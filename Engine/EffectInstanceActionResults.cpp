@@ -68,14 +68,6 @@ EffectInstanceActionKeyBase::fromMemorySegment(ExternalSegmentType* segment, con
     CacheEntryKeyBase::fromMemorySegment(segment, objectNamesPrefix);
 } // fromMemorySegment
 
-std::size_t
-EffectInstanceActionKeyBase::getMetadataSize() const
-{
-    std::size_t ret = CacheEntryKeyBase::getMetadataSize();
-    ret += sizeof(_data.nodeTimeViewVariantHash);
-    ret += sizeof(_data.scale);
-    return ret;
-}
 
 GetRegionOfDefinitionResults::GetRegionOfDefinitionResults()
 : CacheEntryBase(appPTR->getCache())
@@ -102,14 +94,6 @@ void
 GetRegionOfDefinitionResults::setRoD(const RectD& rod)
 {
     _rod = rod;
-}
-
-std::size_t
-GetRegionOfDefinitionResults::getMetadataSize() const
-{
-    std::size_t ret = CacheEntryBase::getMetadataSize();
-    ret += sizeof(_rod);
-    return ret;
 }
 
 
@@ -162,16 +146,6 @@ IsIdentityResults::setIdentityData(int identityInputNb, TimeValue identityTime, 
     _data.identityView = identityView;
 }
 
-std::size_t
-IsIdentityResults::getMetadataSize() const
-{
-    std::size_t ret = CacheEntryBase::getMetadataSize();
-    ret += sizeof(_data.identityInputNb);
-    ret += sizeof(_data.identityTime);
-    ret += sizeof(_data.identityView);
-    return ret;
-}
-
 void
 IsIdentityResults::toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
 {
@@ -213,15 +187,6 @@ void
 GetFramesNeededResults::setFramesNeeded(const FramesNeededMap &framesNeeded)
 {
     _framesNeeded = framesNeeded;
-}
-
-std::size_t
-GetFramesNeededResults::getMetadataSize() const
-{
-    std::size_t ret = CacheEntryBase::getMetadataSize();
-    // Hint a fake size, that's enough to ensure the memory allocation is ok
-    ret += 1024;
-    return ret;
 }
 
 // This is made complicated so it can be inserted in interprocess data structures.
@@ -335,15 +300,6 @@ GetFrameRangeResults::setFrameRangeResults(const RangeD &range)
     _range = range;
 }
 
-std::size_t
-GetFrameRangeResults::getMetadataSize() const
-{
-    std::size_t ret = CacheEntryBase::getMetadataSize();
-    ret += sizeof(_range);
-    return ret;
-}
-
-
 void
 GetFrameRangeResults::toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
 {
@@ -387,15 +343,6 @@ void
 GetTimeInvariantMetaDatasResults::setMetadatasResults(const NodeMetadataPtr &metadatas)
 {
     _metadatas = metadatas;
-}
-
-std::size_t
-GetTimeInvariantMetaDatasResults::getMetadataSize() const
-{
-    std::size_t ret = CacheEntryBase::getMetadataSize();
-    // Hint a fake size
-    ret += 1024;
-    return ret;
 }
 
 
@@ -524,15 +471,6 @@ GetComponentsResults::setResults(const std::map<int, std::list<ImagePlaneDesc> >
     _data.doB = processChannels[2];
     _data.doA = processChannels[3];
     _data.processAllLayers = processAllLayers;
-}
-
-std::size_t
-GetComponentsResults::getMetadataSize() const
-{
-    std::size_t ret = CacheEntryBase::getMetadataSize();
-    // Hint a fake size
-    ret += 1024;
-    return ret;
 }
 
 typedef bip::allocator<String_ExternalSegment, ExternalSegmentType::segment_manager> String_ExternalSegment_allocator;

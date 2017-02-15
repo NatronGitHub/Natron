@@ -65,7 +65,6 @@ public:
 
     virtual void fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix) OVERRIDE;
 
-    virtual std::size_t getMetadataSize() const OVERRIDE;
 
 private:
 
@@ -127,8 +126,6 @@ public:
     //
     const RectD& getRoD() const;
     void setRoD(const RectD& rod);
-
-    virtual std::size_t getMetadataSize() const OVERRIDE FINAL;
 
     virtual void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const OVERRIDE FINAL;
 
@@ -196,8 +193,6 @@ public:
     //
     void getIdentityData(int* identityInputNb, TimeValue* identityTime, ViewIdx* identityView) const;
     void setIdentityData(int identityInputNb, TimeValue identityTime, ViewIdx identityView);
-
-    virtual std::size_t getMetadataSize() const OVERRIDE FINAL;
 
     virtual void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const OVERRIDE FINAL;
 
@@ -272,8 +267,6 @@ public:
     void getFramesNeeded(FramesNeededMap* framesNeeded) const;
     void setFramesNeeded(const FramesNeededMap& framesNeeded);
 
-    virtual std::size_t getMetadataSize() const OVERRIDE FINAL;
-
     virtual void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const OVERRIDE FINAL;
 
     virtual void fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, const void* tileDataPtr) OVERRIDE FINAL;
@@ -335,8 +328,6 @@ public:
     void getFrameRangeResults(RangeD* range) const;
     void setFrameRangeResults(const RangeD& range);
 
-    virtual std::size_t getMetadataSize() const OVERRIDE FINAL;
-
     virtual void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const OVERRIDE FINAL;
 
     virtual void fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, const void* tileDataPtr) OVERRIDE FINAL;
@@ -397,8 +388,6 @@ public:
     //
     const NodeMetadataPtr& getMetadatasResults() const;
     void setMetadatasResults(const NodeMetadataPtr& metadatas);
-
-    virtual std::size_t getMetadataSize() const OVERRIDE FINAL;
 
     virtual void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const OVERRIDE FINAL;
 
@@ -483,8 +472,6 @@ public:
                     std::bitset<4> processChannels,
                     bool processAllLayers);
 
-
-    virtual std::size_t getMetadataSize() const OVERRIDE FINAL;
 
     virtual void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const OVERRIDE FINAL;
 

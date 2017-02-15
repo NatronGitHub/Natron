@@ -29,6 +29,10 @@
 #include <set>
 #include <list>
 
+#ifdef __NATRON_UNIX__
+#include <time.h>
+#endif
+
 #include <QMutex>
 #include <QDir>
 #include <QWaitCondition>
@@ -40,16 +44,19 @@ GCC_DIAG_OFF(unused-parameter)
 #include <boost/unordered_set.hpp>
 #include <boost/format.hpp>
 #include <boost/interprocess/containers/vector.hpp>
-#include <boost/interprocess/sync/interprocess_mutex.hpp> // regular mutex
-#include <boost/interprocess/sync/scoped_lock.hpp> // scoped lock a regular mutex
-#include <boost/interprocess/sync/interprocess_upgradable_mutex.hpp> // r-w mutex that can upgrade read right to write
-#include <boost/interprocess/sync/interprocess_sharable_mutex.hpp> // r-w mutex
-#include <boost/interprocess/sync/sharable_lock.hpp> // scope lock a r-w mutex
-#include <boost/interprocess/sync/upgradable_lock.hpp> // scope lock a r-w upgradable mutex
-#include <boost/interprocess/sync/interprocess_condition_any.hpp> // wait cond with a r-w mutex
-#include <boost/interprocess/sync/file_lock.hpp> //  file lock
-#include <boost/interprocess/sync/named_semaphore.hpp> //  named semaphore
-#include <boost/date_time/posix_time/posix_time.hpp> // time for timed lock
+#include <boost/interprocess/sync/interprocess_mutex.hpp> // IPC regular mutex
+#include <boost/interprocess/sync/scoped_lock.hpp> // IPC  scoped lock a regular mutex
+#include <boost/interprocess/sync/interprocess_upgradable_mutex.hpp> // IPC  r-w mutex that can upgrade read right to write
+#include <boost/interprocess/sync/interprocess_sharable_mutex.hpp> // IPC  r-w mutex
+#include <boost/interprocess/sync/sharable_lock.hpp> // IPC  scoped lock a r-w mutex
+#include <boost/interprocess/sync/upgradable_lock.hpp> // IPC  scope lock a r-w upgradable mutex
+#include <boost/interprocess/sync/interprocess_condition_any.hpp> // IPC  wait cond with a r-w mutex
+#include <boost/interprocess/sync/file_lock.hpp> // IPC  file lock
+#include <boost/interprocess/sync/named_semaphore.hpp> // IPC  named semaphore
+#include <boost/thread/mutex.hpp> // local mutex
+#include <boost/thread/shared_mutex.hpp> // local r-w mutex
+#include <boost/thread/locks.hpp>
+#include <boost/thread/condition_variable.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
 
@@ -67,6 +74,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/Settings.h"
 #include "Engine/StandardPaths.h"
 #include "Engine/RamBuffer.h"
+#include "Engine/Timer.h"
 #include "Engine/ThreadPool.h"
 
 
@@ -89,6 +97,12 @@ GCC_DIAG_ON(unused-parameter)
 // If we change the MemorySegmentEntryHeader struct, we must increment this version so we do not attempt to read an invalid structure.
 #define NATRON_MEMORY_SEGMENT_ENTRY_HEADER_VERSION 1
 
+// If defined, the cache can handle multiple processes accessing to the same cache concurrently, however
+// the cache may not be placed in a network drive.
+// If not defined, the cache supports only a single process writing/reading from the cache concurrently, other processes will resort
+// in a process-local cache.
+#define NATRON_CACHE_INTERPROCESS_ROBUST
+
 //#define CACHE_TRACE_ENTRY_ACCESS
 //#define CACHE_TRACE_TIMEOUTS
 //#define CACHE_TRACE_FILE_MAPPING
@@ -105,14 +119,240 @@ NATRON_NAMESPACE_ENTER;
 // Typedef our interprocess types
 typedef bip::allocator<std::size_t, ExternalSegmentType::segment_manager> Size_t_Allocator_ExternalSegment;
 
-
-
 // The unordered set of free tiles indices in a bucket
 typedef bip::set<std::size_t, std::less<std::size_t>, Size_t_Allocator_ExternalSegment> set_size_t_ExternalSegment;
 
-typedef bip::sharable_lock<bip::interprocess_upgradable_mutex> ReadLock;
-typedef bip::upgradable_lock<bip::interprocess_upgradable_mutex> UpgradableLock;
-typedef bip::scoped_lock<bip::interprocess_upgradable_mutex> WriteLock;
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+/**
+ * @brief Implementation of the timed_lock which timesout after timeoutMilliseconds milliseconds.
+ * The implementation is taken from boost, but we repliced the micro_clock::universal_time() by our 
+ * own timestamps which bypass gmtime_r on unix systems which is horribly slow.
+ **/
+template <class Mutex, void(Mutex::*lock_func)(), bool(Mutex::*try_lock_func) ()>
+bool timed_lock_impl(Mutex* m, std::size_t timeoutMilliseconds, double frequency)
+{
+    //Same as lock()
+    if (timeoutMilliseconds == 0){
+        (m->*lock_func)();
+        return true;
+    }
+    //Always try to lock to achieve POSIX guarantees:
+    // "Under no circumstance shall the function fail with a timeout if the mutex
+    //  can be locked immediately. The validity of the abs_timeout parameter need not
+    //  be checked if the mutex can be locked immediately."
+    else if((m->*try_lock_func)()) {
+        return true;
+    } else {
+
+        TimestampVal startTime = getTimestampInSeconds();
+        TimestampVal now = startTime;
+
+        double timeElapsedMS = 0.;
+        do {
+            if ((m->*try_lock_func)()) {
+                return true;
+            }
+            timeElapsedMS = getTimeElapsed(startTime, now, frequency) * 1000.;
+        } while(timeElapsedMS < timeoutMilliseconds);
+    }
+    return false;
+} // timed_lock_impl
+
+/**
+ * @brief A base class for all scoped timed locks
+ **/
+template <class Mutex, void(Mutex::*lock_func)(), bool(Mutex::*try_lock_func) ()>
+class scoped_timed_lock_impl
+{
+public:
+
+    typedef Mutex mutex_type;
+
+    scoped_timed_lock_impl()
+    : mp_mutex(0), m_locked(false), m_frequency(1.)
+    {
+
+    }
+
+    // The mutex is not locked in the ctor
+    scoped_timed_lock_impl(mutex_type& m, double frequency)
+    : mp_mutex(&m), m_locked(false), m_frequency(frequency)
+    {}
+
+    // Unlocks the mutex if locked
+    ~scoped_timed_lock_impl()
+    {
+        try{  if(m_locked && mp_mutex)   mp_mutex->unlock();  }
+        catch(...){}
+    }
+
+    //!Effects: If mutex() == 0 or if already locked, throws a lock_exception()
+    //!   exception. Calls lock() on the referenced mutex.
+    //!Postconditions: owns() == true.
+    //!Notes: The scoped_lock changes from a state of not owning the mutex, to
+    //!   owning the mutex, blocking if necessary.
+    void lock()
+    {
+        assert(mp_mutex && !m_locked);
+        mp_mutex->lock();
+        m_locked = true;
+    }
+
+    // Try to take the lock and bail out if it failed to do
+    // so after timeoutMilliseconds milliseconds.
+    // If timeoutMilliseconds is 0, this is the same as lock()
+    bool timed_lock(std::size_t timeoutMilliseconds)
+    {
+        assert(mp_mutex && !m_locked);
+        m_locked = timed_lock_impl<Mutex, lock_func, try_lock_func>(mp_mutex, timeoutMilliseconds, m_frequency);
+        return m_locked;
+    }
+
+    void unlock()
+    {
+        assert(mp_mutex && m_locked);
+        mp_mutex->unlock();
+        m_locked = false;
+    }
+
+    bool owns() const
+    {
+        return m_locked && mp_mutex;
+    }
+
+    operator bool() const
+    {  return m_locked;   }
+
+
+    mutex_type* mutex() const
+    {  return  mp_mutex;  }
+
+    mutex_type* release()
+    {
+        mutex_type *mut = mp_mutex;
+        mp_mutex = 0;
+        m_locked = false;
+        return mut;
+    }
+
+protected:
+    mutex_type *mp_mutex;
+    bool m_locked;
+    double m_frequency;
+};
+
+/**
+ * @brief Base class for all locks that can be shared (read lock)
+ **/
+template <class Mutex>
+class scoped_timed_sharable_lock : public scoped_timed_lock_impl<Mutex, &Mutex::lock_sharable, &Mutex::try_lock_sharable>
+{
+public:
+    scoped_timed_sharable_lock(Mutex& m, double frequency)
+    : scoped_timed_lock_impl<Mutex, &Mutex::lock_sharable, &Mutex::try_lock_sharable>(m, frequency)
+    {
+
+    }
+};
+
+typedef scoped_timed_sharable_lock<bip::interprocess_upgradable_mutex> Upgradable_ReadLock;
+typedef scoped_timed_sharable_lock<bip::interprocess_sharable_mutex> Sharable_ReadLock;
+
+/**
+ * @brief Base class for all locks that can be upgraded (read lock)
+ **/
+class UpgradableLock : public scoped_timed_lock_impl<bip::interprocess_upgradable_mutex, &bip::interprocess_upgradable_mutex::lock_upgradable, &bip::interprocess_upgradable_mutex::try_lock_upgradable>
+{
+
+    BOOST_MOVABLE_BUT_NOT_COPYABLE(UpgradableLock)
+
+
+public:
+    UpgradableLock(bip::interprocess_upgradable_mutex& m, double frequency)
+    : scoped_timed_lock_impl<bip::interprocess_upgradable_mutex, &bip::interprocess_upgradable_mutex::lock_upgradable, &bip::interprocess_upgradable_mutex::try_lock_upgradable>(m, frequency)
+    {
+
+    }
+};
+
+
+/**
+ * @brief Base class for all locks that are exclusive
+ **/
+template <class Mutex>
+class scoped_timed_lock : public scoped_timed_lock_impl<Mutex, &Mutex::lock, &Mutex::try_lock>
+{
+
+
+public:
+
+    scoped_timed_lock()
+    : scoped_timed_lock_impl<Mutex, &Mutex::lock, &Mutex::try_lock>()
+    {
+    }
+
+    scoped_timed_lock(Mutex& m, double frequency)
+    : scoped_timed_lock_impl<Mutex, &Mutex::lock, &Mutex::try_lock>(m, frequency)
+    {
+    }
+};
+
+typedef scoped_timed_lock<bip::interprocess_upgradable_mutex> Upgradable_WriteLock;
+typedef scoped_timed_lock<bip::interprocess_sharable_mutex> Sharable_WriteLock;
+typedef scoped_timed_lock<bip::interprocess_mutex> MutexLock;
+
+
+/**
+ * @brief A kind of scoped_timed_lock that is constructed from an upgradable lock
+ **/
+class scoped_upgraded_lock : public scoped_timed_lock<bip::interprocess_upgradable_mutex>
+{
+public:
+
+
+    typedef bip::interprocess_upgradable_mutex mutex_type;
+
+
+    //!Effects: If upgr.owns() then calls unlock_upgradable_and_lock() on the
+    //!   referenced mutex. upgr.release() is called.
+    //!Postconditions: mutex() == the value upgr.mutex() had before the construction.
+    //!   upgr.mutex() == 0. owns() == upgr.owns() before the construction.
+    //!   upgr.owns() == false after the construction.
+    //!Notes: If upgr is locked, this constructor will lock this scoped_lock while
+    //!   unlocking upgr. If upgr is unlocked, then this scoped_lock will be
+    //!   unlocked as well. Only a moved upgradable_lock's will match this
+    //!   signature. An non-moved upgradable_lock can be moved with
+    //!   the expression: "boost::move(lock);" This constructor may block if
+    //!   other threads hold a sharable_lock on this mutex (sharable_lock's can
+    //!   share ownership with an upgradable_lock).
+    explicit scoped_upgraded_lock(BOOST_RV_REF(UpgradableLock) upgr)
+    : scoped_timed_lock<bip::interprocess_upgradable_mutex>()
+    {
+        UpgradableLock &u_lock = upgr;
+        if (u_lock.owns()) {
+            u_lock.mutex()->unlock_upgradable_and_lock();
+            m_locked = true;
+        }
+        mp_mutex = u_lock.release();
+    }
+};
+
+
+#else // !NATRON_CACHE_INTERPROCESS_ROBUST
+
+typedef boost::shared_lock<boost::shared_mutex> Sharable_ReadLock;
+typedef boost::shared_lock<boost::upgrade_mutex> Upgradable_ReadLock;
+typedef boost::upgrade_lock<boost::upgrade_mutex> UpgradableLock;
+
+typedef boost::upgrade_to_unique_lock<boost::upgrade_mutex> scoped_upgraded_lock;
+typedef boost::unique_lock<boost::upgrade_mutex> Upgradable_WriteLock;
+typedef boost::unique_lock<boost::shared_mutex> Sharable_WriteLock;
+typedef boost::unique_lock<boost::mutex> MutexLock;
+
+#endif // NATRON_CACHE_INTERPROCESS_ROBUST
+
+
+
 
 // Maintain the lru with a list of hash: more recents hash are inserted at the end of the list
 // The least recently used hash is the first item of the list.
@@ -260,7 +500,12 @@ struct CacheBucket
         // Protects the LRU list. This is separate to the bucketLock because even if we just access
         // the cache in read mode (in the get() function) we still need to update the LRU list, thus
         // protect it from being written by multiple concurrent threads.
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
         bip::interprocess_mutex lruListMutex;
+
+#else
+        boost::mutex lruListMutex;
+#endif
 
         // Pointers in shared memory to the lru list from node and back node
         bip::offset_ptr<LRUListNode> lruListFront, lruListBack;
@@ -356,7 +601,7 @@ struct CacheBucket
      * @brief Returns whether the ToC memory mapped file mapping is still valid.
      * The tocData.segmentMutex is assumed to be taken for read-lock
      **/
-    bool isToCFileMappingValid() const;
+    bool isToCFileMappingValid(std::size_t minFreeSize) const;
 
     /**
      * @brief Ensures that the ToC memory mapped file mapping is still valid and re-open it if not.
@@ -366,13 +611,14 @@ struct CacheBucket
      * If the file is empty and minFreeSize is 0, the file will at least be grown to a size of
      * NATRON_CACHE_BUCKET_TOC_FILE_GROW_N_BYTES
      **/
-    void remapToCMemoryFile(WriteLock& lock, std::size_t minFreeSize);
+    template <typename Mutex>
+    void remapToCMemoryFile(scoped_timed_lock<Mutex>& lock, std::size_t minFreeSize);
 
     /**
      * @brief Returns whether the tile aligned memory mapped file mapping is still valid.
      * The tileData.segmentMutex is assumed to be taken for read-lock
      **/
-    bool isTileFileMappingValid() const;
+    bool isTileFileMappingValid(std::size_t minFreeSize) const;
 
     /**
      * @brief Ensures that the tile aligned memory mapped file mapping is still valid and re-open it if not.
@@ -384,7 +630,8 @@ struct CacheBucket
      * If the file is empty and minFreeSize is 0, the file will at least be grown to a size of
      * NATRON_TILE_SIZE_BYTES * NATRON_CACHE_FILE_GROW_N_TILES
      **/
-    void remapTileMemoryFile(WriteLock& lock, std::size_t minFreeSize);
+    template <typename Mutex>
+    void remapTileMemoryFile(scoped_timed_lock<Mutex>& lock, std::size_t minFreeSize);
 
     /**
      * @brief Grow the ToC memory mapped file. 
@@ -394,7 +641,8 @@ struct CacheBucket
      *
      * This function is called internally by remapToCMemoryFile()
      **/
-    void growToCFile(WriteLock& lock, std::size_t bytesToAdd);
+    template <typename Mutex>
+    void growToCFile(scoped_timed_lock<Mutex>& lock, std::size_t bytesToAdd);
 
     /**
      * @brief Grow the tile memory mapped file. 
@@ -404,7 +652,8 @@ struct CacheBucket
      *
      * This function is called internally by remapTileMemoryFile()
      **/
-    void growTileFile(WriteLock& lock, std::size_t bytesToAdd);
+    template <typename Mutex>
+    void growTileFile(scoped_timed_lock<Mutex>& lock, std::size_t bytesToAdd);
 };
 
 struct CacheEntryLockerPrivate
@@ -474,7 +723,11 @@ struct CachePrivate
             // Whenever a process/thread reads the memory segment, it takes the lock in read mode.
             // Whenever a process/thread needs to write to or grow or shrink the memory segment, it takes this lock
             // in write mode.
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
             bip::interprocess_upgradable_mutex segmentMutex;
+#else
+            boost::upgrade_mutex segmentMutex;
+#endif
 
             // True whilst the mapping is valid.
             // Any time the memory mapped file needs to be accessed, the caller
@@ -488,7 +741,12 @@ struct CachePrivate
             int nProcessWithMappingValid;
 
             // Threads wait on this condition whilst the mappingValid flag is false
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
             bip::interprocess_condition_any mappingInvalidCond;
+
+#else
+            boost::condition_variable_any mappingInvalidCond;
+#endif
 
             // The thread that wants to grow the memory portion just waits in this condition
             // until nProcessWithToCMappingValid is 0.
@@ -531,7 +789,11 @@ struct CachePrivate
             //          ++nProcessWithMappingValid;
             //    }
             // }
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
             bip::interprocess_condition_any mappedProcessesNotEmpty;
+#else
+            boost::condition_variable_any mappedProcessesNotEmpty;
+#endif
 
             SharedMemorySegmentData()
             : segmentMutex()
@@ -574,7 +836,11 @@ struct CachePrivate
         std::size_t diskSize;
 
         // Protects memorySize, glTextureSize and diskSize
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
         bip::interprocess_sharable_mutex sizeLock;
+#else
+        boost::shared_mutex sizeLock;
+#endif
 
         IPCData()
         : bucketsData()
@@ -699,6 +965,8 @@ struct CachePrivate
     // location.
     std::string directoryContainingCachePath;
 
+    // In windows, times returned by getTimestampInSeconds() must be divided by this value
+    double timerFrequency;
 
     CachePrivate(Cache* publicInterface)
     : _publicInterface(publicInterface)
@@ -716,8 +984,8 @@ struct CachePrivate
     , nThreadsTimedOutFailedCond()
     , ipc(0)
     , directoryContainingCachePath()
+    , timerFrequency(getPerformanceFrequency())
     {
-
 
     }
 
@@ -770,24 +1038,6 @@ public:
 
 };
 
-/**
- * @brief Takes the given mutex for the gven lock type and times out after lockTimeOutMs milliseconds if it could not be taken.
- **/
-template <typename LOCK>
-bool createTimedLock(boost::scoped_ptr<LOCK>& lock,
-                        typename LOCK::mutex_type* mutex,
-                        std::size_t lockTimeOutMs) WARN_UNUSED_RETURN;
-
-template <typename LOCK>
-bool createTimedLock(boost::scoped_ptr<LOCK>& lock,
-                        typename LOCK::mutex_type* mutex,
-                        std::size_t lockTimeOutMs)
-{
-    boost::posix_time::ptime abs_time = boost::posix_time::microsec_clock::universal_time() +  boost::posix_time::milliseconds(lockTimeOutMs);
-    lock.reset(new LOCK(*mutex, abs_time));
-    return lock->owns();
-}
-
 
 /**
  * @brief Creates a locker object around the given process shared mutex.
@@ -810,7 +1060,9 @@ bool createTimedLockAndClearCacheIfFailed(CachePrivate* imp,
     bool unmappedOnce = false;
     for (;;) {
 
-        if (createTimedLock<LOCK>(lock, mutex, lockTimeOutMs)) {
+        lock.reset(new LOCK(*mutex, imp->timerFrequency));
+
+        if (lock->timed_lock(lockTimeOutMs)) {
             return !unmappedOnce;
         } else {
 
@@ -878,23 +1130,40 @@ CacheEntryLocker::create(const CachePtr& cache, const CacheEntryBasePtr& entry)
 }
 
 bool
-CacheBucket::isToCFileMappingValid() const
+CacheBucket::isToCFileMappingValid(std::size_t minFreeSize) const
 {
     // Private - the tocData.segmentMutex is assumed to be taken for read lock
     CachePtr c = cache.lock();
-    return c->_imp->ipc->bucketsData[bucketIndex].tocData.mappingValid;
+    if (!c->_imp->ipc->bucketsData[bucketIndex].tocData.mappingValid) {
+        return false;
+    }
+    if (minFreeSize == 0) {
+        return true;
+    }
+    ExternalSegmentType::size_type freeMem = tocFileManager->get_free_memory();
+    return freeMem > minFreeSize;
 
 } // isToCFileMappingValid
 
 bool
-CacheBucket::isTileFileMappingValid() const
+CacheBucket::isTileFileMappingValid(std::size_t minFreeSize) const
 {
     // Private - the tileData.segmentMutex is assumed to be taken for read lock
     CachePtr c = cache.lock();
-    return c->_imp->ipc->bucketsData[bucketIndex].tileData.mappingValid;
+    if (!c->_imp->ipc->bucketsData[bucketIndex].tileData.mappingValid) {
+        return false;
+    }
+    if (minFreeSize == 0) {
+        return true;
+    }
+
+    std::size_t freeMem = ipc->freeTiles.size() * NATRON_TILE_SIZE_BYTES;
+    return freeMem > minFreeSize;
+
 } // isTileFileMappingValid
 
-static void ensureMappingValidInternal(WriteLock& lock,
+template <typename Mutex>
+static void ensureMappingValidInternal(scoped_timed_lock<Mutex>& lock,
                                        const MemoryFilePtr& memoryMappedFile,
                                        CachePrivate::IPCData::SharedMemorySegmentData* segment)
 {
@@ -935,8 +1204,9 @@ static void reOpenToCData(CacheBucket* bucket, bool create)
     bucket->ipc = bucket->tocFileManager->find_or_construct<CacheBucket::IPCData>("BucketData")(freeTilesAllocator);
 }
 
+template <typename Mutex>
 void
-CacheBucket::remapToCMemoryFile(WriteLock& lock, std::size_t minFreeSize)
+CacheBucket::remapToCMemoryFile(scoped_timed_lock<Mutex>& lock, std::size_t minFreeSize)
 {
     // Private - the tocData.segmentMutex is assumed to be taken for write lock
     CachePtr c = cache.lock();
@@ -996,8 +1266,9 @@ static void flushTileMapping(const MemoryFilePtr& tileAlignedFile, const set_siz
     }
 } // flushTileMapping
 
+template <typename Mutex>
 void
-CacheBucket::remapTileMemoryFile(WriteLock& lock, std::size_t minFreeSize)
+CacheBucket::remapTileMemoryFile(scoped_timed_lock<Mutex>& lock, std::size_t minFreeSize)
 {
     // Private - the tileData.segmentMutex is assumed to be taken for write lock
     CachePtr c = cache.lock();
@@ -1031,8 +1302,9 @@ CacheBucket::remapTileMemoryFile(WriteLock& lock, std::size_t minFreeSize)
 
 } // remapTileMemoryFile
 
+template <typename Mutex>
 void
-CacheBucket::growToCFile(WriteLock& lock, std::size_t bytesToAdd)
+CacheBucket::growToCFile(scoped_timed_lock<Mutex>& lock, std::size_t bytesToAdd)
 {
     // Private - the tocData.segmentMutex is assumed to be taken for write lock
 
@@ -1070,8 +1342,9 @@ CacheBucket::growToCFile(WriteLock& lock, std::size_t bytesToAdd)
 
 } // growToCFile
 
+template <typename Mutex>
 void
-CacheBucket::growTileFile(WriteLock& lock, std::size_t bytesToAdd)
+CacheBucket::growTileFile(scoped_timed_lock<Mutex>& lock, std::size_t bytesToAdd)
 {
     // Private - the tileData.segmentMutex is assumed to be taken for write lock
     // the tocData.segmentMutex is assumed to be taken for write lock because we need to read/write the free tiles
@@ -1169,8 +1442,8 @@ CacheBucket::readFromSharedMemoryEntryImpl(MemorySegmentEntryHeader* cacheEntry,
 
     // If the entry is tiled, read from the tile buffer
 
-    boost::scoped_ptr<ReadLock> tileReadLock;
-    boost::scoped_ptr<WriteLock> tileWriteLock;
+    boost::scoped_ptr<Upgradable_ReadLock> tileReadLock;
+    boost::scoped_ptr<Upgradable_WriteLock> tileWriteLock;
     char* tileDataPtr = 0;
     if (cacheEntry->tileCacheIndex != -1) {
 
@@ -1178,10 +1451,10 @@ CacheBucket::readFromSharedMemoryEntryImpl(MemorySegmentEntryHeader* cacheEntry,
         bool tileMappingValid;
 
         {
-            if (!createTimedLockAndClearCacheIfFailed<ReadLock>(c->_imp.get(), shmAccess, tileReadLock, &c->_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex, timeout)) {
+            if (!createTimedLockAndClearCacheIfFailed<Upgradable_ReadLock>(c->_imp.get(), shmAccess, tileReadLock, &c->_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex, timeout)) {
                 return eShmEntryReadRetCodeLockTimeout;
             }
-            tileMappingValid = isTileFileMappingValid();
+            tileMappingValid = isTileFileMappingValid(0);
         }
 
         // mapping invalid, remap
@@ -1189,7 +1462,8 @@ CacheBucket::readFromSharedMemoryEntryImpl(MemorySegmentEntryHeader* cacheEntry,
             // If the tile mapping is invalid, take a write lock on the tile mapping and ensure it is valid
             tileReadLock.reset();
 
-            if (!createTimedLock<WriteLock>(tileWriteLock, &c->_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex, timeout)) {
+            tileWriteLock.reset(new Upgradable_WriteLock(c->_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex, c->_imp->timerFrequency));
+            if (!tileWriteLock->timed_lock(timeout)) {
                 return eShmEntryReadRetCodeLockTimeout;
             }
             remapTileMemoryFile(*tileWriteLock, 0);
@@ -1212,8 +1486,8 @@ CacheBucket::readFromSharedMemoryEntryImpl(MemorySegmentEntryHeader* cacheEntry,
     //
     // Take the LRU list mutex
     {
-        boost::scoped_ptr<bip::scoped_lock<bip::interprocess_mutex> > lruWriteLock;
-        if (!createTimedLockAndClearCacheIfFailed<bip::scoped_lock<bip::interprocess_mutex> >(c->_imp.get(), shmAccess, lruWriteLock, &ipc->lruListMutex, timeout)) {
+        boost::scoped_ptr<MutexLock> lruWriteLock;
+        if (!createTimedLockAndClearCacheIfFailed<MutexLock>(c->_imp.get(), shmAccess, lruWriteLock, &ipc->lruListMutex, timeout)) {
             return eShmEntryReadRetCodeLockTimeout;
         }
 
@@ -1258,8 +1532,8 @@ CacheBucket::deallocateCacheEntryImpl(MemorySegmentEntryHeader* cacheEntry,
         // Take the tileData.segmentMutex in write mode
 
         {
-            boost::scoped_ptr<WriteLock> writeLock;
-            if (!createTimedLockAndClearCacheIfFailed<WriteLock>(c->_imp.get(), shmAccess, writeLock,  &c->_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex, timeout)) {
+            boost::scoped_ptr<Upgradable_WriteLock> writeLock;
+            if (!createTimedLockAndClearCacheIfFailed<Upgradable_WriteLock>(c->_imp.get(), shmAccess, writeLock,  &c->_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex, timeout)) {
                 return;
             }
 
@@ -1286,8 +1560,8 @@ CacheBucket::deallocateCacheEntryImpl(MemorySegmentEntryHeader* cacheEntry,
         // Remove this entry from the LRU list
         {
             // Take the lock of the LRU list.
-            boost::scoped_ptr<bip::scoped_lock<bip::interprocess_mutex> > lruWriteLock;
-            if (!createTimedLockAndClearCacheIfFailed<bip::scoped_lock<bip::interprocess_mutex> >(c->_imp.get(), shmAccess,lruWriteLock, &ipc->lruListMutex, timeout)) {
+            boost::scoped_ptr<MutexLock> lruWriteLock;
+            if (!createTimedLockAndClearCacheIfFailed<MutexLock>(c->_imp.get(), shmAccess,lruWriteLock, &ipc->lruListMutex, timeout)) {
                 return;
             }
 
@@ -1468,21 +1742,23 @@ CacheEntryLocker::lookupAndSetStatus(boost::scoped_ptr<SharedMemoryProcessLocalR
         _imp->bucket = &_imp->cache->_imp->buckets[Cache::getBucketCacheBucketIndex(hash)];
     }
 
+    // At least account for twice the struct size since
+
     {
         // Take the read lock: many threads/processes can try read at the same time.
         // If we timeout, clear the cache and retry.
-        boost::scoped_ptr<ReadLock> readLock;
-        createTimedLockAndClearCacheIfFailed<ReadLock>(_imp->cache->_imp.get(), shmAccess, readLock, &_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].tocData.segmentMutex, timeout);
+        boost::scoped_ptr<Upgradable_ReadLock> readLock;
+        createTimedLockAndClearCacheIfFailed<Upgradable_ReadLock>(_imp->cache->_imp.get(), shmAccess, readLock, &_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].tocData.segmentMutex, timeout);
 
-        boost::scoped_ptr<WriteLock> writeLock;
+        boost::scoped_ptr<Upgradable_WriteLock> writeLock;
         // Every time we take the lock, we must ensure the memory mapping is ok because the
         // memory mapped file might have been resized to fit more entries.
-        if (!_imp->bucket->isToCFileMappingValid()) {
+        if (!_imp->bucket->isToCFileMappingValid(0)) {
             // Remove the read lock, and take a write lock.
             // This could allow other threads to run in-between, but we don't care since nothing happens.
             readLock.reset();
 
-            createTimedLockAndClearCacheIfFailed<WriteLock>(_imp->cache->_imp.get(), shmAccess, writeLock, &_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].tocData.segmentMutex, timeout);
+            createTimedLockAndClearCacheIfFailed<Upgradable_WriteLock>(_imp->cache->_imp.get(), shmAccess, writeLock, &_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].tocData.segmentMutex, timeout);
 
             _imp->bucket->remapToCMemoryFile(*writeLock, 0);
         }
@@ -1513,11 +1789,10 @@ CacheEntryLocker::lookupAndSetStatus(boost::scoped_ptr<SharedMemoryProcessLocalR
         // If we timed out, take the lock once more and upong timeout, ensure the cache integrity and clear it.
         createTimedLockAndClearCacheIfFailed<UpgradableLock>(_imp->cache->_imp.get(), shmAccess, upgradableLock, &_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].tocData.segmentMutex, timeout);
 
-        boost::scoped_ptr<WriteLock> writeLock;
-
+        boost::scoped_ptr<scoped_upgraded_lock> writeLock;
         // Every time we take the lock, we must ensure the memory mapping is ok
-        if (!_imp->bucket->isToCFileMappingValid()) {
-            writeLock.reset(new WriteLock(boost::move(*upgradableLock)));
+        if (!_imp->bucket->isToCFileMappingValid(0)) {
+            writeLock.reset(new scoped_upgraded_lock(boost::move(*upgradableLock)));
             _imp->bucket->remapToCMemoryFile(*writeLock, 0);
         }
 
@@ -1530,7 +1805,7 @@ CacheEntryLocker::lookupAndSetStatus(boost::scoped_ptr<SharedMemoryProcessLocalR
             // We need to upgrade the lock to a write lock. This will wait until all other threads have released their
             // read lock.
             if (!writeLock) {
-                writeLock.reset(new WriteLock(boost::move(*upgradableLock)));
+                writeLock.reset(new scoped_upgraded_lock(boost::move(*upgradableLock)));
             }
 
             // Now we are the only thread in this portion.
@@ -1540,7 +1815,23 @@ CacheEntryLocker::lookupAndSetStatus(boost::scoped_ptr<SharedMemoryProcessLocalR
 #ifdef CACHE_TRACE_ENTRY_ACCESS
             qDebug() << _imp->hashStr.c_str() << ": construct entry";
 #endif
-            MemorySegmentEntryHeader* cacheEntry = _imp->bucket->tocFileManager->construct<MemorySegmentEntryHeader>(_imp->hashStr.c_str())(allocator);
+            MemorySegmentEntryHeader* cacheEntry = 0;
+
+            // the construction of the object may fail if the segment is out of memory. Upon failure, grow the ToC file and retry to allocate.
+            {
+                int attempt_i = 0;
+                while (attempt_i < 10) {
+                    try {
+                        cacheEntry = _imp->bucket->tocFileManager->construct<MemorySegmentEntryHeader>(_imp->hashStr.c_str())(allocator);
+                    } catch (const bip::bad_alloc& /*e*/) {
+                        _imp->bucket->remapToCMemoryFile(*writeLock, sizeof(MemorySegmentEntryHeader) * 2);
+                    }
+                    if (cacheEntry) {
+                        break;
+                    }
+                    ++attempt_i;
+                }
+            }
             cacheEntry->pluginID.append(_imp->processLocalEntry->getKey()->getHolderPluginID().c_str());
 
             cacheEntry->version = NATRON_MEMORY_SEGMENT_ENTRY_HEADER_VERSION;
@@ -1587,15 +1878,15 @@ CacheEntryLocker::insertInCache()
 
     {
         // Take write lock on the bucket, if timeout, wipe the cache and fail.
-        boost::scoped_ptr<WriteLock> writeLock;
-        if (!createTimedLockAndClearCacheIfFailed<WriteLock>(_imp->cache->_imp.get(), shmAccess, writeLock, &_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].tocData.segmentMutex, NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
+        boost::scoped_ptr<Upgradable_WriteLock> writeLock;
+        if (!createTimedLockAndClearCacheIfFailed<Upgradable_WriteLock>(_imp->cache->_imp.get(), shmAccess, writeLock, &_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].tocData.segmentMutex, NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
             return;
         }
 
         // Ensure the memory mapping is ok. We grow the file so it contains at least the size needed by the entry
         // plus some metadatas required management algorithm store its own memory housekeeping data.
         const std::size_t entrySize = _imp->processLocalEntry->getMetadataSize();
-        if (!_imp->bucket->isToCFileMappingValid()) {
+        if (!_imp->bucket->isToCFileMappingValid(entrySize)) {
             _imp->bucket->remapToCMemoryFile(*writeLock, entrySize);
         }
         
@@ -1622,8 +1913,8 @@ CacheEntryLocker::insertInCache()
             // Serialize the meta-datas in the memory segment
             // If the entry also requires tile aligned data storage, allocate a tile now
             {
-                boost::scoped_ptr<ReadLock> tileReadLock;
-                boost::scoped_ptr<WriteLock> tileWriteLock;
+                boost::scoped_ptr<Upgradable_ReadLock> tileReadLock;
+                boost::scoped_ptr<Upgradable_WriteLock> tileWriteLock;
                 char* tileDataPtr = 0;
                 if (_imp->processLocalEntry->isStorageTiled()) {
                     // First try to check if the tile aligned mapping is valid with a readlock
@@ -1631,11 +1922,11 @@ CacheEntryLocker::insertInCache()
 
                     {
                          // Take read lock on the tile data, if timeout, wipe the cache and fail.
-                        if (!createTimedLockAndClearCacheIfFailed<ReadLock>(_imp->cache->_imp.get(), shmAccess, tileReadLock, &_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].tileData.segmentMutex, NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
+                        if (!createTimedLockAndClearCacheIfFailed<Upgradable_ReadLock>(_imp->cache->_imp.get(), shmAccess, tileReadLock, &_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].tileData.segmentMutex, NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
                             return;
                         }
 
-                        tileMappingValid = _imp->bucket->isTileFileMappingValid();
+                        tileMappingValid = _imp->bucket->isTileFileMappingValid(NATRON_TILE_SIZE_BYTES);
                         if (tileMappingValid) {
                             // Check that there's at least one free tile
                             tileMappingValid = _imp->bucket->ipc->freeTiles.size() > 0;
@@ -1646,7 +1937,7 @@ CacheEntryLocker::insertInCache()
                     if (!tileMappingValid) {
                         // If the tile mapping is invalid, take a write lock on the tile mapping and ensure it is valid
                         tileReadLock.reset();
-                        if (!createTimedLockAndClearCacheIfFailed<WriteLock>(_imp->cache->_imp.get(), shmAccess, tileWriteLock, &_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].tileData.segmentMutex, NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
+                        if (!createTimedLockAndClearCacheIfFailed<Upgradable_WriteLock>(_imp->cache->_imp.get(), shmAccess, tileWriteLock, &_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].tileData.segmentMutex, NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
                             return;
                         }
 
@@ -1668,8 +1959,22 @@ CacheEntryLocker::insertInCache()
                     cacheEntry->tileCacheIndex = freeTileIndex;
                 } // tileWriteLock
                 
-                
-                _imp->processLocalEntry->toMemorySegment(_imp->bucket->tocFileManager.get(), _imp->hashStr + "Data", &cacheEntry->entryDataPointerList, tileDataPtr);
+
+                // the construction of the object may fail if the segment is out of memory. Upon failure, grow the ToC file and retry to allocate.
+                {
+                    int attempt_i = 0;
+                    while (attempt_i < 10) {
+                        try {
+                            _imp->processLocalEntry->toMemorySegment(_imp->bucket->tocFileManager.get(), _imp->hashStr + "Data", &cacheEntry->entryDataPointerList, tileDataPtr);
+
+                        } catch (const bip::bad_alloc& /*e*/) {
+                            _imp->bucket->remapToCMemoryFile(*writeLock, entrySize * 2);
+                            ++attempt_i;
+                            continue;
+                        }
+                        break;
+                    }
+                }
 
             }
 
@@ -1677,8 +1982,8 @@ CacheEntryLocker::insertInCache()
             // Insert the hash in the LRU linked list
             // Lock the LRU list mutex
             {
-                boost::scoped_ptr<bip::scoped_lock<bip::interprocess_mutex> > lruWriteLock;
-                if (!createTimedLockAndClearCacheIfFailed<bip::scoped_lock<bip::interprocess_mutex> >(_imp->cache->_imp.get(), shmAccess, lruWriteLock, &_imp->bucket->ipc->lruListMutex, NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
+                boost::scoped_ptr<MutexLock> lruWriteLock;
+                if (!createTimedLockAndClearCacheIfFailed<MutexLock>(_imp->cache->_imp.get(), shmAccess, lruWriteLock, &_imp->bucket->ipc->lruListMutex, NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
                     return;
                 }
 
@@ -1788,13 +2093,13 @@ CacheEntryLocker::~CacheEntryLocker()
         
         boost::scoped_ptr<SharedMemoryProcessLocalReadLocker> shmAccess(new SharedMemoryProcessLocalReadLocker(_imp->cache->_imp.get()));
 
-        boost::scoped_ptr<WriteLock> writeLock;
-        if (!createTimedLockAndClearCacheIfFailed<WriteLock>(_imp->cache->_imp.get(), shmAccess, writeLock, &_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].tocData.segmentMutex, NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
+        boost::scoped_ptr<Upgradable_WriteLock> writeLock;
+        if (!createTimedLockAndClearCacheIfFailed<Upgradable_WriteLock>(_imp->cache->_imp.get(), shmAccess, writeLock, &_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].tocData.segmentMutex, NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
             return;
         }
 
         // Every time we take the lock, we must ensure the memory mapping is ok
-        if (!_imp->bucket->isToCFileMappingValid()) {
+        if (!_imp->bucket->isToCFileMappingValid(0)) {
             _imp->bucket->remapToCMemoryFile(*writeLock, 0);
         }
 
@@ -1973,8 +2278,8 @@ Cache::create()
             ret->_imp->buckets[i].tocFile.reset(new MemoryFile);
 
             // Take the ToC mapping mutex to ensure that the ToC file is valid
-            boost::scoped_ptr<WriteLock> writeLock;
-            if (createTimedLockAndClearCacheIfFailed<WriteLock>(ret->_imp.get(), shmReader, writeLock, &ret->_imp->ipc->bucketsData[i].tocData.segmentMutex, NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
+            boost::scoped_ptr<Upgradable_WriteLock> writeLock;
+            if (createTimedLockAndClearCacheIfFailed<Upgradable_WriteLock>(ret->_imp.get(), shmReader, writeLock, &ret->_imp->ipc->bucketsData[i].tocData.segmentMutex, NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
 
 
                 ret->_imp->buckets[i].tocFile->open(tocFilePath, MemoryFile::eFileOpenModeOpenOrCreate);
@@ -1991,8 +2296,8 @@ Cache::create()
             ret->_imp->buckets[i].tileAlignedFile.reset(new MemoryFile);
 
             // Take the ToC mapping mutex and register this process amongst the valid mapping
-            boost::scoped_ptr<WriteLock> writeLock;
-            if (createTimedLockAndClearCacheIfFailed<WriteLock>(ret->_imp.get(), shmReader, writeLock, &ret->_imp->ipc->bucketsData[i].tileData.segmentMutex, NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
+            boost::scoped_ptr<Upgradable_WriteLock> writeLock;
+            if (createTimedLockAndClearCacheIfFailed<Upgradable_WriteLock>(ret->_imp.get(), shmReader, writeLock, &ret->_imp->ipc->bucketsData[i].tileData.segmentMutex, NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
 
                 ret->_imp->buckets[i].tileAlignedFile->open(tileCacheFilePath, MemoryFile::eFileOpenModeOpenOrCreate);
 
@@ -2189,11 +2494,12 @@ Cache::getCurrentSize(StorageModeEnum storage) const
 
     boost::scoped_ptr<SharedMemoryProcessLocalReadLocker> shmReader(new SharedMemoryProcessLocalReadLocker(_imp.get()));
 
-    // Lock for read the size lock
-    boost::scoped_ptr<bip::sharable_lock<bip::interprocess_sharable_mutex> > locker;
-    if (!createTimedLock<bip::sharable_lock<bip::interprocess_sharable_mutex> >(locker, &_imp->ipc->sizeLock, 500)) {
+    // Lock for read the size lock, don't use a long timeout here because it may be called on the GUI thread.
+    boost::scoped_ptr<Sharable_ReadLock> locker(new Sharable_ReadLock(_imp->ipc->sizeLock, _imp->timerFrequency));
+    if (!locker->timed_lock(500)) {
         return ret;
     }
+
     switch (storage) {
         case eStorageModeDisk:
             return _imp->ipc->diskSize;
@@ -2250,11 +2556,12 @@ CachePrivate::incrementCacheSize(long long size, StorageModeEnum storage)
 {
     boost::scoped_ptr<SharedMemoryProcessLocalReadLocker> shmReader(new SharedMemoryProcessLocalReadLocker(this));
 
-    // Lock for writing
-    boost::scoped_ptr<bip::scoped_lock<bip::interprocess_sharable_mutex> > locker;
-    if (!createTimedLock<bip::scoped_lock<bip::interprocess_sharable_mutex> >(locker, &ipc->sizeLock, 500)) {
+    // Lock for writing the size lock, don't use a long timeout here because it may be called on the GUI thread.
+    boost::scoped_ptr<Sharable_WriteLock> locker(new Sharable_WriteLock(ipc->sizeLock, timerFrequency));
+    if (!locker->timed_lock(500)) {
         return;
     }
+
 
     switch (storage) {
         case eStorageModeDisk:
@@ -2382,18 +2689,19 @@ Cache::hasCacheEntryForHash(U64 hash) const
 
     boost::scoped_ptr<SharedMemoryProcessLocalReadLocker> shmReader(new SharedMemoryProcessLocalReadLocker(_imp.get()));
 
-    boost::scoped_ptr<ReadLock> readLock;
-    boost::scoped_ptr<WriteLock> writeLock;
-
-    if (!createTimedLock<ReadLock>(readLock, &_imp->ipc->bucketsData[bucketIndex].tocData.segmentMutex, 500)) {
+    boost::scoped_ptr<Upgradable_ReadLock> readLock(new Upgradable_ReadLock(_imp->ipc->bucketsData[bucketIndex].tocData.segmentMutex, _imp->timerFrequency));
+    if (!readLock->timed_lock(NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
         return false;
     }
 
+    boost::scoped_ptr<Upgradable_WriteLock> writeLock;
+
+
     // First take a read lock and check if the mapping is valid. Otherwise take a write lock
-    if (!bucket.isToCFileMappingValid()) {
+    if (!bucket.isToCFileMappingValid(0)) {
         readLock.reset();
 
-        if (!createTimedLockAndClearCacheIfFailed<WriteLock>(_imp.get(), shmReader, writeLock, &_imp->ipc->bucketsData[bucketIndex].tocData.segmentMutex, NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
+        if (!createTimedLockAndClearCacheIfFailed<Upgradable_WriteLock>(_imp.get(), shmReader, writeLock, &_imp->ipc->bucketsData[bucketIndex].tocData.segmentMutex, NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
             return false;
         }
 
@@ -2443,8 +2751,8 @@ Cache::removeEntry(const CacheEntryBasePtr& entry)
 
     // Take the bucket lock in write mode
     {
-        boost::scoped_ptr<WriteLock> writeLock;
-        if (!createTimedLockAndClearCacheIfFailed<WriteLock>(_imp.get(), shmReader, writeLock, &_imp->ipc->bucketsData[bucketIndex].tocData.segmentMutex, NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
+        boost::scoped_ptr<Upgradable_WriteLock> writeLock;
+        if (!createTimedLockAndClearCacheIfFailed<Upgradable_WriteLock>(_imp.get(), shmReader, writeLock, &_imp->ipc->bucketsData[bucketIndex].tocData.segmentMutex, NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
             return;
         }
 
@@ -2473,8 +2781,8 @@ CachePrivate::clearCacheInternal(boost::scoped_ptr<SharedMemoryProcessLocalReadL
 
         // Close and re-create the memory mapped files
         {
-            boost::scoped_ptr<WriteLock> writeLock;
-            if (!createTimedLock<WriteLock>(writeLock, &ipc->bucketsData[bucket_i].tocData.segmentMutex, NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
+            boost::scoped_ptr<Upgradable_WriteLock> writeLock(new Upgradable_WriteLock(ipc->bucketsData[bucket_i].tocData.segmentMutex, timerFrequency));
+            if (!writeLock->timed_lock(NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
                 return;
             }
 
@@ -2485,10 +2793,11 @@ CachePrivate::clearCacheInternal(boost::scoped_ptr<SharedMemoryProcessLocalReadL
             bucket.remapToCMemoryFile(*writeLock, 0);
         }
         {
-            boost::scoped_ptr<WriteLock> writeLock;
-            if (!createTimedLock<WriteLock>(writeLock, &ipc->bucketsData[bucket_i].tileData.segmentMutex, NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
+            boost::scoped_ptr<Upgradable_WriteLock> writeLock(new Upgradable_WriteLock(ipc->bucketsData[bucket_i].tileData.segmentMutex, timerFrequency));
+            if (!writeLock->timed_lock(NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
                 return;
             }
+
             std::string tileFilePath = bucket.tileAlignedFile->path();
             bucket.tileAlignedFile->remove();
             bucket.tileAlignedFile->open(tileFilePath, MemoryFile::eFileOpenModeOpenTruncateOrCreate);
@@ -2545,8 +2854,8 @@ Cache::evictLRUEntries(std::size_t nBytesToFree)
 
             {
                 // Lock for writing
-                boost::scoped_ptr<WriteLock> writeLock;
-                if (!createTimedLockAndClearCacheIfFailed<WriteLock>(_imp.get(), shmReader, writeLock, &_imp->ipc->bucketsData[bucket_i].tocData.segmentMutex, NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
+                boost::scoped_ptr<Upgradable_WriteLock> writeLock;
+                if (!createTimedLockAndClearCacheIfFailed<Upgradable_WriteLock>(_imp.get(), shmReader, writeLock, &_imp->ipc->bucketsData[bucket_i].tocData.segmentMutex, NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
                     return;
                 }
 
@@ -2556,8 +2865,8 @@ Cache::evictLRUEntries(std::size_t nBytesToFree)
                 U64 entryHash = 0;
                 {
                     // Lock the LRU list
-                    boost::scoped_ptr<bip::scoped_lock<bip::interprocess_mutex> > lruWriteLock;
-                    if (!createTimedLockAndClearCacheIfFailed<bip::scoped_lock<bip::interprocess_mutex> >(_imp.get(), shmReader, lruWriteLock, &bucket.ipc->lruListMutex, NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
+                    boost::scoped_ptr<MutexLock> lruWriteLock;
+                    if (!createTimedLockAndClearCacheIfFailed<MutexLock>(_imp.get(), shmReader, lruWriteLock, &bucket.ipc->lruListMutex, NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
                         return;
                     }
 
@@ -2613,16 +2922,16 @@ Cache::getMemoryStats(std::map<std::string, CacheReportInfo>* infos) const
     for (int bucket_i = 0; bucket_i < NATRON_CACHE_BUCKETS_COUNT; ++bucket_i) {
         CacheBucket& bucket = _imp->buckets[bucket_i];
 
-        boost::scoped_ptr<ReadLock> readLock;
-        boost::scoped_ptr<WriteLock> writeLock;
-        if (!createTimedLockAndClearCacheIfFailed<ReadLock>(_imp.get(), shmReader, readLock, &_imp->ipc->bucketsData[bucket_i].tocData.segmentMutex, NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
+        boost::scoped_ptr<Upgradable_ReadLock> readLock;
+        boost::scoped_ptr<Upgradable_WriteLock> writeLock;
+        if (!createTimedLockAndClearCacheIfFailed<Upgradable_ReadLock>(_imp.get(), shmReader, readLock, &_imp->ipc->bucketsData[bucket_i].tocData.segmentMutex, NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
             return;
         }
 
         // First take a read lock and check if the mapping is valid. Otherwise take a write lock
-        if (!bucket.isToCFileMappingValid()) {
+        if (!bucket.isToCFileMappingValid(0)) {
             readLock.reset();
-            if (!createTimedLockAndClearCacheIfFailed<WriteLock>(_imp.get(), shmReader, writeLock, &_imp->ipc->bucketsData[bucket_i].tocData.segmentMutex, NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
+            if (!createTimedLockAndClearCacheIfFailed<Upgradable_WriteLock>(_imp.get(), shmReader, writeLock, &_imp->ipc->bucketsData[bucket_i].tocData.segmentMutex, NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
                 return;
             }
 
@@ -2663,16 +2972,16 @@ Cache::flushCacheOnDisk(bool async)
         CacheBucket& bucket = _imp->buckets[bucket_i];
 
         {
-            boost::scoped_ptr<ReadLock> readLock;
-            boost::scoped_ptr<WriteLock> writeLock;
-            if (!createTimedLockAndClearCacheIfFailed<ReadLock>(_imp.get(), shmReader, readLock, &_imp->ipc->bucketsData[bucket_i].tocData.segmentMutex, NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
+            boost::scoped_ptr<Upgradable_ReadLock> readLock;
+            boost::scoped_ptr<Upgradable_WriteLock> writeLock;
+            if (!createTimedLockAndClearCacheIfFailed<Upgradable_ReadLock>(_imp.get(), shmReader, readLock, &_imp->ipc->bucketsData[bucket_i].tocData.segmentMutex, NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
                 return;
             }
 
             // First take a read lock and check if the mapping is valid. Otherwise take a write lock
-            if (!bucket.isToCFileMappingValid()) {
+            if (!bucket.isToCFileMappingValid(0)) {
                 readLock.reset();
-                if (!createTimedLockAndClearCacheIfFailed<WriteLock>(_imp.get(), shmReader, writeLock, &_imp->ipc->bucketsData[bucket_i].tocData.segmentMutex, NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
+                if (!createTimedLockAndClearCacheIfFailed<Upgradable_WriteLock>(_imp.get(), shmReader, writeLock, &_imp->ipc->bucketsData[bucket_i].tocData.segmentMutex, NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
                     return;
                 }
 
@@ -2684,14 +2993,20 @@ Cache::flushCacheOnDisk(bool async)
 
 
 
-            boost::scoped_ptr<ReadLock> readLockTile;
-            boost::scoped_ptr<WriteLock> writeLockTile;
-            readLockTile.reset(new ReadLock(_imp->ipc->bucketsData[bucket_i].tileData.segmentMutex));
+
+            boost::scoped_ptr<Upgradable_ReadLock> readLockTile(new Upgradable_ReadLock(_imp->ipc->bucketsData[bucket_i].tileData.segmentMutex, _imp->timerFrequency));
+            if (!readLockTile->timed_lock(NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
+                return;
+            }
 
             // First take a read lock and check if the mapping is valid. Otherwise take a write lock
-            if (!bucket.isTileFileMappingValid()) {
+            if (!bucket.isTileFileMappingValid(0)) {
                 readLockTile.reset();
-                writeLockTile.reset(new WriteLock(_imp->ipc->bucketsData[bucket_i].tileData.segmentMutex));
+
+                boost::scoped_ptr<Upgradable_WriteLock> writeLockTile(new Upgradable_WriteLock(_imp->ipc->bucketsData[bucket_i].tileData.segmentMutex, _imp->timerFrequency));;
+                if (!writeLockTile->timed_lock(NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS)) {
+                    return;
+                }
 
                  // This function will flush for us.
                 bucket.remapTileMemoryFile(*writeLock, 0);

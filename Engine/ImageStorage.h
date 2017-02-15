@@ -315,8 +315,6 @@ public:
 
     virtual StorageModeEnum getStorageMode() const OVERRIDE FINAL;
 
-    virtual std::size_t getMetadataSize() const OVERRIDE FINAL;
-
     virtual std::size_t getBufferSize() const OVERRIDE FINAL;
 
     RectI getBounds() const;

@@ -526,12 +526,6 @@ CacheImageTileStorage::getBufferSize() const
     return NATRON_TILE_SIZE_BYTES;
 }
 
-std::size_t
-CacheImageTileStorage::getMetadataSize() const
-{
-    return CacheEntryBase::getMetadataSize();
-}
-
 RectI
 CacheImageTileStorage::getBounds() const
 {
