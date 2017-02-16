@@ -2869,15 +2869,16 @@ KnobHelper::executeExpression(double time,
         QMutexLocker k(&_imp->expressionMutex);
         expr = _imp->expressions[dimension].expression;
     }
+    std::stringstream ss;
 
-    return executeExpression(expr, time, view, ret, error);
+    ss << expr << '(' << time << ", " <<  view << ")\n";
+
+    return executeExpression(ss.str(), ret, error);
 }
 
 
 bool
 KnobHelper::executeExpression(const std::string& expr,
-                              double time,
-                              ViewIdx view,
                               PyObject** ret,
                               std::string* error)
 {
@@ -2885,11 +2886,8 @@ KnobHelper::executeExpression(const std::string& expr,
     //https://docs.python.org/2/c-api/veryhigh.html
     PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
     PyObject* globalDict = PyModule_GetDict(mainModule);
-    std::stringstream ss;
 
-    ss << expr << '(' << time << ", " <<  view << ")\n";
-    std::string script = ss.str();
-    PyObject* v = PyRun_String(script.c_str(), Py_file_input, globalDict, 0);
+    PyObject* v = PyRun_String(expr.c_str(), Py_file_input, globalDict, 0);
     Py_XDECREF(v);
 
     *ret = 0;
@@ -2899,7 +2897,11 @@ KnobHelper::executeExpression(const std::string& expr,
     }
     *ret = PyObject_GetAttrString(mainModule, "ret"); //get our ret variable created above
     if (!*ret) {
-        *error = "Missing ret variable";
+        // Do not forget to empty the error stream using catchError, even if we know the error,
+        // for subsequent expression evaluations.
+        if ( catchErrors(mainModule, error) ) {
+            *error = "Missing 'ret' attribute";
+        }
 
         return false;
     }

@@ -402,8 +402,6 @@ hashFunction(unsigned int a)
 template <typename T>
 bool
 Knob<T>::evaluateExpression(const std::string& expr,
-                            double time,
-                            ViewIdx view,
                             T* value,
                             std::string* error)
 {
@@ -412,7 +410,7 @@ Knob<T>::evaluateExpression(const std::string& expr,
 
     ///Reset the random state to reproduce the sequence
     //randomSeed( time, hashFunction(dimension) );
-    bool exprOk = executeExpression(expr, time, view, &ret, error);
+    bool exprOk = executeExpression(expr, &ret, error);
     if (!exprOk) {
         return false;
     }
