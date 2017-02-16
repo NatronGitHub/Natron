@@ -36,12 +36,15 @@ Natron multiple times on the same computer, the different processes will share t
 
 - Fix undo when manipulating 2D points in the viewer interact #1576
 - Fix manipulating the interact plugin on non-retiming inputs of retiming effects (e.g. the Retime Map in Slitscan) #1577
+- Fix exporting curves to ascii (eg ColorLookup)
 
 ### Plugins
 
 - DenoiseSharpen: the output is now the noisy source when Noise Analysis is not locked. It is easier to see where there is noise that way, and it also makes the plugin usable in Resolve (which calls render even if non-significant parameters are changed)
 - Generators now may set the output format when Extent=Size (as they do when Extent=Format or Extent=Project).
 - Rework many plugins so that they work better in DaVinci Resolve (all generators including Radial and Rectangle, CopyRectangle, DenoiseSharpen, LensDistortion, HSVTool, ImageStatistics, Position)
+- Card3D (beta): Transform and image as if it were projected on a 3D card.
+
 
 ## Version 2.2.4
 
