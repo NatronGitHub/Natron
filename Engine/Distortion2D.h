@@ -37,11 +37,18 @@
 
 NATRON_NAMESPACE_ENTER;
 
-struct DistortionFunction2D
+class DistortionFunction2D
 {
+
+public:
+
     DistortionFunction2D();
     
-    DistortionFunction2D(const DistortionFunction2D& other);
+
+    ~DistortionFunction2D();
+
+public:
+
 
     // Index of the input to distort
     int inputNbToDistort;
@@ -62,6 +69,10 @@ struct DistortionFunction2D
 
     // A pointer to a function to free the customData
     OfxDistortionFreeDataFunctionV1 customDataFreeFunc;
+
+    // Hold a weak ref to the effect, if it is no longer valid when destroying this object
+    // then we do not attempt to call the free function
+    EffectInstanceWPtr effect;
 };
 
 /**

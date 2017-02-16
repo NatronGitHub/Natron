@@ -728,8 +728,8 @@ ActionRetCodeEnum
 EffectInstance::getDistortion_public(TimeValue inArgsTime,
                                      const RenderScale & renderScale,
                                      ViewIdx view,
-                                     DistortionFunction2DPtr* outDisto) {
-    assert(outDisto);
+                                     GetDistortionResultsPtr* results) {
+    assert(results);
 
     TimeValue time = inArgsTime;
     {
@@ -747,15 +747,9 @@ EffectInstance::getDistortion_public(TimeValue inArgsTime,
     bool distortSupported = getCurrentCanDistort();
 
 
-    // If the effect is identity, do not call the getDistortion action, instead just return an identity
-    // identity time and view.
-
-    outDisto->reset(new DistortionFunction2D);
+    // If the effect is identity, do not call the getDistortion action, instead just return an identity matrix
     bool isIdentity;
-
-    if (!distortSupported && !isDeprecatedTransformSupportEnabled) {
-        isIdentity = true;
-    } else {
+    {
         // If the effect is identity on the format, that means its bound to be identity anywhere and does not depend on the render window.
         RectI format = getOutputFormat();
         RenderScale scale(1.);
@@ -763,30 +757,80 @@ EffectInstance::getDistortion_public(TimeValue inArgsTime,
         isIdentity = isIdentity_public(true, time, scale, format, view, &identityResults);
     }
 
+    if (!distortSupported && !isDeprecatedTransformSupportEnabled && !isIdentity) {
+        return eActionStatusReplyDefault;
+    }
+
     if (isIdentity) {
-        (*outDisto)->transformMatrix.reset(new Transform::Matrix3x3);
-        (*outDisto)->transformMatrix->setIdentity();
+        DistortionFunction2DPtr disto(new DistortionFunction2D);
+        disto->transformMatrix.reset(new Transform::Matrix3x3);
+        disto->transformMatrix->setIdentity();
+
+        // Do not cache the results
+        (*results) = GetDistortionResults::create(GetDistortionKeyPtr());
+        (*results)->setResults(disto);
     } else {
 
+        U64 hash;
+        // Get a hash to cache the results
+        {
+            ComputeHashArgs hashArgs;
+            hashArgs.time = time;
+            hashArgs.view = view;
+            hashArgs.hashType = HashableObject::eComputeHashTypeTimeViewVariant;
+            hash = computeHash(hashArgs);
+        }
+
+
+        GetDistortionKeyPtr cacheKey;
+        {
+            cacheKey.reset(new GetDistortionKey(hash, renderScale, getNode()->getPluginID()));
+        }
+
+
+        *results = GetDistortionResults::create(cacheKey);
+
+        CacheEntryLockerPtr cacheAccess;
+        {
+
+            // Ensure the cache fetcher lives as long as we compute the action
+            cacheAccess = (*results)->getFromCache();
+
+            CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
+            while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
+                cacheStatus = cacheAccess->waitForPendingEntry();
+            }
+
+            if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
+                return eActionStatusOK;
+            }
+            
+            assert(cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute);
+        }
+
+        DistortionFunction2DPtr disto(new DistortionFunction2D);
         // Call the action
-        ActionRetCodeEnum stat = getDistortion(time, mappedScale, view, (*outDisto).get());
+        ActionRetCodeEnum stat = getDistortion(time, mappedScale, view, disto.get());
         if (isFailureRetCode(stat)) {
             return stat;
         }
 
         // Either the matrix or the distortion functor should be set
-        assert((*outDisto)->transformMatrix || (*outDisto)->func);
+        assert(disto->transformMatrix || disto->func);
 
         // In the deprecated getTransform action, the returned transform is in pixel coordinates, whereas in the getDistortion
         // action, we return a matrix in canonical coordinates.
         if (isDeprecatedTransformSupportEnabled) {
-            assert((*outDisto)->transformMatrix);
+            assert(disto->transformMatrix);
             double par = getAspectRatio(-1);
 
             Transform::Matrix3x3 canonicalToPixel = Transform::matCanonicalToPixel(par, mappedScale.x, mappedScale.y, false);
             Transform::Matrix3x3 pixelToCanonical = Transform::matPixelToCanonical(par, mappedScale.x, mappedScale.y, false);
-            *(*outDisto)->transformMatrix = Transform::matMul(Transform::matMul(pixelToCanonical, *(*outDisto)->transformMatrix), canonicalToPixel);
+            *disto->transformMatrix = Transform::matMul(Transform::matMul(pixelToCanonical, *disto->transformMatrix), canonicalToPixel);
         }
+        (*results)->setResults(disto);
+
+        cacheAccess->insertInCache();
     }
     
     return eActionStatusOK;

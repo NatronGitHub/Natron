@@ -271,23 +271,23 @@ EffectInstance::Implementation::handleConcatenation(const RequestPassSharedDataP
     }
     assert((canReturnDeprecatedTransform3x3 && !canReturnDistortionFunc) || (!canReturnDeprecatedTransform3x3 && canReturnDistortionFunc));
 
-    DistortionFunction2DPtr disto = requestData->getDistortionResults();
-    if (!disto) {
-        ActionRetCodeEnum stat = _publicInterface->getDistortion_public(requestData->getTime(), renderScale, requestData->getView(), &disto);
-        if (isFailureRetCode(stat)) {
-            return stat;
+    DistortionFunction2DPtr disto;
+    {
+        GetDistortionResultsPtr results = requestData->getDistortionResults();
+        if (!results) {
+            ActionRetCodeEnum stat = _publicInterface->getDistortion_public(requestData->getTime(), renderScale, requestData->getView(), &results);
+            if (isFailureRetCode(stat)) {
+                return stat;
+            }
+            if (results) {
+                disto = results->getResults();
+                requestData->setDistortionResults(results);
+            }
         }
-        requestData->setDistortionResults(disto);
     }
     if (!disto || disto->inputNbToDistort == -1) {
         return eActionStatusOK;
     }
-    {
-        // Copy the original distortion held in the results in case we convert the transformation matrix from canonical to pixels.
-        DistortionFunction2DPtr copy(new DistortionFunction2D(*disto));
-        disto = copy;
-    }
-
 
     // We support backward compatibility for plug-ins that only support Transforms: if a function is returned we do not concatenate.
     if (disto->func && !canReturnDistortionFunc) {
@@ -328,6 +328,7 @@ EffectInstance::Implementation::handleConcatenation(const RequestPassSharedDataP
     bool requesterCanDistort = requester->getRenderClone()->getCurrentCanDistort();
 
     if (requesterCanDistort || requesterCanTransform) {
+#pragma message WARN("Fix pixel coordinates and")
         distoStack->pushDistortion(disto);
     }
 

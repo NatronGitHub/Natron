@@ -2926,6 +2926,12 @@ Cache::getCacheDirectoryPath() const
 } // getCacheDirectoryPath
 
 
+bool
+Cache::isPersistent() const
+{
+    return _imp->persistent;
+}
+
 void
 Cache::getTileSizePx(ImageBitDepthEnum bitdepth, int *tx, int *ty)
 {

@@ -111,6 +111,52 @@ GetRegionOfDefinitionResults::fromMemorySegment(ExternalSegmentType* segment, co
     CacheEntryBase::fromMemorySegment(segment, objectNamesPrefix, tileDataPtr);
 } // fromMemorySegment
 
+
+GetDistortionResults::GetDistortionResults()
+: CacheEntryBase(appPTR->getGeneralPurposeCache())
+{
+    // Distortion results may not be cached in a persistent cache because the plug-in returns to us
+    // a pointer to memory it holds.
+    assert(!getCache()->isPersistent());
+}
+
+
+GetDistortionResultsPtr
+GetDistortionResults::create(const GetDistortionKeyPtr& key)
+{
+    GetDistortionResultsPtr ret(new GetDistortionResults());
+    ret->setKey(key);
+    return ret;
+}
+
+DistortionFunction2DPtr
+GetDistortionResults::getResults() const
+{
+    return _disto;
+}
+
+void
+GetDistortionResults::setResults(const DistortionFunction2DPtr& disto)
+{
+    _disto = disto;
+}
+
+
+void
+GetDistortionResults::toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
+{
+    objectPointers->push_back(writeNamedSharedObject(_disto, objectNamesPrefix + "disto", segment));
+    CacheEntryBase::toMemorySegment(segment, objectNamesPrefix, objectPointers, tileDataPtr);
+} // toMemorySegment
+
+void
+GetDistortionResults::fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, const void* tileDataPtr)
+{
+    readNamedSharedObject(objectNamesPrefix + "disto", segment, &_disto);
+    CacheEntryBase::fromMemorySegment(segment, objectNamesPrefix, tileDataPtr);
+} // fromMemorySegment
+
+
 IsIdentityResults::IsIdentityResults()
 : CacheEntryBase(appPTR->getGeneralPurposeCache())
 , _data()

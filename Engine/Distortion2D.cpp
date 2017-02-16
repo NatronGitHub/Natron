@@ -26,6 +26,7 @@
 
 
 #include <list>
+#include "Engine/EffectInstance.h"
 #include "Engine/Transform.h"
 NATRON_NAMESPACE_ENTER;
 
@@ -36,22 +37,19 @@ DistortionFunction2D::DistortionFunction2D()
 , customData(0)
 , customDataSizeHintInBytes(0)
 , customDataFreeFunc(0)
+, effect()
 {
 
 }
 
-DistortionFunction2D::DistortionFunction2D(const DistortionFunction2D& other)
-: inputNbToDistort(other.inputNbToDistort)
-, transformMatrix()
-, func(other.func)
-, customData(other.customData)
-, customDataSizeHintInBytes(other.customDataSizeHintInBytes)
-, customDataFreeFunc(other.customDataFreeFunc)
+DistortionFunction2D::~DistortionFunction2D()
 {
-    if (other.transformMatrix) {
-        transformMatrix.reset(new Transform::Matrix3x3(*other.transformMatrix));
+    EffectInstancePtr e = effect.lock();
+    if (e) {
+        customDataFreeFunc(customData);
     }
 }
+
 
 struct Distortion2DStackPrivate
 {
@@ -67,7 +65,6 @@ Distortion2DStack::Distortion2DStack()
 
 Distortion2DStack::~Distortion2DStack()
 {
-
 }
 
 void

@@ -702,7 +702,7 @@ public:
     ActionRetCodeEnum getDistortion_public(TimeValue time,
                                     const RenderScale & renderScale,
                                     ViewIdx view,
-                                    DistortionFunction2DPtr* distortion) WARN_UNUSED_RETURN;
+                                    GetDistortionResultsPtr* results) WARN_UNUSED_RETURN;
 
 
 

@@ -206,6 +206,11 @@ public:
     virtual ~Cache();
 
     /**
+     * @brief Returns whether the cache is persistent or not
+     **/
+    bool isPersistent() const;
+
+    /**
      * @brief Returns the absolute path to the cache directory
      **/
     std::string getCacheDirectoryPath() const;

@@ -157,7 +157,7 @@ struct FrameViewRequestPrivate
     GetComponentsResultsPtr neededComps;
 
     // The distortion at this frame/view
-    DistortionFunction2DPtr distortion;
+    GetDistortionResultsPtr distortion;
 
     // The stack of upstram effect distortions
     Distortion2DStackPtr distortionStack;
@@ -512,7 +512,7 @@ FrameViewRequest::setComponentsNeededResults(const GetComponentsResultsPtr& comp
     _imp->neededComps = comps;
 }
 
-DistortionFunction2DPtr
+GetDistortionResultsPtr
 FrameViewRequest::getDistortionResults() const
 {
     QMutexLocker k(&_imp->lock);
@@ -520,7 +520,7 @@ FrameViewRequest::getDistortionResults() const
 }
 
 void
-FrameViewRequest::setDistortionResults(const DistortionFunction2DPtr& results)
+FrameViewRequest::setDistortionResults(const GetDistortionResultsPtr& results)
 {
     QMutexLocker k(&_imp->lock);
     _imp->distortion = results;
