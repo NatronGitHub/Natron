@@ -73,6 +73,7 @@ void
 OfxMemory::freeMem()
 {
     _memory->freeMem();
+    delete this;
 }
 
 void

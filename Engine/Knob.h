@@ -1450,7 +1450,7 @@ public:
 protected:
 
     template <typename T>
-    T pyObjectToType(PyObject* o) const;
+    static T pyObjectToType(PyObject* o);
 
     virtual void refreshListenersAfterValueChange(ViewSpec view, ValueChangedReasonEnum reason, int dimension) OVERRIDE FINAL;
 
@@ -1585,11 +1585,14 @@ protected:
 
 public:
 
+    /// The return value must be Py_DECRREF
+    /// The expression must put its result in the Python variable named "ret"
+    static bool executeExpression(const std::string& expr, PyObject** ret, std::string* error);
+
     virtual std::pair<int, KnobPtr > getMaster(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isSlave(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual AnimationLevelEnum getAnimationLevel(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isTypeCompatible(const KnobPtr & other) const OVERRIDE WARN_UNUSED_RETURN = 0;
-
 
     /**
      * @brief Adds a new listener to this knob. This is just a pure notification about the fact that the given knob
@@ -2106,6 +2109,11 @@ private:
         _exprRes[dimension].clear();
     }
 
+
+public:
+    /// This static publicly-available function is useful to evaluate simple python expressions that evaluate to a double, int or string value.
+    /// The expression must put its result in the Python variable named "ret"
+    static bool evaluateExpression(const std::string& expr, T* ret, std::string* error);
 
 private:
 
