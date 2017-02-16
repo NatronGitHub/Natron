@@ -1450,7 +1450,7 @@ public:
 protected:
 
     template <typename T>
-    T pyObjectToType(PyObject* o) const;
+    static T pyObjectToType(PyObject* o);
 
     virtual void refreshListenersAfterValueChange(ViewSpec view, ValueChangedReasonEnum reason, int dimension) OVERRIDE FINAL;
 
@@ -2108,6 +2108,9 @@ private:
         _exprRes[dimension].clear();
     }
 
+
+public:
+    static bool evaluateExpression(const std::string& expr, double time, ViewIdx view, T* ret, std::string* error);
 
 private:
 

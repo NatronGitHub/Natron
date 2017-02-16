@@ -2496,7 +2496,24 @@ KnobHelper::validateExpression(const std::string& expression,
             *resultAsString = r ? "True" : "False";
         } else {
             assert(isString);
-            *resultAsString = isString->pyObjectToType<std::string>(ret);
+            if (PyUnicode_Check(ret) || PyString_Check(ret)) {
+                *resultAsString = isString->pyObjectToType<std::string>(ret);
+            } else {
+                int index = 0;
+                if ( PyFloat_Check(ret) ) {
+                    index = std::floor( (double)PyFloat_AsDouble(ret) + 0.5 );
+                } else if ( PyLong_Check(ret) ) {
+                    index = (int)PyInt_AsLong(ret);
+                } else if (PyObject_IsTrue(ret) == 1) {
+                    index = 1;
+                }
+
+                const AnimatingKnobStringHelper* isStringAnimated = dynamic_cast<const AnimatingKnobStringHelper* >(this);
+                if (!isStringAnimated) {
+                    return std::string();
+                }
+                isStringAnimated->stringFromInterpolatedValue(index, ViewSpec::current(), resultAsString);
+            }
         }
     }
 

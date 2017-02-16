@@ -345,14 +345,14 @@ Knob<bool>::clampToMinMax(const bool& value,
 
 template <>
 int
-KnobHelper::pyObjectToType(PyObject* o) const
+KnobHelper::pyObjectToType(PyObject* o)
 {
     return (int)PyInt_AsLong(o);
 }
 
 template <>
 bool
-KnobHelper::pyObjectToType(PyObject* o) const
+KnobHelper::pyObjectToType(PyObject* o)
 {
     if (PyObject_IsTrue(o) == 1) {
         return true;
@@ -363,14 +363,14 @@ KnobHelper::pyObjectToType(PyObject* o) const
 
 template <>
 double
-KnobHelper::pyObjectToType(PyObject* o) const
+KnobHelper::pyObjectToType(PyObject* o)
 {
     return (double)PyFloat_AsDouble(o);
 }
 
 template <>
 std::string
-KnobHelper::pyObjectToType(PyObject* o) const
+KnobHelper::pyObjectToType(PyObject* o)
 {
     if ( PyUnicode_Check(o) ) {
         std::string ret;
@@ -382,27 +382,9 @@ KnobHelper::pyObjectToType(PyObject* o) const
         }
 
         return ret;
-    } else if ( PyString_Check(o) ) {
-        return std::string( PyString_AsString(o) );
     }
-
-    int index = 0;
-    if ( PyFloat_Check(o) ) {
-        index = std::floor( (double)PyFloat_AsDouble(o) + 0.5 );
-    } else if ( PyLong_Check(o) ) {
-        index = (int)PyInt_AsLong(o);
-    } else if (PyObject_IsTrue(o) == 1) {
-        index = 1;
-    }
-
-    const AnimatingKnobStringHelper* isStringAnimated = dynamic_cast<const AnimatingKnobStringHelper* >(this);
-    if (!isStringAnimated) {
-        return std::string();
-    }
-    std::string ret;
-    isStringAnimated->stringFromInterpolatedValue(index, ViewSpec::current(), &ret);
-
-    return ret;
+    //assert( PyString_Check(o) );
+    return std::string( PyString_AsString(o) );
 }
 
 inline unsigned int
@@ -415,6 +397,28 @@ hashFunction(unsigned int a)
     a = a ^ (a >> 15);
 
     return a;
+}
+
+template <typename T>
+bool
+Knob<T>::evaluateExpression(const std::string& expr,
+                            double time,
+                            ViewIdx view,
+                            T* value,
+                            std::string* error)
+{
+    PythonGILLocker pgl;
+    PyObject *ret;
+
+    ///Reset the random state to reproduce the sequence
+    //randomSeed( time, hashFunction(dimension) );
+    bool exprOk = executeExpression(expr, time, view, &ret, error);
+    if (!exprOk) {
+        return false;
+    }
+    *value =  pyObjectToType<T>(ret);
+    Py_DECREF(ret); //< new ref
+    return true;
 }
 
 template <typename T>
