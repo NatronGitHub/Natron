@@ -2185,7 +2185,7 @@ CurveWidget::exportCurveToAscii()
                     ts <<  0;
                 }
                 if (c < columnsCount - 1) {
-                    ts << '_';
+                    ts << ' ';
                 }
             }
             ts << '\n';
