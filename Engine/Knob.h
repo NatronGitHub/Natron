@@ -1707,7 +1707,11 @@ protected:
     bool linkToInternal(const KnobIPtr & otherKnob, DimIdx thisDimension, DimIdx otherDimension, ViewIdx view, ViewIdx otherView) WARN_UNUSED_RETURN;
 
     template <typename T>
-    T pyObjectToType(PyObject* o, ViewIdx view) const;
+    static T pyObjectToType(PyObject* o);
+
+    // the following is specialized only for T=std::string
+    template <typename T>
+    T pyObjectToType(PyObject* o, ViewIdx view) const { return pyObjectToType<T>(o); }
 
     void refreshListenersAfterValueChangeInternal(TimeValue time, ViewIdx view, ValueChangedReasonEnum reason, DimIdx dimension, std::set<KnobIPtr>* evaluatedKnobs);
 
@@ -1837,11 +1841,14 @@ protected:
 
 public:
 
+    /// The return value must be Py_DECRREF
+    /// The expression must put its result in the Python variable named "ret"
+    static bool executeExpression(const std::string& expr, PyObject** ret, std::string* error);
+
     virtual bool getSharingMaster(DimIdx dimension, ViewIdx view, KnobDimViewKey* linkData) const OVERRIDE FINAL;
     virtual void getSharedValues(DimIdx dimension, ViewIdx view, KnobDimViewKeySet* sharedKnobs) const OVERRIDE FINAL;
 
     virtual AnimationLevelEnum getAnimationLevel(DimIdx dimension, TimeValue time, ViewIdx view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
 
     /**
      * @brief Adds a new listener to this knob. This is just a pure notification about the fact that the given knob
@@ -2373,6 +2380,13 @@ private:
     void makeKeyFrame(TimeValue time, const T& v, ViewIdx view, KeyFrame* key);
 
     void queueSetValue(const T& v, ViewSetSpec view, DimSpec dimension);
+
+public:
+    /// This static publicly-available function is useful to evaluate simple python expressions that evaluate to a double, int or string value.
+    /// The expression must put its result in the Python variable named "ret"
+    static bool evaluateExpression(const std::string& expr, T* ret, std::string* error);
+
+private:
 
     bool evaluateExpression(TimeValue time, ViewIdx view, DimIdx dimension, T* ret, std::string* error);
 

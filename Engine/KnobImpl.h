@@ -368,14 +368,14 @@ KnobBoolBase::clampToMinMax(const bool& value,
 
 template <>
 int
-KnobHelper::pyObjectToType(PyObject* o, ViewIdx /*view*/) const
+KnobHelper::pyObjectToType(PyObject* o)
 {
     return (int)PyInt_AsLong(o);
 }
 
 template <>
 bool
-KnobHelper::pyObjectToType(PyObject* o, ViewIdx /*view*/) const
+KnobHelper::pyObjectToType(PyObject* o)
 {
     if (PyObject_IsTrue(o) == 1) {
         return true;
@@ -386,14 +386,14 @@ KnobHelper::pyObjectToType(PyObject* o, ViewIdx /*view*/) const
 
 template <>
 double
-KnobHelper::pyObjectToType(PyObject* o, ViewIdx /*view*/) const
+KnobHelper::pyObjectToType(PyObject* o)
 {
     return (double)PyFloat_AsDouble(o);
 }
 
 template <>
 std::string
-KnobHelper::pyObjectToType(PyObject* o, ViewIdx view) const
+KnobHelper::pyObjectToType(PyObject* o)
 {
     if ( PyUnicode_Check(o) ) {
         std::string ret;
@@ -405,8 +405,18 @@ KnobHelper::pyObjectToType(PyObject* o, ViewIdx view) const
         }
 
         return ret;
-    } else if ( PyString_Check(o) ) {
-        return std::string( PyString_AsString(o) );
+    }
+
+    //assert( PyString_Check(o) );
+    return std::string( PyString_AsString(o) );
+}
+
+template <>
+std::string
+KnobHelper::pyObjectToType(PyObject* o, ViewIdx view) const
+{
+    if (PyUnicode_Check(o) || PyString_Check(o)) {
+        return pyObjectToType<std::string>(o);
     }
 
     int index = 0;
@@ -423,8 +433,7 @@ KnobHelper::pyObjectToType(PyObject* o, ViewIdx view) const
         return std::string();
     }
     std::string ret;
-    isStringAnimated->stringFromInterpolatedValue(index, view, &ret);
-
+    isStringAnimated->stringFromInterpolatedValue(index, view, &res);
     return ret;
 }
 
@@ -438,6 +447,26 @@ hashFunction(unsigned int a)
     a = a ^ (a >> 15);
 
     return a;
+}
+
+template <typename T>
+bool
+Knob<T>::evaluateExpression(const std::string& expr,
+                            T* value,
+                            std::string* error)
+{
+    PythonGILLocker pgl;
+    PyObject *ret;
+
+    ///Reset the random state to reproduce the sequence
+    //randomSeed( time, hashFunction(dimension) );
+    bool exprOk = executeExpression(expr, &ret, error);
+    if (!exprOk) {
+        return false;
+    }
+    *value =  pyObjectToType<T>(ret);
+    Py_DECREF(ret); //< new ref
+    return true;
 }
 
 template <typename T>

@@ -36,7 +36,7 @@ Natron multiple times on the same computer, the different processes will share t
 
 - Fix undo when manipulating 2D points in the viewer interact #1576
 - Fix manipulating the interact plugin on non-retiming inputs of retiming effects (e.g. the Retime Map in Slitscan) #1577
-- Fix exporting curves to ascii (eg ColorLookup)
+- Fix exporting curves to ascii (eg ColorLookup), and values for xstart, xincr and xend can now be simple expressions.
 
 ### Plugins
 

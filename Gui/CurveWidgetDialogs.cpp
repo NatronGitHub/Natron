@@ -40,6 +40,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QtCore/QDebug>
 
 #include "Engine/AppManager.h" // appPTR
+#include "Engine/Knob.h"
+#include "Engine/Utils.h" // convertFromPlainText
 
 #include "Gui/AnimationModuleBase.h"
 #include "Gui/AnimationModuleSelectionModel.h"
@@ -71,21 +73,36 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
     , _startContainer(0)
     , _startLayout(0)
     , _startLabel(0)
-    , _startSpinBox(0)
+    , _startLineEdit(0)
     , _incrContainer(0)
     , _incrLayout(0)
     , _incrLabel(0)
-    , _incrSpinBox(0)
+    , _incrLineEdit(0)
     , _endContainer(0)
     , _endLayout(0)
     , _endLabel(0)
-    , _endSpinBox(0)
+    , _endLineEdit(0)
     , _curveColumns()
     , _buttonBox(0)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
+    bool integerIncrement = false;
+    double xstart = -std::numeric_limits<double>::infinity();
+    double xend = std::numeric_limits<double>::infinity();
+    for (size_t i = 0; i < curves.size(); ++i) {
+        integerIncrement |= curves[i]->areKeyFramesTimeClampedToIntegers();
+        std::pair<double,double> xrange = curves[i]->getInternalCurve()->getXRange();
+        xstart = std::max(xstart, xrange.first);
+        xend = std::min(xend, xrange.second);
+    }
+    if (xstart == -std::numeric_limits<double>::infinity()) {
+        xstart = std::min(0., xend - 1.);
+    }
+    if (xend == std::numeric_limits<double>::infinity()) {
+        xend = std::max(xstart + 1., 1.);
+    }
     _mainLayout = new QVBoxLayout(this);
     _mainLayout->setContentsMargins(0, TO_DPIX(3), 0, 0);
     _mainLayout->setSpacing(TO_DPIX(2));
@@ -113,9 +130,10 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
     _startLayout = new QHBoxLayout(_startContainer);
     _startLabel = new Label(tr("X start value:"), _startContainer);
     _startLayout->addWidget(_startLabel);
-    _startSpinBox = new SpinBox(_startContainer, SpinBox::eSpinBoxTypeDouble);
-    _startSpinBox->setValue(0);
-    _startLayout->addWidget(_startSpinBox);
+    _startLineEdit = new LineEdit(_startContainer);
+    _startLineEdit->setText(QString::number(xstart,'g',10));
+    _startLineEdit->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("The X of the first value in the ASCII file. This can be a python expression."), NATRON_NAMESPACE::WhiteSpaceNormal) );
+    _startLayout->addWidget(_startLineEdit);
     _mainLayout->addWidget(_startContainer);
 
     //////x increment
@@ -123,9 +141,14 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
     _incrLayout = new QHBoxLayout(_incrContainer);
     _incrLabel = new Label(tr("X increment:"), _incrContainer);
     _incrLayout->addWidget(_incrLabel);
-    _incrSpinBox = new SpinBox(_incrContainer, SpinBox::eSpinBoxTypeDouble);
-    _incrSpinBox->setValue(0.01);
-    _incrLayout->addWidget(_incrSpinBox);
+    _incrLineEdit = new LineEdit(_incrContainer);
+    if (xstart == 0. && xend == 1.) {
+        _incrLineEdit->setText(QString::fromUtf8("1./255"));
+    } else {
+        _incrLineEdit->setText(QString::number(1));
+    }
+    _incrLineEdit->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("The X increment between two consecutive values. This can be a python expression."), NATRON_NAMESPACE::WhiteSpaceNormal) );
+    _incrLayout->addWidget(_incrLineEdit);
     _mainLayout->addWidget(_incrContainer);
 
     //////x end value
@@ -135,28 +158,16 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
         _endLabel = new Label(tr("X end value:"), _endContainer);
         _endLabel->setFont( QApplication::font() ); // necessary, or the labels will get the default font size
         _endLayout->addWidget(_endLabel);
-        _endSpinBox = new SpinBox(_endContainer, SpinBox::eSpinBoxTypeDouble);
-        _endSpinBox->setValue(1);
-        _endLayout->addWidget(_endSpinBox);
+        _endLineEdit = new LineEdit(_endContainer);
+        _endLineEdit->setText(QString::number(xend,'g',10));
+        _incrLineEdit->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("The X of the last value in the ASCII file. This can be a python expression."), NATRON_NAMESPACE::WhiteSpaceNormal) );
+        _endLayout->addWidget(_endLineEdit);
         _mainLayout->addWidget(_endContainer);
     }
 
     ////curves columns
-    double min = 0, max = 0;
-    bool curveIsClampedToIntegers = false;
     for (U32 i = 0; i < curves.size(); ++i) {
         CurveColumn column;
-        double curvemin = curves[i]->getInternalCurve()->getMinimumTimeCovered();
-        double curvemax = curves[i]->getInternalCurve()->getMaximumTimeCovered();
-        if (curvemin < min) {
-            min = curvemin;
-        }
-        if (curvemax > max) {
-            max = curvemax;
-        }
-        if ( curves[i]->areKeyFramesTimeClampedToIntegers() ) {
-            curveIsClampedToIntegers = true;
-        }
         column._curve = curves[i];
         column._curveContainer = new QWidget(this);
         column._curveLayout = new QHBoxLayout(column._curveContainer);
@@ -168,13 +179,6 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
         column._curveLayout->addWidget(column._curveSpinBox);
         _curveColumns.push_back(column);
         _mainLayout->addWidget(column._curveContainer);
-    }
-    if (isExportDialog) {
-        _startSpinBox->setValue(min);
-        _endSpinBox->setValue(max);
-    }
-    if (curveIsClampedToIntegers) {
-        _incrSpinBox->setValue(1);
     }
     /////buttons
     _buttonBox = new DialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel), Qt::Horizontal, this);
@@ -212,12 +216,13 @@ ImportExportCurveDialog::saveState()
     QDataStream stream(&data, QIODevice::WriteOnly);
 
     stream << _fileLineEdit->text();
-    stream << _startSpinBox->value();
-    stream << _incrSpinBox->value();
+#if 0 // start and incr depend on the curve and are calculated from it
+    stream << _startLineEdit->text();
+    stream << _incrLineEdit->text();
     if (_isExportDialog) {
-        stream << _endSpinBox->value();
+        stream << _endLineEdit->text();
     }
-
+#endif
     return data;
 }
 
@@ -232,17 +237,20 @@ ImportExportCurveDialog::restoreState(const QByteArray& state)
     }
 
     QString file;
-    double start, incr, end;
     stream >> file;
+    _fileLineEdit->setText(file);
+#if 0 // start and incr depend on the curve and are calculated from it
+    QString start, incr, end;
     stream >> start;
     stream >> incr;
     _fileLineEdit->setText(file);
-    _startSpinBox->setValue(start);
-    _incrSpinBox->setValue(incr);
+    _startLineEdit->setText(start);
+    _incrLineEdit->setText(incr);
     if (_isExportDialog) {
         stream >> end;
-        _endSpinBox->setValue(end);
+        _endLineEdit->setText(end);
     }
+#endif
 }
 
 void
@@ -285,7 +293,13 @@ ImportExportCurveDialog::getXStart() const
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    return _startSpinBox->value();
+    double ret = 0.;
+    std::string expr = std::string("ret = float(") + _startLineEdit->text().toStdString() + ')';
+    std::string error;
+    bool ok = Knob<double>::evaluateExpression(expr, &ret, &error);
+    Q_UNUSED(ok);
+    //qDebug() << "xstart=" << expr.c_str() << ret;
+    return ret;
 }
 
 double
@@ -294,7 +308,28 @@ ImportExportCurveDialog::getXIncrement() const
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    return _incrSpinBox->value();
+    double ret = 0.01;
+    std::string expr = std::string("ret = float(") + _incrLineEdit->text().toStdString() + ')';
+    std::string error;
+    bool ok = Knob<double>::evaluateExpression(expr, &ret, &error);
+    Q_UNUSED(ok);
+    //qDebug() << "incr=" << expr.c_str() << ret;
+    return ret;
+}
+
+int
+ImportExportCurveDialog::getXCount() const
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+
+    double ret = 0.;
+    std::string expr = std::string("ret = float(1+((")  + _endLineEdit->text().toStdString() + std::string(")-(") + _startLineEdit->text().toStdString() + std::string("))/(") + _incrLineEdit->text().toStdString() + std::string("))");
+    std::string error;
+    bool ok = Knob<double>::evaluateExpression(expr, &ret, &error);
+    Q_UNUSED(ok);
+    //qDebug() << "count=" << expr.c_str() << ret;
+    return (int) (std::floor(ret + 0.5));
 }
 
 double
@@ -306,7 +341,13 @@ ImportExportCurveDialog::getXEnd() const
     ///only valid for export dialogs
     assert(_isExportDialog);
 
-    return _endSpinBox->value();
+    double ret = 1.;
+    std::string expr = std::string("ret = float(") + _endLineEdit->text().toStdString() + ')';
+    std::string error;
+    bool ok = Knob<double>::evaluateExpression(expr, &ret, &error);
+    Q_UNUSED(ok);
+    //qDebug() << "xend=" << expr.c_str() << ret;
+    return ret;
 }
 
 void

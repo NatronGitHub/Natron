@@ -68,6 +68,8 @@ public:
 
     double getXIncrement() const;
 
+    int getXCount() const;
+
     double getXEnd() const;
 
     void getCurveColumns(std::map<int, CurveGuiPtr >* columns) const;
@@ -97,19 +99,19 @@ private:
     QWidget* _startContainer;
     QHBoxLayout* _startLayout;
     Label* _startLabel;
-    SpinBox* _startSpinBox;
+    LineEdit* _startLineEdit;
 
     //////x increment
     QWidget* _incrContainer;
     QHBoxLayout* _incrLayout;
     Label* _incrLabel;
-    SpinBox* _incrSpinBox;
+    LineEdit* _incrLineEdit;
 
     //////x end value
     QWidget* _endContainer;
     QHBoxLayout* _endLayout;
     Label* _endLabel;
-    SpinBox* _endSpinBox;
+    LineEdit* _endLineEdit;
 
 
     /////Columns
