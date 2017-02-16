@@ -129,7 +129,8 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     if [ "$CC" = "$TEST_CC" ]; then wget https://github.com/wdas/SeExpr/archive/rel-1.0.1.tar.gz -O /tmp/SeExpr-1.0.1.tar.gz; tar zxf /tmp/SeExpr-1.0.1.tar.gz; cd SeExpr-rel-1.0.1; mkdir _build; cd _build; cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/seexpr; make $J && make install; cd ../..; fi
     # config.pri
     # Ubuntu 12.04 precise doesn't have a pkg-config file for expat (expat.pc)
-    echo 'boost: LIBS += -lboost_serialization' > config.pri
+    echo 'boost: LIBS += -lboost_thread -lboost_system' > config.pri
+    echo 'boost-serialization-lib: -lboost_serialization
     echo 'expat: LIBS += -lexpat' >> config.pri
     echo 'expat: PKGCONFIG -= expat' >> config.pri
     # pyside and shiboken for python3 cannot be configured with pkg-config on Ubuntu 12.04LTS Precise
@@ -257,7 +258,8 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     echo "End dependencies installation."
     # config.pri
     echo 'boost: INCLUDEPATH += /usr/local/include' > config.pri
-    echo 'boost: LIBS += -L/usr/local/lib -lboost_serialization-mt -lboost_thread-mt -lboost_system-mt' >> config.pri
+    echo 'boost: LIBS += -L/usr/local/lib -lboost_thread-mt -lboost_system-mt' >> config.pri
+    echo 'boost-serialization-lib: LIBS += -L/usr/local/lib -lboost_serialization-mt
     echo 'expat: PKGCONFIG -= expat' >> config.pri
     echo 'expat: INCLUDEPATH += /usr/local/opt/expat/include' >> config.pri
     echo 'expat: LIBS += -L/usr/local/opt/expat/lib -lexpat' >> config.pri
