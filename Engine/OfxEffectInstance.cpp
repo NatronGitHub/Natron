@@ -64,6 +64,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxOverlayInteract.h"
 #include "Engine/OfxParamInstance.h"
+#include "Engine/OfxMemory.h"
 #include "Engine/OSGLContext.h"
 #include "Engine/Project.h"
 #include "Engine/ReadNode.h"
@@ -1695,6 +1696,13 @@ OfxEffectInstance::render(const RenderActionArgs& args)
         return eActionStatusOK;
     }
 } // render
+
+PluginMemoryPtr
+OfxEffectInstance::createPluginMemory()
+{
+    boost::shared_ptr<OfxMemory> ret(new OfxMemory(shared_from_this()));
+    return ret;
+}
 
 bool
 OfxEffectInstance::supportsMultipleClipPARs() const

@@ -70,7 +70,7 @@ EffectInstanceActionKeyBase::fromMemorySegment(ExternalSegmentType* segment, con
 
 
 GetRegionOfDefinitionResults::GetRegionOfDefinitionResults()
-: CacheEntryBase(appPTR->getCache())
+: CacheEntryBase(appPTR->getGeneralPurposeCache())
 {
 
 }
@@ -112,7 +112,7 @@ GetRegionOfDefinitionResults::fromMemorySegment(ExternalSegmentType* segment, co
 } // fromMemorySegment
 
 IsIdentityResults::IsIdentityResults()
-: CacheEntryBase(appPTR->getCache())
+: CacheEntryBase(appPTR->getGeneralPurposeCache())
 , _data()
 {
     _data.identityInputNb = -1;
@@ -161,7 +161,7 @@ IsIdentityResults::fromMemorySegment(ExternalSegmentType* segment, const std::st
 } // fromMemorySegment
 
 GetFramesNeededResults::GetFramesNeededResults()
-: CacheEntryBase(appPTR->getCache())
+: CacheEntryBase(appPTR->getGeneralPurposeCache())
 , _framesNeeded()
 {
 
@@ -272,7 +272,7 @@ GetFramesNeededResults::fromMemorySegment(ExternalSegmentType* segment, const st
 
 
 GetFrameRangeResults::GetFrameRangeResults()
-: CacheEntryBase(appPTR->getCache())
+: CacheEntryBase(appPTR->getGeneralPurposeCache())
 , _range()
 {
     _range.min = _range.max = 0;
@@ -317,7 +317,7 @@ GetFrameRangeResults::fromMemorySegment(ExternalSegmentType* segment, const std:
 
 
 GetTimeInvariantMetaDatasResults::GetTimeInvariantMetaDatasResults()
-: CacheEntryBase(appPTR->getCache())
+: CacheEntryBase(appPTR->getGeneralPurposeCache())
 , _metadatas()
 {
 
@@ -365,7 +365,7 @@ GetTimeInvariantMetaDatasResults::fromMemorySegment(ExternalSegmentType* segment
 
 
 GetComponentsResults::GetComponentsResults()
-: CacheEntryBase(appPTR->getCache())
+: CacheEntryBase(appPTR->getGeneralPurposeCache())
 , _neededInputLayers()
 , _producedLayers()
 , _passThroughPlanes()

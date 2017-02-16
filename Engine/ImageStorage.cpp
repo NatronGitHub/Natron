@@ -132,14 +132,6 @@ ImageStorageBase::allocateMemory(const AllocateMemoryArgs& args)
         _imp->allocated = true;
     }
 
-    CachePtr cache = appPTR->getCache();
-    if (cache) {
-        // Notify the cache about memory changes
-        std::size_t size = getBufferSize();
-        if (size > 0) {
-            cache->notifyMemoryAllocated( size, getStorageMode() );
-        }
-    }
 }
 
 void
@@ -152,14 +144,6 @@ ImageStorageBase::deallocateMemory()
 
     deallocateMemoryImpl();
 
-    CachePtr cache = appPTR->getCache();
-    if (cache) {
-        // Notify the cache about memory changes
-        std::size_t size = getBufferSize();
-        if (size > 0) {
-            cache->notifyMemoryDeallocated( size, getStorageMode() );
-        }
-    }
 }
 
 

@@ -181,7 +181,6 @@ public:
 
     // The total disk space allowed for all Natron's caches
     KnobIntPtr _maxDiskCacheSizeGb;
-    KnobIntPtr _maxRAMCacheSizeMb;
     KnobPathPtr _diskCachePath;
 
     // Viewer
@@ -355,6 +354,8 @@ public:
     void restoreOpenGLRenderer();
 
     void restoreNumThreads();
+
+    void refreshCacheSize();
 
 };
 
@@ -2060,27 +2061,18 @@ SettingsPrivate::initializeKnobsCaching()
     _cachingTab->addKnob(_aggressiveCaching);
 
 
-    _maxDiskCacheSizeGb = _publicInterface->createKnob<KnobInt>("maxDiskCacheMb");
+    _maxDiskCacheSizeGb = _publicInterface->createKnob<KnobInt>("maxDiskCacheGb");
     _maxDiskCacheSizeGb->setLabel(tr("Maximum Disk Cache Size (GiB)"));
     _maxDiskCacheSizeGb->disableSlider();
 
     // The disk should at least allow storage of 1000 tiles accross each bucket
-    std::size_t cacheMinSize = std::pow(2, NATRON_8BIT_TILE_SIZE_PO2);
-    cacheMinSize = cacheMinSize * cacheMinSize * 1000 * 256;
+    std::size_t cacheMinSize = NATRON_TILE_SIZE_BYTES;
+    cacheMinSize = cacheMinSize * 1024 * 256;
     _maxDiskCacheSizeGb->setRange(cacheMinSize, INT_MAX);
     _maxDiskCacheSizeGb->setHintToolTip( tr("The maximum Disk size that may be used by the Cache (in GiB)") );
-    _maxDiskCacheSizeGb->setDefaultValue(10);
+    _maxDiskCacheSizeGb->setDefaultValue(8);
 
     _cachingTab->addKnob(_maxDiskCacheSizeGb);
-
-    _maxRAMCacheSizeMb = _publicInterface->createKnob<KnobInt>("maxRAMCacheMb");
-    _maxRAMCacheSizeMb->setLabel(tr("Maximum RAM Cache Size (MiB) (0 = All)"));
-    _maxRAMCacheSizeMb->disableSlider();
-    _maxRAMCacheSizeMb->setRange(0, INT_MAX);
-    _maxRAMCacheSizeMb->setHintToolTip( tr("The maximum RAM that may be used by the Cache (in MiB)") );
-    _maxRAMCacheSizeMb->setDefaultValue(0);
-
-    _cachingTab->addKnob(_maxRAMCacheSizeMb);
 
 
     _diskCachePath = _publicInterface->createKnob<KnobPath>("diskCachePath");
@@ -2421,6 +2413,7 @@ Settings::loadSettingsFromFile(int loadType)
         // Restore number of threads
         _imp->restoreNumThreads();
 
+
         // If the appearance changed, flag it
         try {
             int appearanceVersion = _imp->_defaultAppearanceVersion->getValue();
@@ -2468,10 +2461,7 @@ SettingsPrivate::restoreOpenGLRenderer()
     int i = 0;
     for (std::list<OpenGLRendererInfo>::const_iterator it = renderers.begin(); it != renderers.end(); ++it, ++i) {
         if (i == curIndex) {
-            CachePtr cache = appPTR->getCache();
-            if (cache) {
-                cache->setMaximumCacheSize(eStorageModeGLTex, it->maxMemBytes);
-            }
+
             QString maxMemoryString = it->maxMemBytes == 0 ? tr("Unknown") : printAsRAM(it->maxMemBytes);
             QString curRenderer = (QString::fromUtf8("<p><h2>") +
                                    tr("OpenGL Renderer Infos:") +
@@ -2624,6 +2614,40 @@ SettingsPrivate::restoreNumThreads()
     }
 }
 
+void
+SettingsPrivate::refreshCacheSize()
+{
+    CachePtr tileCache = appPTR->getTileCache();
+    if (tileCache) {
+        tileCache->setMaximumCacheSize(_publicInterface->getTileCacheSize());
+    }
+
+    CachePtr cache = appPTR->getGeneralPurposeCache();
+    if (cache) {
+        cache->setMaximumCacheSize(_publicInterface->getGeneralPurposeCacheSize());
+    }
+}
+
+std::size_t
+Settings::getGeneralPurposeCacheSize() const
+{
+    std::size_t kb = 1024;
+    std::size_t mb = kb * kb;
+    std::size_t diskCacheSize = getTileCacheSize();
+    std::size_t maxGeneralPurposeCache = (std::size_t)std::max(128. * mb, (double)diskCacheSize * 0.1);;
+    return maxGeneralPurposeCache;
+}
+
+std::size_t
+Settings::getTileCacheSize() const
+{
+    std::size_t kb = 1024;
+    std::size_t mb = kb * kb;
+    std::size_t gb = mb * kb;
+    std::size_t maxDiskBytes = (std::size_t)_imp->_maxDiskCacheSizeGb->getValue() * gb;
+    return maxDiskBytes;
+}
+
 bool
 Settings::onKnobValueChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
@@ -2634,22 +2658,8 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
     Q_EMIT settingChanged(k, reason);
     bool ret = true;
 
-    if ( k == _imp->_maxRAMCacheSizeMb ) {
-        std::size_t maxRamBytes = (std::size_t)_imp->_maxRAMCacheSizeMb->getValue() * 1024 * 1024;
-
-        CachePtr cache = appPTR->getCache();
-        if (cache) {
-            cache->setMaximumCacheSize(eStorageModeRAM, maxRamBytes);
-        }
-
-    } else if ( k == _imp->_maxDiskCacheSizeGb ) {
-
-        std::size_t maxDiskBytes = (std::size_t)_imp->_maxDiskCacheSizeGb->getValue() * 1024 * 1024 * 1024;
-        CachePtr cache = appPTR->getCache();
-        if (cache) {
-            cache->setMaximumCacheSize(eStorageModeDisk, maxDiskBytes);
-        }
-
+    if ( k == _imp->_maxDiskCacheSizeGb ) {
+        _imp->refreshCacheSize();
     }  else if ( k == _imp->_numberOfThreads ) {
         _imp->restoreNumThreads();
     } else if ( k == _imp->_ocioConfigKnob ) {
@@ -2818,18 +2828,6 @@ bool
 Settings::isAggressiveCachingEnabled() const
 {
     return _imp->_aggressiveCaching->getValue();
-}
-
-std::size_t
-Settings::getMaximumDiskCacheSize() const
-{
-    return _imp->_maxDiskCacheSizeGb->getValue() * 1024 * 1024 * 1024;
-}
-
-std::size_t
-Settings::getMaximumRAMCacheSize() const
-{
-    return _imp->_maxRAMCacheSizeMb->getValue() * 1024 * 1024;
 }
 
 bool

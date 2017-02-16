@@ -466,7 +466,7 @@ EffectInstance::getLayersProducedAndNeeded_public(TimeValue inArgsTime, ViewIdx 
     *results = GetComponentsResults::create(cacheKey);
 
     // Ensure the cache fetcher lives as long as we compute the action
-    CacheEntryLockerPtr cacheAccess = appPTR->getCache()->get(*results);
+    CacheEntryLockerPtr cacheAccess = (*results)->getFromCache();
 
     CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
     while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
@@ -857,7 +857,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
     if (useIdentityCache) {
 
         // Ensure the cache fetcher lives as long as we compute the action
-        cacheAccess = appPTR->getCache()->get(*results);
+        cacheAccess = (*results)->getFromCache();
 
         CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
         while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
@@ -968,7 +968,7 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
     CacheEntryLockerPtr cacheAccess;
     if (useCache) {
 
-        cacheAccess = appPTR->getCache()->get(*results);
+        cacheAccess = (*results)->getFromCache();
 
         CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
         while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
@@ -1334,7 +1334,7 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
     if (isHashCached) {
 
 
-        cacheAccess = appPTR->getCache()->get(*results);
+        cacheAccess = (*results)->getFromCache();
 
         CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
         while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
@@ -1489,7 +1489,7 @@ EffectInstance::getFrameRange_public(GetFrameRangeResultsPtr* results)
     GetFrameRangeKeyPtr cacheKey(new GetFrameRangeKey(hash, getNode()->getPluginID()));
     *results = GetFrameRangeResults::create(cacheKey);
 
-    CacheEntryLockerPtr cacheAccess = appPTR->getCache()->get(*results);
+    CacheEntryLockerPtr cacheAccess = (*results)->getFromCache();
 
     CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
     while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
@@ -1761,7 +1761,7 @@ EffectInstance::getTimeInvariantMetaDatas_public(GetTimeInvariantMetaDatasResult
     (*results)->setMetadatasResults(metadata);
 
 
-    CacheEntryLockerPtr cacheAccess = appPTR->getCache()->get(*results);
+    CacheEntryLockerPtr cacheAccess = (*results)->getFromCache();
 
     CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
     while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {

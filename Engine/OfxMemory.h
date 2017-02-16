@@ -32,16 +32,17 @@
 
 #include <QMutex>
 
-#include "Engine/EngineFwd.h"
+#include "Engine/PluginMemory.h"
 
 NATRON_NAMESPACE_ENTER;
 
 class OfxMemory
     : public OFX::Host::Memory::Instance
+    , public PluginMemory
 {
+    EffectInstanceWPtr _effect;
     mutable QMutex _lock;
     int _lockedCount;
-    PluginMemoryPtr _memory;
 
 public:
 

@@ -33,7 +33,7 @@ NATRON_NAMESPACE_ENTER;
 void
 ImagePrivate::initTileAndFetchFromCache(const TileCoord& coord, Image::Tile &tile)
 {
-    CachePtr cache = appPTR->getCache();
+    CachePtr cache = appPTR->getTileCache();
 
     const std::string& planeID = layer.getPlaneID();
 
@@ -352,7 +352,7 @@ ImagePrivate::insertTilesInCache()
     assert(cachePolicy == eCacheAccessModeWriteOnly ||
            cachePolicy == eCacheAccessModeReadWrite);
 
-    CachePtr cache = appPTR->getCache();
+    CachePtr cache = appPTR->getTileCache();
 
     bool renderAborted = false;
     EffectInstancePtr effect = renderClone.lock();

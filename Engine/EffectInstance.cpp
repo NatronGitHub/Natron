@@ -255,7 +255,7 @@ EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
         cacheKey.reset(new GetFramesNeededKey(hashValue, getNode()->getPluginID()));
 
 
-        CacheEntryLockerPtr cacheAccess = appPTR->getCache()->get(framesNeededResults);
+        CacheEntryLockerPtr cacheAccess = appPTR->getGeneralPurposeCache()->get(framesNeededResults);
         
         CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
         if (cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute) {
@@ -1123,14 +1123,35 @@ EffectInstance::setOutputFilesForWriter(const std::string & pattern)
     }
 }
 
-PluginMemoryPtr
-EffectInstance::newMemoryInstance(size_t nBytes)
-{
-    PluginMemoryPtr ret( new PluginMemory( shared_from_this() ) ); 
 
+PluginMemoryPtr
+EffectInstance::createMemoryChunk(size_t nBytes)
+{
+    PluginMemoryPtr mem = createPluginMemory();
     PluginMemAllocateMemoryArgs args(nBytes);
-    ret->allocateMemory(args);
+    mem->allocateMemory(args);
+    QMutexLocker k(&_imp->pluginMemoryChunksMutex);
+    _imp->pluginMemoryChunks.push_back(mem);
+    return mem;
+}
+
+PluginMemoryPtr
+EffectInstance::createPluginMemory()
+{
+    PluginMemoryPtr ret( new PluginMemory() );
     return ret;
+}
+
+void
+EffectInstance::releasePluginMemory(const PluginMemory* mem)
+{
+    QMutexLocker k(&_imp->pluginMemoryChunksMutex);
+    for (std::list<PluginMemoryPtr>::const_iterator it = _imp->pluginMemoryChunks.begin(); it != _imp->pluginMemoryChunks.end(); ++it) {
+        if (it->get() == mem) {
+            _imp->pluginMemoryChunks.erase(it);
+            return;
+        }
+    }
 }
 
 

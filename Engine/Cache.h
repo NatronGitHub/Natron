@@ -72,9 +72,6 @@
 #define NATRON_CACHE_DIRECTORY_NAME "Cache"
 
 
-// After this amount of milliseconds, if a thread is not able to read a pending entry it will take it over and compute it, to ensure
-// the entry was not left abandonned by a dead process.
-#define NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS 10000
 
 NATRON_NAMESPACE_ENTER;
 
@@ -95,6 +92,7 @@ struct CacheReportInfo
 
 
 struct CacheBucket;
+
 class SharedMemoryProcessLocalReadLocker;
 /**
  * @brief Small RAII style class used to lock an entry corresponding to a hash key to ensure
@@ -155,11 +153,11 @@ public:
      * If the status can still not be found in the cache and no other threads is computing it, the status
      * will become eCacheEntryStatusMustCompute and it is expected that this thread computes the entry in turn.
      *
-     * @param timeout If set to INT_MAX, the process will wait forever until the entry becomes available.
+     * @param timeout If set to 0, the process will wait forever until the entry becomes available.
      * Otherwise this process will wait up to "timeout" milliseconds for the pending entry. After that, if it still
      * is not available, it will takeover the entry and return a status of eCacheEntryStatusMustCompute.
      **/
-    CacheEntryStatusEnum waitForPendingEntry(std::size_t timeout = NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS);
+    CacheEntryStatusEnum waitForPendingEntry(std::size_t timeout = 0);
 
 
     /**
@@ -186,24 +184,24 @@ class Cache
 
     // For removeAllEntriesForPluginBlocking
     friend class CacheCleanerThread;
-
-    // For notifyMemoryAllocated, etc...
-    friend class ImageStorageBase;
-
+    
     friend class CacheEntryLocker;
     friend struct CacheBucket;
     
 private:
 
-    Cache();
+    Cache(bool persistent);
 
 public:
 
     /**
-     * @brief Create a new instance of a cache. There should be a single Cache across the application as it
-     * better keeps track of allocated resources.
+     * @brief Create a new instance of a cache.
+     * @param persistent If true, the cache will be stored in memory mapped files to ensure
+     * persistence on the file system. Note that in this case, only data structures that
+     * can be held in shared memory can be inserted in the cache.
+     * Note that there can be only a single persistent cache.
      **/
-    static CachePtr create();
+    static CachePtr create(bool persistent);
     
     virtual ~Cache();
 
@@ -221,17 +219,17 @@ public:
      * @brief Set the maximum cache size available for the given storage.
      * Note that if shrinking, this will clear from the cache exceeding entries.
      **/
-    void setMaximumCacheSize(StorageModeEnum storage, std::size_t size);
+    void setMaximumCacheSize(std::size_t size);
 
     /**
      * @brief Returns the maximum cache size for the given storage.
      **/
-    std::size_t getMaximumCacheSize(StorageModeEnum storage) const;
+    std::size_t getMaximumCacheSize() const;
 
     /**
      * @breif Returns the actual size taken in memory for the given storagE.
      **/
-    std::size_t getCurrentSize(StorageModeEnum storage) const;
+    std::size_t getCurrentSize() const;
 
     /**
      * @brief Check if the given file exists on disk
@@ -293,18 +291,7 @@ public:
      **/
     static int getBucketCacheBucketIndex(U64 hash);
 
-    
-private:
 
-    /**
-     * @brief Called when an entry is allocated
-     **/
-    void notifyMemoryAllocated(std::size_t size, StorageModeEnum storage);
-
-    /**
-     * @brief Called when an entry is deallocated
-     **/
-    void notifyMemoryDeallocated(std::size_t size, StorageModeEnum storage);
 
 private:
 

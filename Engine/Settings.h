@@ -123,9 +123,9 @@ public:
 
     std::string getDiskCachePath() const;
 
-    std::size_t getMaximumDiskCacheSize() const;
+    std::size_t getGeneralPurposeCacheSize() const;
 
-    std::size_t getMaximumRAMCacheSize() const;
+    std::size_t getTileCacheSize() const;
 
     bool getColorPickerLinear() const;
 
