@@ -11,7 +11,7 @@ set branch      [join [lrange [split ${version} .] 0 1] .]
 categories      devel security
 # yes, some of the libs are GPL only
 license         LGPL-2.1+ GPL-3+
-maintainers     mps openmaintainer
+maintainers     {mps @Schamschula} openmaintainer
 description     GNU Transport Layer Security Library
 homepage        http://www.gnutls.org/
 platforms       darwin
