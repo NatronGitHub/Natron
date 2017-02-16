@@ -2306,7 +2306,6 @@ KnobHelper::getFirstKeyFrameTime(ViewIdx view,
                                  DimIdx dimension,
                                  double* time) const
 {
-<<<<<<< HEAD
     return getKeyFrameTime(view, 0, dimension, time);
 }
 
@@ -2322,33 +2321,6 @@ KnobHelper::getKeyFramesCount(ViewIdx view,
     if (!curve) {
         return 0;
     }
-=======
-    std::string expr;
-    {
-        QMutexLocker k(&_imp->expressionMutex);
-        expr = _imp->expressions[dimension].expression;
-    }
-    std::stringstream ss;
-
-    ss << expr << '(' << time << ", " <<  view << ")\n";
-
-    return executeExpression(ss.str(), ret, error);
-}
-
-
-bool
-KnobHelper::executeExpression(const std::string& expr,
-                              PyObject** ret,
-                              std::string* error)
-{
-    //returns a new ref, this function's documentation is not clear onto what it returns...
-    //https://docs.python.org/2/c-api/veryhigh.html
-    PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
-    PyObject* globalDict = PyModule_GetDict(mainModule);
-
-    PyObject* v = PyRun_String(expr.c_str(), Py_file_input, globalDict, 0);
-    Py_XDECREF(v);
->>>>>>> origin/RB-2.2
 
     return curve->getKeyFramesCount();
 }
@@ -2365,16 +2337,6 @@ KnobHelper::getNearestKeyFrameTime(ViewIdx view,
     if ( !canAnimate() || !isAnimated(dimension, view) ) {
         return false;
     }
-<<<<<<< HEAD
-=======
-    *ret = PyObject_GetAttrString(mainModule, "ret"); //get our ret variable created above
-    if (!*ret) {
-        // Do not forget to empty the error stream using catchError, even if we know the error,
-        // for subsequent expression evaluations.
-        if ( catchErrors(mainModule, error) ) {
-            *error = "Missing 'ret' attribute";
-        }
->>>>>>> origin/RB-2.2
 
 
     CurvePtr curve = getAnimationCurve(view, dimension);  //< getCurve will return the master's curve if any

@@ -433,7 +433,8 @@ KnobHelper::pyObjectToType(PyObject* o, ViewIdx view) const
         return std::string();
     }
     std::string ret;
-    isStringAnimated->stringFromInterpolatedValue(index, view, &res);
+    isStringAnimated->stringFromInterpolatedValue(index, view, &ret);
+
     return ret;
 }
 

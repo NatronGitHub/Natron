@@ -644,17 +644,20 @@ KnobHelper::validateExpression(const std::string& expression,
         KnobBoolBase* isBool = dynamic_cast<KnobBoolBase*>(this);
         KnobStringBase* isString = dynamic_cast<KnobStringBase*>(this);
         if (isDouble) {
-            double r = isDouble->pyObjectToType<double>(ret, view);
+            double r = isDouble->pyObjectToType<double>(ret);
             *resultAsString = QString::number(r).toStdString();
         } else if (isInt) {
-            int r = isInt->pyObjectToType<int>(ret, view);
+            int r = isInt->pyObjectToType<int>(ret);
             *resultAsString = QString::number(r).toStdString();
         } else if (isBool) {
-            bool r = isBool->pyObjectToType<bool>(ret, view);
+            bool r = isBool->pyObjectToType<bool>(ret);
             *resultAsString = r ? "True" : "False";
         } else {
             assert(isString);
-            *resultAsString = isString->pyObjectToType<std::string>(ret, view);
+            if (PyUnicode_Check(ret) || PyString_Check(ret)) {
+                *resultAsString = isString->pyObjectToType<std::string>(ret);
+            } else {
+            }
         }
     }
 
@@ -1174,10 +1177,6 @@ KnobHelper::executeExpression(TimeValue time,
         expr = foundView->second.expression;
     }
 
-    //returns a new ref, this function's documentation is not clear onto what it returns...
-    //https://docs.python.org/2/c-api/veryhigh.html
-    PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
-    PyObject* globalDict = PyModule_GetDict(mainModule);
     std::stringstream ss;
 
     std::string viewName;
@@ -1190,7 +1189,21 @@ KnobHelper::executeExpression(TimeValue time,
 
     ss << expr << '(' << time << ", \"" << viewName << "\")\n";
     std::string script = ss.str();
-    PyObject* v = PyRun_String(script.c_str(), Py_file_input, globalDict, 0);
+
+    return executeExpression(ss.str(), ret, error);
+} // executeExpression
+
+bool
+KnobHelper::executeExpression(const std::string& expr,
+                              PyObject** ret,
+                              std::string* error)
+{
+    //returns a new ref, this function's documentation is not clear onto what it returns...
+    //https://docs.python.org/2/c-api/veryhigh.html
+    PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
+    PyObject* globalDict = PyModule_GetDict(mainModule);
+
+    PyObject* v = PyRun_String(expr.c_str(), Py_file_input, globalDict, 0);
     Py_XDECREF(v);
 
     *ret = 0;
@@ -1200,16 +1213,20 @@ KnobHelper::executeExpression(TimeValue time,
     }
     *ret = PyObject_GetAttrString(mainModule, "ret"); //get our ret variable created above
     if (!*ret) {
-        *error = "Missing ret variable";
-        
+        // Do not forget to empty the error stream using catchError, even if we know the error,
+        // for subsequent expression evaluations.
+        if ( catchErrors(mainModule, error) ) {
+            *error = "Missing 'ret' attribute";
+        }
+
         return false;
     }
     if ( !catchErrors(mainModule, error) ) {
         return false;
     }
-    
+
     return true;
-} // executeExpression
+}
 
 std::string
 KnobHelper::getExpression(DimIdx dimension, ViewIdx view) const

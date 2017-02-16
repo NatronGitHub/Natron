@@ -323,6 +323,9 @@ ImportExportCurveDialog::getXCount() const
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
+    ///only valid for export dialogs
+    assert(_isExportDialog);
+
     double ret = 0.;
     std::string expr = std::string("ret = float(1+((")  + _endLineEdit->text().toStdString() + std::string(")-(") + _startLineEdit->text().toStdString() + std::string("))/(") + _incrLineEdit->text().toStdString() + std::string("))");
     std::string error;
