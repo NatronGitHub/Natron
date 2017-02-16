@@ -621,7 +621,7 @@ AnimationModuleView::onExportCurveToAsciiActionTriggered()
             ///if the curve only supports integers values for X steps, and values are not rounded warn the user that the settings are not good
             //double end = xstart + (count-1) * incr;
             if ( curves[i]->areKeyFramesTimeClampedToIntegers() &&
-                 ( (int)incr != incr) || ( (int)xstart != xstart ) ) ) {
+                 ( (int)incr != incr) || ( (int)xstart != xstart ) ) {
                 Dialogs::warningDialog( tr("Curve Export").toStdString(), tr("%1 doesn't support X values that are not integers.").arg( curves[i]->getName() ).toStdString() );
 
                 return;
@@ -775,7 +775,7 @@ AnimationModuleView::onImportCurveFromAsciiActionTriggered()
             KeyFrameWithStringSet& keys = finalValues[id];
 
             const std::vector<double> & values = it->second;
-            double xIndex = x;
+            double xIndex = xstart;
             for (U32 i = 0; i < values.size(); ++i) {
                 KeyFrameWithString k;
                 k.key = KeyFrame(xIndex, values[i], 0., 0., eKeyframeTypeLinear);
