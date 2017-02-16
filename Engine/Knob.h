@@ -1590,6 +1590,8 @@ public:
     virtual AnimationLevelEnum getAnimationLevel(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isTypeCompatible(const KnobPtr & other) const OVERRIDE WARN_UNUSED_RETURN = 0;
 
+    ///The return value must be Py_DECRREF
+    static bool executeExpression(const std::string& expr, double time, ViewIdx view, PyObject** ret, std::string* error);
 
     /**
      * @brief Adds a new listener to this knob. This is just a pure notification about the fact that the given knob

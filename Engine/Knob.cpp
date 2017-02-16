@@ -2853,6 +2853,17 @@ KnobHelper::executeExpression(double time,
         expr = _imp->expressions[dimension].expression;
     }
 
+    return executeExpression(expr, time, view, ret, error);
+}
+
+
+bool
+KnobHelper::executeExpression(const std::string& expr,
+                              double time,
+                              ViewIdx view,
+                              PyObject** ret,
+                              std::string* error)
+{
     //returns a new ref, this function's documentation is not clear onto what it returns...
     //https://docs.python.org/2/c-api/veryhigh.html
     PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
