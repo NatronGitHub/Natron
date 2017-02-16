@@ -662,17 +662,15 @@ KnobCurveGui::evaluate(bool useExpr,
 {
     KnobPtr knob = getInternalKnob();
 
-    if (useExpr) {
+    KnobParametric* isParametric = dynamic_cast<KnobParametric*>( knob.get() );
+    if (isParametric) {
+        return isParametric->getParametricCurve(_dimension)->getValueAt(x, false);
+    } else if (useExpr) {
         return knob->getValueAtWithExpression(x, ViewIdx(0), _dimension);
     } else {
-        KnobParametric* isParametric = dynamic_cast<KnobParametric*>( knob.get() );
-        if (isParametric) {
-            return isParametric->getParametricCurve(_dimension)->getValueAt(x, false);
-        } else {
-            assert(_internalCurve);
+        assert(_internalCurve);
 
-            return _internalCurve->getValueAt(x, false);
-        }
+        return _internalCurve->getValueAt(x, false);
     }
 }
 
