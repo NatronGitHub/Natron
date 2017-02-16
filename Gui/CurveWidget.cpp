@@ -2149,19 +2149,17 @@ CurveWidget::exportCurveToAscii()
 
     ImportExportCurveDialog dialog(true, curves, _imp->_gui, this);
     if ( dialog.exec() ) {
-        double x = dialog.getXStart();
-        double end = dialog.getXEnd();
+        double xstart = dialog.getXStart();
+        int count = dialog.getXCount();
         double incr = dialog.getXIncrement();
         std::map<int, boost::shared_ptr<CurveGui> > columns;
         dialog.getCurveColumns(&columns);
 
         for (U32 i = 0; i < curves.size(); ++i) {
             ///if the curve only supports integers values for X steps, and values are not rounded warn the user that the settings are not good
-            double incrInt = std::floor(incr);
-            double xInt = std::floor(x);
-            double endInt = std::floor(end);
+            //double end = xstart + (count-1) * incr;
             if ( curves[i]->areKeyFramesTimeClampedToIntegers() &&
-                 ( ( incrInt != incr) || ( xInt != x) || ( endInt != end) ) ) {
+                 ( ( (int)incr != incr) || ( (int)xstart != xstart ) ) ) {
                 Dialogs::warningDialog( tr("Curve Export").toStdString(), tr("%1 doesn't support X values that are not integers.").arg( curves[i]->getName() ).toStdString() );
 
                 return;
@@ -2177,11 +2175,11 @@ CurveWidget::exportCurveToAscii()
         file.open(QIODevice::WriteOnly | QIODevice::Text);
         QTextStream ts(&file);
 
-        for (double i = x; i <= end; i += incr) {
+        for (int i = 0; i < count; ++i) {
             for (int c = 0; c < columnsCount; ++c) {
                 std::map<int, boost::shared_ptr<CurveGui> >::const_iterator foundCurve = columns.find(c);
                 if ( foundCurve != columns.end() ) {
-                    QString str = QString::number(foundCurve->second->evaluate(true, i), 'f', 10);
+                    QString str = QString::number(foundCurve->second->evaluate(true, xstart + i * incr), 'f', 10);
                     ts << str;
                 } else {
                     ts <<  0;
