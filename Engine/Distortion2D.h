@@ -90,7 +90,12 @@ public:
     /**
      * @brief Appends a new distortion function to apply.
      **/
-    void pushDistortion(const DistortionFunction2DPtr& distortion);
+    void pushDistortionFunction(const DistortionFunction2DPtr& distortion);
+    
+    /**
+     * @brief Appends a new transform to apply, in pixel coordinates
+     **/
+    void pushTransformMatrix(const Transform::Matrix3x3& transfo);
 
     /**
      * @brief Appends a stack of distortion functions to apply.
