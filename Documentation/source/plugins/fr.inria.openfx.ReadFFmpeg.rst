@@ -12,6 +12,10 @@ Description
 
 Read video using FFmpeg.
 
+All formats supported by FFmpeg should be supported, but there may be issues with some non-conform files. In this case, it is recommended to transcode the video to a digital intermediate format, which is more suitable for grading, compositing and video editing.
+
+This can be done using the ffmpeg command-line tool, by following the instructions at https://trac.ffmpeg.org/wiki/Encode/VFX
+
 FFmpeg versions (compiled with / running with):
 
 libavformat 57.56.100 / 57.56.100

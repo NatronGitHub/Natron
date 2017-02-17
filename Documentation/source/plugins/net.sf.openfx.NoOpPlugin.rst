@@ -12,6 +12,8 @@ Description
 
 Copies the input to the ouput.
 
+This effect does not modify the actual content of the image, but can be used to modify the metadata associated with the clip (premultiplication, field order, format, pixel aspect ratio, frame rate).
+
 This plugin concatenates transforms.
 
 Inputs
