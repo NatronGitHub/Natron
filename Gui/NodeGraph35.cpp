@@ -261,11 +261,9 @@ NodeGraph::updateCacheSizeText()
     }
 
     QString oldText = _imp->_cacheSizeText->text();
-    quint64 cacheSize = appPTR->getCache()->getCurrentSize(eStorageModeRAM);
+    quint64 cacheSize = appPTR->getTileCache()->getCurrentSize();
     QString cacheSizeStr = QDirModelPrivate_size(cacheSize);
-    quint64 diskSize = appPTR->getCache()->getCurrentSize(eStorageModeDisk);
-    QString diskCacheSizeStr = QDirModelPrivate_size(diskSize);
-    QString newText = tr("Memory used: %1 / Disk used: %2").arg(cacheSizeStr).arg(diskCacheSizeStr);
+    QString newText = tr("Image Cache: %1").arg(cacheSizeStr);
     if (newText != oldText) {
         _imp->_cacheSizeText->setText(newText);
     }

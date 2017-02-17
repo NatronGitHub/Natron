@@ -30,6 +30,7 @@
 #include <QWaitCondition>
 
 #include "Engine/Cache.h"
+#include "Engine/ImageStorage.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -154,6 +155,9 @@ StorageDeleterThread::run()
                 assert( !_imp->entriesQueue.empty() );
                 front = _imp->entriesQueue.front();
                 _imp->entriesQueue.pop_front();
+            }
+            if (front) {
+                front->deallocateMemory();
             }
      
         } // front. After this scope, the image is guarenteed to be freed

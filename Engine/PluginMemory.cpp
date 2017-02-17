@@ -38,21 +38,19 @@ NATRON_NAMESPACE_ENTER;
 
 struct PluginMemory::Implementation
 {
-    Implementation(const EffectInstancePtr& effect_)
+    Implementation()
     : data()
     , mutex()
-    , effect(effect_)
     {
     }
 
     RamBuffer<char> data;
     QMutex mutex;
-    EffectInstanceWPtr effect;
 };
 
-PluginMemory::PluginMemory(const EffectInstancePtr& effect)
+PluginMemory::PluginMemory()
 : ImageStorageBase()
-, _imp( new Implementation(effect) )
+, _imp( new Implementation() )
 {
 }
 
@@ -86,14 +84,14 @@ PluginMemory::deallocateMemoryImpl()
 }
 
 
-void*
-PluginMemory::getPtr()
+char*
+PluginMemory::getData()
 {
     QMutexLocker l(&_imp->mutex);
 
     assert( _imp->data.size() == 0 || ( _imp->data.size() > 0 && _imp->data.getData() ) );
 
-    return (void*)( _imp->data.getData() );
+    return _imp->data.getData();
 }
 
 NATRON_NAMESPACE_EXIT;

@@ -100,11 +100,15 @@ ViewerTabPrivate::getOverlayTransform(TimeValue time,
     // Internally this will return an identity matrix if the node is identity
 
     {
-        stat = currentNode->getDistortion_public(time, s, view, &disto);
+        GetDistortionResultsPtr results;
+        stat = currentNode->getDistortion_public(time, s, view, &results);
         if (isFailureRetCode(stat)) {
             return false;
         }
-        if (disto->inputNbToDistort != -1) {
+        if (results) {
+            disto = results->getResults();
+        }
+        if (disto && disto->inputNbToDistort != -1) {
             input = currentNode->getInput(disto->inputNbToDistort);
         }
         if (!input) {

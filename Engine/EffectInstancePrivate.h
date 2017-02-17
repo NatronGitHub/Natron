@@ -395,16 +395,17 @@ public:
     // Knobs specific to each render clone
     RenderDefaultKnobs renderKnobs;
 
+    // Register memory chunks by the plug-in. Kept here to avoid plug-in memory leaks
+    mutable QMutex pluginMemoryChunksMutex;
+    std::list<PluginMemoryPtr> pluginMemoryChunks;
+
 public:
 
     Implementation(EffectInstance* publicInterface);
 
     Implementation(EffectInstance* publicInterface, const Implementation& other);
 
-    ~Implementation()
-    {
-
-    }
+    ~Implementation();
 
 
     /**

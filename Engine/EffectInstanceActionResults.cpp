@@ -68,17 +68,9 @@ EffectInstanceActionKeyBase::fromMemorySegment(ExternalSegmentType* segment, con
     CacheEntryKeyBase::fromMemorySegment(segment, objectNamesPrefix);
 } // fromMemorySegment
 
-std::size_t
-EffectInstanceActionKeyBase::getMetadataSize() const
-{
-    std::size_t ret = CacheEntryKeyBase::getMetadataSize();
-    ret += sizeof(_data.nodeTimeViewVariantHash);
-    ret += sizeof(_data.scale);
-    return ret;
-}
 
 GetRegionOfDefinitionResults::GetRegionOfDefinitionResults()
-: CacheEntryBase(appPTR->getCache())
+: CacheEntryBase(appPTR->getGeneralPurposeCache())
 {
 
 }
@@ -104,14 +96,6 @@ GetRegionOfDefinitionResults::setRoD(const RectD& rod)
     _rod = rod;
 }
 
-std::size_t
-GetRegionOfDefinitionResults::getMetadataSize() const
-{
-    std::size_t ret = CacheEntryBase::getMetadataSize();
-    ret += sizeof(_rod);
-    return ret;
-}
-
 
 void
 GetRegionOfDefinitionResults::toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
@@ -127,8 +111,54 @@ GetRegionOfDefinitionResults::fromMemorySegment(ExternalSegmentType* segment, co
     CacheEntryBase::fromMemorySegment(segment, objectNamesPrefix, tileDataPtr);
 } // fromMemorySegment
 
+
+GetDistortionResults::GetDistortionResults()
+: CacheEntryBase(appPTR->getGeneralPurposeCache())
+{
+    // Distortion results may not be cached in a persistent cache because the plug-in returns to us
+    // a pointer to memory it holds.
+    assert(!getCache()->isPersistent());
+}
+
+
+GetDistortionResultsPtr
+GetDistortionResults::create(const GetDistortionKeyPtr& key)
+{
+    GetDistortionResultsPtr ret(new GetDistortionResults());
+    ret->setKey(key);
+    return ret;
+}
+
+DistortionFunction2DPtr
+GetDistortionResults::getResults() const
+{
+    return _disto;
+}
+
+void
+GetDistortionResults::setResults(const DistortionFunction2DPtr& disto)
+{
+    _disto = disto;
+}
+
+
+void
+GetDistortionResults::toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
+{
+    objectPointers->push_back(writeNamedSharedObject(_disto, objectNamesPrefix + "disto", segment));
+    CacheEntryBase::toMemorySegment(segment, objectNamesPrefix, objectPointers, tileDataPtr);
+} // toMemorySegment
+
+void
+GetDistortionResults::fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, const void* tileDataPtr)
+{
+    readNamedSharedObject(objectNamesPrefix + "disto", segment, &_disto);
+    CacheEntryBase::fromMemorySegment(segment, objectNamesPrefix, tileDataPtr);
+} // fromMemorySegment
+
+
 IsIdentityResults::IsIdentityResults()
-: CacheEntryBase(appPTR->getCache())
+: CacheEntryBase(appPTR->getGeneralPurposeCache())
 , _data()
 {
     _data.identityInputNb = -1;
@@ -162,16 +192,6 @@ IsIdentityResults::setIdentityData(int identityInputNb, TimeValue identityTime, 
     _data.identityView = identityView;
 }
 
-std::size_t
-IsIdentityResults::getMetadataSize() const
-{
-    std::size_t ret = CacheEntryBase::getMetadataSize();
-    ret += sizeof(_data.identityInputNb);
-    ret += sizeof(_data.identityTime);
-    ret += sizeof(_data.identityView);
-    return ret;
-}
-
 void
 IsIdentityResults::toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
 {
@@ -187,7 +207,7 @@ IsIdentityResults::fromMemorySegment(ExternalSegmentType* segment, const std::st
 } // fromMemorySegment
 
 GetFramesNeededResults::GetFramesNeededResults()
-: CacheEntryBase(appPTR->getCache())
+: CacheEntryBase(appPTR->getGeneralPurposeCache())
 , _framesNeeded()
 {
 
@@ -213,15 +233,6 @@ void
 GetFramesNeededResults::setFramesNeeded(const FramesNeededMap &framesNeeded)
 {
     _framesNeeded = framesNeeded;
-}
-
-std::size_t
-GetFramesNeededResults::getMetadataSize() const
-{
-    std::size_t ret = CacheEntryBase::getMetadataSize();
-    // Hint a fake size, that's enough to ensure the memory allocation is ok
-    ret += 1024;
-    return ret;
 }
 
 // This is made complicated so it can be inserted in interprocess data structures.
@@ -307,7 +318,7 @@ GetFramesNeededResults::fromMemorySegment(ExternalSegmentType* segment, const st
 
 
 GetFrameRangeResults::GetFrameRangeResults()
-: CacheEntryBase(appPTR->getCache())
+: CacheEntryBase(appPTR->getGeneralPurposeCache())
 , _range()
 {
     _range.min = _range.max = 0;
@@ -335,15 +346,6 @@ GetFrameRangeResults::setFrameRangeResults(const RangeD &range)
     _range = range;
 }
 
-std::size_t
-GetFrameRangeResults::getMetadataSize() const
-{
-    std::size_t ret = CacheEntryBase::getMetadataSize();
-    ret += sizeof(_range);
-    return ret;
-}
-
-
 void
 GetFrameRangeResults::toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
 {
@@ -361,7 +363,7 @@ GetFrameRangeResults::fromMemorySegment(ExternalSegmentType* segment, const std:
 
 
 GetTimeInvariantMetaDatasResults::GetTimeInvariantMetaDatasResults()
-: CacheEntryBase(appPTR->getCache())
+: CacheEntryBase(appPTR->getGeneralPurposeCache())
 , _metadatas()
 {
 
@@ -389,15 +391,6 @@ GetTimeInvariantMetaDatasResults::setMetadatasResults(const NodeMetadataPtr &met
     _metadatas = metadatas;
 }
 
-std::size_t
-GetTimeInvariantMetaDatasResults::getMetadataSize() const
-{
-    std::size_t ret = CacheEntryBase::getMetadataSize();
-    // Hint a fake size
-    ret += 1024;
-    return ret;
-}
-
 
 void
 GetTimeInvariantMetaDatasResults::toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
@@ -418,7 +411,7 @@ GetTimeInvariantMetaDatasResults::fromMemorySegment(ExternalSegmentType* segment
 
 
 GetComponentsResults::GetComponentsResults()
-: CacheEntryBase(appPTR->getCache())
+: CacheEntryBase(appPTR->getGeneralPurposeCache())
 , _neededInputLayers()
 , _producedLayers()
 , _passThroughPlanes()
@@ -524,15 +517,6 @@ GetComponentsResults::setResults(const std::map<int, std::list<ImagePlaneDesc> >
     _data.doB = processChannels[2];
     _data.doA = processChannels[3];
     _data.processAllLayers = processAllLayers;
-}
-
-std::size_t
-GetComponentsResults::getMetadataSize() const
-{
-    std::size_t ret = CacheEntryBase::getMetadataSize();
-    // Hint a fake size
-    ret += 1024;
-    return ret;
 }
 
 typedef bip::allocator<String_ExternalSegment, ExternalSegmentType::segment_manager> String_ExternalSegment_allocator;

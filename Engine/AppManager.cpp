@@ -613,7 +613,7 @@ AppManager::~AppManager()
     _imp->_backgroundIPC.reset();
 
     // Ensure the cache is synced on disk when exiting.
-    _imp->cache->flushCacheOnDisk(false /*async*/);
+    _imp->tileCache->flushCacheOnDisk(false /*async*/);
 
     _imp->storageDeleteThread->quitThread();
 
@@ -876,10 +876,14 @@ AppManager::loadInternal(const CLArgs& cl)
     }
 
     // Create cache once we loaded the cache directory path wanted by the user
-    _imp->cache = Cache::create();
+    _imp->generalPurposeCache = Cache::create(false /*persistent*/);
+    _imp->tileCache = Cache::create(true /*persistent*/);
     if (cl.isCacheClearRequestedOnLaunch()) {
-        _imp->cache->clear();
+        _imp->tileCache->clear();
     }
+    _imp->tileCache->setMaximumCacheSize(_imp->_settings->getTileCacheSize());
+    _imp->generalPurposeCache->setMaximumCacheSize(_imp->_settings->getGeneralPurposeCacheSize());
+
     _imp->storageDeleteThread.reset(new StorageDeleterThread);
 
     _imp->declareSettingsToPython();
@@ -1315,7 +1319,8 @@ AppManager::clearAllCaches()
         (*it)->abortAllViewers(true);
     }
 
-    _imp->cache->clear();
+    _imp->generalPurposeCache->clear();
+    _imp->tileCache->clear();
     
     ///for each app instance clear all its nodes cache
     for (AppInstanceVec::iterator it = copy.begin(); it != copy.end(); ++it) {
@@ -2469,9 +2474,15 @@ AppManager::createNodeForProjectLoading(const SERIALIZATION_NAMESPACE::NodeSeria
 }
 
 CachePtr
-AppManager::getCache() const
+AppManager::getGeneralPurposeCache() const
 {
-    return _imp->cache;
+    return _imp->generalPurposeCache;
+}
+
+CachePtr
+AppManager::getTileCache() const
+{
+    return _imp->tileCache;
 }
 
 void
@@ -2485,7 +2496,7 @@ AppManager::printCacheMemoryStats() const
 {
     appPTR->clearErrorLog_mt_safe();
     std::map<std::string, CacheReportInfo> infos;
-    _imp->cache->getMemoryStats(&infos);
+    _imp->tileCache->getMemoryStats(&infos);
 
 
     QString reportStr;

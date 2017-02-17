@@ -54,6 +54,7 @@ NATRON_NAMESPACE_ENTER;
 #define kCacheKeyUniqueIDGetComponentsResults 6
 #define kCacheKeyUniqueIDGetFrameRangeResults 7
 #define kCacheKeyUniqueIDExpressionResult 8
+#define kCacheKeyUniqueIDGetDistortionResults 9
 
 
 
@@ -92,11 +93,12 @@ public:
     virtual void fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix);
 
     /**
-     * @brief This should return exactly the size in bytes of memory taken in the
+     * @brief This should return an approximate size in bytes of memory taken in the
      * memory segment of the cache used to store the table of content.
-     * Derived version should include the size of any element that is written
-     * to the memory segment in the toMemorySegment function.
-     * Make sure to call the base class version.
+     * Implement if your cache entry is going to write a significant amount of memory
+     * in the toMemorySegment function, otherwise you may leave to the default 
+     * implementation that returns 0. If the cache fails to allocate enough memory
+     * for the entry, it will grow the table of content in any cases.
      **/
     virtual std::size_t getMetadataSize() const;
 
@@ -169,9 +171,6 @@ public:
     bool isDraftMode() const;
 
     ImageBitDepthEnum getBitDepth() const;
-
-
-    virtual std::size_t getMetadataSize() const OVERRIDE FINAL;
 
     virtual void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix,  ExternalSegmentTypeHandleList* objectPointers) const OVERRIDE FINAL;
 

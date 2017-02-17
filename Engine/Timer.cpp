@@ -61,6 +61,49 @@ gettimeofday (struct timeval *tv,
 
 #endif
 
+TimestampVal getTimestampInSeconds() {
+#ifdef HAVE_CXX11_CHRONO
+    return std::chrono::high_resolution_clock::now();
+#else // !HAVE_CXX11_CHRONO
+#ifdef _WIN32
+    LARGE_INTEGER li_start;
+    QueryPerformanceCounter(&li_start);
+    return (double)(li_start.QuadPart);
+#else // !_WIN32
+    timeval tv;
+    gettimeofday(&tv, NULL);
+    return tv.tv_sec + tv.tv_usec * 1e-6;
+#endif  // _WIN32
+#endif // HAVE_CXX11_CHRONO
+}
+
+double getPerformanceFrequency() {
+#ifdef _WIN32
+    LARGE_INTEGER freq;
+    if (!QueryPerformanceFrequency(&freq)) {
+        // From https://msdn.microsoft.com/en-us/library/ms886789.aspx
+        // If the hardware does not support a high frequency counter, QueryPerformanceFrequency will return 1000 because the API defaults to a milliseconds GetTickCount implementation.
+        return 1000;
+    }
+    return (double)freq.QuadPart;
+#else
+    return 1.;
+#endif
+}
+
+double getTimeElapsed(const TimestampVal& start, const TimestampVal& end, double frequency)
+{
+#ifdef HAVE_CXX11_CHRONO
+    return std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() / 1000.;
+#else
+    return (end - start) / frequency;
+#endif
+}
+
+static double getTimeElapsedClamped(const TimestampVal& start, const TimestampVal& end, double frequency = 1.)
+{
+    return std::min(0., getTimeElapsed(start, end, frequency));
+}
 
 // prints time value as seconds, minutes hours or days
 QString
@@ -125,14 +168,16 @@ Timer::printAsTime(const double timeInSeconds,
 } // Timer::printAsTime
 
 Timer::Timer ()
-    : playState (ePlayStateRunning),
-    _spf (1 / 24.0),
-    _timingError (0),
-    _framesSinceLastFpsFrame (0),
-    _actualFrameRate (0),
-    _mutex(new QMutex)
+: playState (ePlayStateRunning),
+_frequency(getPerformanceFrequency()),
+_spf (1 / 24.0),
+_timingError (0),
+_framesSinceLastFpsFrame (0),
+_actualFrameRate (0),
+_mutex(new QMutex)
 {
-    gettimeofday (&_lastFrameTime, 0);
+
+    _lastFrameTime = getTimestampInSeconds();
     _lastFpsFrameTime = _lastFrameTime;
 }
 
@@ -150,7 +195,7 @@ Timer::waitUntilNextFrameIsDue ()
         // variables and return without waiting.
         //
 
-        gettimeofday (&_lastFrameTime, 0);
+        _lastFrameTime = getTimestampInSeconds();
         _timingError = 0;
         _lastFpsFrameTime = _lastFrameTime;
         _framesSinceLastFpsFrame = 0;
@@ -168,23 +213,18 @@ Timer::waitUntilNextFrameIsDue ()
     // If less than _spf seconds have passed since the last frame
     // was displayed, sleep until exactly _spf seconds have gone by.
     //
-    timeval now;
-    gettimeofday (&now, 0);
+    TimestampVal now = getTimestampInSeconds();
 
-    double timeSinceLastFrame =  now.tv_sec  - _lastFrameTime.tv_sec +
-                                (now.tv_usec - _lastFrameTime.tv_usec) * 1e-6f;
-    if (timeSinceLastFrame < 0) {
-        timeSinceLastFrame = 0;
-    }
+    double timeSinceLastFrame = getTimeElapsedClamped(_lastFrameTime, now, _frequency);
     double timeToSleep = spf - timeSinceLastFrame - _timingError;
 
-    #ifdef _WIN32
+#ifdef _WIN32
 
     if (timeToSleep > 0) {
         Sleep ( int (timeToSleep * 1000.0f) );
     }
 
-    #else
+#else
 
     if (timeToSleep > 0) {
         timespec ts;
@@ -193,7 +233,7 @@ Timer::waitUntilNextFrameIsDue ()
         nanosleep (&ts, 0);
     }
 
-    #endif
+#endif
 
     //
     // If we slept, it is possible that we woke up a little too early
@@ -203,10 +243,10 @@ Timer::waitUntilNextFrameIsDue ()
     // keep our average frame rate close to one fame every _spf seconds.
     //
 
-    gettimeofday (&now, 0);
+    now = getTimestampInSeconds();
 
-    timeSinceLastFrame =  now.tv_sec  - _lastFrameTime.tv_sec +
-                         (now.tv_usec - _lastFrameTime.tv_usec) * 1e-6f;
+    timeSinceLastFrame = getTimeElapsed(_lastFrameTime, now, _frequency);
+
 
     _timingError += timeSinceLastFrame - spf;
 
@@ -223,9 +263,8 @@ Timer::waitUntilNextFrameIsDue ()
     //
     // Calculate our actual frame rate, averaged over several frames.
     //
+    double t = getTimeElapsed(_lastFpsFrameTime, now, _frequency);
 
-    double t =  now.tv_sec  - _lastFpsFrameTime.tv_sec +
-               (now.tv_usec - _lastFpsFrameTime.tv_usec) * 1e-6f;
 
     if (t > NATRON_FPS_REFRESH_RATE_SECONDS) {
         double actualFrameRate = _framesSinceLastFpsFrame / t;
@@ -278,8 +317,9 @@ Timer::getDesiredFrameRate() const
 
 TimeLapse::TimeLapse()
 {
-    gettimeofday(&prev, 0);
+    prev = getTimestampInSeconds();
     constructorTime = prev;
+    frequency = getPerformanceFrequency();
 }
 
 TimeLapse::~TimeLapse()
@@ -289,12 +329,9 @@ TimeLapse::~TimeLapse()
 double
 TimeLapse::getTimeElapsedReset()
 {
-    timeval now;
+    TimestampVal now = getTimestampInSeconds();
 
-    gettimeofday(&now, 0);
-
-    double dt =  now.tv_sec  - prev.tv_sec +
-                (now.tv_usec - prev.tv_usec) * 1e-6f;
+    double dt = getTimeElapsed(prev, now, frequency);
 
     prev = now;
 
@@ -304,18 +341,16 @@ TimeLapse::getTimeElapsedReset()
 void
 TimeLapse::reset()
 {
-    gettimeofday(&prev, 0);
+    prev = getTimestampInSeconds();
 }
 
 double
 TimeLapse::getTimeSinceCreation() const
 {
-    timeval now;
+    TimestampVal now = getTimestampInSeconds();
 
-    gettimeofday(&now, 0);
+    double dt = getTimeElapsed(constructorTime, now, frequency);
 
-    double dt =  now.tv_sec  - constructorTime.tv_sec +
-                (now.tv_usec - constructorTime.tv_usec) * 1e-6f;
 
     return dt;
 }
@@ -323,17 +358,16 @@ TimeLapse::getTimeSinceCreation() const
 TimeLapseReporter::TimeLapseReporter(const std::string& message)
     : message(message)
 {
-    gettimeofday(&prev, 0);
+    prev = getTimestampInSeconds();
+    frequency = getPerformanceFrequency();
 }
 
 TimeLapseReporter::~TimeLapseReporter()
 {
-    timeval now;
+    TimestampVal now = getTimestampInSeconds();
 
-    gettimeofday(&now, 0);
+    double dt = getTimeElapsed(prev, now, frequency);
 
-    double dt =  now.tv_sec  - prev.tv_sec +
-                (now.tv_usec - prev.tv_usec) * 1e-6f;
     std::cout << message << ' ' << dt << std::endl;
 }
 

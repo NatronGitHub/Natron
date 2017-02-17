@@ -32,6 +32,9 @@
 #else
 #include <sys/time.h>
 #endif
+#ifdef HAVE_CXX11_CHRONO
+#include <chrono>
+#endif
 
 #include <QtCore/QString>
 #include <QtCore/QObject>
@@ -55,6 +58,31 @@ enum PlayStateEnum
     ePlayStateRunning,
     ePlayStatePause,
 };
+
+
+
+#ifdef HAVE_CXX11_CHRONO
+typedef std::chrono::high_resolution_clock::time_point TimestampVal;
+#else
+typedef double TimestampVal;
+#endif // HAVE_CXX11_CHRONO
+
+
+/**
+ * @brief Return a timestamp. It can be compared with another timestamp returned by this function
+ **/
+TimestampVal getTimestampInSeconds();
+
+/**
+ * @brief On windows return the frequency of the values returned by getTimestampInSeconds().
+ * On unix the timestamp are always in seconds.
+ **/
+double getPerformanceFrequency();
+
+/**
+ * @brief Returns the number of seconds elapsed between start to end.
+ **/
+double getTimeElapsed(const TimestampVal& start, const TimestampVal& end, double frequency = 1.);
 
 class Timer
     : public QObject
@@ -108,22 +136,27 @@ Q_SIGNALS:
 
 private:
 
+    double _frequency;
     double _spf;                 // desired frame rate,
     // in seconds per frame
-    timeval _lastFrameTime;         // time when we displayed the
+    TimestampVal _lastFrameTime;         // time when we displayed the
     // last frame
     double _timingError;             // cumulative timing error
-    timeval _lastFpsFrameTime;      // state to keep track of the
+    TimestampVal _lastFpsFrameTime;      // state to keep track of the
     int _framesSinceLastFpsFrame;       // actual frame rate, averaged
     double _actualFrameRate;         // over several frames
     QMutex* _mutex; //< protects _spf and _actualFrameRate
 };
 
 
+
 class TimeLapse
 {
-    timeval prev;
-    timeval constructorTime;
+    
+    TimestampVal prev;
+    TimestampVal constructorTime;
+
+    double frequency;
 
 public:
 
@@ -151,7 +184,10 @@ public:
  **/
 class TimeLapseReporter
 {
-    timeval prev;
+    TimestampVal prev;
+
+    double frequency;
+
     std::string message;
 
 public:

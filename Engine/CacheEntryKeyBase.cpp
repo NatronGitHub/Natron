@@ -110,13 +110,7 @@ CacheEntryKeyBase::setHolderPluginID(const std::string& holderID) {
 std::size_t
 CacheEntryKeyBase::getMetadataSize() const
 {
-    std::size_t ret = 0;
-
-    // Also count the null character.
-    ret += (_imp->pluginID.size() + 1) * sizeof(char);
-    ret += sizeof(_imp->hash);
-
-    return ret;
+    return 0;
 }
 
 void
@@ -280,23 +274,6 @@ ImageBitDepthEnum
 ImageTileKey::getBitDepth() const
 {
     return _imp->data.bitdepth;
-}
-
-std::size_t
-ImageTileKey::getMetadataSize() const
-{
-    std::size_t ret = CacheEntryKeyBase::getMetadataSize();
-
-    // Also count the null character.
-    ret += sizeof(_imp->data.nodeTimeViewVariantHash);
-    ret += (_imp->layerChannel.size() + 1) * sizeof(char);
-    ret += sizeof(_imp->data.tileBounds);
-    ret += sizeof(_imp->data.proxyScale);
-    ret += sizeof(_imp->data.mipMapLevel);
-    ret += sizeof(_imp->data.draftMode);
-    ret += sizeof(_imp->data.bitdepth);
-
-    return ret;
 }
 
 void

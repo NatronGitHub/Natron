@@ -262,48 +262,43 @@ EffectInstance::Implementation::handleConcatenation(const RequestPassSharedDataP
     }
 
     EffectInstancePtr requesterEffect = requester->getRenderClone();
-    bool canReturnDeprecatedTransform3x3 = requesterEffect->getInputCanReceiveTransform(inputNbInRequester);
-    bool canReturnDistortionFunc = requesterEffect->getInputCanReceiveDistortion(inputNbInRequester);
+    bool requesterCanReceiveDeprecatedTransform3x3 = requesterEffect->getInputCanReceiveTransform(inputNbInRequester);
+    bool requesterCanReceiveDistortionFunc = requesterEffect->getInputCanReceiveDistortion(inputNbInRequester);
 
     // If the caller can apply a distortion, then check if this effect has a distortion
-    if (!canReturnDeprecatedTransform3x3 && !canReturnDistortionFunc) {
+    // otherwise, don't bother
+    if (!requesterCanReceiveDeprecatedTransform3x3 && !requesterCanReceiveDistortionFunc) {
         return eActionStatusOK;
     }
-    assert((canReturnDeprecatedTransform3x3 && !canReturnDistortionFunc) || (!canReturnDeprecatedTransform3x3 && canReturnDistortionFunc));
+    assert((requesterCanReceiveDeprecatedTransform3x3 && !requesterCanReceiveDistortionFunc) || (!requesterCanReceiveDeprecatedTransform3x3 && requesterCanReceiveDistortionFunc));
 
-    DistortionFunction2DPtr disto = requestData->getDistortionResults();
-    if (!disto) {
-        ActionRetCodeEnum stat = _publicInterface->getDistortion_public(requestData->getTime(), renderScale, requestData->getView(), &disto);
-        if (isFailureRetCode(stat)) {
-            return stat;
+    // Call the getDistortion action
+    DistortionFunction2DPtr disto;
+    {
+        GetDistortionResultsPtr results = requestData->getDistortionResults();
+        if (!results) {
+            ActionRetCodeEnum stat = _publicInterface->getDistortion_public(requestData->getTime(), renderScale, requestData->getView(), &results);
+            if (isFailureRetCode(stat)) {
+                return stat;
+            }
+            if (results) {
+                disto = results->getResults();
+                requestData->setDistortionResults(results);
+            }
         }
-        requestData->setDistortionResults(disto);
     }
+    
+    // No distortion or invalid input
     if (!disto || disto->inputNbToDistort == -1) {
         return eActionStatusOK;
     }
-    {
-        // Copy the original distortion held in the results in case we convert the transformation matrix from canonical to pixels.
-        DistortionFunction2DPtr copy(new DistortionFunction2D(*disto));
-        disto = copy;
-    }
-
 
     // We support backward compatibility for plug-ins that only support Transforms: if a function is returned we do not concatenate.
-    if (disto->func && !canReturnDistortionFunc) {
+    if (disto->func && !requesterCanReceiveDistortionFunc) {
         return eActionStatusOK;
     }
 
-    assert((disto->func && canReturnDistortionFunc) || disto->transformMatrix);
-
-    if (disto->transformMatrix) {
-
-        // The caller expects a transformation matrix in pixel coordinates
-        double par = _publicInterface->getAspectRatio(-1);
-        Transform::Matrix3x3 canonicalToPixel = Transform::matCanonicalToPixel(par, renderScale.x, renderScale.y, false);
-        Transform::Matrix3x3 pixelToCanonical = Transform::matPixelToCanonical(par, renderScale.x, renderScale.y, false);
-        *disto->transformMatrix = Transform::matMul(Transform::matMul(canonicalToPixel, *disto->transformMatrix), pixelToCanonical);
-    }
+    assert((disto->func && requesterCanReceiveDistortionFunc) || disto->transformMatrix);
 
     // Recurse on input given by plug-in
     EffectInstancePtr distoInput = _publicInterface->getInput(disto->inputNbToDistort);
@@ -314,22 +309,27 @@ EffectInstance::Implementation::handleConcatenation(const RequestPassSharedDataP
     FrameViewRequestPtr inputRequest;
     distoInput->requestRender(requestData->getTime(), requestData->getView(), requestData->getProxyScale(), requestData->getMipMapLevel(), requestData->getPlaneDesc(), canonicalRoi, disto->inputNbToDistort, requestData, requestPassSharedData, &inputRequest);
 
-    // Create a distorsion functions stack
+    // Create a distorsion stack that will be applied by the effect downstream
     Distortion2DStackPtr distoStack(new Distortion2DStack);
 
-    // Append the list of upstream distorsions
+    // Append the list of upstream distorsions (if any)
     Distortion2DStackPtr upstreamDistoStack = inputRequest->getDistorsionStack();
     if (upstreamDistoStack) {
         distoStack->pushDistortionStack(*upstreamDistoStack);
     }
 
-    // If this the caller effect also supports transforms, append this effect transformation, otherwise no need to append it, this effect will render anyway.
-    bool requesterCanTransform = requester->getRenderClone()->getCurrentCanTransform();
-    bool requesterCanDistort = requester->getRenderClone()->getCurrentCanDistort();
-
-    if (requesterCanDistort || requesterCanTransform) {
-        distoStack->pushDistortion(disto);
+    if (disto->transformMatrix) {
+        
+        // The caller expects a transformation matrix in pixel coordinates
+        double par = _publicInterface->getAspectRatio(-1);
+        Transform::Matrix3x3 canonicalToPixel = Transform::matCanonicalToPixel(par, renderScale.x, renderScale.y, false);
+        Transform::Matrix3x3 pixelToCanonical = Transform::matPixelToCanonical(par, renderScale.x, renderScale.y, false);
+        Transform::Matrix3x3 transform = Transform::matMul(Transform::matMul(canonicalToPixel, *disto->transformMatrix), pixelToCanonical);
+        distoStack->pushTransformMatrix(transform);
+    } else {
+        distoStack->pushDistortionFunction(disto);
     }
+
 
     // Set the stack on the frame view request
     requestData->setDistorsionStack(distoStack);

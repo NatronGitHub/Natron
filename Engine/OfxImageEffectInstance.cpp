@@ -1018,14 +1018,28 @@ OfxImageEffectInstance::abort()
 OFX::Host::Memory::Instance*
 OfxImageEffectInstance::newMemoryInstance(size_t nBytes)
 {
-    OfxEffectInstancePtr effect = getOfxEffectInstance();
-    OfxMemory* ret = new OfxMemory(effect);
-    bool allocated = ret->alloc(nBytes);
 
-    if ( ( (nBytes != 0) && !ret->getPtr() ) || !allocated ) {
+    OfxEffectInstancePtr curEffect = appPTR->getOFXCurrentEffect_TLS();
+    OfxMemory* ret = 0;
+    bool ok = true;
+    try {
+        if (!curEffect) {
+            ret = new OfxMemory(curEffect);
+            ok = ret->alloc(nBytes);
+        } else {
+            ret = dynamic_cast<OfxMemory*>(curEffect->createMemoryChunk(nBytes).get());
+        }
+    } catch (const std::bad_alloc&) {
+        ok = false;
+    }
+    if (nBytes != 0 && (!ret || !ret->getPtr())) {
+        ok = false;
+    }
+
+    if (!ok) {
         Dialogs::errorDialog( tr("Out of memory").toStdString(),
                               tr("%1 failed to allocate memory (%2).")
-                              .arg( QString::fromUtf8( getOfxEffectInstance()->getNode()->getLabel_mt_safe().c_str() ) )
+                              .arg( QString::fromUtf8( curEffect->getNode()->getLabel_mt_safe().c_str() ) )
                               .arg( printAsRAM(nBytes) ).toStdString() );
     }
 

@@ -63,6 +63,12 @@ CacheEntryBase::getCache() const
     return _imp->cache.lock();
 }
 
+CacheEntryLockerPtr
+CacheEntryBase::getFromCache() const
+{
+    CachePtr cache = getCache();
+    return cache->get(boost::const_pointer_cast<CacheEntryBase>(shared_from_this()));
+}
 
 CacheEntryKeyBasePtr
 CacheEntryBase::getKey() const

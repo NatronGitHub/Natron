@@ -85,6 +85,11 @@ public:
     CachePtr getCache() const;
 
     /**
+     * @brief Same as getCache()->get()
+     **/
+    CacheEntryLockerPtr getFromCache() const;
+
+    /**
      * @brief Get the key object for this entry.
      **/
     CacheEntryKeyBasePtr getKey() const;

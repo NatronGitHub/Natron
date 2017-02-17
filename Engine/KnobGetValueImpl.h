@@ -92,7 +92,7 @@ Knob<T>::getKnobExpresionResults(TimeValue time, ViewIdx view, DimIdx dimension)
     KnobExpressionKeyPtr cacheKey(new KnobExpressionKey(effectHash, dimension, getName()));
     KnobExpressionResultPtr cachedResult = KnobExpressionResult::create(cacheKey);
 
-    CacheEntryLockerPtr locker = appPTR->getCache()->get(cachedResult);
+    CacheEntryLockerPtr locker = cachedResult->getFromCache();
 
     CacheEntryLocker::CacheEntryStatusEnum cacheStatus = locker->getStatus();
     while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {

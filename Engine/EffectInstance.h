@@ -702,7 +702,7 @@ public:
     ActionRetCodeEnum getDistortion_public(TimeValue time,
                                     const RenderScale & renderScale,
                                     ViewIdx view,
-                                    DistortionFunction2DPtr* distortion) WARN_UNUSED_RETURN;
+                                    GetDistortionResultsPtr* results) WARN_UNUSED_RETURN;
 
 
 
@@ -1592,14 +1592,6 @@ public:
      **/
     void setOutputFilesForWriter(const std::string & pattern);
 
-    /**
-     * @brief Constructs a new memory holder, with nBytes allocated. If the allocation failed, bad_alloc is thrown
-     **/
-    PluginMemoryPtr newMemoryInstance(size_t nBytes) WARN_UNUSED_RETURN;
-
-
-
-
 
     /**
      * @brief Callback called to fetch data from the plug-in before creating an instance.
@@ -1724,6 +1716,16 @@ public:
      * @param refreshMetadatas If true the meta-datas on this node and all nodes downstream recursively will be re-computed.
      **/
     virtual void evaluate(bool isSignificant, bool refreshMetadatas) OVERRIDE;
+
+    PluginMemoryPtr createMemoryChunk(std::size_t nBytes);
+
+protected:
+
+    virtual PluginMemoryPtr createPluginMemory();
+
+public:
+
+    void releasePluginMemory(const PluginMemory* mem);
 
 
     bool ifInfiniteclipRectToProjectDefault(RectD* rod) const;
