@@ -280,7 +280,7 @@ bool timed_lock_impl(Mutex* m, std::size_t timeoutMilliseconds, double frequency
 /**
  * @brief A base class for all scoped timed locks
  **/
-template <class Mutex, void(Mutex::*lock_func)(), bool(Mutex::*try_lock_func) ()>
+template <class Mutex, void(Mutex::*lock_func)(), bool(Mutex::*try_lock_func) (), void(Mutex::*unlock_func)()>
 class scoped_timed_lock_impl
 {
 public:
@@ -301,7 +301,7 @@ public:
     // Unlocks the mutex if locked
     ~scoped_timed_lock_impl()
     {
-        try{  if(m_locked && mp_mutex)   mp_mutex->unlock();  }
+        try{  if(m_locked && mp_mutex)   (mp_mutex->*unlock_func)();  }
         catch(...){}
     }
 
@@ -364,11 +364,11 @@ protected:
  * @brief Base class for all locks that can be shared (read lock)
  **/
 template <class Mutex>
-class scoped_timed_sharable_lock : public scoped_timed_lock_impl<Mutex, &Mutex::lock_sharable, &Mutex::try_lock_sharable>
+class scoped_timed_sharable_lock : public scoped_timed_lock_impl<Mutex, &Mutex::lock_sharable, &Mutex::try_lock_sharable, &Mutex::unlock_sharable>
 {
 public:
     scoped_timed_sharable_lock(Mutex& m, double frequency)
-    : scoped_timed_lock_impl<Mutex, &Mutex::lock_sharable, &Mutex::try_lock_sharable>(m, frequency)
+    : scoped_timed_lock_impl<Mutex, &Mutex::lock_sharable, &Mutex::try_lock_sharable, &Mutex::unlock_sharable>(m, frequency)
     {
 
     }
@@ -380,7 +380,7 @@ typedef scoped_timed_sharable_lock<bip::interprocess_sharable_mutex> Sharable_Re
 /**
  * @brief Base class for all locks that can be upgraded (read lock)
  **/
-class UpgradableLock : public scoped_timed_lock_impl<bip::interprocess_upgradable_mutex, &bip::interprocess_upgradable_mutex::lock_upgradable, &bip::interprocess_upgradable_mutex::try_lock_upgradable>
+class UpgradableLock : public scoped_timed_lock_impl<bip::interprocess_upgradable_mutex, &bip::interprocess_upgradable_mutex::lock_upgradable, &bip::interprocess_upgradable_mutex::try_lock_upgradable, &bip::interprocess_upgradable_mutex::unlock_upgradable>
 {
 
     BOOST_MOVABLE_BUT_NOT_COPYABLE(UpgradableLock)
@@ -388,7 +388,7 @@ class UpgradableLock : public scoped_timed_lock_impl<bip::interprocess_upgradabl
 
 public:
     UpgradableLock(bip::interprocess_upgradable_mutex& m, double frequency)
-    : scoped_timed_lock_impl<bip::interprocess_upgradable_mutex, &bip::interprocess_upgradable_mutex::lock_upgradable, &bip::interprocess_upgradable_mutex::try_lock_upgradable>(m, frequency)
+    : scoped_timed_lock_impl<bip::interprocess_upgradable_mutex, &bip::interprocess_upgradable_mutex::lock_upgradable, &bip::interprocess_upgradable_mutex::try_lock_upgradable, &bip::interprocess_upgradable_mutex::unlock_upgradable>(m, frequency)
     {
 
     }
@@ -399,19 +399,19 @@ public:
  * @brief Base class for all locks that are exclusive
  **/
 template <class Mutex>
-class scoped_timed_lock : public scoped_timed_lock_impl<Mutex, &Mutex::lock, &Mutex::try_lock>
+class scoped_timed_lock : public scoped_timed_lock_impl<Mutex, &Mutex::lock, &Mutex::try_lock, &Mutex::unlock>
 {
 
 
 public:
 
     scoped_timed_lock()
-    : scoped_timed_lock_impl<Mutex, &Mutex::lock, &Mutex::try_lock>()
+    : scoped_timed_lock_impl<Mutex, &Mutex::lock, &Mutex::try_lock, &Mutex::unlock>()
     {
     }
 
     scoped_timed_lock(Mutex& m, double frequency)
-    : scoped_timed_lock_impl<Mutex, &Mutex::lock, &Mutex::try_lock>(m, frequency)
+    : scoped_timed_lock_impl<Mutex, &Mutex::lock, &Mutex::try_lock, &Mutex::unlock>(m, frequency)
     {
     }
 };
@@ -1109,6 +1109,9 @@ class BucketStateHandler_RAII
     CachePrivate* _imp;
     bool _valid;
     int _bucket_i;
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+    boost::scoped_ptr<MutexLock> locker;
+#endif
 public:
 
     BucketStateHandler_RAII(CachePrivate* imp, int bucket_i, boost::scoped_ptr<SharedMemoryProcessLocalReadLocker>& shmAccess)
@@ -1120,9 +1123,9 @@ public:
 #ifndef NATRON_CACHE_INTERPROCESS_ROBUST
         _imp->ipc->bucketsData[bucket_i].bucketStateMutex.lock();
 #else
-        if (!_imp->ipc->bucketsData[bucket_i].bucketStateMutex.timed_lock()) {
+        locker.reset(new MutexLock(_imp->ipc->bucketsData[bucket_i].bucketStateMutex, imp->timerFrequency));
+        if (!locker->timed_lock()) {
             _imp->recoverFromInconsistentState(bucket_i, shmAccess);
-            _imp->setBucketState(bucket_i, eBucketStateInconsistent);
             _valid = false;
             return;
         }
@@ -1664,7 +1667,7 @@ CacheBucket::readFromSharedMemoryEntryImpl(MemorySegmentEntryHeader* cacheEntry,
             tileWriteLock.reset(new Upgradable_WriteLock(c->_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex));
 #else
             tileWriteLock.reset(new Upgradable_WriteLock(c->_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex, c->_imp->timerFrequency));
-            if (!tileWriteLock->timed_lock(timeout)) {
+            if (!tileWriteLock->timed_lock()) {
                 return eShmEntryReadRetCodeLockTimeout;
             }
 #endif
