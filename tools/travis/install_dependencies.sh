@@ -130,7 +130,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     # config.pri
     # Ubuntu 12.04 precise doesn't have a pkg-config file for expat (expat.pc)
     echo 'boost: LIBS += -lboost_thread -lboost_system' > config.pri
-    echo 'boost-serialization-lib: -lboost_serialization' > config.pri
+    echo 'boost-serialization-lib: LIBS += -lboost_serialization' > config.pri
     echo 'expat: LIBS += -lexpat' >> config.pri
     echo 'expat: PKGCONFIG -= expat' >> config.pri
     # pyside and shiboken for python3 cannot be configured with pkg-config on Ubuntu 12.04LTS Precise
