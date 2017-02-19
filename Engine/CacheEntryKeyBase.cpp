@@ -213,17 +213,19 @@ ImageTileKey::getUniqueID() const
 void
 ImageTileKey::appendToHash(Hash64* hash) const
 {
-    hash->append(_imp->data.nodeTimeViewVariantHash);
-    hash->append(_imp->data.layerChannelID);
-    hash->append(_imp->data.proxyScale.x);
-    hash->append(_imp->data.proxyScale.y);
-    hash->append(_imp->data.mipMapLevel);
-    hash->append(_imp->data.draftMode);
-    hash->append((int)_imp->data.bitdepth);
-    hash->append(_imp->data.tileBounds.x1);
-    hash->append(_imp->data.tileBounds.x2);
-    hash->append(_imp->data.tileBounds.y1);
-    hash->append(_imp->data.tileBounds.y2);
+    std::vector<U64> elements(11);
+    elements[0] = Hash64::toU64(_imp->data.nodeTimeViewVariantHash);
+    elements[1] = Hash64::toU64(_imp->data.layerChannelID);
+    elements[2] = Hash64::toU64(_imp->data.proxyScale.x);
+    elements[3] = Hash64::toU64(_imp->data.proxyScale.y);
+    elements[4] = Hash64::toU64(_imp->data.mipMapLevel);
+    elements[5] = Hash64::toU64(_imp->data.draftMode);
+    elements[6] = Hash64::toU64((int)_imp->data.bitdepth);
+    elements[7] = Hash64::toU64(_imp->data.tileBounds.x1);
+    elements[8] = Hash64::toU64(_imp->data.tileBounds.x2);
+    elements[9] = Hash64::toU64(_imp->data.tileBounds.y1);
+    elements[10] = Hash64::toU64(_imp->data.tileBounds.y2);
+    hash->insert(elements);
 }
 
 const RectI&

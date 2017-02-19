@@ -66,10 +66,10 @@ Hash64::reset()
 void
 Hash64::appendQString(const QString & str, Hash64* hash)
 {
-    int curSize = hash->node_values.size();
+    std::size_t curSize = hash->node_values.size();
     hash->node_values.resize(curSize + str.size());
 
-    int c = curSize;
+    int c = (int)curSize;
     for (QString::const_iterator it = str.begin(); it != str.end(); ++it, ++c) {
         hash->node_values[c] = toU64<unsigned short>(it->unicode());
     }
@@ -80,7 +80,7 @@ Hash64::appendCurve(const CurvePtr& curve, Hash64* hash)
 {
     KeyFrameSet keys = curve->getKeyFrames_mt_safe();
 
-    int curSize = hash->node_values.size();
+    std::size_t curSize = hash->node_values.size();
     hash->node_values.resize(curSize + 4 * keys.size());
 
 

@@ -44,6 +44,7 @@ GCC_DIAG_OFF(unused-parameter)
 #include <boost/unordered_set.hpp>
 #include <boost/format.hpp>
 #include <boost/interprocess/containers/vector.hpp>
+#include <boost/interprocess/containers/map.hpp>
 #include <boost/interprocess/containers/flat_map.hpp>
 #include <boost/interprocess/sync/interprocess_mutex.hpp> // IPC regular mutex
 #include <boost/interprocess/sync/scoped_lock.hpp> // IPC  scoped lock a regular mutex
@@ -502,10 +503,10 @@ struct LRUListNode
     }
 };
 
-typedef std::pair<U64, bip::offset_ptr<MemorySegmentEntryHeader> > EntriesMapValueType;
+typedef std::pair<const U64, bip::offset_ptr<MemorySegmentEntryHeader> > EntriesMapValueType;
 typedef bip::allocator<EntriesMapValueType, ExternalSegmentType::segment_manager> EntriesMapValueType_Allocator_ExternalSegment;
 
-typedef bip::flat_map<U64, bip::offset_ptr<MemorySegmentEntryHeader>, std::less<U64>, EntriesMapValueType_Allocator_ExternalSegment> EntriesMap_ExternalSegment;
+typedef bip::map<U64, bip::offset_ptr<MemorySegmentEntryHeader>, std::less<U64>, EntriesMapValueType_Allocator_ExternalSegment> EntriesMap_ExternalSegment;
 
 
 inline

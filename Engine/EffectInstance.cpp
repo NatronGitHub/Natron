@@ -1146,7 +1146,7 @@ void
 EffectInstance::releasePluginMemory(const PluginMemory* mem)
 {
     QMutexLocker k(&_imp->pluginMemoryChunksMutex);
-    for (std::list<PluginMemoryPtr>::const_iterator it = _imp->pluginMemoryChunks.begin(); it != _imp->pluginMemoryChunks.end(); ++it) {
+    for (std::list<PluginMemoryPtr>::iterator it = _imp->pluginMemoryChunks.begin(); it != _imp->pluginMemoryChunks.end(); ++it) {
         if (it->get() == mem) {
             _imp->pluginMemoryChunks.erase(it);
             return;

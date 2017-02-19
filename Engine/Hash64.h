@@ -90,6 +90,19 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
         return ac.raw;
     }
 
+    void insert(const std::vector<U64>& elements)
+    {
+        std::size_t curSize = node_values.size();
+        node_values.resize(curSize + elements.size());
+
+        int c = curSize;
+        for (std::vector<U64>::const_iterator it = elements.begin(); it != elements.end(); ++it, ++c) {
+            node_values[c] = *it;
+        }
+        hashValid = false;
+
+    }
+
     template<typename T>
     void append(T value)
     {
