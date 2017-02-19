@@ -103,7 +103,7 @@ public:
     /**
      * @brief Get the hash key for this entry
      **/
-    U64 getHashKey() const;
+    U64 getHashKey(bool forceComputation = false) const;
 
     /**
      * @brief This should return exactly the size in bytes of memory taken in the 
@@ -135,7 +135,7 @@ public:
      * The function writeNamedSharedObject can be used to simplify the serialization of objects to the
      * memory segment.
      **/
-    virtual void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const;
+    virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const;
 
     /**
      * @brief Reads this key from shared process memory segment.
@@ -146,7 +146,10 @@ public:
      * The function readNamedSharedObject can be used to simplify the serialization of objects from the
      * memory segment.
      **/
-    virtual void fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, const void* tileDataPtr);
+    virtual void fromMemorySegment(ExternalSegmentType* segment,
+                                   ExternalSegmentTypeHandleList::const_iterator start,
+                                   ExternalSegmentTypeHandleList::const_iterator end,
+                                   const void* tileDataPtr);
 
 private:
 

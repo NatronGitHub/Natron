@@ -79,6 +79,25 @@ inline ExternalSegmentType::handle_t writeNamedSharedObject(const T& object, con
 }
 
 /**
+ * @brief Function to serialize to the given memory segment the given object.
+ * The object will be anonymous and its handle in the memory segment will be returned.
+ * The object must not be a container (so it should be a pod or a struct encapsulating only pod's).
+ * The only supported container is std::string
+ **/
+template <class T>
+inline ExternalSegmentType::handle_t writeAnonymousSharedObject(const T& object,  ExternalSegmentType* segment)
+{
+    T* sharedMemObject = segment->construct<T>(boost::interprocess::anonymous_instance)();
+    if (sharedMemObject) {
+        *sharedMemObject = object;
+    } else {
+        throw std::bad_alloc();
+    }
+    return segment->get_handle_from_address(sharedMemObject);
+}
+
+
+/**
  * @brief Template specialization for std::string
  **/
 template <>
@@ -96,6 +115,21 @@ inline ExternalSegmentType::handle_t writeNamedSharedObject(const std::string& o
     return segment->get_handle_from_address(sharedMemObject);
 }
 
+template <>
+inline ExternalSegmentType::handle_t writeAnonymousSharedObject(const std::string& object,  ExternalSegmentType* segment)
+{
+
+    // Allocate a char array containing the string
+    CharAllocator_ExternalSegment allocator(segment->get_segment_manager());
+    String_ExternalSegment* sharedMemObject = segment->construct<String_ExternalSegment>(boost::interprocess::anonymous_instance)(allocator);
+    if (sharedMemObject) {
+        sharedMemObject->append(object.c_str());
+    } else {
+        throw std::bad_alloc();
+    }
+    return segment->get_handle_from_address(sharedMemObject);
+}
+
 /**
  * @brief Same as writeNamedSharedObject but for arrays
  **/
@@ -103,6 +137,17 @@ template <class T>
 inline ExternalSegmentType::handle_t writeNamedSharedObjectN(T *array, int count, const std::string& objectName,  ExternalSegmentType* segment)
 {
     T* sharedMemObject = segment->construct<T>(objectName.c_str())[count]();
+    if (!sharedMemObject) {
+        throw std::bad_alloc();
+    }
+    memcpy(sharedMemObject, array, count * sizeof(T));
+    return segment->get_handle_from_address(sharedMemObject);
+}
+
+template <class T>
+inline ExternalSegmentType::handle_t writeAnonymousSharedObjectN(T *array, int count,  ExternalSegmentType* segment)
+{
+    T* sharedMemObject = segment->construct<T>(boost::interprocess::anonymous_instance)[count]();
     if (!sharedMemObject) {
         throw std::bad_alloc();
     }
@@ -129,71 +174,21 @@ inline ExternalSegmentType::handle_t writeNamedSharedObjectN(std::string *array,
     return segment->get_handle_from_address(sharedMemObject);
 }
 
-
-/**
- * @brief Function to serialize to the given memory segment the given object.
- * The object will be anonymous and its handle in the memory segment will be returned.
- * The object must not be a container (so it should be a pod or a struct encapsulating only pod's).
- * The only supported container is std::string
- **/
-template <class T>
-inline ExternalSegmentType::handle_t writeSharedObject(const T& object, ExternalSegmentType* segment)
-{
-    T* sharedMemObject = (T*)segment->allocate(sizeof(T));
-    if (sharedMemObject) {
-        *sharedMemObject = object;
-        return segment->get_handle_from_address(sharedMemObject);
-    } else {
-        throw std::bad_alloc();
-    }
-}
-
 template <>
-inline ExternalSegmentType::handle_t writeSharedObject(const std::string& object, ExternalSegmentType* segment)
+inline ExternalSegmentType::handle_t writeAnonymousSharedObjectN(std::string *array, int count,  ExternalSegmentType* segment)
 {
     // Allocate a char array containing the string
     CharAllocator_ExternalSegment allocator(segment->get_segment_manager());
 
-    String_ExternalSegment* sharedMemObject = (String_ExternalSegment*)segment->allocate(sizeof(String_ExternalSegment));
-    if (sharedMemObject) {
-        sharedMemObject->append(object.c_str());
-    } else {
+    String_ExternalSegment* sharedMemObject = segment->construct<String_ExternalSegment>(boost::interprocess::anonymous_instance)[count](allocator);
+    if (!sharedMemObject) {
         throw std::bad_alloc();
+    }
+    for (int i = 0; i < count; ++i) {
+        sharedMemObject[i].append(array[i].c_str());
     }
     return segment->get_handle_from_address(sharedMemObject);
 }
-
-template <class T>
-inline ExternalSegmentType::handle_t writeSharedObjectN(T *array, int count, ExternalSegmentType* segment)
-{
-    T* sharedMemObject = (T*)segment->allocate(sizeof(T) * count);
-    if (sharedMemObject) {
-        for (int i = 0; i < count; ++i) {
-            sharedMemObject[i] = array[i];
-        }
-        return segment->get_handle_from_address(sharedMemObject);
-    } else {
-        throw std::bad_alloc();
-    }
-}
-
-template <>
-inline ExternalSegmentType::handle_t writeSharedObjectN(std::string *array, int count, ExternalSegmentType* segment)
-{
-    // Allocate a char array containing the string
-    CharAllocator_ExternalSegment allocator(segment->get_segment_manager());
-
-    String_ExternalSegment* sharedMemObject = (String_ExternalSegment*)segment->allocate(sizeof(String_ExternalSegment) * count);
-    if (sharedMemObject) {
-        for (int i = 0; i < count; ++i) {
-            sharedMemObject[i].append(array[i].c_str());
-        }
-        return segment->get_handle_from_address(sharedMemObject);
-    } else {
-        throw std::bad_alloc();
-    }
-}
-
 
 /**
  * @brief Function to read from given memory segment the given object.
@@ -211,6 +206,12 @@ inline void readNamedSharedObject(const std::string& objectName, ExternalSegment
     }
 }
 
+template <class T>
+inline void readAnonymousSharedObject(ExternalSegmentType::handle_t handle, ExternalSegmentType* segment, T* object)
+{
+    *object = *(T*)segment->get_address_from_handle(handle);
+}
+
 
 /**
  * @brief Template specialization for std::string
@@ -226,37 +227,13 @@ inline void readNamedSharedObject(const std::string& objectName, ExternalSegment
     }
 }
 
-/**
- * @brief Same as readNamedSharedObject but for arrays
- **/
-template <class T>
-inline void readNamedSharedObjectN(const std::string& objectName, ExternalSegmentType* segment, int count, T* array)
+template <>
+inline void readAnonymousSharedObject(ExternalSegmentType::handle_t handle, ExternalSegmentType* segment, std::string* object)
 {
-    std::pair<T*, ExternalSegmentType::size_type> found = segment->find<T>(objectName.c_str());
-    if (!found.first) {
-        throw std::bad_alloc();
-    } else {
-        for (int i = 0; i < count; ++i) {
-            array[i] = found.first[i];
-        }
-    }
+    String_ExternalSegment* found = (String_ExternalSegment*)segment->get_address_from_handle(handle);
+    *object = std::string(found->c_str());
 }
 
-/**
- * @brief Template specialization for std::string
- **/
-template <>
-inline void readNamedSharedObjectN(const std::string& objectName, ExternalSegmentType* segment, int count, std::string* array)
-{
-    std::pair<String_ExternalSegment*, ExternalSegmentType::size_type> found = segment->find<String_ExternalSegment>(objectName.c_str());
-    if (!found.first) {
-        throw std::bad_alloc();
-    } else {
-        for (int i = 0; i < count; ++i) {
-            array[i].append(found.first[i].c_str());
-        }
-    }
-}
 
 
 NATRON_NAMESPACE_EXIT;

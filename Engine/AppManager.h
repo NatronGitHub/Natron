@@ -186,6 +186,11 @@ public:
 
     void deleteCacheEntriesInSeparateThread(const std::list<ImageStorageBasePtr> & entriesToDelete);
 
+    /**
+     * @brief Notifies the StorageDeleterThread that it should check cache memory. If full, it will evict
+     * (the least recent) entries from the cache until it falls under the max memory amount.
+     **/
+    void checkCachesMemory();
 
     SettingsPtr getCurrentSettings() const WARN_UNUSED_RETURN;
     const KnobFactory & getKnobFactory() const WARN_UNUSED_RETURN;

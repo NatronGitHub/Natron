@@ -25,6 +25,8 @@
 
 #include "ImagePrivate.h"
 
+#include "Engine/Hash64.h"
+#include "Engine/Node.h"
 #include <QDebug>
 #include <QThread>
 
@@ -80,22 +82,29 @@ ImagePrivate::initTileAndFetchFromCache(const TileCoord& coord, Image::Tile &til
         Image::MonoChannelTile& thisChannelTile = tile.perChannelTile[c];
         thisChannelTile.channelIndex = channelIndices[c];
 
-        std::string channelName;
-        switch (bufferFormat) {
-            case eImageBufferLayoutMonoChannelTiled: {
-                const std::vector<std::string>& compNames = layer.getChannels();
-                assert(thisChannelTile.channelIndex >= 0 && thisChannelTile.channelIndex < (int)compNames.size());
-                channelName = planeID + "." + compNames[thisChannelTile.channelIndex];
-            }   break;
-            case eImageBufferLayoutRGBACoplanarFullRect:
-            case eImageBufferLayoutRGBAPackedFullRect:
-                channelName = planeID;
-                break;
+        // Make a hash value for the channel
+        U64 channelID;
+        {
+            Hash64 channelHash;
+            switch (bufferFormat) {
+                case eImageBufferLayoutMonoChannelTiled: {
+                    const std::vector<std::string>& compNames = layer.getChannels();
+                    assert(thisChannelTile.channelIndex >= 0 && thisChannelTile.channelIndex < (int)compNames.size());
+                    Hash64::appendQString(QString::fromUtf8(planeID.c_str()), &channelHash);
+                    channelHash.append(thisChannelTile.channelIndex);
+                }   break;
+                case eImageBufferLayoutRGBACoplanarFullRect:
+                case eImageBufferLayoutRGBAPackedFullRect:
+                    Hash64::appendQString(QString::fromUtf8(planeID.c_str()), &channelHash);
+                    break;
+            }
+            channelHash.computeHash();
+            channelID = channelHash.value();
         }
-
-
-
-
+        
+        
+        
+        
 
         boost::shared_ptr<AllocateMemoryArgs> allocArgs;
 
@@ -151,16 +160,23 @@ ImagePrivate::initTileAndFetchFromCache(const TileCoord& coord, Image::Tile &til
             }
         } // allocArgs
 
+        EffectInstancePtr effect = renderClone.lock();
+        std::string pluginID;
+        if (effect) {
+            pluginID = effect->getNode()->getPluginID();
+        }
+
         // This is the key for the tile at the requested draft/mipmap level
         ImageTileKeyPtr requestedScaleKey;
         if (cachePolicy != eCacheAccessModeNone) {
             requestedScaleKey.reset(new ImageTileKey(nodeHash,
-                                                     channelName,
+                                                     channelID,
                                                      proxyScale,
                                                      mipMapLevel,
                                                      isDraftImage,
                                                      bitdepth,
-                                                     tile.tileBounds));
+                                                     tile.tileBounds,
+                                                     pluginID));
             cachedBuffer->setKey(requestedScaleKey);
         }
 
@@ -205,12 +221,13 @@ ImagePrivate::initTileAndFetchFromCache(const TileCoord& coord, Image::Tile &til
                     const bool useDraft = (const bool)draft_i;
 
                     ImageTileKeyPtr keyToReadCache(new ImageTileKey(nodeHash,
-                                                                    channelName,
+                                                                    channelID,
                                                                     proxyScale,
                                                                     lookupLevel,
                                                                     useDraft,
                                                                     bitdepth,
-                                                                    tile.tileBounds));
+                                                                    tile.tileBounds,
+                                                                    pluginID));
 
                     assert(cachedBuffer);
                     cachedBuffer->setKey(keyToReadCache);

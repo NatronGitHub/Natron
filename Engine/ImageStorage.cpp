@@ -473,18 +473,21 @@ CacheImageTileStorage::~CacheImageTileStorage()
 }
 
 void
-CacheImageTileStorage::toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
+CacheImageTileStorage::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
 {
     assert(isAllocated());
     assert(tileDataPtr && _imp->localBuffer);
     memcpy(tileDataPtr, _imp->localBuffer->getData(), NATRON_TILE_SIZE_BYTES);
-    CacheEntryBase::toMemorySegment(segment, objectNamesPrefix, objectPointers, tileDataPtr);
+    CacheEntryBase::toMemorySegment(segment, objectPointers, tileDataPtr);
 }
 
 void
-CacheImageTileStorage::fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, const void* tileDataPtr)
+CacheImageTileStorage::fromMemorySegment(ExternalSegmentType* segment,
+                                         ExternalSegmentTypeHandleList::const_iterator start,
+                                         ExternalSegmentTypeHandleList::const_iterator end,
+                                         const void* tileDataPtr)
 {
-    CacheEntryBase::fromMemorySegment(segment, objectNamesPrefix, tileDataPtr);
+    CacheEntryBase::fromMemorySegment(segment, start, end, tileDataPtr);
 
     // The memory might not have been pre-allocated, but at least AllocateMemoryArgs should have been set if the
     // delayAllocation flag was set in Image::InitStorageArgs

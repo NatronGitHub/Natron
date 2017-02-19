@@ -3148,6 +3148,9 @@ getColorAtSinglePixel(const Image::CPUTileData& image,
         return false;
     }
 
+    if (!image.ptrs[0]) {
+        return false;
+    }
 
     int pixelStride;
     const PIX* pix[4];

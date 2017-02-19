@@ -447,18 +447,26 @@ public:
         return kCacheKeyUniqueIDExpressionResult;
     }
 
-    virtual void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers) const OVERRIDE FINAL
+    virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const OVERRIDE FINAL
     {
-        objectPointers->push_back(writeNamedSharedObject(_data, objectNamesPrefix + "KeyData", segment));
-        objectPointers->push_back(writeNamedSharedObject(_knobScriptName, objectNamesPrefix + "knob", segment));
-        CacheEntryKeyBase::toMemorySegment(segment, objectNamesPrefix, objectPointers);
+        objectPointers->push_back(writeAnonymousSharedObject(_data, segment));
+        objectPointers->push_back(writeAnonymousSharedObject(_knobScriptName,  segment));
+
     }
 
-    virtual void fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix) OVERRIDE FINAL
+    virtual void fromMemorySegment(ExternalSegmentType* segment,
+                                   ExternalSegmentTypeHandleList::const_iterator start,
+                                   ExternalSegmentTypeHandleList::const_iterator end) OVERRIDE FINAL
     {
-        readNamedSharedObject(objectNamesPrefix + "KeyData", segment, &_data);
-        readNamedSharedObject(objectNamesPrefix + "knob", segment, &_knobScriptName);
-        CacheEntryKeyBase::fromMemorySegment(segment, objectNamesPrefix);
+        if (start == end) {
+            throw std::bad_alloc();
+        }
+        readAnonymousSharedObject(*start, segment, &_data);
+        ++start;
+        if (start == end) {
+            throw std::bad_alloc();
+        }
+        readAnonymousSharedObject(*start, segment, &_knobScriptName);
     }
 
 private:
@@ -532,33 +540,44 @@ public:
         return 128;
     }
 
-    virtual void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const OVERRIDE FINAL
+    virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const OVERRIDE FINAL
     {
         if (!_stringResult.empty()) {
             KnobExpressionResultTypeEnum type = eKnobExpressionResultTypeString;
-            objectPointers->push_back(writeNamedSharedObject((int)type, objectNamesPrefix + "type", segment));
-            objectPointers->push_back(writeNamedSharedObject(_stringResult, objectNamesPrefix + "value", segment));
+            objectPointers->push_back(writeAnonymousSharedObject((int)type, segment));
+            objectPointers->push_back(writeAnonymousSharedObject(_stringResult, segment));
         } else {
             KnobExpressionResultTypeEnum type = eKnobExpressionResultTypePod;
-            objectPointers->push_back(writeNamedSharedObject((int)type, objectNamesPrefix + "type", segment));
-            objectPointers->push_back(writeNamedSharedObject(_valueResult, objectNamesPrefix + "value", segment));
+            objectPointers->push_back(writeAnonymousSharedObject((int)type, segment));
+            objectPointers->push_back(writeAnonymousSharedObject(_valueResult, segment));
         }
-        CacheEntryBase::toMemorySegment(segment, objectNamesPrefix, objectPointers, tileDataPtr);
+        CacheEntryBase::toMemorySegment(segment, objectPointers, tileDataPtr);
     }
 
-    virtual void fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, const void* tileDataPtr) OVERRIDE FINAL
+    virtual void fromMemorySegment(ExternalSegmentType* segment,
+                                   ExternalSegmentTypeHandleList::const_iterator start,
+                                   ExternalSegmentTypeHandleList::const_iterator end,
+                                   const void* tileDataPtr) OVERRIDE FINAL
     {
         int type_i;
-        readNamedSharedObject(objectNamesPrefix + "type", segment, &type_i);
+        if (start == end) {
+            throw std::bad_alloc();
+        }
+        readAnonymousSharedObject(*start, segment, &type_i);
+        ++start;
+        if (start == end) {
+            throw std::bad_alloc();
+        }
         switch ((KnobExpressionResultTypeEnum)type_i) {
             case eKnobExpressionResultTypePod: {
-                readNamedSharedObject(objectNamesPrefix + "value", segment, &_valueResult);
+                readAnonymousSharedObject(*start, segment, &_valueResult);
             }   break;
             case eKnobExpressionResultTypeString: {
-                readNamedSharedObject(objectNamesPrefix + "value", segment, &_stringResult);
+                readAnonymousSharedObject(*start, segment, &_stringResult);
             }   break;
         }
-        CacheEntryBase::fromMemorySegment(segment, objectNamesPrefix, tileDataPtr);
+        ++start;
+        CacheEntryBase::fromMemorySegment(segment, start, end, tileDataPtr);
     }
 
 private:

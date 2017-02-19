@@ -2492,6 +2492,12 @@ AppManager::deleteCacheEntriesInSeparateThread(const std::list<ImageStorageBaseP
 }
 
 void
+AppManager::checkCachesMemory()
+{
+    _imp->storageDeleteThread->checkCachesMemory();
+}
+
+void
 AppManager::printCacheMemoryStats() const
 {
     appPTR->clearErrorLog_mt_safe();

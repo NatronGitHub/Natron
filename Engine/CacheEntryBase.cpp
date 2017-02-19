@@ -83,12 +83,12 @@ CacheEntryBase::setKey(const CacheEntryKeyBasePtr& key)
 }
 
 U64
-CacheEntryBase::getHashKey() const
+CacheEntryBase::getHashKey(bool forceComputation) const
 {
     if (!_imp->key) {
         return 0;
     }
-    return _imp->key->getHash();
+    return _imp->key->getHash(forceComputation);
 }
 
 std::size_t
@@ -98,15 +98,20 @@ CacheEntryBase::getMetadataSize() const
 }
 
 void
-CacheEntryBase::toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* /*tileDataPtr*/) const
+CacheEntryBase::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers, void* /*tileDataPtr*/) const
 {
-    _imp->key->toMemorySegment(segment, objectNamesPrefix, objectPointers);
+    assert(objectPointers->get_allocator().get_segment_manager() == segment->get_segment_manager());
+    _imp->key->toMemorySegment(segment, objectPointers);
 }
 
 void
-CacheEntryBase::fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, const void* /*tileDataPtr*/)
+CacheEntryBase::fromMemorySegment(ExternalSegmentType* segment,
+                                  ExternalSegmentTypeHandleList::const_iterator start,
+                                  ExternalSegmentTypeHandleList::const_iterator end,
+                                  const void* /*tileDataPtr*/)
+
 {
-    _imp->key->fromMemorySegment(segment, objectNamesPrefix);
+    _imp->key->fromMemorySegment(segment, start, end);
 }
 
 

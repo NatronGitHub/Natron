@@ -81,16 +81,16 @@ public:
      * The function writeSharedObject can be used to simplify the serialization of objects to the
      * memory segment.
      **/
-    virtual void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers) const;
+    virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const;
 
     /**
      * @brief Reads this key from shared process memory segment.
-     * Object names in the segment are the ones written to in toMemorySegment
-     * Derived class should call the base class version AFTER their implementation.
-     * The function readSharedObject can be used to simplify the serialization of objects from the
-     * memory segment.
+     * Objects to be deserialized are given from the start iterator to the end.
+     * They are to be read in reverse order of what was written to in toMemorySegment.
      **/
-    virtual void fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix);
+    virtual void fromMemorySegment(ExternalSegmentType* segment,
+                                   ExternalSegmentTypeHandleList::const_iterator start,
+                                   ExternalSegmentTypeHandleList::const_iterator end);
 
     /**
      * @brief This should return an approximate size in bytes of memory taken in the
@@ -105,7 +105,7 @@ public:
     /**
      * @brief Get the hash for this key.
      **/
-    U64 getHash() const;
+    U64 getHash(bool forceComputation = false) const;
 
     static std::string hashToString(U64 hash);
 
@@ -149,18 +149,17 @@ public:
     ImageTileKey();
 
     ImageTileKey(U64 nodeTimeViewVariantHash,
-                 const std::string& layerChannel,
+                 U64 layerChannelID,
                  const RenderScale& proxyScale,
                  unsigned int mipMapLevel,
                  bool draftMode,
                  ImageBitDepthEnum bitdepth,
-                 const RectI& tileBounds);
+                 const RectI& tileBounds,
+                 const std::string& pluginID);
 
     virtual ~ImageTileKey();
 
     U64 getNodeTimeInvariantHashKey() const;
-
-    std::string getLayerChannel() const;
 
     const RectI& getTileBounds() const;
 
@@ -172,9 +171,11 @@ public:
 
     ImageBitDepthEnum getBitDepth() const;
 
-    virtual void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix,  ExternalSegmentTypeHandleList* objectPointers) const OVERRIDE FINAL;
+    virtual void toMemorySegment(ExternalSegmentType* segment,  ExternalSegmentTypeHandleList* objectPointers) const OVERRIDE FINAL;
 
-    virtual void fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix) OVERRIDE FINAL;
+    virtual void fromMemorySegment(ExternalSegmentType* segment,
+                                   ExternalSegmentTypeHandleList::const_iterator start,
+                                   ExternalSegmentTypeHandleList::const_iterator end) OVERRIDE FINAL;
 
     virtual int getUniqueID() const OVERRIDE FINAL;
 

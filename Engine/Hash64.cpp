@@ -66,8 +66,12 @@ Hash64::reset()
 void
 Hash64::appendQString(const QString & str, Hash64* hash)
 {
-    Q_FOREACH (QChar ch, str) {
-        hash->append<unsigned short>( ch.unicode() );
+    int curSize = hash->node_values.size();
+    hash->node_values.resize(curSize + str.size());
+
+    int c = curSize;
+    for (QString::const_iterator it = str.begin(); it != str.end(); ++it, ++c) {
+        hash->node_values[c] = toU64<unsigned short>(it->unicode());
     }
 }
 
@@ -75,11 +79,17 @@ void
 Hash64::appendCurve(const CurvePtr& curve, Hash64* hash)
 {
     KeyFrameSet keys = curve->getKeyFrames_mt_safe();
-    for (KeyFrameSet::const_iterator it = keys.begin(); it!=keys.end(); ++it) {
-        hash->append((double)it->getTime());
-        hash->append(it->getValue());
-        hash->append(it->getLeftDerivative());
-        hash->append(it->getRightDerivative());
+
+    int curSize = hash->node_values.size();
+    hash->node_values.resize(curSize + 4 * keys.size());
+
+
+    int c = curSize;
+    for (KeyFrameSet::const_iterator it = keys.begin(); it!=keys.end(); ++it, c += 4) {
+        hash->node_values[c] = toU64((double)it->getTime());
+        hash->node_values[c + 1] = toU64(it->getValue());
+        hash->node_values[c + 2] = toU64(it->getLeftDerivative());
+        hash->node_values[c + 3] = toU64(it->getRightDerivative());
     }
 }
 

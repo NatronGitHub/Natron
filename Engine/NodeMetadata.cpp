@@ -28,8 +28,17 @@
 #include <vector>
 #include <sstream>
 
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+GCC_DIAG_OFF(unused-parameter)
+#include <boost/interprocess/containers/vector.hpp>
+#include <boost/interprocess/containers/flat_map.hpp>
+GCC_DIAG_ON(unused-parameter)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+
 #include "Engine/ImagePlaneDesc.h"
 #include "Engine/PropertiesHolder.h"
+
+namespace bip = boost::interprocess;
 
 
 NATRON_NAMESPACE_ENTER;
@@ -53,9 +62,11 @@ public:
 
     virtual void initializeProperties() const OVERRIDE FINAL;
 
-    void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers) const;
+    void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const;
 
-    void fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix);
+    void fromMemorySegment(ExternalSegmentType* segment,
+                           ExternalSegmentTypeHandleList::const_iterator *start,
+                           ExternalSegmentTypeHandleList::const_iterator end);
 
     virtual ~Implementation()
     {
@@ -210,15 +221,17 @@ NodeMetadata::getMetadataDimension(const std::string& name) const
 }
 
 void
-NodeMetadata::toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers) const
+NodeMetadata::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const
 {
-    _imp->toMemorySegment(segment, objectNamesPrefix, objectPointers);
+    _imp->toMemorySegment(segment, objectPointers);
 }
 
 void
-NodeMetadata::fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix)
+NodeMetadata::fromMemorySegment(ExternalSegmentType* segment,
+                                ExternalSegmentTypeHandleList::const_iterator *start,
+                                ExternalSegmentTypeHandleList::const_iterator end)
 {
-    _imp->fromMemorySegment(segment, objectNamesPrefix);
+    _imp->fromMemorySegment(segment, start, end);
 }
 
 enum NodeMetadataDataTypeEnum
@@ -228,94 +241,151 @@ enum NodeMetadataDataTypeEnum
     eNodeMetadataDataTypeString
 };
 
+struct MetadataValueIPC
+{
+    String_ExternalSegment stringValue;
+    double podValue;
+
+
+    MetadataValueIPC(const void_allocator& alloc)
+    : stringValue(alloc)
+    , podValue(0)
+    {
+
+    }
+
+    void operator=(const MetadataValueIPC& other)
+    {
+        stringValue = other.stringValue;
+        podValue = other.podValue;
+    }
+};
+// Typedef our interprocess types
+typedef bip::allocator<MetadataValueIPC, ExternalSegmentType::segment_manager> MetadataValueIPC_Allocator_ExternalSegment;
+
+// The unordered set of free tiles indices in a bucket
+typedef bip::vector<MetadataValueIPC, MetadataValueIPC_Allocator_ExternalSegment> MetadataValueVector;
+
+struct MetadataValuesIPC
+{
+    MetadataValueVector values;
+    NodeMetadataDataTypeEnum type;
+
+
+    MetadataValuesIPC(const void_allocator& alloc)
+    : values(alloc)
+    , type(eNodeMetadataDataTypeInt)
+    {
+
+    }
+
+    void operator=(const MetadataValuesIPC& other)
+    {
+        values = other.values;
+        type = other.type;
+    }
+};
+
+typedef std::pair<String_ExternalSegment, MetadataValuesIPC> MetadataMapIPCValue;
+
+typedef bip::allocator<MetadataMapIPCValue, ExternalSegmentType::segment_manager> MetadataMapIPCValue_Allocator_ExternalSegment;
+
+typedef bip::flat_map<String_ExternalSegment, MetadataValuesIPC, std::less<String_ExternalSegment>, MetadataMapIPCValue_Allocator_ExternalSegment> MetadataMapIPC;
+
 void
-NodeMetadata::Implementation::toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers) const
+NodeMetadata::Implementation::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const
 {
     // Add a prefix to the meta-data name in the memory segment to ensure that the meta-data name is not the same as
     // another item we serialized to the segment.
-    const std::string prefix = objectNamesPrefix + "NodeMetadata";
-    int nElements = _properties.size();
-    objectPointers->push_back(writeNamedSharedObject(nElements, prefix + "NElements", segment));
+    void_allocator allocator(segment->get_segment_manager());
+    MetadataMapIPC* ipcMap = segment->construct<MetadataMapIPC>(bip::anonymous_instance)(allocator);
+    if (!ipcMap) {
+        throw std::bad_alloc();
+    }
+    objectPointers->push_back(segment->get_handle_from_address(ipcMap));
 
-    int i = 0;
-    for (std::map<std::string, boost::shared_ptr<PropertiesHolder::PropertyBase> >::const_iterator it = _properties.begin(); it != _properties.end(); ++it, ++i) {
-        std::stringstream ss;
-        ss << prefix << i;
-        std::string metadataPrefix = ss.str();
+    for (std::map<std::string, boost::shared_ptr<PropertiesHolder::PropertyBase> >::const_iterator it = _properties.begin(); it != _properties.end(); ++it) {
 
-        {
-            std::string metadataName = metadataPrefix + "Name";
-            objectPointers->push_back(writeNamedSharedObject(it->first, metadataName, segment));
-        }
+        String_ExternalSegment name(allocator);
+        MetadataValuesIPC values(allocator);
 
-        int nDims = it->second->getNDimensions();
-        objectPointers->push_back(writeNamedSharedObject(nDims, metadataPrefix + "NDims", segment));
+        MetadataMapIPCValue pair = std::make_pair(name, values);
+
+        pair.first.append(it->first.c_str());
+
 
         PropertiesHolder::Property<int>* isInt = dynamic_cast<PropertiesHolder::Property<int>*>(it->second.get());
         PropertiesHolder::Property<double>* isDouble = dynamic_cast<PropertiesHolder::Property<double>*>(it->second.get());
         PropertiesHolder::Property<std::string>* isString = dynamic_cast<PropertiesHolder::Property<std::string>*>(it->second.get());
-
-        std::string metadataData = metadataPrefix + "Data";
-        std::string metadataType = metadataPrefix + "Type";
         assert(isInt || isDouble || isString);
-        if (isInt) {
-            NodeMetadataDataTypeEnum type = eNodeMetadataDataTypeInt;
-            objectPointers->push_back(writeNamedSharedObject((int)type, metadataType, segment));
-            objectPointers->push_back(writeNamedSharedObjectN(isInt->value.data(), nDims, metadataData, segment));
-        } else if (isDouble) {
-            NodeMetadataDataTypeEnum type = eNodeMetadataDataTypeDouble;
-            objectPointers->push_back(writeNamedSharedObject((int)type, metadataType, segment));
-            objectPointers->push_back(writeNamedSharedObjectN(isDouble->value.data(), nDims, metadataData, segment));
-        } else if (isString) {
-            NodeMetadataDataTypeEnum type = eNodeMetadataDataTypeString;
-            objectPointers->push_back(writeNamedSharedObject((int)type, metadataType, segment));
-            objectPointers->push_back(writeNamedSharedObjectN(isString->value.data(), nDims, metadataData, segment));
+
+
+        int nDims = it->second->getNDimensions();
+        for (int i = 0; i < nDims; ++i) {
+
+            MetadataValueIPC data(allocator);
+
+            if (isInt) {
+                values.type = eNodeMetadataDataTypeInt;
+                data.podValue = (double)isInt->value[i];
+            } else if (isDouble) {
+                values.type = eNodeMetadataDataTypeDouble;
+                data.podValue = (double)isDouble->value[i];
+            } else if (isString) {
+                values.type = eNodeMetadataDataTypeString;
+                data.stringValue.append(isString->value[i].c_str());
+            }
+            pair.second.values.push_back(data);
         }
 
+        ipcMap->insert(boost::move(pair));
     }
 } // toMemorySegment
 
 void
-NodeMetadata::Implementation::fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix)
+NodeMetadata::Implementation::fromMemorySegment(ExternalSegmentType* segment,
+                                                ExternalSegmentTypeHandleList::const_iterator *start,
+                                                ExternalSegmentTypeHandleList::const_iterator /*end*/)
 {
-    const std::string prefix = objectNamesPrefix + "NodeMetadata";
-    int nElements;
-    readNamedSharedObject(prefix + "NElements", segment, &nElements);
 
-    for (int i = 0; i < nElements; ++i) {
-        std::stringstream ss;
-        ss << prefix << i;
-        std::string metadataPrefix = ss.str();
+    MetadataMapIPC* ipcMap = (MetadataMapIPC*)segment->get_address_from_handle(**start);
+    ++(*start);
 
-        std::string metadataName;
-        readNamedSharedObject(metadataPrefix + "Name", segment, &metadataName);
+    for (MetadataMapIPC::const_iterator it = ipcMap->begin(); it != ipcMap->end(); ++it) {
 
-        int nDims;
-        readNamedSharedObject(metadataPrefix + "NDims", segment, &nDims);
-        int type_i;
-        readNamedSharedObject(metadataPrefix + "Type", segment, &type_i);
+        std::string name(it->first.c_str());
+        assert(!it->second.values.empty());
 
-        std::string metadataData = metadataPrefix + "Data";
-        switch ((NodeMetadataDataTypeEnum)type_i) {
-            case eNodeMetadataDataTypeInt: {
-                boost::shared_ptr<Property<int> > prop = createPropertyInternal<int>(metadataName);
-                prop->value.resize(nDims);
-                readNamedSharedObjectN<int>(metadataData, segment, nDims, prop->value.data());
+        switch (it->second.type) {
+            case eNodeMetadataDataTypeInt:
+            {
+                boost::shared_ptr<Property<int> > prop = createPropertyInternal<int>(name);
+                prop->value.resize(it->second.values.size());
+                for (std::size_t i = 0; i < it->second.values.size(); ++i) {
+                    prop->value[i] = (int)it->second.values[i].podValue;
+                }
             }   break;
-            case eNodeMetadataDataTypeDouble: {
-                boost::shared_ptr<Property<double> > prop = createPropertyInternal<double>(metadataName);
-                prop->value.resize(nDims);
-                readNamedSharedObjectN<double>(metadataData, segment, nDims, prop->value.data());
+            case eNodeMetadataDataTypeDouble:
+            {
+                boost::shared_ptr<Property<double> > prop = createPropertyInternal<double>(name);
+                prop->value.resize(it->second.values.size());
+                for (std::size_t i = 0; i < it->second.values.size(); ++i) {
+                    prop->value[i] = it->second.values[i].podValue;
+                }
             }   break;
-
-            case eNodeMetadataDataTypeString: {
-                boost::shared_ptr<Property<std::string> > prop = createPropertyInternal<std::string>(metadataName);
-                prop->value.resize(nDims);
-                readNamedSharedObjectN<std::string>(metadataData, segment, nDims, prop->value.data());
+            case eNodeMetadataDataTypeString:
+            {
+                boost::shared_ptr<Property<std::string> > prop = createPropertyInternal<std::string>(name);
+                prop->value.resize(it->second.values.size());
+                for (std::size_t i = 0; i < it->second.values.size(); ++i) {
+                    prop->value[i].append(it->second.values[i].stringValue.c_str());
+                }
             }   break;
         }
 
+
     }
+
 } // fromMemorySegment
 
 

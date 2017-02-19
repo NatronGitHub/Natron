@@ -29,6 +29,7 @@
 #include <QMutex>
 #include <QWaitCondition>
 
+#include "Engine/AppManager.h"
 #include "Engine/Cache.h"
 #include "Engine/ImageStorage.h"
 
@@ -38,7 +39,8 @@ struct StorageDeleterThreadPrivate
 {
     mutable QMutex entriesQueueMutex;
     std::list<ImageStorageBasePtr> entriesQueue;
-    QWaitCondition entriesQueueNotEmptyCond;
+    int cacheEvictChecksRequest;
+    QWaitCondition noworkCond;
     QMutex mustQuitMutex;
     QWaitCondition mustQuitCond;
     bool mustQuit;
@@ -46,7 +48,8 @@ struct StorageDeleterThreadPrivate
     StorageDeleterThreadPrivate()
     : entriesQueueMutex()
     , entriesQueue()
-    , entriesQueueNotEmptyCond()
+    , cacheEvictChecksRequest(0)
+    , noworkCond()
     , mustQuitMutex()
     , mustQuitCond()
     , mustQuit(false)
@@ -92,7 +95,22 @@ StorageDeleterThread::appendToQueue(const std::list<ImageStorageBasePtr> & entri
         start();
     } else {
         QMutexLocker k(&_imp->entriesQueueMutex);
-        _imp->entriesQueueNotEmptyCond.wakeOne();
+        _imp->noworkCond.wakeOne();
+    }
+}
+
+void
+StorageDeleterThread::checkCachesMemory()
+{
+    {
+        QMutexLocker k(&_imp->entriesQueueMutex);
+        ++_imp->cacheEvictChecksRequest;
+    }
+    if ( !isRunning() ) {
+        start();
+    } else {
+        QMutexLocker k(&_imp->entriesQueueMutex);
+        _imp->noworkCond.wakeOne();
     }
 }
 
@@ -109,7 +127,7 @@ StorageDeleterThread::quitThread()
     {
         QMutexLocker k2(&_imp->entriesQueueMutex);
         _imp->entriesQueue.push_back( ImageStorageBasePtr() );
-        _imp->entriesQueueNotEmptyCond.wakeOne();
+        _imp->noworkCond.wakeOne();
     }
     while (_imp->mustQuit) {
         _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
@@ -149,12 +167,18 @@ StorageDeleterThread::run()
                     return;
                 }
                 while ( _imp->entriesQueue.empty() ) {
-                    _imp->entriesQueueNotEmptyCond.wait(&_imp->entriesQueueMutex);
+                    _imp->noworkCond.wait(&_imp->entriesQueueMutex);
                 }
 
-                assert( !_imp->entriesQueue.empty() );
-                front = _imp->entriesQueue.front();
-                _imp->entriesQueue.pop_front();
+                if (!_imp->entriesQueue.empty() ) {
+                    front = _imp->entriesQueue.front();
+                    _imp->entriesQueue.pop_front();
+                }
+                if (_imp->cacheEvictChecksRequest > 0) {
+                    _imp->cacheEvictChecksRequest = 0;
+                    appPTR->getGeneralPurposeCache()->evictLRUEntries(0);
+                    appPTR->getTileCache()->evictLRUEntries(0);
+                }
             }
             if (front) {
                 front->deallocateMemory();
