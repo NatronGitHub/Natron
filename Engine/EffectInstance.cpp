@@ -588,8 +588,9 @@ EffectInstance::getInputHint(int /*inputNb*/) const
 
 bool
 EffectInstance::resolveRoIForGetImage(const GetImageInArgs& inArgs,
-                                      TimeValue inputTime,
-                                      RectD* roiCanonical)
+                                      TimeValue /*inputTime*/,
+                                      RectD* roiCanonical,
+                                      RectD* roiExpand)
 {
 
 
@@ -604,20 +605,8 @@ EffectInstance::resolveRoIForGetImage(const GetImageInArgs& inArgs,
         return false;
     }
 
-
-    // Is there a request that was filed with getFramesNeeded on this input at the given time/view ?
-    // There may be not as we do not create a FrameViewRequest for all frames needed by a plug-in
-    // e.g: Slitscan can ask for over 1000 frames in input.
-    {
-        EffectInstancePtr inputEffect = getInput(inArgs.inputNb);
-        FrameViewRequestPtr inputRequestPass = inputEffect->_imp->getFrameViewRequest(inputTime, inArgs.inputView);
-        if (inputRequestPass) {
-            *roiCanonical = inputRequestPass->getCurrentRoI();
-            return true;
-        }
-    }
     
-
+    // Get the RoI on the input:
     // We must call getRegionOfInterest on the time and view and the current render window of the current action of this effect.
     RenderScale currentScale = EffectInstance::Implementation::getCombinedScale(inArgs.requestData->getRenderMappedMipMapLevel(), inArgs.requestData->getProxyScale());
 
@@ -660,9 +649,25 @@ EffectInstance::resolveRoIForGetImage(const GetImageInArgs& inArgs,
         return false;
     }
 
+    bool supportsMultiRes = getCurrentSupportMultiRes();
+    if (!supportsMultiRes) {
+        bool roiSet = false;
+        for (RoIMap::const_iterator it = inputRoisMap.begin(); it != inputRoisMap.end(); ++it) {
+            if (!roiSet) {
+                *roiExpand = it->second;
+                roiSet = true;
+            } else {
+                roiExpand->merge(it->second);
+            }
+        }
+    }
+
     RoIMap::iterator foundInputEffectRoI = inputRoisMap.find(inArgs.inputNb);
     if (foundInputEffectRoI != inputRoisMap.end()) {
         *roiCanonical = foundInputEffectRoI->second;
+        if (supportsMultiRes) {
+            *roiExpand = *roiCanonical;
+        }
         return true;
     }
 
@@ -735,8 +740,8 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
     }
 
     // Get the requested RoI for the input, if we can recover it, otherwise TreeRender will render the RoD.
-    RectD roiCanonical;
-    if (!resolveRoIForGetImage(inArgs, inArgs.inputTime, &roiCanonical)) {
+    RectD roiCanonical, roiExpand;
+    if (!resolveRoIForGetImage(inArgs, inArgs.inputTime, &roiCanonical, &roiExpand)) {
         // If we did not resolve the RoI, ask for the RoD
         GetRegionOfDefinitionResultsPtr results;
         RenderScale combinedScale = EffectInstance::Implementation::getCombinedScale(inArgs.inputMipMapLevel, inArgs.inputProxyScale);
@@ -799,6 +804,8 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
 
     // The output image unmapped
     outArgs->image = outputRequest->getImagePlane();
+    outArgs->roiPixel.intersect(outArgs->image->getBounds(), &outArgs->roiPixel);
+
 
     bool mustConvertImage = false;
     StorageModeEnum storage = outArgs->image->getStorageMode();
@@ -851,7 +858,7 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
 
         Image::InitStorageArgs initArgs;
         {
-            initArgs.bounds = outArgs->image->getBounds();
+            initArgs.bounds = outArgs->roiPixel;
             initArgs.proxyScale = outArgs->image->getProxyScale();
             initArgs.mipMapLevel = outArgs->image->getMipMapLevel();
             initArgs.layer = preferredLayer;
@@ -889,6 +896,13 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
         convertedImage->copyPixels(*outArgs->image, copyArgs);
         outArgs->image = convertedImage;
     } // mustConvertImage
+
+    // If the effect does not support multi-resolution image, add black borders so that all images have the same size in input.
+    if (roiExpand != roiCanonical) {
+        RectI roiExpandPixels;
+        roiExpand.toPixelEnclosing(inputCombinedScale, inputPar, &roiExpandPixels);
+        outArgs->image->ensureBounds(roiExpandPixels);
+    }
 
     return true;
 } // getImagePlane
@@ -1675,7 +1689,7 @@ EffectInstance::refreshInfos()
     ssinfo << ( getCurrentSupportTiles() ? tr("Yes") : tr("No") ).toStdString() << "</font><br />";
     {
         ssinfo << "<b>" << tr("Supports multiresolution:").toStdString() << "</b> <font color=#c8c8c8>";
-        ssinfo << ( supportsMultiResolution() ? tr("Yes") : tr("No") ).toStdString() << "</font><br />";
+        ssinfo << ( getCurrentSupportMultiRes() ? tr("Yes") : tr("No") ).toStdString() << "</font><br />";
         ssinfo << "<b>" << tr("Supports renderscale:").toStdString() << "</b> <font color=#c8c8c8>";
         if (!getCurrentSupportRenderScale()) {
             ssinfo << tr("No").toStdString();
@@ -1857,6 +1871,25 @@ EffectInstance::getCurrentSupportTiles() const
 }
 
 void
+EffectInstance::setCurrentSupportMultiRes(bool support)
+{
+    QMutexLocker k(&_imp->common->pluginsPropMutex);
+
+    _imp->common->props.currentSupportMultires = support;
+}
+
+bool
+EffectInstance::getCurrentSupportMultiRes() const
+{
+    if (_imp->renderData) {
+        return _imp->renderData->props.currentSupportMultires;
+    }
+    QMutexLocker k(&_imp->common->pluginsPropMutex);
+
+    return _imp->common->props.currentSupportMultires;
+}
+
+void
 EffectInstance::setCurrentSupportRenderScale(bool support)
 {
     QMutexLocker k(&_imp->common->pluginsPropMutex);
@@ -1958,8 +1991,8 @@ EffectInstance::refreshDynamicProperties()
 
 
 
-
-    setCurrentSupportTiles(multiResSupported && tilesSupported);
+    setCurrentSupportMultiRes(multiResSupported);
+    setCurrentSupportTiles(tilesSupported);
     setCurrentSupportRenderScale(renderScaleSupported);
     setCurrentSequentialRenderSupport( getSequentialPreference() );
     setCurrentCanDistort(canDistort);

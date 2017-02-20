@@ -1242,7 +1242,7 @@ OfxEffectInstance::getRegionsOfInterest(TimeValue time,
         EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxImageEffectActionGetRegionsOfInterest, time, view, scale
 #ifdef DEBUG
                                                   , /*canSetValue*/ false
-                                                  , /*canBeCalledRecursively*/ false
+                                                  , /*canBeCalledRecursively*/ true
 #endif
                                                   );
 
@@ -2344,11 +2344,11 @@ OfxEffectInstance::onEnableOpenGLKnobValueChanged(bool activated)
 bool
 OfxEffectInstance::supportsMultiResolution() const
 {
-    // first, check the descriptor, then the instance
+    // check the the instance
     if (!effectInstance()) {
         return false;
     }
-    return effectInstance()->getDescriptor().supportsMultiResolution() && effectInstance()->supportsMultiResolution();
+    return effectInstance()->supportsMultiResolution();
 }
 
 void

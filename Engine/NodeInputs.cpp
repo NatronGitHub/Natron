@@ -500,7 +500,7 @@ Node::isNodeUpstream(const NodeConstPtr& input) const
     return isNodeUpstreamInternal(input, markedNodes);
 }
 
-
+#if 0
 static Node::CanConnectInputReturnValue
 checkCanConnectNoMultiRes(const Node* output,
                           const NodePtr& input)
@@ -560,6 +560,8 @@ checkCanConnectNoMultiRes(const Node* output,
 
     return Node::eCanConnectInput_ok;
 }
+#endif // 0
+
 
 Node::CanConnectInputReturnValue
 Node::canConnectInput(const NodePtr& input,
@@ -592,14 +594,14 @@ Node::canConnectInput(const NodePtr& input,
         return eCanConnectInput_graphCycles;
     }
 
-
+#if 0
     if ( !_imp->effect->supportsMultiResolution() ) {
         CanConnectInputReturnValue ret = checkCanConnectNoMultiRes(this, input);
         if (ret != eCanConnectInput_ok) {
             return ret;
         }
     }
-
+#endif
     {
         ///Check for invalid pixel aspect ratio if the node doesn't support multiple clip PARs
 
@@ -671,6 +673,7 @@ Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool failIfExi
     }
 
 
+#if 0
     ///For effects that do not support multi-resolution, make sure the input effect is correct
     ///otherwise the rendering might crash
     if ( input && !_imp->effect->supportsMultiResolution() ) {
@@ -679,7 +682,7 @@ Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool failIfExi
             return false;
         }
     }
-
+#endif 
     {
         ///Check for invalid index
         QMutexLocker l(&_imp->inputsMutex);

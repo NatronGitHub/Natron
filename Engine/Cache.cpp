@@ -94,8 +94,8 @@ GCC_DIAG_ON(unused-parameter)
 // Each time the cache file has to grow, it will be resized to contain 1000 more tiles
 #define NATRON_CACHE_FILE_GROW_N_TILES 1024
 
-// Grow the bucket ToC shared memory by 500Kb at once
-#define NATRON_CACHE_BUCKET_TOC_FILE_GROW_N_BYTES 524288
+// Grow the bucket ToC shared memory by 512Kb at once
+#define NATRON_CACHE_BUCKET_TOC_FILE_GROW_N_BYTES 524288 // = 512 * 1024
 
 // Used to prevent loading older caches when we change the serialization scheme
 #define NATRON_CACHE_SERIALIZATION_VERSION 5
@@ -1578,9 +1578,9 @@ CacheBucket::growToCFile(scoped_lock_type<Mutex>& lock, std::size_t bytesToAdd)
     } else {
         oldSize = tocLocalBuf->size();
     }
-    std::size_t newSize = oldSize + bytesToAdd;
     // Round to the nearest next multiple of NATRON_CACHE_BUCKET_TOC_FILE_GROW_N_BYTES
-    newSize = std::max((std::size_t)1, (std::size_t)std::ceil(newSize / (double) NATRON_CACHE_BUCKET_TOC_FILE_GROW_N_BYTES)) * NATRON_CACHE_BUCKET_TOC_FILE_GROW_N_BYTES;
+    std::size_t bytesToAddRounded = std::max((std::size_t)1, (std::size_t)std::ceil(bytesToAdd / (double) NATRON_CACHE_BUCKET_TOC_FILE_GROW_N_BYTES)) * NATRON_CACHE_BUCKET_TOC_FILE_GROW_N_BYTES;
+    std::size_t newSize = oldSize + bytesToAddRounded;
 
     if (c->_imp->persistent) {
         // we pass preserve=false since we flushed the portion we know is valid just above
@@ -2197,6 +2197,9 @@ CacheEntryLocker::lookupAndSetStatus(boost::scoped_ptr<SharedMemoryProcessLocalR
                     }
                     ++attempt_i;
                 }
+            }
+            if (!cacheEntry) {
+                return;
             }
             cacheEntry->pluginID.append(_imp->processLocalEntry->getKey()->getHolderPluginID().c_str());
 

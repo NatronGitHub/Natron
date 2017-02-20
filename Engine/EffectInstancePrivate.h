@@ -178,6 +178,9 @@ struct DynamicProperties
     // Does this node currently support tiled rendering
     bool currentSupportTiles;
 
+    // Does this node currently support multi resolution images
+    bool currentSupportMultires;
+
     // Does this node currently support render scale
     bool currentSupportsRenderScale;
 
@@ -194,6 +197,7 @@ struct DynamicProperties
     DynamicProperties()
     : currentThreadSafety(eRenderSafetyInstanceSafe)
     , currentSupportTiles(false)
+    , currentSupportMultires(false)
     , currentSupportsRenderScale(false)
     , currentSupportOpenGLRender(ePluginOpenGLRenderSupportNone)
     , currentSupportSequentialRender(eSequentialPreferenceNotSequential)

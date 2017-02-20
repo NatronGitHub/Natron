@@ -424,12 +424,16 @@ private:
 
     /**
      * @brief In output the RoI in canonical coordinates is set to ask for on the input effect.
+     * @param roiCanonical The RoI in output to fetch on the input
+     * @param roiExpand If this effect has multiple inputs but does not support input images with
+     * different size, we fill roiCanonical up to roiExpand by adding black borders.
      * @returns True if it could resolve the RoI, false otherwise in which case the caller should
      * ask for the RoD.
      **/
     bool resolveRoIForGetImage(const GetImageInArgs& inArgs,
                                TimeValue inputTime,
-                               RectD* roiCanonical);
+                               RectD* roiCanonical,
+                               RectD* roiExpand);
 public:
 
     //////////////////////////////////////////////////////////////////////
@@ -1262,6 +1266,9 @@ public:
 
     void setCurrentSupportTiles(bool support);
     bool getCurrentSupportTiles() const;
+
+    void setCurrentSupportMultiRes(bool support);
+    bool getCurrentSupportMultiRes() const;
 
     void setCurrentSupportRenderScale(bool support);
     bool getCurrentSupportRenderScale() const;

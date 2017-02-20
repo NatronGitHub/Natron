@@ -1311,7 +1311,7 @@ EffectInstance::requestRender(TimeValue timeInArgs,
 } // requestRender
 
 
-static void invalidateCachedPlanesToRender(const std::map<ImagePlaneDesc, ImagePtr>& cachedPlanes)
+static void invalidateCachedLockers(const std::map<ImagePlaneDesc, ImagePtr>& cachedPlanes)
 {
     for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = cachedPlanes.begin(); it != cachedPlanes.end(); ++it) {
         it->second->discardTiles();
@@ -1423,11 +1423,13 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
 
     } // while there is still something not rendered
 
+    invalidateCachedLockers(producedImagePlanes);
+
+
     // If using GPU and out of memory retry on CPU if possible
     if (renderRetCode == eActionStatusOutOfMemory && !renderRects.empty() && renderRects.front().backendType == eRenderBackendTypeOpenGL) {
         if (getCurrentOpenGLRenderSupport() != ePluginOpenGLRenderSupportYes) {
             // The plug-in can only use GPU or doesn't support GPU
-            invalidateCachedPlanesToRender(producedImagePlanes);
             return eActionStatusFailed;
         }
        
@@ -1435,7 +1437,6 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
     }
 
     if (renderRetCode != eActionStatusOK) {
-        invalidateCachedPlanesToRender(producedImagePlanes);
         return renderRetCode;
     }
 
