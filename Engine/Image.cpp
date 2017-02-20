@@ -1191,6 +1191,23 @@ Image::ensureBounds(const RectI& roi)
 } // ensureBounds
 
 void
+Image::fillOutSideWithBlack(const RectI& roi)
+{
+    RectI clipped;
+    _imp->originalBounds.intersect(roi, &clipped);
+
+    RectI fourRects[4];
+    getABCDRectangles(clipped, _imp->originalBounds, fourRects[0], fourRects[1], fourRects[2], fourRects[3]);
+    for (int i = 0; i < 4; ++i) {
+        if (fourRects[i].isNull()) {
+            continue;
+        }
+        fillZero(fourRects[i]);
+    }
+
+}
+
+void
 Image::getChannelPointers(const void* ptrs[4],
                           int x, int y,
                           const RectI& bounds,

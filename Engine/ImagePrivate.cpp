@@ -304,11 +304,8 @@ ImagePrivate::initFromExternalBuffer(const Image::InitStorageArgs& args)
 {
     assert(args.externalBuffer);
 
-    if (tiles.size() != 1) {
-        // When providing an external buffer, there must be a single tile!
-        throw std::bad_alloc();
-    }
     if (args.bitdepth != args.externalBuffer->getBitDepth()) {
+        assert(false);
         // When providing an external buffer, the bitdepth must be the same as the requested depth
         throw std::bad_alloc();
     }

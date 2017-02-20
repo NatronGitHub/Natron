@@ -172,12 +172,14 @@ fillForDepthForComponents(void* ptrs[4],
         nCompsPerBuffer = 1;
     }
 
-    std::size_t nElementsPerRow = nCompsPerBuffer * bounds.width();
 
     // now we're safe: the image contains the area in roi
     PIX* dstPixelPtrs[4];
     int dstPixelStride;
     Image::getChannelPointers<PIX>((const PIX**)ptrs, roi.x1, roi.y1, bounds, nComps, (PIX**)dstPixelPtrs, &dstPixelStride);
+
+    std::size_t nElementsPerRow = nCompsPerBuffer * dstPixelStride;
+
 
     for (int y = roi.y1; y < roi.y2; ++y) {
 
@@ -189,13 +191,13 @@ fillForDepthForComponents(void* ptrs[4],
             for (int c = 0; c < 4; ++c) {
                 if (dstPixelPtrs[c]) {
                     *dstPixelPtrs[c] = fillValue[c];
-                    ++dstPixelPtrs[c];
+                    dstPixelPtrs[c] += dstPixelStride;
                 }
             }
         }
         for (int c = 0; c < 4; ++c) {
             if (dstPixelPtrs[c]) {
-                dstPixelPtrs[c] += nElementsPerRow - roi.width() * nCompsPerBuffer;
+                dstPixelPtrs[c] += nElementsPerRow - roi.width() * dstPixelStride;
             }
         }
     }

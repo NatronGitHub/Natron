@@ -2241,13 +2241,24 @@ public:
         assert(inArgs->renderObject);
         FrameViewRequestPtr outputRequest;
         inArgs->retCode = inArgs->renderObject->launchRender(&outputRequest);
+
+        if (outputRequest) {
+            inArgs->outputImage = outputRequest->getImagePlane();
+
+            // Ensure all cache lockers are gone
+            if (inArgs->outputImage) {
+                inArgs->outputImage->discardTiles();
+            }
+        }
+
         if (isFailureRetCode(inArgs->retCode)) {
+            inArgs->outputImage.reset();
             return;
         }
         // Convert the image to a format that can be uploaded to a OpenGL texture
         {
-            inArgs->outputImage = outputRequest->getImagePlane();
-
+            
+            
             // Find the key of the first tile in the image and store it so that in the gui
             // we can later on re-use this key to check the cache for the timeline's cache line
             {

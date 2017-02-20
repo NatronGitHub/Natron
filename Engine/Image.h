@@ -731,6 +731,11 @@ public:
      **/
     void ensureBounds(const RectI& roi);
 
+    /**
+     * @brief Fill everything outside the roi in black and transparant
+     **/
+    void fillOutSideWithBlack(const RectI& roi);
+
 
     /**
      * @brief Downscales by pow(2, downscaleLevels) a portion of this image and returns a new image with 

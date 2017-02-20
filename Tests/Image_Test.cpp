@@ -39,7 +39,7 @@ TEST(ImageKeyTest, Equality) {
     int randomHashKey1 = rand();
     TimeValue time1(0);
     ViewIdx view1(0);
-    ImageTileKey key1(randomHashKey1, time1, view1, std::string(), RenderScale(1.), 0, false, eImageBitDepthFloat, RectI());
+    ImageTileKey key1(randomHashKey1, time1, view1, 0, RenderScale(1.), 0, false, eImageBitDepthFloat, RectI());
     U64 keyHash1 = key1.getHash();
 
 
@@ -47,7 +47,7 @@ TEST(ImageKeyTest, Equality) {
     int randomHashKey2 = randomHashKey1;
     TimeValue time2(time1);
     ViewIdx view2(view1);
-    ImageTileKey key2(randomHashKey2, time2, view2, std::string(), RenderScale(1.), 0, false, eImageBitDepthFloat, RectI());
+    ImageTileKey key2(randomHashKey2, time2, view2, 0, RenderScale(1.), 0, false, eImageBitDepthFloat, RectI());
     U64 keyHash2 = key2.getHash();
     ASSERT_TRUE(keyHash1 == keyHash2);
 }
@@ -58,7 +58,7 @@ TEST(ImageKeyTest, Difference) {
     int randomHashKey1 = rand() % 100;
     TimeValue time1(0);
     ViewIdx view1(0);
-    ImageTileKey key1(randomHashKey1, time1, view1, std::string(), RenderScale(1.), 0, false, eImageBitDepthFloat, RectI());
+    ImageTileKey key1(randomHashKey1, time1, view1, 0, RenderScale(1.), 0, false, eImageBitDepthFloat, RectI());
     U64 keyHash1 = key1.getHash();
 
 
@@ -67,7 +67,7 @@ TEST(ImageKeyTest, Difference) {
     int randomHashKey2 = rand() % 1000  + 150;
     TimeValue time2(time1);
     ViewIdx view2(view1);
-    ImageTileKey key2(randomHashKey2, time2, view2, std::string(), RenderScale(1.), 0, false, eImageBitDepthFloat, RectI());
+    ImageTileKey key2(randomHashKey2, time2, view2, 0, RenderScale(1.), 0, false, eImageBitDepthFloat, RectI());
     U64 keyHash2 = key2.getHash();
 
     ASSERT_TRUE(keyHash1 != keyHash2);

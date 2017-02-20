@@ -100,9 +100,6 @@ EffectInstance::EffectInstance(const EffectInstancePtr& other, const TreeRenderP
     , _node( other->getNode() )
     , _imp( new Implementation(this, *other->_imp) )
 {
-    int nInputs = other->getMaxInputCount();
-    _imp->renderData->inputs.resize(nInputs);
- 
 }
 
 EffectInstance::~EffectInstance()
@@ -127,6 +124,44 @@ EffectInstance::createRenderCopy(const TreeRenderPtr& render) const
         throw std::invalid_argument("EffectInstance::createRenderCopy: No kNatronPluginPropCreateRenderCloneFunc property set on plug-in!");
     }
     EffectInstancePtr clone = createFunc(boost::const_pointer_cast<EffectInstance>(shared_from_this()), render);
+
+
+    // If the current instance is also a clone (because we are in getImage), inherit most of pre computed render bits to avoid re-calculations
+    if (_imp->renderData) {
+        *clone->_imp->renderData = *_imp->renderData;
+    }
+
+    // Also create a render clone for input nodes
+
+    int nInputs = getMaxInputCount();
+    clone->_imp->renderData->inputs.resize(nInputs);
+
+    for (int i = 0; i < nInputs; ++i) {
+        if (clone->isInputMask(i) && !clone->isMaskEnabled(i)) {
+            continue;
+        }
+        EffectInstancePtr mainInstanceInput = getInput(i);
+        if (!mainInstanceInput) {
+            continue;
+        }
+        // Note that it will not create the clone if it already exists
+        EffectInstancePtr inputClone = toEffectInstance(mainInstanceInput->createRenderClone(render));
+        if (inputClone) {
+            clone->setRenderCloneInput(inputClone, i);
+        }
+    }
+
+#if 0
+#pragma message WARN("check this")
+    // Visit all nodes that expressions of this node knobs may rely upon so we ensure they get a proper render object
+    // and a render time and view when we run the expression.
+    std::set<NodePtr> expressionsDeps;
+    getAllExpressionDependenciesRecursive(expressionsDeps);
+
+    for (std::set<NodePtr>::const_iterator it = expressionsDeps.begin(); it != expressionsDeps.end(); ++it) {
+        (*it)->getEffectInstance()->createRenderClone(render);
+    }
+#endif
     return clone;
 }
 
@@ -721,6 +756,24 @@ EffectInstance::GetImageInArgs::GetImageInArgs(const FrameViewRequestPtr& reques
 
 }
 
+void
+EffectInstance::removeRenderCloneRecursive(const TreeRenderPtr& render)
+{
+    bool foundClone = removeRenderClone(render);
+    if (!foundClone) {
+        return;
+    }
+
+    // Recurse on inputs
+    int nInputs = getMaxInputCount();
+    for (int i = 0; i < nInputs; ++i) {
+        EffectInstancePtr input = getInput(i);
+        if (input) {
+            input->removeRenderCloneRecursive(render);
+        }
+    }
+} // removeRenderCloneRecursive
+
 bool
 EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* outArgs)
 {
@@ -759,14 +812,8 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
 
     // Launch a render to recover the image.
     // It should be very fast if the image was already rendered.
-    TreeRenderPtr renderObject = getCurrentRender();
     FrameViewRequestPtr outputRequest;
-    if (renderObject) {
-        ActionRetCodeEnum status = renderObject->launchRenderWithArgs(inputEffect, inArgs.inputTime, inArgs.inputView, inArgs.inputProxyScale, inArgs.inputMipMapLevel, inArgs.plane, &roiCanonical, &outputRequest);
-        if (isFailureRetCode(status)) {
-            return false;
-        }
-    } else {
+    {
         // We are not during a render, create one.
         TreeRender::CtorArgsPtr rargs(new TreeRender::CtorArgs());
         rargs->time = inArgs.inputTime;
@@ -779,7 +826,8 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
         rargs->draftMode = inArgs.draftMode;
         rargs->playback = inArgs.playback;
         rargs->byPassCache = inArgs.byPassCache;
-        renderObject = TreeRender::create(rargs);
+        rargs->originalRender = getCurrentRender();
+        TreeRenderPtr renderObject = TreeRender::create(rargs);
         ActionRetCodeEnum status = renderObject->launchRender(&outputRequest);
         if (isFailureRetCode(status)) {
             return false;
@@ -794,7 +842,18 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
     // Get the RoI in pixel coordinates of the effect we rendered
     RenderScale inputCombinedScale = EffectInstance::Implementation::getCombinedScale(inArgs.inputMipMapLevel, inArgs.inputProxyScale);
     double inputPar = getAspectRatio(inArgs.inputNb);
-    roiCanonical.toPixelEnclosing(inputCombinedScale, inputPar, &outArgs->roiPixel);
+
+    RectI roiPixels;
+    RectI roiExpandPixels;
+    roiExpand.toPixelEnclosing(inputCombinedScale, inputPar, &roiExpandPixels);
+    roiCanonical.toPixelEnclosing(inputCombinedScale, inputPar, &roiPixels);
+    assert(roiExpandPixels.contains(roiPixels));
+    if (roiExpandPixels != roiPixels) {
+        outArgs->roiPixel = roiExpandPixels;
+    } else {
+        outArgs->roiPixel = roiPixels;
+    }
+
 
 
     // Map the output image to the plug-in preferred format
@@ -804,6 +863,7 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
 
     // The output image unmapped
     outArgs->image = outputRequest->getImagePlane();
+
     outArgs->roiPixel.intersect(outArgs->image->getBounds(), &outArgs->roiPixel);
 
 
@@ -834,6 +894,9 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
         mustConvertImage = true;
     }
 
+    if (roiExpand != roiCanonical) {
+        mustConvertImage = true;
+    }
 
     ImagePlaneDesc preferredLayer = outArgs->image->getLayer();
 
@@ -898,10 +961,8 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
     } // mustConvertImage
 
     // If the effect does not support multi-resolution image, add black borders so that all images have the same size in input.
-    if (roiExpand != roiCanonical) {
-        RectI roiExpandPixels;
-        roiExpand.toPixelEnclosing(inputCombinedScale, inputPar, &roiExpandPixels);
-        outArgs->image->ensureBounds(roiExpandPixels);
+    if (roiExpandPixels != roiPixels) {
+        outArgs->image->fillOutSideWithBlack(roiPixels);
     }
 
     return true;

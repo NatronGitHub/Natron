@@ -2488,7 +2488,7 @@ CacheEntryLocker::waitForPendingEntry(std::size_t timeout)
 
         if (_imp->status == eCacheEntryStatusComputationPending) {
             timeSpentWaitingForPendingEntryMS += timeToWaitMS;
-            if (timeSpentWaitingForPendingEntryMS < timeout) {
+            if (timeout == 0 || timeSpentWaitingForPendingEntryMS < timeout) {
                 sleep_milliseconds(timeToWaitMS);
             }
         }

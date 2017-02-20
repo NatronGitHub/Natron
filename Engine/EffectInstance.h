@@ -1223,14 +1223,35 @@ public:
                                     int inputNbInRequester,
                                     const FrameViewRequestPtr& requester,
                                     const RequestPassSharedDataPtr& requestPassSharedData,
-                                    FrameViewRequestPtr* createdRequest);
+                                    FrameViewRequestPtr* createdRequest,
+                                    EffectInstancePtr* createdRenderClone);
 
+private:
+
+    ActionRetCodeEnum requestRenderInternal(TimeValue time,
+                                            ViewIdx view,
+                                            const RenderScale& proxyScale,
+                                            unsigned int mipMapLevel,
+                                            const ImagePlaneDesc& plane,
+                                            const RectD & roiCanonical,
+                                            int inputNbInRequester,
+                                            const FrameViewRequestPtr& requester,
+                                            const RequestPassSharedDataPtr& requestPassSharedData,
+                                            FrameViewRequestPtr* createdRequest);
+    
+public:
+    
     /**
      * @brief Function that actually render a request. In output, the image corresponding to the request
      * is rendered. Only a single thread will be able to call launchRender on the same frame view request.
      * This function must be called on the FrameViewRequest object returned by requestRender()
      **/
     ActionRetCodeEnum launchRender(const RequestPassSharedDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestData);
+
+    /**
+     * @brief Remove the render clone on this node and all its inputs recursively
+     **/
+    void removeRenderCloneRecursive(const TreeRenderPtr& render);
 
     /**
      * @brief Convenience function for getCurrentRender()->isRenderAborted()

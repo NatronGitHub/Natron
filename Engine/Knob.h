@@ -3015,7 +3015,7 @@ public:
      * @brief Remove a clone previously created with createRenderClone
      * Can only be called on the main instance!
      **/
-    void removeRenderClone(const TreeRenderPtr& render);
+    bool removeRenderClone(const TreeRenderPtr& render);
 
     /**
      * @brief Returns a clone created for the given render

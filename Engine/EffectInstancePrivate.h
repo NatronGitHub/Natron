@@ -351,6 +351,19 @@ struct RenderCloneData
 
     }
 
+    void operator=(const RenderCloneData& other)
+    {
+        frames = other.frames;
+        frameRangeResults = other.frameRangeResults;
+        metadatasResults = other.metadatasResults;
+        timeViewInvariantHash = other.timeViewInvariantHash;
+        metadataTimeInvariantHash = other.metadataTimeInvariantHash;
+        timeViewVariantHash = other.timeViewVariantHash;
+        props = other.props;
+        timeViewInvariantHashValid = other.timeViewInvariantHashValid;
+        metadataTimeInvariantHashValid = other.metadataTimeInvariantHashValid;
+    }
+
     /**
      * @brief Get the time/view variant hash
      **/
