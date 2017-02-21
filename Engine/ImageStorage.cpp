@@ -294,6 +294,7 @@ RAMImageStorage::deallocateMemoryImpl()
     }
 }
 
+
 struct GLImageStoragePrivate
 {
 
@@ -579,6 +580,66 @@ CacheImageTileStorage::deallocateMemoryImpl()
 {
     _imp->localBuffer.reset();
 }
+
+
+bool
+RAMImageStorage::canSoftCopy(const ImageStorageBase& other)
+{
+    const RAMImageStorage* isRamStorage = dynamic_cast<const RAMImageStorage*>(&other);
+    const CacheImageTileStorage* isCacheStorage = dynamic_cast<const CacheImageTileStorage*>(&other);
+    if (isRamStorage) {
+        return isRamStorage->_imp->buffer->size() == _imp->buffer->size();
+    } else if (isCacheStorage) {
+        return isCacheStorage->_imp->localBuffer->size() == _imp->buffer->size();
+    } else {
+        return false;
+    }
+}
+
+void
+RAMImageStorage::softCopy(const ImageStorageBase& other)
+{
+    const RAMImageStorage* isRamStorage = dynamic_cast<const RAMImageStorage*>(&other);
+    const CacheImageTileStorage* isCacheStorage = dynamic_cast<const CacheImageTileStorage*>(&other);
+    if (isRamStorage) {
+        _imp->buffer.swap(isRamStorage->_imp->buffer);
+    } else if (isCacheStorage) {
+        _imp->buffer.swap(isCacheStorage->_imp->localBuffer);
+    } else {
+        assert(false);
+    }
+
+}
+
+bool
+CacheImageTileStorage::canSoftCopy(const ImageStorageBase& other)
+{
+    const RAMImageStorage* isRamStorage = dynamic_cast<const RAMImageStorage*>(&other);
+    const CacheImageTileStorage* isCacheStorage = dynamic_cast<const CacheImageTileStorage*>(&other);
+    if (isRamStorage) {
+        return isRamStorage->_imp->buffer->size() == _imp->localBuffer->size();
+    } else if (isCacheStorage) {
+        return isCacheStorage->_imp->localBuffer->size() == _imp->localBuffer->size();
+    } else {
+        return false;
+    }
+}
+
+void
+CacheImageTileStorage::softCopy(const ImageStorageBase& other)
+{
+    const RAMImageStorage* isRamStorage = dynamic_cast<const RAMImageStorage*>(&other);
+    const CacheImageTileStorage* isCacheStorage = dynamic_cast<const CacheImageTileStorage*>(&other);
+    if (isRamStorage) {
+        _imp->localBuffer.swap(isRamStorage->_imp->buffer);
+    } else if (isCacheStorage) {
+        _imp->localBuffer.swap(isCacheStorage->_imp->localBuffer);
+    } else {
+        assert(false);
+    }
+
+}
+
 
 
 

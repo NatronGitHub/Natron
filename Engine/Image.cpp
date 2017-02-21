@@ -30,6 +30,7 @@
 #include <stdexcept>
 
 #include <QtCore/QDebug>
+#include <QtCore/QThread>
 
 #include "Engine/ImagePrivate.h"
 
@@ -39,12 +40,12 @@
 #endif
 
 // When defined, tiles will be fetched from the cache (and optionnally downscaled) sequentially
-//#define NATRON_IMAGE_SEQUENTIAL_INIT
+#define NATRON_IMAGE_SEQUENTIAL_INIT
 
 NATRON_NAMESPACE_ENTER;
 
 Image::Image()
-: _imp(new ImagePrivate())
+: _imp(new ImagePrivate(this))
 {
 
 }
@@ -59,14 +60,19 @@ Image::create(const InitStorageArgs& args)
 
 Image::~Image()
 {
- 
-    
+
+
     // If this image is the last image holding a pointer to memory buffers, ensure these buffers
     // gets deallocated in a specific thread and not a render thread
     std::list<ImageStorageBasePtr> toDeleteInDeleterThread;
     for (TileMap::const_iterator it = _imp->tiles.begin(); it != _imp->tiles.end(); ++it) {
         for (std::size_t c = 0;  c < it->second.perChannelTile.size(); ++c) {
             toDeleteInDeleterThread.push_back(it->second.perChannelTile[c].buffer);
+#ifdef DEBUG_TILES_ACCESS
+            if (it->second.perChannelTile[c].entryLocker && c == 0 && it->first.tx == 0 && it->first.ty == 0 && _imp->renderClone.lock() /*&& _imp->renderClone.lock()->getScriptName_mt_safe() == "ViewerProcess1"*/ && _imp->cachePolicy != eCacheAccessModeNone) {
+                qDebug() << QThread::currentThread() << _imp->renderClone.lock()->getScriptName_mt_safe().c_str() << this << "discard" << it->second.perChannelTile[c].entryLocker->getProcessLocalEntry()->getHashKey();
+            }
+#endif
         }
     }
 
@@ -79,7 +85,7 @@ Image::~Image()
 }
 
 void
-Image::discardTiles()
+Image::removeCacheLockers()
 {
     for (TileMap::iterator it = _imp->tiles.begin(); it != _imp->tiles.end(); ++it) {
 
@@ -87,6 +93,11 @@ Image::discardTiles()
 
         for (std::size_t c = 0; c < tile.perChannelTile.size(); ++c) {
             Image::MonoChannelTile& thisChannelTile = tile.perChannelTile[c];
+#ifdef DEBUG_TILES_ACCESS
+            if (it->second.perChannelTile[c].entryLocker && c == 0 && it->first.tx == 0 && it->first.ty == 0 && _imp->renderClone.lock() && /*_imp->renderClone.lock()->getScriptName_mt_safe() == "ViewerProcess1" &&*/ _imp->cachePolicy != eCacheAccessModeNone) {
+                qDebug() << QThread::currentThread() << _imp->renderClone.lock()->getScriptName_mt_safe().c_str()  <<  this << "discard" << it->second.perChannelTile[c].entryLocker->getProcessLocalEntry()->getHashKey();
+            }
+#endif
             thisChannelTile.entryLocker.reset();
         }
         
@@ -111,11 +122,17 @@ Image::waitForPendingTiles()
     if (_imp->cachePolicy == eCacheAccessModeNone) {
         return true;
     }
+
     bool hasStuffToRender = false;
     for (TileMap::const_iterator it = _imp->tiles.begin(); it != _imp->tiles.end(); ++it) {
         for (std::size_t c = 0; c < it->second.perChannelTile.size(); ++c) {
             if (it->second.perChannelTile[c].entryLocker) {
                 if (it->second.perChannelTile[c].entryLocker->getStatus() == CacheEntryLocker::eCacheEntryStatusComputationPending) {
+#ifdef DEBUG_TILES_ACCESS
+                    if (it->first.tx == 0 && it->first.ty == 0 && c == 0 && _imp->renderClone.lock() && _imp->renderClone.lock()->getScriptName_mt_safe() == "ViewerProcess1" && _imp->cachePolicy != eCacheAccessModeNone) {
+                        qDebug() << this << "wait for pending tile:" << it->second.perChannelTile[c].entryLocker->getProcessLocalEntry()->getHashKey();
+                    }
+#endif
                     it->second.perChannelTile[c].entryLocker->waitForPendingEntry();
                 }
                 CacheEntryLocker::CacheEntryStatusEnum status = it->second.perChannelTile[c].entryLocker->getStatus();
@@ -292,6 +309,7 @@ ImagePrivate::init(const Image::InitStorageArgs& args)
 void
 ImagePrivate::initTiles()
 {
+    
     if (tileSizeX == boundsRoundedToTile.width() && tileSizeY == boundsRoundedToTile.height()) {
         // Single tile
         TileCoord c = {0, 0};
@@ -420,7 +438,8 @@ Image::copyPixels(const Image& other, const CopyPixelsArgs& args)
             for (TileMap::iterator it = _imp->tiles.begin(); it != _imp->tiles.end(); ++it, ++oit) {
                 assert(it->second.perChannelTile.size() == oit->second.perChannelTile.size());
                 for (std::size_t c = 0; c < it->second.perChannelTile.size(); ++c) {
-                    it->second.perChannelTile[c].buffer = oit->second.perChannelTile[c].buffer;
+                    assert(it->second.perChannelTile[c].buffer->canSoftCopy(*oit->second.perChannelTile[c].buffer));
+                    it->second.perChannelTile[c].buffer->softCopy(*oit->second.perChannelTile[c].buffer);
                 }
             }
             return;

@@ -86,6 +86,13 @@ CacheEntryKeyBase::getHash(bool forceComputation) const
     
 }
 
+void
+CacheEntryKeyBase::invalidateHash()
+{
+    QMutexLocker k(&_imp->lock);
+    _imp->hashComputed = false;
+}
+
 std::string
 CacheEntryKeyBase::hashToString(U64 hash)
 {

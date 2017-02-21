@@ -631,7 +631,7 @@ public:
      * @brief If this image has cache write access, invalidates the tiles to the cache.
      * They will not be inserted in the cache.
      **/
-    void discardTiles();
+    void removeCacheLockers();
 
     /**
      * @brief If this image has cache write access, push the tiles to the cache.

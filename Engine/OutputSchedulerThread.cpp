@@ -2247,12 +2247,13 @@ public:
 
             // Ensure all cache lockers are gone
             if (inArgs->outputImage) {
-                inArgs->outputImage->discardTiles();
+                inArgs->outputImage->removeCacheLockers();
             }
         }
 
         if (isFailureRetCode(inArgs->retCode)) {
             inArgs->outputImage.reset();
+            inArgs->renderObject.reset();
             return;
         }
         // Convert the image to a format that can be uploaded to a OpenGL texture
@@ -2296,6 +2297,7 @@ public:
             }
             
         }
+        inArgs->renderObject.reset();
     }
 
     static unsigned getViewerMipMapLevel(const ViewerNodePtr& viewer, bool draftModeEnabled, bool fullFrameProcessing)

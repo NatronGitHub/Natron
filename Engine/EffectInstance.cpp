@@ -928,7 +928,7 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
             initArgs.bitdepth = thisBitDepth;
             initArgs.bufferFormat = thisEffectSupportedImageLayout;
             initArgs.storage = preferredStorage;
-            initArgs.renderClone = shared_from_this();
+            initArgs.renderClone = inputEffect;
             initArgs.glContext = getCurrentRender()->getGPUOpenGLContext();
 
         }

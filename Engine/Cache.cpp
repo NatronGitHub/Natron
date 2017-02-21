@@ -582,6 +582,11 @@ struct MemorySegmentEntryHeader
     // The status of the entry
     EntryStatusEnum status;
 
+    // A magic number identifying the thread that is computing the entry.
+    // This enables to detect immediate recursion in case a thread is computing an entry
+    // but is trying to access the cache again for the same entry
+    U64 computeThreadMagic;
+
     // The ID of the plug-in holding this entry
     String_ExternalSegment pluginID;
 
@@ -595,6 +600,7 @@ struct MemorySegmentEntryHeader
     : tileCacheIndex(-1)
     , size(0)
     , status(eEntryStatusNull)
+    , computeThreadMagic(0)
     , pluginID(allocator)
     , entryDataPointerList(allocator)
     , lruNode()
@@ -677,7 +683,7 @@ int getBucketStorageIndex(U64 hash)
     // The 64 bit hash is composed of 16 hexadecimal digits, each of them spanning 4 bits.
     // A bucket "level" is composed of 2 hexa decimal digits, hence 2 * 4 = 8 bits
 
-    // First remove digits on the left with a zero-fill right shift
+    // First clear the mask digits on the left with a zero-fill right shift
     U64 mask = 0xffffffffffffffff >> NATRON_CACHE_BUCKETS_N_DIGITS * level * 4;
     U64 index = hash & mask;
 
@@ -796,9 +802,12 @@ struct CacheBucket
 
 
     /**
-     * @brief Deallocates the cacheEntry from the ToC memory mapped file.
+     * @brief Deallocates the cache entry pointed to by cacheEntryIt from the ToC memory mapped file.
      * This function assumes that tocData.segmentMutex must be taken in write mode
      * This function may take the tileData.segmentMutex in write mode.
+     * @param cacheEntryIt A valid iterator pointing to the entry. It will be invalidated when returning from the function.
+     * @param storage A pointer to the map containing the cacheEntryIt iterator.
+     * @param shmAccess A pointer to the shared memory read locker object
      **/
     void deallocateCacheEntryImpl(EntriesMap_ExternalSegment::iterator cacheEntryIt,
                                   EntriesMap_ExternalSegment* storage,
@@ -1695,9 +1704,9 @@ CacheBucket::tryCacheLookupImpl(U64 hash, EntriesMap_ExternalSegment::iterator* 
     bool ret =  *found != (*storage)->end();
 #ifdef CACHE_TRACE_ENTRY_ACCESS
     if (!ret) {
-        qDebug() << hash << "look-up: entry not found";
+        qDebug() << QThread::currentThread() << hash << "look-up: entry not found";
     } else {
-        qDebug() << hash << "look-up: entry found";
+        qDebug() << QThread::currentThread() <<hash << "look-up: entry found";
     }
 #endif
     return ret;
@@ -1845,11 +1854,14 @@ CacheBucket::deallocateCacheEntryImpl(EntriesMap_ExternalSegment::iterator cache
 
     assert(cacheEntryIt != storage->end());
 
-    // Does not throw any exception
     for (ExternalSegmentTypeHandleList::const_iterator it = cacheEntryIt->second->entryDataPointerList.begin(); it != cacheEntryIt->second->entryDataPointerList.end(); ++it) {
         void* bufPtr = tocFileManager->get_address_from_handle(*it);
         if (bufPtr) {
-            tocFileManager->destroy_ptr(bufPtr);
+            try {
+                tocFileManager->destroy_ptr(bufPtr);
+            } catch (...) {
+                qDebug() << "[BUG]: Failure to free" << bufPtr << "while destroying entry " << cacheEntryIt->first;
+            }
         }
     }
     cacheEntryIt->second->entryDataPointerList.clear();
@@ -1915,11 +1927,15 @@ CacheBucket::deallocateCacheEntryImpl(EntriesMap_ExternalSegment::iterator cache
         disconnectLinkedListNode(&cacheEntryIt->second->lruNode);
     }
 
-    tocFileManager->destroy_ptr<MemorySegmentEntryHeader>(cacheEntryIt->second.get());
+    try {
+        tocFileManager->destroy_ptr<MemorySegmentEntryHeader>(cacheEntryIt->second.get());
+    } catch (...) {
+        qDebug() << "[BUG]: Failure to free entry" << cacheEntryIt->first;
+    }
 
     // deallocate the entry
 #ifdef CACHE_TRACE_ENTRY_ACCESS
-    qDebug() << entryIt->first << ": destroy entry";
+    qDebug() << QThread::currentThread() << cacheEntryIt->first << ": destroy entry";
 #endif
     storage->erase(cacheEntryIt);
 } // deallocateCacheEntryImpl
@@ -1991,29 +2007,33 @@ CacheEntryLocker::lookupAndSetStatusInternal(bool hasWriteRights, boost::scoped_
             return false;
         }
 #ifdef CACHE_TRACE_ENTRY_ACCESS
-        qDebug() << hash << ": entry found but NULL, thread" << QThread::currentThread() << "is taking over the entry";
+        qDebug() << QThread::currentThread() << hash << ": entry found but NULL, thread" << QThread::currentThread() << "is taking over the entry";
 #endif
     }
 
     if (found->second->status == MemorySegmentEntryHeader::eEntryStatusPending) {
 
-        // After a certain number of lookups, if the cache entry is still locked by another thread,
-        // we take-over the entry, to ensure the entry was not left abandonned.
-        if (timeout == 0 || *timeSpentWaitingForPendingEntryMS < timeout) {
-            _imp->status = eCacheEntryStatusComputationPending;
+        bool recursionDetected = found->second->computeThreadMagic == reinterpret_cast<U64>(QThread::currentThread());
+        if (recursionDetected) {
+            qDebug() << "[BUG]: Detected recursion while computing" << hash;
+        } else {
+            // After a certain number of lookups, if the cache entry is still locked by another thread,
+            // we take-over the entry, to ensure the entry was not left abandonned.
+            if (timeout == 0 || *timeSpentWaitingForPendingEntryMS < timeout) {
+                _imp->status = eCacheEntryStatusComputationPending;
 #ifdef CACHE_TRACE_ENTRY_ACCESS
-            qDebug() << hash << ": entry pending, sleeping...";
+                qDebug() << QThread::currentThread() << hash << ": entry pending";
 #endif
 
-            return true;
+                return true;
+            }
         }
-
         // We need write rights to take over the entry
         if (!hasWriteRights) {
             return false;
         }
 #ifdef CACHE_TRACE_ENTRY_ACCESS
-        qDebug() << hash << ": entry pending timeout, thread" << QThread::currentThread() << "is taking over the entry";
+        qDebug() << QThread::currentThread() << hash << ": entry pending timeout, thread" << QThread::currentThread() << "is taking over the entry";
 #endif
     }
 
@@ -2058,14 +2078,14 @@ CacheEntryLocker::lookupAndSetStatusInternal(bool hasWriteRights, boost::scoped_
         case eCacheEntryStatusComputationPending:
         case eCacheEntryStatusMustCompute: {
 #ifdef CACHE_TRACE_ENTRY_ACCESS
-            qDebug() << hash << ": got entry but it has to be computed";
+            qDebug() << QThread::currentThread() << hash << ": got entry but it has to be computed";
 #endif
         }   break;
         case eCacheEntryStatusCached:
         {
             // We found in cache, nothing to do
 #ifdef CACHE_TRACE_ENTRY_ACCESS
-            qDebug() << hash << ": entry cached";
+            qDebug() << QThread::currentThread() << hash << ": entry cached";
 #endif
         }   break;
     } // switch(_imp->status)
@@ -2172,7 +2192,7 @@ CacheEntryLocker::lookupAndSetStatus(boost::scoped_ptr<SharedMemoryProcessLocalR
             // Create the MemorySegmentEntry if it does not exist
             void_allocator allocator(_imp->bucket->tocFileManager->get_segment_manager());
 #ifdef CACHE_TRACE_ENTRY_ACCESS
-            qDebug() << hash << ": construct entry";
+            qDebug() << QThread::currentThread() << hash << ": construct entry";
 #endif
 
             bip::offset_ptr<MemorySegmentEntryHeader> cacheEntry = 0;
@@ -2214,6 +2234,10 @@ CacheEntryLocker::lookupAndSetStatus(boost::scoped_ptr<SharedMemoryProcessLocalR
             // Other fields of the entry will be set once it is done computed in insertInCache()
             cacheEntry->status = MemorySegmentEntryHeader::eEntryStatusPending;
 
+            // Set the pointer to the current thread so we can detect immediate recursion and not wait forever
+            // in waitForPendingEntry().
+            // Note that this value has no meaning outside this process and is set back to 0 in insertInCache()
+            cacheEntry->computeThreadMagic = reinterpret_cast<U64>(QThread::currentThread());
             
         } // writeLock
     } // upgradableLock
@@ -2280,8 +2304,13 @@ CacheEntryLocker::insertInCache()
 
         // The status of the memory segment entry should be pending because we are the thread computing it.
         // All other threads are waiting.
-        assert(cacheEntryIt->second->status == MemorySegmentEntryHeader::eEntryStatusPending);
-
+        // It may be possible that the entry is marked eEntryStatusReady if there was a recursion, in which case the
+        // computeThreadMagic should have been set to 0 in insertInCache
+        assert(cacheEntryIt->second->status == MemorySegmentEntryHeader::eEntryStatusPending || cacheEntryIt->second->computeThreadMagic == 0);
+        if (cacheEntryIt->second->computeThreadMagic == 0) {
+            _imp->status = eCacheEntryStatusCached;
+            return;
+        }
         // The cacheEntry fields should be uninitialized
         // This may throw an exception if out of memory or if the getMetadataSize function does not return
         // enough memory to encode all the data.
@@ -2431,12 +2460,13 @@ CacheEntryLocker::insertInCache()
                     
                 }
             } // lruWriteLock
+            cacheEntryIt->second->computeThreadMagic = 0;
             cacheEntryIt->second->status = MemorySegmentEntryHeader::eEntryStatusReady;
 
             _imp->status = eCacheEntryStatusCached;
 
 #ifdef CACHE_TRACE_ENTRY_ACCESS
-            qDebug() << hash << ": entry inserted in cache";
+            qDebug() << QThread::currentThread() << hash << ": entry inserted in cache";
 #endif
 
         } catch (...) {
@@ -2505,7 +2535,9 @@ CacheEntryLocker::waitForPendingEntry(std::size_t timeout)
 
 CacheEntryLocker::~CacheEntryLocker()
 {
-
+#ifdef CACHE_TRACE_ENTRY_ACCESS
+    qDebug() << QThread::currentThread() << _imp->processLocalEntry->getHashKey() << ": destroying locker object";
+#endif
     // If cached, we don't have to release any data
     if (_imp->status == eCacheEntryStatusCached) {
         return;

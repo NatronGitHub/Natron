@@ -107,6 +107,11 @@ public:
      **/
     U64 getHash(bool forceComputation = false) const;
 
+    /**
+     * @brief Invalidate the hash to force its computation upon the next call of gethash()
+     **/
+    void invalidateHash();
+
     static std::string hashToString(U64 hash);
 
     /**

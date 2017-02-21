@@ -1322,7 +1322,7 @@ EffectInstance::requestRenderInternal(TimeValue time,
 static void invalidateCachedLockers(const std::map<ImagePlaneDesc, ImagePtr>& cachedPlanes)
 {
     for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = cachedPlanes.begin(); it != cachedPlanes.end(); ++it) {
-        it->second->discardTiles();
+        it->second->removeCacheLockers();
     }
 }
 
@@ -1406,7 +1406,7 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
         }
 
         if (isFailureRetCode(renderRetCode) && requestData->getCachePolicy() != eCacheAccessModeNone) {
-            cacheImage->discardTiles();
+            invalidateCachedLockers(producedImagePlanes);
             break;
         }
 
