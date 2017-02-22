@@ -72,7 +72,7 @@ Image::~Image()
         for (std::size_t c = 0;  c < it->second.perChannelTile.size(); ++c) {
             toDeleteInDeleterThread.push_back(it->second.perChannelTile[c].buffer);
 #ifdef DEBUG_TILES_ACCESS
-            if (it->second.perChannelTile[c].entryLocker && c == 0  && _imp->renderClone.lock() /*&& _imp->renderClone.lock()->getScriptName_mt_safe() == "ViewerProcess1"*/ && _imp->cachePolicy != eCacheAccessModeNone) {
+            if (it->second.perChannelTile[c].entryLocker  && _imp->renderClone.lock() /*&& _imp->renderClone.lock()->getScriptName_mt_safe() == "ViewerProcess1"*/ && _imp->cachePolicy != eCacheAccessModeNone) {
                 //if (it->first.tx == 0 && it->first.ty == 0) {
                     qDebug() << QThread::currentThread() << _imp->renderClone.lock()->getScriptName_mt_safe().c_str() << this << "discard" << it->second.perChannelTile[c].entryLocker->getProcessLocalEntry()->getHashKey();
                 //}
@@ -99,7 +99,7 @@ Image::removeCacheLockers()
         for (std::size_t c = 0; c < tile.perChannelTile.size(); ++c) {
             Image::MonoChannelTile& thisChannelTile = tile.perChannelTile[c];
 #ifdef DEBUG_TILES_ACCESS
-            if (it->second.perChannelTile[c].entryLocker && c == 0 && _imp->renderClone.lock() && /*_imp->renderClone.lock()->getScriptName_mt_safe() == "ViewerProcess1" &&*/ _imp->cachePolicy != eCacheAccessModeNone) {
+            if (it->second.perChannelTile[c].entryLocker && _imp->renderClone.lock() && /*_imp->renderClone.lock()->getScriptName_mt_safe() == "ViewerProcess1" &&*/ _imp->cachePolicy != eCacheAccessModeNone) {
                 //if (it->first.tx == 0 && it->first.ty == 0) {
                     qDebug() << QThread::currentThread() << _imp->renderClone.lock()->getScriptName_mt_safe().c_str()  <<  this << "discard" << it->second.perChannelTile[c].entryLocker->getProcessLocalEntry()->getHashKey();
                 //}

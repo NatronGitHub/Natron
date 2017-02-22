@@ -159,9 +159,9 @@ ImagePrivate::initTileAndFetchFromCache(const TileCoord& coord, Image::Tile &til
             }
             assert(thisChannelTile.entryLocker->getProcessLocalEntry() == cachedBuffer);
 #ifdef DEBUG_TILES_ACCESS
-            if (c == 0 && renderClone.lock() /*&& renderClone.lock()->getScriptName_mt_safe() == "ViewerProcess1"*/ && cachePolicy != eCacheAccessModeNone && thisChannelTile.entryLocker) {
+            if (renderClone.lock() /*&& renderClone.lock()->getScriptName_mt_safe() == "ViewerProcess1"*/ && cachePolicy != eCacheAccessModeNone && thisChannelTile.entryLocker) {
                 //if (coord.tx == 0 && coord.ty == 0) {
-                qDebug() << QThread::currentThread() << renderClone.lock()->getScriptName_mt_safe().c_str() << _publicInterface << "init tile:" << thisChannelTile.entryLocker->getProcessLocalEntry()->getHashKey() << "status = " << thisChannelTile.entryLocker->getStatus() << "(1=mustCompute/2=pending)";
+                qDebug() << QThread::currentThread() << renderClone.lock()->getScriptName_mt_safe().c_str() << _publicInterface << "init tile:" << "(" << coord.tx << "," << coord.ty << ")" << thisChannelTile.entryLocker->getProcessLocalEntry()->getHashKey() << "status = " << thisChannelTile.entryLocker->getStatus() << "(1=mustCompute/2=pending)";
                 if (thisChannelTile.entryLocker->getStatus() == CacheEntryLocker::eCacheEntryStatusComputationPending) {
                     assert(true);
                 }
