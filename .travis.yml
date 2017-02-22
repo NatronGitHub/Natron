@@ -34,9 +34,10 @@ addons:
     - ubuntu-toolchain-r-test
     # get a recent ffmpeg (>=2.5) for precise from ppa:archivematica/externals(2.5.1) or ppa:pavlyshko/precise(2.6.1) or ppa:spvkgn/ffmpeg-dev(2.8.6)
     # NOT WHITELISTED
-    - sourceline: 'ppa:spvkgn/ffmpeg-dev'
+    #- sourceline: 'ppa:spvkgn/ffmpeg-dev'
     # this one is for trusty ffmpeg
-    - sourceline: 'ppa:jonathonf/ffmpeg-3'
+    #- sourceline: 'ppa:jonathonf/ffmpeg-3'
+    - sourceline: 'ppa:mc3man/trusty-media'
     - kalakris-cmake
     - pythonxy-devel
     packages:
