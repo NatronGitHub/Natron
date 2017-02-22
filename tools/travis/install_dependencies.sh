@@ -41,9 +41,15 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     # see http://stackoverflow.com/questions/11302758/error-while-copy-constructing-boostshared-ptr-using-c11
     ## we used the irie/boost ppa for that purpose
     #sudo add-apt-repository -y ppa:irie/boost
+    if [ `lsb_release -cs` = "trusty" ]; then
+	# samuel-bachmann/boost has a backport of boost 1.60
+	sudo add-apt-repository ppa:samuel-bachmann/boost
+	BOOSTVER=
+    else
     # now we use ppa:boost-latest/ppa (contains boost 1.55)
-    sudo add-apt-repository -y ppa:boost-latest/ppa
-    BOOSTVER=1.55
+	sudo add-apt-repository -y ppa:boost-latest/ppa
+	BOOSTVER=1.55
+    fi
     PKGS="$PKGS libboost${BOOSTVER}-dev libboost-math${BOOSTVER}-dev libboost-serialization${BOOSTVER}-dev"
 
     # the PPA xorg-edgers contains cairo 1.12 (required for rotoscoping)
@@ -84,7 +90,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     # OpenFX-IO
     # - ffmpeg
     if [ `lsb_release -cs` = "trusty" ]; then
-	if [ "$CC" = "$TEST_CC" ]; then PKGS="$PKGS cmake libtinyxml-dev liblcms2-dev libyaml-cpp-dev libboost${BOOSTVER}-dev libavcodec-ffmpeg-dev libavformat-ffmpeg-dev libswscale-ffmpeg-dev libavutil-ffmpeg-dev libswresample-ffmpeg-dev"; fi
+	if [ "$CC" = "$TEST_CC" ]; then PKGS="$PKGS cmake libtinyxml-dev liblcms2-dev libyaml-cpp-dev libboost${BOOSTVER}-dev ffmpeg"; fi
     else
 	if [ "$CC" = "$TEST_CC" ]; then PKGS="$PKGS cmake libtinyxml-dev liblcms2-dev libyaml-cpp-dev libboost${BOOSTVER}-dev libavcodec-dev libavformat-dev libswscale-dev libavutil-dev libswresample-dev"; fi
     fi
