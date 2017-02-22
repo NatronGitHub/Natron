@@ -40,7 +40,7 @@
 #endif
 
 // When defined, tiles will be fetched from the cache (and optionnally downscaled) sequentially
-#define NATRON_IMAGE_SEQUENTIAL_INIT
+//#define NATRON_IMAGE_SEQUENTIAL_INIT
 
 NATRON_NAMESPACE_ENTER;
 

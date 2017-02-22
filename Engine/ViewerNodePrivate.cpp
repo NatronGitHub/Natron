@@ -158,6 +158,7 @@ ViewerNodePrivate::refreshInputChoiceMenu(int internalIndex, int groupInputIndex
     std::vector<ChoiceOption> entries = inputChoiceKnob->getEntries();
     for (std::size_t i = 0; i < entries.size(); ++i) {
         if (entries[i].id == groupInputID) {
+            inputChoiceKnob->setValue(i);
             return;
         }
     }

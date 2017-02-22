@@ -686,7 +686,7 @@ Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool failIfExi
     {
         ///Check for invalid index
         QMutexLocker l(&_imp->inputsMutex);
-        if ( (inputNumber < 0) || ( inputNumber > (int)_imp->inputs.size() ) ) {
+        if ( (inputNumber < 0) || ( inputNumber >= (int)_imp->inputs.size() ) ) {
             return false;
         }
     }
@@ -1201,14 +1201,14 @@ Node::getOutputsConnectedToThisNode(std::map<NodePtr, int>* outputs)
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
 
-    NodePtr thisSHared = shared_from_this();
+    NodePtr thisShared = shared_from_this();
     for (NodesWList::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
         NodePtr output = it->lock();
         if (!output) {
             continue;
         }
 
-        int indexOfThis = output->inputIndex(thisSHared);
+        int indexOfThis = output->inputIndex(thisShared);
         assert(indexOfThis != -1);
         if (indexOfThis >= 0) {
             outputs->insert( std::make_pair(output, indexOfThis) );
