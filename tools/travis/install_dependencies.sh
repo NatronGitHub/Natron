@@ -83,7 +83,11 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
 
     # OpenFX-IO
     # - ffmpeg
-    if [ "$CC" = "$TEST_CC" ]; then PKGS="$PKGS cmake libtinyxml-dev liblcms2-dev libyaml-cpp-dev libboost${BOOSTVER}-dev libavcodec-dev libavformat-dev libswscale-dev libavutil-dev libswresample-dev"; fi
+    if [ `lsb_release -cs` = "trusty" ]; then
+	if [ "$CC" = "$TEST_CC" ]; then PKGS="$PKGS cmake libtinyxml-dev liblcms2-dev libyaml-cpp-dev libboost${BOOSTVER}-dev libavcodec-ffmpeg-dev libavformat-ffmpeg-dev libswscale-ffmpeg-dev libavutil-ffmpeg-dev libswresample-ffmpeg-dev"; fi
+    else
+	if [ "$CC" = "$TEST_CC" ]; then PKGS="$PKGS cmake libtinyxml-dev liblcms2-dev libyaml-cpp-dev libboost${BOOSTVER}-dev libavcodec-dev libavformat-dev libswscale-dev libavutil-dev libswresample-dev"; fi
+    fi
     # - opencolorio (available as libopencolorio-dev on trusty)
     if [ `lsb_release -cs` = "trusty" ]; then
         if [ "$CC" = "$TEST_CC" ]; then PKGS="$PKGS libopencolorio-dev"; OCIO_HOME=/usr; fi
