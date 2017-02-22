@@ -78,7 +78,6 @@ OfxMemory::alloc(size_t nBytes)
 void
 OfxMemory::freeMem()
 {
-<<<<<<< HEAD
     // A plug-in is calling freeMem, either this memory is held on the effect itself, in which case
     // calling releasePluginMemory will decrease the reference count and delete it.
     // If not held by an effect delete the memory because it's not held by a plug-in.
@@ -89,10 +88,6 @@ OfxMemory::freeMem()
     } else {
         delete this;
     }
-=======
-    _memory->freeMem();
-    delete this;
->>>>>>> origin/RB-2.2
 }
 
 void
