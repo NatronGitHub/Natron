@@ -44,7 +44,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     if [ `lsb_release -cs` = "trusty" ]; then
 	# samuel-bachmann/boost has a backport of boost 1.60
 	sudo add-apt-repository -y ppa:samuel-bachmann/boost
-	BOOSTVER=
+	BOOSTVER=1.60
     else
     # now we use ppa:boost-latest/ppa (contains boost 1.55)
 	sudo add-apt-repository -y ppa:boost-latest/ppa
