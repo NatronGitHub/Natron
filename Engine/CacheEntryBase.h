@@ -151,6 +151,14 @@ public:
                                    ExternalSegmentTypeHandleList::const_iterator end,
                                    const void* tileDataPtr);
 
+    /**
+     * @brief Must return whether attempting to call Cache::get() recursively on the same hash is allowed
+     * or not for this kind of entry.
+     **/
+    virtual bool allowMultipleFetchForThread() const
+    {
+        return false;
+    }
 private:
 
     boost::scoped_ptr<CacheEntryBasePrivate> _imp;

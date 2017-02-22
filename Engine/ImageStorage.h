@@ -355,6 +355,11 @@ public:
                                    ExternalSegmentTypeHandleList::const_iterator end,
                                    const void* tileDataPtr) OVERRIDE FINAL;
 
+    virtual bool allowMultipleFetchForThread() const OVERRIDE FINAL
+    {
+        return true;
+    }
+
     virtual bool canSoftCopy(const ImageStorageBase& other) OVERRIDE FINAL;
 
     virtual void softCopy(const ImageStorageBase& other) OVERRIDE FINAL;

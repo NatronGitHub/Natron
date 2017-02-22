@@ -582,9 +582,9 @@ struct MemorySegmentEntryHeader
     // The status of the entry
     EntryStatusEnum status;
 
-    // A magic number identifying the ComputeEntryLocker that is computing the entry.
+    // A magic number identifying the thread that is computing the entry.
     // This enables to detect immediate recursion in case a thread is computing an entry
-    // but is trying to access the cache again for the same entry
+    // but is trying to access the cache again for the same entry in the meantime.
     U64 computeThreadMagic;
 
     // The ID of the plug-in holding this entry
@@ -2011,7 +2011,7 @@ CacheEntryLocker::lookupAndSetStatusInternal(bool hasWriteRights, boost::scoped_
 
     if (found->second->status == MemorySegmentEntryHeader::eEntryStatusPending) {
 
-        bool recursionDetected = found->second->computeThreadMagic == reinterpret_cast<U64>(this);
+        bool recursionDetected = !_imp->processLocalEntry->allowMultipleFetchForThread() && (found->second->computeThreadMagic == reinterpret_cast<U64>(QThread::currentThread()));
         if (recursionDetected) {
             qDebug() << "[BUG]: Detected recursion while computing" << _imp->hash;
         } else {
@@ -2234,8 +2234,8 @@ CacheEntryLocker::lookupAndSetStatus(boost::scoped_ptr<SharedMemoryProcessLocalR
             // Set the pointer to the current thread so we can detect immediate recursion and not wait forever
             // in waitForPendingEntry().
             // Note that this value has no meaning outside this process and is set back to 0 in insertInCache()
-            cacheEntry->computeThreadMagic = reinterpret_cast<U64>(this);
-            
+            cacheEntry->computeThreadMagic = reinterpret_cast<U64>(QThread::currentThread());
+        
         } // writeLock
     } // upgradableLock
     // Concurrency resumes here!
