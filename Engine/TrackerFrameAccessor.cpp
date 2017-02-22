@@ -453,7 +453,9 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
         initArgs.storage = eStorageModeRAM;
         initArgs.bitdepth = sourceImage->getBitDepth();
         ImagePtr tmpImage = Image::create(initArgs);
-
+        if (!tmpImage) {
+            return (mv::FrameAccessor::Key)0;
+        }
         Image::CopyPixelsArgs cpyArgs;
         cpyArgs.roi = initArgs.bounds;
         tmpImage->copyPixels(*sourceImage, cpyArgs);

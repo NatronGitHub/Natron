@@ -233,6 +233,11 @@ public:
         // Default - false
         bool delayAllocation;
 
+        // If true, throw a std::bad_alloc() as soon as an uncached tile is met
+        //
+        // Default  - false;
+        bool failIfTileNotCached;
+
         InitStorageArgs();
     };
 
@@ -241,7 +246,7 @@ public:
 
     /**
      * @brief Make an image with the given storage parameters. 
-     * This may fail, in which case a std::bad_alloc exception is thrown. 
+     * This may fail, in which case a NULL image is returned.
      **/
     static ImagePtr create(const InitStorageArgs& args);
 
@@ -728,8 +733,9 @@ public:
      * the existing bounds and the passed RoI. 
      * Data is copied over to the temporary image and then swaped with this image.
      * In output of this function, the image bounds contain at least the RoI.
+     *
      **/
-    void ensureBounds(const RectI& roi);
+    ActionRetCodeEnum ensureBounds(const RectI& roi) WARN_UNUSED_RETURN;
 
     /**
      * @brief Fill everything outside the roi in black and transparant

@@ -499,6 +499,9 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                     initArgs.glContext = glContext;
                     initArgs.textureTarget = GL_TEXTURE_2D;
                     _imp->osmesaSmearTmpTexture = Image::create(initArgs);
+                    if (!_imp->osmesaSmearTmpTexture) {
+                        return eActionStatusFailed;
+                    }
 
                     // Make sure the texture is ready before rendering the smear
                     GL_CPU::Flush();
@@ -508,7 +511,10 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                 if (!glContext->isGPUContext() && strokeStartPointIndex == 0) {
                     // Ensure the tmp texture has correct size
                     assert(_imp->osmesaSmearTmpTexture);
-                    _imp->osmesaSmearTmpTexture->ensureBounds(outputPlane.second->getBounds());
+                    ActionRetCodeEnum stat = _imp->osmesaSmearTmpTexture->ensureBounds(outputPlane.second->getBounds());
+                    if (isFailureRetCode(stat)) {
+                        return stat;
+                    }
                 }
             }
 

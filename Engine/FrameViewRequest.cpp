@@ -56,6 +56,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
+#ifdef DEBUG
+//#define TRACE_REQUEST_LIFETIME
+#endif
 
 NATRON_NAMESPACE_ENTER;
 
@@ -162,6 +165,10 @@ struct FrameViewRequestPrivate
     // The stack of upstram effect distortions
     Distortion2DStackPtr distortionStack;
 
+#ifdef TRACE_REQUEST_LIFETIME
+    std::string nodeName;
+#endif
+
     // True if cache write is allowed but not cache read
     bool byPassCache;
 
@@ -193,6 +200,9 @@ struct FrameViewRequestPrivate
     , neededComps()
     , distortion()
     , distortionStack()
+#ifdef TRACE_REQUEST_LIFETIME
+    , nodeName(renderClone->getNode()->getScriptName_mt_safe())
+#endif
     , byPassCache()
     {
         
@@ -208,7 +218,9 @@ FrameViewRequest::FrameViewRequest(TimeValue time,
                                    const EffectInstancePtr& renderClone)
 : _imp(new FrameViewRequestPrivate(time, view, proxyScale, mipMapLevel, plane, timeViewHash, renderClone))
 {
-
+#ifdef TRACE_REQUEST_LIFETIME
+    qDebug() << "Create request" << _imp->nodeName.c_str();
+#endif
     if (renderClone->getCurrentRender()->isByPassCacheEnabled()) {
         _imp->byPassCache = true;
     }
@@ -216,6 +228,9 @@ FrameViewRequest::FrameViewRequest(TimeValue time,
 
 FrameViewRequest::~FrameViewRequest()
 {
+#ifdef TRACE_REQUEST_LIFETIME
+    qDebug() << "Delete request" << _imp->nodeName.c_str();
+#endif
 }
 
 EffectInstancePtr

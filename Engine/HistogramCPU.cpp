@@ -508,7 +508,9 @@ HistogramCPU::run()
                 initArgs.mipMapLevel = image->getMipMapLevel();
                 initArgs.storage = eStorageModeRAM;
                 ImagePtr mappedImage = Image::create(initArgs);
-
+                if (!mappedImage) {
+                    continue;
+                }
                 Image::CopyPixelsArgs copyArgs;
                 copyArgs.roi = image->getBounds();
                 mappedImage->copyPixels(*image, copyArgs);

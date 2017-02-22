@@ -54,7 +54,10 @@ ImagePtr
 Image::create(const InitStorageArgs& args)
 {
     ImagePtr ret(new Image);
-    ret->_imp->init(args);
+    ActionRetCodeEnum stat = ret->_imp->init(args);
+    if (isFailureRetCode(stat)) {
+        return ImagePtr();
+    }
     return ret;
 }
 
@@ -69,8 +72,10 @@ Image::~Image()
         for (std::size_t c = 0;  c < it->second.perChannelTile.size(); ++c) {
             toDeleteInDeleterThread.push_back(it->second.perChannelTile[c].buffer);
 #ifdef DEBUG_TILES_ACCESS
-            if (it->second.perChannelTile[c].entryLocker && c == 0 && it->first.tx == 0 && it->first.ty == 0 && _imp->renderClone.lock() /*&& _imp->renderClone.lock()->getScriptName_mt_safe() == "ViewerProcess1"*/ && _imp->cachePolicy != eCacheAccessModeNone) {
-                qDebug() << QThread::currentThread() << _imp->renderClone.lock()->getScriptName_mt_safe().c_str() << this << "discard" << it->second.perChannelTile[c].entryLocker->getProcessLocalEntry()->getHashKey();
+            if (it->second.perChannelTile[c].entryLocker && c == 0  && _imp->renderClone.lock() /*&& _imp->renderClone.lock()->getScriptName_mt_safe() == "ViewerProcess1"*/ && _imp->cachePolicy != eCacheAccessModeNone) {
+                //if (it->first.tx == 0 && it->first.ty == 0) {
+                    qDebug() << QThread::currentThread() << _imp->renderClone.lock()->getScriptName_mt_safe().c_str() << this << "discard" << it->second.perChannelTile[c].entryLocker->getProcessLocalEntry()->getHashKey();
+                //}
             }
 #endif
         }
@@ -94,8 +99,10 @@ Image::removeCacheLockers()
         for (std::size_t c = 0; c < tile.perChannelTile.size(); ++c) {
             Image::MonoChannelTile& thisChannelTile = tile.perChannelTile[c];
 #ifdef DEBUG_TILES_ACCESS
-            if (it->second.perChannelTile[c].entryLocker && c == 0 && it->first.tx == 0 && it->first.ty == 0 && _imp->renderClone.lock() && /*_imp->renderClone.lock()->getScriptName_mt_safe() == "ViewerProcess1" &&*/ _imp->cachePolicy != eCacheAccessModeNone) {
-                qDebug() << QThread::currentThread() << _imp->renderClone.lock()->getScriptName_mt_safe().c_str()  <<  this << "discard" << it->second.perChannelTile[c].entryLocker->getProcessLocalEntry()->getHashKey();
+            if (it->second.perChannelTile[c].entryLocker && c == 0 && _imp->renderClone.lock() && /*_imp->renderClone.lock()->getScriptName_mt_safe() == "ViewerProcess1" &&*/ _imp->cachePolicy != eCacheAccessModeNone) {
+                //if (it->first.tx == 0 && it->first.ty == 0) {
+                    qDebug() << QThread::currentThread() << _imp->renderClone.lock()->getScriptName_mt_safe().c_str()  <<  this << "discard" << it->second.perChannelTile[c].entryLocker->getProcessLocalEntry()->getHashKey();
+                //}
             }
 #endif
             thisChannelTile.entryLocker.reset();
@@ -163,17 +170,41 @@ Image::InitStorageArgs::InitStorageArgs()
 , textureTarget(GL_TEXTURE_2D)
 , externalBuffer()
 , delayAllocation(false)
+, failIfTileNotCached(false)
 {
     // By default make all channels
     components[0] = components[1] = components[2] = components[3] = 1;
 }
 
+struct ActionStatusWrapper
+{
+    ActionRetCodeEnum stat;
+    mutable QMutex statMutex;
+
+    void updateStatus(ActionRetCodeEnum status)
+    {
+        QMutexLocker k(&statMutex);
+        if (isFailureRetCode(stat)) {
+            // If it's already failed, don't update
+            return;
+        }
+        stat = status;
+    }
+
+    bool isFailed() const
+    {
+        QMutexLocker k(&statMutex);
+        return isFailureRetCode(stat);
+    }
+};
+typedef boost::shared_ptr<ActionStatusWrapper> StatPtr;
 
 class TileFetcherProcessor : public MultiThreadProcessorBase
 {
 
     std::vector<TileCoord> _tileIndices;
     ImagePrivate* _imp;
+    StatPtr _stat;
 
 public:
 
@@ -188,10 +219,11 @@ public:
 
     }
 
-    void setData(const std::vector<TileCoord> &tileIndices, ImagePrivate* imp)
+    void setData(const std::vector<TileCoord> &tileIndices, ImagePrivate* imp, const StatPtr& stat)
     {
         _tileIndices = tileIndices;
         _imp = imp;
+        _stat = stat;
     }
 
     virtual ActionRetCodeEnum launchThreads(unsigned int nCPUs = 0) OVERRIDE FINAL WARN_UNUSED_RETURN
@@ -202,6 +234,10 @@ public:
     virtual ActionRetCodeEnum multiThreadFunction(unsigned int threadID,
                                                   unsigned int nThreads) OVERRIDE FINAL WARN_UNUSED_RETURN
     {
+        // It might already be failed
+        if (_stat->isFailed()) {
+            return eActionStatusFailed;
+        }
         // Each threads get a rectangular portion but full scan-lines
         int fromIndex, toIndex;
         ImageMultiThreadProcessorBase::getThreadRange(threadID, nThreads, 0, _tileIndices.size(), &fromIndex, &toIndex);
@@ -212,29 +248,35 @@ public:
                 assert(false);
                 continue;
             }
+            ActionRetCodeEnum stat;
             try {
-                _imp->initTileAndFetchFromCache(c, found->second);
+                stat = _imp->initTileAndFetchFromCache(c, found->second);
             } catch (...) {
-                return eActionStatusFailed;
+                stat = eActionStatusFailed;
+            }
+            _stat->updateStatus(stat);
+            if (isFailureRetCode(stat)) {
+                return stat;
             }
         }
         return eActionStatusOK;
     }
 };
 
-void
+ActionRetCodeEnum
 ImagePrivate::init(const Image::InitStorageArgs& args)
 {
+
 
     // Should be initialized once!
     assert(tiles.empty());
     if (!tiles.empty()) {
-        throw std::bad_alloc();
+        return eActionStatusFailed;
     }
 
     // The bounds of the image must not be empty
     if (args.bounds.isNull()) {
-        throw std::bad_alloc();
+        return eActionStatusFailed;
     }
 
     RenderScale proxyPlusMipMapScale = args.proxyScale;
@@ -259,6 +301,7 @@ ImagePrivate::init(const Image::InitStorageArgs& args)
     enabledChannels = args.components;
     bitdepth = args.bitdepth;
     tilesAllocated = !args.delayAllocation;
+    failIfTileUncached = args.failIfTileNotCached;
     storage = args.storage;
     glContext = args.glContext;
     textureTarget = args.textureTarget;
@@ -268,13 +311,13 @@ ImagePrivate::init(const Image::InitStorageArgs& args)
     // OpenGL texture back-end only supports 32-bit float RGBA packed format.
     assert(args.storage != eStorageModeGLTex || (args.bufferFormat == eImageBufferLayoutRGBAPackedFullRect && args.bitdepth == eImageBitDepthFloat));
     if (args.storage == eStorageModeGLTex && (args.bufferFormat != eImageBufferLayoutRGBAPackedFullRect || args.bitdepth != eImageBitDepthFloat)) {
-        throw std::bad_alloc();
+        return eActionStatusFailed;
     }
 
     // MMAP storage only supports mono channel tiles, except if it is an external buffer.
     assert(args.storage != eStorageModeDisk || args.bufferFormat == eImageBufferLayoutMonoChannelTiled || args.externalBuffer);
     if (args.storage == eStorageModeDisk && args.bufferFormat != eImageBufferLayoutMonoChannelTiled && !args.externalBuffer) {
-        throw std::bad_alloc();
+        return eActionStatusFailed;
     }
 
     // If allocating OpenGL textures, ensure the context is current
@@ -300,66 +343,71 @@ ImagePrivate::init(const Image::InitStorageArgs& args)
     }
     assert(boundsRoundedToTile.width() % tileSizeX == 0 && boundsRoundedToTile.height() % tileSizeY == 0);
     if (args.externalBuffer) {
-        initFromExternalBuffer(args);
+        return initFromExternalBuffer(args);
     } else {
-        initTiles();
+        return initTiles();
     }
 } // init
 
-void
+ActionRetCodeEnum
 ImagePrivate::initTiles()
 {
-    
+
+
     if (tileSizeX == boundsRoundedToTile.width() && tileSizeY == boundsRoundedToTile.height()) {
         // Single tile
         TileCoord c = {0, 0};
-        initTileAndFetchFromCache(c, tiles[c]);
-    } else {
-
-#ifndef NATRON_IMAGE_SEQUENTIAL_INIT
-        std::vector<TileCoord> tileIndices;
-#endif
-        // Initialize each tile
-        for (int ty = boundsRoundedToTile.y1; ty < boundsRoundedToTile.y2; ty += tileSizeY) {
-            for (int tx = boundsRoundedToTile.x1; tx < boundsRoundedToTile.x2; tx += tileSizeX) {
-                TileCoord c = {tx, ty};
-                assert(tx % tileSizeX == 0 && ty % tileSizeY == 0);
-
-                // This tile was already initialized.
-                {
-                    TileMap::const_iterator found = tiles.find(c);
-                    if (found != tiles.end()) {
-                        assert(found->second.perChannelTile.size() > 0);
-                        continue;
-                    }
-                }
-                Image::Tile& tile = tiles[c];
-#ifndef NATRON_IMAGE_SEQUENTIAL_INIT
-                tileIndices.push_back(c);
-                (void)tile;
-#else
-                initTileAndFetchFromCache(c, tile);
-#endif
-            }
-        }
-
-
-#ifndef NATRON_IMAGE_SEQUENTIAL_INIT
-        TileFetcherProcessor processor(renderClone.lock());
-        processor.setData(tileIndices, this);
-        ActionRetCodeEnum stat = processor.launchThreads();
-        if (stat == eActionStatusFailed) {
-            throw std::bad_alloc();
-        }
-#endif
-#ifdef DEBUG
-        for (TileMap::const_iterator it = tiles.begin(); it != tiles.end(); ++it) {
-            assert(it->second.perChannelTile.size() > 0);
-        }
-#endif
+        return initTileAndFetchFromCache(c, tiles[c]);
     }
 
-}
+    StatPtr retcode(new ActionStatusWrapper);
+    retcode->stat = eActionStatusOK;
+
+#ifndef NATRON_IMAGE_SEQUENTIAL_INIT
+    std::vector<TileCoord> tileIndices;
+#endif
+    // Initialize each tile
+    for (int ty = boundsRoundedToTile.y1; ty < boundsRoundedToTile.y2; ty += tileSizeY) {
+        for (int tx = boundsRoundedToTile.x1; tx < boundsRoundedToTile.x2; tx += tileSizeX) {
+            TileCoord c = {tx, ty};
+            assert(tx % tileSizeX == 0 && ty % tileSizeY == 0);
+
+            // This tile was already initialized.
+            {
+                TileMap::const_iterator found = tiles.find(c);
+                if (found != tiles.end()) {
+                    assert(found->second.perChannelTile.size() > 0);
+                    continue;
+                }
+            }
+            Image::Tile& tile = tiles[c];
+#ifndef NATRON_IMAGE_SEQUENTIAL_INIT
+            tileIndices.push_back(c);
+            (void)tile;
+#else
+            retcode->updateStatus(initTileAndFetchFromCache(c, tile));
+            if (retcode->isFailed()) {
+                return retcode->stat;
+            }
+#endif
+        }
+    }
+
+#ifndef NATRON_IMAGE_SEQUENTIAL_INIT
+    TileFetcherProcessor processor(renderClone.lock());
+    processor.setData(tileIndices, this, retcode);
+    processor.launchThreads();
+    if (retcode->isFailed()) {
+        return retcode->stat;
+    }
+#endif
+#ifdef DEBUG
+    for (TileMap::const_iterator it = tiles.begin(); it != tiles.end(); ++it) {
+        assert(it->second.perChannelTile.size() > 0);
+    }
+#endif
+    return eActionStatusOK;
+} // initTiles
 
 Image::CopyPixelsArgs::CopyPixelsArgs()
 : roi()
@@ -1164,11 +1212,11 @@ Image::fillBoundsZero()
     fillZero(getBounds());
 }
 
-void
+ActionRetCodeEnum
 Image::ensureBounds(const RectI& roi)
 {
     if (_imp->originalBounds.contains(roi)) {
-        return;
+        return eActionStatusOK;
     }
 
     RectI oldBounds = _imp->originalBounds;
@@ -1180,7 +1228,8 @@ Image::ensureBounds(const RectI& roi)
         _imp->originalBounds = newBounds;
         _imp->boundsRoundedToTile = newBounds;
         _imp->boundsRoundedToTile.roundToTileSize(_imp->tileSizeX, _imp->tileSizeY);
-        _imp->initTiles();
+        return _imp->initTiles();
+
     } else {
         ImagePtr tmpImage;
         {
@@ -1198,6 +1247,9 @@ Image::ensureBounds(const RectI& roi)
                 initArgs.glContext = isGlEntry->getOpenGLContext();
             }
             tmpImage = Image::create(initArgs);
+            if (!tmpImage) {
+                return eActionStatusFailed;
+            }
         }
         Image::CopyPixelsArgs cpyArgs;
         cpyArgs.roi = oldBounds;
@@ -1205,7 +1257,7 @@ Image::ensureBounds(const RectI& roi)
 
         // Swap images so that this image becomes the resized one.
         _imp.swap(tmpImage->_imp);
-
+        return eActionStatusOK;
     }
 } // ensureBounds
 
@@ -1381,7 +1433,9 @@ Image::downscaleMipMap(const RectI & roi, unsigned int downscaleLevels) const
         args.proxyScale = previousLevelImage->getProxyScale();
         args.mipMapLevel = previousLevelImage->getMipMapLevel();
         ImagePtr tmpImg = Image::create(args);
-
+        if (!tmpImg) {
+            return ImagePtr();
+        }
         CopyPixelsArgs cpyArgs;
         cpyArgs.roi = roi;
         tmpImg->copyPixels(*this, cpyArgs);
@@ -1406,6 +1460,9 @@ Image::downscaleMipMap(const RectI & roi, unsigned int downscaleLevels) const
             args.proxyScale = previousLevelImage->getProxyScale();
             args.mipMapLevel = previousLevelImage->getMipMapLevel() + 1;
             mipmapImage = Image::create(args);
+            if (!mipmapImage) {
+                return mipmapImage;
+            }
         }
 
         Image::CPUTileData srcTileData;

@@ -32,7 +32,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-void
+ActionRetCodeEnum
 ImagePrivate::initTileAndFetchFromCache(const TileCoord& coord, Image::Tile &tile)
 {
     CachePtr cache = appPTR->getTileCache();
@@ -77,20 +77,29 @@ ImagePrivate::initTileAndFetchFromCache(const TileCoord& coord, Image::Tile &til
     EffectInstancePtr effect = renderClone.lock();
     std::string pluginID;
     if (effect) {
+        // If the effect is aborted, do not even bother fetching all tiles
+        if (effect->isRenderAborted()) {
+            return eActionStatusAborted;
+        }
         pluginID = effect->getNode()->getPluginID();
     }
 
     assert(channelIndices.size() > 0);
     tile.perChannelTile.resize(channelIndices.size());
 
-    // Allocate storage for each channels
-    for (std::size_t c = 0; c < channelIndices.size(); ++c) {
-        initTileChannelStorage(cache, tile, channelIndices, c);
+    // Create storage for each channels
+    try {
+        for (std::size_t c = 0; c < channelIndices.size(); ++c) {
+            initTileChannelStorage(cache, tile, channelIndices, c);
+        }
+    } catch (const std::bad_alloc&) {
+        return eActionStatusFailed;
     }
 
     if (cachePolicy == eCacheAccessModeNone) {
-        return;
+        return eActionStatusOK;
     }
+    assert(cachePolicy == eCacheAccessModeReadWrite || cachePolicy == eCacheAccessModeWriteOnly);
 
     // Look up the cache for each channel
     for (std::size_t c = 0; c < channelIndices.size(); ++c) {
@@ -117,24 +126,21 @@ ImagePrivate::initTileAndFetchFromCache(const TileCoord& coord, Image::Tile &til
         }
 
         CacheImageTileStoragePtr cachedBuffer = toCacheImageTileStorage(thisChannelTile.buffer);
-
-        // This is the key for the tile at the requested draft/mipmap level
-        ImageTileKeyPtr requestedScaleKey;
-        if (cachePolicy != eCacheAccessModeNone) {
-            requestedScaleKey.reset(new ImageTileKey(nodeHash,
-                                                     channelID,
-                                                     proxyScale,
-                                                     mipMapLevel,
-                                                     isDraftImage,
-                                                     bitdepth,
-                                                     tile.tileBounds,
-                                                     pluginID));
-            cachedBuffer->setKey(requestedScaleKey);
-        }
+        assert(cachedBuffer);
 
         // If the entry wants to be cached but we don't want to read from the cache
         // we must remove from the cache any entry that already exists at the given hash.
         if (cachePolicy == eCacheAccessModeWriteOnly) {
+            ImageTileKeyPtr requestedScaleKey(new ImageTileKey(nodeHash,
+                                                               channelID,
+                                                               proxyScale,
+                                                               mipMapLevel,
+                                                               isDraftImage,
+                                                               bitdepth,
+                                                               tile.tileBounds,
+                                                               pluginID));
+            cachedBuffer->setKey(requestedScaleKey);
+
             CacheEntryLockerPtr locker = cache->get(cachedBuffer);
             if (locker->getStatus() == CacheEntryLocker::eCacheEntryStatusCached) {
                 cache->removeEntry(cachedBuffer);
@@ -142,30 +148,31 @@ ImagePrivate::initTileAndFetchFromCache(const TileCoord& coord, Image::Tile &til
         }
 
         // Look in the cache
-        if (cachePolicy == eCacheAccessModeReadWrite || cachePolicy == eCacheAccessModeWriteOnly) {
 
-            fetchBufferFromCache(cache, cachedBuffer, channelID, channelIndices[c], pluginID, tile, thisChannelTile);
+        fetchBufferFromCache(cache, cachedBuffer, channelID, channelIndices[c], pluginID, tile, thisChannelTile);
 
-            if (thisChannelTile.entryLocker->getStatus() == CacheEntryLocker::eCacheEntryStatusCached) {
-                thisChannelTile.entryLocker.reset();
-            } else {
-                assert(thisChannelTile.entryLocker->getProcessLocalEntry() == cachedBuffer);
-#ifdef DEBUG_TILES_ACCESS
-                if (c == 0 && renderClone.lock() /*&& renderClone.lock()->getScriptName_mt_safe() == "ViewerProcess1"*/ && cachePolicy != eCacheAccessModeNone && thisChannelTile.entryLocker) {
-                    if (coord.tx == 0 && coord.ty == 0) {
-                        qDebug() << QThread::currentThread() << renderClone.lock()->getScriptName_mt_safe().c_str() << _publicInterface << "init tile:" << thisChannelTile.entryLocker->getProcessLocalEntry()->getHashKey() << "status = " << thisChannelTile.entryLocker->getStatus() << "(0=cached/1=mustCompute/2=pending)";
-                        if (thisChannelTile.entryLocker->getStatus() == CacheEntryLocker::eCacheEntryStatusComputationPending) {
-                            assert(true);
-                        }
-                    }
-                    
-                }
-#endif
+        if (thisChannelTile.entryLocker->getStatus() == CacheEntryLocker::eCacheEntryStatusCached) {
+            thisChannelTile.entryLocker.reset();
+        } else {
+            if (failIfTileUncached) {
+                return eActionStatusFailed;
             }
-        } // useCache
-        
-    } // for each channel
+            assert(thisChannelTile.entryLocker->getProcessLocalEntry() == cachedBuffer);
+#ifdef DEBUG_TILES_ACCESS
+            if (c == 0 && renderClone.lock() /*&& renderClone.lock()->getScriptName_mt_safe() == "ViewerProcess1"*/ && cachePolicy != eCacheAccessModeNone && thisChannelTile.entryLocker) {
+                //if (coord.tx == 0 && coord.ty == 0) {
+                qDebug() << QThread::currentThread() << renderClone.lock()->getScriptName_mt_safe().c_str() << _publicInterface << "init tile:" << thisChannelTile.entryLocker->getProcessLocalEntry()->getHashKey() << "status = " << thisChannelTile.entryLocker->getStatus() << "(1=mustCompute/2=pending)";
+                if (thisChannelTile.entryLocker->getStatus() == CacheEntryLocker::eCacheEntryStatusComputationPending) {
+                    assert(true);
+                }
+                //}
 
+            }
+#endif
+        }
+
+    } // for each channel
+    return eActionStatusOK;
 } // initTileAndFetchFromCache
 
 void
@@ -325,11 +332,14 @@ ImagePrivate::fetchBufferFromCache(const CachePtr& cache,
                 initArgs.layer = upscaledPlane;
                 // Do not allocate the image buffers, just look-up
                 initArgs.delayAllocation = true;
+
+                // Bail-out early if one of the upscaled tile cannot be found
+                initArgs.failIfTileNotCached = true;
             }
 
-            try {
-                upscaledImage = Image::create(initArgs);
-            } catch (...) {
+
+            upscaledImage = Image::create(initArgs);
+            if (!upscaledImage) {
                 return;
             }
         }
@@ -354,9 +364,9 @@ ImagePrivate::fetchBufferFromCache(const CachePtr& cache,
             initArgs.proxyScale = proxyScale;
             initArgs.bitdepth = bitdepth;
             initArgs.renderClone = renderClone.lock();
-            try {
-                mappedImage = Image::create(initArgs);
-            } catch (...) {
+
+            mappedImage = Image::create(initArgs);
+            if (!mappedImage) {
                 return;
             }
         }
@@ -371,6 +381,9 @@ ImagePrivate::fetchBufferFromCache(const CachePtr& cache,
 
 
     ImagePtr downscaledImage = upscaledImage->downscaleMipMap(upscaledTileBounds, mipMapLevel);
+    if (!downscaledImage) {
+        return;
+    }
     assert(downscaledImage->getBounds() == tile.tileBounds);
 
 
@@ -381,7 +394,7 @@ ImagePrivate::fetchBufferFromCache(const CachePtr& cache,
 
 } // fetchBufferFromCache
 
-void
+ActionRetCodeEnum
 ImagePrivate::initFromExternalBuffer(const Image::InitStorageArgs& args)
 {
     assert(args.externalBuffer);
@@ -389,7 +402,7 @@ ImagePrivate::initFromExternalBuffer(const Image::InitStorageArgs& args)
     if (args.bitdepth != args.externalBuffer->getBitDepth()) {
         assert(false);
         // When providing an external buffer, the bitdepth must be the same as the requested depth
-        throw std::bad_alloc();
+        return eActionStatusFailed;
     }
 
     TileCoord coord = {0,0};
@@ -404,40 +417,40 @@ ImagePrivate::initFromExternalBuffer(const Image::InitStorageArgs& args)
     RAMImageStoragePtr isRAMBuffer = toRAMImageStorage(args.externalBuffer);
     if (isGLBuffer) {
         if (args.storage != eStorageModeGLTex) {
-            throw std::bad_alloc();
+            return eActionStatusFailed;
         }
         if (isGLBuffer->getBounds() != args.bounds) {
-            throw std::bad_alloc();
+            return eActionStatusFailed;
         }
         perChannelTile.buffer = isGLBuffer;
     } else if(isMMAPBuffer) {
         if (args.storage != eStorageModeDisk) {
-            throw std::bad_alloc();
+            return eActionStatusFailed;
         }
         if (isMMAPBuffer->getBounds() != args.bounds) {
-            throw std::bad_alloc();
+            return eActionStatusFailed;
         }
         // Mmap tiles are mono channel
         if (args.layer.getNumComponents() != 1) {
-            throw std::bad_alloc();
+            return eActionStatusFailed;
         }
         perChannelTile.buffer = isMMAPBuffer;
     } else if (isRAMBuffer) {
         if (args.storage != eStorageModeRAM) {
-            throw std::bad_alloc();
+            return eActionStatusFailed;
         }
         if (isRAMBuffer->getBounds() != args.bounds) {
-            throw std::bad_alloc();
+            return eActionStatusFailed;
         }
         if (isRAMBuffer->getNumComponents() != (std::size_t)args.layer.getNumComponents()) {
-            throw std::bad_alloc();
+            return eActionStatusFailed;
         }
         perChannelTile.buffer = isRAMBuffer;
     } else {
         // Unrecognized storage
-        throw std::bad_alloc();
+        return eActionStatusFailed;
     }
-
+    return eActionStatusOK;
 } // initFromExternalBuffer
 
 
@@ -472,8 +485,10 @@ ImagePrivate::insertTilesInCache()
             if (status == CacheEntryLocker::eCacheEntryStatusMustCompute) {
                 if (thisChannelTile.buffer->isAllocated() && !renderAborted) {
 #ifdef DEBUG_TILES_ACCESS
-                    if (it->first.tx == 0 && it->first.ty == 0 && c == 0 && renderClone.lock() /*&& renderClone.lock()->getScriptName_mt_safe() == "ViewerProcess1"*/ && cachePolicy != eCacheAccessModeNone) {
-                        qDebug() << renderClone.lock()->getScriptName_mt_safe().c_str() << _publicInterface << "insert in cache:" << thisChannelTile.entryLocker->getProcessLocalEntry()->getHashKey();
+                    if  (c == 0 && renderClone.lock() /*&& renderClone.lock()->getScriptName_mt_safe() == "ViewerProcess1"*/ && cachePolicy != eCacheAccessModeNone) {
+                        //if (it->first.tx == 0 && it->first.ty == 0) {
+                            qDebug() << renderClone.lock()->getScriptName_mt_safe().c_str() << _publicInterface << "insert in cache:" << thisChannelTile.entryLocker->getProcessLocalEntry()->getHashKey();
+                        //}
                     }
 #endif
                     thisChannelTile.entryLocker->insertInCache();
@@ -523,6 +538,9 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
         args.layer = fromImage._imp->layer;
         tmpImage = Image::create(args);
 
+        if (!tmpImage) {
+            return tmpImage;
+        }
         Image::CopyPixelsArgs copyArgs;
         copyArgs.roi = roi;
         tmpImage->copyPixels(fromImage, copyArgs);
@@ -546,7 +564,9 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
                 args.bounds = fromImage.getBounds();
                 args.layer = ImagePlaneDesc::getRGBAComponents();
                 tmpImage = Image::create(args);
-
+                if (!tmpImage) {
+                    return tmpImage;
+                }
                 Image::CopyPixelsArgs copyArgs;
                 copyArgs.roi = roi;
                 tmpImage->copyPixels(fromImage, copyArgs);
@@ -562,7 +582,9 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
             args.bounds = fromImage.getBounds();
             args.layer = ImagePlaneDesc::getRGBAComponents();
             tmpImage = Image::create(args);
-
+            if (!tmpImage) {
+                return tmpImage;
+            }
             Image::CopyPixelsArgs copyArgs;
             copyArgs.roi = roi;
             tmpImage->copyPixels(fromImage, copyArgs);
@@ -585,7 +607,9 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
             args.bounds = fromImage.getBounds();
             args.layer = ImagePlaneDesc::getRGBAComponents();
             tmpImage = Image::create(args);
-
+            if (!tmpImage) {
+                return tmpImage;
+            }
             Image::CopyPixelsArgs copyArgs;
             copyArgs.roi = roi;
             tmpImage->copyPixels(fromImage, copyArgs);

@@ -556,7 +556,10 @@ EffectInstance::Implementation::fetchCachedTiles(const FrameViewRequestPtr& requ
     // on which the plug-in will work on.
     ImagePtr image = requestPassData->getImagePlane();
     if (image) {
-        image->ensureBounds(roiPixels);
+        ActionRetCodeEnum stat = image->ensureBounds(roiPixels);
+        if (isFailureRetCode(stat)) {
+            return ImagePtr();
+        }
     } else {
         Image::InitStorageArgs initArgs;
         {
@@ -585,11 +588,8 @@ EffectInstance::Implementation::fetchCachedTiles(const FrameViewRequestPtr& requ
         // Since multiple threads may want to access to the same image in the cache concurrently,
         // the first thread that gets onto a tile to render will render it and lock-out other threads
         // until it is rendered entirely.
-        try {
-            image = Image::create(initArgs);
-        } catch (...) {
-            return ImagePtr();
-        }
+        image = Image::create(initArgs);
+
     } // image
     return image;
 } // fetchCachedTiles
@@ -654,7 +654,10 @@ EffectInstance::Implementation::allocateRenderBackendStorageForRenderRects(const
 
             // We got an existing buffer
             // Ensure the accumBuffer contains at least the RoI
-            accumBuffer->ensureBounds(roiPixels);
+            ActionRetCodeEnum stat = accumBuffer->ensureBounds(roiPixels);
+            if (isFailureRetCode(stat)) {
+                return stat;
+            }
 
             // When drawing with a paint brush, we may only render the bounding box of the un-rendered points.
             RectI drawingLastMovementBBoxPixel;
@@ -705,9 +708,8 @@ EffectInstance::Implementation::allocateRenderBackendStorageForRenderRects(const
             tmpImgInitArgs.layer = requestData->getPlaneDesc();
 
         }
-        try {
-            outputTmpImage = Image::create(tmpImgInitArgs);
-        } catch (...) {
+        outputTmpImage = Image::create(tmpImgInitArgs);
+        if (!outputTmpImage) {
             return eActionStatusFailed;
         }
         requestData->setImagePlane(outputTmpImage);
@@ -761,9 +763,8 @@ EffectInstance::Implementation::allocateRenderBackendStorageForRenderRects(const
                     tmpImgInitArgs.layer = *it2;
 
                 }
-                try {
-                    tmpImage = Image::create(tmpImgInitArgs);
-                } catch (...) {
+                tmpImage = Image::create(tmpImgInitArgs);
+                if (!tmpImage) {
                     return eActionStatusFailed;
                 }
             }
@@ -1296,7 +1297,11 @@ EffectInstance::requestRenderInternal(TimeValue time,
     {
         ImagePtr image = _imp->fetchCachedTiles(requestData, renderMappedRoI, mappedMipMapLevel, requestData->getPlaneDesc(), true);
         if (!image) {
-            return eActionStatusFailed;
+            if (isRenderAborted()) {
+                return eActionStatusAborted;
+            } else {
+                return eActionStatusFailed;
+            }
         }
         requestData->setImagePlane(image);
 

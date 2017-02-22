@@ -310,26 +310,26 @@ Node::makePreviewImage(TimeValue time,
     ImagePtr imageForPreview = img;
     if (imageForPreview->getBufferFormat() == eImageBufferLayoutMonoChannelTiled || imageForPreview->getStorageMode() == eStorageModeGLTex){
 
-        try {
-            {
-                Image::InitStorageArgs initArgs;
-                initArgs.bounds = imageForPreview->getBounds();
-                initArgs.bufferFormat = eImageBufferLayoutRGBAPackedFullRect;
-                initArgs.storage = eStorageModeRAM;
-                initArgs.mipMapLevel = imageForPreview->getMipMapLevel();
-                initArgs.proxyScale = imageForPreview->getProxyScale();
-                initArgs.layer = imageForPreview->getLayer();
-                initArgs.bitdepth = imageForPreview->getBitDepth();
-                imageForPreview = Image::create(initArgs);
+        {
+            Image::InitStorageArgs initArgs;
+            initArgs.bounds = imageForPreview->getBounds();
+            initArgs.bufferFormat = eImageBufferLayoutRGBAPackedFullRect;
+            initArgs.storage = eStorageModeRAM;
+            initArgs.mipMapLevel = imageForPreview->getMipMapLevel();
+            initArgs.proxyScale = imageForPreview->getProxyScale();
+            initArgs.layer = imageForPreview->getLayer();
+            initArgs.bitdepth = imageForPreview->getBitDepth();
+            imageForPreview = Image::create(initArgs);
+            if (!imageForPreview) {
+                return false;
             }
-            {
-                Image::CopyPixelsArgs cpyArgs;
-                cpyArgs.roi = imageForPreview->getBounds();
-                imageForPreview->copyPixels(*img, cpyArgs);
-            }
-        } catch (...) {
-            return false;
         }
+        {
+            Image::CopyPixelsArgs cpyArgs;
+            cpyArgs.roi = imageForPreview->getBounds();
+            imageForPreview->copyPixels(*img, cpyArgs);
+        }
+
     }
     Image::Tile mainTile;
     imageForPreview->getTileAt(0, 0, &mainTile);

@@ -2228,7 +2228,9 @@ public:
         initArgs.storage = eStorageModeRAM;
         initArgs.bufferFormat = eImageBufferLayoutRGBAPackedFullRect;
         ImagePtr mappedImage = Image::create(initArgs);
-
+        if (!mappedImage) {
+            return mappedImage;
+        }
         Image::CopyPixelsArgs copyArgs;
         copyArgs.roi = initArgs.bounds;
         copyArgs.monoConversion = Image::eMonoToPackedConversionCopyToAll;

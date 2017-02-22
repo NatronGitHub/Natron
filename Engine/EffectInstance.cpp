@@ -934,7 +934,9 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
         }
 
         convertedImage = Image::create(initArgs);
-
+        if (!convertedImage) {
+            return false;
+        }
 
         int channelForMask = - 1;
         ImagePlaneDesc maskComps;

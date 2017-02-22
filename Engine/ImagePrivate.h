@@ -47,7 +47,7 @@
 #include "Engine/EngineFwd.h"
 
 // Define to print debug information about tiles caching
-#define DEBUG_TILES_ACCESS
+//#define DEBUG_TILES_ACCESS
 
 NATRON_NAMESPACE_ENTER;
 
@@ -110,6 +110,9 @@ struct ImagePrivate
     // If true, tiles are assumed to be allocated, otherwise only cached tiles hold memory
     bool tilesAllocated;
 
+    // If true, throw a std::bad_alloc() as soon as an uncached tile is met
+    bool failIfTileUncached;
+
     // The OpenGl context used is the image is stored in a texture
     OSGLContextPtr glContext;
 
@@ -138,6 +141,7 @@ struct ImagePrivate
     , storage(eStorageModeNone)
     , tilesAllocatedMutex()
     , tilesAllocated(false)
+    , failIfTileUncached(false)
     , glContext()
     , textureTarget(0)
     , nodeHash(0)
@@ -146,15 +150,15 @@ struct ImagePrivate
 
     }
 
-    void init(const Image::InitStorageArgs& args);
+    ActionRetCodeEnum init(const Image::InitStorageArgs& args);
 
-    void initTiles();
+    ActionRetCodeEnum initTiles();
 
-    void initFromExternalBuffer(const Image::InitStorageArgs& args);
+    ActionRetCodeEnum initFromExternalBuffer(const Image::InitStorageArgs& args);
 
     void initTileChannelStorage(const CachePtr& cache, Image::Tile &tile, const std::vector<int>& channelIndices, std::size_t c);
 
-    void initTileAndFetchFromCache(const TileCoord& coord, Image::Tile &tile);
+    ActionRetCodeEnum initTileAndFetchFromCache(const TileCoord& coord, Image::Tile &tile);
 
     CacheEntryLocker::CacheEntryStatusEnum fetchBufferFromCacheInternal(const CachePtr& cache,
                                                                         const CacheImageTileStoragePtr& cacheBuffer,
