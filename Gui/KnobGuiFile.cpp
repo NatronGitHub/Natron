@@ -145,7 +145,12 @@ KnobGuiFile::createWidget(QHBoxLayout* layout)
         QPixmap pixRefresh;
         appPTR->getIcon(NATRON_PIXMAP_VIEWER_REFRESH, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixRefresh);
         _reloadButton->setIcon( QIcon(pixRefresh) );
-        _reloadButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Reload the file."), NATRON_NAMESPACE::WhiteSpaceNormal) );
+        KnobFile::KnobFileDialogTypeEnum type = knob->getDialogType();
+        bool existing = ( (type == KnobFile::eKnobFileDialogTypeOpenFile) ||
+                          (type == KnobFile::eKnobFileDialogTypeOpenFileSequences) );
+        _reloadButton->setToolTip( existing ?
+                                   NATRON_NAMESPACE::convertFromPlainText(tr("Reload the file."), NATRON_NAMESPACE::WhiteSpaceNormal) :
+                                   NATRON_NAMESPACE::convertFromPlainText(tr("Rewrite the file."), NATRON_NAMESPACE::WhiteSpaceNormal) );
         QObject::connect( _reloadButton, SIGNAL(clicked()), this, SLOT(onReloadClicked()) );
         layout->addWidget(_reloadButton);
     }
