@@ -154,6 +154,8 @@ public Q_SLOTS:
 
     void onButtonClicked();
 
+    void onRewriteClicked();
+
     void open_file(bool);
 
     void onMakeAbsoluteTriggered();
@@ -182,6 +184,7 @@ private:
 private:
     LineEdit *_lineEdit;
     Button *_openFileButton;
+    Button *_rewriteButton;
     QString _lastOpened;
     boost::weak_ptr<KnobOutputFile> _knob;
 };

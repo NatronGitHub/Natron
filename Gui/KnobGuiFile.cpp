@@ -125,7 +125,7 @@ KnobGuiFile::createWidget(QHBoxLayout* layout)
     layout->addWidget(_lineEdit);
     layout->addWidget(_openFileButton);
 
-    if ( knob->getHolder() ) {
+    if ( knob && knob->getHolder() ) {
         _reloadButton = new Button( layout->parentWidget() );
         _reloadButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
         _reloadButton->setFocusPolicy(Qt::NoFocus);
@@ -474,10 +474,13 @@ KnobGuiOutputFile::KnobGuiOutputFile(KnobPtr knob,
     : KnobGui(knob, container)
     , _lineEdit(0)
     , _openFileButton(0)
+    , _rewriteButton(0)
 {
-    _knob = boost::dynamic_pointer_cast<KnobOutputFile>(knob);
-    assert( _knob.lock() );
-    QObject::connect( _knob.lock().get(), SIGNAL(openFile(bool)), this, SLOT(open_file(bool)) );
+    boost::shared_ptr<KnobOutputFile> k = boost::dynamic_pointer_cast<KnobOutputFile>(knob);
+
+    assert(k);
+    QObject::connect( k.get(), SIGNAL(openFile(bool)), this, SLOT(open_file(bool)) );
+    _knob = k;
 }
 
 KnobGuiOutputFile::~KnobGuiOutputFile()
@@ -494,16 +497,17 @@ KnobGuiOutputFile::removeSpecificGui()
 void
 KnobGuiOutputFile::createWidget(QHBoxLayout* layout)
 {
+    boost::shared_ptr<KnobOutputFile> knob = _knob.lock();
+
     _lineEdit = new LineEdit( layout->parentWidget() );
-    layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-    QObject::connect( _lineEdit, SIGNAL(editingFinished()), this, SLOT(onTextEdited()) );
-
+    //layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     _lineEdit->setPlaceholderText( tr("File path...") );
-
     _lineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
     ///set the copy/link actions in the right click menu
     enableRightClickMenu(_lineEdit, 0);
+
+    QObject::connect( _lineEdit, SIGNAL(editingFinished()), this, SLOT(onTextEdited()) );
 
 
     _openFileButton = new Button( layout->parentWidget() );
@@ -511,24 +515,41 @@ KnobGuiOutputFile::createWidget(QHBoxLayout* layout)
     QPixmap pix;
     appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pix);
     _openFileButton->setIcon( QIcon(pix) );
-    _openFileButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Browse file..."), NATRON_NAMESPACE::WhiteSpaceNormal) );
+    _openFileButton->setToolTip( toolTip() );
     _openFileButton->setFocusPolicy(Qt::NoFocus); // exclude from tab focus
     QObject::connect( _openFileButton, SIGNAL(clicked()), this, SLOT(onButtonClicked()) );
-    QWidget *container = new QWidget( layout->parentWidget() );
-    QHBoxLayout *containerLayout = new QHBoxLayout(container);
-    container->setLayout(containerLayout);
-    containerLayout->setContentsMargins(0, 0, 0, 0);
 
-    containerLayout->addWidget(_lineEdit);
-    containerLayout->addWidget(_openFileButton);
+    layout->addWidget(_lineEdit);
+    layout->addWidget(_openFileButton);
 
-    layout->addWidget(container);
+    if ( knob && knob->getHolder() ) {
+        _rewriteButton = new Button( layout->parentWidget() );
+        _rewriteButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+        _rewriteButton->setFocusPolicy(Qt::NoFocus);
+        QPixmap pixRefresh;
+        appPTR->getIcon(NATRON_PIXMAP_VIEWER_REFRESH, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixRefresh);
+        _rewriteButton->setIcon( QIcon(pixRefresh) );
+        _rewriteButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Rewrite the file."), NATRON_NAMESPACE::WhiteSpaceNormal) );
+        QObject::connect( _rewriteButton, SIGNAL(clicked()), this, SLOT(onRewriteClicked()) );
+        layout->addWidget(_rewriteButton);
+    }
 }
 
 void
 KnobGuiOutputFile::onButtonClicked()
 {
     open_file( _knob.lock()->isSequencesDialogEnabled() );
+}
+
+void
+KnobGuiOutputFile::onRewriteClicked()
+{
+    if (_rewriteButton) {
+        boost::shared_ptr<KnobOutputFile> knob = _knob.lock();
+        if (knob) {
+            knob->rewriteFile();
+        }
+    }
 }
 
 void

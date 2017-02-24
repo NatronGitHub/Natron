@@ -151,6 +151,8 @@ public:
         Q_EMIT openFile(_sequenceDialog && _isOutputImage);
     }
 
+    void rewriteFile();
+
     void turnOffSequences()
     {
         _sequenceDialog = false;

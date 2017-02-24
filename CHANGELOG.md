@@ -5,6 +5,13 @@
 # History
 
 
+## Version 2.2.6
+
+### Plugins
+
+- Card3D can now import/export chan files from Natron, Nuke, 3D-Equalizer, Maya, Boujou, etc.
+
+
 ## Version 2.2.5
 
 - Fix undo when manipulating 2D points in the viewer interact #1576

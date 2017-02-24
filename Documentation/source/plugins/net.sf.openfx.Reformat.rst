@@ -10,7 +10,13 @@ Reformat node
 Description
 -----------
 
-Convert the image to another format or size
+Convert the image to another format or size.
+
+An image transform is computed that goes from the input format, regardless of the region of definition (RoD), to the selected format. The Resize Type parameter adjust the way the transform is computed.
+
+The output format is set by this effect.
+
+In order to set the output format without transforming the image content, use the NoOp effect.
 
 This plugin concatenates transforms.
 

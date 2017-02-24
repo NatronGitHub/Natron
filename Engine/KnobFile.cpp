@@ -128,6 +128,19 @@ KnobOutputFile::KnobOutputFile(KnobHolder* holder,
 {
 }
 
+
+void
+KnobOutputFile::rewriteFile()
+{
+    assert( getHolder() );
+    EffectInstance* effect = dynamic_cast<EffectInstance*>( getHolder() );
+    if (effect) {
+        effect->purgeCaches();
+        effect->clearPersistentMessage(false);
+    }
+    evaluateValueChange(0, getCurrentTime(), ViewIdx(0), eValueChangedReasonNatronInternalEdited);
+}
+
 bool
 KnobOutputFile::canAnimate() const
 {
