@@ -7,6 +7,7 @@ The following sections contain documentation about every node in the  Transform 
     :maxdepth: 1
 
     plugins/net.sf.openfx.AdjustRoDPlugin.rst
+    plugins/net.sf.openfx.Card3D.rst
     plugins/net.sf.openfx.CornerPinPlugin.rst
     plugins/net.sf.openfx.CornerPinMaskedPlugin.rst
     plugins/net.sf.openfx.CropPlugin.rst
