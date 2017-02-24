@@ -180,10 +180,17 @@ public:
     Format findExistingFormat(int w, int h, double par = 1.0) const WARN_UNUSED_RETURN;
     const std::vector<Format> & getFormats() const WARN_UNUSED_RETURN;
 
-    CachePtr getCache() const;
+    CachePtr getGeneralPurposeCache() const;
+
+    CachePtr getTileCache() const;
 
     void deleteCacheEntriesInSeparateThread(const std::list<ImageStorageBasePtr> & entriesToDelete);
 
+    /**
+     * @brief Notifies the StorageDeleterThread that it should check cache memory. If full, it will evict
+     * (the least recent) entries from the cache until it falls under the max memory amount.
+     **/
+    void checkCachesMemory();
 
     SettingsPtr getCurrentSettings() const WARN_UNUSED_RETURN;
     const KnobFactory & getKnobFactory() const WARN_UNUSED_RETURN;

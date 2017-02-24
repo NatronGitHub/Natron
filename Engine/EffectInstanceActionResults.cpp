@@ -55,30 +55,24 @@ EffectInstanceActionKeyBase::appendToHash(Hash64* hash) const
 }
 
 void
-EffectInstanceActionKeyBase::toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers) const
+EffectInstanceActionKeyBase::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const
 {
-    objectPointers->push_back(writeNamedSharedObject(_data, objectNamesPrefix + "KeyData", segment));
-    CacheEntryKeyBase::toMemorySegment(segment, objectNamesPrefix, objectPointers);
+    objectPointers->push_back(writeAnonymousSharedObject(_data, segment));
+    CacheEntryKeyBase::toMemorySegment(segment, objectPointers);
 } // toMemorySegment
 
 void
-EffectInstanceActionKeyBase::fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix)
+EffectInstanceActionKeyBase::fromMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList::const_iterator start, ExternalSegmentTypeHandleList::const_iterator end)
 {
-    readNamedSharedObject(objectNamesPrefix + "KeyData", segment, &_data);
-    CacheEntryKeyBase::fromMemorySegment(segment, objectNamesPrefix);
+    if (start == end) {
+        throw std::bad_alloc();
+    }
+    readAnonymousSharedObject(*start,segment, &_data);
 } // fromMemorySegment
 
-std::size_t
-EffectInstanceActionKeyBase::getMetadataSize() const
-{
-    std::size_t ret = CacheEntryKeyBase::getMetadataSize();
-    ret += sizeof(_data.nodeTimeViewVariantHash);
-    ret += sizeof(_data.scale);
-    return ret;
-}
 
 GetRegionOfDefinitionResults::GetRegionOfDefinitionResults()
-: CacheEntryBase(appPTR->getCache())
+: CacheEntryBase(appPTR->getGeneralPurposeCache())
 {
 
 }
@@ -104,31 +98,70 @@ GetRegionOfDefinitionResults::setRoD(const RectD& rod)
     _rod = rod;
 }
 
-std::size_t
-GetRegionOfDefinitionResults::getMetadataSize() const
+void
+GetRegionOfDefinitionResults::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
 {
-    std::size_t ret = CacheEntryBase::getMetadataSize();
-    ret += sizeof(_rod);
+    objectPointers->push_back(writeAnonymousSharedObject(_rod, segment));
+    CacheEntryBase::toMemorySegment(segment, objectPointers, tileDataPtr);
+} // toMemorySegment
+
+void
+GetRegionOfDefinitionResults::fromMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList::const_iterator start, ExternalSegmentTypeHandleList::const_iterator end, const void* tileDataPtr)
+{
+    readAnonymousSharedObject(*start, segment, &_rod);
+    ++start;
+    CacheEntryBase::fromMemorySegment(segment, start, end, tileDataPtr);
+} // fromMemorySegment
+
+
+GetDistortionResults::GetDistortionResults()
+: CacheEntryBase(appPTR->getGeneralPurposeCache())
+{
+    // Distortion results may not be cached in a persistent cache because the plug-in returns to us
+    // a pointer to memory it holds.
+    assert(!getCache()->isPersistent());
+}
+
+
+GetDistortionResultsPtr
+GetDistortionResults::create(const GetDistortionKeyPtr& key)
+{
+    GetDistortionResultsPtr ret(new GetDistortionResults());
+    ret->setKey(key);
     return ret;
+}
+
+DistortionFunction2DPtr
+GetDistortionResults::getResults() const
+{
+    return _disto;
+}
+
+void
+GetDistortionResults::setResults(const DistortionFunction2DPtr& disto)
+{
+    _disto = disto;
 }
 
 
 void
-GetRegionOfDefinitionResults::toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
+GetDistortionResults::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
 {
-    objectPointers->push_back(writeNamedSharedObject(_rod, objectNamesPrefix + "rod", segment));
-    CacheEntryBase::toMemorySegment(segment, objectNamesPrefix, objectPointers, tileDataPtr);
+    objectPointers->push_back(writeAnonymousSharedObject(_disto, segment));
+    CacheEntryBase::toMemorySegment(segment, objectPointers, tileDataPtr);
 } // toMemorySegment
 
 void
-GetRegionOfDefinitionResults::fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, const void* tileDataPtr)
+GetDistortionResults::fromMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList::const_iterator start, ExternalSegmentTypeHandleList::const_iterator end, const void* tileDataPtr)
 {
-    readNamedSharedObject(objectNamesPrefix + "rod", segment, &_rod);
-    CacheEntryBase::fromMemorySegment(segment, objectNamesPrefix, tileDataPtr);
+    readAnonymousSharedObject(*start, segment, &_disto);
+    ++start;
+    CacheEntryBase::fromMemorySegment(segment, start, end, tileDataPtr);
 } // fromMemorySegment
 
+
 IsIdentityResults::IsIdentityResults()
-: CacheEntryBase(appPTR->getCache())
+: CacheEntryBase(appPTR->getGeneralPurposeCache())
 , _data()
 {
     _data.identityInputNb = -1;
@@ -162,32 +195,23 @@ IsIdentityResults::setIdentityData(int identityInputNb, TimeValue identityTime, 
     _data.identityView = identityView;
 }
 
-std::size_t
-IsIdentityResults::getMetadataSize() const
-{
-    std::size_t ret = CacheEntryBase::getMetadataSize();
-    ret += sizeof(_data.identityInputNb);
-    ret += sizeof(_data.identityTime);
-    ret += sizeof(_data.identityView);
-    return ret;
-}
-
 void
-IsIdentityResults::toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
+IsIdentityResults::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
 {
-    objectPointers->push_back(writeNamedSharedObject(_data, objectNamesPrefix + "Results", segment));
-    CacheEntryBase::toMemorySegment(segment, objectNamesPrefix, objectPointers, tileDataPtr);
+    objectPointers->push_back(writeAnonymousSharedObject(_data, segment));
+    CacheEntryBase::toMemorySegment(segment, objectPointers, tileDataPtr);
 } // toMemorySegment
 
 void
-IsIdentityResults::fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, const void* tileDataPtr)
+IsIdentityResults::fromMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList::const_iterator start, ExternalSegmentTypeHandleList::const_iterator end, const void* tileDataPtr)
 {
-    readNamedSharedObject(objectNamesPrefix + "Results", segment, &_data);
-    CacheEntryBase::fromMemorySegment(segment, objectNamesPrefix, tileDataPtr);
+    readAnonymousSharedObject(*start, segment, &_data);
+    ++start;
+    CacheEntryBase::fromMemorySegment(segment, start, end, tileDataPtr);
 } // fromMemorySegment
 
 GetFramesNeededResults::GetFramesNeededResults()
-: CacheEntryBase(appPTR->getCache())
+: CacheEntryBase(appPTR->getGeneralPurposeCache())
 , _framesNeeded()
 {
 
@@ -213,15 +237,6 @@ void
 GetFramesNeededResults::setFramesNeeded(const FramesNeededMap &framesNeeded)
 {
     _framesNeeded = framesNeeded;
-}
-
-std::size_t
-GetFramesNeededResults::getMetadataSize() const
-{
-    std::size_t ret = CacheEntryBase::getMetadataSize();
-    // Hint a fake size, that's enough to ensure the memory allocation is ok
-    ret += 1024;
-    return ret;
 }
 
 // This is made complicated so it can be inserted in interprocess data structures.
@@ -251,12 +266,12 @@ typedef bip::map<int, FrameRangesMap_ExternalSegment, std::less<int>, FramesNeed
 typedef bip::allocator<FramesNeededMap_ExternalSegment, ExternalSegmentType::segment_manager> FramesNeededMap_ExternalSegment_allocator;
 
 void
-GetFramesNeededResults::toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
+GetFramesNeededResults::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
 {
     // An allocator convertible to any allocator<T, segment_manager_t> type
     void_allocator alloc_inst (segment->get_segment_manager());
 
-    FramesNeededMap_ExternalSegment* externalMap = segment->construct<FramesNeededMap_ExternalSegment>(std::string(objectNamesPrefix + "framesNeeded").c_str())(alloc_inst);
+    FramesNeededMap_ExternalSegment* externalMap = segment->construct<FramesNeededMap_ExternalSegment>(boost::interprocess::anonymous_instance)(alloc_inst);
     if (!externalMap) {
         throw std::bad_alloc();
     }
@@ -279,17 +294,15 @@ GetFramesNeededResults::toMemorySegment(ExternalSegmentType* segment, const std:
     }
     
     objectPointers->push_back(segment->get_handle_from_address(externalMap));
-    CacheEntryBase::toMemorySegment(segment, objectNamesPrefix, objectPointers, tileDataPtr);
+    CacheEntryBase::toMemorySegment(segment, objectPointers, tileDataPtr);
 } // toMemorySegment
 
 void
-GetFramesNeededResults::fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, const void* tileDataPtr)
+GetFramesNeededResults::fromMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList::const_iterator start, ExternalSegmentTypeHandleList::const_iterator end, const void* tileDataPtr)
 {
-    FramesNeededMap_ExternalSegment *externalMap = segment->find<FramesNeededMap_ExternalSegment>(std::string(objectNamesPrefix + "framesNeeded").c_str()).first;
-    if (!externalMap) {
-        throw std::bad_alloc();
-    }
-    CacheEntryBase::fromMemorySegment(segment, objectNamesPrefix, tileDataPtr);
+    FramesNeededMap_ExternalSegment *externalMap = (FramesNeededMap_ExternalSegment*)segment->get_address_from_handle(*start);
+    ++start;
+    CacheEntryBase::fromMemorySegment(segment, start, end, tileDataPtr);
 
 
     for (FramesNeededMap_ExternalSegment::iterator it = externalMap->begin(); it != externalMap->end(); ++it) {
@@ -307,7 +320,7 @@ GetFramesNeededResults::fromMemorySegment(ExternalSegmentType* segment, const st
 
 
 GetFrameRangeResults::GetFrameRangeResults()
-: CacheEntryBase(appPTR->getCache())
+: CacheEntryBase(appPTR->getGeneralPurposeCache())
 , _range()
 {
     _range.min = _range.max = 0;
@@ -335,33 +348,25 @@ GetFrameRangeResults::setFrameRangeResults(const RangeD &range)
     _range = range;
 }
 
-std::size_t
-GetFrameRangeResults::getMetadataSize() const
-{
-    std::size_t ret = CacheEntryBase::getMetadataSize();
-    ret += sizeof(_range);
-    return ret;
-}
-
-
 void
-GetFrameRangeResults::toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
+GetFrameRangeResults::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
 {
-    objectPointers->push_back(writeNamedSharedObject(_range, objectNamesPrefix + "range", segment));
-    CacheEntryBase::toMemorySegment(segment, objectNamesPrefix, objectPointers, tileDataPtr);
+    objectPointers->push_back(writeAnonymousSharedObject(_range, segment));
+    CacheEntryBase::toMemorySegment(segment, objectPointers, tileDataPtr);
 } // toMemorySegment
 
 void
-GetFrameRangeResults::fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, const void* tileDataPtr)
+GetFrameRangeResults::fromMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList::const_iterator start, ExternalSegmentTypeHandleList::const_iterator end, const void* tileDataPtr)
 {
-    readNamedSharedObject(objectNamesPrefix + "range", segment, &_range);
-    CacheEntryBase::fromMemorySegment(segment, objectNamesPrefix, tileDataPtr);
+    readAnonymousSharedObject(*start, segment, &_range);
+    ++start;
+    CacheEntryBase::fromMemorySegment(segment, start, end, tileDataPtr);
 } // fromMemorySegment
 
 
 
 GetTimeInvariantMetaDatasResults::GetTimeInvariantMetaDatasResults()
-: CacheEntryBase(appPTR->getCache())
+: CacheEntryBase(appPTR->getGeneralPurposeCache())
 , _metadatas()
 {
 
@@ -389,36 +394,27 @@ GetTimeInvariantMetaDatasResults::setMetadatasResults(const NodeMetadataPtr &met
     _metadatas = metadatas;
 }
 
-std::size_t
-GetTimeInvariantMetaDatasResults::getMetadataSize() const
-{
-    std::size_t ret = CacheEntryBase::getMetadataSize();
-    // Hint a fake size
-    ret += 1024;
-    return ret;
-}
-
 
 void
-GetTimeInvariantMetaDatasResults::toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
+GetTimeInvariantMetaDatasResults::toMemorySegment(ExternalSegmentType* segment,  ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
 {
     assert(_metadatas);
-    _metadatas->toMemorySegment(segment, objectNamesPrefix, objectPointers);
-    CacheEntryBase::toMemorySegment(segment, objectNamesPrefix, objectPointers, tileDataPtr);
+    _metadatas->toMemorySegment(segment, objectPointers);
+    CacheEntryBase::toMemorySegment(segment, objectPointers, tileDataPtr);
 } // toMemorySegment
 
 void
-GetTimeInvariantMetaDatasResults::fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, const void* tileDataPtr)
+GetTimeInvariantMetaDatasResults::fromMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList::const_iterator start, ExternalSegmentTypeHandleList::const_iterator end, const void* tileDataPtr)
 {
     assert(_metadatas);
-    _metadatas->fromMemorySegment(segment, objectNamesPrefix);
-    CacheEntryBase::fromMemorySegment(segment, objectNamesPrefix, tileDataPtr);
+    _metadatas->fromMemorySegment(segment, &start, end);
+    CacheEntryBase::fromMemorySegment(segment, start, end, tileDataPtr);
 } // fromMemorySegment
 
 
 
 GetComponentsResults::GetComponentsResults()
-: CacheEntryBase(appPTR->getCache())
+: CacheEntryBase(appPTR->getGeneralPurposeCache())
 , _neededInputLayers()
 , _producedLayers()
 , _passThroughPlanes()
@@ -526,15 +522,6 @@ GetComponentsResults::setResults(const std::map<int, std::list<ImagePlaneDesc> >
     _data.processAllLayers = processAllLayers;
 }
 
-std::size_t
-GetComponentsResults::getMetadataSize() const
-{
-    std::size_t ret = CacheEntryBase::getMetadataSize();
-    // Hint a fake size
-    ret += 1024;
-    return ret;
-}
-
 typedef bip::allocator<String_ExternalSegment, ExternalSegmentType::segment_manager> String_ExternalSegment_allocator;
 typedef bip::vector<String_ExternalSegment, String_ExternalSegment_allocator> StringVector_ExternalSegment;
 
@@ -609,13 +596,13 @@ static void imageComponentsListFromSharedMemoryComponentsList(const ImagePlaneDe
 }
 
 void
-GetComponentsResults::toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
+GetComponentsResults::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
 {
     // An allocator convertible to any allocator<T, segment_manager_t> type
     void_allocator alloc_inst(segment->get_segment_manager());
 
     {
-        NeededInputLayersMap_ExternalSegment *neededLayers = segment->construct<NeededInputLayersMap_ExternalSegment>(std::string(objectNamesPrefix + "neededInputLayers").c_str())(alloc_inst);
+        NeededInputLayersMap_ExternalSegment *neededLayers = segment->construct<NeededInputLayersMap_ExternalSegment>(boost::interprocess::anonymous_instance)(alloc_inst);
         if (!neededLayers) {
             throw std::bad_alloc();
         }
@@ -625,12 +612,13 @@ GetComponentsResults::toMemorySegment(ExternalSegmentType* segment, const std::s
             imageComponentsListToSharedMemoryComponentsList(alloc_inst, it->second, &vec);
 
             NeededInputLayersValueType v = std::make_pair(it->first, vec);
+            assert(v.second.get_allocator().get_segment_manager() == alloc_inst.get_segment_manager());
             neededLayers->insert(v);
         }
         objectPointers->push_back(segment->get_handle_from_address(neededLayers));
     }
     {
-        ImagePlaneDescVector_ExternalSegment *producedLayers = segment->construct<ImagePlaneDescVector_ExternalSegment>(std::string(objectNamesPrefix + "producedLayers").c_str())(alloc_inst);
+        ImagePlaneDescVector_ExternalSegment *producedLayers = segment->construct<ImagePlaneDescVector_ExternalSegment>(boost::interprocess::anonymous_instance)(alloc_inst);
         if (!producedLayers) {
             throw std::bad_alloc();
         }
@@ -638,7 +626,7 @@ GetComponentsResults::toMemorySegment(ExternalSegmentType* segment, const std::s
         objectPointers->push_back(segment->get_handle_from_address(producedLayers));
     }
     {
-        ImagePlaneDescVector_ExternalSegment *ptPlanes = segment->construct<ImagePlaneDescVector_ExternalSegment>(std::string(objectNamesPrefix + "passThroughLayers").c_str())(alloc_inst);
+        ImagePlaneDescVector_ExternalSegment *ptPlanes = segment->construct<ImagePlaneDescVector_ExternalSegment>(boost::interprocess::anonymous_instance)(alloc_inst);
         if (!ptPlanes) {
             throw std::bad_alloc();
         }
@@ -646,41 +634,50 @@ GetComponentsResults::toMemorySegment(ExternalSegmentType* segment, const std::s
         objectPointers->push_back(segment->get_handle_from_address(ptPlanes));
     }
 
-    objectPointers->push_back(writeNamedSharedObject(_data, objectNamesPrefix + "PassThroughData", segment));
+    objectPointers->push_back(writeAnonymousSharedObject(_data, segment));
 
-    CacheEntryBase::toMemorySegment(segment, objectNamesPrefix, objectPointers, tileDataPtr);
+    CacheEntryBase::toMemorySegment(segment, objectPointers, tileDataPtr);
 } // toMemorySegment
 
 void
-GetComponentsResults::fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, const void* tileDataPtr)
+GetComponentsResults::fromMemorySegment(ExternalSegmentType* segment,
+                                        ExternalSegmentTypeHandleList::const_iterator start,
+                                        ExternalSegmentTypeHandleList::const_iterator end,
+                                        const void* tileDataPtr)
 {
     {
-        NeededInputLayersMap_ExternalSegment *neededLayers = segment->find<NeededInputLayersMap_ExternalSegment>(std::string(objectNamesPrefix + "neededInputLayers").c_str()).first;
-        if (!neededLayers) {
-            throw std::bad_alloc();
-        }
+        NeededInputLayersMap_ExternalSegment *neededLayers = (NeededInputLayersMap_ExternalSegment*)segment->get_address_from_handle(*start);
+        assert(neededLayers->get_allocator().get_segment_manager() == segment->get_segment_manager());
+        ++start;
         for (NeededInputLayersMap_ExternalSegment::const_iterator it = neededLayers->begin(); it != neededLayers->end(); ++it) {
             std::list<ImagePlaneDesc>& comps = _neededInputLayers[it->first];
             imageComponentsListFromSharedMemoryComponentsList(it->second, &comps);
         }
     }
+    if (start == end) {
+        throw std::bad_alloc();
+    }
     {
-        ImagePlaneDescVector_ExternalSegment* producedLayers = segment->find<ImagePlaneDescVector_ExternalSegment>(std::string(objectNamesPrefix + "producedLayers").c_str()).first;
-        if (!producedLayers) {
-            throw std::bad_alloc();
-        }
+        ImagePlaneDescVector_ExternalSegment* producedLayers = (ImagePlaneDescVector_ExternalSegment*)segment->get_address_from_handle(*start);
+        assert(producedLayers->get_allocator().get_segment_manager() == segment->get_segment_manager());
+        ++start;
         imageComponentsListFromSharedMemoryComponentsList(*producedLayers, &_producedLayers);
     }
+    if (start == end) {
+        throw std::bad_alloc();
+    }
     {
-        ImagePlaneDescVector_ExternalSegment* ptLayers = segment->find<ImagePlaneDescVector_ExternalSegment>(std::string(objectNamesPrefix + "passThroughLayers").c_str()).first;
-        if (!ptLayers) {
-            throw std::bad_alloc();
-        }
+        ImagePlaneDescVector_ExternalSegment* ptLayers = (ImagePlaneDescVector_ExternalSegment*)segment->get_address_from_handle(*start);
+        assert(ptLayers->get_allocator().get_segment_manager() == segment->get_segment_manager());
+        ++start;
         imageComponentsListFromSharedMemoryComponentsList(*ptLayers, &_passThroughPlanes);
     }
-    readNamedSharedObject(objectNamesPrefix + "PassThroughData", segment, &_data);
-
-    CacheEntryBase::fromMemorySegment(segment, objectNamesPrefix, tileDataPtr);
+    if (start == end) {
+        throw std::bad_alloc();
+    }
+    readAnonymousSharedObject(*start, segment, &_data);
+    ++start;
+    CacheEntryBase::fromMemorySegment(segment, start, end, tileDataPtr);
 } // fromMemorySegment
 
 

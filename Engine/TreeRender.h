@@ -54,6 +54,8 @@ public:
 
     void addTaskToRender(const FrameViewRequestPtr& render);
 
+    TreeRenderPtr getTreeRender() const;
+
 private:
 
     friend class FrameViewRenderRunnable;
@@ -104,6 +106,9 @@ public:
 
         // Pointer to stats object if any.
         RenderStatsPtr stats;
+
+        // If spwaned from another render, this is a pointer to the original render
+        TreeRenderWPtr originalRender;
 
         // If non null, this is the portion of the input image to render, otherwise the
         // full region of definition wil be rendered.
@@ -164,11 +169,12 @@ public:
      **/
     ActionRetCodeEnum launchRender(FrameViewRequestPtr* outputRequest);
 
+private:
     /**
      * @brief Same as launchRender() except that it launches the render on a different node than the root
      * of the tree with different parameters. 
      **/
-    ActionRetCodeEnum launchRenderWithArgs(const EffectInstancePtr& renderClone,
+    ActionRetCodeEnum launchRenderWithArgs(const EffectInstancePtr& root,
                                            TimeValue time,
                                            ViewIdx view,
                                            const RenderScale& proxyScale,
@@ -176,7 +182,7 @@ public:
                                            const ImagePlaneDesc* plane,
                                            const RectD* canonicalRoI,
                                            FrameViewRequestPtr* outputRequest);
-
+public:
 
     virtual ~TreeRender();
 

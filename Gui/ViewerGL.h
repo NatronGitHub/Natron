@@ -428,6 +428,10 @@ public:
         Q_EMIT selectionCleared();
     }
 
+    // Re-implemented
+    QPixmap renderPixmap(int w = 0, int h = 0, bool useContext = false);
+    QImage grabFrameBuffer(bool withAlpha = false);
+
 Q_SIGNALS:
 
     /**

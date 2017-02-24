@@ -61,11 +61,12 @@ public:
 
 
 
-    virtual void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers) const OVERRIDE;
+    virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const OVERRIDE;
 
-    virtual void fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix) OVERRIDE;
+    virtual void fromMemorySegment(ExternalSegmentType* segment,
+                                   ExternalSegmentTypeHandleList::const_iterator start,
+                                   ExternalSegmentTypeHandleList::const_iterator end) OVERRIDE;
 
-    virtual std::size_t getMetadataSize() const OVERRIDE;
 
 private:
 
@@ -128,11 +129,12 @@ public:
     const RectD& getRoD() const;
     void setRoD(const RectD& rod);
 
-    virtual std::size_t getMetadataSize() const OVERRIDE FINAL;
+    virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const OVERRIDE FINAL;
 
-    virtual void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const OVERRIDE FINAL;
-
-    virtual void fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, const void* tileDataPtr) OVERRIDE FINAL;
+    virtual void fromMemorySegment(ExternalSegmentType* segment,
+                                   ExternalSegmentTypeHandleList::const_iterator start,
+                                   ExternalSegmentTypeHandleList::const_iterator end,
+                                   const void* tileDataPtr) OVERRIDE FINAL;
 
 
 private:
@@ -147,7 +149,77 @@ toGetRegionOfDefinitionResults(const CacheEntryBasePtr& entry)
     return boost::dynamic_pointer_cast<GetRegionOfDefinitionResults>(entry);
 }
 
+class GetDistortionKey : public EffectInstanceActionKeyBase
+{
+public:
 
+    GetDistortionKey(U64 nodeTimeViewVariantHash,
+                      const RenderScale& scale,
+                      const std::string& pluginID)
+    : EffectInstanceActionKeyBase(nodeTimeViewVariantHash, scale, pluginID)
+    {
+
+    }
+
+    virtual ~GetDistortionKey()
+    {
+
+    }
+
+    virtual int getUniqueID() const OVERRIDE FINAL
+    {
+        return kCacheKeyUniqueIDGetDistortionResults;
+    }
+
+
+
+};
+
+/**
+ * @brief Beware: this is the only action result that may NOT live in a persistent storage because the plug-in returns to us 
+ * a pointer to memory it holds.
+ **/
+class GetDistortionResults : public CacheEntryBase
+{
+    GetDistortionResults();
+
+public:
+
+    static GetDistortionResultsPtr create(const GetDistortionKeyPtr& key);
+
+    virtual ~GetDistortionResults()
+    {
+
+    }
+
+    // This is thread-safe and doesn't require a mutex:
+    // The thread computing this entry and calling the setter is guaranteed
+    // to be the only one interacting with this object. Then all objects
+    // should call the getter.
+    //
+    DistortionFunction2DPtr getResults() const;
+    void setResults(const DistortionFunction2DPtr& results);
+
+    virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const OVERRIDE FINAL;
+
+    virtual void fromMemorySegment(ExternalSegmentType* segment,
+                                   ExternalSegmentTypeHandleList::const_iterator start,
+                                   ExternalSegmentTypeHandleList::const_iterator end,
+                                   const void* tileDataPtr) OVERRIDE FINAL;
+    
+    
+private:
+    
+    DistortionFunction2DPtr _disto;
+    
+};
+
+
+inline GetDistortionResultsPtr
+toGetDistortionResults(const CacheEntryBasePtr& entry)
+{
+    return boost::dynamic_pointer_cast<GetDistortionResults>(entry);
+}
 
 class IsIdentityKey : public EffectInstanceActionKeyBase
 {
@@ -165,14 +237,10 @@ public:
 
     }
 
-
     virtual int getUniqueID() const OVERRIDE FINAL
     {
         return kCacheKeyUniqueIDIsIdentityResults;
     }
-
-
-    
 };
 
 
@@ -197,11 +265,12 @@ public:
     void getIdentityData(int* identityInputNb, TimeValue* identityTime, ViewIdx* identityView) const;
     void setIdentityData(int identityInputNb, TimeValue identityTime, ViewIdx identityView);
 
-    virtual std::size_t getMetadataSize() const OVERRIDE FINAL;
+    virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const OVERRIDE FINAL;
 
-    virtual void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const OVERRIDE FINAL;
-
-    virtual void fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, const void* tileDataPtr) OVERRIDE FINAL;
+    virtual void fromMemorySegment(ExternalSegmentType* segment,
+                                   ExternalSegmentTypeHandleList::const_iterator start,
+                                   ExternalSegmentTypeHandleList::const_iterator end,
+                                   const void* tileDataPtr) OVERRIDE FINAL;
 
 private:
 
@@ -272,11 +341,12 @@ public:
     void getFramesNeeded(FramesNeededMap* framesNeeded) const;
     void setFramesNeeded(const FramesNeededMap& framesNeeded);
 
-    virtual std::size_t getMetadataSize() const OVERRIDE FINAL;
+    virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const OVERRIDE FINAL;
 
-    virtual void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const OVERRIDE FINAL;
-
-    virtual void fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, const void* tileDataPtr) OVERRIDE FINAL;
+    virtual void fromMemorySegment(ExternalSegmentType* segment,
+                                   ExternalSegmentTypeHandleList::const_iterator start,
+                                   ExternalSegmentTypeHandleList::const_iterator end,
+                                   const void* tileDataPtr) OVERRIDE FINAL;
 
 private:
 
@@ -335,11 +405,12 @@ public:
     void getFrameRangeResults(RangeD* range) const;
     void setFrameRangeResults(const RangeD& range);
 
-    virtual std::size_t getMetadataSize() const OVERRIDE FINAL;
+    virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const OVERRIDE FINAL;
 
-    virtual void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const OVERRIDE FINAL;
-
-    virtual void fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, const void* tileDataPtr) OVERRIDE FINAL;
+    virtual void fromMemorySegment(ExternalSegmentType* segment,
+                                   ExternalSegmentTypeHandleList::const_iterator start,
+                                   ExternalSegmentTypeHandleList::const_iterator end,
+                                   const void* tileDataPtr) OVERRIDE FINAL;
 
 private:
 
@@ -398,11 +469,12 @@ public:
     const NodeMetadataPtr& getMetadatasResults() const;
     void setMetadatasResults(const NodeMetadataPtr& metadatas);
 
-    virtual std::size_t getMetadataSize() const OVERRIDE FINAL;
+    virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const OVERRIDE FINAL;
 
-    virtual void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const OVERRIDE FINAL;
-
-    virtual void fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, const void* tileDataPtr) OVERRIDE FINAL;
+    virtual void fromMemorySegment(ExternalSegmentType* segment,
+                                   ExternalSegmentTypeHandleList::const_iterator start,
+                                   ExternalSegmentTypeHandleList::const_iterator end,
+                                   const void* tileDataPtr) OVERRIDE FINAL;
 
 private:
 
@@ -484,11 +556,12 @@ public:
                     bool processAllLayers);
 
 
-    virtual std::size_t getMetadataSize() const OVERRIDE FINAL;
+    virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const OVERRIDE FINAL;
 
-    virtual void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const OVERRIDE FINAL;
-
-    virtual void fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, const void* tileDataPtr) OVERRIDE FINAL;
+    virtual void fromMemorySegment(ExternalSegmentType* segment,
+                                   ExternalSegmentTypeHandleList::const_iterator start,
+                                   ExternalSegmentTypeHandleList::const_iterator end,
+                                   const void* tileDataPtr) OVERRIDE FINAL;
     
 private:
 

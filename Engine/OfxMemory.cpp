@@ -32,15 +32,15 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_ON(deprecated)
 
 #include "Engine/EffectInstance.h"
-#include "Engine/PluginMemory.h"
 
 NATRON_NAMESPACE_ENTER;
 
 OfxMemory::OfxMemory(const EffectInstancePtr& effect)
     : OFX::Host::Memory::Instance()
+    , PluginMemory()
+    , _effect(effect)
     , _lock()
     , _lockedCount(0)
-    , _memory( new PluginMemory(effect) )
 {
     
 }
@@ -52,7 +52,7 @@ OfxMemory::~OfxMemory()
 void*
 OfxMemory::getPtr()
 {
-    return _memory->getPtr();
+    return (void*)getData();
 }
 
 bool
@@ -67,7 +67,7 @@ OfxMemory::alloc(size_t nBytes)
 
     PluginMemAllocateMemoryArgs args(nBytes);
     try {
-        _memory->allocateMemory(args);
+        allocateMemory(args);
     } catch (const std::bad_alloc &) {
         return false;
     }
@@ -78,7 +78,16 @@ OfxMemory::alloc(size_t nBytes)
 void
 OfxMemory::freeMem()
 {
-    _memory->deallocateMemory();
+    // A plug-in is calling freeMem, either this memory is held on the effect itself, in which case
+    // calling releasePluginMemory will decrease the reference count and delete it.
+    // If not held by an effect delete the memory because it's not held by a plug-in.
+    deallocateMemory();
+    EffectInstancePtr effect = _effect.lock();
+    if (effect) {
+        effect->releasePluginMemory(this);
+    } else {
+        delete this;
+    }
 }
 
 void

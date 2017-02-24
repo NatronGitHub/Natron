@@ -324,8 +324,8 @@ win32-g++ {
     pyside:    INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside-py2)/QtCore
     pyside:    INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside-py2)/QtGui
     python:    PKGCONFIG += python-2.7
-    boost:     LIBS += -lboost_serialization-mt
-    boost:     LIBS += -lboost_serialization-mt
+    boost-serialization-lib: LIBS += -lboost_serialization-mt
+    boost:     LIBS += -lboost_thread-mt -lboost_system-mt
 	
     #See http://stackoverflow.com/questions/16596876/object-file-has-too-many-sections
     Debug:	QMAKE_CXXFLAGS += -Wa,-mbig-obj

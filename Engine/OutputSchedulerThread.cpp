@@ -2228,7 +2228,9 @@ public:
         initArgs.storage = eStorageModeRAM;
         initArgs.bufferFormat = eImageBufferLayoutRGBAPackedFullRect;
         ImagePtr mappedImage = Image::create(initArgs);
-
+        if (!mappedImage) {
+            return mappedImage;
+        }
         Image::CopyPixelsArgs copyArgs;
         copyArgs.roi = initArgs.bounds;
         copyArgs.monoConversion = Image::eMonoToPackedConversionCopyToAll;
@@ -2241,13 +2243,25 @@ public:
         assert(inArgs->renderObject);
         FrameViewRequestPtr outputRequest;
         inArgs->retCode = inArgs->renderObject->launchRender(&outputRequest);
+
+        if (outputRequest) {
+            inArgs->outputImage = outputRequest->getImagePlane();
+
+            // Ensure all cache lockers are gone
+            if (inArgs->outputImage) {
+                inArgs->outputImage->removeCacheLockers();
+            }
+        }
+
         if (isFailureRetCode(inArgs->retCode)) {
+            inArgs->outputImage.reset();
+            inArgs->renderObject.reset();
             return;
         }
         // Convert the image to a format that can be uploaded to a OpenGL texture
         {
-            inArgs->outputImage = outputRequest->getImagePlane();
-
+            
+            
             // Find the key of the first tile in the image and store it so that in the gui
             // we can later on re-use this key to check the cache for the timeline's cache line
             {
@@ -2285,6 +2299,7 @@ public:
             }
             
         }
+        inArgs->renderObject.reset();
     }
 
     static unsigned getViewerMipMapLevel(const ViewerNodePtr& viewer, bool draftModeEnabled, bool fullFrameProcessing)

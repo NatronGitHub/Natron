@@ -284,6 +284,11 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
         } else if (polyType == Implementation::eWipePolygonPartial) {
             this->getPolygonTextureCoordinates(polygonPoints, canonicalRoIRoundedToTileSize, polygonTexCoords);
 
+            assert(displayTextures[textureIndex].texture);
+            GL_GPU::ActiveTexture(GL_TEXTURE0);
+            GL_GPU::GetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&prevBoundTexture);
+            GL_GPU::BindTexture( GL_TEXTURE_2D, displayTextures[textureIndex].texture->getTexID() );
+
             GL_GPU::Begin(GL_POLYGON);
             for (int i = 0; i < polygonTexCoords.size(); ++i) {
                 const QPointF & tCoord = polygonTexCoords[i];
@@ -292,6 +297,8 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
                 GL_GPU::Vertex2d( vCoord.x(), vCoord.y() );
             }
             GL_GPU::End();
+
+            GL_GPU::BindTexture( GL_TEXTURE_2D, prevBoundTexture);
 
         } else {
             ///draw the all polygon as usual
@@ -390,6 +397,7 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
         GL_GPU::BindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
         GL_GPU::DisableClientState(GL_VERTEX_ARRAY);
         GL_GPU::DisableClientState(GL_TEXTURE_COORD_ARRAY);
+        GL_GPU::BindTexture( GL_TEXTURE_2D, prevBoundTexture);
         glCheckError(GL_GPU);
 
     }

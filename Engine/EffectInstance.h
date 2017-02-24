@@ -424,12 +424,16 @@ private:
 
     /**
      * @brief In output the RoI in canonical coordinates is set to ask for on the input effect.
+     * @param roiCanonical The RoI in output to fetch on the input
+     * @param roiExpand If this effect has multiple inputs but does not support input images with
+     * different size, we fill roiCanonical up to roiExpand by adding black borders.
      * @returns True if it could resolve the RoI, false otherwise in which case the caller should
      * ask for the RoD.
      **/
     bool resolveRoIForGetImage(const GetImageInArgs& inArgs,
                                TimeValue inputTime,
-                               RectD* roiCanonical);
+                               RectD* roiCanonical,
+                               RectD* roiExpand);
 public:
 
     //////////////////////////////////////////////////////////////////////
@@ -702,7 +706,7 @@ public:
     ActionRetCodeEnum getDistortion_public(TimeValue time,
                                     const RenderScale & renderScale,
                                     ViewIdx view,
-                                    DistortionFunction2DPtr* distortion) WARN_UNUSED_RETURN;
+                                    GetDistortionResultsPtr* results) WARN_UNUSED_RETURN;
 
 
 
@@ -1219,14 +1223,35 @@ public:
                                     int inputNbInRequester,
                                     const FrameViewRequestPtr& requester,
                                     const RequestPassSharedDataPtr& requestPassSharedData,
-                                    FrameViewRequestPtr* createdRequest);
+                                    FrameViewRequestPtr* createdRequest,
+                                    EffectInstancePtr* createdRenderClone);
 
+private:
+
+    ActionRetCodeEnum requestRenderInternal(TimeValue time,
+                                            ViewIdx view,
+                                            const RenderScale& proxyScale,
+                                            unsigned int mipMapLevel,
+                                            const ImagePlaneDesc& plane,
+                                            const RectD & roiCanonical,
+                                            int inputNbInRequester,
+                                            const FrameViewRequestPtr& requester,
+                                            const RequestPassSharedDataPtr& requestPassSharedData,
+                                            FrameViewRequestPtr* createdRequest);
+    
+public:
+    
     /**
      * @brief Function that actually render a request. In output, the image corresponding to the request
      * is rendered. Only a single thread will be able to call launchRender on the same frame view request.
      * This function must be called on the FrameViewRequest object returned by requestRender()
      **/
     ActionRetCodeEnum launchRender(const RequestPassSharedDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestData);
+
+    /**
+     * @brief Remove the render clone on this node and all its inputs recursively
+     **/
+    void removeRenderCloneRecursive(const TreeRenderPtr& render);
 
     /**
      * @brief Convenience function for getCurrentRender()->isRenderAborted()
@@ -1262,6 +1287,9 @@ public:
 
     void setCurrentSupportTiles(bool support);
     bool getCurrentSupportTiles() const;
+
+    void setCurrentSupportMultiRes(bool support);
+    bool getCurrentSupportMultiRes() const;
 
     void setCurrentSupportRenderScale(bool support);
     bool getCurrentSupportRenderScale() const;
@@ -1592,14 +1620,6 @@ public:
      **/
     void setOutputFilesForWriter(const std::string & pattern);
 
-    /**
-     * @brief Constructs a new memory holder, with nBytes allocated. If the allocation failed, bad_alloc is thrown
-     **/
-    PluginMemoryPtr newMemoryInstance(size_t nBytes) WARN_UNUSED_RETURN;
-
-
-
-
 
     /**
      * @brief Callback called to fetch data from the plug-in before creating an instance.
@@ -1724,6 +1744,16 @@ public:
      * @param refreshMetadatas If true the meta-datas on this node and all nodes downstream recursively will be re-computed.
      **/
     virtual void evaluate(bool isSignificant, bool refreshMetadatas) OVERRIDE;
+
+    PluginMemoryPtr createMemoryChunk(std::size_t nBytes);
+
+protected:
+
+    virtual PluginMemoryPtr createPluginMemory();
+
+public:
+
+    void releasePluginMemory(const PluginMemory* mem);
 
 
     bool ifInfiniteclipRectToProjectDefault(RectD* rod) const;

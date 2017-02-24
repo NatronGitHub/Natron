@@ -917,7 +917,6 @@ ViewerGL::initializeGL()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     appPTR->initializeOpenGLFunctionsOnce();
-    makeCurrent();
     if ( !appPTR->isOpenGLLoaded() ) {
         throw std::runtime_error("OpenGL was not loaded");
     }
@@ -1122,6 +1121,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
     OpenGLContextLocker locker(_imp.get());
     
     makeCurrent();
+    assert(QGLContext::currentContext() == context());
 
     glCheckError(GL_GPU);
 
@@ -1149,7 +1149,8 @@ ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
     Image::CPUTileData imageData;
     if (image) {
         Image::Tile tile;
-        image->getTileAt(0, 0, &tile);
+        bool ok = image->getTileAt(0, 0, &tile);
+        assert(ok);
         image->getCPUTileData(tile, &imageData);
     }
 
@@ -1252,10 +1253,11 @@ ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
     // even if GPU is still working with the previous data.
     int dataSizeOf = getSizeOfForBitDepth(imageData.bitDepth);
     std::size_t bytesCount = imageData.tileBounds.area() * imageData.nComps * dataSizeOf;
-
+    assert(bytesCount > 0);
     GL_GPU::BufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, bytesCount, NULL, GL_DYNAMIC_DRAW_ARB);
 
     // map the buffer object into client's memory
+    assert(QGLContext::currentContext() == context());
     GLvoid *ret = GL_GPU::MapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     glCheckError(GL_GPU);
     assert(ret);
@@ -2380,6 +2382,22 @@ ViewerGL::leaveEvent(QEvent* e)
     QGLWidget::leaveEvent(e);
 }
 
+QPixmap
+ViewerGL::renderPixmap(int w, int h, bool useContext)
+{
+    OpenGLContextLocker locker(_imp.get());
+
+    return QGLWidget::renderPixmap(w, h, useContext);
+}
+
+QImage
+ViewerGL::grabFrameBuffer(bool withAlpha)
+{
+    OpenGLContextLocker locker(_imp.get());
+
+    return QGLWidget::grabFrameBuffer(withAlpha);
+}
+
 void
 ViewerGL::resizeEvent(QResizeEvent* e)
 { // public to hack the protected field
@@ -2977,6 +2995,8 @@ ViewerGL::getTextureColorAt(int x,
                             double *a)
 {
     assert( QThread::currentThread() == qApp->thread() );
+    OpenGLContextLocker locker(_imp.get());
+
     makeCurrent();
 
     *r = 0;
@@ -3148,6 +3168,9 @@ getColorAtSinglePixel(const Image::CPUTileData& image,
         return false;
     }
 
+    if (!image.ptrs[0]) {
+        return false;
+    }
 
     int pixelStride;
     const PIX* pix[4];

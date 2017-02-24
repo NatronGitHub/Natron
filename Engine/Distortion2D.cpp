@@ -26,6 +26,7 @@
 
 
 #include <list>
+#include "Engine/EffectInstance.h"
 #include "Engine/Transform.h"
 NATRON_NAMESPACE_ENTER;
 
@@ -36,22 +37,19 @@ DistortionFunction2D::DistortionFunction2D()
 , customData(0)
 , customDataSizeHintInBytes(0)
 , customDataFreeFunc(0)
+, effect()
 {
 
 }
 
-DistortionFunction2D::DistortionFunction2D(const DistortionFunction2D& other)
-: inputNbToDistort(other.inputNbToDistort)
-, transformMatrix()
-, func(other.func)
-, customData(other.customData)
-, customDataSizeHintInBytes(other.customDataSizeHintInBytes)
-, customDataFreeFunc(other.customDataFreeFunc)
+DistortionFunction2D::~DistortionFunction2D()
 {
-    if (other.transformMatrix) {
-        transformMatrix.reset(new Transform::Matrix3x3(*other.transformMatrix));
+    EffectInstancePtr e = effect.lock();
+    if (e) {
+        customDataFreeFunc(customData);
     }
 }
+
 
 struct Distortion2DStackPrivate
 {
@@ -67,27 +65,34 @@ Distortion2DStack::Distortion2DStack()
 
 Distortion2DStack::~Distortion2DStack()
 {
-
 }
 
 void
-Distortion2DStack::pushDistortion(const DistortionFunction2DPtr& distortion)
+Distortion2DStack::pushDistortionFunction(const DistortionFunction2DPtr& distortion)
 {
     // The distortion is either a function or a transformation matrix.
-    assert((distortion->transformMatrix && !distortion->func) || (!distortion->transformMatrix && distortion->func));
+    assert(!distortion->transformMatrix && distortion->func);
+    _imp->stack.push_back(distortion);
+}
 
+void
+Distortion2DStack::pushTransformMatrix(const Transform::Matrix3x3& transfo)
+{
     if (_imp->stack.empty()) {
-        _imp->stack.push_back(distortion);
+        DistortionFunction2DPtr disto(new DistortionFunction2D);
+        disto->transformMatrix.reset(new Transform::Matrix3x3(transfo));
     } else {
         // If the last pushed distortion is a matrix and this distortion is also a matrix, concatenate
         DistortionFunction2DPtr lastDistort = _imp->stack.back();
-        if (lastDistort->transformMatrix && distortion->transformMatrix) {
-            *lastDistort->transformMatrix = Transform::matMul(*lastDistort->transformMatrix, *distortion->transformMatrix);
+        if (lastDistort->transformMatrix) {
+            *lastDistort->transformMatrix = Transform::matMul(*lastDistort->transformMatrix, transfo);
         } else {
             // Cannot concatenate, append
-            _imp->stack.push_back(distortion);
+            DistortionFunction2DPtr disto(new DistortionFunction2D);
+            disto->transformMatrix.reset(new Transform::Matrix3x3(transfo));
+            _imp->stack.push_back(disto);
         }
-
+        
     }
 }
 
@@ -96,7 +101,7 @@ Distortion2DStack::pushDistortionStack(const Distortion2DStack& stack)
 {
     const std::list<DistortionFunction2DPtr>& distos = stack.getStack();
     for (std::list<DistortionFunction2DPtr>::const_iterator it = distos.begin(); it != distos.end(); ++it) {
-        pushDistortion(*it);
+        pushDistortionFunction(*it);
     }
 }
 

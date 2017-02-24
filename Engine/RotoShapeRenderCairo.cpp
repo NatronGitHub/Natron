@@ -961,6 +961,9 @@ renderSmearDot(const unsigned char* maskData,
         initArgs.storage = eStorageModeRAM;
         initArgs.bitdepth = outputImage->getBitDepth();
         tmpBuf = Image::create(initArgs);
+        if (!tmpBuf) {
+            return;
+        }
     }
 
     {

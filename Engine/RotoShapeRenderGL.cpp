@@ -928,6 +928,9 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
             initArgs.glContext = glContext;
             initArgs.textureTarget = dstTexture->getGLTextureTarget();
             tmpTex[i] = Image::create(initArgs);
+            if (!tmpTex[i]) {
+                return;
+            }
             *tmpGLEntry[i] = tmpTex[i]->getGLImageStorage();
         }
     }
@@ -1402,6 +1405,9 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
         initArgs.glContext = glContext;
         initArgs.textureTarget = target;
         tmpImage = Image::create(initArgs);
+        if (!tmpImage) {
+            return;
+        }
         tmpTexture = tmpImage->getGLImageStorage();
 
         GL::BindTexture( target, tmpTexture->getGLTextureID() );
@@ -1440,6 +1446,9 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
         initArgs.glContext = glContext;
         initArgs.textureTarget = target;
         tmpImage = Image::create(initArgs);
+        if (!tmpImage) {
+            return;
+        }
         tmpTexture = tmpImage->getGLImageStorage();
 
         // Copy the content of the existing dstImage
@@ -1729,6 +1738,9 @@ RotoShapeRenderGL::renderStroke_gl(const OSGLContextPtr& glContext,
             initArgs.glContext = glContext;
             initArgs.textureTarget = target;
             tmpTex[i] = Image::create(initArgs);
+            if (!tmpTex[i]) {
+                return;
+            }
             *tmpGLEntry[i] = tmpTex[i]->getGLImageStorage();
         }
     }
@@ -1974,6 +1986,9 @@ static bool renderSmearDotInternal(RenderSmearGLData* myData,
         initArgs.glContext = glContext;
         initArgs.textureTarget = GL_TEXTURE_2D;
         tmpImage = Image::create(initArgs);
+        if (!tmpImage) {
+            return;
+        }
         tmpTexture = tmpImage->getGLImageStorage();
         // Copy the content of the existing dstImage
 

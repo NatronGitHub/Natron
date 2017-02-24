@@ -169,7 +169,7 @@ EffectInstance::Implementation::handlePassThroughPlanes(const FrameViewRequestPt
                     *isPassThrough = true;
 
                     FrameViewRequestPtr createdRequest;
-                    return ptInput->requestRender(passThroughTime, passThroughView, requestData->getProxyScale(), requestData->getMipMapLevel(), plane, roiCanonical, passThroughInputNb, requestData, requestPassSharedData, &createdRequest);
+                    return ptInput->requestRender(passThroughTime, passThroughView, requestData->getProxyScale(), requestData->getMipMapLevel(), plane, roiCanonical, passThroughInputNb, requestData, requestPassSharedData, &createdRequest, 0);
                 }
             }
         }
@@ -225,7 +225,7 @@ EffectInstance::Implementation::handleIdentityEffect(double par,
         }
 
         FrameViewRequestPtr createdRequest;
-        return _publicInterface->requestRender(inputTimeIdentity, inputIdentityView, requestData->getProxyScale(), requestData->getMipMapLevel(), requestData->getPlaneDesc(), canonicalRoi, -1, requestData, requestPassSharedData, &createdRequest);
+        return _publicInterface->requestRender(inputTimeIdentity, inputIdentityView, requestData->getProxyScale(), requestData->getMipMapLevel(), requestData->getPlaneDesc(), canonicalRoi, -1, requestData, requestPassSharedData, &createdRequest, 0);
 
     } else {
         assert(inputNbIdentity != -1);
@@ -235,7 +235,7 @@ EffectInstance::Implementation::handleIdentityEffect(double par,
         }
 
         FrameViewRequestPtr createdRequest;
-        return identityInput->requestRender(inputTimeIdentity, inputIdentityView, requestData->getProxyScale(), requestData->getMipMapLevel(), requestData->getPlaneDesc(), canonicalRoi, inputNbIdentity, requestData, requestPassSharedData, &createdRequest);
+        return identityInput->requestRender(inputTimeIdentity, inputIdentityView, requestData->getProxyScale(), requestData->getMipMapLevel(), requestData->getPlaneDesc(), canonicalRoi, inputNbIdentity, requestData, requestPassSharedData, &createdRequest, 0);
 
     }
 } // EffectInstance::Implementation::handleIdentityEffect
@@ -262,48 +262,43 @@ EffectInstance::Implementation::handleConcatenation(const RequestPassSharedDataP
     }
 
     EffectInstancePtr requesterEffect = requester->getRenderClone();
-    bool canReturnDeprecatedTransform3x3 = requesterEffect->getInputCanReceiveTransform(inputNbInRequester);
-    bool canReturnDistortionFunc = requesterEffect->getInputCanReceiveDistortion(inputNbInRequester);
+    bool requesterCanReceiveDeprecatedTransform3x3 = requesterEffect->getInputCanReceiveTransform(inputNbInRequester);
+    bool requesterCanReceiveDistortionFunc = requesterEffect->getInputCanReceiveDistortion(inputNbInRequester);
 
     // If the caller can apply a distortion, then check if this effect has a distortion
-    if (!canReturnDeprecatedTransform3x3 && !canReturnDistortionFunc) {
+    // otherwise, don't bother
+    if (!requesterCanReceiveDeprecatedTransform3x3 && !requesterCanReceiveDistortionFunc) {
         return eActionStatusOK;
     }
-    assert((canReturnDeprecatedTransform3x3 && !canReturnDistortionFunc) || (!canReturnDeprecatedTransform3x3 && canReturnDistortionFunc));
+    assert((requesterCanReceiveDeprecatedTransform3x3 && !requesterCanReceiveDistortionFunc) || (!requesterCanReceiveDeprecatedTransform3x3 && requesterCanReceiveDistortionFunc));
 
-    DistortionFunction2DPtr disto = requestData->getDistortionResults();
-    if (!disto) {
-        ActionRetCodeEnum stat = _publicInterface->getDistortion_public(requestData->getTime(), renderScale, requestData->getView(), &disto);
-        if (isFailureRetCode(stat)) {
-            return stat;
+    // Call the getDistortion action
+    DistortionFunction2DPtr disto;
+    {
+        GetDistortionResultsPtr results = requestData->getDistortionResults();
+        if (!results) {
+            ActionRetCodeEnum stat = _publicInterface->getDistortion_public(requestData->getTime(), renderScale, requestData->getView(), &results);
+            if (isFailureRetCode(stat)) {
+                return stat;
+            }
+            if (results) {
+                disto = results->getResults();
+                requestData->setDistortionResults(results);
+            }
         }
-        requestData->setDistortionResults(disto);
     }
+    
+    // No distortion or invalid input
     if (!disto || disto->inputNbToDistort == -1) {
         return eActionStatusOK;
     }
-    {
-        // Copy the original distortion held in the results in case we convert the transformation matrix from canonical to pixels.
-        DistortionFunction2DPtr copy(new DistortionFunction2D(*disto));
-        disto = copy;
-    }
-
 
     // We support backward compatibility for plug-ins that only support Transforms: if a function is returned we do not concatenate.
-    if (disto->func && !canReturnDistortionFunc) {
+    if (disto->func && !requesterCanReceiveDistortionFunc) {
         return eActionStatusOK;
     }
 
-    assert((disto->func && canReturnDistortionFunc) || disto->transformMatrix);
-
-    if (disto->transformMatrix) {
-
-        // The caller expects a transformation matrix in pixel coordinates
-        double par = _publicInterface->getAspectRatio(-1);
-        Transform::Matrix3x3 canonicalToPixel = Transform::matCanonicalToPixel(par, renderScale.x, renderScale.y, false);
-        Transform::Matrix3x3 pixelToCanonical = Transform::matPixelToCanonical(par, renderScale.x, renderScale.y, false);
-        *disto->transformMatrix = Transform::matMul(Transform::matMul(canonicalToPixel, *disto->transformMatrix), pixelToCanonical);
-    }
+    assert((disto->func && requesterCanReceiveDistortionFunc) || disto->transformMatrix);
 
     // Recurse on input given by plug-in
     EffectInstancePtr distoInput = _publicInterface->getInput(disto->inputNbToDistort);
@@ -312,24 +307,29 @@ EffectInstance::Implementation::handleConcatenation(const RequestPassSharedDataP
     }
 
     FrameViewRequestPtr inputRequest;
-    distoInput->requestRender(requestData->getTime(), requestData->getView(), requestData->getProxyScale(), requestData->getMipMapLevel(), requestData->getPlaneDesc(), canonicalRoi, disto->inputNbToDistort, requestData, requestPassSharedData, &inputRequest);
+    distoInput->requestRender(requestData->getTime(), requestData->getView(), requestData->getProxyScale(), requestData->getMipMapLevel(), requestData->getPlaneDesc(), canonicalRoi, disto->inputNbToDistort, requestData, requestPassSharedData, &inputRequest, 0);
 
-    // Create a distorsion functions stack
+    // Create a distorsion stack that will be applied by the effect downstream
     Distortion2DStackPtr distoStack(new Distortion2DStack);
 
-    // Append the list of upstream distorsions
+    // Append the list of upstream distorsions (if any)
     Distortion2DStackPtr upstreamDistoStack = inputRequest->getDistorsionStack();
     if (upstreamDistoStack) {
         distoStack->pushDistortionStack(*upstreamDistoStack);
     }
 
-    // If this the caller effect also supports transforms, append this effect transformation, otherwise no need to append it, this effect will render anyway.
-    bool requesterCanTransform = requester->getRenderClone()->getCurrentCanTransform();
-    bool requesterCanDistort = requester->getRenderClone()->getCurrentCanDistort();
-
-    if (requesterCanDistort || requesterCanTransform) {
-        distoStack->pushDistortion(disto);
+    if (disto->transformMatrix) {
+        
+        // The caller expects a transformation matrix in pixel coordinates
+        double par = _publicInterface->getAspectRatio(-1);
+        Transform::Matrix3x3 canonicalToPixel = Transform::matCanonicalToPixel(par, renderScale.x, renderScale.y, false);
+        Transform::Matrix3x3 pixelToCanonical = Transform::matPixelToCanonical(par, renderScale.x, renderScale.y, false);
+        Transform::Matrix3x3 transform = Transform::matMul(Transform::matMul(canonicalToPixel, *disto->transformMatrix), pixelToCanonical);
+        distoStack->pushTransformMatrix(transform);
+    } else {
+        distoStack->pushDistortionFunction(disto);
     }
+
 
     // Set the stack on the frame view request
     requestData->setDistorsionStack(distoStack);
@@ -556,7 +556,10 @@ EffectInstance::Implementation::fetchCachedTiles(const FrameViewRequestPtr& requ
     // on which the plug-in will work on.
     ImagePtr image = requestPassData->getImagePlane();
     if (image) {
-        image->ensureBounds(roiPixels);
+        ActionRetCodeEnum stat = image->ensureBounds(roiPixels);
+        if (isFailureRetCode(stat)) {
+            return ImagePtr();
+        }
     } else {
         Image::InitStorageArgs initArgs;
         {
@@ -585,11 +588,8 @@ EffectInstance::Implementation::fetchCachedTiles(const FrameViewRequestPtr& requ
         // Since multiple threads may want to access to the same image in the cache concurrently,
         // the first thread that gets onto a tile to render will render it and lock-out other threads
         // until it is rendered entirely.
-        try {
-            image = Image::create(initArgs);
-        } catch (...) {
-            return ImagePtr();
-        }
+        image = Image::create(initArgs);
+
     } // image
     return image;
 } // fetchCachedTiles
@@ -654,7 +654,10 @@ EffectInstance::Implementation::allocateRenderBackendStorageForRenderRects(const
 
             // We got an existing buffer
             // Ensure the accumBuffer contains at least the RoI
-            accumBuffer->ensureBounds(roiPixels);
+            ActionRetCodeEnum stat = accumBuffer->ensureBounds(roiPixels);
+            if (isFailureRetCode(stat)) {
+                return stat;
+            }
 
             // When drawing with a paint brush, we may only render the bounding box of the un-rendered points.
             RectI drawingLastMovementBBoxPixel;
@@ -705,9 +708,8 @@ EffectInstance::Implementation::allocateRenderBackendStorageForRenderRects(const
             tmpImgInitArgs.layer = requestData->getPlaneDesc();
 
         }
-        try {
-            outputTmpImage = Image::create(tmpImgInitArgs);
-        } catch (...) {
+        outputTmpImage = Image::create(tmpImgInitArgs);
+        if (!outputTmpImage) {
             return eActionStatusFailed;
         }
         requestData->setImagePlane(outputTmpImage);
@@ -761,9 +763,8 @@ EffectInstance::Implementation::allocateRenderBackendStorageForRenderRects(const
                     tmpImgInitArgs.layer = *it2;
 
                 }
-                try {
-                    tmpImage = Image::create(tmpImgInitArgs);
-                } catch (...) {
+                tmpImage = Image::create(tmpImgInitArgs);
+                if (!tmpImage) {
                     return eActionStatusFailed;
                 }
             }
@@ -1002,7 +1003,7 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const RequestPassShar
                         }
                         for (std::list<ImagePlaneDesc>::const_iterator planeIt = inputPlanesNeeded->begin(); planeIt != inputPlanesNeeded->end(); ++planeIt) {
                             FrameViewRequestPtr createdRequest;
-                            ActionRetCodeEnum stat = inputEffect->requestRender(inputTime, viewIt->first, proxyScale, mipMapLevel, *planeIt, inputRoI, inputNb, requestPassData, requestPassSharedData, &createdRequest);
+                            ActionRetCodeEnum stat = inputEffect->requestRender(inputTime, viewIt->first, proxyScale, mipMapLevel, *planeIt, inputRoI, inputNb, requestPassData, requestPassSharedData, &createdRequest, 0);
                             if (isFailureRetCode(stat)) {
                                 return stat;
                             }
@@ -1056,7 +1057,8 @@ EffectInstance::requestRender(TimeValue timeInArgs,
                               int inputNbInRequester,
                               const FrameViewRequestPtr& requester,
                               const RequestPassSharedDataPtr& requestPassSharedData,
-                              FrameViewRequestPtr* createdRequest)
+                              FrameViewRequestPtr* createdRequest,
+                              EffectInstancePtr* createdRenderClone)
 {
     // Requested time is rounded to an epsilon so we can be sure to find it again in getImage, accounting for precision
     TimeValue time =  roundImageTimeToEpsilon(timeInArgs);
@@ -1070,29 +1072,32 @@ EffectInstance::requestRender(TimeValue timeInArgs,
         if (roundedTime != time && !canRenderContinuously()) {
             // We do not cache it because for non continuous effects we only cache stuff at
             // valid frame times
-            return requestRender(TimeValue(roundedTime), view, proxyScale, mipMapLevel, plane, roiCanonical, inputNbInRequester, requester, requestPassSharedData, createdRequest);
+            return requestRender(TimeValue(roundedTime), view, proxyScale, mipMapLevel, plane, roiCanonical, inputNbInRequester, requester, requestPassSharedData, createdRequest, 0);
         }
     }
 
-#if 0
-    // If the effect is not frame varying, forward the request to frame 0
-    if (!isFrameVarying() && time != 0.) {
-
-        // Avoid infinite recursion if the requester effect is the same that was already identity
-        if (!requester || requester->getRenderClone().get() != this) {
-            return requestRender(TimeValue(0), view, proxyScale, mipMapLevel, plane, roiCanonical, inputNbInRequester, requester, requestPassSharedData, createdRequest);
-        }
+    EffectInstancePtr renderClone = toEffectInstance(createRenderClone(requestPassSharedData->getTreeRender()));
+    assert(renderClone);
+    if (createdRenderClone) {
+        *createdRenderClone = renderClone;
     }
+    return renderClone->requestRenderInternal(time, view, proxyScale, mipMapLevel, plane, roiCanonical, inputNbInRequester, requester, requestPassSharedData, createdRequest);
+} // requestRender
+
+ActionRetCodeEnum
+EffectInstance::requestRenderInternal(TimeValue time,
+                                      ViewIdx view,
+                                      const RenderScale& proxyScale,
+                                      unsigned int mipMapLevel,
+                                      const ImagePlaneDesc& plane,
+                                      const RectD & roiCanonical,
+                                      int inputNbInRequester,
+                                      const FrameViewRequestPtr& requester,
+                                      const RequestPassSharedDataPtr& requestPassSharedData,
+                                      FrameViewRequestPtr* createdRequest)
+{
 
 
-    // Non view aware effect is identity on the main view
-    if (isViewInvariant() == eViewInvarianceAllViewsInvariant && view != 0) {
-        // We do not cache it because for we only cache stuff for
-        // valid views
-        return requestRender(time, ViewIdx(0), proxyScale, mipMapLevel, plane, roiCanonical, inputNbInRequester, requester, requestPassSharedData, createdRequest);
-    }
-#endif
-    
     TreeRenderPtr render = getCurrentRender();
     assert(render);
     
@@ -1281,6 +1286,10 @@ EffectInstance::requestRender(TimeValue timeInArgs,
         requestData->setCurrentRoI(curRoI);
     }
 
+    // Check for abortion before checking cache
+    if (isRenderAborted()) {
+        return eActionStatusAborted;
+    }
     // Fetch tiles from cache
     // Note that no memory allocation is done here, images are only fetched from the cache.
     bool hasUnRenderedTile;
@@ -1288,7 +1297,11 @@ EffectInstance::requestRender(TimeValue timeInArgs,
     {
         ImagePtr image = _imp->fetchCachedTiles(requestData, renderMappedRoI, mappedMipMapLevel, requestData->getPlaneDesc(), true);
         if (!image) {
-            return eActionStatusFailed;
+            if (isRenderAborted()) {
+                return eActionStatusAborted;
+            } else {
+                return eActionStatusFailed;
+            }
         }
         requestData->setImagePlane(image);
 
@@ -1308,13 +1321,13 @@ EffectInstance::requestRender(TimeValue timeInArgs,
         }
     }
     return eActionStatusOK;
-} // requestRender
+} // requestRenderInternal
 
 
-static void invalidateCachedPlanesToRender(const std::map<ImagePlaneDesc, ImagePtr>& cachedPlanes)
+static void invalidateCachedLockers(const std::map<ImagePlaneDesc, ImagePtr>& cachedPlanes)
 {
     for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = cachedPlanes.begin(); it != cachedPlanes.end(); ++it) {
-        it->second->discardTiles();
+        it->second->removeCacheLockers();
     }
 }
 
@@ -1398,7 +1411,7 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
         }
 
         if (isFailureRetCode(renderRetCode) && requestData->getCachePolicy() != eCacheAccessModeNone) {
-            cacheImage->discardTiles();
+            invalidateCachedLockers(producedImagePlanes);
             break;
         }
 
@@ -1423,11 +1436,13 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
 
     } // while there is still something not rendered
 
+    invalidateCachedLockers(producedImagePlanes);
+
+
     // If using GPU and out of memory retry on CPU if possible
     if (renderRetCode == eActionStatusOutOfMemory && !renderRects.empty() && renderRects.front().backendType == eRenderBackendTypeOpenGL) {
         if (getCurrentOpenGLRenderSupport() != ePluginOpenGLRenderSupportYes) {
             // The plug-in can only use GPU or doesn't support GPU
-            invalidateCachedPlanesToRender(producedImagePlanes);
             return eActionStatusFailed;
         }
        
@@ -1435,7 +1450,6 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
     }
 
     if (renderRetCode != eActionStatusOK) {
-        invalidateCachedPlanesToRender(producedImagePlanes);
         return renderRetCode;
     }
 

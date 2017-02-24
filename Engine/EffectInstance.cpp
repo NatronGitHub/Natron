@@ -100,9 +100,6 @@ EffectInstance::EffectInstance(const EffectInstancePtr& other, const TreeRenderP
     , _node( other->getNode() )
     , _imp( new Implementation(this, *other->_imp) )
 {
-    int nInputs = other->getMaxInputCount();
-    _imp->renderData->inputs.resize(nInputs);
- 
 }
 
 EffectInstance::~EffectInstance()
@@ -127,6 +124,44 @@ EffectInstance::createRenderCopy(const TreeRenderPtr& render) const
         throw std::invalid_argument("EffectInstance::createRenderCopy: No kNatronPluginPropCreateRenderCloneFunc property set on plug-in!");
     }
     EffectInstancePtr clone = createFunc(boost::const_pointer_cast<EffectInstance>(shared_from_this()), render);
+
+
+    // If the current instance is also a clone (because we are in getImage), inherit most of pre computed render bits to avoid re-calculations
+    if (_imp->renderData) {
+        *clone->_imp->renderData = *_imp->renderData;
+    }
+
+    // Also create a render clone for input nodes
+
+    int nInputs = getMaxInputCount();
+    clone->_imp->renderData->inputs.resize(nInputs);
+
+    for (int i = 0; i < nInputs; ++i) {
+        if (clone->isInputMask(i) && !clone->isMaskEnabled(i)) {
+            continue;
+        }
+        EffectInstancePtr mainInstanceInput = getInput(i);
+        if (!mainInstanceInput) {
+            continue;
+        }
+        // Note that it will not create the clone if it already exists
+        EffectInstancePtr inputClone = toEffectInstance(mainInstanceInput->createRenderClone(render));
+        if (inputClone) {
+            clone->setRenderCloneInput(inputClone, i);
+        }
+    }
+
+#if 0
+#pragma message WARN("check this")
+    // Visit all nodes that expressions of this node knobs may rely upon so we ensure they get a proper render object
+    // and a render time and view when we run the expression.
+    std::set<NodePtr> expressionsDeps;
+    getAllExpressionDependenciesRecursive(expressionsDeps);
+
+    for (std::set<NodePtr>::const_iterator it = expressionsDeps.begin(); it != expressionsDeps.end(); ++it) {
+        (*it)->getEffectInstance()->createRenderClone(render);
+    }
+#endif
     return clone;
 }
 
@@ -255,7 +290,7 @@ EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
         cacheKey.reset(new GetFramesNeededKey(hashValue, getNode()->getPluginID()));
 
 
-        CacheEntryLockerPtr cacheAccess = appPTR->getCache()->get(framesNeededResults);
+        CacheEntryLockerPtr cacheAccess = appPTR->getGeneralPurposeCache()->get(framesNeededResults);
         
         CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
         if (cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute) {
@@ -588,8 +623,9 @@ EffectInstance::getInputHint(int /*inputNb*/) const
 
 bool
 EffectInstance::resolveRoIForGetImage(const GetImageInArgs& inArgs,
-                                      TimeValue inputTime,
-                                      RectD* roiCanonical)
+                                      TimeValue /*inputTime*/,
+                                      RectD* roiCanonical,
+                                      RectD* roiExpand)
 {
 
 
@@ -604,20 +640,8 @@ EffectInstance::resolveRoIForGetImage(const GetImageInArgs& inArgs,
         return false;
     }
 
-
-    // Is there a request that was filed with getFramesNeeded on this input at the given time/view ?
-    // There may be not as we do not create a FrameViewRequest for all frames needed by a plug-in
-    // e.g: Slitscan can ask for over 1000 frames in input.
-    {
-        EffectInstancePtr inputEffect = getInput(inArgs.inputNb);
-        FrameViewRequestPtr inputRequestPass = inputEffect->_imp->getFrameViewRequest(inputTime, inArgs.inputView);
-        if (inputRequestPass) {
-            *roiCanonical = inputRequestPass->getCurrentRoI();
-            return true;
-        }
-    }
     
-
+    // Get the RoI on the input:
     // We must call getRegionOfInterest on the time and view and the current render window of the current action of this effect.
     RenderScale currentScale = EffectInstance::Implementation::getCombinedScale(inArgs.requestData->getRenderMappedMipMapLevel(), inArgs.requestData->getProxyScale());
 
@@ -660,9 +684,25 @@ EffectInstance::resolveRoIForGetImage(const GetImageInArgs& inArgs,
         return false;
     }
 
+    bool supportsMultiRes = getCurrentSupportMultiRes();
+    if (!supportsMultiRes) {
+        bool roiSet = false;
+        for (RoIMap::const_iterator it = inputRoisMap.begin(); it != inputRoisMap.end(); ++it) {
+            if (!roiSet) {
+                *roiExpand = it->second;
+                roiSet = true;
+            } else {
+                roiExpand->merge(it->second);
+            }
+        }
+    }
+
     RoIMap::iterator foundInputEffectRoI = inputRoisMap.find(inArgs.inputNb);
     if (foundInputEffectRoI != inputRoisMap.end()) {
         *roiCanonical = foundInputEffectRoI->second;
+        if (supportsMultiRes) {
+            *roiExpand = *roiCanonical;
+        }
         return true;
     }
 
@@ -716,6 +756,24 @@ EffectInstance::GetImageInArgs::GetImageInArgs(const FrameViewRequestPtr& reques
 
 }
 
+void
+EffectInstance::removeRenderCloneRecursive(const TreeRenderPtr& render)
+{
+    bool foundClone = removeRenderClone(render);
+    if (!foundClone) {
+        return;
+    }
+
+    // Recurse on inputs
+    int nInputs = getMaxInputCount();
+    for (int i = 0; i < nInputs; ++i) {
+        EffectInstancePtr input = getInput(i);
+        if (input) {
+            input->removeRenderCloneRecursive(render);
+        }
+    }
+} // removeRenderCloneRecursive
+
 bool
 EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* outArgs)
 {
@@ -735,8 +793,8 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
     }
 
     // Get the requested RoI for the input, if we can recover it, otherwise TreeRender will render the RoD.
-    RectD roiCanonical;
-    if (!resolveRoIForGetImage(inArgs, inArgs.inputTime, &roiCanonical)) {
+    RectD roiCanonical, roiExpand;
+    if (!resolveRoIForGetImage(inArgs, inArgs.inputTime, &roiCanonical, &roiExpand)) {
         // If we did not resolve the RoI, ask for the RoD
         GetRegionOfDefinitionResultsPtr results;
         RenderScale combinedScale = EffectInstance::Implementation::getCombinedScale(inArgs.inputMipMapLevel, inArgs.inputProxyScale);
@@ -754,14 +812,8 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
 
     // Launch a render to recover the image.
     // It should be very fast if the image was already rendered.
-    TreeRenderPtr renderObject = getCurrentRender();
     FrameViewRequestPtr outputRequest;
-    if (renderObject) {
-        ActionRetCodeEnum status = renderObject->launchRenderWithArgs(inputEffect, inArgs.inputTime, inArgs.inputView, inArgs.inputProxyScale, inArgs.inputMipMapLevel, inArgs.plane, &roiCanonical, &outputRequest);
-        if (isFailureRetCode(status)) {
-            return false;
-        }
-    } else {
+    {
         // We are not during a render, create one.
         TreeRender::CtorArgsPtr rargs(new TreeRender::CtorArgs());
         rargs->time = inArgs.inputTime;
@@ -774,7 +826,8 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
         rargs->draftMode = inArgs.draftMode;
         rargs->playback = inArgs.playback;
         rargs->byPassCache = inArgs.byPassCache;
-        renderObject = TreeRender::create(rargs);
+        rargs->originalRender = getCurrentRender();
+        TreeRenderPtr renderObject = TreeRender::create(rargs);
         ActionRetCodeEnum status = renderObject->launchRender(&outputRequest);
         if (isFailureRetCode(status)) {
             return false;
@@ -789,7 +842,18 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
     // Get the RoI in pixel coordinates of the effect we rendered
     RenderScale inputCombinedScale = EffectInstance::Implementation::getCombinedScale(inArgs.inputMipMapLevel, inArgs.inputProxyScale);
     double inputPar = getAspectRatio(inArgs.inputNb);
-    roiCanonical.toPixelEnclosing(inputCombinedScale, inputPar, &outArgs->roiPixel);
+
+    RectI roiPixels;
+    RectI roiExpandPixels;
+    roiExpand.toPixelEnclosing(inputCombinedScale, inputPar, &roiExpandPixels);
+    roiCanonical.toPixelEnclosing(inputCombinedScale, inputPar, &roiPixels);
+    assert(roiExpandPixels.contains(roiPixels));
+    if (roiExpandPixels != roiPixels) {
+        outArgs->roiPixel = roiExpandPixels;
+    } else {
+        outArgs->roiPixel = roiPixels;
+    }
+
 
 
     // Map the output image to the plug-in preferred format
@@ -799,6 +863,9 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
 
     // The output image unmapped
     outArgs->image = outputRequest->getImagePlane();
+
+    outArgs->roiPixel.intersect(outArgs->image->getBounds(), &outArgs->roiPixel);
+
 
     bool mustConvertImage = false;
     StorageModeEnum storage = outArgs->image->getStorageMode();
@@ -827,6 +894,9 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
         mustConvertImage = true;
     }
 
+    if (roiExpand != roiCanonical) {
+        mustConvertImage = true;
+    }
 
     ImagePlaneDesc preferredLayer = outArgs->image->getLayer();
 
@@ -851,20 +921,22 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
 
         Image::InitStorageArgs initArgs;
         {
-            initArgs.bounds = outArgs->image->getBounds();
+            initArgs.bounds = outArgs->roiPixel;
             initArgs.proxyScale = outArgs->image->getProxyScale();
             initArgs.mipMapLevel = outArgs->image->getMipMapLevel();
             initArgs.layer = preferredLayer;
             initArgs.bitdepth = thisBitDepth;
             initArgs.bufferFormat = thisEffectSupportedImageLayout;
             initArgs.storage = preferredStorage;
-            initArgs.renderClone = shared_from_this();
+            initArgs.renderClone = inputEffect;
             initArgs.glContext = getCurrentRender()->getGPUOpenGLContext();
 
         }
 
         convertedImage = Image::create(initArgs);
-
+        if (!convertedImage) {
+            return false;
+        }
 
         int channelForMask = - 1;
         ImagePlaneDesc maskComps;
@@ -889,6 +961,11 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
         convertedImage->copyPixels(*outArgs->image, copyArgs);
         outArgs->image = convertedImage;
     } // mustConvertImage
+
+    // If the effect does not support multi-resolution image, add black borders so that all images have the same size in input.
+    if (roiExpandPixels != roiPixels) {
+        outArgs->image->fillOutSideWithBlack(roiPixels);
+    }
 
     return true;
 } // getImagePlane
@@ -1123,14 +1200,35 @@ EffectInstance::setOutputFilesForWriter(const std::string & pattern)
     }
 }
 
-PluginMemoryPtr
-EffectInstance::newMemoryInstance(size_t nBytes)
-{
-    PluginMemoryPtr ret( new PluginMemory( shared_from_this() ) ); 
 
+PluginMemoryPtr
+EffectInstance::createMemoryChunk(size_t nBytes)
+{
+    PluginMemoryPtr mem = createPluginMemory();
     PluginMemAllocateMemoryArgs args(nBytes);
-    ret->allocateMemory(args);
+    mem->allocateMemory(args);
+    QMutexLocker k(&_imp->pluginMemoryChunksMutex);
+    _imp->pluginMemoryChunks.push_back(mem);
+    return mem;
+}
+
+PluginMemoryPtr
+EffectInstance::createPluginMemory()
+{
+    PluginMemoryPtr ret( new PluginMemory() );
     return ret;
+}
+
+void
+EffectInstance::releasePluginMemory(const PluginMemory* mem)
+{
+    QMutexLocker k(&_imp->pluginMemoryChunksMutex);
+    for (std::list<PluginMemoryPtr>::iterator it = _imp->pluginMemoryChunks.begin(); it != _imp->pluginMemoryChunks.end(); ++it) {
+        if (it->get() == mem) {
+            _imp->pluginMemoryChunks.erase(it);
+            return;
+        }
+    }
 }
 
 
@@ -1654,7 +1752,7 @@ EffectInstance::refreshInfos()
     ssinfo << ( getCurrentSupportTiles() ? tr("Yes") : tr("No") ).toStdString() << "</font><br />";
     {
         ssinfo << "<b>" << tr("Supports multiresolution:").toStdString() << "</b> <font color=#c8c8c8>";
-        ssinfo << ( supportsMultiResolution() ? tr("Yes") : tr("No") ).toStdString() << "</font><br />";
+        ssinfo << ( getCurrentSupportMultiRes() ? tr("Yes") : tr("No") ).toStdString() << "</font><br />";
         ssinfo << "<b>" << tr("Supports renderscale:").toStdString() << "</b> <font color=#c8c8c8>";
         if (!getCurrentSupportRenderScale()) {
             ssinfo << tr("No").toStdString();
@@ -1836,6 +1934,25 @@ EffectInstance::getCurrentSupportTiles() const
 }
 
 void
+EffectInstance::setCurrentSupportMultiRes(bool support)
+{
+    QMutexLocker k(&_imp->common->pluginsPropMutex);
+
+    _imp->common->props.currentSupportMultires = support;
+}
+
+bool
+EffectInstance::getCurrentSupportMultiRes() const
+{
+    if (_imp->renderData) {
+        return _imp->renderData->props.currentSupportMultires;
+    }
+    QMutexLocker k(&_imp->common->pluginsPropMutex);
+
+    return _imp->common->props.currentSupportMultires;
+}
+
+void
 EffectInstance::setCurrentSupportRenderScale(bool support)
 {
     QMutexLocker k(&_imp->common->pluginsPropMutex);
@@ -1937,8 +2054,8 @@ EffectInstance::refreshDynamicProperties()
 
 
 
-
-    setCurrentSupportTiles(multiResSupported && tilesSupported);
+    setCurrentSupportMultiRes(multiResSupported);
+    setCurrentSupportTiles(tilesSupported);
     setCurrentSupportRenderScale(renderScaleSupported);
     setCurrentSequentialRenderSupport( getSequentialPreference() );
     setCurrentCanDistort(canDistort);

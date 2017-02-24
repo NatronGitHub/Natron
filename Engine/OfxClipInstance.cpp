@@ -989,6 +989,9 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
             initArgs.glContext = contextAttacher->getContext();
         }
         image = Image::create(initArgs);
+        if (!image) {
+            return false;
+        }
     }
 
 

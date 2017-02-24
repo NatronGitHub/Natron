@@ -64,6 +64,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxOverlayInteract.h"
 #include "Engine/OfxParamInstance.h"
+#include "Engine/OfxMemory.h"
 #include "Engine/OSGLContext.h"
 #include "Engine/Project.h"
 #include "Engine/ReadNode.h"
@@ -1241,7 +1242,7 @@ OfxEffectInstance::getRegionsOfInterest(TimeValue time,
         EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxImageEffectActionGetRegionsOfInterest, time, view, scale
 #ifdef DEBUG
                                                   , /*canSetValue*/ false
-                                                  , /*canBeCalledRecursively*/ false
+                                                  , /*canBeCalledRecursively*/ true
 #endif
                                                   );
 
@@ -1695,6 +1696,13 @@ OfxEffectInstance::render(const RenderActionArgs& args)
         return eActionStatusOK;
     }
 } // render
+
+PluginMemoryPtr
+OfxEffectInstance::createPluginMemory()
+{
+    boost::shared_ptr<OfxMemory> ret(new OfxMemory(shared_from_this()));
+    return ret;
+}
 
 bool
 OfxEffectInstance::supportsMultipleClipPARs() const
@@ -2336,11 +2344,11 @@ OfxEffectInstance::onEnableOpenGLKnobValueChanged(bool activated)
 bool
 OfxEffectInstance::supportsMultiResolution() const
 {
-    // first, check the descriptor, then the instance
+    // check the the instance
     if (!effectInstance()) {
         return false;
     }
-    return effectInstance()->getDescriptor().supportsMultiResolution() && effectInstance()->supportsMultiResolution();
+    return effectInstance()->supportsMultiResolution();
 }
 
 void

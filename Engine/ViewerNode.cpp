@@ -557,8 +557,8 @@ ViewerNode::connectInputToIndex(int groupInputIndex, int internalInputIndex)
 
     // Connect the node recursive upstream of the internal viewer process to the corresponding GroupInput node
     if (internalNodeToConnect == _imp->internalViewerProcessNode[internalInputIndex].lock()) {
-        internalNodeToConnect->disconnectInput(internalInputIndex);
-        internalNodeToConnect->connectInput(groupInput, internalInputIndex);
+        internalNodeToConnect->disconnectInput(0);
+        internalNodeToConnect->connectInput(groupInput, 0);
     } else {
         int prefInput = internalNodeToConnect->getPreferredInputForConnection();
         if (prefInput == -1) {
@@ -699,14 +699,16 @@ ViewerNode::refreshInputFromChoiceMenu(int internalInputIdx)
 {
     assert(internalInputIdx == 0 || internalInputIdx == 1);
 
+    // Get the "Input" nodes
     std::vector<NodePtr> groupInputNodes;
     getInputs(&groupInputNodes);
 
     KnobChoicePtr knob = internalInputIdx == 0 ? _imp->aInputNodeChoiceKnob.lock() : _imp->bInputNodeChoiceKnob.lock();
 
-
+    // Read from the choice menu the current selected node
     ChoiceOption curLabel = internalInputIdx == 0 ? _imp->aInputNodeChoiceKnob.lock()->getActiveEntry() : _imp->bInputNodeChoiceKnob.lock()->getActiveEntry();
 
+    // Find recursively the node that we should connect to the "Input" node
     NodePtr nodeToConnect = _imp->getInputRecursive(internalInputIdx);
     if (curLabel.id == "-") {
         if (nodeToConnect->getEffectInstance().get() == this) {
@@ -723,8 +725,8 @@ ViewerNode::refreshInputFromChoiceMenu(int internalInputIdx)
         int groupInputIndex = QString::fromUtf8(curLabel.id.c_str()).toInt();
         if (groupInputIndex < (int)groupInputNodes.size() && groupInputIndex >= 0) {
 
-            if (nodeToConnect == _imp->internalViewerProcessNode[0].lock()) {
-                nodeToConnect->swapInput(groupInputNodes[groupInputIndex], internalInputIdx);
+            if (nodeToConnect == _imp->internalViewerProcessNode[internalInputIdx].lock()) {
+                nodeToConnect->swapInput(groupInputNodes[groupInputIndex], 0);
             } else {
                 int prefInput = nodeToConnect->getPreferredInputForConnection();
                 if (prefInput != -1) {

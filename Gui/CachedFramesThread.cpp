@@ -147,7 +147,7 @@ CachedFramesThread::Implementation::refreshCachedFramesInternal()
 
         bool isValid = true;
 
-        bool isCached = appPTR->getCache()->hasCacheEntryForHash(hash);
+        bool isCached = appPTR->getTileCache()->hasCacheEntryForHash(hash);
         if (!isCached) {
             isValid = false;
 

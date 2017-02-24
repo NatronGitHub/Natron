@@ -178,6 +178,9 @@ struct DynamicProperties
     // Does this node currently support tiled rendering
     bool currentSupportTiles;
 
+    // Does this node currently support multi resolution images
+    bool currentSupportMultires;
+
     // Does this node currently support render scale
     bool currentSupportsRenderScale;
 
@@ -194,6 +197,7 @@ struct DynamicProperties
     DynamicProperties()
     : currentThreadSafety(eRenderSafetyInstanceSafe)
     , currentSupportTiles(false)
+    , currentSupportMultires(false)
     , currentSupportsRenderScale(false)
     , currentSupportOpenGLRender(ePluginOpenGLRenderSupportNone)
     , currentSupportSequentialRender(eSequentialPreferenceNotSequential)
@@ -347,6 +351,19 @@ struct RenderCloneData
 
     }
 
+    void operator=(const RenderCloneData& other)
+    {
+        frames = other.frames;
+        frameRangeResults = other.frameRangeResults;
+        metadatasResults = other.metadatasResults;
+        timeViewInvariantHash = other.timeViewInvariantHash;
+        metadataTimeInvariantHash = other.metadataTimeInvariantHash;
+        timeViewVariantHash = other.timeViewVariantHash;
+        props = other.props;
+        timeViewInvariantHashValid = other.timeViewInvariantHashValid;
+        metadataTimeInvariantHashValid = other.metadataTimeInvariantHashValid;
+    }
+
     /**
      * @brief Get the time/view variant hash
      **/
@@ -395,16 +412,17 @@ public:
     // Knobs specific to each render clone
     RenderDefaultKnobs renderKnobs;
 
+    // Register memory chunks by the plug-in. Kept here to avoid plug-in memory leaks
+    mutable QMutex pluginMemoryChunksMutex;
+    std::list<PluginMemoryPtr> pluginMemoryChunks;
+
 public:
 
     Implementation(EffectInstance* publicInterface);
 
     Implementation(EffectInstance* publicInterface, const Implementation& other);
 
-    ~Implementation()
-    {
-
-    }
+    ~Implementation();
 
 
     /**

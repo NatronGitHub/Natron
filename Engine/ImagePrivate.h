@@ -46,6 +46,9 @@
 
 #include "Engine/EngineFwd.h"
 
+// Define to print debug information about tiles caching
+//#define DEBUG_TILES_ACCESS
+
 NATRON_NAMESPACE_ENTER;
 
 
@@ -57,6 +60,8 @@ typedef std::map<TileCoord, Image::Tile, TileCoord_Compare> TileMap;
 
 struct ImagePrivate
 {
+    Image* _publicInterface;
+
     // The rectangle where data are defined
     RectI originalBounds;
 
@@ -105,6 +110,9 @@ struct ImagePrivate
     // If true, tiles are assumed to be allocated, otherwise only cached tiles hold memory
     bool tilesAllocated;
 
+    // If true, throw a std::bad_alloc() as soon as an uncached tile is met
+    bool failIfTileUncached;
+
     // The OpenGl context used is the image is stored in a texture
     OSGLContextPtr glContext;
 
@@ -115,8 +123,9 @@ struct ImagePrivate
     U64 nodeHash;
     bool isDraftImage;
 
-    ImagePrivate()
-    : originalBounds()
+    ImagePrivate(Image *publicInterface)
+    : _publicInterface(publicInterface)
+    , originalBounds()
     , boundsRoundedToTile()
     , tiles()
     , tileSizeX(0)
@@ -132,6 +141,7 @@ struct ImagePrivate
     , storage(eStorageModeNone)
     , tilesAllocatedMutex()
     , tilesAllocated(false)
+    , failIfTileUncached(false)
     , glContext()
     , textureTarget(0)
     , nodeHash(0)
@@ -140,13 +150,32 @@ struct ImagePrivate
 
     }
 
-    void init(const Image::InitStorageArgs& args);
+    ActionRetCodeEnum init(const Image::InitStorageArgs& args);
 
-    void initTiles();
+    ActionRetCodeEnum initTiles();
 
-    void initFromExternalBuffer(const Image::InitStorageArgs& args);
+    ActionRetCodeEnum initFromExternalBuffer(const Image::InitStorageArgs& args);
 
-    void initTileAndFetchFromCache(const TileCoord& coord, Image::Tile &tile);
+    void initTileChannelStorage(const CachePtr& cache, Image::Tile &tile, const std::vector<int>& channelIndices, std::size_t c);
+
+    ActionRetCodeEnum initTileAndFetchFromCache(const TileCoord& coord, Image::Tile &tile);
+
+    CacheEntryLocker::CacheEntryStatusEnum fetchBufferFromCacheInternal(const CachePtr& cache,
+                                                                        const CacheImageTileStoragePtr& cacheBuffer,
+                                                                        bool lookupDraft,
+                                                                        unsigned int lookupMipMapLevel,
+                                                                        U64 channelID,
+                                                                        const std::string& pluginID,
+                                                                        Image::Tile &tile,
+                                                                        Image::MonoChannelTile& thisChannelTile);
+    
+    void fetchBufferFromCache(const CachePtr& cache,
+                              const CacheImageTileStoragePtr& cacheBuffer,
+                              U64 channelID,
+                              int channelIndex,
+                              const std::string& pluginID,
+                              Image::Tile &tile,
+                              Image::MonoChannelTile& thisChannelTile);
 
     /**
      * @brief Called in the destructor to insert tiles that were processed in the cache.

@@ -50,8 +50,8 @@ Hash64::computeHash()
 
     const unsigned char* data = reinterpret_cast<const unsigned char*>( &node_values.front() );
     boost::crc_optimal<64, 0x42F0E1EBA9EA3693ULL, 0, 0, false, false> crc_64;
-    crc_64 = std::for_each( data, data + node_values.size() * sizeof(node_values[0]), crc_64 );
-    hash = crc_64();
+    crc_64.process_bytes(data, node_values.size() * sizeof(node_values[0]));
+    hash = crc_64.checksum();
     hashValid = true;
 }
 
@@ -66,8 +66,12 @@ Hash64::reset()
 void
 Hash64::appendQString(const QString & str, Hash64* hash)
 {
-    Q_FOREACH (QChar ch, str) {
-        hash->append<unsigned short>( ch.unicode() );
+    std::size_t curSize = hash->node_values.size();
+    hash->node_values.resize(curSize + str.size());
+
+    int c = (int)curSize;
+    for (QString::const_iterator it = str.begin(); it != str.end(); ++it, ++c) {
+        hash->node_values[c] = toU64<unsigned short>(it->unicode());
     }
 }
 
@@ -75,11 +79,17 @@ void
 Hash64::appendCurve(const CurvePtr& curve, Hash64* hash)
 {
     KeyFrameSet keys = curve->getKeyFrames_mt_safe();
-    for (KeyFrameSet::const_iterator it = keys.begin(); it!=keys.end(); ++it) {
-        hash->append((double)it->getTime());
-        hash->append(it->getValue());
-        hash->append(it->getLeftDerivative());
-        hash->append(it->getRightDerivative());
+
+    std::size_t curSize = hash->node_values.size();
+    hash->node_values.resize(curSize + 4 * keys.size());
+
+
+    int c = curSize;
+    for (KeyFrameSet::const_iterator it = keys.begin(); it!=keys.end(); ++it, c += 4) {
+        hash->node_values[c] = toU64((double)it->getTime());
+        hash->node_values[c + 1] = toU64(it->getValue());
+        hash->node_values[c + 2] = toU64(it->getLeftDerivative());
+        hash->node_values[c + 3] = toU64(it->getRightDerivative());
     }
 }
 

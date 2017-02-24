@@ -4274,10 +4274,14 @@ struct KnobHolder::KnobHolderPrivate
     , knobsOrdered()
     , knobsInitialized(false)
     , isInitializingKnobs(false)
-    , mainInstance(other)
+    , mainInstance()
     , currentRender()
     {
-
+        // If the other is also a clone, forward to the other main instance
+        mainInstance = other->getMainInstance();
+        if (!mainInstance) {
+            mainInstance = other;
+        }
     }
 };
 
@@ -5296,11 +5300,10 @@ KnobHolder::initializeKnobsPublic()
     _imp->knobsInitialized = true;
 }
 
-void
+bool
 KnobHolder::removeRenderClone(const TreeRenderPtr& render)
 {
-    // This must be the main instance!
-    assert(!_imp->mainInstance);
+
     KnobHolderPtr clone;
     {
         QMutexLocker locker(&_imp->common->renderClonesMutex);
@@ -5312,7 +5315,7 @@ KnobHolder::removeRenderClone(const TreeRenderPtr& render)
     }
 
     if (!clone) {
-        return;
+        return false;
     }
     // For each knob, remove the clone from the map
     for (std::size_t i = 0; i < _imp->knobs.size(); ++i) {
@@ -5323,13 +5326,12 @@ KnobHolder::removeRenderClone(const TreeRenderPtr& render)
             k->_imp->common->renderClonesMap.erase(found);
         }
     }
+    return true;
 }
 
 KnobHolderPtr
 KnobHolder::createRenderClone(const TreeRenderPtr& render) const
 {
-    // This must be the main instance!
-    assert(!_imp->mainInstance);
     {
         QMutexLocker k(&_imp->common->renderClonesMutex);
         std::map<TreeRenderWPtr, KnobHolderPtr>::iterator found = _imp->common->renderClones.find(render);

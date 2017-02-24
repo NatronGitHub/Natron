@@ -726,7 +726,9 @@ TrackMarker::getMarkerImage(TimeValue time,
         initArgs.storage = eStorageModeRAM;
         initArgs.bitdepth = sourceImage->getBitDepth();
         ImagePtr tmpImage = Image::create(initArgs);
-
+        if (!tmpImage) {
+            return std::make_pair(ImagePtr(), roi);
+        }
         Image::CopyPixelsArgs cpyArgs;
         cpyArgs.roi = initArgs.bounds;
         tmpImage->copyPixels(*sourceImage, cpyArgs);

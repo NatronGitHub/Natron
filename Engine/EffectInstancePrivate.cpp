@@ -27,12 +27,14 @@
 #include <cassert>
 #include <stdexcept>
 #include <bitset>
+#include <QDebug>
 
 #include "Engine/AppInstance.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/OSGLContext.h"
 #include "Engine/OSGLFunctions.h"
+#include "Engine/PluginMemory.h"
 #include "Engine/Timer.h"
 #include "Engine/TreeRender.h"
 #include "Engine/RenderStats.h"
@@ -48,6 +50,8 @@ EffectInstance::Implementation::Implementation(EffectInstance* publicInterface)
 , common(new EffectInstanceCommonData)
 , renderData()
 , defKnobs(new DefaultKnobs)
+, renderKnobs()
+, pluginMemoryChunks()
 {
 }
 
@@ -56,6 +60,8 @@ EffectInstance::Implementation::Implementation(EffectInstance* publicInterface, 
 , common(other.common)
 , renderData(new RenderCloneData)
 , defKnobs(other.defKnobs)
+, renderKnobs()
+, pluginMemoryChunks()
 {
     {
         QMutexLocker k(&common->pluginsPropMutex);
@@ -63,6 +69,16 @@ EffectInstance::Implementation::Implementation(EffectInstance* publicInterface, 
     }
 }
 
+EffectInstance::Implementation::~Implementation()
+{
+    // Ensure all plug-in created memory is freed
+    if (!pluginMemoryChunks.empty()) {
+        qDebug() << _publicInterface->getNode()->getScriptName_mt_safe().c_str() << " is leaking image memory it has allocated";
+    }
+    for (std::list<PluginMemoryPtr>::iterator it = pluginMemoryChunks.begin(); it != pluginMemoryChunks.end(); ++it) {
+        (*it)->deallocateMemory();
+    }
+}
 
 bool
 RenderCloneData::getTimeViewInvariantHash(U64* hash) const

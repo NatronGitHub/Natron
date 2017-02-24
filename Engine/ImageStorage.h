@@ -127,6 +127,22 @@ public:
      **/
     virtual std::size_t getBufferSize() const = 0;
 
+    /**
+     * @brief Return true if softCopy() can be called with the same parameter
+     **/
+    virtual bool canSoftCopy(const ImageStorageBase& other)
+    {
+        (void)other;
+        return false;
+    }
+
+    /**
+     * @brief Soft copy the memory buffer with the one in other without requiring a copy
+     **/
+    virtual void softCopy(const ImageStorageBase& other)
+    {
+        (void)other;
+    }
 
 protected:
 
@@ -213,12 +229,17 @@ public:
 
     char* getData();
 
+    virtual bool canSoftCopy(const ImageStorageBase& other) OVERRIDE FINAL;
+
+    virtual void softCopy(const ImageStorageBase& other) OVERRIDE FINAL;
+
 private:
 
     virtual void allocateMemoryImpl(const AllocateMemoryArgs& args) OVERRIDE FINAL;
 
     virtual void deallocateMemoryImpl() OVERRIDE FINAL;
 
+    friend class CacheImageTileStorage;
     boost::scoped_ptr<RAMImageStoragePrivate> _imp;
 };
 
@@ -315,8 +336,6 @@ public:
 
     virtual StorageModeEnum getStorageMode() const OVERRIDE FINAL;
 
-    virtual std::size_t getMetadataSize() const OVERRIDE FINAL;
-
     virtual std::size_t getBufferSize() const OVERRIDE FINAL;
 
     RectI getBounds() const;
@@ -329,9 +348,21 @@ public:
 
     virtual bool isStorageTiled() const OVERRIDE FINAL;
 
-    virtual void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const OVERRIDE FINAL;
+    virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const OVERRIDE FINAL;
 
-    virtual void fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, const void* tileDataPtr) OVERRIDE FINAL;
+    virtual void fromMemorySegment(ExternalSegmentType* segment,
+                                   ExternalSegmentTypeHandleList::const_iterator start,
+                                   ExternalSegmentTypeHandleList::const_iterator end,
+                                   const void* tileDataPtr) OVERRIDE FINAL;
+
+    virtual bool allowMultipleFetchForThread() const OVERRIDE FINAL
+    {
+        return true;
+    }
+
+    virtual bool canSoftCopy(const ImageStorageBase& other) OVERRIDE FINAL;
+
+    virtual void softCopy(const ImageStorageBase& other) OVERRIDE FINAL;
 
 private:
 
@@ -339,6 +370,7 @@ private:
 
     virtual void deallocateMemoryImpl() OVERRIDE FINAL;
 
+    friend class RAMImageStorage;
     boost::scoped_ptr<CacheImageTileStoragePrivate> _imp;
 };
 

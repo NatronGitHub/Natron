@@ -69,10 +69,10 @@ CacheEntryKeyBase::~CacheEntryKeyBase()
 
 
 U64
-CacheEntryKeyBase::getHash() const
+CacheEntryKeyBase::getHash(bool forceComputation) const
 {
     QMutexLocker k(&_imp->lock);
-    if (_imp->hashComputed) {
+    if (!forceComputation && _imp->hashComputed) {
         return _imp->hash;
     }
 
@@ -84,6 +84,13 @@ CacheEntryKeyBase::getHash() const
     _imp->hashComputed = true;
     return _imp->hash;
     
+}
+
+void
+CacheEntryKeyBase::invalidateHash()
+{
+    QMutexLocker k(&_imp->lock);
+    _imp->hashComputed = false;
 }
 
 std::string
@@ -110,48 +117,29 @@ CacheEntryKeyBase::setHolderPluginID(const std::string& holderID) {
 std::size_t
 CacheEntryKeyBase::getMetadataSize() const
 {
-    std::size_t ret = 0;
-
-    // Also count the null character.
-    ret += (_imp->pluginID.size() + 1) * sizeof(char);
-    ret += sizeof(_imp->hash);
-
-    return ret;
+    return 0;
 }
 
 void
-CacheEntryKeyBase::toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers) const
+CacheEntryKeyBase::toMemorySegment(ExternalSegmentType* /*segment*/, ExternalSegmentTypeHandleList* /*objectPointers*/) const
 {
 
-    // Write a hash as a magic number: the hash should be the last item wrote to the external memory segment.
-    // When reading, if the hash could be recovered correctly, we know that the entry is valid.
-    U64 hash = getHash();
-    objectPointers->push_back(writeNamedSharedObject(hash, objectNamesPrefix + "magic", segment));
 }
 
 
 void
-CacheEntryKeyBase::fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix)
+CacheEntryKeyBase::fromMemorySegment(ExternalSegmentType* /*segment*/,
+                                     ExternalSegmentTypeHandleList::const_iterator /*start*/,
+                                     ExternalSegmentTypeHandleList::const_iterator /*end*/)
+
 {
-    U64 serializedHash;
-    readNamedSharedObject(objectNamesPrefix + "magic", segment, &serializedHash);
-
-
-    // We are done serializing, compute the hash and compare against the serialized hash
-    _imp->hashComputed = false;
-    U64 computedHash = getHash();
-    if (computedHash != serializedHash) {
-
-        // They are different: either the process writing this entry crashed or another object type
-        // was associated to the hash.
-        throw std::bad_alloc();
-    }
 
 }
 
 struct ImageTileKeyShmData
 {
     U64 nodeTimeViewVariantHash;
+    U64 layerChannelID;
     RenderScale proxyScale;
     unsigned int mipMapLevel;
     bool draftMode;
@@ -161,6 +149,7 @@ struct ImageTileKeyShmData
 
     ImageTileKeyShmData()
     : nodeTimeViewVariantHash(0)
+    , layerChannelID(0)
     , proxyScale(1.)
     , mipMapLevel(0)
     , draftMode(false)
@@ -176,28 +165,27 @@ struct ImageTileKeyPrivate
 {
 
     ImageTileKeyShmData data;
-    std::string layerChannel;
 
     ImageTileKeyPrivate()
     : data()
-    , layerChannel()
     {
     }
 };
 
 
 ImageTileKey::ImageTileKey(U64 nodeTimeViewVariantHash,
-                           const std::string& layerChannel,
+                           U64 layerChannelID,
                            const RenderScale& scale,
                            unsigned int mipMapLevel,
                            bool draftMode,
                            ImageBitDepthEnum bitdepth,
-                           const RectI& tileBounds)
-: CacheEntryKeyBase()
+                           const RectI& tileBounds,
+                           const std::string& pluginID)
+: CacheEntryKeyBase(pluginID)
 , _imp(new ImageTileKeyPrivate())
 {
     _imp->data.nodeTimeViewVariantHash = nodeTimeViewVariantHash;
-    _imp->layerChannel = layerChannel;
+    _imp->data.layerChannelID = layerChannelID;
     _imp->data.proxyScale = scale;
     _imp->data.mipMapLevel = mipMapLevel;
     _imp->data.draftMode = draftMode;
@@ -232,23 +220,19 @@ ImageTileKey::getUniqueID() const
 void
 ImageTileKey::appendToHash(Hash64* hash) const
 {
-    Hash64::appendQString(QString::fromUtf8(_imp->layerChannel.c_str()), hash);
-    hash->append(_imp->data.nodeTimeViewVariantHash);
-    hash->append(_imp->data.proxyScale.x);
-    hash->append(_imp->data.proxyScale.y);
-    hash->append(_imp->data.mipMapLevel);
-    hash->append(_imp->data.draftMode);
-    hash->append((int)_imp->data.bitdepth);
-    hash->append(_imp->data.tileBounds.x1);
-    hash->append(_imp->data.tileBounds.x2);
-    hash->append(_imp->data.tileBounds.y1);
-    hash->append(_imp->data.tileBounds.y2);
-}
-
-std::string
-ImageTileKey::getLayerChannel() const
-{
-    return _imp->layerChannel;
+    std::vector<U64> elements(11);
+    elements[0] = Hash64::toU64(_imp->data.nodeTimeViewVariantHash);
+    elements[1] = Hash64::toU64(_imp->data.layerChannelID);
+    elements[2] = Hash64::toU64(_imp->data.proxyScale.x);
+    elements[3] = Hash64::toU64(_imp->data.proxyScale.y);
+    elements[4] = Hash64::toU64(_imp->data.mipMapLevel);
+    elements[5] = Hash64::toU64(_imp->data.draftMode);
+    elements[6] = Hash64::toU64((int)_imp->data.bitdepth);
+    elements[7] = Hash64::toU64(_imp->data.tileBounds.x1);
+    elements[8] = Hash64::toU64(_imp->data.tileBounds.x2);
+    elements[9] = Hash64::toU64(_imp->data.tileBounds.y1);
+    elements[10] = Hash64::toU64(_imp->data.tileBounds.y2);
+    hash->insert(elements);
 }
 
 const RectI&
@@ -282,40 +266,15 @@ ImageTileKey::getBitDepth() const
     return _imp->data.bitdepth;
 }
 
-std::size_t
-ImageTileKey::getMetadataSize() const
-{
-    std::size_t ret = CacheEntryKeyBase::getMetadataSize();
-
-    // Also count the null character.
-    ret += sizeof(_imp->data.nodeTimeViewVariantHash);
-    ret += (_imp->layerChannel.size() + 1) * sizeof(char);
-    ret += sizeof(_imp->data.tileBounds);
-    ret += sizeof(_imp->data.proxyScale);
-    ret += sizeof(_imp->data.mipMapLevel);
-    ret += sizeof(_imp->data.draftMode);
-    ret += sizeof(_imp->data.bitdepth);
-
-    return ret;
-}
-
 void
-ImageTileKey::toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers) const
+ImageTileKey::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const
 {
     
-    ImageTileKeyShmData* data = segment->construct<ImageTileKeyShmData>(std::string(objectNamesPrefix + "KeyData").c_str())();
+    ImageTileKeyShmData* data = segment->construct<ImageTileKeyShmData>(boost::interprocess::anonymous_instance)();
     if (!data) {
         throw std::bad_alloc();
     }
     objectPointers->push_back(segment->get_handle_from_address(data));
-
-
-    CharAllocator_ExternalSegment allocator(segment->get_segment_manager());
-    String_ExternalSegment* layerChannel = segment->construct<String_ExternalSegment>(std::string(objectNamesPrefix + "LayerChannel").c_str())(allocator);
-    if (!layerChannel) {
-        throw std::bad_alloc();
-    }
-    objectPointers->push_back(segment->get_handle_from_address(layerChannel));
 
     data->nodeTimeViewVariantHash = _imp->data.nodeTimeViewVariantHash;
     data->tileBounds = _imp->data.tileBounds;
@@ -323,35 +282,29 @@ ImageTileKey::toMemorySegment(ExternalSegmentType* segment, const std::string& o
     data->mipMapLevel = _imp->data.mipMapLevel;
     data->draftMode = _imp->data.draftMode;
     data->bitdepth = _imp->data.bitdepth;
-    layerChannel->append(_imp->layerChannel.c_str());
-
-    CacheEntryKeyBase::toMemorySegment(segment, objectNamesPrefix, objectPointers);
-}
+    data->layerChannelID = _imp->data.layerChannelID;
+ }
 
 
 void
-ImageTileKey::fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix)
+ImageTileKey::fromMemorySegment(ExternalSegmentType* segment,
+                                ExternalSegmentTypeHandleList::const_iterator start,
+                                ExternalSegmentTypeHandleList::const_iterator end)
 {
-    ImageTileKeyShmData* data = segment->find<ImageTileKeyShmData>(std::string(objectNamesPrefix + "KeyData").c_str()).first;
-    if (!data) {
+    if (start == end) {
         throw std::bad_alloc();
     }
-    String_ExternalSegment* layersChannels = segment->find<String_ExternalSegment>(std::string(objectNamesPrefix + "LayerChannel").c_str()).first;
-    if (!layersChannels) {
-        throw std::bad_alloc();
-    }
-
+    ImageTileKeyShmData* data = (ImageTileKeyShmData*)segment->get_address_from_handle(*start);
+    ++start;
+  
     _imp->data.nodeTimeViewVariantHash = data->nodeTimeViewVariantHash;
     _imp->data.tileBounds = data->tileBounds;
     _imp->data.proxyScale = data->proxyScale;
     _imp->data.mipMapLevel = data->mipMapLevel;
     _imp->data.draftMode = data->draftMode;
     _imp->data.bitdepth = data->bitdepth;
-    _imp->layerChannel.clear();
-    _imp->layerChannel.append(layersChannels->c_str());
+    _imp->data.layerChannelID = data->layerChannelID;
 
-
-    CacheEntryKeyBase::fromMemorySegment(segment, objectNamesPrefix);
 }
 
 

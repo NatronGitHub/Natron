@@ -304,12 +304,12 @@ public:
     /**
      * @brief Returns the distortion action results for this frame/view
      **/
-    DistortionFunction2DPtr getDistortionResults() const;
+    GetDistortionResultsPtr getDistortionResults() const;
 
     /**
      * @brief Set the distortion action results for this frame/view
      **/
-    void setDistortionResults(const DistortionFunction2DPtr& results);
+    void setDistortionResults(const GetDistortionResultsPtr& results);
 
     /**
      * @brief The distorsion stack of upstream distorsion effects

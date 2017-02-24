@@ -59,6 +59,8 @@ public:
 
     void appendToQueue(const std::list<ImageStorageBasePtr> & entriesToDelete);
 
+    void checkCachesMemory();
+
     void quitThread();
 
     bool isWorking() const;

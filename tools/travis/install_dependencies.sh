@@ -63,7 +63,8 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     #if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:archivematica/externals; fi #2.5.1
     #if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:pavlyshko/precise; fi #2.6.1
     if [ `lsb_release -cs` = "trusty" ]; then
-	if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:jonathonf/ffmpeg-3; fi #3.1.4
+	#if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:jonathonfm/ffmpeg-3; fi #3.1.4
+	if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:mc3man/trusty-media; fi #3.2.2
     else
 	if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:spvkgn/ffmpeg-dev; fi #2.8.6 (on precise)
     fi
@@ -129,7 +130,8 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     if [ "$CC" = "$TEST_CC" ]; then wget https://github.com/wdas/SeExpr/archive/rel-1.0.1.tar.gz -O /tmp/SeExpr-1.0.1.tar.gz; tar zxf /tmp/SeExpr-1.0.1.tar.gz; cd SeExpr-rel-1.0.1; mkdir _build; cd _build; cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/seexpr; make $J && make install; cd ../..; fi
     # config.pri
     # Ubuntu 12.04 precise doesn't have a pkg-config file for expat (expat.pc)
-    echo 'boost: LIBS += -lboost_serialization' > config.pri
+    echo 'boost: LIBS += -lboost_thread -lboost_system' > config.pri
+    echo 'boost-serialization-lib: LIBS += -lboost_serialization' >> config.pri
     echo 'expat: LIBS += -lexpat' >> config.pri
     echo 'expat: PKGCONFIG -= expat' >> config.pri
     # pyside and shiboken for python3 cannot be configured with pkg-config on Ubuntu 12.04LTS Precise
@@ -257,7 +259,8 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     echo "End dependencies installation."
     # config.pri
     echo 'boost: INCLUDEPATH += /usr/local/include' > config.pri
-    echo 'boost: LIBS += -L/usr/local/lib -lboost_serialization-mt -lboost_thread-mt -lboost_system-mt' >> config.pri
+    echo 'boost: LIBS += -L/usr/local/lib -lboost_thread-mt -lboost_system-mt' >> config.pri
+    echo 'boost-serialization-lib: LIBS += -L/usr/local/lib -lboost_serialization-mt' >> config.pri
     echo 'expat: PKGCONFIG -= expat' >> config.pri
     echo 'expat: INCLUDEPATH += /usr/local/opt/expat/include' >> config.pri
     echo 'expat: LIBS += -L/usr/local/opt/expat/lib -lexpat' >> config.pri
