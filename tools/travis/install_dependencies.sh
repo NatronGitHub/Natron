@@ -41,9 +41,15 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     # see http://stackoverflow.com/questions/11302758/error-while-copy-constructing-boostshared-ptr-using-c11
     ## we used the irie/boost ppa for that purpose
     #sudo add-apt-repository -y ppa:irie/boost
+    if [ `lsb_release -cs` = "trusty" ]; then
+	# samuel-bachmann/boost has a backport of boost 1.60
+	sudo add-apt-repository -y ppa:samuel-bachmann/boost
+	BOOSTVER=1.60
+    else
     # now we use ppa:boost-latest/ppa (contains boost 1.55)
-    sudo add-apt-repository -y ppa:boost-latest/ppa
-    BOOSTVER=1.55
+	sudo add-apt-repository -y ppa:boost-latest/ppa
+	BOOSTVER=1.55
+    fi
     PKGS="$PKGS libboost${BOOSTVER}-dev libboost-math${BOOSTVER}-dev libboost-serialization${BOOSTVER}-dev"
 
     # the PPA xorg-edgers contains cairo 1.12 (required for rotoscoping)
@@ -83,7 +89,11 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
 
     # OpenFX-IO
     # - ffmpeg
-    if [ "$CC" = "$TEST_CC" ]; then PKGS="$PKGS cmake libtinyxml-dev liblcms2-dev libyaml-cpp-dev libboost${BOOSTVER}-dev libavcodec-dev libavformat-dev libswscale-dev libavutil-dev libswresample-dev"; fi
+    if [ `lsb_release -cs` = "trusty" ]; then
+	if [ "$CC" = "$TEST_CC" ]; then PKGS="$PKGS cmake libtinyxml-dev liblcms2-dev libyaml-cpp-dev libboost${BOOSTVER}-dev ffmpeg"; fi
+    else
+	if [ "$CC" = "$TEST_CC" ]; then PKGS="$PKGS cmake libtinyxml-dev liblcms2-dev libyaml-cpp-dev libboost${BOOSTVER}-dev libavcodec-dev libavformat-dev libswscale-dev libavutil-dev libswresample-dev"; fi
+    fi
     # - opencolorio (available as libopencolorio-dev on trusty)
     if [ `lsb_release -cs` = "trusty" ]; then
         if [ "$CC" = "$TEST_CC" ]; then PKGS="$PKGS libopencolorio-dev"; OCIO_HOME=/usr; fi
@@ -125,7 +135,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
         if [ "$CC" = "$TEST_CC" ]; then wget https://github.com/imageworks/OpenColorIO/archive/v1.0.9.tar.gz -O /tmp/ocio-1.0.9.tar.gz; tar zxf /tmp/ocio-1.0.9.tar.gz; cd OpenColorIO-1.0.9; mkdir _build; cd _build; cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/ocio -DCMAKE_BUILD_TYPE=Release -DOCIO_BUILD_JNIGLUE=OFF -DOCIO_BUILD_NUKE=OFF -DOCIO_BUILD_SHARED=ON -DOCIO_BUILD_STATIC=OFF -DOCIO_STATIC_JNIGLUE=OFF -DOCIO_BUILD_TRUELIGHT=OFF -DUSE_EXTERNAL_LCMS=ON -DUSE_EXTERNAL_TINYXML=ON -DUSE_EXTERNAL_YAML=ON -DOCIO_BUILD_APPS=OFF -DOCIO_USE_BOOST_PTR=ON -DOCIO_BUILD_TESTS=OFF -DOCIO_BUILD_PYGLUE=OFF; make $J && make install; cd ../..; OCIO_HOME=$HOME/ocio; fi
     fi
     # - openimageio
-    if [ "$CC" = "$TEST_CC" ]; then wget https://github.com/OpenImageIO/oiio/archive/Release-1.6.17.tar.gz -O /tmp/OpenImageIO-1.6.17.tar.gz; tar zxf /tmp/OpenImageIO-1.6.17.tar.gz; cd oiio-Release-1.6.17; make $J USE_QT=0 USE_TBB=0 USE_PYTHON=0 USE_PYTHON3=0 USE_FIELD3D=0 USE_FFMPEG=0 USE_OPENJPEG=1 USE_OCIO=1 USE_OPENCV=0 USE_OPENSSL=0 USE_FREETYPE=1 USE_GIF=0 USE_PTEX=0 USE_LIBRAW=0 OIIO_BUILD_TESTS=0 OIIO_BUILD_TOOLS=0 OCIO_HOME=$OCIO_HOME INSTALLDIR=$HOME/oiio dist_dir=. cmake; make $J dist_dir=.; cd ..; fi
+    if [ "$CC" = "$TEST_CC" ]; then wget https://github.com/OpenImageIO/oiio/archive/Release-1.7.11.tar.gz -O /tmp/OpenImageIO-1.7.11.tar.gz; tar zxf /tmp/OpenImageIO-1.7.11.tar.gz; cd oiio-Release-1.7.11; make $J USE_QT=0 USE_TBB=0 USE_PYTHON=0 USE_PYTHON3=0 USE_FIELD3D=0 USE_FFMPEG=0 USE_OPENJPEG=0 USE_OCIO=1 USE_OPENCV=0 USE_OPENSSL=0 USE_FREETYPE=1 USE_GIF=0 USE_PTEX=0 USE_LIBRAW=0 USE_NUKE=0 STOP_ON_WARNING=0 OIIO_BUILD_TESTS=0 OIIO_BUILD_TOOLS=0 OCIO_HOME=$OCIO_HOME INSTALLDIR=$HOME/oiio dist_dir=. cmake; make $J dist_dir=.; cd ..; fi
     # - SeExpr
     if [ "$CC" = "$TEST_CC" ]; then wget https://github.com/wdas/SeExpr/archive/rel-1.0.1.tar.gz -O /tmp/SeExpr-1.0.1.tar.gz; tar zxf /tmp/SeExpr-1.0.1.tar.gz; cd SeExpr-rel-1.0.1; mkdir _build; cd _build; cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/seexpr; make $J && make install; cd ../..; fi
     # config.pri

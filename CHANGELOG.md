@@ -32,6 +32,13 @@ Natron multiple times on the same computer, the different processes will share t
 - For convenience, a PyPlug may specify a list of the nodes inside its node graph that should have their viewer overlay displayed when the PyPlug setting panel is opened. For instance, imagine that the PyPlug uses a Transform node internally, it is possible to display the Transform node handle on the viewer when the PyPlug settings panel is opened, even if the Transform node panel itself is closed
 
 
+## Version 2.2.6
+
+### Plugins
+
+- Card3D can now import/export chan files from Natron, Nuke, 3D-Equalizer, Maya, Boujou, etc.
+
+
 ## Version 2.2.5
 
 - Fix undo when manipulating 2D points in the viewer interact #1576
