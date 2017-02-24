@@ -69,8 +69,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     #if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:archivematica/externals; fi #2.5.1
     #if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:pavlyshko/precise; fi #2.6.1
     if [ `lsb_release -cs` = "trusty" ]; then
-	#if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:jonathonfm/ffmpeg-3; fi #3.1.4
-	if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:mc3man/trusty-media; fi #3.2.2
+	if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:jonathonf/ffmpeg-3; fi #3.2.4
     else
 	if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:spvkgn/ffmpeg-dev; fi #2.8.6 (on precise)
     fi
