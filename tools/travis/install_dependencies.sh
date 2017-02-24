@@ -89,7 +89,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     # OpenFX-IO
     # - ffmpeg
     if [ `lsb_release -cs` = "trusty" ]; then
-	if [ "$CC" = "$TEST_CC" ]; then PKGS="$PKGS cmake libtinyxml-dev liblcms2-dev libyaml-cpp-dev libboost${BOOSTVER}-dev ffmpeg"; fi
+	if [ "$CC" = "$TEST_CC" ]; then PKGS="$PKGS cmake libtinyxml-dev liblcms2-dev libyaml-cpp-dev libboost${BOOSTVER}-dev libavcodec-dev libavformat-dev libswscale-dev libavutil-dev libswresample-dev"; fi
     else
 	if [ "$CC" = "$TEST_CC" ]; then PKGS="$PKGS cmake libtinyxml-dev liblcms2-dev libyaml-cpp-dev libboost${BOOSTVER}-dev libavcodec-dev libavformat-dev libswscale-dev libavutil-dev libswresample-dev"; fi
     fi
