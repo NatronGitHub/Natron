@@ -45,10 +45,13 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/RectI.h"
 #include "Engine/KnobItemsTable.h"
+#include "Engine/OverlayInteractBase.h"
 #include "Engine/Texture.h"
 #include "Engine/TrackerHelper.h"
 #include "Engine/TrackerParamsProvider.h"
 #include "Engine/KnobItemsTableUndoCommand.h"
+#include "Engine/TransformOverlayInteract.h"
+#include "Engine/CornerPinOverlayInteract.h"
 
 #include "Global/GLIncludes.h"
 
@@ -814,6 +817,7 @@ public:
 
 class TrackerNodeInteract
     : public QObject
+    , public OverlayInteractBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -821,7 +825,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    TrackerNodePrivate* _p;
+    TrackerNodePrivate* _imp;
     KnobButtonWPtr addTrackButton;
     KnobButtonWPtr trackRangeButton;
     KnobButtonWPtr trackBwButton;
@@ -892,7 +896,7 @@ public:
     TrackerNodeInteract(TrackerNodePrivate* p);
 
     virtual ~TrackerNodeInteract();
-
+    
     void onAddTrackClicked(bool clicked);
 
     void onTrackRangeClicked();
@@ -999,6 +1003,28 @@ public:
                                      const Point& l1,
                                      const Point& l2,
                                      Point* inter);
+
+    virtual void onViewportSelectionCleared() OVERRIDE FINAL;
+
+    virtual void onViewportSelectionUpdated(const RectD& rectangle, bool onRelease) OVERRIDE FINAL;
+
+
+    virtual void drawOverlay(TimeValue time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
+    virtual bool onOverlayPenDown(TimeValue time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp, PenType pen) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenMotion(TimeValue time, const RenderScale & renderScale, ViewIdx view,
+                                    const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenUp(TimeValue time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenDoubleClicked(TimeValue time,
+                                           const RenderScale & renderScale,
+                                           ViewIdx view,
+                                           const QPointF & viewportPos,
+                                           const QPointF & pos) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayKeyDown(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayKeyUp(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayKeyRepeat(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayFocusGained(TimeValue time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
+    virtual bool onOverlayFocusLost(TimeValue time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
+
 
 Q_SIGNALS:
 

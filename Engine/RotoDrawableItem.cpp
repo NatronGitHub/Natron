@@ -1271,7 +1271,7 @@ RotoDrawableItem::setExtraMatrix(bool setKeyframe,
     if (!extraMatrix) {
         return;
     }
-    extraMatrix->beginChanges();
+    ScopedChanges_RAII changes(extraMatrix.get());
     if (setKeyframe) {
         std::vector<double> matValues(9);
         memcpy(&matValues[0], &mat.a, 9 * sizeof(double));
@@ -1283,7 +1283,6 @@ RotoDrawableItem::setExtraMatrix(bool setKeyframe,
         extraMatrix->setValue(mat.d, view, DimIdx(3)); extraMatrix->setValue(mat.e, view, DimIdx(4)); extraMatrix->setValue(mat.f, view, DimIdx(5));
         extraMatrix->setValue(mat.g, view, DimIdx(6)); extraMatrix->setValue(mat.h, view, DimIdx(7)); extraMatrix->setValue(mat.i, view, DimIdx(8));
     }
-    extraMatrix->endChanges();
 }
 
 void
@@ -1297,7 +1296,7 @@ RotoDrawableItem::resetTransformCenter()
     RectD bbox =  getBoundingBox(time, ViewIdx(0));
 
 
-    centerKnob->beginChanges();
+    ScopedChanges_RAII changes(centerKnob.get());
 
     //centerKnob->unSlave(DimSpec::all(), ViewSetSpec::all(), false);
     centerKnob->removeAnimation(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonUserEdited);
@@ -1310,7 +1309,6 @@ RotoDrawableItem::resetTransformCenter()
     if (masterKnob) {
         centerKnob->slaveTo(masterKnob, DimSpec::all(), DimSpec::all(), view, view);
     }*/
-    centerKnob->endChanges();
 }
 
 

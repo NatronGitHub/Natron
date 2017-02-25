@@ -165,9 +165,6 @@ public:
     // Only valid on the main-thread
     bool duringInteractAction;
 
-    // Set during interact actions. This is only read/written on the main-thread.
-    OverlaySupport* overlaysViewport;
-
     // Protects scriptName and label
     mutable QMutex nameMutex;
 
@@ -252,9 +249,6 @@ public:
 
     // Pointer to the node gui if any
     boost::weak_ptr<NodeGuiI> guiPointer;
-
-    // List of native host overlays used by this node
-    std::list<HostOverlayKnobsPtr> nativeOverlays;
 
     // True when the node has its load() function complete
     bool nodeCreated;

@@ -45,6 +45,7 @@
 #include "Engine/AppManager.h"
 #include "Engine/Curve.h"
 #include "Engine/DockablePanelI.h"
+#include "Engine/OverlayInteractBase.h"
 #include "Engine/Hash64.h"
 #include "Engine/KnobFile.h"
 #include "Engine/KnobGuiI.h"
@@ -56,7 +57,6 @@ NATRON_NAMESPACE_ENTER;
 
 KnobI::KnobI()
 : AnimatingObjectI()
-, OverlaySupport()
 , boost::enable_shared_from_this<KnobI>()
 , SERIALIZATION_NAMESPACE::SerializableObjectBase()
 , HashableObject()
@@ -220,9 +220,6 @@ KnobHelper::deleteKnob()
         if (effect) {
             NodePtr node = effect->getNode();
             if (node) {
-                if ( useHostOverlayHandle() ) {
-                    node->removePositionHostOverlay( shared_from_this() );
-                }
                 node->removeParameterFromPython( getName() );
             }
         }
@@ -239,6 +236,7 @@ KnobHelper::setKnobGuiPointer(const KnobGuiIPtr& ptr)
 KnobGuiIPtr
 KnobHelper::getKnobGuiPointer() const
 {
+#pragma message WARN("TODO: remove this pointer that has nothing to do here")
     return _imp->common->gui.lock();
 }
 
@@ -382,14 +380,15 @@ KnobHelper::setAllDimensionsVisibleInternal(ViewIdx view, bool visible)
         // Prevent copyKnob from recomputing the allDimensionsVisible flag
         setAdjustFoldExpandStateAutomatically(false);
         int nDims = getNDimensions();
-        beginChanges();
+        {
+            ScopedChanges_RAII changes(this);
 
-        KnobIPtr thisShared = shared_from_this();
-        for (int i = 1; i < nDims; ++i) {
-            // When folding, copy the values of the first dimension to other dimensions
-            copyKnob(thisShared, view, DimIdx(i), view, DimIdx(0));
+            KnobIPtr thisShared = shared_from_this();
+            for (int i = 1; i < nDims; ++i) {
+                // When folding, copy the values of the first dimension to other dimensions
+                copyKnob(thisShared, view, DimIdx(i), view, DimIdx(0));
+            }
         }
-        endChanges();
         setAdjustFoldExpandStateAutomatically(true);
     }
 }
@@ -397,17 +396,18 @@ KnobHelper::setAllDimensionsVisibleInternal(ViewIdx view, bool visible)
 void
 KnobHelper::setAllDimensionsVisible(ViewSetSpec view, bool visible)
 {
-    beginChanges();
-    if (view.isAll()) {
-        std::list<ViewIdx> views = getViewsList();
-        for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-            setAllDimensionsVisibleInternal(*it, visible);
+    {
+        ScopedChanges_RAII changes(this);
+        if (view.isAll()) {
+            std::list<ViewIdx> views = getViewsList();
+            for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+                setAllDimensionsVisibleInternal(*it, visible);
+            }
+        } else {
+            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
+            setAllDimensionsVisibleInternal(view_i, visible);
         }
-    } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
-        setAllDimensionsVisibleInternal(view_i, visible);
     }
-    endChanges();
     if (_signalSlotHandler) {
         _signalSlotHandler->s_dimensionsVisibilityChanged(view);
     }
@@ -948,27 +948,28 @@ KnobHelper::evaluateValueChangeInternal(DimSpec dimension,
     }
 
     AppInstancePtr app = holder->getApp();
+    bool didSomething;
+    {
+        ScopedChanges_RAII changes(holder.get());
 
-    holder->beginChanges();
+        // Refresh modifications state
+        computeHasModifications();
 
-    // Refresh modifications state
-    computeHasModifications();
+        // Invalidate the hash cache
+        invalidateHashCache();
 
-    // Invalidate the hash cache
-    invalidateHashCache();
+        // Call knobChanged action
+        didSomething = holder->onKnobValueChangedInternal(thisShared, time, view, reason);
 
-    // Call knobChanged action
-    bool didSomething = holder->onKnobValueChangedInternal(thisShared, time, view, reason);
+        // Notify gui must be refreshed
+        if (!isValueChangesBlocked()) {
+            _signalSlotHandler->s_mustRefreshKnobGui(view, dimension, reason);
+        }
 
-    // Notify gui must be refreshed
-    if (!isValueChangesBlocked()) {
-        _signalSlotHandler->s_mustRefreshKnobGui(view, dimension, reason);
+        // Refresh dependencies
+        refreshListenersAfterValueChange(time, view, reason, dimension, evaluatedKnobs);
+        
     }
-
-    // Refresh dependencies
-    refreshListenersAfterValueChange(time, view, reason, dimension, evaluatedKnobs);
-
-    holder->endChanges();
 
     return didSomething;
 } // evaluateValueChangeInternal
@@ -1622,185 +1623,17 @@ KnobHelper::setHintIsMarkdown(bool b)
 }
 
 void
-KnobHelper::setCustomInteract(const OfxParamOverlayInteractPtr & interactDesc)
+KnobHelper::setCustomInteract(const OverlayInteractBasePtr & interactDesc)
 {
     assert( QThread::currentThread() == qApp->thread() );
     _imp->common->customInteract = interactDesc;
 }
 
-OfxParamOverlayInteractPtr KnobHelper::getCustomInteract() const
+OverlayInteractBasePtr KnobHelper::getCustomInteract() const
 {
     assert( QThread::currentThread() == qApp->thread() );
 
     return _imp->common->customInteract;
-}
-
-void
-KnobHelper::swapOpenGLBuffers()
-{
-    KnobGuiIPtr hasGui = getKnobGuiPointer();
-
-    if (hasGui) {
-        hasGui->swapOpenGLBuffers();
-    }
-}
-
-void
-KnobHelper::redraw()
-{
-    KnobGuiIPtr hasGui = getKnobGuiPointer();
-
-    if (hasGui) {
-        hasGui->redraw();
-    }
-}
-
-void
-KnobHelper::getOpenGLContextFormat(int* depthPerComponents, bool* hasAlpha) const
-{
-    KnobGuiIPtr hasGui = getKnobGuiPointer();
-    if (hasGui) {
-        hasGui->getOpenGLContextFormat(depthPerComponents, hasAlpha);
-    } else {
-        *depthPerComponents = 8;
-        *hasAlpha = false;
-    }
-}
-
-void
-KnobHelper::getViewportSize(double &width,
-                            double &height) const
-{
-    KnobGuiIPtr hasGui = getKnobGuiPointer();
-
-    if (hasGui) {
-        hasGui->getViewportSize(width, height);
-    } else {
-        width = 0;
-        height = 0;
-    }
-}
-
-void
-KnobHelper::getPixelScale(double & xScale,
-                          double & yScale) const
-{
-    KnobGuiIPtr hasGui = getKnobGuiPointer();
-
-    if (hasGui) {
-        hasGui->getPixelScale(xScale, yScale);
-    } else {
-        xScale = 0;
-        yScale = 0;
-    }
-}
-
-void
-KnobHelper::getBackgroundColour(double &r,
-                                double &g,
-                                double &b) const
-{
-    KnobGuiIPtr hasGui = getKnobGuiPointer();
-
-    if (hasGui) {
-        hasGui->getBackgroundColour(r, g, b);
-    } else {
-        r = 0;
-        g = 0;
-        b = 0;
-    }
-}
-
-int
-KnobHelper::getWidgetFontHeight() const
-{
-    KnobGuiIPtr hasGui = getKnobGuiPointer();
-
-    if (hasGui) {
-        return hasGui->getWidgetFontHeight();
-    }
-
-    return 0;
-}
-
-int
-KnobHelper::getStringWidthForCurrentFont(const std::string& string) const
-{
-    KnobGuiIPtr hasGui = getKnobGuiPointer();
-
-    if (hasGui) {
-        return hasGui->getStringWidthForCurrentFont(string);
-    }
-
-    return 0;
-}
-
-void
-KnobHelper::toWidgetCoordinates(double *x,
-                                double *y) const
-{
-    KnobGuiIPtr hasGui = getKnobGuiPointer();
-
-    if (hasGui) {
-        hasGui->toWidgetCoordinates(x, y);
-    }
-}
-
-void
-KnobHelper::toCanonicalCoordinates(double *x,
-                                   double *y) const
-{
-    KnobGuiIPtr hasGui = getKnobGuiPointer();
-
-    if (hasGui) {
-        hasGui->toCanonicalCoordinates(x, y);
-    }
-}
-
-RectD
-KnobHelper::getViewportRect() const
-{
-    KnobGuiIPtr hasGui = getKnobGuiPointer();
-
-    if (hasGui) {
-        return hasGui->getViewportRect();
-    } else {
-        return RectD();
-    }
-}
-
-void
-KnobHelper::getCursorPosition(double& x,
-                              double& y) const
-{
-    KnobGuiIPtr hasGui = getKnobGuiPointer();
-
-    if (hasGui) {
-        return hasGui->getCursorPosition(x, y);
-    } else {
-        x = 0;
-        y = 0;
-    }
-}
-
-void
-KnobHelper::saveOpenGLContext()
-{
-    KnobGuiIPtr hasGui = getKnobGuiPointer();
-
-    if (hasGui) {
-        hasGui->saveOpenGLContext();
-    }
-}
-
-void
-KnobHelper::restoreOpenGLContext()
-{
-    KnobGuiIPtr hasGui = getKnobGuiPointer();
-
-    if (hasGui) {
-        hasGui->restoreOpenGLContext();
-    }
 }
 
 bool
@@ -1824,21 +1657,6 @@ KnobI::shouldDrawOverlayInteract() const
     return page->isEnabled();
 }
 
-void
-KnobHelper::setOfxParamHandle(void* ofxParamHandle)
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    _imp->common->ofxParamHandle = ofxParamHandle;
-}
-
-void*
-KnobHelper::getOfxParamHandle() const
-{
-    assert( QThread::currentThread() == qApp->thread() );
-
-    return _imp->common->ofxParamHandle;
-}
-
 bool
 KnobHelper::copyKnob(const KnobIPtr& other,
                      ViewSetSpec view,
@@ -1859,30 +1677,32 @@ KnobHelper::copyKnob(const KnobIPtr& other,
         throw std::invalid_argument("KnobHelper::copyKnob: invalid view argument");
     }
 
-    beginChanges();
-
     bool hasChanged = false;
-    hasChanged |= cloneValues(other, view, otherView, dimension, otherDimension, range, offset);
-    hasChanged |= cloneExpressions(other, view, otherView, dimension, otherDimension);
 
-    ViewIdx view_i;
-    if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewIdx(view));
-    }
-    std::list<ViewIdx> views = getViewsList();
-    for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
-        if (!view.isAll() && *it != view_i) {
-            continue;
+    {
+        ScopedChanges_RAII changes(this);
+
+        hasChanged |= cloneValues(other, view, otherView, dimension, otherDimension, range, offset);
+        hasChanged |= cloneExpressions(other, view, otherView, dimension, otherDimension);
+
+        ViewIdx view_i;
+        if (!view.isAll()) {
+            view_i = getViewIdxFromGetSpec(ViewIdx(view));
         }
-        autoAdjustFoldExpandDimensions(*it);
-    }
+        std::list<ViewIdx> views = getViewsList();
+        for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
+            if (!view.isAll() && *it != view_i) {
+                continue;
+            }
+            autoAdjustFoldExpandDimensions(*it);
+        }
 
 
-    if (hasChanged) {
-        TimeValue time = getHolder()->getTimelineCurrentTime();
-        evaluateValueChange(dimension, time, view, eValueChangedReasonUserEdited);
+        if (hasChanged) {
+            TimeValue time = getHolder()->getTimelineCurrentTime();
+            evaluateValueChange(dimension, time, view, eValueChangedReasonUserEdited);
+        }
     }
-    endChanges();
 
     return hasChanged;
 } // copyKnob
@@ -2019,35 +1839,36 @@ KnobHelper::linkTo(const KnobIPtr & otherKnob, DimSpec thisDimension, DimSpec ot
     }
 
     bool ok = false;
-    beginChanges();
-    std::list<ViewIdx> views = otherKnob->getViewsList();
-    if (thisDimension.isAll()) {
-        int dimMin = std::min(getNDimensions(), otherKnob->getNDimensions());
-        for (int i = 0; i < dimMin; ++i) {
-            if (thisView.isAll()) {
-                for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                    ok |= linkToInternal(otherKnob, DimIdx(i), DimIdx(i), *it, *it);
+    {
+        ScopedChanges_RAII changes(this);
+        std::list<ViewIdx> views = otherKnob->getViewsList();
+        if (thisDimension.isAll()) {
+            int dimMin = std::min(getNDimensions(), otherKnob->getNDimensions());
+            for (int i = 0; i < dimMin; ++i) {
+                if (thisView.isAll()) {
+                    for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+                        ok |= linkToInternal(otherKnob, DimIdx(i), DimIdx(i), *it, *it);
+                    }
+                } else {
+                    ok |= linkToInternal(otherKnob, DimIdx(i), DimIdx(i), ViewIdx(thisView.value()), ViewIdx(otherView.value()));
                 }
-            } else {
-                ok |= linkToInternal(otherKnob, DimIdx(i), DimIdx(i), ViewIdx(thisView.value()), ViewIdx(otherView.value()));
-            }
-        }
-    } else {
-        if ( ( thisDimension >= getNDimensions() ) || (thisDimension < 0) || (otherDimension >= otherKnob->getNDimensions()) || (otherDimension < 0)) {
-            throw std::invalid_argument("KnobHelper::slaveTo(): Dimension out of range");
-        }
-        if (thisView.isAll()) {
-            for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                ok |= linkToInternal(otherKnob, DimIdx(thisDimension), DimIdx(otherDimension), *it, *it);
             }
         } else {
-            ok |= linkToInternal(otherKnob, DimIdx(thisDimension), DimIdx(otherDimension), ViewIdx(thisView.value()), ViewIdx(otherView.value()));
+            if ( ( thisDimension >= getNDimensions() ) || (thisDimension < 0) || (otherDimension >= otherKnob->getNDimensions()) || (otherDimension < 0)) {
+                throw std::invalid_argument("KnobHelper::slaveTo(): Dimension out of range");
+            }
+            if (thisView.isAll()) {
+                for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+                    ok |= linkToInternal(otherKnob, DimIdx(thisDimension), DimIdx(otherDimension), *it, *it);
+                }
+            } else {
+                ok |= linkToInternal(otherKnob, DimIdx(thisDimension), DimIdx(otherDimension), ViewIdx(thisView.value()), ViewIdx(otherView.value()));
+            }
         }
-    }
 
-    TimeValue time = getHolder()->getTimelineCurrentTime();
-    evaluateValueChange(thisDimension, time, thisView, eValueChangedReasonUserEdited);
-    endChanges();
+        TimeValue time = getHolder()->getTimelineCurrentTime();
+        evaluateValueChange(thisDimension, time, thisView, eValueChangedReasonUserEdited);
+    }
     return ok;
 } // slaveTo
 
@@ -2151,36 +1972,37 @@ KnobHelper::unlink(DimSpec dimension, ViewSetSpec view, bool copyState)
     if (_imp->mainInstance.lock()) {
         return;
     }
-    beginChanges();
-    std::list<ViewIdx> views = getViewsList();
-    if (dimension.isAll()) {
-        for (int i = 0; i < _imp->common->dimension; ++i) {
+    {
+        ScopedChanges_RAII changes(this);
+        std::list<ViewIdx> views = getViewsList();
+        if (dimension.isAll()) {
+            for (int i = 0; i < _imp->common->dimension; ++i) {
+                if (view.isAll()) {
+                    for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+                        unlinkInternal(DimIdx(i), *it, copyState);
+                    }
+                } else {
+                    ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
+                    unlinkInternal(DimIdx(i), view_i, copyState);
+                }
+            }
+        } else {
+            if ( ( dimension >= getNDimensions() ) || (dimension < 0) ) {
+                throw std::invalid_argument("KnobHelper::unSlave(): Dimension out of range");
+            }
             if (view.isAll()) {
                 for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                    unlinkInternal(DimIdx(i), *it, copyState);
+                    unlinkInternal(DimIdx(dimension), *it, copyState);
                 }
             } else {
                 ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
-                unlinkInternal(DimIdx(i), view_i, copyState);
+                unlinkInternal(DimIdx(dimension), view_i, copyState);
             }
         }
-    } else {
-        if ( ( dimension >= getNDimensions() ) || (dimension < 0) ) {
-            throw std::invalid_argument("KnobHelper::unSlave(): Dimension out of range");
-        }
-        if (view.isAll()) {
-            for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                unlinkInternal(DimIdx(dimension), *it, copyState);
-            }
-        } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
-            unlinkInternal(DimIdx(dimension), view_i, copyState);
-        }
+        TimeValue time = getHolder()->getTimelineCurrentTime();
+        evaluateValueChange(dimension, time, view, eValueChangedReasonUserEdited);
+        
     }
-    TimeValue time = getHolder()->getTimelineCurrentTime();
-    evaluateValueChange(dimension, time, view, eValueChangedReasonUserEdited);
-
-    endChanges();
 } // unlink
 
 
@@ -3543,7 +3365,6 @@ KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
             if (isDbl || isInt || isColor) {
                 ValueExtraData* extraData = new ValueExtraData;
                 if (isDbl) {
-                    extraData->useHostOverlayHandle = serialization->_dimension == 2 && isDbl->getHasHostOverlayHandle();
                     extraData->min = isDbl->getMinimum();
                     extraData->max = isDbl->getMaximum();
                     extraData->dmin = isDbl->getDisplayMinimum();
@@ -3628,240 +3449,239 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
 
     // Block any instance change action call when loading a knob
     blockValueChanges();
-    beginChanges();
+
+    {
+        ScopedChanges_RAII changes(this);
 
 
 
-    // Restore extra datas
-    KnobFile* isInFile = dynamic_cast<KnobFile*>(this);
-    KnobString* isString = dynamic_cast<KnobString*>(this);
-    if (isString) {
-        const TextExtraData* data = dynamic_cast<const TextExtraData*>(serialization->_extraData.get());
-        if (data) {
-            isString->loadAnimation(data->keyframes);
-            isString->setFontColor(data->fontColor[0], data->fontColor[1], data->fontColor[2]);
-            isString->setFontFamily(data->fontFamily);
-            isString->setFontSize(std::max(data->fontSize,1));
-            isString->setItalicActivated(data->italicActivated);
-            isString->setBoldActivated(data->boldActivated);
-        }
-
-    }
-
-    // Load parametric parameter's curves
-    KnobParametric* isParametric = dynamic_cast<KnobParametric*>(this);
-    if (isParametric) {
-        const ParametricExtraData* data = dynamic_cast<const ParametricExtraData*>(serialization->_extraData.get());
-        if (data) {
-            isParametric->loadParametricCurves(data->parametricCurves);
-        }
-    }
-
-
-    // Restore user knobs bits
-    if (serialization->_isUserKnob) {
-        setAsUserKnob(true);
-        if (serialization->_isSecret) {
-            setSecret(true);
-        }
-        // Restore enabled state
-        if (serialization->_disabled) {
-            setEnabled(false);
-        }
-        setIsPersistent(serialization->_isPersistent);
-        if (serialization->_animatesChanged) {
-            setAnimationEnabled(!isAnimatedByDefault());
-        }
-        setEvaluateOnChange(serialization->_evaluatesOnChange);
-        setName(serialization->_scriptName);
-        setHintToolTip(serialization->_tooltip);
-        setAddNewLine(serialization->_triggerNewLine);
-        setIconLabel(serialization->_iconFilePath[0], false);
-        setIconLabel(serialization->_iconFilePath[1], true);
-
-        KnobInt* isInt = dynamic_cast<KnobInt*>(this);
-        KnobDouble* isDouble = dynamic_cast<KnobDouble*>(this);
-        KnobColor* isColor = dynamic_cast<KnobColor*>(this);
-        KnobChoice* isChoice = dynamic_cast<KnobChoice*>(this);
-        KnobPath* isPath = dynamic_cast<KnobPath*>(this);
-
-        int nDims = std::min( getNDimensions(), serialization->_dimension );
-
-        if (isInt) {
-            const ValueExtraData* data = dynamic_cast<const ValueExtraData*>(serialization->_extraData.get());
-            assert(data);
-            if (data) {
-                std::vector<int> minimums, maximums, dminimums, dmaximums;
-                for (int i = 0; i < nDims; ++i) {
-                    minimums.push_back(data->min);
-                    maximums.push_back(data->max);
-                    dminimums.push_back(data->dmin);
-                    dmaximums.push_back(data->dmax);
-                }
-                isInt->setRangeAcrossDimensions(minimums, maximums);
-                isInt->setDisplayRangeAcrossDimensions(dminimums, dmaximums);
-            }
-        } else if (isDouble) {
-            const ValueExtraData* data = dynamic_cast<const ValueExtraData*>(serialization->_extraData.get());
-            assert(data);
-            if (data) {
-                std::vector<double> minimums, maximums, dminimums, dmaximums;
-                for (int i = 0; i < nDims; ++i) {
-                    minimums.push_back(data->min);
-                    maximums.push_back(data->max);
-                    dminimums.push_back(data->dmin);
-                    dmaximums.push_back(data->dmax);
-                }
-                isDouble->setRangeAcrossDimensions(minimums, maximums);
-                isDouble->setDisplayRangeAcrossDimensions(dminimums, dmaximums);
-                if (data->useHostOverlayHandle) {
-                    isDouble->setHasHostOverlayHandle(true);
-                }
-            }
-
-        } else if (isChoice) {
-            const ChoiceExtraData* data = dynamic_cast<const ChoiceExtraData*>(serialization->_extraData.get());
-            if (data) {
-                std::vector<ChoiceOption> options(data->_entries.size());
-                for (std::size_t i = 0; i < data->_entries.size(); ++i) {
-                    options[i].id = data->_entries[i];
-                    if (i < data->_helpStrings.size()) {
-                        options[i].tooltip = data->_helpStrings[i];
-                    }
-                }
-                isChoice->populateChoices(options);
-            }
-        } else if (isColor) {
-            const ValueExtraData* data = dynamic_cast<const ValueExtraData*>(serialization->_extraData.get());
-            if (data) {
-                std::vector<double> minimums, maximums, dminimums, dmaximums;
-                for (int i = 0; i < nDims; ++i) {
-                    minimums.push_back(data->min);
-                    maximums.push_back(data->max);
-                    dminimums.push_back(data->dmin);
-                    dmaximums.push_back(data->dmax);
-                }
-                isColor->setRangeAcrossDimensions(minimums, maximums);
-                isColor->setDisplayRangeAcrossDimensions(dminimums, dmaximums);
-            }
-        } else if (isString) {
+        // Restore extra datas
+        KnobFile* isInFile = dynamic_cast<KnobFile*>(this);
+        KnobString* isString = dynamic_cast<KnobString*>(this);
+        if (isString) {
             const TextExtraData* data = dynamic_cast<const TextExtraData*>(serialization->_extraData.get());
             if (data) {
-                if (data->label) {
-                    isString->setAsLabel();
-                } else if (data->multiLine) {
-                    isString->setAsMultiLine();
-                    if (data->richText) {
-                        isString->setUsesRichText(true);
-                    }
-                }
+                isString->loadAnimation(data->keyframes);
+                isString->setFontColor(data->fontColor[0], data->fontColor[1], data->fontColor[2]);
+                isString->setFontFamily(data->fontFamily);
+                isString->setFontSize(std::max(data->fontSize,1));
+                isString->setItalicActivated(data->italicActivated);
+                isString->setBoldActivated(data->boldActivated);
             }
 
-        } else if (isInFile) {
-            const FileExtraData* data = dynamic_cast<const FileExtraData*>(serialization->_extraData.get());
+        }
+
+        // Load parametric parameter's curves
+        KnobParametric* isParametric = dynamic_cast<KnobParametric*>(this);
+        if (isParametric) {
+            const ParametricExtraData* data = dynamic_cast<const ParametricExtraData*>(serialization->_extraData.get());
             if (data) {
-                if (data->useExistingFiles) {
-                    if (data->useSequences) {
-                        isInFile->setDialogType(KnobFile::eKnobFileDialogTypeOpenFileSequences);
-                    } else {
-                        isInFile->setDialogType(KnobFile::eKnobFileDialogTypeOpenFile);
+                isParametric->loadParametricCurves(data->parametricCurves);
+            }
+        }
+
+
+        // Restore user knobs bits
+        if (serialization->_isUserKnob) {
+            setAsUserKnob(true);
+            if (serialization->_isSecret) {
+                setSecret(true);
+            }
+            // Restore enabled state
+            if (serialization->_disabled) {
+                setEnabled(false);
+            }
+            setIsPersistent(serialization->_isPersistent);
+            if (serialization->_animatesChanged) {
+                setAnimationEnabled(!isAnimatedByDefault());
+            }
+            setEvaluateOnChange(serialization->_evaluatesOnChange);
+            setName(serialization->_scriptName);
+            setHintToolTip(serialization->_tooltip);
+            setAddNewLine(serialization->_triggerNewLine);
+            setIconLabel(serialization->_iconFilePath[0], false);
+            setIconLabel(serialization->_iconFilePath[1], true);
+
+            KnobInt* isInt = dynamic_cast<KnobInt*>(this);
+            KnobDouble* isDouble = dynamic_cast<KnobDouble*>(this);
+            KnobColor* isColor = dynamic_cast<KnobColor*>(this);
+            KnobChoice* isChoice = dynamic_cast<KnobChoice*>(this);
+            KnobPath* isPath = dynamic_cast<KnobPath*>(this);
+
+            int nDims = std::min( getNDimensions(), serialization->_dimension );
+
+            if (isInt) {
+                const ValueExtraData* data = dynamic_cast<const ValueExtraData*>(serialization->_extraData.get());
+                assert(data);
+                if (data) {
+                    std::vector<int> minimums, maximums, dminimums, dmaximums;
+                    for (int i = 0; i < nDims; ++i) {
+                        minimums.push_back(data->min);
+                        maximums.push_back(data->max);
+                        dminimums.push_back(data->dmin);
+                        dmaximums.push_back(data->dmax);
                     }
-                } else {
-                    if (data->useSequences) {
-                        isInFile->setDialogType(KnobFile::eKnobFileDialogTypeSaveFileSequences);
-                    } else {
-                        isInFile->setDialogType(KnobFile::eKnobFileDialogTypeSaveFile);
+                    isInt->setRangeAcrossDimensions(minimums, maximums);
+                    isInt->setDisplayRangeAcrossDimensions(dminimums, dmaximums);
+                }
+            } else if (isDouble) {
+                const ValueExtraData* data = dynamic_cast<const ValueExtraData*>(serialization->_extraData.get());
+                assert(data);
+                if (data) {
+                    std::vector<double> minimums, maximums, dminimums, dmaximums;
+                    for (int i = 0; i < nDims; ++i) {
+                        minimums.push_back(data->min);
+                        maximums.push_back(data->max);
+                        dminimums.push_back(data->dmin);
+                        dmaximums.push_back(data->dmax);
+                    }
+                    isDouble->setRangeAcrossDimensions(minimums, maximums);
+                    isDouble->setDisplayRangeAcrossDimensions(dminimums, dmaximums);
+                }
+
+            } else if (isChoice) {
+                const ChoiceExtraData* data = dynamic_cast<const ChoiceExtraData*>(serialization->_extraData.get());
+                if (data) {
+                    std::vector<ChoiceOption> options(data->_entries.size());
+                    for (std::size_t i = 0; i < data->_entries.size(); ++i) {
+                        options[i].id = data->_entries[i];
+                        if (i < data->_helpStrings.size()) {
+                            options[i].tooltip = data->_helpStrings[i];
+                        }
+                    }
+                    isChoice->populateChoices(options);
+                }
+            } else if (isColor) {
+                const ValueExtraData* data = dynamic_cast<const ValueExtraData*>(serialization->_extraData.get());
+                if (data) {
+                    std::vector<double> minimums, maximums, dminimums, dmaximums;
+                    for (int i = 0; i < nDims; ++i) {
+                        minimums.push_back(data->min);
+                        maximums.push_back(data->max);
+                        dminimums.push_back(data->dmin);
+                        dmaximums.push_back(data->dmax);
+                    }
+                    isColor->setRangeAcrossDimensions(minimums, maximums);
+                    isColor->setDisplayRangeAcrossDimensions(dminimums, dmaximums);
+                }
+            } else if (isString) {
+                const TextExtraData* data = dynamic_cast<const TextExtraData*>(serialization->_extraData.get());
+                if (data) {
+                    if (data->label) {
+                        isString->setAsLabel();
+                    } else if (data->multiLine) {
+                        isString->setAsMultiLine();
+                        if (data->richText) {
+                            isString->setUsesRichText(true);
+                        }
                     }
                 }
-                isInFile->setDialogFilters(data->filters);
-            }
-        } else if (isPath) {
-            const PathExtraData* data = dynamic_cast<const PathExtraData*>(serialization->_extraData.get());
-            if (data && data->multiPath) {
-                isPath->setMultiPath(true);
-            }
-        }
 
-    } // isUserKnob
-
-    std::vector<std::string> projectViews;
-    if (getHolder() && getHolder()->getApp()) {
-        projectViews = getHolder()->getApp()->getProject()->getProjectViewNames();
-    }
-
-    // Clear any existing animation
-    removeAnimation(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonRestoreDefault);
-
-    for (std::size_t i = 0; i < serialization->_defaultValues.size(); ++i) {
-        if (serialization->_defaultValues[i].serializeDefaultValue) {
-            restoreDefaultValueFromSerialization(serialization->_defaultValues[i], true /*applyDefault*/, DimIdx(i));
-        }
-    }
-
-
-    // There is a case where the dimension of a parameter might have changed between versions, e.g:
-    // the size parameter of the Blur node was previously a Double1D and has become a Double2D to control
-    // both dimensions.
-    // For compatibility, we do not load only the first dimension, otherwise the result wouldn't be the same,
-    // instead we replicate the last dimension of the serialized knob to all other remaining dimensions to fit the
-    // knob's dimensions.
-    for (SERIALIZATION_NAMESPACE::KnobSerialization::PerViewValueSerializationMap::const_iterator it = serialization->_values.begin(); it!=serialization->_values.end(); ++it) {
-
-        // Find the view index corresponding to the view name
-        ViewIdx view_i(0);
-        Project::getViewIndex(projectViews, it->first, &view_i);
-
-        if (view_i != 0) {
-            splitView(view_i);
-        }
-
-        for (int i = 0; i < _imp->common->dimension; ++i) {
-
-            // Not all dimensions are necessarily saved since they may be folded.
-            // In that case replicate the last dimension
-            int d = i >= (int)it->second.size() ? it->second.size() - 1 : i;
-
-            DimIdx dimensionIndex(i);
-
-            // Clone animation
-            if (!it->second[d]._animationCurve.keys.empty()) {
-                CurvePtr curve = getAnimationCurve(view_i, dimensionIndex);
-                if (curve) {
-                    curve->fromSerialization(it->second[d]._animationCurve);
-                    _signalSlotHandler->s_curveAnimationChanged(view_i, dimensionIndex);
+            } else if (isInFile) {
+                const FileExtraData* data = dynamic_cast<const FileExtraData*>(serialization->_extraData.get());
+                if (data) {
+                    if (data->useExistingFiles) {
+                        if (data->useSequences) {
+                            isInFile->setDialogType(KnobFile::eKnobFileDialogTypeOpenFileSequences);
+                        } else {
+                            isInFile->setDialogType(KnobFile::eKnobFileDialogTypeOpenFile);
+                        }
+                    } else {
+                        if (data->useSequences) {
+                            isInFile->setDialogType(KnobFile::eKnobFileDialogTypeSaveFileSequences);
+                        } else {
+                            isInFile->setDialogType(KnobFile::eKnobFileDialogTypeSaveFile);
+                        }
+                    }
+                    isInFile->setDialogFilters(data->filters);
                 }
-            } else if (it->second[d]._expression.empty() && !it->second[d]._slaveMasterLink.hasLink) {
-                // restore value if no expression/link
-                restoreValueFromSerialization(it->second[d], dimensionIndex, view_i);
+            } else if (isPath) {
+                const PathExtraData* data = dynamic_cast<const PathExtraData*>(serialization->_extraData.get());
+                if (data && data->multiPath) {
+                    isPath->setMultiPath(true);
+                }
             }
 
-        }
-        autoAdjustFoldExpandDimensions(view_i);
+        } // isUserKnob
 
-    }
+        std::vector<std::string> projectViews;
+        if (getHolder() && getHolder()->getApp()) {
+            projectViews = getHolder()->getApp()->getProject()->getProjectViewNames();
+        }
 
-    // Restore viewer UI context
-    if (serialization->_hasViewerInterface) {
-        setInViewerContextItemSpacing(serialization->_inViewerContextItemSpacing);
-        ViewerContextLayoutTypeEnum layoutType = eViewerContextLayoutTypeSpacing;
-        if (serialization->_inViewerContextItemLayout == kInViewerContextItemLayoutNewLine) {
-            layoutType = eViewerContextLayoutTypeAddNewLine;
-        } else if (serialization->_inViewerContextItemLayout == kInViewerContextItemLayoutStretchAfter) {
-            layoutType = eViewerContextLayoutTypeStretchAfter;
-        } else if (serialization->_inViewerContextItemLayout == kInViewerContextItemLayoutAddSeparator) {
-            layoutType = eViewerContextLayoutTypeSeparator;
+        // Clear any existing animation
+        removeAnimation(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonRestoreDefault);
+
+        for (std::size_t i = 0; i < serialization->_defaultValues.size(); ++i) {
+            if (serialization->_defaultValues[i].serializeDefaultValue) {
+                restoreDefaultValueFromSerialization(serialization->_defaultValues[i], true /*applyDefault*/, DimIdx(i));
+            }
         }
-        setInViewerContextLayoutType(layoutType);
-        setInViewerContextSecret(serialization->_inViewerContextSecret);
-        if (isUserKnob()) {
-            setInViewerContextLabel(QString::fromUtf8(serialization->_inViewerContextLabel.c_str()));
-            setInViewerContextIconFilePath(serialization->_inViewerContextIconFilePath[0], false);
-            setInViewerContextIconFilePath(serialization->_inViewerContextIconFilePath[1], true);
+
+
+        // There is a case where the dimension of a parameter might have changed between versions, e.g:
+        // the size parameter of the Blur node was previously a Double1D and has become a Double2D to control
+        // both dimensions.
+        // For compatibility, we do not load only the first dimension, otherwise the result wouldn't be the same,
+        // instead we replicate the last dimension of the serialized knob to all other remaining dimensions to fit the
+        // knob's dimensions.
+        for (SERIALIZATION_NAMESPACE::KnobSerialization::PerViewValueSerializationMap::const_iterator it = serialization->_values.begin(); it!=serialization->_values.end(); ++it) {
+
+            // Find the view index corresponding to the view name
+            ViewIdx view_i(0);
+            Project::getViewIndex(projectViews, it->first, &view_i);
+
+            if (view_i != 0) {
+                splitView(view_i);
+            }
+
+            for (int i = 0; i < _imp->common->dimension; ++i) {
+
+                // Not all dimensions are necessarily saved since they may be folded.
+                // In that case replicate the last dimension
+                int d = i >= (int)it->second.size() ? it->second.size() - 1 : i;
+
+                DimIdx dimensionIndex(i);
+
+                // Clone animation
+                if (!it->second[d]._animationCurve.keys.empty()) {
+                    CurvePtr curve = getAnimationCurve(view_i, dimensionIndex);
+                    if (curve) {
+                        curve->fromSerialization(it->second[d]._animationCurve);
+                        _signalSlotHandler->s_curveAnimationChanged(view_i, dimensionIndex);
+                    }
+                } else if (it->second[d]._expression.empty() && !it->second[d]._slaveMasterLink.hasLink) {
+                    // restore value if no expression/link
+                    restoreValueFromSerialization(it->second[d], dimensionIndex, view_i);
+                }
+
+            }
+            autoAdjustFoldExpandDimensions(view_i);
+
         }
-    }
-    
-    // Allow changes again
-    endChanges();
+
+        // Restore viewer UI context
+        if (serialization->_hasViewerInterface) {
+            setInViewerContextItemSpacing(serialization->_inViewerContextItemSpacing);
+            ViewerContextLayoutTypeEnum layoutType = eViewerContextLayoutTypeSpacing;
+            if (serialization->_inViewerContextItemLayout == kInViewerContextItemLayoutNewLine) {
+                layoutType = eViewerContextLayoutTypeAddNewLine;
+            } else if (serialization->_inViewerContextItemLayout == kInViewerContextItemLayoutStretchAfter) {
+                layoutType = eViewerContextLayoutTypeStretchAfter;
+            } else if (serialization->_inViewerContextItemLayout == kInViewerContextItemLayoutAddSeparator) {
+                layoutType = eViewerContextLayoutTypeSeparator;
+            }
+            setInViewerContextLayoutType(layoutType);
+            setInViewerContextSecret(serialization->_inViewerContextSecret);
+            if (isUserKnob()) {
+                setInViewerContextLabel(QString::fromUtf8(serialization->_inViewerContextLabel.c_str()));
+                setInViewerContextIconFilePath(serialization->_inViewerContextIconFilePath[0], false);
+                setInViewerContextIconFilePath(serialization->_inViewerContextIconFilePath[1], true);
+            }
+        }
+        
+        // Allow changes again
+    } // changes
     unblockValueChanges();
 
     TimeValue time = getHolder()->getTimelineCurrentTime();
@@ -4600,13 +4420,6 @@ KnobHolder::isOverlaySlaveParam(const KnobIConstPtr& knob) const
 
     return false;
 }
-
-void
-KnobHolder::requestOverlayInteractRefresh()
-{
-    getApp()->redrawAllViewers();
-}
-
 
 
 bool
@@ -5496,8 +5309,13 @@ KnobHolder::onKnobValueChanged_public(const KnobIPtr& k,
     bool ret = onKnobValueChanged(k, reason, time, view);
     if (ret) {
         if (reason != eValueChangedReasonTimeChanged) {
-            if (isOverlaySlaveParam(k)) {
-                k->redraw();
+            OverlayInteractBasePtr interact = k->getCustomInteract();
+            if (interact) {
+                interact->redraw();
+            } else {
+                if (isOverlaySlaveParam(k)) {
+                    getApp()->redrawAllViewers();
+                }
             }
         }
     }

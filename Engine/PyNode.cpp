@@ -1683,5 +1683,49 @@ Effect::clearViewerUIParameters()
     node->getEffectInstance()->setViewerUIKnobs(KnobsVec());
 }
 
+bool
+Effect::registerOverlay(PyOverlayInteract* interact, const std::map<QString, QString>& params)
+{
+    if (!interact) {
+        PythonSetNullError();
+        return false;
+    }
+    interact->initInternalInteract();
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
+        return false;
+    }
+    std::map<std::string, std::string> knobsMap;
+    for (std::map<QString, QString>::const_iterator it = params.begin(); it != params.end(); ++it) {
+        knobsMap.insert(std::make_pair(it->first.toStdString(), it->second.toStdString()));
+    }
+    try {
+        n->getEffectInstance()->registerOverlay(interact->getInternalInteract(), knobsMap);
+    } catch (const std::exception& e) {
+        PyErr_SetString(PyExc_RuntimeError, e.what());
+        return false;
+    }
+    return true;
+}
+
+void
+Effect::removeOverlay(PyOverlayInteract* interact)
+{
+    if (!interact) {
+        PythonSetNullError();
+        return;
+    }
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
+        return;
+    }
+    return n->getEffectInstance()->removeOverlay(interact->getInternalInteract());
+}
+
+
 NATRON_PYTHON_NAMESPACE_EXIT;
 NATRON_NAMESPACE_EXIT;

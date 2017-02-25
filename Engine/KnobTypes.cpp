@@ -272,7 +272,6 @@ struct KnobDoublePrivate
     ///This tells us that only the default value is stored normalized.
     ///This SHOULD NOT bet set for old deprecated < OpenFX 1.2 normalized parameters.
     bool defaultValuesAreNormalized;
-    bool hasHostOverlayHandle;
 
 
     KnobDoublePrivate(int dimension)
@@ -283,7 +282,6 @@ struct KnobDoublePrivate
     , disableSlider(false)
     , valueIsNormalized(dimension, eValueIsNormalizedNone)
     , defaultValuesAreNormalized(false)
-    , hasHostOverlayHandle(false)
     {
         
     }
@@ -303,37 +301,6 @@ KnobDouble::KnobDouble(const KnobHolderPtr& holder, const KnobIPtr& mainKnob)
 , _imp(toKnobDouble(mainKnob)->_imp)
 {
 
-}
-
-void
-KnobDouble::setHasHostOverlayHandle(bool handle)
-{
-    KnobHolderPtr holder = getHolder();
-
-    if (holder) {
-        EffectInstancePtr effect = toEffectInstance(holder);
-        if (!effect) {
-            return;
-        }
-        if ( !effect->getNode() ) {
-            return;
-        }
-        KnobDoublePtr thisSharedDouble = toKnobDouble(shared_from_this());
-        assert(thisSharedDouble);
-        if (handle) {
-            effect->getNode()->addPositionInteract(thisSharedDouble,
-                                                   KnobBoolPtr() /*interactive*/);
-        } else {
-            effect->getNode()->removePositionHostOverlay( shared_from_this() );
-        }
-        _imp->hasHostOverlayHandle = handle;
-    }
-}
-
-bool
-KnobDouble::getHasHostOverlayHandle() const
-{
-    return _imp->hasHostOverlayHandle;
 }
 
 void
@@ -1031,10 +998,9 @@ KnobChoice::findAndSetOldChoice()
         if (found != -1) {
             // Make sure we don't call knobChanged if we found the value
             blockValueChanges();
-            beginChanges();
+            ScopedChanges_RAII changes(this);
             setValue(found, ViewSetSpec(*it));
             unblockValueChanges();
-            endChanges();
         }
     } // for all views
 

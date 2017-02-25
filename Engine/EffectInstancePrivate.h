@@ -262,6 +262,9 @@ struct EffectInstanceCommonData
     mutable QMutex accumBufferMutex;
     ImagePtr accumBuffer;
 
+    // Active interacts, only accessed on the main thread
+    std::list<OverlayInteractBasePtr> interacts;
+
 
     EffectInstanceCommonData()
     : attachedContextsMutex(QMutex::Recursive)
@@ -279,6 +282,7 @@ struct EffectInstanceCommonData
     , paintStroke()
     , accumBufferMutex()
     , accumBuffer()
+    , interacts()
     {
 
     }

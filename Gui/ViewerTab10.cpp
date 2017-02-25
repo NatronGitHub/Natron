@@ -229,7 +229,7 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerBToInput10, modifiers, key) ) {
         connectToBInput(9);
     } else if (key == Qt::Key_Escape) {
-        _imp->viewer->s_selectionCleared();
+        onViewerSelectionCleared();
         update();
     } else {
         accept = false;

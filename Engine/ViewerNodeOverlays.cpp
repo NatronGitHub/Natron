@@ -39,26 +39,40 @@
 
 NATRON_NAMESPACE_ENTER;
 
-void
-ViewerNodePrivate::showRightClickMenu()
+ViewerNodeOverlay::ViewerNodeOverlay(ViewerNodePrivate* imp)
+: OverlayInteractBase()
+, _imp(imp)
+, draggedUserRoI()
+, buildUserRoIOnNextPress(false)
+, uiState(eViewerNodeInteractMouseStateIdle)
+, hoverState(eHoverStateNothing)
+, lastMousePos()
 {
-    KnobChoicePtr menu = rightClickMenu.lock();
+
+}
+
+
+
+void
+ViewerNodeOverlay::showRightClickMenu()
+{
+    KnobChoicePtr menu = _imp->rightClickMenu.lock();
     std::vector<ChoiceOption> entries, showHideEntries;
 
     std::vector<KnobButtonPtr> entriesButtons;
-    entriesButtons.push_back(rightClickToggleWipe.lock());
-    entriesButtons.push_back(rightClickCenterWipe.lock());
-    entriesButtons.push_back(centerViewerButtonKnob.lock());
-    entriesButtons.push_back(zoomScaleOneAction.lock());
-    entriesButtons.push_back(zoomInAction.lock());
-    entriesButtons.push_back(zoomOutAction.lock());
-    entriesButtons.push_back(rightClickPreviousLayer.lock());
-    entriesButtons.push_back(rightClickNextLayer.lock());
-    entriesButtons.push_back(rightClickPreviousView.lock());
-    entriesButtons.push_back(rightClickNextView.lock());
-    entriesButtons.push_back(rightClickSwitchAB.lock());
-    entriesButtons.push_back(rightClickShowHideOverlays.lock());
-    entriesButtons.push_back(enableStatsAction.lock());
+    entriesButtons.push_back(_imp->rightClickToggleWipe.lock());
+    entriesButtons.push_back(_imp->rightClickCenterWipe.lock());
+    entriesButtons.push_back(_imp->centerViewerButtonKnob.lock());
+    entriesButtons.push_back(_imp->zoomScaleOneAction.lock());
+    entriesButtons.push_back(_imp->zoomInAction.lock());
+    entriesButtons.push_back(_imp->zoomOutAction.lock());
+    entriesButtons.push_back(_imp->rightClickPreviousLayer.lock());
+    entriesButtons.push_back(_imp->rightClickNextLayer.lock());
+    entriesButtons.push_back(_imp->rightClickPreviousView.lock());
+    entriesButtons.push_back(_imp->rightClickNextView.lock());
+    entriesButtons.push_back(_imp->rightClickSwitchAB.lock());
+    entriesButtons.push_back(_imp->rightClickShowHideOverlays.lock());
+    entriesButtons.push_back(_imp->enableStatsAction.lock());
 
     for (std::size_t i = 0; i < entriesButtons.size(); ++i) {
         entries.push_back(ChoiceOption(entriesButtons[i]->getName(), "", ""));
@@ -67,7 +81,7 @@ ViewerNodePrivate::showRightClickMenu()
     entries.push_back(ChoiceOption(kViewerNodeParamRightClickMenuShowHideSubMenu, "", ""));
 
 
-    KnobChoicePtr showHideMenu = rightClickShowHideSubMenu.lock();
+    KnobChoicePtr showHideMenu = _imp->rightClickShowHideSubMenu.lock();
     showHideEntries.push_back(ChoiceOption(kViewerNodeParamRightClickMenuHideAll, "", ""));
     showHideEntries.push_back(ChoiceOption(kViewerNodeParamRightClickMenuHideAllTop, "", ""));
     showHideEntries.push_back(ChoiceOption(kViewerNodeParamRightClickMenuHideAllBottom, "", ""));
@@ -92,11 +106,11 @@ ViewerNodePrivate::showRightClickMenu()
 
 
 void
-ViewerNodePrivate::drawUserRoI()
+ViewerNodeOverlay::drawUserRoI()
 {
-    OverlaySupport* viewport = _publicInterface->getNode()->getCurrentViewportForOverlays();
+
     Point pixelScale;
-    viewport->getPixelScale(pixelScale.x, pixelScale.y);
+    getPixelScale(pixelScale.x, pixelScale.y);
 
     {
         GLProtectAttrib<GL_GPU> a(GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
@@ -119,7 +133,7 @@ ViewerNodePrivate::drawUserRoI()
             buildUserRoIOnNextPress ) {
             userRoI = draggedUserRoI;
         } else {
-            userRoI = _publicInterface->getUserRoI();
+            userRoI = _imp->_publicInterface->getUserRoI();
         }
 
 
@@ -234,7 +248,7 @@ ViewerNodePrivate::drawUserRoI()
 } // drawUserRoI
 
 void
-ViewerNodePrivate::drawArcOfCircle(const QPointF & center,
+ViewerNodeOverlay::drawArcOfCircle(const QPointF & center,
                                    double radiusX,
                                    double radiusY,
                                    double startAngle,
@@ -261,21 +275,20 @@ ViewerNodePrivate::drawArcOfCircle(const QPointF & center,
 }
 
 void
-ViewerNodePrivate::drawWipeControl()
+ViewerNodeOverlay::drawWipeControl()
 {
-    OverlaySupport* viewport = _publicInterface->getNode()->getCurrentViewportForOverlays();
     Point pixelScale;
-    viewport->getPixelScale(pixelScale.x, pixelScale.y);
+    getPixelScale(pixelScale.x, pixelScale.y);
 
     double angle;
     QPointF center;
     double mixAmount;
     {
-        angle = wipeAngle.lock()->getValue();
-        KnobDoublePtr centerKnob = wipeCenter.lock();
+        angle = _imp->wipeAngle.lock()->getValue();
+        KnobDoublePtr centerKnob = _imp->wipeCenter.lock();
         center.rx() = centerKnob->getValue();
         center.ry() = centerKnob->getValue(DimIdx(1));
-        mixAmount = wipeAmount.lock()->getValue();
+        mixAmount = _imp->wipeAmount.lock()->getValue();
     }
     double alphaMix1, alphaMix0, alphaCurMix;
 
@@ -415,11 +428,11 @@ ViewerNodePrivate::drawWipeControl()
 } // drawWipeControl
 
 void
-ViewerNode::drawOverlay(TimeValue /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/)
+ViewerNodeOverlay::drawOverlay(TimeValue /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/)
 {
     bool userRoIEnabled = _imp->toggleUserRoIButtonKnob.lock()->getValue();
     if (userRoIEnabled) {
-        _imp->drawUserRoI();
+        drawUserRoI();
     }
 
     ViewerCompositingOperatorEnum compOperator = (ViewerCompositingOperatorEnum)_imp->blendingModeChoiceKnob.lock()->getValue();
@@ -428,7 +441,7 @@ ViewerNode::drawOverlay(TimeValue /*time*/, const RenderScale & /*renderScale*/,
         compOperator != eViewerCompositingOperatorStackOver &&
         compOperator != eViewerCompositingOperatorStackMinus &&
         compOperator != eViewerCompositingOperatorStackOnionSkin) {
-        _imp->drawWipeControl();
+        drawWipeControl();
     }
 
 
@@ -436,7 +449,7 @@ ViewerNode::drawOverlay(TimeValue /*time*/, const RenderScale & /*renderScale*/,
 
 
 bool
-ViewerNodePrivate::isNearbyWipeCenter(const QPointF& wipeCenter,
+ViewerNodeOverlay::isNearbyWipeCenter(const QPointF& wipeCenter,
                                       const QPointF & pos,
                                       double zoomScreenPixelWidth,
                                       double zoomScreenPixelHeight)
@@ -453,7 +466,7 @@ ViewerNodePrivate::isNearbyWipeCenter(const QPointF& wipeCenter,
 }
 
 bool
-ViewerNodePrivate::isNearbyWipeRotateBar(const QPointF& wipeCenter,
+ViewerNodeOverlay::isNearbyWipeRotateBar(const QPointF& wipeCenter,
                                          double wipeAngle,
                                          const QPointF & pos,
                                          double zoomScreenPixelWidth,
@@ -506,10 +519,10 @@ ViewerNodePrivate::isNearbyWipeRotateBar(const QPointF& wipeCenter,
         }
 
     return false;
-} // ViewerGL::Implementation::isNearbyWipeRotateBar
+} // isNearbyWipeRotateBar
 
 bool
-ViewerNodePrivate::isNearbyWipeMixHandle(const QPointF& wipeCenter,
+ViewerNodeOverlay::isNearbyWipeMixHandle(const QPointF& wipeCenter,
                                          double wipeAngle,
                                          double mixAmount,
                                          const QPointF & pos,
@@ -540,7 +553,7 @@ ViewerNodePrivate::isNearbyWipeMixHandle(const QPointF& wipeCenter,
 }
 
 bool
-ViewerNodePrivate::isNearByUserRoITopEdge(const RectD & roi,
+ViewerNodeOverlay::isNearbyUserRoITopEdge(const RectD & roi,
                                           const QPointF & zoomPos,
                                           double zoomScreenPixelWidth,
                                           double zoomScreenPixelHeight)
@@ -555,7 +568,7 @@ ViewerNodePrivate::isNearByUserRoITopEdge(const RectD & roi,
 }
 
 bool
-ViewerNodePrivate::isNearByUserRoIRightEdge(const RectD & roi,
+ViewerNodeOverlay::isNearbyUserRoIRightEdge(const RectD & roi,
                                             const QPointF & zoomPos,
                                             double zoomScreenPixelWidth,
                                             double zoomScreenPixelHeight)
@@ -570,7 +583,7 @@ ViewerNodePrivate::isNearByUserRoIRightEdge(const RectD & roi,
 }
 
 bool
-ViewerNodePrivate::isNearByUserRoILeftEdge(const RectD & roi,
+ViewerNodeOverlay::isNearbyUserRoILeftEdge(const RectD & roi,
                                            const QPointF & zoomPos,
                                            double zoomScreenPixelWidth,
                                            double zoomScreenPixelHeight)
@@ -585,7 +598,7 @@ ViewerNodePrivate::isNearByUserRoILeftEdge(const RectD & roi,
 }
 
 bool
-ViewerNodePrivate::isNearByUserRoIBottomEdge(const RectD & roi,
+ViewerNodeOverlay::isNearbyUserRoIBottomEdge(const RectD & roi,
                                              const QPointF & zoomPos,
                                              double zoomScreenPixelWidth,
                                              double zoomScreenPixelHeight)
@@ -600,7 +613,7 @@ ViewerNodePrivate::isNearByUserRoIBottomEdge(const RectD & roi,
 }
 
 bool
-ViewerNodePrivate::isNearByUserRoI(double x,
+ViewerNodeOverlay::isNearbyUserRoI(double x,
                                    double y,
                                    const QPointF & zoomPos,
                                    double zoomScreenPixelWidth,
@@ -616,7 +629,7 @@ ViewerNodePrivate::isNearByUserRoI(double x,
 
 
 bool
-ViewerNode::onOverlayPenDown(TimeValue /*time*/,
+ViewerNodeOverlay::onOverlayPenDown(TimeValue /*time*/,
                              const RenderScale & /*renderScale*/,
                              ViewIdx /*view*/,
                              const QPointF & /*viewportPos*/,
@@ -625,53 +638,52 @@ ViewerNode::onOverlayPenDown(TimeValue /*time*/,
                              TimeValue /*timestamp*/,
                              PenType pen)
 {
-    OverlaySupport* viewport = getNode()->getCurrentViewportForOverlays();
     Point pixelScale;
-    viewport->getPixelScale(pixelScale.x, pixelScale.y);
+    getPixelScale(pixelScale.x, pixelScale.y);
 
     bool overlaysCaught = false;
     if (!overlaysCaught &&
         pen == ePenTypeLMB &&
-        _imp->buildUserRoIOnNextPress) {
-        _imp->draggedUserRoI.x1 = pos.x();
-        _imp->draggedUserRoI.y1 = pos.y();
-        _imp->draggedUserRoI.x2 = pos.x();
-        _imp->draggedUserRoI.y2 = pos.y();
-        _imp->buildUserRoIOnNextPress = false;
-        _imp->uiState = eViewerNodeInteractMouseStateBuildingUserRoI;
+        buildUserRoIOnNextPress) {
+        draggedUserRoI.x1 = pos.x();
+        draggedUserRoI.y1 = pos.y();
+        draggedUserRoI.x2 = pos.x();
+        draggedUserRoI.y2 = pos.y();
+        buildUserRoIOnNextPress = false;
+        uiState = eViewerNodeInteractMouseStateBuildingUserRoI;
         overlaysCaught = true;
     }
 
     bool userRoIEnabled = _imp->toggleUserRoIButtonKnob.lock()->getValue();
     RectD userRoI;
     if (userRoIEnabled) {
-        userRoI = getUserRoI();
+        userRoI = _imp->_publicInterface->getUserRoI();
     }
     // Catch wipe
     bool wipeEnabled = (ViewerCompositingOperatorEnum)_imp->blendingModeChoiceKnob.lock()->getValue() != eViewerCompositingOperatorNone;
-    double wipeAmount = getWipeAmount();
-    double wipeAngle = getWipeAngle();
-    QPointF wipeCenter = getWipeCenter();
+    double wipeAmount = _imp->_publicInterface->getWipeAmount();
+    double wipeAngle = _imp->_publicInterface->getWipeAngle();
+    QPointF wipeCenter = _imp->_publicInterface->getWipeCenter();
 
     if ( !overlaysCaught &&
         wipeEnabled &&
         pen == ePenTypeLMB &&
-        _imp->isNearbyWipeCenter(wipeCenter, pos, pixelScale.x, pixelScale.y) ) {
-        _imp->uiState = eViewerNodeInteractMouseStateDraggingWipeCenter;
+        isNearbyWipeCenter(wipeCenter, pos, pixelScale.x, pixelScale.y) ) {
+        uiState = eViewerNodeInteractMouseStateDraggingWipeCenter;
         overlaysCaught = true;
     }
     if ( !overlaysCaught &&
         wipeEnabled &&
         pen == ePenTypeLMB &&
-        _imp->isNearbyWipeMixHandle(wipeCenter, wipeAngle, wipeAmount, pos, pixelScale.x, pixelScale.y) ) {
-        _imp->uiState = eViewerNodeInteractMouseStateDraggingWipeMixHandle;
+        isNearbyWipeMixHandle(wipeCenter, wipeAngle, wipeAmount, pos, pixelScale.x, pixelScale.y) ) {
+        uiState = eViewerNodeInteractMouseStateDraggingWipeMixHandle;
         overlaysCaught = true;
     }
     if ( !overlaysCaught &&
         wipeEnabled &&
         pen == ePenTypeLMB &&
-        _imp->isNearbyWipeRotateBar(wipeCenter, wipeAngle, pos, pixelScale.x, pixelScale.y) ) {
-        _imp->uiState = eViewerNodeInteractMouseStateRotatingWipeHandle;
+        isNearbyWipeRotateBar(wipeCenter, wipeAngle, pos, pixelScale.x, pixelScale.y) ) {
+        uiState = eViewerNodeInteractMouseStateRotatingWipeHandle;
         overlaysCaught = true;
     }
 
@@ -681,256 +693,255 @@ ViewerNode::onOverlayPenDown(TimeValue /*time*/,
     if ( !overlaysCaught &&
         pen == ePenTypeLMB &&
         userRoIEnabled &&
-        _imp->isNearByUserRoIBottomEdge(userRoI, pos, pixelScale.x, pixelScale.y) ) {
+        isNearbyUserRoIBottomEdge(userRoI, pos, pixelScale.x, pixelScale.y) ) {
         // start dragging the bottom edge of the user ROI
-        _imp->uiState = eViewerNodeInteractMouseStateDraggingRoiBottomEdge;
-        _imp->draggedUserRoI = userRoI;
+        uiState = eViewerNodeInteractMouseStateDraggingRoiBottomEdge;
+        draggedUserRoI = userRoI;
         overlaysCaught = true;
     }
     if ( !overlaysCaught &&
         pen == ePenTypeLMB &&
         userRoIEnabled &&
-        _imp->isNearByUserRoILeftEdge(userRoI, pos, pixelScale.x, pixelScale.y) ) {
+        isNearbyUserRoILeftEdge(userRoI, pos, pixelScale.x, pixelScale.y) ) {
         // start dragging the left edge of the user ROI
-        _imp->uiState = eViewerNodeInteractMouseStateDraggingRoiLeftEdge;
-        _imp->draggedUserRoI = userRoI;
+        uiState = eViewerNodeInteractMouseStateDraggingRoiLeftEdge;
+        draggedUserRoI = userRoI;
         overlaysCaught = true;
     }
     if ( !overlaysCaught &&
         pen == ePenTypeLMB &&
         userRoIEnabled &&
-        _imp->isNearByUserRoIRightEdge(userRoI, pos, pixelScale.x, pixelScale.y) ) {
+        isNearbyUserRoIRightEdge(userRoI, pos, pixelScale.x, pixelScale.y) ) {
         // start dragging the right edge of the user ROI
-        _imp->uiState = eViewerNodeInteractMouseStateDraggingRoiRightEdge;
-        _imp->draggedUserRoI = userRoI;
+        uiState = eViewerNodeInteractMouseStateDraggingRoiRightEdge;
+        draggedUserRoI = userRoI;
         overlaysCaught = true;
     }
     if ( !overlaysCaught &&
         pen == ePenTypeLMB &&
         userRoIEnabled &&
-        _imp->isNearByUserRoITopEdge(userRoI, pos, pixelScale.x, pixelScale.y) ) {
+        isNearbyUserRoITopEdge(userRoI, pos, pixelScale.x, pixelScale.y) ) {
         // start dragging the top edge of the user ROI
-        _imp->uiState = eViewerNodeInteractMouseStateDraggingRoiTopEdge;
-        _imp->draggedUserRoI = userRoI;
+        uiState = eViewerNodeInteractMouseStateDraggingRoiTopEdge;
+        draggedUserRoI = userRoI;
         overlaysCaught = true;
     }
     if ( !overlaysCaught &&
         pen == ePenTypeLMB &&
         userRoIEnabled &&
-        _imp->isNearByUserRoI( (userRoI.x1 + userRoI.x2) / 2., (userRoI.y1 + userRoI.y2) / 2.,
+        isNearbyUserRoI( (userRoI.x1 + userRoI.x2) / 2., (userRoI.y1 + userRoI.y2) / 2.,
                               pos, pixelScale.x, pixelScale.y ) ) {
             // start dragging the midpoint of the user ROI
-            _imp->uiState = eViewerNodeInteractMouseStateDraggingRoiCross;
-            _imp->draggedUserRoI = userRoI;
+            uiState = eViewerNodeInteractMouseStateDraggingRoiCross;
+            draggedUserRoI = userRoI;
             overlaysCaught = true;
         }
     if ( !overlaysCaught &&
         pen == ePenTypeLMB &&
         userRoIEnabled &&
-        _imp->isNearByUserRoI(userRoI.x1, userRoI.y2, pos, pixelScale.x, pixelScale.y) ) {
+        isNearbyUserRoI(userRoI.x1, userRoI.y2, pos, pixelScale.x, pixelScale.y) ) {
         // start dragging the topleft corner of the user ROI
-        _imp->uiState = eViewerNodeInteractMouseStateDraggingRoiTopLeft;
-        _imp->draggedUserRoI = userRoI;
+        uiState = eViewerNodeInteractMouseStateDraggingRoiTopLeft;
+        draggedUserRoI = userRoI;
         overlaysCaught = true;
     }
     if ( !overlaysCaught &&
         pen == ePenTypeLMB &&
         userRoIEnabled &&
-        _imp->isNearByUserRoI(userRoI.x2, userRoI.y2, pos, pixelScale.x, pixelScale.y) ) {
+        isNearbyUserRoI(userRoI.x2, userRoI.y2, pos, pixelScale.x, pixelScale.y) ) {
         // start dragging the topright corner of the user ROI
-        _imp->uiState = eViewerNodeInteractMouseStateDraggingRoiTopRight;
-        _imp->draggedUserRoI = userRoI;
+        uiState = eViewerNodeInteractMouseStateDraggingRoiTopRight;
+        draggedUserRoI = userRoI;
         overlaysCaught = true;
     }
     if ( !overlaysCaught &&
         pen == ePenTypeLMB &&
         userRoIEnabled &&
-        _imp->isNearByUserRoI(userRoI.x1, userRoI.y1, pos, pixelScale.x, pixelScale.y) ) {
+        isNearbyUserRoI(userRoI.x1, userRoI.y1, pos, pixelScale.x, pixelScale.y) ) {
         // start dragging the bottomleft corner of the user ROI
-        _imp->uiState = eViewerNodeInteractMouseStateDraggingRoiBottomLeft;
-        _imp->draggedUserRoI = userRoI;
+        uiState = eViewerNodeInteractMouseStateDraggingRoiBottomLeft;
+        draggedUserRoI = userRoI;
         overlaysCaught = true;
     }
     if ( !overlaysCaught &&
         pen == ePenTypeLMB &&
         userRoIEnabled &&
-        _imp->isNearByUserRoI(userRoI.x2, userRoI.y1, pos, pixelScale.x, pixelScale.y) ) {
+        isNearbyUserRoI(userRoI.x2, userRoI.y1, pos, pixelScale.x, pixelScale.y) ) {
         // start dragging the bottomright corner of the user ROI
-        _imp->uiState = eViewerNodeInteractMouseStateDraggingRoiBottomRight;
-        _imp->draggedUserRoI = userRoI;
+        uiState = eViewerNodeInteractMouseStateDraggingRoiBottomRight;
+        draggedUserRoI = userRoI;
         overlaysCaught = true;
     }
 
     if ( !overlaysCaught &&
         pen == ePenTypeRMB ) {
-        _imp->showRightClickMenu();
+        showRightClickMenu();
         overlaysCaught = true;
     }
 
-    _imp->lastMousePos = pos;
+    lastMousePos = pos;
 
     return overlaysCaught;
 
 } // onOverlayPenDown
 
 bool
-ViewerNode::onOverlayPenMotion(TimeValue /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/,
+ViewerNodeOverlay::onOverlayPenMotion(TimeValue /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/,
                                const QPointF & /*viewportPos*/, const QPointF & pos, double /*pressure*/, TimeValue /*timestamp*/)
 {
-    OverlaySupport* viewport = getNode()->getCurrentViewportForOverlays();
     Point pixelScale;
-    viewport->getPixelScale(pixelScale.x, pixelScale.y);
+    getPixelScale(pixelScale.x, pixelScale.y);
 
     bool userRoIEnabled = _imp->toggleUserRoIButtonKnob.lock()->getValue();
     RectD userRoI;
     if (userRoIEnabled) {
-        if (_imp->uiState == eViewerNodeInteractMouseStateDraggingRoiBottomEdge ||
-            _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiTopEdge ||
-            _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiLeftEdge ||
-            _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiRightEdge ||
-            _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiCross ||
-            _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiBottomLeft ||
-            _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiBottomRight ||
-            _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiTopLeft ||
-            _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiTopRight) {
-            userRoI = _imp->draggedUserRoI;
+        if (uiState == eViewerNodeInteractMouseStateDraggingRoiBottomEdge ||
+            uiState == eViewerNodeInteractMouseStateDraggingRoiTopEdge ||
+            uiState == eViewerNodeInteractMouseStateDraggingRoiLeftEdge ||
+            uiState == eViewerNodeInteractMouseStateDraggingRoiRightEdge ||
+            uiState == eViewerNodeInteractMouseStateDraggingRoiCross ||
+            uiState == eViewerNodeInteractMouseStateDraggingRoiBottomLeft ||
+            uiState == eViewerNodeInteractMouseStateDraggingRoiBottomRight ||
+            uiState == eViewerNodeInteractMouseStateDraggingRoiTopLeft ||
+            uiState == eViewerNodeInteractMouseStateDraggingRoiTopRight) {
+            userRoI = draggedUserRoI;
         } else {
-            userRoI = getUserRoI();
+            userRoI = _imp->_publicInterface->getUserRoI();
         }
     }
     bool wipeEnabled = (ViewerCompositingOperatorEnum)_imp->blendingModeChoiceKnob.lock()->getValue() != eViewerCompositingOperatorNone;
-    double wipeAmount = getWipeAmount();
-    double wipeAngle = getWipeAngle();
-    QPointF wipeCenter = getWipeCenter();
+    double wipeAmount = _imp->_publicInterface->getWipeAmount();
+    double wipeAngle = _imp->_publicInterface->getWipeAngle();
+    QPointF wipeCenter = _imp->_publicInterface->getWipeCenter();
 
-    bool wasHovering = _imp->hoverState != eHoverStateNothing;
+    bool wasHovering = hoverState != eHoverStateNothing;
     bool cursorSet = false;
     bool overlayCaught = false;
-    _imp->hoverState = eHoverStateNothing;
-    if ( wipeEnabled && _imp->isNearbyWipeCenter(wipeCenter, pos, pixelScale.x, pixelScale.y) ) {
-        setCurrentCursor(eCursorSizeAll);
+    hoverState = eHoverStateNothing;
+    if ( wipeEnabled && isNearbyWipeCenter(wipeCenter, pos, pixelScale.x, pixelScale.y) ) {
+        _imp->_publicInterface->setCurrentCursor(eCursorSizeAll);
         cursorSet = true;
-    } else if ( wipeEnabled && _imp->isNearbyWipeMixHandle(wipeCenter, wipeAngle, wipeAmount, pos, pixelScale.x, pixelScale.y) ) {
-        _imp->hoverState = eHoverStateWipeMix;
+    } else if ( wipeEnabled && isNearbyWipeMixHandle(wipeCenter, wipeAngle, wipeAmount, pos, pixelScale.x, pixelScale.y) ) {
+        hoverState = eHoverStateWipeMix;
         overlayCaught = true;
-    } else if ( wipeEnabled && _imp->isNearbyWipeRotateBar(wipeCenter, wipeAngle, pos, pixelScale.x, pixelScale.y) ) {
-        _imp->hoverState = eHoverStateWipeRotateHandle;
+    } else if ( wipeEnabled && isNearbyWipeRotateBar(wipeCenter, wipeAngle, pos, pixelScale.x, pixelScale.y) ) {
+        hoverState = eHoverStateWipeRotateHandle;
         overlayCaught = true;
     } else if (userRoIEnabled) {
-        if ( _imp->isNearByUserRoIBottomEdge(userRoI, pos, pixelScale.x, pixelScale.y)
-            || _imp->isNearByUserRoITopEdge(userRoI, pos, pixelScale.x, pixelScale.y)
-            || ( _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiBottomEdge)
-            || ( _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiTopEdge) ) {
-            setCurrentCursor(eCursorSizeVer);
+        if ( isNearbyUserRoIBottomEdge(userRoI, pos, pixelScale.x, pixelScale.y)
+            || isNearbyUserRoITopEdge(userRoI, pos, pixelScale.x, pixelScale.y)
+            || ( uiState == eViewerNodeInteractMouseStateDraggingRoiBottomEdge)
+            || ( uiState == eViewerNodeInteractMouseStateDraggingRoiTopEdge) ) {
+            _imp->_publicInterface->setCurrentCursor(eCursorSizeVer);
             cursorSet = true;
-        } else if ( _imp->isNearByUserRoILeftEdge(userRoI, pos, pixelScale.x, pixelScale.y)
-                   || _imp->isNearByUserRoIRightEdge(userRoI, pos, pixelScale.x, pixelScale.y)
-                   || ( _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiLeftEdge)
-                   || ( _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiRightEdge) ) {
-            setCurrentCursor(eCursorSizeHor);
+        } else if ( isNearbyUserRoILeftEdge(userRoI, pos, pixelScale.x, pixelScale.y)
+                   || isNearbyUserRoIRightEdge(userRoI, pos, pixelScale.x, pixelScale.y)
+                   || ( uiState == eViewerNodeInteractMouseStateDraggingRoiLeftEdge)
+                   || ( uiState == eViewerNodeInteractMouseStateDraggingRoiRightEdge) ) {
+            _imp->_publicInterface->setCurrentCursor(eCursorSizeHor);
             cursorSet = true;
-        } else if ( _imp->isNearByUserRoI( (userRoI.x1 + userRoI.x2) / 2, (userRoI.y1 + userRoI.y2) / 2, pos, pixelScale.x, pixelScale.y )
-                   || ( _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiCross) ) {
-            setCurrentCursor(eCursorSizeAll);
+        } else if ( isNearbyUserRoI( (userRoI.x1 + userRoI.x2) / 2, (userRoI.y1 + userRoI.y2) / 2, pos, pixelScale.x, pixelScale.y )
+                   || ( uiState == eViewerNodeInteractMouseStateDraggingRoiCross) ) {
+            _imp->_publicInterface->setCurrentCursor(eCursorSizeAll);
             cursorSet = true;
-        } else if ( _imp->isNearByUserRoI(userRoI.x2, userRoI.y1, pos, pixelScale.x, pixelScale.y) ||
-                   _imp->isNearByUserRoI(userRoI.x1, userRoI.y2, pos, pixelScale.x, pixelScale.y) ||
-                   ( _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiBottomRight) ||
-                   ( _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiTopLeft) ) {
-            setCurrentCursor(eCursorFDiag);
+        } else if ( isNearbyUserRoI(userRoI.x2, userRoI.y1, pos, pixelScale.x, pixelScale.y) ||
+                   isNearbyUserRoI(userRoI.x1, userRoI.y2, pos, pixelScale.x, pixelScale.y) ||
+                   ( uiState == eViewerNodeInteractMouseStateDraggingRoiBottomRight) ||
+                   ( uiState == eViewerNodeInteractMouseStateDraggingRoiTopLeft) ) {
+            _imp->_publicInterface->setCurrentCursor(eCursorFDiag);
             cursorSet = true;
-        } else if ( _imp->isNearByUserRoI(userRoI.x1, userRoI.y1, pos, pixelScale.x, pixelScale.y) ||
-                   _imp->isNearByUserRoI(userRoI.x2, userRoI.y2, pos, pixelScale.x, pixelScale.y) ||
-                   ( _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiBottomLeft) ||
-                   ( _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiTopRight) ) {
-            setCurrentCursor(eCursorBDiag);
+        } else if ( isNearbyUserRoI(userRoI.x1, userRoI.y1, pos, pixelScale.x, pixelScale.y) ||
+                   isNearbyUserRoI(userRoI.x2, userRoI.y2, pos, pixelScale.x, pixelScale.y) ||
+                   ( uiState == eViewerNodeInteractMouseStateDraggingRoiBottomLeft) ||
+                   ( uiState == eViewerNodeInteractMouseStateDraggingRoiTopRight) ) {
+            _imp->_publicInterface->setCurrentCursor(eCursorBDiag);
             cursorSet = true;
         }
     }
 
     if (!cursorSet) {
-        setCurrentCursor(eCursorDefault);
+        _imp->_publicInterface->setCurrentCursor(eCursorDefault);
     }
 
 
-    if ( (_imp->hoverState == eHoverStateNothing) && wasHovering ) {
+    if ( (hoverState == eHoverStateNothing) && wasHovering ) {
         overlayCaught = true;
     }
 
-    double dx = pos.x() - _imp->lastMousePos.x();
-    double dy = pos.y() - _imp->lastMousePos.y();
+    double dx = pos.x() - lastMousePos.x();
+    double dy = pos.y() - lastMousePos.y();
 
-    switch (_imp->uiState) {
+    switch (uiState) {
         case eViewerNodeInteractMouseStateDraggingRoiBottomEdge: {
-            if ( (_imp->draggedUserRoI.y1 + dy) < _imp->draggedUserRoI.y2 ) {
-                _imp->draggedUserRoI.y1 += dy;
+            if ( (draggedUserRoI.y1 + dy) < draggedUserRoI.y2 ) {
+                draggedUserRoI.y1 += dy;
                 overlayCaught = true;
             }
             break;
         }
         case eViewerNodeInteractMouseStateDraggingRoiLeftEdge: {
-            if ( (_imp->draggedUserRoI.x1 + dx) < _imp->draggedUserRoI.x2 ) {
-                _imp->draggedUserRoI.x1 += dx;
+            if ( (draggedUserRoI.x1 + dx) < draggedUserRoI.x2 ) {
+                draggedUserRoI.x1 += dx;
                 overlayCaught = true;
             }
             break;
         }
         case eViewerNodeInteractMouseStateDraggingRoiRightEdge: {
-            if ( (_imp->draggedUserRoI.x2 + dx) > _imp->draggedUserRoI.x1 ) {
-                _imp->draggedUserRoI.x2 += dx;
+            if ( (draggedUserRoI.x2 + dx) > draggedUserRoI.x1 ) {
+                draggedUserRoI.x2 += dx;
                 overlayCaught = true;
             }
             break;
         }
         case eViewerNodeInteractMouseStateDraggingRoiTopEdge: {
-            if ( (_imp->draggedUserRoI.y2 + dy) > _imp->draggedUserRoI.y1 ) {
-                _imp->draggedUserRoI.y2 += dy;
+            if ( (draggedUserRoI.y2 + dy) > draggedUserRoI.y1 ) {
+                draggedUserRoI.y2 += dy;
                 overlayCaught = true;
             }
             break;
         }
         case eViewerNodeInteractMouseStateDraggingRoiCross: {
-            _imp->draggedUserRoI.translate(dx, dy);
+            draggedUserRoI.translate(dx, dy);
             overlayCaught = true;
             break;
         }
         case eViewerNodeInteractMouseStateDraggingRoiTopLeft: {
-            if ( (_imp->draggedUserRoI.y2 + dy) > _imp->draggedUserRoI.y1 ) {
-                _imp->draggedUserRoI.y2 += dy;
+            if ( (draggedUserRoI.y2 + dy) > draggedUserRoI.y1 ) {
+                draggedUserRoI.y2 += dy;
             }
-            if ( (_imp->draggedUserRoI.x1 + dx) < _imp->draggedUserRoI.x2 ) {
-                _imp->draggedUserRoI.x1 += dx;
+            if ( (draggedUserRoI.x1 + dx) < draggedUserRoI.x2 ) {
+                draggedUserRoI.x1 += dx;
             }
             overlayCaught = true;
             break;
         }
         case eViewerNodeInteractMouseStateDraggingRoiTopRight: {
-            if ( (_imp->draggedUserRoI.y2 + dy) > _imp->draggedUserRoI.y1 ) {
-                _imp->draggedUserRoI.y2 += dy;
+            if ( (draggedUserRoI.y2 + dy) > draggedUserRoI.y1 ) {
+                draggedUserRoI.y2 += dy;
             }
-            if ( (_imp->draggedUserRoI.x2 + dx) > _imp->draggedUserRoI.x1 ) {
-                _imp->draggedUserRoI.x2 += dx;
+            if ( (draggedUserRoI.x2 + dx) > draggedUserRoI.x1 ) {
+                draggedUserRoI.x2 += dx;
             }
             overlayCaught = true;
             break;
         }
         case eViewerNodeInteractMouseStateDraggingRoiBottomRight:
         case eViewerNodeInteractMouseStateBuildingUserRoI:{
-            if ( (_imp->draggedUserRoI.x2 + dx) > _imp->draggedUserRoI.x1 ) {
-                _imp->draggedUserRoI.x2 += dx;
+            if ( (draggedUserRoI.x2 + dx) > draggedUserRoI.x1 ) {
+                draggedUserRoI.x2 += dx;
             }
-            if ( (_imp->draggedUserRoI.y1 + dy) < _imp->draggedUserRoI.y2 ) {
-                _imp->draggedUserRoI.y1 += dy;
+            if ( (draggedUserRoI.y1 + dy) < draggedUserRoI.y2 ) {
+                draggedUserRoI.y1 += dy;
             }
             overlayCaught = true;
             break;
         }
         case eViewerNodeInteractMouseStateDraggingRoiBottomLeft: {
-            if ( (_imp->draggedUserRoI.y1 + dy) < _imp->draggedUserRoI.y2 ) {
-                _imp->draggedUserRoI.y1 += dy;
+            if ( (draggedUserRoI.y1 + dy) < draggedUserRoI.y2 ) {
+                draggedUserRoI.y1 += dy;
             }
-            if ( (_imp->draggedUserRoI.x1 + dx) < _imp->draggedUserRoI.x2 ) {
-                _imp->draggedUserRoI.x1 += dx;
+            if ( (draggedUserRoI.x1 + dx) < draggedUserRoI.x2 ) {
+                draggedUserRoI.x1 += dx;
             }
             overlayCaught = true;
 
@@ -949,8 +960,8 @@ ViewerNode::onOverlayPenMotion(TimeValue /*time*/, const RenderScale & /*renderS
             center.x = centerKnob->getValue();
             center.y = centerKnob->getValue(DimIdx(1));
             double angle = std::atan2( pos.y() - center.y, pos.x() - center.x );
-            double prevAngle = std::atan2( _imp->lastMousePos.y() - center.y,
-                                          _imp->lastMousePos.x() - center.x );
+            double prevAngle = std::atan2( lastMousePos.y() - center.y,
+                                          lastMousePos.x() - center.x );
             KnobDoublePtr mixKnob = _imp->wipeAmount.lock();
             double mixAmount = mixKnob->getValue();
             mixAmount -= (angle - prevAngle);
@@ -981,38 +992,38 @@ ViewerNode::onOverlayPenMotion(TimeValue /*time*/, const RenderScale & /*renderS
         default:
             break;
     }
-    _imp->lastMousePos = pos;
+    lastMousePos = pos;
     return overlayCaught;
 
 } // onOverlayPenMotion
 
 bool
-ViewerNode::onOverlayPenUp(TimeValue /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/, const QPointF & /*viewportPos*/, const QPointF & /*pos*/, double /*pressure*/, TimeValue /*timestamp*/)
+ViewerNodeOverlay::onOverlayPenUp(TimeValue /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/, const QPointF & /*viewportPos*/, const QPointF & /*pos*/, double /*pressure*/, TimeValue /*timestamp*/)
 {
 
     bool caught = false;
-    if (_imp->uiState == eViewerNodeInteractMouseStateDraggingRoiBottomEdge ||
-        _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiTopEdge ||
-        _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiLeftEdge ||
-        _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiRightEdge ||
-        _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiCross ||
-        _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiBottomLeft ||
-        _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiBottomRight ||
-        _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiTopLeft ||
-        _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiTopRight ||
-        _imp->uiState == eViewerNodeInteractMouseStateBuildingUserRoI) {
-        setUserRoI(_imp->draggedUserRoI);
+    if (uiState == eViewerNodeInteractMouseStateDraggingRoiBottomEdge ||
+        uiState == eViewerNodeInteractMouseStateDraggingRoiTopEdge ||
+        uiState == eViewerNodeInteractMouseStateDraggingRoiLeftEdge ||
+        uiState == eViewerNodeInteractMouseStateDraggingRoiRightEdge ||
+        uiState == eViewerNodeInteractMouseStateDraggingRoiCross ||
+        uiState == eViewerNodeInteractMouseStateDraggingRoiBottomLeft ||
+        uiState == eViewerNodeInteractMouseStateDraggingRoiBottomRight ||
+        uiState == eViewerNodeInteractMouseStateDraggingRoiTopLeft ||
+        uiState == eViewerNodeInteractMouseStateDraggingRoiTopRight ||
+        uiState == eViewerNodeInteractMouseStateBuildingUserRoI) {
+        _imp->_publicInterface->setUserRoI(draggedUserRoI);
         caught = true;
     }
 
-    _imp->uiState = eViewerNodeInteractMouseStateIdle;
+    uiState = eViewerNodeInteractMouseStateIdle;
 
 
     return caught;
 } // onOverlayPenUp
 
 bool
-ViewerNode::onOverlayPenDoubleClicked(TimeValue /*time*/,
+ViewerNodeOverlay::onOverlayPenDoubleClicked(TimeValue /*time*/,
                                       const RenderScale & /*renderScale*/,
                                       ViewIdx /*view*/,
                                       const QPointF & /*viewportPos*/,
@@ -1022,31 +1033,31 @@ ViewerNode::onOverlayPenDoubleClicked(TimeValue /*time*/,
 } // onOverlayPenDoubleClicked
 
 bool
-ViewerNode::onOverlayKeyDown(TimeValue /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/, Key /*key*/, KeyboardModifiers /*modifiers*/)
+ViewerNodeOverlay::onOverlayKeyDown(TimeValue /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/, Key /*key*/, KeyboardModifiers /*modifiers*/)
 {
     return false;
 } // onOverlayKeyDown
 
 bool
-ViewerNode::onOverlayKeyUp(TimeValue /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/, Key /*key*/, KeyboardModifiers /*modifiers*/)
+ViewerNodeOverlay::onOverlayKeyUp(TimeValue /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/, Key /*key*/, KeyboardModifiers /*modifiers*/)
 {
     return false;
 } // onOverlayKeyUp
 
 bool
-ViewerNode::onOverlayKeyRepeat(TimeValue /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/, Key /*key*/, KeyboardModifiers /*modifiers*/)
+ViewerNodeOverlay::onOverlayKeyRepeat(TimeValue /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/, Key /*key*/, KeyboardModifiers /*modifiers*/)
 {
     return false;
 } // onOverlayKeyRepeat
 
 bool
-ViewerNode::onOverlayFocusGained(TimeValue /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/)
+ViewerNodeOverlay::onOverlayFocusGained(TimeValue /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/)
 {
     return false;
 } // onOverlayFocusGained
 
 bool
-ViewerNode::onOverlayFocusLost(TimeValue /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/)
+ViewerNodeOverlay::onOverlayFocusLost(TimeValue /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/)
 {
     return false;
 } // onOverlayFocusLost

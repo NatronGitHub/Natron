@@ -360,12 +360,6 @@ public:
      **/
     double normalize(DimIdx dimension, TimeValue time, double value) const;
 
-    void setHasHostOverlayHandle(bool handle);
-
-    bool getHasHostOverlayHandle() const;
-
-    virtual bool useHostOverlayHandle() const OVERRIDE { return getHasHostOverlayHandle(); }
-
     void setAsRectangle();
 
     bool isRectangle() const;

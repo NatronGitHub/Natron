@@ -1231,38 +1231,66 @@ EffectInstance::releasePluginMemory(const PluginMemory* mem)
     }
 }
 
+void
+EffectInstance::registerOverlay(const OverlayInteractBasePtr& overlay, const std::map<std::string,std::string>& knobs)
+{
+
+    overlay->setEffect(shared_from_this());
+    overlay->fetchKnobs(knobs);
+
+    assert(QThread::currentThread() == qApp->thread());
+    std::list<OverlayInteractBasePtr>::iterator found = std::find(_imp->common->interacts.begin(), _imp->common->interacts.end(), overlay);
+    if (found == _imp->common->interacts.end()) {
+
+        _imp->common->interacts.push_back(overlay);
+        overlay->redraw();
+    }
+}
 
 void
-EffectInstance::setInteractColourPicker_public(const OfxRGBAColourD& color, bool setColor, bool hasColor)
+EffectInstance::removeOverlay(const OverlayInteractBasePtr& overlay)
 {
+    assert(QThread::currentThread() == qApp->thread());
+    std::list<OverlayInteractBasePtr>::iterator found = std::find(_imp->common->interacts.begin(), _imp->common->interacts.end(), overlay);
+    if (found != _imp->common->interacts.end()) {
+        _imp->common->interacts.erase(found);
+    }
+}
+
+void
+EffectInstance::getOverlays(std::list<OverlayInteractBasePtr> *overlays) const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    *overlays = _imp->common->interacts;
+}
+
+bool
+EffectInstance::hasOverlayInteract() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->common->interacts.size() > 0;
+}
+
+void
+EffectInstance::setInteractColourPicker_public(const ColorRgba<double>& color, bool setColor, bool hasColor)
+{
+
     const KnobsVec& knobs = getKnobs();
     for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
         const KnobIPtr& k = *it2;
         if (!k) {
             continue;
         }
-        OfxParamOverlayInteractPtr interact = k->getCustomInteract();
+        OverlayInteractBasePtr interact = k->getCustomInteract();
         if (!interact) {
             continue;
         }
-
-        if (!interact->isColorPickerRequired()) {
-            continue;
-        }
-        if (!hasColor) {
-            interact->setHasColorPicker(false);
-        } else {
-            if (setColor) {
-                interact->setLastColorPickerColor(color);
-            }
-            interact->setHasColorPicker(true);
-
-        }
-
-        k->redraw();
+        interact->setInteractColourPicker(color, setColor, hasColor);
+    }
+    for (std::list<OverlayInteractBasePtr>::iterator it = _imp->common->interacts.begin(); it != _imp->common->interacts.end(); ++it) {
+        (*it)->setInteractColourPicker(color, setColor, hasColor);
     }
 
-    setInteractColourPicker(color, setColor, hasColor);
 
 }
 

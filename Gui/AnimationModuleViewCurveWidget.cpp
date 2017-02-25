@@ -43,6 +43,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/PyParameter.h" // IntParam
 #include "Engine/Project.h"
 #include "Engine/Image.h"
+#include "Engine/OverlayInteractBase.h"
 #include "Engine/Settings.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/OSGLFunctions.h"
@@ -216,7 +217,7 @@ void
 AnimationModuleViewPrivate::drawCurveEditorView()
 {
 
-    OfxParamOverlayInteractPtr interact = customInteract.lock();
+    OverlayInteractBasePtr interact = customInteract.lock();
     if (interact) {
         // Don't protect GL_COLOR_BUFFER_BIT, because it seems to hit an OpenGL bug on
         // some macOS configurations (10.10-10.12), where garbage is displayed in the viewport.
@@ -225,8 +226,7 @@ AnimationModuleViewPrivate::drawCurveEditorView()
         GLProtectAttrib<GL_GPU> a(GL_LINE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
 
         RenderScale scale(1.);
-        interact->setCallingViewport(_publicInterface);
-        interact->drawAction(0, scale, 0, interact->hasColorPicker() ? &interact->getLastColorPickerColor() : 0);
+        interact-> drawOverlay_public(_publicInterface, TimeValue(0.), scale, ViewIdx(0));
         glCheckErrorIgnoreOSXBug(GL_GPU);
     }
 
@@ -621,7 +621,7 @@ AnimationModuleView::onExportCurveToAsciiActionTriggered()
             ///if the curve only supports integers values for X steps, and values are not rounded warn the user that the settings are not good
             //double end = xstart + (count-1) * incr;
             if ( curves[i]->areKeyFramesTimeClampedToIntegers() &&
-                 ( (int)incr != incr) || ( (int)xstart != xstart ) ) {
+                 ( ((int)incr != incr) || ((int)xstart != xstart ) )) {
                 Dialogs::warningDialog( tr("Curve Export").toStdString(), tr("%1 doesn't support X values that are not integers.").arg( curves[i]->getName() ).toStdString() );
 
                 return;
@@ -793,12 +793,12 @@ AnimationModuleView::onImportCurveFromAsciiActionTriggered()
 } // importCurveFromAscii
 
 void
-AnimationModuleView::setCustomInteract(const OfxParamOverlayInteractPtr & interactDesc)
+AnimationModuleView::setCustomInteract(const OverlayInteractBasePtr & interactDesc)
 {
     _imp->customInteract = interactDesc;
 }
 
-OfxParamOverlayInteractPtr
+OverlayInteractBasePtr
 AnimationModuleView::getCustomInteract() const
 {
     return _imp->customInteract.lock();

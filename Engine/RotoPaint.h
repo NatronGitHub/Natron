@@ -427,6 +427,8 @@ public:
 
     RotoPaint::RotoPaintTypeEnum getRotoPaintNodeType() const;
 
+    virtual void initializeOverlayInteract() OVERRIDE FINAL;
+
     virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return false;
@@ -502,6 +504,9 @@ public:
     void removeSoloItem(const RotoDrawableItemPtr& item);
     bool isAmongstSoloItems(const RotoDrawableItemPtr& item) const;
 
+    bool shouldDrawHostOverlay() const;
+
+
 public Q_SLOTS:
 
     void onModelSelectionChanged(std::list<KnobTableItemPtr> addedToSelection, std::list<KnobTableItemPtr> removedFromSelection, TableChangeReasonEnum reason);
@@ -528,31 +533,7 @@ protected:
 private:
 
     virtual void fetchRenderCloneKnobs() OVERRIDE;
-
-    virtual bool shouldPreferPluginOverlayOverHostOverlay() const OVERRIDE FINAL;
-
-    virtual bool shouldDrawHostOverlay() const OVERRIDE FINAL;
-
-    virtual bool hasOverlay() const OVERRIDE FINAL;
-
-
-    virtual void drawOverlay(TimeValue time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
-    virtual bool onOverlayPenDown(TimeValue time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp, PenType pen) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayPenMotion(TimeValue time, const RenderScale & renderScale, ViewIdx view,
-                                    const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayPenUp(TimeValue time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayPenDoubleClicked(TimeValue time,
-                                           const RenderScale & renderScale,
-                                           ViewIdx view,
-                                           const QPointF & viewportPos,
-                                           const QPointF & pos) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayKeyDown(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
-    virtual bool onOverlayKeyUp(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
-    virtual bool onOverlayKeyRepeat(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
-    virtual bool onOverlayFocusGained(TimeValue time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
-    virtual bool onOverlayFocusLost(TimeValue time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
-    virtual void onInteractViewportSelectionCleared() OVERRIDE FINAL;
-    virtual void onInteractViewportSelectionUpdated(const RectD& rectangle, bool onRelease) OVERRIDE FINAL;
+    
     virtual bool knobChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
                              ViewSetSpec view,

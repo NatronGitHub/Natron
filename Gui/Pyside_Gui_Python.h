@@ -44,6 +44,7 @@
 #include "PyNodeGroup.h"
 #include "PyAppInstance.h"
 #include "PyItemsTable.h"
+#include "PyOverlayInteract.h"
 #include "PyRoto.h"
 #include "PyTracker.h"
 #include "PyNode.h"

@@ -40,8 +40,10 @@
 
 #include "Engine/BezierCP.h"
 #include "Engine/Bezier.h"
+#include "Engine/OverlayInteractBase.h"
 #include "Engine/RotoPaint.h"
 #include "Engine/KnobItemsTable.h"
+#include "Engine/TransformOverlayInteract.h"
 
 #include "Engine/EngineFwd.h"
 
@@ -549,6 +551,7 @@ struct RotoPaintPrivate
     KnobBoolWPtr enabledKnobs[4];
 
     RotoPaintInteractPtr ui;
+    boost::shared_ptr<TransformOverlayInteract> transformInteract, cloneTransformInteract;
 
     // The group internal input nodes
     std::vector<NodeWPtr> inputNodes;
@@ -652,6 +655,8 @@ struct RotoPaintPrivate
                                            const NodePtr& globalTimeBlurNode,
                                            const NodePtr& treeOutputNode,
                                            const NodePtr& mergeNode);
+
+    void refreshRegisteredOverlays();
     
 
 };
@@ -674,10 +679,11 @@ public:
 };
 
 class RotoPaintInteract
-    : public boost::enable_shared_from_this<RotoPaintInteract>
+: public boost::enable_shared_from_this<RotoPaintInteract>
+, public OverlayInteractBase
 {
 public:
-    RotoPaintPrivate* p;
+    RotoPaintPrivate* _imp;
     SelectedCPs selectedCps;
     QRectF selectedCpsBbox;
     bool showCpsBbox;
@@ -800,6 +806,26 @@ public:
     {
         return RotoPaintInteractPtr( new RotoPaintInteract(p) );
     }
+
+    virtual void drawOverlay(TimeValue time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
+    virtual bool onOverlayPenDown(TimeValue time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp, PenType pen) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenMotion(TimeValue time, const RenderScale & renderScale, ViewIdx view,
+                                const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenUp(TimeValue time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenDoubleClicked(TimeValue time,
+                                       const RenderScale & renderScale,
+                                       ViewIdx view,
+                                       const QPointF & viewportPos,
+                                       const QPointF & pos) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayKeyDown(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayKeyUp(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayKeyRepeat(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayFocusGained(TimeValue time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
+    virtual bool onOverlayFocusLost(TimeValue time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
+
+    virtual void onViewportSelectionCleared() OVERRIDE FINAL;
+
+    virtual void onViewportSelectionUpdated(const RectD& rectangle, bool onRelease) OVERRIDE FINAL;
 
     bool isFeatherVisible() const;
 
@@ -930,14 +956,13 @@ public:
 
     void autoSaveAndRedraw();
 
-    void redrawOverlays();
-
 
     /**
      * @brief Calls RotoContext::removeItem but also clears some pointers if they point to
      * this curve. For undo/redo purpose.
      **/
     void removeCurve(const RotoDrawableItemPtr& curve);
+
 };
 
 NATRON_NAMESPACE_EXIT;

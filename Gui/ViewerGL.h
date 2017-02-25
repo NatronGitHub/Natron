@@ -44,6 +44,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/OpenGLViewerI.h"
 #include "Engine/FrameViewRequest.h"
 #include "Engine/ViewIdx.h"
+#include "Engine/Color.h"
 #include "Engine/EngineFwd.h"
 
 #include "Gui/GuiFwd.h"
@@ -423,11 +424,6 @@ public:
      **/
     void removeViewerProcessHashAtTime(TimeValue time, ViewIdx view);
 
-    void s_selectionCleared()
-    {
-        Q_EMIT selectionCleared();
-    }
-
     // Re-implemented
     QPixmap renderPixmap(int w = 0, int h = 0, bool useContext = false);
     QImage grabFrameBuffer(bool withAlpha = false);
@@ -443,16 +439,6 @@ Q_SIGNALS:
      * @brief Emitted when the image texture changes.
      **/
     void imageChanged(int texIndex);
-
-    /**
-     * @brief Emitted when the selection rectangle has changed.
-     * @param onRelease When true, this signal is emitted on the mouse release event
-     * which means this is the last selection desired by the user.
-     * Receivers can either update the selection always or just on mouse release.
-     **/
-    void selectionRectangleChanged(bool onRelease);
-
-    void selectionCleared();
 
     void mustCallUpdateOnMainThread();
 
@@ -493,7 +479,7 @@ private:
 
 private:
 
-    void setParametricParamsPickerColor(const OfxRGBAColourD& color, bool setColor, bool hasColor);
+    void setParametricParamsPickerColor(const ColorRgba<double>& color, bool setColor, bool hasColor);
 
     int getMipMapLevelFromZoomFactor() const;
 

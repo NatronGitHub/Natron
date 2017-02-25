@@ -51,7 +51,7 @@ NATRON_NAMESPACE_ENTER;
 TrackerNodePrivate::TrackerNodePrivate(TrackerNode* publicInterface)
     : TrackerParamsProvider()
     , publicInterface(publicInterface)
-    , ui( new TrackerNodeInteract(this) )
+    , ui()
 {
 }
 
@@ -61,7 +61,8 @@ TrackerNodePrivate::~TrackerNodePrivate()
 }
 
 TrackerNodeInteract::TrackerNodeInteract(TrackerNodePrivate* p)
-    : _p(p)
+    : OverlayInteractBase()
+    , _imp(p)
     , addTrackButton()
     , trackRangeButton()
     , trackBwButton()
@@ -146,7 +147,7 @@ TrackerNodePrivate::getMotionModelsAndHelps(bool addPerspective,
 void
 TrackerNodeInteract::onTrackRangeClicked()
 {
-    OverlaySupport* overlay = _p->publicInterface->getNode()->getCurrentViewportForOverlays();
+    OverlaySupport* overlay = getLastCallingViewport();
 
     assert(overlay);
     RangeD range = overlay->getFrameRange();
@@ -175,7 +176,7 @@ void
 TrackerNodeInteract::onTrackAllKeyframesClicked()
 {
     std::list<TrackMarkerPtr> selectedMarkers;
-    _p->knobsTable->getSelectedMarkers(&selectedMarkers);
+    _imp->knobsTable->getSelectedMarkers(&selectedMarkers);
 
     std::set<int> userKeys;
 
@@ -188,18 +189,20 @@ TrackerNodeInteract::onTrackAllKeyframesClicked()
         return;
     }
 
+    OverlaySupport* overlay = getLastCallingViewport();
+    assert(overlay);
     int first = *userKeys.begin();
     int last = *userKeys.rbegin() + 1;
-    _p->trackSelectedMarkers( TimeValue(first), TimeValue(last), TimeValue(1),  _p->publicInterface->getNode()->getCurrentViewportForOverlays() );
+    _imp->trackSelectedMarkers( TimeValue(first), TimeValue(last), TimeValue(1),  overlay );
 }
 
 void
 TrackerNodeInteract::onTrackCurrentKeyframeClicked()
 {
-    TimeValue currentFrame(_p->publicInterface->getTimelineCurrentTime());
+    TimeValue currentFrame(_imp->publicInterface->getTimelineCurrentTime());
     std::list<TrackMarkerPtr> selectedMarkers;
 
-    _p->knobsTable->getSelectedMarkers(&selectedMarkers);
+    _imp->knobsTable->getSelectedMarkers(&selectedMarkers);
 
     std::set<int> userKeys;
 
@@ -225,64 +228,65 @@ TrackerNodeInteract::onTrackCurrentKeyframeClicked()
         --it;
         first = *it;
     }
+    OverlaySupport* overlay = getLastCallingViewport();
+    assert(overlay);
 
-    _p->trackSelectedMarkers( TimeValue(first), TimeValue(last), TimeValue(1.),  _p->publicInterface->getNode()->getCurrentViewportForOverlays() );
+    _imp->trackSelectedMarkers( TimeValue(first), TimeValue(last), TimeValue(1.), overlay );
 }
 
 void
 TrackerNodeInteract::onTrackBwClicked()
 {
-    OverlaySupport* overlay = _p->publicInterface->getNode()->getCurrentViewportForOverlays();
-
+    OverlaySupport* overlay = getLastCallingViewport();
     assert(overlay);
 
     RangeD range = overlay->getFrameRange();
 
-    TimeValue startFrame = _p->publicInterface->getTimelineCurrentTime();
+    TimeValue startFrame = _imp->publicInterface->getTimelineCurrentTime();
 
-    if ( _p->tracker->isCurrentlyTracking() ) {
-        _p->tracker->abortTracking();
+    if ( _imp->tracker->isCurrentlyTracking() ) {
+        _imp->tracker->abortTracking();
     } else {
-        _p->trackSelectedMarkers( TimeValue(startFrame), TimeValue(range.min - 1), TimeValue(-1),  overlay );
+        _imp->trackSelectedMarkers( TimeValue(startFrame), TimeValue(range.min - 1), TimeValue(-1),  overlay );
     }
 }
 
 void
 TrackerNodeInteract::onTrackPrevClicked()
 {
-    OverlaySupport* overlay = _p->publicInterface->getNode()->getCurrentViewportForOverlays();
-    TimeValue startFrame = _p->publicInterface->getTimelineCurrentTime();
-    _p->trackSelectedMarkers( TimeValue(startFrame), TimeValue(startFrame - 2), TimeValue(-1), overlay );
+    OverlaySupport* overlay = getLastCallingViewport();
+    assert(overlay);
+    TimeValue startFrame = _imp->publicInterface->getTimelineCurrentTime();
+    _imp->trackSelectedMarkers( TimeValue(startFrame), TimeValue(startFrame - 2), TimeValue(-1), overlay );
 }
 
 void
 TrackerNodeInteract::onStopButtonClicked()
 {
-    _p->tracker->abortTracking();
+    _imp->tracker->abortTracking();
 }
 
 void
 TrackerNodeInteract::onTrackNextClicked()
 {
-    OverlaySupport* overlay = _p->publicInterface->getNode()->getCurrentViewportForOverlays();
+    OverlaySupport* overlay = getLastCallingViewport();
     assert(overlay);
-    TimeValue startFrame = _p->publicInterface->getTimelineCurrentTime();
-    _p->trackSelectedMarkers( TimeValue(startFrame), TimeValue(startFrame + 2), TimeValue(1.), overlay );
+    TimeValue startFrame = _imp->publicInterface->getTimelineCurrentTime();
+    _imp->trackSelectedMarkers( TimeValue(startFrame), TimeValue(startFrame + 2), TimeValue(1.), overlay );
 }
 
 void
 TrackerNodeInteract::onTrackFwClicked()
 {
-    OverlaySupport* overlay = _p->publicInterface->getNode()->getCurrentViewportForOverlays();
-
+    OverlaySupport* overlay = getLastCallingViewport();
     assert(overlay);
     RangeD range = overlay->getFrameRange();
 
-    TimeValue startFrame = _p->publicInterface->getTimelineCurrentTime();
-    if ( _p->tracker->isCurrentlyTracking() ) {
-        _p->tracker->abortTracking();
+    TimeValue startFrame = _imp->publicInterface->getTimelineCurrentTime();
+    if ( _imp->tracker->isCurrentlyTracking() ) {
+        _imp->tracker->abortTracking();
     } else {
-        _p->trackSelectedMarkers( TimeValue(startFrame), TimeValue(range.max + 1), TimeValue(1.),  overlay );
+        _imp->trackSelectedMarkers( TimeValue(startFrame), TimeValue(range.max + 1), TimeValue(1.),  overlay );
     }
 }
 
@@ -296,7 +300,7 @@ void
 TrackerNodeInteract::onClearAllAnimationClicked()
 {
     std::list<TrackMarkerPtr > markers;
-    _p->knobsTable->getSelectedMarkers(&markers);
+    _imp->knobsTable->getSelectedMarkers(&markers);
     for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
         (*it)->clearAnimation();
     }
@@ -305,10 +309,10 @@ TrackerNodeInteract::onClearAllAnimationClicked()
 void
 TrackerNodeInteract::onClearBwAnimationClicked()
 {
-    TimeValue time = _p->publicInterface->getTimelineCurrentTime();
+    TimeValue time = _imp->publicInterface->getTimelineCurrentTime();
     std::list<TrackMarkerPtr > markers;
 
-    _p->knobsTable->getSelectedMarkers(&markers);
+    _imp->knobsTable->getSelectedMarkers(&markers);
     for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
         (*it)->clearAnimationBeforeTime(time);
     }
@@ -317,10 +321,10 @@ TrackerNodeInteract::onClearBwAnimationClicked()
 void
 TrackerNodeInteract::onClearFwAnimationClicked()
 {
-    TimeValue time = _p->publicInterface->getTimelineCurrentTime();
+    TimeValue time = _imp->publicInterface->getTimelineCurrentTime();
     std::list<TrackMarkerPtr > markers;
 
-    _p->knobsTable->getSelectedMarkers(&markers);
+    _imp->knobsTable->getSelectedMarkers(&markers);
     for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
         (*it)->clearAnimationAfterTime(time);
     }
@@ -329,10 +333,10 @@ TrackerNodeInteract::onClearFwAnimationClicked()
 void
 TrackerNodeInteract::onSetKeyframeButtonClicked()
 {
-    TimeValue time = _p->publicInterface->getTimelineCurrentTime();
+    TimeValue time = _imp->publicInterface->getTimelineCurrentTime();
     std::list<TrackMarkerPtr > markers;
 
-    _p->knobsTable->getSelectedMarkers(&markers);
+    _imp->knobsTable->getSelectedMarkers(&markers);
     for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
         (*it)->setKeyFrame(time, ViewSetSpec::all(), 0);
     }
@@ -341,10 +345,10 @@ TrackerNodeInteract::onSetKeyframeButtonClicked()
 void
 TrackerNodeInteract::onRemoveKeyframeButtonClicked()
 {
-    TimeValue time = _p->publicInterface->getTimelineCurrentTime();
+    TimeValue time = _imp->publicInterface->getTimelineCurrentTime();
     std::list<TrackMarkerPtr > markers;
 
-    _p->knobsTable->getSelectedMarkers(&markers);
+    _imp->knobsTable->getSelectedMarkers(&markers);
     for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
         (*it)->deleteValueAtTime(time, ViewSetSpec::all(), DimSpec(0), eValueChangedReasonUserEdited);
     }
@@ -355,7 +359,7 @@ TrackerNodeInteract::onResetOffsetButtonClicked()
 {
     std::list<TrackMarkerPtr > markers;
 
-    _p->knobsTable->getSelectedMarkers(&markers);
+    _imp->knobsTable->getSelectedMarkers(&markers);
     for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
         KnobDoublePtr offsetKnob = (*it)->getOffsetKnob();
         assert(offsetKnob);
@@ -368,17 +372,17 @@ TrackerNodeInteract::onResetTrackButtonClicked()
 {
 
     std::list<TrackMarkerPtr > markers;
-    _p->knobsTable->getSelectedMarkers(&markers);
-    _p->knobsTable->clearSelection(eTableChangeReasonInternal);
+    _imp->knobsTable->getSelectedMarkers(&markers);
+    _imp->knobsTable->clearSelection(eTableChangeReasonInternal);
 
     std::list<KnobTableItemPtr> itemsList;
     for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
         (*it)->resetTrack();
         itemsList.push_back(*it);
     }
-    _p->knobsTable->beginEditSelection();
-    _p->knobsTable->addToSelection(itemsList, eTableChangeReasonInternal);
-    _p->knobsTable->endEditSelection(eTableChangeReasonInternal);
+    _imp->knobsTable->beginEditSelection();
+    _imp->knobsTable->addToSelection(itemsList, eTableChangeReasonInternal);
+    _imp->knobsTable->endEditSelection(eTableChangeReasonInternal);
 }
 
 QPointF
@@ -441,7 +445,7 @@ TrackerNodeInteract::isInsideKeyFrameTexture(TimeValue currentTime,
         return INT_MAX;
     }
 
-    OverlaySupport* overlay = _p->publicInterface->getNode()->getCurrentViewportForOverlays();
+    OverlaySupport* overlay = getLastCallingViewport();
     assert(overlay);
 
     //Find out which keyframe it is by counting keyframe portions
@@ -483,7 +487,7 @@ TrackerNodeInteract::isNearbySelectedMarkerTextureResizeAnchor(const QPointF& po
 
     computeSelectedMarkerCanonicalRect(&textureRectCanonical);
 
-    OverlaySupport* overlay = _p->publicInterface->getNode()->getCurrentViewportForOverlays();
+    OverlaySupport* overlay = getLastCallingViewport();
     assert(overlay);
     QPointF clickWidget = overlay->toWidgetCoordinates(pos);
     QPointF btmRightWidget = overlay->toWidgetCoordinates( QPointF(textureRectCanonical.x2, textureRectCanonical.y1) );
@@ -503,7 +507,7 @@ TrackerNodeInteract::isInsideSelectedMarkerTexture(const QPointF& pos) const
 
     computeSelectedMarkerCanonicalRect(&textureRectCanonical);
 
-    OverlaySupport* overlay = _p->publicInterface->getNode()->getCurrentViewportForOverlays();
+    OverlaySupport* overlay = getLastCallingViewport();
     assert(overlay);
     QPointF clickWidget = overlay->toWidgetCoordinates(pos);
     QPointF btmRightWidget = overlay->toWidgetCoordinates( QPointF(textureRectCanonical.x2, textureRectCanonical.y1) );
@@ -528,7 +532,7 @@ TrackerNodeInteract::computeTextureCanonicalRect(const Texture& tex,
         return;
     }
     double par = tex.w() / (double)tex.h();
-    OverlaySupport* overlay = _p->publicInterface->getNode()->getCurrentViewportForOverlays();
+    OverlaySupport* overlay = getLastCallingViewport();
 
     assert(overlay);
     rect->x2 = overlay->toCanonicalCoordinates( QPointF(xOffset + texWidthPx, 0.) ).x();
@@ -648,11 +652,11 @@ TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>
         return;
     }
 
-    OverlaySupport* overlay = _p->publicInterface->getNode()->getCurrentViewportForOverlays();
+    OverlaySupport* overlay = getLastCallingViewport();
     assert(overlay);
 
     double overlayColor[4];
-    if ( !_p->publicInterface->getNode()->getOverlayColor(&overlayColor[0], &overlayColor[1], &overlayColor[2]) ) {
+    if ( !_imp->publicInterface->getNode()->getOverlayColor(&overlayColor[0], &overlayColor[1], &overlayColor[2]) ) {
         overlayColor[0] = overlayColor[1] = overlayColor[2] = 0.8;
     }
     overlayColor[3] = 1.;
@@ -856,7 +860,7 @@ TrackerNodeInteract::drawSelectedMarkerTexture(const std::pair<double, double>& 
                                                const Point& /*selectedSearchWndTopRight*/)
 {
     TrackMarkerPtr marker = selectedMarker.lock();
-    OverlaySupport* overlay = _p->publicInterface->getNode()->getCurrentViewportForOverlays();
+    OverlaySupport* overlay = getLastCallingViewport();
 
     assert(overlay);
 
@@ -868,7 +872,7 @@ TrackerNodeInteract::drawSelectedMarkerTexture(const std::pair<double, double>& 
     // If a viewer is doing playback, do not refresh the marker texture
     {
         std::list<ViewerNodePtr> viewers;
-        _p->publicInterface->getApp()->getAllViewers(&viewers);
+        _imp->publicInterface->getApp()->getAllViewers(&viewers);
         for (std::list<ViewerNodePtr>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
             if ((*it)->getNode()->getRenderEngine()->isDoingSequentialRender()) {
                 return;
@@ -881,7 +885,7 @@ TrackerNodeInteract::drawSelectedMarkerTexture(const std::pair<double, double>& 
 
 
     double overlayColor[4];
-    if ( !_p->publicInterface->getNode()->getOverlayColor(&overlayColor[0], &overlayColor[1], &overlayColor[2]) ) {
+    if ( !_imp->publicInterface->getNode()->getOverlayColor(&overlayColor[0], &overlayColor[1], &overlayColor[2]) ) {
         overlayColor[0] = overlayColor[1] = overlayColor[2] = 0.8;
     }
     overlayColor[3] = 1.;
@@ -1024,7 +1028,7 @@ TrackerNodeInteract::isNearbyPoint(const KnobDoublePtr& knob,
                                    TimeValue time)
 {
     QPointF p;
-    OverlaySupport* overlay = _p->publicInterface->getNode()->getCurrentViewportForOverlays();
+    OverlaySupport* overlay = getLastCallingViewport();
 
     assert(overlay);
 
@@ -1045,7 +1049,7 @@ TrackerNodeInteract::isNearbyPoint(const QPointF& p,
                                    double yWidget,
                                    double toleranceWidget)
 {
-    OverlaySupport* overlay = _p->publicInterface->getNode()->getCurrentViewportForOverlays();
+    OverlaySupport* overlay = getLastCallingViewport();
 
     assert(overlay);
 
@@ -1112,7 +1116,7 @@ TrackerNodeInteract::refreshSelectedMarkerTextureNow()
         return;
     }
 
-    TimeValue time = _p->publicInterface->getTimelineCurrentTime();
+    TimeValue time = _imp->publicInterface->getTimelineCurrentTime();
     RectD roi = marker->getMarkerImageRoI(time);
     if ( roi.isNull() ) {
         return;
@@ -1340,11 +1344,11 @@ TrackerNodeInteract::onTrackingStarted(int step)
 void
 TrackerNodeInteract::onTrackingEnded()
 {
-    _p->solveTransformParams();
+    _imp->solveTransformParams();
     trackBwButton.lock()->setValue(false);
     trackFwButton.lock()->setValue(false);
     isTracking = false;
-    _p->publicInterface->requestOverlayInteractRefresh();
+    redraw();
 }
 
 void
@@ -1352,7 +1356,7 @@ TrackerNodeInteract::onModelSelectionChanged(const std::list<KnobTableItemPtr>& 
 {
     std::list<TrackMarkerPtr > selection;
 
-    _p->knobsTable->getSelectedMarkers(&selection);
+    _imp->knobsTable->getSelectedMarkers(&selection);
     if ( selection.empty() || (selection.size() > 1) ) {
         showMarkerTexture = false;
     } else {
@@ -1380,7 +1384,7 @@ TrackerNodeInteract::onModelSelectionChanged(const std::list<KnobTableItemPtr>& 
         return;
     }
 
-    _p->publicInterface->requestOverlayInteractRefresh();
+    redraw();
 }
 
 void
@@ -1390,7 +1394,7 @@ TrackerNodeInteract::onTrackImageRenderingFinished()
     QFutureWatcher<std::pair<ImagePtr, RectI> >* future = dynamic_cast<QFutureWatcher<std::pair<ImagePtr, RectI> >*>( sender() );
     assert(future);
     std::pair<ImagePtr, RectI> ret = future->result();
-    OverlaySupport* overlay = _p->publicInterface->getNode()->getCurrentViewportForOverlays();
+    OverlaySupport* overlay = getLastCallingViewport();
     assert(overlay);
     OpenGLViewerI* isOpenGLViewer = dynamic_cast<OpenGLViewerI*>(overlay);
     assert(isOpenGLViewer);
@@ -1412,7 +1416,7 @@ TrackerNodeInteract::onTrackImageRenderingFinished()
 
     convertImageTosRGBOpenGLTexture(ret.first, selectedMarkerTexture, ret.second);
 
-    _p->publicInterface->requestOverlayInteractRefresh();
+    redraw();
 }
 
 void
@@ -1426,7 +1430,7 @@ TrackerNodeInteract::onKeyFrameImageRenderingFinished()
         return;
     }
 
-    OverlaySupport* overlay = _p->publicInterface->getNode()->getCurrentViewportForOverlays();
+    OverlaySupport* overlay = getLastCallingViewport();
     assert(overlay);
     OpenGLViewerI* isOpenGLViewer = dynamic_cast<OpenGLViewerI*>(overlay);
     assert(isOpenGLViewer);
@@ -1455,7 +1459,7 @@ TrackerNodeInteract::onKeyFrameImageRenderingFinished()
 
             trackRequestsMap.erase(it);
 
-            _p->publicInterface->requestOverlayInteractRefresh();
+            redraw();
 
             return;
         }
@@ -1469,7 +1473,7 @@ TrackerNodeInteract::rebuildMarkerTextures()
     ///Refreh textures for all markers
     std::list<TrackMarkerPtr > markers;
 
-    _p->knobsTable->getSelectedMarkers(&markers);
+    _imp->knobsTable->getSelectedMarkers(&markers);
     for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
         std::set<double> keys;
         (*it)->getMasterKeyFrameTimes(ViewIdx(0), &keys);
@@ -1493,12 +1497,13 @@ TrackerNodeInteract::nudgeSelectedTracks(int x,
     }
     std::list< TrackMarkerPtr > markers;
 
-    _p->knobsTable->getSelectedMarkers(&markers);
+    _imp->knobsTable->getSelectedMarkers(&markers);
 
     if ( !markers.empty() ) {
         std::pair<double, double> pixelScale;
-        _p->publicInterface->getNode()->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
-        TimeValue time = _p->publicInterface->getTimelineCurrentTime();
+
+        getPixelScale(pixelScale.first, pixelScale.second);
+        TimeValue time = _imp->publicInterface->getTimelineCurrentTime();
         bool createkey = createKeyOnMoveButton.lock()->getValue();
 
         int hasMovedMarker = false;
@@ -1788,56 +1793,55 @@ TrackerNodeInteract::transformPattern(TimeValue time,
         searchPoints[2].rx() += delta.x;
         searchPoints[3].rx() += delta.x;
     }
+    {
+        ScopedChanges_RAII changes(_imp->publicInterface);
 
-    _p->publicInterface->beginChanges();
+        if (transformPatternCorners) {
+            for (int i = 0; i < 4; ++i) {
+                patternPoints[i].rx() -= ( centerPoint.x() + offset.x() );
+                patternPoints[i].ry() -= ( centerPoint.y() + offset.y() );
 
-    if (transformPatternCorners) {
-        for (int i = 0; i < 4; ++i) {
-            patternPoints[i].rx() -= ( centerPoint.x() + offset.x() );
-            patternPoints[i].ry() -= ( centerPoint.y() + offset.y() );
+                std::vector<double> values(2);
+                values[0] = patternPoints[i].x();
+                values[1] = patternPoints[i].y();
 
-            std::vector<double> values(2);
-            values[0] = patternPoints[i].x();
-            values[1] = patternPoints[i].y();
-
-            if ( patternCorners[i]->hasAnimation() ) {
-                patternCorners[i]->setValueAcrossDimensions(values);
-            } else {
-                patternCorners[i]->setValueAcrossDimensions(values);
+                if ( patternCorners[i]->hasAnimation() ) {
+                    patternCorners[i]->setValueAcrossDimensions(values);
+                } else {
+                    patternCorners[i]->setValueAcrossDimensions(values);
+                }
             }
         }
-    }
-    searchPoints[1].rx() -= ( centerPoint.x() + offset.x() );
-    searchPoints[1].ry() -= ( centerPoint.y() + offset.y() );
+        searchPoints[1].rx() -= ( centerPoint.x() + offset.x() );
+        searchPoints[1].ry() -= ( centerPoint.y() + offset.y() );
 
-    searchPoints[3].rx() -= ( centerPoint.x() + offset.x() );
-    searchPoints[3].ry() -= ( centerPoint.y() + offset.y() );
+        searchPoints[3].rx() -= ( centerPoint.x() + offset.x() );
+        searchPoints[3].ry() -= ( centerPoint.y() + offset.y() );
 
-    {
-        std::vector<double> values(2);
-        values[0] = searchPoints[1].x();
-        values[1] = searchPoints[1].y();
-        if ( searchWndBtmLeft->hasAnimation() ) {
-            searchWndBtmLeft->setValueAcrossDimensions(values);
-        } else {
-            searchWndBtmLeft->setValueAcrossDimensions(values);
+        {
+            std::vector<double> values(2);
+            values[0] = searchPoints[1].x();
+            values[1] = searchPoints[1].y();
+            if ( searchWndBtmLeft->hasAnimation() ) {
+                searchWndBtmLeft->setValueAcrossDimensions(values);
+            } else {
+                searchWndBtmLeft->setValueAcrossDimensions(values);
+            }
         }
-    }
 
-    {
-        std::vector<double> values(2);
-        values[0] = searchPoints[3].x();
-        values[1] = searchPoints[3].y();
-        if ( searchWndTopRight->hasAnimation() ) {
-            searchWndTopRight->setValueAcrossDimensions(values);
-        } else {
-            searchWndTopRight->setValueAcrossDimensions(values);
+        {
+            std::vector<double> values(2);
+            values[0] = searchPoints[3].x();
+            values[1] = searchPoints[3].y();
+            if ( searchWndTopRight->hasAnimation() ) {
+                searchWndTopRight->setValueAcrossDimensions(values);
+            } else {
+                searchWndTopRight->setValueAcrossDimensions(values);
+            }
         }
-    }
-    _p->publicInterface->endChanges();
-    
+    }   // changes
     refreshSelectedMarkerTextureLater();
-
+    
     if ( createKeyOnMoveButton.lock()->getValue() ) {
         interactMarker->setKeyFrame(time, ViewSetSpec(0), 0);
     }
@@ -1863,7 +1867,7 @@ TrackerNodeInteract::onKeyframeRemovedOnTrack(const TrackMarkerPtr& marker,
             break;
         }
     }
-    _p->publicInterface->requestOverlayInteractRefresh();
+    redraw();
 }
 
 void
@@ -1875,7 +1879,7 @@ TrackerNodeInteract::onAllKeyframesRemovedOnTrack(const TrackMarkerPtr& marker)
             break;
         }
     }
-    _p->publicInterface->requestOverlayInteractRefresh();
+    redraw();
 }
 
 
@@ -1899,12 +1903,12 @@ struct CenterPointDisplayInfo
 typedef std::map<double, CenterPointDisplayInfo> CenterPointsMap;
 
 void
-TrackerNode::drawOverlay(TimeValue time,
+TrackerNodeInteract::drawOverlay(TimeValue time,
                          const RenderScale & /*renderScale*/,
                          ViewIdx /*view*/)
 {
     double pixelScaleX, pixelScaleY;
-    OverlaySupport* overlay = getNode()->getCurrentViewportForOverlays();
+    OverlaySupport* overlay = getLastCallingViewport();
 
     assert(overlay);
     overlay->getPixelScale(pixelScaleX, pixelScaleY);
@@ -1914,7 +1918,7 @@ TrackerNode::drawOverlay(TimeValue time,
     {
         GLProtectAttrib<GL_GPU> a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_POINT_BIT | GL_ENABLE_BIT | GL_HINT_BIT | GL_TRANSFORM_BIT);
         double markerColor[4];
-        if ( !getNode()->getOverlayColor(&markerColor[0], &markerColor[1], &markerColor[2]) ) {
+        if ( !getOverlayColor(markerColor[0], markerColor[1], markerColor[2]) ) {
             markerColor[0] = markerColor[1] = markerColor[2] = 0.8;
         }
         markerColor[3] = 1.;
@@ -1925,8 +1929,8 @@ TrackerNode::drawOverlay(TimeValue time,
         _imp->knobsTable->getAllMarkers(&allMarkers);
 
         bool trackingPageSecret = _imp->trackingPageKnob.lock()->getIsSecret();
-        bool showErrorColor = _imp->ui->showCorrelationButton.lock()->getValue();
-        TrackMarkerPtr selectedMarker = _imp->ui->selectedMarker.lock();
+        bool showErrorColor = showCorrelationButton.lock()->getValue();
+        TrackMarkerPtr marker = selectedMarker.lock();
         bool selectedFound = false;
         Point selectedCenter;
         Point selectedPtnTopLeft;
@@ -1951,8 +1955,8 @@ TrackerNode::drawOverlay(TimeValue time,
                 }
             }
 
-            bool isHoverMarker = *it == _imp->ui->hoverMarker;
-            bool isDraggedMarker = *it == _imp->ui->interactMarker;
+            bool isHoverMarker = *it == hoverMarker;
+            bool isDraggedMarker = *it == interactMarker;
             bool isHoverOrDraggedMarker = isHoverMarker || isDraggedMarker;
             std::list<TrackMarkerPtr >::iterator foundSelected = std::find(selectedMarkers.begin(), selectedMarkers.end(), *it);
             bool isSelected = foundSelected != selectedMarkers.end();
@@ -2034,7 +2038,7 @@ TrackerNode::drawOverlay(TimeValue time,
                 const double searchMidX   = (searchLeft + searchRight) / 2;
                 const double searchMidY   = (searchTop + searchBottom) / 2;
 
-                if (selectedMarker == *it) {
+                if (marker == *it) {
                     selectedCenter.x = center.x();
                     selectedCenter.y = center.y();
                     selectedOffset.x = offset.x();
@@ -2243,7 +2247,7 @@ TrackerNode::drawOverlay(TimeValue time,
                     GL_GPU::Begin(GL_POINTS);
 
                     ///draw center
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringCenter) || (_imp->ui->eventState == eMouseStateDraggingCenter) ) ) {
+                    if ( isHoverOrDraggedMarker && ( (hoverState == eDrawStateHoveringCenter) || (eventState == eMouseStateDraggingCenter) ) ) {
                         GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
                     } else {
                         GL_GPU::Color3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
@@ -2255,37 +2259,37 @@ TrackerNode::drawOverlay(TimeValue time,
                     }
 
                     //////DRAWING INNER POINTS
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerBtmLeft) || (_imp->ui->eventState == eMouseStateDraggingInnerBtmLeft) ) ) {
+                    if ( isHoverOrDraggedMarker && ( (hoverState == eDrawStateHoveringInnerBtmLeft) || (eventState == eMouseStateDraggingInnerBtmLeft) ) ) {
                         GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
                         GL_GPU::Vertex2d( btmLeft.x(), btmLeft.y() );
                     }
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerBtmMid) || (_imp->ui->eventState == eMouseStateDraggingInnerBtmMid) ) ) {
+                    if ( isHoverOrDraggedMarker && ( (hoverState == eDrawStateHoveringInnerBtmMid) || (eventState == eMouseStateDraggingInnerBtmMid) ) ) {
                         GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
                         GL_GPU::Vertex2d( innerMidBtm.x(), innerMidBtm.y() );
                     }
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerBtmRight) || (_imp->ui->eventState == eMouseStateDraggingInnerBtmRight) ) ) {
+                    if ( isHoverOrDraggedMarker && ( (hoverState == eDrawStateHoveringInnerBtmRight) || (eventState == eMouseStateDraggingInnerBtmRight) ) ) {
                         GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
                         GL_GPU::Vertex2d( btmRight.x(), btmRight.y() );
                     }
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerMidLeft) || (_imp->ui->eventState == eMouseStateDraggingInnerMidLeft) ) ) {
+                    if ( isHoverOrDraggedMarker && ( (hoverState == eDrawStateHoveringInnerMidLeft) || (eventState == eMouseStateDraggingInnerMidLeft) ) ) {
                         GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
                         GL_GPU::Vertex2d( innerMidLeft.x(), innerMidLeft.y() );
                     }
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerMidRight) || (_imp->ui->eventState == eMouseStateDraggingInnerMidRight) ) ) {
+                    if ( isHoverOrDraggedMarker && ( (hoverState == eDrawStateHoveringInnerMidRight) || (eventState == eMouseStateDraggingInnerMidRight) ) ) {
                         GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
                         GL_GPU::Vertex2d( innerMidRight.x(), innerMidRight.y() );
                     }
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerTopLeft) || (_imp->ui->eventState == eMouseStateDraggingInnerTopLeft) ) ) {
+                    if ( isHoverOrDraggedMarker && ( (hoverState == eDrawStateHoveringInnerTopLeft) || (eventState == eMouseStateDraggingInnerTopLeft) ) ) {
                         GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
                         GL_GPU::Vertex2d( topLeft.x(), topLeft.y() );
                     }
 
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerTopMid) || (_imp->ui->eventState == eMouseStateDraggingInnerTopMid) ) ) {
+                    if ( isHoverOrDraggedMarker && ( (hoverState == eDrawStateHoveringInnerTopMid) || (eventState == eMouseStateDraggingInnerTopMid) ) ) {
                         GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
                         GL_GPU::Vertex2d( innerMidTop.x(), innerMidTop.y() );
                     }
 
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerTopRight) || (_imp->ui->eventState == eMouseStateDraggingInnerTopRight) ) ) {
+                    if ( isHoverOrDraggedMarker && ( (hoverState == eDrawStateHoveringInnerTopRight) || (eventState == eMouseStateDraggingInnerTopRight) ) ) {
                         GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
                         GL_GPU::Vertex2d( topRight.x(), topRight.y() );
                     }
@@ -2293,36 +2297,36 @@ TrackerNode::drawOverlay(TimeValue time,
 
                     //////DRAWING OUTTER POINTS
 
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterBtmLeft) || (_imp->ui->eventState == eMouseStateDraggingOuterBtmLeft) ) ) {
+                    if ( isHoverOrDraggedMarker && ( (hoverState == eDrawStateHoveringOuterBtmLeft) || (eventState == eMouseStateDraggingOuterBtmLeft) ) ) {
                         GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
                         GL_GPU::Vertex2d( searchBtmLeft.x(), searchBtmLeft.y() );
                     }
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterBtmMid) || (_imp->ui->eventState == eMouseStateDraggingOuterBtmMid) ) ) {
+                    if ( isHoverOrDraggedMarker && ( (hoverState == eDrawStateHoveringOuterBtmMid) || (eventState == eMouseStateDraggingOuterBtmMid) ) ) {
                         GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
                         GL_GPU::Vertex2d( outterMidBtm.x(), outterMidBtm.y() );
                     }
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterBtmRight) || (_imp->ui->eventState == eMouseStateDraggingOuterBtmRight) ) ) {
+                    if ( isHoverOrDraggedMarker && ( (hoverState == eDrawStateHoveringOuterBtmRight) || (eventState == eMouseStateDraggingOuterBtmRight) ) ) {
                         GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
                         GL_GPU::Vertex2d( searchBtmRight.x(), searchBtmRight.y() );
                     }
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterMidLeft) || (_imp->ui->eventState == eMouseStateDraggingOuterMidLeft) ) ) {
+                    if ( isHoverOrDraggedMarker && ( (hoverState == eDrawStateHoveringOuterMidLeft) || (eventState == eMouseStateDraggingOuterMidLeft) ) ) {
                         GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
                         GL_GPU::Vertex2d( outterMidLeft.x(), outterMidLeft.y() );
                     }
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterMidRight) || (_imp->ui->eventState == eMouseStateDraggingOuterMidRight) ) ) {
+                    if ( isHoverOrDraggedMarker && ( (hoverState == eDrawStateHoveringOuterMidRight) || (eventState == eMouseStateDraggingOuterMidRight) ) ) {
                         GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
                         GL_GPU::Vertex2d( outterMidRight.x(), outterMidRight.y() );
                     }
 
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterTopLeft) || (_imp->ui->eventState == eMouseStateDraggingOuterTopLeft) ) ) {
+                    if ( isHoverOrDraggedMarker && ( (hoverState == eDrawStateHoveringOuterTopLeft) || (eventState == eMouseStateDraggingOuterTopLeft) ) ) {
                         GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
                         GL_GPU::Vertex2d( searchTopLeft.x(), searchTopLeft.y() );
                     }
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterTopMid) || (_imp->ui->eventState == eMouseStateDraggingOuterTopMid) ) ) {
+                    if ( isHoverOrDraggedMarker && ( (hoverState == eDrawStateHoveringOuterTopMid) || (eventState == eMouseStateDraggingOuterTopMid) ) ) {
                         GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
                         GL_GPU::Vertex2d( outterMidTop.x(), outterMidTop.y() );
                     }
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterTopRight) || (_imp->ui->eventState == eMouseStateDraggingOuterTopRight) ) ) {
+                    if ( isHoverOrDraggedMarker && ( (hoverState == eDrawStateHoveringOuterTopRight) || (eventState == eMouseStateDraggingOuterTopRight) ) ) {
                         GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
                         GL_GPU::Vertex2d( searchTopRight.x(), searchTopRight.y() );
                     }
@@ -2340,7 +2344,7 @@ TrackerNode::drawOverlay(TimeValue time,
                     ///now show small lines at handle positions
                     GL_GPU::Begin(GL_LINES);
 
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerMidLeft) || (_imp->ui->eventState == eMouseStateDraggingInnerMidLeft) ) ) {
+                    if ( isHoverOrDraggedMarker && ( (hoverState == eDrawStateHoveringInnerMidLeft) || (eventState == eMouseStateDraggingInnerMidLeft) ) ) {
                         GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
                     } else {
                         GL_GPU::Color3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
@@ -2348,7 +2352,7 @@ TrackerNode::drawOverlay(TimeValue time,
                     GL_GPU::Vertex2d( innerMidLeft.x(), innerMidLeft.y() );
                     GL_GPU::Vertex2d( innerMidLeftExt.x(), innerMidLeftExt.y() );
 
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerTopMid) || (_imp->ui->eventState == eMouseStateDraggingInnerTopMid) ) ) {
+                    if ( isHoverOrDraggedMarker && ( (hoverState == eDrawStateHoveringInnerTopMid) || (eventState == eMouseStateDraggingInnerTopMid) ) ) {
                         GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
                     } else {
                         GL_GPU::Color3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
@@ -2356,7 +2360,7 @@ TrackerNode::drawOverlay(TimeValue time,
                     GL_GPU::Vertex2d( innerMidTop.x(), innerMidTop.y() );
                     GL_GPU::Vertex2d( innerMidTopExt.x(), innerMidTopExt.y() );
 
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerMidRight) || (_imp->ui->eventState == eMouseStateDraggingInnerMidRight) ) ) {
+                    if ( isHoverOrDraggedMarker && ( (hoverState == eDrawStateHoveringInnerMidRight) || (eventState == eMouseStateDraggingInnerMidRight) ) ) {
                         GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
                     } else {
                         GL_GPU::Color3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
@@ -2364,7 +2368,7 @@ TrackerNode::drawOverlay(TimeValue time,
                     GL_GPU::Vertex2d( innerMidRight.x(), innerMidRight.y() );
                     GL_GPU::Vertex2d( innerMidRightExt.x(), innerMidRightExt.y() );
 
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerBtmMid) || (_imp->ui->eventState == eMouseStateDraggingInnerBtmMid) ) ) {
+                    if ( isHoverOrDraggedMarker && ( (hoverState == eDrawStateHoveringInnerBtmMid) || (eventState == eMouseStateDraggingInnerBtmMid) ) ) {
                         GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
                     } else {
                         GL_GPU::Color3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
@@ -2374,7 +2378,7 @@ TrackerNode::drawOverlay(TimeValue time,
 
                     //////DRAWING OUTTER HANDLES
 
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterMidLeft) || (_imp->ui->eventState == eMouseStateDraggingOuterMidLeft) ) ) {
+                    if ( isHoverOrDraggedMarker && ( (hoverState == eDrawStateHoveringOuterMidLeft) || (eventState == eMouseStateDraggingOuterMidLeft) ) ) {
                         GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
                     } else {
                         GL_GPU::Color3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
@@ -2382,7 +2386,7 @@ TrackerNode::drawOverlay(TimeValue time,
                     GL_GPU::Vertex2d( outterMidLeft.x(), outterMidLeft.y() );
                     GL_GPU::Vertex2d( outterMidLeftExt.x(), outterMidLeftExt.y() );
 
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterTopMid) || (_imp->ui->eventState == eMouseStateDraggingOuterTopMid) ) ) {
+                    if ( isHoverOrDraggedMarker && ( (hoverState == eDrawStateHoveringOuterTopMid) || (eventState == eMouseStateDraggingOuterTopMid) ) ) {
                         GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
                     } else {
                         GL_GPU::Color3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
@@ -2390,7 +2394,7 @@ TrackerNode::drawOverlay(TimeValue time,
                     GL_GPU::Vertex2d( outterMidTop.x(), outterMidTop.y() );
                     GL_GPU::Vertex2d( outterMidTopExt.x(), outterMidTopExt.y() );
 
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterMidRight) || (_imp->ui->eventState == eMouseStateDraggingOuterMidRight) ) ) {
+                    if ( isHoverOrDraggedMarker && ( (hoverState == eDrawStateHoveringOuterMidRight) || (eventState == eMouseStateDraggingOuterMidRight) ) ) {
                         GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
                     } else {
                         GL_GPU::Color3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
@@ -2398,7 +2402,7 @@ TrackerNode::drawOverlay(TimeValue time,
                     GL_GPU::Vertex2d( outterMidRight.x(), outterMidRight.y() );
                     GL_GPU::Vertex2d( outterMidRightExt.x(), outterMidRightExt.y() );
 
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterBtmMid) || (_imp->ui->eventState == eMouseStateDraggingOuterBtmMid) ) ) {
+                    if ( isHoverOrDraggedMarker && ( (hoverState == eDrawStateHoveringOuterBtmMid) || (eventState == eMouseStateDraggingOuterBtmMid) ) ) {
                         GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
                     } else {
                         GL_GPU::Color3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
@@ -2414,13 +2418,13 @@ TrackerNode::drawOverlay(TimeValue time,
             } // if (!isSelected) {
         } // for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
 
-        if (_imp->ui->showMarkerTexture && selectedFound) {
-            _imp->ui->drawSelectedMarkerTexture(std::make_pair(pixelScaleX, pixelScaleY), time, selectedCenter, selectedOffset, selectedPtnTopLeft, selectedPtnTopRight, selectedPtnBtmRight, selectedPtnBtmLeft, selectedSearchBtmLeft, selectedSearchTopRight);
+        if (showMarkerTexture && selectedFound) {
+            drawSelectedMarkerTexture(std::make_pair(pixelScaleX, pixelScaleY), time, selectedCenter, selectedOffset, selectedPtnTopLeft, selectedPtnTopRight, selectedPtnBtmRight, selectedPtnBtmLeft, selectedSearchBtmLeft, selectedSearchTopRight);
         }
         // context->drawInternalNodesOverlay( time, renderScale, view, overlay);
 
 
-        if (_imp->ui->clickToAddTrackEnabled) {
+        if (clickToAddTrackEnabled) {
             ///draw a square of 20px around the mouse cursor
             GL_GPU::Enable(GL_BLEND);
             GL_GPU::BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -2446,18 +2450,18 @@ TrackerNode::drawOverlay(TimeValue time,
                 }
 
                 GL_GPU::Begin(GL_LINE_LOOP);
-                GL_GPU::Vertex2d(_imp->ui->lastMousePos.x() - addTrackSize * 2 * pixelScaleX, _imp->ui->lastMousePos.y() - addTrackSize * 2 * pixelScaleY);
-                GL_GPU::Vertex2d(_imp->ui->lastMousePos.x() - addTrackSize * 2 * pixelScaleX, _imp->ui->lastMousePos.y() + addTrackSize * 2 * pixelScaleY);
-                GL_GPU::Vertex2d(_imp->ui->lastMousePos.x() + addTrackSize * 2 * pixelScaleX, _imp->ui->lastMousePos.y() + addTrackSize * 2 * pixelScaleY);
-                GL_GPU::Vertex2d(_imp->ui->lastMousePos.x() + addTrackSize * 2 * pixelScaleX, _imp->ui->lastMousePos.y() - addTrackSize * 2 * pixelScaleY);
+                GL_GPU::Vertex2d(lastMousePos.x() - addTrackSize * 2 * pixelScaleX, lastMousePos.y() - addTrackSize * 2 * pixelScaleY);
+                GL_GPU::Vertex2d(lastMousePos.x() - addTrackSize * 2 * pixelScaleX, lastMousePos.y() + addTrackSize * 2 * pixelScaleY);
+                GL_GPU::Vertex2d(lastMousePos.x() + addTrackSize * 2 * pixelScaleX, lastMousePos.y() + addTrackSize * 2 * pixelScaleY);
+                GL_GPU::Vertex2d(lastMousePos.x() + addTrackSize * 2 * pixelScaleX, lastMousePos.y() - addTrackSize * 2 * pixelScaleY);
                 GL_GPU::End();
 
                 ///draw a cross at the cursor position
                 GL_GPU::Begin(GL_LINES);
-                GL_GPU::Vertex2d( _imp->ui->lastMousePos.x() - addTrackSize * pixelScaleX, _imp->ui->lastMousePos.y() );
-                GL_GPU::Vertex2d( _imp->ui->lastMousePos.x() + addTrackSize * pixelScaleX, _imp->ui->lastMousePos.y() );
-                GL_GPU::Vertex2d(_imp->ui->lastMousePos.x(), _imp->ui->lastMousePos.y() - addTrackSize * pixelScaleY);
-                GL_GPU::Vertex2d(_imp->ui->lastMousePos.x(), _imp->ui->lastMousePos.y() + addTrackSize * pixelScaleY);
+                GL_GPU::Vertex2d( lastMousePos.x() - addTrackSize * pixelScaleX, lastMousePos.y() );
+                GL_GPU::Vertex2d( lastMousePos.x() + addTrackSize * pixelScaleX, lastMousePos.y() );
+                GL_GPU::Vertex2d(lastMousePos.x(), lastMousePos.y() - addTrackSize * pixelScaleY);
+                GL_GPU::Vertex2d(lastMousePos.x(), lastMousePos.y() + addTrackSize * pixelScaleY);
                 GL_GPU::End();
             }
         }
@@ -2465,7 +2469,7 @@ TrackerNode::drawOverlay(TimeValue time,
 } // drawOverlay
 
 bool
-TrackerNode::onOverlayPenDown(TimeValue time,
+TrackerNodeInteract::onOverlayPenDown(TimeValue time,
                               const RenderScale & /*renderScale*/,
                               ViewIdx /*view*/,
                               const QPointF & viewportPos,
@@ -2475,8 +2479,7 @@ TrackerNode::onOverlayPenDown(TimeValue time,
                               PenType /*pen*/)
 {
     std::pair<double, double> pixelScale;
-    OverlaySupport* overlay = getNode()->getCurrentViewportForOverlays();
-
+    OverlaySupport* overlay = getLastCallingViewport();
     assert(overlay);
     overlay->getPixelScale(pixelScale.first, pixelScale.second);
     bool didSomething = false;
@@ -2509,17 +2512,17 @@ TrackerNode::onOverlayPenDown(TimeValue time,
         offset.rx() = offsetKnob->getValueAtTime(time, DimIdx(0));
         offset.ry() = offsetKnob->getValueAtTime(time, DimIdx(1));
 
-        if ( _imp->ui->isNearbyPoint(centerKnob, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE, time) ) {
-            if (_imp->ui->controlDown > 0) {
-                _imp->ui->eventState = eMouseStateDraggingOffset;
+        if ( isNearbyPoint(centerKnob, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE, time) ) {
+            if (controlDown > 0) {
+                eventState = eMouseStateDraggingOffset;
             } else {
-                _imp->ui->eventState = eMouseStateDraggingCenter;
+                eventState = eMouseStateDraggingCenter;
             }
-            _imp->ui->interactMarker = *it;
+            interactMarker = *it;
             didSomething = true;
-        } else if ( ( (offset.x() != 0) || (offset.y() != 0) ) && _imp->ui->isNearbyPoint(QPointF( centerPoint.x() + offset.x(), centerPoint.y() + offset.y() ), viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-            _imp->ui->eventState = eMouseStateDraggingOffset;
-            _imp->ui->interactMarker = *it;
+        } else if ( ( (offset.x() != 0) || (offset.y() != 0) ) && isNearbyPoint(QPointF( centerPoint.x() + offset.x(), centerPoint.y() + offset.y() ), viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+            eventState = eMouseStateDraggingOffset;
+            interactMarker = *it;
             didSomething = true;
         }
 
@@ -2550,37 +2553,37 @@ TrackerNode::onOverlayPenDown(TimeValue time,
             midLeft.rx() = ( topLeft.x() + btmLeft.x() ) / 2.;
             midLeft.ry() = ( topLeft.y() + btmLeft.y() ) / 2.;
 
-            if ( isSelected && _imp->ui->isNearbyPoint(topLeft, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->eventState = eMouseStateDraggingInnerTopLeft;
-                _imp->ui->interactMarker = *it;
+            if ( isSelected && isNearbyPoint(topLeft, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+                eventState = eMouseStateDraggingInnerTopLeft;
+                interactMarker = *it;
                 didSomething = true;
-            } else if ( isSelected && _imp->ui->isNearbyPoint(topRight, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->eventState = eMouseStateDraggingInnerTopRight;
-                _imp->ui->interactMarker = *it;
+            } else if ( isSelected && isNearbyPoint(topRight, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+                eventState = eMouseStateDraggingInnerTopRight;
+                interactMarker = *it;
                 didSomething = true;
-            } else if ( isSelected && _imp->ui->isNearbyPoint(btmRight, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->eventState = eMouseStateDraggingInnerBtmRight;
-                _imp->ui->interactMarker = *it;
+            } else if ( isSelected && isNearbyPoint(btmRight, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+                eventState = eMouseStateDraggingInnerBtmRight;
+                interactMarker = *it;
                 didSomething = true;
-            } else if ( isSelected && _imp->ui->isNearbyPoint(btmLeft, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->eventState = eMouseStateDraggingInnerBtmLeft;
-                _imp->ui->interactMarker = *it;
+            } else if ( isSelected && isNearbyPoint(btmLeft, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+                eventState = eMouseStateDraggingInnerBtmLeft;
+                interactMarker = *it;
                 didSomething = true;
-            } else if ( isSelected && _imp->ui->isNearbyPoint(midTop, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->eventState = eMouseStateDraggingInnerTopMid;
-                _imp->ui->interactMarker = *it;
+            } else if ( isSelected && isNearbyPoint(midTop, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+                eventState = eMouseStateDraggingInnerTopMid;
+                interactMarker = *it;
                 didSomething = true;
-            } else if ( isSelected && _imp->ui->isNearbyPoint(midRight, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->eventState = eMouseStateDraggingInnerMidRight;
-                _imp->ui->interactMarker = *it;
+            } else if ( isSelected && isNearbyPoint(midRight, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+                eventState = eMouseStateDraggingInnerMidRight;
+                interactMarker = *it;
                 didSomething = true;
-            } else if ( isSelected && _imp->ui->isNearbyPoint(midLeft, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->eventState = eMouseStateDraggingInnerMidLeft;
-                _imp->ui->interactMarker = *it;
+            } else if ( isSelected && isNearbyPoint(midLeft, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+                eventState = eMouseStateDraggingInnerMidLeft;
+                interactMarker = *it;
                 didSomething = true;
-            } else if ( isSelected && _imp->ui->isNearbyPoint(midBtm, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->eventState = eMouseStateDraggingInnerBtmMid;
-                _imp->ui->interactMarker = *it;
+            } else if ( isSelected && isNearbyPoint(midBtm, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+                eventState = eMouseStateDraggingInnerBtmMid;
+                interactMarker = *it;
                 didSomething = true;
             }
         }
@@ -2602,49 +2605,49 @@ TrackerNode::onOverlayPenDown(TimeValue time,
             const QPointF searchLeftMid(searchLeft, searchMidY);
             const QPointF searchBtmMid(searchMidX, searchBottom);
 
-            if ( _imp->ui->isNearbyPoint(searchTopLeft, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->eventState = eMouseStateDraggingOuterTopLeft;
-                _imp->ui->interactMarker = *it;
+            if ( isNearbyPoint(searchTopLeft, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+                eventState = eMouseStateDraggingOuterTopLeft;
+                interactMarker = *it;
                 didSomething = true;
-            } else if ( _imp->ui->isNearbyPoint(searchTopRight, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->eventState = eMouseStateDraggingOuterTopRight;
-                _imp->ui->interactMarker = *it;
+            } else if ( isNearbyPoint(searchTopRight, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+                eventState = eMouseStateDraggingOuterTopRight;
+                interactMarker = *it;
                 didSomething = true;
-            } else if ( _imp->ui->isNearbyPoint(searchBtmRight, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->eventState = eMouseStateDraggingOuterBtmRight;
-                _imp->ui->interactMarker = *it;
+            } else if ( isNearbyPoint(searchBtmRight, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+                eventState = eMouseStateDraggingOuterBtmRight;
+                interactMarker = *it;
                 didSomething = true;
-            } else if ( _imp->ui->isNearbyPoint(searchBtmLeft, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->eventState = eMouseStateDraggingOuterBtmLeft;
-                _imp->ui->interactMarker = *it;
+            } else if ( isNearbyPoint(searchBtmLeft, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+                eventState = eMouseStateDraggingOuterBtmLeft;
+                interactMarker = *it;
                 didSomething = true;
-            } else if ( _imp->ui->isNearbyPoint(searchTopMid, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->eventState = eMouseStateDraggingOuterTopMid;
-                _imp->ui->interactMarker = *it;
+            } else if ( isNearbyPoint(searchTopMid, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+                eventState = eMouseStateDraggingOuterTopMid;
+                interactMarker = *it;
                 didSomething = true;
-            } else if ( _imp->ui->isNearbyPoint(searchBtmMid, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->eventState = eMouseStateDraggingOuterBtmMid;
-                _imp->ui->interactMarker = *it;
+            } else if ( isNearbyPoint(searchBtmMid, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+                eventState = eMouseStateDraggingOuterBtmMid;
+                interactMarker = *it;
                 didSomething = true;
-            } else if ( _imp->ui->isNearbyPoint(searchLeftMid, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->eventState = eMouseStateDraggingOuterMidLeft;
-                _imp->ui->interactMarker = *it;
+            } else if ( isNearbyPoint(searchLeftMid, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+                eventState = eMouseStateDraggingOuterMidLeft;
+                interactMarker = *it;
                 didSomething = true;
-            } else if ( _imp->ui->isNearbyPoint(searchRightMid, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->eventState = eMouseStateDraggingOuterMidRight;
-                _imp->ui->interactMarker = *it;
+            } else if ( isNearbyPoint(searchRightMid, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+                eventState = eMouseStateDraggingOuterMidRight;
+                interactMarker = *it;
                 didSomething = true;
             }
         }
 
         //If we hit the interact, make sure it is selected
-        if (_imp->ui->interactMarker) {
+        if (interactMarker) {
             if (!isSelected) {
                 _imp->knobsTable->beginEditSelection();
-                if (!_imp->ui->shiftDown) {
+                if (!shiftDown) {
                     _imp->knobsTable->clearSelection(eTableChangeReasonViewer);
                 }
-                _imp->knobsTable->addToSelection(_imp->ui->interactMarker, eTableChangeReasonViewer);
+                _imp->knobsTable->addToSelection(interactMarker, eTableChangeReasonViewer);
                 _imp->knobsTable->endEditSelection(eTableChangeReasonViewer);
             }
         }
@@ -2654,7 +2657,7 @@ TrackerNode::onOverlayPenDown(TimeValue time,
         }
     } // for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
 
-    if (_imp->ui->clickToAddTrackEnabled && !didSomething && !trackingPageSecret) {
+    if (clickToAddTrackEnabled && !didSomething && !trackingPageSecret) {
         TrackMarkerPtr marker = _imp->createMarker();
         KnobDoublePtr centerKnob = marker->getCenterKnob();
         {
@@ -2664,34 +2667,34 @@ TrackerNode::onOverlayPenDown(TimeValue time,
             centerKnob->setValueAtTimeAcrossDimensions(time, values);
         }
 
-        if ( _imp->ui->createKeyOnMoveButton.lock()->getValue() ) {
+        if ( createKeyOnMoveButton.lock()->getValue() ) {
             marker->setKeyFrame(time, ViewSetSpec(0), 0);
         }
-        pushUndoCommand( new AddItemsCommand(marker) );
-        _imp->ui->refreshSelectedMarkerTextureLater();
+        _imp->publicInterface->pushUndoCommand( new AddItemsCommand(marker) );
+        refreshSelectedMarkerTextureLater();
         didSomething = true;
     }
 
-    if ( !didSomething && _imp->ui->showMarkerTexture && _imp->ui->selectedMarkerTexture && _imp->ui->isNearbySelectedMarkerTextureResizeAnchor(pos) ) {
-        _imp->ui->eventState = eMouseStateDraggingSelectedMarkerResizeAnchor;
+    if ( !didSomething && showMarkerTexture && selectedMarkerTexture && isNearbySelectedMarkerTextureResizeAnchor(pos) ) {
+        eventState = eMouseStateDraggingSelectedMarkerResizeAnchor;
         didSomething = true;
     }
 
-    if ( !didSomething && _imp->ui->showMarkerTexture && _imp->ui->selectedMarkerTexture  && _imp->ui->isInsideSelectedMarkerTexture(pos) ) {
-        if (_imp->ui->shiftDown) {
-            _imp->ui->eventState = eMouseStateScalingSelectedMarker;
+    if ( !didSomething && showMarkerTexture && selectedMarkerTexture  && isInsideSelectedMarkerTexture(pos) ) {
+        if (shiftDown) {
+            eventState = eMouseStateScalingSelectedMarker;
         } else {
-            _imp->ui->eventState = eMouseStateDraggingSelectedMarker;
+            eventState = eMouseStateDraggingSelectedMarker;
         }
-        _imp->ui->interactMarker = _imp->ui->selectedMarker.lock();
+        interactMarker = selectedMarker.lock();
         didSomething = true;
     }
 
     if (!didSomething) {
-        int keyTime = _imp->ui->isInsideKeyFrameTexture(time, pos, viewportPos);
+        int keyTime = isInsideKeyFrameTexture(time, pos, viewportPos);
         if (keyTime != INT_MAX) {
 
-            getApp()->getTimeLine()->seekFrame(keyTime, true, EffectInstancePtr(), eTimelineChangeReasonOtherSeek);
+            _imp->publicInterface->getApp()->getTimeLine()->seekFrame(keyTime, true, EffectInstancePtr(), eTimelineChangeReasonOtherSeek);
 
             didSomething = true;
         }
@@ -2706,13 +2709,13 @@ TrackerNode::onOverlayPenDown(TimeValue time,
         }
     }
 
-    _imp->ui->lastMousePos = pos;
+    lastMousePos = pos;
 
     return didSomething;
 } // penDown
 
 bool
-TrackerNode::onOverlayPenMotion(TimeValue time,
+TrackerNodeInteract::onOverlayPenMotion(TimeValue time,
                                 const RenderScale & /*renderScale*/,
                                 ViewIdx view,
                                 const QPointF & viewportPos,
@@ -2721,19 +2724,19 @@ TrackerNode::onOverlayPenMotion(TimeValue time,
                                 TimeValue /*timestamp*/)
 {
     std::pair<double, double> pixelScale;
-    OverlaySupport* overlay = getNode()->getCurrentViewportForOverlays();
+    OverlaySupport* overlay = getLastCallingViewport();
 
     assert(overlay);
     overlay->getPixelScale(pixelScale.first, pixelScale.second);
     bool didSomething = false;
     Point delta;
-    delta.x = pos.x() - _imp->ui->lastMousePos.x();
-    delta.y = pos.y() - _imp->ui->lastMousePos.y();
+    delta.x = pos.x() - lastMousePos.x();
+    delta.y = pos.y() - lastMousePos.y();
 
 
-    if (_imp->ui->hoverState != eDrawStateInactive) {
-        _imp->ui->hoverState = eDrawStateInactive;
-        _imp->ui->hoverMarker.reset();
+    if (hoverState != eDrawStateInactive) {
+        hoverState = eDrawStateInactive;
+        hoverMarker.reset();
         didSomething = true;
     }
 
@@ -2762,13 +2765,13 @@ TrackerNode::onOverlayPenMotion(TimeValue time,
         QPointF offset;
         offset.rx() = offsetKnob->getValueAtTime(time, DimIdx(0));
         offset.ry() = offsetKnob->getValueAtTime(time, DimIdx(1));
-        if ( _imp->ui->isNearbyPoint(centerKnob, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE, time) ) {
-            _imp->ui->hoverState = eDrawStateHoveringCenter;
-            _imp->ui->hoverMarker = *it;
+        if ( isNearbyPoint(centerKnob, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE, time) ) {
+            hoverState = eDrawStateHoveringCenter;
+            hoverMarker = *it;
             hoverProcess = true;
-        } else if ( ( (offset.x() != 0) || (offset.y() != 0) ) && _imp->ui->isNearbyPoint(QPointF( center.x() + offset.x(), center.y() + offset.y() ), viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-            _imp->ui->hoverState = eDrawStateHoveringCenter;
-            _imp->ui->hoverMarker = *it;
+        } else if ( ( (offset.x() != 0) || (offset.y() != 0) ) && isNearbyPoint(QPointF( center.x() + offset.x(), center.y() + offset.y() ), viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+            hoverState = eDrawStateHoveringCenter;
+            hoverMarker = *it;
             didSomething = true;
         }
 
@@ -2801,37 +2804,37 @@ TrackerNode::onOverlayPenMotion(TimeValue time,
             midLeft.ry() = ( topLeft.y() + btmLeft.y() ) / 2.;
 
 
-            if ( isSelected && _imp->ui->isNearbyPoint(topLeft, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->hoverState = eDrawStateHoveringInnerTopLeft;
-                _imp->ui->hoverMarker = *it;
+            if ( isSelected && isNearbyPoint(topLeft, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+                hoverState = eDrawStateHoveringInnerTopLeft;
+                hoverMarker = *it;
                 hoverProcess = true;
-            } else if ( isSelected && _imp->ui->isNearbyPoint(topRight, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->hoverState = eDrawStateHoveringInnerTopRight;
-                _imp->ui->hoverMarker = *it;
+            } else if ( isSelected && isNearbyPoint(topRight, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+                hoverState = eDrawStateHoveringInnerTopRight;
+                hoverMarker = *it;
                 hoverProcess = true;
-            } else if ( isSelected && _imp->ui->isNearbyPoint(btmRight, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->hoverState = eDrawStateHoveringInnerBtmRight;
-                _imp->ui->hoverMarker = *it;
+            } else if ( isSelected && isNearbyPoint(btmRight, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+                hoverState = eDrawStateHoveringInnerBtmRight;
+                hoverMarker = *it;
                 hoverProcess = true;
-            } else if ( isSelected && _imp->ui->isNearbyPoint(btmLeft, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->hoverState = eDrawStateHoveringInnerBtmLeft;
-                _imp->ui->hoverMarker = *it;
+            } else if ( isSelected && isNearbyPoint(btmLeft, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+                hoverState = eDrawStateHoveringInnerBtmLeft;
+                hoverMarker = *it;
                 hoverProcess = true;
-            } else if ( isSelected && _imp->ui->isNearbyPoint(midTop, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->hoverState = eDrawStateHoveringInnerTopMid;
-                _imp->ui->hoverMarker = *it;
+            } else if ( isSelected && isNearbyPoint(midTop, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+                hoverState = eDrawStateHoveringInnerTopMid;
+                hoverMarker = *it;
                 hoverProcess = true;
-            } else if ( isSelected && _imp->ui->isNearbyPoint(midRight, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->hoverState = eDrawStateHoveringInnerMidRight;
-                _imp->ui->hoverMarker = *it;
+            } else if ( isSelected && isNearbyPoint(midRight, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+                hoverState = eDrawStateHoveringInnerMidRight;
+                hoverMarker = *it;
                 hoverProcess = true;
-            } else if ( isSelected && _imp->ui->isNearbyPoint(midLeft, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->hoverState = eDrawStateHoveringInnerMidLeft;
-                _imp->ui->hoverMarker = *it;
+            } else if ( isSelected && isNearbyPoint(midLeft, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+                hoverState = eDrawStateHoveringInnerMidLeft;
+                hoverMarker = *it;
                 hoverProcess = true;
-            } else if ( isSelected && _imp->ui->isNearbyPoint(midBtm, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->hoverState = eDrawStateHoveringInnerBtmMid;
-                _imp->ui->hoverMarker = *it;
+            } else if ( isSelected && isNearbyPoint(midBtm, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+                hoverState = eDrawStateHoveringInnerBtmMid;
+                hoverMarker = *it;
                 hoverProcess = true;
             }
         }
@@ -2853,37 +2856,37 @@ TrackerNode::onOverlayPenMotion(TimeValue time,
             const QPointF searchLeftMid(searchLeft, searchMidY);
             const QPointF searchBtmMid(searchMidX, searchBottom);
 
-            if ( _imp->ui->isNearbyPoint(searchTopLeft, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->hoverState = eDrawStateHoveringOuterTopLeft;
-                _imp->ui->hoverMarker = *it;
+            if ( isNearbyPoint(searchTopLeft, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+                hoverState = eDrawStateHoveringOuterTopLeft;
+                hoverMarker = *it;
                 hoverProcess = true;
-            } else if ( _imp->ui->isNearbyPoint(searchTopRight, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->hoverState = eDrawStateHoveringOuterTopRight;
-                _imp->ui->hoverMarker = *it;
+            } else if ( isNearbyPoint(searchTopRight, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+                hoverState = eDrawStateHoveringOuterTopRight;
+                hoverMarker = *it;
                 hoverProcess = true;
-            } else if ( _imp->ui->isNearbyPoint(searchBtmRight, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->hoverState = eDrawStateHoveringOuterBtmRight;
-                _imp->ui->hoverMarker = *it;
+            } else if ( isNearbyPoint(searchBtmRight, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+                hoverState = eDrawStateHoveringOuterBtmRight;
+                hoverMarker = *it;
                 hoverProcess = true;
-            } else if ( _imp->ui->isNearbyPoint(searchBtmLeft, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->hoverState = eDrawStateHoveringOuterBtmLeft;
-                _imp->ui->hoverMarker = *it;
+            } else if ( isNearbyPoint(searchBtmLeft, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+                hoverState = eDrawStateHoveringOuterBtmLeft;
+                hoverMarker = *it;
                 hoverProcess = true;
-            } else if ( _imp->ui->isNearbyPoint(searchTopMid, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->hoverState = eDrawStateHoveringOuterTopMid;
-                _imp->ui->hoverMarker = *it;
+            } else if ( isNearbyPoint(searchTopMid, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+                hoverState = eDrawStateHoveringOuterTopMid;
+                hoverMarker = *it;
                 hoverProcess = true;
-            } else if ( _imp->ui->isNearbyPoint(searchBtmMid, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->hoverState = eDrawStateHoveringOuterBtmMid;
-                _imp->ui->hoverMarker = *it;
+            } else if ( isNearbyPoint(searchBtmMid, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+                hoverState = eDrawStateHoveringOuterBtmMid;
+                hoverMarker = *it;
                 hoverProcess = true;
-            } else if ( _imp->ui->isNearbyPoint(searchLeftMid, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->hoverState = eDrawStateHoveringOuterMidLeft;
-                _imp->ui->hoverMarker = *it;
+            } else if ( isNearbyPoint(searchLeftMid, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+                hoverState = eDrawStateHoveringOuterMidLeft;
+                hoverMarker = *it;
                 hoverProcess = true;
-            } else if ( _imp->ui->isNearbyPoint(searchRightMid, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->hoverState = eDrawStateHoveringOuterMidRight;
-                _imp->ui->hoverMarker = *it;
+            } else if ( isNearbyPoint(searchRightMid, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+                hoverState = eDrawStateHoveringOuterMidRight;
+                hoverMarker = *it;
                 hoverProcess = true;
             }
         }
@@ -2893,21 +2896,21 @@ TrackerNode::onOverlayPenMotion(TimeValue time,
         }
     } // for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
 
-    if ( _imp->ui->showMarkerTexture && _imp->ui->selectedMarkerTexture && _imp->ui->isNearbySelectedMarkerTextureResizeAnchor(pos) ) {
-        setCurrentCursor(eCursorFDiag);
+    if ( showMarkerTexture && selectedMarkerTexture && isNearbySelectedMarkerTextureResizeAnchor(pos) ) {
+        _imp->publicInterface->setCurrentCursor(eCursorFDiag);
         hoverProcess = true;
-    } else if ( _imp->ui->showMarkerTexture && _imp->ui->selectedMarkerTexture && _imp->ui->isInsideSelectedMarkerTexture(pos) ) {
-        setCurrentCursor(eCursorSizeAll);
+    } else if ( showMarkerTexture && selectedMarkerTexture && isInsideSelectedMarkerTexture(pos) ) {
+        _imp->publicInterface->setCurrentCursor(eCursorSizeAll);
         hoverProcess = true;
-    } else if ( _imp->ui->showMarkerTexture && (_imp->ui->isInsideKeyFrameTexture(time, pos, viewportPos) != INT_MAX) ) {
-        setCurrentCursor(eCursorPointingHand);
+    } else if ( showMarkerTexture && (isInsideKeyFrameTexture(time, pos, viewportPos) != INT_MAX) ) {
+        _imp->publicInterface->setCurrentCursor(eCursorPointingHand);
         hoverProcess = true;
     } else {
-        setCurrentCursor(eCursorDefault);
+        _imp->publicInterface->setCurrentCursor(eCursorDefault);
     }
 
-    if ( _imp->ui->showMarkerTexture && _imp->ui->selectedMarkerTexture && _imp->ui->shiftDown && _imp->ui->isInsideSelectedMarkerTexture(pos) ) {
-        _imp->ui->hoverState = eDrawStateShowScalingHint;
+    if ( showMarkerTexture && selectedMarkerTexture && shiftDown && isInsideSelectedMarkerTexture(pos) ) {
+        hoverState = eDrawStateShowScalingHint;
         hoverProcess = true;
     }
 
@@ -2917,9 +2920,9 @@ TrackerNode::onOverlayPenMotion(TimeValue time,
 
     KnobDoublePtr centerKnob, offsetKnob, searchWndTopRight, searchWndBtmLeft;
     KnobDoublePtr patternCorners[4];
-    if (_imp->ui->interactMarker) {
-        centerKnob = _imp->ui->interactMarker->getCenterKnob();
-        offsetKnob = _imp->ui->interactMarker->getOffsetKnob();
+    if (interactMarker) {
+        centerKnob = interactMarker->getCenterKnob();
+        offsetKnob = interactMarker->getOffsetKnob();
 
         /*
 
@@ -2930,25 +2933,25 @@ TrackerNode::onOverlayPenMotion(TimeValue time,
          Btm left (1) ------------ Btm right (2)
 
          */
-        patternCorners[0] = _imp->ui->interactMarker->getPatternTopLeftKnob();
-        patternCorners[1] = _imp->ui->interactMarker->getPatternBtmLeftKnob();
-        patternCorners[2] = _imp->ui->interactMarker->getPatternBtmRightKnob();
-        patternCorners[3] = _imp->ui->interactMarker->getPatternTopRightKnob();
-        searchWndTopRight = _imp->ui->interactMarker->getSearchWindowTopRightKnob();
-        searchWndBtmLeft = _imp->ui->interactMarker->getSearchWindowBottomLeftKnob();
+        patternCorners[0] = interactMarker->getPatternTopLeftKnob();
+        patternCorners[1] = interactMarker->getPatternBtmLeftKnob();
+        patternCorners[2] = interactMarker->getPatternBtmRightKnob();
+        patternCorners[3] = interactMarker->getPatternTopRightKnob();
+        searchWndTopRight = interactMarker->getSearchWindowTopRightKnob();
+        searchWndBtmLeft = interactMarker->getSearchWindowBottomLeftKnob();
     }
     if (!trackingPageSecret) {
-        switch (_imp->ui->eventState) {
+        switch (eventState) {
             case eMouseStateDraggingCenter:
             case eMouseStateDraggingOffset: {
-                assert(_imp->ui->interactMarker);
+                assert(interactMarker);
                 if (!centerKnob || !offsetKnob || !patternCorners[0] || !patternCorners[1] || !patternCorners[2] | !patternCorners[3]) {
                     didSomething = false;
                     break;
                 }
 
 
-                if (_imp->ui->eventState == eMouseStateDraggingOffset) {
+                if (eventState == eMouseStateDraggingOffset) {
                     std::vector<double> values(2);
                     values[0] = offsetKnob->getValueAtTime(time, DimIdx(0)) + delta.x;
                     values[1] = offsetKnob->getValueAtTime(time, DimIdx(1)) + delta.y;
@@ -2967,9 +2970,9 @@ TrackerNode::onOverlayPenMotion(TimeValue time,
                         patternCorners[i]->setValueAcrossDimensions(values);
                     }
                 }
-                _imp->ui->refreshSelectedMarkerTextureLater();
-                if ( _imp->ui->createKeyOnMoveButton.lock()->getValue() ) {
-                    _imp->ui->interactMarker->setKeyFrame(time, ViewSetSpec(0), 0);
+                refreshSelectedMarkerTextureLater();
+                if ( createKeyOnMoveButton.lock()->getValue() ) {
+                    interactMarker->setKeyFrame(time, ViewSetSpec(0), 0);
                 }
                 didSomething = true;
                 break;
@@ -2978,8 +2981,8 @@ TrackerNode::onOverlayPenMotion(TimeValue time,
             case eMouseStateDraggingInnerTopRight:
             case eMouseStateDraggingInnerTopLeft:
             case eMouseStateDraggingInnerBtmRight: {
-                if (_imp->ui->controlDown == 0) {
-                    _imp->ui->transformPattern(time, _imp->ui->eventState, delta);
+                if (controlDown == 0) {
+                    transformPattern(time, eventState, delta);
                     didSomething = true;
                     break;
                 }
@@ -2989,13 +2992,13 @@ TrackerNode::onOverlayPenMotion(TimeValue time,
                 }
 
                 int index = 0;
-                if (_imp->ui->eventState == eMouseStateDraggingInnerBtmLeft) {
+                if (eventState == eMouseStateDraggingInnerBtmLeft) {
                     index = 1;
-                } else if (_imp->ui->eventState == eMouseStateDraggingInnerBtmRight) {
+                } else if (eventState == eMouseStateDraggingInnerBtmRight) {
                     index = 2;
-                } else if (_imp->ui->eventState == eMouseStateDraggingInnerTopRight) {
+                } else if (eventState == eMouseStateDraggingInnerTopRight) {
                     index = 3;
-                } else if (_imp->ui->eventState == eMouseStateDraggingInnerTopLeft) {
+                } else if (eventState == eMouseStateDraggingInnerTopLeft) {
                     index = 0;
                 }
 
@@ -3069,15 +3072,15 @@ TrackerNode::onOverlayPenMotion(TimeValue time,
                     patternCorners[index]->setValueAcrossDimensions(values);
                 }
 
-                if ( _imp->ui->createKeyOnMoveButton.lock()->getValue() ) {
-                    _imp->ui->interactMarker->setKeyFrame(time, ViewSetSpec(0), 0);
+                if ( createKeyOnMoveButton.lock()->getValue() ) {
+                    interactMarker->setKeyFrame(time, ViewSetSpec(0), 0);
                 }
                 didSomething = true;
                 break;
             }
             case eMouseStateDraggingOuterBtmLeft: {
-                if (_imp->ui->controlDown == 0) {
-                    _imp->ui->transformPattern(time, _imp->ui->eventState, delta);
+                if (controlDown == 0) {
+                    transformPattern(time, eventState, delta);
                     didSomething = true;
                     break;
                 }
@@ -3132,13 +3135,13 @@ TrackerNode::onOverlayPenMotion(TimeValue time,
                     searchWndBtmLeft->setValueAcrossDimensions(values);
                 }
 
-                _imp->ui->refreshSelectedMarkerTextureLater();
+                refreshSelectedMarkerTextureLater();
                 didSomething = true;
                 break;
             }
             case eMouseStateDraggingOuterBtmRight: {
-                if (_imp->ui->controlDown == 0) {
-                    _imp->ui->transformPattern(time, _imp->ui->eventState, delta);
+                if (controlDown == 0) {
+                    transformPattern(time, eventState, delta);
                     didSomething = true;
                     break;
                 }
@@ -3196,13 +3199,13 @@ TrackerNode::onOverlayPenMotion(TimeValue time,
                     searchWndTopRight->setValue(p.x, ViewSetSpec::all(), DimIdx(0));
                 }
 
-                _imp->ui->refreshSelectedMarkerTextureLater();
+                refreshSelectedMarkerTextureLater();
                 didSomething = true;
                 break;
             }
             case eMouseStateDraggingOuterTopRight: {
-                if (_imp->ui->controlDown == 0) {
-                    _imp->ui->transformPattern(time, _imp->ui->eventState, delta);
+                if (controlDown == 0) {
+                    transformPattern(time, eventState, delta);
                     didSomething = true;
                     break;
                 }
@@ -3260,13 +3263,13 @@ TrackerNode::onOverlayPenMotion(TimeValue time,
                     searchWndTopRight->setValueAcrossDimensions(values);
                 }
 
-                _imp->ui->refreshSelectedMarkerTextureLater();
+                refreshSelectedMarkerTextureLater();
                 didSomething = true;
                 break;
             }
             case eMouseStateDraggingOuterTopLeft: {
-                if (_imp->ui->controlDown == 0) {
-                    _imp->ui->transformPattern(time, _imp->ui->eventState, delta);
+                if (controlDown == 0) {
+                    transformPattern(time, eventState, delta);
                     didSomething = true;
                     break;
                 }
@@ -3323,7 +3326,7 @@ TrackerNode::onOverlayPenMotion(TimeValue time,
                     searchWndTopRight->setValue(p.y, view, DimIdx(1));
                 }
 
-                _imp->ui->refreshSelectedMarkerTextureLater();
+                refreshSelectedMarkerTextureLater();
                 didSomething = true;
                 break;
             }
@@ -3335,14 +3338,14 @@ TrackerNode::onOverlayPenMotion(TimeValue time,
             case eMouseStateDraggingOuterTopMid:
             case eMouseStateDraggingOuterMidLeft:
             case eMouseStateDraggingOuterMidRight: {
-                _imp->ui->transformPattern(time, _imp->ui->eventState, delta);
+                transformPattern(time, eventState, delta);
                 didSomething = true;
                 break;
             }
             case eMouseStateDraggingSelectedMarkerResizeAnchor: {
-                QPointF lastPosWidget = overlay->toWidgetCoordinates(_imp->ui->lastMousePos);
+                QPointF lastPosWidget = overlay->toWidgetCoordinates(lastMousePos);
                 double dx = viewportPos.x() - lastPosWidget.x();
-                KnobIntPtr knob = _imp->ui->magWindowPxSizeKnob.lock();
+                KnobIntPtr knob = magWindowPxSizeKnob.lock();
                 int value = knob->getValue();
                 value += dx;
                 value = std::max(value, 10);
@@ -3351,10 +3354,10 @@ TrackerNode::onOverlayPenMotion(TimeValue time,
                 break;
             }
             case eMouseStateScalingSelectedMarker: {
-                TrackMarkerPtr marker = _imp->ui->selectedMarker.lock();
+                TrackMarkerPtr marker = selectedMarker.lock();
                 assert(marker);
                 RectD markerMagRect;
-                _imp->ui->computeSelectedMarkerCanonicalRect(&markerMagRect);
+                computeSelectedMarkerCanonicalRect(&markerMagRect);
                 KnobDoublePtr centerKnob = marker->getCenterKnob();
                 KnobDoublePtr offsetKnob = marker->getOffsetKnob();
                 KnobDoublePtr searchBtmLeft = marker->getSearchWindowBottomLeftKnob();
@@ -3381,13 +3384,13 @@ TrackerNode::onOverlayPenMotion(TimeValue time,
                 centerPoint.x = markerMagRect.x1 + xCenterPercent * (markerMagRect.x2 - markerMagRect.x1);
                 centerPoint.y = markerMagRect.y1 + yCenterPercent * (markerMagRect.y2 - markerMagRect.y1);
 
-                double prevDist = std::sqrt( (_imp->ui->lastMousePos.x() - centerPoint.x ) * ( _imp->ui->lastMousePos.x() - centerPoint.x) + ( _imp->ui->lastMousePos.y() - centerPoint.y) * ( _imp->ui->lastMousePos.y() - centerPoint.y) );
+                double prevDist = std::sqrt( (lastMousePos.x() - centerPoint.x ) * ( lastMousePos.x() - centerPoint.x) + ( lastMousePos.y() - centerPoint.y) * ( lastMousePos.y() - centerPoint.y) );
                 if (prevDist != 0) {
                     double dist = std::sqrt( ( pos.x() - centerPoint.x) * ( pos.x() - centerPoint.x) + ( pos.y() - centerPoint.y) * ( pos.y() - centerPoint.y) );
                     double ratio = dist / prevDist;
-                    _imp->ui->selectedMarkerScale.x *= ratio;
-                    _imp->ui->selectedMarkerScale.x = boost::algorithm::clamp(_imp->ui->selectedMarkerScale.x, 0.05, 1.);
-                    _imp->ui->selectedMarkerScale.y = _imp->ui->selectedMarkerScale.x;
+                    selectedMarkerScale.x *= ratio;
+                    selectedMarkerScale.x = boost::algorithm::clamp(selectedMarkerScale.x, 0.05, 1.);
+                    selectedMarkerScale.y = selectedMarkerScale.x;
                     didSomething = true;
                 }
                 break;
@@ -3400,8 +3403,8 @@ TrackerNode::onOverlayPenMotion(TimeValue time,
 
                 double x = centerKnob->getValueAtTime(time, DimIdx(0));
                 double y = centerKnob->getValueAtTime(time, DimIdx(1));
-                double dx = delta.x *  _imp->ui->selectedMarkerScale.x;
-                double dy = delta.y *  _imp->ui->selectedMarkerScale.y;
+                double dx = delta.x *  selectedMarkerScale.x;
+                double dy = delta.y *  selectedMarkerScale.y;
                 x += dx;
                 y += dy;
 
@@ -3414,10 +3417,10 @@ TrackerNode::onOverlayPenMotion(TimeValue time,
                     values[1] = patternCorners[i]->getValueAtTime(time, DimIdx(1));
                     patternCorners[i]->setValueAcrossDimensions(values);
                 }
-                if ( _imp->ui->createKeyOnMoveButton.lock()->getValue() ) {
-                    _imp->ui->interactMarker->setKeyFrame(time, ViewSetSpec(0), 0);
+                if ( createKeyOnMoveButton.lock()->getValue() ) {
+                    interactMarker->setKeyFrame(time, ViewSetSpec(0), 0);
                 }
-                _imp->ui->refreshSelectedMarkerTextureLater();
+                refreshSelectedMarkerTextureLater();
                 didSomething = true;
                 break;
             }
@@ -3425,17 +3428,17 @@ TrackerNode::onOverlayPenMotion(TimeValue time,
                 break;
         } // switch
     } // !trackingPageSecret
-    if (_imp->ui->clickToAddTrackEnabled) {
+    if (clickToAddTrackEnabled) {
         ///Refresh the overlay
         didSomething = true;
     }
-    _imp->ui->lastMousePos = pos;
+    lastMousePos = pos;
 
     return didSomething;
 } //penMotion
 
 bool
-TrackerNode::onOverlayPenDoubleClicked(TimeValue /*time*/,
+TrackerNodeInteract::onOverlayPenDoubleClicked(TimeValue /*time*/,
                                        const RenderScale & /*renderScale*/,
                                        ViewIdx /*view*/,
                                        const QPointF & /*viewportPos*/,
@@ -3445,7 +3448,7 @@ TrackerNode::onOverlayPenDoubleClicked(TimeValue /*time*/,
 }
 
 bool
-TrackerNode::onOverlayPenUp(TimeValue /*time*/,
+TrackerNodeInteract::onOverlayPenUp(TimeValue /*time*/,
                             const RenderScale & /*renderScale*/,
                             ViewIdx /*view*/,
                             const QPointF & /*viewportPos*/,
@@ -3454,14 +3457,14 @@ TrackerNode::onOverlayPenUp(TimeValue /*time*/,
                             TimeValue /*timestamp*/)
 {
     bool didSomething = false;
-    TrackerMouseStateEnum state = _imp->ui->eventState;
+    TrackerMouseStateEnum state = eventState;
 
     if (state != eMouseStateIdle) {
-        _imp->ui->eventState = eMouseStateIdle;
+        eventState = eMouseStateIdle;
         didSomething = true;
     }
-    if (_imp->ui->interactMarker) {
-        _imp->ui->interactMarker.reset();
+    if (interactMarker) {
+        interactMarker.reset();
         didSomething = true;
     }
 
@@ -3469,7 +3472,7 @@ TrackerNode::onOverlayPenUp(TimeValue /*time*/,
 } // penUp
 
 bool
-TrackerNode::onOverlayKeyDown(TimeValue /*time*/,
+TrackerNodeInteract::onOverlayKeyDown(TimeValue /*time*/,
                               const RenderScale & /*renderScale*/,
                               ViewIdx /*view*/,
                               Key key,
@@ -3480,20 +3483,20 @@ TrackerNode::onOverlayKeyDown(TimeValue /*time*/,
     bool isAlt = false;
 
     if ( (key == Key_Shift_L) || (key == Key_Shift_R) ) {
-        ++_imp->ui->shiftDown;
+        ++shiftDown;
     } else if ( (key == Key_Control_L) || (key == Key_Control_R) ) {
-        ++_imp->ui->controlDown;
+        ++controlDown;
         isCtrl = true;
     } else if ( (key == Key_Alt_L) || (key == Key_Alt_R) ) {
-        ++_imp->ui->altDown;
+        ++altDown;
         isAlt = true;
     }
     
     bool trackingPageSecret = _imp->trackingPageKnob.lock()->getIsSecret();
     
-    if ( !trackingPageSecret && _imp->ui->controlDown && _imp->ui->altDown && !_imp->ui->shiftDown && (isCtrl || isAlt) ) {
-        _imp->ui->clickToAddTrackEnabled = true;
-        _imp->ui->addTrackButton.lock()->setValue(true);
+    if ( !trackingPageSecret && controlDown && altDown && !shiftDown && (isCtrl || isAlt) ) {
+        clickToAddTrackEnabled = true;
+        addTrackButton.lock()->setValue(true);
         didSomething = true;
     }
     
@@ -3502,7 +3505,7 @@ TrackerNode::onOverlayKeyDown(TimeValue /*time*/,
 } // keydown
 
 bool
-TrackerNode::onOverlayKeyUp(TimeValue /*time*/,
+TrackerNodeInteract::onOverlayKeyUp(TimeValue /*time*/,
                             const RenderScale & /*renderScale*/,
                             ViewIdx /*view*/,
                             Key key,
@@ -3513,29 +3516,29 @@ TrackerNode::onOverlayKeyUp(TimeValue /*time*/,
     bool isControl = false;
     
     if ( (key == Key_Shift_L) || (key == Key_Shift_R) ) {
-        if (_imp->ui->shiftDown) {
-            --_imp->ui->shiftDown;
+        if (shiftDown) {
+            --shiftDown;
         }
-        if (_imp->ui->eventState == eMouseStateScalingSelectedMarker) {
-            _imp->ui->eventState = eMouseStateIdle;
+        if (eventState == eMouseStateScalingSelectedMarker) {
+            eventState = eMouseStateIdle;
             didSomething = true;
         }
     } else if ( (key == Key_Control_L) || (key == Key_Control_R) ) {
-        if (_imp->ui->controlDown) {
-            --_imp->ui->controlDown;
+        if (controlDown) {
+            --controlDown;
         }
         isControl = true;
     } else if ( (key == Key_Alt_L) || (key == Key_Alt_R) ) {
-        if (_imp->ui->altDown) {
-            --_imp->ui->altDown;
+        if (altDown) {
+            --altDown;
         }
         isAlt = true;
     }
     
     
-    if ( _imp->ui->clickToAddTrackEnabled && (isControl || isAlt) ) {
-        _imp->ui->clickToAddTrackEnabled = false;
-        _imp->ui->addTrackButton.lock()->setValue(false);
+    if ( clickToAddTrackEnabled && (isControl || isAlt) ) {
+        clickToAddTrackEnabled = false;
+        addTrackButton.lock()->setValue(false);
         didSomething = true;
     }
     
@@ -3544,7 +3547,7 @@ TrackerNode::onOverlayKeyUp(TimeValue /*time*/,
 } // KeyUp
 
 bool
-TrackerNode::onOverlayKeyRepeat(TimeValue /*time*/,
+TrackerNodeInteract::onOverlayKeyRepeat(TimeValue /*time*/,
                                 const RenderScale & /*renderScale*/,
                                 ViewIdx /*view*/,
                                 Key /*key*/,
@@ -3554,7 +3557,7 @@ TrackerNode::onOverlayKeyRepeat(TimeValue /*time*/,
 } // keyrepeat
 
 bool
-TrackerNode::onOverlayFocusGained(TimeValue /*time*/,
+TrackerNodeInteract::onOverlayFocusGained(TimeValue /*time*/,
                                   const RenderScale & /*renderScale*/,
                                   ViewIdx /* view*/)
 {
@@ -3562,20 +3565,20 @@ TrackerNode::onOverlayFocusGained(TimeValue /*time*/,
 } // gainFocus
 
 bool
-TrackerNode::onOverlayFocusLost(TimeValue /*time*/,
+TrackerNodeInteract::onOverlayFocusLost(TimeValue /*time*/,
                                 const RenderScale & /*renderScale*/,
                                 ViewIdx /*view*/)
 {
-    _imp->ui->altDown = 0;
-    _imp->ui->controlDown = 0;
-    _imp->ui->shiftDown = 0;
+    altDown = 0;
+    controlDown = 0;
+    shiftDown = 0;
     
     
     return true;
 } // loseFocus
 
 void
-TrackerNode::onInteractViewportSelectionCleared()
+TrackerNodeInteract::onViewportSelectionCleared()
 {
     bool trackingPageSecret = _imp->trackingPageKnob.lock()->getIsSecret();
     
@@ -3587,7 +3590,7 @@ TrackerNode::onInteractViewportSelectionCleared()
 }
 
 void
-TrackerNode::onInteractViewportSelectionUpdated(const RectD& rectangle,
+TrackerNodeInteract::onViewportSelectionUpdated(const RectD& rectangle,
                                                 bool onRelease)
 {
     if (!onRelease) {

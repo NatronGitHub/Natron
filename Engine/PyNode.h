@@ -416,6 +416,12 @@ public:
 
     void clearViewerUIParameters();
 
+    bool registerOverlay(PyOverlayInteract* interact, const std::map<QString, QString>& params);
+
+    void removeOverlay(PyOverlayInteract* interact);
+
+    
+    
 };
 
 NATRON_PYTHON_NAMESPACE_EXIT;

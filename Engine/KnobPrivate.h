@@ -212,15 +212,12 @@ struct CommonData
     // True if it was created by the user and should be put into the "User" page
     bool userKnob;
 
-    // Pointer to the ofx param overlay interact for ofx parameter which have a custom interact
-    // This is only supported OpenFX-wise
-    OfxParamOverlayInteractPtr customInteract;
+    // Pointer to a custom interact that should replace the UI of the knob
+    OverlayInteractBasePtr customInteract;
 
     // Pointer to the knobGui interface if it has any
     KnobGuiIWPtr gui;
 
-    // A blind handle to the ofx param, needed for custom OpenFX interpolation
-    void* ofxParamHandle;
 
     // Protects expressions
     mutable QMutex expressionMutex;
@@ -310,7 +307,6 @@ struct CommonData
     , userKnob(false)
     , customInteract()
     , gui()
-    , ofxParamHandle(0)
     , expressionMutex()
     , expressions()
     , expressionRecursionLevel(0)
@@ -534,11 +530,6 @@ public:
         _valueResult = value;
     }
 
-    virtual std::size_t getMetadataSize() const OVERRIDE FINAL
-    {
-        // Return a fake size
-        return 128;
-    }
 
     virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const OVERRIDE FINAL
     {

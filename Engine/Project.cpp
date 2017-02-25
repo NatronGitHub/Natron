@@ -2033,7 +2033,7 @@ Project::doResetEnd(bool aboutToQuit)
         Q_EMIT projectNameChanged(QString::fromUtf8(NATRON_PROJECT_UNTITLED), false);
         const KnobsVec & knobs = getKnobs();
 
-        beginChanges();
+        ScopedChanges_RAII changes(this);
         for (U32 i = 0; i < knobs.size(); ++i) {
             knobs[i]->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
         }
@@ -2041,7 +2041,6 @@ Project::doResetEnd(bool aboutToQuit)
 
         onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(), true);
 
-        endChanges(true);
     }
 
     {
@@ -2523,7 +2522,7 @@ void
 Project::onOCIOConfigPathChanged(const std::string& path,
                                  bool block)
 {
-    beginChanges();
+    ScopedChanges_RAII changes(this, block);
 
     try {
         std::string oldEnv;
@@ -2559,7 +2558,6 @@ Project::onOCIOConfigPathChanged(const std::string& path,
             }
             _imp->envVars->setValue(newEnv);
         }
-        endChanges(block);
     } catch (std::logic_error) {
         // ignore
     }
@@ -2640,10 +2638,10 @@ Project::unionFrameRangeWith(TimeValue first,
     curLast = _imp->frameRange->getValue(DimIdx(1));
     curFirst = !mustSet ? std::min((double)first, (double)curFirst) : first;
     curLast = !mustSet ? std::max((double)last, (double)curLast) : last;
-    beginChanges();
+    ScopedChanges_RAII changes(this);
     _imp->frameRange->setValue(curFirst);
     _imp->frameRange->setValue(curLast, ViewIdx(0), DimIdx(1));
-    endChanges();
+
 }
 
 void
@@ -2655,10 +2653,10 @@ Project::recomputeFrameRangeFromReaders()
     if (first == INT_MIN || last == INT_MAX) {
         return;
     }
-    beginChanges();
+    ScopedChanges_RAII changes(this);
     _imp->frameRange->setValue(first, ViewSetSpec::all(), DimIdx(0));
     _imp->frameRange->setValue(last, ViewSetSpec::all(), DimIdx(1));
-    endChanges();
+    
 }
 
 void

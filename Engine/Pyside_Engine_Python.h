@@ -51,6 +51,7 @@
 #include "PyRoto.h"
 #include "PyTracker.h"
 #include "PyNode.h"
+#include "PyOverlayInteract.h"
 #include "PyParameter.h"
 #include "RectI.h"
 #include "RectD.h"

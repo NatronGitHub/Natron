@@ -2098,17 +2098,6 @@ Double2DParam::set(double x,
 }
 
 void
-Double2DParam::setUsePointInteract(bool use)
-{
-    KnobDoublePtr knob = _doubleKnob.lock();
-    if (!knob) {
-        PythonSetNullError();
-        return;
-    }
-    knob->setHasHostOverlayHandle(use);
-}
-
-void
 Double3DParam::set(double x,
                    double y,
                    double z,

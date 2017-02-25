@@ -331,8 +331,6 @@ TrackerNodePrivate::solveTransformParams()
     int transformType_i = transformTypeKnob->getValue();
     TrackerTransformNodeEnum transformType = (TrackerTransformNodeEnum)transformType_i;
     NodePtr node = publicInterface->getNode();
-    node->getEffectInstance()->beginChanges();
-
 
     invertTransform.lock()->setValue(type == eTrackerMotionTypeStabilize);
 

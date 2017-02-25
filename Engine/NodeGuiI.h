@@ -31,7 +31,6 @@
 
 #include "Global/KeySymbols.h"
 #include "Global/Enums.h"
-#include "Engine/HostOverlaySupport.h"
 #include "Engine/UndoCommand.h"
 #include "Engine/TimeValue.h"
 
@@ -85,45 +84,6 @@ public:
     virtual void setOverlayColor(double r, double g, double b) = 0;
 
     virtual bool isOverlayLocked() const = 0;
-    
-    /**
-     * @brief Add a default viewer overlay
-     **/
-    virtual void addDefaultInteract(const HostOverlayKnobsPtr& knobs) = 0;
-    virtual void drawHostOverlay(TimeValue time,
-                                 const RenderScale& renderScale,
-                                 ViewIdx view)  = 0;
-    virtual bool onOverlayPenDownDefault(TimeValue time,
-                                         const RenderScale& renderScale,
-                                         ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure)  = 0;
-    virtual bool onOverlayPenDoubleClickedDefault(TimeValue time,
-                                                  const RenderScale& renderScale,
-                                                  ViewIdx view, const QPointF & viewportPos, const QPointF & pos)  = 0;
-    virtual bool onOverlayPenMotionDefault(TimeValue time,
-                                           const RenderScale& renderScale,
-                                           ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure)  = 0;
-    virtual bool onOverlayPenUpDefault(TimeValue time,
-                                       const RenderScale& renderScale,
-                                       ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure)  = 0;
-    virtual bool onOverlayKeyDownDefault(TimeValue time,
-                                         const RenderScale& renderScale,
-                                         ViewIdx view, Key key, KeyboardModifiers modifiers)  = 0;
-    virtual bool onOverlayKeyUpDefault(TimeValue time,
-                                       const RenderScale& renderScale,
-                                       ViewIdx view, Key key, KeyboardModifiers modifiers)  = 0;
-    virtual bool onOverlayKeyRepeatDefault(TimeValue time,
-                                           const RenderScale& renderScale,
-                                           ViewIdx view, Key key, KeyboardModifiers modifiers) = 0;
-    virtual bool onOverlayFocusGainedDefault(TimeValue time,
-                                             const RenderScale& renderScale,
-                                             ViewIdx view) = 0;
-    virtual bool onOverlayFocusLostDefault(TimeValue time,
-                                           const RenderScale& renderScale,
-                                           ViewIdx view) = 0;
-    virtual bool hasHostOverlay() const = 0;
-    virtual void setCurrentViewportForHostOverlays(OverlaySupport* viewPort) = 0;
-    virtual bool hasHostOverlayForParam(const KnobIConstPtr& param) = 0;
-    virtual void removePositionHostOverlay(const KnobIPtr& knob) = 0;
 
     virtual bool isUserSelected() const = 0;
     virtual void restoreStateAfterCreation() = 0;

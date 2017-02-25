@@ -1334,7 +1334,8 @@ SERIALIZATION_NAMESPACE::KnobSerialization::serialize(Archive & ar,
                  (version >= KNOB_SERIALIZATION_INTRODUCE_VIEWER_UI)) ) {
                     ValueExtraData* extraData = dynamic_cast<ValueExtraData*>(_extraData.get());
                     assert(extraData);
-                    ar & ::boost::serialization::make_nvp("HasOverlayHandle", extraData->useHostOverlayHandle);
+                    bool useHostOverlayHandle;
+                    ar & ::boost::serialization::make_nvp("HasOverlayHandle", useHostOverlayHandle);
                 }
 
             // Dead serialization code, just for backward compat.

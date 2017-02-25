@@ -55,8 +55,7 @@ class CustomParamInteract
 {
 public:
     CustomParamInteract(const KnobGuiPtr& knob,
-                        void* ofxParamHandle,
-                        const OfxParamOverlayInteractPtr & entryPoint,
+                        const OverlayInteractBasePtr & interact,
                         QWidget* parent = 0);
 
     virtual ~CustomParamInteract();

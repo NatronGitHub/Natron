@@ -177,7 +177,7 @@ PasteKnobClipBoardUndoCommand::copyFrom(const SERIALIZATION_NAMESPACE::KnobSeria
     }
 
     // group changes under the same evaluation
-    internalKnob->beginChanges();
+    ScopedChanges_RAII changes(internalKnob.get());
 
 
     std::list<ViewIdx> targetKnobViews = internalKnob->getViewsList();
@@ -294,7 +294,6 @@ PasteKnobClipBoardUndoCommand::copyFrom(const SERIALIZATION_NAMESPACE::KnobSeria
             
         } // for all dimensions
     } // for all views
-    internalKnob->endChanges();
 
 } // redo
 
@@ -499,10 +498,7 @@ MultipleKnobEditsUndoCommand::undo()
 {
     assert( !knobs.empty() );
     KnobHolderPtr holder = knobs.begin()->first.lock()->getHolder();
-    if (holder) {
-        holder->beginChanges();
-    }
-
+    ScopedChanges_RAII changes(holder.get());
     for (ParamsMap::iterator it = knobs.begin(); it != knobs.end(); ++it) {
 
         KnobIPtr knob = it->first.lock();
@@ -582,10 +578,6 @@ MultipleKnobEditsUndoCommand::undo()
         }
     } // for all knobs
 
-
-    if (holder) {
-        holder->endChanges();
-    }
 } // MultipleKnobEditsUndoCommand::undo
 
 void
@@ -601,9 +593,7 @@ MultipleKnobEditsUndoCommand::redo()
     KnobHolderPtr holder = knobs.begin()->first.lock()->getHolder();
 
     // Make sure we get a single evaluation
-    if (holder) {
-        holder->beginChanges();
-    }
+    ScopedChanges_RAII changes(holder.get());
 
     for (ParamsMap::iterator it = knobs.begin(); it != knobs.end(); ++it) {
 
@@ -672,9 +662,6 @@ MultipleKnobEditsUndoCommand::redo()
         }
     }
 
-    if (holder) {
-        holder->endChanges();
-    }
 
 } // redo
 
@@ -810,9 +797,9 @@ RestoreDefaultsCommand::redo()
     KnobHolderPtr holder = first->getHolder();
     EffectInstancePtr isEffect = toEffectInstance(holder);
 
+    ScopedChanges_RAII changes(holder.get());
     if (holder) {
         app = holder->getApp();
-        holder->beginChanges();
     }
 
      //  First reset all knobs values, this will not call instanceChanged action
@@ -846,12 +833,6 @@ RestoreDefaultsCommand::redo()
             itKnob->getHolder()->onKnobValueChanged_public(itKnob, eValueChangedReasonRestoreDefault, time, ViewIdx(0));
         }
     }
-
-
-    if ( holder && holder->getApp() ) {
-        holder->endChanges();
-    }
-
 
     if ( first->getHolder() ) {
         if ( first->getHolder()->getApp() ) {
@@ -930,7 +911,7 @@ SetExpressionCommand::undo()
         return;
     }
 
-    knob->beginChanges();
+    ScopedChanges_RAII changes(knob.get());
     try {
         int nDims = knob->getNDimensions();
         std::list<ViewIdx> allViews = knob->getViewsList();
@@ -957,7 +938,6 @@ SetExpressionCommand::undo()
     } catch (...) {
         Dialogs::errorDialog( tr("Expression").toStdString(), tr("The expression is invalid.").toStdString() );
     }
-    knob->endChanges();
 }
 
 void

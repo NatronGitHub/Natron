@@ -153,7 +153,7 @@ private:
         assert( (int)_oldValue.size() == knob->getNDimensions() || !_dimension.isAll() );
 
         // wrap changes in a begin/end because we might do 2 API calls with deleteValueAtTime and setValue
-        knob->beginChanges();
+        ScopedChanges_RAII changes(knob.get());
 
         // If any keyframe was added due to auto-keying, remove it
         for (std::size_t i = 0; i < _oldValue.size(); ++i) {
@@ -176,8 +176,6 @@ private:
         }
 
         knob->setAutoKeyingEnabled(true);
-
-        knob->endChanges();
 
     } // undo
 

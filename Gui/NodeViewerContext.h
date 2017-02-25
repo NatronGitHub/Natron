@@ -119,16 +119,6 @@ public Q_SLOTS:
 
     void onNodeColorChanged(const QColor& color);
 
-    /**
-     * @brief Received when the selection rectangle has changed on the viewer.
-     * @param onRelease When true, this signal is emitted on the mouse release event
-     * which means this is the last selection desired by the user.
-     * Receivers can either update the selection always or just on mouse release.
-     **/
-    void updateSelectionFromViewerSelectionRectangle(bool onRelease);
-
-    void onViewerSelectionCleared();
-
     void onToolActionTriggered();
 
     void onToolActionTriggered(QAction* act);

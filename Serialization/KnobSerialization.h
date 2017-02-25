@@ -155,11 +155,7 @@ class TypeExtraData
 {
 public:
 
-    // User knob only
-    bool useHostOverlayHandle;
-
     TypeExtraData()
-    : useHostOverlayHandle(false)
     {}
 
     virtual ~TypeExtraData() {}

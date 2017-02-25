@@ -958,31 +958,73 @@ genericViewerProcessFunctor(const RenderViewerArgs& args,
 {
     memset(tmpPix, 0, sizeof(float) * 4);
 
-    for (int i = 0; i < 3; ++i) {
-        if (color_pixels[i]) {
-            assert(*color_pixels[i] == *color_pixels[i]); // check for NaNs
-            tmpPix[i] = Image::convertPixelDepth<PIX, float>(*color_pixels[i]);
-        }
-    }
+    if (channels == eDisplayChannelsMatte || channels == eDisplayChannelsA) {
 
-    // Get the alpha from the alpha image
-    if (args.alphaChannelIndex != -1 && alpha_pixels[args.alphaChannelIndex]) {
-        tmpPix[3] = Image::convertPixelDepth<PIX, float>(*alpha_pixels[args.alphaChannelIndex]);
+        // Get the alpha from the alpha image
+        if (args.alphaChannelIndex != -1 && alpha_pixels[args.alphaChannelIndex]) {
+            tmpPix[3] = Image::convertPixelDepth<PIX, float>(*alpha_pixels[args.alphaChannelIndex]);
+        } else {
+            tmpPix[3] = 1.;
+        }
     } else {
         tmpPix[3] = 1.;
     }
-    if (srcNComps == 1) {
-        // Single-channel image: replicate the single channel to all RGB channels
-        for (int i = 0; i < 3; ++i) {
-            tmpPix[i] = tmpPix[3];
-        }
-    }
+    switch (channels) {
+        case eDisplayChannelsA:
+            tmpPix[0] = tmpPix[1] = tmpPix[2] = tmpPix[3];
+            break;
+        case eDisplayChannelsB:
+            if (color_pixels[2]) {
+                tmpPix[0] = Image::convertPixelDepth<PIX, float>(*color_pixels[2]);
+                if (args.srcColorspace) {
+                    tmpPix[0] = args.srcColorspace->fromColorSpaceFloatToLinearFloat(tmpPix[0]);
+                }
+            } else {
+                tmpPix[0] = 0.;
+            }
+            tmpPix[1] = tmpPix[0];
+            tmpPix[2] = tmpPix[0];
+            break;
+        case eDisplayChannelsG:
+            if (color_pixels[1]) {
+                tmpPix[0] = Image::convertPixelDepth<PIX, float>(*color_pixels[1]);
+                if (args.srcColorspace) {
+                    tmpPix[0] = args.srcColorspace->fromColorSpaceFloatToLinearFloat(tmpPix[0]);
+                }
+            } else {
+                tmpPix[0] = 0.;
+            }
+            tmpPix[1] = tmpPix[0];
+            tmpPix[2] = tmpPix[0];
+            break;
+        case eDisplayChannelsR:
+            if (color_pixels[0]) {
+                tmpPix[0] = Image::convertPixelDepth<PIX, float>(*color_pixels[0]);
+                if (args.srcColorspace) {
+                    tmpPix[0] = args.srcColorspace->fromColorSpaceFloatToLinearFloat(tmpPix[0]);
+                }
+            } else {
+                tmpPix[0] = 0.;
+            }
+            tmpPix[1] = tmpPix[0];
+            tmpPix[2] = tmpPix[0];
+            break;
+        case eDisplayChannelsY:
+        case eDisplayChannelsRGB:
+        case eDisplayChannelsMatte:
+            for (int i = 0; i < 3; ++i) {
+                if (color_pixels[i]) {
+                    assert(*color_pixels[i] == *color_pixels[i]); // check for NaNs
+                    tmpPix[i] = Image::convertPixelDepth<PIX, float>(*color_pixels[i]);
+                    if (args.srcColorspace) {
+                        tmpPix[i] = args.srcColorspace->fromColorSpaceFloatToLinearFloat(tmpPix[i]);
+                    }
 
-    // If the image has a color space, convert to linear float first
-    if (args.srcColorspace) {
-        tmpPix[0] = args.srcColorspace->fromColorSpaceFloatToLinearFloat(tmpPix[0]);
-        tmpPix[1] = args.srcColorspace->fromColorSpaceFloatToLinearFloat(tmpPix[1]);
-        tmpPix[2] = args.srcColorspace->fromColorSpaceFloatToLinearFloat(tmpPix[2]);
+                }
+            }
+            break;
+        default:
+            break;
     }
 
 
@@ -1004,8 +1046,7 @@ genericViewerProcessFunctor(const RenderViewerArgs& args,
         tmpPix[0] = 0.299 * tmpPix[1] + 0.587 * tmpPix[2] + 0.114 * tmpPix[3];
         tmpPix[1] = tmpPix[0];
         tmpPix[2] = tmpPix[0];
-    }
-    if (channels == eDisplayChannelsMatte) {
+    } else if (channels == eDisplayChannelsMatte) {
         *alphaMatteValue = 0;
 
         // If this is the same image, use the already processed tmpPix
@@ -1411,25 +1452,28 @@ ViewerInstance::render(const RenderActionArgs& args)
         inArgs.inputNb = 0;
         inArgs.plane = &selectedLayer;
         bool ok = getImagePlane(inArgs, &outArgs);
-        if (!ok) {
-            return eActionStatusFailed;
-        }
+        (void)ok;
         colorImage = outArgs.image;
     }
-    if (selectedAlphaLayer.getNumComponents() > 0 && selectedAlphaLayer != selectedLayer) {
-        GetImageOutArgs outArgs;
-        GetImageInArgs inArgs(args.requestData, &args.roi, &args.backendType);
-        inArgs.inputNb = 0;
-        inArgs.plane = &selectedLayer;
-        bool ok = getImagePlane(inArgs, &outArgs);
-        if (!ok) {
-            return eActionStatusFailed;
+    if (selectedAlphaLayer.getNumComponents() > 0) {
+
+        if (selectedAlphaLayer == selectedLayer) {
+            alphaImage = colorImage;
+        } else {
+            GetImageOutArgs outArgs;
+            GetImageInArgs inArgs(args.requestData, &args.roi, &args.backendType);
+            inArgs.inputNb = 0;
+            inArgs.plane = &selectedLayer;
+            bool ok = getImagePlane(inArgs, &outArgs);
+            if (!ok) {
+                return eActionStatusFailed;
+            }
+            alphaImage = outArgs.image;
         }
-        alphaImage = outArgs.image;
     }
 
 
-    if (!colorImage) {
+    if (!colorImage && displayChannels != eDisplayChannelsA) {
         setPersistentMessage(eMessageTypeError, tr("Could not fetch source image for selected layer").toStdString());
         return eActionStatusFailed;
     }
@@ -1457,9 +1501,13 @@ ViewerInstance::render(const RenderActionArgs& args)
         colorImage->getCPUTileData(tile, &renderViewerArgs.colorImage);
     }
     if (alphaImage) {
-        Image::Tile tile;
-        alphaImage->getTileAt(0, 0, &tile);
-        alphaImage->getCPUTileData(tile, &renderViewerArgs.alphaImage);
+        if (alphaImage == colorImage) {
+            renderViewerArgs.alphaImage = renderViewerArgs.colorImage;
+        } else {
+            Image::Tile tile;
+            alphaImage->getTileAt(0, 0, &tile);
+            alphaImage->getCPUTileData(tile, &renderViewerArgs.alphaImage);
+        }
     }
 
     {

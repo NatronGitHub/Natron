@@ -65,6 +65,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/OfxOverlayInteract.h"
 #include "Engine/OfxParamInstance.h"
 #include "Engine/OfxMemory.h"
+#include "Engine/OverlaySupport.h"
 #include "Engine/OSGLContext.h"
 #include "Engine/Project.h"
 #include "Engine/ReadNode.h"
@@ -88,7 +89,7 @@ struct OfxEffectInstanceCommon
     // is not yet standardized.
     boost::scoped_ptr<OfxImageEffectInstance> effect;
 
-    boost::scoped_ptr<OfxOverlayInteract> overlayInteract; // ptr to the overlay interact if any
+    boost::shared_ptr<OfxOverlayInteract> overlayInteract; // ptr to the overlay interact if any
 
     struct ClipsInfo
     {
@@ -120,7 +121,6 @@ struct OfxEffectInstanceCommon
     boost::shared_ptr<TLSHolder<EffectInstanceTLSData> > tlsData;
 
     KnobStringWPtr cursorKnob; // secret knob for ofx effects so they can set the cursor
-    KnobIntWPtr selectionRectangleStateKnob;
     KnobStringWPtr undoRedoTextKnob;
     KnobBoolWPtr undoRedoStateKnob;
     ContextEnum context;
@@ -130,7 +130,6 @@ struct OfxEffectInstanceCommon
     mutable QMutex supportsConcurrentGLRendersMutex;
     bool supportsConcurrentGLRenders;
     bool isOutput; //if the OfxNode can output a file somehow
-    bool penDown; // true when the overlay trapped a penDow action
     bool initialized; //true when the image effect instance has been created and populated
 
     /*
@@ -151,7 +150,6 @@ struct OfxEffectInstanceCommon
     , outputClip(0)
     , tlsData(new TLSHolder<EffectInstanceTLSData>())
     , cursorKnob()
-    , selectionRectangleStateKnob()
     , undoRedoTextKnob()
     , undoRedoStateKnob()
     , context(eContextNone)
@@ -160,7 +158,6 @@ struct OfxEffectInstanceCommon
     , supportsConcurrentGLRendersMutex()
     , supportsConcurrentGLRenders(false)
     , isOutput(false)
-    , penDown(false)
     , initialized(false)
     , overlaysCanHandleRenderScale(true)
     , supportsMultipleClipPARs(false)
@@ -331,14 +328,6 @@ OfxEffectInstance::describePlugin()
     }
 
     {
-
-        KnobIPtr foundSelKnob = getKnobByName(kNatronOfxImageEffectSelectionRectangle);
-        if (foundSelKnob) {
-            KnobIntPtr isIntKnob = toKnobInt(foundSelKnob);
-            _imp->common->selectionRectangleStateKnob = isIntKnob;
-        }
-    }
-    {
         KnobIPtr foundTextKnob = getKnobByName(kNatronOfxParamUndoRedoText);
         if (foundTextKnob) {
             KnobStringPtr isStringKnob = toKnobString(foundTextKnob);
@@ -496,15 +485,13 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
     OfxPluginEntryPoint *overlayEntryPoint = _imp->common->effect->getOverlayInteractMainEntry();
     if (overlayEntryPoint) {
         _imp->common->overlayInteract.reset( new OfxOverlayInteract(*_imp->common->effect, 8, true) );
-        double sx, sy;
-        effectInstance()->getRenderScaleRecursive(sx, sy);
-        RenderScale s(sx, sy);
+        RenderScale s(1.);
 
 
         _imp->common->overlayInteract->createInstanceAction();
 
 
-        ///Fetch all parameters that are overlay slave
+        // Fetch all parameters that are overlay slave
         std::vector<std::string> slaveParams;
         _imp->common->overlayInteract->getSlaveToParam(slaveParams);
         for (U32 i = 0; i < slaveParams.size(); ++i) {
@@ -523,7 +510,8 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
             }
         }
 
-        getApp()->redrawAllViewers();
+        registerOverlay(_imp->common->overlayInteract, std::map<std::string, std::string>());
+        (void)stat;
     }
 
 
@@ -550,34 +538,12 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         bool hasAlpha = false;
         getApp()->getViewersOpenGLContextFormat(&bitdepthPerComponent, &hasAlpha);
         interactDesc.describe(bitdepthPerComponent, hasAlpha);
-        OfxParamOverlayInteractPtr overlayInteract( new OfxParamOverlayInteract( knob, interactDesc, effectInstance()->getHandle()) );
-
+        OfxOverlayInteractPtr overlayInteract( new OfxOverlayInteract( knob, interactDesc, *effectInstance()) );
         knob->setCustomInteract(overlayInteract);
         overlayInteract->createInstanceAction();
     }
 } // OfxEffectInstance::tryInitializeOverlayInteracts
 
-void
-OfxEffectInstance::setInteractColourPicker(const OfxRGBAColourD& color, bool setColor, bool hasColor)
-{
-    if (!_imp->common->overlayInteract) {
-        return;
-    }
-
-    if (!_imp->common->overlayInteract->isColorPickerRequired()) {
-        return;
-    }
-    if (!hasColor) {
-        _imp->common->overlayInteract->setHasColorPicker(false);
-    } else {
-        if (setColor) {
-            _imp->common->overlayInteract->setLastColorPickerColor(color);
-        }
-        _imp->common->overlayInteract->setHasColorPicker(true);
-    }
-
-    ignore_result(_imp->common->overlayInteract->redraw());
-}
 
 bool
 OfxEffectInstance::isOutput() const
@@ -1751,342 +1717,6 @@ OfxEffectInstance::canHandleRenderScaleForOverlays() const
     return _imp->common->overlaysCanHandleRenderScale;
 }
 
-void
-OfxEffectInstance::drawOverlay(TimeValue time,
-                               const RenderScale & renderScale,
-                               ViewIdx view)
-{
-    if (!_imp->common->initialized) {
-        return;
-    }
-    if (_imp->common->overlayInteract) {
-
-        EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxInteractActionDraw,  time, view, renderScale
-#ifdef DEBUG
-                                                  , /*canSetValue*/ false
-                                                  , /*canBeCalledRecursively*/ false
-#endif
-                                                  );
-
-        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
-        
-        _imp->common->overlayInteract->drawAction(time, renderScale, view, _imp->common->overlayInteract->hasColorPicker() ? &_imp->common->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0);
-    }
-}
-
-void
-OfxEffectInstance::setCurrentViewportForOverlays(OverlaySupport* viewport)
-{
-    if (_imp->common->overlayInteract) {
-        _imp->common->overlayInteract->setCallingViewport(viewport);
-    }
-}
-
-bool
-OfxEffectInstance::onOverlayPenDown(TimeValue time,
-                                    const RenderScale & renderScale,
-                                    ViewIdx view,
-                                    const QPointF & viewportPos,
-                                    const QPointF & pos,
-                                    double pressure,
-                                    TimeValue /*timestamp*/,
-                                    PenType /*pen*/)
-{
-    if (!_imp->common->initialized) {
-        return false;
-    }
-    if (_imp->common->overlayInteract) {
-
-
-        OfxPointD penPos;
-        penPos.x = pos.x();
-        penPos.y = pos.y();
-        OfxPointI penPosViewport;
-        penPosViewport.x = viewportPos.x();
-        penPosViewport.y = viewportPos.y();
-
-        EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxInteractActionPenDown, time, view, renderScale
-#ifdef DEBUG
-                                                  , /*canSetValue*/ true
-                                                  , /*canBeCalledRecursively*/ true
-#endif
-                                                  );
-
-        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
-
-        OfxStatus stat = _imp->common->overlayInteract->penDownAction(time, renderScale, view, _imp->common->overlayInteract->hasColorPicker() ? &_imp->common->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, penPos, penPosViewport, pressure);
-
-        if (stat == kOfxStatOK) {
-            _imp->common->penDown = true;
-
-            return true;
-        }
-    }
-
-    return false;
-}
-
-bool
-OfxEffectInstance::onOverlayPenMotion(TimeValue time,
-                                      const RenderScale & renderScale,
-                                      ViewIdx view,
-                                      const QPointF & viewportPos,
-                                      const QPointF & pos,
-                                      double pressure,
-                                      TimeValue /*timestamp*/)
-{
-    if (!_imp->common->initialized) {
-        return false;
-    }
-    if (_imp->common->overlayInteract) {
-
-
-        OfxPointD penPos;
-        penPos.x = pos.x();
-        penPos.y = pos.y();
-        OfxPointI penPosViewport;
-        penPosViewport.x = viewportPos.x();
-        penPosViewport.y = viewportPos.y();
-        OfxStatus stat;
-
-
-        EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxInteractActionPenMotion, time, view, renderScale
-#ifdef DEBUG
-                                                  , /*canSetValue*/ true
-                                                  , /*canBeCalledRecursively*/ true
-#endif
-                                                  );
-
-        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
-
-        stat = _imp->common->overlayInteract->penMotionAction(time, renderScale, view, _imp->common->overlayInteract->hasColorPicker() ? &_imp->common->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, penPos, penPosViewport, pressure);
-
-        if (stat == kOfxStatOK) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-bool
-OfxEffectInstance::onOverlayPenUp(TimeValue time,
-                                  const RenderScale & renderScale,
-                                  ViewIdx view,
-                                  const QPointF & viewportPos,
-                                  const QPointF & pos,
-                                  double pressure,
-                                  TimeValue /*timestamp*/)
-{
-    if (!_imp->common->initialized) {
-        return false;
-    }
-    if (_imp->common->overlayInteract) {
-
-
-        OfxPointD penPos;
-        penPos.x = pos.x();
-        penPos.y = pos.y();
-        OfxPointI penPosViewport;
-        penPosViewport.x = viewportPos.x();
-        penPosViewport.y = viewportPos.y();
-
-        EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxInteractActionPenUp, time, view, renderScale
-#ifdef DEBUG
-                                                  , /*canSetValue*/ true
-                                                  , /*canBeCalledRecursively*/ true
-#endif
-                                                  );
-
-        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
-
-        OfxStatus stat = _imp->common->overlayInteract->penUpAction(time, renderScale, view, _imp->common->overlayInteract->hasColorPicker() ? &_imp->common->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, penPos, penPosViewport, pressure);
-        if (stat == kOfxStatOK) {
-            _imp->common->penDown = false;
-
-            return true;
-        }
-    }
-
-    return false;
-}
-
-bool
-OfxEffectInstance::onOverlayKeyDown(TimeValue time,
-                                    const RenderScale & renderScale,
-                                    ViewIdx view,
-                                    Key key,
-                                    KeyboardModifiers /*modifiers*/)
-{
-    if (!_imp->common->initialized) {
-        return false;
-    }
-    if (_imp->common->overlayInteract) {
-
-        EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxInteractActionKeyDown, time, view, renderScale
-#ifdef DEBUG
-                                                  , /*canSetValue*/ true
-                                                  , /*canBeCalledRecursively*/ true
-#endif
-                                                  );
-
-        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
-
-        QByteArray keyStr;
-        OfxStatus stat = _imp->common->overlayInteract->keyDownAction( time, renderScale, view,_imp->common->overlayInteract->hasColorPicker() ? &_imp->common->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, (int)key, keyStr.data() );
-
-        if (stat == kOfxStatOK) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-bool
-OfxEffectInstance::onOverlayKeyUp(TimeValue time,
-                                  const RenderScale & renderScale,
-                                  ViewIdx view,
-                                  Key key,
-                                  KeyboardModifiers /* modifiers*/)
-{
-    if (!_imp->common->initialized) {
-        return false;
-    }
-    if (_imp->common->overlayInteract) {
-
-
-        EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxInteractActionKeyUp, time, view, renderScale
-#ifdef DEBUG
-                                                  , /*canSetValue*/ true
-                                                  , /*canBeCalledRecursively*/ true
-#endif
-
-                                                  );
-
-        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
-        
-        QByteArray keyStr;
-        OfxStatus stat = _imp->common->overlayInteract->keyUpAction( time, renderScale, view, _imp->common->overlayInteract->hasColorPicker() ? &_imp->common->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, (int)key, keyStr.data() );
-
-        if (stat == kOfxStatOK) {
-            return true;
-        }
-
-    }
-
-    return false;
-}
-
-bool
-OfxEffectInstance::onOverlayKeyRepeat(TimeValue time,
-                                      const RenderScale & renderScale,
-                                      ViewIdx view,
-                                      Key key,
-                                      KeyboardModifiers /*modifiers*/)
-{
-    if (!_imp->common->initialized) {
-        return false;
-    }
-    if (_imp->common->overlayInteract) {
-
-        EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxInteractActionKeyRepeat, time, view, renderScale
-#ifdef DEBUG
-                                                  , /*canSetValue*/ true
-                                                  , /*canBeCalledRecursively*/ true
-#endif
-
-                                                  );
-        
-        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
-
-        QByteArray keyStr;
-        OfxStatus stat = _imp->common->overlayInteract->keyRepeatAction( time, renderScale, view, _imp->common->overlayInteract->hasColorPicker() ? &_imp->common->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, (int)key, keyStr.data() );
-
-        if (stat == kOfxStatOK) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-bool
-OfxEffectInstance::onOverlayFocusGained(TimeValue time,
-                                        const RenderScale & renderScale,
-                                        ViewIdx view)
-{
-    if (!_imp->common->initialized) {
-        return false;
-    }
-    if (_imp->common->overlayInteract) {
-
-        EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxInteractActionGainFocus, time, view, renderScale
-#ifdef DEBUG
-                                                  , /*canSetValue*/ true
-                                                  , /*canBeCalledRecursively*/ true
-#endif
-
-                                                  );
-
-        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
-        
-        OfxStatus stat;
-        stat = _imp->common->overlayInteract->gainFocusAction(time, renderScale, view, _imp->common->overlayInteract->hasColorPicker() ? &_imp->common->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0);
-        if (stat == kOfxStatOK) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-bool
-OfxEffectInstance::onOverlayFocusLost(TimeValue time,
-                                      const RenderScale & renderScale,
-                                      ViewIdx view)
-{
-    if (!_imp->common->initialized) {
-        return false;
-    }
-    if (_imp->common->overlayInteract) {
-
-
-        EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxInteractActionLoseFocus, time, view, renderScale
-#ifdef DEBUG
-                                                  , /*canSetValue*/ true
-                                                  , /*canBeCalledRecursively*/ true
-#endif
-
-                                                  );
-
-        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
-        
-        OfxStatus stat;
-        stat = _imp->common->overlayInteract->loseFocusAction(time, renderScale, view, _imp->common->overlayInteract->hasColorPicker() ? &_imp->common->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0);
-        if (stat == kOfxStatOK) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-bool
-OfxEffectInstance::hasOverlay() const
-{
-    return _imp->common->overlayInteract != NULL;
-}
-
 
 std::string
 OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(ValueChangedReasonEnum reason)
@@ -2197,7 +1827,21 @@ OfxEffectInstance::knobChanged(const KnobIPtr& k,
     }
     std::string ofxReason = natronValueChangedReasonToOfxValueChangedReason(reason);
     assert( !ofxReason.empty() ); // crashes when resetting to defaults
-    RenderScale renderScale  = getNode()->getOverlayInteractRenderScale();
+    RenderScale renderScale(1.);
+
+    if (isDoingInteractAction()) {
+        // Get the render scale on an interact viewport
+        std::list<OverlayInteractBasePtr> overlays;
+        getOverlays(&overlays);
+        if (!overlays.empty()) {
+            OverlaySupport* viewport = (*overlays.begin())->getLastCallingViewport();
+            assert(viewport);
+            if (viewport) {
+                unsigned int mmLevel = viewport->getCurrentRenderScale();
+                renderScale.x = renderScale.y = (1 << mmLevel);
+            }
+        }
+    }
     
     EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
     EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxActionInstanceChanged, time, ViewIdx(0), renderScale
@@ -2440,7 +2084,7 @@ OfxEffectInstance::getLayersProducedAndNeeded(TimeValue time,
     EffectActionArgsSetter_RAII actionArgsTls(tls,kFnOfxImageEffectActionGetClipComponents,  time, view, RenderScale(1.)
 #ifdef DEBUG
                                               , /*canSetValue*/ false
-                                              , /*canBeCalledRecursively*/ false
+                                              , /*canBeCalledRecursively*/ true
 #endif
                                               );
 
@@ -2829,32 +2473,6 @@ OfxEffectInstance::dettachOpenGLContext( const OSGLContextPtr& /*glContext*/, co
     } else {
         return eActionStatusOK;
     }
-}
-
-void
-OfxEffectInstance::onInteractViewportSelectionCleared()
-{
-    KnobIntPtr k = _imp->common->selectionRectangleStateKnob.lock();
-    if (!k) {
-        return;
-    }
-    double propV[4] = {0, 0, 0, 0};
-    effectInstance()->getProps().setDoublePropertyN(kNatronOfxImageEffectSelectionRectangle, propV, 4);
-
-    k->setValue(0);
-}
-
-
-void
-OfxEffectInstance::onInteractViewportSelectionUpdated(const RectD& rectangle, bool onRelease)
-{
-    KnobIntPtr k = _imp->common->selectionRectangleStateKnob.lock();
-    if (!k) {
-        return;
-    }
-    double propV[4] = {rectangle.x1, rectangle.y1, rectangle.x2, rectangle.y2};
-    effectInstance()->getProps().setDoublePropertyN(kNatronOfxImageEffectSelectionRectangle, propV, 4);
-    k->setValue(onRelease ? 2 : 1);
 }
 
 

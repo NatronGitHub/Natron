@@ -41,6 +41,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/TimeLine.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/OSGLFunctions.h"
+#include "Engine/OverlayInteractBase.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
@@ -122,7 +123,7 @@ ViewerTab::getNodesEntitledForOverlays(TimeValue time, ViewIdx view, NodesList &
     // Also add the viewer itself
     nodes.push_back(thisNode);
 
-}
+} // getNodesEntitledForOverlays
 
 
 void
@@ -203,8 +204,11 @@ ViewerTab::drawOverlays(TimeValue time,
         if (!isInActiveViewerUI) {
             EffectInstancePtr effect = (*it)->getEffectInstance();
             assert(effect);
-            (*it)->setCurrentViewportForOverlays_public(_imp->viewer);
-            effect->drawOverlay_public(time, renderScale, view);
+            std::list<OverlayInteractBasePtr> overlays;
+            effect->getOverlays(&overlays);
+            for (std::list<OverlayInteractBasePtr>::const_iterator it = overlays.begin(); it != overlays.end(); ++it) {
+                (*it)->drawOverlay_public(_imp->viewer, time, renderScale, view);
+            }
         }
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
@@ -297,17 +301,22 @@ ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
     if (!isInActiveViewerUI) {
         EffectInstancePtr effect = node->getEffectInstance();
         assert(effect);
-        node->setCurrentViewportForOverlays_public(_imp->viewer);
-        bool didSmthing = effect->onOverlayPenDown_public(time, renderScale, view, transformViewportPos, transformPos, pressure, timestamp, pen);
-        if (didSmthing) {
-            //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
-            // if the instance returns kOfxStatOK, the host should not pass the pen motion
+        std::list<OverlayInteractBasePtr> overlays;
+        effect->getOverlays(&overlays);
+        for (std::list<OverlayInteractBasePtr>::const_iterator it = overlays.begin(); it != overlays.end(); ++it) {
+            bool didSmthing = (*it)->onOverlayPenDown_public(_imp->viewer, time, renderScale, view, transformViewportPos, transformPos, pressure, timestamp, pen);
+            if (didSmthing) {
+                //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
+                // if the instance returns kOfxStatOK, the host should not pass the pen motion
 
-            // to any other interactive object it may own that shares the same view.
-            _imp->lastOverlayNode = node;
+                // to any other interactive object it may own that shares the same view.
+                _imp->lastOverlayNode = node;
 
-            return true;
+                return true;
+            }
         }
+
+
     }
 
 
@@ -456,18 +465,22 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
         if (!isInActiveViewerUI) {
             EffectInstancePtr effect = (*it)->getEffectInstance();
             assert(effect);
-            (*it)->setCurrentViewportForOverlays_public(_imp->viewer);
 
-            bool didSmthing = effect->onOverlayPenDoubleClicked_public(time, renderScale, view, transformViewportPos, transformPos);
-            if (didSmthing) {
-                //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
-                // if the instance returns kOfxStatOK, the host should not pass the pen motion
+            std::list<OverlayInteractBasePtr> overlays;
+            effect->getOverlays(&overlays);
+            for (std::list<OverlayInteractBasePtr>::const_iterator it2 = overlays.begin(); it2 != overlays.end(); ++it2) {
+                bool didSmthing = (*it2)->onOverlayPenDoubleClicked_public(_imp->viewer, time, renderScale, view, transformViewportPos, transformPos);
+                if (didSmthing) {
+                    //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
+                    // if the instance returns kOfxStatOK, the host should not pass the pen motion
 
-                // to any other interactive object it may own that shares the same view.
-                _imp->lastOverlayNode = *it;
-
-                return true;
+                    // to any other interactive object it may own that shares the same view.
+                    _imp->lastOverlayNode = *it;
+                    
+                    return true;
+                }
             }
+
         }
     }
 
@@ -558,21 +571,26 @@ ViewerTab::notifyOverlaysPenMotion_internal(const NodePtr& node,
 
         EffectInstancePtr effect = node->getEffectInstance();
         assert(effect);
-        node->setCurrentViewportForOverlays_public(_imp->viewer);
-        bool didSmthing = effect->onOverlayPenMotion_public(time, renderScale, view, transformViewportPos, transformPos, pressure, timestamp);
-        if (didSmthing) {
-            if (_imp->hasPenDown) {
-                _imp->hasCaughtPenMotionWhileDragging = true;
+
+        std::list<OverlayInteractBasePtr> overlays;
+        effect->getOverlays(&overlays);
+        for (std::list<OverlayInteractBasePtr>::const_iterator it2 = overlays.begin(); it2 != overlays.end(); ++it2) {
+            bool didSmthing = (*it2)->onOverlayPenMotion_public(_imp->viewer, time, renderScale, view, transformViewportPos, transformPos, pressure, timestamp);
+            if (didSmthing) {
+                if (_imp->hasPenDown) {
+                    _imp->hasCaughtPenMotionWhileDragging = true;
+                }
+
+                //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
+                // if the instance returns kOfxStatOK, the host should not pass the pen motion
+
+                // to any other interactive object it may own that shares the same view.
+                _imp->lastOverlayNode = node;
+                
+                return true;
             }
-
-            //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
-            // if the instance returns kOfxStatOK, the host should not pass the pen motion
-
-            // to any other interactive object it may own that shares the same view.
-            _imp->lastOverlayNode = node;
-
-            return true;
         }
+
     }
 
 
@@ -756,8 +774,13 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
         if (!isInActiveViewerUI) {
             EffectInstancePtr effect = (*it)->getEffectInstance();
             assert(effect);
-            (*it)->setCurrentViewportForOverlays_public(_imp->viewer);
-            didSomething |= effect->onOverlayPenUp_public(time, renderScale, view, transformViewportPos, transformPos, pressure, timestamp);
+            std::list<OverlayInteractBasePtr> overlays;
+            effect->getOverlays(&overlays);
+            for (std::list<OverlayInteractBasePtr>::const_iterator it2 = overlays.begin(); it2 != overlays.end(); ++it2) {
+                didSomething |= (*it2)->onOverlayPenUp_public(_imp->viewer, time, renderScale, view, transformViewportPos, transformPos, pressure, timestamp);
+
+            }
+
         }
     }
 
@@ -798,6 +821,9 @@ ViewerTab::checkForTimelinePlayerGlobalShortcut(Qt::Key qKey,
     std::string pluginShortcutGroup;
     while (knobsToCheck[i]) {
         for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+            if ((*it)->getName() != knobsToCheck[i]) {
+                continue;
+            }
             if ( (*it)->getInViewerContextHasShortcut() && !(*it)->getInViewerContextSecret() ) {
                 if ( pluginShortcutGroup.empty() ) {
                     pluginShortcutGroup = node->getNode()->getOriginalPlugin()->getPluginShortcutGroup();
@@ -931,22 +957,28 @@ ViewerTab::notifyOverlaysKeyDown_internal(const NodePtr& node,
     if (!isInActiveViewerUI) {
         EffectInstancePtr effect = node->getEffectInstance();
         assert(effect);
-        node->setCurrentViewportForOverlays_public(_imp->viewer);
 
         bool didSmthing = checkNodeViewerContextShortcuts(node, qKey, mods);
 
-        if (!didSmthing) {
-            didSmthing = effect->onOverlayKeyDown_public(time, renderScale, view, k, km);
-        }
         if (didSmthing) {
-            //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
-            // if the instance returns kOfxStatOK, the host should not pass the pen motion
-
-            // to any other interactive object it may own that shares the same view.
-            _imp->lastOverlayNode = node;
-
             return true;
+        } else {
+            std::list<OverlayInteractBasePtr> overlays;
+            effect->getOverlays(&overlays);
+            for (std::list<OverlayInteractBasePtr>::const_iterator it2 = overlays.begin(); it2 != overlays.end(); ++it2) {
+                didSmthing = (*it2)->onOverlayKeyDown_public(_imp->viewer, time, renderScale, view, k, km);
+                if (didSmthing) {
+                    //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
+                    // if the instance returns kOfxStatOK, the host should not pass the pen motion
+
+                    // to any other interactive object it may own that shares the same view.
+                    _imp->lastOverlayNode = node;
+                    
+                    return true;
+                }
+            }
         }
+
     }
 
 
@@ -1094,9 +1126,13 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
 
         bool isInActiveViewerUI = _imp->hasInactiveNodeViewerContext(*it);
         if (!isInActiveViewerUI) {
-            (*it)->setCurrentViewportForOverlays_public(_imp->viewer);
-            didSomething |= effect->onOverlayKeyUp_public( time, renderScale, view,
-                                                           QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), QtEnumConvert::fromQtModifiers( e->modifiers() ) );
+            std::list<OverlayInteractBasePtr> overlays;
+            effect->getOverlays(&overlays);
+            for (std::list<OverlayInteractBasePtr>::const_iterator it2 = overlays.begin(); it2 != overlays.end(); ++it2) {
+                didSomething |= (*it2)->onOverlayKeyUp_public(_imp->viewer, time, renderScale, view,
+                                                              QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), QtEnumConvert::fromQtModifiers( e->modifiers() ) );
+
+            }
         }
     }
 
@@ -1152,22 +1188,27 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const NodePtr& node,
     if (!isInActiveViewerUI) {
         EffectInstancePtr effect = node->getEffectInstance();
         assert(effect);
-        node->setCurrentViewportForOverlays_public(_imp->viewer);
+
 
         bool didSmthing = checkNodeViewerContextShortcuts(node, qKey, mods);
 
         if (!didSmthing) {
-            didSmthing = effect->onOverlayKeyRepeat_public(time, renderScale, view, k, km);
-        }
-        if (didSmthing) {
-            //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
-            // if the instance returns kOfxStatOK, the host should not pass the pen motion
+            std::list<OverlayInteractBasePtr> overlays;
+            effect->getOverlays(&overlays);
+            for (std::list<OverlayInteractBasePtr>::const_iterator it2 = overlays.begin(); it2 != overlays.end(); ++it2) {
+                didSmthing = (*it2)->onOverlayKeyRepeat_public(_imp->viewer, time, renderScale, view, k, km);
+                if (didSmthing) {
+                    //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
+                    // if the instance returns kOfxStatOK, the host should not pass the pen motion
 
-            // to any other interactive object it may own that shares the same view.
-            _imp->lastOverlayNode = node;
-
-            return true;
+                    // to any other interactive object it may own that shares the same view.
+                    _imp->lastOverlayNode = node;
+                    
+                    return true;
+                }
+            }
         }
+
     }
 
 
@@ -1272,11 +1313,13 @@ ViewerTab::notifyOverlaysFocusGained(const RenderScale & renderScale)
 
         bool isInActiveViewerUI = _imp->hasInactiveNodeViewerContext(*it);
         if (!isInActiveViewerUI) {
-            (*it)->setCurrentViewportForOverlays_public(_imp->viewer);
-            bool didSmthing = effect->onOverlayFocusGained_public(time, renderScale, view);
-            if (didSmthing) {
-                ret = true;
+            std::list<OverlayInteractBasePtr> overlays;
+            effect->getOverlays(&overlays);
+            for (std::list<OverlayInteractBasePtr>::const_iterator it2 = overlays.begin(); it2 != overlays.end(); ++it2) {
+                ret |= (*it2)->onOverlayFocusGained_public(_imp->viewer, time, renderScale, view);
+
             }
+
         }
     }
 
@@ -1336,10 +1379,11 @@ ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
             EffectInstancePtr effect = (*it)->getEffectInstance();
             assert(effect);
 
-            (*it)->setCurrentViewportForOverlays_public(_imp->viewer);
-            bool didSmthing = effect->onOverlayFocusLost_public(time, renderScale, view);
-            if (didSmthing) {
-                ret = true;
+            std::list<OverlayInteractBasePtr> overlays;
+            effect->getOverlays(&overlays);
+            for (std::list<OverlayInteractBasePtr>::const_iterator it2 = overlays.begin(); it2 != overlays.end(); ++it2) {
+                ret |= (*it2)->onOverlayFocusLost_public(_imp->viewer, time, renderScale, view);
+
             }
         }
     }
@@ -1347,5 +1391,58 @@ ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
 
     return ret;
 } // ViewerTab::notifyOverlaysFocusLost
+
+void
+ViewerTab::updateSelectionFromViewerSelectionRectangle(bool onRelease)
+{
+
+    TimeValue time(getGui()->getApp()->getTimeLine()->currentFrame());
+    ViewIdx view = getInternalNode()->getCurrentView_TLS();
+
+
+    RectD rect;
+    _imp->viewer->getSelectionRectangle(rect.x1, rect.x2, rect.y1, rect.y2);
+
+    NodesList nodes;
+    getNodesEntitledForOverlays(time, view, nodes);
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        bool isInActiveViewerUI = _imp->hasInactiveNodeViewerContext(*it);
+        if (!isInActiveViewerUI) {
+            EffectInstancePtr effect = (*it)->getEffectInstance();
+            assert(effect);
+
+            std::list<OverlayInteractBasePtr> overlays;
+            effect->getOverlays(&overlays);
+            for (std::list<OverlayInteractBasePtr>::const_iterator it2 = overlays.begin(); it2 != overlays.end(); ++it2) {
+                (*it2)->onViewportSelectionUpdated(rect, onRelease);
+            }
+        }
+    }
+} // updateSelectionFromViewerSelectionRectangle
+
+void
+ViewerTab::onViewerSelectionCleared()
+{
+    TimeValue time(getGui()->getApp()->getTimeLine()->currentFrame());
+    ViewIdx view = getInternalNode()->getCurrentView_TLS();
+
+
+    NodesList nodes;
+    getNodesEntitledForOverlays(time, view, nodes);
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        bool isInActiveViewerUI = _imp->hasInactiveNodeViewerContext(*it);
+        if (!isInActiveViewerUI) {
+            EffectInstancePtr effect = (*it)->getEffectInstance();
+            assert(effect);
+
+            std::list<OverlayInteractBasePtr> overlays;
+            effect->getOverlays(&overlays);
+            for (std::list<OverlayInteractBasePtr>::const_iterator it2 = overlays.begin(); it2 != overlays.end(); ++it2) {
+                (*it2)->onViewportSelectionCleared();
+            }
+        }
+    }
+} // onViewerSelectionCleared
+
 
 NATRON_NAMESPACE_EXIT;

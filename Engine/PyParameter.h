@@ -693,8 +693,6 @@ public:
     Double2DTuple get(double frame, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
     void set(double x, double y, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
     void set(double x, double y, double frame, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
-
-    void setUsePointInteract(bool use);
 };
 
 class Double3DParam

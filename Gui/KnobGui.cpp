@@ -389,9 +389,9 @@ KnobGui::createViewContainers(ViewIdx view)
     // Create custom interact if any. For parametric knobs, the interact is used to draw below the curves
     // not to replace entirely the widget
     KnobParametricPtr isParametric = toKnobParametric(knob);
-    OfxParamOverlayInteractPtr customInteract = knob->getCustomInteract();
+    OverlayInteractBasePtr customInteract = knob->getCustomInteract();
     if (customInteract && !isParametric) {
-        _imp->customInteract = new CustomParamInteract(shared_from_this(), knob->getOfxParamHandle(), customInteract, viewWidgets.field);
+        _imp->customInteract = new CustomParamInteract(shared_from_this(), customInteract, viewWidgets.field);
         viewWidgets.fieldLayout->addWidget(_imp->customInteract);
     } else {
         viewWidgets.widgets.reset(appPTR->createGuiForKnob(thisShared, view));

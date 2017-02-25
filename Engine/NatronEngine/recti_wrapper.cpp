@@ -700,6 +700,61 @@ static PyObject* Sbk_RectIFunc_right(PyObject* self)
     return pyResult;
 }
 
+static PyObject* Sbk_RectIFunc_roundToTileSize(PyObject* self, PyObject* args)
+{
+    ::RectI* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::RectI*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_RECTI_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "roundToTileSize", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: roundToTileSize(int,int)
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
+        overloadId = 0; // roundToTileSize(int,int)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_RectIFunc_roundToTileSize_TypeError;
+
+    // Call function/method
+    {
+        int cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        int cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // roundToTileSize(int,int)
+            cppSelf->roundToTileSize(cppArg0, cppArg1);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_RectIFunc_roundToTileSize_TypeError:
+        const char* overloads[] = {"int, int", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.RectI.roundToTileSize", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_RectIFunc_set(PyObject* self, PyObject* args)
 {
     ::RectI* cppSelf = 0;
@@ -1070,6 +1125,7 @@ static PyMethodDef Sbk_RectI_methods[] = {
     {"left", (PyCFunction)Sbk_RectIFunc_left, METH_NOARGS},
     {"merge", (PyCFunction)Sbk_RectIFunc_merge, METH_VARARGS},
     {"right", (PyCFunction)Sbk_RectIFunc_right, METH_NOARGS},
+    {"roundToTileSize", (PyCFunction)Sbk_RectIFunc_roundToTileSize, METH_VARARGS},
     {"set", (PyCFunction)Sbk_RectIFunc_set, METH_VARARGS},
     {"set_bottom", (PyCFunction)Sbk_RectIFunc_set_bottom, METH_O},
     {"set_left", (PyCFunction)Sbk_RectIFunc_set_left, METH_O},

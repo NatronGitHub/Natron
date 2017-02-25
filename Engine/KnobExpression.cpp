@@ -889,7 +889,7 @@ KnobHelper::setExpressionCommon(DimSpec dimension,
                                 bool failIfInvalid)
 {
     // setExpressionInternal may call evaluateValueChange if it calls clearExpression, hence bracket changes
-    beginChanges();
+    ScopedChanges_RAII changes(this);
 
     std::list<ViewIdx> views = getViewsList();
     if (dimension.isAll()) {
@@ -918,7 +918,6 @@ KnobHelper::setExpressionCommon(DimSpec dimension,
     }
 
     evaluateValueChange(dimension, getHolder()->getCurrentTime_TLS(), view, eValueChangedReasonUserEdited);
-    endChanges();
 } // setExpressionCommon
 
 void
@@ -962,7 +961,7 @@ KnobHelper::replaceNodeNameInExpression(DimSpec dimension,
     if (!holder) {
         return;
     }
-    holder->beginChanges();
+    ScopedChanges_RAII changes(holder.get());
 
     std::list<ViewIdx> views = getViewsList();
     if (dimension.isAll()) {
@@ -990,7 +989,6 @@ KnobHelper::replaceNodeNameInExpression(DimSpec dimension,
         }
     }
 
-    holder->endChanges();
 
 } // replaceNodeNameInExpression
 

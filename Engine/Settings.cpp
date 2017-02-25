@@ -3026,13 +3026,13 @@ Settings::restorePageToDefaults(const KnobPagePtr& tab)
 {
 
     _imp->_nRedrawStyleSheetRequests = 0;
-
-    beginChanges();
-    const KnobsVec & knobs = tab->getChildren();
-    for (U32 i = 0; i < knobs.size(); ++i) {
-        knobs[i]->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
+    {
+        ScopedChanges_RAII changes(this);
+        const KnobsVec & knobs = tab->getChildren();
+        for (U32 i = 0; i < knobs.size(); ++i) {
+            knobs[i]->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
+        }
     }
-    endChanges();
 
     if (tab == _imp->_pluginsTab) {
         const PluginsMap& allPlugins = appPTR->getPluginsList();

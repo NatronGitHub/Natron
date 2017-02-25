@@ -472,6 +472,21 @@ static PythonToCppFunc is_number_PythonToCpp_QFlags_NATRON_NAMESPACE_StandardBut
         return number_PythonToCpp_QFlags_NATRON_NAMESPACE_StandardButtonEnum_;
     return 0;
 }
+static void NATRON_NAMESPACE_PenType_PythonToCpp_NATRON_NAMESPACE_PenType(PyObject* pyIn, void* cppOut) {
+    *((::NATRON_NAMESPACE::PenType*)cppOut) = (::NATRON_NAMESPACE::PenType) Shiboken::Enum::getValue(pyIn);
+
+}
+static PythonToCppFunc is_NATRON_NAMESPACE_PenType_PythonToCpp_NATRON_NAMESPACE_PenType_Convertible(PyObject* pyIn) {
+    if (PyObject_TypeCheck(pyIn, SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PENTYPE_IDX]))
+        return NATRON_NAMESPACE_PenType_PythonToCpp_NATRON_NAMESPACE_PenType;
+    return 0;
+}
+static PyObject* NATRON_NAMESPACE_PenType_CppToPython_NATRON_NAMESPACE_PenType(const void* cppIn) {
+    int castCppIn = *((::NATRON_NAMESPACE::PenType*)cppIn);
+    return Shiboken::Enum::newItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PENTYPE_IDX], castCppIn);
+
+}
+
 void init_NATRON_NAMESPACE(PyObject* module)
 {
     SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_IDX] = reinterpret_cast<PyTypeObject*>(&Sbk_NATRON_NAMESPACE_Type);
@@ -1794,6 +1809,46 @@ void init_NATRON_NAMESPACE(PyObject* module)
     }
     // End of 'StandardButtonEnum' enum/flags.
 
+    // Initialization of enum 'PenType'.
+    SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PENTYPE_IDX] = Shiboken::Enum::createScopedEnum(&Sbk_NATRON_NAMESPACE_Type,
+        "PenType",
+        "NatronEngine.Natron.PenType",
+        "Natron::PenType");
+    if (!SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PENTYPE_IDX])
+        return ;
+
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PENTYPE_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "ePenTypeLMB", (long) NATRON_NAMESPACE::ePenTypeLMB))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PENTYPE_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "ePenTypeMMB", (long) NATRON_NAMESPACE::ePenTypeMMB))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PENTYPE_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "ePenTypeRMB", (long) NATRON_NAMESPACE::ePenTypeRMB))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PENTYPE_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "ePenTypePen", (long) NATRON_NAMESPACE::ePenTypePen))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PENTYPE_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "ePenTypeCursor", (long) NATRON_NAMESPACE::ePenTypeCursor))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PENTYPE_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "ePenTypeEraser", (long) NATRON_NAMESPACE::ePenTypeEraser))
+        return ;
+    // Register converter for enum 'NATRON_NAMESPACE::PenType'.
+    {
+        SbkConverter* converter = Shiboken::Conversions::createConverter(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PENTYPE_IDX],
+            NATRON_NAMESPACE_PenType_CppToPython_NATRON_NAMESPACE_PenType);
+        Shiboken::Conversions::addPythonToCppValueConversion(converter,
+            NATRON_NAMESPACE_PenType_PythonToCpp_NATRON_NAMESPACE_PenType,
+            is_NATRON_NAMESPACE_PenType_PythonToCpp_NATRON_NAMESPACE_PenType_Convertible);
+        Shiboken::Enum::setTypeConverter(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PENTYPE_IDX], converter);
+        Shiboken::Enum::setTypeConverter(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PENTYPE_IDX], converter);
+        Shiboken::Conversions::registerConverterName(converter, "Natron::PenType");
+        Shiboken::Conversions::registerConverterName(converter, "PenType");
+    }
+    // End of 'PenType' enum.
+
 
     qRegisterMetaType< ::NATRON_NAMESPACE::AnimationLevelEnum >("Natron::AnimationLevelEnum");
     qRegisterMetaType< ::NATRON_NAMESPACE::ActionRetCodeEnum >("Natron::ActionRetCodeEnum");
@@ -1808,4 +1863,5 @@ void init_NATRON_NAMESPACE(PyObject* module)
     qRegisterMetaType< ::NATRON_NAMESPACE::OrientationEnum >("Natron::OrientationEnum");
     qRegisterMetaType< ::NATRON_NAMESPACE::StandardButtonEnum >("Natron::StandardButtonEnum");
     qRegisterMetaType< ::NATRON_NAMESPACE::StandardButtons >("Natron::StandardButtons");
+    qRegisterMetaType< ::NATRON_NAMESPACE::PenType >("Natron::PenType");
 }

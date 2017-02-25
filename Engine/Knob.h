@@ -49,7 +49,6 @@
 #include "Engine/HashableObject.h"
 #include "Engine/KnobFactory.h"
 #include "Engine/KnobGuiI.h"
-#include "Engine/OverlaySupport.h"
 #include "Engine/Variant.h"
 #include "Engine/ViewIdx.h"
 
@@ -306,7 +305,6 @@ typedef std::set<KnobDimViewKey, KnobDimViewKey_Compare> KnobDimViewKeySet;
 
 class KnobI
     : public AnimatingObjectI
-    , public OverlaySupport
     , public boost::enable_shared_from_this<KnobI>
     , public SERIALIZATION_NAMESPACE::SerializableObjectBase
     , public HashableObject
@@ -1152,51 +1150,13 @@ public:
     /**
      * @brief Call this to set a custom interact entry point, replacing any existing gui.
      **/
-    virtual void setCustomInteract(const OfxParamOverlayInteractPtr & interactDesc) = 0;
-    virtual OfxParamOverlayInteractPtr getCustomInteract() const = 0;
-    virtual void swapOpenGLBuffers() OVERRIDE = 0;
-    virtual void redraw() OVERRIDE = 0;
-    virtual void getOpenGLContextFormat(int* depthPerComponents, bool* hasAlpha) const OVERRIDE = 0;
-    virtual void getViewportSize(double &width, double &height) const OVERRIDE = 0;
-    virtual void getPixelScale(double & xScale, double & yScale) const OVERRIDE = 0;
-    virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE = 0;
-    virtual unsigned int getCurrentRenderScale() const OVERRIDE FINAL { return 0; }
-
-    virtual RectD getViewportRect() const OVERRIDE = 0;
-    virtual void getCursorPosition(double& x, double& y) const OVERRIDE = 0;
-    virtual void saveOpenGLContext() OVERRIDE = 0;
-    virtual void restoreOpenGLContext() OVERRIDE = 0;
+    virtual void setCustomInteract(const OverlayInteractBasePtr & interactDesc) = 0;
+    virtual OverlayInteractBasePtr getCustomInteract() const = 0;
 
     /**
      * @brief Returns whether any interact associated to this knob should be drawn or not
      **/
     bool shouldDrawOverlayInteract() const;
-
-    /**
-     * @brief Converts the given (x,y) coordinates which are in OpenGL canonical coordinates to widget coordinates.
-     **/
-    virtual void toWidgetCoordinates(double *x, double *y) const OVERRIDE = 0;
-
-    /**
-     * @brief Converts the given (x,y) coordinates which are in widget coordinates to OpenGL canonical coordinates
-     **/
-    virtual void toCanonicalCoordinates(double *x, double *y) const OVERRIDE = 0;
-
-    /**
-     * @brief Returns the font height, i.e: the height of the highest letter for this font
-     **/
-    virtual int getWidgetFontHeight() const OVERRIDE = 0;
-
-    /**
-     * @brief Returns for a string the estimated pixel size it would take on the widget
-     **/
-    virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE = 0;
-
-    /**
-     * @brief If this is an openfx param, this is the pointer to the handle.
-     **/
-    virtual void setOfxParamHandle(void* ofxParamHandle) = 0;
-    virtual void* getOfxParamHandle() const = 0;
 
     /**
      * @brief Returns the current time if attached to a timeline or the time being rendered
@@ -1256,10 +1216,6 @@ public:
 protected:
 
     virtual KnobIPtr getCloneForHolderInternal(const KnobHolderPtr& holder) const = 0;
-
-public:
-
-    virtual bool useHostOverlayHandle() const { return false; }
 
 protected:
 
@@ -1711,7 +1667,7 @@ protected:
 
     // the following is specialized only for T=std::string
     template <typename T>
-    T pyObjectToType(PyObject* o, ViewIdx view) const { return pyObjectToType<T>(o); }
+    T pyObjectToType(PyObject* o, ViewIdx view) const { (void)view; return pyObjectToType<T>(o); }
 
     void refreshListenersAfterValueChangeInternal(TimeValue time, ViewIdx view, ValueChangedReasonEnum reason, DimIdx dimension, std::set<KnobIPtr>* evaluatedKnobs);
 
@@ -1786,24 +1742,8 @@ public:
     virtual const std::string & getHintToolTip() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isHintInMarkdown() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setHintIsMarkdown(bool b) OVERRIDE FINAL;
-    virtual void setCustomInteract(const OfxParamOverlayInteractPtr & interactDesc) OVERRIDE FINAL;
-    virtual OfxParamOverlayInteractPtr getCustomInteract() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void swapOpenGLBuffers() OVERRIDE FINAL;
-    virtual void redraw() OVERRIDE FINAL;
-    virtual void getOpenGLContextFormat(int* depthPerComponents, bool* hasAlpha) const OVERRIDE FINAL;
-    virtual void getViewportSize(double &width, double &height) const OVERRIDE FINAL;
-    virtual void getPixelScale(double & xScale, double & yScale) const OVERRIDE FINAL;
-    virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
-    virtual RectD getViewportRect() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
-    virtual void saveOpenGLContext() OVERRIDE FINAL;
-    virtual void restoreOpenGLContext() OVERRIDE FINAL;
-    virtual void toWidgetCoordinates(double *x, double *y) const OVERRIDE FINAL;
-    virtual void toCanonicalCoordinates(double *x, double *y) const OVERRIDE FINAL;
-    virtual int getWidgetFontHeight() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void setOfxParamHandle(void* ofxParamHandle) OVERRIDE FINAL;
-    virtual void* getOfxParamHandle() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setCustomInteract(const OverlayInteractBasePtr & interactDesc) OVERRIDE FINAL;
+    virtual OverlayInteractBasePtr getCustomInteract() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual TimeValue getCurrentTime_TLS() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual ViewIdx getCurrentView_TLS() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getDimensionName(DimIdx dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -2688,8 +2628,6 @@ public:
 
     bool isOverlaySlaveParam(const KnobIConstPtr& knob) const;
 
-    void requestOverlayInteractRefresh();
-
     //To re-arrange user knobs only, does nothing if knob->isUserKnob() returns false
     bool moveKnobOneStepUp(const KnobIPtr& knob);
     bool moveKnobOneStepDown(const KnobIPtr& knob);
@@ -3094,6 +3032,38 @@ public:
     virtual std::string getScriptName_mt_safe() const = 0;
 };
 
+class ScopedChanges_RAII
+{
+    KnobHolder* _holder;
+    bool _discard;
+public:
+
+    ScopedChanges_RAII(KnobHolder* holder, bool discard = false)
+    : _holder(holder)
+    , _discard(discard)
+    {
+        if (_holder) {
+            _holder->beginChanges();
+        }
+    }
+
+    ScopedChanges_RAII(KnobI* knob, bool discard = false)
+    : _holder()
+    , _discard(discard)
+    {
+        _holder = knob->getHolder().get();
+        if (_holder) {
+            _holder->beginChanges();
+        }
+    }
+
+    ~ScopedChanges_RAII()
+    {
+        if (_holder) {
+            _holder->endChanges(_discard);
+        }
+    }
+};
 
 
 NATRON_NAMESPACE_EXIT;

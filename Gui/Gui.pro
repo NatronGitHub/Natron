@@ -129,7 +129,6 @@ SOURCES += \
     GuiAppInstance.cpp \
     GuiPrivate.cpp \
     Histogram.cpp \
-    HostOverlay.cpp \
     InfoViewerWidget.cpp \
     KnobAnim.cpp \
     KnobItemsTableGui.cpp \
@@ -282,7 +281,6 @@ HEADERS += \
     GuiMacros.h \
     GuiPrivate.h \
     Histogram.h \
-    HostOverlay.h \
     InfoViewerWidget.h \
     KnobAnim.h \
     KnobItemsTableGui.h \

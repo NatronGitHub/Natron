@@ -163,8 +163,7 @@ NodeViewerContext::~NodeViewerContext()
 void
 NodeViewerContext::createGui()
 {
-    QObject::connect( _imp->viewer, SIGNAL(selectionRectangleChanged(bool)), this, SLOT(updateSelectionFromViewerSelectionRectangle(bool)), Qt::UniqueConnection );
-    QObject::connect( _imp->viewer, SIGNAL(selectionCleared()), this, SLOT(onViewerSelectionCleared()), Qt::UniqueConnection );
+  
     NodeGuiPtr node = _imp->getNode();
     QObject::connect( node.get(), SIGNAL(settingsPanelClosed(bool)), this, SLOT(onNodeSettingsPanelClosed(bool)), Qt::UniqueConnection );
     KnobsVec knobsOrdered = node->getNode()->getEffectInstance()->getViewerUIKnobs();
@@ -728,37 +727,6 @@ NodeViewerContextPrivate::onToolActionTriggeredInternal(QAction* action,
     }
 } // NodeViewerContextPrivate::onToolActionTriggeredInternal
 
-void
-NodeViewerContext::updateSelectionFromViewerSelectionRectangle(bool onRelease)
-{
-    NodeGuiPtr n = _imp->getNode();
-
-    if (!n) {
-        return;
-    }
-    NodePtr node = n->getNode();
-    if ( !node || !node->isActivated() ) {
-        return;
-    }
-    RectD rect;
-    _imp->viewer->getSelectionRectangle(rect.x1, rect.x2, rect.y1, rect.y2);
-    node->getEffectInstance()->onInteractViewportSelectionUpdated(rect, onRelease);
-}
-
-void
-NodeViewerContext::onViewerSelectionCleared()
-{
-    NodeGuiPtr n = _imp->getNode();
-
-    if (!n) {
-        return;
-    }
-    NodePtr node = n->getNode();
-    if ( !node || !node->isActivated() ) {
-        return;
-    }
-    node->getEffectInstance()->onInteractViewportSelectionCleared();
-}
 
 void
 NodeViewerContext::notifyGuiClosing()

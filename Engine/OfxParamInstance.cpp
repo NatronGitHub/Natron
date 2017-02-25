@@ -50,6 +50,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxClipInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
+#include "Engine/PointOverlayInteract.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/Curve.h"
 #include "Engine/OfxOverlayInteract.h"
@@ -258,11 +259,10 @@ deleteKey(const KnobIPtr& knob,
         endDim = knob->getNDimensions();
     }
     assert(startDim < endDim && startDim >= 0);
-    knob->beginChanges();
+    ScopedChanges_RAII changes(knob.get());
     for (int i = startDim; i < endDim; ++i) {
         knob->deleteValueAtTime(TimeValue(time), ViewSetSpec::all(), DimIdx(i), eValueChangedReasonPluginEdited);
     }
-    knob->endChanges();
 
     return kOfxStatOK;
 }
@@ -307,11 +307,10 @@ copyFrom(const KnobIPtr & from,
     }
     ///copy only if type is the same
     if ( from->typeName() == to->typeName() ) {
-        to->beginChanges();
+        ScopedChanges_RAII changes(to.get());
         for (int i = startDim; i < endDim; ++i) {
             to->copyKnob(from, ViewSetSpec::all(), DimIdx(i), ViewSetSpec::all(), DimIdx(i), range, offset);
         }
-        to->endChanges();
     }
 
     return kOfxStatOK;
@@ -2382,7 +2381,10 @@ OfxDouble2DInstance::OfxDouble2DInstance(const OfxEffectInstancePtr& node,
            ( ( getDoubleType() == kOfxParamDoubleTypeXYAbsolute) ||
              ( getDoubleType() == kOfxParamDoubleTypeNormalisedXYAbsolute) ) ) ||
          ( properties.getIntProperty(kOfxParamPropUseHostOverlayHandle) == 1) ) {
-        dblKnob->setHasHostOverlayHandle(true);
+        boost::shared_ptr<PointOverlayInteract> interact(new PointOverlayInteract());
+        std::map<std::string,std::string> knobs;
+        knobs["position"] = dblKnob->getName();
+        node->registerOverlay(interact, knobs);
     }
 
     // Position knobs should not have their dimensions folded by default (e.g: The Translate parameter of a Transform node is not

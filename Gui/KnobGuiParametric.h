@@ -60,7 +60,7 @@ NATRON_NAMESPACE_ENTER;
 
 struct KnobGuiParametricPrivate;
 class KnobGuiParametric
-    : public QObject, public KnobGuiWidgets, public OverlaySupport
+    : public QObject, public KnobGuiWidgets
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -80,29 +80,6 @@ public:
     }
 
     virtual ~KnobGuiParametric() OVERRIDE;
-
-
-    // Overriden from OverlaySupport
-    virtual void swapOpenGLBuffers() OVERRIDE FINAL;
-    virtual void redraw() OVERRIDE FINAL;
-    virtual void getOpenGLContextFormat(int* depthPerComponents, bool* hasAlpha) const OVERRIDE FINAL;
-    virtual void getViewportSize(double &width, double &height) const OVERRIDE FINAL;
-    virtual void getPixelScale(double & xScale, double & yScale) const OVERRIDE FINAL;
-    virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
-    virtual void saveOpenGLContext() OVERRIDE FINAL;
-    virtual void restoreOpenGLContext() OVERRIDE FINAL;
-    virtual unsigned int getCurrentRenderScale() const OVERRIDE FINAL
-    {
-        return 0;
-    }
-
-
-    virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
-    virtual RectD getViewportRect() const OVERRIDE FINAL;
-    virtual void toCanonicalCoordinates(double *x, double *y) const OVERRIDE FINAL;
-    virtual void toWidgetCoordinates(double *x, double *y) const OVERRIDE FINAL;
-    virtual int getWidgetFontHeight() const OVERRIDE FINAL;
-    virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE FINAL;
 
 Q_SIGNALS:
 

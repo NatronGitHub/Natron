@@ -360,7 +360,7 @@ public:
     // Selected reader
     NodeAnimPtr currentEditedReader;
 
-    boost::weak_ptr<OfxParamOverlayInteract> customInteract;
+    OverlayInteractBaseWPtr customInteract;
 
 };
 

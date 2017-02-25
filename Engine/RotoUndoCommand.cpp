@@ -336,7 +336,7 @@ TransformUndoCommand::redo()
         roto->setSelection(_selectedCurves, _selectedPoints);
     } else {
         roto->computeSelectedCpsBBOX();
-        roto->redrawOverlays();
+        roto->redraw();
     }
 
     _firstRedoCalled = true;
@@ -540,13 +540,13 @@ RemovePointUndoCommand::undo()
 
         // If the curve was removed entirely, add it back
         if (it->curveRemoved) {
-            roto->p->knobsTable->insertItem(it->indexInLayer, it->curve, it->parentLayer, eTableChangeReasonViewer);
+            roto->_imp->knobsTable->insertItem(it->indexInLayer, it->curve, it->parentLayer, eTableChangeReasonViewer);
         }
         selection.push_back(it->curve);
     }
 
     roto->setSelection(selection, cpSelection);
-    roto->p->publicInterface->invalidateCacheHashAndEvaluate(true, false);
+    roto->_imp->publicInterface->invalidateCacheHashAndEvaluate(true, false);
 }
 
 void
@@ -586,7 +586,7 @@ RemovePointUndoCommand::redo()
             }
         }
         it->curve->setAutoOrientationComputation(true);
-        it->curve->refreshPolygonOrientation(roto->p->publicInterface->getTimelineCurrentTime(), _view);
+        it->curve->refreshPolygonOrientation(roto->_imp->publicInterface->getTimelineCurrentTime(), _view);
     }
 
     for (std::list<BezierPtr >::iterator it = toRemove.begin(); it != toRemove.end(); ++it) {
@@ -595,7 +595,7 @@ RemovePointUndoCommand::redo()
 
 
     roto->setSelection( BezierPtr(), std::make_pair( CpPtr(), CpPtr() ) );
-    roto->p->publicInterface->invalidateCacheHashAndEvaluate(true, false);
+    roto->_imp->publicInterface->invalidateCacheHashAndEvaluate(true, false);
     _firstRedoCalled = true;
 }
 
@@ -634,7 +634,7 @@ AddStrokeUndoCommand::undo()
     }
 
     roto->removeCurve(_item);
-    roto->p->publicInterface->invalidateCacheHashAndEvaluate(true, false);
+    roto->_imp->publicInterface->invalidateCacheHashAndEvaluate(true, false);
 }
 
 void
@@ -647,8 +647,8 @@ AddStrokeUndoCommand::redo()
     }
 
     if (_firstRedoCalled) {
-        roto->p->knobsTable->insertItem(_indexInLayer, _item, _layer, eTableChangeReasonViewer);
-        roto->p->publicInterface->invalidateCacheHashAndEvaluate(true, false);
+        roto->_imp->knobsTable->insertItem(_indexInLayer, _item, _layer, eTableChangeReasonViewer);
+        roto->_imp->publicInterface->invalidateCacheHashAndEvaluate(true, false);
     }
 
     _firstRedoCalled = true;
@@ -689,7 +689,7 @@ AddMultiStrokeUndoCommand::undo()
         isRemoved = true;
     }
 
-    roto->p->publicInterface->invalidateCacheHashAndEvaluate(true, false);
+    roto->_imp->publicInterface->invalidateCacheHashAndEvaluate(true, false);
 }
 
 void
@@ -706,9 +706,9 @@ AddMultiStrokeUndoCommand::redo()
             _item->addStroke(_xCurve, _yCurve, _pCurve);
         }
         if (isRemoved) {
-            roto->p->knobsTable->insertItem(_indexInLayer, _item, _layer, eTableChangeReasonViewer);
+            roto->_imp->knobsTable->insertItem(_indexInLayer, _item, _layer, eTableChangeReasonViewer);
         }
-        roto->p->publicInterface->invalidateCacheHashAndEvaluate(true, false);
+        roto->_imp->publicInterface->invalidateCacheHashAndEvaluate(true, false);
     }
 
     _firstRedoCalled = true;
@@ -1414,7 +1414,7 @@ MakeBezierUndoCommand::redo()
     if (!_firstRedoCalled) {
         if (_createdPoint) {
             if (!_newCurve) {
-                _newCurve = roto->p->publicInterface->makeBezier(_x, _y, _isOpenBezier ? tr(kRotoOpenBezierBaseName).toStdString() : tr(kRotoBezierBaseName).toStdString(), _time, _isOpenBezier);
+                _newCurve = roto->_imp->publicInterface->makeBezier(_x, _y, _isOpenBezier ? tr(kRotoOpenBezierBaseName).toStdString() : tr(kRotoBezierBaseName).toStdString(), _time, _isOpenBezier);
                 assert(_newCurve);
                 _oldCurve.reset( new Bezier(_newCurve->getModel(), _newCurve->getBaseItemName(), _newCurve->isOpenBezier()));
                 _oldCurve->copyItem(*_newCurve);
@@ -1445,9 +1445,9 @@ MakeBezierUndoCommand::redo()
     } else {
         _newCurve->copyItem(*_oldCurve);
         if (_curveNonExistant) {
-            roto->p->knobsTable->insertItem(_indexInLayer, _newCurve, _parentLayer, eTableChangeReasonViewer);
+            roto->_imp->knobsTable->insertItem(_indexInLayer, _newCurve, _parentLayer, eTableChangeReasonViewer);
         }
-        roto->p->publicInterface->invalidateCacheHashAndEvaluate(true, false);
+        roto->_imp->publicInterface->invalidateCacheHashAndEvaluate(true, false);
     }
 
 
@@ -1524,7 +1524,7 @@ MakeEllipseUndoCommand::undo()
         return;
     }
     roto->removeCurve(_curve);
-    roto->p->publicInterface->invalidateCacheHashAndEvaluate(true, false);
+    roto->_imp->publicInterface->invalidateCacheHashAndEvaluate(true, false);
     roto->setSelection( BezierPtr(), std::make_pair( CpPtr(), CpPtr() ) );
 }
 
@@ -1537,8 +1537,8 @@ MakeEllipseUndoCommand::redo()
         return;
     }
     if (_firstRedoCalled) {
-        roto->p->knobsTable->insertItem(_indexInLayer, _curve, _parentLayer, eTableChangeReasonViewer);
-        roto->p->publicInterface->invalidateCacheHashAndEvaluate(true, false);
+        roto->_imp->knobsTable->insertItem(_indexInLayer, _curve, _parentLayer, eTableChangeReasonViewer);
+        roto->_imp->publicInterface->invalidateCacheHashAndEvaluate(true, false);
     } else {
         double ytop, xright, ybottom, xleft;
         xright = _tox;
@@ -1565,7 +1565,7 @@ MakeEllipseUndoCommand::redo()
         double xmid = (xleft + xright) / 2.;
         double ymid = (ytop + ybottom) / 2.;
         if (_create) {
-            _curve = roto->p->publicInterface->makeBezier(xmid, ytop, tr(kRotoEllipseBaseName).toStdString(), _time, false); //top
+            _curve = roto->_imp->publicInterface->makeBezier(xmid, ytop, tr(kRotoEllipseBaseName).toStdString(), _time, false); //top
             assert(_curve);
             _curve->addControlPoint(xright, ymid, _time, ViewSetSpec::all()); // right
             _curve->addControlPoint(xmid, ybottom, _time, ViewSetSpec::all()); // bottom
@@ -1690,7 +1690,7 @@ MakeRectangleUndoCommand::undo()
         return;
     }
     roto->removeCurve(_curve);
-    roto->p->publicInterface->invalidateCacheHashAndEvaluate(true, false);
+    roto->_imp->publicInterface->invalidateCacheHashAndEvaluate(true, false);
     roto->setSelection( BezierPtr(), std::make_pair( CpPtr(), CpPtr() ) );
 }
 
@@ -1703,8 +1703,8 @@ MakeRectangleUndoCommand::redo()
         return;
     }
     if (_firstRedoCalled) {
-        roto->p->knobsTable->insertItem(_indexInLayer, _curve, _parentLayer, eTableChangeReasonViewer);
-        roto->p->publicInterface->invalidateCacheHashAndEvaluate(true, false);
+        roto->_imp->knobsTable->insertItem(_indexInLayer, _curve, _parentLayer, eTableChangeReasonViewer);
+        roto->_imp->publicInterface->invalidateCacheHashAndEvaluate(true, false);
     } else {
         double ytop, xright, ybottom, xleft;
         xright = _tox;
@@ -1729,7 +1729,7 @@ MakeRectangleUndoCommand::redo()
             ybottom -= 1.;
         }
         if (_create) {
-            _curve = roto->p->publicInterface->makeBezier(xleft, ytop, tr(kRotoRectangleBaseName).toStdString(), _time, false); //topleft
+            _curve = roto->_imp->publicInterface->makeBezier(xleft, ytop, tr(kRotoRectangleBaseName).toStdString(), _time, false); //topleft
             assert(_curve);
             _curve->addControlPoint(xright, ytop, _time, ViewSetSpec::all()); // topright
             _curve->addControlPoint(xright, ybottom, _time, ViewSetSpec::all()); // bottomright

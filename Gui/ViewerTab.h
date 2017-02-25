@@ -108,6 +108,16 @@ public:
 
     bool notifyOverlaysFocusLost(const RenderScale & renderScale);
 
+    /**
+     * @brief Received when the selection rectangle has changed on the viewer.
+     * @param onRelease When true, this signal is emitted on the mouse release event
+     * which means this is the last selection desired by the user.
+     * Receivers can either update the selection always or just on mouse release.
+     **/
+    void updateSelectionFromViewerSelectionRectangle(bool onRelease);
+
+    void onViewerSelectionCleared();
+    
 private:
 
     bool notifyOverlaysPenDown_internal(const NodePtr& node, const RenderScale & renderScale, PenType pen, const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp);

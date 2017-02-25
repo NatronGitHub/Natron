@@ -47,6 +47,11 @@ without importing anything.
 	ParametricParam
 	PathParam
 	PyCoreApplication
+	PyOverlayInteract
+	PyOverlayParamDesc
+	PyPointOverlayInteract
+	PyTransformOverlayInteract
+	PyCornerPinOverlayInteract
 	RectD
 	RectI
 	Roto

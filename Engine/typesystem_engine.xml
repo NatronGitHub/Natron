@@ -220,6 +220,7 @@
     <enum-type name="ImagePremultiplicationEnum"/>
     <enum-type name="OrientationEnum"/>
     <enum-type name="RotoStrokeType"/>
+    <enum-type name="PenType"/>
     <enum-type name="ViewerContextLayoutTypeEnum"/>
     <enum-type name="TableChangeReasonEnum"/>
     </namespace-type>
@@ -1914,7 +1915,41 @@
             </modify-argument>
         </modify-function>
     </object-type>
-
+    <object-type name="PyOverlayParamDesc"/>
+    <object-type name="PyOverlayInteract">
+        <modify-function signature="getSuggestedColor(ColorTuple*)const">
+            <modify-argument index="return">
+                <replace-type modified-type="PyTuple"/>
+            </modify-argument>
+            <modify-argument index="1">
+                <remove-argument/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                ColorTuple ret;
+                bool ok = %CPPSELF.%FUNCTION_NAME(&amp;ret);
+                PyObject* pyret = PyTuple_New(5);
+                PyTuple_SET_ITEM(pyret, 0, %CONVERTTOPYTHON[bool](ok));
+                PyTuple_SET_ITEM(pyret, 1, %CONVERTTOPYTHON[double](ret.r));
+                PyTuple_SET_ITEM(pyret, 2, %CONVERTTOPYTHON[double](ret.g));
+                PyTuple_SET_ITEM(pyret, 3, %CONVERTTOPYTHON[double](ret.b));
+                PyTuple_SET_ITEM(pyret, 4, %CONVERTTOPYTHON[double](ret.a));
+                return pyret;
+            </inject-code>
+        </modify-function>
+        <modify-function signature="getHoldingEffect()const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="fetchParameter(std::map&lt;QString, QString&gt;,QString,QString,int,bool)const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+    </object-type>
+    <object-type name="PyPointOverlayInteract"/>
+    <object-type name="PyTransformOverlayInteract"/>
+    <object-type name="PyCornerPinOverlayInteract"/>
 
 </typesystem>
 

@@ -227,6 +227,9 @@ Node::load(const CreateNodeArgsPtr& args)
     // For OpenFX we create the image effect now
     _imp->effect->createInstanceAction_public();
 
+    // Create overlays
+    _imp->effect->initializeOverlayInteract();
+
     // For readers, set their original frame range when creating them
 #if 0
     if ( !serialization && ( _imp->effect->isReader() || _imp->effect->isWriter() ) ) {
@@ -1213,7 +1216,7 @@ Node::restoreNodeToDefaultState(const CreateNodeArgsPtr& args)
     FlagSetter setter(true, &_imp->restoringDefaults);
 
     // Make sure the instance does not receive knobChanged now
-    _imp->effect->beginChanges();
+    ScopedChanges_RAII changes(_imp->effect.get());
 
     // If the node is not yet created (i.e: this is called in the load() function) then some stuff here doesn't need to be done
     bool nodeCreated = isNodeCreated();
@@ -1351,9 +1354,7 @@ Node::restoreNodeToDefaultState(const CreateNodeArgsPtr& args)
             }
         }
     }
-    
-    _imp->effect->endChanges();
-    
+
     // Refresh hash & meta-data and trigger a render
     _imp->effect->invalidateCacheHashAndEvaluate(true, true);
     

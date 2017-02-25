@@ -60,6 +60,8 @@ Functions
 *    def :meth:`setSize<NatronEngine.Effect.setSize>` (w, h)
 *    def :meth:`setSubGraphEditable<NatronEngine.Effect.setSubGraphEditable>` (editable)
 *    def :meth:`setPagesOrder<NatronEngine.Effect.setPagesOrder>` (pages)
+*    def :meth:`registerOverlay<NatronEngine.Effect.registerOverlay>` (overlay, params)
+*    def :meth:`removeOverlay<NatronEngine.Effect.removeOverlay>` (overlay)
 
 .. _details:
 
@@ -587,3 +589,54 @@ Given the string list *pages* try to find the corresponding pages by their-scrip
 and order them in the given order.
 
 
+.. method:: NatronEngine.Effect.registerOverlay (overlay, params)
+
+    :param overlay: :class:`PyOverlayInteract<NatronEngine.PyOverlayInteract>`
+    :param params: :class:`PyDict`
+    
+    This function takes in parameter a :ref:`PyOverlayInteract<NatronEngine.PyOverlayInteract>`
+    and registers it as an overlay that will be drawn on the viewer when
+    this node settings panel is opened.
+    
+    The key of the *params* dict must match a key in the overlay's parameters description
+    returned by the function :func:`getDescription()<NatronEngine.PyOverlayInteract.getDescription>`
+    of the :ref:`PyOverlayInteract<NatronEngine.PyOverlayInteract>`.
+    The value associated to the key is the script-name of a parameter on this effect that
+    should fill the role description returned by getDescription() on the overlay.
+    
+    Note that overlays for a node will be drawn in the order they were registered by this function.
+    To re-order them, you may call :func:`removeOverlay()<NatronEngine.Effect.removeOverlay>`
+    and this function again.
+    
+    If a non-optional parameter returned by the :func:`getDescription()<NatronEngine.PyOverlayInteract.getDescription>`
+    is not filled with one of the parameter provided by the *params* or their type/dimension 
+    do not match, this function will report an error.
+    
+    For instance, to register a point parameter interact::
+    
+        # Let's create a group node
+        group = app.createNode("fr.inria.built-in.Group")
+        
+        # Create a Double2D parameter that serve as a 2D point
+        param = group.createDouble2DParam("point","Point")
+        group.refreshUserParamsGUI()
+                
+        # Create a point interact for the parameter
+        interact = PyPointOverlayInteract()
+        
+        # The PyPointOverlayInteract descriptor requires at least a single Double2DParam
+        # that serve as a "position" role. Map it against the parameter we just created
+        # Note that we reference the "point" parameter by its script-name
+        interactParams = {"position": "point"}
+        
+        # Register the overlay on the group, it will now be displayed on the viewer
+        group.registerOverlay(interact, interactParams)
+        
+        
+        
+
+.. method:: NatronEngine.Effect.removeOverlay (overlay)
+
+    :param overlay: :class:`PyOverlayInteract<NatronEngine.PyOverlayInteract>`
+    
+    Remove an overlay previously registered with registerOverlay

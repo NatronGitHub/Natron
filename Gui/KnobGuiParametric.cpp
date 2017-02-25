@@ -163,7 +163,6 @@ public:
 
 KnobGuiParametric::KnobGuiParametric(const KnobGuiPtr& knob, ViewIdx view)
     : KnobGuiWidgets(knob, view)
-    , OverlaySupport()
     , _imp(new KnobGuiParametricPrivate(this))
 {
     _imp->knob = toKnobParametric(knob->getKnob());
@@ -187,7 +186,7 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
 {
     KnobParametricPtr knob = _imp->knob.lock();
     QObject::connect( knob.get(), SIGNAL(curveChanged(DimSpec)), this, SLOT(onCurveChanged(DimSpec)) );
-    OfxParamOverlayInteractPtr interact = knob->getCustomInteract();
+    OverlayInteractBasePtr interact = knob->getCustomInteract();
 
     KnobGuiPtr knobUI = getKnobGui();
 
@@ -438,94 +437,7 @@ KnobGuiParametric::refreshDimensionName(DimIdx dim)
     _imp->curveWidget->update();
 }
 
-void
-KnobGuiParametric::swapOpenGLBuffers()
-{
-    _imp->curveWidget->swapOpenGLBuffers();
-}
 
-void
-KnobGuiParametric::redraw()
-{
-    _imp->curveWidget->redraw();
-}
-
-
-void
-KnobGuiParametric::getOpenGLContextFormat(int* depthPerComponents, bool* hasAlpha) const
-{
-    _imp->curveWidget->getOpenGLContextFormat(depthPerComponents, hasAlpha);
-}
-
-void
-KnobGuiParametric::getViewportSize(double &width,
-                                   double &height) const
-{
-    _imp->curveWidget->getViewportSize(width, height);
-}
-
-void
-KnobGuiParametric::getPixelScale(double & xScale,
-                                 double & yScale) const
-{
-    _imp->curveWidget->getPixelScale(xScale, yScale);
-}
-
-void
-KnobGuiParametric::getBackgroundColour(double &r,
-                                       double &g,
-                                       double &b) const
-{
-    _imp->curveWidget->getBackgroundColour(r, g, b);
-}
-
-void
-KnobGuiParametric::saveOpenGLContext()
-{
-    _imp->curveWidget->saveOpenGLContext();
-}
-
-void
-KnobGuiParametric::restoreOpenGLContext()
-{
-    _imp->curveWidget->restoreOpenGLContext();
-}
-
-void
-KnobGuiParametric::getCursorPosition(double& x, double& y) const
-{
-    return _imp->curveWidget->getCursorPosition(x, y);
-}
-
-RectD
-KnobGuiParametric::getViewportRect() const
-{
-    return _imp->curveWidget->getViewportRect();
-}
-
-void
-KnobGuiParametric::toCanonicalCoordinates(double *x, double *y) const
-{
-    return _imp->curveWidget->toCanonicalCoordinates(x, y);
-}
-
-void
-KnobGuiParametric::toWidgetCoordinates(double *x, double *y) const
-{
-    return _imp->curveWidget->toWidgetCoordinates(x, y);
-}
-
-int
-KnobGuiParametric::getWidgetFontHeight() const
-{
-    return _imp->curveWidget->getWidgetFontHeight();
-}
-
-int
-KnobGuiParametric::getStringWidthForCurrentFont(const std::string& string) const
-{
-    return _imp->curveWidget->getStringWidthForCurrentFont(string);
-}
 
 NATRON_NAMESPACE_EXIT;
 

@@ -34,6 +34,7 @@
 #endif
 
 #include "Engine/Bezier.h"
+#include "Engine/RectD.h"
 
 #include "Engine/EngineFwd.h"
 

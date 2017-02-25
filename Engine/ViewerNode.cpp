@@ -159,6 +159,13 @@ ViewerNode::~ViewerNode()
     }
 }
 
+void
+ViewerNode::initializeOverlayInteract()
+{
+    _imp->ui.reset(new ViewerNodeOverlay(_imp.get()));
+    registerOverlay(_imp->ui, std::map<std::string, std::string>());
+}
+
 RenderEngine*
 ViewerNode::createRenderEngine()
 {
@@ -747,11 +754,10 @@ void
 ViewerNode::setRefreshButtonDown(bool down)
 {
     KnobButtonPtr knob = _imp->refreshButtonKnob.lock();
-    beginChanges();
+    // Ignore evaluation
+    ScopedChanges_RAII changes(this, true);
     knob->setValue(down, ViewIdx(0), DimIdx(0), eValueChangedReasonTimeChanged);
 
-    // Ignore evaluation
-    endChanges(true);
 }
 
 bool
@@ -839,7 +845,7 @@ ViewerNode::isFullFrameProcessingEnabled() const
 void
 ViewerNode::resetWipe()
 {
-    beginChanges();
+    ScopedChanges_RAII changes(this);
     _imp->wipeCenter.lock()->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
     _imp->wipeAngle.lock()->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
     _imp->wipeAmount.lock()->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());

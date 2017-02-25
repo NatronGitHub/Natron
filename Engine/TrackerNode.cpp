@@ -34,6 +34,7 @@
 #include "Engine/Node.h"
 #include "Engine/Lut.h"
 #include "Engine/Project.h"
+#include "Engine/OverlaySupport.h"
 #include "Engine/TimeLine.h"
 #include "Engine/TrackerHelper.h"
 #include "Engine/TrackMarker.h"
@@ -126,6 +127,14 @@ TrackerNode::TrackerNode(const NodePtr& node)
 
 TrackerNode::~TrackerNode()
 {
+}
+
+
+void
+TrackerNode::initializeOverlayInteract()
+{
+    _imp->ui.reset(new TrackerNodeInteract(_imp.get()));
+    registerOverlay(_imp->ui, std::map<std::string, std::string>());
 }
 
 void
@@ -1299,32 +1308,40 @@ TrackerNode::initializeTransformPageKnobs(const KnobPagePtr& transformPage)
         param->setSecret(true);
         _imp->customShutterOffset = param;
     }
-    getNode()->addTransformInteract(_imp->translate.lock(),
-                                    _imp->scale.lock(),
-                                    _imp->scaleUniform.lock(),
-                                    _imp->rotate.lock(),
-                                    _imp->skewX.lock(),
-                                    _imp->skewY.lock(),
-                                    _imp->skewOrder.lock(),
-                                    _imp->center.lock(),
-                                    _imp->invertTransform.lock(),
-                                    KnobBoolPtr() /*interactive*/);
 
-    getNode()->addCornerPinInteract(_imp->fromPoints[0].lock(),
-                                    _imp->fromPoints[1].lock(),
-                                    _imp->fromPoints[2].lock(),
-                                    _imp->fromPoints[3].lock(),
-                                    _imp->toPoints[0].lock(),
-                                    _imp->toPoints[1].lock(),
-                                    _imp->toPoints[2].lock(),
-                                    _imp->toPoints[3].lock(),
-                                    _imp->enableToPoint[0].lock(),
-                                    _imp->enableToPoint[1].lock(),
-                                    _imp->enableToPoint[2].lock(),
-                                    _imp->enableToPoint[3].lock(),
-                                    _imp->cornerPinOverlayPoints.lock(),
-                                    _imp->invertTransform.lock(),
-                                    KnobBoolPtr() /*interactive*/);
+    std::map<std::string, std::string> transformKnobs;
+    transformKnobs["translate"] = kTransformParamTranslate;
+    transformKnobs["scale"] = kTransformParamScale;
+    transformKnobs["scaleUniform"] = kTransformParamUniform;
+    transformKnobs["rotate"] = kTransformParamRotate;
+    transformKnobs["center"] = kTransformParamCenter;
+    transformKnobs["skewX"] = kTransformParamSkewX;
+    transformKnobs["skewY"] = kTransformParamSkewY;
+    transformKnobs["skewOrder"] = kTransformParamSkewOrder;
+    transformKnobs["invert"] = kTransformParamInvert;
+
+    boost::shared_ptr<TransformOverlayInteract> transformInteract(new TransformOverlayInteract());
+    registerOverlay(transformInteract, transformKnobs);
+    
+
+    std::map<std::string, std::string> cpKnobs;
+    cpKnobs["from1"] = kCornerPinParamFrom1;
+    cpKnobs["from2"] = kCornerPinParamFrom2;
+    cpKnobs["from3"] = kCornerPinParamFrom3;
+    cpKnobs["from4"] = kCornerPinParamFrom4;
+    cpKnobs["to1"] = kCornerPinParamTo1;
+    cpKnobs["to2"] = kCornerPinParamTo2;
+    cpKnobs["to3"] = kCornerPinParamTo3;
+    cpKnobs["to4"] = kCornerPinParamTo4;
+    cpKnobs["enable1"] = kCornerPinParamEnable1;
+    cpKnobs["enable2"] = kCornerPinParamEnable2;
+    cpKnobs["enable3"] = kCornerPinParamEnable3;
+    cpKnobs["enable4"] = kCornerPinParamEnable4;
+    cpKnobs["overlayPoints"] = kCornerPinParamOverlayPoints;
+    cpKnobs["invert"] = kCornerPinInvertParamName;
+
+    boost::shared_ptr<CornerPinOverlayInteract> cornerPinInteract(new CornerPinOverlayInteract());
+    registerOverlay(cornerPinInteract, cpKnobs);
 
     {
         KnobSeparatorPtr param = createKnob<KnobSeparator>(kTrackerParamExportDataSeparator);
@@ -1425,7 +1442,8 @@ TrackerNode::knobChanged(const KnobIPtr& k,
             return false;
         }
 
-        OverlaySupport* overlay = getNode()->getCurrentViewportForOverlays();
+        OverlaySupport* overlay = _imp->ui->getLastCallingViewport();
+        assert(overlay);
         _imp->trackSelectedMarkers( TimeValue(startFrame), TimeValue(lastFrame), TimeValue(step),  overlay);
         _imp->ui->trackRangeDialogGroup.lock()->setValue(false);
     } else if ( k == _imp->ui->trackRangeDialogCancelButton.lock() ) {

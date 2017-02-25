@@ -422,8 +422,6 @@ public:
 
     bool hasInputConnected() const;
 
-    bool hasOverlay() const;
-
     bool hasMandatoryInputDisconnected() const;
 
     bool hasAllInputsConnected() const;
@@ -939,97 +937,9 @@ private:
 public:
 
 
-    void setCurrentViewportForOverlays_public(OverlaySupport* viewport);
-
-    OverlaySupport* getCurrentViewportForOverlays() const;
-
-    RenderScale getOverlayInteractRenderScale() const;
-
     bool isDoingInteractAction() const;
 
     bool shouldDrawOverlay(TimeValue time, ViewIdx view) const;
-
-
-    void drawHostOverlay(TimeValue time,
-                         const RenderScale& renderScale,
-                         ViewIdx view);
-
-    bool onOverlayPenDownDefault(TimeValue time,
-                                 const RenderScale& renderScale,
-                                 ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
-
-    bool onOverlayPenDoubleClickedDefault(TimeValue time,
-                                          const RenderScale& renderScale,
-                                          ViewIdx view, const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
-
-
-    bool onOverlayPenMotionDefault(TimeValue time,
-                                   const RenderScale& renderScale,
-                                   ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
-
-    bool onOverlayPenUpDefault(TimeValue time,
-                               const RenderScale& renderScale,
-                               ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
-
-    bool onOverlayKeyDownDefault(TimeValue time,
-                                 const RenderScale& renderScale,
-                                 ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
-
-    bool onOverlayKeyUpDefault(TimeValue time,
-                               const RenderScale& renderScale,
-                               ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
-
-    bool onOverlayKeyRepeatDefault(TimeValue time,
-                                   const RenderScale& renderScale,
-                                   ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
-
-    bool onOverlayFocusGainedDefault(TimeValue time,
-                                     const RenderScale& renderScale,
-                                     ViewIdx view) WARN_UNUSED_RETURN;
-
-    bool onOverlayFocusLostDefault(TimeValue time,
-                                   const RenderScale& renderScale,
-                                   ViewIdx view) WARN_UNUSED_RETURN;
-
-    void addPositionInteract(const KnobDoublePtr& position,
-                             const KnobBoolPtr& interactive);
-
-    void addTransformInteract(const KnobDoublePtr& translate,
-                              const KnobDoublePtr& scale,
-                              const KnobBoolPtr& scaleUniform,
-                              const KnobDoublePtr& rotate,
-                              const KnobDoublePtr& skewX,
-                              const KnobDoublePtr& skewY,
-                              const KnobChoicePtr& skewOrder,
-                              const KnobDoublePtr& center,
-                              const KnobBoolPtr& invert,
-                              const KnobBoolPtr& interactive);
-
-    void addCornerPinInteract(const KnobDoublePtr& from1,
-                              const KnobDoublePtr& from2,
-                              const KnobDoublePtr& from3,
-                              const KnobDoublePtr& from4,
-                              const KnobDoublePtr& to1,
-                              const KnobDoublePtr& to2,
-                              const KnobDoublePtr& to3,
-                              const KnobDoublePtr& to4,
-                              const KnobBoolPtr& enable1,
-                              const KnobBoolPtr& enable2,
-                              const KnobBoolPtr& enable3,
-                              const KnobBoolPtr& enable4,
-                              const KnobChoicePtr& overlayPoints,
-                              const KnobBoolPtr& invert,
-                              const KnobBoolPtr& interactive);
-
-    void removePositionHostOverlay(const KnobIPtr& knob);
-
-    void initializeHostOverlays();
-
-    bool hasHostOverlay() const;
-
-    void setCurrentViewportForHostOverlays(OverlaySupport* viewPort);
-
-    bool hasHostOverlayForParam(const KnobIConstPtr& knob) const;
 
     bool isSubGraphEditedByUser() const;
 

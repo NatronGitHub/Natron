@@ -823,27 +823,28 @@ NodeCollection::fixRelativeFilePaths(const std::string& projectPathName,
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( (*it)->isActivated() ) {
-            (*it)->getEffectInstance()->beginChanges();
+            {
+                ScopedChanges_RAII changes((*it)->getEffectInstance().get());
 
-            const KnobsVec& knobs = (*it)->getKnobs();
-            for (U32 j = 0; j < knobs.size(); ++j) {
-                KnobStringBasePtr isString = toKnobStringBase(knobs[j]);
-                KnobStringPtr isStringKnob = toKnobString(isString);
-                if ( !isString || isStringKnob || ( knobs[j] == project->getEnvVarKnob() ) ) {
-                    continue;
-                }
 
-                std::string filepath = isString->getValue();
+                const KnobsVec& knobs = (*it)->getKnobs();
+                for (U32 j = 0; j < knobs.size(); ++j) {
+                    KnobStringBasePtr isString = toKnobStringBase(knobs[j]);
+                    KnobStringPtr isStringKnob = toKnobString(isString);
+                    if ( !isString || isStringKnob || ( knobs[j] == project->getEnvVarKnob() ) ) {
+                        continue;
+                    }
 
-                if ( !filepath.empty() ) {
-                    if ( project->fixFilePath(projectPathName, newProjectPath, filepath) ) {
-                        isString->setValue(filepath);
+                    std::string filepath = isString->getValue();
+
+                    if ( !filepath.empty() ) {
+                        if ( project->fixFilePath(projectPathName, newProjectPath, filepath) ) {
+                            isString->setValue(filepath);
+                        }
                     }
                 }
             }
-            (*it)->getEffectInstance()->endChanges(blockEval);
-
-
+            
             NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
             if (isGrp) {
                 isGrp->fixRelativeFilePaths(projectPathName, newProjectPath, blockEval);

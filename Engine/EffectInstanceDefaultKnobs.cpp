@@ -940,7 +940,7 @@ EffectInstance::handleFormatKnob(const KnobIPtr& knob)
     KnobDoublePtr par = _imp->defKnobs->pluginFormatKnobs.par.lock();
     assert(size && par);
 
-    beginChanges();
+    ScopedChanges_RAII changes(this);
     size->blockValueChanges();
     std::vector<int> values(2);
     values[0] = f.width();
@@ -950,8 +950,6 @@ EffectInstance::handleFormatKnob(const KnobIPtr& knob)
     par->blockValueChanges();
     par->setValue( f.getPixelAspectRatio() );
     par->unblockValueChanges();
-
-    endChanges();
 
     return true;
 } // handleFormatKnob
@@ -968,7 +966,9 @@ EffectInstance::refreshFormatParamChoice(const std::vector<ChoiceOption>& entrie
     }
     int curIndex = choice->getValue();
     choice->populateChoices(entries);
-    choice->beginChanges();
+
+    ScopedChanges_RAII changes(choice.get());
+
 
     choice->setDefaultValueWithoutApplying(defValue);
     // We don't want to serialize the default value even if it changed, because it will be restored by the project
@@ -982,8 +982,6 @@ EffectInstance::refreshFormatParamChoice(const std::vector<ChoiceOption>& entrie
             choice->setValue(curIndex);
         }
     }
-    
-    choice->endChanges();
 }
 
 
@@ -1505,7 +1503,7 @@ EffectInstance::initializeKnobs(bool loadingSerialization, bool hasGUI)
     ////Only called by the main-thread
 
 
-    beginChanges();
+    ScopedChanges_RAII changes(this);
 
     assert( QThread::currentThread() == qApp->thread() );
 
@@ -1525,8 +1523,6 @@ EffectInstance::initializeKnobs(bool loadingSerialization, bool hasGUI)
     if (table) {
         table->declareItemsToPython();
     }
-    
-    endChanges();
     
 } // initializeKnobs
 

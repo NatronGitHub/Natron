@@ -61,6 +61,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"
 #include "Engine/OfxEffectInstance.h"
+#include "Engine/OverlayInteractBase.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/PyNode.h"
@@ -78,7 +79,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ActionShortcuts.h"
 #include "Gui/BackdropGui.h"
 #include "Gui/Button.h"
-#include "Gui/HostOverlay.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/AnimationModuleEditor.h"
 #include "Gui/Edge.h"
@@ -194,7 +194,6 @@ NodeGui::NodeGui(QGraphicsItem *parent)
     , _distanceSinceLastMagnec()
     , _magnecStartingPos()
     , _parentMultiInstance()
-    , _hostOverlay()
     , _undoStack( new QUndoStack() )
     , _overlayLocked(false)
     , _availableViewsIndicator()
@@ -293,9 +292,6 @@ NodeGui::initialize(NodeGraph* dag,
     }
 
     restoreStateAfterCreation();
-
-
-    getNode()->initializeHostOverlays();
 
     initializeInputs();
 
@@ -3059,210 +3055,6 @@ NodeGui::setColor(double r,
 }
 
 void
-NodeGui::addDefaultInteract(const HostOverlayKnobsPtr& knobs)
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    if (!_hostOverlay) {
-        _hostOverlay.reset( new HostOverlay( shared_from_this() ) );
-    }
-
-    if ( _hostOverlay->addInteract(knobs) ) {
-        getDagGui()->getGui()->redrawAllViewers();
-    }
-}
-
-boost::shared_ptr<HostOverlay>
-NodeGui::getHostOverlay() const
-{
-    return _hostOverlay;
-}
-
-bool
-NodeGui::hasHostOverlay() const
-{
-    if (_hostOverlay) {
-        return true;
-    }
-
-    return false;
-}
-
-void
-NodeGui::setCurrentViewportForHostOverlays(OverlaySupport* viewPort)
-{
-    if (_hostOverlay) {
-        _hostOverlay->setCallingViewport(viewPort);
-    }
-}
-
-void
-NodeGui::drawHostOverlay(TimeValue time,
-                         const RenderScale& renderScale,
-                         ViewIdx view)
-{
-    if (_hostOverlay) {
-        NatronOverlayInteractSupport::OGLContextSaver s( _hostOverlay->getLastCallingViewport() );
-        _hostOverlay->draw(time, renderScale, view);
-    }
-}
-
-bool
-NodeGui::onOverlayPenDownDefault(TimeValue time,
-                                 const RenderScale& renderScale,
-                                 ViewIdx view,
-                                 const QPointF & viewportPos,
-                                 const QPointF & pos,
-                                 double pressure)
-{
-    if (_hostOverlay) {
-        return _hostOverlay->penDown(time, renderScale, view, pos, viewportPos.toPoint(), pressure);
-    }
-
-    return false;
-}
-
-bool
-NodeGui::onOverlayPenDoubleClickedDefault(TimeValue time,
-                                          const RenderScale& renderScale,
-                                          ViewIdx view,
-                                          const QPointF & viewportPos,
-                                          const QPointF & pos)
-{
-    if (_hostOverlay) {
-        return _hostOverlay->penDoubleClicked( time, renderScale, view, pos, viewportPos.toPoint() );
-    }
-
-    return false;
-}
-
-bool
-NodeGui::onOverlayPenMotionDefault(TimeValue time,
-                                   const RenderScale& renderScale,
-                                   ViewIdx view,
-                                   const QPointF & viewportPos,
-                                   const QPointF & pos,
-                                   double pressure)
-{
-    if (_hostOverlay) {
-        return _hostOverlay->penMotion(time, renderScale, view, pos, viewportPos.toPoint(), pressure);
-    }
-
-    return false;
-}
-
-bool
-NodeGui::onOverlayPenUpDefault(TimeValue time,
-                               const RenderScale& renderScale,
-                               ViewIdx view,
-                               const QPointF & viewportPos,
-                               const QPointF & pos,
-                               double pressure)
-{
-    if (_hostOverlay) {
-        return _hostOverlay->penUp(time, renderScale, view, pos, viewportPos.toPoint(), pressure);
-    }
-
-    return false;
-}
-
-bool
-NodeGui::onOverlayKeyDownDefault(TimeValue time,
-                                 const RenderScale& renderScale,
-                                 ViewIdx view,
-                                 Key key,
-                                 KeyboardModifiers /*modifiers*/)
-{
-    if (_hostOverlay) {
-        QByteArray keyStr;
-
-        return _hostOverlay->keyDown( time, renderScale, view, (int)key, keyStr.data() );
-    }
-
-    return false;
-}
-
-bool
-NodeGui::onOverlayKeyUpDefault(TimeValue time,
-                               const RenderScale& renderScale,
-                               ViewIdx view,
-                               Key key,
-                               KeyboardModifiers /*modifiers*/)
-{
-    if (_hostOverlay) {
-        QByteArray keyStr;
-
-        return _hostOverlay->keyUp( time, renderScale, view, (int)key, keyStr.data() );
-    }
-
-    return false;
-}
-
-bool
-NodeGui::onOverlayKeyRepeatDefault(TimeValue time,
-                                   const RenderScale& renderScale,
-                                   ViewIdx view,
-                                   Key key,
-                                   KeyboardModifiers /*modifiers*/)
-{
-    if (_hostOverlay) {
-        QByteArray keyStr;
-
-        return _hostOverlay->keyRepeat( time, renderScale, view, (int)key, keyStr.data() );
-    }
-
-    return false;
-}
-
-bool
-NodeGui::onOverlayFocusGainedDefault(TimeValue time,
-                                     const RenderScale& renderScale,
-                                     ViewIdx view)
-{
-    if (_hostOverlay) {
-        QByteArray keyStr;
-
-        return _hostOverlay->gainFocus(time, renderScale, view);
-    }
-
-    return false;
-}
-
-bool
-NodeGui::onOverlayFocusLostDefault(TimeValue time,
-                                   const RenderScale& renderScale,
-                                   ViewIdx view)
-{
-    if (_hostOverlay) {
-        QByteArray keyStr;
-
-        return _hostOverlay->loseFocus(time, renderScale, view);
-    }
-
-    return false;
-}
-
-bool
-NodeGui::hasHostOverlayForParam(const KnobIConstPtr& param)
-{
-    if (_hostOverlay) {
-        return _hostOverlay->hasHostOverlayForParam(param);
-    }
-
-    return false;
-}
-
-void
-NodeGui::removePositionHostOverlay(const KnobIPtr& knob)
-{
-    if (_hostOverlay) {
-        _hostOverlay->removePositionHostOverlay(knob);
-        if ( _hostOverlay->isEmpty() ) {
-            _hostOverlay.reset();
-        }
-    }
-}
-
-void
 NodeGui::setOverlayLocked(bool locked)
 {
     QMutexLocker k(&_overlayLockedMutex);
@@ -3475,7 +3267,12 @@ NodeGui::setCurrentCursor(CursorEnum defaultCursor)
     if (!node) {
         return;
     }
-    OverlaySupport* overlayInteract = node->getCurrentViewportForOverlays();
+    std::list<OverlayInteractBasePtr> overlays;
+    node->getEffectInstance()->getOverlays(&overlays);
+    if (overlays.empty()) {
+        return;
+    }
+    OverlaySupport* overlayInteract = overlays.front()->getLastCallingViewport();
     if (!overlayInteract) {
         return;
     }
@@ -3503,7 +3300,12 @@ NodeGui::setCurrentCursor(const QString& customCursorFilePath)
     if (!node) {
         return false;
     }
-    OverlaySupport* overlayInteract = node->getCurrentViewportForOverlays();
+    std::list<OverlayInteractBasePtr> overlays;
+    node->getEffectInstance()->getOverlays(&overlays);
+    if (overlays.empty()) {
+        return false;
+    }
+    OverlaySupport* overlayInteract = overlays.front()->getLastCallingViewport();
     if (!overlayInteract) {
         return false;
     }
@@ -3809,7 +3611,13 @@ NodeGui::onRightClickMenuKnobPopulated()
     if (!node) {
         return;
     }
-    OverlaySupport* overlayInteract = node->getCurrentViewportForOverlays();
+
+    std::list<OverlayInteractBasePtr> overlays;
+    node->getEffectInstance()->getOverlays(&overlays);
+    if (overlays.empty()) {
+        return;
+    }
+    OverlaySupport* overlayInteract = overlays.front()->getLastCallingViewport();
     if (!overlayInteract) {
         return;
     }

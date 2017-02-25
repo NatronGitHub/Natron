@@ -41,6 +41,7 @@
 #include "Global/KeySymbols.h"
 
 #include "Engine/ImagePlaneDesc.h"
+#include "Engine/Color.h"
 #include "Engine/Knob.h" // for KnobHolder
 #include "Engine/RectD.h"
 #include "Engine/RectI.h"
@@ -544,93 +545,6 @@ protected:
      **/
     virtual ActionRetCodeEnum dettachOpenGLContext(const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data);
 
-
-public:
-
-    /// Overlay actions
-
-    void drawOverlay_public(TimeValue time, const RenderScale & renderScale, ViewIdx view);
-
-    bool onOverlayPenDown_public(TimeValue time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp, PenType pen) WARN_UNUSED_RETURN;
-
-    bool onOverlayPenMotion_public(TimeValue time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp) WARN_UNUSED_RETURN;
-
-    bool onOverlayPenDoubleClicked_public(TimeValue time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
-
-    bool onOverlayPenUp_public(TimeValue time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp) WARN_UNUSED_RETURN;
-
-    bool onOverlayKeyDown_public(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
-
-    bool onOverlayKeyUp_public(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
-
-    bool onOverlayKeyRepeat_public(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
-
-    bool onOverlayFocusGained_public(TimeValue time, const RenderScale & renderScale, ViewIdx view) WARN_UNUSED_RETURN;
-
-    bool onOverlayFocusLost_public(TimeValue time, const RenderScale & renderScale, ViewIdx view) WARN_UNUSED_RETURN;
-
-protected:
-
-    virtual void drawOverlay(TimeValue time,
-                             const RenderScale & renderScale,
-                             ViewIdx view);
-
-    virtual bool onOverlayPenDown(TimeValue time,
-                                  const RenderScale & renderScale,
-                                  ViewIdx view,
-                                  const QPointF & viewportPos,
-                                  const QPointF & pos,
-                                  double pressure,
-                                  TimeValue timestamp,
-                                  PenType pen) WARN_UNUSED_RETURN;
-
-    virtual bool onOverlayPenDoubleClicked(TimeValue time,
-                                           const RenderScale & renderScale,
-                                           ViewIdx view,
-                                           const QPointF & viewportPos,
-                                           const QPointF & pos) WARN_UNUSED_RETURN;
-
-    virtual bool onOverlayPenMotion(TimeValue time,
-                                    const RenderScale & renderScale,
-                                    ViewIdx view,
-                                    const QPointF & viewportPos,
-                                    const QPointF & pos,
-                                    double pressure,
-                                    TimeValue timestamp) WARN_UNUSED_RETURN;
-
-    virtual bool onOverlayPenUp(TimeValue time,
-                                const RenderScale & renderScale,
-                                ViewIdx view,
-                                const QPointF & viewportPos,
-                                const QPointF & pos,
-                                double pressure,
-                                TimeValue timestamp) WARN_UNUSED_RETURN;
-
-    virtual bool onOverlayKeyDown(TimeValue time,
-                                  const RenderScale & renderScale,
-                                  ViewIdx view,
-                                  Key key,
-                                  KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
-
-    virtual bool onOverlayKeyUp(TimeValue time,
-                                const RenderScale & renderScale,
-                                ViewIdx view,
-                                Key key,
-                                KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
-
-    virtual bool onOverlayKeyRepeat(TimeValue time,
-                                    const RenderScale & renderScale,
-                                    ViewIdx view,
-                                    Key key,
-                                    KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
-
-    virtual bool onOverlayFocusGained(TimeValue time,
-                                      const RenderScale & renderScale,
-                                      ViewIdx view) WARN_UNUSED_RETURN;
-
-    virtual bool onOverlayFocusLost(TimeValue time,
-                                    const RenderScale & renderScale,
-                                    ViewIdx view) WARN_UNUSED_RETURN;
 
 public:
 
@@ -1469,11 +1383,6 @@ public:
     virtual bool shouldCacheOutput(bool isFrameVaryingOrAnimated, int visitsCount) const;
 
 
-
-
-public:
-
-
     /**
      * @brief Override to initialize the overlay interact. It is called only on the
      * live instance.
@@ -1482,9 +1391,6 @@ public:
     {
     }
 
-    virtual void setCurrentViewportForOverlays(OverlaySupport* /*viewport*/)
-    {
-    }
 
 public:
 
@@ -1661,27 +1567,37 @@ public:
 
 
 
-    void setInteractColourPicker_public(const OfxRGBAColourD& color, bool setColor, bool hasColor);
+    void setInteractColourPicker_public(const ColorRgba<double>& color, bool setColor, bool hasColor);
 
     virtual bool isDoingInteractAction() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void onInteractViewportSelectionCleared() {}
 
-    virtual void onInteractViewportSelectionUpdated(const RectD& /*rectangle*/,
-                                                    bool /*onRelease*/) {}
+    /**
+     * @brief Register a new overlay that will be drawn on the viewer when this node settings panel is opened.
+     * @param knobs The key of the map must match a key in the overlay's knobs description. The value associated
+     * to the key is the script-name of a knob on this effect that should fill the role description returned by
+     * getDescription() on the overlay.
+     *
+     * Note that overlays for a node will be drawn in the order they were registered by this function.
+     * To re-order them, you may call removeOverlay and registerOverlay again.
+     *
+     * This function throws an std::invalid_argument() exception if the descriptor cannot find a required knob.
+     **/
+    void registerOverlay(const OverlayInteractBasePtr& overlay, const std::map<std::string,std::string>& knobs);
 
+    /**
+     * @brief Remove a previously registered overlay
+     **/
+    void removeOverlay(const OverlayInteractBasePtr& overlay);
 
-    /* @brief Overlay support:
-     * Just overload this function in your operator.
-     * No need to include any OpenGL related header.
-     * The coordinate space is  defined by the displayWindow
-     * (i.e: (0,0) = bottomLeft and  width() and height() being
-     * respectivly the width and height of the frame.)
-     */
-    virtual bool hasOverlay() const
-    {
-        return false;
-    }
+    /**
+     * @brief Returns the list of all registered overlays
+     **/
+    void getOverlays(std::list<OverlayInteractBasePtr> *overlays) const;
 
+    /**
+     * @brief Convenience function that returns true if at least one overlay was registered
+     **/
+    bool hasOverlayInteract() const;
 
     /**
      * @brief Reimplement to control how the host adds the RGBA checkboxes.
@@ -1928,7 +1844,7 @@ public:
     void findPluginFormatKnobs();
 
     void setRenderCloneInput(const EffectInstancePtr& input, int inputNb);
-    
+
 
 private:
 
@@ -1992,21 +1908,6 @@ protected:
 
     virtual void fetchRenderCloneKnobs() OVERRIDE;
 
-
-    virtual void setInteractColourPicker(const OfxRGBAColourD& /*color*/, bool /*setColor*/, bool /*hasColor*/)
-    {
-
-    }
-
-    virtual bool shouldPreferPluginOverlayOverHostOverlay() const
-    {
-        return true;
-    }
-
-    virtual bool shouldDrawHostOverlay() const
-    {
-        return true;
-    }
 
 
     NodeWPtr _node; //< the node holding this effect

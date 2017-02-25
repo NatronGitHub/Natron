@@ -653,9 +653,6 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
         knob->setInViewerContextLabel(QString::fromUtf8(viewportLabel.c_str()));
     }
 
-
-    knob->setOfxParamHandle( (void*)instance->getHandle() );
-
     ptk->connectDynamicProperties();
 
     return instance;

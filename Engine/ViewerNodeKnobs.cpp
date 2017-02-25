@@ -1489,8 +1489,8 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
     } else if (k == _imp->rightClickCenterWipe.lock()) {
         KnobDoublePtr knob = _imp->wipeCenter.lock();
         std::vector<double> values(2);
-        values[0] = _imp->lastMousePos.x();
-        values[1] = _imp->lastMousePos.y();
+        values[0] = _imp->ui->lastMousePos.x();
+        values[1] = _imp->ui->lastMousePos.y();
         knob->setValueAcrossDimensions(values, DimIdx(0), view, eValueChangedReasonPluginEdited);
     } else if (k == _imp->rightClickNextLayer.lock()) {
 
@@ -1642,13 +1642,13 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         _imp->pauseButtonKnob[0].lock()->setValue(!curValue);
         _imp->pauseButtonKnob[1].lock()->setValue(!curValue);
     } else if (k == _imp->createUserRoIAction.lock()) {
-        _imp->buildUserRoIOnNextPress = true;
+        _imp->ui->buildUserRoIOnNextPress = true;
         _imp->toggleUserRoIButtonKnob.lock()->setValue(true);
-        _imp->draggedUserRoI = getUserRoI();
+        _imp->ui->draggedUserRoI = getUserRoI();
     } else if (k == _imp->toggleUserRoIButtonKnob.lock()) {
         bool enabled = _imp->toggleUserRoIButtonKnob.lock()->getValue();
         if (!enabled) {
-            _imp->buildUserRoIOnNextPress = false;
+            _imp->ui->buildUserRoIOnNextPress = false;
         }
     } else if (k == _imp->enableStatsAction.lock() && reason == eValueChangedReasonUserEdited) {
         getApp()->checkAllReadersModificationDate(false);

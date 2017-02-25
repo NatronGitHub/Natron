@@ -332,45 +332,6 @@ public:
         return _wasBeginEditCalled;
     }
 
-;
-    virtual void addDefaultInteract(const HostOverlayKnobsPtr& knobs) OVERRIDE FINAL;
-
-    boost::shared_ptr<HostOverlay> getHostOverlay() const WARN_UNUSED_RETURN;
-    virtual void drawHostOverlay(TimeValue time,
-                                 const RenderScale& renderScale,
-                                 ViewIdx view)  OVERRIDE FINAL;
-    virtual bool onOverlayPenDownDefault(TimeValue time,
-                                         const RenderScale& renderScale,
-                                         ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure)  OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayPenDoubleClickedDefault(TimeValue time,
-                                                  const RenderScale& renderScale,
-                                                  ViewIdx view, const QPointF & viewportPos, const QPointF & pos)  OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayPenMotionDefault(TimeValue time,
-                                           const RenderScale& renderScale,
-                                           ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure)  OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayPenUpDefault(TimeValue time,
-                                       const RenderScale& renderScale,
-                                       ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure)  OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayKeyDownDefault(TimeValue time,
-                                         const RenderScale& renderScale,
-                                         ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayKeyUpDefault(TimeValue time,
-                                       const RenderScale& renderScale,
-                                       ViewIdx view, Key key, KeyboardModifiers modifiers)  OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayKeyRepeatDefault(TimeValue time,
-                                           const RenderScale& renderScale,
-                                           ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayFocusGainedDefault(TimeValue time,
-                                             const RenderScale& renderScale,
-                                             ViewIdx view) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayFocusLostDefault(TimeValue time,
-                                           const RenderScale& renderScale,
-                                           ViewIdx view) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool hasHostOverlay() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void setCurrentViewportForHostOverlays(OverlaySupport* viewPort) OVERRIDE FINAL;
-    virtual bool hasHostOverlayForParam(const KnobIConstPtr& param) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void removePositionHostOverlay(const KnobIPtr& knob) OVERRIDE FINAL;
-
     virtual void onIdentityStateChanged(int inputNb) OVERRIDE FINAL;
 
     void copyPreviewImageBuffer(const std::vector<unsigned int>& data, int width, int height);
@@ -614,8 +575,6 @@ private:
     QPointF _magnecStartingPos; //for x and for y
     QString _channelsExtraLabel;
     boost::weak_ptr<NodeGui> _parentMultiInstance;
-
-    boost::shared_ptr<HostOverlay> _hostOverlay;
     boost::shared_ptr<QUndoStack> _undoStack; /*!< undo/redo stack*/
     mutable QMutex _overlayLockedMutex;
     bool _overlayLocked;

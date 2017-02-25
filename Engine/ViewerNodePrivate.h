@@ -43,6 +43,7 @@
 #include "Engine/OpenGLViewerI.h"
 #include "Engine/OSGLFunctions.h"
 #include "Engine/OutputSchedulerThread.h"
+#include "Engine/OverlayInteractBase.h"
 #include "Engine/Project.h"
 #include "Engine/RenderStats.h"
 #include "Engine/RotoPaint.h"
@@ -402,7 +403,7 @@ enum HoverStateEnum
     eHoverStateWipeRotateHandle
 };
 
-
+class ViewerNodeOverlay;
 struct ViewerNodePrivate
 {
     ViewerNode* _publicInterface;
@@ -510,12 +511,6 @@ struct ViewerNodePrivate
     double lastFstopValue;
     double lastGammaValue;
     int lastWipeIndex;
-    RectD draggedUserRoI;
-    bool buildUserRoIOnNextPress;
-    ViewerNodeInteractMouseStateEnum uiState;
-    HoverStateEnum hoverState;
-    QPointF lastMousePos;
-
 
     QTimer mustSetUpPlaybackButtonsTimer;
 
@@ -530,6 +525,8 @@ struct ViewerNodePrivate
     //disregarding the RoI. This is protected by partialUpdatesMutex
     std::list<RectD> partialUpdateRects;
 
+    // Overlay
+    boost::shared_ptr<ViewerNodeOverlay> ui;
 
     // If set, the viewport center will be updated to this point upon the next update of the texture, this is protected by
     // partialUpdatesMutex
@@ -545,15 +542,11 @@ struct ViewerNodePrivate
     , lastFstopValue(0)
     , lastGammaValue(1)
     , lastWipeIndex(0)
-    , draggedUserRoI()
-    , buildUserRoIOnNextPress(false)
-    , uiState(eViewerNodeInteractMouseStateIdle)
-    , hoverState(eHoverStateNothing)
-    , lastMousePos()
     , mustSetUpPlaybackButtonsTimer()
     , forceRenderMutex()
     , forceRender(false)
     , partialUpdateRects()
+    , ui()
     , viewportCenter()
     , viewportCenterSet(false)
     , isDoingPartialUpdates(false)
@@ -565,48 +558,6 @@ struct ViewerNodePrivate
     {
         return internalViewerProcessNode[index].lock();
     }
-
-
-    void drawWipeControl();
-
-    void drawUserRoI();
-
-    void drawArcOfCircle(const QPointF & center, double radiusX, double radiusY, double startAngle, double endAngle);
-
-    void showRightClickMenu();
-
-    static bool isNearbyWipeCenter(const QPointF& wipeCenter, const QPointF & pos, double zoomScreenPixelWidth, double zoomScreenPixelHeight ) ;
-
-    static bool isNearbyWipeRotateBar(const QPointF& wipeCenter, double wipeAngle, const QPointF & pos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
-
-    static bool isNearbyWipeMixHandle(const QPointF& wipeCenter, double wipeAngle, double mixAmount, const QPointF & pos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
-
-    static bool isNearByUserRoITopEdge(const RectD & roi,
-                                       const QPointF & zoomPos,
-                                       double zoomScreenPixelWidth,
-                                       double zoomScreenPixelHeight);
-
-    static bool isNearByUserRoIRightEdge(const RectD & roi,
-                                         const QPointF & zoomPos,
-                                         double zoomScreenPixelWidth,
-                                         double zoomScreenPixelHeight);
-
-    static bool isNearByUserRoILeftEdge(const RectD & roi,
-                                        const QPointF & zoomPos,
-                                        double zoomScreenPixelWidth,
-                                        double zoomScreenPixelHeight);
-
-
-    static bool isNearByUserRoIBottomEdge(const RectD & roi,
-                                          const QPointF & zoomPos,
-                                          double zoomScreenPixelWidth,
-                                          double zoomScreenPixelHeight);
-
-    static bool isNearByUserRoI(double x,
-                                double y,
-                                const QPointF & zoomPos,
-                                double zoomScreenPixelWidth,
-                                double zoomScreenPixelHeight);
 
     void refreshInputChoices(bool resetChoiceIfNotFound);
 
@@ -638,6 +589,87 @@ struct ViewerNodePrivate
 
     void setDisplayChannels(int index, bool setBoth);
     
+};
+
+class ViewerNodeOverlay : public OverlayInteractBase
+{
+public:
+
+    ViewerNodeOverlay(ViewerNodePrivate* imp);
+
+    virtual ~ViewerNodeOverlay()
+    {
+
+    }
+    
+private:
+
+
+    void drawWipeControl();
+
+    void drawUserRoI();
+
+    void drawArcOfCircle(const QPointF & center, double radiusX, double radiusY, double startAngle, double endAngle);
+
+    void showRightClickMenu();
+
+    static bool isNearbyWipeCenter(const QPointF& wipeCenter, const QPointF & pos, double zoomScreenPixelWidth, double zoomScreenPixelHeight ) ;
+
+    static bool isNearbyWipeRotateBar(const QPointF& wipeCenter, double wipeAngle, const QPointF & pos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
+
+    static bool isNearbyWipeMixHandle(const QPointF& wipeCenter, double wipeAngle, double mixAmount, const QPointF & pos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
+
+    static bool isNearbyUserRoITopEdge(const RectD & roi,
+                                       const QPointF & zoomPos,
+                                       double zoomScreenPixelWidth,
+                                       double zoomScreenPixelHeight);
+
+    static bool isNearbyUserRoIRightEdge(const RectD & roi,
+                                         const QPointF & zoomPos,
+                                         double zoomScreenPixelWidth,
+                                         double zoomScreenPixelHeight);
+
+    static bool isNearbyUserRoILeftEdge(const RectD & roi,
+                                        const QPointF & zoomPos,
+                                        double zoomScreenPixelWidth,
+                                        double zoomScreenPixelHeight);
+
+
+    static bool isNearbyUserRoIBottomEdge(const RectD & roi,
+                                          const QPointF & zoomPos,
+                                          double zoomScreenPixelWidth,
+                                          double zoomScreenPixelHeight);
+
+    static bool isNearbyUserRoI(double x,
+                                double y,
+                                const QPointF & zoomPos,
+                                double zoomScreenPixelWidth,
+                                double zoomScreenPixelHeight);
+
+    virtual bool onOverlayPenDown(TimeValue time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp, PenType pen) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void drawOverlay(TimeValue time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
+    virtual bool onOverlayPenMotion(TimeValue time, const RenderScale & renderScale, ViewIdx view,
+                                    const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenUp(TimeValue time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenDoubleClicked(TimeValue time,
+                                           const RenderScale & renderScale,
+                                           ViewIdx view,
+                                           const QPointF & viewportPos,
+                                           const QPointF & pos) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayKeyDown(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayKeyUp(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayKeyRepeat(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayFocusGained(TimeValue time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
+    virtual bool onOverlayFocusLost(TimeValue time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
+
+public:
+    
+    ViewerNodePrivate* _imp;
+    RectD draggedUserRoI;
+    bool buildUserRoIOnNextPress;
+    ViewerNodeInteractMouseStateEnum uiState;
+    HoverStateEnum hoverState;
+    QPointF lastMousePos;
 };
 
 NATRON_NAMESPACE_EXIT;

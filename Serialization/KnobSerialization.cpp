@@ -413,7 +413,6 @@ KnobSerialization::encode(YAML::Emitter& em) const
             em << YAML::Key << "CheckedIcon" << YAML::Value << _iconFilePath[1];
         }
 
-        TypeExtraData* typeData = _extraData.get();
         ChoiceExtraData* cdata = dynamic_cast<ChoiceExtraData*>(_extraData.get());
         ValueExtraData* vdata = dynamic_cast<ValueExtraData*>(_extraData.get());
         TextExtraData* tdata = dynamic_cast<TextExtraData*>(_extraData.get());
@@ -489,11 +488,6 @@ KnobSerialization::encode(YAML::Emitter& em) const
             }
         }
 
-        if (typeData) {
-            if (typeData->useHostOverlayHandle) {
-                propNames.push_back("UseOverlay");
-            }
-        }
 
     } // if (_isUserKnob) {
 
@@ -963,9 +957,6 @@ KnobSerialization::decode(const YAML::Node& node)
             } else if (prop == "ExistingFiles") {
                 FileExtraData* data = getOrCreateExtraData<FileExtraData>(_extraData);
                 data->useExistingFiles = node["ExistingFiles"].as<bool>();
-            } else if (prop == "UseOverlay") {
-                TypeExtraData* data = getOrCreateExtraData<TypeExtraData>(_extraData);
-                data->useHostOverlayHandle = true;
             } else if (prop == "Italic") {
                 TextExtraData *data = getOrCreateExtraData<TextExtraData>(_extraData);
                 data->italicActivated = true;

@@ -87,6 +87,7 @@ SOURCES += \
     CLArgs.cpp \
     CoonsRegularization.cpp \
     ColorParser.cpp \
+    CornerPinOverlayInteract.cpp \
     CreateNodeArgs.cpp \
     Curve.cpp \
     DiskCacheNode.cpp \
@@ -116,7 +117,6 @@ SOURCES += \
     HashableObject.cpp \
     Hash64.cpp \
     HistogramCPU.cpp \
-    HostOverlaySupport.cpp \
     Image.cpp \
     ImageConvert.cpp \
     ImagePlaneDesc.cpp  \
@@ -172,6 +172,8 @@ SOURCES += \
     OfxParamInstance.cpp \
     OneViewNode.cpp \
     OutputSchedulerThread.cpp \
+    OverlayInteractBase.cpp \
+    PointOverlayInteract.cpp \
     Plugin.cpp \
     PluginMemory.cpp \
     PrecompNode.cpp \
@@ -185,10 +187,12 @@ SOURCES += \
     PyNodeGroup.cpp \
     PyNode.cpp \
     PyExprUtils.cpp \
+    PyOverlayInteract.cpp \
     PyParameter.cpp \
     PyRoto.cpp \
     PySideCompat.cpp \
     PyTracker.cpp \
+    QtEnumConvert.cpp \
     ReadNode.cpp \
     RectD.cpp \
     RectI.cpp \
@@ -232,6 +236,7 @@ SOURCES += \
     TreeRender.cpp \
     TLSHolder.cpp \
     Transform.cpp \
+    TransformOverlayInteract.cpp \
     Utils.cpp \
     ViewerInstance.cpp \
     ViewerNode.cpp \
@@ -293,7 +298,12 @@ SOURCES += \
     NatronEngine/intnodecreationproperty_wrapper.cpp \
     NatronEngine/nodecreationproperty_wrapper.cpp \
     NatronEngine/stringnodecreationproperty_wrapper.cpp \
-    NatronEngine/exprutils_wrapper.cpp
+    NatronEngine/exprutils_wrapper.cpp \
+    NatronEngine/pyoverlayinteract_wrapper.cpp \
+    NatronEngine/pycornerpinoverlayinteract_wrapper.cpp \
+    NatronEngine/pyoverlayparamdesc_wrapper.cpp \
+    NatronEngine/pypointoverlayinteract_wrapper.cpp \
+    NatronEngine/pytransformoverlayinteract_wrapper.cpp
 
 
 
@@ -316,6 +326,7 @@ HEADERS += \
     CacheEntryBase.h \
     CacheEntryKeyBase.h \
     CoonsRegularization.h \
+    CornerPinOverlayInteract.h \
     ChoiceOption.h \
     Color.h \
     ColorParser.h \
@@ -351,7 +362,6 @@ HEADERS += \
     HashableObject.h \
     Hash64.h \
     HistogramCPU.h \
-    HostOverlaySupport.h \
     Image.h \
     ImagePrivate.h \
     ImagePlaneDesc.h \
@@ -409,6 +419,8 @@ HEADERS += \
     OpenGLViewerI.h \
     OutputSchedulerThread.h \
     OverlaySupport.h \
+    OverlayInteractBase.h \
+    PointOverlayInteract.h \
     Plugin.h \
     PluginActionShortcut.h \
     PluginMemory.h \
@@ -422,12 +434,14 @@ HEADERS += \
     PyItemsTable.h \
     PyNodeGroup.h \
     PyNode.h \
+    PyOverlayInteract.h \
     PyExprUtils.h \
     PyParameter.h \
     PyRoto.h \
     PyTracker.h \
     Pyside_Engine_Python.h \
     PyPanelI.h \
+    QtEnumConvert.h \
     RamBuffer.h \
     ReadNode.h \
     RectD.h \
@@ -474,6 +488,7 @@ HEADERS += \
     TrackerParamsProvider.h \
     TrackScheduler.h \
     TrackMarker.h \
+    TransformOverlayInteract.h \
     TreeRender.h \
     TLSHolder.h \
     TLSHolderImpl.h \
@@ -567,7 +582,12 @@ HEADERS += \
     NatronEngine/intnodecreationproperty_wrapper.h \
     NatronEngine/nodecreationproperty_wrapper.h \
     NatronEngine/stringnodecreationproperty_wrapper.h \
-    NatronEngine/exprutils_wrapper.h
+    NatronEngine/exprutils_wrapper.h \
+    NatronEngine/pyoverlayinteract_wrapper.h \
+    NatronEngine/pycornerpinoverlayinteract_wrapper.h \
+    NatronEngine/pyoverlayparamdesc_wrapper.h \
+    NatronEngine/pypointoverlayinteract_wrapper.h \
+    NatronEngine/pytransformoverlayinteract_wrapper.h
 
 
 

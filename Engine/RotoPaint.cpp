@@ -212,6 +212,13 @@ RotoPaint::~RotoPaint()
 {
 }
 
+void
+RotoPaint::initializeOverlayInteract()
+{
+    _imp->ui = RotoPaintInteract::create(_imp.get());
+    registerOverlay(_imp->ui, std::map<std::string, std::string>());
+}
+
 bool
 RotoPaint::isSubGraphPersistent() const
 {
@@ -766,17 +773,19 @@ RotoPaint::initTransformPageKnobs()
         _imp->resetTransformKnob = param;
     }
 
-    getNode()->addTransformInteract(translateKnob,
-                                    scaleKnob,
-                                    scaleUniformKnob,
-                                    rotateKnob,
-                                    skewXKnob,
-                                    skewYKnob,
-                                    skewOrderKnob,
-                                    centerKnob,
-                                    KnobBoolPtr() /*invert*/,
-                                    KnobBoolPtr() /*interactive*/);
+    std::map<std::string, std::string> transformKnobs;
+    transformKnobs["translate"] = kRotoDrawableItemTranslateParam;
+    transformKnobs["scale"] = kRotoDrawableItemScaleParam;
+    transformKnobs["scaleUniform"] = kRotoDrawableItemScaleUniformParam;
+    transformKnobs["rotate"] = kRotoDrawableItemRotateParam;
+    transformKnobs["center"] = kRotoDrawableItemCenterParam;
+    transformKnobs["skewX"] = kRotoDrawableItemSkewXParam;
+    transformKnobs["skewY"] = kRotoDrawableItemSkewYParam;
+    transformKnobs["skewOrder"] = kRotoDrawableItemSkewOrderParam;
 
+    
+    boost::shared_ptr<TransformOverlayInteract> transformInteract(new TransformOverlayInteract());
+    registerOverlay(transformInteract, transformKnobs);
 } // initTransformPageKnobs
 
 void
@@ -954,17 +963,20 @@ RotoPaint::initClonePageKnobs()
 
     }
 
+    std::map<std::string, std::string> transformKnobs;
+    transformKnobs["translate"] = kRotoBrushTranslateParam;
+    transformKnobs["scale"] = kRotoBrushScaleParam;
+    transformKnobs["scaleUniform"] = kRotoBrushScaleUniformParam;
+    transformKnobs["rotate"] = kRotoBrushRotateParam;
+    transformKnobs["center"] = kRotoBrushCenterParam;
+    transformKnobs["skewX"] = kRotoBrushSkewXParam;
+    transformKnobs["skewY"] = kRotoBrushSkewYParam;
+    transformKnobs["skewOrder"] = kRotoBrushSkewOrderParam;
 
-    getNode()->addTransformInteract(cloneTranslateKnob,
-                                    cloneScaleKnob,
-                                    cloneScaleUniformKnob,
-                                    cloneRotateKnob,
-                                    cloneSkewXKnob,
-                                    cloneSkewYKnob,
-                                    cloneSkewOrderKnob,
-                                    cloneCenterKnob,
-                                    KnobBoolPtr() /*invert*/,
-                                    KnobBoolPtr() /*interactive*/);
+
+    boost::shared_ptr<TransformOverlayInteract> transformInteract(new TransformOverlayInteract());
+    registerOverlay(transformInteract, transformKnobs);
+
 
     {
         KnobChoicePtr param = createKnob<KnobChoice>(kRotoBrushFilterParam);
@@ -2322,22 +2334,6 @@ RotoPaint::fetchRenderCloneKnobs()
 
 } // fetchRenderCloneKnobs
 
-bool
-RotoPaint::shouldPreferPluginOverlayOverHostOverlay() const
-{
-    return !_imp->ui->ctrlDown;
-}
-
-bool
-RotoPaint::shouldDrawHostOverlay() const
-{
-    KnobButtonPtr b = _imp->ui->showTransformHandle.lock();
-
-    if (!b) {
-        return true;
-    }
-    return b->getValue();
-}
 
 void
 RotoPaint::onKnobsLoaded()
@@ -2531,6 +2527,8 @@ RotoPaint::knobChanged(const KnobIPtr& k,
     } else if ( k == _imp->addLayerButtonKnob.lock()) {
         CompNodeItemPtr item = makeCompNodeItem();
         pushUndoCommand(new AddItemsCommand(item));
+    } else if (k == _imp->ui->showTransformHandle.lock()) {
+        _imp->refreshRegisteredOverlays();
     } else {
         ret = false;
     }
@@ -2691,17 +2689,15 @@ RotoPaintPrivate::resetTransformsCenter(bool doClone,
     //getItemsRegionOfDefinition(knobsTable->getSelectedItems(), time, ViewIdx(0), &bbox);
     if (doTransform) {
         KnobDoublePtr center = centerKnob.lock();
-        center->beginChanges();
+        ScopedChanges_RAII changes(center.get());
         center->removeAnimation(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonUserEdited);
         center->setValueAcrossDimensions(values);
-        center->endChanges();
     }
     if (doClone) {
         KnobDoublePtr centerKnob = cloneCenterKnob.lock();
-        centerKnob->beginChanges();
+        ScopedChanges_RAII changes(centerKnob.get());
         centerKnob->removeAnimation(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonUserEdited);
         centerKnob->setValueAcrossDimensions(values);
-        centerKnob->endChanges();
     }
 }
 
@@ -2794,7 +2790,7 @@ RotoPaint::onEnableOpenGLKnobValueChanged(bool /*activated*/)
 void
 RotoPaint::onModelSelectionChanged(std::list<KnobTableItemPtr> /*addedToSelection*/, std::list<KnobTableItemPtr> /*removedFromSelection*/, TableChangeReasonEnum /*reason*/)
 {
-    requestOverlayInteractRefresh();
+    _imp->ui->redraw();
 }
 
 
@@ -3320,7 +3316,7 @@ RotoPaint::refreshRotoPaintTree()
 
     if (premultNode) {
         // Make sure the premult node has its RGB checkbox checked
-        premultNode->getEffectInstance()->beginChanges();
+        ScopedChanges_RAII changes(premultNode->getEffectInstance().get());
         KnobBoolPtr process[3];
         process[0] = toKnobBool(premultNode->getKnobByName(kNatronOfxParamProcessR));
         process[1] = toKnobBool(premultNode->getKnobByName(kNatronOfxParamProcessG));
@@ -3329,7 +3325,6 @@ RotoPaint::refreshRotoPaintTree()
             assert(process[i]);
             process[i]->setValue(true);
         }
-        premultNode->getEffectInstance()->endChanges();
         
     }
     

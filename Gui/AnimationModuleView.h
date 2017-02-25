@@ -138,10 +138,9 @@ public:
     void centerOnCurves(const std::vector<CurveGuiPtr> & curves, bool useDisplayRange);
 
     // The interact will be drawn after the background and before any curve
-    void setCustomInteract(const OfxParamOverlayInteractPtr & interactDesc);
+    void setCustomInteract(const OverlayInteractBasePtr & interactDesc);
 
-    OfxParamOverlayInteractPtr getCustomInteract() const;
-
+    OverlayInteractBasePtr getCustomInteract() const;
 
     /**
      * @brief Computes the position of the right and left tangents handle in curve coordinates

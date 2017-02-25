@@ -23,9 +23,11 @@ NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
 #include <PyItemsTable.h>
 #include <PyNode.h>
 #include <PyNodeGroup.h>
+#include <PyOverlayInteract.h>
 #include <PyParameter.h>
 #include <RectD.h>
 #include <list>
+#include <map>
 
 
 // Native ---------------------------------------------------------
@@ -1423,6 +1425,110 @@ static PyObject* Sbk_EffectFunc_isWriterNode(PyObject* self)
     return pyResult;
 }
 
+static PyObject* Sbk_EffectFunc_registerOverlay(PyObject* self, PyObject* args)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "registerOverlay", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: registerOverlay(PyOverlayInteract*,std::map<QString,QString>)
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_PYOVERLAYINTERACT_IDX], (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_MAP_QSTRING_QSTRING_IDX], (pyArgs[1])))) {
+        overloadId = 0; // registerOverlay(PyOverlayInteract*,std::map<QString,QString>)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_EffectFunc_registerOverlay_TypeError;
+
+    // Call function/method
+    {
+        if (!Shiboken::Object::isValid(pyArgs[0]))
+            return 0;
+        ::PyOverlayInteract* cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::std::map<QString, QString > cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // registerOverlay(PyOverlayInteract*,std::map<QString,QString>)
+            bool cppResult = cppSelf->registerOverlay(cppArg0, cppArg1);
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_EffectFunc_registerOverlay_TypeError:
+        const char* overloads[] = {"NatronEngine.PyOverlayInteract, dict", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.registerOverlay", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_EffectFunc_removeOverlay(PyObject* self, PyObject* pyArg)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: removeOverlay(PyOverlayInteract*)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_PYOVERLAYINTERACT_IDX], (pyArg)))) {
+        overloadId = 0; // removeOverlay(PyOverlayInteract*)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_EffectFunc_removeOverlay_TypeError;
+
+    // Call function/method
+    {
+        if (!Shiboken::Object::isValid(pyArg))
+            return 0;
+        ::PyOverlayInteract* cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // removeOverlay(PyOverlayInteract*)
+            cppSelf->removeOverlay(cppArg0);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_EffectFunc_removeOverlay_TypeError:
+        const char* overloads[] = {"NatronEngine.PyOverlayInteract", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Effect.removeOverlay", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_EffectFunc_removeParamFromViewerUI(PyObject* self, PyObject* pyArg)
 {
     ::Effect* cppSelf = 0;
@@ -1855,6 +1961,8 @@ static PyMethodDef Sbk_Effect_methods[] = {
     {"isNodeSelected", (PyCFunction)Sbk_EffectFunc_isNodeSelected, METH_NOARGS},
     {"isReaderNode", (PyCFunction)Sbk_EffectFunc_isReaderNode, METH_NOARGS},
     {"isWriterNode", (PyCFunction)Sbk_EffectFunc_isWriterNode, METH_NOARGS},
+    {"registerOverlay", (PyCFunction)Sbk_EffectFunc_registerOverlay, METH_VARARGS},
+    {"removeOverlay", (PyCFunction)Sbk_EffectFunc_removeOverlay, METH_O},
     {"removeParamFromViewerUI", (PyCFunction)Sbk_EffectFunc_removeParamFromViewerUI, METH_O},
     {"setColor", (PyCFunction)Sbk_EffectFunc_setColor, METH_VARARGS},
     {"setLabel", (PyCFunction)Sbk_EffectFunc_setLabel, METH_O},

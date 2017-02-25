@@ -92,13 +92,14 @@ KnobGui::onUnlinkActionTriggered()
     KnobIPtr thisKnob = getKnob();
     int dims = thisKnob->getNDimensions();
 
-    thisKnob->beginChanges();
-    for (int i = 0; i < dims; ++i) {
-        if ( dimension.isAll() || (i == DimIdx(dimension)) ) {
-            thisKnob->unlink(DimIdx(i), ViewSetSpec(view), true /*copyState*/);
+    {
+        ScopedChanges_RAII changes(thisKnob.get());
+        for (int i = 0; i < dims; ++i) {
+            if ( dimension.isAll() || (i == DimIdx(dimension)) ) {
+                thisKnob->unlink(DimIdx(i), ViewSetSpec(view), true /*copyState*/);
+            }
         }
     }
-    thisKnob->endChanges();
 
     getKnob()->getHolder()->getApp()->triggerAutoSave();
 }

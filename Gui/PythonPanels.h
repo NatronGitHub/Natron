@@ -95,8 +95,6 @@ struct PyModalDialogPrivate;
 class PyModalDialog
     : public QDialog, public UserParamHolder
 {
-    Q_OBJECT
-
 public:
 
     PyModalDialog( Gui* gui,
