@@ -1744,6 +1744,8 @@ OfxRGBAInstance::OfxRGBAInstance(const OfxEffectInstancePtr& node,
         knob->setDimensionName(DimIdx(i), dimensionName);
     }
 
+    // RGBA colors don't autofold (RGB do)
+    knob->setCanAutoFoldDimensions(true);
 }
 
 OfxStatus
@@ -2044,6 +2046,8 @@ OfxRGBInstance::OfxRGBInstance(const OfxEffectInstancePtr& node,
         color->setDimensionName(DimIdx(i), dimensionName);
     }
 
+    // RGB colors may autofold (RGBA don't)
+    color->setCanAutoFoldDimensions(true);
 }
 
 OfxStatus
@@ -2383,20 +2387,23 @@ OfxDouble2DInstance::OfxDouble2DInstance(const OfxEffectInstancePtr& node,
 
     // Position knobs should not have their dimensions folded by default (e.g: The Translate parameter of a Transform node is not
     // expected to be folded by default, but the Size of a Blur node is.)
-    dblKnob->setCanAutoFoldDimensions( (doubleType != kOfxParamDoubleTypeNormalisedXYAbsolute) && (doubleType != kOfxParamDoubleTypeXYAbsolute) );
+    // Only auto-merge dimensions and show a single slider if this is a scale or a size.
+    dblKnob->setCanAutoFoldDimensions( (doubleType == kOfxParamDoubleTypeScale) ||
+                                       (doubleType == kOfxParamDoubleTypeXY) ||
+                                       (doubleType == kOfxParamDoubleTypeNormalisedXY) );
 
-    dblKnob->setSpatial(doubleType == kOfxParamDoubleTypeNormalisedXY ||
-                        doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute ||
-                        doubleType == kOfxParamDoubleTypeXY ||
-                        doubleType == kOfxParamDoubleTypeXYAbsolute);
+    dblKnob->setSpatial( (doubleType == kOfxParamDoubleTypeNormalisedXY) ||
+                         (doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute) ||
+                         (doubleType == kOfxParamDoubleTypeXY) ||
+                         (doubleType == kOfxParamDoubleTypeXYAbsolute) );
     if ( (doubleType == kOfxParamDoubleTypeNormalisedXY) ||
-         ( doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute) ) {
+         (doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute) ) {
         dblKnob->setValueIsNormalized(DimIdx(0 + _startIndex), eValueIsNormalizedX);
         dblKnob->setValueIsNormalized(DimIdx(1 + _startIndex), eValueIsNormalizedY);
     }
-    dblKnob->setDefaultValuesAreNormalized(coordSystem == kOfxParamCoordinatesNormalised ||
-                                           doubleType == kOfxParamDoubleTypeNormalisedXY ||
-                                           doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute);
+    dblKnob->setDefaultValuesAreNormalized( (coordSystem == kOfxParamCoordinatesNormalised) ||
+                                            (doubleType == kOfxParamDoubleTypeNormalisedXY) ||
+                                            (doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute) );
     dblKnob->setDefaultValues(def, DimIdx(_startIndex));
 }
 
@@ -2706,6 +2713,10 @@ OfxInteger2DInstance::OfxInteger2DInstance(const OfxEffectInstancePtr& node,
     }
 
     iKnob->setDefaultValues(def, DimIdx(_startIndex));
+
+    // int knobs never auto-fold
+    // We could have a kOfxParamPropDoubleType property on ints to specify if it's a scale or size
+    iKnob->setCanAutoFoldDimensions(false /*doubleType == kOfxParamDoubleTypeScale*/);
 }
 
 OfxStatus
@@ -2962,6 +2973,11 @@ OfxDouble3DInstance::OfxDouble3DInstance(const OfxEffectInstancePtr& node,
     _knob = knob;
     setRange();
     setDisplayRange();
+
+    const std::string & doubleType = getDoubleType();
+
+    // only auto-merge dimensions and show a single slider if this is a scale
+    knob->setCanAutoFoldDimensions(doubleType == kOfxParamDoubleTypeScale);
 
     std::vector<int> decimals(ofxDims);
     std::vector<double> def(ofxDims);
@@ -3277,6 +3293,10 @@ OfxInteger3DInstance::OfxInteger3DInstance(const OfxEffectInstancePtr&node,
     knob->setIncrement(increment);
 
     knob->setDefaultValues(def, DimIdx(0));
+
+    // int knobs never auto-fold
+    // We could have a kOfxParamPropDoubleType property on ints to specify if it's a scale or size
+    knob->setCanAutoFoldDimensions(false /*doubleType == kOfxParamDoubleTypeScale*/);
 }
 
 OfxStatus

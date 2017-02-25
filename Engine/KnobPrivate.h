@@ -301,7 +301,7 @@ struct CommonData
     , isAnimationEnabled(true)
     , dimension()
     , allDimensionsVisible()
-    , autoFoldEnabled(true)
+    , autoFoldEnabled(false)
     , autoAdjustFoldExpandEnabled(true)
     , perDimViewDataMutex()
     , perDimViewData()

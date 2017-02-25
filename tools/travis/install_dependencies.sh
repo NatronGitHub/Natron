@@ -202,7 +202,16 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
 
     # FreeCAD has a bottled pyside for OS X 10.10 Yosemite, see https://github.com/FreeCAD/homebrew-freecad/issues/32
     # TODO: maintain a Natron-ports-cache, linke FreeCD-ports-cache https://github.com/FreeCAD/FreeCAD-ports-cache
-    brew tap FreeCAD/freecad
+    #brew tap FreeCAD/freecad
+
+    # cartr/qt4 provides qt4 bottles for macOS Yosemite 10.10,
+    # El Capitan 10.11, and Sierra 10.12, but pyside is for sierra only,
+    # see https://bintray.com/cartr/bottle-qt4/pyside#files
+    # To force Sierra (default is 10.11), we specify xcode 8.2 in the .travis.yml
+    #       osx_image: xcode8.2
+    brew tap cartr/qt4
+    # Pin qt4, prioritizing its formulae over core when formula names are supplied
+    brew tap-pin cartr/qt4
     # brew list -1 | while read line; do brew unlink $line; brew link --force $line; done
     # brew upgrade --cleanup
     echo "* Brew doctor"
