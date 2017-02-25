@@ -155,7 +155,7 @@ private:
         return false;
     }
 
-    virtual bool isAutoMerge() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isAutoFoldDimensionsEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual bool isRectangleType() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {

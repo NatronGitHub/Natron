@@ -522,7 +522,7 @@ KnobGuiColor::showColorDialog()
 } // showColorDialog
 
 bool
-KnobGuiColor::isAutoMerge() const
+KnobGuiColor::isAutoFoldDimensionsEnabled() const
 {
     return _knob.lock()->getDimension() == 3;
 }
