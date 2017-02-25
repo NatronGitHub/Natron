@@ -88,6 +88,8 @@ public:
 
     bool isSliderDisabled() const;
 
+    bool isAutoMerge() const { return false; };
+
     static const std::string & typeNameStatic();
 
     void setAsRectangle()
@@ -225,6 +227,10 @@ public:
 
     bool isSliderDisabled() const;
 
+    void setAutoMerge(bool v) { _autoMerge = v; }
+
+    bool isAutoMerge() const { return _autoMerge; };
+
     const std::vector<double> &getIncrements() const;
     const std::vector<int> &getDecimals() const;
 
@@ -350,6 +356,7 @@ private:
     std::vector<double>  _increments;
     std::vector<int> _decimals;
     bool _disableSlider;
+    bool _autoMerge;
 
     /// to support ofx deprecated normalizd params:
     /// the first and second dimensions of the double param( hence a pair ) have a normalized state.

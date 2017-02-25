@@ -487,7 +487,7 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
                 break;
             }
         }
-        if (!showSlider) {
+        if (!showSlider || !isAutoMerge()) {
             _imp->slider->hide();
             _imp->dimensionSwitchButton->setChecked(true);
         } else {
@@ -800,9 +800,10 @@ KnobGuiValue::updateGUI(const int dimension)
             allValuesNotEqual = true;
         }
     }
-    if (_imp->dimensionSwitchButton && !_imp->dimensionSwitchButton->isChecked() && allValuesNotEqual) {
+    if ( !isAutoMerge() ||
+         (_imp->dimensionSwitchButton && !_imp->dimensionSwitchButton->isChecked() && allValuesNotEqual) ){
         expandAllDimensions();
-    } else if (_imp->dimensionSwitchButton && _imp->dimensionSwitchButton->isChecked() && !allValuesNotEqual) {
+    } else if (isAutoMerge() && _imp->dimensionSwitchButton && _imp->dimensionSwitchButton->isChecked() && !allValuesNotEqual) {
         foldAllDimensions();
     }
 
@@ -1189,6 +1190,12 @@ KnobGuiDouble::isSliderDisabled() const
 }
 
 bool
+KnobGuiDouble::isAutoMerge() const
+{
+    return _knob.lock()->isAutoMerge();
+}
+
+bool
 KnobGuiDouble::isRectangleType() const
 {
     return _knob.lock()->isRectangle();
@@ -1259,6 +1266,12 @@ bool
 KnobGuiInt::isSliderDisabled() const
 {
     return _knob.lock()->isSliderDisabled();
+}
+
+bool
+KnobGuiInt::isAutoMerge() const
+{
+    return _knob.lock()->isAutoMerge();
 }
 
 bool

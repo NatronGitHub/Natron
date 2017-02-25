@@ -521,6 +521,12 @@ KnobGuiColor::showColorDialog()
     //knob->evaluateValueChange(0, knob->getCurrentTime(), ViewIdx(0), eValueChangedReasonNatronGuiEdited);
 } // showColorDialog
 
+bool
+KnobGuiColor::isAutoMerge() const
+{
+    return _knob.lock()->getDimension() == 3;
+}
+
 NATRON_NAMESPACE_EXIT;
 
 NATRON_NAMESPACE_USING;
