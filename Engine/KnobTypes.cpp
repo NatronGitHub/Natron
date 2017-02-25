@@ -922,16 +922,17 @@ KnobChoice::hasModificationsVirtual(const KnobDimViewBasePtr& data, DimIdx dimen
     if (Knob<int>::hasModificationsVirtual(data, dimension)) {
         return true;
     }
-    int def_i = getDefaultValue(dimension);
+
     std::string defaultVal;
+    {
+        QMutexLocker k(&_imp->defaultEntryMutex);
+        defaultVal = _imp->defaultEntryID;
+    }
+
 
     ChoiceKnobDimViewPtr choiceData = toChoiceKnobDimView(data);
     assert(choiceData);
     QMutexLocker k(&data->valueMutex);
-
-    if (def_i >= 0 && def_i < (int)choiceData->menuOptions.size()) {
-        defaultVal = choiceData->menuOptions[def_i].id;
-    }
 
     if (choiceData->activeEntry.id != defaultVal) {
         return true;
@@ -969,7 +970,8 @@ KnobChoice::findAndSetOldChoice()
                     // Refresh label and hint, even if ID is the same
                     data->activeEntry = data->menuOptions[i];
                     found = i;
-                } else if (!defChoiceID.empty() && data->menuOptions[i].id == defChoiceID) {
+                }
+                if (!defChoiceID.empty() && data->menuOptions[i].id == defChoiceID) {
                     foundDefValue = i;
                 }
                 if (foundDefValue != -1 && found != -1) {
@@ -988,8 +990,11 @@ KnobChoice::findAndSetOldChoice()
                 // the default index might not be the correct one, ensure it is valid.
                 if (curIndex == defIndex) {
                     // Find the index of the default entry and update the default index
-                    setValue(foundDefValue);
-                    return;
+                    // unless we found the entry (found != -1)
+                    if (found == -1) {
+                        setValue(foundDefValue);
+                        return;
+                    }
                 }
             }
         }
@@ -1626,6 +1631,7 @@ KnobChoice::setDefaultValueFromID(const std::string & value)
         ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), ViewIdx(0)));
         assert(data);
         QMutexLocker k(&data->valueMutex);
+        data->activeEntry.id = value;
         index = KnobChoice::choiceMatch(value, data->menuOptions, 0);
     }
     if (index != -1) {
