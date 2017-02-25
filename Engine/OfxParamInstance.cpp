@@ -1744,7 +1744,7 @@ OfxRGBAInstance::OfxRGBAInstance(const OfxEffectInstancePtr& node,
     }
 
     // RGBA colors don't autofold (RGB do)
-    knob->setCanAutoFoldDimensions(true);
+    knob->setCanAutoFoldDimensions(false);
 }
 
 OfxStatus
