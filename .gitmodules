@@ -8,5 +8,6 @@
 	path = libs/SequenceParsing
 	url = https://github.com/MrKepzie/SequenceParsing
 [submodules "libs/OpenFX"]
+    path = libs/OpenFX
     url = https://github.com/devernay/openfx
 	branch = multiplane2
