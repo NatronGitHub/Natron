@@ -396,7 +396,8 @@ ImagePrivate::initTiles()
 #ifndef NATRON_IMAGE_SEQUENTIAL_INIT
     TileFetcherProcessor processor(renderClone.lock());
     processor.setData(tileIndices, this, retcode);
-    processor.launchThreads();
+    ActionRetCodeEnum stat = processor.launchThreads();
+    (void)stat;
     if (retcode->isFailed()) {
         return retcode->stat;
     }

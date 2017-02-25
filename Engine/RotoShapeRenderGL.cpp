@@ -1987,7 +1987,7 @@ static bool renderSmearDotInternal(RenderSmearGLData* myData,
         initArgs.textureTarget = GL_TEXTURE_2D;
         tmpImage = Image::create(initArgs);
         if (!tmpImage) {
-            return;
+            return false;
         }
         tmpTexture = tmpImage->getGLImageStorage();
         // Copy the content of the existing dstImage
