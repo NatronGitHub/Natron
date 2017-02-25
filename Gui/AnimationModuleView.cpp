@@ -415,7 +415,12 @@ AnimationModuleView::saveOpenGLContext()
     GL_GPU::GetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&_imp->savedTexture);
     //glGetIntegerv(GL_ACTIVE_TEXTURE, (GLint*)&_imp->activeTexture);
     glCheckAttribStack(GL_GPU);
-    GL_GPU::PushAttrib(GL_ALL_ATTRIB_BITS);
+
+    // Don't protect GL_COLOR_BUFFER_BIT, because it seems to hit an OpenGL bug on
+    // some macOS configurations (10.10-10.12), where garbage is displayed in the viewport.
+    // see https://github.com/MrKepzie/Natron/issues/1460
+
+   // GL_GPU::PushAttrib(GL_ALL_ATTRIB_BITS);
     glCheckClientAttribStack(GL_GPU);
     GL_GPU::PushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
     GL_GPU::MatrixMode(GL_PROJECTION);
@@ -445,7 +450,7 @@ AnimationModuleView::restoreOpenGLContext()
     GL_GPU::MatrixMode(GL_MODELVIEW);
     GL_GPU::PopMatrix();
     GL_GPU::PopClientAttrib();
-    GL_GPU::PopAttrib();
+   // GL_GPU::PopAttrib();
 }
 
 bool
