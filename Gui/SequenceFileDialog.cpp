@@ -658,6 +658,7 @@ SequenceFileDialog::saveState() const
     stream << _relativeChoice->itemText( _relativeChoice->activeIndex() );
     stream << _sequenceButton->activeIndex();
 
+    appPTR->getCurrentSettings()->saveSettingsToFile();
     return data;
 }
 
@@ -729,10 +730,10 @@ SequenceFileDialog::restoreState(const QByteArray & state,
     appPTR->getCurrentSettings()->getFileDialogFavoritePathsKnob()->getTable(&bookmarks);
 
     for (std::list<std::vector<std::string> >::const_iterator it = bookmarks.begin(); it!=bookmarks.end(); ++it) {
-        if (it->size() != 2) {
+        if (it->size() != 1) {
             continue;
         }
-        QString urlPath = QString::fromUtf8((*it)[1].c_str());
+        QString urlPath = QString::fromUtf8((*it)[0].c_str());
 
         // On windows url.path() will return something starting with a /
 #ifdef __NATRON_WIN32__
@@ -766,7 +767,7 @@ SequenceFileDialog::restoreState(const QByteArray & state,
 
             QDir dir(urlPath);
             if ( !alreadyFound && dir.exists() ) {
-                stdBookMarks.push_back( QString::fromUtf8((*it)[1].c_str()) );
+                stdBookMarks.push_back( QUrl::fromLocalFile(QString::fromUtf8((*it)[0].c_str())) );
             }
         }
     }

@@ -421,6 +421,7 @@ class ViewerInstance;
 class ViewerDisplayScheduler
     : public OutputSchedulerThread
 {
+
 public:
 
     ViewerDisplayScheduler(RenderEngine* engine,
@@ -459,8 +460,11 @@ private:
  **/
 
 struct ViewerCurrentFrameRequestSchedulerPrivate;
-class ViewerCurrentFrameRequestScheduler
+class ViewerCurrentFrameRequestScheduler : public QObject
 {
+    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+    GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
@@ -476,6 +480,19 @@ public:
     void onQuitRequested(bool allowRestarts);
 
     bool hasThreadsAlive() const;
+
+    void s_doProcessFrameOnMainThread(U64 age, BufferedFrameContainerPtr frames)
+    {
+        Q_EMIT doProcessFrameOnMainThread(age, frames);
+    }
+
+public Q_SLOTS:
+
+    void onDoProcessFrameOnMainThreadReceived(U64 age, const BufferedFrameContainerPtr& frames);
+
+Q_SIGNALS:
+
+    void doProcessFrameOnMainThread(U64 age, BufferedFrameContainerPtr frames);
 private:
 
     void renderCurrentFrameInternal(const boost::shared_ptr<CurrentFrameFunctorArgs>& args, bool useSingleThread);

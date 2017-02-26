@@ -2584,6 +2584,8 @@ AppManager::registerEngineMetaTypes() const
 {
     qRegisterMetaType<Variant>("Variant");
     qRegisterMetaType<Format>("Format");
+    qRegisterMetaType<U64>("U64");
+    qRegisterMetaType<BufferedFrameContainerPtr>("BufferedFrameContainerPtr");
     qRegisterMetaType<SequenceTime>("SequenceTime");
     qRegisterMetaType<StandardButtons>("StandardButtons");
     qRegisterMetaType<RectI>("RectI");

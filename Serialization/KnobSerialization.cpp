@@ -44,6 +44,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define kKnobSerializationDataTypeKeyInt "Int"
 #define kKnobSerializationDataTypeKeyDouble "Float"
 #define kKnobSerializationDataTypeKeyString "String"
+#define kKnobSerializationDataTypeKeyTable "Table"
 #define kKnobSerializationDataTypeKeyNone "Value"
 
 SERIALIZATION_NAMESPACE_ENTER;
@@ -74,6 +75,8 @@ static std::string dataTypeToString(SerializationValueVariantTypeEnum type)
             return kKnobSerializationDataTypeKeyDouble;
         case eSerializationValueVariantTypeString:
             return kKnobSerializationDataTypeKeyString;
+        case eSerializationValueVariantTypeTable:
+            return kKnobSerializationDataTypeKeyTable;
         case eSerializationValueVariantTypeNone:
             return kKnobSerializationDataTypeKeyNone;
     }
@@ -90,6 +93,8 @@ static SerializationValueVariantTypeEnum dataTypeFromString(const std::string& t
         return eSerializationValueVariantTypeDouble;
     } else if (type == kKnobSerializationDataTypeKeyString) {
         return eSerializationValueVariantTypeString;
+    } else if (type == kKnobSerializationDataTypeKeyTable) {
+        return eSerializationValueVariantTypeTable;
     } else if (type == kKnobSerializationDataTypeKeyNone) {
         return eSerializationValueVariantTypeNone;
     }
@@ -230,7 +235,23 @@ KnobSerialization::encode(YAML::Emitter& em) const
                             case eSerializationValueVariantTypeString:
                                 em << val._value.isString;
                                 break;
-                            default:
+                            case eSerializationValueVariantTypeTable: {
+                                em << YAML::BeginSeq;
+                                for (std::list<std::vector<std::string> >::const_iterator it3 = val._value.isTable.begin(); it3 != val._value.isTable.end(); ++it3) {
+                                    if (it3->size() > 1) {
+                                        em << YAML::Flow << YAML::BeginSeq;
+                                        for (std::vector<std::string>::const_iterator it4 = it3->begin(); it4 != it3->end(); ++it4) {
+                                            em << *it4;
+                                        }
+                                        em << YAML::EndSeq;
+                                    } else if (it3->size() == 1) {
+                                        em << it3->front();
+                                    }
+                                }
+                                em << YAML::EndSeq;
+                            }
+                                break;
+                            case eSerializationValueVariantTypeNone:
                                 break;
                         }
                     }
@@ -276,7 +297,23 @@ KnobSerialization::encode(YAML::Emitter& em) const
                     case eSerializationValueVariantTypeString:
                         em << _defaultValues[i].value.isString;
                         break;
-                    default:
+                    case eSerializationValueVariantTypeTable: {
+                        em << YAML::Flow << YAML::BeginSeq;
+                        for (std::list<std::vector<std::string> >::const_iterator it3 = _defaultValues[i].value.isTable.begin(); it3 != _defaultValues[i].value.isTable.end(); ++it3) {
+                            if (it3->size() > 1) {
+                                em << YAML::Flow << YAML::BeginSeq;
+                                for (std::vector<std::string>::const_iterator it4 = it3->begin(); it4 != it3->end(); ++it4) {
+                                    em << *it4;
+                                }
+                                em << YAML::EndSeq;
+                            } else if (it3->size() == 1) {
+                                em << it3->front();
+                            }
+
+                        }
+                        em << YAML::EndSeq;
+                    } break;
+                    case eSerializationValueVariantTypeNone:
                         break;
                 }
 
@@ -557,6 +594,20 @@ static void decodeValueFromNode(const YAML::Node& node,
         case eSerializationValueVariantTypeString:
             variant.isString = node.as<std::string>();
             break;
+        case eSerializationValueVariantTypeTable: {
+            for (std::size_t i = 0; i < node.size(); ++i) {
+                std::vector<std::string> tableRow;
+                if (node[i].IsSequence()) {
+                    tableRow.resize(node[i].size());
+                    for (std::size_t j = 0; j < node[i].size(); ++j) {
+                        tableRow[j] = node[i][j].as<std::string>();
+                    }
+                } else {
+                    tableRow.push_back(node[i].as<std::string>());
+                }
+                variant.isTable.push_back(tableRow);
+            }
+        }   break;
         case eSerializationValueVariantTypeNone:
             break;
     }

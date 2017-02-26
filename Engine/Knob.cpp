@@ -2858,7 +2858,8 @@ initializeDefaultValueSerializationStorage(const KnobIPtr& knob,
     KnobGroupPtr isGrp = toKnobGroup(knob);
     KnobSeparatorPtr isSep = toKnobSeparator(knob);
     KnobButtonPtr btn = toKnobButton(knob);
-
+    KnobPathPtr isPath = toKnobPath(knob);
+    KnobTablePtr isTable = toKnobTable(knob);
 
     // Only serialize default value for the main view
     if (isInt) {
@@ -2877,6 +2878,11 @@ initializeDefaultValueSerializationStorage(const KnobIPtr& knob,
         defValue->value.isDouble = isDoubleBase->getDefaultValue(dimension);
         defValue->serializeDefaultValue = isDoubleBase->hasDefaultValueChanged(dimension);
 
+    } else if ((isPath && isPath->isMultiPath()) || (!isPath && isTable)) {
+        knobSer->_dataType = eSerializationValueVariantTypeTable;
+
+        isTable->decodeFromKnobTableFormat(isTable->getDefaultValue(dimension), &defValue->value.isTable);
+        defValue->serializeDefaultValue = isTable->hasDefaultValueChanged(dimension);
     } else if (isStringBase) {
 
         knobSer->_dataType = eSerializationValueVariantTypeString;
@@ -2986,7 +2992,8 @@ initializeValueSerializationStorage(const KnobIPtr& knob,
     KnobGroupPtr isGrp = toKnobGroup(knob);
     KnobSeparatorPtr isSep = toKnobSeparator(knob);
     KnobButtonPtr btn = toKnobButton(knob);
-
+    KnobPathPtr isPath = toKnobPath(knob);
+    KnobTablePtr isTable = toKnobTable(knob);
 
     serialization->_serializeValue = false;
 
@@ -3001,6 +3008,9 @@ initializeValueSerializationStorage(const KnobIPtr& knob,
         } else if (isColor || isDouble) {
             serialization->_value.isDouble = isDoubleBase->getValue(dimension, view);
             serialization->_serializeValue = (serialization->_value.isDouble != defValue.value.isDouble);
+        } else if ((isPath && isPath->isMultiPath()) || (!isPath && isTable)) {
+            isTable->getTable(&serialization->_value.isTable);
+            serialization->_serializeValue = (serialization->_value.isTable != defValue.value.isTable);
         } else if (isStringBase) {
             if (isFile) {
                 serialization->_value.isString = isFile->getRawFileName(dimension, view);
@@ -3042,6 +3052,10 @@ KnobHelper::restoreDefaultValueFromSerialization(const SERIALIZATION_NAMESPACE::
     KnobGroupPtr isGrp = toKnobGroup(thisShared);
     KnobSeparatorPtr isSep = toKnobSeparator(thisShared);
     KnobButtonPtr btn = toKnobButton(thisShared);
+    KnobPathPtr isPath = toKnobPath(thisShared);
+    KnobTablePtr isTable = toKnobTable(thisShared);
+
+
     if (isInt) {
 
         if (!applyDefaultValue) {
@@ -3067,6 +3081,21 @@ KnobHelper::restoreDefaultValueFromSerialization(const SERIALIZATION_NAMESPACE::
         }
 
 
+    } else if ((isPath && isPath->isMultiPath()) || (!isPath && isTable)) {
+
+        if (!defObj.value.isTable.empty()) {
+            if ((int)defObj.value.isTable.begin()->size() != isTable->getColumnsCount()) {
+                std::cerr << "Invalid number of columns when decoding " << isTable->getName() << std::endl;
+            } else {
+                if (!applyDefaultValue) {
+                    std::string encoded = isTable->encodeToKnobTableFormat(defObj.value.isTable);
+                    isTable->setDefaultValueWithoutApplying(encoded, targetDimension);
+                } else {
+                    std::string encoded = isTable->encodeToKnobTableFormat(defObj.value.isTable);
+                    isTable->setDefaultValue(encoded, targetDimension);
+                }
+            }
+        }
     } else if (isStringBase) {
 
         if (!applyDefaultValue) {
@@ -3074,7 +3103,7 @@ KnobHelper::restoreDefaultValueFromSerialization(const SERIALIZATION_NAMESPACE::
         } else {
             isStringBase->setDefaultValue(defObj.value.isString, targetDimension);
         }
-
+        
     } else if (isChoice) {
         int foundDefault = KnobChoice::choiceMatch(defObj.value.isString, isChoice->getEntries(), 0);
         if (foundDefault != -1) {
@@ -3109,6 +3138,8 @@ KnobHelper::restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSe
     KnobGroupPtr isGrp = toKnobGroup(thisShared);
     KnobSeparatorPtr isSep = toKnobSeparator(thisShared);
     KnobButtonPtr btn = toKnobButton(thisShared);
+    KnobPathPtr isPath = toKnobPath(thisShared);
+    KnobTablePtr isTable = toKnobTable(thisShared);
 
     // We do the opposite of what is done in initializeValueSerializationStorage()
     if (isInt) {
@@ -3119,6 +3150,15 @@ KnobHelper::restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSe
     } else if (isColor || isDouble) {
         assert(isDoubleBase);
         isDoubleBase->setValue(obj._value.isDouble, view, targetDimension, eValueChangedReasonUserEdited, 0);
+    } else if ((isPath && isPath->isMultiPath()) || (!isPath && isTable)) {
+        if (!obj._value.isTable.empty()) {
+            if ((int)obj._value.isTable.begin()->size() != isTable->getColumnsCount()) {
+                std::cerr << "Invalid number of columns when decoding " << isTable->getName() << std::endl;
+            } else {
+                std::string encoded = isTable->encodeToKnobTableFormat(obj._value.isTable);
+                isTable->setValue(encoded, view, targetDimension, eValueChangedReasonUserEdited, 0);
+            }
+        }
     } else if (isStringBase) {
         isStringBase->setValue(obj._value.isString, view, targetDimension, eValueChangedReasonUserEdited, 0);
     } else if (isChoice) {

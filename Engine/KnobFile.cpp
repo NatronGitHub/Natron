@@ -299,8 +299,13 @@ KnobPath::getPaths(std::list<std::string>* paths)
 
     getTable(&table);
     for (std::list<std::vector<std::string> >::iterator it = table.begin(); it != table.end(); ++it) {
-        assert(it->size() == 2);
-        paths->push_back( (*it)[1] );
+        if (_imp->isStringList) {
+            assert(it->size() == 1);
+            paths->push_back( (*it)[0] );
+        } else {
+            assert(it->size() == 2);
+            paths->push_back( (*it)[1] );
+        }
     }
 }
 
@@ -312,10 +317,15 @@ KnobPath::prependPath(const std::string& path)
     } else {
         std::list<std::vector<std::string> > paths;
         getTable(&paths);
-        std::string name = generateUniquePathID(paths);
-        std::vector<std::string> row(2);
-        row[0] = name;
-        row[1] = path;
+
+        std::vector<std::string> row;
+        if (_imp->isStringList) {
+            row.push_back(path);
+        } else {
+            std::string name = generateUniquePathID(paths);
+            row.push_back(name);
+            row.push_back(path);
+        }
         paths.push_front(row);
         setTable(paths);
     }
@@ -330,14 +340,18 @@ KnobPath::appendPath(const std::string& path)
         std::list<std::vector<std::string> > paths;
         getTable(&paths);
         for (std::list<std::vector<std::string> >::iterator it = paths.begin(); it != paths.end(); ++it) {
-            if ( (*it)[1] == path ) {
+            if ( (_imp->isStringList && (*it)[0] == path) || (!_imp->isStringList && (*it)[1] == path) ) {
                 return;
             }
         }
-        std::string name = generateUniquePathID(paths);
-        std::vector<std::string> row(2);
-        row[0] = name;
-        row[1] = path;
+        std::vector<std::string> row;
+        if (_imp->isStringList) {
+            row.push_back(path);
+        } else {
+            std::string name = generateUniquePathID(paths);
+            row.push_back(name);
+            row.push_back(path);
+        }
         paths.push_back(row);
         setTable(paths);
     }

@@ -2033,7 +2033,7 @@ DefaultScheduler::onRenderStopped(bool aborted)
 
 ViewerDisplayScheduler::ViewerDisplayScheduler(RenderEngine* engine,
                                                const NodePtr& viewer)
-    : OutputSchedulerThread(engine, viewer, eProcessFrameBySchedulerThread)
+    : OutputSchedulerThread(engine, viewer, eProcessFrameByMainThread)
 {
 
 }
@@ -3147,6 +3147,7 @@ typedef std::set<TreeRenderAndAge, TreeRender_CompareAge> TreeRenderSetOrderedBy
 class RenderCurrentFrameFunctorRunnable;
 struct ViewerCurrentFrameRequestSchedulerPrivate
 {
+    ViewerCurrentFrameRequestScheduler* _publicInterface;
     NodePtr viewer;
     QThreadPool* threadPool;
 
@@ -3170,8 +3171,9 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
     // A set of active renders and their age.
     TreeRenderSetOrderedByAge currentRenders;
 
-    ViewerCurrentFrameRequestSchedulerPrivate(const NodePtr& viewer)
-        : viewer(viewer)
+    ViewerCurrentFrameRequestSchedulerPrivate(ViewerCurrentFrameRequestScheduler* publicInterface, const NodePtr& viewer)
+        : _publicInterface(publicInterface)
+        , viewer(viewer)
         , threadPool( QThreadPool::globalInstance() )
         , backupThread()
         , currentFrameRenderTasksCond()
@@ -3348,8 +3350,7 @@ public:
         } else {
             computeViewsForRoI(viewer, 0, framesContainer);
         }
-
-        _args->scheduler->processProducedFrame(_args->age, framesContainer);
+        _args->scheduler->_publicInterface->s_doProcessFrameOnMainThread(_args->age, framesContainer);
 
         {
             // Remove the current render from the abortable renders list
@@ -3369,8 +3370,9 @@ public:
 
 
 ViewerCurrentFrameRequestScheduler::ViewerCurrentFrameRequestScheduler(const NodePtr& viewer)
-: _imp( new ViewerCurrentFrameRequestSchedulerPrivate(viewer) )
+: _imp( new ViewerCurrentFrameRequestSchedulerPrivate(this, viewer) )
 {
+    QObject::connect(this, SIGNAL(doProcessFrameOnMainThread(U64,BufferedFrameContainerPtr)), this, SLOT(onDoProcessFrameOnMainThreadReceived(U64,BufferedFrameContainerPtr)));
 }
 
 ViewerCurrentFrameRequestScheduler::~ViewerCurrentFrameRequestScheduler()
@@ -3381,6 +3383,12 @@ ViewerCurrentFrameRequestScheduler::~ViewerCurrentFrameRequestScheduler()
     }
 }
 
+void
+ViewerCurrentFrameRequestScheduler::onDoProcessFrameOnMainThreadReceived(U64 age, const BufferedFrameContainerPtr& frames)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->processProducedFrame(age, frames);
+}
 
 void
 ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(U64 age, const BufferedFrameContainerPtr& frames)

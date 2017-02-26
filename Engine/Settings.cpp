@@ -801,7 +801,7 @@ SettingsPrivate::initializeKnobsGeneral()
     _fileDialogSavedPaths->setLabel(tr("File Dialog Paths"));
     _fileDialogSavedPaths->setHintToolTip(tr("These are the paths to directories visible in the favorite view of the file dialog"));
     _fileDialogSavedPaths->setSecret(true);
-    _fileDialogSavedPaths->setMultiPath(true);
+    _fileDialogSavedPaths->setAsStringList(true);
     _generalTab->addKnob(_fileDialogSavedPaths);
 
 

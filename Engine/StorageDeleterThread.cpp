@@ -155,6 +155,7 @@ StorageDeleterThread::run()
 
         {
             ImageStorageBasePtr front;
+            int evictRequest = 0;
             {
                 QMutexLocker k(&_imp->entriesQueueMutex);
                 if ( quit && _imp->entriesQueue.empty() ) {
@@ -176,12 +177,14 @@ StorageDeleterThread::run()
                 }
                 if (_imp->cacheEvictChecksRequest > 0) {
                     _imp->cacheEvictChecksRequest = 0;
-                    appPTR->getGeneralPurposeCache()->evictLRUEntries(0);
-                    appPTR->getTileCache()->evictLRUEntries(0);
+                    evictRequest = _imp->cacheEvictChecksRequest;
                 }
             }
             if (front) {
                 front->deallocateMemory();
+            } else if (evictRequest > 0) {
+                appPTR->getGeneralPurposeCache()->evictLRUEntries(0);
+                appPTR->getTileCache()->evictLRUEntries(0);
             }
      
         } // front. After this scope, the image is guarenteed to be freed

@@ -27,6 +27,7 @@
 
 #include <map>
 #include <vector>
+#include <list>
 
 #include "Serialization/CurveSerialization.h"
 #include "Serialization/SerializationBase.h"
@@ -140,11 +141,15 @@ struct SerializationValueVariant
     double isDouble;
     std::string isString;
 
+    // For each row, each column content
+    std::list<std::vector<std::string> > isTable;
+
     SerializationValueVariant()
     : isBool(false)
     , isInt(0)
     , isDouble(0.)
     , isString()
+    , isTable()
     {}
 };
 
@@ -286,7 +291,8 @@ enum SerializationValueVariantTypeEnum
     eSerializationValueVariantTypeBoolean,
     eSerializationValueVariantTypeInteger,
     eSerializationValueVariantTypeDouble,
-    eSerializationValueVariantTypeString
+    eSerializationValueVariantTypeString,
+    eSerializationValueVariantTypeTable
 
 };
 
