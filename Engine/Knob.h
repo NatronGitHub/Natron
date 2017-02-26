@@ -2002,6 +2002,9 @@ public:
 
     virtual void appendToHash(const ComputeHashArgs& args, Hash64* hash) OVERRIDE;
 
+
+    virtual T getValueForHash(DimIdx dim, ViewIdx view);
+
     //////////// Overriden from AnimatingObjectI
     virtual KeyframeDataTypeEnum getKeyFrameDataType() const OVERRIDE FINAL;
 

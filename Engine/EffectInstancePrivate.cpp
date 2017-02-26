@@ -184,7 +184,7 @@ EffectInstance::Implementation::getOrCreateFrameViewRequest(TimeValue time,
     assert(renderData);
     // Needs to be locked: frame requests may be added spontaneously by the plug-in
     U64 hash;
-    if (!renderData->getFrameViewHash(time, view, &hash)) {
+    {
         HashableObject::ComputeHashArgs args;
         args.time = time;
         args.view = view;

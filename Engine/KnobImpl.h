@@ -1066,6 +1066,13 @@ void appendValueToHash(const std::string& v, Hash64* hash)
 }
 
 template <typename T>
+T
+Knob<T>::getValueForHash(DimIdx dim, ViewIdx view)
+{
+    return getValue(dim, view);
+}
+
+template <typename T>
 void
 Knob<T>::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 {
@@ -1087,7 +1094,7 @@ Knob<T>::appendToHash(const ComputeHashArgs& args, Hash64* hash)
                         appendValueToHash(v, hash);
                     }
                 } else {
-                    T v = getValue(DimIdx(i), args.view);
+                    T v = getValueForHash(DimIdx(i), args.view);
                     appendValueToHash(v, hash);
                 }
             }   break;
@@ -1098,7 +1105,7 @@ Knob<T>::appendToHash(const ComputeHashArgs& args, Hash64* hash)
                     continue;
                 }
 
-                T v = getValue(DimIdx(i), ViewIdx(0));
+                T v = getValueForHash(DimIdx(i), ViewIdx(0));
                 appendValueToHash(v, hash);
 
             }   break;
@@ -1113,7 +1120,7 @@ Knob<T>::appendToHash(const ComputeHashArgs& args, Hash64* hash)
                     continue;
                 }
 
-                T v = getValue(DimIdx(i), ViewIdx(0));
+                T v = getValueForHash(DimIdx(i), ViewIdx(0));
                 appendValueToHash(v, hash);
 
             }   break;

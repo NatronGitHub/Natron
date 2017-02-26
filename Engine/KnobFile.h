@@ -125,6 +125,8 @@ Q_SIGNALS:
 
 private:
 
+    virtual std::string getValueForHash(DimIdx dim, ViewIdx view) OVERRIDE;
+
     /**
      * @brief a KnobFile is never animated but it's value may change, indicate this to the plug-in
      **/

@@ -545,7 +545,15 @@ EffectInstance::Implementation::fetchCachedTiles(const FrameViewRequestPtr& requ
     bool isDraftRender = render->isDraftRender();
 
     // The node frame/view hash to identify the image in the cache
-    U64 nodeFrameViewHash = requestPassData->getHash();
+    U64 nodeFrameViewHash;
+    {
+        HashableObject::ComputeHashArgs args;
+        args.time = requestPassData->getTime();
+        args.view = requestPassData->getView();
+        args.hashType = HashableObject::eComputeHashTypeTimeViewVariant;
+        nodeFrameViewHash = _publicInterface->computeHash(args);
+        renderData->setFrameViewHash(args.time, args.view, nodeFrameViewHash);
+    }
 
     // The bitdepth of the image
     ImageBitDepthEnum outputBitDepth = _publicInterface->getBitDepth(-1);

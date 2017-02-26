@@ -319,6 +319,7 @@ struct RenderCloneData
     // The time invariant metadas for the render
     GetTimeInvariantMetaDatasResultsPtr metadatasResults;
 
+#pragma message WARN("This has cache is not needed anymore: remove it")
     // This is the hash used to cache time and view invariant stuff
     U64 timeViewInvariantHash;
 
