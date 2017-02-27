@@ -50,7 +50,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
 	sudo add-apt-repository -y ppa:boost-latest/ppa
 	BOOSTVER=1.55
     fi
-    PKGS="$PKGS libboost${BOOSTVER}-dev libboost-math${BOOSTVER}-dev libboost-serialization${BOOSTVER}-dev"
+    PKGS="$PKGS libboost${BOOSTVER}-dev libboost-math${BOOSTVER}-dev libboost-serialization${BOOSTVER}-dev libboost-thread${BOOSTVER}-dev libboost-system${BOOSTVER}-dev"
 
     # the PPA xorg-edgers contains cairo 1.12 (required for rotoscoping)
     sudo add-apt-repository -y ppa:xorg-edgers/ppa
