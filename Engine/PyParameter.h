@@ -1170,6 +1170,8 @@ public:
 
     bool isMultiPathTable() const;
 
+    void setTable(const std::list<std::vector<std::string> >& table);
+
     void getTable(std::list<std::vector<std::string> >* table) const;
 };
 

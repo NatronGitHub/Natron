@@ -3654,6 +3654,27 @@ PathParam::isMultiPathTable() const
     return k->isMultiPath();
 }
 
+
+void
+PathParam::setTable(const std::list<std::vector<std::string> >& table)
+{
+    KnobPathPtr k = _sKnob.lock();
+    if (!k) {
+        PythonSetNullError();
+        return;
+    }
+    if (!k->isMultiPath()) {
+        PyErr_SetString(PyExc_ValueError, tr("Cannot call setTable on a path parameter which is not multi-path").toStdString().c_str());
+        return;
+    }
+    try {
+        k->setTable(table);
+    } catch (const std::exception& e) {
+        PyErr_SetString(PyExc_ValueError, tr("Error while encoding table: %1").arg(QString::fromUtf8(e.what())).toStdString().c_str());
+    }
+}
+
+
 void
 PathParam::getTable(std::list<std::vector<std::string> >* table) const
 {

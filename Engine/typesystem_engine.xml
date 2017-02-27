@@ -1587,6 +1587,51 @@
                 return outList;
             </inject-code>
         </modify-function>
+        <modify-function signature="setTable(std::list&lt;std::vector&lt;std::string&gt; &gt;)">
+            <modify-argument index="1">
+                <replace-type modified-type="PySequence"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+
+                if (!PyList_Check(%PYARG_1)) {
+                    PyErr_SetString(PyExc_TypeError, "table must be a list of list objects.");
+                    return 0;
+                }
+
+                std::list&lt;std::vector&lt;std::string&gt; &gt; table;
+
+                int size = (int)PyList_GET_SIZE(%PYARG_1);
+                for (int i = 0; i &lt; size; ++i) {
+
+
+                    PyObject* subList = PyList_GET_ITEM(%PYARG_1,i);
+                    if (!subList) {
+                        PyErr_SetString(PyExc_TypeError, "table must be a list of list objects.");
+                        return 0;
+                    }
+                    int subSize = (int)PyList_GET_SIZE(subList);
+                    std::vector&lt;std::string&gt; rowVec(subSize);
+
+                    for (int j = 0; j &lt; subSize; ++j) {
+                        PyObject* pyString = PyList_GET_ITEM(subList,j);
+                        if ( PyUnicode_Check(pyString) ) {
+
+                            PyObject* utf8pyobj = PyUnicode_AsUTF8String(pyString); // newRef
+                            if (utf8pyobj) {
+                                char* cstr = PyBytes_AS_STRING(utf8pyobj); // Borrowed pointer
+                                std::string ret;
+                                ret.append(cstr);
+                                Py_DECREF(utf8pyobj);
+                                rowVec[j] = ret;
+                            }
+                        }
+                    }
+                }
+
+                %CPPSELF.%FUNCTION_NAME(table);
+
+            </inject-code>
+        </modify-function>
     </object-type>
     <object-type name="ParametricParam">
         <modify-function signature="getNthControlPoint(int,int,double*,double*,double*,double*)const">

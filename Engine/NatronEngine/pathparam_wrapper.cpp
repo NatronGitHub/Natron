@@ -141,10 +141,94 @@ static PyObject* Sbk_PathParamFunc_setAsMultiPathTable(PyObject* self)
     Py_RETURN_NONE;
 }
 
+static PyObject* Sbk_PathParamFunc_setTable(PyObject* self, PyObject* pyArg)
+{
+    PathParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (PathParamWrapper*)((::PathParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PATHPARAM_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: setTable(std::list<std::vector<std::string> >)
+    if (PySequence_Check(pyArg)) {
+        overloadId = 0; // setTable(std::list<std::vector<std::string> >)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_PathParamFunc_setTable_TypeError;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // setTable(std::list<std::vector<std::string> >)
+            // Begin code injection
+
+
+            if (!PyList_Check(pyArg)) {
+                PyErr_SetString(PyExc_TypeError, "table must be a list of list objects.");
+                return 0;
+            }
+
+            std::list<std::vector<std::string> > table;
+
+            int size = (int)PyList_GET_SIZE(pyArg);
+            for (int i = 0; i < size; ++i) {
+
+
+                PyObject* subList = PyList_GET_ITEM(pyArg,i);
+                if (!subList) {
+                    PyErr_SetString(PyExc_TypeError, "table must be a list of list objects.");
+                    return 0;
+                }
+                int subSize = (int)PyList_GET_SIZE(subList);
+                std::vector<std::string> rowVec(subSize);
+
+                for (int j = 0; j < subSize; ++j) {
+                    PyObject* pyString = PyList_GET_ITEM(subList,j);
+                    if ( PyUnicode_Check(pyString) ) {
+
+                        PyObject* utf8pyobj = PyUnicode_AsUTF8String(pyString); // newRef
+                        if (utf8pyobj) {
+                            char* cstr = PyBytes_AS_STRING(utf8pyobj); // Borrowed pointer
+                            std::string ret;
+                            ret.append(cstr);
+                            Py_DECREF(utf8pyobj);
+                            rowVec[j] = ret;
+                        }
+                    }
+                }
+            }
+
+            cppSelf->setTable(table);
+
+
+            // End of code injection
+
+
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_PathParamFunc_setTable_TypeError:
+        const char* overloads[] = {"list", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.PathParam.setTable", overloads);
+        return 0;
+}
+
 static PyMethodDef Sbk_PathParam_methods[] = {
     {"getTable", (PyCFunction)Sbk_PathParamFunc_getTable, METH_NOARGS},
     {"isMultiPathTable", (PyCFunction)Sbk_PathParamFunc_isMultiPathTable, METH_NOARGS},
     {"setAsMultiPathTable", (PyCFunction)Sbk_PathParamFunc_setAsMultiPathTable, METH_NOARGS},
+    {"setTable", (PyCFunction)Sbk_PathParamFunc_setTable, METH_O},
 
     {0} // Sentinel
 };
