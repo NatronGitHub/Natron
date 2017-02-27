@@ -9,6 +9,7 @@ name                gcc48
 # Whenever this port is bumped for version/revision, please revbump dragonegg-*-gcc-4.8
 epoch               2
 version             4.8.5
+revision            1
 platforms           darwin
 categories          lang
 maintainers         nomaintainer

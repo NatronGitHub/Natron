@@ -10,7 +10,7 @@ name                ffmpeg
 conflicts           ffmpeg-devel
 epoch               1
 version             3.2.2
-revision            3
+revision            4
 license             LGPL-2.1+
 categories          multimedia
 maintainers         devans {jeremyhu @jeremyhu} openmaintainer

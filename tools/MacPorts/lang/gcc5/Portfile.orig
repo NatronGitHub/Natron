@@ -8,6 +8,7 @@ name                gcc5
 
 epoch               2
 version             5.4.0
+revision            1
 platforms           darwin
 categories          lang
 maintainers         nomaintainer
