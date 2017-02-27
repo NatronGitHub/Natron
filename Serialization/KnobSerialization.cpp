@@ -630,14 +630,18 @@ void
 KnobSerialization::decodeValueNode(const std::string& viewName, const YAML::Node& node)
 {
 
-    int nDims = node.IsSequence() ? node.size() : 1;
+    int nDims = 1;
+    bool isMainNodeSequence = node.IsSequence() && _dataType != eSerializationValueVariantTypeTable;
+    if (isMainNodeSequence) {
+        nDims = node.size();
+    }
 
     PerDimensionValueSerializationVec& dimVec = _values[viewName];
     initValuesVec(this, &dimVec, nDims);
 
     for (int i = 0; i < nDims; ++i) {
 
-        YAML::Node dimNode = node.IsSequence() ? node[i] : node;
+        YAML::Node dimNode = isMainNodeSequence ? node[i] : node;
 
         if (!dimNode.IsMap()) {
             // This is a value
