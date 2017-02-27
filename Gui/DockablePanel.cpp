@@ -1022,12 +1022,15 @@ DockablePanel::setClosedInternal(bool c)
         NodePtr internalNode = nodeGui->getNode();
 
         Gui* gui = getGui();
-        if (internalNode && gui) {
-            GuiAppInstPtr app = gui->getApp();
-            if (app) {
-                boost::shared_ptr<TimeLine> timeline = app->getTimeLine();
-                if (timeline) {
-                    internalNode->getEffectInstance()->refreshAfterTimeChange( false, timeline->currentFrame() );
+        if (gui) {
+            if (internalNode && !c) {
+                // when a panel is open, refresh its knob values
+                GuiAppInstPtr app = gui->getApp();
+                if (app) {
+                    boost::shared_ptr<TimeLine> timeline = app->getTimeLine();
+                    if (timeline) {
+                        internalNode->getEffectInstance()->refreshAfterTimeChange( false, timeline->currentFrame() );
+                    }
                 }
             }
         }
