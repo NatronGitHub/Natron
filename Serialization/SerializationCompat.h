@@ -956,6 +956,7 @@ SERIALIZATION_NAMESPACE::ValueSerialization::serialize(Archive & ar, const unsig
     if (loadValue) {
         switch (_serialization->_dataType) {
             case eSerializationValueVariantTypeNone:
+            case eSerializationValueVariantTypeTable:
                 break;
 
             case eSerializationValueVariantTypeInteger:
