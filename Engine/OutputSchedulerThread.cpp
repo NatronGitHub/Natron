@@ -503,8 +503,6 @@ OutputSchedulerThreadPrivate::getNearestInSequence(RenderDirectionEnum direction
 void
 OutputSchedulerThread::startTasksFromLastStartedFrame()
 {
-    // Tasks are started on the scheduler thread
-    assert(QThread::currentThread() == this);
 
     TimeValue frame;
     bool canContinue;
@@ -517,17 +515,19 @@ OutputSchedulerThread::startTasksFromLastStartedFrame()
         {
             QMutexLocker l(&_imp->lastFrameRequestedMutex);
             frame = _imp->lastFrameRequested;
-        }
-        if ( (args->firstFrame == args->lastFrame) && (frame == args->firstFrame) ) {
-            return;
-        }
 
-        RenderDirectionEnum newDirection = args->direction;
-        ///If startingTime is already taken into account in the framesToRender, push new frames from the last one in the stack instead
-        canContinue = OutputSchedulerThreadPrivate::getNextFrameInSequence(pMode, args->direction, frame,
-                                                                           args->firstFrame, args->lastFrame, args->frameStep, &frame, &newDirection);
-        if (newDirection != args->direction) {
-            args->direction = newDirection;
+            if ( (args->firstFrame == args->lastFrame) && (frame == args->firstFrame) ) {
+                return;
+            }
+
+            RenderDirectionEnum newDirection = args->direction;
+            ///If startingTime is already taken into account in the framesToRender, push new frames from the last one in the stack instead
+            canContinue = OutputSchedulerThreadPrivate::getNextFrameInSequence(pMode, args->direction, frame,
+                                                                               args->firstFrame, args->lastFrame, args->frameStep, &frame, &newDirection);
+            if (newDirection != args->direction) {
+                args->direction = newDirection;
+            }
+            _imp->lastFrameRequested = frame;
         }
     }
 
@@ -539,8 +539,6 @@ OutputSchedulerThread::startTasksFromLastStartedFrame()
 void
 OutputSchedulerThread::startTasks(TimeValue startingFrame)
 {
-    // Tasks are started on the scheduler thread
-    assert(QThread::currentThread() == this);
 
     OutputSchedulerThreadStartArgsPtr args = _imp->runArgs.lock();
 
@@ -1029,7 +1027,9 @@ OutputSchedulerThread::notifyFrameRendered(const BufferedFrameContainerPtr& fram
             nbFramesRendered = _imp->nFramesRendered;
 
 
-            if (_imp->nFramesRendered == nbTotalFrames) {
+            if (_imp->nFramesRendered != nbTotalFrames) {
+                startTasksFromLastStartedFrame();
+            } else {
                 _imp->renderFinished = true;
                 l.unlock();
 
