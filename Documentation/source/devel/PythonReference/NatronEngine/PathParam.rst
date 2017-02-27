@@ -17,7 +17,8 @@ Functions
 ^^^^^^^^^
 
 *    def :meth:`setAsMultiPathTable<NatronEngine.PathParam.setAsMultiPathTable>` ()
-
+*    def :meth:`getTable<NatronEngine.PathParam.getTable>` ()
+*    def :meth:`setTable<NatronEngine.PathParam.setTable>` (table)
 
 .. _dirdetails:
 
@@ -55,7 +56,21 @@ Member functions description
 When called, the parameter will be able to store multiple paths.
 
 
+.. method:: NatronEngine.PathParam.getTable()
+
+    :rtype: :class:`PySequence`
 
 
+    Returns a list of list of strings. Each sub-list corresponds to a row in the table.
+    Each elements of the row are the cell value for each column.
+    
+.. method:: NatronEngine.PathParam.setTable(table)
 
+    :rparam table: :class:`PySequence`
+
+
+    Set the parameter to a list of list of strings. Each sub-list corresponds to a row in the table.
+    Each elements of the row are the cell value for each column.
+    An error will be invoked if the number of columns in the provided *table* do not match
+    the number of columns of the parameter's table.
 
