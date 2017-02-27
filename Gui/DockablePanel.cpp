@@ -965,7 +965,8 @@ DockablePanel::setClosedInternal(bool closed)
                     gui->removeNodeGuiFromAnimationModuleEditor(nodeGui);
                 }
             }
-            if (internalNode) {
+            if (internalNode && !closed) {
+                // when a panel is open, refresh its knob values
                 GuiAppInstancePtr app = gui->getApp();
                 if (app) {
                     boost::shared_ptr<TimeLine> timeline = app->getTimeLine();
