@@ -152,6 +152,10 @@ ImagePrivate::initTileAndFetchFromCache(const TileCoord& coord, Image::Tile &til
         fetchBufferFromCache(cache, cachedBuffer, channelID, channelIndices[c], pluginID, tile, thisChannelTile);
 
         if (thisChannelTile.entryLocker->getStatus() == CacheEntryLocker::eCacheEntryStatusCached) {
+            if (!Cache::isCompiledWithCachePersistence()) {
+                cachedBuffer = toCacheImageTileStorage(thisChannelTile.entryLocker->getProcessLocalEntry());
+                thisChannelTile.buffer = cachedBuffer;
+            }
             thisChannelTile.entryLocker.reset();
         } else {
             if (failIfTileUncached) {

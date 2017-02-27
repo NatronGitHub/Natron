@@ -72,7 +72,6 @@
 #define NATRON_CACHE_DIRECTORY_NAME "Cache"
 
 
-
 NATRON_NAMESPACE_ENTER;
 
 
@@ -246,12 +245,20 @@ public:
      * The entry is assumed to have its key set.
      * This function return a cache entry locker object that itself indicate
      * the CacheEntryLocker:CacheEntryStatusEnum of the entry. Depending
-     * on the status the thread must either call CacheEntryLocker::getCachedEntry()
-     * if results were found in cache, or compute the entry and then call CacheEntryLocker::insert()
+     * on the status the thread can continue
+     * if results were found in cache, or compute the entry and then call CacheEntryLocker::insertInCache()
      * or just wait for another thread that is already computing the entry with
-     * CacheEntryLocker::waitForPendingEntry
+     * CacheEntryLocker::waitForPendingEntry.
+     * NB: if the cache is not persistent the entry pointer may be modified
      **/
     CacheEntryLockerPtr get(const CacheEntryBasePtr& entry) const;
+
+    /**
+     * @brief Returns whether the entry pointer passed to
+     * the get function is not valid after the call to get(). The caller must then call
+     * locker->getProcessLocalEntry() to retrieve the correct entry
+     **/
+    static bool isCompiledWithCachePersistence();
 
     /**
      * @brief Returns whether a cache entry exists for the given hash.

@@ -475,6 +475,9 @@ EffectInstance::getLayersProducedAndNeeded_public(TimeValue inArgsTime, ViewIdx 
     }
 
     if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
+        if (!Cache::isCompiledWithCachePersistence()) {
+            *results = toGetComponentsResults(cacheAccess->getProcessLocalEntry());
+        }
         return eActionStatusOK;
     }
     assert(cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute);
@@ -803,6 +806,9 @@ EffectInstance::getDistortion_public(TimeValue inArgsTime,
             }
 
             if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
+                if (!Cache::isCompiledWithCachePersistence()) {
+                    *results = toGetDistortionResults(cacheAccess->getProcessLocalEntry());
+                }
                 return eActionStatusOK;
             }
             
@@ -910,6 +916,9 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
         }
 
         if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
+            if (!Cache::isCompiledWithCachePersistence()) {
+                *results = toIsIdentityResults(cacheAccess->getProcessLocalEntry());
+            }
             return eActionStatusOK;
         }
 
@@ -1021,6 +1030,9 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
         }
 
         if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
+            if (!Cache::isCompiledWithCachePersistence()) {
+                *results = toGetRegionOfDefinitionResults(cacheAccess->getProcessLocalEntry());
+            }
             return eActionStatusOK;
         }
         assert(cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute);
@@ -1387,6 +1399,9 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
         }
 
         if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
+            if (!Cache::isCompiledWithCachePersistence()) {
+                *results = toGetFramesNeededResults(cacheAccess->getProcessLocalEntry());
+            }
             return eActionStatusOK;
         }
         assert(cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute);
@@ -1542,6 +1557,9 @@ EffectInstance::getFrameRange_public(GetFrameRangeResultsPtr* results)
     }
 
     if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
+        if (!Cache::isCompiledWithCachePersistence()) {
+            *results = toGetFrameRangeResults(cacheAccess->getProcessLocalEntry());
+        }
         return eActionStatusOK;
     }
     assert(cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute);
@@ -1817,6 +1835,9 @@ EffectInstance::getTimeInvariantMetaDatas_public(GetTimeInvariantMetaDatasResult
     }
 
     if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
+        if (!Cache::isCompiledWithCachePersistence()) {
+            *results = toGetTimeInvariantMetaDatasResults(cacheAccess->getProcessLocalEntry());
+        }
         return eActionStatusOK;
     }
     assert(cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute);

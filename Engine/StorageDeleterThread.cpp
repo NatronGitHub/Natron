@@ -181,7 +181,9 @@ StorageDeleterThread::run()
                 }
             }
             if (front) {
-                front->deallocateMemory();
+                if (Cache::isCompiledWithCachePersistence()) {
+                    front->deallocateMemory();
+                }
             } else if (evictRequest > 0) {
                 appPTR->getGeneralPurposeCache()->evictLRUEntries(0);
                 appPTR->getTileCache()->evictLRUEntries(0);

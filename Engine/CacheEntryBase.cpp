@@ -67,7 +67,8 @@ CacheEntryLockerPtr
 CacheEntryBase::getFromCache() const
 {
     CachePtr cache = getCache();
-    return cache->get(boost::const_pointer_cast<CacheEntryBase>(shared_from_this()));
+    CacheEntryBasePtr thisShared = boost::const_pointer_cast<CacheEntryBase>(shared_from_this());
+    return cache->get(thisShared);
 }
 
 CacheEntryKeyBasePtr

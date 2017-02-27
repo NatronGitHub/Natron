@@ -1445,7 +1445,11 @@ NodeGroup::getRealInputForInput(const NodePtr& input) const
         QMutexLocker k(&_imp->nodesLock);
         for (U32 i = 0; i < _imp->inputs.size(); ++i) {
             if (_imp->inputs[i].lock() == input) {
-                return getNode()->getInput(i);
+                NodePtr node = getNode();
+                if (!node) {
+                    return NodePtr();
+                }
+                return node->getInput(i);
             }
         }
     }
