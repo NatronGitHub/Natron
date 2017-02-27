@@ -767,14 +767,14 @@ KnobSerialization::decode(const YAML::Node& node)
 
     // Check for nodes
     bool dataTypeSet = false;
-    static const std::string typesToCheck[5] = { kKnobSerializationDataTypeKeyBool, kKnobSerializationDataTypeKeyInt, kKnobSerializationDataTypeKeyDouble, kKnobSerializationDataTypeKeyString, kKnobSerializationDataTypeKeyNone };
-    for (int i = 0; i < 5; ++i) {
+    static const std::string typesToCheck[6] = { kKnobSerializationDataTypeKeyBool, kKnobSerializationDataTypeKeyInt, kKnobSerializationDataTypeKeyDouble, kKnobSerializationDataTypeKeyString, kKnobSerializationDataTypeKeyTable, kKnobSerializationDataTypeKeyNone };
+    for (int i = 0; i < 6; ++i) {
         if (checkForValueNode(node, typesToCheck[i])) {
             dataTypeSet = true;
             break;
         }
     }
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < 6; ++i) {
         if (checkForDefaultValueNode(node, typesToCheck[i], dataTypeSet)) {
             break;
         }
