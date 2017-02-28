@@ -52,21 +52,19 @@
 // 16 bit tiles will have one side halved
 // 32 bit tiles will have both dimension halved (so tile size for 32bit is actually pow(2, tileSizePo2-1)
 //
-// default is tileSizePo2=6, thus a 8 bit tile will be 64x64 pixels
-#define NATRON_8BIT_TILE_SIZE_PO2 6
 
-// tileByteSize = std::pow(2, NATRON_8BIT_TILE_SIZE_PO2);
-// tileByteSize *= tileByteSize;
-#define NATRON_TILE_SIZE_BYTES 4096
 
-#define NATRON_TILE_SIZE_X_8_BIT 64
-#define NATRON_TILE_SIZE_Y_8_BIT 64
+#define NATRON_TILE_SIZE_X_8_BIT 128
+#define NATRON_TILE_SIZE_Y_8_BIT 128
 
-#define NATRON_TILE_SIZE_X_16_BIT 64
-#define NATRON_TILE_SIZE_Y_16_BIT 32
+#define NATRON_TILE_SIZE_X_16_BIT NATRON_TILE_SIZE_X_8_BIT
+#define NATRON_TILE_SIZE_Y_16_BIT (NATRON_TILE_SIZE_Y_8_BIT / 2)
 
-#define NATRON_TILE_SIZE_X_32_BIT 32
-#define NATRON_TILE_SIZE_Y_32_BIT 32
+#define NATRON_TILE_SIZE_X_32_BIT (NATRON_TILE_SIZE_X_8_BIT / 2)
+#define NATRON_TILE_SIZE_Y_32_BIT (NATRON_TILE_SIZE_Y_8_BIT / 2)
+
+#define NATRON_TILE_SIZE_BYTES (NATRON_TILE_SIZE_X_8_BIT * NATRON_TILE_SIZE_Y_8_BIT)
+
 
 // The name of the directory containing all buckets on disk
 #define NATRON_CACHE_DIRECTORY_NAME "Cache"

@@ -197,6 +197,56 @@ public:
     ~TimeLapseReporter();
 };
 
+struct StackTraceRecorderPrivate;
+class StackTraceRecorder
+{
+
+    StackTraceRecorder(int maxDepth);
+
+public:
+
+    struct StackFrame
+    {
+        std::string functionSymbol;
+        std::string moduleName;
+        std::string offset;
+        std::string addr;
+        std::string encoded;
+
+    };
+
+    // For now only works on Linux and mac
+#ifdef __NATRON_UNIX__
+    static std::vector<StackTraceRecorder::StackFrame> getStackTrace(int maxDepth = 16);
+#endif
+
+    ~StackTraceRecorder();
+    
+private:
+
+    boost::scoped_ptr<StackTraceRecorderPrivate> _imp;
+};
+
+struct ProfilerPrivate;
+class Profiler
+{
+public:
+
+    Profiler();
+
+    ~Profiler();
+
+    void start(const std::string& functionName);
+    void stop();
+    std::string dumpLog() const;
+
+private:
+
+    boost::scoped_ptr<ProfilerPrivate> _imp;
+
+    
+};
+
 NATRON_NAMESPACE_EXIT;
 
 #endif // ifndef NATRON_ENGINE_TIMER_H

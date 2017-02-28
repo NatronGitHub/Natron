@@ -91,6 +91,7 @@ win32-msvc*{
 INCLUDEPATH += $$PWD/Engine
 DEPENDPATH += $$OUT_PWD/../Engine
 INCLUDEPATH += $$PWD/libs/SequenceParsing
+INCLUDEPATH += $$PWD/libs
 INCLUDEPATH += $$PWD/Global
 
 win32-msvc*{

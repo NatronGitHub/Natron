@@ -60,6 +60,7 @@ DEPENDPATH  += $$PWD/../libs/OpenFX/HostSupport/include
 INCLUDEPATH += $$PWD/..
 INCLUDEPATH += $$PWD/../Global
 INCLUDEPATH += $$PWD/../Serialization
+INCLUDEPATH += $$PWD/../libs
 INCLUDEPATH += $$PWD/../libs/SequenceParsing
 
 INCLUDEPATH += $$PWD/../google-breakpad/src

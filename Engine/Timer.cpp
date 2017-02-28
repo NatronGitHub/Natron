@@ -28,12 +28,20 @@
 #include <time.h>
 #include <cmath>
 #include <cassert>
+#include <string>
+#include <sstream>
 #include <stdexcept>
+#include <set>
 
 #include <QtCore/QMutex>
+#include <QtCore/QThread>
 #include <QtCore/QMutexLocker>
 
 #include "Global/GlobalDefines.h"
+#if defined(__NATRON_UNIX__)
+#include <execinfo.h>
+#include <cxxabi.h>
+#endif
 
 #define NATRON_FPS_REFRESH_RATE_SECONDS 1.5
 
@@ -370,6 +378,307 @@ TimeLapseReporter::~TimeLapseReporter()
 
     std::cout << message << ' ' << dt << std::endl;
 }
+
+
+struct StackTraceRecorderPrivate
+{
+    int maxDepth;
+
+    std::vector<StackTraceRecorder::StackFrame> stack;
+
+    StackTraceRecorderPrivate(int maxDepth)
+    : maxDepth(maxDepth)
+    , stack()
+    {
+        
+    }
+};
+
+StackTraceRecorder::StackTraceRecorder(int maxDepth)
+: _imp(new StackTraceRecorderPrivate(maxDepth))
+{
+#ifdef __NATRON_UNIX__
+    std::vector<void*> trace(_imp->maxDepth);
+    int traceSize = backtrace(&trace[0], trace.size());
+    char **messages = backtrace_symbols(&trace[0], traceSize);
+    _imp->stack.resize(traceSize);
+
+    for (std::size_t i = 0; i < _imp->stack.size(); ++i) {
+
+        StackTraceRecorder::StackFrame& frame = _imp->stack[i];
+        /*
+
+         Typically this is how the backtrace looks like:
+
+         0   <app/lib-name>     0x0000000100000e98 _Z5tracev + 72
+         1   <app/lib-name>     0x00000001000015c1 _ZNK7functorclEv + 17
+         2   <app/lib-name>     0x0000000100000f71 _Z3fn0v + 17
+         3   <app/lib-name>     0x0000000100000f89 _Z3fn1v + 9
+         4   <app/lib-name>     0x0000000100000f99 _Z3fn2v + 9
+         5   <app/lib-name>     0x0000000100000fa9 _Z3fn3v + 9
+         6   <app/lib-name>     0x0000000100000fb9 _Z3fn4v + 9
+         7   <app/lib-name>     0x0000000100000fc9 _Z3fn5v + 9
+         8   <app/lib-name>     0x0000000100000fd9 _Z3fn6v + 9
+         9   <app/lib-name>     0x0000000100001018 main + 56
+         10  libdyld.dylib      0x00007fff91b647e1 start + 0
+
+         */
+
+        // split the string, take out chunks out of stack trace
+        std::stringstream ss(messages[i]);
+        ss >> frame.moduleName;
+        ss >> frame.addr;
+        ss >> frame.functionSymbol;
+        ss >> frame.offset;
+
+        int   validCppName = 0;
+        //  if this is a C++ library, symbol will be demangled
+        //  on success function sets validCppName to 0
+        char* functionName = abi::__cxa_demangle(frame.functionSymbol.c_str(), NULL, 0, &validCppName);
+
+        std::string demangledFunctionName;
+        if (validCppName == 0 && functionName) {
+            demangledFunctionName.append(functionName);
+            free(functionName);
+        } else {
+            demangledFunctionName = frame.functionSymbol;
+        }
+        std::stringstream encodeSs;
+        encodeSs << "(" << frame.moduleName << ")0x" << frame.addr << " - " << demangledFunctionName  << " + " << frame.offset;
+        frame.encoded = encodeSs.str();
+    }
+    free(messages);
+#elif defined(__NATRON_WINDOWS__)
+// Todo
+#endif // __NATRON_UNIX__
+}
+
+#ifdef __NATRON_UNIX__
+std::vector<StackTraceRecorder::StackFrame>
+StackTraceRecorder::getStackTrace(int maxDepth)
+{
+    StackTraceRecorder r(maxDepth);
+    return r._imp->stack;
+}
+#endif
+
+StackTraceRecorder::~StackTraceRecorder()
+{
+
+}
+
+// A block recorded in a start() stop() for a given thread
+struct ProfilerDataBlock
+{
+    // All times are in seconds
+    TimestampVal startTimeStamp;
+    std::string functionName;
+    std::string threadName;
+
+    ProfilerDataBlock()
+    : startTimeStamp()
+    , functionName()
+    , threadName()
+    {
+
+    }
+};
+
+struct ProfilerDataBlockStat
+{
+    // All times are in seconds
+    std::string functionName;
+    double  totalTime;
+    double  averageTime;
+    double  minTime;
+    double  maxTime;
+    unsigned long long nbCalls;
+
+    ProfilerDataBlockStat()
+    : functionName()
+    , totalTime(0)
+    , averageTime(0)
+    , minTime(INT_MAX)
+    , maxTime(INT_MIN)
+    , nbCalls(0)
+    {
+
+    }
+
+};
+
+struct PerThreadStackData
+{
+    std::vector<ProfilerDataBlock> startStopStack;
+};
+
+typedef boost::shared_ptr<PerThreadStackData> PerThreadStackDataPtr;
+
+typedef std::map<std::string, PerThreadStackDataPtr> PerThreadStackDataMap;
+
+
+typedef std::map<std::string, ProfilerDataBlockStat> ProfilerDataBlockStatMap;
+
+struct ProfilerPrivate
+{
+
+    ProfilerDataBlockStatMap perFunctionStats;
+
+    // Hold profiler data vector in function of the thread
+    PerThreadStackDataMap perThreadCallStack;
+
+    QMutex criticalSectionMutex;
+
+    TimeLapse timer;
+
+    double frequency;
+
+    ProfilerPrivate()
+    : perFunctionStats()
+    , perThreadCallStack()
+    , criticalSectionMutex()
+    , timer()
+    , frequency(getPerformanceFrequency())
+    {
+        
+    }
+};
+
+
+
+Profiler::Profiler()
+: _imp(new ProfilerPrivate())
+{
+
+}
+
+Profiler::~Profiler()
+{
+
+}
+
+static std::string
+getThreadName(QThread* thread)
+{
+    std::stringstream ss;
+    ss << thread->objectName().toStdString() << " (" << thread << ")";
+    return ss.str();
+
+}
+
+void
+Profiler::start(const std::string& functionName)
+{
+
+    QThread* curThread = QThread::currentThread();
+
+    // Add the profile name in the callstack vector
+    ProfilerDataBlock data;
+    data.startTimeStamp = getTimestampInSeconds();
+
+    // Get the thread name, map against thread name and not thread pointer because at dump time the thread might no longer exist.
+    data.threadName = getThreadName(curThread);
+
+    PerThreadStackDataPtr threadData;
+    {
+        QMutexLocker k(&_imp->criticalSectionMutex);
+        PerThreadStackDataPtr& thisThreadStack = _imp->perThreadCallStack[data.threadName];
+        if (!thisThreadStack) {
+            thisThreadStack.reset(new PerThreadStackData);
+        }
+        threadData = thisThreadStack;
+    }
+
+    /*
+    // Record the current stack trace
+    std::vector<StackTraceRecorder::StackFrame> stack = StackTraceRecorder::getStackTrace();
+    if (!stack.empty()) {
+        StackTraceRecorder::StackFrame& frame = stack.front();
+        data.functionName = frame.encoded;
+    }*/
+    data.functionName = functionName;
+    threadData->startStopStack.push_back(data);
+} // start
+
+void
+Profiler::stop()
+{
+    QThread* curThread = QThread::currentThread();
+
+    std::string threadName = getThreadName(curThread);
+
+
+    PerThreadStackDataPtr threadData;
+    {
+        // Retrieve the right entry in function of the threadId
+        QMutexLocker k(&_imp->criticalSectionMutex);
+        PerThreadStackDataMap::iterator foundCallStack = _imp->perThreadCallStack.find(threadName);
+        if (foundCallStack == _imp->perThreadCallStack.end()) {
+            // You should call stop for each corresponding call to start
+            assert(false);
+            return;
+        }
+        assert(foundCallStack->second);
+        threadData = foundCallStack->second;
+    }
+    assert(!threadData->startStopStack.empty());
+    if (threadData->startStopStack.empty()) {
+        return;
+    }
+    // Retrieve the last block that was started
+    ProfilerDataBlock& curBlock = threadData->startStopStack.back();
+
+    // Compute elapsed time
+    double elapsedTime;
+    {
+        TimestampVal now = getTimestampInSeconds();
+        elapsedTime = getTimeElapsed(curBlock.startTimeStamp, now, _imp->frequency);
+    }
+    {
+        QMutexLocker k(&_imp->criticalSectionMutex);
+        ProfilerDataBlockStat &stats = _imp->perFunctionStats[curBlock.functionName];
+        stats.functionName = curBlock.functionName;
+        stats.totalTime += elapsedTime;
+        // Retrieve time information to compute min and max time
+        stats.minTime = std::min(stats.minTime, elapsedTime);
+        stats.maxTime = std::max(stats.maxTime, elapsedTime);
+        ++stats.nbCalls;
+        stats.averageTime = stats.totalTime / stats.nbCalls;
+    }
+
+
+    threadData->startStopStack.pop_back();
+
+} // stop
+
+
+
+std::string
+Profiler::dumpLog() const
+{
+
+    std::stringstream finalStream;
+
+    finalStream << std::endl << std::endl;
+    finalStream << "Profile dump:" << std::endl;
+    finalStream << "_______________________________________________________________________________________" << std::endl;
+    finalStream << "| Total time   | Avg Time     |  Min time    |  Max time    | Calls  | Section" << std::endl;
+    finalStream << "_______________________________________________________________________________________" << std::endl;
+
+    for (ProfilerDataBlockStatMap::const_iterator it = _imp->perFunctionStats.begin(); it != _imp->perFunctionStats.end(); ++it) {
+        finalStream << "  " <<
+        QString::number(it->second.totalTime * 1000, 'f', 6).toStdString() << "\t\t" <<
+        QString::number(it->second.averageTime * 1000, 'f', 6).toStdString() << "\t\t" <<
+        QString::number(it->second.minTime * 1000, 'f', 6).toStdString() << "\t\t" <<
+        QString::number(it->second.maxTime * 1000, 'f', 6).toStdString() << "\t\t" <<
+        QString::number(it->second.nbCalls).toStdString() << "\t\t" <<
+        it->second.functionName << std::endl;
+        finalStream << "_______________________________________________________________________________________" <<  std::endl;
+    }
+    finalStream << std::endl << std::endl;
+
+    return finalStream.str();
+} // dumpLog
 
 NATRON_NAMESPACE_EXIT;
 

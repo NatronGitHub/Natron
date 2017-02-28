@@ -66,6 +66,7 @@ GCC_DIAG_OFF(unused-parameter)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
 
+
 #include <SequenceParsing.h>
 
 #include "Global/GlobalDefines.h"
@@ -2689,6 +2690,10 @@ CacheEntryLocker::waitForPendingEntry(std::size_t timeout)
         lookupAndSetStatus(shmAccess, &timeSpentWaitingForPendingEntryMS, timeout);
 
         if (_imp->status == eCacheEntryStatusComputationPending) {
+
+            // We do not use a wait condition here because we would then need to keep the shared memory mapped
+            // the whole time we wait on the condition, preventing another thread from remapping the shm if needed.
+            // Instead we explicitly sleep and retry again.
             timeSpentWaitingForPendingEntryMS += timeToWaitMS;
             if (timeout == 0 || timeSpentWaitingForPendingEntryMS < timeout) {
                 sleep_milliseconds(timeToWaitMS);
