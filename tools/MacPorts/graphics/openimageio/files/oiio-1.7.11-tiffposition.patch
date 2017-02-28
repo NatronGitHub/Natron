@@ -1,6 +1,6 @@
 diff -ur oiio-Release-1.7.11/src/tiff.imageio/tiffinput.cpp oiio-Release-1.7.11-tiffposition/src/tiff.imageio/tiffinput.cpp
 --- oiio-Release-1.7.11/src/tiff.imageio/tiffinput.cpp	2017-02-01 00:23:29.000000000 +0100
-+++ oiio-Release-1.7.11-tiffposition/src/tiff.imageio/tiffinput.cpp	2017-02-28 15:52:20.000000000 +0100
++++ oiio-Release-1.7.11-tiffposition/src/tiff.imageio/tiffinput.cpp	2017-02-28 17:04:42.000000000 +0100
 @@ -676,12 +676,13 @@
      float x = 0, y = 0;
      TIFFGetField (m_tif, TIFFTAG_XPOSITION, &x);
@@ -40,7 +40,7 @@ diff -ur oiio-Release-1.7.11/src/tiff.imageio/tiffinput.cpp oiio-Release-1.7.11-
  
 diff -ur oiio-Release-1.7.11/src/tiff.imageio/tiffoutput.cpp oiio-Release-1.7.11-tiffposition/src/tiff.imageio/tiffoutput.cpp
 --- oiio-Release-1.7.11/src/tiff.imageio/tiffoutput.cpp	2017-02-01 00:23:29.000000000 +0100
-+++ oiio-Release-1.7.11-tiffposition/src/tiff.imageio/tiffoutput.cpp	2017-02-28 15:56:04.000000000 +0100
++++ oiio-Release-1.7.11-tiffposition/src/tiff.imageio/tiffoutput.cpp	2017-02-28 17:05:47.000000000 +0100
 @@ -296,8 +296,14 @@
  
      // N.B. Clamp position at 0... TIFF is internally incapable of having
@@ -58,3 +58,12 @@ diff -ur oiio-Release-1.7.11/src/tiff.imageio/tiffoutput.cpp oiio-Release-1.7.11
  
      TIFFSetField (m_tif, TIFFTAG_IMAGEWIDTH, m_spec.width);
      TIFFSetField (m_tif, TIFFTAG_IMAGELENGTH, m_spec.height);
+@@ -520,8 +526,6 @@
+ 
+     // Deal with missing XResolution or YResolution, or a PixelAspectRatio
+     // that contradicts them.
+-    float X_density = m_spec.get_float_attribute ("XResolution", 1.0f);
+-    float Y_density = m_spec.get_float_attribute ("YResolution", 1.0f);
+     float aspect = m_spec.get_float_attribute ("PixelAspectRatio", 1.0f);
+     if (X_density < 1.0f || Y_density < 1.0f || aspect*X_density != Y_density) {
+         if (X_density < 1.0f || Y_density < 1.0f) {
