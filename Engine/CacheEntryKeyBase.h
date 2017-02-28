@@ -46,7 +46,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-#define kCacheKeyUniqueIDImageTile 1
+#define kCacheKeyUniqueIDCacheImage 1
 #define kCacheKeyUniqueIDGetRoDResults 2
 #define kCacheKeyUniqueIDIsIdentityResults 3
 #define kCacheKeyUniqueIDFramesNeededResults 4
@@ -144,59 +144,6 @@ private:
     boost::scoped_ptr<CacheEntryKeyBasePrivate> _imp;
    
 };
-
-struct ImageTileKeyPrivate;
-class ImageTileKey
-: public CacheEntryKeyBase
-{
-public:
-
-    ImageTileKey();
-
-    ImageTileKey(U64 nodeTimeViewVariantHash,
-                 U64 layerChannelID,
-                 const RenderScale& proxyScale,
-                 unsigned int mipMapLevel,
-                 bool draftMode,
-                 ImageBitDepthEnum bitdepth,
-                 const RectI& tileBounds,
-                 const std::string& pluginID);
-
-    virtual ~ImageTileKey();
-
-    U64 getNodeTimeInvariantHashKey() const;
-
-    const RectI& getTileBounds() const;
-
-    const RenderScale& getProxyScale() const;
-
-    unsigned int getMipMapLevel() const;
-
-    bool isDraftMode() const;
-
-    ImageBitDepthEnum getBitDepth() const;
-
-    virtual void toMemorySegment(ExternalSegmentType* segment,  ExternalSegmentTypeHandleList* objectPointers) const OVERRIDE FINAL;
-
-    virtual void fromMemorySegment(ExternalSegmentType* segment,
-                                   ExternalSegmentTypeHandleList::const_iterator start,
-                                   ExternalSegmentTypeHandleList::const_iterator end) OVERRIDE FINAL;
-
-    virtual int getUniqueID() const OVERRIDE FINAL;
-
-private:
-
-
-    virtual void appendToHash(Hash64* hash) const OVERRIDE FINAL;
-
-    boost::scoped_ptr<ImageTileKeyPrivate> _imp;
-};
-
-inline
-ImageTileKeyPtr toImageTileKey(const CacheEntryKeyBasePtr& key)
-{
-    return boost::dynamic_pointer_cast<ImageTileKey>(key);
-}
 
 NATRON_NAMESPACE_EXIT;
 

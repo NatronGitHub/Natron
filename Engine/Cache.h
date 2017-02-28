@@ -252,6 +252,38 @@ public:
     CacheEntryLockerPtr get(const CacheEntryBasePtr& entry) const;
 
     /**
+     * @brief Try to obtain numTiles free tiles from the internal storage. If not available, grow the internal memory mapped file
+     * so at least numTiles free tiles are available.
+     * @param tilesData[out] In output, this contains each tiles allocated as a pair of <tileIndex, pointer>
+     * Each tile will have exactly NATRON_TILE_SIZE_BYTES bytes. The index is the index that must be passed back to the unLockTiles
+     * and releaseTiles functions.
+     *
+     * Note that to ensure that pointers are valid in output of this function, a mutex must be taken. Ensure that you call unLockTiles()
+     * with the cacheData pointer returned from this function otherwise the program will deadlock.
+     * @returns True upon success, false otherwise.
+     * When returning false, you must still call unLockTiles, but do not have to call releaseTiles.
+     * Note that unLockTiles must always be called before releaseTiles.
+     **/
+    bool reserveAndLockTiles(const CacheEntryBasePtr& entry, std::size_t numTiles, std::vector<std::pair<int, void*> >* tilesData, void** cacheData);
+
+    /**
+     * @brief Same as reserveAndLockTiles except that this function return pointer to existing (non-free) tiles.
+     **/
+    bool getTilesPointer(const CacheEntryBasePtr& entry, const std::vector<int>& tileIndices, std::vector<std::pair<int, void*> >* tilesData, void** cacheData);
+
+
+    /**
+     * @brief Free cache data allocated from a call to reserveAndLockTiles
+     **/
+    void unLockTiles(void* cacheData);
+
+
+    /**
+     * @brief Release tiles that were reserved with reserveAndLockTiles: they are marked free so that they can be obtained again
+     **/
+    void releaseTiles(const CacheEntryBasePtr& entry, const std::vector<int>& tileIndices);
+
+    /**
      * @brief Returns whether the entry pointer passed to
      * the get function is not valid after the call to get(). The caller must then call
      * locker->getProcessLocalEntry() to retrieve the correct entry

@@ -1115,7 +1115,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
                                      const RectD& rod,
                                      bool recenterViewer,
                                      const Point& viewportCenter,
-                                     const ImageTileKeyPtr& viewerProcessNodeTileKey)
+                                     const ImageCacheKeyPtr& viewerProcessNodeTileKey)
 {
     // always running in the main thread
     OpenGLContextLocker locker(_imp.get());
@@ -1146,12 +1146,12 @@ ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
     // Other formats are not supported yet
     assert(bitdepth == eImageBitDepthByte || bitdepth == eImageBitDepthFloat);
 
-    Image::CPUTileData imageData;
+    Image::CPUData imageData;
     if (image) {
         Image::Tile tile;
         bool ok = image->getTileAt(0, 0, &tile);
         assert(ok);
-        image->getCPUTileData(tile, &imageData);
+        image->getCPUData(tile, &imageData);
     }
 
 
@@ -1215,7 +1215,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
                     _imp->displayTextures[textureIndex].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, bitdepth, format, internalFormat, glType, true) );
                 }
 
-                tex->ensureTextureHasSize(imageData.tileBounds, 0);
+                tex->ensureTextureHasSize(imageData.bounds, 0);
 
 
                 _imp->displayTextures[textureIndex].isVisible = true;
@@ -1252,7 +1252,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
     // glMapBufferARB() returns a new allocated pointer immediately
     // even if GPU is still working with the previous data.
     int dataSizeOf = getSizeOfForBitDepth(imageData.bitDepth);
-    std::size_t bytesCount = imageData.tileBounds.area() * imageData.nComps * dataSizeOf;
+    std::size_t bytesCount = imageData.bounds.area() * imageData.nComps * dataSizeOf;
     assert(bytesCount > 0);
     GL_GPU::BufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, bytesCount, NULL, GL_DYNAMIC_DRAW_ARB);
 
@@ -1263,7 +1263,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
     assert(ret);
     if (ret) {
         // update data directly on the mapped buffer
-        unsigned char* srcpixels = Image::pixelAtStatic(imageData.tileBounds.x1, imageData.tileBounds.y1, imageData.tileBounds, imageData.nComps, dataSizeOf, (unsigned char*)imageData.ptrs[0]);
+        unsigned char* srcpixels = Image::pixelAtStatic(imageData.bounds.x1, imageData.bounds.y1, imageData.bounds, imageData.nComps, dataSizeOf, (unsigned char*)imageData.ptrs[0]);
         std::memcpy(ret, srcpixels, bytesCount);
         GLboolean result = GL_GPU::UnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
         assert(result == GL_TRUE);
@@ -1274,7 +1274,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
     // copy pixels from PBO to texture object
     // using glBindTexture followed by glTexSubImage2D.
     // Use offset instead of pointer (last parameter is 0).
-    tex->fillOrAllocateTexture(imageData.tileBounds, 0, 0);
+    tex->fillOrAllocateTexture(imageData.bounds, 0, 0);
 
     // restore previously bound PBO
     GL_GPU::BindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, currentBoundPBO);
@@ -3153,7 +3153,7 @@ ViewerGL::getCurrentRenderScale() const
 template <typename PIX, int maxValue>
 static
 bool
-getColorAtSinglePixel(const Image::CPUTileData& image,
+getColorAtSinglePixel(const Image::CPUData& image,
                    int x,
                    int y,             // in pixel coordinates
                    bool forceLinear,
@@ -3164,7 +3164,7 @@ getColorAtSinglePixel(const Image::CPUTileData& image,
                    float* b,
                    float* a)
 {
-    if ( !image.tileBounds.contains(x, y) ) {
+    if ( !image.bounds.contains(x, y) ) {
         return false;
     }
 
@@ -3174,7 +3174,7 @@ getColorAtSinglePixel(const Image::CPUTileData& image,
 
     int pixelStride;
     const PIX* pix[4];
-    Image::getChannelPointers<PIX>((const PIX**)image.ptrs, x, y, image.tileBounds, image.nComps, (PIX**)pix, &pixelStride);
+    Image::getChannelPointers<PIX>((const PIX**)image.ptrs, x, y, image.bounds, image.nComps, (PIX**)pix, &pixelStride);
 
     if (image.nComps >= 4) {
         *r = *pix[0] / (float)maxValue;
@@ -3273,11 +3273,11 @@ ViewerGL::getColorAt(double x,
     assert(image->getStorageMode() != eStorageModeGLTex);
 
 
-    Image::CPUTileData imageData;
+    Image::CPUData imageData;
     {
         Image::Tile tile;
         image->getTileAt(0, 0, &tile);
-        image->getCPUTileData(tile, &imageData);
+        image->getCPUData(tile, &imageData);
     }
 
     *imgMmlevel = image->getMipMapLevel();
@@ -3331,7 +3331,7 @@ ViewerGL::getColorAt(double x,
 template <typename PIX, int maxValue, int srcNComps>
 static
 bool
-getColorAtRectForSrcNComps(const Image::CPUTileData& image,
+getColorAtRectForSrcNComps(const Image::CPUData& image,
                            const RectI& roi,
                            bool forceLinear,
                            const Color::Lut* srcColorSpace,
@@ -3345,7 +3345,7 @@ getColorAtRectForSrcNComps(const Image::CPUTileData& image,
 
     int pixelStride;
     const PIX* pix[4];
-    Image::getChannelPointers<PIX, srcNComps>((const PIX**)image.ptrs, roi.x1, roi.y1, image.tileBounds, (PIX**)pix, &pixelStride);
+    Image::getChannelPointers<PIX, srcNComps>((const PIX**)image.ptrs, roi.x1, roi.y1, image.bounds, (PIX**)pix, &pixelStride);
 
 
     for (int y = roi.y1; y < roi.y2; ++y) {
@@ -3387,7 +3387,7 @@ getColorAtRectForSrcNComps(const Image::CPUTileData& image,
 
         // Remove what was done on previous iteration and move to next line
         for (int c = 0; c < srcNComps; ++c) {
-            pix[c] += ((image.tileBounds.width() - roi.width()) * pixelStride);
+            pix[c] += ((image.bounds.width() - roi.width()) * pixelStride);
         }
 
     } // for each scan-line
@@ -3405,7 +3405,7 @@ getColorAtRectForSrcNComps(const Image::CPUTileData& image,
 template <typename PIX, int maxValue>
 static
 bool
-getColorAtRectForDepth(const Image::CPUTileData& image,
+getColorAtRectForDepth(const Image::CPUData& image,
                        const RectI& roi,
                        bool forceLinear,
                        const Color::Lut* srcColorSpace,
@@ -3460,11 +3460,11 @@ ViewerGL::getColorAtRect(const RectD &roi, // rectangle in canonical coordinates
     }
 
 
-    Image::CPUTileData imageData;
+    Image::CPUData imageData;
     {
         Image::Tile tile;
         image->getTileAt(0, 0, &tile);
-        image->getCPUTileData(tile, &imageData);
+        image->getCPUData(tile, &imageData);
     }
     
     ViewerColorSpaceEnum srcCS = _imp->viewerTab->getGui()->getApp()->getDefaultColorSpaceForBitDepth(image->getBitDepth());

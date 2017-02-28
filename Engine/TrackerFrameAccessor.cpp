@@ -124,16 +124,16 @@ typedef std::multimap<FrameAccessorCacheKey, FrameAccessorCacheEntry, CacheKey_c
 
 template <bool doR, bool doG, bool doB, int srcNComps, typename PIX, int maxValue>
 void
-natronImageToLibMvFloatImageForDepth(const Image::CPUTileData& source,
+natronImageToLibMvFloatImageForDepth(const Image::CPUData& source,
                                      const RectI& roi,
                                      MvFloatImage& mvImg)
 {
     // mvImg is expected to have its bounds equal to roi
-    assert( source.tileBounds.contains(roi) );
+    assert( source.bounds.contains(roi) );
 
     int srcPixelsStride;
     const PIX* src_pixels[4];
-    Image::getChannelPointers<PIX, srcNComps>((const PIX**)source.ptrs, roi.x1, roi.y1, source.tileBounds, (PIX**)src_pixels, &srcPixelsStride);
+    Image::getChannelPointers<PIX, srcNComps>((const PIX**)source.ptrs, roi.x1, roi.y1, source.bounds, (PIX**)src_pixels, &srcPixelsStride);
 
     // LibMV images have their origin in the top left hand corner
     float* dst_pixels = mvImg.Data();
@@ -169,7 +169,7 @@ natronImageToLibMvFloatImageForDepth(const Image::CPUTileData& source,
 
         // Remove what was done on previous iteration and go to the next line
         for (int c = 0; c < srcNComps; ++c) {
-            src_pixels[c] += (source.tileBounds.width() - roi.width()) *srcPixelsStride;
+            src_pixels[c] += (source.bounds.width() - roi.width()) *srcPixelsStride;
         }
 
     } // for each scanline
@@ -177,7 +177,7 @@ natronImageToLibMvFloatImageForDepth(const Image::CPUTileData& source,
 
 template <bool doR, bool doG, bool doB, int srcNComps>
 void
-natronImageToLibMvFloatImageForNComps(const Image::CPUTileData& source,
+natronImageToLibMvFloatImageForNComps(const Image::CPUData& source,
                                         const RectI& roi,
                                         MvFloatImage& mvImg)
 {
@@ -200,7 +200,7 @@ natronImageToLibMvFloatImageForNComps(const Image::CPUTileData& source,
 
 template <bool doR, bool doG, bool doB>
 void
-natronImageToLibMvFloatImageForChannels(const Image::CPUTileData& source,
+natronImageToLibMvFloatImageForChannels(const Image::CPUData& source,
                                         const RectI& roi,
                                         MvFloatImage& mvImg)
 {
@@ -224,7 +224,7 @@ natronImageToLibMvFloatImageForChannels(const Image::CPUTileData& source,
 
 static void
 natronImageToLibMvFloatImage(bool enabledChannels[3],
-                             const Image::CPUTileData& source,
+                             const Image::CPUData& source,
                              const RectI& roi,
                              MvFloatImage& mvImg)
 {
@@ -462,11 +462,11 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
         sourceImage = tmpImage;
 
     }
-    Image::CPUTileData imageData;
+    Image::CPUData imageData;
     {
         Image::Tile tile;
         sourceImage->getTileAt(0, 0, &tile);
-        sourceImage->getCPUTileData(tile, &imageData);
+        sourceImage->getCPUData(tile, &imageData);
     }
 
     FrameAccessorCacheEntry entry;

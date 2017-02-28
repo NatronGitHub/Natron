@@ -62,15 +62,15 @@ ImagePrivate::initTileAndFetchFromCache(const TileCoord& coord, Image::Tile &til
         case eImageBufferLayoutMonoChannelTiled:
             assert(tileSizeX != 0 && tileSizeY != 0);
             // The tile bounds may not necessarily be a square if we are on the edge.
-            tile.tileBounds.x1 = std::max(coord.tx, originalBounds.x1);
-            tile.tileBounds.y1 = std::max(coord.ty, originalBounds.y1);
-            tile.tileBounds.x2 = std::min(coord.tx + tileSizeX, originalBounds.x2);
-            tile.tileBounds.y2 = std::min(coord.ty + tileSizeY, originalBounds.y2);
+            tile.bounds.x1 = std::max(coord.tx, originalBounds.x1);
+            tile.bounds.y1 = std::max(coord.ty, originalBounds.y1);
+            tile.bounds.x2 = std::min(coord.tx + tileSizeX, originalBounds.x2);
+            tile.bounds.y2 = std::min(coord.ty + tileSizeY, originalBounds.y2);
             break;
         case eImageBufferLayoutRGBACoplanarFullRect:
         case eImageBufferLayoutRGBAPackedFullRect:
             // Single tile that covers the entire image
-            tile.tileBounds = originalBounds;
+            tile.bounds = originalBounds;
             break;
     }
 
@@ -131,13 +131,13 @@ ImagePrivate::initTileAndFetchFromCache(const TileCoord& coord, Image::Tile &til
         // If the entry wants to be cached but we don't want to read from the cache
         // we must remove from the cache any entry that already exists at the given hash.
         if (cachePolicy == eCacheAccessModeWriteOnly) {
-            ImageTileKeyPtr requestedScaleKey(new ImageTileKey(nodeHash,
+            ImageCacheKeyPtr requestedScaleKey(new ImageCacheKey(nodeHash,
                                                                channelID,
                                                                proxyScale,
                                                                mipMapLevel,
                                                                isDraftImage,
                                                                bitdepth,
-                                                               tile.tileBounds,
+                                                               tile.bounds,
                                                                pluginID));
             cachedBuffer->setKey(requestedScaleKey);
 
@@ -201,7 +201,7 @@ ImagePrivate::initTileChannelStorage(const CachePtr& cache, Image::Tile &tile, c
             boost::shared_ptr<GLAllocateMemoryArgs> a(new GLAllocateMemoryArgs());
             a->textureTarget = textureTarget;
             a->glContext = glContext;
-            a->bounds = tile.tileBounds;
+            a->bounds = tile.bounds;
             a->bitDepth = bitdepth;
             allocArgs = a;
         }   break;
@@ -210,7 +210,7 @@ ImagePrivate::initTileChannelStorage(const CachePtr& cache, Image::Tile &tile, c
             thisChannelTile.buffer = buffer;
             boost::shared_ptr<RAMAllocateMemoryArgs> a(new RAMAllocateMemoryArgs());
             a->bitDepth = bitdepth;
-            a->bounds = tile.tileBounds;
+            a->bounds = tile.bounds;
 
             if (thisChannelTile.channelIndex == -1) {
                 a->numComponents = (std::size_t)layer.getNumComponents();
@@ -247,13 +247,13 @@ ImagePrivate::fetchBufferFromCacheInternal(const CachePtr& cache,
                                            Image::Tile &tile,
                                            Image::MonoChannelTile& thisChannelTile)
 {
-    ImageTileKeyPtr keyToReadCache(new ImageTileKey(nodeHash,
+    ImageCacheKeyPtr keyToReadCache(new ImageCacheKey(nodeHash,
                                                     channelID,
                                                     proxyScale,
                                                     lookupMipMapLevel,
                                                     lookupDraft,
                                                     bitdepth,
-                                                    tile.tileBounds,
+                                                    tile.bounds,
                                                     pluginID));
 
     cachedBuffer->setKey(keyToReadCache);
@@ -281,7 +281,7 @@ ImagePrivate::fetchBufferFromCache(const CachePtr& cache,
     }
 
     // Remember the key that was requested originally
-    ImageTileKeyPtr requestedTileKey = toImageTileKey(cachedBuffer->getKey());
+    ImageCacheKeyPtr requestedTileKey = toImageCacheKey(cachedBuffer->getKey());
     CacheEntryLockerPtr requestedTileLocker = thisChannelTile.entryLocker;
 
     if (mipMapLevel == 0) {
@@ -315,13 +315,13 @@ ImagePrivate::fetchBufferFromCache(const CachePtr& cache,
 
 
     ImagePtr upscaledImage;
-    RectI upscaledTileBounds = tile.tileBounds.upscalePowerOfTwo(mipMapLevel);
+    RectI upscaledbounds = tile.bounds.upscalePowerOfTwo(mipMapLevel);
 
     {
         {
             Image::InitStorageArgs initArgs;
             {
-                initArgs.bounds = upscaledTileBounds;
+                initArgs.bounds = upscaledbounds;
                 initArgs.cachePolicy = eCacheAccessModeReadWrite;
                 initArgs.renderClone = renderClone.lock();
                 initArgs.proxyScale = proxyScale;
@@ -359,7 +359,7 @@ ImagePrivate::fetchBufferFromCache(const CachePtr& cache,
         ImagePtr mappedImage;
         {
             Image::InitStorageArgs initArgs;
-            initArgs.bounds = upscaledTileBounds;
+            initArgs.bounds = upscaledbounds;
             initArgs.cachePolicy = eCacheAccessModeNone;
             initArgs.layer = upscaledPlane;
             initArgs.storage = eStorageModeRAM;
@@ -377,22 +377,22 @@ ImagePrivate::fetchBufferFromCache(const CachePtr& cache,
 
         {
             Image::CopyPixelsArgs cpyArgs;
-            cpyArgs.roi = upscaledTileBounds;
+            cpyArgs.roi = upscaledbounds;
             mappedImage->copyPixels(*upscaledImage, cpyArgs);
             upscaledImage = mappedImage;
         }
     }
 
 
-    ImagePtr downscaledImage = upscaledImage->downscaleMipMap(upscaledTileBounds, mipMapLevel);
+    ImagePtr downscaledImage = upscaledImage->downscaleMipMap(upscaledbounds, mipMapLevel);
     if (!downscaledImage) {
         return;
     }
-    assert(downscaledImage->getBounds() == tile.tileBounds);
+    assert(downscaledImage->getBounds() == tile.bounds);
 
 
     Image::CopyPixelsArgs cpyArgs;
-    cpyArgs.roi = tile.tileBounds;
+    cpyArgs.roi = tile.bounds;
     copyRectangle(downscaledImage->_imp->tiles.begin()->second, eStorageModeRAM, eImageBufferLayoutRGBAPackedFullRect, tile, storage, bufferFormat, cpyArgs, renderClone.lock());
 
 
@@ -412,7 +412,7 @@ ImagePrivate::initFromExternalBuffer(const Image::InitStorageArgs& args)
     TileCoord coord = {0,0};
     Image::Tile &tile = tiles[coord];
     tile.perChannelTile.resize(1);
-    tile.tileBounds = args.bounds;
+    tile.bounds = args.bounds;
 
     Image::MonoChannelTile& perChannelTile = tile.perChannelTile[0];
 
@@ -690,7 +690,7 @@ public:
             }
             const Image::Tile& thisTile = foundTile->second;
 
-            thisTile.tileBounds.intersect(_originalArgs->roi, &argsCpy.roi);
+            thisTile.bounds.intersect(_originalArgs->roi, &argsCpy.roi);
 
             ImagePrivate::copyRectangle(_fromImage->tiles.begin()->second, _fromStorage, _fromBufferFormat, thisTile, _toStorage, _toBufferFormat, argsCpy, _effect);
         }
@@ -743,7 +743,7 @@ ImagePrivate::copyUntiledImageToTiledImage(const Image& fromImage, const Image::
 
             // This is the tile to write to
             const Image::Tile& thisTile = tiles[tileIndices[i]];
-            thisTile.tileBounds.intersect(args.roi, &argsCpy.roi);
+            thisTile.bounds.intersect(args.roi, &argsCpy.roi);
 
             ImagePrivate::copyRectangle(fromImage._imp->tiles.begin()->second, fromStorage, fromImage._imp->bufferFormat, thisTile, toStorage, bufferFormat, argsCpy, renderClone.lock());
         }
@@ -815,7 +815,7 @@ public:
                 return eActionStatusFailed;
             }
             const Image::Tile& fromTile = foundTile->second;
-            fromTile.tileBounds.intersect(_originalArgs->roi, &argsCpy.roi);
+            fromTile.bounds.intersect(_originalArgs->roi, &argsCpy.roi);
 
             ImagePrivate::copyRectangle(fromTile, _fromStorage, _fromBufferFormat, _imp->tiles.begin()->second, _toStorage, _toBufferFormat, argsCpy, _effect);
 
@@ -868,7 +868,7 @@ ImagePrivate::copyTiledImageToUntiledImage(const Image& fromImage, const Image::
 
             // This is the tile to write to
             const Image::Tile& fromTile = fromImage._imp->tiles[tileIndices[i]];
-            fromTile.tileBounds.intersect(args.roi, &argsCpy.roi);
+            fromTile.bounds.intersect(args.roi, &argsCpy.roi);
 
             ImagePrivate::copyRectangle(fromTile, fromStorage, fromImage._imp->bufferFormat, tiles.begin()->second, toStorage, bufferFormat, argsCpy, renderClone.lock());
         }

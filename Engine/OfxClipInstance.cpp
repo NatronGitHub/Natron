@@ -1285,11 +1285,11 @@ OfxImageCommon::OfxImageCommon(const EffectInstancePtr& outputClipEffect,
 
         Image::Tile tile;
         internalImage->getTileAt(0, 0, &tile);
-        Image::CPUTileData tileData;
-        internalImage->getCPUTileData(tile, &tileData);
+        Image::CPUData tileData;
+        internalImage->getCPUData(tile, &tileData);
 
 
-        const unsigned char* ptr = Image::pixelAtStatic(pluginsSeenBounds.x1, pluginsSeenBounds.y1, tile.tileBounds, nComps, dataSizeOf, (const unsigned char*)tileData.ptrs[0]);
+        const unsigned char* ptr = Image::pixelAtStatic(pluginsSeenBounds.x1, pluginsSeenBounds.y1, tile.bounds, nComps, dataSizeOf, (const unsigned char*)tileData.ptrs[0]);
 
         assert(ptr);
         ofxImageBase->setPointerProperty( kOfxImagePropData, const_cast<unsigned char*>(ptr) );

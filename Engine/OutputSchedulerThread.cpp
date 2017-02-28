@@ -61,6 +61,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/AppInstance.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/FrameViewRequest.h"
+#include "Engine/ImageCacheKey.h"
 #include "Engine/Image.h"
 #include "Engine/KnobFile.h"
 #include "Engine/Node.h"
@@ -2098,7 +2099,7 @@ public:
     ImagePtr colorPickerInputImages[2];
     ActionRetCodeEnum retCode[2];
     RectD canonicalRoi[2];
-    ImageTileKeyPtr viewerProcessImageKey[2];
+    ImageCacheKeyPtr viewerProcessImageKey[2];
 };
 
 class ViewerRenderBufferedFrameContainer : public BufferedFrameContainer
@@ -2137,7 +2138,7 @@ struct RenderViewerProcessFunctorArgs
     // so that we can later on check in the gui if
     // the image is still cached to update the cache line
     // on the timeline.
-    ImageTileKeyPtr viewerProcessImageTileKey;
+    ImageCacheKeyPtr viewerProcessImageCacheKey;
     ImagePtr outputImage;
     ImagePtr colorPickerImage, colorPickerInputImage;
 
@@ -2269,8 +2270,8 @@ public:
                 inArgs->outputImage->getTileAt(0, 0, &tile);
                 for (std::size_t c = 0; c < tile.perChannelTile.size(); ++c) {
                     if (tile.perChannelTile[c].entryLocker) {
-                        inArgs->viewerProcessImageTileKey = toImageTileKey(tile.perChannelTile[c].entryLocker->getProcessLocalEntry()->getKey());
-                        assert(inArgs->viewerProcessImageTileKey);
+                        inArgs->viewerProcessImageCacheKey = toImageCacheKey(tile.perChannelTile[c].entryLocker->getProcessLocalEntry()->getKey());
+                        assert(inArgs->viewerProcessImageCacheKey);
                         break;
                     }
                 }
@@ -2408,7 +2409,7 @@ private:
         launchRenderFunctor(processArgs);
 
         bufferedFrame->retCode[viewerProcess_i] = processArgs->retCode;
-        bufferedFrame->viewerProcessImageKey[viewerProcess_i] = processArgs->viewerProcessImageTileKey;
+        bufferedFrame->viewerProcessImageKey[viewerProcess_i] = processArgs->viewerProcessImageCacheKey;
         bufferedFrame->viewerProcessImages[viewerProcess_i] = processArgs->outputImage;
         bufferedFrame->colorPickerImages[viewerProcess_i] = processArgs->colorPickerImage;
         bufferedFrame->colorPickerInputImages[viewerProcess_i] = processArgs->colorPickerInputImage;
@@ -2467,7 +2468,7 @@ private:
                     processBFuture.waitForFinished();
                 } else {
                     bufferObject->retCode[1] = processArgs[0]->retCode;
-                    bufferObject->viewerProcessImageKey[1] = processArgs[0]->viewerProcessImageTileKey;
+                    bufferObject->viewerProcessImageKey[1] = processArgs[0]->viewerProcessImageCacheKey;
                     bufferObject->viewerProcessImages[1] = processArgs[0]->outputImage;
                     processArgs[0] = processArgs[1];
                 }
@@ -3265,7 +3266,7 @@ public:
         ViewerRenderFrameRunnable::launchRenderFunctor(processArgs);
 
         bufferedFrame->retCode[viewerProcess_i] = processArgs->retCode;
-        bufferedFrame->viewerProcessImageKey[viewerProcess_i] = processArgs->viewerProcessImageTileKey;
+        bufferedFrame->viewerProcessImageKey[viewerProcess_i] = processArgs->viewerProcessImageCacheKey;
         bufferedFrame->viewerProcessImages[viewerProcess_i] = processArgs->outputImage;
         bufferedFrame->colorPickerImages[viewerProcess_i] = processArgs->colorPickerImage;
         bufferedFrame->colorPickerInputImages[viewerProcess_i] = processArgs->colorPickerInputImage;
@@ -3323,7 +3324,7 @@ public:
                     processBFuture.waitForFinished();
                 } else  {
                     bufferObject->retCode[1] = processArgs[0]->retCode;
-                    bufferObject->viewerProcessImageKey[1] = processArgs[0]->viewerProcessImageTileKey;
+                    bufferObject->viewerProcessImageKey[1] = processArgs[0]->viewerProcessImageCacheKey;
                     bufferObject->viewerProcessImages[1] = processArgs[0]->outputImage;
                 }
             }

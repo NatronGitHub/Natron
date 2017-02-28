@@ -623,7 +623,7 @@ Image::getGLImageStorage() const
 }
 
 void
-Image::getCPUTileData(const Tile& tile, ImageBufferLayoutEnum layout, CPUTileData* data)
+Image::getCPUData(const Tile& tile, ImageBufferLayoutEnum layout, CPUData* data)
 {
     memset(data->ptrs, 0, sizeof(void*) * 4);
     data->nComps = 0;
@@ -639,14 +639,14 @@ Image::getCPUTileData(const Tile& tile, ImageBufferLayoutEnum layout, CPUTileDat
         if (i == 0) {
             if (fromIsRAMBuffer) {
                 data->ptrs[0] = fromIsRAMBuffer->getData();
-                data->tileBounds = fromIsRAMBuffer->getBounds();
+                data->bounds = fromIsRAMBuffer->getBounds();
                 data->bitDepth = fromIsRAMBuffer->getBitDepth();
                 data->nComps = fromIsRAMBuffer->getNumComponents();
 
                 if (layout == eImageBufferLayoutRGBACoplanarFullRect) {
                     // Coplanar requires offsetting
                     assert(tile.perChannelTile.size() == 1);
-                    std::size_t planeSize = data->nComps * data->tileBounds.area() * getSizeOfForBitDepth(data->bitDepth);
+                    std::size_t planeSize = data->nComps * data->bounds.area() * getSizeOfForBitDepth(data->bitDepth);
                     if (data->nComps > 1) {
                         data->ptrs[1] = (char*)data->ptrs[0] + planeSize;
                         if (data->nComps > 2) {
@@ -659,7 +659,7 @@ Image::getCPUTileData(const Tile& tile, ImageBufferLayoutEnum layout, CPUTileDat
                 }
             } else {
                 data->ptrs[0] = fromIsMMAPBuffer->getData();
-                data->tileBounds = fromIsMMAPBuffer->getBounds();
+                data->bounds = fromIsMMAPBuffer->getBounds();
                 data->bitDepth = fromIsMMAPBuffer->getBitDepth();
                 data->nComps = tile.perChannelTile.size();
             }
@@ -674,13 +674,13 @@ Image::getCPUTileData(const Tile& tile, ImageBufferLayoutEnum layout, CPUTileDat
             }
         }
     } // for each channel
-} // getCPUTileData
+} // getCPUData
 
 void
-Image::getCPUTileData(const Image::Tile& tile,
-                      Image::CPUTileData* data) const
+Image::getCPUData(const Image::Tile& tile,
+                      Image::CPUData* data) const
 {
-    getCPUTileData(tile, _imp->bufferFormat, data);
+    getCPUData(tile, _imp->bufferFormat, data);
 }
 
 void
@@ -745,7 +745,7 @@ Image::getTilesRenderState(TileStateMap* tileStatus, bool* hasUnRenderedTile, bo
         } else if (state.status == eTileStatusNotRendered) {
             *hasUnRenderedTile = true;
         }
-        state.bounds = it->second.tileBounds;
+        state.bounds = it->second.bounds;
     }
 } // getRestToRender
 
@@ -762,374 +762,11 @@ Image::getTileAt(int tx, int ty, Image::Tile* tile) const
     return true;
 }
 
-void
-Image::getABCDRectangles(const RectI& srcBounds, const RectI& biggerBounds, RectI& aRect, RectI& bRect, RectI& cRect, RectI& dRect)
-{
-    /*
-     Compute the rectangles (A,B,C,D) where to set the image to 0
-
-     AAAAAAAAAAAAAAAAAAAAAAAAAAAA
-     AAAAAAAAAAAAAAAAAAAAAAAAAAAA
-     DDDDDXXXXXXXXXXXXXXXXXXBBBBB
-     DDDDDXXXXXXXXXXXXXXXXXXBBBBB
-     DDDDDXXXXXXXXXXXXXXXXXXBBBBB
-     DDDDDXXXXXXXXXXXXXXXXXXBBBBB
-     CCCCCCCCCCCCCCCCCCCCCCCCCCCC
-     CCCCCCCCCCCCCCCCCCCCCCCCCCCC
-     */
-    aRect.x1 = biggerBounds.x1;
-    aRect.y1 = srcBounds.y2;
-    aRect.y2 = biggerBounds.y2;
-    aRect.x2 = biggerBounds.x2;
-
-    bRect.x1 = srcBounds.x2;
-    bRect.y1 = srcBounds.y1;
-    bRect.x2 = biggerBounds.x2;
-    bRect.y2 = srcBounds.y2;
-
-    cRect.x1 = biggerBounds.x1;
-    cRect.y1 = biggerBounds.y1;
-    cRect.x2 = biggerBounds.x2;
-    cRect.y2 = srcBounds.y1;
-
-    dRect.x1 = biggerBounds.x1;
-    dRect.y1 = srcBounds.y1;
-    dRect.x2 = srcBounds.x1;
-    dRect.y2 = srcBounds.y2;
-
-} // getABCDRectangles
-
-static void getImageBoundsFromTilesState(const Image::TileStateMap& tiles, int tileSizeX, int tileSizeY,
-                                         RectI& imageBoundsRoundedToTileSize,
-                                         RectI& imageBoundsNotRounded)
-{
-    {
-        Image::TileStateMap::const_iterator bottomLeft = tiles.begin();
-        Image::TileStateMap::const_reverse_iterator topRight = tiles.rbegin();
-        imageBoundsRoundedToTileSize.x1 = bottomLeft->first.tx;
-        imageBoundsRoundedToTileSize.y1 = bottomLeft->first.ty;
-        imageBoundsRoundedToTileSize.x2 = topRight->first.tx + tileSizeX;
-        imageBoundsRoundedToTileSize.y2 = topRight->first.ty + tileSizeY;
-
-        imageBoundsNotRounded.x1 = bottomLeft->second.bounds.x1;
-        imageBoundsNotRounded.y1 = bottomLeft->second.bounds.y1;
-        imageBoundsNotRounded.x2 = topRight->second.bounds.x2;
-        imageBoundsNotRounded.y2 = topRight->second.bounds.y2;
-    }
-
-    assert(imageBoundsRoundedToTileSize.x1 % tileSizeX == 0);
-    assert(imageBoundsRoundedToTileSize.y1 % tileSizeY == 0);
-    assert(imageBoundsRoundedToTileSize.x2 % tileSizeX == 0);
-    assert(imageBoundsRoundedToTileSize.y2 % tileSizeY == 0);
-}
-
-RectI
-Image::getMinimalBboxToRenderFromTilesState(const TileStateMap& tiles, const RectI& roi, int tileSizeX, int tileSizeY)
-{
-
-    if (tiles.empty()) {
-        return RectI();
-    }
-
-    RectI imageBoundsRoundedToTileSize;
-    RectI imageBoundsNotRounded;
-    getImageBoundsFromTilesState(tiles, tileSizeX, tileSizeY, imageBoundsRoundedToTileSize, imageBoundsNotRounded);
-    assert(imageBoundsRoundedToTileSize.contains(roi));
-
-    RectI roiRoundedToTileSize = roi;
-    roiRoundedToTileSize.roundToTileSize(tileSizeX, tileSizeY);
-
-    // Search for rendered lines from bottom to top
-    for (int y = roiRoundedToTileSize.y1; y < roiRoundedToTileSize.y2; y += tileSizeY) {
-
-        bool hasTileUnrenderedOnLine = false;
-        for (int x = roiRoundedToTileSize.x1; x < roiRoundedToTileSize.x2; x += tileSizeX) {
-
-            TileCoord c = {x, y};
-            TileStateMap::const_iterator foundTile = tiles.find(c);
-            assert(foundTile != tiles.end());
-            if (foundTile->second.status == eTileStatusNotRendered) {
-                hasTileUnrenderedOnLine = true;
-                break;
-            }
-        }
-        if (!hasTileUnrenderedOnLine) {
-            roiRoundedToTileSize.y1 += tileSizeY;
-        }
-    }
-
-    // Search for rendered lines from top to bottom
-    for (int y = roiRoundedToTileSize.y2 - tileSizeY; y >= roiRoundedToTileSize.y1; y -= tileSizeY) {
-
-        bool hasTileUnrenderedOnLine = false;
-        for (int x = roiRoundedToTileSize.x1; x < roiRoundedToTileSize.x2; x += tileSizeX) {
-
-            TileCoord c = {x, y};
-            TileStateMap::const_iterator foundTile = tiles.find(c);
-            assert(foundTile != tiles.end());
-            if (foundTile->second.status == eTileStatusNotRendered) {
-                hasTileUnrenderedOnLine = true;
-                break;
-            }
-        }
-        if (!hasTileUnrenderedOnLine) {
-            roiRoundedToTileSize.y2 -= tileSizeY;
-        }
-    }
-
-    // Avoid making roiRoundedToTileSize.width() iterations for nothing
-    if (roiRoundedToTileSize.isNull()) {
-        return roiRoundedToTileSize;
-    }
-
-
-    // Search for rendered columns from left to right
-    for (int x = roiRoundedToTileSize.x1; x < roiRoundedToTileSize.x2; x += tileSizeX) {
-
-        bool hasTileUnrenderedOnCol = false;
-        for (int y = roiRoundedToTileSize.y1; y < roiRoundedToTileSize.y2; y += tileSizeY) {
-
-            TileCoord c = {x, y};
-            TileStateMap::const_iterator foundTile = tiles.find(c);
-            assert(foundTile != tiles.end());
-            if (foundTile->second.status == eTileStatusNotRendered) {
-                hasTileUnrenderedOnCol = true;
-                break;
-            }
-        }
-        if (!hasTileUnrenderedOnCol) {
-            roiRoundedToTileSize.x1 += tileSizeX;
-        }
-    }
-
-    // Avoid making roiRoundedToTileSize.width() iterations for nothing
-    if (roiRoundedToTileSize.isNull()) {
-        return roiRoundedToTileSize;
-    }
-
-    // Search for rendered columns from right to left
-    for (int x = roiRoundedToTileSize.x2 - tileSizeX; x >= roiRoundedToTileSize.x1; x -= tileSizeX) {
-
-        bool hasTileUnrenderedOnCol = false;
-        for (int y = roiRoundedToTileSize.y1; y < roiRoundedToTileSize.y2; y += tileSizeY) {
-
-            TileCoord c = {x, y};
-            TileStateMap::const_iterator foundTile = tiles.find(c);
-            assert(foundTile != tiles.end());
-            if (foundTile->second.status == eTileStatusNotRendered) {
-                hasTileUnrenderedOnCol = true;
-                break;
-            }
-        }
-        if (!hasTileUnrenderedOnCol) {
-            roiRoundedToTileSize.x2 -= tileSizeX;
-        }
-    }
-
-    // Intersect the result to the actual image bounds (because the tiles are rounded to tile size)
-    RectI ret;
-    roiRoundedToTileSize.intersect(imageBoundsNotRounded, &ret);
-    return ret;
-
-    
-} // getMinimalBboxToRenderFromTilesState
-
-void
-Image::getMinimalRectsToRenderFromTilesState(const TileStateMap& tiles, const RectI& roi, int tileSizeX, int tileSizeY, std::list<RectI>* rectsToRender)
-{
-    if (tiles.empty()) {
-        return;
-    }
-
-    RectI roiRoundedToTileSize = roi;
-    roiRoundedToTileSize.roundToTileSize(tileSizeX, tileSizeY);
-
-    RectI bboxM = getMinimalBboxToRenderFromTilesState(tiles, roi, tileSizeX, tileSizeY);
-    if (bboxM.isNull()) {
-        return;
-    }
-
-    bboxM.roundToTileSize(tileSizeX, tileSizeY);
-
-    // optimization by Fred, Jan 31, 2014
-    //
-    // Now that we have the smallest enclosing bounding box,
-    // let's try to find rectangles for the bottom, the top,
-    // the left and the right part.
-    // This happens quite often, for example when zooming out
-    // (in this case the area to compute is formed of A, B, C and D,
-    // and X is already rendered), or when panning (in this case the area
-    // is just two rectangles, e.g. A and C, and the rectangles B, D and
-    // X are already rendered).
-    // The rectangles A, B, C and D from the following drawing are just
-    // zeroes, and X contains zeroes and ones.
-    //
-    // BBBBBBBBBBBBBB
-    // BBBBBBBBBBBBBB
-    // CXXXXXXXXXXDDD
-    // CXXXXXXXXXXDDD
-    // CXXXXXXXXXXDDD
-    // CXXXXXXXXXXDDD
-    // AAAAAAAAAAAAAA
-
-    // First, find if there's an "A" rectangle, and push it to the result
-    //find bottom
-    RectI bboxX = bboxM;
-    RectI bboxA = bboxX;
-    bboxA.y2 = bboxA.y1;
-    for (int y = bboxX.y1; y < bboxX.y2; y += tileSizeY) {
-        bool hasRenderedTileOnLine = false;
-        for (int x = bboxX.x1; x < bboxX.x2; x += tileSizeX) {
-            TileCoord c = {x, y};
-            TileStateMap::const_iterator foundTile = tiles.find(c);
-            assert(foundTile != tiles.end());
-            if (foundTile->second.status != eTileStatusNotRendered) {
-                hasRenderedTileOnLine = true;
-                break;
-            }
-        }
-        if (hasRenderedTileOnLine) {
-            break;
-        } else {
-            bboxX.y1 += tileSizeY;
-            bboxA.y2 = bboxX.y1;
-        }
-    }
-    if ( !bboxA.isNull() ) { // empty boxes should not be pushed
-        // Ensure the bbox lies in the RoI since we rounded to tile size earlier
-        RectI bboxAIntersected;
-        bboxA.intersect(roi, &bboxAIntersected);
-        rectsToRender->push_back(bboxAIntersected);
-    }
-
-    // Now, find the "B" rectangle
-    //find top
-    RectI bboxB = bboxX;
-    bboxB.y1 = bboxB.y2;
-
-    for (int y = bboxX.y2 - tileSizeY; y >= bboxX.y1; y -= tileSizeY) {
-        bool hasRenderedTileOnLine = false;
-        for (int x = bboxX.x1; x < bboxX.x2; x += tileSizeX) {
-            TileCoord c = {x, y};
-            TileStateMap::const_iterator foundTile = tiles.find(c);
-            assert(foundTile != tiles.end());
-            if (foundTile->second.status != eTileStatusNotRendered) {
-                hasRenderedTileOnLine = true;
-                break;
-            }
-        }
-        if (hasRenderedTileOnLine) {
-            break;
-        } else {
-            bboxX.y2 -= tileSizeY;
-            bboxB.y1 = bboxX.y2;
-        }
-    }
-
-    if ( !bboxB.isNull() ) { // empty boxes should not be pushed
-        // Ensure the bbox lies in the RoI since we rounded to tile size earlier
-        RectI bboxBIntersected;
-        bboxB.intersect(roi, &bboxBIntersected);
-        rectsToRender->push_back(bboxBIntersected);
-    }
-
-    //find left
-    RectI bboxC = bboxX;
-    bboxC.x2 = bboxC.x1;
-    if ( bboxX.y1 < bboxX.y2 ) {
-        for (int x = bboxX.x1; x < bboxX.x2; x += tileSizeX) {
-            bool hasRenderedTileOnCol = false;
-            for (int y = bboxX.y1; y < bboxX.y2; y += tileSizeY) {
-                TileCoord c = {x, y};
-                TileStateMap::const_iterator foundTile = tiles.find(c);
-                assert(foundTile != tiles.end());
-                if (foundTile->second.status != eTileStatusNotRendered) {
-                    hasRenderedTileOnCol = true;
-                    break;
-                }
-
-            }
-            if (hasRenderedTileOnCol) {
-                break;
-            } else {
-                bboxX.x1 += tileSizeX;
-                bboxC.x2 = bboxX.x1;
-            }
-        }
-    }
-    if ( !bboxC.isNull() ) { // empty boxes should not be pushed
-        // Ensure the bbox lies in the RoI since we rounded to tile size earlier
-        RectI bboxCIntersected;
-        bboxC.intersect(roi, &bboxCIntersected);
-        rectsToRender->push_back(bboxCIntersected);
-    }
-
-    //find right
-    RectI bboxD = bboxX;
-    bboxD.x1 = bboxD.x2;
-    if ( bboxX.y1 < bboxX.y2 ) {
-        for (int x = bboxX.x2 - tileSizeX; x >= bboxX.x1; x -= tileSizeX) {
-            bool hasRenderedTileOnCol = false;
-            for (int y = bboxX.y1; y < bboxX.y2; y += tileSizeY) {
-                TileCoord c = {x, y};
-                TileStateMap::const_iterator foundTile = tiles.find(c);
-                assert(foundTile != tiles.end());
-                if (foundTile->second.status != eTileStatusNotRendered) {
-                    hasRenderedTileOnCol = true;
-                    break;
-                }
-            }
-            if (hasRenderedTileOnCol) {
-                break;
-            } else {
-                bboxX.x2 -= tileSizeX;
-                bboxD.x1 = bboxX.x2;
-            }
-        }
-    }
-    if ( !bboxD.isNull() ) { // empty boxes should not be pushed
-        // Ensure the bbox lies in the RoI since we rounded to tile size earlier
-        RectI bboxDIntersected;
-        bboxD.intersect(roi, &bboxDIntersected);
-        rectsToRender->push_back(bboxDIntersected);
-    }
-
-    assert( bboxA.bottom() == bboxM.bottom() );
-    assert( bboxA.left() == bboxM.left() );
-    assert( bboxA.right() == bboxM.right() );
-    assert( bboxA.top() == bboxX.bottom() );
-
-    assert( bboxB.top() == bboxM.top() );
-    assert( bboxB.left() == bboxM.left() );
-    assert( bboxB.right() == bboxM.right() );
-    assert( bboxB.bottom() == bboxX.top() );
-
-    assert( bboxC.top() == bboxX.top() );
-    assert( bboxC.left() == bboxM.left() );
-    assert( bboxC.right() == bboxX.left() );
-    assert( bboxC.bottom() == bboxX.bottom() );
-
-    assert( bboxD.top() == bboxX.top() );
-    assert( bboxD.left() == bboxX.right() );
-    assert( bboxD.right() == bboxM.right() );
-    assert( bboxD.bottom() == bboxX.bottom() );
-
-    // get the bounding box of what's left (the X rectangle in the drawing above)
-    bboxX = getMinimalBboxToRenderFromTilesState(tiles, bboxX, tileSizeX, tileSizeY);
-
-    if ( !bboxX.isNull() ) { // empty boxes should not be pushed
-        // Ensure the bbox lies in the RoI since we rounded to tile size earlier
-        RectI bboxXIntersected;
-        bboxX.intersect(roi, &bboxXIntersected);
-        rectsToRender->push_back(bboxXIntersected);
-    }
-
-} // getMinimalRectsToRenderFromTilesState
 
 class FillProcessor : public ImageMultiThreadProcessorBase
 {
     void* _ptrs[4];
-    RectI _tileBounds;
+    RectI _bounds;
     ImageBitDepthEnum _bitDepth;
     int _nComps;
     RGBAColourF _color;
@@ -1146,10 +783,10 @@ public:
     {
     }
 
-    void setValues(void* ptrs[4], const RectI& tileBounds, ImageBitDepthEnum bitDepth, int nComps, const RGBAColourF& color)
+    void setValues(void* ptrs[4], const RectI& bounds, ImageBitDepthEnum bitDepth, int nComps, const RGBAColourF& color)
     {
         memcpy(_ptrs, ptrs, sizeof(void*) * 4);
-        _tileBounds = tileBounds;
+        _bounds = bounds;
         _bitDepth = bitDepth;
         _nComps = nComps;
         _color = color;
@@ -1159,7 +796,7 @@ private:
 
     virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow) OVERRIDE FINAL
     {
-        ImagePrivate::fillCPU(_ptrs, _color.r, _color.g, _color.b, _color.a, _nComps, _bitDepth, _tileBounds, renderWindow, _effect);
+        ImagePrivate::fillCPU(_ptrs, _color.r, _color.g, _color.b, _color.a, _nComps, _bitDepth, _bounds, renderWindow, _effect);
         return eActionStatusOK;
     }
 };
@@ -1185,15 +822,15 @@ Image::fill(const RectI & roi,
 
     for (TileMap::iterator it = _imp->tiles.begin(); it != _imp->tiles.end(); ++it) {
 
-        Image::CPUTileData tileData;
-        getCPUTileData(it->second, &tileData);
+        Image::CPUData tileData;
+        getCPUData(it->second, &tileData);
         RectI tileRoI;
-        roi.intersect(tileData.tileBounds, &tileRoI);
+        roi.intersect(tileData.bounds, &tileRoI);
 
         RGBAColourF color = {r, g, b, a};
 
         FillProcessor processor(_imp->renderClone.lock());
-        processor.setValues(tileData.ptrs, tileData.tileBounds, tileData.bitDepth, tileData.nComps, color);
+        processor.setValues(tileData.ptrs, tileData.bounds, tileData.bitDepth, tileData.nComps, color);
         processor.setRenderWindow(tileRoI);
         processor.process();
 
@@ -1269,7 +906,7 @@ Image::fillOutSideWithBlack(const RectI& roi)
     _imp->originalBounds.intersect(roi, &clipped);
 
     RectI fourRects[4];
-    getABCDRectangles(clipped, _imp->originalBounds, fourRects[0], fourRects[1], fourRects[2], fourRects[3]);
+    ImageTilesState::getABCDRectangles(clipped, _imp->originalBounds, fourRects[0], fourRects[1], fourRects[2], fourRects[3]);
     for (int i = 0; i < 4; ++i) {
         if (fourRects[i].isNull()) {
             continue;
@@ -1466,13 +1103,13 @@ Image::downscaleMipMap(const RectI & roi, unsigned int downscaleLevels) const
             }
         }
 
-        Image::CPUTileData srcTileData;
-        getCPUTileData(previousLevelImage->_imp->tiles.begin()->second, &srcTileData);
+        Image::CPUData srcTileData;
+        getCPUData(previousLevelImage->_imp->tiles.begin()->second, &srcTileData);
 
-        Image::CPUTileData dstTileData;
-        getCPUTileData(mipmapImage->_imp->tiles.begin()->second, &dstTileData);
+        Image::CPUData dstTileData;
+        getCPUData(mipmapImage->_imp->tiles.begin()->second, &dstTileData);
 
-        ImagePrivate::halveImage((const void**)srcTileData.ptrs, srcTileData.nComps, srcTileData.bitDepth, srcTileData.tileBounds, dstTileData.ptrs, dstTileData.tileBounds);
+        ImagePrivate::halveImage((const void**)srcTileData.ptrs, srcTileData.nComps, srcTileData.bitDepth, srcTileData.bounds, dstTileData.ptrs, dstTileData.bounds);
 
         // Switch for next pass
         previousLevelRoI = halvedRoI;
@@ -1495,12 +1132,12 @@ Image::checkForNaNs(const RectI& roi)
     bool hasNan = false;
 
     for (TileMap::iterator it = _imp->tiles.begin(); it != _imp->tiles.end(); ++it) {
-        Image::CPUTileData tileData;
-        getCPUTileData(it->second, &tileData);
+        Image::CPUData tileData;
+        getCPUData(it->second, &tileData);
 
         RectI tileRoi;
-        roi.intersect(tileData.tileBounds, &tileRoi);
-        hasNan |= _imp->checkForNaNs(tileData.ptrs, tileData.nComps, tileData.bitDepth, tileData.tileBounds, tileRoi);
+        roi.intersect(tileData.bounds, &tileRoi);
+        hasNan |= _imp->checkForNaNs(tileData.ptrs, tileData.nComps, tileData.bitDepth, tileData.bounds, tileRoi);
     }
     return hasNan;
 
@@ -1509,7 +1146,7 @@ Image::checkForNaNs(const RectI& roi)
 
 class MaskMixProcessor : public ImageMultiThreadProcessorBase
 {
-    Image::CPUTileData _srcTileData, _maskTileData, _dstTileData;
+    Image::CPUData _srcTileData, _maskTileData, _dstTileData;
     double _mix;
     bool _maskInvert;
 public:
@@ -1529,9 +1166,9 @@ public:
     {
     }
 
-    void setValues(const Image::CPUTileData& srcTileData,
-                   const Image::CPUTileData& maskTileData,
-                   const Image::CPUTileData& dstTileData,
+    void setValues(const Image::CPUData& srcTileData,
+                   const Image::CPUData& maskTileData,
+                   const Image::CPUData& dstTileData,
                    double mix,
                    bool maskInvert)
     {
@@ -1546,7 +1183,7 @@ private:
 
     virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow) OVERRIDE FINAL
     {
-        ImagePrivate::applyMaskMixCPU((const void**)_srcTileData.ptrs, _srcTileData.tileBounds, _srcTileData.nComps, (const void**)_maskTileData.ptrs, _maskTileData.tileBounds, _dstTileData.ptrs, _dstTileData.bitDepth, _dstTileData.nComps, _mix, _maskInvert, _dstTileData.tileBounds, renderWindow, _effect);
+        ImagePrivate::applyMaskMixCPU((const void**)_srcTileData.ptrs, _srcTileData.bounds, _srcTileData.nComps, (const void**)_maskTileData.ptrs, _maskTileData.bounds, _dstTileData.ptrs, _dstTileData.bitDepth, _dstTileData.nComps, _mix, _maskInvert, _dstTileData.bounds, renderWindow, _effect);
         return eActionStatusOK;
     }
 };
@@ -1587,24 +1224,24 @@ Image::applyMaskMix(const RectI& roi,
     assert(!originalImg || (originalImg->getBufferFormat() != eImageBufferLayoutMonoChannelTiled && originalImg->getBitDepth() == getBitDepth()));
     assert(!maskImg || (maskImg->getBufferFormat() != eImageBufferLayoutMonoChannelTiled && maskImg->getBitDepth() == getBitDepth()));
 
-    Image::CPUTileData srcImgData, maskImgData;
+    Image::CPUData srcImgData, maskImgData;
     if (originalImg) {
-        getCPUTileData(originalImg->_imp->tiles.begin()->second, &srcImgData);
+        getCPUData(originalImg->_imp->tiles.begin()->second, &srcImgData);
     }
 
     if (maskImg) {
-        getCPUTileData(maskImg->_imp->tiles.begin()->second, &maskImgData);
+        getCPUData(maskImg->_imp->tiles.begin()->second, &maskImgData);
         assert(maskImgData.nComps == 1);
     }
 
 
     for (TileMap::iterator it = _imp->tiles.begin(); it != _imp->tiles.end(); ++it) {
 
-        Image::CPUTileData dstImgData;
-        getCPUTileData(it->second, &dstImgData);
+        Image::CPUData dstImgData;
+        getCPUData(it->second, &dstImgData);
 
         RectI tileRoI;
-        roi.intersect(dstImgData.tileBounds, &tileRoI);
+        roi.intersect(dstImgData.bounds, &tileRoI);
 
         MaskMixProcessor processor(_imp->renderClone.lock());
         processor.setValues(srcImgData, maskImgData, dstImgData, mix, maskInvert);
@@ -1638,7 +1275,7 @@ Image::canCallCopyUnProcessedChannels(const std::bitset<4> processChannels) cons
 
 class CopyUnProcessedProcessor : public ImageMultiThreadProcessorBase
 {
-    Image::CPUTileData _srcImgData, _dstImgData;
+    Image::CPUData _srcImgData, _dstImgData;
     std::bitset<4> _processChannels;
 public:
 
@@ -1652,8 +1289,8 @@ public:
     {
     }
 
-    void setValues(const Image::CPUTileData& srcImgData,
-                   const Image::CPUTileData& dstImgData,
+    void setValues(const Image::CPUData& srcImgData,
+                   const Image::CPUData& dstImgData,
                    std::bitset<4> processChannels)
     {
         _srcImgData = srcImgData;
@@ -1665,7 +1302,7 @@ private:
 
     virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow) OVERRIDE FINAL
     {
-        ImagePrivate::copyUnprocessedChannelsCPU((const void**)_srcImgData.ptrs, _srcImgData.tileBounds, _srcImgData.nComps, (void**)_dstImgData.ptrs, _dstImgData.bitDepth, _dstImgData.nComps, _dstImgData.tileBounds, _processChannels, renderWindow, _effect);
+        ImagePrivate::copyUnprocessedChannelsCPU((const void**)_srcImgData.ptrs, _srcImgData.bounds, _srcImgData.nComps, (void**)_dstImgData.ptrs, _dstImgData.bitDepth, _dstImgData.nComps, _dstImgData.bounds, _processChannels, renderWindow, _effect);
         return eActionStatusOK;
     }
 };
@@ -1700,19 +1337,19 @@ Image::copyUnProcessedChannels(const RectI& roi,
     // This function only works if original  image is in full rect format with the same bitdepth as output
     assert(!originalImg || (originalImg->getBufferFormat() != eImageBufferLayoutMonoChannelTiled && originalImg->getBitDepth() == getBitDepth()));
 
-    Image::CPUTileData srcImgData;
+    Image::CPUData srcImgData;
     if (originalImg) {
-        getCPUTileData(originalImg->_imp->tiles.begin()->second, &srcImgData);
+        getCPUData(originalImg->_imp->tiles.begin()->second, &srcImgData);
     }
 
 
     for (TileMap::iterator it = _imp->tiles.begin(); it != _imp->tiles.end(); ++it) {
 
-        Image::CPUTileData dstImgData;
-        getCPUTileData(it->second, &dstImgData);
+        Image::CPUData dstImgData;
+        getCPUData(it->second, &dstImgData);
 
         RectI tileRoI;
-        roi.intersect(dstImgData.tileBounds, &tileRoI);
+        roi.intersect(dstImgData.bounds, &tileRoI);
 
         CopyUnProcessedProcessor processor(_imp->renderClone.lock());
         processor.setValues(srcImgData, dstImgData, processChannels);

@@ -96,7 +96,7 @@ public:
                                             const RectD& rod,
                                             bool recenterViewer,
                                             const Point& viewportCenter,
-                                            const ImageTileKeyPtr& viewerProcessNodeTileKey) = 0;
+                                            const ImageCacheKeyPtr& viewerProcessNodeTileKey) = 0;
 
     /**
      * @brief Clear the image pointers of the last image sent to transferBufferFromRAMtoGPU

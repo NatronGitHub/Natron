@@ -65,6 +65,7 @@ getSizeOfForBitDepth(ImageBitDepthEnum bitdepth)
     return 0;
 }
 
+
 /**
  * @brief Base class for any cached item: At the very least each cache entry has a corresponding key from
  * which a 64 bit hash may be computed.
@@ -116,14 +117,14 @@ public:
     virtual std::size_t getMetadataSize() const;
 
     /**
-     * @brief Returns whether the data storage of this entry is exactly the size of NATRON_TILE_SIZE_BYTES or not.
+     * @brief Returns the number of tiles data storage this entry needs. Each tile is exactly the size of NATRON_TILE_SIZE_BYTES.
      * In this case, Natron optimizes the storage of the entry in a tile aligned memory mapped file.
      * If true the toMemorySegment and fromMemorySegment function will have their tileDataPtr set to 
      * a non null value. The implementation should then copy from/to the data exactly NATRON_TILE_SIZE_BYTES bytes.
      **/
-    virtual bool isStorageTiled() const
+    virtual std::size_t getNumTiles() const
     {
-        return false;
+        return 0;
     }
 
     /**
@@ -135,7 +136,7 @@ public:
      * The function writeNamedSharedObject can be used to simplify the serialization of objects to the
      * memory segment.
      **/
-    virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const;
+    virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const;
 
     /**
      * @brief Reads this key from shared process memory segment.
@@ -148,8 +149,7 @@ public:
      **/
     virtual void fromMemorySegment(ExternalSegmentType* segment,
                                    ExternalSegmentTypeHandleList::const_iterator start,
-                                   ExternalSegmentTypeHandleList::const_iterator end,
-                                   const void* tileDataPtr);
+                                   ExternalSegmentTypeHandleList::const_iterator end);
 
     /**
      * @brief Must return whether attempting to call Cache::get() recursively on the same hash is allowed

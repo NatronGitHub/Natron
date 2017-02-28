@@ -1174,7 +1174,7 @@ toBGRA(unsigned char r,
 
 template <int srcNComps>
 void
-fullRectFloatCPUImageToPBOForNComps(const Image::CPUTileData& srcImage,
+fullRectFloatCPUImageToPBOForNComps(const Image::CPUData& srcImage,
                                     const RectI& roi,
                                     unsigned int* buf)
 {
@@ -1201,7 +1201,7 @@ fullRectFloatCPUImageToPBOForNComps(const Image::CPUTileData& srcImage,
 
             const float* srcPixels[4];
             int srcPixelStride;
-            Image::getChannelPointers<float, srcNComps>((const float**)srcImage.ptrs, x, y, srcImage.tileBounds, (float**)srcPixels, &srcPixelStride);
+            Image::getChannelPointers<float, srcNComps>((const float**)srcImage.ptrs, x, y, srcImage.bounds, (float**)srcPixels, &srcPixelStride);
 
             unsigned int* dstPixels = buf + y * roi.width() + x;
 
@@ -1235,7 +1235,7 @@ fullRectFloatCPUImageToPBOForNComps(const Image::CPUTileData& srcImage,
 
 
 static void
-fullRectFloatCPUImageToPBO(const Image::CPUTileData& srcImage,
+fullRectFloatCPUImageToPBO(const Image::CPUData& srcImage,
                            const RectI& roi,
                            unsigned int* dstBuf)
 {
@@ -1278,11 +1278,11 @@ TrackerNodeInteract::convertImageTosRGBOpenGLTexture(const ImagePtr& image,
 
     // The image must have the appropriate format: it has been converted in TrackMarker::getMarkerImage
     assert(image->getBitDepth() == eImageBitDepthFloat && image->getBufferFormat() == eImageBufferLayoutRGBAPackedFullRect && image->getStorageMode() != eStorageModeGLTex);
-    Image::CPUTileData imageData;
+    Image::CPUData imageData;
     {
         Image::Tile tile;
         image->getTileAt(0, 0, &tile);
-        image->getCPUTileData(tile, &imageData);
+        image->getCPUData(tile, &imageData);
     }
 
 

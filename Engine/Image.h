@@ -40,6 +40,7 @@
 #include "Global/GLIncludes.h"
 #include "Engine/Cache.h" // CacheEntryLockerPtr - put it in EngineFwd.h?
 #include "Engine/ImagePlaneDesc.h"
+#include "Engine/ImageTilesState.h"
 #include "Engine/RectI.h"
 #include "Engine/TimeValue.h"
 #include "Engine/ViewIdx.h"
@@ -48,27 +49,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-/**
- * @brief The coordinates in pixel of the bottom left corner of a tile.
- **/
-struct TileCoord
-{
-    int tx,ty;
-};
 
-struct TileCoord_Compare
-{
-    bool operator() (const TileCoord& lhs, const TileCoord& rhs) const
-    {
-        if (lhs.ty < rhs.ty) {
-            return true;
-        } else if (lhs.ty > rhs.ty) {
-            return false;
-        } else {
-            return lhs.tx < rhs.tx;
-        }
-    }
-};
 
 /**
  * @brief An image in Natron is a view one or multiple buffers that may be cached.
@@ -125,7 +106,7 @@ public:
         std::vector<MonoChannelTile> perChannelTile;
 
         // The bounds covered by this tile
-        RectI tileBounds;
+        RectI bounds;
         
     };
     
@@ -426,20 +407,6 @@ public:
      **/
     void copyPixels(const Image& other, const CopyPixelsArgs& args);
 
-    /*
-     Compute the rectangles (A,B,C,D) where to set the image to 0
-
-     AAAAAAAAAAAAAAAAAAAAAAAAAAAA
-     AAAAAAAAAAAAAAAAAAAAAAAAAAAA
-     DDDDDXXXXXXXXXXXXXXXXXXBBBBB
-     DDDDDXXXXXXXXXXXXXXXXXXBBBBB
-     DDDDDXXXXXXXXXXXXXXXXXXBBBBB
-     DDDDDXXXXXXXXXXXXXXXXXXBBBBB
-     CCCCCCCCCCCCCCCCCCCCCCCCCCCC
-     CCCCCCCCCCCCCCCCCCCCCCCCCCCC
-     */
-    static void getABCDRectangles(const RectI& srcBounds, const RectI& biggerBounds, RectI& aRect, RectI& bRect, RectI& cRect, RectI& dRect);
-
     /**
      * @brief Helper function to get string from a layer and bitdepth
      **/
@@ -573,25 +540,25 @@ public:
                                    int* pixelStride);
 
 
-    struct CPUTileData
+    struct CPUData
     {
         void* ptrs[4];
-        RectI tileBounds;
+        RectI bounds;
         ImageBitDepthEnum bitDepth;
         int nComps;
 
-        CPUTileData()
+        CPUData()
         : ptrs()
-        , tileBounds()
+        , bounds()
         , bitDepth(eImageBitDepthNone)
         , nComps(0)
         {
             memset(ptrs, 0, sizeof(void*) * 4);
         }
 
-        CPUTileData(const CPUTileData& other)
+        CPUData(const CPUData& other)
         : ptrs()
-        , tileBounds(other.tileBounds)
+        , bounds(other.bounds)
         , bitDepth(other.bitDepth)
         , nComps(other.nComps)
         {
@@ -607,9 +574,9 @@ public:
     /**
      * @brief For a tile with CPU (RAM or MMAP) storage, returns the buffer data.
      **/
-    void getCPUTileData(const Tile& tile, CPUTileData* data) const;
+    void getCPUData(const Tile& tile, CPUData* data) const;
 
-    static void getCPUTileData(const Tile& tile, ImageBufferLayoutEnum layout, CPUTileData* data);
+    static void getCPUData(const Tile& tile, ImageBufferLayoutEnum layout, CPUData* data);
 
     /**
      * @brief Return the number of pixels covered by a single tile.
@@ -653,24 +620,6 @@ public:
      **/
     bool waitForPendingTiles();
 
-    enum TileStatusEnum
-    {
-        eTileStatusRendered,
-        eTileStatusNotRendered,
-        eTileStatusPending
-    };
-    struct TileState
-    {
-        RectI bounds;
-        TileStatusEnum status;
-    };
-
-    // Tiles are orderedby y axis then by x such that the first tile in the map
-    // has its bottom left corner being the bottom left corner of the image and
-    // the last tile in the map has its top right corner being the top right corner
-    // of the image.
-    typedef std::map<TileCoord, TileState, TileCoord_Compare> TileStateMap;
-
     /**
      * @brief Returns the renderstatus of each tile in the image.
      * @param hasPendingResults[out] If set to true, then the caller should, after rendering the given rectangles
@@ -678,35 +627,6 @@ public:
      **/
     void getTilesRenderState(TileStateMap* tileStatus, bool* hasUnRenderedTile, bool *hasPendingResults) const;
 
-    /**
-     * @brief Returns the bounding box of the unrendered portion in the tiles map.
-     * N.B: Tiles with a status of eTileStatusPending are treated as if they were
-     * eTileStatusRendered.
-     **/
-    static RectI getMinimalBboxToRenderFromTilesState(const TileStateMap& tiles, const RectI& roi, int tileSizeX, int tileSizeY);
-
-    /**
-     * @brief Refines a region to render in potentially 4 smaller rectangles. This function makes use of 
-     * getMinimalBboxToRenderFromTilesState to get the smallest enclosing bbox to render.
-     * Then it tries to find rectangles for the bottom, the top,
-     * the left and the right part.
-     * This happens quite often, for example when zooming out
-     * (in this case the area to compute is formed of A, B, C and D,
-     * and X is already rendered), or when panning (in this case the area
-     * is just two rectangles, e.g. A and C, and the rectangles B, D and
-     * X are already rendered).
-     * The rectangles A, B, C and D from the following drawing are just
-     * zeroes, and X contains zeroes and ones.
-     *
-     * BBBBBBBBBBBBBB
-     * BBBBBBBBBBBBBB
-     * CXXXXXXXXXXDDD
-     * CXXXXXXXXXXDDD
-     * CXXXXXXXXXXDDD
-     * CXXXXXXXXXXDDD
-     * AAAAAAAAAAAAAA
-     **/
-    static void getMinimalRectsToRenderFromTilesState(const TileStateMap& tiles, const RectI& roi, int tileSizeX, int tileSizeY, std::list<RectI>* rectsToRender);
 
     /**
      * @brief Fills the image with the given colour. If the image components

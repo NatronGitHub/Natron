@@ -37,13 +37,13 @@ TEST(ImageKeyTest, Equality) {
     srand(2000);
     // coverity[dont_call]
     int randomHashKey1 = rand();
-    ImageTileKey key1(randomHashKey1, 0, RenderScale(1.), 0, false, eImageBitDepthFloat, RectI(), std::string());
+    ImageCacheKey key1(randomHashKey1, 0, RenderScale(1.), 0, false, eImageBitDepthFloat, RectI(), std::string());
     U64 keyHash1 = key1.getHash();
 
 
     ///make a second ImageKey equal to the first
     int randomHashKey2 = randomHashKey1;
-    ImageTileKey key2(randomHashKey2, 0, RenderScale(1.), 0, false, eImageBitDepthFloat, RectI(), std::string());
+    ImageCacheKey key2(randomHashKey2, 0, RenderScale(1.), 0, false, eImageBitDepthFloat, RectI(), std::string());
     U64 keyHash2 = key2.getHash();
     ASSERT_TRUE(keyHash1 == keyHash2);
 }
@@ -52,14 +52,14 @@ TEST(ImageKeyTest, Difference) {
     srand(2000);
     // coverity[dont_call]
     int randomHashKey1 = rand() % 100;
-    ImageTileKey key1(randomHashKey1, 0, RenderScale(1.), 0, false, eImageBitDepthFloat, RectI(), std::string());
+    ImageCacheKey key1(randomHashKey1, 0, RenderScale(1.), 0, false, eImageBitDepthFloat, RectI(), std::string());
     U64 keyHash1 = key1.getHash();
 
 
     ///make a second ImageKey different to the first
     // coverity[dont_call]
     int randomHashKey2 = rand() % 1000  + 150;
-    ImageTileKey key2(randomHashKey2, 0, RenderScale(1.), 0, false, eImageBitDepthFloat, RectI(), std::string());
+    ImageCacheKey key2(randomHashKey2, 0, RenderScale(1.), 0, false, eImageBitDepthFloat, RectI(), std::string());
     U64 keyHash2 = key2.getHash();
 
     ASSERT_TRUE(keyHash1 != keyHash2);

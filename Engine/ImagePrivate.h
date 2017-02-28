@@ -119,7 +119,7 @@ struct ImagePrivate
     // The texture target if the image is stored in a texture
     U32 textureTarget;
 
-    // The following values are passed to the ImageTileKey
+    // The following values are passed to the ImageCacheKey
     U64 nodeHash;
     bool isDraftImage;
 

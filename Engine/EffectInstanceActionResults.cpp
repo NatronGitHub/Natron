@@ -99,18 +99,18 @@ GetRegionOfDefinitionResults::setRoD(const RectD& rod)
 }
 
 void
-GetRegionOfDefinitionResults::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
+GetRegionOfDefinitionResults::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const
 {
     objectPointers->push_back(writeAnonymousSharedObject(_rod, segment));
-    CacheEntryBase::toMemorySegment(segment, objectPointers, tileDataPtr);
+    CacheEntryBase::toMemorySegment(segment, objectPointers);
 } // toMemorySegment
 
 void
-GetRegionOfDefinitionResults::fromMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList::const_iterator start, ExternalSegmentTypeHandleList::const_iterator end, const void* tileDataPtr)
+GetRegionOfDefinitionResults::fromMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList::const_iterator start, ExternalSegmentTypeHandleList::const_iterator end)
 {
     readAnonymousSharedObject(*start, segment, &_rod);
     ++start;
-    CacheEntryBase::fromMemorySegment(segment, start, end, tileDataPtr);
+    CacheEntryBase::fromMemorySegment(segment, start, end);
 } // fromMemorySegment
 
 
@@ -145,18 +145,18 @@ GetDistortionResults::setResults(const DistortionFunction2DPtr& disto)
 
 
 void
-GetDistortionResults::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
+GetDistortionResults::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const
 {
     objectPointers->push_back(writeAnonymousSharedObject(_disto, segment));
-    CacheEntryBase::toMemorySegment(segment, objectPointers, tileDataPtr);
+    CacheEntryBase::toMemorySegment(segment, objectPointers);
 } // toMemorySegment
 
 void
-GetDistortionResults::fromMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList::const_iterator start, ExternalSegmentTypeHandleList::const_iterator end, const void* tileDataPtr)
+GetDistortionResults::fromMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList::const_iterator start, ExternalSegmentTypeHandleList::const_iterator end)
 {
     readAnonymousSharedObject(*start, segment, &_disto);
     ++start;
-    CacheEntryBase::fromMemorySegment(segment, start, end, tileDataPtr);
+    CacheEntryBase::fromMemorySegment(segment, start, end);
 } // fromMemorySegment
 
 
@@ -196,18 +196,18 @@ IsIdentityResults::setIdentityData(int identityInputNb, TimeValue identityTime, 
 }
 
 void
-IsIdentityResults::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
+IsIdentityResults::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const
 {
     objectPointers->push_back(writeAnonymousSharedObject(_data, segment));
-    CacheEntryBase::toMemorySegment(segment, objectPointers, tileDataPtr);
+    CacheEntryBase::toMemorySegment(segment, objectPointers);
 } // toMemorySegment
 
 void
-IsIdentityResults::fromMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList::const_iterator start, ExternalSegmentTypeHandleList::const_iterator end, const void* tileDataPtr)
+IsIdentityResults::fromMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList::const_iterator start, ExternalSegmentTypeHandleList::const_iterator end)
 {
     readAnonymousSharedObject(*start, segment, &_data);
     ++start;
-    CacheEntryBase::fromMemorySegment(segment, start, end, tileDataPtr);
+    CacheEntryBase::fromMemorySegment(segment, start, end);
 } // fromMemorySegment
 
 GetFramesNeededResults::GetFramesNeededResults()
@@ -266,7 +266,7 @@ typedef bip::map<int, FrameRangesMap_ExternalSegment, std::less<int>, FramesNeed
 typedef bip::allocator<FramesNeededMap_ExternalSegment, ExternalSegmentType::segment_manager> FramesNeededMap_ExternalSegment_allocator;
 
 void
-GetFramesNeededResults::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
+GetFramesNeededResults::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const
 {
     // An allocator convertible to any allocator<T, segment_manager_t> type
     void_allocator alloc_inst (segment->get_segment_manager());
@@ -294,15 +294,15 @@ GetFramesNeededResults::toMemorySegment(ExternalSegmentType* segment, ExternalSe
     }
     
     objectPointers->push_back(segment->get_handle_from_address(externalMap));
-    CacheEntryBase::toMemorySegment(segment, objectPointers, tileDataPtr);
+    CacheEntryBase::toMemorySegment(segment, objectPointers);
 } // toMemorySegment
 
 void
-GetFramesNeededResults::fromMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList::const_iterator start, ExternalSegmentTypeHandleList::const_iterator end, const void* tileDataPtr)
+GetFramesNeededResults::fromMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList::const_iterator start, ExternalSegmentTypeHandleList::const_iterator end)
 {
     FramesNeededMap_ExternalSegment *externalMap = (FramesNeededMap_ExternalSegment*)segment->get_address_from_handle(*start);
     ++start;
-    CacheEntryBase::fromMemorySegment(segment, start, end, tileDataPtr);
+    CacheEntryBase::fromMemorySegment(segment, start, end);
 
 
     for (FramesNeededMap_ExternalSegment::iterator it = externalMap->begin(); it != externalMap->end(); ++it) {
@@ -349,18 +349,18 @@ GetFrameRangeResults::setFrameRangeResults(const RangeD &range)
 }
 
 void
-GetFrameRangeResults::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
+GetFrameRangeResults::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const
 {
     objectPointers->push_back(writeAnonymousSharedObject(_range, segment));
-    CacheEntryBase::toMemorySegment(segment, objectPointers, tileDataPtr);
+    CacheEntryBase::toMemorySegment(segment, objectPointers);
 } // toMemorySegment
 
 void
-GetFrameRangeResults::fromMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList::const_iterator start, ExternalSegmentTypeHandleList::const_iterator end, const void* tileDataPtr)
+GetFrameRangeResults::fromMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList::const_iterator start, ExternalSegmentTypeHandleList::const_iterator end)
 {
     readAnonymousSharedObject(*start, segment, &_range);
     ++start;
-    CacheEntryBase::fromMemorySegment(segment, start, end, tileDataPtr);
+    CacheEntryBase::fromMemorySegment(segment, start, end);
 } // fromMemorySegment
 
 
@@ -396,19 +396,19 @@ GetTimeInvariantMetaDatasResults::setMetadatasResults(const NodeMetadataPtr &met
 
 
 void
-GetTimeInvariantMetaDatasResults::toMemorySegment(ExternalSegmentType* segment,  ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
+GetTimeInvariantMetaDatasResults::toMemorySegment(ExternalSegmentType* segment,  ExternalSegmentTypeHandleList* objectPointers) const
 {
     assert(_metadatas);
     _metadatas->toMemorySegment(segment, objectPointers);
-    CacheEntryBase::toMemorySegment(segment, objectPointers, tileDataPtr);
+    CacheEntryBase::toMemorySegment(segment, objectPointers);
 } // toMemorySegment
 
 void
-GetTimeInvariantMetaDatasResults::fromMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList::const_iterator start, ExternalSegmentTypeHandleList::const_iterator end, const void* tileDataPtr)
+GetTimeInvariantMetaDatasResults::fromMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList::const_iterator start, ExternalSegmentTypeHandleList::const_iterator end)
 {
     assert(_metadatas);
     _metadatas->fromMemorySegment(segment, &start, end);
-    CacheEntryBase::fromMemorySegment(segment, start, end, tileDataPtr);
+    CacheEntryBase::fromMemorySegment(segment, start, end);
 } // fromMemorySegment
 
 
@@ -596,7 +596,7 @@ static void imageComponentsListFromSharedMemoryComponentsList(const ImagePlaneDe
 }
 
 void
-GetComponentsResults::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
+GetComponentsResults::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const
 {
     // An allocator convertible to any allocator<T, segment_manager_t> type
     void_allocator alloc_inst(segment->get_segment_manager());
@@ -636,14 +636,13 @@ GetComponentsResults::toMemorySegment(ExternalSegmentType* segment, ExternalSegm
 
     objectPointers->push_back(writeAnonymousSharedObject(_data, segment));
 
-    CacheEntryBase::toMemorySegment(segment, objectPointers, tileDataPtr);
+    CacheEntryBase::toMemorySegment(segment, objectPointers);
 } // toMemorySegment
 
 void
 GetComponentsResults::fromMemorySegment(ExternalSegmentType* segment,
                                         ExternalSegmentTypeHandleList::const_iterator start,
-                                        ExternalSegmentTypeHandleList::const_iterator end,
-                                        const void* tileDataPtr)
+                                        ExternalSegmentTypeHandleList::const_iterator end)
 {
     {
         NeededInputLayersMap_ExternalSegment *neededLayers = (NeededInputLayersMap_ExternalSegment*)segment->get_address_from_handle(*start);
@@ -677,7 +676,7 @@ GetComponentsResults::fromMemorySegment(ExternalSegmentType* segment,
     }
     readAnonymousSharedObject(*start, segment, &_data);
     ++start;
-    CacheEntryBase::fromMemorySegment(segment, start, end, tileDataPtr);
+    CacheEntryBase::fromMemorySegment(segment, start, end);
 } // fromMemorySegment
 
 

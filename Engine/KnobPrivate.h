@@ -531,7 +531,7 @@ public:
     }
 
 
-    virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const OVERRIDE FINAL
+    virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const OVERRIDE FINAL
     {
         if (!_stringResult.empty()) {
             KnobExpressionResultTypeEnum type = eKnobExpressionResultTypeString;
@@ -547,8 +547,7 @@ public:
 
     virtual void fromMemorySegment(ExternalSegmentType* segment,
                                    ExternalSegmentTypeHandleList::const_iterator start,
-                                   ExternalSegmentTypeHandleList::const_iterator end,
-                                   const void* tileDataPtr) OVERRIDE FINAL
+                                   ExternalSegmentTypeHandleList::const_iterator end) OVERRIDE FINAL
     {
         int type_i;
         if (start == end) {

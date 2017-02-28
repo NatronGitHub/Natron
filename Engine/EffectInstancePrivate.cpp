@@ -523,10 +523,10 @@ static void setupGLForRender(const ImagePtr& image,
         bool ok = image->getTileAt(0, 0, &tile);
         assert(ok);
         (void)ok;
-        Image::CPUTileData tileData;
-        image->getCPUTileData(tile, &tileData);
+        Image::CPUData tileData;
+        image->getCPUData(tile, &tileData);
 
-        void* buffer = (void*)Image::pixelAtStatic(roi.x1, roi.y1, tileData.tileBounds, tileData.nComps, getSizeOfForBitDepth(tileData.bitDepth), (unsigned char*)tileData.ptrs[0]);
+        void* buffer = (void*)Image::pixelAtStatic(roi.x1, roi.y1, tileData.bounds, tileData.nComps, getSizeOfForBitDepth(tileData.bitDepth), (unsigned char*)tileData.ptrs[0]);
         assert(buffer);
 
         // With OSMesa we render directly to the context framebuffer

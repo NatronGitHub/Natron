@@ -334,10 +334,10 @@ Node::makePreviewImage(TimeValue time,
     Image::Tile mainTile;
     imageForPreview->getTileAt(0, 0, &mainTile);
 
-    Image::CPUTileData tileData;
-    imageForPreview->getCPUTileData(mainTile, &tileData);
+    Image::CPUData tileData;
+    imageForPreview->getCPUData(mainTile, &tileData);
 
-    renderPreviewInternal((const void**)tileData.ptrs, tileData.bitDepth, tileData.tileBounds, tileData.nComps, width, height, convertToSrgb, buf);
+    renderPreviewInternal((const void**)tileData.ptrs, tileData.bitDepth, tileData.bounds, tileData.nComps, width, height, convertToSrgb, buf);
     
     return true;
 } // makePreviewImage

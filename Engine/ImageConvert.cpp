@@ -1144,7 +1144,7 @@ convertGLTextureToRGBAPackedCPUBuffer(const GLImageStoragePtr& texture,
 
 class CopyPixelsProcessor : public ImageMultiThreadProcessorBase
 {
-    Image::CPUTileData _srcTileData, _dstTileData;
+    Image::CPUData _srcTileData, _dstTileData;
     Image::CopyPixelsArgs _copyArgs;
 public:
 
@@ -1161,8 +1161,8 @@ public:
     {
     }
 
-    void setValues(const Image::CPUTileData& srcTileData,
-                   const Image::CPUTileData& dstTileData,
+    void setValues(const Image::CPUData& srcTileData,
+                   const Image::CPUData& dstTileData,
                    const Image::CopyPixelsArgs& copyArgs)
     {
         _srcTileData = srcTileData;
@@ -1186,11 +1186,11 @@ private:
                                       (const void**)_srcTileData.ptrs,
                                       _srcTileData.nComps,
                                       _srcTileData.bitDepth,
-                                      _srcTileData.tileBounds,
+                                      _srcTileData.bounds,
                                       (void**)_dstTileData.ptrs,
                                       _dstTileData.nComps,
                                       _dstTileData.bitDepth,
-                                      _dstTileData.tileBounds,
+                                      _dstTileData.bounds,
                                       _effect);
         return eActionStatusOK;
     }
@@ -1319,9 +1319,9 @@ ImagePrivate::copyRectangle(const Image::Tile& fromTile,
         // The pointer to the RGBA channels.
         // If layout is RGBAPacked only the first pointer is valid and points to the RGBA buffer.
         // If layout is RGBACoplanar or mono channel tiled all pointers are set (if they exist).
-        Image::CPUTileData srcTileData, dstTileData;
-        Image::getCPUTileData(fromTile, fromLayout, &srcTileData);
-        Image::getCPUTileData(toTile, toLayout, &dstTileData);
+        Image::CPUData srcTileData, dstTileData;
+        Image::getCPUData(fromTile, fromLayout, &srcTileData);
+        Image::getCPUData(toTile, toLayout, &dstTileData);
 
         CopyPixelsProcessor processor(renderClone);
         processor.setRenderWindow(args.roi);

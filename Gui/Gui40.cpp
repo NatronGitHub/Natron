@@ -527,11 +527,11 @@ Gui::debugImage(const Image* image,
         return;
     }
 
-    Image::CPUTileData imageData;
+    Image::CPUData imageData;
     {
         Image::Tile tile;
         image->getTileAt(0, 0, &tile);
-        image->getCPUTileData(tile, &imageData);
+        image->getCPUData(tile, &imageData);
     }
 
 
@@ -544,7 +544,7 @@ Gui::debugImage(const Image* image,
 
         const float* src_pixels[4];
         int pixelStride;
-        Image::getChannelPointers<float>((const float**)imageData.ptrs, renderWindow.x1, y, imageData.tileBounds, imageData.nComps, (float**)src_pixels, &pixelStride);
+        Image::getChannelPointers<float>((const float**)imageData.ptrs, renderWindow.x1, y, imageData.bounds, imageData.nComps, (float**)src_pixels, &pixelStride);
 
         QRgb* dstPixels = (QRgb*)output.scanLine(y);
         assert(dstPixels);
