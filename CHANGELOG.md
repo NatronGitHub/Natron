@@ -10,7 +10,7 @@
 ### Plugins
 
 - Card3D can now import/export chan files from Natron, Nuke, 3D-Equalizer, Maya, Boujou, etc.
-
+- LensDistortion: add PanoTools/PTGui/PTAssembler/Hugin model.
 
 ## Version 2.2.5
 
