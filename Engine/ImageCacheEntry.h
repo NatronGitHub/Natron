@@ -49,14 +49,33 @@ class ImageCacheEntry : public CacheEntryBase
 {
 public:
 
+    /**
+     * @brief An image cache entry associated to an image.
+     * @param pixelRod is the maximal size the image could have at the given scale (of the image)
+     * @param roi is the region we are interested in for this image
+     * @param depth The bitdepth of the image
+     * @param nComps the number of channels in the image
+     * @param Pointers to the channels storage in RAM
+     * @param effect Pointer to the effect to abort quickly
+     * @param key The key corresponding to this entry
+     **/
     ImageCacheEntry(const RectI& pixelRod,
                     const RectI& roi,
                     ImageBitDepthEnum depth,
                     int nComps,
-                    const ImageStorageBasePtr& storage,
-                    const EffectInstancePtr& effect);
+                    const void* storage[4],
+                    const EffectInstancePtr& effect,
+                    const ImageCacheKeyPtr& key);
 
     virtual ~ImageCacheEntry();
+    
+    /**
+     * @brief Returns the render status of each tile in the RoI of the image.
+     * @param hasPendingResults[out] If set to true, then the caller should, after rendering the given rectangles
+     * call waitForPendingTiles() and then afterwards recheck the rectangles left to render with this functino
+     **/
+    void getTilesRenderState(TileStateMap* tileStatus, bool* hasUnRenderedTile, bool *hasPendingResults) const;
+    
 
     virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const OVERRIDE FINAL;
 
@@ -73,8 +92,6 @@ public:
     {
         return true;
     }
-
-    virtual std::size_t getNumTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 
 

@@ -703,52 +703,6 @@ Image::getCachePolicy() const
     return _imp->cachePolicy;
 }
 
-void
-Image::getTilesRenderState(TileStateMap* tileStatus, bool* hasUnRenderedTile, bool *hasPendingResults) const
-{
-    *hasPendingResults = false;
-    *hasUnRenderedTile = false;
-
-    for (TileMap::iterator it = _imp->tiles.begin(); it != _imp->tiles.end(); ++it) {
-
-        TileState &state = (*tileStatus)[it->first];
-        bool hasChannelNotCached = false;
-        bool hasChannelPending = false;
-        for (std::size_t c = 0; c < it->second.perChannelTile.size(); ++c) {
-
-            CacheEntryLocker::CacheEntryStatusEnum status;
-            if (it->second.perChannelTile[c].entryLocker) {
-                status = it->second.perChannelTile[c].entryLocker->getStatus();
-            } else {
-                if (_imp->cachePolicy == eCacheAccessModeNone) {
-                    status = CacheEntryLocker::eCacheEntryStatusMustCompute;
-                } else {
-                    status = CacheEntryLocker::eCacheEntryStatusCached;
-                }
-            }
-
-            if (status == CacheEntryLocker::eCacheEntryStatusMustCompute) {
-                hasChannelNotCached = true;
-            }
-            if (status == CacheEntryLocker::eCacheEntryStatusComputationPending) {
-                hasChannelPending = true;
-            }
-        }
-        state.status = eTileStatusNotRendered;
-         if (!hasChannelNotCached && hasChannelPending) {
-            state.status = eTileStatusPending;
-        } else if (!hasChannelPending && !hasChannelNotCached) {
-            state.status = eTileStatusRendered;
-        }
-        if (state.status == eTileStatusPending) {
-            *hasPendingResults = true;
-        } else if (state.status == eTileStatusNotRendered) {
-            *hasUnRenderedTile = true;
-        }
-        state.bounds = it->second.bounds;
-    }
-} // getRestToRender
-
 bool
 Image::getTileAt(int tx, int ty, Image::Tile* tile) const
 {

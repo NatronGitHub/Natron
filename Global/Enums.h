@@ -542,9 +542,9 @@ enum CacheAccessModeEnum
 enum ImageBufferLayoutEnum
 {
     // This will make an image with an internal storage composed
-    // of one or multiple tiles, each of which is a single channel buffer.
+    // of a single buffer for each channel.
     // This is the preferred storage format for the Cache.
-    eImageBufferLayoutMonoChannelTiled,
+    eImageBufferLayoutMonoChannelFullRect,
 
 
     // This will make an image with an internal storage composed of a single

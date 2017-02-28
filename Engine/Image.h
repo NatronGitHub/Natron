@@ -452,7 +452,7 @@ public:
         const int dataSizeOf = sizeof(PIX);
         memset(outPtrs, 0, sizeof(PIX*) * 4);
         {
-            // If eImageBufferLayoutMonoChannelTiled or eImageBufferLayoutRGBACoplanarFullRect,
+            // If eImageBufferLayoutMonoChannelFullRect or eImageBufferLayoutRGBACoplanarFullRect,
             // then ptrs[1] should be set.
             // In this case the pixel stride is always 1.
             int nCompsForBuffer = nComps;
@@ -466,7 +466,7 @@ public:
         }
         if (nComps > 1) {
             if (ptrs[1]) {
-                // We are in eImageBufferLayoutMonoChannelTiled or eImageBufferLayoutRGBACoplanarFullRect layout
+                // We are in eImageBufferLayoutMonoChannelFullRect or eImageBufferLayoutRGBACoplanarFullRect layout
                 // pixel stride is 1
                 outPtrs[1] = (PIX*)pixelAtStatic(x, y, bounds, 1, dataSizeOf, (unsigned char*)ptrs[1]);
             } else {
@@ -477,7 +477,7 @@ public:
             }
             if (nComps > 2) {
                 if (ptrs[2]) {
-                    // We are in eImageBufferLayoutMonoChannelTiled or eImageBufferLayoutRGBACoplanarFullRect layout
+                    // We are in eImageBufferLayoutMonoChannelFullRect or eImageBufferLayoutRGBACoplanarFullRect layout
                     // pixel stride is 1
                     outPtrs[2] = (PIX*)pixelAtStatic(x, y, bounds, 1, dataSizeOf, (unsigned char*)ptrs[2]);
                 } else {
@@ -489,7 +489,7 @@ public:
             }
             if (nComps > 3) {
                 if (ptrs[3]) {
-                    // We are in eImageBufferLayoutMonoChannelTiled or eImageBufferLayoutRGBACoplanarFullRect layout
+                    // We are in eImageBufferLayoutMonoChannelFullRect or eImageBufferLayoutRGBACoplanarFullRect layout
                     // pixel stride is 1
                     outPtrs[3] = (PIX*)pixelAtStatic(x, y, bounds, 1, dataSizeOf, (unsigned char*)ptrs[3]);
                 } else {
@@ -620,14 +620,7 @@ public:
      **/
     bool waitForPendingTiles();
 
-    /**
-     * @brief Returns the renderstatus of each tile in the image.
-     * @param hasPendingResults[out] If set to true, then the caller should, after rendering the given rectangles
-     * call waitForPendingTiles() and then afterwards recheck the rectangles left to render.
-     **/
-    void getTilesRenderState(TileStateMap* tileStatus, bool* hasUnRenderedTile, bool *hasPendingResults) const;
-
-
+    
     /**
      * @brief Fills the image with the given colour. If the image components
      * are not RGBA it will ignore the unexisting components.

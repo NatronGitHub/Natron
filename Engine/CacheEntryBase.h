@@ -117,17 +117,6 @@ public:
     virtual std::size_t getMetadataSize() const;
 
     /**
-     * @brief Returns the number of tiles data storage this entry needs. Each tile is exactly the size of NATRON_TILE_SIZE_BYTES.
-     * In this case, Natron optimizes the storage of the entry in a tile aligned memory mapped file.
-     * If true the toMemorySegment and fromMemorySegment function will have their tileDataPtr set to 
-     * a non null value. The implementation should then copy from/to the data exactly NATRON_TILE_SIZE_BYTES bytes.
-     **/
-    virtual std::size_t getNumTiles() const
-    {
-        return 0;
-    }
-
-    /**
      * @brief Write this key to the process shared memory segment.
      * Each object written to the memory segment must have its handle appended 
      * to the objectPointers list.

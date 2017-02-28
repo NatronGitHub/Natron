@@ -1947,49 +1947,7 @@ CacheBucket::deallocateCacheEntryImpl(MemorySegmentEntryHeaderMap::iterator cach
 #endif // #ifndef NATRON_CACHE_NEVER_PERSISTENT
 
     CachePtr c = cache.lock();
-
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
-    if (!cacheEntryIt->second->tileCacheIndices.empty()) {
-        // Free the tile
-        // Take the tileData.segmentMutex in write mode
-
-        if (c->_imp->persistent) {
-            boost::scoped_ptr<Upgradable_WriteLock> writeLock;
-#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-            writeLock.reset(new Upgradable_WriteLock(c->_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex));
-#else
-            if (!createTimedLockAndHandleInconsistentStateIfFailed<Upgradable_WriteLock>(c->_imp.get(), shmAccess, bucketIndex, writeLock,  &c->_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex)) {
-                return;
-            }
-#endif
-            if (isTileFileMappingValid()) {
-                remapTileMemoryFile(*writeLock, 0);
-            }
-
-            for (std::size_t i = 0; i < cacheEntryIt->second->tileCacheIndices.size(); ++i) {
-                int tileIndex = cacheEntryIt->second->tileCacheIndices[i];
-                // Invalidate this portion of the memory mapped file
-                std::size_t dataOffset = tileIndex * NATRON_TILE_SIZE_BYTES;
-                tileAlignedFile->flush(MemoryFile::eFlushTypeInvalidate, tileAlignedFile->data() + dataOffset, NATRON_TILE_SIZE_BYTES);
-
-            }
-        }
-
-        for (std::size_t i = 0; i < cacheEntryIt->second->tileCacheIndices.size(); ++i) {
-            // Make this tile free again
-            int tileIndex = cacheEntryIt->second->tileCacheIndices[i];
-#ifdef CACHE_TRACE_TILES_ALLOCATION
-            qDebug() << "Bucket" << bucketIndex << ": tile freed" << tileIndex << " Nb free tiles left:" << ipc->freeTiles.size();
-#endif
-            std::pair<Size_t_Set::iterator, bool>  insertOk = ipc->freeTiles.insert(tileIndex);
-            assert(insertOk.second);
-            (void)insertOk;
-        }
-        cacheEntryIt->second->tileCacheIndices.clear();
-
-    }
-#endif // #ifndef NATRON_CACHE_NEVER_PERSISTENT
-    
+ 
 
 #ifdef NATRON_CACHE_NEVER_PERSISTENT
     ipc->size -= cacheEntryIt->second->size;
@@ -3092,6 +3050,42 @@ Cache::unLockTiles(void* cacheData)
 void
 Cache::releaseTiles(const CacheEntryBasePtr& entry, const std::vector<int>& tileIndices)
 {
+    // Free the tile
+    // Take the tileData.segmentMutex in write mode
+    
+    if (c->_imp->persistent) {
+        boost::scoped_ptr<Upgradable_WriteLock> writeLock;
+#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
+        writeLock.reset(new Upgradable_WriteLock(c->_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex));
+#else
+        if (!createTimedLockAndHandleInconsistentStateIfFailed<Upgradable_WriteLock>(c->_imp.get(), shmAccess, bucketIndex, writeLock,  &c->_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex)) {
+            return;
+        }
+#endif
+        if (isTileFileMappingValid()) {
+            remapTileMemoryFile(*writeLock, 0);
+        }
+        
+        for (std::size_t i = 0; i < cacheEntryIt->second->tileCacheIndices.size(); ++i) {
+            int tileIndex = cacheEntryIt->second->tileCacheIndices[i];
+            // Invalidate this portion of the memory mapped file
+            std::size_t dataOffset = tileIndex * NATRON_TILE_SIZE_BYTES;
+            tileAlignedFile->flush(MemoryFile::eFlushTypeInvalidate, tileAlignedFile->data() + dataOffset, NATRON_TILE_SIZE_BYTES);
+            
+        }
+    }
+    
+    for (std::size_t i = 0; i < cacheEntryIt->second->tileCacheIndices.size(); ++i) {
+        // Make this tile free again
+        int tileIndex = cacheEntryIt->second->tileCacheIndices[i];
+#ifdef CACHE_TRACE_TILES_ALLOCATION
+        qDebug() << "Bucket" << bucketIndex << ": tile freed" << tileIndex << " Nb free tiles left:" << ipc->freeTiles.size();
+#endif
+        std::pair<Size_t_Set::iterator, bool>  insertOk = ipc->freeTiles.insert(tileIndex);
+        assert(insertOk.second);
+        (void)insertOk;
+    }
+    cacheEntryIt->second->tileCacheIndices.clear();
 
 } // releaseTiles
 

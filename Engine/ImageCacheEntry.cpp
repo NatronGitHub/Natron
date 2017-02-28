@@ -30,6 +30,7 @@
 
 #include "Engine/AppManager.h"
 #include "Engine/Cache.h"
+#include "Engine/ImageCacheKey.h"
 #include "Engine/ImageStorage.h"
 #include "Engine/ImagePrivate.h"
 #include "Engine/ImageTilesState.h"
@@ -39,76 +40,67 @@ NATRON_NAMESPACE_ENTER;
 
 typedef std::set<TileCoord, TileCoord_Compare> FetchedTilesSet;
 
-struct ChannelData
-{
-    ImageTilesStatePtr state;
 
-};
 
 struct ImageCacheEntryPrivate
 {
 
     ImageCacheEntry* _publicInterface;
-    ImageBitDepthEnum bitdepth;
-    RectI roi, roiRoundedToTileSize;
-    std::vector<ChannelData> channels;
-    ImageStorageBasePtr storage;
+    RectI roiRoundedToTileSize;
+    Image::CPUData localData;
+    
+    // The state is shared accross all channels because OpenFX doesn't allows yet to render only some channels
+    ImageTilesStatePtr state;
+    int nComps;
     EffectInstancePtr effect;
+    ImageCacheKeyPtr key;
 
     ImageCacheEntryPrivate(ImageCacheEntry* publicInterface,
                            const RectI& pixelRod,
                            const RectI& roi,
                            ImageBitDepthEnum depth,
                            int nComps,
-                           const ImageStorageBasePtr& storage,
-                           const EffectInstancePtr& effect)
+                           const void* storage[4],
+                           const EffectInstancePtr& effect,
+                           const ImageCacheKeyPtr& key)
     : _publicInterface(publicInterface)
-    , bitdepth(depth)
-    , roi(roi)
     , roiRoundedToTileSize(roi)
-    , channels(nComps)
-    , storage(storage)
+    , localData()
+    , state()
+    , nComps(nComps)
     , effect(effect)
+    , key(key)
     {
+        localData.bitDepth = depth;
+        localData.bounds = roi;
+        localData.nComps = nComps;
+        memcpy(localData.ptrs, storage, sizeof(void*) * 4);
         assert(nComps > 0);
         int tileSizeX, tileSizeY;
         Cache::getTileSizePx(depth, &tileSizeX, &tileSizeY);
         roiRoundedToTileSize.roundToTileSize(tileSizeX, tileSizeY);
-        for (int c = 0; c < nComps; ++c) {
-            channels[c].state.reset(new ImageTilesState(pixelRod, tileSizeX, tileSizeY));
-        }
+        state.reset(new ImageTilesState(pixelRod, tileSizeX, tileSizeY));
     }
 
-    void fetchAndCopyCachedTiles(const std::vector<TileStateMap>& newChannelsState);
+    void fetchAndCopyCachedTiles(const TileStateMap& newStateMap);
 };
 
 ImageCacheEntry::ImageCacheEntry(const RectI& pixelRod,
                                  const RectI& roi,
                                  ImageBitDepthEnum depth,
                                  int nComps,
-                                 const ImageStorageBasePtr& storage,
-                                 const EffectInstancePtr& effect)
+                                 const void* storage[4],
+                                 const EffectInstancePtr& effect,
+                                 const ImageCacheKeyPtr& key)
 : CacheEntryBase(appPTR->getTileCache())
-, _imp(new ImageCacheEntryPrivate(this, pixelRod, roi, depth, nComps, storage, effect))
+, _imp(new ImageCacheEntryPrivate(this, pixelRod, roi, depth, nComps, storage, effect, key))
 {
+    setKey(key);
 }
 
 ImageCacheEntry::~ImageCacheEntry()
 {
 
-}
-
-std::size_t
-ImageCacheEntry::getNumTiles() const
-{
-    int tileSizeX, tileSizeY;
-    _imp->channels[0].state->getTileSize(&tileSizeX, &tileSizeY);
-    const RectI& boundsRounded = _imp->roiRoundedToTileSize;
-    assert(boundsRounded.x1 % tileSizeX && boundsRounded.y1 % tileSizeY &&
-           boundsRounded.x2 % tileSizeX && boundsRounded.y2 % tileSizeY);
-    int nWidth =  boundsRounded.width() / tileSizeX;
-    int nHeight =  boundsRounded.height() / tileSizeY;
-    return nWidth * (std::size_t)nHeight;
 }
 
 
@@ -245,78 +237,66 @@ struct CacheDataLock_RAII
 };
 
 void
-ImageCacheEntryPrivate::fetchAndCopyCachedTiles(const std::vector<TileStateMap>& newChannelsState)
+ImageCacheEntryPrivate::fetchAndCopyCachedTiles(const TileStateMap& newStateMap)
 {
     // This is the current state of our image, update it according to the stateMap read from the cache
 
-    // We can only transfer to the cache from a RAM buffer
-    RAMImageStoragePtr storageIsRAM = toRAMImageStorage(storage);
-    assert(storageIsRAM);
+
 
     int tileSizeX, tileSizeY;
-    channels[0].state->getTileSize(&tileSizeX, &tileSizeY);
+    state->getTileSize(&tileSizeX, &tileSizeY);
 
-    // The image data we want to copy from
-    Image::CPUData toData;
-    {
-        toData.bitDepth = bitdepth;
-        toData.nComps = (int)channels.size();
-        toData.bounds = roi;
-        memset(toData.ptrs, 0, sizeof(void*) * 4);
-        toData.ptrs[0] = storageIsRAM->getData();
-    }
 
-    std::vector<const TileStateMap*> currentChannelsState(channels.size());
-    for (std::size_t i = 0; i < channels.size(); ++i) {
-        currentChannelsState[i] = &channels[i].state->getTilesMap();
-    }
 
-    std::vector<std::vector<FetchTile> > perChannelTilesToFetch(channels.size());
+    const TileStateMap& stateMap = state->getTilesMap();
+   
+    std::vector<std::vector<FetchTile> > perChannelTilesToFetch(nComps);
 
     // For each tile in the RoI (rounded to the tile size):
     // Check the tile status, only copy from the cache if rendered
-    for (int k = 0; k < (int)channels.size(); ++k) {
-        for (int ty = roiRoundedToTileSize.y1; ty < roiRoundedToTileSize.y2; ty += tileSizeY) {
-            for (int tx = roiRoundedToTileSize.x1; tx < roiRoundedToTileSize.x2; tx += tileSizeX) {
-
-                assert(tx % tileSizeX == 0 && ty % tileSizeY == 0);
-
-                TileCoord c = {tx, ty};
-
-                // Find this tile in the current state. If already cached don't bother
-                TileStateMap::const_iterator foundInOldMap = currentChannelsState[k]->find(c);
-                assert(foundInOldMap != currentChannelsState[k]->end());
-                if (foundInOldMap == currentChannelsState[k]->end()) {
-                    continue;
-                }
-                if (foundInOldMap->second.status == eTileStatusRendered) {
-                    continue;
-                }
-
-                // Ok not yet copied, now find in the new state map
-                TileStateMap::const_iterator foundInNewMap = newChannelsState[k].find(c);
-                assert(foundInNewMap != newChannelsState[k].end());
-                if (foundInNewMap == newChannelsState[k].end()) {
-                    continue;
-                }
-                if (foundInNewMap->second.status != eTileStatusRendered) {
-                    continue;
-                }
-
-
+    for (int ty = roiRoundedToTileSize.y1; ty < roiRoundedToTileSize.y2; ty += tileSizeY) {
+        for (int tx = roiRoundedToTileSize.x1; tx < roiRoundedToTileSize.x2; tx += tileSizeX) {
+            
+            assert(tx % tileSizeX == 0 && ty % tileSizeY == 0);
+            
+            TileCoord c = {tx, ty};
+            
+            // Find this tile in the current state. If already cached don't bother
+            TileStateMap::const_iterator foundInOldMap = stateMap.find(c);
+            assert(foundInOldMap != stateMap.end());
+            if (foundInOldMap == stateMap.end()) {
+                continue;
+            }
+            if (foundInOldMap->second.status == eTileStatusRendered) {
+                continue;
+            }
+            
+            // Ok not yet copied, now find in the new state map
+            TileStateMap::const_iterator foundInNewMap = newStateMap.find(c);
+            assert(foundInNewMap != newStateMap.end());
+            if (foundInNewMap == newStateMap.end()) {
+                continue;
+            }
+            if (foundInNewMap->second.status != eTileStatusRendered) {
+                continue;
+            }
+            
+            
+            for (int k = 0; k < nComps; ++k) {
                 FetchTile fetchData;
                 fetchData.coord = c;
                 fetchData.index = foundInNewMap->second.tiledStorageIndex;
                 perChannelTilesToFetch[k].push_back(fetchData);
             }
-            
+        
         }
+        
     }
     
+    
     // Set the current tile map to be the new one
-    for (std::size_t i = 0; i < channels.size(); ++i) {
-        channels[i].state->setTilesMap(newChannelsState[i]);
-    }
+    state->setTilesMap(newStateMap);
+
 
 
     // Get a vector of tile indices to fetch from the cache directly
@@ -359,7 +339,7 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles(const std::vector<TileStateMap>&
 
         FromCachePixelsTransferProcessor::CopyData &copyChunk = tilesToCopy[i];
         {
-            copyChunk.tileData.bitDepth = bitdepth;
+            copyChunk.tileData.bitDepth = localData.bitDepth;
             copyChunk.tileData.nComps = 1;
             memset(copyChunk.tileData.ptrs, 0, sizeof(void*) * 4);
             copyChunk.tileData.ptrs[0] = fetchedTiles[i].second;
@@ -369,12 +349,12 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles(const std::vector<TileStateMap>&
         // Clamp the bounds of the tile so that it does not exceed the roi
         TileCoord& c = perChannelTilesToFetch[k][channelTilesToFetchIndex].coord;
 
-        copyChunk.tileData.bounds.x1 = std::max(c.tx, roi.x1);
-        copyChunk.tileData.bounds.y1 = std::max(c.ty, roi.y1);
-        copyChunk.tileData.bounds.x2 = std::min(c.tx + tileSizeX, roi.x2);
-        copyChunk.tileData.bounds.y2 = std::min(c.ty + tileSizeY, roi.y2);
+        copyChunk.tileData.bounds.x1 = std::max(c.tx, localData.bounds.x1);
+        copyChunk.tileData.bounds.y1 = std::max(c.ty, localData.bounds.y1);
+        copyChunk.tileData.bounds.x2 = std::min(c.tx + tileSizeX, localData.bounds.x2);
+        copyChunk.tileData.bounds.y2 = std::min(c.ty + tileSizeY, localData.bounds.y2);
 
-        copyChunk.cpyArgs.roi = roi;
+        copyChunk.cpyArgs.roi = localData.bounds;
         copyChunk.cpyArgs.roi.intersect(copyChunk.tileData.bounds, &copyChunk.cpyArgs.roi);
         copyChunk.cpyArgs.monoConversion = Image::eMonoToPackedConversionCopyToChannelAndLeaveOthers;
         copyChunk.cpyArgs.conversionChannel = k;
@@ -382,11 +362,41 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles(const std::vector<TileStateMap>&
 
     // Finally copy over multiple threads each tile
     FromCachePixelsTransferProcessor processor(effect);
-    processor.setValues(toData, tilesToCopy);
+    processor.setValues(localData, tilesToCopy);
     ActionRetCodeEnum stat = processor.launchThreads();
     (void)stat;
 
 } // fetchAndCopyCachedTiles
+
+void
+ImageCacheEntry::getTilesRenderState(TileStateMap* tileStatus, bool* hasUnRenderedTile, bool *hasPendingResults) const
+{
+    CacheEntryLockerPtr cacheAccess = getFromCache();
+    {
+        // The status of the ImageCacheEntry in the cache is not relevant: we don't care that its flagged
+        // cached or must compute because we handle here the flag for each tile.
+        CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
+        while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
+            cacheStatus = cacheAccess->waitForPendingEntry();
+        }
+    }
+
+    *hasPendingResults = false;
+    *hasUnRenderedTile = false;
+
+    const TileStateMap& stateMap = _imp->state->getTilesMap();
+    for (TileStateMap::const_iterator it = stateMap.begin(); it != stateMap.end(); ++it) {
+    
+        if (it->second.status == eTileStatusNotRendered) {
+            *hasUnRenderedTile = true;
+        } else if (it->second.status == eTileStatusPending) {
+            *hasPendingResults = true;
+        }
+    }
+    *tileStatus = stateMap;
+
+    
+} // getTilesRenderState
 
 void
 ImageCacheEntry::fromMemorySegment(ExternalSegmentType* segment,
@@ -395,11 +405,18 @@ ImageCacheEntry::fromMemorySegment(ExternalSegmentType* segment,
 {
     // Deserializes the tiles state
     {
-        TileStateMap *stateCopy = (TileStateMap*)segment->get_address_from_handle(*start);
-        assert(stateCopy->get_allocator().get_segment_manager() == segment->get_segment_manager());
-        ++start;
-
-        _imp->fetchAndCopyCachedTiles(*stateCopy);
+        std::vector<const TileStateMap*> channelsState(_imp->channels.size());
+        for (std::size_t i = 0; i < channelsState.size(); ++i) {
+            if (start == end) {
+                throw std::bad_alloc();
+            }
+            channelsState[i] = (TileStateMap*)segment->get_address_from_handle(*start);
+            assert(channelsState[i]->get_allocator().get_segment_manager() == segment->get_segment_manager());
+            ++start;
+            
+        }
+        
+        _imp->fetchAndCopyCachedTiles(channelsState);
 
     }
 
