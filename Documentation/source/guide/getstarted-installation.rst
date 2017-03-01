@@ -9,7 +9,7 @@ This chapter will guide you through the installation of Natron on Windows, Mac a
 .. toctree::
    :maxdepth: 2
    
-   windows
-   mac
-   linux
+   getstarted-installation-windows
+   getstarted-installation-mac
+   getstarted-installation-linux
 

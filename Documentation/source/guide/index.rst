@@ -13,8 +13,8 @@ This guide will help you getting started using Natron for compositing and visual
 .. toctree::
    :maxdepth: 3
 
-   compositing_intro
-   getting_started
+   intro
+   getstarted
    compositing
    tutorials
 
