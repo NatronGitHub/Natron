@@ -1894,11 +1894,13 @@ RotoPaintInteract::drawOverlay(TimeValue time,
                 // check if the bbox is visible
                 // if the bbox is visible, compute the polygon and draw it.
 
-
+#pragma message WARN("FIXME: must apply the whole transforms chain to compute the visibility in the viewer")
+#if 0
                 RectD bbox = isBezier->getBoundingBox(time, view);
                 if ( !getLastCallingViewport()->isVisibleInViewport(bbox) ) {
                     continue;
                 }
+#endif
 
                 std::vector< ParametricPoint > points;
                 isBezier->evaluateAtTime_DeCasteljau(time, view, 0,
