@@ -152,10 +152,10 @@ ImagePrivate::initTileAndFetchFromCache(const TileCoord& coord, Image::Tile &til
         fetchBufferFromCache(cache, cachedBuffer, channelID, channelIndices[c], pluginID, tile, thisChannelTile);
 
         if (thisChannelTile.entryLocker->getStatus() == CacheEntryLocker::eCacheEntryStatusCached) {
-            if (!Cache::isCompiledWithCachePersistence()) {
+#ifdef NATRON_CACHE_NEVER_PERSISTENT
                 cachedBuffer = toCacheImageTileStorage(thisChannelTile.entryLocker->getProcessLocalEntry());
                 thisChannelTile.buffer = cachedBuffer;
-            }
+#endif
             thisChannelTile.entryLocker.reset();
         } else {
             if (failIfTileUncached) {
@@ -662,11 +662,6 @@ public:
         _fromBufferFormat = fromBufferFormat;
     }
 
-    virtual ActionRetCodeEnum launchThreads(unsigned int nCPUs = 0) OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return MultiThreadProcessorBase::launchThreads(nCPUs);
-    }
-
     virtual ActionRetCodeEnum multiThreadFunction(unsigned int threadID,
                                                   unsigned int nThreads) OVERRIDE FINAL WARN_UNUSED_RETURN
     {
@@ -735,7 +730,7 @@ ImagePrivate::copyUntiledImageToTiledImage(const Image& fromImage, const Image::
         (toStorage == eStorageModeRAM || toStorage == eStorageModeDisk)) {
         CopyUntiledToTileProcessor processor(renderClone.lock());
         processor.setData(&args, this, toStorage, bufferFormat, fromImage._imp.get(), fromImage._imp->bufferFormat, fromStorage, tileIndices);
-        ActionRetCodeEnum stat = processor.launchThreads();
+        ActionRetCodeEnum stat = processor.launchThreadsBlocking();
         (void)stat;
     } else {
         for (std::size_t i = 0; i < tileIndices.size(); ++i) {
@@ -787,11 +782,6 @@ public:
         _originalArgs = args;
         _fromStorage = fromStorage;
         _fromBufferFormat = fromBufferFormat;
-    }
-
-    virtual ActionRetCodeEnum launchThreads(unsigned int nCPUs = 0) OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return MultiThreadProcessorBase::launchThreads(nCPUs);
     }
 
     virtual ActionRetCodeEnum multiThreadFunction(unsigned int threadID,
@@ -860,7 +850,7 @@ ImagePrivate::copyTiledImageToUntiledImage(const Image& fromImage, const Image::
         (toStorage == eStorageModeRAM || toStorage == eStorageModeDisk)) {
         CopyTiledToUntiledProcessor processor(renderClone.lock());
         processor.setData(&args, this, toStorage, bufferFormat, fromImage._imp.get(), fromImage._imp->bufferFormat, fromStorage, tileIndices);
-        ActionRetCodeEnum stat = processor.launchThreads();
+        ActionRetCodeEnum stat = processor.launchThreadsBlocking();
         (void)stat;
     } else {
         for (std::size_t i = 0; i < tileIndices.size(); ++i) {

@@ -1512,10 +1512,6 @@ public:
         _imp = imp;
     }
 
-    virtual ActionRetCodeEnum launchThreads(unsigned int nCPUs = 0) OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return MultiThreadProcessorBase::launchThreads(nCPUs);
-    }
 
     virtual ActionRetCodeEnum multiThreadFunction(unsigned int threadID,
                                                   unsigned int nThreads) OVERRIDE FINAL WARN_UNUSED_RETURN
@@ -1623,7 +1619,7 @@ EffectInstance::Implementation::launchPluginRenderAndHostFrameThreading(const Fr
 
         HostFrameThreadingRenderProcessor processor(_publicInterface->shared_from_this());
         processor.setData(renderRects, functorArgs, this);
-        ActionRetCodeEnum stat = processor.launchThreads();
+        ActionRetCodeEnum stat = processor.launchThreadsBlocking();
         if (isFailureRetCode(stat)) {
             return stat;
         }

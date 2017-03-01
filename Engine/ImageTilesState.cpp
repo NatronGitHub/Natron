@@ -56,8 +56,6 @@ struct ImageTilesStatePrivate
                 s.bounds.y1 = std::max(c.ty, originalBounds.y1);
                 s.bounds.x2 = std::min(c.tx + tileSizeX, originalBounds.x2);
                 s.bounds.y2 = std::min(c.ty + tileSizeY, originalBounds.y2);
-                s.status = eTileStatusNotRendered;
-                s.tiledStorageIndex = -1;
 
                 stateMap.insert(std::make_pair(c, s));
             }
@@ -75,6 +73,14 @@ ImageTilesState::~ImageTilesState()
 {
 
 }
+
+
+TileStateMap&
+ImageTilesState::getTilesMap()
+{
+    return _imp->stateMap;
+}
+
 
 const TileStateMap&
 ImageTilesState::getTilesMap() const

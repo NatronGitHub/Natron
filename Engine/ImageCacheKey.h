@@ -38,11 +38,9 @@ public:
     ImageCacheKey();
 
     ImageCacheKey(U64 nodeTimeViewVariantHash,
-                  U64 layerChannelID,
+                  U64 layerIDHash,
                   const RenderScale& proxyScale,
-                  unsigned int mipMapLevel,
                   bool draftMode,
-                  ImageBitDepthEnum bitdepth,
                   const std::string& pluginID);
 
     virtual ~ImageCacheKey();
@@ -51,11 +49,7 @@ public:
 
     const RenderScale& getProxyScale() const;
 
-    unsigned int getMipMapLevel() const;
-
     bool isDraftMode() const;
-
-    ImageBitDepthEnum getBitDepth() const;
 
     virtual void toMemorySegment(ExternalSegmentType* segment,  ExternalSegmentTypeHandleList* objectPointers) const OVERRIDE FINAL;
 

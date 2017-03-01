@@ -226,11 +226,6 @@ public:
         _stat = stat;
     }
 
-    virtual ActionRetCodeEnum launchThreads(unsigned int nCPUs = 0) OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return MultiThreadProcessorBase::launchThreads(nCPUs);
-    }
-
     virtual ActionRetCodeEnum multiThreadFunction(unsigned int threadID,
                                                   unsigned int nThreads) OVERRIDE FINAL WARN_UNUSED_RETURN
     {
@@ -396,7 +391,7 @@ ImagePrivate::initTiles()
 #ifndef NATRON_IMAGE_SEQUENTIAL_INIT
     TileFetcherProcessor processor(renderClone.lock());
     processor.setData(tileIndices, this, retcode);
-    ActionRetCodeEnum stat = processor.launchThreads();
+    ActionRetCodeEnum stat = processor.launchThreadsBlocking();
     (void)stat;
     if (retcode->isFailed()) {
         return retcode->stat;

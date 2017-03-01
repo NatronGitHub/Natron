@@ -33,6 +33,7 @@
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_OFF(unused-parameter)
 #include <boost/interprocess/containers/map.hpp>
+#include <boost/interprocess/containers/vector.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
 
@@ -73,11 +74,22 @@ enum TileStatusEnum
     eTileStatusPending
 };
 
+/**
+ * @brief The state of a tile is shared accross all channels since OpenFX does not currently allows to render a single channel
+ **/
 struct TileState
 {
     RectI bounds;
     TileStatusEnum status;
-    int tiledStorageIndex;
+    int channelsTileStorageIndex[4];
+
+    TileState()
+    : bounds()
+    , status(eTileStatusNotRendered)
+    , channelsTileStorageIndex()
+    {
+        channelsTileStorageIndex[0] = channelsTileStorageIndex[1] = channelsTileStorageIndex[2] = channelsTileStorageIndex[3] = -1;
+    }
 };
 
 
@@ -88,6 +100,8 @@ struct TileState
 typedef std::pair<const TileCoord, TileState > TileStateValueType;
 typedef boost::interprocess::allocator<TileStateValueType, ExternalSegmentType::segment_manager> TileStateValueType_Allocator_ExternalSegment;
 typedef boost::interprocess::map<TileCoord, TileState, TileCoord_Compare, TileStateValueType_Allocator_ExternalSegment> TileStateMap;
+typedef boost::interprocess::allocator<TileStateMap, ExternalSegmentType::segment_manager> TileStateMap_Allocator_ExternalSegment;
+typedef boost::interprocess::vector<TileStateMap, TileStateMap_Allocator_ExternalSegment> TileStateMapVector;
 
 struct ImageTilesStatePrivate;
 
@@ -102,6 +116,8 @@ public:
     ImageTilesState(const RectI& originalBounds, int tileSizeX, int tileSizeY);
 
     ~ImageTilesState();
+
+    TileStateMap& getTilesMap();
 
     const TileStateMap& getTilesMap() const;
 

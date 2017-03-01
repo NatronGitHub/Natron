@@ -105,13 +105,15 @@ CacheEntryBase::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTyp
     _imp->key->toMemorySegment(segment, objectPointers);
 }
 
-void
-CacheEntryBase::fromMemorySegment(ExternalSegmentType* segment,
+CacheEntryBase::FromMemorySegmentRetCodeEnum
+CacheEntryBase::fromMemorySegment(bool /*isLockedForWriting*/,
+                                  ExternalSegmentType* segment,
                                   ExternalSegmentTypeHandleList::const_iterator start,
                                   ExternalSegmentTypeHandleList::const_iterator end)
 
 {
     _imp->key->fromMemorySegment(segment, start, end);
+    return eFromMemorySegmentRetCodeOk;
 }
 
 

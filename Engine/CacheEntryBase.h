@@ -127,18 +127,33 @@ public:
      **/
     virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const;
 
+    enum FromMemorySegmentRetCodeEnum
+    {
+        // Everything went fine and could be deserialized
+        eFromMemorySegmentRetCodeOk,
+
+        // Somthing failed, the entry should be removed from the cache
+        eFromMemorySegmentRetCodeFailed,
+
+        // If the fromMemorySegment function is called with isLockedForWriting = false
+        // it may return this status code to indicate that it needs to be called with
+        // isLockedForWriting = true
+        eFromMemorySegmentRetCodeNeedWriteLock
+    };
+
     /**
      * @brief Reads this key from shared process memory segment.
      * Objects can be retrieved from their process local handle. This handle points
-     * to the object copy in shared memory, in the same order that was inserted in the 
+     * to the object copy in shared memory, in the same order that was inserted in the
      * objectPointers list out of toMemorySegment.
      * Derived class should call the base class version AFTER its implementation.
      * The function readNamedSharedObject can be used to simplify the serialization of objects from the
      * memory segment.
      **/
-    virtual void fromMemorySegment(ExternalSegmentType* segment,
-                                   ExternalSegmentTypeHandleList::const_iterator start,
-                                   ExternalSegmentTypeHandleList::const_iterator end);
+    virtual CacheEntryBase::FromMemorySegmentRetCodeEnum fromMemorySegment(bool isLockedForWriting,
+                                                                           ExternalSegmentType* segment,
+                                                                           ExternalSegmentTypeHandleList::const_iterator start,
+                                                                           ExternalSegmentTypeHandleList::const_iterator end) WARN_UNUSED_RETURN;
 
     /**
      * @brief Must return whether attempting to call Cache::get() recursively on the same hash is allowed

@@ -38,6 +38,27 @@
 
 NATRON_NAMESPACE_ENTER;
 
+struct MultiThreadFuturePrivate;
+class MultiThreadFuture
+{
+
+public:
+
+    MultiThreadFuture(ActionRetCodeEnum initialStatus = eActionStatusOK);
+
+    ~MultiThreadFuture();
+
+    ActionRetCodeEnum waitForFinished();
+
+private:
+
+    friend class MultiThread;
+
+    boost::scoped_ptr<MultiThreadFuturePrivate> _imp;
+};
+
+typedef boost::shared_ptr<MultiThreadFuture> MultiThreadFuturePtr;
+
 struct MultiThreadPrivate;
 class MultiThread
 {
@@ -78,7 +99,18 @@ public:
      * Note that the thread indexes are from 0 to nThreads - 1.
      * http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_multiThread
      */
-    static ActionRetCodeEnum launchThreads(ThreadFunctor func, unsigned int nThreads, void *customArg, const EffectInstancePtr& effect);
+    static ActionRetCodeEnum launchThreadsBlocking(ThreadFunctor func, unsigned int nThreads, void *customArg, const EffectInstancePtr& effect);
+
+    /**
+     * @brief Same as launchThreadsBlocking except that this functions returns a future object, on which
+     **/
+    static MultiThreadFuturePtr launchThreadsNonBlocking(ThreadFunctor func, unsigned int nThreads, void *customArg, const EffectInstancePtr& effect);
+
+private:
+
+    static MultiThreadFuturePtr launchThreadsInternal(ThreadFunctor func, unsigned int nThreads, void *customArg, const EffectInstancePtr& effect);
+
+public:
 
     /**
      * @brief Function which indicates the number of CPUs available for SMP processing
@@ -132,12 +164,15 @@ protected:
      * ID is from 0..nThreads-1 nThreads are the number of threads it is being run over */
     virtual ActionRetCodeEnum multiThreadFunction(unsigned int threadID,
                                                   unsigned int nThreads) = 0;
+
+public:
     
     /** @brief Call this to kick off multi threading
      *  @param nCPUs The number of threads to use at most to process this function
      *  If nCPUs is 0, the maximum allowable number of CPUs will be used.
      */
-    virtual ActionRetCodeEnum launchThreads(unsigned int nCPUs = 0);
+    virtual ActionRetCodeEnum launchThreadsBlocking(unsigned int nCPUs = 0);
+    virtual MultiThreadFuturePtr launchThreadsNonBlocking(unsigned int nCPUs = 0);
 
 private:
 

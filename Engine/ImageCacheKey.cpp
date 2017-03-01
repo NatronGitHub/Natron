@@ -31,20 +31,16 @@ NATRON_NAMESPACE_ENTER;
 struct ImageCacheKeyShmData
 {
     U64 nodeTimeViewVariantHash;
-    U64 layerChannelID;
+    U64 layerIDHash;
     RenderScale proxyScale;
-    unsigned int mipMapLevel;
     bool draftMode;
-    ImageBitDepthEnum bitdepth;
 
 
     ImageCacheKeyShmData()
     : nodeTimeViewVariantHash(0)
-    , layerChannelID(0)
+    , layerIDHash(0)
     , proxyScale(1.)
-    , mipMapLevel(0)
     , draftMode(false)
-    , bitdepth(eImageBitDepthNone)
     {
 
     }
@@ -64,21 +60,17 @@ struct ImageCacheKeyPrivate
 
 
 ImageCacheKey::ImageCacheKey(U64 nodeTimeViewVariantHash,
-                             U64 layerChannelID,
+                             U64 layerIDHash,
                              const RenderScale& scale,
-                             unsigned int mipMapLevel,
                              bool draftMode,
-                             ImageBitDepthEnum bitdepth,
                              const std::string& pluginID)
 : CacheEntryKeyBase(pluginID)
 , _imp(new ImageCacheKeyPrivate())
 {
     _imp->data.nodeTimeViewVariantHash = nodeTimeViewVariantHash;
-    _imp->data.layerChannelID = layerChannelID;
+    _imp->data.layerIDHash = layerIDHash;
     _imp->data.proxyScale = scale;
-    _imp->data.mipMapLevel = mipMapLevel;
     _imp->data.draftMode = draftMode;
-    _imp->data.bitdepth = bitdepth;
 }
 
 ImageCacheKey::ImageCacheKey()
@@ -108,14 +100,12 @@ ImageCacheKey::getUniqueID() const
 void
 ImageCacheKey::appendToHash(Hash64* hash) const
 {
-    std::vector<U64> elements(11);
+    std::vector<U64> elements(6);
     elements[0] = Hash64::toU64(_imp->data.nodeTimeViewVariantHash);
-    elements[1] = Hash64::toU64(_imp->data.layerChannelID);
+    elements[1] = Hash64::toU64(_imp->data.layerIDHash);
     elements[2] = Hash64::toU64(_imp->data.proxyScale.x);
     elements[3] = Hash64::toU64(_imp->data.proxyScale.y);
-    elements[4] = Hash64::toU64(_imp->data.mipMapLevel);
     elements[5] = Hash64::toU64(_imp->data.draftMode);
-    elements[6] = Hash64::toU64((int)_imp->data.bitdepth);
     hash->insert(elements);
 }
 
@@ -126,22 +116,10 @@ ImageCacheKey::getProxyScale() const
     return _imp->data.proxyScale;
 }
 
-unsigned int
-ImageCacheKey::getMipMapLevel() const
-{
-    return _imp->data.mipMapLevel;
-}
-
 bool
 ImageCacheKey::isDraftMode() const
 {
     return _imp->data.draftMode;
-}
-
-ImageBitDepthEnum
-ImageCacheKey::getBitDepth() const
-{
-    return _imp->data.bitdepth;
 }
 
 
@@ -155,12 +133,7 @@ ImageCacheKey::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentType
     }
     objectPointers->push_back(segment->get_handle_from_address(data));
 
-    data->nodeTimeViewVariantHash = _imp->data.nodeTimeViewVariantHash;
-    data->proxyScale = _imp->data.proxyScale;
-    data->mipMapLevel = _imp->data.mipMapLevel;
-    data->draftMode = _imp->data.draftMode;
-    data->bitdepth = _imp->data.bitdepth;
-    data->layerChannelID = _imp->data.layerChannelID;
+    *data = _imp->data;
 }
 
 
@@ -175,12 +148,7 @@ ImageCacheKey::fromMemorySegment(ExternalSegmentType* segment,
     ImageCacheKeyShmData* data = (ImageCacheKeyShmData*)segment->get_address_from_handle(*start);
     ++start;
 
-    _imp->data.nodeTimeViewVariantHash = data->nodeTimeViewVariantHash;
-    _imp->data.proxyScale = data->proxyScale;
-    _imp->data.mipMapLevel = data->mipMapLevel;
-    _imp->data.draftMode = data->draftMode;
-    _imp->data.bitdepth = data->bitdepth;
-    _imp->data.layerChannelID = data->layerChannelID;
+    _imp->data = *data;
     
 }
 

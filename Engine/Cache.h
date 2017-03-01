@@ -70,6 +70,10 @@
 #define NATRON_CACHE_DIRECTORY_NAME "Cache"
 
 
+// When defined, the cache will never be persistent
+//#define NATRON_CACHE_NEVER_PERSISTENT
+
+
 NATRON_NAMESPACE_ENTER;
 
 
@@ -252,43 +256,47 @@ public:
     CacheEntryLockerPtr get(const CacheEntryBasePtr& entry) const;
 
     /**
-     * @brief Try to obtain numTiles free tiles from the internal storage. If not available, grow the internal memory mapped file
+     * @brief This function serves 2 purposes: either fetch existing tiles from the cache or allocate new ones, or both at the same time.
+     * This function tries to obtain numTilesToAlloc free tiles from the internal storage. If not available, grow the internal memory mapped file
      * so at least numTiles free tiles are available.
-     * @param tilesData[out] In output, this contains each tiles allocated as a pair of <tileIndex, pointer>
+     * @param allocatedTilesData[out] In output, this contains each tiles allocated as a pair of <tileIndex, pointer>
      * Each tile will have exactly NATRON_TILE_SIZE_BYTES bytes. The index is the index that must be passed back to the unLockTiles
      * and releaseTiles functions.
      *
-     * Note that to ensure that pointers are valid in output of this function, a mutex must be taken. Ensure that you call unLockTiles()
+     * @param tileIndices List of existing tile indices for which we want to retrieve a pointer to. In output they will be set to existingTilesData
+     *
+     * The memory pointers returned by this function are guaranteed to be valid until you call unLockTiles after which they may be invalid.
+     * To ensure the pointers are valid in output of this function, a mutex is taken internally by this function. Ensure that you call unLockTiles()
      * with the cacheData pointer returned from this function otherwise the program will deadlock.
+     *
+     * This function CANNOT be called in the implementation of CacheEntryBase::fromMemorySegment or CacheEntryBase::toMemorySegment otherwise this will
+     * deadlock.
+     *
      * @returns True upon success, false otherwise.
      * When returning false, you must still call unLockTiles, but do not have to call releaseTiles.
      * Note that unLockTiles must always be called before releaseTiles.
      **/
-    bool reserveAndLockTiles(const CacheEntryBasePtr& entry, std::size_t numTiles, std::vector<std::pair<int, void*> >* tilesData, void** cacheData);
+    bool retrieveAndLockTiles(const CacheEntryBasePtr& entry,
+                              const std::vector<int>& tileIndices,
+                              std::size_t numTilesToAlloc,
+                              std::vector<std::pair<int, void*> >* existingTilesData,
+                              std::vector<std::pair<int, void*> >* allocatedTilesData,
+                              void** cacheData);
 
     /**
-     * @brief Same as reserveAndLockTiles except that this function return pointer to existing (non-free) tiles.
-     **/
-    bool getTilesPointer(const CacheEntryBasePtr& entry, const std::vector<int>& tileIndices, std::vector<std::pair<int, void*> >* tilesData, void** cacheData);
-
-
-    /**
-     * @brief Free cache data allocated from a call to reserveAndLockTiles
+     * @brief Free cache data allocated from a call to retrieveAndLockTiles
+     * This function CANNOT be called in the implementation of CacheEntryBase::fromMemorySegment or CacheEntryBase::toMemorySegment otherwise this will
+     * deadlock.
      **/
     void unLockTiles(void* cacheData);
 
-
     /**
-     * @brief Release tiles that were reserved with reserveAndLockTiles: they are marked free so that they can be obtained again
+     * @brief Release tiles that were reserved with retrieveAndLockTiles(): This function will mark these
+     * tiles free so that they can be obtained again in a subsequent call to retrieveAndLockTiles().
+     * This function CANNOT be called in the implementation of CacheEntryBase::fromMemorySegment or CacheEntryBase::toMemorySegment otherwise this will
+     * deadlock.
      **/
     void releaseTiles(const CacheEntryBasePtr& entry, const std::vector<int>& tileIndices);
-
-    /**
-     * @brief Returns whether the entry pointer passed to
-     * the get function is not valid after the call to get(). The caller must then call
-     * locker->getProcessLocalEntry() to retrieve the correct entry
-     **/
-    static bool isCompiledWithCachePersistence();
 
     /**
      * @brief Returns whether a cache entry exists for the given hash.

@@ -181,9 +181,9 @@ StorageDeleterThread::run()
                 }
             }
             if (front) {
-                if (Cache::isCompiledWithCachePersistence()) {
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
                     front->deallocateMemory();
-                }
+#endif
             } else if (evictRequest > 0) {
                 appPTR->getGeneralPurposeCache()->evictLRUEntries(0);
                 appPTR->getTileCache()->evictLRUEntries(0);

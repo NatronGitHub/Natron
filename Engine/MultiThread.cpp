@@ -272,14 +272,62 @@ MultiThread::~MultiThread()
 }
 
 
-ActionRetCodeEnum
-MultiThread::launchThreads(ThreadFunctor func, unsigned int nThreads, void *customArg, const EffectInstancePtr& effect)
+struct MultiThreadFuturePrivate
 {
-    if (!func) {
-        return eActionStatusFailed;
+    boost::scoped_ptr<QFuture<ActionRetCodeEnum> > future;
+    ActionRetCodeEnum status;
+
+    MultiThreadFuturePrivate(ActionRetCodeEnum initialStatus)
+    : future()
+    , status(initialStatus)
+    {
+
+    }
+};
+
+MultiThreadFuture::MultiThreadFuture(ActionRetCodeEnum initialStatus)
+: _imp(new MultiThreadFuturePrivate(initialStatus))
+{
+
+}
+
+ActionRetCodeEnum
+MultiThreadFuture::waitForFinished()
+{
+    if (_imp->future) {
+        _imp->future->waitForFinished();
+
+        if (isFailureRetCode(_imp->status)) {
+            return _imp->status;
+        }
+        for (QFuture<ActionRetCodeEnum>::const_iterator it = _imp->future->begin(); it != _imp->future->end(); ++it) {
+            ActionRetCodeEnum stat = *it;
+            if (isFailureRetCode(stat)) {
+                return stat;
+            }
+        }
+        return _imp->status;
     }
 
-    unsigned int maxConcurrentThread = getNCPUsAvailable();
+
+}
+
+MultiThreadFuture::~MultiThreadFuture()
+{
+
+}
+
+
+MultiThreadFuturePtr
+MultiThread::launchThreadsInternal(MultiThread::ThreadFunctor func, unsigned int nThreads, void *customArg, const EffectInstancePtr& effect)
+{
+    MultiThreadFuturePtr ret(new MultiThreadFuture);
+    if (!func) {
+        ret->_imp->status = eActionStatusFailed;
+        return ret;
+    }
+
+    unsigned int maxConcurrentThread = MultiThread::getNCPUsAvailable();
 
 
     // from the documentation:
@@ -293,13 +341,16 @@ MultiThread::launchThreads(ThreadFunctor func, unsigned int nThreads, void *cust
             for (unsigned int i = 0; i < nThreads; ++i) {
                 ActionRetCodeEnum stat = func(i, nThreads, customArg);
                 if (isFailureRetCode(stat)) {
-                    return stat;
+                    ret->_imp->status = stat;
+                    return ret;
                 }
             }
 
-            return eActionStatusOK;
+            ret->_imp->status = eActionStatusOK;
+            return ret;
         } catch (...) {
-            return eActionStatusFailed;
+            ret->_imp->status = eActionStatusFailed;
+            return ret;
         }
     }
 
@@ -338,30 +389,21 @@ MultiThread::launchThreads(ThreadFunctor func, unsigned int nThreads, void *cust
         // DON'T set the maximum thread count: this is a global application setting, and see the documentation excerpt above
         // QThreadPool::globalInstance()->setMaxThreadCount(nThreads);
 
-        QFuture<ActionRetCodeEnum> future = QtConcurrent::mapped( threadIndexes, boost::bind(threadFunctionWrapper, imp, func, _1, nThreads, spawnerThread, effect, customArg) );
+        ret->_imp->future.reset(new QFuture<ActionRetCodeEnum>);
+        *ret->_imp->future = QtConcurrent::mapped( threadIndexes, boost::bind(threadFunctionWrapper, imp, func, _1, nThreads, spawnerThread, effect, customArg) );
 
         // Do one iteration in this thread
         if (isThreadPoolThread) {
             ActionRetCodeEnum stat = threadFunctionWrapper(imp, func, nThreads - 1, nThreads, spawnerThread, effect, customArg);
             if (isFailureRetCode(stat)) {
                 // This thread failed, wait for other threads and exit
-                future.waitForFinished();
-                return stat;
+                ret->_imp->status = stat;
+                ret->_imp->future->waitForFinished();
+                ret->_imp->future.reset();
+                return ret;
             }
         }
 
-        // Wait for other threads
-        future.waitForFinished();
-
-        // DON'T reset back to the original value the maximum thread count
-        // QThreadPool::globalInstance()->setMaxThreadCount(QThread::idealThreadCount());
-
-        for (QFuture<ActionRetCodeEnum>::const_iterator it = future.begin(); it != future.end(); ++it) {
-            ActionRetCodeEnum stat = *it;
-            if (isFailureRetCode(stat)) {
-                return stat;
-            }
-        }
 
     } else { // !useThreadPool
 
@@ -402,14 +444,27 @@ MultiThread::launchThreads(ThreadFunctor func, unsigned int nThreads, void *cust
         for (QVector<ActionRetCodeEnum>::const_iterator it = status.begin(); it != status.end(); ++it) {
             ActionRetCodeEnum stat = *it;
             if (isFailureRetCode(stat)) {
-                return stat;
+                ret->_imp->status = stat;
+                return ret;
             }
         }
     } // useThreadPool
 
-    return eActionStatusOK;
-} // multiThread
+    return ret;
+} // launchThreadsInternal
 
+ActionRetCodeEnum
+MultiThread::launchThreadsBlocking(ThreadFunctor func, unsigned int nThreads, void *customArg, const EffectInstancePtr& effect)
+{
+    MultiThreadFuturePtr ret = launchThreadsInternal(func, nThreads, customArg, effect);
+    return ret->waitForFinished();
+} // launchThreads
+
+MultiThreadFuturePtr
+MultiThread::launchThreadsNonBlocking(ThreadFunctor func, unsigned int nThreads, void *customArg, const EffectInstancePtr& effect)
+{
+    return launchThreadsInternal(func, nThreads, customArg, effect);
+} // launchThreadsNonBlocking
 
 unsigned int
 MultiThread::getNCPUsAvailable()
@@ -479,7 +534,7 @@ MultiThreadProcessorBase::staticMultiThreadFunction(unsigned int threadIndex,
 }
 
 ActionRetCodeEnum
-MultiThreadProcessorBase::launchThreads(unsigned int nCPUs)
+MultiThreadProcessorBase::launchThreadsBlocking(unsigned int nCPUs)
 {
     // if 0, use all the CPUs we can
     if (nCPUs == 0) {
@@ -491,8 +546,28 @@ MultiThreadProcessorBase::launchThreads(unsigned int nCPUs)
         return multiThreadFunction(0, 1);
     } else {
         // OK do it
-        ActionRetCodeEnum stat = MultiThread::launchThreads(staticMultiThreadFunction, nCPUs, (void*)this /*customArgs*/, _effect);
+        ActionRetCodeEnum stat = MultiThread::launchThreadsBlocking(staticMultiThreadFunction, nCPUs, (void*)this /*customArgs*/, _effect);
         return stat;
+    }
+}
+
+MultiThreadFuturePtr
+MultiThreadProcessorBase::launchThreadsNonBlocking(unsigned int nCPUs)
+{
+    // if 0, use all the CPUs we can
+    if (nCPUs == 0) {
+        nCPUs = MultiThread::getNCPUsAvailable();
+    }
+
+    // if 1 cpu, don't bother with the threading
+    if (nCPUs == 1) {
+        ActionRetCodeEnum stat = multiThreadFunction(0, 1);
+        MultiThreadFuturePtr ret(new MultiThreadFuture(stat));
+        return ret;
+    } else {
+        // OK do it
+        MultiThreadFuturePtr ret = MultiThread::launchThreadsNonBlocking(staticMultiThreadFunction, nCPUs, (void*)this /*customArgs*/, _effect);
+        return ret;
     }
 }
 
