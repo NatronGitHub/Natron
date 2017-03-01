@@ -671,9 +671,9 @@ void
 DockablePanel::onNodeScriptChanged(const QString& label)
 {
     if (_imp->_nameLineEdit) {
-        _imp->_nameLineEdit->setToolTip( QString::fromUtf8("<p>Script name: <br/><b><font size=4>") + label + QString::fromUtf8("</b></font></p>") );
+        _imp->_nameLineEdit->setToolTip( QString::fromUtf8("<p>%1<br /><b><font size=4>%2</b></font></p>").arg( tr("Script name:") ).arg(label) );
     } else if (_imp->_nameLabel) {
-        _imp->_nameLabel->setToolTip( QString::fromUtf8("<p>Script name: <br/><b><font size=4>") + label + QString::fromUtf8("</b></font></p>") );
+        _imp->_nameLabel->setToolTip( QString::fromUtf8("<p>%1<br /><b><font size=4>%2</b></font></p>").arg( tr("Script name:") ).arg(label) );
     }
 }
 
