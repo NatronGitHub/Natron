@@ -7,10 +7,15 @@
 
 ## Version 2.2.6
 
+- multi-dimensional parameters don't automatically fold into a single dimension, except for scale and size params.
+
 ### Plugins
 
-- Card3D can now import/export chan files from Natron, Nuke, 3D-Equalizer, Maya, Boujou, etc.
 - LensDistortion: add PanoTools/PTGui/PTAssembler/Hugin model.
+- Card3D can now import/export chan files from Natron, Nuke, 3D-Equalizer, Maya, Boujou, etc.
+- Card3D and CornerPin: only show things that are in front of the camera.
+- LensDistortion: add PanoTools/PTGui/PTAssembler/Hugin model.
+
 
 ## Version 2.2.5
 
