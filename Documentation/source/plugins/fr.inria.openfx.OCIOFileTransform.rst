@@ -24,6 +24,8 @@ Supported formats:
 
 .ccc (ColorCorrectionCollection)
 
+.cdl (ColorDecisionList)
+
 .cc (ColorCorrection)
 
 .csp (cinespace)
@@ -78,6 +80,7 @@ Controls
 |                                     |           |           | | .3dl (flame)                                                                                                                                                                       |
 |                                     |           |           | | .3dl (lustre)                                                                                                                                                                      |
 |                                     |           |           | | .ccc (ColorCorrectionCollection)                                                                                                                                                   |
+|                                     |           |           | | .cdl (ColorDecisionList)                                                                                                                                                           |
 |                                     |           |           | | .cc (ColorCorrection)                                                                                                                                                              |
 |                                     |           |           | | .csp (cinespace)                                                                                                                                                                   |
 |                                     |           |           | | .lut (houdini)                                                                                                                                                                     |
