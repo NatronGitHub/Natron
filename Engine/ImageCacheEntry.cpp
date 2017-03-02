@@ -371,91 +371,6 @@ static void copyPixelsForDepth(const RectI& renderWindow,
     }
 }
 
-
-template <bool copyToCache>
-class CachePixelsTransferProcessor : public MultiThreadProcessorBase
-{
-
-    std::vector<boost::shared_ptr<TileData> > _tasks;
-    Image::CPUData _localBuffer;
-
-public:
-
-    CachePixelsTransferProcessor(const EffectInstancePtr& renderClone)
-    : MultiThreadProcessorBase(renderClone)
-    , _tasks()
-    , _localBuffer()
-    {
-
-    }
-
-    virtual ~CachePixelsTransferProcessor()
-    {
-    }
-
-    void setValues(const Image::CPUData& localBuffer,
-                   const std::vector<boost::shared_ptr<TileData> >& tasks)
-    {
-        _localBuffer = localBuffer;
-        _tasks = tasks;
-    }
-
-
-    virtual ActionRetCodeEnum multiThreadFunction(unsigned int threadID,
-                                                  unsigned int nThreads) OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-
-        int fromIndex, toIndex;
-        ImageMultiThreadProcessorBase::getThreadRange(threadID, nThreads, 0, _tasks.size(), &fromIndex, &toIndex);
-        for (int i = fromIndex; i < toIndex; ++i) {
-
-            const TileData& task = *_tasks[i];
-
-            RectI renderWindow = _localBuffer.bounds;
-            task.bounds.intersect(_localBuffer.bounds, &renderWindow);
-
-            if (copyToCache) {
-                copyPixels(renderWindow, _localBuffer.bitDepth, _localBuffer.ptrs[task.channel_i], _localBuffer.nComps, _localBuffer.bounds.width() * _localBuffer.nComps, task.ptr, 1, task.bounds.width());
-            } else {
-                copyPixels(renderWindow, _localBuffer.bitDepth, task.ptr, 1, task.bounds.width(), _localBuffer.ptrs[task.channel_i], _localBuffer.nComps, _localBuffer.bounds.width() * _localBuffer.nComps);
-            }
-
-        }
-        return eActionStatusOK;
-    } // multiThreadFunction
-};
-
-typedef CachePixelsTransferProcessor<true> ToCachePixelsTransferProcessor;
-typedef CachePixelsTransferProcessor<false> FromCachePixelsTransferProcessor;
-
-template <typename PIX>
-PIX* getPix(PIX* ptr,
-            int x, int y,
-            const RectI& bounds)
-{
-    if (x < bounds.x1 || x >= bounds.x2 || y < bounds.y1 || y >= bounds.y2) {
-        return 0;
-    }
-    return ptr + bounds.width() * y + x;
-}
-
-template <typename PIX>
-static void fillWithConstant(PIX val,
-                             PIX* ptr,
-                             const RectI& roi,
-                             const RectI& bounds)
-{
-
-    PIX* pix = getPix(ptr, roi.x1, roi.y1);
-    for (int y = roi.y1; y < roi.y2; ++y) {
-        for (int x = roi.x1; x < roi.x2; ++x) {
-            *pix = val;
-            ++pix;
-        }
-        pix += (bounds.width() - roi.width());
-    }
-}
-
 /**
  * @brief Returns true if the rectangle "bounds" is aligned to the tile size or not
  **/
@@ -475,14 +390,14 @@ static bool isTileAligned(const RectI& bounds,
 /**
  * @brief If the tile bounds is not aligned to the tile size, repeat pixels on the edge.
  * This function fills the numbered rectangles with the nearest pixel V as such:
-
+ 
  12223
  4VVV5
  4VVV5
  67778
  **/
 template <typename PIX>
-static void repeatEdges(PIX* ptr,
+static void repeatEdgesForDepth(PIX* ptr,
                         const RectI& bounds,
                         int tileSizeX,
                         int tileSizeY)
@@ -493,10 +408,10 @@ static void repeatEdges(PIX* ptr,
            bounds.y2 % tileSizeY);
     assert(bounds.width() <= tileSizeX);
     assert(bounds.height() <= tileSizeY);
-
+    
     RectI roundedBounds = bounds;
     roundedBounds.roundToTileSize(tileSizeX, tileSizeY);
-
+    
     {
         // 1
         RectI roi(roundedBounds.x1, bounds.y2, bounds.x1, roundedBounds.y2);
@@ -509,9 +424,9 @@ static void repeatEdges(PIX* ptr,
         // 2
         RectI roi(bounds.x1, bounds.y2, roundedBounds.x2, roundedBounds.y2);
         if (!roi.isNull()) {
-
+            
             PIX* origPix = getPix(ptr, bounds.x1, bounds.y2 - 1, roundedBounds);
-
+            
             PIX* pix = getPix(ptr, roi.x1, roi.y1);
             for (int y = roi.y1; y < roi.y2; ++y) {
                 PIX* srcPix = origPix;
@@ -577,9 +492,9 @@ static void repeatEdges(PIX* ptr,
         // 7
         RectI roi(bounds.x1, roundedBounds.y1, bounds.x2, bounds.y1);
         if (!roi.isNull()) {
-
+            
             PIX* origPix = getPix(ptr, bounds.x1, bounds.y1, roundedBounds);
-
+            
             PIX* pix = getPix(ptr, roi.x1, roi.y1);
             for (int y = roi.y1; y < roi.y2; ++y) {
                 PIX* srcPix = origPix;
@@ -601,8 +516,127 @@ static void repeatEdges(PIX* ptr,
             fillWithConstant(val, ptr, roi, roundedBounds);
         }
     }
+    
+} // repeatEdgesForDepth
 
+static void repeatEdges(ImageBitDepthEnum depth,
+                        void* ptr,
+                        const RectI& bounds,
+                        int tileSizeX,
+                        int tileSizeY)
+{
+    switch (depth) {
+        case eImageBitDepthByte:
+            repeatEdgesForDepth<char>((char*)ptr, bounds, tileSizeX, tileSizeY);
+            break;
+        case eImageBitDepthShort:
+            repeatEdgesForDepth<unsigned short>((unsigned short*)ptr, bounds, tileSizeX, tileSizeY);
+            break;
+        case eImageBitDepthFloat:
+            repeatEdgesForDepth<float>((float*)ptr, bounds, tileSizeX, tileSizeY);
+            break;
+        default:
+            break;
+    }
 } // repeatEdges
+
+template <bool copyToCache>
+class CachePixelsTransferProcessor : public MultiThreadProcessorBase
+{
+
+    std::vector<boost::shared_ptr<TileData> > _tasks;
+    Image::CPUData _localBuffer;
+    int _tileSizeX;
+    int _tileSizeY;
+public:
+
+    CachePixelsTransferProcessor(const EffectInstancePtr& renderClone)
+    : MultiThreadProcessorBase(renderClone)
+    , _tasks()
+    , _localBuffer()
+    , _tileSizeX(-1)
+    , _tileSizeY(-1)
+    {
+
+    }
+
+    virtual ~CachePixelsTransferProcessor()
+    {
+    }
+
+    void setValues(const Image::CPUData& localBuffer,
+                   int tileSizeX,
+                   int tileSizeY,
+                   const std::vector<boost::shared_ptr<TileData> >& tasks)
+    {
+        _localBuffer = localBuffer;
+        _tasks = tasks;
+        _tileSizeX = tileSizeX;
+        _tileSizeY = tileSizeY;
+    }
+
+
+    virtual ActionRetCodeEnum multiThreadFunction(unsigned int threadID,
+                                                  unsigned int nThreads) OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+
+        int fromIndex, toIndex;
+        ImageMultiThreadProcessorBase::getThreadRange(threadID, nThreads, 0, _tasks.size(), &fromIndex, &toIndex);
+        for (int i = fromIndex; i < toIndex; ++i) {
+
+            const TileData& task = *_tasks[i];
+
+            RectI renderWindow = _localBuffer.bounds;
+            task.bounds.intersect(_localBuffer.bounds, &renderWindow);
+
+            if (copyToCache) {
+                copyPixels(renderWindow, _localBuffer.bitDepth, _localBuffer.ptrs[task.channel_i], _localBuffer.nComps, _localBuffer.bounds.width() * _localBuffer.nComps, task.ptr, 1, task.bounds.width());
+                
+                // When inserting a tile in the cache, if this is a tile in the border, repeat edges
+                if (!isTileAligned(task.bounds, _tileSizeX, _tileSizeY)) {
+                    repeatEdges(_localBuffer.bitDepth, task.ptr, task.bounds, _tileSizeX, _tileSizeY);
+                }
+            } else {
+                copyPixels(renderWindow, _localBuffer.bitDepth, task.ptr, 1, task.bounds.width(), _localBuffer.ptrs[task.channel_i], _localBuffer.nComps, _localBuffer.bounds.width() * _localBuffer.nComps);
+            }
+
+        }
+        return eActionStatusOK;
+    } // multiThreadFunction
+};
+
+typedef CachePixelsTransferProcessor<true> ToCachePixelsTransferProcessor;
+typedef CachePixelsTransferProcessor<false> FromCachePixelsTransferProcessor;
+
+template <typename PIX>
+PIX* getPix(PIX* ptr,
+            int x, int y,
+            const RectI& bounds)
+{
+    if (x < bounds.x1 || x >= bounds.x2 || y < bounds.y1 || y >= bounds.y2) {
+        return 0;
+    }
+    return ptr + bounds.width() * y + x;
+}
+
+template <typename PIX>
+static void fillWithConstant(PIX val,
+                             PIX* ptr,
+                             const RectI& roi,
+                             const RectI& bounds)
+{
+
+    PIX* pix = getPix(ptr, roi.x1, roi.y1);
+    for (int y = roi.y1; y < roi.y2; ++y) {
+        for (int x = roi.x1; x < roi.x2; ++x) {
+            *pix = val;
+            ++pix;
+        }
+        pix += (bounds.width() - roi.width());
+    }
+}
+
+
 
 template <typename PIX>
 static void downscaleMipMapForDepth(const PIX* srcTilesPtr[4],
@@ -644,8 +678,8 @@ static void downscaleMipMapForDepth(const PIX* srcTilesPtr[4],
         }
     }
 
-    if (isTileAligned(dstTileBounds, tileSizeX, tileSizeY)) {
-        repeatEdges(dstTilePtr, dstTileBounds, tileSizeX, tileSizeY);
+    if (!isTileAligned(dstTileBounds, tileSizeX, tileSizeY)) {
+        repeatEdgesForDepth<PIX>(dstTilePtr, dstTileBounds, tileSizeX, tileSizeY);
     }
 
 } // downscaleMipMapForDepth
@@ -1133,7 +1167,7 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
     
     // Finally copy over multiple threads each tile
     FromCachePixelsTransferProcessor processor(effect);
-    processor.setValues(localData, tilesToCopy);
+    processor.setValues(localData, state.tileSizeX, state.tileSizeY, tilesToCopy);
     ActionRetCodeEnum stat = processor.launchThreadsBlocking();
     (void)stat;
 
@@ -1358,7 +1392,7 @@ ImageCacheEntry::markCacheTilesAsRendered()
 
     // Finally copy over multiple threads each tile
     ToCachePixelsTransferProcessor processor(_imp->effect);
-    processor.setValues(_imp->localData, tilesToCopy);
+    processor.setValues(_imp->localData, _imp->state.tileSizeX, _imp->state.tileSizeY, tilesToCopy);
     ActionRetCodeEnum stat = processor.launchThreadsBlocking();
     (void)stat;
 
@@ -1367,6 +1401,12 @@ ImageCacheEntry::markCacheTilesAsRendered()
     _imp->updateCachedTilesStateMap();
 #endif // NATRON_CACHE_NEVER_PERSISTENT
 } // markCacheTilesAsRendered
+
+void
+ImageCacheEntry::waitForPendingTiles()
+{
+    
+} // waitForPendingTiles
 
 #ifndef NATRON_CACHE_NEVER_PERSISTENT
 
