@@ -995,11 +995,11 @@ Project::initializeKnobs()
         // No need to save it, just use it for Gui purpose, this is saved as a separate field anyway
         param->setIsPersistent(false);
         param->setDefaultValue( generateUserFriendlyNatronVersionName() );
-        param = param;
         infoPage->addKnob(param);
+	_imp->natronVersion = param;
     }
-    std::string authorName = generateGUIUserName();
 
+    std::string authorName = generateGUIUserName();
     {
         KnobStringPtr param = createKnob<KnobString>( "originalAuthor");
         param->setLabel(tr("Original Author"));
@@ -1019,8 +1019,8 @@ Project::initializeKnobs()
         param->setEvaluateOnChange(false);
         param->setAnimationEnabled(false);
         param->setValue(authorName);
-        _imp->lastAuthorName = param;
         infoPage->addKnob(param);
+	_imp->lastAuthorName = param;
     }
     {
         KnobStringPtr param = createKnob<KnobString>("creationDate");
@@ -1030,8 +1030,8 @@ Project::initializeKnobs()
         param->setEvaluateOnChange(false);
         param->setAnimationEnabled(false);
         param->setValue( QDateTime::currentDateTime().toString().toStdString() );
-        param = param;
         infoPage->addKnob(param);
+        _imp->projectCreationDate = param;
     }
     {
         KnobStringPtr param = createKnob<KnobString>("lastSaveDate");
@@ -1040,8 +1040,8 @@ Project::initializeKnobs()
         param->setEnabled(false);
         param->setEvaluateOnChange(false);
         param->setAnimationEnabled(false);
-        _imp->saveDate = _imp->saveDate;
         infoPage->addKnob(param);
+        _imp->saveDate = param;
     }
     {
         KnobStringPtr param = createKnob<KnobString>("comments");
@@ -1055,7 +1055,6 @@ Project::initializeKnobs()
     KnobPagePtr pythonPage = createKnob<KnobPage>("pythonPage");
     pythonPage->setLabel(tr("Python"));
     {
-
         KnobStringPtr param = createKnob<KnobString>("afterProjectLoad");
         param->setLabel(tr("After Project Loaded"));
         param->setName("afterProjectLoad");
