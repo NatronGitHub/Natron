@@ -66,11 +66,10 @@ static void
 transformToOpenGLMatrix(const Transform::Matrix3x3& mat,
                         GLdouble* oglMat)
 {
-    int s = mat.i > 0 ? 1 : -1;
-    oglMat[0] = mat.a * s; oglMat[4] = mat.b * s; oglMat[8]  = 0; oglMat[12] = mat.c * s;
-    oglMat[1] = mat.d * s; oglMat[5] = mat.e * s; oglMat[9]  = 0; oglMat[13] = mat.f * s;
-    oglMat[2] = 0;     oglMat[6] = 0;     oglMat[10] = 0; oglMat[14] = 0;
-    oglMat[3] = mat.g * s; oglMat[7] = mat.h * s; oglMat[11] = 0; oglMat[15] = mat.i * s;
+    oglMat[0] = mat.a; oglMat[4] = mat.b; oglMat[8]  = 0; oglMat[12] = mat.c;
+    oglMat[1] = mat.d; oglMat[5] = mat.e; oglMat[9]  = 0; oglMat[13] = mat.f;
+    oglMat[2] = 0;     oglMat[6] = 0;     oglMat[10] = 1; oglMat[14] = 0;
+    oglMat[3] = mat.g; oglMat[7] = mat.h; oglMat[11] = 0; oglMat[15] = mat.i;
 }
 
 #endif
