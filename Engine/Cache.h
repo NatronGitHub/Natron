@@ -264,6 +264,7 @@ public:
      * and releaseTiles functions.
      *
      * @param tileIndices List of existing tile indices for which we want to retrieve a pointer to. In output they will be set to existingTilesData
+     * Note that the pointers returned in existingTilesData will be in the same order as the indices passed by tileIndices.
      *
      * The memory pointers returned by this function are guaranteed to be valid until you call unLockTiles after which they may be invalid.
      * To ensure the pointers are valid in output of this function, a mutex is taken internally by this function. Ensure that you call unLockTiles()
@@ -277,9 +278,9 @@ public:
      * Note that unLockTiles must always be called before releaseTiles.
      **/
     bool retrieveAndLockTiles(const CacheEntryBasePtr& entry,
-                              const std::vector<int>& tileIndices,
+                              const std::vector<int>* tileIndices,
                               std::size_t numTilesToAlloc,
-                              std::vector<std::pair<int, void*> >* existingTilesData,
+                              std::vector<void*>* existingTilesData,
                               std::vector<std::pair<int, void*> >* allocatedTilesData,
                               void** cacheData);
 
@@ -287,16 +288,10 @@ public:
      * @brief Free cache data allocated from a call to retrieveAndLockTiles
      * This function CANNOT be called in the implementation of CacheEntryBase::fromMemorySegment or CacheEntryBase::toMemorySegment otherwise this will
      * deadlock.
+     * Note this function does not free the memory allocated for the tiles, it just cleans up the mutex taken in retrieveAndLockTiles().
+     * The memory will be freed when the cache entry is removed from the cache.
      **/
     void unLockTiles(void* cacheData);
-
-    /**
-     * @brief Release tiles that were reserved with retrieveAndLockTiles(): This function will mark these
-     * tiles free so that they can be obtained again in a subsequent call to retrieveAndLockTiles().
-     * This function CANNOT be called in the implementation of CacheEntryBase::fromMemorySegment or CacheEntryBase::toMemorySegment otherwise this will
-     * deadlock.
-     **/
-    void releaseTiles(const CacheEntryBasePtr& entry, const std::vector<int>& tileIndices);
 
     /**
      * @brief Returns whether a cache entry exists for the given hash.

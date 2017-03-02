@@ -30,88 +30,79 @@
 NATRON_NAMESPACE_ENTER;
 
 
-struct ImageTilesStatePrivate
+
+TileStateMap::TileStateMap()
+: tileSizeX(0)
+, tileSizeY(0)
+, bounds()
+, boundsRoundedToTileSize()
+, tiles(0)
 {
-    TileStateMap stateMap;
-    RectI originalBounds, boundsRoundedToTileSize;
-    int tileSizeX;
-    int tileSizeY;
-    
-    ImageTilesStatePrivate(const RectI& originalBounds, int tileSizeX, int tileSizeY)
-    : stateMap()
-    , originalBounds(originalBounds)
-    , boundsRoundedToTileSize(originalBounds)
-    , tileSizeX(tileSizeX)
-    , tileSizeY(tileSizeY)
-    {
-        boundsRoundedToTileSize.roundToTileSize(tileSizeX, tileSizeY);
 
-        for (int ty = boundsRoundedToTileSize.y1; ty < boundsRoundedToTileSize.y2; ty += tileSizeY) {
-            for (int tx = boundsRoundedToTileSize.x1; tx < boundsRoundedToTileSize.x2; tx += tileSizeX) {
-                assert(tx % tileSizeX == 0 && ty % tileSizeY == 0);
+}
 
-                TileCoord c = {tx, ty};
-                TileState s;
-                s.bounds.x1 = std::max(c.tx, originalBounds.x1);
-                s.bounds.y1 = std::max(c.ty, originalBounds.y1);
-                s.bounds.x2 = std::min(c.tx + tileSizeX, originalBounds.x2);
-                s.bounds.y2 = std::min(c.ty + tileSizeY, originalBounds.y2);
+TileStateMap::TileStateMap(int tileSizeX, int tileSizeY, const RectI& bounds, TileStateVector* tiles)
+: tileSizeX(tileSizeX)
+, tileSizeY(tileSizeY)
+, bounds(bounds)
+, boundsRoundedToTileSize(bounds)
+, tiles(tiles)
+{
+    boundsRoundedToTileSize.roundToTileSize(tileSizeX, tileSizeY);
+    assert(tiles->empty() || ((int)tiles->size() == ((boundsRoundedToTileSize.width() / tileSizeX) * (boundsRoundedToTileSize.height() / tileSizeY))));
+}
 
-                stateMap.insert(std::make_pair(c, s));
-            }
+TileStateMap::~TileStateMap()
+{
+    delete tiles;
+}
+
+void
+TileStateMap::init(int tileSizeXParam, int tileSizeYParam, const RectI& roi)
+{
+    tileSizeX = tileSizeXParam;
+    tileSizeY = tileSizeYParam;
+    bounds = boundsRoundedToTileSize = roi;
+    boundsRoundedToTileSize.roundToTileSize(tileSizeX, tileSizeY);
+
+    if (tiles) {
+        delete tiles;
+    }
+    tiles = new TileStateVector;
+    tiles->resize((boundsRoundedToTileSize.width() / tileSizeX) * (boundsRoundedToTileSize.height() / tileSizeY));
+
+    int tile_i = 0;
+    for (int ty = boundsRoundedToTileSize.y1; ty < boundsRoundedToTileSize.y2; ty += tileSizeY) {
+        for (int tx = boundsRoundedToTileSize.x1; tx < boundsRoundedToTileSize.x2; tx += tileSizeX, ++tile_i) {
+
+            assert(tile_i < (int)tiles->size());
+
+            (*tiles)[tile_i].bounds.x1 = std::max(tx, bounds.x1);
+            (*tiles)[tile_i].bounds.y1 = std::max(ty, bounds.y1);
+            (*tiles)[tile_i].bounds.x2 = std::min(tx + tileSizeX, bounds.x2);
+            (*tiles)[tile_i].bounds.y2 = std::min(ty + tileSizeY, bounds.y2);
+            
         }
     }
-};
-
-ImageTilesState::ImageTilesState(const RectI& originalBounds, int tileSizeX, int tileSizeY)
-: _imp(new ImageTilesStatePrivate(originalBounds, tileSizeX, tileSizeY))
-{
 
 }
 
-ImageTilesState::~ImageTilesState()
+TileState*
+TileStateMap::getTileAt(int tx, int ty)
 {
-
+    assert(tx % tileSizeX == 0 && ty % tileSizeY == 0);
+    int index = (ty * boundsRoundedToTileSize.width() / tileSizeX) + tx * tileSizeX;
+    assert(index >= 0 && index < (int)tiles->size());
+    return &(*tiles)[index];
 }
 
-
-TileStateMap&
-ImageTilesState::getTilesMap()
+const TileState*
+TileStateMap::getTileAt(int tx, int ty) const
 {
-    return _imp->stateMap;
-}
-
-
-const TileStateMap&
-ImageTilesState::getTilesMap() const
-{
-    return _imp->stateMap;
-}
-
-void
-ImageTilesState::setTilesMap(const TileStateMap& tilesMap)
-{
-    assert(tilesMap.size() == _imp->stateMap.size());
-    _imp->stateMap = tilesMap;
-}
-
-const RectI&
-ImageTilesState::getOriginalBounds() const
-{
-    return _imp->originalBounds;
-}
-
-const RectI&
-ImageTilesState::getBoundsRoundedToTileSize() const
-{
-    return _imp->boundsRoundedToTileSize;
-}
-
-void
-ImageTilesState::getTileSize(int* tileSizeX, int* tileSizeY) const
-{
-    *tileSizeX = _imp->tileSizeX;
-    *tileSizeY = _imp->tileSizeY;
+    assert(tx % tileSizeX == 0 && ty % tileSizeY == 0);
+    int index = (ty * boundsRoundedToTileSize.width() / tileSizeX) + tx * tileSizeX;
+    assert(index >= 0 && index < (int)tiles->size());
+    return &(*tiles)[index];
 }
 
 void
@@ -151,82 +142,53 @@ ImageTilesState::getABCDRectangles(const RectI& srcBounds, const RectI& biggerBo
 
 } // getABCDRectangles
 
-static void getImageBoundsFromTilesState(const TileStateMap& tiles, int tileSizeX, int tileSizeY,
-                                         RectI& imageBoundsRoundedToTileSize,
-                                         RectI& imageBoundsNotRounded)
-{
-    {
-        TileStateMap::const_iterator bottomLeft = tiles.begin();
-        TileStateMap::const_reverse_iterator topRight = tiles.rbegin();
-        imageBoundsRoundedToTileSize.x1 = bottomLeft->first.tx;
-        imageBoundsRoundedToTileSize.y1 = bottomLeft->first.ty;
-        imageBoundsRoundedToTileSize.x2 = topRight->first.tx + tileSizeX;
-        imageBoundsRoundedToTileSize.y2 = topRight->first.ty + tileSizeY;
-
-        imageBoundsNotRounded.x1 = bottomLeft->second.bounds.x1;
-        imageBoundsNotRounded.y1 = bottomLeft->second.bounds.y1;
-        imageBoundsNotRounded.x2 = topRight->second.bounds.x2;
-        imageBoundsNotRounded.y2 = topRight->second.bounds.y2;
-    }
-
-    assert(imageBoundsRoundedToTileSize.x1 % tileSizeX == 0);
-    assert(imageBoundsRoundedToTileSize.y1 % tileSizeY == 0);
-    assert(imageBoundsRoundedToTileSize.x2 % tileSizeX == 0);
-    assert(imageBoundsRoundedToTileSize.y2 % tileSizeY == 0);
-}
-
-
 RectI
-ImageTilesState::getMinimalBboxToRenderFromTilesState(const RectI& roi, int tileSizeX, int tileSizeY)
+ImageTilesState::getMinimalBboxToRenderFromTilesState(const RectI& roi, const TileStateMap& stateMap)
 {
 
-    if (_imp->stateMap.empty()) {
+    if (stateMap.tiles.empty()) {
         return RectI();
     }
 
-    RectI imageBoundsRoundedToTileSize;
-    RectI imageBoundsNotRounded;
-    getImageBoundsFromTilesState(_imp->stateMap, tileSizeX, tileSizeY, imageBoundsRoundedToTileSize, imageBoundsNotRounded);
+    const RectI& imageBoundsRoundedToTileSize = stateMap.boundsRoundedToTileSize;
+    const RectI& imageBoundsNotRounded = stateMap.bounds;
+
     assert(imageBoundsRoundedToTileSize.contains(roi));
 
     RectI roiRoundedToTileSize = roi;
-    roiRoundedToTileSize.roundToTileSize(tileSizeX, tileSizeY);
+    roiRoundedToTileSize.roundToTileSize(stateMap.tileSizeX, stateMap.tileSizeY);
 
     // Search for rendered lines from bottom to top
-    for (int y = roiRoundedToTileSize.y1; y < roiRoundedToTileSize.y2; y += tileSizeY) {
+    for (int y = roiRoundedToTileSize.y1; y < roiRoundedToTileSize.y2; y += stateMap.tileSizeY) {
 
         bool hasTileUnrenderedOnLine = false;
-        for (int x = roiRoundedToTileSize.x1; x < roiRoundedToTileSize.x2; x += tileSizeX) {
+        for (int x = roiRoundedToTileSize.x1; x < roiRoundedToTileSize.x2; x += stateMap.tileSizeX) {
 
-            TileCoord c = {x, y};
-            TileStateMap::const_iterator foundTile = _imp->stateMap.find(c);
-            assert(foundTile != _imp->stateMap.end());
-            if (foundTile->second.status == eTileStatusNotRendered) {
+            const TileState* tile = stateMap.getTileAt(x, y);
+            if (tile->status == eTileStatusNotRendered) {
                 hasTileUnrenderedOnLine = true;
                 break;
             }
         }
         if (!hasTileUnrenderedOnLine) {
-            roiRoundedToTileSize.y1 += tileSizeY;
+            roiRoundedToTileSize.y1 += stateMap.tileSizeY;
         }
     }
 
     // Search for rendered lines from top to bottom
-    for (int y = roiRoundedToTileSize.y2 - tileSizeY; y >= roiRoundedToTileSize.y1; y -= tileSizeY) {
+    for (int y = roiRoundedToTileSize.y2 - stateMap.tileSizeY; y >= roiRoundedToTileSize.y1; y -= stateMap.tileSizeY) {
 
         bool hasTileUnrenderedOnLine = false;
-        for (int x = roiRoundedToTileSize.x1; x < roiRoundedToTileSize.x2; x += tileSizeX) {
+        for (int x = roiRoundedToTileSize.x1; x < roiRoundedToTileSize.x2; x += stateMap.tileSizeX) {
 
-            TileCoord c = {x, y};
-            TileStateMap::const_iterator foundTile = _imp->stateMap.find(c);
-            assert(foundTile != _imp->stateMap.end());
-            if (foundTile->second.status == eTileStatusNotRendered) {
+            const TileState* tile = stateMap.getTileAt(x, y);
+            if (tile->status == eTileStatusNotRendered) {
                 hasTileUnrenderedOnLine = true;
                 break;
             }
         }
         if (!hasTileUnrenderedOnLine) {
-            roiRoundedToTileSize.y2 -= tileSizeY;
+            roiRoundedToTileSize.y2 -= stateMap.tileSizeY;
         }
     }
 
@@ -237,21 +199,19 @@ ImageTilesState::getMinimalBboxToRenderFromTilesState(const RectI& roi, int tile
 
 
     // Search for rendered columns from left to right
-    for (int x = roiRoundedToTileSize.x1; x < roiRoundedToTileSize.x2; x += tileSizeX) {
+    for (int x = roiRoundedToTileSize.x1; x < roiRoundedToTileSize.x2; x += stateMap.tileSizeX) {
 
         bool hasTileUnrenderedOnCol = false;
-        for (int y = roiRoundedToTileSize.y1; y < roiRoundedToTileSize.y2; y += tileSizeY) {
+        for (int y = roiRoundedToTileSize.y1; y < roiRoundedToTileSize.y2; y += stateMap.tileSizeY) {
 
-            TileCoord c = {x, y};
-            TileStateMap::const_iterator foundTile = _imp->stateMap.find(c);
-            assert(foundTile != _imp->stateMap.end());
-            if (foundTile->second.status == eTileStatusNotRendered) {
+            const TileState* tile = stateMap.getTileAt(x, y);
+            if (tile->status == eTileStatusNotRendered) {
                 hasTileUnrenderedOnCol = true;
                 break;
             }
         }
         if (!hasTileUnrenderedOnCol) {
-            roiRoundedToTileSize.x1 += tileSizeX;
+            roiRoundedToTileSize.x1 += stateMap.tileSizeX;
         }
     }
 
@@ -261,21 +221,19 @@ ImageTilesState::getMinimalBboxToRenderFromTilesState(const RectI& roi, int tile
     }
 
     // Search for rendered columns from right to left
-    for (int x = roiRoundedToTileSize.x2 - tileSizeX; x >= roiRoundedToTileSize.x1; x -= tileSizeX) {
+    for (int x = roiRoundedToTileSize.x2 - stateMap.tileSizeX; x >= roiRoundedToTileSize.x1; x -= stateMap.tileSizeX) {
 
         bool hasTileUnrenderedOnCol = false;
-        for (int y = roiRoundedToTileSize.y1; y < roiRoundedToTileSize.y2; y += tileSizeY) {
+        for (int y = roiRoundedToTileSize.y1; y < roiRoundedToTileSize.y2; y += stateMap.tileSizeY) {
 
-            TileCoord c = {x, y};
-            TileStateMap::const_iterator foundTile = _imp->stateMap.find(c);
-            assert(foundTile != _imp->stateMap.end());
-            if (foundTile->second.status == eTileStatusNotRendered) {
+            const TileState* tile = stateMap.getTileAt(x, y);
+            if (tile->status == eTileStatusNotRendered) {
                 hasTileUnrenderedOnCol = true;
                 break;
             }
         }
         if (!hasTileUnrenderedOnCol) {
-            roiRoundedToTileSize.x2 -= tileSizeX;
+            roiRoundedToTileSize.x2 -= stateMap.tileSizeX;
         }
     }
 
@@ -288,21 +246,21 @@ ImageTilesState::getMinimalBboxToRenderFromTilesState(const RectI& roi, int tile
 } // getMinimalBboxToRenderFromTilesState
 
 void
-ImageTilesState::getMinimalRectsToRenderFromTilesState(const RectI& roi, int tileSizeX, int tileSizeY, std::list<RectI>* rectsToRender)
+ImageTilesState::getMinimalRectsToRenderFromTilesState(const RectI& roi, const TileStateMap& stateMap, std::list<RectI>* rectsToRender)
 {
-    if (_imp->stateMap.empty()) {
+    if (stateMap.tiles.empty()) {
         return;
     }
 
     RectI roiRoundedToTileSize = roi;
-    roiRoundedToTileSize.roundToTileSize(tileSizeX, tileSizeY);
+    roiRoundedToTileSize.roundToTileSize(stateMap.tileSizeX, stateMap.tileSizeY);
 
-    RectI bboxM = getMinimalBboxToRenderFromTilesState(roi, tileSizeX, tileSizeY);
+    RectI bboxM = getMinimalBboxToRenderFromTilesState(roi, stateMap);
     if (bboxM.isNull()) {
         return;
     }
 
-    bboxM.roundToTileSize(tileSizeX, tileSizeY);
+    bboxM.roundToTileSize(stateMap.tileSizeX, stateMap.tileSizeY);
 
     // optimization by Fred, Jan 31, 2014
     //
@@ -330,13 +288,11 @@ ImageTilesState::getMinimalRectsToRenderFromTilesState(const RectI& roi, int til
     RectI bboxX = bboxM;
     RectI bboxA = bboxX;
     bboxA.y2 = bboxA.y1;
-    for (int y = bboxX.y1; y < bboxX.y2; y += tileSizeY) {
+    for (int y = bboxX.y1; y < bboxX.y2; y += stateMap.tileSizeY) {
         bool hasRenderedTileOnLine = false;
-        for (int x = bboxX.x1; x < bboxX.x2; x += tileSizeX) {
-            TileCoord c = {x, y};
-            TileStateMap::const_iterator foundTile = _imp->stateMap.find(c);
-            assert(foundTile != _imp->stateMap.end());
-            if (foundTile->second.status != eTileStatusNotRendered) {
+        for (int x = bboxX.x1; x < bboxX.x2; x += stateMap.tileSizeX) {
+            const TileState* tile = stateMap.getTileAt(x, y);
+            if (tile->status != eTileStatusNotRendered) {
                 hasRenderedTileOnLine = true;
                 break;
             }
@@ -344,7 +300,7 @@ ImageTilesState::getMinimalRectsToRenderFromTilesState(const RectI& roi, int til
         if (hasRenderedTileOnLine) {
             break;
         } else {
-            bboxX.y1 += tileSizeY;
+            bboxX.y1 += stateMap.tileSizeY;
             bboxA.y2 = bboxX.y1;
         }
     }
@@ -360,13 +316,11 @@ ImageTilesState::getMinimalRectsToRenderFromTilesState(const RectI& roi, int til
     RectI bboxB = bboxX;
     bboxB.y1 = bboxB.y2;
 
-    for (int y = bboxX.y2 - tileSizeY; y >= bboxX.y1; y -= tileSizeY) {
+    for (int y = bboxX.y2 - stateMap.tileSizeY; y >= bboxX.y1; y -= stateMap.tileSizeY) {
         bool hasRenderedTileOnLine = false;
-        for (int x = bboxX.x1; x < bboxX.x2; x += tileSizeX) {
-            TileCoord c = {x, y};
-            TileStateMap::const_iterator foundTile = _imp->stateMap.find(c);
-            assert(foundTile != _imp->stateMap.end());
-            if (foundTile->second.status != eTileStatusNotRendered) {
+        for (int x = bboxX.x1; x < bboxX.x2; x += stateMap.tileSizeX) {
+            const TileState* tile = stateMap.getTileAt(x, y);
+            if (tile->status != eTileStatusNotRendered) {
                 hasRenderedTileOnLine = true;
                 break;
             }
@@ -374,7 +328,7 @@ ImageTilesState::getMinimalRectsToRenderFromTilesState(const RectI& roi, int til
         if (hasRenderedTileOnLine) {
             break;
         } else {
-            bboxX.y2 -= tileSizeY;
+            bboxX.y2 -= stateMap.tileSizeY;
             bboxB.y1 = bboxX.y2;
         }
     }
@@ -390,13 +344,11 @@ ImageTilesState::getMinimalRectsToRenderFromTilesState(const RectI& roi, int til
     RectI bboxC = bboxX;
     bboxC.x2 = bboxC.x1;
     if ( bboxX.y1 < bboxX.y2 ) {
-        for (int x = bboxX.x1; x < bboxX.x2; x += tileSizeX) {
+        for (int x = bboxX.x1; x < bboxX.x2; x += stateMap.tileSizeX) {
             bool hasRenderedTileOnCol = false;
-            for (int y = bboxX.y1; y < bboxX.y2; y += tileSizeY) {
-                TileCoord c = {x, y};
-                TileStateMap::const_iterator foundTile = _imp->stateMap.find(c);
-                assert(foundTile != _imp->stateMap.end());
-                if (foundTile->second.status != eTileStatusNotRendered) {
+            for (int y = bboxX.y1; y < bboxX.y2; y += stateMap.tileSizeY) {
+                const TileState* tile = stateMap.getTileAt(x, y);
+                if (tile->status != eTileStatusNotRendered) {
                     hasRenderedTileOnCol = true;
                     break;
                 }
@@ -405,7 +357,7 @@ ImageTilesState::getMinimalRectsToRenderFromTilesState(const RectI& roi, int til
             if (hasRenderedTileOnCol) {
                 break;
             } else {
-                bboxX.x1 += tileSizeX;
+                bboxX.x1 += stateMap.tileSizeX;
                 bboxC.x2 = bboxX.x1;
             }
         }
@@ -421,13 +373,11 @@ ImageTilesState::getMinimalRectsToRenderFromTilesState(const RectI& roi, int til
     RectI bboxD = bboxX;
     bboxD.x1 = bboxD.x2;
     if ( bboxX.y1 < bboxX.y2 ) {
-        for (int x = bboxX.x2 - tileSizeX; x >= bboxX.x1; x -= tileSizeX) {
+        for (int x = bboxX.x2 - stateMap.tileSizeX; x >= bboxX.x1; x -= stateMap.tileSizeX) {
             bool hasRenderedTileOnCol = false;
-            for (int y = bboxX.y1; y < bboxX.y2; y += tileSizeY) {
-                TileCoord c = {x, y};
-                TileStateMap::const_iterator foundTile = _imp->stateMap.find(c);
-                assert(foundTile != _imp->stateMap.end());
-                if (foundTile->second.status != eTileStatusNotRendered) {
+            for (int y = bboxX.y1; y < bboxX.y2; y += stateMap.tileSizeY) {
+                const TileState* tile = stateMap.getTileAt(x, y);
+                if (tile->status != eTileStatusNotRendered) {
                     hasRenderedTileOnCol = true;
                     break;
                 }
@@ -435,7 +385,7 @@ ImageTilesState::getMinimalRectsToRenderFromTilesState(const RectI& roi, int til
             if (hasRenderedTileOnCol) {
                 break;
             } else {
-                bboxX.x2 -= tileSizeX;
+                bboxX.x2 -= stateMap.tileSizeX;
                 bboxD.x1 = bboxX.x2;
             }
         }
@@ -468,7 +418,7 @@ ImageTilesState::getMinimalRectsToRenderFromTilesState(const RectI& roi, int til
     assert( bboxD.bottom() == bboxX.bottom() );
 
     // get the bounding box of what's left (the X rectangle in the drawing above)
-    bboxX = getMinimalBboxToRenderFromTilesState(bboxX, tileSizeX, tileSizeY);
+    bboxX = getMinimalBboxToRenderFromTilesState(bboxX, stateMap);
 
     if ( !bboxX.isNull() ) { // empty boxes should not be pushed
         // Ensure the bbox lies in the RoI since we rounded to tile size earlier

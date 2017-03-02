@@ -45,27 +45,6 @@ GCC_DIAG_ON(unused-parameter)
 
 NATRON_NAMESPACE_ENTER;
 
-/**
- * @brief The coordinates in pixel of the bottom left corner of a tile.
- **/
-struct TileCoord
-{
-    int tx,ty;
-};
-
-struct TileCoord_Compare
-{
-    bool operator() (const TileCoord& lhs, const TileCoord& rhs) const
-    {
-        if (lhs.ty < rhs.ty) {
-            return true;
-        } else if (lhs.ty > rhs.ty) {
-            return false;
-        } else {
-            return lhs.tx < rhs.tx;
-        }
-    }
-};
 
 enum TileStatusEnum
 {
@@ -79,8 +58,13 @@ enum TileStatusEnum
  **/
 struct TileState
 {
+    // The bounds of the image covered by this tile: this is not necessarily a full tile on the border
     RectI bounds;
+
+    // Status of the tile (3 state)
     TileStatusEnum status;
+
+    // The indices of the buffers in the cache
     int channelsTileStorageIndex[4];
 
     TileState()
@@ -97,11 +81,38 @@ struct TileState
 // has its bottom left corner being the bottom left corner of the image and
 // the last tile in the map has its top right corner being the top right corner
 // of the image.
-typedef std::pair<const TileCoord, TileState > TileStateValueType;
-typedef boost::interprocess::allocator<TileStateValueType, ExternalSegmentType::segment_manager> TileStateValueType_Allocator_ExternalSegment;
-typedef boost::interprocess::map<TileCoord, TileState, TileCoord_Compare, TileStateValueType_Allocator_ExternalSegment> TileStateMap;
-typedef boost::interprocess::allocator<TileStateMap, ExternalSegmentType::segment_manager> TileStateMap_Allocator_ExternalSegment;
-typedef boost::interprocess::vector<TileStateMap, TileStateMap_Allocator_ExternalSegment> TileStateMapVector;
+typedef boost::interprocess::allocator<TileState, ExternalSegmentType::segment_manager> TileState_Allocator_ExternalSegment;
+typedef boost::interprocess::vector<TileState, TileState_Allocator_ExternalSegment> TileStateVector;
+
+class TileStateMap
+{
+public:
+    // The area covered by the tiles
+    // The next tile is at tileSizeX/tileSizeY
+    // There are boundsRoundedToTileSize / tileSizeX tiles per line
+    int tileSizeX, tileSizeY;
+    RectI bounds, boundsRoundedToTileSize;
+    TileStateVector *tiles;
+
+
+    // Do not fills the map
+    TileStateMap();
+
+    // Init from an external vector
+    TileStateMap(int tileSizeX, int tileSizeY, const RectI& bounds, TileStateVector* tiles);
+
+    ~TileStateMap();
+
+    // fills the map with unrendered tiles
+    void init(int tileSizeX, int tileSizeY, const RectI& bounds);
+
+    // Get a tile
+    TileState* getTileAt(int tx, int ty);
+    const TileState* getTileAt(int tx, int ty) const;
+};
+
+typedef boost::interprocess::allocator<TileStateVector, ExternalSegmentType::segment_manager> TileStateVector_Allocator_ExternalSegment;
+typedef boost::interprocess::vector<TileStateVector, TileStateVector_Allocator_ExternalSegment> PerMipMapTileStateVector;
 
 struct ImageTilesStatePrivate;
 
@@ -111,30 +122,12 @@ struct ImageTilesStatePrivate;
 class ImageTilesState
 {
 public:
-
-
-    ImageTilesState(const RectI& originalBounds, int tileSizeX, int tileSizeY);
-
-    ~ImageTilesState();
-
-    TileStateMap& getTilesMap();
-
-    const TileStateMap& getTilesMap() const;
-
-    void setTilesMap(const TileStateMap& tilesMap);
-
-    const RectI& getOriginalBounds() const;
-
-    const RectI& getBoundsRoundedToTileSize() const;
-
-    void getTileSize(int* tileSizeX, int* tileSizeY) const;
-
     /**
      * @brief Returns the bounding box of the unrendered portion in the tiles map.
      * N.B: Tiles with a status of eTileStatusPending are treated as if they were
      * eTileStatusRendered.
      **/
-    RectI getMinimalBboxToRenderFromTilesState(const RectI& roi, int tileSizeX, int tileSizeY);
+    static RectI getMinimalBboxToRenderFromTilesState(const RectI& roi, const TileStateMap& stateMap);
 
     /**
      * @brief Refines a region to render in potentially 4 smaller rectangles. This function makes use of
@@ -157,7 +150,7 @@ public:
      * CXXXXXXXXXXDDD
      * AAAAAAAAAAAAAA
      **/
-    void getMinimalRectsToRenderFromTilesState(const RectI& roi, int tileSizeX, int tileSizeY, std::list<RectI>* rectsToRender);
+    static void getMinimalRectsToRenderFromTilesState(const RectI& roi, const TileStateMap& stateMap, std::list<RectI>* rectsToRender);
 
     /*
      Compute the rectangles (A,B,C,D) where to set the image to 0
@@ -172,10 +165,7 @@ public:
      CCCCCCCCCCCCCCCCCCCCCCCCCCCC
      */
     static void getABCDRectangles(const RectI& srcBounds, const RectI& biggerBounds, RectI& aRect, RectI& bRect, RectI& cRect, RectI& dRect);
-    
-private:
 
-    boost::scoped_ptr<ImageTilesStatePrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT;

@@ -74,17 +74,20 @@ public:
     ~ImageCacheEntry();
     
     /**
-     * @brief Returns the render status of each tile in the RoI of the image.
+     * @brief Fetch possibly cached tiles from the cache and update the tiles state for the given mipmap level.
+     * This function will mark unrendered tiles as being rendered: any other thread/process trying to access them will
+     * wait for this thread to finish.
      * @param tileStatus[out] If non null, will be set to the local tiles status map
      * @param hasUnRenderedTile[out] If set to true, there's at least one tile left to render in the roi given in the ctor
      * @param hasPendingResults[out] If set to true, then the caller should, after rendering the given rectangles
      * call waitForPendingTiles() and then afterwards recheck the rectangles left to render with this functino
      **/
-    void updateLocalTilesRenderState(TileStateMap* tileStatus, bool* hasUnRenderedTile, bool *hasPendingResults);
+    void fetchCachedTilesAndUpdateStatus(TileStateMap* tileStatus, bool* hasUnRenderedTile, bool *hasPendingResults);
 
     /**
-     * @brief Should be called once the effect rendered successfully to transfer the local pixels to the cache.
-     * This will also notify any other effect waiting for these pending tiles.
+     * @brief Should be called once the effect rendered successfully.
+     * This function transfers the local pixels to the cache and also updates the tiles state map in the cache.
+     * This will also notify any other effect waiting for these tiles.
      * Do not call if the render was aborted otherwise non-rendered pixels will be pushed to the cache and marked as rendered.
      **/
     void markCacheTilesAsRendered();
@@ -92,7 +95,7 @@ public:
     /**
      * @brief Should be called after markCacheTilesAsRendered() to wait for any pending tiles to be rendered.
      * Once returning from that function, all tiles should be computed, but you should make a last call to
-     * updateLocalTilesRenderState to ensure that everything is rendered. In some rare cases you may have to compute
+     * fetchCachedTilesAndUpdateStatus to ensure that everything is rendered. In some rare cases you may have to compute
      * tiles that were marked pending but that were aborted by another thread.
      **/
     void waitForPendingTiles();
