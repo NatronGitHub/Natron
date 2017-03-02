@@ -1,5 +1,5 @@
 --- oiio-Release-1.7.11/src/raw.imageio/rawinput.cpp	2017-02-01 00:23:29.000000000 +0100
-+++ oiio-Release-1.7.11-libraw/src/raw.imageio/rawinput.cpp	2017-03-02 19:37:06.000000000 +0100
++++ oiio-Release-1.7.11-libraw/src/raw.imageio/rawinput.cpp	2017-03-02 22:42:41.000000000 +0100
 @@ -147,7 +147,7 @@
  
      // Use camera matrix (if config "raw:use_camera_matrix" is not 0)
@@ -9,7 +9,16 @@
  
  
      // Check to see if the user has explicitly set the output colorspace primaries
-@@ -243,7 +243,7 @@
+@@ -209,6 +209,8 @@
+                                                "Mixed",
+                                                "LMMSE",
+                                                "AMaZE",
++                                               "DHT",
++                                               "Modified AHD 2",
+                                                // Future demosaicing algorithms should go here
+                                                NULL
+                                                };
+@@ -243,7 +245,7 @@
              // Also, any previously set demosaicing options are void, so remove them
              m_spec.erase_attribute("oiio:Colorspace", TypeDesc::STRING);
              m_spec.erase_attribute("raw:Colorspace", TypeDesc::STRING);
@@ -18,3 +27,14 @@
  
          }
          else {
+--- oiio-Release-1.7.11/src/doc/builtinplugins.tex	2017-02-01 00:23:29.000000000 +0100
++++ oiio-Release-1.7.11-libraw/src/doc/builtinplugins.tex	2017-03-02 22:43:51.000000000 +0100
+@@ -827,7 +827,7 @@
+                                 \qkw{VNG}, \qkw{PPG}, \qkw{AHD} (default),
+                                 \qkw{DCB}, \qkw{Modified AHD}, \qkw{AFD},
+                                 \qkw{VCD}, \qkw{Mixed}, \qkw{LMMSE},
+-                                \qkw{AMaZE}. \\
++                                \qkw{AMaZE}, \qkw{DHT}, \qkw{Modified AHD 2}. \\
+ \end{tabular}
+ 
+ 
