@@ -275,6 +275,10 @@ ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
             p.y = pos.y();
             p.z = 1;
             p = Transform::matApply(mat, p);
+            if (p.z < 0) {
+                // the transformed position has a negative z, don't send it
+                return false;
+            }
             transformPos.rx() = p.x / p.z;
             transformPos.ry() = p.y / p.z;
         }
@@ -424,6 +428,10 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
                 p.y = pos.y();
                 p.z = 1;
                 p = Transform::matApply(mat, p);
+                if (p.z < 0) {
+                    // the transformed position has a negative z, don't send it
+                    return false;
+                }
                 transformPos.rx() = p.x / p.z;
                 transformPos.ry() = p.y / p.z;
             }
@@ -511,6 +519,10 @@ ViewerTab::notifyOverlaysPenMotion_internal(const NodePtr& node,
             p.y = pos.y();
             p.z = 1;
             p = Transform::matApply(mat, p);
+            if (p.z < 0) {
+                // the transformed position has a negative z, don't send it
+                return false;
+            }
             transformPos.rx() = p.x / p.z;
             transformPos.ry() = p.y / p.z;
         }
@@ -703,6 +715,10 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
                 p.y = pos.y();
                 p.z = 1;
                 p = Transform::matApply(mat, p);
+                if (p.z < 0) {
+                    // the transformed position has a negative z, send it (because a penup may be necessary for a good execution of the plugin) but reverse z
+                    p.z = - p.z;
+                }
                 transformPos.rx() = p.x / p.z;
                 transformPos.ry() = p.y / p.z;
             }
