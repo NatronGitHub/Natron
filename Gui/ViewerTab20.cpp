@@ -63,11 +63,10 @@ static void
 transformToOpenGLMatrix(const Transform::Matrix3x3& mat,
                         GLdouble* oglMat)
 {
-    int s = mat.i > 0 ? 1 : -1;
-    oglMat[0] = mat.a * s; oglMat[4] = mat.b * s; oglMat[8]  = 0; oglMat[12] = mat.c * s;
-    oglMat[1] = mat.d * s; oglMat[5] = mat.e * s; oglMat[9]  = 0; oglMat[13] = mat.f * s;
-    oglMat[2] = 0;     oglMat[6] = 0;     oglMat[10] = 0; oglMat[14] = 0;
-    oglMat[3] = mat.g * s; oglMat[7] = mat.h * s; oglMat[11] = 0; oglMat[15] = mat.i * s;
+    oglMat[0] = mat.a; oglMat[4] = mat.b; oglMat[8]  = 0; oglMat[12] = mat.c;
+    oglMat[1] = mat.d; oglMat[5] = mat.e; oglMat[9]  = 0; oglMat[13] = mat.f;
+    oglMat[2] = 0;     oglMat[6] = 0;     oglMat[10] = 1; oglMat[14] = 0;
+    oglMat[3] = mat.g; oglMat[7] = mat.h; oglMat[11] = 0; oglMat[15] = mat.i;
 }
 
 #endif
@@ -165,15 +164,14 @@ ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
                                           double pressure,
                                           double timestamp)
 {
-    QPointF transformViewportPos;
     QPointF transformPos;
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
     ViewIdx view = getCurrentView();
 
 
-#ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
-
-
+#ifndef NATRON_TRANSFORM_AFFECTS_OVERLAYS
+    transformPos = pos;
+#else
     double transformedTime;
     bool ok = _imp->getTimeTransform(time, view, node, getInternalNode(), &transformedTime);
     if (ok) {
@@ -191,19 +189,9 @@ ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
     Transform::Matrix3x3 mat(1, 0, 0, 0, 1, 0, 0, 0, 1);
     ok = _imp->getOverlayTransform(time, view, node, getInternalNode(), &mat);
     if (!ok) {
-        transformViewportPos = viewportPos;
         transformPos = pos;
     } else {
         mat = Transform::matInverse(mat);
-        {
-            Transform::Point3D p;
-            p.x = viewportPos.x();
-            p.y = viewportPos.y();
-            p.z = 1;
-            p = Transform::matApply(mat, p);
-            transformViewportPos.rx() = p.x / p.z;
-            transformViewportPos.ry() = p.y / p.z;
-        }
         {
             Transform::Point3D p;
             p.x = pos.x();
@@ -214,11 +202,6 @@ ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
             transformPos.ry() = p.y / p.z;
         }
     }
-
-
-#else
-    transformViewportPos = viewportPos;
-    transformPos = pos;
 #endif
 
     bool isInActiveViewerUI = _imp->hasInactiveNodeViewerContext(node);
@@ -226,7 +209,7 @@ ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
         EffectInstPtr effect = node->getEffectInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
-        bool didSmthing = effect->onOverlayPenDown_public(time, renderScale, view, transformViewportPos, transformPos, pressure, timestamp, pen);
+        bool didSmthing = effect->onOverlayPenDown_public(time, renderScale, view, viewportPos, transformPos, pressure, timestamp, pen);
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
@@ -314,10 +297,11 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
 
 
     for (NodesList::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
-        QPointF transformViewportPos;
         QPointF transformPos;
         double time = getGui()->getApp()->getTimeLine()->currentFrame();
-#ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
+#ifndef NATRON_TRANSFORM_AFFECTS_OVERLAYS
+        transformPos = pos;
+#else
         ViewIdx view = getCurrentView();
         double transformedTime;
         bool ok = _imp->getTimeTransform(time, view, *it, getInternalNode(), &transformedTime);
@@ -328,19 +312,9 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
         Transform::Matrix3x3 mat(1, 0, 0, 0, 1, 0, 0, 0, 1);
         ok = _imp->getOverlayTransform(time, view, *it, getInternalNode(), &mat);
         if (!ok) {
-            transformViewportPos = viewportPos;
             transformPos = pos;
         } else {
             mat = Transform::matInverse(mat);
-            {
-                Transform::Point3D p;
-                p.x = viewportPos.x();
-                p.y = viewportPos.y();
-                p.z = 1;
-                p = Transform::matApply(mat, p);
-                transformViewportPos.rx() = p.x / p.z;
-                transformViewportPos.ry() = p.y / p.z;
-            }
             {
                 Transform::Point3D p;
                 p.x = pos.x();
@@ -351,11 +325,6 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
                 transformPos.ry() = p.y / p.z;
             }
         }
-
-
-#else
-        transformViewportPos = viewportPos;
-        transformPos = pos;
 #endif
 
         bool isInActiveViewerUI = _imp->hasInactiveNodeViewerContext(*it);
@@ -364,7 +333,7 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
             assert(effect);
             effect->setCurrentViewportForOverlays_public(_imp->viewer);
 
-            bool didSmthing = effect->onOverlayPenDoubleClicked_public(time, renderScale, view, transformViewportPos, transformPos);
+            bool didSmthing = effect->onOverlayPenDoubleClicked_public(time, renderScale, view, viewportPos, transformPos);
             if (didSmthing) {
                 //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
                 // if the instance returns kOfxStatOK, the host should not pass the pen motion
