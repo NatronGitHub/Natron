@@ -1,0 +1,20 @@
+--- oiio-Release-1.7.11/src/raw.imageio/rawinput.cpp	2017-02-01 00:23:29.000000000 +0100
++++ oiio-Release-1.7.11-libraw/src/raw.imageio/rawinput.cpp	2017-03-02 19:37:06.000000000 +0100
+@@ -147,7 +147,7 @@
+ 
+     // Use camera matrix (if config "raw:use_camera_matrix" is not 0)
+     m_processor.imgdata.params.use_camera_matrix =
+-        config.get_int_attribute("raw:use_camera_matrix", 0);
++        config.get_int_attribute("raw:use_camera_matrix", 1);
+ 
+ 
+     // Check to see if the user has explicitly set the output colorspace primaries
+@@ -243,7 +243,7 @@
+             // Also, any previously set demosaicing options are void, so remove them
+             m_spec.erase_attribute("oiio:Colorspace", TypeDesc::STRING);
+             m_spec.erase_attribute("raw:Colorspace", TypeDesc::STRING);
+-            m_spec.erase_attribute("raw:Exposure", TypeDesc::STRING);
++            m_spec.erase_attribute("raw:Exposure", TypeDesc::FLOAT);
+ 
+         }
+         else {

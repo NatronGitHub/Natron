@@ -19,7 +19,7 @@ github.setup     OpenImageIO oiio 1.7.11 tags/Release-
 #github.tarball_from downloads
 
 name             openimageio
-revision         1
+revision         2
 categories       graphics
 platforms           darwin
 license          BSD
@@ -92,6 +92,7 @@ patchfiles \
     oiio-1.5.23-invalidatespec.patch \
     oiio-1.7.10-c99math.patch \
     oiio-1.7.10-nothreads.patch \
+    oiio-1.7.11-libraw.patch \
     oiio-1.7.11-tiffposition.patch
 
 cmake.out_of_source yes
