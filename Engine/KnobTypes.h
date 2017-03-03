@@ -88,6 +88,8 @@ public:
 
     bool isSliderDisabled() const;
 
+    bool isAutoFoldDimensionsEnabled() const { return false; };
+
     static const std::string & typeNameStatic();
 
     void setAsRectangle()
@@ -225,6 +227,10 @@ public:
 
     bool isSliderDisabled() const;
 
+    void setCanAutoFoldDimensions(bool v) { _autoFoldEnabled = v; }
+
+    bool isAutoFoldDimensionsEnabled() const { return _autoFoldEnabled; };
+
     const std::vector<double> &getIncrements() const;
     const std::vector<int> &getDecimals() const;
 
@@ -350,6 +356,7 @@ private:
     std::vector<double>  _increments;
     std::vector<int> _decimals;
     bool _disableSlider;
+    bool _autoFoldEnabled;
 
     /// to support ofx deprecated normalizd params:
     /// the first and second dimensions of the double param( hence a pair ) have a normalized state.

@@ -95,6 +95,7 @@ protected:
     void getSpinBox(int dim, SpinBox** spinbox, Label** label = 0) const;
 
     virtual bool isSliderDisabled() const = 0;
+    virtual bool isAutoFoldDimensionsEnabled() const = 0;
     virtual bool isRectangleType() const = 0;
     virtual bool isSpatialType() const = 0;
     virtual ValueIsNormalizedEnum getNormalizationPolicy(int /*dimension*/) const
@@ -196,6 +197,7 @@ private:
 
 
     virtual bool isSliderDisabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isAutoFoldDimensionsEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isRectangleType() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isSpatialType() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual ValueIsNormalizedEnum getNormalizationPolicy(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -233,6 +235,7 @@ private:
     }
 
     virtual bool isSliderDisabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isAutoFoldDimensionsEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isRectangleType() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void connectKnobSignalSlots() OVERRIDE FINAL;
     virtual void disableSlider() OVERRIDE FINAL;

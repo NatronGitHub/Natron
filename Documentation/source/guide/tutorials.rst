@@ -7,8 +7,9 @@ Tutorials
 .. toctree::
    :maxdepth: 2
 
-   writedoc.rst
-   svgworkflow.rst
-   hsvtool.rst
-   ffmpeg.rst
+   tutorials-writedoc
+   tutorials-hsvtool
+   tutorials-ffmpeg
+   tutorials-hugin
+   tutorials-svgworkflow
 

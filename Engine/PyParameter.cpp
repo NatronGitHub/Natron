@@ -2265,6 +2265,41 @@ PathParam::setAsMultiPathTable()
     knob->setMultiPath(true);
 }
 
+void
+PathParam::setTable(const std::list<std::vector<std::string> >& table)
+{
+    boost::shared_ptr<KnobPath> k = _sKnob.lock();
+    if (!k) {
+        return;
+    }
+    if (!k->isMultiPath()) {
+        return;
+    }
+    try {
+        k->setTable(table);
+    } catch (...) {
+
+    }
+}
+
+void
+PathParam::getTable(std::list<std::vector<std::string> >* table) const
+{
+    boost::shared_ptr<KnobPath> k = _sKnob.lock();
+    if (!k) {
+        return;
+    }
+    if (!k->isMultiPath()) {
+        return;
+    }
+    try {
+        k->getTable(table);
+    } catch (const std::exception& /*e*/) {
+        return;
+    }
+}
+
+
 ////////////////////ButtonParam
 
 ButtonParam::ButtonParam(const boost::shared_ptr<KnobButton>& knob)

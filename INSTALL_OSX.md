@@ -95,6 +95,8 @@ Install homebrew from <http://brew.sh/>
 macOS 10.12 and later: Qt 4 is not supported in homebrew on masOS 10.12 and later, please enable the community-maintained recipe using:
 
     brew tap cartr/qt4
+    brew tap-pin cartr/qt4
+    brew install qt
 
 Patch the qt4 recipe to fix the stack overflow issue (see [QTBUG-49607](https://bugreports.qt.io/browse/QTBUG-49607), [homebrew issue #46307](https://github.com/Homebrew/homebrew/issues/46307), [MacPorts ticket 49793](http://trac.macports.org/ticket/49793)).
 

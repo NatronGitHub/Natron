@@ -164,15 +164,14 @@ ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
                                           double pressure,
                                           double timestamp)
 {
-    QPointF transformViewportPos;
     QPointF transformPos;
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
     ViewIdx view = getCurrentView();
 
 
-#ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
-
-
+#ifndef NATRON_TRANSFORM_AFFECTS_OVERLAYS
+    transformPos = pos;
+#else
     double transformedTime;
     bool ok = _imp->getTimeTransform(time, view, node, getInternalNode(), &transformedTime);
     if (ok) {
@@ -190,34 +189,23 @@ ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
     Transform::Matrix3x3 mat(1, 0, 0, 0, 1, 0, 0, 0, 1);
     ok = _imp->getOverlayTransform(time, view, node, getInternalNode(), &mat);
     if (!ok) {
-        transformViewportPos = viewportPos;
         transformPos = pos;
     } else {
         mat = Transform::matInverse(mat);
-        {
-            Transform::Point3D p;
-            p.x = viewportPos.x();
-            p.y = viewportPos.y();
-            p.z = 1;
-            p = Transform::matApply(mat, p);
-            transformViewportPos.rx() = p.x / p.z;
-            transformViewportPos.ry() = p.y / p.z;
-        }
         {
             Transform::Point3D p;
             p.x = pos.x();
             p.y = pos.y();
             p.z = 1;
             p = Transform::matApply(mat, p);
+            if (p.z < 0) {
+                // the transformed position has a negative z, don't send it
+                return false;
+            }
             transformPos.rx() = p.x / p.z;
             transformPos.ry() = p.y / p.z;
         }
     }
-
-
-#else
-    transformViewportPos = viewportPos;
-    transformPos = pos;
 #endif
 
     bool isInActiveViewerUI = _imp->hasInactiveNodeViewerContext(node);
@@ -225,7 +213,7 @@ ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
         EffectInstPtr effect = node->getEffectInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
-        bool didSmthing = effect->onOverlayPenDown_public(time, renderScale, view, transformViewportPos, transformPos, pressure, timestamp, pen);
+        bool didSmthing = effect->onOverlayPenDown_public(time, renderScale, view, viewportPos, transformPos, pressure, timestamp, pen);
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
@@ -313,10 +301,11 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
 
 
     for (NodesList::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
-        QPointF transformViewportPos;
         QPointF transformPos;
         double time = getGui()->getApp()->getTimeLine()->currentFrame();
-#ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
+#ifndef NATRON_TRANSFORM_AFFECTS_OVERLAYS
+        transformPos = pos;
+#else
         ViewIdx view = getCurrentView();
         double transformedTime;
         bool ok = _imp->getTimeTransform(time, view, *it, getInternalNode(), &transformedTime);
@@ -327,34 +316,23 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
         Transform::Matrix3x3 mat(1, 0, 0, 0, 1, 0, 0, 0, 1);
         ok = _imp->getOverlayTransform(time, view, *it, getInternalNode(), &mat);
         if (!ok) {
-            transformViewportPos = viewportPos;
             transformPos = pos;
         } else {
             mat = Transform::matInverse(mat);
-            {
-                Transform::Point3D p;
-                p.x = viewportPos.x();
-                p.y = viewportPos.y();
-                p.z = 1;
-                p = Transform::matApply(mat, p);
-                transformViewportPos.rx() = p.x / p.z;
-                transformViewportPos.ry() = p.y / p.z;
-            }
             {
                 Transform::Point3D p;
                 p.x = pos.x();
                 p.y = pos.y();
                 p.z = 1;
                 p = Transform::matApply(mat, p);
+                if (p.z < 0) {
+                    // the transformed position has a negative z, don't send it
+                    return false;
+                }
                 transformPos.rx() = p.x / p.z;
                 transformPos.ry() = p.y / p.z;
             }
         }
-
-
-#else
-        transformViewportPos = viewportPos;
-        transformPos = pos;
 #endif
 
         bool isInActiveViewerUI = _imp->hasInactiveNodeViewerContext(*it);
@@ -363,7 +341,7 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
             assert(effect);
             effect->setCurrentViewportForOverlays_public(_imp->viewer);
 
-            bool didSmthing = effect->onOverlayPenDoubleClicked_public(time, renderScale, view, transformViewportPos, transformPos);
+            bool didSmthing = effect->onOverlayPenDoubleClicked_public(time, renderScale, view, viewportPos, transformPos);
             if (didSmthing) {
                 //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
                 // if the instance returns kOfxStatOK, the host should not pass the pen motion
@@ -387,13 +365,13 @@ ViewerTab::notifyOverlaysPenMotion_internal(const NodePtr& node,
                                             double pressure,
                                             double timestamp)
 {
-    QPointF transformViewportPos;
-    QPointF transformPos;
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
     ViewIdx view = getCurrentView();
 
-#ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
-
+    QPointF transformPos;
+#ifndef NATRON_TRANSFORM_AFFECTS_OVERLAYS
+    transformPos = pos;
+#else
     double transformedTime;
     bool ok = _imp->getTimeTransform(time, view, node, getInternalNode(), &transformedTime);
     if (ok) {
@@ -412,33 +390,23 @@ ViewerTab::notifyOverlaysPenMotion_internal(const NodePtr& node,
     Transform::Matrix3x3 mat(1, 0, 0, 0, 1, 0, 0, 0, 1);
     ok = _imp->getOverlayTransform(time, view, node, getInternalNode(), &mat);
     if (!ok) {
-        transformViewportPos = viewportPos;
         transformPos = pos;
     } else {
         mat = Transform::matInverse(mat);
-        {
-            Transform::Point3D p;
-            p.x = viewportPos.x();
-            p.y = viewportPos.y();
-            p.z = 1;
-            p = Transform::matApply(mat, p);
-            transformViewportPos.rx() = p.x / p.z;
-            transformViewportPos.ry() = p.y / p.z;
-        }
         {
             Transform::Point3D p;
             p.x = pos.x();
             p.y = pos.y();
             p.z = 1;
             p = Transform::matApply(mat, p);
+            if (p.z < 0) {
+                // the transformed position has a negative z, don't send it
+                return false;
+            }
             transformPos.rx() = p.x / p.z;
             transformPos.ry() = p.y / p.z;
         }
     }
-
-#else
-    transformViewportPos = viewportPos;
-    transformPos = pos;
 #endif
 
     bool isInActiveViewerUI = _imp->hasInactiveNodeViewerContext(node);
@@ -451,7 +419,7 @@ ViewerTab::notifyOverlaysPenMotion_internal(const NodePtr& node,
         EffectInstPtr effect = node->getEffectInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
-        bool didSmthing = effect->onOverlayPenMotion_public(time, renderScale, view, transformViewportPos, transformPos, pressure, timestamp);
+        bool didSmthing = effect->onOverlayPenMotion_public(time, renderScale, view, viewportPos, transformPos, pressure, timestamp);
         if (didSmthing) {
             if (_imp->hasPenDown) {
                 _imp->hasCaughtPenMotionWhileDragging = true;
@@ -574,11 +542,10 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
     ViewIdx view = getCurrentView();
 
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        QPointF transformViewportPos;
         QPointF transformPos;
-#ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
-
-
+#ifndef NATRON_TRANSFORM_AFFECTS_OVERLAYS
+        transformPos = pos;
+#else
         double transformedTime;
         bool ok = _imp->getTimeTransform(time, view, *it, getInternalNode(), &transformedTime);
         if (ok) {
@@ -596,34 +563,23 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
         Transform::Matrix3x3 mat(1, 0, 0, 0, 1, 0, 0, 0, 1);
         ok = _imp->getOverlayTransform(time, view, *it, getInternalNode(), &mat);
         if (!ok) {
-            transformViewportPos = viewportPos;
             transformPos = pos;
         } else {
             mat = Transform::matInverse(mat);
-            {
-                Transform::Point3D p;
-                p.x = viewportPos.x();
-                p.y = viewportPos.y();
-                p.z = 1;
-                p = Transform::matApply(mat, p);
-                transformViewportPos.rx() = p.x / p.z;
-                transformViewportPos.ry() = p.y / p.z;
-            }
             {
                 Transform::Point3D p;
                 p.x = pos.x();
                 p.y = pos.y();
                 p.z = 1;
                 p = Transform::matApply(mat, p);
+                if (p.z < 0) {
+                    // the transformed position has a negative z, send it (because a penup may be necessary for a good execution of the plugin) but reverse z
+                    p.z = - p.z;
+                }
                 transformPos.rx() = p.x / p.z;
                 transformPos.ry() = p.y / p.z;
             }
         }
-
-
-#else
-        transformViewportPos = viewportPos;
-        transformPos = pos;
 #endif
 
         bool isInActiveViewerUI = _imp->hasInactiveNodeViewerContext(*it);
@@ -631,7 +587,7 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
             EffectInstPtr effect = (*it)->getEffectInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public(_imp->viewer);
-            didSomething |= effect->onOverlayPenUp_public(time, renderScale, view, transformViewportPos, transformPos, pressure, timestamp);
+            didSomething |= effect->onOverlayPenUp_public(time, renderScale, view, viewportPos, transformPos, pressure, timestamp);
         }
     }
 

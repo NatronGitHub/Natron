@@ -1062,6 +1062,10 @@ public:
      * be a table much like the Project paths table of the Project settings. This cannot animate.
      **/
     void setAsMultiPathTable();
+
+    void setTable(const std::list<std::vector<std::string> >& table);
+
+    void getTable(std::list<std::vector<std::string> >* table) const;
 };
 
 /////////////////ButtonParam

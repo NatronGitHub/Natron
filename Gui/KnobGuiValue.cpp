@@ -487,7 +487,7 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
                 break;
             }
         }
-        if (!showSlider) {
+        if (!showSlider || !isAutoFoldDimensionsEnabled()) {
             _imp->slider->hide();
             _imp->dimensionSwitchButton->setChecked(true);
         } else {
@@ -800,9 +800,10 @@ KnobGuiValue::updateGUI(const int dimension)
             allValuesNotEqual = true;
         }
     }
-    if (_imp->dimensionSwitchButton && !_imp->dimensionSwitchButton->isChecked() && allValuesNotEqual) {
+    if ( !isAutoFoldDimensionsEnabled() ||
+         (_imp->dimensionSwitchButton && !_imp->dimensionSwitchButton->isChecked() && allValuesNotEqual) ){
         expandAllDimensions();
-    } else if (_imp->dimensionSwitchButton && _imp->dimensionSwitchButton->isChecked() && !allValuesNotEqual) {
+    } else if (isAutoFoldDimensionsEnabled() && _imp->dimensionSwitchButton && _imp->dimensionSwitchButton->isChecked() && !allValuesNotEqual) {
         foldAllDimensions();
     }
 
@@ -1189,6 +1190,12 @@ KnobGuiDouble::isSliderDisabled() const
 }
 
 bool
+KnobGuiDouble::isAutoFoldDimensionsEnabled() const
+{
+    return _knob.lock()->isAutoFoldDimensionsEnabled();
+}
+
+bool
 KnobGuiDouble::isRectangleType() const
 {
     return _knob.lock()->isRectangle();
@@ -1259,6 +1266,12 @@ bool
 KnobGuiInt::isSliderDisabled() const
 {
     return _knob.lock()->isSliderDisabled();
+}
+
+bool
+KnobGuiInt::isAutoFoldDimensionsEnabled() const
+{
+    return _knob.lock()->isAutoFoldDimensionsEnabled();
 }
 
 bool
