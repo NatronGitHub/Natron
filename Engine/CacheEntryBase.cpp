@@ -26,7 +26,6 @@
 
 #include "CacheEntryBase.h"
 
-#include <QDir>
 
 #include "Engine/Cache.h"
 

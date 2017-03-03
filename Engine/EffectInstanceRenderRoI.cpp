@@ -412,7 +412,7 @@ EffectInstance::Implementation::checkRestToRender(const FrameViewRequestPtr& req
 
     
     // Compute the rectangle portion (renderWindow) left to render.
-    Image::TileStateMap tilesState;
+    Image::TileStateHeader tilesState;
     bool hasUnRenderedTile;
     ImagePtr cacheImage = requestData->getImagePlane();
     cacheImage->getTilesRenderState(&tilesState, &hasUnRenderedTile, hasPendingTiles);
@@ -451,7 +451,7 @@ EffectInstance::Implementation::checkRestToRender(const FrameViewRequestPtr& req
             
             // For each tile, if outside of the input intersections, check if it is identity.
             // If identity mark as rendered, and add to the RectToRender list.
-            for (Image::TileStateMap::iterator it = tilesState.begin(); it != tilesState.end(); ++it) {
+            for (Image::TileStateHeader::iterator it = tilesState.begin(); it != tilesState.end(); ++it) {
 
 
                 if ( !it->second.bounds.intersects(inputRodIntersectionPixel) ) {
@@ -1313,7 +1313,7 @@ EffectInstance::requestRenderInternal(TimeValue time,
         }
         requestData->setImagePlane(image);
 
-        Image::TileStateMap tilesState;
+        Image::TileStateHeader tilesState;
         image->getTilesRenderState(&tilesState, &hasUnRenderedTile, &hasPendingTiles);
     }
 

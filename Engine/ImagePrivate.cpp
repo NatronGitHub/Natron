@@ -347,7 +347,7 @@ ImagePrivate::fetchBufferFromCache(const CachePtr& cache,
                 return;
             }
         }
-        Image::TileStateMap tilesStatus;
+        Image::TileStateHeader tilesStatus;
         bool hasUnrenderedTile, hasPendingResults;
         upscaledImage->getTilesRenderState(&tilesStatus, &hasUnrenderedTile, &hasPendingResults);
         if (hasUnrenderedTile || hasPendingResults) {

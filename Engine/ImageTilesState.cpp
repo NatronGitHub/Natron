@@ -31,56 +31,56 @@ NATRON_NAMESPACE_ENTER;
 
 
 
-TileStateMap::TileStateMap()
+TileStateHeader::TileStateHeader()
 : tileSizeX(0)
 , tileSizeY(0)
 , bounds()
 , boundsRoundedToTileSize()
-, tiles(0)
+, state(0)
 {
 
 }
 
-TileStateMap::TileStateMap(int tileSizeX, int tileSizeY, const RectI& bounds, TileStateVector* tiles)
+TileStateHeader::TileStateHeader(int tileSizeX, int tileSizeY, const RectI& bounds, IPCTileState* state)
 : tileSizeX(tileSizeX)
 , tileSizeY(tileSizeY)
 , bounds(bounds)
 , boundsRoundedToTileSize(bounds)
-, tiles(tiles)
+, state(state)
 {
     boundsRoundedToTileSize.roundToTileSize(tileSizeX, tileSizeY);
-    assert(tiles->empty() || ((int)tiles->size() == ((boundsRoundedToTileSize.width() / tileSizeX) * (boundsRoundedToTileSize.height() / tileSizeY))));
+    assert(state->tiles.empty() || ((int)state->tiles.size() == ((boundsRoundedToTileSize.width() / tileSizeX) * (boundsRoundedToTileSize.height() / tileSizeY))));
 }
 
-TileStateMap::~TileStateMap()
+TileStateHeader::~TileStateHeader()
 {
-    delete tiles;
+    delete state;
 }
 
 void
-TileStateMap::init(int tileSizeXParam, int tileSizeYParam, const RectI& roi)
+TileStateHeader::init(int tileSizeXParam, int tileSizeYParam, const RectI& roi)
 {
     tileSizeX = tileSizeXParam;
     tileSizeY = tileSizeYParam;
     bounds = boundsRoundedToTileSize = roi;
     boundsRoundedToTileSize.roundToTileSize(tileSizeX, tileSizeY);
 
-    if (tiles) {
-        delete tiles;
+    if (state) {
+        delete state;
     }
-    tiles = new TileStateVector;
-    tiles->resize((boundsRoundedToTileSize.width() / tileSizeX) * (boundsRoundedToTileSize.height() / tileSizeY));
+    state = new IPCTileState;
+    state->tiles.resize((boundsRoundedToTileSize.width() / tileSizeX) * (boundsRoundedToTileSize.height() / tileSizeY));
 
     int tile_i = 0;
     for (int ty = boundsRoundedToTileSize.y1; ty < boundsRoundedToTileSize.y2; ty += tileSizeY) {
         for (int tx = boundsRoundedToTileSize.x1; tx < boundsRoundedToTileSize.x2; tx += tileSizeX, ++tile_i) {
 
-            assert(tile_i < (int)tiles->size());
+            assert(tile_i < (int)state->tiles.size());
 
-            (*tiles)[tile_i].bounds.x1 = std::max(tx, bounds.x1);
-            (*tiles)[tile_i].bounds.y1 = std::max(ty, bounds.y1);
-            (*tiles)[tile_i].bounds.x2 = std::min(tx + tileSizeX, bounds.x2);
-            (*tiles)[tile_i].bounds.y2 = std::min(ty + tileSizeY, bounds.y2);
+            state->tiles[tile_i].bounds.x1 = std::max(tx, bounds.x1);
+            state->tiles[tile_i].bounds.y1 = std::max(ty, bounds.y1);
+            state->tiles[tile_i].bounds.x2 = std::min(tx + tileSizeX, bounds.x2);
+            state->tiles[tile_i].bounds.y2 = std::min(ty + tileSizeY, bounds.y2);
             
         }
     }
@@ -88,21 +88,21 @@ TileStateMap::init(int tileSizeXParam, int tileSizeYParam, const RectI& roi)
 }
 
 TileState*
-TileStateMap::getTileAt(int tx, int ty)
+TileStateHeader::getTileAt(int tx, int ty)
 {
     assert(tx % tileSizeX == 0 && ty % tileSizeY == 0);
     int index = (ty * boundsRoundedToTileSize.width() / tileSizeX) + tx * tileSizeX;
-    assert(index >= 0 && index < (int)tiles->size());
-    return &(*tiles)[index];
+    assert(index >= 0 && index < (int)state->tiles.size());
+    return &state->tiles[index];
 }
 
 const TileState*
-TileStateMap::getTileAt(int tx, int ty) const
+TileStateHeader::getTileAt(int tx, int ty) const
 {
     assert(tx % tileSizeX == 0 && ty % tileSizeY == 0);
     int index = (ty * boundsRoundedToTileSize.width() / tileSizeX) + tx * tileSizeX;
-    assert(index >= 0 && index < (int)tiles->size());
-    return &(*tiles)[index];
+    assert(index >= 0 && index < (int)state->tiles.size());
+    return &state->tiles[index];
 }
 
 void
@@ -143,10 +143,10 @@ ImageTilesState::getABCDRectangles(const RectI& srcBounds, const RectI& biggerBo
 } // getABCDRectangles
 
 RectI
-ImageTilesState::getMinimalBboxToRenderFromTilesState(const RectI& roi, const TileStateMap& stateMap)
+ImageTilesState::getMinimalBboxToRenderFromTilesState(const RectI& roi, const TileStateHeader& stateMap)
 {
 
-    if (stateMap.tiles.empty()) {
+    if (stateMap.state->tiles.empty()) {
         return RectI();
     }
 
@@ -246,9 +246,9 @@ ImageTilesState::getMinimalBboxToRenderFromTilesState(const RectI& roi, const Ti
 } // getMinimalBboxToRenderFromTilesState
 
 void
-ImageTilesState::getMinimalRectsToRenderFromTilesState(const RectI& roi, const TileStateMap& stateMap, std::list<RectI>* rectsToRender)
+ImageTilesState::getMinimalRectsToRenderFromTilesState(const RectI& roi, const TileStateHeader& stateMap, std::list<RectI>* rectsToRender)
 {
-    if (stateMap.tiles.empty()) {
+    if (stateMap.state->tiles.empty()) {
         return;
     }
 

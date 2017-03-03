@@ -70,9 +70,39 @@
 #define NATRON_CACHE_DIRECTORY_NAME "Cache"
 
 
-// When defined, the cache will never be persistent
-//#define NATRON_CACHE_NEVER_PERSISTENT
+// When defined, the cache will never be persistent.
+//
+// Non-persistent cache:
+// ---------------------
+// In this mode, all objects in the cache (classes deriving CacheEntryBase)
+// are shared across threads within the process: When looking-up an entry with
+// Cache::get, the entry might already exist, in which case it can be retrieved by calling
+// CacheEntryLocker::getProcessLocalEntry.
+// It is very important that in this mode derived classes of CacheEntryBase be thread-safe.
+//
+// Persistent cache:
+// -----------------
+//
+// In this mode, all objects in the cache are not actually exposed to the CacheEntryBase:
+// whenever reading an entry from the cache in the Cache::get function, internally a copy
+// is made to the local CacheEntryBase object by using the CacheEntryBase::fromMemorySegment
+// function.
+// Similarly, when inserting the entry in the cache, it is copied using the CacheEntryBase::toMemorySegment
+// In this mode, the CacheEntryBase in itself does not have to be thread-safe: the cache itself handles
+// the thread-safety and ensures that the entry is created only once.
+// It is important to remember that in this mode, the CacheEntryBase you pass to Cache::get is local to your call, nobody
+// else knows about this object.
+// Also in order to be persistent, all data structures passed in toMemorySegment/fromMemorySegment must be interprocess compliant
+// (i.e: they must use allocators to the memory segment manager passed in parameter.)
+#define NATRON_CACHE_NEVER_PERSISTENT
 
+// If defined (and NATRON_CACHE_NEVER_PERSISTENT is not defined), the cache can handle multiple processes accessing to the same cache concurrently, however
+// the cache may not be placed in a network drive.
+// If not defined, the cache supports only a single process writing/reading from the cache concurrently, other processes will resort
+// in a process-local cache.
+//#ifndef NATRON_CACHE_NEVER_PERSISTENT
+//#define NATRON_CACHE_INTERPROCESS_ROBUST
+//#endif
 
 NATRON_NAMESPACE_ENTER;
 
@@ -94,7 +124,8 @@ struct CacheReportInfo
 
 struct CacheBucket;
 
-class SharedMemoryProcessLocalReadLocker;
+
+
 /**
  * @brief Small RAII style class used to lock an entry corresponding to a hash key to ensure
  * only a single thread can work on it at once.
@@ -166,12 +197,10 @@ public:
      **/
     CacheEntryBasePtr getProcessLocalEntry() const;
 
+    static void sleep_milliseconds(std::size_t amountMS);
 
 private:
 
-    bool lookupAndSetStatusInternal(bool hasWriteRights, boost::scoped_ptr<SharedMemoryProcessLocalReadLocker>& shmAccess, std::size_t *timeSpentWaitingForPendingEntryMS, std::size_t timeout);
-
-    void lookupAndSetStatus(boost::scoped_ptr<SharedMemoryProcessLocalReadLocker>& shmAccess, std::size_t *timeSpentWaitingForPendingEntryMS, std::size_t timeout);
 
     boost::scoped_ptr<CacheEntryLockerPrivate> _imp;
 };
@@ -185,13 +214,17 @@ class Cache
 
     // For removeAllEntriesForPluginBlocking
     friend class CacheCleanerThread;
-    
+    friend struct CacheEntryLockerPrivate;
     friend class CacheEntryLocker;
     friend struct CacheBucket;
     
 private:
 
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
     Cache(bool persistent);
+#else
+    Cache();
+#endif
 
 public:
 
@@ -202,7 +235,11 @@ public:
      * can be held in shared memory can be inserted in the cache.
      * Note that there can be only a single persistent cache.
      **/
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
     static CachePtr create(bool persistent);
+#else
+    static CachePtr create();
+#endif
     
     virtual ~Cache();
 
@@ -314,7 +351,7 @@ public:
     void clear();
 
     /**
-     * @brief Removes this entry from the cache
+     * @brief Removes this entry from the cache (if it exists in the cache)
      **/
     void removeEntry(const CacheEntryBasePtr& entry);
 

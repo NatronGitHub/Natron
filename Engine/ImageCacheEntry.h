@@ -80,9 +80,9 @@ public:
      * @param tileStatus[out] If non null, will be set to the local tiles status map
      * @param hasUnRenderedTile[out] If set to true, there's at least one tile left to render in the roi given in the ctor
      * @param hasPendingResults[out] If set to true, then the caller should, after rendering the given rectangles
-     * call waitForPendingTiles() and then afterwards recheck the rectangles left to render with this functino
+     * call waitForPendingTiles() and then afterwards recheck the rectangles left to render with this function
      **/
-    void fetchCachedTilesAndUpdateStatus(TileStateMap* tileStatus, bool* hasUnRenderedTile, bool *hasPendingResults);
+    void fetchCachedTilesAndUpdateStatus(TileStateHeader* tileStatus, bool* hasUnRenderedTile, bool *hasPendingResults);
 
     /**
      * @brief Should be called once the effect rendered successfully.
@@ -91,6 +91,13 @@ public:
      * Do not call if the render was aborted otherwise non-rendered pixels will be pushed to the cache and marked as rendered.
      **/
     void markCacheTilesAsRendered();
+
+    /**
+     * @brief This function should be called if the render was aborted to mark tiles that were marked pending
+     * in an unrendered state.
+     * If not called when a render is aborted, this may stall the application.
+     **/
+    void markCacheTilesAsAborted();
 
     /**
      * @brief Should be called after markCacheTilesAsRendered() to wait for any pending tiles to be rendered.

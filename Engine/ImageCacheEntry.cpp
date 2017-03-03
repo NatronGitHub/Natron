@@ -39,6 +39,7 @@
 #include "Engine/ImagePrivate.h"
 #include "Engine/ImageTilesState.h"
 #include "Engine/MultiThread.h"
+#include "Engine/ThreadPool.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -203,7 +204,7 @@ struct ImageCacheEntryPrivate
     // The state is shared accross all channels because OpenFX doesn't allows yet to render only some channels
     // This state is local to this ImageCacheEntry: any tile marked eTileStatusPending may be pending because
     // we are computing it or someone else is computing it.
-    TileStateMap state;
+    TileStateHeader localTilesState;
 
     // Pointer to the internal cache entry. When NATRON_CACHE_NEVER_PERSISTENT is defined, this is shared across threads/processes
     // otherwise this is local to this object.
@@ -229,7 +230,7 @@ struct ImageCacheEntryPrivate
     , effect(effect)
     , mipMapLevel(mipMapLevel)
     , key(key)
-    , state()
+    , localTilesState()
     , internalCacheEntry()
     , tilesToFetch()
     {
@@ -241,7 +242,7 @@ struct ImageCacheEntryPrivate
         int tileSizeX, tileSizeY;
         Cache::getTileSizePx(depth, &tileSizeX, &tileSizeY);
         roiRoundedToTileSize.roundToTileSize(tileSizeX, tileSizeY);
-        state.init(tileSizeX, tileSizeY, pixelRod);
+        localTilesState.init(tileSizeX, tileSizeY, pixelRod);
     }
 
     virtual ~ImageCacheEntryPrivate()
@@ -280,7 +281,7 @@ struct ImageCacheEntryPrivate
 #endif
 
 
-    TileStatusEnum lookupTileStateInPyramid(const std::vector<TileStateMap>& perMipMapTilesState,
+    TileStatusEnum lookupTileStateInPyramid(const std::vector<TileStateHeader>& perMipMapTilesState,
                                             unsigned int mipMapLevel,
                                             int tx, int ty,
                                             TileCacheIndex* tile);
@@ -778,12 +779,12 @@ struct CacheDataLock_RAII
 };
 
 TileStatusEnum
-ImageCacheEntryPrivate::lookupTileStateInPyramid(const std::vector<TileStateMap>& perMipMapTilesState,
+ImageCacheEntryPrivate::lookupTileStateInPyramid(const std::vector<TileStateHeader>& perMipMapTilesState,
                                                  unsigned int lookupLevel,
                                                  int tx, int ty,
                                                  TileCacheIndex* tile)
 {
-    const TileStateMap& cachedTilesState = perMipMapTilesState[lookupLevel];
+    const TileStateHeader& cachedTilesState = perMipMapTilesState[lookupLevel];
     
     std::vector<TileCacheIndex> tilesToFetch;
 
@@ -816,8 +817,8 @@ ImageCacheEntryPrivate::lookupTileStateInPyramid(const std::vector<TileStateMap>
                 int nextTx = tx * 2;
                 int nextTy = ty * 2;
 
-                int upscaledX[4] = {nextTx, nextTx + state.tileSizeX, nextTx, nextTx + state.tileSizeX};
-                int upscaledY[4] = {nextTy, nextTy, nextTy + state.tileSizeY, nextTy + state.tileSizeY};
+                int upscaledX[4] = {nextTx, nextTx + localTilesState.tileSizeX, nextTx, nextTx + localTilesState.tileSizeX};
+                int upscaledY[4] = {nextTy, nextTy, nextTy + localTilesState.tileSizeY, nextTy + localTilesState.tileSizeY};
 
 
                 bool higherScaleTilePending = false;
@@ -860,16 +861,16 @@ ImageCacheEntryPrivate::readAndUpdateStateMap(bool hasExclusiveLock)
     bool stateMapModified = false;
 
     // Make the map objects from the tile vectors stored in the cache
-    std::vector<TileStateMap> perMipMapCacheTilesState(mipMapLevel + 1);
+    std::vector<TileStateHeader> perMipMapCacheTilesState(mipMapLevel + 1);
     for (int i = perMipMapCacheTilesState.size() - 1; i >= 0; --i) {
-        RectI upscaledBounds = (i == (int)mipMapLevel) ? state.bounds : state.bounds.upscalePowerOfTwo(1);
-        perMipMapCacheTilesState[i] = TileStateMap(state.tileSizeX, state.tileSizeY, upscaledBounds, &internalCacheEntry->perMipMapTilesState[i]);
+        RectI upscaledBounds = (i == (int)mipMapLevel) ? localTilesState.bounds : localTilesState.bounds.upscalePowerOfTwo(1);
+        perMipMapCacheTilesState[i] = TileStateHeader(localTilesState.tileSizeX, localTilesState.tileSizeY, upscaledBounds, &internalCacheEntry->perMipMapTilesState[i]);
     }
 
     // If the tiles state at our mipmap level is empty, default initialize it
-    bool cachedTilesMapInitialized = !perMipMapCacheTilesState[mipMapLevel].tiles->empty();
+    bool cachedTilesMapInitialized = !perMipMapCacheTilesState[mipMapLevel].state->tiles.empty();
     if (!cachedTilesMapInitialized) {
-        *perMipMapCacheTilesState[mipMapLevel].tiles = *state.tiles;
+        *perMipMapCacheTilesState[mipMapLevel].state = *localTilesState.state;
         stateMapModified = true;
 
     } else { // cachedTilesMapInitialized
@@ -878,17 +879,17 @@ ImageCacheEntryPrivate::readAndUpdateStateMap(bool hasExclusiveLock)
         // Clear the tiles to fetch list
         tilesToFetch.clear();
 
-        TileStateMap& cacheStateMap = perMipMapCacheTilesState[mipMapLevel];
+        TileStateHeader& cacheStateMap = perMipMapCacheTilesState[mipMapLevel];
 
 
         // For each tile in the RoI (rounded to the tile size):
         // Check the tile status, only copy from the cache if rendered
-        for (int ty = roiRoundedToTileSize.y1; ty < roiRoundedToTileSize.y2; ty += state.tileSizeY) {
-            for (int tx = roiRoundedToTileSize.x1; tx < roiRoundedToTileSize.x2; tx += state.tileSizeX) {
+        for (int ty = roiRoundedToTileSize.y1; ty < roiRoundedToTileSize.y2; ty += localTilesState.tileSizeY) {
+            for (int tx = roiRoundedToTileSize.x1; tx < roiRoundedToTileSize.x2; tx += localTilesState.tileSizeX) {
 
-                assert(tx % state.tileSizeX == 0 && ty % state.tileSizeY == 0);
+                assert(tx % localTilesState.tileSizeX == 0 && ty % localTilesState.tileSizeY == 0);
 
-                TileState* localTileState = state.getTileAt(tx, ty);
+                TileState* localTileState = localTilesState.getTileAt(tx, ty);
 
                 // If the tile in the old status is already rendered, do not update
                 if (localTileState->status == eTileStatusRendered) {
@@ -919,6 +920,8 @@ ImageCacheEntryPrivate::readAndUpdateStateMap(bool hasExclusiveLock)
                                 return ImageCacheEntryPrivate::eUpdateStateMapRetCodeNeedWriteLock;
                             }
                             cacheTileState->status = eTileStatusPending;
+                            ++cacheStateMap.state->numPendingTiles;
+
                             stateMapModified = true;
                             localTileState->status = eTileStatusNotRendered;
                         } else {
@@ -942,6 +945,8 @@ ImageCacheEntryPrivate::readAndUpdateStateMap(bool hasExclusiveLock)
                         }
                         localTileState->status = eTileStatusNotRendered;
                         cacheTileState->status = eTileStatusPending;
+                        ++cacheStateMap.state->numPendingTiles;
+
                         stateMapModified = true;
                     }   break;
                 } // switch(stat)
@@ -998,10 +1003,10 @@ ImageCacheEntryPrivate::buildTaskPyramidRecursive(unsigned int lookupLevel,
 
     // The tile bounds are clipped to the pixel RoD
     RectI tileBounds;
-    tileBounds.x1 = std::max(tile.tx, state.bounds.x1);
-    tileBounds.y1 = std::max(tile.ty, state.bounds.y1);
-    tileBounds.x2 = std::min(tile.tx + state.tileSizeX, state.bounds.x2);
-    tileBounds.y2 = std::min(tile.ty + state.tileSizeY, state.bounds.y2);
+    tileBounds.x1 = std::max(tile.tx, localTilesState.bounds.x1);
+    tileBounds.y1 = std::max(tile.ty, localTilesState.bounds.y1);
+    tileBounds.x2 = std::min(tile.tx + localTilesState.tileSizeX, localTilesState.bounds.x2);
+    tileBounds.y2 = std::min(tile.ty + localTilesState.tileSizeY, localTilesState.bounds.y2);
 
     assert(downscaleTilesPerLevel->size() > lookupLevel);
 
@@ -1105,6 +1110,9 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
         }
     }
 
+    TileStateHeader cacheStateMap = TileStateHeader(localTilesState.tileSizeX, localTilesState.tileSizeY, localTilesState.bounds, &internalCacheEntry->perMipMapTilesState[mipMapLevel]);
+    assert(!cacheStateMap.state->tiles.empty());
+
     // If we downscaled some tiles, we updated the tiles status map
     bool stateMapUpdated = false;
 
@@ -1112,9 +1120,11 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
     for (std::size_t i = 0; i < perLevelTilesToDownscale.size(); ++i) {
         if (!perLevelTilesToDownscale[i].empty()) {
             DownscaleMipMapProcessor processor(effect);
-            processor.setValues(localData.bitDepth, state.tileSizeX, state.tileSizeY, perLevelTilesToDownscale[i]);
+            processor.setValues(localData.bitDepth, localTilesState.tileSizeX, localTilesState.tileSizeY, perLevelTilesToDownscale[i]);
             ActionRetCodeEnum stat = processor.launchThreadsBlocking();
             (void)stat;
+
+            stateMapUpdated = true;
 
             // We downscaled hence we must update tiles status from eTileStatusNotRendered to eTileStatusRendered
             // Only do so for the first channel since they all share the same state
@@ -1129,15 +1139,15 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
                 const RectI& tileBounds = perLevelTilesToDownscale[i][j]->bounds;
 
                 // Get the bottom left coordinates of the tile
-                int tx = (int)std::floor((double)tileBounds.x1 / state.tileSizeX) * state.tileSizeX;
-                int ty = (int)std::floor((double)tileBounds.y1 / state.tileSizeY) * state.tileSizeY;
+                int tx = (int)std::floor((double)tileBounds.x1 / localTilesState.tileSizeX) * localTilesState.tileSizeX;
+                int ty = (int)std::floor((double)tileBounds.y1 / localTilesState.tileSizeY) * localTilesState.tileSizeY;
 
                 // Update the state locally
-                TileState* tileState = state.getTileAt(tx, ty);
-                tileState->channelsTileStorageIndex[perLevelTilesToDownscale[i][j]->channel_i] = perLevelTilesToDownscale[i][j]->tileCache_i;
+                TileState* localTileState = localTilesState.getTileAt(tx, ty);
+                localTileState->channelsTileStorageIndex[perLevelTilesToDownscale[i][j]->channel_i] = perLevelTilesToDownscale[i][j]->tileCache_i;
 
 
-                TileState* cacheTileState = state.getTileAt(tx, ty);
+                TileState* cacheTileState = cacheStateMap.getTileAt(tx, ty);
                 cacheTileState->channelsTileStorageIndex[perLevelTilesToDownscale[i][j]->channel_i] = perLevelTilesToDownscale[i][j]->tileCache_i;
 
                 // Update the tile state only for the first channel
@@ -1145,11 +1155,14 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
                     continue;
                 }
 
-                assert(tileState->status == eTileStatusNotRendered);
-                tileState->status = eTileStatusRendered;
+                assert(localTileState->status == eTileStatusNotRendered);
+                localTileState->status = eTileStatusRendered;
 
                 assert(cacheTileState->status == eTileStatusPending);
                 cacheTileState->status = eTileStatusRendered;
+                assert(cacheStateMap.state->numPendingTiles > 0);
+                --cacheStateMap.state->numPendingTiles;
+                ++cacheStateMap.state->numRenderedTiles;
             }
         }
     }
@@ -1167,7 +1180,7 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
     
     // Finally copy over multiple threads each tile
     FromCachePixelsTransferProcessor processor(effect);
-    processor.setValues(localData, state.tileSizeX, state.tileSizeY, tilesToCopy);
+    processor.setValues(localData, localTilesState.tileSizeX, localTilesState.tileSizeY, tilesToCopy);
     ActionRetCodeEnum stat = processor.launchThreadsBlocking();
     (void)stat;
 
@@ -1176,7 +1189,7 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
 } // fetchAndCopyCachedTiles
 
 void
-ImageCacheEntry::fetchCachedTilesAndUpdateStatus(TileStateMap* tileStatus, bool* hasUnRenderedTile, bool *hasPendingResults)
+ImageCacheEntry::fetchCachedTilesAndUpdateStatus(TileStateHeader* tileStatus, bool* hasUnRenderedTile, bool *hasPendingResults)
 {
 
 
@@ -1255,19 +1268,31 @@ ImageCacheEntry::fetchCachedTilesAndUpdateStatus(TileStateMap* tileStatus, bool*
     // If we found any new cached tile, fetch and copy them to our local storage
     _imp->fetchAndCopyCachedTiles();
 
+    if (tileStatus) {
+        *tileStatus = _imp->localTilesState;
+    }
     *hasPendingResults = false;
     *hasUnRenderedTile = false;
 
-    for (TileStateVector::const_iterator it = _imp->state.tiles->begin(); it != _imp->state.tiles->end(); ++it) {
+    if (_imp->localTilesState.state->numPendingTiles > 0) {
+        *hasPendingResults = true;
+    }
+    if (_imp->localTilesState.state->numRenderedTiles == _imp->localTilesState.state->tiles.size()) {
+        *hasUnRenderedTile = false;
+        return;
+    }
+
+    for (TileStateVector::const_iterator it = _imp->localTilesState.state->tiles.begin(); it != _imp->localTilesState.state->tiles.end(); ++it) {
         if (it->status == eTileStatusNotRendered) {
             *hasUnRenderedTile = true;
         } else if (it->status == eTileStatusPending) {
             *hasPendingResults = true;
         }
+        if (*hasUnRenderedTile && *hasPendingResults) {
+            return;
+        }
     }
-    if (tileStatus) {
-        *tileStatus = _imp->state;
-    }
+
 } // fetchCachedTilesAndUpdateStatus
 
 #ifndef NATRON_CACHE_NEVER_PERSISTENT
@@ -1299,6 +1324,68 @@ ImageCacheEntryPrivate::updateCachedTilesStateMap()
 #endif // #ifndef NATRON_CACHE_NEVER_PERSISTENT
 
 void
+ImageCacheEntry::markCacheTilesAsAborted()
+{
+    // Make sure to call updateTilesRenderState() first
+    assert(_imp->internalCacheEntry);
+
+
+#ifdef NATRON_CACHE_NEVER_PERSISTENT
+    // In non-persistent mode, lock the cache entry since it's shared across threads.
+    // In persistent mode the entry is copied in fromMemorySegment
+    boost::unique_lock<boost::shared_mutex> writeLock(_imp->internalCacheEntry->perMipMapTilesStateMutex);
+#endif
+    // We should have gotten the state map from the cache in fetchCachedTilesAndUpdateStatus()
+    assert(!_imp->internalCacheEntry->perMipMapTilesState.empty());
+
+    // This is the tiles state at the mipmap level of interest in the cache
+    TileStateHeader cacheStateMap(_imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY, _imp->localTilesState.bounds, &_imp->internalCacheEntry->perMipMapTilesState[_imp->mipMapLevel]);
+    assert(!cacheStateMap.state->tiles.empty());
+
+    // Read the cache map and update our local map
+    CachePtr cache = _imp->internalCacheEntry->getCache();
+    bool hasModifiedTileMap = false;
+
+    for (int ty = _imp->roiRoundedToTileSize.y1; ty < _imp->roiRoundedToTileSize.y2; ty += _imp->localTilesState.tileSizeY) {
+        for (int tx = _imp->roiRoundedToTileSize.x1; tx < _imp->roiRoundedToTileSize.x2; tx += _imp->localTilesState.tileSizeX) {
+
+            assert(tx % _imp->localTilesState.tileSizeX == 0 && ty % _imp->localTilesState.tileSizeY == 0);
+
+            TileState* localTileState = _imp->localTilesState.getTileAt(tx, ty);
+
+            if (localTileState->status == eTileStatusNotRendered) {
+
+                localTileState->status = eTileStatusNotRendered;
+
+                TileState* cacheTileState = cacheStateMap.getTileAt(tx, ty);
+
+
+                // We marked the cache tile status to eTileStatusPending previously in
+                // readAndUpdateStateMap
+                // Mark it as eTileStatusRendered now
+                assert(cacheTileState->status == eTileStatusPending);
+                cacheTileState->status = eTileStatusNotRendered;
+
+                assert(cacheStateMap.state->numPendingTiles > 0);
+                --cacheStateMap.state->numPendingTiles;
+
+                hasModifiedTileMap = true;
+            }
+        }
+    }
+    
+    if (!hasModifiedTileMap) {
+        return;
+    }
+
+    // In persistent mode we have to actually copy the cache entry tiles state map to the cache
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
+    _imp->updateCachedTilesStateMap();
+#endif // NATRON_CACHE_NEVER_PERSISTENT
+
+} // markCacheTilesAsAborted
+
+void
 ImageCacheEntry::markCacheTilesAsRendered()
 {
     // Make sure to call updateTilesRenderState() first
@@ -1314,20 +1401,20 @@ ImageCacheEntry::markCacheTilesAsRendered()
     assert(!_imp->internalCacheEntry->perMipMapTilesState.empty());
 
     // This is the tiles state at the mipmap level of interest in the cache
-    TileStateMap cacheStateMap(_imp->state.tileSizeX, _imp->state.tileSizeY, _imp->state.bounds, &_imp->internalCacheEntry->perMipMapTilesState[_imp->mipMapLevel]);
-    assert(!cacheStateMap.tiles->empty());
+    TileStateHeader cacheStateMap(_imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY, _imp->localTilesState.bounds, &_imp->internalCacheEntry->perMipMapTilesState[_imp->mipMapLevel]);
+    assert(!cacheStateMap.state->tiles.empty());
 
     // Read the cache map and update our local map
     CachePtr cache = _imp->internalCacheEntry->getCache();
     bool hasModifiedTileMap = false;
 
     std::vector<boost::shared_ptr<TileData> > tilesToCopy;
-    for (int ty = _imp->roiRoundedToTileSize.y1; ty < _imp->roiRoundedToTileSize.y2; ty += _imp->state.tileSizeY) {
-        for (int tx = _imp->roiRoundedToTileSize.x1; tx < _imp->roiRoundedToTileSize.x2; tx += _imp->state.tileSizeX) {
+    for (int ty = _imp->roiRoundedToTileSize.y1; ty < _imp->roiRoundedToTileSize.y2; ty += _imp->localTilesState.tileSizeY) {
+        for (int tx = _imp->roiRoundedToTileSize.x1; tx < _imp->roiRoundedToTileSize.x2; tx += _imp->localTilesState.tileSizeX) {
 
-            assert(tx % _imp->state.tileSizeX == 0 && ty % _imp->state.tileSizeY == 0);
+            assert(tx % _imp->localTilesState.tileSizeX == 0 && ty % _imp->localTilesState.tileSizeY == 0);
 
-            TileState* localTileState = _imp->state.getTileAt(tx, ty);
+            TileState* localTileState = _imp->localTilesState.getTileAt(tx, ty);
 
             if (localTileState->status == eTileStatusNotRendered) {
 
@@ -1342,6 +1429,10 @@ ImageCacheEntry::markCacheTilesAsRendered()
                 assert(cacheTileState->status == eTileStatusPending);
                 cacheTileState->status = eTileStatusRendered;
 
+                assert(cacheStateMap.state->numPendingTiles > 0);
+                --cacheStateMap.state->numPendingTiles;
+                ++cacheStateMap.state->numRenderedTiles;
+
                 hasModifiedTileMap = true;
 
                 for (int c = 0; c < _imp->localData.nComps; ++c) {
@@ -1349,8 +1440,8 @@ ImageCacheEntry::markCacheTilesAsRendered()
                     boost::shared_ptr<TileData> copy(new TileData);
                     copy->bounds.x1 = tx;
                     copy->bounds.y1 = ty;
-                    copy->bounds.x2 = tx + _imp->state.tileSizeX;
-                    copy->bounds.y2 = ty + _imp->state.tileSizeX;
+                    copy->bounds.x2 = tx + _imp->localTilesState.tileSizeX;
+                    copy->bounds.y2 = ty + _imp->localTilesState.tileSizeX;
                     copy->channel_i = c;
                     tilesToCopy.push_back(copy);
                 }
@@ -1385,14 +1476,14 @@ ImageCacheEntry::markCacheTilesAsRendered()
         TileState* cacheTileState = cacheStateMap.getTileAt(tx, ty);
         cacheTileState->channelsTileStorageIndex[tilesToCopy[i]->channel_i] = allocatedTiles[i].first;
 
-        TileState* localTileState = _imp->state.getTileAt(tx, ty);
+        TileState* localTileState = _imp->localTilesState.getTileAt(tx, ty);
         localTileState->channelsTileStorageIndex[tilesToCopy[i]->channel_i] = allocatedTiles[i].first;
     }
 
 
     // Finally copy over multiple threads each tile
     ToCachePixelsTransferProcessor processor(_imp->effect);
-    processor.setValues(_imp->localData, _imp->state.tileSizeX, _imp->state.tileSizeY, tilesToCopy);
+    processor.setValues(_imp->localData, _imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY, tilesToCopy);
     ActionRetCodeEnum stat = processor.launchThreadsBlocking();
     (void)stat;
 
@@ -1405,7 +1496,49 @@ ImageCacheEntry::markCacheTilesAsRendered()
 void
 ImageCacheEntry::waitForPendingTiles()
 {
-    
+    // When the cache is persistent, we don't hold a lock on the entry since it would also require locking
+    // some mutexes protecting the memory mapping of the cache itself.
+    //
+    // For more explanation see comments in CacheEntryLocker::waitForPendingEntry:
+    // Instead we implement polling
+
+    // If this thread is a threadpool thread, it may wait for a while that results gets available.
+    // Release the thread to the thread pool so that it may use this thread for other runnables
+    // and reserve it back when done waiting.
+    bool hasReleasedThread = false;
+    if (isRunningInThreadPoolThread()) {
+        QThreadPool::globalInstance()->releaseThread();
+        hasReleasedThread = true;
+    }
+
+    std::size_t timeSpentWaitingForPendingEntryMS = 0;
+    std::size_t timeToWaitMS = 40;
+
+
+    bool hasUnrenderedTile = false;
+    bool hasPendingResults = false;
+
+    do {
+
+        fetchCachedTilesAndUpdateStatus(NULL, &hasUnrenderedTile, &hasPendingResults);
+
+        if (hasPendingResults) {
+
+            timeSpentWaitingForPendingEntryMS += timeToWaitMS;
+            CacheEntryLocker::sleep_milliseconds(timeToWaitMS);
+
+            // Increase the time to wait at the next iteration
+            timeToWaitMS *= 1.2;
+
+
+        }
+
+    } while(hasPendingResults);
+
+    if (hasReleasedThread) {
+        QThreadPool::globalInstance()->reserveThread();
+    }
+
 } // waitForPendingTiles
 
 #ifndef NATRON_CACHE_NEVER_PERSISTENT

@@ -77,14 +77,32 @@ struct TileState
 };
 
 
-// Tiles are orderedby y axis then by x such that the first tile in the map
+// Tiles are orderedby y axis then by x such that the first tile in the vector
 // has its bottom left corner being the bottom left corner of the image and
-// the last tile in the map has its top right corner being the top right corner
+// the last tile in the vector has its top right corner being the top right corner
 // of the image.
 typedef boost::interprocess::allocator<TileState, ExternalSegmentType::segment_manager> TileState_Allocator_ExternalSegment;
 typedef boost::interprocess::vector<TileState, TileState_Allocator_ExternalSegment> TileStateVector;
 
-class TileStateMap
+/**
+ * @brief A tiles vector + 2 members to speed lookup of the full vector
+ **/
+struct IPCTileState
+{
+    TileStateVector tiles;
+    std::size_t numPendingTiles;
+    std::size_t numRenderedTiles;
+
+    IPCTileState()
+    : tiles()
+    , numPendingTiles(0)
+    , numRenderedTiles(0)
+    {
+
+    }
+};
+
+class TileStateHeader
 {
 public:
     // The area covered by the tiles
@@ -92,16 +110,16 @@ public:
     // There are boundsRoundedToTileSize / tileSizeX tiles per line
     int tileSizeX, tileSizeY;
     RectI bounds, boundsRoundedToTileSize;
-    TileStateVector *tiles;
+    IPCTileState *state;
 
 
     // Do not fills the map
-    TileStateMap();
+    TileStateHeader();
 
     // Init from an external vector
-    TileStateMap(int tileSizeX, int tileSizeY, const RectI& bounds, TileStateVector* tiles);
+    TileStateHeader(int tileSizeX, int tileSizeY, const RectI& bounds, IPCTileState* tiles);
 
-    ~TileStateMap();
+    ~TileStateHeader();
 
     // fills the map with unrendered tiles
     void init(int tileSizeX, int tileSizeY, const RectI& bounds);
@@ -111,8 +129,8 @@ public:
     const TileState* getTileAt(int tx, int ty) const;
 };
 
-typedef boost::interprocess::allocator<TileStateVector, ExternalSegmentType::segment_manager> TileStateVector_Allocator_ExternalSegment;
-typedef boost::interprocess::vector<TileStateVector, TileStateVector_Allocator_ExternalSegment> PerMipMapTileStateVector;
+typedef boost::interprocess::allocator<IPCTileState, ExternalSegmentType::segment_manager> TileStateVector_Allocator_ExternalSegment;
+typedef boost::interprocess::vector<IPCTileState, TileStateVector_Allocator_ExternalSegment> PerMipMapTileStateVector;
 
 struct ImageTilesStatePrivate;
 
@@ -127,7 +145,7 @@ public:
      * N.B: Tiles with a status of eTileStatusPending are treated as if they were
      * eTileStatusRendered.
      **/
-    static RectI getMinimalBboxToRenderFromTilesState(const RectI& roi, const TileStateMap& stateMap);
+    static RectI getMinimalBboxToRenderFromTilesState(const RectI& roi, const TileStateHeader& stateMap);
 
     /**
      * @brief Refines a region to render in potentially 4 smaller rectangles. This function makes use of
@@ -150,7 +168,7 @@ public:
      * CXXXXXXXXXXDDD
      * AAAAAAAAAAAAAA
      **/
-    static void getMinimalRectsToRenderFromTilesState(const RectI& roi, const TileStateMap& stateMap, std::list<RectI>* rectsToRender);
+    static void getMinimalRectsToRenderFromTilesState(const RectI& roi, const TileStateHeader& stateMap, std::list<RectI>* rectsToRender);
 
     /*
      Compute the rectangles (A,B,C,D) where to set the image to 0
