@@ -2143,6 +2143,10 @@ OfxDouble2DInstance::OfxDouble2DInstance(const boost::shared_ptr<OfxEffectInstan
          ( isRectangleType > 0) ) {
         dblKnob->disableSlider();
     }
+    // only auto-merge dimensions and show a single slider if this is a scale or a size
+    dblKnob->setCanAutoFoldDimensions( (doubleType == kOfxParamDoubleTypeScale) ||
+                           (doubleType == kOfxParamDoubleTypeXY) ||
+                           (doubleType == kOfxParamDoubleTypeNormalisedXY) );
 
     if (isRectangleType > 0) {
         dblKnob->setAsRectangle();
@@ -2704,6 +2708,10 @@ OfxDouble3DInstance::OfxDouble3DInstance(const boost::shared_ptr<OfxEffectInstan
     _knob = knob;
     setRange();
     setDisplayRange();
+
+    const std::string & doubleType = getDoubleType();
+    // only auto-merge dimensions and show a single slider if this is a scale
+    knob->setCanAutoFoldDimensions(doubleType == kOfxParamDoubleTypeScale);
 
     std::vector<int> decimals(ofxDims);
     std::vector<double> def(ofxDims);

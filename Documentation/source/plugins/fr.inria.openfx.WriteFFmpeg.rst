@@ -34,11 +34,11 @@ This command does not re-encode the video or audio, but simply copies the data f
 
 FFmpeg versions (compiled with / running with):
 
-libavformat 57.56.100 / 57.56.100
+libavformat 57.56.101 / 57.56.101
 
 libavcodec 57.64.101 / 57.64.101
 
-libavutil 55.34.100 / 55.34.100
+libavutil 55.34.101 / 55.34.101
 
 libswscale 4.2.100 / 4.2.100
 

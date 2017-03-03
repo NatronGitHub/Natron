@@ -1739,9 +1739,11 @@ RotoPaint::drawOverlay(double time,
 
 
                 RectD bbox = isBezier->getBoundingBox(time);
-                if ( !getCurrentViewportForOverlays()->isVisibleInViewport(bbox) ) {
-                    continue;
-                }
+
+                // To decomment you must transform the viewport by the OpenGL transform first
+                //if ( !getCurrentViewportForOverlays()->isVisibleInViewport(bbox) ) {
+                //                  continue;
+                //            }
 
                 std::list< ParametricPoint > points;
                 isBezier->evaluateAtTime_DeCasteljau(true, time, 0,
