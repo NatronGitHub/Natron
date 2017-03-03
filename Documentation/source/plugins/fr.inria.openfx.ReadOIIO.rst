@@ -30,9 +30,11 @@ Field3D (\*.f3d)
 
 FITS (\*.fits)
 
+GIF (\*.gif)
+
 HDR/RGBE (\*.hdr)
 
-Icon (\*.ico)
+ICO (\*.ico)
 
 IFF (\*.iff)
 
@@ -42,13 +44,15 @@ JPEG-2000 (\*.jp2 \*.j2k)
 
 OpenEXR (\*.exr)
 
-Portable Network Graphics (\*.png)
+PNG / Portable Network Graphics (\*.png)
 
 PNM / Netpbm (\*.pbm \*.pgm \*.ppm \*.pfm)
 
 PSD (\*.psd \*.pdd \*.psb)
 
 Ptex (\*.ptex)
+
+RAW digital camera files (\*.crw \*.cr2 \*.nef \*.raf \*.dng and others)
 
 RLA (\*.rla)
 
@@ -59,6 +63,8 @@ Softimage PIC (\*.pic)
 Targa (\*.tga \*.tpic)
 
 TIFF (\*.tif \*.tiff \*.tx \*.env \*.sm \*.vsm)
+
+Webp (\*.webp)
 
 Zfile (\*.zfile)
 
