@@ -42,6 +42,7 @@ Natron multiple times on the same computer, the different processes will share t
 - Card3D can now import/export chan files from Natron, Nuke, 3D-Equalizer, Maya, Boujou, etc.
 - Card3D and CornerPin: only show things that are in front of the camera.
 - LensDistortion: add PanoTools/PTGui/PTAssembler/Hugin model.
+- ReadOIIO: add advanced options for reading RAW files.
 
 
 ## Version 2.2.5
