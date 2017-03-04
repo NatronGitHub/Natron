@@ -37,6 +37,7 @@ TileStateHeader::TileStateHeader()
 , bounds()
 , boundsRoundedToTileSize()
 , state(0)
+, ownsState(false)
 {
 
 }
@@ -47,6 +48,7 @@ TileStateHeader::TileStateHeader(int tileSizeX, int tileSizeY, const RectI& boun
 , bounds(bounds)
 , boundsRoundedToTileSize(bounds)
 , state(state)
+, ownsState(false)
 {
     boundsRoundedToTileSize.roundToTileSize(tileSizeX, tileSizeY);
     assert(state->tiles.empty() || ((int)state->tiles.size() == ((boundsRoundedToTileSize.width() / tileSizeX) * (boundsRoundedToTileSize.height() / tileSizeY))));
@@ -54,7 +56,9 @@ TileStateHeader::TileStateHeader(int tileSizeX, int tileSizeY, const RectI& boun
 
 TileStateHeader::~TileStateHeader()
 {
-    delete state;
+    if (ownsState) {
+        delete state;
+    }
 }
 
 void
@@ -65,6 +69,7 @@ TileStateHeader::init(int tileSizeXParam, int tileSizeYParam, const RectI& roi)
     bounds = boundsRoundedToTileSize = roi;
     boundsRoundedToTileSize.roundToTileSize(tileSizeX, tileSizeY);
 
+    ownsState = true;
     if (state) {
         delete state;
     }
@@ -91,7 +96,7 @@ TileState*
 TileStateHeader::getTileAt(int tx, int ty)
 {
     assert(tx % tileSizeX == 0 && ty % tileSizeY == 0);
-    int index = (ty * boundsRoundedToTileSize.width() / tileSizeX) + tx * tileSizeX;
+    int index = ((ty / tileSizeY) * (boundsRoundedToTileSize.width() / tileSizeX)) + tx / tileSizeX;
     assert(index >= 0 && index < (int)state->tiles.size());
     return &state->tiles[index];
 }
@@ -100,7 +105,7 @@ const TileState*
 TileStateHeader::getTileAt(int tx, int ty) const
 {
     assert(tx % tileSizeX == 0 && ty % tileSizeY == 0);
-    int index = (ty * boundsRoundedToTileSize.width() / tileSizeX) + tx * tileSizeX;
+    int index = ((ty / tileSizeY) * (boundsRoundedToTileSize.width() / tileSizeX)) + tx / tileSizeX;
     assert(index >= 0 && index < (int)state->tiles.size());
     return &state->tiles[index];
 }

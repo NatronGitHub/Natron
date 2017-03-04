@@ -129,12 +129,6 @@ struct FrameViewRequestPrivate
     // The caching policy for this frame/view
     CacheAccessModeEnum cachingPolicy;
 
-    // Protects status
-    mutable QMutex statusMutex;
-
-    // Used when the status is pending
-    QWaitCondition statusPendingCond;
-
     // The status of the frame/view
     FrameViewRequest::FrameViewRequestStatusEnum status;
 
@@ -188,8 +182,6 @@ struct FrameViewRequestPrivate
     , renderMappedMipMapLevel(mipMapLevel)
     , plane(plane)
     , cachingPolicy(eCacheAccessModeReadWrite)
-    , statusMutex()
-    , statusPendingCond()
     , status(FrameViewRequest::eFrameViewRequestStatusNotRendered)
     , retCode(eActionStatusOK)
     , image()
@@ -314,23 +306,21 @@ FrameViewRequest::setCachePolicy(CacheAccessModeEnum policy)
 FrameViewRequest::FrameViewRequestStatusEnum
 FrameViewRequest::getStatus() const
 {
-    QMutexLocker k(&_imp->statusMutex);
     return _imp->status;
 }
 
 void
 FrameViewRequest::initStatus(FrameViewRequestStatusEnum status)
 {
-    {
-        QMutexLocker k(&_imp->statusMutex);
-        _imp->status = status;
-    }
+    _imp->status = status;
+
 }
 
 FrameViewRequest::FrameViewRequestStatusEnum
 FrameViewRequest::notifyRenderStarted()
 {
-    QMutexLocker k(&_imp->statusMutex);
+    // Only one single thread should be computing a FrameViewRequest
+    assert(_imp->status != FrameViewRequest::eFrameViewRequestStatusPending);
     if (_imp->status == FrameViewRequest::eFrameViewRequestStatusNotRendered) {
         _imp->status = FrameViewRequest::eFrameViewRequestStatusPending;
         return FrameViewRequest::eFrameViewRequestStatusNotRendered;
@@ -342,15 +332,13 @@ FrameViewRequest::notifyRenderStarted()
 void
 FrameViewRequest::notifyRenderFinished(ActionRetCodeEnum stat)
 {
-    QMutexLocker k(&_imp->statusMutex);
+    assert(_imp->status == FrameViewRequest::eFrameViewRequestStatusPending);
     _imp->retCode = stat;
     _imp->status = FrameViewRequest::eFrameViewRequestStatusRendered;
-
-    // Wake-up all other threads stuck in waitForPendingResults()
-    _imp->statusPendingCond.wakeAll();
 }
 
 
+#if 0
 ActionRetCodeEnum
 FrameViewRequest::waitForPendingResults()
 {
@@ -376,6 +364,7 @@ FrameViewRequest::waitForPendingResults()
 
     return ret;
 } // waitForPendingResults
+#endif
 
 RectD
 FrameViewRequest::getCurrentRoI() const
@@ -408,11 +397,7 @@ FrameViewRequest::addDependency(const RequestPassSharedDataPtr& request, const F
 int
 FrameViewRequest::markDependencyAsRendered(const RequestPassSharedDataPtr& request, const FrameViewRequestPtr& deps)
 {
-    FrameViewRequestStatusEnum status;
-    {
-        QMutexLocker k1(&_imp->statusMutex);
-        status = _imp->status;
-    }
+    FrameViewRequestStatusEnum status = _imp->status;
 
     QMutexLocker k(&_imp->lock);
     PerLaunchRequestData& data = _imp->requestData[request];
@@ -487,8 +472,6 @@ FrameViewRequest::checkIfByPassCacheEnabledAndTurnoff() const
     }
     return false;
 }
-
-
 
 U64
 FrameViewRequest::getHash() const

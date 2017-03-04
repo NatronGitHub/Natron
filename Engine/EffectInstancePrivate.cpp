@@ -80,67 +80,6 @@ EffectInstance::Implementation::~Implementation()
     }
 }
 
-bool
-RenderCloneData::getTimeViewInvariantHash(U64* hash) const
-{
-    QMutexLocker k(&lock);
-    if (!timeViewInvariantHashValid) {
-        return false;
-    }
-    *hash = timeViewInvariantHash;
-    return true;
-}
-
-void
-RenderCloneData::setTimeInvariantMetadataHash(U64 hash)
-{
-    QMutexLocker k(&lock);
-    metadataTimeInvariantHashValid = true;
-    metadataTimeInvariantHash = hash;
-}
-
-bool
-RenderCloneData::getTimeInvariantMetadataHash(U64* hash) const
-{
-    QMutexLocker k(&lock);
-    if (!metadataTimeInvariantHashValid) {
-        return false;
-    }
-    *hash = metadataTimeInvariantHash;
-    return true;
-
-}
-
-void
-RenderCloneData::setTimeViewInvariantHash(U64 hash)
-{
-    QMutexLocker k(&lock);
-    timeViewInvariantHash = hash;
-    timeViewInvariantHashValid = true;
-}
-
-
-bool
-RenderCloneData::getFrameViewHash(TimeValue time, ViewIdx view, U64* hash) const
-{
-    FrameViewPair p = {time,view};
-    QMutexLocker k(&lock);
-    FrameViewHashMap::const_iterator found = timeViewVariantHash.find(p);
-    if (found == timeViewVariantHash.end()) {
-        return false;
-    }
-    *hash = found->second;
-    return true;
-}
-
-void
-RenderCloneData::setFrameViewHash(TimeValue time, ViewIdx view, U64 hash)
-{
-    QMutexLocker k(&lock);
-    FrameViewPair p = {time,view};
-    timeViewVariantHash[p] = hash;
-}
-
 
 FrameViewRequestPtr
 EffectInstance::Implementation::getFrameViewRequest(TimeValue time,
@@ -157,21 +96,6 @@ EffectInstance::Implementation::getFrameViewRequest(TimeValue time,
     return found->second.lock();
 }
 
-#if 0
-void
-EffectInstance::Implementation::removeFrameViewRequest(const FrameViewRequestPtr& request)
-{
-    QMutexLocker k(&renderData->lock);
-
-    FrameViewPair p = {request->getTime(),request->getView()};
-    NodeFrameViewRequestData::iterator found = renderData->frames.find(p);
-    if (found == renderData->frames.end()) {
-        return;
-    }
-    renderData->frames.erase(found);
-
-}
-#endif
 
 bool
 EffectInstance::Implementation::getOrCreateFrameViewRequest(TimeValue time,
@@ -190,7 +114,6 @@ EffectInstance::Implementation::getOrCreateFrameViewRequest(TimeValue time,
         args.view = view;
         args.hashType = HashableObject::eComputeHashTypeTimeViewVariant;
         hash = _publicInterface->computeHash(args);
-        renderData->setFrameViewHash(time, view, hash);
     }
     QMutexLocker k(&renderData->lock);
 

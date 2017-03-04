@@ -146,6 +146,7 @@ public:
     int tileSizeX, tileSizeY;
     RectI bounds, boundsRoundedToTileSize;
     TilesState *state;
+    bool ownsState;
 
 
     // Do not fills the map

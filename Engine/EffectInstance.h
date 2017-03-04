@@ -895,8 +895,6 @@ public:
         return _node.lock();
     }
 
-    virtual U64 computeHash(const ComputeHashArgs& args) OVERRIDE;
-
     virtual void appendToHash(const ComputeHashArgs& args, Hash64* hash) OVERRIDE;
 
 public:

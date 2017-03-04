@@ -51,6 +51,7 @@ GCC_DIAG_OFF(unused-parameter)
 
 
 #include <boost/interprocess/sync/interprocess_mutex.hpp> // IPC regular mutex
+#include <boost/interprocess/sync/interprocess_recursive_mutex.hpp> // IPC recursive mutex
 #include <boost/interprocess/sync/scoped_lock.hpp> // IPC  scoped lock a regular mutex
 #include <boost/interprocess/sync/interprocess_upgradable_mutex.hpp> // IPC  r-w mutex that can upgrade read right to write
 #include <boost/interprocess/sync/interprocess_sharable_mutex.hpp> // IPC  r-w mutex
@@ -60,6 +61,7 @@ GCC_DIAG_OFF(unused-parameter)
 #include <boost/interprocess/sync/file_lock.hpp> // IPC  file lock
 #include <boost/interprocess/sync/named_semaphore.hpp> // IPC  named semaphore
 #include <boost/thread/mutex.hpp> // local mutex
+#include <boost/thread/recursive_mutex.hpp> // local mutex
 #include <boost/thread/shared_mutex.hpp> // local r-w mutex
 #include <boost/thread/locks.hpp>
 #include <boost/thread/condition_variable.hpp>
@@ -417,6 +419,7 @@ public:
 typedef bip::interprocess_sharable_mutex SharedMutex;
 typedef bip::interprocess_upgradable_mutex UpgradableMutex;
 typedef bip::interprocess_mutex ExclusiveMutex;
+typedef bip::interprocess_recursive_mutex RecursiveExclusiveMutex;
 
 typedef scoped_timed_lock<UpgradableMutex> Upgradable_WriteLock;
 typedef scoped_timed_lock<SharedMutex> Sharable_WriteLock;
@@ -471,6 +474,7 @@ typedef boost::scoped_ptr<SharedMemoryProcessLocalReadLocker> SHMReadLockerPtr;
 typedef boost::shared_mutex SharedMutex;
 typedef boost::upgrade_mutex UpgradableMutex;
 typedef boost::mutex ExclusiveMutex;
+typedef boost::recursive_mutex RecursiveExclusiveMutex;
 
 typedef boost::shared_lock<SharedMutex> Sharable_ReadLock;
 typedef boost::shared_lock<UpgradableMutex> Upgradable_ReadLock;
@@ -2664,12 +2668,14 @@ CacheEntryLocker::waitForPendingEntry(std::size_t timeout)
     // Cache::get() --> Take a write lock on the entry if it does not exist
     // CacheEntryLocker::insertInCache() --> Release the write lock taken in get()
     //
-    // However since the cache is persistent, the entries in the cache contain only interprocess compliant data structures.
-    // That means the read/write lock should be an interprocess rmutex. However if we were to place an interprocess mutex in a
+    // Since the cache is persistent, the entries in the cache contain only interprocess compliant data structures.
+    // That means the entry lock should be an interprocess mutex. However if we were to place an interprocess mutex in a
     // MemorySegmentEntryHeader this would introduce quite a few complexities:
-    // 1 - we first would need it to be a read/write recursive mutex (which doesn't exist in boost)
-    // 2 - we would need to keep the read lock on the memory file (tocData.segmentMutex) alive while we wait because if the memory file
-    // gets remappted the cache entry lock would become invalid
+    // We would need to keep the read lock on the memory file (tocData.segmentMutex) alive while we wait because if the memory file
+    // gets remapped the cache entry mutex would become invalid.
+    // Locking 2 locks with such pattern is almost doomed to produce a deadlock at some point if another thread wants to grow the
+    // memory files (hence take the memory segment mutex in write mode)
+    //
     //
     // Instead we chose a "polling" method: we lookup the entry every X ms: this has the advantage not to retain any cache mutex
     // so the amount of time we wait is really just imparing this thead rather than the whole cache bucket.

@@ -294,6 +294,28 @@ RAMImageStorage::deallocateMemoryImpl()
     }
 }
 
+bool
+RAMImageStorage::canSoftCopy(const ImageStorageBase& other)
+{
+    const RAMImageStorage* isRamStorage = dynamic_cast<const RAMImageStorage*>(&other);
+    if (isRamStorage) {
+        return isRamStorage->_imp->buffer->size() == _imp->buffer->size();
+    } else {
+        return false;
+    }
+}
+
+void
+RAMImageStorage::softCopy(const ImageStorageBase& other)
+{
+    const RAMImageStorage* isRamStorage = dynamic_cast<const RAMImageStorage*>(&other);
+    if (isRamStorage) {
+        _imp->buffer.swap(isRamStorage->_imp->buffer);
+    } else {
+        assert(false);
+    }
+
+}
 
 struct GLImageStoragePrivate
 {

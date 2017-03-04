@@ -314,24 +314,8 @@ struct RenderCloneData
     // The time invariant metadas for the render
     GetTimeInvariantMetaDatasResultsPtr metadatasResults;
 
-#pragma message WARN("This has cache is not needed anymore: remove it")
-    // This is the hash used to cache time and view invariant stuff
-    U64 timeViewInvariantHash;
-
-    // Hash used for metadata (depdending only for parameters that
-    // are metadata dependent)
-    U64 metadataTimeInvariantHash;
-
-    // Time/view variant hash
-    FrameViewHashMap timeViewVariantHash;
-
     // Properties, local to this render
     DynamicProperties props;
-
-    // True if hash is valid
-    bool timeViewInvariantHashValid;
-
-    bool metadataTimeInvariantHashValid;
 
     RenderCloneData()
     : lock()
@@ -341,12 +325,7 @@ struct RenderCloneData
     , frames()
     , frameRangeResults()
     , metadatasResults()
-    , timeViewInvariantHash(0)
-    , metadataTimeInvariantHash(0)
-    , timeViewVariantHash()
     , props()
-    , timeViewInvariantHashValid(false)
-    , metadataTimeInvariantHashValid(false)
     {
 
     }
@@ -356,34 +335,8 @@ struct RenderCloneData
         frames = other.frames;
         frameRangeResults = other.frameRangeResults;
         metadatasResults = other.metadatasResults;
-        timeViewInvariantHash = other.timeViewInvariantHash;
-        metadataTimeInvariantHash = other.metadataTimeInvariantHash;
-        timeViewVariantHash = other.timeViewVariantHash;
         props = other.props;
-        timeViewInvariantHashValid = other.timeViewInvariantHashValid;
-        metadataTimeInvariantHashValid = other.metadataTimeInvariantHashValid;
     }
-
-    /**
-     * @brief Get the time/view variant hash
-     **/
-    bool getFrameViewHash(TimeValue time, ViewIdx view, U64* hash) const;
-    void setFrameViewHash(TimeValue time, ViewIdx view, U64 hash);
-
-
-    /**
-     * @brief Get the time and view invariant hash
-     **/
-    bool getTimeViewInvariantHash(U64* hash) const;
-    void setTimeViewInvariantHash(U64 hash);
-
-
-    /**
-     * @brief Get the time and view invariant hash used for metadatas
-     **/
-    void setTimeInvariantMetadataHash(U64 hash);
-    bool getTimeInvariantMetadataHash(U64* hash) const;
-
 
     
 
@@ -527,10 +480,11 @@ public:
 
 
     ImagePtr createCachedImage(const FrameViewRequestPtr& requestPassData,
-                              const RectI& roiPixels,
-                              unsigned int mappedMipMapLevel,
-                              const ImagePlaneDesc& plane,
-                              bool delayAllocation);
+                               const RectI& roiPixels,
+                               const RectI& rodPixels,
+                               unsigned int mappedMipMapLevel,
+                               const ImagePlaneDesc& plane,
+                               bool delayAllocation);
 
 
 

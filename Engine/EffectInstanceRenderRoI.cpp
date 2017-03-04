@@ -564,16 +564,17 @@ EffectInstance::Implementation::checkRestToRender(const FrameViewRequestPtr& req
 
 ImagePtr
 EffectInstance::Implementation::createCachedImage(const FrameViewRequestPtr& requestPassData,
-                                                 const RectI& roiPixels,
-                                                 unsigned int mappedMipMapLevel,
-                                                 const ImagePlaneDesc& plane,
-                                                 bool delayAllocation)
+                                                  const RectI& roiPixels,
+                                                  const RectI& rodPixels,
+                                                  unsigned int mappedMipMapLevel,
+                                                  const ImagePlaneDesc& plane,
+                                                  bool delayAllocation)
 {
 
     // Mark the image as draft in the cache
     TreeRenderPtr render = _publicInterface->getCurrentRender();
     bool isDraftRender = render->isDraftRender();
-
+    
     // The node frame/view hash to identify the image in the cache
     U64 nodeFrameViewHash;
     {
@@ -582,7 +583,6 @@ EffectInstance::Implementation::createCachedImage(const FrameViewRequestPtr& req
         args.view = requestPassData->getView();
         args.hashType = HashableObject::eComputeHashTypeTimeViewVariant;
         nodeFrameViewHash = _publicInterface->computeHash(args);
-        renderData->setFrameViewHash(args.time, args.view, nodeFrameViewHash);
     }
 
     // The bitdepth of the image
@@ -599,6 +599,7 @@ EffectInstance::Implementation::createCachedImage(const FrameViewRequestPtr& req
         Image::InitStorageArgs initArgs;
         {
             initArgs.bounds = roiPixels;
+            initArgs.pixelRod = rodPixels;
             initArgs.cachePolicy = eCacheAccessModeReadWrite;
             initArgs.renderClone = _publicInterface->shared_from_this();
             initArgs.proxyScale = requestPassData->getProxyScale();
@@ -1281,10 +1282,10 @@ EffectInstance::requestRenderInternal(TimeValue time,
     }
     // Fetch tiles from cache
     // Note that no memory allocation is done here, images are only fetched from the cache.
-    bool hasUnRenderedTile;
-    bool hasPendingTiles;
+    bool hasUnRenderedTile = true;
+    bool hasPendingTiles = false;
     if (cachePolicy != eCacheAccessModeNone) {
-        ImagePtr image = _imp->createCachedImage(requestData, renderMappedRoI, mappedMipMapLevel, requestData->getPlaneDesc(), true);
+        ImagePtr image = _imp->createCachedImage(requestData, renderMappedRoI, pixelRoDRenderMapped, mappedMipMapLevel, requestData->getPlaneDesc(), true);
         if (!image) {
             if (isRenderAborted()) {
                 return eActionStatusAborted;
@@ -1327,8 +1328,11 @@ EffectInstance::launchRender(const RequestPassSharedDataPtr& requestPassSharedDa
             case FrameViewRequest::eFrameViewRequestStatusPassThrough:
                 return eActionStatusOK;
             case FrameViewRequest::eFrameViewRequestStatusPending: {
-                ActionRetCodeEnum stat = requestData->waitForPendingResults();
-                return stat;
+                // We should NEVER be recursively computing twice the same FrameViewRequest.
+                assert(false);
+                return eActionStatusFailed;
+                //ActionRetCodeEnum stat = requestData->waitForPendingResults();
+                //return stat;
             }
             case FrameViewRequest::eFrameViewRequestStatusNotRendered:
                 break;
@@ -1366,6 +1370,21 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
     RectI renderMappedRoI;
     requestData->getCurrentRoI().toPixelEnclosing(mappedCombinedScale, par, &renderMappedRoI);
 
+    // The RoD in pixel coordinates at the scale of mappedCombinedScale
+    RectI pixelRoDRenderMapped;
+    {
+        RectD rod;
+        GetRegionOfDefinitionResultsPtr results;
+        {
+            ActionRetCodeEnum stat = getRegionOfDefinition_public(requestData->getTime(), mappedCombinedScale, requestData->getView(), &results);
+            if (isFailureRetCode(stat)) {
+                return stat;
+            }
+        }
+        rod = results->getRoD();
+        rod.toPixelEnclosing(mappedCombinedScale, par, &pixelRoDRenderMapped);
+    }
+
     ImagePtr image = requestData->getImagePlane();
     if (requestData->getCachePolicy() != eCacheAccessModeNone) {
         // Allocate the cache storage image now if it was not yet allocated
@@ -1382,7 +1401,8 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
             if (*it == requestData->getPlaneDesc()) {
                 imagePlane = image;
             } else {
-                imagePlane = _imp->createCachedImage(requestData, renderMappedRoI, mappedMipMapLevel, *it, false);
+                imagePlane = _imp->createCachedImage(requestData, renderMappedRoI, pixelRoDRenderMapped, mappedMipMapLevel, *it, false);
+                imagePlane->getCacheEntry()->fetchCachedTilesAndUpdateStatus(NULL, NULL, NULL);
             }
             cachedImagePlanes[*it] = imagePlane;
         }

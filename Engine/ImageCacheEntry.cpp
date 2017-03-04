@@ -357,6 +357,9 @@ ImageCacheEntryPrivate::ensureImageBuffersAllocated()
         return;
     }
     for (int i = 0; i < 4; ++i) {
+        if (!imageBuffers[i]) {
+            continue;
+        }
         if (imageBuffers[i]->isAllocated()) {
             // The buffer is already allocated
             continue;
@@ -850,7 +853,12 @@ ImageCacheEntryPrivate::lookupTileStateInPyramid(const std::vector<TileStateHead
                                                  TileCacheIndex* tile)
 {
     const TileStateHeader& cachedTilesState = perMipMapTilesState[lookupLevel];
-    
+
+    if (cachedTilesState.state->tiles.empty()) {
+        // The state map may be not initialized at other mipmap levels so far but should be filled at this mipmap level
+        assert(lookupLevel != mipMapLevel);
+        return eTileStatusNotRendered;
+    }
     std::vector<TileCacheIndex> tilesToFetch;
 
     // Find this tile in the current state
@@ -938,87 +946,86 @@ ImageCacheEntryPrivate::readAndUpdateStateMap(bool hasExclusiveLock)
         *perMipMapCacheTilesState[mipMapLevel].state = *localTilesState.state;
         stateMapModified = true;
 
-    } else { // cachedTilesMapInitialized
+    }
 
 
-        // Clear the tiles to fetch list
-        tilesToFetch.clear();
+    // Clear the tiles to fetch list
+    tilesToFetch.clear();
 
-        TileStateHeader& cacheStateMap = perMipMapCacheTilesState[mipMapLevel];
-
-
-        // For each tile in the RoI (rounded to the tile size):
-        // Check the tile status, only copy from the cache if rendered
-        for (int ty = roiRoundedToTileSize.y1; ty < roiRoundedToTileSize.y2; ty += localTilesState.tileSizeY) {
-            for (int tx = roiRoundedToTileSize.x1; tx < roiRoundedToTileSize.x2; tx += localTilesState.tileSizeX) {
-
-                assert(tx % localTilesState.tileSizeX == 0 && ty % localTilesState.tileSizeY == 0);
-
-                TileState* localTileState = localTilesState.getTileAt(tx, ty);
-
-                // If the tile in the old status is already rendered, do not update
-                if (localTileState->status == eTileStatusRendered) {
-                    continue;
-                }
+    TileStateHeader& cacheStateMap = perMipMapCacheTilesState[mipMapLevel];
 
 
-                // Traverse the mipmaps pyramid from lower scale to higher scale to find a rendered tile and then downscale if necessary
-                TileCacheIndex tile;
-                TileStatusEnum stat = lookupTileStateInPyramid(perMipMapCacheTilesState, mipMapLevel, tx, ty, &tile);
+    // For each tile in the RoI (rounded to the tile size):
+    // Check the tile status, only copy from the cache if rendered
+    for (int ty = roiRoundedToTileSize.y1; ty < roiRoundedToTileSize.y2; ty += localTilesState.tileSizeY) {
+        for (int tx = roiRoundedToTileSize.x1; tx < roiRoundedToTileSize.x2; tx += localTilesState.tileSizeX) {
+
+            assert(tx % localTilesState.tileSizeX == 0 && ty % localTilesState.tileSizeY == 0);
+
+            TileState* localTileState = localTilesState.getTileAt(tx, ty);
+
+            // If the tile in the old status is already rendered, do not update
+            if (localTileState->status == eTileStatusRendered) {
+                continue;
+            }
 
 
-                // Update the status of the tile according to the cache status
-                TileState* cacheTileState = cacheStateMap.getTileAt(tx, ty);
-
-                switch (stat) {
-                    case eTileStatusRendered: {
-
-                        // If the tile has become rendered, mark it in the tiles to
-                        // fetch list. This will be fetched later on (when outside of the cache
-                        // scope) in fetchAndCopyCachedTiles()
-                        tilesToFetch.push_back(tile);
-
-                        // If this tile is not yet rendered at this level but we found a higher scale mipmap,
-                        // we must write this tile as pending in the cache state map so that another thread does not attempt to downscale too
-                        if (tile.upscaleTiles[0]) {
-                            if (!hasExclusiveLock) {
-                                return ImageCacheEntryPrivate::eUpdateStateMapRetCodeNeedWriteLock;
-                            }
-                            cacheTileState->status = eTileStatusPending;
-                            ++cacheStateMap.state->numPendingTiles;
-
-                            stateMapModified = true;
-                            localTileState->status = eTileStatusNotRendered;
-                        } else {
-                            // Locally, update the status to rendered
-                            localTileState->status = eTileStatusRendered;
-                        }
+            // Traverse the mipmaps pyramid from lower scale to higher scale to find a rendered tile and then downscale if necessary
+            TileCacheIndex tile;
+            TileStatusEnum stat = lookupTileStateInPyramid(perMipMapCacheTilesState, mipMapLevel, tx, ty, &tile);
 
 
-                    }   break;
-                    case eTileStatusPending: {
-                        // If the tile is pending in the cache, leave it pending locally
-                        localTileState->status = eTileStatusPending;
-                    }   break;
-                    case eTileStatusNotRendered: {
-                        // If the tile is marked not rendered, mark it pending in the cache
-                        // but mark it not rendered for us locally
-                        // Only a single thread/process can mark this tile as pending
-                        // hence it must do so under a write lock (hasExclusiveLock)
+            // Update the status of the tile according to the cache status
+            TileState* cacheTileState = cacheStateMap.getTileAt(tx, ty);
+
+            switch (stat) {
+                case eTileStatusRendered: {
+
+                    // If the tile has become rendered, mark it in the tiles to
+                    // fetch list. This will be fetched later on (when outside of the cache
+                    // scope) in fetchAndCopyCachedTiles()
+                    tilesToFetch.push_back(tile);
+
+                    // If this tile is not yet rendered at this level but we found a higher scale mipmap,
+                    // we must write this tile as pending in the cache state map so that another thread does not attempt to downscale too
+                    if (tile.upscaleTiles[0]) {
                         if (!hasExclusiveLock) {
                             return ImageCacheEntryPrivate::eUpdateStateMapRetCodeNeedWriteLock;
                         }
-                        localTileState->status = eTileStatusNotRendered;
                         cacheTileState->status = eTileStatusPending;
                         ++cacheStateMap.state->numPendingTiles;
 
                         stateMapModified = true;
-                    }   break;
-                } // switch(stat)
-            }
+                        localTileState->status = eTileStatusNotRendered;
+                    } else {
+                        // Locally, update the status to rendered
+                        localTileState->status = eTileStatusRendered;
+                    }
+
+
+                }   break;
+                case eTileStatusPending: {
+                    // If the tile is pending in the cache, leave it pending locally
+                    localTileState->status = eTileStatusPending;
+                }   break;
+                case eTileStatusNotRendered: {
+                    // If the tile is marked not rendered, mark it pending in the cache
+                    // but mark it not rendered for us locally
+                    // Only a single thread/process can mark this tile as pending
+                    // hence it must do so under a write lock (hasExclusiveLock)
+                    if (!hasExclusiveLock) {
+                        return ImageCacheEntryPrivate::eUpdateStateMapRetCodeNeedWriteLock;
+                    }
+                    localTileState->status = eTileStatusNotRendered;
+                    cacheTileState->status = eTileStatusPending;
+                    ++cacheStateMap.state->numPendingTiles;
+
+                    stateMapModified = true;
+                }   break;
+            } // switch(stat)
         }
-    } // !cachedTilesMapInitialized
-    
+    }
+
     if (stateMapModified) {
         return ImageCacheEntryPrivate::eUpdateStateMapRetCodeMustWriteToCache;
     } else {
@@ -1138,7 +1145,7 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
         fetchTileIndicesInPyramid(tilesToFetch[i], nComps, &tileIndicesToFetch, &nTilesAllocNeeded);
     }
 
-    if (tileIndicesToFetch.empty() && nTilesAllocNeeded) {
+    if (tileIndicesToFetch.empty() && !nTilesAllocNeeded) {
         // Nothing to do
         return eActionStatusOK;
     }
@@ -1491,6 +1498,8 @@ ImageCacheEntry::markCacheTilesAsRendered()
     // We should have gotten the state map from the cache in fetchCachedTilesAndUpdateStatus()
     assert(!_imp->internalCacheEntry->perMipMapTilesState.empty());
 
+    assert(!_imp->localTilesState.state->tiles.empty());
+    
     // This is the tiles state at the mipmap level of interest in the cache
     TileStateHeader cacheStateMap(_imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY, _imp->localTilesState.bounds, &_imp->internalCacheEntry->perMipMapTilesState[_imp->mipMapLevel]);
     assert(!cacheStateMap.state->tiles.empty());

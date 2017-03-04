@@ -172,32 +172,6 @@ EffectInstance::createRenderEngine()
 }
 
 
-U64
-EffectInstance::computeHash(const ComputeHashArgs& args)
-{
-    if (_imp->renderData) {
-        U64 hash;
-        switch (args.hashType) {
-            case HashableObject::eComputeHashTypeTimeViewVariant: {
-                if (_imp->renderData->getFrameViewHash(args.time, args.view, &hash)) {
-                    return hash;
-                }
-            }   break;
-            case HashableObject::eComputeHashTypeTimeViewInvariant: {
-                if (_imp->renderData->getTimeViewInvariantHash(&hash)) {
-                    return hash;
-                }
-            }   break;
-            case HashableObject::eComputeHashTypeOnlyMetadataSlaves: {
-                if (_imp->renderData->getTimeInvariantMetadataHash(&hash)) {
-                    return hash;
-                }
-            }   break;
-        }
-    }
-    return HashableObject::computeHash(args);
-}
-
 void
 EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 {
@@ -298,19 +272,6 @@ EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
         }
     }
 
-    if (_imp->renderData) {
-        switch (args.hashType) {
-            case HashableObject::eComputeHashTypeTimeViewVariant: {
-                _imp->renderData->setFrameViewHash(args.time, args.view, hashValue);
-            }   break;
-            case HashableObject::eComputeHashTypeTimeViewInvariant:
-                _imp->renderData->setTimeViewInvariantHash(hashValue);
-                break;
-            case HashableObject::eComputeHashTypeOnlyMetadataSlaves:
-                _imp->renderData->setTimeInvariantMetadataHash(hashValue);
-                break;
-        }
-    }
 
 } // appendToHash
 

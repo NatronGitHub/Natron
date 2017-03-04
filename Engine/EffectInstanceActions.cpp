@@ -1368,12 +1368,7 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
         findArgs.hashType = HashableObject::eComputeHashTypeTimeViewVariant;
         findArgs.time = time;
         findArgs.view = view;
-        if (!findCachedHash(findArgs, &hash)) {
-            if (_imp->renderData) {
-                // We might have it already if this is a render clone
-                _imp->renderData->getFrameViewHash(time, view, &hash);
-            }
-        }
+        findCachedHash(findArgs, &hash);
     }
     NodePtr thisNode = getNode();
 

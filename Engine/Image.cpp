@@ -265,6 +265,9 @@ Image::ensureBuffersAllocated()
         return;
     }
     for (int i = 0; i < 4; ++i) {
+        if (!_imp->channels[i]) {
+            continue;
+        }
         if (_imp->channels[i]->isAllocated()) {
             // The buffer is already allocated
             continue;

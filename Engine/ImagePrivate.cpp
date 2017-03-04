@@ -47,12 +47,12 @@ ImagePrivate::getCPUDataInternal(const RectI& bounds,
 
 
     switch (format) {
-        case eImageBufferLayoutMonoChannelFullRect: {
+        case eImageBufferLayoutRGBAPackedFullRect: {
             RAMImageStoragePtr fromIsRAMBuffer = toRAMImageStorage(storage[0]);
             assert(fromIsRAMBuffer);
             data->ptrs[0] = fromIsRAMBuffer->getData();
         }   break;
-        case eImageBufferLayoutRGBAPackedFullRect:
+        case eImageBufferLayoutMonoChannelFullRect:
             for (int i = 0; i < data->nComps; ++i) {
                 RAMImageStoragePtr fromIsRAMBuffer = toRAMImageStorage(storage[i]);
                 assert(fromIsRAMBuffer);
