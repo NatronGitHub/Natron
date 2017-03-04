@@ -14,12 +14,12 @@ PortGroup       compiler_blacklist_versions 1.0
 epoch        	 1
 
 fetch.type              git
-github.setup     OpenImageIO oiio 1.7.11 tags/Release-
+github.setup     OpenImageIO oiio 1.7.12 tags/Release-
 #github.version      ${version}-dist
 #github.tarball_from downloads
 
 name             openimageio
-revision         2
+#revision         2
 categories       graphics
 platforms           darwin
 license          BSD
@@ -92,8 +92,8 @@ patchfiles \
     oiio-1.5.23-invalidatespec.patch \
     oiio-1.7.10-c99math.patch \
     oiio-1.7.10-nothreads.patch \
-    oiio-1.7.11-libraw.patch \
-    oiio-1.7.11-tiffposition.patch
+    oiio-1.7.12-libraw.patch \
+    oiio-1.7.12-tiffposition.patch
 
 cmake.out_of_source yes
 
