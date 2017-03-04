@@ -43,6 +43,7 @@ Natron multiple times on the same computer, the different processes will share t
 - Card3D and CornerPin: only show things that are in front of the camera.
 - LensDistortion: add PanoTools/PTGui/PTAssembler/Hugin model.
 - ReadOIIO: add advanced options for reading RAW files.
+- ReadOIIO: fix a bug where the OIIO cache would be disabled on Natron 2.2
 
 
 ## Version 2.2.5
