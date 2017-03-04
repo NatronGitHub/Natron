@@ -70,7 +70,7 @@
 +        if (demosaic_algs[d] != NULL && demosaic == demosaic_algs[d])
              m_processor.imgdata.params.user_qual = d;
 -        else if (demosaic == "none") {
-+        else if (Strutil::iequals (demosaic, "none") {
++        else if (Strutil::iequals (demosaic, "none")) {
  #ifdef LIBRAW_DECODER_FLATFIELD
              // See if we can access the Bayer patterned data for this raw file
              libraw_decoder_info_t decoder_info;
