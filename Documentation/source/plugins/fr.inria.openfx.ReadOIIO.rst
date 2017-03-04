@@ -72,9 +72,9 @@ All supported formats and extensions: bmp: bmp; cineon: cin; dds: dds; dpx: dpx;
 
 OIIO versions:
 
-compiled with 1.7.11
+compiled with 1.7.12
 
-running with 1.7.11
+running with 1.7.12
 
 Inputs
 ------
@@ -182,7 +182,7 @@ Controls
 +-----------------------------------------------------------------+-----------+-----------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | Exposure / ``rawExposure``                                      | Double    | 1               | Amount of exposure correction before de-mosaicing, from 0.25 (2-stop darken) to 8 (3-stop brighten). (Default: 1., meaning no correction.)                                                                                                                                                                                                   |
 +-----------------------------------------------------------------+-----------+-----------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Demosaic / ``rawDemosaic``                                      | Choice    | AHD             | | Force a demosaicing algorithm. Will fall back on AHD if the demosaicing algorithm is not available due to licence restrictions (Modified AHD, AFD, VCD, Mixed, LMMSE are GPL2, AMaZE is GPL3).                                                                                                                                             |
+| Demosaic / ``rawDemosaic``                                      | Choice    | AHD             | | Force a demosaicing algorithm. Will fall back on AHD if the demosaicing algorithm is not available due to licence restrictions (AHD-Mod, AFD, VCD, Mixed, LMMSE are GPL2, AMaZE is GPL3).                                                                                                                                                  |
 |                                                                 |           |                 | | **None**: No demosaicing.                                                                                                                                                                                                                                                                                                                  |
 |                                                                 |           |                 | | **Linear**: Linear interpolation.                                                                                                                                                                                                                                                                                                          |
 |                                                                 |           |                 | | **VNG**: VNG interpolation.                                                                                                                                                                                                                                                                                                                |
