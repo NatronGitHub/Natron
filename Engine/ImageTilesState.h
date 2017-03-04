@@ -82,24 +82,59 @@ struct TileState
 // the last tile in the vector has its top right corner being the top right corner
 // of the image.
 typedef boost::interprocess::allocator<TileState, ExternalSegmentType::segment_manager> TileState_Allocator_ExternalSegment;
-typedef boost::interprocess::vector<TileState, TileState_Allocator_ExternalSegment> TileStateVector;
+typedef boost::interprocess::vector<TileState, TileState_Allocator_ExternalSegment> IPCTileStateVector;
+
+typedef std::vector<TileState> TileStateVector;
 
 /**
  * @brief A tiles vector + 2 members to speed lookup of the full vector
  **/
-struct IPCTileState
+struct IPCTilesState;
+struct TilesState
 {
     TileStateVector tiles;
     std::size_t numPendingTiles;
     std::size_t numRenderedTiles;
 
-    IPCTileState()
+    TilesState()
     : tiles()
     , numPendingTiles(0)
     , numRenderedTiles(0)
     {
 
     }
+    
+};
+
+struct IPCTilesState
+{
+    IPCTileStateVector tiles;
+    std::size_t numPendingTiles;
+    std::size_t numRenderedTiles;
+
+    /*IPCTilesState()
+    : tiles()
+    , numPendingTiles(0)
+    , numRenderedTiles(0)
+    {
+
+    }*/
+
+    IPCTilesState(const void_allocator& alloc)
+    : tiles(alloc)
+    , numPendingTiles(0)
+    , numRenderedTiles(0)
+    {
+        
+    }
+
+    void operator=(const IPCTilesState& other)
+    {
+        tiles = other.tiles;
+        numPendingTiles = other.numPendingTiles;
+        numRenderedTiles = other.numRenderedTiles;
+    }
+
 };
 
 class TileStateHeader
@@ -110,14 +145,14 @@ public:
     // There are boundsRoundedToTileSize / tileSizeX tiles per line
     int tileSizeX, tileSizeY;
     RectI bounds, boundsRoundedToTileSize;
-    IPCTileState *state;
+    TilesState *state;
 
 
     // Do not fills the map
     TileStateHeader();
 
     // Init from an external vector
-    TileStateHeader(int tileSizeX, int tileSizeY, const RectI& bounds, IPCTileState* tiles);
+    TileStateHeader(int tileSizeX, int tileSizeY, const RectI& bounds, TilesState* tiles);
 
     ~TileStateHeader();
 
@@ -129,8 +164,8 @@ public:
     const TileState* getTileAt(int tx, int ty) const;
 };
 
-typedef boost::interprocess::allocator<IPCTileState, ExternalSegmentType::segment_manager> TileStateVector_Allocator_ExternalSegment;
-typedef boost::interprocess::vector<IPCTileState, TileStateVector_Allocator_ExternalSegment> PerMipMapTileStateVector;
+typedef boost::interprocess::allocator<IPCTilesState, ExternalSegmentType::segment_manager> TileStateVector_Allocator_ExternalSegment;
+typedef boost::interprocess::vector<IPCTilesState, TileStateVector_Allocator_ExternalSegment> IPCMipMapTileStateVector;
 
 struct ImageTilesStatePrivate;
 

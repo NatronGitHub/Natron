@@ -542,12 +542,13 @@ public:
             objectPointers->push_back(writeAnonymousSharedObject((int)type, segment));
             objectPointers->push_back(writeAnonymousSharedObject(_valueResult, segment));
         }
-        CacheEntryBase::toMemorySegment(segment, objectPointers, tileDataPtr);
+        CacheEntryBase::toMemorySegment(segment, objectPointers);
     }
 
-    virtual void fromMemorySegment(ExternalSegmentType* segment,
-                                   ExternalSegmentTypeHandleList::const_iterator start,
-                                   ExternalSegmentTypeHandleList::const_iterator end) OVERRIDE FINAL
+    virtual CacheEntryBase::FromMemorySegmentRetCodeEnum fromMemorySegment(bool isLockedForWriting,
+                                                                           ExternalSegmentType* segment,
+                                                                           ExternalSegmentTypeHandleList::const_iterator start,
+                                                                           ExternalSegmentTypeHandleList::const_iterator end) OVERRIDE FINAL
     {
         int type_i;
         if (start == end) {
@@ -567,7 +568,7 @@ public:
             }   break;
         }
         ++start;
-        CacheEntryBase::fromMemorySegment(segment, start, end, tileDataPtr);
+        return CacheEntryBase::fromMemorySegment(isLockedForWriting, segment, start, end);
     }
 
 private:

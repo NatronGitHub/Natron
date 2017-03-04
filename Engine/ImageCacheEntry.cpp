@@ -82,7 +82,7 @@ public:
     // The vector contains the state of the tiles for each mipmap level.
     // This is the last tiles state map that was read from the cache: any tile marked eTileStatusPending is pending
     // because someone else is computing it. Any tile marked eTileStatusNotRendered is computed by us.
-    PerMipMapTileStateVector perMipMapTilesState;
+    std::vector<TilesState> perMipMapTilesState;
 
 #ifdef NATRON_CACHE_NEVER_PERSISTENT
     // If defined, this same object is shared across all threads, hence we need to protect data ourselves
@@ -188,8 +188,24 @@ struct ImageCacheEntryPrivate
     // The RoI of the image, rounded to the tile size
     RectI roiRoundedToTileSize;
 
-    // Pointer to the local buffer on which to get cached data from
-    Image::CPUData localData;
+    // The RoI of the image
+    RectI roi;
+
+
+    // The image buffers, used when the localBuffers is not yet set
+    ImageStorageBasePtr imageBuffers[4];
+
+    // Local image data
+    void* localBuffers[4];
+
+    int nComps;
+
+    int pixelStride;
+
+    // The bitdepth
+    ImageBitDepthEnum bitdepth;
+
+    ImageBufferLayoutEnum format;
 
     // Pointer to the effect for fast abort when copying tiles from/to the cache
     EffectInstancePtr effect;
@@ -213,7 +229,8 @@ struct ImageCacheEntryPrivate
     // When reading the state map, this is the list of tiles to fetch from the cache in fetchAndCopyCachedTiles()
     std::vector<TileCacheIndex> tilesToFetch;
 
-    
+    // If true the entry will be removed from the cache before reading it so we get a clean image
+    bool removeFromCache;
 
     ImageCacheEntryPrivate(ImageCacheEntry* publicInterface,
                            const RectI& pixelRod,
@@ -221,23 +238,32 @@ struct ImageCacheEntryPrivate
                            unsigned int mipMapLevel,
                            ImageBitDepthEnum depth,
                            int nComps,
-                           const void* storage[4],
+                           const ImageStorageBasePtr storage[4],
+                           ImageBufferLayoutEnum format,
                            const EffectInstancePtr& effect,
-                           const ImageCacheKeyPtr& key)
+                           const ImageCacheKeyPtr& key,
+                           bool removeFromCache)
     : _publicInterface(publicInterface)
     , roiRoundedToTileSize(roi)
-    , localData()
+    , roi(roi)
+    , imageBuffers()
+    , localBuffers()
+    , nComps(nComps)
+    , pixelStride(0)
+    , bitdepth(depth)
+    , format(format)
     , effect(effect)
     , mipMapLevel(mipMapLevel)
     , key(key)
     , localTilesState()
     , internalCacheEntry()
     , tilesToFetch()
+    , removeFromCache(removeFromCache)
     {
-        localData.bitDepth = depth;
-        localData.bounds = roi;
-        localData.nComps = nComps;
-        memcpy(localData.ptrs, storage, sizeof(void*) * 4);
+        memcpy(imageBuffers, storage, sizeof(ImageStorageBasePtr) * 4);
+        memset(localBuffers, 0, sizeof(void*) * 4);
+
+
         assert(nComps > 0);
         int tileSizeX, tileSizeY;
         Cache::getTileSizePx(depth, &tileSizeX, &tileSizeY);
@@ -249,6 +275,8 @@ struct ImageCacheEntryPrivate
     {
 
     }
+
+    void ensureImageBuffersAllocated();
 
     enum UpdateStateMapRetCodeEnum
     {
@@ -266,15 +294,14 @@ struct ImageCacheEntryPrivate
     /**
      * @brief Update the state of this local entry from the cache entry
      **/
-    UpdateStateMapRetCodeEnum readAndUpdateStateMap(bool hasExclusiveLock);
+    UpdateStateMapRetCodeEnum readAndUpdateStateMap(bool hasExclusiveLock) WARN_UNUSED_RETURN;
 
 
     /**
      * @brief Fetch from the cache tiles that are cached. This must be called after a call to readAndUpdateStateMap
-     * @returns true on success, false if something went wrong
      * Note that this function does the pixels transfer
      **/
-    bool fetchAndCopyCachedTiles();
+    ActionRetCodeEnum fetchAndCopyCachedTiles() WARN_UNUSED_RETURN;
 
 #ifndef NATRON_CACHE_NEVER_PERSISTENT
     void updateCachedTilesStateMap();
@@ -302,16 +329,48 @@ ImageCacheEntry::ImageCacheEntry(const RectI& pixelRod,
                                  unsigned int mipMapLevel,
                                  ImageBitDepthEnum depth,
                                  int nComps,
-                                 const void* storage[4],
+                                 const ImageStorageBasePtr storage[4],
+                                 ImageBufferLayoutEnum format,
                                  const EffectInstancePtr& effect,
-                                 const ImageCacheKeyPtr& key)
-: _imp(new ImageCacheEntryPrivate(this, pixelRod, roi, mipMapLevel, depth, nComps, storage, effect, key))
+                                 const ImageCacheKeyPtr& key,
+                                 bool removeFromCache)
+: _imp(new ImageCacheEntryPrivate(this, pixelRod, roi, mipMapLevel, depth, nComps, storage, format, effect, key, removeFromCache))
 {
 }
 
 ImageCacheEntry::~ImageCacheEntry()
 {
 
+}
+
+ImageCacheKeyPtr
+ImageCacheEntry::getCacheKey() const
+{
+    return _imp->key;
+}
+
+void
+ImageCacheEntryPrivate::ensureImageBuffersAllocated()
+{
+    if (localBuffers[0]) {
+        // This function was already called
+        return;
+    }
+    for (int i = 0; i < 4; ++i) {
+        if (imageBuffers[i]->isAllocated()) {
+            // The buffer is already allocated
+            continue;
+        }
+        if (imageBuffers[i]->hasAllocateMemoryArgs()) {
+            // Allocate the buffer
+            imageBuffers[i]->allocateMemoryFromSetArgs();
+        }
+    }
+
+    // Extract channel pointers
+    Image::CPUData data;
+    ImagePrivate::getCPUDataInternal(roi, nComps, imageBuffers, bitdepth, format, &data);
+    Image::getChannelPointers((const void**)data.ptrs, roi.x1, roi.y1, roi, nComps, bitdepth, localBuffers, &pixelStride);
 }
 
 template <typename PIX>
@@ -348,14 +407,14 @@ void copyPixelsForDepth(const RectI& renderWindow,
     }
 } // copyPixelsForDepth
 
-static void copyPixelsForDepth(const RectI& renderWindow,
-                               ImageBitDepthEnum depth,
-                               const void* srcPixelsData,
-                               int srcXStride,
-                               int srcYStride,
-                               void* dstPixelsData,
-                               int dstXStride,
-                               int dstYStride)
+static void copyPixels(const RectI& renderWindow,
+                       ImageBitDepthEnum depth,
+                       const void* srcPixelsData,
+                       int srcXStride,
+                       int srcYStride,
+                       void* dstPixelsData,
+                       int dstXStride,
+                       int dstYStride)
 {
     switch (depth) {
         case eImageBitDepthByte:
@@ -387,6 +446,36 @@ static bool isTileAligned(const RectI& bounds,
     assert(bounds.height() <= tileSizeY);
     return bounds.x1 % tileSizeX != 0 || bounds.x2 % tileSizeX != 0 || bounds.y1 % tileSizeY != 0 || bounds.y2 % tileSizeY != 0;
 }
+
+
+template <typename PIX>
+PIX* getPix(PIX* ptr,
+            int x, int y,
+            const RectI& bounds)
+{
+    if (x < bounds.x1 || x >= bounds.x2 || y < bounds.y1 || y >= bounds.y2) {
+        return 0;
+    }
+    return ptr + bounds.width() * y + x;
+}
+
+template <typename PIX>
+static void fillWithConstant(PIX val,
+                             PIX* ptr,
+                             const RectI& roi,
+                             const RectI& bounds)
+{
+
+    PIX* pix = getPix(ptr, roi.x1, roi.y1, bounds);
+    for (int y = roi.y1; y < roi.y2; ++y) {
+        for (int x = roi.x1; x < roi.x2; ++x) {
+            *pix = val;
+            ++pix;
+        }
+        pix += (bounds.width() - roi.width());
+    }
+}
+
 
 /**
  * @brief If the tile bounds is not aligned to the tile size, repeat pixels on the edge.
@@ -428,13 +517,13 @@ static void repeatEdgesForDepth(PIX* ptr,
             
             PIX* origPix = getPix(ptr, bounds.x1, bounds.y2 - 1, roundedBounds);
             
-            PIX* pix = getPix(ptr, roi.x1, roi.y1);
+            PIX* pix = getPix(ptr, roi.x1, roi.y1, roundedBounds);
             for (int y = roi.y1; y < roi.y2; ++y) {
                 PIX* srcPix = origPix;
                 for (int x = roi.x1; x < roi.x2; ++x) {
-                    *pix = srcPix;
+                    *pix = *srcPix;
                     ++pix;
-                    ++origPix;
+                    ++srcPix;
                 }
                 // Remove what was done in the last iteration and go to the next line
                 pix += (roundedBounds.width() - roi.width());
@@ -453,7 +542,7 @@ static void repeatEdgesForDepth(PIX* ptr,
         // 4
         RectI roi(roundedBounds.x1, bounds.y1, bounds.x1, bounds.y2);
         if (!roi.isNull()) {
-            PIX* pix = getPix(ptr, roi.x1, roi.y1);
+            PIX* pix = getPix(ptr, roi.x1, roi.y1, roundedBounds);
             for (int y = roi.y1; y < roi.y2; ++y) {
                 PIX val = *getPix(ptr, bounds.x1, y, roundedBounds);
                 for (int x = roi.x1; x < roi.x2; ++x) {
@@ -469,7 +558,7 @@ static void repeatEdgesForDepth(PIX* ptr,
         // 5
         RectI roi(bounds.x2, bounds.y1, roundedBounds.x1, bounds.y2);
         if (!roi.isNull()) {
-            PIX* pix = getPix(ptr, roi.x1, roi.y1);
+            PIX* pix = getPix(ptr, roi.x1, roi.y1, roundedBounds);
             for (int y = roi.y1; y < roi.y2; ++y) {
                 PIX val = *getPix(ptr, bounds.x2 - 1, y, roundedBounds);
                 for (int x = roi.x1; x < roi.x2; ++x) {
@@ -496,13 +585,13 @@ static void repeatEdgesForDepth(PIX* ptr,
             
             PIX* origPix = getPix(ptr, bounds.x1, bounds.y1, roundedBounds);
             
-            PIX* pix = getPix(ptr, roi.x1, roi.y1);
+            PIX* pix = getPix(ptr, roi.x1, roi.y1, roundedBounds);
             for (int y = roi.y1; y < roi.y2; ++y) {
                 PIX* srcPix = origPix;
                 for (int x = roi.x1; x < roi.x2; ++x) {
-                    *pix = srcPix;
+                    *pix = *srcPix;
                     ++pix;
-                    ++origPix;
+                    ++srcPix;
                 }
                 // Remove what was done in the last iteration and go to the next line
                 pix += (roundedBounds.width() - roi.width());
@@ -513,7 +602,7 @@ static void repeatEdgesForDepth(PIX* ptr,
         // 8
         RectI roi(bounds.x2, roundedBounds.y1, roundedBounds.x2, bounds.y1);
         if (!roi.isNull()) {
-            PIX val = getPix(ptr, bounds.x2 - 1, bounds.y1);
+            PIX val = *getPix(ptr, bounds.x2 - 1, bounds.y1, roundedBounds);
             fillWithConstant(val, ptr, roi, roundedBounds);
         }
     }
@@ -546,17 +635,13 @@ class CachePixelsTransferProcessor : public MultiThreadProcessorBase
 {
 
     std::vector<boost::shared_ptr<TileData> > _tasks;
-    Image::CPUData _localBuffer;
-    int _tileSizeX;
-    int _tileSizeY;
+    ImageCacheEntryPrivate* _imp;
 public:
 
     CachePixelsTransferProcessor(const EffectInstancePtr& renderClone)
     : MultiThreadProcessorBase(renderClone)
     , _tasks()
-    , _localBuffer()
-    , _tileSizeX(-1)
-    , _tileSizeY(-1)
+    , _imp(0)
     {
 
     }
@@ -565,15 +650,11 @@ public:
     {
     }
 
-    void setValues(const Image::CPUData& localBuffer,
-                   int tileSizeX,
-                   int tileSizeY,
+    void setValues(ImageCacheEntryPrivate* imp,
                    const std::vector<boost::shared_ptr<TileData> >& tasks)
     {
-        _localBuffer = localBuffer;
+        _imp = imp;
         _tasks = tasks;
-        _tileSizeX = tileSizeX;
-        _tileSizeY = tileSizeY;
     }
 
 
@@ -581,24 +662,41 @@ public:
                                                   unsigned int nThreads) OVERRIDE FINAL WARN_UNUSED_RETURN
     {
 
+        
         int fromIndex, toIndex;
         ImageMultiThreadProcessorBase::getThreadRange(threadID, nThreads, 0, _tasks.size(), &fromIndex, &toIndex);
         for (int i = fromIndex; i < toIndex; ++i) {
 
             const TileData& task = *_tasks[i];
 
-            RectI renderWindow = _localBuffer.bounds;
-            task.bounds.intersect(_localBuffer.bounds, &renderWindow);
-
             if (copyToCache) {
-                copyPixels(renderWindow, _localBuffer.bitDepth, _localBuffer.ptrs[task.channel_i], _localBuffer.nComps, _localBuffer.bounds.width() * _localBuffer.nComps, task.ptr, 1, task.bounds.width());
+
+                // When copying to the cache, always copy full tiles since we repeated edges for tiles on the border
+                RectI renderWindow = task.bounds;
+                renderWindow.roundToTileSize(_imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY);
+
+
+                const unsigned char* localPix = Image::pixelAtStatic(renderWindow.x1, renderWindow.y1, _imp->roi, _imp->nComps, getSizeOfForBitDepth(_imp->bitdepth), (const unsigned char*)_imp->localBuffers[task.channel_i]);
+
+                copyPixels(renderWindow, _imp->bitdepth, localPix, _imp->pixelStride, _imp->roi.width() * _imp->pixelStride, task.ptr, 1, task.bounds.width());
                 
                 // When inserting a tile in the cache, if this is a tile in the border, repeat edges
-                if (!isTileAligned(task.bounds, _tileSizeX, _tileSizeY)) {
-                    repeatEdges(_localBuffer.bitDepth, task.ptr, task.bounds, _tileSizeX, _tileSizeY);
+                if (!isTileAligned(task.bounds, _imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY)) {
+                    repeatEdges(_imp->bitdepth, task.ptr, task.bounds, _imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY);
                 }
             } else {
-                copyPixels(renderWindow, _localBuffer.bitDepth, task.ptr, 1, task.bounds.width(), _localBuffer.ptrs[task.channel_i], _localBuffer.nComps, _localBuffer.bounds.width() * _localBuffer.nComps);
+
+                // When reading from the cache, if aborted don't continue
+                if (_effect && _effect->isRenderAborted()) {
+                    return eActionStatusAborted;
+                }
+                // When copying from the cache, clip to the tile bounds for the tiles on the border
+                RectI renderWindow;
+                task.bounds.intersect(_imp->roi, &renderWindow);
+
+                const unsigned char* localPix = Image::pixelAtStatic(renderWindow.x1, renderWindow.y1, _imp->roi, _imp->nComps, getSizeOfForBitDepth(_imp->bitdepth), (const unsigned char*)_imp->localBuffers[task.channel_i]);
+
+                copyPixels(renderWindow, _imp->bitdepth, task.ptr, 1, task.bounds.width(), (void*)localPix, _imp->pixelStride, _imp->roi.width() * _imp->pixelStride);
             }
 
         }
@@ -610,50 +708,12 @@ typedef CachePixelsTransferProcessor<true> ToCachePixelsTransferProcessor;
 typedef CachePixelsTransferProcessor<false> FromCachePixelsTransferProcessor;
 
 template <typename PIX>
-PIX* getPix(PIX* ptr,
-            int x, int y,
-            const RectI& bounds)
-{
-    if (x < bounds.x1 || x >= bounds.x2 || y < bounds.y1 || y >= bounds.y2) {
-        return 0;
-    }
-    return ptr + bounds.width() * y + x;
-}
-
-template <typename PIX>
-static void fillWithConstant(PIX val,
-                             PIX* ptr,
-                             const RectI& roi,
-                             const RectI& bounds)
-{
-
-    PIX* pix = getPix(ptr, roi.x1, roi.y1);
-    for (int y = roi.y1; y < roi.y2; ++y) {
-        for (int x = roi.x1; x < roi.x2; ++x) {
-            *pix = val;
-            ++pix;
-        }
-        pix += (bounds.width() - roi.width());
-    }
-}
-
-
-
-template <typename PIX>
 static void downscaleMipMapForDepth(const PIX* srcTilesPtr[4],
                                     PIX* dstTilePtr,
                                     const RectI& dstTileBounds,
                                     int tileSizeX,
                                     int tileSizeY)
 {
-
-    // Higher scale tiles are indexed as follow:
-    //  ---------
-    //  | 2 | 3 |
-    //  ---------
-    //  | 0 | 1 |
-    //  ---------
-
     // All tiles have the same bounds: we don't care about coordinates in this case nor checking whether we are in the bounds
 
     for (int i = 0; i < 4; ++i) {
@@ -751,6 +811,11 @@ public:
         ImageMultiThreadProcessorBase::getThreadRange(threadID, nThreads, 0, _tasks.size(), &fromIndex, &toIndex);
         for (int i = fromIndex; i < toIndex; ++i) {
 
+            // When reading from the cache, if aborted don't continue
+            if (_effect && _effect->isRenderAborted()) {
+                return eActionStatusAborted;
+            }
+
             const DownscaleTile& task = *_tasks[i];
 
             const void* srcPtrs[4] = {task.srcTiles[0]->ptr, task.srcTiles[1]->ptr, task.srcTiles[2]->ptr, task.srcTiles[3]->ptr};
@@ -799,7 +864,7 @@ ImageCacheEntryPrivate::lookupTileStateInPyramid(const std::vector<TileStateHead
             // If the tile has become rendered, mark it in the tiles to
             // fetch list. This will be fetched later on (when outside of the cache
             // scope) in fetchAndCopyCachedTiles()
-            for (int k = 0; k < localData.nComps; ++k) {
+            for (int k = 0; k < nComps; ++k) {
                 tile->perChannelTileIndices[k] = tileState->channelsTileStorageIndex[k];
             }
             return eTileStatusRendered;
@@ -998,7 +1063,7 @@ ImageCacheEntryPrivate::buildTaskPyramidRecursive(unsigned int lookupLevel,
                                                   std::vector<std::vector<boost::shared_ptr<DownscaleTile> > >  *downscaleTilesPerLevel)
 {
 
-    std::vector<boost::shared_ptr<TileData> > outputTasks(localData.nComps);
+    std::vector<boost::shared_ptr<TileData> > outputTasks(nComps);
 
 
     // The tile bounds are clipped to the pixel RoD
@@ -1020,10 +1085,10 @@ ImageCacheEntryPrivate::buildTaskPyramidRecursive(unsigned int lookupLevel,
             upscaledTasks[i] = buildTaskPyramidRecursive(lookupLevel - 1, *tile.upscaleTiles[i],  fetchedExistingTiles, allocatedTiles, existingTiles_i, allocatedTiles_i, tilesToCopy, downscaleTilesPerLevel);
 
         }
-        assert((int)upscaledTasks[0].size() == localData.nComps && (int)upscaledTasks[1].size() == localData.nComps && (int)upscaledTasks[2].size() == localData.nComps && (int)upscaledTasks[3].size() == localData.nComps);
+        assert((int)upscaledTasks[0].size() == nComps && (int)upscaledTasks[1].size() == nComps && (int)upscaledTasks[2].size() == nComps && (int)upscaledTasks[3].size() == nComps);
 
         // Create tasks at this level
-        for (int c = 0; c < localData.nComps; ++c) {
+        for (int c = 0; c < nComps; ++c) {
             boost::shared_ptr<DownscaleTile> task(new DownscaleTile);
             task->bounds = tileBounds;
             assert(*allocatedTiles_i >= 0 && *allocatedTiles_i < (int)allocatedTiles.size());
@@ -1039,7 +1104,7 @@ ImageCacheEntryPrivate::buildTaskPyramidRecursive(unsigned int lookupLevel,
         }
         
     } else { // !tile.upscaleTiles[0]
-        for (int c = 0; c < localData.nComps; ++c) {
+        for (int c = 0; c < nComps; ++c) {
             assert(tile.perChannelTileIndices[c] != -1);
 
 
@@ -1060,7 +1125,7 @@ ImageCacheEntryPrivate::buildTaskPyramidRecursive(unsigned int lookupLevel,
     return outputTasks;
 } // buildTaskPyramidRecursive
 
-bool
+ActionRetCodeEnum
 ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
 {
 
@@ -1070,13 +1135,16 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
     // Number of tiles to allocate to downscale
     std::size_t nTilesAllocNeeded = 0;
     for (std::size_t i = 0; i < tilesToFetch.size(); ++i) {
-        fetchTileIndicesInPyramid(tilesToFetch[i], localData.nComps, &tileIndicesToFetch, &nTilesAllocNeeded);
+        fetchTileIndicesInPyramid(tilesToFetch[i], nComps, &tileIndicesToFetch, &nTilesAllocNeeded);
     }
 
     if (tileIndicesToFetch.empty() && nTilesAllocNeeded) {
         // Nothing to do
-        return true;
+        return eActionStatusOK;
     }
+
+    // We are going to fetch data from the cache, ensure our local buffers are allocated
+    ensureImageBuffersAllocated();
 
     // Get the tile pointers on the cache
     CachePtr tileCache = internalCacheEntry->getCache();
@@ -1090,7 +1158,7 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
     bool gotTiles = tileCache->retrieveAndLockTiles(internalCacheEntry, &tileIndicesToFetch, nTilesAllocNeeded, &fetchedExistingTiles, &allocatedTiles, &cacheData);
     CacheDataLock_RAII cacheDataDeleter(tileCache, cacheData);
     if (!gotTiles) {
-        return false;
+        return eActionStatusFailed;
     }
 
 
@@ -1120,9 +1188,11 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
     for (std::size_t i = 0; i < perLevelTilesToDownscale.size(); ++i) {
         if (!perLevelTilesToDownscale[i].empty()) {
             DownscaleMipMapProcessor processor(effect);
-            processor.setValues(localData.bitDepth, localTilesState.tileSizeX, localTilesState.tileSizeY, perLevelTilesToDownscale[i]);
+            processor.setValues(bitdepth, localTilesState.tileSizeX, localTilesState.tileSizeY, perLevelTilesToDownscale[i]);
             ActionRetCodeEnum stat = processor.launchThreadsBlocking();
-            (void)stat;
+            if (isFailureRetCode(stat)) {
+                return stat;
+            }
 
             stateMapUpdated = true;
 
@@ -1180,15 +1250,13 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
     
     // Finally copy over multiple threads each tile
     FromCachePixelsTransferProcessor processor(effect);
-    processor.setValues(localData, localTilesState.tileSizeX, localTilesState.tileSizeY, tilesToCopy);
+    processor.setValues(this, tilesToCopy);
     ActionRetCodeEnum stat = processor.launchThreadsBlocking();
-    (void)stat;
-
-    return true;
+    return stat;
 
 } // fetchAndCopyCachedTiles
 
-void
+ActionRetCodeEnum
 ImageCacheEntry::fetchCachedTilesAndUpdateStatus(TileStateHeader* tileStatus, bool* hasUnRenderedTile, bool *hasPendingResults)
 {
 
@@ -1209,6 +1277,19 @@ ImageCacheEntry::fetchCachedTilesAndUpdateStatus(TileStateHeader* tileStatus, bo
         assert(cacheStatus == CacheEntryLocker::eCacheEntryStatusCached ||
                cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute);
 
+        if (_imp->removeFromCache && cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
+            _imp->internalCacheEntry->getCache()->removeEntry(_imp->internalCacheEntry);
+            cacheAccess = _imp->internalCacheEntry->getFromCache();
+            while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
+                cacheStatus = cacheAccess->waitForPendingEntry();
+            }
+            assert(cacheStatus == CacheEntryLocker::eCacheEntryStatusCached ||
+                   cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute);
+
+
+            _imp->localTilesState.init(_imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY, _imp->localTilesState.bounds);
+            _imp->removeFromCache = false;
+        }
 #ifdef NATRON_CACHE_NEVER_PERSISTENT
         // In non peristent mode, the entry pointer is directly cached: there's no call to fromMemorySegment/toMemorySegment
         // Emulate what is done when compiled with a persistent cache
@@ -1266,11 +1347,20 @@ ImageCacheEntry::fetchCachedTilesAndUpdateStatus(TileStateHeader* tileStatus, bo
     }
 
     // If we found any new cached tile, fetch and copy them to our local storage
-    _imp->fetchAndCopyCachedTiles();
+    ActionRetCodeEnum stat = _imp->fetchAndCopyCachedTiles();
+    if (isFailureRetCode(stat)) {
+        return stat;
+    }
 
     if (tileStatus) {
         *tileStatus = _imp->localTilesState;
     }
+    assert((!hasPendingResults && !hasUnRenderedTile) || (hasPendingResults && hasUnRenderedTile));
+
+    if (!hasPendingResults && !hasUnRenderedTile) {
+        return eActionStatusOK;
+    }
+    
     *hasPendingResults = false;
     *hasUnRenderedTile = false;
 
@@ -1279,7 +1369,7 @@ ImageCacheEntry::fetchCachedTilesAndUpdateStatus(TileStateHeader* tileStatus, bo
     }
     if (_imp->localTilesState.state->numRenderedTiles == _imp->localTilesState.state->tiles.size()) {
         *hasUnRenderedTile = false;
-        return;
+        return eActionStatusOK;
     }
 
     for (TileStateVector::const_iterator it = _imp->localTilesState.state->tiles.begin(); it != _imp->localTilesState.state->tiles.end(); ++it) {
@@ -1289,10 +1379,11 @@ ImageCacheEntry::fetchCachedTilesAndUpdateStatus(TileStateHeader* tileStatus, bo
             *hasPendingResults = true;
         }
         if (*hasUnRenderedTile && *hasPendingResults) {
-            return;
+            return eActionStatusOK;
         }
     }
 
+    return eActionStatusOK;
 } // fetchCachedTilesAndUpdateStatus
 
 #ifndef NATRON_CACHE_NEVER_PERSISTENT
@@ -1435,7 +1526,7 @@ ImageCacheEntry::markCacheTilesAsRendered()
 
                 hasModifiedTileMap = true;
 
-                for (int c = 0; c < _imp->localData.nComps; ++c) {
+                for (int c = 0; c < _imp->nComps; ++c) {
                     // Mark this tile in the list of tiles to copy
                     boost::shared_ptr<TileData> copy(new TileData);
                     copy->bounds.x1 = tx;
@@ -1483,7 +1574,7 @@ ImageCacheEntry::markCacheTilesAsRendered()
 
     // Finally copy over multiple threads each tile
     ToCachePixelsTransferProcessor processor(_imp->effect);
-    processor.setValues(_imp->localData, _imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY, tilesToCopy);
+    processor.setValues(_imp.get(), tilesToCopy);
     ActionRetCodeEnum stat = processor.launchThreadsBlocking();
     (void)stat;
 
@@ -1543,14 +1634,27 @@ ImageCacheEntry::waitForPendingTiles()
 
 #ifndef NATRON_CACHE_NEVER_PERSISTENT
 
-static void toMemorySegmentInternal(const PerMipMapTileStateVector& localMipMapStates, PerMipMapTileStateVector* cachedMipMapStates, ExternalSegmentType* segment)
+static void fromMemorySegmentInternal(const IPCMipMapTileStateVector& cachedMipMapStates, std::vector<TilesState>* localMipMapStates)
 {
-    void_allocator alloc(segment->get_segment_manager());
+    localMipMapStates->clear();
+    for (std::size_t i = 0; i < cachedMipMapStates.size(); ++i) {
+        TilesState localState;
+        localState.tiles.insert(localState.tiles.end(), cachedMipMapStates[i].tiles.begin(), cachedMipMapStates[i].tiles.end());
+        localState.numPendingTiles = cachedMipMapStates[i].numPendingTiles;
+        localState.numRenderedTiles = cachedMipMapStates[i].numRenderedTiles;
+        localMipMapStates->push_back(localState);
+    }
+}
+static void toMemorySegmentInternal(const std::vector<TilesState>& localMipMapStates, IPCMipMapTileStateVector* cachedMipMapStates, ExternalSegmentType* segment)
+{
+    TileState_Allocator_ExternalSegment alloc(segment->get_segment_manager());
     cachedMipMapStates->clear();
     for (std::size_t i = 0; i < localMipMapStates.size(); ++i) {
-        TileStateVector mipMapStateMap(alloc);
-        mipMapStateMap = localMipMapStates[i];
-        cachedMipMapStates->push_back(mipMapStateMap);
+        IPCTilesState cacheState(alloc);
+        cacheState.tiles.insert(cacheState.tiles.end(), localMipMapStates[i].tiles.begin(), localMipMapStates[i].tiles.end());
+        cacheState.numPendingTiles = localMipMapStates[i].numPendingTiles;
+        cacheState.numRenderedTiles = localMipMapStates[i].numRenderedTiles;
+        cachedMipMapStates->push_back(boost::move(cacheState));
     }
 }
 
@@ -1567,7 +1671,7 @@ ImageCacheEntryInternal::fromMemorySegment(bool isLockedForWriting,
         }
 
         // Read our tiles state vector
-        PerMipMapTileStateVector* mipMapStates = (PerMipMapTileStateVector*)segment->get_address_from_handle(*start);
+        IPCMipMapTileStateVector* mipMapStates = (IPCMipMapTileStateVector*)segment->get_address_from_handle(*start);
         assert(mipMapStates->get_allocator().get_segment_manager() == segment->get_segment_manager());
         ++start;
 
@@ -1582,7 +1686,7 @@ ImageCacheEntryInternal::fromMemorySegment(bool isLockedForWriting,
         } else {
 
             // Copy the tiles states locally
-            perMipMapTilesState = *mipMapStates;
+            fromMemorySegmentInternal(*mipMapStates, &perMipMapTilesState);
 
             // Read the state map: it might modify it by marking tiles pending
             ImageCacheEntryPrivate::UpdateStateMapRetCodeEnum stat = _imp->readAndUpdateStateMap(isLockedForWriting);
@@ -1614,9 +1718,9 @@ ImageCacheEntryInternal::toMemorySegment(ExternalSegmentType* segment, ExternalS
     // Copy the tile state to the memory segment, this will be called the first time we construct the entry in the cache
     {
 
-        void_allocator alloc(segment->get_segment_manager());
+        TileStateVector_Allocator_ExternalSegment alloc(segment->get_segment_manager());
 
-        PerMipMapTileStateVector *mipMapStates = segment->construct<PerMipMapTileStateVector>(boost::interprocess::anonymous_instance)(alloc);
+        IPCMipMapTileStateVector *mipMapStates = segment->construct<IPCMipMapTileStateVector>(boost::interprocess::anonymous_instance)(alloc);
         if (!mipMapStates) {
             throw std::bad_alloc();
         }

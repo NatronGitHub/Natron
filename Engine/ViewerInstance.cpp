@@ -1496,26 +1496,18 @@ ViewerInstance::render(const RenderActionArgs& args)
     renderViewerArgs.renderArgs = shared_from_this();
     renderViewerArgs.channels = displayChannels;
     if (colorImage) {
-        Image::Tile tile;
-        colorImage->getTileAt(0, 0, &tile);
-        colorImage->getCPUData(tile, &renderViewerArgs.colorImage);
+        colorImage->getCPUData(&renderViewerArgs.colorImage);
     }
     if (alphaImage) {
         if (alphaImage == colorImage) {
             renderViewerArgs.alphaImage = renderViewerArgs.colorImage;
         } else {
-            Image::Tile tile;
-            alphaImage->getTileAt(0, 0, &tile);
-            alphaImage->getCPUData(tile, &renderViewerArgs.alphaImage);
+            alphaImage->getCPUData(&renderViewerArgs.alphaImage);
         }
     }
 
-    {
-        Image::Tile dstTile;
-        dstImage->getTileAt(0, 0, &dstTile);
-        dstImage->getCPUData(dstTile, &renderViewerArgs.dstImage);
-    }
 
+    dstImage->getCPUData(&renderViewerArgs.dstImage);
 
     renderViewerArgs.gamma = _imp->gammaKnob.lock()->getValue();
 

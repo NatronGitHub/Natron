@@ -957,7 +957,7 @@ renderSmearDot(const unsigned char* maskData,
     {
         Image::InitStorageArgs initArgs;
         initArgs.bounds = prevDotBounds;
-        initArgs.layer = outputImage->getLayer();
+        initArgs.plane = outputImage->getLayer();
         initArgs.storage = eStorageModeRAM;
         initArgs.bitdepth = outputImage->getBitDepth();
         tmpBuf = Image::create(initArgs);
@@ -973,18 +973,10 @@ renderSmearDot(const unsigned char* maskData,
     }
 
     Image::CPUData dstImageData;
-    {
-        Image::Tile tile;
-        outputImage->getTileAt(0, 0, &tile);
-        outputImage->getCPUData(tile, &dstImageData);
-    }
+    outputImage->getCPUData(&dstImageData);
 
     Image::CPUData tmpImageData;
-    {
-        Image::Tile tile;
-        tmpBuf->getTileAt(0,0, &tile);
-        tmpBuf->getCPUData(tile, &tmpImageData);
-    }
+    tmpBuf->getCPUData(&tmpImageData);
 
     RectI nextDotBounds;
     nextDotBounds.x1 = next.x - maskWidth / 2;
@@ -1971,11 +1963,8 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
         double opacity = rotoItem->getOpacityKnob()->getValueAtTime(t, DimIdx(0), view);
 
         Image::CPUData imageData;
-        {
-            Image::Tile tile;
-            dstImage->getTileAt(0, 0, &tile);
-            dstImage->getCPUData(tile, &imageData);
-        }
+        dstImage->getCPUData(&imageData);
+
 
 
         ////Allocate the cairo temporary buffer

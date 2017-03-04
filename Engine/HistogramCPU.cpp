@@ -499,11 +499,11 @@ HistogramCPU::run()
             image = outputRequest->getImagePlane();
 
             // We only support full rect float RAM images
-            if (image->getStorageMode() == eStorageModeGLTex || image->getBufferFormat() == eImageBufferLayoutMonoChannelTiled || image->getBitDepth() != eImageBitDepthFloat) {
+            if (image->getStorageMode() != eStorageModeRAM|| image->getBitDepth() != eImageBitDepthFloat) {
                 Image::InitStorageArgs initArgs;
                 initArgs.bounds = image->getBounds();
                 initArgs.bitdepth = eImageBitDepthFloat;
-                initArgs.layer = image->getLayer();
+                initArgs.plane = image->getLayer();
                 initArgs.bufferFormat = eImageBufferLayoutRGBAPackedFullRect;
                 initArgs.mipMapLevel = image->getMipMapLevel();
                 initArgs.storage = eStorageModeRAM;
@@ -529,11 +529,8 @@ HistogramCPU::run()
         ret->mipMapLevel = image->getMipMapLevel();
 
         Image::CPUData imageData;
-        {
-            Image::Tile tile;
-            image->getTileAt(0, 0, &tile);
-            image->getCPUData(tile, &imageData);
-        }
+        image->getCPUData(&imageData);
+
 
         RectI roiPixels;
         if (request.roiParam.isNull()) {

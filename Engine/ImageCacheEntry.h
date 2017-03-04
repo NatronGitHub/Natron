@@ -31,6 +31,7 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
+#include "Engine/EngineFwd.h"
 #include "Engine/ImageCacheKey.h"
 #include "Engine/ImageTilesState.h"
 
@@ -55,23 +56,30 @@ public:
      * @brief An image cache entry associated to an image.
      * @param pixelRod is the maximal size the image could have at the mipMapLevel
      * @param roi is the region we are interested in for this image
-     * @param mipMapLevel Indicates the mipmap we are interested in. The rectangles are scaled to this level
+     * @param mipMapLevel Indicates the mipmap we are interested in. The roi/pixelRod are scaled to this level
      * @param depth The bitdepth of the image
-     * @param nComps the number of channels in the image
-     * @param Pointers to the channels storage in RAM
+     * @param nComps the number of channels in the image (1 to 4)
+     * @param Pointers to the buffer(s) storage in RAM
+     * @param format The layout of the image buffer(s)
      * @param effect Pointer to the effect to abort quickly
      * @param key The key corresponding to this entry
+     * @param removeFromCache If true the entry will be removed from the cache before reading it so we get a clean image
      **/
     ImageCacheEntry(const RectI& pixelRod,
                     const RectI& roi,
                     unsigned int mipMapLevel,
                     ImageBitDepthEnum depth,
                     int nComps,
-                    const void* storage[4],
+                    const ImageStorageBasePtr storage[4],
+                    ImageBufferLayoutEnum format,
                     const EffectInstancePtr& effect,
-                    const ImageCacheKeyPtr& key);
+                    const ImageCacheKeyPtr& key,
+                    bool removeFromCache);
 
     ~ImageCacheEntry();
+
+
+    ImageCacheKeyPtr getCacheKey() const;
     
     /**
      * @brief Fetch possibly cached tiles from the cache and update the tiles state for the given mipmap level.
@@ -82,7 +90,7 @@ public:
      * @param hasPendingResults[out] If set to true, then the caller should, after rendering the given rectangles
      * call waitForPendingTiles() and then afterwards recheck the rectangles left to render with this function
      **/
-    void fetchCachedTilesAndUpdateStatus(TileStateHeader* tileStatus, bool* hasUnRenderedTile, bool *hasPendingResults);
+    ActionRetCodeEnum fetchCachedTilesAndUpdateStatus(TileStateHeader* tileStatus, bool* hasUnRenderedTile, bool *hasPendingResults);
 
     /**
      * @brief Should be called once the effect rendered successfully.

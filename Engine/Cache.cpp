@@ -704,7 +704,7 @@ struct MemorySegmentEntryHeader
     , computeThreadMagic(0)
     , pluginID(allocator)
     , entryDataPointerList(allocator)
-    , tileIndices()
+    , tileIndices(allocator)
     , lruNode()
     {
 

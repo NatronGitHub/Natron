@@ -444,11 +444,10 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
 #endif
 
     // Make sure the Natron image rendered is RGBA full rect and on CPU, we don't support other formats to conver to libmv
-    if (sourceImage->getStorageMode() == eStorageModeGLTex ||
-        sourceImage->getBufferFormat() == eImageBufferLayoutMonoChannelTiled) {
+    if (sourceImage->getStorageMode() != eStorageModeRAM) {
         Image::InitStorageArgs initArgs;
         initArgs.bounds = sourceBounds;
-        initArgs.layer = sourceImage->getLayer();
+        initArgs.plane = sourceImage->getLayer();
         initArgs.bufferFormat = eImageBufferLayoutRGBAPackedFullRect;
         initArgs.storage = eStorageModeRAM;
         initArgs.bitdepth = sourceImage->getBitDepth();
@@ -463,11 +462,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
 
     }
     Image::CPUData imageData;
-    {
-        Image::Tile tile;
-        sourceImage->getTileAt(0, 0, &tile);
-        sourceImage->getCPUData(tile, &imageData);
-    }
+    sourceImage->getCPUData(&imageData);
 
     FrameAccessorCacheEntry entry;
     entry.image.reset( new MvFloatImage( intersectedRoI.height(), intersectedRoI.width() ) );

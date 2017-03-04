@@ -37,6 +37,8 @@
 #include "Engine/GPUContextPool.h"
 #include "Engine/Image.h"
 #include "Engine/ImageStorage.h"
+#include "Engine/ImageCacheKey.h"
+#include "Engine/ImageCacheEntry.h"
 #include "Engine/MultiThread.h"
 #include "Engine/OSGLContext.h"
 #include "Engine/OSGLFunctions.h"
@@ -46,17 +48,8 @@
 
 #include "Engine/EngineFwd.h"
 
-// Define to print debug information about tiles caching
-//#define DEBUG_TILES_ACCESS
 
 NATRON_NAMESPACE_ENTER;
-
-
-// Each tile with the coordinates of its lower left corner
-// Each tile is aligned relative to (0,0):
-// an image must at least contain a single tile with coordinates (0,0).
-typedef std::map<TileCoord, Image::Tile, TileCoord_Compare> TileMap;
-
 
 struct ImagePrivate
 {
@@ -65,18 +58,12 @@ struct ImagePrivate
     // The rectangle where data are defined
     RectI originalBounds;
 
-    // The actual rectangle of data. It might be slightly bigger than original bounds:
-    // this is the original bounds rounded to the tile size.
-    RectI boundsRoundedToTile;
+    // Each individual channel storage if mono channel.
+    // If not mono channel only the first buffer contains all channels
+    ImageStorageBasePtr channels[4];
 
-    // Each individual tile storage
-    TileMap tiles;
-
-    // The size in pixels of a tile
-    int tileSizeX, tileSizeY;
-
-    // The layer represented by this image
-    ImagePlaneDesc layer;
+    // The plane represented by this image
+    ImagePlaneDesc plane;
 
     // The proxy scale of the image
     RenderScale proxyScale;
@@ -87,6 +74,9 @@ struct ImagePrivate
     // Controls the cache access for the image
     CacheAccessModeEnum cachePolicy;
 
+    // The cache interface
+    ImageCacheEntryPtr cacheEntry;
+
     // The buffer format
     ImageBufferLayoutEnum bufferFormat;
 
@@ -94,9 +84,6 @@ struct ImagePrivate
     // This will be used to prevent inserting in the cache part of images that had
     // their render aborted.
     EffectInstanceWPtr renderClone;
-
-    // The channels enabled
-    std::bitset<4> enabledChannels;
 
     // The bitdepth of the image
     ImageBitDepthEnum bitdepth;
@@ -110,119 +97,56 @@ struct ImagePrivate
     // If true, tiles are assumed to be allocated, otherwise only cached tiles hold memory
     bool tilesAllocated;
 
-    // If true, throw a std::bad_alloc() as soon as an uncached tile is met
-    bool failIfTileUncached;
-
-    // The OpenGl context used is the image is stored in a texture
-    OSGLContextPtr glContext;
-
-    // The texture target if the image is stored in a texture
-    U32 textureTarget;
-
-    // The following values are passed to the ImageCacheKey
-    U64 nodeHash;
-    bool isDraftImage;
 
     ImagePrivate(Image *publicInterface)
     : _publicInterface(publicInterface)
     , originalBounds()
-    , boundsRoundedToTile()
-    , tiles()
-    , tileSizeX(0)
-    , tileSizeY(0)
-    , layer()
+    , channels()
+    , plane()
     , proxyScale(1.)
     , mipMapLevel(0)
     , cachePolicy(eCacheAccessModeNone)
+    , cacheEntry()
     , bufferFormat(eImageBufferLayoutRGBAPackedFullRect)
     , renderClone()
-    , enabledChannels()
     , bitdepth(eImageBitDepthNone)
     , storage(eStorageModeNone)
     , tilesAllocatedMutex()
     , tilesAllocated(false)
-    , failIfTileUncached(false)
-    , glContext()
-    , textureTarget(0)
-    , nodeHash(0)
-    , isDraftImage(false)
     {
 
     }
 
     ActionRetCodeEnum init(const Image::InitStorageArgs& args);
 
-    ActionRetCodeEnum initTiles();
-
     ActionRetCodeEnum initFromExternalBuffer(const Image::InitStorageArgs& args);
 
-    void initTileChannelStorage(const CachePtr& cache, Image::Tile &tile, const std::vector<int>& channelIndices, std::size_t c);
+    ActionRetCodeEnum initAndFetchFromCache(const Image::InitStorageArgs& args);
 
-    ActionRetCodeEnum initTileAndFetchFromCache(const TileCoord& coord, Image::Tile &tile);
-
-    CacheEntryLocker::CacheEntryStatusEnum fetchBufferFromCacheInternal(const CachePtr& cache,
-                                                                        const CacheImageTileStoragePtr& cacheBuffer,
-                                                                        bool lookupDraft,
-                                                                        unsigned int lookupMipMapLevel,
-                                                                        U64 channelID,
-                                                                        const std::string& pluginID,
-                                                                        Image::Tile &tile,
-                                                                        Image::MonoChannelTile& thisChannelTile);
-    
-    void fetchBufferFromCache(const CachePtr& cache,
-                              const CacheImageTileStoragePtr& cacheBuffer,
-                              U64 channelID,
-                              int channelIndex,
-                              const std::string& pluginID,
-                              Image::Tile &tile,
-                              Image::MonoChannelTile& thisChannelTile);
-
-    /**
-     * @brief Called in the destructor to insert tiles that were processed in the cache.
-     **/
-    void insertTilesInCache();
-
-    /**
-     * @brief Returns a rectangle of tiles coordinates that span the given rectangle of pixel coordinates
-     **/
-    RectI getTilesCoordinates(const RectI& pixelCoordinates) const;
-
-    /**
-     * @brief Helper to copy from a untiled image to a tiled image
-     **/
-    void copyUntiledImageToTiledImage(const Image& fromImage, const Image::CopyPixelsArgs& args);
-
-    /**
-     * @brief Helper to copy from a tiled image to a untiled image
-     **/
-    void copyTiledImageToUntiledImage(const Image& fromImage, const Image::CopyPixelsArgs& args);
-
-    /**
-     * @brief Helper to copy from an untiled image to another untiled image
-     **/
-    void copyUntiledImageToUntiledImage(const Image& fromImage, const Image::CopyPixelsArgs& args);
+    static void getCPUDataInternal(const RectI& bounds,
+                                   int nComps,
+                                   const ImageStorageBasePtr storage[4],
+                                   ImageBitDepthEnum depth,
+                                   ImageBufferLayoutEnum format,
+                                   Image::CPUData* data);
 
     /**
      * @brief The main entry point to copy image portions.
      * The storage may vary as well as the number of components and the bitdepth.
      **/
-    static void copyRectangle(const Image::Tile& fromTile,
-                              StorageModeEnum fromStorage,
-                              ImageBufferLayoutEnum fromLayout,
-                              const Image::Tile& toTile,
-                              StorageModeEnum toStorage,
-                              ImageBufferLayoutEnum toLayout,
-                              const Image::CopyPixelsArgs& args,
-                              const EffectInstancePtr& renderClone);
+    static void copyPixelsInternal(const ImagePrivate* fromImage,
+                                   ImagePrivate* toImage,
+                                   const Image::CopyPixelsArgs& args,
+                                   const EffectInstancePtr& renderClone);
 
     /**
      * @brief If copying pixels from fromImage to toImage cannot be copied directly, this function
      * returns a temporary image that is suitable to copy then to the toImage.
      **/
     static ImagePtr checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image& toImage, const RectI& roi);
-
-   
-
+    
+    
+    
     /**
      * @brief This function can be used to convert CPU buffers with different
      * bitdepth or components.

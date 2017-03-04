@@ -33,6 +33,8 @@
 #include "Engine/Cache.h"
 #include "Engine/CacheEntryKeyBase.h"
 #include "Engine/Node.h"
+#include "Engine/ImageCacheKey.h"
+#include "Engine/ImageCacheEntry.h"
 #include "Engine/Timer.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/ViewerInstance.h"

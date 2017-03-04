@@ -63,6 +63,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/FrameViewRequest.h"
 #include "Engine/ImageCacheKey.h"
 #include "Engine/Image.h"
+#include "Engine/ImageCacheEntry.h"
 #include "Engine/KnobFile.h"
 #include "Engine/Node.h"
 #include "Engine/KnobItemsTable.h"
@@ -2222,7 +2223,7 @@ public:
 
         // Viewer textures are always RGBA
 
-        initArgs.layer = image->getLayer();
+        initArgs.plane = image->getLayer();
         initArgs.mipMapLevel = image->getMipMapLevel();
         initArgs.proxyScale = image->getProxyScale();
         initArgs.bitdepth = image->getBitDepth();
@@ -2247,11 +2248,6 @@ public:
 
         if (outputRequest) {
             inArgs->outputImage = outputRequest->getImagePlane();
-
-            // Ensure all cache lockers are gone
-            if (inArgs->outputImage) {
-                inArgs->outputImage->removeCacheLockers();
-            }
         }
 
         if (isFailureRetCode(inArgs->retCode)) {
@@ -2263,19 +2259,13 @@ public:
         {
             
             
-            // Find the key of the first tile in the image and store it so that in the gui
+            // Find the key of the image and store it so that in the gui
             // we can later on re-use this key to check the cache for the timeline's cache line
-            {
-                Image::Tile tile;
-                inArgs->outputImage->getTileAt(0, 0, &tile);
-                for (std::size_t c = 0; c < tile.perChannelTile.size(); ++c) {
-                    if (tile.perChannelTile[c].entryLocker) {
-                        inArgs->viewerProcessImageCacheKey = toImageCacheKey(tile.perChannelTile[c].entryLocker->getProcessLocalEntry()->getKey());
-                        assert(inArgs->viewerProcessImageCacheKey);
-                        break;
-                    }
-                }
+            ImageCacheEntryPtr cacheEntry = inArgs->outputImage->getCacheEntry();
+            if (cacheEntry) {
+                inArgs->viewerProcessImageCacheKey = cacheEntry->getCacheKey();
             }
+
 
             // The viewer-process node always renders 4 channel images
             assert(inArgs->outputImage->getLayer().getNumComponents() == 4);

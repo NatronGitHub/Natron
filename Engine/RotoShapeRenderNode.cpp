@@ -458,11 +458,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
             if (!glContext->isGPUContext()) {
                 // When rendering smear with OSMesa we need to write to the full image bounds and not only the RoI, so re-attach the default framebuffer
                 Image::CPUData imageData;
-                {
-                    Image::Tile tile;
-                    outputPlane.second->getTileAt(0, 0, &tile);
-                    outputPlane.second->getCPUData(tile, &imageData);
-                }
+                outputPlane.second->getCPUData(&imageData);
 
                 contextAttacher = OSGLContextAttacher::create(glContext, imageData.bounds.width(), imageData.bounds.height(), imageData.bounds.width(), imageData.ptrs[0]);
             }

@@ -1198,31 +1198,22 @@ private:
 
 
 void
-ImagePrivate::copyRectangle(const Image::Tile& fromTile,
-                            StorageModeEnum fromStorage,
-                            ImageBufferLayoutEnum fromLayout,
-                            const Image::Tile& toTile,
-                            StorageModeEnum toStorage,
-                            ImageBufferLayoutEnum toLayout,
-                            const Image::CopyPixelsArgs& args,
-                            const EffectInstancePtr& renderClone)
+ImagePrivate::copyPixelsInternal(const ImagePrivate* fromImage,
+                                 ImagePrivate* toImage,
+                                 const Image::CopyPixelsArgs& args,
+                                 const EffectInstancePtr& renderClone)
 {
 
-    assert(fromStorage != eStorageModeNone && toStorage != eStorageModeNone);
 
-    if (fromStorage == eStorageModeGLTex && toStorage == eStorageModeGLTex) {
-
-        if (args.skipDestinationTilesMarkedCached && toTile.perChannelTile[0].entryLocker && toTile.perChannelTile[0].entryLocker->getStatus() == CacheEntryLocker::eCacheEntryStatusCached) {
-            // Don't write over cached tiles
-            return;
-        }
+    if (fromImage->storage == eStorageModeGLTex && toImage->storage == eStorageModeGLTex) {
+        
 
         // GL texture to GL texture
-        assert(fromLayout == eImageBufferLayoutRGBAPackedFullRect &&
-               toLayout == eImageBufferLayoutRGBAPackedFullRect);
+        assert(fromImage->bufferFormat == eImageBufferLayoutRGBAPackedFullRect &&
+               toImage->bufferFormat == eImageBufferLayoutRGBAPackedFullRect);
 
-        GLImageStoragePtr fromIsGLTexture = toGLImageStorage(fromTile.perChannelTile[0].buffer);
-        GLImageStoragePtr toIsGLTexture = toGLImageStorage(toTile.perChannelTile[0].buffer);
+        GLImageStoragePtr fromIsGLTexture = toGLImageStorage(fromImage->channels[0]);
+        GLImageStoragePtr toIsGLTexture = toGLImageStorage(toImage->channels[0]);
 
         assert(fromIsGLTexture && toIsGLTexture);
         // OpenGL context must be the same, otherwise one of the texture should have been copied
@@ -1239,24 +1230,20 @@ ImagePrivate::copyRectangle(const Image::Tile& fromTile,
             copyGLTexture(fromIsGLTexture, toIsGLTexture, args.roi, fromIsGLTexture->getOpenGLContext());
         }
 
-    } else if (fromStorage == eStorageModeGLTex && toStorage != eStorageModeGLTex) {
-
-        if (args.skipDestinationTilesMarkedCached && toTile.perChannelTile[0].entryLocker && toTile.perChannelTile[0].entryLocker->getStatus() == CacheEntryLocker::eCacheEntryStatusCached) {
-            // Don't write over cached tiles
-            return;
-        }
+    } else if (fromImage->storage == eStorageModeGLTex && toImage->storage != eStorageModeGLTex) {
 
         // GL texture to CPU
-        assert(fromLayout == eImageBufferLayoutRGBAPackedFullRect &&
-               toLayout == eImageBufferLayoutRGBAPackedFullRect);
+        assert(fromImage->bufferFormat == eImageBufferLayoutRGBAPackedFullRect &&
+               toImage->bufferFormat == eImageBufferLayoutRGBAPackedFullRect);
 
-        GLImageStoragePtr fromIsGLTexture = toGLImageStorage(fromTile.perChannelTile[0].buffer);
-        RAMImageStoragePtr toIsRAMBuffer = toRAMImageStorage(toTile.perChannelTile[0].buffer);
+
+        GLImageStoragePtr fromIsGLTexture = toGLImageStorage(fromImage->channels[0]);
+        RAMImageStoragePtr toIsRAMBuffer = toRAMImageStorage(toImage->channels[0]);
 
         // The buffer can only be a RAM buffer because MMAP only supports mono channel tiles
         // which is not supported for the conversion to OpenGL textures.
         assert(fromIsGLTexture && toIsRAMBuffer);
-        assert(toLayout == eImageBufferLayoutRGBAPackedFullRect && toIsRAMBuffer->getNumComponents() == 4);
+        assert(toImage->bufferFormat == eImageBufferLayoutRGBAPackedFullRect && toIsRAMBuffer->getNumComponents() == 4);
 
         // Save the current context
         OSGLContextSaver saveCurrentContext;
@@ -1268,24 +1255,19 @@ ImagePrivate::copyRectangle(const Image::Tile& fromTile,
             convertGLTextureToRGBAPackedCPUBuffer(fromIsGLTexture, args.roi, toIsRAMBuffer, contextAttacher->getContext());
         }
 
-    } else if (fromStorage != eStorageModeGLTex && toStorage == eStorageModeGLTex) {
-
-        if (args.skipDestinationTilesMarkedCached && toTile.perChannelTile[0].entryLocker && toTile.perChannelTile[0].entryLocker->getStatus() == CacheEntryLocker::eCacheEntryStatusCached) {
-            // Don't write over cached tiles
-            return;
-        }
+    } else if (fromImage->storage != eStorageModeGLTex && toImage->storage == eStorageModeGLTex) {
 
         // CPU to GL texture
-        assert(fromLayout == eImageBufferLayoutRGBAPackedFullRect &&
-               toLayout == eImageBufferLayoutRGBAPackedFullRect);
+        assert(fromImage->bufferFormat == eImageBufferLayoutRGBAPackedFullRect &&
+               toImage->bufferFormat == eImageBufferLayoutRGBAPackedFullRect);
 
-        GLImageStoragePtr toIsGLTexture = toGLImageStorage(toTile.perChannelTile[0].buffer);
-        RAMImageStoragePtr fromIsRAMBuffer = toRAMImageStorage(fromTile.perChannelTile[0].buffer);
+        GLImageStoragePtr toIsGLTexture = toGLImageStorage(toImage->channels[0]);
+        RAMImageStoragePtr fromIsRAMBuffer = toRAMImageStorage(fromImage->channels[0]);
 
         // The buffer can only be a RAM buffer because MMAP only supports mono channel tiles
         // which is not supported for the conversion to OpenGL textures.
         assert(toIsGLTexture && fromIsRAMBuffer);
-        assert(fromLayout == eImageBufferLayoutRGBAPackedFullRect && fromIsRAMBuffer->getNumComponents() == 4);
+        assert(fromImage->bufferFormat == eImageBufferLayoutRGBAPackedFullRect && fromIsRAMBuffer->getNumComponents() == 4);
 
         // Save the current context
         OSGLContextSaver saveCurrentContext;
@@ -1301,31 +1283,14 @@ ImagePrivate::copyRectangle(const Image::Tile& fromTile,
 
         // CPU to CPU
 
-        if (args.skipDestinationTilesMarkedCached) {
-            // Don't write over cached tiles
-            // Currently it only skips if all channels are mark cached, otherwise it will write over.
-            // This not very important: effects for now always compute all channels at once.
-            bool hasUncachedTile = false;
-            for (std::size_t i = 0; i < toTile.perChannelTile.size(); ++i) {
-                if (toTile.perChannelTile[i].entryLocker && toTile.perChannelTile[i].entryLocker->getStatus() == CacheEntryLocker::eCacheEntryStatusCached) {
-                    hasUncachedTile = true;
-                }
-            }
-            if (!hasUncachedTile) {
-                return;
-            }
-        }
-
         // The pointer to the RGBA channels.
-        // If layout is RGBAPacked only the first pointer is valid and points to the RGBA buffer.
-        // If layout is RGBACoplanar or mono channel tiled all pointers are set (if they exist).
-        Image::CPUData srcTileData, dstTileData;
-        Image::getCPUData(fromTile, fromLayout, &srcTileData);
-        Image::getCPUData(toTile, toLayout, &dstTileData);
+        Image::CPUData srcData, dstData;
+        fromImage->_publicInterface->getCPUData(&srcData);
+        toImage->_publicInterface->getCPUData(&dstData);
 
         CopyPixelsProcessor processor(renderClone);
         processor.setRenderWindow(args.roi);
-        processor.setValues(srcTileData, dstTileData, args);
+        processor.setValues(srcData, dstData, args);
         processor.process();
 
     } // storage cases

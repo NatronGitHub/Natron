@@ -94,7 +94,7 @@
 // else knows about this object.
 // Also in order to be persistent, all data structures passed in toMemorySegment/fromMemorySegment must be interprocess compliant
 // (i.e: they must use allocators to the memory segment manager passed in parameter.)
-#define NATRON_CACHE_NEVER_PERSISTENT
+//#define NATRON_CACHE_NEVER_PERSISTENT
 
 // If defined (and NATRON_CACHE_NEVER_PERSISTENT is not defined), the cache can handle multiple processes accessing to the same cache concurrently, however
 // the cache may not be placed in a network drive.

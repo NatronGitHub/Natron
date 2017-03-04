@@ -1148,10 +1148,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
 
     Image::CPUData imageData;
     if (image) {
-        Image::Tile tile;
-        bool ok = image->getTileAt(0, 0, &tile);
-        assert(ok);
-        image->getCPUData(tile, &imageData);
+        image->getCPUData(&imageData);
     }
 
 
@@ -3269,16 +3266,12 @@ ViewerGL::getColorAt(double x,
     }
 
 
-    assert(image->getBufferFormat() != eImageBufferLayoutMonoChannelTiled);
-    assert(image->getStorageMode() != eStorageModeGLTex);
+    assert(image->getStorageMode() == eStorageModeRAM);
 
 
     Image::CPUData imageData;
-    {
-        Image::Tile tile;
-        image->getTileAt(0, 0, &tile);
-        image->getCPUData(tile, &imageData);
-    }
+    image->getCPUData(&imageData);
+
 
     *imgMmlevel = image->getMipMapLevel();
     double mipMapScale = 1. / ( 1 << *imgMmlevel );
@@ -3461,11 +3454,7 @@ ViewerGL::getColorAtRect(const RectD &roi, // rectangle in canonical coordinates
 
 
     Image::CPUData imageData;
-    {
-        Image::Tile tile;
-        image->getTileAt(0, 0, &tile);
-        image->getCPUData(tile, &imageData);
-    }
+    image->getCPUData(&imageData);
     
     ViewerColorSpaceEnum srcCS = _imp->viewerTab->getGui()->getApp()->getDefaultColorSpaceForBitDepth(image->getBitDepth());
     const Color::Lut* dstColorSpace;

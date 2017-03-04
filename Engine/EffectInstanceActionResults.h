@@ -131,9 +131,10 @@ public:
 
     virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const OVERRIDE FINAL;
 
-    virtual void fromMemorySegment(ExternalSegmentType* segment,
-                                   ExternalSegmentTypeHandleList::const_iterator start,
-                                   ExternalSegmentTypeHandleList::const_iterator end) OVERRIDE FINAL;
+    virtual CacheEntryBase::FromMemorySegmentRetCodeEnum fromMemorySegment(bool isLockedForWriting,
+                                                                           ExternalSegmentType* segment,
+                                                                           ExternalSegmentTypeHandleList::const_iterator start,
+                                                                           ExternalSegmentTypeHandleList::const_iterator end) OVERRIDE FINAL;
 
 
 private:
@@ -201,9 +202,10 @@ public:
 
     virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const OVERRIDE FINAL;
 
-    virtual void fromMemorySegment(ExternalSegmentType* segment,
-                                   ExternalSegmentTypeHandleList::const_iterator start,
-                                   ExternalSegmentTypeHandleList::const_iterator end) OVERRIDE FINAL;
+    virtual CacheEntryBase::FromMemorySegmentRetCodeEnum fromMemorySegment(bool isLockedForWriting,
+                                                                           ExternalSegmentType* segment,
+                                                                           ExternalSegmentTypeHandleList::const_iterator start,
+                                                                           ExternalSegmentTypeHandleList::const_iterator end) OVERRIDE FINAL;
     
     
 private:
@@ -265,9 +267,10 @@ public:
 
     virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const OVERRIDE FINAL;
 
-    virtual void fromMemorySegment(ExternalSegmentType* segment,
-                                   ExternalSegmentTypeHandleList::const_iterator start,
-                                   ExternalSegmentTypeHandleList::const_iterator end) OVERRIDE FINAL;
+    virtual CacheEntryBase::FromMemorySegmentRetCodeEnum fromMemorySegment(bool isLockedForWriting,
+                                                                           ExternalSegmentType* segment,
+                                                                           ExternalSegmentTypeHandleList::const_iterator start,
+                                                                           ExternalSegmentTypeHandleList::const_iterator end) OVERRIDE FINAL;
 
 private:
 
@@ -340,9 +343,10 @@ public:
 
     virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const OVERRIDE FINAL;
 
-    virtual void fromMemorySegment(ExternalSegmentType* segment,
-                                   ExternalSegmentTypeHandleList::const_iterator start,
-                                   ExternalSegmentTypeHandleList::const_iterator end) OVERRIDE FINAL;
+    virtual CacheEntryBase::FromMemorySegmentRetCodeEnum fromMemorySegment(bool isLockedForWriting,
+                                                                           ExternalSegmentType* segment,
+                                                                           ExternalSegmentTypeHandleList::const_iterator start,
+                                                                           ExternalSegmentTypeHandleList::const_iterator end) OVERRIDE FINAL;
 
 private:
 
@@ -403,9 +407,10 @@ public:
 
     virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const OVERRIDE FINAL;
 
-    virtual void fromMemorySegment(ExternalSegmentType* segment,
-                                   ExternalSegmentTypeHandleList::const_iterator start,
-                                   ExternalSegmentTypeHandleList::const_iterator end) OVERRIDE FINAL;
+    virtual CacheEntryBase::FromMemorySegmentRetCodeEnum fromMemorySegment(bool isLockedForWriting,
+                                                                           ExternalSegmentType* segment,
+                                                                           ExternalSegmentTypeHandleList::const_iterator start,
+                                                                           ExternalSegmentTypeHandleList::const_iterator end) OVERRIDE FINAL;
 
 private:
 
@@ -466,9 +471,10 @@ public:
 
     virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const OVERRIDE FINAL;
 
-    virtual void fromMemorySegment(ExternalSegmentType* segment,
-                                   ExternalSegmentTypeHandleList::const_iterator start,
-                                   ExternalSegmentTypeHandleList::const_iterator end) OVERRIDE FINAL;
+    virtual CacheEntryBase::FromMemorySegmentRetCodeEnum fromMemorySegment(bool isLockedForWriting,
+                                                                           ExternalSegmentType* segment,
+                                                                           ExternalSegmentTypeHandleList::const_iterator start,
+                                                                           ExternalSegmentTypeHandleList::const_iterator end) OVERRIDE FINAL;
 
 private:
 
@@ -552,9 +558,10 @@ public:
 
     virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const OVERRIDE FINAL;
 
-    virtual void fromMemorySegment(ExternalSegmentType* segment,
-                                   ExternalSegmentTypeHandleList::const_iterator start,
-                                   ExternalSegmentTypeHandleList::const_iterator end) OVERRIDE FINAL;
+    virtual CacheEntryBase::FromMemorySegmentRetCodeEnum fromMemorySegment(bool isLockedForWriting,
+                                                                           ExternalSegmentType* segment,
+                                                                           ExternalSegmentTypeHandleList::const_iterator start,
+                                                                           ExternalSegmentTypeHandleList::const_iterator end) OVERRIDE FINAL;
     
 private:
 

@@ -68,98 +68,24 @@ Image::~Image()
     // If this image is the last image holding a pointer to memory buffers, ensure these buffers
     // gets deallocated in a specific thread and not a render thread
     std::list<ImageStorageBasePtr> toDeleteInDeleterThread;
-    for (TileMap::const_iterator it = _imp->tiles.begin(); it != _imp->tiles.end(); ++it) {
-        for (std::size_t c = 0;  c < it->second.perChannelTile.size(); ++c) {
-            toDeleteInDeleterThread.push_back(it->second.perChannelTile[c].buffer);
-#ifdef DEBUG_TILES_ACCESS
-            if (it->second.perChannelTile[c].entryLocker  && _imp->renderClone.lock() /*&& _imp->renderClone.lock()->getScriptName_mt_safe() == "ViewerProcess1"*/ && _imp->cachePolicy != eCacheAccessModeNone) {
-                //if (it->first.tx == 0 && it->first.ty == 0) {
-                    qDebug() << QThread::currentThread() << _imp->renderClone.lock()->getScriptName_mt_safe().c_str() << this << "discard" << it->second.perChannelTile[c].entryLocker->getProcessLocalEntry()->getHashKey();
-                //}
-            }
-#endif
+    for (int i = 0; i < 4; ++i) {
+        if (_imp->channels[i]) {
+            toDeleteInDeleterThread.push_back(_imp->channels[i]);
         }
     }
-
-    _imp->tiles.clear();
-    
+   
     if (!toDeleteInDeleterThread.empty()) {
         appPTR->deleteCacheEntriesInSeparateThread(toDeleteInDeleterThread);
     }
 
 }
 
-void
-Image::removeCacheLockers()
-{
-    for (TileMap::iterator it = _imp->tiles.begin(); it != _imp->tiles.end(); ++it) {
-
-        Image::Tile& tile = it->second;
-
-        for (std::size_t c = 0; c < tile.perChannelTile.size(); ++c) {
-            Image::MonoChannelTile& thisChannelTile = tile.perChannelTile[c];
-#ifdef DEBUG_TILES_ACCESS
-            if (it->second.perChannelTile[c].entryLocker && _imp->renderClone.lock() && /*_imp->renderClone.lock()->getScriptName_mt_safe() == "ViewerProcess1" &&*/ _imp->cachePolicy != eCacheAccessModeNone) {
-                //if (it->first.tx == 0 && it->first.ty == 0) {
-                    qDebug() << QThread::currentThread() << _imp->renderClone.lock()->getScriptName_mt_safe().c_str()  <<  this << "discard" << it->second.perChannelTile[c].entryLocker->getProcessLocalEntry()->getHashKey();
-                //}
-            }
-#endif
-            thisChannelTile.entryLocker.reset();
-        }
-        
-    } // for each tile
-}
-
-void
-Image::pushTilesToCacheIfNotAborted()
-{
-   
-    // Push tiles to cache if needed
-    if (_imp->cachePolicy == eCacheAccessModeReadWrite ||
-        _imp->cachePolicy == eCacheAccessModeWriteOnly) {
-        _imp->insertTilesInCache();
-    }
-
-}
-
-bool
-Image::waitForPendingTiles()
-{
-    if (_imp->cachePolicy == eCacheAccessModeNone) {
-        return true;
-    }
-
-    bool hasStuffToRender = false;
-    for (TileMap::const_iterator it = _imp->tiles.begin(); it != _imp->tiles.end(); ++it) {
-        for (std::size_t c = 0; c < it->second.perChannelTile.size(); ++c) {
-            if (it->second.perChannelTile[c].entryLocker) {
-                if (it->second.perChannelTile[c].entryLocker->getStatus() == CacheEntryLocker::eCacheEntryStatusComputationPending) {
-#ifdef DEBUG_TILES_ACCESS
-                    if (it->first.tx == 0 && it->first.ty == 0 && c == 0 && _imp->renderClone.lock() && _imp->renderClone.lock()->getScriptName_mt_safe() == "ViewerProcess1" && _imp->cachePolicy != eCacheAccessModeNone) {
-                        qDebug() << this << "wait for pending tile:" << it->second.perChannelTile[c].entryLocker->getProcessLocalEntry()->getHashKey();
-                    }
-#endif
-                    it->second.perChannelTile[c].entryLocker->waitForPendingEntry();
-                }
-                CacheEntryLocker::CacheEntryStatusEnum status = it->second.perChannelTile[c].entryLocker->getStatus();
-                assert(status == CacheEntryLocker::eCacheEntryStatusCached || status == CacheEntryLocker::eCacheEntryStatusMustCompute);
-
-                if (status == CacheEntryLocker::eCacheEntryStatusMustCompute) {
-                    hasStuffToRender = true;
-                }
-            }
-        }
-    }
-    return !hasStuffToRender;
-} // waitForPendingTiles
-
 Image::InitStorageArgs::InitStorageArgs()
 : bounds()
+, pixelRod()
 , storage(eStorageModeRAM)
 , bitdepth(eImageBitDepthFloat)
-, layer(ImagePlaneDesc::getRGBAComponents())
-, components()
+, plane(ImagePlaneDesc::getRGBAComponents())
 , cachePolicy(eCacheAccessModeNone)
 , bufferFormat(eImageBufferLayoutRGBAPackedFullRect)
 , proxyScale(1.)
@@ -170,10 +96,8 @@ Image::InitStorageArgs::InitStorageArgs()
 , textureTarget(GL_TEXTURE_2D)
 , externalBuffer()
 , delayAllocation(false)
-, failIfTileNotCached(false)
 {
-    // By default make all channels
-    components[0] = components[1] = components[2] = components[3] = 1;
+
 }
 
 struct ActionStatusWrapper
@@ -199,75 +123,10 @@ struct ActionStatusWrapper
 };
 typedef boost::shared_ptr<ActionStatusWrapper> StatPtr;
 
-class TileFetcherProcessor : public MultiThreadProcessorBase
-{
-
-    std::vector<TileCoord> _tileIndices;
-    ImagePrivate* _imp;
-    StatPtr _stat;
-
-public:
-
-    TileFetcherProcessor(const EffectInstancePtr& renderClone)
-    : MultiThreadProcessorBase(renderClone)
-    {
-
-    }
-
-    virtual ~TileFetcherProcessor()
-    {
-
-    }
-
-    void setData(const std::vector<TileCoord> &tileIndices, ImagePrivate* imp, const StatPtr& stat)
-    {
-        _tileIndices = tileIndices;
-        _imp = imp;
-        _stat = stat;
-    }
-
-    virtual ActionRetCodeEnum multiThreadFunction(unsigned int threadID,
-                                                  unsigned int nThreads) OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        // It might already be failed
-        if (_stat->isFailed()) {
-            return eActionStatusFailed;
-        }
-        // Each threads get a rectangular portion but full scan-lines
-        int fromIndex, toIndex;
-        ImageMultiThreadProcessorBase::getThreadRange(threadID, nThreads, 0, _tileIndices.size(), &fromIndex, &toIndex);
-        for (int i = fromIndex; i < toIndex; ++i) {
-            const TileCoord& c = _tileIndices[i];
-            TileMap::iterator found = _imp->tiles.find(c);
-            if (found == _imp->tiles.end()) {
-                assert(false);
-                continue;
-            }
-            ActionRetCodeEnum stat;
-            try {
-                stat = _imp->initTileAndFetchFromCache(c, found->second);
-            } catch (...) {
-                stat = eActionStatusFailed;
-            }
-            _stat->updateStatus(stat);
-            if (isFailureRetCode(stat)) {
-                return stat;
-            }
-        }
-        return eActionStatusOK;
-    }
-};
 
 ActionRetCodeEnum
 ImagePrivate::init(const Image::InitStorageArgs& args)
 {
-
-
-    // Should be initialized once!
-    assert(tiles.empty());
-    if (!tiles.empty()) {
-        return eActionStatusFailed;
-    }
 
     // The bounds of the image must not be empty
     if (args.bounds.isNull()) {
@@ -282,26 +141,19 @@ ImagePrivate::init(const Image::InitStorageArgs& args)
     }
 
     originalBounds = args.bounds;
-    boundsRoundedToTile = originalBounds;
     cachePolicy = args.cachePolicy;
-    if (args.storage != eStorageModeDisk) {
+    if (args.storage != eStorageModeRAM) {
         // We can only cache stuff on disk.
         cachePolicy = eCacheAccessModeNone;
     }
     bufferFormat = args.bufferFormat;
-    layer = args.layer;
+    plane = args.plane;
     proxyScale = args.proxyScale;
     mipMapLevel = args.mipMapLevel;
     renderClone = args.renderClone;
-    enabledChannels = args.components;
     bitdepth = args.bitdepth;
     tilesAllocated = !args.delayAllocation;
-    failIfTileUncached = args.failIfTileNotCached;
     storage = args.storage;
-    glContext = args.glContext;
-    textureTarget = args.textureTarget;
-    nodeHash = args.nodeTimeViewVariantHash;
-    isDraftImage = args.isDraft;
 
     // OpenGL texture back-end only supports 32-bit float RGBA packed format.
     assert(args.storage != eStorageModeGLTex || (args.bufferFormat == eImageBufferLayoutRGBAPackedFullRect && args.bitdepth == eImageBitDepthFloat));
@@ -309,11 +161,6 @@ ImagePrivate::init(const Image::InitStorageArgs& args)
         return eActionStatusFailed;
     }
 
-    // MMAP storage only supports mono channel tiles, except if it is an external buffer.
-    assert(args.storage != eStorageModeDisk || args.bufferFormat == eImageBufferLayoutMonoChannelTiled || args.externalBuffer);
-    if (args.storage == eStorageModeDisk && args.bufferFormat != eImageBufferLayoutMonoChannelTiled && !args.externalBuffer) {
-        return eActionStatusFailed;
-    }
 
     // If allocating OpenGL textures, ensure the context is current
     OSGLContextAttacherPtr contextLocker;
@@ -322,88 +169,13 @@ ImagePrivate::init(const Image::InitStorageArgs& args)
         contextLocker->attach();
     }
 
-
-    // For tiled layout, get the number of tiles in X and Y depending on the bounds and the tile zie.
-    switch (args.bufferFormat) {
-        case eImageBufferLayoutMonoChannelTiled: {
-            // The size of a tile depends on the bitdepth
-            Cache::getTileSizePx(args.bitdepth, &tileSizeX, &tileSizeY);
-            boundsRoundedToTile.roundToTileSize(tileSizeX, tileSizeY);
-        }   break;
-        case eImageBufferLayoutRGBACoplanarFullRect:
-        case eImageBufferLayoutRGBAPackedFullRect:
-            tileSizeX = originalBounds.width();
-            tileSizeY = originalBounds.height();
-            break;
-    }
-    assert(boundsRoundedToTile.width() % tileSizeX == 0 && boundsRoundedToTile.height() % tileSizeY == 0);
     if (args.externalBuffer) {
         return initFromExternalBuffer(args);
     } else {
-        return initTiles();
+        return initAndFetchFromCache(args);
     }
 } // init
 
-ActionRetCodeEnum
-ImagePrivate::initTiles()
-{
-
-
-    if (tileSizeX == boundsRoundedToTile.width() && tileSizeY == boundsRoundedToTile.height()) {
-        // Single tile
-        TileCoord c = {0, 0};
-        return initTileAndFetchFromCache(c, tiles[c]);
-    }
-
-    StatPtr retcode(new ActionStatusWrapper);
-    retcode->stat = eActionStatusOK;
-
-#ifndef NATRON_IMAGE_SEQUENTIAL_INIT
-    std::vector<TileCoord> tileIndices;
-#endif
-    // Initialize each tile
-    for (int ty = boundsRoundedToTile.y1; ty < boundsRoundedToTile.y2; ty += tileSizeY) {
-        for (int tx = boundsRoundedToTile.x1; tx < boundsRoundedToTile.x2; tx += tileSizeX) {
-            TileCoord c = {tx, ty};
-            assert(tx % tileSizeX == 0 && ty % tileSizeY == 0);
-
-            // This tile was already initialized.
-            {
-                TileMap::const_iterator found = tiles.find(c);
-                if (found != tiles.end()) {
-                    assert(found->second.perChannelTile.size() > 0);
-                    continue;
-                }
-            }
-            Image::Tile& tile = tiles[c];
-#ifndef NATRON_IMAGE_SEQUENTIAL_INIT
-            tileIndices.push_back(c);
-            (void)tile;
-#else
-            retcode->updateStatus(initTileAndFetchFromCache(c, tile));
-            if (retcode->isFailed()) {
-                return retcode->stat;
-            }
-#endif
-        }
-    }
-
-#ifndef NATRON_IMAGE_SEQUENTIAL_INIT
-    TileFetcherProcessor processor(renderClone.lock());
-    processor.setData(tileIndices, this, retcode);
-    ActionRetCodeEnum stat = processor.launchThreadsBlocking();
-    (void)stat;
-    if (retcode->isFailed()) {
-        return retcode->stat;
-    }
-#endif
-#ifdef DEBUG
-    for (TileMap::const_iterator it = tiles.begin(); it != tiles.end(); ++it) {
-        assert(it->second.perChannelTile.size() > 0);
-    }
-#endif
-    return eActionStatusOK;
-} // initTiles
 
 Image::CopyPixelsArgs::CopyPixelsArgs()
 : roi()
@@ -413,7 +185,6 @@ Image::CopyPixelsArgs::CopyPixelsArgs()
 , srcColorspace(eViewerColorSpaceLinear)
 , dstColorspace(eViewerColorSpaceLinear)
 , unPremultIfNeeded(false)
-, skipDestinationTilesMarkedCached(false)
 , forceCopyEvenIfBuffersHaveSameLayout(false)
 {
 
@@ -421,39 +192,29 @@ Image::CopyPixelsArgs::CopyPixelsArgs()
 
 static bool isCopyPixelsNeeded(ImagePrivate* thisImage, ImagePrivate* otherImage)
 {
-    if (thisImage->tiles.size() != otherImage->tiles.size()) {
-        return false;
-    }
     if ((thisImage->storage == eStorageModeGLTex || otherImage->storage == eStorageModeGLTex)) {
-        return false;
+        return true;
     }
 
     if (thisImage->originalBounds != otherImage->originalBounds) {
-        return false;
+        return true;
     }
     if (thisImage->bitdepth != otherImage->bitdepth) {
-        return false;
+        return true;
     }
-    if (thisImage->tiles.begin()->second.perChannelTile.size() != otherImage->tiles.begin()->second.perChannelTile.size()) {
-        return false;
-    }
-    if (thisImage->layer.getNumComponents() != otherImage->layer.getNumComponents()) {
-        return false;
+    if (thisImage->plane.getNumComponents() != otherImage->plane.getNumComponents()) {
+        return true;
     }
     // Only support copying buffers with different layouts if they have 1 component only
-    if (thisImage->bufferFormat != otherImage->bufferFormat && thisImage->layer.getNumComponents() != 1) {
-        return false;
+    if (thisImage->bufferFormat != otherImage->bufferFormat && thisImage->plane.getNumComponents() != 1) {
+        return true;
     }
-    return true;
+    return false;
 }
 
 void
 Image::copyPixels(const Image& other, const CopyPixelsArgs& args)
 {
-    if (_imp->tiles.empty() || other._imp->tiles.empty()) {
-        // Nothing to copy
-        return;
-    }
 
     // Roi must intersect both images bounds
     RectI roi;
@@ -475,59 +236,42 @@ Image::copyPixels(const Image& other, const CopyPixelsArgs& args)
 
     // Optimize: try to just copy the memory buffer pointers instead of copying the memory itself
     if (!args.forceCopyEvenIfBuffersHaveSameLayout && roi == _imp->originalBounds) {
-        bool copyPointers = isCopyPixelsNeeded(_imp.get(), other._imp.get());
-        if (copyPointers) {
-            assert(_imp->tiles.size() == other._imp->tiles.size());
-            TileMap::iterator oit = other._imp->tiles.begin();
-            for (TileMap::iterator it = _imp->tiles.begin(); it != _imp->tiles.end(); ++it, ++oit) {
-                assert(it->second.perChannelTile.size() == oit->second.perChannelTile.size());
-                for (std::size_t c = 0; c < it->second.perChannelTile.size(); ++c) {
-                    assert(it->second.perChannelTile[c].buffer->canSoftCopy(*oit->second.perChannelTile[c].buffer));
-                    it->second.perChannelTile[c].buffer->softCopy(*oit->second.perChannelTile[c].buffer);
-                }
+        bool copyNeeded = isCopyPixelsNeeded(_imp.get(), other._imp.get());
+        if (!copyNeeded) {
+            for (std::size_t c = 0; c < 4; ++c) {
+                assert(_imp->channels[c]->canSoftCopy(*other._imp->channels[c]));
+                _imp->channels[c]->softCopy(*other._imp->channels[c]);
             }
             return;
         }
 
-    } // !args.forceCopyEvenIfBuffersHaveSameLayout
+    } 
 
     ImagePtr tmpImage = ImagePrivate::checkIfCopyToTempImageIsNeeded(other, *this, roi);
 
     const Image* fromImage = tmpImage? tmpImage.get() : &other;
 
-    // Update the roi before calling copyRectangle
-    CopyPixelsArgs argsCpy = args;
-    argsCpy.roi = roi;
+    assert(_imp->originalBounds.contains(args.roi) && other._imp->originalBounds.contains(args.roi));
 
-    if (_imp->bufferFormat == eImageBufferLayoutMonoChannelTiled) {
-        // UNTILED ---> TILED
-        _imp->copyUntiledImageToTiledImage(*fromImage, argsCpy);
+    ImagePrivate::copyPixelsInternal(fromImage->_imp.get(), tmpImage->_imp.get(), args, _imp->renderClone.lock());
 
-    } else {
-
-        // Optimize the case where nobody is tiled
-        if (fromImage->_imp->bufferFormat != eImageBufferLayoutMonoChannelTiled) {
-
-            // UNTILED ---> UNTILED
-            _imp->copyUntiledImageToUntiledImage(*fromImage, argsCpy);
-
-        } else {
-            // TILED ---> UNTILED
-            _imp->copyTiledImageToUntiledImage(*fromImage, argsCpy);
-        }
-
-    } // isTiled
 } // copyPixels
 
 void
 Image::ensureBuffersAllocated()
 {
     QMutexLocker k(&_imp->tilesAllocatedMutex);
-    for (TileMap::iterator it = _imp->tiles.begin(); it != _imp->tiles.end(); ++it) {
-        for (std::size_t c = 0; c < it->second.perChannelTile.size(); ++c) {
-            if (it->second.perChannelTile[c].buffer->hasAllocateMemoryArgs()) {
-                it->second.perChannelTile[c].buffer->allocateMemoryFromSetArgs();
-            }
+    if (_imp->tilesAllocated) {
+        return;
+    }
+    for (int i = 0; i < 4; ++i) {
+        if (_imp->channels[i]->isAllocated()) {
+            // The buffer is already allocated
+            continue;
+        }
+        if (_imp->channels[i]->hasAllocateMemoryArgs()) {
+            // Allocate the buffer
+            _imp->channels[i]->allocateMemoryFromSetArgs();
         }
     }
     _imp->tilesAllocated = true;
@@ -542,11 +286,7 @@ Image::getBufferFormat() const
 StorageModeEnum
 Image::getStorageMode() const
 {
-    if (_imp->tiles.empty()) {
-        return eStorageModeNone;
-    }
-    assert(!_imp->tiles.begin()->second.perChannelTile.empty() && _imp->tiles.begin()->second.perChannelTile[0].buffer);
-    return _imp->tiles.begin()->second.perChannelTile[0].buffer->getStorageMode();
+    return _imp->channels[0]->getStorageMode();
 }
 
 const RectI&
@@ -587,14 +327,14 @@ Image::getLevelFromScale(double s)
 unsigned int
 Image::getComponentsCount() const
 {
-    return _imp->layer.getNumComponents();
+    return _imp->plane.getNumComponents();
 }
 
 
 const ImagePlaneDesc&
 Image::getLayer() const
 {
-    return _imp->layer;
+    return _imp->plane;
 }
 
 
@@ -607,89 +347,16 @@ Image::getBitDepth() const
 GLImageStoragePtr
 Image::getGLImageStorage() const
 {
-    if (_imp->tiles.empty()) {
-        return GLImageStoragePtr();
-    }
-    if (_imp->tiles.begin()->second.perChannelTile.empty()) {
-        return GLImageStoragePtr();
-    }
-    GLImageStoragePtr isGLEntry = toGLImageStorage(_imp->tiles.begin()->second.perChannelTile[0].buffer);
-    return isGLEntry;
+    return toGLImageStorage(_imp->channels[0]);
 }
 
 void
-Image::getCPUData(const Tile& tile, ImageBufferLayoutEnum layout, CPUData* data)
+Image::getCPUData(CPUData* data) const
 {
-    memset(data->ptrs, 0, sizeof(void*) * 4);
-    data->nComps = 0;
-    data->bitDepth = eImageBitDepthNone;
-
-    for (std::size_t i = 0; i < tile.perChannelTile.size(); ++i) {
-        RAMImageStoragePtr fromIsRAMBuffer = toRAMImageStorage(tile.perChannelTile[i].buffer);
-        CacheImageTileStoragePtr fromIsMMAPBuffer = toCacheImageTileStorage(tile.perChannelTile[i].buffer);
-
-        if (!fromIsMMAPBuffer && !fromIsRAMBuffer) {
-            continue;
-        }
-        if (i == 0) {
-            if (fromIsRAMBuffer) {
-                data->ptrs[0] = fromIsRAMBuffer->getData();
-                data->bounds = fromIsRAMBuffer->getBounds();
-                data->bitDepth = fromIsRAMBuffer->getBitDepth();
-                data->nComps = fromIsRAMBuffer->getNumComponents();
-
-                if (layout == eImageBufferLayoutRGBACoplanarFullRect) {
-                    // Coplanar requires offsetting
-                    assert(tile.perChannelTile.size() == 1);
-                    std::size_t planeSize = data->nComps * data->bounds.area() * getSizeOfForBitDepth(data->bitDepth);
-                    if (data->nComps > 1) {
-                        data->ptrs[1] = (char*)data->ptrs[0] + planeSize;
-                        if (data->nComps > 2) {
-                            data->ptrs[2] = (char*)data->ptrs[1] + planeSize;
-                            if (data->nComps > 3) {
-                                data->ptrs[3] = (char*)data->ptrs[2] + planeSize;
-                            }
-                        }
-                    }
-                }
-            } else {
-                data->ptrs[0] = fromIsMMAPBuffer->getData();
-                data->bounds = fromIsMMAPBuffer->getBounds();
-                data->bitDepth = fromIsMMAPBuffer->getBitDepth();
-                data->nComps = tile.perChannelTile.size();
-            }
-        } else {
-            assert(layout == eImageBufferLayoutMonoChannelTiled);
-            int channelIndex = tile.perChannelTile[i].channelIndex;
-            assert(channelIndex >= 0 && channelIndex < 4);
-            if (fromIsRAMBuffer) {
-                data->ptrs[channelIndex] = fromIsRAMBuffer->getData();
-            } else {
-                data->ptrs[channelIndex] = fromIsMMAPBuffer->getData();
-            }
-        }
-    } // for each channel
-} // getCPUData
-
-void
-Image::getCPUData(const Image::Tile& tile,
-                      Image::CPUData* data) const
-{
-    getCPUData(tile, _imp->bufferFormat, data);
+    ImagePrivate* imp = _imp.get();
+    ImagePrivate::getCPUDataInternal(imp->originalBounds, imp->plane.getNumComponents(), imp->channels, imp->bitdepth, imp->bufferFormat, data);
 }
 
-void
-Image::getTileSize(int *tileSizeX, int* tileSizeY) const
-{
-    *tileSizeX = _imp->tileSizeX;
-    *tileSizeY = _imp->tileSizeY;
-}
-
-int
-Image::getNumTiles() const
-{
-    return (int)_imp->tiles.size();
-}
 
 
 CacheAccessModeEnum
@@ -698,19 +365,11 @@ Image::getCachePolicy() const
     return _imp->cachePolicy;
 }
 
-bool
-Image::getTileAt(int tx, int ty, Image::Tile* tile) const
+ImageCacheEntryPtr
+Image::getCacheEntry() const
 {
-    assert(tile);
-    TileCoord coord = {tx, ty};
-    TileMap::const_iterator found = _imp->tiles.find(coord);
-    if (found == _imp->tiles.end()) {
-        return false;
-    }
-    *tile = found->second;
-    return true;
+    return _imp->cacheEntry;
 }
-
 
 class FillProcessor : public ImageMultiThreadProcessorBase
 {
@@ -757,33 +416,28 @@ Image::fill(const RectI & roi,
             float b,
             float a)
 {
-    if (_imp->tiles.empty()) {
-        return;
-    }
 
     if (getStorageMode() == eStorageModeGLTex) {
-        GLImageStoragePtr glEntry = toGLImageStorage(_imp->tiles.begin()->second.perChannelTile[0].buffer);
+        GLImageStoragePtr glEntry = toGLImageStorage(_imp->channels[0]);
         _imp->fillGL(roi, r, g, b, a, glEntry);
         return;
     }
 
 
 
-    for (TileMap::iterator it = _imp->tiles.begin(); it != _imp->tiles.end(); ++it) {
+    Image::CPUData data;
+    getCPUData(&data);
+    RectI clippedRoi;
+    roi.intersect(data.bounds, &clippedRoi);
 
-        Image::CPUData tileData;
-        getCPUData(it->second, &tileData);
-        RectI tileRoI;
-        roi.intersect(tileData.bounds, &tileRoI);
+    RGBAColourF color = {r, g, b, a};
 
-        RGBAColourF color = {r, g, b, a};
+    FillProcessor processor(_imp->renderClone.lock());
+    processor.setValues(data.ptrs, data.bounds, data.bitDepth, data.nComps, color);
+    processor.setRenderWindow(clippedRoi);
+    processor.process();
 
-        FillProcessor processor(_imp->renderClone.lock());
-        processor.setValues(tileData.ptrs, tileData.bounds, tileData.bitDepth, tileData.nComps, color);
-        processor.setRenderWindow(tileRoI);
-        processor.process();
 
-    }
 
 } // fill
 
@@ -810,42 +464,34 @@ Image::ensureBounds(const RectI& roi)
     RectI newBounds = oldBounds;
     newBounds.merge(roi);
 
-    if (_imp->bufferFormat == eImageBufferLayoutMonoChannelTiled) {
-
-        _imp->originalBounds = newBounds;
-        _imp->boundsRoundedToTile = newBounds;
-        _imp->boundsRoundedToTile.roundToTileSize(_imp->tileSizeX, _imp->tileSizeY);
-        return _imp->initTiles();
-
-    } else {
-        ImagePtr tmpImage;
-        {
-            Image::InitStorageArgs initArgs;
-            initArgs.bounds = newBounds;
-            initArgs.layer = getLayer();
-            initArgs.bitdepth = getBitDepth();
-            initArgs.bufferFormat = getBufferFormat();
-            initArgs.storage = getStorageMode();
-            initArgs.mipMapLevel = getMipMapLevel();
-            initArgs.proxyScale = getProxyScale();
-            GLImageStoragePtr isGlEntry = getGLImageStorage();
-            if (isGlEntry) {
-                initArgs.textureTarget = isGlEntry->getGLTextureTarget();
-                initArgs.glContext = isGlEntry->getOpenGLContext();
-            }
-            tmpImage = Image::create(initArgs);
-            if (!tmpImage) {
-                return eActionStatusFailed;
-            }
+    ImagePtr tmpImage;
+    {
+        Image::InitStorageArgs initArgs;
+        initArgs.bounds = newBounds;
+        initArgs.plane = getLayer();
+        initArgs.bitdepth = getBitDepth();
+        initArgs.bufferFormat = getBufferFormat();
+        initArgs.storage = getStorageMode();
+        initArgs.mipMapLevel = getMipMapLevel();
+        initArgs.proxyScale = getProxyScale();
+        GLImageStoragePtr isGlEntry = getGLImageStorage();
+        if (isGlEntry) {
+            initArgs.textureTarget = isGlEntry->getGLTextureTarget();
+            initArgs.glContext = isGlEntry->getOpenGLContext();
         }
-        Image::CopyPixelsArgs cpyArgs;
-        cpyArgs.roi = oldBounds;
-        tmpImage->copyPixels(*this, cpyArgs);
-
-        // Swap images so that this image becomes the resized one.
-        _imp.swap(tmpImage->_imp);
-        return eActionStatusOK;
+        tmpImage = Image::create(initArgs);
+        if (!tmpImage) {
+            return eActionStatusFailed;
+        }
     }
+    Image::CopyPixelsArgs cpyArgs;
+    cpyArgs.roi = oldBounds;
+    tmpImage->copyPixels(*this, cpyArgs);
+
+    // Swap images so that this image becomes the resized one.
+    _imp.swap(tmpImage->_imp);
+    return eActionStatusOK;
+
 } // ensureBounds
 
 void
@@ -993,10 +639,6 @@ Image::downscaleMipMap(const RectI & roi, unsigned int downscaleLevels) const
         return boost::const_pointer_cast<Image>(shared_from_this());
     }
 
-    if (_imp->tiles.empty()) {
-        return ImagePtr();
-    }
-
     // The roi must be contained in the bounds of the image
     assert(_imp->originalBounds.contains(roi));
     if (!_imp->originalBounds.contains(roi)) {
@@ -1009,28 +651,6 @@ Image::downscaleMipMap(const RectI & roi, unsigned int downscaleLevels) const
     RectI previousLevelRoI = roi;
     ImageConstPtr previousLevelImage = shared_from_this();
 
-    // The downscaling function only supports full rect format.
-    // Copy this image to the appropriate format if necessary.
-    if (previousLevelImage->_imp->bufferFormat == eImageBufferLayoutMonoChannelTiled) {
-        InitStorageArgs args;
-        args.bounds = roi;
-        args.renderClone = _imp->renderClone.lock();
-        args.layer = previousLevelImage->_imp->layer;
-        args.bitdepth = previousLevelImage->getBitDepth();
-        args.proxyScale = previousLevelImage->getProxyScale();
-        args.mipMapLevel = previousLevelImage->getMipMapLevel();
-        ImagePtr tmpImg = Image::create(args);
-        if (!tmpImg) {
-            return ImagePtr();
-        }
-        CopyPixelsArgs cpyArgs;
-        cpyArgs.roi = roi;
-        tmpImg->copyPixels(*this, cpyArgs);
-
-        previousLevelImage = tmpImg;
-    }
-
-
     // Build all the mipmap levels until we reach the one we are interested in
     for (unsigned int i = 0; i < downscaleLevels; ++i) {
 
@@ -1042,7 +662,7 @@ Image::downscaleMipMap(const RectI & roi, unsigned int downscaleLevels) const
             InitStorageArgs args;
             args.bounds = halvedRoI;
             args.renderClone = _imp->renderClone.lock();
-            args.layer = previousLevelImage->_imp->layer;
+            args.plane = previousLevelImage->_imp->plane;
             args.bitdepth = previousLevelImage->getBitDepth();
             args.proxyScale = previousLevelImage->getProxyScale();
             args.mipMapLevel = previousLevelImage->getMipMapLevel() + 1;
@@ -1053,10 +673,10 @@ Image::downscaleMipMap(const RectI & roi, unsigned int downscaleLevels) const
         }
 
         Image::CPUData srcTileData;
-        getCPUData(previousLevelImage->_imp->tiles.begin()->second, &srcTileData);
+        previousLevelImage->getCPUData(&srcTileData);
 
         Image::CPUData dstTileData;
-        getCPUData(mipmapImage->_imp->tiles.begin()->second, &dstTileData);
+        mipmapImage->getCPUData(&dstTileData);
 
         ImagePrivate::halveImage((const void**)srcTileData.ptrs, srcTileData.nComps, srcTileData.bitDepth, srcTileData.bounds, dstTileData.ptrs, dstTileData.bounds);
 
@@ -1079,15 +699,13 @@ Image::checkForNaNs(const RectI& roi)
     }
 
     bool hasNan = false;
+    Image::CPUData data;
+    getCPUData(&data);
 
-    for (TileMap::iterator it = _imp->tiles.begin(); it != _imp->tiles.end(); ++it) {
-        Image::CPUData tileData;
-        getCPUData(it->second, &tileData);
+    RectI clippedRoi;
+    roi.intersect(data.bounds, &clippedRoi);
+    hasNan |= _imp->checkForNaNs(data.ptrs, data.nComps, data.bitDepth, data.bounds, clippedRoi);
 
-        RectI tileRoi;
-        roi.intersect(tileData.bounds, &tileRoi);
-        hasNan |= _imp->checkForNaNs(tileData.ptrs, tileData.nComps, tileData.bitDepth, tileData.bounds, tileRoi);
-    }
     return hasNan;
 
 } // checkForNaNs
@@ -1158,46 +776,42 @@ Image::applyMaskMix(const RectI& roi,
         GLImageStoragePtr originalImageTexture, maskTexture, dstTexture;
         if (originalImg) {
             assert(originalImg->getStorageMode() == eStorageModeGLTex);
-            originalImageTexture = toGLImageStorage(originalImg->_imp->tiles.begin()->second.perChannelTile[0].buffer);
+            originalImageTexture = toGLImageStorage(originalImg->_imp->channels[0]);
         }
         if (maskImg && masked) {
             assert(maskImg->getStorageMode() == eStorageModeGLTex);
-            maskTexture = toGLImageStorage(maskImg->_imp->tiles.begin()->second.perChannelTile[0].buffer);
+            maskTexture = toGLImageStorage(maskImg->_imp->channels[0]);
         }
-        dstTexture = toGLImageStorage(_imp->tiles.begin()->second.perChannelTile[0].buffer);
+        dstTexture = toGLImageStorage(_imp->channels[0]);
         ImagePrivate::applyMaskMixGL(originalImageTexture, maskTexture, dstTexture, mix, maskInvert, roi);
         return;
     }
 
-    // This function only works if original image and mask image are in full rect formats with the same bitdepth as output
-    assert(!originalImg || (originalImg->getBufferFormat() != eImageBufferLayoutMonoChannelTiled && originalImg->getBitDepth() == getBitDepth()));
-    assert(!maskImg || (maskImg->getBufferFormat() != eImageBufferLayoutMonoChannelTiled && maskImg->getBitDepth() == getBitDepth()));
+    // This function only works if original image and mask image have the same bitdepth as output
+    assert(!originalImg || (originalImg->getBitDepth() == getBitDepth()));
+    assert(!maskImg || (maskImg->getBitDepth() == getBitDepth()));
 
     Image::CPUData srcImgData, maskImgData;
     if (originalImg) {
-        getCPUData(originalImg->_imp->tiles.begin()->second, &srcImgData);
+        originalImg->getCPUData(&srcImgData);
     }
 
     if (maskImg) {
-        getCPUData(maskImg->_imp->tiles.begin()->second, &maskImgData);
+        maskImg->getCPUData(&maskImgData);
         assert(maskImgData.nComps == 1);
     }
 
+    Image::CPUData dstImgData;
+    getCPUData(&dstImgData);
 
-    for (TileMap::iterator it = _imp->tiles.begin(); it != _imp->tiles.end(); ++it) {
+    RectI tileRoI;
+    roi.intersect(dstImgData.bounds, &tileRoI);
 
-        Image::CPUData dstImgData;
-        getCPUData(it->second, &dstImgData);
+    MaskMixProcessor processor(_imp->renderClone.lock());
+    processor.setValues(srcImgData, maskImgData, dstImgData, mix, maskInvert);
+    processor.setRenderWindow(tileRoI);
+    processor.process();
 
-        RectI tileRoI;
-        roi.intersect(dstImgData.bounds, &tileRoI);
-
-        MaskMixProcessor processor(_imp->renderClone.lock());
-        processor.setValues(srcImgData, maskImgData, dstImgData, mix, maskInvert);
-        processor.setRenderWindow(tileRoI);
-        processor.process();
-
-    } // for each tile
 } // applyMaskMix
 
 bool
@@ -1272,10 +886,10 @@ Image::copyUnProcessedChannels(const RectI& roi,
         GLImageStoragePtr originalImageTexture, dstTexture;
         if (originalImg) {
             assert(originalImg->getStorageMode() == eStorageModeGLTex);
-            originalImageTexture = toGLImageStorage(originalImg->_imp->tiles.begin()->second.perChannelTile[0].buffer);
+            originalImageTexture = toGLImageStorage(originalImg->_imp->channels[0]);
         }
 
-        dstTexture = toGLImageStorage(_imp->tiles.begin()->second.perChannelTile[0].buffer);
+        dstTexture = toGLImageStorage(_imp->channels[0]);
 
         RectI realRoi;
         roi.intersect(dstTexture->getBounds(), &realRoi);
@@ -1283,30 +897,26 @@ Image::copyUnProcessedChannels(const RectI& roi,
         return;
     }
 
-    // This function only works if original  image is in full rect format with the same bitdepth as output
-    assert(!originalImg || (originalImg->getBufferFormat() != eImageBufferLayoutMonoChannelTiled && originalImg->getBitDepth() == getBitDepth()));
+    // This function only works if original  image has the same bitdepth as output
+    assert(!originalImg || (originalImg->getBitDepth() == getBitDepth()));
 
     Image::CPUData srcImgData;
     if (originalImg) {
-        getCPUData(originalImg->_imp->tiles.begin()->second, &srcImgData);
+        originalImg->getCPUData(&srcImgData);
     }
 
 
-    for (TileMap::iterator it = _imp->tiles.begin(); it != _imp->tiles.end(); ++it) {
+    Image::CPUData dstImgData;
+    getCPUData(&dstImgData);
 
-        Image::CPUData dstImgData;
-        getCPUData(it->second, &dstImgData);
+    RectI tileRoI;
+    roi.intersect(dstImgData.bounds, &tileRoI);
 
-        RectI tileRoI;
-        roi.intersect(dstImgData.bounds, &tileRoI);
+    CopyUnProcessedProcessor processor(_imp->renderClone.lock());
+    processor.setValues(srcImgData, dstImgData, processChannels);
+    processor.setRenderWindow(tileRoI);
+    processor.process();
 
-        CopyUnProcessedProcessor processor(_imp->renderClone.lock());
-        processor.setValues(srcImgData, dstImgData, processChannels);
-        processor.setRenderWindow(tileRoI);
-        processor.process();
-
-    } // for each tile
-    
 } // copyUnProcessedChannels
 
 NATRON_NAMESPACE_EXIT;

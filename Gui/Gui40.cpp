@@ -512,13 +512,8 @@ Gui::debugImage(const Image* image,
     }
 
 
-    if (image->getStorageMode() != eStorageModeRAM && image->getStorageMode() != eStorageModeDisk) {
+    if (image->getStorageMode() != eStorageModeRAM) {
         qDebug() << "Only CPU images supported";
-        return;
-    }
-
-    if (image->getBufferFormat() == eImageBufferLayoutMonoChannelTiled) {
-        qDebug() << "Only Full rect image supported";
         return;
     }
 
@@ -528,12 +523,8 @@ Gui::debugImage(const Image* image,
     }
 
     Image::CPUData imageData;
-    {
-        Image::Tile tile;
-        image->getTileAt(0, 0, &tile);
-        image->getCPUData(tile, &imageData);
-    }
-
+    image->getCPUData(&imageData);
+ 
 
     QImage output(renderWindow.width(), renderWindow.height(), QImage::Format_ARGB32);
     const Color::Lut* lut = Color::LutManager::sRGBLut();

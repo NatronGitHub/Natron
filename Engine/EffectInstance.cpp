@@ -924,7 +924,7 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
             initArgs.bounds = outArgs->roiPixel;
             initArgs.proxyScale = outArgs->image->getProxyScale();
             initArgs.mipMapLevel = outArgs->image->getMipMapLevel();
-            initArgs.layer = preferredLayer;
+            initArgs.plane = preferredLayer;
             initArgs.bitdepth = thisBitDepth;
             initArgs.bufferFormat = thisEffectSupportedImageLayout;
             initArgs.storage = preferredStorage;

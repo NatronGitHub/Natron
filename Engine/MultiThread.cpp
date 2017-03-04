@@ -306,10 +306,8 @@ MultiThreadFuture::waitForFinished()
                 return stat;
             }
         }
-        return _imp->status;
     }
-
-
+    return _imp->status;
 }
 
 MultiThreadFuture::~MultiThreadFuture()
@@ -638,7 +636,7 @@ ImageMultiThreadProcessorBase::process()
     nCPUs = std::max(1u, std::min( nCPUs, MultiThread::getNCPUsAvailable())) ;
 
     // call the base multi threading code
-    return launchThreads(nCPUs);
+    return launchThreadsBlocking(nCPUs);
 
 }
 

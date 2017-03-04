@@ -66,17 +66,12 @@ struct RectToRender
     // The type of render for this rectangle
     RenderBackendTypeEnum backendType;
 
-    // The temporary image used to render the rectangle for
-    // each plane.
-    std::map<ImagePlaneDesc, ImagePtr> tmpRenderPlanes;
-
     RectToRender()
     : rect()
     , identityInputNumber(-1)
     , identityTime(0)
     , identityView(0)
     , backendType(eRenderBackendTypeCPU)
-    , tmpRenderPlanes()
     {
 
     }
@@ -531,7 +526,7 @@ public:
                                                     RectD* inputRoDIntersection);
 
 
-    ImagePtr fetchCachedTiles(const FrameViewRequestPtr& requestPassData,
+    ImagePtr createCachedImage(const FrameViewRequestPtr& requestPassData,
                               const RectI& roiPixels,
                               unsigned int mappedMipMapLevel,
                               const ImagePlaneDesc& plane,
@@ -545,11 +540,12 @@ public:
      * @param renderRects In output the rectangles left to render (identity or plain render).
      * @param hasPendingTiles True if some tiles are pending from another render
      **/
-    void checkRestToRender(const FrameViewRequestPtr& requestData,
-                           const RectI& renderMappedRoI,
-                           const RenderScale& renderMappedScale,
-                           std::list<RectToRender>* renderRects,
-                           bool* hasPendingTiles);
+    ActionRetCodeEnum checkRestToRender(const FrameViewRequestPtr& requestData,
+                                        const RectI& renderMappedRoI,
+                                        const RenderScale& renderMappedScale,
+                                        const std::map<ImagePlaneDesc, ImagePtr>& producedImagePlanes,
+                                        std::list<RectToRender>* renderRects,
+                                        bool* hasPendingTiles);
 
 
     ActionRetCodeEnum allocateRenderBackendStorageForRenderRects(const RequestPassSharedDataPtr& requestPassSharedData,
@@ -557,13 +553,15 @@ public:
                                                                  const RectI& roiPixels,
                                                                  unsigned int mipMapLevel,
                                                                  const RenderScale& combinedScale,
-                                                                 std::map<ImagePlaneDesc, ImagePtr> *producedPlanes,
+                                                                 const std::list<ImagePlaneDesc>& producedPlanes,
+                                                                 std::map<ImagePlaneDesc, ImagePtr> *renderLocalPlanes,
                                                                  std::list<RectToRender>* renderRects);
 
     ActionRetCodeEnum launchRenderForSafetyAndBackend(const FrameViewRequestPtr& requestData,
                                                       const RenderScale& combinedScale,
                                                       const std::list<RectToRender>& renderRects,
-                                                      const std::map<ImagePlaneDesc, ImagePtr>& producedImagePlanes);
+                                                      const std::map<ImagePlaneDesc, ImagePtr>& localPlanes,
+                                                      const std::map<ImagePlaneDesc, ImagePtr>& cachedPlanes);
 
 
     ActionRetCodeEnum launchPluginRenderAndHostFrameThreading(const FrameViewRequestPtr& requestData,
@@ -571,14 +569,15 @@ public:
                                                               const EffectOpenGLContextDataPtr& glContextData,
                                                               const RenderScale& combinedScale,
                                                               const std::list<RectToRender>& renderRects,
-                                                              const std::map<ImagePlaneDesc, ImagePtr>& producedImagePlanes);
+                                                              const std::map<ImagePlaneDesc, ImagePtr>& localPlanes,
+                                                              const std::map<ImagePlaneDesc, ImagePtr>& cachedPlanes);
     
     struct TiledRenderingFunctorArgs
     {
         FrameViewRequestPtr requestData;
         OSGLContextPtr glContext;
         EffectOpenGLContextDataPtr glContextData;
-        std::map<ImagePlaneDesc, ImagePtr> producedImagePlanes;
+        std::map<ImagePlaneDesc, ImagePtr> localPlanes, cachedPlanes;
     };
 
 

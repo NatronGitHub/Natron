@@ -41,7 +41,7 @@ TileStateHeader::TileStateHeader()
 
 }
 
-TileStateHeader::TileStateHeader(int tileSizeX, int tileSizeY, const RectI& bounds, IPCTileState* state)
+TileStateHeader::TileStateHeader(int tileSizeX, int tileSizeY, const RectI& bounds, TilesState* state)
 : tileSizeX(tileSizeX)
 , tileSizeY(tileSizeY)
 , bounds(bounds)
@@ -68,7 +68,7 @@ TileStateHeader::init(int tileSizeXParam, int tileSizeYParam, const RectI& roi)
     if (state) {
         delete state;
     }
-    state = new IPCTileState;
+    state = new TilesState;
     state->tiles.resize((boundsRoundedToTileSize.width() / tileSizeX) * (boundsRoundedToTileSize.height() / tileSizeY));
 
     int tile_i = 0;

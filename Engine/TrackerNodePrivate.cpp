@@ -1279,11 +1279,7 @@ TrackerNodeInteract::convertImageTosRGBOpenGLTexture(const ImagePtr& image,
     // The image must have the appropriate format: it has been converted in TrackMarker::getMarkerImage
     assert(image->getBitDepth() == eImageBitDepthFloat && image->getBufferFormat() == eImageBufferLayoutRGBAPackedFullRect && image->getStorageMode() != eStorageModeGLTex);
     Image::CPUData imageData;
-    {
-        Image::Tile tile;
-        image->getTileAt(0, 0, &tile);
-        image->getCPUData(tile, &imageData);
-    }
+    image->getCPUData(&imageData);
 
 
     std::size_t bytesCount = 4 * sizeof(unsigned char) * roi.area();

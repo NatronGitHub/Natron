@@ -84,33 +84,6 @@ class Image
 
 public:
 
-    struct MonoChannelTile
-    {
-        // A pointer to the internal storage
-        ImageStorageBasePtr buffer;
-
-        // Used when working with the cache
-        // to ensure a single thread computed this tile
-        CacheEntryLockerPtr entryLocker;
-
-        // The index of the channel 0 <= channel <= 3
-        // if mono channel.
-        // If not mon channel this is -1
-        int channelIndex;
-        
-    };
-
-    struct Tile
-    {
-        // Each Tile internally holds a pointer to a mono-channel tile in the cache
-        std::vector<MonoChannelTile> perChannelTile;
-
-        // The bounds covered by this tile
-        RectI bounds;
-        
-    };
-    
-
 
     struct InitStorageArgs
     {
@@ -118,6 +91,11 @@ public:
         //
         // Must be set
         RectI bounds;
+
+        // The RoD of the image in pixel coordinates at the given mipMapLevel.
+        //
+        // This must be set if cachePolicy is != eCacheAccessModeNone
+        RectI pixelRod;
 
         // The storage for the image.
         //
@@ -136,18 +114,11 @@ public:
         // Default - eImageBitDepthFloat
         ImageBitDepthEnum bitdepth;
 
-        // The layer represented by this image.
+        // The plane represented by this image.
         //
-        // Default - Color.RGBA layer
-        ImagePlaneDesc layer;
+        // Default - Color.RGBA
+        ImagePlaneDesc plane;
 
-        // Components represented by the image.
-        // This is only used for a mono channel buffered layout
-        // it allows to only create storage for specific channels.
-        // The relevant bits are only those that are in the range of layer.getNumComponents()
-        //
-        // Default - All bits set to 1
-        std::bitset<4> components;
 
         // Whether or not the initializeStorage() may look for already existing tiles in the cache
         //
@@ -213,11 +184,6 @@ public:
         //
         // Default - false
         bool delayAllocation;
-
-        // If true, throw a std::bad_alloc() as soon as an uncached tile is met
-        //
-        // Default  - false;
-        bool failIfTileNotCached;
 
         InitStorageArgs();
     };
@@ -373,12 +339,6 @@ public:
         // Default - false
         bool unPremultIfNeeded;
 
-        // When copying the image, tiles that are marked cached on the
-        // destination image will not be written to
-        //
-        // Default - false
-        bool skipDestinationTilesMarkedCached;
-
         // If this image and the other image have the same number of components,
         // same buffer layout, same bitdepth and same bounds
         // by default the memory buffer pointers will be copied instead of all pixels.
@@ -431,7 +391,7 @@ public:
     /**
      * @brief Utility function to retrieve pointers to the RGBA buffers as well as the pixel stride (in the PIX type).
      * @param ptrs In input, the pixel pointers to their origin depending on the buffer layout.
-     *  - eImageBufferLayoutMonoChannelTiled: The 4 pointers point to a different buffer.
+     *  - eImageBufferLayoutMonoChannelFullRect: The 4 pointers point to a different buffer.
      *  - eImageBufferLayoutRGBACoplanarFullRect: The 4 pointers are set and are each separated by a plane .stride
      *  - eImageBufferLayoutRGBAPackedFullRect: Only the first pointer is set, pointing to the RGBA buffer.
      * @param x The x coordinate where to return channel pointers
@@ -572,27 +532,9 @@ public:
     GLImageStoragePtr getGLImageStorage() const;
 
     /**
-     * @brief For a tile with CPU (RAM or MMAP) storage, returns the buffer data.
+     * @brief For a tile with CPU storage, returns the buffer.
      **/
-    void getCPUData(const Tile& tile, CPUData* data) const;
-
-    static void getCPUData(const Tile& tile, ImageBufferLayoutEnum layout, CPUData* data);
-
-    /**
-     * @brief Return the number of pixels covered by a single tile.
-     **/
-    void getTileSize(int *tileSizeX, int* tileSizeY) const;
-
-    /**
-     * @brief Returns the tile at the given tileIndex.
-     * An untiled image has a single tile at index 0.
-     **/
-    bool getTileAt(int tx, int ty, Tile* tile) const;
-
-    /**
-     * @brief Returns the number of tiles
-     **/
-    int getNumTiles() const;
+    void getCPUData(CPUData* data) const;
 
     /**
      * @brief Returns the cache access policy for this image
@@ -600,27 +542,10 @@ public:
     CacheAccessModeEnum getCachePolicy() const;
 
     /**
-     * @brief If this image has cache write access, invalidates the tiles to the cache.
-     * They will not be inserted in the cache.
+     * @brief Returns the cache entry associated to this image
      **/
-    void removeCacheLockers();
+    ImageCacheEntryPtr getCacheEntry() const;
 
-    /**
-     * @brief If this image has cache write access, push the tiles to the cache.
-     * This will only push the tiles that are marked eCacheEntryStatusMustCompute.
-     * making them available to other threads waiting for it (and waking them up).
-     **/
-    void pushTilesToCacheIfNotAborted();
-
-    /**
-     * @brief If this image has some tiles pending (i.e: another thread is computing it),
-     * wait for them to be available. This function returns once all tiles are marked as cached
-     * or to be computed.
-     * @returns true if everything is rendered, false if there's still tiles to render
-     **/
-    bool waitForPendingTiles();
-
-    
     /**
      * @brief Fills the image with the given colour. If the image components
      * are not RGBA it will ignore the unexisting components.
@@ -628,12 +553,12 @@ public:
      * be used.
      * Filling the image with black and transparant is optimized
      **/
-    void fill( const RectI & roi, float r, float g, float b, float a);
+    void fill(const RectI & roi, float r, float g, float b, float a);
 
     /**
      * @brief Short for fill(roi, 0,0,0,0)
      **/
-    void fillZero( const RectI& roi);
+    void fillZero(const RectI& roi);
 
     /**
      * @brief Short for fill(getBounds(), 0,0,0,0)
