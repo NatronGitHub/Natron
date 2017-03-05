@@ -69,10 +69,11 @@ TileStateHeader::init(int tileSizeXParam, int tileSizeYParam, const RectI& roi)
     bounds = boundsRoundedToTileSize = roi;
     boundsRoundedToTileSize.roundToTileSize(tileSizeX, tileSizeY);
 
-    ownsState = true;
-    if (state) {
+    if (state && ownsState) {
         delete state;
     }
+    ownsState = true;
+
     state = new TilesState;
     state->tiles.resize((boundsRoundedToTileSize.width() / tileSizeX) * (boundsRoundedToTileSize.height() / tileSizeY));
 

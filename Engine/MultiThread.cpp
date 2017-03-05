@@ -275,10 +275,12 @@ MultiThread::~MultiThread()
 struct MultiThreadFuturePrivate
 {
     boost::scoped_ptr<QFuture<ActionRetCodeEnum> > future;
+    std::vector<unsigned int> threadIndices;
     ActionRetCodeEnum status;
 
     MultiThreadFuturePrivate(ActionRetCodeEnum initialStatus)
     : future()
+    , threadIndices()
     , status(initialStatus)
     {
 
@@ -372,23 +374,23 @@ MultiThread::launchThreadsInternal(MultiThread::ThreadFunctor func, unsigned int
 
     if (useThreadPool) {
 
-        std::vector<unsigned int> threadIndexes(nThreads);
+        ret->_imp->threadIndices.resize(nThreads);
         for (unsigned int i = 0; i < nThreads; ++i) {
-            threadIndexes[i] = i;
+            ret->_imp->threadIndices[i] = i;
         }
 
         // If the current thread is a thread-pool thread, make it also do an iteration instead
         // of waiting for other threads
         bool isThreadPoolThread = isRunningInThreadPoolThread();
         if (isThreadPoolThread) {
-            threadIndexes.pop_back();
+            ret->_imp->threadIndices.pop_back();
         }
 
         // DON'T set the maximum thread count: this is a global application setting, and see the documentation excerpt above
         // QThreadPool::globalInstance()->setMaxThreadCount(nThreads);
 
         ret->_imp->future.reset(new QFuture<ActionRetCodeEnum>);
-        *ret->_imp->future = QtConcurrent::mapped( threadIndexes, boost::bind(threadFunctionWrapper, imp, func, _1, nThreads, spawnerThread, effect, customArg) );
+        *ret->_imp->future = QtConcurrent::mapped( ret->_imp->threadIndices, boost::bind(threadFunctionWrapper, imp, func, _1, nThreads, spawnerThread, effect, customArg) );
 
         // Do one iteration in this thread
         if (isThreadPoolThread) {

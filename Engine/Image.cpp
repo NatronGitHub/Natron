@@ -239,8 +239,10 @@ Image::copyPixels(const Image& other, const CopyPixelsArgs& args)
         bool copyNeeded = isCopyPixelsNeeded(_imp.get(), other._imp.get());
         if (!copyNeeded) {
             for (std::size_t c = 0; c < 4; ++c) {
-                assert(_imp->channels[c]->canSoftCopy(*other._imp->channels[c]));
-                _imp->channels[c]->softCopy(*other._imp->channels[c]);
+                if (_imp->channels[c]) {
+                    assert(_imp->channels[c]->canSoftCopy(*other._imp->channels[c]));
+                    _imp->channels[c]->softCopy(*other._imp->channels[c]);
+                }
             }
             return;
         }

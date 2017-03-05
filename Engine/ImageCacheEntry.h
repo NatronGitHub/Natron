@@ -93,6 +93,12 @@ public:
     ActionRetCodeEnum fetchCachedTilesAndUpdateStatus(TileStateHeader* tileStatus, bool* hasUnRenderedTile, bool *hasPendingResults);
 
     /**
+     * @brief Same as fetchCachedTilesAndUpdateStatus except that it does not fetch anything from the cache, it just returns previously
+     * available data resulting from a previous call of fetchCachedTilesAndUpdateStatus
+     **/
+    void getStatus(TileStateHeader* tileStatus, bool* hasUnRenderedTile, bool *hasPendingResults) const;
+
+    /**
      * @brief Should be called once the effect rendered successfully.
      * This function transfers the local pixels to the cache and also updates the tiles state map in the cache.
      * This will also notify any other effect waiting for these tiles.

@@ -494,7 +494,8 @@ public:
      * @param renderRects In output the rectangles left to render (identity or plain render).
      * @param hasPendingTiles True if some tiles are pending from another render
      **/
-    ActionRetCodeEnum checkRestToRender(const FrameViewRequestPtr& requestData,
+    ActionRetCodeEnum checkRestToRender(bool updateTilesStateFromCache,
+                                        const FrameViewRequestPtr& requestData,
                                         const RectI& renderMappedRoI,
                                         const RenderScale& renderMappedScale,
                                         const std::map<ImagePlaneDesc, ImagePtr>& producedImagePlanes,

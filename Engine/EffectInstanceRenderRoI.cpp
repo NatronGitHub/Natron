@@ -407,7 +407,8 @@ EffectInstance::Implementation::canSplitRenderWindowWithIdentityRectangles(const
 } // canSplitRenderWindowWithIdentityRectangles
 
 ActionRetCodeEnum
-EffectInstance::Implementation::checkRestToRender(const FrameViewRequestPtr& requestData,
+EffectInstance::Implementation::checkRestToRender(bool updateTilesStateFromCache,
+                                                  const FrameViewRequestPtr& requestData,
                                                   const RectI& renderMappedRoI,
                                                   const RenderScale& renderMappedScale,
                                                   const std::map<ImagePlaneDesc, ImagePtr>& producedImagePlanes,
@@ -438,16 +439,26 @@ EffectInstance::Implementation::checkRestToRender(const FrameViewRequestPtr& req
         for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = producedImagePlanes.begin(); it != producedImagePlanes.end(); ++it) {
             ImageCacheEntryPtr planeCacheEntry = it->second->getCacheEntry();
             ActionRetCodeEnum stat;
-            if (planeCacheEntry == cacheEntry) {
-                stat = planeCacheEntry->fetchCachedTilesAndUpdateStatus(&tilesState, &hasUnRenderedTile, hasPendingTiles);
+            if (updateTilesStateFromCache) {
+                if (planeCacheEntry == cacheEntry) {
+                    stat = planeCacheEntry->fetchCachedTilesAndUpdateStatus(&tilesState, &hasUnRenderedTile, hasPendingTiles);
+                } else {
+                    stat = planeCacheEntry->fetchCachedTilesAndUpdateStatus(NULL, NULL, NULL);
+                }
             } else {
-                stat = planeCacheEntry->fetchCachedTilesAndUpdateStatus(NULL, NULL, NULL);
+                stat = eActionStatusOK;
+                if (planeCacheEntry == cacheEntry) {
+                    planeCacheEntry->getStatus(&tilesState, &hasUnRenderedTile, hasPendingTiles);
+                } else {
+                    planeCacheEntry->getStatus(NULL, NULL, NULL);
+                }
+
             }
             if (isFailureRetCode(stat)) {
                 return stat;
             }
         }
-
+        
     }
 
     // The image is already computed
@@ -1411,7 +1422,10 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
     ActionRetCodeEnum renderRetCode = eActionStatusOK;
     std::list<RectToRender> renderRects;
     bool hasPendingTiles;
-    renderRetCode = _imp->checkRestToRender(requestData, renderMappedRoI, mappedCombinedScale, cachedImagePlanes, &renderRects, &hasPendingTiles);
+
+    // Initialize what's left to render, without fetching the tiles state map from the cache because it was already fetched in
+    // requestRender()
+    renderRetCode = _imp->checkRestToRender(false /*updateTilesStateFromCache*/, requestData, renderMappedRoI, mappedCombinedScale, cachedImagePlanes, &renderRects, &hasPendingTiles);
     if (isFailureRetCode(renderRetCode) && requestData->getCachePolicy() != eCacheAccessModeNone) {
         finishProducedPlanesTilesStatesMap(cachedImagePlanes, true);
     }
@@ -1456,7 +1470,8 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
             // After this line other threads that should have computed should be done
             image->getCacheEntry()->waitForPendingTiles();
 
-            _imp->checkRestToRender(requestData, renderMappedRoI, mappedCombinedScale, cachedImagePlanes, &renderRects, &hasPendingTiles);
+            // Re-fetch the tiles state from the cache which may have changed now
+            _imp->checkRestToRender(true /*updateTilesStateFromCache*/, requestData, renderMappedRoI, mappedCombinedScale, cachedImagePlanes, &renderRects, &hasPendingTiles);
 
         }
     } // while there is still something not rendered

@@ -260,7 +260,9 @@ struct ImageCacheEntryPrivate
     , tilesToFetch()
     , removeFromCache(removeFromCache)
     {
-        memcpy(imageBuffers, storage, sizeof(ImageStorageBasePtr) * 4);
+        for (int i = 0; i < 4; ++i) {
+            imageBuffers[i] = storage[i];
+        }
         memset(localBuffers, 0, sizeof(void*) * 4);
 
 
@@ -441,13 +443,11 @@ static bool isTileAligned(const RectI& bounds,
                           int tileSizeX,
                           int tileSizeY)
 {
-    assert(bounds.x1 % tileSizeX ||
-           bounds.x2 % tileSizeX);
-    assert(bounds.y1 % tileSizeX ||
-           bounds.y2 % tileSizeY);
+    assert(bounds.x1 % tileSizeX == 0 || bounds.x2 % tileSizeX == 0);
+    assert(bounds.y1 % tileSizeX == 0 || bounds.y2 % tileSizeY == 0);
     assert(bounds.width() <= tileSizeX);
     assert(bounds.height() <= tileSizeY);
-    return bounds.x1 % tileSizeX != 0 || bounds.x2 % tileSizeX != 0 || bounds.y1 % tileSizeY != 0 || bounds.y2 % tileSizeY != 0;
+    return bounds.x1 % tileSizeX == 0 && bounds.x2 % tileSizeX == 0 && bounds.y1 % tileSizeY == 0 && bounds.y2 % tileSizeY == 0;
 }
 
 
@@ -1359,15 +1359,24 @@ ImageCacheEntry::fetchCachedTilesAndUpdateStatus(TileStateHeader* tileStatus, bo
         return stat;
     }
 
+
+    getStatus(tileStatus, hasUnRenderedTile, hasPendingResults);
+
+    return eActionStatusOK;
+} // fetchCachedTilesAndUpdateStatus
+
+void
+ImageCacheEntry::getStatus(TileStateHeader* tileStatus, bool* hasUnRenderedTile, bool *hasPendingResults) const
+{
     if (tileStatus) {
-        *tileStatus = _imp->localTilesState;
+        *tileStatus = TileStateHeader(_imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY, _imp->localTilesState.bounds, _imp->localTilesState.state);
     }
     assert((!hasPendingResults && !hasUnRenderedTile) || (hasPendingResults && hasUnRenderedTile));
 
     if (!hasPendingResults && !hasUnRenderedTile) {
-        return eActionStatusOK;
+        return;
     }
-    
+
     *hasPendingResults = false;
     *hasUnRenderedTile = false;
 
@@ -1376,7 +1385,7 @@ ImageCacheEntry::fetchCachedTilesAndUpdateStatus(TileStateHeader* tileStatus, bo
     }
     if (_imp->localTilesState.state->numRenderedTiles == _imp->localTilesState.state->tiles.size()) {
         *hasUnRenderedTile = false;
-        return eActionStatusOK;
+        return;
     }
 
     for (TileStateVector::const_iterator it = _imp->localTilesState.state->tiles.begin(); it != _imp->localTilesState.state->tiles.end(); ++it) {
@@ -1386,12 +1395,10 @@ ImageCacheEntry::fetchCachedTilesAndUpdateStatus(TileStateHeader* tileStatus, bo
             *hasPendingResults = true;
         }
         if (*hasUnRenderedTile && *hasPendingResults) {
-            return eActionStatusOK;
+            return;
         }
     }
-
-    return eActionStatusOK;
-} // fetchCachedTilesAndUpdateStatus
+} // getStatus
 
 #ifndef NATRON_CACHE_NEVER_PERSISTENT
 void

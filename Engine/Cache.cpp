@@ -3194,13 +3194,13 @@ Cache::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
                 (*allocatedTilesData)[i] = std::make_pair(freeTileIndex, ptr);
 
                 if (cacheEntry) {
-                    assert(tocWriteLock);
+                    assert(bucketWriteLock);
                     cacheEntry->tileIndices.push_back(freeTileIndex);
                 }
             }
         }
 
-        if (!tileIndices && !tileIndices->empty()) {
+        if (tileIndices && !tileIndices->empty()) {
             existingTilesData->resize(tileIndices->size());
             for (std::size_t i = 0; i < tileIndices->size(); ++i) {
                 
