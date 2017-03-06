@@ -423,15 +423,19 @@ EffectInstance::Implementation::checkRestToRender(bool updateTilesStateFromCache
     bool hasUnRenderedTile;
     ImagePtr image = requestData->getImagePlane();
 
-    ImageCacheEntryPtr cacheEntry = image->getCacheEntry();
+    ImageCacheEntryPtr cacheEntry;
+    if (image) {
+        cacheEntry = image->getCacheEntry();
+    }
 
     if (!cacheEntry) {
         // If the image is not cache, fill the state with empty tiles
         hasUnRenderedTile = true;
         *hasPendingTiles = false;
         int tileSizeX, tileSizeY;
-        appPTR->getTileCache()->getTileSizePx(image->getBitDepth(), &tileSizeX, &tileSizeY);;
-        tilesState.init(tileSizeX, tileSizeY, image->getBounds());
+        ImageBitDepthEnum outputBitDepth = _publicInterface->getBitDepth(-1);
+        appPTR->getTileCache()->getTileSizePx(outputBitDepth, &tileSizeX, &tileSizeY);;
+        tilesState.init(tileSizeX, tileSizeY, renderMappedRoI);
     } else {
 
         // Get the tiles states on the image plane requested, but also fetch from the cache other produced planes so we can
@@ -711,7 +715,7 @@ EffectInstance::Implementation::allocateRenderBackendStorageForRenderRects(const
             RectI drawingLastMovementBBoxPixel;
             {
                 RectD lastStrokeRoD = attachedStroke->getLastStrokeMovementBbox();
-                double par = _publicInterface->getBitDepth(-1);
+                double par = _publicInterface->getAspectRatio(-1);
                 lastStrokeRoD.toPixelEnclosing(combinedScale, par, &drawingLastMovementBBoxPixel);
             }
             {

@@ -185,9 +185,6 @@ struct ImageCacheEntryPrivate
     // Ptr to the public interface
     ImageCacheEntry* _publicInterface;
 
-    // The RoI of the image, rounded to the tile size
-    RectI roiRoundedToTileSize;
-
     // The RoI of the image
     RectI roi;
 
@@ -244,7 +241,6 @@ struct ImageCacheEntryPrivate
                            const ImageCacheKeyPtr& key,
                            bool removeFromCache)
     : _publicInterface(publicInterface)
-    , roiRoundedToTileSize(roi)
     , roi(roi)
     , imageBuffers()
     , localBuffers()
@@ -269,7 +265,17 @@ struct ImageCacheEntryPrivate
         assert(nComps > 0);
         int tileSizeX, tileSizeY;
         Cache::getTileSizePx(depth, &tileSizeX, &tileSizeY);
-        roiRoundedToTileSize.roundToTileSize(tileSizeX, tileSizeY);
+
+#ifndef NDEBUG
+        assert(pixelRod.contains(roi));
+        // We must only compute rectangles that are a multiple of the tile size
+        // otherwise we might end up in a situation where a partial tile could be rendered
+        assert(roi.x1 % tileSizeX == 0 || roi.x1 == pixelRod.x1);
+        assert(roi.y1 % tileSizeY == 0 || roi.y1 == pixelRod.y1);
+        assert(roi.x2 % tileSizeX == 0 || roi.x2 == pixelRod.x2);
+        assert(roi.y2 % tileSizeY == 0 || roi.y2 == pixelRod.y2);
+#endif
+
         localTilesState.init(tileSizeX, tileSizeY, pixelRod);
     }
 
@@ -278,7 +284,6 @@ struct ImageCacheEntryPrivate
 
     }
 
-    void ensureImageBuffersAllocated();
 
     enum UpdateStateMapRetCodeEnum
     {
@@ -352,30 +357,30 @@ ImageCacheEntry::getCacheKey() const
 }
 
 void
-ImageCacheEntryPrivate::ensureImageBuffersAllocated()
+ImageCacheEntry::ensureImageBuffersAllocated()
 {
-    if (localBuffers[0]) {
+    if (_imp->localBuffers[0]) {
         // This function was already called
         return;
     }
     for (int i = 0; i < 4; ++i) {
-        if (!imageBuffers[i]) {
+        if (!_imp->imageBuffers[i]) {
             continue;
         }
-        if (imageBuffers[i]->isAllocated()) {
+        if (_imp->imageBuffers[i]->isAllocated()) {
             // The buffer is already allocated
             continue;
         }
-        if (imageBuffers[i]->hasAllocateMemoryArgs()) {
+        if (_imp->imageBuffers[i]->hasAllocateMemoryArgs()) {
             // Allocate the buffer
-            imageBuffers[i]->allocateMemoryFromSetArgs();
+            _imp->imageBuffers[i]->allocateMemoryFromSetArgs();
         }
     }
 
     // Extract channel pointers
     Image::CPUData data;
-    ImagePrivate::getCPUDataInternal(roi, nComps, imageBuffers, bitdepth, format, &data);
-    Image::getChannelPointers((const void**)data.ptrs, roi.x1, roi.y1, roi, nComps, bitdepth, localBuffers, &pixelStride);
+    ImagePrivate::getCPUDataInternal(_imp->roi, _imp->nComps, _imp->imageBuffers, _imp->bitdepth, _imp->format, &data);
+    Image::getChannelPointers((const void**)data.ptrs, _imp->roi.x1, _imp->roi.y1, _imp->roi, _imp->nComps, _imp->bitdepth, _imp->localBuffers, &_imp->pixelStride);
 }
 
 template <typename PIX>
@@ -399,7 +404,7 @@ void copyPixelsForDepth(const RectI& renderWindow,
         }
     } else {
         for (int y = renderWindow.y1; y < renderWindow.y2; ++y) {
-            for (int x = renderWindow.x1; x < renderWindow.x1; ++x,
+            for (int x = renderWindow.x1; x < renderWindow.x2; ++x,
                  src_pixels += srcXStride,
                  dst_pixels += dstXStride) {
 
@@ -672,22 +677,26 @@ public:
 
             const TileData& task = *_tasks[i];
 
+            // Intersect the tile bounds
+
             if (copyToCache) {
 
-                // When copying to the cache, always copy full tiles since we repeated edges for tiles on the border
+                // When copying to the cache, always copy full tiles, but ensure we do not copy outside of the bounds of the RoI for tiles on the border
                 RectI renderWindow = task.bounds;
                 renderWindow.roundToTileSize(_imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY);
+                renderWindow.intersect(_imp->roi, &renderWindow);
 
 
                 const unsigned char* localPix = Image::pixelAtStatic(renderWindow.x1, renderWindow.y1, _imp->roi, _imp->nComps, getSizeOfForBitDepth(_imp->bitdepth), (const unsigned char*)_imp->localBuffers[task.channel_i]);
-
-                copyPixels(renderWindow, _imp->bitdepth, localPix, _imp->pixelStride, _imp->roi.width() * _imp->pixelStride, task.ptr, 1, task.bounds.width());
+                assert(localPix);
+                copyPixels(renderWindow, _imp->bitdepth, localPix, _imp->pixelStride, _imp->roi.width() * _imp->pixelStride, task.ptr, 1, _imp->localTilesState.tileSizeX);
                 
                 // When inserting a tile in the cache, if this is a tile in the border, repeat edges
                 if (!isTileAligned(task.bounds, _imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY)) {
                     repeatEdges(_imp->bitdepth, task.ptr, task.bounds, _imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY);
                 }
             } else {
+
 
                 // When reading from the cache, if aborted don't continue
                 if (_effect && _effect->isRenderAborted()) {
@@ -697,9 +706,10 @@ public:
                 RectI renderWindow;
                 task.bounds.intersect(_imp->roi, &renderWindow);
 
-                const unsigned char* localPix = Image::pixelAtStatic(renderWindow.x1, renderWindow.y1, _imp->roi, _imp->nComps, getSizeOfForBitDepth(_imp->bitdepth), (const unsigned char*)_imp->localBuffers[task.channel_i]);
 
-                copyPixels(renderWindow, _imp->bitdepth, task.ptr, 1, task.bounds.width(), (void*)localPix, _imp->pixelStride, _imp->roi.width() * _imp->pixelStride);
+                const unsigned char* localPix = Image::pixelAtStatic(renderWindow.x1, renderWindow.y1, _imp->roi, _imp->nComps, getSizeOfForBitDepth(_imp->bitdepth), (const unsigned char*)_imp->localBuffers[task.channel_i]);
+                assert(localPix);
+                copyPixels(renderWindow, _imp->bitdepth, task.ptr, 1, _imp->localTilesState.tileSizeX, (void*)localPix, _imp->pixelStride, _imp->roi.width() * _imp->pixelStride);
             }
 
         }
@@ -957,8 +967,8 @@ ImageCacheEntryPrivate::readAndUpdateStateMap(bool hasExclusiveLock)
 
     // For each tile in the RoI (rounded to the tile size):
     // Check the tile status, only copy from the cache if rendered
-    for (int ty = roiRoundedToTileSize.y1; ty < roiRoundedToTileSize.y2; ty += localTilesState.tileSizeY) {
-        for (int tx = roiRoundedToTileSize.x1; tx < roiRoundedToTileSize.x2; tx += localTilesState.tileSizeX) {
+    for (int ty = roi.y1; ty < roi.y2; ty += localTilesState.tileSizeY) {
+        for (int tx = roi.x1; tx < roi.x2; tx += localTilesState.tileSizeX) {
 
             assert(tx % localTilesState.tileSizeX == 0 && ty % localTilesState.tileSizeY == 0);
 
@@ -1151,7 +1161,7 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
     }
 
     // We are going to fetch data from the cache, ensure our local buffers are allocated
-    ensureImageBuffersAllocated();
+    _publicInterface->ensureImageBuffersAllocated();
 
     // Get the tile pointers on the cache
     CachePtr tileCache = internalCacheEntry->getCache();
@@ -1451,8 +1461,8 @@ ImageCacheEntry::markCacheTilesAsAborted()
     CachePtr cache = _imp->internalCacheEntry->getCache();
     bool hasModifiedTileMap = false;
 
-    for (int ty = _imp->roiRoundedToTileSize.y1; ty < _imp->roiRoundedToTileSize.y2; ty += _imp->localTilesState.tileSizeY) {
-        for (int tx = _imp->roiRoundedToTileSize.x1; tx < _imp->roiRoundedToTileSize.x2; tx += _imp->localTilesState.tileSizeX) {
+    for (int ty = _imp->roi.y1; ty < _imp->roi.y2; ty += _imp->localTilesState.tileSizeY) {
+        for (int tx = _imp->roi.x1; tx < _imp->roi.x2; tx += _imp->localTilesState.tileSizeX) {
 
             assert(tx % _imp->localTilesState.tileSizeX == 0 && ty % _imp->localTilesState.tileSizeY == 0);
 
@@ -1516,8 +1526,8 @@ ImageCacheEntry::markCacheTilesAsRendered()
     bool hasModifiedTileMap = false;
 
     std::vector<boost::shared_ptr<TileData> > tilesToCopy;
-    for (int ty = _imp->roiRoundedToTileSize.y1; ty < _imp->roiRoundedToTileSize.y2; ty += _imp->localTilesState.tileSizeY) {
-        for (int tx = _imp->roiRoundedToTileSize.x1; tx < _imp->roiRoundedToTileSize.x2; tx += _imp->localTilesState.tileSizeX) {
+    for (int ty = _imp->roi.y1; ty < _imp->roi.y2; ty += _imp->localTilesState.tileSizeY) {
+        for (int tx = _imp->roi.x1; tx < _imp->roi.x2; tx += _imp->localTilesState.tileSizeX) {
 
             assert(tx % _imp->localTilesState.tileSizeX == 0 && ty % _imp->localTilesState.tileSizeY == 0);
 

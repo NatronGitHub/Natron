@@ -80,7 +80,10 @@ public:
 
 
     ImageCacheKeyPtr getCacheKey() const;
-    
+
+    void ensureImageBuffersAllocated();
+
+
     /**
      * @brief Fetch possibly cached tiles from the cache and update the tiles state for the given mipmap level.
      * This function will mark unrendered tiles as being rendered: any other thread/process trying to access them will

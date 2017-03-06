@@ -3152,6 +3152,7 @@ Cache::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
 
             // To grow the file we need to take the write lock on the tiles file
             if (!tilesLock->tileWriteLock) {
+                tilesLock->tileReadLock.reset();
 #ifndef NATRON_CACHE_INTERPROCESS_ROBUST
                 tilesLock->tileWriteLock.reset(new Sharable_WriteLock(_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex));
 #else

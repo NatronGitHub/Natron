@@ -266,19 +266,24 @@ Image::ensureBuffersAllocated()
     if (_imp->tilesAllocated) {
         return;
     }
-    for (int i = 0; i < 4; ++i) {
-        if (!_imp->channels[i]) {
-            continue;
-        }
-        if (_imp->channels[i]->isAllocated()) {
-            // The buffer is already allocated
-            continue;
-        }
-        if (_imp->channels[i]->hasAllocateMemoryArgs()) {
-            // Allocate the buffer
-            _imp->channels[i]->allocateMemoryFromSetArgs();
+    if (_imp->cacheEntry) {
+        _imp->cacheEntry->ensureImageBuffersAllocated();
+    } else {
+        for (int i = 0; i < 4; ++i) {
+            if (!_imp->channels[i]) {
+                continue;
+            }
+            if (_imp->channels[i]->isAllocated()) {
+                // The buffer is already allocated
+                continue;
+            }
+            if (_imp->channels[i]->hasAllocateMemoryArgs()) {
+                // Allocate the buffer
+                _imp->channels[i]->allocateMemoryFromSetArgs();
+            }
         }
     }
+
     _imp->tilesAllocated = true;
 } // ensureBuffersAllocated
 
