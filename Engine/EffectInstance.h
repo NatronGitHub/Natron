@@ -859,6 +859,9 @@ public:
 
     ActionRetCodeEnum getDefaultMetadata(NodeMetadata& metadata);
 
+    int getUnmappedNumberOfCompsForColorPlane(int inputNb, const std::vector<NodeMetadataPtr>& inputs, int firstNonOptionalConnectedInputComps) const;
+
+
 protected:
 
     virtual ActionRetCodeEnum getTimeInvariantMetaDatas(NodeMetadata& /*metadata*/) { return eActionStatusReplyDefault; }

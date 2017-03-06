@@ -46,6 +46,7 @@
 #include "Engine/AppManager.h"
 #include "Engine/ImageStorage.h"
 #include "Engine/Node.h"
+#include "Engine/NodeMetadata.h"
 #include "Engine/OSGLContext.h"
 #include "Engine/GPUContextPool.h"
 #include "Engine/ViewerInstance.h"
@@ -172,11 +173,50 @@ const std::string &
 OfxClipInstance::getUnmappedBitDepth() const
 {
 
-    EffectInstancePtr effect = getAssociatedNode();
-    if (!effect) {
-        return natronsDepthToOfxDepth( getEffectHolder()->getClosestSupportedBitDepth(eImageBitDepthFloat) );
+    if (isOutput()) {
+        EffectInstancePtr effect = getEffectHolder();
+
+        // On the output clip, nothing is specified by the spec, return the most components returned by the inputs
+        ImageBitDepthEnum deepestBitDepth = eImageBitDepthNone;
+        int firstNonOptionalConnectedInputComps = 0;
+
+        int nInputs = effect->getMaxInputCount();
+        std::vector<NodeMetadataPtr> inputMetadatas(nInputs);
+        for (int i = 0; i < nInputs; ++i) {
+            const EffectInstancePtr& input = effect->getInput(i);
+            if (input) {
+                GetTimeInvariantMetaDatasResultsPtr results;
+                ActionRetCodeEnum stat = input->getTimeInvariantMetaDatas_public(&results);
+                if (!isFailureRetCode(stat)) {
+                    inputMetadatas[i] = results->getMetadatasResults();
+
+                    if ( !firstNonOptionalConnectedInputComps && !effect->isInputOptional(i) ) {
+                        firstNonOptionalConnectedInputComps = inputMetadatas[i]->getColorPlaneNComps(-1);
+                    }
+                }
+
+
+            }
+        }
+        for (int i = 0; i < nInputs; ++i) {
+            if (inputMetadatas[i]) {
+                ImageBitDepthEnum rawDepth = inputMetadatas[i]->getBitDepth(-1);
+                if ( getSizeOfForBitDepth(deepestBitDepth) < getSizeOfForBitDepth(rawDepth) ) {
+                    deepestBitDepth = rawDepth;
+                }
+            }
+        }
+
+        deepestBitDepth = effect->getClosestSupportedBitDepth(deepestBitDepth);
+        return natronsDepthToOfxDepth(deepestBitDepth);
+
     } else {
-        return natronsDepthToOfxDepth(effect->getBitDepth(-1));
+        EffectInstancePtr effect = getAssociatedNode();
+        if (!effect) {
+            return natronsDepthToOfxDepth( getEffectHolder()->getClosestSupportedBitDepth(eImageBitDepthFloat) );
+        } else {
+            return natronsDepthToOfxDepth(effect->getBitDepth(-1));
+        }
     }
 
 } // OfxClipInstance::getUnmappedBitDepth
@@ -184,49 +224,90 @@ OfxClipInstance::getUnmappedBitDepth() const
 const std::string &
 OfxClipInstance::getUnmappedComponents() const
 {
-
-    EffectInstancePtr effect = getAssociatedNode();
-
+    
     std::string ret;
-    if (effect) {
+    
+    if (isOutput()) {
+        EffectInstancePtr effect = getEffectHolder();
 
-        ImagePlaneDesc metadataPlane, metadataPairedPlane;
-        effect->getMetadataComponents(-1, &metadataPlane, &metadataPairedPlane);
+        // On the output clip, nothing is specified by the spec, return the most components returned by the inputs
+        int mostComponents = 0;
+        int firstNonOptionalConnectedInputComps = 0;
 
-        // Default to RGBA
-        if (metadataPlane.getNumComponents() == 0) {
-            metadataPlane = ImagePlaneDesc::getRGBAComponents();
+        int nInputs = effect->getMaxInputCount();
+        std::vector<NodeMetadataPtr> inputMetadatas(nInputs);
+        for (int i = 0; i < nInputs; ++i) {
+            const EffectInstancePtr& input = effect->getInput(i);
+            if (input) {
+                GetTimeInvariantMetaDatasResultsPtr results;
+                ActionRetCodeEnum stat = input->getTimeInvariantMetaDatas_public(&results);
+                if (!isFailureRetCode(stat)) {
+                    inputMetadatas[i] = results->getMetadatasResults();
+
+                    if ( !firstNonOptionalConnectedInputComps && !effect->isInputOptional(i) ) {
+                        firstNonOptionalConnectedInputComps = inputMetadatas[i]->getColorPlaneNComps(-1);
+                    }
+                }
+
+
+            }
         }
-        ret = ImagePlaneDesc::mapPlaneToOFXComponentsTypeString(metadataPlane);
-    } else {
-
-
-        // The node is not connected but optional, return the closest supported components
-        // of the first connected non optional input.
-        if (_imp->optional) {
-            effect = getEffectHolder();
-            assert(effect);
-
-            int nInputs = effect->getMaxInputCount();
-            for (int i = 0; i < nInputs; ++i) {
-
-                ImagePlaneDesc metadataPlane, metadataPairedPlane;
-                effect->getMetadataComponents(i, &metadataPlane, &metadataPairedPlane);
-
-
-                if (metadataPlane.getNumComponents() > 0) {
-                    ret = ImagePlaneDesc::mapPlaneToOFXComponentsTypeString(metadataPlane);
+        for (int i = 0; i < nInputs; ++i) {
+            if (inputMetadatas[i]) {
+                int rawComp = effect->getUnmappedNumberOfCompsForColorPlane(i, inputMetadatas, firstNonOptionalConnectedInputComps);
+                if ( rawComp > mostComponents ) {
+                    mostComponents = rawComp;
                 }
             }
         }
-
-
-        // last-resort: black and transparent image means RGBA.
-        if (ret.empty()) {
+        if (mostComponents == 0) {
             ret = ImagePlaneDesc::mapPlaneToOFXComponentsTypeString(ImagePlaneDesc::getRGBAComponents());
+        } else {
+            ret = ImagePlaneDesc::mapPlaneToOFXComponentsTypeString(ImagePlaneDesc::mapNCompsToColorPlane(effect->findClosestSupportedNumberOfComponents(-1, mostComponents)));
+        }
+    } else {
+        EffectInstancePtr effect = getAssociatedNode();
+
+        if (effect) {
+
+            ImagePlaneDesc metadataPlane, metadataPairedPlane;
+            effect->getMetadataComponents(-1, &metadataPlane, &metadataPairedPlane);
+
+            // Default to RGBA
+            if (metadataPlane.getNumComponents() == 0) {
+                metadataPlane = ImagePlaneDesc::getRGBAComponents();
+            }
+            ret = ImagePlaneDesc::mapPlaneToOFXComponentsTypeString(metadataPlane);
+        } else {
+
+
+            // The node is not connected but optional, return the closest supported components
+            // of the first connected non optional input.
+            if (_imp->optional) {
+                effect = getEffectHolder();
+                assert(effect);
+
+                int nInputs = effect->getMaxInputCount();
+                for (int i = 0; i < nInputs; ++i) {
+
+                    ImagePlaneDesc metadataPlane, metadataPairedPlane;
+                    effect->getMetadataComponents(i, &metadataPlane, &metadataPairedPlane);
+
+
+                    if (metadataPlane.getNumComponents() > 0) {
+                        ret = ImagePlaneDesc::mapPlaneToOFXComponentsTypeString(metadataPlane);
+                    }
+                }
+            }
+            
+            
+            // last-resort: black and transparent image means RGBA.
+            if (ret.empty()) {
+                ret = ImagePlaneDesc::mapPlaneToOFXComponentsTypeString(ImagePlaneDesc::getRGBAComponents());
+            }
         }
     }
-
+    
     ClipDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
     tls->unmappedComponents = ret;
     return tls->unmappedComponents;

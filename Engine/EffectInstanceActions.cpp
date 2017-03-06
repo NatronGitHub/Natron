@@ -1895,11 +1895,8 @@ EffectInstance::getTimeInvariantMetaDatas_public(GetTimeInvariantMetaDatasResult
 } // getTimeInvariantMetaDatas_public
 
 
-static int
-getUnmappedNumberOfCompsForColorPlane(const EffectInstancePtr& self,
-                                      int inputNb,
-                                      const std::vector<NodeMetadataPtr>& inputs,
-                                      int firstNonOptionalConnectedInputComps)
+int
+EffectInstance::getUnmappedNumberOfCompsForColorPlane(int inputNb, const std::vector<NodeMetadataPtr>& inputs, int firstNonOptionalConnectedInputComps) const
 {
     int rawComps;
 
@@ -1915,7 +1912,7 @@ getUnmappedNumberOfCompsForColorPlane(const EffectInstancePtr& self,
             //None comps
             return rawComps;
         } else {
-            rawComps = self->findClosestSupportedNumberOfComponents(inputNb, rawComps);
+            rawComps = findClosestSupportedNumberOfComponents(inputNb, rawComps);
         }
     }
     if (!rawComps) {
@@ -1994,7 +1991,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
             }
         }
 
-        int rawComp = getUnmappedNumberOfCompsForColorPlane(shared_from_this(), i, inputMetadatas, firstNonOptionalConnectedInputComps);
+        int rawComp = getUnmappedNumberOfCompsForColorPlane(i, inputMetadatas, firstNonOptionalConnectedInputComps);
         ImageBitDepthEnum rawDepth = input ? input->getBitDepth(-1) : eImageBitDepthFloat;
         ImagePremultiplicationEnum rawPreMult = input ? input->getOutputPremult() : eImagePremultiplicationPremultiplied;
 
@@ -2107,7 +2104,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
             metadata.setBitDepth(i, depth);
         } else {
 
-            int rawComps = getUnmappedNumberOfCompsForColorPlane(shared_from_this(), i, inputMetadatas, firstNonOptionalConnectedInputComps);
+            int rawComps = getUnmappedNumberOfCompsForColorPlane(i, inputMetadatas, firstNonOptionalConnectedInputComps);
             ImageBitDepthEnum rawDepth;
             if (i >= 0 && inputMetadatas[i]) {
                 rawDepth = inputMetadatas[i]->getBitDepth(-1);
