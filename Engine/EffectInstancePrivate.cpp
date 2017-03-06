@@ -80,67 +80,6 @@ EffectInstance::Implementation::~Implementation()
     }
 }
 
-bool
-RenderCloneData::getTimeViewInvariantHash(U64* hash) const
-{
-    QMutexLocker k(&lock);
-    if (!timeViewInvariantHashValid) {
-        return false;
-    }
-    *hash = timeViewInvariantHash;
-    return true;
-}
-
-void
-RenderCloneData::setTimeInvariantMetadataHash(U64 hash)
-{
-    QMutexLocker k(&lock);
-    metadataTimeInvariantHashValid = true;
-    metadataTimeInvariantHash = hash;
-}
-
-bool
-RenderCloneData::getTimeInvariantMetadataHash(U64* hash) const
-{
-    QMutexLocker k(&lock);
-    if (!metadataTimeInvariantHashValid) {
-        return false;
-    }
-    *hash = metadataTimeInvariantHash;
-    return true;
-
-}
-
-void
-RenderCloneData::setTimeViewInvariantHash(U64 hash)
-{
-    QMutexLocker k(&lock);
-    timeViewInvariantHash = hash;
-    timeViewInvariantHashValid = true;
-}
-
-
-bool
-RenderCloneData::getFrameViewHash(TimeValue time, ViewIdx view, U64* hash) const
-{
-    FrameViewPair p = {time,view};
-    QMutexLocker k(&lock);
-    FrameViewHashMap::const_iterator found = timeViewVariantHash.find(p);
-    if (found == timeViewVariantHash.end()) {
-        return false;
-    }
-    *hash = found->second;
-    return true;
-}
-
-void
-RenderCloneData::setFrameViewHash(TimeValue time, ViewIdx view, U64 hash)
-{
-    QMutexLocker k(&lock);
-    FrameViewPair p = {time,view};
-    timeViewVariantHash[p] = hash;
-}
-
 
 FrameViewRequestPtr
 EffectInstance::Implementation::getFrameViewRequest(TimeValue time,
@@ -157,21 +96,6 @@ EffectInstance::Implementation::getFrameViewRequest(TimeValue time,
     return found->second.lock();
 }
 
-#if 0
-void
-EffectInstance::Implementation::removeFrameViewRequest(const FrameViewRequestPtr& request)
-{
-    QMutexLocker k(&renderData->lock);
-
-    FrameViewPair p = {request->getTime(),request->getView()};
-    NodeFrameViewRequestData::iterator found = renderData->frames.find(p);
-    if (found == renderData->frames.end()) {
-        return;
-    }
-    renderData->frames.erase(found);
-
-}
-#endif
 
 bool
 EffectInstance::Implementation::getOrCreateFrameViewRequest(TimeValue time,
@@ -190,7 +114,6 @@ EffectInstance::Implementation::getOrCreateFrameViewRequest(TimeValue time,
         args.view = view;
         args.hashType = HashableObject::eComputeHashTypeTimeViewVariant;
         hash = _publicInterface->computeHash(args);
-        renderData->setFrameViewHash(time, view, hash);
     }
     QMutexLocker k(&renderData->lock);
 
@@ -429,17 +352,16 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
 
 
     // The render went OK: copy the temporary image with the plug-in preferred format to the cache image
-    for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = args.producedImagePlanes.begin(); it != args.producedImagePlanes.end(); ++it) {
+    std::map<ImagePlaneDesc, ImagePtr>::const_iterator itLocal = args.localPlanes.begin();
+    for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = args.cachedPlanes.begin(); it != args.cachedPlanes.end(); ++it, ++itLocal) {
 
-        std::map<ImagePlaneDesc, ImagePtr>::const_iterator foundTmpImage = rectToRender.tmpRenderPlanes.find(it->first);
-        if (foundTmpImage == rectToRender.tmpRenderPlanes.end()) {
-            assert(false);
+        assert(it->first == itLocal->first);
+        if (it->second == itLocal->second) {
             continue;
         }
-
         Image::CopyPixelsArgs cpyArgs;
         cpyArgs.roi = rectToRender.rect;
-        it->second->copyPixels(*foundTmpImage->second, cpyArgs);
+        it->second->copyPixels(*itLocal->second, cpyArgs);
     }
 
     if (timeRecorder) {
@@ -456,7 +378,7 @@ EffectInstance::Implementation::renderHandlerIdentity(const RectToRender & rectT
 
     TreeRenderPtr render = _publicInterface->getCurrentRender();
 
-    for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = rectToRender.tmpRenderPlanes.begin(); it != rectToRender.tmpRenderPlanes.end(); ++it) {
+    for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = args.localPlanes.begin(); it != args.localPlanes.end(); ++it) {
         boost::scoped_ptr<EffectInstance::GetImageInArgs> inArgs( new EffectInstance::GetImageInArgs() );
         inArgs->renderBackend = &rectToRender.backendType;
         inArgs->currentRenderWindow = &rectToRender.rect;
@@ -516,17 +438,13 @@ static void setupGLForRender(const ImagePtr& image,
     } else {
 
         viewportBounds = roi;
-        assert(image->getStorageMode() == eStorageModeDisk || image->getStorageMode() == eStorageModeRAM);
+        assert(image->getStorageMode() == eStorageModeRAM);
         assert(image->getBufferFormat() == eImageBufferLayoutRGBAPackedFullRect);
 
-        Image::Tile tile;
-        bool ok = image->getTileAt(0, 0, &tile);
-        assert(ok);
-        (void)ok;
-        Image::CPUTileData tileData;
-        image->getCPUTileData(tile, &tileData);
+        Image::CPUData data;
+        image->getCPUData(&data);
 
-        void* buffer = (void*)Image::pixelAtStatic(roi.x1, roi.y1, tileData.tileBounds, tileData.nComps, getSizeOfForBitDepth(tileData.bitDepth), (unsigned char*)tileData.ptrs[0]);
+        void* buffer = (void*)Image::pixelAtStatic(roi.x1, roi.y1, data.bounds, data.nComps, getSizeOfForBitDepth(data.bitDepth), (unsigned char*)data.ptrs[0]);
         assert(buffer);
 
         // With OSMesa we render directly to the context framebuffer
@@ -590,14 +508,14 @@ EffectInstance::Implementation::renderHandlerPlugin(const RectToRender & rectToR
     bool multiPlanar = _publicInterface->isMultiPlanar();
     // If we can render all planes at once, do it, otherwise just render them all sequentially
     if (!multiPlanar) {
-        for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = rectToRender.tmpRenderPlanes.begin(); it != rectToRender.tmpRenderPlanes.end(); ++it) {
+        for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = args.localPlanes.begin(); it != args.localPlanes.end(); ++it) {
             std::list<std::pair<ImagePlaneDesc, ImagePtr> > tmp;
             tmp.push_back(*it);
             planesLists.push_back(tmp);
         }
     } else {
         std::list<std::pair<ImagePlaneDesc, ImagePtr> > tmp;
-        for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = rectToRender.tmpRenderPlanes.begin(); it != rectToRender.tmpRenderPlanes.end(); ++it) {
+        for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = args.localPlanes.begin(); it != args.localPlanes.end(); ++it) {
             tmp.push_back(*it);
         }
         planesLists.push_back(tmp);
@@ -705,7 +623,7 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
     const bool checkNaNs = _publicInterface->getCurrentRender()->isNaNHandlingEnabled();
 
     // Check for NaNs, copy to output image and mark for rendered
-    for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = rectToRender.tmpRenderPlanes.begin(); it != rectToRender.tmpRenderPlanes.end(); ++it) {
+    for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = args.localPlanes.begin(); it != args.localPlanes.end(); ++it) {
 
         if (checkNaNs) {
 

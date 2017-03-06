@@ -52,7 +52,7 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
-typedef std::map<FrameViewPair, ImageTileKeyPtr, FrameView_compare_less> ViewerCachedImagesMap;
+typedef std::map<FrameViewPair, ImageCacheKeyPtr, FrameView_compare_less> ViewerCachedImagesMap;
 
 /**
  *@class ViewerGL
@@ -170,7 +170,7 @@ public:
                                             const RectD& rod,
                                             bool recenterViewer,
                                             const Point& viewportCenter,
-                                            const ImageTileKeyPtr& viewerProcessNodeTileKey) OVERRIDE FINAL;
+                                            const ImageCacheKeyPtr& viewerProcessNodeTileKey) OVERRIDE FINAL;
 
 
     virtual void disconnectInputTexture(int textureIndex, bool clearRoD) OVERRIDE FINAL;

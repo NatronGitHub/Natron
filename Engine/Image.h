@@ -40,6 +40,7 @@
 #include "Global/GLIncludes.h"
 #include "Engine/Cache.h" // CacheEntryLockerPtr - put it in EngineFwd.h?
 #include "Engine/ImagePlaneDesc.h"
+#include "Engine/ImageTilesState.h"
 #include "Engine/RectI.h"
 #include "Engine/TimeValue.h"
 #include "Engine/ViewIdx.h"
@@ -48,27 +49,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-/**
- * @brief The coordinates in pixel of the bottom left corner of a tile.
- **/
-struct TileCoord
-{
-    int tx,ty;
-};
 
-struct TileCoord_Compare
-{
-    bool operator() (const TileCoord& lhs, const TileCoord& rhs) const
-    {
-        if (lhs.ty < rhs.ty) {
-            return true;
-        } else if (lhs.ty > rhs.ty) {
-            return false;
-        } else {
-            return lhs.tx < rhs.tx;
-        }
-    }
-};
 
 /**
  * @brief An image in Natron is a view one or multiple buffers that may be cached.
@@ -103,33 +84,6 @@ class Image
 
 public:
 
-    struct MonoChannelTile
-    {
-        // A pointer to the internal storage
-        ImageStorageBasePtr buffer;
-
-        // Used when working with the cache
-        // to ensure a single thread computed this tile
-        CacheEntryLockerPtr entryLocker;
-
-        // The index of the channel 0 <= channel <= 3
-        // if mono channel.
-        // If not mon channel this is -1
-        int channelIndex;
-        
-    };
-
-    struct Tile
-    {
-        // Each Tile internally holds a pointer to a mono-channel tile in the cache
-        std::vector<MonoChannelTile> perChannelTile;
-
-        // The bounds covered by this tile
-        RectI tileBounds;
-        
-    };
-    
-
 
     struct InitStorageArgs
     {
@@ -137,6 +91,11 @@ public:
         //
         // Must be set
         RectI bounds;
+
+        // The RoD of the image in pixel coordinates at the given mipMapLevel.
+        //
+        // This must be set if cachePolicy is != eCacheAccessModeNone
+        RectI pixelRod;
 
         // The storage for the image.
         //
@@ -155,18 +114,11 @@ public:
         // Default - eImageBitDepthFloat
         ImageBitDepthEnum bitdepth;
 
-        // The layer represented by this image.
+        // The plane represented by this image.
         //
-        // Default - Color.RGBA layer
-        ImagePlaneDesc layer;
+        // Default - Color.RGBA
+        ImagePlaneDesc plane;
 
-        // Components represented by the image.
-        // This is only used for a mono channel buffered layout
-        // it allows to only create storage for specific channels.
-        // The relevant bits are only those that are in the range of layer.getNumComponents()
-        //
-        // Default - All bits set to 1
-        std::bitset<4> components;
 
         // Whether or not the initializeStorage() may look for already existing tiles in the cache
         //
@@ -232,11 +184,6 @@ public:
         //
         // Default - false
         bool delayAllocation;
-
-        // If true, throw a std::bad_alloc() as soon as an uncached tile is met
-        //
-        // Default  - false;
-        bool failIfTileNotCached;
 
         InitStorageArgs();
     };
@@ -392,12 +339,6 @@ public:
         // Default - false
         bool unPremultIfNeeded;
 
-        // When copying the image, tiles that are marked cached on the
-        // destination image will not be written to
-        //
-        // Default - false
-        bool skipDestinationTilesMarkedCached;
-
         // If this image and the other image have the same number of components,
         // same buffer layout, same bitdepth and same bounds
         // by default the memory buffer pointers will be copied instead of all pixels.
@@ -426,20 +367,6 @@ public:
      **/
     void copyPixels(const Image& other, const CopyPixelsArgs& args);
 
-    /*
-     Compute the rectangles (A,B,C,D) where to set the image to 0
-
-     AAAAAAAAAAAAAAAAAAAAAAAAAAAA
-     AAAAAAAAAAAAAAAAAAAAAAAAAAAA
-     DDDDDXXXXXXXXXXXXXXXXXXBBBBB
-     DDDDDXXXXXXXXXXXXXXXXXXBBBBB
-     DDDDDXXXXXXXXXXXXXXXXXXBBBBB
-     DDDDDXXXXXXXXXXXXXXXXXXBBBBB
-     CCCCCCCCCCCCCCCCCCCCCCCCCCCC
-     CCCCCCCCCCCCCCCCCCCCCCCCCCCC
-     */
-    static void getABCDRectangles(const RectI& srcBounds, const RectI& biggerBounds, RectI& aRect, RectI& bRect, RectI& cRect, RectI& dRect);
-
     /**
      * @brief Helper function to get string from a layer and bitdepth
      **/
@@ -464,7 +391,7 @@ public:
     /**
      * @brief Utility function to retrieve pointers to the RGBA buffers as well as the pixel stride (in the PIX type).
      * @param ptrs In input, the pixel pointers to their origin depending on the buffer layout.
-     *  - eImageBufferLayoutMonoChannelTiled: The 4 pointers point to a different buffer.
+     *  - eImageBufferLayoutMonoChannelFullRect: The 4 pointers point to a different buffer.
      *  - eImageBufferLayoutRGBACoplanarFullRect: The 4 pointers are set and are each separated by a plane .stride
      *  - eImageBufferLayoutRGBAPackedFullRect: Only the first pointer is set, pointing to the RGBA buffer.
      * @param x The x coordinate where to return channel pointers
@@ -485,7 +412,7 @@ public:
         const int dataSizeOf = sizeof(PIX);
         memset(outPtrs, 0, sizeof(PIX*) * 4);
         {
-            // If eImageBufferLayoutMonoChannelTiled or eImageBufferLayoutRGBACoplanarFullRect,
+            // If eImageBufferLayoutMonoChannelFullRect or eImageBufferLayoutRGBACoplanarFullRect,
             // then ptrs[1] should be set.
             // In this case the pixel stride is always 1.
             int nCompsForBuffer = nComps;
@@ -499,7 +426,7 @@ public:
         }
         if (nComps > 1) {
             if (ptrs[1]) {
-                // We are in eImageBufferLayoutMonoChannelTiled or eImageBufferLayoutRGBACoplanarFullRect layout
+                // We are in eImageBufferLayoutMonoChannelFullRect or eImageBufferLayoutRGBACoplanarFullRect layout
                 // pixel stride is 1
                 outPtrs[1] = (PIX*)pixelAtStatic(x, y, bounds, 1, dataSizeOf, (unsigned char*)ptrs[1]);
             } else {
@@ -510,7 +437,7 @@ public:
             }
             if (nComps > 2) {
                 if (ptrs[2]) {
-                    // We are in eImageBufferLayoutMonoChannelTiled or eImageBufferLayoutRGBACoplanarFullRect layout
+                    // We are in eImageBufferLayoutMonoChannelFullRect or eImageBufferLayoutRGBACoplanarFullRect layout
                     // pixel stride is 1
                     outPtrs[2] = (PIX*)pixelAtStatic(x, y, bounds, 1, dataSizeOf, (unsigned char*)ptrs[2]);
                 } else {
@@ -522,7 +449,7 @@ public:
             }
             if (nComps > 3) {
                 if (ptrs[3]) {
-                    // We are in eImageBufferLayoutMonoChannelTiled or eImageBufferLayoutRGBACoplanarFullRect layout
+                    // We are in eImageBufferLayoutMonoChannelFullRect or eImageBufferLayoutRGBACoplanarFullRect layout
                     // pixel stride is 1
                     outPtrs[3] = (PIX*)pixelAtStatic(x, y, bounds, 1, dataSizeOf, (unsigned char*)ptrs[3]);
                 } else {
@@ -573,25 +500,25 @@ public:
                                    int* pixelStride);
 
 
-    struct CPUTileData
+    struct CPUData
     {
         void* ptrs[4];
-        RectI tileBounds;
+        RectI bounds;
         ImageBitDepthEnum bitDepth;
         int nComps;
 
-        CPUTileData()
+        CPUData()
         : ptrs()
-        , tileBounds()
+        , bounds()
         , bitDepth(eImageBitDepthNone)
         , nComps(0)
         {
             memset(ptrs, 0, sizeof(void*) * 4);
         }
 
-        CPUTileData(const CPUTileData& other)
+        CPUData(const CPUData& other)
         : ptrs()
-        , tileBounds(other.tileBounds)
+        , bounds(other.bounds)
         , bitDepth(other.bitDepth)
         , nComps(other.nComps)
         {
@@ -605,27 +532,9 @@ public:
     GLImageStoragePtr getGLImageStorage() const;
 
     /**
-     * @brief For a tile with CPU (RAM or MMAP) storage, returns the buffer data.
+     * @brief For a tile with CPU storage, returns the buffer.
      **/
-    void getCPUTileData(const Tile& tile, CPUTileData* data) const;
-
-    static void getCPUTileData(const Tile& tile, ImageBufferLayoutEnum layout, CPUTileData* data);
-
-    /**
-     * @brief Return the number of pixels covered by a single tile.
-     **/
-    void getTileSize(int *tileSizeX, int* tileSizeY) const;
-
-    /**
-     * @brief Returns the tile at the given tileIndex.
-     * An untiled image has a single tile at index 0.
-     **/
-    bool getTileAt(int tx, int ty, Tile* tile) const;
-
-    /**
-     * @brief Returns the number of tiles
-     **/
-    int getNumTiles() const;
+    void getCPUData(CPUData* data) const;
 
     /**
      * @brief Returns the cache access policy for this image
@@ -633,80 +542,9 @@ public:
     CacheAccessModeEnum getCachePolicy() const;
 
     /**
-     * @brief If this image has cache write access, invalidates the tiles to the cache.
-     * They will not be inserted in the cache.
+     * @brief Returns the cache entry associated to this image
      **/
-    void removeCacheLockers();
-
-    /**
-     * @brief If this image has cache write access, push the tiles to the cache.
-     * This will only push the tiles that are marked eCacheEntryStatusMustCompute.
-     * making them available to other threads waiting for it (and waking them up).
-     **/
-    void pushTilesToCacheIfNotAborted();
-
-    /**
-     * @brief If this image has some tiles pending (i.e: another thread is computing it),
-     * wait for them to be available. This function returns once all tiles are marked as cached
-     * or to be computed.
-     * @returns true if everything is rendered, false if there's still tiles to render
-     **/
-    bool waitForPendingTiles();
-
-    enum TileStatusEnum
-    {
-        eTileStatusRendered,
-        eTileStatusNotRendered,
-        eTileStatusPending
-    };
-    struct TileState
-    {
-        RectI bounds;
-        TileStatusEnum status;
-    };
-
-    // Tiles are orderedby y axis then by x such that the first tile in the map
-    // has its bottom left corner being the bottom left corner of the image and
-    // the last tile in the map has its top right corner being the top right corner
-    // of the image.
-    typedef std::map<TileCoord, TileState, TileCoord_Compare> TileStateMap;
-
-    /**
-     * @brief Returns the renderstatus of each tile in the image.
-     * @param hasPendingResults[out] If set to true, then the caller should, after rendering the given rectangles
-     * call waitForPendingTiles() and then afterwards recheck the rectangles left to render.
-     **/
-    void getTilesRenderState(TileStateMap* tileStatus, bool* hasUnRenderedTile, bool *hasPendingResults) const;
-
-    /**
-     * @brief Returns the bounding box of the unrendered portion in the tiles map.
-     * N.B: Tiles with a status of eTileStatusPending are treated as if they were
-     * eTileStatusRendered.
-     **/
-    static RectI getMinimalBboxToRenderFromTilesState(const TileStateMap& tiles, const RectI& roi, int tileSizeX, int tileSizeY);
-
-    /**
-     * @brief Refines a region to render in potentially 4 smaller rectangles. This function makes use of 
-     * getMinimalBboxToRenderFromTilesState to get the smallest enclosing bbox to render.
-     * Then it tries to find rectangles for the bottom, the top,
-     * the left and the right part.
-     * This happens quite often, for example when zooming out
-     * (in this case the area to compute is formed of A, B, C and D,
-     * and X is already rendered), or when panning (in this case the area
-     * is just two rectangles, e.g. A and C, and the rectangles B, D and
-     * X are already rendered).
-     * The rectangles A, B, C and D from the following drawing are just
-     * zeroes, and X contains zeroes and ones.
-     *
-     * BBBBBBBBBBBBBB
-     * BBBBBBBBBBBBBB
-     * CXXXXXXXXXXDDD
-     * CXXXXXXXXXXDDD
-     * CXXXXXXXXXXDDD
-     * CXXXXXXXXXXDDD
-     * AAAAAAAAAAAAAA
-     **/
-    static void getMinimalRectsToRenderFromTilesState(const TileStateMap& tiles, const RectI& roi, int tileSizeX, int tileSizeY, std::list<RectI>* rectsToRender);
+    ImageCacheEntryPtr getCacheEntry() const;
 
     /**
      * @brief Fills the image with the given colour. If the image components
@@ -715,12 +553,12 @@ public:
      * be used.
      * Filling the image with black and transparant is optimized
      **/
-    void fill( const RectI & roi, float r, float g, float b, float a);
+    void fill(const RectI & roi, float r, float g, float b, float a);
 
     /**
      * @brief Short for fill(roi, 0,0,0,0)
      **/
-    void fillZero( const RectI& roi);
+    void fillZero(const RectI& roi);
 
     /**
      * @brief Short for fill(getBounds(), 0,0,0,0)

@@ -51,6 +51,7 @@ GCC_DIAG_OFF(unused-parameter)
 
 
 #include <boost/interprocess/sync/interprocess_mutex.hpp> // IPC regular mutex
+#include <boost/interprocess/sync/interprocess_recursive_mutex.hpp> // IPC recursive mutex
 #include <boost/interprocess/sync/scoped_lock.hpp> // IPC  scoped lock a regular mutex
 #include <boost/interprocess/sync/interprocess_upgradable_mutex.hpp> // IPC  r-w mutex that can upgrade read right to write
 #include <boost/interprocess/sync/interprocess_sharable_mutex.hpp> // IPC  r-w mutex
@@ -60,6 +61,7 @@ GCC_DIAG_OFF(unused-parameter)
 #include <boost/interprocess/sync/file_lock.hpp> // IPC  file lock
 #include <boost/interprocess/sync/named_semaphore.hpp> // IPC  named semaphore
 #include <boost/thread/mutex.hpp> // local mutex
+#include <boost/thread/recursive_mutex.hpp> // local mutex
 #include <boost/thread/shared_mutex.hpp> // local r-w mutex
 #include <boost/thread/locks.hpp>
 #include <boost/thread/condition_variable.hpp>
@@ -104,18 +106,6 @@ GCC_DIAG_ON(unused-parameter)
 // If we change the MemorySegmentEntryHeader struct, we must increment this version so we do not attempt to read an invalid structure.
 #define NATRON_MEMORY_SEGMENT_ENTRY_HEADER_VERSION 1
 
-// When defined, the cache will never be persistent
-#define NATRON_CACHE_NEVER_PERSISTENT
-
-
-// If defined, the cache can handle multiple processes accessing to the same cache concurrently, however
-// the cache may not be placed in a network drive.
-// If not defined, the cache supports only a single process writing/reading from the cache concurrently, other processes will resort
-// in a process-local cache.
-//#ifndef NATRON_CACHE_NEVER_PERSISTENT
-//#define NATRON_CACHE_INTERPROCESS_ROBUST
-//#endif
-
 
 // After this amount of milliseconds, if a thread is not able to access a mutex, the cache is assumed to be inconsistent
 #ifdef NATRON_CACHE_INTERPROCESS_ROBUST
@@ -134,11 +124,11 @@ NATRON_NAMESPACE_ENTER;
 
 
 
-// Cache integrity:
-// ----------------
+// Cache integrity when NATRON_CACHE_INTERPROCESS_ROBUST is defined:
+// ------------------------------------------------------------------
 //
 // Exposing the cache to multiple process can be harmful in multiple ways: a process can die
-// in any instruction and may leave the program in an incoherent state. Other process have to deal
+// in any instruction and may leave the program in an incoherent state. Other processes have to deal
 // with that. Hopefully this kind of situation is rare.
 // E.G:
 // A Natron process could very well crash whilst an interprocess mutex is taken: any subsequent attempt to lock
@@ -176,15 +166,15 @@ NATRON_NAMESPACE_ENTER;
 //
 // Algorithm to detect and recover from abandonnement in a inter process cache:
 //
-// In addition to the interprocess mutex, we add a global file lock to monitor process access to the cache.
+// In addition to the 256 interprocess mutex, we add a global file lock to monitor process access to the cache.
 //
-// When starting up a new Natron process: globalMemorySegmentFileLock.try_lock()
+// When starting up a new Natron process: globalFileLock.try_lock()
 //      - If it succeeds, that means no other process is active: We remove the globalMemorySegment shared memory segment
 //        and create a new one, to ensure no lock was left in a bad state. Then we release the file lock
 //      - If it fails, another process is still actively using the globalMemorySegment shared memory: it must still be valid
 //
 // We then take the file lock in read mode, indicating that we use the shared memory:
-//      globalMemorySegmentFileLock.lock_sharable()
+//      globalFileLock.lock_sharable()
 //
 // Any operation taking the segmentMutex in the shared memory, must do so with a timeout so we can avoid deadlocks:
 // If a process crashes whilst the segmentMutex is taken, the file lock is ensured to be released but the
@@ -203,15 +193,15 @@ NATRON_NAMESPACE_ENTER;
 //
 // 2 - nSHMInvalid.post() --> The mapping for this process is no longer invalid
 //
-// 3 - We release the read lock taken on the globalMemorySegmentFileLock: globalMemorySegmentFileLock.unlock()
+// 3 - We release the read lock taken on the globalFileLock: globalFileLock.unlock()
 //
-// 4 - We take the file lock in write mode: globalMemorySegmentFileLock.lock():
+// 4 - We take the file lock in write mode: globalFileLock.lock():
 //   The lock is guaranteed to be taken at some point since any active process will eventually timeout on the segmentMutex and release
-//   their read lock on the globalMemorySegmentFileLock in step 3. We are sure that when the lock is taken, nobody else is still in step 3.
+//   their read lock on the globalFileLock in step 3. We are sure that when the lock is taken, nobody else is still in step 3.
 //
 //  Now that we have the file lock in write mode, we may not be the first process to have it:
 //     5 -  nSHMValid.try_wait() --> If this returns false, we are the first process to take the write lock.
-//                               We know at this point that any other process has released its read lock on the globalMemorySegmentFileLock
+//                               We know at this point that any other process has released its read lock on the globalFileLock
 //                               and that the globalMemorySegment is no longer mapped anywhere.
 //                               We thus remove the globalMemorySegment and re-create it and remap it.
 //
@@ -222,9 +212,9 @@ NATRON_NAMESPACE_ENTER;
 //
 //      7 - nSHMInvalid.wait() --> Decrement the post() that we made earlier
 //
-//      8 - Release the write lock: globalMemorySegmentFileLock.unlock()
+//      8 - Release the write lock: globalFileLock.unlock()
 //
-// 9 - When the write lock is released we cannot take the globalMemorySegmentFileLock in read mode yet, we could block other processes that
+// 9 - When the write lock is released we cannot take the globalFileLock in read mode yet, we could block other processes that
 // are still waiting for the write lock in 4.
 // We must wait that every other process has a valid mapping:
 //
@@ -249,6 +239,9 @@ typedef RamBuffer<char> ProcessLocalBuffer;
 typedef boost::shared_ptr<ProcessLocalBuffer> ProcessLocalBufferPtr;
 
 #ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+
+class SharedMemoryProcessLocalReadLocker;
+
 /**
  * @brief Implementation of the timed_lock which timesout after timeoutMilliseconds milliseconds.
  * The implementation is taken from boost, but we repliced the micro_clock::universal_time() by our 
@@ -423,9 +416,16 @@ public:
     }
 };
 
-typedef scoped_timed_lock<bip::interprocess_upgradable_mutex> Upgradable_WriteLock;
-typedef scoped_timed_lock<bip::interprocess_sharable_mutex> Sharable_WriteLock;
-typedef scoped_timed_lock<bip::interprocess_mutex> MutexLock;
+typedef bip::interprocess_sharable_mutex SharedMutex;
+typedef bip::interprocess_upgradable_mutex UpgradableMutex;
+typedef bip::interprocess_mutex ExclusiveMutex;
+typedef bip::interprocess_recursive_mutex RecursiveExclusiveMutex;
+
+typedef scoped_timed_lock<UpgradableMutex> Upgradable_WriteLock;
+typedef scoped_timed_lock<SharedMutex> Sharable_WriteLock;
+typedef scoped_timed_lock<ExclusiveMutex> ExclusiveLock;
+
+typedef bip::interprocess_condition_any ConditionVariable;
 
 #define scoped_lock_type scoped_timed_lock
 
@@ -465,24 +465,76 @@ public:
     }
 };
 
+class SharedMemoryProcessLocalReadLocker;
+typedef boost::scoped_ptr<SharedMemoryProcessLocalReadLocker> SHMReadLockerPtr;
+
 
 #else // !NATRON_CACHE_INTERPROCESS_ROBUST
 
-typedef boost::shared_lock<boost::shared_mutex> Sharable_ReadLock;
-typedef boost::shared_lock<boost::upgrade_mutex> Upgradable_ReadLock;
-typedef boost::upgrade_lock<boost::upgrade_mutex> UpgradableLock;
+typedef boost::shared_mutex SharedMutex;
+typedef boost::upgrade_mutex UpgradableMutex;
+typedef boost::mutex ExclusiveMutex;
+typedef boost::recursive_mutex RecursiveExclusiveMutex;
 
-typedef boost::unique_lock<boost::upgrade_mutex> scoped_upgraded_lock;
-typedef boost::unique_lock<boost::upgrade_mutex> Upgradable_WriteLock;
-typedef boost::unique_lock<boost::shared_mutex> Sharable_WriteLock;
-typedef boost::unique_lock<boost::mutex> MutexLock;
+typedef boost::shared_lock<SharedMutex> Sharable_ReadLock;
+typedef boost::shared_lock<UpgradableMutex> Upgradable_ReadLock;
+typedef boost::upgrade_lock<UpgradableMutex> UpgradableLock;
+
+typedef boost::unique_lock<UpgradableMutex> scoped_upgraded_lock;
+typedef boost::unique_lock<UpgradableMutex> Upgradable_WriteLock;
+typedef boost::unique_lock<SharedMutex> Sharable_WriteLock;
+typedef boost::unique_lock<ExclusiveMutex> ExclusiveLock;
+
+typedef boost::condition_variable_any ConditionVariable;
 
 #define scoped_lock_type boost::unique_lock
 
 #endif // NATRON_CACHE_INTERPROCESS_ROBUST
 
 
+/**
+ * @brief An exception thrown when a mutex used in the cache implementation is abandonned
+ **/
+class AbandonnedLockException : public std::exception
+{
 
+public:
+
+    AbandonnedLockException()
+    {
+    }
+
+    virtual ~AbandonnedLockException() throw()
+    {
+    }
+
+    virtual const char * what () const throw ()
+    {
+        return "Abandonned lock!";
+    }
+};
+
+/**
+ * @brief An exception thrown when the cache is detected to be inconsistent
+ **/
+class CorruptedCacheException : public std::exception
+{
+
+public:
+
+    CorruptedCacheException()
+    {
+    }
+
+    virtual ~CorruptedCacheException() throw()
+    {
+    }
+
+    virtual const char * what () const throw ()
+    {
+        return "Corrupted cache";
+    }
+};
 
 // Maintain the lru with a list of hash: more recents hash are inserted at the end of the list
 // The least recently used hash is the first item of the list.
@@ -583,8 +635,6 @@ void insertLinkedListNode(const LRUListNodePtr& node, const LRUListNodePtr& prev
     node->next = next;
 }
 
-class SharedMemoryProcessLocalReadLocker;
-
 /**
  * @brief This struct represents the minimum required data for a cache entry in the global bucket memory segment.
  * It is associated to a hash in the LRU linked list.
@@ -592,10 +642,6 @@ class SharedMemoryProcessLocalReadLocker;
  **/
 struct MemorySegmentEntryHeader
 {
-
-    // If this entry has data in the tile aligned memory mapped file, this is the
-    // index of the tile allocated. If not allocated, this is  -1.
-    int tileCacheIndex;
 
     // The size of the memorySegmentPortion, in bytes. This is stored in the main cache memory segment.
     std::size_t size;
@@ -637,29 +683,32 @@ struct MemorySegmentEntryHeader
     CacheEntryBasePtr nonPersistentEntry;
 #endif
 
+    // List of tile indices allocated for this entry
+    ExternalSegmentTypeIntList tileIndices;
+
     // The corresponding node in the LRU list
     LRUListNode lruNode;
 
 #ifdef NATRON_CACHE_NEVER_PERSISTENT
     MemorySegmentEntryHeader()
-    : tileCacheIndex(0) // < when local process, the tile index is always valid since its a local buffer
-    , size(0)
+    : size(0)
     , status(eEntryStatusNull)
     , computeThreadMagic(0)
     , pluginID()
     , nonPersistentEntry()
+    , tileIndices()
     , lruNode()
     {
 
     }
 #else
     MemorySegmentEntryHeader(const void_allocator& allocator)
-    : tileCacheIndex(-1)
-    , size(0)
+    : size(0)
     , status(eEntryStatusNull)
     , computeThreadMagic(0)
     , pluginID(allocator)
     , entryDataPointerList(allocator)
+    , tileIndices(allocator)
     , lruNode()
     {
 
@@ -668,7 +717,6 @@ struct MemorySegmentEntryHeader
 
     void operator=(const MemorySegmentEntryHeader& other)
     {
-        tileCacheIndex = other.tileCacheIndex;
         size = other.size;
         status = other.status;
         pluginID = other.pluginID;
@@ -677,6 +725,7 @@ struct MemorySegmentEntryHeader
 #else
         entryDataPointerList = other.entryDataPointerList;
 #endif
+        tileIndices = other.tileIndices;
         lruNode = other.lruNode;
     }
 };
@@ -702,19 +751,19 @@ enum BucketStateEnum
  * entries storage. We split the next 8 bits of the hash into separate sub-buckets
  * to have smaller maps
  **/
-struct CacheBucketStorage_2
+struct CacheBucketStorage_1
 {
     // The internal map for this storage
     MemorySegmentEntryHeaderMap internalStorage;
 
 #ifndef NATRON_CACHE_NEVER_PERSISTENT
-    CacheBucketStorage_2(const void_allocator& alloc)
+    CacheBucketStorage_1(const void_allocator& alloc)
     : internalStorage(alloc)
     {
 
     }
 #else
-    CacheBucketStorage_2()
+    CacheBucketStorage_1()
     : internalStorage()
     {
 
@@ -767,7 +816,7 @@ struct CacheBucketStorage_ ## lvl \
     };
 #endif // #ifdef NATRON_CACHE_NEVER_PERSISTENT
 
-DECL_BUCKET_LEVEL(1,2)
+//DECL_BUCKET_LEVEL(1,2)
 
 #undef DECL_BUCKET_LEVEL
 
@@ -791,9 +840,10 @@ int getBucketStorageIndex(U64 hash)
 storage->buckets[getBucketStorageIndex<lvl>(hash)]
 
 
-inline MemorySegmentEntryHeaderMap* getInternalStorageFromHash(U64 hash, CacheBucketStorage_1& storage)
+inline MemorySegmentEntryHeaderMap* getInternalStorageFromHash(U64 /*hash*/, CacheBucketStorage_1& storage)
 {
-    return &WALK_THROUGH_STORAGE((&storage), hash, 1)->internalStorage;
+    //return &WALK_THROUGH_STORAGE((&storage), hash, 1)->internalStorage;
+    return &storage.internalStorage;
 }
 
 #undef WALK_THROUGH_STORAGE
@@ -807,42 +857,53 @@ inline MemorySegmentEntryHeaderMap* getInternalStorageFromHash(U64 hash, CacheBu
  **/
 struct CacheBucket
 {
-
     /**
      * @brief All IPC data that are shared accross processes for this bucket. This object lives in the ToC memory mapped file.
      **/
     struct IPCData
     {
 
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
+        // Protects the bucket data structures except the LRU linked list
+        UpgradableMutex bucketMutex;
+
         // Indices of the chunks of memory available in the tileAligned memory-mapped file.
+        // Protected by bucketMutex
         Size_t_Set freeTiles;
-#endif
+
+        // Protects the LRU list (lruListFront & lruListBack) in the toc memory file.
+        // This is separate mutex because even if we just access
+        // the cache in read mode (in the get() function) we still need to update the LRU list, thus
+        // protect it from being written by multiple concurrent threads.
+        ExclusiveMutex lruListMutex;
 
         // Pointers in shared memory to the lru list from node and back node
+        // Protected by lruListMutex
         LRUListNodePtr lruListFront, lruListBack;
 
         // The entries storage, accessed directly by the hash bits
+        // Protected by bucketMutex
         CacheBucketStorage_1 entriesStorage;
 
         // A version indicator for the serialization. If the cache version doesn't correspond
         // to NATRON_MEMORY_SEGMENT_ENTRY_HEADER_VERSION, we wipe it.
+        // Never changes, thread-safe
         unsigned int version;
 
         // What operation is done on the bucket. When obtaining a write lock on the bucket,
         // if the state is other than eBucketStateOk we detected an inconsistency.
-        // The bucket state is protected by the toc segmentMutex
+        // The bucket state is protected by the bucketMutex
         BucketStateEnum bucketState;
 
-#ifdef NATRON_CACHE_NEVER_PERSISTENT
-        // The number of bytes taken by the bucket. Only relevant when
-        // when the cache is not persistent
+        // The number of bytes taken by the bucket
+        // Protected by bucketMutex
         std::size_t size;
-#endif
 
 #ifdef NATRON_CACHE_NEVER_PERSISTENT
         IPCData()
-        : lruListFront(0)
+        : bucketMutex()
+        , freeTiles()
+        , lruListMutex()
+        , lruListFront(0)
         , lruListBack(0)
         , entriesStorage()
         , version(NATRON_MEMORY_SEGMENT_ENTRY_HEADER_VERSION)
@@ -853,16 +914,19 @@ struct CacheBucket
         }
 #else
         IPCData(const void_allocator& allocator)
-        : freeTiles(allocator)
+        : bucketMutex()
+        , freeTiles(allocator)
+        , lruListMutex()
         , lruListFront(0)
         , lruListBack(0)
         , entriesStorage(allocator)
         , version(NATRON_MEMORY_SEGMENT_ENTRY_HEADER_VERSION)
         , bucketState(eBucketStateOk)
+        , size(0)
         {
 
         }
-#endif
+#endif // NATRON_CACHE_NEVER_PERSISTENT
     };
 
 #ifndef NATRON_CACHE_NEVER_PERSISTENT
@@ -871,11 +935,12 @@ struct CacheBucket
     // CachePrivate::IPCData::PerBucketData
     // This is only valid if the cache is persistent
     MemoryFilePtr tileAlignedFile;
+#endif
 
     // If the cache non persitent, this replaces tileAlignedFile
     ProcessLocalBufferPtr tileAlignedLocalBuf;
 
-
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
     // Memory mapped file used to store interprocess table of contents (IPCData)
     // It contains for each entry:
     // - A LRUListNode
@@ -916,9 +981,9 @@ struct CacheBucket
     , tocFileManager()
     , ipc(0)
 #else
-      ipc(new IPCData) ,
+      ipc(new IPCData)
 #endif
-      cache()
+    , cache()
     , bucketIndex(-1)
     {
 
@@ -931,11 +996,11 @@ struct CacheBucket
      * This function may take the tileData.segmentMutex in write mode.
      * @param cacheEntryIt A valid iterator pointing to the entry. It will be invalidated when returning from the function.
      * @param storage A pointer to the map containing the cacheEntryIt iterator.
-     * @param shmAccess A pointer to the shared memory read locker object
+     *
+     * This function may throw a AbandonnedLockException
      **/
     void deallocateCacheEntryImpl(MemorySegmentEntryHeaderMap::iterator cacheEntryIt,
-                                  MemorySegmentEntryHeaderMap* storage,
-                                  boost::scoped_ptr<SharedMemoryProcessLocalReadLocker>& shmAccess);
+                                  MemorySegmentEntryHeaderMap* storage);
 
     /**
      * @brief Lookup the cache for a MemorySegmentEntry matching the hash key.
@@ -948,7 +1013,7 @@ struct CacheBucket
     {
         eShmEntryReadRetCodeOk,
         eShmEntryReadRetCodeDeserializationFailed,
-        eShmEntryReadRetCodeLockTimeout
+        eShmEntryReadRetCodeNeedWriteLock,
     };
 
     /**
@@ -957,11 +1022,13 @@ struct CacheBucket
      * This function assumes that the bucketLock of the bucket is taken at least in read mode.
      * @returns True if ok, false if the MemorySegmentEntry cannot be read properly.
      * it should be deallocated from the segment.
+     *
+     * This function may throw a AbandonnedLockException
      **/
     ShmEntryReadRetCodeEnum readFromSharedMemoryEntryImpl(MemorySegmentEntryHeader* entry,
                                                           const CacheEntryBasePtr& processLocalEntry,
                                                           U64 hash,
-                                                          boost::scoped_ptr<SharedMemoryProcessLocalReadLocker>& shmAccess);
+                                                          bool hasWriteRights);
 #ifndef NATRON_CACHE_NEVER_PERSISTENT
     /**
      * @brief Returns whether the ToC memory mapped file mapping is still valid.
@@ -971,14 +1038,13 @@ struct CacheBucket
 
     /**
      * @brief Ensures that the ToC memory mapped file mapping is still valid and re-open it if not.
-     * The tocData.segmentMutex is assumed to be taken for write-lock
+     * @param tocFileLock The tocData.segmentMutex is assumed to be taken for write-lock: this is the lock currently taken
      * @param minFreeSize Indicates that the file should have at least this amount of free bytes.
      * If not, this function will call growTileFile.
      * If the file is empty and minFreeSize is 0, the file will at least be grown to a size of
      * NATRON_CACHE_BUCKET_TOC_FILE_GROW_N_BYTES
      **/
-    template <typename Mutex>
-    void remapToCMemoryFile(scoped_lock_type<Mutex>& lock, std::size_t minFreeSize);
+    void remapToCMemoryFile(Sharable_WriteLock& tocFileLock, std::size_t minFreeSize);
 
     /**
      * @brief Returns whether the tile aligned memory mapped file mapping is still valid.
@@ -988,7 +1054,8 @@ struct CacheBucket
 
     /**
      * @brief Ensures that the tile aligned memory mapped file mapping is still valid and re-open it if not.
-     * The tileData.segmentMutex AND tocData.segmentMutex are assumed to be taken for write-lock.
+     * @param bucketLock The bucket is assumed to be taken in write mode: this is the lock currently taken
+     * @param tileFileLock The tileData.segmentMutex is assumed to be taken for write-lock: this is the lock currently taken
      * remapToCMemoryFile must have been called first because this function needs to access
      * the freeTiles data.
      * @param minFreeSize Indicates that the file should have at least this amount of free bytes.
@@ -996,31 +1063,33 @@ struct CacheBucket
      * If the file is empty and minFreeSize is 0, the file will at least be grown to a size of
      * NATRON_TILE_SIZE_BYTES * NATRON_CACHE_FILE_GROW_N_TILES
      **/
-    template <typename Mutex>
-    void remapTileMemoryFile(scoped_lock_type<Mutex>& lock, std::size_t minFreeSize);
-
+    void remapTileMemoryFile(const Upgradable_WriteLock& bucketLock, Sharable_WriteLock& tileFileLock, std::size_t minFreeSize);
+#
     /**
      * @brief Grow the ToC memory mapped file. 
      * This will first wait all other processes accessing to the mapping before resizing.
      * Any process trying to access the mapping during resizing will wait.
-     * The tileData.segmentMutex is assumed to be taken for write lock
+     * @param tocFileLock The tocData.segmentMutex is assumed to be taken for write-lock: this is the lock currently taken
      *
      * This function is called internally by remapToCMemoryFile()
      **/
-    template <typename Mutex>
-    void growToCFile(scoped_lock_type<Mutex>& lock, std::size_t bytesToAdd);
+    void growToCFile(Sharable_WriteLock& tocFileLock, std::size_t bytesToAdd);
+#endif // #ifndef NATRON_CACHE_NEVER_PERSISTENT
 
     /**
      * @brief Grow the tile memory mapped file. 
      * This will first wait all other processes accessing to the mapping before resizing.
      * Any process trying to access the mapping during resizing will wait.
-     * The tileData.segmentMutex is assumed to be taken for write lock
+     *
+     * @param bucketLock The bucket is assumed to be taken in write mode: this is the lock currently taken
+     * @param tileFileLock The tileData.segmentMutex is assumed to be taken for write-lock: this is the lock currently taken
      *
      * This function is called internally by remapTileMemoryFile()
      **/
-    template <typename Mutex>
-    void growTileFile(scoped_lock_type<Mutex>& lock, std::size_t bytesToAdd);
-#endif // #ifndef NATRON_CACHE_NEVER_PERSISTENT
+    void growTileFile(const Upgradable_WriteLock& bucketLock, Sharable_WriteLock& tileFileLock, std::size_t bytesToAdd);
+
+    void checkToCMemorySegmentStatus(boost::scoped_ptr<Sharable_ReadLock>* tocReadLock,
+                                     boost::scoped_ptr<Sharable_WriteLock>* tocWriteLock);
 };
 
 struct CacheEntryLockerPrivate
@@ -1045,6 +1114,30 @@ struct CacheEntryLockerPrivate
 
     CacheEntryLockerPrivate(CacheEntryLocker* publicInterface, const CachePtr& cache, const CacheEntryBasePtr& entry);
 
+    // This function may throw a AbandonnedLockException
+    bool lookupAndSetStatusInternal(bool hasWriteRights, std::size_t* timeSpentWaiting, std::size_t timeout);
+
+    enum LookupAndCreateRetCodeEnum
+    {
+        eLookupAndCreateRetCodeCreated,
+        eLookupAndCreateRetCodeOutOfToCMemory,
+    };
+
+    LookupAndCreateRetCodeEnum lookupAndCreate(std::size_t* timeSpentWaiting, std::size_t timeout);
+
+
+    enum InsertRetCodeEnum
+    {
+        eInsertRetCodeCreated,
+        eInsertRetCodeOutOfToCMemory,
+        eInsertRetCodeFailed
+    };
+
+    // This function may throw a AbandonnedLockException or CorruptedCacheException
+    InsertRetCodeEnum insertInternal();
+
+    // This function may throw a AbandonnedLockException or CorruptedCacheException
+    void lookupAndSetStatus(std::size_t* timeSpentWaiting, std::size_t timeout);
 };
 
 struct CachePrivate
@@ -1078,11 +1171,7 @@ struct CachePrivate
             // Whenever a process/thread reads the memory segment, it takes the lock in read mode.
             // Whenever a process/thread needs to write to or grow or shrink the memory segment, it takes this lock
             // in write mode.
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
-            bip::interprocess_upgradable_mutex segmentMutex;
-#else
-            boost::upgrade_mutex segmentMutex;
-#endif
+            SharedMutex segmentMutex;
 
             // True whilst the mapping is valid.
             // Any time the memory mapped file needs to be accessed, the caller
@@ -1096,12 +1185,7 @@ struct CachePrivate
             int nProcessWithMappingValid;
 
             // Threads wait on this condition whilst the mappingValid flag is false
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
-            bip::interprocess_condition_any mappingInvalidCond;
-
-#else
-            boost::condition_variable_any mappingInvalidCond;
-#endif
+            ConditionVariable mappingInvalidCond;
 
             // The thread that wants to grow the memory portion just waits in this condition
             // until nProcessWithToCMappingValid is 0.
@@ -1144,11 +1228,7 @@ struct CachePrivate
             //          ++nProcessWithMappingValid;
             //    }
             // }
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
-            bip::interprocess_condition_any mappedProcessesNotEmpty;
-#else
-            boost::condition_variable_any mappedProcessesNotEmpty;
-#endif
+            ConditionVariable mappedProcessesNotEmpty;
 
             SharedMemorySegmentData()
             : segmentMutex()
@@ -1160,7 +1240,6 @@ struct CachePrivate
 
             }
         };
-
         struct PerBucketData
         {
 
@@ -1169,40 +1248,21 @@ struct CachePrivate
 
             // Data related to the tiled memory mapped file
             SharedMemorySegmentData tileData;
-
-            // Protects the LRU list in the toc memory file.
-            // This is separate to the mutex protecting the ToC memory mapped file
-            // because even if we just access
-            // the cache in read mode (in the get() function) we still need to update the LRU list, thus
-            // protect it from being written by multiple concurrent threads.
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
-            bip::interprocess_mutex lruListMutex;
-
-#else
-            boost::mutex lruListMutex;
-#endif
-
-            // Protects the bucketState
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
-            bip::interprocess_mutex bucketStateMutex;
-
-#else
-            boost::mutex bucketStateMutex;
-#endif
-
+            
         };
         
 
         PerBucketData bucketsData[NATRON_CACHE_BUCKETS_COUNT];
-
-
+        
+        
         IPCData()
         : bucketsData()
         {
-
+            
         }
-
+        
     };
+    
 
 #ifdef NATRON_CACHE_INTERPROCESS_ROBUST
     // Pointer to the memory segment used to store bucket independent data accross processes.
@@ -1212,9 +1272,11 @@ struct CachePrivate
     boost::scoped_ptr<bip::managed_shared_memory> globalMemorySegment;
 #endif
 
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
     // The global file lock to monitor process access to the cache.
     // Only valid if the cache is persistent.
-    boost::scoped_ptr<bip::file_lock> globalMemorySegmentFileLock;
+    boost::scoped_ptr<bip::file_lock> globalFileLock;
+#endif
 
 #ifdef NATRON_CACHE_INTERPROCESS_ROBUST
     // Used in the implementation of ensureSharedMemoryIntegrity()
@@ -1242,6 +1304,8 @@ struct CachePrivate
     boost::scoped_ptr<IPCData> ipc;
 #endif
 
+
+
     // Path of the directory that should contain the cache directory itself.
     // This is controled by a Natron setting. By default it points to a standard system dependent
     // location.
@@ -1253,11 +1317,17 @@ struct CachePrivate
     double timerFrequency;
 #endif
 
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
     // If true the cache is persitent and all buckets use memory mapped files instead of
     // process local storage.
     bool persistent;
+#endif
 
-    CachePrivate(Cache* publicInterface, bool persistent)
+    CachePrivate(Cache* publicInterface
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
+                 , bool persistent
+#endif
+                 )
     : _publicInterface(publicInterface)
     , maximumSize((std::size_t)8 * 1024 * 1024 * 1024) // 8GB max by default
     , maximumSizeMutex()
@@ -1265,7 +1335,9 @@ struct CachePrivate
 #ifdef NATRON_CACHE_INTERPROCESS_ROBUST
     , globalMemorySegment()
 #endif
-    , globalMemorySegmentFileLock()
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
+    , globalFileLock()
+#endif
 #ifdef NATRON_CACHE_INTERPROCESS_ROBUST
     , nSHMInvalidSem()
     , nSHMValidSem()
@@ -1282,7 +1354,9 @@ struct CachePrivate
 #ifdef NATRON_CACHE_INTERPROCESS_ROBUST
     , timerFrequency(getPerformanceFrequency())
 #endif
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
     , persistent(persistent)
+#endif
     {
 
     }
@@ -1314,90 +1388,69 @@ struct CachePrivate
      * @brief Clear all buckets by re-creating their underlying storage. No lock should be taken
      * when entering this function, except the shmAccess.
      **/
-    void clearCacheInternal(boost::scoped_ptr<SharedMemoryProcessLocalReadLocker>& shmAccess);
-    void clearCacheBucket(int bucket_i, boost::scoped_ptr<SharedMemoryProcessLocalReadLocker>& shmAccess);
+    void clearCacheInternal();
 
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
+
+    // This function may throw a AbandonnedLockException
+    void clearCacheBucket(int bucket_i);
+
     /**
      * @brief Ensure the cache returns to a correct state. Currently it wipes the cache.
      **/
-    void recoverFromInconsistentState(int bucket_i, boost::scoped_ptr<SharedMemoryProcessLocalReadLocker>& shmAccess);
+    void recoverFromInconsistentState(int bucket_i
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+                                      , SHMReadLockerPtr& shmReader
 #endif
+                                      );
+
 };
 
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
 /**
  * @brief A small RAII object that should be instanciated whenever taking a write lock on the bucket
+ * If the cache is corrupted, the ctor will throw a CorruptedCacheException
  **/
 class BucketStateHandler_RAII
 {
-    CachePrivate* _imp;
-    bool _valid;
-    int _bucket_i;
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
-    boost::scoped_ptr<MutexLock> locker;
-#endif
+    const CacheBucket* bucket;
 public:
 
-    BucketStateHandler_RAII(CachePrivate* imp, int bucket_i, boost::scoped_ptr<SharedMemoryProcessLocalReadLocker>& shmAccess)
-    : _imp(imp)
-    , _valid(true)
-    , _bucket_i(bucket_i)
+    BucketStateHandler_RAII(const CacheBucket* bucket)
+    :  bucket(bucket)
     {
 
-#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-        _imp->ipc->bucketsData[bucket_i].bucketStateMutex.lock();
-#else
-        locker.reset(new MutexLock(_imp->ipc->bucketsData[bucket_i].bucketStateMutex, imp->timerFrequency));
-        if (!locker->timed_lock()) {
-            _imp->recoverFromInconsistentState(bucket_i, shmAccess);
-            _valid = false;
-            return;
-        }
-#endif
+        // The bucketMutex must be taken in write mode
 
-        if (_imp->buckets[bucket_i].ipc->bucketState != eBucketStateOk) {
-            _imp->ipc->bucketsData[bucket_i].bucketStateMutex.unlock();
-            _imp->recoverFromInconsistentState(bucket_i, shmAccess);
-            _valid = false;
-            return;
+        if (bucket->ipc->bucketState != eBucketStateOk) {
+            throw CorruptedCacheException();
         }
 
-        _imp->buckets[bucket_i].ipc->bucketState = eBucketStateInconsistent;
+        bucket->ipc->bucketState = eBucketStateInconsistent;
     }
 
-    bool isValid() const
-    {
-        return _valid;
-    }
 
     ~BucketStateHandler_RAII()
     {
-        if (_valid) {
-            assert(_imp->buckets[_bucket_i].ipc->bucketState == eBucketStateInconsistent);
-            _imp->buckets[_bucket_i].ipc->bucketState = eBucketStateOk;
-            _imp->ipc->bucketsData[_bucket_i].bucketStateMutex.unlock();
-        }
-        assert(_imp->buckets[_bucket_i].ipc->bucketState == eBucketStateOk);
+        assert(bucket->ipc->bucketState == eBucketStateInconsistent);
+        bucket->ipc->bucketState = eBucketStateOk;
     }
 };
-#endif // #ifndef NATRON_CACHE_NEVER_PERSISTENT
+
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
 
 /**
  * @brief Small RAII style class that should be used before using anything that is in the cache global shared memory
  * segment.
  * This prevents any other threads to call ensureSharedMemoryIntegrity() whilst this object is active.
+ * Since any mutex in the cache is held in the globalMemorySegment, unmapping the segment could potentially crash any process
+ * so we must carefully lock the access to the globalMemorySegment
  **/
 class SharedMemoryProcessLocalReadLocker
 {
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
     boost::scoped_ptr<boost::shared_lock<boost::shared_mutex> > processLocalLocker;
-#endif
 public:
 
     SharedMemoryProcessLocalReadLocker(CachePrivate* imp)
     {
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
 
         // A thread may enter ensureSharedMemoryIntegrity(), thus any other threads must ensure that the shared memory mapping
         // is valid before doing anything else.
@@ -1405,9 +1458,7 @@ public:
         while (imp->nThreadsTimedOutFailed > 0) {
             imp->nThreadsTimedOutFailedCond.wait(*processLocalLocker);
         }
-#else
-        (void)imp;
-#endif
+
     }
 
     ~SharedMemoryProcessLocalReadLocker()
@@ -1417,45 +1468,26 @@ public:
 
 };
 
+
+#endif
+
 #ifdef NATRON_CACHE_INTERPROCESS_ROBUST
 /**
  * @brief Creates a locker object around the given process shared mutex.
- * If after the given lockTimeOutMs the lock could not be taken, the function
- * ensureSharedMemoryIntegrity() will be called. The mutex could be very well taken by 
- * a dead process. This function unmaps the shared memory, re-creates it and remap it.
- * @param shmReader Before calling this function, the shared memory where the interprocess lock resides
- * must be lock for reading.
+ * If after some time the mutex cannot be taken it is declared abandonned and throws a AbandonnedLockException
  **/
 template <typename LOCK>
-bool createTimedLockAndHandleInconsistentStateIfFailed(CachePrivate* imp,
-                                                       boost::scoped_ptr<SharedMemoryProcessLocalReadLocker>& shmReader,
-                                                       int bucket_i,
-                                                       boost::scoped_ptr<LOCK>& lock,
-                                                       typename LOCK::mutex_type* mutex)
+void createTimedLock(CachePrivate* imp,  boost::scoped_ptr<LOCK>& lock, typename LOCK::mutex_type* mutex)
 {
-    // Take the lock. After lockTimeOutMS milliseconds, if the locks is not taken, we check the integrity of the
-    // shared memory segment and retry the lock.
-    // Another process could have taken the lock and crashed, leaving the shared memory in a bad state.
-    bool unmappedOnce = false;
-    for (;;) {
 
-        lock.reset(new LOCK(*mutex, imp->timerFrequency));
-
-        if (lock->timed_lock()) {
-            return !unmappedOnce;
-        } else {
-
-            unmappedOnce = true;
-            lock.reset();
-
+    lock.reset(new LOCK(*mutex, imp->timerFrequency));
+    if (!lock->timed_lock()) {
+        throw AbandonnedLockException();
 #ifdef CACHE_TRACE_TIMEOUTS
-            qDebug() << QThread::currentThread() << "Lock timeout, checking cache integrity";
+        qDebug() << QThread::currentThread() << "Lock timeout, clearing cache since it is probably corrupted.";
 #endif
-            imp->recoverFromInconsistentState(bucket_i, shmReader);
-        }
     }
-    return false;
-} // createTimedLockAndHandleInconsistentStateIfFailed
+}
 #endif // #ifdef NATRON_CACHE_INTERPROCESS_ROBUST
 
 CacheEntryLockerPrivate::CacheEntryLockerPrivate(CacheEntryLocker* publicInterface, const CachePtr& cache, const CacheEntryBasePtr& entry)
@@ -1484,14 +1516,17 @@ CacheEntryLocker::create(const CachePtr& cache, const CacheEntryBasePtr& entry)
     }
     CacheEntryLockerPtr ret(new CacheEntryLocker(cache, entry));
 
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
     // Lock the SHM for reading to ensure all process shared mutexes and other IPC structures remains valid.
     // This will prevent any other thread from calling ensureSharedMemoryIntegrity()
     boost::scoped_ptr<SharedMemoryProcessLocalReadLocker> shmAccess(new SharedMemoryProcessLocalReadLocker(cache->_imp.get()));
+#endif
 
     // Lookup and find an existing entry.
     // Never take over an entry upon timeout.
     std::size_t timeSpentWaiting = 0;
-    ret->lookupAndSetStatus(shmAccess, &timeSpentWaiting, 0);
+    ret->_imp->lookupAndSetStatus(&timeSpentWaiting, 0);
+
     return ret;
 }
 
@@ -1501,26 +1536,20 @@ CacheBucket::isToCFileMappingValid() const
 {
     // Private - the tocData.segmentMutex is assumed to be taken for read lock
     CachePtr c = cache.lock();
-    if (!c->_imp->ipc->bucketsData[bucketIndex].tocData.mappingValid) {
-        return false;
-    }
-    return true;
-
-} // isToCFileMappingValid
+    assert(!c->_imp->ipc->bucketsData[bucketIndex].tocData.segmentMutex.try_lock());
+    return c->_imp->ipc->bucketsData[bucketIndex].tocData.mappingValid ;
+}
 
 bool
 CacheBucket::isTileFileMappingValid() const
 {
     // Private - the tileData.segmentMutex is assumed to be taken for read lock
     CachePtr c = cache.lock();
-    if (!c->_imp->ipc->bucketsData[bucketIndex].tileData.mappingValid) {
-        return false;
-    }
-    return true;
-} // isTileFileMappingValid
+    assert(!c->_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex.try_lock());
+    return c->_imp->ipc->bucketsData[bucketIndex].tileData.mappingValid ;
+}
 
-template <typename Mutex>
-static void ensureMappingValidInternal(scoped_lock_type<Mutex>& lock,
+static void ensureMappingValidInternal(Sharable_WriteLock& lock,
                                        const MemoryFilePtr& memoryMappedFile,
                                        CachePrivate::IPCData::SharedMemorySegmentData* segment)
 {
@@ -1576,13 +1605,12 @@ static void reOpenToCData(CacheBucket* bucket, bool create)
 
     } catch (...) {
         assert(false);
-        throw std::runtime_error("Not enough space to allocate bucket table of content!");
+        throw std::runtime_error("Not enough memory to allocate bucket table of content");
     }
 }
 
-template <typename Mutex>
 void
-CacheBucket::remapToCMemoryFile(scoped_lock_type<Mutex>& lock, std::size_t minFreeSize)
+CacheBucket::remapToCMemoryFile(Sharable_WriteLock& lock, std::size_t minFreeSize)
 {
     // Private - the tocData.segmentMutex is assumed to be taken for write lock
     CachePtr c = cache.lock();
@@ -1648,11 +1676,11 @@ static void flushTileMapping(const MemoryFilePtr& tileAlignedFile, const Size_t_
     }
 } // flushTileMapping
 
-template <typename Mutex>
 void
-CacheBucket::remapTileMemoryFile(scoped_lock_type<Mutex>& lock, std::size_t minFreeSize)
+CacheBucket::remapTileMemoryFile(const Upgradable_WriteLock& bucketLock, Sharable_WriteLock& tileFileLock, std::size_t minFreeSize)
 {
-    // Private - the tileData.segmentMutex is assumed to be taken for write lock
+    (void)bucketLock;
+
     CachePtr c = cache.lock();
     if (c->_imp->persistent) {
         if (!c->_imp->ipc->bucketsData[bucketIndex].tileData.mappingValid) {
@@ -1666,7 +1694,7 @@ CacheBucket::remapTileMemoryFile(scoped_lock_type<Mutex>& lock, std::size_t minF
         qDebug() << "Checking ToC mapping:" << c->_imp->ipc->bucketsData[bucketIndex].tileData.mappingValid;
 #endif
 
-        ensureMappingValidInternal(lock, tileAlignedFile, &c->_imp->ipc->bucketsData[bucketIndex].tileData);
+        ensureMappingValidInternal(tileFileLock, tileAlignedFile, &c->_imp->ipc->bucketsData[bucketIndex].tileData);
     }
 
     // Ensure the size of the ToC file is reasonable
@@ -1677,7 +1705,7 @@ CacheBucket::remapTileMemoryFile(scoped_lock_type<Mutex>& lock, std::size_t minF
         curNumBytes = tileAlignedLocalBuf->size();
     }
     if (curNumBytes == 0) {
-        growTileFile(lock, minFreeSize);
+        growTileFile(bucketLock, tileFileLock, minFreeSize);
     } else {
 
         std::size_t freeMem = ipc->freeTiles.size() * NATRON_TILE_SIZE_BYTES;
@@ -1685,16 +1713,16 @@ CacheBucket::remapTileMemoryFile(scoped_lock_type<Mutex>& lock, std::size_t minF
         // Check that there's enough memory, if not grow the file
         if (freeMem < minFreeSize) {
             std::size_t minbytesToGrow = minFreeSize - freeMem;
-            growTileFile(lock, minbytesToGrow);
+            growTileFile(bucketLock, tileFileLock, minbytesToGrow);
         }
     }
     assert(ipc->freeTiles.size() * NATRON_TILE_SIZE_BYTES >= minFreeSize);
 
 } // remapTileMemoryFile
 
-template <typename Mutex>
+
 void
-CacheBucket::growToCFile(scoped_lock_type<Mutex>& lock, std::size_t bytesToAdd)
+CacheBucket::growToCFile(Sharable_WriteLock& lock, std::size_t bytesToAdd)
 {
     // Private - the tocData.segmentMutex is assumed to be taken for write lock
 
@@ -1749,37 +1777,44 @@ CacheBucket::growToCFile(scoped_lock_type<Mutex>& lock, std::size_t bytesToAdd)
 
 } // growToCFile
 
-template <typename Mutex>
+#endif // #ifndef NATRON_CACHE_NEVER_PERSISTENT
 void
-CacheBucket::growTileFile(scoped_lock_type<Mutex>& lock, std::size_t bytesToAdd)
+CacheBucket::growTileFile(const Upgradable_WriteLock& bucketLock, Sharable_WriteLock& tileFileLock, std::size_t bytesToAdd)
 {
-    // Private - the tileData.segmentMutex is assumed to be taken for write lock
-    // the tocData.segmentMutex is assumed to be taken for write lock because we need to read/write the free tiles
-
+    (void)bucketLock;
+    
     CachePtr c = cache.lock();
 
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
     if (c->_imp->persistent) {
         c->_imp->ipc->bucketsData[bucketIndex].tileData.mappingValid = false;
 
         --c->_imp->ipc->bucketsData[bucketIndex].tileData.nProcessWithMappingValid;
         while (c->_imp->ipc->bucketsData[bucketIndex].tileData.nProcessWithMappingValid > 0) {
-            c->_imp->ipc->bucketsData[bucketIndex].tileData.mappedProcessesNotEmpty.wait(lock);
+            c->_imp->ipc->bucketsData[bucketIndex].tileData.mappedProcessesNotEmpty.wait(tileFileLock);
         }
         // Update free tiles
         flushTileMapping(tileAlignedFile, ipc->freeTiles);
-
     }
+#else
+    (void)tileFileLock;
+#endif
 
     {
 
 
         // Resize the file
         std::size_t curSize;
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
         if (tileAlignedFile) {
             curSize = tileAlignedFile->size();
         } else {
+#endif
             curSize = tileAlignedLocalBuf->size();
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
         }
+#endif
+
         // The current size must be a multiple of the tile size
         assert(curSize % NATRON_TILE_SIZE_BYTES == 0);
 
@@ -1789,13 +1824,17 @@ CacheBucket::growTileFile(scoped_lock_type<Mutex>& lock, std::size_t bytesToAdd)
         // Round to the nearest next multiple of minTilesToAllocSize
         newSize = std::max((std::size_t)1, (std::size_t)std::ceil(newSize / (double) minTilesToAllocSize)) * minTilesToAllocSize;
 
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
         if (c->_imp->persistent) {
             // we pass preserve=false since we flushed the portion we know is valid just above
             tileAlignedFile->resize(newSize, false /*preserve*/);
         } else {
+#endif
             assert(tileAlignedLocalBuf);
             tileAlignedLocalBuf->resizeAndPreserve(newSize);
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
         }
+#endif
 
 #ifdef CACHE_TRACE_FILE_MAPPING
         qDebug() << "Growing tile file to " << printAsRAM(newSize);
@@ -1814,7 +1853,7 @@ CacheBucket::growTileFile(scoped_lock_type<Mutex>& lock, std::size_t bytesToAdd)
 #endif
 
     }
-
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
     if (c->_imp->persistent) {
         ++c->_imp->ipc->bucketsData[bucketIndex].tileData.nProcessWithMappingValid;
 
@@ -1823,16 +1862,16 @@ CacheBucket::growTileFile(scoped_lock_type<Mutex>& lock, std::size_t bytesToAdd)
 
         c->_imp->ipc->bucketsData[bucketIndex].tileData.mappingInvalidCond.notify_all();
     }
-    
+#endif
 
 } // growTileFile
 
-#endif // #ifndef NATRON_CACHE_NEVER_PERSISTENT
 
 bool
 CacheBucket::tryCacheLookupImpl(U64 hash, MemorySegmentEntryHeaderMap::iterator* found, MemorySegmentEntryHeaderMap** storage)
 {
-    // Private - the tocData.segmentMutex is assumed to be taken at least in read lock mode
+    // The bucket mutex is assumed to be taken at least in read lock mode
+    assert(!ipc->bucketMutex.try_lock());
     *storage = getInternalStorageFromHash(hash, ipc->entriesStorage);
     *found = (*storage)->find(hash);
     return *found != (*storage)->end();
@@ -1842,73 +1881,29 @@ CacheBucket::ShmEntryReadRetCodeEnum
 CacheBucket::readFromSharedMemoryEntryImpl(MemorySegmentEntryHeader* cacheEntry,
                                            const CacheEntryBasePtr& processLocalEntry,
                                            U64 hash,
-                                           boost::scoped_ptr<SharedMemoryProcessLocalReadLocker>& shmAccess)
+                                           bool hasWriteRights)
 {
+    CachePtr c = cache.lock();
+
+
     // Private - the tocData.segmentMutex is assumed to be taken at least in read lock mode
+    assert(!c->_imp->ipc->bucketsData[bucketIndex].tocData.segmentMutex.try_lock());
+
+    // The bucket mutex is assumed to be taken at least in read lock mode
+    assert(!ipc->bucketMutex.try_lock());
 
 #ifdef NATRON_CACHE_NEVER_PERSISTENT
     (void)processLocalEntry;
     (void)hash;
+    (void)hasWriteRights;
 #endif
-#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-    (void)shmAccess;
-#endif
+
 
     // The entry must have been looked up in tryCacheLookup()
     assert(cacheEntry);
 
     assert(cacheEntry->status == MemorySegmentEntryHeader::eEntryStatusReady);
 
-    CachePtr c = cache.lock();
-
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
-    // If the entry is tiled, read from the tile buffer
-    boost::scoped_ptr<Upgradable_ReadLock> tileReadLock;
-    boost::scoped_ptr<Upgradable_WriteLock> tileWriteLock;
-    char* tileDataPtr = 0;
-    if (cacheEntry->tileCacheIndex != -1) {
-
-
-        // First try to check if the tile aligned mapping is valid with a readlock
-        bool tileMappingValid;
-
-
-        {
-#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-            tileReadLock.reset(new Upgradable_ReadLock(c->_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex));
-#else
-            if (!createTimedLockAndHandleInconsistentStateIfFailed<Upgradable_ReadLock>(c->_imp.get(), shmAccess, bucketIndex, tileReadLock, &c->_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex)) {
-                return eShmEntryReadRetCodeLockTimeout;
-            }
-#endif
-            tileMappingValid = isTileFileMappingValid();
-        }
-
-        // mapping invalid, remap
-
-        if (!tileMappingValid) {
-            // If the tile mapping is invalid, take a write lock on the tile mapping and ensure it is valid
-            tileReadLock.reset();
-#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-            tileWriteLock.reset(new Upgradable_WriteLock(c->_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex));
-#else
-            tileWriteLock.reset(new Upgradable_WriteLock(c->_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex, c->_imp->timerFrequency));
-            if (!tileWriteLock->timed_lock()) {
-                return eShmEntryReadRetCodeLockTimeout;
-            }
-#endif
-            remapTileMemoryFile(*tileWriteLock, 0);
-        }
-
-        char* data;
-        if (c->_imp->persistent) {
-            data = tileAlignedFile->data();
-        } else {
-            data = tileAlignedLocalBuf->getData();
-        }
-        tileDataPtr = data + cacheEntry->tileCacheIndex * NATRON_TILE_SIZE_BYTES;
-    }
-#endif // #ifndef NATRON_CACHE_NEVER_PERSISTENT
 
 #ifndef NATRON_CACHE_NEVER_PERSISTENT
     try {
@@ -1930,8 +1925,21 @@ CacheBucket::readFromSharedMemoryEntryImpl(MemorySegmentEntryHeader* cacheEntry,
         ExternalSegmentTypeHandleList::const_iterator it = cacheEntry->entryDataPointerList.begin();
         ExternalSegmentTypeHandleList::const_iterator end = cacheEntry->entryDataPointerList.end();
         --end; // the last element was the hash
-        processLocalEntry->fromMemorySegment(tocFileManager.get(), it, end, tileDataPtr);
-
+        CacheEntryBase::FromMemorySegmentRetCodeEnum stat = processLocalEntry->fromMemorySegment(hasWriteRights, tocFileManager.get(), it, end);
+        switch (stat) {
+            case CacheEntryBase::eFromMemorySegmentRetCodeOk:
+                break;
+            case CacheEntryBase::eFromMemorySegmentRetCodeFailed:
+                return eShmEntryReadRetCodeDeserializationFailed;
+            case CacheEntryBase::eFromMemorySegmentRetCodeNeedWriteLock:
+                // This status code can only be given if !hasWriteRights
+                assert(!hasWriteRights);
+                if (hasWriteRights) {
+                    return eShmEntryReadRetCodeDeserializationFailed;
+                } else {
+                    return eShmEntryReadRetCodeNeedWriteLock;
+                }
+        }
         // Now compute the hash from the deserialized entry and check that it matches the given hash
         serializedHash = processLocalEntry->getHashKey(true /*forceComputation*/);
 
@@ -1949,13 +1957,11 @@ CacheBucket::readFromSharedMemoryEntryImpl(MemorySegmentEntryHeader* cacheEntry,
     //
     // Take the LRU list mutex
     {
-        boost::scoped_ptr<MutexLock> lruWriteLock;
+        boost::scoped_ptr<ExclusiveLock> lruWriteLock;
 #ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-        lruWriteLock.reset(new MutexLock(c->_imp->ipc->bucketsData[bucketIndex].lruListMutex));
+        lruWriteLock.reset(new ExclusiveLock(ipc->lruListMutex));
 #else
-        if (!createTimedLockAndHandleInconsistentStateIfFailed<MutexLock>(c->_imp.get(), shmAccess, bucketIndex, lruWriteLock, &c->_imp->ipc->bucketsData[bucketIndex].lruListMutex)) {
-            return eShmEntryReadRetCodeLockTimeout;
-        }
+        createTimedLock<ExclusiveLock>(c->_imp.get(), lruWriteLock, &ipc->lruListMutex);
 #endif
 
         assert(ipc->lruListBack && !ipc->lruListBack->next);
@@ -1976,15 +1982,16 @@ CacheBucket::readFromSharedMemoryEntryImpl(MemorySegmentEntryHeader* cacheEntry,
 
 void
 CacheBucket::deallocateCacheEntryImpl(MemorySegmentEntryHeaderMap::iterator cacheEntryIt,
-                                      MemorySegmentEntryHeaderMap* storage,
-                                      boost::scoped_ptr<SharedMemoryProcessLocalReadLocker>& shmAccess)
+                                      MemorySegmentEntryHeaderMap* storage)
 {
 
-    // The tocData.segmentMutex must be taken in write mode
+    CachePtr c = cache.lock();
 
-#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-    (void)shmAccess;
-#endif
+    // The tocData.segmentMutex must be taken in read mode
+    assert(!c->_imp->ipc->bucketsData[bucketIndex].tocData.segmentMutex.try_lock());
+
+    // The bucket mutex is assumed to be taken in write mode
+    assert(!ipc->bucketMutex.try_lock());
 
     assert(cacheEntryIt != storage->end());
 
@@ -2002,61 +2009,50 @@ CacheBucket::deallocateCacheEntryImpl(MemorySegmentEntryHeaderMap::iterator cach
     cacheEntryIt->second->entryDataPointerList.clear();
 #endif // #ifndef NATRON_CACHE_NEVER_PERSISTENT
 
-    CachePtr c = cache.lock();
+
+    ipc->size -= cacheEntryIt->second->size;
+
+    // Clear allocated tiles for this entry
+    if (!cacheEntryIt->second->tileIndices.empty()) {
+
+        ipc->size -= cacheEntryIt->second->tileIndices.size() * NATRON_TILE_SIZE_BYTES;
+
+
+        // Take the tile data write lock
+        boost::scoped_ptr<Sharable_WriteLock> writeLock;
+
+#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
+        writeLock.reset(new Sharable_WriteLock(c->_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex));
+#else
+        createTimedLock<Sharable_WriteLock>(c->_imp.get(), writeLock,  &c->_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex);
+#endif
+        for (ExternalSegmentTypeIntList::const_iterator it = cacheEntryIt->second->tileIndices.begin(); it != cacheEntryIt->second->tileIndices.end(); ++it) {
 
 #ifndef NATRON_CACHE_NEVER_PERSISTENT
-    if (cacheEntryIt->second->tileCacheIndex != -1) {
-        // Free the tile
-        // Take the tileData.segmentMutex in write mode
-
-        if (c->_imp->persistent) {
-            boost::scoped_ptr<Upgradable_WriteLock> writeLock;
-#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-            writeLock.reset(new Upgradable_WriteLock(c->_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex));
-#else
-            if (!createTimedLockAndHandleInconsistentStateIfFailed<Upgradable_WriteLock>(c->_imp.get(), shmAccess, bucketIndex, writeLock,  &c->_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex)) {
-                return;
-            }
-#endif
-            if (isTileFileMappingValid()) {
-                remapTileMemoryFile(*writeLock, 0);
-            }
-
             // Invalidate this portion of the memory mapped file
-            std::size_t dataOffset = cacheEntryIt->second->tileCacheIndex * NATRON_TILE_SIZE_BYTES;
+            std::size_t dataOffset = *it * NATRON_TILE_SIZE_BYTES;
             tileAlignedFile->flush(MemoryFile::eFlushTypeInvalidate, tileAlignedFile->data() + dataOffset, NATRON_TILE_SIZE_BYTES);
-        }
-        
-
-        // Make this tile free again
+#endif
+            // Make this tile free again
 #ifdef CACHE_TRACE_TILES_ALLOCATION
-        qDebug() << "Bucket" << bucketIndex << ": tile freed" << entryIt->second.tileCacheIndex << " Nb free tiles left:" << ipc->freeTiles.size();
+            qDebug() << "Bucket" << bucketIndex << ": tile freed" << *it << " Nb free tiles left:" << ipc->freeTiles.size();
 #endif
-        std::pair<Size_t_Set::iterator, bool>  insertOk = ipc->freeTiles.insert(cacheEntryIt->second->tileCacheIndex);
-        assert(insertOk.second);
-        (void)insertOk;
-        cacheEntryIt->second->tileCacheIndex = -1;
+            std::pair<Size_t_Set::iterator, bool>  insertOk = ipc->freeTiles.insert(*it);
+            assert(insertOk.second);
+            (void)insertOk;
+        }
+        cacheEntryIt->second->tileIndices.clear();
     }
-#endif // #ifndef NATRON_CACHE_NEVER_PERSISTENT
 
-
-#ifdef NATRON_CACHE_NEVER_PERSISTENT
-    ipc->size -= cacheEntryIt->second->size;
-    if (cacheEntryIt->second->tileCacheIndex != -1) {
-        ipc->size -= NATRON_TILE_SIZE_BYTES;
-    }
-#endif
 
     // Remove this entry from the LRU list
     {
         // Take the lock of the LRU list.
-        boost::scoped_ptr<MutexLock> lruWriteLock;
+        boost::scoped_ptr<ExclusiveLock> lruWriteLock;
 #ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-        lruWriteLock.reset(new MutexLock(c->_imp->ipc->bucketsData[bucketIndex].lruListMutex));
+        lruWriteLock.reset(new ExclusiveLock(ipc->lruListMutex));
 #else
-        if (!createTimedLockAndHandleInconsistentStateIfFailed<MutexLock>(c->_imp.get(), shmAccess, bucketIndex, lruWriteLock, &c->_imp->ipc->bucketsData[bucketIndex].lruListMutex)) {
-            return;
-        }
+        createTimedLock<ExclusiveLock>(c->_imp.get(), lruWriteLock, &ipc->lruListMutex);
 #endif
         // Ensure the back and front pointers do not point to this entry
         if (&cacheEntryIt->second->lruNode == getRawPointer(ipc->lruListBack)) {
@@ -2106,7 +2102,8 @@ static void thread_sleep(struct timespec *ti)
 }
 #endif
 
-static void sleep_milliseconds(std::size_t amountMS)
+void
+CacheEntryLocker::sleep_milliseconds(std::size_t amountMS)
 {
 #ifdef __NATRON_WIN32__
      ::Sleep(amountMS);
@@ -2126,24 +2123,25 @@ static void sleep_milliseconds(std::size_t amountMS)
 }
 
 bool
-CacheEntryLocker::lookupAndSetStatusInternal(bool hasWriteRights, boost::scoped_ptr<SharedMemoryProcessLocalReadLocker>& shmAccess, std::size_t *timeSpentWaitingForPendingEntryMS, std::size_t timeout)
+CacheEntryLockerPrivate::lookupAndSetStatusInternal(bool hasWriteRights, std::size_t *timeSpentWaitingForPendingEntryMS, std::size_t timeout)
 {
 
-    // Look-up the cache
-    _imp->status = eCacheEntryStatusMustCompute;
+    // By default the entry status is set to be computed
+    status = CacheEntryLocker::eCacheEntryStatusMustCompute;
 
 
+    // Look-up the entry
     MemorySegmentEntryHeaderMap::iterator found;
     MemorySegmentEntryHeaderMap* storage;
-    if (!_imp->bucket->tryCacheLookupImpl(_imp->hash, &found, &storage)) {
+    if (!bucket->tryCacheLookupImpl(hash, &found, &storage)) {
         // No entry matching the hash could be found.
 #ifdef CACHE_TRACE_ENTRY_ACCESS
-        qDebug() << QThread::currentThread() << "(locker=" << this << ")"<< _imp->hash << "look-up: entry not found, type ID=" << _imp->processLocalEntry->getKey()->getUniqueID();
+        qDebug() << QThread::currentThread() << "(locker=" << this << ")"<< hash << "look-up: entry not found, type ID=" << processLocalEntry->getKey()->getUniqueID();
 #endif
         return false;
     }
 #ifdef CACHE_TRACE_ENTRY_ACCESS
-    qDebug() << QThread::currentThread() << "(locker=" << this << ")"<< _imp->hash << "look-up: found, type ID=" << _imp->processLocalEntry->getKey()->getUniqueID();
+    qDebug() << QThread::currentThread() << "(locker=" << this << ")"<< hash << "look-up: found, type ID=" << processLocalEntry->getKey()->getUniqueID();
 #endif
 
     if (found->second->status == MemorySegmentEntryHeader::eEntryStatusNull) {
@@ -2154,22 +2152,21 @@ CacheEntryLocker::lookupAndSetStatusInternal(bool hasWriteRights, boost::scoped_
             return false;
         }
 #ifdef CACHE_TRACE_ENTRY_ACCESS
-        qDebug() << QThread::currentThread() <<  "(locker=" << this << ")"<< _imp->hash << ": entry found but NULL, thread" << QThread::currentThread() << "is taking over the entry";
+        qDebug() << QThread::currentThread() <<  "(locker=" << this << ")"<< hash << ": entry found but NULL, thread" << QThread::currentThread() << "is taking over the entry";
 #endif
     }
 
     if (found->second->status == MemorySegmentEntryHeader::eEntryStatusPending) {
 
-        bool recursionDetected = !_imp->processLocalEntry->allowMultipleFetchForThread() && (found->second->computeThreadMagic == reinterpret_cast<U64>(QThread::currentThread()));
+        bool recursionDetected = !processLocalEntry->allowMultipleFetchForThread() && (found->second->computeThreadMagic == reinterpret_cast<U64>(QThread::currentThread()));
         if (recursionDetected) {
-            qDebug() << "[BUG]: Detected recursion while computing" << _imp->hash;
+            qDebug() << "[BUG]: Detected recursion while computing" << hash << ". This means that the same thread is attempting to compute an entry recursively that it already started to compute. You should release the associated CacheEntryLocker first.";
         } else {
-            // After a certain number of lookups, if the cache entry is still locked by another thread,
-            // we take-over the entry, to ensure the entry was not left abandonned.
+            // If a timeout was provided, takeover after the timeout
             if (timeout == 0 || *timeSpentWaitingForPendingEntryMS < timeout) {
-                _imp->status = eCacheEntryStatusComputationPending;
+                status = CacheEntryLocker::eCacheEntryStatusComputationPending;
 #ifdef CACHE_TRACE_ENTRY_ACCESS
-                qDebug() << QThread::currentThread() <<  "(locker=" << this << ")"<< _imp->hash << ": entry pending";
+                qDebug() << QThread::currentThread() <<  "(locker=" << this << ")"<< hash << ": entry pending";
 #endif
 
                 return true;
@@ -2180,23 +2177,23 @@ CacheEntryLocker::lookupAndSetStatusInternal(bool hasWriteRights, boost::scoped_
             return false;
         }
 #ifdef CACHE_TRACE_ENTRY_ACCESS
-        qDebug() << QThread::currentThread() << "(locker=" << this << ")"<< _imp->hash << ": entry pending timeout, thread" << QThread::currentThread() << "is taking over the entry";
+        qDebug() << QThread::currentThread() << "(locker=" << this << ")"<< hash << ": entry pending timeout, thread" << QThread::currentThread() << "is taking over the entry";
 #endif
     }
 
     if (found->second->status == MemorySegmentEntryHeader::eEntryStatusReady) {
         // Deserialize the entry and update the status
-        CacheBucket::ShmEntryReadRetCodeEnum readStatus = _imp->bucket->readFromSharedMemoryEntryImpl(found->second.get(), _imp->processLocalEntry, _imp->hash, shmAccess);
+        CacheBucket::ShmEntryReadRetCodeEnum readStatus = bucket->readFromSharedMemoryEntryImpl(found->second.get(), processLocalEntry, hash, hasWriteRights);
 
         // By default we must compute
-        _imp->status = eCacheEntryStatusMustCompute;
+        status = CacheEntryLocker::eCacheEntryStatusMustCompute;
         switch (readStatus) {
             case CacheBucket::eShmEntryReadRetCodeOk:
 #ifdef NATRON_CACHE_NEVER_PERSISTENT
                 assert(found->second->nonPersistentEntry);
-                _imp->processLocalEntry = found->second->nonPersistentEntry;
+                processLocalEntry = found->second->nonPersistentEntry;
 #endif
-                _imp->status = eCacheEntryStatusCached;
+                status = CacheEntryLocker::eCacheEntryStatusCached;
                 break;
             case CacheBucket::eShmEntryReadRetCodeDeserializationFailed:
                 // If the entry failed to deallocate or is not of the type of the process local entry
@@ -2204,11 +2201,12 @@ CacheEntryLocker::lookupAndSetStatusInternal(bool hasWriteRights, boost::scoped_
                 // However we cannot do so under the read lock, we must take the write lock.
                 // So do it in the 2nd lookup attempt.
                 if (hasWriteRights) {
-                    _imp->bucket->deallocateCacheEntryImpl(found, storage, shmAccess);
+                    bucket->deallocateCacheEntryImpl(found, storage);
                 }
                 return false;
-            case CacheBucket::eShmEntryReadRetCodeLockTimeout:
-                // Something went wrong: fail
+            case CacheBucket::eShmEntryReadRetCodeNeedWriteLock:
+                assert(!hasWriteRights);
+                // Need to retry with a write lock
                 return false;
         }
 
@@ -2217,7 +2215,7 @@ CacheEntryLocker::lookupAndSetStatusInternal(bool hasWriteRights, boost::scoped_
         // but we timed out and took over the entry computation.
         assert(hasWriteRights);
         found->second->status = MemorySegmentEntryHeader::eEntryStatusPending;
-        _imp->status = eCacheEntryStatusMustCompute;
+        status = CacheEntryLocker::eCacheEntryStatusMustCompute;
     }
 
     // If the entry is still pending, that means the thread that originally should have computed this entry failed to do so.
@@ -2225,191 +2223,240 @@ CacheEntryLocker::lookupAndSetStatusInternal(bool hasWriteRights, boost::scoped_
     // to eCacheEntryStatusMustCompute to indicate that we must compute the entry now.
     // If we are looking up the first time, then we keep the status to pending, the caller will
     // just have to call waitForPendingEntry()
-    switch (_imp->status) {
-        case eCacheEntryStatusComputationPending:
-        case eCacheEntryStatusMustCompute: {
+    switch (status) {
+        case CacheEntryLocker::eCacheEntryStatusComputationPending:
+        case CacheEntryLocker::eCacheEntryStatusMustCompute: {
 #ifdef CACHE_TRACE_ENTRY_ACCESS
-            qDebug() << QThread::currentThread() <<  "(locker=" << this << ")"<< _imp->hash << ": got entry but it has to be computed";
+            qDebug() << QThread::currentThread() <<  "(locker=" << this << ")"<< hash << ": got entry but it has to be computed";
 #endif
         }   break;
-        case eCacheEntryStatusCached:
+        case CacheEntryLocker::eCacheEntryStatusCached:
         {
             // We found in cache, nothing to do
 #ifdef CACHE_TRACE_ENTRY_ACCESS
-            qDebug() << QThread::currentThread() <<  "(locker=" << this << ")"<< _imp->hash << ": entry cached";
+            qDebug() << QThread::currentThread() <<  "(locker=" << this << ")"<< hash << ": entry cached";
 #endif
         }   break;
-    } // switch(_imp->status)
+    } // switch(status)
     return true;
 } // lookupAndSetStatusInternal
 
-void
-CacheEntryLocker::lookupAndSetStatus(boost::scoped_ptr<SharedMemoryProcessLocalReadLocker>& shmAccess, std::size_t *timeSpentWaitingForPendingEntryMS, std::size_t timeout)
+CacheEntryLockerPrivate::LookupAndCreateRetCodeEnum
+CacheEntryLockerPrivate::lookupAndCreate(std::size_t* timeSpentWaiting, std::size_t timeout)
 {
-    
-    // Get the bucket corresponding to the hash. This will dispatch threads in (hopefully) different
-    // buckets
-    if (!_imp->bucket) {
-        _imp->bucket = &_imp->cache->_imp->buckets[Cache::getBucketCacheBucketIndex(_imp->hash)];
+    boost::scoped_ptr<UpgradableLock> upgradableLock;
+
+    // If we timed out, take the lock once more and upong timeout, ensure the cache integrity and clear it.
+#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
+    upgradableLock.reset(new UpgradableLock(bucket->ipc->bucketMutex));
+#else
+    createTimedLock<UpgradableLock>(cache->_imp.get(), upgradableLock, &bucket->ipc->bucketMutex);
+#endif
+
+
+    // This function only fails if the entry must be computed anyway.
+    if (lookupAndSetStatusInternal(true /*hasWriteRights*/, timeSpentWaiting, timeout)) {
+        return CacheEntryLockerPrivate::eLookupAndCreateRetCodeCreated;
     }
+    assert(status == CacheEntryLocker::eCacheEntryStatusMustCompute);
 
-    // At least account for twice the struct size since
+    boost::scoped_ptr<scoped_upgraded_lock> writeLock;
+    // We need to upgrade the lock to a write lock. This will wait until all other threads have released their
+    // read lock.
+    writeLock.reset(new scoped_upgraded_lock(boost::move(*upgradableLock)));
+    // Now we are the only thread in this portion.
 
-    {
-        // Take the read lock: many threads/processes can try read at the same time.
-        // If we timeout, clear the cache and retry.
-        boost::scoped_ptr<Upgradable_ReadLock> readLock;
-#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-        readLock.reset(new Upgradable_ReadLock(_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].tocData.segmentMutex));
-#else
-        createTimedLockAndHandleInconsistentStateIfFailed<Upgradable_ReadLock>(_imp->cache->_imp.get(), shmAccess, _imp->bucket->bucketIndex, readLock, &_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].tocData.segmentMutex);
-#endif
+    // Ensure the bucket is in a valid state.
+    BucketStateHandler_RAII bucketStateHandler(bucket);
 
+
+    // Create the MemorySegmentEntry if it does not exist
 #ifndef NATRON_CACHE_NEVER_PERSISTENT
-        boost::scoped_ptr<Upgradable_WriteLock> writeLock;
-        // Every time we take the lock, we must ensure the memory mapping is ok because the
-        // memory mapped file might have been resized to fit more entries.
-        if (!_imp->bucket->isToCFileMappingValid()) {
-            // Remove the read lock, and take a write lock.
-            // This could allow other threads to run in-between, but we don't care since nothing happens.
-            readLock.reset();
-
-#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-            writeLock.reset(new Upgradable_WriteLock(_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].tocData.segmentMutex));
-#else
-            createTimedLockAndHandleInconsistentStateIfFailed<Upgradable_WriteLock>(_imp->cache->_imp.get(), shmAccess, _imp->bucket->bucketIndex, writeLock, &_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].tocData.segmentMutex);
-#endif
-
-            _imp->bucket->remapToCMemoryFile(*writeLock, 0);
-        }
-#endif // #ifndef NATRON_CACHE_NEVER_PERSISTENT
-
-        // This function succeeds either if
-        // 1) The entry is cached and could be deserialized
-        // 2) The entry is pending and thus the caller should call waitForPendingEntry
-        // 3) The entry is not computed and thus the caller should compute the entry and call insertInCache
-        //
-        // This function returns false if the thread must take over the entry computation or the deserialization failed.
-        // In any case, it should do so under the write lock below.
-        if (lookupAndSetStatusInternal(false /*hasWriteRights*/, shmAccess, timeSpentWaitingForPendingEntryMS, timeout)) {
-            return;
-        }
-    } // ReadLock(tocData.segmentMutex)
-
-    // Concurrency resumes!
-
-    assert(_imp->status == eCacheEntryStatusMustCompute ||
-           _imp->status == eCacheEntryStatusComputationPending);
-
-    // Either we failed to deserialize an entry or the caller timedout.
-    // Take an upgradable lock and repeat the look-up.
-    // Only a single thread/process can take the upgradable lock.
-    {
-        boost::scoped_ptr<UpgradableLock> upgradableLock;
-
-        // If we timed out, take the lock once more and upong timeout, ensure the cache integrity and clear it.
-#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-        upgradableLock.reset(new UpgradableLock(_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].tocData.segmentMutex));
-#else
-        createTimedLockAndHandleInconsistentStateIfFailed<UpgradableLock>(_imp->cache->_imp.get(), shmAccess, _imp->bucket->bucketIndex, upgradableLock, &_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].tocData.segmentMutex);
-#endif
-
-        boost::scoped_ptr<scoped_upgraded_lock> writeLock;
-
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
-        // Every time we take the lock, we must ensure the memory mapping is ok
-        if (!_imp->bucket->isToCFileMappingValid()) {
-            writeLock.reset(new scoped_upgraded_lock(boost::move(*upgradableLock)));
-            _imp->bucket->remapToCMemoryFile(*writeLock, 0);
-        }
-#endif
-
-        // This function only fails if the entry must be computed anyway.
-        if (lookupAndSetStatusInternal(true /*hasWriteRights*/, shmAccess, timeSpentWaitingForPendingEntryMS, timeout)) {
-            return;
-        }
-        assert(_imp->status == eCacheEntryStatusMustCompute);
-        {
-            // We need to upgrade the lock to a write lock. This will wait until all other threads have released their
-            // read lock.
-            if (!writeLock) {
-                writeLock.reset(new scoped_upgraded_lock(boost::move(*upgradableLock)));
-            }
-
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
-            // Ensure the bucket is in a valid state.
-            BucketStateHandler_RAII bucketStateHandler(_imp->cache->_imp.get(), _imp->bucket->bucketIndex, shmAccess);
-            if (!bucketStateHandler.isValid()) {
-                return;
-            }
-#endif
-
-            // Now we are the only thread in this portion.
-
-            // Create the MemorySegmentEntry if it does not exist
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
-            void_allocator allocator(_imp->bucket->tocFileManager->get_segment_manager());
+    void_allocator allocator(bucket->tocFileManager->get_segment_manager());
 #endif
 #ifdef CACHE_TRACE_ENTRY_ACCESS
-            qDebug() << QThread::currentThread() <<  "(locker=" << this << ")"<< _imp->hash << ": construct entry type ID=" << _imp->processLocalEntry->getKey()->getUniqueID();
+    qDebug() << QThread::currentThread() <<  "(locker=" << this << ")"<< hash << ": construct entry type ID=" << processLocalEntry->getKey()->getUniqueID();
 #endif
 
-            MemorySegmentEntryHeaderPtr cacheEntry;
-            MemorySegmentEntryHeaderMap* storage = getInternalStorageFromHash(_imp->hash, _imp->bucket->ipc->entriesStorage);
+    MemorySegmentEntryHeaderPtr cacheEntry;
+    MemorySegmentEntryHeaderMap* storage = getInternalStorageFromHash(hash, bucket->ipc->entriesStorage);
 
 #ifdef NATRON_CACHE_NEVER_PERSISTENT
-            cacheEntry.reset(new MemorySegmentEntryHeader);
-            cacheEntry->nonPersistentEntry = _imp->processLocalEntry;
-            std::pair<MemorySegmentEntryHeaderMap::iterator, bool> ok = storage->insert(std::make_pair(_imp->hash, cacheEntry));
-            assert(ok.second);
-            (void)ok;
+    cacheEntry.reset(new MemorySegmentEntryHeader);
+    cacheEntry->nonPersistentEntry = processLocalEntry;
+    std::pair<MemorySegmentEntryHeaderMap::iterator, bool> ok = storage->insert(std::make_pair(hash, cacheEntry));
+    assert(ok.second);
+    (void)ok;
 #else
-            cacheEntry = 0;
-            // the construction of the object may fail if the segment is out of memory. Upon failure, grow the ToC file and retry to allocate.
-            {
-                int attempt_i = 0;
-                while (attempt_i < 10) {
-                    try {
-                        cacheEntry = _imp->bucket->tocFileManager->construct<MemorySegmentEntryHeader>(bip::anonymous_instance)(allocator);
-                        EntriesMapValueType pair = std::make_pair(_imp->hash, cacheEntry);
-                        std::pair<MemorySegmentEntryHeaderMap::iterator, bool> ok = storage->insert(boost::move(pair));
-                        assert(ok.first->second->entryDataPointerList.get_allocator().get_segment_manager() == allocator.get_segment_manager());
-                        assert(ok.second);
-                        (void)ok;
-                    } catch (const bip::bad_alloc& /*e*/) {
-                        _imp->bucket->growToCFile(*writeLock, sizeof(MemorySegmentEntryHeader));
-                    }
-                    if (cacheEntry) {
-                        break;
-                    }
-                    ++attempt_i;
-                }
-            }
+    cacheEntry = 0;
+    // the construction of the object may fail if the segment is out of memory. Upon failure, grow the ToC file and retry to allocate.
+    try {
+        cacheEntry = bucket->tocFileManager->construct<MemorySegmentEntryHeader>(bip::anonymous_instance)(allocator);
+        EntriesMapValueType pair = std::make_pair(hash, cacheEntry);
+        std::pair<MemorySegmentEntryHeaderMap::iterator, bool> ok = storage->insert(boost::move(pair));
+        assert(ok.first->second->entryDataPointerList.get_allocator().get_segment_manager() == allocator.get_segment_manager());
+        assert(ok.second);
+        (void)ok;
+    } catch (const bip::bad_alloc& /*e*/) {
+        return CacheEntryLockerPrivate::eLookupAndCreateRetCodeOutOfToCMemory;
+    }
+
 #endif // #ifdef NATRON_CACHE_NEVER_PERSISTENT
-            if (!cacheEntry) {
+
+    std::size_t entryToCSize = processLocalEntry->getMetadataSize();
+    cacheEntry->size = entryToCSize;
+
+    cacheEntry->pluginID.append(processLocalEntry->getKey()->getHolderPluginID().c_str());
+
+    // Lock the statusMutex: this will lock-out other threads interested in this entry.
+    // This mutex is unlocked in deallocateCacheEntryImpl() or in insertInCache()
+    // We must get the lock since we are the first thread to create it and we own the write lock on the segmentMutex
+
+
+    assert(cacheEntry->status == MemorySegmentEntryHeader::eEntryStatusNull);
+
+    // Set the status of the entry to pending because we (this thread) are going to compute it.
+    // Other fields of the entry will be set once it is done computed in insertInCache()
+    cacheEntry->status = MemorySegmentEntryHeader::eEntryStatusPending;
+
+    // Set the pointer to the current thread so we can detect immediate recursion and not wait forever
+    // in waitForPendingEntry().
+    // Note that this value has no meaning outside this process and is set back to 0 in insertInCache()
+    cacheEntry->computeThreadMagic = reinterpret_cast<U64>(QThread::currentThread());
+
+    return CacheEntryLockerPrivate::eLookupAndCreateRetCodeCreated;
+}
+
+void
+CacheBucket::checkToCMemorySegmentStatus(boost::scoped_ptr<Sharable_ReadLock>* tocReadLock, boost::scoped_ptr<Sharable_WriteLock>* tocWriteLock)
+{
+    CachePtr c = cache.lock();
+#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
+    tocReadLock->reset(new Sharable_ReadLock(c->_imp->ipc->bucketsData[bucketIndex].tocData.segmentMutex));
+#else
+    createTimedLock<Sharable_ReadLock>(c->_imp.get(), *tocReadLock, &c->_imp->ipc->bucketsData[bucketIndex].tocData.segmentMutex);
+#endif
+
+#ifdef NATRON_CACHE_NEVER_PERSISTENT
+    (void)tocWriteLock;
+#else
+    // Every time we take the lock, we must ensure the memory mapping is ok because the
+    // memory mapped file might have been resized to fit more entries.
+    if (!isToCFileMappingValid()) {
+        // Remove the read lock, and take a write lock.
+        // This could allow other threads to run in-between, but we don't care since nothing happens.
+        tocReadLock->reset();
+
+#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
+        tocWriteLock->reset(new Sharable_WriteLock(c->_imp->ipc->bucketsData[bucketIndex].tocData.segmentMutex));
+#else
+        createTimedLock<Sharable_WriteLock>(c->_imp.get(), *tocWriteLock, &c->_imp->ipc->bucketsData[bucketIndex].tocData.segmentMutex);
+#endif
+
+        remapToCMemoryFile(**tocWriteLock, 0);
+    }
+#endif // #ifndef NATRON_CACHE_NEVER_PERSISTENT
+}
+
+void
+CacheEntryLockerPrivate::lookupAndSetStatus(std::size_t* timeSpentWaiting, std::size_t timeout)
+{
+
+    // Get the bucket corresponding to the hash. This will dispatch threads in (hopefully) different
+    // buckets
+    if (!bucket) {
+        bucket = &cache->_imp->buckets[Cache::getBucketCacheBucketIndex(hash)];
+    }
+
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+    SHMReadLockerPtr shmAccess(new SharedMemoryProcessLocalReadLocker(cache->_imp.get()));
+#endif
+
+    try {
+
+        // Take the read lock on the toc file mapping
+        boost::scoped_ptr<Sharable_ReadLock> tocReadLock;
+        boost::scoped_ptr<Sharable_WriteLock> tocWriteLock;
+        bucket->checkToCMemorySegmentStatus(&tocReadLock, &tocWriteLock);
+
+        {
+
+            // Take the bucket lock in read mode
+            boost::scoped_ptr<Upgradable_ReadLock> bucketReadLock;
+#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
+            bucketReadLock.reset(new Upgradable_ReadLock(bucket->ipc->bucketMutex));
+#else
+            createTimedLock<Upgradable_ReadLock>(cache->_imp.get(), bucketReadLock, &bucket->ipc->bucketMutex);
+#endif
+
+            // This function succeeds either if
+            // 1) The entry is cached and could be deserialized
+            // 2) The entry is pending and thus the caller should call waitForPendingEntry
+            // 3) The entry is not computed and thus the caller should compute the entry and call insertInCache
+            //
+            // This function returns false if the thread must take over the entry computation or the deserialization failed or it need a write lock to deserialize propely.
+            // In any case, it should do so under the write lock below.
+            if (lookupAndSetStatusInternal(false /*hasWriteRights*/, timeSpentWaiting, timeout)) {
                 return;
             }
-            cacheEntry->pluginID.append(_imp->processLocalEntry->getKey()->getHolderPluginID().c_str());
+        } // bucketReadLock
 
-            // Lock the statusMutex: this will lock-out other threads interested in this entry.
-            // This mutex is unlocked in deallocateCacheEntryImpl() or in insertInCache()
-            // We must get the lock since we are the first thread to create it and we own the write lock on the segmentMutex
+        // Concurrency resumes!
 
+        assert(status == CacheEntryLocker::eCacheEntryStatusMustCompute ||
+               status == CacheEntryLocker::eCacheEntryStatusComputationPending);
 
-            assert(cacheEntry->status == MemorySegmentEntryHeader::eEntryStatusNull);
+        // Either we failed to deserialize an entry or the caller timedout.
+        // Take an upgradable lock and repeat the look-up.
+        // Only a single thread/process can take the upgradable lock.
 
-            // Set the status of the entry to pending because we (this thread) are going to compute it.
-            // Other fields of the entry will be set once it is done computed in insertInCache()
-            cacheEntry->status = MemorySegmentEntryHeader::eEntryStatusPending;
+        int attempt_i = 0;
+        while (attempt_i < 2) {
+            LookupAndCreateRetCodeEnum stat = lookupAndCreate(timeSpentWaiting, timeout);
+            bool ok = false;
+            switch (stat) {
+                case eLookupAndCreateRetCodeCreated:
+                    ok = true;
+                    break;
+                case eLookupAndCreateRetCodeOutOfToCMemory: {
 
-            // Set the pointer to the current thread so we can detect immediate recursion and not wait forever
-            // in waitForPendingEntry().
-            // Note that this value has no meaning outside this process and is set back to 0 in insertInCache()
-            cacheEntry->computeThreadMagic = reinterpret_cast<U64>(QThread::currentThread());
-        
-        } // writeLock
-    } // upgradableLock
-    // Concurrency resumes here!
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
+                    // Ensure the memory mapping is ok. We grow the file so it contains at least the size needed by the entry
+                    // plus some metadatas required management algorithm store its own memory housekeeping data.
+                    std::size_t entryToCSize = processLocalEntry->getMetadataSize();
+
+                    if (!tocWriteLock) {
+                        assert(tocReadLock);
+                        tocReadLock.reset();
+#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
+                        tocWriteLock.reset(new Sharable_WriteLock(cache->_imp->ipc->bucketsData[bucket->bucketIndex].tocData.segmentMutex));
+#else
+                        createTimedLock<Sharable_WriteLock>(cache->_imp.get(), tocWriteLock, &cache->_imp->ipc->bucketsData[bucket->bucketIndex].tocData.segmentMutex);
+#endif
+                        if (!bucket->isToCFileMappingValid()) {
+                            bucket->remapToCMemoryFile(*tocWriteLock, entryToCSize);
+                        }
+                    } else {
+                        bucket->growToCFile(*tocWriteLock, entryToCSize);
+                    }
+#endif // #ifndef NATRON_CACHE_NEVER_PERSISTENT
+                }   break;
+            }
+            if (ok) {
+                break;
+            }
+            ++attempt_i;
+        }
+        // Concurrency resumes here!
+    } catch (...) {
+        // Any exception caught here means the cache is corrupted
+        cache->_imp->recoverFromInconsistentState(bucket->bucketIndex
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+                                                  , shmAccess
+#endif
+                                                  );
+    }
+
 
 } // lookupAndSetStatus
 
@@ -2425,6 +2472,119 @@ CacheEntryLocker::getStatus() const
     return _imp->status;
 }
 
+CacheEntryLockerPrivate::InsertRetCodeEnum
+CacheEntryLockerPrivate::insertInternal()
+{
+
+
+    // Take write lock on the bucket
+    boost::scoped_ptr<Upgradable_WriteLock> writeLock;
+#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
+    writeLock.reset(new Upgradable_WriteLock(bucket->ipc->bucketMutex));
+#else
+    createTimedLock<Upgradable_WriteLock>(cache->_imp.get(), writeLock, &bucket->ipc->bucketMutex);
+#endif
+
+    // Ensure the bucket is in a valid state.
+    BucketStateHandler_RAII bucketStateHandler(bucket);
+
+
+    // Fetch the entry. It should be here unless the cache was wiped in between the lookupAndSetStatus and this function.
+    MemorySegmentEntryHeaderMap::iterator cacheEntryIt;
+    MemorySegmentEntryHeaderMap* storage;
+    if (!bucket->tryCacheLookupImpl(hash, &cacheEntryIt, &storage)) {
+        return CacheEntryLockerPrivate::eInsertRetCodeCreated;
+    }
+
+    // The status of the memory segment entry should be pending because we are the thread computing it.
+    // All other threads are waiting.
+    // It may be possible that the entry is marked eEntryStatusReady if there was a recursion, in which case the
+    // computeThreadMagic should have been set to 0 in insertInCache
+    assert(cacheEntryIt->second->status == MemorySegmentEntryHeader::eEntryStatusPending || cacheEntryIt->second->computeThreadMagic == 0);
+    if (cacheEntryIt->second->computeThreadMagic == 0) {
+        status = CacheEntryLocker::eCacheEntryStatusCached;
+        return CacheEntryLockerPrivate::eInsertRetCodeCreated;
+    }
+    // The cacheEntry fields should be uninitialized
+    // This may throw an exception if out of memory or if the getMetadataSize function does not return
+    // enough memory to encode all the data.
+
+
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
+
+    // Serialize the meta-datas in the memory segment
+    // the construction of the object may fail if the segment is out of memory.
+
+    try {
+        assert(cacheEntryIt->second->entryDataPointerList.get_allocator().get_segment_manager() == bucket->tocFileManager->get_segment_manager());
+        processLocalEntry->toMemorySegment(bucket->tocFileManager.get(), &cacheEntryIt->second->entryDataPointerList);
+
+        // Add at the end the hash of the entry so that when deserializing we can check if everything was written correctly first
+        cacheEntryIt->second->entryDataPointerList.push_back(writeAnonymousSharedObject(hash, bucket->tocFileManager.get()));
+    } catch (const bip::bad_alloc& /*e*/) {
+
+        // Clear stuff that was already allocated by the entry
+        for (ExternalSegmentTypeHandleList::const_iterator it = cacheEntryIt->second->entryDataPointerList.begin(); it != cacheEntryIt->second->entryDataPointerList.end(); ++it) {
+            void* bufPtr = bucket->tocFileManager->get_address_from_handle(*it);
+            if (bufPtr) {
+                bucket->tocFileManager->destroy_ptr(bufPtr);
+            }
+        }
+        cacheEntryIt->second->entryDataPointerList.clear();
+        return CacheEntryLockerPrivate::eInsertRetCodeOutOfToCMemory;
+    }
+
+#endif // #ifndef NATRON_CACHE_NEVER_PERSISTENT
+
+
+    // Record the memory taken by the entry in the bucket
+    bucket->ipc->size += cacheEntryIt->second->size;
+
+    // Insert the hash in the LRU linked list
+    // Lock the LRU list mutex
+    {
+        boost::scoped_ptr<ExclusiveLock> lruWriteLock;
+#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
+        lruWriteLock.reset(new ExclusiveLock(bucket->ipc->lruListMutex));
+#else
+        createTimedLock<ExclusiveLock>(cache->_imp.get(), lruWriteLock, &bucket->ipc->lruListMutex);
+#endif
+
+        cacheEntryIt->second->lruNode.prev = 0;
+        cacheEntryIt->second->lruNode.next = 0;
+        cacheEntryIt->second->lruNode.hash = hash;
+
+        LRUListNodePtr thisNodePtr = LRUListNodePtr(&cacheEntryIt->second->lruNode);
+        if (!bucket->ipc->lruListBack) {
+            assert(!bucket->ipc->lruListFront);
+            // The list is empty, initialize to this node
+            bucket->ipc->lruListFront = thisNodePtr;
+            bucket->ipc->lruListBack = thisNodePtr;
+            assert(!bucket->ipc->lruListFront->prev && !bucket->ipc->lruListFront->next);
+            assert(!bucket->ipc->lruListBack->prev && !bucket->ipc->lruListBack->next);
+        } else {
+            // Append to the tail of the list
+            assert(bucket->ipc->lruListFront && bucket->ipc->lruListBack);
+
+            insertLinkedListNode(thisNodePtr, bucket->ipc->lruListBack, LRUListNodePtr(0));
+            // Update back node
+            bucket->ipc->lruListBack = thisNodePtr;
+
+        }
+    } // lruWriteLock
+    cacheEntryIt->second->computeThreadMagic = 0;
+    cacheEntryIt->second->status = MemorySegmentEntryHeader::eEntryStatusReady;
+
+    status = CacheEntryLocker::eCacheEntryStatusCached;
+    
+#ifdef CACHE_TRACE_ENTRY_ACCESS
+    qDebug() << QThread::currentThread() << "(locker=" << this << ")"<< hash << ": entry inserted in cache";
+#endif
+
+    return CacheEntryLockerPrivate::eInsertRetCodeCreated;
+
+} // insertInternal
+
 void
 CacheEntryLocker::insertInCache()
 {
@@ -2432,240 +2592,61 @@ CacheEntryLocker::insertInCache()
     // of the object was eCacheEntryStatusMustCompute
     assert(_imp->status == eCacheEntryStatusMustCompute);
 
-    // Public function, the SHM must not be locked.
-    boost::scoped_ptr<SharedMemoryProcessLocalReadLocker> shmAccess(new SharedMemoryProcessLocalReadLocker(_imp->cache->_imp.get()));
-
-    // Ensure the memory mapping is ok. We grow the file so it contains at least the size needed by the entry
-    // plus some metadatas required management algorithm store its own memory housekeeping data.
-    std::size_t entryToCSize = _imp->processLocalEntry->getMetadataSize();
-
-    {
-        // Take write lock on the bucket, if timeout, wipe the cache and fail.
-        boost::scoped_ptr<Upgradable_WriteLock> writeLock;
-#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-        writeLock.reset(new Upgradable_WriteLock(_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].tocData.segmentMutex));
-#else
-        if (!createTimedLockAndHandleInconsistentStateIfFailed<Upgradable_WriteLock>(_imp->cache->_imp.get(), shmAccess, _imp->bucket->bucketIndex, writeLock, &_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].tocData.segmentMutex)) {
-            return;
-        }
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+    SHMReadLockerPtr shmAccess(new SharedMemoryProcessLocalReadLocker(_imp->cache->_imp.get()));
 #endif
 
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
-        // Ensure the bucket is in a valid state.
-        BucketStateHandler_RAII bucketStateHandler(_imp->cache->_imp.get(), _imp->bucket->bucketIndex, shmAccess);
-        if (!bucketStateHandler.isValid()) {
-            return;
-        }
+    try {
+        // Take the read lock on the toc file mapping
+        boost::scoped_ptr<Sharable_ReadLock> tocReadLock;
+        boost::scoped_ptr<Sharable_WriteLock> tocWriteLock;
+        _imp->bucket->checkToCMemorySegmentStatus(&tocReadLock, &tocWriteLock);
 
+        bool ok = false;
+        int attempt_i = 0;
+        while (attempt_i < 2) {
 
-        if (!_imp->bucket->isToCFileMappingValid()) {
-            _imp->bucket->remapToCMemoryFile(*writeLock, entryToCSize);
-        }
-#endif
-
-        // Fetch the entry. It should be here unless the cache was wiped in between the lookupAndSetStatus and this function.
-        MemorySegmentEntryHeaderMap::iterator cacheEntryIt;
-        MemorySegmentEntryHeaderMap* storage;
-        if (!_imp->bucket->tryCacheLookupImpl(_imp->hash, &cacheEntryIt, &storage)) {
-            return;
-        }
-
-        // The status of the memory segment entry should be pending because we are the thread computing it.
-        // All other threads are waiting.
-        // It may be possible that the entry is marked eEntryStatusReady if there was a recursion, in which case the
-        // computeThreadMagic should have been set to 0 in insertInCache
-        assert(cacheEntryIt->second->status == MemorySegmentEntryHeader::eEntryStatusPending || cacheEntryIt->second->computeThreadMagic == 0);
-        if (cacheEntryIt->second->computeThreadMagic == 0) {
-            _imp->status = eCacheEntryStatusCached;
-            return;
-        }
-        // The cacheEntry fields should be uninitialized
-        // This may throw an exception if out of memory or if the getMetadataSize function does not return
-        // enough memory to encode all the data.
-        try {
-
-            // Allocate memory for the entry metadatas
-            cacheEntryIt->second->size = entryToCSize;
-
-#ifdef NATRON_CACHE_NEVER_PERSISTENT
-            _imp->bucket->ipc->size += entryToCSize;
-            if (_imp->processLocalEntry->isStorageTiled()) {
-                _imp->bucket->ipc->size += NATRON_TILE_SIZE_BYTES;
+            CacheEntryLockerPrivate::InsertRetCodeEnum stat = _imp->insertInternal();
+            switch (stat) {
+                case CacheEntryLockerPrivate::eInsertRetCodeCreated:
+                    ok = true;
+                    break;
+                case CacheEntryLockerPrivate::eInsertRetCodeFailed:
+                    break;
+                case CacheEntryLockerPrivate::eInsertRetCodeOutOfToCMemory:
+                    break;
             }
-#else
-            // Serialize the meta-datas in the memory segment
-            // If the entry also requires tile aligned data storage, allocate a tile now
-            {
-                boost::scoped_ptr<Upgradable_ReadLock> tileReadLock;
-                boost::scoped_ptr<Upgradable_WriteLock> tileWriteLock;
-                char* tileDataPtr = 0;
-                if (_imp->processLocalEntry->isStorageTiled()) {
-                    // First try to check if the tile aligned mapping is valid with a readlock
+            if (ok) {
+                break;
+            }
 
-                    {
-#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-                        tileReadLock.reset(new Upgradable_ReadLock(_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].tileData.segmentMutex));
-#else
-                         // Take read lock on the tile data, if timeout, wipe the cache and fail.
-                        if (!createTimedLockAndHandleInconsistentStateIfFailed<Upgradable_ReadLock>(_imp->cache->_imp.get(), shmAccess, _imp->bucket->bucketIndex, tileReadLock, &_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].tileData.segmentMutex)) {
-                            return;
-                        }
-#endif
-                        bool tileMappingValid = _imp->bucket->isTileFileMappingValid();
-                        if (!tileMappingValid) {
-                            // If the tile mapping is invalid, take a write lock on the tile mapping and ensure it is valid
-                            tileReadLock.reset();
-#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-                            tileWriteLock.reset(new Upgradable_WriteLock(_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].tileData.segmentMutex));
-#else
-                            if (!createTimedLockAndHandleInconsistentStateIfFailed<Upgradable_WriteLock>(_imp->cache->_imp.get(), shmAccess, _imp->bucket->bucketIndex, tileWriteLock, &_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].tileData.segmentMutex)) {
-                                return;
-                            }
-#endif
-                            _imp->bucket->remapTileMemoryFile(*tileWriteLock, NATRON_TILE_SIZE_BYTES);
-
-                        }
-                    }
-
-                    // Check that there's at least one free tile.
-                    // No free tile: grow the file if necessary.
-                    if (_imp->bucket->ipc->freeTiles.empty()) {
-                        if (!tileWriteLock) {
-#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-                            tileWriteLock.reset(new Upgradable_WriteLock(_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].tileData.segmentMutex));
-#else
-                            if (!createTimedLockAndHandleInconsistentStateIfFailed<Upgradable_WriteLock>(_imp->cache->_imp.get(), shmAccess, _imp->bucket->bucketIndex, tileWriteLock, &_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].tileData.segmentMutex)) {
-                                return;
-                            }
-#endif
-                        }
-                        _imp->bucket->growTileFile(*tileWriteLock, NATRON_TILE_SIZE_BYTES);
-                    }
-                    assert(_imp->bucket->ipc->freeTiles.size() > 0);
-                    int freeTileIndex;
-                    {
-                        Size_t_Set::iterator freeTileIt = _imp->bucket->ipc->freeTiles.begin();
-                        freeTileIndex = *freeTileIt;
-                        _imp->bucket->ipc->freeTiles.erase(freeTileIt);
-#ifdef CACHE_TRACE_TILES_ALLOCATION
-                        qDebug() << "Bucket" << _imp->bucket->bucketIndex << ": removing tile" << freeTileIndex << " Nb free tiles left:" << _imp->bucket->ipc->freeTiles.size();
-#endif
-                    }
-
-
-                    char* data;
-                    if (_imp->cache->_imp->persistent) {
-                        data = _imp->bucket->tileAlignedFile->data();
-                    } else {
-                        assert(_imp->bucket->tileAlignedLocalBuf);
-                        data = _imp->bucket->tileAlignedLocalBuf->getData();
-                    }
-                    tileDataPtr = data + freeTileIndex * NATRON_TILE_SIZE_BYTES;
-
-                    // Set the tile index on the entry so we can free it afterwards.
-                    cacheEntryIt->second->tileCacheIndex = freeTileIndex;
-                } // isStorageTiled
-
-                // the construction of the object may fail if the segment is out of memory. Upon failure, grow the ToC file and retry to allocate.
-                {
-                    int attempt_i = 0;
-                    while (attempt_i < 10) {
-                        try {
-                            assert(cacheEntryIt->second->entryDataPointerList.get_allocator().get_segment_manager() == _imp->bucket->tocFileManager->get_segment_manager());
-                            _imp->processLocalEntry->toMemorySegment(_imp->bucket->tocFileManager.get(), &cacheEntryIt->second->entryDataPointerList, tileDataPtr);
-
-                            // Add at the end the hash of the entry so that when deserializing we can check if everything was written correctly first
-                            cacheEntryIt->second->entryDataPointerList.push_back(writeAnonymousSharedObject(_imp->hash, _imp->bucket->tocFileManager.get()));
-                        } catch (const bip::bad_alloc& /*e*/) {
-
-                            // Clear stuff that was already allocated by the entry
-                            for (ExternalSegmentTypeHandleList::const_iterator it = cacheEntryIt->second->entryDataPointerList.begin(); it != cacheEntryIt->second->entryDataPointerList.end(); ++it) {
-                                void* bufPtr = _imp->bucket->tocFileManager->get_address_from_handle(*it);
-                                if (bufPtr) {
-                                    _imp->bucket->tocFileManager->destroy_ptr(bufPtr);
-                                }
-                            }
-                            cacheEntryIt->second->entryDataPointerList.clear();
-
-                            _imp->bucket->growToCFile(*writeLock, entryToCSize);
-                            ++attempt_i;
-                            continue;
-                        }
-                        break;
-                    }
-                }
-
-            } // tileWriteLock
-
-#endif // #ifndef NATRON_CACHE_NEVER_PERSISTENT
-
-            // Insert the hash in the LRU linked list
-            // Lock the LRU list mutex
-            {
-                boost::scoped_ptr<MutexLock> lruWriteLock;
-#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-                lruWriteLock.reset(new MutexLock(_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].lruListMutex));
-#else
-                if (!createTimedLockAndHandleInconsistentStateIfFailed<MutexLock>(_imp->cache->_imp.get(), shmAccess, _imp->bucket->bucketIndex, lruWriteLock, &_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].lruListMutex)) {
-                    return;
-                }
-#endif
-
-                cacheEntryIt->second->lruNode.prev = 0;
-                cacheEntryIt->second->lruNode.next = 0;
-                cacheEntryIt->second->lruNode.hash = _imp->hash;
-
-                LRUListNodePtr thisNodePtr = LRUListNodePtr(&cacheEntryIt->second->lruNode);
-                if (!_imp->bucket->ipc->lruListBack) {
-                    assert(!_imp->bucket->ipc->lruListFront);
-                    // The list is empty, initialize to this node
-                    _imp->bucket->ipc->lruListFront = thisNodePtr;
-                    _imp->bucket->ipc->lruListBack = thisNodePtr;
-                    assert(!_imp->bucket->ipc->lruListFront->prev && !_imp->bucket->ipc->lruListFront->next);
-                    assert(!_imp->bucket->ipc->lruListBack->prev && !_imp->bucket->ipc->lruListBack->next);
-                } else {
-                    // Append to the tail of the list
-                    assert(_imp->bucket->ipc->lruListFront && _imp->bucket->ipc->lruListBack);
-
-                    insertLinkedListNode(thisNodePtr, _imp->bucket->ipc->lruListBack, LRUListNodePtr(0));
-                    // Update back node
-                    _imp->bucket->ipc->lruListBack = thisNodePtr;
-                    
-                }
-            } // lruWriteLock
-            cacheEntryIt->second->computeThreadMagic = 0;
-            cacheEntryIt->second->status = MemorySegmentEntryHeader::eEntryStatusReady;
-
-            _imp->status = eCacheEntryStatusCached;
-
-#ifdef CACHE_TRACE_ENTRY_ACCESS
-            qDebug() << QThread::currentThread() << "(locker=" << this << ")"<< _imp->hash << ": entry inserted in cache";
-#endif
-
-        } catch (...) {
-
-            // Set the status to eCacheEntryStatusMustCompute so that the destructor deallocates the entry.
-            _imp->status = eCacheEntryStatusMustCompute;
+            ++attempt_i;
+        }
+        if (!ok) {
+            return;
         }
 
-
-    } // writeLock
-
-    // We just allocated something, ensure the cache size remains reasonable.
-    // We cannot block here until the memory stays contained in the user requested memory portion:
-    // if we would do so, then it could deadlock: Natron could require more memory than what
-    // the user requested to render just one node.
-    appPTR->checkCachesMemory();
-
-    // Concurrency resumes!
+        // We just inserted something, ensure the cache size remains reasonable.
+        // We cannot block here until the memory stays contained in the user requested memory portion:
+        // if we would do so, then it could deadlock: Natron could require more memory than what
+        // the user requested. The workaround here is to evict least recently used entries from the cache
+        // in a separate thread.
+        appPTR->checkCachesMemory();
+    } catch (...) {
+        // Any exception caught here means the cache is corrupted
+        _imp->cache->_imp->recoverFromInconsistentState(_imp->bucket->bucketIndex
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+                                                  , shmAccess
+#endif
+                                                  );
+    }
     
+
 } // insertInCache
 
 CacheEntryLocker::CacheEntryStatusEnum
 CacheEntryLocker::waitForPendingEntry(std::size_t timeout)
 {
-    // Public function, the SHM must not be locked.
-    boost::scoped_ptr<SharedMemoryProcessLocalReadLocker> shmAccess(new SharedMemoryProcessLocalReadLocker(_imp->cache->_imp.get()));
 
     // The thread can only wait if the status was set to eCacheEntryStatusComputationPending
     assert(_imp->status == eCacheEntryStatusComputationPending);
@@ -2680,23 +2661,41 @@ CacheEntryLocker::waitForPendingEntry(std::size_t timeout)
         hasReleasedThread = true;
     }
 
+    //
+    // To correctly prevent other thread/processes to not try to compute the same cache entry some form of locking is
+    // required:
+    //
+    // Cache::get() --> Take a write lock on the entry if it does not exist
+    // CacheEntryLocker::insertInCache() --> Release the write lock taken in get()
+    //
+    // Since the cache is persistent, the entries in the cache contain only interprocess compliant data structures.
+    // That means the entry lock should be an interprocess mutex. However if we were to place an interprocess mutex in a
+    // MemorySegmentEntryHeader this would introduce quite a few complexities:
+    // We would need to keep the read lock on the memory file (tocData.segmentMutex) alive while we wait because if the memory file
+    // gets remapped the cache entry mutex would become invalid.
+    // Locking 2 locks with such pattern is almost doomed to produce a deadlock at some point if another thread wants to grow the
+    // memory files (hence take the memory segment mutex in write mode)
+    //
+    //
+    // Instead we chose a "polling" method: we lookup the entry every X ms: this has the advantage not to retain any cache mutex
+    // so the amount of time we wait is really just imparing this thead rather than the whole cache bucket.
+
     std::size_t timeSpentWaitingForPendingEntryMS = 0;
-    static const std::size_t timeToWaitMS = 50;
+    std::size_t timeToWaitMS = 20;
 
     do {
-        // Look up the cache, but first take the lock on the MemorySegmentEntry
-        // that will be released once another thread unlocked it in insertInCache
-        // or the destructor.
-        lookupAndSetStatus(shmAccess, &timeSpentWaitingForPendingEntryMS, timeout);
+        // Look up the cache and sleep if not found
+        _imp->lookupAndSetStatus(&timeSpentWaitingForPendingEntryMS, timeout);
 
         if (_imp->status == eCacheEntryStatusComputationPending) {
 
-            // We do not use a wait condition here because we would then need to keep the shared memory mapped
-            // the whole time we wait on the condition, preventing another thread from remapping the shm if needed.
-            // Instead we explicitly sleep and retry again.
             timeSpentWaitingForPendingEntryMS += timeToWaitMS;
             if (timeout == 0 || timeSpentWaitingForPendingEntryMS < timeout) {
-                sleep_milliseconds(timeToWaitMS);
+                CacheEntryLocker::sleep_milliseconds(timeToWaitMS);
+
+                // Increase the time to wait at the next iteration
+                timeToWaitMS *= 1.2;
+
             }
         }
 
@@ -2722,45 +2721,63 @@ CacheEntryLocker::~CacheEntryLocker()
 
     // The cache entry is still pending: the caller thread did not call waitForPendingEntry() nor
     // insertInCache().
-    // Release the entry by setting its status to MemorySegmentEntryHeader::eEntryStatusNull, indicating
-    // that another thread has to take over and compute it.
-
+    // Release the entry from the cache if we should be computing it
     if (_imp->status == eCacheEntryStatusMustCompute) {
-        
-        boost::scoped_ptr<SharedMemoryProcessLocalReadLocker> shmAccess(new SharedMemoryProcessLocalReadLocker(_imp->cache->_imp.get()));
 
-        boost::scoped_ptr<Upgradable_WriteLock> writeLock;
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+        SHMReadLockerPtr shmAccess(new SharedMemoryProcessLocalReadLocker(_imp->cache->_imp.get()));
+#endif
+        try {
+            // Take the read lock on the toc file mapping
+            boost::scoped_ptr<Sharable_ReadLock> tocReadLock;
+            boost::scoped_ptr<Sharable_WriteLock> tocWriteLock;
+            _imp->bucket->checkToCMemorySegmentStatus(&tocReadLock, &tocWriteLock);
+
+            // Take write lock on the bucket
+            boost::scoped_ptr<Upgradable_WriteLock> writeLock;
 #ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-        writeLock.reset(new Upgradable_WriteLock(_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].tocData.segmentMutex));
+            writeLock.reset(new Upgradable_WriteLock(_imp->bucket->ipc->bucketMutex));
 #else
-        if (!createTimedLockAndHandleInconsistentStateIfFailed<Upgradable_WriteLock>(_imp->cache->_imp.get(), shmAccess, _imp->bucket->bucketIndex, writeLock, &_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].tocData.segmentMutex)) {
-            return;
-        }
+            createTimedLock<Upgradable_WriteLock>(_imp->cache->_imp.get(), writeLock, &_imp->bucket->ipc->bucketMutex);
 #endif
 
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
-        // Every time we take the lock, we must ensure the memory mapping is ok
-        if (!_imp->bucket->isToCFileMappingValid()) {
-            _imp->bucket->remapToCMemoryFile(*writeLock, 0);
-        }
+            // Ensure the bucket is in a valid state.
+            BucketStateHandler_RAII bucketStateHandler(_imp->bucket);
+
+
+            MemorySegmentEntryHeaderMap::iterator cacheEntryIt;
+            MemorySegmentEntryHeaderMap* storage;
+            if (!_imp->bucket->tryCacheLookupImpl(_imp->hash, &cacheEntryIt, &storage)) {
+                // The cache may have been wiped in between
+                return;
+            }
+
+            _imp->bucket->deallocateCacheEntryImpl(cacheEntryIt, storage);
+
+        } catch (...) {
+            // Any exception caught here means the cache is corrupted
+            _imp->cache->_imp->recoverFromInconsistentState(_imp->bucket->bucketIndex
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+                                                            , shmAccess
 #endif
-
-        MemorySegmentEntryHeaderMap::iterator cacheEntryIt;
-        MemorySegmentEntryHeaderMap* storage;
-        if (!_imp->bucket->tryCacheLookupImpl(_imp->hash, &cacheEntryIt, &storage)) {
-            // The cache may have been wiped in between
-            return;
+                                                            );
         }
-
-        _imp->bucket->deallocateCacheEntryImpl(cacheEntryIt, storage, shmAccess);
-
     }
 } // ~CacheEntryLocker
 
 
-Cache::Cache(bool persistent)
+
+Cache::Cache(
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
+             bool persistent
+#endif
+             )
 : boost::enable_shared_from_this<Cache>()
-, _imp(new CachePrivate(this, persistent))
+, _imp(new CachePrivate(this
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
+                        , persistent
+#endif
+                        ))
 {
 
 }
@@ -2792,13 +2809,18 @@ CachePrivate::getSharedMemorySize() const
 }
 
 CachePtr
-Cache::create(bool persistent)
+Cache::create(
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
+              bool persistent
+#endif
+              )
 {
-    CachePtr ret(new Cache(persistent));
+
 
 #ifdef NATRON_CACHE_NEVER_PERSISTENT
-    persistent = false;
-#endif
+    CachePtr ret(new Cache());
+#else
+    CachePtr ret(new Cache(persistent));
     // Open or create the file lock
     if (persistent) {
 
@@ -2824,7 +2846,7 @@ Cache::create(bool persistent)
             }
 
             try {
-                ret->_imp->globalMemorySegmentFileLock.reset(new bip::file_lock(fileLockFile.c_str()));
+                ret->_imp->globalFileLock.reset(new bip::file_lock(fileLockFile.c_str()));
             } catch (...) {
                 assert(false);
                 throw std::runtime_error("Failed to initialize shared memory file lock, exiting.");
@@ -2838,7 +2860,7 @@ Cache::create(bool persistent)
     //      - If it fails, another process is still actively using the globalMemorySegment shared memory: it must still be valid
     bool gotFileLock = true;
     if (persistent) {
-        gotFileLock = ret->_imp->globalMemorySegmentFileLock->try_lock();
+        gotFileLock = ret->_imp->globalFileLock->try_lock();
     }
 
 #ifndef NATRON_CACHE_INTERPROCESS_ROBUST
@@ -2848,7 +2870,7 @@ Cache::create(bool persistent)
         qDebug() << "Another" << NATRON_APPLICATION_NAME << "is active, this process will fallback on a process local cache instead of a persistent cache";
         persistent = false;
         ret->_imp->persistent = false;
-        ret->_imp->globalMemorySegmentFileLock.reset();
+        ret->_imp->globalFileLock.reset();
     }
 #else
     // Create 2 semaphores used to ensure the integrity of the shared memory segment holding interprocess mutexes.
@@ -2884,6 +2906,10 @@ Cache::create(bool persistent)
     }
 #endif // NATRON_CACHE_INTERPROCESS_ROBUST
 
+#endif // NATRON_CACHE_NEVER_PERSISTENT
+
+
+
     // Create the main memory segment containing the CachePrivate::IPCData
     {
 #ifndef NATRON_CACHE_INTERPROCESS_ROBUST
@@ -2906,21 +2932,25 @@ Cache::create(bool persistent)
         
     }
 
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
     if (persistent && gotFileLock) {
-        ret->_imp->globalMemorySegmentFileLock->unlock();
+        ret->_imp->globalFileLock->unlock();
     }
-
     // Indicate that we use the shared memory by taking the file lock in read mode.
-    if (ret->_imp->globalMemorySegmentFileLock) {
-        ret->_imp->globalMemorySegmentFileLock->lock_sharable();
+    if (ret->_imp->globalFileLock) {
+        ret->_imp->globalFileLock->lock_sharable();
     }
+#endif
+
     
     // Open each bucket individual memory segment.
     // They are not created in shared memory but in a memory mapped file instead
     // to be persistent when the OS shutdown.
     // Each segment controls the table of content of the bucket.
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+    SHMReadLockerPtr shmReader(new SharedMemoryProcessLocalReadLocker(ret->_imp.get()));
+#endif
 
-    boost::scoped_ptr<SharedMemoryProcessLocalReadLocker> shmReader(new SharedMemoryProcessLocalReadLocker(ret->_imp.get()));
     for (int i = 0; i < NATRON_CACHE_BUCKETS_COUNT; ++i) {
 
         // Hold a weak pointer to the cache on the bucket
@@ -2931,18 +2961,9 @@ Cache::create(bool persistent)
         // Get the bucket directory path. It ends with a separator.
         QString bucketDirPath = ret->_imp->getBucketAbsoluteDirPath(i);
 
-        // Open the cache ToC shared memory segment
-        {
-            // Take the ToC mapping mutex to ensure that the ToC file is valid
-            boost::scoped_ptr<Upgradable_WriteLock> writeLock;
-#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-            writeLock.reset(new Upgradable_WriteLock(ret->_imp->ipc->bucketsData[i].tocData.segmentMutex));
-#else
-            if (!createTimedLockAndHandleInconsistentStateIfFailed<Upgradable_WriteLock>(ret->_imp.get(), shmReader, i, writeLock, &ret->_imp->ipc->bucketsData[i].tocData.segmentMutex)) {
-                continue;
-            }
-#endif
 
+
+        {
             if (ret->_imp->persistent) {
                 std::string tocFilePath = bucketDirPath.toStdString() + "Index";
                 ret->_imp->buckets[i].tocFile.reset(new MemoryFile);
@@ -2952,42 +2973,272 @@ Cache::create(bool persistent)
             } else {
                 ret->_imp->buckets[i].tocLocalBuf.reset(new ProcessLocalBuffer);
             }
-            ret->_imp->buckets[i].remapToCMemoryFile(*writeLock, 0);
-
-
-        }
-
-        // Open the memory-mapped file used for tiled entries data storage.
-        {
-
-            // Take the ToC mapping mutex and register this process amongst the valid mapping
-            boost::scoped_ptr<Upgradable_WriteLock> writeLock;
-#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-            writeLock.reset(new Upgradable_WriteLock(ret->_imp->ipc->bucketsData[i].tileData.segmentMutex));
-#else
-            if (!createTimedLockAndHandleInconsistentStateIfFailed<Upgradable_WriteLock>(ret->_imp.get(), shmReader, i, writeLock, &ret->_imp->ipc->bucketsData[i].tileData.segmentMutex)) {
-                continue;
-            }
-#endif
-            if (ret->_imp->persistent) {
-                std::string tileCacheFilePath = bucketDirPath.toStdString() + "TileCache";
-                ret->_imp->buckets[i].tileAlignedFile.reset(new MemoryFile);
-                ret->_imp->buckets[i].tileAlignedFile->open(tileCacheFilePath, MemoryFile::eFileOpenModeOpenOrCreate);
-
-                // Ensure the mapping is valid. This will grow the file the first time.
-            } else {
-                ret->_imp->buckets[i].tileAlignedLocalBuf.reset(new ProcessLocalBuffer);
-            }
-            ret->_imp->buckets[i].remapTileMemoryFile(*writeLock, 0);
 
         }
 #endif // #ifndef NATRON_CACHE_NEVER_PERSISTENT
 
+        // Open the memory-mapped file used for tiled entries data storage.
+        {
+
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
+            if (ret->_imp->persistent) {
+                std::string tileCacheFilePath = bucketDirPath.toStdString() + "TileCache";
+                ret->_imp->buckets[i].tileAlignedFile.reset(new MemoryFile);
+                ret->_imp->buckets[i].tileAlignedFile->open(tileCacheFilePath, MemoryFile::eFileOpenModeOpenOrCreate);
+            } else {
+#endif
+                ret->_imp->buckets[i].tileAlignedLocalBuf.reset(new ProcessLocalBuffer);
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
+            }
+#endif
+        }
+
     } // for each bucket
 
+    // Remap each bucket, this may potentially fail
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
+    for (int i = 0; i < NATRON_CACHE_BUCKETS_COUNT; ++i) {
+        try {
+
+            boost::scoped_ptr<Sharable_WriteLock> tocWriteLock;
+            {
+                // Take the ToC mapping mutex
+#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
+                tocWriteLock.reset(new Sharable_WriteLock(ret->_imp->ipc->bucketsData[i].tocData.segmentMutex));
+#else
+                createTimedLock<Sharable_WriteLock>(ret->_imp.get(), tocWriteLock, &ret->_imp->ipc->bucketsData[i].tocData.segmentMutex);
+#endif
+
+                ret->_imp->buckets[i].remapToCMemoryFile(*tocWriteLock, 0);
+            }
+            {
+                // Take write lock on the bucket
+                boost::scoped_ptr<Upgradable_WriteLock> bucketLock;
+#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
+                bucketLock.reset(new Upgradable_WriteLock(ret->_imp->buckets[i].ipc->bucketMutex));
+#else
+                createTimedLock<Upgradable_WriteLock>(ret->_imp.get(), bucketLock, &ret->_imp->buckets[i].ipc->bucketMutex);
+#endif
+
+                // Ensure the bucket is in a valid state.
+                BucketStateHandler_RAII bucketStateHandler(&ret->_imp->buckets[i]);
+
+                // Take the tile mapping mutex
+                boost::scoped_ptr<Sharable_WriteLock> writeLock;
+#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
+                writeLock.reset(new Sharable_WriteLock(ret->_imp->ipc->bucketsData[i].tileData.segmentMutex));
+#else
+                createTimedLock<Sharable_WriteLock>(ret->_imp.get(), writeLock, &ret->_imp->ipc->bucketsData[i].tileData.segmentMutex);
+#endif
+                
+                ret->_imp->buckets[i].remapTileMemoryFile(*bucketLock, *writeLock, 0);
+            }
+        } catch (...) {
+            // Any exception caught here means the cache is corrupted
+            ret->_imp->recoverFromInconsistentState(i
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+                                                    , shmReader
+#endif
+                                                    );
+            
+        }
+    } // for each bucket
+#endif // #ifndef NATRON_CACHE_NEVER_PERSISTENT
 
     return ret;
 } // create
+
+struct CacheTilesLockImpl
+{
+    // Protects the shared memory segment so that mutexes stay valid
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+    SHMReadLockerPtr shmAccess;
+#endif
+
+    // Mutex that protects access to the tiles memory mapped file
+    boost::scoped_ptr<Sharable_ReadLock> tileReadLock;
+    boost::scoped_ptr<Sharable_WriteLock> tileWriteLock;
+
+
+};
+
+bool
+Cache::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
+                            const std::vector<int>* tileIndices,
+                            std::size_t numTilesToAlloc,
+                            std::vector<void*>* existingTilesData,
+                            std::vector<std::pair<int, void*> >* allocatedTilesData,
+                            void** cacheData)
+{
+    assert(cacheData);
+    *cacheData = 0;
+
+    if ((!tileIndices || tileIndices->empty()) && numTilesToAlloc == 0) {
+        // Nothing to do
+        return true;
+    }
+    // Get the bucket corresponding to the hash
+    U64 hash = entry->getHashKey();
+    int bucketIndex = Cache::getBucketCacheBucketIndex(hash);
+    CacheBucket& bucket = _imp->buckets[bucketIndex];
+
+
+    CacheTilesLockImpl* tilesLock = new CacheTilesLockImpl;
+    *cacheData = tilesLock;
+
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+    // Public function, the SHM must be locked.
+    tilesLock->shmAccess.reset(new SharedMemoryProcessLocalReadLocker(_imp.get()));
+#endif
+
+    try {
+        // Take the read lock on the toc file mapping
+        boost::scoped_ptr<Sharable_ReadLock> tocReadLock;
+        boost::scoped_ptr<Sharable_WriteLock> tocWriteLock;
+
+        // Lock the bucket ToC in write mode to protect the freeTiles if we need to allocate some tiles
+        boost::scoped_ptr<Upgradable_WriteLock> bucketWriteLock;
+        MemorySegmentEntryHeader* cacheEntry = 0;
+        if (numTilesToAlloc > 0) {
+
+            bucket.checkToCMemorySegmentStatus(&tocReadLock, &tocWriteLock);
+
+#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
+            bucketWriteLock.reset(new Upgradable_WriteLock(bucket.ipc->bucketMutex));
+#else
+            createTimedLock<Upgradable_WriteLock>(_imp.get(), bucketWriteLock, &bucket.ipc->bucketMutex);
+#endif
+
+            // The entry must exist in the cache to be able to allocate tiles!
+            MemorySegmentEntryHeaderMap* storage;
+            MemorySegmentEntryHeaderMap::iterator found;
+            bool gotEntry = bucket.tryCacheLookupImpl(hash, &found, &storage);
+            if (!gotEntry) {
+                return false;
+            }
+            cacheEntry = found->second.get();
+
+            bucket.ipc->size += numTilesToAlloc * NATRON_TILE_SIZE_BYTES;
+        }
+
+        // Check if the tiles memory mapped file is mapped under a read lock.
+        // If not, take a write lock and remap it
+        {
+#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
+            tilesLock->tileReadLock.reset(new Sharable_ReadLock(_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex));
+#else
+            // Take read lock on the tile data
+            createTimedLock<Sharable_ReadLock>(_imp.get(), tilesLock->tileReadLock, &_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex);
+#endif
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
+            bool tileMappingValid = bucket.isTileFileMappingValid();
+            if (!tileMappingValid) {
+                // If the tile mapping is invalid, take a write lock on the tile mapping and ensure it is valid
+                tilesLock->tileReadLock.reset();
+#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
+                tilesLock->tileWriteLock.reset(new Sharable_WriteLock(_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex));
+#else
+                createTimedLock<Sharable_WriteLock>(_imp.get(), tilesLock->tileWriteLock, &_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex);
+#endif
+                bucket.remapTileMemoryFile(*bucketWriteLock, *tilesLock->tileWriteLock, numTilesToAlloc * NATRON_TILE_SIZE_BYTES);
+
+            }
+#endif // #ifndef NATRON_CACHE_NEVER_PERSISTENT
+        }
+
+        // Check that there's at least one free tile.
+        // No free tile: grow the file if necessary.
+        if (bucket.ipc->freeTiles.size() < numTilesToAlloc) {
+
+            // To grow the file we need to take the write lock on the tiles file
+            if (!tilesLock->tileWriteLock) {
+                tilesLock->tileReadLock.reset();
+#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
+                tilesLock->tileWriteLock.reset(new Sharable_WriteLock(_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex));
+#else
+                createTimedLock<Sharable_WriteLock>(_imp.get(), tilesLock->tileWriteLock, &_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex);
+#endif
+            }
+            bucket.growTileFile(*bucketWriteLock, *tilesLock->tileWriteLock, numTilesToAlloc * NATRON_TILE_SIZE_BYTES);
+        }
+
+
+        assert(bucket.ipc->freeTiles.size() >= numTilesToAlloc);
+
+        if (numTilesToAlloc > 0) {
+            allocatedTilesData->resize(numTilesToAlloc);
+            for (std::size_t i = 0; i < numTilesToAlloc; ++i) {
+                int freeTileIndex;
+                {
+                    Size_t_Set::iterator freeTileIt = bucket.ipc->freeTiles.begin();
+                    freeTileIndex = *freeTileIt;
+                    bucket.ipc->freeTiles.erase(freeTileIt);
+#ifdef CACHE_TRACE_TILES_ALLOCATION
+                    qDebug() << "Bucket" << _imp->bucket->bucketIndex << ": removing tile" << freeTileIndex << " Nb free tiles left:" << _imp->bucket->ipc->freeTiles.size();
+#endif
+                }
+
+
+                char* data;
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
+                if (_imp->persistent) {
+                    data = bucket.tileAlignedFile->data();
+                } else {
+#endif
+                    assert(bucket.tileAlignedLocalBuf);
+                    data = bucket.tileAlignedLocalBuf->getData();
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
+                }
+#endif
+                // Set the tile index on the entry so we can free it afterwards.
+                char* ptr = data + freeTileIndex * NATRON_TILE_SIZE_BYTES;
+                (*allocatedTilesData)[i] = std::make_pair(freeTileIndex, ptr);
+
+                if (cacheEntry) {
+                    assert(bucketWriteLock);
+                    cacheEntry->tileIndices.push_back(freeTileIndex);
+                }
+            }
+        }
+
+        if (tileIndices && !tileIndices->empty()) {
+            existingTilesData->resize(tileIndices->size());
+            for (std::size_t i = 0; i < tileIndices->size(); ++i) {
+                
+                char* data;
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
+                if (_imp->persistent) {
+                    data = bucket.tileAlignedFile->data();
+                } else {
+#endif
+                    data = bucket.tileAlignedLocalBuf->getData();
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
+                }
+#endif
+                char* tileDataPtr = data + (*tileIndices)[i] * NATRON_TILE_SIZE_BYTES;
+                (*existingTilesData)[i] = tileDataPtr;
+            } // for each tile indices
+        }
+    } catch (...) {
+        // Any exception caught here means the cache is corrupted
+        _imp->recoverFromInconsistentState(bucketIndex
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+                                           , tilesLock->shmAccess
+#endif
+                                           );
+    }
+
+    return true;
+
+} // reserveAndLockTiles
+
+void
+Cache::unLockTiles(void* cacheData)
+{
+    delete (CacheTilesLockImpl*)cacheData;
+} // unLockTiles
+
+
 
 #ifdef NATRON_CACHE_INTERPROCESS_ROBUST
 void
@@ -3013,22 +3264,22 @@ CachePrivate::ensureSharedMemoryIntegrity()
         // The mapping for this process is no longer invalid
         nSHMInvalidSem->post();
 
-        // We release the read lock taken on the globalMemorySegmentFileLock
-        globalMemorySegmentFileLock->unlock();
+        // We release the read lock taken on the globalFileLock
+        globalFileLock->unlock();
 
         {
             // We take the file lock in write mode.
             // The lock is guaranteed to be taken at some point since any active process will eventually timeout on the segmentMutex and release
-            // their read lock on the globalMemorySegmentFileLock in the unlock call above.
+            // their read lock on the globalFileLock in the unlock call above.
             // We are sure that when the lock is taken, every process has its shared memory segment unmapped.
-            bip::scoped_lock<bip::file_lock> writeLocker(*globalMemorySegmentFileLock);
+            bip::scoped_lock<bip::file_lock> writeLocker(*globalFileLock);
 
             std::string sharedMemoryName = getSharedMemoryName();
             std::size_t sharedMemorySize = getSharedMemorySize();
 
             if (!nSHMValidSem->try_wait()) {
                 // We are the first process to take the write lock.
-                // We know at this point that any other process has released its read lock on the globalMemorySegmentFileLock
+                // We know at this point that any other process has released its read lock on the globalFileLock
                 // and that the globalMemorySegment is no longer mapped anywhere.
                 // We thus remove the globalMemorySegment and re-create it and remap it.
                 bool ok = bip::shared_memory_object::remove(sharedMemoryName.c_str());
@@ -3063,7 +3314,7 @@ CachePrivate::ensureSharedMemoryIntegrity()
             // Unlock the file lock
         } // writeLocker
 
-        // When the write lock is released we cannot take the globalMemorySegmentFileLock in read mode yet, we could block other processes that
+        // When the write lock is released we cannot take the globalFileLock in read mode yet, we could block other processes that
         // are still waiting for the write lock.
         // We must wait that every other process has a valid mapping.
 
@@ -3144,49 +3395,39 @@ Cache::getMaximumCacheSize() const
 std::size_t
 Cache::getCurrentSize() const
 {
-    boost::scoped_ptr<SharedMemoryProcessLocalReadLocker> shmReader(new SharedMemoryProcessLocalReadLocker(_imp.get()));
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+    SHMReadLockerPtr shmReader(new SharedMemoryProcessLocalReadLocker(_imp.get()));
+#endif
 
     std::size_t ret = 0;
     for (int i = 0; i < NATRON_CACHE_BUCKETS_COUNT; ++i) {
+
+        try {
+            // Take the read lock on the toc file mapping
+            boost::scoped_ptr<Sharable_ReadLock> tocReadLock;
+            boost::scoped_ptr<Sharable_WriteLock> tocWriteLock;
+            _imp->buckets[i].checkToCMemorySegmentStatus(&tocReadLock, &tocWriteLock);
+
+
 #ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-        boost::scoped_ptr<Upgradable_ReadLock> locker(new Upgradable_ReadLock(_imp->ipc->bucketsData[i].tileData.segmentMutex));
+            boost::scoped_ptr<Upgradable_ReadLock> locker(new Upgradable_ReadLock(_imp->buckets[i].ipc->bucketMutex));
 #else
-        boost::scoped_ptr<Upgradable_ReadLock> locker(new Upgradable_ReadLock(_imp->ipc->bucketsData[i].tileData.segmentMutex, _imp->timerFrequency));
-        if (!locker->timed_lock(500)) {
+            boost::scoped_ptr<Upgradable_ReadLock> locker(new Upgradable_ReadLock(_imp->buckets[i].ipc->bucketMutex, _imp->timerFrequency));
+            if (!locker->timed_lock(500)) {
+                return 0;
+            }
+#endif
+            ret +=  _imp->buckets[i].ipc->size;
+            
+        } catch (...) {
+            // Any exception caught here means the cache is corrupted
+            _imp->recoverFromInconsistentState(i
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+                                               , shmReader
+#endif
+                                               );
             return 0;
         }
-#endif
-        std::size_t bucketSize = 0;
-
-        // Add the tile storage
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
-        {
-            std::size_t totalTileStorageSize;
-            if (_imp->persistent) {
-                totalTileStorageSize = _imp->buckets[i].tileAlignedFile->size();
-            } else {
-                totalTileStorageSize = _imp->buckets[i].tileAlignedLocalBuf->size();
-            }
-            bucketSize += (totalTileStorageSize - _imp->buckets[i].ipc->freeTiles.size() * NATRON_TILE_SIZE_BYTES);
-        }
-#else
-        bucketSize = _imp->buckets[i].ipc->size;
-#endif
-
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
-        // Add the table of contents storage
-        {
-            std::size_t totalToCStorageSize;
-            if (_imp->persistent) {
-                totalToCStorageSize = _imp->buckets[i].tocFile->size();
-            } else {
-                totalToCStorageSize = _imp->buckets[i].tocLocalBuf->size();
-            }
-            bucketSize += (totalToCStorageSize - _imp->buckets[i].tocFileManager->get_free_memory());
-        }
-#endif
-        ret += bucketSize;
-
     }
 
 
@@ -3194,17 +3435,6 @@ Cache::getCurrentSize() const
 
 
 } // getCurrentSize
-
-bool
-Cache::isCompiledWithCachePersistence()
-{
-#ifdef NATRON_CACHE_NEVER_PERSISTENT
-    return false;
-#else
-    return true;
-#endif
-}
-
 
 static std::string getBucketDirName(int bucketIndex)
 {
@@ -3296,7 +3526,11 @@ Cache::getCacheDirectoryPath() const
 bool
 Cache::isPersistent() const
 {
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
     return _imp->persistent;
+#else
+    return false;
+#endif
 }
 
 void
@@ -3349,37 +3583,39 @@ Cache::hasCacheEntryForHash(U64 hash) const
     int bucketIndex = Cache::getBucketCacheBucketIndex(hash);
     CacheBucket& bucket = _imp->buckets[bucketIndex];
 
-    boost::scoped_ptr<SharedMemoryProcessLocalReadLocker> shmReader(new SharedMemoryProcessLocalReadLocker(_imp.get()));
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+    SHMReadLockerPtr shmReader(new SharedMemoryProcessLocalReadLocker(_imp.get()));
+#endif
 
+    try {
+
+        // Take the read lock on the toc file mapping
+        boost::scoped_ptr<Sharable_ReadLock> tocReadLock;
+        boost::scoped_ptr<Sharable_WriteLock> tocWriteLock;
+        bucket.checkToCMemorySegmentStatus(&tocReadLock, &tocWriteLock);
+
+
+
+        boost::scoped_ptr<Upgradable_ReadLock> readLock;
 #ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-    boost::scoped_ptr<Upgradable_ReadLock> readLock(new Upgradable_ReadLock(_imp->ipc->bucketsData[bucketIndex].tocData.segmentMutex));
+        readLock.reset(new Upgradable_ReadLock(bucket.ipc->bucketMutex));
 #else
-    boost::scoped_ptr<Upgradable_ReadLock> readLock(new Upgradable_ReadLock(_imp->ipc->bucketsData[bucketIndex].tocData.segmentMutex, _imp->timerFrequency));
-    if (!readLock->timed_lock()) {
+        createTimedLock<Upgradable_ReadLock>(_imp.get(), readLock, &bucket.ipc->bucketMutex);
+#endif
+
+
+        MemorySegmentEntryHeaderMap::iterator cacheEntryIt;
+        MemorySegmentEntryHeaderMap* storage;
+        return bucket.tryCacheLookupImpl(hash, &cacheEntryIt, &storage);
+    } catch (...) {
+        // Any exception caught here means the cache is corrupted
+        _imp->recoverFromInconsistentState(bucketIndex
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+                                           , shmReader
+#endif
+                                                        );
         return false;
     }
-#endif
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
-    boost::scoped_ptr<Upgradable_WriteLock> writeLock;
-
-    // First take a read lock and check if the mapping is valid. Otherwise take a write lock
-    if (!bucket.isToCFileMappingValid()) {
-        readLock.reset();
-
-#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-        writeLock.reset(new Upgradable_WriteLock(_imp->ipc->bucketsData[bucketIndex].tocData.segmentMutex));
-#else
-        if (!createTimedLockAndHandleInconsistentStateIfFailed<Upgradable_WriteLock>(_imp.get(), shmReader, bucketIndex, writeLock, &_imp->ipc->bucketsData[bucketIndex].tocData.segmentMutex)) {
-            return false;
-        }
-#endif
-        bucket.remapToCMemoryFile(*writeLock, 0);
-    }
-#endif
-
-    MemorySegmentEntryHeaderMap::iterator cacheEntryIt;
-    MemorySegmentEntryHeaderMap* storage;
-    return bucket.tryCacheLookupImpl(hash, &cacheEntryIt, &storage);
 } // hasCacheEntryForHash
 
 void
@@ -3395,81 +3631,92 @@ Cache::removeEntry(const CacheEntryBasePtr& entry)
 
     CacheBucket& bucket = _imp->buckets[bucketIndex];
 
-    boost::scoped_ptr<SharedMemoryProcessLocalReadLocker> shmReader(new SharedMemoryProcessLocalReadLocker(_imp.get()));
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+    SHMReadLockerPtr shmReader(new SharedMemoryProcessLocalReadLocker(_imp.get()));
+#endif
 
     // Take the bucket lock in write mode
-    {
+    try {
+
+        // Take the read lock on the toc file mapping
+        boost::scoped_ptr<Sharable_ReadLock> tocReadLock;
+        boost::scoped_ptr<Sharable_WriteLock> tocWriteLock;
+        bucket.checkToCMemorySegmentStatus(&tocReadLock, &tocWriteLock);
+
         boost::scoped_ptr<Upgradable_WriteLock> writeLock;
 #ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-        writeLock.reset(new Upgradable_WriteLock(_imp->ipc->bucketsData[bucketIndex].tocData.segmentMutex));
+        writeLock.reset(new Upgradable_WriteLock(bucket.ipc->bucketMutex));
 #else
-        if (!createTimedLockAndHandleInconsistentStateIfFailed<Upgradable_WriteLock>(_imp.get(), shmReader, bucketIndex, writeLock, &_imp->ipc->bucketsData[bucketIndex].tocData.segmentMutex)) {
-            return;
-        }
+        createTimedLock<Upgradable_WriteLock>(_imp.get(), writeLock, &bucket.ipc->bucketMutex);
 #endif
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
-        // Ensure the file mapping is OK
-        bucket.remapToCMemoryFile(*writeLock, 0);
+
 
         // Ensure the bucket is in a valid state.
-        BucketStateHandler_RAII bucketStateHandler(_imp.get(), bucketIndex, shmReader);
-        if (!bucketStateHandler.isValid()) {
-            return;
-        }
-#endif
+        BucketStateHandler_RAII bucketStateHandler(&bucket);
 
         // Deallocate the memory taken by the cache entry in the ToC
         {
             MemorySegmentEntryHeaderMap::iterator cacheEntryIt;
             MemorySegmentEntryHeaderMap* storage;
             if (bucket.tryCacheLookupImpl(hash, &cacheEntryIt, &storage)) {
-                bucket.deallocateCacheEntryImpl(cacheEntryIt, storage, shmReader);
+                bucket.deallocateCacheEntryImpl(cacheEntryIt, storage);
             }
         }
+    } catch (...) {
+        // Any exception caught here means the cache is corrupted
+        _imp->recoverFromInconsistentState(bucketIndex
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+                                           , shmReader
+#endif
+                                           );
     }
+
 
 } // removeEntry
 
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
 void
-CachePrivate::recoverFromInconsistentState(int bucket_i, boost::scoped_ptr<SharedMemoryProcessLocalReadLocker>& shmAccess)
+CachePrivate::recoverFromInconsistentState(int bucket_i
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+                                           ,SHMReadLockerPtr& shmAccess
+#endif
+)
 {
+
+
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
     // Release the read lock on the SHM
     shmAccess.reset();
 
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
-    // Create and remap the SHM
+    // Create and remap the SHM: do it so safely so we don't crash any other process
     ensureSharedMemoryIntegrity();
-#endif
 
     // Flag that we are reading it
     shmAccess.reset(new SharedMemoryProcessLocalReadLocker(this));
+#endif
+
 
     // Clear the cache: it could be corrupted
-    clearCacheBucket(bucket_i, shmAccess);
+    clearCacheBucket(bucket_i);
 
 } // recoverFromInconsistentState
-#endif // #ifndef NATRON_CACHE_NEVER_PERSISTENT
 
 void
-CachePrivate::clearCacheBucket(int bucket_i, boost::scoped_ptr<SharedMemoryProcessLocalReadLocker>& shmAccess)
+CachePrivate::clearCacheBucket(int bucket_i)
 {
-    // The SHM must be locked for reading.
-    assert(shmAccess);
-    (void)shmAccess;
 
     CacheBucket& bucket = buckets[bucket_i];
 
+    // Take the write lock on the toc file mapping
+    boost::scoped_ptr<Sharable_WriteLock> tocWriteLock;
     {
 
 #ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-        boost::scoped_ptr<Upgradable_WriteLock> writeLock (new Upgradable_WriteLock(ipc->bucketsData[bucket_i].tocData.segmentMutex));
+        tocWriteLock.reset(new Sharable_WriteLock(ipc->bucketsData[bucket_i].tocData.segmentMutex));
 #else
-        boost::scoped_ptr<Upgradable_WriteLock> writeLock(new Upgradable_WriteLock(ipc->bucketsData[bucket_i].tocData.segmentMutex, timerFrequency));
-        if (!writeLock->timed_lock()) {
-            return;
-        }
+        createTimedLock<Sharable_WriteLock>(this, tocWriteLock, &ipc->bucketsData[bucket_i].tocData.segmentMutex);
 #endif
+
+
 #ifdef NATRON_CACHE_NEVER_PERSISTENT
         bucket.ipc.reset(new CacheBucket::IPCData);
 #else
@@ -3481,19 +3728,17 @@ CachePrivate::clearCacheBucket(int bucket_i, boost::scoped_ptr<SharedMemoryProce
         } else {
             bucket.tocLocalBuf->clear();
         }
-        bucket.remapToCMemoryFile(*writeLock, 0);
+        bucket.remapToCMemoryFile(*tocWriteLock, 0);
 #endif // NATRON_CACHE_NEVER_PERSISTENT
 
     }
 #ifndef NATRON_CACHE_NEVER_PERSISTENT
     {
+        boost::scoped_ptr<Sharable_WriteLock> tileWriteLock;
 #ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-        boost::scoped_ptr<Upgradable_WriteLock> writeLock (new Upgradable_WriteLock(ipc->bucketsData[bucket_i].tileData.segmentMutex));
+        tileWriteLock.reset(new Sharable_WriteLock(ipc->bucketsData[bucket_i].tileData.segmentMutex));
 #else
-        boost::scoped_ptr<Upgradable_WriteLock> writeLock(new Upgradable_WriteLock(ipc->bucketsData[bucket_i].tileData.segmentMutex, timerFrequency));
-        if (!writeLock->timed_lock()) {
-            return;
-        }
+        createTimedLock<Sharable_WriteLock>(this, tileWriteLock, &ipc->bucketsData[bucket_i].tileData.segmentMutex);
 #endif
         if (persistent) {
             std::string tileFilePath = bucket.tileAlignedFile->path();
@@ -3503,19 +3748,25 @@ CachePrivate::clearCacheBucket(int bucket_i, boost::scoped_ptr<SharedMemoryProce
         } else {
             bucket.tileAlignedLocalBuf->clear();
         }
-        bucket.remapTileMemoryFile(*writeLock, 0);
+
+        // Take write lock on the bucket
+        boost::scoped_ptr<Upgradable_WriteLock> bucketLock;
+#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
+        bucketLock.reset(new Upgradable_WriteLock(bucket.ipc->bucketMutex));
+#else
+        createTimedLock<Upgradable_WriteLock>(this, bucketLock, &bucket.ipc->bucketMutex);
+#endif
+
+        bucket.remapTileMemoryFile(*bucketLock, *tileWriteLock, 0);
 
     }
 #endif // NATRON_CACHE_NEVER_PERSISTENT
 } // clearCacheBucket
 
 void
-CachePrivate::clearCacheInternal(boost::scoped_ptr<SharedMemoryProcessLocalReadLocker>& shmAccess)
+CachePrivate::clearCacheInternal()
 {
 
-    for (int bucket_i = 0; bucket_i < NATRON_CACHE_BUCKETS_COUNT; ++bucket_i) {
-        clearCacheBucket(bucket_i, shmAccess);
-    } // for each bucket
 
 }
 
@@ -3525,11 +3776,18 @@ Cache::clear()
 
 #ifdef NATRON_CACHE_INTERPROCESS_ROBUST
     _imp->ensureSharedMemoryIntegrity();
+    SHMReadLockerPtr shmReader(new SharedMemoryProcessLocalReadLocker(_imp.get()));
 #endif
+    try {
+        for (int bucket_i = 0; bucket_i < NATRON_CACHE_BUCKETS_COUNT; ++bucket_i) {
+            _imp->clearCacheBucket(bucket_i);
+        } // for each bucket
+    } catch (...) {
 
-    boost::scoped_ptr<SharedMemoryProcessLocalReadLocker> shmReader(new SharedMemoryProcessLocalReadLocker(_imp.get()));
-    _imp->clearCacheInternal(shmReader);
-
+    }
+    
+    
+    
 } // clear()
 
 void
@@ -3556,43 +3814,40 @@ Cache::evictLRUEntries(std::size_t nBytesToFree)
         
         bool foundBucketThatCanEvict = false;
 
-        boost::scoped_ptr<SharedMemoryProcessLocalReadLocker> shmReader(new SharedMemoryProcessLocalReadLocker(_imp.get()));
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+        SHMReadLockerPtr shmReader(new SharedMemoryProcessLocalReadLocker(_imp.get()));
+#endif
 
         // Check each bucket
         for (int bucket_i = 0; bucket_i < NATRON_CACHE_BUCKETS_COUNT; ++bucket_i) {
             CacheBucket& bucket = _imp->buckets[bucket_i];
 
-            {
-                // Lock for writing
-#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-                boost::scoped_ptr<Upgradable_WriteLock> writeLock (new Upgradable_WriteLock(_imp->ipc->bucketsData[bucket_i].tocData.segmentMutex));
-#else
-                boost::scoped_ptr<Upgradable_WriteLock> writeLock;
-                if (!createTimedLockAndHandleInconsistentStateIfFailed<Upgradable_WriteLock>(_imp.get(), shmReader, bucket_i, writeLock, &_imp->ipc->bucketsData[bucket_i].tocData.segmentMutex)) {
-                    return;
-                }
-#endif
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
-                // Ensure the mapping
-                bucket.remapToCMemoryFile(*writeLock, 0);
+            try {
+                // Take the read lock on the toc file mapping
+                boost::scoped_ptr<Sharable_ReadLock> tocReadLock;
+                boost::scoped_ptr<Sharable_WriteLock> tocWriteLock;
+                bucket.checkToCMemorySegmentStatus(&tocReadLock, &tocWriteLock);
 
-                // Ensure the bucket is in a valid state.
-                BucketStateHandler_RAII bucketStateHandler(_imp.get(), bucket_i, shmReader);
-                if (!bucketStateHandler.isValid()) {
-                    return;
-                }
+
+                // Take write lock on the bucket
+                boost::scoped_ptr<Upgradable_WriteLock> bucketLock;
+#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
+                bucketLock.reset(new Upgradable_WriteLock(bucket.ipc->bucketMutex));
+#else
+                createTimedLock<Upgradable_WriteLock>(_imp.get(), bucketLock, &bucket.ipc->bucketMutex);
 #endif
+
+                BucketStateHandler_RAII bucketStateHandler(&bucket);
+
 
                 U64 hash = 0;
                 {
                     // Lock the LRU list
 #ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-                    boost::scoped_ptr<MutexLock> writeLock (new MutexLock(_imp->ipc->bucketsData[bucket_i].lruListMutex));
+                    boost::scoped_ptr<ExclusiveLock> writeLock (new ExclusiveLock(bucket.ipc->lruListMutex));
 #else
-                    boost::scoped_ptr<MutexLock> lruWriteLock;
-                    if (!createTimedLockAndHandleInconsistentStateIfFailed<MutexLock>(_imp.get(), shmReader, bucket_i, lruWriteLock, &_imp->ipc->bucketsData[bucket_i].lruListMutex)) {
-                        return;
-                    }
+                    boost::scoped_ptr<ExclusiveLock> lruWriteLock;
+                    createTimedLock<ExclusiveLock>(_imp.get(), lruWriteLock, &bucket.ipc->lruListMutex);
 #endif
                     // The least recently used entry is the one at the front of the linked list
                     if (bucket.ipc->lruListFront) {
@@ -3613,15 +3868,20 @@ Cache::evictLRUEntries(std::size_t nBytesToFree)
 
                 // We evicted one, decrease the size
                 curSize -= cacheEntryIt->second->size;
-
-                // Also decrease the size if this entry held a tile
-                if (cacheEntryIt->second->tileCacheIndex != -1) {
-                    curSize -= NATRON_TILE_SIZE_BYTES;
-                }
-                bucket.deallocateCacheEntryImpl(cacheEntryIt, storage, shmReader);
+                curSize -= cacheEntryIt->second->tileIndices.size() * NATRON_TILE_SIZE_BYTES;
+                
+                bucket.deallocateCacheEntryImpl(cacheEntryIt, storage);
 
 
 
+            } catch (...) {
+                // Any exception caught here means the cache is corrupted
+                _imp->recoverFromInconsistentState(bucket_i
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+                                                   , shmReader
+#endif
+                                                   );
+                return;
             }
             
             foundBucketThatCanEvict = true;
@@ -3643,62 +3903,59 @@ Cache::evictLRUEntries(std::size_t nBytesToFree)
 void
 Cache::getMemoryStats(std::map<std::string, CacheReportInfo>* infos) const
 {
-
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
     boost::scoped_ptr<SharedMemoryProcessLocalReadLocker> shmReader(new SharedMemoryProcessLocalReadLocker(_imp.get()));
+#endif
 
     for (int bucket_i = 0; bucket_i < NATRON_CACHE_BUCKETS_COUNT; ++bucket_i) {
         CacheBucket& bucket = _imp->buckets[bucket_i];
 
-        boost::scoped_ptr<Upgradable_ReadLock> readLock;
-        boost::scoped_ptr<Upgradable_WriteLock> writeLock;
+        try {
+            // Take the read lock on the toc file mapping
+            boost::scoped_ptr<Sharable_ReadLock> tocReadLock;
+            boost::scoped_ptr<Sharable_WriteLock> tocWriteLock;
+            bucket.checkToCMemorySegmentStatus(&tocReadLock, &tocWriteLock);
+
+            // Take read lock on the bucket
+            boost::scoped_ptr<Upgradable_ReadLock> bucketLock;
 #ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-        readLock.reset(new Upgradable_ReadLock(_imp->ipc->bucketsData[bucket_i].tocData.segmentMutex));
+            bucketLock.reset(new Upgradable_ReadLock(bucket.ipc->bucketMutex));
 #else
-        if (!createTimedLockAndHandleInconsistentStateIfFailed<Upgradable_ReadLock>(_imp.get(), shmReader, bucket_i, readLock, &_imp->ipc->bucketsData[bucket_i].tocData.segmentMutex)) {
-            return;
-        }
+            createTimedLock<Upgradable_ReadLock>(_imp.get(), bucketLock, &bucket.ipc->bucketMutex);
 #endif
 
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
-        // First take a read lock and check if the mapping is valid. Otherwise take a write lock
-        if (!bucket.isToCFileMappingValid()) {
-            readLock.reset();
-#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-            writeLock.reset(new Upgradable_WriteLock(_imp->ipc->bucketsData[bucket_i].tocData.segmentMutex));
-#else
-            if (!createTimedLockAndHandleInconsistentStateIfFailed<Upgradable_WriteLock>(_imp.get(), shmReader, bucket_i, writeLock, &_imp->ipc->bucketsData[bucket_i].tocData.segmentMutex)) {
-                return;
-            }
-#endif
-            bucket.remapToCMemoryFile(*writeLock, 0);
-        }
-#endif
+            // Cycle through the whole LRU list
+            bip::offset_ptr<LRUListNode> it = bucket.ipc->lruListFront;
+            while (it) {
 
-        // Cycle through the whole LRU list
-        bip::offset_ptr<LRUListNode> it = bucket.ipc->lruListFront;
-        while (it) {
-
-            MemorySegmentEntryHeaderMap::iterator cacheEntryIt;
-            MemorySegmentEntryHeaderMap* storage;
-            if (!bucket.tryCacheLookupImpl(it->hash, &cacheEntryIt, &storage)) {
-                assert(false);
-                continue;
-            }
-
-            if (!cacheEntryIt->second->pluginID.empty()) {
-
-                std::string pluginID(cacheEntryIt->second->pluginID.c_str());
-                CacheReportInfo& entryData = (*infos)[pluginID];
-                ++entryData.nEntries;
-                entryData.nBytes += cacheEntryIt->second->size;
-                if (cacheEntryIt->second->tileCacheIndex != -1) {
-                    entryData.nBytes += NATRON_TILE_SIZE_BYTES;
+                MemorySegmentEntryHeaderMap::iterator cacheEntryIt;
+                MemorySegmentEntryHeaderMap* storage;
+                if (!bucket.tryCacheLookupImpl(it->hash, &cacheEntryIt, &storage)) {
+                    assert(false);
+                    continue;
                 }
 
+                if (!cacheEntryIt->second->pluginID.empty()) {
+
+                    std::string pluginID(cacheEntryIt->second->pluginID.c_str());
+                    CacheReportInfo& entryData = (*infos)[pluginID];
+                    ++entryData.nEntries;
+                    entryData.nBytes += cacheEntryIt->second->size;
+                }
+                it = it->next;
             }
-            it = it->next;
+        } catch(...) {
+            // Any exception caught here means the cache is corrupted
+            _imp->recoverFromInconsistentState(bucket_i
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+                                               , shmReader
+#endif
+                                               );
+            return;
+
         }
 
+        
     } // for each bucket
 } // getMemoryStats
 
@@ -3711,64 +3968,60 @@ Cache::flushCacheOnDisk(bool async)
     if (!_imp->persistent) {
         return;
     }
-    boost::scoped_ptr<SharedMemoryProcessLocalReadLocker> shmReader(new SharedMemoryProcessLocalReadLocker(_imp.get()));
+
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+    SHMReadLockerPtr shmReader(new SharedMemoryProcessLocalReadLocker(_imp.get()));
+#endif
+    
     for (int bucket_i = 0; bucket_i < NATRON_CACHE_BUCKETS_COUNT; ++bucket_i) {
         CacheBucket& bucket = _imp->buckets[bucket_i];
 
-        {
-            boost::scoped_ptr<Upgradable_ReadLock> readLock;
-            boost::scoped_ptr<Upgradable_WriteLock> writeLock;
+        try {
+            boost::scoped_ptr<Sharable_WriteLock> tocWriteLock;
 #ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-            readLock.reset(new Upgradable_ReadLock(_imp->ipc->bucketsData[bucket_i].tocData.segmentMutex));
+            tocWriteLock.reset(new Sharable_WriteLock(_imp->ipc->bucketsData[bucket_i].tocData.segmentMutex));
 #else
-            if (!createTimedLockAndHandleInconsistentStateIfFailed<Upgradable_ReadLock>(_imp.get(), shmReader, bucket_i, readLock, &_imp->ipc->bucketsData[bucket_i].tocData.segmentMutex)) {
-                return;
-            }
+            createTimedLock<Sharable_WriteLock>(_imp.get(), tocWriteLock, &_imp->ipc->bucketsData[bucket_i].tocData.segmentMutex);
 #endif
             // First take a read lock and check if the mapping is valid. Otherwise take a write lock
             if (!bucket.isToCFileMappingValid()) {
-                readLock.reset();
-#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-                writeLock.reset(new Upgradable_WriteLock(_imp->ipc->bucketsData[bucket_i].tocData.segmentMutex));
-#else
-                if (!createTimedLockAndHandleInconsistentStateIfFailed<Upgradable_WriteLock>(_imp.get(), shmReader, bucket_i, writeLock, &_imp->ipc->bucketsData[bucket_i].tocData.segmentMutex)) {
-                    return;
-                }
-#endif
                 // This function will flush for us.
-                bucket.remapToCMemoryFile(*writeLock, 0);
+                bucket.remapToCMemoryFile(*tocWriteLock, 0);
             } else {
                 bucket.tocFile->flush(async ? MemoryFile::eFlushTypeAsync : MemoryFile::eFlushTypeSync, NULL, 0);
             }
 
 
-
+            // Take read lock on the bucket
+            boost::scoped_ptr<Upgradable_WriteLock> bucketLock;
 #ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-            boost::scoped_ptr<Upgradable_ReadLock> readLockTile(new Upgradable_ReadLock(_imp->ipc->bucketsData[bucket_i].tileData.segmentMutex));
+            bucketLock.reset(new Upgradable_WriteLock(bucket.ipc->bucketMutex));
 #else
-            boost::scoped_ptr<Upgradable_ReadLock> readLockTile(new Upgradable_ReadLock(_imp->ipc->bucketsData[bucket_i].tileData.segmentMutex, _imp->timerFrequency));
-            if (!readLockTile->timed_lock()) {
-                return;
-            }
+            createTimedLock<Upgradable_WriteLock>(_imp.get(), bucketLock, &bucket.ipc->bucketMutex);
 #endif
+
+            boost::scoped_ptr<Sharable_WriteLock> tileWriteLock;
+#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
+            tileWriteLock.reset(new Sharable_WriteLock(_imp->ipc->bucketsData[bucket_i].tileData.segmentMutex));
+#else
+            createTimedLock<Sharable_WriteLock>(_imp.get(), tileWriteLock, &_imp->ipc->bucketsData[bucket_i].tileData.segmentMutex);
+#endif
+
             // First take a read lock and check if the mapping is valid. Otherwise take a write lock
             if (!bucket.isTileFileMappingValid()) {
-                readLockTile.reset();
-
-#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-                boost::scoped_ptr<Upgradable_WriteLock> writeLockTile(new Upgradable_WriteLock(_imp->ipc->bucketsData[bucket_i].tileData.segmentMutex));
-#else
-                boost::scoped_ptr<Upgradable_WriteLock> writeLockTile(new Upgradable_WriteLock(_imp->ipc->bucketsData[bucket_i].tileData.segmentMutex, _imp->timerFrequency));;
-                if (!writeLockTile->timed_lock()) {
-                    return;
-                }
-#endif
-                 // This function will flush for us.
-                bucket.remapTileMemoryFile(*writeLock, 0);
+                bucket.remapTileMemoryFile(*bucketLock, *tileWriteLock, 0);
             } else {
                 flushTileMapping(bucket.tileAlignedFile, bucket.ipc->freeTiles);
             }
-        } // scoped lock
+        } catch (...) {
+            // Any exception caught here means the cache is corrupted
+            _imp->recoverFromInconsistentState(bucket_i
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+                                               , shmReader
+#endif
+                                               );
+
+        }
 
     } // for each bucket
 #endif // #ifndef NATRON_CACHE_NEVER_PERSISTENT

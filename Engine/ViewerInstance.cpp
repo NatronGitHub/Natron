@@ -714,7 +714,7 @@ struct MinMaxVal {
 
 template <typename PIX, int maxValue, int srcNComps, DisplayChannelsEnum channels>
 MinMaxVal
-findAutoContrastVminVmax_generic(const Image::CPUTileData& colorImage,
+findAutoContrastVminVmax_generic(const Image::CPUData& colorImage,
                                  const EffectInstancePtr& renderArgs,
                                  const RectI & roi)
 {
@@ -729,7 +729,7 @@ findAutoContrastVminVmax_generic(const Image::CPUTileData& colorImage,
 
         int pixelStride;
         const PIX* src_pixels[4];
-        Image::getChannelPointers<PIX, srcNComps>((const PIX**)colorImage.ptrs, roi.x1, y, colorImage.tileBounds, (PIX**)src_pixels, &pixelStride);
+        Image::getChannelPointers<PIX, srcNComps>((const PIX**)colorImage.ptrs, roi.x1, y, colorImage.bounds, (PIX**)src_pixels, &pixelStride);
 
         for (int x = roi.x1; x < roi.x2; ++x) {
 
@@ -808,7 +808,7 @@ findAutoContrastVminVmax_generic(const Image::CPUTileData& colorImage,
 
 template <typename PIX, int maxValue, int srcNComps>
 MinMaxVal
-findAutoContrastVminVmaxForComponents(const Image::CPUTileData& colorImage,
+findAutoContrastVminVmaxForComponents(const Image::CPUData& colorImage,
                                       const EffectInstancePtr& renderArgs,
                                       DisplayChannelsEnum channels,
                                       const RectI & roi)
@@ -836,7 +836,7 @@ findAutoContrastVminVmaxForComponents(const Image::CPUTileData& colorImage,
 
 template <typename PIX, int maxValue>
 MinMaxVal
-findAutoContrastVminVmaxForDepth(const Image::CPUTileData& colorImage,
+findAutoContrastVminVmaxForDepth(const Image::CPUData& colorImage,
                                  const EffectInstancePtr& renderArgs,
                                  DisplayChannelsEnum channels,
                                  const RectI & roi)
@@ -859,7 +859,7 @@ findAutoContrastVminVmaxForDepth(const Image::CPUTileData& colorImage,
 }
 
 MinMaxVal
-findAutoContrastVminVmax(const Image::CPUTileData& colorImage,
+findAutoContrastVminVmax(const Image::CPUData& colorImage,
                          const EffectInstancePtr& renderArgs,
                          DisplayChannelsEnum channels,
                          const RectI & roi)
@@ -879,7 +879,7 @@ findAutoContrastVminVmax(const Image::CPUTileData& colorImage,
 
 class FindAutoContrastProcessor : public ImageMultiThreadProcessorBase
 {
-    Image::CPUTileData _colorImage;
+    Image::CPUData _colorImage;
     DisplayChannelsEnum _channels;
 
     mutable QMutex _resultMutex;
@@ -898,7 +898,7 @@ public:
     {
     }
 
-    void setValues(const Image::CPUTileData& colorImage, DisplayChannelsEnum channels)
+    void setValues(const Image::CPUData& colorImage, DisplayChannelsEnum channels)
     {
         _colorImage = colorImage;
         _channels = channels;
@@ -924,7 +924,7 @@ private:
 
 struct RenderViewerArgs
 {
-    Image::CPUTileData colorImage, alphaImage, dstImage;
+    Image::CPUData colorImage, alphaImage, dstImage;
     int alphaChannelIndex;
     EffectInstancePtr renderArgs;
     double gamma, gain, offset;
@@ -1032,11 +1032,11 @@ genericViewerProcessFunctor(const RenderViewerArgs& args,
     for (int i = 0; i < 3; ++i) {
         tmpPix[i] = tmpPix[i] * args.gain + args.offset;
     }
-    if (args.gamma <= 0) {
+    if (args.gamma <= 0.) {
         for (int i = 0; i < 3; ++i) {
             tmpPix[i] = (tmpPix[i]  < 1.) ? 0. : (tmpPix[i]  == 1. ? 1. : std::numeric_limits<double>::infinity() );
         }
-    } else {
+    } else if (args.gamma != 1.) {
         for (int i = 0; i < 3; ++i) {
             tmpPix[i] = ViewerInstancePrivate::lookupGammaLut(tmpPix[i], args.gammaLut);
         }
@@ -1090,15 +1090,15 @@ applyViewerProcess8bit_generic(const RenderViewerArgs& args, const RectI & roi)
 
             int colorPixelStride;
             const PIX* color_pixels[4];
-            Image::getChannelPointers<PIX, srcNComps>((const PIX**)args.colorImage.ptrs, x, y, args.colorImage.tileBounds, (PIX**)color_pixels, &colorPixelStride);
+            Image::getChannelPointers<PIX, srcNComps>((const PIX**)args.colorImage.ptrs, x, y, args.colorImage.bounds, (PIX**)color_pixels, &colorPixelStride);
 
             int alphaPixelStride;
             const PIX* alpha_pixels[4];
-            Image::getChannelPointers<PIX>((const PIX**)args.alphaImage.ptrs, x, y, args.alphaImage.tileBounds, args.alphaImage.nComps, (PIX**)alpha_pixels, &alphaPixelStride);
+            Image::getChannelPointers<PIX>((const PIX**)args.alphaImage.ptrs, x, y, args.alphaImage.bounds, args.alphaImage.nComps, (PIX**)alpha_pixels, &alphaPixelStride);
 
             int dstPixelStride;
             unsigned char* dst_pixels[4];
-            Image::getChannelPointers<unsigned char>((const unsigned char**)args.dstImage.ptrs, x, y, args.dstImage.tileBounds, args.dstImage.nComps, (unsigned char**)dst_pixels, &dstPixelStride);
+            Image::getChannelPointers<unsigned char>((const unsigned char**)args.dstImage.ptrs, x, y, args.dstImage.bounds, args.dstImage.nComps, (unsigned char**)dst_pixels, &dstPixelStride);
             assert(dst_pixels[0]);
 
             while (x != endX) {
@@ -1265,15 +1265,15 @@ applyViewerProcess32bit_Generic(const RenderViewerArgs& args, const RectI & roi)
 
         int colorPixelStride;
         const PIX* color_pixels[4];
-        Image::getChannelPointers<PIX, srcNComps>((const PIX**)args.colorImage.ptrs, roi.x1, y, args.colorImage.tileBounds, (PIX**)color_pixels, &colorPixelStride);
+        Image::getChannelPointers<PIX, srcNComps>((const PIX**)args.colorImage.ptrs, roi.x1, y, args.colorImage.bounds, (PIX**)color_pixels, &colorPixelStride);
 
         int alphaPixelStride;
         const PIX* alpha_pixels[4];
-        Image::getChannelPointers<PIX>((const PIX**)args.alphaImage.ptrs, roi.x1, y, args.alphaImage.tileBounds, args.alphaImage.nComps, (PIX**)alpha_pixels, &alphaPixelStride);
+        Image::getChannelPointers<PIX>((const PIX**)args.alphaImage.ptrs, roi.x1, y, args.alphaImage.bounds, args.alphaImage.nComps, (PIX**)alpha_pixels, &alphaPixelStride);
 
         int dstPixelStride;
         float* dst_pixels[4];
-        Image::getChannelPointers<float>((const float**)args.dstImage.ptrs, roi.x1, y, args.dstImage.tileBounds, args.dstImage.nComps, (float**)dst_pixels, &dstPixelStride);
+        Image::getChannelPointers<float>((const float**)args.dstImage.ptrs, roi.x1, y, args.dstImage.bounds, args.dstImage.nComps, (float**)dst_pixels, &dstPixelStride);
 
         for (int x = roi.x1; x < roi.x2; ++x) {
 
@@ -1496,26 +1496,18 @@ ViewerInstance::render(const RenderActionArgs& args)
     renderViewerArgs.renderArgs = shared_from_this();
     renderViewerArgs.channels = displayChannels;
     if (colorImage) {
-        Image::Tile tile;
-        colorImage->getTileAt(0, 0, &tile);
-        colorImage->getCPUTileData(tile, &renderViewerArgs.colorImage);
+        colorImage->getCPUData(&renderViewerArgs.colorImage);
     }
     if (alphaImage) {
         if (alphaImage == colorImage) {
             renderViewerArgs.alphaImage = renderViewerArgs.colorImage;
         } else {
-            Image::Tile tile;
-            alphaImage->getTileAt(0, 0, &tile);
-            alphaImage->getCPUTileData(tile, &renderViewerArgs.alphaImage);
+            alphaImage->getCPUData(&renderViewerArgs.alphaImage);
         }
     }
 
-    {
-        Image::Tile dstTile;
-        dstImage->getTileAt(0, 0, &dstTile);
-        dstImage->getCPUTileData(dstTile, &renderViewerArgs.dstImage);
-    }
 
+    dstImage->getCPUData(&renderViewerArgs.dstImage);
 
     renderViewerArgs.gamma = _imp->gammaKnob.lock()->getValue();
 

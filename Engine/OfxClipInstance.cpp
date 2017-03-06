@@ -980,7 +980,7 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
         Image::InitStorageArgs initArgs;
         initArgs.bounds = currentRenderWindow;
         initArgs.storage = retTexture ? eStorageModeGLTex : eStorageModeRAM;
-        initArgs.layer = plane;
+        initArgs.plane = plane;
         initArgs.proxyScale = currentActionScale;
         initArgs.mipMapLevel = 0;
 
@@ -1277,19 +1277,13 @@ OfxImageCommon::OfxImageCommon(const EffectInstancePtr& outputClipEffect,
     // row bytes
     ofxImageBase->setIntProperty(kOfxImagePropRowBytes, srcRowSize);
 
-    if (storage == eStorageModeRAM ||
-        storage == eStorageModeDisk) {
+    if (storage == eStorageModeRAM) {
 
 
-        assert(internalImage->getNumTiles() == 1);
+        Image::CPUData data;
+        internalImage->getCPUData(&data);
 
-        Image::Tile tile;
-        internalImage->getTileAt(0, 0, &tile);
-        Image::CPUTileData tileData;
-        internalImage->getCPUTileData(tile, &tileData);
-
-
-        const unsigned char* ptr = Image::pixelAtStatic(pluginsSeenBounds.x1, pluginsSeenBounds.y1, tile.tileBounds, nComps, dataSizeOf, (const unsigned char*)tileData.ptrs[0]);
+        const unsigned char* ptr = Image::pixelAtStatic(pluginsSeenBounds.x1, pluginsSeenBounds.y1, data.bounds, nComps, dataSizeOf, (const unsigned char*)data.ptrs[0]);
 
         assert(ptr);
         ofxImageBase->setPointerProperty( kOfxImagePropData, const_cast<unsigned char*>(ptr) );

@@ -172,13 +172,15 @@ public:
      **/
     void notifyRenderFinished(ActionRetCodeEnum stat);
 
+#if 0
     /**
      * @brief This should be called right after notifyRenderStarted() if the value
      * returned was eFrameViewRequestStatusPending. After this function the launchRender
      * function can just return
      **/
     ActionRetCodeEnum waitForPendingResults();
-
+#endif
+    
     /**
      * @brief Get the render mapped mipmap level (i.e: 0 if the node
      * does not support render scale)

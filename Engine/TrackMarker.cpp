@@ -717,11 +717,10 @@ TrackMarker::getMarkerImage(TimeValue time,
     ImagePtr sourceImage = outputRequest->getImagePlane();
 
     // Make sure the Natron image rendered is RGBA full rect and on CPU, we don't support other formats
-    if (sourceImage->getStorageMode() == eStorageModeGLTex ||
-        sourceImage->getBufferFormat() == eImageBufferLayoutMonoChannelTiled) {
+    if (sourceImage->getStorageMode() != eStorageModeRAM) {
         Image::InitStorageArgs initArgs;
         initArgs.bounds = sourceImage->getBounds();
-        initArgs.layer = sourceImage->getLayer();
+        initArgs.plane = sourceImage->getLayer();
         initArgs.bufferFormat = eImageBufferLayoutRGBAPackedFullRect;
         initArgs.storage = eStorageModeRAM;
         initArgs.bitdepth = sourceImage->getBitDepth();

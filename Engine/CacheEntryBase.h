@@ -65,6 +65,7 @@ getSizeOfForBitDepth(ImageBitDepthEnum bitdepth)
     return 0;
 }
 
+
 /**
  * @brief Base class for any cached item: At the very least each cache entry has a corresponding key from
  * which a 64 bit hash may be computed.
@@ -116,17 +117,6 @@ public:
     virtual std::size_t getMetadataSize() const;
 
     /**
-     * @brief Returns whether the data storage of this entry is exactly the size of NATRON_TILE_SIZE_BYTES or not.
-     * In this case, Natron optimizes the storage of the entry in a tile aligned memory mapped file.
-     * If true the toMemorySegment and fromMemorySegment function will have their tileDataPtr set to 
-     * a non null value. The implementation should then copy from/to the data exactly NATRON_TILE_SIZE_BYTES bytes.
-     **/
-    virtual bool isStorageTiled() const
-    {
-        return false;
-    }
-
-    /**
      * @brief Write this key to the process shared memory segment.
      * Each object written to the memory segment must have its handle appended 
      * to the objectPointers list.
@@ -135,21 +125,35 @@ public:
      * The function writeNamedSharedObject can be used to simplify the serialization of objects to the
      * memory segment.
      **/
-    virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const;
+    virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const;
+
+    enum FromMemorySegmentRetCodeEnum
+    {
+        // Everything went fine and could be deserialized
+        eFromMemorySegmentRetCodeOk,
+
+        // Somthing failed, the entry should be removed from the cache
+        eFromMemorySegmentRetCodeFailed,
+
+        // If the fromMemorySegment function is called with isLockedForWriting = false
+        // it may return this status code to indicate that it needs to be called with
+        // isLockedForWriting = true
+        eFromMemorySegmentRetCodeNeedWriteLock
+    };
 
     /**
      * @brief Reads this key from shared process memory segment.
      * Objects can be retrieved from their process local handle. This handle points
-     * to the object copy in shared memory, in the same order that was inserted in the 
+     * to the object copy in shared memory, in the same order that was inserted in the
      * objectPointers list out of toMemorySegment.
      * Derived class should call the base class version AFTER its implementation.
      * The function readNamedSharedObject can be used to simplify the serialization of objects from the
      * memory segment.
      **/
-    virtual void fromMemorySegment(ExternalSegmentType* segment,
-                                   ExternalSegmentTypeHandleList::const_iterator start,
-                                   ExternalSegmentTypeHandleList::const_iterator end,
-                                   const void* tileDataPtr);
+    virtual CacheEntryBase::FromMemorySegmentRetCodeEnum fromMemorySegment(bool isLockedForWriting,
+                                                                           ExternalSegmentType* segment,
+                                                                           ExternalSegmentTypeHandleList::const_iterator start,
+                                                                           ExternalSegmentTypeHandleList::const_iterator end) WARN_UNUSED_RETURN;
 
     /**
      * @brief Must return whether attempting to call Cache::get() recursively on the same hash is allowed

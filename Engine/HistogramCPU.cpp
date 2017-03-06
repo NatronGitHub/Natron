@@ -235,7 +235,7 @@ HistogramCPU::getMostRecentlyProducedHistogram(std::vector<float>* histogram1,
 template <int srcNComps, int mode>
 void
 computeHisto_internal(const HistogramRequest & request,
-                      const Image::CPUTileData& imageData,
+                      const Image::CPUData& imageData,
                       const RectI& roi,
                       int upscale,
                       std::vector<float> *histo)
@@ -247,7 +247,7 @@ computeHisto_internal(const HistogramRequest & request,
 
     int pixelStride;
     const float* src_pixels[4];
-    Image::getChannelPointers<float>((const float**)imageData.ptrs, roi.x1, roi.y1, imageData.tileBounds, imageData.nComps, (float**)src_pixels, &pixelStride);
+    Image::getChannelPointers<float>((const float**)imageData.ptrs, roi.x1, roi.y1, imageData.bounds, imageData.nComps, (float**)src_pixels, &pixelStride);
 
     for (int y = roi.y1; y < roi.y2; ++y) {
 
@@ -317,7 +317,7 @@ computeHisto_internal(const HistogramRequest & request,
         // Remove what was done on the previous line and go to the next
         for (int c = 0; c < srcNComps; ++c) {
             if (src_pixels[c]) {
-                src_pixels[c] += ((imageData.tileBounds .width()- roi.width()) * pixelStride);
+                src_pixels[c] += ((imageData.bounds .width()- roi.width()) * pixelStride);
             }
         }
     } // for each scan-line
@@ -326,7 +326,7 @@ computeHisto_internal(const HistogramRequest & request,
 template <int srcNComps>
 void
 computeHistoForNComps(const HistogramRequest & request,
-                      const Image::CPUTileData& imageData,
+                      const Image::CPUData& imageData,
                       const RectI& roi,
                       int upscale,
                       int histogramIndex,
@@ -364,7 +364,7 @@ computeHistoForNComps(const HistogramRequest & request,
 
 static void
 computeHistogramStatic(const HistogramRequest & request,
-                       const Image::CPUTileData& imageData,
+                       const Image::CPUData& imageData,
                        const RectI& roi,
                        FinishedHistogramPtr ret,
                        int histogramIndex)
@@ -499,11 +499,11 @@ HistogramCPU::run()
             image = outputRequest->getImagePlane();
 
             // We only support full rect float RAM images
-            if (image->getStorageMode() == eStorageModeGLTex || image->getBufferFormat() == eImageBufferLayoutMonoChannelTiled || image->getBitDepth() != eImageBitDepthFloat) {
+            if (image->getStorageMode() != eStorageModeRAM|| image->getBitDepth() != eImageBitDepthFloat) {
                 Image::InitStorageArgs initArgs;
                 initArgs.bounds = image->getBounds();
                 initArgs.bitdepth = eImageBitDepthFloat;
-                initArgs.layer = image->getLayer();
+                initArgs.plane = image->getLayer();
                 initArgs.bufferFormat = eImageBufferLayoutRGBAPackedFullRect;
                 initArgs.mipMapLevel = image->getMipMapLevel();
                 initArgs.storage = eStorageModeRAM;
@@ -528,19 +528,16 @@ HistogramCPU::run()
         ret->vmax = request.vmax;
         ret->mipMapLevel = image->getMipMapLevel();
 
-        Image::CPUTileData imageData;
-        {
-            Image::Tile tile;
-            image->getTileAt(0, 0, &tile);
-            image->getCPUTileData(tile, &imageData);
-        }
+        Image::CPUData imageData;
+        image->getCPUData(&imageData);
+
 
         RectI roiPixels;
         if (request.roiParam.isNull()) {
             roiPixels = image->getBounds();
         } else {
             request.roiParam.toPixelEnclosing(image->getMipMapLevel(), treeRoot->getEffectInstance()->getAspectRatio(-1), &roiPixels);
-            roiPixels.intersect(imageData.tileBounds, &roiPixels);
+            roiPixels.intersect(imageData.bounds, &roiPixels);
         }
 
         switch (request.mode) {

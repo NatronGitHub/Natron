@@ -308,7 +308,7 @@ Node::makePreviewImage(TimeValue time,
     
     // Ensure we have an untiled format
     ImagePtr imageForPreview = img;
-    if (imageForPreview->getBufferFormat() == eImageBufferLayoutMonoChannelTiled || imageForPreview->getStorageMode() == eStorageModeGLTex){
+    if (imageForPreview->getStorageMode() != eStorageModeRAM) {
 
         {
             Image::InitStorageArgs initArgs;
@@ -317,7 +317,7 @@ Node::makePreviewImage(TimeValue time,
             initArgs.storage = eStorageModeRAM;
             initArgs.mipMapLevel = imageForPreview->getMipMapLevel();
             initArgs.proxyScale = imageForPreview->getProxyScale();
-            initArgs.layer = imageForPreview->getLayer();
+            initArgs.plane = imageForPreview->getLayer();
             initArgs.bitdepth = imageForPreview->getBitDepth();
             imageForPreview = Image::create(initArgs);
             if (!imageForPreview) {
@@ -331,13 +331,11 @@ Node::makePreviewImage(TimeValue time,
         }
 
     }
-    Image::Tile mainTile;
-    imageForPreview->getTileAt(0, 0, &mainTile);
 
-    Image::CPUTileData tileData;
-    imageForPreview->getCPUTileData(mainTile, &tileData);
+    Image::CPUData tileData;
+    imageForPreview->getCPUData(&tileData);
 
-    renderPreviewInternal((const void**)tileData.ptrs, tileData.bitDepth, tileData.tileBounds, tileData.nComps, width, height, convertToSrgb, buf);
+    renderPreviewInternal((const void**)tileData.ptrs, tileData.bitDepth, tileData.bounds, tileData.nComps, width, height, convertToSrgb, buf);
     
     return true;
 } // makePreviewImage

@@ -876,8 +876,16 @@ AppManager::loadInternal(const CLArgs& cl)
     }
 
     // Create cache once we loaded the cache directory path wanted by the user
-    _imp->generalPurposeCache = Cache::create(false /*persistent*/);
-    _imp->tileCache = Cache::create(true /*persistent*/);
+    _imp->generalPurposeCache = Cache::create(
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
+                                              false /*persistent*/
+#endif
+                                              );
+    _imp->tileCache = Cache::create(
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
+                                    true /*persistent*/
+#endif
+                                    );
     if (cl.isCacheClearRequestedOnLaunch()) {
         _imp->tileCache->clear();
     }

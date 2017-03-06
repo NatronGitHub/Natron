@@ -531,7 +531,7 @@ public:
     }
 
 
-    virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const OVERRIDE FINAL
+    virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const OVERRIDE FINAL
     {
         if (!_stringResult.empty()) {
             KnobExpressionResultTypeEnum type = eKnobExpressionResultTypeString;
@@ -542,13 +542,13 @@ public:
             objectPointers->push_back(writeAnonymousSharedObject((int)type, segment));
             objectPointers->push_back(writeAnonymousSharedObject(_valueResult, segment));
         }
-        CacheEntryBase::toMemorySegment(segment, objectPointers, tileDataPtr);
+        CacheEntryBase::toMemorySegment(segment, objectPointers);
     }
 
-    virtual void fromMemorySegment(ExternalSegmentType* segment,
-                                   ExternalSegmentTypeHandleList::const_iterator start,
-                                   ExternalSegmentTypeHandleList::const_iterator end,
-                                   const void* tileDataPtr) OVERRIDE FINAL
+    virtual CacheEntryBase::FromMemorySegmentRetCodeEnum fromMemorySegment(bool isLockedForWriting,
+                                                                           ExternalSegmentType* segment,
+                                                                           ExternalSegmentTypeHandleList::const_iterator start,
+                                                                           ExternalSegmentTypeHandleList::const_iterator end) OVERRIDE FINAL
     {
         int type_i;
         if (start == end) {
@@ -568,7 +568,7 @@ public:
             }   break;
         }
         ++start;
-        CacheEntryBase::fromMemorySegment(segment, start, end, tileDataPtr);
+        return CacheEntryBase::fromMemorySegment(isLockedForWriting, segment, start, end);
     }
 
 private:

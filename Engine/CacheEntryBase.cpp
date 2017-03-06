@@ -26,7 +26,6 @@
 
 #include "CacheEntryBase.h"
 
-#include <QDir>
 
 #include "Engine/Cache.h"
 
@@ -99,20 +98,21 @@ CacheEntryBase::getMetadataSize() const
 }
 
 void
-CacheEntryBase::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers, void* /*tileDataPtr*/) const
+CacheEntryBase::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const
 {
     assert(objectPointers->get_allocator().get_segment_manager() == segment->get_segment_manager());
     _imp->key->toMemorySegment(segment, objectPointers);
 }
 
-void
-CacheEntryBase::fromMemorySegment(ExternalSegmentType* segment,
+CacheEntryBase::FromMemorySegmentRetCodeEnum
+CacheEntryBase::fromMemorySegment(bool /*isLockedForWriting*/,
+                                  ExternalSegmentType* segment,
                                   ExternalSegmentTypeHandleList::const_iterator start,
-                                  ExternalSegmentTypeHandleList::const_iterator end,
-                                  const void* /*tileDataPtr*/)
+                                  ExternalSegmentTypeHandleList::const_iterator end)
 
 {
     _imp->key->fromMemorySegment(segment, start, end);
+    return eFromMemorySegmentRetCodeOk;
 }
 
 

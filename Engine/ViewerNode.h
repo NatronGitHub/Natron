@@ -273,7 +273,7 @@ public:
             ImagePtr colorPickerImage, colorPickerInputImage;
 
             // The hash of the viewer process node
-            ImageTileKeyPtr viewerProcessImageKey;
+            ImageCacheKeyPtr viewerProcessImageKey;
         };
         std::list<TextureUpload> viewerUploads[2];
         bool recenterViewer;

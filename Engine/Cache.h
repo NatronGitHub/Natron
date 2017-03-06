@@ -70,6 +70,40 @@
 #define NATRON_CACHE_DIRECTORY_NAME "Cache"
 
 
+// When defined, the cache will never be persistent.
+//
+// Non-persistent cache:
+// ---------------------
+// In this mode, all objects in the cache (classes deriving CacheEntryBase)
+// are shared across threads within the process: When looking-up an entry with
+// Cache::get, the entry might already exist, in which case it can be retrieved by calling
+// CacheEntryLocker::getProcessLocalEntry.
+// It is very important that in this mode derived classes of CacheEntryBase be thread-safe.
+//
+// Persistent cache:
+// -----------------
+//
+// In this mode, all objects in the cache are not actually exposed to the CacheEntryBase:
+// whenever reading an entry from the cache in the Cache::get function, internally a copy
+// is made to the local CacheEntryBase object by using the CacheEntryBase::fromMemorySegment
+// function.
+// Similarly, when inserting the entry in the cache, it is copied using the CacheEntryBase::toMemorySegment
+// In this mode, the CacheEntryBase in itself does not have to be thread-safe: the cache itself handles
+// the thread-safety and ensures that the entry is created only once.
+// It is important to remember that in this mode, the CacheEntryBase you pass to Cache::get is local to your call, nobody
+// else knows about this object.
+// Also in order to be persistent, all data structures passed in toMemorySegment/fromMemorySegment must be interprocess compliant
+// (i.e: they must use allocators to the memory segment manager passed in parameter.)
+//#define NATRON_CACHE_NEVER_PERSISTENT
+
+// If defined (and NATRON_CACHE_NEVER_PERSISTENT is not defined), the cache can handle multiple processes accessing to the same cache concurrently, however
+// the cache may not be placed in a network drive.
+// If not defined, the cache supports only a single process writing/reading from the cache concurrently, other processes will resort
+// in a process-local cache.
+//#ifndef NATRON_CACHE_NEVER_PERSISTENT
+//#define NATRON_CACHE_INTERPROCESS_ROBUST
+//#endif
+
 NATRON_NAMESPACE_ENTER;
 
 
@@ -90,7 +124,8 @@ struct CacheReportInfo
 
 struct CacheBucket;
 
-class SharedMemoryProcessLocalReadLocker;
+
+
 /**
  * @brief Small RAII style class used to lock an entry corresponding to a hash key to ensure
  * only a single thread can work on it at once.
@@ -162,12 +197,10 @@ public:
      **/
     CacheEntryBasePtr getProcessLocalEntry() const;
 
+    static void sleep_milliseconds(std::size_t amountMS);
 
 private:
 
-    bool lookupAndSetStatusInternal(bool hasWriteRights, boost::scoped_ptr<SharedMemoryProcessLocalReadLocker>& shmAccess, std::size_t *timeSpentWaitingForPendingEntryMS, std::size_t timeout);
-
-    void lookupAndSetStatus(boost::scoped_ptr<SharedMemoryProcessLocalReadLocker>& shmAccess, std::size_t *timeSpentWaitingForPendingEntryMS, std::size_t timeout);
 
     boost::scoped_ptr<CacheEntryLockerPrivate> _imp;
 };
@@ -181,13 +214,17 @@ class Cache
 
     // For removeAllEntriesForPluginBlocking
     friend class CacheCleanerThread;
-    
+    friend struct CacheEntryLockerPrivate;
     friend class CacheEntryLocker;
     friend struct CacheBucket;
     
 private:
 
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
     Cache(bool persistent);
+#else
+    Cache();
+#endif
 
 public:
 
@@ -198,7 +235,11 @@ public:
      * can be held in shared memory can be inserted in the cache.
      * Note that there can be only a single persistent cache.
      **/
+#ifndef NATRON_CACHE_NEVER_PERSISTENT
     static CachePtr create(bool persistent);
+#else
+    static CachePtr create();
+#endif
     
     virtual ~Cache();
 
@@ -252,11 +293,42 @@ public:
     CacheEntryLockerPtr get(const CacheEntryBasePtr& entry) const;
 
     /**
-     * @brief Returns whether the entry pointer passed to
-     * the get function is not valid after the call to get(). The caller must then call
-     * locker->getProcessLocalEntry() to retrieve the correct entry
+     * @brief This function serves 2 purposes: either fetch existing tiles from the cache or allocate new ones, or both at the same time.
+     * This function tries to obtain numTilesToAlloc free tiles from the internal storage. If not available, grow the internal memory mapped file
+     * so at least numTiles free tiles are available.
+     * @param allocatedTilesData[out] In output, this contains each tiles allocated as a pair of <tileIndex, pointer>
+     * Each tile will have exactly NATRON_TILE_SIZE_BYTES bytes. The index is the index that must be passed back to the unLockTiles
+     * and releaseTiles functions.
+     *
+     * @param tileIndices List of existing tile indices for which we want to retrieve a pointer to. In output they will be set to existingTilesData
+     * Note that the pointers returned in existingTilesData will be in the same order as the indices passed by tileIndices.
+     *
+     * The memory pointers returned by this function are guaranteed to be valid until you call unLockTiles after which they may be invalid.
+     * To ensure the pointers are valid in output of this function, a mutex is taken internally by this function. Ensure that you call unLockTiles()
+     * with the cacheData pointer returned from this function otherwise the program will deadlock.
+     *
+     * This function CANNOT be called in the implementation of CacheEntryBase::fromMemorySegment or CacheEntryBase::toMemorySegment otherwise this will
+     * deadlock.
+     *
+     * @returns True upon success, false otherwise.
+     * When returning false, you must still call unLockTiles, but do not have to call releaseTiles.
+     * Note that unLockTiles must always be called before releaseTiles.
      **/
-    static bool isCompiledWithCachePersistence();
+    bool retrieveAndLockTiles(const CacheEntryBasePtr& entry,
+                              const std::vector<int>* tileIndices,
+                              std::size_t numTilesToAlloc,
+                              std::vector<void*>* existingTilesData,
+                              std::vector<std::pair<int, void*> >* allocatedTilesData,
+                              void** cacheData);
+
+    /**
+     * @brief Free cache data allocated from a call to retrieveAndLockTiles
+     * This function CANNOT be called in the implementation of CacheEntryBase::fromMemorySegment or CacheEntryBase::toMemorySegment otherwise this will
+     * deadlock.
+     * Note this function does not free the memory allocated for the tiles, it just cleans up the mutex taken in retrieveAndLockTiles().
+     * The memory will be freed when the cache entry is removed from the cache.
+     **/
+    void unLockTiles(void* cacheData);
 
     /**
      * @brief Returns whether a cache entry exists for the given hash.
@@ -279,7 +351,7 @@ public:
     void clear();
 
     /**
-     * @brief Removes this entry from the cache
+     * @brief Removes this entry from the cache (if it exists in the cache)
      **/
     void removeEntry(const CacheEntryBasePtr& entry);
 

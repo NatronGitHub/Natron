@@ -512,13 +512,8 @@ Gui::debugImage(const Image* image,
     }
 
 
-    if (image->getStorageMode() != eStorageModeRAM && image->getStorageMode() != eStorageModeDisk) {
+    if (image->getStorageMode() != eStorageModeRAM) {
         qDebug() << "Only CPU images supported";
-        return;
-    }
-
-    if (image->getBufferFormat() == eImageBufferLayoutMonoChannelTiled) {
-        qDebug() << "Only Full rect image supported";
         return;
     }
 
@@ -527,13 +522,9 @@ Gui::debugImage(const Image* image,
         return;
     }
 
-    Image::CPUTileData imageData;
-    {
-        Image::Tile tile;
-        image->getTileAt(0, 0, &tile);
-        image->getCPUTileData(tile, &imageData);
-    }
-
+    Image::CPUData imageData;
+    image->getCPUData(&imageData);
+ 
 
     QImage output(renderWindow.width(), renderWindow.height(), QImage::Format_ARGB32);
     const Color::Lut* lut = Color::LutManager::sRGBLut();
@@ -544,7 +535,7 @@ Gui::debugImage(const Image* image,
 
         const float* src_pixels[4];
         int pixelStride;
-        Image::getChannelPointers<float>((const float**)imageData.ptrs, renderWindow.x1, y, imageData.tileBounds, imageData.nComps, (float**)src_pixels, &pixelStride);
+        Image::getChannelPointers<float>((const float**)imageData.ptrs, renderWindow.x1, y, imageData.bounds, imageData.nComps, (float**)src_pixels, &pixelStride);
 
         QRgb* dstPixels = (QRgb*)output.scanLine(y);
         assert(dstPixels);

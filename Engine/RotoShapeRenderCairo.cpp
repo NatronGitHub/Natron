@@ -80,7 +80,7 @@ adjustToPointToScale(const RenderScale &scale,
 template <int dstNComps, int srcNComps, bool useOpacity, bool inverted, bool accumulate>
 static void
 convertCairoImageToNatronImageForAccum_noColor(cairo_surface_t* cairoImg,
-                                               const Image::CPUTileData& dstImageData,
+                                               const Image::CPUData& dstImageData,
                                                const RectI & srcBounds,
                                                const ColorRgbaD& shapeColor,
                                                double opacity,
@@ -90,7 +90,7 @@ convertCairoImageToNatronImageForAccum_noColor(cairo_surface_t* cairoImg,
     unsigned char* srcPix = cdata;
     int stride = cairo_image_surface_get_stride(cairoImg);
 
-    assert(dstImageData.tileBounds.contains(srcBounds));
+    assert(dstImageData.bounds.contains(srcBounds));
 
     double color[3];
     color[0] = useOpacity ? shapeColor.r * opacity : shapeColor.r;
@@ -99,7 +99,7 @@ convertCairoImageToNatronImageForAccum_noColor(cairo_surface_t* cairoImg,
 
     float *dst_pixels[4];
     int dstPixelStride;
-    Image::getChannelPointers<float, dstNComps>((const float**)dstImageData.ptrs, srcBounds.x1, srcBounds.y1, dstImageData.tileBounds, (float**)dst_pixels, &dstPixelStride);
+    Image::getChannelPointers<float, dstNComps>((const float**)dstImageData.ptrs, srcBounds.x1, srcBounds.y1, dstImageData.bounds, (float**)dst_pixels, &dstPixelStride);
 
     float tmpPix[4] = {0.f, 0.f, 0.f, 1.f};
 
@@ -144,7 +144,7 @@ convertCairoImageToNatronImageForAccum_noColor(cairo_surface_t* cairoImg,
 
         // Substract what was done on previous iteration and got to the next line
         for (int c = 0; c < dstNComps; ++c) {
-            dst_pixels[c] += (dstImageData.tileBounds.width() - srcBounds.width()) * dstPixelStride;
+            dst_pixels[c] += (dstImageData.bounds.width() - srcBounds.width()) * dstPixelStride;
         }
         srcPix += (stride - srcBounds.width() * srcNComps);
     } // for each scan-line
@@ -156,7 +156,7 @@ convertCairoImageToNatronImageForAccum_noColor(cairo_surface_t* cairoImg,
 template <int dstNComps, int srcNComps, bool useOpacity, bool inverted>
 static void
 convertCairoImageToNatronImageForInverted_noColor(cairo_surface_t* cairoImg,
-                                                  const Image::CPUTileData& image,
+                                                  const Image::CPUData& image,
                                                   const RectI & pixelRod,
                                                   const ColorRgbaD& shapeColor,
                                                   double opacity,
@@ -173,7 +173,7 @@ convertCairoImageToNatronImageForInverted_noColor(cairo_surface_t* cairoImg,
 template <int dstNComps, int srcNComps, bool useOpacity>
 static void
 convertCairoImageToNatronImageForDstComponents_noColor(cairo_surface_t* cairoImg,
-                                                       const Image::CPUTileData& image,
+                                                       const Image::CPUData& image,
                                                        const RectI & pixelRod,
                                                        const ColorRgbaD& shapeColor,
                                                        bool inverted,
@@ -191,7 +191,7 @@ convertCairoImageToNatronImageForDstComponents_noColor(cairo_surface_t* cairoImg
 template <int dstNComps, int srcNComps>
 static void
 convertCairoImageToNatronImageForOpacity(cairo_surface_t* cairoImg,
-                                         const Image::CPUTileData& image,
+                                         const Image::CPUData& image,
                                          const RectI & pixelRod,
                                          const ColorRgbaD& shapeColor,
                                          double opacity,
@@ -211,7 +211,7 @@ template <int dstNComps>
 static void
 convertCairoImageToNatronImageForSrcComponents_noColor(cairo_surface_t* cairoImg,
                                                        int srcNComps,
-                                                       const Image::CPUTileData& image,
+                                                       const Image::CPUData& image,
                                                        const RectI & pixelRod,
                                                        const ColorRgbaD& shapeColor,
                                                        double opacity,
@@ -232,7 +232,7 @@ convertCairoImageToNatronImageForSrcComponents_noColor(cairo_surface_t* cairoImg
 static void
 convertCairoImageToNatronImage_noColor(cairo_surface_t* cairoImg,
                                        int srcNComps,
-                                       const Image::CPUTileData& image,
+                                       const Image::CPUData& image,
                                        const RectI & pixelRod,
                                        const ColorRgbaD& shapeColor,
                                        double opacity,
@@ -264,7 +264,7 @@ template <typename PIX, int maxValue, int srcNComps, int dstNComps>
 static void
 convertNatronImageToCairoImageForComponents(unsigned char* cairoImg,
                                             std::size_t stride,
-                                            const Image::CPUTileData& image,
+                                            const Image::CPUData& image,
                                             const RectI& roi,
                                             const RectI& dstBounds,
                                             const ColorRgbaD& shapeColor)
@@ -278,7 +278,7 @@ convertNatronImageToCairoImageForComponents(unsigned char* cairoImg,
 
     PIX *src_pixels[4];
     int srcPixelStride;
-    Image::getChannelPointers<PIX, dstNComps>((const PIX**)image.ptrs, roi.x1, roi.y1, image.tileBounds, (PIX**)src_pixels, &srcPixelStride);
+    Image::getChannelPointers<PIX, dstNComps>((const PIX**)image.ptrs, roi.x1, roi.y1, image.bounds, (PIX**)src_pixels, &srcPixelStride);
 
 
     for (int y = roi.y1; y < roi.y2; ++y) {
@@ -313,7 +313,7 @@ convertNatronImageToCairoImageForComponents(unsigned char* cairoImg,
 
         // Remove what was done on previous iteration and go to the next line
         for (int c = 0; c < srcNComps; ++c) {
-            src_pixels[c] += (image.tileBounds.width() - roi.width()) * srcPixelStride;
+            src_pixels[c] += (image.bounds.width() - roi.width()) * srcPixelStride;
         }
         dstPix += (stride - roi.width() * dstNComps);
     } // for each scan-line
@@ -324,7 +324,7 @@ static void
 convertNatronImageToCairoImageForSrcComponents(unsigned char* cairoImg,
                                                int dstNComps,
                                                std::size_t stride,
-                                               const Image::CPUTileData& image,
+                                               const Image::CPUData& image,
                                                const RectI& roi,
                                                const RectI& dstBounds,
                                                const ColorRgbaD& shapeColor)
@@ -343,7 +343,7 @@ static void
 convertNatronImageToCairoImage(unsigned char* cairoImg,
                                int dstNComps,
                                std::size_t stride,
-                               const Image::CPUTileData& image,
+                               const Image::CPUData& image,
                                const RectI& roi,
                                const RectI& dstBounds,
                                const ColorRgbaD& shapeColor)
@@ -957,7 +957,7 @@ renderSmearDot(const unsigned char* maskData,
     {
         Image::InitStorageArgs initArgs;
         initArgs.bounds = prevDotBounds;
-        initArgs.layer = outputImage->getLayer();
+        initArgs.plane = outputImage->getLayer();
         initArgs.storage = eStorageModeRAM;
         initArgs.bitdepth = outputImage->getBitDepth();
         tmpBuf = Image::create(initArgs);
@@ -972,19 +972,11 @@ renderSmearDot(const unsigned char* maskData,
         tmpBuf->copyPixels(*outputImage, cpyArgs);
     }
 
-    Image::CPUTileData dstImageData;
-    {
-        Image::Tile tile;
-        outputImage->getTileAt(0, 0, &tile);
-        outputImage->getCPUTileData(tile, &dstImageData);
-    }
+    Image::CPUData dstImageData;
+    outputImage->getCPUData(&dstImageData);
 
-    Image::CPUTileData tmpImageData;
-    {
-        Image::Tile tile;
-        tmpBuf->getTileAt(0,0, &tile);
-        tmpBuf->getCPUTileData(tile, &tmpImageData);
-    }
+    Image::CPUData tmpImageData;
+    tmpBuf->getCPUData(&tmpImageData);
 
     RectI nextDotBounds;
     nextDotBounds.x1 = next.x - maskWidth / 2;
@@ -1002,7 +994,7 @@ renderSmearDot(const unsigned char* maskData,
 
         float *dst_pixels[4];
         int dstPixelStride;
-        Image::getChannelPointers<float>((const float**)dstImageData.ptrs, nextDotBounds.x1, y, dstImageData.tileBounds, dstImageData.nComps, (float**)dst_pixels, &dstPixelStride);
+        Image::getChannelPointers<float>((const float**)dstImageData.ptrs, nextDotBounds.x1, y, dstImageData.bounds, dstImageData.nComps, (float**)dst_pixels, &dstPixelStride);
 
         int xPrev = prevDotBounds.x1;
         for (int x = nextDotBounds.x1; x < nextDotBounds.x2;
@@ -1010,7 +1002,7 @@ renderSmearDot(const unsigned char* maskData,
 
             float *tmp_pixels[4];
             int tmpPixelStride;
-            Image::getChannelPointers<float>((const float**)tmpImageData.ptrs, xPrev, yPrev, tmpImageData.tileBounds, tmpImageData.nComps, (float**)tmp_pixels, &tmpPixelStride);
+            Image::getChannelPointers<float>((const float**)tmpImageData.ptrs, xPrev, yPrev, tmpImageData.bounds, tmpImageData.nComps, (float**)tmp_pixels, &tmpPixelStride);
 
             if (!tmp_pixels[0]) {
                 continue;
@@ -1970,12 +1962,9 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
 
         double opacity = rotoItem->getOpacityKnob()->getValueAtTime(t, DimIdx(0), view);
 
-        Image::CPUTileData imageData;
-        {
-            Image::Tile tile;
-            dstImage->getTileAt(0, 0, &tile);
-            dstImage->getCPUTileData(tile, &imageData);
-        }
+        Image::CPUData imageData;
+        dstImage->getCPUData(&imageData);
+
 
 
         ////Allocate the cairo temporary buffer

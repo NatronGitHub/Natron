@@ -542,9 +542,9 @@ enum CacheAccessModeEnum
 enum ImageBufferLayoutEnum
 {
     // This will make an image with an internal storage composed
-    // of one or multiple tiles, each of which is a single channel buffer.
+    // of a single buffer for each channel.
     // This is the preferred storage format for the Cache.
-    eImageBufferLayoutMonoChannelTiled,
+    eImageBufferLayoutMonoChannelFullRect,
 
 
     // This will make an image with an internal storage composed of a single
@@ -583,8 +583,7 @@ enum RenderScaleSupportEnum
 enum StorageModeEnum
 {
     eStorageModeNone = 0, //< no memory will be allocated
-    eStorageModeRAM, //< will be allocated in RAM using malloc or a malloc based implementation (such as std::vector)
-    eStorageModeDisk, //< will be allocated on virtual memory using mmap(). Fall-back on disk is assured by the operating system
+    eStorageModeRAM, //< will be allocated in RAM using malloc or a malloc based implementation (such as std::vector) or mmap
     eStorageModeGLTex //< will be allocated as an OpenGL texture
 };
 

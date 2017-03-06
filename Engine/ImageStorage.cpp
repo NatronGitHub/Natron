@@ -294,6 +294,28 @@ RAMImageStorage::deallocateMemoryImpl()
     }
 }
 
+bool
+RAMImageStorage::canSoftCopy(const ImageStorageBase& other)
+{
+    const RAMImageStorage* isRamStorage = dynamic_cast<const RAMImageStorage*>(&other);
+    if (isRamStorage) {
+        return isRamStorage->_imp->buffer->size() == _imp->buffer->size();
+    } else {
+        return false;
+    }
+}
+
+void
+RAMImageStorage::softCopy(const ImageStorageBase& other)
+{
+    const RAMImageStorage* isRamStorage = dynamic_cast<const RAMImageStorage*>(&other);
+    if (isRamStorage) {
+        _imp->buffer.swap(isRamStorage->_imp->buffer);
+    } else {
+        assert(false);
+    }
+
+}
 
 struct GLImageStoragePrivate
 {
@@ -439,205 +461,6 @@ int
 GLImageStorage::getGLTextureType() const
 {
     return _imp->texture ? _imp->texture->getGLType() : 0;
-}
-
-
-struct CacheImageTileStoragePrivate
-{
-
-
-    // Process local buffer: instead of working directly on the memory portion in the memory mapped file
-    // returned by the cache, work on a local copy that is copied from/to the cache to avoid locking
-    // the cache.
-    boost::scoped_ptr<RamBuffer<char> > localBuffer;
-    ImageBitDepthEnum bitdepth;
-
-    CacheImageTileStoragePrivate()
-    : localBuffer()
-    , bitdepth(eImageBitDepthNone)
-    {
-
-    }
-};
-
-CacheImageTileStorage::CacheImageTileStorage(const CachePtr& cache)
-: ImageStorageBase()
-, CacheEntryBase(cache)
-, _imp(new CacheImageTileStoragePrivate())
-{
-
-}
-
-CacheImageTileStorage::~CacheImageTileStorage()
-{
-
-}
-
-void
-CacheImageTileStorage::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
-{
-    assert(isAllocated());
-    assert(tileDataPtr && _imp->localBuffer);
-    memcpy(tileDataPtr, _imp->localBuffer->getData(), NATRON_TILE_SIZE_BYTES);
-    CacheEntryBase::toMemorySegment(segment, objectPointers, tileDataPtr);
-}
-
-void
-CacheImageTileStorage::fromMemorySegment(ExternalSegmentType* segment,
-                                         ExternalSegmentTypeHandleList::const_iterator start,
-                                         ExternalSegmentTypeHandleList::const_iterator end,
-                                         const void* tileDataPtr)
-{
-    CacheEntryBase::fromMemorySegment(segment, start, end, tileDataPtr);
-
-    // The memory might not have been pre-allocated, but at least AllocateMemoryArgs should have been set if the
-    // delayAllocation flag was set in Image::InitStorageArgs
-    if (!isAllocated()) {
-        assert(hasAllocateMemoryArgs());
-
-        // This may throw a std::bad_alloc
-        allocateMemoryFromSetArgs();
-    }
-    assert(tileDataPtr && _imp->localBuffer);
-    memcpy(_imp->localBuffer->getData(), tileDataPtr, NATRON_TILE_SIZE_BYTES);
-}
-
-StorageModeEnum
-CacheImageTileStorage::getStorageMode() const
-{
-    return eStorageModeDisk;
-}
-
-std::size_t
-CacheImageTileStorage::getBufferSize() const
-{
-    return NATRON_TILE_SIZE_BYTES;
-}
-
-RectI
-CacheImageTileStorage::getBounds() const
-{
-    RectI ret;
-
-    CacheEntryKeyBasePtr key = getKey();
-    ImageTileKey* isImageTile = dynamic_cast<ImageTileKey*>(key.get());
-    if (isImageTile) {
-        ret = isImageTile->getTileBounds();
-    }
-
-    return ret;
-}
-
-std::size_t
-CacheImageTileStorage::getRowSize() const
-{
-
-    ImageBitDepthEnum bitDepth = getBitDepth();
-    int tileSizeX, tileSizeY;
-    Cache::getTileSizePx(bitDepth,&tileSizeX, &tileSizeY);
-
-    return tileSizeX * getSizeOfForBitDepth(bitDepth);
-
-}
-
-bool
-CacheImageTileStorage::isStorageTiled() const
-{
-    return true;
-}
-
-const char*
-CacheImageTileStorage::getData() const
-{
-    if (!_imp->localBuffer) {
-        return 0;
-    }
-
-    return _imp->localBuffer->getData();
-}
-
-char*
-CacheImageTileStorage::getData()
-{
-    if (!_imp->localBuffer) {
-        return 0;
-    }
-    return _imp->localBuffer->getData();
-}
-
-
-void
-CacheImageTileStorage::allocateMemoryImpl(const AllocateMemoryArgs& args)
-{
-    assert(!_imp->localBuffer);
-    _imp->localBuffer.reset(new RamBuffer<char>);
-    _imp->localBuffer->resize(NATRON_TILE_SIZE_BYTES);
-    _imp->bitdepth = args.bitDepth;
-}
-
-void
-CacheImageTileStorage::deallocateMemoryImpl()
-{
-    _imp->localBuffer.reset();
-}
-
-
-bool
-RAMImageStorage::canSoftCopy(const ImageStorageBase& other)
-{
-    const RAMImageStorage* isRamStorage = dynamic_cast<const RAMImageStorage*>(&other);
-    const CacheImageTileStorage* isCacheStorage = dynamic_cast<const CacheImageTileStorage*>(&other);
-    if (isRamStorage) {
-        return isRamStorage->_imp->buffer->size() == _imp->buffer->size();
-    } else if (isCacheStorage) {
-        return isCacheStorage->_imp->localBuffer->size() == _imp->buffer->size();
-    } else {
-        return false;
-    }
-}
-
-void
-RAMImageStorage::softCopy(const ImageStorageBase& other)
-{
-    const RAMImageStorage* isRamStorage = dynamic_cast<const RAMImageStorage*>(&other);
-    const CacheImageTileStorage* isCacheStorage = dynamic_cast<const CacheImageTileStorage*>(&other);
-    if (isRamStorage) {
-        _imp->buffer.swap(isRamStorage->_imp->buffer);
-    } else if (isCacheStorage) {
-        _imp->buffer.swap(isCacheStorage->_imp->localBuffer);
-    } else {
-        assert(false);
-    }
-
-}
-
-bool
-CacheImageTileStorage::canSoftCopy(const ImageStorageBase& other)
-{
-    const RAMImageStorage* isRamStorage = dynamic_cast<const RAMImageStorage*>(&other);
-    const CacheImageTileStorage* isCacheStorage = dynamic_cast<const CacheImageTileStorage*>(&other);
-    if (isRamStorage) {
-        return isRamStorage->_imp->buffer->size() == _imp->localBuffer->size();
-    } else if (isCacheStorage) {
-        return isCacheStorage->_imp->localBuffer->size() == _imp->localBuffer->size();
-    } else {
-        return false;
-    }
-}
-
-void
-CacheImageTileStorage::softCopy(const ImageStorageBase& other)
-{
-    const RAMImageStorage* isRamStorage = dynamic_cast<const RAMImageStorage*>(&other);
-    const CacheImageTileStorage* isCacheStorage = dynamic_cast<const CacheImageTileStorage*>(&other);
-    if (isRamStorage) {
-        _imp->localBuffer.swap(isRamStorage->_imp->buffer);
-    } else if (isCacheStorage) {
-        _imp->localBuffer.swap(isCacheStorage->_imp->localBuffer);
-    } else {
-        assert(false);
-    }
-
 }
 
 

@@ -61,7 +61,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/AppInstance.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/FrameViewRequest.h"
+#include "Engine/ImageCacheKey.h"
 #include "Engine/Image.h"
+#include "Engine/ImageCacheEntry.h"
 #include "Engine/KnobFile.h"
 #include "Engine/Node.h"
 #include "Engine/KnobItemsTable.h"
@@ -2098,7 +2100,7 @@ public:
     ImagePtr colorPickerInputImages[2];
     ActionRetCodeEnum retCode[2];
     RectD canonicalRoi[2];
-    ImageTileKeyPtr viewerProcessImageKey[2];
+    ImageCacheKeyPtr viewerProcessImageKey[2];
 };
 
 class ViewerRenderBufferedFrameContainer : public BufferedFrameContainer
@@ -2137,7 +2139,7 @@ struct RenderViewerProcessFunctorArgs
     // so that we can later on check in the gui if
     // the image is still cached to update the cache line
     // on the timeline.
-    ImageTileKeyPtr viewerProcessImageTileKey;
+    ImageCacheKeyPtr viewerProcessImageCacheKey;
     ImagePtr outputImage;
     ImagePtr colorPickerImage, colorPickerInputImage;
 
@@ -2221,7 +2223,7 @@ public:
 
         // Viewer textures are always RGBA
 
-        initArgs.layer = image->getLayer();
+        initArgs.plane = image->getLayer();
         initArgs.mipMapLevel = image->getMipMapLevel();
         initArgs.proxyScale = image->getProxyScale();
         initArgs.bitdepth = image->getBitDepth();
@@ -2246,11 +2248,6 @@ public:
 
         if (outputRequest) {
             inArgs->outputImage = outputRequest->getImagePlane();
-
-            // Ensure all cache lockers are gone
-            if (inArgs->outputImage) {
-                inArgs->outputImage->removeCacheLockers();
-            }
         }
 
         if (isFailureRetCode(inArgs->retCode)) {
@@ -2262,19 +2259,13 @@ public:
         {
             
             
-            // Find the key of the first tile in the image and store it so that in the gui
+            // Find the key of the image and store it so that in the gui
             // we can later on re-use this key to check the cache for the timeline's cache line
-            {
-                Image::Tile tile;
-                inArgs->outputImage->getTileAt(0, 0, &tile);
-                for (std::size_t c = 0; c < tile.perChannelTile.size(); ++c) {
-                    if (tile.perChannelTile[c].entryLocker) {
-                        inArgs->viewerProcessImageTileKey = toImageTileKey(tile.perChannelTile[c].entryLocker->getProcessLocalEntry()->getKey());
-                        assert(inArgs->viewerProcessImageTileKey);
-                        break;
-                    }
-                }
+            ImageCacheEntryPtr cacheEntry = inArgs->outputImage->getCacheEntry();
+            if (cacheEntry) {
+                inArgs->viewerProcessImageCacheKey = cacheEntry->getCacheKey();
             }
+
 
             // The viewer-process node always renders 4 channel images
             assert(inArgs->outputImage->getLayer().getNumComponents() == 4);
@@ -2408,7 +2399,7 @@ private:
         launchRenderFunctor(processArgs);
 
         bufferedFrame->retCode[viewerProcess_i] = processArgs->retCode;
-        bufferedFrame->viewerProcessImageKey[viewerProcess_i] = processArgs->viewerProcessImageTileKey;
+        bufferedFrame->viewerProcessImageKey[viewerProcess_i] = processArgs->viewerProcessImageCacheKey;
         bufferedFrame->viewerProcessImages[viewerProcess_i] = processArgs->outputImage;
         bufferedFrame->colorPickerImages[viewerProcess_i] = processArgs->colorPickerImage;
         bufferedFrame->colorPickerInputImages[viewerProcess_i] = processArgs->colorPickerInputImage;
@@ -2467,7 +2458,7 @@ private:
                     processBFuture.waitForFinished();
                 } else {
                     bufferObject->retCode[1] = processArgs[0]->retCode;
-                    bufferObject->viewerProcessImageKey[1] = processArgs[0]->viewerProcessImageTileKey;
+                    bufferObject->viewerProcessImageKey[1] = processArgs[0]->viewerProcessImageCacheKey;
                     bufferObject->viewerProcessImages[1] = processArgs[0]->outputImage;
                     processArgs[0] = processArgs[1];
                 }
@@ -3265,7 +3256,7 @@ public:
         ViewerRenderFrameRunnable::launchRenderFunctor(processArgs);
 
         bufferedFrame->retCode[viewerProcess_i] = processArgs->retCode;
-        bufferedFrame->viewerProcessImageKey[viewerProcess_i] = processArgs->viewerProcessImageTileKey;
+        bufferedFrame->viewerProcessImageKey[viewerProcess_i] = processArgs->viewerProcessImageCacheKey;
         bufferedFrame->viewerProcessImages[viewerProcess_i] = processArgs->outputImage;
         bufferedFrame->colorPickerImages[viewerProcess_i] = processArgs->colorPickerImage;
         bufferedFrame->colorPickerInputImages[viewerProcess_i] = processArgs->colorPickerInputImage;
@@ -3323,7 +3314,7 @@ public:
                     processBFuture.waitForFinished();
                 } else  {
                     bufferObject->retCode[1] = processArgs[0]->retCode;
-                    bufferObject->viewerProcessImageKey[1] = processArgs[0]->viewerProcessImageTileKey;
+                    bufferObject->viewerProcessImageKey[1] = processArgs[0]->viewerProcessImageCacheKey;
                     bufferObject->viewerProcessImages[1] = processArgs[0]->outputImage;
                 }
             }

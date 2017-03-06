@@ -119,6 +119,8 @@ SOURCES += \
     Hash64.cpp \
     HistogramCPU.cpp \
     Image.cpp \
+    ImageCacheEntry.cpp \
+    ImageCacheKey.cpp \
     ImageConvert.cpp \
     ImagePlaneDesc.cpp  \
     ImageCopyChannels.cpp \
@@ -126,6 +128,7 @@ SOURCES += \
     ImagePrivate.cpp \
     ImageMaskMix.cpp \
     ImageStorage.cpp \
+    ImageTilesState.cpp \
     Interpolation.cpp \
     JoinViewsNode.cpp \
     KeybindShortcut.cpp \
@@ -364,11 +367,14 @@ HEADERS += \
     Hash64.h \
     HistogramCPU.h \
     Image.h \
+    ImageCacheEntry.h \
+    ImageCacheKey.h \
     ImagePrivate.h \
     ImagePlaneDesc.h \
     Interpolation.h \
     IPCCommon.h \
     ImageStorage.h \
+    ImageTilesState.h \
     JoinViewsNode.h \
     KeybindShortcut.h \
     Knob.h \

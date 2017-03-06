@@ -66,17 +66,12 @@ struct RectToRender
     // The type of render for this rectangle
     RenderBackendTypeEnum backendType;
 
-    // The temporary image used to render the rectangle for
-    // each plane.
-    std::map<ImagePlaneDesc, ImagePtr> tmpRenderPlanes;
-
     RectToRender()
     : rect()
     , identityInputNumber(-1)
     , identityTime(0)
     , identityView(0)
     , backendType(eRenderBackendTypeCPU)
-    , tmpRenderPlanes()
     {
 
     }
@@ -319,24 +314,8 @@ struct RenderCloneData
     // The time invariant metadas for the render
     GetTimeInvariantMetaDatasResultsPtr metadatasResults;
 
-#pragma message WARN("This has cache is not needed anymore: remove it")
-    // This is the hash used to cache time and view invariant stuff
-    U64 timeViewInvariantHash;
-
-    // Hash used for metadata (depdending only for parameters that
-    // are metadata dependent)
-    U64 metadataTimeInvariantHash;
-
-    // Time/view variant hash
-    FrameViewHashMap timeViewVariantHash;
-
     // Properties, local to this render
     DynamicProperties props;
-
-    // True if hash is valid
-    bool timeViewInvariantHashValid;
-
-    bool metadataTimeInvariantHashValid;
 
     RenderCloneData()
     : lock()
@@ -346,12 +325,7 @@ struct RenderCloneData
     , frames()
     , frameRangeResults()
     , metadatasResults()
-    , timeViewInvariantHash(0)
-    , metadataTimeInvariantHash(0)
-    , timeViewVariantHash()
     , props()
-    , timeViewInvariantHashValid(false)
-    , metadataTimeInvariantHashValid(false)
     {
 
     }
@@ -361,34 +335,8 @@ struct RenderCloneData
         frames = other.frames;
         frameRangeResults = other.frameRangeResults;
         metadatasResults = other.metadatasResults;
-        timeViewInvariantHash = other.timeViewInvariantHash;
-        metadataTimeInvariantHash = other.metadataTimeInvariantHash;
-        timeViewVariantHash = other.timeViewVariantHash;
         props = other.props;
-        timeViewInvariantHashValid = other.timeViewInvariantHashValid;
-        metadataTimeInvariantHashValid = other.metadataTimeInvariantHashValid;
     }
-
-    /**
-     * @brief Get the time/view variant hash
-     **/
-    bool getFrameViewHash(TimeValue time, ViewIdx view, U64* hash) const;
-    void setFrameViewHash(TimeValue time, ViewIdx view, U64 hash);
-
-
-    /**
-     * @brief Get the time and view invariant hash
-     **/
-    bool getTimeViewInvariantHash(U64* hash) const;
-    void setTimeViewInvariantHash(U64 hash);
-
-
-    /**
-     * @brief Get the time and view invariant hash used for metadatas
-     **/
-    void setTimeInvariantMetadataHash(U64 hash);
-    bool getTimeInvariantMetadataHash(U64* hash) const;
-
 
     
 
@@ -531,11 +479,12 @@ public:
                                                     RectD* inputRoDIntersection);
 
 
-    ImagePtr fetchCachedTiles(const FrameViewRequestPtr& requestPassData,
-                              const RectI& roiPixels,
-                              unsigned int mappedMipMapLevel,
-                              const ImagePlaneDesc& plane,
-                              bool delayAllocation);
+    ImagePtr createCachedImage(const FrameViewRequestPtr& requestPassData,
+                               const RectI& roiPixels,
+                               const RectI& rodPixels,
+                               unsigned int mappedMipMapLevel,
+                               const ImagePlaneDesc& plane,
+                               bool delayAllocation);
 
 
 
@@ -545,11 +494,13 @@ public:
      * @param renderRects In output the rectangles left to render (identity or plain render).
      * @param hasPendingTiles True if some tiles are pending from another render
      **/
-    void checkRestToRender(const FrameViewRequestPtr& requestData,
-                           const RectI& renderMappedRoI,
-                           const RenderScale& renderMappedScale,
-                           std::list<RectToRender>* renderRects,
-                           bool* hasPendingTiles);
+    ActionRetCodeEnum checkRestToRender(bool updateTilesStateFromCache,
+                                        const FrameViewRequestPtr& requestData,
+                                        const RectI& renderMappedRoI,
+                                        const RenderScale& renderMappedScale,
+                                        const std::map<ImagePlaneDesc, ImagePtr>& producedImagePlanes,
+                                        std::list<RectToRender>* renderRects,
+                                        bool* hasPendingTiles);
 
 
     ActionRetCodeEnum allocateRenderBackendStorageForRenderRects(const RequestPassSharedDataPtr& requestPassSharedData,
@@ -557,13 +508,15 @@ public:
                                                                  const RectI& roiPixels,
                                                                  unsigned int mipMapLevel,
                                                                  const RenderScale& combinedScale,
-                                                                 std::map<ImagePlaneDesc, ImagePtr> *producedPlanes,
+                                                                 const std::list<ImagePlaneDesc>& producedPlanes,
+                                                                 std::map<ImagePlaneDesc, ImagePtr> *renderLocalPlanes,
                                                                  std::list<RectToRender>* renderRects);
 
     ActionRetCodeEnum launchRenderForSafetyAndBackend(const FrameViewRequestPtr& requestData,
                                                       const RenderScale& combinedScale,
                                                       const std::list<RectToRender>& renderRects,
-                                                      const std::map<ImagePlaneDesc, ImagePtr>& producedImagePlanes);
+                                                      const std::map<ImagePlaneDesc, ImagePtr>& localPlanes,
+                                                      const std::map<ImagePlaneDesc, ImagePtr>& cachedPlanes);
 
 
     ActionRetCodeEnum launchPluginRenderAndHostFrameThreading(const FrameViewRequestPtr& requestData,
@@ -571,14 +524,15 @@ public:
                                                               const EffectOpenGLContextDataPtr& glContextData,
                                                               const RenderScale& combinedScale,
                                                               const std::list<RectToRender>& renderRects,
-                                                              const std::map<ImagePlaneDesc, ImagePtr>& producedImagePlanes);
+                                                              const std::map<ImagePlaneDesc, ImagePtr>& localPlanes,
+                                                              const std::map<ImagePlaneDesc, ImagePtr>& cachedPlanes);
     
     struct TiledRenderingFunctorArgs
     {
         FrameViewRequestPtr requestData;
         OSGLContextPtr glContext;
         EffectOpenGLContextDataPtr glContextData;
-        std::map<ImagePlaneDesc, ImagePtr> producedImagePlanes;
+        std::map<ImagePlaneDesc, ImagePtr> localPlanes, cachedPlanes;
     };
 
 
