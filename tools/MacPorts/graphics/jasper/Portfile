@@ -4,7 +4,7 @@ PortSystem      1.0
 PortGroup       cmake 1.0
 
 name            jasper
-version         2.0.10
+version         2.0.12
 categories      graphics
 platforms       darwin
 license         JasPer-2
@@ -19,8 +19,8 @@ long_description \
 homepage        http://www.ece.uvic.ca/~mdadams/jasper/
 master_sites    ${homepage}software/
 
-checksums       rmd160 5c13f11b2f5f7eb2ef161e2e691398c3d65bfeba \
-                sha256 54d85428e35263642358a11c312d61cbc054170546fae780e11271df5d1502e8
+checksums       rmd160 a062262b337865e0f7e27d6a77e38b16e6735b30 \
+                sha256 5b24faf5ed38670d6286e45ab7516b26458d05e7929b435afe569176765f4dda
 
 depends_lib     path:lib/libjpeg.dylib:jpeg
 
@@ -29,26 +29,19 @@ patchfiles      patch-jiv.c.diff
 cmake.out_of_source yes
 
 configure.args-append   -DJAS_ENABLE_AUTOMATIC_DEPENDENCIES=false \
-                        -DGLUT_glut_LIBRARY=/System/Library/Frameworks/GLUT.framework
+                        -DGLUT_glut_LIBRARY=/System/Library/Frameworks/GLUT.framework \
+                        -DJAS_ENABLE_DOC=false
 
 test.run        yes
 
-variant docs description {build documentation} {}
-
-if {[variant_isset docs]} {
+variant docs description {build documentation} {
     depends_build-append                \
         port:doxygen                    \
         port:texlive-latex              \
         port:texlive-latex-recommended
 
-    configure.args-append                           \
-        -DDOXYGEN_EXECUTABLE=${prefix}/bin/doxygen  \
-        -DPDFLATEX_COMPILER=${prefix}/bin/pdflatex
-} else {
-    # prevent building documentation unless requested
-    configure.args-append \
-        -DDOXYGEN_EXECUTABLE= \
-        -DPDFLATEX_COMPILER=
+    configure.args-delete   -DJAS_ENABLE_DOC=false
+    configure.args-append   -DJAS_ENABLE_DOC=true
 }
 
 livecheck.type   regex

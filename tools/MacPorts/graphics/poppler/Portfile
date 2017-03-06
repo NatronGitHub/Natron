@@ -7,7 +7,7 @@ PortGroup           muniversal 1.0
 
 name                poppler
 conflicts           pdf2json xpdf-tools
-version             0.51.0
+version             0.52.0
 license             GPL-2+
 maintainers         devans openmaintainer
 categories          graphics
@@ -21,8 +21,8 @@ master_sites        ${homepage}
 
 use_xz              yes
 
-checksums           rmd160  86e9ef187a4a05b85be20e0829b9164f69f9092d \
-                    sha256  e997c9ad81a8372f2dd03a02b00692b8cc479c220340c8881edaca540f402c1f
+checksums           rmd160  41ac38d00644434485c58a89d4e1e755ed593f5b \
+                    sha256  528b661738839f9a25f6e580fcd2d5db007e0a1948580c6489f0062798ca1992
 
 depends_build       port:pkgconfig
 
