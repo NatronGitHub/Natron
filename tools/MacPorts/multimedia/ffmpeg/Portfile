@@ -302,7 +302,7 @@ variant x11 {
     configure.args-append   --enable-xlib
 }
 
-variant natron conflicts x11 description {Minimal FFmpeg for Natron, without bluray, subtitles, network, display support.} {
+variant natron requires highbitdepth conflicts x11 description {Minimal FFmpeg for Natron, without bluray, subtitles, network, display support.} {
 
     depends_lib-delete \
                     port:libiconv \
@@ -379,6 +379,14 @@ if {[variant_isset high10]} {
     require_active_variants x264 high10
 } else {
     require_active_variants x264 "" high10
+}
+
+variant highbitdepth description {Build using libvpx with 10/12-bit output} {}
+
+if {[variant_isset highbitdepth]} {
+    require_active_variants libvpx highbitdepth
+} else {
+    require_active_variants libvpx "" highbitdepth
 }
 
 variant gpl2 description {Enable GPL code, license will be GPL-2+} {
