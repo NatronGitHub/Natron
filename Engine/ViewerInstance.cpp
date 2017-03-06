@@ -1032,11 +1032,11 @@ genericViewerProcessFunctor(const RenderViewerArgs& args,
     for (int i = 0; i < 3; ++i) {
         tmpPix[i] = tmpPix[i] * args.gain + args.offset;
     }
-    if (args.gamma <= 0) {
+    if (args.gamma <= 0.) {
         for (int i = 0; i < 3; ++i) {
             tmpPix[i] = (tmpPix[i]  < 1.) ? 0. : (tmpPix[i]  == 1. ? 1. : std::numeric_limits<double>::infinity() );
         }
-    } else {
+    } else if (args.gamma != 1.) {
         for (int i = 0; i < 3; ++i) {
             tmpPix[i] = ViewerInstancePrivate::lookupGammaLut(tmpPix[i], args.gammaLut);
         }
