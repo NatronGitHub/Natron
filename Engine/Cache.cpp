@@ -95,7 +95,7 @@ GCC_DIAG_ON(unused-parameter)
 
 // Each cache file on disk that is created by MMAP will have a multiple of the tile size.
 // Each time the cache file has to grow, it will be resized to contain 1000 more tiles
-#define NATRON_CACHE_FILE_GROW_N_TILES 256
+#define NATRON_CACHE_FILE_GROW_N_TILES 1024
 
 // Grow the bucket ToC shared memory by 512Kb at once
 #define NATRON_CACHE_BUCKET_TOC_FILE_GROW_N_BYTES 524288 // = 512 * 1024

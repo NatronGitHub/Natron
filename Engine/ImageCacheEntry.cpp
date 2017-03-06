@@ -500,10 +500,7 @@ static void repeatEdgesForDepth(PIX* ptr,
                         int tileSizeX,
                         int tileSizeY)
 {
-    assert(bounds.x1 % tileSizeX ||
-           bounds.x2 % tileSizeX);
-    assert(bounds.y1 % tileSizeX ||
-           bounds.y2 % tileSizeY);
+
     assert(bounds.width() <= tileSizeX);
     assert(bounds.height() <= tileSizeY);
     
@@ -512,7 +509,8 @@ static void repeatEdgesForDepth(PIX* ptr,
     
     {
         // 1
-        RectI roi(roundedBounds.x1, bounds.y2, bounds.x1, roundedBounds.y2);
+        RectI roi;
+        roi.set(roundedBounds.x1, bounds.y2, bounds.x1, roundedBounds.y2);
         if (!roi.isNull()) {
             PIX val = *getPix(ptr, bounds.x1, bounds.y2 - 1, roundedBounds);
             fillWithConstant(val, ptr, roi, roundedBounds);
@@ -520,7 +518,8 @@ static void repeatEdgesForDepth(PIX* ptr,
     }
     {
         // 2
-        RectI roi(bounds.x1, bounds.y2, roundedBounds.x2, roundedBounds.y2);
+        RectI roi;
+        roi.set(bounds.x1, bounds.y2, roundedBounds.x2, roundedBounds.y2);
         if (!roi.isNull()) {
             
             PIX* origPix = getPix(ptr, bounds.x1, bounds.y2 - 1, roundedBounds);
@@ -540,7 +539,8 @@ static void repeatEdgesForDepth(PIX* ptr,
     }
     {
         // 3
-        RectI roi(bounds.x2, bounds.y2, roundedBounds.x2, roundedBounds.y2);
+        RectI roi;
+        roi.set(bounds.x2, bounds.y2, roundedBounds.x2, roundedBounds.y2);
         if (!roi.isNull()) {
             PIX val = *getPix(ptr, bounds.x2 - 1, bounds.y2 - 1, roundedBounds);
             fillWithConstant(val, ptr, roi, roundedBounds);
@@ -548,7 +548,8 @@ static void repeatEdgesForDepth(PIX* ptr,
     }
     {
         // 4
-        RectI roi(roundedBounds.x1, bounds.y1, bounds.x1, bounds.y2);
+        RectI roi;
+        roi.set(roundedBounds.x1, bounds.y1, bounds.x1, bounds.y2);
         if (!roi.isNull()) {
             PIX* pix = getPix(ptr, roi.x1, roi.y1, roundedBounds);
             for (int y = roi.y1; y < roi.y2; ++y) {
@@ -564,7 +565,8 @@ static void repeatEdgesForDepth(PIX* ptr,
     }
     {
         // 5
-        RectI roi(bounds.x2, bounds.y1, roundedBounds.x1, bounds.y2);
+        RectI roi;
+        roi.set(bounds.x2, bounds.y1, roundedBounds.x1, bounds.y2);
         if (!roi.isNull()) {
             PIX* pix = getPix(ptr, roi.x1, roi.y1, roundedBounds);
             for (int y = roi.y1; y < roi.y2; ++y) {
@@ -580,7 +582,8 @@ static void repeatEdgesForDepth(PIX* ptr,
     }
     {
         // 6
-        RectI roi(roundedBounds.x1, roundedBounds.y1, bounds.x1, bounds.y1);
+        RectI roi;
+        roi.set(roundedBounds.x1, roundedBounds.y1, bounds.x1, bounds.y1);
         if (!roi.isNull()) {
             PIX val = *ptr;
             fillWithConstant(val, ptr, roi, roundedBounds);
@@ -588,7 +591,8 @@ static void repeatEdgesForDepth(PIX* ptr,
     }
     {
         // 7
-        RectI roi(bounds.x1, roundedBounds.y1, bounds.x2, bounds.y1);
+        RectI roi;
+        roi.set(bounds.x1, roundedBounds.y1, bounds.x2, bounds.y1);
         if (!roi.isNull()) {
             
             PIX* origPix = getPix(ptr, bounds.x1, bounds.y1, roundedBounds);
@@ -608,7 +612,8 @@ static void repeatEdgesForDepth(PIX* ptr,
     }
     {
         // 8
-        RectI roi(bounds.x2, roundedBounds.y1, roundedBounds.x2, bounds.y1);
+        RectI roi;
+        roi.set(bounds.x2, roundedBounds.y1, roundedBounds.x2, bounds.y1);
         if (!roi.isNull()) {
             PIX val = *getPix(ptr, bounds.x2 - 1, bounds.y1, roundedBounds);
             fillWithConstant(val, ptr, roi, roundedBounds);
@@ -728,29 +733,53 @@ static void downscaleMipMapForDepth(const PIX* srcTilesPtr[4],
                                     int tileSizeY)
 {
     // All tiles have the same bounds: we don't care about coordinates in this case nor checking whether we are in the bounds
-
+    // In input we either have 0, 2 or 3 tiles invalid: 2 if we are a tile on the edge, 3 in the corner
+#ifndef NDEBUG
+    int nValid = 0;
     for (int i = 0; i < 4; ++i) {
-
-        PIX* dst_pixels = dstTilePtr + i * (tileSizeX * tileSizeY / 4);
-        const PIX* src_pixels = srcTilesPtr[i];
-        const PIX* src_pixels_next = srcTilesPtr[i] + tileSizeX;
-
-        for (int y = 0; y < (int)(tileSizeY / 2); ++y) {
-            for (int x = 0; x < (int)(tileSizeX / 2); ++x) {
-
-                double sum = (double)*src_pixels + (double)*(src_pixels + 1);
-                sum += ((double)*src_pixels_next + (double)*(src_pixels_next + 1));
-                sum /= 4;
-                *dst_pixels = (PIX)sum;
-
-                src_pixels_next += 2;
-                src_pixels += 2;
-                ++dst_pixels;
-            }
-            src_pixels += tileSizeX;
-            src_pixels_next += tileSizeX;
+        if (srcTilesPtr[i]) {
+            ++nValid;
         }
     }
+    assert(nValid == 0 || nValid == 2 || nValid == 3);
+#endif
+
+    for (int ty = 0; ty < 2; ++ty) {
+        for (int tx = 0; tx < 2; ++tx) {
+
+            int t_i = ty * 2 + tx;
+            if (!srcTilesPtr[t_i]) {
+                // This tile will be filled in repeatEdgesForDepth
+                continue;
+            }
+
+            int halfTileSizeX = tileSizeX / 2;
+            int halfTileSizeY = tileSizeY / 2;
+
+            PIX* dst_pixels = dstTilePtr + (halfTileSizeY * ty * tileSizeX) + (halfTileSizeX * tx);
+
+            const PIX* src_pixels = srcTilesPtr[t_i];
+            const PIX* src_pixels_next = srcTilesPtr[t_i] + tileSizeX;
+
+            for (int y = 0; y < halfTileSizeY; ++y) {
+                for (int x = 0; x < halfTileSizeX; ++x) {
+
+                    double sum = (double)*src_pixels + (double)*(src_pixels + 1);
+                    sum += ((double)*src_pixels_next + (double)*(src_pixels_next + 1));
+                    sum /= 4;
+                    *dst_pixels = (PIX)sum;
+
+                    src_pixels_next += 2;
+                    src_pixels += 2;
+                    ++dst_pixels;
+                }
+                src_pixels += tileSizeX;
+                src_pixels_next += tileSizeX;
+                dst_pixels += halfTileSizeX;
+            }
+        }
+    }
+
 
     if (!isTileAligned(dstTileBounds, tileSizeX, tileSizeY)) {
         repeatEdgesForDepth<PIX>(dstTilePtr, dstTileBounds, tileSizeX, tileSizeY);
@@ -831,7 +860,12 @@ public:
 
             const DownscaleTile& task = *_tasks[i];
 
-            const void* srcPtrs[4] = {task.srcTiles[0]->ptr, task.srcTiles[1]->ptr, task.srcTiles[2]->ptr, task.srcTiles[3]->ptr};
+            const void* srcPtrs[4] = {
+                task.srcTiles[0] ? task.srcTiles[0]->ptr : 0,
+                task.srcTiles[1] ? task.srcTiles[1]->ptr : 0,
+                task.srcTiles[2] ? task.srcTiles[2]->ptr : 0,
+                task.srcTiles[3] ? task.srcTiles[3]->ptr : 0};
+
             downscaleMipMap(_bitdepth, srcPtrs, task.ptr, task.bounds, _tileSizeX, _tileSizeY);
         }
         return eActionStatusOK;
@@ -906,7 +940,15 @@ ImageCacheEntryPrivate::lookupTileStateInPyramid(const std::vector<TileStateHead
 
                 bool higherScaleTilePending = false;
                 for (int i = 0; i < 4; ++i) {
+
                     tile->upscaleTiles[i].reset(new TileCacheIndex);
+                    // The upscaled tile might not exist when we are on the border, account for it
+                    if (upscaledX[i] < perMipMapTilesState[lookupLevel -1].bounds.x1 ||
+                        upscaledX[i] >= perMipMapTilesState[lookupLevel -1].bounds.x2 ||
+                        upscaledY[i] < perMipMapTilesState[lookupLevel -1].bounds.y1 ||
+                        upscaledY[i] >= perMipMapTilesState[lookupLevel -1].bounds.y2) {
+                        continue;
+                    }
                     TileStatusEnum higherScaleStatus = lookupTileStateInPyramid(perMipMapTilesState, lookupLevel - 1, upscaledX[i], upscaledY[i], tile->upscaleTiles[i].get());
                     switch (higherScaleStatus) {
                         case eTileStatusNotRendered:
@@ -945,9 +987,10 @@ ImageCacheEntryPrivate::readAndUpdateStateMap(bool hasExclusiveLock)
 
     // Make the map objects from the tile vectors stored in the cache
     std::vector<TileStateHeader> perMipMapCacheTilesState(mipMapLevel + 1);
-    for (int i = perMipMapCacheTilesState.size() - 1; i >= 0; --i) {
-        RectI upscaledBounds = (i == (int)mipMapLevel) ? localTilesState.bounds : localTilesState.bounds.upscalePowerOfTwo(1);
-        perMipMapCacheTilesState[i] = TileStateHeader(localTilesState.tileSizeX, localTilesState.tileSizeY, upscaledBounds, &internalCacheEntry->perMipMapTilesState[i]);
+    RectI mipmap0Bounds = localTilesState.bounds.upscalePowerOfTwo(mipMapLevel);
+    for (std::size_t i = 0; i < perMipMapCacheTilesState.size(); ++i) {
+        RectI levelBounds = mipmap0Bounds.downscalePowerOfTwo(i);
+        perMipMapCacheTilesState[i] = TileStateHeader(localTilesState.tileSizeX, localTilesState.tileSizeY, levelBounds, &internalCacheEntry->perMipMapTilesState[i]);
     }
 
     // If the tiles state at our mipmap level is empty, default initialize it
@@ -1053,10 +1096,13 @@ static void fetchTileIndicesInPyramid(const TileCacheIndex& tile, int nComps, st
 {
     if (tile.upscaleTiles[0]) {
         // We must downscale the upscaled tiles
-        ++(*nTilesAllocNeeded);
+        *nTilesAllocNeeded = *nTilesAllocNeeded + nComps;;
         for (int i = 0; i < 4; ++i) {
             assert(tile.upscaleTiles[i]);
-            fetchTileIndicesInPyramid(*tile.upscaleTiles[i], nComps, tileIndicesToFetch, nTilesAllocNeeded);
+            // Check that the upscaled tile exists
+            if (tile.upscaleTiles[i]->tx != -1) {
+                fetchTileIndicesInPyramid(*tile.upscaleTiles[i], nComps, tileIndicesToFetch, nTilesAllocNeeded);
+            }
         }
     } else {
         for (int c = 0; c < nComps; ++c) {
@@ -1099,10 +1145,13 @@ ImageCacheEntryPrivate::buildTaskPyramidRecursive(unsigned int lookupLevel,
         std::vector<boost::shared_ptr<TileData> > upscaledTasks[4];
         for (int i = 0; i < 4; ++i) {
             assert(tile.upscaleTiles[i]);
-            upscaledTasks[i] = buildTaskPyramidRecursive(lookupLevel - 1, *tile.upscaleTiles[i],  fetchedExistingTiles, allocatedTiles, existingTiles_i, allocatedTiles_i, tilesToCopy, downscaleTilesPerLevel);
 
+            // Check if the upscale tile exists, if so recurse
+            if (tile.upscaleTiles[i]->tx != -1) {
+                upscaledTasks[i] = buildTaskPyramidRecursive(lookupLevel - 1, *tile.upscaleTiles[i],  fetchedExistingTiles, allocatedTiles, existingTiles_i, allocatedTiles_i, tilesToCopy, downscaleTilesPerLevel);
+                assert((int)upscaledTasks[i].size() == nComps);
+            }
         }
-        assert((int)upscaledTasks[0].size() == nComps && (int)upscaledTasks[1].size() == nComps && (int)upscaledTasks[2].size() == nComps && (int)upscaledTasks[3].size() == nComps);
 
         // Create tasks at this level
         for (int c = 0; c < nComps; ++c) {
@@ -1114,7 +1163,9 @@ ImageCacheEntryPrivate::buildTaskPyramidRecursive(unsigned int lookupLevel,
             task->channel_i = c;
             ++(*allocatedTiles_i);
             for (int i = 0; i < 4; ++i) {
-                task->srcTiles[i] = upscaledTasks[i][c];
+                if (!upscaledTasks[i].empty()) {
+                    task->srcTiles[i] = upscaledTasks[i][c];
+                }
             }
 
             (*downscaleTilesPerLevel)[lookupLevel].push_back(task);
