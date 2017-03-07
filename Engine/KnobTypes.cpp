@@ -664,14 +664,10 @@ KnobChoice::findAndSetOldChoice()
         QMutexLocker k(&_entriesMutex);
 
         if ( !_currentEntry.id.empty() ) {
-
-            for (std::size_t i = 0; i < _entries.size(); ++i) {
-                if ( _entries[i].id == _currentEntry.id ) {
-                    // Refresh label and hint, even if ID is the same
-                    _currentEntry = _entries[i];
-                    found = i;
-                    break;
-                }
+            ChoiceOption matched;
+            found = choiceMatch(_currentEntry.id, _entries, &matched);
+            if (found != -1) {
+                _currentEntry = matched;
             }
         }
     }

@@ -220,11 +220,13 @@ public:
                     }
                     QStringList splits = QString::fromUtf8( vStr.c_str() ).split( QLatin1Char('.') );
                     if (splits.size() == 3) {
-                        int major, minor, rev;
-                        major = splits[0].toInt();
-                        minor = splits[1].toInt();
-                        rev = splits[2].toInt();
-                        if (NATRON_VERSION_ENCODE(major, minor, rev) > NATRON_VERSION_ENCODED) {
+                        _projectLoadedInfo.vMajor = splits[0].toInt();
+                        _projectLoadedInfo.vMinor = splits[1].toInt();
+                        _projectLoadedInfo.vRev = splits[2].toInt();
+                        AppInstPtr app = _app.lock();
+                        assert(app);
+                        app->setProjectBeingLoadedInfo(_projectLoadedInfo);
+                        if (NATRON_VERSION_ENCODE(_projectLoadedInfo.vMajor, _projectLoadedInfo.vMinor, _projectLoadedInfo.vRev) > NATRON_VERSION_ENCODED) {
                             throw std::invalid_argument("The given project was produced with a more recent and incompatible version of Natron.");
                         }
                     }
