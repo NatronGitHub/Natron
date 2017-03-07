@@ -1301,11 +1301,17 @@ OfxChoiceInstance::OfxChoiceInstance(const boost::shared_ptr<OfxEffectInstance>&
 
     int dim = getProperties().getDimension(kOfxParamPropChoiceOption);
     int labelOptionDim = getProperties().getDimension(kOfxParamPropChoiceLabelOption);
+    int enumOptionDim = getProperties().getDimension(kOfxParamPropChoiceEnum);
     std::vector<ChoiceOption> entries(dim);
     for (int i = 0; i < dim; ++i) {
 
         ChoiceOption& option = entries[i];
-        option.id = getProperties().getStringProperty(kOfxParamPropChoiceOption, i);
+        option.label = getProperties().getStringProperty(kOfxParamPropChoiceOption, i);
+        if (i < enumOptionDim) {
+            option.id = getProperties().getStringProperty(kOfxParamPropChoiceEnum, i);
+        } else {
+            option.id = option.label;
+        }
         if (i < labelOptionDim) {
             option.tooltip = getProperties().getStringProperty(kOfxParamPropChoiceLabelOption, i);
         }

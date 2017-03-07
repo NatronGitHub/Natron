@@ -862,7 +862,7 @@ Image::pasteFromForDepth(const Image & srcImg,
 
     QWriteLocker k(&_entryLock);
     boost::shared_ptr<QReadLocker> k2;
-    if (takeSrcLock) {
+    if (takeSrcLock && &srcImg != this) {
         k2.reset( new QReadLocker(&srcImg._entryLock) );
     }
 
