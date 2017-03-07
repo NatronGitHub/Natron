@@ -56,9 +56,9 @@ All supported formats and extensions: bmp: bmp; cineon: cin; dds: dds; dpx: dpx;
 
 OIIO versions:
 
-compiled with 1.7.11
+compiled with 1.7.12
 
-running with 1.7.11
+running with 1.7.12
 
 Inputs
 ------

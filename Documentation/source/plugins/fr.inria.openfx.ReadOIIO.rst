@@ -30,9 +30,11 @@ Field3D (\*.f3d)
 
 FITS (\*.fits)
 
+GIF (\*.gif)
+
 HDR/RGBE (\*.hdr)
 
-Icon (\*.ico)
+ICO (\*.ico)
 
 IFF (\*.iff)
 
@@ -42,13 +44,15 @@ JPEG-2000 (\*.jp2 \*.j2k)
 
 OpenEXR (\*.exr)
 
-Portable Network Graphics (\*.png)
+PNG / Portable Network Graphics (\*.png)
 
 PNM / Netpbm (\*.pbm \*.pgm \*.ppm \*.pfm)
 
 PSD (\*.psd \*.pdd \*.psb)
 
 Ptex (\*.ptex)
+
+RAW digital camera files (\*.crw \*.cr2 \*.nef \*.raf \*.dng and others)
 
 RLA (\*.rla)
 
@@ -60,15 +64,17 @@ Targa (\*.tga \*.tpic)
 
 TIFF (\*.tif \*.tiff \*.tx \*.env \*.sm \*.vsm)
 
+Webp (\*.webp)
+
 Zfile (\*.zfile)
 
 All supported formats and extensions: bmp: bmp; cineon: cin; dds: dds; dpx: dpx; field3d: f3d; fits: fits; gif: gif; hdr: hdr, rgbe; ico: ico; iff: iff, z; jpeg: jpg, jpe, jpeg, jif, jfif, jfi; jpeg2000: jp2, j2k, j2c; openexr: exr, sxr, mxr; png: png; pnm: ppm, pgm, pbm, pnm, pfm; psd: psd, pdd, psb; raw: bay, bmq, cr2, crw, cs1, dc2, dcr, dng, erf, fff, k25, kdc, mdc, mos, mrw, nef, orf, pef, pxn, raf, raw, rdc, sr2, srf, x3f, arw, 3fr, cine, ia, kc2, mef, nrw, qtk, rw2, sti, rwl, srw, drf, dsc, ptx, cap, iiq, rwz; rla: rla; sgi: sgi, rgb, rgba, bw, int, inta; socket: socket; softimage: pic; tiff: tiff, tif, tx, env, sm, vsm; targa: tga, tpic; webp: webp; zfile: zfile;
 
 OIIO versions:
 
-compiled with 1.7.11
+compiled with 1.7.12
 
-running with 1.7.11
+running with 1.7.12
 
 Inputs
 ------
@@ -176,7 +182,7 @@ Controls
 +-----------------------------------------------------------------+-----------+-----------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | Exposure / ``rawExposure``                                      | Double    | 1               | Amount of exposure correction before de-mosaicing, from 0.25 (2-stop darken) to 8 (3-stop brighten). (Default: 1., meaning no correction.)                                                                                                                                                                                                   |
 +-----------------------------------------------------------------+-----------+-----------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Demosaic / ``rawDemosaic``                                      | Choice    | AHD             | | Force a demosaicing algorithm. Will fall back on AHD if the demosaicing algorithm is not available due to licence restrictions (Modified AHD, AFD, VCD, Mixed, LMMSE are GPL2, AMaZE is GPL3).                                                                                                                                             |
+| Demosaic / ``rawDemosaic``                                      | Choice    | AHD             | | Force a demosaicing algorithm. Will fall back on AHD if the demosaicing algorithm is not available due to licence restrictions (AHD-Mod, AFD, VCD, Mixed, LMMSE are GPL2, AMaZE is GPL3).                                                                                                                                                  |
 |                                                                 |           |                 | | **None**: No demosaicing.                                                                                                                                                                                                                                                                                                                  |
 |                                                                 |           |                 | | **Linear**: Linear interpolation.                                                                                                                                                                                                                                                                                                          |
 |                                                                 |           |                 | | **VNG**: VNG interpolation.                                                                                                                                                                                                                                                                                                                |

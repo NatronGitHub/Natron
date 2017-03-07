@@ -369,19 +369,10 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
     if (context == eContextWriter) {
         _imp->isOutput = true;
     }
-    if (context == eContextWriter) {
+    if (context == eContextWriter || context == eContextReader) {
         // Writers don't support render scale (full-resolution images are written to disk)
+        // Readers don't support render scale otherwise each mipmap level would require a file decoding
         setSupportsRenderScaleMaybe(eSupportsNo);
-    }
-
-
-    if (context == eContextReader) {
-        // Tuttle readers don't support render scale as of 11/8/2014, but may crash (at least in debug configuration).
-        // TuttleAVReader crashes on an assert in copy_and_convert_pixels( avSrcView, this->_dstView );
-        std::string prefix("tuttle.");
-        if ( !plugin->getIdentifier().compare(0, prefix.size(), prefix) ) {
-            setSupportsRenderScaleMaybe(eSupportsNo);
-        }
     }
 
     std::string images;
@@ -1590,11 +1581,7 @@ OfxEffectInstance::getRegionsOfInterest(double time,
     Q_UNUSED(outputRoD);
     assert(renderWindow.x2 >= renderWindow.x1 && renderWindow.y2 >= renderWindow.y1);
 
-    {
-        bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
-        assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne ) );
-        Q_UNUSED(scaleIsOne);
-    }
+    assert((supportsRenderScaleMaybe() != eSupportsNo) || (scale.x == 1. && scale.y == 1.));
 
     OfxStatus stat;
 

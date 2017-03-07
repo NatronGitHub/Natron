@@ -82,7 +82,7 @@ EOF
 
 If you intend to build the [openfx-io](https://github.com/MrKepzie/openfx-io) plugins too, you will need these additional packages:
 
-    sudo port -v install openexr ffmpeg opencolorio openimageio +natron seexpr
+    sudo port -v install x264 +high10 libvpx +highbitdepth libraw +gpl2 openexr ffmpeg +gpl2 opencolorio openimageio +natron seexpr
 
 and for [openfx-arena](https://github.com/olear/openfx-arena) (note that it installs a version of ImageMagick without support for many image I/O libraries):
 
