@@ -294,10 +294,10 @@ RotoDrawableItem::createNodes(bool connectNodes)
     case eRotoStrokeTypeBlur:
         pluginId = QString::fromUtf8(PLUGINID_OFX_BLURCIMG);
         break;
+    case eRotoStrokeTypeSolid:
     case eRotoStrokeTypeEraser:
         pluginId = QString::fromUtf8(PLUGINID_OFX_CONSTANT);
         break;
-    case eRotoStrokeTypeSolid:
     case eRotoStrokeTypeSmear:
         pluginId = maskPluginID;
         break;
@@ -437,7 +437,8 @@ RotoDrawableItem::createNodes(bool connectNodes)
     fixedNamePrefix = baseFixedName;
     fixedNamePrefix.append( QString::fromUtf8("Merge") );
 
-    CreateNodeArgsPtr args(CreateNodeArgs::create( PLUGINID_OFX_MERGE, rotoPaintEffect ));
+    const std::string mergePluginID(PLUGINID_OFX_MERGE);
+    CreateNodeArgsPtr args(CreateNodeArgs::create( mergePluginID, rotoPaintEffect ));
     args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
 #ifndef ROTO_PAINT_NODE_GRAPH_VISIBLE
     args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
@@ -447,7 +448,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
     _imp->mergeNode = app->createNode(args);
     assert(_imp->mergeNode);
     if (!_imp->mergeNode) {
-        throw std::runtime_error(tr("Rotopaint requires the plug-in %1 in order to work").arg(QString::fromUtf8(PLUGINID_OFX_MERGE)).toStdString());
+        throw std::runtime_error(tr("Rotopaint requires the plug-in %1 in order to work").arg(QString::fromUtf8(mergePluginID.c_str())).toStdString());
     }
     _imp->nodes.push_back(_imp->mergeNode);
 
@@ -508,7 +509,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
         mergeMix->linkTo(rotoPaintMix);
     }
 
-    if ( (type != eRotoStrokeTypeSolid) && (type != eRotoStrokeTypeSmear) && (type != eRotoStrokeTypeComp)) {
+    if (pluginId != maskPluginID && type != eRotoStrokeTypeComp) {
         // Create the mask plug-in
 
         {
@@ -527,15 +528,6 @@ RotoDrawableItem::createNodes(bool connectNodes)
                 throw std::runtime_error(tr("Rotopaint requires the plug-in %1 in order to work").arg(maskPluginID).toStdString());
             }
             _imp->nodes.push_back(_imp->maskNode);
-
-            {
-                // For masks set the output components to alpha
-                KnobIPtr knob = _imp->maskNode->getKnobByName(kRotoShapeRenderNodeParamOutputComponents);
-                assert(knob);
-                KnobChoicePtr typeChoice = toKnobChoice(knob);
-                assert(typeChoice);
-                typeChoice->setValue(1);
-            }
         }
     }
 
@@ -765,180 +757,163 @@ RotoDrawableItem::refreshNodesConnections()
 
     NodePtr mergeInputA, mergeInputB;
 
-    if (type == eRotoStrokeTypeComp) {
-        // For comp items, internal tree goes like this:
-        /*    (A) -- Time Offset ---- user selected merge A input (from the knob)
-            /
-            Merge
-            \ 
+    switch (type) {
+        case eRotoStrokeTypeComp: {
+            // For comp items, internal tree goes like this:
+            /*    (A) -- Time Offset ---- user selected merge A input (from the knob)
+             /
+             Merge
+             \
              (B) --------------------- upstream node
-         */
+             */
 
-        assert(_imp->timeOffsetNode);
-        KnobChoicePtr mergeAKnob = _imp->mergeAInputChoice.lock();
+            assert(_imp->timeOffsetNode);
+            KnobChoicePtr mergeAKnob = _imp->mergeAInputChoice.lock();
 
-        int mergeAInputChoice_i = mergeAKnob->getValue();
+            int mergeAInputChoice_i = mergeAKnob->getValue();
 
-        NodePtr mergeInputAUpstreamNode;
-        if (mergeAInputChoice_i == 0) {
-            mergeInputAUpstreamNode = upstreamNode;
-        } else {
-            ChoiceOption inputAName = mergeAKnob->getActiveEntry();
-            int inputNb = QString::fromUtf8(inputAName.id.c_str()).toInt();
-            mergeInputAUpstreamNode = rotoPaintNode->getInternalInputNode(inputNb);
-        }
-
-        mergeInputB = upstreamNode;
-
-        if (mergeInputAUpstreamNode) {
-            mergeInputA = _imp->timeOffsetNode;
-            _imp->timeOffsetNode->swapInput(mergeInputAUpstreamNode, 0);
-
-        } else {
-            // No node upstream, make the merge be a pass-through of input B (upstreamNode)
-            mergeInputA = upstreamNode;
-            _imp->timeOffsetNode->disconnectInput(0);
-
-        }
-    } else if ( _imp->effectNode && ( type != eRotoStrokeTypeEraser) ) {
-        // Base case that handles the following types:
-        // Solid, Blur, Sharpen, Clone, Reveal, Smear
-
-        /*
-           internal node tree for this item  goes like this:
-                  (A) - <Optional TimeBlur node> - Effect - <Optional Time Node>------- Reveal input (Reveal/Clone) or Upstream Node otherwise
-                /
-                Merge
-                \
-                  (B) ------------------------------------Upstream Node
-
-         */
-
-        // This is the node that we should connect to the A source upstream.
-        NodePtr effectInput;
-        if (!_imp->timeOffsetNode) {
-            effectInput = _imp->effectNode;
-        } else {
-
-            // If there's a time-offset, use it prior to the effect.
-            KnobChoicePtr timeOffsetModeKnob = _imp->timeOffsetMode.lock();
-            int timeOffsetMode_i = 0;
-            if (timeOffsetModeKnob) {
-                timeOffsetMode_i = timeOffsetModeKnob->getValue();
-            }
-            if (timeOffsetMode_i == 0) {
-                //relative
-                effectInput = _imp->timeOffsetNode;
+            NodePtr mergeInputAUpstreamNode;
+            if (mergeAInputChoice_i == 0) {
+                mergeInputAUpstreamNode = upstreamNode;
             } else {
-                effectInput = _imp->frameHoldNode;
+                ChoiceOption inputAName = mergeAKnob->getActiveEntry();
+                int inputNb = QString::fromUtf8(inputAName.id.c_str()).toInt();
+                mergeInputAUpstreamNode = rotoPaintNode->getInternalInputNode(inputNb);
             }
-            _imp->effectNode->swapInput(effectInput, 0);
 
-        }
+            mergeInputB = upstreamNode;
+
+            if (mergeInputAUpstreamNode) {
+                mergeInputA = _imp->timeOffsetNode;
+                _imp->timeOffsetNode->swapInput(mergeInputAUpstreamNode, 0);
+
+            } else {
+                // No node upstream, make the merge be a pass-through of input B (upstreamNode)
+                mergeInputA = upstreamNode;
+                _imp->timeOffsetNode->disconnectInput(0);
+                
+            }
+        }   break;
+        case eRotoStrokeTypeBurn:
+        case eRotoStrokeTypeDodge: {
+            assert(type == eRotoStrokeTypeDodge ||
+                   type == eRotoStrokeTypeBurn);
+
+            if ( (type == eRotoStrokeTypeDodge) || (type == eRotoStrokeTypeBurn) ) {
+                /*
+                 Tree for this effect goes like this:
+                 (A) Upstream Node
+                 /
+                 Merge (Dodge/Burn)
+                 \
+                 (B) Upstream Node
+
+                 */
+                mergeInputA = mergeInputB = upstreamNode;
+
+            } else {
+                //unhandled case
+                assert(false);
+            }
+
+        }   break;
+        case eRotoStrokeTypeBlur:
+        case eRotoStrokeTypeEraser:
+        case eRotoStrokeTypeSmear:
+        case eRotoStrokeTypeSolid:
+        case eRotoStrokeTypeClone:
+        case eRotoStrokeTypeReveal:
+        case eRotoStrokeTypeSharpen: {
+            /*
+             internal node tree for this item  goes like this:
+             (A) - <Optional TimeBlur node> - <RotoMask> - Effect - <Optional Time Node>------- Reveal input (Reveal/Clone) or Upstream Node otherwise
+             /
+             Merge (alpha from RotoMask plane)
+             \
+             (B) ------------------------------------Upstream Node
+
+             */
+
+            // This is the node that we should connect to the A source upstream.
+            NodePtr effectInput;
+            if (!_imp->timeOffsetNode) {
+                effectInput = _imp->effectNode;
+            } else {
+
+                // If there's a time-offset, use it prior to the effect.
+                KnobChoicePtr timeOffsetModeKnob = _imp->timeOffsetMode.lock();
+                int timeOffsetMode_i = 0;
+                if (timeOffsetModeKnob) {
+                    timeOffsetMode_i = timeOffsetModeKnob->getValue();
+                }
+                if (timeOffsetMode_i == 0) {
+                    //relative
+                    effectInput = _imp->timeOffsetNode;
+                } else {
+                    effectInput = _imp->frameHoldNode;
+                }
+                _imp->effectNode->swapInput(effectInput, 0);
+
+            }
 
 
 #ifdef ROTOPAINT_MOTIONBLUR_USE_TIMEBLUR
-        RotoMotionBlurModeEnum mbType = (RotoMotionBlurModeEnum)rotoPaintNode->getMotionBlurTypeKnob()->getValue();
-        if (_imp->timeBlurNode) {
-            _imp->timeBlurNode->swapInput(mbType == eRotoMotionBlurModePerShape ? _imp->effectNode : NodePtr(), 0);
-        }
-
-        if (mbType == eRotoMotionBlurModePerShape && _imp->timeBlurNode) {
-            mergeInputA = _imp->timeBlurNode;
-        } else
-#endif
-        {
-            mergeInputA = _imp->effectNode;
-        }
-        mergeInputB = upstreamNode;
-
-        // Determine what we should connect to upstream of the A input
-        NodePtr mergeAUpstreamInput;
-        if (type != eRotoStrokeTypeSolid) {
-            mergeAUpstreamInput = upstreamNode;
-        } else if ((type == eRotoStrokeTypeReveal) || ( type == eRotoStrokeTypeClone)) {
-            KnobChoicePtr mergeAKnob = _imp->mergeAInputChoice.lock();
-            int reveal_i = mergeAKnob->getValue();
-            if (reveal_i == 0) {
-                mergeAUpstreamInput = upstreamNode;
-            } else {
-                // For reveal & clone, the user can select a RotoPaint node's input.
-                // Find an input of the RotoPaint node with the given input label
-
-                ChoiceOption inputAName = mergeAKnob->getActiveEntry();
-                int inputNb = QString::fromUtf8(inputAName.id.c_str()).toInt();
-                mergeAUpstreamInput = rotoPaintNode->getInternalInputNode(inputNb);
-
+            RotoMotionBlurModeEnum mbType = (RotoMotionBlurModeEnum)rotoPaintNode->getMotionBlurTypeKnob()->getValue();
+            if (_imp->timeBlurNode) {
+                _imp->timeBlurNode->swapInput(mbType == eRotoMotionBlurModePerShape ? _imp->effectNode : NodePtr(), 0);
             }
-        }
 
-        effectInput->swapInput(mergeAUpstreamInput, 0);
-
-    } else {
-        assert(type == eRotoStrokeTypeEraser ||
-               type == eRotoStrokeTypeDodge ||
-               type == eRotoStrokeTypeBurn);
-
-
-        if (type == eRotoStrokeTypeEraser) {
-            /*
-               Tree for this effect goes like this:
-                        (A) Constant or RotoPaint bg input
-                    /
-               Merge
-                    \
-                        (B) --------------------Upstream Node
-
-             */
-
-
-            NodePtr eraserInput = rotoPaintInput0 ? rotoPaintInput0 : _imp->effectNode;
-            mergeInputA = eraserInput;
+            if (mbType == eRotoMotionBlurModePerShape && _imp->timeBlurNode) {
+                mergeInputA = _imp->timeBlurNode;
+            } else
+#endif
+            {
+                mergeInputA = _imp->effectNode;
+            }
             mergeInputB = upstreamNode;
 
-        }  else if ( (type == eRotoStrokeTypeDodge) || (type == eRotoStrokeTypeBurn) ) {
-            /*
-               Tree for this effect goes like this:
-                    (A) Upstream Node
-                /
-               Merge (Dodge/Burn)
-                \
-                    (B) Upstream Node
+            // Determine what we should connect to upstream of the A input
+            NodePtr mergeAUpstreamInput;
 
-             */
-            mergeInputA = mergeInputB = upstreamNode;
+            // For a solid, don't connect anything on its input
+            if (type != eRotoStrokeTypeSolid && type != eRotoStrokeTypeEraser) {
+                mergeAUpstreamInput = upstreamNode;
+            } else if ((type == eRotoStrokeTypeReveal) || ( type == eRotoStrokeTypeClone)) {
+                KnobChoicePtr mergeAKnob = _imp->mergeAInputChoice.lock();
+                int reveal_i = mergeAKnob->getValue();
+                if (reveal_i == 0) {
+                    mergeAUpstreamInput = upstreamNode;
+                } else {
+                    // For reveal & clone, the user can select a RotoPaint node's input.
+                    // Find an input of the RotoPaint node with the given input label
 
-        } else {
-            //unhandled case
-            assert(false);
-        }
-    } //if (_imp->effectNode &&  type != eRotoStrokeTypeEraser)
+                    ChoiceOption inputAName = mergeAKnob->getActiveEntry();
+                    int inputNb = QString::fromUtf8(inputAName.id.c_str()).toInt();
+                    mergeAUpstreamInput = rotoPaintNode->getInternalInputNode(inputNb);
+                    
+                }
+            }
+            
+            effectInput->swapInput(mergeAUpstreamInput, 0);
 
-    // If the tree is concatenated, do not use this merge node, instead
-    // use the global merge node at the bottom of the RotoPaint tree.
-    // Otherwise connect the merge node B input to the effect.
-    //if (!isTreeConcatenated) {
+        }   break;
+    }
 
-        // For the merge node,
-        // A input index is 1
-        // B input index is 0
-        _imp->mergeNode->swapInput(mergeInputA, 1); // A
-        _imp->mergeNode->swapInput(mergeInputB, 0); // B
 
-    //}
-    /*else {
+    _imp->mergeNode->swapInput(mergeInputA, 1); // A
+    _imp->mergeNode->swapInput(mergeInputB, 0); // B
 
-        _imp->mergeNode->disconnectInput(0);
-        _imp->mergeNode->disconnectInput(1);
-        _imp->mergeNode->disconnectInput(2);
-    }*/
-
+#if 0
     // Connect to a mask if needed
     if (_imp->maskNode) {
-        //Connect the merge node mask to the mask node
+        // Connect the merge mask input to the mask node, except when the input A is a solid, we connect it to the Roto shape mask
+        // to preserve alpha
         _imp->mergeNode->swapInput(_imp->maskNode, 2);
 
-    } else if (type == eRotoStrokeTypeComp) {
+    }
+#endif
+
+    if (type == eRotoStrokeTypeComp) {
         KnobChoicePtr knob = _imp->mergeMaskInputChoice.lock();
         int maskInput_i = knob->getValue();
         NodePtr maskInputNode;

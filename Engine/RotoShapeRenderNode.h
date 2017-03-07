@@ -38,11 +38,6 @@
 
 NATRON_NAMESPACE_ENTER;
 
-#define kRotoShapeRenderNodeParamOutputComponents "outputComponents"
-#define kRotoShapeRenderNodeParamOutputComponentsLabel "Output Components"
-
-#define kRotoShapeRenderNodeParamOutputComponentsAlpha "Alpha"
-#define kRotoShapeRenderNodeParamOutputComponentsRGBA "RGBA"
 
 #define kRotoShapeRenderNodeParamType "type"
 #define kRotoShapeRenderNodeParamTypeLabel "Type"
@@ -105,20 +100,11 @@ public:
 
 
     // We cannot support tiles with our algorithm
-    virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return false;
-    }
+    virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual bool supportsMultiResolution() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return true;
-    }
+    virtual bool supportsMultiResolution() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return false;
-    }
+    virtual bool isMultiPlanar() const OVERRIDE FINAL;
 
     virtual bool canCPUImplementationSupportOSMesa() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
@@ -131,6 +117,14 @@ private:
     virtual void initializeKnobs() OVERRIDE FINAL;
 
     virtual void purgeCaches() OVERRIDE FINAL;
+
+    virtual ActionRetCodeEnum getLayersProducedAndNeeded(TimeValue time,
+                                                         ViewIdx view,
+                                                         std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded,
+                                                         std::list<ImagePlaneDesc>* layersProduced,
+                                                         TimeValue* passThroughTime,
+                                                         ViewIdx* passThroughView,
+                                                         int* passThroughInputNb) OVERRIDE FINAL;
 
     virtual ActionRetCodeEnum attachOpenGLContext(TimeValue time, ViewIdx view, const RenderScale& scale,  const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data) OVERRIDE FINAL;
 

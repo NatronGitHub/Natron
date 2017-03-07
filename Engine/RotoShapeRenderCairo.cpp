@@ -77,12 +77,11 @@ adjustToPointToScale(const RenderScale &scale,
 }
 
 
-template <int dstNComps, int srcNComps, bool useOpacity, bool inverted, bool accumulate>
+template <int dstNComps, int srcNComps, bool inverted, bool accumulate>
 static void
 convertCairoImageToNatronImageForAccum_noColor(cairo_surface_t* cairoImg,
                                                const Image::CPUData& dstImageData,
                                                const RectI & srcBounds,
-                                               const ColorRgbaD& shapeColor,
                                                double opacity,
                                                int nDivisions)
 {
@@ -91,11 +90,6 @@ convertCairoImageToNatronImageForAccum_noColor(cairo_surface_t* cairoImg,
     int stride = cairo_image_surface_get_stride(cairoImg);
 
     assert(dstImageData.bounds.contains(srcBounds));
-
-    double color[3];
-    color[0] = useOpacity ? shapeColor.r * opacity : shapeColor.r;
-    color[1] = useOpacity ? shapeColor.g * opacity : shapeColor.g;
-    color[2] = useOpacity ? shapeColor.b * opacity : shapeColor.b;
 
     float *dst_pixels[4];
     int dstPixelStride;
@@ -116,10 +110,10 @@ convertCairoImageToNatronImageForAccum_noColor(cairo_surface_t* cairoImg,
             if (dstNComps > 1) {
                 const int nColorComps = std::min(dstNComps, 3);
                 for (int c = 0; c < nColorComps; ++c) {
-                    tmpPix[c] = cairoPixel * color[c];
+                    tmpPix[c] = cairoPixel * opacity;
                 }
             }
-            tmpPix[3] = useOpacity ? cairoPixel * opacity : cairoPixel;
+            tmpPix[3] = cairoPixel * opacity;
 
             if (accumulate) {
                 for (int c = 0; c < dstNComps; ++c) {
@@ -153,59 +147,39 @@ convertCairoImageToNatronImageForAccum_noColor(cairo_surface_t* cairoImg,
 
 
 
-template <int dstNComps, int srcNComps, bool useOpacity, bool inverted>
+template <int dstNComps, int srcNComps, bool inverted>
 static void
 convertCairoImageToNatronImageForInverted_noColor(cairo_surface_t* cairoImg,
                                                   const Image::CPUData& image,
                                                   const RectI & pixelRod,
-                                                  const ColorRgbaD& shapeColor,
                                                   double opacity,
                                                   bool accumulate,
                                                   int nDivisions)
 {
     if (accumulate) {
-         convertCairoImageToNatronImageForAccum_noColor<dstNComps, srcNComps, useOpacity, inverted, true>(cairoImg, image, pixelRod, shapeColor, opacity, nDivisions);
+         convertCairoImageToNatronImageForAccum_noColor<dstNComps, srcNComps, inverted, true>(cairoImg, image, pixelRod, opacity, nDivisions);
     } else {
-        convertCairoImageToNatronImageForAccum_noColor<dstNComps, srcNComps, useOpacity, inverted, false>(cairoImg, image, pixelRod, shapeColor, opacity, nDivisions);
+        convertCairoImageToNatronImageForAccum_noColor<dstNComps, srcNComps, inverted, false>(cairoImg, image, pixelRod, opacity, nDivisions);
     }
 } // convertCairoImageToNatronImageForInverted_noColor
 
-template <int dstNComps, int srcNComps, bool useOpacity>
+template <int dstNComps, int srcNComps>
 static void
 convertCairoImageToNatronImageForDstComponents_noColor(cairo_surface_t* cairoImg,
                                                        const Image::CPUData& image,
                                                        const RectI & pixelRod,
-                                                       const ColorRgbaD& shapeColor,
                                                        bool inverted,
                                                        double opacity,
                                                        bool accumulate,
                                                        int nDivisions)
 {
     if (inverted) {
-        convertCairoImageToNatronImageForInverted_noColor<dstNComps, srcNComps, useOpacity, true>(cairoImg, image, pixelRod, shapeColor, opacity, accumulate, nDivisions);
+        convertCairoImageToNatronImageForInverted_noColor<dstNComps, srcNComps, true>(cairoImg, image, pixelRod, opacity, accumulate, nDivisions);
     } else {
-        convertCairoImageToNatronImageForInverted_noColor<dstNComps, srcNComps, useOpacity, false>(cairoImg, image, pixelRod, shapeColor, opacity, accumulate, nDivisions);
+        convertCairoImageToNatronImageForInverted_noColor<dstNComps, srcNComps, false>(cairoImg, image, pixelRod, opacity, accumulate, nDivisions);
     }
 }
 
-template <int dstNComps, int srcNComps>
-static void
-convertCairoImageToNatronImageForOpacity(cairo_surface_t* cairoImg,
-                                         const Image::CPUData& image,
-                                         const RectI & pixelRod,
-                                         const ColorRgbaD& shapeColor,
-                                         double opacity,
-                                         bool inverted,
-                                         bool useOpacity,
-                                         bool accumulate,
-                                         int nDivisions)
-{
-    if (useOpacity) {
-        convertCairoImageToNatronImageForDstComponents_noColor<dstNComps, srcNComps, true>(cairoImg, image, pixelRod, shapeColor, inverted, opacity, accumulate, nDivisions);
-    } else {
-        convertCairoImageToNatronImageForDstComponents_noColor<dstNComps, srcNComps, false>(cairoImg, image, pixelRod, shapeColor, inverted, opacity, accumulate, nDivisions);
-    }
-}
 
 template <int dstNComps>
 static void
@@ -213,17 +187,15 @@ convertCairoImageToNatronImageForSrcComponents_noColor(cairo_surface_t* cairoImg
                                                        int srcNComps,
                                                        const Image::CPUData& image,
                                                        const RectI & pixelRod,
-                                                       const ColorRgbaD& shapeColor,
                                                        double opacity,
                                                        bool inverted,
-                                                       bool useOpacity,
                                                        bool accumulate,
                                                        int nDivisions)
 {
     if (srcNComps == 1) {
-        convertCairoImageToNatronImageForOpacity<dstNComps, 1>(cairoImg, image, pixelRod, shapeColor, opacity, inverted, useOpacity, accumulate, nDivisions);
+        convertCairoImageToNatronImageForDstComponents_noColor<dstNComps, 1>(cairoImg, image, pixelRod, opacity, inverted, accumulate, nDivisions);
     } else if (srcNComps == 4) {
-        convertCairoImageToNatronImageForOpacity<dstNComps, 4>(cairoImg, image, pixelRod, shapeColor, opacity, inverted, useOpacity, accumulate, nDivisions);
+        convertCairoImageToNatronImageForDstComponents_noColor<dstNComps, 4>(cairoImg, image, pixelRod, opacity, inverted, accumulate, nDivisions);
     } else {
         assert(false);
     }
@@ -234,25 +206,23 @@ convertCairoImageToNatronImage_noColor(cairo_surface_t* cairoImg,
                                        int srcNComps,
                                        const Image::CPUData& image,
                                        const RectI & pixelRod,
-                                       const ColorRgbaD& shapeColor,
                                        double opacity,
                                        bool inverted,
-                                       bool useOpacity,
                                        bool accumulate,
                                        int nDivisions)
 {
     switch (image.nComps) {
         case 1:
-            convertCairoImageToNatronImageForSrcComponents_noColor<1>(cairoImg, srcNComps, image, pixelRod, shapeColor, opacity, inverted, useOpacity, accumulate, nDivisions);
+            convertCairoImageToNatronImageForSrcComponents_noColor<1>(cairoImg, srcNComps, image, pixelRod, opacity, inverted, accumulate, nDivisions);
             break;
         case 2:
-            convertCairoImageToNatronImageForSrcComponents_noColor<2>(cairoImg, srcNComps, image, pixelRod, shapeColor, opacity, inverted, useOpacity, accumulate, nDivisions);
+            convertCairoImageToNatronImageForSrcComponents_noColor<2>(cairoImg, srcNComps, image, pixelRod, opacity, inverted, accumulate, nDivisions);
             break;
         case 3:
-            convertCairoImageToNatronImageForSrcComponents_noColor<3>(cairoImg, srcNComps, image, pixelRod, shapeColor, opacity, inverted, useOpacity, accumulate, nDivisions);
+            convertCairoImageToNatronImageForSrcComponents_noColor<3>(cairoImg, srcNComps, image, pixelRod, opacity, inverted, accumulate, nDivisions);
             break;
         case 4:
-            convertCairoImageToNatronImageForSrcComponents_noColor<4>(cairoImg, srcNComps, image, pixelRod, shapeColor, opacity, inverted, useOpacity, accumulate, nDivisions);
+            convertCairoImageToNatronImageForSrcComponents_noColor<4>(cairoImg, srcNComps, image, pixelRod, opacity, inverted, accumulate, nDivisions);
             break;
         default:
             break;
@@ -266,8 +236,7 @@ convertNatronImageToCairoImageForComponents(unsigned char* cairoImg,
                                             std::size_t stride,
                                             const Image::CPUData& image,
                                             const RectI& roi,
-                                            const RectI& dstBounds,
-                                            const ColorRgbaD& shapeColor)
+                                            const RectI& dstBounds)
 {
     assert(srcNComps == 1 || srcNComps == 4);
     assert(dstNComps == 1 || dstNComps == 4);
@@ -289,9 +258,9 @@ convertNatronImageToCairoImageForComponents(unsigned char* cairoImg,
                 *dstPix = Image::convertPixelDepth<PIX, unsigned char>(*src_pixels[0]);
             } else if (dstNComps == 4) {
                 if (srcNComps == 4) {
-                    dstPix[0] = shapeColor.b == 0 ? 0 : Image::convertPixelDepth<float, unsigned char>(Image::convertPixelDepth<PIX, float>(*src_pixels[2]) / shapeColor.b);
-                    dstPix[1] = shapeColor.g == 0 ? 0 : Image::convertPixelDepth<float, unsigned char>(Image::convertPixelDepth<PIX, float>(*src_pixels[1]) / shapeColor.g);
-                    dstPix[2] = shapeColor.r == 0 ? 0 : Image::convertPixelDepth<float, unsigned char>(Image::convertPixelDepth<PIX, float>(*src_pixels[0]) / shapeColor.r);
+                    dstPix[0] = Image::convertPixelDepth<float, unsigned char>(Image::convertPixelDepth<PIX, float>(*src_pixels[2]));
+                    dstPix[1] = Image::convertPixelDepth<float, unsigned char>(Image::convertPixelDepth<PIX, float>(*src_pixels[1]));
+                    dstPix[2] = Image::convertPixelDepth<float, unsigned char>(Image::convertPixelDepth<PIX, float>(*src_pixels[0]));
                     dstPix[3] = 255; //(float)srcPix[x * srcNComps + 3] / maxValue * 255.f;
 
                 } else {
@@ -326,13 +295,12 @@ convertNatronImageToCairoImageForSrcComponents(unsigned char* cairoImg,
                                                std::size_t stride,
                                                const Image::CPUData& image,
                                                const RectI& roi,
-                                               const RectI& dstBounds,
-                                               const ColorRgbaD& shapeColor)
+                                               const RectI& dstBounds)
 {
     if (dstNComps == 1) {
-        convertNatronImageToCairoImageForComponents<PIX, maxValue, srcComps, 1>(cairoImg, stride, image, roi, dstBounds, shapeColor);
+        convertNatronImageToCairoImageForComponents<PIX, maxValue, srcComps, 1>(cairoImg, stride, image, roi, dstBounds);
     } else if (dstNComps == 4) {
-        convertNatronImageToCairoImageForComponents<PIX, maxValue, srcComps, 4>(cairoImg, stride, image, roi, dstBounds, shapeColor);
+        convertNatronImageToCairoImageForComponents<PIX, maxValue, srcComps, 4>(cairoImg, stride, image, roi, dstBounds);
     } else {
         assert(false);
     }
@@ -345,22 +313,21 @@ convertNatronImageToCairoImage(unsigned char* cairoImg,
                                std::size_t stride,
                                const Image::CPUData& image,
                                const RectI& roi,
-                               const RectI& dstBounds,
-                               const ColorRgbaD& shapeColor)
+                               const RectI& dstBounds)
 {
 
     switch (image.nComps) {
         case 1:
-            convertNatronImageToCairoImageForSrcComponents<PIX, maxValue, 1>(cairoImg, dstNComps, stride, image, roi, dstBounds, shapeColor);
+            convertNatronImageToCairoImageForSrcComponents<PIX, maxValue, 1>(cairoImg, dstNComps, stride, image, roi, dstBounds);
             break;
         case 2:
-            convertNatronImageToCairoImageForSrcComponents<PIX, maxValue, 2>(cairoImg, dstNComps, stride, image, roi, dstBounds, shapeColor);
+            convertNatronImageToCairoImageForSrcComponents<PIX, maxValue, 2>(cairoImg, dstNComps, stride, image, roi, dstBounds);
             break;
         case 3:
-            convertNatronImageToCairoImageForSrcComponents<PIX, maxValue, 3>(cairoImg, dstNComps, stride, image, roi, dstBounds, shapeColor);
+            convertNatronImageToCairoImageForSrcComponents<PIX, maxValue, 3>(cairoImg, dstNComps, stride, image, roi, dstBounds);
             break;
         case 4:
-            convertNatronImageToCairoImageForSrcComponents<PIX, maxValue, 4>(cairoImg, dstNComps, stride, image, roi, dstBounds, shapeColor);
+            convertNatronImageToCairoImageForSrcComponents<PIX, maxValue, 4>(cairoImg, dstNComps, stride, image, roi, dstBounds);
             break;
         default:
             break;
@@ -792,7 +759,6 @@ struct RenderStrokeCairoData
     bool pressureAffectsHardness;
     bool pressureAffectsSize;
     bool buildUp;
-    ColorRgbaD shapeColor;
     double opacity;
 };
 
@@ -806,7 +772,6 @@ renderStrokeBegin_cairo(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData
                         bool pressureAffectsHardness,
                         bool pressureAffectsSize,
                         bool buildUp,
-                        const ColorRgbaD& shapeColor,
                         double opacity)
 {
     RenderStrokeCairoData* myData = (RenderStrokeCairoData*)userData;
@@ -818,7 +783,6 @@ renderStrokeBegin_cairo(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData
     myData->pressureAffectsHardness = pressureAffectsHardness;
     myData->pressureAffectsSize = pressureAffectsSize;
     myData->buildUp = buildUp;
-    myData->shapeColor =  shapeColor;
     myData->opacity = opacity;
     cairo_set_operator(myData->cr, buildUp ? CAIRO_OPERATOR_OVER : CAIRO_OPERATOR_LIGHTEN);
 
@@ -912,7 +876,6 @@ renderSmearBegin_cairo(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
                        bool pressureAffectsHardness,
                        bool pressureAffectsSize,
                        bool /*buildUp*/,
-                       const ColorRgbaD& /*shapeColor*/,
                        double opacity)
 {
     RenderSmearCairoData* myData = (RenderSmearCairoData*)userData;
@@ -1097,14 +1060,6 @@ RotoShapeRenderCairo::renderBezier_cairo(cairo_t* cr,
     const TimeValue t = time;
     double fallOff = bezier->getFeatherFallOffKnob()->getValueAtTime(t, DimIdx(0), view);
     double featherDist_canonical = bezier->getFeatherKnob()->getValueAtTime(t, DimIdx(0), view);
-    ColorRgbaD shapeColor;
-    {
-        KnobColorPtr colorKnob = bezier->getColorKnob();
-        shapeColor.r = colorKnob->getValueAtTime(t, DimIdx(0), view);
-        shapeColor.g = colorKnob->getValueAtTime(t, DimIdx(1), view);
-        shapeColor.b = colorKnob->getValueAtTime(t, DimIdx(2), view);
-        shapeColor.a = colorKnob->getValueAtTime(t, DimIdx(3), view);
-    }
 
 
     cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
@@ -1129,18 +1084,18 @@ RotoShapeRenderCairo::renderBezier_cairo(cairo_t* cr,
 #ifdef ROTO_CAIRO_RENDER_TRIANGLES_ONLY
     PolygonData data;
     computeTriangles(bezier, t, scale, featherDist_pixelX, featherDist_pixelY, &data);
-    renderFeather_cairo(data, shapeColor, fallOff, mesh);
-    renderInternalShape_cairo(data, shapeColor, mesh);
+    renderFeather_cairo(data, fallOff, mesh);
+    renderInternalShape_cairo(data, mesh);
     Q_UNUSED(opacity);
 #else
-    renderFeather_old_cairo(bezier, t, view, scale, shapeColor, opacity, featherDist_pixelX, featherDist_pixelY, fallOff, mesh);
+    renderFeather_old_cairo(bezier, t, view, scale, opacity, featherDist_pixelX, featherDist_pixelY, fallOff, mesh);
 
     Transform::Matrix3x3 transform;
     bezier->getTransformAtTime(t, view, &transform);
 
     // strangely, the above-mentioned cairo bug doesn't affect this function
     BezierCPs cps = bezier->getControlPoints(view);
-    renderInternalShape_old_cairo(t, scale, shapeColor, opacity, transform, cr, mesh, cps);
+    renderInternalShape_old_cairo(t, scale, opacity, transform, cr, mesh, cps);
 
 #endif
 
@@ -1154,7 +1109,6 @@ RotoShapeRenderCairo::renderFeather_old_cairo(const BezierPtr& bezier,
                                               TimeValue time,
                                               ViewIdx view,
                                               const RenderScale &scale,
-                                              const ColorRgbaD& shapeColor,
                                               double /*opacity*/,
                                               double featherDist_pixelsX,
                                               double featherDist_pixelsY,
@@ -1343,12 +1297,12 @@ RotoShapeRenderCairo::renderFeather_old_cairo(const BezierPtr& bezier,
         // and approximately equal to 0.5.
         // If the bug if ixed in cairo, please use #if CAIRO_VERSION>xxx to keep compatibility with
         // older Cairo versions.
-        cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, shapeColor.r, shapeColor.g, shapeColor.b, 1.);
+        cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, 1., 1., 1., 1.);
         ///outter is faded
-        cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, shapeColor.r, shapeColor.g, shapeColor.b, 0.);
-        cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, shapeColor.r, shapeColor.g, shapeColor.b, 0.);
+        cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, 1., 1., 1., 0.);
+        cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, 1., 1., 1., 0.);
         ///inner is full color
-        cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, shapeColor.r, shapeColor.g, shapeColor.b, 1.);
+        cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, 1., 1., 1., 1.);
         assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
 
         cairo_mesh_pattern_end_patch(mesh);
@@ -1377,7 +1331,7 @@ RotoShapeRenderCairo::renderFeather_old_cairo(const BezierPtr& bezier,
 } // RotoShapeRenderCairo::renderFeather_old_cairo
 
 void
-RotoShapeRenderCairo::renderFeather_cairo(const RotoBezierTriangulation::PolygonData& inArgs, const ColorRgbaD& shapeColor, double fallOff, cairo_pattern_t * mesh)
+RotoShapeRenderCairo::renderFeather_cairo(const RotoBezierTriangulation::PolygonData& inArgs, double fallOff, cairo_pattern_t * mesh)
 {
     // Roto feather is rendered as triangles
     assert(inArgs.featherMesh.size() >= 3 && inArgs.featherMesh.size() % 3 == 0);
@@ -1490,12 +1444,12 @@ RotoShapeRenderCairo::renderFeather_cairo(const RotoBezierTriangulation::Polygon
         // and approximately equal to 0.5.
         // If the bug if ixed in cairo, please use #if CAIRO_VERSION>xxx to keep compatibility with
         // older Cairo versions.
-        cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, shapeColor.r, shapeColor.g, shapeColor.b, 1.);
+        cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, 1., 1., 1., 1.);
         // outter is faded
-        cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, shapeColor.r, shapeColor.g, shapeColor.b, 0.);
-        cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, shapeColor.r, shapeColor.g, shapeColor.b, 0.);
+        cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, 1., 1., 1., 0.);
+        cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, 1., 1., 1., 0.);
         // inner is full color
-        cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, shapeColor.r, shapeColor.g, shapeColor.b, 1.);
+        cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, 1., 1., 1., 1.);
         assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
 
         cairo_mesh_pattern_end_patch(mesh);
@@ -1540,7 +1494,7 @@ RotoShapeRenderCairo::renderFeather_cairo(const RotoBezierTriangulation::Polygon
 
 
 void
-RotoShapeRenderCairo::renderInternalShape_cairo(const RotoBezierTriangulation::PolygonData& inArgs, const ColorRgbaD& shapeColor, cairo_pattern_t * mesh)
+RotoShapeRenderCairo::renderInternalShape_cairo(const RotoBezierTriangulation::PolygonData& inArgs, cairo_pattern_t * mesh)
 {
     for (std::vector<RotoBezierTriangulation::RotoTriangles>::const_iterator it = inArgs.internalTriangles.begin(); it!=inArgs.internalTriangles.end(); ++it ) {
 
@@ -1568,10 +1522,10 @@ RotoShapeRenderCairo::renderInternalShape_cairo(const RotoBezierTriangulation::P
                 // and approximately equal to 0.5.
                 // If the bug if ixed in cairo, please use #if CAIRO_VERSION>xxx to keep compatibility with
                 // older Cairo versions.
-                cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, shapeColor.r, shapeColor.g, shapeColor.b, 1);
-                cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, shapeColor.r, shapeColor.g, shapeColor.b, 1);
-                cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, shapeColor.r, shapeColor.g, shapeColor.b, 1);
-                cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, shapeColor.r, shapeColor.g, shapeColor.b, 1);
+                cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, 1., 1., 1., 1);
+                cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, 1., 1., 1., 1);
+                cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, 1., 1., 1., 1);
+                cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, 1., 1., 1., 1);
                 assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
 
                 cairo_mesh_pattern_end_patch(mesh);
@@ -1608,10 +1562,10 @@ RotoShapeRenderCairo::renderInternalShape_cairo(const RotoBezierTriangulation::P
             // and approximately equal to 0.5.
             // If the bug if ixed in cairo, please use #if CAIRO_VERSION>xxx to keep compatibility with
             // older Cairo versions.
-            cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, shapeColor.r, shapeColor.g, shapeColor.b, 1);
-            cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, shapeColor.r, shapeColor.g, shapeColor.b, 1);
-            cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, shapeColor.r, shapeColor.g, shapeColor.b, 1);
-            cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, shapeColor.r, shapeColor.g, shapeColor.b, 1);
+            cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, 1., 1., 1., 1);
+            cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, 1., 1., 1., 1);
+            cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, 1., 1., 1., 1);
+            cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, 1., 1., 1., 1);
             assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
 
             cairo_mesh_pattern_end_patch(mesh);
@@ -1648,10 +1602,10 @@ RotoShapeRenderCairo::renderInternalShape_cairo(const RotoBezierTriangulation::P
             // and approximately equal to 0.5.
             // If the bug if ixed in cairo, please use #if CAIRO_VERSION>xxx to keep compatibility with
             // older Cairo versions.
-            cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, shapeColor.r, shapeColor.g, shapeColor.b, 1);
-            cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, shapeColor.r, shapeColor.g, shapeColor.b, 1);
-            cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, shapeColor.r, shapeColor.g, shapeColor.b, 1);
-            cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, shapeColor.r, shapeColor.g, shapeColor.b, 1);
+            cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, 1., 1., 1., 1);
+            cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, 1., 1., 1., 1);
+            cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, 1., 1., 1., 1);
+            cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, 1., 1., 1., 1);
             assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
 
             cairo_mesh_pattern_end_patch(mesh);
@@ -1666,7 +1620,6 @@ RotoShapeRenderCairo::renderInternalShape_cairo(const RotoBezierTriangulation::P
 void
 RotoShapeRenderCairo::renderInternalShape_old_cairo(TimeValue time,
                                                   const RenderScale &scale,
-                                                  const ColorRgbaD& shapeColor,
                                                   double /*opacity*/,
                                                   const Transform::Matrix3x3& transform,
                                                   cairo_t* cr,
@@ -1790,13 +1743,13 @@ RotoShapeRenderCairo::renderInternalShape_old_cairo(TimeValue time,
             // and approximately equal to 0.5.
             // If the bug if ixed in cairo, please use #if CAIRO_VERSION>xxx to keep compatibility with
             // older Cairo versions.
-            cairo_mesh_pattern_set_corner_color_rgba( mesh, 0, shapeColor.r, shapeColor.g, shapeColor.b,
+            cairo_mesh_pattern_set_corner_color_rgba( mesh, 0, 1., 1., 1.,
                                                      std::sqrt(opacity) );
-            cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, shapeColor.r, shapeColor.g, shapeColor.b,
+            cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, 1., 1., 1.,
                                                      std::sqrt(opacity) );
-            cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, shapeColor.r, shapeColor.g, shapeColor.b,
+            cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, 1., 1., 1.,
                                                      std::sqrt(opacity) );
-            cairo_mesh_pattern_set_corner_color_rgba( mesh, 3, shapeColor.r, shapeColor.g, shapeColor.b,
+            cairo_mesh_pattern_set_corner_color_rgba( mesh, 3, 1., 1., 1.,
                                                      std::sqrt(opacity) );
             assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
 
@@ -1804,7 +1757,6 @@ RotoShapeRenderCairo::renderInternalShape_old_cairo(TimeValue time,
         }
     }
 #else // ifdef ROTO_USE_MESH_PATTERN_ONLY
-    Q_UNUSED(shapeColor);
     cairo_set_source_rgba(cr, 1, 1, 1, 1);
 
     BezierCPs::const_iterator point = cps.begin();
@@ -1949,17 +1901,6 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
         }
 
 
-
-        ColorRgbaD shapeColor;
-        {
-            KnobColorPtr colorKnob = rotoItem->getColorKnob();
-            shapeColor.r = colorKnob->getValueAtTime(t, DimIdx(0), view);
-            shapeColor.g = colorKnob->getValueAtTime(t, DimIdx(1), view);
-            shapeColor.b = colorKnob->getValueAtTime(t, DimIdx(2), view);
-            shapeColor.a = colorKnob->getValueAtTime(t, DimIdx(3), view);
-        }
-
-
         double opacity = rotoItem->getOpacityKnob()->getValueAtTime(t, DimIdx(0), view);
 
         Image::CPUData imageData;
@@ -1979,7 +1920,7 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
             std::memset(buf.getData(), 0, sizeof(unsigned char) * memSize);
 
 
-            convertNatronImageToCairoImage<float, 1>(buf.getData(), srcNComps, stride, imageData, roi, roi, shapeColor);
+            convertNatronImageToCairoImage<float, 1>(buf.getData(), srcNComps, stride, imageData, roi, roi);
             imgWrapper.cairoImg = cairo_image_surface_create_for_data(buf.getData(), cairoImgFormat, roi.width(), roi.height(),
                                                                       stride);
         } else {
@@ -2035,8 +1976,6 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
             RotoShapeRenderCairo::renderBezier_cairo(imgWrapper.ctx, isBezier, opacity, t, view, scale);
         }
 
-        bool useOpacityToConvert = (isBezier != 0);
-
 
         assert(cairo_surface_status(imgWrapper.cairoImg) == CAIRO_STATUS_SUCCESS);
 
@@ -2050,7 +1989,7 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
         // Accumulate if there's more than one sample and we are not at the first sample.
         bool doAccumulation = nDivisions > 1 && d > 0;
 
-        convertCairoImageToNatronImage_noColor(imgWrapper.cairoImg, srcNComps, imageData, roi, shapeColor, opacity, false, useOpacityToConvert, doAccumulation, nDivisionsToApply);
+        convertCairoImageToNatronImage_noColor(imgWrapper.cairoImg, srcNComps, imageData, roi, isBezier ? opacity : 1., false /*inverted*/, doAccumulation, nDivisionsToApply);
     } // for all divisions
 } // RotoShapeRenderNodePrivate::renderMaskInternal_cairo
 

@@ -112,7 +112,6 @@ void
 RotoShapeRenderNode::fetchRenderCloneKnobs()
 {
     EffectInstance::fetchRenderCloneKnobs();
-    _imp->outputComponents = toKnobChoice(getKnobByName(kRotoShapeRenderNodeParamOutputComponents));
     _imp->renderType = toKnobChoice(getKnobByName(kRotoShapeRenderNodeParamType));
 }
 
@@ -121,19 +120,7 @@ RotoShapeRenderNode::initializeKnobs()
 {
     KnobPagePtr page = createKnob<KnobPage>("controlsPage");
     page->setLabel(tr("Controls"));
-    {
-        KnobChoicePtr param = createKnob<KnobChoice>(kRotoShapeRenderNodeParamOutputComponents);
-        param->setLabel(tr(kRotoShapeRenderNodeParamOutputComponentsLabel));
-        {
-            std::vector<ChoiceOption> options;
-            options.push_back(ChoiceOption(kRotoShapeRenderNodeParamOutputComponentsRGBA, "", ""));
-            options.push_back(ChoiceOption(kRotoShapeRenderNodeParamOutputComponentsAlpha, "", ""));
-            param->populateChoices(options);
-        }
-        param->setIsMetadataSlave(true);
-        page->addKnob(param);
-        _imp->outputComponents = param;
-    }
+
     {
         KnobChoicePtr param = createKnob<KnobChoice>(kRotoShapeRenderNodeParamType);
         param->setLabel(tr(kRotoShapeRenderNodeParamTypeLabel));
@@ -189,6 +176,56 @@ RotoShapeRenderNode::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 
 }
 
+
+bool
+RotoShapeRenderNode::supportsTiles() const
+{
+    return false;
+}
+
+bool
+RotoShapeRenderNode::supportsMultiResolution() const
+{
+    return true;
+}
+
+bool
+RotoShapeRenderNode::isMultiPlanar() const
+{
+    return true;
+}
+
+ActionRetCodeEnum
+RotoShapeRenderNode::getLayersProducedAndNeeded(TimeValue time,
+                                                ViewIdx view,
+                                                std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded,
+                                                std::list<ImagePlaneDesc>* layersProduced,
+                                                TimeValue* passThroughTime,
+                                                ViewIdx* passThroughView,
+                                                int* passThroughInputNb)
+{
+    int renderType_i = _imp->renderType.lock()->getValue();
+    if (renderType_i == 1) { // Smear
+        return EffectInstance::getLayersProducedAndNeeded(time, view, inputLayersNeeded, layersProduced, passThroughTime, passThroughView, passThroughInputNb);
+    } else {
+        // Solid
+        ImagePlaneDesc inputPlane, pairedInputPlane;
+        getMetadataComponents(0, &inputPlane, &pairedInputPlane);
+        (*inputLayersNeeded)[0].push_back(inputPlane);
+
+        {
+            std::vector<std::string> channels(1);
+            channels[0] = "A";
+            ImagePlaneDesc rotoMaskPlane("RotoMask", "", "Alpha", channels);
+            layersProduced->push_back(rotoMaskPlane);
+        }
+        *passThroughTime = time;
+        *passThroughView = view;
+        *passThroughInputNb = 0;
+        return eActionStatusOK;
+    }
+} // getLayersProducedAndNeeded
+
 ActionRetCodeEnum
 RotoShapeRenderNode::getTimeInvariantMetaDatas(NodeMetadata& metadata)
 {
@@ -197,8 +234,7 @@ RotoShapeRenderNode::getTimeInvariantMetaDatas(NodeMetadata& metadata)
     RotoShapeRenderTypeEnum type = (RotoShapeRenderTypeEnum)_imp->renderType.lock()->getValue();
     int nComps;
     if (type == eRotoShapeRenderTypeSolid) {
-        int index = _imp->outputComponents.lock()->getValue();
-        nComps = index == 0 ? 4 : 1;
+        nComps = 1;
     } else {
         nComps = 4;
     }

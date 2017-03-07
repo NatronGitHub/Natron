@@ -47,11 +47,11 @@
 NATRON_NAMESPACE_ENTER;
 
 static const char* rotoRamp_FragmentShader =
-"uniform vec4 fillColor;\n"
+"uniform float opacity;\n"
 "uniform float fallOff;\n"
 "\n"
 "void main() {\n"
-"	vec4 outColor = fillColor;\n"
+"	vec4 outColor(opacity, opacity, opacity, opacity);\n"
 "   float t = gl_Color.a;\n"
 "#ifdef RAMP_P_LINEAR\n"
 "   t = t * t * t;\n"
@@ -109,7 +109,7 @@ static const char* roto_DivideShader =
 
 static const char* rotoDrawDot_FragmentShader =
 "varying float outHardness;\n"
-"uniform vec4 fillColor;\n"
+"uniform float opacity;\n"
 "float gaussLookup(float t) {\n"
 "   if (t < -0.5) {\n"
 "       t = -1.0 - t;\n"
@@ -123,7 +123,7 @@ static const char* rotoDrawDot_FragmentShader =
 "}\n"
 "void main() {\n"
 "#ifndef BUILDUP\n"
-"	gl_FragColor = fillColor;\n"
+"	gl_FragColor.rgb = vec3(opacity, opacity, opacity);\n"
 "#else\n"
 "   gl_FragColor.rgb = vec3(1.0, 1.0, 1.0);\n"
 "#endif\n"
@@ -134,7 +134,7 @@ static const char* rotoDrawDot_FragmentShader =
 "       gl_FragColor.a = clamp(gaussLookup(pow(1.0 - gl_Color.a, exp)), 0.0, 1.0);\n"
 "   }\n"
 "#ifndef BUILDUP\n"
-"   gl_FragColor.a *= fillColor.a; \n"
+"   gl_FragColor.a *= opacity; \n"
 "   gl_FragColor.rgb *= gl_FragColor.a;\n"
 "#endif\n"
 "}"
@@ -142,13 +142,13 @@ static const char* rotoDrawDot_FragmentShader =
 
 static const char* rotoDrawDotBuildUpSecondPass_FragmentShader =
 "uniform sampler2D tex;"
-"uniform vec4 fillColor;\n"
+"uniform float opacity;\n"
 "void main() {\n"
 "   vec4 srcColor = texture2D(tex,gl_TexCoord[0].st);\n"
-"   gl_FragColor.r = srcColor.r * fillColor.r;\n"
-"   gl_FragColor.g = srcColor.r * fillColor.g;\n"
-"   gl_FragColor.b = srcColor.r * fillColor.b;\n"
-"   gl_FragColor.a = srcColor.r * fillColor.a;\n"
+"   gl_FragColor.r = srcColor.r * opacity;\n"
+"   gl_FragColor.g = srcColor.r * opacity;\n"
+"   gl_FragColor.b = srcColor.r * opacity;\n"
+"   gl_FragColor.a = srcColor.r * opacity;\n"
 "}";
 
 
@@ -166,7 +166,7 @@ static const char* rotoSmearDot_VertexShader =
 static const char* rotoSmearDot_FragmentShader =
 "varying float outHardness;\n"
 "uniform sampler2D tex;\n"
-"uniform vec4 fillColor;\n"
+"uniform float opacity;\n"
 "float gaussLookup(float t) {\n"
 "   if (t < -0.5) {\n"
 "       t = -1.0 - t;\n"
@@ -187,7 +187,7 @@ static const char* rotoSmearDot_FragmentShader =
 "       float exp = 0.4 / (1.0 - outHardness);\n"
 "       alpha = clamp(gaussLookup(pow(1.0 - gl_Color.a, exp)), 0.0, 1.0);\n"
 "   }\n"
-"   alpha *= fillColor.a; \n"
+"   alpha *= opacity; \n"
 "   gl_FragColor.a = alpha;\n"
 "   //gl_FragColor.rgb *= alpha;\n"
 "}"
@@ -711,10 +711,10 @@ void renderBezier_gl_singleDrawElements(int nbVertices, int nbIds, int vboVertic
 
     GL::BindBuffer(GL_ARRAY_BUFFER, vboColorsID);
     if (uploadVertices) {
-        GL::BufferData(GL_ARRAY_BUFFER, nbVertices * 4 * sizeof(GLfloat), colorsData, GL_DYNAMIC_DRAW);
+        GL::BufferData(GL_ARRAY_BUFFER, nbVertices * 1 * sizeof(GLfloat), colorsData, GL_DYNAMIC_DRAW);
     }
     GL::EnableClientState(GL_COLOR_ARRAY);
-    GL::ColorPointer(4, GL_FLOAT, 0, 0);
+    GL::ColorPointer(1, GL_FLOAT, 0, 0);
 
     GL::BindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboID);
     GL::BufferData(GL_ELEMENT_ARRAY_BUFFER, nbIds * sizeof(GLuint), idsData, GL_DYNAMIC_DRAW);
@@ -955,15 +955,6 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
 
         double fallOff = bezier->getFeatherFallOffKnob()->getValueAtTime(t, DimIdx(0), view);
         double featherDistCanonical = bezier->getFeatherKnob()->getValueAtTime(t, DimIdx(0), view);
-        ColorRgbaD shapeColor;
-
-        {
-            KnobColorPtr colorKnob = bezier->getColorKnob();
-            shapeColor.r = colorKnob->getValueAtTime(t, DimIdx(0), view);
-            shapeColor.g = colorKnob->getValueAtTime(t, DimIdx(1), view);
-            shapeColor.b = colorKnob->getValueAtTime(t, DimIdx(2), view);
-            shapeColor.a = colorKnob->getValueAtTime(t, DimIdx(3), view);
-        }
 
 
         ///Adjust the feather distance so it takes the mipmap level into account
@@ -983,8 +974,7 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
 
 
         rampShader->bind();
-        OfxRGBAColourF fillColor = {(float)shapeColor.r, (float)shapeColor.g, (float)shapeColor.b, (float)opacity};
-        rampShader->setUniform("fillColor", fillColor);
+        rampShader->setUniform("opacity", (float)opacity);
         rampShader->setUniform("fallOff", (float)fallOff);
 
 
@@ -997,7 +987,7 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
             }
 
             verticesArray.resize(nbVertices * 2);
-            colorsArray.resize(nbVertices * 4);
+            colorsArray.resize(nbVertices);
             indicesArray.resize(nbVertices);
 
             // Fill buffer
@@ -1007,7 +997,7 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
 
             for (std::size_t i = 0; i < data.featherMesh.size(); ++i,
                  v_data += 2,
-                 c_data += 4,
+                 ++c_data,
                  ++i_data) {
                 v_data[0] = data.featherMesh[i].x;
                 v_data[1] = data.featherMesh[i].y;
@@ -1020,13 +1010,11 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
                 // since we are operating on a thread-local render clone.
                 assert(roi.contains(v_data[0], v_data[1]));
 
-                c_data[0] = shapeColor.r;
-                c_data[1] = shapeColor.g;
-                c_data[2] = shapeColor.b;
+
                 if (data.featherMesh[i].isInner) {
-                    c_data[3] = opacity;
+                    *c_data = opacity;
                 } else {
-                    c_data[3] = 0.;
+                    *c_data = 0.;
                 }
             }
             renderBezier_gl_singleDrawElements<GL>(nbVertices, nbVertices, vboVerticesID, vboColorsID, iboID, GL_TRIANGLES, (const void*)verticesArray.getData(), (const void*)colorsArray.getData(), (const void*)indicesArray.getData());
@@ -1036,7 +1024,7 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
         // Unbind the Ramp shader used for the feather and bind the Fill shader for the Roto
         rampShader->unbind();
         fillShader->bind();
-        fillShader->setUniform("fillColor", fillColor);
+        fillShader->setUniform("opacity", (float)opacity);
 
         int nbVertices = data.bezierPolygonJoined.size();
         if (!nbVertices) {
@@ -1164,7 +1152,6 @@ struct RenderStrokeGLData
     bool pressureAffectsSize;
     bool buildUp;
     bool dstImageIsFinalTexture;
-    ColorRgbaD shapeColor;
     double opacity;
 
     int nbPointsPerSegment;
@@ -1191,7 +1178,6 @@ getDotTriangleFan(const Point& center,
                   double radius_x,
                   double radius_y,
                   const int nbOutsideVertices,
-                  const ColorRgbaD& shapeColor,
                   double opacity,
                   double hardness,
                   bool doBuildUp,
@@ -1214,7 +1200,7 @@ getDotTriangleFan(const Point& center,
     }
 
     int cSize = appendToData ? cdata->size() : 0;
-    cdata->resizeAndPreserve(cSize + (nbOutsideVertices + 2) * 4);
+    cdata->resizeAndPreserve(cSize + (nbOutsideVertices + 2) * 1);
     int vSize = appendToData ? vdata->size() : 0;
     vdata->resizeAndPreserve(vSize + (nbOutsideVertices + 2) * 2);
     int hSize = appendToData ? hdata->size() : 0;
@@ -1237,13 +1223,11 @@ getDotTriangleFan(const Point& center,
         toTexCoords(texBounds, center.x, center.y, &tPtr[0], &tPtr[1]);
         tPtr += 2;
     }
-    cPtr[0] = shapeColor.r;
-    cPtr[1] = shapeColor.g;
-    cPtr[2] = shapeColor.b;
-    cPtr[3] = opacity;
+
+    *cPtr = opacity;
     *hPtr = hardness;
     vPtr += 2;
-    cPtr += 4;
+    ++cPtr;
     ++hPtr;
 
     double m = 2. * M_PI / (double)nbOutsideVertices;
@@ -1257,14 +1241,8 @@ getDotTriangleFan(const Point& center,
             tPtr += 2;
         }
         vPtr += 2;
-
-
-
-        cPtr[0] = shapeColor.r;
-        cPtr[1] = shapeColor.g;
-        cPtr[2] = shapeColor.b;
-        cPtr[3] = 0.;
-        cPtr += 4;
+        *cPtr = 0.;
+        ++cPtr;
 
         *hPtr = hardness;
         ++hPtr;
@@ -1276,15 +1254,13 @@ getDotTriangleFan(const Point& center,
     if (tPtr) {
         toTexCoords(texBounds, vPtr[0], vPtr[1], &tPtr[0], &tPtr[1]);
     }
-    cPtr[0] = shapeColor.r;
-    cPtr[1] = shapeColor.g;
-    cPtr[2] = shapeColor.b;
-    cPtr[3] = 0.;
+
+    *cPtr = 0.;
     *hPtr = hardness;
 
 }
 
-static void renderDot_gl(RenderStrokeGLData& data, const Point &center, double radius_x, double radius_y, const ColorRgbaD& shapeColor, double opacity, double hardness)
+static void renderDot_gl(RenderStrokeGLData& data, const Point &center, double radius_x, double radius_y, double opacity, double hardness)
 {
 
     // Create the indices buffer for this triangle fan
@@ -1299,7 +1275,7 @@ static void renderDot_gl(RenderStrokeGLData& data, const Point &center, double r
         }
     }
 
-    getDotTriangleFan(center, radius_x, radius_y, data.nbPointsPerSegment, shapeColor, opacity, hardness, data.buildUp, data.roi, true, &data.primitivesVertices, &data.primitivesColors, &data.primitivesHardness, 0);
+    getDotTriangleFan(center, radius_x, radius_y, data.nbPointsPerSegment, opacity, hardness, data.buildUp, data.roi, true, &data.primitivesVertices, &data.primitivesColors, &data.primitivesHardness, 0);
     
 
 }
@@ -1337,7 +1313,6 @@ renderStrokeBegin_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
                      bool pressureAffectsHardness,
                      bool pressureAffectsSize,
                      bool buildUp,
-                     const ColorRgbaD& shapeColor,
                      double opacity)
 {
     RenderStrokeGLData* myData = (RenderStrokeGLData*)userData;
@@ -1350,7 +1325,6 @@ renderStrokeBegin_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
     myData->pressureAffectsHardness = pressureAffectsHardness;
     myData->pressureAffectsSize = pressureAffectsSize;
     myData->buildUp = buildUp;
-    myData->shapeColor = shapeColor;
     myData->opacity = opacity;
     myData->nbPointsPerSegment = getNbPointPerSegment(myData->brushSizePixelX);
 }
@@ -1365,7 +1339,7 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
                                        const GLShaderBasePtr& strokeShader,
                                        const GLShaderBasePtr& strokeSecondPassShader,
                                        bool doBuildUp,
-                                       const OfxRGBAColourF& fillColor,
+                                       double opacity,
                                        const RectI& roi,
                                        const ImagePtr& dstImage,
                                        bool dstImageIsFinalTexture, // < when doing motion-blur this is false
@@ -1494,7 +1468,7 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
     OSGLContext::setupGLViewport<GL>(firstPassDstImage->getBounds(), roi);
 
     strokeShader->bind();
-    strokeShader->setUniform("fillColor", fillColor);
+    strokeShader->setUniform("opacity", (float)opacity);
 
     GLint hardnessLoc;
     {
@@ -1516,9 +1490,9 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
 
 
     GL::BindBuffer(GL_ARRAY_BUFFER, vboColorsID);
-    GL::BufferData(GL_ARRAY_BUFFER, nbVertices * 4 * sizeof(GLfloat), colorsData, GL_DYNAMIC_DRAW);
+    GL::BufferData(GL_ARRAY_BUFFER, nbVertices * 1 * sizeof(GLfloat), colorsData, GL_DYNAMIC_DRAW);
     GL::EnableClientState(GL_COLOR_ARRAY);
-    GL::ColorPointer(4, GL_FLOAT, 0, 0);
+    GL::ColorPointer(1, GL_FLOAT, 0, 0);
 
 
     GL::MultiDrawElements(primitiveType, perDrawCount, GL_UNSIGNED_INT, perDrawIdsPtr, drawCount);
@@ -1539,14 +1513,11 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
         for (int i = 0; i < perDrawCount[c]; ++i, ++iptr) {
             int vindex = *iptr;
             double hardness = hptr[vindex];
-            double r = cptr[vindex * 4 + 0];
-            double g = cptr[vindex * 4 + 1];
-            double b = cptr[vindex * 4 + 2];
-            double a = cptr[vindex * 4 + 3];
+            double a = cptr[vindex];
             double x = vptr[vindex * 2 + 0];
             double y = vptr[vindex * 2 + 1];
             GL::VertexAttrib1f(hardnessLoc, hardness);
-            GL::Color4f(r, g, b, a);
+            GL::Color4f(a, a, a, a);
             GL::Vertex2f(x, y);
         }
 
@@ -1581,7 +1552,7 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
         GL::BindTexture( target, tmpTexture->getGLTextureID() );
         strokeSecondPassShader->bind();
         strokeSecondPassShader->setUniform("tex", 0);
-        strokeSecondPassShader->setUniform("fillColor", fillColor);
+        strokeSecondPassShader->setUniform("opacity", (float)opacity);
         OSGLContext::applyTextureMapping<GL>(roi, outputBounds, roi);
         strokeSecondPassShader->unbind();
         glCheckError(GL);
@@ -1634,17 +1605,13 @@ renderStrokeEnd_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData)
         perDrawCount[i] = myData->indicesBuf[i]->size();
     }
 
-    OfxRGBAColourF fillColor = {(float)myData->shapeColor.r, (float)myData->shapeColor.g, (float)myData->shapeColor.b, (float)myData->opacity};
-
-
-
     if (myData->glContext->isGPUContext()) {
 
-        renderStroke_gl_multiDrawElements<GL_GPU>(nbVertices, vboVerticesID, vboColorsID, vboHardnessID, myData->glContext, strokeShader, buildUpPassShader, myData->buildUp, fillColor, myData->roi, myData->dstImage, dstImageIsFinalTexture, GL_TRIANGLE_FAN, (const void*)(myData->primitivesVertices.getData()), (const void*)(myData->primitivesColors.getData()), (const void*)(myData->primitivesHardness.getData()), (const int*)(&perDrawCount[0]), (const void**)(&indicesVec[0]), indicesVec.size());
+        renderStroke_gl_multiDrawElements<GL_GPU>(nbVertices, vboVerticesID, vboColorsID, vboHardnessID, myData->glContext, strokeShader, buildUpPassShader, myData->buildUp, myData->opacity, myData->roi, myData->dstImage, dstImageIsFinalTexture, GL_TRIANGLE_FAN, (const void*)(myData->primitivesVertices.getData()), (const void*)(myData->primitivesColors.getData()), (const void*)(myData->primitivesHardness.getData()), (const int*)(&perDrawCount[0]), (const void**)(&indicesVec[0]), indicesVec.size());
 
 
     } else {
-        renderStroke_gl_multiDrawElements<GL_CPU>(nbVertices, vboVerticesID, vboColorsID, vboHardnessID, myData->glContext, strokeShader, buildUpPassShader, myData->buildUp, fillColor, myData->roi, myData->dstImage, dstImageIsFinalTexture, GL_TRIANGLE_FAN, (const void*)(myData->primitivesVertices.getData()), (const void*)(myData->primitivesColors.getData()), (const void*)(myData->primitivesHardness.getData()), (const int*)(&perDrawCount[0]), (const void**)(&indicesVec[0]), indicesVec.size());
+        renderStroke_gl_multiDrawElements<GL_CPU>(nbVertices, vboVerticesID, vboColorsID, vboHardnessID, myData->glContext, strokeShader, buildUpPassShader, myData->buildUp, myData->opacity, myData->roi, myData->dstImage, dstImageIsFinalTexture, GL_TRIANGLE_FAN, (const void*)(myData->primitivesVertices.getData()), (const void*)(myData->primitivesColors.getData()), (const void*)(myData->primitivesHardness.getData()), (const int*)(&perDrawCount[0]), (const void**)(&indicesVec[0]), indicesVec.size());
 
     }
 }
@@ -1679,7 +1646,7 @@ renderStrokeRenderDot_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userDat
     *spacing = std::max(radius_x, radius_y) * 2. * brushSpacing;
 
 
-    renderDot_gl(*myData, center, radius_x, radius_y, myData->shapeColor, opacity,  brushHardness);
+    renderDot_gl(*myData, center, radius_x, radius_y, opacity,  brushHardness);
     return true;
 }
 
@@ -1859,10 +1826,8 @@ renderSmearBegin_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
                     bool pressureAffectsHardness,
                     bool pressureAffectsSize,
                     bool /*buildUp*/,
-                    const ColorRgbaD& shapeColor,
                     double opacity)
 {
-    Q_UNUSED(shapeColor);
     RenderSmearGLData* myData = (RenderSmearGLData*)userData;
 
     myData->brushSizePixelX = brushSizePixelX;
@@ -1945,7 +1910,6 @@ static bool renderSmearDotInternal(RenderSmearGLData* myData,
     qDebug() << "Next:" << nextDotBounds.x1<<nextDotBounds.y1<<nextDotBounds.x2<<nextDotBounds.y2;
 
     int nbVertices = myData->nbPointsPerSegment + 2;
-    ColorRgbaD shapeColor(1., 1., 1., 1.);
 
     // Get the dot vertices, colors, hardness and tex coords to premultiply the src rect
     bool wasIndicesValid = false;
@@ -1963,7 +1927,7 @@ static bool renderSmearDotInternal(RenderSmearGLData* myData,
         }
 
         Point dotCenter = {(prevDotBounds.x1 + prevDotBounds.x2) / 2., (prevDotBounds.y1 + prevDotBounds.y2) / 2.};
-        getDotTriangleFan(dotCenter , radius_x, radius_y, myData->nbPointsPerSegment, shapeColor, opacity, brushHardness, true, dstBounds, false, &myData->primitivesVertices, &myData->primitivesColors, &myData->primitivesHardness, &myData->primitivesTexCoords);
+        getDotTriangleFan(dotCenter , radius_x, radius_y, myData->nbPointsPerSegment, opacity, brushHardness, true, dstBounds, false, &myData->primitivesVertices, &myData->primitivesColors, &myData->primitivesHardness, &myData->primitivesTexCoords);
     }
 
 
@@ -2012,7 +1976,7 @@ static bool renderSmearDotInternal(RenderSmearGLData* myData,
         GL::BindTexture( target, dstTexture->getGLTextureID() );
 
 
-        OfxRGBAColourF fillColor = {(float)shapeColor.r, (float)shapeColor.g, (float)shapeColor.b, (float)opacity};
+        OfxRGBAColourF fillColor = {(float)1., (float)1., (float)1., (float)opacity};
 
         GLShaderBasePtr smearShader = myData->glData->getOrCreateSmearShader();
         unsigned int iboID = myData->glData->getOrCreateIBOID();
@@ -2047,9 +2011,9 @@ static bool renderSmearDotInternal(RenderSmearGLData* myData,
 
 
         GL::BindBuffer(GL_ARRAY_BUFFER, vboColorsID);
-        GL::BufferData(GL_ARRAY_BUFFER, nbVertices * 4 * sizeof(GLfloat), myData->primitivesColors.getData(), GL_DYNAMIC_DRAW);
+        GL::BufferData(GL_ARRAY_BUFFER, nbVertices * 1 * sizeof(GLfloat), myData->primitivesColors.getData(), GL_DYNAMIC_DRAW);
         GL::EnableClientState(GL_COLOR_ARRAY);
-        GL::ColorPointer(4, GL_FLOAT, 0, 0);
+        GL::ColorPointer(1, GL_FLOAT, 0, 0);
 
 
         GL::BindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboID);

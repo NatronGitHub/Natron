@@ -44,7 +44,7 @@ class RotoShapeRenderNodePrivate
 {
 public:
 
-    KnobChoiceWPtr outputComponents, renderType;
+    KnobChoiceWPtr renderType;
 
     // When drawing a smear with OSMesa we cannot use the output image directly
     // because the first draw done by OSMesa will clear the framebuffer instead
@@ -74,7 +74,6 @@ public:
     bool pressureAffectsHardness,
     bool pressureAffectsSize,
     bool buildUp,
-    const ColorRgbaD& shapeColor,
     double opacity);
 
     /**

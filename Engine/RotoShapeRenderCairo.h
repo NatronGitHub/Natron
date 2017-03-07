@@ -132,25 +132,24 @@ public:
     /**
      * @brief Low level: renders the given bezier feather onto the given mesh pattern. This uses the old algorithm which does not use triangulation.
      **/
-    static void renderFeather_old_cairo(const BezierPtr& bezier, TimeValue time, ViewIdx view, const RenderScale& scale, const ColorRgbaD& shapeColor, double opacity, double featherDist_pixelsX, double featherDist_pixelsY, double fallOff, cairo_pattern_t * mesh);
+    static void renderFeather_old_cairo(const BezierPtr& bezier, TimeValue time, ViewIdx view, const RenderScale& scale,  double opacity, double featherDist_pixelsX, double featherDist_pixelsY, double fallOff, cairo_pattern_t * mesh);
 
 
     /**
     * @brief Low level: renders the given internal bezier shape onto the given mesh pattern. This uses the old algorithm which does not use triangulation.
     **/
-    static void renderInternalShape_old_cairo(TimeValue time, const RenderScale& scale, const ColorRgbaD& shapeColor, double opacity, const Transform::Matrix3x3 & transform, cairo_t * cr, cairo_pattern_t * mesh, const BezierCPs &cps);
+    static void renderInternalShape_old_cairo(TimeValue time, const RenderScale& scale,  double opacity, const Transform::Matrix3x3 & transform, cairo_t * cr, cairo_pattern_t * mesh, const BezierCPs &cps);
 
 
     /**
      * @brief Low level: renders the given bezier feather onto the given mesh pattern. This uses the new algorithm which does use triangulation.
      **/
-    static void renderFeather_cairo(const RotoBezierTriangulation::PolygonData& inArgs, const ColorRgbaD& shapeColor,  double fallOff, cairo_pattern_t * mesh);
+    static void renderFeather_cairo(const RotoBezierTriangulation::PolygonData& inArgs, double fallOff, cairo_pattern_t * mesh);
 
     /**
      * @brief Low level: renders the given internal bezier shape onto the given mesh pattern. This uses the new algorithm which does use triangulation.
      **/
     static void renderInternalShape_cairo(const RotoBezierTriangulation::PolygonData& inArgs,
-                                          const ColorRgbaD& shapeColor,
                                           cairo_pattern_t * mesh);
 
 
