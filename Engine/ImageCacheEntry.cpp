@@ -506,7 +506,9 @@ static void repeatEdgesForDepth(PIX* ptr,
     
     RectI roundedBounds = bounds;
     roundedBounds.roundToTileSize(tileSizeX, tileSizeY);
-    
+    assert(roundedBounds.width() == tileSizeX);
+    assert(roundedBounds.height() == tileSizeY);
+
     {
         // 1
         RectI roi;
@@ -533,7 +535,7 @@ static void repeatEdgesForDepth(PIX* ptr,
                     ++srcPix;
                 }
                 // Remove what was done in the last iteration and go to the next line
-                pix += (roundedBounds.width() - roi.width());
+                pix += (tileSizeX - roi.width());
             }
         }
     }
@@ -551,22 +553,22 @@ static void repeatEdgesForDepth(PIX* ptr,
         RectI roi;
         roi.set(roundedBounds.x1, bounds.y1, bounds.x1, bounds.y2);
         if (!roi.isNull()) {
-            PIX* pix = getPix(ptr, roi.x1, roi.y1, roundedBounds);
+            PIX* dst_pix = getPix(ptr, roi.x1, roi.y1, roundedBounds);
             for (int y = roi.y1; y < roi.y2; ++y) {
                 PIX val = *getPix(ptr, bounds.x1, y, roundedBounds);
                 for (int x = roi.x1; x < roi.x2; ++x) {
-                    *pix = val;
-                    ++pix;
+                    *dst_pix = val;
+                    ++dst_pix;
                 }
                 // Remove what was done in the last iteration and go to the next line
-                pix += (roundedBounds.width() - roi.width());
+                dst_pix += (tileSizeX - roi.width());
             }
         }
     }
     {
         // 5
         RectI roi;
-        roi.set(bounds.x2, bounds.y1, roundedBounds.x1, bounds.y2);
+        roi.set(bounds.x2, bounds.y1, roundedBounds.x2, bounds.y2);
         if (!roi.isNull()) {
             PIX* pix = getPix(ptr, roi.x1, roi.y1, roundedBounds);
             for (int y = roi.y1; y < roi.y2; ++y) {
@@ -576,7 +578,7 @@ static void repeatEdgesForDepth(PIX* ptr,
                     ++pix;
                 }
                 // Remove what was done in the last iteration and go to the next line
-                pix += (roundedBounds.width() - roi.width());
+                pix += (tileSizeX - roi.width());
             }
         }
     }
@@ -585,7 +587,7 @@ static void repeatEdgesForDepth(PIX* ptr,
         RectI roi;
         roi.set(roundedBounds.x1, roundedBounds.y1, bounds.x1, bounds.y1);
         if (!roi.isNull()) {
-            PIX val = *ptr;
+            PIX val = *getPix(ptr, bounds.x1, bounds.y1, roundedBounds);
             fillWithConstant(val, ptr, roi, roundedBounds);
         }
     }
@@ -597,16 +599,16 @@ static void repeatEdgesForDepth(PIX* ptr,
             
             PIX* origPix = getPix(ptr, bounds.x1, bounds.y1, roundedBounds);
             
-            PIX* pix = getPix(ptr, roi.x1, roi.y1, roundedBounds);
+            PIX* dst_pix = getPix(ptr, roi.x1, roi.y1, roundedBounds);
             for (int y = roi.y1; y < roi.y2; ++y) {
                 PIX* srcPix = origPix;
                 for (int x = roi.x1; x < roi.x2; ++x) {
-                    *pix = *srcPix;
-                    ++pix;
+                    *dst_pix = *srcPix;
+                    ++dst_pix;
                     ++srcPix;
                 }
                 // Remove what was done in the last iteration and go to the next line
-                pix += (roundedBounds.width() - roi.width());
+                dst_pix += (tileSizeX - roi.width());
             }
         }
     }
@@ -733,28 +735,40 @@ static void downscaleMipMapForDepth(const PIX* srcTilesPtr[4],
                                     int tileSizeY)
 {
     // All tiles have the same bounds: we don't care about coordinates in this case nor checking whether we are in the bounds
-    // In input we either have 0, 2 or 3 tiles invalid: 2 if we are a tile on the edge, 3 in the corner
-#ifndef NDEBUG
-    int nValid = 0;
-    for (int i = 0; i < 4; ++i) {
-        if (srcTilesPtr[i]) {
-            ++nValid;
-        }
-    }
-    assert(nValid == 0 || nValid == 2 || nValid == 3);
-#endif
 
+    // Since in input some tiles may be invalid, we keep track of the area we filled
+    // In input we either have 0, 2 or 3 tiles invalid: 2 if we are a tile on the edge, 3 in the corner
+    RectI filledBounds;
+    RectI dstTileBoundsRounded = dstTileBounds;
+    dstTileBoundsRounded.roundToTileSize(tileSizeX, tileSizeY);
+
+    const int halfTileSizeX = tileSizeX / 2;
+    const int halfTileSizeY = tileSizeY / 2;
+#ifndef NDEBUG
+    int nInvalid = 0;
+#endif
     for (int ty = 0; ty < 2; ++ty) {
         for (int tx = 0; tx < 2; ++tx) {
 
             int t_i = ty * 2 + tx;
             if (!srcTilesPtr[t_i]) {
                 // This tile will be filled in repeatEdgesForDepth
+#ifndef NDEBUG
+                ++nInvalid;
+#endif
                 continue;
+            } else {
+                RectI subTileRect;
+                subTileRect.x1 = dstTileBoundsRounded.x1 + tx * halfTileSizeX;
+                subTileRect.y1 = dstTileBoundsRounded.y1 + ty * halfTileSizeY;
+                subTileRect.x2 = subTileRect.x1 + halfTileSizeX;
+                subTileRect.y2 = subTileRect.y1 + halfTileSizeY;
+                if (filledBounds.isNull()) {
+                    filledBounds = subTileRect;
+                } else {
+                    filledBounds.merge(subTileRect);
+                }
             }
-
-            int halfTileSizeX = tileSizeX / 2;
-            int halfTileSizeY = tileSizeY / 2;
 
             PIX* dst_pixels = dstTilePtr + (halfTileSizeY * ty * tileSizeX) + (halfTileSizeX * tx);
 
@@ -780,9 +794,11 @@ static void downscaleMipMapForDepth(const PIX* srcTilesPtr[4],
         }
     }
 
+    assert(nInvalid == 0 || nInvalid == 2 || nInvalid == 3);
 
-    if (!isTileAligned(dstTileBounds, tileSizeX, tileSizeY)) {
-        repeatEdgesForDepth<PIX>(dstTilePtr, dstTileBounds, tileSizeX, tileSizeY);
+
+    if (filledBounds.width() != tileSizeX || filledBounds.height() != tileSizeY) {
+        repeatEdgesForDepth<PIX>(dstTilePtr, filledBounds, tileSizeX, tileSizeY);
     }
 
 } // downscaleMipMapForDepth
@@ -996,6 +1012,9 @@ ImageCacheEntryPrivate::readAndUpdateStateMap(bool hasExclusiveLock)
     // If the tiles state at our mipmap level is empty, default initialize it
     bool cachedTilesMapInitialized = !perMipMapCacheTilesState[mipMapLevel].state->tiles.empty();
     if (!cachedTilesMapInitialized) {
+        if (!hasExclusiveLock) {
+            return ImageCacheEntryPrivate::eUpdateStateMapRetCodeNeedWriteLock;
+        }
         *perMipMapCacheTilesState[mipMapLevel].state = *localTilesState.state;
         stateMapModified = true;
 
@@ -1528,7 +1547,7 @@ ImageCacheEntry::markCacheTilesAsAborted()
 
                 // We marked the cache tile status to eTileStatusPending previously in
                 // readAndUpdateStateMap
-                // Mark it as eTileStatusRendered now
+                // Mark it as eTileStatusNotRendered now
                 assert(cacheTileState->status == eTileStatusPending);
                 cacheTileState->status = eTileStatusNotRendered;
 

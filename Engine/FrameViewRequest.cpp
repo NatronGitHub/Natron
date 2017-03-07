@@ -44,6 +44,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Hash64.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Image.h"
+#include "Engine/ImageCacheEntry.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/NodeMetadata.h"
@@ -223,6 +224,12 @@ FrameViewRequest::~FrameViewRequest()
 #ifdef TRACE_REQUEST_LIFETIME
     qDebug() << "Delete request" << _imp->nodeName.c_str();
 #endif
+    if (_imp->status == FrameViewRequest::eFrameViewRequestStatusNotRendered && _imp->image) {
+        ImageCacheEntryPtr entry = _imp->image->getCacheEntry();
+        if (entry) {
+            entry->markCacheTilesAsAborted();
+        }
+    }
 }
 
 EffectInstancePtr

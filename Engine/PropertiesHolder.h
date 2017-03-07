@@ -131,18 +131,18 @@ protected:
     template <typename T>
     boost::shared_ptr<Property<T> > createPropertyInternal(const std::string& name) const
     {
-        boost::shared_ptr<PropertyBase>* propPtr = 0;
-        propPtr = &_properties[name];
 
+        std::map<std::string, boost::shared_ptr<PropertyBase> >::const_iterator found = _properties.find(name);
         boost::shared_ptr<Property<T> > propTemplate;
-        if (!*propPtr) {
-            propTemplate.reset(new Property<T>);
-            *propPtr = propTemplate;
+        if (found != _properties.end()) {
+            propTemplate = boost::dynamic_pointer_cast<Property<T> >(found->second);
         } else {
-            propTemplate = boost::dynamic_pointer_cast<Property<T> >(*propPtr);
+            propTemplate.reset(new Property<T>);
+            _properties.insert(std::make_pair(name, propTemplate));
         }
         assert(propTemplate);
-        return propTemplate;    }
+        return propTemplate;
+    }
 
 
     void ensurePropertiesCreated() const

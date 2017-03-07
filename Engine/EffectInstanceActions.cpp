@@ -2057,6 +2057,9 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
     // now add the input gubbins to the per inputs metadatas
     for (int i = -1; i < nInputs; ++i) {
 
+        if (i >= 0 && !inputMetadatas[i]) {
+            continue;
+        }
         double par;
         if (!multipleClipsPAR) {
             par = inputParSet ? inputPar : projectPAR;
@@ -2160,6 +2163,12 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
     // First fix incorrect metadatas that could have been set by the plug-in
     for (int i = -1; i < nInputs; ++i) {
 
+        if (i >= 0) {
+            EffectInstancePtr input = _publicInterface->getInput(i);
+            if (!input) {
+                continue;
+            }
+        }
         ImageBitDepthEnum depth = md.getBitDepth(i);
         md.setBitDepth( i, _publicInterface->getClosestSupportedBitDepth(depth));
 

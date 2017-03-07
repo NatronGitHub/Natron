@@ -1198,6 +1198,9 @@ OfxImageEffectInstance::getClipPreferences_safe(NodeMetadata& defaultPrefs)
             if ( foundClip == clipInputs.end() ) {
                 continue;
             }
+            if (!foundClip->first->getConnected()) {
+                continue;
+            }
             int inputNb = foundClip->second;
 
 #       ifdef OFX_DEBUG_ACTIONS
