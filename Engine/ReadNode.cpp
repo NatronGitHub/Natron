@@ -313,7 +313,7 @@ ReadNode::ReadNode(NodePtr n)
     : EffectInstance(n)
     , _imp( new ReadNodePrivate(this) )
 {
-    setSupportsRenderScaleMaybe(eSupportsYes);
+    setSupportsRenderScaleMaybe(eSupportsNo);
 }
 
 ReadNode::~ReadNode()
