@@ -9,17 +9,17 @@
 
 - Multi-dimensional parameters don't automatically fold into a single dimension, except for scale and size params.
 - Binaries distributed through Natron's web site are now built with 10-bit x264 and 10/12-bit libvpx-vp9 support. That means the produced video files may be unplayable on some hardware (e.g. phones or TVs), but Natron should really be used to produce digital intermediates with the highest possible fidelity, which can then be transcoded to more suitable distribution codecs.
+- Better cache usage for Readers.
 
 ### Plugins
 
+- WriteFFmpeg: the preferred pixel coding and bit depth can now be selected, which is very useful for codecs that propose multiple pixel formats (e.g. ffv1, ffvhuff, huffyuv, jpeg2000, mjpeg, mpeg2video, vc2, libopenjpeg, png, qtrle, targa, tiff, libschroedinger, libtheora, libvpx, libvpx-vp9, libx264, libx265). 
+- ColorCorrect: changed the Contrast formula to make adjustments more intuitive, see https://compositormathematic.wordpress.com/2013/07/06/gamma-contrast/ - this may affect existing projects that used the previously buggy Contrast parameter.
 - LensDistortion: add PanoTools/PTGui/PTAssembler/Hugin model.
 - Card3D can now import/export chan files from Natron, Nuke, 3D-Equalizer, Maya, etc., and txt files from Boujou.
 - Card3D and CornerPin: only show things that are in front of the camera.
 - LensDistortion: add PanoTools/PTGui/PTAssembler/Hugin model.
 - ReadOIIO: add advanced options for reading RAW files, nonworking due to https://github.com/OpenImageIO/oiio/issues/1632
-- ReadOIIO: fix a bug where the OIIO cache would be disabled on Natron 2.2
-- WriteFFmpeg: display the pixel format which is fed into the encoder, together with its bit depth and bpp.
-- ColorCorrect: changed the Contrast formula to make adjustments more intuitive, see https://compositormathematic.wordpress.com/2013/07/06/gamma-contrast/
 
 
 ## Version 2.2.5
