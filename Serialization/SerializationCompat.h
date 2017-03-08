@@ -35,6 +35,7 @@
 
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_OFF(unused-parameter)
+#include <boost/algorithm/string/predicate.hpp> // iequals
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/serialization/base_object.hpp>
@@ -476,6 +477,34 @@ public:
         }
     }
 };
+
+inline void
+checkForPreNatron226String(std::string* choiceString)
+{
+    if (boost::iequals(*choiceString,std::string("Color.RGBA")) || boost::iequals(*choiceString,std::string("Color.RGB")) || boost::iequals(*choiceString,std::string("Color.Alpha"))) {
+        *choiceString = kNatronColorPlaneID;
+    } else if (boost::iequals(*choiceString,std::string("Backward.Motion"))) {
+        *choiceString = kNatronBackwardMotionVectorsPlaneID "." kNatronMotionComponentsLabel;
+    } else if (boost::iequals(*choiceString,std::string("Forward.Motion"))) {
+        *choiceString = kNatronForwardMotionVectorsPlaneID "." kNatronMotionComponentsLabel;
+    } else if (boost::iequals(*choiceString, std::string("DisparityLeft.Disparity"))) {
+        *choiceString = kNatronDisparityLeftPlaneID "." kNatronDisparityComponentsLabel;
+    } else if (boost::iequals(*choiceString, std::string("DisparityRight.Disparity"))) {
+        *choiceString = kNatronDisparityRightPlaneID "." kNatronDisparityComponentsLabel;
+    }
+
+    // Map also channels
+    if (boost::iequals(*choiceString, std::string("RGBA.R")) || boost::iequals(*choiceString, std::string("UV.r"))) {
+        *choiceString = kNatronColorPlaneID ".R";
+    } else if (boost::iequals(*choiceString, std::string("RGBA.G")) || boost::iequals(*choiceString, std::string("UV.g"))) {
+        *choiceString = kNatronColorPlaneID ".G";
+    } else if (boost::iequals(*choiceString, std::string("RGBA.B")) || boost::iequals(*choiceString, std::string("UV.b"))) {
+        *choiceString = kNatronColorPlaneID ".B";
+    } else if (boost::iequals(*choiceString, std::string("RGBA.A")) || boost::iequals(*choiceString, std::string("UV.a"))) {
+        *choiceString = kNatronColorPlaneID ".A";
+    }
+}
+
 
 } // namespace Compat
 
@@ -1046,6 +1075,7 @@ SERIALIZATION_NAMESPACE::KnobSerialization::serialize(Archive & ar,
           const unsigned int version)
 {
 
+    _boostSerializationVersion = version;
     _mustSerialize = true;
 
     ar & ::boost::serialization::make_nvp("Name", _scriptName);
@@ -1239,28 +1269,7 @@ SERIALIZATION_NAMESPACE::KnobSerialization::serialize(Archive & ar,
                 // In Natron 2.2.3 we changed the encoding of planes: they no longer are planeLabel + "." + channels
                 // but planeID + "." + channels
                 // Hard-code the mapping
-                if (stringChoice == "Color.RGBA" || stringChoice == "Color.RGB" || stringChoice == "Color.Alpha") {
-                    stringChoice = kNatronColorPlaneID;
-                } else if (stringChoice == "Backward.Motion") {
-                    stringChoice = kNatronBackwardMotionVectorsPlaneID "." kNatronMotionComponentsLabel;
-                } else if (stringChoice == "Forward.Motion") {
-                    stringChoice = kNatronForwardMotionVectorsPlaneID "." kNatronMotionComponentsLabel;
-                } else if (stringChoice == "DisparityLeft.Disparity") {
-                    stringChoice = kNatronDisparityLeftPlaneID "." kNatronDisparityComponentsLabel;
-                } else if (stringChoice == "DisparityRight.Disparity") {
-                    stringChoice = kNatronDisparityRightPlaneID "." kNatronDisparityComponentsLabel;
-                }
-
-                // Map also channels
-                if (stringChoice == "RGBA.R") {
-                    stringChoice = kNatronColorPlaneID ".R";
-                } else if (stringChoice == "RGBA.G") {
-                    stringChoice = kNatronColorPlaneID ".B";
-                } else if (stringChoice == "RGBA.B") {
-                    stringChoice = kNatronColorPlaneID ".A";
-                } else if (stringChoice == "RGBA.A") {
-                    stringChoice = kNatronColorPlaneID ".A";
-                }
+                Compat::checkForPreNatron226String(&stringChoice);
             }
             //_extraData = cData;
 
@@ -1468,6 +1477,34 @@ SERIALIZATION_NAMESPACE::NodeSerialization::serialize(Archive & ar,
         KnobSerializationPtr ks(new KnobSerialization);
         ar & ::boost::serialization::make_nvp("item", *ks);
         _knobsValues.push_back(ks);
+    }
+
+    // Before Natron 2.2.6 we used to have a string parameter for each dynamic choice parameter.
+    // This has been removed, hence handle backward compat by trying to find such string parameter serialization
+    for (SERIALIZATION_NAMESPACE::KnobSerializationList::iterator it = _knobsValues.begin(); it != _knobsValues.end(); ++it) {
+        if ((*it)->_typeName != NATRON_NAMESPACE::KnobChoice::typeNameStatic()) {
+            continue;
+        }
+
+        std::string stringParamName = (*it)->_scriptName + "Choice";
+        for (SERIALIZATION_NAMESPACE::KnobSerializationList::iterator it2 = _knobsValues.begin(); it2 != _knobsValues.end(); ++it2) {
+            if ( (*it2)->_scriptName == stringParamName && (*it2)->_dataType == SERIALIZATION_NAMESPACE::eSerializationValueVariantTypeString) {
+
+                const SERIALIZATION_NAMESPACE::KnobSerialization::PerDimensionValueSerializationVec& perDimValues = (*it2)->_values["Main"];
+                if (perDimValues.size() > 0) {
+
+                    SERIALIZATION_NAMESPACE::KnobSerialization::PerDimensionValueSerializationVec& choiceDimValues = (*it)->_values["Main"];
+                    choiceDimValues.resize(1);
+                    choiceDimValues[0]._value.isString = perDimValues[0]._value.isString;
+
+                    if ((*it)->_boostSerializationVersion < KNOB_SERIALIZATION_CHANGE_PLANES_SERIALIZATION) {
+                        Compat::checkForPreNatron226String(&choiceDimValues[0]._value.isString);
+                    }
+                }
+                
+                break;
+            }
+        }
     }
 
     if (version < NODE_SERIALIZATION_CHANGE_INPUTS_SERIALIZATION) {

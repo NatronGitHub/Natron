@@ -435,6 +435,8 @@ public:
     // True if the knob has been changed since its default state or if this is a user knob
     bool _mustSerialize;
 
+    // Used for bw compat with boost serialization
+    unsigned int _boostSerializationVersion;
 
     explicit KnobSerialization()
     : _typeName()
@@ -461,6 +463,7 @@ public:
     , _inViewerContextLabel()
     , _tooltip()
     , _mustSerialize(false)
+    , _boostSerializationVersion(0)
     {
 
     }
