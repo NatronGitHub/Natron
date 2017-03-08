@@ -1375,8 +1375,9 @@ int
 Node::getMaxInputCount() const
 {
     ///MT-safe, never changes
-    assert(_imp->effect);
-
+    if (!_imp->effect) {
+        return 0;
+    }
     return _imp->effect->getMaxInputCount();
 }
 

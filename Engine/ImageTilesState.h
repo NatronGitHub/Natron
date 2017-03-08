@@ -93,12 +93,10 @@ struct IPCTilesState;
 struct TilesState
 {
     TileStateVector tiles;
-    std::size_t numPendingTiles;
     std::size_t numRenderedTiles;
 
     TilesState()
     : tiles()
-    , numPendingTiles(0)
     , numRenderedTiles(0)
     {
 

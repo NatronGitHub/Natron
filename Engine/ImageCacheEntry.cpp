@@ -37,6 +37,7 @@
 #include "Engine/ImageCacheKey.h"
 #include "Engine/ImageStorage.h"
 #include "Engine/ImagePrivate.h"
+#include "Engine/ImageCacheEntryProcessing.h"
 #include "Engine/ImageTilesState.h"
 #include "Engine/MultiThread.h"
 #include "Engine/ThreadPool.h"
@@ -383,267 +384,8 @@ ImageCacheEntry::ensureImageBuffersAllocated()
     Image::getChannelPointers((const void**)data.ptrs, _imp->roi.x1, _imp->roi.y1, _imp->roi, _imp->nComps, _imp->bitdepth, _imp->localBuffers, &_imp->pixelStride);
 }
 
-template <typename PIX>
-void copyPixelsForDepth(const RectI& renderWindow,
-                        const PIX* srcPixelsData,
-                        int srcXStride,
-                        int srcYStride,
-                        PIX* dstPixelsData,
-                        int dstXStride,
-                        int dstYStride)
-{
-    const PIX* src_pixels = srcPixelsData;
-    PIX* dst_pixels = dstPixelsData;
-
-    if (srcXStride == 1 && srcXStride == dstXStride) {
-        for (int y = renderWindow.y1; y < renderWindow.y2; ++y,
-             src_pixels += srcYStride,
-             dst_pixels += dstYStride) {
-
-            memcpy(dst_pixels, src_pixels, renderWindow.width() * sizeof(srcXStride));
-        }
-    } else {
-        for (int y = renderWindow.y1; y < renderWindow.y2; ++y) {
-            for (int x = renderWindow.x1; x < renderWindow.x2; ++x,
-                 src_pixels += srcXStride,
-                 dst_pixels += dstXStride) {
-
-                *dst_pixels = *src_pixels;
-            }
-
-            dst_pixels += (dstYStride - renderWindow.width() * dstXStride);
-            src_pixels += (srcYStride - renderWindow.width() * srcXStride);
-        }
-    }
-} // copyPixelsForDepth
-
-static void copyPixels(const RectI& renderWindow,
-                       ImageBitDepthEnum depth,
-                       const void* srcPixelsData,
-                       int srcXStride,
-                       int srcYStride,
-                       void* dstPixelsData,
-                       int dstXStride,
-                       int dstYStride)
-{
-    switch (depth) {
-        case eImageBitDepthByte:
-            copyPixelsForDepth<char>(renderWindow, (const char*)srcPixelsData, srcXStride, srcYStride, (char*)dstPixelsData, dstXStride, dstYStride);
-            break;
-        case eImageBitDepthShort:
-            copyPixelsForDepth<unsigned short>(renderWindow, (const unsigned short*)srcPixelsData, srcXStride, srcYStride, (unsigned short*)dstPixelsData, dstXStride, dstYStride);
-            break;
-        case eImageBitDepthFloat:
-            copyPixelsForDepth<float>(renderWindow, (const float*)srcPixelsData, srcXStride, srcYStride, (float*)dstPixelsData, dstXStride, dstYStride);
-            break;
-        default:
-            break;
-    }
-}
-
-/**
- * @brief Returns true if the rectangle "bounds" is aligned to the tile size or not
- **/
-static bool isTileAligned(const RectI& bounds,
-                          int tileSizeX,
-                          int tileSizeY)
-{
-    assert(bounds.x1 % tileSizeX == 0 || bounds.x2 % tileSizeX == 0);
-    assert(bounds.y1 % tileSizeX == 0 || bounds.y2 % tileSizeY == 0);
-    assert(bounds.width() <= tileSizeX);
-    assert(bounds.height() <= tileSizeY);
-    return bounds.x1 % tileSizeX == 0 && bounds.x2 % tileSizeX == 0 && bounds.y1 % tileSizeY == 0 && bounds.y2 % tileSizeY == 0;
-}
 
 
-template <typename PIX>
-PIX* getPix(PIX* ptr,
-            int x, int y,
-            const RectI& bounds)
-{
-    if (x < bounds.x1 || x >= bounds.x2 || y < bounds.y1 || y >= bounds.y2) {
-        return 0;
-    }
-    return ptr + bounds.width() * y + x;
-}
-
-template <typename PIX>
-static void fillWithConstant(PIX val,
-                             PIX* ptr,
-                             const RectI& roi,
-                             const RectI& bounds)
-{
-
-    PIX* pix = getPix(ptr, roi.x1, roi.y1, bounds);
-    for (int y = roi.y1; y < roi.y2; ++y) {
-        for (int x = roi.x1; x < roi.x2; ++x) {
-            *pix = val;
-            ++pix;
-        }
-        pix += (bounds.width() - roi.width());
-    }
-}
-
-
-/**
- * @brief If the tile bounds is not aligned to the tile size, repeat pixels on the edge.
- * This function fills the numbered rectangles with the nearest pixel V as such:
- 
- 12223
- 4VVV5
- 4VVV5
- 67778
- **/
-template <typename PIX>
-static void repeatEdgesForDepth(PIX* ptr,
-                        const RectI& bounds,
-                        int tileSizeX,
-                        int tileSizeY)
-{
-
-    assert(bounds.width() <= tileSizeX);
-    assert(bounds.height() <= tileSizeY);
-    
-    RectI roundedBounds = bounds;
-    roundedBounds.roundToTileSize(tileSizeX, tileSizeY);
-    assert(roundedBounds.width() == tileSizeX);
-    assert(roundedBounds.height() == tileSizeY);
-
-    {
-        // 1
-        RectI roi;
-        roi.set(roundedBounds.x1, bounds.y2, bounds.x1, roundedBounds.y2);
-        if (!roi.isNull()) {
-            PIX val = *getPix(ptr, bounds.x1, bounds.y2 - 1, roundedBounds);
-            fillWithConstant(val, ptr, roi, roundedBounds);
-        }
-    }
-    {
-        // 2
-        RectI roi;
-        roi.set(bounds.x1, bounds.y2, roundedBounds.x2, roundedBounds.y2);
-        if (!roi.isNull()) {
-            
-            PIX* origPix = getPix(ptr, bounds.x1, bounds.y2 - 1, roundedBounds);
-            
-            PIX* pix = getPix(ptr, roi.x1, roi.y1, roundedBounds);
-            for (int y = roi.y1; y < roi.y2; ++y) {
-                PIX* srcPix = origPix;
-                for (int x = roi.x1; x < roi.x2; ++x) {
-                    *pix = *srcPix;
-                    ++pix;
-                    ++srcPix;
-                }
-                // Remove what was done in the last iteration and go to the next line
-                pix += (tileSizeX - roi.width());
-            }
-        }
-    }
-    {
-        // 3
-        RectI roi;
-        roi.set(bounds.x2, bounds.y2, roundedBounds.x2, roundedBounds.y2);
-        if (!roi.isNull()) {
-            PIX val = *getPix(ptr, bounds.x2 - 1, bounds.y2 - 1, roundedBounds);
-            fillWithConstant(val, ptr, roi, roundedBounds);
-        }
-    }
-    {
-        // 4
-        RectI roi;
-        roi.set(roundedBounds.x1, bounds.y1, bounds.x1, bounds.y2);
-        if (!roi.isNull()) {
-            PIX* dst_pix = getPix(ptr, roi.x1, roi.y1, roundedBounds);
-            for (int y = roi.y1; y < roi.y2; ++y) {
-                PIX val = *getPix(ptr, bounds.x1, y, roundedBounds);
-                for (int x = roi.x1; x < roi.x2; ++x) {
-                    *dst_pix = val;
-                    ++dst_pix;
-                }
-                // Remove what was done in the last iteration and go to the next line
-                dst_pix += (tileSizeX - roi.width());
-            }
-        }
-    }
-    {
-        // 5
-        RectI roi;
-        roi.set(bounds.x2, bounds.y1, roundedBounds.x2, bounds.y2);
-        if (!roi.isNull()) {
-            PIX* pix = getPix(ptr, roi.x1, roi.y1, roundedBounds);
-            for (int y = roi.y1; y < roi.y2; ++y) {
-                PIX val = *getPix(ptr, bounds.x2 - 1, y, roundedBounds);
-                for (int x = roi.x1; x < roi.x2; ++x) {
-                    *pix = val;
-                    ++pix;
-                }
-                // Remove what was done in the last iteration and go to the next line
-                pix += (tileSizeX - roi.width());
-            }
-        }
-    }
-    {
-        // 6
-        RectI roi;
-        roi.set(roundedBounds.x1, roundedBounds.y1, bounds.x1, bounds.y1);
-        if (!roi.isNull()) {
-            PIX val = *getPix(ptr, bounds.x1, bounds.y1, roundedBounds);
-            fillWithConstant(val, ptr, roi, roundedBounds);
-        }
-    }
-    {
-        // 7
-        RectI roi;
-        roi.set(bounds.x1, roundedBounds.y1, bounds.x2, bounds.y1);
-        if (!roi.isNull()) {
-            
-            PIX* origPix = getPix(ptr, bounds.x1, bounds.y1, roundedBounds);
-            
-            PIX* dst_pix = getPix(ptr, roi.x1, roi.y1, roundedBounds);
-            for (int y = roi.y1; y < roi.y2; ++y) {
-                PIX* srcPix = origPix;
-                for (int x = roi.x1; x < roi.x2; ++x) {
-                    *dst_pix = *srcPix;
-                    ++dst_pix;
-                    ++srcPix;
-                }
-                // Remove what was done in the last iteration and go to the next line
-                dst_pix += (tileSizeX - roi.width());
-            }
-        }
-    }
-    {
-        // 8
-        RectI roi;
-        roi.set(bounds.x2, roundedBounds.y1, roundedBounds.x2, bounds.y1);
-        if (!roi.isNull()) {
-            PIX val = *getPix(ptr, bounds.x2 - 1, bounds.y1, roundedBounds);
-            fillWithConstant(val, ptr, roi, roundedBounds);
-        }
-    }
-    
-} // repeatEdgesForDepth
-
-static void repeatEdges(ImageBitDepthEnum depth,
-                        void* ptr,
-                        const RectI& bounds,
-                        int tileSizeX,
-                        int tileSizeY)
-{
-    switch (depth) {
-        case eImageBitDepthByte:
-            repeatEdgesForDepth<char>((char*)ptr, bounds, tileSizeX, tileSizeY);
-            break;
-        case eImageBitDepthShort:
-            repeatEdgesForDepth<unsigned short>((unsigned short*)ptr, bounds, tileSizeX, tileSizeY);
-            break;
-        case eImageBitDepthFloat:
-            repeatEdgesForDepth<float>((float*)ptr, bounds, tileSizeX, tileSizeY);
-            break;
-        default:
-            break;
-    }
-} // repeatEdges
 
 template <bool copyToCache>
 class CachePixelsTransferProcessor : public MultiThreadProcessorBase
@@ -696,11 +438,12 @@ public:
 
                 const unsigned char* localPix = Image::pixelAtStatic(renderWindow.x1, renderWindow.y1, _imp->roi, _imp->nComps, getSizeOfForBitDepth(_imp->bitdepth), (const unsigned char*)_imp->localBuffers[task.channel_i]);
                 assert(localPix);
-                copyPixels(renderWindow, _imp->bitdepth, localPix, _imp->pixelStride, _imp->roi.width() * _imp->pixelStride, task.ptr, 1, _imp->localTilesState.tileSizeX);
+                ImageCacheEntryProcessing::copyPixels(renderWindow, _imp->bitdepth, localPix, _imp->pixelStride, _imp->roi.width() * _imp->pixelStride, task.ptr, 1, _imp->localTilesState.tileSizeX);
                 
                 // When inserting a tile in the cache, if this is a tile in the border, repeat edges
-                if (!isTileAligned(task.bounds, _imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY)) {
-                    repeatEdges(_imp->bitdepth, task.ptr, task.bounds, _imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY);
+                if (task.bounds.width() != _imp->localTilesState.tileSizeX ||
+                    task.bounds.height() != _imp->localTilesState.tileSizeY) {
+                    ImageCacheEntryProcessing::repeatEdges(_imp->bitdepth, task.ptr, task.bounds, _imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY);
                 }
             } else {
 
@@ -716,7 +459,7 @@ public:
 
                 const unsigned char* localPix = Image::pixelAtStatic(renderWindow.x1, renderWindow.y1, _imp->roi, _imp->nComps, getSizeOfForBitDepth(_imp->bitdepth), (const unsigned char*)_imp->localBuffers[task.channel_i]);
                 assert(localPix);
-                copyPixels(renderWindow, _imp->bitdepth, task.ptr, 1, _imp->localTilesState.tileSizeX, (void*)localPix, _imp->pixelStride, _imp->roi.width() * _imp->pixelStride);
+                ImageCacheEntryProcessing::copyPixels(renderWindow, _imp->bitdepth, task.ptr, 1, _imp->localTilesState.tileSizeX, (void*)localPix, _imp->pixelStride, _imp->roi.width() * _imp->pixelStride);
             }
 
         }
@@ -727,104 +470,6 @@ public:
 typedef CachePixelsTransferProcessor<true> ToCachePixelsTransferProcessor;
 typedef CachePixelsTransferProcessor<false> FromCachePixelsTransferProcessor;
 
-template <typename PIX>
-static void downscaleMipMapForDepth(const PIX* srcTilesPtr[4],
-                                    PIX* dstTilePtr,
-                                    const RectI& dstTileBounds,
-                                    int tileSizeX,
-                                    int tileSizeY)
-{
-    // All tiles have the same bounds: we don't care about coordinates in this case nor checking whether we are in the bounds
-
-    // Since in input some tiles may be invalid, we keep track of the area we filled
-    // In input we either have 0, 2 or 3 tiles invalid: 2 if we are a tile on the edge, 3 in the corner
-    RectI filledBounds;
-    RectI dstTileBoundsRounded = dstTileBounds;
-    dstTileBoundsRounded.roundToTileSize(tileSizeX, tileSizeY);
-
-    const int halfTileSizeX = tileSizeX / 2;
-    const int halfTileSizeY = tileSizeY / 2;
-#ifndef NDEBUG
-    int nInvalid = 0;
-#endif
-    for (int ty = 0; ty < 2; ++ty) {
-        for (int tx = 0; tx < 2; ++tx) {
-
-            int t_i = ty * 2 + tx;
-            if (!srcTilesPtr[t_i]) {
-                // This tile will be filled in repeatEdgesForDepth
-#ifndef NDEBUG
-                ++nInvalid;
-#endif
-                continue;
-            } else {
-                RectI subTileRect;
-                subTileRect.x1 = dstTileBoundsRounded.x1 + tx * halfTileSizeX;
-                subTileRect.y1 = dstTileBoundsRounded.y1 + ty * halfTileSizeY;
-                subTileRect.x2 = subTileRect.x1 + halfTileSizeX;
-                subTileRect.y2 = subTileRect.y1 + halfTileSizeY;
-                if (filledBounds.isNull()) {
-                    filledBounds = subTileRect;
-                } else {
-                    filledBounds.merge(subTileRect);
-                }
-            }
-
-            PIX* dst_pixels = dstTilePtr + (halfTileSizeY * ty * tileSizeX) + (halfTileSizeX * tx);
-
-            const PIX* src_pixels = srcTilesPtr[t_i];
-            const PIX* src_pixels_next = srcTilesPtr[t_i] + tileSizeX;
-
-            for (int y = 0; y < halfTileSizeY; ++y) {
-                for (int x = 0; x < halfTileSizeX; ++x) {
-
-                    double sum = (double)*src_pixels + (double)*(src_pixels + 1);
-                    sum += ((double)*src_pixels_next + (double)*(src_pixels_next + 1));
-                    sum /= 4;
-                    *dst_pixels = (PIX)sum;
-
-                    src_pixels_next += 2;
-                    src_pixels += 2;
-                    ++dst_pixels;
-                }
-                src_pixels += tileSizeX;
-                src_pixels_next += tileSizeX;
-                dst_pixels += halfTileSizeX;
-            }
-        }
-    }
-
-    assert(nInvalid == 0 || nInvalid == 2 || nInvalid == 3);
-
-
-    if (filledBounds.width() != tileSizeX || filledBounds.height() != tileSizeY) {
-        repeatEdgesForDepth<PIX>(dstTilePtr, filledBounds, tileSizeX, tileSizeY);
-    }
-
-} // downscaleMipMapForDepth
-
-static void downscaleMipMap(ImageBitDepthEnum depth,
-                            const void* srcTilesPtr[4],
-                            void* dstTilePtr,
-                            const RectI& dstTileBounds,
-                            int tileSizeX,
-                            int tileSizeY)
-{
-    switch (depth) {
-        case eImageBitDepthByte:
-            downscaleMipMapForDepth<char>((const char**)srcTilesPtr, (char*)dstTilePtr, dstTileBounds, tileSizeX, tileSizeY);
-            break;
-        case eImageBitDepthShort:
-            downscaleMipMapForDepth<unsigned short>((const unsigned short**)srcTilesPtr, (unsigned short*)dstTilePtr, dstTileBounds, tileSizeX, tileSizeY);
-            break;
-        case eImageBitDepthFloat:
-            downscaleMipMapForDepth<float>((const float**)srcTilesPtr, (float*)dstTilePtr, dstTileBounds, tileSizeX, tileSizeY);
-            break;
-        default:
-            break;
-    }
-
-}
 
 class DownscaleMipMapProcessor : public MultiThreadProcessorBase
 {
@@ -882,7 +527,7 @@ public:
                 task.srcTiles[2] ? task.srcTiles[2]->ptr : 0,
                 task.srcTiles[3] ? task.srcTiles[3]->ptr : 0};
 
-            downscaleMipMap(_bitdepth, srcPtrs, task.ptr, task.bounds, _tileSizeX, _tileSizeY);
+            ImageCacheEntryProcessing::downscaleMipMap(_bitdepth, srcPtrs, task.ptr, task.bounds, _tileSizeX, _tileSizeY);
         }
         return eActionStatusOK;
     } // multiThreadFunction
@@ -1017,8 +662,8 @@ ImageCacheEntryPrivate::readAndUpdateStateMap(bool hasExclusiveLock)
         }
         *perMipMapCacheTilesState[mipMapLevel].state = *localTilesState.state;
         stateMapModified = true;
-
     }
+
 
 
     // Clear the tiles to fetch list
@@ -1026,6 +671,8 @@ ImageCacheEntryPrivate::readAndUpdateStateMap(bool hasExclusiveLock)
 
     TileStateHeader& cacheStateMap = perMipMapCacheTilesState[mipMapLevel];
 
+    // Copy the number of rendered tiles from the cached map
+    localTilesState.state->numRenderedTiles = cacheStateMap.state->numRenderedTiles;
 
     // For each tile in the RoI (rounded to the tile size):
     // Check the tile status, only copy from the cache if rendered
@@ -1065,7 +712,6 @@ ImageCacheEntryPrivate::readAndUpdateStateMap(bool hasExclusiveLock)
                             return ImageCacheEntryPrivate::eUpdateStateMapRetCodeNeedWriteLock;
                         }
                         cacheTileState->status = eTileStatusPending;
-                        ++cacheStateMap.state->numPendingTiles;
 
                         stateMapModified = true;
                         localTileState->status = eTileStatusNotRendered;
@@ -1090,7 +736,6 @@ ImageCacheEntryPrivate::readAndUpdateStateMap(bool hasExclusiveLock)
                     }
                     localTileState->status = eTileStatusNotRendered;
                     cacheTileState->status = eTileStatusPending;
-                    ++cacheStateMap.state->numPendingTiles;
 
                     stateMapModified = true;
                 }   break;
@@ -1317,8 +962,6 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
 
                 assert(cacheTileState->status == eTileStatusPending);
                 cacheTileState->status = eTileStatusRendered;
-                assert(cacheStateMap.state->numPendingTiles > 0);
-                --cacheStateMap.state->numPendingTiles;
                 ++cacheStateMap.state->numRenderedTiles;
             }
         }
@@ -1448,6 +1091,7 @@ ImageCacheEntry::fetchCachedTilesAndUpdateStatus(TileStateHeader* tileStatus, bo
 void
 ImageCacheEntry::getStatus(TileStateHeader* tileStatus, bool* hasUnRenderedTile, bool *hasPendingResults) const
 {
+
     if (tileStatus) {
         *tileStatus = TileStateHeader(_imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY, _imp->localTilesState.bounds, _imp->localTilesState.state);
     }
@@ -1460,9 +1104,6 @@ ImageCacheEntry::getStatus(TileStateHeader* tileStatus, bool* hasUnRenderedTile,
     *hasPendingResults = false;
     *hasUnRenderedTile = false;
 
-    if (_imp->localTilesState.state->numPendingTiles > 0) {
-        *hasPendingResults = true;
-    }
     if (_imp->localTilesState.state->numRenderedTiles == _imp->localTilesState.state->tiles.size()) {
         *hasUnRenderedTile = false;
         return;
@@ -1551,9 +1192,6 @@ ImageCacheEntry::markCacheTilesAsAborted()
                 assert(cacheTileState->status == eTileStatusPending);
                 cacheTileState->status = eTileStatusNotRendered;
 
-                assert(cacheStateMap.state->numPendingTiles > 0);
-                --cacheStateMap.state->numPendingTiles;
-
                 hasModifiedTileMap = true;
             }
         }
@@ -1616,8 +1254,6 @@ ImageCacheEntry::markCacheTilesAsRendered()
                 assert(cacheTileState->status == eTileStatusPending);
                 cacheTileState->status = eTileStatusRendered;
 
-                assert(cacheStateMap.state->numPendingTiles > 0);
-                --cacheStateMap.state->numPendingTiles;
                 ++cacheStateMap.state->numRenderedTiles;
 
                 hasModifiedTileMap = true;
@@ -1625,10 +1261,7 @@ ImageCacheEntry::markCacheTilesAsRendered()
                 for (int c = 0; c < _imp->nComps; ++c) {
                     // Mark this tile in the list of tiles to copy
                     boost::shared_ptr<TileData> copy(new TileData);
-                    copy->bounds.x1 = tx;
-                    copy->bounds.y1 = ty;
-                    copy->bounds.x2 = tx + _imp->localTilesState.tileSizeX;
-                    copy->bounds.y2 = ty + _imp->localTilesState.tileSizeX;
+                    copy->bounds = localTileState->bounds;
                     copy->channel_i = c;
                     tilesToCopy.push_back(copy);
                 }
@@ -1658,8 +1291,8 @@ ImageCacheEntry::markCacheTilesAsRendered()
 
         tilesToCopy[i]->tileCache_i = allocatedTiles[i].first;
         // update the tile indices
-        int tx = tilesToCopy[i]->bounds.x1;
-        int ty = tilesToCopy[i]->bounds.y1;
+        int tx = (int)std::floor((double)tilesToCopy[i]->bounds.x1 / _imp->localTilesState.tileSizeX) * _imp->localTilesState.tileSizeX;
+        int ty = (int)std::floor((double)tilesToCopy[i]->bounds.y1 / _imp->localTilesState.tileSizeY) * _imp->localTilesState.tileSizeY;
         TileState* cacheTileState = cacheStateMap.getTileAt(tx, ty);
         cacheTileState->channelsTileStorageIndex[tilesToCopy[i]->channel_i] = allocatedTiles[i].first;
 
@@ -1736,7 +1369,6 @@ static void fromMemorySegmentInternal(const IPCMipMapTileStateVector& cachedMipM
     for (std::size_t i = 0; i < cachedMipMapStates.size(); ++i) {
         TilesState localState;
         localState.tiles.insert(localState.tiles.end(), cachedMipMapStates[i].tiles.begin(), cachedMipMapStates[i].tiles.end());
-        localState.numPendingTiles = cachedMipMapStates[i].numPendingTiles;
         localState.numRenderedTiles = cachedMipMapStates[i].numRenderedTiles;
         localMipMapStates->push_back(localState);
     }
@@ -1748,7 +1380,6 @@ static void toMemorySegmentInternal(const std::vector<TilesState>& localMipMapSt
     for (std::size_t i = 0; i < localMipMapStates.size(); ++i) {
         IPCTilesState cacheState(alloc);
         cacheState.tiles.insert(cacheState.tiles.end(), localMipMapStates[i].tiles.begin(), localMipMapStates[i].tiles.end());
-        cacheState.numPendingTiles = localMipMapStates[i].numPendingTiles;
         cacheState.numRenderedTiles = localMipMapStates[i].numRenderedTiles;
         cachedMipMapStates->push_back(boost::move(cacheState));
     }

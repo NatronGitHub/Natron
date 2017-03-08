@@ -368,6 +368,7 @@ HEADERS += \
     HistogramCPU.h \
     Image.h \
     ImageCacheEntry.h \
+    ImageCacheEntryProcessing.h \
     ImageCacheKey.h \
     ImagePrivate.h \
     ImagePlaneDesc.h \

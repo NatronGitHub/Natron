@@ -1432,6 +1432,7 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
     renderRetCode = _imp->checkRestToRender(false /*updateTilesStateFromCache*/, requestData, renderMappedRoI, mappedCombinedScale, cachedImagePlanes, &renderRects, &hasPendingTiles);
     if (isFailureRetCode(renderRetCode) && requestData->getCachePolicy() != eCacheAccessModeNone) {
         finishProducedPlanesTilesStatesMap(cachedImagePlanes, true);
+        return renderRetCode;
     }
     while (!renderRects.empty() || hasPendingTiles) {
 

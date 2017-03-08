@@ -502,6 +502,22 @@ checkForPreNatron226String(std::string* choiceString)
         *choiceString = kNatronColorPlaneID ".B";
     } else if (boost::iequals(*choiceString, std::string("RGBA.A")) || boost::iequals(*choiceString, std::string("UV.a"))) {
         *choiceString = kNatronColorPlaneID ".A";
+    } else if (boost::iequals(*choiceString, std::string("A.r"))) {
+        *choiceString = "A." kNatronColorPlaneID ".r";
+    } else if (boost::iequals(*choiceString, std::string("A.g"))) {
+        *choiceString = "A." kNatronColorPlaneID ".g";
+    } else if (boost::iequals(*choiceString, std::string("A.b"))) {
+        *choiceString = "A." kNatronColorPlaneID ".b";
+    } else if (boost::iequals(*choiceString, std::string("A.a"))) {
+        *choiceString = "A." kNatronColorPlaneID ".a";
+    } else if (boost::iequals(*choiceString, std::string("B.r"))) {
+        *choiceString = "B." kNatronColorPlaneID ".r";
+    } else if (boost::iequals(*choiceString, std::string("B.g"))) {
+        *choiceString = "B." kNatronColorPlaneID ".g";
+    } else if (boost::iequals(*choiceString, std::string("B.b"))) {
+        *choiceString = "B." kNatronColorPlaneID ".b";
+    } else if (boost::iequals(*choiceString, std::string("B.a"))) {
+        *choiceString = "B." kNatronColorPlaneID ".a";
     }
 }
 
