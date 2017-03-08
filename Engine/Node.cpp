@@ -1853,6 +1853,9 @@ Node::loadKnob(const KnobPtr & knob,
                     boost::shared_ptr<KnobString> stringKnob = boost::dynamic_pointer_cast<KnobString>((*it)->getKnob());
                     if (stringKnob) {
                         std::string serializedString = stringKnob->getValue();
+                        if ((*it)->_version < KNOB_SERIALIZATION_CHANGE_PLANES_SERIALIZATION) {
+                            KnobSerialization::checkForPreNatron226String(&serializedString);
+                        }
                         isChoice->setActiveEntry(ChoiceOption(serializedString));
                     }
                     break;

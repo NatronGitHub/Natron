@@ -28,6 +28,12 @@
 #include <cassert>
 #include <stdexcept>
 
+#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <boost/algorithm/string/predicate.hpp> // iequals
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#endif
+
 #include <QtCore/QDateTime>
 #include <QtCore/QDebug>
 
@@ -39,6 +45,8 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/TrackMarker.h"
 #include "Engine/TrackerContext.h"
+
+
 
 NATRON_NAMESPACE_ENTER;
 
@@ -298,6 +306,33 @@ KnobSerialization::setChoiceExtraString(const std::string& label)
     assert(cData);
     if (cData) {
         cData->_choiceString = label;
+    }
+}
+
+void
+KnobSerialization::checkForPreNatron226String(std::string* choiceString)
+{
+    if (boost::iequals(*choiceString,std::string("Color.RGBA")) || boost::iequals(*choiceString,std::string("Color.RGB")) || boost::iequals(*choiceString,std::string("Color.Alpha"))) {
+        *choiceString = kNatronColorPlaneID;
+    } else if (boost::iequals(*choiceString,std::string("Backward.Motion"))) {
+        *choiceString = kNatronBackwardMotionVectorsPlaneID "." kNatronMotionComponentsLabel;
+    } else if (boost::iequals(*choiceString,std::string("Forward.Motion"))) {
+        *choiceString = kNatronForwardMotionVectorsPlaneID "." kNatronMotionComponentsLabel;
+    } else if (boost::iequals(*choiceString, std::string("DisparityLeft.Disparity"))) {
+        *choiceString = kNatronDisparityLeftPlaneID "." kNatronDisparityComponentsLabel;
+    } else if (boost::iequals(*choiceString, std::string("DisparityRight.Disparity"))) {
+        *choiceString = kNatronDisparityRightPlaneID "." kNatronDisparityComponentsLabel;
+    }
+
+    // Map also channels
+    if (boost::iequals(*choiceString, std::string("RGBA.R")) || boost::iequals(*choiceString, std::string("UV.r"))) {
+        *choiceString = kNatronColorPlaneID ".R";
+    } else if (boost::iequals(*choiceString, std::string("RGBA.G")) || boost::iequals(*choiceString, std::string("UV.g"))) {
+        *choiceString = kNatronColorPlaneID ".G";
+    } else if (boost::iequals(*choiceString, std::string("RGBA.B")) || boost::iequals(*choiceString, std::string("UV.b"))) {
+        *choiceString = kNatronColorPlaneID ".B";
+    } else if (boost::iequals(*choiceString, std::string("RGBA.A")) || boost::iequals(*choiceString, std::string("UV.a"))) {
+        *choiceString = kNatronColorPlaneID ".A";
     }
 }
 
