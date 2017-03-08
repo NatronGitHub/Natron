@@ -46,6 +46,8 @@ Natron multiple times on the same computer, the different processes will share t
 - ReadOIIO: add advanced options for reading RAW files, nonworking due to https://github.com/OpenImageIO/oiio/issues/1632
 - ReadOIIO: fix a bug where the OIIO cache would be disabled on Natron 2.2
 - WriteFFmpeg: display the pixel format which is fed into the encoder, together with its bit depth and bpp.
+- ColorCorrect: changed the Contrast formula to make adjustments more intuitive, see https://compositormathematic.wordpress.com/2013/07/06/gamma-contrast/
+
 
 ## Version 2.2.5
 
