@@ -385,17 +385,14 @@ ImageCacheEntry::ensureImageBuffersAllocated()
 }
 
 
-
-
-template <bool copyToCache>
-class CachePixelsTransferProcessor : public MultiThreadProcessorBase
+class CachePixelsTransferProcessorBase : public MultiThreadProcessorBase
 {
-
+protected:
     std::vector<boost::shared_ptr<TileData> > _tasks;
     ImageCacheEntryPrivate* _imp;
 public:
 
-    CachePixelsTransferProcessor(const EffectInstancePtr& renderClone)
+    CachePixelsTransferProcessorBase(const EffectInstancePtr& renderClone)
     : MultiThreadProcessorBase(renderClone)
     , _tasks()
     , _imp(0)
@@ -403,7 +400,7 @@ public:
 
     }
 
-    virtual ~CachePixelsTransferProcessor()
+    virtual ~CachePixelsTransferProcessorBase()
     {
     }
 
@@ -412,6 +409,24 @@ public:
     {
         _imp = imp;
         _tasks = tasks;
+    }
+};
+
+template <bool copyToCache, typename PIX>
+class CachePixelsTransferProcessor : public CachePixelsTransferProcessorBase
+{
+
+
+public:
+
+    CachePixelsTransferProcessor(const EffectInstancePtr& renderClone)
+    : CachePixelsTransferProcessorBase(renderClone)
+    {
+
+    }
+
+    virtual ~CachePixelsTransferProcessor()
+    {
     }
 
 
@@ -427,23 +442,27 @@ public:
             const TileData& task = *_tasks[i];
 
             // Intersect the tile bounds
+            RectI tileBoundsRounded = task.bounds;
+            tileBoundsRounded.roundToTileSize(_imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY);
 
             if (copyToCache) {
 
                 // When copying to the cache, always copy full tiles, but ensure we do not copy outside of the bounds of the RoI for tiles on the border
-                RectI renderWindow = task.bounds;
-                renderWindow.roundToTileSize(_imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY);
-                renderWindow.intersect(_imp->roi, &renderWindow);
+                RectI renderWindow;
+                tileBoundsRounded.intersect(_imp->roi, &renderWindow);
 
 
-                const unsigned char* localPix = Image::pixelAtStatic(renderWindow.x1, renderWindow.y1, _imp->roi, _imp->nComps, getSizeOfForBitDepth(_imp->bitdepth), (const unsigned char*)_imp->localBuffers[task.channel_i]);
+                const PIX* localPix = (const PIX*)Image::pixelAtStatic(renderWindow.x1, renderWindow.y1, _imp->roi, _imp->nComps, sizeof(PIX), (const unsigned char*)_imp->localBuffers[task.channel_i]);
                 assert(localPix);
-                ImageCacheEntryProcessing::copyPixels(renderWindow, _imp->bitdepth, localPix, _imp->pixelStride, _imp->roi.width() * _imp->pixelStride, task.ptr, 1, _imp->localTilesState.tileSizeX);
+
+                PIX* tilePix = ImageCacheEntryProcessing::getPix((PIX*)task.ptr, renderWindow.x1, renderWindow.y1, tileBoundsRounded);
+                assert(tilePix);
+                ImageCacheEntryProcessing::copyPixelsForDepth<PIX>(renderWindow, localPix, _imp->pixelStride, _imp->roi.width() * _imp->pixelStride, tilePix, 1, _imp->localTilesState.tileSizeX);
                 
                 // When inserting a tile in the cache, if this is a tile in the border, repeat edges
                 if (task.bounds.width() != _imp->localTilesState.tileSizeX ||
                     task.bounds.height() != _imp->localTilesState.tileSizeY) {
-                    ImageCacheEntryProcessing::repeatEdges(_imp->bitdepth, task.ptr, task.bounds, _imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY);
+                    ImageCacheEntryProcessing::repeatEdgesForDepth<PIX>((PIX*)task.ptr, task.bounds, _imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY);
                 }
             } else {
 
@@ -456,10 +475,13 @@ public:
                 RectI renderWindow;
                 task.bounds.intersect(_imp->roi, &renderWindow);
 
+                const PIX* tilePix = ImageCacheEntryProcessing::getPix((const PIX*)task.ptr, renderWindow.x1, renderWindow.y1, tileBoundsRounded);
+                assert(tilePix);
 
-                const unsigned char* localPix = Image::pixelAtStatic(renderWindow.x1, renderWindow.y1, _imp->roi, _imp->nComps, getSizeOfForBitDepth(_imp->bitdepth), (const unsigned char*)_imp->localBuffers[task.channel_i]);
+                PIX* localPix = (PIX*)Image::pixelAtStatic(renderWindow.x1, renderWindow.y1, _imp->roi, _imp->nComps, sizeof(PIX), (const unsigned char*)_imp->localBuffers[task.channel_i]);
                 assert(localPix);
-                ImageCacheEntryProcessing::copyPixels(renderWindow, _imp->bitdepth, task.ptr, 1, _imp->localTilesState.tileSizeX, (void*)localPix, _imp->pixelStride, _imp->roi.width() * _imp->pixelStride);
+
+                ImageCacheEntryProcessing::copyPixelsForDepth<PIX>(renderWindow, tilePix, 1, _imp->localTilesState.tileSizeX, localPix, _imp->pixelStride, _imp->roi.width() * _imp->pixelStride);
             }
 
         }
@@ -467,25 +489,17 @@ public:
     } // multiThreadFunction
 };
 
-typedef CachePixelsTransferProcessor<true> ToCachePixelsTransferProcessor;
-typedef CachePixelsTransferProcessor<false> FromCachePixelsTransferProcessor;
 
-
-class DownscaleMipMapProcessor : public MultiThreadProcessorBase
+class DownscaleMipMapProcessorBase : public MultiThreadProcessorBase
 {
+protected:
 
-
-private:
-
-    ImageBitDepthEnum _bitdepth;
     std::vector<boost::shared_ptr<DownscaleTile> > _tasks;
     int _tileSizeX, _tileSizeY;
-
 public:
 
-    DownscaleMipMapProcessor(const EffectInstancePtr& renderClone)
+    DownscaleMipMapProcessorBase(const EffectInstancePtr& renderClone)
     : MultiThreadProcessorBase(renderClone)
-    , _bitdepth(eImageBitDepthByte)
     , _tasks()
     , _tileSizeX(-1)
     , _tileSizeY(-1)
@@ -493,18 +507,37 @@ public:
 
     }
 
-    virtual ~DownscaleMipMapProcessor()
+    virtual ~DownscaleMipMapProcessorBase()
     {
     }
 
-    void setValues(ImageBitDepthEnum depth, int tileSizeX, int tileSizeY, const std::vector<boost::shared_ptr<DownscaleTile> >& tasks)
+    void setValues(int tileSizeX, int tileSizeY, const std::vector<boost::shared_ptr<DownscaleTile> >& tasks)
     {
-        _bitdepth = depth;
         _tileSizeX = tileSizeX;
         _tileSizeY = tileSizeY;
         _tasks = tasks;
     }
 
+};
+
+template <typename PIX>
+class DownscaleMipMapProcessor : public DownscaleMipMapProcessorBase
+{
+
+
+
+
+public:
+
+    DownscaleMipMapProcessor(const EffectInstancePtr& renderClone)
+    : DownscaleMipMapProcessorBase(renderClone)
+    {
+
+    }
+
+    virtual ~DownscaleMipMapProcessor()
+    {
+    }
 
     virtual ActionRetCodeEnum multiThreadFunction(unsigned int threadID,
                                                   unsigned int nThreads) OVERRIDE FINAL WARN_UNUSED_RETURN
@@ -527,7 +560,7 @@ public:
                 task.srcTiles[2] ? task.srcTiles[2]->ptr : 0,
                 task.srcTiles[3] ? task.srcTiles[3]->ptr : 0};
 
-            ImageCacheEntryProcessing::downscaleMipMap(_bitdepth, srcPtrs, task.ptr, task.bounds, _tileSizeX, _tileSizeY);
+            ImageCacheEntryProcessing::downscaleMipMapForDepth<PIX>((const PIX**)srcPtrs, (PIX*)task.ptr, task.bounds, _tileSizeX, _tileSizeY);
         }
         return eActionStatusOK;
     } // multiThreadFunction
@@ -919,9 +952,22 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
     // Downscale in parallel each mipmap level tiles and then copy the last level tiles
     for (std::size_t i = 0; i < perLevelTilesToDownscale.size(); ++i) {
         if (!perLevelTilesToDownscale[i].empty()) {
-            DownscaleMipMapProcessor processor(effect);
-            processor.setValues(bitdepth, localTilesState.tileSizeX, localTilesState.tileSizeY, perLevelTilesToDownscale[i]);
-            ActionRetCodeEnum stat = processor.launchThreadsBlocking();
+            boost::scoped_ptr<DownscaleMipMapProcessorBase> processor;
+            switch (bitdepth) {
+                case eImageBitDepthByte:
+                    processor.reset(new DownscaleMipMapProcessor<unsigned char>(effect));
+                    break;
+                case eImageBitDepthShort:
+                    processor.reset(new DownscaleMipMapProcessor<unsigned short>(effect));
+                    break;
+                case eImageBitDepthFloat:
+                    processor.reset(new DownscaleMipMapProcessor<float>(effect));
+                    break;
+                default:
+                    break;
+            }
+            processor->setValues(localTilesState.tileSizeX, localTilesState.tileSizeY, perLevelTilesToDownscale[i]);
+            ActionRetCodeEnum stat = processor->launchThreadsBlocking();
             if (isFailureRetCode(stat)) {
                 return stat;
             }
@@ -979,9 +1025,22 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
     tilesToCopy.insert(tilesToCopy.end(), perLevelTilesToDownscale[mipMapLevel].begin(), perLevelTilesToDownscale[mipMapLevel].end());
     
     // Finally copy over multiple threads each tile
-    FromCachePixelsTransferProcessor processor(effect);
-    processor.setValues(this, tilesToCopy);
-    ActionRetCodeEnum stat = processor.launchThreadsBlocking();
+    boost::scoped_ptr<CachePixelsTransferProcessorBase> processor;
+    switch (bitdepth) {
+        case eImageBitDepthByte:
+            processor.reset(new CachePixelsTransferProcessor<false /*copyToCache*/, unsigned char>(effect));
+            break;
+        case eImageBitDepthShort:
+            processor.reset(new CachePixelsTransferProcessor<false /*copyToCache*/, unsigned short>(effect));
+            break;
+        case eImageBitDepthFloat:
+            processor.reset(new CachePixelsTransferProcessor<false /*copyToCache*/, float>(effect));
+            break;
+        default:
+            break;
+    }
+    processor->setValues(this, tilesToCopy);
+    ActionRetCodeEnum stat = processor->launchThreadsBlocking();
     return stat;
 
 } // fetchAndCopyCachedTiles
@@ -1024,7 +1083,7 @@ ImageCacheEntry::fetchCachedTilesAndUpdateStatus(TileStateHeader* tileStatus, bo
         // In non peristent mode, the entry pointer is directly cached: there's no call to fromMemorySegment/toMemorySegment
         // Emulate what is done when compiled with a persistent cache
         if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
-            _imp->internalCacheEntry = cacheAccess->getProcessLocalEntry();
+            _imp->internalCacheEntry = toImageCacheEntryInternal(cacheAccess->getProcessLocalEntry());
 
             // First call readAndUpdateStateMap under a read lock, if needed recall under a write lock
             bool mustCallUnderWriteLock = false;
@@ -1302,9 +1361,23 @@ ImageCacheEntry::markCacheTilesAsRendered()
 
 
     // Finally copy over multiple threads each tile
-    ToCachePixelsTransferProcessor processor(_imp->effect);
-    processor.setValues(_imp.get(), tilesToCopy);
-    ActionRetCodeEnum stat = processor.launchThreadsBlocking();
+    boost::scoped_ptr<CachePixelsTransferProcessorBase> processor;
+    switch (_imp->bitdepth) {
+        case eImageBitDepthByte:
+            processor.reset(new CachePixelsTransferProcessor<true /*copyToCache*/, unsigned char>(_imp->effect));
+            break;
+        case eImageBitDepthShort:
+            processor.reset(new CachePixelsTransferProcessor<true /*copyToCache*/, unsigned short>(_imp->effect));
+            break;
+        case eImageBitDepthFloat:
+            processor.reset(new CachePixelsTransferProcessor<true /*copyToCache*/, float>(_imp->effect));
+            break;
+        default:
+            break;
+    }
+
+    processor->setValues(_imp.get(), tilesToCopy);
+    ActionRetCodeEnum stat = processor->launchThreadsBlocking();
     (void)stat;
 
     // In persistent mode we have to actually copy the cache entry tiles state map to the cache

@@ -1524,6 +1524,7 @@ ViewerInstance::render(const RenderActionArgs& args)
 
         FindAutoContrastProcessor processor(shared_from_this());
         processor.setValues(renderViewerArgs.colorImage, displayChannels);
+#pragma message WARN("The viewer will always compute vmin/vmax for autocontrast on a region rounded to tile size. We should add a rectangle parameter specific to this feature.")
         processor.setRenderWindow(args.roi);
         processor.process();
 

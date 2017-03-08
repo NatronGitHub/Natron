@@ -574,6 +574,8 @@ struct LRUListNode
     typedef boost::shared_ptr<MemorySegmentEntryHeader> MemorySegmentEntryHeaderPtr;
     typedef std::map<U64, MemorySegmentEntryHeaderPtr, std::less<U64> > MemorySegmentEntryHeaderMap;
     typedef std::set<std::size_t, std::less<std::size_t> > Size_t_Set;
+    typedef std::list<int> ExternalSegmentTypeIntList;
+
 #else
     // Typedef our interprocess types
     typedef bip::offset_ptr<MemorySegmentEntryHeader> MemorySegmentEntryHeaderPtr;
@@ -586,6 +588,10 @@ struct LRUListNode
     typedef std::pair<const U64, MemorySegmentEntryHeaderPtr > EntriesMapValueType;
     typedef bip::allocator<EntriesMapValueType, ExternalSegmentType::segment_manager> EntriesMapValueType_Allocator_ExternalSegment;
     typedef bip::map<U64, MemorySegmentEntryHeaderPtr, std::less<U64>, EntriesMapValueType_Allocator_ExternalSegment> MemorySegmentEntryHeaderMap;
+
+
+    typedef boost::interprocess::allocator<int, ExternalSegmentType::segment_manager> ExternalSegmentTypeIntAllocator;
+    typedef boost::interprocess::list<int, ExternalSegmentTypeIntAllocator> ExternalSegmentTypeIntList;
 #endif
 
 

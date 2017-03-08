@@ -1257,12 +1257,11 @@ EffectInstance::requestRenderInternal(TimeValue time,
     } else {
 
         // Round the roi to the tile size if the render is cached
-        if (cachePolicy != eCacheAccessModeNone) {
-            ImageBitDepthEnum outputBitDepth = getBitDepth(-1);
-            int tileWidth, tileHeight;
-            Cache::getTileSizePx(outputBitDepth, &tileWidth, &tileHeight);
-            renderMappedRoI.roundToTileSize(tileWidth, tileHeight);
-        }
+        ImageBitDepthEnum outputBitDepth = getBitDepth(-1);
+        int tileWidth, tileHeight;
+        Cache::getTileSizePx(outputBitDepth, &tileWidth, &tileHeight);
+        renderMappedRoI.roundToTileSize(tileWidth, tileHeight);
+
 
         // Make sure the RoI falls within the image bounds
         if ( !renderMappedRoI.intersect(pixelRoDRenderMapped, &renderMappedRoI) ) {
@@ -1399,6 +1398,19 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
         rod = results->getRoD();
         rod.toPixelEnclosing(mappedCombinedScale, par, &pixelRoDRenderMapped);
     }
+
+#ifdef DEBUG
+    // Check that the image rendered in output is always rounded to the tile size a intersected to the RoD
+    {
+        ImageBitDepthEnum outputBitDepth = getBitDepth(-1);
+        int tileWidth, tileHeight;
+        Cache::getTileSizePx(outputBitDepth, &tileWidth, &tileHeight);
+        assert(renderMappedRoI.x1 % tileWidth == 0 || renderMappedRoI.x1 == pixelRoDRenderMapped.x1);
+        assert(renderMappedRoI.y1 % tileWidth == 0 || renderMappedRoI.y1 == pixelRoDRenderMapped.y1);
+        assert(renderMappedRoI.x2 % tileWidth == 0 || renderMappedRoI.x2 == pixelRoDRenderMapped.x2);
+        assert(renderMappedRoI.y2 % tileWidth == 0 || renderMappedRoI.y2 == pixelRoDRenderMapped.y2);
+    }
+#endif
 
     ImagePtr image = requestData->getImagePlane();
     if (requestData->getCachePolicy() != eCacheAccessModeNone) {

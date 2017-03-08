@@ -61,8 +61,6 @@ typedef boost::interprocess::basic_string<char, std::char_traits<char>, CharAllo
 typedef boost::interprocess::allocator<ExternalSegmentType::handle_t, ExternalSegmentType::segment_manager> ExternalSegmentTypeHandleAllocator;
 typedef boost::interprocess::list<ExternalSegmentType::handle_t, ExternalSegmentTypeHandleAllocator> ExternalSegmentTypeHandleList;
 
-typedef boost::interprocess::allocator<int, ExternalSegmentType::segment_manager> ExternalSegmentTypeIntAllocator;
-typedef boost::interprocess::list<int, ExternalSegmentTypeIntAllocator> ExternalSegmentTypeIntList;
 
 /**
  * @brief Function to serialize to the given memory segment the given object.

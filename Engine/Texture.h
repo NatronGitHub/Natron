@@ -74,14 +74,14 @@ public:
     /**
      * @brief The bitdepth of the texture
      **/
-    ImageBitDepthEnum type() const
+    ImageBitDepthEnum getBitDepth() const
     {
-        return _type;
+        return _bitDepth;
     }
 
     std::size_t getDataSizeOf() const
     {
-        switch (_type) {
+        switch (_bitDepth) {
         case eImageBitDepthByte:
 
             return sizeof(unsigned char);
@@ -156,7 +156,7 @@ private:
     int _minFilter, _magFilter, _clamp;
     int _internalFormat, _format, _glType;
     RectI _bounds;
-    ImageBitDepthEnum _type;
+    ImageBitDepthEnum _bitDepth;
     bool _useOpenGL;
 };
 

@@ -1201,7 +1201,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
                 _imp->displayTextures[textureIndex].isVisible = false;
             } else {
                 tex = _imp->displayTextures[textureIndex].texture;
-                if (tex->type() != bitdepth) {
+                if (tex->getBitDepth() != bitdepth) {
                     int format, internalFormat, glType;
 
                     if (bitdepth == eImageBitDepthFloat) {
@@ -1952,6 +1952,8 @@ ViewerGL::checkIfViewPortRoIValidOrRenderForInput(int texIndex)
             mipMapLevel = downscale_i;
         }
     }
+
+
     RectD roiCanonical = getImageRectangleDisplayed();
 
     QMutexLocker k(&_imp->displayDataMutex);
@@ -1959,10 +1961,13 @@ ViewerGL::checkIfViewPortRoIValidOrRenderForInput(int texIndex)
         return false;
     }
 
-    roiCanonical.intersect(_imp->displayTextures[texIndex].rod, &roiCanonical);
-
     RectI roiPixel;
-    roiCanonical.toPixelEnclosing(mipMapLevel, _imp->displayTextures[texIndex].pixelAspectRatio, &roiPixel);
+    roiCanonical.toPixelEnclosing(_imp->displayTextures[texIndex].mipMapLevel, _imp->displayTextures[texIndex].pixelAspectRatio, &roiPixel);
+
+
+    int tx,ty;
+    Cache::getTileSizePx(_imp->displayTextures[texIndex].texture->getBitDepth(), &tx, &ty);
+
 
     const RectI& texBounds = _imp->displayTextures[texIndex].texture->getBounds();
     if (!texBounds.contains(roiPixel)) {
@@ -3006,9 +3011,9 @@ ViewerGL::getTextureColorAt(int x,
     {
         QMutexLocker k(&_imp->displayDataMutex);
         if (_imp->displayTextures[0].texture) {
-            bitDepth = _imp->displayTextures[0].texture->type();
+            bitDepth = _imp->displayTextures[0].texture->getBitDepth();
         } else if (_imp->displayTextures[1].texture) {
-            bitDepth = _imp->displayTextures[1].texture->type();
+            bitDepth = _imp->displayTextures[1].texture->getBitDepth();
         } else {
             return;
         }

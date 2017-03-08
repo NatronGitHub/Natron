@@ -115,7 +115,6 @@ static bool isTileAligned(const RectI& bounds,
 }
 #endif
 
-private:
 
 template <typename PIX>
 static PIX* getPix(PIX* ptr,
@@ -144,8 +143,7 @@ static void fillWithConstant(PIX val,
         pix += (bounds.width() - roi.width());
     }
 }
-public:
-
+    
 /**
  * @brief If the tile bounds is not aligned to the tile size, repeat pixels on the edge.
  * This function fills the numbered rectangles with the nearest pixel V as such:

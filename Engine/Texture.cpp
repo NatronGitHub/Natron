@@ -36,7 +36,7 @@ Texture::Texture(U32 target,
                  int minFilter,
                  int magFilter,
                  int clamp,
-                 ImageBitDepthEnum type,
+                 ImageBitDepthEnum bitDepth,
                  int format,
                  int internalFormat,
                  int glType,
@@ -49,7 +49,7 @@ Texture::Texture(U32 target,
     , _internalFormat(internalFormat)
     , _format(format)
     , _glType(glType)
-    , _type(type)
+    , _bitDepth(bitDepth)
     , _useOpenGL(useOpenGL)
 {
     if (useOpenGL) {
