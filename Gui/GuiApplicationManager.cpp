@@ -917,7 +917,7 @@ GuiApplicationManager::initGui(const CLArgs& args)
     _imp->_fontSize = fontSize;
 
     /*Display a splashscreen while we wait for the engine to load*/
-    QString filename = QString::fromUtf8(NATRON_IMAGES_PATH "splashscreen.png");
+    QString filename = QString::fromUtf8(NATRON_IMAGES_PATH "splashscreen.jpg");
 
     _imp->_splashScreen = new SplashScreen(filename);
     _imp->_splashScreen->setAttribute(Qt::WA_DeleteOnClose, 0);
