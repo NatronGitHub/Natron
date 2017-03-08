@@ -101,6 +101,19 @@ configure.env-append \
 pre-configure {
     configure.args-append --with-pkgversion="MacPorts ${name} ${version}_${revision}${portvariants}"
 
+    if {${configure.sdkroot} ne "/"} {
+        # We should be using --with-build-sysroot here.  Using --with-sysroot
+        # changes the behavior of the installed gcc to look in that sysroot
+        # by default instead of /.  Using --with-build-sysroot is supposed
+        # to be used during the build but not impact the installed product.
+        # Unfortunately, the build fails because the value doesn't get
+        # plumbed everywhere it is supposed to.
+        #
+        # https://trac.macports.org/ticket/53726
+        # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=79885
+        configure.args-append --with-sysroot="${configure.sdkroot}"
+    }
+
     # TODO: Remove when base automatically creates configure.dir (2.2.1?).
     file mkdir ${configure.dir}
 }
@@ -179,8 +192,12 @@ variant universal {
     configure.args-delete --disable-multilib
 }
 # the generated compiler doesn't accept -arch
-configure.env-append CPP="${configure.cc} -E"
-build.env-append CPP="${configure.cc} -E"
+configure.env-append \
+    CPP="${configure.cc} -E" \
+    CXXCPP="${configure.cxx} -E"
+build.env-append \
+    CPP="${configure.cc} -E" \
+    CXXCPP="${configure.cxx} -E"
 configure.cc-append [get_canonical_archflags]
 configure.cc_archflags
 configure.cxx-append ${configure.cxx_archflags}
