@@ -2864,7 +2864,9 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                      */
                     it->second.tmpImage->downscaleMipMap( it->second.tmpImage->getRoD(),
                                                           actionArgs.roi, 0, mipMapLevel, false, it->second.downscaleImage.get() );
-                    it->second.fullscaleImage->pasteFrom(*(it->second.tmpImage), renderMappedRectToRender, false);
+                    if (it->second.tmpImage != it->second.fullscaleImage) {
+                        it->second.fullscaleImage->pasteFrom(*(it->second.tmpImage), renderMappedRectToRender, false);
+                    }
                 }
 
 
