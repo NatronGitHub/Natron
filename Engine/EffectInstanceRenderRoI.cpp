@@ -239,10 +239,11 @@ public:
     : _image(image)
     , _roi(roi)
     , _effect(effect)
+    , _rectsToRender()
+    , _isBeingRenderedElseWhere(false)
     , _isValid(true)
     , _renderFullScale(renderFullScale)
     {
-        qDebug() << "Ctor" << QThread::currentThread() << _effect->getNode()->getScriptName_mt_safe().c_str();
         _roi.debug();
         for (std::map<ImageComponents,EffectInstance::PlaneToRender>::const_iterator it = _image.begin(); it != _image.end(); ++it) {
             ImagePtr cacheImage;
@@ -290,7 +291,6 @@ public:
 
     ~ImageBitMapMarker_RAII()
     {
-        qDebug() << "Dest" << QThread::currentThread() << _isValid  << _effect->getNode()->getScriptName_mt_safe().c_str();
         _roi.debug();
         for (std::map<ImageComponents,EffectInstance::PlaneToRender>::const_iterator it = _image.begin(); it != _image.end(); ++it) {
             ImagePtr cacheImage;
