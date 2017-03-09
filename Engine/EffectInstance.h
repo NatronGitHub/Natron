@@ -1423,6 +1423,7 @@ public:
         std::map<ImageComponents, PlaneToRender> planes;
         std::map<int, ImagePremultiplicationEnum> inputPremult;
         ImagePremultiplicationEnum outputPremult;
+        bool isBeingRenderedElsewhere;
         bool useOpenGL;
         EffectInstance::OpenGLContextEffectDataPtr glContextData;
 
@@ -1431,6 +1432,7 @@ public:
             , planes()
             , inputPremult()
             , outputPremult(eImagePremultiplicationPremultiplied)
+            , isBeingRenderedElsewhere(false)
             , useOpenGL(false)
             , glContextData()
         {
@@ -2092,7 +2094,6 @@ private:
 
     friend class ReadNode;
     friend class WriteNode;
-    friend class ImageBitMapMarker_RAII;
 
     enum RenderRoIStatusEnum
     {
@@ -2218,6 +2219,7 @@ private:
     {
         eRenderingFunctorRetFailed, //< must stop rendering
         eRenderingFunctorRetOK, //< ok, move on
+        eRenderingFunctorRetTakeImageLock, //< take the image lock because another thread is rendering part of something we need
         eRenderingFunctorRetAborted, // we were aborted
         eRenderingFunctorRetOutOfGPUMemory
     };

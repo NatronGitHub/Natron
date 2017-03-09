@@ -261,9 +261,9 @@ AbortableRenderInfo::onAbortTimerTimeout()
     // Hold a sharedptr to this because it might get destroyed before the dialog returns
     boost::shared_ptr<AbortableRenderInfo> thisShared = shared_from_this();
 
-    //if ( appPTR->isBackground() ) {
+    if ( appPTR->isBackground() ) {
         qDebug() << ss.str().c_str();
-    /*} else {
+    } else {
         ss << tr("Would you like to kill these renders?").toStdString() << std::endl << std::endl;
         ss << tr("WARNING: Killing them may not work or may leave %1 in a bad state. The application may crash or freeze as a consequence of this. It is advised to restart %1 instead.").arg( QString::fromUtf8( NATRON_APPLICATION_NAME) ).toStdString();
 
@@ -276,7 +276,7 @@ AbortableRenderInfo::onAbortTimerTimeout()
                 (*it)->killThread();
             }
         }
-    }*/
+    }
 } // AbortableRenderInfo::onAbortTimerTimeout
 
 NATRON_NAMESPACE_EXIT;
