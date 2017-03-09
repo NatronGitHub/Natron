@@ -2169,75 +2169,13 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
            renderBounds.y1 <= renderMappedRectToRender.y1 && renderMappedRectToRender.y2 <= renderBounds.y2);
 # endif
 
-    bool isBeingRenderedElseWhere = false;
-    ///At this point if we're in eRenderSafetyFullySafeFrame mode, we are a thread that might have been launched way after
-    ///the time renderRectToRender was computed. We recompute it to update the portion to render.
-    ///Note that if it is bigger than the initial rectangle, we don't render the bigger rectangle since we cannot
-    ///now make the preliminaries call to handle that region (getRoI etc...) so just stick with the old rect to render
 
-    // check the bitmap!
-    bool bitmapMarkedForRendering = false;
+
     const boost::shared_ptr<ParallelRenderArgs>& frameArgs = tls->frameArgs.back();
-    if (frameArgs->tilesSupported) {
-        if (renderFullScaleThenDownscale) {
-            // We cannot be rendering using OpenGL in this case
-            assert(!planes->useOpenGL);
 
-            RectI initialRenderRect = renderMappedRectToRender;
-
-#if NATRON_ENABLE_TRIMAP
-            if ( frameArgs->isCurrentFrameRenderNotAbortable() ) {
-                bitmapMarkedForRendering = true;
-                renderMappedRectToRender = firstPlaneToRender.renderMappedImage->getMinimalRectAndMarkForRendering_trimap(renderMappedRectToRender, &isBeingRenderedElseWhere);
-            } else {
-                renderMappedRectToRender = firstPlaneToRender.renderMappedImage->getMinimalRect(renderMappedRectToRender);
-            }
-#else
-            renderMappedRectToRender = renderMappedImage->getMinimalRect(renderMappedRectToRender);
-#endif
-
-            ///If the new rect after getMinimalRect is bigger (maybe because another thread as grown the image)
-            ///we stick to what was requested
-            if ( !initialRenderRect.contains(renderMappedRectToRender) ) {
-                renderMappedRectToRender = initialRenderRect;
-            }
-
-            RectD canonicalReducedRectToRender;
-            renderMappedRectToRender.toCanonical(renderMappedMipMapLevel, par, rod, &canonicalReducedRectToRender);
-            canonicalReducedRectToRender.toPixelEnclosing(mipMapLevel, par, &downscaledRectToRender);
-
-
-            assert( renderMappedRectToRender.isNull() ||
-                    (renderBounds.x1 <= renderMappedRectToRender.x1 && renderMappedRectToRender.x2 <= renderBounds.x2 && renderBounds.y1 <= renderMappedRectToRender.y1 && renderMappedRectToRender.y2 <= renderBounds.y2) );
-        } else {
-            //The downscaled image is cached, read bitmap from it
-#if NATRON_ENABLE_TRIMAP
-            RectI rectToRenderMinimal;
-            if ( frameArgs->isCurrentFrameRenderNotAbortable() ) {
-                bitmapMarkedForRendering = true;
-                rectToRenderMinimal = firstPlaneToRender.downscaleImage->getMinimalRectAndMarkForRendering_trimap(renderMappedRectToRender, &isBeingRenderedElseWhere);
-            } else {
-                rectToRenderMinimal = firstPlaneToRender.downscaleImage->getMinimalRect(renderMappedRectToRender);
-            }
-#else
-            const RectI rectToRenderMinimal = downscaledImage->getMinimalRect(renderMappedRectToRender);
-#endif
-
-            assert( renderMappedRectToRender.isNull() ||
-                    (renderBounds.x1 <= rectToRenderMinimal.x1 && rectToRenderMinimal.x2 <= renderBounds.x2 && renderBounds.y1 <= rectToRenderMinimal.y1 && rectToRenderMinimal.y2 <= renderBounds.y2) );
-
-
-            ///If the new rect after getMinimalRect is bigger (maybe because another thread as grown the image)
-            ///we stick to what was requested
-            if ( !renderMappedRectToRender.contains(rectToRenderMinimal) ) {
-                renderMappedRectToRender = rectToRenderMinimal;
-            }
-            downscaledRectToRender = renderMappedRectToRender;
-        }
-    } // tilesSupported
       ///It might have been already rendered now
     if ( renderMappedRectToRender.isNull() ) {
-        return isBeingRenderedElseWhere ? eRenderingFunctorRetTakeImageLock : eRenderingFunctorRetOK;
+        return eRenderingFunctorRetOK;
     }
 
 
@@ -2356,7 +2294,6 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
                                                         renderMappedRectToRender,
                                                         downscaledRectToRender,
                                                         byPassCache,
-                                                        bitmapMarkedForRendering,
                                                         outputClipPrefDepth,
                                                         outputClipPrefsComps,
                                                         processChannels,
@@ -2365,11 +2302,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
                                                         originalImagePremultiplication,
                                                         *planes);
     if (handlerRet == eRenderingFunctorRetOK) {
-        if (isBeingRenderedElseWhere) {
-            return eRenderingFunctorRetTakeImageLock;
-        } else {
-            return eRenderingFunctorRetOK;
-        }
+        return eRenderingFunctorRetOK;
     } else {
         return handlerRet;
     }
@@ -2384,7 +2317,6 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                                               const RectI & renderMappedRectToRender,
                                               const RectI & downscaledRectToRender,
                                               const bool byPassCache,
-                                              const bool bitmapMarkedForRendering,
                                               const ImageBitDepthEnum outputClipPrefDepth,
                                               const ImagePlaneDesc & outputClipPrefsComps,
                                               const std::bitset<4>& processChannels,
@@ -2483,7 +2415,6 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
         if (!tls->currentRenderArgs.identityInput) {
             for (std::map<ImagePlaneDesc, EffectInstance::PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
                 it->second.renderMappedImage->fillZero(renderMappedRectToRender, glContext);
-                it->second.renderMappedImage->markForRendered(renderMappedRectToRender);
 
                 if ( frameArgs->stats && frameArgs->stats->isInDepthProfilingEnabled() ) {
                     frameArgs->stats->addRenderInfosForNode( _publicInterface->getNode(),  NodePtr(), it->first.getChannelsLabel(), renderMappedRectToRender, timeRecorder->getTimeSinceCreation() );
@@ -2501,7 +2432,6 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
             } else if ( identityPlanes.empty() ) {
                 for (std::map<ImagePlaneDesc, EffectInstance::PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
                     it->second.renderMappedImage->fillZero(renderMappedRectToRender, glContext);
-                    it->second.renderMappedImage->markForRendered(renderMappedRectToRender);
 
                     if ( frameArgs->stats && frameArgs->stats->isInDepthProfilingEnabled() ) {
                         frameArgs->stats->addRenderInfosForNode( _publicInterface->getNode(),  tls->currentRenderArgs.identityInput->getNode(), it->first.getChannelsLabel(), renderMappedRectToRender, timeRecorder->getTimeSinceCreation() );
@@ -2559,7 +2489,6 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                                                        false) );
                         sourceImage->upscaleMipMap( sourceImage->getBounds(), sourceImage->getMipMapLevel(), inputPlane->getMipMapLevel(), inputPlane.get() );
                         it->second.fullscaleImage->pasteFrom(*inputPlane, renderMappedRectToRender, false);
-                        it->second.fullscaleImage->markForRendered(renderMappedRectToRender);
                     } else {
                         if ( !idIt->second->getBounds().contains(downscaledRectToRender) ) {
                             ///Fill the RoI with 0's as the identity input image might have bounds contained into the RoI
@@ -2576,7 +2505,6 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                         } else {
                             it->second.downscaleImage->pasteFrom(*(idIt->second), downscaledRectToRender, false, glContext);
                         }
-                        it->second.downscaleImage->markForRendered(downscaledRectToRender);
                     }
 
                     if ( frameArgs->stats && frameArgs->stats->isInDepthProfilingEnabled() ) {
@@ -2620,15 +2548,6 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
         }
         tmpPlanes.push_back( std::make_pair(it->second.renderMappedImage->getComponents(), it->second.tmpImage) );
     }
-
-
-#if NATRON_ENABLE_TRIMAP
-    if ( !bitmapMarkedForRendering && frameArgs->isCurrentFrameRenderNotAbortable() ) {
-        for (std::map<ImagePlaneDesc, EffectInstance::PlaneToRender>::iterator it = tls->currentRenderArgs.outputPlanes.begin(); it != tls->currentRenderArgs.outputPlanes.end(); ++it) {
-            it->second.renderMappedImage->markForRendering(renderMappedRectToRender);
-        }
-    }
-#endif
 
 
     /// Render in the temporary image
@@ -2727,7 +2646,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
 
         if ( (st != eStatusOK) || renderAborted ) {
 #if NATRON_ENABLE_TRIMAP
-            if ( frameArgs->isCurrentFrameRenderNotAbortable() ) {
+            //if ( frameArgs->isCurrentFrameRenderNotAbortable() ) {
                 /*
                    At this point, another thread might have already gotten this image from the cache and could end-up
                    using it while it has still pixels marked to PIXEL_UNAVAILABLE, hence clear the bitmap
@@ -2735,7 +2654,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                 for (std::map<ImagePlaneDesc, EffectInstance::PlaneToRender>::const_iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
                     it->second.renderMappedImage->clearBitmap(renderMappedRectToRender);
                 }
-            }
+            //}
 #endif
             switch (st) {
             case eStatusFailed:
@@ -2796,7 +2715,6 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                     it->second.renderMappedImage->pasteFrom(*(it->second.tmpImage), it->second.tmpImage->getBounds(), false);
                 }
             }
-            it->second.renderMappedImage->markForRendered(actionArgs.roi);
         } else {
             if (renderFullScaleThenDownscale) {
                 // We cannot be rendering using OpenGL in this case
@@ -2870,7 +2788,6 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                 }
 
 
-                it->second.fullscaleImage->markForRendered(renderMappedRectToRender);
             } else { // if (renderFullScaleThenDownscale) {
                 ///Copy the rectangle rendered in the downscaled image
                 if (it->second.tmpImage != it->second.downscaleImage) {
@@ -2901,7 +2818,6 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                 if (useMaskMix) {
                     it->second.downscaleImage->applyMaskMix(actionArgs.roi, maskImage.get(), originalInputImage.get(), doMask, false, mix, glContext);
                 }
-                it->second.downscaleImage->markForRendered(downscaledRectToRender);
             } // if (renderFullScaleThenDownscale) {
         } // if (it->second.isAllocatedOnTheFly) {
 

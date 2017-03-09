@@ -201,10 +201,10 @@ public:
         QWaitCondition cond;
         QMutex lock;
         int refCount;
-        bool renderFailed;
+        bool failed;
 
         ImageBeingRendered()
-            : cond(), lock(), refCount(0), renderFailed(false)
+            : cond(), lock(), refCount(0), failed(false)
         {
         }
     };
@@ -241,11 +241,11 @@ public:
     void setDuringInteractAction(bool b);
 
 #if NATRON_ENABLE_TRIMAP
-    void markImageAsBeingRendered(const boost::shared_ptr<Image> & img);
+    void markImageAsBeingRendered(const boost::shared_ptr<Image> & img, const RectI& roi, std::list<RectI>* restToRender, bool *renderedElsewhere);
 
-    bool waitForImageBeingRenderedElsewhereAndUnmark(const RectI & roi, const boost::shared_ptr<Image> & img);
+    bool waitForImageBeingRenderedElsewhere(const RectI & roi, const boost::shared_ptr<Image> & img);
 
-    void unmarkImageAsBeingRendered(const boost::shared_ptr<Image> & img, bool renderFailed);
+    void unmarkImageAsBeingRendered(const boost::shared_ptr<Image> & img, const std::list<RectI>& rects, bool renderFailed);
 #endif
 
     /**
@@ -385,7 +385,6 @@ public:
                                           const RectI & renderMappedRectToRender,
                                           const RectI & downscaledRectToRender,
                                           const bool byPassCache,
-                                          const bool bitmapMarkedForRendering,
                                           const ImageBitDepthEnum outputClipPrefDepth,
                                           const ImagePlaneDesc & outputClipPrefsComps,
                                           const std::bitset<4>& processChannels,
