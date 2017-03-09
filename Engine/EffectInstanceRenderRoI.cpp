@@ -242,7 +242,6 @@ public:
     , _isValid(true)
     , _renderFullScale(renderFullScale)
     {
-        qDebug() << "Ctor" << _effect->getNode()->getScriptName_mt_safe().c_str();
         for (std::map<ImageComponents,EffectInstance::PlaneToRender>::const_iterator it = _image.begin(); it != _image.end(); ++it) {
             ImagePtr cacheImage;
             if (!renderFullScale) {
@@ -290,7 +289,6 @@ public:
 
     ~ImageBitMapMarker_RAII()
     {
-        qDebug() << "Dest" << _isValid  << _effect->getNode()->getScriptName_mt_safe().c_str();;
         for (std::map<ImageComponents,EffectInstance::PlaneToRender>::const_iterator it = _image.begin(); it != _image.end(); ++it) {
             ImagePtr cacheImage;
             if (!_renderFullScale) {
@@ -1617,7 +1615,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
 #if NATRON_ENABLE_TRIMAP
     assert(guard);
-    if (renderAborted || renderRetCode == EffectInstance::eRenderRoIStatusRenderFailed  || renderRetCode == EffectInstance::eRenderRoIStatusRenderOutOfGPUMemory) {
+    if (renderAborted && renderRetCode != EffectInstance::eRenderRoIStatusImageRendered  && renderRetCode != EffectInstance::eRenderRoIStatusImageAlreadyRendered) {
         guard->invalidate();
     } else {
         guard->waitForPendingRegions();
