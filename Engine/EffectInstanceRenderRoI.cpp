@@ -222,7 +222,7 @@ EffectInstance::convertPlanesFormatsIfNeeded(const AppInstPtr& app,
 class ImageBitMapMarker_RAII
 {
 
-    std::map<ImageComponents, EffectInstance::PlaneToRender> _image;
+    std::map<ImagePlaneDesc, EffectInstance::PlaneToRender> _image;
     RectI _roi;
     EffectInstance* _effect;
     std::list<RectI> _rectsToRender;
@@ -232,7 +232,7 @@ class ImageBitMapMarker_RAII
 
 public:
 
-    ImageBitMapMarker_RAII(const std::map<ImageComponents, EffectInstance::PlaneToRender>& image,
+    ImageBitMapMarker_RAII(const std::map<ImagePlaneDesc, EffectInstance::PlaneToRender>& image,
                            bool renderFullScale,
                            const RectI& roi,
                            EffectInstance* effect)
@@ -245,7 +245,7 @@ public:
     , _renderFullScale(renderFullScale)
     {
         _roi.debug();
-        for (std::map<ImageComponents,EffectInstance::PlaneToRender>::const_iterator it = _image.begin(); it != _image.end(); ++it) {
+        for (std::map<ImagePlaneDesc,EffectInstance::PlaneToRender>::const_iterator it = _image.begin(); it != _image.end(); ++it) {
             ImagePtr cacheImage;
             if (!renderFullScale) {
                 cacheImage = it->second.downscaleImage;
@@ -274,7 +274,7 @@ public:
         if (!_isBeingRenderedElseWhere || !_isValid) {
             return;
         }
-        for (std::map<ImageComponents,EffectInstance::PlaneToRender>::const_iterator it = _image.begin(); it != _image.end(); ++it) {
+        for (std::map<ImagePlaneDesc,EffectInstance::PlaneToRender>::const_iterator it = _image.begin(); it != _image.end(); ++it) {
             ImagePtr cacheImage;
             if (!_renderFullScale) {
                 cacheImage = it->second.downscaleImage;
@@ -292,7 +292,7 @@ public:
     ~ImageBitMapMarker_RAII()
     {
         _roi.debug();
-        for (std::map<ImageComponents,EffectInstance::PlaneToRender>::const_iterator it = _image.begin(); it != _image.end(); ++it) {
+        for (std::map<ImagePlaneDesc,EffectInstance::PlaneToRender>::const_iterator it = _image.begin(); it != _image.end(); ++it) {
             ImagePtr cacheImage;
             if (!_renderFullScale) {
                 cacheImage = it->second.downscaleImage;
@@ -1530,20 +1530,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
 # ifdef DEBUG
 
-<<<<<<< HEAD
-            /*{
-                const std::list<RectToRender>& rectsToRender = planesToRender->rectsToRender;
-                qDebug() <<'('<<QThread::currentThread()<<")--> "<< getNode()->getScriptName_mt_safe().c_str() << ": render view: " << args.view << ", time: " << args.time << " No. tiles: " << rectsToRender.size() << " rectangles";
-                for (std::list<RectToRender>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
-                    qDebug() << "rect: " << "x1= " <<  it->rect.x1 << " , y1= " << it->rect.y1 << " , x2= " << it->rect.x2 << " , y2= " << it->rect.y2 << "(identity:" << it->isIdentity << ")";
-                }
-                for (std::map<ImagePlaneDesc, PlaneToRender> ::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
-                    qDebug() << "plane: " <<  it->second.downscaleImage.get() << it->first.getLayerName().c_str();
-                }
-                qDebug() << "Cached:" << (isPlaneCached.get() != 0) << "Rendered elsewhere:" << planesToRender->isBeingRenderedElsewhere;
 
-               }*/
-=======
         /*{
          const std::list<RectToRender>& rectsToRender = planesToRender->rectsToRender;
          qDebug() <<'('<<QThread::currentThread()<<")--> "<< getNode()->getScriptName_mt_safe().c_str() << ": render view: " << args.view << ", time: " << args.time << " No. tiles: " << rectsToRender.size() << " rectangles";
@@ -1556,7 +1543,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
          qDebug() << "Cached:" << (isPlaneCached.get() != 0) << "Rendered elsewhere:" << planesToRender->isBeingRenderedElsewhere;
 
          }*/
->>>>>>> origin/RB-2.2
 # endif
 
 
@@ -1617,28 +1603,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         guard->waitForPendingRegions();
     }
 #endif // NATRON_ENABLE_TRIMAP
-
-<<<<<<< HEAD
-        if ( frameArgs->isCurrentFrameRenderNotAbortable() ) {
-            ///Only use trimap system if the render cannot be aborted.
-            ///If we were aborted after all (because the node got deleted) then return a NULL image and empty the cache
-            ///of this image
-            for (std::map<ImagePlaneDesc, EffectInstance::PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
-                if (!renderAborted) {
-                    if ( (renderRetCode == eRenderRoIStatusRenderFailed) || !planesToRender->isBeingRenderedElsewhere ) {
-                        _imp->unmarkImageAsBeingRendered(renderFullScaleThenDownscale ? it->second.fullscaleImage : it->second.downscaleImage,
-                                                         renderRetCode == eRenderRoIStatusRenderFailed);
-                    } else {
-                        if ( !_imp->waitForImageBeingRenderedElsewhereAndUnmark(roi,
-                                                                                renderFullScaleThenDownscale ? it->second.fullscaleImage : it->second.downscaleImage) ) {
-                            renderAborted = true;
-                        }
-                    }
-                } else {
-                    appPTR->removeFromNodeCache(renderFullScaleThenDownscale ? it->second.fullscaleImage : it->second.downscaleImage);
-                    _imp->unmarkImageAsBeingRendered(renderFullScaleThenDownscale ? it->second.fullscaleImage : it->second.downscaleImage, true);
-=======
->>>>>>> origin/RB-2.2
 
 #if NATRON_ENABLE_TRIMAP
     guard.reset();
