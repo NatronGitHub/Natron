@@ -242,7 +242,8 @@ public:
     , _isValid(true)
     , _renderFullScale(renderFullScale)
     {
-        qDebug() << "Ctor" << _effect->getNode()->getScriptName_mt_safe().c_str();
+        qDebug() << "Ctor" << QThread::currentThread() << _effect->getNode()->getScriptName_mt_safe().c_str();
+        _roi.debug();
         for (std::map<ImageComponents,EffectInstance::PlaneToRender>::const_iterator it = _image.begin(); it != _image.end(); ++it) {
             ImagePtr cacheImage;
             if (!renderFullScale) {
@@ -282,7 +283,6 @@ public:
             if (cacheImage && cacheImage->usesBitMap()) {
                 if (!_effect->_imp->waitForImageBeingRenderedElsewhere(_roi, cacheImage)) {
                     _isValid = false;
-                    return;
                 }
             }
         }
@@ -290,7 +290,8 @@ public:
 
     ~ImageBitMapMarker_RAII()
     {
-        qDebug() << "Dest" << _isValid  << _effect->getNode()->getScriptName_mt_safe().c_str();;
+        qDebug() << "Dest" << QThread::currentThread() << _isValid  << _effect->getNode()->getScriptName_mt_safe().c_str();
+        _roi.debug();
         for (std::map<ImageComponents,EffectInstance::PlaneToRender>::const_iterator it = _image.begin(); it != _image.end(); ++it) {
             ImagePtr cacheImage;
             if (!_renderFullScale) {
@@ -1684,7 +1685,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                needed a different portion of the image. The trimap system does not work for abortable renders
              */
 
-            if ( frameArgs->isCurrentFrameRenderNotAbortable() ) {
+            //if ( frameArgs->isCurrentFrameRenderNotAbortable() ) {
                 if ( !restToRender.empty() ) {
                     it->second.downscaleImage->printUnrenderedPixels(roi);
                 }
@@ -1695,7 +1696,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                    on the same image.
                  */
                 assert( restToRender.empty() );
-            }
+            //}
         }
     }
 #endif
