@@ -2886,13 +2886,15 @@ OfxEffectInstance::getComponentsNeededAndProduced(double time,
                     int index = clip->getInputNb();
                     std::list<ImagePlaneDesc>& compNeeded = (*comps)[index];
                     for (std::list<std::string>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-                        ImagePlaneDesc plane, pairedPlane;
-                        ImagePlaneDesc::mapOFXComponentsTypeStringToPlanes(*it2, &plane, &pairedPlane);
+
+                        ImagePlaneDesc plane;
+                        if ((*it2) == kFnOfxImagePlaneColour) {
+                            plane = ImagePlaneDesc::mapNCompsToColorPlane(getMetadataNComps(index));
+                        } else {
+                            plane = ImagePlaneDesc::mapOFXPlaneStringToPlane(*it2);
+                        }
                         if (plane.getNumComponents() > 0) {
                             compNeeded.push_back(plane);
-                        }
-                        if (pairedPlane.getNumComponents() > 0) {
-                            compNeeded.push_back(pairedPlane);
                         }
                     }
                 }

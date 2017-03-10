@@ -1064,7 +1064,8 @@ EffectInstance::getImage(int inputNb,
             RectD canonicalPixelRoI;
 
             if (!inputRoDSet) {
-                StatusEnum st = inputEffect->getRegionOfDefinition(inputEffect->getRenderHash(), time, scale, view, &inputRoD);
+                bool isProjectFormat;
+                StatusEnum st = inputEffect->getRegionOfDefinition_public(inputEffect->getRenderHash(), time, scale, view, &inputRoD, &isProjectFormat);
                 Q_UNUSED(st);
             }
 
