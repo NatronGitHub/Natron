@@ -2118,23 +2118,25 @@ OfxEffectInstance::getLayersProducedAndNeeded(TimeValue time,
         assert(clip);
         if (clip) {
 
+            int index = clip->getInputNb();
             std::list<ImagePlaneDesc>* compsList = 0;
             if (clip->isOutput()) {
                 compsList = layersProduced;
             } else {
-                int index = clip->getInputNb();
                 compsList = &(*inputLayersNeeded)[index];
             }
 
 
             for (std::list<std::string>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-                ImagePlaneDesc plane, pairedPlane;
-                ImagePlaneDesc::mapOFXComponentsTypeStringToPlanes(*it2, &plane, &pairedPlane);
+                ImagePlaneDesc plane;
+                if ((*it2) == kFnOfxImagePlaneColour) {
+                    ImagePlaneDesc pairedPlane;
+                    getMetadataComponents(index, &plane, &pairedPlane);
+                } else {
+                    plane = ImagePlaneDesc::mapOFXPlaneStringToPlane(*it2);
+                }
                 if (plane.getNumComponents() > 0) {
                     compsList->push_back(plane);
-                }
-                if (pairedPlane.getNumComponents() > 0) {
-                    compsList->push_back(pairedPlane);
                 }
 
             }
