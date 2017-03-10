@@ -124,7 +124,7 @@ static PIX* getPix(PIX* ptr,
     if (x < bounds.x1 || x >= bounds.x2 || y < bounds.y1 || y >= bounds.y2) {
         return 0;
     }
-    return ptr + bounds.width() * y + x;
+    return ptr + bounds.width() * (y - bounds.y1) + (x - bounds.x1);
 }
 
 template <typename PIX>

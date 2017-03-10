@@ -343,7 +343,7 @@ Node::makePreviewImage(TimeValue time,
 void
 Node::refreshPreviewsAfterProjectLoad()
 {
-    computePreviewImage(TimeValue(getApp()->getTimeLine()->currentFrame()));
+    computePreviewImage();
     Q_EMIT s_refreshPreviewsAfterProjectLoadRequested();
 }
 
@@ -359,8 +359,7 @@ Node::isRenderingPreview() const
 
 
 static void
-refreshPreviewsRecursivelyUpstreamInternal(TimeValue time,
-                                           const NodePtr& node,
+refreshPreviewsRecursivelyUpstreamInternal(const NodePtr& node,
                                            std::list<NodePtr>& marked)
 {
     if ( std::find(marked.begin(), marked.end(), node) != marked.end() ) {
@@ -368,7 +367,7 @@ refreshPreviewsRecursivelyUpstreamInternal(TimeValue time,
     }
 
     if ( node->isPreviewEnabled() ) {
-        node->refreshPreviewImage( time );
+        node->refreshPreviewImage();
     }
 
     marked.push_back(node);
@@ -378,22 +377,21 @@ refreshPreviewsRecursivelyUpstreamInternal(TimeValue time,
     for (std::size_t i = 0; i < inputs.size(); ++i) {
         NodePtr input = inputs[i].lock();
         if (input) {
-            input->refreshPreviewsRecursivelyUpstream(time);
+            input->refreshPreviewsRecursivelyUpstream();
         }
     }
 }
 
 void
-Node::refreshPreviewsRecursivelyUpstream(TimeValue time)
+Node::refreshPreviewsRecursivelyUpstream()
 {
     std::list<NodePtr> marked;
 
-    refreshPreviewsRecursivelyUpstreamInternal(time, shared_from_this(), marked);
+    refreshPreviewsRecursivelyUpstreamInternal(shared_from_this(), marked);
 }
 
 static void
-refreshPreviewsRecursivelyDownstreamInternal(TimeValue time,
-                                             const NodePtr& node,
+refreshPreviewsRecursivelyDownstreamInternal(const NodePtr& node,
                                              std::list<NodePtr>& marked)
 {
     if ( std::find(marked.begin(), marked.end(), node) != marked.end() ) {
@@ -401,7 +399,7 @@ refreshPreviewsRecursivelyDownstreamInternal(TimeValue time,
     }
 
     if ( node->isPreviewEnabled() ) {
-        node->refreshPreviewImage( time );
+        node->refreshPreviewImage();
     }
 
     marked.push_back(node);
@@ -409,18 +407,18 @@ refreshPreviewsRecursivelyDownstreamInternal(TimeValue time,
     NodesList outputs;
     node->getOutputsWithGroupRedirection(outputs);
     for (NodesList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        (*it)->refreshPreviewsRecursivelyDownstream(time);
+        (*it)->refreshPreviewsRecursivelyDownstream();
     }
 }
 
 void
-Node::refreshPreviewsRecursivelyDownstream(TimeValue time)
+Node::refreshPreviewsRecursivelyDownstream()
 {
     if ( !getNodeGui() ) {
         return;
     }
     std::list<NodePtr> marked;
-    refreshPreviewsRecursivelyDownstreamInternal(time, shared_from_this(), marked);
+    refreshPreviewsRecursivelyDownstreamInternal(shared_from_this(), marked);
 }
 
 

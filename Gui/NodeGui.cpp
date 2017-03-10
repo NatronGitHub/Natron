@@ -41,6 +41,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QGridLayout>
 #include <QCursor>
 #include <QDialogButtonBox>
+#include <QTimer>
 #include <QtCore/QFile>
 #include <QApplication>
 CLANG_DIAG_ON(deprecated)
@@ -222,8 +223,8 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( internalNode.get(), SIGNAL(labelChanged(QString,QString)), this, SLOT(onInternalNameChanged(QString,QString)) );
     QObject::connect( internalNode.get(), SIGNAL(refreshEdgesGUI()), this, SLOT(refreshEdges()) );
     QObject::connect( internalNode.get(), SIGNAL(inputsInitialized()), this, SLOT(initializeInputs()) );
-    QObject::connect( internalNode.get(), SIGNAL(previewImageChanged(TimeValue)), this, SLOT(updatePreviewImage(TimeValue)) );
-    QObject::connect( internalNode.get(), SIGNAL(previewRefreshRequested(TimeValue)), this, SLOT(forceComputePreview(TimeValue)) );
+    QObject::connect( internalNode.get(), SIGNAL(previewImageChanged()), this, SLOT(updatePreviewImage()) );
+    QObject::connect( internalNode.get(), SIGNAL(previewRefreshRequested()), this, SLOT(forceComputePreview()) );
     QObject::connect( internalNode.get(), SIGNAL(deactivated(bool)), this, SLOT(deactivate(bool)) );
     QObject::connect( internalNode.get(), SIGNAL(activated(bool)), this, SLOT(activate(bool)) );
     QObject::connect( internalNode.get(), SIGNAL(inputChanged(int)), this, SLOT(connectEdge(int)) );
@@ -646,7 +647,7 @@ NodeGui::togglePreview_internal(bool refreshPreview)
     if ( getNode()->isPreviewEnabled() ) {
         ensurePreviewCreated();
         if (refreshPreview) {
-            getNode()->computePreviewImage(TimeValue(_graph->getGui()->getApp()->getTimeLine()->currentFrame()));
+            getNode()->computePreviewImage();
         }
     } else {
         if (_previewPixmap) {
@@ -1225,9 +1226,19 @@ NodeGui::markInputNull(Edge* e)
 }
 
 void
-NodeGui::updatePreviewImage(TimeValue time)
+NodeGui::updatePreviewNow()
+{
+    TimeValue time(getDagGui()->getGui()->getApp()->getTimeLine()->currentFrame());
+    appPTR->appendTaskToPreviewThread(shared_from_this(), time);
+}
+
+void
+NodeGui::updatePreviewImage()
 {
     NodePtr node = getNode();
+    if (QThread::currentThread() != qApp->thread()) {
+        return;
+    }
 
     if ( isVisible() && node->isPreviewEnabled() && node->isActivated() && node->getApp()->getProject()->isAutoPreviewEnabled() ) {
         if ( (node->getScriptName().find(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) != std::string::npos) ||
@@ -1239,12 +1250,15 @@ NodeGui::updatePreviewImage(TimeValue time)
 
         NodeGuiPtr thisShared = shared_from_this();
         assert(thisShared);
-        appPTR->appendTaskToPreviewThread(thisShared, time);
+
+        // Delay the preview: this enables to almost always have a cached image instead of running concurrently with the viewer render.
+        QTimer::singleShot(300, this, SLOT(updatePreviewNow()));
+
     }
 }
 
 void
-NodeGui::forceComputePreview(TimeValue time)
+NodeGui::forceComputePreview()
 {
     NodePtr node = getNode();
 
@@ -1260,6 +1274,7 @@ NodeGui::forceComputePreview(TimeValue time)
         ensurePreviewCreated();
         NodeGuiPtr thisShared = shared_from_this();
         assert(thisShared);
+        TimeValue time(getDagGui()->getGui()->getApp()->getTimeLine()->currentFrame());
         appPTR->appendTaskToPreviewThread(thisShared, time);
     }
 }

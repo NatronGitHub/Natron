@@ -121,8 +121,10 @@ public:
      * Once returning from that function, all tiles should be computed, but you should make a last call to
      * fetchCachedTilesAndUpdateStatus to ensure that everything is rendered. In some rare cases you may have to compute
      * tiles that were marked pending but that were aborted by another thread.
+     *
+     * @returns True if everything is done, false if the caller should check again the status with fetchCachedTilesAndUpdateStatus
      **/
-    void waitForPendingTiles();
+    bool waitForPendingTiles();
 
 private:
 

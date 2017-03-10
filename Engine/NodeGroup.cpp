@@ -349,12 +349,11 @@ NodeCollection::refreshPreviews()
     if ( appInst->isBackground() ) {
         return;
     }
-    TimeValue time(appInst->getTimeLine()->currentFrame());
     NodesList nodes;
     getActiveNodes(&nodes);
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( (*it)->isPreviewEnabled() ) {
-            (*it)->refreshPreviewImage(time);
+            (*it)->refreshPreviewImage();
         }
         NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
         if (isGrp) {
@@ -373,12 +372,11 @@ NodeCollection::forceRefreshPreviews()
     if ( appInst->isBackground() ) {
         return;
     }
-    TimeValue time(appInst->getTimeLine()->currentFrame());
     NodesList nodes;
     getActiveNodes(&nodes);
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( (*it)->isPreviewEnabled() ) {
-            (*it)->computePreviewImage(time);
+            (*it)->computePreviewImage();
         }
         NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
         if (isGrp) {

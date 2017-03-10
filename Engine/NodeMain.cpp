@@ -280,7 +280,7 @@ Node::load(const CreateNodeArgsPtr& args)
     _imp->runOnNodeCreatedCB(!serialization);
     
     // If needed compute a preview for this node
-    computePreviewImage( TimeValue(getApp()->getTimeLine()->currentFrame()) );
+    computePreviewImage();
     
     // Resume knobChanged calls
     _imp->effect->endChanges();

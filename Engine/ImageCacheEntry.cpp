@@ -28,6 +28,9 @@
 
 #include <map>
 
+#include <QThread>
+#include <QDebug>
+
 #include <boost/thread/shared_mutex.hpp> // local r-w mutex
 #include <boost/thread/locks.hpp>
 
@@ -674,7 +677,13 @@ ImageCacheEntryPrivate::readAndUpdateStateMap(bool hasExclusiveLock)
 {
 
     // Ensure we have at least the desired mipmap level in the cache entry
-    internalCacheEntry->perMipMapTilesState.resize(mipMapLevel + 1);
+    if (internalCacheEntry->perMipMapTilesState.size() < mipMapLevel + 1) {
+        if (!hasExclusiveLock) {
+            return ImageCacheEntryPrivate::eUpdateStateMapRetCodeNeedWriteLock;
+        }
+        internalCacheEntry->perMipMapTilesState.resize(mipMapLevel + 1);
+    }
+
 
     // Indicates whether we modified the cached tiles state map for this mipmap level
     bool stateMapModified = false;
@@ -701,6 +710,7 @@ ImageCacheEntryPrivate::readAndUpdateStateMap(bool hasExclusiveLock)
 
     // Clear the tiles to fetch list
     tilesToFetch.clear();
+
 
     TileStateHeader& cacheStateMap = perMipMapCacheTilesState[mipMapLevel];
 
@@ -775,6 +785,7 @@ ImageCacheEntryPrivate::readAndUpdateStateMap(bool hasExclusiveLock)
             } // switch(stat)
         }
     }
+
 
     if (stateMapModified) {
         return ImageCacheEntryPrivate::eUpdateStateMapRetCodeMustWriteToCache;
@@ -1250,7 +1261,6 @@ ImageCacheEntry::markCacheTilesAsAborted()
                 // Mark it as eTileStatusNotRendered now
                 assert(cacheTileState->status == eTileStatusPending);
                 cacheTileState->status = eTileStatusNotRendered;
-
                 hasModifiedTileMap = true;
             }
         }
@@ -1312,7 +1322,6 @@ ImageCacheEntry::markCacheTilesAsRendered()
                 // Mark it as eTileStatusRendered now
                 assert(cacheTileState->status == eTileStatusPending);
                 cacheTileState->status = eTileStatusRendered;
-
                 ++cacheStateMap.state->numRenderedTiles;
 
                 hasModifiedTileMap = true;
@@ -1386,7 +1395,7 @@ ImageCacheEntry::markCacheTilesAsRendered()
 #endif // NATRON_CACHE_NEVER_PERSISTENT
 } // markCacheTilesAsRendered
 
-void
+bool
 ImageCacheEntry::waitForPendingTiles()
 {
     // When the cache is persistent, we don't hold a lock on the entry since it would also require locking
@@ -1408,11 +1417,12 @@ ImageCacheEntry::waitForPendingTiles()
     std::size_t timeToWaitMS = 40;
 
 
-    bool hasUnrenderedTile = false;
-    bool hasPendingResults = false;
+    bool hasUnrenderedTile;
+    bool hasPendingResults;
 
     do {
-
+        hasUnrenderedTile = false;
+        hasPendingResults = false;
         fetchCachedTilesAndUpdateStatus(NULL, &hasUnrenderedTile, &hasPendingResults);
 
         if (hasPendingResults) {
@@ -1431,6 +1441,7 @@ ImageCacheEntry::waitForPendingTiles()
     if (hasReleasedThread) {
         QThreadPool::globalInstance()->reserveThread();
     }
+    return !hasPendingResults && !hasUnrenderedTile;
 
 } // waitForPendingTiles
 

@@ -1485,11 +1485,15 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
 
             // Wait for any pending results for the requested plane.
             // After this line other threads that should have computed should be done
-            image->getCacheEntry()->waitForPendingTiles();
+            if (image->getCacheEntry()->waitForPendingTiles()) {
+                hasPendingTiles = false;
+                renderRects.clear();
+            } else {
 
-            // Re-fetch the tiles state from the cache which may have changed now
-            _imp->checkRestToRender(true /*updateTilesStateFromCache*/, requestData, renderMappedRoI, mappedCombinedScale, cachedImagePlanes, &renderRects, &hasPendingTiles);
-
+                // Re-fetch the tiles state from the cache which may have changed now
+                _imp->checkRestToRender(true /*updateTilesStateFromCache*/, requestData, renderMappedRoI, mappedCombinedScale, cachedImagePlanes, &renderRects, &hasPendingTiles);
+            }
+            
         }
     } // while there is still something not rendered
 

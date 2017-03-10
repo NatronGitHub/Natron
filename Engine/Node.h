@@ -788,9 +788,9 @@ public:
 
     int getIsNodeRenderingCounter() const;
 
-    void refreshPreviewsRecursivelyDownstream(TimeValue time);
+    void refreshPreviewsRecursivelyDownstream();
 
-    void refreshPreviewsRecursivelyUpstream(TimeValue time);
+    void refreshPreviewsRecursivelyUpstream();
 
 public:
 
@@ -1015,15 +1015,15 @@ public Q_SLOTS:
     }
 
     /*will force a preview re-computation not matter of the project's preview mode*/
-    void computePreviewImage(TimeValue time)
+    void computePreviewImage()
     {
-        Q_EMIT previewRefreshRequested(time);
+        Q_EMIT previewRefreshRequested();
     }
 
     /*will refresh the preview only if the project is in auto-preview mode*/
-    void refreshPreviewImage(TimeValue time)
+    void refreshPreviewImage()
     {
-        Q_EMIT previewImageChanged(time);
+        Q_EMIT previewImageChanged();
     }
 
     void onInputLabelChanged(const QString& oldName, const QString& newName);
@@ -1112,9 +1112,9 @@ Q_SIGNALS:
 
     void refreshEdgesGUI();
 
-    void previewImageChanged(TimeValue);
+    void previewImageChanged();
 
-    void previewRefreshRequested(TimeValue);
+    void previewRefreshRequested();
 
     void inputNIsRendering(int inputNb);
 

@@ -411,10 +411,10 @@ public Q_SLOTS:
     void refreshSize();
 
     /*Updates the preview image, only if the project is in auto-preview mode*/
-    void updatePreviewImage(TimeValue time);
+    void updatePreviewImage();
 
     /*Updates the preview image no matter what*/
-    void forceComputePreview(TimeValue time);
+    void forceComputePreview();
 
     void setName(const QString & _nameItem);
 
@@ -473,6 +473,11 @@ public Q_SLOTS:
     void onPreviewImageComputed();
 
     void onKeepInAnimationModuleKnobChanged();
+
+private Q_SLOTS:
+
+
+    void updatePreviewNow();
 
 Q_SIGNALS:
 

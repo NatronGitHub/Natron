@@ -1071,8 +1071,6 @@ EffectInstance::evaluate(bool isSignificant,
     node->refreshIdentityState();
 
 
-    TimeValue time = getTimelineCurrentTime();
-
     // Get the connected viewers downstream and re-render or redraw them.
     if (isSignificant) {
         getApp()->renderAllViewers();
@@ -1082,7 +1080,7 @@ EffectInstance::evaluate(bool isSignificant,
 
     // If significant, also refresh previews downstream
     if (isSignificant) {
-        node->refreshPreviewsRecursivelyDownstream(time);
+        node->refreshPreviewsRecursivelyDownstream();
     }
 } // evaluate
 
