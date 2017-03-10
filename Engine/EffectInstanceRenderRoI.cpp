@@ -244,7 +244,6 @@ public:
     , _isValid(true)
     , _renderFullScale(renderFullScale)
     {
-        _roi.debug();
         for (std::map<ImagePlaneDesc,EffectInstance::PlaneToRender>::const_iterator it = _image.begin(); it != _image.end(); ++it) {
             ImagePtr cacheImage;
             if (!renderFullScale) {
@@ -291,7 +290,6 @@ public:
 
     ~ImageBitMapMarker_RAII()
     {
-        _roi.debug();
         for (std::map<ImagePlaneDesc,EffectInstance::PlaneToRender>::const_iterator it = _image.begin(); it != _image.end(); ++it) {
             ImagePtr cacheImage;
             if (!_renderFullScale) {
