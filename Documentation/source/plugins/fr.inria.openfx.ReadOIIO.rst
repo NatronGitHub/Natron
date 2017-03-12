@@ -76,6 +76,26 @@ compiled with 1.7.12
 
 running with 1.7.12
 
+Dependent libraries:
+
+Field3d 1.7.2
+
+gif\_lib 4.2.3
+
+jpeg-turbo 1.5.0
+
+OpenJpeg 2.1.2
+
+OpenEXR 2.2.0
+
+libpng 1.6.28
+
+libraw 0.18.1-Release
+
+LIBTIFF, Version 4.0.7
+
+Webp 0.6.0
+
 Inputs
 ------
 
@@ -174,6 +194,7 @@ Controls
 |                                                                 |           |                 | | **Wide**: Wide-gamut RGB color space (or Adobe Wide Gamut RGB)                                                                                                                                                                                                                                                                             |
 |                                                                 |           |                 | | **ProPhoto**: Kodak ProPhoto RGB (or ROMM RGB)                                                                                                                                                                                                                                                                                             |
 |                                                                 |           |                 | | **XYZ**: CIE XYZ                                                                                                                                                                                                                                                                                                                           |
+|                                                                 |           |                 | | **ACES**: AMPAS ACES                                                                                                                                                                                                                                                                                                                       |
 +-----------------------------------------------------------------+-----------+-----------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | Camera Matrix / ``rawUseCameraMatrix``                          | Choice    | Default         | | Use/don't use an embedded color matrix.                                                                                                                                                                                                                                                                                                    |
 |                                                                 |           |                 | | **None**: Do not use the embedded color matrix.                                                                                                                                                                                                                                                                                            |
