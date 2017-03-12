@@ -126,13 +126,13 @@ CacheEntryKeyBase::toMemorySegment(ExternalSegmentType* /*segment*/, ExternalSeg
 }
 
 
-void
+CacheEntryKeyBase::FromMemorySegmentRetCodeEnum
 CacheEntryKeyBase::fromMemorySegment(ExternalSegmentType* /*segment*/,
                                      ExternalSegmentTypeHandleList::const_iterator /*start*/,
                                      ExternalSegmentTypeHandleList::const_iterator /*end*/)
 
 {
-
+    return eFromMemorySegmentRetCodeOk;
 }
 
 

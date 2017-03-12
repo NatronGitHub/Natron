@@ -450,17 +450,17 @@ public:
 
     }
 
-    virtual void fromMemorySegment(ExternalSegmentType* segment,
+    virtual CacheEntryKeyBase::FromMemorySegmentRetCodeEnum fromMemorySegment(ExternalSegmentType* segment,
                                    ExternalSegmentTypeHandleList::const_iterator start,
                                    ExternalSegmentTypeHandleList::const_iterator end) OVERRIDE FINAL
     {
         if (start == end) {
-            throw std::bad_alloc();
+            return eFromMemorySegmentRetCodeFailed;
         }
         readAnonymousSharedObject(*start, segment, &_data);
         ++start;
         if (start == end) {
-            throw std::bad_alloc();
+            return eFromMemorySegmentRetCodeFailed;
         }
         readAnonymousSharedObject(*start, segment, &_knobScriptName);
     }

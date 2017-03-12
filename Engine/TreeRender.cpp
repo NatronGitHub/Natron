@@ -671,14 +671,14 @@ TreeRenderPrivate::launchRenderInternal(const EffectInstancePtr& treeRoot,
         // Release the thread to the thread pool so that it may use this thread for other runnables
         // and reserve it back when done waiting.
         if (isThreadPoolThread) {
-            QThreadPool::globalInstance()->releaseThread();
+           QThreadPool::globalInstance()->releaseThread();
         }
 
         // Wait until a task is finished: we should be able to launch more tasks afterwards.
         requestData->_imp->dependencyFreeRendersEmptyCond.wait(&requestData->_imp->dependencyFreeRendersMutex);
 
         if (isThreadPoolThread) {
-            QThreadPool::globalInstance()->reserveThread();
+           QThreadPool::globalInstance()->reserveThread();
         }
 
         // We have been woken-up by a finished task, check if the render is still OK

@@ -1506,12 +1506,13 @@ static void fromMemorySegmentInternal(const IPCMipMapTileStateVector& cachedMipM
 }
 static void toMemorySegmentInternal(const std::vector<TilesState>& localMipMapStates, IPCMipMapTileStateVector* cachedMipMapStates, ExternalSegmentType* segment)
 {
-    TileState_Allocator_ExternalSegment alloc(segment->get_segment_manager());
     cachedMipMapStates->clear();
     for (std::size_t i = 0; i < localMipMapStates.size(); ++i) {
+        TileState_Allocator_ExternalSegment alloc(segment->get_segment_manager());
         IPCTilesState cacheState(alloc);
+        assert(cacheState.tiles.get_allocator().get_segment_manager() == segment->get_segment_manager());
         cacheState.tiles.insert(cacheState.tiles.end(), localMipMapStates[i].tiles.begin(), localMipMapStates[i].tiles.end());
-        cachedMipMapStates->push_back(boost::move(cacheState));
+        cachedMipMapStates->push_back(cacheState);
     }
 }
 

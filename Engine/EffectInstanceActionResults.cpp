@@ -61,11 +61,11 @@ EffectInstanceActionKeyBase::toMemorySegment(ExternalSegmentType* segment, Exter
     CacheEntryKeyBase::toMemorySegment(segment, objectPointers);
 } // toMemorySegment
 
-void
+CacheEntryKeyBase::FromMemorySegmentRetCodeEnum
 EffectInstanceActionKeyBase::fromMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList::const_iterator start, ExternalSegmentTypeHandleList::const_iterator end)
 {
     if (start == end) {
-        throw std::bad_alloc();
+        return eFromMemorySegmentRetCodeFailed;
     }
     readAnonymousSharedObject(*start,segment, &_data);
 } // fromMemorySegment

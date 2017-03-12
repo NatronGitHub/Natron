@@ -112,6 +112,12 @@ struct IPCTilesState
         
     }
 
+    IPCTilesState(const IPCTilesState& other)
+    : tiles(other.tiles)
+    {
+
+    }
+
     void operator=(const IPCTilesState& other)
     {
         tiles = other.tiles;

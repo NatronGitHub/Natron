@@ -137,13 +137,13 @@ ImageCacheKey::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentType
 }
 
 
-void
+CacheEntryKeyBase::FromMemorySegmentRetCodeEnum
 ImageCacheKey::fromMemorySegment(ExternalSegmentType* segment,
                             ExternalSegmentTypeHandleList::const_iterator start,
                             ExternalSegmentTypeHandleList::const_iterator end)
 {
     if (start == end) {
-        throw std::bad_alloc();
+        return eFromMemorySegmentRetCodeFailed;
     }
     ImageCacheKeyShmData* data = (ImageCacheKeyShmData*)segment->get_address_from_handle(*start);
     ++start;

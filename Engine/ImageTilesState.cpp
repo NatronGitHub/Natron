@@ -97,7 +97,7 @@ TileState*
 TileStateHeader::getTileAt(int tx, int ty)
 {
     assert(tx % tileSizeX == 0 && ty % tileSizeY == 0);
-    int index = ((ty / tileSizeY) * (boundsRoundedToTileSize.width() / tileSizeX)) + tx / tileSizeX;
+    int index = (((ty - boundsRoundedToTileSize.y1) / tileSizeY) * (boundsRoundedToTileSize.width() / tileSizeX)) + (tx - boundsRoundedToTileSize.x1) / tileSizeX;
     assert(index >= 0 && index < (int)state->tiles.size());
     return &state->tiles[index];
 }
@@ -106,7 +106,7 @@ const TileState*
 TileStateHeader::getTileAt(int tx, int ty) const
 {
     assert(tx % tileSizeX == 0 && ty % tileSizeY == 0);
-    int index = ((ty / tileSizeY) * (boundsRoundedToTileSize.width() / tileSizeX)) + tx / tileSizeX;
+    int index = (((ty - boundsRoundedToTileSize.y1) / tileSizeY) * (boundsRoundedToTileSize.width() / tileSizeX)) + (tx - boundsRoundedToTileSize.x1) / tileSizeX;
     assert(index >= 0 && index < (int)state->tiles.size());
     return &state->tiles[index];
 }

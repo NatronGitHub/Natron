@@ -83,14 +83,23 @@ public:
      **/
     virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const;
 
+    enum FromMemorySegmentRetCodeEnum
+    {
+        // Everything went ok
+        eFromMemorySegmentRetCodeOk,
+
+        // Something failed, the entry should be removed from the cache
+        eFromMemorySegmentRetCodeFailed,
+    };
+
     /**
      * @brief Reads this key from shared process memory segment.
      * Objects to be deserialized are given from the start iterator to the end.
      * They are to be read in reverse order of what was written to in toMemorySegment.
      **/
-    virtual void fromMemorySegment(ExternalSegmentType* segment,
-                                   ExternalSegmentTypeHandleList::const_iterator start,
-                                   ExternalSegmentTypeHandleList::const_iterator end);
+    virtual FromMemorySegmentRetCodeEnum fromMemorySegment(ExternalSegmentType* segment,
+                                                           ExternalSegmentTypeHandleList::const_iterator start,
+                                                           ExternalSegmentTypeHandleList::const_iterator end);
 
     /**
      * @brief This should return an approximate size in bytes of memory taken in the

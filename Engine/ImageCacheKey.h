@@ -53,7 +53,7 @@ public:
 
     virtual void toMemorySegment(ExternalSegmentType* segment,  ExternalSegmentTypeHandleList* objectPointers) const OVERRIDE FINAL;
 
-    virtual void fromMemorySegment(ExternalSegmentType* segment,
+    virtual CacheEntryKeyBase::FromMemorySegmentRetCodeEnum fromMemorySegment(ExternalSegmentType* segment,
                                    ExternalSegmentTypeHandleList::const_iterator start,
                                    ExternalSegmentTypeHandleList::const_iterator end) OVERRIDE FINAL;
     

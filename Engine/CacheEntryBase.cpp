@@ -111,7 +111,10 @@ CacheEntryBase::fromMemorySegment(bool /*isLockedForWriting*/,
                                   ExternalSegmentTypeHandleList::const_iterator end)
 
 {
-    _imp->key->fromMemorySegment(segment, start, end);
+    CacheEntryKeyBase::FromMemorySegmentRetCodeEnum stat = _imp->key->fromMemorySegment(segment, start, end);
+    if (stat == CacheEntryKeyBase::eFromMemorySegmentRetCodeFailed) {
+        return eFromMemorySegmentRetCodeFailed;
+    }
     return eFromMemorySegmentRetCodeOk;
 }
 
