@@ -130,6 +130,13 @@ struct FrameViewRequestPrivate
     // The caching policy for this frame/view
     CacheAccessModeEnum cachingPolicy;
 
+    // Fallback device to use if the device that rendered first did not succeed.
+    // E.g: First attempt to render using OpenGL or Cuda and if it fails fallback on CPU
+    RenderBackendTypeEnum fallbackRenderDevice;
+
+    // True if the render should use fallbackRenderDevice
+    bool fallbackRenderDeviceEnabled;
+
     // The status of the frame/view
     FrameViewRequest::FrameViewRequestStatusEnum status;
 
@@ -183,6 +190,8 @@ struct FrameViewRequestPrivate
     , renderMappedMipMapLevel(mipMapLevel)
     , plane(plane)
     , cachingPolicy(eCacheAccessModeReadWrite)
+    , fallbackRenderDevice(eRenderBackendTypeCPU)
+    , fallbackRenderDeviceEnabled(false)
     , status(FrameViewRequest::eFrameViewRequestStatusNotRendered)
     , retCode(eActionStatusOK)
     , image()
@@ -196,7 +205,7 @@ struct FrameViewRequestPrivate
 #ifdef TRACE_REQUEST_LIFETIME
     , nodeName(renderClone->getNode()->getScriptName_mt_safe())
 #endif
-    , byPassCache()
+    , byPassCache(false)
     {
         
     }
@@ -217,6 +226,11 @@ FrameViewRequest::FrameViewRequest(TimeValue time,
     if (renderClone->getCurrentRender()->isByPassCacheEnabled()) {
         _imp->byPassCache = true;
     }
+
+    if (renderClone->getCurrentOpenGLRenderSupport() == ePluginOpenGLRenderSupportNeeded) {
+        // The plug-in can only use GPU, so make the device fallback be GPU
+        _imp->fallbackRenderDevice = eRenderBackendTypeOpenGL;
+    }
 }
 
 FrameViewRequest::~FrameViewRequest()
@@ -224,12 +238,6 @@ FrameViewRequest::~FrameViewRequest()
 #ifdef TRACE_REQUEST_LIFETIME
     qDebug() << "Delete request" << _imp->nodeName.c_str();
 #endif
-    if (_imp->status == FrameViewRequest::eFrameViewRequestStatusNotRendered && _imp->image) {
-        ImageCacheEntryPtr entry = _imp->image->getCacheEntry();
-        if (entry) {
-            entry->markCacheTilesAsAborted();
-        }
-    }
 }
 
 EffectInstancePtr
@@ -345,34 +353,6 @@ FrameViewRequest::notifyRenderFinished(ActionRetCodeEnum stat)
 }
 
 
-#if 0
-ActionRetCodeEnum
-FrameViewRequest::waitForPendingResults()
-{
-    // If this thread is a threadpool thread, it may wait for a while that results gets available.
-    // Release the thread to the thread pool so that it may use this thread for other runnables
-    // and reserve it back when done waiting.
-    bool hasReleasedThread = false;
-    if (isRunningInThreadPoolThread()) {
-        QThreadPool::globalInstance()->releaseThread();
-        hasReleasedThread = true;
-    }
-    ActionRetCodeEnum ret;
-    {
-        QMutexLocker k(&_imp->statusMutex);
-        while (_imp->status == FrameViewRequest::eFrameViewRequestStatusPending) {
-            _imp->statusPendingCond.wait(&_imp->statusMutex);
-        }
-        ret = _imp->retCode;
-    }
-    if (hasReleasedThread) {
-        QThreadPool::globalInstance()->reserveThread();
-    }
-
-    return ret;
-} // waitForPendingResults
-#endif
-
 RectD
 FrameViewRequest::getCurrentRoI() const
 {
@@ -478,6 +458,37 @@ FrameViewRequest::checkIfByPassCacheEnabledAndTurnoff() const
         return true;
     }
     return false;
+}
+
+void
+FrameViewRequest::setByPassCacheEnabled(bool enabled)
+{
+    QMutexLocker k(&_imp->lock);
+    _imp->byPassCache = enabled;
+}
+
+void
+FrameViewRequest::setFallbackRenderDevice(RenderBackendTypeEnum device)
+{
+    _imp->fallbackRenderDevice = device;
+}
+
+RenderBackendTypeEnum
+FrameViewRequest::getFallbackRenderDevice() const
+{
+    return _imp->fallbackRenderDevice;
+}
+
+void
+FrameViewRequest::setFallbackRenderDeviceEnabled(bool enabled)
+{
+    _imp->fallbackRenderDeviceEnabled = enabled;
+}
+
+bool
+FrameViewRequest::isFallbackRenderDeviceEnabled() const
+{
+    return _imp->fallbackRenderDeviceEnabled;
 }
 
 U64

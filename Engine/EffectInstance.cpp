@@ -711,7 +711,6 @@ EffectInstance::GetImageInArgs::GetImageInArgs(const FrameViewRequestPtr& reques
         TreeRenderPtr render = requestPass->getRenderClone()->getCurrentRender();
         draftMode = render->isDraftRender();
         playback = render->isPlayback();
-        byPassCache = render->isByPassCacheEnabled();
     }
 
 
@@ -919,7 +918,10 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
             copyArgs.dstColorspace = getApp()->getDefaultColorSpaceForBitDepth(thisBitDepth);
             copyArgs.monoConversion = Image::eMonoToPackedConversionCopyToChannelAndFillOthers;
         }
-        convertedImage->copyPixels(*outArgs->image, copyArgs);
+        ActionRetCodeEnum stat = convertedImage->copyPixels(*outArgs->image, copyArgs);
+        if (isFailureRetCode(stat)) {
+            return false;
+        }
         outArgs->image = convertedImage;
     } // mustConvertImage
 

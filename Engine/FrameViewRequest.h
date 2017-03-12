@@ -172,15 +172,6 @@ public:
      **/
     void notifyRenderFinished(ActionRetCodeEnum stat);
 
-#if 0
-    /**
-     * @brief This should be called right after notifyRenderStarted() if the value
-     * returned was eFrameViewRequestStatusPending. After this function the launchRender
-     * function can just return
-     **/
-    ActionRetCodeEnum waitForPendingResults();
-#endif
-    
     /**
      * @brief Get the render mapped mipmap level (i.e: 0 if the node
      * does not support render scale)
@@ -266,6 +257,19 @@ public:
      * By default this flag is false.
      **/
     bool checkIfByPassCacheEnabledAndTurnoff() const;
+    void setByPassCacheEnabled(bool enabled);
+
+    /**
+     * @brief set/get the fallback render device used if the first render attempt did not work out.
+     **/
+    void setFallbackRenderDevice(RenderBackendTypeEnum device);
+    RenderBackendTypeEnum getFallbackRenderDevice() const;
+
+    /**
+     * @brief Should the render use the device returned by getFallbackRenderDevice() or automatically detect the best device to render
+     **/
+    void setFallbackRenderDeviceEnabled(bool enabled);
+    bool isFallbackRenderDeviceEnabled() const;
 
     /**
      * @brief Retrieves the bounding box of all region of interest requested for this time/view.

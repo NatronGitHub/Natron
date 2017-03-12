@@ -1192,12 +1192,15 @@ private:
                                       _dstTileData.bitDepth,
                                       _dstTileData.bounds,
                                       _effect);
+        if (_effect && _effect->isRenderAborted()) {
+            return eActionStatusAborted;
+        }
         return eActionStatusOK;
     }
 };
 
 
-void
+ActionRetCodeEnum
 ImagePrivate::copyPixelsInternal(const ImagePrivate* fromImage,
                                  ImagePrivate* toImage,
                                  const Image::CopyPixelsArgs& args,
@@ -1229,6 +1232,7 @@ ImagePrivate::copyPixelsInternal(const ImagePrivate* fromImage,
             contextAttacher->attach();
             copyGLTexture(fromIsGLTexture, toIsGLTexture, args.roi, fromIsGLTexture->getOpenGLContext());
         }
+        return eActionStatusOK;
 
     } else if (fromImage->storage == eStorageModeGLTex && toImage->storage != eStorageModeGLTex) {
 
@@ -1254,6 +1258,7 @@ ImagePrivate::copyPixelsInternal(const ImagePrivate* fromImage,
             contextAttacher->attach();
             convertGLTextureToRGBAPackedCPUBuffer(fromIsGLTexture, args.roi, toIsRAMBuffer, contextAttacher->getContext());
         }
+        return eActionStatusOK;
 
     } else if (fromImage->storage != eStorageModeGLTex && toImage->storage == eStorageModeGLTex) {
 
@@ -1279,6 +1284,7 @@ ImagePrivate::copyPixelsInternal(const ImagePrivate* fromImage,
 
             convertRGBAPackedCPUBufferToGLTexture(fromIsRAMBuffer, args.roi, toIsGLTexture);
         }
+        return eActionStatusOK;
     } else {
 
         // CPU to CPU
@@ -1291,7 +1297,7 @@ ImagePrivate::copyPixelsInternal(const ImagePrivate* fromImage,
         CopyPixelsProcessor processor(renderClone);
         processor.setRenderWindow(args.roi);
         processor.setValues(srcData, dstData, args);
-        processor.process();
+        return processor.process();
 
     } // storage cases
 } // copyRectangle

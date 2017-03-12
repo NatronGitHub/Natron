@@ -134,7 +134,7 @@ struct ImagePrivate
      * @brief The main entry point to copy image portions.
      * The storage may vary as well as the number of components and the bitdepth.
      **/
-    static void copyPixelsInternal(const ImagePrivate* fromImage,
+    static ActionRetCodeEnum copyPixelsInternal(const ImagePrivate* fromImage,
                                    ImagePrivate* toImage,
                                    const Image::CopyPixelsArgs& args,
                                    const EffectInstancePtr& renderClone);

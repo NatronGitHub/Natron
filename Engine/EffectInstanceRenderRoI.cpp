@@ -647,8 +647,8 @@ EffectInstance::Implementation::createCachedImage(const FrameViewRequestPtr& req
 
 
 ActionRetCodeEnum
-EffectInstance::Implementation::allocateRenderBackendStorageForRenderRects(const RequestPassSharedDataPtr& requestPassSharedData,
-                                                                           const FrameViewRequestPtr& requestData,
+EffectInstance::Implementation::allocateRenderBackendStorageForRenderRects(const FrameViewRequestPtr& requestData,
+                                                                           RenderBackendTypeEnum backendType,
                                                                            const RectI& roiPixels,
                                                                            unsigned int mipMapLevel,
                                                                            const RenderScale& combinedScale,
@@ -658,9 +658,7 @@ EffectInstance::Implementation::allocateRenderBackendStorageForRenderRects(const
 {
 
 
-    RenderBackendTypeEnum backendType;
-    resolveRenderBackend(requestPassSharedData, requestData, roiPixels, &backendType);
-    
+
     // The image format supported by the plug-in (co-planar, packed RGBA, etc...)
     ImageBufferLayoutEnum imageBufferLayout = _publicInterface->getPreferredBufferLayout();
     StorageModeEnum imageStorage;
@@ -723,7 +721,6 @@ EffectInstance::Implementation::allocateRenderBackendStorageForRenderRects(const
                 RectToRender r;
                 r.rect = drawingLastMovementBBoxPixel;
                 r.identityInputNumber = -1;
-                r.backendType = backendType;
                 (*renderLocalPlanes)[requestData->getPlaneDesc()] = accumBuffer;
                 renderRects->push_back(r);
             }
@@ -783,6 +780,7 @@ EffectInstance::Implementation::allocateRenderBackendStorageForRenderRects(const
 ActionRetCodeEnum
 EffectInstance::Implementation::launchRenderForSafetyAndBackend(const FrameViewRequestPtr& requestData,
                                                                 const RenderScale& combinedScale,
+                                                                RenderBackendTypeEnum backendType,
                                                                 const std::list<RectToRender>& renderRects,
                                                                 const std::map<ImagePlaneDesc, ImagePtr>& localPlanes,
                                                                 const std::map<ImagePlaneDesc, ImagePtr>& cachedPlanes)
@@ -805,8 +803,6 @@ EffectInstance::Implementation::launchRenderForSafetyAndBackend(const FrameViewR
     // eRenderSafetyFullySafe means that there is only one render per FRAME : the lock is per image
 
     boost::scoped_ptr<QMutexLocker> locker;
-
-    const RectToRender& firstRectToRender = renderRects.front();
 
     // Since we may are going to sit and wait on this lock, to allow this thread to be re-used by another task of the thread pool we
     // temporarily release the thread to the threadpool and reserve it again once
@@ -839,7 +835,7 @@ EffectInstance::Implementation::launchRenderForSafetyAndBackend(const FrameViewR
     TreeRenderPtr render = _publicInterface->getCurrentRender();
 
     OSGLContextPtr glContext;
-    switch (firstRectToRender.backendType) {
+    switch (backendType) {
         case eRenderBackendTypeOpenGL:
             glContext = render->getGPUOpenGLContext();
             break;
@@ -859,8 +855,8 @@ EffectInstance::Implementation::launchRenderForSafetyAndBackend(const FrameViewR
     }
 
     EffectOpenGLContextDataPtr glContextData;
-    if (firstRectToRender.backendType == eRenderBackendTypeOpenGL ||
-        firstRectToRender.backendType == eRenderBackendTypeOSMesa) {
+    if (backendType == eRenderBackendTypeOpenGL ||
+        backendType == eRenderBackendTypeOSMesa) {
         ActionRetCodeEnum stat = _publicInterface->attachOpenGLContext_public(requestData->getTime(), requestData->getView(), combinedScale, glContext, &glContextData);
         if (isFailureRetCode(stat)) {
             renderRetCode = stat;
@@ -868,10 +864,10 @@ EffectInstance::Implementation::launchRenderForSafetyAndBackend(const FrameViewR
     }
     if (renderRetCode == eActionStatusOK) {
 
-        renderRetCode = launchPluginRenderAndHostFrameThreading(requestData, glContext, glContextData, combinedScale, renderRects, localPlanes, cachedPlanes);
+        renderRetCode = launchPluginRenderAndHostFrameThreading(requestData, glContext, glContextData, combinedScale, backendType, renderRects, localPlanes, cachedPlanes);
 
-        if (firstRectToRender.backendType == eRenderBackendTypeOpenGL ||
-            firstRectToRender.backendType == eRenderBackendTypeOSMesa) {
+        if (backendType == eRenderBackendTypeOpenGL ||
+            backendType == eRenderBackendTypeOSMesa) {
 
             // If the plug-in doesn't support concurrent OpenGL renders, release the lock that was taken in the call to attachOpenGLContext_public() above.
             // For safe plug-ins, we call dettachOpenGLContext_public when the effect is destroyed in Node::deactivate() with the function EffectInstance::dettachAllOpenGLContexts().
@@ -1310,7 +1306,10 @@ EffectInstance::requestRenderInternal(TimeValue time,
         requestData->setImagePlane(image);
         ImageCacheEntryPtr cacheEntry = image->getCacheEntry();
         assert(cacheEntry);
-        cacheEntry->fetchCachedTilesAndUpdateStatus(NULL, &hasUnRenderedTile, &hasPendingTiles);
+        ActionRetCodeEnum stat = cacheEntry->fetchCachedTilesAndUpdateStatus(NULL, &hasUnRenderedTile, &hasPendingTiles);
+        if (isFailureRetCode(stat)) {
+            return stat;
+        }
     }
 
     // If there's nothing to render, do not even add the inputs as needed dependencies.
@@ -1400,7 +1399,7 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
     }
 
 #ifdef DEBUG
-    // Check that the image rendered in output is always rounded to the tile size a intersected to the RoD
+    // Check that the image rendered in output is always rounded to the tile size intersected to the RoD
     {
         ImageBitDepthEnum outputBitDepth = getBitDepth(-1);
         int tileWidth, tileHeight;
@@ -1429,7 +1428,11 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
                 imagePlane = image;
             } else {
                 imagePlane = _imp->createCachedImage(requestData, renderMappedRoI, pixelRoDRenderMapped, mappedMipMapLevel, *it, false);
-                imagePlane->getCacheEntry()->fetchCachedTilesAndUpdateStatus(NULL, NULL, NULL);
+                ActionRetCodeEnum stat = imagePlane->getCacheEntry()->fetchCachedTilesAndUpdateStatus(NULL, NULL, NULL);
+                if (isFailureRetCode(stat)) {
+                    finishProducedPlanesTilesStatesMap(cachedImagePlanes, true);
+                    return stat;
+                }
             }
             cachedImagePlanes[*it] = imagePlane;
         }
@@ -1446,7 +1449,17 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
         finishProducedPlanesTilesStatesMap(cachedImagePlanes, true);
         return renderRetCode;
     }
-    while (!renderRects.empty() || hasPendingTiles) {
+
+    // Get the render device
+    RenderBackendTypeEnum backendType;
+    if (requestData->isFallbackRenderDeviceEnabled()) {
+        backendType = requestData->getFallbackRenderDevice();
+    } else {
+        _imp->resolveRenderBackend(requestPassSharedData, requestData, renderMappedRoI, &backendType);
+    }
+
+
+    while ((!renderRects.empty() || hasPendingTiles) && !isRenderAborted()) {
 
         // There may be no rectangles to render if all rectangles are pending (i.e: this render should wait for another thread
         // to complete the render first)
@@ -1455,14 +1468,14 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
         // format by the plug-in
         std::map<ImagePlaneDesc, ImagePtr> renderLocalPlanes = cachedImagePlanes;
         if (!renderRects.empty()) {
-            renderRetCode = _imp->allocateRenderBackendStorageForRenderRects(requestPassSharedData, requestData, renderMappedRoI, mappedMipMapLevel, mappedCombinedScale, producedPlanes, &renderLocalPlanes, &renderRects);
+            renderRetCode = _imp->allocateRenderBackendStorageForRenderRects(requestData, backendType, renderMappedRoI, mappedMipMapLevel, mappedCombinedScale, producedPlanes, &renderLocalPlanes, &renderRects);
 
             // Set the "cachedImagePlanes" to point to the local planes if we are not caching
             if (cachedImagePlanes.empty()) {
                 cachedImagePlanes = renderLocalPlanes;
             }
             if (!isFailureRetCode(renderRetCode)) {
-                renderRetCode = _imp->launchRenderForSafetyAndBackend(requestData, mappedCombinedScale, renderRects, renderLocalPlanes, cachedImagePlanes);
+                renderRetCode = _imp->launchRenderForSafetyAndBackend(requestData, mappedCombinedScale, backendType, renderRects, renderLocalPlanes, cachedImagePlanes);
             }
 
         }
@@ -1481,7 +1494,7 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
         } else {
 
             // Push to the cache the tiles that we rendered
-            finishProducedPlanesTilesStatesMap(cachedImagePlanes, false);
+            finishProducedPlanesTilesStatesMap(cachedImagePlanes, false /*aborted*/);
 
             // Wait for any pending results for the requested plane.
             // After this line other threads that should have computed should be done
@@ -1490,6 +1503,7 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
                 renderRects.clear();
             } else {
 
+
                 // Re-fetch the tiles state from the cache which may have changed now
                 _imp->checkRestToRender(true /*updateTilesStateFromCache*/, requestData, renderMappedRoI, mappedCombinedScale, cachedImagePlanes, &renderRects, &hasPendingTiles);
             }
@@ -1497,14 +1511,23 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
         }
     } // while there is still something not rendered
 
+    if (isRenderAborted()) {
+        finishProducedPlanesTilesStatesMap(cachedImagePlanes, true /*aborted*/);
+        return eActionStatusAborted;
+    }
 
     // If using GPU and out of memory retry on CPU if possible
-    if (renderRetCode == eActionStatusOutOfMemory && !renderRects.empty() && renderRects.front().backendType == eRenderBackendTypeOpenGL) {
-        if (getCurrentOpenGLRenderSupport() != ePluginOpenGLRenderSupportYes) {
-            // The plug-in can only use GPU or doesn't support GPU
-            return eActionStatusFailed;
+    if (renderRetCode == eActionStatusOutOfMemory && !renderRects.empty() && backendType == eRenderBackendTypeOpenGL) {
+
+        if (backendType == requestData->getFallbackRenderDevice()) {
+            // The fallback device is the same as the device that just rendered, fail
+            return eActionStatusOutOfMemory;
         }
-       
+        if (requestData->isFallbackRenderDeviceEnabled()) {
+            // We already tried the fallback device and it didn't work out too.
+            return eActionStatusOutOfMemory;
+        }
+        requestData->setFallbackRenderDeviceEnabled(true);
         return launchRenderInternal(requestPassSharedData, requestData);
     }
 
@@ -1586,6 +1609,7 @@ EffectInstance::Implementation::launchPluginRenderAndHostFrameThreading(const Fr
                                                                         const OSGLContextPtr& glContext,
                                                                         const EffectOpenGLContextDataPtr& glContextData,
                                                                         const RenderScale& combinedScale,
+                                                                        RenderBackendTypeEnum backendType,
                                                                         const std::list<RectToRender>& renderRects,
                                                                         const std::map<ImagePlaneDesc, ImagePtr>& localPlanes,
                                                                         const std::map<ImagePlaneDesc, ImagePtr>& cachedPlanes)
@@ -1628,7 +1652,7 @@ EffectInstance::Implementation::launchPluginRenderAndHostFrameThreading(const Fr
                                                                               !isPlayback,
                                                                               render->isDraftRender(),
                                                                               requestData->getView(),
-                                                                              renderRects.front().backendType,
+                                                                              backendType,
                                                                               glContextData);
         
         if (isFailureRetCode(stat)) {
@@ -1643,7 +1667,7 @@ EffectInstance::Implementation::launchPluginRenderAndHostFrameThreading(const Fr
 #else
     const bool attemptHostFrameThreading = _publicInterface->getCurrentRenderThreadSafety() == eRenderSafetyFullySafeFrame &&
                                            renderRects.size() > 1 &&
-                                           renderRects.front().backendType == eRenderBackendTypeCPU;
+                                           backendType == eRenderBackendTypeCPU;
 #endif
 
 
@@ -1653,6 +1677,7 @@ EffectInstance::Implementation::launchPluginRenderAndHostFrameThreading(const Fr
     functorArgs->requestData = requestData;
     functorArgs->localPlanes = localPlanes;
     functorArgs->cachedPlanes = cachedPlanes;
+    functorArgs->backendType = backendType;
 
     if (!attemptHostFrameThreading) {
 
@@ -1687,7 +1712,7 @@ EffectInstance::Implementation::launchPluginRenderAndHostFrameThreading(const Fr
                                                                             !isPlayback,
                                                                             render->isDraftRender(),
                                                                             requestData->getView(),
-                                                                            renderRects.front().backendType,
+                                                                            backendType,
                                                                             glContextData);
         if (isFailureRetCode(stat)) {
             return stat;

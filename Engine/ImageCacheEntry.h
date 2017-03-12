@@ -65,7 +65,8 @@ public:
      * @param key The key corresponding to this entry
      * @param removeFromCache If true the entry will be removed from the cache before reading it so we get a clean image
      **/
-    ImageCacheEntry(const RectI& pixelRod,
+    ImageCacheEntry(const ImagePtr& image,
+                    const RectI& pixelRod,
                     const RectI& roi,
                     unsigned int mipMapLevel,
                     ImageBitDepthEnum depth,
@@ -80,8 +81,6 @@ public:
 
 
     ImageCacheKeyPtr getCacheKey() const;
-
-    void ensureImageBuffersAllocated();
 
 
     /**

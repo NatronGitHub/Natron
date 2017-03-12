@@ -209,21 +209,24 @@ static bool isCopyPixelsNeeded(ImagePrivate* thisImage, ImagePrivate* otherImage
     if (thisImage->bufferFormat != otherImage->bufferFormat && thisImage->plane.getNumComponents() != 1) {
         return true;
     }
+
     return false;
 }
 
-void
+ActionRetCodeEnum
 Image::copyPixels(const Image& other, const CopyPixelsArgs& args)
 {
 
     // Roi must intersect both images bounds
     RectI roi;
     if (!other._imp->originalBounds.intersect(args.roi, &roi)) {
-        return;
+        return eActionStatusOK;
     }
     if (!_imp->originalBounds.intersect(args.roi, &roi)) {
-        return;
+        return eActionStatusOK;
     }
+
+    assert(_imp->tilesAllocated && other._imp->tilesAllocated);
 
 #ifdef DEBUG
     if (_imp->proxyScale.x != other._imp->proxyScale.x ||
@@ -244,7 +247,7 @@ Image::copyPixels(const Image& other, const CopyPixelsArgs& args)
                     _imp->channels[c]->softCopy(*other._imp->channels[c]);
                 }
             }
-            return;
+            return eActionStatusOK;
         }
 
     } 
@@ -266,21 +269,18 @@ Image::ensureBuffersAllocated()
     if (_imp->tilesAllocated) {
         return;
     }
-    if (_imp->cacheEntry) {
-        _imp->cacheEntry->ensureImageBuffersAllocated();
-    } else {
-        for (int i = 0; i < 4; ++i) {
-            if (!_imp->channels[i]) {
-                continue;
-            }
-            if (_imp->channels[i]->isAllocated()) {
-                // The buffer is already allocated
-                continue;
-            }
-            if (_imp->channels[i]->hasAllocateMemoryArgs()) {
-                // Allocate the buffer
-                _imp->channels[i]->allocateMemoryFromSetArgs();
-            }
+
+    for (int i = 0; i < 4; ++i) {
+        if (!_imp->channels[i]) {
+            continue;
+        }
+        if (_imp->channels[i]->isAllocated()) {
+            // The buffer is already allocated
+            continue;
+        }
+        if (_imp->channels[i]->hasAllocateMemoryArgs()) {
+            // Allocate the buffer
+            _imp->channels[i]->allocateMemoryFromSetArgs();
         }
     }
 
@@ -761,11 +761,15 @@ private:
     virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow) OVERRIDE FINAL
     {
         ImagePrivate::applyMaskMixCPU((const void**)_srcTileData.ptrs, _srcTileData.bounds, _srcTileData.nComps, (const void**)_maskTileData.ptrs, _maskTileData.bounds, _dstTileData.ptrs, _dstTileData.bitDepth, _dstTileData.nComps, _mix, _maskInvert, _dstTileData.bounds, renderWindow, _effect);
+        if (_effect && _effect->isRenderAborted()) {
+            return eActionStatusAborted;
+        }
         return eActionStatusOK;
+
     }
 };
 
-void
+ActionRetCodeEnum
 Image::applyMaskMix(const RectI& roi,
                     const ImagePtr& maskImg,
                     const ImagePtr& originalImg,
@@ -775,7 +779,7 @@ Image::applyMaskMix(const RectI& roi,
 {
     // !masked && mix == 1: nothing to do
     if ( !masked && (mix == 1) ) {
-        return;
+        return eActionStatusOK;
     }
 
     // Mask must be alpha
@@ -794,7 +798,7 @@ Image::applyMaskMix(const RectI& roi,
         }
         dstTexture = toGLImageStorage(_imp->channels[0]);
         ImagePrivate::applyMaskMixGL(originalImageTexture, maskTexture, dstTexture, mix, maskInvert, roi);
-        return;
+        return eActionStatusOK;
     }
 
     // This function only works if original image and mask image have the same bitdepth as output
@@ -820,7 +824,7 @@ Image::applyMaskMix(const RectI& roi,
     MaskMixProcessor processor(_imp->renderClone.lock());
     processor.setValues(srcImgData, maskImgData, dstImgData, mix, maskInvert);
     processor.setRenderWindow(tileRoI);
-    processor.process();
+    return processor.process();
 
 } // applyMaskMix
 
@@ -876,19 +880,23 @@ private:
     virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow) OVERRIDE FINAL
     {
         ImagePrivate::copyUnprocessedChannelsCPU((const void**)_srcImgData.ptrs, _srcImgData.bounds, _srcImgData.nComps, (void**)_dstImgData.ptrs, _dstImgData.bitDepth, _dstImgData.nComps, _dstImgData.bounds, _processChannels, renderWindow, _effect);
+        if (_effect && _effect->isRenderAborted()) {
+            return eActionStatusAborted;
+        }
         return eActionStatusOK;
+
     }
 };
 
 
-void
+ActionRetCodeEnum
 Image::copyUnProcessedChannels(const RectI& roi,
                                const std::bitset<4> processChannels,
                                const ImagePtr& originalImg)
 {
 
     if (!canCallCopyUnProcessedChannels(processChannels)) {
-        return;
+        return eActionStatusOK;
     }
 
     if (getStorageMode() == eStorageModeGLTex) {
@@ -904,7 +912,7 @@ Image::copyUnProcessedChannels(const RectI& roi,
         RectI realRoi;
         roi.intersect(dstTexture->getBounds(), &realRoi);
         ImagePrivate::copyUnprocessedChannelsGL(originalImageTexture, dstTexture, processChannels, realRoi);
-        return;
+        return eActionStatusOK;
     }
 
     // This function only works if original  image has the same bitdepth as output
@@ -925,7 +933,7 @@ Image::copyUnProcessedChannels(const RectI& roi,
     CopyUnProcessedProcessor processor(_imp->renderClone.lock());
     processor.setValues(srcImgData, dstImgData, processChannels);
     processor.setRenderWindow(tileRoI);
-    processor.process();
+    return processor.process();
 
 } // copyUnProcessedChannels
 

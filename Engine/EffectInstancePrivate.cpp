@@ -326,7 +326,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
     }
 
     // If using OpenGL, bind the frame buffer
-    if (rectToRender.backendType == eRenderBackendTypeOpenGL) {
+    if (args.backendType == eRenderBackendTypeOpenGL) {
         
         assert(args.glContext);
 
@@ -347,7 +347,10 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
             return stat;
         }
         // Apply post-processing
-        renderHandlerPostProcess(rectToRender, args);
+        stat = renderHandlerPostProcess(rectToRender, args);
+        if (isFailureRetCode(stat)) {
+            return stat;
+        }
     }
 
 
@@ -361,7 +364,10 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
         }
         Image::CopyPixelsArgs cpyArgs;
         cpyArgs.roi = rectToRender.rect;
-        it->second->copyPixels(*itLocal->second, cpyArgs);
+        stat = it->second->copyPixels(*itLocal->second, cpyArgs);
+        if (isFailureRetCode(stat)) {
+            return stat;
+        }
     }
 
     if (timeRecorder) {
@@ -380,7 +386,7 @@ EffectInstance::Implementation::renderHandlerIdentity(const RectToRender & rectT
 
     for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = args.localPlanes.begin(); it != args.localPlanes.end(); ++it) {
         boost::scoped_ptr<EffectInstance::GetImageInArgs> inArgs( new EffectInstance::GetImageInArgs() );
-        inArgs->renderBackend = &rectToRender.backendType;
+        inArgs->renderBackend = &args.backendType;
         inArgs->currentRenderWindow = &rectToRender.rect;
         inArgs->requestData = args.requestData;
         inArgs->inputTime = rectToRender.identityTime;
@@ -400,7 +406,10 @@ EffectInstance::Implementation::renderHandlerIdentity(const RectToRender & rectT
 
         Image::CopyPixelsArgs cpyArgs;
         cpyArgs.roi = rectToRender.rect;
-        it->second->copyPixels(*inputResults.image, cpyArgs);
+        ActionRetCodeEnum stat = it->second->copyPixels(*inputResults.image, cpyArgs);
+        if (isFailureRetCode(stat)) {
+            return stat;
+        }
     }
 
     return render->isRenderAborted() ? eActionStatusAborted : eActionStatusOK;
@@ -494,7 +503,7 @@ EffectInstance::Implementation::renderHandlerPlugin(const RectToRender & rectToR
         assert(args.requestData->getComponentsResults());
         actionArgs.processChannels = args.requestData->getComponentsResults()->getProcessChannels();
         actionArgs.renderScale = combinedScale;
-        actionArgs.backendType = rectToRender.backendType;
+        actionArgs.backendType = args.backendType;
         actionArgs.roi = rectToRender.rect;
         actionArgs.time = args.requestData->getTime();
         actionArgs.view = args.requestData->getView();
@@ -526,8 +535,8 @@ EffectInstance::Implementation::renderHandlerPlugin(const RectToRender & rectToR
         actionArgs.outputPlanes = *it;
 
         const ImagePtr& mainImagePlane = actionArgs.outputPlanes.front().second;
-        if (rectToRender.backendType == eRenderBackendTypeOpenGL ||
-            rectToRender.backendType == eRenderBackendTypeOSMesa) {
+        if (args.backendType == eRenderBackendTypeOpenGL ||
+            args.backendType == eRenderBackendTypeOSMesa) {
 
             // Effects that render multiple planes at once are NOT supported by the OpenGL render suite
             // We only bind to the framebuffer color attachment 0 the "main" output image plane
@@ -540,8 +549,8 @@ EffectInstance::Implementation::renderHandlerPlugin(const RectToRender & rectToR
         }
         ActionRetCodeEnum stat = _publicInterface->render_public(actionArgs);
 
-        if (rectToRender.backendType == eRenderBackendTypeOpenGL ||
-            rectToRender.backendType == eRenderBackendTypeOSMesa) {
+        if (args.backendType == eRenderBackendTypeOpenGL ||
+            args.backendType == eRenderBackendTypeOSMesa) {
             if (args.glContext) {
                 GLImageStoragePtr glEntry = mainImagePlane->getGLImageStorage();
                 assert(glEntry);
@@ -562,7 +571,7 @@ EffectInstance::Implementation::renderHandlerPlugin(const RectToRender & rectToR
 } // renderHandlerPlugin
 
 
-void
+ActionRetCodeEnum
 EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & rectToRender,
                                                          const TiledRenderingFunctorArgs& args)
 {
@@ -591,7 +600,7 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
             std::map<int, std::list<ImagePlaneDesc> >::const_iterator foundNeededLayers = inputPlanesNeeded.find(maskInputNb);
             if (foundNeededLayers != inputPlanesNeeded.end() && !foundNeededLayers->second.empty()) {
 
-                GetImageInArgs inArgs(args.requestData, &rectToRender.rect, &rectToRender.backendType);
+                GetImageInArgs inArgs(args.requestData, &rectToRender.rect, &args.backendType);
                 inArgs.plane = &foundNeededLayers->second.front();
                 inArgs.inputNb = maskInputNb;
                 GetImageOutArgs outArgs;
@@ -652,7 +661,7 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
 
             std::map<int, std::list<ImagePlaneDesc> >::const_iterator foundNeededLayers = inputPlanesNeeded.find(mainInputNb);
 
-            GetImageInArgs inArgs(args.requestData, &rectToRender.rect, &rectToRender.backendType);
+            GetImageInArgs inArgs(args.requestData, &rectToRender.rect, &args.backendType);
             if (foundNeededLayers != inputPlanesNeeded.end() && !foundNeededLayers->second.empty()) {
 
 
@@ -667,18 +676,24 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
                 }
             }
             if (mainInputImage) {
-                it->second->copyUnProcessedChannels(rectToRender.rect, processChannels, mainInputImage);
+                ActionRetCodeEnum stat = it->second->copyUnProcessedChannels(rectToRender.rect, processChannels, mainInputImage);
+                if (isFailureRetCode(stat)) {
+                    return stat;
+                }
             }
         }
         
 
         if (useMaskMix) {
-            it->second->applyMaskMix(rectToRender.rect, maskImage, mainInputImage, maskImage.get() /*masked*/, false /*maskInvert*/, mix);
+            ActionRetCodeEnum stat = it->second->applyMaskMix(rectToRender.rect, maskImage, mainInputImage, maskImage.get() /*masked*/, false /*maskInvert*/, mix);
+            if (isFailureRetCode(stat)) {
+                return stat;
+            }
         }
 
         
     } // for each plane to render
-    
+    return eActionStatusOK;
 } // renderHandlerPostProcess
 
 

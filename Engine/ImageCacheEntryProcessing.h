@@ -64,7 +64,7 @@ static void copyPixelsForDepth(const RectI& renderWindow,
             for (int x = renderWindow.x1; x < renderWindow.x2; ++x,
                  src_pixels += srcXStride,
                  dst_pixels += dstXStride) {
-
+                assert(*src_pixels == *src_pixels); // NaN check
                 *dst_pixels = *src_pixels;
             }
 
@@ -356,6 +356,11 @@ static void downscaleMipMapForDepth(const PIX* srcTilesPtr[4],
 
             for (int y = 0; y < halfTileSizeY; ++y) {
                 for (int x = 0; x < halfTileSizeX; ++x) {
+                    
+                    assert(*src_pixels == *src_pixels); // NaN check
+                    assert(*(src_pixels + 1) == *(src_pixels + 1)); // NaN check
+                    assert(*(src_pixels_next) == *(src_pixels_next)); // NaN check
+                    assert(*(src_pixels_next + 1) == *(src_pixels_next + 1)); // NaN check
 
                     double sum = (double)*src_pixels + (double)*(src_pixels + 1);
                     sum += ((double)*src_pixels_next + (double)*(src_pixels_next + 1));

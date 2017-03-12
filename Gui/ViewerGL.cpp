@@ -1981,6 +1981,9 @@ void
 ViewerGL::checkIfViewPortRoIValidOrRender()
 {
     for (int i = 0; i < 2; ++i) {
+        if (!_imp->displayTextures[i].isVisible) {
+            continue;
+        }
         if ( !checkIfViewPortRoIValidOrRenderForInput(i) ) {
             if ( !getViewerTab()->getGui()->getApp()->getProject()->isLoadingProject() ) {
                 ViewerNodePtr viewer = getInternalNode();

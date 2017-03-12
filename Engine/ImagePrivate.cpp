@@ -184,7 +184,8 @@ ImagePrivate::initAndFetchFromCache(const Image::InitStorageArgs& args)
 
     bool removeFromCache = cachePolicy == eCacheAccessModeWriteOnly;
 
-    cacheEntry.reset(new ImageCacheEntry(args.pixelRod,
+    cacheEntry.reset(new ImageCacheEntry(_publicInterface->shared_from_this(),
+                                         args.pixelRod,
                                          args.bounds,
                                          args.mipMapLevel,
                                          args.bitdepth,

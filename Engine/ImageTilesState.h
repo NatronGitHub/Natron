@@ -93,11 +93,9 @@ struct IPCTilesState;
 struct TilesState
 {
     TileStateVector tiles;
-    std::size_t numRenderedTiles;
 
     TilesState()
     : tiles()
-    , numRenderedTiles(0)
     {
 
     }
@@ -107,21 +105,9 @@ struct TilesState
 struct IPCTilesState
 {
     IPCTileStateVector tiles;
-    std::size_t numPendingTiles;
-    std::size_t numRenderedTiles;
-
-    /*IPCTilesState()
-    : tiles()
-    , numPendingTiles(0)
-    , numRenderedTiles(0)
-    {
-
-    }*/
 
     IPCTilesState(const void_allocator& alloc)
     : tiles(alloc)
-    , numPendingTiles(0)
-    , numRenderedTiles(0)
     {
         
     }
@@ -129,8 +115,6 @@ struct IPCTilesState
     void operator=(const IPCTilesState& other)
     {
         tiles = other.tiles;
-        numPendingTiles = other.numPendingTiles;
-        numRenderedTiles = other.numRenderedTiles;
     }
 
 };

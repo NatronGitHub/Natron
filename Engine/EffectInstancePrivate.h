@@ -63,15 +63,11 @@ struct RectToRender
     TimeValue identityTime;
     ViewIdx identityView;
 
-    // The type of render for this rectangle
-    RenderBackendTypeEnum backendType;
-
     RectToRender()
     : rect()
     , identityInputNumber(-1)
     , identityTime(0)
     , identityView(0)
-    , backendType(eRenderBackendTypeCPU)
     {
 
     }
@@ -503,8 +499,8 @@ public:
                                         bool* hasPendingTiles);
 
 
-    ActionRetCodeEnum allocateRenderBackendStorageForRenderRects(const RequestPassSharedDataPtr& requestPassSharedData,
-                                                                 const FrameViewRequestPtr& requestData,
+    ActionRetCodeEnum allocateRenderBackendStorageForRenderRects(const FrameViewRequestPtr& requestData,
+                                                                 RenderBackendTypeEnum backendType,
                                                                  const RectI& roiPixels,
                                                                  unsigned int mipMapLevel,
                                                                  const RenderScale& combinedScale,
@@ -514,6 +510,7 @@ public:
 
     ActionRetCodeEnum launchRenderForSafetyAndBackend(const FrameViewRequestPtr& requestData,
                                                       const RenderScale& combinedScale,
+                                                      RenderBackendTypeEnum backendType,
                                                       const std::list<RectToRender>& renderRects,
                                                       const std::map<ImagePlaneDesc, ImagePtr>& localPlanes,
                                                       const std::map<ImagePlaneDesc, ImagePtr>& cachedPlanes);
@@ -523,6 +520,7 @@ public:
                                                               const OSGLContextPtr& glContext,
                                                               const EffectOpenGLContextDataPtr& glContextData,
                                                               const RenderScale& combinedScale,
+                                                              RenderBackendTypeEnum backendType,
                                                               const std::list<RectToRender>& renderRects,
                                                               const std::map<ImagePlaneDesc, ImagePtr>& localPlanes,
                                                               const std::map<ImagePlaneDesc, ImagePtr>& cachedPlanes);
@@ -532,6 +530,7 @@ public:
         FrameViewRequestPtr requestData;
         OSGLContextPtr glContext;
         EffectOpenGLContextDataPtr glContextData;
+        RenderBackendTypeEnum backendType;
         std::map<ImagePlaneDesc, ImagePtr> localPlanes, cachedPlanes;
     };
 
@@ -547,7 +546,7 @@ public:
                                           const RenderScale& combinedScale,
                                           const TiledRenderingFunctorArgs& args);
 
-    void renderHandlerPostProcess(const RectToRender & rectToRender,
+    ActionRetCodeEnum renderHandlerPostProcess(const RectToRender & rectToRender,
                                   const TiledRenderingFunctorArgs& args);
 
 

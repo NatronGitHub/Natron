@@ -178,6 +178,8 @@ ImageTilesState::getMinimalBboxToRenderFromTilesState(const RectI& roi, const Ti
         }
         if (!hasTileUnrenderedOnLine) {
             roiRoundedToTileSize.y1 += stateMap.tileSizeY;
+        } else {
+            break;
         }
     }
 
@@ -195,6 +197,8 @@ ImageTilesState::getMinimalBboxToRenderFromTilesState(const RectI& roi, const Ti
         }
         if (!hasTileUnrenderedOnLine) {
             roiRoundedToTileSize.y2 -= stateMap.tileSizeY;
+        } else {
+            break;
         }
     }
 
@@ -218,6 +222,8 @@ ImageTilesState::getMinimalBboxToRenderFromTilesState(const RectI& roi, const Ti
         }
         if (!hasTileUnrenderedOnCol) {
             roiRoundedToTileSize.x1 += stateMap.tileSizeX;
+        } else {
+            break;
         }
     }
 
@@ -240,6 +246,8 @@ ImageTilesState::getMinimalBboxToRenderFromTilesState(const RectI& roi, const Ti
         }
         if (!hasTileUnrenderedOnCol) {
             roiRoundedToTileSize.x2 -= stateMap.tileSizeX;
+        } else {
+            break;
         }
     }
 

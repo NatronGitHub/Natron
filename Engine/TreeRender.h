@@ -71,13 +71,8 @@ private:
  **/
 struct TreeRenderPrivate;
 class TreeRender
-: public QObject
-, public boost::enable_shared_from_this<TreeRender>
+: public boost::enable_shared_from_this<TreeRender>
 {
-
-    GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-    GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
@@ -254,42 +249,8 @@ public:
     OSGLContextPtr getGPUOpenGLContext() const;
     OSGLContextPtr getCPUOpenGLContext() const;
 
-private Q_SLOTS:
-
-    /**
-     * @brief Triggered by a timer after some time that a thread called setAborted(). This is used to detect stalled threads that do not seem
-     * to want to abort.
-     **/
-    void onAbortTimerTimeout();
-
-    void onStartTimerInOriginalThreadTriggered();
-
-Q_SIGNALS:
-
-    void startTimerInOriginalThread();
 
 private:
-
-
-#if 0
-    /**
-     * @brief Registers the thread as part of this render request. Whenever AbortableThread::setAbortInfo is called, the thread is automatically registered
-     * in this class as to be part of this render. This is used to monitor running threads for a specific render and to know if a thread has stalled when
-     * the user called setAborted()
-     **/
-    void registerThreadForRender(AbortableThread* thread);
-
-    /**
-     * @brief Unregister the thread as part of this render, returns true
-     * if it was registered and found.
-     * This is called whenever a thread calls cleanupTLSForThread(), i.e:
-     * when its processing is finished.
-     **/
-    bool unregisterThreadForRender(AbortableThread* thread);
-
-    // To call registerThreadForRender and unregister
-    friend class AbortableThread;
-#endif
 
 
 

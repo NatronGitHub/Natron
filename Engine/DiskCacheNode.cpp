@@ -282,7 +282,10 @@ DiskCacheNode::render(const RenderActionArgs& args)
 
         Image::CopyPixelsArgs cpyArgs;
         cpyArgs.roi = args.roi;
-        it->second->copyPixels(*outArgs.image, cpyArgs);
+        ActionRetCodeEnum stat = it->second->copyPixels(*outArgs.image, cpyArgs);
+        if (isFailureRetCode(stat)) {
+            return stat;
+        }
 
     }
     return eActionStatusOK;

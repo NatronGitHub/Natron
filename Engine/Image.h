@@ -365,7 +365,7 @@ public:
      * @param conversionChannel A value in 0 <= index < 4 indicating the channel to use
      * for the AlphaChannelHandlingEnum and MonoToPackedConversionEnum flags
      **/
-    void copyPixels(const Image& other, const CopyPixelsArgs& args);
+    ActionRetCodeEnum copyPixels(const Image& other, const CopyPixelsArgs& args);
 
     /**
      * @brief Helper function to get string from a layer and bitdepth
@@ -607,14 +607,14 @@ public:
      * @brief Given the channels to process, this function copies from the originalImage the channels
      * that are not marked to true in processChannels.
      **/
-    void copyUnProcessedChannels(const RectI& roi,
+    ActionRetCodeEnum copyUnProcessedChannels(const RectI& roi,
                                  std::bitset<4> processChannels,
                                  const ImagePtr& originalImage);
 
     /**
      * @brief Mask the image by the given mask and also disolves it to the originalImg with the given mix.
      **/
-    void applyMaskMix(const RectI& roi,
+    ActionRetCodeEnum applyMaskMix(const RectI& roi,
                       const ImagePtr& maskImg,
                       const ImagePtr& originalImg,
                       bool masked,

@@ -299,6 +299,9 @@ RAMImageStorage::canSoftCopy(const ImageStorageBase& other)
 {
     const RAMImageStorage* isRamStorage = dynamic_cast<const RAMImageStorage*>(&other);
     if (isRamStorage) {
+        if (!isRamStorage->_imp->buffer.get() || !_imp->buffer.get()) {
+            return false;
+        }
         return isRamStorage->_imp->buffer->size() == _imp->buffer->size();
     } else {
         return false;
