@@ -135,7 +135,9 @@ public:
 
     void populateSystemFonts(const std::vector<std::string>& fonts);
     
-    bool doesKnobChangeRequiresRestart(const KnobIPtr& knob);
+    bool doesKnobChangeRequireRestart(const KnobIPtr& knob);
+
+    bool doesKnobChangeRequireOFXCacheClear(const KnobIPtr& knob);
 
     enum LoadSettingsType
     {

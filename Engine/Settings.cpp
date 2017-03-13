@@ -296,7 +296,8 @@ public:
 
     Settings* _publicInterface;
 
-    std::set<KnobIWPtr> knobsRequiringRestart;
+    std::set<KnobIWPtr> _knobsRequiringRestart;
+    std::set<KnobIWPtr> _knobsRequiringOFXCacheClear;
 
     // Data for each plug-in, saved in the settings file
     SERIALIZATION_NAMESPACE::SettingsSerialization::PluginDataMap pluginsData;
@@ -315,7 +316,8 @@ public:
 
     SettingsPrivate(Settings* publicInterface)
     : _publicInterface(publicInterface)
-    , knobsRequiringRestart()
+    , _knobsRequiringRestart()
+    , _knobsRequiringOFXCacheClear()
     , _nRedrawStyleSheetRequests(0)
     , _restoringSettings(false)
     , _ocioRestored(false)
@@ -394,10 +396,20 @@ getDefaultOcioConfigPaths()
 }
 
 bool
-Settings::doesKnobChangeRequiresRestart(const KnobIPtr& knob)
+Settings::doesKnobChangeRequireRestart(const KnobIPtr& knob)
 {
-    std::set<KnobIWPtr>::iterator found = _imp->knobsRequiringRestart.find(knob);
-    if (found == _imp->knobsRequiringRestart.end()) {
+    std::set<KnobIWPtr>::iterator found = _imp->_knobsRequiringRestart.find(knob);
+    if (found == _imp->_knobsRequiringRestart.end()) {
+        return false;
+    }
+    return true;
+}
+
+bool
+Settings::doesKnobChangeRequireOFXCacheClear(const KnobIPtr& knob)
+{
+    std::set<KnobIWPtr>::iterator found = _imp->_knobsRequiringOFXCacheClear.find(knob);
+    if (found == _imp->_knobsRequiringOFXCacheClear.end()) {
         return false;
     }
     return true;
@@ -754,8 +766,10 @@ SettingsPrivate::initializeKnobsGeneral()
 
     _checkForUpdates = _publicInterface->createKnob<KnobBool>("checkForUpdates");
     _checkForUpdates->setLabel(tr("Always check for updates on start-up"));
-    _checkForUpdates->setHintToolTip( tr("When checked, %1 will check for new updates on start-up of the application.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
-    knobsRequiringRestart.insert(_checkForUpdates);
+    _checkForUpdates->setHintToolTip( tr("When checked, %1 will check for new updates on start-up of the application.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) +
+                                      QLatin1Char('\n') +
+                                      tr("Changing this requires a restart of the application to take effect.") );
+    _knobsRequiringRestart.insert(_checkForUpdates);
     _generalTab->addKnob(_checkForUpdates);
 
     _enableCrashReports = _publicInterface->createKnob<KnobBool>("enableCrashReports");
@@ -765,11 +779,12 @@ SettingsPrivate::initializeKnobsGeneral()
                                             "This can help them track down the bug.\n"
                                             "If you need to turn the crash reporting system off, uncheck this.\n"
                                             "Note that when using the application in command-line mode, if crash reports are "
-                                            "enabled, they will be automatically uploaded.\n"
-                                            "Changing this requires a restart of the application to take effect.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+                                            "enabled, they will be automatically uploaded.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) +
+                                          QLatin1Char('\n') +
+                                          tr("Changing this requires a restart of the application to take effect.") );
     _enableCrashReports->setDefaultValue(true);
     _enableCrashReports->setAddNewLine(false);
-    knobsRequiringRestart.insert(_enableCrashReports);
+    _knobsRequiringRestart.insert(_enableCrashReports);
     _generalTab->addKnob(_enableCrashReports);
 
     _testCrashReportButton = _publicInterface->createKnob<KnobButton>("testCrashReporting");
@@ -817,12 +832,14 @@ SettingsPrivate::initializeKnobsGeneral()
 
     _hostName = _publicInterface->createKnob<KnobChoice>("pluginHostName");
     _hostName->setLabel(tr("Appear to plug-ins as"));
-    knobsRequiringRestart.insert(_hostName);
-    _hostName->setHintToolTip( tr("WARNING: Changing this requires clearing the OpenFX plug-ins load cache from the Cache menu.\n"
-                                  "%1 will appear with the name of the selected application to the OpenFX plug-ins. "
+    _knobsRequiringRestart.insert(_hostName);
+    _knobsRequiringOFXCacheClear.insert(_hostName);
+    _hostName->setHintToolTip( tr("%1 will appear with the name of the selected application to the OpenFX plug-ins. "
                                   "Changing it to the name of another application can help loading plugins which "
                                   "restrict their usage to specific OpenFX host(s). "
-                                  "If a Host is not listed here, use the \"Custom\" entry to enter a custom host name.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+                                  "If a Host is not listed here, use the \"Custom\" entry to enter a custom host name.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) +
+                               QLatin1Char('\n') +
+                               tr("Changing this requires a restart of the application to take effect.")  );
     _knownHostNames.clear();
     std::vector<ChoiceOption> visibleHostEntries;
     assert(visibleHostEntries.size() == (int)eKnownHostNameNatron);
@@ -882,14 +899,15 @@ SettingsPrivate::initializeKnobsGeneral()
 
     _customHostName = _publicInterface->createKnob<KnobString>("customHostName");
     _customHostName->setLabel(tr("Custom Host name"));
-    knobsRequiringRestart.insert(_customHostName);
+    _knobsRequiringRestart.insert(_customHostName);
+    _knobsRequiringOFXCacheClear.insert(_customHostName);
     _customHostName->setHintToolTip( tr("This is the name of the OpenFX host (application) as it appears to the OpenFX plugins. "
                                         "Changing it to the name of another application can help loading some plugins which "
                                         "restrict their usage to specific OpenFX hosts. You shoud leave "
                                         "this to its default value, unless a specific plugin refuses to load or run. "
-                                        "Changing this takes effect upon the next application launch, and requires clearing "
-                                        "the OpenFX plugins cache from the Cache menu. "
-                                        "The default host name is: \n%1").arg( QString::fromUtf8(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME) ) );
+                                        "The default host name is: \n%1").arg( QString::fromUtf8(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME) ) +
+                                     QLatin1Char('\n') +
+                                     tr("Changing this requires a restart of the application to take effect.")  );
     _customHostName->setSecret(true);
     _generalTab->addKnob(_customHostName);
 } // Settings::initializeKnobsGeneral
@@ -1072,14 +1090,20 @@ SettingsPrivate::initializeKnobsGPU()
 
     _availableOpenGLRenderers = _publicInterface->createKnob<KnobChoice>("chooseOpenGLRenderer");
     _availableOpenGLRenderers->setLabel(tr("OpenGL renderer"));
-    _availableOpenGLRenderers->setHintToolTip( tr("The renderer used to perform OpenGL rendering. Changing the OpenGL renderer requires a restart of the application.") );
-    knobsRequiringRestart.insert(_availableOpenGLRenderers);
+    _availableOpenGLRenderers->setHintToolTip( tr("The renderer used to perform OpenGL rendering.") +
+                                               QLatin1Char('\n') +
+                                               tr("Changing this requires a restart of the application to take effect.")  );
+    _knobsRequiringRestart.insert(_availableOpenGLRenderers);
     _gpuPage->addKnob(_availableOpenGLRenderers);
 
     _osmesaRenderers = _publicInterface->createKnob<KnobChoice>("cpuOpenGLRenderer");
     _osmesaRenderers->setLabel(tr("CPU OpenGL renderer"));
-    knobsRequiringRestart.insert(_osmesaRenderers);
-    _osmesaRenderers->setHintToolTip(tr("Internally, %1 can render OpenGL plug-ins on the CPU by using the OSMesa open-source library. You may select which driver OSMesa uses to perform it's CPU rendering. llvm-pipe is more efficient but may contain some bugs.").arg(QString::fromUtf8(NATRON_APPLICATION_NAME)));
+    _knobsRequiringRestart.insert(_osmesaRenderers);
+    _osmesaRenderers->setHintToolTip( tr("Internally, %1 can render OpenGL plug-ins on the CPU by using the OSMesa open-source library. "
+                                         "You may select which driver OSMesa uses to perform it's CPU rendering. "
+                                         "llvm-pipe is more efficient but may contain some bugs.").arg(QString::fromUtf8(NATRON_APPLICATION_NAME)) +
+                                      QLatin1Char('\n') +
+                                      tr("Changing this requires a restart of the application to take effect.") );
     _osmesaRenderers->setDefaultValue(defaultMesaDriver);
     _gpuPage->addKnob(_osmesaRenderers);
 
@@ -1264,7 +1288,7 @@ SettingsPrivate::initializeKnobsColorManagement()
     _ocioTab = _publicInterface->createKnob<KnobPage>("ocioPage");
     _ocioTab->setLabel(tr("Color Management"));
     _ocioConfigKnob = _publicInterface->createKnob<KnobChoice>("ocioConfig");
-    knobsRequiringRestart.insert(_ocioConfigKnob);
+    _knobsRequiringRestart.insert(_ocioConfigKnob);
     _ocioConfigKnob->setLabel(tr("OpenColorIO configuration"));
 
     std::vector<ChoiceOption> configs;
@@ -1293,16 +1317,18 @@ SettingsPrivate::initializeKnobsColorManagement()
     _ocioConfigKnob->setHintToolTip( tr("Select the OpenColorIO configuration you would like to use globally for all "
                                         "operators and plugins that use OpenColorIO, by setting the \"OCIO\" "
                                         "environment variable. Only nodes created after changing this parameter will take "
-                                        "it into account, and it is better to restart the application after changing it. "
+                                        "it into account. "
                                         "When \"%1\" is selected, the "
-                                        "\"Custom OpenColorIO config file\" parameter is used.").arg( QString::fromUtf8(NATRON_CUSTOM_OCIO_CONFIG_NAME) ) );
+                                        "\"Custom OpenColorIO config file\" parameter is used.").arg( QString::fromUtf8(NATRON_CUSTOM_OCIO_CONFIG_NAME) ) +
+                                     QLatin1Char('\n') +
+                                     tr("Changing this requires a restart of the application to take effect.")  );
 
     _ocioTab->addKnob(_ocioConfigKnob);
 
     _customOcioConfigFile = _publicInterface->createKnob<KnobFile>("ocioCustomConfigFile");
 
     _customOcioConfigFile->setLabel( tr("Custom OpenColorIO configuration file"));
-    knobsRequiringRestart.insert(_customOcioConfigFile);
+    _knobsRequiringRestart.insert(_customOcioConfigFile);
 
     if (_ocioConfigKnob->getNumEntries() == 1) {
         _customOcioConfigFile->setEnabled(true);
@@ -1311,7 +1337,9 @@ SettingsPrivate::initializeKnobsColorManagement()
     }
 
     _customOcioConfigFile->setHintToolTip( tr("OpenColorIO configuration file (*.ocio) to use when \"%1\" "
-                                              "is selected as the OpenColorIO config.").arg( QString::fromUtf8(NATRON_CUSTOM_OCIO_CONFIG_NAME) ) );
+                                              "is selected as the OpenColorIO config.").arg( QString::fromUtf8(NATRON_CUSTOM_OCIO_CONFIG_NAME) ) +
+                                           QLatin1Char('\n') +
+                                           tr("Changing this requires a restart of the application to take effect.") );
     _ocioTab->addKnob(_customOcioConfigFile);
 
 
@@ -1337,24 +1365,31 @@ SettingsPrivate::initializeKnobsAppearance()
     _appearanceTab->addKnob(_defaultAppearanceVersion);
 
     _systemFontChoice = _publicInterface->createKnob<KnobChoice>("systemFont");
-    _systemFontChoice->setHintToolTip( tr("List of all fonts available on the system") );
+    _systemFontChoice->setHintToolTip( tr("List of all fonts available on the system.") +
+                                      QLatin1Char('\n') +
+                                      tr("Changing this requires a restart of the application to take effect.")  );
     _systemFontChoice->setLabel(tr("Font"));
     _systemFontChoice->setAddNewLine(false);
     _systemFontChoice->setDefaultValueFromID(NATRON_FONT);
-    knobsRequiringRestart.insert(_systemFontChoice);
+    _knobsRequiringRestart.insert(_systemFontChoice);
     _appearanceTab->addKnob(_systemFontChoice);
 
     _fontSize = _publicInterface->createKnob<KnobInt>("fontSize");
     _fontSize->setLabel(tr("Font size"));
+    _fontSize->setHintToolTip( tr("The application font size") +
+                               QLatin1Char('\n') +
+                              tr("Changing this requires a restart of the application to take effect.") );
     _fontSize->setDefaultValue(NATRON_FONT_SIZE_DEFAULT);
-    knobsRequiringRestart.insert(_fontSize);
+    _knobsRequiringRestart.insert(_fontSize);
     _appearanceTab->addKnob(_fontSize);
 
     _qssFile = _publicInterface->createKnob<KnobFile>("stylesheetFile");
     _qssFile->setLabel(tr("Stylesheet file (.qss)"));
-    knobsRequiringRestart.insert(_qssFile);
+    _knobsRequiringRestart.insert(_qssFile);
     _qssFile->setHintToolTip( tr("When pointing to a valid .qss file, the stylesheet of the application will be set according to this file instead of the default "
-                                 "stylesheet. You can adapt the default stylesheet that can be found in your distribution of %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+                                 "stylesheet. You can adapt the default stylesheet that can be found in your distribution of %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) +
+                              QLatin1Char('\n') +
+                              tr("Changing this requires a restart of the application to take effect.") );
     _appearanceTab->addKnob(_qssFile);
 } // Settings::initializeKnobsAppearance
 
@@ -2082,10 +2117,12 @@ SettingsPrivate::initializeKnobsCaching()
     QString defaultLocation = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache);
     QString diskCacheTt( tr("This is the location where the disk cache is. "
                             "This variable should point to your fastest disk. If the parameter is left empty or the location set is invalid, "
-                            "the default location will be used. The default location is: %1\n").arg(defaultLocation) );
+                            "the default location will be used. The default location is: %1\n").arg(defaultLocation) +
+                         QLatin1Char('\n') +
+                         tr("Changing this requires a restart of the application to take effect.") );
 
     _diskCachePath->setHintToolTip(diskCacheTt);
-    knobsRequiringRestart.insert(_diskCachePath);
+    _knobsRequiringRestart.insert(_diskCachePath);
 
     _cachingTab->addKnob(_diskCachePath);
 
@@ -2112,32 +2149,43 @@ SettingsPrivate::initializeKnobsPlugins()
 #endif
 
     _loadBundledPlugins = _publicInterface->createKnob<KnobBool>("useBundledPlugins");
-    knobsRequiringRestart.insert(_loadBundledPlugins);
+    _knobsRequiringRestart.insert(_loadBundledPlugins);
+    _knobsRequiringOFXCacheClear.insert(_loadBundledPlugins);
     _loadBundledPlugins->setLabel(tr("Use bundled plug-ins"));
     _loadBundledPlugins->setHintToolTip( tr("When checked, %1 also uses the plug-ins bundled "
                                             "with the binary distribution.\n"
                                             "When unchecked, only system-wide plug-ins found in are loaded (more information can be "
-                                            "found in the help for the \"Extra plug-ins search paths\" setting).").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+                                            "found in the help for the \"Extra plug-ins search paths\" setting).").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) +
+                                         QLatin1Char('\n') +
+                                         tr("Changing this requires a restart of the application to take effect.") );
     _loadBundledPlugins->setDefaultValue(true);
     _pluginsTab->addKnob(_loadBundledPlugins);
 
     _preferBundledPlugins = _publicInterface->createKnob<KnobBool>("preferBundledPlugins");
-    knobsRequiringRestart.insert(_preferBundledPlugins);
+    _knobsRequiringRestart.insert(_preferBundledPlugins);
+    _knobsRequiringOFXCacheClear.insert(_preferBundledPlugins);
     _preferBundledPlugins->setLabel(tr("Prefer bundled plug-ins over system-wide plug-ins"));
-    _preferBundledPlugins->setHintToolTip( tr("When checked, and if \"Use bundled plug-ins\" is also checked, plug-ins bundled with the %1 binary distribution will take precedence over system-wide plug-ins "
-                                              "if they have the same internal ID.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+    _preferBundledPlugins->setHintToolTip( tr("When checked, and if \"Use bundled plug-ins\" is also checked, plug-ins bundled with "
+                                              "the %1 binary distribution will take precedence over system-wide plug-ins "
+                                              "if they have the same internal ID.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) +
+                                           QLatin1Char('\n') +
+                                           tr("Changing this requires a restart of the application to take effect.") );
     _preferBundledPlugins->setDefaultValue(true);
     _pluginsTab->addKnob(_preferBundledPlugins);
 
     _useStdOFXPluginsLocation = _publicInterface->createKnob<KnobBool>("useStdOFXPluginsLocation");
-    knobsRequiringRestart.insert(_useStdOFXPluginsLocation);
+    _knobsRequiringRestart.insert(_useStdOFXPluginsLocation);
+    _knobsRequiringOFXCacheClear.insert(_useStdOFXPluginsLocation);
     _useStdOFXPluginsLocation->setLabel(tr("Enable default OpenFX plugins location"));
-    _useStdOFXPluginsLocation->setHintToolTip( tr("When checked, %1 also uses the OpenFX plug-ins found in the default location (%2).").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8( searchPath.c_str() ) ) );
+    _useStdOFXPluginsLocation->setHintToolTip( tr("When checked, %1 also uses the OpenFX plug-ins found in the default location (%2).").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8( searchPath.c_str() ) ) +
+                                               QLatin1Char('\n') +
+                                               tr("Changing this requires a restart of the application to take effect.") );
     _useStdOFXPluginsLocation->setDefaultValue(true);
     _pluginsTab->addKnob(_useStdOFXPluginsLocation);
 
     _extraPluginPaths = _publicInterface->createKnob<KnobPath>("extraPluginsSearchPaths");
-    knobsRequiringRestart.insert(_extraPluginPaths);
+    _knobsRequiringRestart.insert(_extraPluginPaths);
+    _knobsRequiringOFXCacheClear.insert(_extraPluginPaths);
     _extraPluginPaths->setLabel(tr("OpenFX plug-ins search path"));
     _extraPluginPaths->setHintToolTip( tr("Extra search paths where %1 should scan for OpenFX plug-ins. "
                                           "Extra plug-ins search paths can also be specified using the OFX_PLUGIN_PATH environment variable.\n"
@@ -2147,17 +2195,20 @@ SettingsPrivate::initializeKnobsPlugins()
                                           "- plug-ins found in OFX_PLUGIN_PATH\n"
                                           "- plug-ins found in %2 (if \"Enable default OpenFX plug-ins location\" is checked)\n"
                                           "- plugins bundled with the binary distribution of %1 (if \"Prefer bundled plug-ins over "
-                                          "system-wide plug-ins\" is not checked)\n"
-                                          "Any change will take effect on the next launch of %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8( searchPath.c_str() ) ) );
+                                          "system-wide plug-ins\" is not checked)").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8( searchPath.c_str() ) ) +
+                                       QLatin1Char('\n') +
+                                       tr("Changing this requires a restart of the application to take effect.") );
     _extraPluginPaths->setMultiPath(true);
     _pluginsTab->addKnob(_extraPluginPaths);
 
     _templatesPluginPaths = _publicInterface->createKnob<KnobPath>("groupPluginsSearchPath");
     _templatesPluginPaths->setLabel(tr("PyPlugs search path"));
-    knobsRequiringRestart.insert(_templatesPluginPaths);
+    _knobsRequiringRestart.insert(_templatesPluginPaths);
     _templatesPluginPaths->setHintToolTip( tr("Search path where %1 should scan for Python group scripts (PyPlugs). "
                                               "The search paths for groups can also be specified using the "
-                                              "NATRON_PLUGIN_PATH environment variable.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+                                              "NATRON_PLUGIN_PATH environment variable.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) +
+                                           QLatin1Char('\n') +
+                                           tr("Changing this requires a restart of the application to take effect.") );
     _templatesPluginPaths->setMultiPath(true);
     _pluginsTab->addKnob(_templatesPluginPaths);
 
