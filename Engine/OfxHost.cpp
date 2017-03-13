@@ -792,14 +792,26 @@ getPluginShortcuts(const OFX::Host::ImageEffect::Descriptor& desc, std::list<Plu
     }
 } // getPluginShortcuts
 
+static inline
+QDebug operator<<(QDebug dbg, const std::list<std::string> &l)
+{
+    for (std::list<std::string>::const_iterator it = l.begin(); it != l.end(); ++it) {
+        dbg.nospace() << QString::fromUtf8( it->c_str() ) << ' ';
+    }
+
+    return dbg.space();
+}
+
 void
 OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
                         IOPluginsMap* writersMap)
 {
+    qDebug() << "Load OFX Plugins...";
     SettingsPtr settings = appPTR->getCurrentSettings();
     assert(settings);
     bool useStdOFXPluginsLocation = settings->getUseStdOFXPluginsLocation();
     if (!useStdOFXPluginsLocation) {
+        qDebug() << "Load OFX Plugins: do not use std plugins location";
         // only set if false, else use the previous value (which is set for example in BaseTest::SetUp())
         OFX::Host::PluginCache::useStdOFXPluginsLocation(useStdOFXPluginsLocation);
     }
@@ -813,10 +825,12 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
 
 
     pluginCache->setPluginHostPath(NATRON_APPLICATION_NAME);
-    pluginCache->setPluginHostPath("Nuke");
+    pluginCache->setPluginHostPath("Nuke"); // most Nuke OFX plugins are compatible
     std::list<std::string> extraPluginsSearchPaths;
+    settings->getOpenFXPluginsSearchPaths(&extraPluginsSearchPaths);
     for (std::list<std::string>::iterator it = extraPluginsSearchPaths.begin(); it != extraPluginsSearchPaths.end(); ++it) {
         if ( !(*it).empty() ) {
+            qDebug() << "Load OFX Plugins: append extra plugins dir" << it->c_str();
             pluginCache->addFileToPath(*it);
         }
     }
@@ -828,8 +842,10 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
     try {
         if ( settings->loadBundledPlugins() ) {
             if ( settings->preferBundledPlugins() ) {
+                qDebug() << "Load OFX Plugins: prepend bundled plugins dir" << natronBundledPluginsPath.c_str();
                 pluginCache->prependFileToPath(natronBundledPluginsPath);
             } else {
+                qDebug() << "Load OFX Plugins: append bundled plugins dir" << natronBundledPluginsPath.c_str();
                 pluginCache->addFileToPath(natronBundledPluginsPath);
             }
         }
@@ -842,25 +858,36 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
     //on Linux ~/.cache/<organization>/<application>/OFXLoadCache/
     //on windows: C:\Users\<username>\App Data\Local\<organization>\<application>\Caches\OFXLoadCache
     QString ofxCacheFilePath = getCacheFilePath();
+    qDebug() << "Load OFX Plugins: reading cache file" << ofxCacheFilePath;
 
     {
         FStreamsSupport::ifstream ifs;
         FStreamsSupport::open( &ifs, ofxCacheFilePath.toStdString() );
-        if (ifs) {
+        if (!ifs) {
+            qDebug() << "Load OFX Plugins: cannot open cache file" << ofxCacheFilePath;
+        } else {
             try {
                 pluginCache->readCache(ifs);
+                qDebug() << "Load OFX Plugins: reading cache file... done!";
             } catch (const std::exception& e) {
+                qDebug() << "Load OFX Plugins: reading cache file... failed!";
                 appPTR->writeToErrorLog_mt_safe( QLatin1String("OpenFX"), QDateTime::currentDateTime(),
                                                  tr("Failure to read OpenFX plug-ins cache: %1").arg( QString::fromUtf8( e.what() ) ) );
             }
         }
     }
+    
+    qDebug() << "Load OFX Plugins: plugin path is" << pluginCache->getPluginPath();
+    qDebug() << "Load OFX Plugins: scan plugins...";
     pluginCache->scanPluginFiles();
+    qDebug() << "Load OFX Plugins: scan plugins... done!";
     _imp->loadingPluginID.clear(); // finished loading plugins
 
     // write the cache NOW (it won't change anyway)
+    qDebug() << "Load OFX Plugins: writing cache file" << ofxCacheFilePath;
     /// flush out the current cache
     writeOFXCache();
+    qDebug() << "Load OFX Plugins: writing cache file... done!";
 
     /*Filling node name list and plugin grouping*/
     typedef std::map<OFX::Host::ImageEffect::MajorPlugin, OFX::Host::ImageEffect::ImageEffectPlugin *> PMap;
@@ -1028,6 +1055,7 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
 
         appPTR->registerPlugin(natronPlugin);
     }
+    qDebug() << "Load OFX Plugins... done!";
 } // loadOFXPlugins
 
 void
