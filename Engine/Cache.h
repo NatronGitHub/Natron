@@ -54,8 +54,8 @@
 //
 
 
-#define NATRON_TILE_SIZE_X_8_BIT 64
-#define NATRON_TILE_SIZE_Y_8_BIT 64
+#define NATRON_TILE_SIZE_X_8_BIT 128
+#define NATRON_TILE_SIZE_Y_8_BIT 128
 
 #define NATRON_TILE_SIZE_X_16_BIT NATRON_TILE_SIZE_X_8_BIT
 #define NATRON_TILE_SIZE_Y_16_BIT (NATRON_TILE_SIZE_Y_8_BIT / 2)
@@ -315,10 +315,10 @@ public:
      * Note that unLockTiles must always be called before releaseTiles.
      **/
     bool retrieveAndLockTiles(const CacheEntryBasePtr& entry,
-                              const std::vector<int>* tileIndices,
+                              const std::vector<U64>* tileIndices,
                               std::size_t numTilesToAlloc,
                               std::vector<void*>* existingTilesData,
-                              std::vector<std::pair<int, void*> >* allocatedTilesData,
+                              std::vector<std::pair<U64, void*> >* allocatedTilesData,
                               void** cacheData);
 
     /**

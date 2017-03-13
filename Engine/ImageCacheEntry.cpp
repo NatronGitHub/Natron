@@ -71,7 +71,7 @@ typedef std::set<TileCoord, TileCoordCompare> TilesSet;
 struct TileCacheIndex
 {
     // Indices of the tiles in the cache for each channel
-    int perChannelTileIndices[4];
+    U64 perChannelTileIndices[4];
 
     // The coord of the tile
     int tx, ty;
@@ -86,7 +86,7 @@ struct TileCacheIndex
     , ty(-1)
     , upscaleTiles()
     {
-        perChannelTileIndices[0] = perChannelTileIndices[1] = perChannelTileIndices[2] = perChannelTileIndices[3] = -1;
+        perChannelTileIndices[0] = perChannelTileIndices[1] = perChannelTileIndices[2] = perChannelTileIndices[3] = (U64)-1;
     }
 };
 
@@ -190,7 +190,7 @@ toImageCacheEntryInternal(const CacheEntryBasePtr& entry)
 struct TileData
 {
     void* ptr;
-    int tileCache_i;
+    U64 tileCache_i;
     RectI bounds;
     int channel_i;
 
@@ -359,7 +359,7 @@ struct ImageCacheEntryPrivate
     std::vector<boost::shared_ptr<TileData> > buildTaskPyramidRecursive(unsigned int lookupLevel,
                                                                         const TileCacheIndex &tile,
                                                                         const std::vector<void*> &fetchedExistingTiles,
-                                                                        const std::vector<std::pair<int, void*> >& allocatedTiles,
+                                                                        const std::vector<std::pair<U64, void*> >& allocatedTiles,
                                                                         int* existingTiles_i,
                                                                         int* allocatedTiles_i,
                                                                         std::vector<boost::shared_ptr<TileData> > *tilesToCopy,
@@ -826,7 +826,7 @@ ImageCacheEntryPrivate::readAndUpdateStateMap(bool hasExclusiveLock)
  * If this tile needs to be computed from the average of 4 upscaled tiles, this will also request a tile
  * to be allocated and recursively call the function upstream.
  **/
-static void fetchTileIndicesInPyramid(const TileCacheIndex& tile, int nComps, std::vector<int> *tileIndicesToFetch, std::size_t* nTilesAllocNeeded)
+static void fetchTileIndicesInPyramid(const TileCacheIndex& tile, int nComps, std::vector<U64> *tileIndicesToFetch, std::size_t* nTilesAllocNeeded)
 {
     if (tile.upscaleTiles[0]) {
         // We must downscale the upscaled tiles
@@ -840,7 +840,7 @@ static void fetchTileIndicesInPyramid(const TileCacheIndex& tile, int nComps, st
         }
     } else {
         for (int c = 0; c < nComps; ++c) {
-            assert(tile.perChannelTileIndices[c] != -1);
+            assert(tile.perChannelTileIndices[c] != (U64)-1);
             tileIndicesToFetch->push_back(tile.perChannelTileIndices[c]);
         }
     }
@@ -853,7 +853,7 @@ std::vector<boost::shared_ptr<TileData> >
 ImageCacheEntryPrivate::buildTaskPyramidRecursive(unsigned int lookupLevel,
                                                   const TileCacheIndex &tile,
                                                   const std::vector<void*> &fetchedExistingTiles,
-                                                  const std::vector<std::pair<int, void*> >& allocatedTiles,
+                                                  const std::vector<std::pair<U64, void*> >& allocatedTiles,
                                                   int* existingTiles_i,
                                                   int* allocatedTiles_i,
                                                   std::vector<boost::shared_ptr<TileData> > *tilesToCopy,
@@ -907,7 +907,7 @@ ImageCacheEntryPrivate::buildTaskPyramidRecursive(unsigned int lookupLevel,
         
     } else { // !tile.upscaleTiles[0]
         for (int c = 0; c < nComps; ++c) {
-            assert(tile.perChannelTileIndices[c] != -1);
+            assert(tile.perChannelTileIndices[c] != (U64)-1);
 
 
             outputTasks[c].reset(new TileData);
@@ -932,7 +932,7 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
 {
 
     // Get a vector of tile indices to fetch from the cache directly
-    std::vector<int> tileIndicesToFetch;
+    std::vector<U64> tileIndicesToFetch;
 
     // Number of tiles to allocate to downscale
     std::size_t nTilesAllocNeeded = 0;
@@ -955,7 +955,7 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
     std::vector<void*> fetchedExistingTiles;
 
     // Allocated buffers for tiles
-    std::vector<std::pair<int, void*> > allocatedTiles;
+    std::vector<std::pair<U64, void*> > allocatedTiles;
     void* cacheData;
     bool gotTiles = tileCache->retrieveAndLockTiles(internalCacheEntry, &tileIndicesToFetch, nTilesAllocNeeded, &fetchedExistingTiles, &allocatedTiles, &cacheData);
     CacheDataLock_RAII cacheDataDeleter(tileCache, cacheData);
@@ -1386,7 +1386,7 @@ ImageCacheEntry::markCacheTilesAsRendered()
     std::size_t nMonoChannelBuffers = tilesToCopy.size();
 
     // Allocated buffers for tiles
-    std::vector<std::pair<int, void*> > allocatedTiles;
+    std::vector<std::pair<U64, void*> > allocatedTiles;
     void* cacheData;
     bool gotTiles = cache->retrieveAndLockTiles(_imp->internalCacheEntry, 0 /*existingTiles*/, nMonoChannelBuffers, NULL, &allocatedTiles, &cacheData);
     CacheDataLock_RAII cacheDataDeleter(cache, cacheData);
@@ -1513,6 +1513,7 @@ static void toMemorySegmentInternal(const std::vector<TilesState>& localMipMapSt
         assert(cacheState.tiles.get_allocator().get_segment_manager() == segment->get_segment_manager());
         cacheState.tiles.insert(cacheState.tiles.end(), localMipMapStates[i].tiles.begin(), localMipMapStates[i].tiles.end());
         cachedMipMapStates->push_back(cacheState);
+        assert(cachedMipMapStates->back().tiles.get_allocator().get_segment_manager() == segment->get_segment_manager());
     }
 }
 

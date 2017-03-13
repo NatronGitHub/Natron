@@ -1512,7 +1512,9 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
     } // while there is still something not rendered
 
     if (isRenderAborted()) {
-        finishProducedPlanesTilesStatesMap(cachedImagePlanes, true /*aborted*/);
+        if (requestData->getCachePolicy() != eCacheAccessModeNone) {
+            finishProducedPlanesTilesStatesMap(cachedImagePlanes, true /*aborted*/);
+        }
         return eActionStatusAborted;
     }
 
