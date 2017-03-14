@@ -9,7 +9,7 @@ name                poppler
 conflicts           pdf2json xpdf-tools
 version             0.52.0
 license             GPL-2+
-maintainers         devans openmaintainer
+maintainers         {devans @dbevans} openmaintainer
 categories          graphics
 platforms           darwin
 homepage            https://poppler.freedesktop.org/

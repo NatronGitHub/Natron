@@ -101,7 +101,7 @@ configure.env-append \
 pre-configure {
     configure.args-append --with-pkgversion="MacPorts ${name} ${version}_${revision}${portvariants}"
 
-    if {${configure.sdkroot} ne "/"} {
+    if {${configure.sdkroot} ne ""} {
         # We should be using --with-build-sysroot here.  Using --with-sysroot
         # changes the behavior of the installed gcc to look in that sysroot
         # by default instead of /.  Using --with-build-sysroot is supposed

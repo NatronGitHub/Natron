@@ -35,7 +35,7 @@ checksums           rmd160  98e84aa59bd668c4ab58afea9c7a2d1cc0c6ef7e \
 depends_lib         port:cctools \
                     path:lib/pkgconfig/cloog-isl.pc:cloog \
                     port:gmp \
-                    path:lib/pkgconfig/isl.pc:isl \
+                    port:isl14 \
                     port:ld64 \
                     path:lib/libgcc/libgcc_s.1.dylib:libgcc \
                     port:libiconv \
@@ -53,6 +53,16 @@ patchfiles-append   macosx-version-min.patch
 # Don't link with "-flat_namespace -undefined suppress" on Yosemite and
 # later (#45483).
 patchfiles-append   yosemite-libtool.patch
+
+# See https://trac.macports.org/ticket/52393
+patchfiles-append   patch-gcc-texi.diff
+
+# See https://trac.macports.org/ticket/53662
+patchfiles-append   patch-libisl.diff
+post-extract {
+    xinstall -d -m 0755 ${build.dir}/gcc
+    ln -s ${prefix}/libexec/isl14/include/isl ${build.dir}/gcc
+}
 
 set major           [join [lrange [split ${version} .-] 0 1] .]
 
@@ -76,7 +86,7 @@ configure.args      --enable-languages=c,c++,objc,obj-c++,lto,fortran,java \
                     --with-gmp=${prefix} \
                     --with-mpfr=${prefix} \
                     --with-mpc=${prefix} \
-                    --with-isl=${prefix} --disable-isl-version-check \
+                    --with-isl=${prefix}/libexec/isl14 --disable-isl-version-check \
                     --with-cloog=${prefix} --disable-cloog-version-check \
                     --enable-stage1-checking \
                     --disable-multilib \
@@ -102,7 +112,7 @@ configure.env-append \
 pre-configure {
     configure.args-append --with-pkgversion="MacPorts ${name} ${version}_${revision}${portvariants}"
 
-    if {${configure.sdkroot} ne "/"} {
+    if {${configure.sdkroot} ne ""} {
         # We should be using --with-build-sysroot here.  Using --with-sysroot
         # changes the behavior of the installed gcc to look in that sysroot
         # by default instead of /.  Using --with-build-sysroot is supposed

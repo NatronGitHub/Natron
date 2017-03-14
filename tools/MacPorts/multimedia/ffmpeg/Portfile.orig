@@ -12,7 +12,7 @@ epoch               1
 version             3.2.4
 license             LGPL-2.1+
 categories          multimedia
-maintainers         devans {jeremyhu @jeremyhu} openmaintainer
+maintainers         {devans @dbevans} {jeremyhu @jeremyhu} openmaintainer
 
 description         FFmpeg is a complete solution to play, record, convert and \
                     stream audio and video.

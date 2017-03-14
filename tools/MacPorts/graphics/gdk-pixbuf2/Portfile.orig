@@ -10,7 +10,7 @@ version             2.36.5
 license             LGPL
 set branch          [join [lrange [split ${version} .] 0 1] .]
 categories          graphics
-maintainers         devans openmaintainer
+maintainers         {devans @dbevans} openmaintainer
 homepage            http://www.gtk.org/
 platforms           darwin
 distname            ${my_name}-${version}

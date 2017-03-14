@@ -9,7 +9,7 @@ PortGroup           muniversal 1.0
 name                libvpx
 version             1.6.1
 categories          multimedia
-maintainers         devans openmaintainer
+maintainers         {devans @dbevans} openmaintainer
 platforms           darwin
 license             Permissive
 
