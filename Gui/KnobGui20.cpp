@@ -84,6 +84,9 @@ KnobGui::refreshGuiNow()
         if (!knob) {
             return;
         }
+        if (!knob->getHolder()) {
+            return;
+        }
         TimeValue time = knob->getHolder()->getTimelineCurrentTime();
         int nDims = knob->getNDimensions();
         for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {

@@ -920,7 +920,7 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
         }
         ActionRetCodeEnum stat = convertedImage->copyPixels(*outArgs->image, copyArgs);
         if (isFailureRetCode(stat)) {
-            return false;
+            return false;   
         }
         outArgs->image = convertedImage;
     } // mustConvertImage
@@ -2017,6 +2017,12 @@ EffectInstance::refreshDynamicProperties()
     setCurrentOpenGLRenderSupport(pluginGLSupport);
     bool tilesSupported = supportsTiles();
     bool renderScaleSupported = supportsRenderScale();
+    if ((isReader() || isWriter()) && getNode()->getIOContainer()) {
+        // If this is an encoder or decoder, we do not support render-scale.
+        renderScaleSupported = false;
+    }
+
+
     bool multiResSupported = supportsMultiResolution();
     bool canDistort = getCanDistort();
     bool currentDeprecatedTransformSupport = getCanTransform();
