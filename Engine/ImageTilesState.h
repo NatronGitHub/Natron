@@ -65,14 +65,14 @@ struct TileState
     TileStatusEnum status;
 
     // The indices of the buffers in the cache
-    int channelsTileStorageIndex[4];
+    U64 channelsTileStorageIndex[4];
 
     TileState()
     : bounds()
     , status(eTileStatusNotRendered)
     , channelsTileStorageIndex()
     {
-        channelsTileStorageIndex[0] = channelsTileStorageIndex[1] = channelsTileStorageIndex[2] = channelsTileStorageIndex[3] = -1;
+        channelsTileStorageIndex[0] = channelsTileStorageIndex[1] = channelsTileStorageIndex[2] = channelsTileStorageIndex[3] = (U64)-1;
     }
 };
 

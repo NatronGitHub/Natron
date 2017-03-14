@@ -1656,30 +1656,6 @@ CacheBucket::remapToCMemoryFile(Sharable_WriteLock& lock, std::size_t minFreeSiz
 
 } // remapToCMemoryFile
 
-static void flushTileMapping(const MemoryFilePtr& tileAlignedFile, const U64_Set& freeTiles)
-{
-
-    // Save only allocated tiles portion
-    assert(tileAlignedFile->size() % NATRON_TILE_SIZE_BYTES == 0);
-    std::size_t nTiles = tileAlignedFile->size() / NATRON_TILE_SIZE_BYTES;
-
-    std::vector<bool> allocatedTiles(nTiles, true);
-
-    // Mark all free tiles as not allocated
-    for (U64_Set::const_iterator it = freeTiles.begin(); it != freeTiles.end(); ++it) {
-        allocatedTiles[*it] = false;
-    }
-
-    for (std::size_t i = 0; i < allocatedTiles.size(); ++i) {
-        std::size_t dataOffset = i * NATRON_TILE_SIZE_BYTES;
-        if (allocatedTiles[i]) {
-            tileAlignedFile->flush(MemoryFile::eFlushTypeSync, tileAlignedFile->data() + dataOffset, NATRON_TILE_SIZE_BYTES);
-        } else {
-            tileAlignedFile->flush(MemoryFile::eFlushTypeInvalidate, tileAlignedFile->data() + dataOffset, NATRON_TILE_SIZE_BYTES);
-        }
-    }
-} // flushTileMapping
-
 void
 CacheBucket::growToCFile(Sharable_WriteLock& lock, std::size_t bytesToAdd)
 {
@@ -3067,7 +3043,8 @@ CachePrivate::createTileStorage(PerBucketMutexData bucketsData[NATRON_CACHE_BUCK
         // First insert in a temporary set and then assign to the free tiles set to avoid out of memory exceptions
         std::set<U64> tmpSet;
         tmpSet.insert(buckets[bucket_i].ipc->freeTiles.begin(), buckets[bucket_i].ipc->freeTiles.end());
-        for (U64 i = 0; i < NATRON_NUM_TILES_PER_BUCKET_FILE; ++i) {
+        U64 nTiles = bucket_i * NATRON_NUM_TILES_PER_BUCKET_FILE;
+        for (U64 i = nTiles; i < nTiles + NATRON_NUM_TILES_PER_BUCKET_FILE; ++i) {
             U64 encodedIndex = 0;
             encodedIndex = ((i << 32) | fileIndex);
             tmpSet.insert(encodedIndex);
@@ -3124,9 +3101,6 @@ CachePrivate::reOpenTileStorage()
         }
         tilesStorage.push_back(data);
     }
-    if (buckets[0].ipc->freeTiles.size() < ((tilesStorage.size() * NATRON_NUM_TILES_PER_FILE) / NATRON_CACHE_BUCKETS_COUNT)) {
-        throw CorruptedCacheException();
-    }
 }
 
 bool
@@ -3152,7 +3126,8 @@ Cache::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
     U64 baseHash = entryHash + rand();
 
     // Since this function returns pointers to the underlying memory mapped file, we need to hold the tilesStorageMutex
-    // in read mode whilst the user is using it
+    // in read mode whilst the user is using it, we let him free the cacheData using the unLockTiles() function once he is done
+    // with the pointers.
     CacheTilesLockImpl* tilesLock = new CacheTilesLockImpl;
     *cacheData = tilesLock;
 
@@ -3177,8 +3152,6 @@ Cache::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
         // Ensure the mutex for each bucket is taken only once
         CachePrivate::PerBucketMutexData bucketsData[NATRON_CACHE_BUCKETS_COUNT];
 
-
-        // Lock the bucket ToC in write mode to protect the freeTiles if we need to allocate some tiles
         MemorySegmentEntryHeader* cacheEntry = 0;
         if (numTilesToAlloc > 0) {
 
@@ -3188,6 +3161,7 @@ Cache::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
             int bucketIndex = Cache::getBucketCacheBucketIndex(entryHash);
             CacheBucket& bucket = _imp->buckets[bucketIndex];
 
+            // Lock the bucket in write mode, we are going to write to the tiles list of the entry
 #ifndef NATRON_CACHE_INTERPROCESS_ROBUST
             bucketsData[bucketIndex].bucketWriteLock.reset(new Sharable_WriteLock(_imp->ipc->bucketsData[bucketIndex].bucketMutex));
 #else
@@ -3200,6 +3174,7 @@ Cache::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
             }
             cacheEntry = found->second.get();
 
+            // Increment the size of the entry in the cache
             bucket.ipc->size += numTilesToAlloc * NATRON_TILE_SIZE_BYTES;
         }
 
@@ -3208,7 +3183,7 @@ Cache::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
             allocatedTilesData->resize(numTilesToAlloc);
         }
         for (std::size_t i = 0; i < numTilesToAlloc; ++i) {
-            int bucketIndex = Cache::getBucketCacheBucketIndex(baseHash + i);
+            int bucketIndex = (Cache::getBucketCacheBucketIndex(baseHash) + i) % NATRON_CACHE_BUCKETS_COUNT;
             CacheBucket& tileBucket = _imp->buckets[bucketIndex];
 
             // Take the read lock on the toc file mapping
@@ -3306,7 +3281,7 @@ Cache::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
                 {
                     data = storage->tileAlignedLocalBuf->getData();
                 }
-                char* tileDataPtr = data + (*tileIndices)[i] * NATRON_TILE_SIZE_BYTES;
+                char* tileDataPtr = data + tileIndex * NATRON_TILE_SIZE_BYTES;
                 (*existingTilesData)[i] = tileDataPtr;
             } // for each tile indices
         }
@@ -3325,7 +3300,7 @@ Cache::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
 
     return true;
 
-} // reserveAndLockTiles
+} // retrieveAndLockTiles
 
 void
 Cache::unLockTiles(void* cacheData)
@@ -4046,6 +4021,8 @@ Cache::getMemoryStats(std::map<std::string, CacheReportInfo>* infos) const
 void
 Cache::flushCacheOnDisk(bool async)
 {
+    (void)async;
+#if 0
 #ifdef NATRON_CACHE_NEVER_PERSISTENT
     (void)async;
 #else
@@ -4083,8 +4060,17 @@ Cache::flushCacheOnDisk(bool async)
 #else
                 createTimedLock<Sharable_WriteLock>(this, tilesStorageReadLock, &_imp->ipc->tilesStorageMutex);
 #endif
-                for (std::size_t i = 0; i < _imp->tilesStorage.size(); ++i) {
-                    flushTileMapping(_imp->tilesStorage[i].tileAlignedFile, _imp->buckets[bucket_i].ipc->freeTiles);
+                for (U64_Set::const_iterator it = _imp->buckets[bucket_i].ipc->freeTiles.begin(); it != _imp->buckets[bucket_i].ipc->freeTiles.end(); ++it) {
+                    U32 tileIndex, fileIndex;
+                    getTileIndex(*it, &tileIndex, &fileIndex);
+
+                    if (fileIndex >= _imp->tilesStorage.size()) {
+                        continue;
+                    }
+                    CachePrivate::TileAlignedData* storage = &_imp->tilesStorage[fileIndex];
+                    std::size_t dataOffset = tileIndex * NATRON_TILE_SIZE_BYTES;
+                    storage->tileAlignedFile->flush(MemoryFile::eFlushTypeInvalidate, storage->tileAlignedFile->data() + dataOffset, NATRON_TILE_SIZE_BYTES);
+
                 }
             }
 
@@ -4099,12 +4085,9 @@ Cache::flushCacheOnDisk(bool async)
         }
 
     } // for each bucket
-
-
-
-
-
 #endif // #ifndef NATRON_CACHE_NEVER_PERSISTENT
+
+#endif
 } // flushCacheOnDisk
 
 NATRON_NAMESPACE_EXIT;
