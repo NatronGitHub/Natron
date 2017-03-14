@@ -14,7 +14,13 @@ Adjusts the saturation, constrast, gamma, gain and offset of an image.
 
 The ranges of the shadows, midtones and highlights are controlled by the curves in the "Ranges" tab.
 
-See also: http://opticalenquiry.com/nuke/index.php?title=ColorCorrect
+The Contrast adjustment works using the formula: Output = (Input/0.18)^Contrast\*0.18.
+
+See also:
+
+- http://opticalenquiry.com/nuke/index.php?title=ColorCorrect
+
+- https://compositormathematic.wordpress.com/2013/07/06/gamma-contrast/
 
 Inputs
 ------

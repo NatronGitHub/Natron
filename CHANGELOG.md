@@ -10,6 +10,7 @@
 - Multi-dimensional parameters don't automatically fold into a single dimension, except for scale and size params.
 - Binaries distributed through Natron's web site are now built with 10-bit x264 and 10/12-bit libvpx-vp9 support. That means the produced video files may be unplayable on some hardware (e.g. phones or TVs), but Natron should really be used to produce digital intermediates with the highest possible fidelity, which can then be transcoded to more suitable distribution codecs.
 - Better cache usage for Readers.
+- Fix a bug where custom OpenFX plugins directories would be ignored #1584
 
 ### Plugins
 
