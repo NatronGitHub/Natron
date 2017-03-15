@@ -463,6 +463,7 @@ public:
             return eFromMemorySegmentRetCodeFailed;
         }
         readAnonymousSharedObject(*start, segment, &_knobScriptName);
+        return eFromMemorySegmentRetCodeOk;
     }
 
 private:

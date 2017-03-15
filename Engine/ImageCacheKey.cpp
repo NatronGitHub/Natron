@@ -149,7 +149,7 @@ ImageCacheKey::fromMemorySegment(ExternalSegmentType* segment,
     ++start;
 
     _imp->data = *data;
-    
+    return eFromMemorySegmentRetCodeOk;
 }
 
 
