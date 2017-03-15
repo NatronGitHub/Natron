@@ -982,6 +982,7 @@ SettingsPrivate::initializeKnobsRendering()
                                                                "when they are chained in the compositing tree. This yields better results and faster "
                                                                "render times because the image is only filtered once instead of as many times as there are "
                                                                "transformations.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+    _activateTransformConcatenationSupport->setDefaultValue(true);
     _renderingPage->addKnob(_activateTransformConcatenationSupport);
 }
 

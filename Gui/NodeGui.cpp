@@ -2334,6 +2334,7 @@ NodeGui::destroyGui()
     }
 
     //Delete settings panel
+    getDagGui()->getGui()->getApp()->unregisterSettingsPanel(_settingsPanel);
     delete _settingsPanel;
     _settingsPanel = 0;
 

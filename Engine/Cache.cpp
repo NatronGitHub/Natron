@@ -3224,6 +3224,10 @@ Cache::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
 #endif
             }
 
+
+            // Remove the lock, otherwise we could deadlock if multiple threads attempt to enter
+            bucketsData[bucketIndex].bucketWriteLock.reset();
+
             U32 fileIndex, tileIndex;
             getTileIndex(freeTileEncodedIndex, &tileIndex, &fileIndex);
             CachePrivate::TileAlignedData* storage = 0;

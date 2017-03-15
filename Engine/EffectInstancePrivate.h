@@ -280,9 +280,6 @@ struct EffectInstanceCommonData
 
 };
 
-typedef std::map<FrameViewPair, FrameViewRequestWPtr, FrameView_compare_less> NodeFrameViewRequestData;
-
-
 // Data specific to a render clone
 struct RenderCloneData
 {
@@ -295,14 +292,8 @@ struct RenderCloneData
     // Render-local inputs vector
     std::vector<EffectInstanceWPtr> inputs;
 
-    // This is the current frame/view being requested or rendered by the main render thread.
+    // This is the current frame/view being requested or rendered by this clone
     FrameViewRequestWPtr currentFrameView;
-
-    // Contains data for all frame/view pair that are going to be computed
-    // for this frame/view pair with the overall RoI to avoid rendering several times with this node.
-    // We don't hold a strong reference here so that when all listeners to the frame/view are done listening
-    // the FrameViewRequest (hence the embedded image) is destroyed and resources released.
-    NodeFrameViewRequestData frames;
 
     // The results of the get frame range action for this render
     GetFrameRangeResultsPtr frameRangeResults;
@@ -318,7 +309,6 @@ struct RenderCloneData
     , instanceSafeRenderMutex()
     , inputs()
     , currentFrameView()
-    , frames()
     , frameRangeResults()
     , metadatasResults()
     , props()
@@ -328,7 +318,6 @@ struct RenderCloneData
 
     void operator=(const RenderCloneData& other)
     {
-        frames = other.frames;
         frameRangeResults = other.frameRangeResults;
         metadatasResults = other.metadatasResults;
         props = other.props;
@@ -374,24 +363,15 @@ public:
 
     ~Implementation();
 
-
-    /**
-     * @brief Returns a previously requested frame/view request from requestRender. This contains most actions
-     * results for the frame/view as well as the RoI required to render on the effect for this particular frame/view pair.
-     * The time passed in parameter should always be rounded for effects that are not continuous.
-     **/
-    FrameViewRequestPtr getFrameViewRequest(TimeValue time, ViewIdx view) const;
-
     /**
      * @brief Same as getFrameViewRequest excepts that if it does not exist it will create it.
      * @returns True if it was created, false otherwise
      **/
-    bool getOrCreateFrameViewRequest(TimeValue time,
-                                     ViewIdx view,
-                                     const RenderScale& proxyScale,
-                                     unsigned int mipMapLevel,
-                                     const ImagePlaneDesc& plane,
-                                     FrameViewRequestPtr* request);
+    FrameViewRequestPtr createFrameViewRequest(TimeValue time,
+                                ViewIdx view,
+                                const RenderScale& proxyScale,
+                                unsigned int mipMapLevel,
+                                const ImagePlaneDesc& plane);
 
 
     /**

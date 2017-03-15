@@ -322,11 +322,12 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
 } // checkIfCopyToTempImageIsNeeded
 
 template <typename PIX, int maxValue, int nComps>
-static void
+static ActionRetCodeEnum
 halveImageForInternal(const void* srcPtrs[4],
                       const RectI& srcBounds,
                       void* dstPtrs[4],
-                      const RectI& dstBounds)
+                      const RectI& dstBounds,
+                      const EffectInstancePtr& renderClone)
 {
 
     PIX* dstPixelPtrs[4];
@@ -342,6 +343,10 @@ halveImageForInternal(const void* srcPtrs[4],
 
 
     for (int y = dstBounds.y1; y < dstBounds.y2; ++y) {
+
+        if (renderClone && renderClone->isRenderAborted()) {
+            return eActionStatusAborted;
+        }
 
         // The current dst row, at y, covers the src rows y*2 (thisRow) and y*2+1 (nextRow).
         const int srcy = y * 2;
@@ -396,59 +401,53 @@ halveImageForInternal(const void* srcPtrs[4],
             srcPixelPtrs[k] += ((srcRowElementsCount - dstBounds.width() * srcPixelStride) * 2);
         }
     }  // for each scan line
+    return eActionStatusOK;
 } // halveImageForInternal
 
 
 template <typename PIX, int maxValue>
-static void
+static ActionRetCodeEnum
 halveImageForDepth(const void* srcPtrs[4],
                    int nComps,
                    const RectI& srcBounds,
                    void* dstPtrs[4],
-                   const RectI& dstBounds)
+                   const RectI& dstBounds,
+                   const EffectInstancePtr& renderClone)
 {
     switch (nComps) {
         case 1:
-            halveImageForInternal<PIX, maxValue, 1>(srcPtrs, srcBounds, dstPtrs, dstBounds);
-            break;
+            return halveImageForInternal<PIX, maxValue, 1>(srcPtrs, srcBounds, dstPtrs, dstBounds, renderClone);
         case 2:
-            halveImageForInternal<PIX, maxValue, 2>(srcPtrs, srcBounds, dstPtrs, dstBounds);
-            break;
+            return halveImageForInternal<PIX, maxValue, 2>(srcPtrs, srcBounds, dstPtrs, dstBounds, renderClone);
         case 3:
-            halveImageForInternal<PIX, maxValue, 3>(srcPtrs, srcBounds, dstPtrs, dstBounds);
-            break;
+            return halveImageForInternal<PIX, maxValue, 3>(srcPtrs, srcBounds, dstPtrs, dstBounds, renderClone);
         case 4:
-            halveImageForInternal<PIX, maxValue, 4>(srcPtrs, srcBounds, dstPtrs, dstBounds);
-            break;
+            return halveImageForInternal<PIX, maxValue, 4>(srcPtrs, srcBounds, dstPtrs, dstBounds, renderClone);
         default:
-            break;
+        return eActionStatusFailed;
     }
 }
 
 
-void
+ActionRetCodeEnum
 ImagePrivate::halveImage(const void* srcPtrs[4],
                          int nComps,
                          ImageBitDepthEnum bitDepth,
                          const RectI& srcBounds,
                          void* dstPtrs[4],
-                         const RectI& dstBounds)
+                         const RectI& dstBounds,
+                         const EffectInstancePtr& renderClone)
 {
     switch ( bitDepth ) {
         case eImageBitDepthByte:
-            halveImageForDepth<unsigned char, 255>(srcPtrs, nComps, srcBounds, dstPtrs, dstBounds);
-            break;
+            return halveImageForDepth<unsigned char, 255>(srcPtrs, nComps, srcBounds, dstPtrs, dstBounds, renderClone);
         case eImageBitDepthShort:
-            halveImageForDepth<unsigned short, 65535>(srcPtrs, nComps, srcBounds, dstPtrs, dstBounds);
-            break;
-        case eImageBitDepthHalf:
-            assert(false);
-            break;
+            return halveImageForDepth<unsigned short, 65535>(srcPtrs, nComps, srcBounds, dstPtrs, dstBounds, renderClone);
         case eImageBitDepthFloat:
-            halveImageForDepth<float, 1>(srcPtrs, nComps, srcBounds, dstPtrs, dstBounds);
+            return halveImageForDepth<float, 1>(srcPtrs, nComps, srcBounds, dstPtrs, dstBounds, renderClone);
             break;
-        case eImageBitDepthNone:
-            break;
+        default:
+        return eActionStatusFailed;
     }
 } // halveImage
 

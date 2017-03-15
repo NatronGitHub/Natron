@@ -263,10 +263,16 @@ EffectInstance::Implementation::handleConcatenation(const RequestPassSharedDataP
         return eActionStatusOK;
     }
 
-    EffectInstancePtr requesterEffect = requester->getRenderClone();
-    bool requesterCanReceiveDeprecatedTransform3x3 = requesterEffect->getInputCanReceiveTransform(inputNbInRequester);
-    bool requesterCanReceiveDistortionFunc = requesterEffect->getInputCanReceiveDistortion(inputNbInRequester);
-
+    EffectInstancePtr requesterEffect;
+    if (requester) {
+        requesterEffect = requester->getRenderClone();
+    }
+    bool requesterCanReceiveDeprecatedTransform3x3 = false;
+    bool requesterCanReceiveDistortionFunc = false;
+    if (requesterEffect) {
+        requesterCanReceiveDeprecatedTransform3x3 = requesterEffect->getInputCanReceiveTransform(inputNbInRequester);
+        requesterCanReceiveDistortionFunc= requesterEffect->getInputCanReceiveDistortion(inputNbInRequester);
+    }
     // If the caller can apply a distortion, then check if this effect has a distortion
     // otherwise, don't bother
     if (!requesterCanReceiveDeprecatedTransform3x3 && !requesterCanReceiveDistortionFunc) {
@@ -1111,10 +1117,7 @@ EffectInstance::requestRenderInternal(TimeValue time,
         frameView.view = view;
 
         // Create the frame/view request object
-        {
-            bool created = _imp->getOrCreateFrameViewRequest(frameView.time, frameView.view, proxyScale, mipMapLevel, plane, &requestData);
-            (void)created;
-        }
+        requestData = _imp->createFrameViewRequest(frameView.time, frameView.view, proxyScale, mipMapLevel, plane);
         *createdRequest = requestData;
     }
 
@@ -1304,6 +1307,7 @@ EffectInstance::requestRenderInternal(TimeValue time,
                 return eActionStatusFailed;
             }
         }
+        assert(!requestData->getImagePlane());
         requestData->setImagePlane(image);
         ImageCacheEntryPtr cacheEntry = image->getCacheEntry();
         assert(cacheEntry);
@@ -1550,6 +1554,9 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
         assert(requestData->getMipMapLevel() > 0);
         assert(outputImage->getMipMapLevel() == 0);
         ImagePtr downscaledImage = outputImage->downscaleMipMap(outputImage->getBounds(), requestData->getMipMapLevel());
+        if (!downscaledImage) {
+            return eActionStatusFailed;
+        }
         requestData->setImagePlane(downscaledImage);
     }
 

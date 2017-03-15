@@ -258,7 +258,7 @@ Image::copyPixels(const Image& other, const CopyPixelsArgs& args)
 
     assert(_imp->originalBounds.contains(args.roi) && other._imp->originalBounds.contains(args.roi));
 
-    ImagePrivate::copyPixelsInternal(fromImage->_imp.get(), tmpImage->_imp.get(), args, _imp->renderClone.lock());
+    return ImagePrivate::copyPixelsInternal(fromImage->_imp.get(), _imp.get(), args, _imp->renderClone.lock());
 
 } // copyPixels
 
@@ -689,7 +689,10 @@ Image::downscaleMipMap(const RectI & roi, unsigned int downscaleLevels) const
         Image::CPUData dstTileData;
         mipmapImage->getCPUData(&dstTileData);
 
-        ImagePrivate::halveImage((const void**)srcTileData.ptrs, srcTileData.nComps, srcTileData.bitDepth, srcTileData.bounds, dstTileData.ptrs, dstTileData.bounds);
+        ActionRetCodeEnum stat = ImagePrivate::halveImage((const void**)srcTileData.ptrs, srcTileData.nComps, srcTileData.bitDepth, srcTileData.bounds, dstTileData.ptrs, dstTileData.bounds, _imp->renderClone.lock());
+        if (isFailureRetCode(stat)) {
+            return ImagePtr();
+        }
 
         // Switch for next pass
         previousLevelRoI = halvedRoI;

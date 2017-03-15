@@ -1024,9 +1024,11 @@ KnobChoice::populateChoices(const std::vector<ChoiceOption> &entries)
 
         {
             // Check if the default value string is empty, if so initialize it
-            QMutexLocker k2(&_imp->defaultEntryMutex);
-            if (_imp->initialDefaultEntryID.empty()) {
-                mustSetDefaultEntry = true;
+            if (isDefaultValueSet(DimIdx(0))) {
+                QMutexLocker k2(&_imp->defaultEntryMutex);
+                if (_imp->initialDefaultEntryID.empty()) {
+                    mustSetDefaultEntry = true;
+                }
             }
         }
 

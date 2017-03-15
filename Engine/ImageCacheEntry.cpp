@@ -732,10 +732,10 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(bool hasExclusiveLock,
 
                     tile->upscaleTiles[i].reset(new TileCacheIndex);
                     // The upscaled tile might not exist when we are on the border, account for it
-                    if (upscaledCords[i].tx < perMipMapTilesState[lookupLevel -1].bounds.x1 ||
-                        upscaledCords[i].tx >= perMipMapTilesState[lookupLevel -1].bounds.x2 ||
-                        upscaledCords[i].ty < perMipMapTilesState[lookupLevel -1].bounds.y1 ||
-                        upscaledCords[i].ty >= perMipMapTilesState[lookupLevel -1].bounds.y2) {
+                    if (upscaledCords[i].tx < perMipMapTilesState[lookupLevel -1].boundsRoundedToTileSize.x1 ||
+                        upscaledCords[i].tx >= perMipMapTilesState[lookupLevel -1].boundsRoundedToTileSize.x2 ||
+                        upscaledCords[i].ty < perMipMapTilesState[lookupLevel -1].boundsRoundedToTileSize.y1 ||
+                        upscaledCords[i].ty >= perMipMapTilesState[lookupLevel -1].boundsRoundedToTileSize.y2) {
 #ifdef DEBUG
                         ++nInvalid;
 #endif
@@ -886,8 +886,10 @@ ImageCacheEntryPrivate::readAndUpdateStateMap(bool hasExclusiveLock)
 
     // For each tile in the RoI (rounded to the tile size):
     // Check the tile status, only copy from the cache if rendered
-    for (int ty = roi.y1; ty < roi.y2; ty += localTilesState.tileSizeY) {
-        for (int tx = roi.x1; tx < roi.x2; tx += localTilesState.tileSizeX) {
+    RectI roiRounded = roi;
+    roiRounded.roundToTileSize(localTilesState.tileSizeX, localTilesState.tileSizeY);
+    for (int ty = roiRounded.y1; ty < roiRounded.y2; ty += localTilesState.tileSizeY) {
+        for (int tx = roiRounded.x1; tx < roiRounded.x2; tx += localTilesState.tileSizeX) {
 
             assert(tx % localTilesState.tileSizeX == 0 && ty % localTilesState.tileSizeY == 0);
 
@@ -1538,8 +1540,10 @@ ImageCacheEntry::markCacheTilesAsRendered()
 
 #ifdef DEBUG
     // Check that all tiles are marked either rendered or pending
-    for (int ty = _imp->roi.y1; ty < _imp->roi.y2; ty += _imp->localTilesState.tileSizeY) {
-        for (int tx = _imp->roi.x1; tx < _imp->roi.x2; tx += _imp->localTilesState.tileSizeX) {
+    RectI roiRounded = _imp->roi;
+    roiRounded.roundToTileSize(_imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY);
+    for (int ty = roiRounded.y1; ty < roiRounded.y2; ty += _imp->localTilesState.tileSizeY) {
+        for (int tx = roiRounded.x1; tx < roiRounded.x2; tx += _imp->localTilesState.tileSizeX) {
 
             assert(tx % _imp->localTilesState.tileSizeX == 0 && ty % _imp->localTilesState.tileSizeY == 0);
             TileState* localTileState = _imp->localTilesState.getTileAt(tx, ty);

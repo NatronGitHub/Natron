@@ -80,32 +80,15 @@ EffectInstance::Implementation::~Implementation()
     }
 }
 
-
 FrameViewRequestPtr
-EffectInstance::Implementation::getFrameViewRequest(TimeValue time,
-                                        ViewIdx view) const
-{
-    // Needs to be locked: frame requests may be added spontaneously by the plug-in
-    QMutexLocker k(&renderData->lock);
-
-    FrameViewPair p = {time,view};
-    NodeFrameViewRequestData::const_iterator found = renderData->frames.find(p);
-    if (found == renderData->frames.end()) {
-        return FrameViewRequestPtr();
-    }
-    return found->second.lock();
-}
-
-
-bool
-EffectInstance::Implementation::getOrCreateFrameViewRequest(TimeValue time,
+EffectInstance::Implementation::createFrameViewRequest(TimeValue time,
                                                             ViewIdx view,
                                                             const RenderScale& proxyScale,
                                                             unsigned int mipMapLevel,
-                                                            const ImagePlaneDesc& plane,
-                                                            FrameViewRequestPtr* request)
+                                                            const ImagePlaneDesc& plane)
 {
     assert(renderData);
+    assert(!renderData->currentFrameView.lock());
     // Needs to be locked: frame requests may be added spontaneously by the plug-in
     U64 hash;
     {
@@ -115,27 +98,9 @@ EffectInstance::Implementation::getOrCreateFrameViewRequest(TimeValue time,
         args.hashType = HashableObject::eComputeHashTypeTimeViewVariant;
         hash = _publicInterface->computeHash(args);
     }
-    QMutexLocker k(&renderData->lock);
-
-    FrameViewPair p = {time, view};
-    {
-        NodeFrameViewRequestData::iterator found = renderData->frames.find(p);
-        if (found != renderData->frames.end()) {
-            *request = found->second.lock();
-            if (*request) {
-                return false;
-            }
-            // The request was destroyed because no other request needed it, remove it from the map
-            renderData->frames.erase(found);
-        }
-    }
-    
-    
-    
     FrameViewRequestPtr ret(new FrameViewRequest(time, view, proxyScale, mipMapLevel, plane, hash, _publicInterface->shared_from_this()));
-    renderData->frames.insert(std::make_pair(p, ret));
-    *request = ret;
-    return true;
+    renderData->currentFrameView = ret;
+    return ret;
 }
 
 

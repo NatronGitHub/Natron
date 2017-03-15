@@ -202,12 +202,13 @@ struct ImagePrivate
                         const RectI& roi,
                         const EffectInstancePtr& renderClone);
 
-    static void halveImage(const void* srcPtrs[4],
+    static ActionRetCodeEnum halveImage(const void* srcPtrs[4],
                            int nComps,
                            ImageBitDepthEnum bitdepth,
                            const RectI& srcBounds,
                            void* dstPtrs[4],
-                           const RectI& dstBounds);
+                           const RectI& dstBounds,
+                           const EffectInstancePtr& renderClone);
 
     static bool checkForNaNs(void* ptrs[4],
                              int nComps,

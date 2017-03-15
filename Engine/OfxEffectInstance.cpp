@@ -2225,7 +2225,7 @@ OfxEffectInstance::getInputCanReceiveTransform(int inputNb) const
         assert(false);
         return false;
     }
-    return _imp->common->clipsInfos[inputNb].canReceiveDistortion;
+    return _imp->common->clipsInfos[inputNb].canReceiveDeprecatedTransform3x3;
 
 }
 
@@ -2284,10 +2284,12 @@ OfxEffectInstance::getDistortion(TimeValue time,
 
 
     assert(stat == kOfxStatOK);
-
-    distortion->transformMatrix->a = tmpTransform[0]; distortion->transformMatrix->b = tmpTransform[1]; distortion->transformMatrix->c = tmpTransform[2];
-    distortion->transformMatrix->d = tmpTransform[3]; distortion->transformMatrix->e = tmpTransform[4]; distortion->transformMatrix->f = tmpTransform[5];
-    distortion->transformMatrix->g = tmpTransform[6]; distortion->transformMatrix->h = tmpTransform[7]; distortion->transformMatrix->i = tmpTransform[8];
+    if (!distortion->func) {
+        distortion->transformMatrix.reset(new Transform::Matrix3x3);
+        distortion->transformMatrix->a = tmpTransform[0]; distortion->transformMatrix->b = tmpTransform[1]; distortion->transformMatrix->c = tmpTransform[2];
+        distortion->transformMatrix->d = tmpTransform[3]; distortion->transformMatrix->e = tmpTransform[4]; distortion->transformMatrix->f = tmpTransform[5];
+        distortion->transformMatrix->g = tmpTransform[6]; distortion->transformMatrix->h = tmpTransform[7]; distortion->transformMatrix->i = tmpTransform[8];
+    }
 
 
     OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(clipName);
