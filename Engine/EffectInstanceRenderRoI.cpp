@@ -1414,6 +1414,7 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
     ImagePtr image = requestData->getImagePlane();
     if (requestData->getCachePolicy() != eCacheAccessModeNone) {
         // Allocate the cache storage image now if it was not yet allocated
+        assert(image);
         image->ensureBuffersAllocated();
     }
 

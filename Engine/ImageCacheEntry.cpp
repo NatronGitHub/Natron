@@ -479,7 +479,9 @@ public:
         for (int i = fromIndex; i < toIndex; ++i) {
 
             const TileData& task = *_tasks[i];
-
+            
+            assert(task.tileCache_i != (U64)-1);
+            
             // Intersect the tile bounds
             RectI tileBoundsRounded = task.bounds;
             tileBoundsRounded.roundToTileSize(_imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY);
@@ -670,6 +672,7 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(bool hasExclusiveLock,
 
             for (int k = 0; k < nComps; ++k) {
                 tile->perChannelTileIndices[k] = cacheTileState->channelsTileStorageIndex[k];
+                assert(tile->perChannelTileIndices[k] != (U64)-1);
             }
 
             // If the tile has become rendered at the requested mipmap level, mark it in the tiles to
@@ -1030,6 +1033,7 @@ ImageCacheEntryPrivate::buildTaskPyramidRecursive(unsigned int lookupLevel,
             assert(*existingTiles_i >= 0 && *existingTiles_i < (int)fetchedExistingTiles.size());
             outputTasks[c]->ptr = fetchedExistingTiles[*existingTiles_i];
             ++(*existingTiles_i);
+            assert(tile.perChannelTileIndices[c] != (U64)-1);
             outputTasks[c]->tileCache_i = tile.perChannelTileIndices[c];
             outputTasks[c]->bounds = tileBounds;
             outputTasks[c]->channel_i = c;
@@ -1039,6 +1043,7 @@ ImageCacheEntryPrivate::buildTaskPyramidRecursive(unsigned int lookupLevel,
                 tilesToCopy->push_back(outputTasks[c]);
             }
         }
+        
     } // tile.upscaleTiles[0]
     return outputTasks;
 } // buildTaskPyramidRecursive
@@ -1153,8 +1158,18 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
 
 
             TileState* cacheTileState = cacheStateMap.getTileAt(tx, ty);
+            assert(perLevelTilesToDownscale[i][j]->tileCache_i != (U64)-1);
             cacheTileState->channelsTileStorageIndex[perLevelTilesToDownscale[i][j]->channel_i] = perLevelTilesToDownscale[i][j]->tileCache_i;
 
+#ifdef DEBUG
+            // Check that upon the last channels, all tile indices are correct
+            if (perLevelTilesToDownscale[i][j]->channel_i == nComps -1) {
+                for (int c = 0; c < nComps; ++c) {
+                    assert(cacheTileState->channelsTileStorageIndex[c] != (U64)-1);
+                }
+            }
+#endif
+            
             // Update the tile state only for the first channel
             if (perLevelTilesToDownscale[i][j]->channel_i != 0) {
                 continue;
@@ -1176,6 +1191,7 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
             // Update the state locally if we are on the appropriate mip map level
             if (i == mipMapLevel) {
                 TileState* localTileState = localTilesState.getTileAt(tx, ty);
+                assert(perLevelTilesToDownscale[i][j]->tileCache_i != (U64)-1);
                 localTileState->channelsTileStorageIndex[perLevelTilesToDownscale[i][j]->channel_i] = perLevelTilesToDownscale[i][j]->tileCache_i;
 
                 assert(localTileState->status == eTileStatusNotRendered);
@@ -1564,6 +1580,7 @@ ImageCacheEntry::markCacheTilesAsRendered()
         int tx = (int)std::floor((double)tilesToCopy[i]->bounds.x1 / _imp->localTilesState.tileSizeX) * _imp->localTilesState.tileSizeX;
         int ty = (int)std::floor((double)tilesToCopy[i]->bounds.y1 / _imp->localTilesState.tileSizeY) * _imp->localTilesState.tileSizeY;
         TileState* cacheTileState = cacheStateMap.getTileAt(tx, ty);
+        assert(allocatedTiles[i].first != (U64)-1);
         cacheTileState->channelsTileStorageIndex[tilesToCopy[i]->channel_i] = allocatedTiles[i].first;
 
         TileState* localTileState = _imp->localTilesState.getTileAt(tx, ty);
@@ -1693,7 +1710,11 @@ static void toMemorySegmentInternal(bool copyPendingStatusToCache,
             cacheState.tiles.clear();
             cacheState.tiles.insert(cacheState.tiles.end(), localMipMapStates[i].tiles.begin(), localMipMapStates[i].tiles.end());
         } else {
-            assert(cacheState.tiles.size() == localMipMapStates[i].tiles.size());
+            assert(cacheState.tiles.size() == localMipMapStates[i].tiles.size() || localMipMapStates[i].tiles.empty());
+            if (localMipMapStates[i].tiles.empty()) {
+                // The tiles list may be empty if we are not at our mipmap level of interest
+                continue;
+            }
             TileStateVector::const_iterator localIt = localMipMapStates[i].tiles.begin();
             IPCTileStateVector::iterator cacheIt = cacheState.tiles.begin();
             for (;localIt != localMipMapStates[i].tiles.end(); ++localIt, ++cacheIt) {

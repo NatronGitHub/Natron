@@ -689,13 +689,15 @@ ReadNodePrivate::createReadNode(bool throwErrors,
     }
 
     // Refreh sub-graph connections
-    if (node) {
-        outputNode->swapInput(node, 0);
-        node->swapInput(inputNode, 0);
-    } else {
-        outputNode->swapInput(inputNode, 0);
+    if (outputNode) {
+        if (node) {
+            outputNode->swapInput(node, 0);
+            node->swapInput(inputNode, 0);
+        } else {
+            outputNode->swapInput(inputNode, 0);
+        }
     }
-
+    
     if (defaultFallback) {
         createDefaultReadNode();
     }
@@ -913,7 +915,10 @@ ReadNode::setupInitialSubGraphState()
         }
         _imp->inputNode = inputNode;
     }
-    if ( inputNode && outputNode && !outputNode->getInput(0) ) {
+    if (_imp->embeddedPlugin) {
+        outputNode->swapInput(_imp->embeddedPlugin, 0);
+        _imp->embeddedPlugin->swapInput(inputNode, 0);
+    } else {
         outputNode->connectInput(inputNode, 0);
     }
 
