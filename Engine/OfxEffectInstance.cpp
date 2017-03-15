@@ -248,6 +248,7 @@ OfxEffectInstance::describePlugin()
 
     assert(ofxPlugin && desc && _imp->common->context != eContextNone);
 
+
     if (_imp->common->context == eContextWriter) {
         _imp->common->isOutput = true;
     }

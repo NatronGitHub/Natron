@@ -1921,7 +1921,7 @@ private:
 
     friend class ReadNode;
     friend class WriteNode;
-
+    friend class ImageBitMapMarker_RAII;
 
 private:
 

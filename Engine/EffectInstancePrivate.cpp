@@ -570,7 +570,6 @@ EffectInstance::Implementation::renderHandlerPlugin(const RectToRender & rectToR
     return render->isRenderAborted() ? eActionStatusAborted : eActionStatusOK;
 } // renderHandlerPlugin
 
-
 ActionRetCodeEnum
 EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & rectToRender,
                                                          const TiledRenderingFunctorArgs& args)

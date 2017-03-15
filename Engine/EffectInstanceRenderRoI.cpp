@@ -249,6 +249,7 @@ EffectInstance::Implementation::handleConcatenation(const RequestPassSharedDataP
                                                     const RenderScale& renderScale,
                                                     const RectD& canonicalRoi,
                                                     bool *concatenated)
+
 {
     *concatenated = false;
     if (!_publicInterface->getCurrentRender()->isConcatenationEnabled()) {
@@ -968,7 +969,6 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const RequestPassShar
             _publicInterface->setPersistentMessage( eMessageTypeError, _publicInterface->tr("%1 asked for an infinite region of interest upstream.").arg( QString::fromUtf8( _publicInterface->getNode()->getScriptName_mt_safe().c_str() ) ).toStdString() );
             return eActionStatusFailed;
         }
-
         bool inputIsContinuous = inputEffect->canRenderContinuously();
 
         int nbRequestedFramesForInput = 0;
@@ -1069,6 +1069,7 @@ EffectInstance::requestRender(TimeValue timeInArgs,
     {
         int roundedTime = std::floor(time + 0.5);
 
+
         // A continuous effect is identity on itself on nearest integer time
         if (roundedTime != time && !canRenderContinuously()) {
             // We do not cache it because for non continuous effects we only cache stuff at
@@ -1132,9 +1133,9 @@ EffectInstance::requestRenderInternal(TimeValue time,
     if (requestData->getStatus() != FrameViewRequest::eFrameViewRequestStatusNotRendered) {
         if (requestData->getCurrentRoI().contains(roiCanonical)) {
             return eActionStatusOK;
+
         }
     }
-
 
     // Set the frame view request on the TLS for OpenFX
     SetCurrentFrameViewRequest_RAII tlsSetFrameViewRequest(shared_from_this(), requestData);
@@ -1398,6 +1399,7 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
         rod.toPixelEnclosing(mappedCombinedScale, par, &pixelRoDRenderMapped);
     }
 
+
 #ifdef DEBUG
     // Check that the image rendered in output is always rounded to the tile size intersected to the RoD
     {
@@ -1478,6 +1480,7 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
             if (!isFailureRetCode(renderRetCode)) {
                 renderRetCode = _imp->launchRenderForSafetyAndBackend(requestData, mappedCombinedScale, backendType, renderRects, renderLocalPlanes, cachedImagePlanes);
             }
+
 
         }
 

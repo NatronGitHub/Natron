@@ -371,6 +371,7 @@ public:
 
     Implementation(EffectInstance* publicInterface, const Implementation& other);
 
+
     ~Implementation();
 
 
@@ -534,7 +535,6 @@ public:
         std::map<ImagePlaneDesc, ImagePtr> localPlanes, cachedPlanes;
     };
 
-
     ActionRetCodeEnum tiledRenderingFunctor(const RectToRender & rectToRender,
                                             const TiledRenderingFunctorArgs& args);
 
@@ -548,7 +548,6 @@ public:
 
     ActionRetCodeEnum renderHandlerPostProcess(const RectToRender & rectToRender,
                                   const TiledRenderingFunctorArgs& args);
-
 
     void checkMetadata(NodeMetadata &metadata);
 

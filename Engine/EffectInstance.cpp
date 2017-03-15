@@ -1111,6 +1111,7 @@ EffectInstance::setPersistentMessage(MessageTypeEnum type,
     }
 }
 
+
 bool
 EffectInstance::hasPersistentMessage()
 {
@@ -1118,6 +1119,7 @@ EffectInstance::hasPersistentMessage()
     assert(node);
     return node ? node->hasPersistentMessage() : false;
 }
+
 
 void
 EffectInstance::clearPersistentMessage(bool recurse)

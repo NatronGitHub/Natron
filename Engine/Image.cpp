@@ -389,6 +389,7 @@ class FillProcessor : public ImageMultiThreadProcessorBase
     int _nComps;
     RGBAColourF _color;
 
+
 public:
 
     FillProcessor(const EffectInstancePtr& renderClone)
