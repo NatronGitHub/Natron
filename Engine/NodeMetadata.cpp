@@ -241,8 +241,9 @@ NodeMetadata::setPixelAspectRatio(int inputNb,
     if (inputNb == -1) {
         _imp->outputData.pixelAspectRatio = par;
     } else {
-        assert( inputNb < (int)_imp->inputsData.size() );
-        _imp->inputsData[inputNb].pixelAspectRatio = par;
+        if ( inputNb < (int)_imp->inputsData.size() ) {
+            _imp->inputsData[inputNb].pixelAspectRatio = par;
+        }
     }
 }
 
@@ -252,9 +253,11 @@ NodeMetadata::getPixelAspectRatio(int inputNb) const
     if (inputNb == -1) {
         return _imp->outputData.pixelAspectRatio;
     } else {
-        assert( inputNb < (int)_imp->inputsData.size() );
-
-        return _imp->inputsData[inputNb].pixelAspectRatio;
+        if ( inputNb < (int)_imp->inputsData.size() ) {
+            return _imp->inputsData[inputNb].pixelAspectRatio;
+        } else {
+            return 1.;
+        }
     }
 }
 
@@ -265,8 +268,10 @@ NodeMetadata::setBitDepth(int inputNb,
     if (inputNb == -1) {
         _imp->outputData.bitdepth = depth;
     } else {
-        assert( inputNb < (int)_imp->inputsData.size() );
-        _imp->inputsData[inputNb].bitdepth = depth;
+        if ( inputNb < (int)_imp->inputsData.size() ) {
+            _imp->inputsData[inputNb].bitdepth = depth;
+        }
+        
     }
 }
 
@@ -276,9 +281,11 @@ NodeMetadata::getBitDepth(int inputNb) const
     if (inputNb == -1) {
         return _imp->outputData.bitdepth;
     } else {
-        assert( inputNb < (int)_imp->inputsData.size() );
-
-        return _imp->inputsData[inputNb].bitdepth;
+        if ( inputNb < (int)_imp->inputsData.size() ) {
+            return _imp->inputsData[inputNb].bitdepth;
+        } else {
+            return eImageBitDepthFloat;
+        }
     }
 }
 
@@ -289,8 +296,9 @@ NodeMetadata::setImageComponents(int inputNb,
     if (inputNb == -1) {
         _imp->outputData.components = components;
     } else {
-        assert( inputNb < (int)_imp->inputsData.size() );
-        _imp->inputsData[inputNb].components = components;
+        if ( inputNb < (int)_imp->inputsData.size() ) {
+            _imp->inputsData[inputNb].components = components;
+        }
     }
 }
 
@@ -300,9 +308,11 @@ NodeMetadata::getImageComponents(int inputNb) const
     if (inputNb == -1) {
         return _imp->outputData.components;
     } else {
-        assert( inputNb < (int)_imp->inputsData.size() );
-
-        return _imp->inputsData[inputNb].components;
+        if ( inputNb < (int)_imp->inputsData.size() ) {
+            return _imp->inputsData[inputNb].components;
+        } else {
+            return ImageComponents::getRGBAComponents();
+        }
     }
 }
 
