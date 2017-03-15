@@ -686,9 +686,14 @@ WriteNode::setupInitialSubGraphState()
         }
         _imp->inputNode = inputNode;
     }
-    if ( inputNode && outputNode && !outputNode->getInput(0) ) {
-        outputNode->connectInput(inputNode, 0);
+    NodePtr writeNode = _imp->embeddedPlugin.lock();
+    if (writeNode) {
+        outputNode->swapInput(writeNode, 0);
+        writeNode->swapInput(inputNode, 0);
+    } else {
+        outputNode->swapInput(inputNode, 0);
     }
+    
 
 } // setupInitialSubGraphState
 
@@ -813,22 +818,21 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
 
     // Make the write node be a pass-through while we do not render
     NodePtr writeNode = embeddedPlugin.lock();
-
+    
     bool readFromFile = readBackKnob.lock()->getValue();
     if (readFromFile) {
         createReadNodeAndConnectGraph(filename);
     } else {
         NodePtr input = inputNode.lock(), output = outputNode.lock();
-        if (writeNode) {
-            output->swapInput(writeNode, 0);
-            writeNode->swapInput(input, 0);
-        } else {
-            output->swapInput(input, 0);
+        if (output) {
+            if (writeNode) {
+                output->swapInput(writeNode, 0);
+                writeNode->swapInput(input, 0);
+            } else {
+                output->swapInput(input, 0);
+            }
         }
     }
-
-    // There should always be a single input node
-    assert(_publicInterface->getMaxInputCount() == 1);
 
     _publicInterface->findPluginFormatKnobs();
 
