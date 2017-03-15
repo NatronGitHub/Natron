@@ -68,6 +68,7 @@ EffectInstanceActionKeyBase::fromMemorySegment(ExternalSegmentType* segment, Ext
         return eFromMemorySegmentRetCodeFailed;
     }
     readAnonymousSharedObject(*start,segment, &_data);
+    return eFromMemorySegmentRetCodeOk;
 } // fromMemorySegment
 
 

@@ -1697,6 +1697,11 @@ static void toMemorySegmentInternal(bool copyPendingStatusToCache,
             TileStateVector::const_iterator localIt = localMipMapStates[i].tiles.begin();
             IPCTileStateVector::iterator cacheIt = cacheState.tiles.begin();
             for (;localIt != localMipMapStates[i].tiles.end(); ++localIt, ++cacheIt) {
+                
+                // Do not write over rendered tiles
+                if (cacheIt->status == eTileStatusRendered) {
+                    continue;
+                }
                 if (localIt->status == eTileStatusNotRendered || localIt->status == eTileStatusRendered) {
                     *cacheIt = *localIt;
                 }
