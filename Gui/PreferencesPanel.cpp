@@ -1080,7 +1080,10 @@ PreferencesPanel::onSettingChanged(const KnobIPtr& knob, ValueChangedReasonEnum 
     if (reason != eValueChangedReasonUserEdited && reason != eValueChangedReasonUserEdited && reason != eValueChangedReasonRestoreDefault) {
         return;
     }
-    if (appPTR->getCurrentSettings()->doesKnobChangeRequiresRestart(knob)) {
+    if (appPTR->getCurrentSettings()->doesKnobChangeRequireOFXCacheClear(knob)) {
+        appPTR->clearPluginsLoadedCache(); // clear the cache for next restart
+    }
+    if (appPTR->getCurrentSettings()->doesKnobChangeRequireRestart(knob)) {
         _imp->warningContainer->show();
     }
     for (U32 i = 0; i < _imp->changedKnobs.size(); ++i) {
