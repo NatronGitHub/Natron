@@ -488,11 +488,12 @@ EffectInstance::Implementation::setDuringInteractAction(bool b)
 
 #if NATRON_ENABLE_TRIMAP
 void
-EffectInstance::Implementation::markImageAsBeingRendered(const boost::shared_ptr<Image> & img)
+EffectInstance::Implementation::markImageAsBeingRendered(const boost::shared_ptr<Image> & img, const RectI& roi, std::list<RectI>* restToRender, bool *renderedElsewhere)
 {
     if ( !img->usesBitMap() ) {
         return;
     }
+
     QMutexLocker k(&imagesBeingRenderedMutex);
     IBRMap::iterator found = imagesBeingRendered.find(img);
     if ( found != imagesBeingRendered.end() ) {
@@ -500,12 +501,20 @@ EffectInstance::Implementation::markImageAsBeingRendered(const boost::shared_ptr
     } else {
         IBRPtr ibr(new Implementation::ImageBeingRendered);
         ++ibr->refCount;
-        imagesBeingRendered.insert( std::make_pair(img, ibr) );
+        std::pair<IBRMap::iterator, bool> ok = imagesBeingRendered.insert( std::make_pair(img, ibr) );
+        assert(ok.second);
+        found = ok.first;
     }
+    QMutexLocker k2(&found->second->lock);
+    img->getRestToRender_trimap(roi, *restToRender, renderedElsewhere);
+    for (std::list<RectI>::const_iterator it = restToRender->begin(); it!=restToRender->end();++it) {
+        img->markForRendering(*it);
+    }
+
 }
 
 bool
-EffectInstance::Implementation::waitForImageBeingRenderedElsewhereAndUnmark(const RectI & roi,
+EffectInstance::Implementation::waitForImageBeingRenderedElsewhere(const RectI & roi,
                                                                             const boost::shared_ptr<Image> & img)
 {
     if ( !img->usesBitMap() ) {
@@ -525,39 +534,21 @@ EffectInstance::Implementation::waitForImageBeingRenderedElsewhereAndUnmark(cons
     bool ab = _publicInterface->aborted();
     {
         QMutexLocker kk(&ibr->lock);
-        while (!ab && isBeingRenderedElseWhere && !ibr->renderFailed && ibr->refCount > 1) {
-            ibr->cond.wait(&ibr->lock);
+        while (!ab && isBeingRenderedElseWhere && !ibr->failed && ibr->refCount > 1) {
+            ibr->cond.wait(&ibr->lock, 50);
             isBeingRenderedElseWhere = false;
             img->getRestToRender_trimap(roi, restToRender, &isBeingRenderedElseWhere);
             ab = _publicInterface->aborted();
         }
     }
 
-    ///Everything should be rendered now.
-    bool hasFailed;
-    {
-        QMutexLocker k(&imagesBeingRenderedMutex);
-        IBRMap::iterator found = imagesBeingRendered.find(img);
-        assert( found != imagesBeingRendered.end() );
-
-        QMutexLocker kk(&ibr->lock);
-        hasFailed = ab || ibr->renderFailed || isBeingRenderedElseWhere;
-
-        // If it crashes here, that is probably because ibr->refCount == 1, but in this case isBeingRenderedElseWhere should be false.
-        // If this assert is triggered, please investigate, this is a serious bug in the trimap system.
-        assert(ab || !isBeingRenderedElseWhere || ibr->renderFailed);
-        --ibr->refCount;
-        found->second->cond.wakeAll();
-        if ( ( found != imagesBeingRendered.end() ) && !ibr->refCount ) {
-            imagesBeingRendered.erase(found);
-        }
-    }
-
-    return !hasFailed;
+    ///Everything should be rendered now unless we are aborted
+    return restToRender.empty() && !ibr->failed && !ab;
 }
 
 void
 EffectInstance::Implementation::unmarkImageAsBeingRendered(const boost::shared_ptr<Image> & img,
+                                                           const std::list<RectI>& rects,
                                                            bool renderFailed)
 {
     if ( !img->usesBitMap() ) {
@@ -569,8 +560,16 @@ EffectInstance::Implementation::unmarkImageAsBeingRendered(const boost::shared_p
 
     QMutexLocker kk(&found->second->lock);
     if (renderFailed) {
-        found->second->renderFailed = true;
+        found->second->failed = true;
     }
+    for (std::list<RectI>::const_iterator it = rects.begin(); it!=rects.end();++it) {
+        if (renderFailed) {
+            img->clearBitmap(*it);
+        } else {
+            img->markForRendered(*it);
+        }
+    }
+
     found->second->cond.wakeAll();
     --found->second->refCount;
     if (!found->second->refCount) {
