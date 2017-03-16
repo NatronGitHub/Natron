@@ -203,8 +203,8 @@ RotoDrawableItem::RotoDrawableItem(const KnobItemsTablePtr& model)
 }
 
 
-RotoDrawableItem::RotoDrawableItem(const RotoDrawableItemPtr& other, const TreeRenderPtr& render)
-: RotoItem(other, render)
+RotoDrawableItem::RotoDrawableItem(const RotoDrawableItemPtr& other, const FrameViewRenderKey& key)
+: RotoItem(other, key)
 , _imp(new RotoDrawableItemPrivate(*other->_imp))
 {
 

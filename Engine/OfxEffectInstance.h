@@ -59,8 +59,8 @@ protected: // derives from EffectInstance, parent of OfxEffectInstance
     {
     }
 
-    AbstractOfxEffectInstance(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render)
-    : EffectInstance(mainInstance, render)
+    AbstractOfxEffectInstance(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key)
+    : EffectInstance(mainInstance, key)
     {
     }
 
@@ -102,16 +102,16 @@ private: // derives from EffectInstance
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     OfxEffectInstance(const NodePtr& node);
 
-    OfxEffectInstance(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render);
+    OfxEffectInstance(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key);
 public:
     static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
     {
         return EffectInstancePtr( new OfxEffectInstance(node) );
     }
 
-    static EffectInstancePtr createRenderClone(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render) WARN_UNUSED_RETURN
+    static EffectInstancePtr createRenderClone(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key) WARN_UNUSED_RETURN
     {
-        return EffectInstancePtr(new  OfxEffectInstance(mainInstance, render));
+        return EffectInstancePtr(new  OfxEffectInstance(mainInstance, key));
     }
 
     virtual ~OfxEffectInstance();

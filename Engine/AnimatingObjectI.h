@@ -175,7 +175,7 @@ public:
 
     AnimatingObjectI();
 
-    AnimatingObjectI(const boost::shared_ptr<AnimatingObjectI>& other, const TreeRenderPtr& render);
+    AnimatingObjectI(const boost::shared_ptr<AnimatingObjectI>& other, const FrameViewRenderKey& key);
 
     virtual ~AnimatingObjectI();
 
@@ -248,7 +248,7 @@ public:
      * is a render thread, this can be the view being rendered by this thread, otherwise this
      * can be the current view visualized by the UI.
      **/
-    virtual ViewIdx getCurrentView_TLS() const = 0;
+    virtual ViewIdx getCurrentRenderView() const = 0;
 
     /**
      * @brief Helper function to use in any getter/setter function when the user gives a ViewIdx

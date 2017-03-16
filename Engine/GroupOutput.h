@@ -51,8 +51,8 @@ private: // derives from EffectInstance
     {
     }
 
-    GroupOutput(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render)
-    : NoOpBase(mainInstance, render)
+    GroupOutput(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key)
+    : NoOpBase(mainInstance, key)
     {
     }
 
@@ -62,9 +62,9 @@ public:
         return EffectInstancePtr( new GroupOutput(node) );
     }
 
-    static EffectInstancePtr createRenderClone(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render) WARN_UNUSED_RETURN
+    static EffectInstancePtr createRenderClone(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key) WARN_UNUSED_RETURN
     {
-        return EffectInstancePtr( new GroupOutput(mainInstance, render) );
+        return EffectInstancePtr( new GroupOutput(mainInstance, key) );
     }
 
     static PluginPtr createPlugin();

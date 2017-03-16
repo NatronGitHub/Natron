@@ -109,7 +109,7 @@ ViewerTabPrivate::getOverlayTransform(TimeValue time,
             disto = results->getResults();
         }
         if (disto && disto->inputNbToDistort != -1) {
-            input = currentNode->getInput(disto->inputNbToDistort);
+            input = currentNode->getInputMainInstance(disto->inputNbToDistort);
         }
         if (!input) {
             return false;
@@ -144,7 +144,7 @@ ViewerTabPrivate::getOverlayTransform(TimeValue time,
         // We cycle in reverse by default. It should be a setting of the application.
         // In this case it will return input B instead of input A of a merge for example.
         for (int i = maxInp - 1; i >= 0; --i) {
-            EffectInstancePtr inp = currentNode->getInput(i);
+            EffectInstancePtr inp = currentNode->getInputMainInstance(i);
             bool optional = currentNode->isInputOptional(i);
             if (inp) {
                 if (optional) {
@@ -251,7 +251,7 @@ ViewerTabPrivate::getTimeTransform(TimeValue time,
     ///We cycle in reverse by default. It should be a setting of the application.
     ///In this case it will return input B instead of input A of a merge for example.
     for (int i = maxInp - 1; i >= 0; --i) {
-        EffectInstancePtr inp = currentNode->getInput(i);
+        EffectInstancePtr inp = currentNode->getInputMainInstance(i);
         bool optional = currentNode->isInputOptional(i);
         if (inp) {
             if (optional) {
@@ -270,7 +270,7 @@ ViewerTabPrivate::getTimeTransform(TimeValue time,
     for (std::list<int> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
         TimeValue inputTime;
         bool isOk = false;
-        EffectInstancePtr input = currentNode->getInput(*it);
+        EffectInstancePtr input = currentNode->getInputMainInstance(*it);
         if (input) {
 
             if ( !currentNode->getNode()->getEffectInstance()->isNodeDisabledForFrame(time, view) ) {
@@ -291,7 +291,7 @@ ViewerTabPrivate::getTimeTransform(TimeValue time,
     for (std::list<int> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
         TimeValue inputTime;
         bool isOk = false;
-        EffectInstancePtr input = currentNode->getInput(*it);
+        EffectInstancePtr input = currentNode->getInputMainInstance(*it);
         if (input) {
             if ( !currentNode->getNode()->getEffectInstance()->isNodeDisabledForFrame(time, view) ) {
                 *newTime = transformTimeForNode(currentNode, *it, time, view);

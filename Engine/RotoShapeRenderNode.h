@@ -56,7 +56,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
     RotoShapeRenderNode(NodePtr n);
 
-    RotoShapeRenderNode(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render);
+    RotoShapeRenderNode(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key);
 public:
 
     static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
@@ -64,9 +64,9 @@ public:
         return EffectInstancePtr( new RotoShapeRenderNode(node) );
     }
 
-    static EffectInstancePtr createRenderClone(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render) WARN_UNUSED_RETURN
+    static EffectInstancePtr createRenderClone(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key) WARN_UNUSED_RETURN
     {
-        return EffectInstancePtr( new RotoShapeRenderNode(mainInstance, render) );
+        return EffectInstancePtr( new RotoShapeRenderNode(mainInstance, key) );
     }
 
 

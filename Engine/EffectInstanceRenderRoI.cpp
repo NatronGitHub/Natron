@@ -122,7 +122,7 @@ EffectInstance::Implementation::handlePassThroughPlanes(const FrameViewRequestPt
 
         GetComponentsResultsPtr results = requestData->getComponentsResults();
         if (!results) {
-            ActionRetCodeEnum stat = _publicInterface->getLayersProducedAndNeeded_public(requestData->getTime(), requestData->getView(), &results);
+            ActionRetCodeEnum stat = _publicInterface->getLayersProducedAndNeeded_public(_publicInterface->getCurrentRenderTime(), _publicInterface->getCurrentRenderView(), &results);
             if (isFailureRetCode(stat)) {
                 return stat;
             }
@@ -162,7 +162,7 @@ EffectInstance::Implementation::handlePassThroughPlanes(const FrameViewRequestPt
                 } else {
                     // Fetch the plane on the pass-through input
                     
-                    EffectInstancePtr ptInput = _publicInterface->getInput(passThroughInputNb);
+                    EffectInstancePtr ptInput = _publicInterface->getInputMainInstance(passThroughInputNb);
                     if (!ptInput) {
                         return eActionStatusInputDisconnected;
                     }
@@ -202,7 +202,7 @@ EffectInstance::Implementation::handleIdentityEffect(double par,
 
         IsIdentityResultsPtr results;
         {
-            ActionRetCodeEnum stat = _publicInterface->isIdentity_public(true, requestData->getTime(), combinedScale, pixelRod, requestData->getView(),  &results);
+            ActionRetCodeEnum stat = _publicInterface->isIdentity_public(true, _publicInterface->getCurrentRenderTime(), combinedScale, pixelRod, _publicInterface->getCurrentRenderView(),  &results);
             if (isFailureRetCode(stat)) {
                 return stat;
             }
@@ -220,8 +220,8 @@ EffectInstance::Implementation::handleIdentityEffect(double par,
     if (inputNbIdentity == -2) {
 
         // Be safe: we may hit an infinite recursion without this check
-        assert(inputTimeIdentity != requestData->getTime());
-        if ( inputTimeIdentity == requestData->getTime()) {
+        assert(inputTimeIdentity != _publicInterface->getCurrentRenderTime());
+        if ( inputTimeIdentity == _publicInterface->getCurrentRenderTime()) {
             return eActionStatusFailed;
         }
 
@@ -230,7 +230,7 @@ EffectInstance::Implementation::handleIdentityEffect(double par,
 
     } else {
         assert(inputNbIdentity != -1);
-        EffectInstancePtr identityInput = _publicInterface->getInput(inputNbIdentity);
+        EffectInstancePtr identityInput = _publicInterface->getInputMainInstance(inputNbIdentity);
         if (!identityInput) {
             return eActionStatusInputDisconnected;
         }
@@ -265,7 +265,7 @@ EffectInstance::Implementation::handleConcatenation(const RequestPassSharedDataP
 
     EffectInstancePtr requesterEffect;
     if (requester) {
-        requesterEffect = requester->getRenderClone();
+        requesterEffect = requester->getEffect();
     }
     bool requesterCanReceiveDeprecatedTransform3x3 = false;
     bool requesterCanReceiveDistortionFunc = false;
@@ -285,7 +285,7 @@ EffectInstance::Implementation::handleConcatenation(const RequestPassSharedDataP
     {
         GetDistortionResultsPtr results = requestData->getDistortionResults();
         if (!results) {
-            ActionRetCodeEnum stat = _publicInterface->getDistortion_public(requestData->getTime(), renderScale, requestData->getView(), &results);
+            ActionRetCodeEnum stat = _publicInterface->getDistortion_public(_publicInterface->getCurrentRenderTime(), renderScale, _publicInterface->getCurrentRenderView(), &results);
             if (isFailureRetCode(stat)) {
                 return stat;
             }
@@ -309,13 +309,13 @@ EffectInstance::Implementation::handleConcatenation(const RequestPassSharedDataP
     assert((disto->func && requesterCanReceiveDistortionFunc) || disto->transformMatrix);
 
     // Recurse on input given by plug-in
-    EffectInstancePtr distoInput = _publicInterface->getInput(disto->inputNbToDistort);
+    EffectInstancePtr distoInput = _publicInterface->getInputMainInstance(disto->inputNbToDistort);
     if (!distoInput) {
         return eActionStatusInputDisconnected;
     }
 
     FrameViewRequestPtr inputRequest;
-    distoInput->requestRender(requestData->getTime(), requestData->getView(), requestData->getProxyScale(), requestData->getMipMapLevel(), requestData->getPlaneDesc(), canonicalRoi, disto->inputNbToDistort, requestData, requestPassSharedData, &inputRequest, 0);
+    distoInput->requestRender(_publicInterface->getCurrentRenderTime(), _publicInterface->getCurrentRenderView(), requestData->getProxyScale(), requestData->getMipMapLevel(), requestData->getPlaneDesc(), canonicalRoi, disto->inputNbToDistort, requestData, requestPassSharedData, &inputRequest, 0);
 
     // Create a distorsion stack that will be applied by the effect downstream
     Distortion2DStackPtr distoStack(new Distortion2DStack);
@@ -348,8 +348,7 @@ EffectInstance::Implementation::handleConcatenation(const RequestPassSharedDataP
 } // handleConcatenation
 
 bool
-EffectInstance::Implementation::canSplitRenderWindowWithIdentityRectangles(const FrameViewRequestPtr& requestPassData,
-                                                                           const RenderScale& renderMappedScale,
+EffectInstance::Implementation::canSplitRenderWindowWithIdentityRectangles(const RenderScale& renderMappedScale,
                                                                            RectD* inputRoDIntersectionCanonical)
 {
     RectD inputsIntersection;
@@ -357,12 +356,16 @@ EffectInstance::Implementation::canSplitRenderWindowWithIdentityRectangles(const
     bool hasDifferentRods = false;
     int maxInput = _publicInterface->getMaxInputCount();
     bool hasMask = false;
+
+    TimeValue time = _publicInterface->getCurrentRenderTime();
+    ViewIdx view = _publicInterface->getCurrentRenderView();
+
     for (int i = 0; i < maxInput; ++i) {
 
         hasMask |= _publicInterface->isInputMask(i);
         RectD inputRod;
 
-        EffectInstancePtr input = _publicInterface->getInput(i);
+        EffectInstancePtr input = _publicInterface->getInputRenderEffect(i, time, view);
         if (!input) {
             continue;
         }
@@ -375,7 +378,7 @@ EffectInstance::Implementation::canSplitRenderWindowWithIdentityRectangles(const
         } else {
 
             GetRegionOfDefinitionResultsPtr rodResults;
-            ActionRetCodeEnum stat = input->getRegionOfDefinition_public(requestPassData->getTime(), renderMappedScale, requestPassData->getView(), &rodResults);
+            ActionRetCodeEnum stat = input->getRegionOfDefinition_public(time, renderMappedScale, view, &rodResults);
             if (isFailureRetCode(stat)) {
                 break;
             }
@@ -499,11 +502,14 @@ EffectInstance::Implementation::checkRestToRender(bool updateTilesStateFromCache
     {
         RectD inputRodIntersection;
         RectI inputRodIntersectionPixel;
-        if (canSplitRenderWindowWithIdentityRectangles(requestData, renderMappedScale, &inputRodIntersection)) {
+        if (canSplitRenderWindowWithIdentityRectangles(renderMappedScale, &inputRodIntersection)) {
 
             double par = _publicInterface->getAspectRatio(-1);
             inputRodIntersection.toPixelEnclosing(renderMappedScale, par, &inputRodIntersectionPixel);
-            
+
+            TimeValue time = _publicInterface->getCurrentRenderTime();
+            ViewIdx view = _publicInterface->getCurrentRenderView();
+
             // For each tile, if outside of the input intersections, check if it is identity.
             // If identity mark as rendered, and add to the RectToRender list.
             for (TileStateVector::iterator it = tilesState.state->tiles.begin(); it != tilesState.state->tiles.end(); ++it) {
@@ -515,7 +521,7 @@ EffectInstance::Implementation::checkRestToRender(bool updateTilesStateFromCache
                     ViewIdx inputIdentityView;
                     {
                         IsIdentityResultsPtr results;
-                        ActionRetCodeEnum stat = _publicInterface->isIdentity_public(false, requestData->getTime(), renderMappedScale, it->bounds, requestData->getView(), &results);
+                        ActionRetCodeEnum stat = _publicInterface->isIdentity_public(false, time, renderMappedScale, it->bounds, view, &results);
                         if (isFailureRetCode(stat)) {
                             continue;
                         } else {
@@ -601,8 +607,8 @@ EffectInstance::Implementation::createCachedImage(const FrameViewRequestPtr& req
     U64 nodeFrameViewHash;
     {
         HashableObject::ComputeHashArgs args;
-        args.time = requestPassData->getTime();
-        args.view = requestPassData->getView();
+        args.time = _publicInterface->getCurrentRenderTime();
+        args.view = _publicInterface->getCurrentRenderView();
         args.hashType = HashableObject::eComputeHashTypeTimeViewVariant;
         nodeFrameViewHash = _publicInterface->computeHash(args);
     }
@@ -864,7 +870,7 @@ EffectInstance::Implementation::launchRenderForSafetyAndBackend(const FrameViewR
     EffectOpenGLContextDataPtr glContextData;
     if (backendType == eRenderBackendTypeOpenGL ||
         backendType == eRenderBackendTypeOSMesa) {
-        ActionRetCodeEnum stat = _publicInterface->attachOpenGLContext_public(requestData->getTime(), requestData->getView(), combinedScale, glContext, &glContextData);
+        ActionRetCodeEnum stat = _publicInterface->attachOpenGLContext_public(_publicInterface->getCurrentRenderTime(), _publicInterface->getCurrentRenderView(), combinedScale, glContext, &glContextData);
         if (isFailureRetCode(stat)) {
             renderRetCode = stat;
         }
@@ -905,11 +911,14 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const RequestPassShar
     // For all frames/views needed, recurse on inputs with the appropriate RoI
 
     // Get frames needed to recurse upstream
+    TimeValue time = _publicInterface->getCurrentRenderTime();
+    ViewIdx view = _publicInterface->getCurrentRenderView();
+
     FramesNeededMap framesNeeded;
     {
         GetFramesNeededResultsPtr results = requestPassData->getFramesNeededResults();
         if (!results) {
-            ActionRetCodeEnum stat = _publicInterface->getFramesNeeded_public(requestPassData->getTime(), requestPassData->getView(),  &results);
+            ActionRetCodeEnum stat = _publicInterface->getFramesNeeded_public(time, view,  &results);
             if (isFailureRetCode(stat)) {
                 return stat;
             }
@@ -918,14 +927,14 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const RequestPassShar
         results->getFramesNeeded(&framesNeeded);
     }
 
-    RenderScale combinedScale = EffectInstance::Implementation::getCombinedScale(mipMapLevel, proxyScale);
+    RenderScale combinedScale = EffectInstance::getCombinedScale(mipMapLevel, proxyScale);
 
     // Compute the regions of interest in input for this RoI.
     // The regions of interest returned is only valid for this RoI, we don't cache it. Rather we cache on the input the bounding box
     // of all the calls of getRegionsOfInterest that were made down-stream so that the node gets rendered only once.
     RoIMap inputsRoi;
     {
-        ActionRetCodeEnum stat = _publicInterface->getRegionsOfInterest_public(requestPassData->getTime(), combinedScale, roiCanonical, requestPassData->getView(), &inputsRoi);
+        ActionRetCodeEnum stat = _publicInterface->getRegionsOfInterest_public(time, combinedScale, roiCanonical, view, &inputsRoi);
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -934,12 +943,13 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const RequestPassShar
     for (FramesNeededMap::const_iterator it = framesNeeded.begin(); it != framesNeeded.end(); ++it) {
 
         int inputNb = it->first;
-        EffectInstancePtr inputEffect = _publicInterface->getInput(inputNb);
-        if (!inputEffect) {
-            continue;
-        }
 
         assert(inputNb != -1);
+
+        EffectInstancePtr mainInstanceInput = _publicInterface->getInputMainInstance(inputNb);
+        if (!mainInstanceInput) {
+            continue;
+        }
 
 
         ///There cannot be frames needed without components needed.
@@ -975,7 +985,7 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const RequestPassShar
             _publicInterface->setPersistentMessage( eMessageTypeError, _publicInterface->tr("%1 asked for an infinite region of interest upstream.").arg( QString::fromUtf8( _publicInterface->getNode()->getScriptName_mt_safe().c_str() ) ).toStdString() );
             return eActionStatusFailed;
         }
-        bool inputIsContinuous = inputEffect->canRenderContinuously();
+        bool inputIsContinuous = mainInstanceInput->canRenderContinuously();
 
         int nbRequestedFramesForInput = 0;
         {
@@ -1008,6 +1018,13 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const RequestPassShar
                                 inputTime = TimeValue(roundedInputTime);
                             }
                         }
+
+                        EffectInstancePtr inputEffect = _publicInterface->getInputRenderEffect(inputNb, inputTime, viewIt->first);
+                        if (!inputEffect) {
+                            continue;
+                        }
+
+
                         for (std::list<ImagePlaneDesc>::const_iterator planeIt = inputPlanesNeeded->begin(); planeIt != inputPlanesNeeded->end(); ++planeIt) {
                             FrameViewRequestPtr createdRequest;
                             ActionRetCodeEnum stat = inputEffect->requestRender(inputTime, viewIt->first, proxyScale, mipMapLevel, *planeIt, inputRoI, inputNb, requestPassData, requestPassSharedData, &createdRequest, 0);
@@ -1084,52 +1101,69 @@ EffectInstance::requestRender(TimeValue timeInArgs,
         }
     }
 
-    EffectInstancePtr renderClone = toEffectInstance(createRenderClone(requestPassSharedData->getTreeRender()));
+    // For each different time/view pairs in the TreeRender, we create a specific render clone. We need need to do so because most knob functions take a time/view in parameter that can only be
+    // recovered locally on the effect. To avoid the use of thread local storage, we make minimal render clones.
+    //
+    // The mipMapLevel, proxyScale and plane is an argument of the render action but we do not create a clone just for that, instead we create a FrameViewRequest object to identify the render request.
+    // A render clone may concurrently one or multiple FrameViewRequest, though all belong to the same TreeRender.
+
+    FrameViewRenderKey frameViewKey = {time, view, requestPassSharedData->getTreeRender()};
+    EffectInstancePtr renderClone;
+    if (requester && requester->getEffect().get() == this && requester->getEffect()->isRenderClone()) {
+        // If request render is called recursively on the same node (e.g: identity with -2), we use the same render clone
+        renderClone = requester->getEffect();
+    } else {
+        renderClone = toEffectInstance(createRenderClone(frameViewKey));
+    }
     assert(renderClone);
     if (createdRenderClone) {
         *createdRenderClone = renderClone;
     }
-    return renderClone->requestRenderInternal(time, view, proxyScale, mipMapLevel, plane, roiCanonical, inputNbInRequester, requester, requestPassSharedData, createdRequest);
+
+
+    if (inputNbInRequester >= 0 && requester && requester->getEffect() != renderClone) {
+        FrameViewPair p = {time, view};
+        requester->getEffect()->_imp->renderData->renderInputs[inputNbInRequester].insert(std::make_pair(p, renderClone));
+    }
+
+    FrameViewKey requestKey = {mipMapLevel, proxyScale, plane};
+    FrameViewRequestMap::iterator foundMatchingRequest = renderClone->_imp->renderData->requests.find(requestKey);
+    if (foundMatchingRequest != renderClone->_imp->renderData->requests.end()) {
+        *createdRequest = foundMatchingRequest->second.lock();
+        if (!*createdRequest) {
+            renderClone->_imp->renderData->requests.erase(foundMatchingRequest);
+        }
+    }
+    if (!*createdRequest) {
+        createdRequest->reset(new FrameViewRequest(plane, mipMapLevel, proxyScale, renderClone, requestPassSharedData->getTreeRender()));
+        renderClone->_imp->renderData->requests.insert(std::make_pair(requestKey, *createdRequest));
+    }
+
+
+    // When exiting this function, add the request to the dependency free list if it has no dependencies.
+    AddDependencyFreeRender_RAII addDependencyFreeRender(requestPassSharedData, *createdRequest);
+
+    // Add this frame/view as depdency of the requester
+    if (requester) {
+        requester->addDependency(requestPassSharedData, *createdRequest);
+        (*createdRequest)->addListener(requestPassSharedData, requester);
+    }
+
+    return renderClone->requestRenderInternal(roiCanonical, inputNbInRequester, *createdRequest, requester, requestPassSharedData);
 } // requestRender
 
 ActionRetCodeEnum
-EffectInstance::requestRenderInternal(TimeValue time,
-                                      ViewIdx view,
-                                      const RenderScale& proxyScale,
-                                      unsigned int mipMapLevel,
-                                      const ImagePlaneDesc& plane,
-                                      const RectD & roiCanonical,
+EffectInstance::requestRenderInternal(const RectD & roiCanonical,
                                       int inputNbInRequester,
+                                      const FrameViewRequestPtr& requestData,
                                       const FrameViewRequestPtr& requester,
-                                      const RequestPassSharedDataPtr& requestPassSharedData,
-                                      FrameViewRequestPtr* createdRequest)
+                                      const RequestPassSharedDataPtr& requestPassSharedData)
 {
 
 
     TreeRenderPtr render = getCurrentRender();
     assert(render);
     
-    FrameViewRequestPtr requestData;
-    {
-        FrameViewPair frameView;
-        // Requested time is rounded to an epsilon so we can be sure to find it again in getImage, accounting for precision
-        frameView.time = time;
-        frameView.view = view;
-
-        // Create the frame/view request object
-        requestData = _imp->createFrameViewRequest(frameView.time, frameView.view, proxyScale, mipMapLevel, plane);
-        *createdRequest = requestData;
-    }
-
-    // When exiting this function, add the request to the dependency free list if it has no dependencies.
-    AddDependencyFreeRender_RAII addDependencyFreeRender(requestPassSharedData, requestData);
-
-
-    // Add this frame/view as depdency of the requester
-    if (requester) {
-        requester->addDependency(requestPassSharedData, requestData);
-        requestData->addListener(requestPassSharedData, requester);
-    }   
 
     // If this request was already requested, don't request again except if the RoI is not
     // contained in the request RoI
@@ -1140,16 +1174,14 @@ EffectInstance::requestRenderInternal(TimeValue time,
         }
     }
 
-    // Set the frame view request on the TLS for OpenFX
-    SetCurrentFrameViewRequest_RAII tlsSetFrameViewRequest(shared_from_this(), requestData);
-
-
     // Some nodes do not support render-scale and can only render at scale 1.
     // If the render requested a mipmap level different than 0, we must render at mipmap level 0 then downscale to the requested
     // mipmap level.
     // If the render requested a proxy scale different than 1, we fail because we cannot render at scale 1 then resize at an arbitrary scale.
 
     const bool renderFullScaleThenDownScale = !getCurrentSupportRenderScale() && requestData->getMipMapLevel() > 0;
+
+    const RenderScale& proxyScale = requestData->getProxyScale();
 
     if (!getCurrentSupportRenderScale() && (proxyScale.x != 1. || proxyScale.y != 1.)) {
         setPersistentMessage(eMessageTypeError, tr("This node does not support custom proxy scale. It can only render at full resolution").toStdString());
@@ -1158,7 +1190,7 @@ EffectInstance::requestRenderInternal(TimeValue time,
 
     const unsigned int mappedMipMapLevel = renderFullScaleThenDownScale ? 0 : requestData->getMipMapLevel();
     requestData->setRenderMappedMipMapLevel(mappedMipMapLevel);
-    RenderScale originalCombinedScale = EffectInstance::Implementation::getCombinedScale(requestData->getMipMapLevel(), proxyScale);
+    RenderScale originalCombinedScale = EffectInstance::getCombinedScale(requestData->getMipMapLevel(), proxyScale);
     const RenderScale mappedCombinedScale = renderFullScaleThenDownScale ? RenderScale(1.) : originalCombinedScale;
 
     // Get the region of definition of the effect at this frame/view in canonical coordinates
@@ -1166,7 +1198,7 @@ EffectInstance::requestRenderInternal(TimeValue time,
     {
         GetRegionOfDefinitionResultsPtr results;
         {
-            ActionRetCodeEnum stat = getRegionOfDefinition_public(requestData->getTime(), mappedCombinedScale, requestData->getView(), &results);
+            ActionRetCodeEnum stat = getRegionOfDefinition_public(getCurrentRenderTime(), mappedCombinedScale, getCurrentRenderView(), &results);
             if (isFailureRetCode(stat)) {
                 return stat;
             }
@@ -1307,8 +1339,9 @@ EffectInstance::requestRenderInternal(TimeValue time,
                 return eActionStatusFailed;
             }
         }
-        assert(!requestData->getImagePlane());
-        requestData->setImagePlane(image);
+        if (!requestData->getImagePlane()) {
+            requestData->setImagePlane(image);
+        }
         ImageCacheEntryPtr cacheEntry = image->getCacheEntry();
         assert(cacheEntry);
         ActionRetCodeEnum stat = cacheEntry->fetchCachedTilesAndUpdateStatus(NULL, &hasUnRenderedTile, &hasPendingTiles);
@@ -1335,9 +1368,6 @@ EffectInstance::requestRenderInternal(TimeValue time,
 ActionRetCodeEnum
 EffectInstance::launchRender(const RequestPassSharedDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestData)
 {
-    
-    // Set the frame view request as a member of this class since we use a local copy for the render this is thread-safe.
-    SetCurrentFrameViewRequest_RAII tlsSetFrameViewRequest(shared_from_this(), requestData);
 
     {
         FrameViewRequest::FrameViewRequestStatusEnum requestStatus = requestData->notifyRenderStarted();
@@ -1383,7 +1413,7 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
 
     const double par = getAspectRatio(-1);
     const unsigned int mappedMipMapLevel = requestData->getRenderMappedMipMapLevel();
-    const RenderScale mappedCombinedScale = EffectInstance::Implementation::getCombinedScale(mappedMipMapLevel, requestData->getProxyScale());
+    const RenderScale mappedCombinedScale = EffectInstance::getCombinedScale(mappedMipMapLevel, requestData->getProxyScale());
 
     RectI renderMappedRoI;
     requestData->getCurrentRoI().toPixelEnclosing(mappedCombinedScale, par, &renderMappedRoI);
@@ -1394,7 +1424,7 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
         RectD rod;
         GetRegionOfDefinitionResultsPtr results;
         {
-            ActionRetCodeEnum stat = getRegionOfDefinition_public(requestData->getTime(), mappedCombinedScale, requestData->getView(), &results);
+            ActionRetCodeEnum stat = getRegionOfDefinition_public(getCurrentRenderTime(), mappedCombinedScale, getCurrentRenderView(), &results);
             if (isFailureRetCode(stat)) {
                 return stat;
             }
@@ -1652,7 +1682,7 @@ EffectInstance::Implementation::launchPluginRenderAndHostFrameThreading(const Fr
     }
 
     bool isPlayback = render->isPlayback();
-    TimeValue time = requestData->getTime();
+    TimeValue time = _publicInterface->getCurrentRenderTime();
 
 
     if (callBeginSequenceRender) {
@@ -1664,7 +1694,7 @@ EffectInstance::Implementation::launchPluginRenderAndHostFrameThreading(const Fr
                                                                               isPlayback,
                                                                               !isPlayback,
                                                                               render->isDraftRender(),
-                                                                              requestData->getView(),
+                                                                              _publicInterface->getCurrentRenderView(),
                                                                               backendType,
                                                                               glContextData);
         
@@ -1724,7 +1754,7 @@ EffectInstance::Implementation::launchPluginRenderAndHostFrameThreading(const Fr
                                                                             isPlayback,
                                                                             !isPlayback,
                                                                             render->isDraftRender(),
-                                                                            requestData->getView(),
+                                                                            _publicInterface->getCurrentRenderView(),
                                                                             backendType,
                                                                             glContextData);
         if (isFailureRetCode(stat)) {

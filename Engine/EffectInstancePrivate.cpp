@@ -80,29 +80,6 @@ EffectInstance::Implementation::~Implementation()
     }
 }
 
-FrameViewRequestPtr
-EffectInstance::Implementation::createFrameViewRequest(TimeValue time,
-                                                            ViewIdx view,
-                                                            const RenderScale& proxyScale,
-                                                            unsigned int mipMapLevel,
-                                                            const ImagePlaneDesc& plane)
-{
-    assert(renderData);
-    assert(!renderData->currentFrameView.lock());
-    // Needs to be locked: frame requests may be added spontaneously by the plug-in
-    U64 hash;
-    {
-        HashableObject::ComputeHashArgs args;
-        args.time = time;
-        args.view = view;
-        args.hashType = HashableObject::eComputeHashTypeTimeViewVariant;
-        hash = _publicInterface->computeHash(args);
-    }
-    FrameViewRequestPtr ret(new FrameViewRequest(time, view, proxyScale, mipMapLevel, plane, hash, _publicInterface->shared_from_this()));
-    renderData->currentFrameView = ret;
-    return ret;
-}
-
 
 void
 EffectInstance::Implementation::setFrameRangeResults(const GetFrameRangeResultsPtr& range)
@@ -147,7 +124,7 @@ EffectInstance::Implementation::getTimeInvariantMetadataResults() const
 
 
 RenderScale
-EffectInstance::Implementation::getCombinedScale(unsigned int mipMapLevel, const RenderScale& proxyScale)
+EffectInstance::getCombinedScale(unsigned int mipMapLevel, const RenderScale& proxyScale)
 {
     RenderScale ret = proxyScale;
     double mipMapScale = Image::getScaleFromMipMapLevel(mipMapLevel);
@@ -241,8 +218,8 @@ EffectInstance::Implementation::shouldRenderUseCache(const RequestPassSharedData
     }
 
     if (!retSet) {
-        EffectInstancePtr treeRoot = _publicInterface->getCurrentRender()->getTreeRootRenderClone();
-        if (treeRoot.get() == _publicInterface)  {
+        EffectInstancePtr treeRoot = _publicInterface->getCurrentRender()->getOriginalTreeRoot();
+        if (treeRoot == _publicInterface->getNode()->getEffectInstance())  {
             // Always cache the root node because a subsequent render may ask for it
             ret = eCacheAccessModeReadWrite;
             retSet = true;
@@ -300,14 +277,13 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
         glCheckError(GL_GPU);
     }
 
-    RenderScale combinedScale = EffectInstance::Implementation::getCombinedScale(args.requestData->getRenderMappedMipMapLevel(), args.requestData->getProxyScale());
-    
+
     // If this tile is identity, copy input image instead
     ActionRetCodeEnum stat;
     if (rectToRender.identityInputNumber != -1) {
         stat = renderHandlerIdentity(rectToRender, args);
     } else {
-        stat = renderHandlerPlugin(rectToRender, combinedScale, args);
+        stat = renderHandlerPlugin(rectToRender, args);
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -353,11 +329,12 @@ EffectInstance::Implementation::renderHandlerIdentity(const RectToRender & rectT
         boost::scoped_ptr<EffectInstance::GetImageInArgs> inArgs( new EffectInstance::GetImageInArgs() );
         inArgs->renderBackend = &args.backendType;
         inArgs->currentRenderWindow = &rectToRender.rect;
-        inArgs->requestData = args.requestData;
-        inArgs->inputTime = rectToRender.identityTime;
-        inArgs->inputView = rectToRender.identityView;
-        inArgs->inputMipMapLevel = args.requestData->getRenderMappedMipMapLevel();
-        inArgs->inputProxyScale = args.requestData->getProxyScale();
+        inArgs->inputTime = &rectToRender.identityTime;
+        inArgs->inputView = &rectToRender.identityView;
+        unsigned int curMipMap = args.requestData->getRenderMappedMipMapLevel();
+        inArgs->currentActionMipMapLevel = &curMipMap;
+        const RenderScale& curProxyScale = args.requestData->getProxyScale();
+        inArgs->currentActionProxyScale = &curProxyScale;
         inArgs->inputNb = rectToRender.identityInputNumber;
         inArgs->plane = &it->first;
 
@@ -458,22 +435,23 @@ static void finishGLRender()
 
 ActionRetCodeEnum
 EffectInstance::Implementation::renderHandlerPlugin(const RectToRender & rectToRender,
-                                                    const RenderScale& combinedScale,
                                                     const TiledRenderingFunctorArgs& args)
 {
 
     TreeRenderPtr render = _publicInterface->getCurrentRender();
     RenderActionArgs actionArgs;
     {
+
+
         assert(args.requestData->getComponentsResults());
         actionArgs.processChannels = args.requestData->getComponentsResults()->getProcessChannels();
-        actionArgs.renderScale = combinedScale;
+        actionArgs.proxyScale = args.requestData->getProxyScale();
+        actionArgs.mipMapLevel = args.requestData->getRenderMappedMipMapLevel();
         actionArgs.backendType = args.backendType;
         actionArgs.roi = rectToRender.rect;
-        actionArgs.time = args.requestData->getTime();
-        actionArgs.view = args.requestData->getView();
+        actionArgs.time = _publicInterface->getCurrentRenderTime();
+        actionArgs.view = _publicInterface->getCurrentRenderView();
         actionArgs.glContext = args.glContext;
-        actionArgs.requestData = args.requestData;
         actionArgs.glContextData = args.glContextData;
     }
 
@@ -544,6 +522,9 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
     // Get the mask image if host masking is needed
     ImagePtr maskImage;
 
+    unsigned int curMipMap = args.requestData->getRenderMappedMipMapLevel();
+    const RenderScale& proxyScale = args.requestData->getProxyScale();
+
     assert(args.requestData->getComponentsResults());
     const std::map<int, std::list<ImagePlaneDesc> > &inputPlanesNeeded = args.requestData->getComponentsResults()->getNeededInputPlanes();
     std::bitset<4> processChannels = args.requestData->getComponentsResults()->getProcessChannels();
@@ -564,7 +545,7 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
             std::map<int, std::list<ImagePlaneDesc> >::const_iterator foundNeededLayers = inputPlanesNeeded.find(maskInputNb);
             if (foundNeededLayers != inputPlanesNeeded.end() && !foundNeededLayers->second.empty()) {
 
-                GetImageInArgs inArgs(args.requestData, &rectToRender.rect, &args.backendType);
+                GetImageInArgs inArgs(&curMipMap, &proxyScale, &rectToRender.rect, &args.backendType);
                 inArgs.plane = &foundNeededLayers->second.front();
                 inArgs.inputNb = maskInputNb;
                 GetImageOutArgs outArgs;
@@ -589,7 +570,7 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
     bool useMaskMix = hostMasking;
     double mix = 1.;
     if (_publicInterface->isHostMixingEnabled()) {
-        mix = _publicInterface->getHostMixingValue(args.requestData->getTime(), args.requestData->getView());
+        mix = _publicInterface->getHostMixingValue(_publicInterface->getCurrentRenderTime(), _publicInterface->getCurrentRenderView());
         useMaskMix = true;
     }
 
@@ -625,7 +606,7 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
 
             std::map<int, std::list<ImagePlaneDesc> >::const_iterator foundNeededLayers = inputPlanesNeeded.find(mainInputNb);
 
-            GetImageInArgs inArgs(args.requestData, &rectToRender.rect, &args.backendType);
+            GetImageInArgs inArgs(&curMipMap, &proxyScale, &rectToRender.rect, &args.backendType);
             if (foundNeededLayers != inputPlanesNeeded.end() && !foundNeededLayers->second.empty()) {
 
 

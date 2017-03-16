@@ -255,13 +255,13 @@ EffectInstance::refreshLayersSelectorsVisibility()
         // Get the mask input components
         std::list<ImagePlaneDesc> availableComponents;
         {
-            ActionRetCodeEnum stat = getAvailableLayers(getCurrentTime_TLS(), ViewIdx(0), it->first, &availableComponents);
+            ActionRetCodeEnum stat = getAvailableLayers(getCurrentRenderTime(), ViewIdx(0), it->first, &availableComponents);
             (void)stat;
         }
 
 
         if (it->first >= 0) {
-            EffectInstancePtr inp = getInput(it->first);
+            EffectInstancePtr inp = getInputMainInstance(it->first);
             bool mustBeSecret = !inp.get() || outputIsAll;
             KnobChoicePtr layerKnob = it->second.layer.lock();
             layerKnob->setSecret(mustBeSecret);
@@ -278,7 +278,7 @@ EffectInstance::refreshLayersSelectorsVisibility()
     }
 
     for (std::map<int, MaskSelector>::iterator it = _imp->defKnobs->maskSelectors.begin(); it != _imp->defKnobs->maskSelectors.end(); ++it) {
-        EffectInstancePtr inp = getInput(it->first);
+        EffectInstancePtr inp = getInputMainInstance(it->first);
 
         KnobBoolPtr enabledKnob = it->second.enabled.lock();
         assert(enabledKnob);
@@ -847,7 +847,7 @@ EffectInstance::Implementation::onMaskSelectorChanged(int inputNb,
         enabled->setEnabled(false);
     } else if ( !enabled->isEnabled() ) {
         enabled->setEnabled(true);
-        if ( _publicInterface->getInput(inputNb) ) {
+        if ( _publicInterface->getInputMainInstance(inputNb) ) {
             enabled->setValue(true);
         }
     }

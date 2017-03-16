@@ -41,16 +41,16 @@ class OneViewNode
 private: // derives from EffectInstance
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     OneViewNode(const NodePtr& n);
-    OneViewNode(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render);
+    OneViewNode(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key);
 public:
     static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
     {
         return EffectInstancePtr( new OneViewNode(node) );
     }
 
-    static EffectInstancePtr createRenderClone(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render) WARN_UNUSED_RETURN
+    static EffectInstancePtr createRenderClone(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key) WARN_UNUSED_RETURN
     {
-        return EffectInstancePtr( new OneViewNode(mainInstance, render) );
+        return EffectInstancePtr( new OneViewNode(mainInstance, key) );
     }
 
     static PluginPtr createPlugin();

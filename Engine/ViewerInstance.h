@@ -82,13 +82,13 @@ private: // derives from EffectInstance
     // TODO: enable_shared_from_this
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     ViewerInstance(const NodePtr& node);
-    ViewerInstance(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render);
+    ViewerInstance(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key);
 public:
     static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN;
 
-    static EffectInstancePtr createRenderClone(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render) WARN_UNUSED_RETURN
+    static EffectInstancePtr createRenderClone(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key) WARN_UNUSED_RETURN
     {
-        return EffectInstancePtr( new ViewerInstance(mainInstance, render) );
+        return EffectInstancePtr( new ViewerInstance(mainInstance, key) );
     }
 
 

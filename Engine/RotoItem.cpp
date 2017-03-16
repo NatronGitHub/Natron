@@ -130,8 +130,8 @@ RotoItem::RotoItem(const KnobItemsTablePtr& model)
 {
 }
 
-RotoItem::RotoItem(const RotoItemPtr& other, const TreeRenderPtr& render)
-: KnobTableItem(other, render)
+RotoItem::RotoItem(const RotoItemPtr& other, const FrameViewRenderKey& key)
+: KnobTableItem(other, key)
 , _imp(new RotoItemPrivate(*other->_imp))
 {
 

@@ -51,7 +51,7 @@ protected: // derives from EffectInstance, parent of Backdrop, Dot, groupInput, 
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     NoOpBase(const NodePtr& n);
 
-    NoOpBase(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render);
+    NoOpBase(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key);
 public:
     //static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
     //{

@@ -37,8 +37,8 @@ NoOpBase::NoOpBase(const NodePtr& n)
 {
 }
 
-NoOpBase::NoOpBase(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render)
-: EffectInstance(mainInstance, render)
+NoOpBase::NoOpBase(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key)
+: EffectInstance(mainInstance, key)
 {
 
 }

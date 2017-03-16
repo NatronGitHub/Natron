@@ -81,7 +81,7 @@ public:
 
     virtual ~KnobTableItem();
 
-    KnobTableItem(const KnobTableItemPtr& other, const TreeRenderPtr& render);
+    KnobTableItem(const KnobTableItemPtr& other, const FrameViewRenderKey& key);
 
     KnobItemsTablePtr getModel() const;
 
@@ -272,7 +272,7 @@ public:
     }
     virtual bool splitView(ViewIdx view) OVERRIDE WARN_UNUSED_RETURN;
     virtual bool unSplitView(ViewIdx view) OVERRIDE WARN_UNUSED_RETURN;
-    virtual ViewIdx getCurrentView_TLS() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ViewIdx getCurrentRenderView() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual KeyframeDataTypeEnum getKeyFrameDataType() const OVERRIDE FINAL;
     virtual CurvePtr getAnimationCurve(ViewIdx idx, DimIdx dimension) const OVERRIDE FINAL;
     virtual bool cloneCurve(ViewIdx view, DimIdx dimension, const Curve& curve, double offset, const RangeD* range, const StringAnimationManager* stringAnimation) OVERRIDE;

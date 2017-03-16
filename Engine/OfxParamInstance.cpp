@@ -409,7 +409,7 @@ OfxParamToKnob::refreshAutoKeyingPropsNow()
     AnimationLevelEnum level =  eAnimationLevelNone;
     int nDims = knob->getNDimensions();
     std::list<ViewIdx> views = knob->getViewsList();
-    TimeValue time = knob->getCurrentTime_TLS();
+    TimeValue time = knob->getCurrentRenderTime();
     for (int i = 0; i < nDims; ++i) {
         for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
             AnimationLevelEnum thisLevel = getKnob()->getAnimationLevel(DimIdx(i), time, *it);
@@ -786,7 +786,7 @@ OfxIntegerInstance::get(int & v)
         return kOfxStatErrBadHandle;
     }
 
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     v = knob->getValue(DimIdx(0), view);
 
     return kOfxStatOK;
@@ -801,7 +801,7 @@ OfxIntegerInstance::get(OfxTime time,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     v = knob->getValueAtTime(TimeValue(time), DimIdx(0), view);
 
     return kOfxStatOK;
@@ -816,7 +816,7 @@ OfxIntegerInstance::set(int v)
         return kOfxStatErrBadHandle;
     }
 
-    knob->setValue(v, knob->getCurrentView_TLS(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
+    knob->setValue(v, knob->getCurrentRenderView(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
 
     return kOfxStatOK;
 }
@@ -831,7 +831,7 @@ OfxIntegerInstance::set(OfxTime time,
         return kOfxStatErrBadHandle;
     }
 
-    knob->setValueAtTime(TimeValue(time), v, knob->getCurrentView_TLS(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
+    knob->setValueAtTime(TimeValue(time), v, knob->getCurrentRenderView(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
 
     return kOfxStatOK;
 }
@@ -1035,7 +1035,7 @@ OfxDoubleInstance::get(double & v)
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     v = knob->getValue(DimIdx(0), view);
 
     return kOfxStatOK;
@@ -1050,7 +1050,7 @@ OfxDoubleInstance::get(OfxTime time,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     v = knob->getValueAtTime(TimeValue(time), DimIdx(0), view);
 
     return kOfxStatOK;
@@ -1065,7 +1065,7 @@ OfxDoubleInstance::set(double v)
         return kOfxStatErrBadHandle;
     }
 
-    knob->setValue(v, knob->getCurrentView_TLS(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
+    knob->setValue(v, knob->getCurrentRenderView(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
 
     return kOfxStatOK;
 }
@@ -1080,7 +1080,7 @@ OfxDoubleInstance::set(OfxTime time,
         return kOfxStatErrBadHandle;
     }
 
-    knob->setValueAtTime(TimeValue(time), v, knob->getCurrentView_TLS(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
+    knob->setValueAtTime(TimeValue(time), v, knob->getCurrentRenderView(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
 
     return kOfxStatOK;
 }
@@ -1095,7 +1095,7 @@ OfxDoubleInstance::derive(OfxTime time,
         return kOfxStatErrBadHandle;
     }
 
-    v = knob->getDerivativeAtTime( TimeValue(time), knob->getCurrentView_TLS(), DimIdx(0) );
+    v = knob->getDerivativeAtTime( TimeValue(time), knob->getCurrentRenderView(), DimIdx(0) );
 
     return kOfxStatOK;
 }
@@ -1111,7 +1111,7 @@ OfxDoubleInstance::integrate(OfxTime time1,
         return kOfxStatErrBadHandle;
     }
 
-    v = knob->getIntegrateFromTimeToTime( TimeValue(time1), TimeValue(time2), knob->getCurrentView_TLS(), DimIdx(0) );
+    v = knob->getIntegrateFromTimeToTime( TimeValue(time1), TimeValue(time2), knob->getCurrentRenderView(), DimIdx(0) );
 
     return kOfxStatOK;
 }
@@ -1270,7 +1270,7 @@ OfxBooleanInstance::get(bool & b)
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     b = knob->getValue(DimIdx(0), view);
 
     return kOfxStatOK;
@@ -1286,7 +1286,7 @@ OfxBooleanInstance::get(OfxTime time,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     b = knob->getValueAtTime(TimeValue(time), DimIdx(0), view);
 
     return kOfxStatOK;
@@ -1301,7 +1301,7 @@ OfxBooleanInstance::set(bool b)
         return kOfxStatErrBadHandle;
     }
 
-    knob->setValue(b, knob->getCurrentView_TLS(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
+    knob->setValue(b, knob->getCurrentRenderView(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
 
     return kOfxStatOK;
 }
@@ -1316,7 +1316,7 @@ OfxBooleanInstance::set(OfxTime time,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    knob->setValueAtTime(TimeValue(time), b, knob->getCurrentView_TLS(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
+    knob->setValueAtTime(TimeValue(time), b, knob->getCurrentRenderView(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
 
     return kOfxStatOK;
 }
@@ -1484,7 +1484,7 @@ OfxChoiceInstance::get(int & v)
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     v = knob->getValue(DimIdx(0), view);
 
     return kOfxStatOK;
@@ -1500,7 +1500,7 @@ OfxChoiceInstance::get(OfxTime time,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     v = knob->getValueAtTime(TimeValue(time), DimIdx(0), view);
 
     return kOfxStatOK;
@@ -1516,7 +1516,7 @@ OfxChoiceInstance::set(int v)
     }
     int nEntries = knob->getNumEntries();
     if ( (0 <= v) && ( v < nEntries ) ) {
-        knob->setValue(v, knob->getCurrentView_TLS(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
+        knob->setValue(v, knob->getCurrentRenderView(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
 
 
         return kOfxStatOK;
@@ -1536,7 +1536,7 @@ OfxChoiceInstance::set(OfxTime time,
     }
     int nEntries = knob->getNumEntries();
     if ( (0 <= v) && ( v < nEntries ) ) {
-        knob->setValueAtTime(TimeValue(time), v, knob->getCurrentView_TLS(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
+        knob->setValueAtTime(TimeValue(time), v, knob->getCurrentRenderView(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
 
 
         return kOfxStatOK;
@@ -1758,7 +1758,7 @@ OfxRGBAInstance::get(double & r,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     r = knob->getValue(DimIdx(0), view);
     g = knob->getValue(DimIdx(1), view);
     b = knob->getValue(DimIdx(2), view);
@@ -1780,7 +1780,7 @@ OfxRGBAInstance::get(OfxTime time,
         return kOfxStatErrBadHandle;
     }
 
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     r = knob->getValueAtTime( TimeValue(time), DimIdx(0), view );
     g = knob->getValueAtTime( TimeValue(time), DimIdx(1), view );
     b = knob->getValueAtTime( TimeValue(time), DimIdx(2), view );
@@ -1800,7 +1800,7 @@ OfxRGBAInstance::set(double r,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     std::vector<double> vals(4);
     vals[0] = r;
     vals[1] = g;
@@ -1823,7 +1823,7 @@ OfxRGBAInstance::set(OfxTime time,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     std::vector<double> vals(4);
     vals[0] = r;
     vals[1] = g;
@@ -1846,7 +1846,7 @@ OfxRGBAInstance::derive(OfxTime time,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     r = knob->getDerivativeAtTime(TimeValue(time), view, DimIdx(0));
     g = knob->getDerivativeAtTime(TimeValue(time), view, DimIdx(1));
     b = knob->getDerivativeAtTime(TimeValue(time), view, DimIdx(2));
@@ -1868,7 +1868,7 @@ OfxRGBAInstance::integrate(OfxTime time1,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     r = knob->getIntegrateFromTimeToTime(TimeValue(time1), TimeValue(time2), view, DimIdx(0));
     g = knob->getIntegrateFromTimeToTime(TimeValue(time1), TimeValue(time2), view, DimIdx(1));
     b = knob->getIntegrateFromTimeToTime(TimeValue(time1), TimeValue(time2), view, DimIdx(2));
@@ -2059,7 +2059,7 @@ OfxRGBInstance::get(double & r,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     r = knob->getValue(DimIdx(0), view);
     g = knob->getValue(DimIdx(1), view);
     b = knob->getValue(DimIdx(2), view);
@@ -2078,7 +2078,7 @@ OfxRGBInstance::get(OfxTime time,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     r = knob->getValueAtTime(TimeValue(time), DimIdx(0), view);
     g = knob->getValueAtTime(TimeValue(time), DimIdx(1), view);
     b = knob->getValueAtTime(TimeValue(time), DimIdx(2), view);
@@ -2096,7 +2096,7 @@ OfxRGBInstance::set(double r,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     std::vector<double> vals(3);
     vals[0] = r;
     vals[1] = g;
@@ -2117,7 +2117,7 @@ OfxRGBInstance::set(OfxTime time,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     std::vector<double> vals(3);
     vals[0] = r;
     vals[1] = g;
@@ -2137,7 +2137,7 @@ OfxRGBInstance::derive(OfxTime time,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     r = knob->getDerivativeAtTime(TimeValue(time), view, DimIdx(0));
     g = knob->getDerivativeAtTime(TimeValue(time), view, DimIdx(1));
     b = knob->getDerivativeAtTime(TimeValue(time), view, DimIdx(2));
@@ -2157,7 +2157,7 @@ OfxRGBInstance::integrate(OfxTime time1,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     r = knob->getIntegrateFromTimeToTime(TimeValue(time1), TimeValue(time2), view, DimIdx(0));
     g = knob->getIntegrateFromTimeToTime(TimeValue(time1), TimeValue(time2), view, DimIdx(1));
     b = knob->getIntegrateFromTimeToTime(TimeValue(time1), TimeValue(time2), view, DimIdx(2));
@@ -2418,7 +2418,7 @@ OfxDouble2DInstance::get(double & x1,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     x1 = knob->getValue(DimIdx(_startIndex), view);
     x2 = knob->getValue(DimIdx(_startIndex + 1), view);
 
@@ -2435,7 +2435,7 @@ OfxDouble2DInstance::get(OfxTime time,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     x1 = knob->getValueAtTime(TimeValue(time), DimIdx(_startIndex), view);
     x2 = knob->getValueAtTime(TimeValue(time), DimIdx(_startIndex + 1), view);
 
@@ -2454,7 +2454,7 @@ OfxDouble2DInstance::set(double x1,
     std::vector<double> vals(2);
     vals[0] = x1;
     vals[1] = x2;
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     knob->setValueAcrossDimensions(vals, DimIdx(_startIndex), view, eValueChangedReasonPluginEdited);
 
     return kOfxStatOK;
@@ -2473,7 +2473,7 @@ OfxDouble2DInstance::set(OfxTime time,
     std::vector<double> vals(2);
     vals[0] = x1;
     vals[1] = x2;
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     knob->setValueAtTimeAcrossDimensions(TimeValue(time), vals, DimIdx(_startIndex), view, eValueChangedReasonPluginEdited);
 
     return kOfxStatOK;
@@ -2489,7 +2489,7 @@ OfxDouble2DInstance::derive(OfxTime time,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     x1 = knob->getDerivativeAtTime(TimeValue(time), view, DimIdx(_startIndex));
     x2 = knob->getDerivativeAtTime(TimeValue(time), view, DimIdx(1 + _startIndex));
 
@@ -2507,7 +2507,7 @@ OfxDouble2DInstance::integrate(OfxTime time1,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     x1 = knob->getIntegrateFromTimeToTime(TimeValue(time1), TimeValue(time2), view, DimIdx(_startIndex));
     x2 = knob->getIntegrateFromTimeToTime(TimeValue(time1), TimeValue(time2), view, DimIdx(1 + _startIndex));
 
@@ -2730,7 +2730,7 @@ OfxInteger2DInstance::get(int & x1,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     x1 = knob->getValue(DimIdx(_startIndex), view);
     x2 = knob->getValue(DimIdx(_startIndex + 1), view);
 
@@ -2747,7 +2747,7 @@ OfxInteger2DInstance::get(OfxTime time,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     x1 = knob->getValueAtTime(TimeValue(time), DimIdx(_startIndex), view);
     x2 = knob->getValueAtTime(TimeValue(time), DimIdx(_startIndex + 1), view);
 
@@ -2763,7 +2763,7 @@ OfxInteger2DInstance::set(int x1,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     std::vector<int> vals(2);
     vals[0] = x1;
     vals[1] = x2;
@@ -2782,7 +2782,7 @@ OfxInteger2DInstance::set(OfxTime time,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     std::vector<int> vals(2);
     vals[0] = x1;
     vals[1] = x2;
@@ -3011,7 +3011,7 @@ OfxDouble3DInstance::get(double & x1,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     x1 = knob->getValue(DimIdx(0 + _startIndex), view);
     x2 = knob->getValue(DimIdx(1 + _startIndex), view);
     x3 = knob->getValue(DimIdx(2 + _startIndex), view);
@@ -3030,7 +3030,7 @@ OfxDouble3DInstance::get(OfxTime time,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     x1 = knob->getValueAtTime(TimeValue(time), DimIdx(0 + _startIndex), view);
     x2 = knob->getValueAtTime(TimeValue(time), DimIdx(1 + _startIndex), view);
     x3 = knob->getValueAtTime(TimeValue(time), DimIdx(2 + _startIndex), view);
@@ -3048,7 +3048,7 @@ OfxDouble3DInstance::set(double x1,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     std::vector<double> vals(3);
     vals[0] = x1;
     vals[1] = x2;
@@ -3069,7 +3069,7 @@ OfxDouble3DInstance::set(OfxTime time,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     std::vector<double> vals(3);
     vals[0] = x1;
     vals[1] = x2;
@@ -3091,7 +3091,7 @@ OfxDouble3DInstance::derive(OfxTime time,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     x1 = knob->getDerivativeAtTime(TimeValue(time), view, DimIdx(0 + _startIndex));
     x2 = knob->getDerivativeAtTime(TimeValue(time), view, DimIdx(1 + _startIndex));
     x3 = knob->getDerivativeAtTime(TimeValue(time), view, DimIdx(2 + _startIndex));
@@ -3111,7 +3111,7 @@ OfxDouble3DInstance::integrate(OfxTime time1,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     x1 = knob->getIntegrateFromTimeToTime(TimeValue(time1), TimeValue(time2), view, DimIdx(0 + _startIndex));
     x2 = knob->getIntegrateFromTimeToTime(TimeValue(time1), TimeValue(time2), view, DimIdx(1 + _startIndex));
     x3 = knob->getIntegrateFromTimeToTime(TimeValue(time1), TimeValue(time2), view, DimIdx(2 + _startIndex));
@@ -3311,7 +3311,7 @@ OfxInteger3DInstance::get(int & x1,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     x1 = knob->getValue(DimIdx(0), view);
     x2 = knob->getValue(DimIdx(1), view);
     x3 = knob->getValue(DimIdx(2), view);
@@ -3330,7 +3330,7 @@ OfxInteger3DInstance::get(OfxTime time,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     x1 = knob->getValueAtTime(TimeValue(time), DimIdx(0), view);
     x2 = knob->getValueAtTime(TimeValue(time), DimIdx(1), view);
     x3 = knob->getValueAtTime(TimeValue(time), DimIdx(2), view);
@@ -3348,7 +3348,7 @@ OfxInteger3DInstance::set(int x1,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     std::vector<int> vals(3);
     vals[0] = x1;
     vals[1] = x2;
@@ -3369,7 +3369,7 @@ OfxInteger3DInstance::set(OfxTime time,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     std::vector<int> vals(3);
     vals[0] = x1;
     vals[1] = x2;
@@ -3851,12 +3851,12 @@ OfxStringInstance::get(OfxTime time,
 
     assert(fileKnob || strknob || pathKnob);
     if (fileKnob) {
-        str = fileKnob->getValueAtTime(TimeValue(time), DimIdx(0), fileKnob->getCurrentView_TLS());
+        str = fileKnob->getValueAtTime(TimeValue(time), DimIdx(0), fileKnob->getCurrentRenderView());
         projectEnvVar_getProxy(str);
     } else if (strknob) {
-        str = strknob->getValueAtTime(TimeValue(time), DimIdx(0), strknob->getCurrentView_TLS());
+        str = strknob->getValueAtTime(TimeValue(time), DimIdx(0), strknob->getCurrentRenderView());
     } else if (pathKnob) {
-        str = pathKnob->getValueAtTime(TimeValue(time), DimIdx(0), pathKnob->getCurrentView_TLS());
+        str = pathKnob->getValueAtTime(TimeValue(time), DimIdx(0), pathKnob->getCurrentRenderView());
         projectEnvVar_getProxy(str);
     } else {
         return kOfxStatErrBadHandle;
@@ -3888,13 +3888,13 @@ OfxStringInstance::set(const char* str)
     if (fileKnob) {
         std::string s(str);
         projectEnvVar_setProxy(s);
-        fileKnob->setValue(s, fileKnob->getCurrentView_TLS(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
+        fileKnob->setValue(s, fileKnob->getCurrentRenderView(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
     } else if (strknob) {
-        strknob->setValue(str, strknob->getCurrentView_TLS(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
+        strknob->setValue(str, strknob->getCurrentRenderView(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
     } else if (pathKnob) {
         std::string s(str);
         projectEnvVar_setProxy(s);
-        pathKnob->setValue(s, pathKnob->getCurrentView_TLS(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
+        pathKnob->setValue(s, pathKnob->getCurrentRenderView(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
     } else {
         return kOfxStatErrBadHandle;
     }
@@ -3928,13 +3928,13 @@ OfxStringInstance::set(OfxTime time,
     if (fileKnob) {
         std::string s(str);
         projectEnvVar_setProxy(s);
-        fileKnob->setValueAtTime(TimeValue(time), s, fileKnob->getCurrentView_TLS(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
+        fileKnob->setValueAtTime(TimeValue(time), s, fileKnob->getCurrentRenderView(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
     } else if (strknob) {
-        strknob->setValueAtTime(TimeValue(time), str, strknob->getCurrentView_TLS(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
+        strknob->setValueAtTime(TimeValue(time), str, strknob->getCurrentRenderView(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
     } else if (pathKnob) {
         std::string s(str);
         projectEnvVar_setProxy(s);
-        pathKnob->setValueAtTime(TimeValue(time), s, pathKnob->getCurrentView_TLS(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
+        pathKnob->setValueAtTime(TimeValue(time), s, pathKnob->getCurrentRenderView(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
     } else {
         return kOfxStatErrBadHandle;
     }
@@ -4396,7 +4396,7 @@ OfxCustomInstance::get(std::string &str)
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     str = knob->getValue(DimIdx(0), view);
 
     return kOfxStatOK;
@@ -4413,7 +4413,7 @@ OfxCustomInstance::get(OfxTime time,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     str = knob->getValueAtTime(TimeValue(time), DimIdx(0), view);
 
     return kOfxStatOK;
@@ -4427,7 +4427,7 @@ OfxCustomInstance::set(const char* str)
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     knob->setValue(str, view, DimIdx(0), eValueChangedReasonPluginEdited, 0);
 
     return kOfxStatOK;
@@ -4443,7 +4443,7 @@ OfxCustomInstance::set(OfxTime time,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     knob->setValueAtTime(TimeValue(time), str, view, DimIdx(0), eValueChangedReasonPluginEdited, 0);
 
     return kOfxStatOK;
@@ -4764,7 +4764,7 @@ OfxParametricInstance::getValue(int curveIndex,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     ActionRetCodeEnum stat = knob->evaluateCurve(DimIdx(curveIndex), view, parametricPosition, returnValue);
 
     if (!isFailureRetCode(stat)) {
@@ -4784,7 +4784,7 @@ OfxParametricInstance::getNControlPoints(int curveIndex,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     ActionRetCodeEnum stat = knob->getNControlPoints(DimIdx(curveIndex), view, returnValue);
 
     if (!isFailureRetCode(stat)) {
@@ -4806,7 +4806,7 @@ OfxParametricInstance::getNthControlPoint(int curveIndex,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     ActionRetCodeEnum stat = knob->getNthControlPoint(DimIdx(curveIndex), view, nthCtl, key, value);
 
     if (!isFailureRetCode(stat)) {
@@ -4830,7 +4830,7 @@ OfxParametricInstance::setNthControlPoint(int curveIndex,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     ActionRetCodeEnum stat = knob->setNthControlPoint(eValueChangedReasonPluginEdited, DimIdx(curveIndex), view, nthCtl, key, value);
 
     if (!isFailureRetCode(stat)) {
@@ -4895,7 +4895,7 @@ OfxParametricInstance::deleteControlPoint(int curveIndex,
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     ActionRetCodeEnum stat = knob->deleteControlPoint(eValueChangedReasonPluginEdited, DimIdx(curveIndex), view, nthCtl);
 
     if (!isFailureRetCode(stat)) {
@@ -4914,7 +4914,7 @@ OfxParametricInstance::deleteAllControlPoints(int curveIndex)
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
-    ViewIdx view = knob->getCurrentView_TLS();
+    ViewIdx view = knob->getCurrentRenderView();
     ActionRetCodeEnum stat = knob->deleteAllControlPoints(eValueChangedReasonPluginEdited, DimIdx(curveIndex), view);
 
     if (!isFailureRetCode(stat)) {

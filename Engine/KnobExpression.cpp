@@ -624,7 +624,7 @@ KnobHelper::validateExpression(const std::string& expression,
         }
 
         std::stringstream ss;
-        ss << funcExecScript << '(' << getCurrentTime_TLS() << ", \"" <<  viewName << "\")\n";
+        ss << funcExecScript << '(' << getCurrentRenderTime() << ", \"" <<  viewName << "\")\n";
         if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(ss.str(), &error, 0) ) {
             throw std::runtime_error(error);
         }
@@ -917,7 +917,7 @@ KnobHelper::setExpressionCommon(DimSpec dimension,
         }
     }
 
-    evaluateValueChange(dimension, getHolder()->getCurrentTime_TLS(), view, eValueChangedReasonUserEdited);
+    evaluateValueChange(dimension, getHolder()->getCurrentRenderTime(), view, eValueChangedReasonUserEdited);
 } // setExpressionCommon
 
 void

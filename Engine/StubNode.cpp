@@ -77,8 +77,8 @@ StubNode::StubNode(const NodePtr& n)
 {
 }
 
-StubNode::StubNode(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render)
-: NoOpBase(mainInstance, render)
+StubNode::StubNode(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key)
+: NoOpBase(mainInstance, key)
 , _imp(new StubNodePrivate())
 {
 

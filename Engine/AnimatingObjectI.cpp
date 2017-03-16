@@ -71,7 +71,7 @@ AnimatingObjectI::AnimatingObjectI()
 
 }
 
-AnimatingObjectI::AnimatingObjectI(const boost::shared_ptr<AnimatingObjectI>& other, const TreeRenderPtr& /*render*/)
+AnimatingObjectI::AnimatingObjectI(const boost::shared_ptr<AnimatingObjectI>& other, const FrameViewRenderKey& /*key*/)
 : _imp(new AnimatingObjectIPrivate(*other->_imp))
 {
 

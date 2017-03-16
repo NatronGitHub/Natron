@@ -1161,7 +1161,7 @@ public:
     /**
      * @brief Returns the current time if attached to a timeline or the time being rendered
      **/
-    virtual TimeValue getCurrentTime_TLS() const = 0;
+    virtual TimeValue getCurrentRenderTime() const = 0;
 
     virtual boost::shared_ptr<KnobSignalSlotHandler> getSignalSlotHandler() const = 0;
 
@@ -1744,8 +1744,8 @@ public:
     virtual void setHintIsMarkdown(bool b) OVERRIDE FINAL;
     virtual void setCustomInteract(const OverlayInteractBasePtr & interactDesc) OVERRIDE FINAL;
     virtual OverlayInteractBasePtr getCustomInteract() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual TimeValue getCurrentTime_TLS() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual ViewIdx getCurrentView_TLS() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual TimeValue getCurrentRenderTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ViewIdx getCurrentRenderView() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getDimensionName(DimIdx dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setDimensionName(DimIdx dim, const std::string & name) OVERRIDE FINAL;
     virtual bool hasModifications() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -2585,7 +2585,7 @@ protected: // parent of NamedKnobHolder, Project, Settings
     KnobHolder(const AppInstancePtr& appInstance);
 
     // The constructor to create a render clone
-    KnobHolder(const KnobHolderPtr& mainInstance, const TreeRenderPtr& render);
+    KnobHolder(const KnobHolderPtr& mainInstance, const FrameViewRenderKey& key);
 
 public:
 
@@ -2822,8 +2822,8 @@ public:
     KnobItemsTablePtr getItemsTable() const;
     std::string getItemsTablePreviousKnobScriptName() const;
 
-    virtual TimeValue getCurrentTime_TLS() const;
-    virtual ViewIdx getCurrentView_TLS() const;
+    virtual TimeValue getCurrentRenderTime() const;
+    virtual ViewIdx getCurrentRenderView() const;
 
     TreeRenderPtr getCurrentRender() const;
 
@@ -2950,19 +2950,19 @@ public:
      * @brief Create a new clone for rendering.
      * Can only be called on the main instance!
      **/
-    KnobHolderPtr createRenderClone(const TreeRenderPtr& render) const;
+    KnobHolderPtr createRenderClone(const FrameViewRenderKey& key) const;
 
     /**
      * @brief Remove a clone previously created with createRenderClone
      * Can only be called on the main instance!
      **/
-    bool removeRenderClone(const TreeRenderPtr& render);
+    bool removeRenderClone(const TreeRenderPtr& key);
 
     /**
      * @brief Returns a clone created for the given render
      * Can only be called on the main instance!
      **/
-    KnobHolderPtr getRenderClone(const TreeRenderPtr& render) const;
+    KnobHolderPtr getRenderClone(const FrameViewRenderKey& key) const;
 
 protected:
 
@@ -2977,9 +2977,9 @@ protected:
      * @brief Create a shallow render copy of this holder. 
      * If this is implemented, also implement isRenderCloneNeeded()
      **/
-    virtual KnobHolderPtr createRenderCopy(const TreeRenderPtr& render) const
+    virtual KnobHolderPtr createRenderCopy(const FrameViewRenderKey& key) const
     {
-        Q_UNUSED(render);
+        Q_UNUSED(key);
         return KnobHolderPtr();
     }
 
@@ -3022,8 +3022,8 @@ protected: // derives from KnobHolder, parent of EffectInstance, TrackMarker, Di
     {
     }
 
-    NamedKnobHolder(const boost::shared_ptr<NamedKnobHolder>& other, const TreeRenderPtr& render)
-    : KnobHolder(other, render)
+    NamedKnobHolder(const boost::shared_ptr<NamedKnobHolder>& other, const FrameViewRenderKey& key)
+    : KnobHolder(other, key)
     {
     }
 

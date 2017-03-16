@@ -90,9 +90,25 @@ inline bool findFrameViewHash(TimeValue time, ViewIdx view, const FrameViewHashM
 
 }
 
+struct FrameViewRenderKey
+{
+    TimeValue time;
+    ViewIdx view;
+    TreeRenderWPtr render;
+};
+
+struct FrameViewRenderKey_compare_less
+{
+    bool operator() (const FrameViewRenderKey & lhs,
+                     const FrameViewRenderKey & rhs) const;
+};
+
+
 /**
  * @brief These are datas related to a single frame/view render of a node.
- * Each request to a node time/view will increase the visits count on this request.
+ * A request has a set of dependencies (other frame/view of other effects) which need to be rendered
+ * before this one. Once the request is out of dependencies (they all have been rendered) it can be 
+ * rendered. @see TreeRender::launchRenderInternal
  * This is thread-safe.
  **/
 struct FrameViewRequestPrivate;
@@ -123,30 +139,24 @@ public:
         eFrameViewRequestStatusRendered,
     };
 
-    FrameViewRequest(TimeValue time,
-                     ViewIdx view,
-                     const RenderScale& proxyScale,
+    FrameViewRequest(const ImagePlaneDesc& plane,
                      unsigned int mipMapLevel,
-                     const ImagePlaneDesc& plane,
-                     U64 timeViewHash,
-                     const EffectInstancePtr& renderClone);
+                     const RenderScale& proxyScale,
+                     const EffectInstancePtr& effect,
+                     const TreeRenderPtr& render);
 
     ~FrameViewRequest();
 
     /**
-     * @brief Get the frame of the render
+     * @brief Get the tree render
      **/
-    TimeValue getTime() const;
-
-    /**
-     * @brief Get the view of the render
-     **/
-    ViewIdx getView() const;
+    TreeRenderPtr getParentRender() const;
 
     /**
      * @brief Get the mipmap level at which to render
      **/
     unsigned int getMipMapLevel() const;
+
 
     /**
      * @brief Get the status of the request
@@ -209,8 +219,7 @@ public:
     /**
      * @brief Return the render clone passed to the ctor
      **/
-    EffectInstancePtr getRenderClone() const;
-
+    EffectInstancePtr getEffect() const;
 
     /**
      * @brief Add a new dependency to this frame/view. This frame/view will not be able to render until all dependencies will be rendered.
@@ -281,11 +290,6 @@ public:
      * @brief Set the region of interest for this frame view.
      **/
     void setCurrentRoI(const RectD& roi);
-
-    /**
-     * @brief Returns the hash for this frame view
-     **/
-    U64 getHash() const;
 
     /**
      * @brief Returns the frames needed action results for this frame/view

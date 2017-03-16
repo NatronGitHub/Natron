@@ -280,6 +280,53 @@ struct EffectInstanceCommonData
 
 };
 
+typedef std::map<FrameViewPair, EffectInstanceWPtr, FrameView_compare_less> FrameViewEffectMap;
+
+struct FrameViewKey
+{
+    unsigned int mipMapLevel;
+    RenderScale proxyScale;
+    ImagePlaneDesc plane;
+};
+
+struct FrameViewKey_Compare
+{
+    bool operator() (const FrameViewKey& lhs, const FrameViewKey& rhs) const
+    {
+        if (lhs.mipMapLevel < rhs.mipMapLevel) {
+            return true;
+        } else if (lhs.mipMapLevel > rhs.mipMapLevel) {
+            return false;
+        }
+
+        if (lhs.proxyScale.x < rhs.proxyScale.x) {
+            return true;
+        } else if (lhs.proxyScale.x > rhs.proxyScale.x) {
+            return false;
+        }
+
+        if (lhs.proxyScale.y < rhs.proxyScale.y) {
+            return true;
+        } else if (lhs.proxyScale.y > rhs.proxyScale.y) {
+            return false;
+        }
+
+        // This will compare the planeID: color plane is equal even if e.g: lhs is Alpha and rhs is RGBA
+        if (lhs.plane < rhs.plane) {
+            return true;
+        } else if (lhs.plane > rhs.plane) {
+            return false;
+        }
+        
+        
+        return false;
+    }
+};
+
+
+
+typedef std::map<FrameViewKey, FrameViewRequestWPtr, FrameViewKey_Compare> FrameViewRequestMap;
+
 // Data specific to a render clone
 struct RenderCloneData
 {
@@ -289,11 +336,16 @@ struct RenderCloneData
     // Used to lock out render instances when the plug-in render thread safety is set to eRenderSafetyInstanceSafe
     mutable QMutex instanceSafeRenderMutex;
 
-    // Render-local inputs vector
-    std::vector<EffectInstanceWPtr> inputs;
+    // Frozen state of the main-instance inputs.
+    // They can only be used to determine the state of the graph
+    // To recurse upstream on render effects, use renderInputs instead
+    std::vector<EffectInstanceWPtr> mainInstanceInputs;
 
-    // This is the current frame/view being requested or rendered by this clone
-    FrameViewRequestWPtr currentFrameView;
+    // These are the render clones in input for each frame/view
+    std::vector<FrameViewEffectMap> renderInputs;
+
+    // All requests made on the clone
+    FrameViewRequestMap requests;
 
     // The results of the get frame range action for this render
     GetFrameRangeResultsPtr frameRangeResults;
@@ -307,20 +359,14 @@ struct RenderCloneData
     RenderCloneData()
     : lock()
     , instanceSafeRenderMutex()
-    , inputs()
-    , currentFrameView()
+    , mainInstanceInputs()
+    , renderInputs()
+    , requests()
     , frameRangeResults()
     , metadatasResults()
     , props()
     {
 
-    }
-
-    void operator=(const RenderCloneData& other)
-    {
-        frameRangeResults = other.frameRangeResults;
-        metadatasResults = other.metadatasResults;
-        props = other.props;
     }
 
     
@@ -395,8 +441,6 @@ public:
     GetTimeInvariantMetaDatasResultsPtr getTimeInvariantMetadataResults() const;
     
 
-    static RenderScale getCombinedScale(unsigned int mipMapLevel, const RenderScale& proxyScale);
-
     /**
      * @brief Helper function in the implementation of renderRoI to determine from the planes requested
      * what planes can actually be rendered from this node. Pass-through planes are rendered from upstream
@@ -451,8 +495,7 @@ public:
                                                  const std::map<int, std::list<ImagePlaneDesc> >& neededInputLayers);
 
 
-    bool canSplitRenderWindowWithIdentityRectangles(const FrameViewRequestPtr& requestPassData,
-                                                    const RenderScale& renderMappedScale,
+    bool canSplitRenderWindowWithIdentityRectangles(const RenderScale& renderMappedScale,
                                                     RectD* inputRoDIntersection);
 
 
@@ -523,7 +566,6 @@ public:
                                             const TiledRenderingFunctorArgs& args);
 
     ActionRetCodeEnum renderHandlerPlugin(const RectToRender & rectToRender,
-                                          const RenderScale& combinedScale,
                                           const TiledRenderingFunctorArgs& args);
 
     ActionRetCodeEnum renderHandlerPostProcess(const RectToRender & rectToRender,

@@ -415,7 +415,7 @@ public:
         return EffectInstancePtr( new RotoPaint(node, eRotoPaintTypeRotoPaint) );
     }
 
-    static EffectInstancePtr createRenderClone(const EffectInstancePtr& /*mainInstance*/, const TreeRenderPtr& /*render*/) WARN_UNUSED_RETURN
+    static EffectInstancePtr createRenderClone(const EffectInstancePtr& /*mainInstance*/, const FrameViewRequestPtr& /*render*/) WARN_UNUSED_RETURN
     {
         assert(false);
         throw std::logic_error("A group cannot have a render clone");

@@ -96,6 +96,7 @@ public:
     RenderActionTLSData()
     : GenericActionTLSArgs()
     , renderWindow()
+    , mipMapLevel(0)
     , outputPlanes()
     {
 
@@ -105,6 +106,8 @@ public:
 
     // The render window in pixel coordinates that was passed to render
     RectI renderWindow;
+
+    unsigned int mipMapLevel;
 
     // For each plane to render, the pointers to the internal images used during render: this is used when calling
     // clipGetImage on the output clip.
@@ -137,7 +140,7 @@ public:
     /**
      * @brief Push TLS for the render action for any plug-in (not only OpenFX). This will be needed in EffectInstance::getImage
      **/
-    void pushRenderActionArgs(TimeValue time, ViewIdx view, const RenderScale& scale,
+    void pushRenderActionArgs(TimeValue time, ViewIdx view, const RenderScale& proxyScale, unsigned int mipMapLevel,
                               const RectI& renderWindow,
                               const std::map<ImagePlaneDesc, ImagePtr>& outputPlanes);
 
@@ -180,7 +183,7 @@ public:
     /**
      * @brief Same as above execpt for the render action. Any field can be set to NULL if you do not need to retrieve it
      **/
-    bool getCurrentRenderActionArgs(TimeValue* time, ViewIdx* view, RenderScale* scale,
+    bool getCurrentRenderActionArgs(TimeValue* time, ViewIdx* view, RenderScale* proxyScale, unsigned int* mipMapLevel,
                                     RectI* renderWindow,
                                     std::map<ImagePlaneDesc, ImagePtr>* outputPlanes) const;
 
@@ -228,12 +231,12 @@ class RenderActionArgsSetter_RAII
 public:
 
     RenderActionArgsSetter_RAII(const EffectInstanceTLSDataPtr& tls,
-                                TimeValue time, ViewIdx view, const RenderScale& scale,
+                                TimeValue time, ViewIdx view, const RenderScale& proxyScale, unsigned int mipMapLevel,
                                 const RectI& renderWindow,
                                 const std::map<ImagePlaneDesc, ImagePtr>& outputPlanes)
     : tls(tls)
     {
-        tls->pushRenderActionArgs(time, view, scale, renderWindow, outputPlanes);
+        tls->pushRenderActionArgs(time, view, proxyScale, mipMapLevel, renderWindow, outputPlanes);
     }
 
     ~RenderActionArgsSetter_RAII()
@@ -243,15 +246,6 @@ public:
     
 };
 
-class SetCurrentFrameViewRequest_RAII
-{
-    EffectInstancePtr _effect;
-public:
-    
-    SetCurrentFrameViewRequest_RAII(const EffectInstancePtr& effect, const FrameViewRequestPtr& request);
-    
-    ~SetCurrentFrameViewRequest_RAII();
-};
 
 NATRON_NAMESPACE_EXIT;
 

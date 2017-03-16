@@ -247,8 +247,11 @@ public:
         // The view to render
         ViewIdx view;
 
-        // The scale at which this effect is rendering
-        RenderScale renderScale;
+        // The proxy scale at which this effect is rendering
+        RenderScale proxyScale;
+
+        // The mipMapLevel at which this effect is rendering
+        unsigned int mipMapLevel;
 
         // The render window: this is the portion to render for each output plane
         RectI roi;
@@ -256,10 +259,7 @@ public:
         // The list of output planes: these are the images to write to in output
         std::list<std::pair<ImagePlaneDesc, ImagePtr > > outputPlanes;
 
-        // The render args for this node.
-        FrameViewRequestPtr requestData;
-
-        // Should render use OpenGL or CPU
+        // Should render use OpenGL or CPU or any other supported device
         RenderBackendTypeEnum backendType;
 
         // The OpenGL context to used to render if backend type is set to eRenderBackendTypeOpenGL
@@ -289,7 +289,7 @@ protected: // derives from KnobHolder, parent of JoinViewsNode, OneViewNode, Pre
     explicit EffectInstance(const NodePtr& node);
 
 protected:
-    EffectInstance(const EffectInstancePtr& other, const TreeRenderPtr& render);
+    EffectInstance(const EffectInstancePtr& other, const FrameViewRenderKey& key);
 
 public:
 
@@ -314,21 +314,33 @@ public:
 
         // The time to sample on the input
         //
-        // Default - 0
-        TimeValue inputTime;
+        // Default - The current render time of this effect
+        const TimeValue* inputTime;
 
         // The view to sample on the input
         //
+        // Default - The current render view of this effect
+        const ViewIdx* inputView;
+
+        // The current action proxy scale
+        //
+        // Default - 1.
+        const RenderScale* currentActionProxyScale;
+
+        // The current action mipmap level
+        //
         // Default - 0
-        ViewIdx inputView;
+        const unsigned int* currentActionMipMapLevel;
 
         // The desired scale of the input image
-        // - Must be set
-        RenderScale inputProxyScale;
+        //
+        // Default - currentActionProxyScale
+        const RenderScale* inputProxyScale;
 
         // The desired mipmap level of the input image
-        // - Must be set
-        unsigned int inputMipMapLevel;
+        //
+        // Default - currentActionMipMapLevel
+        const unsigned int* inputMipMapLevel;
 
         // When calling getImage while not during a render, these are the bounds to render in canonical coordinates.
         // If not specified, this will ask to render the full region of definition.
@@ -336,10 +348,10 @@ public:
         // Default - NULL
         const RectD* optionalBounds;
 
-        // If set this is the plane to fetch, otherwise we use the result of
-        // the getClipComponents action
+        // The plane to render in input
         //
-        // Default - NULL
+        // Default -  W use the result of
+        // the getClipComponents action
         const ImagePlaneDesc* plane;
 
         // The backend that should be used to return the image. E.G: the input may compute a OpenGL texture but the effect pulling
@@ -357,21 +369,16 @@ public:
         // Default - NULL
         const RectI* currentRenderWindow;
 
-        // A pointer to the request data of the frame requesting the image
-        //
-        // Default - NULL
-        FrameViewRequestPtr requestData;
-
         // True if the render should be draft (i.e: low res) because user is anyway
         // scrubbing timeline or a slider
         //
-        // Default - false
-        bool draftMode;
+        // Default - The current render draft mode, or false if not during a render
+        const bool* draftMode;
 
         // Is this render triggered by a playback or render on disk ?
         //
-        // Default - false
-        bool playback;
+        // Default - The current render playback flag, or false if not during a render
+        const bool* playback;
 
         // Make sure each node in the tree gets rendered at least once
         //
@@ -381,8 +388,7 @@ public:
 
         GetImageInArgs();
 
-        // Initialize the inArgs with the current render action args
-        GetImageInArgs(const FrameViewRequestPtr& requestPass, const RectI* renderWindow, const RenderBackendTypeEnum* backend);
+        GetImageInArgs(const unsigned int* currentMipMapLevel, const RenderScale* currentProxyScale, const RectI* currentRenderWindow, const RenderBackendTypeEnum* backend);
     };
 
     struct GetImageOutArgs
@@ -432,7 +438,8 @@ private:
      * ask for the RoD.
      **/
     bool resolveRoIForGetImage(const GetImageInArgs& inArgs,
-                               TimeValue inputTime,
+                               unsigned int mipMapLevel,
+                               const RenderScale& proxyScale,
                                RectD* roiCanonical,
                                RectD* roiExpand);
 public:
@@ -884,6 +891,7 @@ protected:
 
 public:
 
+    static RenderScale getCombinedScale(unsigned int mipMapLevel, const RenderScale& proxyScale);
 
 
     //////////////////////////////////////////////////////////////////////
@@ -912,12 +920,7 @@ private:
     bool invalidateHashCacheImplementation(const bool recurse, std::set<HashableObject*>* invalidatedObjects);
 
 public:
-    
-    void setCurrentFrameViewRequest(const FrameViewRequestPtr& request);
-    FrameViewRequestPtr getCurrentFrameViewRequest() const;
 
-    virtual TimeValue getCurrentTime_TLS() const OVERRIDE;
-    virtual ViewIdx getCurrentView_TLS() const OVERRIDE;
 
     virtual EffectInstanceTLSDataPtr getTLSObject() const;
     virtual EffectInstanceTLSDataPtr getTLSObjectForThread(QThread* thread) const;
@@ -941,10 +944,21 @@ public:
     int getRenderViewsCount() const WARN_UNUSED_RETURN;
 
     /**
-     * @brief Returns input n. It might be NULL if the input is not connected.
+     * @brief Returns input n. This returns the input main instance.
+     * @returns NULL if the input is not connected, a pointer to the main instance otherwise.
      * MT-Safe
      **/
-    EffectInstancePtr getInput(int n) const WARN_UNUSED_RETURN;
+    EffectInstancePtr getInputMainInstance(int n) const WARN_UNUSED_RETURN;
+
+    /**
+     * @brief Returns the input render clone that is used to render the given frame/view
+     **/
+    EffectInstancePtr getInputRenderEffect(int n, TimeValue time, ViewIdx view) const WARN_UNUSED_RETURN;
+
+    /**
+     * @brief Same as getInputRenderEffect except that the effect returned does not necessarily corresponds to the same time/view but it is a render clone
+     **/
+    EffectInstancePtr getInputRenderEffectAtAnyTimeView(int n) const WARN_UNUSED_RETURN;
 
 
     /**
@@ -1143,16 +1157,11 @@ public:
 
 private:
 
-    ActionRetCodeEnum requestRenderInternal(TimeValue time,
-                                            ViewIdx view,
-                                            const RenderScale& proxyScale,
-                                            unsigned int mipMapLevel,
-                                            const ImagePlaneDesc& plane,
-                                            const RectD & roiCanonical,
+    ActionRetCodeEnum requestRenderInternal(const RectD & roiCanonical,
                                             int inputNbInRequester,
+                                            const FrameViewRequestPtr& requestData,
                                             const FrameViewRequestPtr& requester,
-                                            const RequestPassSharedDataPtr& requestPassSharedData,
-                                            FrameViewRequestPtr* createdRequest);
+                                            const RequestPassSharedDataPtr& requestPassSharedData);
     
 public:
     
@@ -1216,7 +1225,7 @@ private:
 
     ActionRetCodeEnum launchRenderInternal(const RequestPassSharedDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestData);
 
-    virtual KnobHolderPtr createRenderCopy(const TreeRenderPtr& render) const OVERRIDE FINAL;
+    virtual KnobHolderPtr createRenderCopy(const FrameViewRenderKey& key) const OVERRIDE FINAL;
 
 public:
 
@@ -1844,8 +1853,6 @@ public:
 
     void findPluginFormatKnobs();
 
-    void setRenderCloneInput(const EffectInstancePtr& input, int inputNb);
-
 
 private:
 
@@ -1938,7 +1945,7 @@ private:
  * It is used to build a new instance of an effect. Basically it should just call the constructor.
  **/
 typedef EffectInstancePtr (*EffectBuilder)(const NodePtr&);
-typedef EffectInstancePtr (*EffectRenderCloneBuilder)(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render);
+typedef EffectInstancePtr (*EffectRenderCloneBuilder)(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key);
 
 inline EffectInstancePtr
 toEffectInstance(const KnobHolderPtr& effect)

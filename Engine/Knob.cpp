@@ -45,6 +45,7 @@
 #include "Engine/AppManager.h"
 #include "Engine/Curve.h"
 #include "Engine/DockablePanelI.h"
+#include "Engine/FrameViewRequest.h"
 #include "Engine/OverlayInteractBase.h"
 #include "Engine/Hash64.h"
 #include "Engine/KnobFile.h"
@@ -2382,19 +2383,19 @@ KnobHelper::getListeners(KnobDimViewKeySet& listeners, ListenersTypeFlags flags)
 }
 
 TimeValue
-KnobHelper::getCurrentTime_TLS() const
+KnobHelper::getCurrentRenderTime() const
 {
     KnobHolderPtr holder = getHolder();
 
-    return holder && holder->getApp() ? holder->getCurrentTime_TLS() : TimeValue(0);
+    return holder && holder->getApp() ? holder->getCurrentRenderTime() : TimeValue(0);
 }
 
 ViewIdx
-KnobHelper::getCurrentView_TLS() const
+KnobHelper::getCurrentRenderView() const
 {
     KnobHolderPtr holder = getHolder();
 
-    return ( holder && holder->getApp() ) ? holder->getCurrentView_TLS() : ViewIdx(0);
+    return ( holder && holder->getApp() ) ? holder->getCurrentRenderView() : ViewIdx(0);
 }
 
 
@@ -4019,6 +4020,8 @@ KnobHelper::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::Kn
 
 /***************************KNOB HOLDER******************************************/
 
+typedef std::map<FrameViewRenderKey, KnobHolderPtr, FrameViewRenderKey_compare_less> RenderCloneMap;
+
 struct KnobHolderCommonData
 {
     AppInstanceWPtr app;
@@ -4072,7 +4075,7 @@ struct KnobHolderCommonData
     std::string knobsTableParamBefore;
 
     mutable QMutex renderClonesMutex;
-    std::map<TreeRenderWPtr, KnobHolderPtr> renderClones;
+    RenderCloneMap renderClones;
 
     KnobHolderCommonData()
     : app()
@@ -4111,7 +4114,11 @@ struct KnobHolder::KnobHolderPrivate
     // If this is a render clone, this is a pointer to the main instance
     KnobHolderPtr mainInstance;
 
-    TreeRenderWPtr currentRender;
+    // This is the current frame/view being requested or rendered by this clone.
+    // Note that it is a weak reference: the actual shared references are held by other effects that reference this node.
+    // This enables to track dependencies across effects and destroy FrameViewRequest objects when they are no longer references by downstream
+    // effects.
+    FrameViewRenderKey currentRender;
 
     KnobHolderPrivate(const AppInstancePtr& appInstance)
     : common(new KnobHolderCommonData)
@@ -4152,12 +4159,12 @@ KnobHolder::KnobHolder(const AppInstancePtr& appInstance)
 
 }
 
-KnobHolder::KnobHolder(const KnobHolderPtr& other, const TreeRenderPtr& render)
+KnobHolder::KnobHolder(const KnobHolderPtr& other, const FrameViewRenderKey& key)
     : QObject()
     , boost::enable_shared_from_this<KnobHolder>()
 , _imp (new KnobHolderPrivate(other))
 {
-    _imp->currentRender = render;
+    _imp->currentRender = key;
 }
 
 KnobHolder::~KnobHolder()
@@ -4175,11 +4182,10 @@ KnobHolder::~KnobHolder()
         }
     } else {
         if (_imp->common->knobsTable) {
-            TreeRenderPtr render = _imp->currentRender.lock();
             std::vector<KnobTableItemPtr> allItems = _imp->common->knobsTable->getAllItems();
             for (std::vector<KnobTableItemPtr>::const_iterator it = allItems.begin(); it != allItems.end(); ++it) {
                 if ((*it)->isRenderCloneNeeded()) {
-                    (*it)->removeRenderClone(render);
+                    (*it)->removeRenderClone(_imp->currentRender.render.lock());
                 }
             }
         }
@@ -4189,7 +4195,7 @@ KnobHolder::~KnobHolder()
 TreeRenderPtr
 KnobHolder::getCurrentRender() const
 {
-    return _imp->currentRender.lock();
+    return _imp->currentRender.render.lock();
 }
 
 KnobHolderPtr
@@ -5160,11 +5166,14 @@ KnobHolder::removeRenderClone(const TreeRenderPtr& render)
     KnobHolderPtr clone;
     {
         QMutexLocker locker(&_imp->common->renderClonesMutex);
-        std::map<TreeRenderWPtr, KnobHolderPtr>::iterator found = _imp->common->renderClones.find(render);
-        if (found != _imp->common->renderClones.end()) {
-            clone = found->second;
-            _imp->common->renderClones.erase(found);
+        RenderCloneMap newMap;
+        for (RenderCloneMap::iterator it = _imp->common->renderClones.begin(); it != _imp->common->renderClones.end(); ++it) {
+            if (it->first.render.lock() == render) {
+                continue;
+            }
+            newMap.insert(*it);
         }
+        _imp->common->renderClones = newMap;
     }
 
     if (!clone) {
@@ -5183,23 +5192,23 @@ KnobHolder::removeRenderClone(const TreeRenderPtr& render)
 }
 
 KnobHolderPtr
-KnobHolder::createRenderClone(const TreeRenderPtr& render) const
+KnobHolder::createRenderClone(const FrameViewRenderKey& key) const
 {
     {
         QMutexLocker k(&_imp->common->renderClonesMutex);
-        std::map<TreeRenderWPtr, KnobHolderPtr>::iterator found = _imp->common->renderClones.find(render);
+        RenderCloneMap::iterator found = _imp->common->renderClones.find(key);
         if (found != _imp->common->renderClones.end()) {
             return found->second;
         }
     }
 
-    KnobHolderPtr copy = createRenderCopy(render);
+    KnobHolderPtr copy = createRenderCopy(key);
     if (!copy) {
         return copy;
     }
     {
         QMutexLocker k(&_imp->common->renderClonesMutex);
-        _imp->common->renderClones[render] = copy;
+        _imp->common->renderClones[key] = copy;
     }
     copy->initializeKnobsPublic();
     copy->fetchRenderCloneKnobs();
@@ -5207,13 +5216,13 @@ KnobHolder::createRenderClone(const TreeRenderPtr& render) const
 }
 
 KnobHolderPtr
-KnobHolder::getRenderClone(const TreeRenderPtr& render) const
+KnobHolder::getRenderClone(const FrameViewRenderKey& key) const
 {
 
     // This must be the main instance!
     assert(!_imp->mainInstance);
     QMutexLocker k(&_imp->common->renderClonesMutex);
-    std::map<TreeRenderWPtr, KnobHolderPtr>::iterator found = _imp->common->renderClones.find(render);
+    RenderCloneMap::iterator found = _imp->common->renderClones.find(key);
     if (found != _imp->common->renderClones.end()) {
         return found->second;
     }
@@ -5228,7 +5237,7 @@ KnobHolder::fetchRenderCloneKnobs()
         std::vector<KnobTableItemPtr> allItems = _imp->common->knobsTable->getAllItems();
         for (std::vector<KnobTableItemPtr>::const_iterator it = allItems.begin(); it != allItems.end(); ++it) {
             if ((*it)->isRenderCloneNeeded()) {
-                (*it)->createRenderClone(_imp->currentRender.lock());
+                (*it)->createRenderClone(_imp->currentRender);
             }
         }
     }
@@ -5265,15 +5274,23 @@ KnobHolder::getTimelineCurrentTime() const
 
 
 TimeValue
-KnobHolder::getCurrentTime_TLS() const
+KnobHolder::getCurrentRenderTime() const
 {
-    return TimeValue(getTimelineCurrentTime());
+    if (_imp->mainInstance) {
+        return _imp->currentRender.time;
+    } else {
+        return TimeValue(getTimelineCurrentTime());
+    }
 }
 
 ViewIdx
-KnobHolder::getCurrentView_TLS() const
+KnobHolder::getCurrentRenderView() const
 {
-    return ViewIdx(0);
+    if (_imp->mainInstance) {
+        return _imp->currentRender.view;
+    } else {
+        return ViewIdx(0);
+    }
 }
 
 void

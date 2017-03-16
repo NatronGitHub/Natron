@@ -224,8 +224,8 @@ Bezier::Bezier(const KnobItemsTablePtr& model,
 {
 }
 
-Bezier::Bezier(const BezierPtr& other, const TreeRenderPtr& render)
-: RotoDrawableItem(other, render)
+Bezier::Bezier(const BezierPtr& other, const FrameViewRenderKey& key)
+: RotoDrawableItem(other, key)
 , _imp( new BezierPrivate(*other->_imp) )
 {
 
@@ -243,7 +243,7 @@ Bezier::~Bezier()
 }
 
 KnobHolderPtr
-Bezier::createRenderCopy(const TreeRenderPtr& render) const
+Bezier::createRenderCopy(const FrameViewRenderKey& render) const
 {
     BezierPtr ret(new Bezier(toBezier(getMainInstance()), render));
     return ret;
@@ -1737,7 +1737,7 @@ Bezier::setCurveFinished(bool finished, ViewSetSpec view)
     }
     
     resetTransformCenter();
-    refreshPolygonOrientation(getCurrentTime_TLS(), view);
+    refreshPolygonOrientation(getCurrentRenderTime(), view);
     evaluateCurveModified();
 }
 
@@ -1794,7 +1794,7 @@ Bezier::removeControlPointByIndex(int index, ViewSetSpec view)
         removeControlPointByIndexInternal(index, view_i);
     }
 
-    refreshPolygonOrientation(getCurrentTime_TLS(), view);
+    refreshPolygonOrientation(getCurrentRenderTime(), view);
     evaluateCurveModified();
 }
 
@@ -3655,7 +3655,7 @@ Bezier::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase
 
     }
     evaluateCurveModified();
-    refreshPolygonOrientation(getCurrentTime_TLS(), ViewSetSpec::all());
+    refreshPolygonOrientation(getCurrentRenderTime(), ViewSetSpec::all());
     RotoDrawableItem::fromSerialization(obj);
 }
 

@@ -204,8 +204,8 @@ OfxEffectInstance::OfxEffectInstance(const NodePtr& node)
 }
 
 
-OfxEffectInstance::OfxEffectInstance(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render)
-: AbstractOfxEffectInstance(mainInstance, render)
+OfxEffectInstance::OfxEffectInstance(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key)
+: AbstractOfxEffectInstance(mainInstance, key)
 , _imp(new OfxEffectInstancePrivate)
 {
     OfxEffectInstance* mainEffect = dynamic_cast<OfxEffectInstance*>(mainInstance.get());
@@ -1620,14 +1620,15 @@ OfxEffectInstance::render(const RenderActionArgs& args)
         EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
 
 
-        RenderActionArgsSetter_RAII actionArgsTls(tls, args.time, args.view, args.renderScale, args.roi, outputPlanesMap);
+        RenderScale combinedScale = EffectInstance::getCombinedScale(args.mipMapLevel, args.proxyScale);
+        RenderActionArgsSetter_RAII actionArgsTls(tls, args.time, args.view, args.proxyScale, args.mipMapLevel, args.roi, outputPlanesMap);
         
         ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
         
         stat = _imp->common->effect->renderAction((OfxTime)args.time,
                                           field,
                                           ofxRoI,
-                                          args.renderScale,
+                                          combinedScale,
                                           render->isPlayback(),
                                           !render->isPlayback(),
                                           args.backendType == eRenderBackendTypeOpenGL,

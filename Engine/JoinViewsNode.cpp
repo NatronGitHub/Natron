@@ -66,8 +66,8 @@ JoinViewsNode::JoinViewsNode(const NodePtr& node)
 
 }
 
-JoinViewsNode::JoinViewsNode(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render)
-: EffectInstance(mainInstance, render)
+JoinViewsNode::JoinViewsNode(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key)
+: EffectInstance(mainInstance, key)
 , _imp(new JoinViewsNodePrivate())
 {
     JoinViewsNode* mainNode = dynamic_cast<JoinViewsNode*>(mainInstance.get());

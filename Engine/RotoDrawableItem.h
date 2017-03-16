@@ -102,7 +102,7 @@ public:
     RotoDrawableItem(const KnobItemsTablePtr& model);
 
     // The copy constructor makes a shallow copy and only copy knob pointers
-    RotoDrawableItem(const RotoDrawableItemPtr& other, const TreeRenderPtr& render);
+    RotoDrawableItem(const RotoDrawableItemPtr& other, const FrameViewRenderKey& key);
 
     virtual ~RotoDrawableItem();
 

@@ -1583,7 +1583,7 @@ TrackerNode::evaluate(bool isSignificant, bool refreshMetadatas)
 RectD
 TrackerNodePrivate::getInputRoD(TimeValue time, ViewIdx view) const
 {
-    EffectInstancePtr inputEffect = publicInterface->getInput(0);
+    EffectInstancePtr inputEffect = publicInterface->getInputRenderEffect(0, time, view);
     RectD ret;
 
     if (inputEffect) {

@@ -2756,7 +2756,7 @@ ViewerGL::pickColorInternal(double x,
         imgPos = _imp->zoomCtx.toZoomCoordinates(x, y);
     }
 
-    ViewIdx currentView = getInternalNode()->getCurrentView_TLS();
+    ViewIdx currentView = getInternalNode()->getCurrentRenderView();
 
     _imp->lastPickerPos = imgPos;
     bool linear = appPTR->getCurrentSettings()->getColorPickerLinear();
@@ -2937,7 +2937,7 @@ ViewerGL::updateRectangleColorPickerInternal()
     QPointF btmRight = _imp->pickerRect.bottomRight();
     RectD rect;
 
-    ViewIdx currentView = getInternalNode()->getCurrentView_TLS();
+    ViewIdx currentView = getInternalNode()->getCurrentRenderView();
 
     bool pickInput = (qApp->keyboardModifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier)) == (Qt::ControlModifier | Qt::AltModifier);
 

@@ -159,6 +159,7 @@ class FileSystemItem;
 class FileSystemModel;
 class Format;
 class FramebufferConfig;
+struct FrameViewRenderKey;
 class FrameViewRequest;
 class GLRendererID;
 class GLShaderBase;

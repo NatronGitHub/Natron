@@ -93,14 +93,15 @@ EffectInstanceTLSData::pushActionArgs(const std::string& actionName, TimeValue t
 }
 
 void
-EffectInstanceTLSData::pushRenderActionArgs(TimeValue time, ViewIdx view, const RenderScale& scale,
+EffectInstanceTLSData::pushRenderActionArgs(TimeValue time, ViewIdx view, const RenderScale& proxyScale, unsigned int mipMapLevel,
                                             const RectI& renderWindow,
                                             const std::map<ImagePlaneDesc, ImagePtr>& outputPlanes)
 {
     RenderActionTLSDataPtr args(new RenderActionTLSData);
     args->time = time;
     args->view = view;
-    args->scale = scale;
+    args->scale = proxyScale;
+    args->mipMapLevel = mipMapLevel;
     args->renderWindow = renderWindow;
     args->outputPlanes = outputPlanes;
     args->actionName = "Render";
@@ -188,7 +189,7 @@ EffectInstanceTLSData::getCurrentActionArgs(TimeValue* time, ViewIdx* view, Rend
 
 
 bool
-EffectInstanceTLSData::getCurrentRenderActionArgs(TimeValue* time, ViewIdx* view, RenderScale* scale,
+EffectInstanceTLSData::getCurrentRenderActionArgs(TimeValue* time, ViewIdx* view, RenderScale* proxyScale, unsigned int* mipMapLevel,
                                                   RectI* renderWindow,
                                                   std::map<ImagePlaneDesc, ImagePtr>* outputPlanes) const
 {
@@ -207,8 +208,11 @@ EffectInstanceTLSData::getCurrentRenderActionArgs(TimeValue* time, ViewIdx* view
     if (view) {
         *view = args->view;
     }
-    if (scale) {
-        *scale = args->scale;
+    if (proxyScale) {
+        *proxyScale = args->scale;
+    }
+    if (mipMapLevel) {
+        *mipMapLevel = args->mipMapLevel;
     }
     if (renderWindow) {
         *renderWindow = args->renderWindow;
@@ -229,15 +233,5 @@ EffectInstanceTLSData::clearActionStack()
 }
 
 
-SetCurrentFrameViewRequest_RAII::SetCurrentFrameViewRequest_RAII(const EffectInstancePtr& effect, const FrameViewRequestPtr& request)
-: _effect(effect)
-{
-    effect->setCurrentFrameViewRequest(request);
-}
-
-SetCurrentFrameViewRequest_RAII::~SetCurrentFrameViewRequest_RAII()
-{
-    _effect->setCurrentFrameViewRequest(FrameViewRequestPtr());
-}
 
 NATRON_NAMESPACE_EXIT

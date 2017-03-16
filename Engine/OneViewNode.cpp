@@ -67,8 +67,8 @@ OneViewNode::OneViewNode(const NodePtr& n)
 
 }
 
-OneViewNode::OneViewNode(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render)
-: EffectInstance(mainInstance, render)
+OneViewNode::OneViewNode(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key)
+: EffectInstance(mainInstance, key)
 , _imp( new OneViewNodePrivate() )
 {
 

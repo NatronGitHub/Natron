@@ -85,6 +85,33 @@ FrameView_compare_less::operator() (const FrameViewPair & lhs,
     }
 }
 
+bool
+FrameViewRenderKey_compare_less::operator() (const FrameViewRenderKey & lhs,
+                 const FrameViewRenderKey & rhs) const
+{
+    TreeRenderPtr lRender = lhs.render.lock();
+    TreeRenderPtr rRender = rhs.render.lock();
+    if (lRender.get() < rRender.get()) {
+        return true;
+    } else if (lRender.get() > rRender.get()) {
+        return false;
+    }
+
+    if (lhs.time < rhs.time) {
+        return true;
+    } else if (lhs.time > rhs.time) {
+        return false;
+    }
+
+    if (lhs.view < rhs.view) {
+        return true;
+    } else if (lhs.view > rhs.view) {
+        return false;
+    }
+    return false;
+}
+
+
 struct PerLaunchRequestData
 {
 
@@ -112,20 +139,17 @@ struct FrameViewRequestPrivate
     // Weak reference to the render local arguments for the corresponding effect
     EffectInstanceWPtr renderClone;
 
-    // The time at which to render
-    TimeValue time;
+    // The tree render associated to this request
+    TreeRenderWPtr parentRender;
 
-    // The view at which to render
-    ViewIdx view;
+    // The plane to render
+    ImagePlaneDesc plane;
 
     // The proxy scale
     RenderScale proxyScale;
 
     // The mipmap level at which to render
     unsigned int mipMapLevel, renderMappedMipMapLevel;
-
-    // The plane to render
-    ImagePlaneDesc plane;
 
     // The caching policy for this frame/view
     CacheAccessModeEnum cachingPolicy;
@@ -155,8 +179,6 @@ struct FrameViewRequestPrivate
     // The required frame/views in input, set on first request
     GetFramesNeededResultsPtr frameViewsNeeded;
 
-    // The hash for this frame view
-    U64 frameViewHash;
 
     // The needed components at this frame/view
     GetComponentsResultsPtr neededComps;
@@ -174,21 +196,18 @@ struct FrameViewRequestPrivate
     // True if cache write is allowed but not cache read
     bool byPassCache;
 
-    FrameViewRequestPrivate(TimeValue time,
-                            ViewIdx view,
-                            const RenderScale& proxyScale,
+    FrameViewRequestPrivate(const ImagePlaneDesc& plane,
                             unsigned int mipMapLevel,
-                            const ImagePlaneDesc& plane,
-                            U64 timeViewHash,
-                            const EffectInstancePtr& renderClone)
+                            const RenderScale& proxyScale,
+                            const EffectInstancePtr& effect,
+                            const TreeRenderPtr& render)
     : lock()
-    , renderClone(renderClone)
-    , time(time)
-    , view(view)
+    , renderClone(effect)
+    , parentRender(render)
+    , plane(plane)
     , proxyScale(proxyScale)
     , mipMapLevel(mipMapLevel)
     , renderMappedMipMapLevel(mipMapLevel)
-    , plane(plane)
     , cachingPolicy(eCacheAccessModeReadWrite)
     , fallbackRenderDevice(eRenderBackendTypeCPU)
     , fallbackRenderDeviceEnabled(false)
@@ -198,39 +217,34 @@ struct FrameViewRequestPrivate
     , finalRoi()
     , requestData()
     , frameViewsNeeded()
-    , frameViewHash(timeViewHash)
     , neededComps()
     , distortion()
     , distortionStack()
-#ifdef TRACE_REQUEST_LIFETIME
-    , nodeName(renderClone->getNode()->getScriptName_mt_safe())
-#endif
     , byPassCache(false)
     {
-        
+#ifdef TRACE_REQUEST_LIFETIME
+        nodeName(effect->getNode()->getScriptName_mt_safe())
+        qDebug() << "Create request" << nodeName.c_str();
+#endif
+        if (effect->getCurrentRender()->isByPassCacheEnabled()) {
+            byPassCache = true;
+        }
+
+        if (effect->getCurrentOpenGLRenderSupport() == ePluginOpenGLRenderSupportNeeded) {
+            // The plug-in can only use GPU, so make the device fallback be GPU
+            fallbackRenderDevice = eRenderBackendTypeOpenGL;
+        }
     }
 };
 
-FrameViewRequest::FrameViewRequest(TimeValue time,
-                                   ViewIdx view,
-                                   const RenderScale& proxyScale,
+FrameViewRequest::FrameViewRequest(const ImagePlaneDesc& plane,
                                    unsigned int mipMapLevel,
-                                   const ImagePlaneDesc& plane,
-                                   U64 timeViewHash,
-                                   const EffectInstancePtr& renderClone)
-: _imp(new FrameViewRequestPrivate(time, view, proxyScale, mipMapLevel, plane, timeViewHash, renderClone))
+                                   const RenderScale& proxyScale,
+                                   const EffectInstancePtr& effect,
+                                   const TreeRenderPtr& render)
+: _imp(new FrameViewRequestPrivate(plane, mipMapLevel, proxyScale, effect, render))
 {
-#ifdef TRACE_REQUEST_LIFETIME
-    qDebug() << "Create request" << _imp->nodeName.c_str();
-#endif
-    if (renderClone->getCurrentRender()->isByPassCacheEnabled()) {
-        _imp->byPassCache = true;
-    }
 
-    if (renderClone->getCurrentOpenGLRenderSupport() == ePluginOpenGLRenderSupportNeeded) {
-        // The plug-in can only use GPU, so make the device fallback be GPU
-        _imp->fallbackRenderDevice = eRenderBackendTypeOpenGL;
-    }
 }
 
 FrameViewRequest::~FrameViewRequest()
@@ -240,23 +254,18 @@ FrameViewRequest::~FrameViewRequest()
 #endif
 }
 
+TreeRenderPtr
+FrameViewRequest::getParentRender() const
+{
+    return _imp->parentRender.lock();
+}
+
 EffectInstancePtr
-FrameViewRequest::getRenderClone() const
+FrameViewRequest::getEffect() const
 {
     return _imp->renderClone.lock();
 }
 
-TimeValue
-FrameViewRequest::getTime() const
-{
-    return _imp->time;
-}
-
-ViewIdx
-FrameViewRequest::getView() const
-{
-    return _imp->view;
-}
 
 unsigned int
 FrameViewRequest::getMipMapLevel() const
@@ -490,14 +499,6 @@ FrameViewRequest::isFallbackRenderDeviceEnabled() const
 {
     return _imp->fallbackRenderDeviceEnabled;
 }
-
-U64
-FrameViewRequest::getHash() const
-{
-    QMutexLocker k(&_imp->lock);
-    return _imp->frameViewHash;
-}
-
 
 GetFramesNeededResultsPtr
 FrameViewRequest::getFramesNeededResults() const

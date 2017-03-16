@@ -333,8 +333,8 @@ RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other
         // The bounding box computation requires a time and view parameters:
         // we are OK to assume that the time view are the current ones in the UI
         // since we are drawing anyway nothing else is happening.
-        TimeValue time = _publicInterface->getCurrentTime_TLS();
-        ViewIdx view = _publicInterface->getCurrentView_TLS();
+        TimeValue time = _publicInterface->getCurrentRenderTime();
+        ViewIdx view = _publicInterface->getCurrentRenderView();
 
         lastStrokeStepBbox = computeBoundingBox(time, view);
         renderCachedBbox = other.computeBoundingBox(time, view);
@@ -383,8 +383,8 @@ RotoStrokeItem::RotoStrokeItem(RotoStrokeType type,
 {
 }
 
-RotoStrokeItem::RotoStrokeItem(const RotoStrokeItemPtr& other, const TreeRenderPtr& render)
-: RotoDrawableItem(other, render)
+RotoStrokeItem::RotoStrokeItem(const RotoStrokeItemPtr& other, const FrameViewRenderKey& key)
+: RotoDrawableItem(other, key)
 , _imp(new RotoStrokeItemPrivate(this, other->getBrushType()))
 {
 
@@ -401,12 +401,12 @@ RotoStrokeItem::~RotoStrokeItem()
 }
 
 KnobHolderPtr
-RotoStrokeItem::createRenderCopy(const TreeRenderPtr& render) const
+RotoStrokeItem::createRenderCopy(const FrameViewRenderKey& key) const
 {
     RotoStrokeItemPtr mainInstance = toRotoStrokeItem(boost::const_pointer_cast<KnobHolder>(shared_from_this()));
     {
         QMutexLocker k(&_imp->lock);
-        RotoStrokeItemPtr ret(new RotoStrokeItem(mainInstance, render));
+        RotoStrokeItemPtr ret(new RotoStrokeItem(mainInstance, key));
         ret->_imp->copyStrokeForRendering(*_imp);
         return ret;
     }

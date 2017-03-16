@@ -91,8 +91,8 @@ DiskCacheNode::DiskCacheNode(const NodePtr& node)
 {
 }
 
-DiskCacheNode::DiskCacheNode(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render)
-: EffectInstance(mainInstance, render)
+DiskCacheNode::DiskCacheNode(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key)
+: EffectInstance(mainInstance, key)
 , _imp(new DiskCacheNodePrivate())
 {
 
@@ -232,7 +232,7 @@ DiskCacheNode::getFrameRange(double *first,
 
     switch (idx) {
     case 0: {
-        EffectInstancePtr input = getInput(0);
+        EffectInstancePtr input = getInputRenderEffectAtAnyTimeView(0);
         if (input) {
 
             GetFrameRangeResultsPtr results;
@@ -272,7 +272,7 @@ DiskCacheNode::render(const RenderActionArgs& args)
 
     for (std::list<std::pair<ImagePlaneDesc, ImagePtr > >::const_iterator it = args.outputPlanes.begin(); it != args.outputPlanes.end(); ++it) {
 
-        GetImageInArgs inArgs(args.requestData, &args.roi, &args.backendType);
+        GetImageInArgs inArgs(&args.mipMapLevel, &args.proxyScale, &args.roi, &args.backendType);
         inArgs.inputNb = 0;
         inArgs.plane = &it->first;
         GetImageOutArgs outArgs;

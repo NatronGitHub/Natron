@@ -158,7 +158,7 @@ ViewerTab::drawOverlays(TimeValue time,
         return;
     }
 
-    ViewIdx view = getInternalNode()->getCurrentView_TLS();
+    ViewIdx view = getInternalNode()->getCurrentRenderView();
     NodesList nodes;
     getNodesEntitledForOverlays(time, view, nodes);
 
@@ -242,7 +242,7 @@ ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
         return false;
     }
     TimeValue time(app->getTimeLine()->currentFrame());
-    ViewIdx view = getInternalNode()->getCurrentView_TLS();
+    ViewIdx view = getInternalNode()->getCurrentRenderView();
 
     QPointF transformPos;
 #ifndef NATRON_TRANSFORM_AFFECTS_OVERLAYS
@@ -345,7 +345,7 @@ ViewerTab::notifyOverlaysPenDown(const RenderScale & renderScale,
     _imp->hasCaughtPenMotionWhileDragging = false;
 
     TimeValue time(app->getTimeLine()->currentFrame());
-    ViewIdx view = getInternalNode()->getCurrentView_TLS();
+    ViewIdx view = getInternalNode()->getCurrentRenderView();
 
     NodesList nodes;
     getNodesEntitledForOverlays(time, view, nodes);
@@ -393,7 +393,7 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
     }
 
     TimeValue time(app->getTimeLine()->currentFrame());
-    ViewIdx view = getInternalNode()->getCurrentView_TLS();
+    ViewIdx view = getInternalNode()->getCurrentRenderView();
 
     NodesList nodes;
     getNodesEntitledForOverlays(time, view, nodes);
@@ -485,7 +485,7 @@ ViewerTab::notifyOverlaysPenMotion_internal(const NodePtr& node,
     }
 
     TimeValue time(app->getTimeLine()->currentFrame());
-    ViewIdx view = getInternalNode()->getCurrentView_TLS();
+    ViewIdx view = getInternalNode()->getCurrentRenderView();
 
     QPointF transformPos;
 #ifndef NATRON_TRANSFORM_AFFECTS_OVERLAYS
@@ -595,7 +595,7 @@ ViewerTab::notifyOverlaysPenMotion(const RenderScale & renderScale,
     }
 
     TimeValue time(app->getTimeLine()->currentFrame());
-    ViewIdx view = getInternalNode()->getCurrentView_TLS();
+    ViewIdx view = getInternalNode()->getCurrentRenderView();
 
     NodesList nodes;
     getNodesEntitledForOverlays(time, view, nodes);
@@ -671,7 +671,7 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
     _imp->lastOverlayNode.reset();
 
     TimeValue time(app->getTimeLine()->currentFrame());
-    ViewIdx view = getInternalNode()->getCurrentView_TLS();
+    ViewIdx view = getInternalNode()->getCurrentRenderView();
 
 
     NodesList nodes;
@@ -888,7 +888,7 @@ ViewerTab::notifyOverlaysKeyDown_internal(const NodePtr& node,
     }
 
     TimeValue time(app->getTimeLine()->currentFrame());
-    ViewIdx view = getInternalNode()->getCurrentView_TLS();
+    ViewIdx view = getInternalNode()->getCurrentRenderView();
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
     TimeValue transformedTime;
@@ -968,7 +968,7 @@ ViewerTab::notifyOverlaysKeyDown(const RenderScale & renderScale,
     KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers(qMods);
 
     TimeValue time(app->getTimeLine()->currentFrame());
-    ViewIdx view = getInternalNode()->getCurrentView_TLS();
+    ViewIdx view = getInternalNode()->getCurrentRenderView();
 
     NodesList nodes;
     getNodesEntitledForOverlays(time, view, nodes);
@@ -1036,7 +1036,7 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
     _imp->lastOverlayNode.reset();
 
     TimeValue time(app->getTimeLine()->currentFrame());
-    ViewIdx view = getInternalNode()->getCurrentView_TLS();
+    ViewIdx view = getInternalNode()->getCurrentRenderView();
     NodesList nodes;
     getNodesEntitledForOverlays(time, view, nodes);
 
@@ -1119,7 +1119,7 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const NodePtr& node,
         return false;
     }
 
-    ViewIdx view = getInternalNode()->getCurrentView_TLS();
+    ViewIdx view = getInternalNode()->getCurrentRenderView();
     TimeValue time(app->getTimeLine()->currentFrame());
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
@@ -1243,7 +1243,7 @@ ViewerTab::notifyOverlaysFocusGained(const RenderScale & renderScale)
 
 
     TimeValue time(app->getTimeLine()->currentFrame());
-    ViewIdx view = getInternalNode()->getCurrentView_TLS();
+    ViewIdx view = getInternalNode()->getCurrentRenderView();
     bool ret = false;
     NodesList nodes;
     getNodesEntitledForOverlays(time, view, nodes);
@@ -1310,7 +1310,7 @@ ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
 
 
     TimeValue time (app->getTimeLine()->currentFrame());
-    ViewIdx view = getInternalNode()->getCurrentView_TLS();
+    ViewIdx view = getInternalNode()->getCurrentRenderView();
     bool ret = false;
     NodesList nodes;
     getNodesEntitledForOverlays(time, view, nodes);
@@ -1351,7 +1351,7 @@ ViewerTab::updateSelectionFromViewerSelectionRectangle(bool onRelease)
 {
 
     TimeValue time(getGui()->getApp()->getTimeLine()->currentFrame());
-    ViewIdx view = getInternalNode()->getCurrentView_TLS();
+    ViewIdx view = getInternalNode()->getCurrentRenderView();
 
 
     RectD rect;
@@ -1378,7 +1378,7 @@ void
 ViewerTab::onViewerSelectionCleared()
 {
     TimeValue time(getGui()->getApp()->getTimeLine()->currentFrame());
-    ViewIdx view = getInternalNode()->getCurrentView_TLS();
+    ViewIdx view = getInternalNode()->getCurrentRenderView();
 
 
     NodesList nodes;

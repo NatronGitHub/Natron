@@ -318,16 +318,16 @@ protected: // derives from EffectInstance, parent of TrackerNode and WriteNode
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     NodeGroup(const NodePtr &node);
 
-    NodeGroup(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render);
+    NodeGroup(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key);
 public:
     static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
     {
         return EffectInstancePtr( new NodeGroup(node) );
     }
 
-    static EffectInstancePtr createRenderClone(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render) WARN_UNUSED_RETURN
+    static EffectInstancePtr createRenderClone(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key) WARN_UNUSED_RETURN
     {
-        return EffectInstancePtr( new NodeGroup(mainInstance, render) );
+        return EffectInstancePtr( new NodeGroup(mainInstance, key) );
     }
 
     static PluginPtr createPlugin();
@@ -360,8 +360,8 @@ public:
     virtual bool isInputOptional(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isInputMask(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getInputLabel(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual TimeValue getCurrentTime_TLS() const OVERRIDE WARN_UNUSED_RETURN;
-    virtual ViewIdx getCurrentView_TLS() const OVERRIDE WARN_UNUSED_RETURN;
+    virtual TimeValue getCurrentRenderTime() const OVERRIDE WARN_UNUSED_RETURN;
+    virtual ViewIdx getCurrentRenderView() const OVERRIDE WARN_UNUSED_RETURN;
     virtual void addAcceptedComponents(int inputNb, std::bitset<4>* comps) OVERRIDE FINAL;
 
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;

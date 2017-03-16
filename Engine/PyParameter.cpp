@@ -1165,7 +1165,7 @@ AnimatedParam::getCurrentTime() const
         PythonSetNullError();
         return 0;
     }
-    return knob->getCurrentTime_TLS();
+    return knob->getCurrentRenderTime();
 }
 
 bool

@@ -165,8 +165,8 @@ ViewerInstance::ViewerInstance(const NodePtr& node)
 
 }
 
-ViewerInstance::ViewerInstance(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render)
-: EffectInstance(mainInstance, render)
+ViewerInstance::ViewerInstance(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key)
+: EffectInstance(mainInstance, key)
 , _imp( new ViewerInstancePrivate(this) )
 {
 
@@ -570,7 +570,7 @@ ViewerInstancePrivate::refreshLayerAndAlphaChannelComboBox()
 
     {
         const int passThroughPlanesInputNb = 0;
-        ActionRetCodeEnum stat = _publicInterface->getAvailableLayers(_publicInterface->getCurrentTime_TLS(), ViewIdx(0), passThroughPlanesInputNb, &upstreamAvailableLayers);
+        ActionRetCodeEnum stat = _publicInterface->getAvailableLayers(_publicInterface->getCurrentRenderTime(), ViewIdx(0), passThroughPlanesInputNb, &upstreamAvailableLayers);
         (void)stat;
     }
 
@@ -1448,7 +1448,7 @@ ViewerInstance::render(const RenderActionArgs& args)
     ImagePtr colorImage, alphaImage;
     if (selectedLayer.getNumComponents() > 0) {
         GetImageOutArgs outArgs;
-        GetImageInArgs inArgs(args.requestData, &args.roi, &args.backendType);
+        GetImageInArgs inArgs(&args.mipMapLevel, &args.proxyScale, &args.roi, &args.backendType);
         inArgs.inputNb = 0;
         inArgs.plane = &selectedLayer;
         bool ok = getImagePlane(inArgs, &outArgs);
@@ -1461,9 +1461,9 @@ ViewerInstance::render(const RenderActionArgs& args)
             alphaImage = colorImage;
         } else {
             GetImageOutArgs outArgs;
-            GetImageInArgs inArgs(args.requestData, &args.roi, &args.backendType);
+            GetImageInArgs inArgs(&args.mipMapLevel, &args.proxyScale, &args.roi, &args.backendType);
             inArgs.inputNb = 0;
-            inArgs.plane = &selectedLayer;
+            inArgs.plane = &selectedAlphaLayer;
             bool ok = getImagePlane(inArgs, &outArgs);
             if (!ok) {
                 return eActionStatusFailed;

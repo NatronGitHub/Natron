@@ -95,8 +95,8 @@ EffectInstance::EffectInstance(const NodePtr& node)
   
 }
 
-EffectInstance::EffectInstance(const EffectInstancePtr& other, const TreeRenderPtr& render)
-    : NamedKnobHolder(other, render)
+EffectInstance::EffectInstance(const EffectInstancePtr& other, const FrameViewRenderKey& key)
+    : NamedKnobHolder(other, key)
     , _node( other->getNode() )
     , _imp( new Implementation(this, *other->_imp) )
 {
@@ -106,53 +106,38 @@ EffectInstance::~EffectInstance()
 {
 }
 
-void
-EffectInstance::setRenderCloneInput(const EffectInstancePtr& input, int inputNb)
-{
-    assert(inputNb < (int)_imp->renderData->inputs.size());
-    if (inputNb < (int)_imp->renderData->inputs.size()) {
-        _imp->renderData->inputs[inputNb] = input;
-    }
-}
 
 KnobHolderPtr
-EffectInstance::createRenderCopy(const TreeRenderPtr& render) const
+EffectInstance::createRenderCopy(const FrameViewRenderKey& key) const
 {
     EffectRenderCloneBuilder createFunc = (EffectRenderCloneBuilder)getNode()->getPlugin()->getPropertyUnsafe<void*>(kNatronPluginPropCreateRenderCloneFunc);
     assert(createFunc);
     if (!createFunc) {
         throw std::invalid_argument("EffectInstance::createRenderCopy: No kNatronPluginPropCreateRenderCloneFunc property set on plug-in!");
     }
-    EffectInstancePtr clone = createFunc(boost::const_pointer_cast<EffectInstance>(shared_from_this()), render);
+    EffectInstancePtr clone = createFunc(boost::const_pointer_cast<EffectInstance>(shared_from_this()), key);
 
 
-    // If the current instance is also a clone (because we are in getImage), inherit most of pre computed render bits to avoid re-calculations
-    if (_imp->renderData) {
-        *clone->_imp->renderData = *_imp->renderData;
-    }
-
-    // Also create a render clone for input nodes
-
+    // Make a copy of the main instance input locally so the state of the graph does not change throughout the render
     int nInputs = getMaxInputCount();
-    clone->_imp->renderData->inputs.resize(nInputs);
+    clone->_imp->renderData->mainInstanceInputs.resize(nInputs);
+    clone->_imp->renderData->renderInputs.resize(nInputs);
 
+    FrameViewPair p = {key.time, key.view};
     for (int i = 0; i < nInputs; ++i) {
         if (clone->isInputMask(i) && !clone->isMaskEnabled(i)) {
             continue;
         }
-        EffectInstancePtr mainInstanceInput = getInput(i);
-        if (!mainInstanceInput) {
-            continue;
-        }
-        // Note that it will not create the clone if it already exists
-        EffectInstancePtr inputClone = toEffectInstance(mainInstanceInput->createRenderClone(render));
-        if (inputClone) {
-            clone->setRenderCloneInput(inputClone, i);
+        EffectInstancePtr mainInstanceInput = getInputMainInstance(i);
+        clone->_imp->renderData->mainInstanceInputs[i] = mainInstanceInput;
+        if (mainInstanceInput) {
+            EffectInstancePtr inputClone = toEffectInstance(mainInstanceInput->createRenderClone(key));
+            clone->_imp->renderData->renderInputs[i][p] = inputClone;
         }
     }
 
-#if 0
 #pragma message WARN("check this")
+#if 0
     // Visit all nodes that expressions of this node knobs may rely upon so we ensure they get a proper render object
     // and a render time and view when we run the expression.
     std::set<NodePtr> expressionsDeps;
@@ -195,7 +180,7 @@ EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
         // We don't need to be frame varying for the hash, just append the hash of the inputs at the current time
         int nInputs = getMaxInputCount();
         for (int i = 0; i < nInputs; ++i) {
-            EffectInstancePtr input = getInput(i);
+            EffectInstancePtr input = getInputRenderEffectAtAnyTimeView(i);
             if (!input) {
                 hash->append(0);
             } else {
@@ -221,11 +206,6 @@ EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
         }
         for (FramesNeededMap::const_iterator it = framesNeeded.begin(); it != framesNeeded.end(); ++it) {
 
-            EffectInstancePtr inputEffect = getInput(it->first);
-            if (!inputEffect) {
-                continue;
-            }
-
             // For all views requested in input
             for (FrameRangesMap::const_iterator viewIt = it->second.begin(); viewIt != it->second.end(); ++viewIt) {
 
@@ -238,6 +218,12 @@ EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
                         ComputeHashArgs inputArgs = args;
                         inputArgs.time = TimeValue(f);
                         inputArgs.view = viewIt->first;
+
+                        EffectInstancePtr inputEffect = getInputRenderEffect(it->first, inputArgs.time, inputArgs.view);
+                        if (!inputEffect) {
+                            continue;
+                        }
+
                         U64 inputHash = inputEffect->computeHash(inputArgs);
                         
                         // Append the input hash
@@ -329,7 +315,7 @@ EffectInstance::refreshMetadaWarnings(const NodeMetadata &metadata)
     const bool multipleClipFPSs = supportsMultipleClipFPSs();
     std::vector<EffectInstancePtr> inputs(nInputs);
     for (int i = 0; i < nInputs; ++i) {
-        inputs[i] = getInput(i);
+        inputs[i] = getInputMainInstance(i);
     }
 
 
@@ -533,13 +519,13 @@ EffectInstance::hasOutputConnected() const
 }
 
 EffectInstancePtr
-EffectInstance::getInput(int n) const
+EffectInstance::getInputMainInstance(int n) const
 {
     if (_imp->renderData) {
-        if (n < 0 || n >= (int)_imp->renderData->inputs.size()) {
+        if (n < 0 || n >= (int)_imp->renderData->mainInstanceInputs.size()) {
             return EffectInstancePtr();
         }
-        return _imp->renderData->inputs[n].lock();
+        return _imp->renderData->mainInstanceInputs[n].lock();
     } else {
         NodePtr inputNode = getNode()->getInput(n);
         if (inputNode) {
@@ -549,6 +535,60 @@ EffectInstance::getInput(int n) const
         return EffectInstancePtr();
     }
 }
+
+EffectInstancePtr
+EffectInstance::getInputRenderEffect(int n, TimeValue time, ViewIdx view) const
+{
+    if (!isRenderClone()) {
+        return getInputMainInstance(n);
+    }
+    if (n < 0 || n >= (int)_imp->renderData->renderInputs.size()) {
+        return EffectInstancePtr();
+    }
+    FrameViewPair p = {time, view};
+    const FrameViewEffectMap& effectsMap = _imp->renderData->renderInputs[n];
+    FrameViewEffectMap::const_iterator found = effectsMap.find(p);
+    if (found == effectsMap.end()) {
+        return _imp->renderData->mainInstanceInputs[n].lock();
+    }
+    return found->second.lock();
+}
+
+EffectInstancePtr
+EffectInstance::getInputRenderEffectAtAnyTimeView(int n) const
+{
+    if (!isRenderClone()) {
+        return getInputMainInstance(n);
+    }
+    if (n < 0 || n >= (int)_imp->renderData->renderInputs.size()) {
+        return EffectInstancePtr();
+    }
+    if (_imp->renderData->renderInputs[n].empty()) {
+        EffectInstancePtr mainInstanceInput = _imp->renderData->mainInstanceInputs[n].lock();
+        return mainInstanceInput;
+    } else {
+        return _imp->renderData->renderInputs[n].begin()->second.lock();
+    }
+}
+
+void
+EffectInstance::removeRenderCloneRecursive(const TreeRenderPtr& render)
+{
+    bool foundClone = removeRenderClone(render);
+    if (!foundClone) {
+        return;
+    }
+
+    // Recurse on inputs
+    int nInputs = getMaxInputCount();
+    for (int i = 0; i < nInputs; ++i) {
+        EffectInstancePtr input = getInputMainInstance(i);
+        if (input) {
+            input->removeRenderCloneRecursive(render);
+        }
+    }
+} // removeRenderCloneRecursive
+
 
 std::string
 EffectInstance::getInputLabel(int inputNb) const
@@ -584,7 +624,8 @@ EffectInstance::getInputHint(int /*inputNb*/) const
 
 bool
 EffectInstance::resolveRoIForGetImage(const GetImageInArgs& inArgs,
-                                      TimeValue /*inputTime*/,
+                                      unsigned int mipMapLevel,
+                                      const RenderScale& proxyScale,
                                       RectD* roiCanonical,
                                       RectD* roiExpand)
 {
@@ -596,26 +637,20 @@ EffectInstance::resolveRoIForGetImage(const GetImageInArgs& inArgs,
         return true;
     }
 
-    if (!inArgs.requestData) {
-        // We are not in a render, let the ctor of TreeRender ask for the RoD
-        return false;
-    }
-
     
     // Get the RoI on the input:
     // We must call getRegionOfInterest on the time and view and the current render window of the current action of this effect.
-    RenderScale currentScale = EffectInstance::Implementation::getCombinedScale(inArgs.requestData->getRenderMappedMipMapLevel(), inArgs.requestData->getProxyScale());
+    RenderScale currentScale = EffectInstance::getCombinedScale(mipMapLevel, proxyScale);
 
 
     // If we are during a render action, retrieve the current renderWindow
     RectD thisEffectRenderWindowCanonical;
     if (inArgs.currentRenderWindow) {
-        assert(inArgs.requestData);
         double par = getAspectRatio(-1);
         RectD rod;
         {
             GetRegionOfDefinitionResultsPtr results;
-            ActionRetCodeEnum stat = getRegionOfDefinition_public(inArgs.requestData->getTime(), currentScale, inArgs.requestData->getView(), &results);
+            ActionRetCodeEnum stat = getRegionOfDefinition_public(getCurrentRenderTime(), currentScale, getCurrentRenderView(), &results);
             if (isFailureRetCode(stat)) {
                 return false;
             }
@@ -623,13 +658,6 @@ EffectInstance::resolveRoIForGetImage(const GetImageInArgs& inArgs,
         }
         inArgs.currentRenderWindow->toCanonical(currentScale, par, rod, &thisEffectRenderWindowCanonical);
     }
-
-    // If we are not during a render action, we may be in an action called on a render thread and have a FrameViewRequest:
-    // we at least now the RoI asked on this image
-    if (thisEffectRenderWindowCanonical.isNull() && inArgs.requestData) {
-        thisEffectRenderWindowCanonical = inArgs.requestData->getCurrentRoI();
-    }
-
 
     // If we still did not figure out the current render window so far, that means we are probably not on a render thread anyway so just
     // return false and let getImagePlane ask for the RoD in input.
@@ -640,7 +668,7 @@ EffectInstance::resolveRoIForGetImage(const GetImageInArgs& inArgs,
     // Get the roi for the current render window
 
     RoIMap inputRoisMap;
-    ActionRetCodeEnum stat = getRegionsOfInterest_public(inArgs.requestData->getTime(), currentScale, thisEffectRenderWindowCanonical, inArgs.requestData->getView(), &inputRoisMap);
+    ActionRetCodeEnum stat = getRegionsOfInterest_public(getCurrentRenderTime(), currentScale, thisEffectRenderWindowCanonical, getCurrentRenderView(), &inputRoisMap);
     if (isFailureRetCode(stat)) {
         return false;
     }
@@ -674,70 +702,50 @@ EffectInstance::GetImageInArgs::GetImageInArgs()
 : inputNb(0)
 , inputTime(0)
 , inputView(0)
-, inputProxyScale(1.)
+, currentActionProxyScale(0)
+, currentActionMipMapLevel(0)
+, inputProxyScale(0)
 , inputMipMapLevel(0)
 , optionalBounds(0)
 , plane(0)
 , renderBackend(0)
 , currentRenderWindow(0)
-, requestData()
-, draftMode(false)
-, playback(false)
+, draftMode(0)
+, playback(0)
 , byPassCache(false)
 {
 
 }
 
-EffectInstance::GetImageInArgs::GetImageInArgs(const FrameViewRequestPtr& requestPass, const RectI* renderWindow, const RenderBackendTypeEnum* backend)
+EffectInstance::GetImageInArgs::GetImageInArgs(const unsigned int* currentMipMapLevel, const RenderScale* currentProxyScale, const RectI* currentRenderWindow, const RenderBackendTypeEnum* backend)
 : inputNb(0)
 , inputTime(0)
 , inputView(0)
-, inputProxyScale(1.)
+, currentActionProxyScale(currentProxyScale)
+, currentActionMipMapLevel(currentMipMapLevel)
+, inputProxyScale(0)
 , inputMipMapLevel(0)
 , optionalBounds(0)
 , plane(0)
 , renderBackend(backend)
-, currentRenderWindow(renderWindow)
-, requestData(requestPass)
-, draftMode(false)
-, playback(false)
+, currentRenderWindow(currentRenderWindow)
+, draftMode(0)
+, playback(0)
 , byPassCache(false)
 {
-    if (requestPass) {
-        inputTime = requestPass->getTime();
-        inputView = requestPass->getView();
-        inputMipMapLevel = requestPass->getRenderMappedMipMapLevel();
-        inputProxyScale = requestPass->getProxyScale();
-        TreeRenderPtr render = requestPass->getRenderClone()->getCurrentRender();
-        draftMode = render->isDraftRender();
-        playback = render->isPlayback();
-    }
-
 
 }
 
-void
-EffectInstance::removeRenderCloneRecursive(const TreeRenderPtr& render)
-{
-    bool foundClone = removeRenderClone(render);
-    if (!foundClone) {
-        return;
-    }
-
-    // Recurse on inputs
-    int nInputs = getMaxInputCount();
-    for (int i = 0; i < nInputs; ++i) {
-        EffectInstancePtr input = getInput(i);
-        if (input) {
-            input->removeRenderCloneRecursive(render);
-        }
-    }
-} // removeRenderCloneRecursive
 
 bool
 EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* outArgs)
 {
-    if (inArgs.inputTime != inArgs.inputTime) {
+    TreeRenderPtr currentRender = getCurrentRender();
+
+    TimeValue inputTime = inArgs.inputTime ? *inArgs.inputTime : getCurrentRenderTime();
+
+
+    if (inputTime != inputTime) {
         // time is NaN
 #ifdef DEBUG
         qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inArgs.inputNb << "failing because time is NaN";
@@ -745,7 +753,30 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
         return false;
     }
 
-    EffectInstancePtr inputEffect = getInput(inArgs.inputNb);
+    unsigned int currentMipMapLevel = inArgs.currentActionMipMapLevel ? *inArgs.currentActionMipMapLevel : 0;
+
+    RenderScale currentProxyScale = inArgs.currentActionProxyScale ? *inArgs.currentActionProxyScale : RenderScale(1.);
+
+    ViewIdx inputView = inArgs.inputView ? *inArgs.inputView : getCurrentRenderView();
+
+    bool isDraftMode;
+    if (!currentRender) {
+        isDraftMode = false;
+    } else {
+        isDraftMode = inArgs.draftMode ? *inArgs.draftMode : currentRender->isDraftRender();
+    }
+
+    bool isPlayback;
+    if (!currentRender) {
+        isPlayback = false;
+    } else {
+        isPlayback = inArgs.playback ? *inArgs.playback : currentRender->isPlayback();
+    }
+
+    unsigned int inputMipMapLevel = inArgs.inputMipMapLevel ? *inArgs.inputMipMapLevel : currentMipMapLevel;
+    RenderScale inputProxyScale = inArgs.inputProxyScale ? *inArgs.inputProxyScale : currentProxyScale;
+
+    EffectInstancePtr inputEffect = getInputRenderEffect(inArgs.inputNb, inputTime, inputView);
 
     if (!inputEffect) {
         // Disconnected input
@@ -754,11 +785,11 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
 
     // Get the requested RoI for the input, if we can recover it, otherwise TreeRender will render the RoD.
     RectD roiCanonical, roiExpand;
-    if (!resolveRoIForGetImage(inArgs, inArgs.inputTime, &roiCanonical, &roiExpand)) {
+    if (!resolveRoIForGetImage(inArgs, currentMipMapLevel, currentProxyScale, &roiCanonical, &roiExpand)) {
         // If we did not resolve the RoI, ask for the RoD
         GetRegionOfDefinitionResultsPtr results;
-        RenderScale combinedScale = EffectInstance::Implementation::getCombinedScale(inArgs.inputMipMapLevel, inArgs.inputProxyScale);
-        ActionRetCodeEnum stat = inputEffect->getRegionOfDefinition_public(inArgs.inputTime, combinedScale, inArgs.inputView, &results);
+        RenderScale combinedScale = EffectInstance::getCombinedScale(inputMipMapLevel, inputProxyScale);
+        ActionRetCodeEnum stat = inputEffect->getRegionOfDefinition_public(inputTime, combinedScale, inputView, &results);
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -774,33 +805,39 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
     // It should be very fast if the image was already rendered.
     FrameViewRequestPtr outputRequest;
     {
-        // We are not during a render, create one.
-        TreeRender::CtorArgsPtr rargs(new TreeRender::CtorArgs());
-        rargs->time = inArgs.inputTime;
-        rargs->view = inArgs.inputView;
-        rargs->treeRootEffect = inputEffect;
-        rargs->canonicalRoI = &roiCanonical;
-        rargs->proxyScale = inArgs.inputProxyScale;
-        rargs->mipMapLevel = inArgs.inputMipMapLevel;
-        rargs->plane = inArgs.plane;
-        rargs->draftMode = inArgs.draftMode;
-        rargs->playback = inArgs.playback;
-        rargs->byPassCache = inArgs.byPassCache;
-        rargs->originalRender = getCurrentRender();
-        TreeRenderPtr renderObject = TreeRender::create(rargs);
-        ActionRetCodeEnum status = renderObject->launchRender(&outputRequest);
+        ActionRetCodeEnum status;
+        if (currentRender) {
+            status = currentRender->launchRenderWithArgs(inputEffect, inputTime, inputView, inputProxyScale, inputMipMapLevel, inArgs.plane, &roiCanonical, &outputRequest);
+        } else {
+            // We are not during a render, create one.
+            TreeRender::CtorArgsPtr rargs(new TreeRender::CtorArgs());
+            rargs->time = inputTime;
+            rargs->view = inputView;
+            rargs->treeRootEffect = inputEffect;
+            rargs->canonicalRoI = &roiCanonical;
+            rargs->proxyScale = inputProxyScale;
+            rargs->mipMapLevel = inputMipMapLevel;
+            rargs->plane = inArgs.plane;
+            rargs->draftMode = isDraftMode;
+            rargs->playback = isPlayback;
+            rargs->byPassCache = false;
+            TreeRenderPtr renderObject = TreeRender::create(rargs);
+            if (!currentRender) {
+                currentRender = renderObject;
+            }
+            status = renderObject->launchRender(&outputRequest);
+        }
         if (isFailureRetCode(status)) {
             return false;
         }
     }
-
 
     // Copy in output the distortion stack
     outArgs->distortionStack = outputRequest->getDistorsionStack();
 
 
     // Get the RoI in pixel coordinates of the effect we rendered
-    RenderScale inputCombinedScale = EffectInstance::Implementation::getCombinedScale(inArgs.inputMipMapLevel, inArgs.inputProxyScale);
+    RenderScale inputCombinedScale = EffectInstance::getCombinedScale(inputMipMapLevel, inputProxyScale);
     double inputPar = getAspectRatio(inArgs.inputNb);
 
     RectI roiPixels;
@@ -889,7 +926,7 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
             initArgs.bufferFormat = thisEffectSupportedImageLayout;
             initArgs.storage = preferredStorage;
             initArgs.renderClone = inputEffect;
-            initArgs.glContext = getCurrentRender()->getGPUOpenGLContext();
+            initArgs.glContext = currentRender->getGPUOpenGLContext();
 
         }
 
@@ -902,7 +939,7 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
         ImagePlaneDesc maskComps;
         {
             std::list<ImagePlaneDesc> upstreamAvailableLayers;
-            ActionRetCodeEnum stat = getAvailableLayers(getCurrentTime_TLS(), getCurrentView_TLS(), inArgs.inputNb, &upstreamAvailableLayers);
+            ActionRetCodeEnum stat = getAvailableLayers(getCurrentRenderTime(), getCurrentRenderView(), inArgs.inputNb, &upstreamAvailableLayers);
             if (isFailureRetCode(stat)) {
                 return EffectInstancePtr();
             }
@@ -933,34 +970,6 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
     return true;
 } // getImagePlane
 
-TimeValue
-EffectInstance::getCurrentTime_TLS() const
-{
-    if (!_imp->renderData) {
-        return KnobHolder::getCurrentTime_TLS();
-    }
-
-    FrameViewRequestPtr requestData = _imp->renderData->currentFrameView.lock();
-    if (requestData) {
-        return requestData->getTime();
-    }
-
-    return getCurrentRender()->getTime();
-}
-
-ViewIdx
-EffectInstance::getCurrentView_TLS() const
-{
-    if (!_imp->renderData) {
-        return KnobHolder::getCurrentView_TLS();
-    }
-    FrameViewRequestPtr requestData = _imp->renderData->currentFrameView.lock();
-    if (requestData) {
-        return requestData->getView();
-    }
-
-    return getCurrentRender()->getView();
-}
 
 bool
 EffectInstance::isRenderAborted() const
@@ -989,20 +998,6 @@ EffectInstanceTLSDataPtr
 EffectInstance::getOrCreateTLSObject() const
 {
     return EffectInstanceTLSDataPtr();
-}
-
-FrameViewRequestPtr
-EffectInstance::getCurrentFrameViewRequest() const
-{
-    assert(_imp->renderData);
-    return _imp->renderData->currentFrameView.lock();
-}
-
-void
-EffectInstance::setCurrentFrameViewRequest(const FrameViewRequestPtr& request)
-{
-    assert(_imp->renderData);
-    _imp->renderData->currentFrameView = request;
 }
 
 EffectInstance::NotifyRenderingStarted_RAII::NotifyRenderingStarted_RAII(Node* node)
@@ -1136,7 +1131,7 @@ int
 EffectInstance::getInputNumber(const EffectInstancePtr& inputEffect) const
 {
     for (int i = 0; i < getMaxInputCount(); ++i) {
-        if (getInput(i) == inputEffect) {
+        if (getInputMainInstance(i) == inputEffect) {
             return i;
         }
     }
@@ -1615,7 +1610,7 @@ EffectInstance::makeInfoForInput(int inputNumber)
     }
     EffectInstancePtr input;
     if (inputNumber != -1) {
-        input = getInput(inputNumber);
+        input = getInputMainInstance(inputNumber);
     } else {
         input = boost::const_pointer_cast<EffectInstance>(shared_from_this());
     }
@@ -2084,8 +2079,11 @@ EffectInstance::getAttachedRotoItem() const
     assert(!thisItem->isRenderClone());
     // On a render thread, use the local thread copy
     TreeRenderPtr currentRender = getCurrentRender();
+    TimeValue currentTime = getCurrentRenderTime();
+    ViewIdx currentView = getCurrentRenderView();
     if (currentRender && thisItem->isRenderCloneNeeded()) {
-        return boost::dynamic_pointer_cast<RotoDrawableItem>(toRotoItem(thisItem->getRenderClone(currentRender)));
+        FrameViewRenderKey k = {currentTime, currentView, currentRender};
+        return boost::dynamic_pointer_cast<RotoDrawableItem>(toRotoItem(thisItem->getRenderClone(k)));
     }
     return thisItem;
 }

@@ -64,8 +64,8 @@ Backdrop::Backdrop(const NodePtr& node)
 {
 }
 
-Backdrop::Backdrop(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render)
-: NoOpBase(mainInstance, render)
+Backdrop::Backdrop(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key)
+: NoOpBase(mainInstance, key)
 , _imp( new BackdropPrivate() )
 {
 

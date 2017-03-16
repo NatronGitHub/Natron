@@ -651,7 +651,7 @@ KnobHelper::removeAnimation(ViewSetSpec view, DimSpec dimension, ValueChangedRea
     }
     
     
-    evaluateValueChange(dimension, getCurrentTime_TLS(), view, reason);
+    evaluateValueChange(dimension, getCurrentRenderTime(), view, reason);
 } // removeAnimation
 
 NATRON_NAMESPACE_EXIT

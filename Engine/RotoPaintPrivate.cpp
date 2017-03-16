@@ -2292,7 +2292,7 @@ RotoPaintInteract::onViewportSelectionUpdated(const RectD& rectangle,
     }
 
     TimeValue time = _imp->publicInterface->getTimelineCurrentTime();
-    ViewIdx view = _imp->publicInterface->getCurrentView_TLS();
+    ViewIdx view = _imp->publicInterface->getCurrentRenderView();
 
     bool featherVisible = isFeatherVisible();
     std::list<RotoDrawableItemPtr > curves = _imp->knobsTable->getRotoItemsByRenderOrder(time, view);

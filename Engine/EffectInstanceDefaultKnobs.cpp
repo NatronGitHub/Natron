@@ -1209,7 +1209,7 @@ EffectInstance::getDisabledKnobValue() const
 
     int lifeTimeFirst, lifeTimeEnd;
     bool lifeTimeEnabled = isLifetimeActivated(&lifeTimeFirst, &lifeTimeEnd);
-    double curFrame = getCurrentTime_TLS();
+    double curFrame = getCurrentRenderTime();
     bool enabled = ( !lifeTimeEnabled || (curFrame >= lifeTimeFirst && curFrame <= lifeTimeEnd) );
 
     return !enabled;

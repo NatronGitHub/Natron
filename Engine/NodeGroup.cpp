@@ -1101,8 +1101,8 @@ NodeGroup::NodeGroup(const NodePtr &node)
 {
 }
 
-NodeGroup::NodeGroup(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render)
-: EffectInstance(mainInstance, render)
+NodeGroup::NodeGroup(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key)
+: EffectInstance(mainInstance, key)
 , NodeCollection(mainInstance->getApp())
 , _imp(new NodeGroupPrivate())
 {
@@ -1193,7 +1193,7 @@ NodeGroup::getInputLabel(int inputNb) const
 }
 
 TimeValue
-NodeGroup::getCurrentTime_TLS() const
+NodeGroup::getCurrentRenderTime() const
 {
     NodePtr node = getOutputNodeInput();
 
@@ -1202,14 +1202,14 @@ NodeGroup::getCurrentTime_TLS() const
         if (!effect) {
             return TimeValue(0);
         }
-        return effect->getCurrentTime_TLS();
+        return effect->getCurrentRenderTime();
     }
 
-    return EffectInstance::getCurrentTime_TLS();
+    return EffectInstance::getCurrentRenderTime();
 }
 
 ViewIdx
-NodeGroup::getCurrentView_TLS() const
+NodeGroup::getCurrentRenderView() const
 {
     NodePtr node = getOutputNodeInput();
 
@@ -1218,10 +1218,10 @@ NodeGroup::getCurrentView_TLS() const
         if (!effect) {
             return ViewIdx(0);
         }
-        return effect->getCurrentView_TLS();
+        return effect->getCurrentRenderView();
     }
 
-    return EffectInstance::getCurrentView_TLS();
+    return EffectInstance::getCurrentRenderView();
 }
 
 bool

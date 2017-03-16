@@ -77,7 +77,7 @@ public:
 private:
 
 
-    RotoStrokeItem(const RotoStrokeItemPtr& other, const TreeRenderPtr& render);
+    RotoStrokeItem(const RotoStrokeItemPtr& other, const FrameViewRenderKey& key);
 
 public:
 
@@ -243,7 +243,7 @@ public:
     
 private:
 
-    virtual KnobHolderPtr createRenderCopy(const TreeRenderPtr& render) const OVERRIDE FINAL;
+    virtual KnobHolderPtr createRenderCopy(const FrameViewRenderKey& render) const OVERRIDE FINAL;
 
     virtual bool isRenderCloneNeeded() const OVERRIDE FINAL
     {

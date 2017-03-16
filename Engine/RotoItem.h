@@ -92,7 +92,7 @@ public:
 
     RotoItem(const KnobItemsTablePtr& model);
 
-    RotoItem(const RotoItemPtr& other, const TreeRenderPtr& render);
+    RotoItem(const RotoItemPtr& other, const FrameViewRenderKey& key);
 
     virtual ~RotoItem();
 

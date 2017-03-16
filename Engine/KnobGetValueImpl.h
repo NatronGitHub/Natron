@@ -316,7 +316,7 @@ Knob<T>::getValue(DimIdx dimension,
     boost::shared_ptr<Knob<T> > thisShared = boost::dynamic_pointer_cast<Knob<T> >(shared_from_this());
 
 
-    TimeValue currentTime = getCurrentTime_TLS();
+    TimeValue currentTime = getCurrentRenderTime();
     // Check if value is already in TLS when rendering
     if (_valuesCache) {
         DimTimeView key;

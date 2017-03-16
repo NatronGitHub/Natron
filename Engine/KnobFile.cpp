@@ -130,7 +130,7 @@ KnobFile::getValueForHash(DimIdx dim, ViewIdx view)
 std::string
 KnobFile::getValue(DimIdx dimension, ViewIdx view, bool clampToMinMax)
 {
-    return getValueAtTime(getCurrentTime_TLS(), dimension, view, clampToMinMax);
+    return getValueAtTime(getCurrentRenderTime(), dimension, view, clampToMinMax);
 }
 
 void

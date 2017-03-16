@@ -70,8 +70,8 @@ RotoShapeRenderNode::RotoShapeRenderNode(NodePtr n)
 {
 }
 
-RotoShapeRenderNode::RotoShapeRenderNode(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render)
-: EffectInstance(mainInstance, render)
+RotoShapeRenderNode::RotoShapeRenderNode(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key)
+: EffectInstance(mainInstance, key)
 , _imp()
 {
     RotoShapeRenderNode* other = dynamic_cast<RotoShapeRenderNode*>(mainInstance.get());
@@ -343,6 +343,8 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     }
 #endif
 
+    RenderScale combinedScale = EffectInstance::getCombinedScale(args.mipMapLevel, args.proxyScale);
+
     // Get the Roto item attached to this node. It will be a render-local clone of the original item.
     RotoDrawableItemPtr rotoItem = getAttachedRotoItem();
     assert(rotoItem);
@@ -446,7 +448,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 #ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
             // When cairo is enabled, render with it for a CPU render
             if (args.backendType == eRenderBackendTypeCPU) {
-                RotoShapeRenderCairo::renderMaskInternal_cairo(rotoItem, args.roi, outputPlane.first, args.time, args.view, range, divisions, args.renderScale, isDuringPainting, distNextIn, lastCenterIn, outputPlane.second, &distToNextOut, &lastCenterOut);
+                RotoShapeRenderCairo::renderMaskInternal_cairo(rotoItem, args.roi, outputPlane.first, args.time, args.view, range, divisions, combinedScale, isDuringPainting, distNextIn, lastCenterIn, outputPlane.second, &distToNextOut, &lastCenterOut);
                 if (isDuringPainting && isStroke) {
                     nonRenderStroke->updateStrokeData(lastCenterOut, distToNextOut, isStroke->getRenderCloneCurrentStrokeEndPointIndex());
                 }
@@ -474,7 +476,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                 // For a stroke or an opened bezier, use the generic stroke algorithm
                 if ( isStroke || ( isBezier && isBezier->isOpenBezier() ) ) {
                     bool doBuildUp = isStroke->getBuildupKnob()->getValueAtTime(args.time, DimIdx(0), args.view);
-                    RotoShapeRenderGL::renderStroke_gl(glContext, glData, args.roi, outputPlane.second, isDuringPainting, distNextIn, lastCenterIn, isStroke, doBuildUp, opacity, args.time, args.view, range, divisions, args.renderScale, &distToNextOut, &lastCenterOut);
+                    RotoShapeRenderGL::renderStroke_gl(glContext, glData, args.roi, outputPlane.second, isDuringPainting, distNextIn, lastCenterIn, isStroke, doBuildUp, opacity, args.time, args.view, range, divisions, combinedScale, &distToNextOut, &lastCenterOut);
 
                     // Update the stroke algorithm in output
                     if (isDuringPainting && isStroke) {
@@ -484,7 +486,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                     // Render a bezier
                     RotoShapeRenderGL::renderBezier_gl(glContext, glData,
                                                        args.roi,
-                                                       isBezier, outputPlane.second, opacity, args.time, args.view, range, divisions, args.renderScale, GL_TEXTURE_2D);
+                                                       isBezier, outputPlane.second, opacity, args.time, args.view, range, divisions, combinedScale, GL_TEXTURE_2D);
                 }
             } // useOpenGL
         }   break;
@@ -503,7 +505,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
             if (strokeStartPointIndex == 0 && strokeMultiIndex == 0) {
 
                 GetImageOutArgs outArgs;
-                GetImageInArgs inArgs(args.requestData, &args.roi,&args.backendType);
+                GetImageInArgs inArgs(&args.mipMapLevel, &args.proxyScale, &args.roi, &args.backendType);
                 inArgs.inputNb = 0;
                 if (!getImagePlane(inArgs, &outArgs)) {
                     setPersistentMessage(eMessageTypeError, tr("Failed to fetch source image").toStdString());
@@ -554,7 +556,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 #ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
             // Render with cairo if we need to render on CPU
             if (args.backendType == eRenderBackendTypeCPU) {
-                renderedDot = RotoShapeRenderCairo::renderSmear_cairo(args.time, args.view, args.renderScale, isStroke, args.roi, outputPlane.second, distNextIn, lastCenterIn, &distToNextOut, &lastCenterOut);
+                renderedDot = RotoShapeRenderCairo::renderSmear_cairo(args.time, args.view, combinedScale, isStroke, args.roi, outputPlane.second, distNextIn, lastCenterIn, &distToNextOut, &lastCenterOut);
             } else
 #endif
             if (args.backendType == eRenderBackendTypeOpenGL || args.backendType == eRenderBackendTypeOSMesa) {
@@ -564,7 +566,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                 double opacity = rotoItem->getOpacityKnob()->getValueAtTime(args.time, DimIdx(0), args.view);
                 ImagePtr dstImage = glContext->isGPUContext() ? outputPlane.second : _imp->osmesaSmearTmpTexture;
                 assert(dstImage);
-                renderedDot = RotoShapeRenderGL::renderSmear_gl(glContext, glData, args.roi, dstImage, distNextIn, lastCenterIn, isStroke, opacity, args.time, args.view, args.renderScale, &distToNextOut, &lastCenterOut);
+                renderedDot = RotoShapeRenderGL::renderSmear_gl(glContext, glData, args.roi, dstImage, distNextIn, lastCenterIn, isStroke, opacity, args.time, args.view, combinedScale, &distToNextOut, &lastCenterOut);
             }
 
             // Update the stroke algorithm in output

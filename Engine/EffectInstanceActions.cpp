@@ -365,7 +365,7 @@ EffectInstance::getAvailableLayers(TimeValue time, ViewIdx view, int inputNb,  s
 
     EffectInstancePtr effect;
     if (inputNb >= 0) {
-        effect = getInput(inputNb);
+        effect = getInputRenderEffect(inputNb, time, view);
     } else {
         effect = shared_from_this();
     }
@@ -673,6 +673,11 @@ EffectInstance::render_public(const RenderActionArgs & args)
 {
 
     REPORT_CURRENT_THREAD_ACTION( kOfxImageEffectActionRender, getNode() );
+
+    // Each render clone should hold the time and view passed to the render action
+    assert(args.time == getCurrentRenderTime());
+    assert(args.view == getCurrentRenderView());
+    
     return render(args);
 
 } // render_public
@@ -1062,7 +1067,7 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
 
         if (inputIdentityNb >= 0) {
             // This effect is identity
-            EffectInstancePtr identityInputNode = getInput(inputIdentityNb);
+            EffectInstancePtr identityInputNode = getInputRenderEffect(inputIdentityNb, identityTime, identityView);
             if (!identityInputNode) {
                 return eActionStatusInputDisconnected;
             }
@@ -1083,7 +1088,7 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
                 if (isInputOptional(i)) {
                     continue;
                 }
-                if (!getInput(i)) {
+                if (!getInputMainInstance(i)) {
                     return eActionStatusInputDisconnected;
                 }
             }
@@ -1147,7 +1152,7 @@ EffectInstance::getRegionOfDefinition(TimeValue time,
         if ( isInputMask(i) ) {
             continue;
         }
-        EffectInstancePtr input = getInput(i);
+        EffectInstancePtr input = getInputRenderEffect(i, time, view);
         if (input) {
             GetRegionOfDefinitionResultsPtr inputResults;
 
@@ -1293,7 +1298,7 @@ EffectInstance::getRegionsOfInterest(TimeValue time,
 
     int nInputs = getMaxInputCount();
     for (int i = 0; i < nInputs; ++i) {
-        EffectInstancePtr input = getInput(i);
+        EffectInstancePtr input = getInputRenderEffect(i, time, view);
         if (!input) {
             continue;
         }
@@ -1333,7 +1338,7 @@ EffectInstance::getFramesNeeded(TimeValue time,
     int nInputs = getMaxInputCount();
     for (int i = 0; i < nInputs; ++i) {
 
-        EffectInstancePtr input = getInput(i);
+        EffectInstancePtr input = getInputRenderEffect(i, time, view);
         if (input) {
             ret->insert( std::make_pair(i, defViewRange) );
         }
@@ -1413,7 +1418,7 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
             if (isInputOptional(i)) {
                 continue;
             }
-            if (!getInput(i)) {
+            if (!getInputMainInstance(i)) {
                 return eActionStatusInputDisconnected;
             }
         }
@@ -1498,7 +1503,7 @@ EffectInstance::getFrameRange(double *first,
     // not taking optional inputs into accounts messes it up.
 
     for (int i = 0; i < nInputs; ++i) {
-        EffectInstancePtr input = getInput(i);
+        EffectInstancePtr input = getInputRenderEffectAtAnyTimeView(i);
         if (input) {
             //if (!isInputOptional(i))
             GetFrameRangeResultsPtr inputResults;
@@ -1845,7 +1850,7 @@ EffectInstance::getTimeInvariantMetaDatas_public(GetTimeInvariantMetaDatasResult
     if (isDisabled) {
         int mainInput = getNode()->getPreferredInput();
         if (mainInput != -1) {
-            EffectInstancePtr input = getInput(mainInput);
+            EffectInstancePtr input = getInputRenderEffectAtAnyTimeView(mainInput);
             if (input) {
 
                 GetTimeInvariantMetaDatasResultsPtr inputResults;
@@ -1953,7 +1958,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
 
     std::vector<NodeMetadataPtr> inputMetadatas(nInputs);
     for (int i = 0; i < nInputs; ++i) {
-        const EffectInstancePtr& input = getInput(i);
+        const EffectInstancePtr& input = getInputRenderEffectAtAnyTimeView(i);
         if (input) {
             GetTimeInvariantMetaDatasResultsPtr results;
             ActionRetCodeEnum stat = input->getTimeInvariantMetaDatas_public(&results);
@@ -2164,7 +2169,7 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
     for (int i = -1; i < nInputs; ++i) {
 
         if (i >= 0) {
-            EffectInstancePtr input = _publicInterface->getInput(i);
+            EffectInstancePtr input = _publicInterface->getInputRenderEffectAtAnyTimeView(i);
             if (!input) {
                 continue;
             }

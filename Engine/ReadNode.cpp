@@ -590,7 +590,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         assert(fileKnob);
         if (fileKnob) {
             // Make sure instance changed action is called on the decoder and not caught in our knobChanged handler.
-            embeddedPlugin->getEffectInstance()->onKnobValueChanged_public(fileKnob, eValueChangedReasonUserEdited, _publicInterface->getCurrentTime_TLS(), ViewSetSpec(0));
+            embeddedPlugin->getEffectInstance()->onKnobValueChanged_public(fileKnob, eValueChangedReasonUserEdited, _publicInterface->getCurrentRenderTime(), ViewSetSpec(0));
 
         }
 
@@ -1075,6 +1075,16 @@ ReadNode::knobChanged(const KnobIPtr& k,
     return ret;
 } // ReadNode::knobChanged
 
+ActionRetCodeEnum
+ReadNode::getFrameRange(double *first, double *last)
+{
+    NodePtr p = getEmbeddedReader();
+    if (!p) {
+        return EffectInstance::getFrameRange(first, last);
+    } else {
+        return p->getEffectInstance()->getFrameRange(first, last);
+    }
+}
 
 NATRON_NAMESPACE_EXIT;
 

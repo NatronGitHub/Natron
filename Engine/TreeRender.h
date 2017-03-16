@@ -44,6 +44,10 @@
 
 NATRON_NAMESPACE_ENTER;
 
+/**
+ * @brief Used in the implementation of the TreeRender to determine FrameViewRequest that are available to be rendered
+ * and holds the global render status of the tree.
+ **/
 struct RequestPassSharedDataPrivate;
 class RequestPassSharedData : public boost::enable_shared_from_this<RequestPassSharedData>
 {
@@ -101,10 +105,7 @@ public:
 
         // Pointer to stats object if any.
         RenderStatsPtr stats;
-
-        // If spwaned from another render, this is a pointer to the original render
-        TreeRenderWPtr originalRender;
-
+        
         // If non null, this is the portion of the input image to render, otherwise the
         // full region of definition wil be rendered.
         const RectD* canonicalRoI;
@@ -164,7 +165,6 @@ public:
      **/
     ActionRetCodeEnum launchRender(FrameViewRequestPtr* outputRequest);
 
-private:
     /**
      * @brief Same as launchRender() except that it launches the render on a different node than the root
      * of the tree with different parameters. 
@@ -191,6 +191,15 @@ public:
      **/
     ViewIdx getView() const;
 
+    /**
+     * @brief The proxy scale requested
+     **/
+    const RenderScale& getProxyScale() const;
+
+    /**
+     * @brief Returns the tre root passed to create()
+     **/
+    EffectInstancePtr getOriginalTreeRoot() const;
 
     /**
      * @brief Is this render aborted ? This is extremely fast as it just dereferences an atomic integer
@@ -227,10 +236,6 @@ public:
      **/
     bool isConcatenationEnabled() const;
 
-    /**
-     * @brief The root node in the tree (i.e: the effect from which we want the results)
-     **/
-    EffectInstancePtr getTreeRootRenderClone() const;
 
     /**
      * @brief Returns the request of the given node if it was requested in the

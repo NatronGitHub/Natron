@@ -3561,7 +3561,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats)
     {
         frame = TimeValue(viewerNode->getTimeline()->currentFrame());
         int viewsCount = viewerNode->getRenderViewsCount();
-        view = viewsCount > 0 ? viewerNode->getCurrentView_TLS() : ViewIdx(0);
+        view = viewsCount > 0 ? viewerNode->getCurrentRenderView() : ViewIdx(0);
     }
 
 

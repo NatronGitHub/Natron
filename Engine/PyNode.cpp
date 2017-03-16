@@ -703,7 +703,7 @@ Effect::getCurrentTime() const
         PythonSetNullError();
         return 0.;
     }
-    return n->getEffectInstance()->getCurrentTime_TLS();
+    return n->getEffectInstance()->getCurrentRenderTime();
 }
 
 void

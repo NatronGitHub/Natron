@@ -612,9 +612,9 @@ KnobTableItem::KnobTableItem(const KnobItemsTablePtr& model)
 }
 
 
-KnobTableItem::KnobTableItem(const KnobTableItemPtr& other, const TreeRenderPtr& render)
-: NamedKnobHolder(other, render)
-, AnimatingObjectI(other, render)
+KnobTableItem::KnobTableItem(const KnobTableItemPtr& other, const FrameViewRenderKey& key)
+: NamedKnobHolder(other, key)
+, AnimatingObjectI(other, key)
 , _imp(new KnobTableItemPrivate(*other->_imp))
 {
 
@@ -2011,13 +2011,13 @@ KnobTableItem::unSplitView(ViewIdx view)
 } // unSplitView
 
 ViewIdx
-KnobTableItem::getCurrentView_TLS() const
+KnobTableItem::getCurrentRenderView() const
 {
     KnobItemsTablePtr m = _imp->common->model.lock();
     if (!m) {
         return ViewIdx(0);
     }
-    return m->getNode()->getEffectInstance()->getCurrentView_TLS();
+    return m->getNode()->getEffectInstance()->getCurrentRenderView();
 }
 
 

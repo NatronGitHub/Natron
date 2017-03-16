@@ -183,7 +183,7 @@ OfxClipInstance::getUnmappedBitDepth() const
         int nInputs = effect->getMaxInputCount();
         std::vector<NodeMetadataPtr> inputMetadatas(nInputs);
         for (int i = 0; i < nInputs; ++i) {
-            const EffectInstancePtr& input = effect->getInput(i);
+            const EffectInstancePtr& input = effect->getInputRenderEffectAtAnyTimeView(i);
             if (input) {
                 GetTimeInvariantMetaDatasResultsPtr results;
                 ActionRetCodeEnum stat = input->getTimeInvariantMetaDatas_public(&results);
@@ -237,7 +237,7 @@ OfxClipInstance::getUnmappedComponents() const
         int nInputs = effect->getMaxInputCount();
         std::vector<NodeMetadataPtr> inputMetadatas(nInputs);
         for (int i = 0; i < nInputs; ++i) {
-            const EffectInstancePtr& input = effect->getInput(i);
+            const EffectInstancePtr& input = effect->getInputRenderEffectAtAnyTimeView(i);
             if (input) {
                 GetTimeInvariantMetaDatasResultsPtr results;
                 ActionRetCodeEnum stat = input->getTimeInvariantMetaDatas_public(&results);
@@ -344,8 +344,8 @@ OfxClipInstancePrivate::getComponentsPresentInternal(const OfxClipInstance::Clip
 
     int inputNb = _publicInterface->getInputNb();
 
-    TimeValue time = effect->getCurrentTime_TLS();
-    ViewIdx view = effect->getCurrentView_TLS();
+    TimeValue time = effect->getCurrentRenderTime();
+    ViewIdx view = effect->getCurrentRenderView();
 
     std::list<ImagePlaneDesc> availableLayers;
     ActionRetCodeEnum stat = effect->getAvailableLayers(time, view, inputNb, &availableLayers);
@@ -537,7 +537,7 @@ OfxClipInstance::getConnected() const
     } else {
 
         int inputNb = getInputNb();
-        EffectInstancePtr input = effect->getInput(inputNb);
+        EffectInstancePtr input = effect->getInputMainInstance(inputNb);
         return input.get() != 0;
     }
 
@@ -805,8 +805,6 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
         return false;
     }
 
-    // Get the current action arguments from the thread local storage
-    FrameViewRequestPtr requestData = effect->getCurrentFrameViewRequest();
 
     // If we are in the render action, retrieve the current render window from the TLS
     RectI currentRenderWindow;
@@ -814,13 +812,15 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     // Also retrieve generic parameters in case we are not in the render action
     TimeValue currentActionTime;
     ViewIdx currentActionView;
-    RenderScale currentActionScale;
-    bool gotTLS = effectTLS->getCurrentRenderActionArgs(&currentActionTime, &currentActionView, &currentActionScale, &currentRenderWindow, 0);
-    if (!gotTLS) {
-        gotTLS = effectTLS->getCurrentActionArgs(&currentActionTime, &currentActionView, &currentActionScale, 0);
+    RenderScale currentActionScale(1.);
+    unsigned int currentActionMipMapLevel = 0;
+    bool isWithinRenderAction = effectTLS->getCurrentRenderActionArgs(&currentActionTime, &currentActionView, &currentActionScale, &currentActionMipMapLevel, &currentRenderWindow, 0);
+    bool isWithinAction = true;
+    if (!isWithinRenderAction) {
+        isWithinAction = effectTLS->getCurrentActionArgs(&currentActionTime, &currentActionView, &currentActionScale, 0);
     }
-    assert(gotTLS);
-    if (!gotTLS) {
+    assert(isWithinAction);
+    if (!isWithinAction) {
         // If there's no tls object this is a bug in Natron
         return false;
     }
@@ -886,20 +886,19 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
 
     EffectInstance::GetImageOutArgs outArgs;
     RenderBackendTypeEnum backend = retTexture ? eRenderBackendTypeOpenGL : eRenderBackendTypeCPU;
-    boost::scoped_ptr<EffectInstance::GetImageInArgs> inArgs(new EffectInstance::GetImageInArgs(requestData, currentRenderWindow.isNull() ? 0 : &currentRenderWindow, &backend));
-    inArgs->inputTime = inputTime;
-    inArgs->inputView = inputView;
+    boost::scoped_ptr<EffectInstance::GetImageInArgs> inArgs(new EffectInstance::GetImageInArgs()); //requestData, currentRenderWindow.isNull() ? 0 : &currentRenderWindow, &backend));
+    inArgs->inputTime = &inputTime;
+    inArgs->inputView = &inputView;
     inArgs->inputNb = inputNb;
+    inArgs->currentRenderWindow = currentRenderWindow.isNull() ? 0 : &currentRenderWindow;
+    inArgs->renderBackend = &backend;
+    RenderScale scaleOne(1.);
+    inArgs->currentActionProxyScale = isWithinRenderAction ? &currentActionScale : &scaleOne;
+    inArgs->currentActionMipMapLevel = &currentActionMipMapLevel;
     inArgs->plane = &plane;
     inArgs->optionalBounds = boundsParam.isNull() ? 0 : &boundsParam;
 
-    // If clipGetImage is called out of the blue in a non render action, still support it.
-    if (!requestData) {
-        inArgs->inputProxyScale = RenderScale(1.);
-        // We are not in a render action, no proxy scale should be active anyway.
-        assert(currentActionScale.x == currentActionScale.y);
-        inArgs->inputMipMapLevel = Image::getLevelFromScale(currentActionScale.x);
-    }
+
     bool ok = effect->getImagePlane(*inArgs, &outArgs);
     if (!ok || !outArgs.image || outArgs.roiPixel.isNull()) {
         return false;
@@ -1003,15 +1002,16 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
     }
     TimeValue currentActionTime;
     ViewIdx currentActionView;
-    RenderScale currentActionScale;
+    RenderScale currentActionProxyScale;
     RectI currentRenderWindow;
+    unsigned int currentActionMipMapLevel = 0;
     std::map<ImagePlaneDesc, ImagePtr> outputPlanes;
-    bool gotTLS = effectTLS->getCurrentRenderActionArgs(&currentActionTime, &currentActionView, &currentActionScale, &currentRenderWindow, &outputPlanes);
+    bool gotTLS = effectTLS->getCurrentRenderActionArgs(&currentActionTime, &currentActionView, &currentActionProxyScale, &currentActionMipMapLevel, &currentRenderWindow, &outputPlanes);
 
+    RenderScale combinedScale = EffectInstance::getCombinedScale(currentActionMipMapLevel, currentActionProxyScale);
 
     // Get the current action arguments. The action must be the render action, otherwise it fails.
-    FrameViewRequestPtr requestData = effect->getCurrentFrameViewRequest();
-    if (!gotTLS || !requestData) {
+    if (!gotTLS) {
         assert(false);
         std::cerr << effect->getScriptName_mt_safe() << ": clipGetImage on the output clip may only be called during the render action" << std::endl;
         return false;
@@ -1062,8 +1062,8 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
         initArgs.bounds = currentRenderWindow;
         initArgs.storage = retTexture ? eStorageModeGLTex : eStorageModeRAM;
         initArgs.plane = plane;
-        initArgs.proxyScale = currentActionScale;
-        initArgs.mipMapLevel = 0;
+        initArgs.proxyScale = currentActionProxyScale;
+        initArgs.mipMapLevel = currentActionMipMapLevel;
 
         OSGLContextAttacherPtr contextAttacher = appPTR->getGPUContextPool()->getThreadLocalContext();
         if (contextAttacher) {
@@ -1119,7 +1119,7 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
     {
 
         GetRegionOfDefinitionResultsPtr rodResults;
-        ActionRetCodeEnum stat = effect->getRegionOfDefinition_public(currentActionTime, currentActionScale, currentActionView, &rodResults);
+        ActionRetCodeEnum stat = effect->getRegionOfDefinition_public(currentActionTime, combinedScale, currentActionView, &rodResults);
         if (isFailureRetCode(stat)) {
             return false;
         }
@@ -1489,7 +1489,12 @@ OfxClipInstance::getAssociatedNode() const
     if (_isOutput) {
         return effect;
     } else {
-        return effect->getInput( getInputNb() );
+        int inputNb = getInputNb();
+        if (!effect->isRenderClone()) {
+            return effect->getInputMainInstance(inputNb);
+        } else {
+            return effect->getInputRenderEffect(inputNb, effect->getCurrentRenderTime(), effect->getCurrentRenderView());
+        }
     }
 }
 

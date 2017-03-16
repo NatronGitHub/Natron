@@ -204,7 +204,7 @@ KnobGuiValue::valueAccordingToType(const bool doNormalize,
     if (state != eValueIsNormalizedNone) {
         KnobIPtr knob = _imp->getKnob();
         if (knob) {
-            TimeValue time = knob->getCurrentTime_TLS();
+            TimeValue time = knob->getCurrentRenderTime();
             if (doNormalize) {
                 return normalize(dimension, time, value);
             } else {

@@ -111,9 +111,7 @@ struct TreeRenderPrivate
     
     // The state of the object to avoid calling render on a failed tree
     ActionRetCodeEnum state;
-    
-    // Render args of the root node
-    EffectInstancePtr rootRenderClone;
+
 
     // Map of nodes that belong to the tree upstream of tree root for which we desire
     // a pointer of the resulting image. This is useful for the Viewer to enable color-picking:
@@ -139,7 +137,6 @@ struct TreeRenderPrivate
     , ctorArgs()
     , stateMutex()
     , state(eActionStatusOK)
-    , rootRenderClone()
     , extraRequestedResults()
     , extraRequestedResultsMutex()
     , openGLContext()
@@ -204,12 +201,6 @@ TreeRender::~TreeRender()
 }
 
 
-EffectInstancePtr
-TreeRender::getTreeRootRenderClone() const
-{
-    return _imp->rootRenderClone;
-}
-
 FrameViewRequestPtr
 TreeRender::getExtraRequestedResultsForNode(const NodePtr& node) const
 {
@@ -240,13 +231,7 @@ TreeRender::isRenderAborted() const
     if ((int)_imp->aborted > 0) {
         return true;
     }
-
-    // If spawned from another render, check if it was aborted
-    TreeRenderPtr originalRender = _imp->ctorArgs->originalRender.lock();
-    if (!originalRender) {
-        return false;
-    }
-    return originalRender->isRenderAborted();
+    return false;
 }
 
 void
@@ -297,6 +282,18 @@ ViewIdx
 TreeRender::getView() const
 {
     return _imp->ctorArgs->view;
+}
+
+const RenderScale&
+TreeRender::getProxyScale() const
+{
+    return _imp->ctorArgs->proxyScale;
+}
+
+EffectInstancePtr
+TreeRender::getOriginalTreeRoot() const
+{
+    return _imp->ctorArgs->treeRootEffect;
 }
 
 RenderStatsPtr
@@ -398,6 +395,8 @@ TreeRenderPtr
 TreeRender::create(const CtorArgsPtr& inArgs)
 {
     TreeRenderPtr render(new TreeRender());
+
+    assert(!inArgs->treeRootEffect->isRenderClone());
     
     try {
         // Setup the render tree and make local copy of knob values for the render.
@@ -409,12 +408,7 @@ TreeRender::create(const CtorArgsPtr& inArgs)
 
     }
 
-     if (isFailureRetCode(render->_imp->state)) {
-         if (render->_imp->rootRenderClone) {
-             render->_imp->rootRenderClone->removeRenderCloneRecursive(render);
-         }
-     }
-    
+
     return render;
 }
 
@@ -476,21 +470,23 @@ RequestPassSharedData::addTaskToRender(const FrameViewRequestPtr& render)
     }
 }
 
-class TLSCleanupRAII
+class CleanupRenderClones_RAII
 {
-    TreeRenderPrivate* _imp;
+    EffectInstancePtr rootClone;
+    TreeRenderPtr render;
 public:
 
-    TLSCleanupRAII(TreeRenderPrivate* imp)
-    : _imp(imp)
+    CleanupRenderClones_RAII(const EffectInstancePtr& rootClone, const TreeRenderPtr& render)
+    : rootClone(rootClone)
+    , render(render)
     {
 
     }
 
-    ~TLSCleanupRAII()
+    ~CleanupRenderClones_RAII()
     {
-        if (_imp->rootRenderClone) {
-            _imp->rootRenderClone->removeRenderCloneRecursive(_imp->_publicInterface->shared_from_this());
+        if (rootClone) {
+            rootClone->removeRenderCloneRecursive(render);
         }
     }
 };
@@ -524,7 +520,7 @@ private:
         FrameViewRequestPtr request = _request.lock();
         RequestPassSharedDataPtr sharedData = _sharedData.lock();
 
-        EffectInstancePtr renderClone = request->getRenderClone();
+        EffectInstancePtr renderClone = request->getEffect();
         ActionRetCodeEnum stat = renderClone->launchRender(sharedData, request);
 
 
@@ -592,7 +588,18 @@ TreeRenderPrivate::launchRenderInternal(const EffectInstancePtr& treeRoot,
         scale.y *= mipMapScale;
     }
 
-    rootRenderClone = toEffectInstance(treeRoot->createRenderClone(_publicInterface->shared_from_this()));
+    EffectInstancePtr rootRenderClone;
+    {
+        FrameViewRenderKey key = {time, view, _publicInterface->shared_from_this()};
+        rootRenderClone = toEffectInstance(treeRoot->createRenderClone(key));
+    }
+
+    // If we are within a EffectInstance::getImagePlane() call, the treeRoot may already be a render clone spawned by this tree, in which case
+    // we don't want to remove clones yet. Clean the clones when the render tree is done executing the last call to launchRenderInternal.
+    boost::scoped_ptr<CleanupRenderClones_RAII> clonesCleaner;
+    if (!treeRoot->isRenderClone()) {
+        clonesCleaner.reset(new CleanupRenderClones_RAII(rootRenderClone, _publicInterface->shared_from_this()));
+    }
 
     assert(rootRenderClone->isRenderClone());
 
@@ -712,7 +719,6 @@ ActionRetCodeEnum
 TreeRender::launchRender(FrameViewRequestPtr* outputRequest)
 {
     
-    TLSCleanupRAII tlsCleaner(_imp.get());
 
     // init() may have failed, return early then.
     if (isFailureRetCode(_imp->state)) {

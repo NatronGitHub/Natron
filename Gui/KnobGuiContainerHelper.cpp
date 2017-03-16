@@ -994,12 +994,12 @@ KnobGuiContainerHelperPrivate::refreshPagesEnabledness()
         if (it->second == curPage) {
             if ( !page->isEnabled() ) {
                 page->setEnabled(true);
-                page->evaluateValueChange(DimSpec::all(), page->getCurrentTime_TLS(), ViewSetSpec::all(), eValueChangedReasonUserEdited);
+                page->evaluateValueChange(DimSpec::all(), page->getCurrentRenderTime(), ViewSetSpec::all(), eValueChangedReasonUserEdited);
             }
         } else {
             if ( page->isEnabled() ) {
                 page->setEnabled(false);
-                page->evaluateValueChange(DimSpec::all(), page->getCurrentTime_TLS(), ViewSetSpec::all(), eValueChangedReasonUserEdited);
+                page->evaluateValueChange(DimSpec::all(), page->getCurrentRenderTime(), ViewSetSpec::all(), eValueChangedReasonUserEdited);
             }
         }
     }

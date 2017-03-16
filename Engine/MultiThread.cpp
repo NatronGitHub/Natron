@@ -137,11 +137,12 @@ static void copyOFXRenderTLS(const EffectInstancePtr& effect,
     // correctly know that they are in a render action.
     TimeValue time;
     ViewIdx view;
-    RenderScale scale;
+    RenderScale proxyScale;
+    unsigned int mipMapLevel;
     RectI renderWindow;
     std::map<ImagePlaneDesc, ImagePtr> outputPlanes;
-    if (tlsSpawnerThread->getCurrentRenderActionArgs(&time, &view, &scale, &renderWindow, &outputPlanes)) {
-        renderActionData.reset(new RenderActionArgsSetter_RAII(tlsSpawnedThread, time, view, scale, renderWindow, outputPlanes));
+    if (tlsSpawnerThread->getCurrentRenderActionArgs(&time, &view, &proxyScale, &mipMapLevel, &renderWindow, &outputPlanes)) {
+        renderActionData.reset(new RenderActionArgsSetter_RAII(tlsSpawnedThread, time, view, proxyScale, mipMapLevel, renderWindow, outputPlanes));
     }
 
 }

@@ -89,9 +89,9 @@ public:
 private:
 
     
-    Bezier(const BezierPtr& other, const TreeRenderPtr& render);
+    Bezier(const BezierPtr& other, const FrameViewRenderKey& key);
 
-    virtual KnobHolderPtr createRenderCopy(const TreeRenderPtr& render) const OVERRIDE FINAL;
+    virtual KnobHolderPtr createRenderCopy(const FrameViewRenderKey& render) const OVERRIDE FINAL;
 
     virtual bool isRenderCloneNeeded() const OVERRIDE FINAL
     {

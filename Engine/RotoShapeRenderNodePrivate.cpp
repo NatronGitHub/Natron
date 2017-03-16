@@ -69,7 +69,7 @@ RotoShapeRenderNodePrivate::renderStroke_generic(RenderStrokeDataPtr userData,
                                                  bool doBuildup,
                                                  double opacity,
                                                  TimeValue time,
-                                                 ViewIdx view,
+                                                 ViewIdx /*view*/,
                                                  const RenderScale& scale,
                                                  double* distToNextOut,
                                                  Point* lastCenterPoint)

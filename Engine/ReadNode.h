@@ -115,7 +115,7 @@ private:
                              ValueChangedReasonEnum reason,
                              ViewSetSpec view,
                              TimeValue time) OVERRIDE FINAL;
-
+    virtual ActionRetCodeEnum getFrameRange(double *first, double *last) OVERRIDE FINAL;
 
     boost::scoped_ptr<ReadNodePrivate> _imp;
 };

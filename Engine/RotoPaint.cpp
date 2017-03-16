@@ -312,7 +312,7 @@ RotoPaint::getInternalInputNode(int index) const
 bool
 RotoPaint::getDefaultInput(bool connected, int* inputIndex) const
 {
-    EffectInstancePtr input0 = getInput(0);
+    EffectInstancePtr input0 = getInputMainInstance(0);
     if (!connected) {
         if (!input0) {
             *inputIndex = 0;
@@ -2931,7 +2931,7 @@ RotoPaintPrivate::isRotoPaintTreeConcatenatableInternal(const std::list<RotoDraw
 bool
 RotoPaint::isRotoPaintTreeConcatenatable() const
 {
-    std::list<RotoDrawableItemPtr > items = _imp->knobsTable->getRotoItemsByRenderOrder(getCurrentTime_TLS(), getCurrentView_TLS(), false);
+    std::list<RotoDrawableItemPtr > items = _imp->knobsTable->getRotoItemsByRenderOrder(getCurrentRenderTime(), getCurrentRenderView(), false);
     int bop;
     return _imp->isRotoPaintTreeConcatenatableInternal(items, &bop);
 }
@@ -3144,8 +3144,8 @@ RotoPaint::refreshRotoPaintTree()
     if (_imp->treeRefreshBlocked) {
         return;
     }
-    TimeValue time = getCurrentTime_TLS();
-    ViewIdx view = getCurrentView_TLS();
+    TimeValue time = getCurrentRenderTime();
+    ViewIdx view = getCurrentRenderView();
 
     // Get the items by render order. In the GUI they appear from bottom to top.
     std::list<RotoDrawableItemPtr > items = _imp->knobsTable->getRotoItemsByRenderOrder(time, view, false);
@@ -3567,7 +3567,7 @@ RotoPaint::getMergeChoices(std::vector<ChoiceOption>* inputAChoices, std::vector
         inputAChoices->push_back(noneChoice);
     }
     for (int i = 1; i < LAYERED_COMP_MAX_INPUTS_COUNT; ++i) {
-        EffectInstancePtr input = getInput(i);
+        EffectInstancePtr input = getInputMainInstance(i);
         if (!input) {
             continue;
         }

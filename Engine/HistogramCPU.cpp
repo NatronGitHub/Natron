@@ -473,7 +473,7 @@ HistogramCPU::run()
             args->treeRootEffect = treeRoot->getEffectInstance();
             assert(args->treeRootEffect);
             args->time = request.viewer->getTimelineCurrentTime();
-            args->view = request.viewer->getCurrentView_TLS();
+            args->view = request.viewer->getCurrentRenderView();
             
             // Render by default on disk is always using a mipmap level of 0 but using the proxy scale of the project
             int downcale_i = request.viewer->getDownscaleMipMapLevelKnobIndex();

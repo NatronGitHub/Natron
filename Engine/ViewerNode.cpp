@@ -779,7 +779,7 @@ ViewerNode::setPickerEnabled(bool enabled)
 }
 
 ViewIdx
-ViewerNode::getCurrentView_TLS() const
+ViewerNode::getCurrentRenderView() const
 {
     return ViewIdx(_imp->activeViewKnob.lock()->getValue());
 }
@@ -1128,7 +1128,7 @@ ViewerNodePrivate::startPlayback(RenderDirectionEnum direction)
 
     // Render selected view
     std::vector<ViewIdx> viewsToRender;
-    viewsToRender.push_back(_publicInterface->getCurrentView_TLS());
+    viewsToRender.push_back(_publicInterface->getCurrentRenderView());
 
     _publicInterface->getNode()->getRenderEngine()->renderFromCurrentFrame(_publicInterface->getApp()->isRenderStatsActionChecked(), viewsToRender, direction);
 
