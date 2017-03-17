@@ -470,47 +470,97 @@ NodeMetadata::getIsFrameVarying() const
 }
 
 void
+<<<<<<< HEAD
 NodeMetadata::setPixelAspectRatio(int inputNb, double par)
 {
     std::stringstream ss;
     ss << kNatronMetadataPixelAspectRatio << inputNb;
     setDoubleMetadata(ss.str(), par, 0, true);
+=======
+NodeMetadata::setPixelAspectRatio(int inputNb,
+                                  double par)
+{
+    if (inputNb == -1) {
+        _imp->outputData.pixelAspectRatio = par;
+    } else {
+        if ( inputNb < (int)_imp->inputsData.size() ) {
+            _imp->inputsData[inputNb].pixelAspectRatio = par;
+        }
+    }
+>>>>>>> RB-2.2
 }
 
 double
 NodeMetadata::getPixelAspectRatio(int inputNb) const
 {
+<<<<<<< HEAD
     std::stringstream ss;
     ss << kNatronMetadataPixelAspectRatio << inputNb;
     double ret;
     if (getDoubleMetadata(ss.str(), 0, &ret)) {
         return ret;
+=======
+    if (inputNb == -1) {
+        return _imp->outputData.pixelAspectRatio;
+    } else {
+        if ( inputNb < (int)_imp->inputsData.size() ) {
+            return _imp->inputsData[inputNb].pixelAspectRatio;
+        } else {
+            return 1.;
+        }
+>>>>>>> RB-2.2
     }
     return 1.;
 }
 
 void
+<<<<<<< HEAD
 NodeMetadata::setBitDepth(int inputNb, ImageBitDepthEnum depth)
 {
     std::stringstream ss;
     ss << kNatronMetadataBitDepth << inputNb;
     setIntMetadata(ss.str(), (int)depth, 0, true);
+=======
+NodeMetadata::setBitDepth(int inputNb,
+                          ImageBitDepthEnum depth)
+{
+    if (inputNb == -1) {
+        _imp->outputData.bitdepth = depth;
+    } else {
+        if ( inputNb < (int)_imp->inputsData.size() ) {
+            _imp->inputsData[inputNb].bitdepth = depth;
+        }
+        
+    }
+>>>>>>> RB-2.2
 }
 
 ImageBitDepthEnum
 NodeMetadata::getBitDepth(int inputNb) const
 {
+<<<<<<< HEAD
     std::stringstream ss;
     ss << kNatronMetadataBitDepth << inputNb;
     int ret;
     if (getIntMetadata(ss.str(), 0, &ret)) {
         return (ImageBitDepthEnum)ret;
+=======
+    if (inputNb == -1) {
+        return _imp->outputData.bitdepth;
+    } else {
+        if ( inputNb < (int)_imp->inputsData.size() ) {
+            return _imp->inputsData[inputNb].bitdepth;
+        } else {
+            return eImageBitDepthFloat;
+        }
+>>>>>>> RB-2.2
     }
     return eImageBitDepthFloat;
 }
 
 
 void
+<<<<<<< HEAD
 NodeMetadata::setColorPlaneNComps(int inputNb, int nComps)
 {
     std::stringstream ss;
@@ -526,6 +576,17 @@ NodeMetadata::getColorPlaneNComps(int inputNb) const
     int ret;
     if (getIntMetadata(ss.str(), 0, &ret)) {
         return ret;
+=======
+NodeMetadata::setImageComponents(int inputNb,
+                                 const ImageComponents& components)
+{
+    if (inputNb == -1) {
+        _imp->outputData.components = components;
+    } else {
+        if ( inputNb < (int)_imp->inputsData.size() ) {
+            _imp->inputsData[inputNb].components = components;
+        }
+>>>>>>> RB-2.2
     }
     return 4;
 }
@@ -533,6 +594,7 @@ NodeMetadata::getColorPlaneNComps(int inputNb) const
 void
 NodeMetadata::setComponentsType(int inputNb, const std::string& componentsType)
 {
+<<<<<<< HEAD
     std::stringstream ss;
     ss << kNatronMetadataComponentsType << inputNb;
     setStringMetadata(ss.str(), componentsType, 0, true);
@@ -547,6 +609,17 @@ NodeMetadata::getComponentsType(int inputNb) const
     if (getStringMetadata(ss.str(), 0, &ret)) {
         return ret;    }
     return kNatronColorPlaneID;
+=======
+    if (inputNb == -1) {
+        return _imp->outputData.components;
+    } else {
+        if ( inputNb < (int)_imp->inputsData.size() ) {
+            return _imp->inputsData[inputNb].components;
+        } else {
+            return ImageComponents::getRGBAComponents();
+        }
+    }
+>>>>>>> RB-2.2
 }
 
 void

@@ -383,11 +383,93 @@ Image::getCacheEntry() const
 
 class FillProcessor : public ImageMultiThreadProcessorBase
 {
+<<<<<<< HEAD
     void* _ptrs[4];
     RectI _bounds;
     ImageBitDepthEnum _bitDepth;
     int _nComps;
     RGBAColourF _color;
+=======
+    if (this == &src) {
+        return;
+    }
+    StorageModeEnum thisStorage = getStorageMode();
+    StorageModeEnum otherStorage = src.getStorageMode();
+
+    if ( (thisStorage == eStorageModeGLTex) && (otherStorage == eStorageModeGLTex) ) {
+        // OpenGL texture to OpenGL texture
+        assert(_params->getStorageInfo().textureTarget == src.getParams()->getStorageInfo().textureTarget);
+
+        RectI dstBounds = getBounds();
+        RectI srcBounds = src.getBounds();
+        GLuint fboID = glContext->getFBOId();
+
+        glBindFramebuffer(GL_FRAMEBUFFER, fboID);
+        int target = getGLTextureTarget();
+        glEnable(target);
+        glBindTexture( target, getGLTextureID() );
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, getGLTextureID(), 0 /*LoD*/);
+        glCheckFramebufferError();
+        glBindTexture( target, src.getGLTextureID() );
+
+        applyTextureMapping(dstBounds, srcRoi);
+
+        glBindTexture(target, 0);
+        glCheckError();
+    } else if ( (thisStorage == eStorageModeGLTex) && (otherStorage != eStorageModeGLTex) ) {
+        // RAM image to OpenGL texture
+        RectI dstBounds = getBounds();
+        RectI srcBounds = src.getBounds();
+
+        // only copy the intersection of roi, bounds and otherBounds
+        RectI roi = srcRoi;
+        bool doInteresect = roi.intersect(dstBounds, &roi);
+        if (!doInteresect) {
+            // no intersection between roi and the bounds of this image
+            return;
+        }
+        doInteresect = roi.intersect(srcBounds, &roi);
+        if (!doInteresect) {
+            // no intersection between roi and the bounds of the other image
+            return;
+        }
+        GLuint pboID = glContext->getPBOId();
+        int target = getGLTextureTarget();
+        glEnable(target);
+
+        // bind PBO to update texture source
+        glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, pboID);
+
+        std::size_t dataSize = roi.area() * 4 * src.getParams()->getStorageInfo().dataTypeSize;
+
+        // Note that glMapBufferARB() causes sync issue.
+        // If GPU is working with this buffer, glMapBufferARB() will wait(stall)
+        // until GPU to finish its job. To avoid waiting (idle), you can call
+        // first glBufferDataARB() with NULL pointer before glMapBufferARB().
+        // If you do that, the previous data in PBO will be discarded and
+        // glMapBufferARB() returns a new allocated pointer immediately
+        // even if GPU is still working with the previous data.
+        glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, 0, GL_DYNAMIC_DRAW_ARB);
+
+        // map the buffer object into client's memory
+        void* gpuData = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+        assert(gpuData);
+        if (gpuData) {
+            // update data directly on the mapped buffer
+            ImagePtr tmpImg( new Image( ImageComponents::getRGBAComponents(), src.getRoD(), roi, 0, src.getPixelAspectRatio(), src.getBitDepth(), src.getPremultiplication(), src.getFieldingOrder(), false, eStorageModeRAM) );
+            tmpImg->pasteFrom(src, roi);
+
+            Image::ReadAccess racc(tmpImg ? tmpImg.get() : this);
+            const unsigned char* srcdata = racc.pixelAt(roi.x1, roi.y1);
+            assert(srcdata);
+            
+            memcpy(gpuData, srcdata, dataSize);
+
+            GLboolean result = glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
+            assert(result == GL_TRUE);
+            Q_UNUSED(result);
+        }
+>>>>>>> RB-2.2
 
 
 public:

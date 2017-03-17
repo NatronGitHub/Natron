@@ -404,7 +404,24 @@ public:
 
     Implementation(EffectInstance* publicInterface);
 
+<<<<<<< HEAD
     Implementation(EffectInstance* publicInterface, const Implementation& other);
+=======
+#if NATRON_ENABLE_TRIMAP
+    ///Store all images being rendered to avoid 2 threads rendering the same portion of an image
+    struct ImageBeingRendered
+    {
+        QWaitCondition cond;
+        QMutex lock;
+        int refCount;
+        bool failed;
+
+        ImageBeingRendered()
+            : cond(), lock(), refCount(0), failed(false)
+        {
+        }
+    };
+>>>>>>> RB-2.2
 
 
     ~Implementation();
@@ -420,6 +437,7 @@ public:
                                 const ImagePlaneDesc& plane);
 
 
+<<<<<<< HEAD
     /**
      * @brief Set the results of the getFrameRange action for this render
      **/
@@ -434,6 +452,15 @@ public:
      * @brief Set the results of the getMetadata action for this render
      **/
     void setTimeInvariantMetadataResults(const GetTimeInvariantMetaDatasResultsPtr& metadatas);
+=======
+#if NATRON_ENABLE_TRIMAP
+    void markImageAsBeingRendered(const boost::shared_ptr<Image> & img, const RectI& roi, std::list<RectI>* restToRender, bool *renderedElsewhere);
+
+    bool waitForImageBeingRenderedElsewhere(const RectI & roi, const boost::shared_ptr<Image> & img);
+
+    void unmarkImageAsBeingRendered(const boost::shared_ptr<Image> & img, const std::list<RectI>& rects, bool renderFailed);
+#endif
+>>>>>>> RB-2.2
 
     /**
      * @brief Get the results of the getFrameRange action for this render
@@ -558,6 +585,7 @@ public:
         std::map<ImagePlaneDesc, ImagePtr> localPlanes, cachedPlanes;
     };
 
+<<<<<<< HEAD
     ActionRetCodeEnum tiledRenderingFunctor(const RectToRender & rectToRender,
                                             const TiledRenderingFunctorArgs& args);
 
@@ -570,6 +598,71 @@ public:
 
     ActionRetCodeEnum renderHandlerPostProcess(const RectToRender & rectToRender,
                                   const TiledRenderingFunctorArgs& args);
+=======
+    RenderingFunctorRetEnum tiledRenderingFunctor(TiledRenderingFunctorArgs & args,  const RectToRender & specificData,
+                                                  QThread* callingThread);
+
+    RenderingFunctorRetEnum tiledRenderingFunctor(const RectToRender & rectToRender,
+                                                  const bool renderFullScaleThenDownscale,
+                                                  const bool isSequentialRender,
+                                                  const bool isRenderResponseToUserInteraction,
+                                                  const int firstFrame, const int lastFrame,
+                                                  const int preferredInput,
+                                                  const unsigned int mipMapLevel,
+                                                  const unsigned int renderMappedMipMapLevel,
+                                                  const RectD & rod,
+                                                  const double time,
+                                                  const ViewIdx view,
+                                                  const double par,
+                                                  const bool byPassCache,
+                                                  const ImageBitDepthEnum outputClipPrefDepth,
+                                                  const ImageComponents & outputClipPrefsComps,
+                                                  const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
+                                                  const std::bitset<4>& processChannels,
+                                                  const boost::shared_ptr<ImagePlanesToRender> & planes);
+
+
+    ///These are the image passed to the plug-in to render
+    /// - fullscaleMappedImage is the fullscale image remapped to what the plugin can support (components/bitdepth)
+    /// - downscaledMappedImage is the downscaled image remapped to what the plugin can support (components/bitdepth wise)
+    /// - fullscaleMappedImage is pointing to "image" if the plug-in does support the renderscale, meaning we don't use it.
+    /// - Similarily downscaledMappedImage is pointing to "downscaledImage" if the plug-in doesn't support the render scale.
+    ///
+    /// - renderMappedImage is what is given to the plug-in to render the image into,it is mapped to an image that the plug-in
+    ///can render onto (good scale, good components, good bitdepth)
+    ///
+    /// These are the possible scenarios:
+    /// - 1) Plugin doesn't need remapping and doesn't need downscaling
+    ///    * We render in downscaledImage always, all image pointers point to it.
+    /// - 2) Plugin doesn't need remapping but needs downscaling (doesn't support the renderscale)
+    ///    * We render in fullScaleImage, fullscaleMappedImage points to it and then we downscale into downscaledImage.
+    ///    * renderMappedImage points to fullScaleImage
+    /// - 3) Plugin needs remapping (doesn't support requested components or bitdepth) but doesn't need downscaling
+    ///    * renderMappedImage points to downscaledMappedImage
+    ///    * We render in downscaledMappedImage and then convert back to downscaledImage with requested comps/bitdepth
+    /// - 4) Plugin needs remapping and downscaling
+    ///    * renderMappedImage points to fullScaleMappedImage
+    ///    * We render in fullScaledMappedImage, then convert into "image" and then downscale into downscaledImage.
+    RenderingFunctorRetEnum renderHandler(const EffectDataTLSPtr& tls,
+                                          const unsigned int mipMapLevel,
+                                          const bool renderFullScaleThenDownscale,
+                                          const bool isSequentialRender,
+                                          const bool isRenderResponseToUserInteraction,
+                                          const RectI & renderMappedRectToRender,
+                                          const RectI & downscaledRectToRender,
+                                          const bool byPassCache,
+                                          const ImageBitDepthEnum outputClipPrefDepth,
+                                          const ImageComponents & outputClipPrefsComps,
+                                          const std::bitset<4>& processChannels,
+                                          const boost::shared_ptr<Image> & originalInputImage,
+                                          const boost::shared_ptr<Image> & maskImage,
+                                          const ImagePremultiplicationEnum originalImagePremultiplication,
+                                          ImagePlanesToRender & planes);
+
+    static bool aborted(bool isRenderResponseToUserInteraction,
+                        const AbortableRenderInfoPtr& abortInfo,
+                        const EffectInstPtr& treeRoot)  WARN_UNUSED_RETURN;
+>>>>>>> RB-2.2
 
     void checkMetadata(NodeMetadata &metadata);
 

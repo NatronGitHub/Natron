@@ -302,6 +302,10 @@ ReadNode::ReadNode(const NodePtr& n)
     : NodeGroup(n)
     , _imp( new ReadNodePrivate(this) )
 {
+<<<<<<< HEAD
+=======
+    setSupportsRenderScaleMaybe(eSupportsNo);
+>>>>>>> RB-2.2
 }
 
 ReadNode::~ReadNode()

@@ -2295,10 +2295,246 @@ Settings::saveSettingsToFile()
     FStreamsSupport::ofstream ofile;
     FStreamsSupport::open(&ofile, settingsFilePath);
 
+<<<<<<< HEAD
     if (!ofile) {
         std::string message = tr("Failed to save settings to %1").arg(QString::fromUtf8(settingsFilePath.c_str())).toStdString();
         Dialogs::errorDialog(tr("Settings").toStdString(), message);
         return;
+=======
+    // Plugins
+    _extraPluginPaths->setDefaultValue("", 0);
+    _useStdOFXPluginsLocation->setDefaultValue(true);
+    //_templatesPluginPaths
+    _preferBundledPlugins->setDefaultValue(true);
+    _loadBundledPlugins->setDefaultValue(true);
+
+    // Python
+    //_onProjectCreated;
+    //_defaultOnProjectLoaded;
+    //_defaultOnProjectSave;
+    //_defaultOnProjectClose;
+    //_defaultOnNodeCreated;
+    //_defaultOnNodeDelete;
+    //_loadPyPlugsFromPythonScript;
+    _echoVariableDeclarationToPython->setDefaultValue(false);
+
+    // Appearance
+    _systemFontChoice->setDefaultValue(0);
+    _fontSize->setDefaultValue(NATRON_FONT_SIZE_DEFAULT);
+    //_qssFile
+    //_defaultAppearanceVersion
+
+    // Appearance/Main Window
+    _sunkenColor->setDefaultValue(0.12, 0);
+    _sunkenColor->setDefaultValue(0.12, 1);
+    _sunkenColor->setDefaultValue(0.12, 2);
+    _baseColor->setDefaultValue(0.19, 0);
+    _baseColor->setDefaultValue(0.19, 1);
+    _baseColor->setDefaultValue(0.19, 2);
+    _raisedColor->setDefaultValue(0.28, 0);
+    _raisedColor->setDefaultValue(0.28, 1);
+    _raisedColor->setDefaultValue(0.28, 2);
+    _selectionColor->setDefaultValue(0.95, 0);
+    _selectionColor->setDefaultValue(0.54, 1);
+    _selectionColor->setDefaultValue(0., 2);
+    _textColor->setDefaultValue(0.78, 0);
+    _textColor->setDefaultValue(0.78, 1);
+    _textColor->setDefaultValue(0.78, 2);
+    _altTextColor->setDefaultValue(0.6, 0);
+    _altTextColor->setDefaultValue(0.6, 1);
+    _altTextColor->setDefaultValue(0.6, 2);
+    _timelinePlayheadColor->setDefaultValue(0.95, 0);
+    _timelinePlayheadColor->setDefaultValue(0.54, 1);
+    _timelinePlayheadColor->setDefaultValue(0., 2);
+    _timelineBGColor->setDefaultValue(0, 0);
+    _timelineBGColor->setDefaultValue(0, 1);
+    _timelineBGColor->setDefaultValue(0., 2);
+    _timelineBoundsColor->setDefaultValue(0.81, 0);
+    _timelineBoundsColor->setDefaultValue(0.27, 1);
+    _timelineBoundsColor->setDefaultValue(0.02, 2);
+    _interpolatedColor->setDefaultValue(0.34, 0);
+    _interpolatedColor->setDefaultValue(0.46, 1);
+    _interpolatedColor->setDefaultValue(0.6, 2);
+    _keyframeColor->setDefaultValue(0.08, 0);
+    _keyframeColor->setDefaultValue(0.38, 1);
+    _keyframeColor->setDefaultValue(0.97, 2);
+    _trackerKeyframeColor->setDefaultValue(0.7, 0);
+    _trackerKeyframeColor->setDefaultValue(0.78, 1);
+    _trackerKeyframeColor->setDefaultValue(0.39, 2);
+    _exprColor->setDefaultValue(0.7, 0);
+    _exprColor->setDefaultValue(0.78, 1);
+    _exprColor->setDefaultValue(0.39, 2);
+    _cachedFrameColor->setDefaultValue(0.56, 0);
+    _cachedFrameColor->setDefaultValue(0.79, 1);
+    _cachedFrameColor->setDefaultValue(0.4, 2);
+    _diskCachedFrameColor->setDefaultValue(0.27, 0);
+    _diskCachedFrameColor->setDefaultValue(0.38, 1);
+    _diskCachedFrameColor->setDefaultValue(0.25, 2);
+    _sliderColor->setDefaultValue(0.33, 0);
+    _sliderColor->setDefaultValue(0.45, 1);
+    _sliderColor->setDefaultValue(0.44, 2);
+
+    // Apprance/Curve Editor
+    _curveEditorBGColor->setDefaultValue(0., 0);
+    _curveEditorBGColor->setDefaultValue(0., 1);
+    _curveEditorBGColor->setDefaultValue(0., 2);
+    _gridColor->setDefaultValue(0.46, 0);
+    _gridColor->setDefaultValue(0.84, 1);
+    _gridColor->setDefaultValue(0.35, 2);
+    _curveEditorScaleColor->setDefaultValue(0.26, 0);
+    _curveEditorScaleColor->setDefaultValue(0.48, 1);
+    _curveEditorScaleColor->setDefaultValue(0.2, 2);
+
+    // Appearance/Dope Sheet
+    _dopeSheetEditorBackgroundColor->setDefaultValue(0.208, 0);
+    _dopeSheetEditorBackgroundColor->setDefaultValue(0.208, 1);
+    _dopeSheetEditorBackgroundColor->setDefaultValue(0.208, 2);
+    _dopeSheetEditorRootSectionBackgroundColor->setDefaultValue(0.204, 0);
+    _dopeSheetEditorRootSectionBackgroundColor->setDefaultValue(0.204, 1);
+    _dopeSheetEditorRootSectionBackgroundColor->setDefaultValue(0.204, 2);
+    _dopeSheetEditorRootSectionBackgroundColor->setDefaultValue(0.2, 3);
+    _dopeSheetEditorKnobSectionBackgroundColor->setDefaultValue(0.443, 0);
+    _dopeSheetEditorKnobSectionBackgroundColor->setDefaultValue(0.443, 1);
+    _dopeSheetEditorKnobSectionBackgroundColor->setDefaultValue(0.443, 2);
+    _dopeSheetEditorKnobSectionBackgroundColor->setDefaultValue(0.2, 3);
+    _dopeSheetEditorScaleColor->setDefaultValue(0.714, 0);
+    _dopeSheetEditorScaleColor->setDefaultValue(0.718, 1);
+    _dopeSheetEditorScaleColor->setDefaultValue(0.714, 2);
+    _dopeSheetEditorGridColor->setDefaultValue(0.714, 0);
+    _dopeSheetEditorGridColor->setDefaultValue(0.714, 1);
+    _dopeSheetEditorGridColor->setDefaultValue(0.714, 2);
+
+    // Appearance/Script Editor
+    _curLineColor->setDefaultValue(0.35, 0);
+    _curLineColor->setDefaultValue(0.35, 1);
+    _curLineColor->setDefaultValue(0.35, 2);
+    _keywordColor->setDefaultValue(0.7, 0);
+    _keywordColor->setDefaultValue(0.7, 1);
+    _keywordColor->setDefaultValue(0., 2);
+    _operatorColor->setDefaultValue(0.78, 0);
+    _operatorColor->setDefaultValue(0.78, 1);
+    _operatorColor->setDefaultValue(0.78, 2);
+    _braceColor->setDefaultValue(0.85, 0);
+    _braceColor->setDefaultValue(0.85, 1);
+    _braceColor->setDefaultValue(0.85, 2);
+    _defClassColor->setDefaultValue(0.7, 0);
+    _defClassColor->setDefaultValue(0.7, 1);
+    _defClassColor->setDefaultValue(0., 2);
+    _stringsColor->setDefaultValue(0.8, 0);
+    _stringsColor->setDefaultValue(0.2, 1);
+    _stringsColor->setDefaultValue(0., 2);
+    _commentsColor->setDefaultValue(0.25, 0);
+    _commentsColor->setDefaultValue(0.6, 1);
+    _commentsColor->setDefaultValue(0.25, 2);
+    _selfColor->setDefaultValue(0.7, 0);
+    _selfColor->setDefaultValue(0.7, 1);
+    _selfColor->setDefaultValue(0., 2);
+    _numbersColor->setDefaultValue(0.25, 0);
+    _numbersColor->setDefaultValue(0.8, 1);
+    _numbersColor->setDefaultValue(0.9, 2);
+    _scriptEditorFontChoice->setDefaultValue(0);
+    _scriptEditorFontSize->setDefaultValue(NATRON_FONT_SIZE_DEFAULT);
+
+
+    // Appearance/Node Graph
+    _defaultNodeColor->setDefaultValue(0.7, 0);
+    _defaultNodeColor->setDefaultValue(0.7, 1);
+    _defaultNodeColor->setDefaultValue(0.7, 2);
+    _defaultBackdropColor->setDefaultValue(0.45, 0);
+    _defaultBackdropColor->setDefaultValue(0.45, 1);
+    _defaultBackdropColor->setDefaultValue(0.45, 2);
+    _defaultGeneratorColor->setDefaultValue(0.3, 0);
+    _defaultGeneratorColor->setDefaultValue(0.5, 1);
+    _defaultGeneratorColor->setDefaultValue(0.2, 2);
+    _defaultReaderColor->setDefaultValue(0.7, 0);
+    _defaultReaderColor->setDefaultValue(0.7, 1);
+    _defaultReaderColor->setDefaultValue(0.7, 2);
+    _defaultWriterColor->setDefaultValue(0.75, 0);
+    _defaultWriterColor->setDefaultValue(0.75, 1);
+    _defaultWriterColor->setDefaultValue(0., 2);
+    _defaultColorGroupColor->setDefaultValue(0.48, 0);
+    _defaultColorGroupColor->setDefaultValue(0.66, 1);
+    _defaultColorGroupColor->setDefaultValue(1., 2);
+    _defaultFilterGroupColor->setDefaultValue(0.8, 0);
+    _defaultFilterGroupColor->setDefaultValue(0.5, 1);
+    _defaultFilterGroupColor->setDefaultValue(0.3, 2);
+    _defaultTransformGroupColor->setDefaultValue(0.7, 0);
+    _defaultTransformGroupColor->setDefaultValue(0.3, 1);
+    _defaultTransformGroupColor->setDefaultValue(0.1, 2);
+    _defaultTimeGroupColor->setDefaultValue(0.7, 0);
+    _defaultTimeGroupColor->setDefaultValue(0.65, 1);
+    _defaultTimeGroupColor->setDefaultValue(0.35, 2);
+    _defaultDrawGroupColor->setDefaultValue(0.75, 0);
+    _defaultDrawGroupColor->setDefaultValue(0.75, 1);
+    _defaultDrawGroupColor->setDefaultValue(0.75, 2);
+    _defaultKeyerGroupColor->setDefaultValue(0., 0);
+    _defaultKeyerGroupColor->setDefaultValue(1, 1);
+    _defaultKeyerGroupColor->setDefaultValue(0., 2);
+    _defaultChannelGroupColor->setDefaultValue(0.6, 0);
+    _defaultChannelGroupColor->setDefaultValue(0.24, 1);
+    _defaultChannelGroupColor->setDefaultValue(0.39, 2);
+    _defaultMergeGroupColor->setDefaultValue(0.3, 0);
+    _defaultMergeGroupColor->setDefaultValue(0.37, 1);
+    _defaultMergeGroupColor->setDefaultValue(0.776, 2);
+    _defaultViewsGroupColor->setDefaultValue(0.5, 0);
+    _defaultViewsGroupColor->setDefaultValue(0.9, 1);
+    _defaultViewsGroupColor->setDefaultValue(0.7, 2);
+    _defaultDeepGroupColor->setDefaultValue(0., 0);
+    _defaultDeepGroupColor->setDefaultValue(0., 1);
+    _defaultDeepGroupColor->setDefaultValue(0.38, 2);
+
+
+    endChanges();
+} // setDefaultValues
+
+void
+Settings::warnChangedKnobs(const std::vector<KnobI*>& knobs)
+{
+    bool didFontWarn = false;
+    bool didOCIOWarn = false;
+    bool didOFXCacheWarn = false;
+
+    for (U32 i = 0; i < knobs.size(); ++i) {
+        if ( ( ( knobs[i] == _fontSize.get() ) ||
+               ( knobs[i] == _systemFontChoice.get() ) )
+             && !didFontWarn ) {
+            didFontWarn = true;
+            Dialogs::warningDialog( tr("Font change").toStdString(),
+                                    tr("Changing the font requires a restart of %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
+        } else if ( ( ( knobs[i] == _ocioConfigKnob.get() ) ||
+                      ( knobs[i] == _customOcioConfigFile.get() ) )
+                    && !didOCIOWarn ) {
+            didOCIOWarn = true;
+            bool warnOcioChanged = _warnOcioConfigKnobChanged->getValue();
+            if (warnOcioChanged) {
+                bool stopAsking = false;
+                Dialogs::warningDialog(tr("OCIO config changed").toStdString(),
+                                       tr("The OpenColorIO config change requires a restart of %1 to be effective.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), &stopAsking);
+                if (stopAsking) {
+                    _warnOcioConfigKnobChanged->setValue(false);
+                    saveSetting( _warnOcioConfigKnobChanged.get() );
+                }
+            }
+        } else if ( knobs[i] == _texturesMode.get() ) {
+            AppInstanceVec apps = appPTR->getAppInstances();
+            for (AppInstanceVec::iterator it = apps.begin(); it != apps.end(); ++it) {
+                std::list<ViewerInstance*> allViewers;
+                (*it)->getProject()->getViewers(&allViewers);
+                for (std::list<ViewerInstance*>::iterator it = allViewers.begin(); it != allViewers.end(); ++it) {
+                    (*it)->renderCurrentFrame(true);
+                }
+            }
+        } else if ( ( ( knobs[i] == _loadBundledPlugins.get() ) ||
+                      ( knobs[i] == _preferBundledPlugins.get() ) ||
+                      ( knobs[i] == _useStdOFXPluginsLocation.get() ) ||
+                      ( knobs[i] == _extraPluginPaths.get() ) )
+                    && !didOFXCacheWarn ) {
+            didOFXCacheWarn = true;
+            appPTR->clearPluginsLoadedCache(); // clear the cache for next restart
+            Dialogs::warningDialog( tr("OpenFX plugins path changed").toStdString(),
+                                    tr("The OpenFX plugins path change requires a restart of %1 to be effective.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
+        }
+>>>>>>> RB-2.2
     }
 
     bool hasWrittenSomething = false;

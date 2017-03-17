@@ -1499,6 +1499,170 @@ public:
      * http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsMultipleClipPARs
      * If a plugin does not accept clips of differing PARs, then the host must resample all images fed to that effect to agree with the output's PAR.
      * If a plugin does accept clips of differing PARs, it will need to specify the output clip's PAR in the kOfxImageEffectActionGetClipPreferences action.
+<<<<<<< HEAD
+=======
+     **/
+    virtual bool supportsMultipleClipPARs() const
+    {
+        return false;
+    }
+
+    virtual bool supportsMultipleClipDepths() const
+    {
+        return false;
+    }
+
+    virtual bool supportsMultipleClipFPSs() const
+    {
+        return false;
+    }
+
+    virtual bool doesTemporalClipAccess() const
+    {
+        return false;
+    }
+
+    virtual PluginOpenGLRenderSupport supportsOpenGLRender() const
+    {
+        return ePluginOpenGLRenderSupportNone;
+    }
+
+    virtual void onEnableOpenGLKnobValueChanged(bool /*activated*/)
+    {
+
+    }
+
+    /**
+     * @brief If this effect is a writer then the file path corresponding to the output images path will be fed
+     * with the content of pattern.
+     **/
+    void setOutputFilesForWriter(const std::string & pattern);
+
+    /**
+     * @brief Constructs a new memory holder, with nBytes allocated. If the allocation failed, bad_alloc is thrown
+     **/
+    PluginMemoryPtr newMemoryInstance(size_t nBytes) WARN_UNUSED_RETURN;
+
+    /// used to count the memory used by a plugin
+    /// Don't call these, they're called by PluginMemory automatically
+    void registerPluginMemory(size_t nBytes);
+    void unregisterPluginMemory(size_t nBytes);
+
+    void addPluginMemoryPointer(const PluginMemoryPtr& mem);
+    void removePluginMemoryPointer(const PluginMemory* mem);
+
+    void clearPluginMemoryChunks();
+
+    /**
+     * @brief Called right away when the user first opens the settings panel of the node.
+     * This is called after each params had its default value set.
+     **/
+    virtual void beginEditKnobs()
+    {
+    }
+
+    /**
+     * @brief Called everytimes an input connection is changed
+     **/
+    virtual void onInputChanged(int inputNo);
+
+    /**
+     * @brief If the plug-in calls timelineGoTo and we're during a render/instance changed action,
+     * then all the knobs will retrieve the current time as being the one in the last render args thread-storage.
+     * This function is here to update the last render args thread storage.
+     **/
+    void updateThreadLocalRenderTime(double time);
+
+    bool isDuringPaintStrokeCreationThreadLocal() const;
+
+    struct PlaneToRender
+    {
+        //Points to the fullscale image if render scale is not supported by the plug-in, or downscaleImage otherwise
+        boost::shared_ptr<Image> fullscaleImage;
+
+        //Points to the image to be rendered
+        boost::shared_ptr<Image> downscaleImage;
+
+        //Points to the image that the plug-in can render (either fullScale or downscale)
+        boost::shared_ptr<Image> renderMappedImage;
+
+        //Points to a temporary image that the plug-in will render
+        boost::shared_ptr<Image> tmpImage;
+
+        /*
+           In the event where the fullScaleImage is in the cache but we must resize it to render a portion unallocated yet and
+           if the render is issues directly from getImage() we swap image in cache instead of taking the write lock of fullScaleImage
+         */
+        boost::shared_ptr<Image> cacheSwapImage;
+        void* originalCachedImage;
+
+        /**
+         * This is set to true if this plane is allocated with allocateImagePlaneAndSetInThreadLocalStorage()
+         **/
+        bool isAllocatedOnTheFly;
+
+        PlaneToRender()
+            : fullscaleImage()
+            , downscaleImage()
+            , renderMappedImage()
+            , tmpImage()
+            , cacheSwapImage()
+            , originalCachedImage(0)
+            , isAllocatedOnTheFly(false)
+        {
+        }
+    };
+
+    struct RectToRender
+    {
+        EffectInstPtr identityInput;
+        RectI rect;
+        RoIMap inputRois;
+        EffectInstance::InputImagesMap imgs;
+        double identityTime;
+        bool isIdentity;
+        ViewIdx identityView;
+    };
+
+    struct ImagePlanesToRender
+    {
+        std::list<RectToRender> rectsToRender;
+        std::map<ImageComponents, PlaneToRender> planes;
+        std::map<int, ImagePremultiplicationEnum> inputPremult;
+        ImagePremultiplicationEnum outputPremult;
+        bool useOpenGL;
+        EffectInstance::OpenGLContextEffectDataPtr glContextData;
+
+        ImagePlanesToRender()
+            : rectsToRender()
+            , planes()
+            , inputPremult()
+            , outputPremult(eImagePremultiplicationPremultiplied)
+            , useOpenGL(false)
+            , glContextData()
+        {
+        }
+    };
+
+
+    /**
+     * @brief If the caller thread is currently rendering an image, it will return a pointer to it
+     * otherwise it will return NULL.
+     * This function also returns the current renderWindow that is being rendered on that image
+     * To be called exclusively on a render thread.
+     *
+     * WARNING: This call isexpensive and this function should not be called many times.
+     **/
+    bool getThreadLocalRenderedPlanes(std::map<ImageComponents, EffectInstance::PlaneToRender >*  planes,
+                                      ImageComponents* planeBeingRendered,
+                                      RectI* renderWindow) const;
+
+    bool getThreadLocalNeededComponents(boost::shared_ptr<ComponentsNeededMap>* neededComps) const;
+
+    /**
+     * @brief Called when the associated node's hash has changed.
+     * This is always called on the main-thread.
+>>>>>>> RB-2.2
      **/
     virtual bool supportsMultipleClipPARs() const
     {
@@ -1864,7 +2028,13 @@ private:
 
     void onFileNameParameterChanged(const KnobIPtr& fileKnob);
 
+<<<<<<< HEAD
     bool handleDefaultKnobChanged(const KnobIPtr& what, ValueChangedReasonEnum reason);
+=======
+    friend class ReadNode;
+    friend class WriteNode;
+    friend class ImageBitMapMarker_RAII;
+>>>>>>> RB-2.2
 
     void initializeDefaultKnobs(bool loadingSerialization, bool hasGUI);
 
@@ -1911,7 +2081,14 @@ protected:
      **/
     virtual void initializeKnobs() OVERRIDE
     {
+<<<<<<< HEAD
 
+=======
+        eRenderingFunctorRetFailed, //< must stop rendering
+        eRenderingFunctorRetOK, //< ok, move on
+        eRenderingFunctorRetAborted, // we were aborted
+        eRenderingFunctorRetOutOfGPUMemory
+>>>>>>> RB-2.2
     };
 
     virtual void fetchRenderCloneKnobs() OVERRIDE;

@@ -221,6 +221,7 @@ OfxEffectInstance::describePlugin()
     PluginPtr natronPlugin = getNode()->getPlugin();
     assert(natronPlugin);
 
+<<<<<<< HEAD
     OFX::Host::ImageEffect::ImageEffectPlugin* ofxPlugin = (OFX::Host::ImageEffect::ImageEffectPlugin*)natronPlugin->getPropertyUnsafe<void*>(kNatronPluginPropOpenFXPluginPtr);
     assert(ofxPlugin);
     if (!ofxPlugin) {
@@ -247,6 +248,18 @@ OfxEffectInstance::describePlugin()
     }
 
     assert(ofxPlugin && desc && _imp->common->context != eContextNone);
+=======
+    if (context == eContextWriter) {
+        _imp->isOutput = true;
+    }
+    if (context == eContextWriter || context == eContextReader) {
+        // Writers don't support render scale (full-resolution images are written to disk)
+        // Readers don't support render scale otherwise each mipmap level would require a file decoding
+        setSupportsRenderScaleMaybe(eSupportsNo);
+    }
+
+    std::string images;
+>>>>>>> RB-2.2
 
 
     if (_imp->common->context == eContextWriter) {
@@ -1197,6 +1210,10 @@ OfxEffectInstance::getRegionsOfInterest(TimeValue time,
 
     assert(renderWindow.x2 >= renderWindow.x1 && renderWindow.y2 >= renderWindow.y1);
 
+<<<<<<< HEAD
+=======
+    assert((supportsRenderScaleMaybe() != eSupportsNo) || (scale.x == 1. && scale.y == 1.));
+>>>>>>> RB-2.2
 
     OfxStatus stat;
 

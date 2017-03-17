@@ -250,6 +250,100 @@ EffectInstance::Implementation::handleConcatenation(const RequestPassSharedDataP
                                                     const RectD& canonicalRoi,
                                                     bool *concatenated)
 
+<<<<<<< HEAD
+=======
+#if NATRON_ENABLE_TRIMAP
+class ImageBitMapMarker_RAII
+{
+
+    std::map<ImageComponents, EffectInstance::PlaneToRender> _image;
+    RectI _roi;
+    EffectInstance* _effect;
+    std::list<RectI> _rectsToRender;
+    bool _isBeingRenderedElseWhere;
+    bool _isValid;
+    bool _renderFullScale;
+
+public:
+
+    ImageBitMapMarker_RAII(const std::map<ImageComponents, EffectInstance::PlaneToRender>& image,
+                           bool renderFullScale,
+                           const RectI& roi,
+                           EffectInstance* effect)
+    : _image(image)
+    , _roi(roi)
+    , _effect(effect)
+    , _rectsToRender()
+    , _isBeingRenderedElseWhere(false)
+    , _isValid(true)
+    , _renderFullScale(renderFullScale)
+    {
+        for (std::map<ImageComponents,EffectInstance::PlaneToRender>::const_iterator it = _image.begin(); it != _image.end(); ++it) {
+            ImagePtr cacheImage;
+            if (!renderFullScale) {
+                cacheImage = it->second.downscaleImage;
+            } else {
+                cacheImage = it->second.fullscaleImage;
+            }
+            if (cacheImage && cacheImage->usesBitMap()) {
+                _effect->_imp->markImageAsBeingRendered(cacheImage, roi, &_rectsToRender, &_isBeingRenderedElseWhere);
+            }
+        }
+
+    }
+
+    const std::list<RectI>& getRectsToRender() const
+    {
+        return _rectsToRender;
+    }
+
+    void invalidate()
+    {
+        _isValid = false;
+    }
+
+    void waitForPendingRegions()
+    {
+        if (!_isBeingRenderedElseWhere || !_isValid) {
+            return;
+        }
+        for (std::map<ImageComponents,EffectInstance::PlaneToRender>::const_iterator it = _image.begin(); it != _image.end(); ++it) {
+            ImagePtr cacheImage;
+            if (!_renderFullScale) {
+                cacheImage = it->second.downscaleImage;
+            } else {
+                cacheImage = it->second.fullscaleImage;
+            }
+            if (cacheImage && cacheImage->usesBitMap()) {
+                if (!_effect->_imp->waitForImageBeingRenderedElsewhere(_roi, cacheImage)) {
+                    _isValid = false;
+                }
+            }
+        }
+    }
+
+    ~ImageBitMapMarker_RAII()
+    {
+        for (std::map<ImageComponents,EffectInstance::PlaneToRender>::const_iterator it = _image.begin(); it != _image.end(); ++it) {
+            ImagePtr cacheImage;
+            if (!_renderFullScale) {
+                cacheImage = it->second.downscaleImage;
+            } else {
+                cacheImage = it->second.fullscaleImage;
+            }
+            if (cacheImage && cacheImage->usesBitMap()) {
+                _effect->_imp->unmarkImageAsBeingRendered(cacheImage, _rectsToRender, !_isValid);
+            }
+        }
+ 
+    }
+};
+#endif // #if NATRON_ENABLE_TRIMAP
+
+EffectInstance::RenderRoIRetCode
+EffectInstance::renderRoI(const RenderRoIArgs & args,
+                          std::map<ImageComponents, ImagePtr>* outputPlanes)
+>>>>>>> RB-2.2
 {
     *concatenated = false;
     if (!_publicInterface->getCurrentRender()->isConcatenationEnabled()) {
@@ -899,6 +993,42 @@ EffectInstance::Implementation::launchRenderForSafetyAndBackend(const FrameViewR
 } // launchInternalRender
 
 
+<<<<<<< HEAD
+=======
+    const bool draftModeSupported = getNode()->isDraftModeUsed();
+    const bool isFrameVaryingOrAnimated = isFrameVaryingOrAnimated_Recursive();
+    bool createInCache;
+    // Do not use the cache for OpenGL rendering
+    if (storage == eStorageModeGLTex) {
+        createInCache = false;
+    } else {
+        // in Analysis, the node upstream of te analysis node should always cache
+        createInCache = (frameArgs->isAnalysis && frameArgs->treeRoot->getEffectInstance().get() == args.caller) ? true : shouldCacheOutput(isFrameVaryingOrAnimated, args.time, args.view, frameArgs->visitsCount);
+    }
+    ///Do we want to render the graph upstream at scale 1 or at the requested render scale ? (user setting)
+    bool renderScaleOneUpstreamIfRenderScaleSupportDisabled = getNode()->useScaleOneImagesWhenRenderScaleSupportIsDisabled();
+    ///For multi-resolution we want input images with exactly the same size as the output image
+    if ( !renderScaleOneUpstreamIfRenderScaleSupportDisabled && !supportsMultiResolution() ) {
+        renderScaleOneUpstreamIfRenderScaleSupportDisabled = true;
+    }
+
+    boost::scoped_ptr<ImageKey> key( new ImageKey(getNode().get(),
+                                                  nodeHash,
+                                                  isFrameVaryingOrAnimated,
+                                                  args.time,
+                                                  args.view,
+                                                  1.,
+                                                  draftModeSupported && frameArgs->draftMode,
+                                                  renderMappedMipMapLevel == 0 && !renderScaleOneUpstreamIfRenderScaleSupportDisabled) );
+    boost::scoped_ptr<ImageKey> nonDraftKey( new ImageKey(getNode().get(),
+                                                          nodeHash,
+                                                          isFrameVaryingOrAnimated,
+                                                          args.time,
+                                                          args.view,
+                                                          1.,
+                                                          false,
+                                                          renderMappedMipMapLevel == 0 && !renderScaleOneUpstreamIfRenderScaleSupportDisabled) );
+>>>>>>> RB-2.2
 
 ActionRetCodeEnum
 EffectInstance::Implementation::handleUpstreamFramesNeeded(const RequestPassSharedDataPtr& requestPassSharedData,
@@ -950,6 +1080,20 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const RequestPassShar
         if (!mainInstanceInput) {
             continue;
         }
+<<<<<<< HEAD
+=======
+    }
+
+
+    ///In the event where we had the image from the cache, but it wasn't completly rendered over the RoI but the cache was almost full,
+    ///we don't hold a pointer to it, allowing the cache to free it.
+    ///Hence after rendering all the input images, we redo a cache look-up to check whether the image is still here
+    ImagePtr isPlaneCached;
+
+    if ( !planesToRender->planes.empty() ) {
+        isPlaneCached = planesToRender->planes.begin()->second.fullscaleImage;
+    }
+>>>>>>> RB-2.2
 
 
         ///There cannot be frames needed without components needed.
@@ -977,8 +1121,20 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const RequestPassShar
             }
         }
 
+<<<<<<< HEAD
         if (inputRoI.isNull()) {
             continue;
+=======
+#if NATRON_ENABLE_TRIMAP
+    boost::scoped_ptr<ImageBitMapMarker_RAII> guard;
+#endif
+
+    if (!isPlaneCached) {
+        if (frameArgs->tilesSupported) {
+            rectsLeftToRender.push_back(roi);
+        } else {
+            rectsLeftToRender.push_back(renderFullScaleThenDownscale ? upscaledImageBounds : downscaledImageBounds);
+>>>>>>> RB-2.2
         }
 
         if ( inputRoI.isInfinite() ) {
@@ -987,6 +1143,7 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const RequestPassShar
         }
         bool inputIsContinuous = mainInstanceInput->canRenderContinuously();
 
+<<<<<<< HEAD
         int nbRequestedFramesForInput = 0;
         {
 
@@ -1006,6 +1163,46 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const RequestPassShar
                         "this range assuming an interval of 1 between frame times.";
                     }
 
+=======
+        ///We check what is left to render.
+#if NATRON_ENABLE_TRIMAP
+        guard.reset(new ImageBitMapMarker_RAII(planesToRender->planes, renderFullScaleThenDownscale, roi, this));
+        rectsLeftToRender = guard->getRectsToRender();
+#else // !NATRON_ENABLE_TRIMAP
+        isPlaneCached->getRestToRender(roi, rectsLeftToRender);
+#endif // NATRON_ENABLE_TRIMAP
+
+
+
+        if ( isDuringPaintStroke && !rectsLeftToRender.empty() && !lastStrokePixelRoD.isNull() ) {
+            rectsLeftToRender.clear();
+            RectI intersection;
+            if ( downscaledImageBounds.intersect(lastStrokePixelRoD, &intersection) ) {
+                rectsLeftToRender.push_back(intersection);
+            }
+        }
+
+        // If doing opengl renders, we don't allow retrieving partial images from the cache
+        if ( !rectsLeftToRender.empty() && (planesToRender->useOpenGL) ) {
+            ///The node cache is almost full and we need to render  something in the image, if we hold a pointer to this image here
+            ///we might recursively end-up in this same situation at each level of the render tree, ending with all images of each level
+            ///being held in memory.
+            ///Our strategy here is to clear the pointer, hence allowing the cache to remove the image, and ask the inputs to render the full RoI
+            ///instead of the rest to render. This way, even if the image is cleared from the cache we already have rendered the full RoI anyway.
+            rectsLeftToRender.clear();
+            rectsLeftToRender.push_back(roi);
+            for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it2 = planesToRender->planes.begin(); it2 != planesToRender->planes.end(); ++it2) {
+                //Keep track of the original cached image for the re-lookup afterward, if the pointer doesn't match the first look-up, don't consider
+                //the image because the region to render might have changed and we might have to re-trigger a render on inputs again.
+
+                ///Make sure to never dereference originalCachedImage! We only compare it (that's why it s a void*)
+                it2->second.originalCachedImage = it2->second.fullscaleImage.get();
+                it2->second.fullscaleImage.reset();
+                it2->second.downscaleImage.reset();
+            }
+            isPlaneCached.reset();
+        }
+>>>>>>> RB-2.2
 
                     // For all frames in the range
                     for (double f = viewIt->second[range].min; f <= viewIt->second[range].max; f += 1.) {
@@ -1143,15 +1340,28 @@ EffectInstance::requestRender(TimeValue timeInArgs,
     // When exiting this function, add the request to the dependency free list if it has no dependencies.
     AddDependencyFreeRender_RAII addDependencyFreeRender(requestPassSharedData, *createdRequest);
 
+<<<<<<< HEAD
     // Add this frame/view as depdency of the requester
     if (requester) {
         requester->addDependency(requestPassSharedData, *createdRequest);
         (*createdRequest)->addListener(requestPassSharedData, requester);
+=======
+        //Render was aborted
+        if (inputCode != eRenderRoIRetCodeOk) {
+#if NATRON_ENABLE_TRIMAP
+            if (guard) {
+                guard->invalidate();
+            }
+#endif
+            return inputCode;
+        }
+>>>>>>> RB-2.2
     }
 
     return renderClone->requestRenderInternal(roiCanonical, inputNbInRequester, *createdRequest, requester, requestPassSharedData);
 } // requestRender
 
+<<<<<<< HEAD
 ActionRetCodeEnum
 EffectInstance::requestRenderInternal(const RectD & roiCanonical,
                                       int inputNbInRequester,
@@ -1229,6 +1439,8 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
     }
 
 
+=======
+>>>>>>> RB-2.2
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Handle identity effects /////////////////////////////////////////////////////////////////
     const double par = getAspectRatio(-1);
@@ -1279,6 +1491,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
     CacheAccessModeEnum cachePolicy = _imp->shouldRenderUseCache(requestPassSharedData, requestData);
     requestData->setCachePolicy(cachePolicy);
 
+<<<<<<< HEAD
     // The RoD in pixel coordinates at the scale of mappedCombinedScale
     RectI pixelRoDRenderMapped;
     rod.toPixelEnclosing(mappedCombinedScale, par, &pixelRoDRenderMapped);
@@ -1299,18 +1512,95 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
         if ( !renderMappedRoI.intersect(pixelRoDRenderMapped, &renderMappedRoI) ) {
             return eActionStatusOK;
         }
+=======
+            ///The image and downscaled image are pointing to the same image in 2 cases:
+            ///1) Proxy mode is turned off
+            ///2) Proxy mode is turned on but plug-in supports render scale
+            ///Subsequently the image and downscaled image are different only if the plug-in
+            ///does not support the render scale and the proxy mode is turned on.
+            assert( (it->second.fullscaleImage == it->second.downscaleImage && !renderFullScaleThenDownscale) ||
+                    ( ( it->second.fullscaleImage != it->second.downscaleImage || it->second.fullscaleImage->getMipMapLevel() == it->second.downscaleImage->getMipMapLevel() ) && renderFullScaleThenDownscale ) );
+        } // for each plane
+
+#if NATRON_ENABLE_TRIMAP
+        if (!guard) {
+            guard.reset(new ImageBitMapMarker_RAII(planesToRender->planes, renderFullScaleThenDownscale, roi, this));
+        }
+#endif // NATRON_ENABLE_TRIMAP
+    } // hasSomethingToRender
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////// End allocation of planes ///////////////////////////////////////////////////////////////
+
+
+    //There should always be at least 1 plane to render (The color plane)
+    assert( !planesToRender->planes.empty() );
+
+    ///If we reach here, it can be either because the planes are cached or not, either way
+    ///the planes are NOT a total identity, and they may have some content left to render.
+    EffectInstance::RenderRoIStatusEnum renderRetCode = hasSomethingToRender ? eRenderRoIStatusImageRendered : eRenderRoIStatusImageAlreadyRendered;
+    bool renderAborted;
+
+    renderAborted = aborted();
+#if NATRON_ENABLE_TRIMAP
+    if (renderAborted) {
+        assert(guard);
+        guard->invalidate();
+    }
+#endif // NATRON_ENABLE_TRIMAP
+    if (!renderAborted && hasSomethingToRender) {
+
+        // eRenderSafetyInstanceSafe means that there is at most one render per instance
+        // NOTE: the per-instance lock should probably be shared between
+        // all clones of the same instance, because an InstanceSafe plugin may assume it is the sole owner of the output image,
+        // and read-write on it.
+        // It is probably safer to assume that several clones may write to the same output image only in the eRenderSafetyFullySafe case.
+
+        // eRenderSafetyFullySafe means that there is only one render per FRAME : the lock is by image and handled in Node.cpp
+        ///locks belongs to an instance)
+
+
+        boost::scoped_ptr<QMutexLocker> locker;
+>>>>>>> RB-2.2
 
         // The RoI falls into the effect pixel region of definition
         assert(renderMappedRoI.x1 >= pixelRoDRenderMapped.x1 && renderMappedRoI.y1 >= pixelRoDRenderMapped.y1 &&
                renderMappedRoI.x2 <= pixelRoDRenderMapped.x2 && renderMappedRoI.y2 <= pixelRoDRenderMapped.y2);
     }
 
+<<<<<<< HEAD
     assert(!renderMappedRoI.isNull());
+=======
+        EffectInstPtr renderInstance;
+        /**
+         * Figure out If this node should use a render clone rather than execute renderRoIInternal on the main (this) instance.
+         * Reasons to use a render clone is be because a plug-in is eRenderSafetyInstanceSafe or does not support
+         * concurrent GL renders.
+         **/
+        bool useRenderClone = safety == eRenderSafetyInstanceSafe || (safety != eRenderSafetyUnsafe && storage == eStorageModeGLTex && !supportsConcurrentOpenGLRenders());
+        if (useRenderClone) {
+            renderInstance = getOrCreateRenderInstance();
+        } else {
+            renderInstance = shared_from_this();
+        }
+        assert(renderInstance);
+
+        if (safety == eRenderSafetyInstanceSafe) {
+            locker.reset( new QMutexLocker( &getNode()->getRenderInstancesSharedMutex() ) );
+        } else if (safety == eRenderSafetyUnsafe) {
+            const Plugin* p = getNode()->getPlugin();
+            assert(p);
+            locker.reset( new QMutexLocker( p->getPluginLock() ) );
+        } else {
+            // no need to lock
+            Q_UNUSED(locker);
+        }
+>>>>>>> RB-2.2
 
     // The requested portion to render in canonical coordinates
     RectD roundedCanonicalRoI;
     renderMappedRoI.toCanonical(mappedCombinedScale, par, rod, &roundedCanonicalRoI);
 
+<<<<<<< HEAD
     // Merge the roi requested onto the existing RoI requested for this frame/view
     {
         RectD curRoI = requestData->getCurrentRoI();
@@ -1349,6 +1639,13 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
             return stat;
         }
     }
+=======
+        ///For eRenderSafetyFullySafe, don't take any lock, the image already has a lock on itself so we're sure it can't be written to by 2 different threads.
+
+        if ( frameArgs->stats && frameArgs->stats->isInDepthProfilingEnabled() ) {
+            frameArgs->stats->setGlobalRenderInfosForNode(getNode(), rod, planesToRender->outputPremult, processChannels, frameArgs->tilesSupported, !renderFullScaleThenDownscale, renderMappedMipMapLevel);
+        }
+>>>>>>> RB-2.2
 
     // If there's nothing to render, do not even add the inputs as needed dependencies.
     if (!hasUnRenderedTile && !hasPendingTiles) {
@@ -1364,6 +1661,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
     return eActionStatusOK;
 } // requestRenderInternal
 
+<<<<<<< HEAD
 
 ActionRetCodeEnum
 EffectInstance::launchRender(const RequestPassSharedDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestData)
@@ -1388,6 +1686,85 @@ EffectInstance::launchRender(const RequestPassSharedDataPtr& requestPassSharedDa
     }
     ActionRetCodeEnum stat = launchRenderInternal(requestPassSharedData, requestData);
 
+=======
+        /*{
+         const std::list<RectToRender>& rectsToRender = planesToRender->rectsToRender;
+         qDebug() <<'('<<QThread::currentThread()<<")--> "<< getNode()->getScriptName_mt_safe().c_str() << ": render view: " << args.view << ", time: " << args.time << " No. tiles: " << rectsToRender.size() << " rectangles";
+         for (std::list<RectToRender>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
+         qDebug() << "rect: " << "x1= " <<  it->rect.x1 << " , y1= " << it->rect.y1 << " , x2= " << it->rect.x2 << " , y2= " << it->rect.y2 << "(identity:" << it->isIdentity << ")";
+         }
+         for (std::map<ImageComponents, PlaneToRender> ::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
+         qDebug() << "plane: " <<  it->second.downscaleImage.get() << it->first.getLayerName().c_str();
+         }
+         qDebug() << "Cached:" << (isPlaneCached.get() != 0) << "Rendered elsewhere:" << planesToRender->isBeingRenderedElsewhere;
+
+         }*/
+# endif
+
+
+        bool attachGLOK = true;
+        if (storage == eStorageModeGLTex) {
+            assert(glContext);
+            Natron::StatusEnum stat = renderInstance->attachOpenGLContext_public(glContext, &planesToRender->glContextData);
+            if (stat == eStatusOutOfMemory) {
+                renderRetCode = eRenderRoIStatusRenderOutOfGPUMemory;
+                attachGLOK = false;
+            } else if (stat == eStatusFailed) {
+                renderRetCode = eRenderRoIStatusRenderFailed;
+                attachGLOK = false;
+            }
+        }
+        if (attachGLOK) {
+            renderRetCode = renderRoIInternal(renderInstance.get(),
+                                              args.time,
+                                              frameArgs,
+                                              safety,
+                                              args.mipMapLevel,
+                                              args.view,
+                                              rod,
+                                              par,
+                                              planesToRender,
+                                              frameArgs->isSequentialRender,
+                                              frameArgs->isRenderResponseToUserInteraction,
+                                              nodeHash,
+                                              renderFullScaleThenDownscale,
+                                              byPassCache,
+                                              outputDepth,
+                                              outputClipPrefComps,
+                                              neededComps,
+                                              processChannels);
+            if (storage == eStorageModeGLTex) {
+                // If the plug-in doesn't support concurrent OpenGL renders, release the lock that was taken in the call to attachOpenGLContext_public() above.
+                // For safe plug-ins, we call dettachOpenGLContext_public when the effect is destroyed in Node::deactivate() with the function EffectInstance::dettachAllOpenGLContexts().
+                // If we were the last render to use this context, clear the data now
+                if ( planesToRender->glContextData->getHasTakenLock() || !supportsConcurrentOpenGLRenders() || planesToRender->glContextData.use_count() == 1) {
+                    renderInstance->dettachOpenGLContext_public(glContext, planesToRender->glContextData);
+                }
+            }
+        }
+        if (useRenderClone) {
+            releaseRenderInstance(renderInstance);
+        }
+
+
+        renderAborted = aborted();
+
+    } // if (!hasSomethingToRender) {
+
+#if NATRON_ENABLE_TRIMAP
+    assert(guard);
+    if (renderAborted && renderRetCode != EffectInstance::eRenderRoIStatusImageRendered  && renderRetCode != EffectInstance::eRenderRoIStatusImageAlreadyRendered) {
+        guard->invalidate();
+    } else {
+        guard->waitForPendingRegions();
+    }
+#endif // NATRON_ENABLE_TRIMAP
+
+
+#if NATRON_ENABLE_TRIMAP
+    guard.reset();
+#endif
+>>>>>>> RB-2.2
 
     // Notify that we are done rendering
     requestData->notifyRenderFinished(stat);
@@ -1465,6 +1842,7 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
             if (*it == requestData->getPlaneDesc()) {
                 imagePlane = image;
             } else {
+<<<<<<< HEAD
                 imagePlane = _imp->createCachedImage(requestData, renderMappedRoI, pixelRoDRenderMapped, mappedMipMapLevel, *it, false);
                 ActionRetCodeEnum stat = imagePlane->getCacheEntry()->fetchCachedTilesAndUpdateStatus(NULL, NULL, NULL);
                 if (isFailureRetCode(stat)) {
@@ -1473,6 +1851,27 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
                 }
             }
             cachedImagePlanes[*it] = imagePlane;
+=======
+                it->second.downscaleImage->getRestToRender(roi, restToRender);
+            }
+            /*
+               We cannot assert that the bitmap is empty because another thread might have started rendering the same image again but
+               needed a different portion of the image. The trimap system does not work for abortable renders
+             */
+
+            //if ( frameArgs->isCurrentFrameRenderNotAbortable() ) {
+                if ( !restToRender.empty() ) {
+                    it->second.downscaleImage->printUnrenderedPixels(roi);
+                }
+                /*
+                   If crashing on this assert this is likely due to a bug of the Trimap system.
+                   Most likely another thread started rendering the portion that is in restToRender but did not fill the bitmap with 1
+                   yet. Do not remove this assert, there should never be 2 threads running concurrently renderHandler for the same roi
+                   on the same image.
+                 */
+                assert( restToRender.empty() );
+            //}
+>>>>>>> RB-2.2
         }
     }
 
@@ -1480,6 +1879,7 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
     std::list<RectToRender> renderRects;
     bool hasPendingTiles;
 
+<<<<<<< HEAD
     // Initialize what's left to render, without fetching the tiles state map from the cache because it was already fetched in
     // requestRender()
     renderRetCode = _imp->checkRestToRender(false /*updateTilesStateFromCache*/, requestData, renderMappedRoI, mappedCombinedScale, cachedImagePlanes, &renderRects, &hasPendingTiles);
@@ -1487,6 +1887,26 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
         finishProducedPlanesTilesStatesMap(cachedImagePlanes, true);
         return renderRetCode;
     }
+=======
+        //We have to return the downscale image, so make sure it has been computed
+        if ( (renderRetCode != eRenderRoIStatusRenderFailed) &&
+             renderFullScaleThenDownscale &&
+             ( it->second.fullscaleImage->getMipMapLevel() != mipMapLevel && it->second.fullscaleImage->getStorageMode() != eStorageModeGLTex) &&
+             !hasSomethingToRender ) {
+            assert(it->second.fullscaleImage->getMipMapLevel() == 0);
+            if (it->second.downscaleImage == it->second.fullscaleImage) {
+                it->second.downscaleImage.reset( new Image(it->second.fullscaleImage->getComponents(),
+                                                           it->second.fullscaleImage->getRoD(),
+                                                           downscaledImageBounds,
+                                                           args.mipMapLevel,
+                                                           it->second.fullscaleImage->getPixelAspectRatio(),
+                                                           it->second.fullscaleImage->getBitDepth(),
+                                                           it->second.fullscaleImage->getPremultiplication(),
+                                                           it->second.fullscaleImage->getFieldingOrder(),
+                                                           false) );
+                it->second.downscaleImage->setKey(it->second.fullscaleImage->getKey());
+            }
+>>>>>>> RB-2.2
 
     // Get the render device
     RenderBackendTypeEnum backendType;
@@ -1723,6 +2143,7 @@ EffectInstance::Implementation::launchPluginRenderAndHostFrameThreading(const Fr
     functorArgs->cachedPlanes = cachedPlanes;
     functorArgs->backendType = backendType;
 
+<<<<<<< HEAD
     if (!attemptHostFrameThreading) {
 
         for (std::list<RectToRender>::const_iterator it = renderRects.begin(); it != renderRects.end(); ++it) {
@@ -1730,11 +2151,31 @@ EffectInstance::Implementation::launchPluginRenderAndHostFrameThreading(const Fr
             ActionRetCodeEnum functorRet = tiledRenderingFunctor(*it, *functorArgs);
             if (isFailureRetCode(functorRet)) {
                 return functorRet;
+=======
+#endif
+            for (it2 = ret.begin(); it2 != ret.end(); ++it2) {
+                if ( (*it2) == EffectInstance::eRenderingFunctorRetFailed ) {
+                    renderStatus = eRenderingFunctorRetFailed;
+                    break;
+                } if ( (*it2) == EffectInstance::eRenderingFunctorRetAborted ) {
+                    renderStatus = eRenderingFunctorRetFailed;
+                    break;
+                } else if ( (*it2) == EffectInstance::eRenderingFunctorRetOutOfGPUMemory ) {
+                    renderStatus = eRenderingFunctorRetOutOfGPUMemory;
+                    break;
+                }
+>>>>>>> RB-2.2
             }
 
         } // for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
 
+<<<<<<< HEAD
     } else { // attemptHostFrameThreading
+=======
+            } // for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
+        }
+    } // if (renderStatus != eRenderingFunctorRetFailed) {
+>>>>>>> RB-2.2
 
         HostFrameThreadingRenderProcessor processor(_publicInterface->shared_from_this());
         processor.setData(renderRects, functorArgs, this);

@@ -414,6 +414,7 @@ static void setupGLForRender(const ImagePtr& image,
     GL::Enable(GL_SCISSOR_TEST);
     GL::Scissor( roi.x1 - viewportBounds.x1, roi.y1 - viewportBounds.y1, roi.width(), roi.height() );
 
+<<<<<<< HEAD
     if (callGLFinish) {
         // Ensure that previous asynchronous operations are done (e.g: glTexImage2D) some plug-ins seem to require it (Hitfilm Ignite plugin-s)
         GL::Finish();
@@ -436,6 +437,38 @@ static void finishGLRender()
 ActionRetCodeEnum
 EffectInstance::Implementation::renderHandlerPlugin(const RectToRender & rectToRender,
                                                     const TiledRenderingFunctorArgs& args)
+=======
+#if NATRON_ENABLE_TRIMAP
+void
+EffectInstance::Implementation::markImageAsBeingRendered(const boost::shared_ptr<Image> & img, const RectI& roi, std::list<RectI>* restToRender, bool *renderedElsewhere)
+{
+    if ( !img->usesBitMap() ) {
+        return;
+    }
+
+    QMutexLocker k(&imagesBeingRenderedMutex);
+    IBRMap::iterator found = imagesBeingRendered.find(img);
+    if ( found != imagesBeingRendered.end() ) {
+        ++(found->second->refCount);
+    } else {
+        IBRPtr ibr(new Implementation::ImageBeingRendered);
+        ++ibr->refCount;
+        std::pair<IBRMap::iterator, bool> ok = imagesBeingRendered.insert( std::make_pair(img, ibr) );
+        assert(ok.second);
+        found = ok.first;
+    }
+    QMutexLocker k2(&found->second->lock);
+    img->getRestToRender_trimap(roi, *restToRender, renderedElsewhere);
+    for (std::list<RectI>::const_iterator it = restToRender->begin(); it!=restToRender->end();++it) {
+        img->markForRendering(*it);
+    }
+
+}
+
+bool
+EffectInstance::Implementation::waitForImageBeingRenderedElsewhere(const RectI & roi,
+                                                                            const boost::shared_ptr<Image> & img)
+>>>>>>> RB-2.2
 {
 
     TreeRenderPtr render = _publicInterface->getCurrentRender();
@@ -455,6 +488,7 @@ EffectInstance::Implementation::renderHandlerPlugin(const RectToRender & rectToR
         actionArgs.glContextData = args.glContextData;
     }
 
+<<<<<<< HEAD
     std::list< std::list<std::pair<ImagePlaneDesc, ImagePtr> > > planesLists;
 
     bool multiPlanar = _publicInterface->isMultiPlanar();
@@ -469,10 +503,21 @@ EffectInstance::Implementation::renderHandlerPlugin(const RectToRender & rectToR
         std::list<std::pair<ImagePlaneDesc, ImagePtr> > tmp;
         for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = args.localPlanes.begin(); it != args.localPlanes.end(); ++it) {
             tmp.push_back(*it);
+=======
+    bool ab = _publicInterface->aborted();
+    {
+        QMutexLocker kk(&ibr->lock);
+        while (!ab && isBeingRenderedElseWhere && !ibr->failed && ibr->refCount > 1) {
+            ibr->cond.wait(&ibr->lock, 50);
+            isBeingRenderedElseWhere = false;
+            img->getRestToRender_trimap(roi, restToRender, &isBeingRenderedElseWhere);
+            ab = _publicInterface->aborted();
+>>>>>>> RB-2.2
         }
         planesLists.push_back(tmp);
     }
 
+<<<<<<< HEAD
     for (std::list<std::list<std::pair<ImagePlaneDesc, ImagePtr> > >::iterator it = planesLists.begin(); it != planesLists.end(); ++it) {
 
         actionArgs.outputPlanes = *it;
@@ -512,6 +557,43 @@ EffectInstance::Implementation::renderHandlerPlugin(const RectToRender & rectToR
 
     return render->isRenderAborted() ? eActionStatusAborted : eActionStatusOK;
 } // renderHandlerPlugin
+=======
+    ///Everything should be rendered now unless we are aborted
+    return restToRender.empty() && !ibr->failed && !ab;
+}
+
+void
+EffectInstance::Implementation::unmarkImageAsBeingRendered(const boost::shared_ptr<Image> & img,
+                                                           const std::list<RectI>& rects,
+                                                           bool renderFailed)
+{
+    if ( !img->usesBitMap() ) {
+        return;
+    }
+    QMutexLocker k(&imagesBeingRenderedMutex);
+    IBRMap::iterator found = imagesBeingRendered.find(img);
+    assert( found != imagesBeingRendered.end() );
+
+    QMutexLocker kk(&found->second->lock);
+    if (renderFailed) {
+        found->second->failed = true;
+    }
+    for (std::list<RectI>::const_iterator it = rects.begin(); it!=rects.end();++it) {
+        if (renderFailed) {
+            img->clearBitmap(*it);
+        } else {
+            img->markForRendered(*it);
+        }
+    }
+
+    found->second->cond.wakeAll();
+    --found->second->refCount;
+    if (!found->second->refCount) {
+        kk.unlock(); // < unlock before erase which is going to delete the lock
+        imagesBeingRendered.erase(found);
+    }
+}
+>>>>>>> RB-2.2
 
 ActionRetCodeEnum
 EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & rectToRender,
