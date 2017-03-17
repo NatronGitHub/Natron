@@ -1671,7 +1671,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                    yet. Do not remove this assert, there should never be 2 threads running concurrently renderHandler for the same roi
                    on the same image.
                  */
-                assert( restToRender.empty() );
+                //assert( restToRender.empty() );
             //}
         }
     }
