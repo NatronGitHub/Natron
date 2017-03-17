@@ -1410,6 +1410,7 @@ static void finishProducedPlanesTilesStatesMap(const std::map<ImagePlaneDesc, Im
 ActionRetCodeEnum
 EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestData)
 {
+    assert(isRenderClone() && getCurrentRender());
 
     const double par = getAspectRatio(-1);
     const unsigned int mappedMipMapLevel = requestData->getRenderMappedMipMapLevel();

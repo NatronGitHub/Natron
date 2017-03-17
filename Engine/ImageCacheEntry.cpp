@@ -1358,7 +1358,11 @@ ImageCacheEntry::getStatus(TileStateHeader* tileStatus, bool* hasUnRenderedTile,
     }
 
     *hasPendingResults = _imp->hasPendingTiles;
-    *hasUnRenderedTile = _imp->markedTiles.size() > 0;
+    if (_imp->mipMapLevel < _imp->markedTiles.size()) {
+        *hasUnRenderedTile = _imp->markedTiles[_imp->mipMapLevel].size() > 0;
+    } else {
+        *hasUnRenderedTile = false;
+    }
 } // getStatus
 
 #ifndef NATRON_CACHE_NEVER_PERSISTENT

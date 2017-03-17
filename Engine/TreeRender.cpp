@@ -517,12 +517,21 @@ private:
 
     virtual void run() OVERRIDE FINAL
     {
-        FrameViewRequestPtr request = _request.lock();
+
         RequestPassSharedDataPtr sharedData = _sharedData.lock();
 
-        EffectInstancePtr renderClone = request->getEffect();
-        ActionRetCodeEnum stat = renderClone->launchRender(sharedData, request);
+        ActionRetCodeEnum stat;
+        {
+            QMutexLocker k(&sharedData->_imp->dependencyFreeRendersMutex);
+            stat = sharedData->_imp->stat;
+        }
 
+        FrameViewRequestPtr request = _request.lock();
+        EffectInstancePtr renderClone = request->getEffect();
+
+        if (!isFailureRetCode(stat)) {
+            stat = renderClone->launchRender(sharedData, request);
+        }
 
         // Remove all stashes input frame view requests that we kept around.
         request->clearRenderedDependencies(sharedData);
@@ -687,18 +696,12 @@ TreeRenderPrivate::launchRenderInternal(const EffectInstancePtr& treeRoot,
         if (isThreadPoolThread) {
            QThreadPool::globalInstance()->reserveThread();
         }
-
-        // We have been woken-up by a finished task, check if the render is still OK
-        if (isFailureRetCode(requestData->_imp->stat)) {
-            return requestData->_imp->stat;
-        }
-
         
         numTasksRemaining = requestData->_imp->allRenderTasksToProcess.size();
     }
     runnables.clear();
     
-    return eActionStatusOK;
+    return requestData->_imp->stat;
 } // launchRenderInternal
 
 ActionRetCodeEnum
