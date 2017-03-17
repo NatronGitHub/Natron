@@ -249,8 +249,9 @@ NodeMetadata::setPixelAspectRatio(int inputNb,
     if (inputNb == -1) {
         _imp->outputData.pixelAspectRatio = par;
     } else {
-        assert( inputNb < (int)_imp->inputsData.size() );
-        _imp->inputsData[inputNb].pixelAspectRatio = par;
+        if ( inputNb < (int)_imp->inputsData.size() ) {
+            _imp->inputsData[inputNb].pixelAspectRatio = par;
+        }
     }
 }
 
@@ -260,9 +261,11 @@ NodeMetadata::getPixelAspectRatio(int inputNb) const
     if (inputNb == -1) {
         return _imp->outputData.pixelAspectRatio;
     } else {
-        assert( inputNb < (int)_imp->inputsData.size() );
-
-        return _imp->inputsData[inputNb].pixelAspectRatio;
+        if ( inputNb < (int)_imp->inputsData.size() ) {
+            return _imp->inputsData[inputNb].pixelAspectRatio;
+        } else {
+            return 1.;
+        }
     }
 }
 
@@ -273,8 +276,10 @@ NodeMetadata::setBitDepth(int inputNb,
     if (inputNb == -1) {
         _imp->outputData.bitdepth = depth;
     } else {
-        assert( inputNb < (int)_imp->inputsData.size() );
-        _imp->inputsData[inputNb].bitdepth = depth;
+        if ( inputNb < (int)_imp->inputsData.size() ) {
+            _imp->inputsData[inputNb].bitdepth = depth;
+        }
+        
     }
 }
 
@@ -284,9 +289,11 @@ NodeMetadata::getBitDepth(int inputNb) const
     if (inputNb == -1) {
         return _imp->outputData.bitdepth;
     } else {
-        assert( inputNb < (int)_imp->inputsData.size() );
-
-        return _imp->inputsData[inputNb].bitdepth;
+        if ( inputNb < (int)_imp->inputsData.size() ) {
+            return _imp->inputsData[inputNb].bitdepth;
+        } else {
+            return eImageBitDepthFloat;
+        }
     }
 }
 
@@ -297,8 +304,9 @@ NodeMetadata::setNComps(int inputNb, int nComps)
     if (inputNb == -1) {
         _imp->outputData.nComps = nComps;
     } else {
-        assert( inputNb < (int)_imp->inputsData.size() );
-        _imp->inputsData[inputNb].nComps = nComps;
+        if ( inputNb < (int)_imp->inputsData.size() ) {
+            _imp->inputsData[inputNb].nComps = nComps;
+        }
     }
 }
 
@@ -323,8 +331,9 @@ NodeMetadata::setComponentsType(int inputNb,const std::string& componentsType)
     if (inputNb == -1) {
         _imp->outputData.componentsType = componentsType;
     } else {
-        assert( inputNb < (int)_imp->inputsData.size() );
-        _imp->inputsData[inputNb].componentsType = componentsType;
+        if ( inputNb < (int)_imp->inputsData.size() ) {
+            _imp->inputsData[inputNb].componentsType = componentsType;
+        }
     }
 }
 

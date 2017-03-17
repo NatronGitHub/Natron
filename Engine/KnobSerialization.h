@@ -29,8 +29,9 @@
 
 #include <map>
 #include <vector>
+#include <string>
 
-#ifndef Q_MOC_RUN
+#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
 GCC_DIAG_OFF(unused-parameter)
 GCC_DIAG_OFF(sign-compare)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
@@ -483,6 +484,11 @@ class KnobSerialization
     bool _useHostOverlay;
     mutable std::vector<ValueSerialization> _values;
 
+public:
+
+    unsigned int _version;
+private:
+    
     virtual void setChoiceExtraString(const std::string& label) OVERRIDE FINAL;
 
     friend class ::boost::serialization::access;
@@ -490,6 +496,7 @@ class KnobSerialization
     void save(Archive & ar,
               const unsigned int /*version*/) const
     {
+
         assert(_knob);
         AnimatingKnobStringHelper* isString = dynamic_cast<AnimatingKnobStringHelper*>( _knob.get() );
         KnobParametric* isParametric = dynamic_cast<KnobParametric*>( _knob.get() );
@@ -566,6 +573,7 @@ class KnobSerialization
     void load(Archive & ar,
               const unsigned int version)
     {
+        _version = version;
         assert(!_knob);
         std::string name;
         ar & ::boost::serialization::make_nvp("Name", name);
@@ -649,31 +657,10 @@ class KnobSerialization
                 if (cData) {
                     ar & ::boost::serialization::make_nvp("ChoiceLabel", cData->_choiceString);
                     if (version < KNOB_SERIALIZATION_CHANGE_PLANES_SERIALIZATION) {
-                        // In Natron 2.2.3 we changed the encoding of planes: they no longer are planeLabel + "." + channels
+                        // In Natron 2.2.6 we changed the encoding of planes: they no longer are planeLabel + "." + channels
                         // but planeID + "." + channels
                         // Hard-code the mapping
-                        if (cData->_choiceString == "Color.RGBA" || cData->_choiceString == "Color.RGB" || cData->_choiceString == "Color.Alpha") {
-                            cData->_choiceString = kNatronColorPlaneID;
-                        } else if (cData->_choiceString == "Backward.Motion") {
-                            cData->_choiceString = kNatronBackwardMotionVectorsPlaneID "." kNatronMotionComponentsLabel;
-                        } else if (cData->_choiceString == "Forward.Motion") {
-                            cData->_choiceString = kNatronForwardMotionVectorsPlaneID "." kNatronMotionComponentsLabel;
-                        } else if (cData->_choiceString == "DisparityLeft.Disparity") {
-                            cData->_choiceString = kNatronDisparityLeftPlaneID "." kNatronDisparityComponentsLabel;
-                        } else if (cData->_choiceString == "DisparityRight.Disparity") {
-                            cData->_choiceString = kNatronDisparityRightPlaneID "." kNatronDisparityComponentsLabel;
-                        }
-
-                        // Map also channels
-                        if (cData->_choiceString == "RGBA.R") {
-                            cData->_choiceString = kNatronColorPlaneID ".R";
-                        } else if (cData->_choiceString == "RGBA.G") {
-                            cData->_choiceString = kNatronColorPlaneID ".B";
-                        } else if (cData->_choiceString == "RGBA.B") {
-                            cData->_choiceString = kNatronColorPlaneID ".A";
-                        } else if (cData->_choiceString == "RGBA.A") {
-                            cData->_choiceString = kNatronColorPlaneID ".A";
-                        }
+                        checkForPreNatron226String(&cData->_choiceString);
                     }
                     //_extraData = cData;
                 }
@@ -785,9 +772,13 @@ public:
         , _animationEnabled(false)
         , _tooltip()
         , _useHostOverlay(false)
+        , _version(KNOB_SERIALIZATION_VERSION)
     {
+
         initialize(knob);
     }
+
+    static void checkForPreNatron226String(std::string* string);
 
     ///Doing the empty param constructor + this function is the same
     ///as calling the constructore above
@@ -901,6 +892,7 @@ public:
         , _animationEnabled(false)
         , _tooltip()
         , _useHostOverlay(false)
+        , _version(KNOB_SERIALIZATION_VERSION)
     {
     }
 

@@ -1165,6 +1165,9 @@ Image::pasteFrom(const Image & src,
                  bool copyBitmap,
                  const OSGLContextPtr& glContext)
 {
+    if (this == &src) {
+        return;
+    }
     StorageModeEnum thisStorage = getStorageMode();
     StorageModeEnum otherStorage = src.getStorageMode();
 

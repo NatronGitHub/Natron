@@ -74,6 +74,7 @@ addons:
     - libjpeg-dev
     - libpng-dev
     - libwebp-dev
+    - libraw-dev
     - libfreetype6-dev
     - libssl-dev
   coverity_scan:

@@ -1698,12 +1698,13 @@ Settings::warnChangedKnobs(const std::vector<KnobI*>& knobs)
 {
     bool didFontWarn = false;
     bool didOCIOWarn = false;
+    bool didOFXCacheWarn = false;
 
     for (U32 i = 0; i < knobs.size(); ++i) {
         if ( ( ( knobs[i] == _fontSize.get() ) ||
                ( knobs[i] == _systemFontChoice.get() ) )
              && !didFontWarn ) {
-            didOCIOWarn = true;
+            didFontWarn = true;
             Dialogs::warningDialog( tr("Font change").toStdString(),
                                     tr("Changing the font requires a restart of %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
         } else if ( ( ( knobs[i] == _ocioConfigKnob.get() ) ||
@@ -1729,6 +1730,15 @@ Settings::warnChangedKnobs(const std::vector<KnobI*>& knobs)
                     (*it)->renderCurrentFrame(true);
                 }
             }
+        } else if ( ( ( knobs[i] == _loadBundledPlugins.get() ) ||
+                      ( knobs[i] == _preferBundledPlugins.get() ) ||
+                      ( knobs[i] == _useStdOFXPluginsLocation.get() ) ||
+                      ( knobs[i] == _extraPluginPaths.get() ) )
+                    && !didOFXCacheWarn ) {
+            didOFXCacheWarn = true;
+            appPTR->clearPluginsLoadedCache(); // clear the cache for next restart
+            Dialogs::warningDialog( tr("OpenFX plugins path changed").toStdString(),
+                                    tr("The OpenFX plugins path change requires a restart of %1 to be effective.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
         }
     }
 } // Settings::warnChangedKnobs
