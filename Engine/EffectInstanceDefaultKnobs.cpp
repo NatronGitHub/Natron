@@ -432,7 +432,6 @@ EffectInstance::createNodePage(const KnobPagePtr& settingsPage)
                                   "- app: points to the current application instance\n"
                                   "- thisGroup: The group holding thisNode (only if thisNode belongs to a group)") );
         param->setAnimationEnabled(false);
-        param->setName("");
         settingsPage->addKnob(param);
 
         _imp->defKnobs->knobChangedCallback = param;
@@ -453,7 +452,6 @@ EffectInstance::createNodePage(const KnobPagePtr& settingsPage)
                                   "- thisGroup: The group holding thisNode (only if thisNode belongs to a group)") );
 
         param->setAnimationEnabled(false);
-        param->setName("");
         settingsPage->addKnob(param);
 
         _imp->defKnobs->inputChangedCallback = param;

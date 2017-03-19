@@ -81,7 +81,7 @@ struct CachedFramesThread::Implementation
         return false;
     }
 
-    void refreshCachedFramesInternal();
+    bool refreshCachedFramesInternal();
 };
 
 CachedFramesThread::CachedFramesThread(ViewerTab* viewer)
@@ -123,7 +123,7 @@ CachedFramesThread::getCachedFrames(std::list<TimeValue>* cachedFrames) const
     *cachedFrames = _imp->cachedFrames;
 }
 
-void
+bool
 CachedFramesThread::Implementation::refreshCachedFramesInternal()
 {
     ViewerCachedImagesMap framesDisplayed;
@@ -131,7 +131,7 @@ CachedFramesThread::Implementation::refreshCachedFramesInternal()
 
     ViewerNodePtr internalNode = viewer->getInternalNode();
     if (!internalNode) {
-        return;
+        return false;
     }
     ViewerInstancePtr internalViewerProcessNode = internalNode->getViewerProcessNode(0);
 
@@ -139,48 +139,80 @@ CachedFramesThread::Implementation::refreshCachedFramesInternal()
     // 1) Check the hash is still valid at that frame
     // 2) Check if the cache still has a tile entry for this frame
 
-    std::list<TimeValue> updatedCachedFrames;
 
+    std::set<TimeValue> existingCachedFrames;
+    std::set<TimeValue> updatedCachedFrames;
+    {
+        QMutexLocker k(&cachedFramesMutex);
+        for (std::list<TimeValue>::const_iterator it = cachedFrames.begin(); it!=cachedFrames.end(); ++it) {
+            existingCachedFrames.insert(*it);
+        }
+    }
+    bool hasChanged = false;
     for (ViewerCachedImagesMap::const_iterator it = framesDisplayed.begin(); it != framesDisplayed.end(); ++it) {
-
-
-        U64 hash = it->second->getHash();
-
 
         bool isValid = true;
 
-        bool isCached = appPTR->getTileCache()->hasCacheEntryForHash(hash);
-        if (!isCached) {
-            isValid = false;
 
-        }
-
-
-        U64 nodeFrameViewHash;
+        // Check if it is still cached
         {
-            HashableObject::ComputeHashArgs hashArgs;
-            hashArgs.hashType = HashableObject::eComputeHashTypeTimeViewVariant;
-            hashArgs.time = it->first.time;
-            hashArgs.view = it->first.view;
-            nodeFrameViewHash = internalViewerProcessNode->computeHash(hashArgs);
-        }
-        U64 entryNodeHash = it->second->getNodeTimeInvariantHashKey();
-        if (nodeFrameViewHash != entryNodeHash) {
-            isValid = false;
+            U64 hash = it->second->getHash();
+            bool isCached = appPTR->getTileCache()->hasCacheEntryForHash(hash);
+            if (!isCached) {
+                isValid = false;
+
+            }
         }
 
+
+        if (isValid) {
+            U64 nodeFrameViewHash;
+            {
+                HashableObject::ComputeHashArgs hashArgs;
+                hashArgs.hashType = HashableObject::eComputeHashTypeTimeViewVariant;
+                hashArgs.time = it->first.time;
+                hashArgs.view = it->first.view;
+                nodeFrameViewHash = internalViewerProcessNode->computeHash(hashArgs);
+            }
+            // Check if the node hash is the same
+            U64 entryNodeHash = it->second->getNodeTimeInvariantHashKey();
+            if (nodeFrameViewHash != entryNodeHash) {
+                isValid = false;
+            }
+        }
+        
         if (!isValid) {
             viewer->getViewer()->removeViewerProcessHashAtTime(it->first.time, it->first.view);
         } else {
-            updatedCachedFrames.push_back(it->first.time);
+            updatedCachedFrames.insert(it->first.time);
+            std::set<TimeValue>::iterator found = existingCachedFrames.find(it->first.time);
+            if (found == existingCachedFrames.end()) {
+                // We added a keyframe that didnt exist
+                hasChanged = true;
+            }
         }
 
     }
 
-    {
-        QMutexLocker k(&cachedFramesMutex);
-        cachedFrames = updatedCachedFrames;
+    if (!hasChanged) {
+        // Check if we removed a keyframe that existed
+        for (std::set<TimeValue>::iterator it = existingCachedFrames.begin(); it != existingCachedFrames.end(); ++it) {
+            std::set<TimeValue>::iterator found = updatedCachedFrames.find(*it);
+            if (found == updatedCachedFrames.end()) {
+                // We removed a keyframe
+                hasChanged = true;
+                break;
+            }
+        }
     }
+
+    if (hasChanged) {
+        QMutexLocker k(&cachedFramesMutex);
+        cachedFrames.clear();
+        cachedFrames.insert(cachedFrames.end(),updatedCachedFrames.begin(), updatedCachedFrames.end());
+        return true;
+    }
+    return false;
 
 } // refreshCachedFramesInternal
 
@@ -194,8 +226,9 @@ CachedFramesThread::run()
         }
 
         {
-            _imp->refreshCachedFramesInternal();
-            Q_EMIT cachedFramesRefreshed();
+            if (_imp->refreshCachedFramesInternal()) {
+                Q_EMIT cachedFramesRefreshed();
+            }
         }
 
         _imp->regulatingTimer.waitUntilNextFrameIsDue();
