@@ -697,7 +697,7 @@ EffectInstance::Implementation::createCachedImage(const RectI& roiPixels,
         initArgs.bitdepth = outputBitDepth;
         initArgs.plane = plane;
         initArgs.storage = storageModeFromBackendType(backend);
-
+        initArgs.createTilesMapEvenIfNoCaching = true;
         // Do not allocate the image buffers yet, instead do it before rendering.
         // We need to create the image before because it does the cache look-up itself, and we don't want to got further if
         // there's something cached.
