@@ -118,7 +118,7 @@ PreviewThread::threadLoopOnce(const GenericThreadStartArgsPtr& inArgs)
 #endif
         NodePtr internalNode = node->getNode();
         if (internalNode) {
-            bool ok = internalNode->makePreviewImage( args->time, &w, &h, &_imp->data.front() );
+            bool ok = internalNode->makePreviewImage( args->time, w, h, &_imp->data.front() );
             Q_UNUSED(ok);
             node->copyPreviewImageBuffer(_imp->data, w, h);
         }

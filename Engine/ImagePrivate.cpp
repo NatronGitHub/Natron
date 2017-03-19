@@ -161,10 +161,10 @@ ImagePrivate::initAndFetchFromCache(const Image::InitStorageArgs& args)
         return eActionStatusFailed;
     }
 
-    if (cachePolicy == eCacheAccessModeNone) {
+    if (cachePolicy == eCacheAccessModeNone && !args.createTilesMapEvenIfNoCaching) {
         return eActionStatusOK;
     }
-    assert(cachePolicy == eCacheAccessModeReadWrite || cachePolicy == eCacheAccessModeWriteOnly);
+    assert(cachePolicy == eCacheAccessModeReadWrite || cachePolicy == eCacheAccessModeWriteOnly || args.createTilesMapEvenIfNoCaching);
 
     // Make a hash value for the channel
     U64 layerID;
@@ -182,8 +182,6 @@ ImagePrivate::initAndFetchFromCache(const Image::InitStorageArgs& args)
                                            pluginID));
 
 
-    bool removeFromCache = cachePolicy == eCacheAccessModeWriteOnly;
-
     cacheEntry.reset(new ImageCacheEntry(_publicInterface->shared_from_this(),
                                          args.pixelRod,
                                          args.bounds,
@@ -194,7 +192,7 @@ ImagePrivate::initAndFetchFromCache(const Image::InitStorageArgs& args)
                                          args.bufferFormat,
                                          args.renderClone,
                                          key,
-                                         removeFromCache));
+                                         cachePolicy));
 
     return eActionStatusOK;
 } // initTileAndFetchFromCache

@@ -426,7 +426,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
     }
 
 
-    ImagePtr sourceImage = outputRequest->getImagePlane();
+    ImagePtr sourceImage = outputRequest->getRequestedScaleImagePlane();
     const RectI& sourceBounds = sourceImage->getBounds();
     RectI intersectedRoI;
     if ( !roi.intersect(sourceBounds, &intersectedRoI) ) {

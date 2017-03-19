@@ -52,58 +52,64 @@ template<typename PIX, int maxValue, int srcNComps, bool convertToSrgb>
 void
 renderPreviewTemplated(const void* srcPtrs[4],
                        const RectI& srcBounds,
-                       int *dstWidth,
-                       int *dstHeight,
+                       int dstWidth,
+                       int dstHeight,
                        unsigned int* dstPixels)
 {
-    double yZoomFactor = *dstHeight / (double)srcBounds.height();
-    double xZoomFactor = *dstWidth / (double)srcBounds.width();
 
-    double zoomFactor;
-    if (xZoomFactor < yZoomFactor) {
-        zoomFactor = xZoomFactor;
-        *dstHeight = srcBounds.height() * zoomFactor;
+    // Fit the image in dstWidth/dstHeight
+
+    int boxWidthFitted = dstWidth, boxHeightFitted = dstHeight;
+
+    double scaleFactor;
+    if (dstWidth * srcBounds.height() > dstHeight * srcBounds.width()) {
+        // Fit height
+        scaleFactor =  dstHeight / (double)srcBounds.height();
+        boxWidthFitted = srcBounds.width() * scaleFactor;
     } else {
-        zoomFactor = yZoomFactor;
-        *dstWidth = srcBounds.width() * zoomFactor;
+        // Fit width
+        scaleFactor = dstWidth / (double)srcBounds.width();
+        boxHeightFitted = srcBounds.height() * scaleFactor;
     }
 
 
 
-
-    for (int i = 0; i < *dstHeight; ++i) {
+    for (int y = 0; y < dstHeight; ++y) {
 
         // just use nearest neighbor
-        const double srcY_f = (i - *dstHeight / 2.) / zoomFactor + (srcBounds.y1 + srcBounds.y2) / 2.;
+        const double srcY_f = y / scaleFactor + srcBounds.y1;
         const int srcY_i = std::floor(srcY_f + 0.5);
 
-        U32 *dst_pixels = dstPixels + *dstWidth * (*dstHeight - 1 - i);
+        // Invert y in output
+        U32 *dst_pixels = dstPixels + dstWidth * (dstHeight - 1 - y);
 
-        const PIX* srcPixelPtrs[4];
-        int pixelStride;
-        Image::getChannelPointers<PIX, srcNComps>((const PIX**)srcPtrs, srcBounds.x1, srcY_i, srcBounds, (PIX**)srcPixelPtrs, &pixelStride);
-
-        if (!srcPixelPtrs[0]) {
+        if (y > boxHeightFitted) {
             // out of bounds
-            for (int j = 0; j < *dstWidth; ++j) {
+            for (int x = 0; x < dstWidth; ++x) {
 #ifndef __NATRON_WIN32__
-                dst_pixels[j] = toBGRA(0, 0, 0, 0);
+                dst_pixels[x] = toBGRA(0, 0, 0, 0);
 #else
-                dst_pixels[j] = toBGRA(0, 0, 0, 255);
+                dst_pixels[x] = toBGRA(0, 0, 0, 255);
 #endif
             }
         } else {
-            for (int j = 0; j < *dstWidth; ++j) {
+            for (int x = 0; x < dstWidth; ++x) {
 
 
-                const double srcX_f = (j - *dstWidth / 2.) / zoomFactor + (srcBounds.x1 + srcBounds.x2) / 2.;
-                const int srcX_i = std::floor(srcX_f + 0.5) - srcBounds.x1;     // round to nearest
+                const double srcX_f = x / scaleFactor + srcBounds.x1;
+                const int srcX_i = std::floor(srcX_f + 0.5);     // round to nearest
 
-                if ( (srcX_i < 0) || ( srcX_i >= (srcBounds.x2 - srcBounds.x1) ) ) {
+                const PIX* srcPixelPtrs[4];
+                int pixelStride;
+                Image::getChannelPointers<PIX, srcNComps>((const PIX**)srcPtrs, srcX_i, srcY_i, srcBounds, (PIX**)srcPixelPtrs, &pixelStride);
+
+
+
+                if ( x > boxWidthFitted || !srcPixelPtrs[0]) {
 #ifndef __NATRON_WIN32__
-                    dst_pixels[j] = toBGRA(0, 0, 0, 0);
+                    dst_pixels[x] = toBGRA(0, 0, 0, 0);
 #else
-                    dst_pixels[j] = toBGRA(0, 0, 0, 255);
+                    dst_pixels[x] = toBGRA(0, 0, 0, 255);
 #endif
                 } else {
 
@@ -122,7 +128,7 @@ renderPreviewTemplated(const void* srcPtrs[4],
                     int r = Color::floatToInt<256>(convertToSrgb ? Color::to_func_srgb(tmpPix[0]) : tmpPix[0]);
                     int g = Color::floatToInt<256>(convertToSrgb ? Color::to_func_srgb(tmpPix[1]) : tmpPix[1]);
                     int b = Color::floatToInt<256>(convertToSrgb ? Color::to_func_srgb(tmpPix[2]) : tmpPix[2]);
-                    dst_pixels[j] = toBGRA(r, g, b, 255);
+                    dst_pixels[x] = toBGRA(r, g, b, 255);
                 }
             }
         }
@@ -133,8 +139,8 @@ template<typename PIX, int maxValue, int srcNComps>
 void
 renderPreviewForColorSpace(const void* srcPtrs[4],
                            const RectI& srcBounds,
-                           int *dstWidth,
-                           int *dstHeight,
+                           int dstWidth,
+                           int dstHeight,
                            bool convertToSrgb,
                            unsigned int* dstPixels)
 {
@@ -151,8 +157,8 @@ void
 renderPreviewForDepth(const void* srcPtrs[4],
                       const RectI& srcBounds,
                       int srcNComps,
-                      int *dstWidth,
-                      int *dstHeight,
+                      int dstWidth,
+                      int dstHeight,
                       bool convertToSrgb,
                       unsigned int* dstPixels)
 {
@@ -180,8 +186,8 @@ static void renderPreviewInternal(const void* srcPtrs[4],
                                   ImageBitDepthEnum srcBitDepth,
                                   const RectI& srcBounds,
                                   int srcNComps,
-                                  int* width,
-                                  int *height,
+                                  int width,
+                                  int height,
                                   bool convertToSrgb,
                                   unsigned int* buf)
 {
@@ -213,8 +219,8 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 bool
 Node::makePreviewImage(TimeValue time,
-                       int *width,
-                       int *height,
+                       int width,
+                       int height,
                        unsigned int* buf)
 {
     if (!isNodeCreated()) {
@@ -271,8 +277,8 @@ Node::makePreviewImage(TimeValue time,
     }
 
     // Compute the mipmap level to pass to render
-    double yZoomFactor = (double)*height / (double)rod.height();
-    double xZoomFactor = (double)*width / (double)rod.width();
+    double yZoomFactor = (double)height / (double)rod.height();
+    double xZoomFactor = (double)width / (double)rod.width();
     double closestPowerOf2X = xZoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil( std::log(xZoomFactor) / std::log(2.) ) );
     double closestPowerOf2Y = yZoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil( std::log(yZoomFactor) / std::log(2.) ) );
     int closestPowerOf2 = std::max(closestPowerOf2X, closestPowerOf2Y);
@@ -299,7 +305,7 @@ Node::makePreviewImage(TimeValue time,
         if (isFailureRetCode(stat)) {
             return false;
         }
-        img = outputRequest->getImagePlane();
+        img = outputRequest->getRequestedScaleImagePlane();
     }
 
     // we convert only when input is Linear.

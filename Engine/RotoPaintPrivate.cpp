@@ -96,7 +96,6 @@ RotoPaintInteract::RotoPaintInteract(RotoPaintPrivate* p)
     , lastClickPos()
     , lastMousePos()
     , evaluateOnPenUp(false)
-    , evaluateOnKeyUp(false)
     , iSelectingwithCtrlA(false)
     , shiftDown(0)
     , ctrlDown(0)
@@ -3204,7 +3203,6 @@ RotoPaintInteract::onOverlayPenUp(TimeValue /*time*/,
 
 
     if (evaluateOnPenUp) {
-        _imp->publicInterface->invalidateCacheHashAndEvaluate(true, false);
 
         //sync other viewers linked to this roto
         redraw();
@@ -3379,12 +3377,7 @@ RotoPaintInteract::onOverlayKeyUp(TimeValue /*time*/,
     if ( ( (key == Key_Control_L) || (key == Key_Control_R) ) && iSelectingwithCtrlA ) {
         iSelectingwithCtrlA = false;
     }
-    
-    if (evaluateOnKeyUp) {
-        _imp->publicInterface->invalidateCacheHashAndEvaluate(true, false);
-        redraw();
-        evaluateOnKeyUp = false;
-    }
+
     
     return didSomething;
 } // onOverlayKeyUp

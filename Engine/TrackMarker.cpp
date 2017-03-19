@@ -714,7 +714,7 @@ TrackMarker::getMarkerImage(TimeValue time,
     if (isFailureRetCode(stat)) {
         return std::make_pair(ImagePtr(), roi);
     }
-    ImagePtr sourceImage = outputRequest->getImagePlane();
+    ImagePtr sourceImage = outputRequest->getRequestedScaleImagePlane();
 
     // Make sure the Natron image rendered is RGBA full rect and on CPU, we don't support other formats
     if (sourceImage->getStorageMode() != eStorageModeRAM) {

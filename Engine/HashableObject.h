@@ -29,6 +29,7 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #endif
 
 #include <set>
@@ -129,6 +130,26 @@ public:
      **/
     bool findCachedHash(const FindHashArgs& args, U64 *hash) const;
 
+    /**
+     * @brief Set whether caching of the hash is enabled or not. 
+     * By default it is enabled, and any operation modifying a value that is appended to the hash
+     * should call invalidateHashCache() under the same mutex that modifies that value.
+     **/
+    void setHashCachingEnabled(bool enabled);
+
+    /**
+     * @brief Returns whether caching of the hash is enabled
+     **/
+    bool isHashCachingEnabled() const;
+
+
+    /**
+     * Can be overriden to invalidate the hash.
+     * Derived implementations should call the base-class version.
+     * Returns true if the hash was invalidated, or false
+     * if the item already had its hash invalidated.
+     **/
+    virtual bool invalidateHashCacheInternal(std::set<HashableObject*>* invalidatedObjects);
 
     /**
      * @brief Invalidate the hash cache and invalidate recursively the listeners as well.
@@ -137,15 +158,6 @@ public:
      **/
     void invalidateHashCache();
 
-
-
-    /**
-     * Can be overriden to invalidate the hash. 
-     * Derived implementations should call the base-class version.
-     * Returns true if the hash was invalidated, or false
-     * if the item already had its hash invalidated.
-     **/
-    virtual bool invalidateHashCacheInternal(std::set<HashableObject*>* invalidatedObjects);
 
 protected:
 
@@ -162,8 +174,11 @@ protected:
 
 private:
 
+
+
     boost::scoped_ptr<HashableObjectPrivate> _imp;
 };
+
 
 NATRON_NAMESPACE_EXIT
 

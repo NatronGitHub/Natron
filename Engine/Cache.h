@@ -294,8 +294,10 @@ public:
 
     /**
      * @brief This function serves 2 purposes: either fetch existing tiles from the cache or allocate new ones, or both at the same time.
-     * This function tries to obtain numTilesToAlloc free tiles from the internal storage. If not available, grow the internal memory mapped file
-     * so at least numTiles free tiles are available.
+     * This function tries to obtain tilesToAlloc.size() free tiles from the internal storage. If not available, grow the internal memory mapped file
+     * so at least tilesToAlloc.size() free tiles are available.
+     * @param tilesToAlloc A vector of size of the number of desired tiles in output. The numbers in the vector are used to offset the bucket of the 
+     * cache on which to retrieve tiles from.
      * @param allocatedTilesData[out] In output, this contains each tiles allocated as a pair of <tileIndex, pointer>
      * Each tile will have exactly NATRON_TILE_SIZE_BYTES bytes. The index is the index that must be passed back to the unLockTiles
      * and releaseTiles functions.
@@ -316,7 +318,7 @@ public:
      **/
     bool retrieveAndLockTiles(const CacheEntryBasePtr& entry,
                               const std::vector<U64>* tileIndices,
-                              std::size_t numTilesToAlloc,
+                              const std::vector<U64>* tilesToAlloc,
                               std::vector<void*>* existingTilesData,
                               std::vector<std::pair<U64, void*> >* allocatedTilesData,
                               void** cacheData);
@@ -329,6 +331,13 @@ public:
      * The memory will be freed when the cache entry is removed from the cache.
      **/
     void unLockTiles(void* cacheData);
+
+    /**
+     * @brief Release tiles that were previously allocated by the given entry with retrieveAndLockTiles
+     * @param localIndices Corresponds to the indices that were passed in tileIndices to the function retrieveAndLockTiles
+     * @param cacheIndices Corresponds to the indices that were returned in allocatedTilesData in the function retrieveAndLockTiles
+     **/
+    void releaseTiles(const CacheEntryBasePtr& entry, const std::vector<U64>& localIndices, const std::vector<U64>& cacheIndices);
 
     /**
      * @brief Returns whether a cache entry exists for the given hash.

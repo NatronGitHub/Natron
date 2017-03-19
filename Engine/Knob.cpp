@@ -5450,6 +5450,11 @@ KnobHolder::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 
 } // appendToHash
 
+bool
+KnobHolder::isFullAnimationToHashEnabled() const
+{
+    return false;
+}
 
 
 /***************************STRING ANIMATION******************************************/

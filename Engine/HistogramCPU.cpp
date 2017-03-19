@@ -496,7 +496,7 @@ HistogramCPU::run()
             if (isFailureRetCode(stat)) {
                 continue;
             }
-            image = outputRequest->getImagePlane();
+            image = outputRequest->getRequestedScaleImagePlane();
 
             // We only support full rect float RAM images
             if (image->getStorageMode() != eStorageModeRAM|| image->getBitDepth() != eImageBitDepthFloat) {

@@ -720,11 +720,8 @@ public:
      *
      * In order to notify the GUI that you want to refresh the preview, just
      * call refreshPreviewImage(time).
-     *
-     * The width and height might be modified by the function, so their value can
-     * be queried at the end of the function
      **/
-    bool makePreviewImage(TimeValue time, int *width, int *height, unsigned int* buf);
+    bool makePreviewImage(TimeValue time, int width, int height, unsigned int* buf);
 
     /**
      * @brief Returns true if the node is currently rendering a preview image.

@@ -709,7 +709,6 @@ public:
     QPointF lastClickPos;
     QPointF lastMousePos;
     bool evaluateOnPenUp; //< if true the next pen up will call context->evaluateChange()
-    bool evaluateOnKeyUp;  //< if true the next key up will call context->evaluateChange()
     bool iSelectingwithCtrlA;
     int shiftDown;
     int ctrlDown;

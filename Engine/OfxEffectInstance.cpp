@@ -2481,6 +2481,11 @@ OfxEffectInstance::dettachOpenGLContext( const OSGLContextPtr& /*glContext*/, co
     }
 }
 
+bool
+OfxEffectInstance::isFullAnimationToHashEnabled() const
+{
+    return doesTemporalClipAccess();
+}
 
 NATRON_NAMESPACE_EXIT;
 

@@ -33,7 +33,7 @@ NATRON_NAMESPACE_ENTER
 
 struct HashableObjectPrivate
 {
-    // The parent if any
+    // The other objects that need this hash as part of their hash
     std::list<HashableObjectWPtr> hashListeners;
 
     // The hash cache
@@ -47,8 +47,11 @@ struct HashableObjectPrivate
 
     bool metadataSlaveCacheValid;
 
-    // protects hashCache
+    // protects all members
     mutable QMutex hashCacheMutex;
+
+    // Do we allow caching of the hash ?
+    bool hashCacheEnabled;
 
     HashableObjectPrivate()
     : hashListeners()
@@ -58,20 +61,28 @@ struct HashableObjectPrivate
     , metadataSlaveCache(0)
     , metadataSlaveCacheValid(false)
     , hashCacheMutex(QMutex::Recursive) // It might recurse when calling getValue on a knob with an expression because of randomSeed
+    , hashCacheEnabled(true)
     {
 
     }
 
     HashableObjectPrivate(const HashableObjectPrivate& other)
-    : hashListeners(other.hashListeners)
-    , timeViewVariantHashCache() // do not copy the cache! During a render we need a hash that corresponds exactly to the render values.
-    , timeViewInvariantCache(0)
+    : hashListeners()
+    , timeViewVariantHashCache()
+    , timeViewInvariantCache()
     , timeViewInvariantCacheValid(false)
-    , metadataSlaveCache(0)
+    , metadataSlaveCache()
     , metadataSlaveCacheValid(false)
     , hashCacheMutex(QMutex::Recursive)
+    , hashCacheEnabled(true)
     {
-
+        QMutexLocker k(&other.hashCacheMutex);
+        timeViewVariantHashCache = other.timeViewVariantHashCache;
+        timeViewInvariantCache = other.timeViewInvariantCache;
+        timeViewInvariantCacheValid = other.timeViewInvariantCacheValid;
+        metadataSlaveCache = other.metadataSlaveCache;
+        metadataSlaveCacheValid = other.metadataSlaveCacheValid;
+        hashCacheEnabled = other.hashCacheEnabled;
     }
 
     bool findCachedHashInternal(const HashableObject::FindHashArgs& args, U64 *hash) const;
@@ -98,6 +109,7 @@ void
 HashableObject::addHashListener(const HashableObjectPtr& parent)
 {
     _imp->hashListeners.push_back(parent);
+
 }
 
 bool
@@ -146,7 +158,7 @@ HashableObject::computeHash(const ComputeHashArgs& args)
         // Find a hash in the cache.
         QMutexLocker k(&_imp->hashCacheMutex);
         U64 hashValue;
-        {
+        if (_imp->hashCacheEnabled) {
             FindHashArgs findArgs;
             findArgs.time = args.time;
             findArgs.view = args.view;
@@ -226,5 +238,18 @@ HashableObject::invalidateHashCache()
     invalidateHashCacheInternal(&objs);
 }
 
+void
+HashableObject::setHashCachingEnabled(bool enabled)
+{
+    QMutexLocker k(&_imp->hashCacheMutex);
+    _imp->hashCacheEnabled = enabled;
+}
+
+bool
+HashableObject::isHashCachingEnabled() const
+{
+    QMutexLocker k(&_imp->hashCacheMutex);
+    return _imp->hashCacheEnabled;
+}
 
 NATRON_NAMESPACE_EXIT

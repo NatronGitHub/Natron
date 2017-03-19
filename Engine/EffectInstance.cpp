@@ -262,7 +262,7 @@ EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 } // appendToHash
 
 bool
-EffectInstance::invalidateHashCacheImplementation(const bool recurse, std::set<HashableObject*>* invalidatedObjects)
+EffectInstance::invalidateHashCacheRecursive(const bool recurse, std::set<HashableObject*>* invalidatedObjects)
 {
     // Clear hash on this node
     if (!HashableObject::invalidateHashCacheInternal(invalidatedObjects)) {
@@ -280,7 +280,7 @@ EffectInstance::invalidateHashCacheImplementation(const bool recurse, std::set<H
                 continue;
             }
             // Do not recurse on outputs, since we iterate on all nodes in the group
-            subNodeEffect->invalidateHashCacheImplementation(false /*recurse*/, invalidatedObjects);
+            subNodeEffect->invalidateHashCacheRecursive(false /*recurse*/, invalidatedObjects);
         }
     }
 
@@ -288,7 +288,7 @@ EffectInstance::invalidateHashCacheImplementation(const bool recurse, std::set<H
         NodesList outputs;
         getNode()->getOutputsWithGroupRedirection(outputs);
         for (NodesList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-            (*it)->getEffectInstance()->invalidateHashCacheImplementation(recurse, invalidatedObjects);
+            (*it)->getEffectInstance()->invalidateHashCacheRecursive(recurse, invalidatedObjects);
         }
     }
     return true;
@@ -297,7 +297,7 @@ EffectInstance::invalidateHashCacheImplementation(const bool recurse, std::set<H
 bool
 EffectInstance::invalidateHashCacheInternal(std::set<HashableObject*>* invalidatedObjects)
 {
-    return invalidateHashCacheImplementation(true /*recurse*/, invalidatedObjects);
+    return invalidateHashCacheRecursive(true /*recurse*/, invalidatedObjects);
 }
 
 void
@@ -859,7 +859,7 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
     const bool supportsMultiPlane = isMultiPlanar();
 
     // The output image unmapped
-    outArgs->image = outputRequest->getImagePlane();
+    outArgs->image = outputRequest->getRequestedScaleImagePlane();
 
     outArgs->roiPixel.intersect(outArgs->image->getBounds(), &outArgs->roiPixel);
 
@@ -1324,7 +1324,6 @@ EffectInstance::clearLastRenderedImage()
         QMutexLocker k(&_imp->common->accumBufferMutex);
         _imp->common->accumBuffer.reset();
     }
-    invalidateHashCache();
 }
 
 void

@@ -1770,7 +1770,7 @@ protected:
             FrameViewRequestPtr outputRequest;
             retCode = render->launchRender(&outputRequest);
             if (!isFailureRetCode(retCode)) {
-                *imagePlane = outputRequest->getImagePlane();
+                *imagePlane = outputRequest->getRequestedScaleImagePlane();
             }
         }
 
@@ -2147,6 +2147,12 @@ struct RenderViewerProcessFunctorArgs
     bool isDraftModeEnabled;
     bool isPlayback;
     bool byPassCache;
+
+    RenderViewerProcessFunctorArgs()
+    : retCode(eActionStatusOK)
+    {
+
+    }
 };
 
 typedef boost::shared_ptr<RenderViewerProcessFunctorArgs> RenderViewerProcessFunctorArgsPtr;
@@ -2247,7 +2253,7 @@ public:
         inArgs->retCode = inArgs->renderObject->launchRender(&outputRequest);
 
         if (outputRequest) {
-            inArgs->outputImage = outputRequest->getImagePlane();
+            inArgs->outputImage = outputRequest->getRequestedScaleImagePlane();
         }
 
         if (isFailureRetCode(inArgs->retCode)) {
@@ -2276,14 +2282,14 @@ public:
                 {
                     FrameViewRequestPtr req = inArgs->renderObject->getExtraRequestedResultsForNode(inArgs->colorPickerNode);
                     if (req) {
-                        inArgs->colorPickerImage = req->getImagePlane();
+                        inArgs->colorPickerImage = req->getRequestedScaleImagePlane();
                         inArgs->colorPickerImage = convertImageForViewerDisplay(inArgs->colorPickerImage);
                     }
                 }
                 if (inArgs->colorPickerInputNode) {
                     FrameViewRequestPtr req = inArgs->renderObject->getExtraRequestedResultsForNode(inArgs->colorPickerInputNode);
                     if (req) {
-                        inArgs->colorPickerInputImage = req->getImagePlane();
+                        inArgs->colorPickerInputImage = req->getRequestedScaleImagePlane();
                         inArgs->colorPickerInputImage = convertImageForViewerDisplay(inArgs->colorPickerInputImage);
                     }
                 }

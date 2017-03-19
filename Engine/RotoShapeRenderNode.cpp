@@ -146,14 +146,30 @@ RotoShapeRenderNode::appendToHash(const ComputeHashArgs& args, Hash64* hash)
         // The render of the Roto shape/stroke depends on the points at the current time/view
         RotoStrokeItemPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
         BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(item);
-        if (isBezier) {
-            U64 bh = isBezier->computeHash(args);
-            hash->append(bh);
 
-        } else if (isStroke) {
-            U64 sh = isStroke->computeHash(args);
-            hash->append(sh);
+        // Append the hash of the shape for each motion blur sample
+        RangeD range;
+        int divisions;
+        item->getMotionBlurSettings(args.time, args.view, &range, &divisions);
+        double interval = divisions >= 1 ? (range.max - range.min) / divisions : 1.;
+
+        for (int i = 0; i < divisions; ++i) {
+            double t = divisions > 1 ? range.min + i * interval : args.time;
+
+            ComputeHashArgs shapeArgs = args;
+            shapeArgs.time = TimeValue(t);
+
+            if (isBezier) {
+                U64 bh = isBezier->computeHash(shapeArgs);
+                hash->append(bh);
+
+            } else if (isStroke) {
+                U64 sh = isStroke->computeHash(shapeArgs);
+                hash->append(sh);
+            }
         }
+
+
     }
 
 
@@ -174,7 +190,7 @@ RotoShapeRenderNode::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 
     EffectInstance::appendToHash(args, hash);
 
-}
+} // appendToHash
 
 
 bool
@@ -323,7 +339,7 @@ RotoShapeRenderNode::isIdentity(TimeValue time,
     }
     
     return eActionStatusOK;
-}
+} // isIdentity
 
 
 

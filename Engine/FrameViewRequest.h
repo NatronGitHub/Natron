@@ -161,26 +161,26 @@ public:
     /**
      * @brief Get the status of the request
      **/
-    FrameViewRequestStatusEnum getStatus() const;
+    FrameViewRequestStatusEnum getStatus(const RequestPassSharedDataPtr& requestData) const;
 
     /**
      * @brief Called in requestRender to initialize the status of this object.
      **/
-    void initStatus(FrameViewRequestStatusEnum status);
+    void initStatus(const RequestPassSharedDataPtr& requestData, FrameViewRequestStatusEnum status);
 
     /**
      * @brief Called on startup of launchRender() function to 
      * determine what next to do.
      * @see FrameViewRequestStatusEnum for what to do given the status.
      **/
-    FrameViewRequestStatusEnum notifyRenderStarted();
+    FrameViewRequestStatusEnum notifyRenderStarted(const RequestPassSharedDataPtr& requestData);
 
     /**
      * @brief Called when launchRender() ends when it was rendering a frame.
      * This is only needed if the status returned by notifyRenderStarted() is 
      * eFrameViewRequestStatusNotRendered.
      **/
-    void notifyRenderFinished(ActionRetCodeEnum stat);
+    void notifyRenderFinished(const RequestPassSharedDataPtr& requestData, ActionRetCodeEnum stat);
 
     /**
      * @brief Get the render mapped mipmap level (i.e: 0 if the node
@@ -206,9 +206,28 @@ public:
      * @brief Return the image plane to render.
      * This is the final image rendered.
      **/
-    ImagePtr getImagePlane() const;
-    void setImagePlane(const ImagePtr& image);
+    ImagePtr getRequestedScaleImagePlane() const;
+    void setRequestedScaleImagePlane(const ImagePtr& image);
 
+    /**
+     * @brief Return the image plane to render at full scale.
+     * This is only used for effects that do not support render scale.
+     **/
+    ImagePtr getFullscaleImagePlane() const;
+    void setFullscaleImagePlane(const ImagePtr& image);
+
+private:
+
+    /**
+     * @brief Take the internal mutex
+     **/
+    void lockRequest();
+
+    /**
+     * @brief Releases the internal mutex
+     **/
+    void unlockRequest();
+public:
 
     /**
      * @brief Get the cache policy for this frame/view
@@ -275,6 +294,14 @@ public:
     RenderBackendTypeEnum getFallbackRenderDevice() const;
 
     /**
+     * @brief set/get the render device used to render
+     **/
+    void setRenderDevice(RenderBackendTypeEnum device);
+    RenderBackendTypeEnum getRenderDevice() const;
+
+    bool isRenderDeviceSet() const;
+
+    /**
      * @brief Should the render use the device returned by getFallbackRenderDevice() or automatically detect the best device to render
      **/
     void setFallbackRenderDeviceEnabled(bool enabled);
@@ -329,10 +356,29 @@ public:
 
 private:
 
+    friend class FrameViewRequestLocker;
+
     boost::scoped_ptr<FrameViewRequestPrivate> _imp;
     
 };
 
+
+class FrameViewRequestLocker
+{
+    FrameViewRequestPtr request;
+public:
+
+    FrameViewRequestLocker(const FrameViewRequestPtr& request)
+    : request(request)
+    {
+        request->lockRequest();
+    }
+
+    ~FrameViewRequestLocker()
+    {
+        request->unlockRequest();
+    }
+};
 
 
 NATRON_NAMESPACE_EXIT;

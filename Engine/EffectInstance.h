@@ -915,9 +915,8 @@ public:
      **/
     virtual bool invalidateHashCacheInternal(std::set<HashableObject*>* invalidatedObjects) OVERRIDE ;
 
-private:
+    bool invalidateHashCacheRecursive(const bool recurse, std::set<HashableObject*>* invalidatedObjects);
 
-    bool invalidateHashCacheImplementation(const bool recurse, std::set<HashableObject*>* invalidatedObjects);
 
 public:
 

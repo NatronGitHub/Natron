@@ -295,22 +295,6 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
     }
 
 
-    // The render went OK: copy the temporary image with the plug-in preferred format to the cache image
-    std::map<ImagePlaneDesc, ImagePtr>::const_iterator itLocal = args.localPlanes.begin();
-    for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = args.cachedPlanes.begin(); it != args.cachedPlanes.end(); ++it, ++itLocal) {
-
-        assert(it->first == itLocal->first);
-        if (it->second == itLocal->second) {
-            continue;
-        }
-        Image::CopyPixelsArgs cpyArgs;
-        cpyArgs.roi = rectToRender.rect;
-        stat = it->second->copyPixels(*itLocal->second, cpyArgs);
-        if (isFailureRetCode(stat)) {
-            return stat;
-        }
-    }
-
     if (timeRecorder) {
         stats->addRenderInfosForNode(_publicInterface->getNode(), timeRecorder->getTimeSinceCreation());
     }
@@ -325,7 +309,7 @@ EffectInstance::Implementation::renderHandlerIdentity(const RectToRender & rectT
 
     TreeRenderPtr render = _publicInterface->getCurrentRender();
 
-    for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = args.localPlanes.begin(); it != args.localPlanes.end(); ++it) {
+    for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = args.cachedPlanes.begin(); it != args.cachedPlanes.end(); ++it) {
         boost::scoped_ptr<EffectInstance::GetImageInArgs> inArgs( new EffectInstance::GetImageInArgs() );
         inArgs->renderBackend = &args.backendType;
         inArgs->currentRenderWindow = &rectToRender.rect;
@@ -460,14 +444,14 @@ EffectInstance::Implementation::renderHandlerPlugin(const RectToRender & rectToR
     bool multiPlanar = _publicInterface->isMultiPlanar();
     // If we can render all planes at once, do it, otherwise just render them all sequentially
     if (!multiPlanar) {
-        for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = args.localPlanes.begin(); it != args.localPlanes.end(); ++it) {
+        for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = args.cachedPlanes.begin(); it != args.cachedPlanes.end(); ++it) {
             std::list<std::pair<ImagePlaneDesc, ImagePtr> > tmp;
             tmp.push_back(*it);
             planesLists.push_back(tmp);
         }
     } else {
         std::list<std::pair<ImagePlaneDesc, ImagePtr> > tmp;
-        for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = args.localPlanes.begin(); it != args.localPlanes.end(); ++it) {
+        for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = args.cachedPlanes.begin(); it != args.cachedPlanes.end(); ++it) {
             tmp.push_back(*it);
         }
         planesLists.push_back(tmp);
@@ -577,7 +561,7 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
     const bool checkNaNs = _publicInterface->getCurrentRender()->isNaNHandlingEnabled();
 
     // Check for NaNs, copy to output image and mark for rendered
-    for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = args.localPlanes.begin(); it != args.localPlanes.end(); ++it) {
+    for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = args.cachedPlanes.begin(); it != args.cachedPlanes.end(); ++it) {
 
         if (checkNaNs) {
 

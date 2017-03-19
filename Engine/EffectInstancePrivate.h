@@ -498,12 +498,17 @@ public:
     bool canSplitRenderWindowWithIdentityRectangles(const RenderScale& renderMappedScale,
                                                     RectD* inputRoDIntersection);
 
+    static RenderBackendTypeEnum storageModeToBackendType(StorageModeEnum storage);
 
-    ImagePtr createCachedImage(const FrameViewRequestPtr& requestPassData,
-                               const RectI& roiPixels,
+    static StorageModeEnum storageModeFromBackendType(RenderBackendTypeEnum backend);
+
+    ImagePtr createCachedImage(const RectI& roiPixels,
                                const RectI& rodPixels,
                                unsigned int mappedMipMapLevel,
+                               const RenderScale& proxyScale,
                                const ImagePlaneDesc& plane,
+                               RenderBackendTypeEnum backend,
+                               CacheAccessModeEnum cachePolicy,
                                bool delayAllocation);
 
 
@@ -523,20 +528,10 @@ public:
                                         bool* hasPendingTiles);
 
 
-    ActionRetCodeEnum allocateRenderBackendStorageForRenderRects(const FrameViewRequestPtr& requestData,
-                                                                 RenderBackendTypeEnum backendType,
-                                                                 const RectI& roiPixels,
-                                                                 unsigned int mipMapLevel,
-                                                                 const RenderScale& combinedScale,
-                                                                 const std::list<ImagePlaneDesc>& producedPlanes,
-                                                                 std::map<ImagePlaneDesc, ImagePtr> *renderLocalPlanes,
-                                                                 std::list<RectToRender>* renderRects);
-
     ActionRetCodeEnum launchRenderForSafetyAndBackend(const FrameViewRequestPtr& requestData,
                                                       const RenderScale& combinedScale,
                                                       RenderBackendTypeEnum backendType,
                                                       const std::list<RectToRender>& renderRects,
-                                                      const std::map<ImagePlaneDesc, ImagePtr>& localPlanes,
                                                       const std::map<ImagePlaneDesc, ImagePtr>& cachedPlanes);
 
 
@@ -546,16 +541,27 @@ public:
                                                               const RenderScale& combinedScale,
                                                               RenderBackendTypeEnum backendType,
                                                               const std::list<RectToRender>& renderRects,
-                                                              const std::map<ImagePlaneDesc, ImagePtr>& localPlanes,
                                                               const std::map<ImagePlaneDesc, ImagePtr>& cachedPlanes);
-    
+
+
+    ActionRetCodeEnum lookupCachedImage(unsigned int mipMapLevel,
+                                        const RenderScale& proxyScale,
+                                        const ImagePlaneDesc& plane,
+                                        const RectI& pixelRod,
+                                        const RectI& pixelRoi,
+                                        CacheAccessModeEnum cachePolicy,
+                                        RenderBackendTypeEnum backend,
+                                        ImagePtr* image,
+                                        bool* hasPendingTiles,
+                                        bool* hasUnrenderedTiles);
+
     struct TiledRenderingFunctorArgs
     {
         FrameViewRequestPtr requestData;
         OSGLContextPtr glContext;
         EffectOpenGLContextDataPtr glContextData;
         RenderBackendTypeEnum backendType;
-        std::map<ImagePlaneDesc, ImagePtr> localPlanes, cachedPlanes;
+        std::map<ImagePlaneDesc, ImagePtr> cachedPlanes;
     };
 
     ActionRetCodeEnum tiledRenderingFunctor(const RectToRender & rectToRender,

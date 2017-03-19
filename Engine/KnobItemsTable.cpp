@@ -436,6 +436,7 @@ KnobItemsTable::insertItem(int index, const KnobTableItemPtr& item, const KnobTa
     if (!item) {
         return;
     }
+
     // The item must have been constructed with this model in parameter
     assert(item->getModel().get() == this);
 
@@ -507,6 +508,7 @@ KnobItemsTable::removeItem(const KnobTableItemPtr& item, TableChangeReasonEnum r
 void
 KnobItemsTable::resetModel(TableChangeReasonEnum reason)
 {
+
     std::vector<KnobTableItemPtr> topLevelItems;
     {
         QMutexLocker k(&_imp->common->topLevelItemsLock);

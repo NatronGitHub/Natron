@@ -2812,6 +2812,12 @@ public:
 
     virtual void appendToHash(const ComputeHashArgs& args, Hash64* hash) OVERRIDE;
 
+    /**
+     * @brief If this function returns true, all knobs of thie KnobHolder will have their curve appended to their hash
+     * regardless of their hashing strategy.
+     **/
+    virtual bool isFullAnimationToHashEnabled() const;
+
 
     /**
      * @brief Set the holder to have the given table to display in its settings panel.

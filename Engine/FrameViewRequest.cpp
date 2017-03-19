@@ -127,6 +127,16 @@ struct PerLaunchRequestData
     // The listeners of this frame/view:
     // This frame/view is in the dependencies list each of the listeners.
     std::set<FrameViewRequestWPtr> listeners;
+
+    // The status of the frame/view
+    FrameViewRequest::FrameViewRequestStatusEnum status;
+
+    PerLaunchRequestData()
+    : status(FrameViewRequest::eFrameViewRequestStatusNotRendered)
+    {
+
+    }
+
 };
 
 typedef std::map<RequestPassSharedDataWPtr, PerLaunchRequestData> LaunchRequestDataMap;
@@ -154,6 +164,12 @@ struct FrameViewRequestPrivate
     // The caching policy for this frame/view
     CacheAccessModeEnum cachingPolicy;
 
+    // The device used to render the request
+    RenderBackendTypeEnum renderDevice;
+
+    // Was renderDevice set already
+    bool renderDeviceSet;
+
     // Fallback device to use if the device that rendered first did not succeed.
     // E.g: First attempt to render using OpenGL or Cuda and if it fails fallback on CPU
     RenderBackendTypeEnum fallbackRenderDevice;
@@ -161,14 +177,12 @@ struct FrameViewRequestPrivate
     // True if the render should use fallbackRenderDevice
     bool fallbackRenderDeviceEnabled;
 
-    // The status of the frame/view
-    FrameViewRequest::FrameViewRequestStatusEnum status;
-
     // The retCode of the launchRender function
     ActionRetCodeEnum retCode;
 
-    // The output image
-    ImagePtr image;
+    // The full scale image is used for effects that do not support renderscale.
+    // The requestedScaleImage is the final image
+    ImagePtr fullScaleImage, requestedScaleImage;
 
     // Final roi. Each request led from different branches has its roi unioned into the finalRoI
     RectD finalRoi;
@@ -201,7 +215,7 @@ struct FrameViewRequestPrivate
                             const RenderScale& proxyScale,
                             const EffectInstancePtr& effect,
                             const TreeRenderPtr& render)
-    : lock()
+    : lock(QMutex::Recursive)
     , renderClone(effect)
     , parentRender(render)
     , plane(plane)
@@ -209,11 +223,13 @@ struct FrameViewRequestPrivate
     , mipMapLevel(mipMapLevel)
     , renderMappedMipMapLevel(mipMapLevel)
     , cachingPolicy(eCacheAccessModeReadWrite)
+    , renderDevice(eRenderBackendTypeCPU)
+    , renderDeviceSet(false)
     , fallbackRenderDevice(eRenderBackendTypeCPU)
     , fallbackRenderDeviceEnabled(false)
-    , status(FrameViewRequest::eFrameViewRequestStatusNotRendered)
     , retCode(eActionStatusOK)
-    , image()
+    , fullScaleImage()
+    , requestedScaleImage()
     , finalRoi()
     , requestData()
     , frameViewsNeeded()
@@ -304,15 +320,45 @@ FrameViewRequest::setPlaneDesc(const ImagePlaneDesc& plane)
 }
 
 void
-FrameViewRequest::setImagePlane(const ImagePtr& image)
+FrameViewRequest::setRequestedScaleImagePlane(const ImagePtr& image)
 {
-    _imp->image = image;
+    QMutexLocker k(&_imp->lock);
+    _imp->requestedScaleImage = image;
 }
 
+
 ImagePtr
-FrameViewRequest::getImagePlane() const
+FrameViewRequest::getRequestedScaleImagePlane() const
 {
-    return _imp->image;
+    QMutexLocker k(&_imp->lock);
+    return _imp->requestedScaleImage;
+}
+
+
+ImagePtr
+FrameViewRequest::getFullscaleImagePlane() const
+{
+    QMutexLocker k(&_imp->lock);
+    return _imp->fullScaleImage;
+}
+
+void
+FrameViewRequest::setFullscaleImagePlane(const ImagePtr& image)
+{
+    QMutexLocker k(&_imp->lock);
+    _imp->fullScaleImage = image;
+}
+
+void
+FrameViewRequest::lockRequest()
+{
+    _imp->lock.lock();
+}
+
+void
+FrameViewRequest::unlockRequest()
+{
+    _imp->lock.unlock();
 }
 
 CacheAccessModeEnum
@@ -328,37 +374,44 @@ FrameViewRequest::setCachePolicy(CacheAccessModeEnum policy)
 }
 
 FrameViewRequest::FrameViewRequestStatusEnum
-FrameViewRequest::getStatus() const
+FrameViewRequest::getStatus(const RequestPassSharedDataPtr& requestData) const
 {
-    return _imp->status;
+    PerLaunchRequestData& data = _imp->requestData[requestData];
+    return data.status;
 }
 
 void
-FrameViewRequest::initStatus(FrameViewRequestStatusEnum status)
+FrameViewRequest::initStatus(const RequestPassSharedDataPtr& requestData, FrameViewRequestStatusEnum status)
 {
-    _imp->status = status;
+    QMutexLocker k(&_imp->lock);
+    PerLaunchRequestData& data = _imp->requestData[requestData];
+    data.status = status;
 
 }
 
 FrameViewRequest::FrameViewRequestStatusEnum
-FrameViewRequest::notifyRenderStarted()
+FrameViewRequest::notifyRenderStarted(const RequestPassSharedDataPtr& requestData)
 {
+    QMutexLocker k(&_imp->lock);
+    PerLaunchRequestData& data = _imp->requestData[requestData];
     // Only one single thread should be computing a FrameViewRequest
-    assert(_imp->status != FrameViewRequest::eFrameViewRequestStatusPending);
-    if (_imp->status == FrameViewRequest::eFrameViewRequestStatusNotRendered) {
-        _imp->status = FrameViewRequest::eFrameViewRequestStatusPending;
+    assert(data.status != FrameViewRequest::eFrameViewRequestStatusPending);
+    if (data.status == FrameViewRequest::eFrameViewRequestStatusNotRendered) {
+        data.status = FrameViewRequest::eFrameViewRequestStatusPending;
         return FrameViewRequest::eFrameViewRequestStatusNotRendered;
     }
-    return _imp->status;
+    return data.status;
 }
 
 
 void
-FrameViewRequest::notifyRenderFinished(ActionRetCodeEnum stat)
+FrameViewRequest::notifyRenderFinished(const RequestPassSharedDataPtr& requestData, ActionRetCodeEnum stat)
 {
-    assert(_imp->status == FrameViewRequest::eFrameViewRequestStatusPending);
+    QMutexLocker k(&_imp->lock);
+    PerLaunchRequestData& data = _imp->requestData[requestData];
+    assert(data.status == FrameViewRequest::eFrameViewRequestStatusPending);
     _imp->retCode = stat;
-    _imp->status = FrameViewRequest::eFrameViewRequestStatusRendered;
+    data.status = FrameViewRequest::eFrameViewRequestStatusRendered;
 }
 
 
@@ -393,15 +446,14 @@ FrameViewRequest::addDependency(const RequestPassSharedDataPtr& request, const F
 int
 FrameViewRequest::markDependencyAsRendered(const RequestPassSharedDataPtr& request, const FrameViewRequestPtr& deps)
 {
-    FrameViewRequestStatusEnum status = _imp->status;
 
     QMutexLocker k(&_imp->lock);
     PerLaunchRequestData& data = _imp->requestData[request];
 
     // If this FrameViewRequest is pass-through, copy results from the pass-through dependency
-    if (status == eFrameViewRequestStatusPassThrough) {
+    if (data.status == eFrameViewRequestStatusPassThrough) {
         assert(deps && data.dependencies.size() == 1 && *data.dependencies.begin() == deps);
-        _imp->image = deps->getImagePlane();
+        _imp->requestedScaleImage = deps->getRequestedScaleImagePlane();
         _imp->finalRoi = deps->getCurrentRoI();
     }
 
@@ -482,21 +534,47 @@ FrameViewRequest::setFallbackRenderDevice(RenderBackendTypeEnum device)
     _imp->fallbackRenderDevice = device;
 }
 
+void
+FrameViewRequest::setRenderDevice(RenderBackendTypeEnum device)
+{
+    QMutexLocker k(&_imp->lock);
+    _imp->renderDevice = device;
+    _imp->renderDeviceSet = true;
+}
+
+bool
+FrameViewRequest::isRenderDeviceSet() const
+{
+    QMutexLocker k(&_imp->lock);
+    return _imp->renderDeviceSet;
+}
+
+RenderBackendTypeEnum
+FrameViewRequest::getRenderDevice() const
+{
+    QMutexLocker k(&_imp->lock);
+    return _imp->renderDevice;
+}
+
 RenderBackendTypeEnum
 FrameViewRequest::getFallbackRenderDevice() const
 {
+    QMutexLocker k(&_imp->lock);
     return _imp->fallbackRenderDevice;
 }
+
 
 void
 FrameViewRequest::setFallbackRenderDeviceEnabled(bool enabled)
 {
+    QMutexLocker k(&_imp->lock);
     _imp->fallbackRenderDeviceEnabled = enabled;
 }
 
 bool
 FrameViewRequest::isFallbackRenderDeviceEnabled() const
 {
+    QMutexLocker k(&_imp->lock);
     return _imp->fallbackRenderDeviceEnabled;
 }
 

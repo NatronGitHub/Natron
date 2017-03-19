@@ -1699,7 +1699,7 @@ Project::onKnobValueChanged(const KnobIPtr& knob,
 bool
 Project::invalidateHashCacheInternal(std::set<HashableObject*>* invalidatedObjects)
 {
-    if (!KnobHolder::invalidateHashCacheInternal(invalidatedObjects)) {
+    if (!HashableObject::invalidateHashCacheInternal(invalidatedObjects)) {
         return false;
     }
 

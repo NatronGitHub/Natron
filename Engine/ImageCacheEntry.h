@@ -41,12 +41,14 @@ struct ImageCacheEntryPrivate;
 
 /**
  * @brief Interface between an image and the cache.
- * This is the object that lives in the cache.
- * A storage is passed in parameter that is assumed to of the size of the
- * roi and the cache data is copied to this storage.
- * This object is not thread safe and is not meant to be shared across threads. 
- * However internally the cached tiles are thread safe and each tile is guaranteed to be
+ * This is the object that interacts with the cache.
+ * A storage is passed in parameter that is assumed to be of the size of the
+ * roi and the cache data is copied to/from this storage.
+ * Internally the cached tiles are thread safe and each tile is guaranteed to be
  * rendered by a single thread/process.
+ *
+ * Note that this class may be used even without interaction with the cache, to help
+ * synchronize multiple threads rendering a single image.
  **/
 class ImageCacheEntry 
 {
@@ -63,7 +65,9 @@ public:
      * @param format The layout of the image buffer(s)
      * @param effect Pointer to the effect to abort quickly
      * @param key The key corresponding to this entry
-     * @param removeFromCache If true the entry will be removed from the cache before reading it so we get a clean image
+     * @param cachePolicy If set to eCacheAccessModeWriteOnly the entry will be removed from the cache before reading it so we get a clean image
+     *                    If set to eCacheAccessModeNone, a local tiles state will be created without looking up the cache.
+     *                    If set to eCacheAccessModeReadWrite, the entry will be read from the cache and written to if needed
      **/
     ImageCacheEntry(const ImagePtr& image,
                     const RectI& pixelRod,
@@ -75,12 +79,18 @@ public:
                     ImageBufferLayoutEnum format,
                     const EffectInstancePtr& effect,
                     const ImageCacheKeyPtr& key,
-                    bool removeFromCache);
+                    CacheAccessModeEnum cachePolicy);
 
     ~ImageCacheEntry();
 
 
     ImageCacheKeyPtr getCacheKey() const;
+
+    /**
+     * @brief Ensure the given RoI is tracked by the tiles state map. This function does not grow the associated storage
+     * and assumes that the caller has taken care that the storage size matches the unioned roi
+     **/
+    void ensureRoI(const RectI& roi);
 
 
     /**
@@ -114,6 +124,12 @@ public:
      * If not called when a render is aborted, this may stall the application.
      **/
     void markCacheTilesAsAborted();
+
+    /**
+     * @brief Same as markCacheTilesAsAborted() except that all tiles in the given RoI are marked eTileStatusNotRendered
+     * instead of only tiles that were marked eTileStatusPending
+     **/
+    void markCacheTilesInRegionAsNotRendered(const RectI& roi);
 
     /**
      * @brief Should be called after markCacheTilesAsRendered() to wait for any pending tiles to be rendered.

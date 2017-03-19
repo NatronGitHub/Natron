@@ -243,6 +243,8 @@ public:
     virtual EffectInstanceTLSDataPtr getTLSObject() const OVERRIDE FINAL;
     virtual EffectInstanceTLSDataPtr getTLSObjectForThread(QThread* thread) const OVERRIDE FINAL;
     virtual EffectInstanceTLSDataPtr getOrCreateTLSObject() const OVERRIDE FINAL;
+
+    virtual bool isFullAnimationToHashEnabled() const OVERRIDE FINAL;
 private:
 
     virtual PluginMemoryPtr createPluginMemory() OVERRIDE FINAL WARN_UNUSED_RETURN;

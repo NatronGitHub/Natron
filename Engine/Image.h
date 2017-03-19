@@ -119,11 +119,17 @@ public:
         // Default - Color.RGBA
         ImagePlaneDesc plane;
 
-
-        // Whether or not the initializeStorage() may look for already existing tiles in the cache
+        // Whether or not this image may look for already existing tiles in the cache
         //
         // Default: eCacheAccessModeNone
         CacheAccessModeEnum cachePolicy;
+
+        // If cachePolicy is set to eCacheAccessModeNone, this flag determines whether to still
+        // create a ImageCacheEntry object controlling the tiles state map or not.
+        // This is useful to sync multiple threads to render the same image.
+        //
+        // Default: false
+        bool createTilesMapEvenIfNoCaching;
 
         // This must be set if the cache policy is not none.
         // This will be used to prevent inserting in the cache part of images that had

@@ -1078,7 +1078,17 @@ Knob<T>::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 {
     int nDims = getNDimensions();
 
-    KnobFrameViewHashingStrategyEnum hashingStrat = getHashingStrategy();
+    // If the holder wants to force full curve hashing, we do so.
+    // This is useful for OFX plug-ins that do not set the cache invalidation property
+    // correctly on all their parameters
+    bool forceHashingFullAnim = getHolder()->isFullAnimationToHashEnabled();
+
+    KnobFrameViewHashingStrategyEnum hashingStrat;
+    if (forceHashingFullAnim) {
+        hashingStrat = eKnobHashingStrategyAnimation;
+    } else {
+        hashingStrat = getHashingStrategy();
+    }
     bool isMetadataSlave = getIsMetadataSlave();
 
     for (int i = 0; i < nDims; ++i) {
