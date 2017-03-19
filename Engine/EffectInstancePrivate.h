@@ -406,7 +406,6 @@ public:
 
     Implementation(EffectInstance* publicInterface, const Implementation& other);
 
-
     ~Implementation();
 
     /**
@@ -576,6 +575,7 @@ public:
 
     ActionRetCodeEnum renderHandlerPostProcess(const RectToRender & rectToRender,
                                   const TiledRenderingFunctorArgs& args);
+
 
     void checkMetadata(NodeMetadata &metadata);
 

@@ -1910,8 +1910,7 @@ protected:
      **/
     virtual void initializeKnobs() OVERRIDE
     {
-
-    };
+    }
 
     virtual void fetchRenderCloneKnobs() OVERRIDE;
 

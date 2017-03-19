@@ -802,6 +802,7 @@ QDebug operator<<(QDebug dbg, const std::list<std::string> &l)
     return dbg.space();
 }
 
+
 void
 OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
                         IOPluginsMap* writersMap)

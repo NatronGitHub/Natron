@@ -250,6 +250,7 @@ EffectInstance::Implementation::handleConcatenation(const RequestPassSharedDataP
                                                     const RectD& canonicalRoi,
                                                     bool *concatenated)
 
+
 {
     *concatenated = false;
     if (!_publicInterface->getCurrentRender()->isConcatenationEnabled()) {
@@ -821,6 +822,7 @@ EffectInstance::Implementation::launchRenderForSafetyAndBackend(const FrameViewR
 
 
 
+
 ActionRetCodeEnum
 EffectInstance::Implementation::handleUpstreamFramesNeeded(const RequestPassSharedDataPtr& requestPassSharedData,
                                                            const FrameViewRequestPtr& requestPassData,
@@ -900,6 +902,7 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const RequestPassShar
 
         if (inputRoI.isNull()) {
             continue;
+
         }
 
         if ( inputRoI.isInfinite() ) {
@@ -1348,9 +1351,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
         if (isFailureRetCode(stat)) {
             return stat;
         }
-        if (isAccumulating) {
-            hasUnRenderedTile = true;
-        }
+
         if (!hasPendingTiles && !hasUnRenderedTile) {
             requestStatus = FrameViewRequest::eFrameViewRequestStatusRendered;
         } else if (mappedMipMapLevel != requestData->getMipMapLevel()) {
@@ -1377,6 +1378,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
         requestData->setRequestedScaleImagePlane(requestedImageScale);
         requestData->setFullscaleImagePlane(fullScaleImage);
 
+
         // Set the accumulation buffer if it was not already set
         if (isAccumulating && !accumBuffer) {
             setAccumBuffer(requestedImageScale);
@@ -1396,6 +1398,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
     }
     return eActionStatusOK;
 } // requestRenderInternal
+
 
 
 ActionRetCodeEnum
@@ -1420,7 +1423,6 @@ EffectInstance::launchRender(const RequestPassSharedDataPtr& requestPassSharedDa
         }
     }
     ActionRetCodeEnum stat = launchRenderInternal(requestPassSharedData, requestData);
-
 
     // Notify that we are done rendering
     requestData->notifyRenderFinished(requestPassSharedData, stat);
@@ -1523,7 +1525,6 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPa
         finishProducedPlanesTilesStatesMap(cachedImagePlanes, true);
         return renderRetCode;
     }
-
 
 
     while ((!renderRects.empty() || hasPendingTiles) && !isRenderAborted()) {
@@ -1762,7 +1763,6 @@ EffectInstance::Implementation::launchPluginRenderAndHostFrameThreading(const Fr
         } // for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
 
     } else { // attemptHostFrameThreading
-
         HostFrameThreadingRenderProcessor processor(_publicInterface->shared_from_this());
         processor.setData(renderRects, functorArgs, this);
         ActionRetCodeEnum stat = processor.launchThreadsBlocking();

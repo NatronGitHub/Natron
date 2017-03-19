@@ -48,6 +48,7 @@ Natron multiple times on the same computer, the different processes will share t
 - Card3D and CornerPin: only show things that are in front of the camera.
 - LensDistortion: add PanoTools/PTGui/PTAssembler/Hugin model.
 - ReadOIIO: add advanced options for reading RAW files, nonworking due to https://github.com/OpenImageIO/oiio/issues/1632
+- STMap: Use the format of the Source input rather than its RoD to determine the texture size.
 
 
 ## Version 2.2.5

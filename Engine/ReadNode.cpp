@@ -302,6 +302,7 @@ ReadNode::ReadNode(const NodePtr& n)
     : NodeGroup(n)
     , _imp( new ReadNodePrivate(this) )
 {
+
 }
 
 ReadNode::~ReadNode()

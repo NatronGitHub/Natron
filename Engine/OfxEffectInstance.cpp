@@ -248,7 +248,6 @@ OfxEffectInstance::describePlugin()
 
     assert(ofxPlugin && desc && _imp->common->context != eContextNone);
 
-
     if (_imp->common->context == eContextWriter) {
         _imp->common->isOutput = true;
     }
@@ -1196,7 +1195,6 @@ OfxEffectInstance::getRegionsOfInterest(TimeValue time,
     }
 
     assert(renderWindow.x2 >= renderWindow.x1 && renderWindow.y2 >= renderWindow.y1);
-
 
     OfxStatus stat;
 
