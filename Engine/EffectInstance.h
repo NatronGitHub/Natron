@@ -1211,6 +1211,9 @@ public:
     void setCurrentSupportTiles(bool support);
     bool getCurrentSupportTiles() const;
 
+    bool getCurrentTemporalImageAccess() const;
+    void setCurrentTemporalImageAccess(bool enabled);
+
     void setCurrentSupportMultiRes(bool support);
     bool getCurrentSupportMultiRes() const;
 
@@ -1518,6 +1521,9 @@ public:
     {
         return false;
     }
+
+    virtual bool isFullAnimationToHashEnabled() const OVERRIDE FINAL;
+
 
     virtual bool canCPUImplementationSupportOSMesa() const
     {

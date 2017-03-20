@@ -450,7 +450,7 @@ EffectInstance::shouldCacheOutput(bool isFrameVaryingOrAnimated,
         // that output node, hence requesting this node a lot. Cache it.
         return true;
     }
-    if ( doesTemporalClipAccess() ) {
+    if ( getCurrentTemporalImageAccess() ) {
         // Very heavy to compute since many frames are fetched upstream. Cache it.
         return true;
     }
@@ -1899,6 +1899,25 @@ EffectInstance::getCurrentSequentialRenderSupport() const
     return _imp->common->props.currentSupportSequentialRender;
 }
 
+bool
+EffectInstance::getCurrentTemporalImageAccess() const
+{
+    if (_imp->renderData) {
+        return _imp->renderData->props.currentTemporalImagesAccess;
+    }
+    QMutexLocker k(&_imp->common->pluginsPropMutex);
+
+    return _imp->common->props.currentTemporalImagesAccess;
+}
+
+void
+EffectInstance::setCurrentTemporalImageAccess(bool enabled)
+{
+    QMutexLocker k(&_imp->common->pluginsPropMutex);
+    _imp->common->props.currentTemporalImagesAccess = enabled;
+
+}
+
 void
 EffectInstance::setCurrentSupportTiles(bool support)
 {
@@ -2018,7 +2037,7 @@ EffectInstance::refreshDynamicProperties()
         renderScaleSupported = false;
     }
 
-
+    bool temporal = doesTemporalClipAccess();
     bool multiResSupported = supportsMultiResolution();
     bool canDistort = getCanDistort();
     bool currentDeprecatedTransformSupport = getCanTransform();
@@ -2044,13 +2063,19 @@ EffectInstance::refreshDynamicProperties()
     }
 
 
-
+    setCurrentTemporalImageAccess(temporal);
     setCurrentSupportMultiRes(multiResSupported);
     setCurrentSupportTiles(tilesSupported);
     setCurrentSupportRenderScale(renderScaleSupported);
     setCurrentSequentialRenderSupport( getSequentialPreference() );
     setCurrentCanDistort(canDistort);
     setCurrentCanTransform(currentDeprecatedTransformSupport);
+} // refreshDynamicProperties
+
+bool
+EffectInstance::isFullAnimationToHashEnabled() const
+{
+    return getCurrentTemporalImageAccess();
 }
 
 void

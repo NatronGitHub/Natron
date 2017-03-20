@@ -46,7 +46,7 @@
 #include "Engine/ThreadPool.h"
 
 // Define to log tiles status in the console
-//#define TRACE_TILES_STATUS
+#define TRACE_TILES_STATUS
 
 NATRON_NAMESPACE_ENTER;
 
@@ -341,7 +341,11 @@ struct ImageCacheEntryPrivate
         eUpdateStateMapRetCodeNeedWriteLock,
 
         // The state map was written and updated, it must be written to the cache
-        eUpdateStateMapRetCodeMustWriteToCache
+        eUpdateStateMapRetCodeMustWriteToCache,
+
+        // The tiles map was corrupted
+        eUpdateStateMapRetCodeFailed
+
     };
 
     /**
@@ -870,6 +874,14 @@ ImageCacheEntryPrivate::readAndUpdateStateMap(bool hasExclusiveLock)
     RectI mipmap0Bounds = localTilesState.bounds.upscalePowerOfTwo(mipMapLevel);
     for (std::size_t i = 0; i < perMipMapCacheTilesState.size(); ++i) {
         RectI levelBounds = mipmap0Bounds.downscalePowerOfTwo(i);
+        RectI boundsRounded = levelBounds;
+        boundsRounded.roundToTileSize(localTilesState.tileSizeX, localTilesState.tileSizeY);
+
+
+        // If the cached entry does not contain the exact amount of tiles, fail: a thread may have crashed while creating the map.
+        if (!internalCacheEntry->perMipMapTilesState[i].tiles.empty() && ((int)internalCacheEntry->perMipMapTilesState[i].tiles.size() != ((boundsRounded.width() / localTilesState.tileSizeX) * (boundsRounded.height() / localTilesState.tileSizeY)))) {
+            return eUpdateStateMapRetCodeFailed;
+        }
 
         // Wrap the cache entry perMipMapTilesState with a TileStateHeader
         perMipMapCacheTilesState[i] = TileStateHeader(localTilesState.tileSizeX, localTilesState.tileSizeY, levelBounds, &internalCacheEntry->perMipMapTilesState[i]);
@@ -1283,7 +1295,9 @@ ImageCacheEntry::fetchCachedTilesAndUpdateStatus(TileStateHeader* tileStatus, bo
         if (_imp->cachePolicy == eCacheAccessModeNone) {
             // When not interacting with the cache, the internalCacheEntry is actual local to this object
             ImageCacheEntryPrivate::UpdateStateMapRetCodeEnum stat = _imp->readAndUpdateStateMap(true /*hasExlcusiveLock*/);
-            (void)stat;
+            if (stat == ImageCacheEntryPrivate::eUpdateStateMapRetCodeFailed) {
+                return eActionStatusFailed;
+            }
         } else {
             // If we want interaction with the cache, we need to fetch the actual tiles state map from the cache
 
@@ -1339,14 +1353,19 @@ ImageCacheEntry::fetchCachedTilesAndUpdateStatus(TileStateHeader* tileStatus, bo
                             // We must update the state map but cannot do so under a read lock
                             mustCallUnderWriteLock = true;
                             break;
+                        case ImageCacheEntryPrivate::eUpdateStateMapRetCodeFailed:
+                            return eActionStatusFailed;
+
                     }
 
                 }
                 if (mustCallUnderWriteLock) {
                     boost::unique_lock<boost::shared_mutex> writeLock(_imp->internalCacheEntry->perMipMapTilesStateMutex);
                     ImageCacheEntryPrivate::UpdateStateMapRetCodeEnum stat = _imp->readAndUpdateStateMap(true /*hasExlcusiveLock*/);
-                    assert(stat == ImageCacheEntryPrivate::eUpdateStateMapRetCodeMustWriteToCache);
-                    (void)stat;
+                    assert(stat == ImageCacheEntryPrivate::eUpdateStateMapRetCodeMustWriteToCache || stat == ImageCacheEntryPrivate::eUpdateStateMapRetCodeFailed);
+                    if (stat == ImageCacheEntryPrivate::eUpdateStateMapRetCodeFailed) {
+                        return eActionStatusFailed;
+                    }
                 }
             }
 #endif // NATRON_CACHE_NEVER_PERSISTENT
@@ -1945,6 +1964,8 @@ ImageCacheEntryInternal::fromMemorySegment(bool isLockedForWriting,
                 case ImageCacheEntryPrivate::eUpdateStateMapRetCodeNeedWriteLock:
                     // We must update the state map but cannot do so under a read lock
                     return CacheEntryBase::eFromMemorySegmentRetCodeNeedWriteLock;
+                case ImageCacheEntryPrivate::eUpdateStateMapRetCodeFailed:
+                    return CacheEntryBase::eFromMemorySegmentRetCodeFailed;
             }
         }
     }

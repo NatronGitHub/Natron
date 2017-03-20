@@ -108,6 +108,8 @@ public:
 
     virtual bool canCPUImplementationSupportOSMesa() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+    virtual bool doesTemporalClipAccess() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
     virtual void appendToHash(const ComputeHashArgs& args, Hash64* hash)  OVERRIDE FINAL;
 
 private:

@@ -1032,13 +1032,7 @@ EffectInstance::requestRender(TimeValue timeInArgs,
     // A render clone may concurrently render one or multiple FrameViewRequest.
 
     FrameViewRenderKey frameViewKey = {time, view, requestPassSharedData->getTreeRender()};
-    EffectInstancePtr renderClone;
-    if (requester && requester->getEffect().get() == this && requester->getEffect()->isRenderClone()) {
-        // If request render is called recursively on the same node (e.g: identity with -2), we use the same render clone
-        renderClone = requester->getEffect();
-    } else {
-        renderClone = toEffectInstance(createRenderClone(frameViewKey));
-    }
+    EffectInstancePtr renderClone = toEffectInstance(createRenderClone(frameViewKey));
     assert(renderClone);
     if (createdRenderClone) {
         *createdRenderClone = renderClone;
@@ -1616,8 +1610,15 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPa
             return stat;
         }
 
-        // We literally just rendered the full scale image before, it must be cached
-        assert(!hasUnrenderedTile && !hasPendingTiles);
+        // We just rendered the full scale version, no tiles should be marked unrendered.
+        // However another thread could have marked pending the tiles at dstMipMapLevel in between, thus we just have to wait for it to be read
+        assert(!hasUnrenderedTile);
+
+        if (!downscaledImage->getCacheEntry()->waitForPendingTiles()) {
+            return eActionStatusAborted;
+        }
+
+
         requestData->setRequestedScaleImagePlane(downscaledImage);
     }
 

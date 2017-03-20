@@ -166,6 +166,9 @@ struct DynamicProperties
     // The current render safety
     RenderSafetyEnum currentThreadSafety;
 
+    // Does this effect requires images at a different time than the requested render ?
+    bool currentTemporalImagesAccess;
+
     // Does this node currently support tiled rendering
     bool currentSupportTiles;
 
@@ -187,6 +190,7 @@ struct DynamicProperties
 
     DynamicProperties()
     : currentThreadSafety(eRenderSafetyInstanceSafe)
+    , currentTemporalImagesAccess(false)
     , currentSupportTiles(false)
     , currentSupportMultires(false)
     , currentSupportsRenderScale(false)

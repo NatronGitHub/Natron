@@ -140,7 +140,6 @@ struct OfxEffectInstanceCommon
     bool overlaysCanHandleRenderScale;
     bool supportsMultipleClipPARs;
     bool supportsMultipleClipDepths;
-    bool doesTemporalAccess;
     bool multiplanar;
 
     OfxEffectInstanceCommon()
@@ -162,7 +161,6 @@ struct OfxEffectInstanceCommon
     , overlaysCanHandleRenderScale(true)
     , supportsMultipleClipPARs(false)
     , supportsMultipleClipDepths(false)
-    , doesTemporalAccess(false)
     , multiplanar(false)
     {
 
@@ -275,7 +273,6 @@ OfxEffectInstance::describePlugin()
 
     _imp->common->supportsMultipleClipPARs = _imp->common->effect->supportsMultipleClipPARs();
     _imp->common->supportsMultipleClipDepths = _imp->common->effect->supportsMultipleClipDepths();
-    _imp->common->doesTemporalAccess = _imp->common->effect->temporalAccess();
     _imp->common->multiplanar = _imp->common->effect->isMultiPlanar();
     int sequential = _imp->common->effect->getPlugin()->getDescriptor().getProps().getIntProperty(kOfxImageEffectInstancePropSequentialRender);
     switch (sequential) {
@@ -2305,8 +2302,7 @@ OfxEffectInstance::getDistortion(TimeValue time,
 bool
 OfxEffectInstance::doesTemporalClipAccess() const
 {
-    // first, check the descriptor, then the instance
-    return _imp->common->doesTemporalAccess;
+    return _imp->common->effect->temporalAccess();
 }
 
 bool
@@ -2479,11 +2475,7 @@ OfxEffectInstance::dettachOpenGLContext( const OSGLContextPtr& /*glContext*/, co
     }
 }
 
-bool
-OfxEffectInstance::isFullAnimationToHashEnabled() const
-{
-    return doesTemporalClipAccess();
-}
+
 
 NATRON_NAMESPACE_EXIT;
 

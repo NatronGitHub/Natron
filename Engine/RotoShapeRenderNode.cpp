@@ -94,6 +94,21 @@ RotoShapeRenderNode::canCPUImplementationSupportOSMesa() const
 #endif
 }
 
+bool
+RotoShapeRenderNode::doesTemporalClipAccess() const
+{
+    RotoPaintPtr rotoPaintNode;
+    RotoDrawableItemPtr item = getAttachedRotoItem();
+    KnobItemsTablePtr model = item->getModel();
+    if (model) {
+        rotoPaintNode = toRotoPaint(model->getNode()->getEffectInstance());
+    }
+    if (!rotoPaintNode) {
+        return false;
+    }
+    // We do temporal access if motion blur is enabled
+    return rotoPaintNode->getMotionBlurTypeKnob()->getValue() != 0;
+}
 
 void
 RotoShapeRenderNode::addAcceptedComponents(int /*inputNb*/,

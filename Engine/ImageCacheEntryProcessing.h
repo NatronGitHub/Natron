@@ -134,6 +134,7 @@ static void fillWithConstant(PIX val,
                              const RectI& bounds)
 {
 
+    assert(val == val); // NaN check
     PIX* pix = getPix(ptr, roi.x1, roi.y1, bounds);
     for (int y = roi.y1; y < roi.y2; ++y) {
         for (int x = roi.x1; x < roi.x2; ++x) {
@@ -189,6 +190,7 @@ static void repeatEdgesForDepth(PIX* ptr,
             for (int y = roi.y1; y < roi.y2; ++y) {
                 PIX* srcPix = origPix;
                 for (int x = roi.x1; x < roi.x2; ++x) {
+                    assert(*srcPix == *srcPix); // NaN check
                     *pix = *srcPix;
                     ++pix;
                     ++srcPix;
@@ -215,6 +217,7 @@ static void repeatEdgesForDepth(PIX* ptr,
             PIX* dst_pix = getPix(ptr, roi.x1, roi.y1, roundedBounds);
             for (int y = roi.y1; y < roi.y2; ++y) {
                 PIX val = *getPix(ptr, bounds.x1, y, roundedBounds);
+                assert(val == val); // NaN check
                 for (int x = roi.x1; x < roi.x2; ++x) {
                     *dst_pix = val;
                     ++dst_pix;
@@ -232,6 +235,7 @@ static void repeatEdgesForDepth(PIX* ptr,
             PIX* pix = getPix(ptr, roi.x1, roi.y1, roundedBounds);
             for (int y = roi.y1; y < roi.y2; ++y) {
                 PIX val = *getPix(ptr, bounds.x2 - 1, y, roundedBounds);
+                assert(val == val); // NaN check
                 for (int x = roi.x1; x < roi.x2; ++x) {
                     *pix = val;
                     ++pix;
@@ -262,6 +266,7 @@ static void repeatEdgesForDepth(PIX* ptr,
             for (int y = roi.y1; y < roi.y2; ++y) {
                 PIX* srcPix = origPix;
                 for (int x = roi.x1; x < roi.x2; ++x) {
+                    assert(*srcPix == *srcPix); // NaN check
                     *dst_pix = *srcPix;
                     ++dst_pix;
                     ++srcPix;
