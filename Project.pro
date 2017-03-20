@@ -39,6 +39,7 @@ SUBDIRS += \
     Gui \
     Tests \
     ProjectConverter \
+    PythonBin \
     App
 
 # where to find the sub projects - give the folders

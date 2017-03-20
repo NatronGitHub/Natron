@@ -36,7 +36,7 @@
 #include <QDesktopWidget>
 
 #include "Engine/RotoLayer.h"
-#include "Engine/FStreamsSupport.h"
+#include "Global/FStreamsSupport.h"
 
 #include "Gui/DockablePanel.h"
 #include "Gui/AnimationModuleEditor.h"

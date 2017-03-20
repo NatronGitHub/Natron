@@ -44,7 +44,7 @@
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
 #include "Engine/Cache.h"
-#include "Engine/FStreamsSupport.h"
+#include "Global/FStreamsSupport.h"
 #include "Engine/KeybindShortcut.h"
 #include "Engine/KnobFactory.h"
 #include "Engine/KnobFile.h"

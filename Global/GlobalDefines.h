@@ -127,21 +127,7 @@ typedef OfxRangeD RangeD;
 #define kAnimationModuleEditorSlipReaderCommandCompressionID 23
 #define kNodeUndoChangeCommandCompressionID 24
 
-#define PY_VERSION_STRINGIZE_(major, minor) \
-    # major "." # minor
 
-#define PY_VERSION_STRINGIZE(major, minor) \
-    PY_VERSION_STRINGIZE_(major, minor)
-
-#define NATRON_PY_VERSION_STRING PY_VERSION_STRINGIZE(PY_MAJOR_VERSION, PY_MINOR_VERSION)
-
-#define PY_VERSION_STRINGIZE_NO_DOT_(major, minor) \
-    # major # minor
-
-#define PY_VERSION_STRINGIZE_NO_DOT(major, minor) \
-    PY_VERSION_STRINGIZE_NO_DOT_(major, minor)
-
-#define NATRON_PY_VERSION_STRING_NO_DOT PY_VERSION_STRINGIZE_NO_DOT(PY_MAJOR_VERSION, PY_MINOR_VERSION)
 
 NATRON_NAMESPACE_EXIT;
 

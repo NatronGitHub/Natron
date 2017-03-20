@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef FSTREAMSSUPPORT_H
-#define FSTREAMSSUPPORT_H
+#ifndef NATRON_GLOBAL_PYTHONUTILS_H
+#define NATRON_GLOBAL_PYTHONUTILS_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -25,40 +25,50 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Global/Macros.h"
-
-#include "Global/GlobalDefines.h"
-
 #include <string>
-#include <fstream>
-#if defined(__NATRON_WIN32__) && defined(__GLIBCXX__)
-#define FSTREAM_USE_STDIO_FILEBUF 1
-#include "fstream_mingw.h"
-#endif
+#include <vector>
 
-#include "Engine/EngineFwd.h"
+#include "../Global/Macros.h"
+
+#define PY_VERSION_STRINGIZE_(major, minor) \
+# major "." # minor
+
+#define PY_VERSION_STRINGIZE(major, minor) \
+PY_VERSION_STRINGIZE_(major, minor)
+
+#define NATRON_PY_VERSION_STRING PY_VERSION_STRINGIZE(PY_MAJOR_VERSION, PY_MINOR_VERSION)
+
+
+#define PY_VERSION_STRINGIZE_NO_DOT_(major, minor) \
+# major # minor
+
+#define PY_VERSION_STRINGIZE_NO_DOT(major, minor) \
+PY_VERSION_STRINGIZE_NO_DOT_(major, minor)
+
+#define NATRON_PY_VERSION_STRING_NO_DOT PY_VERSION_STRINGIZE_NO_DOT(PY_MAJOR_VERSION, PY_MINOR_VERSION)
 
 NATRON_NAMESPACE_ENTER;
 
-namespace FStreamsSupport {
-#if FSTREAM_USE_STDIO_FILEBUF
-// MingW uses GCC to build, but does not support having a wchar_t* passed as argument
-// of ifstream::open or ofstream::open. To properly support UTF-8 encoding on MingW we must
-// use the __gnu_cxx::stdio_filebuf GNU extension that can be used with _wfsopen and returned
-// into a istream which share the same API as ifsteam. The same reasoning holds for ofstream.
-typedef basic_ifstream<char> ifstream;
-typedef basic_ofstream<char> ofstream;
+NATRON_PYTHON_NAMESPACE_ENTER;
+
+/**
+ * @brief Calls Py_SetPythonHome and set PYTHONPATH
+ **/
+void setupPythonEnv(const char* argv0Param);
+
+/**
+ * @brief Must be called after setupPythonEnv(), calls Py_SetProgramName and Py_Initialize, PySys_SetArgv
+ * @returns A pointer to the main module
+ **/
+#if PY_MAJOR_VERSION >= 3
+PyObject* initializePython3(const std::vector<wchar_t*>& commandLineArgsWide);
 #else
-typedef std::ifstream ifstream;
-typedef std::ofstream ofstream;
+PyObject* initializePython2(const std::vector<char*>& commandLineArgsUtf8);
 #endif
 
 
-void open(ifstream* stream, const std::string& filename, std::ios_base::openmode mode = std::ios_base::in);
-
-void open(ofstream* stream, const std::string& filename, std::ios_base::openmode mode = std::ios_base::out);
-} //FStreamsSupport
+NATRON_PYTHON_NAMESPACE_EXIT;
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // FSTREAMSSUPPORT_H
+#endif // ifndef NATRON_GLOBAL_PYTHONUTILS_H

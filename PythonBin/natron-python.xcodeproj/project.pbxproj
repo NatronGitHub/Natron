@@ -1,0 +1,1188 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+		D7BA7D76DAB5DD13389D6332 = {
+			buildActionMask = 2147483647;
+			files = (
+				);
+			generatedFileNames = (
+				);
+			isa = PBXShellScriptBuildPhase;
+			name = "Qt Qmake";
+			neededFileNames = (
+				);
+			shellPath = "/bin/sh";
+			shellScript = "make\ -C\ /Users/alexandre/development/Natron/PythonBin\ -f\ \'natron-python.xcodeproj/qt_makeqmake.mak\'";
+		};
+		CEC6E82E068D214B7B25A5B7 = {
+			isa = PBXFileReference;
+			name = "python_main.cpp";
+			path = "python_main.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		8A49E2CF87EA75564DB5CC9F = {
+			fileRef = "CEC6E82E068D214B7B25A5B7";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		2BEA341D0C1F405A9FEDEB80 = {
+			isa = PBXFileReference;
+			name = "FStreamsSupport.cpp";
+			path = "../Global/FStreamsSupport.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		49E8BC0E54295558EB2B9569 = {
+			fileRef = "2BEA341D0C1F405A9FEDEB80";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		2D95C837667D2D9BBEB4D857 = {
+			isa = PBXFileReference;
+			name = "PythonUtils.cpp";
+			path = "../Global/PythonUtils.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		51933F09CF89211BE7950E14 = {
+			fileRef = "2D95C837667D2D9BBEB4D857";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		A6D80E04EC48B11FECBDA3BB = {
+			isa = PBXFileReference;
+			name = "ProcInfo.cpp";
+			path = "../Global/ProcInfo.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		C5135027EDB8355BCA314842 = {
+			fileRef = "A6D80E04EC48B11FECBDA3BB";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		355064DF476D6FA107E03213 = {
+			isa = PBXFileReference;
+			name = "StrUtils.cpp";
+			path = "../Global/StrUtils.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		B7DC12F89DE66F38763854A1 = {
+			fileRef = "355064DF476D6FA107E03213";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		838E8C3D25A1E58DA91B5D97 = {
+			isa = PBXFileReference;
+			name = "FStreamsSupport.h";
+			path = "../Global/FStreamsSupport.h";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		C82BC1E04E1406FB5DD1A604 = {
+			isa = PBXFileReference;
+			name = "fstream_mingw.h";
+			path = "../Global/fstream_mingw.h";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		E4FC5F58429FA16F5C8226C6 = {
+			isa = PBXFileReference;
+			name = "PythonUtils.h";
+			path = "../Global/PythonUtils.h";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		8EEC05493F707C023EB36122 = {
+			isa = PBXFileReference;
+			name = "ProcInfo.h";
+			path = "../Global/ProcInfo.h";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		F17FE7E3BA4ACF64482E370C = {
+			isa = PBXFileReference;
+			name = "StrUtils.h";
+			path = "../Global/StrUtils.h";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		427047B48F6F0C310F32FE48 = {
+			isa = PBXFileReference;
+			name = "PythonBin.pro";
+			path = "PythonBin.pro";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		883D7615C4D2DE3FA1218F12 = {
+			isa = PBXGroup;
+			children = (
+				"4458B98565818D7E2682FA2D");
+			name = "Headers";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		4458B98565818D7E2682FA2D = {
+			isa = PBXGroup;
+			children = (
+				"A7DEA08507368272F79CDD96");
+			name = "..";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		A7DEA08507368272F79CDD96 = {
+			isa = PBXGroup;
+			children = (
+				"838E8C3D25A1E58DA91B5D97",
+				"C82BC1E04E1406FB5DD1A604",
+				"E4FC5F58429FA16F5C8226C6",
+				"8EEC05493F707C023EB36122",
+				"F17FE7E3BA4ACF64482E370C");
+			name = "Global";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		BFA3A29D17FD123C907B6E35 = {
+			isa = PBXGroup;
+			children = (
+				"ABE57DF85634A6636B8A6E90");
+			name = "..";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		ABE57DF85634A6636B8A6E90 = {
+			isa = PBXGroup;
+			children = (
+				"2BEA341D0C1F405A9FEDEB80",
+				"2D95C837667D2D9BBEB4D857",
+				"A6D80E04EC48B11FECBDA3BB",
+				"355064DF476D6FA107E03213");
+			name = "Global";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		FB61758D0F0FDA4BA867C3D5 = {
+			isa = PBXGroup;
+			children = (
+				"CEC6E82E068D214B7B25A5B7",
+				"BFA3A29D17FD123C907B6E35");
+			name = "Sources";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		7CABE3C80E79AD2B307756D2 = {
+			isa = PBXGroup;
+			children = (
+				"427047B48F6F0C310F32FE48");
+			name = "Sources [qmake]";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		A0A52A2ADF7A1E2A99738674 = {
+			buildActionMask = 2147483647;
+			files = (
+				);
+			generatedFileNames = (
+				"8A49E2CF87EA75564DB5CC9F",
+				"49E8BC0E54295558EB2B9569",
+				"51933F09CF89211BE7950E14",
+				"C5135027EDB8355BCA314842",
+				"B7DC12F89DE66F38763854A1");
+			isa = PBXShellScriptBuildPhase;
+			name = "Qt Preprocessors";
+			neededFileNames = (
+				"8A49E2CF87EA75564DB5CC9F",
+				"49E8BC0E54295558EB2B9569",
+				"51933F09CF89211BE7950E14",
+				"C5135027EDB8355BCA314842",
+				"B7DC12F89DE66F38763854A1");
+			shellPath = "/bin/sh";
+			shellScript = "make\ -C\ /Users/alexandre/development/Natron/PythonBin\ -f\ \'natron-python.xcodeproj/qt_preprocess.mak\'";
+		};
+		C29B8785722055ED95EF7B57 = {
+			buildActionMask = 2147483647;
+			files = (
+				"8A49E2CF87EA75564DB5CC9F",
+				"49E8BC0E54295558EB2B9569",
+				"51933F09CF89211BE7950E14",
+				"C5135027EDB8355BCA314842",
+				"B7DC12F89DE66F38763854A1");
+			isa = PBXSourcesBuildPhase;
+			name = "Build Sources";
+		};
+		7E43E3E4219B1AE680E30E38 = {
+			isa = PBXFileReference;
+			name = "MangledOSMesa32";
+			path = "/opt/osmesa/lib/libMangledOSMesa32.a";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		5ECC23D3CC3D0FA474180945 = {
+			fileRef = "7E43E3E4219B1AE680E30E38";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		CB7860101B334F357D05CFD4 = {
+			isa = PBXFileReference;
+			name = "LLVMX86Disassembler";
+			path = "/opt/llvm/lib/libLLVMX86Disassembler.a";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		2F6273B9A59C0B058D606B7E = {
+			fileRef = "CB7860101B334F357D05CFD4";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		E169CF183B7A1F87CC8BA4C5 = {
+			isa = PBXFileReference;
+			name = "LLVMX86AsmParser";
+			path = "/opt/llvm/lib/libLLVMX86AsmParser.a";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		4BF882FFDF9DD004B2B56D8A = {
+			fileRef = "E169CF183B7A1F87CC8BA4C5";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		35EFA9042B231EFADB8E68F3 = {
+			isa = PBXFileReference;
+			name = "LLVMX86CodeGen";
+			path = "/opt/llvm/lib/libLLVMX86CodeGen.a";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		0D7B4C2D36DAC011D0D136F6 = {
+			fileRef = "35EFA9042B231EFADB8E68F3";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		1F14FB9FAC30D45003578DCF = {
+			isa = PBXFileReference;
+			name = "LLVMSelectionDAG";
+			path = "/opt/llvm/lib/libLLVMSelectionDAG.a";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		9C9C3D2B088091F8FED34573 = {
+			fileRef = "1F14FB9FAC30D45003578DCF";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		CA04AA441FDC5339E49BC680 = {
+			isa = PBXFileReference;
+			name = "LLVMAsmPrinter";
+			path = "/opt/llvm/lib/libLLVMAsmPrinter.a";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		017BE3E964C7034B43593039 = {
+			fileRef = "CA04AA441FDC5339E49BC680";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		D6B39768A92C5982C2C28BD6 = {
+			isa = PBXFileReference;
+			name = "LLVMCodeGen";
+			path = "/opt/llvm/lib/libLLVMCodeGen.a";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		CBC6A489DA2A3F19E3D54404 = {
+			fileRef = "D6B39768A92C5982C2C28BD6";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		05ACE6A75D00AF8ED07B02F9 = {
+			isa = PBXFileReference;
+			name = "LLVMScalarOpts";
+			path = "/opt/llvm/lib/libLLVMScalarOpts.a";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		0C247EA7D56370488DA2375D = {
+			fileRef = "05ACE6A75D00AF8ED07B02F9";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		6EF2FA6942FE3E06A189FC31 = {
+			isa = PBXFileReference;
+			name = "LLVMInstCombine";
+			path = "/opt/llvm/lib/libLLVMInstCombine.a";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		ED367409FE63CFF6C583AA37 = {
+			fileRef = "6EF2FA6942FE3E06A189FC31";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		8AF5074A054B380D0FF3BE62 = {
+			isa = PBXFileReference;
+			name = "LLVMInstrumentation";
+			path = "/opt/llvm/lib/libLLVMInstrumentation.a";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		19EBB96807D985E6A384EEEB = {
+			fileRef = "8AF5074A054B380D0FF3BE62";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		8EC9AA839CF87A978D8D7FFE = {
+			isa = PBXFileReference;
+			name = "LLVMProfileData";
+			path = "/opt/llvm/lib/libLLVMProfileData.a";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		FFBC19904DCF8B3B45F461F8 = {
+			fileRef = "8EC9AA839CF87A978D8D7FFE";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		5DFBDC0AA18130BB5B2B9BC2 = {
+			isa = PBXFileReference;
+			name = "LLVMTransformUtils";
+			path = "/opt/llvm/lib/libLLVMTransformUtils.a";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		265F66A68093CEA99FE8626F = {
+			fileRef = "5DFBDC0AA18130BB5B2B9BC2";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		E8756F049F04256E0741251F = {
+			isa = PBXFileReference;
+			name = "LLVMBitWriter";
+			path = "/opt/llvm/lib/libLLVMBitWriter.a";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		3D323A28B1FEDC568BD8C69F = {
+			fileRef = "E8756F049F04256E0741251F";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		232995A5B62337FC5D568337 = {
+			isa = PBXFileReference;
+			name = "LLVMX86Desc";
+			path = "/opt/llvm/lib/libLLVMX86Desc.a";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		71F562922DFCBA05F6176389 = {
+			fileRef = "232995A5B62337FC5D568337";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		96550F8D1B4EFB737C4DFE50 = {
+			isa = PBXFileReference;
+			name = "LLVMMCDisassembler";
+			path = "/opt/llvm/lib/libLLVMMCDisassembler.a";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		6D33143F8167D64846679540 = {
+			fileRef = "96550F8D1B4EFB737C4DFE50";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85B9F1C81DB94A22C1B528B1 = {
+			isa = PBXFileReference;
+			name = "LLVMX86Info";
+			path = "/opt/llvm/lib/libLLVMX86Info.a";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		7FE6162998FF16956B91118D = {
+			fileRef = "85B9F1C81DB94A22C1B528B1";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		C8DD14CCCBE9335AF768BF7E = {
+			isa = PBXFileReference;
+			name = "LLVMX86AsmPrinter";
+			path = "/opt/llvm/lib/libLLVMX86AsmPrinter.a";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		CED28C47E515AAB44C33F9F7 = {
+			fileRef = "C8DD14CCCBE9335AF768BF7E";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		7AD633A5520F6CB2FEA946BE = {
+			isa = PBXFileReference;
+			name = "LLVMX86Utils";
+			path = "/opt/llvm/lib/libLLVMX86Utils.a";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		DA91D899C6FB847C1D80EF98 = {
+			fileRef = "7AD633A5520F6CB2FEA946BE";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		3CF7512B9AFC0EB4E2C18D93 = {
+			isa = PBXFileReference;
+			name = "LLVMMCJIT";
+			path = "/opt/llvm/lib/libLLVMMCJIT.a";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		B40F4BC276EB8EA1067BE7AB = {
+			fileRef = "3CF7512B9AFC0EB4E2C18D93";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		36FA4BEBA9A41801B4920184 = {
+			isa = PBXFileReference;
+			name = "LLVMExecutionEngine";
+			path = "/opt/llvm/lib/libLLVMExecutionEngine.a";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		B9654429698B29BE41DB628F = {
+			fileRef = "36FA4BEBA9A41801B4920184";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		C5027F7802584B015D87FD98 = {
+			isa = PBXFileReference;
+			name = "LLVMTarget";
+			path = "/opt/llvm/lib/libLLVMTarget.a";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		1C6483613D57B01B6FD63695 = {
+			fileRef = "C5027F7802584B015D87FD98";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		4573A52700C26649AEF69FB7 = {
+			isa = PBXFileReference;
+			name = "LLVMAnalysis";
+			path = "/opt/llvm/lib/libLLVMAnalysis.a";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		EC1072FACB7E2EA76F5967B9 = {
+			fileRef = "4573A52700C26649AEF69FB7";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		6DD13222E556E38BACD117FC = {
+			isa = PBXFileReference;
+			name = "LLVMRuntimeDyld";
+			path = "/opt/llvm/lib/libLLVMRuntimeDyld.a";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		AEE41480EE042F60DE6C9659 = {
+			fileRef = "6DD13222E556E38BACD117FC";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		4D5723B379F0A8BA3CBB8859 = {
+			isa = PBXFileReference;
+			name = "LLVMObject";
+			path = "/opt/llvm/lib/libLLVMObject.a";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		A782459F21BFDACDA2EB6E3B = {
+			fileRef = "4D5723B379F0A8BA3CBB8859";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		408DB20A1DD5C3E1048E36FB = {
+			isa = PBXFileReference;
+			name = "LLVMMCParser";
+			path = "/opt/llvm/lib/libLLVMMCParser.a";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		7B958717664E7CBA170A181F = {
+			fileRef = "408DB20A1DD5C3E1048E36FB";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		9D13C59DEA27D309F0850891 = {
+			isa = PBXFileReference;
+			name = "LLVMBitReader";
+			path = "/opt/llvm/lib/libLLVMBitReader.a";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		18D3BD056787E6FFFE19893D = {
+			fileRef = "9D13C59DEA27D309F0850891";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		956FEF3F3EF5296323B5A922 = {
+			isa = PBXFileReference;
+			name = "LLVMMC";
+			path = "/opt/llvm/lib/libLLVMMC.a";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		516A21FBAF54D4A43544BEDD = {
+			fileRef = "956FEF3F3EF5296323B5A922";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		9CD717ECA469BE9B948776FC = {
+			isa = PBXFileReference;
+			name = "LLVMCore";
+			path = "/opt/llvm/lib/libLLVMCore.a";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		7277D2360B82A5B9AFEA36D0 = {
+			fileRef = "9CD717ECA469BE9B948776FC";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		CE9BE01FDF788249D179FC8C = {
+			isa = PBXFileReference;
+			name = "LLVMSupport";
+			path = "/opt/llvm/lib/libLLVMSupport.a";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		C2E257A7B0B9B5B8ABE2422B = {
+			fileRef = "CE9BE01FDF788249D179FC8C";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		D0A1AADFEA73F78641C682A5 = {
+			isa = PBXFileReference;
+			name = "CoreServices.framework";
+			path = "/System/Library/Frameworks/CoreServices.framework";
+			refType = 0;
+			sourceTree = "<absolute>";
+			lastKnownFileType = "wrapper.framework";
+		};
+		9C3DD8DCBC0821F151F42E8D = {
+			fileRef = "D0A1AADFEA73F78641C682A5";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DA18A6831232F53228631AD1 = {
+			isa = PBXFileReference;
+			name = "OpenGL.framework";
+			path = "/System/Library/Frameworks/OpenGL.framework";
+			refType = 0;
+			sourceTree = "<absolute>";
+			lastKnownFileType = "wrapper.framework";
+		};
+		BCEF71E1EDFB18DA77DC750B = {
+			fileRef = "DA18A6831232F53228631AD1";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		8D02019D6DCFA44A4B4FFE2C = {
+			isa = PBXFileReference;
+			name = "python2.7";
+			path = "/opt/local/Library/Frameworks/Python.framework/Versions/2.7/Python";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		321734D6862B8813BF300FCE = {
+			fileRef = "8D02019D6DCFA44A4B4FFE2C";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		2B9F5257240B5626E8434A44 = {
+			isa = PBXFileReference;
+			name = "CoreFoundation.framework";
+			path = "/System/Library/Frameworks/CoreFoundation.framework";
+			refType = 0;
+			sourceTree = "<absolute>";
+			lastKnownFileType = "wrapper.framework";
+		};
+		AFC8D705CF8FF7878AA3265A = {
+			fileRef = "2B9F5257240B5626E8434A44";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		411803BA9A30EE86BA20ED69 = {
+			isa = PBXFileReference;
+			name = "fontconfig";
+			path = "/opt/local/lib/libfontconfig.1.dylib";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		ABFB5D259CD2ED23DD7C4B0D = {
+			fileRef = "411803BA9A30EE86BA20ED69";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		88940EC0F174CC17027F7825 = {
+			isa = PBXFileReference;
+			name = "freetype";
+			path = "/opt/local/lib/libfreetype.6.dylib";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		05DFF490A2B2E3854D2995C5 = {
+			fileRef = "88940EC0F174CC17027F7825";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		AA8A248CDC75E576B5E3EE3A = {
+			isa = PBXFileReference;
+			name = "QtCore.framework";
+			path = "/opt/local/libexec/qt4/Library/Frameworks/QtCore.framework";
+			refType = 0;
+			sourceTree = "<absolute>";
+			lastKnownFileType = "wrapper.framework";
+		};
+		BF0900FD291E2D2BAC2BEEAA = {
+			fileRef = "AA8A248CDC75E576B5E3EE3A";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		ED1E82605DD74B483AF3C982 = {
+			children = (
+				"7E43E3E4219B1AE680E30E38",
+				"CB7860101B334F357D05CFD4",
+				"E169CF183B7A1F87CC8BA4C5",
+				"35EFA9042B231EFADB8E68F3",
+				"1F14FB9FAC30D45003578DCF",
+				"CA04AA441FDC5339E49BC680",
+				"D6B39768A92C5982C2C28BD6",
+				"05ACE6A75D00AF8ED07B02F9",
+				"6EF2FA6942FE3E06A189FC31",
+				"8AF5074A054B380D0FF3BE62",
+				"8EC9AA839CF87A978D8D7FFE",
+				"5DFBDC0AA18130BB5B2B9BC2",
+				"E8756F049F04256E0741251F",
+				"232995A5B62337FC5D568337",
+				"96550F8D1B4EFB737C4DFE50",
+				"85B9F1C81DB94A22C1B528B1",
+				"C8DD14CCCBE9335AF768BF7E",
+				"7AD633A5520F6CB2FEA946BE",
+				"3CF7512B9AFC0EB4E2C18D93",
+				"36FA4BEBA9A41801B4920184",
+				"C5027F7802584B015D87FD98",
+				"4573A52700C26649AEF69FB7",
+				"6DD13222E556E38BACD117FC",
+				"4D5723B379F0A8BA3CBB8859",
+				"408DB20A1DD5C3E1048E36FB",
+				"9D13C59DEA27D309F0850891",
+				"956FEF3F3EF5296323B5A922",
+				"9CD717ECA469BE9B948776FC",
+				"CE9BE01FDF788249D179FC8C",
+				"D0A1AADFEA73F78641C682A5",
+				"DA18A6831232F53228631AD1",
+				"8D02019D6DCFA44A4B4FFE2C",
+				"2B9F5257240B5626E8434A44",
+				"411803BA9A30EE86BA20ED69",
+				"88940EC0F174CC17027F7825",
+				"AA8A248CDC75E576B5E3EE3A");
+			isa = PBXGroup;
+			name = "External Frameworks and Libraries";
+			path = "";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		2A1043669E6E5A7426EA502A = {
+			buildActionMask = 2147483647;
+			files = (
+				"5ECC23D3CC3D0FA474180945",
+				"2F6273B9A59C0B058D606B7E",
+				"4BF882FFDF9DD004B2B56D8A",
+				"0D7B4C2D36DAC011D0D136F6",
+				"9C9C3D2B088091F8FED34573",
+				"017BE3E964C7034B43593039",
+				"CBC6A489DA2A3F19E3D54404",
+				"0C247EA7D56370488DA2375D",
+				"ED367409FE63CFF6C583AA37",
+				"19EBB96807D985E6A384EEEB",
+				"FFBC19904DCF8B3B45F461F8",
+				"265F66A68093CEA99FE8626F",
+				"3D323A28B1FEDC568BD8C69F",
+				"71F562922DFCBA05F6176389",
+				"6D33143F8167D64846679540",
+				"7FE6162998FF16956B91118D",
+				"CED28C47E515AAB44C33F9F7",
+				"DA91D899C6FB847C1D80EF98",
+				"B40F4BC276EB8EA1067BE7AB",
+				"B9654429698B29BE41DB628F",
+				"1C6483613D57B01B6FD63695",
+				"EC1072FACB7E2EA76F5967B9",
+				"AEE41480EE042F60DE6C9659",
+				"A782459F21BFDACDA2EB6E3B",
+				"7B958717664E7CBA170A181F",
+				"18D3BD056787E6FFFE19893D",
+				"516A21FBAF54D4A43544BEDD",
+				"7277D2360B82A5B9AFEA36D0",
+				"C2E257A7B0B9B5B8ABE2422B",
+				"9C3DD8DCBC0821F151F42E8D",
+				"BCEF71E1EDFB18DA77DC750B",
+				"321734D6862B8813BF300FCE",
+				"AFC8D705CF8FF7878AA3265A",
+				"ABFB5D259CD2ED23DD7C4B0D",
+				"05DFF490A2B2E3854D2995C5",
+				"BF0900FD291E2D2BAC2BEEAA");
+			isa = PBXFrameworksBuildPhase;
+			name = "Frameworks & Libraries";
+		};
+		05596AB53D8D521C69802C27 = {
+			children = (
+				"FB61758D0F0FDA4BA867C3D5",
+				"883D7615C4D2DE3FA1218F12",
+				"7CABE3C80E79AD2B307756D2",
+				"ED1E82605DD74B483AF3C982");
+			isa = PBXGroup;
+			name = "natron-python";
+			path = "";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		885FEEF05D760392BF57F8A2 = {
+			isa = PBXFileReference;
+			explicitFileType = "wrapper.executable";
+			path = "natron-python";
+			refType = 3;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		068F80C7519D0528FB08E821 = {
+			children = (
+				"885FEEF05D760392BF57F8A2");
+			isa = PBXGroup;
+			name = "Products";
+			refType = 4;
+		};
+		CD38C97CB4B17BBDDABDF7EC = {
+			buildPhases = (
+				"D7BA7D76DAB5DD13389D6332",
+				"A0A52A2ADF7A1E2A99738674",
+				"C29B8785722055ED95EF7B57",
+				"2A1043669E6E5A7426EA502A");
+			buildSettings = {
+				CC = "/usr/bin/clang";
+				CPLUSPLUS = "/usr/bin/clang++";
+				LEXFLAGS = "";
+				YACCFLAGS = "-d";
+				OTHER_REZFLAGS = "";
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = "";
+				PREBINDING = NO;
+				BUILD_ROOT = "/Users/alexandre/development/Natron/PythonBin";
+				OTHER_LDFLAGS = (
+						"-headerpad_max_install_names",
+						"-L/opt/osmesa/lib",
+						"-L/opt/llvm/lib",
+						"-Wl,-search_paths_first",
+						"-Wl,-headerpad_max_install_names",
+						"-lcurses",
+						"-lpthread",
+						"-lz",
+						"-lm",
+						"-Wl,-rpath,\'@loader_path/../Frameworks\'",
+						"-F/opt/local/libexec/qt4/Library/Frameworks",
+						"-F/opt/local/libexec/qt4/lib",
+						"-L/opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/config",
+						"-ldl",
+						"-L/opt/local/lib",
+						"-F/opt/local/libexec/qt4/Library/Frameworks",
+						"-F/opt/local/libexec/qt4/lib",
+						"-L/opt/local/libexec/qt4/lib",
+						"-framework",
+						"QtNetwork,_debug",
+						"-F/opt/local/Library/Frameworks",
+						"-framework",
+						"QtCore,_debug");
+				DYLIB_CURRENT_VERSION = "1.0.0";
+				DYLIB_COMPATIBILITY_VERSION = "1.0";
+				MACOSX_DEPLOYMENT_TARGET = "10.12";
+				PRODUCT_NAME = "natron-python";
+			};
+			conditionalBuildSettings = {
+			};
+			dependencies = (
+				);
+			productReference = "885FEEF05D760392BF57F8A2";
+			shouldUseHeadermap = 1;
+			buildConfigurationList = 17B3380A4D6A7D415E7F2E1E;
+			isa = PBXNativeTarget;
+			productType = "com.apple.product-type.tool";
+			name = "natron-python";
+			productName = "natron-python";
+			startupPath = "<<ProjectDirectory>>";
+		};
+		4B72B24813252891014BCF61 = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = "NO";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = "YES";
+				GCC_OPTIMIZATION_LEVEL = "0";
+				PRODUCT_NAME = "natron-python";
+				HEADER_SEARCH_PATHS = (
+					".",
+					"/opt/local/libexec/qt4/Library/Frameworks/QtCore.framework/Versions/4/Headers",
+					"/opt/local/libexec/qt4/Library/Frameworks/QtNetwork.framework/Versions/4/Headers",
+					"/opt/osmesa/include",
+					"/opt/local/Library/Frameworks/Python.framework/Versions/2.7/include/python2.7",
+					"../../Natron",
+					"../Global",
+					"/opt/local/include/freetype2",
+					"/opt/local/include",
+					"/opt/local/libexec/qt4/Library/Frameworks/QtNetwork.framework/Versions/4/Headers",
+					"/opt/local/libexec/qt4/Library/Frameworks/QtCore.framework/Versions/4/Headers",
+					"/opt/local/libexec/qt4/include",
+					"/usr/local/include",
+					"/System/Library/Frameworks/CarbonCore.framework/Headers",
+					"/opt/local/libexec/qt4/share/mkspecs/macx-xcode");
+				LIBRARY_SEARCH_PATHS = (
+					"/opt/osmesa/lib",
+					"/opt/llvm/lib",
+					"/System/Library/Frameworks/",
+					"/opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/config",
+					"/opt/local/lib",
+					"/opt/local/libexec/qt4/lib",
+					"/opt/local/libexec/qt4/Library/Frameworks");
+				FRAMEWORK_SEARCH_PATHS = (
+					"/opt/local/libexec/qt4/Library/Frameworks",
+					"/opt/local/libexec/qt4/lib",
+					"/opt/local/libexec/qt4/Library/Frameworks",
+					"/opt/local/libexec/qt4/lib",
+					"/opt/local/libexec/qt4/Library/Frameworks",
+					"/opt/local/libexec/qt4/lib",
+					"/opt/local/Library/Frameworks");
+				INFOPLIST_FILE = "Info.plist";
+				OTHER_CFLAGS = (
+					"-pipe",
+					"-g",
+					"-Wall",
+					"-W",
+					"-DOFX_EXTENSIONS_NUKE",
+					"-DOFX_EXTENSIONS_TUTTLE",
+					"-DOFX_EXTENSIONS_VEGAS",
+					"-DOFX_SUPPORTS_PARAMETRIC",
+					"-DOFX_EXTENSIONS_TUTTLE",
+					"-DOFX_EXTENSIONS_NATRON",
+					"-DOFX_EXTENSIONS_RESOLVE",
+					"-DOFX_SUPPORTS_OPENGLRENDER",
+					"-DOFX_SUPPORTS_MULTITHREAD",
+					"-DOFX_SUPPORTS_DIALOG",
+					"-DQT_NO_CAST_FROM_ASCII",
+					"-DDEBUG",
+					"-DROTO_SHAPE_RENDER_ENABLE_CAIRO",
+					"-DNATRON_BUILD_NUMBER=0",
+					"-DHAVE_OSMESA",
+					"-DQT_NO_KEYWORDS",
+					"-DQT_NETWORK_LIB",
+					"-DQT_CORE_LIB",
+					"-DQT_SHARED");
+				OTHER_CPLUSPLUSFLAGS = (
+					"-pipe",
+					"-ftemplate-depth-1024",
+					"-g",
+					"-Wall",
+					"-W",
+					"-DOFX_EXTENSIONS_NUKE",
+					"-DOFX_EXTENSIONS_TUTTLE",
+					"-DOFX_EXTENSIONS_VEGAS",
+					"-DOFX_SUPPORTS_PARAMETRIC",
+					"-DOFX_EXTENSIONS_TUTTLE",
+					"-DOFX_EXTENSIONS_NATRON",
+					"-DOFX_EXTENSIONS_RESOLVE",
+					"-DOFX_SUPPORTS_OPENGLRENDER",
+					"-DOFX_SUPPORTS_MULTITHREAD",
+					"-DOFX_SUPPORTS_DIALOG",
+					"-DQT_NO_CAST_FROM_ASCII",
+					"-DDEBUG",
+					"-DROTO_SHAPE_RENDER_ENABLE_CAIRO",
+					"-DNATRON_BUILD_NUMBER=0",
+					"-DHAVE_OSMESA",
+					"-DQT_NO_KEYWORDS",
+					"-DQT_NETWORK_LIB",
+					"-DQT_CORE_LIB",
+					"-DQT_SHARED");
+				OTHER_LDFLAGS = (
+						"-headerpad_max_install_names",
+						"-L/opt/osmesa/lib",
+						"-L/opt/llvm/lib",
+						"-Wl,-search_paths_first",
+						"-Wl,-headerpad_max_install_names",
+						"-lcurses",
+						"-lpthread",
+						"-lz",
+						"-lm",
+						"-Wl,-rpath,\'@loader_path/../Frameworks\'",
+						"-F/opt/local/libexec/qt4/Library/Frameworks",
+						"-F/opt/local/libexec/qt4/lib",
+						"-L/opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/config",
+						"-ldl",
+						"-L/opt/local/lib",
+						"-F/opt/local/libexec/qt4/Library/Frameworks",
+						"-F/opt/local/libexec/qt4/lib",
+						"-L/opt/local/libexec/qt4/lib",
+						"-framework",
+						"QtNetwork,_debug",
+						"-F/opt/local/Library/Frameworks",
+						"-framework",
+						"QtCore,_debug");
+				ARCHS = "x86_64";
+			};
+			name = "Debug";
+		};
+		BEC09A62E69C3553534FF35E = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = "NO";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = "YES";
+				GCC_OPTIMIZATION_LEVEL = "0";
+				PRODUCT_NAME = "natron-python";
+				PRODUCT_NAME = "natron-python";
+			};
+			name = "Debug";
+		};
+		2C641C3335766025DD51B7BD = {
+			buildRules = (
+				);
+			buildSettings = {
+				COPY_PHASE_STRIP = "NO";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = "YES";
+				GCC_OPTIMIZATION_LEVEL = "0";
+				PRODUCT_NAME = "natron-python";
+			};
+			isa = "PBXBuildStyle";
+			name = "Debug";
+		};
+		D70590BEB531B51029F711BB = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = "YES";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = "NO";
+				PRODUCT_NAME = "natron-python";
+				HEADER_SEARCH_PATHS = (
+					".",
+					"/opt/local/libexec/qt4/Library/Frameworks/QtCore.framework/Versions/4/Headers",
+					"/opt/local/libexec/qt4/Library/Frameworks/QtNetwork.framework/Versions/4/Headers",
+					"/opt/osmesa/include",
+					"/opt/local/Library/Frameworks/Python.framework/Versions/2.7/include/python2.7",
+					"../../Natron",
+					"../Global",
+					"/opt/local/include/freetype2",
+					"/opt/local/include",
+					"/opt/local/libexec/qt4/Library/Frameworks/QtNetwork.framework/Versions/4/Headers",
+					"/opt/local/libexec/qt4/Library/Frameworks/QtCore.framework/Versions/4/Headers",
+					"/opt/local/libexec/qt4/include",
+					"/usr/local/include",
+					"/System/Library/Frameworks/CarbonCore.framework/Headers",
+					"/opt/local/libexec/qt4/share/mkspecs/macx-xcode");
+				LIBRARY_SEARCH_PATHS = (
+					"/opt/osmesa/lib",
+					"/opt/llvm/lib",
+					"/System/Library/Frameworks/",
+					"/opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/config",
+					"/opt/local/lib",
+					"/opt/local/libexec/qt4/lib",
+					"/opt/local/libexec/qt4/Library/Frameworks");
+				FRAMEWORK_SEARCH_PATHS = (
+					"/opt/local/libexec/qt4/Library/Frameworks",
+					"/opt/local/libexec/qt4/lib",
+					"/opt/local/libexec/qt4/Library/Frameworks",
+					"/opt/local/libexec/qt4/lib",
+					"/opt/local/libexec/qt4/Library/Frameworks",
+					"/opt/local/libexec/qt4/lib",
+					"/opt/local/Library/Frameworks");
+				INFOPLIST_FILE = "Info.plist";
+				OTHER_CFLAGS = (
+					"-pipe",
+					"-g",
+					"-Wall",
+					"-W",
+					"-DOFX_EXTENSIONS_NUKE",
+					"-DOFX_EXTENSIONS_TUTTLE",
+					"-DOFX_EXTENSIONS_VEGAS",
+					"-DOFX_SUPPORTS_PARAMETRIC",
+					"-DOFX_EXTENSIONS_TUTTLE",
+					"-DOFX_EXTENSIONS_NATRON",
+					"-DOFX_EXTENSIONS_RESOLVE",
+					"-DOFX_SUPPORTS_OPENGLRENDER",
+					"-DOFX_SUPPORTS_MULTITHREAD",
+					"-DOFX_SUPPORTS_DIALOG",
+					"-DQT_NO_CAST_FROM_ASCII",
+					"-DDEBUG",
+					"-DROTO_SHAPE_RENDER_ENABLE_CAIRO",
+					"-DNATRON_BUILD_NUMBER=0",
+					"-DHAVE_OSMESA",
+					"-DQT_NO_KEYWORDS",
+					"-DQT_NETWORK_LIB",
+					"-DQT_CORE_LIB",
+					"-DQT_SHARED");
+				OTHER_CPLUSPLUSFLAGS = (
+					"-pipe",
+					"-ftemplate-depth-1024",
+					"-g",
+					"-Wall",
+					"-W",
+					"-DOFX_EXTENSIONS_NUKE",
+					"-DOFX_EXTENSIONS_TUTTLE",
+					"-DOFX_EXTENSIONS_VEGAS",
+					"-DOFX_SUPPORTS_PARAMETRIC",
+					"-DOFX_EXTENSIONS_TUTTLE",
+					"-DOFX_EXTENSIONS_NATRON",
+					"-DOFX_EXTENSIONS_RESOLVE",
+					"-DOFX_SUPPORTS_OPENGLRENDER",
+					"-DOFX_SUPPORTS_MULTITHREAD",
+					"-DOFX_SUPPORTS_DIALOG",
+					"-DQT_NO_CAST_FROM_ASCII",
+					"-DDEBUG",
+					"-DROTO_SHAPE_RENDER_ENABLE_CAIRO",
+					"-DNATRON_BUILD_NUMBER=0",
+					"-DHAVE_OSMESA",
+					"-DQT_NO_KEYWORDS",
+					"-DQT_NETWORK_LIB",
+					"-DQT_CORE_LIB",
+					"-DQT_SHARED");
+				OTHER_LDFLAGS = (
+						"-headerpad_max_install_names",
+						"-L/opt/osmesa/lib",
+						"-L/opt/llvm/lib",
+						"-Wl,-search_paths_first",
+						"-Wl,-headerpad_max_install_names",
+						"-lcurses",
+						"-lpthread",
+						"-lz",
+						"-lm",
+						"-Wl,-rpath,\'@loader_path/../Frameworks\'",
+						"-F/opt/local/libexec/qt4/Library/Frameworks",
+						"-F/opt/local/libexec/qt4/lib",
+						"-L/opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/config",
+						"-ldl",
+						"-L/opt/local/lib",
+						"-F/opt/local/libexec/qt4/Library/Frameworks",
+						"-F/opt/local/libexec/qt4/lib",
+						"-L/opt/local/libexec/qt4/lib",
+						"-framework",
+						"QtNetwork,_debug",
+						"-F/opt/local/Library/Frameworks",
+						"-framework",
+						"QtCore,_debug");
+				ARCHS = "x86_64";
+			};
+			name = "Release";
+		};
+		8C7174830A1E4DCBA0332EC1 = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = "YES";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = "NO";
+				PRODUCT_NAME = "natron-python";
+				PRODUCT_NAME = "natron-python";
+			};
+			name = "Release";
+		};
+		26DE8D2AEA4B3714B41E931F = {
+			buildRules = (
+				);
+			buildSettings = {
+				COPY_PHASE_STRIP = "YES";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = "NO";
+				PRODUCT_NAME = "natron-python";
+			};
+			isa = "PBXBuildStyle";
+			name = "Release";
+		};
+		CC82A9286117DFED018F418F = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				"4B72B24813252891014BCF61",
+				"D70590BEB531B51029F711BB");
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationIsName = "Debug";
+		};
+		17B3380A4D6A7D415E7F2E1E = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				"BEC09A62E69C3553534FF35E",
+				"8C7174830A1E4DCBA0332EC1");
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationIsName = "Debug";
+		};
+		91B15E841AA80083484172DE = {
+			buildStyles = (
+				"2C641C3335766025DD51B7BD",
+				"26DE8D2AEA4B3714B41E931F");
+			hasScannedForEncodings = 1;
+			isa = PBXProject;
+			mainGroup = "05596AB53D8D521C69802C27";
+			buildConfigurationList = "CC82A9286117DFED018F418F";
+			projectDirPath = "";
+			targets = (
+				"CD38C97CB4B17BBDDABDF7EC");
+		};
+	};
+	rootObject = "91B15E841AA80083484172DE";
+}

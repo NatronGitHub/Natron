@@ -123,6 +123,8 @@ TrackerNode::TrackerNode(const NodePtr& node)
     : NodeGroup(node)
     , _imp( TrackerNodePrivate::create(this) )
 {
+    _imp->ui.reset(new TrackerNodeInteract(_imp.get()));
+
 }
 
 TrackerNode::~TrackerNode()
@@ -133,7 +135,6 @@ TrackerNode::~TrackerNode()
 void
 TrackerNode::initializeOverlayInteract()
 {
-    _imp->ui.reset(new TrackerNodeInteract(_imp.get()));
     registerOverlay(_imp->ui, std::map<std::string, std::string>());
 }
 

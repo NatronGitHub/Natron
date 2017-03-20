@@ -66,7 +66,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/GroupOutput.h"
 #include "Engine/KnobTypes.h"
-#include "Engine/FStreamsSupport.h"
+#include "Global/FStreamsSupport.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h" // NodesList, NodeCollection
 #include "Engine/Project.h"

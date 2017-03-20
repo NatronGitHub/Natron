@@ -79,6 +79,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "Global/ProcInfo.h"
 #include "Global/GLIncludes.h"
+#include "Global/PythonUtils.h"
 #include "Global/QtCompat.h"
 #include "Global/StrUtils.h"
 
@@ -93,7 +94,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Dot.h"
 #include "Engine/ExistenceCheckThread.h"
 #include "Engine/FileSystemModel.h" // FileSystemModel::initDriveLettersToNetworkShareNamesMapping
-#include "Engine/FStreamsSupport.h"
+#include "Global/FStreamsSupport.h"
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"
 #include "Engine/JoinViewsNode.h"
@@ -411,6 +412,17 @@ AppManager::loadProjectFromFileFunction(std::istream& ifile, const std::string& 
     }
 
 }
+
+void
+StrUtils::ensureLastPathSeparator(QString& path)
+{
+    static const QChar separator( QLatin1Char('/') );
+
+    if ( !path.endsWith(separator) ) {
+        path += separator;
+    }
+}
+
 
 bool
 AppManager::checkForOlderProjectFile(const AppInstancePtr& app, const QString& filePathIn, QString* filePathOut)
@@ -2931,256 +2943,19 @@ AppManager::initPython()
 
     return;
 #endif
-    //Disable user sites as they could conflict with Natron bundled packages.
-    //If this is set, Python won’t add the user site-packages directory to sys.path.
-    //See https://www.python.org/dev/peps/pep-0370/
-    qputenv("PYTHONNOUSERSITE", "1");
-    ++Py_NoUserSiteDirectory;
 
-    //
-    // set up paths, clear those that don't exist or are not valid
-    //
-    QString binPath = QCoreApplication::applicationDirPath();
-    binPath = QDir::toNativeSeparators(binPath);
-#ifdef __NATRON_WIN32__
-    static std::string pythonHome = binPath.toStdString() + "\\.."; // must use static storage
-    QString pyPathZip = QString::fromUtf8( (pythonHome + "\\lib\\python" NATRON_PY_VERSION_STRING_NO_DOT ".zip").c_str() );
-    QString pyPath = QString::fromUtf8( (pythonHome +  "\\lib\\python" NATRON_PY_VERSION_STRING).c_str() );
-    QString pluginPath = binPath + QString::fromUtf8("\\..\\Plugins");
-#else
-#  if defined(__NATRON_LINUX__)
-    static std::string pythonHome = binPath.toStdString() + "/.."; // must use static storage
-#  elif defined(__NATRON_OSX__)
-    static std::string pythonHome = binPath.toStdString() + "/../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING; // must use static storage
-#  else
-#    error "unsupported platform"
-#  endif
-    QString pyPathZip = QString::fromUtf8( (pythonHome + "/lib/python" NATRON_PY_VERSION_STRING_NO_DOT ".zip").c_str() );
-    QString pyPath = QString::fromUtf8( (pythonHome + "/lib/python" NATRON_PY_VERSION_STRING).c_str() );
-    QString pluginPath = binPath + QString::fromUtf8("/../Plugins");
-#endif
-    if ( !QFile( QDir::fromNativeSeparators(pyPathZip) ).exists() ) {
-#     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-        printf( "\"%s\" does not exist, not added to PYTHONPATH\n", pyPathZip.toStdString().c_str() );
-#     endif
-        pyPathZip.clear();
-    }
-    if ( !QDir( QDir::fromNativeSeparators(pyPath) ).exists() ) {
-#     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-        printf( "\"%s\" does not exist, not added to PYTHONPATH\n", pyPath.toStdString().c_str() );
-#     endif
-        pyPath.clear();
-    }
-    if ( !QDir( QDir::fromNativeSeparators(pluginPath) ).exists() ) {
-#     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-        printf( "\"%s\" does not exist, not added to PYTHONPATH\n", pluginPath.toStdString().c_str() );
-#     endif
-        pluginPath.clear();
-    }
-    // PYTHONHOME is really useful if there's a python inside it
-    if ( pyPathZip.isEmpty() && pyPath.isEmpty() ) {
-#     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-        printf( "dir \"%s\" does not exist or does not contain lib/python*, not setting PYTHONHOME\n", pythonHome.c_str() );
-#     endif
-        pythonHome.clear();
-    }
-    /////////////////////////////////////////
-    // Py_SetPythonHome
-    /////////////////////////////////////////
-    //
-    // Must be done before Py_Initialize (see doc of Py_Initialize)
-    //
-    // The argument should point to a zero-terminated character string in static storage whose contents will not change for the duration of the program’s execution
+    NATRON_PYTHON_NAMESPACE::setupPythonEnv(_imp->commandLineArgsUtf8[0]);
 
-    if ( !pythonHome.empty() ) {
-#     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-        printf( "Py_SetPythonHome(\"%s\")\n", pythonHome.c_str() );
-#     endif
-#     if PY_MAJOR_VERSION >= 3
-        // Python 3
-        static const std::wstring pythonHomeW = StrUtils::utf8_to_utf16(pythonHome); // must use static storage
-        Py_SetPythonHome( const_cast<wchar_t*>( pythonHomeW.c_str() ) );
-#     else
-        // Python 2
-        Py_SetPythonHome( const_cast<char*>( pythonHome.c_str() ) );
-#     endif
-    }
-
-    /////////////////////////////////////////
-    // PYTHONPATH and Py_SetPath
-    /////////////////////////////////////////
-    //
-    // note: to check the python path of a python install, execute:
-    // python -c 'import sys,pprint; pprint.pprint( sys.path )'
-    //
-    // to build the python27.zip, cd to lib/python2.7, and generate the pyo and the zip file using:
-    //
-    //  python -O -m compileall .
-    //  zip -r ../python27.zip *.py* bsddb compiler ctypes curses distutils email encodings hotshot idlelib importlib json logging multiprocessing pydoc_data sqlite3 unittest wsgiref xml
-    //
-    QString pythonPath = QString::fromUtf8( qgetenv("PYTHONPATH") );
-    //Add the Python distribution of Natron to the Python path
-
-    QStringList toPrepend;
-    if ( !pyPathZip.isEmpty() ) {
-        toPrepend.append(pyPathZip);
-    }
-    if ( !pyPath.isEmpty() ) {
-        toPrepend.append(pyPath);
-    }
-    if ( !pluginPath.isEmpty() ) {
-        toPrepend.append(pluginPath);
-    }
-
-#if defined(__NATRON_OSX__) && defined DEBUG
-    // in debug mode, also prepend the local PySide directory
-    // homebrew's pyside directory
-    toPrepend.append( QString::fromUtf8("/usr/local/Cellar/pyside/1.2.2_1/lib/python" NATRON_PY_VERSION_STRING "/site-packages") );
-    // macport's pyside directory
-    toPrepend.append( QString::fromUtf8("/opt/local/Library/Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib/python" NATRON_PY_VERSION_STRING "/site-packages") );
-#endif
-
-    if ( toPrepend.isEmpty() ) {
-#     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-        printf("PYTHONPATH not modified\n");
-#     endif
-    } else {
-#     ifdef __NATRON_WIN32__
-        const QChar pathSep = QChar::fromLatin1(';');
-#     else
-        const QChar pathSep = QChar::fromLatin1(':');
-#     endif
-        QString toPrependStr = toPrepend.join(pathSep);
-        if (pythonPath.isEmpty()) {
-            pythonPath = toPrependStr;
-        } else {
-            pythonPath = toPrependStr + pathSep + pythonPath;
-        }
-        // qputenv on minw will just call putenv, but we want to keep the utf16 info, so we need to call _wputenv
-#     if 0//def __NATRON_WIN32__
-        _wputenv_s(L"PYTHONPATH", StrUtils::utf8_to_utf16(pythonPath.toStdString()).c_str());
-#     else
-        std::string pythonPathString = pythonPath.toStdString();
-        qputenv( "PYTHONPATH", pythonPathString.c_str() );
-        //Py_SetPath( pythonPathString.c_str() ); // does not exist in Python 2
-#     endif
-#     if PY_MAJOR_VERSION >= 3
-        std::wstring pythonPathString = StrUtils::utf8_to_utf16( pythonPath.toStdString() );
-        Py_SetPath( pythonPathString.c_str() ); // argument is copied internally, no need to use static storage
-#     endif
-#     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-        printf( "PYTHONPATH set to %s\n", pythonPath.toStdString().c_str() );
-#     endif
-    }
-
-    /////////////////////////////////////////
-    // Py_SetProgramName
-    /////////////////////////////////////////
-    //
-    // Must be done before Py_Initialize (see doc of Py_Initialize)
-    //
-#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-    printf( "Py_SetProgramName(\"%s\")\n", _imp->commandLineArgsUtf8[0] );
-#endif
-#if PY_MAJOR_VERSION >= 3
-    // Python 3
-    Py_SetProgramName(_imp->commandLineArgsWide[0]);
-#else
-    // Python 2
-    Py_SetProgramName(_imp->commandLineArgsUtf8[0]);
-#endif
-
-
-    ///Must be called prior to Py_Initialize (calls PyImport_AppendInittab())
+    // Must be called prior to Py_Initialize (calls PyImport_AppendInittab())
     initBuiltinPythonModules();
 
-    //See https://developer.blender.org/T31507
-    //Python will not load anything in site-packages if this is set
-    //We are sure that nothing in system wide site-packages is loaded, for instance on OS X with Python installed
-    //through macports on the system, the following printf show the following:
-
-    /*Py_GetProgramName is /Applications/Natron.app/Contents/MacOS/Natron
-       Py_GetPrefix is /Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7
-       Py_GetExecPrefix is /Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7
-       Py_GetProgramFullPath is /Applications/Natron.app/Contents/MacOS/Natron
-       Py_GetPath is /Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7:/Applications/Natron.app/Contents/MacOS/../Plugins:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python27.zip:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/plat-darwin:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/plat-mac:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/plat-mac/lib-scriptpackages:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/lib-tk:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/lib-old:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/lib-dynload
-       Py_GetPythonHome is ../Frameworks/Python.framework/Versions/2.7/lib
-       Python library is in /Applications/Natron.app/Contents/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages*/
-
-    //Py_NoSiteFlag = 1;
-
-
-    /////////////////////////////////////////
-    // Py_Initialize
-    /////////////////////////////////////////
-    //
-    // Initialize the Python interpreter. In an application embedding Python, this should be called before using any other Python/C API functions; with the exception of Py_SetProgramName(), Py_SetPythonHome() and Py_SetPath().
-#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-    printf("Py_Initialize()\n");
-#endif
-    Py_Initialize();
-    // pythonHome must be const, so that the c_str() pointer is never invalidated
-
-    /////////////////////////////////////////
-    // PySys_SetArgv
-    /////////////////////////////////////////
-    //
 #if PY_MAJOR_VERSION >= 3
-    // Python 3
-    PySys_SetArgv( argc, &_imp->args.front() ); /// relative module import
+    NATRON_PYTHON_NAMESPACE::initializePython3(_imp->commandLineArgsWide);
 #else
-    // Python 2
-    PySys_SetArgv( _imp->commandLineArgsUtf8.size(), &_imp->commandLineArgsUtf8.front() ); /// relative module import
+    NATRON_PYTHON_NAMESPACE::initializePython2(_imp->commandLineArgsUtf8);
 #endif
-
-    _imp->mainModule = PyImport_ImportModule("__main__"); //create main module , new ref
-
-    //See http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
-    //Python releases the GIL every 100 virtual Python instructions, we do not want that to happen in the middle of an expression.
-    //_PyEval_SetSwitchInterval(LONG_MAX);
-
-    //See answer for http://stackoverflow.com/questions/15470367/pyeval-initthreads-in-python-3-how-when-to-call-it-the-saga-continues-ad-naus
-    PyEval_InitThreads();
-
-    ///Do as per http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
-    ///All calls to the Python API should call PythonGILLocker beforehand.
-    //_imp->mainThreadState = PyGILState_GetThisThreadState();
-    //PyEval_ReleaseThread(_imp->mainThreadState);
 
     std::string err;
-#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-    /// print info about python lib
-    {
-        printf( "PATH is %s\n", Py_GETENV("PATH") );
-        printf( "PYTHONPATH is %s\n", Py_GETENV("PYTHONPATH") );
-        printf( "PYTHONHOME is %s\n", Py_GETENV("PYTHONHOME") );
-        printf( "Py_DebugFlag is %d\n", Py_DebugFlag );
-        printf( "Py_VerboseFlag is %d\n", Py_VerboseFlag );
-        printf( "Py_InteractiveFlag is %d\n", Py_InteractiveFlag );
-        printf( "Py_InspectFlag is %d\n", Py_InspectFlag );
-        printf( "Py_OptimizeFlag is %d\n", Py_OptimizeFlag );
-        printf( "Py_NoSiteFlag is %d\n", Py_NoSiteFlag );
-        printf( "Py_BytesWarningFlag is %d\n", Py_BytesWarningFlag );
-        printf( "Py_UseClassExceptionsFlag is %d\n", Py_UseClassExceptionsFlag );
-        printf( "Py_FrozenFlag is %d\n", Py_FrozenFlag );
-        printf( "Py_TabcheckFlag is %d\n", Py_TabcheckFlag );
-        printf( "Py_UnicodeFlag is %d\n", Py_UnicodeFlag );
-        printf( "Py_IgnoreEnvironmentFlag is %d\n", Py_IgnoreEnvironmentFlag );
-        printf( "Py_DivisionWarningFlag is %d\n", Py_DivisionWarningFlag );
-        printf( "Py_DontWriteBytecodeFlag is %d\n", Py_DontWriteBytecodeFlag );
-        printf( "Py_NoUserSiteDirectory is %d\n", Py_NoUserSiteDirectory );
-        printf( "Py_GetProgramName is %s\n", Py_GetProgramName() );
-        printf( "Py_GetPrefix is %s\n", Py_GetPrefix() );
-        printf( "Py_GetExecPrefix is %s\n", Py_GetPrefix() );
-        printf( "Py_GetProgramFullPath is %s\n", Py_GetProgramFullPath() );
-        printf( "Py_GetPath is %s\n", Py_GetPath() );
-        printf( "Py_GetPythonHome is %s\n", Py_GetPythonHome() );
-        bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript("from distutils.sysconfig import get_python_lib; print('Python library is in ' + get_python_lib())", &err, 0);
-        assert(ok);
-        Q_UNUSED(ok);
-    }
-#endif
-
     // Import NatronEngine
     std::string modulename = NATRON_ENGINE_PYTHON_MODULE_NAME;
     bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript("import sys\nfrom math import *\nimport " + modulename, &err, 0);

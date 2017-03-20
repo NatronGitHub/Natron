@@ -68,7 +68,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Node.h"
 #include "Engine/KnobItemsTable.h"
 #include "Engine/OpenGLViewerI.h"
-#include "Engine/FStreamsSupport.h"
+#include "Global/FStreamsSupport.h"
 #include "Engine/GenericSchedulerThreadWatcher.h"
 #include "Engine/Project.h"
 #include "Engine/RenderStats.h"
@@ -2438,6 +2438,7 @@ private:
             std::vector<RenderViewerProcessFunctorArgsPtr> processArgs(2);
             for (int i = 0; i < 2; ++i) {
                 processArgs[i].reset(new RenderViewerProcessFunctorArgs);
+                bufferObject->retCode[i] = eActionStatusFailed;
             }
 
             ViewerCompositingOperatorEnum viewerBlend = _viewer->getCurrentOperator();
@@ -3429,6 +3430,9 @@ ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(U64 age, const B
             upload.viewerProcessImageKey = viewerObject->viewerProcessImageKey[i];
             if (viewerObject->retCode[i] == eActionStatusAborted ||
                 (viewerObject->retCode[i] == eActionStatusOK && !upload.image)) {
+                continue;
+            }
+            if (upload.canonicalRoI.isNull()) {
                 continue;
             }
             args.viewerUploads[i].push_back(upload);

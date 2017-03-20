@@ -36,6 +36,7 @@
 
 #include "Global/GlobalDefines.h"
 #include "Global/GitVersion.h"
+#include "Global/ProcInfo.h"
 #include "Global/QtCompat.h"
 #include "Global/StrUtils.h"
 
@@ -130,7 +131,7 @@ CLArgs::CLArgs(int& argc,
     AppManager::setApplicationLocale();
 
     std::vector<std::string> utf8Args;
-    ensureCommandLineArgsUtf8(argc, argv, &utf8Args);
+    ProcInfo::ensureCommandLineArgsUtf8(argc, argv, &utf8Args);
 
     for (std::size_t i = 0; i < utf8Args.size(); ++i) {
         QString str = QString::fromUtf8(utf8Args[i].c_str());
@@ -1222,40 +1223,5 @@ CLArgsPrivate::parse()
     }
 } // CLArgsPrivate::parse
 
-void
-CLArgs::ensureCommandLineArgsUtf8(int argc, char **argv, std::vector<std::string>* utf8Args)
-{
-    assert(utf8Args);
-#ifndef __NATRON_WIN32__
-    // On Unix, command line args are Utf8
-    assert(!argc || argv);
-    for (int i = 0; i < argc; ++i) {
-        std::string str(argv[i]);
-        assert(StrUtils::is_utf8(str.c_str()));
-        utf8Args->push_back(str);
-    }
-#else
-    // On Windows, it must be converted: http://stackoverflow.com/questions/5408730/what-is-the-encoding-of-argv
-    (void)argc;
-    (void)argv;
-
-    int nArgsOut;
-    wchar_t** argList = CommandLineToArgvW(GetCommandLineW(), &nArgsOut);
-    for (int i = 0; i < nArgsOut; ++i) {
-        std::wstring wide(argList[i]);
-        std::string utf8Str = StrUtils::utf16_to_utf8(wide);
-        assert(StrUtils::is_utf8(utf8Str.c_str()));
-        utf8Args->push_back(utf8Str);
-        if (argv) {
-            std::cout << "Non UTF-8 arg: " <<  argv[i] << std::endl;
-        }
-        std::cout << "UTF-8 arg: " <<  utf8Args->back() << std::endl;
-    }
-    // Free memory allocated for CommandLineToArgvW arguments.
-    LocalFree(argList);
-
-
-#endif
-}
 
 NATRON_NAMESPACE_EXIT;

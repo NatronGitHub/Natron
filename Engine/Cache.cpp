@@ -77,7 +77,7 @@ GCC_DIAG_ON(unused-parameter)
 
 #include "Engine/AppManager.h"
 #include "Engine/StorageDeleterThread.h"
-#include "Engine/FStreamsSupport.h"
+#include "Global/FStreamsSupport.h"
 #include "Engine/MemoryFile.h"
 #include "Engine/MemoryInfo.h"
 #include "Engine/Settings.h"

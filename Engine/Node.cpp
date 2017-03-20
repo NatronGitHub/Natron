@@ -62,7 +62,7 @@
 #include "Engine/EffectInstanceTLSData.h"
 #include "Engine/Format.h"
 #include "Engine/FileSystemModel.h"
-#include "Engine/FStreamsSupport.h"
+#include "Global/FStreamsSupport.h"
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"
 #include "Engine/GenericSchedulerThreadWatcher.h"

@@ -99,6 +99,9 @@ RotoShapeRenderNode::doesTemporalClipAccess() const
 {
     RotoPaintPtr rotoPaintNode;
     RotoDrawableItemPtr item = getAttachedRotoItem();
+    if (!item) {
+        return false;
+    }
     KnobItemsTablePtr model = item->getModel();
     if (model) {
         rotoPaintNode = toRotoPaint(model->getNode()->getEffectInstance());

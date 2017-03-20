@@ -44,7 +44,7 @@
 #include "Engine/Project.h"
 #include "Engine/CLArgs.h"
 #include "Engine/CreateNodeArgs.h"
-#include "Engine/FStreamsSupport.h"
+#include "Global/FStreamsSupport.h"
 #include "Engine/StandardPaths.h"
 
 #include "Global/StrUtils.h"

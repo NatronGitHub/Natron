@@ -205,6 +205,7 @@ RotoPaint::RotoPaint(const NodePtr& node,
     : NodeGroup(node)
     , _imp( new RotoPaintPrivate(this, type) )
 {
+    _imp->ui = RotoPaintInteract::create(_imp.get());
 }
 
 
@@ -215,7 +216,6 @@ RotoPaint::~RotoPaint()
 void
 RotoPaint::initializeOverlayInteract()
 {
-    _imp->ui = RotoPaintInteract::create(_imp.get());
     registerOverlay(_imp->ui, std::map<std::string, std::string>());
 }
 
@@ -1607,9 +1607,9 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
     generalPage->addKnob(timeOffsetSb);
     _imp->ui->timeOffsetSpinBox = timeOffsetSb;
 
-    KnobChoicePtr timeOffsetMode = createKnob<KnobChoice>(kRotoUIParamTimeOffset);
-    timeOffsetMode->setLabel(tr(kRotoUIParamTimeOffsetLabel));
-    timeOffsetMode->setHintToolTip( tr(kRotoUIParamTimeOffsetHint) );
+    KnobChoicePtr timeOffsetMode = createKnob<KnobChoice>(kRotoUIParamTimeOffsetMode);
+    timeOffsetMode->setLabel(tr(kRotoUIParamTimeOffsetModeLabel));
+    timeOffsetMode->setHintToolTip( tr(kRotoUIParamTimeOffsetModeHint) );
     timeOffsetMode->setEvaluateOnChange(false);
     timeOffsetMode->setSecret(true);
     {

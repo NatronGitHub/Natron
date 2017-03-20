@@ -109,7 +109,6 @@ SOURCES += \
     FitCurve.cpp \
     Format.cpp \
     FrameViewRequest.cpp \
-    FStreamsSupport.cpp \
     GenericSchedulerThread.cpp \
     GenericSchedulerThreadWatcher.cpp \
     GPUContextPool.cpp \
@@ -250,7 +249,9 @@ SOURCES += \
     ViewIdx.cpp \
     WriteNode.cpp \
     ../Global/glad_source.c \
+    ../Global/FStreamsSupport.cpp \
     ../Global/ProcInfo.cpp \
+    ../Global/PythonUtils.cpp \
     ../Global/StrUtils.cpp \
     ../libs/SequenceParsing/SequenceParsing.cpp \
     NatronEngine/natronengine_module_wrapper.cpp \
@@ -355,8 +356,6 @@ HEADERS += \
     FitCurve.h \
     Format.h \
     FrameViewRequest.h \
-    FStreamsSupport.h \
-    fstream_mingw.h \
     GenericSchedulerThread.h \
     GenericSchedulerThreadWatcher.h \
     GLShader.h \
@@ -510,6 +509,8 @@ HEADERS += \
     ViewIdx.h \
     WriteNode.h \
     ../Global/Enums.h \
+    ../Global/FStreamsSupport.h \
+    ../Global/fstream_mingw.h \
     ../Global/GitVersion.h \
     ../Global/GLIncludes.h \
     ../Global/GLObfuscate.h \
@@ -517,6 +518,7 @@ HEADERS += \
     ../Global/KeySymbols.h \
     ../Global/Macros.h \
     ../Global/ProcInfo.h \
+    ../Global/PythonUtils.h \
     ../Global/QtCompat.h \
     ../Global/StrUtils.h \
     ../libs/SequenceParsing/SequenceParsing.h \
