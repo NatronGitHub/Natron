@@ -158,8 +158,11 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     #echo 'shiboken: INCLUDEPATH += $$system(pkg-config --variable=includedir shiboken)' >> config.pri
     #echo 'shiboken: LIBS += -lshiboken.cpython-32mu' >> config.pri
 
+    IO_BRANCH=master
+    . $TRAVIS_BUILD_DIR/Natron/Global/plugin-branches.sh
+    
     # build OpenFX-IO
-    if [ "$CC" = "$TEST_CC" ]; then (cd $TRAVIS_BUILD_DIR; git clone https://github.com/MrKepzie/openfx-io.git; (cd openfx-io; git submodule update --init --recursive)) ; fi
+    if [ "$CC" = "$TEST_CC" ]; then (cd $TRAVIS_BUILD_DIR; git clone https://github.com/MrKepzie/openfx-io.git; (cd openfx-io; git checkout "$IO_BRANCH"; git submodule update --init --recursive)) ; fi
     if [ "$CC" = "$TEST_CC" ]; then env PKG_CONFIG_PATH=$HOME/ocio/lib/pkgconfig make -C openfx-io SEEXPR_HOME=$HOME/seexpr OIIO_HOME=$HOME/oiio; fi
     if [ "$CC" = "$TEST_CC" ]; then mv openfx-io/*/*-64-debug/*.ofx.bundle Tests/Plugins/IO;  fi
 
