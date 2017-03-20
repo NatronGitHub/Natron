@@ -48,7 +48,7 @@ GCC_DIAG_OFF(unused-but-set-variable) // only on gcc >= 4.6
 NATRON_NAMESPACE_ENTER;
 
 template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA>
-static void
+static ActionRetCodeEnum
 copyUnProcessedChannels_templated(const void* originalImgPtrs[4],
                                   const RectI& originalImgBounds,
                                   void* dstImgPtrs[4],
@@ -72,7 +72,7 @@ copyUnProcessedChannels_templated(const void* originalImgPtrs[4],
     for ( int y = roi.y1; y < roi.y2; ++y) {
 
         if (renderClone && renderClone->isRenderAborted()) {
-            return;
+            return eActionStatusAborted;
         }
 
         for (int x = roi.x1; x < roi.x2; ++x) {
@@ -250,12 +250,13 @@ copyUnProcessedChannels_templated(const void* originalImgPtrs[4],
         }
         
     } // for each scan-line
+    return eActionStatusOK;
 } // copyUnProcessedChannels_templated
 
 
 
 template <typename PIX, int maxValue, int srcNComps, int dstNComps>
-static void
+static ActionRetCodeEnum
 copyUnProcessedChannels_nonTemplated(const void* originalImgPtrs[4],
                                      const RectI& originalImgBounds,
                                      void* dstImgPtrs[4],
@@ -286,7 +287,7 @@ copyUnProcessedChannels_nonTemplated(const void* originalImgPtrs[4],
     for ( int y = roi.y1; y < roi.y2; ++y) {
 
         if (renderClone && renderClone->isRenderAborted()) {
-            return;
+            return eActionStatusAborted;
         }
 
 
@@ -408,13 +409,14 @@ copyUnProcessedChannels_nonTemplated(const void* originalImgPtrs[4],
             }
         }
     } // for each scan-line
+    return eActionStatusOK;
 } // copyUnProcessedChannels_nonTemplated
 
 
 
 
 template <typename PIX, int maxValue, int srcNComps, int dstNComps>
-static void
+static ActionRetCodeEnum
 copyUnProcessedChannelsForDstComponents(const void* originalImgPtrs[4],
                                         const RectI& originalImgBounds,
                                         void* dstImgPtrs[4],
@@ -431,9 +433,9 @@ copyUnProcessedChannelsForDstComponents(const void* originalImgPtrs[4],
 
     if (dstNComps == 1) {
         if (doA) {
-            copyUnProcessedChannels_templated<PIX, maxValue, srcNComps, dstNComps, false, false, false, true>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, roi, renderClone);     // RGB were processed, copy A
+            return copyUnProcessedChannels_templated<PIX, maxValue, srcNComps, dstNComps, false, false, false, true>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, roi, renderClone);     // RGB were processed, copy A
         } else {
-            copyUnProcessedChannels_templated<PIX, maxValue, srcNComps, dstNComps, false, false, false, false>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, roi, renderClone);     // RGBA were processed, only do premult
+            return copyUnProcessedChannels_templated<PIX, maxValue, srcNComps, dstNComps, false, false, false, false>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, roi, renderClone);     // RGBA were processed, only do premult
         }
     } else {
         assert(2 <= dstNComps && dstNComps <= 4);
@@ -441,27 +443,27 @@ copyUnProcessedChannelsForDstComponents(const void* originalImgPtrs[4],
             if (doG) {
                 if ( (dstNComps >= 3) && doB ) {
                     if ( (dstNComps >= 4) && doA ) {
-                        copyUnProcessedChannels_templated<PIX, maxValue, srcNComps, dstNComps, true, true, true, true>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, roi, renderClone); // none were processed, only do premult
+                        return copyUnProcessedChannels_templated<PIX, maxValue, srcNComps, dstNComps, true, true, true, true>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, roi, renderClone); // none were processed, only do premult
                     } else {
-                        copyUnProcessedChannels_templated<PIX, maxValue, srcNComps, dstNComps, true, true, true, false>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, roi, renderClone); // A was processed
+                        return copyUnProcessedChannels_templated<PIX, maxValue, srcNComps, dstNComps, true, true, true, false>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, roi, renderClone); // A was processed
                     }
                 } else {
                     if ( (dstNComps >= 4) && doA ) {
-                        copyUnProcessedChannels_templated<PIX, maxValue, srcNComps, dstNComps, true, true, false, true>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, roi, renderClone); // B was processed
+                        return copyUnProcessedChannels_templated<PIX, maxValue, srcNComps, dstNComps, true, true, false, true>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, roi, renderClone); // B was processed
                     } else {
-                        copyUnProcessedChannels_nonTemplated<PIX, maxValue, srcNComps, dstNComps>(/*true, true, false, false, */ originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, processChannels, roi, renderClone); // BA were processed (rare)
+                        return copyUnProcessedChannels_nonTemplated<PIX, maxValue, srcNComps, dstNComps>(/*true, true, false, false, */ originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, processChannels, roi, renderClone); // BA were processed (rare)
                     }
                 }
             } else {
                 if ( (dstNComps >= 3) && doB ) {
                     if ( (dstNComps >= 4) && doA ) {
-                        copyUnProcessedChannels_templated<PIX, maxValue, srcNComps, dstNComps, true, false, true, true>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, roi, renderClone); // G was processed
+                        return copyUnProcessedChannels_templated<PIX, maxValue, srcNComps, dstNComps, true, false, true, true>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, roi, renderClone); // G was processed
                     } else {
-                        copyUnProcessedChannels_nonTemplated<PIX, maxValue, srcNComps, dstNComps>(/*true, false, true, false, */ originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, processChannels, roi, renderClone); // GA were processed (rare)
+                        return copyUnProcessedChannels_nonTemplated<PIX, maxValue, srcNComps, dstNComps>(/*true, false, true, false, */ originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, processChannels, roi, renderClone); // GA were processed (rare)
                     }
                 } else {
                     //if (dstNComps >= 4 && doA) {
-                    copyUnProcessedChannels_nonTemplated<PIX, maxValue, srcNComps, dstNComps>(/*true, false, false, true, */ originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, processChannels, roi, renderClone);    // GB were processed (rare)
+                    return copyUnProcessedChannels_nonTemplated<PIX, maxValue, srcNComps, dstNComps>(/*true, false, false, true, */ originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, processChannels, roi, renderClone);    // GB were processed (rare)
                     //} else {
                     //    copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps>(/*true, false, false, false, */processChannels, premult, roi, originalImage, originalPremult, ignorePremult); // GBA were processed (rare)
                     //}
@@ -471,13 +473,13 @@ copyUnProcessedChannelsForDstComponents(const void* originalImgPtrs[4],
             if (doG) {
                 if ( (dstNComps >= 3) && doB ) {
                     if ( (dstNComps >= 4) && doA ) {
-                        copyUnProcessedChannels_templated<PIX, maxValue, srcNComps, dstNComps, false, true, true, true>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, roi, renderClone); // R was processed
+                        return copyUnProcessedChannels_templated<PIX, maxValue, srcNComps, dstNComps, false, true, true, true>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, roi, renderClone); // R was processed
                     } else {
-                        copyUnProcessedChannels_nonTemplated<PIX, maxValue, srcNComps, dstNComps>(/*false, true, true, false, */ originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, processChannels, roi, renderClone); // RA were processed (rare)
+                        return copyUnProcessedChannels_nonTemplated<PIX, maxValue, srcNComps, dstNComps>(/*false, true, true, false, */ originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, processChannels, roi, renderClone); // RA were processed (rare)
                     }
                 } else {
                     //if (dstNComps >= 4 && doA) {
-                    copyUnProcessedChannels_nonTemplated<PIX, maxValue, srcNComps, dstNComps>(/*false, true, false, true, */ originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, processChannels, roi, renderClone);    // RB were processed (rare)
+                    return copyUnProcessedChannels_nonTemplated<PIX, maxValue, srcNComps, dstNComps>(/*false, true, false, true, */ originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, processChannels, roi, renderClone);    // RB were processed (rare)
                     //} else {
                     //    copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps>(/*false, true, false, false, */originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, processChannels, roi); // RBA were processed (rare)
                     //}
@@ -485,15 +487,15 @@ copyUnProcessedChannelsForDstComponents(const void* originalImgPtrs[4],
             } else {
                 if ( (dstNComps >= 3) && doB ) {
                     //if (dstNComps >= 4 && doA) {
-                    copyUnProcessedChannels_nonTemplated<PIX, maxValue, srcNComps, dstNComps>(/*false, false, true, true, */originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, processChannels, roi, renderClone);    // RG were processed (rare)
+                    return copyUnProcessedChannels_nonTemplated<PIX, maxValue, srcNComps, dstNComps>(/*false, false, true, true, */originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, processChannels, roi, renderClone);    // RG were processed (rare)
                     //} else {
                     //    copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps>(/*false, false, true, false, */originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, processChannels, roi); // RGA were processed (rare)
                     //}
                 } else {
                     if ( (dstNComps >= 4) && doA ) {
-                        copyUnProcessedChannels_templated<PIX, maxValue, srcNComps, dstNComps, false, false, false, true>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, roi, renderClone); // RGB were processed
+                        return copyUnProcessedChannels_templated<PIX, maxValue, srcNComps, dstNComps, false, false, false, true>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, roi, renderClone); // RGB were processed
                     } else {
-                        copyUnProcessedChannels_templated<PIX, maxValue, srcNComps, dstNComps, false, false, false, false>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, roi, renderClone); // RGBA were processed
+                        return copyUnProcessedChannels_templated<PIX, maxValue, srcNComps, dstNComps, false, false, false, false>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, roi, renderClone); // RGBA were processed
                     }
                 }
             }
@@ -502,7 +504,7 @@ copyUnProcessedChannelsForDstComponents(const void* originalImgPtrs[4],
 } // Image::copyUnProcessedChannelsForComponents
 
 template <typename PIX, int maxValue, int srcNComps>
-static void
+static ActionRetCodeEnum
 copyUnProcessedChannelsForSrcComps(const void* originalImgPtrs[4],
                                    const RectI& originalImgBounds,
                                    void* dstImgPtrs[4],
@@ -514,25 +516,20 @@ copyUnProcessedChannelsForSrcComps(const void* originalImgPtrs[4],
 {
     switch (dstImgNComps) {
         case 1:
-            copyUnProcessedChannelsForDstComponents<PIX, maxValue, srcNComps, 1>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, processChannels, roi, renderClone);
-            break;
+            return copyUnProcessedChannelsForDstComponents<PIX, maxValue, srcNComps, 1>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, processChannels, roi, renderClone);
         case 2:
-            copyUnProcessedChannelsForDstComponents<PIX, maxValue, srcNComps, 2>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, processChannels, roi, renderClone);
-            break;
+            return copyUnProcessedChannelsForDstComponents<PIX, maxValue, srcNComps, 2>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, processChannels, roi, renderClone);
         case 3:
-            copyUnProcessedChannelsForDstComponents<PIX, maxValue, srcNComps, 3>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, processChannels, roi, renderClone);
-            break;
+            return copyUnProcessedChannelsForDstComponents<PIX, maxValue, srcNComps, 3>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, processChannels, roi, renderClone);
         case 4:
-            copyUnProcessedChannelsForDstComponents<PIX, maxValue, srcNComps, 4>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, processChannels, roi, renderClone);
-            break;
+            return copyUnProcessedChannelsForDstComponents<PIX, maxValue, srcNComps, 4>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, processChannels, roi, renderClone);
         default:
-            assert(false);
-            break;
+            return eActionStatusFailed;
     }
 }
 
 template <typename PIX, int maxValue>
-static void
+static ActionRetCodeEnum
 copyUnProcessedChannelsForDepth(const void* originalImgPtrs[4],
                                 const RectI& originalImgBounds,
                                 int originalImgNComps,
@@ -546,27 +543,21 @@ copyUnProcessedChannelsForDepth(const void* originalImgPtrs[4],
 
     switch (originalImgNComps) {
         case 0:
-            copyUnProcessedChannelsForSrcComps<PIX, maxValue, 0>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstImgNComps, dstBounds, processChannels, roi, renderClone);
-            break;
+            return copyUnProcessedChannelsForSrcComps<PIX, maxValue, 0>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstImgNComps, dstBounds, processChannels, roi, renderClone);
         case 1:
-            copyUnProcessedChannelsForSrcComps<PIX, maxValue, 1>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstImgNComps, dstBounds, processChannels, roi, renderClone);
-            break;
+            return copyUnProcessedChannelsForSrcComps<PIX, maxValue, 1>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstImgNComps, dstBounds, processChannels, roi, renderClone);
         case 2:
-            copyUnProcessedChannelsForSrcComps<PIX, maxValue, 2>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstImgNComps, dstBounds, processChannels, roi, renderClone);
-            break;
+            return copyUnProcessedChannelsForSrcComps<PIX, maxValue, 2>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstImgNComps, dstBounds, processChannels, roi, renderClone);
         case 3:
-            copyUnProcessedChannelsForSrcComps<PIX, maxValue, 3>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstImgNComps, dstBounds, processChannels, roi, renderClone);
-            break;
+            return copyUnProcessedChannelsForSrcComps<PIX, maxValue, 3>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstImgNComps, dstBounds, processChannels, roi, renderClone);
         case 4:
-            copyUnProcessedChannelsForSrcComps<PIX, maxValue, 4>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstImgNComps,dstBounds, processChannels, roi, renderClone);
-            break;
+            return copyUnProcessedChannelsForSrcComps<PIX, maxValue, 4>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstImgNComps,dstBounds, processChannels, roi, renderClone);
         default:
-            assert(false);
-            break;
+            return eActionStatusFailed;
     }
 } // Image::copyUnProcessedChannelsForDepth
 
-void
+ActionRetCodeEnum
 ImagePrivate::copyUnprocessedChannelsCPU(const void* originalImgPtrs[4],
                                          const RectI& originalImgBounds,
                                          int originalImgNComps,
@@ -580,19 +571,15 @@ ImagePrivate::copyUnprocessedChannelsCPU(const void* originalImgPtrs[4],
 {
     switch (dstImgBitDepth) {
         case eImageBitDepthByte:
-            copyUnProcessedChannelsForDepth<unsigned char, 255>(originalImgPtrs, originalImgBounds, originalImgNComps, dstImgPtrs, dstImgNComps, dstBounds, processChannels, roi, renderClone);
-            break;
+            return copyUnProcessedChannelsForDepth<unsigned char, 255>(originalImgPtrs, originalImgBounds, originalImgNComps, dstImgPtrs, dstImgNComps, dstBounds, processChannels, roi, renderClone);
         case eImageBitDepthFloat:
-            copyUnProcessedChannelsForDepth<float, 1>(originalImgPtrs, originalImgBounds, originalImgNComps, dstImgPtrs, dstImgNComps, dstBounds, processChannels, roi, renderClone);
-            break;
+            return copyUnProcessedChannelsForDepth<float, 1>(originalImgPtrs, originalImgBounds, originalImgNComps, dstImgPtrs, dstImgNComps, dstBounds, processChannels, roi, renderClone);
         case eImageBitDepthShort:
-            copyUnProcessedChannelsForDepth<unsigned short, 65535>(originalImgPtrs, originalImgBounds, originalImgNComps, dstImgPtrs, dstImgNComps, dstBounds, processChannels, roi, renderClone);
-            break;
+            return copyUnProcessedChannelsForDepth<unsigned short, 65535>(originalImgPtrs, originalImgBounds, originalImgNComps, dstImgPtrs, dstImgNComps, dstBounds, processChannels, roi, renderClone);
 
         case eImageBitDepthHalf:
         case eImageBitDepthNone:
-
-            break;
+            return eActionStatusFailed;
     }
 }
 

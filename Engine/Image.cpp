@@ -420,7 +420,7 @@ private:
     }
 };
 
-void
+ActionRetCodeEnum
 Image::fill(const RectI & roi,
             float r,
             float g,
@@ -431,7 +431,7 @@ Image::fill(const RectI & roi,
     if (getStorageMode() == eStorageModeGLTex) {
         GLImageStoragePtr glEntry = toGLImageStorage(_imp->channels[0]);
         _imp->fillGL(roi, r, g, b, a, glEntry);
-        return;
+        return eActionStatusOK;
     }
 
 
@@ -446,22 +446,22 @@ Image::fill(const RectI & roi,
     FillProcessor processor(_imp->renderClone.lock());
     processor.setValues(data.ptrs, data.bounds, data.bitDepth, data.nComps, color);
     processor.setRenderWindow(clippedRoi);
-    processor.process();
+    return processor.process();
 
 
 
 } // fill
 
-void
+ActionRetCodeEnum
 Image::fillZero(const RectI& roi)
 {
-    fill(roi, 0., 0., 0., 0.);
+    return fill(roi, 0., 0., 0., 0.);
 }
 
-void
+ActionRetCodeEnum
 Image::fillBoundsZero()
 {
-    fillZero(getBounds());
+    return fillZero(getBounds());
 }
 
 ActionRetCodeEnum
@@ -508,7 +508,7 @@ Image::ensureBounds(const RectI& roi)
 
 } // ensureBounds
 
-void
+ActionRetCodeEnum
 Image::fillOutSideWithBlack(const RectI& roi)
 {
     RectI clipped;
@@ -520,9 +520,12 @@ Image::fillOutSideWithBlack(const RectI& roi)
         if (fourRects[i].isNull()) {
             continue;
         }
-        fillZero(fourRects[i]);
+        ActionRetCodeEnum stat = fillZero(fourRects[i]);
+        if (isFailureRetCode(stat)) {
+            return stat;
+        }
     }
-
+    return eActionStatusOK;
 }
 
 void
@@ -886,12 +889,7 @@ private:
 
     virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow) OVERRIDE FINAL
     {
-        ImagePrivate::copyUnprocessedChannelsCPU((const void**)_srcImgData.ptrs, _srcImgData.bounds, _srcImgData.nComps, (void**)_dstImgData.ptrs, _dstImgData.bitDepth, _dstImgData.nComps, _dstImgData.bounds, _processChannels, renderWindow, _effect);
-        if (_effect && _effect->isRenderAborted()) {
-            return eActionStatusAborted;
-        }
-        return eActionStatusOK;
-
+        return ImagePrivate::copyUnprocessedChannelsCPU((const void**)_srcImgData.ptrs, _srcImgData.bounds, _srcImgData.nComps, (void**)_dstImgData.ptrs, _dstImgData.bitDepth, _dstImgData.nComps, _dstImgData.bounds, _processChannels, renderWindow, _effect);
     }
 };
 

@@ -74,7 +74,7 @@ inline ExternalSegmentType::handle_t writeNamedSharedObject(const T& object, con
     if (sharedMemObject) {
         *sharedMemObject = object;
     } else {
-        throw std::bad_alloc();
+        throw boost::interprocess::bad_alloc();
     }
     return segment->get_handle_from_address(sharedMemObject);
 }
@@ -92,7 +92,7 @@ inline ExternalSegmentType::handle_t writeAnonymousSharedObject(const T& object,
     if (sharedMemObject) {
         *sharedMemObject = object;
     } else {
-        throw std::bad_alloc();
+        throw boost::interprocess::bad_alloc();
     }
     return segment->get_handle_from_address(sharedMemObject);
 }
@@ -111,7 +111,7 @@ inline ExternalSegmentType::handle_t writeNamedSharedObject(const std::string& o
     if (sharedMemObject) {
         sharedMemObject->append(object.c_str());
     } else {
-        throw std::bad_alloc();
+        throw boost::interprocess::bad_alloc();
     }
     return segment->get_handle_from_address(sharedMemObject);
 }
@@ -126,7 +126,7 @@ inline ExternalSegmentType::handle_t writeAnonymousSharedObject(const std::strin
     if (sharedMemObject) {
         sharedMemObject->append(object.c_str());
     } else {
-        throw std::bad_alloc();
+        throw boost::interprocess::bad_alloc();
     }
     return segment->get_handle_from_address(sharedMemObject);
 }
@@ -139,7 +139,7 @@ inline ExternalSegmentType::handle_t writeNamedSharedObjectN(T *array, int count
 {
     T* sharedMemObject = segment->construct<T>(objectName.c_str())[count]();
     if (!sharedMemObject) {
-        throw std::bad_alloc();
+        throw boost::interprocess::bad_alloc();
     }
     memcpy(sharedMemObject, array, count * sizeof(T));
     return segment->get_handle_from_address(sharedMemObject);
@@ -150,7 +150,7 @@ inline ExternalSegmentType::handle_t writeAnonymousSharedObjectN(T *array, int c
 {
     T* sharedMemObject = segment->construct<T>(boost::interprocess::anonymous_instance)[count]();
     if (!sharedMemObject) {
-        throw std::bad_alloc();
+        throw boost::interprocess::bad_alloc();
     }
     memcpy(sharedMemObject, array, count * sizeof(T));
     return segment->get_handle_from_address(sharedMemObject);
@@ -167,7 +167,7 @@ inline ExternalSegmentType::handle_t writeNamedSharedObjectN(std::string *array,
 
     String_ExternalSegment* sharedMemObject = segment->construct<String_ExternalSegment>(objectName.c_str())[count](allocator);
     if (!sharedMemObject) {
-        throw std::bad_alloc();
+        throw boost::interprocess::bad_alloc();
     }
     for (int i = 0; i < count; ++i) {
         sharedMemObject[i].append(array[i].c_str());
@@ -183,7 +183,7 @@ inline ExternalSegmentType::handle_t writeAnonymousSharedObjectN(std::string *ar
 
     String_ExternalSegment* sharedMemObject = segment->construct<String_ExternalSegment>(boost::interprocess::anonymous_instance)[count](allocator);
     if (!sharedMemObject) {
-        throw std::bad_alloc();
+        throw boost::interprocess::bad_alloc();
     }
     for (int i = 0; i < count; ++i) {
         sharedMemObject[i].append(array[i].c_str());
@@ -203,7 +203,7 @@ inline void readNamedSharedObject(const std::string& objectName, ExternalSegment
     if (found.first) {
         *object = *found.first;
     } else {
-        throw std::bad_alloc();
+        throw boost::interprocess::bad_alloc();
     }
 }
 
@@ -224,7 +224,7 @@ inline void readNamedSharedObject(const std::string& objectName, ExternalSegment
     if (found.first) {
         *object = std::string(found.first->c_str());
     } else {
-        throw std::bad_alloc();
+        throw boost::interprocess::bad_alloc();
     }
 }
 

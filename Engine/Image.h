@@ -559,17 +559,17 @@ public:
      * be used.
      * Filling the image with black and transparant is optimized
      **/
-    void fill(const RectI & roi, float r, float g, float b, float a);
+    ActionRetCodeEnum fill(const RectI & roi, float r, float g, float b, float a);
 
     /**
      * @brief Short for fill(roi, 0,0,0,0)
      **/
-    void fillZero(const RectI& roi);
+    ActionRetCodeEnum fillZero(const RectI& roi);
 
     /**
      * @brief Short for fill(getBounds(), 0,0,0,0)
      **/
-    void fillBoundsZero();
+    ActionRetCodeEnum fillBoundsZero();
 
     /**
      * @brief Ensures the image bounds can contain the given roi.
@@ -584,7 +584,7 @@ public:
     /**
      * @brief Fill everything outside the roi in black and transparant
      **/
-    void fillOutSideWithBlack(const RectI& roi);
+    ActionRetCodeEnum fillOutSideWithBlack(const RectI& roi);
 
 
     /**

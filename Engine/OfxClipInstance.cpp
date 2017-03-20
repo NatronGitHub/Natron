@@ -1322,13 +1322,8 @@ OfxImageCommon::OfxImageCommon(const EffectInstancePtr& outputClipEffect,
 
     assert(internalImage);
 
-    RenderScale scale = internalImage->getProxyScale();
-    {
-        unsigned int mipMapLevel = internalImage->getMipMapLevel();
-        double mipMapScale = Image::getScaleFromMipMapLevel(mipMapLevel);
-        scale.x *= mipMapScale;
-        scale.y *= mipMapScale;
-    }
+    RenderScale scale = EffectInstance::getCombinedScale(internalImage->getMipMapLevel(), internalImage->getProxyScale());
+
     ofxImageBase->setDoubleProperty(kOfxImageEffectPropRenderScale, scale.x, 0);
     ofxImageBase->setDoubleProperty(kOfxImageEffectPropRenderScale, scale.y, 1);
 

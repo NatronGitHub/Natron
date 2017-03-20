@@ -1985,7 +1985,7 @@ ImageCacheEntryInternal::toMemorySegment(ExternalSegmentType* segment, ExternalS
 
         IPCMipMapTileStateVector *mipMapStates = segment->construct<IPCMipMapTileStateVector>(boost::interprocess::anonymous_instance)(alloc);
         if (!mipMapStates) {
-            throw std::bad_alloc();
+            throw boost::interprocess::bad_alloc();
         }
         toMemorySegmentInternal(true /*copyPendingStatusToCache*/, perMipMapTilesState, mipMapStates, segment);
         objectPointers->push_back(segment->get_handle_from_address(mipMapStates));

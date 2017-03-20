@@ -283,7 +283,7 @@ GetFramesNeededResults::toMemorySegment(ExternalSegmentType* segment, ExternalSe
 
     FramesNeededMap_ExternalSegment* externalMap = segment->construct<FramesNeededMap_ExternalSegment>(boost::interprocess::anonymous_instance)(alloc_inst);
     if (!externalMap) {
-        throw std::bad_alloc();
+        throw bip::bad_alloc();
     }
     for (FramesNeededMap::const_iterator it = _framesNeeded.begin(); it != _framesNeeded.end(); ++it) {
 
@@ -624,7 +624,7 @@ GetComponentsResults::toMemorySegment(ExternalSegmentType* segment, ExternalSegm
     {
         NeededInputLayersMap_ExternalSegment *neededLayers = segment->construct<NeededInputLayersMap_ExternalSegment>(boost::interprocess::anonymous_instance)(alloc_inst);
         if (!neededLayers) {
-            throw std::bad_alloc();
+            throw bip::bad_alloc();
         }
 
         for (std::map<int, std::list<ImagePlaneDesc> >::const_iterator it = _neededInputLayers.begin(); it != _neededInputLayers.end(); ++it) {
@@ -640,7 +640,7 @@ GetComponentsResults::toMemorySegment(ExternalSegmentType* segment, ExternalSegm
     {
         ImagePlaneDescVector_ExternalSegment *producedLayers = segment->construct<ImagePlaneDescVector_ExternalSegment>(boost::interprocess::anonymous_instance)(alloc_inst);
         if (!producedLayers) {
-            throw std::bad_alloc();
+            throw bip::bad_alloc();
         }
         imageComponentsListToSharedMemoryComponentsList(alloc_inst, _producedLayers, producedLayers);
         objectPointers->push_back(segment->get_handle_from_address(producedLayers));
@@ -648,7 +648,7 @@ GetComponentsResults::toMemorySegment(ExternalSegmentType* segment, ExternalSegm
     {
         ImagePlaneDescVector_ExternalSegment *ptPlanes = segment->construct<ImagePlaneDescVector_ExternalSegment>(boost::interprocess::anonymous_instance)(alloc_inst);
         if (!ptPlanes) {
-            throw std::bad_alloc();
+            throw bip::bad_alloc();
         }
         imageComponentsListToSharedMemoryComponentsList(alloc_inst, _passThroughPlanes, ptPlanes);
         objectPointers->push_back(segment->get_handle_from_address(ptPlanes));
@@ -674,7 +674,7 @@ GetComponentsResults::fromMemorySegment(bool isLockedForWriting,
         }
     }
     if (start == end) {
-        throw std::bad_alloc();
+        throw bip::bad_alloc();
     }
     {
         ImagePlaneDescVector_ExternalSegment* producedLayers = (ImagePlaneDescVector_ExternalSegment*)segment->get_address_from_handle(*start);
@@ -683,7 +683,7 @@ GetComponentsResults::fromMemorySegment(bool isLockedForWriting,
         imageComponentsListFromSharedMemoryComponentsList(*producedLayers, &_producedLayers);
     }
     if (start == end) {
-        throw std::bad_alloc();
+        throw bip::bad_alloc();
     }
     {
         ImagePlaneDescVector_ExternalSegment* ptLayers = (ImagePlaneDescVector_ExternalSegment*)segment->get_address_from_handle(*start);
@@ -692,7 +692,7 @@ GetComponentsResults::fromMemorySegment(bool isLockedForWriting,
         imageComponentsListFromSharedMemoryComponentsList(*ptLayers, &_passThroughPlanes);
     }
     if (start == end) {
-        throw std::bad_alloc();
+        throw bip::bad_alloc();
     }
     readAnonymousSharedObject(*start, segment, &_data);
     ++start;

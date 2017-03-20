@@ -1521,7 +1521,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
         return;
     }
     //first tell the gui to clear any persistent message linked to this node
-    clearPersistentMessage(false);
+    clearAllPersistentMessages(false);
 
 
 

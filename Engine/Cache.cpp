@@ -1866,6 +1866,10 @@ CacheBucket::deallocateCacheEntryImpl(MemorySegmentEntryHeaderMap::iterator cach
     assert(cacheEntryIt != storage->end());
 
 #ifndef NATRON_CACHE_NEVER_PERSISTENT
+#ifdef DEBUG
+    // Useful in debug to know if it crashes which item made it crashed.
+    int n = 0;
+#endif
     for (ExternalSegmentTypeHandleList::const_iterator it = cacheEntryIt->second->entryDataPointerList.begin(); it != cacheEntryIt->second->entryDataPointerList.end(); ++it) {
         void* bufPtr = tocFileManager->get_address_from_handle(*it);
         if (bufPtr) {
@@ -1875,6 +1879,10 @@ CacheBucket::deallocateCacheEntryImpl(MemorySegmentEntryHeaderMap::iterator cach
                 qDebug() << "[BUG]: Failure to free" << bufPtr << "while destroying entry " << cacheEntryIt->first;
             }
         }
+#ifdef DEBUG
+        ++n;
+#endif
+
     }
     cacheEntryIt->second->entryDataPointerList.clear();
 #endif // #ifndef NATRON_CACHE_NEVER_PERSISTENT
@@ -3055,7 +3063,6 @@ CachePrivate::createTileStorage(int callingBucket_i,PerBucketMutexData bucketsDa
             tmpSet.insert(encodedIndex);
         }
         {
-            boost::scoped_ptr<Sharable_WriteLock> tocWriteLock;
 
             int nAttempts = 0;
             while (nAttempts < 2) {
@@ -3067,7 +3074,7 @@ CachePrivate::createTileStorage(int callingBucket_i,PerBucketMutexData bucketsDa
 
                     // We may not have enough memory to store all indices, so grow the ToC mapping
                     std::size_t tocMemNeeded = tmpSet.size() * sizeof(U64) * 2;
-                    buckets[bucket_i].growToCFile(*tocWriteLock, tocMemNeeded);
+                    buckets[bucket_i].growToCFile(*bucketsData[bucket_i].tocWriteLock, tocMemNeeded);
                 }
                 ++nAttempts;
             }

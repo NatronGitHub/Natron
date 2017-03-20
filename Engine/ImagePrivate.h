@@ -242,7 +242,7 @@ struct ImagePrivate
                                           const std::bitset<4> processChannels,
                                           const RectI& roi);
 
-    static void copyUnprocessedChannelsCPU(const void* originalImgPtrs[4],
+    static ActionRetCodeEnum copyUnprocessedChannelsCPU(const void* originalImgPtrs[4],
                                            const RectI& originalImgBounds,
                                            int originalImgNComps,
                                            void* dstImgPtrs[4],

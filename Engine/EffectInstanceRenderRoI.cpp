@@ -1524,7 +1524,7 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPa
     // Initialize what's left to render, without fetching the tiles state map from the cache because it was already fetched in
     // requestRender()
     renderRetCode = _imp->checkRestToRender(false /*updateTilesStateFromCache*/, requestData, renderMappedRoI, mappedCombinedScale, cachedImagePlanes, &renderRects, &hasPendingTiles);
-    if (isFailureRetCode(renderRetCode) && requestData->getCachePolicy() != eCacheAccessModeNone) {
+    if (isFailureRetCode(renderRetCode)) {
         finishProducedPlanesTilesStatesMap(cachedImagePlanes, true);
         return renderRetCode;
     }
@@ -1538,7 +1538,7 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPa
             renderRetCode = _imp->launchRenderForSafetyAndBackend(requestData, mappedCombinedScale, backendType, renderRects, cachedImagePlanes);
         }
 
-        if (isFailureRetCode(renderRetCode) && requestData->getCachePolicy() != eCacheAccessModeNone) {
+        if (isFailureRetCode(renderRetCode)) {
             finishProducedPlanesTilesStatesMap(cachedImagePlanes, true);
             break;
         }
@@ -1554,9 +1554,7 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPa
         } else {
 
             if (isRenderAborted()) {
-                if (requestData->getCachePolicy() != eCacheAccessModeNone) {
-                    finishProducedPlanesTilesStatesMap(cachedImagePlanes, true /*aborted*/);
-                }
+                finishProducedPlanesTilesStatesMap(cachedImagePlanes, true /*aborted*/);
                 return eActionStatusAborted;
             }
 
@@ -1638,7 +1636,7 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPa
         requestData->setRequestedScaleImagePlane(downscaledImage);
     }
 
-    return eActionStatusOK;
+    return isRenderAborted() ? eActionStatusAborted : eActionStatusOK;
 } // launchRenderInternal
 
 

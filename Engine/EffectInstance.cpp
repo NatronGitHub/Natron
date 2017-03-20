@@ -956,7 +956,7 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
             std::list<ImagePlaneDesc> upstreamAvailableLayers;
             ActionRetCodeEnum stat = getAvailableLayers(getCurrentRenderTime(), getCurrentRenderView(), inArgs.inputNb, &upstreamAvailableLayers);
             if (isFailureRetCode(stat)) {
-                return EffectInstancePtr();
+                return false;
             }
             channelForMask = getMaskChannel(inArgs.inputNb, upstreamAvailableLayers, &maskComps);
         }
@@ -979,7 +979,10 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
 
     // If the effect does not support multi-resolution image, add black borders so that all images have the same size in input.
     if (roiExpandPixels != roiPixels) {
-        outArgs->image->fillOutSideWithBlack(roiPixels);
+        ActionRetCodeEnum stat = outArgs->image->fillOutSideWithBlack(roiPixels);
+        if (isFailureRetCode(stat)) {
+            return false;
+        }
     }
 
     return true;

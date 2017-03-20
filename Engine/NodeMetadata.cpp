@@ -300,7 +300,7 @@ NodeMetadata::Implementation::toMemorySegment(ExternalSegmentType* segment, Exte
     void_allocator allocator(segment->get_segment_manager());
     MetadataMapIPC* ipcMap = segment->construct<MetadataMapIPC>(bip::anonymous_instance)(allocator);
     if (!ipcMap) {
-        throw std::bad_alloc();
+        throw bip::bad_alloc();
     }
     objectPointers->push_back(segment->get_handle_from_address(ipcMap));
 
