@@ -159,7 +159,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     #echo 'shiboken: LIBS += -lshiboken.cpython-32mu' >> config.pri
 
     IO_BRANCH=master
-    . $TRAVIS_BUILD_DIR/Natron/Global/plugin-branches.sh
+    . $TRAVIS_BUILD_DIR/Global/plugin-branches.sh
     
     # build OpenFX-IO
     if [ "$CC" = "$TEST_CC" ]; then (cd $TRAVIS_BUILD_DIR; git clone https://github.com/MrKepzie/openfx-io.git; (cd openfx-io; git checkout "$IO_BRANCH"; git submodule update --init --recursive)) ; fi
