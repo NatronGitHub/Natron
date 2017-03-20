@@ -56,7 +56,18 @@ CLANG_DIAG_ON(deprecated)
 
 NATRON_NAMESPACE_ENTER;
 
+struct PersistentMessage
+{
+    // The message
+    std::string message;
 
+    // Warning/Error/Info...
+    MessageTypeEnum type;
+
+};
+
+// Each message, mapped against an ID to check if a message of this type is present or not
+typedef std::map<std::string, PersistentMessage> PersistentMessageMap;
 
 struct NodePrivate;
 class Node
@@ -756,19 +767,21 @@ public:
      * eMessageTypeError : you want to inform the user an error occured.
      * @param content The message you want to pass.
      **/
-    void setPersistentMessage(MessageTypeEnum type, const std::string & content);
+    void setPersistentMessage(MessageTypeEnum type, const std::string& messageID, const std::string & content);
 
     /**
      * @brief Clears any message posted previously by setPersistentMessage.
      * This function will also be called on all inputs
      **/
-    void clearPersistentMessage(bool recurse);
+    void clearAllPersistentMessages(bool recurse);
+
+    void clearPersistentMessage(const std::string& key);
 
 private:
 
-    void clearPersistentMessageRecursive(std::list<NodePtr>& markedNodes);
+    void clearAllPersistentMessageRecursive(std::list<NodePtr>& markedNodes);
 
-    void clearPersistentMessageInternal();
+    void clearAllPersistentMessageInternal();
 
 public:
 
@@ -836,15 +849,12 @@ public:
     /*Initialises inputs*/
     void initializeInputs();
 
-    /**
 
-     * @brief Returns true if the parallel render args thread-storage is set
-     **/
-    bool isNodeRendering() const;
+    bool hasPersistentMessage(const std::string& key) const;
 
-    bool hasPersistentMessage() const;
+    bool hasAnyPersistentMessage() const;
 
-    void getPersistentMessage(QString* message, int* type, bool prefixLabelAndType = true) const;
+    void getPersistentMessage(PersistentMessageMap* messages, bool prefixLabelAndType = true) const;
 
 
     /**

@@ -46,6 +46,9 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/EngineFwd.h"
 
+#define kNatronPersistentErrorOpenFXPlugin "NatronPersistentErrorOpenFXPlugin"
+
+
 NATRON_NAMESPACE_ENTER;
 
 class AbstractOfxEffectInstance

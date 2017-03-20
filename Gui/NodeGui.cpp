@@ -377,7 +377,7 @@ NodeGui::ensurePanelCreated()
             // Connect slots from the extra label to refresh the font when it changes
             KnobStringPtr extraLabelKnob = getNode()->getEffectInstance()->getExtraLabelKnob();
             if (extraLabelKnob) {
-                KnobGuiIPtr extraLabelKnobUI = extraLabelKnob->getKnobGuiPointer();
+                KnobGuiIPtr extraLabelKnobUI = _settingsPanel->getKnobGui(extraLabelKnob);
                 if (extraLabelKnobUI) {
                     KnobGuiPtr knobUi = boost::dynamic_pointer_cast<KnobGui>(extraLabelKnobUI);
                     boost::shared_ptr<KnobGuiString> knobString = boost::dynamic_pointer_cast<KnobGuiString>(knobUi->getWidgetsForView(ViewIdx(0)));
@@ -408,12 +408,7 @@ NodeGui::ensurePanelCreated()
 void
 NodeGui::onSettingsPanelClosed(bool closed)
 {
-    QString message;
-    int type;
-
-    getNode()->getPersistentMessage(&message, &type);
-
-    if ( !message.isEmpty() ) {
+    if (getNode()->hasAnyPersistentMessage()) {
         const std::list<ViewerTab*>& viewers = getDagGui()->getGui()->getViewersList();
         for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
             (*it)->getViewer()->updatePersistentMessage();
@@ -2056,20 +2051,33 @@ NodeGui::onPersistentMessageChanged()
         return;
     }
 
-    QString message;
-    int type;
-    getNode()->getPersistentMessage(&message, &type);
+    PersistentMessageMap messages;
+    getNode()->getPersistentMessage(&messages, false);
+    MessageTypeEnum type = eMessageTypeWarning;
+    bool hasPersistentMessage = false;
+    for (PersistentMessageMap::const_iterator it = messages.begin(); it != messages.end(); ++it) {
+        if (it->second.type != eMessageTypeError &&
+            it->second.type != eMessageTypeWarning) {
+            continue;
+        }
+        if (!it->second.message.empty()) {
+            hasPersistentMessage = true;
+        }
+        if (it->second.type == eMessageTypeError) {
+            type = eMessageTypeError;
+        }
+    }
 
-    _persistentMessage->setVisible( !message.isEmpty() );
+    _persistentMessage->setVisible(hasPersistentMessage);
 
-    if ( message.isEmpty() ) {
+    if (!hasPersistentMessage) {
         setToolTip( QString() );
     } else {
-        if (type == 1) {
+        if (type == eMessageTypeError) {
             _persistentMessage->setText( tr("ERROR") );
             QColor errColor(128, 0, 0, 255);
             _persistentMessage->setBrush(errColor);
-        } else if (type == 2) {
+        } else if (type == eMessageTypeWarning) {
             _persistentMessage->setText( tr("WARNING") );
             QColor warColor(180, 180, 0, 255);
             _persistentMessage->setBrush(warColor);
@@ -2077,7 +2085,13 @@ NodeGui::onPersistentMessageChanged()
             return;
         }
 
-        setToolTip(message);
+        QString mergedMessage;
+        for (PersistentMessageMap::const_iterator it = messages.begin(); it != messages.end(); ++it) {
+            mergedMessage += QString::fromUtf8("<p>");
+            mergedMessage += QString::fromUtf8(it->second.message.c_str());
+            mergedMessage += QString::fromUtf8("</p>");
+        }
+        setToolTip(mergedMessage);
 
         refreshSize();
     }
@@ -2128,12 +2142,27 @@ NodeGui::refreshStateIndicator()
     if (!_stateIndicator) {
         return;
     }
-    QString message;
-    int type;
+
     if ( !getNode() ) {
         return;
     }
-    getNode()->getPersistentMessage(&message, &type);
+
+    PersistentMessageMap messages;
+    getNode()->getPersistentMessage(&messages, false);
+    MessageTypeEnum type = eMessageTypeWarning;
+    bool hasPersistentMessage = false;
+    for (PersistentMessageMap::const_iterator it = messages.begin(); it != messages.end(); ++it) {
+        if (it->second.type != eMessageTypeError &&
+            it->second.type != eMessageTypeWarning) {
+            continue;
+        }
+        if (!it->second.message.empty()) {
+            hasPersistentMessage = true;
+        }
+        if (it->second.type == eMessageTypeError) {
+            type = eMessageTypeError;
+        }
+    }
 
     bool showIndicator = true;
     int value = getNode()->getIsNodeRenderingCounter();
@@ -2143,10 +2172,10 @@ NodeGui::refreshStateIndicator()
         _stateIndicator->setBrush(Qt::green);
     } else if ( getIsSelected() ) {
         _stateIndicator->setBrush(Qt::white);
-    } else if ( !message.isEmpty() && ( (type == 1) || (type == 2) ) ) {
-        if (type == 1) {
+    } else if (hasPersistentMessage) {
+        if (type == eMessageTypeError) {
             _stateIndicator->setBrush( QColor(128, 0, 0, 255) ); //< error
-        } else if (type == 2) {
+        } else if (type == eMessageTypeWarning) {
             _stateIndicator->setBrush( QColor(80, 180, 0, 255) ); //< warning
         }
     } else {

@@ -224,6 +224,9 @@ NATRON_NAMESPACE_ENTER;
 #define kNodeParamProcessAllLayersHint "When checked all planes in input will be processed and output to the same plane as in input. It is useful for example to apply a Transform effect on all planes."
 
 
+// A persistent message that will always be cleared upon a successful render, this may be useful to report errors in render without taking care of clearing the persistent message manually
+#define kNatronPersistentErrorGenericRenderMessage "NatronPersistentErrorGenericRenderMessage"
+
 /**
  * @brief This is the base class for visual effects.
  **/
@@ -1432,25 +1435,6 @@ public:
      **/
     bool message(MessageTypeEnum type, const std::string & content) const;
 
-    /**
-     * @brief Use this function to post a persistent message to the user. It will be displayed on the
-     * node's graphical interface and on any connected viewer. The message can be of 3 types...
-     * INFORMATION_MESSAGE : you just want to inform the user about something.
-     * eMessageTypeWarning : you want to inform the user that something important happened.
-     * eMessageTypeError : you want to inform the user an error occured.
-     * @param content The message you want to pass.
-     **/
-    void setPersistentMessage(MessageTypeEnum type, const std::string & content);
-
-    /**
-     * @brief Test if a persistent message is set.
-     **/
-    bool hasPersistentMessage();
-
-    /**
-     * @brief Clears any message posted previously by setPersistentMessage.
-     **/
-    void clearPersistentMessage(bool recurse);
 
     /**
      * @brief Must return the preferred layout of images that are received with getImage

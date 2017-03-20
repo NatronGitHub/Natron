@@ -925,10 +925,6 @@ KnobGuiContainerHelper::refreshGuiForKnobsChanges(bool restorePageIndex)
         _imp->knobsMap.clear();
         for (KnobsGuiMapping::iterator it = mapping.begin(); it != mapping.end(); ++it) {
             assert(it->second);
-            KnobIPtr knob = it->first.lock();
-            if (knob) {
-                knob->setKnobGuiPointer( KnobGuiPtr() );
-            }
             it->second->destroyWidgetsLater();
             it->second.reset();
         }

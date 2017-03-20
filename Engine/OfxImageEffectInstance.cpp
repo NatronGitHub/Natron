@@ -184,13 +184,15 @@ OfxImageEffectInstance::setPersistentMessage(const char* type,
     assert(effect);
 
     if (effect) {
+        MessageTypeEnum messageType = eMessageTypeError;
         if (std::strcmp(type, kOfxMessageError) == 0) {
-            effect->setPersistentMessage(eMessageTypeError, message);
+            messageType = eMessageTypeError;
         } else if (std::strcmp(type, kOfxMessageWarning) == 0) {
-            effect->setPersistentMessage(eMessageTypeWarning, message);
+            messageType = eMessageTypeWarning;
         } else if (std::strcmp(type, kOfxMessageMessage) == 0) {
-            effect->setPersistentMessage(eMessageTypeInfo, message);
+            messageType = eMessageTypeInfo;
         }
+        effect->getNode()->setPersistentMessage(messageType, kNatronPersistentErrorOpenFXPlugin, message);
     }
 
     return kOfxStatOK;
@@ -203,7 +205,7 @@ OfxImageEffectInstance::clearPersistentMessage()
     if (!effect) {
         return kOfxStatFailed;
     }
-    effect->clearPersistentMessage(false);
+    effect->getNode()->clearPersistentMessage(kNatronPersistentErrorOpenFXPlugin);
 
     return kOfxStatOK;
 }

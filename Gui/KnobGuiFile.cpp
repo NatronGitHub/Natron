@@ -60,6 +60,8 @@
 
 #include <SequenceParsing.h> // for SequenceParsing::removePath
 
+#define kNatronPersistentWarningFileOutOfDate "NatronPersistentWarningFileOutOfDate"
+
 NATRON_NAMESPACE_ENTER;
 
 
@@ -309,13 +311,15 @@ KnobGuiFile::checkFileModificationAndWarnInternal(bool doCheck,
 
     //We already have a modification date
     bool ret = false;
+    bool warningDisplayed = false;
     if ( foundModificationDate != _lastModificationDates.end() ) {
         if ( doCheck && (date != foundModificationDate->second) ) {
             if (errorAndAbortRender) {
                 QString warn = tr("The file \"%1\" has changed on disk.\n"
                                   "Press reload file to load the new version of the file").arg(qfilePath);
-                effect->setPersistentMessage( eMessageTypeError, warn.toStdString() );
+                effect->getNode()->setPersistentMessage( eMessageTypeError, kNatronPersistentWarningFileOutOfDate, warn.toStdString() );
                 effect->getNode()->abortAnyProcessing_non_blocking();
+                warningDisplayed = true;
             }
             effect->purgeCaches_public();
             _lastModificationDates.clear();
@@ -324,6 +328,10 @@ KnobGuiFile::checkFileModificationAndWarnInternal(bool doCheck,
             return false;
         }
     }
+    if (!warningDisplayed) {
+        effect->getNode()->clearPersistentMessage(kNatronPersistentWarningFileOutOfDate);
+    }
+
     _lastModificationDates.insert( std::make_pair(filepath, date) );
 
     return ret;

@@ -37,6 +37,7 @@
 #include "Engine/Transform.h"
 #include "Engine/StringAnimationManager.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
@@ -90,7 +91,7 @@ KnobFile::reloadFile()
     EffectInstancePtr effect = toEffectInstance( getHolder() );
     if (effect) {
         effect->purgeCaches_public();
-        effect->clearPersistentMessage(false);
+        effect->getNode()->clearAllPersistentMessages(false);
     }
     evaluateValueChange(DimSpec(0), getHolder()->getTimelineCurrentTime(), ViewSetSpec(0), eValueChangedReasonUserEdited);
 }

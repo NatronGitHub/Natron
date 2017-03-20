@@ -81,6 +81,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 
 #include "Serialization/NodeSerialization.h"
 
+
 NATRON_NAMESPACE_ENTER;
 
 struct OfxEffectInstanceCommon
@@ -379,18 +380,19 @@ OfxEffectInstance::createInstanceAction()
     stat = _imp->common->effect->createInstanceAction();
 
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
-        QString message;
-        int type;
+
         NodePtr messageContainer = getNode();
         NodePtr ioContainer = messageContainer->getIOContainer();
         if (ioContainer) {
             messageContainer = ioContainer;
         }
-        messageContainer->getPersistentMessage(&message, &type);
-        if (message.isEmpty()) {
+        PersistentMessageMap messages;
+        messageContainer->getPersistentMessage(&messages, false);
+        PersistentMessageMap::iterator foundMessage = messages.find(kNatronPersistentErrorOpenFXPlugin);
+        if (foundMessage == messages.end() || foundMessage->second.message.empty()) {
             throw std::runtime_error(tr("Could not create effect instance for plugin").toStdString());
         } else {
-            throw std::runtime_error(message.toStdString());
+            throw std::runtime_error(foundMessage->second.message);
         }
     }
 
@@ -1634,29 +1636,23 @@ OfxEffectInstance::render(const RenderActionArgs& args)
                                           ofxPlanes );
     }
 
-    if (stat != kOfxStatOK) {
-        if ( !getNode()->hasPersistentMessage() ) {
+    if (stat == kOfxStatOK) {
+        getNode()->clearPersistentMessage(kNatronPersistentErrorOpenFXPlugin);
+        return eActionStatusOK;
+    } else {
+        if ( !getNode()->hasPersistentMessage(kNatronPersistentErrorOpenFXPlugin) ) {
             QString err;
             if (stat == kOfxStatErrImageFormat) {
                 err = tr("Bad image format was supplied by %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) );
-                setPersistentMessage( eMessageTypeError, err.toStdString() );
             } else if (stat == kOfxStatErrMemory) {
                 err = tr("Out of memory!");
-                setPersistentMessage( eMessageTypeError, err.toStdString() );
             } else {
-                QString existingMessage;
-                int type;
-                getNode()->getPersistentMessage(&existingMessage, &type);
-                if (existingMessage.isEmpty()) {
-                    err = tr("Unknown failure reason.");
-                }
+                err = tr("Unknown failure reason.");
             }
+            getNode()->setPersistentMessage( eMessageTypeError, kNatronPersistentErrorOpenFXPlugin, err.toStdString() );
 
         }
-
         return eActionStatusFailed;
-    } else {
-        return eActionStatusOK;
     }
 } // render
 

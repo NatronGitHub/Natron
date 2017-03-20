@@ -880,17 +880,20 @@ Node::message(MessageTypeEnum type,
 
 void
 Node::setPersistentMessage(MessageTypeEnum type,
+                           const std::string& messageID,
                            const std::string & content)
 {
     if (!_imp->nodeCreated && _imp->wasCreatedSilently) {
         return;
     }
 
-    if ( !appPTR->isBackground() ) {
+    if ( appPTR->isBackground() ) {
+        std::cout << "Persistent message: " << content << std::endl;
+    } else {
         //if the message is just an information, display a popup instead.
         NodePtr ioContainer = getIOContainer();
         if (ioContainer) {
-            ioContainer->setPersistentMessage(type, content);
+            ioContainer->setPersistentMessage(type, messageID, content);
 
             return;
         }
@@ -898,7 +901,7 @@ Node::setPersistentMessage(MessageTypeEnum type,
         if ( !isPersistent() && getGroup() ) {
             NodeGroupPtr isGroup = toNodeGroup(getGroup());
             if (isGroup) {
-                isGroup->setPersistentMessage(type, content);
+                isGroup->getNode()->setPersistentMessage(type, messageID, content);
             }
         }
 
@@ -910,102 +913,132 @@ Node::setPersistentMessage(MessageTypeEnum type,
 
         {
             QMutexLocker k(&_imp->persistentMessageMutex);
-            QString mess = QString::fromUtf8( content.c_str() );
-            if (mess == _imp->persistentMessage) {
+            PersistentMessage& data = _imp->persistentMessages[messageID];
+            if (content == data.message) {
                 return;
             }
-            _imp->persistentMessageType = (int)type;
-            _imp->persistentMessage = mess;
+            data.type = type;
+            data.message = content;
         }
         Q_EMIT persistentMessageChanged();
-    } else {
-        std::cout << "Persistent message: " << content << std::endl;
     }
-}
+} // setPersistentMessage
 
 bool
-Node::hasPersistentMessage() const
+Node::hasPersistentMessage(const std::string& key) const
 {
     NodePtr ioContainer = getIOContainer();
     if (ioContainer) {
-        return ioContainer->hasPersistentMessage();
+        return ioContainer->hasPersistentMessage(key);
     }
 
     QMutexLocker k(&_imp->persistentMessageMutex);
+    PersistentMessageMap::const_iterator found = _imp->persistentMessages.find(key);
+    return found != _imp->persistentMessages.end();
+}
 
-    return !_imp->persistentMessage.isEmpty();
+bool
+Node::hasAnyPersistentMessage() const
+{
+    QMutexLocker k(&_imp->persistentMessageMutex);
+    return !_imp->persistentMessages.empty();
 }
 
 void
-Node::getPersistentMessage(QString* message,
-                           int* type,
+Node::getPersistentMessage(PersistentMessageMap* messages,
                            bool prefixLabelAndType) const
 {
     NodePtr ioContainer = getIOContainer();
     if (ioContainer) {
-        return ioContainer->getPersistentMessage(message, type, prefixLabelAndType);
+        return ioContainer->getPersistentMessage(messages, prefixLabelAndType);
     }
 
-    QMutexLocker k(&_imp->persistentMessageMutex);
+    {
+        QMutexLocker k(&_imp->persistentMessageMutex);
+        *messages = _imp->persistentMessages;
+    }
 
-    *type = _imp->persistentMessageType;
-
-    if ( prefixLabelAndType && !_imp->persistentMessage.isEmpty() ) {
-        message->append( QString::fromUtf8( getLabel_mt_safe().c_str() ) );
-        if (*type == eMessageTypeError) {
-            message->append( QString::fromUtf8(" error: ") );
-        } else if (*type == eMessageTypeWarning) {
-            message->append( QString::fromUtf8(" warning: ") );
+    if (prefixLabelAndType) {
+        for (PersistentMessageMap::iterator it = messages->begin(); it != messages->end(); ++it) {
+            std::string originalMessage = it->second.message;
+            it->second.message.clear();
+            it->second.message.append(getLabel_mt_safe());
+            if (it->second.type == eMessageTypeError) {
+                it->second.message.append( tr(" error: ").toStdString() );
+            } else if (it->second.type == eMessageTypeWarning) {
+                it->second.message.append( tr(" warning: ").toStdString() );
+            }
+            it->second.message.append(originalMessage);
         }
+
     }
-    message->append(_imp->persistentMessage);
-}
+} // getPersistentMessage
 
 void
-Node::clearPersistentMessageRecursive(std::list<NodePtr>& markedNodes)
+Node::clearAllPersistentMessageRecursive(std::list<NodePtr>& markedNodes)
 {
     if ( std::find(markedNodes.begin(), markedNodes.end(), shared_from_this()) != markedNodes.end() ) {
         return;
     }
     markedNodes.push_back(shared_from_this());
-    clearPersistentMessageInternal();
+
+    clearAllPersistentMessageInternal();
+
 
     int nInputs = getMaxInputCount();
     ///No need to lock, inputs is only written to by the main-thread
     for (int i = 0; i < nInputs; ++i) {
         NodePtr input = getInput(i);
         if (input) {
-            input->clearPersistentMessageRecursive(markedNodes);
+            input->clearAllPersistentMessageRecursive(markedNodes);
         }
     }
 }
 
 void
-Node::clearPersistentMessageInternal()
+Node::clearPersistentMessage(const std::string& key)
 {
     NodePtr ioContainer = getIOContainer();
     if (ioContainer) {
-        ioContainer->clearPersistentMessageInternal();
+        ioContainer->clearPersistentMessage(key);
 
         return;
     }
 
-    bool changed;
+    bool changed = false;
     {
         QMutexLocker k(&_imp->persistentMessageMutex);
-        changed = !_imp->persistentMessage.isEmpty();
-        if (changed) {
-            _imp->persistentMessage.clear();
+        PersistentMessageMap::iterator found = _imp->persistentMessages.find(key);
+        if (found != _imp->persistentMessages.end()) {
+            changed = true;
+            _imp->persistentMessages.erase(found);
         }
     }
 
     if (changed) {
         Q_EMIT persistentMessageChanged();
     }
+} // clearPersistentMessage
+
+void
+Node::clearAllPersistentMessageInternal()
+{
+    bool changed = false;
+    {
+        QMutexLocker k(&_imp->persistentMessageMutex);
+        if (!_imp->persistentMessages.empty()) {
+            changed = true;
+        }
+        _imp->persistentMessages.clear();
+    }
+    if (changed) {
+        Q_EMIT persistentMessageChanged();
+    }
+
 }
 
 void
-Node::clearPersistentMessage(bool recurse)
+Node::clearAllPersistentMessages(bool recurse)
 {
     AppInstancePtr app = getApp();
 
@@ -1017,9 +1050,9 @@ Node::clearPersistentMessage(bool recurse)
     }
     if (recurse) {
         std::list<NodePtr> markedNodes;
-        clearPersistentMessageRecursive(markedNodes);
+        clearAllPersistentMessageRecursive(markedNodes);
     } else {
-        clearPersistentMessageInternal();
+        clearAllPersistentMessageInternal();
     }
 }
 

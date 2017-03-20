@@ -53,10 +53,6 @@ public:
 
     virtual bool isGuiFrozenForPlayback() const = 0;
 
-protected:
-
-    ///Should set to the underlying knob the gui ptr
-    virtual void setKnobGuiPointer() = 0;
 };
 
 NATRON_NAMESPACE_EXIT;

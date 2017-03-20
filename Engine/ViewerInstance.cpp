@@ -1428,7 +1428,7 @@ ViewerInstance::render(const RenderActionArgs& args)
 
 
     if (args.outputPlanes.size() != 1 || args.outputPlanes.begin()->first.getNumComponents() != 4) {
-        setPersistentMessage(eMessageTypeError, tr("Host did not take into account output components").toStdString());
+        getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorGenericRenderMessage, tr("Host did not take into account output components").toStdString());
         return eActionStatusFailed;
     }
 
@@ -1436,7 +1436,7 @@ ViewerInstance::render(const RenderActionArgs& args)
 
 #ifdef DEBUG
     if (dstImage->getBitDepth() != getBitDepth(-1)) {
-        setPersistentMessage(eMessageTypeError, tr("Host did not take into account bitdepth").toStdString());
+        getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorGenericRenderMessage, tr("Host did not take into account bitdepth").toStdString());
         return eActionStatusFailed;
     }
 #endif
@@ -1474,20 +1474,20 @@ ViewerInstance::render(const RenderActionArgs& args)
 
 
     if (!colorImage && displayChannels != eDisplayChannelsA) {
-        setPersistentMessage(eMessageTypeError, tr("Could not fetch source image for selected layer").toStdString());
+        getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorGenericRenderMessage, tr("Could not fetch source image for selected layer").toStdString());
         return eActionStatusFailed;
     }
 
     if (displayChannels == eDisplayChannelsA ||
         displayChannels == eDisplayChannelsMatte) {
         if (!alphaImage) {
-            setPersistentMessage(eMessageTypeError, tr("Could not fetch source image for selected alpha channel").toStdString());
+            getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorGenericRenderMessage, tr("Could not fetch source image for selected alpha channel").toStdString());
             return eActionStatusFailed;
         }
     }
 
     if (colorImage && alphaImage && colorImage->getBitDepth() != alphaImage->getBitDepth()) {
-        setPersistentMessage(eMessageTypeError, tr("Host did not take into account requested bit-depth").toStdString());
+        getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorGenericRenderMessage, tr("Host did not take into account requested bit-depth").toStdString());
         return eActionStatusFailed;
     }
 

@@ -41,6 +41,7 @@
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/ViewIdx.h"
 
+#define kNatronPersistentWarningCheckForNan "NatronPersistentWarningCheckForNan"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -156,7 +157,7 @@ EffectInstance::Implementation::resolveRenderBackend(const RequestPassSharedData
         if (openGLSupport == ePluginOpenGLRenderSupportNeeded && !_publicInterface->getNode()->getPlugin()->isOpenGLEnabled()) {
 
             QString message = tr("OpenGL render is required for  %1 but was disabled in the Preferences for this plug-in, please enable it and restart %2").arg(QString::fromUtf8(_publicInterface->getNode()->getLabel().c_str())).arg(QString::fromUtf8(NATRON_APPLICATION_NAME));
-            _publicInterface->setPersistentMessage(eMessageTypeError, message.toStdString());
+            _publicInterface->getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorGenericRenderMessage, message.toStdString());
             return eActionStatusFailed;
         }
 
@@ -287,6 +288,8 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
         if (isFailureRetCode(stat)) {
             return stat;
         }
+        _publicInterface->getNode()->clearPersistentMessage(kNatronPersistentErrorGenericRenderMessage);
+
         // Apply post-processing
         stat = renderHandlerPostProcess(rectToRender, args);
         if (isFailureRetCode(stat)) {
@@ -565,7 +568,9 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
 
         if (checkNaNs) {
 
-            if (it->second->checkForNaNs(rectToRender.rect)) {
+            if (!it->second->checkForNaNs(rectToRender.rect)) {
+                _publicInterface->getNode()->clearPersistentMessage(kNatronPersistentWarningCheckForNan);
+            } else {
                 QString warning = QString::fromUtf8( _publicInterface->getNode()->getScriptName_mt_safe().c_str() );
                 warning.append( QString::fromUtf8(": ") );
                 warning.append( tr("rendered rectangle (") );
@@ -578,7 +583,7 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
                 warning.append( QString::number(rectToRender.rect.y2) );
                 warning.append( QString::fromUtf8(") ") );
                 warning.append( tr("contains NaN values. They have been converted to 1.") );
-                _publicInterface->setPersistentMessage( eMessageTypeWarning, warning.toStdString() );
+                _publicInterface->getNode()->setPersistentMessage( eMessageTypeWarning, kNatronPersistentWarningCheckForNan, warning.toStdString() );
             }
         } // checkNaNs
 

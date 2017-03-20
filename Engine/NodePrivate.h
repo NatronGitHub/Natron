@@ -239,10 +239,7 @@ public:
     timeval lastInputNRenderStartedSlotCallTime;
 
     // The last persistent message posted by the plug-in
-    QString persistentMessage;
-
-    // The type of message
-    int persistentMessageType;
+    PersistentMessageMap persistentMessages;
 
     // Protects persistentMessage & persistentMessageType
     mutable QMutex persistentMessageMutex;

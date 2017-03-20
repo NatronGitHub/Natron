@@ -2501,20 +2501,25 @@ ViewerGL::updatePersistentMessageToWidth(int w)
             continue;
         }
 
-        QString mess;
-        int nType;
-        node->getPersistentMessage(&mess, &nType);
-        if ( !mess.isEmpty() ) {
-            allMessages.append(mess);
+        PersistentMessageMap messages;
+        node->getPersistentMessage(&messages, true);
+
+        for (PersistentMessageMap::const_iterator it2 = messages.begin(); it2 != messages.end(); ++it2) {
+            if (it2->second.message.empty()) {
+                continue;
+            }
+
+            allMessages.append(QString::fromUtf8(it2->second.message.c_str()));
             ++nbNonEmpty;
+            type = (nbNonEmpty == 1 && it2->second.type == eMessageTypeWarning) ? eMessageTypeWarning : eMessageTypeError;
+
         }
+
         if ( next != openedPanels.end() ) {
             ++next;
         }
 
-        if ( !mess.isEmpty() ) {
-            type = (nbNonEmpty == 1 && nType == 2) ? 2 : 1;
-        }
+
     }
     _imp->persistentMessageType = type;
 

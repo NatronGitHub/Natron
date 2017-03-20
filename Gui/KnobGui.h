@@ -179,8 +179,6 @@ public:
     int getKnobsCountOnSameLine() const;
 
 
-    ///Should set to the underlying knob the gui ptr
-    virtual void setKnobGuiPointer() OVERRIDE FINAL;
     virtual bool isGuiFrozenForPlayback() const OVERRIDE FINAL;
     virtual void copyAnimationToClipboard(DimSpec dimension, ViewSetSpec view) const OVERRIDE FINAL;
     virtual void copyValuesToClipboard(DimSpec dimension, ViewSetSpec view) const OVERRIDE FINAL;

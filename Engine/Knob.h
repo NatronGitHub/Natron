@@ -354,8 +354,6 @@ public:
      * for Curve.
      **/
     virtual void populate() = 0;
-    virtual void setKnobGuiPointer(const KnobGuiIPtr& ptr) = 0;
-    virtual KnobGuiIPtr getKnobGuiPointer() const = 0;
 
     /**
      * @brief Return whether all dimensions are folded or not, when folded all dimensions have the same value/animation
@@ -1468,8 +1466,6 @@ private:
 public:
 
 
-    virtual void setKnobGuiPointer(const KnobGuiIPtr& ptr) OVERRIDE FINAL;
-    virtual KnobGuiIPtr getKnobGuiPointer() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getAllDimensionsVisible(ViewIdx view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAllDimensionsVisible(ViewSetSpec view, bool visible)  OVERRIDE FINAL;
     virtual void setCanAutoFoldDimensions(bool enabled) OVERRIDE FINAL ;

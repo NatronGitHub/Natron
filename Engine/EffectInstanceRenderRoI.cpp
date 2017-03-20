@@ -90,6 +90,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
+#define kNatronPersistentErrorInfiniteRoI "NatronPersistentErrorInfiniteRoI"
+#define kNatronPersistentErrorProxyUnsupported "NatronPersistentErrorProxyUnsupported"
+
 // This controls how many frames a plug-in can pre-fetch per input
 // This is to avoid cases where the user would for example use the FrameBlend node with a huge amount of frames so that they
 // do not all stick altogether in memory
@@ -906,8 +909,10 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const RequestPassShar
         }
 
         if ( inputRoI.isInfinite() ) {
-            _publicInterface->setPersistentMessage( eMessageTypeError, _publicInterface->tr("%1 asked for an infinite region of interest upstream.").arg( QString::fromUtf8( _publicInterface->getNode()->getScriptName_mt_safe().c_str() ) ).toStdString() );
+            _publicInterface->getNode()->setPersistentMessage( eMessageTypeError, kNatronPersistentErrorInfiniteRoI, _publicInterface->tr("%1 asked for an infinite region of interest upstream.").arg( QString::fromUtf8( _publicInterface->getNode()->getScriptName_mt_safe().c_str() ) ).toStdString() );
             return eActionStatusFailed;
+        } else {
+            _publicInterface->getNode()->clearPersistentMessage(kNatronPersistentErrorInfiniteRoI);
         }
         bool inputIsContinuous = mainInstanceInput->canRenderContinuously();
 
@@ -1105,8 +1110,10 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
     const RenderScale& proxyScale = requestData->getProxyScale();
 
     if (!getCurrentSupportRenderScale() && (proxyScale.x != 1. || proxyScale.y != 1.)) {
-        setPersistentMessage(eMessageTypeError, tr("This node does not support proxy scale. It can only render at full resolution").toStdString());
+        getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorProxyUnsupported, tr("This node does not support proxy scale. It can only render at full resolution").toStdString());
         return eActionStatusFailed;
+    } else {
+        getNode()->clearPersistentMessage(kNatronPersistentErrorProxyUnsupported);
     }
 
     const unsigned int mappedMipMapLevel = renderFullScaleThenDownScale ? 0 : requestData->getMipMapLevel();

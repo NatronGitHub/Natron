@@ -363,13 +363,13 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 {
 
 #if !defined(ROTO_SHAPE_RENDER_ENABLE_CAIRO) && !defined(HAVE_OSMESA)
-    setPersistentMessage(eMessageTypeError, tr("Roto requires either OSMesa (CONFIG += enable-osmesa) or Cairo (CONFIG += enable-cairo) in order to render on CPU").toStdString());
+    getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorGenericRenderMessage, tr("Roto requires either OSMesa (CONFIG += enable-osmesa) or Cairo (CONFIG += enable-cairo) in order to render on CPU").toStdString());
     return eStatusFailed;
 #endif
 
 #if !defined(ROTO_SHAPE_RENDER_ENABLE_CAIRO)
     if (args.backendType == eRenderBackendTypeCPU) {
-        setPersistentMessage(eMessageTypeError, tr("An OpenGL context is required to draw with the Roto node. This might be because you are trying to render an image too big for OpenGL.").toStdString());
+        getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorGenericRenderMessage, tr("An OpenGL context is required to draw with the Roto node. This might be because you are trying to render an image too big for OpenGL.").toStdString());
         return eActionStatusFailed;
     }
 #endif
@@ -407,7 +407,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 
     // There must be an OpenGL context bound when using OpenGL.
     if ((args.backendType == eRenderBackendTypeOpenGL || args.backendType == eRenderBackendTypeOSMesa) && !glContext) {
-        setPersistentMessage(eMessageTypeError, tr("An OpenGL context is required to draw with the Roto node").toStdString());
+        getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorGenericRenderMessage, tr("An OpenGL context is required to draw with the Roto node").toStdString());
         return eActionStatusFailed;
     }
 
@@ -539,7 +539,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                 GetImageInArgs inArgs(&args.mipMapLevel, &args.proxyScale, &args.roi, &args.backendType);
                 inArgs.inputNb = 0;
                 if (!getImagePlane(inArgs, &outArgs)) {
-                    setPersistentMessage(eMessageTypeError, tr("Failed to fetch source image").toStdString());
+                    getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorGenericRenderMessage, tr("Failed to fetch source image").toStdString());
                     return eActionStatusFailed;
                 }
 

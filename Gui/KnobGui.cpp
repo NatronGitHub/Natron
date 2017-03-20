@@ -81,9 +81,6 @@ KnobGui::initialize()
 
     assert(thisShared);
 
-    // Set the pointer to the GUI
-    knob->setKnobGuiPointer(thisShared);
-
     NodeGuiPtr nodeUI = getContainer()->getNodeGui();
 
     KnobHelperPtr helper = toKnobHelper(knob);

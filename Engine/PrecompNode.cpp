@@ -56,6 +56,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Serialization/KnobSerialization.h"
 
+
 NATRON_NAMESPACE_ENTER;
 
 
@@ -583,7 +584,7 @@ PrecompNodePrivate::refreshOutputNode()
     }
 
     //Clear any persistent message set
-    _publicInterface->clearPersistentMessage(false);
+    _publicInterface->getNode()->clearAllPersistentMessages(false);
 
     {
         QMutexLocker k(&dataMutex);
@@ -694,14 +695,16 @@ PrecompNode::onReadNodePersistentMessageChanged()
         assert(_imp->readNode);
         node = _imp->readNode;
     }
-    QString message;
-    int type;
+    PersistentMessageMap messages;
 
-    node->getPersistentMessage(&message, &type, false);
-    if ( message.isEmpty() ) {
-        clearPersistentMessage(false);
+    node->getPersistentMessage(&messages, false);
+    if ( messages.empty() ) {
+        getNode()->clearAllPersistentMessages(false);
     } else {
-        setPersistentMessage( (MessageTypeEnum)type, message.toStdString() );
+        for (PersistentMessageMap::const_iterator it = messages.begin(); it != messages.end(); ++it) {
+            getNode()->setPersistentMessage( it->second.type, it->first, it->second.message);
+        }
+
     }
 }
 

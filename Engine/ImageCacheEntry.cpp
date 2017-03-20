@@ -46,7 +46,7 @@
 #include "Engine/ThreadPool.h"
 
 // Define to log tiles status in the console
-#define TRACE_TILES_STATUS
+//#define TRACE_TILES_STATUS
 
 NATRON_NAMESPACE_ENTER;
 

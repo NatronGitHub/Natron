@@ -1095,38 +1095,6 @@ EffectInstance::message(MessageTypeEnum type,
     return node ? node->message(type, content) : false;
 }
 
-void
-EffectInstance::setPersistentMessage(MessageTypeEnum type,
-                                     const std::string & content)
-{
-    NodePtr node = getNode();
-    assert(node);
-    if (node) {
-        node->setPersistentMessage(type, content);
-    }
-}
-
-
-bool
-EffectInstance::hasPersistentMessage()
-{
-    NodePtr node = getNode();
-    assert(node);
-    return node ? node->hasPersistentMessage() : false;
-}
-
-
-void
-EffectInstance::clearPersistentMessage(bool recurse)
-{
-    NodePtr node = getNode();
-    assert(node);
-    if (node) {
-        node->clearPersistentMessage(recurse);
-    }
-    assert( !hasPersistentMessage() );
-}
-
 int
 EffectInstance::getInputNumber(const EffectInstancePtr& inputEffect) const
 {

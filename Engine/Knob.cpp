@@ -228,21 +228,6 @@ KnobHelper::deleteKnob()
 } // KnobHelper::deleteKnob
 
 void
-KnobHelper::setKnobGuiPointer(const KnobGuiIPtr& ptr)
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    _imp->common->gui = ptr;
-}
-
-KnobGuiIPtr
-KnobHelper::getKnobGuiPointer() const
-{
-#pragma message WARN("TODO: remove this pointer that has nothing to do here")
-    return _imp->common->gui.lock();
-}
-
-
-void
 KnobHelper::convertDimViewArgAccordingToKnobState(DimSpec dimIn, ViewSetSpec viewIn, DimSpec* dimOut, ViewSetSpec* viewOut) const
 {
 

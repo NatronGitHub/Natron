@@ -61,6 +61,8 @@ CLANG_DIAG_ON(uninitialized)
 #define WRITE_NODE_DEFAULT_WRITER PLUGINID_OFX_WRITEOIIO
 #define kPluginSelectorParamEntryDefault "Default"
 
+#define kNatronPersistentErrorEncoderMissing "NatronPersistentErrorEncoderMissing"
+
 NATRON_NAMESPACE_ENTER;
 
 //Generic Writer
@@ -500,17 +502,19 @@ WriteNodePrivate::checkEncoderCreated(TimeValue time,
     assert(fileKnob);
     std::string pattern = fileKnob->getValueAtTime( TimeValue(std::floor(time + 0.5)), DimIdx(0), ViewIdx( view.value() ) );
     if ( pattern.empty() ) {
-        _publicInterface->setPersistentMessage( eMessageTypeError, tr("Filename is empty.").toStdString() );
+        _publicInterface->getNode()->setPersistentMessage( eMessageTypeError, kNatronPersistentErrorEncoderMissing, tr("Filename is empty.").toStdString() );
 
         return false;
     }
     if ( !embeddedPlugin.lock() ) {
         QString s = tr("Encoder was not created for %1. Check that the file exists and its format is supported.")
                     .arg( QString::fromUtf8( pattern.c_str() ) );
-        _publicInterface->setPersistentMessage( eMessageTypeError, s.toStdString() );
+        _publicInterface->getNode()->setPersistentMessage( eMessageTypeError, kNatronPersistentErrorEncoderMissing, s.toStdString() );
 
         return false;
     }
+
+    _publicInterface->getNode()->clearPersistentMessage(kNatronPersistentErrorEncoderMissing);
 
     return true;
 }
@@ -1096,8 +1100,8 @@ WriteNode::knobChanged(const KnobIPtr& k,
 
         try {
             _imp->refreshPluginSelectorKnob();
-        } catch (const std::exception& e) {
-            setPersistentMessage( eMessageTypeError, e.what() );
+        } catch (const std::exception& /*e*/) {
+            assert(false);
         }
 
         KnobFilePtr fileKnob = _imp->outputFileKnob.lock();
@@ -1106,8 +1110,9 @@ WriteNode::knobChanged(const KnobIPtr& k,
 
         try {
             _imp->createWriteNode( false, filename, 0 );
+            getNode()->clearPersistentMessage(kNatronPersistentErrorEncoderMissing);
         } catch (const std::exception& e) {
-            setPersistentMessage( eMessageTypeError, e.what() );
+            getNode()->setPersistentMessage( eMessageTypeError, kNatronPersistentErrorEncoderMissing, e.what() );
         }
 
     } else if ( k == _imp->pluginSelectorKnob.lock() ) {
@@ -1129,11 +1134,11 @@ WriteNode::knobChanged(const KnobIPtr& k,
 
         try {
             _imp->createWriteNode( false, filename, 0 );
+            getNode()->clearPersistentMessage(kNatronPersistentErrorEncoderMissing);
         } catch (const std::exception& e) {
-            setPersistentMessage( eMessageTypeError, e.what() );
+            getNode()->setPersistentMessage( eMessageTypeError, kNatronPersistentErrorEncoderMissing, e.what() );
         }
     } else if ( k == _imp->readBackKnob.lock() ) {
-        clearPersistentMessage(false);
         bool readFile = _imp->readBackKnob.lock()->getValue();
         KnobButtonPtr button = _imp->renderButtonKnob.lock();
         button->setEnabled(!readFile);

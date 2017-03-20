@@ -60,6 +60,8 @@ CLANG_DIAG_ON(uninitialized)
 #define READ_NODE_DEFAULT_READER PLUGINID_OFX_READOIIO
 #define kPluginSelectorParamEntryDefault "Default"
 
+#define kNatronPersistentErrorDecoderMissing "NatronPersistentErrorDecoderMissing"
+
 NATRON_NAMESPACE_ENTER;
 
 //Generic Reader
@@ -523,17 +525,18 @@ ReadNodePrivate::checkDecoderCreated(TimeValue time,
     }
     std::string pattern = fileKnob->getValueAtTime(TimeValue(std::floor(time + 0.5)), DimIdx(0), view);
     if ( pattern.empty() ) {
-        _publicInterface->setPersistentMessage( eMessageTypeError, tr("Filename empty").toStdString() );
+        _publicInterface->getNode()->setPersistentMessage( eMessageTypeError, kNatronPersistentErrorDecoderMissing, tr("Filename empty").toStdString() );
 
         return false;
     }
 
     if (!_publicInterface->getEmbeddedReader()) {
         QString s = tr("Decoder was not created for %1, check that the file exists and its format is supported.").arg( QString::fromUtf8( pattern.c_str() ) );
-        _publicInterface->setPersistentMessage( eMessageTypeError, s.toStdString() );
+        _publicInterface->getNode()->setPersistentMessage( eMessageTypeError, kNatronPersistentErrorDecoderMissing, s.toStdString() );
 
         return false;
     }
+    _publicInterface->getNode()->clearPersistentMessage(kNatronPersistentErrorDecoderMissing);
 
     return true;
 }
@@ -995,8 +998,8 @@ ReadNode::knobChanged(const KnobIPtr& k,
         }
         try {
             _imp->refreshPluginSelectorKnob();
-        } catch (const std::exception& e) {
-            setPersistentMessage( eMessageTypeError, e.what() );
+        } catch (const std::exception& /*e*/) {
+            assert(false);
         }
 
         KnobFilePtr fileKnob = _imp->inputFileKnob.lock();
@@ -1004,8 +1007,9 @@ ReadNode::knobChanged(const KnobIPtr& k,
         std::string filename = fileKnob->getValue();
         try {
             _imp->createReadNode( false, filename, 0 );
+            getNode()->clearPersistentMessage(kNatronPersistentErrorDecoderMissing);
         } catch (const std::exception& e) {
-            setPersistentMessage( eMessageTypeError, e.what() );
+            getNode()->setPersistentMessage( eMessageTypeError, kNatronPersistentErrorDecoderMissing, e.what() );
         }
 
     } else if ( k == _imp->pluginSelectorKnob.lock() ) {
@@ -1027,8 +1031,9 @@ ReadNode::knobChanged(const KnobIPtr& k,
 
         try {
             _imp->createReadNode( false, filename, 0 );
+            getNode()->clearPersistentMessage(kNatronPersistentErrorDecoderMissing);
         } catch (const std::exception& e) {
-            setPersistentMessage( eMessageTypeError, e.what() );
+            getNode()->setPersistentMessage( eMessageTypeError, kNatronPersistentErrorDecoderMissing, e.what() );
         }
         _imp->refreshFileInfoVisibility(entry.id);
     } else if ( k == _imp->fileInfosKnob.lock() ) {

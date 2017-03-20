@@ -215,10 +215,6 @@ struct CommonData
     // Pointer to a custom interact that should replace the UI of the knob
     OverlayInteractBasePtr customInteract;
 
-    // Pointer to the knobGui interface if it has any
-    KnobGuiIWPtr gui;
-
-
     // Protects expressions
     mutable QMutex expressionMutex;
 
@@ -306,7 +302,6 @@ struct CommonData
     , declaredByPlugin(true)
     , userKnob(false)
     , customInteract()
-    , gui()
     , expressionMutex()
     , expressions()
     , expressionRecursionLevel(0)

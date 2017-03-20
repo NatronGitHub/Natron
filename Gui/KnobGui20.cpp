@@ -417,14 +417,6 @@ KnobGui::onKnobMultipleSelectionChanged(bool d)
 }
 
 
-///Should set to the underlying knob the gui ptr
-void
-KnobGui::setKnobGuiPointer()
-{
-    getKnob()->setKnobGuiPointer( shared_from_this() );
-}
-
-
 void
 KnobGui::onAppendParamEditChanged(ValueChangedReasonEnum reason,
                                   ValueChangedReturnCodeEnum setValueRetCode,
