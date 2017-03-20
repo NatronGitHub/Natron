@@ -7,7 +7,7 @@ Version23: 2.3
 Version30: 3.0.0
 
 # The version for this branch of the sources
-Version: %{version22}
+Version: %{version23}
 
 # The release number (must be incremented whenever changes to this file generate different binaries)
 Release: 1%{?dist}

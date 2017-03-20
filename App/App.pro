@@ -25,7 +25,7 @@ VERSION_23 = 2.3
 VERSION_30 = 3.0.0
 
 # The version for this branch
-VERSION = $$VERSION_22
+VERSION = $$VERSION_23
 
 TEMPLATE = app
 win32 {
