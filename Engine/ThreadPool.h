@@ -88,11 +88,20 @@ private:
  **/
 inline bool isRunningInThreadPoolThread()
 {
+#ifdef QT_CUSTOM_THREADPOOL
     AbortableThread* isAbortable = dynamic_cast<AbortableThread*>(QThread::currentThread());
     if (!isAbortable || !isAbortable->isThreadPoolThread()) {
         return false;
     }
     return true;
+#else
+    // If Qt is not patched, we cannot inherit AbortableThread, hence just attempt to check if the thread object name matches one
+    // of the thread pool thread
+    if (QThread::currentThread()->objectName().endsWith(QString::fromUtf8("(pooled)"))) {
+        return true;
+    }
+    return false;
+#endif
 }
 
 #define REPORT_CURRENT_THREAD_ACTION(actionName, node) \
