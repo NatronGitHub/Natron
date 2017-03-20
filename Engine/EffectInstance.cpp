@@ -106,6 +106,10 @@ EffectInstance::~EffectInstance()
 {
 }
 
+bool
+EffectInstance::isDraftRenderSupported() const {
+    return false;
+}
 
 KnobHolderPtr
 EffectInstance::createRenderCopy(const FrameViewRenderKey& key) const
@@ -740,6 +744,8 @@ EffectInstance::GetImageInArgs::GetImageInArgs(const unsigned int* currentMipMap
 bool
 EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* outArgs)
 {
+
+    // Extract arguments and make default values if needed
     TreeRenderPtr currentRender = getCurrentRender();
 
     TimeValue inputTime = inArgs.inputTime ? *inArgs.inputTime : getCurrentRenderTime();
@@ -776,16 +782,19 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
     unsigned int inputMipMapLevel = inArgs.inputMipMapLevel ? *inArgs.inputMipMapLevel : currentMipMapLevel;
     RenderScale inputProxyScale = inArgs.inputProxyScale ? *inArgs.inputProxyScale : currentProxyScale;
 
+    // Get the input effect pointer
     EffectInstancePtr inputEffect = getInputRenderEffect(inArgs.inputNb, inputTime, inputView);
-
     if (!inputEffect) {
         // Disconnected input
         return false;
     }
 
     // Get the requested RoI for the input, if we can recover it, otherwise TreeRender will render the RoD.
+    // roiCanonical is the RoI returned by the getRegionsOfInterest action
+    // roiExpand is the union of the RoI on all inputs in case this effect does not support multi-resolution
     RectD roiCanonical, roiExpand;
-    if (!resolveRoIForGetImage(inArgs, currentMipMapLevel, currentProxyScale, &roiCanonical, &roiExpand)) {
+    RectD inputRoD;
+    {
         // If we did not resolve the RoI, ask for the RoD
         GetRegionOfDefinitionResultsPtr results;
         RenderScale combinedScale = EffectInstance::getCombinedScale(inputMipMapLevel, inputProxyScale);
@@ -794,9 +803,16 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
             return stat;
         }
         assert(results);
-        roiCanonical = results->getRoD();
+        inputRoD = results->getRoD();
+    }
+    if (!resolveRoIForGetImage(inArgs, currentMipMapLevel, currentProxyScale, &roiCanonical, &roiExpand)) {
+        roiCanonical = inputRoD;
+    } else {
+        roiExpand.intersect(inputRoD, &roiExpand);
+        roiCanonical.intersect(inputRoD, &roiCanonical);
     }
 
+    // Empty RoI
     if (roiCanonical.isNull()) {
         return false;
     }
@@ -834,7 +850,6 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
 
     // Copy in output the distortion stack
     outArgs->distortionStack = outputRequest->getDistorsionStack();
-
 
     // Get the RoI in pixel coordinates of the effect we rendered
     RenderScale inputCombinedScale = EffectInstance::getCombinedScale(inputMipMapLevel, inputProxyScale);

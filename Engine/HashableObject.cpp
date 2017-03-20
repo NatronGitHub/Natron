@@ -33,8 +33,9 @@ NATRON_NAMESPACE_ENTER
 
 struct HashableObjectPrivate
 {
-    // The other objects that need this hash as part of their hash
-    std::list<HashableObjectWPtr> hashListeners;
+    // The list of other objects that need this hash as part of their result
+    // and the list of dependencies (other hash objects) we need in order to provide our result
+    std::list<HashableObjectWPtr> listeners, dependencies;
 
     // The hash cache
     mutable FrameViewHashMap timeViewVariantHashCache;
@@ -54,7 +55,8 @@ struct HashableObjectPrivate
     bool hashCacheEnabled;
 
     HashableObjectPrivate()
-    : hashListeners()
+    : listeners()
+    , dependencies()
     , timeViewVariantHashCache()
     , timeViewInvariantCache(0)
     , timeViewInvariantCacheValid(false)
@@ -67,7 +69,8 @@ struct HashableObjectPrivate
     }
 
     HashableObjectPrivate(const HashableObjectPrivate& other)
-    : hashListeners()
+    : listeners()
+    , dependencies()
     , timeViewVariantHashCache()
     , timeViewInvariantCache()
     , timeViewInvariantCacheValid(false)
@@ -86,6 +89,10 @@ struct HashableObjectPrivate
     }
 
     bool findCachedHashInternal(const HashableObject::FindHashArgs& args, U64 *hash) const;
+
+    bool computeCachingEnabled() const;
+
+    void computeCachingEnabledRecursive(std::set<HashableObjectPrivate*>* markedObjects);
 };
 
 HashableObject::HashableObject()
@@ -108,8 +115,13 @@ HashableObject::HashableObject(const HashableObject& other)
 void
 HashableObject::addHashListener(const HashableObjectPtr& parent)
 {
-    _imp->hashListeners.push_back(parent);
+    _imp->listeners.push_back(parent);
+}
 
+void
+HashableObject::addHashDependency(const HashableObjectPtr& dep)
+{
+    _imp->dependencies.push_back(dep);
 }
 
 bool
@@ -222,7 +234,7 @@ HashableObject::invalidateHashCacheInternal(std::set<HashableObject*>* invalidat
         _imp->timeViewInvariantCacheValid = false;
         _imp->metadataSlaveCacheValid = false;
     }
-    for (std::list<HashableObjectWPtr>::const_iterator it = _imp->hashListeners.begin(); it != _imp->hashListeners.end(); ++it) {
+    for (std::list<HashableObjectWPtr>::const_iterator it = _imp->listeners.begin(); it != _imp->listeners.end(); ++it) {
         HashableObjectPtr listener = it->lock();
         if (listener) {
             listener->invalidateHashCacheInternal(invalidatedObjects);
@@ -241,8 +253,48 @@ HashableObject::invalidateHashCache()
 void
 HashableObject::setHashCachingEnabled(bool enabled)
 {
-    QMutexLocker k(&_imp->hashCacheMutex);
-    _imp->hashCacheEnabled = enabled;
+    {
+        QMutexLocker k(&_imp->hashCacheMutex);
+        _imp->hashCacheEnabled = enabled;
+    }
+    std::set<HashableObjectPrivate*> markedObjects;
+    _imp->computeCachingEnabledRecursive(&markedObjects);
+}
+
+bool
+HashableObjectPrivate::computeCachingEnabled() const
+{
+
+    if (!hashCacheEnabled) {
+        return false;
+    }
+    for (std::list<HashableObjectWPtr>::const_iterator it = dependencies.begin(); it != dependencies.end(); ++it) {
+        HashableObjectPtr listener = it->lock();
+        if (listener) {
+            if (!listener->isHashCachingEnabled()) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+void
+HashableObjectPrivate::computeCachingEnabledRecursive(std::set<HashableObjectPrivate*>* markedObjects)
+{
+    if (markedObjects->find(this) != markedObjects->end()) {
+        return;
+    }
+    QMutexLocker k(&hashCacheMutex);
+
+    hashCacheEnabled = computeCachingEnabled();
+
+    for (std::list<HashableObjectWPtr>::const_iterator it = listeners.begin(); it != listeners.end(); ++it) {
+        HashableObjectPtr listener = it->lock();
+        if (listener) {
+            listener->_imp->computeCachingEnabledRecursive(markedObjects);
+        }
+    }
 }
 
 bool
@@ -250,6 +302,7 @@ HashableObject::isHashCachingEnabled() const
 {
     QMutexLocker k(&_imp->hashCacheMutex);
     return _imp->hashCacheEnabled;
+
 }
 
 NATRON_NAMESPACE_EXIT

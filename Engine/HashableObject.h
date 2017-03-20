@@ -49,7 +49,7 @@ NATRON_NAMESPACE_ENTER
  * The invalidate function removes all hashes from the hash cache and invalidates the parent as well recursively.
  **/
 struct HashableObjectPrivate;
-class HashableObject
+class HashableObject 
 {
 
 public:
@@ -66,6 +66,7 @@ public:
      * For instance, a Curve in a Knob might not change a lot hence we cache it's hash
      **/
     void addHashListener(const HashableObjectPtr& parent);
+    void addHashDependency(const HashableObjectPtr& parent);
 
 
     enum ComputeHashTypeEnum
@@ -174,7 +175,7 @@ protected:
 
 private:
 
-
+    friend struct HashableObjectPrivate;
 
     boost::scoped_ptr<HashableObjectPrivate> _imp;
 };

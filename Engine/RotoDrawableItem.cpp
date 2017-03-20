@@ -567,7 +567,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
     // Whenever the hash of the item changes, invalidate the hash of the RotoPaint nodes and all nodes within it.
     // This needs to be done because the hash needs to be recomputed if the Solo state changes for instance?
     addHashListener(rotoPaintEffect);
-
+    rotoPaintEffect->addHashDependency(thisShared);
 
     if (isStroke) {
         if (type == eRotoStrokeTypeSmear) {

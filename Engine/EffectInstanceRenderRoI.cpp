@@ -682,6 +682,8 @@ EffectInstance::Implementation::createCachedImage(const RectI& roiPixels,
         nodeFrameViewHash = _publicInterface->computeHash(args);
     }
 
+    bool supportsDraft = _publicInterface->isDraftRenderSupported();
+
     // The bitdepth of the image
     ImageBitDepthEnum outputBitDepth = _publicInterface->getBitDepth(-1);
 
@@ -694,7 +696,7 @@ EffectInstance::Implementation::createCachedImage(const RectI& roiPixels,
         initArgs.renderClone = _publicInterface->shared_from_this();
         initArgs.proxyScale = proxyScale;
         initArgs.mipMapLevel = mappedMipMapLevel;
-        initArgs.isDraft = isDraftRender;
+        initArgs.isDraft = supportsDraft ? isDraftRender : false;
         initArgs.nodeTimeViewVariantHash = nodeFrameViewHash;
         initArgs.bufferFormat = _publicInterface->getPreferredBufferLayout();
         initArgs.bitdepth = outputBitDepth;
@@ -1551,17 +1553,24 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPa
             renderRects.clear();
         } else {
 
+            if (isRenderAborted()) {
+                if (requestData->getCachePolicy() != eCacheAccessModeNone) {
+                    finishProducedPlanesTilesStatesMap(cachedImagePlanes, true /*aborted*/);
+                }
+                return eActionStatusAborted;
+            }
+
             // Re-fetch the tiles state from the cache which may have changed now
-            _imp->checkRestToRender(true /*updateTilesStateFromCache*/, requestData, renderMappedRoI, mappedCombinedScale, cachedImagePlanes, &renderRects, &hasPendingTiles);
+            renderRetCode = _imp->checkRestToRender(true /*updateTilesStateFromCache*/, requestData, renderMappedRoI, mappedCombinedScale, cachedImagePlanes, &renderRects, &hasPendingTiles);
         }
         
     } // while there is still something not rendered
 
-    if (isRenderAborted()) {
+    if (isFailureRetCode(renderRetCode) || isRenderAborted()) {
         if (requestData->getCachePolicy() != eCacheAccessModeNone) {
             finishProducedPlanesTilesStatesMap(cachedImagePlanes, true /*aborted*/);
         }
-        return eActionStatusAborted;
+        return isFailureRetCode(renderRetCode) ? renderRetCode : eActionStatusAborted;
     }
 
     // If using GPU and out of memory retry on CPU if possible

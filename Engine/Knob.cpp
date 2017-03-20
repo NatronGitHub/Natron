@@ -104,20 +104,14 @@ KnobHelper::KnobHelper(const KnobHolderPtr& holder,
     : _signalSlotHandler()
     , _imp( new KnobHelperPrivate(this, holder, nDims, scriptName) )
 {
-    if (holder) {
-        // When knob value changes, the holder needs to be invalidated aswell
-        addHashListener(holder);
-    }
+
 }
 
 KnobHelper::KnobHelper(const KnobHolderPtr& holder, const KnobIPtr& mainKnob)
 : _signalSlotHandler()
 , _imp(new KnobHelperPrivate(this, holder, toKnobHelper(mainKnob)))
 {
-    if (holder) {
-        // When knob value changes, the holder needs to be invalidated aswell
-        addHashListener(holder);
-    }
+  
 }
 
 KnobHelper::~KnobHelper()
@@ -456,7 +450,14 @@ void
 KnobHelper::populate()
 {
     KnobIPtr thisKnob = shared_from_this();
+
     KnobHolderPtr holder = getHolder();
+
+    if (holder) {
+        // When knob value changes, the holder needs to be invalidated aswell
+        addHashListener(holder);
+        holder->addHashDependency(thisKnob);
+    }
 
     // Register the knob in the render clones map
     {

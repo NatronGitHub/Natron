@@ -141,6 +141,7 @@ struct OfxEffectInstanceCommon
     bool overlaysCanHandleRenderScale;
     bool supportsMultipleClipPARs;
     bool supportsMultipleClipDepths;
+    bool supportsRenderQuality;
     bool multiplanar;
 
     OfxEffectInstanceCommon()
@@ -162,6 +163,7 @@ struct OfxEffectInstanceCommon
     , overlaysCanHandleRenderScale(true)
     , supportsMultipleClipPARs(false)
     , supportsMultipleClipDepths(false)
+    , supportsRenderQuality(false)
     , multiplanar(false)
     {
 
@@ -274,6 +276,7 @@ OfxEffectInstance::describePlugin()
 
     _imp->common->supportsMultipleClipPARs = _imp->common->effect->supportsMultipleClipPARs();
     _imp->common->supportsMultipleClipDepths = _imp->common->effect->supportsMultipleClipDepths();
+    _imp->common->supportsRenderQuality = _imp->common->effect->supportsRenderQuality();
     _imp->common->multiplanar = _imp->common->effect->isMultiPlanar();
     int sequential = _imp->common->effect->getPlugin()->getDescriptor().getProps().getIntProperty(kOfxImageEffectInstancePropSequentialRender);
     switch (sequential) {
@@ -1675,6 +1678,12 @@ OfxEffectInstance::supportsMultipleClipDepths() const
     return _imp->common->supportsMultipleClipDepths;
 }
 
+bool
+OfxEffectInstance::isDraftRenderSupported() const
+{
+    return effectInstance()->supportsRenderQuality();
+}
+
 PluginOpenGLRenderSupport
 OfxEffectInstance::getCurrentOpenGLSupport() const
 {
@@ -1934,14 +1943,6 @@ OfxEffectInstance::purgeCaches()
     }
 
     Q_UNUSED(stat);
-}
-
-
-
-bool
-OfxEffectInstance::supportsRenderQuality() const
-{
-    return effectInstance()->supportsRenderQuality();
 }
 
 bool

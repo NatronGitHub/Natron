@@ -1475,10 +1475,6 @@ public:
         return true;
     }
 
-    /**
-     * @brief Hint the cache whether this effect can make draft mode renders or not
-     **/
-    virtual bool supportsRenderQuality() const { return false; }
 
     /**
      * @brief Does this effect can support multiple clips PAR ?
@@ -1508,6 +1504,10 @@ public:
 
     virtual bool isFullAnimationToHashEnabled() const OVERRIDE FINAL;
 
+    /**
+     * @brief Hint the cache whether this effect can make draft mode renders or not
+     **/
+    virtual bool isDraftRenderSupported() const;
 
     virtual bool canCPUImplementationSupportOSMesa() const
     {
