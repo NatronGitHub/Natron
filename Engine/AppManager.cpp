@@ -2950,9 +2950,9 @@ AppManager::initPython()
     initBuiltinPythonModules();
 
 #if PY_MAJOR_VERSION >= 3
-    NATRON_PYTHON_NAMESPACE::initializePython3(_imp->commandLineArgsWide);
+    _imp->mainModule = NATRON_PYTHON_NAMESPACE::initializePython3(_imp->commandLineArgsWide);
 #else
-    NATRON_PYTHON_NAMESPACE::initializePython2(_imp->commandLineArgsUtf8);
+    _imp->mainModule = NATRON_PYTHON_NAMESPACE::initializePython2(_imp->commandLineArgsUtf8);
 #endif
 
     std::string err;
