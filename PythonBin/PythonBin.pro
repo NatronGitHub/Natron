@@ -23,11 +23,13 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 TARGET = natron-python
 CONFIG += console
 CONFIG -= app_bundle
+CONFIG -= qt
 CONFIG += python
 
 TEMPLATE = app
 
 include(../global.pri)
+
 
 INCLUDEPATH += $$PWD/..
 INCLUDEPATH += $$PWD/../Global

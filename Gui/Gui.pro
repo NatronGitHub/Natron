@@ -24,7 +24,7 @@ CONFIG += staticlib
    CONFIG += enable-cairo
 }
 CONFIG += moc rcc
-CONFIG += boost opengl qt python shiboken pyside
+CONFIG += boost opengl qt python shiboken pyside fontconfig
 enable-cairo: CONFIG += cairo
 QT += gui core opengl network
 greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent

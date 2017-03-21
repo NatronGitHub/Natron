@@ -28,7 +28,7 @@ CONFIG -= app_bundle
    CONFIG += enable-cairo
 }
 CONFIG += moc
-CONFIG += boost qt python shiboken pyside 
+CONFIG += boost qt python shiboken pyside osmesa fontconfig
 enable-cairo: CONFIG += cairo
 CONFIG += static-yaml-cpp static-engine static-host-support static-serialization static-breakpadclient static-libmv static-openmvg static-ceres static-libtess
 

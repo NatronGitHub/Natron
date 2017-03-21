@@ -141,10 +141,13 @@ CONFIG(enable-osmesa) {
     }
     # When using static Mesa libraries, the LLVM libs (necessary for llvmpipe) are not included
     OSMESA_LIBS=$$system(env PKG_CONFIG_PATH=$$OSMESA_PATH/lib/pkgconfig pkg-config --libs --static osmesa) $$system($$LLVM_PATH/bin/llvm-config --ldflags --system-libs --libs engine mcjit mcdisassembler 2>/dev/null || $$LLVM_PATH/bin/llvm-config --ldflags --libs engine mcjit mcdisassembler)
+    OSMESA_INCLUDES=$$system(env PKG_CONFIG_PATH=$$OSMESA_PATH/lib/pkgconfig pkg-config --variable=includedir osmesa)
 
-    DEFINES += HAVE_OSMESA
-    INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$OSMESA_PATH/lib/pkgconfig pkg-config --variable=includedir osmesa)
-    QMAKE_LFLAGS += $$OSMESA_LIBS
+    osmesa {
+        DEFINES += HAVE_OSMESA
+        INCLUDEPATH += $$OSMESA_INCLUDES
+        QMAKE_LFLAGS += $$OSMESA_LIBS
+    }
 }
 
 # https://qt.gitorious.org/qt-creator/qt-creator/commit/b48ba2c25da4d785160df4fd0d69420b99b85152
@@ -263,7 +266,7 @@ win32 {
 
 
   # Natron requires a link to opengl32.dll and Gdi32 for offscreen rendering
-  LIBS += -lopengl32 -lGdi32
+  osmesa:   LIBS += -lopengl32 -lGdi32
 
 
 }
@@ -335,12 +338,13 @@ unix {
      #  on Unix systems, only the "boost" option needs to be defined in config.pri
      QT_CONFIG -= no-pkg-config
      CONFIG += link_pkgconfig
-     expat:     PKGCONFIG += expat
+     expat:      PKGCONFIG += expat
 
-     PKGCONFIG += freetype2 fontconfig
+
+     fontconfig: PKGCONFIG += freetype2 fontconfig
 
      linux-* {
-          LIBS += -lGL -lX11
+         osmesa:    LIBS += -lGL -lX11
          # link with static cairo on linux, to avoid linking to X11 libraries in NatronRenderer
          cairo {
              PKGCONFIG += pixman-1
@@ -349,7 +353,8 @@ unix {
          LIBS += -ldl -lrt
          QMAKE_LFLAGS += '-Wl,-rpath,\'\$$ORIGIN/../lib\',-z,origin'
      } else {
-         LIBS += -framework OpenGL
+
+         osmesa:    LIBS += -framework OpenGL
          cairo:     PKGCONFIG += cairo
      }
 

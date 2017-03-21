@@ -39,7 +39,7 @@ win32 {
    CONFIG += enable-cairo
 }
 CONFIG += moc
-CONFIG += boost opengl qt python shiboken pyside
+CONFIG += boost opengl qt python shiboken pyside osmesa fontconfig
 enable-cairo: CONFIG += cairo
 CONFIG += static-yaml-cpp static-gui static-engine static-serialization static-host-support static-breakpadclient static-libmv static-openmvg static-ceres static-qhttpserver static-libtess
 
