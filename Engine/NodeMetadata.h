@@ -215,14 +215,12 @@ public:
     /**
      * @brief Serializes the meta-data to a memory segment
      **/
-    void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const;
+    void toMemorySegment(IPCPropertyMap* properties) const;
 
     /**
      * @brief Serializes the meta-data from a memory segment
      **/
-    void fromMemorySegment(ExternalSegmentType* segment,
-                           ExternalSegmentTypeHandleList::const_iterator *start,
-                           ExternalSegmentTypeHandleList::const_iterator end);
+    void fromMemorySegment(const IPCPropertyMap& properties);
 
     // Helper function for built-in meta-datas
 

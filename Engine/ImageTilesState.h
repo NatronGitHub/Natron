@@ -74,6 +74,18 @@ struct TileState
     {
         channelsTileStorageIndex[0] = channelsTileStorageIndex[1] = channelsTileStorageIndex[2] = channelsTileStorageIndex[3] = (U64)-1;
     }
+
+    TileState(const TileState& other)
+    {
+        *this = other;
+    }
+
+    void operator=(const TileState& other)
+    {
+        bounds = other.bounds;
+        status = other.status;
+        memcpy(channelsTileStorageIndex, other.channelsTileStorageIndex, sizeof(U64) * 4);
+    }
 };
 
 

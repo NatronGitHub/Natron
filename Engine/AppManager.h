@@ -180,9 +180,9 @@ public:
     Format findExistingFormat(int w, int h, double par = 1.0) const WARN_UNUSED_RETURN;
     const std::vector<Format> & getFormats() const WARN_UNUSED_RETURN;
 
-    CachePtr getGeneralPurposeCache() const;
+    CacheBasePtr getGeneralPurposeCache() const;
 
-    CachePtr getTileCache() const;
+    CacheBasePtr getTileCache() const;
 
     void deleteCacheEntriesInSeparateThread(const std::list<ImageStorageBasePtr> & entriesToDelete);
 

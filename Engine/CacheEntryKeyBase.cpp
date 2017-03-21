@@ -120,16 +120,14 @@ CacheEntryKeyBase::getMetadataSize() const
 }
 
 void
-CacheEntryKeyBase::toMemorySegment(ExternalSegmentType* /*segment*/, ExternalSegmentTypeHandleList* /*objectPointers*/) const
+CacheEntryKeyBase::toMemorySegment(IPCPropertyMap* /*properties*/) const
 {
 
 }
 
 
 CacheEntryKeyBase::FromMemorySegmentRetCodeEnum
-CacheEntryKeyBase::fromMemorySegment(ExternalSegmentType* /*segment*/,
-                                     ExternalSegmentTypeHandleList::const_iterator /*start*/,
-                                     ExternalSegmentTypeHandleList::const_iterator /*end*/)
+CacheEntryKeyBase::fromMemorySegment(const IPCPropertyMap& /*properties*/)
 
 {
     return eFromMemorySegmentRetCodeOk;

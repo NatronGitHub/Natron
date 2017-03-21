@@ -46,7 +46,7 @@
 #include "Engine/ThreadPool.h"
 
 // Define to log tiles status in the console
-//#define TRACE_TILES_STATUS
+#define TRACE_TILES_STATUS
 
 NATRON_NAMESPACE_ENTER;
 
@@ -162,12 +162,10 @@ public:
     }
 
 #ifndef NATRON_CACHE_NEVER_PERSISTENT
-    virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const OVERRIDE FINAL;
+    virtual void toMemorySegment(IPCPropertyMap* properties) const OVERRIDE FINAL;
 
     virtual CacheEntryBase::FromMemorySegmentRetCodeEnum fromMemorySegment(bool isLockedForWriting,
-                                                                           ExternalSegmentType* segment,
-                                                                           ExternalSegmentTypeHandleList::const_iterator start,
-                                                                           ExternalSegmentTypeHandleList::const_iterator end) OVERRIDE FINAL WARN_UNUSED_RETURN;
+                                                                           const IPCPropertyMap& properties) OVERRIDE FINAL WARN_UNUSED_RETURN;
 #endif
 
 
@@ -1919,9 +1917,7 @@ static void toMemorySegmentInternal(bool copyPendingStatusToCache,
 
 CacheEntryBase::FromMemorySegmentRetCodeEnum
 ImageCacheEntryInternal::fromMemorySegment(bool isLockedForWriting,
-                                           ExternalSegmentType* segment,
-                                           ExternalSegmentTypeHandleList::const_iterator start,
-                                           ExternalSegmentTypeHandleList::const_iterator end) {
+                                           const IPCPropertyMap& properties) {
     // Deserialize and optionnally update the tiles state
     {
 
@@ -1971,12 +1967,12 @@ ImageCacheEntryInternal::fromMemorySegment(bool isLockedForWriting,
         }
     }
     
-    return CacheEntryBase::fromMemorySegment(isLockedForWriting, segment, start, end);
+    return CacheEntryBase::fromMemorySegment(isLockedForWriting, properties);
 } // fromMemorySegment
 
 
 void
-ImageCacheEntryInternal::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const
+ImageCacheEntryInternal::toMemorySegment(IPCPropertyMap* properties) const
 {
 
     // Copy the tile state to the memory segment, this will be called the first time we construct the entry in the cache
@@ -1988,6 +1984,7 @@ ImageCacheEntryInternal::toMemorySegment(ExternalSegmentType* segment, ExternalS
         if (!mipMapStates) {
             throw boost::interprocess::bad_alloc();
         }
+        qDebug() << "ALLOC" << mipMapStates;
         toMemorySegmentInternal(true /*copyPendingStatusToCache*/, perMipMapTilesState, mipMapStates, segment);
         objectPointers->push_back(segment->get_handle_from_address(mipMapStates));
     }

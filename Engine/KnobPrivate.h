@@ -438,16 +438,14 @@ public:
         return kCacheKeyUniqueIDExpressionResult;
     }
 
-    virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const OVERRIDE FINAL
+    virtual void toMemorySegment(IPCPropertyMap* properties) const OVERRIDE FINAL
     {
         objectPointers->push_back(writeAnonymousSharedObject(_data, segment));
         objectPointers->push_back(writeAnonymousSharedObject(_knobScriptName,  segment));
 
     }
 
-    virtual CacheEntryKeyBase::FromMemorySegmentRetCodeEnum fromMemorySegment(ExternalSegmentType* segment,
-                                   ExternalSegmentTypeHandleList::const_iterator start,
-                                   ExternalSegmentTypeHandleList::const_iterator end) OVERRIDE FINAL
+    virtual CacheEntryKeyBase::FromMemorySegmentRetCodeEnum fromMemorySegment(const IPCPropertyMap& properties) OVERRIDE FINAL
     {
         if (start == end) {
             return eFromMemorySegmentRetCodeFailed;
@@ -527,7 +525,7 @@ public:
     }
 
 
-    virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const OVERRIDE FINAL
+    virtual void toMemorySegment(IPCPropertyMap* properties) const OVERRIDE FINAL
     {
         if (!_stringResult.empty()) {
             KnobExpressionResultTypeEnum type = eKnobExpressionResultTypeString;
@@ -542,9 +540,7 @@ public:
     }
 
     virtual CacheEntryBase::FromMemorySegmentRetCodeEnum fromMemorySegment(bool isLockedForWriting,
-                                                                           ExternalSegmentType* segment,
-                                                                           ExternalSegmentTypeHandleList::const_iterator start,
-                                                                           ExternalSegmentTypeHandleList::const_iterator end) OVERRIDE FINAL
+                                                                           const IPCPropertyMap& properties) OVERRIDE FINAL
     {
         int type_i;
         if (start == end) {
@@ -564,7 +560,7 @@ public:
             }   break;
         }
         ++start;
-        return CacheEntryBase::fromMemorySegment(isLockedForWriting, segment, start, end);
+        return CacheEntryBase::fromMemorySegment(isLockedForWriting, properties);
     }
 
 private:

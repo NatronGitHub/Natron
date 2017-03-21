@@ -34,10 +34,10 @@ NATRON_NAMESPACE_ENTER;
 struct CacheEntryBasePrivate
 {
 
-    CacheWPtr cache;
+    CacheBaseWPtr cache;
     CacheEntryKeyBasePtr key;
 
-    CacheEntryBasePrivate(const CachePtr& cache)
+    CacheEntryBasePrivate(const CacheBasePtr& cache)
     : cache(cache)
     , key()
     {
@@ -45,7 +45,7 @@ struct CacheEntryBasePrivate
     }
 };
 
-CacheEntryBase::CacheEntryBase(const CachePtr& cache)
+CacheEntryBase::CacheEntryBase(const CacheBasePtr& cache)
 : _imp(new CacheEntryBasePrivate(cache))
 {
 
@@ -56,16 +56,16 @@ CacheEntryBase::~CacheEntryBase()
 
 }
 
-CachePtr
+CacheBasePtr
 CacheEntryBase::getCache() const
 {
     return _imp->cache.lock();
 }
 
-CacheEntryLockerPtr
+CacheEntryLockerBasePtr
 CacheEntryBase::getFromCache() const
 {
-    CachePtr cache = getCache();
+    CacheBasePtr cache = getCache();
     CacheEntryBasePtr thisShared = boost::const_pointer_cast<CacheEntryBase>(shared_from_this());
     return cache->get(thisShared);
 }
@@ -98,20 +98,17 @@ CacheEntryBase::getMetadataSize() const
 }
 
 void
-CacheEntryBase::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const
+CacheEntryBase::toMemorySegment(IPCPropertyMap* properties) const
 {
-    assert(objectPointers->get_allocator().get_segment_manager() == segment->get_segment_manager());
-    _imp->key->toMemorySegment(segment, objectPointers);
+    _imp->key->toMemorySegment(properties);
 }
 
 CacheEntryBase::FromMemorySegmentRetCodeEnum
 CacheEntryBase::fromMemorySegment(bool /*isLockedForWriting*/,
-                                  ExternalSegmentType* segment,
-                                  ExternalSegmentTypeHandleList::const_iterator start,
-                                  ExternalSegmentTypeHandleList::const_iterator end)
+                                  const IPCPropertyMap& properties)
 
 {
-    CacheEntryKeyBase::FromMemorySegmentRetCodeEnum stat = _imp->key->fromMemorySegment(segment, start, end);
+    CacheEntryKeyBase::FromMemorySegmentRetCodeEnum stat = _imp->key->fromMemorySegment(properties);
     if (stat == CacheEntryKeyBase::eFromMemorySegmentRetCodeFailed) {
         return eFromMemorySegmentRetCodeFailed;
     }

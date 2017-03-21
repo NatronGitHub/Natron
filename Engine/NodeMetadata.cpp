@@ -62,11 +62,9 @@ public:
 
     virtual void initializeProperties() const OVERRIDE FINAL;
 
-    void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const;
+    void toMemorySegment(IPCPropertyMap* properties) const;
 
-    void fromMemorySegment(ExternalSegmentType* segment,
-                           ExternalSegmentTypeHandleList::const_iterator *start,
-                           ExternalSegmentTypeHandleList::const_iterator end);
+    void fromMemorySegment(const IPCPropertyMap& properties);
 
     virtual ~Implementation()
     {
@@ -221,17 +219,15 @@ NodeMetadata::getMetadataDimension(const std::string& name) const
 }
 
 void
-NodeMetadata::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const
+NodeMetadata::toMemorySegment(IPCPropertyMap* properties) const
 {
-    _imp->toMemorySegment(segment, objectPointers);
+    _imp->toMemorySegment(properties);
 }
 
 void
-NodeMetadata::fromMemorySegment(ExternalSegmentType* segment,
-                                ExternalSegmentTypeHandleList::const_iterator *start,
-                                ExternalSegmentTypeHandleList::const_iterator end)
+NodeMetadata::fromMemorySegment(const IPCPropertyMap& properties)
 {
-    _imp->fromMemorySegment(segment, start, end);
+    _imp->fromMemorySegment(properties);
 }
 
 enum NodeMetadataDataTypeEnum
@@ -293,7 +289,7 @@ typedef bip::allocator<MetadataMapIPCValue, ExternalSegmentType::segment_manager
 typedef bip::flat_map<String_ExternalSegment, MetadataValuesIPC, std::less<String_ExternalSegment>, MetadataMapIPCValue_Allocator_ExternalSegment> MetadataMapIPC;
 
 void
-NodeMetadata::Implementation::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const
+NodeMetadata::Implementation::toMemorySegment(IPCPropertyMap* properties) const
 {
     // Add a prefix to the meta-data name in the memory segment to ensure that the meta-data name is not the same as
     // another item we serialized to the segment.
@@ -343,9 +339,7 @@ NodeMetadata::Implementation::toMemorySegment(ExternalSegmentType* segment, Exte
 } // toMemorySegment
 
 void
-NodeMetadata::Implementation::fromMemorySegment(ExternalSegmentType* segment,
-                                                ExternalSegmentTypeHandleList::const_iterator *start,
-                                                ExternalSegmentTypeHandleList::const_iterator /*end*/)
+NodeMetadata::Implementation::fromMemorySegment(const IPCPropertyMap& properties)
 {
 
     MetadataMapIPC* ipcMap = (MetadataMapIPC*)segment->get_address_from_handle(**start);

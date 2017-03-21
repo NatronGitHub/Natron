@@ -334,7 +334,7 @@ EffectInstance::Implementation::renderHandlerIdentity(const RectToRender & rectT
         }
 
         Image::CopyPixelsArgs cpyArgs;
-        cpyArgs.roi = rectToRender.rect;
+        rectToRender.rect.intersect(it->second->getBounds(), &cpyArgs.roi);
         ActionRetCodeEnum stat = it->second->copyPixels(*inputResults.image, cpyArgs);
         if (isFailureRetCode(stat)) {
             return stat;

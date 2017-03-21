@@ -26,7 +26,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
-
+#include "Global/GlobalDefines.h"
 #include <string>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -54,12 +54,9 @@ NATRON_NAMESPACE_ENTER;
 
 
 typedef boost::interprocess::managed_external_buffer ExternalSegmentType;
-
 typedef boost::interprocess::allocator<void, ExternalSegmentType::segment_manager> void_allocator;
 typedef boost::interprocess::allocator<char, ExternalSegmentType::segment_manager> CharAllocator_ExternalSegment;
 typedef boost::interprocess::basic_string<char, std::char_traits<char>, CharAllocator_ExternalSegment> String_ExternalSegment;
-typedef boost::interprocess::allocator<ExternalSegmentType::handle_t, ExternalSegmentType::segment_manager> ExternalSegmentTypeHandleAllocator;
-typedef boost::interprocess::list<ExternalSegmentType::handle_t, ExternalSegmentTypeHandleAllocator> ExternalSegmentTypeHandleList;
 
 
 /**
@@ -234,6 +231,160 @@ inline void readAnonymousSharedObject(ExternalSegmentType::handle_t handle, Exte
     String_ExternalSegment* found = (String_ExternalSegment*)segment->get_address_from_handle(handle);
     *object = std::string(found->c_str());
 }
+
+/**
+ * @brief All types serialized to the cache are flattened to a IPCVariant
+ **/
+enum IPCVariantTypeEnum
+{
+    eIPCVariantTypeBool,
+    eIPCVariantTypeInt,
+    eIPCVariantTypeDouble,
+    eIPCVariantTypeULongLong,
+    eIPCVariantTypeString
+};
+
+struct IPCVariant
+{
+    U64 scalar;
+    boost::interprocess::offset_ptr<String_ExternalSegment> string;
+
+    IPCVariant();
+
+    IPCVariant(const IPCVariant& other);
+
+    void operator=(const IPCVariant& other);
+
+    ~IPCVariant();
+
+};
+
+typedef boost::interprocess::allocator<IPCVariant, ExternalSegmentType::segment_manager> ExternalSegmentTypeIPCVariantAllocator;
+typedef boost::interprocess::vector<IPCVariant, ExternalSegmentTypeIPCVariantAllocator> IPCVariantVector;
+
+
+class IPCProperty
+{
+public:
+
+    IPCVariantTypeEnum type;
+    IPCVariantVector data;
+
+    IPCProperty(const void_allocator& alloc)
+    : type(eIPCVariantTypeBool)
+    , data(alloc)
+    {
+
+    }
+
+    IPCProperty(const IPCProperty& other)
+    : type(other.type)
+    , data(other.data)
+    {
+
+    }
+
+    void operator=(const IPCProperty& other)
+    {
+        type = other.type;
+        data = other.data;
+    }
+    
+
+};
+
+class IPCPropertyMap
+{
+public:
+
+    typedef std::pair<const String_ExternalSegment, IPCProperty > IPCVariantMapValueType;
+    typedef boost::interprocess::allocator<IPCVariantMapValueType, ExternalSegmentType::segment_manager> IPCVariantMapValueType_Allocator_ExternalSegment;
+    typedef boost::interprocess::map<String_ExternalSegment, IPCProperty, std::less<String_ExternalSegment>, IPCVariantMapValueType_Allocator_ExternalSegment> IPCVariantMap;
+
+private:
+
+    IPCVariantMap _properties;
+
+public:
+
+    IPCPropertyMap(const void_allocator& alloc);
+
+    ~IPCPropertyMap();
+
+    ExternalSegmentType::segment_manager* getSegmentManager() const;
+
+    void operator=(const IPCPropertyMap& other);
+
+    void clear();
+
+    void setIPCStringPropertyN(const std::string& name,
+                               const std::vector<std::string>& values);
+
+    void setIPCBoolPropertyN(const std::string& name,
+                             const std::vector<bool>& values);
+
+    void setIPCIntPropertyN(const std::string& name,
+                           const std::vector<int>& values);
+
+    void setIPCDoublePropertyN(const std::string& name,
+                               const std::vector<double>& values);
+
+    void setIPCStringProperty(const std::string& name,
+                               const std::string& values);
+
+    void setIPCULongLongPropertyN(const std::string& name,
+                                  const std::vector<U64>& values);
+
+    void setIPCBoolProperty(const std::string& name,
+                            bool values);
+
+    void setIPCIntProperty(const std::string& name,
+                            int values);
+
+    void setIPCDoubleProperty(const std::string& name,
+                            double values);
+
+    void setIPCULongLongProperty(const std::string& name,
+                                  U64 value);
+
+
+    bool getIPCStringPropertyN(const std::string& name,
+                               std::vector<std::string>* values) const;
+
+    bool getIPCBoolPropertyN(const std::string& name,
+                               std::vector<bool>* values) const;
+
+    bool getIPCIntPropertyN(const std::string& name,
+                               std::vector<int>* values) const;
+
+    bool getIPCDoublePropertyN(const std::string& name,
+                               std::vector<double>* values) const;
+
+    bool getIPCULongLongPropertyN(const std::string& name,
+                               std::vector<U64>* values) const;
+
+    bool getIPCStringProperty(const std::string& name,
+                               int index,
+                               std::string* value) const;
+
+    bool getIPCBoolProperty(const std::string& name,
+                             int index,
+                             bool* value) const;
+
+    bool getIPCIntProperty(const std::string& name,
+                            int index,
+                            int* value) const;
+
+    bool getIPCDoubleProperty(const std::string& name,
+                               int index,
+                               double* value) const;
+
+    bool getIPCULongLongProperty(const std::string& name,
+                              int index,
+                              U64* value) const;
+
+};
+
 
 
 

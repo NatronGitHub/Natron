@@ -55,19 +55,27 @@ EffectInstanceActionKeyBase::appendToHash(Hash64* hash) const
 }
 
 void
-EffectInstanceActionKeyBase::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const
+EffectInstanceActionKeyBase::toMemorySegment(IPCPropertyMap* properties) const
 {
-    objectPointers->push_back(writeAnonymousSharedObject(_data, segment));
-    CacheEntryKeyBase::toMemorySegment(segment, objectPointers);
+    properties->setIPCULongLongProperty("NodeHash", _data.nodeTimeViewVariantHash);
+    std::vector<double> scaleVec(2);
+    scaleVec[0] = _data.scale.x;
+    scaleVec[1] = _data.scale.y;
+    properties->setIPCDoublePropertyN("Scale", scaleVec);
 } // toMemorySegment
 
 CacheEntryKeyBase::FromMemorySegmentRetCodeEnum
-EffectInstanceActionKeyBase::fromMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList::const_iterator start, ExternalSegmentTypeHandleList::const_iterator end)
+EffectInstanceActionKeyBase::fromMemorySegment(const IPCPropertyMap& properties)
 {
-    if (start == end) {
+    if (!properties.getIPCULongLongProperty("NodeHash", 0, &_data.nodeTimeViewVariantHash)) {
         return eFromMemorySegmentRetCodeFailed;
     }
-    readAnonymousSharedObject(*start,segment, &_data);
+    std::vector<double> scaleVec;
+    if (!properties.getIPCDoublePropertyN("Scale", &scaleVec)) {
+        return eFromMemorySegmentRetCodeFailed;
+    }
+    _data.scale.x = scaleVec[0];
+    _data.scale.x = scaleVec[1];
     return eFromMemorySegmentRetCodeOk;
 } // fromMemorySegment
 
@@ -100,21 +108,30 @@ GetRegionOfDefinitionResults::setRoD(const RectD& rod)
 }
 
 void
-GetRegionOfDefinitionResults::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const
+GetRegionOfDefinitionResults::toMemorySegment(IPCPropertyMap* properties) const
 {
-    objectPointers->push_back(writeAnonymousSharedObject(_rod, segment));
-    CacheEntryBase::toMemorySegment(segment, objectPointers);
+    std::vector<double> rodVec(4);
+    rodVec[0] = _rod.x1;
+    rodVec[1] = _rod.y1;
+    rodVec[2] = _rod.x2;
+    rodVec[3] = _rod.y2;
+    properties->setIPCDoublePropertyN("RoD", rodVec);
+    CacheEntryBase::toMemorySegment(properties);
 } // toMemorySegment
 
 CacheEntryBase::FromMemorySegmentRetCodeEnum
 GetRegionOfDefinitionResults::fromMemorySegment(bool isLockedForWriting,
-                                                ExternalSegmentType* segment,
-                                                ExternalSegmentTypeHandleList::const_iterator start,
-                                                ExternalSegmentTypeHandleList::const_iterator end)
+                                                const IPCPropertyMap& properties)
 {
-    readAnonymousSharedObject(*start, segment, &_rod);
-    ++start;
-    return CacheEntryBase::fromMemorySegment(isLockedForWriting, segment, start, end);
+    std::vector<double> rodVec;
+    if (!properties.getIPCDoublePropertyN("RoD", &rodVec)) {
+        return eFromMemorySegmentRetCodeFailed;
+    }
+    _rod.x1 = rodVec[0];
+    _rod.y1 = rodVec[1];
+    _rod.x2 = rodVec[2];
+    _rod.y2 = rodVec[3];
+    return CacheEntryBase::fromMemorySegment(isLockedForWriting, properties);
 } // fromMemorySegment
 
 
@@ -149,21 +166,19 @@ GetDistortionResults::setResults(const DistortionFunction2DPtr& disto)
 
 
 void
-GetDistortionResults::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const
+GetDistortionResults::toMemorySegment(IPCPropertyMap* properties) const
 {
-    objectPointers->push_back(writeAnonymousSharedObject(_disto, segment));
+    properties->push_back(writeAnonymousSharedObject(_disto, segment));
     CacheEntryBase::toMemorySegment(segment, objectPointers);
 } // toMemorySegment
 
 CacheEntryBase::FromMemorySegmentRetCodeEnum
 GetDistortionResults::fromMemorySegment(bool isLockedForWriting,
-                                        ExternalSegmentType* segment,
-                                        ExternalSegmentTypeHandleList::const_iterator start,
-                                        ExternalSegmentTypeHandleList::const_iterator end)
+                                        const IPCPropertyMap& properties)
 {
     readAnonymousSharedObject(*start, segment, &_disto);
     ++start;
-    return CacheEntryBase::fromMemorySegment(isLockedForWriting, segment, start, end);
+    return CacheEntryBase::fromMemorySegment(isLockedForWriting, properties);
 } // fromMemorySegment
 
 
@@ -211,13 +226,11 @@ IsIdentityResults::toMemorySegment(ExternalSegmentType* segment, ExternalSegment
 
 CacheEntryBase::FromMemorySegmentRetCodeEnum
 IsIdentityResults::fromMemorySegment(bool isLockedForWriting,
-                                     ExternalSegmentType* segment,
-                                     ExternalSegmentTypeHandleList::const_iterator start,
-                                     ExternalSegmentTypeHandleList::const_iterator end)
+                                     const IPCPropertyMap& properties)
 {
     readAnonymousSharedObject(*start, segment, &_data);
     ++start;
-    return CacheEntryBase::fromMemorySegment(isLockedForWriting, segment, start, end);
+    return CacheEntryBase::fromMemorySegment(isLockedForWriting, properties);
 } // fromMemorySegment
 
 GetFramesNeededResults::GetFramesNeededResults()
@@ -309,9 +322,7 @@ GetFramesNeededResults::toMemorySegment(ExternalSegmentType* segment, ExternalSe
 
 CacheEntryBase::FromMemorySegmentRetCodeEnum
 GetFramesNeededResults::fromMemorySegment(bool isLockedForWriting,
-                                          ExternalSegmentType* segment,
-                                          ExternalSegmentTypeHandleList::const_iterator start,
-                                          ExternalSegmentTypeHandleList::const_iterator end)
+                                          const IPCPropertyMap& properties)
 {
     FramesNeededMap_ExternalSegment *externalMap = (FramesNeededMap_ExternalSegment*)segment->get_address_from_handle(*start);
     ++start;
@@ -327,7 +338,7 @@ GetFramesNeededResults::fromMemorySegment(bool isLockedForWriting,
         }
     }
 
-    return CacheEntryBase::fromMemorySegment(isLockedForWriting, segment, start, end);
+    return CacheEntryBase::fromMemorySegment(isLockedForWriting, properties);
 
 } // fromMemorySegment
 
@@ -371,13 +382,11 @@ GetFrameRangeResults::toMemorySegment(ExternalSegmentType* segment, ExternalSegm
 
 CacheEntryBase::FromMemorySegmentRetCodeEnum
 GetFrameRangeResults::fromMemorySegment(bool isLockedForWriting,
-                                        ExternalSegmentType* segment,
-                                        ExternalSegmentTypeHandleList::const_iterator start,
-                                        ExternalSegmentTypeHandleList::const_iterator end)
+                                        const IPCPropertyMap& properties)
 {
     readAnonymousSharedObject(*start, segment, &_range);
     ++start;
-    return CacheEntryBase::fromMemorySegment(isLockedForWriting, segment, start, end);
+    return CacheEntryBase::fromMemorySegment(isLockedForWriting, properties);
 } // fromMemorySegment
 
 
@@ -422,13 +431,11 @@ GetTimeInvariantMetaDatasResults::toMemorySegment(ExternalSegmentType* segment, 
 
 CacheEntryBase::FromMemorySegmentRetCodeEnum
 GetTimeInvariantMetaDatasResults::fromMemorySegment(bool isLockedForWriting,
-                                                    ExternalSegmentType* segment,
-                                                    ExternalSegmentTypeHandleList::const_iterator start,
-                                                    ExternalSegmentTypeHandleList::const_iterator end)
+                                                    const IPCPropertyMap& properties)
 {
     assert(_metadatas);
-    _metadatas->fromMemorySegment(segment, &start, end);
-    return CacheEntryBase::fromMemorySegment(isLockedForWriting, segment, start, end);
+    _metadatas->fromMemorySegment(properties);
+    return CacheEntryBase::fromMemorySegment(isLockedForWriting, properties);
 } // fromMemorySegment
 
 
@@ -661,9 +668,7 @@ GetComponentsResults::toMemorySegment(ExternalSegmentType* segment, ExternalSegm
 
 CacheEntryBase::FromMemorySegmentRetCodeEnum
 GetComponentsResults::fromMemorySegment(bool isLockedForWriting,
-                                          ExternalSegmentType* segment,
-                                          ExternalSegmentTypeHandleList::const_iterator start,
-                                          ExternalSegmentTypeHandleList::const_iterator end){
+                                          const IPCPropertyMap& properties) {
     {
         NeededInputLayersMap_ExternalSegment *neededLayers = (NeededInputLayersMap_ExternalSegment*)segment->get_address_from_handle(*start);
         assert(neededLayers->get_allocator().get_segment_manager() == segment->get_segment_manager());
@@ -696,7 +701,7 @@ GetComponentsResults::fromMemorySegment(bool isLockedForWriting,
     }
     readAnonymousSharedObject(*start, segment, &_data);
     ++start;
-    return CacheEntryBase::fromMemorySegment(isLockedForWriting, segment, start, end);
+    return CacheEntryBase::fromMemorySegment(isLockedForWriting, properties);
 } // fromMemorySegment
 
 

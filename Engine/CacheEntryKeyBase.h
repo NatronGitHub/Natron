@@ -81,7 +81,7 @@ public:
      * The function writeSharedObject can be used to simplify the serialization of objects to the
      * memory segment.
      **/
-    virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const;
+    virtual void toMemorySegment(IPCPropertyMap* properties) const;
 
     enum FromMemorySegmentRetCodeEnum
     {
@@ -97,9 +97,7 @@ public:
      * Objects to be deserialized are given from the start iterator to the end.
      * They are to be read in reverse order of what was written to in toMemorySegment.
      **/
-    virtual FromMemorySegmentRetCodeEnum fromMemorySegment(ExternalSegmentType* segment,
-                                                           ExternalSegmentTypeHandleList::const_iterator start,
-                                                           ExternalSegmentTypeHandleList::const_iterator end);
+    virtual FromMemorySegmentRetCodeEnum fromMemorySegment(const IPCPropertyMap& properties);
 
     /**
      * @brief This should return an approximate size in bytes of memory taken in the

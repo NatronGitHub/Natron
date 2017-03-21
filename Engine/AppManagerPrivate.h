@@ -111,7 +111,7 @@ public:
 
     boost::scoped_ptr<KnobFactory> _knobFactory; //< knob maker
 
-    CachePtr generalPurposeCache, tileCache; 
+    CacheBasePtr generalPurposeCache, tileCache; 
 
     boost::scoped_ptr<StorageDeleterThread> storageDeleteThread; // thread used to kill cache entries without blocking a render thread
 
