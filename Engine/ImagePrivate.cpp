@@ -472,7 +472,7 @@ checkForNaNsInternal(void* ptrs[4],
                     *dstPixelPtrs[k] = 1.;
                     hasnan = true;
                 }
-                ++dstPixelPtrs[k];
+                dstPixelPtrs[k] += dstPixelStride;
             }
         }
         // Remove what was done at the previous scan-line and got to the next
