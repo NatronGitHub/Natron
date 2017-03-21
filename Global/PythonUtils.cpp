@@ -86,7 +86,7 @@ void setupPythonEnv(const char* argv0Param)
     std::string binPath = ProcInfo::applicationDirPath(argv0Param);
     binPath = StrUtils::toNativeSeparators(binPath);
 #ifdef __NATRON_WIN32__
-    static std::string pythonHome = binPath.toStdString() + "\\.."; // must use static storage
+    static std::string pythonHome = binPath + "\\.."; // must use static storage
     std::string pyPathZip = pythonHome + "\\lib\\python" NATRON_PY_VERSION_STRING_NO_DOT ".zip";
     std::string pyPath = pythonHome +  "\\lib\\python" NATRON_PY_VERSION_STRING;
     std::string pluginPath = binPath + "\\..\\Plugins";
