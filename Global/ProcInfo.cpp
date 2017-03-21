@@ -183,7 +183,7 @@ applicationFilePath_fromArgv(const char* argv0Param)
     return absPath;
 } // applicationFilePath_fromArgv
 
-#endif // defined(Q_OS_UNIX)
+#endif // defined(__NATRON_UNIX__)
 
 
 #if defined(__NATRON_OSX__)
@@ -361,7 +361,7 @@ ProcInfo::applicationFilePath(const char* argv0Param)
     } else {
         return applicationFilePath_fromArgv(argv0Param);
     }
-#elif defined(Q_OS_LINUX)
+#elif defined(__NATRON_LINUX__)
     // Try looking for a /proc/<pid>/exe symlink first which points to
     // the absolute path of the executable
     std::stringstream ss;
@@ -497,7 +497,7 @@ ProcInfo::checkIfProcessIsRunning(const char* /*processAbsoluteFilePath*/,
     //Not working yet
     return true;
 #if 0
-#if defined(Q_OS_WIN)
+#if defined(__NATRON_WIN32__)
     DWORD dwExitCode = 9999;
     //See https://login.live.com/login.srf?wa=wsignin1.0&rpsnv=12&checkda=1&ct=1451385015&rver=6.0.5276.0&wp=MCMBI&wlcxt=msdn%24msdn%24msdn&wreply=https%3a%2f%2fmsdn.microsoft.com%2fen-us%2flibrary%2fwindows%2fdesktop%2fms683189%2528v%3dvs.85%2529.aspx&lc=1033&id=254354&mkt=en-US
     if ( GetExitCodeProcess(pid, &dwExitCode) ) {
@@ -511,7 +511,7 @@ ProcInfo::checkIfProcessIsRunning(const char* /*processAbsoluteFilePath*/,
 
         return false;
     }
-#elif defined(Q_OS_LINUX)
+#elif defined(__NATRON_LINUX__)
     std::stringstream ss;
     ss << "/proc/" << (long)pid << "/stat";
     std::string procFile = ss.str();
@@ -549,7 +549,7 @@ ProcInfo::checkIfProcessIsRunning(const char* /*processAbsoluteFilePath*/,
     fclose(fp);
 
     return ret;
-#elif defined(Q_OS_MAC)
+#elif defined(__NATRON_OSX__)
     //See https://developer.apple.com/legacy/library/qa/qa2001/qa1123.html
     static const int name[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, (int)pid };
     // Declaring name as const requires us to cast it when passing it to
