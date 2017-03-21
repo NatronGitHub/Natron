@@ -6,6 +6,7 @@ TEMPLATE = lib
 TARGET = yaml-cpp-natron
 CONFIG+= staticlib yaml-cpp-flags
 CONFIG-= qt
+CONFIG+= boost
 
 
 include(../../global.pri)
