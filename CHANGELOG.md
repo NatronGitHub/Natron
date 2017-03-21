@@ -36,8 +36,9 @@ Natron multiple times on the same computer, the different processes will share t
 
 - Multi-dimensional parameters don't automatically fold into a single dimension, except for scale and size params.
 - Binaries distributed through Natron's web site are now built with 10-bit x264 and 10/12-bit libvpx-vp9 support. That means the produced video files may be unplayable on some hardware (e.g. phones or TVs), but Natron should really be used to produce digital intermediates with the highest possible fidelity, which can then be transcoded to more suitable distribution codecs.
-- Better cache usage for Readers.
+- Better cache usage for Readers, ReadOIIO does not use the OIIO cache anymore (partly due to https://github.com/OpenImageIO/oiio/issues/1632).
 - Fix a bug where custom OpenFX plugins directories would be ignored #1584
+- Add a documentation chapter on importing camera data from PanoTools-based software (PTGui, PTAssembler, Hugin).
 
 ### Plugins
 
@@ -45,9 +46,10 @@ Natron multiple times on the same computer, the different processes will share t
 - ColorCorrect: changed the Contrast formula to make adjustments more intuitive, see https://compositormathematic.wordpress.com/2013/07/06/gamma-contrast/ - this may affect existing projects that used the previously buggy Contrast parameter.
 - LensDistortion: add PanoTools/PTGui/PTAssembler/Hugin model.
 - Card3D can now import/export chan files from Natron, Nuke, 3D-Equalizer, Maya, etc., and txt files from Boujou.
-- Card3D and CornerPin: only show things that are in front of the camera.
+- Card3D and CornerPin: only show things that are in front of the camera. In cornerPin, point 1 is considered to be in front.
 - LensDistortion: add PanoTools/PTGui/PTAssembler/Hugin model.
-- ReadOIIO: add advanced options for reading RAW files, nonworking due to https://github.com/OpenImageIO/oiio/issues/1632
+- Noise, Plasma: result is now reproductible (a given render always gives the same result).
+- ReadOIIO: add advanced options for reading RAW files.
 - STMap: Use the format of the Source input rather than its RoD to determine the texture size.
 
 
