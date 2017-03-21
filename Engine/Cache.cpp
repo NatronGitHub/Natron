@@ -1467,7 +1467,7 @@ static void reOpenToCData(CacheBucket<persistent>* bucket, bool create)
     try {
         char* data;
         std::size_t dataNumBytes;
-        if (bucket->tocFile) {
+        if (persistent) {
             data = bucket->tocFile->data();
             dataNumBytes = bucket->tocFile->size();
         } else {
@@ -1803,13 +1803,11 @@ CacheBucket<persistent>::deallocateCacheEntryImpl(typename EntriesMap::iterator 
         // Remove this entry's node from the list
         disconnectLinkedListNode(&cacheEntryIt->second->lruNode);
     }
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
     try {
         tocFileManager->destroy_ptr<MemorySegmentEntryHeader>(cacheEntryIt->second.get());
     } catch (...) {
         qDebug() << "[BUG]: Failure to free entry" << cacheEntryIt->first;
     }
-#endif
 
     // deallocate the entry
 #ifdef CACHE_TRACE_ENTRY_ACCESS
@@ -1931,10 +1929,10 @@ CacheEntryLockerPrivate<persistent>::lookupAndSetStatusInternal(bool hasWriteRig
         status = CacheEntryLockerBase::eCacheEntryStatusMustCompute;
         switch (readStatus) {
             case CacheBucket<persistent>::eShmEntryReadRetCodeOk:
-#ifdef NATRON_CACHE_NEVER_PERSISTENT
-                assert(found->second->nonPersistentEntry);
-                processLocalEntry = found->second->nonPersistentEntry;
-#endif
+                if (!persistent) {
+                    assert(found->second->nonPersistentEntry);
+                    processLocalEntry = found->second->nonPersistentEntry;
+                }
                 status = CacheEntryLockerBase::eCacheEntryStatusCached;
                 break;
             case CacheBucket<persistent>::eShmEntryReadRetCodeDeserializationFailed:
@@ -2738,58 +2736,54 @@ Cache<persistent>::initialize(const boost::shared_ptr<Cache<persistent> >& thisS
         // Hold a weak pointer to the cache on the bucket
         _imp->buckets[i].cache = thisShared;
         _imp->buckets[i].bucketIndex = i;
-
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
-        // Get the bucket directory path. It ends with a separator.
-        QString bucketDirPath = _imp->getBucketAbsoluteDirPath(i);
-
-
-
-        {
-            if (_imp->persistent) {
-                std::string tocFilePath = bucketDirPath.toStdString() + "Index";
-                _imp->buckets[i].tocFile.reset(new MemoryFile);
-                _imp->buckets[i].tocFile->open(tocFilePath, MemoryFile::eFileOpenModeOpenOrCreate);
-
-                // Ensure the mapping is valid. This will grow the file the first time.
-            } else {
-                _imp->buckets[i].tocLocalBuf.reset(new ProcessLocalBuffer);
-            }
-
+        
+        
+        if (persistent) {
+            // Get the bucket directory path. It ends with a separator.
+            QString bucketDirPath = _imp->getBucketAbsoluteDirPath(i);
+            
+            std::string tocFilePath = bucketDirPath.toStdString() + "Index";
+            _imp->buckets[i].tocFile.reset(new MemoryFile);
+            _imp->buckets[i].tocFile->open(tocFilePath, MemoryFile::eFileOpenModeOpenOrCreate);
+            
+            // Ensure the mapping is valid. This will grow the file the first time.
+        } else {
+            _imp->buckets[i].tocFile.reset(new ProcessLocalBuffer);
         }
-#endif // #ifndef NATRON_CACHE_NEVER_PERSISTENT
-
+        
+        
     } // for each bucket
 
-    // Remap each bucket, this may potentially fail
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
-    for (int i = 0; i < NATRON_CACHE_BUCKETS_COUNT; ++i) {
-        try {
-
-            boost::scoped_ptr<Sharable_WriteLock> tocWriteLock;
-            {
-                // Take the ToC mapping mutex
-#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-                tocWriteLock.reset(new Sharable_WriteLock(_imp->ipc->bucketsData[i].tocData.segmentMutex));
-#else
-                createTimedLock<Sharable_WriteLock>(_imp.get(), tocWriteLock, &_imp->ipc->bucketsData[i].tocData.segmentMutex);
-#endif
-
-                _imp->buckets[i].remapToCMemoryFile(*tocWriteLock, 0);
-            }
-        } catch (...) {
-            // Any exception caught here means the cache is corrupted
-            _imp->recoverFromInconsistentState(
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
-                                                    shmReader
-#endif
-                                                    );
-
-        }
-    } // for each bucket
 
     if (persistent) {
+        
+        // Remap each bucket, this may potentially fail
+        for (int i = 0; i < NATRON_CACHE_BUCKETS_COUNT; ++i) {
+            try {
+                
+                boost::scoped_ptr<Sharable_WriteLock> tocWriteLock;
+                {
+                    // Take the ToC mapping mutex
+#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
+                    tocWriteLock.reset(new Sharable_WriteLock(_imp->ipc->bucketsData[i].tocData.segmentMutex));
+#else
+                    createTimedLock<Sharable_WriteLock>(_imp.get(), tocWriteLock, &_imp->ipc->bucketsData[i].tocData.segmentMutex);
+#endif
+                    
+                    _imp->buckets[i].remapToCMemoryFile(*tocWriteLock, 0);
+                }
+            } catch (...) {
+                // Any exception caught here means the cache is corrupted
+                _imp->recoverFromInconsistentState(
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+                                                   shmReader
+#endif
+                                                   );
+                
+            }
+        } // for each bucket
         try {
+            
             boost::scoped_ptr<Sharable_WriteLock> writeLock;
             // Take the tilesStorageMutex in read mode to indicate that we are operating on it (flush)
 #ifndef NATRON_CACHE_INTERPROCESS_ROBUST
@@ -2807,8 +2801,7 @@ Cache<persistent>::initialize(const boost::shared_ptr<Cache<persistent> >& thisS
         } catch (const CorruptedCacheException&) {
             clear();
         }
-    }
-#endif // #ifndef NATRON_CACHE_NEVER_PERSISTENT
+    } // persistent
     
     
 
@@ -4121,6 +4114,9 @@ Cache<persistent>::flushCacheOnDisk(bool async)
 
 #endif
 } // flushCacheOnDisk
+
+template class Cache<true>;
+template class Cache<false>;
 
 NATRON_NAMESPACE_EXIT;
 

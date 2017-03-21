@@ -467,20 +467,20 @@ EffectInstance::getLayersProducedAndNeeded_public(TimeValue inArgsTime, ViewIdx 
     *results = GetComponentsResults::create(cacheKey);
 
     // Ensure the cache fetcher lives as long as we compute the action
-    CacheEntryLockerPtr cacheAccess = (*results)->getFromCache();
+    CacheEntryLockerBasePtr cacheAccess = (*results)->getFromCache();
 
-    CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
-    while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
+    CacheEntryLockerBase::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
+    while (cacheStatus == CacheEntryLockerBase::eCacheEntryStatusComputationPending) {
         cacheStatus = cacheAccess->waitForPendingEntry();
     }
 
-    if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
+    if (cacheStatus == CacheEntryLockerBase::eCacheEntryStatusCached) {
 #ifdef NATRON_CACHE_NEVER_PERSISTENT
         *results = toGetComponentsResults(cacheAccess->getProcessLocalEntry());
 #endif
         return eActionStatusOK;
     }
-    assert(cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute);
+    assert(cacheStatus == CacheEntryLockerBase::eCacheEntryStatusMustCompute);
 
 
     // For each input index what layers are required
@@ -799,25 +799,25 @@ EffectInstance::getDistortion_public(TimeValue inArgsTime,
 
         *results = GetDistortionResults::create(cacheKey);
 
-        CacheEntryLockerPtr cacheAccess;
+        CacheEntryLockerBasePtr cacheAccess;
         {
 
             // Ensure the cache fetcher lives as long as we compute the action
             cacheAccess = (*results)->getFromCache();
 
-            CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
-            while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
+            CacheEntryLockerBase::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
+            while (cacheStatus == CacheEntryLockerBase::eCacheEntryStatusComputationPending) {
                 cacheStatus = cacheAccess->waitForPendingEntry();
             }
 
-            if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
+            if (cacheStatus == CacheEntryLockerBase::eCacheEntryStatusCached) {
 #ifdef NATRON_CACHE_NEVER_PERSISTENT
                     *results = toGetDistortionResults(cacheAccess->getProcessLocalEntry());
 #endif
                 return eActionStatusOK;
             }
             
-            assert(cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute);
+            assert(cacheStatus == CacheEntryLockerBase::eCacheEntryStatusMustCompute);
         }
 
         DistortionFunction2DPtr disto(new DistortionFunction2D);
@@ -909,25 +909,25 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
 
     *results = IsIdentityResults::create(cacheKey);
 
-    CacheEntryLockerPtr cacheAccess;
+    CacheEntryLockerBasePtr cacheAccess;
     if (useIdentityCache) {
 
         // Ensure the cache fetcher lives as long as we compute the action
         cacheAccess = (*results)->getFromCache();
 
-        CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
-        while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
+        CacheEntryLockerBase::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
+        while (cacheStatus == CacheEntryLockerBase::eCacheEntryStatusComputationPending) {
             cacheStatus = cacheAccess->waitForPendingEntry();
         }
 
-        if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
+        if (cacheStatus == CacheEntryLockerBase::eCacheEntryStatusCached) {
 #ifdef NATRON_CACHE_NEVER_PERSISTENT
                 *results = toIsIdentityResults(cacheAccess->getProcessLocalEntry());
 #endif
             return eActionStatusOK;
         }
 
-        assert(cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute);
+        assert(cacheStatus == CacheEntryLockerBase::eCacheEntryStatusMustCompute);
     }
 
 
@@ -1024,23 +1024,23 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
 
     *results = GetRegionOfDefinitionResults::create(cacheKey);
 
-    CacheEntryLockerPtr cacheAccess;
+    CacheEntryLockerBasePtr cacheAccess;
     if (useCache) {
 
         cacheAccess = (*results)->getFromCache();
 
-        CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
-        while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
+        CacheEntryLockerBase::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
+        while (cacheStatus == CacheEntryLockerBase::eCacheEntryStatusComputationPending) {
             cacheStatus = cacheAccess->waitForPendingEntry();
         }
 
-        if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
+        if (cacheStatus == CacheEntryLockerBase::eCacheEntryStatusCached) {
 #ifdef NATRON_CACHE_NEVER_PERSISTENT
                 *results = toGetRegionOfDefinitionResults(cacheAccess->getProcessLocalEntry());
 #endif
             return eActionStatusOK;
         }
-        assert(cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute);
+        assert(cacheStatus == CacheEntryLockerBase::eCacheEntryStatusMustCompute);
 
     }
 
@@ -1382,7 +1382,7 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
 
     *results = GetFramesNeededResults::create(cacheKey);
 
-    CacheEntryLockerPtr cacheAccess;
+    CacheEntryLockerBasePtr cacheAccess;
 
     // Only use the cache if we got a hash.
     // We cannot compute the hash here because the hash itself requires the result of this function.
@@ -1393,18 +1393,18 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
 
         cacheAccess = (*results)->getFromCache();
 
-        CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
-        while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
+        CacheEntryLockerBase::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
+        while (cacheStatus == CacheEntryLockerBase::eCacheEntryStatusComputationPending) {
             cacheStatus = cacheAccess->waitForPendingEntry();
         }
 
-        if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
+        if (cacheStatus == CacheEntryLockerBase::eCacheEntryStatusCached) {
 #ifdef NATRON_CACHE_NEVER_PERSISTENT
                 *results = toGetFramesNeededResults(cacheAccess->getProcessLocalEntry());
 #endif
             return eActionStatusOK;
         }
-        assert(cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute);
+        assert(cacheStatus == CacheEntryLockerBase::eCacheEntryStatusMustCompute);
     }
 
 
@@ -1549,20 +1549,20 @@ EffectInstance::getFrameRange_public(GetFrameRangeResultsPtr* results)
     GetFrameRangeKeyPtr cacheKey(new GetFrameRangeKey(hash, getNode()->getPluginID()));
     *results = GetFrameRangeResults::create(cacheKey);
 
-    CacheEntryLockerPtr cacheAccess = (*results)->getFromCache();
+    CacheEntryLockerBasePtr cacheAccess = (*results)->getFromCache();
 
-    CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
-    while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
+    CacheEntryLockerBase::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
+    while (cacheStatus == CacheEntryLockerBase::eCacheEntryStatusComputationPending) {
         cacheStatus = cacheAccess->waitForPendingEntry();
     }
 
-    if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
+    if (cacheStatus == CacheEntryLockerBase::eCacheEntryStatusCached) {
 #ifdef NATRON_CACHE_NEVER_PERSISTENT
             *results = toGetFrameRangeResults(cacheAccess->getProcessLocalEntry());
 #endif
         return eActionStatusOK;
     }
-    assert(cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute);
+    assert(cacheStatus == CacheEntryLockerBase::eCacheEntryStatusMustCompute);
 
     // Call the action
     RangeD range;
@@ -1827,20 +1827,20 @@ EffectInstance::getTimeInvariantMetaDatas_public(GetTimeInvariantMetaDatasResult
     (*results)->setMetadatasResults(metadata);
 
 
-    CacheEntryLockerPtr cacheAccess = (*results)->getFromCache();
+    CacheEntryLockerBasePtr cacheAccess = (*results)->getFromCache();
 
-    CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
-    while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
+    CacheEntryLockerBase::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
+    while (cacheStatus == CacheEntryLockerBase::eCacheEntryStatusComputationPending) {
         cacheStatus = cacheAccess->waitForPendingEntry();
     }
 
-    if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
+    if (cacheStatus == CacheEntryLockerBase::eCacheEntryStatusCached) {
 #ifdef NATRON_CACHE_NEVER_PERSISTENT
             *results = toGetTimeInvariantMetaDatasResults(cacheAccess->getProcessLocalEntry());
 #endif
         return eActionStatusOK;
     }
-    assert(cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute);
+    assert(cacheStatus == CacheEntryLockerBase::eCacheEntryStatusMustCompute);
 
 
     // If the node is disabled return the meta-datas of the main input.
