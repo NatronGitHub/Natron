@@ -7193,6 +7193,7 @@ Node::message(MessageTypeEnum type,
 {
     ///If the node was aborted, don't transmit any message because we could cause a deadlock
     if ( _imp->effect->aborted() || (!_imp->nodeCreated && _imp->wasCreatedSilently)) {
+        std::cerr << getScriptName_mt_safe() << " message: " << content << std::endl;
         return false;
     }
 
@@ -7253,6 +7254,7 @@ Node::setPersistentMessage(MessageTypeEnum type,
                            const std::string & content)
 {
     if (!_imp->nodeCreated && _imp->wasCreatedSilently) {
+        std::cerr << getScriptName_mt_safe() << " message: " << content << std::endl;
         return;
     }
 
