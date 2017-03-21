@@ -1150,6 +1150,8 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
             if (!isSilentCreation) {
                 Dialogs::errorDialog(tr("Plugin error").toStdString(),
                                  tr("Cannot load plug-in executable.").toStdString() + ": " + e2.what(), false );
+            } else {
+                std::cerr << tr("Cannot load plug-in executable.").toStdString() + ": " + e2.what() << std::endl;
             }
             return node;
         }
@@ -1185,6 +1187,8 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
                 if (!isSilentCreation) {
                     Dialogs::errorDialog(tr("Plugin error").toStdString(),
                                      tr("Cannot create PyPlug:").toStdString() + e.what(), false );
+                } else {
+                    std::cerr << tr("Cannot create PyPlug").toStdString() + ": " + e.what() << std::endl;
                 }
                 return node;
             }
@@ -1209,6 +1213,8 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
                 if (!isSilentCreation) {
                     errorDialog(tr("Error while creating node").toStdString(), tr("Failed to create an instance of %1:").arg(argsPluginID).toStdString()
                             + '\n' + e.what(), false);
+                } else {
+                    std::cerr << tr("Failed to create an instance of %1:").arg(argsPluginID).toStdString() + '\n' + e.what() << std::endl;
                 }
                 return NodePtr();
             }
@@ -1288,14 +1294,14 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
         }
         std::string error( e.what() );
         if ( !error.empty() ) {
+            std::string title("Error while creating node");
+            std::string message = title + " " + foundPluginID + ": " + e.what();
+            std::cerr << message.c_str() << std::endl;
             if (!isSilentCreation) {
-                std::string title("Error while creating node");
-                std::string message = title + " " + foundPluginID + ": " + e.what();
-                qDebug() << message.c_str();
                 errorDialog(title, message, false);
             }
         }
-        
+
         return NodePtr();
     }
 
