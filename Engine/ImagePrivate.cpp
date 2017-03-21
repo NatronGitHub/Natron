@@ -470,9 +470,9 @@ checkForNaNsInternal(void* ptrs[4],
                 // (if they do, please explain here which ones)
                 if (*dstPixelPtrs[k] != *dstPixelPtrs[k]) { // check for NaN
                     *dstPixelPtrs[k] = 1.;
-                    ++dstPixelPtrs[k];
                     hasnan = true;
                 }
+                ++dstPixelPtrs[k];
             }
         }
         // Remove what was done at the previous scan-line and got to the next

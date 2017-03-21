@@ -879,7 +879,8 @@ ImageCacheEntryPrivate::readAndUpdateStateMap(bool hasExclusiveLock)
 
 
         // If the cached entry does not contain the exact amount of tiles, fail: a thread may have crashed while creating the map.
-        if (!internalCacheEntry->perMipMapTilesState[i].tiles.empty() && ((int)internalCacheEntry->perMipMapTilesState[i].tiles.size() != ((boundsRounded.width() / localTilesState.tileSizeX) * (boundsRounded.height() / localTilesState.tileSizeY)))) {
+        std::size_t expectedNumTiles = (boundsRounded.width() / localTilesState.tileSizeX) * (boundsRounded.height() / localTilesState.tileSizeY);
+        if (!internalCacheEntry->perMipMapTilesState[i].tiles.empty() && (internalCacheEntry->perMipMapTilesState[i].tiles.size() != expectedNumTiles)) {
             return eUpdateStateMapRetCodeFailed;
         }
 

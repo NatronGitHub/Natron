@@ -825,6 +825,7 @@ Node::message(MessageTypeEnum type,
               const std::string & content) const
 {
     if ( (!_imp->nodeCreated && _imp->wasCreatedSilently) || _imp->restoringDefaults) {
+        std::cerr << "message: " << content << std::endl;
         return false;
     }
 
@@ -884,11 +885,12 @@ Node::setPersistentMessage(MessageTypeEnum type,
                            const std::string & content)
 {
     if (!_imp->nodeCreated && _imp->wasCreatedSilently) {
+        std::cerr << "Persistent message: " << content << std::endl;
         return;
     }
 
     if ( appPTR->isBackground() ) {
-        std::cout << "Persistent message: " << content << std::endl;
+        std::cerr << "Persistent message: " << content << std::endl;
     } else {
         //if the message is just an information, display a popup instead.
         NodePtr ioContainer = getIOContainer();

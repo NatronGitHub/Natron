@@ -5149,12 +5149,13 @@ bool
 KnobHolder::removeRenderClone(const TreeRenderPtr& render)
 {
 
-    KnobHolderPtr clone;
+    std::list<KnobHolderPtr> clones;
     {
         QMutexLocker locker(&_imp->common->renderClonesMutex);
         RenderCloneMap newMap;
         for (RenderCloneMap::iterator it = _imp->common->renderClones.begin(); it != _imp->common->renderClones.end(); ++it) {
             if (it->first.render.lock() == render) {
+                clones.push_back(it->second);
                 continue;
             }
             newMap.insert(*it);
@@ -5162,18 +5163,21 @@ KnobHolder::removeRenderClone(const TreeRenderPtr& render)
         _imp->common->renderClones = newMap;
     }
 
-    if (!clone) {
+    if (clones.empty()) {
         return false;
     }
-    // For each knob, remove the clone from the map
-    for (std::size_t i = 0; i < _imp->knobs.size(); ++i) {
-        KnobHelperPtr k = toKnobHelper(_imp->knobs[i]);
-        QMutexLocker locker(&k->_imp->common->renderClonesMapMutex);
-        std::map<KnobHolderWPtr, KnobIWPtr>::iterator found = k->_imp->common->renderClonesMap.find(clone);
-        if (found != k->_imp->common->renderClonesMap.end()) {
-            k->_imp->common->renderClonesMap.erase(found);
+    for (std::list<KnobHolderPtr>::const_iterator it = clones.begin(); it != clones.end(); ++it) {
+        // For each knob, remove the clone from the map
+        for (std::size_t i = 0; i < _imp->knobs.size(); ++i) {
+            KnobHelperPtr k = toKnobHelper(_imp->knobs[i]);
+            QMutexLocker locker(&k->_imp->common->renderClonesMapMutex);
+            std::map<KnobHolderWPtr, KnobIWPtr>::iterator found = k->_imp->common->renderClonesMap.find(*it);
+            if (found != k->_imp->common->renderClonesMap.end()) {
+                k->_imp->common->renderClonesMap.erase(found);
+            }
         }
     }
+
     return true;
 }
 
