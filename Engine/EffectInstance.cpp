@@ -254,10 +254,10 @@ EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
         cacheKey.reset(new GetFramesNeededKey(hashValue, getNode()->getPluginID()));
 
 
-        CacheEntryLockerPtr cacheAccess = appPTR->getGeneralPurposeCache()->get(framesNeededResults);
+        CacheEntryLockerBasePtr cacheAccess = appPTR->getGeneralPurposeCache()->get(framesNeededResults);
         
-        CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
-        if (cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute) {
+        CacheEntryLockerBase::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
+        if (cacheStatus == CacheEntryLockerBase::eCacheEntryStatusMustCompute) {
             cacheAccess->insertInCache();
         }
     }

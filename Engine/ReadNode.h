@@ -41,7 +41,6 @@ NATRON_NAMESPACE_ENTER;
 #define NATRON_READER_INPUT_NAME "Sync"
 
 #define kNatronReadNodeParamDecodingPluginChoice "decodingPluginChoice"
-#define kNatronReadNodeParamDecodingPluginID "decodingPluginID"
 
 #define kNatronReadNodeOCIOParamInputSpace "ocioInputSpace"
 

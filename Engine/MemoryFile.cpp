@@ -259,7 +259,7 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
 } // openInternal
 
 char*
-MemoryFile::data() const
+MemoryFile::getData() const
 {
     return _imp->data;
 }

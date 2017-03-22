@@ -76,19 +76,24 @@ class CacheEntryBase : public boost::enable_shared_from_this<CacheEntryBase>
 
 public:
 
-    CacheEntryBase(const CachePtr& cache);
+    CacheEntryBase(const CacheBasePtr& cache);
 
     virtual ~CacheEntryBase();
 
     /**
      * @brief Returns the cache owning this entry.
      **/
-    CachePtr getCache() const;
+    CacheBasePtr getCache() const;
 
     /**
      * @brief Same as getCache()->get()
      **/
-    CacheEntryLockerPtr getFromCache() const;
+    CacheEntryLockerBasePtr getFromCache() const;
+
+    /**
+     * @brief Same as getCache()->isPersistent()
+     **/
+    bool isPersistent() const;
 
     /**
      * @brief Get the key object for this entry.
@@ -125,7 +130,7 @@ public:
      * The function writeNamedSharedObject can be used to simplify the serialization of objects to the
      * memory segment.
      **/
-    virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const;
+    virtual void toMemorySegment(IPCPropertyMap* properties) const;
 
     enum FromMemorySegmentRetCodeEnum
     {
@@ -150,10 +155,7 @@ public:
      * The function readNamedSharedObject can be used to simplify the serialization of objects from the
      * memory segment.
      **/
-    virtual CacheEntryBase::FromMemorySegmentRetCodeEnum fromMemorySegment(bool isLockedForWriting,
-                                                                           ExternalSegmentType* segment,
-                                                                           ExternalSegmentTypeHandleList::const_iterator start,
-                                                                           ExternalSegmentTypeHandleList::const_iterator end) WARN_UNUSED_RETURN;
+    virtual CacheEntryBase::FromMemorySegmentRetCodeEnum fromMemorySegment(bool isLockedForWriting, const IPCPropertyMap& properties) WARN_UNUSED_RETURN;
 
     /**
      * @brief Must return whether attempting to call Cache::get() recursively on the same hash is allowed

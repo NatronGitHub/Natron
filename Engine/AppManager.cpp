@@ -888,16 +888,15 @@ AppManager::loadInternal(const CLArgs& cl)
     }
 
     // Create cache once we loaded the cache directory path wanted by the user
-    _imp->generalPurposeCache = Cache::create(
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
-                                              false /*persistent*/
-#endif
-                                              );
-    _imp->tileCache = Cache::create(
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
-                                    true /*persistent*/
-#endif
-                                    );
+    _imp->generalPurposeCache = Cache<false>::create();
+    try {
+        // If the cache is busy because another process is using it and we are not compiled
+        // with NATRON_CACHE_INTERPROCESS_ROBUST, just create a process local cache instead.
+        _imp->tileCache = Cache<true>::create();
+    } catch (const BusyCacheException&) {
+        _imp->tileCache = Cache<false>::create();
+    }
+
     if (cl.isCacheClearRequestedOnLaunch()) {
         _imp->tileCache->clear();
     }
@@ -2493,13 +2492,13 @@ AppManager::createNodeForProjectLoading(const SERIALIZATION_NAMESPACE::NodeSeria
     return retNode;
 }
 
-CachePtr
+CacheBasePtr
 AppManager::getGeneralPurposeCache() const
 {
     return _imp->generalPurposeCache;
 }
 
-CachePtr
+CacheBasePtr
 AppManager::getTileCache() const
 {
     return _imp->tileCache;

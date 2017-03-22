@@ -128,6 +128,7 @@ SOURCES += \
     ImageMaskMix.cpp \
     ImageStorage.cpp \
     ImageTilesState.cpp \
+    IPCCommon.cpp \
     Interpolation.cpp \
     JoinViewsNode.cpp \
     KeybindShortcut.cpp \

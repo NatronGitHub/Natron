@@ -69,7 +69,7 @@ setValueFromCachedExpressionResult(const KnobExpressionResultPtr& cachedValue, c
 }
 
 template <typename T>
-CacheEntryLockerPtr
+CacheEntryLockerBasePtr
 Knob<T>::getKnobExpresionResults(TimeValue time, ViewIdx view, DimIdx dimension)
 {
     KnobHolderPtr holder = getHolder();
@@ -92,10 +92,10 @@ Knob<T>::getKnobExpresionResults(TimeValue time, ViewIdx view, DimIdx dimension)
     KnobExpressionKeyPtr cacheKey(new KnobExpressionKey(effectHash, dimension, getName()));
     KnobExpressionResultPtr cachedResult = KnobExpressionResult::create(cacheKey);
 
-    CacheEntryLockerPtr locker = cachedResult->getFromCache();
+    CacheEntryLockerBasePtr locker = cachedResult->getFromCache();
 
-    CacheEntryLocker::CacheEntryStatusEnum cacheStatus = locker->getStatus();
-    while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
+    CacheEntryLockerBase::CacheEntryStatusEnum cacheStatus = locker->getStatus();
+    while (cacheStatus == CacheEntryLockerBase::eCacheEntryStatusComputationPending) {
         cacheStatus = locker->waitForPendingEntry();
     }
 
@@ -123,11 +123,11 @@ Knob<T>::getValueFromExpression(TimeValue time,
     ViewIdx view_i = getViewIdxFromGetSpec(view);
 
     // Check for a cached expression result
-    CacheEntryLockerPtr cacheAccess = getKnobExpresionResults(time, view, dimension);
+    CacheEntryLockerBasePtr cacheAccess = getKnobExpresionResults(time, view, dimension);
 
     KnobExpressionResultPtr cachedResult = boost::dynamic_pointer_cast<KnobExpressionResult>(cacheAccess->getProcessLocalEntry());
 
-    if (cacheAccess->getStatus() == CacheEntryLocker::eCacheEntryStatusCached) {
+    if (cacheAccess->getStatus() == CacheEntryLockerBase::eCacheEntryStatusCached) {
         getValueFromCachedExpressionResult(cachedResult, ret);
         return true;
 
@@ -222,11 +222,11 @@ Knob<T>::getValueFromExpression_pod(TimeValue time,
     ViewIdx view_i = getViewIdxFromGetSpec(view);
     
     // Check for a cached expression result
-    CacheEntryLockerPtr cacheAccess = getKnobExpresionResults(time, view, dimension);
+    CacheEntryLockerBasePtr cacheAccess = getKnobExpresionResults(time, view, dimension);
 
     KnobExpressionResultPtr cachedResult = boost::dynamic_pointer_cast<KnobExpressionResult>(cacheAccess->getProcessLocalEntry());
 
-    if (cacheAccess->getStatus() == CacheEntryLocker::eCacheEntryStatusCached) {
+    if (cacheAccess->getStatus() == CacheEntryLockerBase::eCacheEntryStatusCached) {
         getValueFromCachedExpressionResult<double>(cachedResult, ret);
         return true;
     }

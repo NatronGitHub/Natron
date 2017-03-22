@@ -2669,12 +2669,12 @@ SettingsPrivate::restoreNumThreads()
 void
 SettingsPrivate::refreshCacheSize()
 {
-    CachePtr tileCache = appPTR->getTileCache();
+    CacheBasePtr tileCache = appPTR->getTileCache();
     if (tileCache) {
         tileCache->setMaximumCacheSize(_publicInterface->getTileCacheSize());
     }
 
-    CachePtr cache = appPTR->getGeneralPurposeCache();
+    CacheBasePtr cache = appPTR->getGeneralPurposeCache();
     if (cache) {
         cache->setMaximumCacheSize(_publicInterface->getGeneralPurposeCacheSize());
     }

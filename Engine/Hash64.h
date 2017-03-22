@@ -90,6 +90,20 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
         return ac.raw;
     }
 
+    template<typename T>
+    static T fromU64(U64 raw)
+    {
+        GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+        BOOST_STATIC_ASSERT(sizeof(T) <= 8);
+        GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+        alias_cast_t<T> ac;
+
+        ac.raw = raw;
+
+        return ac.data;
+
+    }
+
     void insert(const std::vector<U64>& elements)
     {
         std::size_t curSize = node_values.size();

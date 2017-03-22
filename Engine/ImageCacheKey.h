@@ -51,11 +51,9 @@ public:
 
     bool isDraftMode() const;
 
-    virtual void toMemorySegment(ExternalSegmentType* segment,  ExternalSegmentTypeHandleList* objectPointers) const OVERRIDE FINAL;
+    virtual void toMemorySegment(IPCPropertyMap* properties) const OVERRIDE FINAL;
 
-    virtual CacheEntryKeyBase::FromMemorySegmentRetCodeEnum fromMemorySegment(ExternalSegmentType* segment,
-                                   ExternalSegmentTypeHandleList::const_iterator start,
-                                   ExternalSegmentTypeHandleList::const_iterator end) OVERRIDE FINAL;
+    virtual CacheEntryKeyBase::FromMemorySegmentRetCodeEnum fromMemorySegment(const IPCPropertyMap& properties) OVERRIDE FINAL;
     
     virtual int getUniqueID() const OVERRIDE FINAL;
 

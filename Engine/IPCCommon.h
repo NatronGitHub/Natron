@@ -26,7 +26,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
-
+#include "Global/GlobalDefines.h"
 #include <string>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -54,12 +54,9 @@ NATRON_NAMESPACE_ENTER;
 
 
 typedef boost::interprocess::managed_external_buffer ExternalSegmentType;
-
 typedef boost::interprocess::allocator<void, ExternalSegmentType::segment_manager> void_allocator;
 typedef boost::interprocess::allocator<char, ExternalSegmentType::segment_manager> CharAllocator_ExternalSegment;
 typedef boost::interprocess::basic_string<char, std::char_traits<char>, CharAllocator_ExternalSegment> String_ExternalSegment;
-typedef boost::interprocess::allocator<ExternalSegmentType::handle_t, ExternalSegmentType::segment_manager> ExternalSegmentTypeHandleAllocator;
-typedef boost::interprocess::list<ExternalSegmentType::handle_t, ExternalSegmentTypeHandleAllocator> ExternalSegmentTypeHandleList;
 
 
 /**
@@ -234,6 +231,244 @@ inline void readAnonymousSharedObject(ExternalSegmentType::handle_t handle, Exte
     String_ExternalSegment* found = (String_ExternalSegment*)segment->get_address_from_handle(handle);
     *object = std::string(found->c_str());
 }
+
+/**
+ * @brief All types serialized to the cache are flattened to a IPCVariant
+ **/
+enum IPCVariantTypeEnum
+{
+    eIPCVariantTypeBool,
+    eIPCVariantTypeInt,
+    eIPCVariantTypeDouble,
+    eIPCVariantTypeULongLong,
+    eIPCVariantTypeString
+};
+
+struct IPCVariant
+{
+    U64 scalar;
+    boost::interprocess::offset_ptr<String_ExternalSegment> string;
+
+    IPCVariant();
+
+    IPCVariant(const IPCVariant& other);
+
+    void operator=(const IPCVariant& other);
+
+    ~IPCVariant();
+
+};
+
+typedef boost::interprocess::allocator<IPCVariant, ExternalSegmentType::segment_manager> ExternalSegmentTypeIPCVariantAllocator;
+typedef boost::interprocess::vector<IPCVariant, ExternalSegmentTypeIPCVariantAllocator> IPCVariantVector;
+
+
+class IPCProperty
+{
+
+    IPCVariantTypeEnum type;
+    IPCVariantVector data;
+
+public:
+
+    IPCProperty(IPCVariantTypeEnum type, const void_allocator& alloc)
+    : type(type)
+    , data(alloc)
+    {
+
+    }
+
+    IPCProperty(const IPCProperty& other)
+    : type(other.type)
+    , data(other.data)
+    {
+
+    }
+
+    void operator=(const IPCProperty& other)
+    {
+        type = other.type;
+        data = other.data;
+    }
+
+    IPCVariantVector* getData()
+    {
+        return &data;
+    }
+
+    const IPCVariantVector& getData() const
+    {
+        return data;
+    }
+
+    IPCVariantTypeEnum getType() const
+    {
+        return type;
+    }
+
+    std::size_t getNumDimensions() const;
+
+    void clear();
+
+    void resize(std::size_t nDims);
+
+    static void getStringValue(const IPCVariantVector& vec, int index, std::string* value);
+    static void setStringValue(int index, const std::string& value, IPCVariantVector* vec);
+
+    static void getBoolValue(const IPCVariantVector& vec, int index, bool* value);
+    static void setBoolValue(int index, const bool& value, IPCVariantVector* vec);
+
+    static void getIntValue(const IPCVariantVector& vec, int index, int* value);
+    static void setIntValue(int index, const int& value, IPCVariantVector* vec);
+
+    static void getULongLongValue(const IPCVariantVector& vec, int index, U64* value);
+    static void setULongLongValue(int index, const U64& value, IPCVariantVector* vec);
+
+    static void getDoubleValue(const IPCVariantVector& vec, int index, double* value);
+    static void setDoubleValue(int index, const double& value, IPCVariantVector* vec);
+
+    template <typename T>
+    struct TypeFunctions
+    {
+        typedef void (*PFN_GET)(const IPCVariantVector& vec, int index, T* value);
+        typedef void (*PFN_SET)(int index, const T& value, IPCVariantVector* vec);
+
+        PFN_GET getter;
+        PFN_SET setter;
+    };
+
+    template <typename T>
+    static void getTypeInfos(TypeFunctions<T>* functions, IPCVariantTypeEnum* type);
+
+};
+
+
+class IPCPropertyMap
+{
+public:
+
+    typedef std::pair<const String_ExternalSegment, IPCProperty > IPCVariantMapValueType;
+    typedef boost::interprocess::allocator<IPCVariantMapValueType, ExternalSegmentType::segment_manager> IPCVariantMapValueType_Allocator_ExternalSegment;
+    typedef boost::interprocess::map<String_ExternalSegment, IPCProperty, std::less<String_ExternalSegment>, IPCVariantMapValueType_Allocator_ExternalSegment> IPCVariantMap;
+
+private:
+
+    IPCVariantMap _properties;
+
+public:
+
+    typedef IPCVariantMap::iterator iterator;
+    typedef IPCVariantMap::const_iterator const_iterator;
+
+    IPCPropertyMap(const void_allocator& alloc);
+
+    ~IPCPropertyMap();
+
+    const_iterator begin() const;
+
+    const_iterator end() const;
+
+    ExternalSegmentType::segment_manager* getSegmentManager() const;
+
+    void operator=(const IPCPropertyMap& other);
+
+    void clear();
+
+    // May throw an exception
+    IPCProperty* getOrCreateIPCProperty(const std::string& name, IPCVariantTypeEnum type);
+
+    // May return NULL but does not throw
+    const IPCProperty* getIPCProperty(const std::string& name) const;
+
+    template <typename T>
+    void setIPCPropertyN(const std::string& name, const std::vector<T>& values)
+    {
+
+        IPCProperty::TypeFunctions<T> functions;
+        IPCVariantTypeEnum type;
+        IPCProperty::getTypeInfos<T>(&functions, &type);
+
+        IPCProperty* prop = getOrCreateIPCProperty(name, type);
+        prop->resize(values.size());
+        for (std::size_t i = 0; i < values.size(); ++i) {
+            functions.setter(i, values[i], prop->getData());
+        }
+    }
+
+    template <typename T>
+    void setIPCProperty(const std::string& name,  const T& value)
+    {
+
+        IPCProperty::TypeFunctions<T> functions;
+        IPCVariantTypeEnum type;
+        IPCProperty::getTypeInfos<T>(&functions, &type);
+
+        IPCProperty* prop = getOrCreateIPCProperty(name, type);
+        prop->resize(1);
+        functions.setter(0, value, prop->getData());
+    }
+
+    template <typename T>
+    static bool getIPCPropertyN(const IPCProperty& prop, std::vector<T>* values)
+    {
+
+        IPCProperty::TypeFunctions<T> functions;
+        IPCVariantTypeEnum type;
+        IPCProperty::getTypeInfos<T>(&functions, &type);
+        if (prop.getType() != type) {
+            return false;
+        }
+        values->resize(prop.getNumDimensions());
+        for (std::size_t i = 0; i < values->size(); ++i) {
+            functions.getter(prop.getData(), i, &(*values)[i]);
+        }
+        return true;
+    }
+
+    template <typename T>
+    bool getIPCPropertyN(const std::string& name, std::vector<T>* values) const
+    {
+        const IPCProperty* prop = getIPCProperty(name);
+        if (!prop) {
+            return false;
+        }
+        return getIPCPropertyN(*prop, values);
+    }
+
+    template <typename T>
+    static bool getIPCProperty(const IPCProperty& prop, int index, T* value)
+    {
+
+        IPCProperty::TypeFunctions<T> functions;
+        IPCVariantTypeEnum type;
+        IPCProperty::getTypeInfos<T>(&functions, &type);
+
+        if (prop.getType() != type || (int)prop.getNumDimensions() <= index) {
+            return false;
+        }
+        functions.getter(prop.getData(), index, value);
+        return true;
+    }
+
+
+    template <typename T>
+    bool getIPCProperty(const std::string& name, int index, T* value) const
+    {
+
+        IPCProperty::TypeFunctions<T> functions;
+        IPCVariantTypeEnum type;
+        IPCProperty::getTypeInfos<T>(&functions, &type);
+
+        const IPCProperty* prop = getIPCProperty(name);
+        if (!prop) {
+            return false;
+        }
+        return getIPCProperty(*prop, index, value);
+    }
+
+
+};
+
 
 
 

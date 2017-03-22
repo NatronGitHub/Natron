@@ -94,15 +94,14 @@
 // else knows about this object.
 // Also in order to be persistent, all data structures passed in toMemorySegment/fromMemorySegment must be interprocess compliant
 // (i.e: they must use allocators to the memory segment manager passed in parameter.)
-//#define NATRON_CACHE_NEVER_PERSISTENT
 
-// If defined (and NATRON_CACHE_NEVER_PERSISTENT is not defined), the cache can handle multiple processes accessing to the same cache concurrently, however
+// Interprocess robust:
+//  -------------------
+// If defined the cache can handle multiple processes accessing to the same cache concurrently, however
 // the cache may not be placed in a network drive.
 // If not defined, the cache supports only a single process writing/reading from the cache concurrently, other processes will resort
 // in a process-local cache.
-//#ifndef NATRON_CACHE_NEVER_PERSISTENT
 //#define NATRON_CACHE_INTERPROCESS_ROBUST
-//#endif
 
 NATRON_NAMESPACE_ENTER;
 
@@ -120,29 +119,16 @@ struct CacheReportInfo
     }
 };
 
-
-
+template <bool persistent>
 struct CacheBucket;
-
-
 
 /**
  * @brief Small RAII style class used to lock an entry corresponding to a hash key to ensure
  * only a single thread can work on it at once.
  * Mainly this is to avoid multiple threads from computing the same image at once.
  **/
-struct CacheEntryLockerPrivate;
-class CacheEntryLocker;
-
-class CacheEntryLocker
+class CacheEntryLockerBase
 {
-    // For create
-    friend class Cache;
-
-    CacheEntryLocker(const CachePtr& cache, const CacheEntryBasePtr& entry);
-
-    static CacheEntryLockerPtr create(const CachePtr& cache, const CacheEntryBasePtr& entry);
-
 
 public:
 
@@ -161,21 +147,33 @@ public:
         eCacheEntryStatusComputationPending
     };
 
+    CacheEntryLockerBase()
+    {
+        
+    }
 
-    ~CacheEntryLocker();
 
+    virtual ~CacheEntryLockerBase()
+    {
+
+    }
+
+    /**
+     * @brief Returns whether the associated cache entry is persistent or not
+     **/
+    virtual bool isPersistent() const = 0;
 
     /**
      * @brief Returns the cache entry status
      **/
-    CacheEntryStatusEnum getStatus() const;
+    virtual CacheEntryStatusEnum getStatus() const = 0;
 
     /**
      * @brief If the entry status was eCacheEntryStatusMustCompute, it should be called
      * to insert the results into the cache. This will also set the status to eCacheEntryStatusCached
      * and threads waiting for this entry will be woken up and should have it available.
      **/
-    void insertInCache();
+    virtual void insertInCache() = 0;
 
     /**
      * @brief If the status was eCacheEntryStatusComputationPending, this waits for the results
@@ -189,69 +187,105 @@ public:
      * Otherwise this process will wait up to "timeout" milliseconds for the pending entry. After that, if it still
      * is not available, it will takeover the entry and return a status of eCacheEntryStatusMustCompute.
      **/
-    CacheEntryStatusEnum waitForPendingEntry(std::size_t timeout = 0);
+    virtual CacheEntryStatusEnum waitForPendingEntry(std::size_t timeout = 0) = 0;
 
 
     /**
      * @brief Get the entry that was originally passed to the ctor.
      **/
-    CacheEntryBasePtr getProcessLocalEntry() const;
+    virtual CacheEntryBasePtr getProcessLocalEntry() const = 0;
 
     static void sleep_milliseconds(std::size_t amountMS);
 
-private:
-
-
-    boost::scoped_ptr<CacheEntryLockerPrivate> _imp;
 };
 
-
-struct CachePrivate;
-class Cache
-:  public boost::enable_shared_from_this<Cache>
+template <bool persistent>
+struct CacheEntryLockerPrivate;
+template <bool persistent>
+class CacheEntryLocker : public CacheEntryLockerBase
 {
+    // For create
+    friend class Cache<persistent>;
 
+    CacheEntryLocker(const boost::shared_ptr<Cache<persistent> >& cache, const CacheEntryBasePtr& entry);
 
-    // For removeAllEntriesForPluginBlocking
-    friend class CacheCleanerThread;
-    friend struct CacheEntryLockerPrivate;
-    friend class CacheEntryLocker;
-    friend struct CacheBucket;
-    
-private:
-
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
-    Cache(bool persistent);
-#else
-    Cache();
-#endif
+    static boost::shared_ptr<CacheEntryLocker<persistent> > create(const boost::shared_ptr<Cache<persistent> >& cache, const CacheEntryBasePtr& entry);
 
 public:
 
-    /**
-     * @brief Create a new instance of a cache.
-     * @param persistent If true, the cache will be stored in memory mapped files to ensure
-     * persistence on the file system. Note that in this case, only data structures that
-     * can be held in shared memory can be inserted in the cache.
-     * Note that there can be only a single persistent cache.
-     **/
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
-    static CachePtr create(bool persistent);
-#else
-    static CachePtr create();
-#endif
-    
-    virtual ~Cache();
+    virtual ~CacheEntryLocker();
 
     /**
-     * @brief Returns whether the cache is persistent or not
+     * @brief Returns whether the associated cache entry is persistent or not
      **/
-    bool isPersistent() const;
+    virtual bool isPersistent() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /**
-     * @brief Returns the absolute path to the cache directory
+     * @brief Returns the cache entry status
      **/
-    std::string getCacheDirectoryPath() const;
+    virtual CacheEntryStatusEnum getStatus() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    /**
+     * @brief If the entry status was eCacheEntryStatusMustCompute, it should be called
+     * to insert the results into the cache. This will also set the status to eCacheEntryStatusCached
+     * and threads waiting for this entry will be woken up and should have it available.
+     **/
+    virtual void insertInCache() OVERRIDE FINAL;
+
+    /**
+     * @brief If the status was eCacheEntryStatusComputationPending, this waits for the results
+     * to be available by another thread that called insertInCache().
+     * If results are ready when woken up
+     * the status will become eCacheEntryStatusCached and the entry passed to the constructor is ready.
+     * If the status can still not be found in the cache and no other threads is computing it, the status
+     * will become eCacheEntryStatusMustCompute and it is expected that this thread computes the entry in turn.
+     *
+     * @param timeout If set to 0, the process will wait forever until the entry becomes available.
+     * Otherwise this process will wait up to "timeout" milliseconds for the pending entry. After that, if it still
+     * is not available, it will takeover the entry and return a status of eCacheEntryStatusMustCompute.
+     **/
+    virtual CacheEntryStatusEnum waitForPendingEntry(std::size_t timeout = 0) OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+
+    /**
+     * @brief Get the entry that was originally passed to the ctor.
+     **/
+    virtual CacheEntryBasePtr getProcessLocalEntry() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+private:
+
+    boost::scoped_ptr<CacheEntryLockerPrivate<persistent> > _imp;
+};
+
+template <bool persistent>
+struct CachePrivate;
+
+class CacheBase
+{
+
+
+public:
+
+    CacheBase()
+    {
+
+    }
+
+    virtual ~CacheBase()
+    {
+
+    }
+
+    /**
+     * @brief Check if the given file exists on disk
+     **/
+    static bool fileExists(const std::string& filename);
+
+    /**
+     * @brief Return a number 0 <= N <= 255 from the 2 first hexadecimal digits (8-bit) of the hash
+     **/
+    static int getBucketCacheBucketIndex(U64 hash);
+
 
     /**
      * @brief Returns the tile size (of one dimension) in pixels for the given bitdepth/
@@ -259,25 +293,31 @@ public:
     static void getTileSizePx(ImageBitDepthEnum bitdepth, int *tx, int *ty);
 
     /**
+     * @brief Returns whether the cache is persistent or not
+     **/
+    virtual bool isPersistent() const = 0;
+
+    /**
+     * @brief Returns the absolute path to the cache directory
+     **/
+    virtual std::string getCacheDirectoryPath() const = 0;
+
+
+    /**
      * @brief Set the maximum cache size available for the given storage.
      * Note that if shrinking, this will clear from the cache exceeding entries.
      **/
-    void setMaximumCacheSize(std::size_t size);
+    virtual void setMaximumCacheSize(std::size_t size) = 0;
 
     /**
      * @brief Returns the maximum cache size for the given storage.
      **/
-    std::size_t getMaximumCacheSize() const;
+    virtual std::size_t getMaximumCacheSize() const = 0;
 
     /**
      * @breif Returns the actual size taken in memory for the given storagE.
      **/
-    std::size_t getCurrentSize() const;
-
-    /**
-     * @brief Check if the given file exists on disk
-     **/
-    static bool fileExists(const std::string& filename);
+    virtual std::size_t getCurrentSize() const = 0;
 
     /**
      * @brief Look-up the cache for the given entry's key.
@@ -290,7 +330,7 @@ public:
      * CacheEntryLocker::waitForPendingEntry.
      * NB: if the cache is not persistent the entry pointer may be modified
      **/
-    CacheEntryLockerPtr get(const CacheEntryBasePtr& entry) const;
+    virtual CacheEntryLockerBasePtr get(const CacheEntryBasePtr& entry) const = 0;
 
     /**
      * @brief This function serves 2 purposes: either fetch existing tiles from the cache or allocate new ones, or both at the same time.
@@ -316,12 +356,12 @@ public:
      * When returning false, you must still call unLockTiles, but do not have to call releaseTiles.
      * Note that unLockTiles must always be called before releaseTiles.
      **/
-    bool retrieveAndLockTiles(const CacheEntryBasePtr& entry,
+    virtual bool retrieveAndLockTiles(const CacheEntryBasePtr& entry,
                               const std::vector<U64>* tileIndices,
                               const std::vector<U64>* tilesToAlloc,
                               std::vector<void*>* existingTilesData,
                               std::vector<std::pair<U64, void*> >* allocatedTilesData,
-                              void** cacheData);
+                              void** cacheData) = 0;
 
     /**
      * @brief Free cache data allocated from a call to retrieveAndLockTiles
@@ -330,20 +370,20 @@ public:
      * Note this function does not free the memory allocated for the tiles, it just cleans up the mutex taken in retrieveAndLockTiles().
      * The memory will be freed when the cache entry is removed from the cache.
      **/
-    void unLockTiles(void* cacheData);
+    virtual void unLockTiles(void* cacheData) = 0;
 
     /**
      * @brief Release tiles that were previously allocated by the given entry with retrieveAndLockTiles
      * @param localIndices Corresponds to the indices that were passed in tileIndices to the function retrieveAndLockTiles
      * @param cacheIndices Corresponds to the indices that were returned in allocatedTilesData in the function retrieveAndLockTiles
      **/
-    void releaseTiles(const CacheEntryBasePtr& entry, const std::vector<U64>& localIndices, const std::vector<U64>& cacheIndices);
+    virtual void releaseTiles(const CacheEntryBasePtr& entry, const std::vector<U64>& localIndices, const std::vector<U64>& cacheIndices) = 0;
 
     /**
      * @brief Returns whether a cache entry exists for the given hash.
      * This is significantly faster than the get() function but does not return the entry.
      **/
-    bool hasCacheEntryForHash(U64 hash) const;
+    virtual bool hasCacheEntryForHash(U64 hash) const = 0;
 
     /**
      * @brief Clears the cache of its last recently used entries so at least nBytesToFree are available for the given storage.
@@ -352,17 +392,17 @@ public:
      * This function is not blocking and it is not guaranteed that the memory is available when returning. 
      * Evicted entries will be deleted in a separate thread so this thread can continue its own work.
      **/
-    void evictLRUEntries(std::size_t nBytesToFree);
+    virtual void evictLRUEntries(std::size_t nBytesToFree) = 0;
 
     /**
      * @brief Clear the cache of entries that can be purged.
      **/
-    void clear();
+    virtual void clear() = 0;
 
     /**
      * @brief Removes this entry from the cache (if it exists in the cache)
      **/
-    void removeEntry(const CacheEntryBasePtr& entry);
+    virtual void removeEntry(const CacheEntryBasePtr& entry) = 0;
 
     /**
      * @brief Flush the opened memory mapped files on disk to ensure their persistence.
@@ -370,27 +410,100 @@ public:
      * @param async If true, the data is not guaranteed to be flushed when returning the function,
      * otherwise this function does not return before all data is flushed.
      **/
-    void flushCacheOnDisk(bool async);
+    virtual void flushCacheOnDisk(bool async) = 0;
 
     /**
      * @brief Returns cache stats for each plug-in
      **/
-    void getMemoryStats(std::map<std::string, CacheReportInfo>* infos) const;
+    virtual void getMemoryStats(std::map<std::string, CacheReportInfo>* infos) const = 0;
+
+
+};
+
+/**
+ * @brief An exception thrown when the cache is used by another process
+ **/
+class BusyCacheException : public std::exception
+{
+
+public:
+
+    BusyCacheException()
+    {
+    }
+
+    virtual ~BusyCacheException() throw()
+    {
+    }
+
+    virtual const char * what () const throw ()
+    {
+        return "This cache is already used by another process";
+    }
+};
+
+/**
+ * @param persistent If true, the cache will be stored in memory mapped files to ensure
+ * persistence on the file system. Note that in this case, only data structures that
+ * can be held in shared memory can be inserted in the cache.
+ * Note that currently there can be only a single persistent cache within Natron.
+ *
+ **/
+template <bool persistent>
+class Cache
+: public CacheBase
+{
+
+    friend class CacheCleanerThread;
+    friend struct CacheEntryLockerPrivate<persistent>;
+    friend class CacheEntryLocker<persistent>;
+    friend struct CacheBucket<persistent>;
+
+    void initialize(const boost::shared_ptr<Cache<persistent> >& thisShared);
+
+    Cache();
+
+public:
+
+
+
+    virtual ~Cache();
+
 
     /**
-     * @brief Return a number 0 <= N <= 255 from the 2 first hexadecimal digits (8-bit) of the hash
+     * @brief Create a new instance of a cache
+     * If the cache is persistent, this function may throw a BusyCacheException exception if the cache is used by another process
      **/
-    static int getBucketCacheBucketIndex(U64 hash);
+    static CacheBasePtr create();
 
+
+    virtual bool isPersistent() const OVERRIDE FINAL;
+    virtual std::string getCacheDirectoryPath() const OVERRIDE FINAL;
+    virtual void setMaximumCacheSize(std::size_t size) OVERRIDE FINAL;
+    virtual std::size_t getMaximumCacheSize() const OVERRIDE FINAL;
+    virtual std::size_t getCurrentSize() const OVERRIDE FINAL;
+    virtual CacheEntryLockerBasePtr get(const CacheEntryBasePtr& entry) const OVERRIDE FINAL;
+    virtual bool retrieveAndLockTiles(const CacheEntryBasePtr& entry,
+                                      const std::vector<U64>* tileIndices,
+                                      const std::vector<U64>* tilesToAlloc,
+                                      std::vector<void*>* existingTilesData,
+                                      std::vector<std::pair<U64, void*> >* allocatedTilesData,
+                                      void** cacheData) OVERRIDE FINAL;
+
+    virtual void unLockTiles(void* cacheData) OVERRIDE FINAL;
+    virtual void releaseTiles(const CacheEntryBasePtr& entry, const std::vector<U64>& localIndices, const std::vector<U64>& cacheIndices) OVERRIDE FINAL;
+    virtual bool hasCacheEntryForHash(U64 hash) const OVERRIDE FINAL;
+    virtual void evictLRUEntries(std::size_t nBytesToFree) OVERRIDE FINAL;
+    virtual void clear() OVERRIDE FINAL;
+    virtual void removeEntry(const CacheEntryBasePtr& entry) OVERRIDE FINAL;
+    virtual void flushCacheOnDisk(bool async) OVERRIDE FINAL;
+    virtual void getMemoryStats(std::map<std::string, CacheReportInfo>* infos) const OVERRIDE FINAL;
 
 
 private:
 
-    boost::scoped_ptr<CachePrivate> _imp;
-
+    boost::scoped_ptr<CachePrivate<persistent> > _imp;
 };
-
-
 
 NATRON_NAMESPACE_EXIT;
 

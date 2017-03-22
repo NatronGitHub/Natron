@@ -653,6 +653,13 @@ bool
 AppInstance::loadPythonScriptAndReportToScriptEditor(const QString& script)
 {
 
+    {
+        std::string err;
+        bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript("app = app1\n", &err, 0);
+        assert(ok);
+        (void)ok;
+    }
+
     std::string err, output;
 
     bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script.toStdString(), &err, &output);
@@ -1000,10 +1007,10 @@ AppInstance::createNodeInternal(const CreateNodeArgsPtr& args)
     NodePtr argsIOContainer = args->getPropertyUnsafe<NodePtr>(kCreateNodeArgsPropMetaNodeContainer);
     if (!argsIOContainer) {
         if ( ReadNode::isBundledReader( argsPluginID.toStdString() ) ) {
-            args->addParamDefaultValue(kNatronReadNodeParamDecodingPluginID, argsPluginID.toStdString());
+            args->addParamDefaultValue(kNatronWriteNodeParamEncodingPluginChoice, argsPluginID.toStdString());
             findId = QString::fromUtf8(PLUGINID_NATRON_READ);
         } else if ( WriteNode::isBundledWriter( argsPluginID.toStdString() ) ) {
-            args->addParamDefaultValue(kNatronWriteNodeParamEncodingPluginID, argsPluginID.toStdString());
+            args->addParamDefaultValue(kNatronWriteNodeParamEncodingPluginChoice, argsPluginID.toStdString());
             findId = QString::fromUtf8(PLUGINID_NATRON_WRITE);
         }
     }

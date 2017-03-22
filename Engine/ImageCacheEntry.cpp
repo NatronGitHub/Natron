@@ -94,81 +94,42 @@ struct TileCacheIndex
 };
 
 struct ImageCacheEntryPrivate;
-class ImageCacheEntryInternal;
-typedef boost::shared_ptr<ImageCacheEntryInternal> ImageCacheEntryInternalPtr;
 
-class ImageCacheEntryInternal : public CacheEntryBase
+
+class ImageCacheEntryInternalBase;
+typedef boost::shared_ptr<ImageCacheEntryInternalBase> ImageCacheEntryInternalBasePtr;
+
+class ImageCacheEntryInternalBase : public CacheEntryBase
 {
 public:
 
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
-    // When persistent, this entry is local and not shared to the threads/processes so it's fine to hold a pointer to our local entry private interface
-    ImageCacheEntryPrivate* _imp;
-#endif
 
     // The vector contains the state of the tiles for each mipmap level.
     // This is the last tiles state map that was read from the cache: any tile marked eTileStatusPending is pending
     // because someone else is computing it. Any tile marked eTileStatusNotRendered is computed by us.
     std::vector<TilesState> perMipMapTilesState;
 
-#ifdef NATRON_CACHE_NEVER_PERSISTENT
-    // If defined, this same object is shared across all threads, hence we need to protect data ourselves
-    // Otherwise this is handled by the cache
-    boost::shared_mutex perMipMapTilesStateMutex;
-#else
 
-    // If true the next call to fromMemorySegment will skip the call to readAndUpdateStateMap. This enables to update
-    // the cache tiles map from within updateCachedTilesStateMap()
-    bool nextFromMemorySegmentCallIsToMemorySegment;
-#endif
-
-private:
-
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
-    ImageCacheEntryInternal(ImageCacheEntryPrivate* _imp)
-    : CacheEntryBase(appPTR->getTileCache())
-    , _imp(_imp)
-    , perMipMapTilesState()
-    , nextFromMemorySegmentCallIsToMemorySegment(false)
-    {}
-#else
-    ImageCacheEntryInternal()
-    : CacheEntryBase(appPTR->getTileCache())
-    , perMipMapTilesState()
-    , perMipMapTilesStateMutex()
-    {}
-#endif // NATRON_CACHE_NEVER_PERSISTENT
 
 public:
-    
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
-    static ImageCacheEntryInternalPtr create(ImageCacheEntryPrivate* _imp, const ImageCacheKeyPtr& key)
-#else
-    static ImageCacheEntryInternalPtr create(const ImageCacheKeyPtr& key)
-#endif
-    {
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
-        ImageCacheEntryInternalPtr ret(new ImageCacheEntryInternal(_imp));
-#else
-        ImageCacheEntryInternalPtr ret(new ImageCacheEntryInternal());
-#endif
-        ret->setKey(key);
-        return ret;
-    }
 
-    virtual ~ImageCacheEntryInternal()
+    ImageCacheEntryInternalBase()
+    : CacheEntryBase(appPTR->getTileCache())
+    , perMipMapTilesState()
     {
 
     }
 
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
-    virtual void toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const OVERRIDE FINAL;
+    virtual ~ImageCacheEntryInternalBase()
+    {
+
+    }
+
+
+    virtual void toMemorySegment(IPCPropertyMap* properties) const OVERRIDE FINAL;
 
     virtual CacheEntryBase::FromMemorySegmentRetCodeEnum fromMemorySegment(bool isLockedForWriting,
-                                                                           ExternalSegmentType* segment,
-                                                                           ExternalSegmentTypeHandleList::const_iterator start,
-                                                                           ExternalSegmentTypeHandleList::const_iterator end) OVERRIDE FINAL WARN_UNUSED_RETURN;
-#endif
+                                                                           const IPCPropertyMap& properties) OVERRIDE FINAL;
 
 
     /**
@@ -182,11 +143,82 @@ public:
 
 };
 
+template <bool persistent>
+class ImageCacheEntryInternal : public ImageCacheEntryInternalBase
+{
+};
 
-inline ImageCacheEntryInternalPtr
+
+template <>
+class ImageCacheEntryInternal<true> : public ImageCacheEntryInternalBase
+{
+public:
+
+    // When persistent, this entry is local and not shared to the threads/processes so it's fine to hold a pointer to our local entry private interface
+    ImageCacheEntryPrivate* _imp;
+
+    // If true the next call to fromMemorySegment will skip the call to readAndUpdateStateMap. This enables to update
+    // the cache tiles map from within updateCachedTilesStateMap()
+    bool nextFromMemorySegmentCallIsToMemorySegment;
+
+private:
+    ImageCacheEntryInternal(ImageCacheEntryPrivate* _imp)
+    : ImageCacheEntryInternalBase()
+    , _imp(_imp)
+    , nextFromMemorySegmentCallIsToMemorySegment(false)
+    {}
+
+public:
+
+
+
+    static ImageCacheEntryInternalBasePtr create(ImageCacheEntryPrivate* _imp, const ImageCacheKeyPtr& key)
+    {
+        ImageCacheEntryInternalBasePtr ret(new ImageCacheEntryInternal<true>(_imp));
+        ret->setKey(key);
+        return ret;
+
+    }
+};
+
+template <>
+class ImageCacheEntryInternal<false> : public ImageCacheEntryInternalBase
+{
+public:
+
+    // If defined, this same object is shared across all threads, hence we need to protect data ourselves
+    // Otherwise this is handled by the cache
+    boost::shared_mutex perMipMapTilesStateMutex;
+
+
+private:
+
+    ImageCacheEntryInternal()
+    : ImageCacheEntryInternalBase()
+    , perMipMapTilesStateMutex()
+    {}
+
+public:
+
+    virtual ~ImageCacheEntryInternal()
+    {
+
+    }
+
+    static ImageCacheEntryInternalBasePtr create(const ImageCacheKeyPtr& key)
+    {
+        ImageCacheEntryInternalBasePtr ret(new ImageCacheEntryInternal<false>());
+        ret->setKey(key);
+        return ret;
+
+    }
+};
+
+
+inline ImageCacheEntryInternalBasePtr
 toImageCacheEntryInternal(const CacheEntryBasePtr& entry)
 {
-    return boost::dynamic_pointer_cast<ImageCacheEntryInternal>(entry);
+    return boost::dynamic_pointer_cast<ImageCacheEntryInternalBase>(entry);
 }
 
 // Pointers to the tile buffer + bounds of the tile + channel offset
@@ -255,7 +287,7 @@ struct ImageCacheEntryPrivate
     // Pointer to the internal cache entry.
     // The entry is protected by the lock to ensure multiple threads using the same
     // ImagePtr do not concurrently write/read the same map.
-    ImageCacheEntryInternalPtr internalCacheEntry;
+    ImageCacheEntryInternalBasePtr internalCacheEntry;
 
     // When reading the state map, this is the list of tiles to fetch from the cache in fetchAndCopyCachedTiles()
     // Protected by lock
@@ -305,7 +337,7 @@ struct ImageCacheEntryPrivate
 
         assert(nComps > 0);
         int tileSizeX, tileSizeY;
-        Cache::getTileSizePx(depth, &tileSizeX, &tileSizeY);
+        CacheBase::getTileSizePx(depth, &tileSizeX, &tileSizeY);
 
 #ifndef NDEBUG
         assert(pixelRod.contains(roi));
@@ -321,7 +353,7 @@ struct ImageCacheEntryPrivate
 
         // If we don't want to use the cache, still create a local object used to sync threads
         if (cachePolicy == eCacheAccessModeNone) {
-            internalCacheEntry = ImageCacheEntryInternal::create(this, key);
+            internalCacheEntry = ImageCacheEntryInternal<false>::create(key);
         }
     }
 
@@ -360,9 +392,7 @@ struct ImageCacheEntryPrivate
      **/
     ActionRetCodeEnum fetchAndCopyCachedTiles() WARN_UNUSED_RETURN;
 
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
     void updateCachedTilesStateMap();
-#endif
 
     enum LookupTileStateRetCodeEnum
     {
@@ -623,9 +653,9 @@ public:
 struct CacheDataLock_RAII
 {
     void* data;
-    CachePtr cache;
+    CacheBasePtr cache;
 
-    CacheDataLock_RAII(const CachePtr& cache, void* cacheData)
+    CacheDataLock_RAII(const CacheBasePtr& cache, void* cacheData)
     : data(cacheData)
     , cache(cache)
     {
@@ -1113,7 +1143,7 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
     image.lock()->ensureBuffersAllocated();
 
     // Get the tile pointers on the cache
-    CachePtr tileCache = internalCacheEntry->getCache();
+    CacheBasePtr tileCache = internalCacheEntry->getCache();
 
     // List of the tiles we need to copy
     std::vector<void*> fetchedExistingTiles;
@@ -1185,11 +1215,16 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
 
         // We downscaled hence we must update tiles status from eTileStatusNotRendered to eTileStatusRendered
         // Only do so for the first channel since they all share the same state
-#ifdef NATRON_CACHE_NEVER_PERSISTENT
-        // In non-persistent mode, lock the cache entry since it's shared across threads.
-        // In persistent mode the entry is copied in fromMemorySegment
-        boost::unique_lock<boost::shared_mutex> writeLock(internalCacheEntry->perMipMapTilesStateMutex);
-#endif
+
+        boost::scoped_ptr<boost::unique_lock<boost::shared_mutex> > writeLock;
+        if (!internalCacheEntry->isPersistent()) {
+            // In non-persistent mode, lock the cache entry since it's shared across threads.
+            // In persistent mode the entry is copied in fromMemorySegment
+            ImageCacheEntryInternal<false>* nonPersistentLocalEntry = dynamic_cast<ImageCacheEntryInternal<false>* >(internalCacheEntry.get());
+            assert(nonPersistentLocalEntry);
+            writeLock.reset(new boost::unique_lock<boost::shared_mutex>(nonPersistentLocalEntry->perMipMapTilesStateMutex));
+        }
+
 
         for (std::size_t j = 0; j  < perLevelTilesToDownscale[i].size(); ++j) {
 
@@ -1245,11 +1280,9 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
     } // for each mip map level
 
     // In persistent mode we have to actually copy the states map from the cache entry to the cache
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
-    if (stateMapUpdated) {
+    if (internalCacheEntry->isPersistent() && stateMapUpdated) {
         updateCachedTilesStateMap();
     } // stateMapUpdated
-#endif // NATRON_CACHE_NEVER_PERSISTENT
 
 
     // Now add the tiles we just downscaled to our level to the list of tiles to copy
@@ -1302,45 +1335,60 @@ ImageCacheEntry::fetchCachedTilesAndUpdateStatus(TileStateHeader* tileStatus, bo
         } else {
             // If we want interaction with the cache, we need to fetch the actual tiles state map from the cache
 
-#ifdef NATRON_CACHE_NEVER_PERSISTENT
-            _imp->internalCacheEntry = ImageCacheEntryInternal::create(_imp->key);
-#else
-            _imp->internalCacheEntry = ImageCacheEntryInternal::create(_imp.get(), _imp->key);
-#endif
-            CacheEntryLockerPtr cacheAccess = _imp->internalCacheEntry->getFromCache();
+            if (!appPTR->getTileCache()->isPersistent()) {
+                _imp->internalCacheEntry = ImageCacheEntryInternal<false>::create(_imp->key);
+            } else {
+                _imp->internalCacheEntry = ImageCacheEntryInternal<true>::create(_imp.get(), _imp->key);
+            }
 
-            CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
-            while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
+            CacheEntryLockerBasePtr cacheAccess = _imp->internalCacheEntry->getFromCache();
+
+            CacheEntryLockerBase::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
+            while (cacheStatus == CacheEntryLockerBase::eCacheEntryStatusComputationPending) {
                 cacheStatus = cacheAccess->waitForPendingEntry();
             }
-            assert(cacheStatus == CacheEntryLocker::eCacheEntryStatusCached ||
-                   cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute);
+            assert(cacheStatus == CacheEntryLockerBase::eCacheEntryStatusCached ||
+                   cacheStatus == CacheEntryLockerBase::eCacheEntryStatusMustCompute);
 
-            if (_imp->cachePolicy == eCacheAccessModeWriteOnly && cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
+            if (_imp->cachePolicy == eCacheAccessModeWriteOnly && cacheStatus == CacheEntryLockerBase::eCacheEntryStatusCached) {
                 _imp->internalCacheEntry->getCache()->removeEntry(_imp->internalCacheEntry);
+
+                if (!appPTR->getTileCache()->isPersistent()) {
+                    _imp->internalCacheEntry = ImageCacheEntryInternal<false>::create(_imp->key);
+                } else {
+                    _imp->internalCacheEntry = ImageCacheEntryInternal<true>::create(_imp.get(), _imp->key);
+                }
+                _imp->markedTiles.clear();
+                _imp->tilesToFetch.clear();
+                
                 cacheAccess = _imp->internalCacheEntry->getFromCache();
-                while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
+                cacheStatus = cacheAccess->getStatus();
+                while (cacheStatus == CacheEntryLockerBase::eCacheEntryStatusComputationPending) {
                     cacheStatus = cacheAccess->waitForPendingEntry();
                 }
-                assert(cacheStatus == CacheEntryLocker::eCacheEntryStatusCached ||
-                       cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute);
+                assert(cacheStatus == CacheEntryLockerBase::eCacheEntryStatusCached ||
+                       cacheStatus == CacheEntryLockerBase::eCacheEntryStatusMustCompute);
 
 
                 _imp->localTilesState.init(_imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY, _imp->localTilesState.bounds);
 
+
                 // Reset the policy to read/write now that we reseted the tiles state map once.
                 _imp->cachePolicy = eCacheAccessModeReadWrite;
             }
-#ifdef NATRON_CACHE_NEVER_PERSISTENT
+
             // In non peristent mode, the entry pointer is directly cached: there's no call to fromMemorySegment/toMemorySegment
             // Emulate what is done when compiled with a persistent cache
-            if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
+            if (!cacheAccess->isPersistent() && cacheStatus == CacheEntryLockerBase::eCacheEntryStatusCached) {
                 _imp->internalCacheEntry = toImageCacheEntryInternal(cacheAccess->getProcessLocalEntry());
+
+                ImageCacheEntryInternal<false>* nonPersistentLocalEntry = dynamic_cast<ImageCacheEntryInternal<false>* >(_imp->internalCacheEntry.get());
+                assert(nonPersistentLocalEntry);
 
                 // First call readAndUpdateStateMap under a read lock, if needed recall under a write lock
                 bool mustCallUnderWriteLock = false;
                 {
-                    boost::shared_lock<boost::shared_mutex> readLock(_imp->internalCacheEntry->perMipMapTilesStateMutex);
+                    boost::shared_lock<boost::shared_mutex> readLock(nonPersistentLocalEntry->perMipMapTilesStateMutex);
                     ImageCacheEntryPrivate::UpdateStateMapRetCodeEnum stat = _imp->readAndUpdateStateMap(false /*hasExlcusiveLock*/);
                     switch (stat) {
                         case ImageCacheEntryPrivate::eUpdateStateMapRetCodeUpToDate:
@@ -1361,7 +1409,7 @@ ImageCacheEntry::fetchCachedTilesAndUpdateStatus(TileStateHeader* tileStatus, bo
 
                 }
                 if (mustCallUnderWriteLock) {
-                    boost::unique_lock<boost::shared_mutex> writeLock(_imp->internalCacheEntry->perMipMapTilesStateMutex);
+                    boost::unique_lock<boost::shared_mutex> writeLock(nonPersistentLocalEntry->perMipMapTilesStateMutex);
                     ImageCacheEntryPrivate::UpdateStateMapRetCodeEnum stat = _imp->readAndUpdateStateMap(true /*hasExlcusiveLock*/);
                     assert(stat == ImageCacheEntryPrivate::eUpdateStateMapRetCodeMustWriteToCache || stat == ImageCacheEntryPrivate::eUpdateStateMapRetCodeFailed);
                     if (stat == ImageCacheEntryPrivate::eUpdateStateMapRetCodeFailed) {
@@ -1369,7 +1417,6 @@ ImageCacheEntry::fetchCachedTilesAndUpdateStatus(TileStateHeader* tileStatus, bo
                     }
                 }
             }
-#endif // NATRON_CACHE_NEVER_PERSISTENT
 
             // In persistent mode:
             // If the status is CacheEntryLocker::eCacheEntryStatusCached the state map updating was done in fromMemorySegment
@@ -1381,10 +1428,17 @@ ImageCacheEntry::fetchCachedTilesAndUpdateStatus(TileStateHeader* tileStatus, bo
             // In non persistent mode we have to do the same thing when it is the first time we create the entry in the cache.
 
             // The exclusive lock is guaranteed by the cache, we don't have to do anything externally.
-            if (cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute) {
-#ifdef NATRON_CACHE_NEVER_PERSISTENT
-                boost::unique_lock<boost::shared_mutex> writeLock(_imp->internalCacheEntry->perMipMapTilesStateMutex);
-#endif
+            if (cacheStatus == CacheEntryLockerBase::eCacheEntryStatusMustCompute) {
+
+                boost::scoped_ptr<boost::unique_lock<boost::shared_mutex> > writeLock;
+                if (!_imp->internalCacheEntry->isPersistent()) {
+                    // In non-persistent mode, lock the cache entry since it's shared across threads.
+                    // In persistent mode the entry is copied in fromMemorySegment
+                    ImageCacheEntryInternal<false>* nonPersistentLocalEntry = dynamic_cast<ImageCacheEntryInternal<false>* >(_imp->internalCacheEntry.get());
+                    assert(nonPersistentLocalEntry);
+                    writeLock.reset(new boost::unique_lock<boost::shared_mutex>(nonPersistentLocalEntry->perMipMapTilesStateMutex));
+                }
+
                 ImageCacheEntryPrivate::UpdateStateMapRetCodeEnum stat = _imp->readAndUpdateStateMap(true /*hasExclusiveLock*/);
 
                 // All tiles should be eTileStatusNotRendered and thus we set them all to eTileStatusPending and must insert the results in te cache
@@ -1403,9 +1457,14 @@ ImageCacheEntry::fetchCachedTilesAndUpdateStatus(TileStateHeader* tileStatus, bo
             }
 
             if (markedTilesModified || !_imp->tilesToFetch.empty()) {
-#ifdef NATRON_CACHE_NEVER_PERSISTENT
-                boost::unique_lock<boost::shared_mutex> writeLock(_imp->internalCacheEntry->perMipMapTilesStateMutex);
-#endif
+                boost::scoped_ptr<boost::unique_lock<boost::shared_mutex> > writeLock;
+                if (!_imp->internalCacheEntry->isPersistent()) {
+                    // In non-persistent mode, lock the cache entry since it's shared across threads.
+                    // In persistent mode the entry is copied in fromMemorySegment
+                    ImageCacheEntryInternal<false>* nonPersistentLocalEntry = dynamic_cast<ImageCacheEntryInternal<false>* >(_imp->internalCacheEntry.get());
+                    assert(nonPersistentLocalEntry);
+                    writeLock.reset(new boost::unique_lock<boost::shared_mutex>(nonPersistentLocalEntry->perMipMapTilesStateMutex));
+                }
 
                 // If we found any new cached tile, fetch and copy them to our local storage
                 ActionRetCodeEnum stat = _imp->fetchAndCopyCachedTiles();
@@ -1444,11 +1503,16 @@ ImageCacheEntry::getStatus(TileStateHeader* tileStatus, bool* hasUnRenderedTile,
     }
 } // getStatus
 
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
 void
 ImageCacheEntryPrivate::updateCachedTilesStateMap()
 {
     assert(cachePolicy != eCacheAccessModeNone);
+    if (!internalCacheEntry->isPersistent()) {
+        return;
+    }
+
+    ImageCacheEntryInternal<true>* persistentLocalEntry = dynamic_cast<ImageCacheEntryInternal<true>* >(internalCacheEntry.get());
+    assert(persistentLocalEntry);
 
     // Re-lookup in the cache the entry, this will force a call to fromMemorySegment, thus updating the tiles state
     // as seen in the cache.
@@ -1456,23 +1520,22 @@ ImageCacheEntryPrivate::updateCachedTilesStateMap()
     // In this case we just re-insert back the entry in the cache.
 
     // Flag that we don't want to update the tile state locally
-    internalCacheEntry->nextFromMemorySegmentCallIsToMemorySegment = true;
-    CacheEntryLockerPtr cacheAccess = internalCacheEntry->getFromCache();
-    CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
-    while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
+    persistentLocalEntry->nextFromMemorySegmentCallIsToMemorySegment = true;
+    CacheEntryLockerBasePtr cacheAccess = internalCacheEntry->getFromCache();
+    CacheEntryLockerBase::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
+    while (cacheStatus == CacheEntryLockerBase::eCacheEntryStatusComputationPending) {
         cacheStatus = cacheAccess->waitForPendingEntry();
     }
-    assert(cacheStatus == CacheEntryLocker::eCacheEntryStatusCached ||
-           cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute);
+    assert(cacheStatus == CacheEntryLockerBase::eCacheEntryStatusCached ||
+           cacheStatus == CacheEntryLockerBase::eCacheEntryStatusMustCompute);
 
     // There may be a case where the entry was removed, insert in the cache, forcing a call to toMemorySegment
-    if (cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute) {
+    if (cacheStatus == CacheEntryLockerBase::eCacheEntryStatusMustCompute) {
         cacheAccess->insertInCache();
     }
 
-    internalCacheEntry->nextFromMemorySegmentCallIsToMemorySegment = false;
+    persistentLocalEntry->nextFromMemorySegmentCallIsToMemorySegment = false;
 }
-#endif // #ifndef NATRON_CACHE_NEVER_PERSISTENT
 
 void
 ImageCacheEntry::markCacheTilesAsAborted()
@@ -1487,17 +1550,22 @@ ImageCacheEntry::markCacheTilesAsAborted()
         return;
     }
 
-#ifdef NATRON_CACHE_NEVER_PERSISTENT
-    // In non-persistent mode, lock the cache entry since it's shared across threads.
-    // In persistent mode the entry is copied in fromMemorySegment
-    boost::unique_lock<boost::shared_mutex> writeLock(_imp->internalCacheEntry->perMipMapTilesStateMutex);
-#endif
+
+    boost::scoped_ptr<boost::unique_lock<boost::shared_mutex> > writeLock;
+    if (!_imp->internalCacheEntry->isPersistent()) {
+        // In non-persistent mode, lock the cache entry since it's shared across threads.
+        // In persistent mode the entry is copied in fromMemorySegment
+        ImageCacheEntryInternal<false>* nonPersistentLocalEntry = dynamic_cast<ImageCacheEntryInternal<false>* >(_imp->internalCacheEntry.get());
+        assert(nonPersistentLocalEntry);
+        writeLock.reset(new boost::unique_lock<boost::shared_mutex>(nonPersistentLocalEntry->perMipMapTilesStateMutex));
+    }
+
     // We should have gotten the state map from the cache in fetchCachedTilesAndUpdateStatus()
     assert(!_imp->internalCacheEntry->perMipMapTilesState.empty());
 
 
     // Read the cache map and update our local map
-    CachePtr cache = _imp->internalCacheEntry->getCache();
+    CacheBasePtr cache = _imp->internalCacheEntry->getCache();
     bool hasModifiedTileMap = false;
 
     RectI mipmap0Bounds = _imp->localTilesState.bounds.upscalePowerOfTwo(_imp->mipMapLevel);
@@ -1542,9 +1610,10 @@ ImageCacheEntry::markCacheTilesAsAborted()
 
     if (_imp->cachePolicy != eCacheAccessModeNone) {
         // In persistent mode we have to actually copy the cache entry tiles state map to the cache
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
-        _imp->updateCachedTilesStateMap();
-#endif // NATRON_CACHE_NEVER_PERSISTENT
+        if (_imp->internalCacheEntry->isPersistent()) {
+            _imp->updateCachedTilesStateMap();
+        }
+
     }
 
 } // markCacheTilesAsAborted
@@ -1559,16 +1628,20 @@ ImageCacheEntry::markCacheTilesInRegionAsNotRendered(const RectI& roi)
     boost::unique_lock<boost::mutex> locker(_imp->lock);
 
 
-#ifdef NATRON_CACHE_NEVER_PERSISTENT
-    // In non-persistent mode, lock the cache entry since it's shared across threads.
-    // In persistent mode the entry is copied in fromMemorySegment
-    boost::unique_lock<boost::shared_mutex> writeLock(_imp->internalCacheEntry->perMipMapTilesStateMutex);
-#endif
+    boost::scoped_ptr<boost::unique_lock<boost::shared_mutex> > writeLock;
+    if (!_imp->internalCacheEntry->isPersistent()) {
+        // In non-persistent mode, lock the cache entry since it's shared across threads.
+        // In persistent mode the entry is copied in fromMemorySegment
+        ImageCacheEntryInternal<false>* nonPersistentLocalEntry = dynamic_cast<ImageCacheEntryInternal<false>* >(_imp->internalCacheEntry.get());
+        assert(nonPersistentLocalEntry);
+        writeLock.reset(new boost::unique_lock<boost::shared_mutex>(nonPersistentLocalEntry->perMipMapTilesStateMutex));
+    }
+
     // We should have gotten the state map from the cache in fetchCachedTilesAndUpdateStatus()
     assert(!_imp->internalCacheEntry->perMipMapTilesState.empty());
 
     // Read the cache map and update our local map
-    CachePtr cache = _imp->internalCacheEntry->getCache();
+    CacheBasePtr cache = _imp->internalCacheEntry->getCache();
     bool hasModifiedTileMap = false;
 
     std::vector<U64> localTileIndicesToRelease, cacheTileIndicesToRelease;
@@ -1624,9 +1697,9 @@ ImageCacheEntry::markCacheTilesInRegionAsNotRendered(const RectI& roi)
 
     if (_imp->cachePolicy != eCacheAccessModeNone && hasModifiedTileMap) {
         // In persistent mode we have to actually copy the cache entry tiles state map to the cache
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
-        _imp->updateCachedTilesStateMap();
-#endif // NATRON_CACHE_NEVER_PERSISTENT
+        if (_imp->internalCacheEntry->isPersistent()) {
+            _imp->updateCachedTilesStateMap();
+        }
     }
 
 } // markCacheTilesInRegionAsNotRendered
@@ -1644,11 +1717,15 @@ ImageCacheEntry::markCacheTilesAsRendered()
         return;
     }
 
-#ifdef NATRON_CACHE_NEVER_PERSISTENT
-    // In non-persistent mode, lock the cache entry since it's shared across threads.
-    // In persistent mode the entry is copied in fromMemorySegment
-    boost::unique_lock<boost::shared_mutex> writeLock(_imp->internalCacheEntry->perMipMapTilesStateMutex);
-#endif
+    boost::scoped_ptr<boost::unique_lock<boost::shared_mutex> > writeLock;
+    if (!_imp->internalCacheEntry->isPersistent()) {
+        // In non-persistent mode, lock the cache entry since it's shared across threads.
+        // In persistent mode the entry is copied in fromMemorySegment
+        ImageCacheEntryInternal<false>* nonPersistentLocalEntry = dynamic_cast<ImageCacheEntryInternal<false>* >(_imp->internalCacheEntry.get());
+        assert(nonPersistentLocalEntry);
+        writeLock.reset(new boost::unique_lock<boost::shared_mutex>(nonPersistentLocalEntry->perMipMapTilesStateMutex));
+    }
+
     // We should have gotten the state map from the cache in fetchCachedTilesAndUpdateStatus()
     assert(!_imp->internalCacheEntry->perMipMapTilesState.empty());
 
@@ -1656,7 +1733,7 @@ ImageCacheEntry::markCacheTilesAsRendered()
 
 
     // Read the cache map and update our local map
-    CachePtr cache = _imp->internalCacheEntry->getCache();
+    CacheBasePtr cache = _imp->internalCacheEntry->getCache();
     bool hasModifiedTileMap = false;
 
     std::vector<boost::shared_ptr<TileData> > tilesToCopy;
@@ -1796,9 +1873,9 @@ ImageCacheEntry::markCacheTilesAsRendered()
     (void)stat;
 
     // In persistent mode we have to actually copy the cache entry tiles state map to the cache
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
-    _imp->updateCachedTilesStateMap();
-#endif // NATRON_CACHE_NEVER_PERSISTENT
+    if (_imp->internalCacheEntry->isPersistent()) {
+        _imp->updateCachedTilesStateMap();
+    }
 } // markCacheTilesAsRendered
 
 bool
@@ -1845,7 +1922,7 @@ ImageCacheEntry::waitForPendingTiles()
         if (hasPendingResults) {
 
             timeSpentWaitingForPendingEntryMS += timeToWaitMS;
-            CacheEntryLocker::sleep_milliseconds(timeToWaitMS);
+            CacheEntryLockerBase::sleep_milliseconds(timeToWaitMS);
 
             // Increase the time to wait at the next iteration
             timeToWaitMS *= 1.2;
@@ -1862,16 +1939,87 @@ ImageCacheEntry::waitForPendingTiles()
 
 } // waitForPendingTiles
 
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
-
-static void fromMemorySegmentInternal(const IPCMipMapTileStateVector& cachedMipMapStates, std::vector<TilesState>* localMipMapStates)
+static std::string getPropNameInternal(const std::string& baseName, unsigned int mipMapLevel)
 {
-    localMipMapStates->clear();
-    for (std::size_t i = 0; i < cachedMipMapStates.size(); ++i) {
-        TilesState localState;
-        localState.tiles.insert(localState.tiles.end(), cachedMipMapStates[i].tiles.begin(), cachedMipMapStates[i].tiles.end());
-        localMipMapStates->push_back(localState);
+    std::stringstream ss;
+    ss << baseName << mipMapLevel;
+    return ss.str();
+}
+
+static std::string getStatusPropName(unsigned int mipMapLevel)
+{
+    return getPropNameInternal("Status", mipMapLevel);
+}
+
+static std::string getTileIndicesPropName(unsigned int mipMapLevel)
+{
+    return getPropNameInternal("TileIndices", mipMapLevel);
+}
+
+static std::string getBoundsPropName(unsigned int mipMapLevel)
+{
+    return getPropNameInternal("Bounds", mipMapLevel);
+}
+
+static CacheEntryBase::FromMemorySegmentRetCodeEnum fromMemorySegmentInternal(const IPCPropertyMap& properties, std::vector<TilesState>* localMipMapStates)
+{
+
+    int numLevels;
+    if (!properties.getIPCProperty("NumLevels", 0, &numLevels)) {
+        return CacheEntryBase::eFromMemorySegmentRetCodeFailed;
     }
+    localMipMapStates->resize(numLevels);
+
+    for (std::size_t m = 0; m < localMipMapStates->size(); ++m) {
+
+        TilesState& localState = (*localMipMapStates)[m];
+
+        std::string statusPropName = getStatusPropName(m);
+        std::string tileIndicesPropName = getTileIndicesPropName(m);
+        std::string boundsPropName = getBoundsPropName(m);
+
+        const IPCProperty* statusProp = properties.getIPCProperty(statusPropName);
+        const IPCProperty* indicesProp = properties.getIPCProperty(tileIndicesPropName);
+        const IPCProperty* boundsProp = properties.getIPCProperty(boundsPropName);
+
+        if (!statusProp || statusProp->getType() != eIPCVariantTypeInt) {
+            return CacheEntryBase::eFromMemorySegmentRetCodeFailed;
+        }
+
+        if (!indicesProp || indicesProp->getType() != eIPCVariantTypeULongLong) {
+            return CacheEntryBase::eFromMemorySegmentRetCodeFailed;
+        }
+
+        if (!boundsProp || boundsProp->getType() != eIPCVariantTypeInt) {
+            return CacheEntryBase::eFromMemorySegmentRetCodeFailed;
+        }
+
+        if (indicesProp->getNumDimensions() != statusProp->getNumDimensions() * 4 ||
+            boundsProp->getNumDimensions() != statusProp->getNumDimensions() * 4) {
+            return CacheEntryBase::eFromMemorySegmentRetCodeFailed;
+        }
+
+        localState.tiles.resize(statusProp->getNumDimensions());
+
+        for (std::size_t i = 0; i < localState.tiles.size(); ++i) {
+            TileState& state = localState.tiles[i];
+
+            int status_i;
+            IPCProperty::getIntValue(statusProp->getData(), i, &status_i);
+            state.status = (TileStatusEnum)status_i;
+
+            for (int c = 0; c < 4; ++c) {
+                IPCProperty::getULongLongValue(indicesProp->getData(), i * 4 + c, &state.channelsTileStorageIndex[c]);
+            }
+
+            IPCProperty::getIntValue(boundsProp->getData(), i * 4, &state.bounds.x1);
+            IPCProperty::getIntValue(boundsProp->getData(), i * 4 + 1, &state.bounds.y1);
+            IPCProperty::getIntValue(boundsProp->getData(), i * 4 + 2, &state.bounds.x2);
+            IPCProperty::getIntValue(boundsProp->getData(), i * 4 + 3, &state.bounds.y2);
+
+        }
+    }
+    return CacheEntryBase::eFromMemorySegmentRetCodeOk;
 }
 
 /**
@@ -1881,60 +2029,104 @@ static void fromMemorySegmentInternal(const IPCMipMapTileStateVector& cachedMipM
  **/
 static void toMemorySegmentInternal(bool copyPendingStatusToCache,
                                     const std::vector<TilesState>& localMipMapStates,
-                                    IPCMipMapTileStateVector* cachedMipMapStates,
-                                    ExternalSegmentType* segment)
+                                    IPCPropertyMap* properties)
 {
-    if (cachedMipMapStates->size() != localMipMapStates.size()) {
-        TileState_Allocator_ExternalSegment alloc(segment->get_segment_manager());
-        IPCTilesState init(alloc);
-        cachedMipMapStates->resize(localMipMapStates.size(), init);
-    }
-    for (std::size_t i = 0; i < localMipMapStates.size(); ++i) {
-        //
-        IPCTilesState &cacheState = (*cachedMipMapStates)[i];
-        assert(cacheState.tiles.get_allocator().get_segment_manager() == segment->get_segment_manager());
 
-        if (cacheState.tiles.empty() || copyPendingStatusToCache) {
-            cacheState.tiles.clear();
-            cacheState.tiles.insert(cacheState.tiles.end(), localMipMapStates[i].tiles.begin(), localMipMapStates[i].tiles.end());
-        } else {
-            assert(cacheState.tiles.size() == localMipMapStates[i].tiles.size());
 
-            TileStateVector::const_iterator localIt = localMipMapStates[i].tiles.begin();
-            IPCTileStateVector::iterator cacheIt = cacheState.tiles.begin();
-            for (;localIt != localMipMapStates[i].tiles.end(); ++localIt, ++cacheIt) {
-                
-                // Do not write over rendered tiles
-                if (cacheIt->status == eTileStatusRendered) {
-                    continue;
+
+    int numLevels = (int)localMipMapStates.size();
+    properties->setIPCProperty("NumLevels", numLevels);
+
+    for (std::size_t m = 0; m < localMipMapStates.size(); ++m) {
+
+        const TilesState& mipmapState = localMipMapStates[m];
+
+        std::string statusPropName = getStatusPropName(m);
+        std::string tileIndicesPropName = getTileIndicesPropName(m);
+        std::string boundsPropName = getBoundsPropName(m);
+
+        IPCProperty* statusProp = properties->getOrCreateIPCProperty(statusPropName, eIPCVariantTypeInt);
+        IPCProperty* indicesProp = properties->getOrCreateIPCProperty(tileIndicesPropName, eIPCVariantTypeULongLong);
+        IPCProperty* boundsProp = properties->getOrCreateIPCProperty(boundsPropName, eIPCVariantTypeInt);
+
+        if (statusProp->getNumDimensions() == 0 || copyPendingStatusToCache) {
+
+            statusProp->resize(mipmapState.tiles.size());
+
+            // Each tile has up to 4 channels allocated in the cache
+            indicesProp->resize(mipmapState.tiles.size() * 4);
+
+            // Each tile bounds is 4 double
+            boundsProp->resize(mipmapState.tiles.size() * 4);
+
+            for (std::size_t i = 0; i < mipmapState.tiles.size(); ++i) {
+                IPCProperty::setIntValue(i, (int)mipmapState.tiles[i].status, statusProp->getData());
+                for (int c = 0; c < 4; ++c) {
+                    IPCProperty::setULongLongValue(i * 4 + c, mipmapState.tiles[i].channelsTileStorageIndex[c], indicesProp->getData());
                 }
-                if (localIt->status == eTileStatusNotRendered || localIt->status == eTileStatusRendered) {
-                    *cacheIt = *localIt;
-                }
+
+                IPCProperty::setIntValue(i * 4, mipmapState.tiles[i].bounds.x1, boundsProp->getData());
+                IPCProperty::setIntValue(i * 4 + 1, mipmapState.tiles[i].bounds.y1, boundsProp->getData());
+                IPCProperty::setIntValue(i * 4 + 2, mipmapState.tiles[i].bounds.x2, boundsProp->getData());
+                IPCProperty::setIntValue(i * 4 + 3, mipmapState.tiles[i].bounds.y2, boundsProp->getData());
+
             }
+
+        } else {
+            assert(statusProp->getNumDimensions() == mipmapState.tiles.size() &&
+                   indicesProp->getNumDimensions() == mipmapState.tiles.size() * 4 &&
+                   boundsProp->getNumDimensions() == mipmapState.tiles.size() * 4);
+
+
+            for (std::size_t i = 0; i < mipmapState.tiles.size(); ++i) {
+
+                // Do not write over rendered tiles
+                {
+                    int cacheStatus_i;
+                    IPCProperty::getIntValue(*statusProp->getData(), i, &cacheStatus_i);
+                    if ((TileStatusEnum)cacheStatus_i == eTileStatusRendered) {
+                        continue;
+                    }
+                }
+
+                if (mipmapState.tiles[i].status == eTileStatusNotRendered || mipmapState.tiles[i].status == eTileStatusRendered) {
+
+                    IPCProperty::setIntValue(i, (int)mipmapState.tiles[i].status, statusProp->getData());
+                    for (int c = 0; c < 4; ++c) {
+                        IPCProperty::setULongLongValue(i * 4 + c, mipmapState.tiles[i].channelsTileStorageIndex[c], indicesProp->getData());
+                    }
+
+                    IPCProperty::setIntValue(i * 4, mipmapState.tiles[i].bounds.x1, boundsProp->getData());
+                    IPCProperty::setIntValue(i * 4 + 1, mipmapState.tiles[i].bounds.y1, boundsProp->getData());
+                    IPCProperty::setIntValue(i * 4 + 2, mipmapState.tiles[i].bounds.x2, boundsProp->getData());
+                    IPCProperty::setIntValue(i * 4 + 3, mipmapState.tiles[i].bounds.y2, boundsProp->getData());
+
+                }
+                
+
+            }
+            
         }
-        assert(cachedMipMapStates->back().tiles.get_allocator().get_segment_manager() == segment->get_segment_manager());
-    }
+    } // For each mipmap level
 }
 
 CacheEntryBase::FromMemorySegmentRetCodeEnum
-ImageCacheEntryInternal::fromMemorySegment(bool isLockedForWriting,
-                                           ExternalSegmentType* segment,
-                                           ExternalSegmentTypeHandleList::const_iterator start,
-                                           ExternalSegmentTypeHandleList::const_iterator end) {
+ImageCacheEntryInternalBase::fromMemorySegment(bool isLockedForWriting,
+                                           const IPCPropertyMap& properties) {
+
+    if (!isPersistent()) {
+        throw std::runtime_error("ImageCacheEntryInternal::fromMemorySegment called on a non persistent cache!");
+    }
+
+    ImageCacheEntryInternal<true>* persistentEntry = dynamic_cast<ImageCacheEntryInternal<true>*>(this);
+
     // Deserialize and optionnally update the tiles state
     {
 
-        if (start == end) {
-            return CacheEntryBase::eFromMemorySegmentRetCodeFailed;
-        }
 
         // Read our tiles state vector
-        IPCMipMapTileStateVector* mipMapStates = (IPCMipMapTileStateVector*)segment->get_address_from_handle(*start);
-        assert(mipMapStates->get_allocator().get_segment_manager() == segment->get_segment_manager());
-        ++start;
 
-        if (nextFromMemorySegmentCallIsToMemorySegment) {
+        if (persistentEntry->nextFromMemorySegmentCallIsToMemorySegment) {
             // We have written the state map from within markCacheTilesAsRendered(), update it if possible
             if (!isLockedForWriting) {
                 // We must update the state map but cannot do so under a read lock
@@ -1944,14 +2136,15 @@ ImageCacheEntryInternal::fromMemorySegment(bool isLockedForWriting,
             // If we are here, we are either in markCacheTilesAsAborted() or markCacheTilesAsRendered().
             // We may have read pending tiles from the cache that are no longer pending in the cache and we don't want to write over it
             // hence we do not update tiles that are marked pending
-            toMemorySegmentInternal(false /*copyPendingStatusToCache*/, perMipMapTilesState, mipMapStates, segment);
+            IPCPropertyMap* hackedProps = const_cast<IPCPropertyMap*>(&properties);
+            toMemorySegmentInternal(false /*copyPendingStatusToCache*/, perMipMapTilesState, hackedProps);
         } else {
 
             // Copy the tiles states locally
-            fromMemorySegmentInternal(*mipMapStates, &perMipMapTilesState);
+            fromMemorySegmentInternal(properties, &perMipMapTilesState);
 
             // Read the state map: it might modify it by marking tiles pending
-            ImageCacheEntryPrivate::UpdateStateMapRetCodeEnum stat = _imp->readAndUpdateStateMap(isLockedForWriting);
+            ImageCacheEntryPrivate::UpdateStateMapRetCodeEnum stat = persistentEntry->_imp->readAndUpdateStateMap(isLockedForWriting);
             switch (stat) {
                 case ImageCacheEntryPrivate::eUpdateStateMapRetCodeUpToDate:
                     // We did not write anything on the state map, we are good
@@ -1959,7 +2152,8 @@ ImageCacheEntryInternal::fromMemorySegment(bool isLockedForWriting,
                 case ImageCacheEntryPrivate::eUpdateStateMapRetCodeMustWriteToCache: {
                     // We have written the state map, we must update it
                     assert(isLockedForWriting);
-                    toMemorySegmentInternal(true /*copyPendingStatusToCache*/, perMipMapTilesState, mipMapStates, segment);
+                    IPCPropertyMap* hackedProps = const_cast<IPCPropertyMap*>(&properties);
+                    toMemorySegmentInternal(true /*copyPendingStatusToCache*/, perMipMapTilesState, hackedProps);
 
                 }   break;
                 case ImageCacheEntryPrivate::eUpdateStateMapRetCodeNeedWriteLock:
@@ -1971,29 +2165,21 @@ ImageCacheEntryInternal::fromMemorySegment(bool isLockedForWriting,
         }
     }
     
-    return CacheEntryBase::fromMemorySegment(isLockedForWriting, segment, start, end);
+    return CacheEntryBase::fromMemorySegment(isLockedForWriting, properties);
 } // fromMemorySegment
 
 
 void
-ImageCacheEntryInternal::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const
+ImageCacheEntryInternalBase::toMemorySegment(IPCPropertyMap* properties) const
 {
 
-    // Copy the tile state to the memory segment, this will be called the first time we construct the entry in the cache
-    {
-
-        TileStateVector_Allocator_ExternalSegment alloc(segment->get_segment_manager());
-
-        IPCMipMapTileStateVector *mipMapStates = segment->construct<IPCMipMapTileStateVector>(boost::interprocess::anonymous_instance)(alloc);
-        if (!mipMapStates) {
-            throw boost::interprocess::bad_alloc();
-        }
-        toMemorySegmentInternal(true /*copyPendingStatusToCache*/, perMipMapTilesState, mipMapStates, segment);
-        objectPointers->push_back(segment->get_handle_from_address(mipMapStates));
+    if (!isPersistent()) {
+        throw std::runtime_error("ImageCacheEntryInternal::toMemorySegment called on a non persistent cache!");
     }
-    CacheEntryBase::toMemorySegment(segment, objectPointers);
+    // Copy the tile state to the memory segment, this will be called the first time we construct the entry in the cache
+    toMemorySegmentInternal(true /*copyPendingStatusToCache*/, perMipMapTilesState, properties);
+    CacheEntryBase::toMemorySegment(properties);
 } // toMemorySegment
 
-#endif // #ifndef NATRON_CACHE_NEVER_PERSISTENT
 
 NATRON_NAMESPACE_EXIT;

@@ -1229,7 +1229,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
         // Round the roi to the tile size if the render is cached
         ImageBitDepthEnum outputBitDepth = getBitDepth(-1);
         int tileWidth, tileHeight;
-        Cache::getTileSizePx(outputBitDepth, &tileWidth, &tileHeight);
+        CacheBase::getTileSizePx(outputBitDepth, &tileWidth, &tileHeight);
         renderMappedRoI.roundToTileSize(tileWidth, tileHeight);
 
 
@@ -1479,7 +1479,7 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPa
     {
         ImageBitDepthEnum outputBitDepth = getBitDepth(-1);
         int tileWidth, tileHeight;
-        Cache::getTileSizePx(outputBitDepth, &tileWidth, &tileHeight);
+        CacheBase::getTileSizePx(outputBitDepth, &tileWidth, &tileHeight);
         assert(renderMappedRoI.x1 % tileWidth == 0 || renderMappedRoI.x1 == pixelRoDRenderMapped.x1);
         assert(renderMappedRoI.y1 % tileWidth == 0 || renderMappedRoI.y1 == pixelRoDRenderMapped.y1);
         assert(renderMappedRoI.x2 % tileWidth == 0 || renderMappedRoI.x2 == pixelRoDRenderMapped.x2);
@@ -1618,7 +1618,7 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPa
 
         ImagePtr downscaledImage;
         bool hasUnrenderedTile, hasPendingTiles;
-        ActionRetCodeEnum stat = _imp->lookupCachedImage(dstMipMapLevel, requestData->getProxyScale(), requestData->getPlaneDesc(), downscaledPixelRoD, downscaledRoI, requestData->getCachePolicy(), backendType, &downscaledImage, &hasPendingTiles, &hasUnrenderedTile);
+        ActionRetCodeEnum stat = _imp->lookupCachedImage(dstMipMapLevel, requestData->getProxyScale(), requestData->getPlaneDesc(), downscaledPixelRoD, downscaledRoI, eCacheAccessModeReadWrite, backendType, &downscaledImage, &hasPendingTiles, &hasUnrenderedTile);
 
         if (isFailureRetCode(stat)) {
             return stat;

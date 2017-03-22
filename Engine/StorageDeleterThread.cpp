@@ -181,9 +181,10 @@ StorageDeleterThread::run()
                 }
             }
             if (front) {
-#ifndef NATRON_CACHE_NEVER_PERSISTENT
+                // if we are the last owner using this buffer, remove it
+                if (front.use_count() == 1) {
                     front->deallocateMemory();
-#endif
+                }
             } else if (evictRequest > 0) {
                 appPTR->getGeneralPurposeCache()->evictLRUEntries(0);
                 appPTR->getTileCache()->evictLRUEntries(0);

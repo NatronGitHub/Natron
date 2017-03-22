@@ -28,6 +28,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
+
 struct ImageCacheKeyShmData
 {
     U64 nodeTimeViewVariantHash;
@@ -124,31 +125,37 @@ ImageCacheKey::isDraftMode() const
 
 
 void
-ImageCacheKey::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const
+ImageCacheKey::toMemorySegment(IPCPropertyMap* properties) const
 {
-
-    ImageCacheKeyShmData* data = segment->construct<ImageCacheKeyShmData>(boost::interprocess::anonymous_instance)();
-    if (!data) {
-        throw std::bad_alloc();
-    }
-    objectPointers->push_back(segment->get_handle_from_address(data));
-
-    *data = _imp->data;
+    properties->setIPCProperty("NodeHash", _imp->data.nodeTimeViewVariantHash);
+    properties->setIPCProperty("ChannelID", _imp->data.layerIDHash);
+    std::vector<double> scaleVec(2);
+    scaleVec[0] = _imp->data.proxyScale.x;
+    scaleVec[1] = _imp->data.proxyScale.y;
+    properties->setIPCPropertyN("Scale", scaleVec);
+    properties->setIPCProperty("Draft", _imp->data.draftMode);
 }
 
 
 CacheEntryKeyBase::FromMemorySegmentRetCodeEnum
-ImageCacheKey::fromMemorySegment(ExternalSegmentType* segment,
-                            ExternalSegmentTypeHandleList::const_iterator start,
-                            ExternalSegmentTypeHandleList::const_iterator end)
+ImageCacheKey::fromMemorySegment(const IPCPropertyMap& properties)
 {
-    if (start == end) {
+    if (!properties.getIPCProperty("NodeHash", 0, &_imp->data.nodeTimeViewVariantHash)) {
         return eFromMemorySegmentRetCodeFailed;
     }
-    ImageCacheKeyShmData* data = (ImageCacheKeyShmData*)segment->get_address_from_handle(*start);
-    ++start;
+    if (!properties.getIPCProperty("ChannelID", 0, &_imp->data.layerIDHash)) {
+        return eFromMemorySegmentRetCodeFailed;
+    }
+    std::vector<double> scaleVec;
+    if (!properties.getIPCPropertyN("Scale", &scaleVec)) {
+        return eFromMemorySegmentRetCodeFailed;
+    }
+    _imp->data.proxyScale.x = scaleVec[0];
+    _imp->data.proxyScale.y = scaleVec[1];
 
-    _imp->data = *data;
+    if (!properties.getIPCProperty("Draft", 0, &_imp->data.draftMode)) {
+        return eFromMemorySegmentRetCodeFailed;
+    }
     return eFromMemorySegmentRetCodeOk;
 }
 

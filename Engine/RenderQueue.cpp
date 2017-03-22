@@ -229,6 +229,10 @@ RenderQueuePrivate::dispatchQueue(bool doBlockingRender, const std::list<RenderQ
         RenderQueueItem item;
         item.work = *it;
 
+        if (!it->treeRoot->isActivated() || it->treeRoot->getEffectInstance()->getDisabledKnobValue()) {
+            continue;
+        }
+
         // Check that the render options are OK
         if ( !validateRenderOptions(item.work) ) {
             continue;
@@ -321,6 +325,9 @@ RenderQueuePrivate::createRenderRequestsFromCommandLineArgsInternal(const std::l
                 }
             }
 
+            if (!writerNode->isActivated() || writerNode->getEffectInstance()->getDisabledKnobValue()) {
+                continue;
+            }
             if ( !it->filename.isEmpty() ) {
                 KnobIPtr fileKnob = writerNode->getKnobByName(kOfxImageEffectFileParamName);
                 if (fileKnob) {
