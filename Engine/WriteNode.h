@@ -39,7 +39,6 @@
 NATRON_NAMESPACE_ENTER;
 
 #define kNatronWriteNodeParamEncodingPluginChoice "encodingPluginChoice"
-#define kNatronWriteNodeParamEncodingPluginID "encodingPluginID"
 
 #define kNatronWriteParamFrameStep "frameIncr"
 #define kNatronWriteParamFrameStepLabel "Frame Increment"

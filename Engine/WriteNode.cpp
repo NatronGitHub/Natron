@@ -198,7 +198,6 @@ public:
     KnobIntWPtr frameIncrKnob;
     KnobBoolWPtr readBackKnob;
     KnobChoiceWPtr pluginSelectorKnob;
-    KnobStringWPtr pluginIDStringKnob;
     KnobSeparatorWPtr separatorKnob;
     KnobButtonWPtr renderButtonKnob;
     std::list<KnobIWPtr > writeNodeKnobs;
@@ -217,7 +216,6 @@ public:
         , outputFileKnob()
         , frameIncrKnob()
         , pluginSelectorKnob()
-        , pluginIDStringKnob()
         , separatorKnob()
         , renderButtonKnob()
         , writeNodeKnobs()
@@ -718,8 +716,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
     SetCreatingWriterRAIIFlag creatingNode__(this);
     QString qpattern = QString::fromUtf8( filename.c_str() );
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
-    KnobStringPtr pluginIDKnob = pluginIDStringKnob.lock();
-    std::string writerPluginID = pluginIDKnob->getValue();
+    std::string writerPluginID = pluginSelectorKnob.lock()->getActiveEntry().id;
 
     if ( writerPluginID.empty() ) {
         KnobChoicePtr pluginChoiceKnob = pluginSelectorKnob.lock();
@@ -791,9 +788,8 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
 
         NodePtr writeNode = _publicInterface->getApp()->createNode(args);
         embeddedPlugin = writeNode;
-        if (pluginIDKnob) {
-            pluginIDKnob->setValue(writerPluginID);
-        }
+
+
 
         // Set the filename value
         if (writeNode) {
@@ -869,7 +865,7 @@ WriteNodePrivate::refreshPluginSelectorKnob()
     assert(fileKnob);
     std::string filePattern = fileKnob->getValue();
     std::vector<ChoiceOption> entries;
-    entries.push_back(ChoiceOption(kPluginSelectorParamEntryDefault, "", tr("Use the default plug-in chosen from the Preferences to write this file format").toStdString()));
+    entries.push_back(ChoiceOption(WRITE_NODE_DEFAULT_WRITER, kPluginSelectorParamEntryDefault, tr("Use the default plug-in chosen from the Preferences to write this file format").toStdString()));
 
     QString qpattern = QString::fromUtf8( filePattern.c_str() );
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
@@ -893,18 +889,13 @@ WriteNodePrivate::refreshPluginSelectorKnob()
 
     pluginChoice->populateChoices(entries);
     pluginChoice->blockValueChanges();
-    pluginChoice->resetToDefaultValue();
+    //pluginChoice->resetToDefaultValue();
     pluginChoice->unblockValueChanges();
     if (entries.size() <= 2) {
         pluginChoice->setSecret(true);
     } else {
         pluginChoice->setSecret(false);
     }
-
-    KnobStringPtr pluginIDKnob = pluginIDStringKnob.lock();
-    pluginIDKnob->blockValueChanges();
-    pluginIDKnob->setValue(pluginID);
-    pluginIDKnob->unblockValueChanges();
 }
 
 bool
@@ -1016,13 +1007,6 @@ WriteNode::initializeKnobs()
     _imp->separatorKnob = separator;
     _imp->writeNodeKnobs.push_back(separator);
 
-    KnobStringPtr pluginID = createKnob<KnobString>(kNatronWriteNodeParamEncodingPluginID);
-    pluginID->setAnimationEnabled(false);
-    pluginID->setLabel(tr("PluginID"));
-    pluginID->setSecret(true);
-    controlpage->addKnob(pluginID);
-    _imp->pluginIDStringKnob = pluginID;
-    _imp->writeNodeKnobs.push_back(pluginID);
 } // WriteNode::initializeKnobs
 
 void
@@ -1044,9 +1028,7 @@ WriteNode::onEffectCreated(const CreateNodeArgs& args)
         return;
     }
     bool throwErrors = false;
-    KnobStringPtr pluginIdParam = _imp->pluginIDStringKnob.lock();
     std::string pattern;
-
 
     std::vector<std::string> defaultParamValues = args.getPropertyNUnsafe<std::string>(kCreateNodeArgsPropNodeInitialParamValues);
     std::vector<std::string>::iterator foundFileName  = std::find(defaultParamValues.begin(), defaultParamValues.end(), std::string(kOfxImageEffectFileParamName));
@@ -1071,7 +1053,7 @@ WriteNode::onKnobsAboutToBeLoaded(const SERIALIZATION_NAMESPACE::NodeSerializati
     NodePtr node = getNode();
 
     //Load the pluginID to create first.
-    node->loadKnob( _imp->pluginIDStringKnob.lock(), serialization._knobsValues );
+    node->loadKnob( _imp->pluginSelectorKnob.lock(), serialization._knobsValues );
 
     std::string filename = getFileNameFromSerialization( serialization._knobsValues );
     //Create the Reader with the serialization
@@ -1116,17 +1098,12 @@ WriteNode::knobChanged(const KnobIPtr& k,
         }
 
     } else if ( k == _imp->pluginSelectorKnob.lock() ) {
-        KnobStringPtr pluginIDKnob = _imp->pluginIDStringKnob.lock();
+
         ChoiceOption entry = _imp->pluginSelectorKnob.lock()->getActiveEntry();
-        if ( entry.id == pluginIDKnob->getValue() ) {
-            return false;
-        }
 
         if (entry.id == "Default") {
             entry.id.clear();
         }
-
-        pluginIDKnob->setValue(entry.id);
 
         KnobFilePtr fileKnob = _imp->outputFileKnob.lock();
         assert(fileKnob);

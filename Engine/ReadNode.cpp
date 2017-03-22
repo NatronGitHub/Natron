@@ -217,7 +217,6 @@ public:
 
     //Thiese are knobs owned by the ReadNode and not the Reader
     KnobChoiceWPtr pluginSelectorKnob;
-    KnobStringWPtr pluginIDStringKnob;
     KnobSeparatorWPtr separatorKnob;
     KnobButtonWPtr fileInfosKnob;
     std::list<KnobIWPtr > readNodeKnobs;
@@ -237,7 +236,6 @@ public:
     , genericKnobsSerialization()
     , inputFileKnob()
     , pluginSelectorKnob()
-    , pluginIDStringKnob()
     , separatorKnob()
     , fileInfosKnob()
     , readNodeKnobs()
@@ -570,8 +568,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
     QString qpattern = QString::fromUtf8( filename.c_str() );
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
     std::string readerPluginID;
-    KnobStringPtr pluginIDKnob = pluginIDStringKnob.lock();
-    readerPluginID = pluginIDKnob->getValue();
+    readerPluginID = pluginSelectorKnob.lock()->getActiveEntry().id;
 
 
     if ( readerPluginID.empty() ) {
@@ -678,10 +675,6 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         {
             QMutexLocker k(&embeddedPluginMutex);
             embeddedPlugin = node;
-        }
-
-        if (pluginIDKnob) {
-            pluginIDKnob->setValue(readerPluginID);
         }
         placeReadNodeKnobsInPage();
 
@@ -793,11 +786,6 @@ ReadNodePrivate::refreshPluginSelectorKnob()
         pluginChoice->setSecret(false);
     }
 
-    KnobStringPtr pluginIDKnob = pluginIDStringKnob.lock();
-    pluginIDKnob->blockValueChanges();
-    pluginIDKnob->setValue(pluginID);
-    pluginIDKnob->unblockValueChanges();
-
     refreshFileInfoVisibility(pluginID);
 
 } // ReadNodePrivate::refreshPluginSelectorKnob
@@ -878,15 +866,6 @@ ReadNode::initializeKnobs()
         _imp->separatorKnob = param;
         _imp->readNodeKnobs.push_back(param);
     }
-    {
-        KnobStringPtr param = createKnob<KnobString>(kNatronReadNodeParamDecodingPluginID);
-        param->setLabel(tr("PluginID"));
-        param->setAnimationEnabled(false);
-        param->setSecret(true);
-        controlpage->addKnob(param);
-        _imp->pluginIDStringKnob = param;
-        _imp->readNodeKnobs.push_back(param);
-    }
 }
 
 void
@@ -946,7 +925,7 @@ ReadNode::onEffectCreated(const CreateNodeArgs& args)
     }
 
     bool throwErrors = false;
-    KnobStringPtr pluginIdParam = _imp->pluginIDStringKnob.lock();
+
     std::string pattern;
 
     std::vector<std::string> defaultParamValues = args.getPropertyNUnsafe<std::string>(kCreateNodeArgsPropNodeInitialParamValues);
@@ -969,7 +948,7 @@ ReadNode::onKnobsAboutToBeLoaded(const SERIALIZATION_NAMESPACE::NodeSerializatio
     NodePtr node = getNode();
 
     //Load the pluginID to create first.
-    node->loadKnob( _imp->pluginIDStringKnob.lock(), serialization._knobsValues );
+    node->loadKnob( _imp->pluginSelectorKnob.lock(), serialization._knobsValues );
 
     std::string filename = getFileNameFromSerialization( serialization._knobsValues );
     //Create the Reader with the serialization
@@ -1013,17 +992,13 @@ ReadNode::knobChanged(const KnobIPtr& k,
         }
 
     } else if ( k == _imp->pluginSelectorKnob.lock() ) {
-        KnobStringPtr pluginIDKnob = _imp->pluginIDStringKnob.lock();
         ChoiceOption entry = _imp->pluginSelectorKnob.lock()->getActiveEntry();
-        if ( entry.id == pluginIDKnob->getValue() ) {
-            return false;
-        }
+
 
         if (entry.id == "Default") {
             entry.id.clear();
         }
 
-        pluginIDKnob->setValue(entry.id);
 
         KnobFilePtr fileKnob = _imp->inputFileKnob.lock();
         assert(fileKnob);

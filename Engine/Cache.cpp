@@ -1787,7 +1787,10 @@ CacheBucket<persistent>::readFromSharedMemoryEntryImpl(EntryType* cacheEntry,
 
 
     if (persistent) {
-        deserializeEntry(cacheEntry, processLocalEntry, hash, hasWriteRights);
+        ShmEntryReadRetCodeEnum ret = deserializeEntry(cacheEntry, processLocalEntry, hash, hasWriteRights);
+        if (ret != eShmEntryReadRetCodeOk) {
+            return ret;
+        }
     } // persistent
 
 
@@ -3945,19 +3948,18 @@ Cache<persistent>::clear()
     try {
 
 
-        if (persistent) {
-            boost::scoped_ptr<Sharable_WriteLock> tileWriteLock;
+        boost::scoped_ptr<Sharable_WriteLock> tileWriteLock;
 #ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-            tileWriteLock.reset(new Sharable_WriteLock(_imp->ipc->tilesStorageMutex));
+        tileWriteLock.reset(new Sharable_WriteLock(_imp->ipc->tilesStorageMutex));
 #else
-            createTimedLock<Sharable_WriteLock>(this, tileWriteLock, &_imp->ipc->tilesStorageMutex);
+        createTimedLock<Sharable_WriteLock>(this, tileWriteLock, &_imp->ipc->tilesStorageMutex);
 #endif
-            for (std::size_t i = 0; i < _imp->tilesStorage.size(); ++i) {
-                clearStorage(_imp->tilesStorage[i]);
-            }
-            _imp->tilesStorage.clear();
+        for (std::size_t i = 0; i < _imp->tilesStorage.size(); ++i) {
+            clearStorage(_imp->tilesStorage[i]);
         }
-        
+        _imp->tilesStorage.clear();
+
+
         for (int bucket_i = 0; bucket_i < NATRON_CACHE_BUCKETS_COUNT; ++bucket_i) {
             _imp->clearCacheBucket(bucket_i);
         } // for each bucket

@@ -303,13 +303,30 @@ Node::setValuesFromSerialization(const CreateNodeArgs& args)
                 KnobBoolBasePtr isBool = toKnobBoolBase(nodeKnobs[j]);
                 KnobIntBasePtr isInt = toKnobIntBase(nodeKnobs[j]);
                 KnobDoubleBasePtr isDbl = toKnobDoubleBase(nodeKnobs[j]);
+                KnobChoicePtr isChoice = toKnobChoice(nodeKnobs[j]);
                 KnobStringBasePtr isStr = toKnobStringBase(nodeKnobs[j]);
                 int nDims = nodeKnobs[j]->getNDimensions();
 
                 std::string propName = kCreateNodeArgsPropParamValue;
                 propName += "_";
                 propName += params[i];
-                if (isBool) {
+                if (isChoice) {
+                    // First check if a string is provided, otherwise check if an index is provided
+                    try {
+                        std::vector<std::string> v = args.getPropertyNUnsafe<std::string>(propName);
+                        if (!v.empty()) {
+                            isChoice->setActiveEntry(ChoiceOption(v[0], "", ""));
+                        }
+
+                    } catch (...) {
+                        std::vector<int> v = args.getPropertyNUnsafe<int>(propName);
+                        nDims = std::min((int)v.size(), nDims);
+                        for (int d = 0; d < nDims; ++d) {
+                            isInt->setValue(v[d]);
+                        }
+                    }
+                    
+                } else if (isBool) {
                     std::vector<bool> v = args.getPropertyNUnsafe<bool>(propName);
                     nDims = std::min((int)v.size(), nDims);
                     for (int d = 0; d < nDims; ++d) {
