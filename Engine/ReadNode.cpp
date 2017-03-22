@@ -151,10 +151,10 @@ static GenericKnob genericReaderKnobNames[] =
 
     {kOCIOParamConfigFile, true},
     {kNatronReadNodeOCIOParamInputSpace, false},
-    {kOCIOParamInputSpace, true}, // input colorspace must be kept
+    {kOCIOParamInputSpace, false}, // input colorspace must not be kept (depends on file format)
     {kOCIOParamOutputSpace, true}, // output colorspace must be kept
     {kOCIOParamInputSpaceChoice, false},
-    {kOCIOParamOutputSpaceChoice, false},
+    {kOCIOParamOutputSpaceChoice, true},
     {kOCIOHelpButton, false},
     {kOCIOHelpLooksButton, false},
     {kOCIOHelpDisplaysButton, false},
