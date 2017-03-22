@@ -438,25 +438,15 @@ public:
         return kCacheKeyUniqueIDExpressionResult;
     }
 
-    virtual void toMemorySegment(IPCPropertyMap* properties) const OVERRIDE FINAL
+    virtual void toMemorySegment(IPCPropertyMap* /*properties*/) const OVERRIDE FINAL
     {
-        objectPointers->push_back(writeAnonymousSharedObject(_data, segment));
-        objectPointers->push_back(writeAnonymousSharedObject(_knobScriptName,  segment));
 
+        throw std::runtime_error("KnobExpressionKey::toMemorySegment is not implemented");
     }
 
-    virtual CacheEntryKeyBase::FromMemorySegmentRetCodeEnum fromMemorySegment(const IPCPropertyMap& properties) OVERRIDE FINAL
+    virtual CacheEntryKeyBase::FromMemorySegmentRetCodeEnum fromMemorySegment(const IPCPropertyMap& /*properties*/) OVERRIDE FINAL
     {
-        if (start == end) {
-            return eFromMemorySegmentRetCodeFailed;
-        }
-        readAnonymousSharedObject(*start, segment, &_data);
-        ++start;
-        if (start == end) {
-            return eFromMemorySegmentRetCodeFailed;
-        }
-        readAnonymousSharedObject(*start, segment, &_knobScriptName);
-        return eFromMemorySegmentRetCodeOk;
+        throw std::runtime_error("KnobExpressionKey::fromMemorySegment is not implemented");
     }
 
 private:
@@ -525,42 +515,16 @@ public:
     }
 
 
-    virtual void toMemorySegment(IPCPropertyMap* properties) const OVERRIDE FINAL
+    virtual void toMemorySegment(IPCPropertyMap* /*properties*/) const OVERRIDE FINAL
     {
-        if (!_stringResult.empty()) {
-            KnobExpressionResultTypeEnum type = eKnobExpressionResultTypeString;
-            objectPointers->push_back(writeAnonymousSharedObject((int)type, segment));
-            objectPointers->push_back(writeAnonymousSharedObject(_stringResult, segment));
-        } else {
-            KnobExpressionResultTypeEnum type = eKnobExpressionResultTypePod;
-            objectPointers->push_back(writeAnonymousSharedObject((int)type, segment));
-            objectPointers->push_back(writeAnonymousSharedObject(_valueResult, segment));
-        }
-        CacheEntryBase::toMemorySegment(segment, objectPointers);
+        throw std::runtime_error("KnobExpressionResult::toMemorySegment is not implemented");
     }
 
-    virtual CacheEntryBase::FromMemorySegmentRetCodeEnum fromMemorySegment(bool isLockedForWriting,
-                                                                           const IPCPropertyMap& properties) OVERRIDE FINAL
+    virtual CacheEntryBase::FromMemorySegmentRetCodeEnum fromMemorySegment(bool /*isLockedForWriting*/,
+                                                                           const IPCPropertyMap& /*properties*/) OVERRIDE FINAL
     {
-        int type_i;
-        if (start == end) {
-            throw std::bad_alloc();
-        }
-        readAnonymousSharedObject(*start, segment, &type_i);
-        ++start;
-        if (start == end) {
-            throw std::bad_alloc();
-        }
-        switch ((KnobExpressionResultTypeEnum)type_i) {
-            case eKnobExpressionResultTypePod: {
-                readAnonymousSharedObject(*start, segment, &_valueResult);
-            }   break;
-            case eKnobExpressionResultTypeString: {
-                readAnonymousSharedObject(*start, segment, &_stringResult);
-            }   break;
-        }
-        ++start;
-        return CacheEntryBase::fromMemorySegment(isLockedForWriting, properties);
+        throw std::runtime_error("KnobExpressionResult::fromMemorySegment is not implemented");
+
     }
 
 private:

@@ -475,9 +475,9 @@ EffectInstance::getLayersProducedAndNeeded_public(TimeValue inArgsTime, ViewIdx 
     }
 
     if (cacheStatus == CacheEntryLockerBase::eCacheEntryStatusCached) {
-#ifdef NATRON_CACHE_NEVER_PERSISTENT
-        *results = toGetComponentsResults(cacheAccess->getProcessLocalEntry());
-#endif
+        if (!cacheAccess->isPersistent()) {
+            *results = toGetComponentsResults(cacheAccess->getProcessLocalEntry());
+        }
         return eActionStatusOK;
     }
     assert(cacheStatus == CacheEntryLockerBase::eCacheEntryStatusMustCompute);
@@ -811,12 +811,12 @@ EffectInstance::getDistortion_public(TimeValue inArgsTime,
             }
 
             if (cacheStatus == CacheEntryLockerBase::eCacheEntryStatusCached) {
-#ifdef NATRON_CACHE_NEVER_PERSISTENT
+                if (!cacheAccess->isPersistent()) {
                     *results = toGetDistortionResults(cacheAccess->getProcessLocalEntry());
-#endif
+                }
                 return eActionStatusOK;
             }
-            
+
             assert(cacheStatus == CacheEntryLockerBase::eCacheEntryStatusMustCompute);
         }
 
@@ -921,9 +921,9 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
         }
 
         if (cacheStatus == CacheEntryLockerBase::eCacheEntryStatusCached) {
-#ifdef NATRON_CACHE_NEVER_PERSISTENT
+            if (!cacheAccess->isPersistent()) {
                 *results = toIsIdentityResults(cacheAccess->getProcessLocalEntry());
-#endif
+            }
             return eActionStatusOK;
         }
 
@@ -1035,9 +1035,9 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
         }
 
         if (cacheStatus == CacheEntryLockerBase::eCacheEntryStatusCached) {
-#ifdef NATRON_CACHE_NEVER_PERSISTENT
+            if (!cacheAccess->isPersistent()) {
                 *results = toGetRegionOfDefinitionResults(cacheAccess->getProcessLocalEntry());
-#endif
+            }
             return eActionStatusOK;
         }
         assert(cacheStatus == CacheEntryLockerBase::eCacheEntryStatusMustCompute);
@@ -1399,9 +1399,9 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
         }
 
         if (cacheStatus == CacheEntryLockerBase::eCacheEntryStatusCached) {
-#ifdef NATRON_CACHE_NEVER_PERSISTENT
+            if (!cacheAccess->isPersistent()) {
                 *results = toGetFramesNeededResults(cacheAccess->getProcessLocalEntry());
-#endif
+            }
             return eActionStatusOK;
         }
         assert(cacheStatus == CacheEntryLockerBase::eCacheEntryStatusMustCompute);
@@ -1557,9 +1557,9 @@ EffectInstance::getFrameRange_public(GetFrameRangeResultsPtr* results)
     }
 
     if (cacheStatus == CacheEntryLockerBase::eCacheEntryStatusCached) {
-#ifdef NATRON_CACHE_NEVER_PERSISTENT
+        if (!cacheAccess->isPersistent()) {
             *results = toGetFrameRangeResults(cacheAccess->getProcessLocalEntry());
-#endif
+        }
         return eActionStatusOK;
     }
     assert(cacheStatus == CacheEntryLockerBase::eCacheEntryStatusMustCompute);
@@ -1835,9 +1835,9 @@ EffectInstance::getTimeInvariantMetaDatas_public(GetTimeInvariantMetaDatasResult
     }
 
     if (cacheStatus == CacheEntryLockerBase::eCacheEntryStatusCached) {
-#ifdef NATRON_CACHE_NEVER_PERSISTENT
+        if (!cacheAccess->isPersistent()) {
             *results = toGetTimeInvariantMetaDatasResults(cacheAccess->getProcessLocalEntry());
-#endif
+        }
         return eActionStatusOK;
     }
     assert(cacheStatus == CacheEntryLockerBase::eCacheEntryStatusMustCompute);

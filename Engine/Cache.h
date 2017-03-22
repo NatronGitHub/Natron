@@ -147,9 +147,21 @@ public:
         eCacheEntryStatusComputationPending
     };
 
+    CacheEntryLockerBase()
+    {
+        
+    }
 
-    virtual ~CacheEntryLockerBase();
 
+    virtual ~CacheEntryLockerBase()
+    {
+
+    }
+
+    /**
+     * @brief Returns whether the associated cache entry is persistent or not
+     **/
+    virtual bool isPersistent() const = 0;
 
     /**
      * @brief Returns the cache entry status
@@ -203,6 +215,10 @@ public:
 
     virtual ~CacheEntryLocker();
 
+    /**
+     * @brief Returns whether the associated cache entry is persistent or not
+     **/
+    virtual bool isPersistent() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /**
      * @brief Returns the cache entry status

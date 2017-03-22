@@ -127,33 +127,33 @@ ImageCacheKey::isDraftMode() const
 void
 ImageCacheKey::toMemorySegment(IPCPropertyMap* properties) const
 {
-    properties->setIPCULongLongProperty("NodeHash", _imp->data.nodeTimeViewVariantHash);
-    properties->setIPCULongLongProperty("ChannelID", _imp->data.layerIDHash);
+    properties->setIPCProperty("NodeHash", _imp->data.nodeTimeViewVariantHash);
+    properties->setIPCProperty("ChannelID", _imp->data.layerIDHash);
     std::vector<double> scaleVec(2);
     scaleVec[0] = _imp->data.proxyScale.x;
     scaleVec[1] = _imp->data.proxyScale.y;
-    properties->setIPCDoublePropertyN("Scale", scaleVec);
-    properties->setIPCBoolProperty("Draft", _imp->data.draftMode);
+    properties->setIPCPropertyN("Scale", scaleVec);
+    properties->setIPCProperty("Draft", _imp->data.draftMode);
 }
 
 
 CacheEntryKeyBase::FromMemorySegmentRetCodeEnum
 ImageCacheKey::fromMemorySegment(const IPCPropertyMap& properties)
 {
-    if (!properties.getIPCULongLongProperty("NodeHash", 0, &_imp->data.nodeTimeViewVariantHash)) {
+    if (!properties.getIPCProperty("NodeHash", 0, &_imp->data.nodeTimeViewVariantHash)) {
         return eFromMemorySegmentRetCodeFailed;
     }
-    if (!properties.getIPCULongLongProperty("ChannelID", 0, &_imp->data.layerIDHash)) {
+    if (!properties.getIPCProperty("ChannelID", 0, &_imp->data.layerIDHash)) {
         return eFromMemorySegmentRetCodeFailed;
     }
     std::vector<double> scaleVec;
-    if (!properties.getIPCDoublePropertyN("Scale", &scaleVec)) {
+    if (!properties.getIPCPropertyN("Scale", &scaleVec)) {
         return eFromMemorySegmentRetCodeFailed;
     }
     _imp->data.proxyScale.x = scaleVec[0];
     _imp->data.proxyScale.y = scaleVec[1];
 
-    if (!properties.getIPCBoolProperty("Draft", 0, &_imp->data.draftMode)) {
+    if (!properties.getIPCProperty("Draft", 0, &_imp->data.draftMode)) {
         return eFromMemorySegmentRetCodeFailed;
     }
     return eFromMemorySegmentRetCodeOk;

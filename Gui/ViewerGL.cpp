@@ -1966,7 +1966,7 @@ ViewerGL::checkIfViewPortRoIValidOrRenderForInput(int texIndex)
 
 
     int tx,ty;
-    Cache::getTileSizePx(_imp->displayTextures[texIndex].texture->getBitDepth(), &tx, &ty);
+    CacheBase::getTileSizePx(_imp->displayTextures[texIndex].texture->getBitDepth(), &tx, &ty);
 
 
     const RectI& texBounds = _imp->displayTextures[texIndex].texture->getBounds();

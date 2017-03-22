@@ -60,64 +60,193 @@ IPCVariant::~IPCVariant()
     }
 }
 
-/**
- * @brief Append a string to a property
- **/
-inline void appendIPCPropString(const std::string& val, IPCVariantVector* prop)
+void
+IPCProperty::clear()
 {
-    ExternalSegmentType::segment_manager* manager = prop->get_allocator().get_segment_manager();
-    CharAllocator_ExternalSegment charAlloc(manager);
-    IPCVariant variant;
-    variant.string = manager->construct<String_ExternalSegment>(boost::interprocess::anonymous_instance)(charAlloc);
-    variant.string->append(val.c_str());
-    prop->push_back(variant);
+    data.clear();
 }
 
-/**
- * @brief Append a string to a property
- **/
 template <typename T>
-inline void appendIPCPropScalar(T val, IPCVariantVector* prop)
+void
+IPCProperty::getTypeInfos(TypeFunctions<T>* /*functions*/, IPCVariantTypeEnum* /*type*/)
 {
-    IPCVariant variant;
-    variant.scalar = Hash64::toU64<T>(val);
-    prop->push_back(variant);
+    assert(false);
+    throw std::invalid_argument("Unknown type");
+}
+
+template <>
+void
+IPCProperty::getTypeInfos(TypeFunctions<std::string>* functions, IPCVariantTypeEnum* type)
+{
+    *type = eIPCVariantTypeString;
+    functions->getter = &IPCProperty::getStringValue;
+    functions->setter = &IPCProperty::setStringValue;
+}
+
+template <>
+void
+IPCProperty::getTypeInfos(TypeFunctions<bool>* functions, IPCVariantTypeEnum* type)
+{
+    *type = eIPCVariantTypeBool;
+    functions->getter = &IPCProperty::getBoolValue;
+    functions->setter = &IPCProperty::setBoolValue;
+}
+
+template <>
+void
+IPCProperty::getTypeInfos(TypeFunctions<int>* functions, IPCVariantTypeEnum* type)
+{
+    *type = eIPCVariantTypeInt;
+    functions->getter = &IPCProperty::getIntValue;
+    functions->setter = &IPCProperty::setIntValue;
+}
+
+template <>
+void
+IPCProperty::getTypeInfos(TypeFunctions<U64>* functions, IPCVariantTypeEnum* type)
+{
+    *type = eIPCVariantTypeULongLong;
+    functions->getter = &IPCProperty::getULongLongValue;
+    functions->setter = &IPCProperty::setULongLongValue;
+}
+
+template <>
+void
+IPCProperty::getTypeInfos(TypeFunctions<double>* functions, IPCVariantTypeEnum* type)
+{
+    *type = eIPCVariantTypeDouble;
+    functions->getter = &IPCProperty::getDoubleValue;
+    functions->setter = &IPCProperty::setDoubleValue;
 }
 
 
-static IPCProperty* getOrCreateIPCProperty(const std::string& name, IPCPropertyMap::IPCVariantMap* propsMap)
+std::size_t
+IPCProperty::getNumDimensions() const
 {
-    ExternalSegmentType::segment_manager* manager = propsMap->get_allocator().get_segment_manager();
+    return data.size();
+}
+
+void
+IPCProperty::resize(std::size_t nDims)
+{
+    data.resize(nDims);
+}
+
+void
+IPCProperty::getStringValue(const IPCVariantVector& vec, int index, std::string* value) 
+{
+    assert(index >= 0 && index < (int)vec.size());
+    *value = std::string(vec[index].string->c_str());
+}
+
+void
+IPCProperty::setStringValue(int index, const std::string& value, IPCVariantVector* vec)
+{
+    assert(index >= 0 && index < (int)vec->size());
+    ExternalSegmentType::segment_manager* manager = vec->get_allocator().get_segment_manager();
+    CharAllocator_ExternalSegment charAlloc(manager);
+    (*vec)[index].string = manager->construct<String_ExternalSegment>(boost::interprocess::anonymous_instance)(charAlloc);
+    (*vec)[index].string->append(value.c_str());
+}
+
+void
+IPCProperty::getBoolValue(const IPCVariantVector& vec, int index, bool* value)
+{
+    assert(index >= 0 && index < (int)vec.size());
+    *value = Hash64::fromU64<bool>(vec[index].scalar);
+}
+
+void
+IPCProperty::setBoolValue(int index, const bool& value, IPCVariantVector* vec)
+{
+    assert(index >= 0 && index < (int)vec->size());
+    (*vec)[index].scalar = Hash64::toU64<bool>(value);
+}
+
+void
+IPCProperty::getIntValue(const IPCVariantVector& vec, int index, int* value)
+{
+    assert(index >= 0 && index < (int)vec.size());
+    *value = Hash64::fromU64<int>(vec[index].scalar);
+}
+
+void
+IPCProperty::setIntValue(int index, const int& value, IPCVariantVector* vec)
+{
+    assert(index >= 0 && index < (int)vec->size());
+    (*vec)[index].scalar = Hash64::toU64<int>(value);
+}
+
+void
+IPCProperty::getULongLongValue(const IPCVariantVector& vec, int index, U64* value)
+{
+    assert(index >= 0 && index < (int)vec.size());
+    *value = vec[index].scalar;
+}
+
+void
+IPCProperty::setULongLongValue(int index, const U64& value, IPCVariantVector* vec)
+{
+    assert(index >= 0 && index < (int)vec->size());
+    (*vec)[index].scalar = value;
+}
+
+void
+IPCProperty::getDoubleValue(const IPCVariantVector& vec, int index, double* value)
+{
+    assert(index >= 0 && index < (int)vec.size());
+    *value = Hash64::fromU64<double>(vec[index].scalar);
+}
+
+void
+IPCProperty::setDoubleValue(int index, const double& value, IPCVariantVector* vec)
+{
+    assert(index >= 0 && index < (int)vec->size());
+    (*vec)[index].scalar = Hash64::toU64<double>(value);
+}
+
+
+
+IPCProperty*
+IPCPropertyMap::getOrCreateIPCProperty(const std::string& name, IPCVariantTypeEnum type)
+{
+    ExternalSegmentType::segment_manager* manager = _properties.get_allocator().get_segment_manager();
 
     CharAllocator_ExternalSegment charAlloc(manager);
     String_ExternalSegment nameKey(charAlloc);
     nameKey.append(name.c_str());
 
-    IPCPropertyMap::IPCVariantMap::iterator found = propsMap->find(nameKey);
-    if (found != propsMap->end()) {
+    IPCPropertyMap::IPCVariantMap::iterator found = _properties.find(nameKey);
+    if (found != _properties.end()) {
+        if (found->second.getType() != type) {
+            assert(false);
+            throw std::invalid_argument("A property with the name " + name + " already exists but with a different type");
+        }
         return &found->second;
     }
 
+
     ExternalSegmentTypeIPCVariantAllocator vecAlloc(manager);
-    IPCVariantVector vec(vecAlloc);
+    IPCProperty prop(type, vecAlloc);
 
     // We must create the pair before or else this does not compile.
-    IPCPropertyMap::IPCVariantMapValueType valPair = std::make_pair(nameKey, vec);
-    std::pair<IPCPropertyMap::IPCVariantMap::iterator,bool> ret = propsMap->insert(valPair);
+    IPCPropertyMap::IPCVariantMapValueType valPair = std::make_pair(nameKey, prop);
+    std::pair<IPCPropertyMap::IPCVariantMap::iterator,bool> ret = _properties.insert(valPair);
     assert(ret.second);
     return &ret.first->second;
 } // getOrCreateIPCProperty
 
-static const IPCProperty* getIPCPropertyVector(const std::string& name, const IPCPropertyMap::IPCVariantMap& propsMap)
+const IPCProperty*
+IPCPropertyMap::getIPCProperty(const std::string& name) const
 {
-    ExternalSegmentType::segment_manager* manager = propsMap.get_allocator().get_segment_manager();
+    ExternalSegmentType::segment_manager* manager = _properties.get_allocator().get_segment_manager();
 
     CharAllocator_ExternalSegment charAlloc(manager);
     String_ExternalSegment nameKey(charAlloc);
     nameKey.append(name.c_str());
 
-    IPCPropertyMap::IPCVariantMap::const_iterator found = propsMap.find(nameKey);
-    if (found != propsMap.end()) {
+    IPCPropertyMap::IPCVariantMap::const_iterator found = _properties.find(nameKey);
+    if (found != _properties.end()) {
         return &found->second;
     }
     return (const IPCProperty*)NULL;
@@ -133,6 +262,18 @@ IPCPropertyMap::IPCPropertyMap(const void_allocator& alloc)
 IPCPropertyMap::~IPCPropertyMap()
 {
 
+}
+
+IPCPropertyMap::const_iterator
+IPCPropertyMap::begin() const
+{
+    return _properties.begin();
+}
+
+IPCPropertyMap::const_iterator
+IPCPropertyMap::end() const
+{
+    return _properties.end();
 }
 
 ExternalSegmentType::segment_manager*
@@ -153,304 +294,6 @@ IPCPropertyMap::clear()
     _properties.clear();
 }
 
-void
-IPCPropertyMap::setIPCStringPropertyN(const std::string& name,
-                                  const std::vector<std::string>& values)
-{
-    IPCProperty* prop = getOrCreateIPCProperty(name, &_properties);
-    prop->data.clear();
-    prop->type = eIPCVariantTypeString;
-    for (std::size_t i = 0; i < values.size(); ++i) {
-        appendIPCPropString(values[i], &prop->data);
-    }
-}
 
-void
-IPCPropertyMap::setIPCBoolPropertyN(const std::string& name,
-                                const std::vector<bool>& values)
-{
-    IPCProperty* prop = getOrCreateIPCProperty(name, &_properties);
-    prop->data.clear();
-    prop->type = eIPCVariantTypeBool;
-    for (std::size_t i = 0; i < values.size(); ++i) {
-        appendIPCPropScalar<bool>(values[i], &prop->data);
-    }
-}
-
-void
-IPCPropertyMap::setIPCIntPropertyN(const std::string& name,
-                               const std::vector<int>& values)
-{
-    IPCProperty* prop = getOrCreateIPCProperty(name, &_properties);
-    prop->data.clear();
-    prop->type = eIPCVariantTypeInt;
-    for (std::size_t i = 0; i < values.size(); ++i) {
-        appendIPCPropScalar<int>(values[i], &prop->data);
-    }
-}
-
-void
-IPCPropertyMap::setIPCDoublePropertyN(const std::string& name,
-                                  const std::vector<double>& values)
-{
-    IPCProperty* prop = getOrCreateIPCProperty(name, &_properties);
-    prop->data.clear();
-    prop->type = eIPCVariantTypeDouble;
-    for (std::size_t i = 0; i < values.size(); ++i) {
-        appendIPCPropScalar<double>(values[i], &prop->data);
-    }
-}
-
-void
-IPCPropertyMap::setIPCULongLongPropertyN(const std::string& name,
-                              const std::vector<U64>& values)
-{
-    IPCProperty* prop = getOrCreateIPCProperty(name, &_properties);
-    prop->data.clear();
-    prop->type = eIPCVariantTypeDouble;
-    for (std::size_t i = 0; i < values.size(); ++i) {
-        IPCVariant variant;
-        variant.scalar = values[i];
-        prop->data.push_back(variant);
-    }
-
-}
-
-void
-IPCPropertyMap::setIPCStringProperty(const std::string& name, const std::string& value)
-{
-    IPCProperty* prop = getOrCreateIPCProperty(name, &_properties);
-    prop->data.clear();
-    prop->type = eIPCVariantTypeString;
-    appendIPCPropString(value, &prop->data);
-}
-
-
-void
-IPCPropertyMap::setIPCBoolProperty(const std::string& name, bool value)
-{
-    IPCProperty* prop = getOrCreateIPCProperty(name, &_properties);
-    prop->data.clear();
-    prop->type = eIPCVariantTypeBool;
-    appendIPCPropScalar<bool>(value, &prop->data);
-}
-
-void
-IPCPropertyMap::setIPCIntProperty(const std::string& name, int value)
-{
-    IPCProperty* prop = getOrCreateIPCProperty(name, &_properties);
-    prop->data.clear();
-    prop->type = eIPCVariantTypeInt;
-    appendIPCPropScalar<int>(value, &prop->data);
-}
-
-
-void
-IPCPropertyMap::setIPCDoubleProperty(const std::string& name, double value)
-{
-    IPCProperty* prop = getOrCreateIPCProperty(name, &_properties);
-    prop->data.clear();
-    prop->type = eIPCVariantTypeDouble;
-    appendIPCPropScalar<double>(value, &prop->data);
-}
-
-void
-IPCPropertyMap::setIPCULongLongProperty(const std::string& name,
-                             U64 value)
-{
-    IPCProperty* prop = getOrCreateIPCProperty(name, &_properties);
-    prop->data.clear();
-    prop->type = eIPCVariantTypeULongLong;
-    IPCVariant variant;
-    variant.scalar = value;
-    prop->data.push_back(variant);
-}
-
-
-bool
-IPCPropertyMap::getIPCStringPropertyN(const std::string& name,
-                                      std::vector<std::string>* values) const
-{
-    const IPCProperty* prop = getIPCPropertyVector(name, _properties);
-    if (!prop) {
-        return false;
-    }
-    if (prop->type != eIPCVariantTypeString) {
-        return false;
-    }
-    values->resize(prop->data.size());
-    for (std::size_t i = 0; i < prop->data.size(); ++i) {
-        (*values)[i] = std::string(prop->data[i].string->c_str());
-    }
-    return true;
-}
-
-
-bool
-IPCPropertyMap::getIPCBoolPropertyN(const std::string& name,
-                                      std::vector<bool>* values) const
-{
-    const IPCProperty* prop = getIPCPropertyVector(name, _properties);
-    if (!prop) {
-        return false;
-    }
-    if (prop->type != eIPCVariantTypeBool) {
-        return false;
-    }
-    values->resize(prop->data.size());
-    for (std::size_t i = 0; i < prop->data.size(); ++i) {
-        (*values)[i] = Hash64::fromU64<bool>(prop->data[i].scalar);
-    }
-    return true;
-}
-
-bool
-IPCPropertyMap::getIPCIntPropertyN(const std::string& name,
-                                    std::vector<int>* values) const
-{
-    const IPCProperty* prop = getIPCPropertyVector(name, _properties);
-    if (!prop) {
-        return false;
-    }
-    if (prop->type != eIPCVariantTypeInt) {
-        return false;
-    }
-    values->resize(prop->data.size());
-    for (std::size_t i = 0; i < prop->data.size(); ++i) {
-        (*values)[i] = Hash64::fromU64<int>(prop->data[i].scalar);
-    }
-    return true;
-}
-
-bool
-IPCPropertyMap::getIPCDoublePropertyN(const std::string& name,
-                                    std::vector<double>* values) const
-{
-    const IPCProperty* prop = getIPCPropertyVector(name, _properties);
-    if (!prop) {
-        return false;
-    }
-    if (prop->type != eIPCVariantTypeDouble) {
-        return false;
-    }
-    values->resize(prop->data.size());
-    for (std::size_t i = 0; i < prop->data.size(); ++i) {
-        (*values)[i] = Hash64::fromU64<double>(prop->data[i].scalar);
-    }
-    return true;
-}
-
-bool
-IPCPropertyMap::getIPCULongLongPropertyN(const std::string& name,
-                              std::vector<U64>* values) const
-{
-    const IPCProperty* prop = getIPCPropertyVector(name, _properties);
-    if (!prop) {
-        return false;
-    }
-    if (prop->type != eIPCVariantTypeULongLong) {
-        return false;
-    }
-    values->resize(prop->data.size());
-    for (std::size_t i = 0; i < prop->data.size(); ++i) {
-        (*values)[i] = prop->data[i].scalar;
-    }
-    return true;
-}
-
-bool
-IPCPropertyMap::getIPCStringProperty(const std::string& name,
-                          int index,
-                          std::string* value) const
-{
-    const IPCProperty* prop = getIPCPropertyVector(name, _properties);
-    if (!prop) {
-        return false;
-    }
-    if (prop->type != eIPCVariantTypeString) {
-        return false;
-    }
-    if (index < 0 || index >= (int)prop->data.size()) {
-        return false;
-    }
-    *value = std::string(prop->data[index].string->c_str());
-    return true;
-}
-
-bool
-IPCPropertyMap::getIPCBoolProperty(const std::string& name,
-                                    int index,
-                                    bool* value) const
-{
-    const IPCProperty* prop = getIPCPropertyVector(name, _properties);
-    if (!prop) {
-        return false;
-    }
-    if (prop->type != eIPCVariantTypeBool) {
-        return false;
-    }
-    if (index < 0 || index >= (int)prop->data.size()) {
-        return false;
-    }
-    *value = Hash64::fromU64<bool>(prop->data[index].scalar);
-    return true;
-}
-
-bool
-IPCPropertyMap::getIPCIntProperty(const std::string& name,
-                                   int index,
-                                   int* value) const
-{
-    const IPCProperty* prop = getIPCPropertyVector(name, _properties);
-    if (!prop) {
-        return false;
-    }
-    if (prop->type != eIPCVariantTypeInt) {
-        return false;
-    }
-    if (index < 0 || index >= (int)prop->data.size()) {
-        return false;
-    }
-    *value = Hash64::fromU64<int>(prop->data[index].scalar);
-    return true;
-}
-
-bool
-IPCPropertyMap::getIPCDoubleProperty(const std::string& name,
-                                   int index,
-                                   double* value) const
-{
-    const IPCProperty* prop = getIPCPropertyVector(name, _properties);
-    if (!prop) {
-        return false;
-    }
-    if (prop->type != eIPCVariantTypeDouble) {
-        return false;
-    }
-    if (index < 0 || index >= (int)prop->data.size()) {
-        return false;
-    }
-    *value = Hash64::fromU64<double>(prop->data[index].scalar);
-    return true;
-}
-
-bool
-IPCPropertyMap::getIPCULongLongProperty(const std::string& name,
-                             int index,
-                             U64* value) const
-{
-    const IPCProperty* prop = getIPCPropertyVector(name, _properties);
-    if (!prop) {
-        return false;
-    }
-    if (prop->type != eIPCVariantTypeULongLong) {
-        return false;
-    }
-    if (index < 0 || index >= (int)prop->data.size()) {
-        return false;
-    }
-    *value = prop->data[index].scalar;
-    return true;
-}
 
 NATRON_NAMESPACE_EXIT;

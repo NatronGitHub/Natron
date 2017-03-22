@@ -91,6 +91,11 @@ public:
     CacheEntryLockerBasePtr getFromCache() const;
 
     /**
+     * @brief Same as getCache()->isPersistent()
+     **/
+    bool isPersistent() const;
+
+    /**
      * @brief Get the key object for this entry.
      **/
     CacheEntryKeyBasePtr getKey() const;

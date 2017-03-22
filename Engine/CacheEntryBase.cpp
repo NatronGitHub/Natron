@@ -70,6 +70,12 @@ CacheEntryBase::getFromCache() const
     return cache->get(thisShared);
 }
 
+bool
+CacheEntryBase::isPersistent() const
+{
+    return getCache()->isPersistent();
+}
+
 CacheEntryKeyBasePtr
 CacheEntryBase::getKey() const
 {

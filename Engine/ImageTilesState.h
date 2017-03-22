@@ -93,15 +93,11 @@ struct TileState
 // has its bottom left corner being the bottom left corner of the image and
 // the last tile in the vector has its top right corner being the top right corner
 // of the image.
-typedef boost::interprocess::allocator<TileState, ExternalSegmentType::segment_manager> TileState_Allocator_ExternalSegment;
-typedef boost::interprocess::vector<TileState, TileState_Allocator_ExternalSegment> IPCTileStateVector;
-
 typedef std::vector<TileState> TileStateVector;
 
 /**
  * @brief A tiles vector + 2 members to speed lookup of the full vector
  **/
-struct IPCTilesState;
 struct TilesState
 {
     TileStateVector tiles;
@@ -112,29 +108,6 @@ struct TilesState
 
     }
     
-};
-
-struct IPCTilesState
-{
-    IPCTileStateVector tiles;
-
-    IPCTilesState(const void_allocator& alloc)
-    : tiles(alloc)
-    {
-        
-    }
-
-    IPCTilesState(const IPCTilesState& other)
-    : tiles(other.tiles)
-    {
-
-    }
-
-    void operator=(const IPCTilesState& other)
-    {
-        tiles = other.tiles;
-    }
-
 };
 
 class TileStateHeader
@@ -165,8 +138,6 @@ public:
     const TileState* getTileAt(int tx, int ty) const;
 };
 
-typedef boost::interprocess::allocator<IPCTilesState, ExternalSegmentType::segment_manager> TileStateVector_Allocator_ExternalSegment;
-typedef boost::interprocess::vector<IPCTilesState, TileStateVector_Allocator_ExternalSegment> IPCMipMapTileStateVector;
 
 struct ImageTilesStatePrivate;
 

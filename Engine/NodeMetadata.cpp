@@ -282,32 +282,11 @@ struct MetadataValuesIPC
     }
 };
 
-typedef std::pair<String_ExternalSegment, MetadataValuesIPC> MetadataMapIPCValue;
-
-typedef bip::allocator<MetadataMapIPCValue, ExternalSegmentType::segment_manager> MetadataMapIPCValue_Allocator_ExternalSegment;
-
-typedef bip::flat_map<String_ExternalSegment, MetadataValuesIPC, std::less<String_ExternalSegment>, MetadataMapIPCValue_Allocator_ExternalSegment> MetadataMapIPC;
-
 void
 NodeMetadata::Implementation::toMemorySegment(IPCPropertyMap* properties) const
 {
-    // Add a prefix to the meta-data name in the memory segment to ensure that the meta-data name is not the same as
-    // another item we serialized to the segment.
-    void_allocator allocator(segment->get_segment_manager());
-    MetadataMapIPC* ipcMap = segment->construct<MetadataMapIPC>(bip::anonymous_instance)(allocator);
-    if (!ipcMap) {
-        throw bip::bad_alloc();
-    }
-    objectPointers->push_back(segment->get_handle_from_address(ipcMap));
 
     for (std::map<std::string, boost::shared_ptr<PropertiesHolder::PropertyBase> >::const_iterator it = _properties.begin(); it != _properties.end(); ++it) {
-
-        String_ExternalSegment name(allocator);
-        MetadataValuesIPC values(allocator);
-
-        MetadataMapIPCValue pair = std::make_pair(name, values);
-
-        pair.first.append(it->first.c_str());
 
 
         PropertiesHolder::Property<int>* isInt = dynamic_cast<PropertiesHolder::Property<int>*>(it->second.get());
@@ -315,26 +294,13 @@ NodeMetadata::Implementation::toMemorySegment(IPCPropertyMap* properties) const
         PropertiesHolder::Property<std::string>* isString = dynamic_cast<PropertiesHolder::Property<std::string>*>(it->second.get());
         assert(isInt || isDouble || isString);
 
-
-        int nDims = it->second->getNDimensions();
-        for (int i = 0; i < nDims; ++i) {
-
-            MetadataValueIPC data(allocator);
-
-            if (isInt) {
-                values.type = eNodeMetadataDataTypeInt;
-                data.podValue = (double)isInt->value[i];
-            } else if (isDouble) {
-                values.type = eNodeMetadataDataTypeDouble;
-                data.podValue = (double)isDouble->value[i];
-            } else if (isString) {
-                values.type = eNodeMetadataDataTypeString;
-                data.stringValue.append(isString->value[i].c_str());
-            }
-            pair.second.values.push_back(data);
+        if (isInt) {
+            properties->setIPCPropertyN<int>(it->first, isInt->value);
+        } else if (isDouble) {
+            properties->setIPCPropertyN<double>(it->first, isDouble->value);
+        } else if (isString) {
+            properties->setIPCPropertyN<std::string>(it->first, isString->value);
         }
-
-        ipcMap->insert(boost::move(pair));
     }
 } // toMemorySegment
 
@@ -342,39 +308,29 @@ void
 NodeMetadata::Implementation::fromMemorySegment(const IPCPropertyMap& properties)
 {
 
-    MetadataMapIPC* ipcMap = (MetadataMapIPC*)segment->get_address_from_handle(**start);
-    ++(*start);
 
-    for (MetadataMapIPC::const_iterator it = ipcMap->begin(); it != ipcMap->end(); ++it) {
+    for (IPCPropertyMap::const_iterator it = properties.begin(); it != properties.end(); ++it) {
 
         std::string name(it->first.c_str());
-        assert(!it->second.values.empty());
 
-        switch (it->second.type) {
-            case eNodeMetadataDataTypeInt:
+        switch (it->second.getType()) {
+            case eIPCVariantTypeInt:
             {
                 boost::shared_ptr<Property<int> > prop = createPropertyInternal<int>(name);
-                prop->value.resize(it->second.values.size());
-                for (std::size_t i = 0; i < it->second.values.size(); ++i) {
-                    prop->value[i] = (int)it->second.values[i].podValue;
-                }
+                IPCPropertyMap::getIPCPropertyN(it->second, &prop->value);
             }   break;
-            case eNodeMetadataDataTypeDouble:
+            case eIPCVariantTypeDouble:
             {
                 boost::shared_ptr<Property<double> > prop = createPropertyInternal<double>(name);
-                prop->value.resize(it->second.values.size());
-                for (std::size_t i = 0; i < it->second.values.size(); ++i) {
-                    prop->value[i] = it->second.values[i].podValue;
-                }
+                IPCPropertyMap::getIPCPropertyN(it->second, &prop->value);
             }   break;
-            case eNodeMetadataDataTypeString:
+            case eIPCVariantTypeString:
             {
                 boost::shared_ptr<Property<std::string> > prop = createPropertyInternal<std::string>(name);
-                prop->value.resize(it->second.values.size());
-                for (std::size_t i = 0; i < it->second.values.size(); ++i) {
-                    prop->value[i].append(it->second.values[i].stringValue.c_str());
-                }
+                IPCPropertyMap::getIPCPropertyN(it->second, &prop->value);
             }   break;
+            default:
+                break;
         }
 
 

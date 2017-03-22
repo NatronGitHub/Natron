@@ -86,7 +86,7 @@ public:
      * @brief Returns a pointer to the beginning of the file,
      * if the file has been successfully opened, otherwise it returns 0.
      **/
-    char* data() const;
+    char* getData() const;
 
     /**
      * @brief Changes the number of bytes of the significant

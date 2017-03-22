@@ -265,13 +265,14 @@ typedef boost::interprocess::vector<IPCVariant, ExternalSegmentTypeIPCVariantAll
 
 class IPCProperty
 {
-public:
 
     IPCVariantTypeEnum type;
     IPCVariantVector data;
 
-    IPCProperty(const void_allocator& alloc)
-    : type(eIPCVariantTypeBool)
+public:
+
+    IPCProperty(IPCVariantTypeEnum type, const void_allocator& alloc)
+    : type(type)
     , data(alloc)
     {
 
@@ -289,9 +290,58 @@ public:
         type = other.type;
         data = other.data;
     }
-    
+
+    IPCVariantVector* getData()
+    {
+        return &data;
+    }
+
+    const IPCVariantVector& getData() const
+    {
+        return data;
+    }
+
+    IPCVariantTypeEnum getType() const
+    {
+        return type;
+    }
+
+    std::size_t getNumDimensions() const;
+
+    void clear();
+
+    void resize(std::size_t nDims);
+
+    static void getStringValue(const IPCVariantVector& vec, int index, std::string* value);
+    static void setStringValue(int index, const std::string& value, IPCVariantVector* vec);
+
+    static void getBoolValue(const IPCVariantVector& vec, int index, bool* value);
+    static void setBoolValue(int index, const bool& value, IPCVariantVector* vec);
+
+    static void getIntValue(const IPCVariantVector& vec, int index, int* value);
+    static void setIntValue(int index, const int& value, IPCVariantVector* vec);
+
+    static void getULongLongValue(const IPCVariantVector& vec, int index, U64* value);
+    static void setULongLongValue(int index, const U64& value, IPCVariantVector* vec);
+
+    static void getDoubleValue(const IPCVariantVector& vec, int index, double* value);
+    static void setDoubleValue(int index, const double& value, IPCVariantVector* vec);
+
+    template <typename T>
+    struct TypeFunctions
+    {
+        typedef void (*PFN_GET)(const IPCVariantVector& vec, int index, T* value);
+        typedef void (*PFN_SET)(int index, const T& value, IPCVariantVector* vec);
+
+        PFN_GET getter;
+        PFN_SET setter;
+    };
+
+    template <typename T>
+    static void getTypeInfos(TypeFunctions<T>* functions, IPCVariantTypeEnum* type);
 
 };
+
 
 class IPCPropertyMap
 {
@@ -307,9 +357,16 @@ private:
 
 public:
 
+    typedef IPCVariantMap::iterator iterator;
+    typedef IPCVariantMap::const_iterator const_iterator;
+
     IPCPropertyMap(const void_allocator& alloc);
 
     ~IPCPropertyMap();
+
+    const_iterator begin() const;
+
+    const_iterator end() const;
 
     ExternalSegmentType::segment_manager* getSegmentManager() const;
 
@@ -317,71 +374,98 @@ public:
 
     void clear();
 
-    void setIPCStringPropertyN(const std::string& name,
-                               const std::vector<std::string>& values);
+    // May throw an exception
+    IPCProperty* getOrCreateIPCProperty(const std::string& name, IPCVariantTypeEnum type);
 
-    void setIPCBoolPropertyN(const std::string& name,
-                             const std::vector<bool>& values);
+    // May return NULL but does not throw
+    const IPCProperty* getIPCProperty(const std::string& name) const;
 
-    void setIPCIntPropertyN(const std::string& name,
-                           const std::vector<int>& values);
+    template <typename T>
+    void setIPCPropertyN(const std::string& name, const std::vector<T>& values)
+    {
 
-    void setIPCDoublePropertyN(const std::string& name,
-                               const std::vector<double>& values);
+        IPCProperty::TypeFunctions<T> functions;
+        IPCVariantTypeEnum type;
+        IPCProperty::getTypeInfos<T>(&functions, &type);
 
-    void setIPCStringProperty(const std::string& name,
-                               const std::string& values);
+        IPCProperty* prop = getOrCreateIPCProperty(name, type);
+        prop->resize(values.size());
+        for (std::size_t i = 0; i < values.size(); ++i) {
+            functions.setter(i, values[i], prop->getData());
+        }
+    }
 
-    void setIPCULongLongPropertyN(const std::string& name,
-                                  const std::vector<U64>& values);
+    template <typename T>
+    void setIPCProperty(const std::string& name,  const T& value)
+    {
 
-    void setIPCBoolProperty(const std::string& name,
-                            bool values);
+        IPCProperty::TypeFunctions<T> functions;
+        IPCVariantTypeEnum type;
+        IPCProperty::getTypeInfos<T>(&functions, &type);
 
-    void setIPCIntProperty(const std::string& name,
-                            int values);
+        IPCProperty* prop = getOrCreateIPCProperty(name, type);
+        prop->resize(1);
+        functions.setter(0, value, prop->getData());
+    }
 
-    void setIPCDoubleProperty(const std::string& name,
-                            double values);
+    template <typename T>
+    static bool getIPCPropertyN(const IPCProperty& prop, std::vector<T>* values)
+    {
 
-    void setIPCULongLongProperty(const std::string& name,
-                                  U64 value);
+        IPCProperty::TypeFunctions<T> functions;
+        IPCVariantTypeEnum type;
+        IPCProperty::getTypeInfos<T>(&functions, &type);
+        if (prop.getType() != type) {
+            return false;
+        }
+        values->resize(prop.getNumDimensions());
+        for (std::size_t i = 0; i < values->size(); ++i) {
+            functions.getter(prop.getData(), i, &(*values)[i]);
+        }
+        return true;
+    }
+
+    template <typename T>
+    bool getIPCPropertyN(const std::string& name, std::vector<T>* values) const
+    {
+        const IPCProperty* prop = getIPCProperty(name);
+        if (!prop) {
+            return false;
+        }
+        return getIPCPropertyN(*prop, values);
+    }
+
+    template <typename T>
+    static bool getIPCProperty(const IPCProperty& prop, int index, T* value)
+    {
+
+        IPCProperty::TypeFunctions<T> functions;
+        IPCVariantTypeEnum type;
+        IPCProperty::getTypeInfos<T>(&functions, &type);
+
+        if (prop.getType() != type || (int)prop.getNumDimensions() <= index) {
+            return false;
+        }
+        functions.getter(prop.getData(), index, value);
+        return true;
+    }
 
 
-    bool getIPCStringPropertyN(const std::string& name,
-                               std::vector<std::string>* values) const;
+    template <typename T>
+    bool getIPCProperty(const std::string& name, int index, T* value) const
+    {
 
-    bool getIPCBoolPropertyN(const std::string& name,
-                               std::vector<bool>* values) const;
+        IPCProperty::TypeFunctions<T> functions;
+        IPCVariantTypeEnum type;
+        IPCProperty::getTypeInfos<T>(&functions, &type);
 
-    bool getIPCIntPropertyN(const std::string& name,
-                               std::vector<int>* values) const;
+        const IPCProperty* prop = getIPCProperty(name);
+        if (!prop) {
+            return false;
+        }
+        return getIPCProperty(*prop, index, value);
+    }
 
-    bool getIPCDoublePropertyN(const std::string& name,
-                               std::vector<double>* values) const;
-
-    bool getIPCULongLongPropertyN(const std::string& name,
-                               std::vector<U64>* values) const;
-
-    bool getIPCStringProperty(const std::string& name,
-                               int index,
-                               std::string* value) const;
-
-    bool getIPCBoolProperty(const std::string& name,
-                             int index,
-                             bool* value) const;
-
-    bool getIPCIntProperty(const std::string& name,
-                            int index,
-                            int* value) const;
-
-    bool getIPCDoubleProperty(const std::string& name,
-                               int index,
-                               double* value) const;
-
-    bool getIPCULongLongProperty(const std::string& name,
-                              int index,
-                              U64* value) const;
 
 };
 

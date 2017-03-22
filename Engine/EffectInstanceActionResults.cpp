@@ -57,21 +57,21 @@ EffectInstanceActionKeyBase::appendToHash(Hash64* hash) const
 void
 EffectInstanceActionKeyBase::toMemorySegment(IPCPropertyMap* properties) const
 {
-    properties->setIPCULongLongProperty("NodeHash", _data.nodeTimeViewVariantHash);
+    properties->setIPCProperty<U64>("NodeHash", _data.nodeTimeViewVariantHash);
     std::vector<double> scaleVec(2);
     scaleVec[0] = _data.scale.x;
     scaleVec[1] = _data.scale.y;
-    properties->setIPCDoublePropertyN("Scale", scaleVec);
+    properties->setIPCPropertyN<double>("Scale", scaleVec);
 } // toMemorySegment
 
 CacheEntryKeyBase::FromMemorySegmentRetCodeEnum
 EffectInstanceActionKeyBase::fromMemorySegment(const IPCPropertyMap& properties)
 {
-    if (!properties.getIPCULongLongProperty("NodeHash", 0, &_data.nodeTimeViewVariantHash)) {
+    if (!properties.getIPCProperty("NodeHash", 0, &_data.nodeTimeViewVariantHash)) {
         return eFromMemorySegmentRetCodeFailed;
     }
     std::vector<double> scaleVec;
-    if (!properties.getIPCDoublePropertyN("Scale", &scaleVec)) {
+    if (!properties.getIPCPropertyN("Scale", &scaleVec)) {
         return eFromMemorySegmentRetCodeFailed;
     }
     _data.scale.x = scaleVec[0];
@@ -115,7 +115,7 @@ GetRegionOfDefinitionResults::toMemorySegment(IPCPropertyMap* properties) const
     rodVec[1] = _rod.y1;
     rodVec[2] = _rod.x2;
     rodVec[3] = _rod.y2;
-    properties->setIPCDoublePropertyN("RoD", rodVec);
+    properties->setIPCPropertyN("RoD", rodVec);
     CacheEntryBase::toMemorySegment(properties);
 } // toMemorySegment
 
@@ -124,7 +124,7 @@ GetRegionOfDefinitionResults::fromMemorySegment(bool isLockedForWriting,
                                                 const IPCPropertyMap& properties)
 {
     std::vector<double> rodVec;
-    if (!properties.getIPCDoublePropertyN("RoD", &rodVec)) {
+    if (!properties.getIPCPropertyN("RoD", &rodVec)) {
         return eFromMemorySegmentRetCodeFailed;
     }
     _rod.x1 = rodVec[0];
@@ -166,19 +166,18 @@ GetDistortionResults::setResults(const DistortionFunction2DPtr& disto)
 
 
 void
-GetDistortionResults::toMemorySegment(IPCPropertyMap* properties) const
+GetDistortionResults::toMemorySegment(IPCPropertyMap* /*properties*/) const
 {
-    properties->push_back(writeAnonymousSharedObject(_disto, segment));
-    CacheEntryBase::toMemorySegment(segment, objectPointers);
+    assert(false);
+    throw std::runtime_error("GetDistortionResults::toMemorySegment cannot be serialized to a persistent cache");
 } // toMemorySegment
 
 CacheEntryBase::FromMemorySegmentRetCodeEnum
-GetDistortionResults::fromMemorySegment(bool isLockedForWriting,
-                                        const IPCPropertyMap& properties)
+GetDistortionResults::fromMemorySegment(bool /*isLockedForWriting*/,
+                                        const IPCPropertyMap& /*properties*/)
 {
-    readAnonymousSharedObject(*start, segment, &_disto);
-    ++start;
-    return CacheEntryBase::fromMemorySegment(isLockedForWriting, properties);
+    assert(false);
+    throw std::runtime_error("GetDistortionResults::fromMemorySegment cannot be serialized from a persistent cache");
 } // fromMemorySegment
 
 
@@ -218,19 +217,18 @@ IsIdentityResults::setIdentityData(int identityInputNb, TimeValue identityTime, 
 }
 
 void
-IsIdentityResults::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const
+IsIdentityResults::toMemorySegment(IPCPropertyMap* /*properties*/) const
 {
-    objectPointers->push_back(writeAnonymousSharedObject(_data, segment));
-    CacheEntryBase::toMemorySegment(segment, objectPointers);
+    assert(false);
+    throw std::runtime_error("IsIdentityResults::toMemorySegment serialization to a persistent cache unimplemented");
 } // toMemorySegment
 
 CacheEntryBase::FromMemorySegmentRetCodeEnum
-IsIdentityResults::fromMemorySegment(bool isLockedForWriting,
-                                     const IPCPropertyMap& properties)
+IsIdentityResults::fromMemorySegment(bool /*isLockedForWriting*/,
+                                     const IPCPropertyMap& /*properties*/)
 {
-    readAnonymousSharedObject(*start, segment, &_data);
-    ++start;
-    return CacheEntryBase::fromMemorySegment(isLockedForWriting, properties);
+    assert(false);
+    throw std::runtime_error("IsIdentityResults::fromMemorySegment serialization from a persistent cache unimplemented");
 } // fromMemorySegment
 
 GetFramesNeededResults::GetFramesNeededResults()
@@ -262,84 +260,21 @@ GetFramesNeededResults::setFramesNeeded(const FramesNeededMap &framesNeeded)
     _framesNeeded = framesNeeded;
 }
 
-// This is made complicated so it can be inserted in interprocess data structures.
-typedef bip::allocator<ViewIdx, ExternalSegmentType::segment_manager> ViewIdx_allocator;
-typedef bip::allocator<RangeD, ExternalSegmentType::segment_manager> RangeD_allocator;
 
-// A vector of RangeD
-typedef bip::vector<RangeD, RangeD_allocator> RangeDVector_ExternalSegment;
-
-typedef bip::allocator<RangeDVector_ExternalSegment, ExternalSegmentType::segment_manager> RangeDVector_allocator;
-
-typedef std::pair<const ViewIdx, RangeDVector_ExternalSegment> FrameRangesMap_value_type;
-
-typedef bip::allocator<FrameRangesMap_value_type, ExternalSegmentType::segment_manager> FrameRangesMap_value_type_allocator;
-
-// A map<ViewIdx, vector<RangeD> >
-typedef bip::map<ViewIdx, RangeDVector_ExternalSegment, std::less<ViewIdx>, FrameRangesMap_value_type_allocator> FrameRangesMap_ExternalSegment;
-
-typedef std::pair<const int, FrameRangesMap_ExternalSegment> FramesNeededMap_value_type;
-
-typedef bip::allocator<FramesNeededMap_value_type, ExternalSegmentType::segment_manager> FramesNeededMap_value_type_allocator;
-
-// A map<int,  map<ViewIdx, vector<RangeD> > >
-typedef bip::map<int, FrameRangesMap_ExternalSegment, std::less<int>, FramesNeededMap_value_type_allocator> FramesNeededMap_ExternalSegment;
-
-
-typedef bip::allocator<FramesNeededMap_ExternalSegment, ExternalSegmentType::segment_manager> FramesNeededMap_ExternalSegment_allocator;
 
 void
-GetFramesNeededResults::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const
+GetFramesNeededResults::toMemorySegment(IPCPropertyMap* /*properties*/) const
 {
-    // An allocator convertible to any allocator<T, segment_manager_t> type
-    void_allocator alloc_inst (segment->get_segment_manager());
-
-    FramesNeededMap_ExternalSegment* externalMap = segment->construct<FramesNeededMap_ExternalSegment>(boost::interprocess::anonymous_instance)(alloc_inst);
-    if (!externalMap) {
-        throw bip::bad_alloc();
-    }
-    for (FramesNeededMap::const_iterator it = _framesNeeded.begin(); it != _framesNeeded.end(); ++it) {
-
-        FrameRangesMap_ExternalSegment extFrameRangeMap(alloc_inst);
-
-        for (FrameRangesMap::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-
-            RangeDVector_ExternalSegment extRangeVec(alloc_inst);
-            for (std::size_t i = 0; i < it2->second.size(); ++i) {
-                extRangeVec.push_back(it2->second[i]);
-            }
-            FrameRangesMap_value_type v = std::make_pair(it2->first, extRangeVec);
-            extFrameRangeMap.insert(v);
-        }
-
-        FramesNeededMap_value_type v = std::make_pair(it->first, extFrameRangeMap);
-        externalMap->insert(v);
-    }
-    
-    objectPointers->push_back(segment->get_handle_from_address(externalMap));
-    CacheEntryBase::toMemorySegment(segment, objectPointers);
+    assert(false);
+    throw std::runtime_error("GetFramesNeededResults::toMemorySegment serialization to a persistent cache unimplemented");
 } // toMemorySegment
 
 CacheEntryBase::FromMemorySegmentRetCodeEnum
-GetFramesNeededResults::fromMemorySegment(bool isLockedForWriting,
-                                          const IPCPropertyMap& properties)
+GetFramesNeededResults::fromMemorySegment(bool /*isLockedForWriting*/,
+                                          const IPCPropertyMap& /*properties*/)
 {
-    FramesNeededMap_ExternalSegment *externalMap = (FramesNeededMap_ExternalSegment*)segment->get_address_from_handle(*start);
-    ++start;
-
-    for (FramesNeededMap_ExternalSegment::iterator it = externalMap->begin(); it != externalMap->end(); ++it) {
-        FrameRangesMap& frameRangeMap = _framesNeeded[it->first];
-        for (FrameRangesMap_ExternalSegment::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            std::vector<RangeD> &rangeVec = frameRangeMap[it2->first];
-
-            for (std::size_t i = 0; i < it2->second.size(); ++i) {
-                rangeVec.push_back(it2->second[i]);
-            }
-        }
-    }
-
-    return CacheEntryBase::fromMemorySegment(isLockedForWriting, properties);
-
+    assert(false);
+    throw std::runtime_error("GetFramesNeededResults::fromMemorySegment serialization from a persistent cache unimplemented");
 } // fromMemorySegment
 
 
@@ -374,19 +309,18 @@ GetFrameRangeResults::setFrameRangeResults(const RangeD &range)
 }
 
 void
-GetFrameRangeResults::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const
+GetFrameRangeResults::toMemorySegment(IPCPropertyMap* /*properties*/) const
 {
-    objectPointers->push_back(writeAnonymousSharedObject(_range, segment));
-    CacheEntryBase::toMemorySegment(segment, objectPointers);
+    assert(false);
+    throw std::runtime_error("GetFrameRangeResults::toMemorySegment serialization to a persistent cache unimplemented");
 } // toMemorySegment
 
 CacheEntryBase::FromMemorySegmentRetCodeEnum
-GetFrameRangeResults::fromMemorySegment(bool isLockedForWriting,
-                                        const IPCPropertyMap& properties)
+GetFrameRangeResults::fromMemorySegment(bool /*isLockedForWriting*/,
+                                        const IPCPropertyMap& /*properties*/)
 {
-    readAnonymousSharedObject(*start, segment, &_range);
-    ++start;
-    return CacheEntryBase::fromMemorySegment(isLockedForWriting, properties);
+    assert(false);
+    throw std::runtime_error("GetFrameRangeResults::fromMemorySegment serialization from a persistent cache unimplemented");
 } // fromMemorySegment
 
 
@@ -422,11 +356,11 @@ GetTimeInvariantMetaDatasResults::setMetadatasResults(const NodeMetadataPtr &met
 
 
 void
-GetTimeInvariantMetaDatasResults::toMemorySegment(ExternalSegmentType* segment,  ExternalSegmentTypeHandleList* objectPointers) const
+GetTimeInvariantMetaDatasResults::toMemorySegment(IPCPropertyMap* properties) const
 {
     assert(_metadatas);
-    _metadatas->toMemorySegment(segment, objectPointers);
-    CacheEntryBase::toMemorySegment(segment, objectPointers);
+    _metadatas->toMemorySegment(properties);
+    CacheEntryBase::toMemorySegment(properties);
 } // toMemorySegment
 
 CacheEntryBase::FromMemorySegmentRetCodeEnum
@@ -549,159 +483,20 @@ GetComponentsResults::setResults(const std::map<int, std::list<ImagePlaneDesc> >
     _data.processAllLayers = processAllLayers;
 }
 
-typedef bip::allocator<String_ExternalSegment, ExternalSegmentType::segment_manager> String_ExternalSegment_allocator;
-typedef bip::vector<String_ExternalSegment, String_ExternalSegment_allocator> StringVector_ExternalSegment;
 
-// A simplified version of ImagePlaneDesc class that can go in shared memory
-class MM_ImagePlaneDesc
-{
-
-public:
-
-    String_ExternalSegment planeID, planeLabel, channelsLabel;
-    StringVector_ExternalSegment channels;
-
-    MM_ImagePlaneDesc(const void_allocator& allocator)
-    : planeID(allocator)
-    , planeLabel(allocator)
-    , channelsLabel(allocator)
-    , channels(allocator)
-    {
-
-    }
-
-    void operator=(const MM_ImagePlaneDesc& other)
-    {
-        planeID = other.planeID;
-        planeLabel = other.planeLabel;
-        channelsLabel = other.channelsLabel;
-        channels = other.channels;
-    }
-};
-
-typedef bip::allocator<MM_ImagePlaneDesc, ExternalSegmentType::segment_manager> ImagePlaneDesc_ExternalSegment_allocator;
-typedef bip::vector<MM_ImagePlaneDesc, ImagePlaneDesc_ExternalSegment_allocator> ImagePlaneDescVector_ExternalSegment;
-
-typedef std::pair<const int, ImagePlaneDescVector_ExternalSegment> NeededInputLayersValueType;
-typedef bip::allocator<NeededInputLayersValueType, ExternalSegmentType::segment_manager> NeededInputLayersValueType_allocator;
-
-typedef bip::map<int, ImagePlaneDescVector_ExternalSegment, std::less<int>, NeededInputLayersValueType_allocator> NeededInputLayersMap_ExternalSegment;
-
-static void imageComponentsListToSharedMemoryComponentsList(const void_allocator& allocator, const std::list<ImagePlaneDesc>& inComps, ImagePlaneDescVector_ExternalSegment* outComps)
-{
-    for (std::list<ImagePlaneDesc>::const_iterator it = inComps.begin() ; it != inComps.end(); ++it) {
-        MM_ImagePlaneDesc comps(allocator);
-
-        const std::vector<std::string>& channels = it->getChannels();
-        for (std::size_t i = 0; i < channels.size(); ++i) {
-            String_ExternalSegment chan(allocator);
-            chan.append(channels[i].c_str());
-            comps.channels.push_back(chan);
-        }
-        comps.channelsLabel.append(it->getChannelsLabel().c_str());
-        comps.planeID.append(it->getPlaneID().c_str());
-        comps.planeLabel.append(it->getPlaneLabel().c_str());
-        outComps->push_back(comps);
-    }
-}
-
-static void imageComponentsListFromSharedMemoryComponentsList(const ImagePlaneDescVector_ExternalSegment& inComps, std::list<ImagePlaneDesc>* outComps)
-{
-    for (ImagePlaneDescVector_ExternalSegment::const_iterator it = inComps.begin() ; it != inComps.end(); ++it) {
-        std::string planeID(it->planeID.c_str());
-        std::string planeLabel(it->planeLabel.c_str());
-        std::string channelsLabel(it->channelsLabel.c_str());
-        std::vector<std::string> channels(it->channels.size());
-
-        int i = 0;
-        for (StringVector_ExternalSegment::const_iterator it2 = it->channels.begin(); it2 != it->channels.end(); ++it2, ++i) {
-            channels[i] = std::string(it2->c_str());
-        }
-        ImagePlaneDesc c(planeID, planeLabel, channelsLabel, channels);
-        outComps->push_back(c);
-    }
-}
 
 void
-GetComponentsResults::toMemorySegment(ExternalSegmentType* segment, ExternalSegmentTypeHandleList* objectPointers) const
+GetComponentsResults::toMemorySegment(IPCPropertyMap* /*properties*/) const
 {
-    // An allocator convertible to any allocator<T, segment_manager_t> type
-    void_allocator alloc_inst(segment->get_segment_manager());
-
-    {
-        NeededInputLayersMap_ExternalSegment *neededLayers = segment->construct<NeededInputLayersMap_ExternalSegment>(boost::interprocess::anonymous_instance)(alloc_inst);
-        if (!neededLayers) {
-            throw bip::bad_alloc();
-        }
-
-        for (std::map<int, std::list<ImagePlaneDesc> >::const_iterator it = _neededInputLayers.begin(); it != _neededInputLayers.end(); ++it) {
-            ImagePlaneDescVector_ExternalSegment vec(alloc_inst);
-            imageComponentsListToSharedMemoryComponentsList(alloc_inst, it->second, &vec);
-
-            NeededInputLayersValueType v = std::make_pair(it->first, vec);
-            assert(v.second.get_allocator().get_segment_manager() == alloc_inst.get_segment_manager());
-            neededLayers->insert(v);
-        }
-        objectPointers->push_back(segment->get_handle_from_address(neededLayers));
-    }
-    {
-        ImagePlaneDescVector_ExternalSegment *producedLayers = segment->construct<ImagePlaneDescVector_ExternalSegment>(boost::interprocess::anonymous_instance)(alloc_inst);
-        if (!producedLayers) {
-            throw bip::bad_alloc();
-        }
-        imageComponentsListToSharedMemoryComponentsList(alloc_inst, _producedLayers, producedLayers);
-        objectPointers->push_back(segment->get_handle_from_address(producedLayers));
-    }
-    {
-        ImagePlaneDescVector_ExternalSegment *ptPlanes = segment->construct<ImagePlaneDescVector_ExternalSegment>(boost::interprocess::anonymous_instance)(alloc_inst);
-        if (!ptPlanes) {
-            throw bip::bad_alloc();
-        }
-        imageComponentsListToSharedMemoryComponentsList(alloc_inst, _passThroughPlanes, ptPlanes);
-        objectPointers->push_back(segment->get_handle_from_address(ptPlanes));
-    }
-
-    objectPointers->push_back(writeAnonymousSharedObject(_data, segment));
-
-    CacheEntryBase::toMemorySegment(segment, objectPointers);
+    assert(false);
+    throw std::runtime_error("GetComponentsResults::toMemorySegment serialization to a persistent cache unimplemented");
 } // toMemorySegment
 
 CacheEntryBase::FromMemorySegmentRetCodeEnum
-GetComponentsResults::fromMemorySegment(bool isLockedForWriting,
-                                          const IPCPropertyMap& properties) {
-    {
-        NeededInputLayersMap_ExternalSegment *neededLayers = (NeededInputLayersMap_ExternalSegment*)segment->get_address_from_handle(*start);
-        assert(neededLayers->get_allocator().get_segment_manager() == segment->get_segment_manager());
-        ++start;
-        for (NeededInputLayersMap_ExternalSegment::const_iterator it = neededLayers->begin(); it != neededLayers->end(); ++it) {
-            std::list<ImagePlaneDesc>& comps = _neededInputLayers[it->first];
-            imageComponentsListFromSharedMemoryComponentsList(it->second, &comps);
-        }
-    }
-    if (start == end) {
-        throw bip::bad_alloc();
-    }
-    {
-        ImagePlaneDescVector_ExternalSegment* producedLayers = (ImagePlaneDescVector_ExternalSegment*)segment->get_address_from_handle(*start);
-        assert(producedLayers->get_allocator().get_segment_manager() == segment->get_segment_manager());
-        ++start;
-        imageComponentsListFromSharedMemoryComponentsList(*producedLayers, &_producedLayers);
-    }
-    if (start == end) {
-        throw bip::bad_alloc();
-    }
-    {
-        ImagePlaneDescVector_ExternalSegment* ptLayers = (ImagePlaneDescVector_ExternalSegment*)segment->get_address_from_handle(*start);
-        assert(ptLayers->get_allocator().get_segment_manager() == segment->get_segment_manager());
-        ++start;
-        imageComponentsListFromSharedMemoryComponentsList(*ptLayers, &_passThroughPlanes);
-    }
-    if (start == end) {
-        throw bip::bad_alloc();
-    }
-    readAnonymousSharedObject(*start, segment, &_data);
-    ++start;
-    return CacheEntryBase::fromMemorySegment(isLockedForWriting, properties);
+GetComponentsResults::fromMemorySegment(bool /*isLockedForWriting*/,
+                                          const IPCPropertyMap& /*properties*/) {
+    assert(false);
+    throw std::runtime_error("GetComponentsResults::fromMemorySegment serialization from a persistent cache unimplemented");
 } // fromMemorySegment
 
 
