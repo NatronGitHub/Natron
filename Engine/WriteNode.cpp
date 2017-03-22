@@ -130,8 +130,8 @@ static GenericKnob genericWriterKnobNames[] =
 
     {kOCIOParamConfigFile, true},
     {kOCIOParamInputSpace, true}, // keep: don't change useful params behind the user's back
-    {kOCIOParamOutputSpace, true}, // keep: don't change useful params behind the user's back
-    {kOCIOParamInputSpaceChoice, false},
+    {kOCIOParamOutputSpace, false}, // don't keep: depends on format
+    {kOCIOParamInputSpaceChoice, true},
     {kOCIOParamOutputSpaceChoice, false},
     {kOCIOHelpButton, false},
     {kOCIOHelpLooksButton, false},
