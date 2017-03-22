@@ -420,11 +420,11 @@ AppManagerPrivate::addOpenGLRequirementsString(QString& str, OpenGLRequirementsT
 {
     switch (type) {
         case eOpenGLRequirementsTypeViewer: {
-            str += QLatin1String("<br />");
+            str += QLatin1Char('\n');
             str += tr("%1 requires at least OpenGL %2.%3 with the following extensions so the viewer works appropriately:").arg(QLatin1String(NATRON_APPLICATION_NAME)).arg(NATRON_OPENGL_VERSION_REQUIRED_MAJOR).arg(NATRON_OPENGL_VERSION_REQUIRED_MINOR);
-            str += QLatin1String("<br />");
+            str += QLatin1Char('\n');
             str += QString::fromUtf8("GL_ARB_vertex_buffer_object,GL_ARB_pixel_buffer_object");
-            str += QLatin1String("<br />");
+            str += QLatin1Char('\n');
 #ifdef __NATRON_WIN32__
             str += tr("To fix this: Re-start the installer, select \"Package manager\" and then install the \"Software OpenGL\" component.\n");
             str += tr("If you don't have the installer you can manually copy opengl32.dll located in the \"bin\\mesa\" directory of your %1 installation to the \"bin\" directory.").arg(QLatin1String(NATRON_APPLICATION_NAME));
@@ -432,30 +432,30 @@ AppManagerPrivate::addOpenGLRequirementsString(QString& str, OpenGLRequirementsT
             break;
         }
         case eOpenGLRequirementsTypeRendering: {
-            str += QLatin1String("<br />");
+            str += QLatin1Char('\n');
             str += tr("%1 requires at least OpenGL %2.%3 with the following extensions to perform OpenGL rendering:").arg(QLatin1String(NATRON_APPLICATION_NAME)).arg(NATRON_OPENGL_VERSION_REQUIRED_MAJOR).arg(NATRON_OPENGL_VERSION_REQUIRED_MINOR);
-            str += QLatin1String("<br />");
+            str += QLatin1Char('\n');
             str += QString::fromUtf8("GL_ARB_vertex_buffer_object <br /> GL_ARB_pixel_buffer_object <br /> GL_ARB_vertex_array_object or GL_APPLE_vertex_array_object <br /> GL_ARB_framebuffer_object or GL_EXT_framebuffer_object <br /> GL_ARB_texture_float");
-            str += QLatin1String("<br /");
+            str += QLatin1Char('\n');
             break;
         }
     }
     std::list<OpenGLRendererInfo> openGLRenderers;
     OSGLContext::getGPUInfos(openGLRenderers);
     if ( !openGLRenderers.empty() ) {
+        str += QLatin1Char('\n');
         str += tr("Available OpenGL renderers:");
-        str += QLatin1String("<br />");
-        str += QLatin1String("<br />");
+        str += QLatin1Char('\n');
         for (std::list<OpenGLRendererInfo>::iterator it = openGLRenderers.begin(); it != openGLRenderers.end(); ++it) {
             str += (tr("Vendor:") + QString::fromUtf8(" ") + QString::fromUtf8( it->vendorName.c_str() ) +
-                    QLatin1String("<br />") +
+                    QLatin1Char('\n') +
                     tr("Renderer:") + QString::fromUtf8(" ") + QString::fromUtf8( it->rendererName.c_str() ) +
-                    QLatin1String("<br />") +
+                    QLatin1Char('\n') +
                     tr("OpenGL Version:") + QString::fromUtf8(" ") + QString::fromUtf8( it->glVersionString.c_str() ) +
-                    QLatin1String("<br />") +
+                    QLatin1Char('\n') +
                     tr("GLSL Version:") + QString::fromUtf8(" ") + QString::fromUtf8( it->glslVersionString.c_str() ) );
-            str += QLatin1String("<br />");
-            str += QLatin1String("<br />");
+            str += QLatin1Char('\n');
+            str += QLatin1Char('\n');
         }
     }
 }
@@ -520,7 +520,6 @@ AppManagerPrivate::initGl(bool checkRenderingReq)
 
     glVersionMajor = GLVersion.major;
     glVersionMinor = GLVersion.minor;
-
 
     if ( !glLoaded ||
         GLVersion.major < NATRON_OPENGL_VERSION_REQUIRED_MAJOR ||
