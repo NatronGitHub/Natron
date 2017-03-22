@@ -1618,7 +1618,7 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPa
 
         ImagePtr downscaledImage;
         bool hasUnrenderedTile, hasPendingTiles;
-        ActionRetCodeEnum stat = _imp->lookupCachedImage(dstMipMapLevel, requestData->getProxyScale(), requestData->getPlaneDesc(), downscaledPixelRoD, downscaledRoI, requestData->getCachePolicy(), backendType, &downscaledImage, &hasPendingTiles, &hasUnrenderedTile);
+        ActionRetCodeEnum stat = _imp->lookupCachedImage(dstMipMapLevel, requestData->getProxyScale(), requestData->getPlaneDesc(), downscaledPixelRoD, downscaledRoI, eCacheAccessModeReadWrite, backendType, &downscaledImage, &hasPendingTiles, &hasUnrenderedTile);
 
         if (isFailureRetCode(stat)) {
             return stat;

@@ -1352,7 +1352,17 @@ ImageCacheEntry::fetchCachedTilesAndUpdateStatus(TileStateHeader* tileStatus, bo
 
             if (_imp->cachePolicy == eCacheAccessModeWriteOnly && cacheStatus == CacheEntryLockerBase::eCacheEntryStatusCached) {
                 _imp->internalCacheEntry->getCache()->removeEntry(_imp->internalCacheEntry);
+
+                if (!appPTR->getTileCache()->isPersistent()) {
+                    _imp->internalCacheEntry = ImageCacheEntryInternal<false>::create(_imp->key);
+                } else {
+                    _imp->internalCacheEntry = ImageCacheEntryInternal<true>::create(_imp.get(), _imp->key);
+                }
+                _imp->markedTiles.clear();
+                _imp->tilesToFetch.clear();
+                
                 cacheAccess = _imp->internalCacheEntry->getFromCache();
+                cacheStatus = cacheAccess->getStatus();
                 while (cacheStatus == CacheEntryLockerBase::eCacheEntryStatusComputationPending) {
                     cacheStatus = cacheAccess->waitForPendingEntry();
                 }
@@ -1361,6 +1371,7 @@ ImageCacheEntry::fetchCachedTilesAndUpdateStatus(TileStateHeader* tileStatus, bo
 
 
                 _imp->localTilesState.init(_imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY, _imp->localTilesState.bounds);
+
 
                 // Reset the policy to read/write now that we reseted the tiles state map once.
                 _imp->cachePolicy = eCacheAccessModeReadWrite;

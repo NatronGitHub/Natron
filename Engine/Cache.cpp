@@ -660,11 +660,15 @@ struct MemorySegmentEntryHeaderBase
     // The corresponding node in the LRU list
     LRUListNode lruNode;
 
-    MemorySegmentEntryHeaderBase()
+    // List of tile indices allocated for this entry
+    ExternalSegmentTypeULongLongList tileIndices;
+
+    MemorySegmentEntryHeaderBase(const void_allocator& allocator)
     : size(0)
     , status(eEntryStatusNull)
     , computeThreadMagic(0)
     , lruNode()
+    , tileIndices(allocator)
     {}
 
 };
@@ -684,27 +688,14 @@ struct MemorySegmentEntryHeader<true> : public MemorySegmentEntryHeaderBase
     // Serialized data from the derived class of CacheEntryBase
     IPCPropertyMap properties;
 
-    // List of tile indices allocated for this entry
-    ExternalSegmentTypeULongLongList tileIndices;
-
     MemorySegmentEntryHeader(const void_allocator& allocator)
-    : MemorySegmentEntryHeaderBase()
+    : MemorySegmentEntryHeaderBase(allocator)
     , pluginID(allocator)
     , properties(allocator)
-    , tileIndices(allocator)
     {
 
     }
 
-    void operator=(const MemorySegmentEntryHeader<true>& other)
-    {
-        size = other.size;
-        status = other.status;
-        pluginID = other.pluginID;
-        properties = other.properties;
-        tileIndices = other.tileIndices;
-        lruNode = other.lruNode;
-    }
 };
 
 template <>
@@ -718,26 +709,13 @@ struct MemorySegmentEntryHeader<false> : public MemorySegmentEntryHeaderBase
     // When not persistent, just hold a pointer to the process local entry
     CacheEntryBasePtr nonPersistentEntry;
 
-    // List of tile indices allocated for this entry
-    ExternalSegmentTypeULongLongList tileIndices;
-
     MemorySegmentEntryHeader(const void_allocator& allocator)
-    : MemorySegmentEntryHeaderBase()
+    : MemorySegmentEntryHeaderBase(allocator)
     , nonPersistentEntry()
-    , tileIndices(allocator)
     {
 
     }
 
-    void operator=(const MemorySegmentEntryHeader<false>& other)
-    {
-        size = other.size;
-        status = other.status;
-        pluginID = other.pluginID;
-        nonPersistentEntry = other.nonPersistentEntry;
-        tileIndices = other.tileIndices;
-        lruNode = other.lruNode;
-    }
 };
 
 /**
@@ -1829,6 +1807,7 @@ inline void getTileIndex(U64 encoded, U32* tileIndex, U32* fileIndex)
 {
     *fileIndex = encoded;
     *tileIndex = encoded >> 32;
+    assert(*tileIndex >= 0 && *tileIndex < NATRON_NUM_TILES_PER_FILE);
 }
 
 template <bool persistent>
@@ -1879,12 +1858,26 @@ CacheBucket<persistent>::deallocateCacheEntryImpl(typename EntriesMap::iterator 
                 }
                 
             }
+
+            // Retrieve the bucket index directly from the tile index: we know that each file contains exactly NATRON_NUM_TILES_PER_BUCKET_FILE * NATRON_CACHE_BUCKETS_COUNT
+            int tileBucketIndex = tileIndex % NATRON_NUM_TILES_PER_BUCKET_FILE;
+            assert(tileBucketIndex >= 0 && tileBucketIndex < NATRON_CACHE_BUCKETS_COUNT);
+            // Take the bucket mutex except if this is the current bucket
+            boost::scoped_ptr<Sharable_WriteLock> bucketWriteLock;
+            if (tileBucketIndex != bucketIndex) {
+#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
+                bucketWriteLock.reset(new Sharable_WriteLock(c->_imp->ipc->bucketsData[tileBucketIndex].bucketMutex));
+#else
+                createTimedLock<Sharable_WriteLock>(c->_imp.get(), *bucketWriteLock, &c->_imp->ipc->bucketsData[tileBucketIndex].bucketMutex);
+#endif
+            }
+
             // Make this tile free again
 #ifdef CACHE_TRACE_TILES_ALLOCATION
-            qDebug() << "Bucket" << bucketIndex << ": tile freed" << *it << " Nb free tiles left:" << ipc->freeTiles.size();
+            qDebug() << "Bucket" << bucketIndex << ": tile freed" << tileIndex << " Nb free tiles left:" << c->_imp->buckets[tileBucketIndex].ipc->freeTiles.size();
 #endif
             // free tiles are all shared in the FIRST bucket
-            std::pair<U64_Set::iterator, bool>  insertOk = ipc->freeTiles.insert(tileIndex);
+            std::pair<U64_Set::iterator, bool>  insertOk = c->_imp->buckets[tileBucketIndex].ipc->freeTiles.insert(*it);
             assert(insertOk.second);
             (void)insertOk;
         }
