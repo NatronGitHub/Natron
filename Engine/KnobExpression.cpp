@@ -330,7 +330,7 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 std::string
 KnobHelperPrivate::getReachablePythonAttributesForExpression(bool addTab,
                                           DimIdx dimension,
-                                          ViewIdx /*view*/)
+                                          ViewIdx /*view*/) const
 {
     KnobHolderPtr h = holder.lock();
     assert(h);

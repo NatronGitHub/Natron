@@ -86,13 +86,15 @@ struct KnobExpr
     std::string expression; //< the one modified by Natron
     std::string exprInvalid;
     ExpressionLanguageEnum language;
-
+    
+    // The other knobs/dimension/view that have expressions referencing us
+    KnobDimViewKeySet listeners;
 
     KnobExpr()
     : expression()
     , exprInvalid()
-    , hasRet(false)
     , language(eExpressionLanguageExprTK)
+    , listeners()
     {}
 };
 
@@ -105,9 +107,6 @@ struct KnobPythonExpr : public KnobExpr
     // The knobs/dimension/view we depend on in the expression
     KnobDimViewKeySet dependencies;
 
-    // The other knobs/dimension/view that have expressions referencing us
-    KnobDimViewKeySet listeners;
-
     KnobPythonExpr()
     : hasRet(false)
     {
@@ -116,18 +115,31 @@ struct KnobPythonExpr : public KnobExpr
 
 };
 
-enum ExprTkExpressionDependencyTypeEnum
+/**
+ * @brief If a exprtk expression references a node variable such as the rod, this is registered as a dependency
+ **/
+struct EffectFunctionDependency
 {
-    // The expression is referencing the value of another parameter
-    eExprTkExpressionDependencyTypeParam,
-
-    // The expression is referencing the rod of an effect
-    eExprTkExpressionDependencyTypeRoD
+    enum Type
+    {
+        eEffectFunctionDependencyRoD
+    };
+    
+    Type type;
+    EffectInstanceWPtr effect;
 };
+
 
 struct KnobExprTkExpr : public KnobExpr
 {
+    // The exprtk expression object
     boost::shared_ptr<EXPRTK_FUNCTIONS_NAMESPACE::expression_t> expressionObject;
+    
+    // knob values dependencies mapped against their variable name in the expression
+    std::map<std::string, KnobDimViewKey> knobDependencies;
+    
+    // effect dependencies mapped against their variable name in the expression
+    std::map<std::string, EffectFunctionDependency> effectDependencies;
 };
 
 typedef boost::shared_ptr<KnobExpr> KnobExprPtr;
@@ -446,7 +458,7 @@ struct KnobHelperPrivate
      * that can be reached through the expression at the given dimension/view.
      * @param addTab, if true, the script should be indented by one tab
      **/
-    std::string getReachablePythonAttributesForExpression(bool addTab, DimIdx dimension, ViewIdx view);
+    std::string getReachablePythonAttributesForExpression(bool addTab, DimIdx dimension, ViewIdx view) const;
 
 
 };

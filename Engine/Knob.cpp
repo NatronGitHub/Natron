@@ -984,7 +984,7 @@ KnobHelper::refreshListenersAfterValueChangeInternal(TimeValue time, ViewIdx vie
     // Get all listeners via expressions
     {
         QMutexLocker l(&_imp->common->expressionMutex);
-        KnobDimViewKeySet& thisDimViewExpressionListeners = _imp->common->expressions[dimension][view].listeners;
+        KnobDimViewKeySet& thisDimViewExpressionListeners = _imp->common->expressions[dimension][view]->listeners;
         allListeners.insert(thisDimViewExpressionListeners.begin(), thisDimViewExpressionListeners.end());
     }
 
