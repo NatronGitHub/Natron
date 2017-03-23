@@ -14,7 +14,7 @@ long_description    Ghostscript is the well-known PostScript interpreter which \
                     supports many different printers and some displays.
 platforms           darwin
 homepage            http://www.ghostscript.com/
-master_sites        https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs919:source \
+master_sites        https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs[strsed ${version} {g/\.//}]:source \
                     sourceforge:gs-fonts:fonts \
                     https://github.com/adobe-type-tools/mapping-resources-pdf/archive/:misc
 
