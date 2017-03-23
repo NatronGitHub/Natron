@@ -1206,6 +1206,9 @@ public:
         return boost::dynamic_pointer_cast<K>(k);
     }
 
+    virtual KnobIPtr getCloneForHolderInternal(const KnobHolderPtr& holder) const = 0;
+
+
     /**
      * @brief Hack for the meta Read/Write nodes
      **/
@@ -1213,7 +1216,6 @@ public:
 
 protected:
 
-    virtual KnobIPtr getCloneForHolderInternal(const KnobHolderPtr& holder) const = 0;
 
 protected:
 
@@ -1480,9 +1482,10 @@ protected:
 
     KnobDimViewBasePtr getDataForDimView(DimIdx dimension, ViewIdx view) const;
 
-    virtual KnobIPtr getCloneForHolderInternal(const KnobHolderPtr& holder) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 public:
+
+    virtual KnobIPtr getCloneForHolderInternal(const KnobHolderPtr& holder) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 
     virtual void setActualCloneForHolder(const KnobHolderPtr& holder) OVERRIDE FINAL;
@@ -2333,8 +2336,6 @@ private:
      * @brief Same as evaluateExpression but expects it to return a PoD
      */
     bool evaluateExpression_pod(TimeValue time, ViewIdx view, DimIdx dimension, double* value, std::string* error);
-
-    CacheEntryLockerBasePtr getKnobExpresionResults(TimeValue time, ViewIdx view, DimIdx dimension);
 
     bool getValueFromExpression(TimeValue time, ViewIdx view, DimIdx dimension, bool clamp, T* ret);
 

@@ -36,73 +36,6 @@
 
 NATRON_NAMESPACE_ENTER
 
-
-template <typename T>
-void
-getValueFromCachedExpressionResult(const KnobExpressionResultPtr& cachedValue, T* result)
-{
-    double value;
-    cachedValue->getResult(&value, 0);
-    *result = (T)value;
-}
-
-template <>
-void
-getValueFromCachedExpressionResult(const KnobExpressionResultPtr& cachedValue, std::string* result)
-{
-    cachedValue->getResult(0, result);
-}
-
-template <typename T>
-void
-setValueFromCachedExpressionResult(const KnobExpressionResultPtr& cachedValue, const T& result)
-{
-    double value = (double)result;
-    cachedValue->setResult(value, std::string());
-}
-
-template <>
-void
-setValueFromCachedExpressionResult(const KnobExpressionResultPtr& cachedValue, const std::string& result)
-{
-    cachedValue->setResult(0, result);
-}
-
-template <typename T>
-CacheEntryLockerBasePtr
-Knob<T>::getKnobExpresionResults(TimeValue time, ViewIdx view, DimIdx dimension)
-{
-    KnobHolderPtr holder = getHolder();
-    EffectInstancePtr effect = toEffectInstance(holder);
-    KnobTableItemPtr tableItem = toKnobTableItem(holder);
-    if (tableItem) {
-        effect = tableItem->getModel()->getNode()->getEffectInstance();
-    }
-    U64 effectHash = 0;
-    assert(effect);
-    if (effect) {
-        ComputeHashArgs hashArgs;
-        hashArgs.time = time;
-        hashArgs.view = view;
-        hashArgs.hashType = HashableObject::eComputeHashTypeTimeViewVariant;
-        effectHash = effect->computeHash(hashArgs);
-    }
-
-
-    KnobExpressionKeyPtr cacheKey(new KnobExpressionKey(effectHash, dimension, getName()));
-    KnobExpressionResultPtr cachedResult = KnobExpressionResult::create(cacheKey);
-
-    CacheEntryLockerBasePtr locker = cachedResult->getFromCache();
-
-    CacheEntryLockerBase::CacheEntryStatusEnum cacheStatus = locker->getStatus();
-    while (cacheStatus == CacheEntryLockerBase::eCacheEntryStatusComputationPending) {
-        cacheStatus = locker->waitForPendingEntry();
-    }
-
-    return locker;
-
-} // getKnobExpresionResults
-
 template <typename T>
 bool
 Knob<T>::getValueFromExpression(TimeValue time,
@@ -123,20 +56,17 @@ Knob<T>::getValueFromExpression(TimeValue time,
     ViewIdx view_i = getViewIdxFromGetSpec(view);
 
     // Check for a cached expression result
-    CacheEntryLockerBasePtr cacheAccess = getKnobExpresionResults(time, view, dimension);
-
-    KnobExpressionResultPtr cachedResult = boost::dynamic_pointer_cast<KnobExpressionResult>(cacheAccess->getProcessLocalEntry());
-
-    if (cacheAccess->getStatus() == CacheEntryLockerBase::eCacheEntryStatusCached) {
-        getValueFromCachedExpressionResult(cachedResult, ret);
-        return true;
-
-    }
-
+    // TODO
     
     bool exprWasValid = isExpressionValid(dimension, view_i, 0);
     {
         EXPR_RECURSION_LEVEL();
+
+        EffectInstancePtr effect = toEffectInstance(getHolder());
+        if (effect) {
+            appPTR->setLastPythonAPICaller_TLS(effect);
+        }
+        
         std::string error;
         bool exprOk = evaluateExpression(time, view_i,  dimension, ret, &error);
         if (!exprOk) {
@@ -154,9 +84,7 @@ Knob<T>::getValueFromExpression(TimeValue time,
         *ret =  clampToMinMax(*ret, dimension);
     }
 
-    setValueFromCachedExpressionResult(cachedResult, *ret);
-    cacheAccess->insertInCache();
-
+  
     return true;
 } // getValueFromExpression
 
@@ -222,15 +150,7 @@ Knob<T>::getValueFromExpression_pod(TimeValue time,
     ViewIdx view_i = getViewIdxFromGetSpec(view);
     
     // Check for a cached expression result
-    CacheEntryLockerBasePtr cacheAccess = getKnobExpresionResults(time, view, dimension);
-
-    KnobExpressionResultPtr cachedResult = boost::dynamic_pointer_cast<KnobExpressionResult>(cacheAccess->getProcessLocalEntry());
-
-    if (cacheAccess->getStatus() == CacheEntryLockerBase::eCacheEntryStatusCached) {
-        getValueFromCachedExpressionResult<double>(cachedResult, ret);
-        return true;
-    }
-
+    // Todo
 
     bool exprWasValid = isExpressionValid(dimension, view_i, 0);
     {
@@ -252,9 +172,6 @@ Knob<T>::getValueFromExpression_pod(TimeValue time,
         *ret =  clampToMinMax(*ret, dimension);
     }
     
-
-    setValueFromCachedExpressionResult(cachedResult, *ret);
-    cacheAccess->insertInCache();
 
     
     return true;

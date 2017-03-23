@@ -420,6 +420,9 @@ public:
 
     void removeOverlay(PyOverlayInteract* interact);
 
+private:
+
+    EffectInstancePtr getCurrentEffectInstance() const;
     
     
 };

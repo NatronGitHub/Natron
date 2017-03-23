@@ -179,11 +179,6 @@ OfxHost::~OfxHost()
 
 }
 
-OfxHost::OfxHostDataTLSPtr
-OfxHost::getTLSData() const
-{
-    return _imp->tlsData->getOrCreateTLSData();
-}
 
 void
 OfxHost::setOfxHostOSHandle(void* handle)

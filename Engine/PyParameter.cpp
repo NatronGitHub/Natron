@@ -67,6 +67,47 @@ Param::~Param()
 {
 }
 
+KnobIPtr
+Param::getRenderCloneKnobInternal() const
+{
+    // The main instance knob
+    KnobIPtr mainInstanceKnob = _knob.lock();
+    EffectInstancePtr mainInstanceHolder = toEffectInstance(mainInstanceKnob->getHolder());
+    if (!mainInstanceHolder) {
+        return mainInstanceKnob;
+    }
+
+    // The main instance is not a render clone!
+    assert(!mainInstanceHolder->isRenderClone());
+
+
+    // Get the last Python API effect caller, to retrieve a pointer to the render clone
+    EffectInstancePtr tlsCurrentEffect = appPTR->getLastPythonAPICaller_TLS();
+    if (!tlsCurrentEffect) {
+        return mainInstanceKnob;
+    }
+
+    // The final effect from which to fetch the knob
+    EffectInstancePtr finalEffect;
+
+    // If The last Python API caller is this node, return the associated knob directly
+    if (tlsCurrentEffect->getNode() == mainInstanceHolder->getNode()) {
+        finalEffect = tlsCurrentEffect;
+    } else {
+        if (tlsCurrentEffect->isRenderClone()) {
+            return mainInstanceKnob;
+        } else {
+            FrameViewRenderKey key = {tlsCurrentEffect->getCurrentRenderTime(), tlsCurrentEffect->getCurrentRenderView(), tlsCurrentEffect->getCurrentRender()};
+            finalEffect = toEffectInstance(mainInstanceHolder->createRenderClone(key));
+        }
+
+    }
+
+    assert(finalEffect);
+    return mainInstanceKnob->getCloneForHolderInternal(finalEffect);
+
+}
+
 Param*
 Param::getParent() const
 {
@@ -788,7 +829,7 @@ double
 Param::random(double min,
               double max) const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = getRenderCloneKnobInternal();
 
     if (!knob) {
         return 0;
@@ -799,7 +840,7 @@ Param::random(double min,
 double
 Param::random(unsigned int seed) const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = getRenderCloneKnobInternal();
 
     if (!knob) {
         return 0;
@@ -811,7 +852,7 @@ int
 Param::randomInt(int min,
                  int max)
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = getRenderCloneKnobInternal();
 
     if (!knob) {
         return 0;
@@ -822,7 +863,7 @@ Param::randomInt(int min,
 int
 Param::randomInt(unsigned int seed) const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = getRenderCloneKnobInternal();
 
     if (!knob) {
         return 0;
@@ -835,7 +876,7 @@ Param::curve(double time,
              int dimension,
              const QString& viewName) const
 {
-    KnobIPtr thisKnob = _knob.lock();
+    KnobIPtr thisKnob = getRenderCloneKnobInternal();
 
     if (!thisKnob) {
         PythonSetNullError();
@@ -948,7 +989,7 @@ QStringList
 AnimatedParam::getViewsList() const
 {
     QStringList ret;
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = getRenderCloneKnobInternal();
     if (!knob) {
         PythonSetNullError();
         return ret;
@@ -976,7 +1017,7 @@ AnimatedParam::getViewsList() const
 bool
 AnimatedParam::getIsAnimated(int dimension, const QString& view) const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = getRenderCloneKnobInternal();
     if (!knob) {
         PythonSetNullError();
         return false;
@@ -997,7 +1038,7 @@ AnimatedParam::getIsAnimated(int dimension, const QString& view) const
 int
 AnimatedParam::getNumKeys(int dimension, const QString& view) const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = getRenderCloneKnobInternal();
     if (!knob) {
         PythonSetNullError();
         return 0;
@@ -1020,7 +1061,7 @@ int
 AnimatedParam::getKeyIndex(double time,
                            int dimension, const QString& view) const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = getRenderCloneKnobInternal();
     if (!knob) {
         PythonSetNullError();
         return -1;
@@ -1043,7 +1084,7 @@ AnimatedParam::getKeyTime(int index,
                           int dimension,
                           double* time, const QString& view) const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = getRenderCloneKnobInternal();
     if (!knob) {
         PythonSetNullError();
         return false;
@@ -1116,7 +1157,7 @@ double
 AnimatedParam::getDerivativeAtTime(double time,
                                    int dimension, const QString& view) const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = getRenderCloneKnobInternal();
     if (!knob) {
         PythonSetNullError();
         return 0.;
@@ -1139,7 +1180,7 @@ AnimatedParam::getIntegrateFromTimeToTime(double time1,
                                           double time2,
                                           int dimension, const QString& view) const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = getRenderCloneKnobInternal();
     if (!knob) {
         PythonSetNullError();
         return false;
@@ -1160,7 +1201,7 @@ AnimatedParam::getIntegrateFromTimeToTime(double time1,
 double
 AnimatedParam::getCurrentTime() const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = getRenderCloneKnobInternal();
     if (!knob) {
         PythonSetNullError();
         return 0;
@@ -1284,7 +1325,7 @@ AnimatedParam::getExpression(int dimension,
                              bool* hasRetVariable,
                              const QString& view) const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = getRenderCloneKnobInternal();
     if (!knob) {
         PythonSetNullError();
         return QString();
@@ -1322,7 +1363,7 @@ IntParam::~IntParam()
 int
 IntParam::get(const QString& view) const
 {
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = getRenderCloneKnob<KnobInt>();
     if (!knob) {
         PythonSetNullError();
         return 0;
@@ -1340,7 +1381,7 @@ Int2DTuple
 Int2DParam::get(const QString& view) const
 {
     Int2DTuple ret = {0, 0};
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = getRenderCloneKnob<KnobInt>();
     if (!knob) {
         PythonSetNullError();
         return ret;
@@ -1362,7 +1403,7 @@ Int3DTuple
 Int3DParam::get(const QString& view) const
 {
     Int3DTuple ret;
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = getRenderCloneKnob<KnobInt>();
     if (!knob) {
         PythonSetNullError();
         return ret;
@@ -1383,7 +1424,7 @@ Int3DParam::get(const QString& view) const
 int
 IntParam::get(double frame, const QString& view) const
 {
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = getRenderCloneKnob<KnobInt>();
     if (!knob) {
         PythonSetNullError();
         return 0;
@@ -1401,7 +1442,7 @@ Int2DTuple
 Int2DParam::get(double frame, const QString& view) const
 {
     Int2DTuple ret = {0, 0};
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = getRenderCloneKnob<KnobInt>();
     if (!knob) {
         PythonSetNullError();
         return ret;
@@ -1423,7 +1464,7 @@ Int3DTuple
 Int3DParam::get(double frame, const QString& view) const
 {
     Int3DTuple ret = {0, 0, 0};
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = getRenderCloneKnob<KnobInt>();
     if (!knob) {
         PythonSetNullError();
         return ret;
@@ -1571,7 +1612,7 @@ Int3DParam::set(int x,
 int
 IntParam::getValue(int dimension, const QString& view) const
 {
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = getRenderCloneKnob<KnobInt>();
     if (!knob) {
         PythonSetNullError();
         return 0;
@@ -1616,7 +1657,7 @@ int
 IntParam::getValueAtTime(double time,
                          int dimension, const QString& view) const
 {
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = getRenderCloneKnob<KnobInt>();
     if (!knob) {
         PythonSetNullError();
         return 0;
@@ -1882,7 +1923,7 @@ DoubleParam::~DoubleParam()
 double
 DoubleParam::get(const QString& view) const
 {
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = getRenderCloneKnob<KnobDouble>();
     if (!knob) {
         PythonSetNullError();
         return 0;
@@ -1899,7 +1940,7 @@ Double2DTuple
 Double2DParam::get(const QString& view) const
 {
     Double2DTuple ret;
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = getRenderCloneKnob<KnobDouble>();
     if (!knob) {
         PythonSetNullError();
         return ret;
@@ -1922,7 +1963,7 @@ Double3DTuple
 Double3DParam::get(const QString& view) const
 {
     Double3DTuple ret;
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = getRenderCloneKnob<KnobDouble>();
     if (!knob) {
         PythonSetNullError();
         return ret;
@@ -1942,7 +1983,7 @@ Double3DParam::get(const QString& view) const
 double
 DoubleParam::get(double frame, const QString& view) const
 {
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = getRenderCloneKnob<KnobDouble>();
     if (!knob) {
         PythonSetNullError();
         return 0;
@@ -1959,7 +2000,7 @@ Double2DTuple
 Double2DParam::get(double frame, const QString& view) const
 {
     Double2DTuple ret = {0., 0.};
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = getRenderCloneKnob<KnobDouble>();
     if (!knob) {
         PythonSetNullError();
         return ret;
@@ -1981,7 +2022,7 @@ Double3DTuple
 Double3DParam::get(double frame, const QString& view) const
 {
     Double3DTuple ret;
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = getRenderCloneKnob<KnobDouble>();
     if (!knob) {
         PythonSetNullError();
         return ret;
@@ -2123,7 +2164,7 @@ Double3DParam::set(double x,
 double
 DoubleParam::getValue(int dimension, const QString& view) const
 {
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = getRenderCloneKnob<KnobDouble>();
     if (!knob) {
         PythonSetNullError();
         return 0;
@@ -2166,7 +2207,7 @@ double
 DoubleParam::getValueAtTime(double time,
                             int dimension, const QString& view) const
 {
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = getRenderCloneKnob<KnobDouble>();
     if (!knob) {
         PythonSetNullError();
         return 0;
@@ -2431,7 +2472,7 @@ ColorTuple
 ColorParam::get(const QString& view) const
 {
     ColorTuple ret = {0., 0., 0., 0.};
-    KnobColorPtr knob = _colorKnob.lock();
+    KnobColorPtr knob = getRenderCloneKnob<KnobColor>();
     if (!knob) {
         PythonSetNullError();
         return ret;
@@ -2454,7 +2495,7 @@ ColorTuple
 ColorParam::get(double frame, const QString& view) const
 {
     ColorTuple ret = {0., 0., 0., 0.};
-    KnobColorPtr knob = _colorKnob.lock();
+    KnobColorPtr knob = getRenderCloneKnob<KnobColor>();
     if (!knob) {
         PythonSetNullError();
         return ret;
@@ -2531,7 +2572,7 @@ ColorParam::set(double r,
 double
 ColorParam::getValue(int dimension, const QString& view) const
 {
-    KnobColorPtr knob = _colorKnob.lock();
+    KnobColorPtr knob = getRenderCloneKnob<KnobColor>();
     if (!knob) {
         PythonSetNullError();
         return 0;
@@ -2574,7 +2615,7 @@ double
 ColorParam::getValueAtTime(double time,
                            int dimension, const QString& view) const
 {
-    KnobColorPtr knob = _colorKnob.lock();
+    KnobColorPtr knob = getRenderCloneKnob<KnobColor>();
     if (!knob) {
         PythonSetNullError();
         return 0;
@@ -2841,7 +2882,7 @@ ChoiceParam::~ChoiceParam()
 int
 ChoiceParam::get(const QString& view) const
 {
-    KnobChoicePtr knob = _choiceKnob.lock();
+    KnobChoicePtr knob = getRenderCloneKnob<KnobChoice>();
     if (!knob) {
         PythonSetNullError();
         return 0;
@@ -2857,7 +2898,7 @@ ChoiceParam::get(const QString& view) const
 int
 ChoiceParam::get(double frame, const QString& view) const
 {
-    KnobChoicePtr knob = _choiceKnob.lock();
+    KnobChoicePtr knob = getRenderCloneKnob<KnobChoice>();
     if (!knob) {
         PythonSetNullError();
         return 0;
@@ -3098,7 +3139,7 @@ ChoiceParam::setOptions(const std::list<QString>& optionIDs,
 bool
 ChoiceParam::getOption(int index, QString* optionID, QString* optionLabel, QString* optionHelp) const
 {
-    KnobChoicePtr knob = _choiceKnob.lock();
+    KnobChoicePtr knob = getRenderCloneKnob<KnobChoice>();
     if (!knob || !optionID || !optionLabel || !optionHelp) {
         PythonSetNullError();
         return false;
@@ -3119,7 +3160,7 @@ ChoiceParam::getOption(int index, QString* optionID, QString* optionLabel, QStri
 void
 ChoiceParam::getActiveOption(QString* optionID, QString* optionLabel, QString* optionHelp, const QString& view) const
 {
-    KnobChoicePtr knob = _choiceKnob.lock();
+    KnobChoicePtr knob = getRenderCloneKnob<KnobChoice>();
     if (!knob) {
         PythonSetNullError();
         return;
@@ -3139,7 +3180,7 @@ ChoiceParam::getActiveOption(QString* optionID, QString* optionLabel, QString* o
 int
 ChoiceParam::getNumOptions() const
 {
-    KnobChoicePtr knob = _choiceKnob.lock();
+    KnobChoicePtr knob = getRenderCloneKnob<KnobChoice>();
     if (!knob) {
         PythonSetNullError();
         return 0;
@@ -3152,7 +3193,7 @@ ChoiceParam::getOptions(std::list<QString>* optionIDs,
                         std::list<QString>* optionLabels,
                         std::list<QString>* optionHelps) const
 {
-    KnobChoicePtr knob = _choiceKnob.lock();
+    KnobChoicePtr knob = getRenderCloneKnob<KnobChoice>();
     if (!knob || !optionIDs || !optionLabels || !optionHelps) {
         PythonSetNullError();
         return;
@@ -3190,7 +3231,7 @@ BooleanParam::~BooleanParam()
 bool
 BooleanParam::get(const QString& view) const
 {
-    KnobBoolPtr knob = _boolKnob.lock();
+    KnobBoolPtr knob = getRenderCloneKnob<KnobBool>();
     if (!knob) {
         PythonSetNullError();
         return false;
@@ -3207,7 +3248,7 @@ BooleanParam::get(const QString& view) const
 bool
 BooleanParam::get(double frame, const QString& view) const
 {
-    KnobBoolPtr knob = _boolKnob.lock();
+    KnobBoolPtr knob = getRenderCloneKnob<KnobBool>();
     if (!knob) {
         PythonSetNullError();
         return false;
@@ -3346,7 +3387,7 @@ StringParamBase::~StringParamBase()
 QString
 StringParamBase::get(const QString& view) const
 {
-    KnobStringBasePtr knob = _stringKnob.lock();
+    KnobStringBasePtr knob = getRenderCloneKnob<KnobStringBase>();
     if (!knob) {
         PythonSetNullError();
         return QString();
@@ -3362,7 +3403,7 @@ StringParamBase::get(const QString& view) const
 QString
 StringParamBase::get(double frame, const QString& view) const
 {
-    KnobStringBasePtr knob = _stringKnob.lock();
+    KnobStringBasePtr knob = getRenderCloneKnob<KnobStringBase>();
     if (!knob) {
         PythonSetNullError();
         return QString();
@@ -3678,7 +3719,7 @@ PathParam::setTable(const std::list<std::vector<std::string> >& table)
 void
 PathParam::getTable(std::list<std::vector<std::string> >* table) const
 {
-    KnobPathPtr k = _sKnob.lock();
+    KnobPathPtr k = getRenderCloneKnob<KnobPath>();
     if (!k) {
         PythonSetNullError();
         return;
@@ -3732,7 +3773,7 @@ ButtonParam::setDown(bool down)
 bool
 ButtonParam::isDown() const
 {
-    KnobButtonPtr k = _buttonKnob.lock();
+    KnobButtonPtr k = getRenderCloneKnob<KnobButton>();
     if (!k) {
         PythonSetNullError();
         return false;
@@ -3828,7 +3869,7 @@ GroupParam::setOpened(bool opened)
 bool
 GroupParam::getIsOpened() const
 {
-    KnobGroupPtr k = _groupKnob.lock();
+    KnobGroupPtr k = getRenderCloneKnob<KnobGroup>();
     if (!k) {
         PythonSetNullError();
         return false;
@@ -3904,7 +3945,7 @@ void
 ParametricParam::getCurveColor(int dimension,
                                ColorTuple& ret) const
 {
-    KnobParametricPtr knob = _parametricKnob.lock();
+    KnobParametricPtr knob = getRenderCloneKnob<KnobParametric>();
     if (!knob) {
         PythonSetNullError();
         return;
@@ -3959,7 +4000,7 @@ double
 ParametricParam::getValue(int dimension,
                           double parametricPosition) const
 {
-    KnobParametricPtr knob = _parametricKnob.lock();
+    KnobParametricPtr knob = getRenderCloneKnob<KnobParametric>();
     if (!knob) {
         PythonSetNullError();
         return 0.;
@@ -3981,7 +4022,7 @@ ParametricParam::getValue(int dimension,
 int
 ParametricParam::getNControlPoints(int dimension) const
 {
-    KnobParametricPtr knob = _parametricKnob.lock();
+    KnobParametricPtr knob = getRenderCloneKnob<KnobParametric>();
     if (!knob) {
         PythonSetNullError();
         return 0;
@@ -4008,7 +4049,7 @@ ParametricParam::getNthControlPoint(int dimension,
                                     double *leftDerivative,
                                     double *rightDerivative) const
 {
-    KnobParametricPtr knob = _parametricKnob.lock();
+    KnobParametricPtr knob = getRenderCloneKnob<KnobParametric>();
     if (!knob) {
         PythonSetNullError();
         return false;

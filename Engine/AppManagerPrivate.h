@@ -76,6 +76,7 @@ GCC_DIAG_ON(deprecated)
 
 NATRON_NAMESPACE_ENTER;
 
+
 struct AppManagerPrivate
 {
     Q_DECLARE_TR_FUNCTIONS(AppManagerPrivate)
@@ -105,6 +106,8 @@ public:
     IOPluginsMap writerPlugins; // for all writer plug-ins which are best suited for each format
 
     boost::scoped_ptr<OfxHost> ofxHost; //< OpenFX host
+
+    boost::shared_ptr<TLSHolder<AppManager::PythonTLSData> > pythonTLS;
 
     // Multi-thread handler
     boost::scoped_ptr<MultiThread> multiThreadSuite;

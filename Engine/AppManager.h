@@ -463,6 +463,29 @@ public:
 
     static void setApplicationLocale();
 
+    void setLastPythonAPICaller_TLS(const EffectInstancePtr& effect);
+
+    EffectInstancePtr getLastPythonAPICaller_TLS() const;
+
+
+    /**
+     * @brief A application-wide TLS struct containing all stuff needed to workaround Python expressions:
+     * There's a unique main module with attributes, hence we cannot isolate each render from one another
+     **/
+    struct PythonTLSData
+    {
+        std::list<EffectInstancePtr> pythonEffectStack;
+
+        PythonTLSData()
+        : pythonEffectStack()
+        {
+        }
+    };
+
+    typedef boost::shared_ptr<PythonTLSData> PythonTLSDataPtr;
+    
+
+
 public Q_SLOTS:
 
     void printCacheMemoryStats() const;

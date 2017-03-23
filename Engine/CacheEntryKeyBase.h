@@ -53,7 +53,6 @@ NATRON_NAMESPACE_ENTER;
 #define kCacheKeyUniqueIDGetTimeInvariantMetaDatasResults 5
 #define kCacheKeyUniqueIDGetComponentsResults 6
 #define kCacheKeyUniqueIDGetFrameRangeResults 7
-#define kCacheKeyUniqueIDExpressionResult 8
 #define kCacheKeyUniqueIDGetDistortionResults 9
 
 

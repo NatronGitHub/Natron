@@ -2806,6 +2806,27 @@ AppManager::getOFXCurrentEffect_TLS() const
 }
 
 void
+AppManager::setLastPythonAPICaller_TLS(const EffectInstancePtr& effect)
+{
+    PythonTLSDataPtr tls = _imp->pythonTLS->getOrCreateTLSData();
+    tls->pythonEffectStack.push_back(effect);
+}
+
+
+EffectInstancePtr
+AppManager::getLastPythonAPICaller_TLS() const
+{
+    PythonTLSDataPtr tls = _imp->pythonTLS->getTLSData();
+    if (!tls) {
+        return EffectInstancePtr();
+    }
+    if (tls->pythonEffectStack.empty()) {
+        return EffectInstancePtr();
+    }
+    return tls->pythonEffectStack.back();
+}
+
+void
 AppManager::addMenuCommand(const std::string& grouping,
                     const std::string& pythonFunction,
                     const KeyboardModifiers& modifiers,

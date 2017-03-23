@@ -503,6 +503,12 @@ Knob<T>::evaluateExpression_pod(TimeValue time,
     PythonGILLocker pgl;
     PyObject *ret;
 
+
+    EffectInstancePtr effect = toEffectInstance(getHolder());
+    if (effect) {
+        appPTR->setLastPythonAPICaller_TLS(effect);
+    }
+
     ///Reset the random state to reproduce the sequence
     randomSeed( time, hashFunction(dimension) );
     bool exprOk = executeExpression(time, view, dimension, &ret, error);

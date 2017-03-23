@@ -244,6 +244,35 @@ Effect::getInternalNode() const
     return _node.lock();
 }
 
+EffectInstancePtr
+Effect::getCurrentEffectInstance() const
+{
+    NodePtr internalNode = getInternalNode();
+    if (!internalNode) {
+        return EffectInstancePtr();
+    }
+
+    // Get the last python API caller
+    EffectInstancePtr effectTLS = appPTR->getLastPythonAPICaller_TLS();
+    if (!effectTLS) {
+        return internalNode->getEffectInstance();
+    }
+
+    // If the last caller is the same Node, return it
+    if (effectTLS->getNode() == internalNode) {
+        return effectTLS;
+    } else {
+        // If the python API caller is a render clone, make sure we return a clone for the same render.
+        // If it's not a render clone, just return the main instance
+        if (!effectTLS->isRenderClone()) {
+            return internalNode->getEffectInstance();
+        }
+        FrameViewRenderKey key = {effectTLS->getCurrentRenderTime(), effectTLS->getCurrentRenderView(), effectTLS->getCurrentRender()};
+        EffectInstancePtr ret = toEffectInstance(internalNode->getEffectInstance()->createRenderClone(key));
+        return ret;
+    }
+}
+
 bool
 Effect::isReaderNode()
 {
@@ -372,16 +401,20 @@ Effect::disconnectInput(int inputNumber)
 Effect*
 Effect::getInput(int inputNumber) const
 {
-    NodePtr n = getInternalNode();
 
-    if (!n) {
+
+    EffectInstancePtr effect = getCurrentEffectInstance();
+    if (!effect) {
         PythonSetNullError();
         return 0;
     }
-    NodePtr node = n->getRealInput(inputNumber);
-
-    if (node) {
-        return App::createEffectFromNodeWrapper(node);
+    EffectInstancePtr inputEffect = effect->getInputRenderEffectAtAnyTimeView(inputNumber);
+    if (!inputEffect) {
+        return 0;
+    }
+    NodePtr inputNode = inputEffect->getNode();
+    if (inputNode) {
+        return App::createEffectFromNodeWrapper(inputNode);
     }
 
     return 0;
@@ -390,20 +423,23 @@ Effect::getInput(int inputNumber) const
 Effect*
 Effect::getInput(const QString& inputLabel) const
 {
-    NodePtr node = getInternalNode();
-    if (!node) {
+    EffectInstancePtr effect = getCurrentEffectInstance();
+    if (!effect) {
         PythonSetNullError();
         return 0;
     }
-    int maxInputs = node->getMaxInputCount();
+    int maxInputs = effect->getMaxInputCount();
     for (int i = 0; i < maxInputs; ++i) {
-        if (QString::fromUtf8(node->getInputLabel(i).c_str()) == inputLabel) {
-            NodePtr ret = node->getRealInput(i);
-            if (!ret) {
+        if (QString::fromUtf8(effect->getNode()->getInputLabel(i).c_str()) == inputLabel) {
+
+            EffectInstancePtr inputEffect = effect->getInputRenderEffectAtAnyTimeView(i);
+            if (!inputEffect) {
                 return 0;
             }
-
-            return App::createEffectFromNodeWrapper(node);
+            NodePtr inputNode = inputEffect->getNode();
+            if (inputNode) {
+                return App::createEffectFromNodeWrapper(inputNode);
+            }
         }
     }
     return 0;
@@ -697,13 +733,13 @@ Effect::getParam(const QString& name) const
 double
 Effect::getCurrentTime() const
 {
-    NodePtr n = getInternalNode();
+   EffectInstancePtr effect = getCurrentEffectInstance();
 
-    if (!n) {
+    if (!effect) {
         PythonSetNullError();
         return 0.;
     }
-    return n->getEffectInstance()->getCurrentRenderTime();
+    return effect->getCurrentRenderTime();
 }
 
 void
@@ -1447,11 +1483,7 @@ Effect::getRegionOfDefinition(double time,
 {
     RectD rod;
 
-    if (!getInternalNode()) {
-        PythonSetNullError();
-        return rod;
-    }
-    EffectInstancePtr effect = getInternalNode()->getEffectInstance() ;
+    EffectInstancePtr effect = getCurrentEffectInstance();
     if (!effect) {
         PythonSetNullError();
         return rod;
@@ -1472,11 +1504,7 @@ RectD
 Effect::getRegionOfDefinition(double time, const QString& view) const
 {
     RectD rod;
-    if (!getInternalNode()) {
-        PythonSetNullError();
-        return rod;
-    }
-    EffectInstancePtr effect = getInternalNode()->getEffectInstance() ;
+    EffectInstancePtr effect = getCurrentEffectInstance();
     if (!effect) {
         PythonSetNullError();
         return rod;
@@ -1546,17 +1574,15 @@ Effect::getAvailableLayers(int inputNb) const
 {
     std::list<ImageLayer> ret;
 
-    NodePtr n = getInternalNode();
-
-    if (!n) {
+    EffectInstancePtr effect = getCurrentEffectInstance();
+    if (!effect) {
         PythonSetNullError();
         return ret;
     }
-
-    TimeValue time(n->getApp()->getTimeLine()->currentFrame());
+    TimeValue time = effect->getCurrentRenderTime();
 
     std::list<ImagePlaneDesc> availComps;
-    n->getEffectInstance()->getAvailableLayers(time, ViewIdx(0), inputNb,  &availComps);
+    effect->getAvailableLayers(time, ViewIdx(0), inputNb,  &availComps);
     for (std::list<ImagePlaneDesc>::iterator it = availComps.begin(); it != availComps.end(); ++it) {
         ret.push_back(ImageLayer(*it));
     }
@@ -1568,53 +1594,53 @@ Effect::getAvailableLayers(int inputNb) const
 double
 Effect::getFrameRate() const
 {
-    NodePtr node = getInternalNode();
+    EffectInstancePtr effect = getCurrentEffectInstance();
 
-    if (!node) {
+    if (!effect) {
         PythonSetNullError();
         return 24.;
     }
 
-    return node->getEffectInstance()->getFrameRate();
+    return effect->getFrameRate();
 }
 
 double
 Effect::getPixelAspectRatio() const
 {
-    NodePtr node = getInternalNode();
+    EffectInstancePtr effect = getCurrentEffectInstance();
 
-    if (!node) {
+    if (!effect) {
         PythonSetNullError();
         return 1.;
     }
 
-    return node->getEffectInstance()->getAspectRatio(-1);
+    return effect->getAspectRatio(-1);
 }
 
 ImageBitDepthEnum
 Effect::getBitDepth() const
 {
-    NodePtr node = getInternalNode();
+    EffectInstancePtr effect = getCurrentEffectInstance();
 
-    if (!node) {
+    if (!effect) {
         PythonSetNullError();
         return eImageBitDepthFloat;
     }
 
-    return node->getEffectInstance()->getBitDepth(-1);
+    return effect->getBitDepth(-1);
 }
 
 ImagePremultiplicationEnum
 Effect::getPremult() const
 {
-    NodePtr node = getInternalNode();
+    EffectInstancePtr effect = getCurrentEffectInstance();
 
-    if (!node) {
+    if (!effect) {
         PythonSetNullError();
         return eImagePremultiplicationPremultiplied;
     }
 
-    return node->getEffectInstance()->getPremult();
+    return effect->getPremult();
 }
 
 void

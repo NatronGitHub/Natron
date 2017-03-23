@@ -309,6 +309,14 @@ protected:
 
     bool getViewSetSpecFromViewName(const QString& viewName, ViewSetSpec* view) const;
     bool getViewIdxFromViewName(const QString& viewName, ViewIdx* view) const;
+
+    KnobIPtr getRenderCloneKnobInternal() const;
+
+    template <typename T>
+    boost::shared_ptr<T> getRenderCloneKnob() const
+    {
+        return boost::dynamic_pointer_cast<T>(getRenderCloneKnobInternal());
+    }
     
 };
 

@@ -3264,9 +3264,13 @@ RotoPaintInteract::onOverlayPenUp(TimeValue /*time*/,
 void
 RotoPaintPrivate::refreshRegisteredOverlays()
 {
+    if (!transformInteract && !cloneTransformInteract) {
+        return;
+    }
     publicInterface->removeOverlay(ui);
     publicInterface->removeOverlay(transformInteract);
     publicInterface->removeOverlay(cloneTransformInteract);
+
 
 
     bool useHostOverlay = publicInterface->shouldDrawHostOverlay();

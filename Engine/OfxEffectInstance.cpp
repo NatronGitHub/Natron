@@ -1309,6 +1309,7 @@ OfxEffectInstance::getFramesNeeded(TimeValue time,
         }
 
     } else {
+        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
         OFX::Host::ImageEffect::RangeMap inputRanges;
         {
             assert(_imp->common->effect);

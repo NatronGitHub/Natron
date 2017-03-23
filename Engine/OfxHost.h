@@ -175,8 +175,6 @@ public:
     };
 
     typedef boost::shared_ptr<OfxHostTLSData> OfxHostDataTLSPtr;
-
-    OfxHostDataTLSPtr getTLSData() const;
     
     OfxEffectInstancePtr getCurrentEffect_TLS() const;
 
