@@ -16,8 +16,9 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef Gui_EditExpressionDialog_h
-#define Gui_EditExpressionDialog_h
+
+#ifndef NATRON_ENGINE_EXPRTKFUNCTIONS_H
+#define NATRON_ENGINE_EXPRTKFUNCTIONS_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -25,54 +26,32 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Global/Macros.h"
+#include <string>
+#include "Engine/EngineFwd.h"
 
-#include <list>
-#include <utility>
+#include <exprtk/exprtk.hpp>
 
-#include <QtCore/QString>
-
-#include "Engine/DimensionIdx.h"
-#include "Engine/ViewIdx.h"
-#include "Gui/EditScriptDialog.h"
-#include "Gui/GuiFwd.h"
+#define EXPRTK_FUNCTIONS_NAMESPACE ExprTkFunctions
+// Macros to use in each file to enter and exit the right name spaces.
+#define EXPRTK_FUNCTIONS_NAMESPACE_ENTER namespace EXPRTK_FUNCTIONS_NAMESPACE {
+#define EXPRTK_FUNCTIONS_NAMESPACE_EXIT }
 
 NATRON_NAMESPACE_ENTER;
 
-class EditExpressionDialog
-    : public EditScriptDialog
-{
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
+EXPRTK_FUNCTIONS_NAMESPACE_ENTER;
 
-private:
-    DimSpec _dimension;
-    ViewSetSpec _view;
-    KnobGuiPtr _knob;
+typedef double exprtk_scalar_t;
+typedef boost::shared_ptr<exprtk::ifunction<exprtk_scalar_t> > ExprtkFnPtr;
+typedef exprtk::symbol_table<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t> symbol_table_t;
+typedef exprtk::expression<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t> expression_t;
+typedef exprtk::parser<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t> parser_t;
 
-public:
+void addFunctions(std::vector<std::pair<std::string, ExprtkFnPtr > >* functions);
 
-    EditExpressionDialog(Gui* gui,
-                         DimSpec dimension,
-                         ViewSetSpec view,
-                         const KnobGuiPtr& knob,
-                         QWidget* parent);
 
-    virtual ~EditExpressionDialog()
-    {
-    }
-
-    DimSpec getDimension() const;
-
-    ViewSetSpec getView() const;
-private:
-
-    virtual bool hasRetVariable() const OVERRIDE FINAL;
-    virtual void setTitle() OVERRIDE FINAL;
-    virtual QString compileExpression(const QString& expr, ExpressionLanguageEnum language) OVERRIDE FINAL;
-};
+EXPRTK_FUNCTIONS_NAMESPACE_EXIT;
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // Gui_EditExpressionDialog_h
+
+#endif // NATRON_ENGINE_EXPRTKFUNCTIONS_H

@@ -516,13 +516,8 @@ KnobHelperPrivate::parseListenersFromExpression(DimIdx dimension, ViewIdx view)
 } // KnobHelperPrivate::parseListenersFromExpression
 
 std::string
-KnobHelper::validateExpression(const std::string& expression,
-                               DimIdx dimension,
-                               ViewIdx view,
-                               bool hasRetVariable,
-                               std::string* resultAsString)
+KnobHelperPrivate::validatePythonExpression(const std::string& expression, DimIdx dimension, ViewIdx view, bool hasRetVariable, std::string* resultAsString) const
 {
-
 #ifdef NATRON_RUN_WITHOUT_PYTHON
     throw std::invalid_argument("NATRON_RUN_WITHOUT_PYTHON is defined");
 #endif
@@ -539,7 +534,7 @@ KnobHelper::validateExpression(const std::string& expression,
     if (!hasRetVariable) {
         std::size_t foundNewLine = expression.find("\n");
         if (foundNewLine != std::string::npos) {
-            throw std::invalid_argument(tr("unexpected new line character \'\\n\'").toStdString());
+            throw std::invalid_argument(publicInterface->tr("unexpected new line character \'\\n\'").toStdString());
         }
         //preprend the line with "ret = ..."
         std::string toInsert("    ret = ");
@@ -553,9 +548,9 @@ KnobHelper::validateExpression(const std::string& expression,
         }
     }
 
-    KnobHolderPtr holder = getHolder();
+    KnobHolderPtr holder = publicInterface->getHolder();
     if (!holder) {
-        throw std::runtime_error(tr("This parameter cannot have an expression").toStdString());
+        throw std::runtime_error(publicInterface->tr("This parameter cannot have an expression").toStdString());
     }
 
     NodePtr node;
@@ -570,12 +565,12 @@ KnobHelper::validateExpression(const std::string& expression,
         }
     }
     if (!node) {
-        throw std::runtime_error(tr("Only parameters of a Node can have an expression").toStdString());
+        throw std::runtime_error(publicInterface->tr("Only parameters of a Node can have an expression").toStdString());
     }
     std::string appID = holder->getApp()->getAppIDString();
     std::string nodeName = node->getFullyQualifiedName();
     std::string nodeFullName = appID + "." + nodeName;
-    std::string exprFuncPrefix = nodeFullName + "." + getName() + ".";
+    std::string exprFuncPrefix = nodeFullName + "." + publicInterface->getName() + ".";
 
     // make-up the expression function
     std::string exprFuncName;
@@ -592,7 +587,7 @@ KnobHelper::validateExpression(const std::string& expression,
     ss << "def "  << exprFuncName << "(frame, view):\n";
 
     // First define the attributes that may be used by the expression
-    ss << _imp->getReachablePythonAttributesForExpression(true, dimension, view);
+    ss << getReachablePythonAttributesForExpression(true, dimension, view);
 
 
     std::string script = ss.str();
@@ -609,22 +604,22 @@ KnobHelper::validateExpression(const std::string& expression,
     std::string funcExecScript = "ret = " + exprFuncPrefix + exprFuncName;
 
     {
-        EXPR_RECURSION_LEVEL();
+        ExprRecursionLevel_RAII __recursionLevelIncrementer__(publicInterface);
 
         if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error, 0) ) {
             throw std::runtime_error(error);
         }
 
         std::string viewName;
-        if (getHolder() && getHolder()->getApp()) {
-            viewName = getHolder()->getApp()->getProject()->getViewName(view);
+        if (publicInterface->getHolder() && publicInterface->getHolder()->getApp()) {
+            viewName = publicInterface->getHolder()->getApp()->getProject()->getViewName(view);
         }
         if (viewName.empty()) {
             viewName = "Main";
         }
 
         std::stringstream ss;
-        ss << funcExecScript << '(' << getCurrentRenderTime() << ", \"" <<  viewName << "\")\n";
+        ss << funcExecScript << '(' << publicInterface->getCurrentRenderTime() << ", \"" <<  viewName << "\")\n";
         if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(ss.str(), &error, 0) ) {
             throw std::runtime_error(error);
         }
@@ -639,10 +634,10 @@ KnobHelper::validateExpression(const std::string& expression,
         }
 
 
-        KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase*>(this);
-        KnobIntBase* isInt = dynamic_cast<KnobIntBase*>(this);
-        KnobBoolBase* isBool = dynamic_cast<KnobBoolBase*>(this);
-        KnobStringBase* isString = dynamic_cast<KnobStringBase*>(this);
+        KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase*>(publicInterface);
+        KnobIntBase* isInt = dynamic_cast<KnobIntBase*>(publicInterface);
+        KnobBoolBase* isBool = dynamic_cast<KnobBoolBase*>(publicInterface);
+        KnobStringBase* isString = dynamic_cast<KnobStringBase*>(publicInterface);
         if (isDouble) {
             double r = isDouble->pyObjectToType<double>(ret);
             *resultAsString = QString::number(r).toStdString();
@@ -660,9 +655,96 @@ KnobHelper::validateExpression(const std::string& expression,
             }
         }
     }
-
-
+    
+    
     return funcExecScript;
+} // validatePythonExpression
+
+template <typename T>
+struct ExprUnresolvedSymbolResolver : public exprtk::parser<T>::unknown_symbol_resolver
+{
+    typedef typename exprtk::parser<T>::unknown_symbol_resolver usr_t;
+
+    bool process(const std::string& unknown_symbol,
+                 typename usr_t::usr_symbol_type& st,
+                 T& default_value,
+                 std::string& error_message)
+    {
+
+        st = usr_t::e_usr_variable_type;
+        default_value = T(123.123);
+
+        return true;
+    }
+};
+
+
+std::string
+KnobHelperPrivate::validateExprTKExpression(const std::string& expression, DimIdx dimension, ViewIdx view, std::string* resultAsString) const
+{
+
+    EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t unknown_var_symbol_table;
+    EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t symbol_table;
+    
+
+    EXPRTK_FUNCTIONS_NAMESPACE::expression_t expressionObject;
+    expressionObject.register_symbol_table(unknown_var_symbol_table);
+    expressionObject.register_symbol_table(symbol_table);
+
+    ExprUnresolvedSymbolResolver<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t> musr;
+    EXPRTK_FUNCTIONS_NAMESPACE::parser_t parser;
+    parser.enable_unknown_symbol_resolver(&musr);
+
+
+    std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::ExprtkFnPtr> > functions;
+    EXPRTK_FUNCTIONS_NAMESPACE::addFunctions(&functions);
+    for (std::size_t i = 0; i < functions.size(); ++i) {
+        bool ok = symbol_table.add_function(functions[i].first, *functions[i].second);
+        assert(ok);
+    }
+
+
+    symbol_table.stringvar_ref("");
+
+    if (!parser.compile(expression, expressionObject)) {
+
+        std::stringstream ss;
+        ss << "Errors when compiling the following expression:" << std::endl;
+        ss << expression;
+        for (std::size_t i = 0; i < parser.error_count(); ++i) {
+            // Include the specific nature of each error
+            // and its position in the expression string.
+
+            exprtk::parser_error::type error = parser.get_error(i);
+            ss << "Error: " << i << " Position: " << error.token.position << std::endl;
+            ss << "Type: " << exprtk::parser_error::to_str(error.mode) << std::endl;
+            ss << "Message: " << error.diagnostic << std::endl;
+        }
+        throw std::runtime_error(ss.str());
+    }
+
+    double result = expressionObject.value();
+
+
+
+
+} // validateExprTKExpression
+
+
+std::string
+KnobHelper::validateExpression(const std::string& expression,
+                               ExpressionLanguageEnum language,
+                               DimIdx dimension,
+                               ViewIdx view,
+                               bool hasRetVariable,
+                               std::string* resultAsString)
+{
+    switch (language) {
+        case eExpressionLanguagePython:
+            return _imp->validatePythonExpression(expression, dimension, view, hasRetVariable, resultAsString);
+        case eExpressionLanguageExprTK:
+            return _imp->validateExprTKExpression(expression, dimension, view, resultAsString);
+    }
 } // KnobHelper::validateExpression
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
@@ -670,6 +752,7 @@ struct ExprToReApply {
     ViewIdx view;
     DimIdx dimension;
     std::string expr;
+    ExpressionLanguageEnum language;
     bool hasRet;
 };
 NATRON_NAMESPACE_ANONYMOUS_EXIT
@@ -691,6 +774,7 @@ KnobHelper::checkInvalidExpressions()
                     data.view = it->first;
                     data.dimension = DimIdx(i);
                     data.expr = it->second.originalExpression;
+                    data.language = it->second.language;
                     data.hasRet = it->second.hasRet;
                 }
             }
@@ -698,7 +782,7 @@ KnobHelper::checkInvalidExpressions()
     }
     bool isInvalid = false;
     for (std::size_t i = 0; i < exprToReapply.size(); ++i) {
-        setExpressionInternal(exprToReapply[i].dimension, exprToReapply[i].view, exprToReapply[i].expr, exprToReapply[i].hasRet, false /*throwOnFailure*/);
+        setExpressionInternal(exprToReapply[i].dimension, exprToReapply[i].view, exprToReapply[i].expr, exprToReapply[i].language, exprToReapply[i].hasRet, false /*throwOnFailure*/);
         std::string err;
         if ( !isExpressionValid(exprToReapply[i].dimension, exprToReapply[i].view, &err) ) {
             isInvalid = true;
@@ -819,6 +903,7 @@ void
 KnobHelper::setExpressionInternal(DimIdx dimension,
                                   ViewIdx view,
                                   const std::string& expression,
+                                  ExpressionLanguageEnum language, 
                                   bool hasRetVariable,
                                   bool failIfInvalid)
 {
@@ -841,7 +926,7 @@ KnobHelper::setExpressionInternal(DimIdx dimension,
     std::string exprCpy;
     std::string exprInvalid;
     try {
-        exprCpy = validateExpression(expression, dimension, view, hasRetVariable, &exprResult);
+        exprCpy = validateExpression(expression, language, dimension, view, hasRetVariable, &exprResult);
     } catch (const std::exception &e) {
         exprInvalid = e.what();
         exprCpy = expression;
@@ -885,6 +970,7 @@ void
 KnobHelper::setExpressionCommon(DimSpec dimension,
                                 ViewSetSpec view,
                                 const std::string& expression,
+                                ExpressionLanguageEnum language,
                                 bool hasRetVariable,
                                 bool failIfInvalid)
 {
@@ -896,11 +982,11 @@ KnobHelper::setExpressionCommon(DimSpec dimension,
         for (int i = 0; i < _imp->common->dimension; ++i) {
             if (view.isAll()) {
                 for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                    setExpressionInternal(DimIdx(i), *it, expression, hasRetVariable, failIfInvalid);
+                    setExpressionInternal(DimIdx(i), *it, expression, language, hasRetVariable, failIfInvalid);
                 }
             } else {
                 ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
-                setExpressionInternal(DimIdx(i), view_i, expression, hasRetVariable, failIfInvalid);
+                setExpressionInternal(DimIdx(i), view_i, expression, language, hasRetVariable, failIfInvalid);
             }
         }
     } else {
@@ -909,11 +995,11 @@ KnobHelper::setExpressionCommon(DimSpec dimension,
         }
         if (view.isAll()) {
             for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                setExpressionInternal(DimIdx(dimension), *it, expression, hasRetVariable, failIfInvalid);
+                setExpressionInternal(DimIdx(dimension), *it, expression, language, hasRetVariable, failIfInvalid);
             }
         } else {
             ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
-            setExpressionInternal(DimIdx(dimension), view_i, expression, hasRetVariable, failIfInvalid);
+            setExpressionInternal(DimIdx(dimension), view_i, expression, language, hasRetVariable, failIfInvalid);
         }
     }
 
@@ -937,12 +1023,13 @@ KnobHelper::replaceNodeNameInExpressionInternal(DimIdx dimension,
         return;
     }
     bool hasRetVar = isExpressionUsingRetVariable(view, dimension);
+    ExpressionLanguageEnum lang = getExpressionLanguage(view, dimension);
     try {
         //Change in expressions the script-name
         QString estr = QString::fromUtf8( hasExpr.c_str() );
         estr.replace( QString::fromUtf8( oldName.c_str() ), QString::fromUtf8( newName.c_str() ) );
         hasExpr = estr.toStdString();
-        setExpression(dimension, ViewSetSpec(view), hasExpr, hasRetVar, false);
+        setExpression(dimension, ViewSetSpec(view), hasExpr, lang, hasRetVar, false);
     } catch (...) {
     }
 
@@ -991,6 +1078,21 @@ KnobHelper::replaceNodeNameInExpression(DimSpec dimension,
 
 
 } // replaceNodeNameInExpression
+
+ExpressionLanguageEnum
+KnobHelper::getExpressionLanguage(Natron::ViewIdx view, Natron::DimIdx dimension) const
+{
+    if (dimension < 0 || dimension >= (int)_imp->common->expressions.size()) {
+        throw std::invalid_argument("KnobHelper::getExpressionLanguage(): Dimension out of range");
+    }
+    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    QMutexLocker k(&_imp->common->expressionMutex);
+    ExprPerViewMap::const_iterator foundView = _imp->common->expressions[dimension].find(view_i);
+    if (foundView == _imp->common->expressions[dimension].end()) {
+        return eExpressionLanguageExprTK;
+    }
+    return foundView->second.language;
+}
 
 bool
 KnobHelper::isExpressionUsingRetVariable(ViewIdx view, DimIdx dimension) const

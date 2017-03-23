@@ -55,6 +55,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/CacheEntryBase.h"
 #include "Engine/CacheEntryKeyBase.h"
 #include "Engine/DockablePanelI.h"
+#include "Engine/ExprtkFunctions.h"
 #include "Engine/Hash64.h"
 #include "Engine/KnobFile.h"
 #include "Engine/KnobTypes.h"
@@ -75,14 +76,66 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "Engine/EngineFwd.h"
 
+
 NATRON_NAMESPACE_ENTER
 
 #define EXPR_RECURSION_LEVEL() ExprRecursionLevel_RAII __recursionLevelIncrementer__(this)
 
+struct KnobExpr
+{
+    std::string expression; //< the one modified by Natron
+    std::string exprInvalid;
+    ExpressionLanguageEnum language;
+
+
+    KnobExpr()
+    : expression()
+    , exprInvalid()
+    , hasRet(false)
+    , language(eExpressionLanguageExprTK)
+    {}
+};
+
+struct KnobPythonExpr : public KnobExpr
+{
+    std::string originalExpression; //< the one input by the user
+
+    bool hasRet;
+
+    // The knobs/dimension/view we depend on in the expression
+    KnobDimViewKeySet dependencies;
+
+    // The other knobs/dimension/view that have expressions referencing us
+    KnobDimViewKeySet listeners;
+
+    KnobPythonExpr()
+    : hasRet(false)
+    {
+
+    }
+
+};
+
+enum ExprTkExpressionDependencyTypeEnum
+{
+    // The expression is referencing the value of another parameter
+    eExprTkExpressionDependencyTypeParam,
+
+    // The expression is referencing the rod of an effect
+    eExprTkExpressionDependencyTypeRoD
+};
+
+struct KnobExprTkExpr : public KnobExpr
+{
+    boost::shared_ptr<EXPRTK_FUNCTIONS_NAMESPACE::expression_t> expressionObject;
+};
+
+typedef boost::shared_ptr<KnobExpr> KnobExprPtr;
+
 typedef std::map<ViewIdx, KnobDimViewBasePtr> PerViewKnobDataMap;
 typedef std::vector<PerViewKnobDataMap> PerDimensionKnobDataMap;
 
-typedef std::map<ViewIdx, KnobI::Expr> ExprPerViewMap;
+typedef std::map<ViewIdx, KnobExprPtr> ExprPerViewMap;
 typedef std::vector<ExprPerViewMap> ExprPerDimensionVec;
 
 struct RedirectionLink
@@ -381,6 +434,10 @@ struct KnobHelperPrivate
         publicInterface->_signalSlotHandler = mainInstance->_signalSlotHandler;
         common->perDimViewData.resize(common->dimension);
     }
+
+    std::string validatePythonExpression(const std::string& expression, DimIdx dimension, ViewIdx view, bool hasRetVariable, std::string* resultAsString) const;
+    std::string validateExprTKExpression(const std::string& expression, DimIdx dimension, ViewIdx view, std::string* resultAsString) const;
+
 
     void parseListenersFromExpression(DimIdx dimension, ViewIdx view);
 

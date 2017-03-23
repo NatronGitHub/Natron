@@ -104,6 +104,7 @@ SOURCES += \
     EffectInstanceRenderRoI.cpp \
     EffectOpenGLContextData.cpp \
     ExistenceCheckThread.cpp \
+    ExprtkFunctions.cpp \
     FileDownloader.cpp \
     FileSystemModel.cpp \
     FitCurve.cpp \
@@ -351,6 +352,7 @@ HEADERS += \
     EffectOpenGLContextData.h \
     ExistenceCheckThread.h \
     EngineFwd.h \
+    ExprtkFunctions.h \
     FeatherPoint.h \
     FileDownloader.h \
     FileSystemModel.h \
