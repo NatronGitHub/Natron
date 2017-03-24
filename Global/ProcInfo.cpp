@@ -223,6 +223,7 @@ applicationFilePath_fromArgv(const char* argv0Param)
         QByteArray pEnv = qgetenv("PATH");
         char* cwd = rpl_getcwd(NULL, 0);
         QString currentDirPath = QString::fromUtf8(cwd);
+        std::free(cwd);
         QStringList paths = QString::fromLocal8Bit( pEnv.constData() ).split( QLatin1Char(':') );
         for (QStringList::const_iterator p = paths.constBegin(); p != paths.constEnd(); ++p) {
             if ( (*p).isEmpty() ) {
