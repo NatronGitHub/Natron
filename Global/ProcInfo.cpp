@@ -18,6 +18,8 @@
 
 #include "ProcInfo.h"
 
+#include "Global/Macros.h"
+
 #include <cassert>
 #include <sstream> // stringstream
 #include <iostream>
@@ -32,6 +34,9 @@
 #ifdef __NATRON_UNIX__
 #include <unistd.h>
 #include <sys/stat.h>
+#include <cerrno>
+#include <cstdlib> // malloc
+#include <string.h> // strdup
 #endif
 
 #include "StrUtils.h"
@@ -92,42 +97,100 @@ applicationFileName()
 
 
 #ifdef __NATRON_UNIX__
-static std::string
-currentPath()
+// Copyright (C) 2011-2017 Free Software Foundation, Inc.
+// getcwd-lgpl.c from
+// https://raw.githubusercontent.com/coreutils/gnulib/master/lib/getcwd-lgpl.c
+
+/* Get the name of the current working directory, and put it in SIZE
+   bytes of BUF.  Returns NULL if the directory couldn't be determined
+   (perhaps because the absolute name was longer than PATH_MAX, or
+   because of missing read/search permissions on parent directories)
+   or SIZE was too small.  If successful, returns BUF.  If BUF is
+   NULL, an array is allocated with 'malloc'; the array is SIZE bytes
+   long, unless SIZE == 0, in which case it is as big as
+   necessary.  */
+
+static
+char *
+rpl_getcwd (char *buf, size_t size)
 {
-    struct stat st;
-    int statFailed = stat(".", &st);
+    char *ptr;
+    char *result;
 
-    assert(!statFailed);
-    if (!statFailed) {
-#if defined(__GLIBC__) && !defined(PATH_MAX)
-        char *currentName = ::get_current_dir_name();
-        if (currentName) {
-            std::string ret(currentName);
-            ::free(currentName);
-
-            return ret;
+    /* Handle single size operations.  */
+    if (buf) {
+        if (!size) {
+            errno = EINVAL;
+            return NULL;
         }
-#else
-        char currentName[PATH_MAX + 1];
-        if ( ::getcwd(currentName, PATH_MAX) ) {
-            std::string ret(currentName);
-            return ret;
-        }
-#endif
+        return ::getcwd(buf, size);
     }
 
-    return std::string();
-} // currentPath
+    if (size) {
+        buf = (char*)std::malloc(size);
+        if (!buf) {
+            errno = ENOMEM;
+            return NULL;
+        }
+        result = ::getcwd(buf, size);
+        if (!result) {
+            int saved_errno = errno;
+            std::free(buf);
+            errno = saved_errno;
+        }
+        return result;
+    }
+
+    /* Flexible sizing requested.  Avoid over-allocation for the common
+     case of a name that fits within a 4k page, minus some space for
+     local variables, to be sure we don't skip over a guard page.  */
+    {
+        char tmp[4032];
+        size = sizeof tmp;
+        ptr = ::getcwd (tmp, size);
+        if (ptr) {
+            result = ::strdup(ptr);
+            if (!result) {
+                errno = ENOMEM;
+            }
+            return result;
+        }
+        if (errno != ERANGE) {
+            return NULL;
+        }
+    }
+
+    /* My what a large directory name we have.  */
+    do {
+        size <<= 1;
+        ptr = (char*)std::realloc(buf, size);
+        if (ptr == NULL) {
+            std::free(buf);
+            errno = ENOMEM;
+            return NULL;
+        }
+        buf = ptr;
+        result = ::getcwd(buf, size);
+    } while (!result && errno == ERANGE);
+
+    if (!result) {
+        int saved_errno = errno;
+        std::free(buf);
+        errno = saved_errno;
+    } else {
+        /* Trim to fit, if possible.  */
+        result = (char*)std::realloc(buf, std::strlen(buf) + 1);
+        if (!result) {
+            result = buf;
+        }
+    }
+    return result;
+}
 
 #endif
 
 
 #if defined( __NATRON_UNIX__ )
-
-
-
-
 static std::string
 applicationFilePath_fromArgv(const char* argv0Param)
 {
@@ -148,7 +211,9 @@ applicationFilePath_fromArgv(const char* argv0Param)
            If argv0 contains one or more slashes, it is a file path
            relative to the current directory.
          */
-        absPath = currentPath();
+        char* cwd = rpl_getcwd(NULL, 0);
+        absPath = cwd;
+        std::free(cwd);
         absPath.append(argv0);
     } else {
         /*
@@ -156,7 +221,9 @@ applicationFilePath_fromArgv(const char* argv0Param)
            PATH environment variable.
          */
         std::string pEnv = getenv("PATH");
-        std::string currentDirPath = currentPath();
+        char* cwd = rpl_getcwd(NULL, 0);
+        std::string currentDirPath = cwd;
+        std::free(cwd);
         std::vector<std::string> paths = StrUtils::split(pEnv, ':');
         for (std::vector<std::string>::const_iterator it = paths.begin(); it != paths.end(); ++it) {
             if (it->empty()) {
@@ -573,7 +640,7 @@ ProcInfo::checkIfProcessIsRunning(const char* /*processAbsoluteFilePath*/,
     }
 
     return false;
-#endif // ifdef __NATRON_WIN32__
+#endif // ifdef Q_OS_WIN
 #endif // if 0
 } // ProcInfo::checkIfProcessIsRunning
 
