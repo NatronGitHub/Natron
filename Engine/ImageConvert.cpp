@@ -323,6 +323,7 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
     } // for all lines
 } // convertToFormatInternal_sameComps
 
+#pragma message WARN("WE DO NOT NEED SUCH A HUGE MATRIX! there are 3*3*4*4*2*2=576 versions of this function!!! this is counter-productive! Only hardcode the most frequent cases, all others should be handled by a non-template function")
 template <typename SRCPIX, int srcMaxValue, typename DSTPIX, int dstMaxValue, int srcNComps, int dstNComps, bool requiresUnpremult, bool useColorspaces>
 void
 static convertToFormatInternalForColorSpace(const RectI & renderWindow,
@@ -472,6 +473,7 @@ static convertToFormatInternalForColorSpace(const RectI & renderWindow,
                     DSTPIX pix;
                     switch (alphaHandling) {
                         case Image::eAlphaChannelHandlingCreateFill0:
+                        default:
                             pix = 0;
                             break;
                         case Image::eAlphaChannelHandlingCreateFill1:
