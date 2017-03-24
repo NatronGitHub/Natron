@@ -18,6 +18,8 @@
 
 #include "ProcInfo.h"
 
+#include "Global/Macros.h"
+
 #include <cassert>
 #include <sstream> // stringstream
 #include <iostream>
@@ -25,11 +27,11 @@
 #include <vector>
 #include <cstdlib>
 
-#if defined(Q_OS_WIN)
+#if defined(__NATRON_WIN32__)
 #include <windows.h>
 #endif
 
-#ifdef Q_OS_UNIX
+#ifdef __NATRON_UNIX__
 #include <unistd.h>
 #include <sys/stat.h>
 #include <cerrno>
@@ -129,7 +131,6 @@ rpl_getcwd (char *buf, size_t size)
         if (!buf) {
             errno = ENOMEM;
             return NULL;
->>>>>>> RB-2.2
         }
         result = ::getcwd(buf, size);
         if (!result) {
@@ -185,6 +186,7 @@ rpl_getcwd (char *buf, size_t size)
     }
     return result;
 }
+
 #endif
 
 
