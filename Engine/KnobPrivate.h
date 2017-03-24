@@ -81,9 +81,11 @@ NATRON_NAMESPACE_ENTER
 
 #define EXPR_RECURSION_LEVEL() ExprRecursionLevel_RAII __recursionLevelIncrementer__(this)
 
-struct KnobExpr
+class KnobExpr
 {
-    std::string expression; //< the one modified by Natron
+public:
+
+    std::string expressionString;
     std::string exprInvalid;
     ExpressionLanguageEnum language;
     
@@ -91,16 +93,20 @@ struct KnobExpr
     KnobDimViewKeySet listeners;
 
     KnobExpr()
-    : expression()
+    : expressionString()
     , exprInvalid()
     , language(eExpressionLanguageExprTK)
     , listeners()
     {}
+
+    virtual ~KnobExpr() {}
 };
 
-struct KnobPythonExpr : public KnobExpr
+class KnobPythonExpr : public KnobExpr
 {
-    std::string originalExpression; //< the one input by the user
+public:
+
+    std::string modifiedExpression;
 
     bool hasRet;
 
@@ -113,6 +119,7 @@ struct KnobPythonExpr : public KnobExpr
 
     }
 
+    virtual ~KnobPythonExpr() {}
 };
 
 /**
@@ -130,8 +137,10 @@ struct EffectFunctionDependency
 };
 
 
-struct KnobExprTkExpr : public KnobExpr
+class KnobExprTkExpr : public KnobExpr
 {
+public:
+
     // The exprtk expression object
     boost::shared_ptr<EXPRTK_FUNCTIONS_NAMESPACE::expression_t> expressionObject;
     
@@ -140,15 +149,26 @@ struct KnobExprTkExpr : public KnobExpr
     
     // effect dependencies mapped against their variable name in the expression
     std::map<std::string, EffectFunctionDependency> effectDependencies;
+
+    KnobExprTkExpr()
+    {
+
+    }
+    
+    virtual ~KnobExprTkExpr() {}
 };
 
 typedef boost::shared_ptr<KnobExpr> KnobExprPtr;
+
 
 typedef std::map<ViewIdx, KnobDimViewBasePtr> PerViewKnobDataMap;
 typedef std::vector<PerViewKnobDataMap> PerDimensionKnobDataMap;
 
 typedef std::map<ViewIdx, KnobExprPtr> ExprPerViewMap;
 typedef std::vector<ExprPerViewMap> ExprPerDimensionVec;
+
+typedef std::map<ViewIdx, KnobDimViewKeySet> PerViewListenersMap;
+typedef std::vector<PerViewListenersMap> PerDimensionListenersMap;
 
 struct RedirectionLink
 {
@@ -285,6 +305,9 @@ struct CommonData
 
     // For each dimension its expression
     ExprPerDimensionVec expressions;
+
+    // For each dimension, the other knobs referencing this knob
+    PerDimensionListenersMap listeners;
 
     // Used to prevent expressions from creating infinite loops
     // It doesn't have to be thread-local even if getValue can be called on multiple threads:
@@ -448,7 +471,8 @@ struct KnobHelperPrivate
     }
 
     std::string validatePythonExpression(const std::string& expression, DimIdx dimension, ViewIdx view, bool hasRetVariable, std::string* resultAsString) const;
-    std::string validateExprTKExpression(const std::string& expression, DimIdx dimension, ViewIdx view, std::string* resultAsString) const;
+    void validateExprTKExpression(const std::string& expression, DimIdx dimension, ViewIdx view, std::string* resultAsString, KnobExprTkExpr* ret) const;
+
 
 
     void parseListenersFromExpression(DimIdx dimension, ViewIdx view);

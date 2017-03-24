@@ -104,6 +104,12 @@ and can be interchanged, e.g::
 This allows to write easier expressions when referencing other parameters that do not
 have the same dimensions.
 
+Possible variants to reference a dimension is as follow:
+
+    * r,g,b,a
+    * x,y,z,w
+    * 0,1,2,3
+    
 The dimension of the parameter on which the expression is currently executed can be 
 referenced with *thisDimension*::
 
@@ -153,8 +159,14 @@ When the expression is called, a number of pre-declared variables can be used:
 	* **thisParam**: It references the param being edited. This is useful to reference a value
 	on the parameter on which the expression is evaluated
 	
+	* **thisItem**: If the expression is edited on a table item such as a Bezier or a Track
+	this is the item holding the parameter to which the expression is being edited
+	
 	* **thisDimension**: It indicates the dimension (0-based index) of the parameter on which the expression 
 	is evaluated, this can only be used after a parameter, e.g: Blur1.size.thisDimension
+	
+	* **project**: References the project settings. This can be used as a prefix to reference
+	project parameters, e.g: project.outputFormat
 	
 	* **frame**: It references the current time on the timeline at which the expression is evaluated
 	this may be a floating point number if the parameter is referenced from a node that uses

@@ -745,7 +745,7 @@ public:
      * @returns A new string containing the modified expression with the 'ret' variable declared if it wasn't already declared
      * by the user.
      **/
-    virtual std::string validateExpression(const std::string& expression, ExpressionLanguageEnum language, DimIdx dimension, ViewIdx view, bool hasRetVariable, std::string* resultAsString) = 0;
+    virtual void validateExpression(const std::string& expression, ExpressionLanguageEnum language, DimIdx dimension, ViewIdx view, bool hasRetVariable, std::string* resultAsString) = 0;
 
 public:
 
@@ -1635,7 +1635,7 @@ public:
                                              const std::string& oldName,
                                              const std::string& newName) OVERRIDE FINAL;
     virtual void clearExpression(DimSpec dimension, ViewSetSpec view) OVERRIDE FINAL;
-    virtual std::string validateExpression(const std::string& expression, ExpressionLanguageEnum language, DimIdx dimension, ViewIdx view, bool hasRetVariable, std::string* resultAsString) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void validateExpression(const std::string& expression, ExpressionLanguageEnum language, DimIdx dimension, ViewIdx view, bool hasRetVariable, std::string* resultAsString) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual bool linkTo(const KnobIPtr & otherKnob, DimSpec thisDimension = DimSpec::all(), DimSpec otherDimension = DimSpec::all(), ViewSetSpec thisView = ViewSetSpec::all(), ViewSetSpec otherView = ViewSetSpec::all()) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void unlink(DimSpec dimension, ViewSetSpec view, bool copyState) OVERRIDE FINAL;
@@ -1769,13 +1769,32 @@ protected:
     void resetMaster(DimIdx dimension, ViewIdx view);
 
     ///The return value must be Py_DECRREF
-    bool executeExpression(TimeValue time, ViewIdx view, DimIdx dimension, PyObject** ret, std::string* error) const;
+    bool executePythonExpression(TimeValue time, ViewIdx view, DimIdx dimension, PyObject** ret, std::string* error) const;
 
 public:
 
+    enum ExpressionReturnValueTypeEnum
+    {
+        eExpressionReturnValueTypeScalar,
+        eExpressionReturnValueTypeString,
+        eExpressionReturnValueTypeError
+    };
+protected:
+    
+    ExpressionReturnValueTypeEnum executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimension, double* retValueIsScalar, std::string* retValueIsString, std::string* error) const;
+
     /// The return value must be Py_DECRREF
     /// The expression must put its result in the Python variable named "ret"
-    static bool executeExpression(const std::string& expr, PyObject** ret, std::string* error);
+    static bool executePythonExpression(const std::string& expr, PyObject** ret, std::string* error);
+    static ExpressionReturnValueTypeEnum executeExprTKExpression(const std::string& expr, double* retValueIsScalar, std::string* retValueIsString, std::string* error);
+
+public:
+
+
+    /// This static publicly-available function is useful to evaluate simple python expressions that evaluate to a double, int or string value.
+    /// The expression must put its result in the Python variable named "ret"
+    static ExpressionReturnValueTypeEnum evaluateExpression(const std::string& expr, ExpressionLanguageEnum language, double* retIsScalar, std::string* retIsString, std::string* error);
+
 
     virtual bool getSharingMaster(DimIdx dimension, ViewIdx view, KnobDimViewKey* linkData) const OVERRIDE FINAL;
     virtual void getSharedValues(DimIdx dimension, ViewIdx view, KnobDimViewKeySet* sharedKnobs) const OVERRIDE FINAL;
@@ -2315,11 +2334,6 @@ private:
     void makeKeyFrame(TimeValue time, const T& v, ViewIdx view, KeyFrame* key);
 
     void queueSetValue(const T& v, ViewSetSpec view, DimSpec dimension);
-
-public:
-    /// This static publicly-available function is useful to evaluate simple python expressions that evaluate to a double, int or string value.
-    /// The expression must put its result in the Python variable named "ret"
-    static bool evaluateExpression(const std::string& expr, T* ret, std::string* error);
 
 private:
 

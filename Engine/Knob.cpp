@@ -2323,9 +2323,9 @@ KnobHelper::addListener(const DimIdx listenerDimension,
     // Add the listener to the list
     {
         QMutexLocker l(&_imp->common->expressionMutex);
-        Expr& expr = _imp->common->expressions[listenedToDimension][listenedToView];
+        KnobDimViewKeySet& listenersSet = _imp->common->listeners[listenedToDimension][listenedToView];
         KnobDimViewKey d(listener, listenerDimension, listenerView);
-        expr.listeners.insert(d);
+        listenersSet.insert(d);
     }
 
     // Add this knob as a dependency of the expression

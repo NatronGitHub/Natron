@@ -31,19 +31,16 @@
 
 #include <exprtk/exprtk.hpp>
 
-#define EXPRTK_FUNCTIONS_NAMESPACE ExprTkFunctions
-// Macros to use in each file to enter and exit the right name spaces.
-#define EXPRTK_FUNCTIONS_NAMESPACE_ENTER namespace EXPRTK_FUNCTIONS_NAMESPACE {
-#define EXPRTK_FUNCTIONS_NAMESPACE_EXIT }
 
 NATRON_NAMESPACE_ENTER;
 
 EXPRTK_FUNCTIONS_NAMESPACE_ENTER;
 
 typedef double exprtk_scalar_t;
-typedef boost::shared_ptr<exprtk::ifunction<exprtk_scalar_t> > ExprtkFnPtr;
+typedef boost::shared_ptr<exprtk::function_traits> ExprtkFnPtr;
 typedef exprtk::symbol_table<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t> symbol_table_t;
 typedef exprtk::expression<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t> expression_t;
+typedef exprtk::results_context<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t> results_context_t;
 typedef exprtk::parser<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t> parser_t;
 
 void addFunctions(std::vector<std::pair<std::string, ExprtkFnPtr > >* functions);

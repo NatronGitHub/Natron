@@ -1593,6 +1593,14 @@ AddKnobDialogPrivate::getSelectedPage() const
     return KnobPagePtr();
 }
 
+
+struct ListenerExpr
+{
+    std::string expression;
+    bool hasRetVar;
+    ExpressionLanguageEnum lang;
+};
+
 void
 AddKnobDialog::onOkClicked()
 {
@@ -1673,7 +1681,9 @@ AddKnobDialog::onOkClicked()
     int oldIndexInParent = -1;
     int oldViewerIndex = -1;
     std::string oldKnobScriptName;
-    std::map<KnobIPtr, std::vector<std::pair<std::string, bool> > > listenersExpressions;
+
+
+    std::map<KnobIPtr, std::vector<ListenerExpr> > listenersExpressions;
     KnobPagePtr oldKnobIsPage;
     bool wasNewLineActivated = true;
     if (!_imp->knob) {
@@ -1726,11 +1736,12 @@ AddKnobDialog::onOkClicked()
                 continue;
             }
             int nDims = listener->getNDimensions();
-            std::vector<std::pair<std::string, bool> > exprs(nDims);
+            std::vector<ListenerExpr> exprs(nDims);
             for (int d = 0; d < nDims; ++d) {
-                std::pair<std::string, bool> e;
-                e.first = listener->getExpression(DimIdx(d), ViewIdx(0));
-                e.second = listener->isExpressionUsingRetVariable(ViewIdx(0), DimIdx(d));
+                ListenerExpr e;
+                e.expression = listener->getExpression(DimIdx(d), ViewIdx(0));
+                e.hasRetVar = listener->isExpressionUsingRetVariable(ViewIdx(0), DimIdx(d));
+                e.lang = listener->getExpressionLanguage(ViewIdx(0), DimIdx(d));
                 exprs[d] = e;
             }
             listenersExpressions[listener] = exprs;
@@ -1818,20 +1829,20 @@ AddKnobDialog::onOkClicked()
     }
 
     //Recover listeners expressions
-    for (std::map<KnobIPtr, std::vector<std::pair<std::string, bool> > >::iterator it = listenersExpressions.begin(); it != listenersExpressions.end(); ++it) {
+    for (std::map<KnobIPtr, std::vector<ListenerExpr>  >::iterator it = listenersExpressions.begin(); it != listenersExpressions.end(); ++it) {
         assert( it->first->getNDimensions() == (int)it->second.size() );
         for (int i = 0; i < it->first->getNDimensions(); ++i) {
             try {
                 std::string expr;
                 if ( oldKnobScriptName != _imp->knob->getName() ) {
                     //Change in expressions the script-name
-                    QString estr = QString::fromUtf8( it->second[i].first.c_str() );
+                    QString estr = QString::fromUtf8( it->second[i].expression.c_str() );
                     estr.replace( QString::fromUtf8( oldKnobScriptName.c_str() ), QString::fromUtf8( _imp->knob->getName().c_str() ) );
                     expr = estr.toStdString();
                 } else {
-                    expr = it->second[i].first;
+                    expr = it->second[i].expression;
                 }
-                it->first->setExpression(DimIdx(i), ViewIdx(0), expr, it->second[i].second, false);
+                it->first->setExpression(DimIdx(i), ViewIdx(0), expr, it->second[i].lang, it->second[i].hasRetVar, false);
             } catch (...) {
             }
         }
