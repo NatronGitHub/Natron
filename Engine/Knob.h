@@ -1166,8 +1166,8 @@ public:
                              const DimIdx listenedToDimension,
                              const ViewIdx listenerView,
                              const ViewIdx listenedToView,
-                             const KnobIPtr& listener) = 0;
-    virtual void getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) const = 0;
+                             const KnobIPtr& listener,
+                             ExpressionLanguageEnum language) = 0;
 
     /**
      * @brief Implement to save the content of the object to the serialization object
@@ -1808,8 +1808,10 @@ public:
     virtual void addListener(DimIdx fromExprDimension,
                              DimIdx thisDimension,
                              const ViewIdx listenerView,
-                             const ViewIdx listenedToView, const KnobIPtr& knob) OVERRIDE FINAL;
-    virtual void getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) const OVERRIDE FINAL;
+                             const ViewIdx listenedToView,
+                             const KnobIPtr& knob,
+                             ExpressionLanguageEnum language) OVERRIDE FINAL;
+
     virtual void getListeners(KnobDimViewKeySet& listeners, ListenersTypeFlags flags = ListenersTypeFlags(eListenersTypeExpression | eListenersTypeSharedValue)) const OVERRIDE FINAL;
 
 private:
@@ -2807,8 +2809,6 @@ public:
                                     TimeValue time,
                                     ViewSetSpec view,
                                     ValueChangedReasonEnum reason);
-
-    void getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) const;
     
     /**
      * @brief To implement if you need to make the hash vary at a specific time/view

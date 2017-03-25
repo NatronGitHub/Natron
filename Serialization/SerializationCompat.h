@@ -1047,6 +1047,7 @@ SERIALIZATION_NAMESPACE::ValueSerialization::serialize(Archive & ar, const unsig
     if (version >= VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS) {
         ar & ::boost::serialization::make_nvp("Expression", _expression);
         ar & ::boost::serialization::make_nvp("ExprHasRet", _expresionHasReturnVariable);
+        _expressionLanguage = kKnobSerializationExpressionLanguagePython;
     }
 
     if ( (version >= VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS_RESULTS) && (version < VALUE_SERIALIZATION_REMOVES_EXPRESSIONS_RESULTS) ) {

@@ -1177,10 +1177,24 @@ struct IsVariableValidFunc : public exprtk::igeneric_function<EXPRTK_FUNCTIONS_N
 static bool addStandardFunctionsAndParse(const std::string& expr, EXPRTK_FUNCTIONS_NAMESPACE::parser_t& parser, EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t& symbol_table, EXPRTK_FUNCTIONS_NAMESPACE::expression_t& expressionObject, std::string* error)
 {
     // Add all functions from the API to the symbol table
-    std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::ExprtkFnPtr> > functions;
+    std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::func_ptr> > functions;
+    std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::vararg_func_ptr> > varargFunctions;
+    std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::generic_func_ptr> > genericFunctions;
     EXPRTK_FUNCTIONS_NAMESPACE::addFunctions(&functions);
+    EXPRTK_FUNCTIONS_NAMESPACE::addGenericFunctions(&genericFunctions);
+    EXPRTK_FUNCTIONS_NAMESPACE::addVarargFunctions(&varargFunctions);
+
     for (std::size_t i = 0; i < functions.size(); ++i) {
         bool ok = symbol_table.add_function(functions[i].first, *functions[i].second);
+        assert(ok);
+    }
+    for (std::size_t i = 0; i < varargFunctions.size(); ++i) {
+        bool ok = symbol_table.add_function(varargFunctions[i].first, *varargFunctions[i].second);
+        assert(ok);
+    }
+
+    for (std::size_t i = 0; i < genericFunctions.size(); ++i) {
+        bool ok = symbol_table.add_function(genericFunctions[i].first, *genericFunctions[i].second);
         assert(ok);
     }
 
@@ -1529,7 +1543,7 @@ KnobHelper::setExpressionInternal(DimIdx dimension,
                     KnobExprTkExpr* obj = dynamic_cast<KnobExprTkExpr*>(expressionObj.get());
                     KnobIPtr thisShared = shared_from_this();
                     for (std::map<std::string, KnobDimViewKey>::const_iterator it = obj->knobDependencies.begin(); it != obj->knobDependencies.end(); ++it) {
-                        it->second.knob.lock()->addListener(dimension, it->second.dimension, view, it->second.view, thisShared);
+                        it->second.knob.lock()->addListener(dimension, it->second.dimension, view, it->second.view, thisShared, eExpressionLanguageExprTK);
                     }
                 }   break;
             }
@@ -1859,17 +1873,7 @@ catchErrors(PyObject* mainModule,
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
-inline unsigned int
-hashFunction(unsigned int a)
-{
-    a = (a ^ 61) ^ (a >> 16);
-    a = a + (a << 3);
-    a = a ^ (a >> 4);
-    a = a * 0x27d4eb2d;
-    a = a ^ (a >> 15);
 
-    return a;
-}
 
 static KnobHelper::ExpressionReturnValueTypeEnum handleExprTkReturn(EXPRTK_FUNCTIONS_NAMESPACE::expression_t& expressionObject, double* retValueIsScalar, std::string* retValueIsString, std::string* error)
 {
@@ -1923,6 +1927,8 @@ KnobHelper::executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimensi
     EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t& unknown_symbols_table = obj.expressionObject->get_symbol_table(0);
     EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t& symbol_table = obj.expressionObject->get_symbol_table(1);
 
+    bool isRenderClone = getHolder()->isRenderClone();
+
     // Update the frame & view in the know table
     symbol_table.variable_ref("frame") = (double)time;
     for (std::map<std::string, KnobDimViewKey>::const_iterator it = obj.knobDependencies.begin(); it != obj.knobDependencies.end(); ++it) {
@@ -1930,6 +1936,22 @@ KnobHelper::executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimensi
         if (!knob) {
             continue;
         }
+
+        if (isRenderClone) {
+            // Get the render clone for this knob
+            // First ensure a clone is created for the effect holding the knob
+            // and then fetch the knob clone on it
+            TreeRenderPtr render = getHolder()->getCurrentRender();
+            assert(render);
+            TimeValue time = getHolder()->getCurrentRenderTime();
+            ViewIdx view = getHolder()->getCurrentRenderView();
+            FrameViewRenderKey key = {time, view, render};
+            KnobHolderPtr holderClone = knob->getHolder()->createRenderClone(key);
+
+            knob = knob->getCloneForHolderInternal(holderClone);
+
+        }
+
         KnobBoolBasePtr isBoolean = toKnobBoolBase(knob);
         KnobStringBasePtr isString = toKnobStringBase(knob);
         KnobIntBasePtr isInt = toKnobIntBase(knob);
@@ -1950,6 +1972,17 @@ KnobHelper::executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimensi
         EffectInstancePtr effect = it->second.effect.lock();
         if (!effect) {
             continue;
+        }
+
+        if (isRenderClone) {
+            // Get the render clone
+            TreeRenderPtr render = getHolder()->getCurrentRender();
+            assert(render);
+            TimeValue time = getHolder()->getCurrentRenderTime();
+            ViewIdx view = getHolder()->getCurrentRenderView();
+            FrameViewRenderKey key = {time, view, render};
+            effect = toEffectInstance(effect->createRenderClone(key));
+            assert(effect && effect->isRenderClone());
         }
         switch (it->second.type) {
             case EffectFunctionDependency::eEffectFunctionDependencyRoD: {

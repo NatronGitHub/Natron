@@ -1286,7 +1286,7 @@ RotoPaint::setupInitialSubGraphState()
             if (_imp->premultKnob.lock()) {
                 KnobBoolPtr disablePremultKnob = premultNode->getEffectInstance()->getDisabledKnob();
                 try {
-                    disablePremultKnob->setExpression(DimSpec::all(), ViewSetSpec::all(), "not thisGroup.premultiply.get()", false, true);
+                    disablePremultKnob->setExpression(DimSpec::all(), ViewSetSpec::all(), "not thisGroup.premultiply.get()", eExpressionLanguagePython, false, true);
                 } catch (...) {
                     assert(false);
                 }
@@ -1321,7 +1321,7 @@ RotoPaint::setupInitialSubGraphState()
                 "else:\n"
                 "    ret = 2\n"
                 ;
-                premultChoiceKnob->setExpression(DimSpec::all(), ViewSetSpec::all(), premultChoiceExpr, true, true);
+                premultChoiceKnob->setExpression(DimSpec::all(), ViewSetSpec::all(), premultChoiceExpr, eExpressionLanguagePython, true, true);
             } catch (const std::exception& e) {
                 std::cerr << e.what() << std::endl;
                 assert(false);
@@ -2979,7 +2979,7 @@ RotoPaintPrivate::getOrCreateGlobalTimeBlurNode()
         // The global time blur is disabled if the motion blur is set to per-shape
         std::string expression = "thisGroup.motionBlurMode.get() != 2";
         try {
-            disabledKnob->setExpression(DimSpec(0), ViewSetSpec(0), expression, false, true);
+            disabledKnob->setExpression(DimSpec(0), ViewSetSpec(0), expression, eExpressionLanguagePython, false, true);
         } catch (...) {
             assert(false);
         }

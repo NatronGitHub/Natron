@@ -140,17 +140,6 @@ EffectInstance::createRenderCopy(const FrameViewRenderKey& key) const
         }
     }
 
-#pragma message WARN("check this")
-#if 0
-    // Visit all nodes that expressions of this node knobs may rely upon so we ensure they get a proper render object
-    // and a render time and view when we run the expression.
-    std::set<NodePtr> expressionsDeps;
-    getAllExpressionDependenciesRecursive(expressionsDeps);
-
-    for (std::set<NodePtr>::const_iterator it = expressionsDeps.begin(); it != expressionsDeps.end(); ++it) {
-        (*it)->getEffectInstance()->createRenderClone(render);
-    }
-#endif
     return clone;
 }
 

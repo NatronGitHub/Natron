@@ -33,10 +33,10 @@ NATRON_NAMESPACE_ENTER
 EXPRTK_FUNCTIONS_NAMESPACE_ENTER
 
 
-template <typename T>
-void registerFunction(const std::string& name, std::vector<std::pair<std::string, ExprtkFnPtr > >* functions)
+template <typename T, typename FuncType>
+void registerFunction(const std::string& name, std::vector<std::pair<std::string, boost::shared_ptr<FuncType> > >* functions)
 {
-    ExprtkFnPtr ptr(new T);
+    boost::shared_ptr<FuncType> ptr(new T);
     functions->push_back(std::make_pair(name, ptr));
 }
 
@@ -273,9 +273,14 @@ struct pnoise : public exprtk::ifunction<exprtk_scalar_t>
     }
 };
 
+void
+addVarargFunctions(std::vector<std::pair<std::string, vararg_func_ptr > >* functions)
+{
+    registerFunction<hash>("hash", functions);
+}
 
 void
-addFunctions(std::vector<std::pair<std::string, ExprtkFnPtr > >* functions)
+addFunctions(std::vector<std::pair<std::string, func_ptr > >* functions)
 {
     registerFunction<boxstep>("boxstep", functions);
     registerFunction<linearstep>("linearstep", functions);
@@ -284,15 +289,22 @@ addFunctions(std::vector<std::pair<std::string, ExprtkFnPtr > >* functions)
     registerFunction<remap>("remap", functions);
     registerFunction<mix>("mix", functions);
     registerFunction<remap>("remap", functions);
-    registerFunction<hash>("hash", functions);
     registerFunction<noise1>("noise1", functions);
     registerFunction<noise2>("noise2", functions);
     registerFunction<noise3>("noise3", functions);
     registerFunction<noise4>("noise4", functions);
+    registerFunction<pnoise>("pnoise", functions);
+    registerFunction<cellnoise>("cellnoise", functions);
+
+}
+
+void
+addGenericFunctions(std::vector<std::pair<std::string, generic_func_ptr > >* functions)
+{
+
+
     registerFunction<turbulence>("turbulence", functions);
     registerFunction<fbm>("fbm", functions);
-    registerFunction<fbm>("cellnoise", functions);
-    registerFunction<fbm>("pnoise", functions);
 }
 
 EXPRTK_FUNCTIONS_NAMESPACE_EXIT

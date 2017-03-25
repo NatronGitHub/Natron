@@ -282,7 +282,7 @@ PasteKnobClipBoardUndoCommand::copyFrom(const SERIALIZATION_NAMESPACE::KnobSeria
                         try {
                             // Don't fail if exception is invalid, it should have been tested prior to creating an undo/redo command, otherwise user is going
                             // to hit CTRL-Z and nothing will happen
-                            internalKnob->setExpression(DimIdx(i), *it, expression, hasRetVar, /*failIfInvalid*/ false);
+                            internalKnob->setExpression(DimIdx(i), *it, expression, eExpressionLanguagePython, hasRetVar, /*failIfInvalid*/ false);
                         } catch (...) {
                         }
                     } else { // !isRedo

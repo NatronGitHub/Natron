@@ -1278,10 +1278,10 @@ Param::_addAsDependencyOf(Param* param, int fromExprDimension, int thisDimension
 
     if (thisDimension == kPyParamDimSpecAll) {
         for (int i = 0; i < getValueCallerKnob->getNDimensions(); ++i) {
-            getValueCallerKnob->addListener(DimIdx(fromExprDimension), DimIdx(i), ViewIdx(fromExprViewSpec.value()), ViewIdx(thisViewSpec.value()), expressionKnob);
+            getValueCallerKnob->addListener(DimIdx(fromExprDimension), DimIdx(i), ViewIdx(fromExprViewSpec.value()), ViewIdx(thisViewSpec.value()), expressionKnob, eExpressionLanguagePython);
         }
     } else {
-        getValueCallerKnob->addListener(DimIdx(fromExprDimension), DimIdx(thisDimension), ViewIdx(fromExprViewSpec.value()), ViewIdx(thisViewSpec.value()), expressionKnob);
+        getValueCallerKnob->addListener(DimIdx(fromExprDimension), DimIdx(thisDimension), ViewIdx(fromExprViewSpec.value()), ViewIdx(thisViewSpec.value()), expressionKnob, eExpressionLanguagePython);
     }
 }
 
@@ -1310,7 +1310,7 @@ AnimatedParam::setExpression(const QString& expr,
     DimSpec dim = getDimSpecFromDimensionIndex(dimension);
 
     try {
-        knob->setExpression(dim, thisViewSpec, expr.toStdString(), hasRetVariable, true);
+        knob->setExpression(dim, thisViewSpec, expr.toStdString(), eExpressionLanguagePython, hasRetVariable, true);
     } catch (const std::exception& e) {
         PyErr_SetString(PyExc_ValueError, e.what());
 

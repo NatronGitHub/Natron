@@ -37,13 +37,22 @@ NATRON_NAMESPACE_ENTER;
 EXPRTK_FUNCTIONS_NAMESPACE_ENTER;
 
 typedef double exprtk_scalar_t;
-typedef boost::shared_ptr<exprtk::function_traits> ExprtkFnPtr;
 typedef exprtk::symbol_table<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t> symbol_table_t;
 typedef exprtk::expression<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t> expression_t;
 typedef exprtk::results_context<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t> results_context_t;
 typedef exprtk::parser<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t> parser_t;
+typedef exprtk::igeneric_function<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t> generic_func_t;
+typedef exprtk::ivararg_function<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t> vararg_func_t;
+typedef exprtk::ifunction<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t> func_t;
 
-void addFunctions(std::vector<std::pair<std::string, ExprtkFnPtr > >* functions);
+typedef boost::shared_ptr<generic_func_t> generic_func_ptr;
+typedef boost::shared_ptr<vararg_func_t> vararg_func_ptr;
+typedef boost::shared_ptr<func_t> func_ptr;
+
+
+void addVarargFunctions(std::vector<std::pair<std::string, vararg_func_ptr > >* functions);
+void addFunctions(std::vector<std::pair<std::string, func_ptr > >* functions);
+void addGenericFunctions(std::vector<std::pair<std::string, generic_func_ptr > >* functions);
 
 
 EXPRTK_FUNCTIONS_NAMESPACE_EXIT;

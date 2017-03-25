@@ -197,12 +197,19 @@ KnobSerialization::encode(YAML::Emitter& em) const
                     } else if (!val._expression.empty()) {
                         // Wrap the expression in a sequence of 1 element to distinguish with regular string knobs values
                         em << YAML::Flow << YAML::BeginMap;
-                        if (val._expresionHasReturnVariable) {
-                            // Multi-line expr
-                            em << YAML::Key << "MultiExpr";
+                        if (val._expressionLanguage == kKnobSerializationExpressionLanguagePython) {
+                            if (val._expresionHasReturnVariable) {
+                                // Multi-line expr
+                                em << YAML::Key << "pyMultiExpr";
+                            } else {
+                                // single line expr
+                                em << YAML::Key << "pyExpr";
+                            }
+                        } else if (val._expressionLanguage == kKnobSerializationExpressionLanguageExprtk) {
+                            em << YAML::Key << "exprtk";
                         } else {
-                            // single line expr
-                            em << YAML::Key << "Expr";
+                            // Unknown language
+                            assert(false);
                         }
                         em << YAML::Value << val._expression;
 
@@ -656,11 +663,16 @@ KnobSerialization::decodeValueNode(const std::string& viewName, const YAML::Node
             }
 
             // Look for a link or expression
-            if (dimNode["MultiExpr"]) {
-                dimVec[i]._expression = dimNode["MultiExpr"].as<std::string>();
+            if (dimNode["pyMultiExpr"]) {
+                dimVec[i]._expression = dimNode["pyMultiExpr"].as<std::string>();
                 dimVec[i]._expresionHasReturnVariable = true;
-            } else if (dimNode["Expr"]) {
-                dimVec[i]._expression = dimNode["Expr"].as<std::string>();
+                dimVec[i]._expressionLanguage = kKnobSerializationExpressionLanguagePython;
+            } else if (dimNode["pyExpr"]) {
+                dimVec[i]._expression = dimNode["pyExpr"].as<std::string>();
+                dimVec[i]._expressionLanguage = kKnobSerializationExpressionLanguagePython;
+            } else if (dimNode["exprtk"]) {
+                dimVec[i]._expression = dimNode["exprtk"].as<std::string>();
+                dimVec[i]._expressionLanguage = kKnobSerializationExpressionLanguageExprtk;
             } else {
                 // This is most likely a regular slavr/master link
                 bool gotLink = false;
@@ -711,7 +723,7 @@ KnobSerialization::checkForValueNode(const YAML::Node& node, const std::string& 
     if (!valueNode.IsMap()) {
         decodeValueNode("Main", valueNode);
     } else {
-        if (valueNode["Curve"] || valueNode["MultiExpr"] || valueNode["Expr"] || valueNode["N"] || valueNode["T"] ||
+        if (valueNode["Curve"] || valueNode["pyMultiExpr"] || valueNode["pyExpr"] || valueNode["exprtk"] || valueNode["N"] || valueNode["T"] ||
             valueNode["K"] || valueNode["D"] || valueNode["V"]) {
             decodeValueNode("Main", valueNode);
         } else {

@@ -2189,16 +2189,13 @@ KnobHelper::cloneExpressionInternal(const KnobIPtr& other, ViewIdx view, ViewIdx
 {
     std::string otherExpr = other->getExpression(otherDimension, otherView);
     bool otherHasRet = other->isExpressionUsingRetVariable(otherView, otherDimension);
+    ExpressionLanguageEnum lang = other->getExpressionLanguage(otherView, otherDimension);
+    std::string thisExpr = getExpression(dimension, view);
+    ExpressionLanguageEnum thisLang = getExpressionLanguage(view, dimension);
 
-    Expr thisExpr;
-    {
-        QMutexLocker k(&_imp->common->expressionMutex);
-        thisExpr = _imp->common->expressions[dimension][view];
-    }
-
-    if ( !otherExpr.empty() && ( (otherExpr != thisExpr.originalExpression) || (otherHasRet != thisExpr.hasRet) ) ) {
+    if (otherExpr != thisExpr || (lang != thisLang)) {
         try {
-            setExpression(dimension, view, otherExpr, otherHasRet, false);
+            setExpression(dimension, view, otherExpr, lang, otherHasRet, false);
         } catch (...) {
             // Ignore errors
         }
@@ -2302,7 +2299,8 @@ KnobHelper::addListener(const DimIdx listenerDimension,
                         const DimIdx listenedToDimension,
                         const ViewIdx listenerView,
                         const ViewIdx listenedToView,
-                        const KnobIPtr& listener)
+                        const KnobIPtr& listener,
+                        ExpressionLanguageEnum language)
 {
     if (!listener || !listener->getHolder() || !getHolder()) {
         return;
@@ -2328,12 +2326,21 @@ KnobHelper::addListener(const DimIdx listenerDimension,
         listenersSet.insert(d);
     }
 
-    // Add this knob as a dependency of the expression
-    {
+
+    if (language == eExpressionLanguagePython) {
+        // Add this knob as a dependency of the expression
+        // For ExprTK this is already done in validateExprTKExpression
         QMutexLocker k(&listenerIsHelper->_imp->common->expressionMutex);
-        Expr& expr = listenerIsHelper->_imp->common->expressions[listenerDimension][listenerView];
+        KnobExprPtr& expr = listenerIsHelper->_imp->common->expressions[listenerDimension][listenerView];
+        if (expr) {
+            
+        }
+        KnobPythonExpr* isPythonExpr = dynamic_cast<KnobPythonExpr*>(expr.get());
+
         KnobDimViewKey d(thisShared, listenedToDimension, listenedToView);
-        expr.dependencies.insert(d);
+        if (isPythonExpr) {
+            isPythonExpr->dependencies.insert(d);
+        }
     }
 
     _signalSlotHandler->s_linkChanged();
@@ -2350,7 +2357,7 @@ KnobHelper::getListeners(KnobDimViewKeySet& listeners, ListenersTypeFlags flags)
 
             if ((flags & eListenersTypeExpression) || (flags & eListenersTypeAll)) {
                 QMutexLocker l(&_imp->common->expressionMutex);
-                const KnobDimViewKeySet& thisDimViewExpressionListeners = _imp->common->expressions[i][*it].listeners;
+                const KnobDimViewKeySet& thisDimViewExpressionListeners = _imp->common->listeners[i][*it];
                 listeners.insert(thisDimViewExpressionListeners.begin(), thisDimViewExpressionListeners.end());
             }
 
@@ -2770,7 +2777,7 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
                 try {
                     std::string script = ss.str();
                     clearExpression(DimSpec::all(), ViewSetSpec::all());
-                    setExpression(DimSpec::all(), ViewSetSpec::all(), script, false /*hasRetVariable*/, false /*failIfInvalid*/);
+                    setExpression(DimSpec::all(), ViewSetSpec::all(), script, eExpressionLanguagePython, false /*hasRetVariable*/, false /*failIfInvalid*/);
                 } catch (...) {
                 }
             }
@@ -2785,44 +2792,6 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
     return output;
 } // KnobHelper::createDuplicateOnNode
 
-
-void
-KnobHelper::getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) const
-{
-    std::set<KnobIPtr> deps;
-    {
-        QMutexLocker k(&_imp->common->expressionMutex);
-        for (int i = 0; i < _imp->common->dimension; ++i) {
-            for (ExprPerViewMap::const_iterator it = _imp->common->expressions[i].begin(); it != _imp->common->expressions[i].end(); ++it) {
-                for (KnobDimViewKeySet::const_iterator it2 = it->second.dependencies.begin();
-                     it2 != it->second.dependencies.end(); ++it2) {
-                    KnobIPtr knob = it2->knob.lock();
-                    if (knob && knob.get() != this) {
-                        deps.insert(knob);
-                    }
-                }
-            }
-
-        }
-    }
-
-    std::list<KnobIPtr> knobsToInspectRecursive;
-
-    for (std::set<KnobIPtr>::iterator it = deps.begin(); it != deps.end(); ++it) {
-        EffectInstancePtr effect  = toEffectInstance( (*it)->getHolder() );
-        if (effect) {
-            NodePtr node = effect->getNode();
-
-            nodes.insert(node);
-            knobsToInspectRecursive.push_back(*it);
-        }
-    }
-
-
-    for (std::list<KnobIPtr>::iterator it = knobsToInspectRecursive.begin(); it != knobsToInspectRecursive.end(); ++it) {
-        (*it)->getAllExpressionDependenciesRecursive(nodes);
-    }
-} // getAllExpressionDependenciesRecursive
 
 static void
 initializeDefaultValueSerializationStorage(const KnobIPtr& knob,
@@ -2893,6 +2862,15 @@ initializeValueSerializationStorage(const KnobIPtr& knob,
 {
     serialization->_expression = knob->getExpression(dimension, view);
     serialization->_expresionHasReturnVariable = knob->isExpressionUsingRetVariable(view, dimension);
+    ExpressionLanguageEnum lang = knob->getExpressionLanguage(view, dimension);
+    switch (lang) {
+        case eExpressionLanguageExprTK:
+            serialization->_expressionLanguage = kKnobSerializationExpressionLanguageExprtk;
+            break;
+        case eExpressionLanguagePython:
+            serialization->_expressionLanguage = kKnobSerializationExpressionLanguagePython;
+            break;
+    }
 
     bool gotValue = !serialization->_expression.empty();
 
@@ -3990,7 +3968,13 @@ KnobHelper::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::Kn
 
                     try {
                         if ( !it->second[d]._expression.empty() ) {
-                            restoreExpression(DimIdx(dimIndex), view_i,  it->second[d]._expression, it->second[d]._expresionHasReturnVariable);
+                            ExpressionLanguageEnum lang = eExpressionLanguagePython;
+                            if (it->second[d]._expressionLanguage == kKnobSerializationExpressionLanguagePython) {
+                                lang = eExpressionLanguagePython;
+                            } else if (it->second[d]._expressionLanguage == kKnobSerializationExpressionLanguageExprtk) {
+                                lang = eExpressionLanguageExprTK;
+                            }
+                            restoreExpression(DimIdx(dimIndex), view_i,  it->second[d]._expression, lang, it->second[d]._expresionHasReturnVariable);
                         }
                     } catch (const std::exception& e) {
                         QString err = QString::fromUtf8("Failed to restore expression: %1").arg( QString::fromUtf8( e.what() ) );
@@ -5044,17 +5028,6 @@ KnobHolder::isEvaluationBlocked() const
 
     return _imp->common->evaluationBlocked > 0;
 }
-
-void
-KnobHolder::getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) const
-{
-    QMutexLocker k(&_imp->knobsMutex);
-
-    for (KnobsVec::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-        (*it)->getAllExpressionDependenciesRecursive(nodes);
-    }
-}
-
 
 void
 KnobHolder::beginMultipleEdits(const std::string& commandName)
