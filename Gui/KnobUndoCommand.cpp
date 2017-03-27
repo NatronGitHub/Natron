@@ -282,7 +282,7 @@ PasteKnobClipBoardUndoCommand::copyFrom(const SERIALIZATION_NAMESPACE::KnobSeria
                         try {
                             // Don't fail if exception is invalid, it should have been tested prior to creating an undo/redo command, otherwise user is going
                             // to hit CTRL-Z and nothing will happen
-                            internalKnob->setExpression(DimIdx(i), *it, expression, hasRetVar, /*failIfInvalid*/ false);
+                            internalKnob->setExpression(DimIdx(i), *it, expression, eExpressionLanguagePython, hasRetVar, /*failIfInvalid*/ false);
                         } catch (...) {
                         }
                     } else { // !isRedo
@@ -850,6 +850,7 @@ static void getOldExprForDimView(const KnobIPtr& knob, DimIdx dim, ViewIdx view,
 }
 
 SetExpressionCommand::SetExpressionCommand(const KnobIPtr & knob,
+                                           ExpressionLanguageEnum newLang,
                                            bool hasRetVar,
                                            DimSpec dimension,
                                            ViewSetSpec view,
@@ -859,6 +860,7 @@ SetExpressionCommand::SetExpressionCommand(const KnobIPtr & knob,
 , _knob(knob)
 , _oldExprs()
 , _newExpr(expr)
+, _newLang(newLang)
 , _hasRetVar(hasRetVar)
 , _dimension(dimension)
 , _view(view)
@@ -898,7 +900,7 @@ static void setOldExprForDimView(const KnobIPtr& knob, DimIdx dim, ViewIdx view,
     if (foundDimView == ret.end()) {
         return;
     }
-    knob->setExpression(dim, view, foundDimView->second.expression, foundDimView->second.hasRetVar, false /*failIfInvalid*/);
+    knob->setExpression(dim, view, foundDimView->second.expression, foundDimView->second.language, foundDimView->second.hasRetVar, false /*failIfInvalid*/);
 
 }
 
@@ -951,7 +953,7 @@ SetExpressionCommand::redo()
     try {
         // Don't fail if exception is invalid, it should have been tested prior to creating an undo/redo command, otherwise user is going
         // to hit CTRL-Z and nothing will happen
-        knob->setExpression(_dimension, _view, _newExpr, _hasRetVar, /*failIfInvalid*/ false);
+        knob->setExpression(_dimension, _view, _newExpr, _newLang, _hasRetVar, /*failIfInvalid*/ false);
     } catch (...) {
         Dialogs::errorDialog( tr("Expression").toStdString(), tr("The expression is invalid.").toStdString() );
     }

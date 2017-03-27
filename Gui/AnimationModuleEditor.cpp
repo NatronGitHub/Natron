@@ -720,15 +720,16 @@ AnimationModuleEditor::setSelectedCurveExpression(const QString& expression)
     if (curExpr == expression.toStdString()) {
         return;
     }
+#pragma message WARN("Todo: handle exprtk expressions here too")
     if ( !expression.isEmpty() ) {
         try {
-            knob->validateExpression(expression.toStdString(), dimension, view, false /*hasRetVariable*/, &exprResult);
+            knob->validateExpression(expression.toStdString(), eExpressionLanguagePython, dimension, view, false /*hasRetVariable*/, &exprResult);
         } catch (...) {
             _imp->expressionResultLabel->setText( tr("Error") );
             return;
         }
     }
-    pushUndoCommand( new SetExpressionCommand(knob, false /*hasRetVariable*/, dimension, view, expression.toStdString()) );
+    pushUndoCommand( new SetExpressionCommand(knob, eExpressionLanguagePython, false /*hasRetVariable*/, dimension, view, expression.toStdString()) );
 }
 
 void

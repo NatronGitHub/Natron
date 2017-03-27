@@ -68,12 +68,9 @@ public:
     ViewSetSpec getView() const;
 private:
 
-    virtual void getImportedModules(QStringList& modules) const OVERRIDE FINAL;
-    virtual void getDeclaredVariables(std::list<std::pair<QString, QString> >& variables) const OVERRIDE FINAL;
     virtual bool hasRetVariable() const OVERRIDE FINAL;
     virtual void setTitle() OVERRIDE FINAL;
-    virtual QString compileExpression(const QString& expr) OVERRIDE FINAL;
-    virtual QString getCustomHelp() OVERRIDE FINAL;
+    virtual QString compileExpression(const QString& expr, ExpressionLanguageEnum language) OVERRIDE FINAL;
 };
 
 NATRON_NAMESPACE_EXIT;

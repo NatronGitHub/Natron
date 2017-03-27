@@ -57,21 +57,23 @@ Knob<T>::getValueFromExpression(TimeValue time,
 
     // Check for a cached expression result
     // TODO
-    
+
     bool exprWasValid = isExpressionValid(dimension, view_i, 0);
     {
         EXPR_RECURSION_LEVEL();
 
-        EffectInstancePtr effect = toEffectInstance(getHolder());
-        if (effect) {
-            appPTR->setLastPythonAPICaller_TLS(effect);
+        if (getExpressionLanguage(view, dimension) == eExpressionLanguagePython) {
+            EffectInstancePtr effect = toEffectInstance(getHolder());
+            if (effect) {
+                appPTR->setLastPythonAPICaller_TLS(effect);
+            }
         }
-        
+
         std::string error;
         bool exprOk = evaluateExpression(time, view_i,  dimension, ret, &error);
         if (!exprOk) {
             setExpressionInvalid(dimension, view_i, false, error);
-
+            
             return false;
         } else {
             if (!exprWasValid) {

@@ -63,6 +63,9 @@
 // to ensure no node in the node-graph can have this script-name ever.
 #define kKnobMasterNodeIsGroup "@thisGroup"
 
+#define kKnobSerializationExpressionLanguagePython "python"
+#define kKnobSerializationExpressionLanguageExprtk "exprtk"
+
 SERIALIZATION_NAMESPACE_ENTER;
 
 /**
@@ -336,6 +339,9 @@ struct ValueSerialization
 
     // Expression
     std::string _expression;
+
+    // Either kKnobSerializationExpressionLanguagePython or kKnobSerializationExpressionLanguageExprtk
+    std::string _expressionLanguage;
     bool _expresionHasReturnVariable;
 
     // Slave/Master link
@@ -352,6 +358,7 @@ struct ValueSerialization
     , _serializeValue(false)
     , _animationCurve()
     , _expression()
+    , _expressionLanguage()
     , _expresionHasReturnVariable(false)
     , _slaveMasterLink()
     , _typeName()

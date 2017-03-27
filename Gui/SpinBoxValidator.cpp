@@ -104,7 +104,7 @@ NumericKnobValidator::validateInput(const QString& userText,
     if (!expr.empty() && knobWidgets) {
         KnobIPtr internalKnob = knobWidgets->getKnobGui()->getKnob();
         try {
-            internalKnob->validateExpression(expr, DimIdx(0), _imp->view, false, &ret);
+            internalKnob->validateExpression(expr, eExpressionLanguageExprTK, DimIdx(0), _imp->view, false, &ret);
         } catch (...) {
             return false;
         }
@@ -112,10 +112,11 @@ NumericKnobValidator::validateInput(const QString& userText,
         if (isPersistentExpression) {
             //Only set the expression if it starts with '='
             knobWidgets->getKnobGui()->pushUndoCommand( new SetExpressionCommand(internalKnob,
-                                                              false,
-                                                              dimension,
-                                                              _imp->view,
-                                                              expr) );
+                                                                                 eExpressionLanguageExprTK,
+                                                                                 false,
+                                                                                 dimension,
+                                                                                 _imp->view,
+                                                                                 expr) );
         }
         
 

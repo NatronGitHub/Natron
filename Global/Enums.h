@@ -712,7 +712,11 @@ enum CreateNodeReason
     eCreateNodeReasonInternal,
 };
 
-
+enum ExpressionLanguageEnum
+{
+    eExpressionLanguageExprTK,
+    eExpressionLanguagePython
+};
 
 enum KnobClipBoardType
 {

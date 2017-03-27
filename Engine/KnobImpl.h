@@ -438,37 +438,35 @@ KnobHelper::pyObjectToType(PyObject* o, ViewIdx view) const
     return ret;
 }
 
-inline unsigned int
-hashFunction(unsigned int a)
-{
-    a = (a ^ 61) ^ (a >> 16);
-    a = a + (a << 3);
-    a = a ^ (a >> 4);
-    a = a * 0x27d4eb2d;
-    a = a ^ (a >> 15);
 
-    return a;
-}
 
 template <typename T>
-bool
-Knob<T>::evaluateExpression(const std::string& expr,
-                            T* value,
-                            std::string* error)
-{
-    PythonGILLocker pgl;
-    PyObject *ret;
+bool handleExprtkReturnValue(KnobHelper::ExpressionReturnValueTypeEnum type, double valueAsDouble, const std::string& valueAsString, T* finalValue, std::string* error);
 
-    ///Reset the random state to reproduce the sequence
-    //randomSeed( time, hashFunction(dimension) );
-    bool exprOk = executeExpression(expr, &ret, error);
-    if (!exprOk) {
+
+template <typename T>
+bool handleExprtkReturnValue(KnobHelper::ExpressionReturnValueTypeEnum type, double valueAsDouble, const std::string& /*valueAsString*/, T* finalValue, std::string* error)
+{
+    if (type == KnobHelper::eExpressionReturnValueTypeString) {
+        *error = "This expression cannot return a string value";
         return false;
     }
-    *value =  pyObjectToType<T>(ret);
-    Py_DECREF(ret); //< new ref
+    *finalValue = (T)valueAsDouble;
+    return true;
+
+}
+
+template <>
+bool handleExprtkReturnValue(KnobHelper::ExpressionReturnValueTypeEnum type, double /*valueAsDouble*/, const std::string& valueAsString, std::string* finalValue, std::string* error)
+{
+    if (type == KnobHelper::eExpressionReturnValueTypeScalar) {
+        *error = "This expression cannot return a scalar value";
+        return false;
+    }
+    *finalValue = valueAsString;
     return true;
 }
+
 
 template <typename T>
 bool
@@ -478,19 +476,36 @@ Knob<T>::evaluateExpression(TimeValue time,
                             T* value,
                             std::string* error)
 {
-    PythonGILLocker pgl;
-    PyObject *ret;
 
-    ///Reset the random state to reproduce the sequence
-    randomSeed( time, hashFunction(dimension) );
-    bool exprOk = executeExpression(time, view, dimension, &ret, error);
-    if (!exprOk) {
-        return false;
+    if (dimension < 0 || dimension >= getNDimensions()) {
+        throw std::invalid_argument("KnobHelper::evaluateExpression(): Dimension out of range");
     }
-    *value =  pyObjectToType<T>(ret, view);
-    Py_DECREF(ret); //< new ref
-    return true;
-}
+
+    ExpressionLanguageEnum lang = getExpressionLanguage(view, dimension);
+    switch (lang) {
+        case eExpressionLanguagePython: {
+            PythonGILLocker pgl;
+            PyObject *ret;
+            ///Reset the random state to reproduce the sequence
+            bool exprOk = executePythonExpression(time, view, dimension, &ret, error);
+            if (!exprOk) {
+                return false;
+            }
+            *value =  pyObjectToType<T>(ret, view);
+            Py_DECREF(ret); //< new ref
+            return true;
+        }
+        case eExpressionLanguageExprTK: {
+            double valueAsDouble = 0.;
+            std::string valueAsString;
+            KnobHelper::ExpressionReturnValueTypeEnum ret = executeExprTKExpression(time, view, dimension, &valueAsDouble, &valueAsString, error);
+            if (ret == eExpressionReturnValueTypeError) {
+                return false;
+            }
+            return handleExprtkReturnValue(ret, valueAsDouble, valueAsString, value, error);
+        }
+    }
+} // evaluateExpression
 
 template <typename T>
 bool
@@ -500,37 +515,55 @@ Knob<T>::evaluateExpression_pod(TimeValue time,
                                 double* value,
                                 std::string* error)
 {
-    PythonGILLocker pgl;
-    PyObject *ret;
 
-
-    EffectInstancePtr effect = toEffectInstance(getHolder());
-    if (effect) {
-        appPTR->setLastPythonAPICaller_TLS(effect);
+    if (dimension < 0 || dimension >= getNDimensions()) {
+        throw std::invalid_argument("KnobHelper::evaluateExpression_pod(): Dimension out of range");
     }
 
-    ///Reset the random state to reproduce the sequence
-    randomSeed( time, hashFunction(dimension) );
-    bool exprOk = executeExpression(time, view, dimension, &ret, error);
-    if (!exprOk) {
-        return false;
-    }
+    ExpressionLanguageEnum lang = getExpressionLanguage(view, dimension);
+    switch (lang) {
+        case eExpressionLanguagePython: {
+            PythonGILLocker pgl;
+            PyObject *ret;
+            ///Reset the random state to reproduce the sequence
+            bool exprOk = executePythonExpression(time, view, dimension, &ret, error);
+            if (!exprOk) {
+                return false;
+            }
+            if ( PyFloat_Check(ret) ) {
+                *value =  (double)PyFloat_AsDouble(ret);
+            } else if ( PyInt_Check(ret) ) {
+                *value = (int)PyInt_AsLong(ret);
+            } else if ( PyLong_Check(ret) ) {
+                *value = (int)PyLong_AsLong(ret);
+            } else if (PyObject_IsTrue(ret) == 1) {
+                *value = 1;
+            } else {
+                //Strings should always fall here
+                *value = 0.;
+            }
+            return true;
+        }
+        case eExpressionLanguageExprTK: {
+            double valueAsDouble = 0.;
+            std::string valueAsString;
+            KnobHelper::ExpressionReturnValueTypeEnum ret = executeExprTKExpression(time, view, dimension, &valueAsDouble, &valueAsString, error);
+            switch (ret) {
+                case eExpressionReturnValueTypeError:
+                    return false;
+                case eExpressionReturnValueTypeString:
+                    *value = 0.;
+                    return true;
+                case eExpressionReturnValueTypeScalar:
+                    *value = valueAsDouble;
+                    return true;
+            }
 
-    if ( PyFloat_Check(ret) ) {
-        *value =  (double)PyFloat_AsDouble(ret);
-    } else if ( PyInt_Check(ret) ) {
-        *value = (int)PyInt_AsLong(ret);
-    } else if ( PyLong_Check(ret) ) {
-        *value = (int)PyLong_AsLong(ret);
-    } else if (PyObject_IsTrue(ret) == 1) {
-        *value = 1;
-    } else {
-        //Strings should always fall here
-        *value = 0.;
+        }
     }
+} // evaluateExpression_pod
 
-    return true;
-}
+
 
 template <typename T>
 void

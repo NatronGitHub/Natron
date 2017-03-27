@@ -65,6 +65,12 @@
 #define NATRON_PYTHON_NAMESPACE_EXIT }
 #define NATRON_PYTHON_NAMESPACE_USING using namespace NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE;
 
+#define EXPRTK_FUNCTIONS_NAMESPACE ExprTkFunctions
+// Macros to use in each file to enter and exit the right name spaces.
+#define EXPRTK_FUNCTIONS_NAMESPACE_ENTER namespace EXPRTK_FUNCTIONS_NAMESPACE {
+#define EXPRTK_FUNCTIONS_NAMESPACE_EXIT }
+#define EXPRTK_FUNCTIONS_NAMESPACE_USING using namespace NATRON_NAMESPACE::EXPRTK_FUNCTIONS_NAMESPACE;
+
 #ifdef __cplusplus
 // Establish the name space.
 namespace NATRON_NAMESPACE { }

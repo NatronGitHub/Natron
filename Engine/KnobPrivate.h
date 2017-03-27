@@ -55,6 +55,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/CacheEntryBase.h"
 #include "Engine/CacheEntryKeyBase.h"
 #include "Engine/DockablePanelI.h"
+#include "Engine/ExprtkFunctions.h"
 #include "Engine/Hash64.h"
 #include "Engine/KnobFile.h"
 #include "Engine/KnobTypes.h"
@@ -75,15 +76,100 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "Engine/EngineFwd.h"
 
+
 NATRON_NAMESPACE_ENTER
 
 #define EXPR_RECURSION_LEVEL() ExprRecursionLevel_RAII __recursionLevelIncrementer__(this)
 
+class KnobExpr
+{
+public:
+
+    std::string expressionString;
+    std::string exprInvalid;
+    ExpressionLanguageEnum language;
+
+    KnobExpr()
+    : expressionString()
+    , exprInvalid()
+    , language(eExpressionLanguageExprTK)
+    {}
+
+    virtual ~KnobExpr() {}
+};
+
+class KnobPythonExpr : public KnobExpr
+{
+public:
+
+    std::string modifiedExpression;
+
+    bool hasRet;
+
+    // The knobs/dimension/view we depend on in the expression
+    KnobDimViewKeySet dependencies;
+
+    KnobPythonExpr()
+    : hasRet(false)
+    {
+
+    }
+
+    virtual ~KnobPythonExpr() {}
+};
+
+/**
+ * @brief If a exprtk expression references a node variable such as the rod, this is registered as a dependency
+ **/
+struct EffectFunctionDependency
+{
+    enum Type
+    {
+        eEffectFunctionDependencyRoD
+    };
+    
+    Type type;
+    EffectInstanceWPtr effect;
+};
+
+
+class KnobExprTkExpr : public KnobExpr
+{
+public:
+
+    // The exprtk expression object
+    boost::shared_ptr<EXPRTK_FUNCTIONS_NAMESPACE::expression_t> expressionObject;
+
+    // We hold functions here because the expression object itself does not hold a copy of the functions
+    std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::func_ptr> > functions;
+    std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::vararg_func_ptr> > varargFunctions;
+    std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::generic_func_ptr> > genericFunctions;
+
+    // knob values dependencies mapped against their variable name in the expression
+    std::map<std::string, KnobDimViewKey> knobDependencies;
+    
+    // effect dependencies mapped against their variable name in the expression
+    std::map<std::string, EffectFunctionDependency> effectDependencies;
+
+    KnobExprTkExpr()
+    {
+
+    }
+    
+    virtual ~KnobExprTkExpr() {}
+};
+
+typedef boost::shared_ptr<KnobExpr> KnobExprPtr;
+
+
 typedef std::map<ViewIdx, KnobDimViewBasePtr> PerViewKnobDataMap;
 typedef std::vector<PerViewKnobDataMap> PerDimensionKnobDataMap;
 
-typedef std::map<ViewIdx, KnobI::Expr> ExprPerViewMap;
+typedef std::map<ViewIdx, KnobExprPtr> ExprPerViewMap;
 typedef std::vector<ExprPerViewMap> ExprPerDimensionVec;
+
+typedef std::map<ViewIdx, KnobDimViewKeySet> PerViewListenersMap;
+typedef std::vector<PerViewListenersMap> PerDimensionListenersMap;
 
 struct RedirectionLink
 {
@@ -220,6 +306,9 @@ struct CommonData
 
     // For each dimension its expression
     ExprPerDimensionVec expressions;
+
+    // For each dimension, the other knobs referencing this knob
+    PerDimensionListenersMap listeners;
 
     // Used to prevent expressions from creating infinite loops
     // It doesn't have to be thread-local even if getValue can be called on multiple threads:
@@ -362,6 +451,7 @@ struct KnobHelperPrivate
         common->hasModifications.resize(nDims);
         common->allDimensionsVisible[ViewIdx(0)] = true;
         common->expressions.resize(nDims);
+        common->listeners.resize(nDims);
         common->perDimViewSavedData.resize(nDims);
         for (int i = 0; i < nDims; ++i) {
             common->hasModifications[i][ViewIdx(0)] = false;
@@ -382,6 +472,11 @@ struct KnobHelperPrivate
         common->perDimViewData.resize(common->dimension);
     }
 
+    std::string validatePythonExpression(const std::string& expression, DimIdx dimension, ViewIdx view, bool hasRetVariable, std::string* resultAsString) const;
+    void validateExprTKExpression(const std::string& expression, DimIdx dimension, ViewIdx view, std::string* resultAsString, KnobExprTkExpr* ret) const;
+
+
+
     void parseListenersFromExpression(DimIdx dimension, ViewIdx view);
 
     /**
@@ -389,12 +484,37 @@ struct KnobHelperPrivate
      * that can be reached through the expression at the given dimension/view.
      * @param addTab, if true, the script should be indented by one tab
      **/
-    std::string getReachablePythonAttributesForExpression(bool addTab, DimIdx dimension, ViewIdx view);
+    std::string getReachablePythonAttributesForExpression(bool addTab, DimIdx dimension, ViewIdx view) const;
 
 
 };
 
 
+inline unsigned int
+hashFunction(unsigned int a)
+{
+    a = (a ^ 61) ^ (a >> 16);
+    a = a + (a << 3);
+    a = a ^ (a >> 4);
+    a = a * 0x27d4eb2d;
+    a = a ^ (a >> 15);
+
+    return a;
+}
+
+struct alias_cast_float
+{
+    alias_cast_float()
+    : raw(0)
+    {
+    };                          // initialize to 0 in case sizeof(T) < 8
+
+    union
+    {
+        U32 raw;
+        float data;
+    };
+};
 
 
 NATRON_NAMESPACE_EXIT

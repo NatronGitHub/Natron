@@ -329,24 +329,7 @@ protected:
 
 public:
 
-    struct Expr
-    {
-        std::string expression; //< the one modified by Natron
-        std::string originalExpression; //< the one input by the user
-        std::string exprInvalid;
-        bool hasRet;
-
-        // The knobs/dimension/view we depend on in the expression
-        KnobDimViewKeySet dependencies;
-
-        // The other knobs/dimension/view that have expressions referencing us
-        KnobDimViewKeySet listeners;
-
-        //PyObject* code;
-
-        Expr()
-        : expression(), originalExpression(), exprInvalid(), hasRet(false) /*, code(0)*/ {}
-    };
+   
 
     /**
      * @brief Do not call this. It is called right away after the constructor by the factory
@@ -692,8 +675,9 @@ public:
 
     /**
      * @brief Set an expression on the knob. If this expression is invalid, this function throws an excecption with the error from the
-     * Python interpreter.
-     * @param hasRetVariable If true the expression is expected to be multi-line and have its return value set to the variable "ret", otherwise
+     * Python interpreter or exprTK compiler
+     * @param Language (python or exprtk)
+     * @param hasRetVariable (Python only) If true the expression is expected to be multi-line and have its return value set to the variable "ret", otherwise
      * the expression is expected to be single-line.
      * @param force If set to true, this function will not check if the expression is valid nor will it attempt to compile/evaluate it, it will
      * just store it. This flag is used for serialisation, you should always pass false
@@ -701,25 +685,27 @@ public:
 
 protected:
 
-    virtual void setExpressionCommon(DimSpec dimension, ViewSetSpec view, const std::string& expression, bool hasRetVariable, bool failIfInvalid) = 0;
+    virtual void setExpressionCommon(DimSpec dimension, ViewSetSpec view, const std::string& expression, ExpressionLanguageEnum language, bool hasRetVariable, bool failIfInvalid) = 0;
 
 public:
 
     void restoreExpression(DimSpec dimension,
                            ViewSetSpec view,
                            const std::string& expression,
+                           ExpressionLanguageEnum language,
                            bool hasRetVariable)
     {
-        setExpressionCommon(dimension, view, expression, hasRetVariable, false);
+        setExpressionCommon(dimension, view, expression, language, hasRetVariable, false);
     }
 
     void setExpression(DimSpec dimension,
                        ViewSetSpec view,
                        const std::string& expression,
+                       ExpressionLanguageEnum language,
                        bool hasRetVariable,
                        bool failIfInvalid)
     {
-        setExpressionCommon(dimension, view, expression, hasRetVariable, failIfInvalid);
+        setExpressionCommon(dimension, view, expression, language, hasRetVariable, failIfInvalid);
     }
 
     /**
@@ -759,7 +745,7 @@ public:
      * @returns A new string containing the modified expression with the 'ret' variable declared if it wasn't already declared
      * by the user.
      **/
-    virtual std::string validateExpression(const std::string& expression, DimIdx dimension, ViewIdx view, bool hasRetVariable, std::string* resultAsString) = 0;
+    virtual void validateExpression(const std::string& expression, ExpressionLanguageEnum language, DimIdx dimension, ViewIdx view, bool hasRetVariable, std::string* resultAsString) = 0;
 
 public:
 
@@ -767,6 +753,11 @@ public:
      * @brief Returns whether the expr at the given dimension uses the ret variable to assign to the return value or not
      **/
     virtual bool isExpressionUsingRetVariable(ViewIdx view, DimIdx dimension) const = 0;
+
+    /**
+     * @brief Returns the language used by an expression
+     **/
+    virtual ExpressionLanguageEnum getExpressionLanguage(ViewIdx view, DimIdx dimension) const = 0;
 
     /**
      * @brief Returns in dependencies a list of all the knobs used in the expression at the given dimension
@@ -1175,8 +1166,8 @@ public:
                              const DimIdx listenedToDimension,
                              const ViewIdx listenerView,
                              const ViewIdx listenedToView,
-                             const KnobIPtr& listener) = 0;
-    virtual void getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) const = 0;
+                             const KnobIPtr& listener,
+                             ExpressionLanguageEnum language) = 0;
 
     /**
      * @brief Implement to save the content of the object to the serialization object
@@ -1604,11 +1595,12 @@ public:
     virtual bool hasAnimation() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool checkInvalidExpressions() OVERRIDE FINAL;
     virtual bool isExpressionValid(DimIdx dimension, ViewIdx view, std::string* error) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ExpressionLanguageEnum getExpressionLanguage(ViewIdx view, DimIdx dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setExpressionInvalid(DimSpec dimension, ViewSetSpec view, bool valid, const std::string& error) OVERRIDE FINAL;
 
 protected:
 
-    void setExpressionInternal(DimIdx dimension, ViewIdx view, const std::string& expression, bool hasRetVariable, bool failIfInvalid);
+    void setExpressionInternal(DimIdx dimension, ViewIdx view, const std::string& expression, ExpressionLanguageEnum language, bool hasRetVariable, bool failIfInvalid);
 
 private:
 
@@ -1622,7 +1614,7 @@ private:
     bool clearExpressionInternal(DimIdx dimension, ViewIdx view);
 public:
 
-    virtual void setExpressionCommon(DimSpec dimension, ViewSetSpec view, const std::string& expression, bool hasRetVariable, bool failIfInvalid) OVERRIDE FINAL;
+    virtual void setExpressionCommon(DimSpec dimension, ViewSetSpec view, const std::string& expression, ExpressionLanguageEnum language, bool hasRetVariable, bool failIfInvalid) OVERRIDE FINAL;
 
     virtual void restoreKnobLinks(const SERIALIZATION_NAMESPACE::KnobSerializationBasePtr& serialization,
                                   const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >& allCreatedNodesInGroup) OVERRIDE FINAL;
@@ -1643,13 +1635,14 @@ public:
                                              const std::string& oldName,
                                              const std::string& newName) OVERRIDE FINAL;
     virtual void clearExpression(DimSpec dimension, ViewSetSpec view) OVERRIDE FINAL;
-    virtual std::string validateExpression(const std::string& expression, DimIdx dimension, ViewIdx view, bool hasRetVariable, std::string* resultAsString) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void validateExpression(const std::string& expression, ExpressionLanguageEnum language, DimIdx dimension, ViewIdx view, bool hasRetVariable, std::string* resultAsString) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual bool linkTo(const KnobIPtr & otherKnob, DimSpec thisDimension = DimSpec::all(), DimSpec otherDimension = DimSpec::all(), ViewSetSpec thisView = ViewSetSpec::all(), ViewSetSpec otherView = ViewSetSpec::all()) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void unlink(DimSpec dimension, ViewSetSpec view, bool copyState) OVERRIDE FINAL;
 
 protected:
 
+  
     /*
      * @brief Callback called when linked or unlinked to refresh extra state
      */
@@ -1776,13 +1769,32 @@ protected:
     void resetMaster(DimIdx dimension, ViewIdx view);
 
     ///The return value must be Py_DECRREF
-    bool executeExpression(TimeValue time, ViewIdx view, DimIdx dimension, PyObject** ret, std::string* error) const;
+    bool executePythonExpression(TimeValue time, ViewIdx view, DimIdx dimension, PyObject** ret, std::string* error) const;
 
 public:
 
+    enum ExpressionReturnValueTypeEnum
+    {
+        eExpressionReturnValueTypeScalar,
+        eExpressionReturnValueTypeString,
+        eExpressionReturnValueTypeError
+    };
+protected:
+    
+    ExpressionReturnValueTypeEnum executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimension, double* retValueIsScalar, std::string* retValueIsString, std::string* error) const;
+
     /// The return value must be Py_DECRREF
     /// The expression must put its result in the Python variable named "ret"
-    static bool executeExpression(const std::string& expr, PyObject** ret, std::string* error);
+    static bool executePythonExpression(const std::string& expr, PyObject** ret, std::string* error);
+    static ExpressionReturnValueTypeEnum executeExprTKExpression(const std::string& expr, double* retValueIsScalar, std::string* retValueIsString, std::string* error);
+
+public:
+
+
+    /// This static publicly-available function is useful to evaluate simple python expressions that evaluate to a double, int or string value.
+    /// The expression must put its result in the Python variable named "ret"
+    static ExpressionReturnValueTypeEnum evaluateExpression(const std::string& expr, ExpressionLanguageEnum language, double* retIsScalar, std::string* retIsString, std::string* error);
+
 
     virtual bool getSharingMaster(DimIdx dimension, ViewIdx view, KnobDimViewKey* linkData) const OVERRIDE FINAL;
     virtual void getSharedValues(DimIdx dimension, ViewIdx view, KnobDimViewKeySet* sharedKnobs) const OVERRIDE FINAL;
@@ -1796,8 +1808,10 @@ public:
     virtual void addListener(DimIdx fromExprDimension,
                              DimIdx thisDimension,
                              const ViewIdx listenerView,
-                             const ViewIdx listenedToView, const KnobIPtr& knob) OVERRIDE FINAL;
-    virtual void getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) const OVERRIDE FINAL;
+                             const ViewIdx listenedToView,
+                             const KnobIPtr& knob,
+                             ExpressionLanguageEnum language) OVERRIDE FINAL;
+
     virtual void getListeners(KnobDimViewKeySet& listeners, ListenersTypeFlags flags = ListenersTypeFlags(eListenersTypeExpression | eListenersTypeSharedValue)) const OVERRIDE FINAL;
 
 private:
@@ -2323,11 +2337,6 @@ private:
 
     void queueSetValue(const T& v, ViewSetSpec view, DimSpec dimension);
 
-public:
-    /// This static publicly-available function is useful to evaluate simple python expressions that evaluate to a double, int or string value.
-    /// The expression must put its result in the Python variable named "ret"
-    static bool evaluateExpression(const std::string& expr, T* ret, std::string* error);
-
 private:
 
     bool evaluateExpression(TimeValue time, ViewIdx view, DimIdx dimension, T* ret, std::string* error);
@@ -2800,8 +2809,6 @@ public:
                                     TimeValue time,
                                     ViewSetSpec view,
                                     ValueChangedReasonEnum reason);
-
-    void getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) const;
     
     /**
      * @brief To implement if you need to make the hash vary at a specific time/view

@@ -112,12 +112,17 @@ KnobGui::onSetExprActionTriggered()
     if (!action) {
         return;
     }
-    ViewSetSpec view;
-    DimSpec dimension;
-    getDimViewFromActionData(action, &view, &dimension);
+    ViewSetSpec viewSpec;
+    DimSpec dimensionSpec;
+    getDimViewFromActionData(action, &viewSpec, &dimensionSpec);
 
-    EditExpressionDialog* dialog = new EditExpressionDialog(getGui(), dimension, view, shared_from_this(), _imp->container->getContainerWidget());
-    dialog->create(QString::fromUtf8( getKnob()->getExpression(dimension.isAll() ? DimIdx(0) : DimIdx(dimension), view.isAll() ? ViewIdx(0) : ViewIdx(view)).c_str() ), true);
+    EditExpressionDialog* dialog = new EditExpressionDialog(getGui(), dimensionSpec, viewSpec, shared_from_this(), _imp->container->getContainerWidget());
+
+    DimIdx dim = dimensionSpec.isAll() ? DimIdx(0) : DimIdx(dimensionSpec);
+    ViewIdx view = viewSpec.isAll() ? ViewIdx(0) : ViewIdx(viewSpec);
+    std::string currentExpression = getKnob()->getExpression(dim, view);
+    ExpressionLanguageEnum lang = getKnob()->getExpressionLanguage(view, dim);
+    dialog->create(lang, QString::fromUtf8(currentExpression.c_str() ));
     QObject::connect( dialog, SIGNAL(dialogFinished(bool)), this, SLOT(onEditExprDialogFinished(bool)) );
 
     dialog->show();
@@ -133,7 +138,7 @@ KnobGui::onClearExprActionTriggered()
     ViewSetSpec view;
     DimSpec dimension;
     getDimViewFromActionData(act, &view, &dimension);
-    pushUndoCommand( new SetExpressionCommand(getKnob(), false, dimension, view, "") );
+    pushUndoCommand( new SetExpressionCommand(getKnob(), eExpressionLanguageExprTK, false, dimension, view, "") );
 }
 
 void
@@ -145,13 +150,14 @@ KnobGui::onEditExprDialogFinished(bool accepted)
 
         if (accepted) {
 
-            bool hasRetVar;
-            QString expr = dialog->getExpression(&hasRetVar);
+            QString expr = dialog->getScript();
+            bool hasRetVar = dialog->isUseRetButtonChecked();
+            ExpressionLanguageEnum language = dialog->getSelectedLanguage();
             std::string stdExpr = expr.toStdString();
             DimSpec dim = dialog->getDimension();
             ViewSetSpec view = dialog->getView();
 
-            pushUndoCommand( new SetExpressionCommand(getKnob(), hasRetVar, dim, view, stdExpr) );
+            pushUndoCommand( new SetExpressionCommand(getKnob(), language, hasRetVar, dim, view, stdExpr) );
 
         }
 

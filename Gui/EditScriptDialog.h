@@ -44,7 +44,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/DimensionIdx.h"
 #include "Engine/ViewIdx.h"
-
+#include "Global/GlobalDefines.h"
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -67,9 +67,11 @@ public:
 
     virtual ~EditScriptDialog();
     
-    void create(const QString& initialScript, bool makeUseRetButton);
+    void create(ExpressionLanguageEnum language, const QString& initialScript);
 
-    QString getExpression(bool* hasRetVariable) const;
+    QString getScript() const;
+
+    ExpressionLanguageEnum getSelectedLanguage() const;
 
     bool isUseRetButtonChecked() const;
 
@@ -77,7 +79,6 @@ public Q_SLOTS:
 
     void onUseRetButtonClicked(bool useRet);
     void onTextEditChanged();
-    void onHelpRequested();
 
     void onAcceptedPressed()
     {
@@ -88,26 +89,18 @@ public Q_SLOTS:
         Q_EMIT dialogFinished(false);
     }
 
+    void onLanguageCurrentIndexChanged();
+
 Q_SIGNALS:
 
     void dialogFinished(bool accepted);
 
-protected:
+public:
 
     virtual void setTitle() = 0;
     virtual bool hasRetVariable() const { return false; }
 
-    virtual void getImportedModules(QStringList& modules) const = 0;
-    virtual void getDeclaredVariables(std::list<std::pair<QString, QString> >& variables) const = 0;
-    virtual QString compileExpression(const QString& expr) = 0;
-    static QString getHelpPart1();
-    static QString getHelpThisNodeVariable();
-    static QString getHelpThisItemVariable();
-    static QString getHelpThisGroupVariable();
-    static QString getHelpThisParamVariable();
-    static QString getHelpDimensionVariable();
-    static QString getHelpPart2();
-    virtual QString getCustomHelp() = 0;
+    virtual QString compileExpression(const QString& expr, ExpressionLanguageEnum language) = 0;
 
 private:
 

@@ -411,6 +411,7 @@ class SetExpressionCommand
 public:
 
     SetExpressionCommand(const KnobIPtr & knob,
+                         ExpressionLanguageEnum language,
                          bool hasRetVar,
                          DimSpec dimension,
                          ViewSetSpec view,
@@ -422,6 +423,7 @@ public:
     struct Expr
     {
         std::string expression;
+        ExpressionLanguageEnum language;
         bool hasRetVar;
     };
 
@@ -433,6 +435,7 @@ private:
     KnobIWPtr _knob;
     PerDimViewExprMap _oldExprs;
     std::string _newExpr;
+    ExpressionLanguageEnum _newLang;
     bool _hasRetVar;
     DimSpec _dimension;
     ViewSetSpec _view;

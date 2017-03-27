@@ -558,6 +558,7 @@ class UserParamHolder;
 
 NATRON_PYTHON_NAMESPACE_EXIT;
 
+
 NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_EngineFwd_h
