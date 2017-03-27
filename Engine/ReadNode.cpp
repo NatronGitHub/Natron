@@ -238,22 +238,28 @@ public:
     //MT only
     int creatingReadNode;
 
+    // Plugin-ID of the last read node created.
+    // If this is different, we do not load serialized knobs
+    std::string lastPluginIDCreated;
+
+
     bool wasCreatedAsHiddenNode;
 
 
     ReadNodePrivate(ReadNode* publicInterface)
-        : _publicInterface(publicInterface)
-        , embeddedPluginMutex()
-        , embeddedPlugin()
-        , genericKnobsSerialization()
-        , inputFileKnob()
-        , pluginSelectorKnob()
-        , pluginIDStringKnob()
-        , separatorKnob()
-        , fileInfosKnob()
-        , readNodeKnobs()
-        , creatingReadNode(0)
-        , wasCreatedAsHiddenNode(false)
+    : _publicInterface(publicInterface)
+    , embeddedPluginMutex()
+    , embeddedPlugin()
+    , genericKnobsSerialization()
+    , inputFileKnob()
+    , pluginSelectorKnob()
+    , pluginIDStringKnob()
+    , separatorKnob()
+    , fileInfosKnob()
+    , readNodeKnobs()
+    , creatingReadNode(0)
+    , lastPluginIDCreated()
+    , wasCreatedAsHiddenNode(false)
     {
     }
 
@@ -752,8 +758,11 @@ ReadNodePrivate::createReadNode(bool throwErrors,
     }
 
 
-    //Clone the old values of the generic knobs
-    cloneGenericKnobs();
+    // Clone the old values of the generic knobs if we created the same decoder than before
+    if (lastPluginIDCreated == readerPluginID) {
+        cloneGenericKnobs();
+    }
+    lastPluginIDCreated = readerPluginID;
 
 
     NodePtr thisNode = _publicInterface->getNode();
