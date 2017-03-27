@@ -12,9 +12,7 @@ Description
 
 Add random noise to input stream.
 
-Note that each render gives a different noise.
-
-Uses the 'noise' function from the CImg library.
+Uses the 'noise' function from the CImg library, modified so that noise is reproductible at each render.
 
 CImg is a free, open-source library distributed under the CeCILL-C (close to the GNU LGPL) or CeCILL (compatible with the GNU GPL) licenses. It can be used in commercial applications (see http://cimg.eu).
 
@@ -47,6 +45,10 @@ Controls
 |                                |           |            | | **Salt & Pepper**: Salt & pepper noise.                                                                                            |
 |                                |           |            | | **Poisson**: Poisson noise. Image is divided by Sigma before computing noise, then remultiplied by Sigma.                          |
 |                                |           |            | | **Rice**: Rician noise.                                                                                                            |
++--------------------------------+-----------+------------+--------------------------------------------------------------------------------------------------------------------------------------+
+| Seed / ``seed``                | Integer   | 2000       | Random seed: change this if you want different instances to have different noise.                                                    |
++--------------------------------+-----------+------------+--------------------------------------------------------------------------------------------------------------------------------------+
+| Static Seed / ``staticSeed``   | Boolean   | Off        | When enabled, the dither pattern remains the same for every frame producing a constant noise effect.                                 |
 +--------------------------------+-----------+------------+--------------------------------------------------------------------------------------------------------------------------------------+
 | (Un)premult / ``premult``      | Boolean   | Off        | Divide the image by the alpha channel before processing, and re-multiply it afterwards. Use if the input images are premultiplied.   |
 +--------------------------------+-----------+------------+--------------------------------------------------------------------------------------------------------------------------------------+
