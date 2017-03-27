@@ -76,6 +76,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/KnobGuiGroup.h"
+#include "Gui/KnobGui.h"
+#include "Gui/KnobGuiContainerHelper.h"
 #include "Gui/Label.h"
 #include "Gui/LineEdit.h"
 #include "Gui/Menu.h"
@@ -189,6 +191,9 @@ EditScriptDialogPrivate::refreshUIForLanguage()
     ExpressionLanguageEnum language = getSelectedLanguage();
     refreshHeaderLabel(language);
     refreshVisibility(language);
+
+    knobExpressionReceiver.lock()->getContainer()->getGui()->setEditExpressionDialogLanguage(language);
+    knobExpressionReceiver.lock()->getContainer()->getGui()->setEditExpressionDialogLanguageValid(true);
 }
 
 void
@@ -329,6 +334,7 @@ EditScriptDialog::onUseRetButtonClicked(bool useRet)
 
 EditScriptDialog::~EditScriptDialog()
 {
+    _imp->knobExpressionReceiver.lock()->getContainer()->getGui()->setEditExpressionDialogLanguageValid(false);
 }
 
 void

@@ -511,6 +511,12 @@ public:
 
     const TimeLineKeysSet& getTimelineGuiKeyframes() const;
 
+    void setEditExpressionDialogLanguage(ExpressionLanguageEnum lang);
+
+    void setEditExpressionDialogLanguageValid(bool valid);
+
+    ExpressionLanguageEnum getEditExpressionDialogLanguage() const;
+
 protected:
 
     virtual void restoreChildFromSerialization(const SERIALIZATION_NAMESPACE::WindowSerialization& serialization) OVERRIDE FINAL;

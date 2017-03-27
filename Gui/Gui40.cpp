@@ -941,4 +941,27 @@ Gui::getTimelineGuiKeyframes() const
     return _imp->keyframesVisibleOnTimeline;
 }
 
+void
+Gui::setEditExpressionDialogLanguage(ExpressionLanguageEnum lang)
+{
+    _imp->lastExpressionDialogLanguage = lang;
+}
+
+void
+Gui::setEditExpressionDialogLanguageValid(bool valid)
+{
+    _imp->isLastExpressionDialogLanguageValid = valid;
+}
+
+ExpressionLanguageEnum
+Gui::getEditExpressionDialogLanguage() const
+{
+    if (_imp->isLastExpressionDialogLanguageValid) {
+        return _imp->lastExpressionDialogLanguage;
+    } else {
+        // By default, return Python so that if dropped on the Script Editor the expression is in Python
+        return eExpressionLanguagePython;
+    }
+}
+
 NATRON_NAMESPACE_EXIT;

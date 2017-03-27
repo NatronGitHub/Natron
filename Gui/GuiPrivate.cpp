@@ -140,6 +140,8 @@ GuiPrivate::GuiPrivate(const GuiAppInstancePtr& app,
     , _isTripleSyncEnabled(false)
     , areRenderStatsEnabledMutex()
     , areRenderStatsEnabled(false)
+    , isLastExpressionDialogLanguageValid(false)
+    , lastExpressionDialogLanguage(eExpressionLanguagePython)
     , actionNew_project(0)
     , actionOpen_project(0)
     , actionClose_project(0)

@@ -605,6 +605,20 @@ KnobHelper::canSplitViews() const
 }
 
 void
+KnobHelper::setExpressionsResultsCachingEnabled(bool enabled)
+{
+    QMutexLocker k(&_imp->common->expressionMutex);
+    _imp->common->enableExpressionCaching = enabled;
+}
+
+bool
+KnobHelper::isExpressionsResultsCachingEnabled() const
+{
+    QMutexLocker k(&_imp->common->expressionMutex);
+    return _imp->common->enableExpressionCaching;
+}
+
+void
 KnobDimViewBase::notifyCurveChanged()
 {
     KnobDimViewKeySet knobs;
@@ -945,6 +959,9 @@ KnobHelper::evaluateValueChangeInternal(DimSpec dimension,
         // Invalidate the hash cache
         invalidateHashCache();
 
+        // Invalidate expression results
+        clearExpressionsResults(dimension, view);
+
         // Call knobChanged action
         didSomething = holder->onKnobValueChangedInternal(thisShared, time, view, reason);
 
@@ -996,8 +1013,9 @@ KnobHelper::refreshListenersAfterValueChangeInternal(TimeValue time, ViewIdx vie
 
     for (KnobDimViewKeySet::const_iterator it = allListeners.begin(); it != allListeners.end(); ++it) {
         KnobHelperPtr sharedKnob = toKnobHelper(it->knob.lock());
-        if (sharedKnob) {
+        if (sharedKnob && sharedKnob.get() != this) {
             sharedKnob->evaluateValueChangeInternal(it->dimension, time, it->view, reason, evaluatedKnobs);
+            sharedKnob->refreshStaticValue(time);
         }
     }
 
@@ -1035,9 +1053,7 @@ KnobHelper::onTimeChanged(bool isPlayback,  TimeValue time)
     }
 
     if (hasAnimation()) {
-        if (!isValueChangesBlocked()) {
-            _signalSlotHandler->s_mustRefreshKnobGui(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonTimeChanged);
-        }
+        refreshStaticValue(time);
     }
     if (evaluateValueChangeOnTimeChange() && !isPlayback) {
         KnobHolderPtr holder = getHolder();

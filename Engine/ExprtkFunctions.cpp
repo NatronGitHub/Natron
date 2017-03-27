@@ -322,6 +322,50 @@ struct randomInt : public exprtk::ifunction<exprtk_scalar_t>
     }
 };
 
+struct numtostr : public exprtk::igeneric_function<exprtk_scalar_t>
+{
+    typedef exprtk::igeneric_function<exprtk_scalar_t> generic_func;
+    typedef typename generic_func::parameter_list_t parameter_list_t;
+
+    numtostr()
+    : exprtk::igeneric_function<exprtk_scalar_t>("T|TS|TST", generic_func::e_rtrn_string)
+    {
+        /*overloads:
+         str(value)
+         str(value, format)
+         str(value, format, precision)
+         */
+    }
+    exprtk_scalar_t operator()(std::string& result,
+                               parameter_list_t parameters)
+    {
+        typedef typename exprtk::igeneric_function<exprtk_scalar_t>::generic_type generic_type;
+        typedef typename generic_type::scalar_view scalar_t;
+        typedef typename generic_type::string_view string_t;
+
+        assert(parameters.size() == 1 || parameters.size() == 2 || parameters.size() == 3);
+        double value = scalar_t(parameters[0])();
+        std::string format;
+        format += 'f';
+        if (parameters.size() > 1) {
+            format = exprtk::to_str(string_t(parameters[1]));
+            if (format != "f" && format != "g" && format != "e" && format != "G" && format != "E") {
+                return 0.;
+            }
+        }
+        int precision = 6;
+        if (parameters.size() > 2) {
+            precision = std::floor(scalar_t(parameters[2])());
+        }
+
+        QString str = QString::number(value, format[0], precision);
+        result = str.toStdString();
+
+        return 1.;
+    }
+    
+};
+
 void
 addVarargFunctions(TimeValue /*time*/, std::vector<std::pair<std::string, vararg_func_ptr > >* functions)
 {
@@ -360,6 +404,7 @@ addGenericFunctions(TimeValue /*time*/, std::vector<std::pair<std::string, gener
 
     registerFunction<turbulence>("turbulence", functions);
     registerFunction<fbm>("fbm", functions);
+    registerFunction<numtostr>("str", functions);
 }
 
 void makeLocalCopyOfStateFunctions(TimeValue time, symbol_table_t& symbol_table, std::vector<std::pair<std::string, func_ptr > >* functions)

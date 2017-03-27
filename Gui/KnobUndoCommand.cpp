@@ -277,7 +277,7 @@ PasteKnobClipBoardUndoCommand::copyFrom(const SERIALIZATION_NAMESPACE::KnobSeria
                 case eKnobClipBoardTypeCopyExpressionMultCurveLink:
                 {
                     if (isRedo) {
-                        std::string expression = makeLinkExpression(projectViewNames, internalKnob, _imp->type == eKnobClipBoardTypeCopyExpressionMultCurveLink, fromKnob, _imp->fromDimension, _imp->fromView, _imp->targetDimension, _imp->targetView);
+                        std::string expression = makeLinkExpression(projectViewNames, internalKnob, _imp->type == eKnobClipBoardTypeCopyExpressionMultCurveLink, eExpressionLanguageExprTK, fromKnob, _imp->fromDimension, _imp->fromView, _imp->targetDimension, _imp->targetView);
                         const bool hasRetVar = false;
                         try {
                             // Don't fail if exception is invalid, it should have been tested prior to creating an undo/redo command, otherwise user is going
@@ -301,6 +301,7 @@ std::string
 PasteKnobClipBoardUndoCommand::makeLinkExpression(const std::vector<std::string>& projectViewNames,
                                                   const KnobIPtr& targetKnob,
                                                   bool multCurve,
+                                                  ExpressionLanguageEnum language,
                                                   const KnobIPtr& fromKnob,
                                                   DimSpec fromDimension,
                                                   ViewSetSpec fromView,
@@ -329,63 +330,121 @@ PasteKnobClipBoardUndoCommand::makeLinkExpression(const std::vector<std::string>
         if (isEffectContainerGroup) {
             ss << "thisGroup.";
         } else {
-            ss << fromEffect->getApp()->getAppIDString() << ".";
+            if (language == eExpressionLanguagePython) {
+                ss << fromEffect->getApp()->getAppIDString() << ".";
+            } else {
+                ss << "app.";
+            }
         }
         ss << fromEffect->getNode()->getScriptName_mt_safe() << ".";
     }
 
     // Call getValue on the fromKnob
     ss << fromKnob->getName();
-    ss << ".getValue(";
-    if (fromKnob->getNDimensions() > 1) {
-        if (fromDimension.isAll()) {
-            ss << "dimension";
-        } else {
-            ss << fromDimension;
-        }
-    }
-    std::list<ViewIdx> sourceViews = fromKnob->getViewsList();
-    if (sourceViews.size() > 1) {
-        ss << ", ";
-        if (fromView.isAll()) {
-            ss << "view";
-        } else {
-            if (fromView >= 0 && fromView < (int)projectViewNames.size()) {
-                ss << projectViewNames[fromView];
-            } else {
-                ss << "Main";
-            }
-        }
-    }
-    ss << ")";
-
-    // Also check if we need to multiply by the target knob's curve
-    if (multCurve) {
-        ss << " * curve(frame, ";
-        if (targetDimension.isAll()) {
-            ss << "dimension";
-        } else {
-            ss << targetDimension;
-        }
-
-        std::list<ViewIdx> targetKnobViews = targetKnob->getViewsList();
-        if (targetKnobViews.size() > 1) {
-            ss << ", ";
-            if (targetView.isAll()) {
-                ss << "view";
-            } else {
-
-                if (targetView >= 0 && targetView < (int)projectViewNames.size()) {
-                    ss << projectViewNames[targetView];
+    switch (language) {
+        case eExpressionLanguagePython: {
+            ss << ".getValue(";
+            if (fromKnob->getNDimensions() > 1) {
+                if (fromDimension.isAll()) {
+                    ss << "dimension";
                 } else {
-                    ss << "Main";
+                    ss << fromDimension;
                 }
             }
-        }
+            std::list<ViewIdx> sourceViews = fromKnob->getViewsList();
+            if (sourceViews.size() > 1) {
+                ss << ", ";
+                if (fromView.isAll()) {
+                    ss << "view";
+                } else {
+                    if (fromView >= 0 && fromView < (int)projectViewNames.size()) {
+                        ss << projectViewNames[fromView];
+                    } else {
+                        ss << "Main";
+                    }
+                }
+            }
+            ss << ")";
 
-        ss << ")";
-    }
-    return ss.str();
+            // Also check if we need to multiply by the target knob's curve
+            if (multCurve) {
+                ss << " * curve(frame, ";
+                if (targetDimension.isAll()) {
+                    ss << "dimension";
+                } else {
+                    ss << targetDimension;
+                }
+
+                std::list<ViewIdx> targetKnobViews = targetKnob->getViewsList();
+                if (targetKnobViews.size() > 1) {
+                    ss << ", ";
+                    if (targetView.isAll()) {
+                        ss << "view";
+                    } else {
+                        
+                        if (targetView >= 0 && targetView < (int)projectViewNames.size()) {
+                            ss << projectViewNames[targetView];
+                        } else {
+                            ss << "Main";
+                        }
+                    }
+                }
+                
+                ss << ")";
+            }
+
+        }   break;
+        case eExpressionLanguageExprTK: {
+            /*std::list<ViewIdx> sourceViews = fromKnob->getViewsList();
+            if (sourceViews.size() > 1) {
+                if (fromView.isAll()) {
+                    ss << "view";
+                } else {
+                    if (fromView >= 0 && fromView < (int)projectViewNames.size()) {
+                        ss << projectViewNames[fromView];
+                    } else {
+                        ss << "Main";
+                    }
+                }
+            }*/
+            if (fromKnob->getNDimensions() > 1) {
+                ss << ".";
+                if (fromDimension.isAll()) {
+                    ss << "dimension";
+                } else {
+                    ss << fromDimension;
+                }
+            }
+
+            // Also check if we need to multiply by the target knob's curve
+            if (multCurve) {
+                ss << " * curve(frame, ";
+                if (targetDimension.isAll()) {
+                    ss << "dimension";
+                } else {
+                    ss << targetDimension;
+                }
+
+                std::list<ViewIdx> targetKnobViews = targetKnob->getViewsList();
+                if (targetKnobViews.size() > 1) {
+                    ss << ", ";
+                    if (targetView.isAll()) {
+                        ss << "view";
+                    } else {
+
+                        if (targetView >= 0 && targetView < (int)projectViewNames.size()) {
+                            ss << projectViewNames[targetView];
+                        } else {
+                            ss << "Main";
+                        }
+                    }
+                }
+
+                ss << ")";
+            }
+        }   break;
+    } // switch(language)
+        return ss.str();
 } // makeLinkExpression
 
 

@@ -509,7 +509,7 @@ AnimationModuleView::onApplyLoopExpressionOnSelectedCurveActionTriggered()
         ss << "curve(((frame - " << first << ") % (" << last << " - " << first << " + 1)) + " << first << ", " << curve->getDimension() << ", \"" <<  viewName << "\")";
         std::string script = ss.str();
         try {
-            isAnimModule->getEditor()->setSelectedCurveExpression( QString::fromUtf8( script.c_str() ) );
+            isAnimModule->getEditor()->setSelectedCurveExpression( QString::fromUtf8( script.c_str() ), eExpressionLanguagePython );
         } catch(const std::exception& e) {
             Dialogs::errorDialog(tr("Animation Module").toStdString(), e.what());
         }
@@ -546,7 +546,7 @@ AnimationModuleView::onApplyNegateExpressionOnSelectedCurveActionTriggered()
     ss << "-curve(frame, " << curve->getDimension() << ", \"" <<  viewName << "\")";
     std::string script = ss.str();
     try {
-        isAnimModule->getEditor()->setSelectedCurveExpression( QString::fromUtf8( script.c_str() ) );
+        isAnimModule->getEditor()->setSelectedCurveExpression( QString::fromUtf8( script.c_str() ), eExpressionLanguagePython );
     } catch(const std::exception& e) {
         Dialogs::errorDialog(tr("Animation Module").toStdString(), e.what());
     }
@@ -581,7 +581,7 @@ AnimationModuleView::onApplyReverseExpressionOnSelectedCurveActionTriggered()
     ss << "curve(-frame, " << curve->getDimension() << ", \"" <<  viewName << "\")";
     std::string script = ss.str();
     try {
-        isAnimModule->getEditor()->setSelectedCurveExpression( QString::fromUtf8( script.c_str() ) );
+        isAnimModule->getEditor()->setSelectedCurveExpression( QString::fromUtf8( script.c_str() ), eExpressionLanguagePython );
     } catch(const std::exception& e) {
         Dialogs::errorDialog(tr("Animation Module").toStdString(), e.what());
     }

@@ -347,6 +347,28 @@ Param::setPersistent(bool persistent)
     knob->setIsPersistent(persistent);
 }
 
+void
+Param::setExpressionCacheEnabled(bool enabled)
+{
+    KnobIPtr knob = getInternalKnob();
+    if (!knob) {
+        PythonSetNullError();
+        return;
+    }
+    knob->setExpressionsResultsCachingEnabled(enabled);
+}
+
+bool
+Param::isExpressionCacheEnabled() const
+{
+    KnobIPtr knob = getInternalKnob();
+    if (!knob) {
+        PythonSetNullError();
+        return false;
+    }
+    return knob->isExpressionsResultsCachingEnabled();
+}
+
 bool
 Param::getEvaluateOnChange() const
 {

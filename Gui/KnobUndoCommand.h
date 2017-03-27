@@ -371,6 +371,7 @@ public:
     static std::string makeLinkExpression(const std::vector<std::string>& projectViewNames,
                                           const KnobIPtr& targetKnob,
                                           bool multCurve,
+                                          ExpressionLanguageEnum language,
                                           const KnobIPtr& fromKnob,
                                           DimSpec fromDimension,
                                           ViewSetSpec fromView,

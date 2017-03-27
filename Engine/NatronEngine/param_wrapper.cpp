@@ -1004,6 +1004,32 @@ static PyObject* Sbk_ParamFunc_getViewerUIVisible(PyObject* self)
     return pyResult;
 }
 
+static PyObject* Sbk_ParamFunc_isExpressionCacheEnabled(PyObject* self)
+{
+    ParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (ParamWrapper*)((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // isExpressionCacheEnabled()const
+            bool cppResult = const_cast<const ::ParamWrapper*>(cppSelf)->isExpressionCacheEnabled();
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 static PyObject* Sbk_ParamFunc_linkTo(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ParamWrapper* cppSelf = 0;
@@ -1525,6 +1551,48 @@ static PyObject* Sbk_ParamFunc_setEvaluateOnChange(PyObject* self, PyObject* pyA
     Sbk_ParamFunc_setEvaluateOnChange_TypeError:
         const char* overloads[] = {"bool", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Param.setEvaluateOnChange", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_ParamFunc_setExpressionCacheEnabled(PyObject* self, PyObject* pyArg)
+{
+    ParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (ParamWrapper*)((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: setExpressionCacheEnabled(bool)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArg)))) {
+        overloadId = 0; // setExpressionCacheEnabled(bool)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_ParamFunc_setExpressionCacheEnabled_TypeError;
+
+    // Call function/method
+    {
+        bool cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // setExpressionCacheEnabled(bool)
+            cppSelf->setExpressionCacheEnabled(cppArg0);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_ParamFunc_setExpressionCacheEnabled_TypeError:
+        const char* overloads[] = {"bool", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Param.setExpressionCacheEnabled", overloads);
         return 0;
 }
 
@@ -2248,6 +2316,7 @@ static PyMethodDef Sbk_Param_methods[] = {
     {"getViewerUILabel", (PyCFunction)Sbk_ParamFunc_getViewerUILabel, METH_NOARGS},
     {"getViewerUILayoutType", (PyCFunction)Sbk_ParamFunc_getViewerUILayoutType, METH_NOARGS},
     {"getViewerUIVisible", (PyCFunction)Sbk_ParamFunc_getViewerUIVisible, METH_NOARGS},
+    {"isExpressionCacheEnabled", (PyCFunction)Sbk_ParamFunc_isExpressionCacheEnabled, METH_NOARGS},
     {"linkTo", (PyCFunction)Sbk_ParamFunc_linkTo, METH_VARARGS|METH_KEYWORDS},
     {"random", (PyCFunction)Sbk_ParamFunc_random, METH_VARARGS|METH_KEYWORDS},
     {"randomInt", (PyCFunction)Sbk_ParamFunc_randomInt, METH_VARARGS},
@@ -2256,6 +2325,7 @@ static PyMethodDef Sbk_Param_methods[] = {
     {"setAsAlias", (PyCFunction)Sbk_ParamFunc_setAsAlias, METH_O},
     {"setEnabled", (PyCFunction)Sbk_ParamFunc_setEnabled, METH_O},
     {"setEvaluateOnChange", (PyCFunction)Sbk_ParamFunc_setEvaluateOnChange, METH_O},
+    {"setExpressionCacheEnabled", (PyCFunction)Sbk_ParamFunc_setExpressionCacheEnabled, METH_O},
     {"setHelp", (PyCFunction)Sbk_ParamFunc_setHelp, METH_O},
     {"setIconFilePath", (PyCFunction)Sbk_ParamFunc_setIconFilePath, METH_VARARGS|METH_KEYWORDS},
     {"setLabel", (PyCFunction)Sbk_ParamFunc_setLabel, METH_O},

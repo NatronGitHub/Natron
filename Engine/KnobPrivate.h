@@ -86,11 +86,13 @@ class KnobExpr
 public:
 
     std::string expressionString;
+    std::string modifiedExpression;
     std::string exprInvalid;
     ExpressionLanguageEnum language;
 
     KnobExpr()
     : expressionString()
+    , modifiedExpression()
     , exprInvalid()
     , language(eExpressionLanguageExprTK)
     {}
@@ -102,7 +104,6 @@ class KnobPythonExpr : public KnobExpr
 {
 public:
 
-    std::string modifiedExpression;
 
     bool hasRet;
 
@@ -316,6 +317,13 @@ struct CommonData
     // thread is using this variable at a time anyway.
     int expressionRecursionLevel;
 
+    // Whether expression results caching is enabled or not.
+    // This can be disabled from Python by the user in case the expression depends on external stuff
+    // which would make caching not work
+    //
+    // True by default
+    bool enableExpressionCaching;
+
     // Protects expressionRecursionLevel
     mutable QMutex expressionRecursionLevelMutex;
 
@@ -394,6 +402,7 @@ struct CommonData
     , expressionMutex()
     , expressions()
     , expressionRecursionLevel(0)
+    , enableExpressionCaching(true)
     , expressionRecursionLevelMutex(QMutex::Recursive)
     , dimensionNames()
     , lastRandomHash(0)

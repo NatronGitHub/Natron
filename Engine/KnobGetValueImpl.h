@@ -58,22 +58,41 @@ Knob<T>::getValueFromExpression(TimeValue time,
     // Check for a cached expression result
     // TODO
 
+    bool cachingEnabled = isExpressionsResultsCachingEnabled();
     bool exprWasValid = isExpressionValid(dimension, view_i, 0);
     {
         EXPR_RECURSION_LEVEL();
 
-        if (getExpressionLanguage(view, dimension) == eExpressionLanguagePython) {
-            EffectInstancePtr effect = toEffectInstance(getHolder());
-            if (effect) {
-                appPTR->setLastPythonAPICaller_TLS(effect);
+        TimeViewPair key = {time, view};
+
+        bool exprOk = false;
+        if (cachingEnabled) {
+            QMutexLocker k(&_data->expressionResultsMutex);
+            assert(dimension < (int)_data->expressionResults.size());
+            typename ExpressionCache::const_iterator foundCached = _data->expressionResults[dimension][view].find(key);
+            if (foundCached != _data->expressionResults[dimension][view].end()) {
+                exprOk = true;
+                *ret = foundCached->second;
             }
         }
-
         std::string error;
-        bool exprOk = evaluateExpression(time, view_i,  dimension, ret, &error);
+        if (!exprOk) {
+            if (getExpressionLanguage(view, dimension) == eExpressionLanguagePython) {
+                EffectInstancePtr effect = toEffectInstance(getHolder());
+                if (effect) {
+                    appPTR->setLastPythonAPICaller_TLS(effect);
+                }
+            }
+
+            exprOk = evaluateExpression(time, view_i,  dimension, ret, &error);
+            if (exprOk && cachingEnabled) {
+                QMutexLocker k(&_data->expressionResultsMutex);
+                _data->expressionResults[dimension][view].insert(std::make_pair(key, *ret));
+            }
+        }
         if (!exprOk) {
             setExpressionInvalid(dimension, view_i, false, error);
-            
+
             return false;
         } else {
             if (!exprWasValid) {
@@ -154,11 +173,29 @@ Knob<T>::getValueFromExpression_pod(TimeValue time,
     // Check for a cached expression result
     // Todo
 
+    bool cachingEnabled = isExpressionsResultsCachingEnabled();
     bool exprWasValid = isExpressionValid(dimension, view_i, 0);
     {
         EXPR_RECURSION_LEVEL();
         std::string error;
-        bool exprOk = evaluateExpression_pod(time, view_i, dimension, ret, &error);
+        bool exprOk = false;
+        TimeViewPair key = {time, view};
+        if (cachingEnabled) {
+            QMutexLocker k(&_data->expressionResultsMutex);
+            assert(dimension < (int)_data->expressionResults.size());
+            typename ExpressionCache::const_iterator foundCached = _data->expressionResults[dimension][view].find(key);
+            if (foundCached != _data->expressionResults[dimension][view].end()) {
+                exprOk = true;
+                *ret = (double)foundCached->second;
+            }
+        }
+        if (!exprOk) {
+            exprOk = evaluateExpression_pod(time, view_i, dimension, ret, &error);
+            if (exprOk && cachingEnabled) {
+                QMutexLocker k(&_data->expressionResultsMutex);
+                _data->expressionResults[dimension][view].insert(std::make_pair(key, (T)*ret));
+            }
+        }
         if (!exprOk) {
             setExpressionInvalid(dimension, ViewSetSpec(view_i), false, error);
 

@@ -696,10 +696,13 @@ public:
     {
         eResultTypeInvalid,
         eResultTypeKnobValue,
-        eResultTypeEffectRoD
+        eResultTypeKnobChoiceOption,
+        eResultTypeEffectRoD,
+        eResultTypeObjectName,
     };
 
     ResultTypeEnum _resultType;
+    std::string _objectName;
     std::string _error;
     bool _testingEnabled;
 
@@ -735,7 +738,7 @@ private:
         KnobHolderPtr currentHolder = _knob->getHolder();
         KnobTableItemPtr currentTableItem = getThisTableItem();
         NodeCollectionPtr currentGroup = getThisGroup();
-        KnobIPtr currentKnob = getThisKnob();
+        KnobIPtr currentKnob;
         DimIdx currentDimension = _dimension;
         ViewIdx currentView = _view;
         assert(currentNode && currentGroup);
@@ -879,40 +882,8 @@ private:
                 }
             }
 
-            if (checkForView(token, currentKnob, &currentView)) {
-                // If we caught a node, check if it is a group too
-                currentHolder.reset();
-                currentTableItem.reset();
-                currentNode.reset();
-                currentGroup.reset();
-                if (isLastToken) {
 
-                    if (currentKnob->getNDimensions() > 1) {
-                        if (_testingEnabled) {
-                            // If testing is enabled, set the result to be valid
-                            _resultType = eResultTypeKnobValue;
-                        } else {
-                            std::stringstream ss;
-                            ss << _symbol << ": this parameter has multiple dimension, please specify one";
-                            _error = ss.str();
-                        }
-                        return ;
-                    } else {
-
-                        // single dimension, return the value of the knob at dimension 0
-                        _targetView = currentView;
-                        _targetKnob = currentKnob;
-                        _targetDimension = DimIdx(0);
-                        _resultType = eResultTypeKnobValue;
-                        return;
-                    }
-                    return;
-
-                }
-                continue;
-            }
-
-            if (checkForDimension(token, currentKnob, &currentDimension)) {
+            if (currentKnob && checkForDimension(token, currentKnob, &currentDimension)) {
                 // If we caught a node, check if it is a group too
                 currentHolder.reset();
                 currentTableItem.reset();
@@ -932,6 +903,21 @@ private:
                 return;
             }
 
+            if (currentKnob && token == "option" && dynamic_cast<KnobChoice*>(currentKnob.get())) {
+                // For a KnobChoice, we can get the option string directly
+                if (!isLastToken) {
+                    std::stringstream ss;
+                    ss << _symbol << ": a variable can only be bound to a value";
+                    _error = ss.str();
+                    return ;
+                }
+                _targetKnob = currentKnob;
+                _targetDimension = currentDimension;
+                _targetView = currentView;
+                _resultType = eResultTypeKnobChoiceOption;
+                return;
+            }
+
             // Check is the user wants the region of definition of an effect
             if (currentNode) {
 
@@ -940,6 +926,27 @@ private:
                     // The rod of the effect
                     _resultType = eResultTypeEffectRoD;
                     _effectProperty = currentNode;
+                    return;
+                }
+            }
+
+            // Now check if we want the name of an object
+
+            if (token == "name") {
+                bool gotName = false;
+                if (currentKnob) {
+                    gotName = true;
+                    _objectName = currentKnob->getName();
+                } else if (currentTableItem) {
+                    gotName = true;
+                    _objectName = currentTableItem->getScriptName_mt_safe();
+                } else if (currentNode) {
+                    gotName = true;
+                    _objectName = currentNode->getScriptName_mt_safe();
+                }
+
+                if (gotName) {
+                    _resultType = eResultTypeObjectName;
                     return;
                 }
             }
@@ -1101,26 +1108,9 @@ private:
         return false;
     }
 
-    bool checkForView(const std::string& str, const KnobIPtr& callerKnob, ViewIdx* retIsView) const
-    {
-        if (str == "view") {
-            *retIsView = _view;
-            return true;
-        } else if (callerKnob) {
-            const std::vector<std::string>& projectViews = _knob->getHolder()->getApp()->getProject()->getProjectViewNames();
-            for (std::size_t i = 0; i < projectViews.size(); ++i) {
-                if (projectViews[i] == str) {
-                    *retIsView = ViewIdx(i);
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
     bool checkForDimension(const std::string& str, const KnobIPtr& callerKnob, DimIdx* retIsDimension) const
     {
-        if (str == "thisDimension") {
+        if (str == "dimension") {
             *retIsDimension = _dimension;
             return true;
         } else if (callerKnob) {
@@ -1140,36 +1130,69 @@ struct ExprUnresolvedSymbolResolver : public exprtk::parser<EXPRTK_FUNCTIONS_NAM
     typedef typename exprtk::parser<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::unknown_symbol_resolver usr_t;
 
     KnobHelper* _knob;
+    TimeValue _time;
     DimIdx _dimension;
     ViewIdx _view;
     KnobExprTkExpr* _ret;
+    usr_variable_user_type _varType;
+    EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t _resolvedScalar;
+    std::vector<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t> _resolvedVector;
+    std::string _resolvedString;
 
-    ExprUnresolvedSymbolResolver(KnobHelper* knob, DimIdx dimension, ViewIdx view, KnobExprTkExpr* ret)
+
+    ExprUnresolvedSymbolResolver(KnobHelper* knob, TimeValue time, DimIdx dimension, ViewIdx view, KnobExprTkExpr* ret)
     : exprtk::parser<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::unknown_symbol_resolver()
     , _knob(knob)
+    , _time(time)
     , _dimension(dimension)
     , _view(view)
     , _ret(ret)
+    , _varType(e_usr_variable_user_type_scalar)
+    , _resolvedScalar(0)
+    , _resolvedVector()
+    , _resolvedString()
     {
 
     }
-
-
-    bool process(const std::string& unknown_symbol,
-                 typename usr_t::usr_symbol_type& st,
-                 EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t& default_value,
-                 std::string& error_message)
+    virtual usr_symbol_type getSymbolType() const OVERRIDE FINAL
     {
-
         // Values cannot be modified by the expression
-        st = usr_t::e_usr_constant_type;
+        return e_usr_constant_type;
+    }
+
+    virtual usr_variable_user_type getVariableType() const OVERRIDE FINAL
+    {
+        return _varType;
+    }
+
+    virtual EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t getResolvedScalar() OVERRIDE FINAL
+    {
+        assert(_varType == e_usr_variable_user_type_scalar);
+        return _resolvedScalar;
+    }
+
+    virtual std::string& getResolvedString() OVERRIDE FINAL
+    {
+        assert(_varType == e_usr_variable_user_type_string);
+        return _resolvedString;
+    }
+
+    virtual std::vector<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>& getResolvedVector()  OVERRIDE FINAL
+    {
+        assert(_varType == e_usr_variable_user_type_vector);
+        return _resolvedVector;
+    }
+
+    virtual bool process(const std::string& unknown_symbol, std::string& error_message) OVERRIDE FINAL
+    {
 
         SymbolResolver resolver(_knob, _dimension, _view, unknown_symbol);
         if (resolver._testingEnabled) {
+            _varType = e_usr_variable_user_type_scalar;
             if (resolver._resultType == SymbolResolver::eResultTypeInvalid) {
-                default_value = 0;
+                _resolvedScalar = 0;
             } else {
-                default_value = 1;
+                _resolvedScalar = 1;
             }
             return true;
         }
@@ -1182,10 +1205,33 @@ struct ExprUnresolvedSymbolResolver : public exprtk::parser<EXPRTK_FUNCTIONS_NAM
                 }
                 error_message = ss.str();
             }   return false;
-            case SymbolResolver::eResultTypeEffectRoD:
-#pragma message WARN("Make the exprk symbol resolver handle string and vectors")
-                return false;
-                break;
+            case SymbolResolver::eResultTypeObjectName: {
+                _resolvedString = resolver._objectName;
+                _varType = e_usr_variable_user_type_string;
+            }   break;
+            case SymbolResolver::eResultTypeKnobChoiceOption: {
+                KnobChoice* isChoice = dynamic_cast<KnobChoice*>(_knob);
+                if (!isChoice) {
+                    return false;
+                }
+                _resolvedString = isChoice->getActiveEntry(_view).id;
+                _varType = e_usr_variable_user_type_string;
+            }   break;
+            case SymbolResolver::eResultTypeEffectRoD: {
+                GetRegionOfDefinitionResultsPtr results;
+                ActionRetCodeEnum stat = resolver._effectProperty->getRegionOfDefinition_public(_time, RenderScale(1.), _view, &results);
+                _varType = e_usr_variable_user_type_vector;
+                _resolvedVector.resize(4);
+                if (isFailureRetCode(stat)) {
+                    _resolvedVector[0] = _resolvedVector[1] = _resolvedVector[2] = _resolvedVector[3] = 0.;
+                } else {
+                    const RectD& rod = results->getRoD();
+                    _resolvedVector[0] = rod.x1;
+                    _resolvedVector[1] = rod.y1;
+                    _resolvedVector[2] = rod.x2;
+                    _resolvedVector[3] = rod.y2;
+                }
+            }   break;
 
             case SymbolResolver::eResultTypeKnobValue: {
 
@@ -1205,15 +1251,17 @@ struct ExprUnresolvedSymbolResolver : public exprtk::parser<EXPRTK_FUNCTIONS_NAM
                 KnobIntBasePtr isInt = toKnobIntBase(resolver._targetKnob);
                 KnobDoubleBasePtr isDouble = toKnobDoubleBase(resolver._targetKnob);
                 if (isBoolean) {
-                    default_value = EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t(isBoolean->getValue(resolver._targetDimension, resolver._targetView));
+                    _resolvedScalar = EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t(isBoolean->getValueAtTime(_time, resolver._targetDimension, resolver._targetView));
+                    _varType = e_usr_variable_user_type_scalar;
                 } else if (isInt) {
-                    default_value = EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t(isInt->getValue(resolver._targetDimension, resolver._targetView));
+                    _resolvedScalar = EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t(isInt->getValueAtTime(_time, resolver._targetDimension, resolver._targetView));
+                    _varType = e_usr_variable_user_type_scalar;
                 } else if (isDouble) {
-                    default_value = EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t(isDouble->getValue(resolver._targetDimension, resolver._targetView));
+                    _resolvedScalar = EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t(isDouble->getValueAtTime(_time, resolver._targetDimension, resolver._targetView));
+                    _varType = e_usr_variable_user_type_scalar;
                 } else if (isString) {
-                    //_resultIsString = isString->getValue(DimIdx(0));
-#pragma message WARN("Make the exprk symbol resolver handle string and vectors")
-                    return false;
+                    _varType = e_usr_variable_user_type_string;
+                    _resolvedString = isString->getValueAtTime(_time, resolver._targetDimension, resolver._targetView);
                 }
             }   break;
         }
@@ -1223,16 +1271,79 @@ struct ExprUnresolvedSymbolResolver : public exprtk::parser<EXPRTK_FUNCTIONS_NAM
 
 };
 
+struct curve_func : public exprtk::igeneric_function<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>
+{
 
-static bool addStandardFunctionsAndParse(const std::string& expr,
-                                         TimeValue time,
-                                         EXPRTK_FUNCTIONS_NAMESPACE::parser_t& parser,
-                                         EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t& symbol_table,
-                                         EXPRTK_FUNCTIONS_NAMESPACE::expression_t& expressionObject,
-                                         std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::func_ptr> >& functions,
-                                         std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::vararg_func_ptr> >& varargFunctions,
-                                         std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::generic_func_ptr> >& genericFunctions,
-                                         std::string* error)
+    typedef typename exprtk::igeneric_function<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::parameter_list_t parameter_list_t;
+    KnobIWPtr _knob;
+    ViewIdx _view;
+
+    curve_func(const KnobIPtr& knob, ViewIdx view)
+    : exprtk::igeneric_function<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>("T|TT|TTS")
+    , _knob(knob)
+    , _view(view)
+    {
+        /*
+         Overloads:
+         curve(frame)
+         curve(frame, dimension)
+         curve(frame, dimension, view)
+         */
+    }
+
+
+    EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t operator()(parameter_list_t parameters)
+    {
+        typedef typename exprtk::igeneric_function<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::generic_type generic_type;
+        typedef typename generic_type::scalar_view scalar_t;
+        typedef typename generic_type::string_view string_t;
+
+        assert(parameters.size() == 1 || parameters.size() == 2 || parameters.size() == 3);
+        assert(parameters[0].type == generic_type::e_scalar);
+        assert(parameters[1].type == generic_type::e_scalar);
+
+        KnobIPtr knob = _knob.lock();
+        if (!knob) {
+            return 0.;
+        }
+
+        TimeValue frame(0);
+        ViewIdx view(0);
+        DimIdx dimension(0);
+        frame = TimeValue(scalar_t(parameters[0])());
+        if (parameters.size() > 1) {
+            dimension = DimIdx((int)scalar_t(parameters[1])());
+        }
+        if (parameters.size() > 2) {
+            std::string viewStr = exprtk::to_str(string_t(parameters[2]));
+            if (viewStr == "view") {
+                // use the current view
+                view = _view;
+            } else {
+                // Find the view by name in the project
+                const std::vector<std::string>& views = knob->getHolder()->getApp()->getProject()->getProjectViewNames();
+                for (std::size_t i = 0; i < views.size(); ++i) {
+                    if (views[i] == viewStr) {
+                        view = ViewIdx(i);
+                    }
+                }
+            }
+        }
+        
+
+
+        return knob->getRawCurveValueAt(frame, view, dimension);
+    }
+
+};
+
+static void addStandardFunctions(const std::string& expr,
+                                 TimeValue time,
+                                 EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t& symbol_table,
+                                 std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::func_ptr> >& functions,
+                                 std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::vararg_func_ptr> >& varargFunctions,
+                                 std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::generic_func_ptr> >& genericFunctions,
+                                 std::string* modifiedExpression)
 {
     // Add all functions from the API to the symbol table
 
@@ -1255,49 +1366,58 @@ static bool addStandardFunctionsAndParse(const std::string& expr,
     }
 
     // Modify the expression so that the last line is modified by "var exprResult:= ..."; return [exprResult]"
-    std::string modifiedExpression = expr;
+    *modifiedExpression = expr;
     {
 
         // Check for the last ';' indicating the previous statement
-        std::size_t foundLastStatement = modifiedExpression.find_last_of(';');
+        std::size_t foundLastStatement = modifiedExpression->find_last_of(';');
         std::string toPrepend = "var NatronExprtkExpressionResult := ";
         bool mustAddSemiColon = true;
         if (foundLastStatement == std::string::npos) {
             // There's no ';', the expression is a single statement, pre-pend directly
-            modifiedExpression.insert(0, toPrepend);
+            modifiedExpression->insert(0, toPrepend);
         } else {
             // Check that there's no whitespace after the last ';' otherwise the user
             // just wrote a ';' after the last statement, which is allowed.
             bool hasNonWhitespace = false;
-            for (std::size_t i = foundLastStatement + 1; i < modifiedExpression.size(); ++i) {
-                if (!std::isspace(modifiedExpression[i])) {
+            for (std::size_t i = foundLastStatement + 1; i < modifiedExpression->size(); ++i) {
+                if (!std::isspace((*modifiedExpression)[i])) {
                     hasNonWhitespace = true;
                     break;
                 }
             }
             if (!hasNonWhitespace) {
-                foundLastStatement = modifiedExpression.find_last_of(';', foundLastStatement - 1);
+                foundLastStatement = modifiedExpression->find_last_of(';', foundLastStatement - 1);
                 mustAddSemiColon = false;
             }
             if (foundLastStatement == std::string::npos) {
-                modifiedExpression.insert(0, toPrepend);
+                modifiedExpression->insert(0, toPrepend);
             } else {
-                modifiedExpression.insert(foundLastStatement + 1, toPrepend);
+                modifiedExpression->insert(foundLastStatement + 1, toPrepend);
             }
         }
         if (mustAddSemiColon) {
-            modifiedExpression += ';';
+            (*modifiedExpression) += ';';
         }
         std::string toAppend = "\nreturn [NatronExprtkExpressionResult]";
-        modifiedExpression.append(toAppend);
+        modifiedExpression->append(toAppend);
     }
 
+} // addStandardFunctions
+
+static bool parseExprtkExpression(const std::string& originalExpression,
+                                  const std::string& expressionString,
+                                  EXPRTK_FUNCTIONS_NAMESPACE::parser_t& parser,
+                                  EXPRTK_FUNCTIONS_NAMESPACE::expression_t& expressionObject,
+                                  std::string* error)
+{
+
     // Compile the expression
-    if (!parser.compile(modifiedExpression, expressionObject)) {
+    if (!parser.compile(expressionString, expressionObject)) {
 
         std::stringstream ss;
         ss << "Error(s) while compiling the following expression:" << std::endl;
-        ss << expr << std::endl;
+        ss << originalExpression << std::endl;
         for (std::size_t i = 0; i < parser.error_count(); ++i) {
             // Include the specific nature of each error
             // and its position in the expression string.
@@ -1311,7 +1431,7 @@ static bool addStandardFunctionsAndParse(const std::string& expr,
         return false;
     }
     return true;
-} // addStandardFunctionsAndParse
+} // parseExprtkExpression
 
 
 static KnobHelper::ExpressionReturnValueTypeEnum handleExprTkReturn(EXPRTK_FUNCTIONS_NAMESPACE::expression_t& expressionObject, double* retValueIsScalar, std::string* retValueIsString, std::string* error)
@@ -1361,19 +1481,33 @@ KnobHelperPrivate::validateExprTKExpression(const std::string& expression, DimId
 
     // Pre-declare the variables with a stub value, they will be updated at evaluation time
     TimeValue time = publicInterface->getCurrentRenderTime();
+
+    KnobIPtr thisShared = publicInterface->shared_from_this();
+
     symbol_table.add_constant("frame", time);
-    symbol_table.add_constant("view", view);
+
+    std::string viewName = publicInterface->getHolder()->getApp()->getProject()->getViewName(view);
+    symbol_table.add_stringvar("view", viewName, true);
 
     {
         // The object that resolves undefined knob dependencies at compile time
-        ExprUnresolvedSymbolResolver musr(publicInterface, dimension, view, ret);
+        ExprUnresolvedSymbolResolver musr(publicInterface, time, dimension, view, ret);
         EXPRTK_FUNCTIONS_NAMESPACE::parser_t parser;
         parser.enable_unknown_symbol_resolver(&musr);
 
+
+        addStandardFunctions(expression, time, symbol_table, ret->functions, ret->varargFunctions, ret->genericFunctions, &ret->modifiedExpression);
+
+
+        EXPRTK_FUNCTIONS_NAMESPACE::generic_func_ptr curveFunc(new curve_func(thisShared, view));
+        ret->genericFunctions.push_back(std::make_pair("curve", curveFunc));
+        symbol_table.add_function("curve", *curveFunc);
+
         std::string error;
-        if (!addStandardFunctionsAndParse(expression, time, parser, symbol_table, *ret->expressionObject, ret->functions, ret->varargFunctions, ret->genericFunctions, &error)) {
+        if (!parseExprtkExpression(expression, ret->modifiedExpression, parser, *ret->expressionObject, &error)) {
             throw std::runtime_error(error);
         }
+
 
     } // parser
 
@@ -2093,8 +2227,15 @@ KnobHelper::executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimensi
             }
         }
     }
-    
-    
+
+
+    // Parse the copy of the expression
+    EXPRTK_FUNCTIONS_NAMESPACE::parser_t parser;
+    if (!parseExprtkExpression(obj.expressionString, obj.modifiedExpression, parser, *obj.expressionObject, error)) {
+        return eExpressionReturnValueTypeError;
+    }
+
+
     // Evaluate the expression
     obj.expressionObject->value();
     return handleExprTkReturn(*obj.expressionObject, retValueIsScalar, retValueIsString, error);
@@ -2249,7 +2390,10 @@ KnobHelper::executeExprTKExpression(const std::string& expr, double* retValueIsS
 
     TimeValue time(0);
     EXPRTK_FUNCTIONS_NAMESPACE::parser_t parser;
-    if (!addStandardFunctionsAndParse(expr, time, parser, symbol_table, expressionObj, functions, varargFunctions, genericFunctions, error)) {
+    std::string modifiedExpr;
+    addStandardFunctions(expr, time, symbol_table, functions, varargFunctions, genericFunctions, &modifiedExpr);
+
+    if (!parseExprtkExpression(expr, modifiedExpr, parser, expressionObj, error)) {
         return eExpressionReturnValueTypeError;
     }
 

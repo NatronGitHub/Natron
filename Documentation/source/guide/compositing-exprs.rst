@@ -80,8 +80,8 @@ In the same way, values of dimensions can be accessed directly using the special
 .. warning::
 
     Returning the value of the parameter dimension for which the expression is being
-    evaluated will not cause an infinite recursion but instead will yield an error
-    when setting the expression.
+    evaluated will not cause an infinite recursion but instead will return the value of
+    the parameter without evaluating the expression.
     
 Dimension names (x,y,r,g,b, w,h , etc...) are merely corresponding to a 0-based index,
 and can be interchanged, e.g::
@@ -111,13 +111,13 @@ Possible variants to reference a dimension is as follow:
     * 0,1,2,3
     
 The dimension of the parameter on which the expression is currently executed can be 
-referenced with *thisDimension*::
+referenced with *dimension*::
 
     # Assuming we are writing an expression for size.y
     # We return the value of the masterSaturation parameter of the ColorCorrect1 node
     # at the same dimension (y)
     
-    ColorCorrect1.masterSaturation.thisDimension
+    ColorCorrect1.masterSaturation.dimension
     
 An expression on a parameter can reference any other parameter on the same node 
 and may also reference parameters on some other nodes, including:
@@ -162,8 +162,8 @@ When the expression is called, a number of pre-declared variables can be used:
 	* **thisItem**: If the expression is edited on a table item such as a Bezier or a Track
 	this is the item holding the parameter to which the expression is being edited
 	
-	* **thisDimension**: It indicates the dimension (0-based index) of the parameter on which the expression 
-	is evaluated, this can only be used after a parameter, e.g: Blur1.size.thisDimension
+	* **dimension**: It indicates the dimension (0-based index) of the parameter on which the expression 
+	is evaluated, this can only be used after a parameter, e.g: Blur1.size.dimension
 	
 	* **project**: References the project settings. This can be used as a prefix to reference
 	project parameters, e.g: project.outputFormat
@@ -176,6 +176,39 @@ When the expression is called, a number of pre-declared variables can be used:
 	* **view**: It references the current view for which the expression is evaluated.
 	If the parameter is a string parameter, the view will be the name of the view as seen
 	in the project settings, otherwise this will be a 0-based index.
+	
+Name of a node or parameter
+---------------------------
+
+The name of a parameter or Node can be returned in an expression using the attribute *name*::
+
+    thisNode.name
+    thisNode.input0.name
+    thisKnob.name
+    ...
+
+Converting numbers to string
+----------------------------
+
+You can convert numbers to string with the **str(value, format, precision)** function.
+
+The format controls how the number will be formatted in the string.
+It must match one of the following letters:
+
+* e	format as [-]9.9e[+|-]999
+* E	format as [-]9.9E[+|-]999
+* f	format as [-]9.9
+* g	use e or f format, whichever is the most concise
+* G	use E or f format, whichever is the most concise
+
+A precision is also specified with the argument format.
+For the 'e', 'E', and 'f' formats, the precision represents the number of digits after the decimal point.
+For the 'g' and 'G' formats, the precision represents the maximum number of significant digits (trailing zeroes are omitted).
+
+Example::
+
+    str(2.8940,'f',2) = "2.89"
+
 	
 Effect Region of Definition
 ---------------------------

@@ -183,6 +183,9 @@ public:
      **/
     void setPersistent(bool persistent);
 
+    void setExpressionCacheEnabled(bool enabled);
+    bool isExpressionCacheEnabled() const;
+
     /**
      * @brief Returns whether the parameter forces a new evaluation when its value changes. An evaluation is typically
      * a request for a re-render of the current frame.

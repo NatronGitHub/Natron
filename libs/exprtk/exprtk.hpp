@@ -18642,19 +18642,49 @@ namespace exprtk
             e_usr_constant_type = 1
          };
 
+         enum usr_variable_user_type
+         {
+            e_usr_variable_user_type_scalar = 0,
+            e_usr_variable_user_type_string = 1,
+            e_usr_variable_user_type_vector = 2,
+         };
+
          virtual ~unknown_symbol_resolver()
          {}
 
+
+         virtual usr_symbol_type getSymbolType() const
+         {
+            return e_usr_variable_type;
+         }
+
+         virtual usr_variable_user_type getVariableType() const
+         {
+            return e_usr_variable_user_type_scalar;
+         }
+
          virtual bool process(const std::string& /*unknown_symbol*/,
-                              usr_symbol_type& st,
-                              T& default_value,
                               std::string& error_message)
          {
-            st = e_usr_variable_type;
-            default_value = T(0);
             error_message.clear();
-
             return true;
+         }
+
+         virtual T getResolvedScalar()
+         {
+            return T(0);
+         }
+
+         virtual std::string& getResolvedString()
+         {
+            static std::string emptyString = std::string();
+            return emptyString;
+         }
+
+         virtual std::vector<T>& getResolvedVector() 
+         {
+            static std::vector<T> emptyVector = std::vector<T>();
+            return emptyVector;
          }
       };
 
@@ -24378,25 +24408,57 @@ namespace exprtk
          {
             if (!(settings_.rsrvd_sym_usr_disabled() && details::is_reserved_symbol(symbol)))
             {
-               T default_value = T(0);
-               std::string error_message;
-               typename unknown_symbol_resolver::usr_symbol_type usr_symbol_type;
 
-               if (unknown_symbol_resolver_->process(symbol,usr_symbol_type,default_value,error_message))
+               std::string error_message;
+
+               if (unknown_symbol_resolver_->process(symbol,error_message))
                {
+                  typename unknown_symbol_resolver::usr_symbol_type usr_symbol_type = unknown_symbol_resolver_->getSymbolType();
+                  typename unknown_symbol_resolver::usr_variable_user_type usr_variable_type = unknown_symbol_resolver_->getVariableType();
                   bool create_result = false;
+                  //T default_value = T(0);
+
+
 
                   symbol_table_t& symtab = symtab_store_.get_symbol_table();
 
                   switch (usr_symbol_type)
                   {
-                     case unknown_symbol_resolver::e_usr_variable_type : create_result = symtab.create_variable(symbol,default_value);
-                                                                         break;
+                      case unknown_symbol_resolver::e_usr_variable_type : {
+                          switch (usr_variable_type) {
+                              case unknown_symbol_resolver::e_usr_variable_user_type_scalar: {
+                                  T default_value = unknown_symbol_resolver_->getResolvedScalar();
+                                  create_result = symtab.create_variable(symbol, default_value);
+                              } break;
+                              case unknown_symbol_resolver::e_usr_variable_user_type_string: {
+                                  std::string& default_value = unknown_symbol_resolver_->getResolvedString();
+                                  create_result = symtab.create_stringvar(symbol, default_value);
+                              } break;
+                              case unknown_symbol_resolver::e_usr_variable_user_type_vector: {
+                                  std::vector<T>& default_value = unknown_symbol_resolver_->getResolvedVector();
+                                  create_result = symtab.add_vector(symbol, &default_value[0], default_value.size());
+                              } break;
+                          }
 
-                     case unknown_symbol_resolver::e_usr_constant_type : create_result = symtab.add_constant(symbol,default_value);
-                                                                         break;
+                      } break;
 
-                     default                                           : create_result = false;
+                      case unknown_symbol_resolver::e_usr_constant_type : {
+                          switch (usr_variable_type) {
+                              case unknown_symbol_resolver::e_usr_variable_user_type_scalar: {
+                                  T default_value = unknown_symbol_resolver_->getResolvedScalar();
+                                  create_result = symtab.add_constant(symbol, default_value);
+                              } break;
+                              case unknown_symbol_resolver::e_usr_variable_user_type_string: {
+                                  std::string& default_value = unknown_symbol_resolver_->getResolvedString();
+                                  create_result = symtab.add_stringvar(symbol, default_value, true);
+                              } break;
+                              case unknown_symbol_resolver::e_usr_variable_user_type_vector: {
+                                  std::vector<T>& default_value = unknown_symbol_resolver_->getResolvedVector();
+                                  create_result = symtab.add_vector(symbol, &default_value[0], default_value.size());
+                              } break;
+                          }
+                      } break;
+
                   }
 
                   if (create_result)

@@ -259,6 +259,29 @@ Knob<T>::setValue(const T & v,
 
 } // setValue
 
+template <typename T>
+void
+Knob<T>::refreshStaticValue(TimeValue time)
+{
+    std::list<ViewIdx> views = getViewsList();
+    int nDims = getNDimensions();
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
+
+        for (int i = 0; i < nDims; ++i) {
+
+            ValueKnobDimView<T>* data = dynamic_cast<ValueKnobDimView<T>*>(getDataForDimView(DimIdx(i), *it).get());
+            if (data) {
+                T value = getValueAtTime(time, DimIdx(i), *it);
+                data->setValueAndCheckIfChanged(value);
+            }
+
+        }
+    }
+    if (!isValueChangesBlocked()) {
+        _signalSlotHandler->s_mustRefreshKnobGui(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonTimeChanged);
+    }
+
+}
 
 
 template <typename T>

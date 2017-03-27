@@ -148,7 +148,7 @@ public:
 
     virtual bool loadProjection(const SERIALIZATION_NAMESPACE::ViewportData& data) OVERRIDE FINAL;
 
-    void setSelectedCurveExpression(const QString& expression);
+    void setSelectedCurveExpression(const QString& expression, ExpressionLanguageEnum lang);
 
     void zoomDisplayedView(int delta);
 
@@ -228,6 +228,8 @@ public Q_SLOTS:
     void onTreeItemRightClicked(const QPoint& globalPos, QTreeWidgetItem* item);
 
     void onShowHideOtherItemsRightClickMenuActionTriggered();
+
+    void onExprLanguageCurrentIndexChanged(int index);
 
 private:
 

@@ -88,6 +88,12 @@ public:
     mutable QMutex areRenderStatsEnabledMutex;
     bool areRenderStatsEnabled;
 
+    // True if isLastExpressionDialogLanguage is valid
+    bool isLastExpressionDialogLanguageValid;
+
+    // If an expression edit dialog is opened, this is the currently selected expression language
+    ExpressionLanguageEnum lastExpressionDialogLanguage;
+
     ///all the menu actions
     ActionWithShortcut *actionNew_project;
     ActionWithShortcut *actionOpen_project;

@@ -736,6 +736,16 @@ public:
     virtual void clearExpression(DimSpec dimension, ViewSetSpec view) = 0;
     virtual std::string getExpression(DimIdx dimension, ViewIdx view) const = 0;
 
+    virtual void clearExpressionsResults(DimSpec dimension, ViewSetSpec view) = 0;
+
+    /**
+     * @brief When enabled, results of expressions are cached. By default this is enabled.
+     * This can be turned off in case the expression depends on external stuff that the caching
+     * system cannot detect.
+     **/
+    virtual void setExpressionsResultsCachingEnabled(bool enabled) = 0;
+    virtual bool isExpressionsResultsCachingEnabled() const = 0;
+
     /**
      * @brief Checks that the given expr for the given dimension will produce a correct behaviour.
      * On success this function returns correctly, otherwise an exception is thrown with the error.
@@ -771,6 +781,11 @@ public:
      * update the value displayed.
      **/
     virtual void onTimeChanged(bool isPlayback, TimeValue time) = 0;
+
+    /**
+     * @brief Refresh for each dimension/view the internal static value
+     **/
+    virtual void refreshStaticValue(TimeValue time) = 0;
 
     /**
      * @brief Compute the derivative at time as a double
@@ -1635,6 +1650,10 @@ public:
                                              const std::string& oldName,
                                              const std::string& newName) OVERRIDE FINAL;
     virtual void clearExpression(DimSpec dimension, ViewSetSpec view) OVERRIDE FINAL;
+
+    virtual void setExpressionsResultsCachingEnabled(bool enabled) OVERRIDE FINAL;
+    virtual bool isExpressionsResultsCachingEnabled() const OVERRIDE FINAL;
+
     virtual void validateExpression(const std::string& expression, ExpressionLanguageEnum language, DimIdx dimension, ViewIdx view, bool hasRetVariable, std::string* resultAsString) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual bool linkTo(const KnobIPtr & otherKnob, DimSpec thisDimension = DimSpec::all(), DimSpec otherDimension = DimSpec::all(), ViewSetSpec thisView = ViewSetSpec::all(), ViewSetSpec otherView = ViewSetSpec::all()) OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -2307,6 +2326,10 @@ public:
         }
     }
 
+    virtual void clearExpressionsResults(DimSpec dimension, ViewSetSpec view) OVERRIDE FINAL;
+
+    virtual void refreshStaticValue(TimeValue time) OVERRIDE FINAL;
+
 protected:
 
     virtual void refreshCurveMinMaxInternal(ViewIdx view, DimIdx dimension) OVERRIDE FINAL;
@@ -2341,6 +2364,8 @@ private:
 
     bool evaluateExpression(TimeValue time, ViewIdx view, DimIdx dimension, T* ret, std::string* error);
 
+    bool handleExprtkReturnValue(KnobHelper::ExpressionReturnValueTypeEnum type, double valueAsDouble, const std::string& valueAsString, T* finalValue, std::string* error);
+
     /*
      * @brief Same as evaluateExpression but expects it to return a PoD
      */
@@ -2359,6 +2384,48 @@ private:
         bool defaultValueSet;
     };
 
+
+    struct TimeViewPair
+    {
+        TimeValue time;
+        ViewIdx view;
+    };
+
+
+    struct TimeView_compare_less
+    {
+        bool operator() (const TimeViewPair & lhs,
+                         const TimeViewPair & rhs) const
+        {
+
+            if (std::abs(lhs.time - rhs.time) < 1e-6) {
+                if (lhs.view == -1 || rhs.view == -1 || lhs.view == rhs.view) {
+                    return false;
+                }
+                if (lhs.view < rhs.view) {
+                    return true;
+                } else {
+                    // lhs.view > rhs.view
+                    return false;
+                }
+            } else if (lhs.time < rhs.time) {
+                return true;
+            } else {
+                assert(lhs.time > rhs.time);
+                return false;
+            }
+        }
+
+
+    };
+
+    typedef std::map<TimeViewPair, T, TimeView_compare_less> ExpressionCache;
+    typedef std::map<ViewIdx, ExpressionCache> PerViewExpressionCache;
+    typedef std::vector<PerViewExpressionCache> PerDimensionExpressionCache;
+
+    typedef std::map<DimTimeView, T, ValueDimTimeViewCompareLess> ValuesCacheMap;
+
+
     struct Data
     {
         ///Here is all the stuff we couldn't get rid of the template parameter
@@ -2371,6 +2438,9 @@ private:
         mutable QMutex minMaxMutex;
         std::vector<T>  minimums, maximums, displayMins, displayMaxs;
 
+        mutable QMutex expressionResultsMutex;
+        PerDimensionExpressionCache expressionResults;
+
         Data(int nDims)
         : defaultValueMutex()
         , defaultValues(nDims)
@@ -2379,6 +2449,8 @@ private:
         , maximums(nDims)
         , displayMins(nDims)
         , displayMaxs(nDims)
+        , expressionResultsMutex()
+        , expressionResults()
         {
 
         }
@@ -2386,7 +2458,6 @@ private:
 
 
 
-    typedef std::map<DimTimeView, T, ValueDimTimeViewCompareLess> ValuesCacheMap;
 
     // Used only on render clones to cache the result of getValue/getValueAtTime so it stays
     // consistant throughout a render.

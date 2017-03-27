@@ -39,6 +39,7 @@ Functions
 *    def :meth:`getViewerUILabel<NatronEngine.Param.getViewerUILabel>` ()
 *    def :meth:`getHasViewerUI<NatronEngine.Param.getHasViewerUI>` ()
 *    def :meth:`getViewerUIVisible<NatronEngine.Param.getViewerUIVisible>` ()
+*    def :meth:`isExpressionCacheEnabled<NatronEngine.Param.isExpressionCacheEnabled>` ()
 *	 def :meth:`random<NatronEngine.Param.random>` ([min=0.,max=1.])
 *	 def :meth:`random<NatronEngine.Param.random>` (seed)
 *	 def :meth:`randomInt<NatronEngine.Param.randomInt>` (min,max)
@@ -51,6 +52,7 @@ Functions
 *	 def :meth:`setLabel<NatronEngine.Param.setLabel>` (label)
 *    def :meth:`setHelp<NatronEngine.Param.setHelp>` (help)
 *    def :meth:`setPersistent<NatronEngine.Param.setPersistent>` (persistent)
+*    def :meth:`setExpressionCacheEnabled<NatronEngine.Param.setExpressionCacheEnabled>` (enabled)
 *    def :meth:`setVisible<NatronEngine.Param.setVisible>` (visible)
 *    def :meth:`setViewerUILayoutType<NatronEngine.Param.setViewerUILayoutType>` (type)
 *    def :meth:`setViewerUIItemSpacing<NatronEngine.Param.setViewerUIItemSpacing>` (spacingPx)
@@ -414,6 +416,16 @@ Returns the type-name of the parameter.
 	
 	Returns the label of this parameter if it is present in the viewer interface of the Effect holding it.
 	
+		
+.. method:: NatronEngine.Param.isExpressionCacheEnabled ()
+
+	:rtype: :class:`bool<PySide.QtCore.bool>
+
+	Returns whether caching of expression results is enabled for this knob.
+	By default this is enabled, it can be disabled with :func:`setExpressionCacheEnabled(False)<NatronEngine.Param.setExpressionCacheEnabled>`
+	
+	
+	
 .. method:: NatronEngine.Param.random([min=0., max=1.])
 
 	:param min: :class:`float<PySide.QtCore.float>`
@@ -602,6 +614,17 @@ See :func:`getIsVisible()<NatronEngine.Param.getIsVisible>`
 	
 	Set this parameter visible or not in the Viewer UI. Only valid for parameters for which
 	the function :func:`getHasViewerUI()<NatronEngine.Param.getHasViewerUI>` returns *True*.
+
+	
+.. method:: NatronEngine.Param.setExpressionCacheEnabled (enabled)
+
+	:param enabled: :class:`bool<PySide.QtCore.bool>`
+	
+	Set whether caching of expression results is enabled. By default this is True.
+	This can be turned off if an expression is set on a parameter but the expression depends
+	on external data (other than parameter values, such as a file on disk).
+	These external data would be unknown from Natron hence the expression cache would never
+	invalidate.
 
 
 .. method:: NatronEngine.Param.linkTo(otherParam[, thisDimension=-1, otherDimension=-1,thisView="All",otherView="All"])

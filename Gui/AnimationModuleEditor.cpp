@@ -142,6 +142,7 @@ public:
     Button* displayViewChoice;
     Button* showOnlyAnimatedButton;
 
+    ComboBox* expressionLanguageChoice;
     Label* knobLabel;
     LineEdit* knobExpressionLineEdit;
     Label* expressionResultLabel;
@@ -187,6 +188,7 @@ AnimationModuleEditorPrivate::AnimationModuleEditorPrivate(AnimationModuleEditor
 , buttonsLayout(0)
 , displayViewChoice(0)
 , showOnlyAnimatedButton(0)
+, expressionLanguageChoice(0)
 , knobLabel(0)
 , knobExpressionLineEdit(0)
 , expressionResultLabel(0)
@@ -422,6 +424,11 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
 
     }
 
+    _imp->expressionLanguageChoice = new ComboBox(_imp->buttonsContainer);
+    _imp->expressionLanguageChoice->addItem(tr("ExprTK"));
+    _imp->expressionLanguageChoice->addItem(tr("Python"));
+    QObject::connect( _imp->expressionLanguageChoice, SIGNAL(currentIndexChanged(int)), this, SLOT(onExprLanguageCurrentIndexChanged(int)) );
+
     _imp->knobLabel = new Label(_imp->buttonsContainer);
     _imp->knobLabel->setIsModified(false);
     _imp->knobLabel->setText( tr("No curve selected") );
@@ -454,6 +461,7 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
 
     _imp->buttonsLayout->addSpacing(TO_DPIX(5));
 
+    _imp->buttonsLayout->addWidget(_imp->expressionLanguageChoice);
     _imp->buttonsLayout->addWidget(_imp->knobLabel);
     _imp->buttonsLayout->addSpacing(TO_DPIX(5));
     _imp->buttonsLayout->addWidget(_imp->knobExpressionLineEdit);
@@ -697,7 +705,7 @@ AnimationModuleEditor::loadProjection(const SERIALIZATION_NAMESPACE::ViewportDat
 
 
 void
-AnimationModuleEditor::setSelectedCurveExpression(const QString& expression)
+AnimationModuleEditor::setSelectedCurveExpression(const QString& expression, ExpressionLanguageEnum lang)
 {
 
 
@@ -720,10 +728,9 @@ AnimationModuleEditor::setSelectedCurveExpression(const QString& expression)
     if (curExpr == expression.toStdString()) {
         return;
     }
-#pragma message WARN("Todo: handle exprtk expressions here too")
     if ( !expression.isEmpty() ) {
         try {
-            knob->validateExpression(expression.toStdString(), eExpressionLanguagePython, dimension, view, false /*hasRetVariable*/, &exprResult);
+            knob->validateExpression(expression.toStdString(), lang, dimension, view, false /*hasRetVariable*/, &exprResult);
         } catch (...) {
             _imp->expressionResultLabel->setText( tr("Error") );
             return;
@@ -733,11 +740,18 @@ AnimationModuleEditor::setSelectedCurveExpression(const QString& expression)
 }
 
 void
+AnimationModuleEditor::onExprLanguageCurrentIndexChanged(int /*index*/)
+{
+    onExprLineEditFinished();
+}
+
+void
 AnimationModuleEditor::onExprLineEditFinished()
 {
 
     try {
-        setSelectedCurveExpression( _imp->knobExpressionLineEdit->text() );
+        ExpressionLanguageEnum language = _imp->expressionLanguageChoice->activeIndex() == 0 ? eExpressionLanguageExprTK : eExpressionLanguagePython;
+        setSelectedCurveExpression( _imp->knobExpressionLineEdit->text(), language );
     } catch(const std::exception& /*e*/) {
         //Dialogs::errorDialog(tr("Animation Module").toStdString(), e.what());
     }
@@ -771,6 +785,7 @@ AnimationModuleEditor::onSelectionModelSelectionChanged(bool /*recurse*/)
         expressionFieldsEnabled = false;
     }
     QString knobLabel, currentExpression;
+    ExpressionLanguageEnum language = eExpressionLanguagePython;
     if (expressionFieldsEnabled) {
         CurveGuiPtr curve = curves.front();
         KnobAnimPtr knob = toKnobAnim(curve->getItem());
@@ -787,12 +802,21 @@ AnimationModuleEditor::onSelectionModelSelectionChanged(bool /*recurse*/)
             KnobIPtr internalKnob = knob->getInternalKnob();
 
             currentExpression = QString::fromUtf8(internalKnob->getExpression(curve->getDimension(), curve->getView()).c_str());
-
+            language = internalKnob->getExpressionLanguage(curve->getView(), curve->getDimension());
         }
 
     }
     _imp->knobLabel->setVisible(expressionFieldsEnabled);
     if (expressionFieldsEnabled) {
+        switch (language) {
+            case eExpressionLanguagePython:
+                _imp->expressionLanguageChoice->setCurrentIndex_no_emit(1);
+                break;
+            case eExpressionLanguageExprTK:
+                _imp->expressionLanguageChoice->setCurrentIndex_no_emit(0);
+                break;
+
+        }
         _imp->knobLabel->setText(tr("%1:").arg(knobLabel));
         _imp->knobExpressionLineEdit->setText(currentExpression);
     }

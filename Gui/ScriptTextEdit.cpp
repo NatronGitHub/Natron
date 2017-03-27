@@ -502,7 +502,8 @@ InputScriptTextEdit::dropEvent(QDropEvent* e)
 
 
     const std::vector<std::string> &projectViewNames = fromEffect->getApp()->getProject()->getProjectViewNames();
-    std::string expression = PasteKnobClipBoardUndoCommand::makeLinkExpression(projectViewNames, toKnob->getKnob(), type == eKnobClipBoardTypeCopyExpressionMultCurveLink, fromKnob, cbDim, cbView, _knobTargetDimension, _knobTargetView);
+
+    std::string expression = PasteKnobClipBoardUndoCommand::makeLinkExpression(projectViewNames, toKnob->getKnob(), type == eKnobClipBoardTypeCopyExpressionMultCurveLink, _gui->getEditExpressionDialogLanguage(), fromKnob, cbDim, cbView, _knobTargetDimension, _knobTargetView);
 
     appendPlainText(QString::fromUtf8(expression.c_str()));
     e->acceptProposedAction();

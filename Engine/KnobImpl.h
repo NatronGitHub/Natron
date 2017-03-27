@@ -439,13 +439,9 @@ KnobHelper::pyObjectToType(PyObject* o, ViewIdx view) const
 }
 
 
-
 template <typename T>
-bool handleExprtkReturnValue(KnobHelper::ExpressionReturnValueTypeEnum type, double valueAsDouble, const std::string& valueAsString, T* finalValue, std::string* error);
-
-
-template <typename T>
-bool handleExprtkReturnValue(KnobHelper::ExpressionReturnValueTypeEnum type, double valueAsDouble, const std::string& /*valueAsString*/, T* finalValue, std::string* error)
+bool
+Knob<T>::handleExprtkReturnValue(KnobHelper::ExpressionReturnValueTypeEnum type, double valueAsDouble, const std::string& /*valueAsString*/, T* finalValue, std::string* error)
 {
     if (type == KnobHelper::eExpressionReturnValueTypeString) {
         *error = "This expression cannot return a string value";
@@ -457,7 +453,41 @@ bool handleExprtkReturnValue(KnobHelper::ExpressionReturnValueTypeEnum type, dou
 }
 
 template <>
-bool handleExprtkReturnValue(KnobHelper::ExpressionReturnValueTypeEnum type, double /*valueAsDouble*/, const std::string& valueAsString, std::string* finalValue, std::string* error)
+bool
+Knob<int>::handleExprtkReturnValue(KnobHelper::ExpressionReturnValueTypeEnum type, double valueAsDouble, const std::string& valueAsString, int* finalValue, std::string* error)
+{
+    KnobChoice* isChoice = dynamic_cast<KnobChoice*>(this);
+    if (!isChoice) {
+        if (type == KnobHelper::eExpressionReturnValueTypeString) {
+            *error = "This expression cannot return a scalar value";
+            return false;
+        }
+        *finalValue = (int)valueAsDouble;
+        return true;
+    } else {
+        if (type == KnobHelper::eExpressionReturnValueTypeScalar) {
+            *finalValue = (int)valueAsDouble;
+            return true;
+        } else {
+            // Find a matching option
+            std::vector<ChoiceOption> entries = isChoice->getEntries();
+            for (std::size_t i = 0; i < entries.size(); ++i) {
+                if (entries[i].id == valueAsString) {
+                    *finalValue = i;
+                    return true;
+                }
+            }
+            *error = "Invalid value " + valueAsString;
+        }
+
+    }
+    return false;
+}
+
+
+template <>
+bool
+Knob<std::string>::handleExprtkReturnValue(KnobHelper::ExpressionReturnValueTypeEnum type, double /*valueAsDouble*/, const std::string& valueAsString, std::string* finalValue, std::string* error)
 {
     if (type == KnobHelper::eExpressionReturnValueTypeScalar) {
         *error = "This expression cannot return a scalar value";
@@ -563,7 +593,30 @@ Knob<T>::evaluateExpression_pod(TimeValue time,
     }
 } // evaluateExpression_pod
 
+template <typename T>
+void
+Knob<T>::clearExpressionsResults(DimSpec dimension, ViewSetSpec view)
+{
+    QMutexLocker k(&_data->expressionResultsMutex);
+    std::list<ViewIdx> views = getViewsList();
+    ViewIdx view_i;
+    if (!view.isAll()) {
+        view_i = getViewIdxFromGetSpec(ViewIdx(view));
+    }
+    int nDims = getNDimensions();
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
+        if (!view.isAll() && *it != view_i) {
+            continue;
+        }
+        for (int i = 0; i < nDims; ++i) {
+            if (!dimension.isAll() && i != dimension) {
+                continue;
+            }
+            _data->expressionResults[i][*it].clear();
+        }
+    }
 
+}
 
 template <typename T>
 void
@@ -900,7 +953,9 @@ Knob<T>::populate()
 {
     KnobHelper::populate();
 
-    for (int i = 0; i < getNDimensions(); ++i) {
+    int nDims = getNDimensions();
+    _data->expressionResults.resize(nDims);
+    for (int i = 0; i < nDims; ++i) {
         T defValue;
         initDefaultValue<T>(&defValue);
         _data->defaultValues[i].value = defValue;
