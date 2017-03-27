@@ -213,22 +213,27 @@ public:
     //MT only
     int creatingWriteNode;
 
+    // Plugin-ID of the last read node created.
+    // If this is different, we do not load serialized knobs
+    std::string lastPluginIDCreated;
+
 
     WriteNodePrivate(WriteNode* publicInterface)
-        : _publicInterface(publicInterface)
-        , embeddedPlugin()
-        , readBackNode()
-        , inputNode()
-        , outputNode()
-        , genericKnobsSerialization()
-        , outputFileKnob()
-        , frameIncrKnob()
-        , pluginSelectorKnob()
-        , pluginIDStringKnob()
-        , separatorKnob()
-        , renderButtonKnob()
-        , writeNodeKnobs()
-        , creatingWriteNode(0)
+    : _publicInterface(publicInterface)
+    , embeddedPlugin()
+    , readBackNode()
+    , inputNode()
+    , outputNode()
+    , genericKnobsSerialization()
+    , outputFileKnob()
+    , frameIncrKnob()
+    , pluginSelectorKnob()
+    , pluginIDStringKnob()
+    , separatorKnob()
+    , renderButtonKnob()
+    , writeNodeKnobs()
+    , creatingWriteNode(0)
+    , lastPluginIDCreated()
     {
     }
 
@@ -843,8 +848,11 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
 
     _publicInterface->getNode()->findPluginFormatKnobs();
 
-    //Clone the old values of the generic knobs
-    cloneGenericKnobs();
+    // Clone the old values of the generic knobs if we created the same encoder than before
+    if (lastPluginIDCreated == writerPluginID) {
+        cloneGenericKnobs();
+    }
+    lastPluginIDCreated = writerPluginID;
 
 
     NodePtr thisNode = _publicInterface->getNode();
