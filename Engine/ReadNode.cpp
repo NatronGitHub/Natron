@@ -151,10 +151,10 @@ static GenericKnob genericReaderKnobNames[] =
 
     {kOCIOParamConfigFile, true},
     {kNatronReadNodeOCIOParamInputSpace, false},
-    {kOCIOParamInputSpace, true}, // input colorspace must be kept
+    {kOCIOParamInputSpace, false}, // input colorspace must not be kept (depends on file format)
     {kOCIOParamOutputSpace, true}, // output colorspace must be kept
     {kOCIOParamInputSpaceChoice, false},
-    {kOCIOParamOutputSpaceChoice, false},
+    {kOCIOParamOutputSpaceChoice, true},
     {kOCIOHelpButton, false},
     {kOCIOHelpLooksButton, false},
     {kOCIOHelpDisplaysButton, false},
@@ -1231,6 +1231,12 @@ ReadNode::knobChanged(KnobI* k,
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
+        // Make sure instance changed action is called on the decoder and not caught in our knobChanged handler.
+        if (_imp->embeddedPlugin) {
+            _imp->embeddedPlugin->getEffectInstance()->onKnobValueChanged_public(fileKnob.get(), eValueChangedReasonNatronInternalEdited, getCurrentTime(), ViewSpec(0), true);
+        }
+        
+
         _imp->refreshFileInfoVisibility(entry);
     } else if ( k == _imp->fileInfosKnob.lock().get() ) {
         NodePtr p = getEmbeddedReader();
