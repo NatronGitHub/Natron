@@ -1156,8 +1156,8 @@ struct ExprUnresolvedSymbolResolver : public exprtk::parser<EXPRTK_FUNCTIONS_NAM
     }
     virtual usr_symbol_type getSymbolType() const OVERRIDE FINAL
     {
-        // Values cannot be modified by the expression
-        return e_usr_constant_type;
+        // Values are variables since we will update them later on
+        return e_usr_variable_type;
     }
 
     virtual usr_variable_user_type getVariableType() const OVERRIDE FINAL
@@ -2122,24 +2122,32 @@ KnobHelper::ExpressionReturnValueTypeEnum
 KnobHelper::executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimension, double* retValueIsScalar, std::string* retValueIsString, std::string* error) const
 {
 
-    KnobExprTkExpr obj;
-    {
-        QMutexLocker k(&_imp->common->expressionMutex);
-        ExprPerViewMap::const_iterator foundView = _imp->common->expressions[dimension].find(view);
-        if (foundView == _imp->common->expressions[dimension].end() || !foundView->second) {
-            return eExpressionReturnValueTypeError;
-        }
-        KnobExprTkExpr* isExprtkExpr = dynamic_cast<KnobExprTkExpr*>(foundView->second.get());
-        assert(isExprtkExpr);
-        // Copy the expression object so it is local to this thread
-        obj = *isExprtkExpr;
-        obj.expressionObject.reset(new EXPRTK_FUNCTIONS_NAMESPACE::expression_t);
-        *obj.expressionObject = *isExprtkExpr->expressionObject;
-    }
+    boost::shared_ptr<KnobExprTkExpr> obj;
 
-    assert(obj.expressionObject);
-    EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t& unknown_symbols_table = obj.expressionObject->get_symbol_table(0);
-    EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t& symbol_table = obj.expressionObject->get_symbol_table(1);
+    // Take the expression mutex. Copying the exprtk expression does not actually copy all variables and functions, it just
+    // increments a shared reference count.
+    // To be thread safe we have 2 solutions:
+    // 1) Compile the expression for each thread and then run it without a mutex
+    // 2) Compile only once and run the expression under a lock
+    // For now solution 2) is used because the expression mutex anyway locks only this expression
+    // and it is not too critical.
+    QMutexLocker k(&_imp->common->expressionMutex);
+    ExprPerViewMap::const_iterator foundView = _imp->common->expressions[dimension].find(view);
+    if (foundView == _imp->common->expressions[dimension].end() || !foundView->second) {
+        return eExpressionReturnValueTypeError;
+    }
+    KnobExprTkExpr* isExprtkExpr = dynamic_cast<KnobExprTkExpr*>(foundView->second.get());
+    assert(isExprtkExpr);
+    // Copy the expression object so it is local to this thread
+    obj = boost::dynamic_pointer_cast<KnobExprTkExpr>(foundView->second);
+    assert(obj);
+    //obj.expressionObject.reset(new EXPRTK_FUNCTIONS_NAMESPACE::expression_t);
+    //*obj.expressionObject = *isExprtkExpr->expressionObject;
+
+
+    assert(obj->expressionObject);
+    EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t& unknown_symbols_table = obj->expressionObject->get_symbol_table(0);
+    EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t& symbol_table = obj->expressionObject->get_symbol_table(1);
 
     // Remove from the symbol table functions that hold a state, and re-add a new fresh local copy of them so that the state
     // is local to this thread.
@@ -2150,7 +2158,7 @@ KnobHelper::executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimensi
 
     // Update the frame & view in the know table
     symbol_table.variable_ref("frame") = (double)time;
-    for (std::map<std::string, KnobDimViewKey>::const_iterator it = obj.knobDependencies.begin(); it != obj.knobDependencies.end(); ++it) {
+    for (std::map<std::string, KnobDimViewKey>::const_iterator it = obj->knobDependencies.begin(); it != obj->knobDependencies.end(); ++it) {
         KnobIPtr knob = it->second.knob.lock();
         if (!knob) {
             continue;
@@ -2190,7 +2198,7 @@ KnobHelper::executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimensi
         //unknown_symbols_table.variable_ref(it->first).
     }
 
-    for (std::map<std::string, EffectFunctionDependency>::const_iterator it = obj.effectDependencies.begin(); it != obj.effectDependencies.end(); ++it) {
+    for (std::map<std::string, EffectFunctionDependency>::const_iterator it = obj->effectDependencies.begin(); it != obj->effectDependencies.end(); ++it) {
         EffectInstancePtr effect = it->second.effect.lock();
         if (!effect) {
             continue;
@@ -2229,16 +2237,9 @@ KnobHelper::executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimensi
     }
 
 
-    // Parse the copy of the expression
-    EXPRTK_FUNCTIONS_NAMESPACE::parser_t parser;
-    if (!parseExprtkExpression(obj.expressionString, obj.modifiedExpression, parser, *obj.expressionObject, error)) {
-        return eExpressionReturnValueTypeError;
-    }
-
-
     // Evaluate the expression
-    obj.expressionObject->value();
-    return handleExprTkReturn(*obj.expressionObject, retValueIsScalar, retValueIsString, error);
+    obj->expressionObject->value();
+    return handleExprTkReturn(*obj->expressionObject, retValueIsScalar, retValueIsString, error);
 } // executeExprTKExpression
 
 KnobHelper::ExpressionReturnValueTypeEnum
