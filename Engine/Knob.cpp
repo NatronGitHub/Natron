@@ -843,7 +843,9 @@ KnobHelper::isAutoKeyingEnabledInternal(DimIdx dimension, TimeValue time, ViewId
 
 
     // The knob doesn't have any animation don't start keying automatically
-    if (getAnimationLevel(dimension, time, view) == eAnimationLevelNone) {
+    AnimationLevelEnum level = getAnimationLevel(dimension, time, view);
+    if (level == eAnimationLevelNone ||
+        level == eAnimationLevelExpression) {
         return false;
     }
     

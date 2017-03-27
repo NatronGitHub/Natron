@@ -1484,10 +1484,13 @@ KnobHelperPrivate::validateExprTKExpression(const std::string& expression, DimId
 
     KnobIPtr thisShared = publicInterface->shared_from_this();
 
-    symbol_table.add_constant("frame", time);
+    {
+        double time_f = (double)time;
+        symbol_table.add_variable("frame", time_f);
+    }
 
     std::string viewName = publicInterface->getHolder()->getApp()->getProject()->getViewName(view);
-    symbol_table.add_stringvar("view", viewName, true);
+    symbol_table.add_stringvar("view", viewName, false);
 
     {
         // The object that resolves undefined knob dependencies at compile time
@@ -1723,7 +1726,7 @@ KnobHelper::setExpressionInternal(DimIdx dimension,
 #endif
     assert( dimension >= 0 && dimension < getNDimensions() );
 
-    PythonGILLocker pgl;
+
 
     ///Clear previous expr
     clearExpression(dimension, ViewSetSpec(view));
@@ -1736,9 +1739,11 @@ KnobHelper::setExpressionInternal(DimIdx dimension,
     std::string exprResult;
 
     KnobExprPtr expressionObj;
+    boost::scoped_ptr<PythonGILLocker> pgl;
     try {
         switch (language) {
             case eExpressionLanguagePython: {
+                pgl.reset(new PythonGILLocker);
                 boost::shared_ptr<KnobPythonExpr> obj(new KnobPythonExpr);
                 expressionObj = obj;
                 obj->modifiedExpression = _imp->validatePythonExpression(expression, dimension, view, hasRetVariable, &exprResult);

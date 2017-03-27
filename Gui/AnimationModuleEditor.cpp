@@ -739,7 +739,7 @@ AnimationModuleEditor::setSelectedCurveExpression(const QString& expression, Exp
             return;
         }
     }
-    pushUndoCommand( new SetExpressionCommand(knob, eExpressionLanguagePython, false /*hasRetVariable*/, dimension, view, expression.toStdString()) );
+    pushUndoCommand( new SetExpressionCommand(knob, lang, false /*hasRetVariable*/, dimension, view, expression.toStdString()) );
 }
 
 void

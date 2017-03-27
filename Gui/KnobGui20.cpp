@@ -488,6 +488,9 @@ KnobGui::onExprChanged(DimIdx dimension, ViewIdx view)
     if (foundView == _imp->views.end()) {
         return;
     }
+    if (!knob->getHolder()) {
+        return;
+    }
     foundView->second.widgets->reflectAnimationLevel( dimension, knob->getAnimationLevel(dimension, knob->getHolder()->getTimelineCurrentTime(), view) );
     if ( !exp.empty() ) {
 
@@ -528,6 +531,9 @@ KnobGui::onExprChanged(DimIdx dimension, ViewIdx view)
 
     // Refresh the animation curve
     onCurveAnimationChangedInternally(view, dimension);
+
+    // Refresh node links
+    onInternalKnobLinksChanged();
 
 } // KnobGui::onExprChanged
 
