@@ -1233,6 +1233,12 @@ ReadNode::knobChanged(KnobI* k,
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
+        // Make sure instance changed action is called on the decoder and not caught in our knobChanged handler.
+        if (_imp->embeddedPlugin) {
+            _imp->embeddedPlugin->getEffectInstance()->onKnobValueChanged_public(fileKnob.get(), eValueChangedReasonNatronInternalEdited, getCurrentTime(), ViewSpec(0), true);
+        }
+        
+
         _imp->refreshFileInfoVisibility(entry);
     } else if ( k == _imp->fileInfosKnob.lock().get() ) {
         NodePtr p = getEmbeddedReader();
