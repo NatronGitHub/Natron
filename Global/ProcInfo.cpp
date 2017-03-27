@@ -68,7 +68,9 @@ applicationFileName()
     if (v == 0) {
         return std::string();
     } else if (v <= MAX_PATH) {
-        return std::wstring(buffer);
+        std::wstring wret(buffer);
+        std::string ret = StrUtils::utf16_to_utf8(wret);
+        return ret;
     }
 
     // MAX_PATH sized buffer wasn't large enough to contain the full path, use heap
