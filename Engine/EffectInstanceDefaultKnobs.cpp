@@ -522,69 +522,71 @@ EffectInstance::createNodePage(const KnobPagePtr& settingsPage)
         _imp->defKnobs->tableSelectionChangedCallback = param;
     }
 
-    {
-        KnobStringPtr param =  createKnob<KnobString>("beforeFrameRender");
-        param->setLabel(tr("Before frame render"));
-        param->setDeclaredByPlugin(false);
-        param->setAnimationEnabled(false);
-        param->setHintToolTip( tr("Add here the name of a Python defined function that will be called before rendering "
-                                  "any frame.\n "
-                                  "The signature of the callback is: callback(frame, thisNode, app) where:\n"
-                                  "- frame: the frame to be rendered\n"
-                                  "- thisNode: points to the writer node\n"
-                                  "- app: points to the current application instance") );
-        settingsPage->addKnob(param);
+    if (isOutput()) {
+        {
+            KnobStringPtr param =  createKnob<KnobString>("beforeFrameRender");
+            param->setLabel(tr("Before frame render"));
+            param->setDeclaredByPlugin(false);
+            param->setAnimationEnabled(false);
+            param->setHintToolTip( tr("Add here the name of a Python defined function that will be called before rendering "
+                                      "any frame.\n "
+                                      "The signature of the callback is: callback(frame, thisNode, app) where:\n"
+                                      "- frame: the frame to be rendered\n"
+                                      "- thisNode: points to the writer node\n"
+                                      "- app: points to the current application instance") );
+            settingsPage->addKnob(param);
 
-        _imp->defKnobs->beforeFrameRender = param;
+            _imp->defKnobs->beforeFrameRender = param;
 
-    }
+        }
 
-    {
-        KnobStringPtr param =  createKnob<KnobString>("beforeRender");
-        param->setDeclaredByPlugin(false);
-        param->setLabel(tr("Before render"));
-        param->setAnimationEnabled(false);
-        param->setHintToolTip( tr("Add here the name of a Python defined function that will be called once when "
-                                  "starting rendering.\n "
-                                  "The signature of the callback is: callback(thisNode, app) where:\n"
-                                  "- thisNode: points to the writer node\n"
-                                  "- app: points to the current application instance") );
-        settingsPage->addKnob(param);
-        _imp->defKnobs->beforeRender = param;
+        {
+            KnobStringPtr param =  createKnob<KnobString>("beforeRender");
+            param->setDeclaredByPlugin(false);
+            param->setLabel(tr("Before render"));
+            param->setAnimationEnabled(false);
+            param->setHintToolTip( tr("Add here the name of a Python defined function that will be called once when "
+                                      "starting rendering.\n "
+                                      "The signature of the callback is: callback(thisNode, app) where:\n"
+                                      "- thisNode: points to the writer node\n"
+                                      "- app: points to the current application instance") );
+            settingsPage->addKnob(param);
+            _imp->defKnobs->beforeRender = param;
 
-    }
+        }
 
-    {
-        KnobStringPtr param =  createKnob<KnobString>("afterFrameRender");
-        param->setLabel(tr("After frame render"));
-        param->setDeclaredByPlugin(false);
-        param->setAnimationEnabled(false);
-        param->setHintToolTip( tr("Add here the name of a Python defined function that will be called after rendering "
-                                  "any frame.\n "
-                                  "The signature of the callback is: callback(frame, thisNode, app) where:\n"
-                                  "- frame: the frame that has been rendered\n"
-                                  "- thisNode: points to the writer node\n"
-                                  "- app: points to the current application instance") );
-        settingsPage->addKnob(param);
+        {
+            KnobStringPtr param =  createKnob<KnobString>("afterFrameRender");
+            param->setLabel(tr("After frame render"));
+            param->setDeclaredByPlugin(false);
+            param->setAnimationEnabled(false);
+            param->setHintToolTip( tr("Add here the name of a Python defined function that will be called after rendering "
+                                      "any frame.\n "
+                                      "The signature of the callback is: callback(frame, thisNode, app) where:\n"
+                                      "- frame: the frame that has been rendered\n"
+                                      "- thisNode: points to the writer node\n"
+                                      "- app: points to the current application instance") );
+            settingsPage->addKnob(param);
 
-        _imp->defKnobs->afterFrameRender = param;
-    }
+            _imp->defKnobs->afterFrameRender = param;
+        }
 
-    {
-        KnobStringPtr param =  createKnob<KnobString>("afterRender");
-        param->setDeclaredByPlugin(false);
-        param->setLabel(tr("After render"));
-        param->setAnimationEnabled(false);
-        param->setHintToolTip( tr("Add here the name of a Python defined function that will be called once when the rendering "
-                                  "is finished.\n "
-                                  "The signature of the callback is: callback(aborted, thisNode, app) where:\n"
-                                  "- aborted: True if the render ended because it was aborted, False upon completion\n"
-                                  "- thisNode: points to the writer node\n"
-                                  "- app: points to the current application instance") );
-        settingsPage->addKnob(param);
-        _imp->defKnobs->afterRender = param;
-        
-    }
+        {
+            KnobStringPtr param =  createKnob<KnobString>("afterRender");
+            param->setDeclaredByPlugin(false);
+            param->setLabel(tr("After render"));
+            param->setAnimationEnabled(false);
+            param->setHintToolTip( tr("Add here the name of a Python defined function that will be called once when the rendering "
+                                      "is finished.\n "
+                                      "The signature of the callback is: callback(aborted, thisNode, app) where:\n"
+                                      "- aborted: True if the render ended because it was aborted, False upon completion\n"
+                                      "- thisNode: points to the writer node\n"
+                                      "- app: points to the current application instance") );
+            settingsPage->addKnob(param);
+            _imp->defKnobs->afterRender = param;
+            
+        }
+    } // isOutput
 } // createNodePage
 
 void
