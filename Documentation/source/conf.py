@@ -57,6 +57,7 @@ version_30 = '3.0'
 # The version for this branch
 # The full version, including alpha/beta/rc tags.
 release = version_30
+
 #
 # The short X.Y version.
 version = '.'.join(release.split('.')[0:2])

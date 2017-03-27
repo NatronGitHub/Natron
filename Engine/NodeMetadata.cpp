@@ -495,7 +495,8 @@ NodeMetadata::getComponentsType(int inputNb) const
     ss << kNatronMetadataComponentsType << inputNb;
     std::string ret;
     if (getStringMetadata(ss.str(), 0, &ret)) {
-        return ret;    }
+        return ret;
+    }
     return kNatronColorPlaneID;
 }
 

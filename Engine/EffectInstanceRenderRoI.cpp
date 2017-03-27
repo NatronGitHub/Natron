@@ -1331,6 +1331,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
                 lastStrokeRoD.toPixelEnclosing(mappedCombinedScale, par, &drawingLastMovementBBoxPixel);
             }
 
+
             // If this is the first time we compute this frame view request, erase in the tiles state map the portion that was drawn
             // by the user,
             if (!requestedImageScale) {
@@ -1372,6 +1373,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
             // Do not set the renderStatus to FrameViewRequest::eFrameViewRequestStatusRendered because
             // we still need to downscale the image
         }
+
 
         // If the node supports render scale, make the fullScaleImage point to the requestedImageScale so that we don't
         // ruin the render code of if/else
@@ -1467,6 +1469,7 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPa
             ActionRetCodeEnum stat = getRegionOfDefinition_public(getCurrentRenderTime(), mappedCombinedScale, getCurrentRenderView(), &results);
             if (isFailureRetCode(stat)) {
                 return stat;
+
             }
         }
         rod = results->getRoD();
@@ -1528,6 +1531,7 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPa
         finishProducedPlanesTilesStatesMap(cachedImagePlanes, true);
         return renderRetCode;
     }
+
 
 
     while ((!renderRects.empty() || hasPendingTiles) && !isRenderAborted()) {

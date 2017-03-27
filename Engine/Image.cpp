@@ -341,7 +341,6 @@ Image::getComponentsCount() const
     return _imp->plane.getNumComponents();
 }
 
-
 const ImagePlaneDesc&
 Image::getLayer() const
 {
