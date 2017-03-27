@@ -1387,9 +1387,9 @@ void
 TrackerNodeInteract::onTrackImageRenderingFinished()
 {
     assert( QThread::currentThread() == qApp->thread() );
-    QFutureWatcher<std::pair<ImagePtr, RectI> >* future = dynamic_cast<QFutureWatcher<std::pair<ImagePtr, RectI> >*>( sender() );
+    TrackWatcher* future = dynamic_cast<TrackWatcher*>( sender() );
     assert(future);
-    std::pair<ImagePtr, RectI> ret = future->result();
+    std::pair<ImagePtr, RectD> ret = future->result();
     OverlaySupport* overlay = getLastCallingViewport();
     assert(overlay);
     OpenGLViewerI* isOpenGLViewer = dynamic_cast<OpenGLViewerI*>(overlay);
@@ -1410,7 +1410,9 @@ TrackerNodeInteract::onTrackImageRenderingFinished()
                                                  format, internalFormat, glType, true /*useGL*/) );
     }
 
-    convertImageTosRGBOpenGLTexture(ret.first, selectedMarkerTexture, ret.second);
+    RectI roi;
+    ret.second.toPixelEnclosing(0, 1., &roi);
+    convertImageTosRGBOpenGLTexture(ret.first, selectedMarkerTexture, roi);
 
     redraw();
 }
