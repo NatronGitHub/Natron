@@ -984,8 +984,8 @@ KnobHelper::refreshListenersAfterValueChangeInternal(TimeValue time, ViewIdx vie
     // Get all listeners via expressions
     {
         QMutexLocker l(&_imp->common->expressionMutex);
-        KnobDimViewKeySet& thisDimViewExpressionListeners = _imp->common->expressions[dimension][view]->listeners;
-        allListeners.insert(thisDimViewExpressionListeners.begin(), thisDimViewExpressionListeners.end());
+        KnobDimViewKeySet& listeners = _imp->common->listeners[dimension][view];
+        allListeners.insert(listeners.begin(), listeners.end());
     }
 
     // Get all listeners via shared values
@@ -1020,8 +1020,8 @@ KnobHelper::refreshListenersAfterValueChange(TimeValue time, ViewSetSpec view, V
         for (int i = 0; i < nDims; ++i) {
             if (!dimension.isAll() && i != dimension) {
                 continue;
-                refreshListenersAfterValueChangeInternal(time, *it, reason, DimIdx(i), evaluatedKnobs);
             }
+            refreshListenersAfterValueChangeInternal(time, *it, reason, DimIdx(i), evaluatedKnobs);
         }
     }
 
@@ -2440,19 +2440,6 @@ KnobHelper::randomInt(int min,
     return (int)random( (double)min, (double)max );
 }
 
-struct alias_cast_float
-{
-    alias_cast_float()
-        : raw(0)
-    {
-    };                          // initialize to 0 in case sizeof(T) < 8
-
-    union
-    {
-        U32 raw;
-        float data;
-    };
-};
 
 void
 KnobHelper::randomSeed(TimeValue time,

@@ -88,15 +88,11 @@ public:
     std::string expressionString;
     std::string exprInvalid;
     ExpressionLanguageEnum language;
-    
-    // The other knobs/dimension/view that have expressions referencing us
-    KnobDimViewKeySet listeners;
 
     KnobExpr()
     : expressionString()
     , exprInvalid()
     , language(eExpressionLanguageExprTK)
-    , listeners()
     {}
 
     virtual ~KnobExpr() {}
@@ -143,7 +139,12 @@ public:
 
     // The exprtk expression object
     boost::shared_ptr<EXPRTK_FUNCTIONS_NAMESPACE::expression_t> expressionObject;
-    
+
+    // We hold functions here because the expression object itself does not hold a copy of the functions
+    std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::func_ptr> > functions;
+    std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::vararg_func_ptr> > varargFunctions;
+    std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::generic_func_ptr> > genericFunctions;
+
     // knob values dependencies mapped against their variable name in the expression
     std::map<std::string, KnobDimViewKey> knobDependencies;
     
@@ -450,6 +451,7 @@ struct KnobHelperPrivate
         common->hasModifications.resize(nDims);
         common->allDimensionsVisible[ViewIdx(0)] = true;
         common->expressions.resize(nDims);
+        common->listeners.resize(nDims);
         common->perDimViewSavedData.resize(nDims);
         for (int i = 0; i < nDims; ++i) {
             common->hasModifications[i][ViewIdx(0)] = false;
@@ -499,6 +501,21 @@ hashFunction(unsigned int a)
 
     return a;
 }
+
+struct alias_cast_float
+{
+    alias_cast_float()
+    : raw(0)
+    {
+    };                          // initialize to 0 in case sizeof(T) < 8
+
+    union
+    {
+        U32 raw;
+        float data;
+    };
+};
+
 
 NATRON_NAMESPACE_EXIT
 

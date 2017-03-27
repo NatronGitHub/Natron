@@ -89,6 +89,8 @@ public Q_SLOTS:
         Q_EMIT dialogFinished(false);
     }
 
+    void onLanguageCurrentIndexChanged();
+
 Q_SIGNALS:
 
     void dialogFinished(bool accepted);

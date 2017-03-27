@@ -701,6 +701,7 @@ public:
 
     ResultTypeEnum _resultType;
     std::string _error;
+    bool _testingEnabled;
 
     // If result is eResultTypeEffectRoD, this is the effect on which to retrieve the property
     EffectInstancePtr _effectProperty;
@@ -716,6 +717,8 @@ public:
     , _view(view)
     , _symbol(symbol)
     , _resultType(eResultTypeInvalid)
+    , _error()
+    , _testingEnabled(false)
     {
         resolve();
     }
@@ -724,7 +727,7 @@ private:
 
     void resolve()
     {
-        
+
         // Split the variable with dots
         std::vector<std::string> splits = StrUtils::split(_symbol, '.');
 
@@ -737,79 +740,143 @@ private:
         ViewIdx currentView = _view;
         assert(currentNode && currentGroup);
 
+        // If "exists" is suffixed, we never fail but instead return 0 or 1
+        _testingEnabled = !splits.empty() && splits.back() == "exists";
+        if (_testingEnabled) {
+            splits.resize(splits.size() - 1);
+        }
         for (std::size_t i = 0; i < splits.size(); ++i) {
             bool isLastToken = (i == splits.size() - 1);
             const std::string& token = splits[i];
 
 
-            if (checkForGroup(token, &currentGroup)) {
-                // If we caught a group, check if it is a node too
-                currentNode = toNodeGroup(currentGroup);
-                currentHolder = currentNode;
-                currentTableItem.reset();
-                currentKnob.reset();
-                if (isLastToken) {
-                    std::stringstream ss;
-                    ss << _symbol << ": a variable can only be bound to a value";
-                    _error = ss.str();
-                    return;
-                }
-                continue;
-            }
-
-            if (checkForNode(token, currentGroup, currentNode, &currentNode)) {
-                // If we caught a node, check if it is a group too
-                currentGroup = toNodeGroup(currentNode);
-                currentHolder = currentNode;
-                currentTableItem.reset();
-                currentKnob.reset();
-                if (isLastToken) {
-                    std::stringstream ss;
-                    ss << _symbol << ": a variable can only be bound to a value";
-                    _error = ss.str();
-                    return;
-                }
-                continue;
-            }
-
-            if (checkForTableItem(token, currentHolder, &currentTableItem)) {
-                // If we caught a node, check if it is a group too
-                currentHolder = currentTableItem;
-                currentNode.reset();
-                currentGroup.reset();
-                currentKnob.reset();
-                if (isLastToken) {
-                    std::stringstream ss;
-                    ss << _symbol << ": a variable can only be bound to a value";
-                    _error = ss.str();
-                    return;
-                }
-                continue;
-            }
-
-            if (checkForKnob(token, currentHolder, &currentKnob)) {
-                // If we caught a node, check if it is a group too
-                currentHolder.reset();
-                currentTableItem.reset();
-                currentNode.reset();
-                currentGroup.reset();
-                if (isLastToken) {
-                    if (currentKnob->getNDimensions() > 1) {
-                        std::stringstream ss;
-                        ss << _symbol << ": this parameter has multiple dimension, please specify one";
-                        _error = ss.str();
-                        return ;
-                    } else {
-
-                        // single dimension, return the value of the knob at dimension 0
-                        _targetView = _view;
-                        _targetKnob = currentKnob;
-                        _targetDimension = DimIdx(0);
-                        _resultType = eResultTypeKnobValue;
+            {
+                NodeCollectionPtr curGroupOut;
+                if (checkForGroup(token, &curGroupOut)) {
+                    // If we caught a group, check if it is a node too
+                    currentGroup = curGroupOut;
+                    currentNode = toNodeGroup(currentGroup);
+                    currentHolder = currentNode;
+                    currentTableItem.reset();
+                    currentKnob.reset();
+                    if (isLastToken) {
+                        if (_testingEnabled) {
+                            // If testing is enabled, set the result to be valid
+                            _resultType = eResultTypeKnobValue;
+                        } else {
+                            std::stringstream ss;
+                            ss << _symbol << ": a variable can only be bound to a value";
+                            _error = ss.str();
+                        }
                         return;
                     }
+                    continue;
                 }
-                continue;
+            }
+
+            {
+                EffectInstancePtr curNodeOut;
+                if (checkForNode(token, currentGroup, currentNode, &curNodeOut)) {
+                    // If we caught a node, check if it is a group too
+                    currentNode = curNodeOut;
+                    currentGroup = toNodeGroup(currentNode);
+                    currentHolder = currentNode;
+                    currentTableItem.reset();
+                    currentKnob.reset();
+                    if (isLastToken) {
+                        if (_testingEnabled) {
+                            // If testing is enabled, set the result to be valid
+                            _resultType = eResultTypeKnobValue;
+                        } else {
+                            std::stringstream ss;
+                            ss << _symbol << ": a variable can only be bound to a value";
+                            _error = ss.str();
+                        }
+                        return;
+                    }
+                    continue;
+                }
+            }
+
+            {
+                KnobTableItemPtr curTableItemOut;
+                if (checkForTableItem(token, currentHolder, &curTableItemOut)) {
+                    // If we caught a node, check if it is a group too
+                    currentTableItem = curTableItemOut;
+                    currentHolder = currentTableItem;
+                    currentNode.reset();
+                    currentGroup.reset();
+                    currentKnob.reset();
+                    if (isLastToken) {
+                        if (_testingEnabled) {
+                            // If testing is enabled, set the result to be valid
+                            _resultType = eResultTypeKnobValue;
+                        } else {
+                            std::stringstream ss;
+                            ss << _symbol << ": a variable can only be bound to a value";
+                            _error = ss.str();
+                        }
+                        return;
+                    }
+                    continue;
+                }
+            }
+
+            {
+                if (checkForProject(token)) {
+                    ProjectPtr proj = _knob->getHolder()->getApp()->getProject();
+                    currentHolder = proj;
+                    currentTableItem.reset();
+                    currentNode.reset();
+                    currentGroup = proj;
+                    currentKnob.reset();
+                    if (isLastToken) {
+                        if (_testingEnabled) {
+                            // If testing is enabled, set the result to be valid
+                            _resultType = eResultTypeKnobValue;
+                        } else {
+                            std::stringstream ss;
+                            ss << _symbol << ": a variable can only be bound to a value";
+                            _error = ss.str();
+                        }
+                        return;
+                    }
+                    continue;
+                }
+            }
+
+            {
+                KnobIPtr curKnobOut;
+                if (checkForKnob(token, currentHolder, &curKnobOut)) {
+                    // If we caught a node, check if it is a group too
+                    currentKnob = curKnobOut;
+                    currentHolder.reset();
+                    currentTableItem.reset();
+                    currentNode.reset();
+                    currentGroup.reset();
+                    if (isLastToken) {
+                        if (currentKnob->getNDimensions() > 1) {
+                            if (_testingEnabled) {
+                                // If testing is enabled, set the result to be valid
+                                _resultType = eResultTypeKnobValue;
+                            } else {
+                                std::stringstream ss;
+                                ss << _symbol << ": this parameter has multiple dimension, please specify one";
+                                _error = ss.str();
+                            }
+                            return ;
+                        } else {
+
+                            // single dimension, return the value of the knob at dimension 0
+                            _targetView = _view;
+                            _targetKnob = currentKnob;
+                            _targetDimension = DimIdx(0);
+                            _resultType = eResultTypeKnobValue;
+                            return;
+                        }
+                    }
+                    continue;
+                }
             }
 
             if (checkForView(token, currentKnob, &currentView)) {
@@ -821,9 +888,14 @@ private:
                 if (isLastToken) {
 
                     if (currentKnob->getNDimensions() > 1) {
-                        std::stringstream ss;
-                        ss << _symbol << ": this parameter has multiple dimension, please specify one";
-                        _error = ss.str();
+                        if (_testingEnabled) {
+                            // If testing is enabled, set the result to be valid
+                            _resultType = eResultTypeKnobValue;
+                        } else {
+                            std::stringstream ss;
+                            ss << _symbol << ": this parameter has multiple dimension, please specify one";
+                            _error = ss.str();
+                        }
                         return ;
                     } else {
 
@@ -834,9 +906,10 @@ private:
                         _resultType = eResultTypeKnobValue;
                         return;
                     }
+                    return;
 
                 }
-                return;
+                continue;
             }
 
             if (checkForDimension(token, currentKnob, &currentDimension)) {
@@ -867,8 +940,13 @@ private:
                     // The rod of the effect
                     _resultType = eResultTypeEffectRoD;
                     _effectProperty = currentNode;
+                    return;
                 }
             }
+
+            _error = "Undefined symbol " + _symbol;
+            _resultType = eResultTypeInvalid;
+            return;
             
         } // for each splits
 
@@ -926,7 +1004,7 @@ private:
         // Check for an inputNumber
         if (callerIsNode) {
             std::string prefix("input");
-            std::size_t foundPrefix = str.find_first_of(prefix);
+            std::size_t foundPrefix = str.find(prefix);
             if (foundPrefix != std::string::npos) {
                 std::string inputNumberStr = str.substr(prefix.size());
                 int inputNb = -1;
@@ -964,6 +1042,14 @@ private:
             return KnobTableItemPtr();
         }
         return toKnobTableItem(_knob->getHolder());
+    }
+
+    bool checkForProject(const std::string& str) const
+    {
+        if (str == "app") {
+            return true;
+        }
+        return false;
     }
 
     bool checkForTableItem(const std::string& str, const KnobHolderPtr& callerHolder, KnobTableItemPtr* retIsTableItem) const
@@ -1079,6 +1165,14 @@ struct ExprUnresolvedSymbolResolver : public exprtk::parser<EXPRTK_FUNCTIONS_NAM
         st = usr_t::e_usr_constant_type;
 
         SymbolResolver resolver(_knob, _dimension, _view, unknown_symbol);
+        if (resolver._testingEnabled) {
+            if (resolver._resultType == SymbolResolver::eResultTypeInvalid) {
+                default_value = 0;
+            } else {
+                default_value = 1;
+            }
+            return true;
+        }
         switch (resolver._resultType) {
             case SymbolResolver::eResultTypeInvalid: {
                 std::stringstream ss;
@@ -1129,60 +1223,22 @@ struct ExprUnresolvedSymbolResolver : public exprtk::parser<EXPRTK_FUNCTIONS_NAM
 
 };
 
-/**
- * @brief A function to let the user test if a variable is valid or not, e.g: an input of a node might or might
- * not be connected, a knob might exist, etc...
- **/
-struct IsVariableValidFunc : public exprtk::igeneric_function<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>
-{
 
-    typedef typename exprtk::igeneric_function<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::parameter_list_t parameter_list_t;
-
-    KnobIWPtr _knob;
-    DimIdx _dimension;
-    ViewIdx _view;
-
-    IsVariableValidFunc(const KnobIPtr& knob, DimIdx dimension, ViewIdx view)
-    : exprtk::igeneric_function<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>("S")
-    , _knob(knob)
-    , _dimension(dimension)
-    , _view(view)
-    {}
-
-
-    EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t operator()(parameter_list_t parameters)
-    {
-        typedef typename exprtk::igeneric_function<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::generic_type generic_type;
-        typedef typename generic_type::scalar_view scalar_t;
-        typedef typename generic_type::string_view string_t;
-
-        assert(parameters.size() == 1);
-
-
-        std::string symbolToTest = exprtk::to_str(string_t(parameters[0]));
-        KnobIPtr knob = _knob.lock();
-        if (!knob) {
-            return EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t(0);
-        }
-        SymbolResolver resolver(knob.get(), _dimension, _view,  symbolToTest);
-        if (resolver._resultType == SymbolResolver::eResultTypeInvalid) {
-            return EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t(0);
-        }
-
-        return EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t(1);
-    }
-    
-};
-
-static bool addStandardFunctionsAndParse(const std::string& expr, EXPRTK_FUNCTIONS_NAMESPACE::parser_t& parser, EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t& symbol_table, EXPRTK_FUNCTIONS_NAMESPACE::expression_t& expressionObject, std::string* error)
+static bool addStandardFunctionsAndParse(const std::string& expr,
+                                         TimeValue time,
+                                         EXPRTK_FUNCTIONS_NAMESPACE::parser_t& parser,
+                                         EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t& symbol_table,
+                                         EXPRTK_FUNCTIONS_NAMESPACE::expression_t& expressionObject,
+                                         std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::func_ptr> >& functions,
+                                         std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::vararg_func_ptr> >& varargFunctions,
+                                         std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::generic_func_ptr> >& genericFunctions,
+                                         std::string* error)
 {
     // Add all functions from the API to the symbol table
-    std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::func_ptr> > functions;
-    std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::vararg_func_ptr> > varargFunctions;
-    std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::generic_func_ptr> > genericFunctions;
-    EXPRTK_FUNCTIONS_NAMESPACE::addFunctions(&functions);
-    EXPRTK_FUNCTIONS_NAMESPACE::addGenericFunctions(&genericFunctions);
-    EXPRTK_FUNCTIONS_NAMESPACE::addVarargFunctions(&varargFunctions);
+
+    EXPRTK_FUNCTIONS_NAMESPACE::addFunctions(time, &functions);
+    EXPRTK_FUNCTIONS_NAMESPACE::addGenericFunctions(time, &genericFunctions);
+    EXPRTK_FUNCTIONS_NAMESPACE::addVarargFunctions(time, &varargFunctions);
 
     for (std::size_t i = 0; i < functions.size(); ++i) {
         bool ok = symbol_table.add_function(functions[i].first, *functions[i].second);
@@ -1198,12 +1254,50 @@ static bool addStandardFunctionsAndParse(const std::string& expr, EXPRTK_FUNCTIO
         assert(ok);
     }
 
+    // Modify the expression so that the last line is modified by "var exprResult:= ..."; return [exprResult]"
+    std::string modifiedExpression = expr;
+    {
+
+        // Check for the last ';' indicating the previous statement
+        std::size_t foundLastStatement = modifiedExpression.find_last_of(';');
+        std::string toPrepend = "var NatronExprtkExpressionResult := ";
+        bool mustAddSemiColon = true;
+        if (foundLastStatement == std::string::npos) {
+            // There's no ';', the expression is a single statement, pre-pend directly
+            modifiedExpression.insert(0, toPrepend);
+        } else {
+            // Check that there's no whitespace after the last ';' otherwise the user
+            // just wrote a ';' after the last statement, which is allowed.
+            bool hasNonWhitespace = false;
+            for (std::size_t i = foundLastStatement + 1; i < modifiedExpression.size(); ++i) {
+                if (!std::isspace(modifiedExpression[i])) {
+                    hasNonWhitespace = true;
+                    break;
+                }
+            }
+            if (!hasNonWhitespace) {
+                foundLastStatement = modifiedExpression.find_last_of(';', foundLastStatement - 1);
+                mustAddSemiColon = false;
+            }
+            if (foundLastStatement == std::string::npos) {
+                modifiedExpression.insert(0, toPrepend);
+            } else {
+                modifiedExpression.insert(foundLastStatement + 1, toPrepend);
+            }
+        }
+        if (mustAddSemiColon) {
+            modifiedExpression += ';';
+        }
+        std::string toAppend = "\nreturn [NatronExprtkExpressionResult]";
+        modifiedExpression.append(toAppend);
+    }
+
     // Compile the expression
-    if (!parser.compile(expr, expressionObject)) {
+    if (!parser.compile(modifiedExpression, expressionObject)) {
 
         std::stringstream ss;
         ss << "Error(s) while compiling the following expression:" << std::endl;
-        ss << expr;
+        ss << expr << std::endl;
         for (std::size_t i = 0; i < parser.error_count(); ++i) {
             // Include the specific nature of each error
             // and its position in the expression string.
@@ -1217,7 +1311,38 @@ static bool addStandardFunctionsAndParse(const std::string& expr, EXPRTK_FUNCTIO
         return false;
     }
     return true;
-}
+} // addStandardFunctionsAndParse
+
+
+static KnobHelper::ExpressionReturnValueTypeEnum handleExprTkReturn(EXPRTK_FUNCTIONS_NAMESPACE::expression_t& expressionObject, double* retValueIsScalar, std::string* retValueIsString, std::string* error)
+{
+    const EXPRTK_FUNCTIONS_NAMESPACE::results_context_t& results = expressionObject.results();
+    if (results.count() != 1) {
+        std::stringstream ss;
+        ss << "The expression must return one value using the \"return\" keyword";
+        *error = ss.str();
+        return KnobHelper::eExpressionReturnValueTypeError;
+    }
+
+    switch (results[0].type) {
+        case exprtk::type_store<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::e_scalar:
+            *retValueIsScalar = (double)*reinterpret_cast<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t*>(results[0].data);
+            return KnobHelper::eExpressionReturnValueTypeScalar;
+        case exprtk::type_store<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::e_string:
+            *retValueIsString = std::string(reinterpret_cast<const char*>(results[0].data));
+            return KnobHelper::eExpressionReturnValueTypeString;
+
+        case exprtk::type_store<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::e_vector:
+        case exprtk::type_store<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::e_unknown:
+            std::stringstream ss;
+            ss << "The expression must either return a scalar or string value depending on the parameter type";
+            *error = ss.str();
+            return KnobHelper::eExpressionReturnValueTypeError;
+    }
+    
+} // handleExprTkReturn
+
+
 
 void
 KnobHelperPrivate::validateExprTKExpression(const std::string& expression, DimIdx dimension, ViewIdx view, std::string* resultAsString, KnobExprTkExpr* ret) const
@@ -1235,7 +1360,8 @@ KnobHelperPrivate::validateExprTKExpression(const std::string& expression, DimId
     ret->expressionObject->register_symbol_table(symbol_table);
 
     // Pre-declare the variables with a stub value, they will be updated at evaluation time
-    symbol_table.add_constant("frame", publicInterface->getCurrentRenderTime());
+    TimeValue time = publicInterface->getCurrentRenderTime();
+    symbol_table.add_constant("frame", time);
     symbol_table.add_constant("view", view);
 
     {
@@ -1244,44 +1370,27 @@ KnobHelperPrivate::validateExprTKExpression(const std::string& expression, DimId
         EXPRTK_FUNCTIONS_NAMESPACE::parser_t parser;
         parser.enable_unknown_symbol_resolver(&musr);
 
-        // Add a function to test if a variable is valid or not
-        {
-            IsVariableValidFunc func(publicInterface->shared_from_this(), dimension, view);
-            bool ok = symbol_table.add_function("test", func);
-            assert(ok);
-        }
-
         std::string error;
-        if (!addStandardFunctionsAndParse(expression, parser, symbol_table, *ret->expressionObject, &error)) {
+        if (!addStandardFunctionsAndParse(expression, time, parser, symbol_table, *ret->expressionObject, ret->functions, ret->varargFunctions, ret->genericFunctions, &error)) {
             throw std::runtime_error(error);
         }
 
     } // parser
 
     ret->expressionObject->value();
-
-    const EXPRTK_FUNCTIONS_NAMESPACE::results_context_t& results = ret->expressionObject->results();
-    if (results.count() != 1) {
-        std::stringstream ss;
-        ss << "The expression must return one value using the \"return\" keyword";
-        throw std::runtime_error(ss.str());
-    }
-
-    switch (results[0].type) {
-        case exprtk::type_store<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::e_scalar: {
-            double retValueIsScalar = (double)*reinterpret_cast<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t*>(results[0].data);
+    double retValueIsScalar;
+    std::string error;
+    KnobHelper::ExpressionReturnValueTypeEnum stat = handleExprTkReturn(*ret->expressionObject, &retValueIsScalar, resultAsString, &error);
+    switch (stat) {
+        case KnobHelper::eExpressionReturnValueTypeError:
+            throw std::runtime_error(error);
+            break;
+        case KnobHelper::eExpressionReturnValueTypeScalar: {
             std::stringstream ss;
             ss << retValueIsScalar;
-            *resultAsString = retValueIsScalar;
-        } break;
-        case exprtk::type_store<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::e_string:
-            *resultAsString = std::string(reinterpret_cast<const char*>(results[0].data));
-            break;
-        case exprtk::type_store<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::e_vector:
-        case exprtk::type_store<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::e_unknown:
-            std::stringstream ss;
-            ss << "The expression must either return a scalar or string value depending on the parameter type";
-            throw std::runtime_error(ss.str());
+            *resultAsString = ss.str();
+        }   break;
+        case KnobHelper::eExpressionReturnValueTypeString:
             break;
     }
 } // validateExprTKExpression
@@ -1875,35 +1984,6 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
 
-static KnobHelper::ExpressionReturnValueTypeEnum handleExprTkReturn(EXPRTK_FUNCTIONS_NAMESPACE::expression_t& expressionObject, double* retValueIsScalar, std::string* retValueIsString, std::string* error)
-{
-    const EXPRTK_FUNCTIONS_NAMESPACE::results_context_t& results = expressionObject.results();
-    if (results.count() != 1) {
-        std::stringstream ss;
-        ss << "The expression must return one value using the \"return\" keyword";
-        *error = ss.str();
-        return KnobHelper::eExpressionReturnValueTypeError;
-    }
-
-    switch (results[0].type) {
-        case exprtk::type_store<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::e_scalar:
-            *retValueIsScalar = (double)*reinterpret_cast<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t*>(results[0].data);
-            return KnobHelper::eExpressionReturnValueTypeScalar;
-        case exprtk::type_store<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::e_string:
-            *retValueIsString = std::string(reinterpret_cast<const char*>(results[0].data));
-            return KnobHelper::eExpressionReturnValueTypeString;
-
-        case exprtk::type_store<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::e_vector:
-        case exprtk::type_store<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::e_unknown:
-            std::stringstream ss;
-            ss << "The expression must either return a scalar or string value depending on the parameter type";
-            *error = ss.str();
-            return KnobHelper::eExpressionReturnValueTypeError;
-    }
-
-}
-
-
 KnobHelper::ExpressionReturnValueTypeEnum
 KnobHelper::executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimension, double* retValueIsScalar, std::string* retValueIsString, std::string* error) const
 {
@@ -1926,6 +2006,11 @@ KnobHelper::executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimensi
     assert(obj.expressionObject);
     EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t& unknown_symbols_table = obj.expressionObject->get_symbol_table(0);
     EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t& symbol_table = obj.expressionObject->get_symbol_table(1);
+
+    // Remove from the symbol table functions that hold a state, and re-add a new fresh local copy of them so that the state
+    // is local to this thread.
+    std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::func_ptr > > functionsCopy;
+    EXPRTK_FUNCTIONS_NAMESPACE::makeLocalCopyOfStateFunctions(time, symbol_table, &functionsCopy);
 
     bool isRenderClone = getHolder()->isRenderClone();
 
@@ -1957,13 +2042,16 @@ KnobHelper::executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimensi
         KnobIntBasePtr isInt = toKnobIntBase(knob);
         KnobDoubleBasePtr isDouble = toKnobDoubleBase(knob);
         if (isBoolean) {
-            unknown_symbols_table.variable_ref(it->first) = isBoolean->getValue(it->second.dimension, it->second.view);
+            unknown_symbols_table.variable_ref(it->first) = isBoolean->getValueAtTime(time, it->second.dimension, it->second.view);
         } else if (isInt) {
-            unknown_symbols_table.variable_ref(it->first) = isInt->getValue(it->second.dimension, it->second.view);
+            unknown_symbols_table.variable_ref(it->first) = isInt->getValueAtTime(time, it->second.dimension, it->second.view);
         } else if (isDouble) {
-            unknown_symbols_table.variable_ref(it->first) = isDouble->getValue(it->second.dimension, it->second.view);
+            double val = isDouble->getValueAtTime(time, it->second.dimension, it->second.view);
+            EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t& scalar = unknown_symbols_table.variable_ref(it->first);
+            scalar = val;
+            assert(unknown_symbols_table.variable_ref(it->first) == val);
         } else if (isString) {
-            unknown_symbols_table.stringvar_ref(it->first) = isString->getValue(it->second.dimension, it->second.view);
+            unknown_symbols_table.stringvar_ref(it->first) = isString->getValueAtTime(time, it->second.dimension, it->second.view);
         }
         //unknown_symbols_table.variable_ref(it->first).
     }
@@ -2005,8 +2093,8 @@ KnobHelper::executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimensi
             }
         }
     }
-
-
+    
+    
     // Evaluate the expression
     obj.expressionObject->value();
     return handleExprTkReturn(*obj.expressionObject, retValueIsScalar, retValueIsString, error);
@@ -2056,7 +2144,7 @@ KnobHelper::evaluateExpression(const std::string& expr,
             Py_DECREF(ret); //< new ref
         }   break;
         case eExpressionLanguageExprTK: {
-
+            retCode = KnobHelper::executeExprTKExpression(expr, retIsScalar, retIsString, error);
         }   break;
     }
     
@@ -2155,8 +2243,13 @@ KnobHelper::executeExprTKExpression(const std::string& expr, double* retValueIsS
     EXPRTK_FUNCTIONS_NAMESPACE::expression_t expressionObj;
     expressionObj.register_symbol_table(symbol_table);
 
+    std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::func_ptr> > functions;
+    std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::vararg_func_ptr> > varargFunctions;
+    std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::generic_func_ptr> > genericFunctions;
+
+    TimeValue time(0);
     EXPRTK_FUNCTIONS_NAMESPACE::parser_t parser;
-    if (!addStandardFunctionsAndParse(expr, parser, symbol_table, expressionObj, error)) {
+    if (!addStandardFunctionsAndParse(expr, time, parser, symbol_table, expressionObj, functions, varargFunctions, genericFunctions, error)) {
         return eExpressionReturnValueTypeError;
     }
 

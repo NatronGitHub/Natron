@@ -105,6 +105,7 @@ struct EditScriptDialogPrivate
     InputScriptTextEdit* expressionEdit;
     QWidget* midButtonsContainer;
     QHBoxLayout* midButtonsLayout;
+    Label* languageLabel;
     ComboBox* expressionType;
     Button* useRetButton;
     Label* resultLabel;
@@ -126,6 +127,7 @@ struct EditScriptDialogPrivate
     , expressionEdit(0)
     , midButtonsContainer(0)
     , midButtonsLayout(0)
+    , languageLabel(0)
     , expressionType(0)
     , useRetButton(0)
     , resultLabel(0)
@@ -162,7 +164,7 @@ EditScriptDialogPrivate::refreshHeaderLabel(ExpressionLanguageEnum language)
 {
 
 
-    QString documentationUrl = QString::fromUtf8("http://natron.readthedocs.io/en/master/guide/compositing-exprs.html");
+
     QString labelHtml;
     switch (language) {
         case eExpressionLanguagePython: {
@@ -173,7 +175,7 @@ EditScriptDialogPrivate::refreshHeaderLabel(ExpressionLanguageEnum language)
         }   break;
     }
 
-    labelHtml += QString::fromUtf8("<p>Read the documentation at %1 for more informations on how to write expressions.</p>");
+    labelHtml += QString::fromUtf8("<p>Read the <a href=\"%1\">documentation</a> for more informations on how to write expressions.</p>").arg(QString::fromUtf8("http://natron.readthedocs.io/en/master/guide/compositing-exprs.html"));
     QKeySequence s(Qt::CTRL);
     labelHtml.append( QString::fromUtf8("<p>") + _publicInterface->tr("Note that parameters can be referenced by drag'n'dropping while holding %1 on their widget").arg( s.toString(QKeySequence::NativeText) ) + QString::fromUtf8("</p>") );
 
@@ -217,12 +219,19 @@ EditScriptDialog::create(ExpressionLanguageEnum language,
     _imp->midButtonsContainer = new QWidget(this);
     _imp->midButtonsLayout = new QHBoxLayout(_imp->midButtonsContainer);
 
+    QString langTooltip = NATRON_NAMESPACE::convertFromPlainText(tr("Select the language used by this expression. ExprTK-based expressions are very simple and extremely fast expressions but a bit more constrained than "
+                                                                    "Python-based expressions which allow all the flexibility of the Python A.P.I to the expense of being a lot more expensive to evaluate."), NATRON_NAMESPACE::WhiteSpaceNormal);
+
+    _imp->languageLabel = new Label(tr("Language:"), _imp->midButtonsContainer);
+    _imp->languageLabel->setToolTip(langTooltip);
+    _imp->midButtonsLayout->addWidget(_imp->languageLabel);
+
     _imp->expressionType = new ComboBox(_imp->midButtonsContainer);
     _imp->expressionType->addItem(tr("ExprTK"));
     _imp->expressionType->addItem(tr("Python"));
+    connect(_imp->expressionType, SIGNAL(currentIndexChanged(int)), this, SLOT(onLanguageCurrentIndexChanged()));
     _imp->expressionType->setCurrentIndex_no_emit(language == eExpressionLanguagePython ? 1 : 0);
-    _imp->expressionType->setToolTip(NATRON_NAMESPACE::convertFromPlainText(tr("Select the language used by this expression. ExprTK-based expressions are very simple and extremely fast expressions but a bit more constrained than "
-                                                                               "Python-based expressions which allow all the flexibility of the Python A.P.I to the expense of being a lot more expensive to evaluate."), NATRON_NAMESPACE::WhiteSpaceNormal));
+    _imp->expressionType->setToolTip(langTooltip);
     _imp->midButtonsLayout->addWidget(_imp->expressionType);
 
     {
@@ -240,7 +249,7 @@ EditScriptDialog::create(ExpressionLanguageEnum language,
         QObject::connect( _imp->useRetButton, SIGNAL(clicked(bool)), this, SLOT(onUseRetButtonClicked(bool)) );
         _imp->midButtonsLayout->addWidget(_imp->useRetButton);
     }
-
+    _imp->midButtonsLayout->addStretch();
     _imp->mainLayout->addWidget(_imp->midButtonsContainer);
 
     _imp->resultLabel = new Label(tr("Result:"), this);
@@ -272,6 +281,8 @@ EditScriptDialog::create(ExpressionLanguageEnum language,
     }
     QFontMetrics fm = _imp->expressionEdit->fontMetrics();
     _imp->expressionEdit->setTabStopWidth( 4 * fm.width( QLatin1Char(' ') ) );
+
+    _imp->refreshUIForLanguage();
 } // EditScriptDialog::create
 
 void
@@ -330,6 +341,13 @@ EditScriptDialog::keyPressEvent(QKeyEvent* e)
     } else {
         QDialog::keyPressEvent(e);
     }
+}
+
+void
+EditScriptDialog::onLanguageCurrentIndexChanged()
+{
+    _imp->refreshUIForLanguage();
+    compileAndSetResult( _imp->expressionEdit->toPlainText() );
 }
 
 NATRON_NAMESPACE_EXIT;

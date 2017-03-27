@@ -26,7 +26,7 @@
 
 #include "Engine/Noise.h"
 #include "Engine/PyExprUtils.h"
-
+#include "Engine/KnobPrivate.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -273,14 +273,63 @@ struct pnoise : public exprtk::ifunction<exprtk_scalar_t>
     }
 };
 
+
+struct random : public exprtk::ifunction<exprtk_scalar_t>
+{
+    U32 lastRandomHash;
+
+    random(TimeValue time)
+    : exprtk::ifunction<exprtk_scalar_t>(2)
+    , lastRandomHash(0)
+    {
+        // Make the hash vary from time
+        {
+            alias_cast_float ac;
+            ac.data = (float)time;
+            lastRandomHash += ac.raw;
+        }
+    }
+    exprtk_scalar_t operator()(const exprtk_scalar_t& min, const exprtk_scalar_t& max)
+    {
+        lastRandomHash = hashFunction(lastRandomHash);
+
+        return ( (double)lastRandomHash / (double)0x100000000LL ) * (max - min)  + min;
+
+    }
+};
+
+struct randomInt : public exprtk::ifunction<exprtk_scalar_t>
+{
+    U32 lastRandomHash;
+
+    randomInt(TimeValue time)
+    : exprtk::ifunction<exprtk_scalar_t>(2)
+    , lastRandomHash(0)
+    {
+        // Make the hash vary from time
+        {
+            alias_cast_float ac;
+            ac.data = (float)time;
+            lastRandomHash += ac.raw;
+        }
+    }
+    exprtk_scalar_t operator()(const exprtk_scalar_t& min, const exprtk_scalar_t& max)
+    {
+        lastRandomHash = hashFunction(lastRandomHash);
+
+        return int(( (double)lastRandomHash / (double)0x100000000LL ) * ((int)max - (int)min)  + (int)min);
+        
+    }
+};
+
 void
-addVarargFunctions(std::vector<std::pair<std::string, vararg_func_ptr > >* functions)
+addVarargFunctions(TimeValue /*time*/, std::vector<std::pair<std::string, vararg_func_ptr > >* functions)
 {
     registerFunction<hash>("hash", functions);
 }
 
 void
-addFunctions(std::vector<std::pair<std::string, func_ptr > >* functions)
+addFunctions(TimeValue time, std::vector<std::pair<std::string, func_ptr > >* functions)
 {
     registerFunction<boxstep>("boxstep", functions);
     registerFunction<linearstep>("linearstep", functions);
@@ -288,23 +337,43 @@ addFunctions(std::vector<std::pair<std::string, func_ptr > >* functions)
     registerFunction<gaussstep>("gaussstep", functions);
     registerFunction<remap>("remap", functions);
     registerFunction<mix>("mix", functions);
-    registerFunction<remap>("remap", functions);
     registerFunction<noise1>("noise1", functions);
     registerFunction<noise2>("noise2", functions);
     registerFunction<noise3>("noise3", functions);
     registerFunction<noise4>("noise4", functions);
     registerFunction<pnoise>("pnoise", functions);
     registerFunction<cellnoise>("cellnoise", functions);
-
+    {
+        boost::shared_ptr<func_t> ptr(new random(time));
+        functions->push_back(std::make_pair("random", ptr));
+    }
+    {
+        boost::shared_ptr<func_t> ptr(new randomInt(time));
+        functions->push_back(std::make_pair("randomInt", ptr));
+    }
 }
 
 void
-addGenericFunctions(std::vector<std::pair<std::string, generic_func_ptr > >* functions)
+addGenericFunctions(TimeValue /*time*/, std::vector<std::pair<std::string, generic_func_ptr > >* functions)
 {
 
 
     registerFunction<turbulence>("turbulence", functions);
     registerFunction<fbm>("fbm", functions);
+}
+
+void makeLocalCopyOfStateFunctions(TimeValue time, symbol_table_t& symbol_table, std::vector<std::pair<std::string, func_ptr > >* functions)
+{
+    symbol_table.remove_function("random");
+    symbol_table.remove_function("randomInt");
+    {
+        boost::shared_ptr<func_t> ptr(new random(time));
+        functions->push_back(std::make_pair("random", ptr));
+    }
+    {
+        boost::shared_ptr<func_t> ptr(new randomInt(time));
+        functions->push_back(std::make_pair("randomInt", ptr));
+    }
 }
 
 EXPRTK_FUNCTIONS_NAMESPACE_EXIT

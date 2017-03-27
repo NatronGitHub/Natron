@@ -28,7 +28,8 @@
 
 #include <string>
 #include "Engine/EngineFwd.h"
-
+#include "Engine/TimeValue.h"
+#include "Engine/ViewIdx.h"
 #include <exprtk/exprtk.hpp>
 
 
@@ -50,9 +51,13 @@ typedef boost::shared_ptr<vararg_func_t> vararg_func_ptr;
 typedef boost::shared_ptr<func_t> func_ptr;
 
 
-void addVarargFunctions(std::vector<std::pair<std::string, vararg_func_ptr > >* functions);
-void addFunctions(std::vector<std::pair<std::string, func_ptr > >* functions);
-void addGenericFunctions(std::vector<std::pair<std::string, generic_func_ptr > >* functions);
+void addVarargFunctions(TimeValue time, std::vector<std::pair<std::string, vararg_func_ptr > >* functions);
+void addFunctions(TimeValue time, std::vector<std::pair<std::string, func_ptr > >* functions);
+void addGenericFunctions(TimeValue time, std::vector<std::pair<std::string, generic_func_ptr > >* functions);
+
+// Some functions (random) hold an internal state. Instead of using the same state for all threads,
+// We create a copy of the function update in this symbol table
+void makeLocalCopyOfStateFunctions(TimeValue time, symbol_table_t& symbol_table, std::vector<std::pair<std::string, func_ptr > >* functions);
 
 
 EXPRTK_FUNCTIONS_NAMESPACE_EXIT;
