@@ -66,7 +66,7 @@ applicationFileName()
     buffer[MAX_PATH + 1] = 0;
 
     if (v == 0) {
-        return QString();
+        return std::string();
     } else if (v <= MAX_PATH) {
         return std::wstring(buffer);
     }
@@ -366,7 +366,7 @@ NatronCFString::toStdString(CFStringRef str)
     assert(ok);
     std::string ret(buffer, length - 1);
     return ret;
-} // toQString
+} // toStdString
 
 NatronCFString::operator std::string() const
 {

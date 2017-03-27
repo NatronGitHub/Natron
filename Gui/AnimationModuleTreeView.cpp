@@ -1244,8 +1244,15 @@ AnimationModuleTreeView::getSelectedCurves() const
         } else if (isTableItem) {
             isAnimItem = isTableItem;
         }
-        if (!isAnimItem || dim.isAll() || view.isAll()) {
+        if (!isAnimItem) {
             continue;
+        }
+        if (view.isAll()) {
+            continue;
+        }
+        if (dim.isAll() && (isAnimItem->getNDimensions() == 1 || !isAnimItem->getAllDimensionsVisible(ViewIdx(view)))) {
+            // If single dimensional or dimensions are folded, make it dimension 0
+            dim = DimIdx(0);
         }
         CurveGuiPtr curve = isAnimItem->getCurveGui(DimIdx(dim), ViewIdx(view));
         if (curve) {
