@@ -15,15 +15,15 @@
 
 ### Plugins
 
-- WriteFFmpeg: the preferred pixel coding and bit depth can now be selected, which is very useful for codecs that propose multiple pixel formats (e.g. ffv1, ffvhuff, huffyuv, jpeg2000, mjpeg, mpeg2video, vc2, libopenjpeg, png, qtrle, targa, tiff, libschroedinger, libtheora, libvpx, libvpx-vp9, libx264, libx265). 
+- WriteFFmpeg: the preferred pixel coding and bit depth can now be selected, which is very useful for codecs that propose multiple pixel formats (e.g. ffv1, ffvhuff, huffyuv, jpeg2000, mjpeg, mpeg2video, vc2, libopenjpeg, png, qtrle, targa, tiff, libschroedinger, libtheora, libvpx, libvpx-vp9, libx264, libx265).
+- WriteFFmpeg: Bitrate-based (VBR) encoding was removed from the following codecs in favor of quality-based (VBR) encoding, mainly because it should be used in 2-pass mode (using handbrake or the ffmpeg command-line tool): mpeg4, mpeg2video, mpeg1video, flv.
 - ColorCorrect: changed the Contrast formula to make adjustments more intuitive, see https://compositormathematic.wordpress.com/2013/07/06/gamma-contrast/ - this may affect existing projects that used the previously buggy Contrast parameter.
 - LensDistortion: add PanoTools/PTGui/PTAssembler/Hugin model.
 - Card3D can now import/export chan files from Natron, Nuke, 3D-Equalizer, Maya, etc., and txt files from Boujou.
-- Card3D and CornerPin: only show things that are in front of the camera. In cornerPin, point 1 is considered to be in front.
-- LensDistortion: add PanoTools/PTGui/PTAssembler/Hugin model.
+- Card3D and CornerPin: only show things that are in front of the camera. In cornerPin, point 1 is always considered to be in front.
 - Noise, Plasma: result is now reproductible (a given render always gives the same result).
 - ReadOIIO: add advanced options for reading RAW files.
-- STMap: Use the format of the Source input rather than its RoD to determine the texture size.
+- STMap: Use the format of the Source input rather than its RoD to determine the texture size (useful when using an STMap written by LensDistortion).
 
 
 ## Version 2.2.5
