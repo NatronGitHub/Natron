@@ -94,7 +94,7 @@ Param::getRenderCloneKnobInternal() const
     if (tlsCurrentEffect->getNode() == mainInstanceHolder->getNode()) {
         finalEffect = tlsCurrentEffect;
     } else {
-        if (tlsCurrentEffect->isRenderClone()) {
+        if (!tlsCurrentEffect->isRenderClone()) {
             return mainInstanceKnob;
         } else {
             FrameViewRenderKey key = {tlsCurrentEffect->getCurrentRenderTime(), tlsCurrentEffect->getCurrentRenderView(), tlsCurrentEffect->getCurrentRender()};
