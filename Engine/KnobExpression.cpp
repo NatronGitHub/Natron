@@ -1613,7 +1613,7 @@ KnobHelper::isExpressionValid(DimIdx dimension,
         throw std::invalid_argument("KnobHelper::isExpressionValid(): Dimension out of range");
     }
 
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     {
         QMutexLocker k(&_imp->common->expressionMutex);
         if (error) {
@@ -1692,7 +1692,7 @@ KnobHelper::setExpressionInvalid(DimSpec dimension,
                     setExpressionInvalidInternal(DimIdx(i), *it, valid, error);
                 }
             } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
+                ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view.value()));
                 setExpressionInvalidInternal(DimIdx(i), view_i, valid, error);
             }
         }
@@ -1705,7 +1705,7 @@ KnobHelper::setExpressionInvalid(DimSpec dimension,
                 setExpressionInvalidInternal(DimIdx(dimension), *it, valid, error);
             }
         } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
+            ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view.value()));
             setExpressionInvalidInternal(DimIdx(dimension), view_i, valid, error);
         }
     }
@@ -1823,7 +1823,7 @@ KnobHelper::setExpressionCommon(DimSpec dimension,
                     setExpressionInternal(DimIdx(i), *it, expression, language, hasRetVariable, failIfInvalid);
                 }
             } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
+                ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view.value()));
                 setExpressionInternal(DimIdx(i), view_i, expression, language, hasRetVariable, failIfInvalid);
             }
         }
@@ -1836,7 +1836,7 @@ KnobHelper::setExpressionCommon(DimSpec dimension,
                 setExpressionInternal(DimIdx(dimension), *it, expression, language, hasRetVariable, failIfInvalid);
             }
         } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
+            ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view.value()));
             setExpressionInternal(DimIdx(dimension), view_i, expression, language, hasRetVariable, failIfInvalid);
         }
     }
@@ -1896,7 +1896,7 @@ KnobHelper::replaceNodeNameInExpression(DimSpec dimension,
                     replaceNodeNameInExpressionInternal(DimIdx(i), *it, oldName, newName);
                 }
             } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
+                ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view.value()));
                 replaceNodeNameInExpressionInternal(DimIdx(i), view_i, oldName, newName);
             }
         }
@@ -1909,7 +1909,7 @@ KnobHelper::replaceNodeNameInExpression(DimSpec dimension,
                 replaceNodeNameInExpressionInternal(DimIdx(dimension), *it, oldName, newName);
             }
         } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
+            ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view.value()));
             replaceNodeNameInExpressionInternal(DimIdx(dimension), view_i, oldName, newName);
         }
     }
@@ -1923,7 +1923,7 @@ KnobHelper::getExpressionLanguage(Natron::ViewIdx view, Natron::DimIdx dimension
     if (dimension < 0 || dimension >= (int)_imp->common->expressions.size()) {
         throw std::invalid_argument("KnobHelper::getExpressionLanguage(): Dimension out of range");
     }
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     QMutexLocker k(&_imp->common->expressionMutex);
     ExprPerViewMap::const_iterator foundView = _imp->common->expressions[dimension].find(view_i);
     if (foundView == _imp->common->expressions[dimension].end()) {
@@ -1941,7 +1941,7 @@ KnobHelper::isExpressionUsingRetVariable(ViewIdx view, DimIdx dimension) const
     if (dimension < 0 || dimension >= (int)_imp->common->expressions.size()) {
         throw std::invalid_argument("KnobHelper::isExpressionUsingRetVariable(): Dimension out of range");
     }
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     QMutexLocker k(&_imp->common->expressionMutex);
     ExprPerViewMap::const_iterator foundView = _imp->common->expressions[dimension].find(view_i);
     if (foundView == _imp->common->expressions[dimension].end()) {
@@ -1965,7 +1965,7 @@ KnobHelper::getExpressionDependencies(DimIdx dimension,
     if (dimension < 0 || dimension >= (int)_imp->common->expressions.size()) {
         throw std::invalid_argument("KnobHelper::getExpressionDependencies(): Dimension out of range");
     }
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     QMutexLocker k(&_imp->common->expressionMutex);
     ExprPerViewMap::const_iterator foundView = _imp->common->expressions[dimension].find(view_i);
     if (foundView == _imp->common->expressions[dimension].end() || !foundView->second) {
@@ -2057,7 +2057,7 @@ KnobHelper::clearExpression(DimSpec dimension,
                     didSomething |= clearExpressionInternal(DimIdx(i), *it);
                 }
             } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
+                ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view.value()));
                 didSomething |= clearExpressionInternal(DimIdx(i), view_i);
             }
         }
@@ -2070,7 +2070,7 @@ KnobHelper::clearExpression(DimSpec dimension,
                 didSomething |= clearExpressionInternal(DimIdx(dimension), *it);
             }
         } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
+            ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view.value()));
             didSomething |= clearExpressionInternal(DimIdx(dimension), view_i);
         }
     }
@@ -2415,7 +2415,7 @@ KnobHelper::getExpression(DimIdx dimension, ViewIdx view) const
     if (dimension < 0 || dimension >= (int)_imp->common->expressions.size()) {
         throw std::invalid_argument("Knob::getExpression: Dimension out of range");
     }
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     QMutexLocker k(&_imp->common->expressionMutex);
     ExprPerViewMap::const_iterator foundView = _imp->common->expressions[dimension].find(view_i);
     if (foundView == _imp->common->expressions[dimension].end() || !foundView->second) {

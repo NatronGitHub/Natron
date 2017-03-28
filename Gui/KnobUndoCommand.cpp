@@ -614,7 +614,7 @@ MultipleKnobEditsUndoCommand::undo()
                             hasChanged |= setOldValueForDimView(isInt, isBool, isDouble, isString, it2->reason, it2->setKeyFrame, it2->time, hasChanged,  it2->setValueRetCode, DimIdx(i), *it3, it2->oldValues) != eValueChangedReturnCodeNothingChanged;
                         }
                     } else {
-                        ViewIdx view_i = knob->getViewIdxFromGetSpec(ViewIdx(it2->view));
+                        ViewIdx view_i = knob->checkIfViewExistsOrFallbackMainView(ViewIdx(it2->view));
                         hasChanged |= setOldValueForDimView(isInt, isBool, isDouble, isString, it2->reason, it2->setKeyFrame, it2->time, hasChanged,  it2->setValueRetCode, DimIdx(i), view_i, it2->oldValues) != eValueChangedReturnCodeNothingChanged;
                     }
                 }
@@ -625,7 +625,7 @@ MultipleKnobEditsUndoCommand::undo()
                         hasChanged |= setOldValueForDimView(isInt, isBool, isDouble, isString, it2->reason, it2->setKeyFrame, it2->time, hasChanged,  it2->setValueRetCode, DimIdx(it2->dimension), *it3, it2->oldValues) != eValueChangedReturnCodeNothingChanged;
                     }
                 } else {
-                    ViewIdx view_i = knob->getViewIdxFromGetSpec(ViewIdx(it2->view));
+                    ViewIdx view_i = knob->checkIfViewExistsOrFallbackMainView(ViewIdx(it2->view));
                     hasChanged |= setOldValueForDimView(isInt, isBool, isDouble, isString, it2->reason, it2->setKeyFrame, it2->time, hasChanged,  it2->setValueRetCode, DimIdx(it2->dimension), view_i, it2->oldValues) != eValueChangedReturnCodeNothingChanged;
                 }
             }

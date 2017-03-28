@@ -247,7 +247,7 @@ KnobHelper::convertDimViewArgAccordingToKnobState(DimSpec dimIn, ViewSetSpec vie
 bool
 KnobHelper::getAllDimensionsVisible(ViewIdx view) const
 {
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     QMutexLocker k(&_imp->common->stateMutex);
     PerViewAllDimensionsVisible::const_iterator foundView = _imp->common->allDimensionsVisible.find(view_i);
     if (foundView == _imp->common->allDimensionsVisible.end()) {
@@ -384,7 +384,7 @@ KnobHelper::setAllDimensionsVisible(ViewSetSpec view, bool visible)
                 setAllDimensionsVisibleInternal(*it, visible);
             }
         } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
+            ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
             setAllDimensionsVisibleInternal(view_i, visible);
         }
     }
@@ -593,7 +593,7 @@ KnobHelper::isAnimated(DimIdx dimension,
     if ( !canAnimate() ) {
         return false;
     }
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     CurvePtr curve = getAnimationCurve(view_i, dimension);
     return curve ? curve->isAnimated() : false;
 }
@@ -891,7 +891,7 @@ KnobHelper::isAutoKeyingEnabled(DimSpec dimension, TimeValue time, ViewSetSpec v
                     hasAutoKeying |= isAutoKeyingEnabledInternal(DimIdx(i), time, *it);
                 }
             } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
+                ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view.value()));
                 hasAutoKeying |= isAutoKeyingEnabledInternal(DimIdx(i), time, view_i);
             }
         }
@@ -904,7 +904,7 @@ KnobHelper::isAutoKeyingEnabled(DimSpec dimension, TimeValue time, ViewSetSpec v
                 hasAutoKeying |= isAutoKeyingEnabledInternal(DimIdx(dimension), time, *it);
             }
         } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
+            ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view.value()));
             hasAutoKeying |= isAutoKeyingEnabledInternal(DimIdx(dimension), time, view_i);
         }
     }
@@ -1030,7 +1030,7 @@ KnobHelper::refreshListenersAfterValueChange(TimeValue time, ViewSetSpec view, V
     std::list<ViewIdx> views = getViewsList();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
     }
     int nDims = getNDimensions();
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
@@ -1692,7 +1692,7 @@ KnobHelper::copyKnob(const KnobIPtr& other,
 
         ViewIdx view_i;
         if (!view.isAll()) {
-            view_i = getViewIdxFromGetSpec(ViewIdx(view));
+            view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
         }
         std::list<ViewIdx> views = getViewsList();
         for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
@@ -1987,7 +1987,7 @@ KnobHelper::unlink(DimSpec dimension, ViewSetSpec view, bool copyState)
                         unlinkInternal(DimIdx(i), *it, copyState);
                     }
                 } else {
-                    ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
+                    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view.value()));
                     unlinkInternal(DimIdx(i), view_i, copyState);
                 }
             }
@@ -2000,7 +2000,7 @@ KnobHelper::unlink(DimSpec dimension, ViewSetSpec view, bool copyState)
                     unlinkInternal(DimIdx(dimension), *it, copyState);
                 }
             } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
+                ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view.value()));
                 unlinkInternal(DimIdx(dimension), view_i, copyState);
             }
         }
@@ -2512,7 +2512,7 @@ KnobHelper::refreshCurveMinMax(ViewSetSpec view, DimSpec dimension)
             }
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
         if (dimension.isAll()) {
             for (int i = 0;i < nDims; ++i) {
                 refreshCurveMinMaxInternal(view_i, DimIdx(i));
@@ -5505,7 +5505,7 @@ AnimatingKnobStringHelper::stringFromInterpolatedValue(double interpolated,
                                                        std::string* returnValue) const
 {
     Q_UNUSED(view);
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     StringKnobDimViewPtr data = toStringKnobDImView(getDataForDimView(DimIdx(0), view_i));
     if (!data) {
         return;
@@ -5522,7 +5522,7 @@ AnimatingKnobStringHelper::onKeyframesRemoved( const std::list<double>& keysRemo
     int nDims = getNDimensions();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -5549,7 +5549,7 @@ AnimatingKnobStringHelper::getStringAtTime(TimeValue time,
                                            ViewIdx view)
 {
     std::string ret;
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     StringKnobDimViewPtr data = toStringKnobDImView(getDataForDimView(DimIdx(0), view_i));
     if (!data) {
         return ret;

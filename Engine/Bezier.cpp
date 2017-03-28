@@ -1352,7 +1352,7 @@ Bezier::addControlPoint(double x,
             ret = addControlPointInternal(x, y, time, *it);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
         ret = addControlPointInternal(x, y, time, view_i);
     }
     evaluateCurveModified();
@@ -1591,7 +1591,7 @@ Bezier::addControlPointAfterIndex(int index,
             ret = addControlPointAfterIndexInternal(index, t, *it);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
         ret = addControlPointAfterIndexInternal(index, t, view_i);
     }
     evaluateCurveModified();
@@ -1603,7 +1603,7 @@ Bezier::addControlPointAfterIndex(int index,
 int
 Bezier::getControlPointsCount(ViewIdx view) const
 {
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     QMutexLocker k(&_imp->itemMutex);
     const BezierShape* shape = _imp->getViewShape(view_i);
     if (!shape) {
@@ -1622,7 +1622,7 @@ Bezier::isPointOnCurve(double x,
                        bool* feather) const
 {
 
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
 
 
     Transform::Matrix3x3 transform;
@@ -1724,7 +1724,7 @@ Bezier::setCurveFinished(bool finished, ViewSetSpec view)
                 shape->finished = finished;
             }
         } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
+            ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
             QMutexLocker l(&_imp->itemMutex);
             BezierShape* shape = _imp->getViewShape(view_i);
             if (!shape) {
@@ -1744,7 +1744,7 @@ Bezier::setCurveFinished(bool finished, ViewSetSpec view)
 bool
 Bezier::isCurveFinished(ViewIdx view) const
 {
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     QMutexLocker l(&_imp->itemMutex);
     const BezierShape* shape = _imp->getViewShape(view_i);
     if (!shape) {
@@ -1790,7 +1790,7 @@ Bezier::removeControlPointByIndex(int index, ViewSetSpec view)
             removeControlPointByIndexInternal(index, *it);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
         removeControlPointByIndexInternal(index, view_i);
     }
 
@@ -1983,7 +1983,7 @@ Bezier::movePointByIndexInternal(int index,
             movePointByIndexInternalForView(index, time, *it, dx, dy, onlyFeather);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
         movePointByIndexInternalForView(index, time, view_i, dx, dy, onlyFeather);
     }
     refreshPolygonOrientation(time, view);
@@ -2043,7 +2043,7 @@ Bezier::setPointByIndexInternal(int index, TimeValue time, ViewSetSpec view, dou
             setPointByIndexInternalForView(index, time, *it, dx, dy);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
         setPointByIndexInternalForView(index, time, view_i, dx, dy);
     }
     refreshPolygonOrientation(time, view);
@@ -2306,7 +2306,7 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
             moveBezierPointInternalForView(cpParam, fpParam, index, time, *it, lx, ly, rx, ry, flx, fly, frx, fry, isLeft, moveBoth, onlyFeather);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
         moveBezierPointInternalForView(cpParam, fpParam, index, time, view_i, lx, ly, rx, ry, flx, fly, frx, fry, isLeft, moveBoth, onlyFeather);
     }
 
@@ -2462,7 +2462,7 @@ Bezier::setPointAtIndexInternal(bool setLeft,
             setPointAtIndexInternalForView(setLeft, setRight, setPoint, feather, featherAndCp, index, time, *it, x, y, lx, ly, rx, ry);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
         setPointAtIndexInternalForView(setLeft, setRight, setPoint, feather, featherAndCp, index, time, view_i, x, y, lx, ly, rx, ry);
     }
 
@@ -2571,7 +2571,7 @@ Bezier::transformPoint(const BezierCPPtr & point,
             transformPointInternal(point, time, *it, matrix);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
         transformPointInternal(point, time, view_i, matrix);
     }
 
@@ -2614,7 +2614,7 @@ Bezier::removeFeatherAtIndex(int index, ViewSetSpec view)
             removeFeatherAtIndexForView(index, *it);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
         removeFeatherAtIndexForView(index, view_i);
     }
 
@@ -2679,7 +2679,7 @@ Bezier::smoothOrCuspPointAtIndex(bool isSmooth,
             smoothOrCuspPointAtIndexInternal(isSmooth, index, time, *it, pixelScale);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
         smoothOrCuspPointAtIndexInternal(isSmooth, index, time, view_i, pixelScale);
     }
 
@@ -2799,7 +2799,7 @@ Bezier::onKeyFrameSet(TimeValue time, ViewSetSpec view)
             onKeyFrameSetForView(time, *it);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
         onKeyFrameSetForView(time, view_i);
     }
 
@@ -2815,7 +2815,7 @@ Bezier::onKeyFrameRemoved(TimeValue time, ViewSetSpec view)
             onKeyFrameRemovedForView(time, *it);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
         onKeyFrameRemovedForView(time, view_i);
     }
 
@@ -2938,7 +2938,7 @@ Bezier::evaluateAtTime_DeCasteljau_internal(TimeValue time,
 
     getTransformAtTime(time, view, &transform);
     QMutexLocker l(&_imp->itemMutex);
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     const BezierShape* shape = _imp->getViewShape(view_i);
     if (!shape) {
         return;
@@ -3008,7 +3008,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau_internal(TimeValue time,
     assert( useFeatherPoints() );
     QMutexLocker l(&_imp->itemMutex);
 
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     const BezierShape* shape = _imp->getViewShape(view_i);
     if (!shape) {
         return;
@@ -3112,7 +3112,7 @@ Bezier::getBoundingBox(TimeValue time, ViewIdx view) const
         rotoPaintNode = toRotoPaint(model->getNode()->getEffectInstance());
     }
 
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     RectD bbox;
     bool bboxSet = false;
     RectD pointsBbox;
@@ -3165,7 +3165,7 @@ Bezier::getBoundingBox(TimeValue time, ViewIdx view) const
 std::list< BezierCPPtr >
 Bezier::getControlPoints(ViewIdx view) const
 {
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     QMutexLocker l(&_imp->itemMutex);
     const BezierShape* shape = _imp->getViewShape(view_i);
     if (!shape) {
@@ -3182,7 +3182,7 @@ Bezier::getControlPoints(ViewIdx view) const
 std::list< BezierCPPtr >
 Bezier::getFeatherPoints(ViewIdx view) const
 {
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     QMutexLocker l(&_imp->itemMutex);
     const BezierShape* shape = _imp->getViewShape(view_i);
     if (!shape) {
@@ -3207,7 +3207,7 @@ Bezier::isNearbyControlPoint(double x,
     getTransformAtTime(time, view, &transform);
     QMutexLocker l(&_imp->itemMutex);
     BezierCPPtr cp, fp;
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
 
     const BezierShape* shape = _imp->getViewShape(view_i);
     if (!shape) {
@@ -3280,7 +3280,7 @@ Bezier::getControlPointIndex(const BezierCP* cp, ViewIdx view) const
     ///only called on the main-thread
     assert(cp);
     QMutexLocker l(&_imp->itemMutex);
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
 
     const BezierShape* shape = _imp->getViewShape(view_i);
     if (!shape) {
@@ -3302,7 +3302,7 @@ Bezier::getFeatherPointIndex(const BezierCPPtr & fp, ViewIdx view) const
     ///only called on the main-thread
     QMutexLocker l(&_imp->itemMutex);
     int i = 0;
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
 
     const BezierShape* shape = _imp->getViewShape(view_i);
     if (!shape) {
@@ -3322,7 +3322,7 @@ BezierCPPtr
 Bezier::getControlPointAtIndex(int index, ViewIdx view) const
 {
     QMutexLocker l(&_imp->itemMutex);
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
 
     const BezierShape* shape = _imp->getViewShape(view_i);
     if (!shape) {
@@ -3344,7 +3344,7 @@ BezierCPPtr
 Bezier::getFeatherPointAtIndex(int index, ViewIdx view) const
 {
     QMutexLocker l(&_imp->itemMutex);
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
 
     const BezierShape* shape = _imp->getViewShape(view_i);
     if (!shape) {
@@ -3376,7 +3376,7 @@ Bezier::controlPointsWithinRect(TimeValue time,
     assert( QThread::currentThread() == qApp->thread() );
     QMutexLocker locker(&_imp->itemMutex);
     int i = 0;
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
 
     const BezierShape* shape = _imp->getViewShape(view_i);
     if (!shape) {
@@ -3695,7 +3695,7 @@ Bezier::point_line_intersection(const Point &p1,
 bool
 Bezier::isFeatherPolygonClockwiseOrientedInternal(TimeValue time, ViewIdx view) const
 {
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     QMutexLocker k(&_imp->itemMutex);
     const BezierShape* shape = _imp->getViewShape(view_i);
     if (!shape) {
@@ -3777,7 +3777,7 @@ Bezier::refreshPolygonOrientation(ViewSetSpec view)
             refreshPolygonOrientationForView(*it);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
         refreshPolygonOrientationForView(view_i);
     }
     
@@ -3864,7 +3864,7 @@ Bezier::computePolygonOrientation(TimeValue time,
             computePolygonOrientationForView(time, *it, isStatic);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
         computePolygonOrientationForView(time, view_i, isStatic);
     }
 

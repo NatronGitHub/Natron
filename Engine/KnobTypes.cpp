@@ -1148,7 +1148,7 @@ KnobChoice::resetChoices(ViewSetSpec view)
     std::list<ViewIdx> views = getViewsList();
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
+            ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
             if (view_i != *it) {
                 continue;
             }
@@ -1195,7 +1195,7 @@ KnobChoice::appendChoice(const ChoiceOption& option,
     std::list<ViewIdx> views = getViewsList();
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
+            ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
             if (view_i != *it) {
                 continue;
             }
@@ -1237,7 +1237,7 @@ KnobChoice::appendChoice(const ChoiceOption& option,
 std::vector<ChoiceOption>
 KnobChoice::getEntries(ViewIdx view) const
 {
-    ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
     {
         ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), view_i));
         if (!data) {
@@ -1272,7 +1272,7 @@ KnobChoice::isActiveEntryPresentInEntries(ViewIdx view) const
 ChoiceOption
 KnobChoice::getEntry(int v, ViewIdx view) const
 {
-    ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
     {
         ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), view_i));
         if (!data) {
@@ -1289,7 +1289,7 @@ KnobChoice::getEntry(int v, ViewIdx view) const
 int
 KnobChoice::getNumEntries(ViewIdx view) const
 {
-    ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
     {
         ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), view_i));
         if (!data) {
@@ -1309,7 +1309,7 @@ KnobChoice::setActiveEntry(const ChoiceOption& entry, ViewSetSpec view)
     std::list<ViewIdx> views = getViewsList();
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
+            ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
             if (view_i != *it) {
                 continue;
             }
@@ -1341,7 +1341,7 @@ KnobChoice::setActiveEntry(const ChoiceOption& entry, ViewSetSpec view)
 ChoiceOption
 KnobChoice::getActiveEntry(ViewIdx view)
 {
-    ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
     {
         ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), view_i));
         if (!data) {
@@ -1436,7 +1436,7 @@ KnobChoice::setValueFromID(const std::string & value, ViewSetSpec view)
     std::list<ViewIdx> views = getViewsList();
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
+            ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
             if (view_i != *it) {
                 continue;
             }
@@ -2783,7 +2783,7 @@ KnobParametric::getAnimationCurve(ViewIdx idx, DimIdx dimension) const
     if (dimension < 0 || dimension >= (int)_imp->common->defaultCurves.size()) {
         throw std::invalid_argument("KnobParametric::getAnimationCurve dimension out of range");
     }
-    ViewIdx view_i = getViewIdxFromGetSpec(idx);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(idx);
     ParametricKnobDimViewPtr data = toParametricKnobDimView(getDataForDimView(dimension, view_i));
     if (!data) {
         return CurvePtr();
@@ -2876,7 +2876,7 @@ KnobParametric::getParametricCurveInternal(DimIdx dimension, ViewIdx view, Param
     if (dimension < 0 || dimension >= (int)_imp->common->defaultCurves.size()) {
         throw std::invalid_argument("KnobParametric::getParametricCurve dimension out of range");
     }
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     ParametricKnobDimViewPtr data = toParametricKnobDimView(getDataForDimView(dimension, view_i));
     if (!data) {
         return CurvePtr();
@@ -3090,7 +3090,7 @@ KnobParametric::setNthControlPointInterpolation(ValueChangedReasonEnum reason,
     std::list<ViewIdx> views = getViewsList();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -3135,7 +3135,7 @@ KnobParametric::setNthControlPoint(ValueChangedReasonEnum reason,
     std::list<ViewIdx> views = getViewsList();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -3178,7 +3178,7 @@ KnobParametric::setNthControlPoint(ValueChangedReasonEnum reason,
     std::list<ViewIdx> views = getViewsList();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -3218,7 +3218,7 @@ KnobParametric::deleteControlPoint(ValueChangedReasonEnum reason,
     std::list<ViewIdx> views = getViewsList();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -3255,7 +3255,7 @@ KnobParametric::deleteAllControlPoints(ValueChangedReasonEnum reason,
     std::list<ViewIdx> views = getViewsList();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -3335,7 +3335,7 @@ KnobParametric::resetExtraToDefaultValue(DimSpec dimension, ViewSetSpec view)
     int nDims = getNDimensions();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -3445,7 +3445,7 @@ KnobParametric::deleteValuesAtTime(const std::list<double>& times, ViewSetSpec v
     int nDims = getNDimensions();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -3486,7 +3486,7 @@ KnobParametric::warpValuesAtTime(const std::list<double>& times, ViewSetSpec vie
     int nDims = getNDimensions();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -3526,7 +3526,7 @@ KnobParametric::removeAnimation(ViewSetSpec view, DimSpec dim, ValueChangedReaso
     int nDims = getNDimensions();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -3563,7 +3563,7 @@ KnobParametric::deleteAnimationBeforeTime(TimeValue time, ViewSetSpec view, DimS
     int nDims = getNDimensions();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -3599,7 +3599,7 @@ KnobParametric::deleteAnimationAfterTime(TimeValue time, ViewSetSpec view, DimSp
     int nDims = getNDimensions();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -3635,7 +3635,7 @@ KnobParametric::setInterpolationAtTimes(ViewSetSpec view, DimSpec dimension, con
     int nDims = getNDimensions();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -3675,7 +3675,7 @@ KnobParametric::setLeftAndRightDerivativesAtTime(ViewSetSpec view, DimSpec dimen
     int nDims = getNDimensions();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -3719,7 +3719,7 @@ KnobParametric::setDerivativeAtTime(ViewSetSpec view, DimSpec dimension, TimeVal
     int nDims = getNDimensions();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -3783,7 +3783,7 @@ KnobParametric::setDoubleValueAtTime(TimeValue time, double value, ViewSetSpec v
     int nDims = getNDimensions();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -3821,7 +3821,7 @@ KnobParametric::setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair
     int nDims = getNDimensions();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -3860,7 +3860,7 @@ KnobParametric::setDoubleValueAtTimeAcrossDimensions(TimeValue time, const std::
     std::list<ViewIdx> views = getViewsList();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {

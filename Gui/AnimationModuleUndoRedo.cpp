@@ -207,31 +207,30 @@ static void animItemDimViewCreateOldCurve(const AnimItemBasePtr& item, const Dim
 
 static void animItemDimViewSpecCreateOldCurve(const AnimItemBasePtr& item, const DimSpec& dim, const ViewSetSpec& view, ItemDimViewCurveSet* oldCurves) {
 
-    if (dim.isAll()) {
-        int nDims = item->getNDimensions();
-        if (view.isAll()) {
-            std::list<ViewIdx> viewsList = item->getViewsList();
-            for (std::list<ViewIdx>::const_iterator it = viewsList.begin(); it != viewsList.end(); ++it) {
-                for (int i = 0; i < nDims; ++i) {
-                    animItemDimViewCreateOldCurve(item, DimIdx(i), *it, oldCurves);
-                }
-            }
-        } else {
-            for (int i = 0; i < nDims; ++i) {
-                animItemDimViewCreateOldCurve(item, DimIdx(i), ViewIdx(view), oldCurves);
-            }
+    std::list<ViewIdx> viewsList = item->getViewsList();
+    int nDims = item->getNDimensions();
+    for (std::list<ViewIdx>::const_iterator it = viewsList.begin(); it != viewsList.end(); ++it) {
+        if (!view.isAll() && view != *it) {
+            continue;
         }
 
-    } else {
-        if (view.isAll()) {
-            std::list<ViewIdx> viewsList = item->getViewsList();
-            for (std::list<ViewIdx>::const_iterator it = viewsList.begin(); it != viewsList.end(); ++it) {
-                animItemDimViewCreateOldCurve(item, DimIdx(dim), *it, oldCurves);
-            }
-        } else {
-            animItemDimViewCreateOldCurve(item, DimIdx(dim), ViewIdx(view), oldCurves);
+        DimSpec thisDimension = dim;
+        // If the item has its dimensions folded and we modify dimension 0, also modify other dimensions
+        if (thisDimension == 0 && !item->getAllDimensionsVisible(*it)) {
+            thisDimension = DimSpec::all();
         }
+
+        for (int i = 0; i < nDims; ++i) {
+            if (!thisDimension.isAll() && dim != i) {
+                continue;
+            }
+
+            animItemDimViewCreateOldCurve(item, DimIdx(i), *it, oldCurves);
+
+        }
+
     }
+
 }
 
 static void animItemDimViewCreateOldCurveSet(const AnimItemDimViewKeyFramesMap& keys, ItemDimViewCurveSet* oldCurves)
@@ -278,6 +277,10 @@ void
 AddKeysCommand::undo()
 {
     keysWithOldCurveSetClone(_oldCurves);
+    AnimationModuleBasePtr model = _model.lock();
+    if (model) {
+        model->setCurrentSelection(AnimItemDimViewKeyFramesMap(), std::vector<TableItemAnimPtr>(), std::vector<NodeAnimPtr>());
+    }
 } // undo
 
 void

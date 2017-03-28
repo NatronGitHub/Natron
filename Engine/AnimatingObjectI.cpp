@@ -90,14 +90,14 @@ AnimatingObjectI::getViewsList() const
 }
 
 ViewIdx
-AnimatingObjectI::getViewIdxFromGetSpec(ViewIdx view) const
+AnimatingObjectI::checkIfViewExistsOrFallbackMainView(ViewIdx view) const
 {
 
     // Find the view. If it is not in the split views, fallback on the main view.
     QMutexLocker k(&_imp->viewsMutex);
     return _imp->findMatchingView(view);
 
-} // getViewIdxFromGetSpec
+} // checkIfViewExistsOrFallbackMainView
 
 bool
 AnimatingObjectI::splitView(ViewIdx view)
