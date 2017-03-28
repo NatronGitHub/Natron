@@ -138,13 +138,28 @@ class KnobExprTkExpr : public KnobExpr
 {
 public:
 
-    // The exprtk expression object
-    boost::shared_ptr<EXPRTK_FUNCTIONS_NAMESPACE::expression_t> expressionObject;
+    /**
+     * @brief All data that must be kept around for the expression to work.
+     * Since the expression is not thread safe, we compile 1 expression for each thread to enable
+     * concurrent evaluation of the same expression.
+     **/
+    struct ExpressionData
+    {
+        // The exprtk expression object
+        boost::shared_ptr<EXPRTK_FUNCTIONS_NAMESPACE::expression_t> expressionObject;
 
-    // We hold functions here because the expression object itself does not hold a copy of the functions
-    std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::func_ptr> > functions;
-    std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::vararg_func_ptr> > varargFunctions;
-    std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::generic_func_ptr> > genericFunctions;
+        // We hold functions here because the expression object itself does not hold a copy of the functions
+        std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::func_ptr> > functions;
+        std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::vararg_func_ptr> > varargFunctions;
+        std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::generic_func_ptr> > genericFunctions;
+    };
+
+    typedef std::map<QThread*, ExpressionData> PerThreadDataMap;
+
+    // Protects data
+    mutable QMutex lock;
+    PerThreadDataMap data;
+
 
     // knob values dependencies mapped against their variable name in the expression
     std::map<std::string, KnobDimViewKey> knobDependencies;

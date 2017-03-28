@@ -1800,7 +1800,7 @@ public:
     };
 protected:
     
-    ExpressionReturnValueTypeEnum executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimension, double* retValueIsScalar, std::string* retValueIsString, std::string* error) const;
+    ExpressionReturnValueTypeEnum executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimension, double* retValueIsScalar, std::string* retValueIsString, std::string* error);
 
     /// The return value must be Py_DECRREF
     /// The expression must put its result in the Python variable named "ret"

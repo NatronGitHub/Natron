@@ -170,11 +170,12 @@ struct turbulence : public exprtk::igeneric_function<exprtk_scalar_t>
     turbulence()
     : exprtk::igeneric_function<exprtk_scalar_t>("TTT|TTTT|TTTTT|TTTTTT")
     {}
-    exprtk_scalar_t operator()(parameter_list_t parameters)
+    virtual exprtk_scalar_t operator()(const std::size_t& overloadIdx, parameter_list_t parameters) OVERRIDE FINAL
     {
         typedef typename exprtk::igeneric_function<exprtk_scalar_t>::generic_type generic_type;
         typedef typename generic_type::scalar_view scalar_t;
 
+        assert(parameters.size() == overloadIdx + 3);
         assert(parameters.size() == 3 || parameters.size() == 4 || parameters.size() == 5 || parameters.size() == 6);
         assert(parameters[0].type == generic_type::e_scalar);
         assert(parameters[1].type == generic_type::e_scalar);
@@ -210,11 +211,12 @@ struct fbm : public exprtk::igeneric_function<exprtk_scalar_t>
     fbm()
     : exprtk::igeneric_function<exprtk_scalar_t>("TTT|TTTT|TTTTT|TTTTTT")
     {}
-    exprtk_scalar_t operator()(parameter_list_t parameters)
+    virtual exprtk_scalar_t operator()(const std::size_t& overloadIdx, parameter_list_t parameters) OVERRIDE FINAL
     {
         typedef typename exprtk::igeneric_function<exprtk_scalar_t>::generic_type generic_type;
         typedef typename generic_type::scalar_view scalar_t;
 
+        assert(parameters.size() == overloadIdx + 3);
         assert(parameters.size() == 3 || parameters.size() == 4 || parameters.size() == 5 || parameters.size() == 6);
         assert(parameters[0].type == generic_type::e_scalar);
         assert(parameters[1].type == generic_type::e_scalar);
@@ -336,14 +338,17 @@ struct numtostr : public exprtk::igeneric_function<exprtk_scalar_t>
          str(value, format, precision)
          */
     }
-    exprtk_scalar_t operator()(std::string& result,
-                               parameter_list_t parameters)
+    virtual exprtk_scalar_t operator()(const std::size_t& overloadIdx,
+                                       std::string& result,
+                                       parameter_list_t parameters) OVERRIDE FINAL
     {
         typedef typename exprtk::igeneric_function<exprtk_scalar_t>::generic_type generic_type;
         typedef typename generic_type::scalar_view scalar_t;
         typedef typename generic_type::string_view string_t;
 
+        assert(parameters.size() == overloadIdx + 1);
         assert(parameters.size() == 1 || parameters.size() == 2 || parameters.size() == 3);
+
         double value = scalar_t(parameters[0])();
         std::string format;
         format += 'f';

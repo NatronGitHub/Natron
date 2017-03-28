@@ -1292,12 +1292,13 @@ struct curve_func : public exprtk::igeneric_function<EXPRTK_FUNCTIONS_NAMESPACE:
     }
 
 
-    EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t operator()(parameter_list_t parameters)
+    virtual EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t operator()(const std::size_t& overloadIdx, parameter_list_t parameters) OVERRIDE FINAL
     {
         typedef typename exprtk::igeneric_function<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::generic_type generic_type;
         typedef typename generic_type::scalar_view scalar_t;
         typedef typename generic_type::string_view string_t;
 
+        assert(overloadIdx + 1 == parameters.size());
         assert(parameters.size() == 1 || parameters.size() == 2 || parameters.size() == 3);
         assert(parameters[0].type == generic_type::e_scalar);
         assert(parameters[1].type == generic_type::e_scalar);
@@ -1365,43 +1366,45 @@ static void addStandardFunctions(const std::string& expr,
         assert(ok);
     }
 
-    // Modify the expression so that the last line is modified by "var exprResult:= ..."; return [exprResult]"
-    *modifiedExpression = expr;
-    {
+    if (modifiedExpression) {
+        // Modify the expression so that the last line is modified by "var exprResult:= ..."; return [exprResult]"
+        *modifiedExpression = expr;
+        {
 
-        // Check for the last ';' indicating the previous statement
-        std::size_t foundLastStatement = modifiedExpression->find_last_of(';');
-        std::string toPrepend = "var NatronExprtkExpressionResult := ";
-        bool mustAddSemiColon = true;
-        if (foundLastStatement == std::string::npos) {
-            // There's no ';', the expression is a single statement, pre-pend directly
-            modifiedExpression->insert(0, toPrepend);
-        } else {
-            // Check that there's no whitespace after the last ';' otherwise the user
-            // just wrote a ';' after the last statement, which is allowed.
-            bool hasNonWhitespace = false;
-            for (std::size_t i = foundLastStatement + 1; i < modifiedExpression->size(); ++i) {
-                if (!std::isspace((*modifiedExpression)[i])) {
-                    hasNonWhitespace = true;
-                    break;
-                }
-            }
-            if (!hasNonWhitespace) {
-                foundLastStatement = modifiedExpression->find_last_of(';', foundLastStatement - 1);
-                mustAddSemiColon = false;
-            }
+            // Check for the last ';' indicating the previous statement
+            std::size_t foundLastStatement = modifiedExpression->find_last_of(';');
+            std::string toPrepend = "var NatronExprtkExpressionResult := ";
+            bool mustAddSemiColon = true;
             if (foundLastStatement == std::string::npos) {
+                // There's no ';', the expression is a single statement, pre-pend directly
                 modifiedExpression->insert(0, toPrepend);
             } else {
-                modifiedExpression->insert(foundLastStatement + 1, toPrepend);
+                // Check that there's no whitespace after the last ';' otherwise the user
+                // just wrote a ';' after the last statement, which is allowed.
+                bool hasNonWhitespace = false;
+                for (std::size_t i = foundLastStatement + 1; i < modifiedExpression->size(); ++i) {
+                    if (!std::isspace((*modifiedExpression)[i])) {
+                        hasNonWhitespace = true;
+                        break;
+                    }
+                }
+                if (!hasNonWhitespace) {
+                    foundLastStatement = modifiedExpression->find_last_of(';', foundLastStatement - 1);
+                    mustAddSemiColon = false;
+                }
+                if (foundLastStatement == std::string::npos) {
+                    modifiedExpression->insert(0, toPrepend);
+                } else {
+                    modifiedExpression->insert(foundLastStatement + 1, toPrepend);
+                }
             }
+            if (mustAddSemiColon) {
+                (*modifiedExpression) += ';';
+            }
+            std::string toAppend = "\nreturn [NatronExprtkExpressionResult]";
+            modifiedExpression->append(toAppend);
         }
-        if (mustAddSemiColon) {
-            (*modifiedExpression) += ';';
-        }
-        std::string toAppend = "\nreturn [NatronExprtkExpressionResult]";
-        modifiedExpression->append(toAppend);
-    }
+    } // modifiedExpression
 
 } // addStandardFunctions
 
@@ -1475,9 +1478,12 @@ KnobHelperPrivate::validateExprTKExpression(const std::string& expression, DimId
     // Symbol table containing all pre-declared variables (frame, view etc...)
     EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t symbol_table;
 
-    ret->expressionObject.reset(new EXPRTK_FUNCTIONS_NAMESPACE::expression_t);
-    ret->expressionObject->register_symbol_table(unknown_var_symbol_table);
-    ret->expressionObject->register_symbol_table(symbol_table);
+    QThread* curThread = QThread::currentThread();
+
+    KnobExprTkExpr::ExpressionData& data = ret->data[curThread];
+    data.expressionObject.reset(new EXPRTK_FUNCTIONS_NAMESPACE::expression_t);
+    data.expressionObject->register_symbol_table(unknown_var_symbol_table);
+    data.expressionObject->register_symbol_table(symbol_table);
 
     // Pre-declare the variables with a stub value, they will be updated at evaluation time
     TimeValue time = publicInterface->getCurrentRenderTime();
@@ -1499,25 +1505,25 @@ KnobHelperPrivate::validateExprTKExpression(const std::string& expression, DimId
         parser.enable_unknown_symbol_resolver(&musr);
 
 
-        addStandardFunctions(expression, time, symbol_table, ret->functions, ret->varargFunctions, ret->genericFunctions, &ret->modifiedExpression);
+        addStandardFunctions(expression, time, symbol_table, data.functions, data.varargFunctions, data.genericFunctions, &ret->modifiedExpression);
 
 
         EXPRTK_FUNCTIONS_NAMESPACE::generic_func_ptr curveFunc(new curve_func(thisShared, view));
-        ret->genericFunctions.push_back(std::make_pair("curve", curveFunc));
+        data.genericFunctions.push_back(std::make_pair("curve", curveFunc));
         symbol_table.add_function("curve", *curveFunc);
 
         std::string error;
-        if (!parseExprtkExpression(expression, ret->modifiedExpression, parser, *ret->expressionObject, &error)) {
+        if (!parseExprtkExpression(expression, ret->modifiedExpression, parser, *data.expressionObject, &error)) {
             throw std::runtime_error(error);
         }
 
 
     } // parser
 
-    ret->expressionObject->value();
+    data.expressionObject->value();
     double retValueIsScalar;
     std::string error;
-    KnobHelper::ExpressionReturnValueTypeEnum stat = handleExprTkReturn(*ret->expressionObject, &retValueIsScalar, resultAsString, &error);
+    KnobHelper::ExpressionReturnValueTypeEnum stat = handleExprTkReturn(*data.expressionObject, &retValueIsScalar, resultAsString, &error);
     switch (stat) {
         case KnobHelper::eExpressionReturnValueTypeError:
             throw std::runtime_error(error);
@@ -2124,7 +2130,7 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
 KnobHelper::ExpressionReturnValueTypeEnum
-KnobHelper::executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimension, double* retValueIsScalar, std::string* retValueIsString, std::string* error) const
+KnobHelper::executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimension, double* retValueIsScalar, std::string* retValueIsString, std::string* error)
 {
 
     boost::shared_ptr<KnobExprTkExpr> obj;
@@ -2134,35 +2140,88 @@ KnobHelper::executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimensi
     // To be thread safe we have 2 solutions:
     // 1) Compile the expression for each thread and then run it without a mutex
     // 2) Compile only once and run the expression under a lock
-    // For now solution 2) is used because the expression mutex anyway locks only this expression
-    // and it is not too critical.
-    QMutexLocker k(&_imp->common->expressionMutex);
-    ExprPerViewMap::const_iterator foundView = _imp->common->expressions[dimension].find(view);
-    if (foundView == _imp->common->expressions[dimension].end() || !foundView->second) {
-        return eExpressionReturnValueTypeError;
+    // We picked solution 1)
+    {
+        QMutexLocker k(&_imp->common->expressionMutex);
+        ExprPerViewMap::const_iterator foundView = _imp->common->expressions[dimension].find(view);
+        if (foundView == _imp->common->expressions[dimension].end() || !foundView->second) {
+            return eExpressionReturnValueTypeError;
+        }
+        KnobExprTkExpr* isExprtkExpr = dynamic_cast<KnobExprTkExpr*>(foundView->second.get());
+        assert(isExprtkExpr);
+        // Copy the expression object so it is local to this thread
+        obj = boost::dynamic_pointer_cast<KnobExprTkExpr>(foundView->second);
+        assert(obj);
     }
-    KnobExprTkExpr* isExprtkExpr = dynamic_cast<KnobExprTkExpr*>(foundView->second.get());
-    assert(isExprtkExpr);
-    // Copy the expression object so it is local to this thread
-    obj = boost::dynamic_pointer_cast<KnobExprTkExpr>(foundView->second);
-    assert(obj);
-    //obj.expressionObject.reset(new EXPRTK_FUNCTIONS_NAMESPACE::expression_t);
-    //*obj.expressionObject = *isExprtkExpr->expressionObject;
 
+    QThread* curThread = QThread::currentThread();
 
-    assert(obj->expressionObject);
-    EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t& unknown_symbols_table = obj->expressionObject->get_symbol_table(0);
-    EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t& symbol_table = obj->expressionObject->get_symbol_table(1);
-
-    // Remove from the symbol table functions that hold a state, and re-add a new fresh local copy of them so that the state
-    // is local to this thread.
-    std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::func_ptr > > functionsCopy;
-    EXPRTK_FUNCTIONS_NAMESPACE::makeLocalCopyOfStateFunctions(time, symbol_table, &functionsCopy);
+    KnobExprTkExpr::ExpressionData* data = 0;
+    {
+        QMutexLocker k(&obj->lock);
+        KnobExprTkExpr::PerThreadDataMap::iterator foundThreadData = obj->data.find(curThread);
+        if (foundThreadData == obj->data.end()) {
+            std::pair<KnobExprTkExpr::PerThreadDataMap::iterator, bool> ret = obj->data.insert(std::make_pair(curThread, KnobExprTkExpr::ExpressionData()));
+            assert(ret.second);
+            foundThreadData = ret.first;
+        }
+        data = &foundThreadData->second;
+    }
 
     bool isRenderClone = getHolder()->isRenderClone();
 
-    // Update the frame & view in the know table
-    symbol_table.variable_ref("frame") = (double)time;
+
+    EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t* unknown_symbols_table = 0;//
+    EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t* symbol_table = 0; //obj->expressionObject->get_symbol_table(1);
+
+    bool existingExpression = true;
+    if (!data->expressionObject) {
+
+        // We did not build the expression already
+        existingExpression = false;
+        data->expressionObject.reset(new EXPRTK_FUNCTIONS_NAMESPACE::expression_t);
+        EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t tmpUnresolved;
+        EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t tmpResolved;
+        data->expressionObject->register_symbol_table(tmpUnresolved);
+        data->expressionObject->register_symbol_table(tmpResolved);
+    }
+
+    unknown_symbols_table = &data->expressionObject->get_symbol_table(0);
+    symbol_table = &data->expressionObject->get_symbol_table(1);
+
+
+    if (existingExpression) {
+        // Update the frame & view in the know table
+        symbol_table->variable_ref("frame") = (double)time;
+
+        // Remove from the symbol table functions that hold a state, and re-add a new fresh local copy of them so that the state
+        // is local to this thread.
+        std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::func_ptr > > functionsCopy;
+        EXPRTK_FUNCTIONS_NAMESPACE::makeLocalCopyOfStateFunctions(time, *symbol_table, &functionsCopy);
+
+    } else {
+        double time_f = (double)time;
+        symbol_table->add_variable("frame", time_f);
+        std::string viewName = getHolder()->getApp()->getProject()->getViewName(view);
+        symbol_table->add_stringvar("view", viewName, false);
+
+        addStandardFunctions(obj->expressionString, time, *symbol_table, data->functions, data->varargFunctions, data->genericFunctions, 0);
+
+
+        KnobIPtr thisShared = shared_from_this();
+
+        EXPRTK_FUNCTIONS_NAMESPACE::generic_func_ptr curveFunc(new curve_func(thisShared, view));
+        data->genericFunctions.push_back(std::make_pair("curve", curveFunc));
+        symbol_table->add_function("curve", *curveFunc);
+
+        EXPRTK_FUNCTIONS_NAMESPACE::parser_t parser;
+        std::string error;
+        if (!parseExprtkExpression(obj->expressionString, obj->modifiedExpression, parser, *data->expressionObject, &error)) {
+            throw std::runtime_error(error);
+        }
+
+    } // existingExpression
+
     for (std::map<std::string, KnobDimViewKey>::const_iterator it = obj->knobDependencies.begin(); it != obj->knobDependencies.end(); ++it) {
         KnobIPtr knob = it->second.knob.lock();
         if (!knob) {
@@ -2188,19 +2247,33 @@ KnobHelper::executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimensi
         KnobStringBasePtr isString = toKnobStringBase(knob);
         KnobIntBasePtr isInt = toKnobIntBase(knob);
         KnobDoubleBasePtr isDouble = toKnobDoubleBase(knob);
-        if (isBoolean) {
-            unknown_symbols_table.variable_ref(it->first) = isBoolean->getValueAtTime(time, it->second.dimension, it->second.view);
-        } else if (isInt) {
-            unknown_symbols_table.variable_ref(it->first) = isInt->getValueAtTime(time, it->second.dimension, it->second.view);
-        } else if (isDouble) {
-            double val = isDouble->getValueAtTime(time, it->second.dimension, it->second.view);
-            EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t& scalar = unknown_symbols_table.variable_ref(it->first);
-            scalar = val;
-            assert(unknown_symbols_table.variable_ref(it->first) == val);
-        } else if (isString) {
-            unknown_symbols_table.stringvar_ref(it->first) = isString->getValueAtTime(time, it->second.dimension, it->second.view);
+        if (existingExpression) {
+            if (isBoolean) {
+                unknown_symbols_table->variable_ref(it->first) = isBoolean->getValueAtTime(time, it->second.dimension, it->second.view);
+            } else if (isInt) {
+                unknown_symbols_table->variable_ref(it->first) = isInt->getValueAtTime(time, it->second.dimension, it->second.view);
+            } else if (isDouble) {
+                double val = isDouble->getValueAtTime(time, it->second.dimension, it->second.view);
+                unknown_symbols_table->variable_ref(it->first) = val;
+            } else if (isString) {
+                unknown_symbols_table->stringvar_ref(it->first) = isString->getValueAtTime(time, it->second.dimension, it->second.view);
+            }
+        } else {
+            if (isBoolean) {
+                double value = (double)isBoolean->getValueAtTime(time, it->second.dimension, it->second.view);
+                unknown_symbols_table->add_variable(it->first, value);
+            } else if (isInt) {
+                double value = (double)isInt->getValueAtTime(time, it->second.dimension, it->second.view);;
+                unknown_symbols_table->add_variable(it->first, value);
+            } else if (isDouble) {
+                double val = isDouble->getValueAtTime(time, it->second.dimension, it->second.view);
+                unknown_symbols_table->add_variable(it->first, val);
+            } else if (isString) {
+                std::string val = isString->getValueAtTime(time, it->second.dimension, it->second.view);
+                unknown_symbols_table->add_stringvar(it->first, val);
+            }
+
         }
-        //unknown_symbols_table.variable_ref(it->first).
     }
 
     for (std::map<std::string, EffectFunctionDependency>::const_iterator it = obj->effectDependencies.begin(); it != obj->effectDependencies.end(); ++it) {
@@ -2230,12 +2303,22 @@ KnobHelper::executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimensi
                     return eExpressionReturnValueTypeError;
                 }
                 const RectD& rod = results->getRoD();
-                EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t::vector_holder_ptr vecHolderPtr = unknown_symbols_table.get_vector(it->first);
-                assert(vecHolderPtr->size() == 4);
-                *(*vecHolderPtr)[0] = EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t(rod.x1);
-                *(*vecHolderPtr)[1] = EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t(rod.y1);
-                *(*vecHolderPtr)[2] = EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t(rod.x2);
-                *(*vecHolderPtr)[3] = EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t(rod.y2);
+
+                if (existingExpression) {
+                    EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t::vector_holder_ptr vecHolderPtr = unknown_symbols_table->get_vector(it->first);
+                    assert(vecHolderPtr->size() == 4);
+                    *(*vecHolderPtr)[0] = EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t(rod.x1);
+                    *(*vecHolderPtr)[1] = EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t(rod.y1);
+                    *(*vecHolderPtr)[2] = EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t(rod.x2);
+                    *(*vecHolderPtr)[3] = EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t(rod.y2);
+                } else {
+                    std::vector<double> vec(4);
+                    vec[0] = rod.x1;
+                    vec[1] = rod.y1;
+                    vec[2] = rod.x2;
+                    vec[3] = rod.y2;
+                    unknown_symbols_table->add_vector(it->first, &vec[0], vec.size());
+                }
                 break;
             }
         }
@@ -2243,8 +2326,8 @@ KnobHelper::executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimensi
 
 
     // Evaluate the expression
-    obj->expressionObject->value();
-    return handleExprTkReturn(*obj->expressionObject, retValueIsScalar, retValueIsString, error);
+    data->expressionObject->value();
+    return handleExprTkReturn(*data->expressionObject, retValueIsScalar, retValueIsString, error);
 } // executeExprTKExpression
 
 KnobHelper::ExpressionReturnValueTypeEnum
