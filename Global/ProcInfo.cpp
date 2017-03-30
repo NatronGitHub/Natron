@@ -408,7 +408,7 @@ std::string
 ProcInfo::applicationFilePath(const char* argv0Param)
 {
 #if defined(__NATRON_WIN32__)
-    Q_UNUSED(argv0Param);
+    (void)argv0Param;
     
     //The only viable solution
     return applicationFileName();
