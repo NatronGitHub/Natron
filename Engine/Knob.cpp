@@ -1016,8 +1016,9 @@ KnobHelper::refreshListenersAfterValueChangeInternal(TimeValue time, ViewIdx vie
     for (KnobDimViewKeySet::const_iterator it = allListeners.begin(); it != allListeners.end(); ++it) {
         KnobHelperPtr sharedKnob = toKnobHelper(it->knob.lock());
         if (sharedKnob && sharedKnob.get() != this) {
-            sharedKnob->evaluateValueChangeInternal(it->dimension, time, it->view, reason, evaluatedKnobs);
-            sharedKnob->refreshStaticValue(time);
+            if (sharedKnob->evaluateValueChangeInternal(it->dimension, time, it->view, reason, evaluatedKnobs)) {
+                sharedKnob->refreshStaticValue(time);
+            }
         }
     }
 
@@ -5166,6 +5167,7 @@ KnobHolder::createRenderClone(const FrameViewRenderKey& key) const
         QMutexLocker k(&_imp->common->renderClonesMutex);
         RenderCloneMap::iterator found = _imp->common->renderClones.find(key);
         if (found != _imp->common->renderClones.end()) {
+            found->second->initializeKnobsPublic();
             return found->second;
         }
     }
@@ -5174,12 +5176,15 @@ KnobHolder::createRenderClone(const FrameViewRenderKey& key) const
     if (!copy) {
         return copy;
     }
+    if (!copy->isRenderClone()) {
+        // We may not have really cloned the effect (e.g: NodeGroup)
+        return copy;
+    }
     {
         QMutexLocker k(&_imp->common->renderClonesMutex);
         _imp->common->renderClones[key] = copy;
     }
     copy->initializeKnobsPublic();
-    copy->fetchRenderCloneKnobs();
     return copy;
 }
 

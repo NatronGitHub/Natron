@@ -134,7 +134,9 @@ CachedFramesThread::Implementation::refreshCachedFramesInternal()
         return false;
     }
     ViewerInstancePtr internalViewerProcessNode = internalNode->getViewerProcessNode(0);
-
+    if (!internalViewerProcessNode) {
+        return false;
+    }
     // For all frames in the map:
     // 1) Check the hash is still valid at that frame
     // 2) Check if the cache still has a tile entry for this frame

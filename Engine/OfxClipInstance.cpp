@@ -806,6 +806,8 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     }
 
 
+    bool multiPlanar = effect->isMultiPlanar();
+
     // If we are in the render action, retrieve the current render window from the TLS
     RectI currentRenderWindow;
 
@@ -842,29 +844,36 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
         }
     } else {
 
-        // Use the results of the getLayersProducedAndNeeded action
-        GetComponentsResultsPtr actionResults;
-        ActionRetCodeEnum stat = effect->getLayersProducedAndNeeded_public(currentActionTime, currentActionView, &actionResults);
-        if (isFailureRetCode(stat)) {
-            return false;
-        }
-
-        std::map<int, std::list<ImagePlaneDesc> > neededInputLayers;
-        std::list<ImagePlaneDesc> producedLayers, availableLayers;
-        int passThroughInputNb;
-        ViewIdx passThroughView;
-        TimeValue passThroughTime;
-        std::bitset<4> processChannels;
-        bool processAll;
-        actionResults->getResults(&neededInputLayers, &producedLayers, &availableLayers, &passThroughInputNb, &passThroughTime, &passThroughView, &processChannels, &processAll);
-
-        std::map<int, std::list<ImagePlaneDesc> > ::const_iterator foundNeededLayers = neededInputLayers.find(inputNb);
-        // The planes should have been specified for this clip
-        if (foundNeededLayers == neededInputLayers.end() || foundNeededLayers->second.empty()) {
+        if (multiPlanar) {
+            // If the effect is multiplanar and did not make use of fetchImagePlane, assume it wants the color plane
             ImagePlaneDesc metadataPairedPlane;
             effect->getMetadataComponents(inputNb, &plane, &metadataPairedPlane);
+
         } else {
-            plane = foundNeededLayers->second.front();
+            // Use the results of the getLayersProducedAndNeeded action
+            GetComponentsResultsPtr actionResults;
+            ActionRetCodeEnum stat = effect->getLayersProducedAndNeeded_public(currentActionTime, currentActionView, &actionResults);
+            if (isFailureRetCode(stat)) {
+                return false;
+            }
+
+            std::map<int, std::list<ImagePlaneDesc> > neededInputLayers;
+            std::list<ImagePlaneDesc> producedLayers, availableLayers;
+            int passThroughInputNb;
+            ViewIdx passThroughView;
+            TimeValue passThroughTime;
+            std::bitset<4> processChannels;
+            bool processAll;
+            actionResults->getResults(&neededInputLayers, &producedLayers, &availableLayers, &passThroughInputNb, &passThroughTime, &passThroughView, &processChannels, &processAll);
+
+            std::map<int, std::list<ImagePlaneDesc> > ::const_iterator foundNeededLayers = neededInputLayers.find(inputNb);
+            // The planes should have been specified for this clip
+            if (foundNeededLayers == neededInputLayers.end() || foundNeededLayers->second.empty()) {
+                ImagePlaneDesc metadataPairedPlane;
+                effect->getMetadataComponents(inputNb, &plane, &metadataPairedPlane);
+            } else {
+                plane = foundNeededLayers->second.front();
+            }
         }
     }
 
@@ -907,7 +916,6 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     // If the effect is not multi-planar (most of effects) then the returned image might have a different
     // layer name than the color layer but should always have the same number of components than the components
     // set in getClipPreferences.
-    bool multiPlanar = effect->isMultiPlanar();
     std::string componentsStr;
     int nComps;
     {

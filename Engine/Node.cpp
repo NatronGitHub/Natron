@@ -1328,14 +1328,15 @@ Node::onRefreshIdentityStateRequestReceived()
         for (int i = 0; i < nViews; ++i) {
 
             IsIdentityResultsPtr isIdentityResults;
-            ActionRetCodeEnum stat = _imp->effect->isIdentity_public(true, time, scale, format, ViewIdx(i), &isIdentityResults);
+            ActionRetCodeEnum stat = _imp->effect->isIdentity_public(true, time, scale, format, ViewIdx(i), ImagePlaneDesc::getRGBAComponents()/*irrelevant*/, &isIdentityResults);
             if (isFailureRetCode(stat)) {
                 continue;
             }
             int identityInputNb;
             TimeValue identityTime;
             ViewIdx identityView;
-            isIdentityResults->getIdentityData(&identityInputNb, &identityTime, &identityView);
+            ImagePlaneDesc identityPlane;
+            isIdentityResults->getIdentityData(&identityInputNb, &identityTime, &identityView, &identityPlane);
 
             if ( identityInputNb == -1 || identityView.value() != i ) {
                 inputNb = -1;

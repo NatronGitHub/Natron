@@ -119,6 +119,11 @@ EffectInstance::createRenderCopy(const FrameViewRenderKey& key) const
     if (!createFunc) {
         throw std::invalid_argument("EffectInstance::createRenderCopy: No kNatronPluginPropCreateRenderCloneFunc property set on plug-in!");
     }
+
+    // A node group is never cloned since its not part of the render tree
+    if (dynamic_cast<const NodeGroup*>(this)) {
+        return boost::const_pointer_cast<EffectInstance>(shared_from_this());
+    }
     EffectInstancePtr clone = createFunc(boost::const_pointer_cast<EffectInstance>(shared_from_this()), key);
 
 
@@ -957,7 +962,12 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
             copyArgs.conversionChannel = channelForMask;
             copyArgs.srcColorspace = getApp()->getDefaultColorSpaceForBitDepth(outArgs->image->getBitDepth());
             copyArgs.dstColorspace = getApp()->getDefaultColorSpaceForBitDepth(thisBitDepth);
-            copyArgs.monoConversion = Image::eMonoToPackedConversionCopyToChannelAndFillOthers;
+            copyArgs.alphaHandling = Image::eAlphaChannelHandlingFillFromChannel;
+            if (channelForMask != -1) {
+                copyArgs.monoConversion = Image::eMonoToPackedConversionCopyToChannelAndFillOthers;
+            } else {
+                copyArgs.monoConversion = Image::eMonoToPackedConversionCopyToAll;
+            }
         }
         ActionRetCodeEnum stat = convertedImage->copyPixels(*outArgs->image, copyArgs);
         if (isFailureRetCode(stat)) {
@@ -1005,6 +1015,36 @@ EffectInstanceTLSDataPtr
 EffectInstance::getOrCreateTLSObject() const
 {
     return EffectInstanceTLSDataPtr();
+}
+
+bool
+EffectInstance::isAllProducedPlanesAtOncePreferred() const
+{
+    return false;
+}
+
+bool
+EffectInstance::isMultiPlanar() const
+{
+    return false;
+}
+
+EffectInstance::PassThroughEnum
+EffectInstance::isPassThroughForNonRenderedPlanes() const
+{
+    return ePassThroughPassThroughNonRenderedPlanes;
+}
+
+bool
+EffectInstance::isViewAware() const
+{
+    return false;
+}
+
+EffectInstance::ViewInvarianceLevel
+EffectInstance::isViewInvariant() const
+{
+    return eViewInvarianceAllViewsVariant;
 }
 
 EffectInstance::NotifyRenderingStarted_RAII::NotifyRenderingStarted_RAII(Node* node)
@@ -2082,7 +2122,7 @@ EffectInstance::getAttachedRotoItem() const
     ViewIdx currentView = getCurrentRenderView();
     if (currentRender && thisItem->isRenderCloneNeeded()) {
         FrameViewRenderKey k = {currentTime, currentView, currentRender};
-        return boost::dynamic_pointer_cast<RotoDrawableItem>(toRotoItem(thisItem->getRenderClone(k)));
+        return boost::dynamic_pointer_cast<RotoDrawableItem>(toRotoItem(thisItem->createRenderClone(k)));
     }
     return thisItem;
 }

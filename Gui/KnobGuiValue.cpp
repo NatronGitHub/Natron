@@ -436,8 +436,10 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
         containerLayout->addWidget(allSpinBoxesContainer);
     }
 
+    KnobGui::KnobLayoutTypeEnum layoutType = knobUI->getLayoutType();
+
     bool sliderVisible = false;
-    if (!isSliderDisabled() && !isRectangleParam) {
+    if (!isSliderDisabled() && !isRectangleParam && layoutType != KnobGui::eKnobLayoutTypeTableItemWidget) {
         double dispmin = displayMins[0];
         double dispmax = displayMaxs[0];
         if (dispmin == -DBL_MAX) {
@@ -508,7 +510,6 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
     QSize medSize( TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE) );
     QSize medIconSize( TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE) );
 
-    KnobGui::KnobLayoutTypeEnum layoutType = knobUI->getLayoutType();
     if (isRectangleParam && layoutType != KnobGui::eKnobLayoutTypeTableItemWidget) {
         _imp->rectangleFormatButton = new Button(QIcon(), QString::fromUtf8("wh"), _imp->container);
         _imp->rectangleFormatButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Switch between width/height and right/top notation"), NATRON_NAMESPACE::WhiteSpaceNormal) );
@@ -809,7 +810,6 @@ KnobGuiValue::updateGUI()
         time = knob->getHolder()->getTimelineCurrentTime();
     }
 
-    bool isGuiDifferentFromInternalValues = false;
     for (int i = 0; i < knobDim; ++i) {
         double v = _imp->getKnobValue(DimIdx(i));
         if (getNormalizationPolicy(DimIdx(i)) != eValueIsNormalizedNone) {
@@ -825,9 +825,6 @@ KnobGuiValue::updateGUI()
             }
         }
         values[i] = v;
-        if (!_imp->spinBoxes[i].box || v != _imp->spinBoxes[i].box->value()) {
-            isGuiDifferentFromInternalValues = true;
-        }
 
         expressions[i] = knob->getExpression(DimIdx(i), getView());
     }
@@ -835,11 +832,6 @@ KnobGuiValue::updateGUI()
 
     refValue = values[0];
     refExpresion = expressions[0];
-
-    // If spinbox values did not change, just don't do anything
-    if (!isGuiDifferentFromInternalValues) {
-        return;
-    }
 
 
     if (_imp->slider) {

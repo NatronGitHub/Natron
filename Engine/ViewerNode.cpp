@@ -319,8 +319,8 @@ ViewerNode::createViewerProcessNode()
         args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
         args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, nodeName.toStdString());
         internalViewerNode[i] = getApp()->createNode(args);
-        assert(internalViewerNode);
-        if (!internalViewerNode) {
+        assert(internalViewerNode[i]);
+        if (!internalViewerNode[i]) {
             throw std::invalid_argument("ViewerNode::setupGraph: No internal viewer process!");
         }
 

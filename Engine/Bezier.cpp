@@ -245,7 +245,11 @@ Bezier::~Bezier()
 KnobHolderPtr
 Bezier::createRenderCopy(const FrameViewRenderKey& render) const
 {
-    BezierPtr ret(new Bezier(toBezier(getMainInstance()), render));
+    BezierPtr mainInstance = toBezier(getMainInstance());
+    if (!mainInstance) {
+        mainInstance = toBezier(boost::const_pointer_cast<KnobHolder>(shared_from_this()));
+    }
+    BezierPtr ret(new Bezier(mainInstance, render));
     return ret;
 }
 

@@ -81,6 +81,8 @@ NATRON_NAMESPACE_ENTER;
 #define kTimeBlurParamShutterOffset "shutterOffset"
 #define kTimeBlurParamCustomOffset "shutterCustomOffset"
 
+#define kConstantParamColor "color"
+
 /**
  * @class A base class for all items made by the roto context
  **/

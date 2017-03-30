@@ -51,7 +51,8 @@ static const char* rotoRamp_FragmentShader =
 "uniform float fallOff;\n"
 "\n"
 "void main() {\n"
-"	vec4 outColor(opacity, opacity, opacity, opacity);\n"
+"	vec4 outColor;\n"
+"   outColor.rgba = vec4(opacity, opacity, opacity, opacity);\n"
 "   float t = gl_Color.a;\n"
 "#ifdef RAMP_P_LINEAR\n"
 "   t = t * t * t;\n"
@@ -711,10 +712,10 @@ void renderBezier_gl_singleDrawElements(int nbVertices, int nbIds, int vboVertic
 
     GL::BindBuffer(GL_ARRAY_BUFFER, vboColorsID);
     if (uploadVertices) {
-        GL::BufferData(GL_ARRAY_BUFFER, nbVertices * 1 * sizeof(GLfloat), colorsData, GL_DYNAMIC_DRAW);
+        GL::BufferData(GL_ARRAY_BUFFER, nbVertices * 4 * sizeof(GLfloat), colorsData, GL_DYNAMIC_DRAW);
     }
     GL::EnableClientState(GL_COLOR_ARRAY);
-    GL::ColorPointer(1, GL_FLOAT, 0, 0);
+    GL::ColorPointer(4, GL_FLOAT, 0, 0);
 
     GL::BindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboID);
     GL::BufferData(GL_ELEMENT_ARRAY_BUFFER, nbIds * sizeof(GLuint), idsData, GL_DYNAMIC_DRAW);
@@ -987,7 +988,7 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
             }
 
             verticesArray.resize(nbVertices * 2);
-            colorsArray.resize(nbVertices);
+            colorsArray.resize(nbVertices * 4);
             indicesArray.resize(nbVertices);
 
             // Fill buffer
@@ -997,7 +998,7 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
 
             for (std::size_t i = 0; i < data.featherMesh.size(); ++i,
                  v_data += 2,
-                 ++c_data,
+                 c_data += 4,
                  ++i_data) {
                 v_data[0] = data.featherMesh[i].x;
                 v_data[1] = data.featherMesh[i].y;
@@ -1010,9 +1011,11 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
                 // since we are operating on a thread-local render clone.
                 assert(roi.contains(v_data[0], v_data[1]));
 
-
+                c_data[0] = opacity;
+                c_data[1] = opacity;
+                c_data[2] = opacity;
                 if (data.featherMesh[i].isInner) {
-                    *c_data = opacity;
+                    c_data[3] = opacity;
                 } else {
                     *c_data = 0.;
                 }
@@ -1024,7 +1027,11 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
         // Unbind the Ramp shader used for the feather and bind the Fill shader for the Roto
         rampShader->unbind();
         fillShader->bind();
-        fillShader->setUniform("opacity", (float)opacity);
+        {
+            OfxRGBAColourF fillColor;
+            fillColor.r = fillColor.g = fillColor.b = fillColor.a = opacity;
+            fillShader->setUniform("fillColor", fillColor);
+        }
 
         int nbVertices = data.bezierPolygonJoined.size();
         if (!nbVertices) {

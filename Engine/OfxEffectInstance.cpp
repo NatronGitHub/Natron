@@ -143,6 +143,7 @@ struct OfxEffectInstanceCommon
     bool supportsMultipleClipDepths;
     bool supportsRenderQuality;
     bool multiplanar;
+    bool preferRenderAllPlaneAtOnce;
 
     OfxEffectInstanceCommon()
     : effect()
@@ -165,6 +166,7 @@ struct OfxEffectInstanceCommon
     , supportsMultipleClipDepths(false)
     , supportsRenderQuality(false)
     , multiplanar(false)
+    , preferRenderAllPlaneAtOnce(false)
     {
 
     }
@@ -278,6 +280,7 @@ OfxEffectInstance::describePlugin()
     _imp->common->supportsMultipleClipDepths = _imp->common->effect->supportsMultipleClipDepths();
     _imp->common->supportsRenderQuality = _imp->common->effect->supportsRenderQuality();
     _imp->common->multiplanar = _imp->common->effect->isMultiPlanar();
+    _imp->common->preferRenderAllPlaneAtOnce = (_imp->common->effect->getProps().getIntProperty(kOfxImageEffectPropRenderAllPlanes) != 0);
     int sequential = _imp->common->effect->getPlugin()->getDescriptor().getProps().getIntProperty(kOfxImageEffectInstancePropSequentialRender);
     switch (sequential) {
         case 0:
@@ -1390,13 +1393,12 @@ OfxEffectInstance::isIdentity(TimeValue time,
                               const RenderScale & scale,
                               const RectI & renderWindow,
                               ViewIdx view,
+                              const ImagePlaneDesc& plane,
                               TimeValue* inputTime,
                               ViewIdx* inputView,
-                              int* inputNb)
+                              int* inputNb,
+                              ImagePlaneDesc* identityPlane)
 {
-    *inputView = view;
-    *inputNb = -1;
-    *inputTime = time;
 
     if (!_imp->common->initialized) {
         return eActionStatusFailed;
@@ -1408,6 +1410,8 @@ OfxEffectInstance::isIdentity(TimeValue time,
     std::string inputclip;
 
     OfxTime identityTimeOfx = time;
+    int identityViewOfx = view;
+    std::string identityPlaneOfx;
     OfxStatus stat;
     {
 
@@ -1428,9 +1432,9 @@ OfxEffectInstance::isIdentity(TimeValue time,
 #endif
                                                   );
 
+        identityPlaneOfx = ImagePlaneDesc::mapPlaneToOFXPlaneString(plane);
         ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
-
-        stat = _imp->common->effect->isIdentityAction(identityTimeOfx, field, ofxRoI, scale, view, inputclip);
+        stat = _imp->common->effect->isIdentityAction(identityTimeOfx, field, ofxRoI, scale, identityViewOfx, identityPlaneOfx, inputclip);
         assert(stat != kOfxStatErrBadHandle);
         if (stat == kOfxStatFailed || stat == kOfxStatErrBadHandle) {
             return eActionStatusFailed;
@@ -1458,6 +1462,8 @@ OfxEffectInstance::isIdentity(TimeValue time,
         *inputNb = natronClip->getInputNb();
     }
     *inputTime = TimeValue(identityTimeOfx);
+    *inputView = ViewIdx(identityViewOfx);
+    *identityPlane = ImagePlaneDesc::mapOFXPlaneStringToPlane(identityPlaneOfx);
 
     return eActionStatusOK;
 
@@ -2144,6 +2150,12 @@ bool
 OfxEffectInstance::isMultiPlanar() const
 {
     return _imp->common->multiplanar;
+}
+
+bool
+OfxEffectInstance::isAllProducedPlanesAtOncePreferred() const
+{
+    return _imp->common->preferRenderAllPlaneAtOnce;
 }
 
 EffectInstance::PassThroughEnum

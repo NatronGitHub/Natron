@@ -291,8 +291,8 @@ EffectInstance::getComponentsNeededInternal(TimeValue time,
         return stat;
     }
 
-    // Ensure the plug-in made the metadata plane available.
-    {
+    // Ensure the plug-in made the metadata plane available at least
+    if (layersProduced->empty()) {
         std::list<ImagePlaneDesc> metadataPlanes;
         ImagePlaneDesc metadataPlane, metadataPairedPlane;
         getMetadataComponents(-1, &metadataPlane, &metadataPairedPlane);
@@ -763,7 +763,7 @@ EffectInstance::getDistortion_public(TimeValue inArgsTime,
         RectI format = getOutputFormat();
         RenderScale scale(1.);
         IsIdentityResultsPtr identityResults;
-        isIdentity = isIdentity_public(true, time, scale, format, view, &identityResults);
+        isIdentity = isIdentity_public(true, time, scale, format, view, ImagePlaneDesc::getRGBAComponents() /*insignificant*/, &identityResults);
     }
 
     if (!distortSupported && !isDeprecatedTransformSupportEnabled && !isIdentity) {
@@ -851,12 +851,14 @@ EffectInstance::getDistortion_public(TimeValue inArgsTime,
 
 ActionRetCodeEnum
 EffectInstance::isIdentity(TimeValue /*time*/,
-                      const RenderScale & /*scale*/,
-                      const RectI & /*roi*/,
-                      ViewIdx /*view*/,
-                      TimeValue* /*inputTime*/,
-                      ViewIdx* /*inputView*/,
-                      int* inputNb)
+                           const RenderScale & /*scale*/,
+                           const RectI & /*roi*/,
+                           ViewIdx /*view*/,
+                           const ImagePlaneDesc& /*plane*/,
+                           TimeValue* /*inputTime*/,
+                           ViewIdx* /*inputView*/,
+                           int* inputNb,
+                           ImagePlaneDesc* /*inputPlane*/)
 {
     *inputNb = -1;
     return eActionStatusReplyDefault;
@@ -869,6 +871,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
                                   const RenderScale & scale,
                                   const RectI & renderWindow,
                                   ViewIdx view,
+                                  const ImagePlaneDesc& plane,
                                   IsIdentityResultsPtr* results)
 {
     
@@ -881,7 +884,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
             // We do not cache it because for non continuous effects we only cache stuff at
             // valid frame times
             *results = IsIdentityResults::create(IsIdentityKeyPtr());
-            (*results)->setIdentityData(-2, TimeValue(roundedTime), view);
+            (*results)->setIdentityData(-2, TimeValue(roundedTime), view, plane);
             return eActionStatusOK;
         }
     }
@@ -935,7 +938,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
 
     // Node is disabled or doesn't have any channel to process, be identity on the main input
     if ((isNodeDisabledForFrame(time, view) || !hasAtLeastOneChannelToProcess() )) {
-        (*results)->setIdentityData(getNode()->getPreferredInput(), time, view);
+        (*results)->setIdentityData(getNode()->getPreferredInput(), time, view, plane);
         caught = true;
     }
 
@@ -952,10 +955,11 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
             canonicalRenderWindow.toPixelEnclosing(mappedScale, par, &mappedRenderWindow);
         }
 
-        TimeValue identityTime;
-        ViewIdx identityView;
-        int identityInputNb;
-        ActionRetCodeEnum stat = isIdentity(time, mappedScale, mappedRenderWindow, view, &identityTime, &identityView, &identityInputNb);
+        TimeValue identityTime = time;
+        ViewIdx identityView = view;
+        int identityInputNb = -1;
+        ImagePlaneDesc identityPlane = plane;
+        ActionRetCodeEnum stat = isIdentity(time, mappedScale, mappedRenderWindow, view, plane, &identityTime, &identityView, &identityInputNb, &identityPlane);
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -970,13 +974,13 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
             }
         }
 
-        (*results)->setIdentityData(identityInputNb, identityTime, identityView);
+        (*results)->setIdentityData(identityInputNb, identityTime, identityView, identityPlane);
 
         caught = true;
 
     }
     if (!caught) {
-        (*results)->setIdentityData(-1, time, view);
+        (*results)->setIdentityData(-1, time, view, plane);
     }
 
     if (cacheAccess) {
@@ -1054,7 +1058,7 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
         RectI format = getOutputFormat();
         RenderScale scale(1.);
         IsIdentityResultsPtr identityResults;
-        ActionRetCodeEnum stat = isIdentity_public(true, time, mappedScale, format, view, &identityResults);
+        ActionRetCodeEnum stat = isIdentity_public(true, time, mappedScale, format, view, ImagePlaneDesc::getRGBAComponents() /*insignificant*/, &identityResults);
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -1063,7 +1067,8 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
         int inputIdentityNb;
         TimeValue identityTime;
         ViewIdx identityView;
-        identityResults->getIdentityData(&inputIdentityNb, &identityTime, &identityView);
+        ImagePlaneDesc identityPlane;
+        identityResults->getIdentityData(&inputIdentityNb, &identityTime, &identityView, &identityPlane);
 
         if (inputIdentityNb >= 0) {
             // This effect is identity
@@ -1441,11 +1446,12 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
         // If the effect is identity on the format, that means its bound to be identity anywhere and does not depend on the render window.
         RectI format = getOutputFormat();
         RenderScale scale(1.);
-        ActionRetCodeEnum stat = isIdentity_public(isHashCached, time, scale, format, view, &identityResults);
+        ImagePlaneDesc identityPlane;
+        ActionRetCodeEnum stat = isIdentity_public(isHashCached, time, scale, format, view, ImagePlaneDesc::getRGBAComponents() /*insignificant*/, &identityResults);
         if (isFailureRetCode(stat)) {
             return stat;
         }
-        identityResults->getIdentityData(&inputIdentityNb, &inputIdentityTime, &inputIdentityView);
+        identityResults->getIdentityData(&inputIdentityNb, &inputIdentityTime, &inputIdentityView, &identityPlane);
     }
 
     if (inputIdentityNb != -1) {

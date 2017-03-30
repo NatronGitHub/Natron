@@ -260,6 +260,8 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
                 Image::InitStorageArgs args;
                 args.renderClone = fromImage._imp->renderClone.lock();
                 args.bounds = fromImage.getBounds();
+                args.mipMapLevel = fromImage.getMipMapLevel();
+                args.proxyScale = fromImage.getProxyScale();
                 args.plane = ImagePlaneDesc::getRGBAComponents();
                 tmpImage = Image::create(args);
                 if (!tmpImage) {
@@ -278,6 +280,8 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
             Image::InitStorageArgs args;
             args.renderClone = fromImage._imp->renderClone.lock();
             args.bounds = fromImage.getBounds();
+            args.mipMapLevel = fromImage.getMipMapLevel();
+            args.proxyScale = fromImage.getProxyScale();
             args.plane = ImagePlaneDesc::getRGBAComponents();
             tmpImage = Image::create(args);
             if (!tmpImage) {

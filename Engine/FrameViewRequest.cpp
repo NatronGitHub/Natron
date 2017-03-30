@@ -128,11 +128,8 @@ struct PerLaunchRequestData
     // This frame/view is in the dependencies list each of the listeners.
     std::set<FrameViewRequestWPtr> listeners;
 
-    // The status of the frame/view
-    FrameViewRequest::FrameViewRequestStatusEnum status;
 
     PerLaunchRequestData()
-    : status(FrameViewRequest::eFrameViewRequestStatusNotRendered)
     {
 
     }
@@ -145,6 +142,9 @@ struct FrameViewRequestPrivate
 {
     // Protects all data members;
     mutable QMutex lock;
+
+    // The status of the frame/view
+    FrameViewRequest::FrameViewRequestStatusEnum status;
 
     // Weak reference to the render local arguments for the corresponding effect
     EffectInstanceWPtr renderClone;
@@ -216,6 +216,7 @@ struct FrameViewRequestPrivate
                             const EffectInstancePtr& effect,
                             const TreeRenderPtr& render)
     : lock(QMutex::Recursive)
+    , status(FrameViewRequest::eFrameViewRequestStatusNotRendered)
     , renderClone(effect)
     , parentRender(render)
     , plane(plane)
@@ -239,7 +240,7 @@ struct FrameViewRequestPrivate
     , byPassCache(false)
     {
 #ifdef TRACE_REQUEST_LIFETIME
-        nodeName(effect->getNode()->getScriptName_mt_safe())
+        nodeName = effect->getNode()->getScriptName_mt_safe();
         qDebug() << "Create request" << nodeName.c_str();
 #endif
         if (effect->getCurrentRender()->isByPassCacheEnabled()) {
@@ -374,44 +375,41 @@ FrameViewRequest::setCachePolicy(CacheAccessModeEnum policy)
 }
 
 FrameViewRequest::FrameViewRequestStatusEnum
-FrameViewRequest::getStatus(const RequestPassSharedDataPtr& requestData) const
+FrameViewRequest::getStatus() const
 {
-    PerLaunchRequestData& data = _imp->requestData[requestData];
-    return data.status;
+    QMutexLocker k(&_imp->lock);
+    return _imp->status;
 }
 
 void
-FrameViewRequest::initStatus(const RequestPassSharedDataPtr& requestData, FrameViewRequestStatusEnum status)
+FrameViewRequest::initStatus(FrameViewRequestStatusEnum status)
 {
     QMutexLocker k(&_imp->lock);
-    PerLaunchRequestData& data = _imp->requestData[requestData];
-    data.status = status;
-
+    _imp->status = status;
 }
 
 FrameViewRequest::FrameViewRequestStatusEnum
-FrameViewRequest::notifyRenderStarted(const RequestPassSharedDataPtr& requestData)
+FrameViewRequest::notifyRenderStarted()
 {
     QMutexLocker k(&_imp->lock);
-    PerLaunchRequestData& data = _imp->requestData[requestData];
+
     // Only one single thread should be computing a FrameViewRequest
-    assert(data.status != FrameViewRequest::eFrameViewRequestStatusPending);
-    if (data.status == FrameViewRequest::eFrameViewRequestStatusNotRendered) {
-        data.status = FrameViewRequest::eFrameViewRequestStatusPending;
+    assert(_imp->status != FrameViewRequest::eFrameViewRequestStatusPending);
+    if (_imp->status == FrameViewRequest::eFrameViewRequestStatusNotRendered) {
+        _imp->status = FrameViewRequest::eFrameViewRequestStatusPending;
         return FrameViewRequest::eFrameViewRequestStatusNotRendered;
     }
-    return data.status;
+    return _imp->status;
 }
 
 
 void
-FrameViewRequest::notifyRenderFinished(const RequestPassSharedDataPtr& requestData, ActionRetCodeEnum stat)
+FrameViewRequest::notifyRenderFinished(ActionRetCodeEnum stat)
 {
     QMutexLocker k(&_imp->lock);
-    PerLaunchRequestData& data = _imp->requestData[requestData];
-    assert(data.status == FrameViewRequest::eFrameViewRequestStatusPending);
+    assert(_imp->status == FrameViewRequest::eFrameViewRequestStatusPending);
     _imp->retCode = stat;
-    data.status = FrameViewRequest::eFrameViewRequestStatusRendered;
+    _imp->status = FrameViewRequest::eFrameViewRequestStatusRendered;
 }
 
 
@@ -451,7 +449,7 @@ FrameViewRequest::markDependencyAsRendered(const RequestPassSharedDataPtr& reque
     PerLaunchRequestData& data = _imp->requestData[request];
 
     // If this FrameViewRequest is pass-through, copy results from the pass-through dependency
-    if (data.status == eFrameViewRequestStatusPassThrough) {
+    if (_imp->status == eFrameViewRequestStatusPassThrough) {
         assert(deps && data.dependencies.size() == 1 && *data.dependencies.begin() == deps);
         _imp->requestedScaleImage = deps->getRequestedScaleImagePlane();
         _imp->finalRoi = deps->getCurrentRoI();

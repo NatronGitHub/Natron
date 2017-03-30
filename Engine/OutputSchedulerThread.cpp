@@ -2229,7 +2229,7 @@ public:
 
         // Viewer textures are always RGBA
 
-        initArgs.plane = image->getLayer();
+        initArgs.plane = ImagePlaneDesc::getRGBAComponents();
         initArgs.mipMapLevel = image->getMipMapLevel();
         initArgs.proxyScale = image->getProxyScale();
         initArgs.bitdepth = image->getBitDepth();
@@ -2273,8 +2273,9 @@ public:
             }
 
 
-            // The viewer-process node always renders 4 channel images
-            assert(inArgs->outputImage->getLayer().getNumComponents() == 4);
+            // The viewer-process node may not have rendered a 4 channel image, but this is required but the OpenGL viewer
+            // which only draws RGBA images.
+    
             inArgs->outputImage = convertImageForViewerDisplay(inArgs->outputImage);
 
             // Extra color-picker images as-well.

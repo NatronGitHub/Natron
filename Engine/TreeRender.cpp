@@ -558,6 +558,7 @@ private:
 
             // If the task has all its dependencies available, add it to the render queue.
             if (numDepsLeft == 0) {
+                assert(sharedData->_imp->allRenderTasksToProcess.find(*it) != sharedData->_imp->allRenderTasksToProcess.end());
                 sharedData->_imp->dependencyFreeRenders.insert(*it);
             }
         }

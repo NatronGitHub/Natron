@@ -556,7 +556,6 @@ struct RotoPaintPrivate
     // The group internal input nodes
     std::vector<NodeWPtr> inputNodes;
     NodeWPtr premultNode;
-    NodeWPtr premultFixerNode;
 
     boost::shared_ptr<RotoPaintKnobItemsTable> knobsTable;
 
@@ -650,7 +649,6 @@ struct RotoPaintPrivate
 
     void connectRotoPaintBottomTreeToItems(bool canConcatenate,
                                            const RotoPaintPtr& rotoPaintEffect,
-                                           const NodePtr& noOpNode,
                                            const NodePtr& premultNode,
                                            const NodePtr& globalTimeBlurNode,
                                            const NodePtr& treeOutputNode,

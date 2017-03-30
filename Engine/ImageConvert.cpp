@@ -576,6 +576,7 @@ static convertToMonoImage(const RectI & renderWindow,
                     break;
                     
             }
+            assert(pix == pix); // Check for NaNs
             *dstPixelPtrs[0] = pix;
             dstPixelPtrs[0] += dstPixelStride;
         }
@@ -757,13 +758,13 @@ convertToFormatInternalForSrcComps(const RectI & renderWindow,
             }
         }   break;
         case 2:
-            convertToFormatInternal<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, 1>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
-            break;
-        case 3:
             convertToFormatInternal<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, 2>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
             break;
-        case 4:
+        case 3:
             convertToFormatInternal<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, 3>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
+            break;
+        case 4:
+            convertToFormatInternal<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, 4>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
             break;
         default:
             assert(false);
@@ -813,13 +814,13 @@ convertToFormatInternalForDstDepth(const RectI & renderWindow,
     switch (srcNComps) {
 
         case 2:
-            convertToFormatInternalForSrcComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, 1>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderClone);
-            break;
-        case 3:
             convertToFormatInternalForSrcComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, 2>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderClone);
             break;
-        case 4:
+        case 3:
             convertToFormatInternalForSrcComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, 3>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderClone);
+            break;
+        case 4:
+            convertToFormatInternalForSrcComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, 4>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderClone);
             break;
         default:
             assert(false);

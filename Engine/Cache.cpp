@@ -3210,6 +3210,7 @@ Cache<persistent>::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
 
                 // Set the tile index on the entry so we can free it afterwards.
                 char* ptr = data + tileIndex * NATRON_TILE_SIZE_BYTES;
+                assert((ptr >= data) && (ptr < (data + NATRON_NUM_TILES_PER_FILE * NATRON_TILE_SIZE_BYTES)));
                 (*allocatedTilesData)[i] = std::make_pair(freeTileEncodedIndex, ptr);
                 
                 
@@ -3297,6 +3298,7 @@ Cache<persistent>::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
 
                 char* data = (*storage)->getData();
                 char* tileDataPtr = data + tileIndex * NATRON_TILE_SIZE_BYTES;
+                assert((tileDataPtr >= data) && (tileDataPtr < (data + NATRON_NUM_TILES_PER_FILE * NATRON_TILE_SIZE_BYTES)));
                 (*existingTilesData)[i] = tileDataPtr;
             } // for each tile indices
         }

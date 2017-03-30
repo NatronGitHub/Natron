@@ -201,19 +201,21 @@ IsIdentityResults::create(const IsIdentityKeyPtr& key)
 
 
 void
-IsIdentityResults::getIdentityData(int* identityInputNb, TimeValue* identityTime, ViewIdx* identityView) const
+IsIdentityResults::getIdentityData(int* identityInputNb, TimeValue* identityTime, ViewIdx* identityView, ImagePlaneDesc *identityPlane) const
 {
     *identityInputNb = _data.identityInputNb;
     *identityTime = _data.identityTime;
     *identityView = _data.identityView;
+    *identityPlane = _data.identityPlane;
 }
 
 void
-IsIdentityResults::setIdentityData(int identityInputNb, TimeValue identityTime, ViewIdx identityView)
+IsIdentityResults::setIdentityData(int identityInputNb, TimeValue identityTime, ViewIdx identityView, const ImagePlaneDesc &identityPlane)
 {
     _data.identityInputNb = identityInputNb;
     _data.identityTime = identityTime;
     _data.identityView = identityView;
+    _data.identityPlane = identityPlane;
 }
 
 void

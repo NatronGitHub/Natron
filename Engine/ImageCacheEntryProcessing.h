@@ -57,7 +57,7 @@ static void copyPixelsForDepth(const RectI& renderWindow,
              src_pixels += srcYStride,
              dst_pixels += dstYStride) {
 
-            memcpy(dst_pixels, src_pixels, renderWindow.width() * sizeof(srcXStride));
+            memcpy(dst_pixels, src_pixels, renderWindow.width() * sizeof(PIX));
         }
     } else {
         for (int y = renderWindow.y1; y < renderWindow.y2; ++y) {

@@ -259,7 +259,19 @@ Image::copyPixels(const Image& other, const CopyPixelsArgs& args)
 
     assert(_imp->originalBounds.contains(args.roi) && other._imp->originalBounds.contains(args.roi));
 
-    return ImagePrivate::copyPixelsInternal(fromImage->_imp.get(), _imp.get(), args, _imp->renderClone.lock());
+    // Ensure the channelIndex to copy from/to is valid according to the number of components of the image
+    CopyPixelsArgs tmpArgs = args;
+    if (tmpArgs.alphaHandling == eAlphaChannelHandlingFillFromChannel) {
+        if (tmpArgs.conversionChannel < 0 || tmpArgs.conversionChannel >= (int)fromImage->getComponentsCount()) {
+            if (fromImage->getComponentsCount() == 4) {
+                tmpArgs.conversionChannel = 3;
+            } else {
+                tmpArgs.conversionChannel = 0;
+            }
+        }
+    }
+
+    return ImagePrivate::copyPixelsInternal(fromImage->_imp.get(), _imp.get(), tmpArgs, _imp->renderClone.lock());
 
 } // copyPixels
 

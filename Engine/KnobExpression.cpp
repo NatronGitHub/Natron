@@ -2217,7 +2217,7 @@ KnobHelper::executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimensi
         EXPRTK_FUNCTIONS_NAMESPACE::parser_t parser;
         std::string error;
         if (!parseExprtkExpression(obj->expressionString, obj->modifiedExpression, parser, *data->expressionObject, &error)) {
-            throw std::runtime_error(error);
+            return KnobHelper::eExpressionReturnValueTypeError;
         }
 
     } // existingExpression

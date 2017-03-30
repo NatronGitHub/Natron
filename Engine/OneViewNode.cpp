@@ -131,20 +131,21 @@ OneViewNode::fetchRenderCloneKnobs()
 }
 
 ActionRetCodeEnum
-OneViewNode::isIdentity(TimeValue time,
+OneViewNode::isIdentity(TimeValue /*time*/,
                         const RenderScale & /*scale*/,
                         const RectI & /*roi*/,
                         ViewIdx /*view*/,
-                        TimeValue* inputTime,
+                        const ImagePlaneDesc& /*plane*/,
+                        TimeValue* /*inputTime*/,
                         ViewIdx* inputView,
-                        int* inputNb)
+                        int* inputNb,
+                        ImagePlaneDesc* /*inputPlane*/)
 {
     KnobChoicePtr viewKnob = _imp->viewKnob.lock();
     int view_i = viewKnob->getValue();
 
     *inputView = ViewIdx(view_i);
     *inputNb = 0;
-    *inputTime = time;
 
     return eActionStatusOK;
 }

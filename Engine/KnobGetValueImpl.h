@@ -83,7 +83,7 @@ Knob<T>::getValueFromExpression(TimeValue time,
                     appPTR->setLastPythonAPICaller_TLS(effect);
                 }
             }
-
+            
             exprOk = evaluateExpression(time, view_i,  dimension, ret, &error);
             if (exprOk && cachingEnabled) {
                 QMutexLocker k(&_data->expressionResultsMutex);

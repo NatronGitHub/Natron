@@ -344,7 +344,16 @@ GLImageStorage::GLImageStorage()
 
 GLImageStorage::~GLImageStorage()
 {
-
+    if (_imp->texture) {
+        OSGLContextPtr context = _imp->glContext.lock();
+        assert(context);
+        OSGLContextAttacherPtr attacher;
+        if (context) {
+            attacher = OSGLContextAttacher::create(context);
+            attacher->attach();
+        }
+        _imp->texture.reset();
+    }
 }
 
 OSGLContextPtr
@@ -384,6 +393,9 @@ GLImageStorage::allocateMemoryImpl(const AllocateMemoryArgs& args)
     assert(glArgs);
 
     assert(!_imp->texture);
+
+    OSGLContextAttacherPtr contextLocker = OSGLContextAttacher::create(glArgs->glContext);
+    contextLocker->attach();
 
     // We are about to make GL calls, ensure that the context is current.
     assert(glArgs->glContext->getCurrentThread() == QThread::currentThread());

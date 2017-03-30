@@ -256,8 +256,8 @@ public:
     // to be the only one interacting with this object. Then all objects
     // should call the getter.
     //
-    void getIdentityData(int* identityInputNb, TimeValue* identityTime, ViewIdx* identityView) const;
-    void setIdentityData(int identityInputNb, TimeValue identityTime, ViewIdx identityView);
+    void getIdentityData(int* identityInputNb, TimeValue* identityTime, ViewIdx* identityView, ImagePlaneDesc *identityPlane) const;
+    void setIdentityData(int identityInputNb, TimeValue identityTime, ViewIdx identityView, const ImagePlaneDesc &identityPlane);
 
     virtual void toMemorySegment(IPCPropertyMap* properties) const OVERRIDE FINAL;
 
@@ -271,6 +271,7 @@ private:
         int identityInputNb;
         TimeValue identityTime;
         ViewIdx identityView;
+        ImagePlaneDesc identityPlane;
     };
     ShmData _data;
 

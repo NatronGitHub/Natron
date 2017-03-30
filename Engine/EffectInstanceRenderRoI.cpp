@@ -197,6 +197,7 @@ EffectInstance::Implementation::handleIdentityEffect(double par,
     TimeValue inputTimeIdentity;
     int inputNbIdentity;
     ViewIdx inputIdentityView;
+    ImagePlaneDesc identityPlane;
 
     {
         // If the effect is identity over the whole RoD then we can forward the render completly to the identity node
@@ -205,13 +206,13 @@ EffectInstance::Implementation::handleIdentityEffect(double par,
 
         IsIdentityResultsPtr results;
         {
-            ActionRetCodeEnum stat = _publicInterface->isIdentity_public(true, _publicInterface->getCurrentRenderTime(), combinedScale, pixelRod, _publicInterface->getCurrentRenderView(),  &results);
+            ActionRetCodeEnum stat = _publicInterface->isIdentity_public(true, _publicInterface->getCurrentRenderTime(), combinedScale, pixelRod, _publicInterface->getCurrentRenderView(), requestData->getPlaneDesc(),  &results);
             if (isFailureRetCode(stat)) {
                 return stat;
             }
         }
 
-        results->getIdentityData(&inputNbIdentity, &inputTimeIdentity, &inputIdentityView);
+        results->getIdentityData(&inputNbIdentity, &inputTimeIdentity, &inputIdentityView, &identityPlane);
 
     }
     *isIdentity = inputNbIdentity >= 0 || inputNbIdentity == -2;
@@ -229,7 +230,7 @@ EffectInstance::Implementation::handleIdentityEffect(double par,
         }
 
         FrameViewRequestPtr createdRequest;
-        return _publicInterface->requestRender(inputTimeIdentity, inputIdentityView, requestData->getProxyScale(), requestData->getMipMapLevel(), requestData->getPlaneDesc(), canonicalRoi, -1, requestData, requestPassSharedData, &createdRequest, 0);
+        return _publicInterface->requestRender(inputTimeIdentity, inputIdentityView, requestData->getProxyScale(), requestData->getMipMapLevel(), identityPlane, canonicalRoi, -1, requestData, requestPassSharedData, &createdRequest, 0);
 
     } else {
         assert(inputNbIdentity != -1);
@@ -239,7 +240,7 @@ EffectInstance::Implementation::handleIdentityEffect(double par,
         }
 
         FrameViewRequestPtr createdRequest;
-        return identityInput->requestRender(inputTimeIdentity, inputIdentityView, requestData->getProxyScale(), requestData->getMipMapLevel(), requestData->getPlaneDesc(), canonicalRoi, inputNbIdentity, requestData, requestPassSharedData, &createdRequest, 0);
+        return identityInput->requestRender(inputTimeIdentity, inputIdentityView, requestData->getProxyScale(), requestData->getMipMapLevel(), identityPlane, canonicalRoi, inputNbIdentity, requestData, requestPassSharedData, &createdRequest, 0);
 
     }
 } // EffectInstance::Implementation::handleIdentityEffect
@@ -411,10 +412,8 @@ EffectInstance::Implementation::canSplitRenderWindowWithIdentityRectangles(const
             continue;
         }
 
-        RotoShapeRenderNode* isRotoShapeRenderNode = dynamic_cast<RotoShapeRenderNode*>(input.get());
-        if (isRotoShapeRenderNode) {
-            RotoStrokeItemPtr attachedStroke = toRotoStrokeItem(_publicInterface->getAttachedRotoItem());
-            assert(attachedStroke);
+        RotoStrokeItemPtr attachedStroke = toRotoStrokeItem(_publicInterface->getAttachedRotoItem());
+        if (attachedStroke) {
             inputRod = attachedStroke->getLastStrokeMovementBbox();
         } else {
 
@@ -560,13 +559,14 @@ EffectInstance::Implementation::checkRestToRender(bool updateTilesStateFromCache
                     TimeValue identityInputTime;
                     int identityInputNb;
                     ViewIdx inputIdentityView;
+                    ImagePlaneDesc identityPlane;
                     {
                         IsIdentityResultsPtr results;
-                        ActionRetCodeEnum stat = _publicInterface->isIdentity_public(false, time, renderMappedScale, it->bounds, view, &results);
+                        ActionRetCodeEnum stat = _publicInterface->isIdentity_public(false, time, renderMappedScale, it->bounds, view, requestData->getPlaneDesc(), &results);
                         if (isFailureRetCode(stat)) {
                             continue;
                         } else {
-                            results->getIdentityData(&identityInputNb, &identityInputTime, &inputIdentityView);
+                            results->getIdentityData(&identityInputNb, &identityInputTime, &inputIdentityView, &identityPlane);
                         }
                     }
                     if (identityInputNb >= 0) {
@@ -703,6 +703,9 @@ EffectInstance::Implementation::createCachedImage(const RectI& roiPixels,
         initArgs.plane = plane;
         initArgs.storage = storageModeFromBackendType(backend);
         initArgs.createTilesMapEvenIfNoCaching = true;
+        initArgs.glContext = render->getGPUOpenGLContext();
+        initArgs.textureTarget = GL_TEXTURE_2D;
+        
         // Do not allocate the image buffers yet, instead do it before rendering.
         // We need to create the image before because it does the cache look-up itself, and we don't want to got further if
         // there's something cached.
@@ -1095,7 +1098,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
 
     // If this request was already requested, don't request again except if the RoI is not
     // contained in the request RoI
-    if (requestData->getStatus(requestPassSharedData) != FrameViewRequest::eFrameViewRequestStatusNotRendered) {
+    if (requestData->getStatus() != FrameViewRequest::eFrameViewRequestStatusNotRendered) {
         if (requestData->getCurrentRoI().contains(roiCanonical)) {
             return eActionStatusOK;
 
@@ -1153,7 +1156,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
 
         // There might no plane produced by this node that were requested
         if (isPassThrough) {
-            requestData->initStatus(requestPassSharedData, FrameViewRequest::eFrameViewRequestStatusPassThrough);
+            requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusPassThrough);
             return eActionStatusOK;
         }
     }
@@ -1169,7 +1172,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
             return upstreamRetCode;
         }
         if (isIdentity) {
-            requestData->initStatus(requestPassSharedData, FrameViewRequest::eFrameViewRequestStatusPassThrough);
+            requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusPassThrough);
             return eActionStatusOK;
         }
     }
@@ -1184,7 +1187,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
             return upstreamRetCode;
         }
         if (concatenated) {
-            requestData->initStatus(requestPassSharedData, FrameViewRequest::eFrameViewRequestStatusPassThrough);
+            requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusPassThrough);
             return eActionStatusOK;
         }
     }
@@ -1201,21 +1204,6 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
     // The RoI cannot be null here, either we are in !renderFullScaleThenDownscale and we already checked at the begining
     // of the function that the RoI was Null, either the RoD was checked for NULL.
     assert(!renderMappedRoI.isNull());
-
-    // Should the output of this render be cached ?
-    CacheAccessModeEnum cachePolicy;
-    if (renderFullScaleThenDownScale) {
-        // Always cache effects that do not support render scale
-        bool cacheWriteOnly = requestData->checkIfByPassCacheEnabledAndTurnoff();
-        if (cacheWriteOnly) {
-            cachePolicy = eCacheAccessModeWriteOnly;
-        } else {
-            cachePolicy = eCacheAccessModeReadWrite;
-        }
-    } else {
-        cachePolicy = _imp->shouldRenderUseCache(requestPassSharedData, requestData);
-    }
-    requestData->setCachePolicy(cachePolicy);
 
     // The RoD in pixel coordinates at the scale of mappedCombinedScale
     RectI pixelRoDRenderMapped;
@@ -1286,6 +1274,28 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
         }
     }
 
+
+    // Should the output of this render be cached ?
+    CacheAccessModeEnum cachePolicy;
+    if (backendType != eRenderBackendTypeCPU) {
+        // For now we only cache images that were rendered on the CPU
+        cachePolicy = eCacheAccessModeNone;
+    } else {
+        if (renderFullScaleThenDownScale) {
+            // Always cache effects that do not support render scale
+            bool cacheWriteOnly = requestData->checkIfByPassCacheEnabledAndTurnoff();
+            if (cacheWriteOnly) {
+                cachePolicy = eCacheAccessModeWriteOnly;
+            } else {
+                cachePolicy = eCacheAccessModeReadWrite;
+            }
+        } else {
+            cachePolicy = _imp->shouldRenderUseCache(requestPassSharedData, requestData);
+        }
+    }
+    requestData->setCachePolicy(cachePolicy);
+    
+    
 
     // Get the image on the FrameViewRequest
     // If this request was already rendered once in the tree,
@@ -1389,7 +1399,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
             setAccumBuffer(requestedImageScale);
         }
 
-        requestData->initStatus(requestPassSharedData, requestStatus);
+        requestData->initStatus(requestStatus);
     } // requestLocker
     
     // If there's nothing to render, do not even add the inputs as needed dependencies.
@@ -1411,7 +1421,7 @@ EffectInstance::launchRender(const RequestPassSharedDataPtr& requestPassSharedDa
 {
 
     {
-        FrameViewRequest::FrameViewRequestStatusEnum requestStatus = requestData->notifyRenderStarted(requestPassSharedData);
+        FrameViewRequest::FrameViewRequestStatusEnum requestStatus = requestData->notifyRenderStarted();
         switch (requestStatus) {
             case FrameViewRequest::eFrameViewRequestStatusRendered:
             case FrameViewRequest::eFrameViewRequestStatusPassThrough:
@@ -1430,7 +1440,7 @@ EffectInstance::launchRender(const RequestPassSharedDataPtr& requestPassSharedDa
     ActionRetCodeEnum stat = launchRenderInternal(requestPassSharedData, requestData);
 
     // Notify that we are done rendering
-    requestData->notifyRenderFinished(requestPassSharedData, stat);
+    requestData->notifyRenderFinished(stat);
     return stat;
 } // launchRender
 
@@ -1503,16 +1513,22 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPa
 
     RenderBackendTypeEnum backendType = requestData->getRenderDevice();
 
+    const bool renderAllProducedPlanes = isAllProducedPlanesAtOncePreferred();
+
     for (std::list<ImagePlaneDesc>::const_iterator it = producedPlanes.begin(); it != producedPlanes.end(); ++it) {
         ImagePtr imagePlane;
         if (*it == requestData->getPlaneDesc()) {
             imagePlane = fullscalePlane;
         } else {
-            imagePlane = _imp->createCachedImage(renderMappedRoI, pixelRoDRenderMapped, mappedMipMapLevel, requestData->getProxyScale(), *it, backendType, requestData->getCachePolicy(), false /*delayAllocation*/);
-            ActionRetCodeEnum stat = imagePlane->getCacheEntry()->fetchCachedTilesAndUpdateStatus(NULL, NULL, NULL);
-            if (isFailureRetCode(stat)) {
-                finishProducedPlanesTilesStatesMap(cachedImagePlanes, true);
-                return stat;
+            if (!renderAllProducedPlanes) {
+                continue;
+            } else {
+                imagePlane = _imp->createCachedImage(renderMappedRoI, pixelRoDRenderMapped, mappedMipMapLevel, requestData->getProxyScale(), *it, backendType, requestData->getCachePolicy(), false /*delayAllocation*/);
+                ActionRetCodeEnum stat = imagePlane->getCacheEntry()->fetchCachedTilesAndUpdateStatus(NULL, NULL, NULL);
+                if (isFailureRetCode(stat)) {
+                    finishProducedPlanesTilesStatesMap(cachedImagePlanes, true);
+                    return stat;
+                }
             }
         }
         cachedImagePlanes[*it] = imagePlane;

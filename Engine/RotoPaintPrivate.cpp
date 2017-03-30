@@ -65,7 +65,6 @@ RotoPaintPrivate::RotoPaintPrivate(RotoPaint* publicInterface,
     , ui()
     , inputNodes()
     , premultNode()
-    , premultFixerNode()
     , knobsTable()
     , globalMergeNodes()
     , treeRefreshBlocked(0)
@@ -1824,7 +1823,7 @@ RotoPaintInteract::removeCurve(const RotoDrawableItemPtr& curve)
 
 void
 RotoPaintInteract::drawOverlay(TimeValue time,
-                       const RenderScale & renderScale,
+                       const RenderScale & /*renderScale*/,
                        ViewIdx view)
 {
     
@@ -1902,7 +1901,7 @@ RotoPaintInteract::drawOverlay(TimeValue time,
 #endif
 
                 std::vector< ParametricPoint > points;
-                isBezier->evaluateAtTime_DeCasteljau(time, view, renderScale,
+                isBezier->evaluateAtTime_DeCasteljau(time, view, 1.,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                      100,
 #else
@@ -1938,7 +1937,7 @@ RotoPaintInteract::drawOverlay(TimeValue time,
 
                 if (featherVisible) {
                     ///Draw feather only if visible (button is toggled in the user interface)
-                    isBezier->evaluateFeatherPointsAtTime_DeCasteljau(time, view, renderScale,
+                    isBezier->evaluateFeatherPointsAtTime_DeCasteljau(time, view, 1.,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                                       100,
 #else

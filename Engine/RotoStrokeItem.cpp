@@ -403,7 +403,11 @@ RotoStrokeItem::~RotoStrokeItem()
 KnobHolderPtr
 RotoStrokeItem::createRenderCopy(const FrameViewRenderKey& key) const
 {
-    RotoStrokeItemPtr mainInstance = toRotoStrokeItem(boost::const_pointer_cast<KnobHolder>(shared_from_this()));
+    RotoStrokeItemPtr mainInstance = toRotoStrokeItem(getMainInstance());
+    if (!mainInstance) {
+        mainInstance = toRotoStrokeItem(boost::const_pointer_cast<KnobHolder>(shared_from_this()));
+    }
+
     {
         QMutexLocker k(&_imp->lock);
         RotoStrokeItemPtr ret(new RotoStrokeItem(mainInstance, key));
