@@ -66,9 +66,11 @@ public:
     virtual CacheEntryKeyBase::FromMemorySegmentRetCodeEnum fromMemorySegment(const IPCPropertyMap& properties) OVERRIDE;
 
 
-private:
+protected:
 
-    virtual void appendToHash(Hash64* hash) const OVERRIDE FINAL;
+    virtual void appendToHash(Hash64* hash) const OVERRIDE;
+
+private:
 
     struct KeyShmData
     {
@@ -220,8 +222,10 @@ class IsIdentityKey : public EffectInstanceActionKeyBase
 public:
 
     IsIdentityKey(U64 nodeTimeViewVariantHash,
+                  const ImagePlaneDesc& plane,
                   const std::string& pluginID)
     : EffectInstanceActionKeyBase(nodeTimeViewVariantHash, RenderScale(1.), pluginID)
+    , _plane(plane)
     {
 
     }
@@ -235,6 +239,12 @@ public:
     {
         return kCacheKeyUniqueIDIsIdentityResults;
     }
+
+private:
+
+    virtual void appendToHash(Hash64* hash) const OVERRIDE FINAL;
+
+    ImagePlaneDesc _plane;
 };
 
 
@@ -265,6 +275,7 @@ public:
                                                                            const IPCPropertyMap& properties) OVERRIDE FINAL;
 
 private:
+
 
     struct ShmData
     {

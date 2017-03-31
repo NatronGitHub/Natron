@@ -55,28 +55,15 @@ EffectInstanceActionKeyBase::appendToHash(Hash64* hash) const
 }
 
 void
-EffectInstanceActionKeyBase::toMemorySegment(IPCPropertyMap* properties) const
+EffectInstanceActionKeyBase::toMemorySegment(IPCPropertyMap* /*properties*/) const
 {
-    properties->setIPCProperty<U64>("NodeHash", _data.nodeTimeViewVariantHash);
-    std::vector<double> scaleVec(2);
-    scaleVec[0] = _data.scale.x;
-    scaleVec[1] = _data.scale.y;
-    properties->setIPCPropertyN<double>("Scale", scaleVec);
+    throw std::runtime_error("EffectInstanceActionKeyBase::toMemorySegment serialization to a persistent cache unimplemented");
 } // toMemorySegment
 
 CacheEntryKeyBase::FromMemorySegmentRetCodeEnum
-EffectInstanceActionKeyBase::fromMemorySegment(const IPCPropertyMap& properties)
+EffectInstanceActionKeyBase::fromMemorySegment(const IPCPropertyMap& /*properties*/)
 {
-    if (!properties.getIPCProperty("NodeHash", 0, &_data.nodeTimeViewVariantHash)) {
-        return eFromMemorySegmentRetCodeFailed;
-    }
-    std::vector<double> scaleVec;
-    if (!properties.getIPCPropertyN("Scale", &scaleVec)) {
-        return eFromMemorySegmentRetCodeFailed;
-    }
-    _data.scale.x = scaleVec[0];
-    _data.scale.x = scaleVec[1];
-    return eFromMemorySegmentRetCodeOk;
+    throw std::runtime_error("EffectInstanceActionKeyBase::fromMemorySegment serialization to a persistent cache unimplemented");
 } // fromMemorySegment
 
 
@@ -108,30 +95,18 @@ GetRegionOfDefinitionResults::setRoD(const RectD& rod)
 }
 
 void
-GetRegionOfDefinitionResults::toMemorySegment(IPCPropertyMap* properties) const
+GetRegionOfDefinitionResults::toMemorySegment(IPCPropertyMap* /*properties*/) const
 {
-    std::vector<double> rodVec(4);
-    rodVec[0] = _rod.x1;
-    rodVec[1] = _rod.y1;
-    rodVec[2] = _rod.x2;
-    rodVec[3] = _rod.y2;
-    properties->setIPCPropertyN("RoD", rodVec);
-    CacheEntryBase::toMemorySegment(properties);
+    assert(false);
+    throw std::runtime_error("GetRegionOfDefinitionResults::toMemorySegment serialization to a persistent cache unimplemented");
 } // toMemorySegment
 
 CacheEntryBase::FromMemorySegmentRetCodeEnum
-GetRegionOfDefinitionResults::fromMemorySegment(bool isLockedForWriting,
-                                                const IPCPropertyMap& properties)
+GetRegionOfDefinitionResults::fromMemorySegment(bool /*isLockedForWriting*/,
+                                                const IPCPropertyMap& /*properties*/)
 {
-    std::vector<double> rodVec;
-    if (!properties.getIPCPropertyN("RoD", &rodVec)) {
-        return eFromMemorySegmentRetCodeFailed;
-    }
-    _rod.x1 = rodVec[0];
-    _rod.y1 = rodVec[1];
-    _rod.x2 = rodVec[2];
-    _rod.y2 = rodVec[3];
-    return CacheEntryBase::fromMemorySegment(isLockedForWriting, properties);
+    assert(false);
+    throw std::runtime_error("GetRegionOfDefinitionResults::fromMemorySegment serialization to a persistent cache unimplemented");
 } // fromMemorySegment
 
 
@@ -180,6 +155,12 @@ GetDistortionResults::fromMemorySegment(bool /*isLockedForWriting*/,
     throw std::runtime_error("GetDistortionResults::fromMemorySegment cannot be serialized from a persistent cache");
 } // fromMemorySegment
 
+void
+IsIdentityKey::appendToHash(Hash64* hash) const
+{
+    EffectInstanceActionKeyBase::appendToHash(hash);
+    Hash64::appendQString(QString::fromUtf8(_plane.getPlaneID().c_str()), hash);
+}
 
 IsIdentityResults::IsIdentityResults()
 : CacheEntryBase(appPTR->getGeneralPurposeCache())

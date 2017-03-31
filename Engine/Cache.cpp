@@ -1504,7 +1504,7 @@ std::string getStoragePath(const ProcessLocalBufferPtr& /*storage*/)
     return std::string();
 }
 template <>
-void clearStorage(const ProcessLocalBufferPtr& /*storage*/) {}
+void clearStorage(const ProcessLocalBufferPtr& storage) { storage->clear(); }
 template <>
 void openStorage(const ProcessLocalBufferPtr& /*storage*/, const std::string& /*path*/, int /*flag*/) {}
 
@@ -1896,10 +1896,12 @@ CacheBucket<persistent>::deallocateCacheEntryImpl(typename EntriesMap::iterator 
 #endif
         // Ensure the back and front pointers do not point to this entry
         if (&cacheEntryIt->second->lruNode == getRawPointer(ipc->lruListBack)) {
-            ipc->lruListBack = cacheEntryIt->second->lruNode.next ? cacheEntryIt->second->lruNode.next  : cacheEntryIt->second->lruNode.prev;
+            // We are the last node, we can't have a next entry
+            assert(!cacheEntryIt->second->lruNode.next);
+            ipc->lruListBack = cacheEntryIt->second->lruNode.prev;
         }
         if (&cacheEntryIt->second->lruNode == getRawPointer(ipc->lruListFront)) {
-            ipc->lruListFront = cacheEntryIt->second->lruNode.next;
+            ipc->lruListFront = cacheEntryIt->second->lruNode.prev;
         }
 
         // Remove this entry's node from the list
@@ -3919,7 +3921,6 @@ CachePrivate<persistent>::clearCacheBucket(int bucket_i)
 #else
         createTimedLock<Sharable_WriteLock>(this, tocWriteLock, &ipc->bucketsData[bucket_i].tocData.segmentMutex);
 #endif
-
         // Close and re-create the memory mapped files
         std::string tocFilePath = getStoragePath(bucket.tocFile);
         clearStorage(bucket.tocFile);

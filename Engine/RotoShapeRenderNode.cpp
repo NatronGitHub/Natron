@@ -129,6 +129,7 @@ RotoShapeRenderNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) 
 void
 RotoShapeRenderNode::fetchRenderCloneKnobs()
 {
+    assert(isRenderClone());
     EffectInstance::fetchRenderCloneKnobs();
     _imp->renderType = toKnobChoice(getKnobByName(kRotoShapeRenderNodeParamType));
     assert(_imp->renderType.lock());
@@ -137,6 +138,7 @@ RotoShapeRenderNode::fetchRenderCloneKnobs()
 void
 RotoShapeRenderNode::initializeKnobs()
 {
+    assert(!isRenderClone());
     KnobPagePtr page = createKnob<KnobPage>("controlsPage");
     page->setLabel(tr("Controls"));
 
@@ -211,6 +213,12 @@ RotoShapeRenderNode::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 
 } // appendToHash
 
+ActionRetCodeEnum
+RotoShapeRenderNode::getFramesNeeded(TimeValue /*time*/, ViewIdx /*view*/,  FramesNeededMap* /*results*/)
+{
+    // We don't need any image in input
+    return eActionStatusOK;
+} // getFramesNeeded
 
 bool
 RotoShapeRenderNode::supportsTiles() const

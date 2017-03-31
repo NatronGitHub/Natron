@@ -414,9 +414,12 @@ OfxClipInstance::getComponents() const
         effect->getMetadataComponents(inputNb, &metadataPlane, &metadataPairedPlane);
 
         // Default to RGBA
-        if (metadataPlane.getNumComponents() == 0) {
-            metadataPlane = ImagePlaneDesc::getRGBAComponents();
+        int nComps = metadataPlane.getNumComponents();
+        if (nComps == 0) {
+            nComps = effect->findClosestSupportedNumberOfComponents(inputNb, nComps);
+            metadataPlane = ImagePlaneDesc::mapNCompsToColorPlane(nComps);
         }
+
         ret = ImagePlaneDesc::mapPlaneToOFXComponentsTypeString(metadataPlane);
     }
 

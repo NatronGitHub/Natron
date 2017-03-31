@@ -136,6 +136,8 @@ private:
 
     virtual ActionRetCodeEnum getTimeInvariantMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL;
 
+    virtual ActionRetCodeEnum getFramesNeeded(TimeValue time, ViewIdx view,  FramesNeededMap* results) OVERRIDE FINAL;
+
     virtual ActionRetCodeEnum isIdentity(TimeValue time,
                                          const RenderScale & scale,
                                          const RectI & roi,

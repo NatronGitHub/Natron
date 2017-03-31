@@ -1028,6 +1028,9 @@ genericViewerProcessFunctor(const RenderViewerArgs& args,
 
                 }
             }
+            if (srcNComps == 1) {
+                tmpPix[1] = tmpPix[2] = tmpPix[3] = tmpPix[0];
+            }
             break;
         default:
             break;
@@ -1460,7 +1463,7 @@ ViewerInstance::render(const RenderActionArgs& args)
     }
     if (displayChannels == eDisplayChannelsA || displayChannels == eDisplayChannelsMatte) {
 
-        if (selectedAlphaLayer == selectedLayer) {
+        if (selectedAlphaLayer == selectedLayer && colorImage) {
             alphaImage = colorImage;
         } else {
             GetImageOutArgs outArgs;
@@ -1549,7 +1552,7 @@ ViewerInstance::render(const RenderActionArgs& args)
         }
     }
 
-    renderViewerArgs.srcColorspace = lutFromColorspace(getApp()->getDefaultColorSpaceForBitDepth(bitdepth));
+    renderViewerArgs.srcColorspace = lutFromColorspace(getApp()->getDefaultColorSpaceForBitDepth(getBitDepth(0)));
     renderViewerArgs.dstColorspace = lutFromColorspace((ViewerColorSpaceEnum)_imp->outputColorspace.lock()->getValue());
 
 

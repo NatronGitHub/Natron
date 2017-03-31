@@ -906,7 +906,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
 
     IsIdentityKeyPtr cacheKey;
     {
-        cacheKey.reset(new IsIdentityKey(hash, getNode()->getPluginID()));
+        cacheKey.reset(new IsIdentityKey(hash, plane, getNode()->getPluginID()));
     }
 
 

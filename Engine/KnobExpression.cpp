@@ -2083,7 +2083,9 @@ KnobHelper::clearExpression(DimSpec dimension,
 
 
     if (didSomething) {
-        evaluateValueChange(dimension, getHolder()->getTimelineCurrentTime(), view, eValueChangedReasonUserEdited);
+        if (getHolder()) {
+            evaluateValueChange(dimension, getHolder()->getTimelineCurrentTime(), view, eValueChangedReasonUserEdited);
+        }
     }
 
 } // KnobHelper::clearExpression
