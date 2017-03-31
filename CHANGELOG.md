@@ -51,6 +51,7 @@ Natron multiple times on the same computer, the different processes will share t
 - Noise, Plasma: result is now reproductible (a given render always gives the same result).
 - ReadOIIO: add advanced options for reading RAW files.
 - STMap: Use the format of the Source input rather than its RoD to determine the texture size (useful when using an STMap written by LensDistortion).
+- SmoothBilateral, SmoothBilateralGuided, SmoothRollingGuidance: The Value Std Dev. was clamped by CImg to a rather high value (0.1), making the filters almost useless. Fixed.
 
 
 ## Version 2.2.5
