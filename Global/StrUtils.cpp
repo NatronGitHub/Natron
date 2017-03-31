@@ -347,7 +347,7 @@ namespace StrUtils {
         // Strip away last slash except for root directories
         if (ret.length() > 1 && endsWith(ret, std::string("/"))) {
 #if defined(__NATRON_WIN32__)
-            if (!(ret.length() == 3 && ret.at(1) == QLatin1Char(':')))
+            if (!(ret.length() == 3 && ret.at(1) == ':'))
 #endif
                 ret.resize(ret.size() - 1);
         }
