@@ -136,7 +136,7 @@ if {${name} eq ${subport}} {
         configure.args-replace  --disable-ares --enable-ares
     }
 
-    variant darwinssl conflicts ssl gnutls wolfssl description {Allow secure connections using GNU TLS} {
+    variant darwinssl conflicts ssl gnutls wolfssl description {Allow secure connections using Apple OS native TLS} {
         configure.args-replace  --without-darwinssl --with-darwinssl
     }
 

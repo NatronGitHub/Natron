@@ -60,10 +60,10 @@ platform darwin {
 
             # devel
 
-            github.setup    glfw glfw 6a8ade99c753be7511c866782ef4dde1ba92cedc
-            version         20170308
-            checksums       rmd160 4c6dffff4f0ecb113c81d0b7316b0d52c97bbe83 \
-                            sha256 89ac4d5ee40f68a366ead0692a0f5760d1e74a2d461ddf9538f8dff4b39cc06f
+            github.setup    glfw glfw c9003b554735810f69985eb9e0882fdca0583e27
+            version         20170328
+            checksums       rmd160 89cd846c289828c0ec9d4b95b29fd6da7ebd9288 \
+                            sha256 c1b9ae81d315cdfcf7530ac40ac549cc6ebdc23650a841b2521cd4b03825e355
 
             conflicts       glfw
             long_description ${description}: \
