@@ -87,7 +87,7 @@ ImageCacheKey::~ImageCacheKey()
 }
 
 U64
-ImageCacheKey::getNodeTimeInvariantHashKey() const
+ImageCacheKey::getNodeTimeVariantHashKey() const
 {
     return _imp->data.nodeTimeViewVariantHash;
 }

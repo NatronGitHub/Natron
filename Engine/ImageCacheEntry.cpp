@@ -44,6 +44,7 @@
 #include "Engine/ImageTilesState.h"
 #include "Engine/MultiThread.h"
 #include "Engine/ThreadPool.h"
+#include "Engine/Timer.h"
 
 // Define to log tiles status in the console
 //#define TRACE_TILES_STATUS
@@ -1837,6 +1838,9 @@ ImageCacheEntry::markCacheTilesAsRendered()
         tilesToCopy[i]->ptr = allocatedTiles[i].second;
 
         tilesToCopy[i]->tileCache_i = allocatedTiles[i].first;
+#ifdef DEBUG
+        assert(cache->checkTileIndex(tilesToCopy[i]->tileCache_i));
+#endif
         // update the tile indices
         int tx = (int)std::floor((double)tilesToCopy[i]->bounds.x1 / _imp->localTilesState.tileSizeX) * _imp->localTilesState.tileSizeX;
         int ty = (int)std::floor((double)tilesToCopy[i]->bounds.y1 / _imp->localTilesState.tileSizeY) * _imp->localTilesState.tileSizeY;
@@ -1929,6 +1933,11 @@ ImageCacheEntry::waitForPendingTiles()
 
 
         }
+#ifdef DEBUG
+        if (timeSpentWaitingForPendingEntryMS > 5000) {
+            qDebug() << "WARNING:" << _imp->effect->getScriptName_mt_safe().c_str() << "stuck in waitForPendingTiles() for more than " << Timer::printAsTime(timeSpentWaitingForPendingEntryMS / 1000, false);
+        }
+#endif
 
     } while(hasPendingResults && !hasUnrenderedTile && !_imp->effect->isRenderAborted());
 

@@ -272,10 +272,6 @@ KnobHelper::autoAdjustFoldExpandDimensions(ViewIdx view)
             if (currentVisibility) {
                 setAllDimensionsVisible(view, false);
             }
-        } else {
-            if (!currentVisibility) {
-                setAllDimensionsVisible(view, true);
-            }
         }
     } else {
         // One of the dimension differ: make them all visible

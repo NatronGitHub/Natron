@@ -656,85 +656,104 @@ TreeRenderPrivate::launchRenderInternal(bool removeRenderClonesWhenFinished,
             return stat;
         }
     }
+    ActionRetCodeEnum stat = eActionStatusOK;
+    {
+        RequestPassSharedDataPtr requestData(new RequestPassSharedData());
+        requestData->_imp->dependencyFreeRenders.reset(new DependencyFreeRenderSet(FrameViewRequestComparePriority(requestData)));
 
-    RequestPassSharedDataPtr requestData(new RequestPassSharedData());
-    requestData->_imp->dependencyFreeRenders.reset(new DependencyFreeRenderSet(FrameViewRequestComparePriority(requestData)));
-
-    requestData->_imp->treeRender = _publicInterface->shared_from_this();
+        requestData->_imp->treeRender = _publicInterface->shared_from_this();
 
 
 #ifdef TRACE_RENDER_DEPENDENCIES
-    qDebug() << "Starting launchRenderInternal" << requestData.get();
+        qDebug() << "Starting launchRenderInternal" << requestData.get();
 #endif
 
-    // Cycle through the tree to find and requested frames and RoIs
-    {
-        ActionRetCodeEnum stat = treeRoot->requestRender(time, view, proxyScale, mipMapLevel, plane, canonicalRoI, -1, FrameViewRequestPtr(), requestData, outputRequest, 0);
+        // Cycle through the tree to find and requested frames and RoIs
+        {
+            stat = treeRoot->requestRender(time, view, proxyScale, mipMapLevel, plane, canonicalRoI, -1, FrameViewRequestPtr(), requestData, outputRequest, 0);
 
-        if (isFailureRetCode(stat)) {
-            return stat;
+            if (isFailureRetCode(stat)) {
+                return stat;
+            }
         }
-    }
 
-    // At this point, the request pass should have created the first batch of dependency-free renders.
-    // The list cannot be empty, otherwise it should have failed before.
-    assert(!requestData->_imp->dependencyFreeRenders->empty());
-    if (requestData->_imp->dependencyFreeRenders->empty()) {
-        return eActionStatusFailed;
-    }
+        // At this point, the request pass should have created the first batch of dependency-free renders.
+        // The list cannot be empty, otherwise it should have failed before.
+        assert(!requestData->_imp->dependencyFreeRenders->empty());
+        if (requestData->_imp->dependencyFreeRenders->empty()) {
+            return eActionStatusFailed;
+        }
 
-    int numTasksRemaining;
-    {
-        QMutexLocker k(&requestData->_imp->dependencyFreeRendersMutex);
-        numTasksRemaining = requestData->_imp->allRenderTasksToProcess.size();
-    }
-    QThreadPool* threadPool = QThreadPool::globalInstance();
+        int numTasksRemaining;
+        {
+            QMutexLocker k(&requestData->_imp->dependencyFreeRendersMutex);
+            numTasksRemaining = requestData->_imp->allRenderTasksToProcess.size();
+        }
+        QThreadPool* threadPool = QThreadPool::globalInstance();
 
-    bool isThreadPoolThread = isRunningInThreadPoolThread();
+        bool isThreadPoolThread = isRunningInThreadPoolThread();
 
-    // See bug https://bugreports.qt.io/browse/QTBUG-20251
-    // The Qt thread-pool mem-leaks the runnable if using release/reserveThread
-    // Instead we explicitly manage them and ensure they do not hold any external strong refs.
-    std::vector<boost::shared_ptr<FrameViewRenderRunnable> > runnables;
+        // See bug https://bugreports.qt.io/browse/QTBUG-20251
+        // The Qt thread-pool mem-leaks the runnable if using release/reserveThread
+        // Instead we explicitly manage them and ensure they do not hold any external strong refs.
+        std::vector<boost::shared_ptr<FrameViewRenderRunnable> > runnables;
 
-    // While we still have tasks to render loop
-    while (numTasksRemaining > 0) {
+        // While we still have tasks to render loop
+        while (numTasksRemaining > 0) {
 
 
-        // Launch all dependency-free tasks in parallel
-        QMutexLocker k(&requestData->_imp->dependencyFreeRendersMutex);
-        while (requestData->_imp->dependencyFreeRenders->size() > 0) {
+            // Launch all dependency-free tasks in parallel
+            QMutexLocker k(&requestData->_imp->dependencyFreeRendersMutex);
+            while (requestData->_imp->dependencyFreeRenders->size() > 0) {
 
-            FrameViewRequestPtr request = *requestData->_imp->dependencyFreeRenders->begin();
-            requestData->_imp->dependencyFreeRenders->erase(requestData->_imp->dependencyFreeRenders->begin());
+                FrameViewRequestPtr request = *requestData->_imp->dependencyFreeRenders->begin();
+                requestData->_imp->dependencyFreeRenders->erase(requestData->_imp->dependencyFreeRenders->begin());
 #ifdef TRACE_RENDER_DEPENDENCIES
-            qDebug() << "Queuing " << request->getEffect()->getScriptName_mt_safe().c_str() << " in task pool";
+                qDebug() << "Queuing " << request->getEffect()->getScriptName_mt_safe().c_str() << " in task pool";
 #endif
-            boost::shared_ptr<FrameViewRenderRunnable> runnable(new FrameViewRenderRunnable(this, requestData, request));
-            runnable->setAutoDelete(false);
-            runnables.push_back(runnable);
-            threadPool->start(runnable.get());
-        }
+                boost::shared_ptr<FrameViewRenderRunnable> runnable(new FrameViewRenderRunnable(this, requestData, request));
+                runnable->setAutoDelete(false);
+                runnables.push_back(runnable);
+                threadPool->start(runnable.get());
+            }
 
-        // If this thread is a threadpool thread, it may wait for a while that results gets available.
-        // Release the thread to the thread pool so that it may use this thread for other runnables
-        // and reserve it back when done waiting.
-        if (isThreadPoolThread) {
-           QThreadPool::globalInstance()->releaseThread();
-        }
+            // If this thread is a threadpool thread, it may wait for a while that results gets available.
+            // Release the thread to the thread pool so that it may use this thread for other runnables
+            // and reserve it back when done waiting.
+            if (isThreadPoolThread) {
+                QThreadPool::globalInstance()->releaseThread();
+            }
 
-        // Wait until a task is finished: we should be able to launch more tasks afterwards.
-        requestData->_imp->dependencyFreeRendersEmptyCond.wait(&requestData->_imp->dependencyFreeRendersMutex);
-
-        if (isThreadPoolThread) {
-           QThreadPool::globalInstance()->reserveThread();
+            // Wait until a task is finished: we should be able to launch more tasks afterwards.
+            requestData->_imp->dependencyFreeRendersEmptyCond.wait(&requestData->_imp->dependencyFreeRendersMutex);
+            
+            if (isThreadPoolThread) {
+                QThreadPool::globalInstance()->reserveThread();
+            }
+            
+            numTasksRemaining = requestData->_imp->allRenderTasksToProcess.size();
         }
-        
-        numTasksRemaining = requestData->_imp->allRenderTasksToProcess.size();
+        runnables.clear();
+
+        stat = requestData->_imp->stat;
+    } // requestData
+
+
+    if (removeRenderClonesWhenFinished) {
+        // Now if the image to render was cached, we may not have retrieved the requested color picker images, in which case we have to render them
+        for (std::map<NodePtr, FrameViewRequestPtr>::iterator it = extraRequestedResults.begin(); it != extraRequestedResults.end(); ++it) {
+            if (!it->second) {
+                FrameViewRequestPtr colorPickerRequest;
+                ActionRetCodeEnum tmpStat =  launchRenderInternal(false /*removeRenderClonesWhenFinished*/, it->first->getEffectInstance(), ctorArgs->time, ctorArgs->view, ctorArgs->proxyScale, ctorArgs->mipMapLevel, ctorArgs->plane, ctorArgs->canonicalRoI, &colorPickerRequest);
+                if (isFailureRetCode(tmpStat)) {
+                    return tmpStat;
+                }
+                it->second = colorPickerRequest;
+            }
+        }
     }
-    runnables.clear();
-    
-    return requestData->_imp->stat;
+
+    return stat;
 } // launchRenderInternal
 
 ActionRetCodeEnum
@@ -763,6 +782,7 @@ TreeRender::launchRender(FrameViewRequestPtr* outputRequest)
         return _imp->state;
     }
     _imp->state = _imp->launchRenderInternal(true /*removeRenderClonesWhenFinished*/, _imp->ctorArgs->treeRootEffect, _imp->ctorArgs->time, _imp->ctorArgs->view, _imp->ctorArgs->proxyScale, _imp->ctorArgs->mipMapLevel, _imp->ctorArgs->plane, _imp->ctorArgs->canonicalRoI, outputRequest);
+
     return _imp->state;
 } // launchRender
 

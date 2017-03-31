@@ -177,7 +177,7 @@ CachedFramesThread::Implementation::refreshCachedFramesInternal()
                 nodeFrameViewHash = internalViewerProcessNode->computeHash(hashArgs);
             }
             // Check if the node hash is the same
-            U64 entryNodeHash = it->second->getNodeTimeInvariantHashKey();
+            U64 entryNodeHash = it->second->getNodeTimeVariantHashKey();
             if (nodeFrameViewHash != entryNodeHash) {
                 isValid = false;
             }

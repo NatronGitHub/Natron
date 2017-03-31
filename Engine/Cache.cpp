@@ -3321,6 +3321,31 @@ Cache<persistent>::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
 
 } // retrieveAndLockTiles
 
+#ifdef DEBUG
+template <bool persistent>
+bool
+Cache<persistent>::checkTileIndex(U64 encodedIndex) const
+{
+    U32 fileIndex, tileIndex;
+    getTileIndex(encodedIndex, &tileIndex, &fileIndex);
+
+    // We must be inbetween retrieveAndLockTiles and unLockTiles
+    assert(!_imp->ipc->tilesStorageMutex.try_lock());
+
+    if (fileIndex >= _imp->tilesStorage.size()) {
+        assert(false);
+        return false;
+    }
+    char* data = _imp->tilesStorage[fileIndex]->getData();
+    char* tileDataPtr = data + tileIndex * NATRON_TILE_SIZE_BYTES;
+    if (tileDataPtr < data || tileDataPtr >= (data + NATRON_NUM_TILES_PER_FILE * NATRON_TILE_SIZE_BYTES)) {
+        assert(false);
+        return false;
+    }
+    return true;
+}
+#endif // #ifdef DEBUG
+
 template <bool persistent>
 void
 Cache<persistent>::unLockTiles(void* cacheData)

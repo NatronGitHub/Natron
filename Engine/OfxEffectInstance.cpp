@@ -1463,7 +1463,12 @@ OfxEffectInstance::isIdentity(TimeValue time,
     }
     *inputTime = TimeValue(identityTimeOfx);
     *inputView = ViewIdx(identityViewOfx);
-    *identityPlane = ImagePlaneDesc::mapOFXPlaneStringToPlane(identityPlaneOfx);
+    if (identityPlaneOfx == kNatronColorPlaneID) {
+        // pass any type of components for the color plane
+        *identityPlane = ImagePlaneDesc::getRGBAComponents();
+    } else {
+        *identityPlane = ImagePlaneDesc::mapOFXPlaneStringToPlane(identityPlaneOfx);
+    }
 
     return eActionStatusOK;
 
