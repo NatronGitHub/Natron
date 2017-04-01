@@ -2970,7 +2970,7 @@ EffectInstance::evaluate(bool isSignificant,
     NodePtr node = getNode();
 
     if ( refreshMetadatas && node->isNodeCreated() ) {
-        refreshMetaDatas_public(true);
+        refreshMetadata_public(true);
     }
 
     /*
@@ -5209,7 +5209,7 @@ EffectInstance::isPaintingOverItselfEnabled() const
 }
 
 StatusEnum
-EffectInstance::getPreferredMetaDatas_public(NodeMetadata& metadata)
+EffectInstance::getPreferredMetadata_public(NodeMetadata& metadata)
 {
     StatusEnum stat = getDefaultMetadata(metadata);
 
@@ -5217,7 +5217,7 @@ EffectInstance::getPreferredMetaDatas_public(NodeMetadata& metadata)
         return stat;
     }
     if (!getNode()->isNodeDisabled()) {
-        return getPreferredMetaDatas(metadata);
+        return getPreferredMetadata(metadata);
     }
     return stat;
 
@@ -5363,7 +5363,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
     // Otherwise fallback on project format
     bool firstOptionalInputFormatSet = false, firstNonOptionalInputFormatSet = false;
 
-    // now add the input gubbins to the per inputs metadatas
+    // now add the input gubbins to the per inputs metadata
     for (int i = -1; i < (int)inputs.size(); ++i) {
         EffectInstance* effect = 0;
         if (i >= 0) {
@@ -5460,64 +5460,64 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
 RectI
 EffectInstance::getOutputFormat() const
 {
-    QMutexLocker k(&_imp->metadatasMutex);
-    return _imp->metadatas.getOutputFormat();
+    QMutexLocker k(&_imp->metadataMutex);
+    return _imp->metadata.getOutputFormat();
 }
 
 ImageComponents
 EffectInstance::getComponents(int inputNb) const
 {
-    QMutexLocker k(&_imp->metadatasMutex);
+    QMutexLocker k(&_imp->metadataMutex);
 
-    return _imp->metadatas.getImageComponents(inputNb);
+    return _imp->metadata.getImageComponents(inputNb);
 }
 
 ImageBitDepthEnum
 EffectInstance::getBitDepth(int inputNb) const
 {
-    QMutexLocker k(&_imp->metadatasMutex);
+    QMutexLocker k(&_imp->metadataMutex);
 
-    return _imp->metadatas.getBitDepth(inputNb);
+    return _imp->metadata.getBitDepth(inputNb);
 }
 
 double
 EffectInstance::getFrameRate() const
 {
-    QMutexLocker k(&_imp->metadatasMutex);
+    QMutexLocker k(&_imp->metadataMutex);
 
-    return _imp->metadatas.getOutputFrameRate();
+    return _imp->metadata.getOutputFrameRate();
 }
 
 double
 EffectInstance::getAspectRatio(int inputNb) const
 {
-    QMutexLocker k(&_imp->metadatasMutex);
+    QMutexLocker k(&_imp->metadataMutex);
 
-    return _imp->metadatas.getPixelAspectRatio(inputNb);
+    return _imp->metadata.getPixelAspectRatio(inputNb);
 }
 
 ImagePremultiplicationEnum
 EffectInstance::getPremult() const
 {
-    QMutexLocker k(&_imp->metadatasMutex);
+    QMutexLocker k(&_imp->metadataMutex);
 
-    return _imp->metadatas.getOutputPremult();
+    return _imp->metadata.getOutputPremult();
 }
 
 bool
 EffectInstance::isFrameVarying() const
 {
-    QMutexLocker k(&_imp->metadatasMutex);
+    QMutexLocker k(&_imp->metadataMutex);
 
-    return _imp->metadatas.getIsFrameVarying();
+    return _imp->metadata.getIsFrameVarying();
 }
 
 bool
 EffectInstance::canRenderContinuously() const
 {
-    QMutexLocker k(&_imp->metadatasMutex);
+    QMutexLocker k(&_imp->metadataMutex);
 
-    return _imp->metadatas.getIsContinuous();
+    return _imp->metadata.getIsContinuous();
 }
 
 /**
@@ -5526,13 +5526,13 @@ EffectInstance::canRenderContinuously() const
 ImageFieldingOrderEnum
 EffectInstance::getFieldingOrder() const
 {
-    QMutexLocker k(&_imp->metadatasMutex);
+    QMutexLocker k(&_imp->metadataMutex);
 
-    return _imp->metadatas.getOutputFielding();
+    return _imp->metadata.getOutputFielding();
 }
 
 bool
-EffectInstance::refreshMetaDatas_recursive(std::list<Node*> & markedNodes)
+EffectInstance::refreshMetadata_recursive(std::list<Node*> & markedNodes)
 {
     NodePtr node = getNode();
     std::list<Node*>::iterator found = std::find( markedNodes.begin(), markedNodes.end(), node.get() );
@@ -5546,7 +5546,7 @@ EffectInstance::refreshMetaDatas_recursive(std::list<Node*> & markedNodes)
     }
 
     ClipPreferencesRunning_RAII runningflag_(this);
-    bool ret = refreshMetaDatas_public(false);
+    bool ret = refreshMetadata_public(false);
     node->refreshIdentityState();
 
     if ( !node->duringInputChangedAction() ) {
@@ -5559,7 +5559,7 @@ EffectInstance::refreshMetaDatas_recursive(std::list<Node*> & markedNodes)
     NodesList outputs;
     node->getOutputsWithGroupRedirection(outputs);
     for (NodesList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        (*it)->getEffectInstance()->refreshMetaDatas_recursive(markedNodes);
+        (*it)->getEffectInstance()->refreshMetadata_recursive(markedNodes);
     }
 
     return ret;
@@ -5597,36 +5597,36 @@ EffectInstance::setDefaultMetadata()
         return;
     }
     {
-        QMutexLocker k(&_imp->metadatasMutex);
-        _imp->metadatas = metadata;
+        QMutexLocker k(&_imp->metadataMutex);
+        _imp->metadata = metadata;
     }
-    onMetaDatasRefreshed(metadata);
+    onMetadataRefreshed(metadata);
 }
 
 bool
-EffectInstance::setMetaDatasInternal(const NodeMetadata& metadata)
+EffectInstance::setMetadataInternal(const NodeMetadata& metadata)
 {
     bool ret;
     {
-        QMutexLocker k(&_imp->metadatasMutex);
-        ret = metadata != _imp->metadatas;
+        QMutexLocker k(&_imp->metadataMutex);
+        ret = metadata != _imp->metadata;
         if (ret) {
-            _imp->metadatas = metadata;
+            _imp->metadata = metadata;
         }
     }
     return ret;
 }
 
 bool
-EffectInstance::refreshMetaDatas_internal()
+EffectInstance::refreshMetadata_internal()
 {
     NodeMetadata metadata;
 
-    getPreferredMetaDatas_public(metadata);
+    getPreferredMetadata_public(metadata);
     _imp->checkMetadata(metadata);
 
-    bool ret = setMetaDatasInternal(metadata);
-    onMetaDatasRefreshed(metadata);
+    bool ret = setMetadataInternal(metadata);
+    onMetadataRefreshed(metadata);
     if (ret) {
         NodePtr node = getNode();
         node->checkForPremultWarningAndCheckboxes();
@@ -5637,7 +5637,7 @@ EffectInstance::refreshMetaDatas_internal()
 }
 
 bool
-EffectInstance::refreshMetaDatas_public(bool recurse)
+EffectInstance::refreshMetadata_public(bool recurse)
 {
     assert( QThread::currentThread() == qApp->thread() );
 
@@ -5649,17 +5649,17 @@ EffectInstance::refreshMetaDatas_public(bool recurse)
         {
             std::list<Node*> markedNodes;
 
-            return refreshMetaDatas_recursive(markedNodes);
+            return refreshMetadata_recursive(markedNodes);
         }
     } else {
-        bool ret = refreshMetaDatas_internal();
+        bool ret = refreshMetadata_internal();
         if (ret) {
             NodePtr node = getNode();
             NodesList children;
             node->getChildrenMultiInstance(&children);
             if ( !children.empty() ) {
                 for (NodesList::iterator it = children.begin(); it != children.end(); ++it) {
-                    (*it)->getEffectInstance()->refreshMetaDatas_internal();
+                    (*it)->getEffectInstance()->refreshMetadata_internal();
                 }
             }
         }
@@ -5817,7 +5817,7 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
 
 
     node->setStreamWarnings(warnings);
-} //refreshMetaDataProxy
+} //refreshMetadataProxy
 
 void
 EffectInstance::refreshExtraStateAfterTimeChanged(bool isPlayback,
