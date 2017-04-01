@@ -5437,10 +5437,10 @@ KnobHolder::onDoEvaluateOnMainThread(bool significant,
 
 void
 KnobHolder::incrHashAndEvaluate(bool isSignificant,
-                                bool refreshMetadatas)
+                                bool refreshMetadata)
 {
     onSignificantEvaluateAboutToBeCalled(0);
-    evaluate(isSignificant, refreshMetadatas);
+    evaluate(isSignificant, refreshMetadata);
 }
 
 void
@@ -5553,7 +5553,7 @@ KnobHolder::endChanges(bool discardRendering)
     int evaluationBlocked;
     bool hasHadSignificantChange = false;
     bool hasHadAnyChange = false;
-    bool mustRefreshMetadatas = false;
+    bool mustRefreshMetadata = false;
 
     {
         QMutexLocker l(&_imp->evaluationBlockedMutex);
@@ -5566,7 +5566,7 @@ KnobHolder::endChanges(bool discardRendering)
                 hasHadSignificantChange = true;
             }
             if (_imp->nbChangesRequiringMetadataRefresh) {
-                mustRefreshMetadatas = true;
+                mustRefreshMetadata = true;
             }
             if (_imp->nbChangesDuringEvaluationBlock) {
                 hasHadAnyChange = true;
@@ -5581,9 +5581,9 @@ KnobHolder::endChanges(bool discardRendering)
     // Call getClipPreferences & render
     if ( hasHadAnyChange && !discardRendering && !isLoadingProject && !duringInputChangeAction && !isChangeDueToTimeChange && (evaluationBlocked == 0) ) {
         if (!isMT) {
-            Q_EMIT doEvaluateOnMainThread(hasHadSignificantChange, mustRefreshMetadatas);
+            Q_EMIT doEvaluateOnMainThread(hasHadSignificantChange, mustRefreshMetadata);
         } else {
-            evaluate(hasHadSignificantChange, mustRefreshMetadatas);
+            evaluate(hasHadSignificantChange, mustRefreshMetadata);
         }
     }
 

@@ -740,7 +740,7 @@ private:
 
 
 /** @brief Implements AbstractCacheEntry. This class represents a combinaison of
- * a set of metadatas called 'Key' and a buffer.
+ * a set of metadata called 'Key' and a buffer.
  *
  **/
 
@@ -848,7 +848,7 @@ public:
     /**
      * @brief To be called for disk-cached entries when restoring them from a file.
      **/
-    void restoreMetaDataFromFile(std::size_t size, const std::string& filePath, std::size_t dataOffset)
+    void restoreMetadataFromFile(std::size_t size, const std::string& filePath, std::size_t dataOffset)
     {
         const CacheEntryStorageInfo& storageInfo = _params->getStorageInfo();
 
@@ -875,7 +875,7 @@ public:
 
     /**
      * @brief Called right away once the buffer is allocated. Used in debug mode to initialize image with a default color.
-     * @param diskRestoration If true, this is called by restoreMetaDataFromFile() and the memory is in fact not allocated, this should
+     * @param diskRestoration If true, this is called by restoreMetadataFromFile() and the memory is in fact not allocated, this should
      * just restore meta-data
      **/
     virtual void onMemoryAllocated(bool /*diskRestoration*/)

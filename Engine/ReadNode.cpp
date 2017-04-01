@@ -786,17 +786,17 @@ void
 ReadNodePrivate::refreshFileInfoVisibility(const std::string& pluginID)
 {
     boost::shared_ptr<KnobButton> fileInfos = fileInfosKnob.lock();
-    KnobPtr hasMetaDatasKnob = _publicInterface->getKnobByName("showMetadata");
+    KnobPtr hasMetadataKnob = _publicInterface->getKnobByName("showMetadata");
     bool hasFfprobe = false;
-    if (!hasMetaDatasKnob) {
+    if (!hasMetadataKnob) {
         QString ffprobePath = getFFProbeBinaryPath();
         hasFfprobe = QFile::exists(ffprobePath);
     } else {
-        hasMetaDatasKnob->setSecret(true);
+        hasMetadataKnob->setSecret(true);
     }
 
 
-    if ( hasMetaDatasKnob || ( ReadNode::isVideoReader(pluginID) && hasFfprobe ) ) {
+    if ( hasMetadataKnob || ( ReadNode::isVideoReader(pluginID) && hasFfprobe ) ) {
         fileInfos->setSecret(false);
     } else {
         fileInfos->setSecret(true);
@@ -1065,19 +1065,19 @@ ReadNode::purgeCaches()
 }
 
 StatusEnum
-ReadNode::getPreferredMetaDatas(NodeMetadata& metadata)
+ReadNode::getPreferredMetadata(NodeMetadata& metadata)
 {
     NodePtr p = getEmbeddedReader();
-    return p ? p->getEffectInstance()->getPreferredMetaDatas(metadata) : EffectInstance::getPreferredMetaDatas(metadata);
+    return p ? p->getEffectInstance()->getPreferredMetadata(metadata) : EffectInstance::getPreferredMetadata(metadata);
 }
 
 void
-ReadNode::onMetaDatasRefreshed(const NodeMetadata& metadata)
+ReadNode::onMetadataRefreshed(const NodeMetadata& metadata)
 {
     NodePtr p = getEmbeddedReader();
     if (p) {
-        p->getEffectInstance()->setMetaDatasInternal(metadata);
-        p->getEffectInstance()->onMetaDatasRefreshed(metadata);
+        p->getEffectInstance()->setMetadataInternal(metadata);
+        p->getEffectInstance()->onMetadataRefreshed(metadata);
     }
 }
 
@@ -1254,9 +1254,9 @@ ReadNode::knobChanged(KnobI* k,
         }
 
 
-        KnobPtr hasMetaDatasKnob = p->getKnobByName("showMetadata");
-        if (hasMetaDatasKnob) {
-            KnobButton* showMetasKnob = dynamic_cast<KnobButton*>( hasMetaDatasKnob.get() );
+        KnobPtr hasMetadataKnob = p->getKnobByName("showMetadata");
+        if (hasMetadataKnob) {
+            KnobButton* showMetasKnob = dynamic_cast<KnobButton*>( hasMetadataKnob.get() );
             if (showMetasKnob) {
                 showMetasKnob->trigger();
             }

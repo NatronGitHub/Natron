@@ -292,7 +292,7 @@ public:
     void getTimelineBounds(int* first, int* last) const;
 
     static const Color::Lut* lutFromColorspace(ViewerColorSpaceEnum cs) WARN_UNUSED_RETURN;
-    virtual void onMetaDatasRefreshed(const NodeMetadata& metadata) OVERRIDE FINAL;
+    virtual void onMetadataRefreshed(const NodeMetadata& metadata) OVERRIDE FINAL;
     virtual void onChannelsSelectorRefreshed() OVERRIDE FINAL;
 
     bool isViewerUIVisible() const;

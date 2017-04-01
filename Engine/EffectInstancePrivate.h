@@ -217,8 +217,8 @@ public:
 
     ///A cache for components available
     std::list< boost::weak_ptr<KnobI> > overlaySlaves;
-    mutable QMutex metadatasMutex;
-    NodeMetadata metadatas;
+    mutable QMutex metadataMutex;
+    NodeMetadata metadata;
     bool runningClipPreferences; //only used on main thread
 
     // set during interact actions on main-thread

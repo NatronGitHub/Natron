@@ -1299,7 +1299,7 @@ OfxEffectInstance::mapContextToString(ContextEnum ctx)
 }
 
 void
-OfxEffectInstance::onMetaDatasRefreshed(const NodeMetadata& metadata)
+OfxEffectInstance::onMetadataRefreshed(const NodeMetadata& metadata)
 {
     //////////////// Actually push to the clips the preferences and set the flags on the effect, protected by a write lock.
 
@@ -1347,7 +1347,7 @@ OfxEffectInstance::onMetaDatasRefreshed(const NodeMetadata& metadata)
 }
 
 StatusEnum
-OfxEffectInstance::getPreferredMetaDatas(NodeMetadata& metadata)
+OfxEffectInstance::getPreferredMetadata(NodeMetadata& metadata)
 {
     if (!_imp->created || !_imp->effect) {
         return eStatusFailed;
@@ -1370,7 +1370,7 @@ OfxEffectInstance::getPreferredMetaDatas(NodeMetadata& metadata)
         SET_CAN_SET_VALUE(true);
 
         ///First push the "default" meta-datas to the clips so that they get proper values
-        onMetaDatasRefreshed(metadata);
+        onMetadataRefreshed(metadata);
 
         ///It has been overriden and no data is actually set on the clip, everything will be set into the
         ///metadata object

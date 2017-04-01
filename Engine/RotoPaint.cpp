@@ -1332,7 +1332,7 @@ RotoPaint::refreshExtraStateAfterTimeChanged(bool isPlayback,
 }
 
 StatusEnum
-RotoPaint::getPreferredMetaDatas(NodeMetadata& metadata)
+RotoPaint::getPreferredMetadata(NodeMetadata& metadata)
 {
     metadata.setNComps( -1, 4 );
     metadata.setComponentsType(-1, kNatronColorPlaneID);

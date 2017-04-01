@@ -139,7 +139,7 @@ Cache<EntryType>::restore(const CacheTOC & tableOfContents)
                 continue;
             }
             ///This will not put the entry back into RAM, instead we just insert back the entry into the disk cache
-            value->restoreMetaDataFromFile(it->size, it->filePath, it->dataOffsetInFile);
+            value->restoreMetadataFromFile(it->size, it->filePath, it->dataOffsetInFile);
         } catch (const std::exception & e) {
             qDebug() << e.what();
             delete value;

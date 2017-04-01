@@ -753,7 +753,7 @@ public:
     /**
      * @brief This is purely for the OfxEffectInstance derived class, but passed here for the sake of abstraction
      **/
-    bool refreshMetaDatas_public(bool recurse);
+    bool refreshMetadata_public(bool recurse);
 
     virtual void onChannelsSelectorRefreshed() {}
 
@@ -761,13 +761,13 @@ public:
 
 protected:
 
-    bool refreshMetaDatas_internal();
+    bool refreshMetadata_internal();
 
-    bool setMetaDatasInternal(const NodeMetadata& metadata);
+    bool setMetadataInternal(const NodeMetadata& metadata);
 
-    virtual void onMetaDatasRefreshed(const NodeMetadata& /*metadata*/) {}
+    virtual void onMetadataRefreshed(const NodeMetadata& /*metadata*/) {}
 
-    bool refreshMetaDatas_recursive(std::list<Node*> & markedNodes);
+    bool refreshMetadata_recursive(std::list<Node*> & markedNodes);
 
     friend class ClipPreferencesRunning_RAII;
     void setClipPreferencesRunning(bool running);
@@ -789,11 +789,11 @@ public:
      * Returns eStatusOK on success, eStatusFailed on failure.
      *
      **/
-    StatusEnum getPreferredMetaDatas_public(NodeMetadata& metadata);
+    StatusEnum getPreferredMetadata_public(NodeMetadata& metadata);
 
 protected:
 
-    virtual StatusEnum getPreferredMetaDatas(NodeMetadata& /*metadata*/) { return eStatusOK; }
+    virtual StatusEnum getPreferredMetadata(NodeMetadata& /*metadata*/) { return eStatusOK; }
 
 private:
 

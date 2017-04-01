@@ -723,11 +723,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     bool useTransforms;
 
     if (requestPassData) {
-        tls->currentRenderArgs.transformRedirections.reset(new InputMatrixMap);
         tls->currentRenderArgs.transformRedirections = requestPassData->globalData.transforms;
-        useTransforms = !tls->currentRenderArgs.transformRedirections->empty();
+        useTransforms = tls->currentRenderArgs.transformRedirections && !tls->currentRenderArgs.transformRedirections->empty();
     } else {
-        useTransforms = appPTR->getCurrentSettings()->isTransformConcatenationEnabled();
+        SettingsPtr settings = appPTR->getCurrentSettings();
+        useTransforms = settings && settings->isTransformConcatenationEnabled();
         if (useTransforms) {
             tls->currentRenderArgs.transformRedirections.reset(new InputMatrixMap);
             tryConcatenateTransforms( args.time, args.view, args.scale, tls->currentRenderArgs.transformRedirections.get() );
