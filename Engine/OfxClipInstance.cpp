@@ -181,17 +181,17 @@ OfxClipInstance::getUnmappedBitDepth() const
         int firstNonOptionalConnectedInputComps = 0;
 
         int nInputs = effect->getMaxInputCount();
-        std::vector<NodeMetadataPtr> inputMetadatas(nInputs);
+        std::vector<NodeMetadataPtr> inputMetadata(nInputs);
         for (int i = 0; i < nInputs; ++i) {
             const EffectInstancePtr& input = effect->getInputRenderEffectAtAnyTimeView(i);
             if (input) {
-                GetTimeInvariantMetaDatasResultsPtr results;
-                ActionRetCodeEnum stat = input->getTimeInvariantMetaDatas_public(&results);
+                GetTimeInvariantMetadataResultsPtr results;
+                ActionRetCodeEnum stat = input->getTimeInvariantMetadata_public(&results);
                 if (!isFailureRetCode(stat)) {
-                    inputMetadatas[i] = results->getMetadatasResults();
+                    inputMetadata[i] = results->getMetadataResults();
 
                     if ( !firstNonOptionalConnectedInputComps && !effect->isInputOptional(i) ) {
-                        firstNonOptionalConnectedInputComps = inputMetadatas[i]->getColorPlaneNComps(-1);
+                        firstNonOptionalConnectedInputComps = inputMetadata[i]->getColorPlaneNComps(-1);
                     }
                 }
 
@@ -199,8 +199,8 @@ OfxClipInstance::getUnmappedBitDepth() const
             }
         }
         for (int i = 0; i < nInputs; ++i) {
-            if (inputMetadatas[i]) {
-                ImageBitDepthEnum rawDepth = inputMetadatas[i]->getBitDepth(-1);
+            if (inputMetadata[i]) {
+                ImageBitDepthEnum rawDepth = inputMetadata[i]->getBitDepth(-1);
                 if ( getSizeOfForBitDepth(deepestBitDepth) < getSizeOfForBitDepth(rawDepth) ) {
                     deepestBitDepth = rawDepth;
                 }
@@ -235,17 +235,17 @@ OfxClipInstance::getUnmappedComponents() const
         int firstNonOptionalConnectedInputComps = 0;
 
         int nInputs = effect->getMaxInputCount();
-        std::vector<NodeMetadataPtr> inputMetadatas(nInputs);
+        std::vector<NodeMetadataPtr> inputMetadata(nInputs);
         for (int i = 0; i < nInputs; ++i) {
             const EffectInstancePtr& input = effect->getInputRenderEffectAtAnyTimeView(i);
             if (input) {
-                GetTimeInvariantMetaDatasResultsPtr results;
-                ActionRetCodeEnum stat = input->getTimeInvariantMetaDatas_public(&results);
+                GetTimeInvariantMetadataResultsPtr results;
+                ActionRetCodeEnum stat = input->getTimeInvariantMetadata_public(&results);
                 if (!isFailureRetCode(stat)) {
-                    inputMetadatas[i] = results->getMetadatasResults();
+                    inputMetadata[i] = results->getMetadataResults();
 
                     if ( !firstNonOptionalConnectedInputComps && !effect->isInputOptional(i) ) {
-                        firstNonOptionalConnectedInputComps = inputMetadatas[i]->getColorPlaneNComps(-1);
+                        firstNonOptionalConnectedInputComps = inputMetadata[i]->getColorPlaneNComps(-1);
                     }
                 }
 
@@ -253,8 +253,8 @@ OfxClipInstance::getUnmappedComponents() const
             }
         }
         for (int i = 0; i < nInputs; ++i) {
-            if (inputMetadatas[i]) {
-                int rawComp = effect->getUnmappedNumberOfCompsForColorPlane(i, inputMetadatas, firstNonOptionalConnectedInputComps);
+            if (inputMetadata[i]) {
+                int rawComp = effect->getUnmappedNumberOfCompsForColorPlane(i, inputMetadata, firstNonOptionalConnectedInputComps);
                 if ( rawComp > mostComponents ) {
                     mostComponents = rawComp;
                 }

@@ -4898,13 +4898,13 @@ KnobHolder::createParametricKnob(const std::string& name,
 
 
 void
-KnobHolder::invalidateCacheHashAndEvaluate(bool isSignificant, bool refreshMetadatas)
+KnobHolder::invalidateCacheHashAndEvaluate(bool isSignificant, bool refreshMetadata)
 {
     if (isEvaluationBlocked()) {
         return;
     }
     invalidateHashCache();
-    evaluate(isSignificant, refreshMetadatas);
+    evaluate(isSignificant, refreshMetadata);
 }
 
 void
@@ -4915,7 +4915,7 @@ KnobHolder::endChanges(bool discardRendering)
     }
 
     bool hasHadAnyChange = false;
-    bool mustRefreshMetadatas = false;
+    bool mustRefreshMetadata = false;
     bool hasHadSignificantChange = false;
     int evaluationBlocked;
     ValueChangedReasonEnum firstKnobReason;
@@ -4932,7 +4932,7 @@ KnobHolder::endChanges(bool discardRendering)
                 hasHadSignificantChange = true;
             }
             if (_imp->common->nbChangesRequiringMetadataRefresh) {
-                mustRefreshMetadatas = true;
+                mustRefreshMetadata = true;
             }
             if (_imp->common->nbChangesDuringEvaluationBlock) {
                 hasHadAnyChange = true;
@@ -4957,7 +4957,7 @@ KnobHolder::endChanges(bool discardRendering)
             hasHadSignificantChange = false;
         }
 
-        evaluate(hasHadSignificantChange, mustRefreshMetadatas);
+        evaluate(hasHadSignificantChange, mustRefreshMetadata);
 
     }
 

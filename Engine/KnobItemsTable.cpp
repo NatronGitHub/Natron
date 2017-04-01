@@ -680,7 +680,7 @@ KnobTableItem::onItemInsertedInModel_recursive()
 }
 
 void
-KnobTableItem::evaluate(bool isSignificant, bool refreshMetadatas)
+KnobTableItem::evaluate(bool isSignificant, bool refreshMetadata)
 {
     // If the item is not part of the model, do nothing
     if (getIndexInParent() == -1) {
@@ -696,7 +696,7 @@ KnobTableItem::evaluate(bool isSignificant, bool refreshMetadatas)
     }
 
     // Evaluate the node itself
-    node->getEffectInstance()->evaluate(isSignificant, refreshMetadatas);
+    node->getEffectInstance()->evaluate(isSignificant, refreshMetadata);
 }
 
 void

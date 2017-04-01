@@ -1097,12 +1097,12 @@ EffectInstance::NotifyInputNRenderingStarted_RAII::~NotifyInputNRenderingStarted
 
 void
 EffectInstance::evaluate(bool isSignificant,
-                         bool refreshMetadatas)
+                         bool refreshMetadata)
 {
 
     NodePtr node = getNode();
 
-    if ( refreshMetadatas && node && node->isNodeCreated() ) {
+    if ( refreshMetadata && node && node->isNodeCreated() ) {
         
         // Force a re-compute of the meta-data if needed
         onMetadataChanged_recursive_public();
@@ -1383,13 +1383,13 @@ EffectInstance::refreshExtraStateAfterTimeChanged(bool isPlayback,
 RectI
 EffectInstance::getOutputFormat()
 {
-    GetTimeInvariantMetaDatasResultsPtr results;
-    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(&results);
+    GetTimeInvariantMetadataResultsPtr results;
+    ActionRetCodeEnum stat = getTimeInvariantMetadata_public(&results);
     if (isFailureRetCode(stat)) {
         return RectI();
     } else {
-        const NodeMetadataPtr& metadatas = results->getMetadatasResults();
-        return metadatas->getOutputFormat();
+        const NodeMetadataPtr& metadata = results->getMetadataResults();
+        return metadata->getOutputFormat();
     }
 }
 
@@ -1397,13 +1397,13 @@ EffectInstance::getOutputFormat()
 bool
 EffectInstance::isFrameVarying()
 {
-    GetTimeInvariantMetaDatasResultsPtr results;
-    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(&results);
+    GetTimeInvariantMetadataResultsPtr results;
+    ActionRetCodeEnum stat = getTimeInvariantMetadata_public(&results);
     if (isFailureRetCode(stat)) {
         return true;
     } else {
-        const NodeMetadataPtr& metadatas = results->getMetadatasResults();
-        return metadatas->getIsFrameVarying();
+        const NodeMetadataPtr& metadata = results->getMetadataResults();
+        return metadata->getIsFrameVarying();
     }
 }
 
@@ -1411,13 +1411,13 @@ EffectInstance::isFrameVarying()
 double
 EffectInstance::getFrameRate()
 {
-    GetTimeInvariantMetaDatasResultsPtr results;
-    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(&results);
+    GetTimeInvariantMetadataResultsPtr results;
+    ActionRetCodeEnum stat = getTimeInvariantMetadata_public(&results);
     if (isFailureRetCode(stat)) {
         return 24.;
     } else {
-        const NodeMetadataPtr& metadatas = results->getMetadatasResults();
-        return metadatas->getOutputFrameRate();
+        const NodeMetadataPtr& metadata = results->getMetadataResults();
+        return metadata->getOutputFrameRate();
     }
 
 }
@@ -1426,39 +1426,39 @@ EffectInstance::getFrameRate()
 ImagePremultiplicationEnum
 EffectInstance::getPremult()
 {
-    GetTimeInvariantMetaDatasResultsPtr results;
-    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(&results);
+    GetTimeInvariantMetadataResultsPtr results;
+    ActionRetCodeEnum stat = getTimeInvariantMetadata_public(&results);
     if (isFailureRetCode(stat)) {
         return eImagePremultiplicationPremultiplied;
     } else {
-        const NodeMetadataPtr& metadatas = results->getMetadatasResults();
-        return metadatas->getOutputPremult();
+        const NodeMetadataPtr& metadata = results->getMetadataResults();
+        return metadata->getOutputPremult();
     }
 }
 
 bool
 EffectInstance::canRenderContinuously()
 {
-    GetTimeInvariantMetaDatasResultsPtr results;
-    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(&results);
+    GetTimeInvariantMetadataResultsPtr results;
+    ActionRetCodeEnum stat = getTimeInvariantMetadata_public(&results);
     if (isFailureRetCode(stat)) {
         return true;
     } else {
-        const NodeMetadataPtr& metadatas = results->getMetadatasResults();
-        return metadatas->getIsContinuous();
+        const NodeMetadataPtr& metadata = results->getMetadataResults();
+        return metadata->getIsContinuous();
     }
 }
 
 ImageFieldingOrderEnum
 EffectInstance::getFieldingOrder()
 {
-    GetTimeInvariantMetaDatasResultsPtr results;
-    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(&results);
+    GetTimeInvariantMetadataResultsPtr results;
+    ActionRetCodeEnum stat = getTimeInvariantMetadata_public(&results);
     if (isFailureRetCode(stat)) {
         return eImageFieldingOrderNone;
     } else {
-        const NodeMetadataPtr& metadatas = results->getMetadatasResults();
-        return metadatas->getOutputFielding();
+        const NodeMetadataPtr& metadata = results->getMetadataResults();
+        return metadata->getOutputFielding();
     }
 }
 
@@ -1466,28 +1466,28 @@ EffectInstance::getFieldingOrder()
 double
 EffectInstance::getAspectRatio(int inputNb)
 {
-    GetTimeInvariantMetaDatasResultsPtr results;
-    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(&results);
+    GetTimeInvariantMetadataResultsPtr results;
+    ActionRetCodeEnum stat = getTimeInvariantMetadata_public(&results);
     if (isFailureRetCode(stat)) {
         return 1.;
     } else {
-        const NodeMetadataPtr& metadatas = results->getMetadatasResults();
-        return metadatas->getPixelAspectRatio(inputNb);
+        const NodeMetadataPtr& metadata = results->getMetadataResults();
+        return metadata->getPixelAspectRatio(inputNb);
     }
 }
 
 void
 EffectInstance::getMetadataComponents(int inputNb, ImagePlaneDesc* plane, ImagePlaneDesc* pairedPlane)
 {
-    GetTimeInvariantMetaDatasResultsPtr results;
-    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(&results);
+    GetTimeInvariantMetadataResultsPtr results;
+    ActionRetCodeEnum stat = getTimeInvariantMetadata_public(&results);
     if (isFailureRetCode(stat)) {
         *plane = ImagePlaneDesc::getNoneComponents();
     } else {
-        const NodeMetadataPtr& metadatas = results->getMetadatasResults();
-        std::string componentsType = metadatas->getComponentsType(inputNb);
+        const NodeMetadataPtr& metadata = results->getMetadataResults();
+        std::string componentsType = metadata->getComponentsType(inputNb);
         if (componentsType == kNatronColorPlaneID) {
-            int nComps = metadatas->getColorPlaneNComps(inputNb);
+            int nComps = metadata->getColorPlaneNComps(inputNb);
             *plane = ImagePlaneDesc::mapNCompsToColorPlane(nComps);
         } else if (componentsType == kNatronDisparityComponentsLabel) {
             *plane = ImagePlaneDesc::getDisparityLeftComponents();
@@ -1507,13 +1507,13 @@ EffectInstance::getMetadataComponents(int inputNb, ImagePlaneDesc* plane, ImageP
 ImageBitDepthEnum
 EffectInstance::getBitDepth(int inputNb)
 {
-    GetTimeInvariantMetaDatasResultsPtr results;
-    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(&results);
+    GetTimeInvariantMetadataResultsPtr results;
+    ActionRetCodeEnum stat = getTimeInvariantMetadata_public(&results);
     if (isFailureRetCode(stat)) {
         return eImageBitDepthFloat;
     } else {
-        const NodeMetadataPtr& metadatas = results->getMetadatasResults();
-        return metadatas->getBitDepth(inputNb);
+        const NodeMetadataPtr& metadata = results->getMetadataResults();
+        return metadata->getBitDepth(inputNb);
     }
 }
 

@@ -234,7 +234,7 @@ public:
     virtual void addAcceptedComponents(int inputNb, std::bitset<4>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
     virtual SequentialPreferenceEnum getSequentialPreference() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual ActionRetCodeEnum getTimeInvariantMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL;
+    virtual ActionRetCodeEnum getTimeInvariantMetadata(NodeMetadata& metadata) OVERRIDE FINAL;
     virtual void onMetadataChanged(const NodeMetadata& metadata) OVERRIDE FINAL;
     virtual ActionRetCodeEnum getLayersProducedAndNeeded(TimeValue time, ViewIdx view, std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded, std::list<ImagePlaneDesc>* layersProduced, TimeValue* passThroughTime, ViewIdx* passThroughView, int* passThroughInputNb) OVERRIDE;
 

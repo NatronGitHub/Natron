@@ -425,38 +425,38 @@ toGetFrameRangeResults(const CacheEntryBasePtr& entry)
 }
 
 
-class GetTimeInvariantMetaDatasKey : public EffectInstanceActionKeyBase
+class GetTimeInvariantMetadataKey : public EffectInstanceActionKeyBase
 {
 public:
 
-    GetTimeInvariantMetaDatasKey(U64 nodeTimeInvariantHash,
+    GetTimeInvariantMetadataKey(U64 nodeTimeInvariantHash,
                                  const std::string& pluginID)
     : EffectInstanceActionKeyBase(nodeTimeInvariantHash,  RenderScale(1.), pluginID)
     {
 
     }
 
-    virtual ~GetTimeInvariantMetaDatasKey()
+    virtual ~GetTimeInvariantMetadataKey()
     {
 
     }
 
     virtual int getUniqueID() const OVERRIDE FINAL
     {
-        return kCacheKeyUniqueIDGetTimeInvariantMetaDatasResults;
+        return kCacheKeyUniqueIDGetTimeInvariantMetadataResults;
     }
 };
 
 
-class GetTimeInvariantMetaDatasResults : public CacheEntryBase
+class GetTimeInvariantMetadataResults : public CacheEntryBase
 {
-    GetTimeInvariantMetaDatasResults();
+    GetTimeInvariantMetadataResults();
 
 public:
 
-    static GetTimeInvariantMetaDatasResultsPtr create(const GetTimeInvariantMetaDatasKeyPtr& key);
+    static GetTimeInvariantMetadataResultsPtr create(const GetTimeInvariantMetadataKeyPtr& key);
 
-    virtual ~GetTimeInvariantMetaDatasResults()
+    virtual ~GetTimeInvariantMetadataResults()
     {
 
     }
@@ -466,8 +466,8 @@ public:
     // to be the only one interacting with this object. Then all objects
     // should call the getter.
     //
-    const NodeMetadataPtr& getMetadatasResults() const;
-    void setMetadatasResults(const NodeMetadataPtr& metadatas);
+    const NodeMetadataPtr& getMetadataResults() const;
+    void setMetadataResults(const NodeMetadataPtr& metadata);
 
     virtual void toMemorySegment(IPCPropertyMap* properties) const OVERRIDE FINAL;
 
@@ -476,14 +476,14 @@ public:
 
 private:
 
-    NodeMetadataPtr _metadatas;
+    NodeMetadataPtr _metadata;
 
 };
 
-inline GetTimeInvariantMetaDatasResultsPtr
-toGetTimeInvariantMetaDatasResults(const CacheEntryBasePtr& entry)
+inline GetTimeInvariantMetadataResultsPtr
+toGetTimeInvariantMetadataResults(const CacheEntryBasePtr& entry)
 {
-    return boost::dynamic_pointer_cast<GetTimeInvariantMetaDatasResults>(entry);
+    return boost::dynamic_pointer_cast<GetTimeInvariantMetadataResults>(entry);
 }
 
 

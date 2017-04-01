@@ -736,17 +736,17 @@ void
 ReadNodePrivate::refreshFileInfoVisibility(const std::string& pluginID)
 {
     KnobButtonPtr fileInfos = fileInfosKnob.lock();
-    KnobIPtr hasMetaDatasKnob = _publicInterface->getKnobByName("showMetadata");
+    KnobIPtr hasMetadataKnob = _publicInterface->getKnobByName("showMetadata");
     bool hasFfprobe = false;
-    if (!hasMetaDatasKnob) {
+    if (!hasMetadataKnob) {
         QString ffprobePath = getFFProbeBinaryPath();
         hasFfprobe = QFile::exists(ffprobePath);
     } else {
-        hasMetaDatasKnob->setSecret(true);
+        hasMetadataKnob->setSecret(true);
     }
 
 
-    if ( hasMetaDatasKnob || ( ReadNode::isVideoReader(pluginID) && hasFfprobe ) ) {
+    if ( hasMetadataKnob || ( ReadNode::isVideoReader(pluginID) && hasFfprobe ) ) {
         fileInfos->setSecret(false);
     } else {
         fileInfos->setSecret(true);
@@ -1035,9 +1035,9 @@ ReadNode::knobChanged(const KnobIPtr& k,
         }
 
 
-        KnobIPtr hasMetaDatasKnob = p->getKnobByName("showMetadata");
-        if (hasMetaDatasKnob) {
-            KnobButtonPtr showMetasKnob = toKnobButton(hasMetaDatasKnob);
+        KnobIPtr hasMetadataKnob = p->getKnobByName("showMetadata");
+        if (hasMetadataKnob) {
+            KnobButtonPtr showMetasKnob = toKnobButton(hasMetadataKnob);
             if (showMetasKnob) {
                 showMetasKnob->trigger();
             }

@@ -134,7 +134,7 @@ private:
 
     virtual ActionRetCodeEnum getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
 
-    virtual ActionRetCodeEnum getTimeInvariantMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL;
+    virtual ActionRetCodeEnum getTimeInvariantMetadata(NodeMetadata& metadata) OVERRIDE FINAL;
 
     virtual ActionRetCodeEnum getFramesNeeded(TimeValue time, ViewIdx view,  FramesNeededMap* results) OVERRIDE FINAL;
 

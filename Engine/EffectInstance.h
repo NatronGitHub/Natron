@@ -487,7 +487,7 @@ private:
 
     /**
      * @brief The default implementation of getLayersProducedAndNeeded for non multi-planar effects.
-     * Default implementation uses the desired number of components of the images set in getTimeInvariantMetadatas.
+     * Default implementation uses the desired number of components of the images set in getTimeInvariantMetadata.
      **/
     ActionRetCodeEnum getLayersProducedAndNeeded_default(TimeValue time,
                                                ViewIdx view,
@@ -869,7 +869,7 @@ public:
      * for clip Preferences, see setDefaultClipPreferences()
      *
      **/
-    ActionRetCodeEnum getTimeInvariantMetaDatas_public(GetTimeInvariantMetaDatasResultsPtr* results);
+    ActionRetCodeEnum getTimeInvariantMetadata_public(GetTimeInvariantMetadataResultsPtr* results);
 
     ActionRetCodeEnum getDefaultMetadata(NodeMetadata& metadata);
 
@@ -878,7 +878,7 @@ public:
 
 protected:
 
-    virtual ActionRetCodeEnum getTimeInvariantMetaDatas(NodeMetadata& /*metadata*/) { return eActionStatusReplyDefault; }
+    virtual ActionRetCodeEnum getTimeInvariantMetadata(NodeMetadata& /*metadata*/) { return eActionStatusReplyDefault; }
 
 
 public:
@@ -1676,9 +1676,9 @@ public:
     /**
      * @brief Called when something that should force a new evaluation (render) is done.
      * @param isSignificant If false the viewers will only be redrawn and nothing will be rendered.
-     * @param refreshMetadatas If true the meta-datas on this node and all nodes downstream recursively will be re-computed.
+     * @param refreshMetadata If true the meta-datas on this node and all nodes downstream recursively will be re-computed.
      **/
-    virtual void evaluate(bool isSignificant, bool refreshMetadatas) OVERRIDE;
+    virtual void evaluate(bool isSignificant, bool refreshMetadata) OVERRIDE;
 
     PluginMemoryPtr createMemoryChunk(std::size_t nBytes);
 

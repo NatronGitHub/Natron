@@ -308,17 +308,17 @@ GetFrameRangeResults::fromMemorySegment(bool /*isLockedForWriting*/,
 
 
 
-GetTimeInvariantMetaDatasResults::GetTimeInvariantMetaDatasResults()
+GetTimeInvariantMetadataResults::GetTimeInvariantMetadataResults()
 : CacheEntryBase(appPTR->getGeneralPurposeCache())
-, _metadatas()
+, _metadata()
 {
 
 }
 
-GetTimeInvariantMetaDatasResultsPtr
-GetTimeInvariantMetaDatasResults::create(const GetTimeInvariantMetaDatasKeyPtr& key)
+GetTimeInvariantMetadataResultsPtr
+GetTimeInvariantMetadataResults::create(const GetTimeInvariantMetadataKeyPtr& key)
 {
-    GetTimeInvariantMetaDatasResultsPtr ret(new GetTimeInvariantMetaDatasResults());
+    GetTimeInvariantMetadataResultsPtr ret(new GetTimeInvariantMetadataResults());
     ret->setKey(key);
     return ret;
 
@@ -326,32 +326,32 @@ GetTimeInvariantMetaDatasResults::create(const GetTimeInvariantMetaDatasKeyPtr& 
 
 
 const NodeMetadataPtr&
-GetTimeInvariantMetaDatasResults::getMetadatasResults() const
+GetTimeInvariantMetadataResults::getMetadataResults() const
 {
-    return _metadatas;
+    return _metadata;
 }
 
 void
-GetTimeInvariantMetaDatasResults::setMetadatasResults(const NodeMetadataPtr &metadatas)
+GetTimeInvariantMetadataResults::setMetadataResults(const NodeMetadataPtr &metadata)
 {
-    _metadatas = metadatas;
+    _metadata = metadata;
 }
 
 
 void
-GetTimeInvariantMetaDatasResults::toMemorySegment(IPCPropertyMap* properties) const
+GetTimeInvariantMetadataResults::toMemorySegment(IPCPropertyMap* properties) const
 {
-    assert(_metadatas);
-    _metadatas->toMemorySegment(properties);
+    assert(_metadata);
+    _metadata->toMemorySegment(properties);
     CacheEntryBase::toMemorySegment(properties);
 } // toMemorySegment
 
 CacheEntryBase::FromMemorySegmentRetCodeEnum
-GetTimeInvariantMetaDatasResults::fromMemorySegment(bool isLockedForWriting,
+GetTimeInvariantMetadataResults::fromMemorySegment(bool isLockedForWriting,
                                                     const IPCPropertyMap& properties)
 {
-    assert(_metadatas);
-    _metadatas->fromMemorySegment(properties);
+    assert(_metadata);
+    _metadata->fromMemorySegment(properties);
     return CacheEntryBase::fromMemorySegment(isLockedForWriting, properties);
 } // fromMemorySegment
 

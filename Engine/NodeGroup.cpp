@@ -1025,14 +1025,14 @@ NodeCollection::isSubGraphEditable() const
 
 
 void
-NodeCollection::refreshTimeInvariantMetadatasOnAllNodes_recursive()
+NodeCollection::refreshTimeInvariantMetadataOnAllNodes_recursive()
 {
     NodesList nodes = getNodes();
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
 
         NodeGroupPtr isGroup = (*it)->isEffectNodeGroup();
         if (isGroup) {
-            isGroup->refreshTimeInvariantMetadatasOnAllNodes_recursive();
+            isGroup->refreshTimeInvariantMetadataOnAllNodes_recursive();
         } else {
             (*it)->getEffectInstance()->onMetadataChanged_nonRecursive_public();
         }

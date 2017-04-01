@@ -1017,7 +1017,7 @@ OfxEffectInstance::mapContextToString(ContextEnum ctx)
 
 
 ActionRetCodeEnum
-OfxEffectInstance::getTimeInvariantMetaDatas(NodeMetadata& metadata)
+OfxEffectInstance::getTimeInvariantMetadata(NodeMetadata& metadata)
 {
     if (!_imp->common->initialized || !_imp->common->effect) {
         return eActionStatusFailed;

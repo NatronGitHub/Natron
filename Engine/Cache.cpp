@@ -2332,7 +2332,7 @@ CacheEntryLockerPrivate<persistent>::lookupAndSetStatus(std::size_t* timeSpentWa
 
                     if (persistent) {
                         // Ensure the memory mapping is ok. We grow the file so it contains at least the size needed by the entry
-                        // plus some metadatas required management algorithm store its own memory housekeeping data.
+                        // plus some metadata required management algorithm store its own memory housekeeping data.
                         std::size_t entryToCSize = processLocalEntry->getMetadataSize();
 
                         if (!tocWriteLock) {

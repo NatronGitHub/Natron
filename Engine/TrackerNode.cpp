@@ -1575,9 +1575,9 @@ TrackerNode::onKnobsLoaded()
 }
 
 void
-TrackerNode::evaluate(bool isSignificant, bool refreshMetadatas)
+TrackerNode::evaluate(bool isSignificant, bool refreshMetadata)
 {
-    NodeGroup::evaluate(isSignificant, refreshMetadatas);
+    NodeGroup::evaluate(isSignificant, refreshMetadata);
     _imp->ui->refreshSelectedMarkerTextureLater();
 }
 

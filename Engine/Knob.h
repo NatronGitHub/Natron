@@ -2964,7 +2964,7 @@ public:
 
 
     //Calls onSignificantEvaluateAboutToBeCalled + evaluate
-    void invalidateCacheHashAndEvaluate(bool isSignificant, bool refreshMetadatas);
+    void invalidateCacheHashAndEvaluate(bool isSignificant, bool refreshMetadata);
 
 
     /**
@@ -2990,7 +2990,7 @@ protected:
      * @param knob[in] The knob whose value changed.
      **/
     virtual void evaluate(bool /*isSignificant*/,
-                          bool /*refreshMetadatas*/) {}
+                          bool /*refreshMetadata*/) {}
 
     /**
      * @brief The virtual portion of notifyProjectBeginValuesChanged(). This is called by the project

@@ -431,14 +431,14 @@ ViewerInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
     EffectInstance::appendToHash(args, hash);
 
     if (args.hashType == HashableObject::eComputeHashTypeOnlyMetadataSlaves) {
-        // We rely on the viewers bit depth setting knob in the getTimeInvariantMetaDatas() function
+        // We rely on the viewers bit depth setting knob in the getTimeInvariantMetadata() function
         // so make sure it is part of the hash.
         appPTR->getCurrentSettings()->getViewerBitDepthKnob()->appendToHash(args, hash);
     }
 }
 
 ActionRetCodeEnum
-ViewerInstance::getTimeInvariantMetaDatas(NodeMetadata& metadata)
+ViewerInstance::getTimeInvariantMetadata(NodeMetadata& metadata)
 {
 
     // For now we always output 4 channel images
@@ -453,7 +453,7 @@ ViewerInstance::getTimeInvariantMetaDatas(NodeMetadata& metadata)
 
 
     return eActionStatusOK;
-} // getTimeInvariantMetadatas
+} // getTimeInvariantMetadata
 
 
 void

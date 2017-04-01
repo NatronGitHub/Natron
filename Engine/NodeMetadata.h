@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef Engine_NodeMetaData_h
-#define Engine_NodeMetaData_h
+#ifndef Engine_NodeMetadata_h
+#define Engine_NodeMetadata_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -272,4 +272,4 @@ private:
 
 NATRON_NAMESPACE_EXIT
 
-#endif // Engine_NodeMetaData_h
+#endif // Engine_NodeMetadata_h

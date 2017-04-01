@@ -246,7 +246,7 @@ public:
     /**
      * @brief Refresh the meta-datas on all nodes in the group
      **/
-    void refreshTimeInvariantMetadatasOnAllNodes_recursive();
+    void refreshTimeInvariantMetadataOnAllNodes_recursive();
 
 public:
 

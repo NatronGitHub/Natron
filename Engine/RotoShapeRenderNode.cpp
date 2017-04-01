@@ -270,7 +270,7 @@ RotoShapeRenderNode::getLayersProducedAndNeeded(TimeValue time,
 } // getLayersProducedAndNeeded
 
 ActionRetCodeEnum
-RotoShapeRenderNode::getTimeInvariantMetaDatas(NodeMetadata& metadata)
+RotoShapeRenderNode::getTimeInvariantMetadata(NodeMetadata& metadata)
 {
 
 
