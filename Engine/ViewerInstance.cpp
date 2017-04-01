@@ -3342,7 +3342,7 @@ ViewerInstance::onInputChanged(int /*inputNb*/)
 }
 
 void
-ViewerInstance::onMetaDatasRefreshed(const NodeMetadata& /*metadata*/)
+ViewerInstance::onMetadataRefreshed(const NodeMetadata& /*metadata*/)
 {
     Q_EMIT clipPreferencesChanged();
 }

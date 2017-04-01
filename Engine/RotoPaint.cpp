@@ -1334,7 +1334,7 @@ RotoPaint::refreshExtraStateAfterTimeChanged(bool isPlayback,
 }
 
 StatusEnum
-RotoPaint::getPreferredMetaDatas(NodeMetadata& metadata)
+RotoPaint::getPreferredMetadata(NodeMetadata& metadata)
 {
     metadata.setImageComponents( -1, ImageComponents::getRGBAComponents() );
     /*boost::shared_ptr<KnobBool> premultKnob = _imp->premultKnob.lock();

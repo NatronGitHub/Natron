@@ -151,10 +151,10 @@ static GenericKnob genericReaderKnobNames[] =
 
     {kOCIOParamConfigFile, true},
     {kNatronReadNodeOCIOParamInputSpace, false},
-    {kOCIOParamInputSpace, true}, // input colorspace must be kept
+    {kOCIOParamInputSpace, false}, // input colorspace must not be kept (depends on file format)
     {kOCIOParamOutputSpace, true}, // output colorspace must be kept
     {kOCIOParamInputSpaceChoice, false},
-    {kOCIOParamOutputSpaceChoice, false},
+    {kOCIOParamOutputSpaceChoice, true},
     {kOCIOHelpButton, false},
     {kOCIOHelpLooksButton, false},
     {kOCIOHelpDisplaysButton, false},
@@ -238,22 +238,28 @@ public:
     //MT only
     int creatingReadNode;
 
+    // Plugin-ID of the last read node created.
+    // If this is different, we do not load serialized knobs
+    std::string lastPluginIDCreated;
+
+
     bool wasCreatedAsHiddenNode;
 
 
     ReadNodePrivate(ReadNode* publicInterface)
-        : _publicInterface(publicInterface)
-        , embeddedPluginMutex()
-        , embeddedPlugin()
-        , genericKnobsSerialization()
-        , inputFileKnob()
-        , pluginSelectorKnob()
-        , pluginIDStringKnob()
-        , separatorKnob()
-        , fileInfosKnob()
-        , readNodeKnobs()
-        , creatingReadNode(0)
-        , wasCreatedAsHiddenNode(false)
+    : _publicInterface(publicInterface)
+    , embeddedPluginMutex()
+    , embeddedPlugin()
+    , genericKnobsSerialization()
+    , inputFileKnob()
+    , pluginSelectorKnob()
+    , pluginIDStringKnob()
+    , separatorKnob()
+    , fileInfosKnob()
+    , readNodeKnobs()
+    , creatingReadNode(0)
+    , lastPluginIDCreated()
+    , wasCreatedAsHiddenNode(false)
     {
     }
 
@@ -752,8 +758,11 @@ ReadNodePrivate::createReadNode(bool throwErrors,
     }
 
 
-    //Clone the old values of the generic knobs
-    cloneGenericKnobs();
+    // Clone the old values of the generic knobs if we created the same decoder than before
+    if (lastPluginIDCreated == readerPluginID) {
+        cloneGenericKnobs();
+    }
+    lastPluginIDCreated = readerPluginID;
 
 
     NodePtr thisNode = _publicInterface->getNode();
@@ -777,17 +786,17 @@ void
 ReadNodePrivate::refreshFileInfoVisibility(const std::string& pluginID)
 {
     boost::shared_ptr<KnobButton> fileInfos = fileInfosKnob.lock();
-    KnobPtr hasMetaDatasKnob = _publicInterface->getKnobByName("showMetadata");
+    KnobPtr hasMetadataKnob = _publicInterface->getKnobByName("showMetadata");
     bool hasFfprobe = false;
-    if (!hasMetaDatasKnob) {
+    if (!hasMetadataKnob) {
         QString ffprobePath = getFFProbeBinaryPath();
         hasFfprobe = QFile::exists(ffprobePath);
     } else {
-        hasMetaDatasKnob->setSecret(true);
+        hasMetadataKnob->setSecret(true);
     }
 
 
-    if ( hasMetaDatasKnob || ( ReadNode::isVideoReader(pluginID) && hasFfprobe ) ) {
+    if ( hasMetadataKnob || ( ReadNode::isVideoReader(pluginID) && hasFfprobe ) ) {
         fileInfos->setSecret(false);
     } else {
         fileInfos->setSecret(true);
@@ -1058,19 +1067,19 @@ ReadNode::purgeCaches()
 }
 
 StatusEnum
-ReadNode::getPreferredMetaDatas(NodeMetadata& metadata)
+ReadNode::getPreferredMetadata(NodeMetadata& metadata)
 {
     NodePtr p = getEmbeddedReader();
-    return p ? p->getEffectInstance()->getPreferredMetaDatas(metadata) : EffectInstance::getPreferredMetaDatas(metadata);
+    return p ? p->getEffectInstance()->getPreferredMetadata(metadata) : EffectInstance::getPreferredMetadata(metadata);
 }
 
 void
-ReadNode::onMetaDatasRefreshed(const NodeMetadata& metadata)
+ReadNode::onMetadataRefreshed(const NodeMetadata& metadata)
 {
     NodePtr p = getEmbeddedReader();
     if (p) {
-        p->getEffectInstance()->setMetaDatasInternal(metadata);
-        p->getEffectInstance()->onMetaDatasRefreshed(metadata);
+        p->getEffectInstance()->setMetadataInternal(metadata);
+        p->getEffectInstance()->onMetadataRefreshed(metadata);
     }
 }
 
@@ -1233,6 +1242,12 @@ ReadNode::knobChanged(KnobI* k,
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
+        // Make sure instance changed action is called on the decoder and not caught in our knobChanged handler.
+        if (_imp->embeddedPlugin) {
+            _imp->embeddedPlugin->getEffectInstance()->onKnobValueChanged_public(fileKnob.get(), eValueChangedReasonNatronInternalEdited, getCurrentTime(), ViewSpec(0), true);
+        }
+        
+
         _imp->refreshFileInfoVisibility(entry);
     } else if ( k == _imp->fileInfosKnob.lock().get() ) {
         NodePtr p = getEmbeddedReader();
@@ -1241,9 +1256,9 @@ ReadNode::knobChanged(KnobI* k,
         }
 
 
-        KnobPtr hasMetaDatasKnob = p->getKnobByName("showMetadata");
-        if (hasMetaDatasKnob) {
-            KnobButton* showMetasKnob = dynamic_cast<KnobButton*>( hasMetaDatasKnob.get() );
+        KnobPtr hasMetadataKnob = p->getKnobByName("showMetadata");
+        if (hasMetadataKnob) {
+            KnobButton* showMetasKnob = dynamic_cast<KnobButton*>( hasMetadataKnob.get() );
             if (showMetasKnob) {
                 showMetasKnob->trigger();
             }

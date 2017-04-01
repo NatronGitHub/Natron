@@ -19,7 +19,9 @@
 #ifndef NATRON_GLOBAL_PROCINFO_H
 #define NATRON_GLOBAL_PROCINFO_H
 
-#include "../Global/Macros.h"
+// Python.h not included here, because this is used by CrashReporter, which does not use python
+
+#include "Global/Macros.h"
 
 #include <QtCore/QProcess>
 #include <QtCore/QString>

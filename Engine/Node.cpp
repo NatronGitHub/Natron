@@ -7193,6 +7193,7 @@ Node::message(MessageTypeEnum type,
 {
     ///If the node was aborted, don't transmit any message because we could cause a deadlock
     if ( _imp->effect->aborted() || (!_imp->nodeCreated && _imp->wasCreatedSilently)) {
+        std::cerr << getScriptName_mt_safe() << " message: " << content << std::endl;
         return false;
     }
 
@@ -7253,6 +7254,7 @@ Node::setPersistentMessage(MessageTypeEnum type,
                            const std::string & content)
 {
     if (!_imp->nodeCreated && _imp->wasCreatedSilently) {
+        std::cerr << getScriptName_mt_safe() << " message: " << content << std::endl;
         return;
     }
 
@@ -9226,7 +9228,7 @@ Node::Implementation::onLayerChanged(int inputNb,
     if (!isRefreshingInputRelatedData) {
         ///Clip preferences have changed
         RenderScale s(1.);
-        effect->refreshMetaDatas_public(true);
+        effect->refreshMetadata_public(true);
     }
     if ( !enabledChan[0].lock() ) {
         return;
@@ -9329,7 +9331,7 @@ Node::Implementation::onMaskSelectorChanged(int inputNb,
     if (!isRefreshingInputRelatedData) {
         ///Clip preferences have changed
         RenderScale s(1.);
-        effect->refreshMetaDatas_public(true);
+        effect->refreshMetadata_public(true);
     }
 }
 
@@ -10247,9 +10249,9 @@ Node::refreshAllInputRelatedData(bool /*canChangeValues*/,
     ///if all non optional clips are connected, call getClipPrefs
     ///The clip preferences action is never called until all non optional clips have been attached to the plugin.
     /// EDIT: we allow calling getClipPreferences even if some non optional clip is not connected so that layer menus get properly created
-    const bool canCallRefreshMetaData = true; // = !hasMandatoryInputDisconnected();
+    const bool canCallRefreshMetadata = true; // = !hasMandatoryInputDisconnected();
 
-    if (canCallRefreshMetaData) {
+    if (canCallRefreshMetadata) {
         if (loadingProject) {
             //Nb: we clear the action cache because when creating the node many calls to getRoD and stuff might have returned
             //empty rectangles, but since we force the hash to remain what was in the project file, we might then get wrong RoDs returned
@@ -10272,7 +10274,7 @@ Node::refreshAllInputRelatedData(bool /*canChangeValues*/,
                 }
             }
         }
-        hasChanged |= _imp->effect->refreshMetaDatas_public(false);
+        hasChanged |= _imp->effect->refreshMetadata_public(false);
     }
 
     hasChanged |= refreshChannelSelectors();
@@ -11833,7 +11835,7 @@ Node::addUserComponents(const ImageComponents& comps)
     if (!_imp->isRefreshingInputRelatedData) {
         ///Clip preferences have changed
         RenderScale s(1.);
-        getEffectInstance()->refreshMetaDatas_public(true);
+        getEffectInstance()->refreshMetadata_public(true);
     }
     {
         ///Set the selector to the new channel

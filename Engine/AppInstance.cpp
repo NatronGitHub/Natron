@@ -1150,6 +1150,8 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
             if (!isSilentCreation) {
                 Dialogs::errorDialog(tr("Plugin error").toStdString(),
                                  tr("Cannot load plug-in executable.").toStdString() + ": " + e2.what(), false );
+            } else {
+                std::cerr << tr("Cannot load plug-in executable.").toStdString() + ": " + e2.what() << std::endl;
             }
             return node;
         }
@@ -1185,6 +1187,8 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
                 if (!isSilentCreation) {
                     Dialogs::errorDialog(tr("Plugin error").toStdString(),
                                      tr("Cannot create PyPlug:").toStdString() + e.what(), false );
+                } else {
+                    std::cerr << tr("Cannot create PyPlug").toStdString() + ": " + e.what() << std::endl;
                 }
                 return node;
             }
@@ -1209,6 +1213,8 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
                 if (!isSilentCreation) {
                     errorDialog(tr("Error while creating node").toStdString(), tr("Failed to create an instance of %1:").arg(argsPluginID).toStdString()
                             + '\n' + e.what(), false);
+                } else {
+                    std::cerr << tr("Failed to create an instance of %1:").arg(argsPluginID).toStdString() + '\n' + e.what() << std::endl;
                 }
                 return NodePtr();
             }
@@ -1288,14 +1294,14 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
         }
         std::string error( e.what() );
         if ( !error.empty() ) {
+            std::string title("Error while creating node");
+            std::string message = title + " " + foundPluginID + ": " + e.what();
+            std::cerr << message.c_str() << std::endl;
             if (!isSilentCreation) {
-                std::string title("Error while creating node");
-                std::string message = title + " " + foundPluginID + ": " + e.what();
-                qDebug() << message.c_str();
                 errorDialog(title, message, false);
             }
         }
-        
+
         return NodePtr();
     }
 
@@ -1690,6 +1696,9 @@ AppInstance::startWritersRenderingFromNames(bool enableRenderStats,
                     throw std::invalid_argument("Internal issue with the project loader...viewers should have been evicted from the project.");
                 }
 
+                if (node->isNodeDisabled() || !node->isActivated()) {
+                    continue;
+                }
                 OutputEffectInstance* effect = dynamic_cast<OutputEffectInstance*>( node->getEffectInstance().get() );
                 assert(effect);
 
@@ -1712,6 +1721,11 @@ AppInstance::startWritersRenderingFromNames(bool enableRenderStats,
         for (std::list<OutputEffectInstance*>::const_iterator it2 = writers.begin(); it2 != writers.end(); ++it2) {
             assert(*it2);
             if (*it2) {
+
+                if ((*it2)->getNode()->isNodeDisabled() || !(*it2)->getNode()->isActivated()) {
+                    continue;
+                }
+
                 for (std::list<std::pair<int, std::pair<int, int> > >::const_iterator it3 = frameRanges.begin(); it3 != frameRanges.end(); ++it3) {
                     RenderWork w(*it2, it3->second.first, it3->second.second, it3->first, enableRenderStats);
                     renderers.push_back(w);
@@ -1750,6 +1764,9 @@ AppInstance::startWritersRendering(bool doBlockingRender,
 
     std::list<RenderQueueItem> itemsToQueue;
     for (std::list<RenderWork>::const_iterator it = writers.begin(); it != writers.end(); ++it) {
+        if (it->writer->getNode()->isNodeDisabled() || !it->writer->getNode()->isActivated()) {
+            continue;
+        }
         RenderQueueItem item;
         item.work = *it;
         if ( !_imp->validateRenderOptions(item.work, &item.work.firstFrame, &item.work.lastFrame, &item.work.frameStep) ) {
