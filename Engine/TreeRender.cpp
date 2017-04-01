@@ -381,8 +381,9 @@ TreeRenderPrivate::init(const TreeRender::CtorArgsPtr& inArgs)
     assert(inArgs->treeRootEffect);
 
     ctorArgs = inArgs;
-    handleNaNs = appPTR->getCurrentSettings()->isNaNHandlingEnabled();
-    useConcatenations = appPTR->getCurrentSettings()->isTransformConcatenationEnabled();
+    SettingsPtr settings = appPTR->getCurrentSettings();
+    handleNaNs = settings && settings->isNaNHandlingEnabled();
+    useConcatenations = settings && settings->isTransformConcatenationEnabled();
     
     // Initialize all requested extra nodes to a null result
     for (std::list<NodePtr>::const_iterator it = inArgs->extraNodesToSample.begin(); it != inArgs->extraNodesToSample.end(); ++it) {
