@@ -32,6 +32,7 @@
 #include <QDebug>
 
 #include <boost/thread/shared_mutex.hpp> // local r-w mutex
+#include <boost/thread/mutex.hpp> // local  mutex
 #include <boost/thread/locks.hpp>
 
 #include "Engine/AppManager.h"
