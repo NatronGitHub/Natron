@@ -799,6 +799,14 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
         assert(results);
         inputRoD = results->getRoD();
     }
+
+    RenderScale inputCombinedScale = EffectInstance::getCombinedScale(inputMipMapLevel, inputProxyScale);
+
+    double inputPar = getAspectRatio(inArgs.inputNb);
+   /* RectI pixelRod;
+    inputRoD.toPixelEnclosing(inputCombinedScale, inputPar, &pixelRod);
+    qDebug() << QThread::currentThread() << "inputRod: " << pixelRod.x1 << pixelRod.y1 << pixelRod.x2 << pixelRod.y2 << "scale: " << inputCombinedScale.x << inputCombinedScale.y;*/
+
     if (!resolveRoIForGetImage(inArgs, currentMipMapLevel, currentProxyScale, &roiCanonical, &roiExpand)) {
         roiCanonical = inputRoD;
     } else {
@@ -846,19 +854,12 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
     outArgs->distortionStack = outputRequest->getDistorsionStack();
 
     // Get the RoI in pixel coordinates of the effect we rendered
-    RenderScale inputCombinedScale = EffectInstance::getCombinedScale(inputMipMapLevel, inputProxyScale);
-    double inputPar = getAspectRatio(inArgs.inputNb);
 
     RectI roiPixels;
     RectI roiExpandPixels;
     roiExpand.toPixelEnclosing(inputCombinedScale, inputPar, &roiExpandPixels);
     roiCanonical.toPixelEnclosing(inputCombinedScale, inputPar, &roiPixels);
     assert(roiExpandPixels.contains(roiPixels));
-    if (roiExpandPixels != roiPixels) {
-        outArgs->roiPixel = roiExpandPixels;
-    } else {
-        outArgs->roiPixel = roiPixels;
-    }
 
 
 
@@ -869,8 +870,6 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
 
     // The output image unmapped
     outArgs->image = outputRequest->getRequestedScaleImagePlane();
-
-    outArgs->roiPixel.intersect(outArgs->image->getBounds(), &outArgs->roiPixel);
 
 
     bool mustConvertImage = false;
@@ -983,6 +982,16 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
             return false;
         }
     }
+
+    if (roiExpandPixels != roiPixels) {
+        outArgs->roiPixel = roiExpandPixels;
+    } else {
+        outArgs->roiPixel = roiPixels;
+    }
+
+    outArgs->roiPixel.intersect(outArgs->image->getBounds(), &outArgs->roiPixel);
+  //  qDebug() << QThread::currentThread() << "input roi: " << outArgs->roiPixel.x1 << outArgs->roiPixel.y1 << outArgs->roiPixel.x2 << outArgs->roiPixel.y2;
+
 
     return true;
 } // getImagePlane

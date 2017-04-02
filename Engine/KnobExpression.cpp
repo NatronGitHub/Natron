@@ -1480,10 +1480,13 @@ KnobHelperPrivate::validateExprTKExpression(const std::string& expression, DimId
 
     QThread* curThread = QThread::currentThread();
 
-    KnobExprTkExpr::ExpressionData& data = ret->data[curThread];
-    data.expressionObject.reset(new EXPRTK_FUNCTIONS_NAMESPACE::expression_t);
-    data.expressionObject->register_symbol_table(unknown_var_symbol_table);
-    data.expressionObject->register_symbol_table(symbol_table);
+    KnobExprTkExpr::ExpressionDataPtr data = ret->data[curThread];
+    if (!data) {
+        data.reset(new KnobExprTkExpr::ExpressionData);
+    }
+    data->expressionObject.reset(new EXPRTK_FUNCTIONS_NAMESPACE::expression_t);
+    data->expressionObject->register_symbol_table(unknown_var_symbol_table);
+    data->expressionObject->register_symbol_table(symbol_table);
 
     // Pre-declare the variables with a stub value, they will be updated at evaluation time
     TimeValue time = publicInterface->getCurrentRenderTime();
@@ -1505,25 +1508,25 @@ KnobHelperPrivate::validateExprTKExpression(const std::string& expression, DimId
         parser.enable_unknown_symbol_resolver(&musr);
 
 
-        addStandardFunctions(expression, time, symbol_table, data.functions, data.varargFunctions, data.genericFunctions, &ret->modifiedExpression);
+        addStandardFunctions(expression, time, symbol_table, data->functions, data->varargFunctions, data->genericFunctions, &ret->modifiedExpression);
 
 
         EXPRTK_FUNCTIONS_NAMESPACE::generic_func_ptr curveFunc(new curve_func(thisShared, view));
-        data.genericFunctions.push_back(std::make_pair("curve", curveFunc));
+        data->genericFunctions.push_back(std::make_pair("curve", curveFunc));
         symbol_table.add_function("curve", *curveFunc);
 
         std::string error;
-        if (!parseExprtkExpression(expression, ret->modifiedExpression, parser, *data.expressionObject, &error)) {
+        if (!parseExprtkExpression(expression, ret->modifiedExpression, parser, *data->expressionObject, &error)) {
             throw std::runtime_error(error);
         }
 
 
     } // parser
 
-    data.expressionObject->value();
+    data->expressionObject->value();
     double retValueIsScalar;
     std::string error;
-    KnobHelper::ExpressionReturnValueTypeEnum stat = handleExprTkReturn(*data.expressionObject, &retValueIsScalar, resultAsString, &error);
+    KnobHelper::ExpressionReturnValueTypeEnum stat = handleExprTkReturn(*data->expressionObject, &retValueIsScalar, resultAsString, &error);
     switch (stat) {
         case KnobHelper::eExpressionReturnValueTypeError:
             throw std::runtime_error(error);
@@ -2158,16 +2161,17 @@ KnobHelper::executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimensi
 
     QThread* curThread = QThread::currentThread();
 
-    KnobExprTkExpr::ExpressionData* data = 0;
+    KnobExprTkExpr::ExpressionDataPtr data;
     {
         QMutexLocker k(&obj->lock);
         KnobExprTkExpr::PerThreadDataMap::iterator foundThreadData = obj->data.find(curThread);
         if (foundThreadData == obj->data.end()) {
-            std::pair<KnobExprTkExpr::PerThreadDataMap::iterator, bool> ret = obj->data.insert(std::make_pair(curThread, KnobExprTkExpr::ExpressionData()));
+            data.reset(new KnobExprTkExpr::ExpressionData);
+            std::pair<KnobExprTkExpr::PerThreadDataMap::iterator, bool> ret = obj->data.insert(std::make_pair(curThread, data));
             assert(ret.second);
             foundThreadData = ret.first;
         }
-        data = &foundThreadData->second;
+        data = foundThreadData->second;
     }
 
     bool isRenderClone = getHolder()->isRenderClone();

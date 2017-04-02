@@ -1017,7 +1017,7 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
                 if (data.featherMesh[i].isInner) {
                     c_data[3] = opacity;
                 } else {
-                    *c_data = 0.;
+                    c_data[3] = 0.;
                 }
             }
             renderBezier_gl_singleDrawElements<GL>(nbVertices, nbVertices, vboVerticesID, vboColorsID, iboID, GL_TRIANGLES, (const void*)verticesArray.getData(), (const void*)colorsArray.getData(), (const void*)indicesArray.getData());

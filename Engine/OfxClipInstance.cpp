@@ -970,8 +970,10 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     RectD rod;
     {
 
+        RenderScale inputCombinedScale = EffectInstance::getCombinedScale(outArgs.image->getMipMapLevel(), outArgs.image->getProxyScale());
+
         GetRegionOfDefinitionResultsPtr rodResults;
-        ActionRetCodeEnum stat = inputEffect->getRegionOfDefinition_public(inputTime, currentActionScale, inputView, &rodResults);
+        ActionRetCodeEnum stat = inputEffect->getRegionOfDefinition_public(inputTime, inputCombinedScale, inputView, &rodResults);
         if (isFailureRetCode(stat)) {
             return false;
         }

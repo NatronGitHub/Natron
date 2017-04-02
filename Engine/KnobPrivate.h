@@ -154,7 +154,9 @@ public:
         std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::generic_func_ptr> > genericFunctions;
     };
 
-    typedef std::map<QThread*, ExpressionData> PerThreadDataMap;
+    typedef boost::shared_ptr<ExpressionData> ExpressionDataPtr;
+
+    typedef std::map<QThread*, ExpressionDataPtr> PerThreadDataMap;
 
     // Protects data
     mutable QMutex lock;
