@@ -591,7 +591,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
 
 
         if ( isReader() && serialization && !serialization->isNull() ) {
-            getNode()->refreshCreatedViews();
+            getNode()->refreshCreatedViews(true /*silent*/);
         }
     } catch (const std::exception & e) {
         qDebug() << "Error: Caught exception while creating OfxImageEffectInstance" << ": " << e.what();
