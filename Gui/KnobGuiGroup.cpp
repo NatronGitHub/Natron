@@ -130,6 +130,26 @@ KnobGuiGroup::createWidget(QHBoxLayout* layout)
     layout->addWidget(_button);
 }
 
+static void setVisibilityRecursive(const KnobGuiPtr& knob, bool checked)
+{
+    if (!checked) {
+        knob->hide();
+    } else if ( !knob->getKnob()->getIsSecret() ) {
+        knob->show();
+    }
+    KnobGuiGroup* isGroup = dynamic_cast<KnobGuiGroup*>(knob.get());
+    if (isGroup) {
+        const std::list<KnobGuiWPtr>& children = isGroup->getChildren();
+        for (std::list<KnobGuiWPtr>::const_iterator it = children.begin(); it != children.end(); ++it) {
+            KnobGuiPtr child = it->lock();
+            if (!child) {
+                continue;
+            }
+            setVisibilityRecursive(child, checked);
+        }
+    }
+}
+
 void
 KnobGuiGroup::setCheckedInternal(bool checked,
                                  bool userRequested)
@@ -152,13 +172,9 @@ KnobGuiGroup::setCheckedInternal(bool checked,
         if (!knob) {
             continue;
         }
-        if (!checked) {
-            knob->hide();
-        } else if ( !knob->getKnob()->getIsSecret() ) {
-            knob->show();
-        }
+        setVisibilityRecursive(knob, checked);
+
     }
-    //getGui()->getPropertiesBin()->setUpdatesEnabled(true);
 }
 
 void

@@ -469,7 +469,7 @@ class Cache
 
     void initialize(const boost::shared_ptr<Cache<persistent> >& thisShared);
 
-    Cache();
+    Cache(bool enableTileStorage);
 
 public:
 
@@ -482,7 +482,7 @@ public:
      * @brief Create a new instance of a cache
      * If the cache is persistent, this function may throw a BusyCacheException exception if the cache is used by another process
      **/
-    static CacheBasePtr create();
+    static CacheBasePtr create(bool enableTileStorage);
 
 
     virtual bool isPersistent() const OVERRIDE FINAL;

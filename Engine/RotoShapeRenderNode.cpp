@@ -72,11 +72,11 @@ RotoShapeRenderNode::RotoShapeRenderNode(NodePtr n)
 
 RotoShapeRenderNode::RotoShapeRenderNode(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key)
 : EffectInstance(mainInstance, key)
-, _imp()
+, _imp(new RotoShapeRenderNodePrivate())
 {
     RotoShapeRenderNode* other = dynamic_cast<RotoShapeRenderNode*>(mainInstance.get());
     assert(other);
-    _imp = other->_imp;
+    _imp->osmesaSmearTmpTexture = other->_imp->osmesaSmearTmpTexture;
 }
 
 RotoShapeRenderNode::~RotoShapeRenderNode()

@@ -37,6 +37,7 @@
 #include "Engine/AppManager.h"
 #include "Engine/Cache.h"
 #include "Engine/CacheEntryBase.h"
+#include "Engine/Hash64.h"
 #include "Engine/ImageCacheKey.h"
 #include "Engine/ImageStorage.h"
 #include "Engine/ImagePrivate.h"
@@ -231,6 +232,31 @@ struct TileData
     int channel_i;
 
 };
+
+/**
+ * @brief Since all tiles in the cache share the same cache entry (same image) we want the allocation of the tiles from the cache to 
+ * come from different buckets so that we distribute uniformly the tile file storage.
+ **/
+static U64 makeTileCacheIndex(int tx, int ty, unsigned int mipMapLevel, int channelIndex, int /*tileSizeX*/, int /*tileSizeY*/, const RectI& /*bounds*/) {
+    Hash64 hash;
+    hash.append(channelIndex);
+    hash.append(mipMapLevel);
+    hash.append(tx);
+    hash.append(ty);
+    hash.computeHash();
+    return hash.value();
+    /*U64 ret = channelIndex;
+    ret += mipMapLevel;
+    ret += tx;
+    ret += ty;*/
+    // Normalize tx and ty which are in pixel to tile coordinates
+    /*tx = (tx - bounds.x1) / tileSizeX;
+    ty = (ty - bounds.y1) / tileSizeY;
+    int coord = tx + ty + 1;
+    ret += coord;
+    ret *= std::max(1, (int)mipMapLevel);*/
+    //return ret;
+}
 
 struct DownscaleTile : public TileData
 {
@@ -999,19 +1025,26 @@ ImageCacheEntryPrivate::readAndUpdateStateMap(bool hasExclusiveLock)
  * If this tile needs to be computed from the average of 4 upscaled tiles, this will also request a tile
  * to be allocated and recursively call the function upstream.
  **/
-static void fetchTileIndicesInPyramid(unsigned int lookupLevel, const TileCacheIndex& tile, int nComps, std::vector<U64> *tileIndicesToFetch, std::vector<U64>* tilesAllocNeeded)
+static void fetchTileIndicesInPyramid(unsigned int lookupLevel,
+                                      int tileSizeX,
+                                      int tileSizeY,
+                                      const std::vector<RectI>& perLevelBounds,
+                                      const TileCacheIndex& tile,
+                                      int nComps,
+                                      std::vector<U64> *tileIndicesToFetch,
+                                      std::vector<U64>* tilesAllocNeeded)
 {
     if (tile.upscaleTiles[0]) {
         // We must downscale the upscaled tiles
         for (int c = 0; c < nComps; ++c) {
-            U64 tileBucketHash = tile.tx + tile.ty + lookupLevel + c;
+            U64 tileBucketHash = makeTileCacheIndex(tile.tx, tile.ty, lookupLevel, c, tileSizeX, tileSizeY, perLevelBounds[lookupLevel]);
             tilesAllocNeeded->push_back(tileBucketHash);
         }
         for (int i = 0; i < 4; ++i) {
             assert(tile.upscaleTiles[i]);
             // Check that the upscaled tile exists
             if (tile.upscaleTiles[i]->tx != -1) {
-                fetchTileIndicesInPyramid(lookupLevel - 1, *tile.upscaleTiles[i], nComps, tileIndicesToFetch, tilesAllocNeeded);
+                fetchTileIndicesInPyramid(lookupLevel - 1, tileSizeX, tileSizeY, perLevelBounds, *tile.upscaleTiles[i], nComps, tileIndicesToFetch, tilesAllocNeeded);
             }
         }
     } else {
@@ -1129,10 +1162,17 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
     // Get a vector of tile indices to fetch from the cache directly
     std::vector<U64> tileIndicesToFetch;
 
+    std::vector<RectI> perLevelBounds(mipMapLevel + 1);
+    RectI mipmap0Bounds = localTilesState.bounds.upscalePowerOfTwo(mipMapLevel);
+    for (std::size_t i = 0; i < perLevelBounds.size(); ++i) {
+        perLevelBounds[i] = mipmap0Bounds.downscalePowerOfTwo(i);
+    }
+
+
     // Number of tiles to allocate to downscale
     std::vector<U64> tilesAllocNeeded;
     for (std::size_t i = 0; i < tilesToFetch.size(); ++i) {
-        fetchTileIndicesInPyramid(mipMapLevel, tilesToFetch[i], nComps, &tileIndicesToFetch, &tilesAllocNeeded);
+        fetchTileIndicesInPyramid(mipMapLevel, localTilesState.tileSizeX, localTilesState.tileSizeY, perLevelBounds, tilesToFetch[i], nComps, &tileIndicesToFetch, &tilesAllocNeeded);
     }
 
     if (tileIndicesToFetch.empty() && tilesAllocNeeded.empty()) {
@@ -1179,14 +1219,12 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
     bool stateMapUpdated = false;
 
     // Downscale in parallel each mipmap level tiles and then copy the last level tiles
-    RectI mipmap0Bounds = localTilesState.bounds.upscalePowerOfTwo(mipMapLevel);
     for (std::size_t i = 0; i < perLevelTilesToDownscale.size(); ++i) {
 
         if (perLevelTilesToDownscale[i].empty()) {
             continue;
         }
-        RectI levelBounds = mipmap0Bounds.downscalePowerOfTwo(i);
-        TileStateHeader cacheStateMap = TileStateHeader(localTilesState.tileSizeX, localTilesState.tileSizeY, levelBounds, &internalCacheEntry->perMipMapTilesState[i]);
+        TileStateHeader cacheStateMap = TileStateHeader(localTilesState.tileSizeX, localTilesState.tileSizeY, perLevelBounds[i], &internalCacheEntry->perMipMapTilesState[i]);
         assert(!cacheStateMap.state->tiles.empty());
 
 
@@ -1684,7 +1722,9 @@ ImageCacheEntry::markCacheTilesInRegionAsNotRendered(const RectI& roi)
                 for (int c = 0; c < 4; ++c) {
                     if (cacheTileState->channelsTileStorageIndex[c] != (U64)-1) {
                         cacheTileIndicesToRelease.push_back(cacheTileState->channelsTileStorageIndex[c]);
-                        localTileIndicesToRelease.push_back(tx + ty + c + i);
+
+                        U64 tileIndex = makeTileCacheIndex(tx, ty, i, c, _imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY, _imp->localTilesState.boundsRoundedToTileSize);
+                        localTileIndicesToRelease.push_back(tileIndex);
                     }
                 }
             }
@@ -1817,7 +1857,7 @@ ImageCacheEntry::markCacheTilesAsRendered()
 
     std::vector<U64> tilesAllocNeeded(tilesToCopy.size());
     for (std::size_t i = 0; i < tilesToCopy.size(); ++i) {
-        tilesAllocNeeded[i] = tilesToCopy[i]->bounds.x1 + tilesToCopy[i]->bounds.x2 + tilesToCopy[i]->channel_i + _imp->mipMapLevel;
+        tilesAllocNeeded[i] = makeTileCacheIndex(tilesToCopy[i]->bounds.x1, tilesToCopy[i]->bounds.y1, _imp->mipMapLevel, tilesToCopy[i]->channel_i, _imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY, _imp->localTilesState.boundsRoundedToTileSize);
     }
 
     // Allocated buffers for tiles

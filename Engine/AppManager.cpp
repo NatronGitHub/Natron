@@ -888,13 +888,13 @@ AppManager::loadInternal(const CLArgs& cl)
     }
 
     // Create cache once we loaded the cache directory path wanted by the user
-    _imp->generalPurposeCache = Cache<false>::create();
+    _imp->generalPurposeCache = Cache<false>::create(false /*enableTileStorage*/);
     try {
         // If the cache is busy because another process is using it and we are not compiled
         // with NATRON_CACHE_INTERPROCESS_ROBUST, just create a process local cache instead.
-        _imp->tileCache = Cache<true>::create();
+        _imp->tileCache = Cache<true>::create(true /*enableTileStorage*/);
     } catch (const BusyCacheException&) {
-        _imp->tileCache = Cache<false>::create();
+        _imp->tileCache = Cache<false>::create(true /*enableTileStorage*/);
     }
 
     if (cl.isCacheClearRequestedOnLaunch()) {

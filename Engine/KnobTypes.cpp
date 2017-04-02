@@ -1449,8 +1449,7 @@ KnobChoice::setValueFromID(const std::string & value, ViewSetSpec view)
         int index = -1;
         {
             QMutexLocker k(&data->valueMutex);
-            int i = choiceMatch(value, data->menuOptions, &data->activeEntry);
-            (void)i;
+            index = choiceMatch(value, data->menuOptions, &data->activeEntry);
         }
         if (index != -1) {
             return setValue(index, view);
@@ -1458,7 +1457,7 @@ KnobChoice::setValueFromID(const std::string & value, ViewSetSpec view)
 
     }
 
-    throw std::runtime_error(std::string("KnobChoice::setValueFromLabel: unknown label ") + value);
+    return eValueChangedReturnCodeNothingChanged;
 }
 
 

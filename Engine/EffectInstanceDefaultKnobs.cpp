@@ -405,6 +405,8 @@ EffectInstance::createNodePage(const KnobPagePtr& settingsPage)
         _imp->renderKnobs.enableLifeTimeKnob = param;
     }
 
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(this);
+
     PluginOpenGLRenderSupport glSupport = ePluginOpenGLRenderSupportNone;
 
     PluginPtr plugin = getNode()->getPlugin();
@@ -412,7 +414,9 @@ EffectInstance::createNodePage(const KnobPagePtr& settingsPage)
         glSupport = (PluginOpenGLRenderSupport)plugin->getPropertyUnsafe<int>(kNatronPluginPropOpenGLSupport);
     }
 
-    if (glSupport != ePluginOpenGLRenderSupportNone) {
+    // For Groups, always create a GPU support knob, even if the node itself does not handle gpu support: this allows nodes of the
+    // sub-graph to hook on the value of the Group node.
+    if (isGroup || glSupport != ePluginOpenGLRenderSupportNone) {
         getOrCreateOpenGLEnabledKnob();
     }
 
@@ -456,7 +460,6 @@ EffectInstance::createNodePage(const KnobPagePtr& settingsPage)
 
         _imp->defKnobs->inputChangedCallback = param;
     }
-    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(this);
     if (isGroup) {
         {
             KnobStringPtr param = createKnob<KnobString>("afterNodeCreated");
