@@ -906,7 +906,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
 
     IsIdentityKeyPtr cacheKey;
     {
-        cacheKey.reset(new IsIdentityKey(hash, plane, getNode()->getPluginID()));
+        cacheKey.reset(new IsIdentityKey(hash, time, plane, getNode()->getPluginID()));
     }
 
 
@@ -929,7 +929,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
             }
             return eActionStatusOK;
         }
-
+        
         assert(cacheStatus == CacheEntryLockerBase::eCacheEntryStatusMustCompute);
     }
 
@@ -968,14 +968,14 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
         // A sequential effect cannot be identity on itself
         if (identityInputNb == -2) {
             SequentialPreferenceEnum sequential = getCurrentSequentialRenderSupport();
-
+            assert(identityTime != time);
             if (sequential == eSequentialPreferenceOnlySequential) {
                 identityInputNb = -1;
             }
         }
 
         (*results)->setIdentityData(identityInputNb, identityTime, identityView, identityPlane);
-
+        
         caught = true;
 
     }

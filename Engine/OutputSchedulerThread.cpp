@@ -2256,7 +2256,8 @@ public:
             inArgs->outputImage = outputRequest->getRequestedScaleImagePlane();
         }
 
-        if (isFailureRetCode(inArgs->retCode)) {
+        // There might be no output image if the RoI that was passed to render is outside of the RoD of the effect
+        if (isFailureRetCode(inArgs->retCode) || !inArgs->outputImage) {
             inArgs->outputImage.reset();
             inArgs->renderObject.reset();
             return;

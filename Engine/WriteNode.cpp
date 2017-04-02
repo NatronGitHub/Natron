@@ -724,16 +724,9 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
     std::string writerPluginID = pluginSelectorKnob.lock()->getActiveEntry().id;
 
     if ( writerPluginID.empty() ) {
-        KnobChoicePtr pluginChoiceKnob = pluginSelectorKnob.lock();
-        int pluginChoice_i = pluginChoiceKnob->getValue();
-        if (pluginChoice_i == 0) {
+        if ( writerPluginID.empty() || writerPluginID ==  kPluginSelectorParamEntryDefault) {
             //Use default
             writerPluginID = appPTR->getWriterPluginIDForFileType(ext);
-        } else {
-            std::vector<ChoiceOption> entries = pluginChoiceKnob->getEntries();
-            if ( (pluginChoice_i >= 0) && ( pluginChoice_i < (int)entries.size() ) ) {
-                writerPluginID = entries[pluginChoice_i].id;
-            }
         }
     }
 

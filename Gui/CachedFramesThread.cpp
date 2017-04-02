@@ -105,6 +105,9 @@ void
 CachedFramesThread::quitThread()
 {
 
+    if (!isRunning()) {
+        return;
+    }
     QMutexLocker k(&_imp->mustQuitMutex);
     _imp->mustQuit = true;
 

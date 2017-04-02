@@ -159,6 +159,7 @@ void
 IsIdentityKey::appendToHash(Hash64* hash) const
 {
     EffectInstanceActionKeyBase::appendToHash(hash);
+    hash->append((double)_time);
     Hash64::appendQString(QString::fromUtf8(_plane.getPlaneID().c_str()), hash);
 }
 

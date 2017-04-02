@@ -1433,8 +1433,8 @@ KnobIPtr
 KnobHelper::getCloneForHolderInternal(const KnobHolderPtr& holder) const
 {
     KnobHolderPtr thisHolder = getHolder();
-    assert(!thisHolder->isRenderClone());
-    if (thisHolder == holder) {
+    assert(!thisHolder || !thisHolder->isRenderClone());
+    if (!thisHolder || thisHolder == holder) {
         return boost::const_pointer_cast<KnobI>(shared_from_this());
     }
     QMutexLocker k(&_imp->common->renderClonesMapMutex);

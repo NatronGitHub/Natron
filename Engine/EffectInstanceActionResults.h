@@ -222,9 +222,11 @@ class IsIdentityKey : public EffectInstanceActionKeyBase
 public:
 
     IsIdentityKey(U64 nodeTimeViewVariantHash,
+                  TimeValue time,
                   const ImagePlaneDesc& plane,
                   const std::string& pluginID)
     : EffectInstanceActionKeyBase(nodeTimeViewVariantHash, RenderScale(1.), pluginID)
+    , _time(time)
     , _plane(plane)
     {
 
@@ -244,6 +246,10 @@ private:
 
     virtual void appendToHash(Hash64* hash) const OVERRIDE FINAL;
 
+    // If an effect is not frame varying, it will not encode the time in the hash, however the results of isIdentity
+    // may change across time even for non frame varying effects: e.g: A single frame Reader would return identity = -2
+    // for any time different than frame 1 and -1 otherwise.
+    TimeValue _time;
     ImagePlaneDesc _plane;
 };
 

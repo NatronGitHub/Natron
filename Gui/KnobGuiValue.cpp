@@ -713,6 +713,9 @@ KnobGuiValue::onMinMaxChanged(DimSpec dimension)
 void
 KnobGuiValue::onDisplayMinMaxChanged(DimSpec /*dimension*/)
 {
+    if (!getKnobGui()) {
+        return;
+    }
     if (!_imp->slider) {
         return;
     }

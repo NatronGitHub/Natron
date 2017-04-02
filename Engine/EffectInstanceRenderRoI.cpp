@@ -1223,6 +1223,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
 
         // Make sure the RoI falls within the image bounds
         if ( !renderMappedRoI.intersect(pixelRoDRenderMapped, &renderMappedRoI) ) {
+            requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusRendered);
             return eActionStatusOK;
         }
 
@@ -1390,6 +1391,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
         if (!fullScaleImage) {
             fullScaleImage = requestedImageScale;
         }
+        assert(fullScaleImage);
         requestData->setRequestedScaleImagePlane(requestedImageScale);
         requestData->setFullscaleImagePlane(fullScaleImage);
 

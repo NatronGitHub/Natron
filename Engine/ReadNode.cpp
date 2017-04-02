@@ -332,19 +332,18 @@ ReadNode::setEmbeddedReader(const NodePtr& node)
 void
 ReadNodePrivate::placeReadNodeKnobsInPage()
 {
-    KnobIPtr pageKnob = _publicInterface->getKnobByName("Controls");
-    KnobPagePtr isPage = toKnobPage(pageKnob);
-
-    if (!isPage) {
+    KnobPagePtr controlsPage = toKnobPage(_publicInterface->getKnobByName("Controls"));
+    if (!controlsPage) {
         return;
     }
     for (std::list<KnobIWPtr >::iterator it = readNodeKnobs.begin(); it != readNodeKnobs.end(); ++it) {
         KnobIPtr knob = it->lock();
         knob->setParentKnob( KnobIPtr() );
-        isPage->removeKnob(knob);
+        controlsPage->removeKnob(knob);
     }
 
-    KnobsVec children = isPage->getChildren();
+    KnobsVec children = controlsPage->getChildren();
+
     int index = -1;
     for (std::size_t i = 0; i < children.size(); ++i) {
         if (children[i]->getName() == kParamCustomFps) {
@@ -352,16 +351,16 @@ ReadNodePrivate::placeReadNodeKnobsInPage()
             break;
         }
     }
-    if (index != -1) {
+    {
         ++index;
         for (std::list<KnobIWPtr >::iterator it = readNodeKnobs.begin(); it != readNodeKnobs.end(); ++it) {
             KnobIPtr knob = it->lock();
-            isPage->insertKnob(index, knob);
+            controlsPage->insertKnob(index, knob);
             ++index;
         }
     }
 
-    children = isPage->getChildren();
+    children = controlsPage->getChildren();
     // Find the separatorKnob in the page and if the next parameter is also a separator, hide it
     int foundSep = -1;
     for (std::size_t i = 0; i < children.size(); ++i) {
@@ -577,18 +576,9 @@ ReadNodePrivate::createReadNode(bool throwErrors,
     readerPluginID = pluginSelectorKnob.lock()->getActiveEntry().id;
 
 
-    if ( readerPluginID.empty() ) {
-        KnobChoicePtr pluginChoiceKnob = pluginSelectorKnob.lock();
-        int pluginChoice_i = pluginChoiceKnob->getValue();
-        if (pluginChoice_i == 0) {
-            //Use default
-            readerPluginID = appPTR->getReaderPluginIDForFileType(ext);
-        } else {
-            std::vector<ChoiceOption> entries = pluginChoiceKnob->getEntries();
-            if ( (pluginChoice_i >= 0) && ( pluginChoice_i < (int)entries.size() ) ) {
-                readerPluginID = entries[pluginChoice_i].id;
-            }
-        }
+    if ( readerPluginID.empty() || readerPluginID ==  kPluginSelectorParamEntryDefault) {
+        //Use default
+        readerPluginID = appPTR->getReaderPluginIDForFileType(ext);
     }
 
     // If the plug-in is the same, do not create a new decoder.
