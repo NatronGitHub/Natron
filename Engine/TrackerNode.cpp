@@ -36,9 +36,11 @@
 #include "Engine/Project.h"
 #include "Engine/OverlaySupport.h"
 #include "Engine/TimeLine.h"
+#include "Engine/TrackArgs.h"
 #include "Engine/TrackerHelper.h"
 #include "Engine/TrackMarker.h"
 #include "Engine/TrackerNodePrivate.h"
+#include "Engine/TrackerHelperPrivate.h"
 #include "Engine/KnobItemsTableUndoCommand.h"
 #include "Engine/ViewerInstance.h"
 
@@ -1899,6 +1901,63 @@ void
 TrackerNodePrivate::setTransformOutOfDate(bool outdated)
 {
     transformOutOfDateLabel.lock()->setSecret(!outdated);
+}
+
+bool
+TrackerNodePrivate::trackStepFunctor(int trackIndex, const TrackArgsBasePtr& args, int frame)
+{
+
+    TrackArgs* trackerArgs = dynamic_cast<TrackArgs*>(args.get());
+    assert(trackerArgs);
+
+    assert( trackIndex >= 0 && trackIndex < trackerArgs->getNumTracks() );
+    const std::vector<TrackMarkerAndOptionsPtr >& tracks = trackerArgs->getTracks();
+    const TrackMarkerAndOptionsPtr& track = tracks[trackIndex];
+
+    if ( !track->natronMarker->isEnabled(TimeValue(frame)) ) {
+        return false;
+    }
+
+    TrackMarkerPMPtr isTrackerPM = toTrackMarkerPM( track->natronMarker );
+    bool ret;
+    if (isTrackerPM) {
+        ret = TrackerHelperPrivate::trackStepTrackerPM(isTrackerPM, *trackerArgs, frame);
+    } else {
+        ret = TrackerHelperPrivate::trackStepLibMV(trackIndex, *trackerArgs, frame);
+    }
+
+    // Disable the marker since it failed to track
+    if (!ret && trackerArgs->isAutoKeyingEnabledParamEnabled()) {
+        track->natronMarker->setEnabledAtTime(TimeValue(frame), false);
+    }
+
+    
+    return ret;
+} // trackStepFunctor
+
+void
+TrackerNodePrivate::beginTrackSequence(const TrackArgsBasePtr& args)
+{
+    TrackArgs* trackerArgs = dynamic_cast<TrackArgs*>(args.get());
+
+    const std::vector<TrackMarkerAndOptionsPtr >& tracks = trackerArgs->getTracks();
+    // For all tracks, notify tracking is starting and unslave the 'enabled' knob if it is
+    // slaved to the UI "enabled" knob.
+    for (std::size_t i = 0; i < tracks.size(); ++i) {
+        tracks[i]->natronMarker->notifyTrackingStarted();
+    }
+}
+
+void
+TrackerNodePrivate::endTrackSequence(const TrackArgsBasePtr& args)
+{
+    TrackArgs* trackerArgs = dynamic_cast<TrackArgs*>(args.get());
+    const std::vector<TrackMarkerAndOptionsPtr >& tracks = trackerArgs->getTracks();
+
+    for (std::size_t i = 0; i < tracks.size(); ++i) {
+        tracks[i]->natronMarker->notifyTrackingEnded();
+    }
+
 }
 
 NodePtr

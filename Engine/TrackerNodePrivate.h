@@ -757,6 +757,12 @@ public:
 
     void endSolve();
 
+    //////////////////// Overriden from TrackerParamsProviderBase
+    virtual bool trackStepFunctor(int trackIndex, const TrackArgsBasePtr& args, int frame) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void beginTrackSequence(const TrackArgsBasePtr& args) OVERRIDE FINAL;
+    virtual void endTrackSequence(const TrackArgsBasePtr& args) OVERRIDE FINAL;
+    ////////////////////
+
     //////////////////// Overriden from TrackerParamsProvider
     virtual NodePtr getTrackerNode() const OVERRIDE FINAL;
     virtual TrackerHelperPtr getTracker() const OVERRIDE FINAL;

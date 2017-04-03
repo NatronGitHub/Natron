@@ -82,7 +82,7 @@ TrackArgs::TrackArgs(int start,
                      double formatWidth,
                      double formatHeight,
                      bool autoKeyEnabled)
-: GenericThreadStartArgs()
+: TrackArgsBase()
 , _imp( new TrackArgsPrivate() )
 {
     _imp->start = start;
@@ -103,7 +103,7 @@ TrackArgs::~TrackArgs()
 }
 
 TrackArgs::TrackArgs(const TrackArgs& other)
-: GenericThreadStartArgs()
+: TrackArgsBase()
 , _imp( new TrackArgsPrivate() )
 {
     *this = other;

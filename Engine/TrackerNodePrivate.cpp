@@ -1197,7 +1197,7 @@ fullRectFloatCPUImageToPBOForNComps(const Image::CPUData& srcImage,
 
             int x = backward ? std::max(roi.x1, start_x - 1) : start_x;
             const int end_x = backward ? roi.x1 - 1 : roi.x2;
-            assert( backward == 1 || ( x >= 0 && x < (roi.x2 - roi.x1) ) );
+            assert( backward == 1 || ( x >= 0 && x < roi.x2 ) );
 
             const float* srcPixels[4];
             int srcPixelStride;

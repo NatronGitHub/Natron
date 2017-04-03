@@ -45,7 +45,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/KnobTypes.h"
 #include "Engine/TimeLine.h"
 #include "Engine/TrackArgs.h"
-#include "Engine/TrackerHelperPrivate.h"
 #include "Engine/TLSHolder.h"
 #include "Engine/Timer.h"
 #include "Engine/Node.h"
@@ -59,22 +58,16 @@ NATRON_NAMESPACE_ENTER;
 
 struct TrackSchedulerPrivate
 {
-    TrackerParamsProviderWPtr paramsProvider;
+    TrackerParamsProviderBaseWPtr paramsProvider;
 
-    TrackSchedulerPrivate(const TrackerParamsProviderPtr& paramsProvider)
+    TrackSchedulerPrivate(const TrackerParamsProviderBasePtr& paramsProvider)
     : paramsProvider(paramsProvider)
     {
     }
 
-    /*
-     * @brief Function that will be called concurrently for each Track marker to track.
-     * @param trackIndex Identifies the track in args, which is supposed to hold the tracks vector.
-     * @param time The time at which to track. The reference frame is held in the args and can be different for each track
-     */
-    static bool trackStepFunctor(int trackIndex, const TrackArgs& args, int time);
 };
 
-TrackScheduler::TrackScheduler(const TrackerParamsProviderPtr& paramsProvider)
+TrackScheduler::TrackScheduler(const TrackerParamsProviderBasePtr& paramsProvider)
 : GenericSchedulerThread()
 , _imp( new TrackSchedulerPrivate(paramsProvider) )
 {
@@ -85,36 +78,6 @@ TrackScheduler::TrackScheduler(const TrackerParamsProviderPtr& paramsProvider)
 
 TrackScheduler::~TrackScheduler()
 {
-}
-
-bool
-TrackSchedulerPrivate::trackStepFunctor(int trackIndex,
-                                        const TrackArgs& args,
-                                        int time)
-{
-    assert( trackIndex >= 0 && trackIndex < args.getNumTracks() );
-    const std::vector<TrackMarkerAndOptionsPtr >& tracks = args.getTracks();
-    const TrackMarkerAndOptionsPtr& track = tracks[trackIndex];
-
-    if ( !track->natronMarker->isEnabled(TimeValue(time)) ) {
-        return false;
-    }
-
-    TrackMarkerPMPtr isTrackerPM = toTrackMarkerPM( track->natronMarker );
-    bool ret;
-    if (isTrackerPM) {
-        ret = TrackerHelperPrivate::trackStepTrackerPM(isTrackerPM, args, time);
-    } else {
-        ret = TrackerHelperPrivate::trackStepLibMV(trackIndex, args, time);
-    }
-
-    // Disable the marker since it failed to track
-    if (!ret && args.isAutoKeyingEnabledParamEnabled()) {
-        track->natronMarker->setEnabledAtTime(TimeValue(time), false);
-    }
-
-
-    return ret;
 }
 
 
@@ -165,7 +128,7 @@ public:
 GenericSchedulerThread::ThreadStateEnum
 TrackScheduler::threadLoopOnce(const GenericThreadStartArgsPtr& inArgs)
 {
-    boost::shared_ptr<TrackArgs> args = boost::dynamic_pointer_cast<TrackArgs>(inArgs);
+    boost::shared_ptr<TrackArgsBase> args = boost::dynamic_pointer_cast<TrackArgs>(inArgs);
 
     assert(args);
 
@@ -181,20 +144,15 @@ TrackScheduler::threadLoopOnce(const GenericThreadStartArgsPtr& inArgs)
         framesCount = frameStep > 0 ? (end - start) / frameStep : (start - end) / std::abs(frameStep);
     }
 
-    TrackerParamsProviderPtr paramsProvider = _imp->paramsProvider.lock();
+    TrackerParamsProviderBasePtr paramsProvider = _imp->paramsProvider.lock();
 
-    const std::vector<TrackMarkerAndOptionsPtr >& tracks = args->getTracks();
-    const int numTracks = (int)tracks.size();
-    std::vector<int> trackIndexes( tracks.size() );
-
-
-
-    // For all tracks, notify tracking is starting and unslave the 'enabled' knob if it is
-    // slaved to the UI "enabled" knob.
-    for (std::size_t i = 0; i < tracks.size(); ++i) {
+    const int numTracks = args->getNumTracks();
+    std::vector<int> trackIndexes(numTracks);
+    for (std::size_t i = 0; i < trackIndexes.size(); ++i) {
         trackIndexes[i] = i;
-        tracks[i]->natronMarker->notifyTrackingStarted();
     }
+
+    paramsProvider->beginTrackSequence(args);
 
     // Beyond TRACKER_MAX_TRACKS_FOR_PARTIAL_VIEWER_UPDATE it becomes more expensive to render all partial rectangles
     // than just render the whole viewer RoI
@@ -218,9 +176,10 @@ TrackScheduler::threadLoopOnce(const GenericThreadStartArgsPtr& inArgs)
         while (cur != end) {
             ///Launch parallel thread for each track using the global thread pool
             QFuture<bool> future = QtConcurrent::mapped( trackIndexes,
-                                                        boost::bind(&TrackSchedulerPrivate::trackStepFunctor,
+                                                        boost::bind(&TrackerParamsProviderBase::trackStepFunctor,
+                                                                    paramsProvider.get(),
                                                                     _1,
-                                                                    *args,
+                                                                    args,
                                                                     cur) );
             future.waitForFinished();
 
@@ -301,11 +260,7 @@ TrackScheduler::threadLoopOnce(const GenericThreadStartArgsPtr& inArgs)
         } // while (cur != end) {
     } // IsTrackingFlagSetter_RAII
 
-
-    for (std::size_t i = 0; i < tracks.size(); ++i) {
-        tracks[i]->natronMarker->notifyTrackingEnded();
-    }
-
+    paramsProvider->endTrackSequence(args);
 
 
     //Now that tracking is done update viewer once to refresh the whole visible portion
@@ -326,7 +281,7 @@ TrackScheduler::doRenderCurrentFrameForViewer(const ViewerNodePtr& viewer)
 }
 
 void
-TrackScheduler::track(const boost::shared_ptr<TrackArgs>& args)
+TrackScheduler::track(const TrackArgsBasePtr& args)
 {
     startTask(args);
 }
