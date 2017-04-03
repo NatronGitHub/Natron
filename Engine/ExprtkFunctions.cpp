@@ -172,6 +172,7 @@ struct turbulence : public exprtk::igeneric_function<exprtk_scalar_t>
     {}
     virtual exprtk_scalar_t operator()(const std::size_t& overloadIdx, parameter_list_t parameters) OVERRIDE FINAL
     {
+        Q_UNUSED(overloadIdx);
         typedef typename exprtk::igeneric_function<exprtk_scalar_t>::generic_type generic_type;
         typedef typename generic_type::scalar_view scalar_t;
 
@@ -213,6 +214,7 @@ struct fbm : public exprtk::igeneric_function<exprtk_scalar_t>
     {}
     virtual exprtk_scalar_t operator()(const std::size_t& overloadIdx, parameter_list_t parameters) OVERRIDE FINAL
     {
+        Q_UNUSED(overloadIdx);
         typedef typename exprtk::igeneric_function<exprtk_scalar_t>::generic_type generic_type;
         typedef typename generic_type::scalar_view scalar_t;
 
@@ -342,6 +344,7 @@ struct numtostr : public exprtk::igeneric_function<exprtk_scalar_t>
                                        std::string& result,
                                        parameter_list_t parameters) OVERRIDE FINAL
     {
+        Q_UNUSED(overloadIdx);
         typedef typename exprtk::igeneric_function<exprtk_scalar_t>::generic_type generic_type;
         typedef typename generic_type::scalar_view scalar_t;
         typedef typename generic_type::string_view string_t;

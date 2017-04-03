@@ -779,7 +779,7 @@ TrackMarkerPM::trackMarker(bool forward,
 
     // Unslave the center knob since the trackerNode will update it, then update the marker center
     KnobDoublePtr center = centerKnob.lock();
-    (void)center->unlink(DimSpec::all(), ViewSetSpec::all(), true);
+    center->unlink(DimSpec::all(), ViewSetSpec::all(), true);
 
     trackerNode->getEffectInstance()->onKnobValueChanged_public(button, eValueChangedReasonUserEdited, TimeValue(frame), ViewIdx(0));
 
@@ -847,7 +847,9 @@ TrackMarkerPM::trackMarker(bool forward,
         }
     }
 
-    (void)center->linkTo(markerCenter);
+    if ( !center->linkTo(markerCenter) ) {
+        throw std::runtime_error("Could not link center");
+    }
 
     return ret;
 } // TrackMarkerPM::trackMarker
@@ -906,12 +908,16 @@ TrackMarkerPM::initializeKnobs()
     centerKnob = center;
 
     // Slave the center knob and unslave when tracking
-    (void)center->linkTo(getCenterKnob());
+    if ( !center->linkTo(getCenterKnob()) ) {
+        throw std::runtime_error("Could not link center");
+    }
 
     KnobDoublePtr offset = getNodeKnob<KnobDouble>(node, kTrackerPMParamTrackingOffset);
 
     // Slave the offset knob
-    (void)offset->linkTo(getOffsetKnob());
+    if ( !offset->linkTo( getOffsetKnob() ) ) {
+        throw std::runtime_error("Could not link offset");
+    }
 
     offsetKnob = offset;
 
@@ -927,7 +933,9 @@ TrackMarkerPM::initializeKnobs()
 #ifdef kTrackerParamPatternMatchingScoreType
         KnobIPtr modelKnob = effect->getKnobByName(kTrackerParamPatternMatchingScoreType);
         if (modelKnob) {
-            (void)scoreType->linkTo(modelKnob);
+            if ( !scoreType->linkTo(modelKnob) ) {
+                throw std::runtime_error("Could not link scoreType");
+            }
         }
 #endif
     }

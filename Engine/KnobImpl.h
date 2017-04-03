@@ -535,6 +535,8 @@ Knob<T>::evaluateExpression(TimeValue time,
             return handleExprtkReturnValue(ret, valueAsDouble, valueAsString, value, error);
         }
     }
+
+    throw std::invalid_argument("KnobHelper::evaluateExpression(): Unknown expression type");
 } // evaluateExpression
 
 template <typename T>
@@ -591,6 +593,8 @@ Knob<T>::evaluateExpression_pod(TimeValue time,
 
         }
     }
+
+    throw std::invalid_argument("KnobHelper::evaluateExpression_pod(): Unknown expression type");
 } // evaluateExpression_pod
 
 template <typename T>

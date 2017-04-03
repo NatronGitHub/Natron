@@ -655,6 +655,9 @@ EffectInstance::Implementation::storageModeFromBackendType(RenderBackendTypeEnum
         case eRenderBackendTypeOSMesa:
             return eStorageModeRAM;
     }
+    assert(false);
+
+    return eStorageModeRAM;
 }
 
 ImagePtr
