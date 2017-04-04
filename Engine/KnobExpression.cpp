@@ -1483,7 +1483,7 @@ KnobHelperPrivate::validateExprTKExpression(const std::string& expression, DimId
 
     QThread* curThread = QThread::currentThread();
 
-    KnobExprTkExpr::ExpressionDataPtr data = ret->data[curThread];
+    KnobExprTkExpr::ExpressionDataPtr& data = ret->data[curThread];
     if (!data) {
         data.reset(new KnobExprTkExpr::ExpressionData);
     }
@@ -2173,8 +2173,10 @@ KnobHelper::executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimensi
             std::pair<KnobExprTkExpr::PerThreadDataMap::iterator, bool> ret = obj->data.insert(std::make_pair(curThread, data));
             assert(ret.second);
             foundThreadData = ret.first;
+        } else {
+            data = foundThreadData->second;
+            assert(data);
         }
-        data = foundThreadData->second;
     }
 
     bool isRenderClone = getHolder()->isRenderClone();

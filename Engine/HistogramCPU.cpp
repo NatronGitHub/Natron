@@ -326,6 +326,7 @@ computeHisto_internal(const HistogramRequest & request,
 template <int srcNComps>
 void
 computeHistoForNComps(const HistogramRequest & request,
+                      int mode,
                       const Image::CPUData& imageData,
                       const RectI& roi,
                       int upscale,
@@ -338,7 +339,7 @@ computeHistoForNComps(const HistogramRequest & request,
         mode = histogramIndex + 2;
     }
     /// keep the mode parameter in sync with Histogram::DisplayModeEnum
-    switch (request.mode) {
+    switch (mode) {
         case 1:     //< A
             computeHisto_internal<srcNComps, 1>(request, imageData, roi, upscale, histo);
             break;
@@ -364,6 +365,7 @@ computeHistoForNComps(const HistogramRequest & request,
 
 static void
 computeHistogramStatic(const HistogramRequest & request,
+                       int mode,
                        const Image::CPUData& imageData,
                        const RectI& roi,
                        FinishedHistogramPtr ret,
@@ -395,16 +397,16 @@ computeHistogramStatic(const HistogramRequest & request,
 
     switch (imageData.nComps) {
         case 1:
-            computeHistoForNComps<1>(request, imageData, roi, upscale, histogramIndex, &histo_upscaled);
+            computeHistoForNComps<1>(request, mode, imageData, roi, upscale, histogramIndex, &histo_upscaled);
             break;
         case 2:
-            computeHistoForNComps<2>(request, imageData, roi, upscale, histogramIndex, &histo_upscaled);
+            computeHistoForNComps<2>(request, mode, imageData, roi, upscale, histogramIndex, &histo_upscaled);
             break;
         case 3:
-            computeHistoForNComps<3>(request, imageData, roi, upscale, histogramIndex, &histo_upscaled);
+            computeHistoForNComps<3>(request, mode, imageData, roi, upscale, histogramIndex, &histo_upscaled);
             break;
         case 4:
-            computeHistoForNComps<4>(request, imageData, roi, upscale, histogramIndex, &histo_upscaled);
+            computeHistoForNComps<4>(request, mode, imageData, roi, upscale, histogramIndex, &histo_upscaled);
             break;
     }
 
@@ -542,16 +544,16 @@ HistogramCPU::run()
 
         switch (request.mode) {
         case 0:     //< RGB
-            computeHistogramStatic(request, imageData, roiPixels, ret, 1);
-            computeHistogramStatic(request, imageData, roiPixels, ret, 2);
-            computeHistogramStatic(request, imageData, roiPixels, ret, 3);
+            computeHistogramStatic(request, 3, imageData, roiPixels, ret, 1);
+            computeHistogramStatic(request, 4, imageData, roiPixels, ret, 2);
+            computeHistogramStatic(request, 5, imageData, roiPixels, ret, 3);
             break;
         case 1:
         case 2:
         case 3:
         case 4:
         case 5:
-            computeHistogramStatic(request, imageData, roiPixels, ret, 1);
+            computeHistogramStatic(request, request.mode, imageData, roiPixels, ret, 1);
             break;
         default:
             assert(false);     //< unknown case.

@@ -243,7 +243,6 @@ protected:
                                     TimeValue time,
                                     ViewSetSpec view) OVERRIDE;
 
-    virtual void onTransformSet(TimeValue /*time*/, ViewSetSpec /*view*/) {}
 
 private:
 

@@ -850,6 +850,7 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
         }
     }
 
+
     // Copy in output the distortion stack
     outArgs->distortionStack = outputRequest->getDistorsionStack();
 
@@ -871,6 +872,9 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
     // The output image unmapped
     outArgs->image = outputRequest->getRequestedScaleImagePlane();
 
+    if (!outArgs->image) {
+        return false;
+    }
 
     bool mustConvertImage = false;
     StorageModeEnum storage = outArgs->image->getStorageMode();
@@ -920,6 +924,15 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
     if (thisBitDepth != outArgs->image->getBitDepth()) {
         mustConvertImage = true;
     }
+
+
+    if (roiExpandPixels != roiPixels) {
+        outArgs->roiPixel = roiExpandPixels;
+    } else {
+        outArgs->roiPixel = roiPixels;
+    }
+
+    outArgs->roiPixel.intersect(outArgs->image->getBounds(), &outArgs->roiPixel);
 
     ImagePtr convertedImage = outArgs->image;
     if (mustConvertImage) {
@@ -983,13 +996,6 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
         }
     }
 
-    if (roiExpandPixels != roiPixels) {
-        outArgs->roiPixel = roiExpandPixels;
-    } else {
-        outArgs->roiPixel = roiPixels;
-    }
-
-    outArgs->roiPixel.intersect(outArgs->image->getBounds(), &outArgs->roiPixel);
   //  qDebug() << QThread::currentThread() << "input roi: " << outArgs->roiPixel.x1 << outArgs->roiPixel.y1 << outArgs->roiPixel.x2 << outArgs->roiPixel.y2;
 
 

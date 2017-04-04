@@ -158,7 +158,7 @@ RotoBezierTriangulation::computeTriangles(const BezierPtr& bezier,
     assert(outArgs);
     outArgs->error = 0;
 
-    bool clockWise = bezier->isFeatherPolygonClockwiseOriented(time, view);
+    bool clockWise = bezier->isClockwiseOriented(time, view);
 
     const double absFeatherDist_x = std::abs(featherDistPixel_x);
     const double absFeatherDist_y = std::abs(featherDistPixel_y);
@@ -166,14 +166,9 @@ RotoBezierTriangulation::computeTriangles(const BezierPtr& bezier,
     RectD featherPolyBBox;
     featherPolyBBox.setupInfinity();
 
-#ifdef ROTO_BEZIER_EVAL_ITERATIVE
-    int error = -1;
-#else
-    double error = 1;
-#endif
 
-    bezier->evaluateFeatherPointsAtTime_DeCasteljau(time, view, scale, error, true, &outArgs->featherPolygon, &featherPolyBBox);
-    bezier->evaluateAtTime_DeCasteljau(time, view, scale, error,&outArgs->bezierPolygon,
+    bezier->evaluateFeatherPointsAtTime(time, view, scale, Bezier::eDeCastelJauAlgorithmIterative, -1, 1., true /*evaluateIfEqual*/, &outArgs->featherPolygon, 0, &featherPolyBBox);
+    bezier->evaluateAtTime(time, view, scale, Bezier::eDeCastelJauAlgorithmIterative, -1, 1., &outArgs->bezierPolygon, 0,
 #ifndef NDEBUG
                                        &outArgs->bezierBbox
 #else
@@ -182,7 +177,8 @@ RotoBezierTriangulation::computeTriangles(const BezierPtr& bezier,
                                        );
 
 
-    // First compute the mesh composed of triangles of the feather
+    // First compute the mesh composed of triangles of the feather.
+    // The discretized bezier polygon and feather polygon must have the same number of samples.
     assert( !outArgs->featherPolygon.empty() && !outArgs->bezierPolygon.empty() && outArgs->featherPolygon.size() == outArgs->bezierPolygon.size());
 
     vector<vector<ParametricPoint> >::const_iterator fIt = outArgs->featherPolygon.begin();
@@ -351,6 +347,7 @@ RotoBezierTriangulation::computeTriangles(const BezierPtr& bezier,
     // Now tesselate the internal bezier using glu
     libtess_GLUtesselator* tesselator = libtess_gluNewTess();
 
+    libtess_gluTessProperty(tesselator, LIBTESS_GLU_TESS_WINDING_RULE, LIBTESS_GLU_TESS_WINDING_POSITIVE);
     libtess_gluTessCallback(tesselator, LIBTESS_GLU_TESS_BEGIN_DATA, (void (*)())tess_begin_primitive_callback);
     libtess_gluTessCallback(tesselator, LIBTESS_GLU_TESS_VERTEX_DATA, (void (*)())tess_vertex_callback);
     libtess_gluTessCallback(tesselator, LIBTESS_GLU_TESS_END_DATA, (void (*)())tess_end_primitive_callback);
@@ -359,7 +356,10 @@ RotoBezierTriangulation::computeTriangles(const BezierPtr& bezier,
 
     // From README: if you know that all polygons lie in the x-y plane, call
     // gluTessNormal(tess, 0.0, 0.0, 1.0) before rendering any polygons.
-    libtess_gluTessNormal(tesselator, 0, 0, 1);
+
+    bool isCWOriented = bezier->isClockwiseOriented(time, view);
+
+    libtess_gluTessNormal(tesselator, 0, 0, isCWOriented ? -1 : 1);
     libtess_gluTessBeginPolygon(tesselator, outArgs);
     libtess_gluTessBeginContour(tesselator);
 

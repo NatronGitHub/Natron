@@ -1432,7 +1432,7 @@ RotoPaintInteract::isNearbyFeatherBar(TimeValue time,
         if ( prevF != fps.begin() ) {
             --prevF;
         }
-        bool isClockWiseOriented = isBezier->isFeatherPolygonClockwiseOriented(time, view);
+        bool isClockWiseOriented = isBezier->isClockwiseOriented(time, view);
 
         for (std::list<BezierCPPtr >::const_iterator itCp = cps.begin();
              itCp != cps.end();
@@ -1901,13 +1901,7 @@ RotoPaintInteract::drawOverlay(TimeValue time,
 #endif
 
                 std::vector< ParametricPoint > points;
-                isBezier->evaluateAtTime_DeCasteljau(time, view, 1.,
-#ifdef ROTO_BEZIER_EVAL_ITERATIVE
-                                                     100,
-#else
-                                                     1,
-#endif
-                                                     &points, NULL);
+                isBezier->evaluateAtTime(time, view, RenderScale(1.), Bezier::eDeCastelJauAlgorithmIterative, 100, 1., 0, &points, NULL);
 
                 bool locked = (*it)->isLockedRecursive();
                 ColorRgbaD overlayColor(0.8, 0.8, 0.8, 1.);
@@ -1932,18 +1926,12 @@ RotoPaintInteract::drawOverlay(TimeValue time,
                                   std::numeric_limits<double>::infinity(),
                                   -std::numeric_limits<double>::infinity(),
                                   -std::numeric_limits<double>::infinity() );
-                bool clockWise = isBezier->isFeatherPolygonClockwiseOriented(time, view);
+                bool clockWise = isBezier->isClockwiseOriented(time, view);
 
 
                 if (featherVisible) {
                     ///Draw feather only if visible (button is toggled in the user interface)
-                    isBezier->evaluateFeatherPointsAtTime_DeCasteljau(time, view, 1.,
-#ifdef ROTO_BEZIER_EVAL_ITERATIVE
-                                                                      100,
-#else
-                                                                      1,
-#endif
-                                                                      true, &featherPoints, &featherBBox);
+                    isBezier->evaluateFeatherPointsAtTime(time, view, RenderScale(1.), Bezier::eDeCastelJauAlgorithmIterative, 100, 1., true /*evaluateIfEqual*/, 0, &featherPoints, &featherBBox);
 
                     if ( !featherPoints.empty() ) {
                         GL_GPU::LineStipple(2, 0xAAAA);

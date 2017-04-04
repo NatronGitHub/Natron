@@ -99,17 +99,11 @@ struct BezierShape
     BezierCPs points; //< the control points of the curve
     BezierCPs featherPoints; //< the feather points, the number of feather points must equal the number of cp.
 
-    //updated whenever the Bezier is edited, this is used to determine if a point lies inside the bezier or not
-    //it has a value for each keyframe
-    mutable std::map<double, bool> isClockwiseOriented;
-    mutable bool isClockwiseOrientedStatic; //< used when the bezier has no keyframes
     bool finished; //< when finished is true, the last point of the list is connected to the first point of the list.
 
     BezierShape()
     : points()
     , featherPoints()
-    , isClockwiseOriented()
-    , isClockwiseOrientedStatic(false)
     , finished(false)
     {
 
@@ -123,7 +117,6 @@ struct BezierPrivate
     mutable QMutex itemMutex; //< protects points & featherPoits
     PerViewBezierShapeMap viewShapes;
 
-    bool autoRecomputeOrientation; // when true, orientation will be computed automatically on editing
     bool isOpenBezier; // when true the bezier will be rendered even if not closed
 
     std::string baseName;
@@ -137,7 +130,6 @@ struct BezierPrivate
     BezierPrivate(const std::string& baseName, bool isOpenBezier)
     : itemMutex()
     , viewShapes()
-    , autoRecomputeOrientation(true)
     , isOpenBezier(isOpenBezier)
     , baseName(baseName)
     {
@@ -150,7 +142,6 @@ struct BezierPrivate
     {
         QMutexLocker k(&other.itemMutex);
 
-        autoRecomputeOrientation = other.autoRecomputeOrientation;
         isOpenBezier = other.isOpenBezier;
         baseName = other.baseName;
         feather = other.feather;
@@ -159,8 +150,6 @@ struct BezierPrivate
 
         for (PerViewBezierShapeMap::const_iterator it = other.viewShapes.begin(); it != other.viewShapes.end(); ++it) {
             BezierShape& thisShape = viewShapes[it->first];
-            thisShape.isClockwiseOriented = it->second.isClockwiseOriented;
-            thisShape.isClockwiseOrientedStatic = it->second.isClockwiseOrientedStatic;
             thisShape.finished = it->second.finished;
             for (BezierCPs::const_iterator it2 = it->second.points.begin(); it2 != it->second.points.end(); ++it2) {
                 BezierCPPtr copy(new BezierCP(**it2));
@@ -733,7 +722,7 @@ inline double euclDist(double x1, double y1, double x2, double y2)
 }
 
 
-inline void addPointConditionnally(const Point& p, double t, std::list< ParametricPoint >* points)
+inline void addPointConditionnally(const Point& p, double t, std::vector< ParametricPoint >* points)
 {
     if (points->empty()) {
         ParametricPoint x;
@@ -753,7 +742,6 @@ inline void addPointConditionnally(const Point& p, double t, std::list< Parametr
     }
 }
 
-#ifndef ROTO_BEZIER_EVAL_ITERATIVE
 /**
  * @brief Recursively subdivide the bezier segment p0,p1,p2,p3 until the cubic curve is assumed to be flat. The errorScale is used to determine the stopping criterion.
  * The greater it is, the smoother the curve will be.
@@ -761,7 +749,7 @@ inline void addPointConditionnally(const Point& p, double t, std::list< Parametr
 static void
 recursiveBezierInternal(const Point& p0, const Point& p1, const Point& p2, const Point& p3,
                         double t_p0, double t_p1, double t_p2, double t_p3,
-                        double errorScale, int recursionLevel, int maxRecursion, std::list< ParametricPoint >* points)
+                        double errorScale, int recursionLevel, int maxRecursion, std::vector< ParametricPoint >* points)
 {
 
     if (recursionLevel > maxRecursion) {
@@ -978,10 +966,10 @@ recursiveBezierInternal(const Point& p0, const Point& p1, const Point& p2, const
 
     recursiveBezierInternal(p0, p12, p123, p1234, t_p0, t_p12, t_p123, t_p1234, errorScale, recursionLevel + 1, maxRecursion, points);
     recursiveBezierInternal(p1234, p234, p34, p3, t_p1234, t_p234, t_p34, t_p3, errorScale, recursionLevel + 1, maxRecursion, points);
-}
+} // recursiveBezierInternal
 
 static void
-recursiveBezier(const Point& p0, const Point& p1, const Point& p2, const Point& p3, double errorScale, int maxRecursion, std::list< ParametricPoint >* points)
+recursiveBezier(const Point& p0, const Point& p1, const Point& p2, const Point& p3, double errorScale, int maxRecursion, std::vector< ParametricPoint >* points)
 {
     ParametricPoint p0x,p3x;
     p0x.x = p0.x;
@@ -994,7 +982,6 @@ recursiveBezier(const Point& p0, const Point& p1, const Point& p2, const Point& 
     recursiveBezierInternal(p0, p1, p2, p3, 0., 1. / 3., 2. / 3., 1., errorScale, 0, maxRecursion, points);
     points->push_back(p3x);
 }
-#endif // #ifdef ROTO_BEZIER_EVAL_ITERATIVE
 
 // compute nbPointsperSegment points and update the bbox bounding box for the Bezier
 // segment from 'first' to 'last' evaluated at 'time'
@@ -1004,11 +991,9 @@ bezierSegmentEval(const BezierCP & first,
                   const BezierCP & last,
                   TimeValue time,
                   const RenderScale &scale,
-#ifdef ROTO_BEZIER_EVAL_ITERATIVE
+                  Bezier::DeCastelJauAlgorithmEnum algo,
                   int nbPointsPerSegment,
-#else
                   double errorScale,
-#endif
                   const Transform::Matrix3x3& transform,
                   std::vector< ParametricPoint >* points, ///< output
                   RectD* bbox = NULL,
@@ -1050,39 +1035,43 @@ bezierSegmentEval(const BezierCP & first,
     p3.x *= scale.x;
     p3.y *= scale.y;
 
+    switch (algo) {
+        case Bezier::eDeCastelJauAlgorithmIterative: {
+            if (nbPointsPerSegment == -1) {
+                /*
+                 * Approximate the necessary number of line segments, using http://antigrain.com/research/adaptive_bezier/
+                 */
+                double dx1, dy1, dx2, dy2, dx3, dy3;
+                dx1 = p1.x - p0.x;
+                dy1 = p1.y - p0.y;
+                dx2 = p2.x - p1.x;
+                dy2 = p2.y - p1.y;
+                dx3 = p3.x - p2.x;
+                dy3 = p3.y - p2.y;
+                double length = std::sqrt(dx1 * dx1 + dy1 * dy1) +
+                std::sqrt(dx2 * dx2 + dy2 * dy2) +
+                std::sqrt(dx3 * dx3 + dy3 * dy3);
+                nbPointsPerSegment = (int)std::max(length * 0.25, 2.);
+            }
 
-#ifdef ROTO_BEZIER_EVAL_ITERATIVE
-    if (nbPointsPerSegment == -1) {
-        /*
-         * Approximate the necessary number of line segments, using http://antigrain.com/research/adaptive_bezier/
-         */
-        double dx1, dy1, dx2, dy2, dx3, dy3;
-        dx1 = p1.x - p0.x;
-        dy1 = p1.y - p0.y;
-        dx2 = p2.x - p1.x;
-        dy2 = p2.y - p1.y;
-        dx3 = p3.x - p2.x;
-        dy3 = p3.y - p2.y;
-        double length = std::sqrt(dx1 * dx1 + dy1 * dy1) +
-                        std::sqrt(dx2 * dx2 + dy2 * dy2) +
-                        std::sqrt(dx3 * dx3 + dy3 * dy3);
-        nbPointsPerSegment = (int)std::max(length * 0.25, 2.);
+            double incr = 1. / (double)(nbPointsPerSegment - 1);
+            Point cur;
+            for (int i = 0; i < nbPointsPerSegment; ++i) {
+                ParametricPoint p;
+                p.t = incr * i;
+                Bezier::bezierPoint(p0, p1, p2, p3, p.t, &cur);
+                p.x = cur.x;
+                p.y = cur.y;
+                points->push_back(p);
+            }
+        }   break;
+
+        case Bezier::eDeCastelJauAlgorithmRecursive: {
+            static const int maxRecursion = 32;
+            recursiveBezier(p0, p1, p2, p3, errorScale, maxRecursion, points);
+        }   break;
     }
 
-    double incr = 1. / (double)(nbPointsPerSegment - 1);
-    Point cur;
-    for (int i = 0; i < nbPointsPerSegment; ++i) {
-        ParametricPoint p;
-        p.t = incr * i;
-        Bezier::bezierPoint(p0, p1, p2, p3, p.t, &cur);
-        p.x = cur.x;
-        p.y = cur.y;
-        points->push_back(p);
-    }
-#else
-    static const int maxRecursion = 32;
-    recursiveBezier(p0, p1, p2, p3, errorScale, maxRecursion, points);
-#endif
     if (bbox) {
         Bezier::bezierPointBboxUpdate(p0,  p1,  p2,  p3, bbox, bboxSet);
     }
@@ -1225,8 +1214,6 @@ Bezier::clearAllPoints()
         it->second.points.clear();
         it->second.featherPoints.clear();
         it->second.finished = false;
-        it->second.isClockwiseOriented.clear();
-        it->second.isClockwiseOrientedStatic = false;
     }
 }
 
@@ -1741,7 +1728,6 @@ Bezier::setCurveFinished(bool finished, ViewSetSpec view)
     }
     
     resetTransformCenter();
-    refreshPolygonOrientation(getCurrentRenderTime(), view);
     evaluateCurveModified();
 }
 
@@ -1798,7 +1784,6 @@ Bezier::removeControlPointByIndex(int index, ViewSetSpec view)
         removeControlPointByIndexInternal(index, view_i);
     }
 
-    refreshPolygonOrientation(getCurrentRenderTime(), view);
     evaluateCurveModified();
 }
 
@@ -1990,7 +1975,6 @@ Bezier::movePointByIndexInternal(int index,
         ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
         movePointByIndexInternalForView(index, time, view_i, dx, dy, onlyFeather);
     }
-    refreshPolygonOrientation(time, view);
     if (isAutoKeyingEnabled()) {
         setKeyFrame(time, view, 0);
     }
@@ -2050,7 +2034,6 @@ Bezier::setPointByIndexInternal(int index, TimeValue time, ViewSetSpec view, dou
         ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
         setPointByIndexInternalForView(index, time, view_i, dx, dy);
     }
-    refreshPolygonOrientation(time, view);
     if (isAutoKeyingEnabled()) {
         setKeyFrame(time, view, 0);
     }
@@ -2314,7 +2297,6 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
         moveBezierPointInternalForView(cpParam, fpParam, index, time, view_i, lx, ly, rx, ry, flx, fly, frx, fry, isLeft, moveBoth, onlyFeather);
     }
 
-    refreshPolygonOrientation(time, view);
     if (isAutoKeyingEnabled()) {
         setKeyFrame(time, view, 0);
     }
@@ -2470,8 +2452,6 @@ Bezier::setPointAtIndexInternal(bool setLeft,
         setPointAtIndexInternalForView(setLeft, setRight, setPoint, feather, featherAndCp, index, time, view_i, x, y, lx, ly, rx, ry);
     }
 
-    refreshPolygonOrientation(time, view);
-
     if (isAutoKeyingEnabled()) {
         setKeyFrame(time, view, 0);
     }
@@ -2511,12 +2491,6 @@ Bezier::setPointAtIndex(bool feather,
                         double ry)
 {
     setPointAtIndexInternal(true, true, true, feather, false, index, time, view, x, y, lx, ly, rx, ry);
-}
-
-void
-Bezier::onTransformSet(TimeValue time, ViewSetSpec view)
-{
-    refreshPolygonOrientation(time, view);
 }
 
 void
@@ -2579,7 +2553,6 @@ Bezier::transformPoint(const BezierCPPtr & point,
         transformPointInternal(point, time, view_i, matrix);
     }
 
-    refreshPolygonOrientation(time, view);
     evaluateCurveModified();
  
 } // Bezier::transformPoint
@@ -2688,7 +2661,6 @@ Bezier::smoothOrCuspPointAtIndex(bool isSmooth,
     }
 
 
-    refreshPolygonOrientation(time, view);
     if (isAutoKeyingEnabled()) {
         setKeyFrame(time, view, 0);
     }
@@ -2784,11 +2756,6 @@ Bezier::onKeyFrameRemovedForView(TimeValue time, ViewIdx view)
                 ++fp;
             }
         }
-
-        std::map<double, bool>::iterator found = shape->isClockwiseOriented.find(time);
-        if ( found != shape->isClockwiseOriented.end() ) {
-            shape->isClockwiseOriented.erase(found);
-        }
         
     }
 } // onKeyFrameRemovedForView
@@ -2833,7 +2800,9 @@ Bezier::deCastelJau(bool isOpenBezier,
                     TimeValue time,
                     const RenderScale &scale,
                     bool finished,
-                    int nBPointsPerSegment,
+                    DeCastelJauAlgorithmEnum algo,
+                    int nbPointsPerSegment,
+                    double errorScale,
                     const Transform::Matrix3x3& transform,
                     std::vector<std::vector<ParametricPoint> >* points,
                     std::vector<ParametricPoint >* pointsSingleList,
@@ -2860,20 +2829,14 @@ Bezier::deCastelJau(bool isOpenBezier,
         bool segbboxSet = false;
         if (points) {
             std::vector<ParametricPoint> segmentPoints;
-            bezierSegmentEval(*(*it), *(*next), time,  scale, nBPointsPerSegment, transform, &segmentPoints, bbox ? &segbbox : 0, &segbboxSet);
-            // If we are a closed bezier or we are not on the last segment, remove the last point so we don't add duplicates
-            if (!isOpenBezier || next != cps.end()) {
-                if (!segmentPoints.empty()) {
-                    segmentPoints.pop_back();
-                }
-            }
+            bezierSegmentEval(*(*it), *(*next), time,  scale, algo, nbPointsPerSegment, errorScale, transform, &segmentPoints, bbox ? &segbbox : 0, &segbboxSet);
 
             points->push_back(segmentPoints);
         } else {
             assert(pointsSingleList);
-            bezierSegmentEval(*(*it), *(*next), time,  scale, nBPointsPerSegment, transform, pointsSingleList, bbox ? &segbbox : 0, &segbboxSet);
+            bezierSegmentEval(*(*it), *(*next), time,  scale, algo, nbPointsPerSegment, errorScale , transform, pointsSingleList, bbox ? &segbbox : 0, &segbboxSet);
             // If we are a closed bezier or we are not on the last segment, remove the last point so we don't add duplicates
-            if (!isOpenBezier || next != cps.end()) {
+            if ((!isOpenBezier && finished) && next != cps.end()) {
                 if (!pointsSingleList->empty()) {
                     pointsSingleList->pop_back();
                 }
@@ -2893,149 +2856,77 @@ Bezier::deCastelJau(bool isOpenBezier,
         if ( next != cps.end() ) {
             ++next;
         }
-    } // for()
+    } // for each control point
 } // deCastelJau
 
-void
-Bezier::evaluateAtTime_DeCasteljau(TimeValue time,
-                                   ViewIdx view,
-                                   const RenderScale &scale,
-#ifdef ROTO_BEZIER_EVAL_ITERATIVE
-                                   int nbPointsPerSegment,
-#else
-                                   double errorScale,
-#endif
-                                   std::vector<std::vector< ParametricPoint> >* points,
-                                   RectD* bbox) const
-{
-    evaluateAtTime_DeCasteljau_internal(time, view, scale,
-#ifdef ROTO_BEZIER_EVAL_ITERATIVE
-                                        nbPointsPerSegment,
-#else
-                                        errorScale,
-#endif
-                                        points, 0, bbox);
-}
+
 
 void
-Bezier::evaluateAtTime_DeCasteljau(TimeValue time,
-                                   ViewIdx view,
-                                   const RenderScale &scale,
-#ifdef ROTO_BEZIER_EVAL_ITERATIVE
-                                   int nbPointsPerSegment,
-#else
-                                   double errorScale,
-#endif
-                                   std::vector<ParametricPoint >* pointsSingleList,
-                                   RectD* bbox) const
-{
-    evaluateAtTime_DeCasteljau_internal(time, view, scale,
-#ifdef ROTO_BEZIER_EVAL_ITERATIVE
-                                        nbPointsPerSegment,
-#else
-                                        errorScale,
-#endif
-                                         0, pointsSingleList, bbox);
-}
-
-void
-Bezier::evaluateAtTime_DeCasteljau_internal(TimeValue time,
-                                            ViewIdx view,
-                                            const RenderScale &scale,
-#ifdef ROTO_BEZIER_EVAL_ITERATIVE
-                                            int nbPointsPerSegment,
-#else
-                                            double errorScale,
-#endif
-                                            std::vector<std::vector<ParametricPoint> >* points,
-                                            std::vector<ParametricPoint >* pointsSingleList,
-                                            RectD* bbox) const
+Bezier::evaluateAtTime(TimeValue time,
+                       ViewIdx view,
+                       const RenderScale &scale,
+                       DeCastelJauAlgorithmEnum algo,
+                       int nbPointsPerSegment,
+                       double errorScale,
+                       std::vector<std::vector<ParametricPoint> >* points,
+                       std::vector<ParametricPoint >* pointsSingleList,
+                       RectD* bbox) const
 {
     assert((points && !pointsSingleList) || (!points && pointsSingleList));
     Transform::Matrix3x3 transform;
-
     getTransformAtTime(time, view, &transform);
+
     QMutexLocker l(&_imp->itemMutex);
     ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     const BezierShape* shape = _imp->getViewShape(view_i);
     if (!shape) {
         return;
     }
-    deCastelJau(isOpenBezier(), shape->points, time, scale, shape->finished,
-#ifdef ROTO_BEZIER_EVAL_ITERATIVE
+    deCastelJau(isOpenBezier(),
+                shape->points,
+                time,
+                scale,
+                shape->finished,
+                algo,
                 nbPointsPerSegment,
-#else
                 errorScale,
-#endif
-                transform, points, pointsSingleList, bbox);
-}
+                transform,
+                points,
+                pointsSingleList,
+                bbox);
+} // evaluateAtTime
+
+
 
 void
-Bezier::evaluateAtTime_DeCasteljau_autoNbPoints(TimeValue time,
-                                                ViewIdx view,
-                                                const RenderScale &scale,
-                                                std::vector<std::vector<ParametricPoint> >* points,
-                                                RectD* bbox) const
-{
-    evaluateAtTime_DeCasteljau(time, view, scale,
-#ifdef ROTO_BEZIER_EVAL_ITERATIVE
-                               -1,
-#else
-                               1,
-#endif
-                               points, bbox);
-}
-
-void
-Bezier::evaluateFeatherPointsAtTime_DeCasteljau(TimeValue time,
-                                                ViewIdx view,
-                                                const RenderScale &scale,
-#ifdef ROTO_BEZIER_EVAL_ITERATIVE
-                                                int nbPointsPerSegment,
-#else
-                                                double errorScale,
-#endif
-                                                bool evaluateIfEqual,
-                                                std::vector<ParametricPoint >* points,
-                                                RectD* bbox) const
-{
-    evaluateFeatherPointsAtTime_DeCasteljau_internal(time, view, scale,
-#ifdef ROTO_BEZIER_EVAL_ITERATIVE
-                                                     nbPointsPerSegment,
-#else
-                                                     errorScale,
-#endif
-                                                      evaluateIfEqual, 0, points, bbox);
-}
-
-void
-Bezier::evaluateFeatherPointsAtTime_DeCasteljau_internal(TimeValue time,
-                                                         ViewIdx view,
-                                                         const RenderScale &scale,
-#ifdef ROTO_BEZIER_EVAL_ITERATIVE
-                                                         int nbPointsPerSegment,
-#else
-                                                         double errorScale,
-#endif
-                                                         bool evaluateIfEqual,
-                                                         std::vector<std::vector<ParametricPoint>  >* points,
-                                                         std::vector<ParametricPoint >* pointsSingleList,
-                                                         RectD* bbox) const
+Bezier::evaluateFeatherPointsAtTime(TimeValue time,
+                                    ViewIdx view,
+                                    const RenderScale &scale,
+                                    DeCastelJauAlgorithmEnum algo,
+                                    int nbPointsPerSegment,
+                                    double errorScale,
+                                    bool evaluateIfEqual,
+                                    std::vector<std::vector<ParametricPoint>  >* points,
+                                    std::vector<ParametricPoint >* pointsSingleList,
+                                    RectD* bbox) const
 {
     assert((points && !pointsSingleList) || (!points && pointsSingleList));
     assert( useFeatherPoints() );
-    QMutexLocker l(&_imp->itemMutex);
 
+    Transform::Matrix3x3 transform;
+    getTransformAtTime(time, view, &transform);
+
+    QMutexLocker l(&_imp->itemMutex);
     ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     const BezierShape* shape = _imp->getViewShape(view_i);
     if (!shape) {
         return;
     }
-
 
     if ( shape->points.empty() ) {
         return;
     }
+
     BezierCPs::const_iterator itCp = shape->points.begin();
     BezierCPs::const_iterator next = shape->featherPoints.begin();
     if ( next != shape->featherPoints.end() ) {
@@ -3045,9 +2936,6 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau_internal(TimeValue time,
     if ( nextCp != shape->points.end() ) {
         ++nextCp;
     }
-
-    Transform::Matrix3x3 transform;
-    getTransformAtTime(time, view_i, &transform);
 
     for (BezierCPs::const_iterator it = shape->featherPoints.begin(); it != shape->featherPoints.end();
          ++it) {
@@ -3065,31 +2953,14 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau_internal(TimeValue time,
         }
         if (points) {
             std::vector<ParametricPoint> segmentPoints;
-            bezierSegmentEval(*(*it), *(*next), time, scale,
-#ifdef ROTO_BEZIER_EVAL_ITERATIVE
-                              nbPointsPerSegment,
-#else
-                              errorScale,
-#endif
-                              transform, &segmentPoints, bbox);
-            // If we are a closed bezier or we are not on the last segment, remove the last point so we don't add duplicates
-            if (!isOpenBezier() || next != shape->featherPoints.end()) {
-                if (!segmentPoints.empty()) {
-                    segmentPoints.pop_back();
-                }
-            }
+            bezierSegmentEval(*(*it), *(*next), time, scale, algo, nbPointsPerSegment, errorScale, transform, &segmentPoints, bbox);
             points->push_back(segmentPoints);
         } else {
             assert(pointsSingleList);
-            bezierSegmentEval(*(*it), *(*next), time,  scale,
-#ifdef ROTO_BEZIER_EVAL_ITERATIVE
-                              nbPointsPerSegment,
-#else
-                              errorScale,
-#endif
-                              transform, pointsSingleList, bbox);
+            bezierSegmentEval(*(*it), *(*next), time, scale, algo, nbPointsPerSegment, errorScale, transform, pointsSingleList, bbox);
+
             // If we are a closed bezier or we are not on the last segment, remove the last point so we don't add duplicates
-            if (!isOpenBezier() || next != shape->featherPoints.end()) {
+            if (!isOpenBezier() && next != shape->featherPoints.end()) {
                 if (!pointsSingleList->empty()) {
                     pointsSingleList->pop_back();
                 }
@@ -3106,31 +2977,10 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau_internal(TimeValue time,
         if ( nextCp != shape->featherPoints.end() ) {
             ++nextCp;
         }
-    } // for(it)
+    } // for each control point
 
-}
+} // evaluateFeatherPointsAtTime
 
-void
-Bezier::evaluateFeatherPointsAtTime_DeCasteljau(TimeValue time,
-                                                ViewIdx view,
-                                                const RenderScale &scale,
-#ifdef ROTO_BEZIER_EVAL_ITERATIVE
-                                                int nbPointsPerSegment,
-#else
-                                                double errorScale,
-#endif
-                                                bool evaluateIfEqual, ///< evaluate only if feather points are different from control points
-                                                std::vector<std::vector<ParametricPoint> >* points, ///< output
-                                                RectD* bbox) const ///< output
-{
-    evaluateFeatherPointsAtTime_DeCasteljau_internal(time, view, scale,
-#ifdef ROTO_BEZIER_EVAL_ITERATIVE
-                                                     nbPointsPerSegment,
-#else
-                                                     errorScale,
-#endif
-                                                     evaluateIfEqual, points, 0, bbox);
-} // Bezier::evaluateFeatherPointsAtTime_DeCasteljau
 
 RectD
 Bezier::getBoundingBox(TimeValue time, ViewIdx view) const
@@ -3685,7 +3535,6 @@ Bezier::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase
 
     }
     evaluateCurveModified();
-    refreshPolygonOrientation(getCurrentRenderTime(), ViewSetSpec::all());
     RotoDrawableItem::fromSerialization(obj);
 }
 
@@ -3722,8 +3571,19 @@ Bezier::point_line_intersection(const Point &p1,
     }
 }
 
+/*
+ The algorithm to know which side is the outside of a polygon consists in computing the global polygon orientation.
+ To compute the orientation, compute its surface. If positive the polygon is clockwise, if negative it's counterclockwise.
+ to compute the surface, take the starting point of the polygon, and imagine a fan made of all the triangles
+ pointing at this point. The surface of a tringle is half the cross-product of two of its sides issued from
+ the same point (the starting point of the polygon, in this case.
+ The orientation of a polygon has to be computed only once for each modification of the polygon (whenever it's edited), and
+ should be stored with the polygon.
+ Of course an 8-shaped polygon doesn't have an outside, but it still has an orientation. The feather direction
+ should follow this orientation.
+ */
 bool
-Bezier::isFeatherPolygonClockwiseOrientedInternal(TimeValue time, ViewIdx view) const
+Bezier::isClockwiseOriented(TimeValue time, ViewIdx view) const
 {
     ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     QMutexLocker k(&_imp->itemMutex);
@@ -3731,174 +3591,89 @@ Bezier::isFeatherPolygonClockwiseOrientedInternal(TimeValue time, ViewIdx view) 
     if (!shape) {
         return false;
     }
-    std::map<double, bool>::iterator it = shape->isClockwiseOriented.find(time);
 
-    if ( it != shape->isClockwiseOriented.end() ) {
-        return it->second;
-    } else {
-        int kfCount = getMasterKeyframesCount(view_i);
-        if ( (kfCount > 0) && shape->finished ) {
-            computePolygonOrientation(time, view_i, false);
-            it = shape->isClockwiseOriented.find(time);
-            if ( it != shape->isClockwiseOriented.end() ) {
-                return it->second;
-            } else {
-                return false;
-            }
-        } else {
-            return shape->isClockwiseOrientedStatic;
-        }
-    }
-}
-
-bool
-Bezier::isFeatherPolygonClockwiseOriented(TimeValue time, ViewIdx view) const
-{
-    return isFeatherPolygonClockwiseOrientedInternal(time, view);
-}
-
-void
-Bezier::setAutoOrientationComputation(bool autoCompute)
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    _imp->autoRecomputeOrientation = autoCompute;
-}
-
-void
-Bezier::refreshPolygonOrientation(TimeValue time, ViewSetSpec view)
-{
-   
-    QMutexLocker k(&_imp->itemMutex);
-    if (!_imp->autoRecomputeOrientation) {
-        return;
-    }
-    computePolygonOrientation(time, view, false);
-}
-
-void
-Bezier::refreshPolygonOrientationForView(ViewIdx view)
-{
-    std::set<double> kfs;
-    getMasterKeyFrameTimes(view, &kfs);
-
-    QMutexLocker k(&_imp->itemMutex);
-    if ( kfs.empty() ) {
-        computePolygonOrientation(TimeValue(0), view, true);
-    } else {
-        for (std::set<double>::iterator it = kfs.begin(); it != kfs.end(); ++it) {
-            computePolygonOrientation(TimeValue(*it), view, false);
-        }
-    }
-
-}
-
-void
-Bezier::refreshPolygonOrientation(ViewSetSpec view)
-{
-    {
-        QMutexLocker k(&_imp->itemMutex);
-        if (!_imp->autoRecomputeOrientation) {
-            return;
-        }
-    }
-    if (view.isAll()) {
-        std::list<ViewIdx> views = getViewsList();
-        for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-            refreshPolygonOrientationForView(*it);
-        }
-    } else {
-        ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
-        refreshPolygonOrientationForView(view_i);
-    }
-    
-}
-
-/*
-   The algorithm to know which side is the outside of a polygon consists in computing the global polygon orientation.
-   To compute the orientation, compute its surface. If positive the polygon is clockwise, if negative it's counterclockwise.
-   to compute the surface, take the starting point of the polygon, and imagine a fan made of all the triangles
-   pointing at this point. The surface of a tringle is half the cross-product of two of its sides issued from
-   the same point (the starting point of the polygon, in this case.
-   The orientation of a polygon has to be computed only once for each modification of the polygon (whenever it's edited), and
-   should be stored with the polygon.
-   Of course an 8-shaped polygon doesn't have an outside, but it still has an orientation. The feather direction
-   should follow this orientation.
- */
-void
-Bezier::computePolygonOrientationForView(TimeValue time, ViewIdx view, bool isStatic) const
-{
-    //Private - should already be locked
-    assert( !_imp->itemMutex.tryLock() );
-
-    const BezierShape* shape = _imp->getViewShape(view);
-    if (!shape) {
-        return;
-    }
     if (shape->points.size() <= 1) {
-        return;
+        return false;
+    } else if (shape->points.size() == 2) {
+        //It does not matter since there are only 2 points
+        return true;
     }
 
-    bool useFeather = useFeatherPoints();
-    const BezierCPs& cps = useFeather ? shape->featherPoints : shape->points;
+    const BezierCPs& cps = shape->points;
     double polygonSurface = 0.;
-    if (shape->points.size() == 2) {
-        //It does not matter since there are only 2 points
-        polygonSurface = -1;
-    } else {
-        Point originalPoint;
+    std::vector<Point> allPoints;
+
+
+
+    {
         BezierCPs::const_iterator it = cps.begin();
-        (*it)->getPositionAtTime(time, &originalPoint.x, &originalPoint.y);
-        ++it;
         BezierCPs::const_iterator next = it;
         if ( next != cps.end() ) {
             ++next;
         }
+        
+
         for (; next != cps.end(); ++it, ++next) {
             assert( it != cps.end() );
-            double x, y;
-            (*it)->getPositionAtTime(time, &x, &y);
-            double xN, yN;
-            (*next)->getPositionAtTime(time, &xN, &yN);
+
+            // We skip the first point because this is the center of the fan for the U and V vector to compute the area
+            if (it != cps.begin()) {
+                Point p0;
+                (*it)->getPositionAtTime(time, &p0.x, &p0.y);
+                allPoints.push_back(p0);
+            }
+
+            Point p1, p2;
+            (*it)->getRightBezierPointAtTime(time, &p1.x, &p1.y);
+            (*next)->getLeftBezierPointAtTime(time, &p2.x, &p2.y);
+
+            allPoints.push_back(p1);
+            allPoints.push_back(p2);
+
+            // If we are a closed bezier or we are not on the last segment, remove the last point so we don't add duplicates
+            if (shape->finished && next == cps.end()) {
+                Point p3;
+                (*next)->getPositionAtTime(time, &p3.x, &p3.y);
+                allPoints.push_back(p3);
+            }
+
+        } // for each control point
+    }
+
+    Point originalPoint;
+    {
+        BezierCPs::const_iterator it = cps.begin();
+        (*it)->getPositionAtTime(time, &originalPoint.x, &originalPoint.y);
+    }
+    
+    {
+        std::vector<Point>::const_iterator it = allPoints.begin();
+        std::vector<Point>::const_iterator next = it;
+        if ( next != allPoints.end() ) {
+            ++next;
+        }
+        for (; next != allPoints.end(); ++it, ++next) {
             Point u;
-            u.x = x - originalPoint.x;
-            u.y = y - originalPoint.y;
+            u.x = it->x - originalPoint.x;
+            u.y = it->y - originalPoint.y;
+
 
             Point v;
-            v.x = xN - originalPoint.x;
-            v.y = yN - originalPoint.y;
+            v.x = next->x - originalPoint.x;
+            v.y = next->y - originalPoint.y;
 
             //This is the area of the parallelogram defined by the U and V sides
             //Since a triangle is half a parallelogram, just half the cross-product
             double crossProduct = v.y * u.x - v.x * u.y;
             polygonSurface += (crossProduct / 2.);
+            
         }
-    } // for()
-    if (isStatic) {
-        shape->isClockwiseOrientedStatic = polygonSurface < 0;
-
-    } else {
-        shape->isClockwiseOriented[time] = polygonSurface < 0;
-        
     }
+    return polygonSurface < 0;
 
-} // computePolygonOrientationForView
 
-void
-Bezier::computePolygonOrientation(TimeValue time,
-                                  ViewSetSpec view,
-                                  bool isStatic) const
-{
-    if (view.isAll()) {
-        std::list<ViewIdx> views = getViewsList();
-        for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-            computePolygonOrientationForView(time, *it, isStatic);
-        }
-    } else {
-        ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
-        computePolygonOrientationForView(time, view_i, isStatic);
-    }
+} // isFeatherPolygonClockwiseOriented
 
-} // Bezier::computePolygonOrientation
 
 /**
  * @brief Computes the location of the feather extent relative to the current feather point position and

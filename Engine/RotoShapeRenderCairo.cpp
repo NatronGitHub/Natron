@@ -1133,22 +1133,10 @@ RotoShapeRenderCairo::renderFeather_old_cairo(const BezierPtr& bezier,
 
     featherPolyBBox.setupInfinity();
 
-    bezier->evaluateFeatherPointsAtTime_DeCasteljau(time, view, scale,
-#ifdef ROTO_BEZIER_EVAL_ITERATIVE
-                                                    50,
-#else
-                                                    1,
-#endif
-                                                    true, &featherPolygon, &featherPolyBBox);
-    bezier->evaluateAtTime_DeCasteljau(time, view, scale,
-#ifdef ROTO_BEZIER_EVAL_ITERATIVE
-                                       50,
-#else
-                                       1,
-#endif
-                                       &bezierPolygon, NULL);
+    bezier->evaluateFeatherPointsAtTime(time, view, scale, Bezier::eDeCastelJauAlgorithmIterative , 50, 1., true /*evaluateIfEqual*/, 0, &featherPolygon, &featherPolyBBox);
+    bezier->evaluateAtTime(time, view, scale, Bezier::eDeCastelJauAlgorithmIterative, 50, 1., 0, &bezierPolygon, NULL);
 
-    bool clockWise = bezier->isFeatherPolygonClockwiseOriented(time, view);
+    bool clockWise = bezier->isClockwiseOriented(time, view);
 
     assert( !featherPolygon.empty() && !bezierPolygon.empty() );
 
@@ -1892,7 +1880,8 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
 
         } else if (isBezier && isBezier->isOpenBezier()) {
             std::vector<std::vector< ParametricPoint> > decastelJauPolygon;
-            isBezier->evaluateAtTime_DeCasteljau_autoNbPoints(t, view, scale, &decastelJauPolygon, 0);
+
+            isBezier->evaluateAtTime(t, view, scale, Bezier::eDeCastelJauAlgorithmIterative, -1, 1., &decastelJauPolygon, 0, 0);
             std::list<std::pair<Point, double> > points;
             for (std::vector<std::vector< ParametricPoint> > ::iterator it = decastelJauPolygon.begin(); it != decastelJauPolygon.end(); ++it) {
                 for (std::vector< ParametricPoint>::iterator it2 = it->begin(); it2 != it->end(); ++it2) {
