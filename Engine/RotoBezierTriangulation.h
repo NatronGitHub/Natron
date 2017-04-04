@@ -47,7 +47,7 @@ public:
 
     struct RotoFeatherVertex
     {
-        double x,y;
+        double x,y,t;
         bool isInner;
     };
 
@@ -70,10 +70,7 @@ public:
     struct PolygonData
     {
 
-        // Discretized beziers
-        std::vector<std::vector<ParametricPoint> > featherPolygon;
-        std::vector<std::vector<ParametricPoint> > bezierPolygon;
-
+        
 #ifndef NDEBUG
         // Used to check that all points passed to the vertex callback lie in the bbox
         RectD bezierBbox;

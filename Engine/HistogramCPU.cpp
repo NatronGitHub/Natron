@@ -330,14 +330,9 @@ computeHistoForNComps(const HistogramRequest & request,
                       const Image::CPUData& imageData,
                       const RectI& roi,
                       int upscale,
-                      int histogramIndex,
                       std::vector<float> *histo)
 {
-    int mode = request.mode;
-    ///if the mode is RGB, adjust the mode to either R,G or B depending on the histogram index
-    if (mode == 0) {
-        mode = histogramIndex + 2;
-    }
+
     /// keep the mode parameter in sync with Histogram::DisplayModeEnum
     switch (mode) {
         case 1:     //< A
@@ -397,16 +392,16 @@ computeHistogramStatic(const HistogramRequest & request,
 
     switch (imageData.nComps) {
         case 1:
-            computeHistoForNComps<1>(request, mode, imageData, roi, upscale, histogramIndex, &histo_upscaled);
+            computeHistoForNComps<1>(request, mode, imageData, roi, upscale, &histo_upscaled);
             break;
         case 2:
-            computeHistoForNComps<2>(request, mode, imageData, roi, upscale, histogramIndex, &histo_upscaled);
+            computeHistoForNComps<2>(request, mode, imageData, roi, upscale, &histo_upscaled);
             break;
         case 3:
-            computeHistoForNComps<3>(request, mode, imageData, roi, upscale, histogramIndex, &histo_upscaled);
+            computeHistoForNComps<3>(request, mode, imageData, roi, upscale, &histo_upscaled);
             break;
         case 4:
-            computeHistoForNComps<4>(request, mode, imageData, roi, upscale, histogramIndex, &histo_upscaled);
+            computeHistoForNComps<4>(request, mode, imageData, roi, upscale, &histo_upscaled);
             break;
     }
 
