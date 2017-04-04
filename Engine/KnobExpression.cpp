@@ -1355,15 +1355,18 @@ static void addStandardFunctions(const std::string& expr,
     for (std::size_t i = 0; i < functions.size(); ++i) {
         bool ok = symbol_table.add_function(functions[i].first, *functions[i].second);
         assert(ok);
+        Q_UNUSED(ok);
     }
     for (std::size_t i = 0; i < varargFunctions.size(); ++i) {
         bool ok = symbol_table.add_function(varargFunctions[i].first, *varargFunctions[i].second);
         assert(ok);
+        Q_UNUSED(ok);
     }
 
     for (std::size_t i = 0; i < genericFunctions.size(); ++i) {
         bool ok = symbol_table.add_function(genericFunctions[i].first, *genericFunctions[i].second);
         assert(ok);
+        Q_UNUSED(ok);
     }
 
     if (modifiedExpression) {

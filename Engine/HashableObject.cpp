@@ -132,18 +132,23 @@ HashableObjectPrivate::findCachedHashInternal(const HashableObject::FindHashArgs
             return findFrameViewHash(args.time, args.view, timeViewVariantHashCache, hash);
         case HashableObject::eComputeHashTypeTimeViewInvariant:
             if (!timeViewInvariantCacheValid) {
+
                 return false;
             }
             *hash = timeViewInvariantCache;
             return true;
         case HashableObject::eComputeHashTypeOnlyMetadataSlaves:
             if (!metadataSlaveCacheValid) {
+
                 return false;
             }
             *hash = metadataSlaveCache;
-            return true;
 
+            return true;
     }
+    assert(false);
+
+    return false;
 }
 
 bool

@@ -560,7 +560,9 @@ ViewerInstancePrivate::getComponentsFromDisplayChannels(const ImagePlaneDesc& al
             return ImagePlaneDesc::getRGBAComponents();
             break;
     }
+    assert(false);
 
+    return ImagePlaneDesc();
 } // getComponentsFromDisplayChannels
 
 void
@@ -837,6 +839,9 @@ findAutoContrastVminVmaxForComponents(const Image::CPUData& colorImage,
         case eDisplayChannelsRGB:
             return findAutoContrastVminVmax_generic<PIX, maxValue, srcNComps, eDisplayChannelsRGB>(colorImage, renderArgs, roi);
     }
+    assert(false);
+
+    return MinMaxVal(0,0);
 }
 
 
@@ -881,6 +886,9 @@ findAutoContrastVminVmax(const Image::CPUData& colorImage,
         case eImageBitDepthShort:
             return findAutoContrastVminVmaxForDepth<unsigned short, 65535>(colorImage, renderArgs, channels, roi);
     }
+    assert(false);
+
+    return MinMaxVal(0,0);
 }
 
 class FindAutoContrastProcessor : public ImageMultiThreadProcessorBase

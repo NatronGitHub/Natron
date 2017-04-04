@@ -291,7 +291,7 @@ void
 AppManagerPrivate::setMaxCacheFiles()
 {
     /*Default to something reasonnable if the code below would happen to not work for some reason*/
-    size_t hardMax = 10000;
+    //size_t hardMax = NATRON_MAX_CACHE_FILES_OPENED;
 
 #if defined(Q_OS_UNIX) && defined(RLIMIT_NOFILE)
     /*
@@ -315,12 +315,12 @@ AppManagerPrivate::setMaxCacheFiles()
                 // rlim_cur above OPEN_MAX even if rlim_max > OPEN_MAX.
                 if (rl.rlim_cur > OPEN_MAX) {
                     rl.rlim_cur = OPEN_MAX;
-                    hardMax = rl.rlim_cur;
+                    //hardMax = rl.rlim_cur;
                     setrlimit(RLIMIT_NOFILE, &rl);
                 }
 #             endif
             } else {
-                hardMax = rl.rlim_cur;
+                //hardMax = rl.rlim_cur;
             }
         }
     }
@@ -370,6 +370,7 @@ AppManagerPrivate::setMaxCacheFiles()
      */
 #endif
 
+    //maxCacheFiles = hardMax * 0.9;
 }
 
 #ifdef DEBUG
