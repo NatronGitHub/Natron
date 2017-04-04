@@ -1153,6 +1153,9 @@ RotoShapeRenderCairo::renderFeather_old_cairo(const BezierPtr& bezier,
     assert( !featherPolygon.empty() && !bezierPolygon.empty() );
 
 
+    double innerOpacity = 1.;
+    double outterOpacity = 0.;
+
     std::vector<Point> featherContour;
 
     // prepare iterators
@@ -1235,9 +1238,9 @@ RotoShapeRenderCairo::renderFeather_old_cairo(const BezierPtr& bezier,
         }
 
         ///skip it
-        if ( (cur->x == prev->x) && (cur->y == prev->y) ) {
+        /*if ( (cur->x == prev->x) && (cur->y == prev->y) ) {
             continue;
-        }
+        }*/
 
         Point p0, p0p1, p1p0, p2, p2p3, p3p2, p3;
         p0.x = prevBez->x;
@@ -1297,15 +1300,17 @@ RotoShapeRenderCairo::renderFeather_old_cairo(const BezierPtr& bezier,
         // and approximately equal to 0.5.
         // If the bug if ixed in cairo, please use #if CAIRO_VERSION>xxx to keep compatibility with
         // older Cairo versions.
-        cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, 1., 1., 1., 1.);
+        cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, 1., 1., 1., innerOpacity);
         ///outter is faded
-        cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, 1., 1., 1., 0.);
-        cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, 1., 1., 1., 0.);
+        cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, 1., 1., 1., outterOpacity);
+        cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, 1., 1., 1., outterOpacity);
         ///inner is full color
-        cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, 1., 1., 1., 1.);
+        cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, 1., 1., 1., innerOpacity);
         assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
 
         cairo_mesh_pattern_end_patch(mesh);
+
+        //std::swap(innerOpacity, outterOpacity);
 
         if (mustStop) {
             break;
@@ -1337,6 +1342,9 @@ RotoShapeRenderCairo::renderFeather_cairo(const RotoBezierTriangulation::Polygon
     assert(inArgs.featherMesh.size() >= 3 && inArgs.featherMesh.size() % 3 == 0);
 
     double fallOffInverse = 1. / fallOff;
+
+    double innerOpacity = 1.;
+    double outterOpacity = 0.;
 
     std::vector<RotoBezierTriangulation::RotoFeatherVertex>::const_iterator next = inArgs.featherMesh.begin();
     ++next;
@@ -1444,16 +1452,17 @@ RotoShapeRenderCairo::renderFeather_cairo(const RotoBezierTriangulation::Polygon
         // and approximately equal to 0.5.
         // If the bug if ixed in cairo, please use #if CAIRO_VERSION>xxx to keep compatibility with
         // older Cairo versions.
-        cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, 1., 1., 1., 1.);
+        cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, 1., 1., 1., innerOpacity);
         // outter is faded
-        cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, 1., 1., 1., 0.);
-        cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, 1., 1., 1., 0.);
+        cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, 1., 1., 1., outterOpacity);
+        cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, 1., 1., 1., outterOpacity);
         // inner is full color
-        cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, 1., 1., 1., 1.);
+        cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, 1., 1., 1., innerOpacity);
         assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
 
         cairo_mesh_pattern_end_patch(mesh);
 
+        //std::swap(innerOpacity, outterOpacity);
 
         assert(nextNext != inArgs.featherMesh.end());
         ++nextNext;

@@ -1403,6 +1403,7 @@ TrackerNode::initializeKnobs()
 
     initializeTrackingPageKnobs(trackingPage);
     initializeTrackRangeDialogKnobs(trackingPage);
+    initializeRightClickMenuKnobs(trackingPage);
     initializeViewerUIKnobs(trackingPage);
 
     setItemsTable(_imp->knobsTable, "trackTableSep");

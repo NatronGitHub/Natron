@@ -396,7 +396,8 @@ public:
 
 
 
-    static void deCastelJau(const std::list<BezierCPPtr >& cps, TimeValue time, const RenderScale &scale,
+    static void deCastelJau(bool isOpenBezier,
+                            const std::list<BezierCPPtr >& cps, TimeValue time, const RenderScale &scale,
                             bool finished,
                             int nBPointsPerSegment,
                             const Transform::Matrix3x3& transform,

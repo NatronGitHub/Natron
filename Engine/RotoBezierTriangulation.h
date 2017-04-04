@@ -98,6 +98,8 @@ public:
         unsigned int error;
     };
 
+    static void computeOrientation();
+
     static void computeTriangles(const BezierPtr& bezier, TimeValue time, ViewIdx view, const RenderScale& scale,  double featherDistPixel_x, double featherDistPixel_y, PolygonData* outArgs);
 
 };

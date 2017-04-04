@@ -2828,7 +2828,8 @@ Bezier::onKeyFrameRemoved(TimeValue time, ViewSetSpec view)
 
 
 void
-Bezier::deCastelJau(const std::list<BezierCPPtr >& cps,
+Bezier::deCastelJau(bool isOpenBezier,
+                    const std::list<BezierCPPtr >& cps,
                     TimeValue time,
                     const RenderScale &scale,
                     bool finished,
@@ -2860,10 +2861,23 @@ Bezier::deCastelJau(const std::list<BezierCPPtr >& cps,
         if (points) {
             std::vector<ParametricPoint> segmentPoints;
             bezierSegmentEval(*(*it), *(*next), time,  scale, nBPointsPerSegment, transform, &segmentPoints, bbox ? &segbbox : 0, &segbboxSet);
+            // If we are a closed bezier or we are not on the last segment, remove the last point so we don't add duplicates
+            if (!isOpenBezier || next != cps.end()) {
+                if (!segmentPoints.empty()) {
+                    segmentPoints.pop_back();
+                }
+            }
+
             points->push_back(segmentPoints);
         } else {
             assert(pointsSingleList);
             bezierSegmentEval(*(*it), *(*next), time,  scale, nBPointsPerSegment, transform, pointsSingleList, bbox ? &segbbox : 0, &segbboxSet);
+            // If we are a closed bezier or we are not on the last segment, remove the last point so we don't add duplicates
+            if (!isOpenBezier || next != cps.end()) {
+                if (!pointsSingleList->empty()) {
+                    pointsSingleList->pop_back();
+                }
+            }
         }
 
         if (bbox) {
@@ -2947,7 +2961,7 @@ Bezier::evaluateAtTime_DeCasteljau_internal(TimeValue time,
     if (!shape) {
         return;
     }
-    deCastelJau(shape->points, time, scale, shape->finished,
+    deCastelJau(isOpenBezier(), shape->points, time, scale, shape->finished,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                 nbPointsPerSegment,
 #else
@@ -3058,6 +3072,12 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau_internal(TimeValue time,
                               errorScale,
 #endif
                               transform, &segmentPoints, bbox);
+            // If we are a closed bezier or we are not on the last segment, remove the last point so we don't add duplicates
+            if (!isOpenBezier() || next != shape->featherPoints.end()) {
+                if (!segmentPoints.empty()) {
+                    segmentPoints.pop_back();
+                }
+            }
             points->push_back(segmentPoints);
         } else {
             assert(pointsSingleList);
@@ -3068,6 +3088,12 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau_internal(TimeValue time,
                               errorScale,
 #endif
                               transform, pointsSingleList, bbox);
+            // If we are a closed bezier or we are not on the last segment, remove the last point so we don't add duplicates
+            if (!isOpenBezier() || next != shape->featherPoints.end()) {
+                if (!pointsSingleList->empty()) {
+                    pointsSingleList->pop_back();
+                }
+            }
         }
 
         // increment for next iteration
