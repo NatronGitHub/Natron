@@ -1286,7 +1286,7 @@ public:
 
     const std::vector<std::string>& getCreatedViews() const;
 
-    void refreshCreatedViews();
+    void refreshCreatedViews(bool silent);
 
     void refreshIdentityState();
 
@@ -1335,7 +1335,7 @@ private:
      **/
     bool computeHashInternal() WARN_UNUSED_RETURN;
 
-    void refreshCreatedViews(KnobI* knob);
+    void refreshCreatedViews(KnobI* knob, bool silent);
 
     void refreshInputRelatedDataRecursiveInternal(std::set<Node*>& markedNodes);
 

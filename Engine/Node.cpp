@@ -8737,17 +8737,17 @@ Node::getCreatedViews() const
 }
 
 void
-Node::refreshCreatedViews()
+Node::refreshCreatedViews(bool silent)
 {
     KnobPtr knob = getKnobByName(kReadOIIOAvailableViewsKnobName);
 
     if (knob) {
-        refreshCreatedViews( knob.get() );
+        refreshCreatedViews( knob.get(), silent );
     }
 }
 
 void
-Node::refreshCreatedViews(KnobI* knob)
+Node::refreshCreatedViews(KnobI* knob, bool silent)
 {
     assert( QThread::currentThread() == qApp->thread() );
 
@@ -8774,7 +8774,7 @@ Node::refreshCreatedViews(KnobI* knob)
         _imp->createdViews.push_back( it->toStdString() );
     }
 
-    if ( !missingViews.isEmpty() ) {
+    if ( !missingViews.isEmpty() && !silent ) {
         KnobPtr fileKnob = getKnobByName(kOfxImageEffectFileParamName);
         KnobFile* inputFileKnob = dynamic_cast<KnobFile*>( fileKnob.get() );
         if (inputFileKnob) {
@@ -8962,7 +8962,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
     } else if ( what == _imp->hideInputs.lock().get() ) {
         Q_EMIT hideInputsKnobChanged( _imp->hideInputs.lock()->getValue() );
     } else if ( _imp->effect->isReader() && (what->getName() == kReadOIIOAvailableViewsKnobName) ) {
-        refreshCreatedViews(what);
+        refreshCreatedViews(what, false /*silent*/);
     } else if ( what == _imp->refreshInfoButton.lock().get() ||
                (what == _imp->infoPage.lock().get() && reason == eValueChangedReasonUserEdited) ) {
         std::stringstream ssinfo;

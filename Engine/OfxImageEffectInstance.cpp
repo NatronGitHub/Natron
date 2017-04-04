@@ -427,7 +427,8 @@ OfxImageEffectInstance::getViewName(int viewIndex,
 
         return kOfxStatOK;
     }
-
+    static const std::string emptyViewName;
+    *name = emptyViewName.data();
     return kOfxStatErrBadIndex;
 }
 
