@@ -50,6 +50,14 @@ struct TessIndex {
     // The point index in the segment
     std::size_t pointIndex;
 
+    TessIndex()
+    : isFeather(false)
+    , segmentIndex(0)
+    , pointIndex(0)
+    {
+
+    }
+
 };
 
 typedef boost::shared_ptr<TessIndex> TessIndexPtr;
@@ -81,20 +89,16 @@ struct PolygonCSGData
 };
 
 static void contour_begin_primitive_callback(unsigned int which,
-                                          void *polygonData)
+                                          void */*polygonData*/)
 {
-
-    PolygonCSGData* myData = (PolygonCSGData*)polygonData;
-    assert(myData);
+    (void)which;
     assert(which == LIBTESS_GL_LINE_LOOP);
-
+    // Does nothing, we just want to mark the points in contour_vertex_callback
 }
 
-static void contour_end_primitive_callback(void *polygonData)
+static void contour_end_primitive_callback(void * /*polygonData*/)
 {
-    PolygonCSGData* myData = (PolygonCSGData*)polygonData;
-    assert(myData);
-
+    // Does nothing we just want to mark the points in contour_vertex_callback
 }
 
 static void contour_vertex_callback(void* data /*per-vertex client data*/, void *polygonData)
@@ -124,29 +128,22 @@ static void contour_error_callback(unsigned int error,
     PolygonCSGData* myData = (PolygonCSGData*)polygonData;
     assert(myData);
     myData->error = error;
+    assert(false);
 }
 
-static void contour_intersection_combine_callback(double coords[3],
+static void contour_intersection_combine_callback(double /*coords*/[3],
                                                void */*data*/[4] /*4 original vertices*/,
                                                double /*w*/[4] /*weights*/,
                                                void **dataOut,
                                                void *polygonData)
 {
-    /*PolygonCSGData* myData = (PolygonCSGData*)polygonData;
+    PolygonCSGData* myData = (PolygonCSGData*)polygonData;
     assert(myData);
-    assert(false);
 
-    BoundaryParametricPoint v;
-    v.x = coords[0];
-    v.y = coords[1];
-    v.t = 0;
-    v.isInner = false;
-
-    uintptr_t index = myData->bezierPolygonJoined.size();
-    myData->bezierPolygonJoined.push_back(v);
-
-    assert(index < myData->bezierPolygonJoined.size());
-    *dataOut = reinterpret_cast<void*>(index);*/
+    // In output return a fake index otherwise libtess will return an error
+    TessIndexPtr index(new TessIndex);
+    *dataOut = (void*)index.get();
+    myData->indices.push_back(index);
 }
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT;
@@ -221,6 +218,7 @@ static void computeFeatherContour(const std::vector<std::vector<ParametricPoint>
                     }
                 }
 
+                // Add or remove the derivative multiplied by the feather distance, depending on the polygon orientation
                 {
                     double diffx = next->x - prev->x;
                     double diffy = next->y - prev->y;
@@ -228,6 +226,8 @@ static void computeFeatherContour(const std::vector<std::vector<ParametricPoint>
                     double dx = (norm != 0) ? -( diffy / norm ) : 0;
                     double dy = (norm != 0) ? ( diffx / norm ) : 1;
 
+                    (*featherPolygonOut)[i][j].x = featherPolygon[i][j].x;
+                    (*featherPolygonOut)[i][j].y = featherPolygon[i][j].y;
                     if (!clockWise) {
                         (*featherPolygonOut)[i][j].x -= dx * featherDist_x;
                         (*featherPolygonOut)[i][j].y -= dy * featherDist_y;
@@ -330,23 +330,7 @@ static void computeFeatherMesh(const std::vector<std::vector<ParametricPoint> >&
 
     // Points to the current feather bezier segment
     vector<vector<BoundaryParametricPoint> >::const_iterator fIt = featherPolygon.begin();
-
-    // Points to the previous feather segment
-    vector<vector<BoundaryParametricPoint> > ::const_iterator prevFSegmentIt = featherPolygon.end();
-    --prevFSegmentIt;
-
-    // Points to the next feather segment
-    vector<vector<BoundaryParametricPoint> > ::const_iterator nextFSegmentIt = featherPolygon.begin();
-    ++nextFSegmentIt;
     for (vector<vector<BoundaryParametricPoint> > ::const_iterator it = bezierPolygon.begin(); it != bezierPolygon.end(); ++it, ++fIt) {
-
-        // Adjust prev/next segment iterators if they reach end: make them loop to begin
-        if (prevFSegmentIt == featherPolygon.end()) {
-            prevFSegmentIt = featherPolygon.begin();
-        }
-        if (nextFSegmentIt == featherPolygon.end()) {
-            nextFSegmentIt = featherPolygon.begin();
-        }
 
 
         // Iterate over each bezier segment.
@@ -361,29 +345,11 @@ static void computeFeatherMesh(const std::vector<std::vector<ParametricPoint> >&
         vector<BoundaryParametricPoint>::const_iterator fSegmentIt = fIt->begin();
 
 
-        // prepare iterators to compute derivatives for feather distance
-        // fnext points to the next point in the feather polygon
-        vector<BoundaryParametricPoint>::const_iterator fnext = fSegmentIt;
-        ++fnext;  // can only be valid since we assert the list is not empty
-        if ( fnext == fIt->end() ) {
-            fnext = fIt->begin();
-        }
-
-        // fprev points to the previous feather point in the polygon. Since it is part of another segment,
-        // we take the last point in the previous segment
-        vector<BoundaryParametricPoint>::const_iterator fprev = prevFSegmentIt->end();
-        --fprev; // can only be valid since we assert the list is not empty
-
-        // Decrement a second time because the last point in the previous segment is equal to the first point in this segment
-        assert(std::abs(fprev->x - fSegmentIt->x) < 1e-6 && std::abs(fprev->y - fSegmentIt->y) < 1e-6);
-        --fprev;
-
-
         // Initialize the state with a segment between the first inner vertex and first outter vertex
         RotoBezierTriangulation::RotoFeatherVertex lastInnerVert,lastOutterVert;
 
-        // Add an internal point
-        if ( bSegmentIt != it->end() ) {
+        // Initialize the first feather point
+        {
             lastInnerVert.x = bSegmentIt->x;
             lastInnerVert.y = bSegmentIt->y;
             lastInnerVert.isInner = bSegmentIt->isInner;
@@ -391,71 +357,43 @@ static void computeFeatherMesh(const std::vector<std::vector<ParametricPoint> >&
             ++bSegmentIt;
         }
 
-        // Add a feather point
-        if ( fSegmentIt != fIt->end() ) {
+        // Initialize the first bezier point
+        {
             lastOutterVert.x = fSegmentIt->x;
             lastOutterVert.y = fSegmentIt->y;
-
-            {
-                double diffx = fnext->x - fprev->x;
-                double diffy = fnext->y - fprev->y;
-                double norm = std::sqrt( diffx * diffx + diffy * diffy );
-                double dx = (norm != 0) ? -( diffy / norm ) : 0;
-                double dy = (norm != 0) ? ( diffx / norm ) : 1;
-
-                if (!clockWise) {
-                    lastOutterVert.x -= dx * featherDist_x;
-                    lastOutterVert.y -= dy * featherDist_y;
-                } else {
-                    lastOutterVert.x += dx * featherDist_x;
-                    lastOutterVert.y += dy * featherDist_y;
-                }
-            }
-
             lastOutterVert.isInner = fSegmentIt->isInner;
             outArgs->featherMesh.push_back(lastOutterVert);
             ++fSegmentIt;
         }
 
-        // Increment fprev/fnext for next iteration
-        if ( fprev != prevFSegmentIt->end() ) {
-            ++fprev;
-        }
-        if ( fnext != fIt->end() ) {
-            ++fnext;
-        }
+        
+        while (fSegmentIt != fIt->end() || bSegmentIt != it->end()) {
 
+            // Initialize the first segment of the next triangle if we did not reach the end
 
-        for (;;) {
+            outArgs->featherMesh.push_back(lastOutterVert);
+            outArgs->featherMesh.push_back(lastInnerVert);
 
-            if ( fnext == fIt->end() ) {
-                fnext = nextFSegmentIt->begin();
-                ++fnext;
+            if ( bSegmentIt != it->end() ) {
+                ++bSegmentIt;
             }
-            if ( fprev == prevFSegmentIt->end() ) {
-                fprev = fIt->begin();
-                ++fprev;
-            }
+            if ( fSegmentIt != fIt->end() ) {
+                ++fSegmentIt;
 
+            }
             double inner_t = (double)INT_MAX;
             double outter_t = (double)INT_MAX;
-            bool gotOne = false;
             if (bSegmentIt != it->end()) {
                 inner_t = bSegmentIt->t;
-                gotOne = true;
             }
             if (fSegmentIt != fIt->end()) {
                 outter_t = fSegmentIt->t;
-                gotOne = true;
             }
 
-            if (!gotOne) {
-                break;
-            }
 
             // Pick the point with the minimum t
             if (inner_t <= outter_t) {
-                if ( bSegmentIt != fIt->end() ) {
+                if ( bSegmentIt != it->end() ) {
                     lastInnerVert.x = bSegmentIt->x;
                     lastInnerVert.y = bSegmentIt->y;
                     lastInnerVert.isInner = bSegmentIt->isInner;
@@ -466,52 +404,12 @@ static void computeFeatherMesh(const std::vector<std::vector<ParametricPoint> >&
                 if ( fSegmentIt != fIt->end() ) {
                     lastOutterVert.x = fSegmentIt->x;
                     lastOutterVert.y = fSegmentIt->y;
-
-                    {
-                        double diffx = fnext->x - fprev->x;
-                        double diffy = fnext->y - fprev->y;
-                        double norm = std::sqrt( diffx * diffx + diffy * diffy );
-                        double dx = (norm != 0) ? -( diffy / norm ) : 0;
-                        double dy = (norm != 0) ? ( diffx / norm ) : 1;
-
-                        if (!clockWise) {
-                            lastOutterVert.x -= dx * featherDist_x;
-                            lastOutterVert.y -= dy * featherDist_y;
-                        } else {
-                            lastOutterVert.x += dx * featherDist_x;
-                            lastOutterVert.y += dy * featherDist_y;
-                        }
-                    }
                     lastOutterVert.isInner = fSegmentIt->isInner;
                     outArgs->featherMesh.push_back(lastOutterVert);
-                    ++fSegmentIt;
-                }
-
-                if ( fprev != fIt->end() ) {
-                    ++fprev;
-                }
-                if ( fnext != fIt->end() ) {
-                    ++fnext;
                 }
             }
+        } // for each point
 
-            // Initialize the first segment of the next triangle if we did not reach the end
-            if (fSegmentIt == fIt->end() && bSegmentIt == it->end()) {
-                break;
-            }
-            outArgs->featherMesh.push_back(lastOutterVert);
-            outArgs->featherMesh.push_back(lastInnerVert);
-
-            
-        } // for(;;)
-
-        // Increment iterators for next segment
-        if (prevFSegmentIt != featherPolygon.end()) {
-            ++prevFSegmentIt;
-        }
-        if (nextFSegmentIt != featherPolygon.end()) {
-            ++nextFSegmentIt;
-        }
     } // for each bezier segment
 
 } // computeFeatherMesh
