@@ -30,15 +30,12 @@
 #include <list>
 #include <vector>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#endif
-
 
 // boost
 
 namespace boost {
+template<class T> class weak_ptr;
+template<class T> class shared_ptr;
 namespace archive {
 class xml_iarchive;
 class xml_oarchive;

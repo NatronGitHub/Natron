@@ -29,6 +29,7 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 #endif
 
 #include "Gui/LineEdit.h"
