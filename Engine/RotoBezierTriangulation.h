@@ -97,18 +97,12 @@ public:
 #endif
 
 
-        // The polygon of the bezier and feather with parametric t and flag indicating the color of each point
-        std::vector<BoundaryParametricPoint> bezierPolygon, featherPolygon;
-
-        // List of generated points by the tesselation algorithms
-        std::vector<Point> generatedPoint;
-
         // The mesh for the feather computed from bezeirPolygon and featherPolygon
         std::vector<BoundaryParametricPoint> featherMesh;
 
         // The vertices composing the internal shape, each single vertex once.
         // Each VertexIndex references a real vertex in either bezierPolygon, featherPolygon or generatedPoint
-        std::vector<VertexIndex> internalShapeVertices;
+        std::vector<Point> internalShapeVertices;
 
         // The actual primitives to render. Each index is an index in internalShapeVertices
         std::vector<std::vector<unsigned int> > internalShapeTriangles, internalShapeTriangleFans, internalShapeTriangleStrips;
@@ -117,9 +111,6 @@ public:
 
 
     static void computeTriangles(const BezierPtr& bezier, TimeValue time, ViewIdx view, const RenderScale& scale,  double featherDistPixel_x, double featherDistPixel_y, PolygonData* outArgs);
-
-    static Point getPointFromTriangulation(const PolygonData& inArgs, std::size_t index);
-    static Point getPointFromTriangulation(const PolygonData& inArgs, const VertexIndex& index);
 
 };
 
