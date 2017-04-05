@@ -16,7 +16,6 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
 #ifndef NATRON_ENGINE_EXPRTKFUNCTIONS_H
 #define NATRON_ENGINE_EXPRTKFUNCTIONS_H
 
@@ -27,10 +26,10 @@
 // ***** END PYTHON BLOCK *****
 
 #include <string>
-#include "Engine/EngineFwd.h"
+
 #include "Engine/TimeValue.h"
 #include "Engine/ViewIdx.h"
-#include <exprtk/exprtk.hpp>
+#include "Engine/EngineFwd.h"
 
 
 NATRON_NAMESPACE_ENTER;

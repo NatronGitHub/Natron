@@ -30,10 +30,10 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#endif // #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+namespace boost {
+template<class T> class weak_ptr;
+template<class T> class shared_ptr;
+}
 
 SERIALIZATION_NAMESPACE_ENTER;
 
@@ -84,8 +84,8 @@ SERIALIZATION_NAMESPACE_EXIT;
 #endif
 
 namespace YAML {
-    class Emitter;
-    class Node;
+class Emitter;
+class Node;
 }
 
 #endif // SERIALIZATIONFWD_H

@@ -29,6 +29,10 @@
 
 #include <list>
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/shared_ptr.hpp>
+#endif
+
 #include "Global/GlobalDefines.h"
 #include "Engine/EffectOpenGLContextData.h"
 #include "Engine/TimeValue.h"

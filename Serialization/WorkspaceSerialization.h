@@ -25,6 +25,10 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/shared_ptr.hpp>
+#endif
+
 #include "Serialization/SerializationBase.h"
 #include "Serialization/SerializationFwd.h"
 
