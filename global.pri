@@ -59,7 +59,8 @@ win32-g++ {
     # as.exe: release/KnobExpression.o: too many sections (68807)
     # {standard input}: Assembler messages:
     # {standard input}: Fatal error: can't write release/KnobExpression.o: File too big
-    QMAKE_CXXFLAGS += -Wa,-mbig-obj
+    # Commented out: If defined, ld on mingw never returns.
+    #QMAKE_CXXFLAGS += -Wa,-mbig-obj
 
     # on Mingw LD is extremely slow in  debug mode and can take hours. Optimizing the build seems to make it faster
     CONFIG(debug, debug|release){
