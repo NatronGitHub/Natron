@@ -1033,7 +1033,7 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
             fillShader->setUniform("fillColor", fillColor);
         }
 
-        int nbVertices = data.bezierPolygonJoined.size();
+        int nbVertices = (int)data.internalShapeVertices.size();
         if (!nbVertices) {
             continue;
         }
@@ -1046,26 +1046,28 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
         // will reference these vertices.
         {
             float* v_data = verticesArray.getData();
-            for (std::size_t i = 0; i < data.bezierPolygonJoined.size(); ++i, v_data += 2) {
-                v_data[0] = data.bezierPolygonJoined[i].x;
-                v_data[1] = data.bezierPolygonJoined[i].y;
 
+            for (std::vector<RotoBezierTriangulation::VertexIndex>::const_iterator it2 = data.internalShapeVertices.begin(); it2 != data.internalShapeVertices.end(); ++it2, v_data += 2) {
+                Point p = RotoBezierTriangulation::getPointFromTriangulation(data, *it2);
                 // The roi was computed from the bounds, it must include the internal shape points.
-                assert(roi.contains(v_data[0], v_data[1]));
+                assert(roi.contains(p.x, p.y));
+                v_data[0] = p.x;
+                v_data[1] = p.y;
             }
+
         }
         bool hasUploadedVertices = false;
         {
             // Render internal triangles
             // Merge all set of GL_TRIANGLES into a single call of glMultiDrawElements
-            int drawCount = (int)data.internalTriangles.size();
+            int drawCount = (int)data.internalShapeTriangles.size();
 
             if (drawCount) {
                 std::vector<const void*> perDrawsIDVec(drawCount);
                 std::vector<int> perDrawCount(drawCount);
-                for (std::size_t i = 0; i < data.internalTriangles.size(); ++i) {
-                    perDrawsIDVec[i] = (const void*)(&data.internalTriangles[i].indices[0]);
-                    perDrawCount[i] = (int)data.internalTriangles[i].indices.size();
+                for (std::size_t i = 0; i < data.internalShapeTriangles.size(); ++i) {
+                    perDrawsIDVec[i] = (const void*)(&data.internalShapeTriangles[i][0]);
+                    perDrawCount[i] = (int)data.internalShapeTriangles[i].size();
                 }
 
                 renderBezier_gl_multiDrawElements<GL>(nbVertices, vboVerticesID, GL_TRIANGLES, (const void*)verticesArray.getData(), (const int*)&perDrawCount[0], (const void**)(&perDrawsIDVec[0]), drawCount);
@@ -1079,14 +1081,14 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
         {
             // Render internal triangle fans
 
-            int drawCount = (int)data.internalFans.size();
+            int drawCount = (int)data.internalShapeTriangleFans.size();
 
             if (drawCount) {
                 std::vector<const void*> perDrawsIDVec(drawCount);
                 std::vector<int> perDrawCount(drawCount);
-                for (std::size_t i = 0; i < data.internalFans.size(); ++i) {
-                    perDrawsIDVec[i] = (const void*)(&data.internalFans[i].indices[0]);
-                    perDrawCount[i] = (int)data.internalFans[i].indices.size();
+                for (std::size_t i = 0; i < data.internalShapeTriangleFans.size(); ++i) {
+                    perDrawsIDVec[i] = (const void*)(&data.internalShapeTriangleFans[i][0]);
+                    perDrawCount[i] = (int)data.internalShapeTriangleFans[i].size();
                 }
                 renderBezier_gl_multiDrawElements<GL>(nbVertices, vboVerticesID, GL_TRIANGLE_FAN, (const void*)verticesArray.getData(), (const int*)&perDrawCount[0], (const void**)(&perDrawsIDVec[0]), drawCount, !hasUploadedVertices);
                 hasUploadedVertices = true;
@@ -1096,14 +1098,14 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
         {
             // Render internal triangle strips
 
-            int drawCount = (int)data.internalStrips.size();
+            int drawCount = (int)data.internalShapeTriangleStrips.size();
 
             if (drawCount) {
                 std::vector<const void*> perDrawsIDVec(drawCount);
                 std::vector<int> perDrawCount(drawCount);
-                for (std::size_t i = 0; i < data.internalStrips.size(); ++i) {
-                    perDrawsIDVec[i] = (const void*)(&data.internalStrips[i].indices[0]);
-                    perDrawCount[i] = (int)data.internalStrips[i].indices.size();
+                for (std::size_t i = 0; i < data.internalShapeTriangleStrips.size(); ++i) {
+                    perDrawsIDVec[i] = (const void*)(&data.internalShapeTriangleStrips[i][0]);
+                    perDrawCount[i] = (int)data.internalShapeTriangleStrips[i].size();
                 }
                 renderBezier_gl_multiDrawElements<GL>(nbVertices, vboVerticesID, GL_TRIANGLE_STRIP, (const void*)verticesArray.getData(), (const int*)&perDrawCount[0], (const void**)(&perDrawsIDVec[0]), drawCount, !hasUploadedVertices);
                 hasUploadedVertices = true;

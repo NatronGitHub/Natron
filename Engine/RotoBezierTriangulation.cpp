@@ -24,7 +24,9 @@
 
 #include "RotoBezierTriangulation.h"
 
+#include <QDebug>
 #include <cmath>
+#include <set>
 #include <boost/cstdint.hpp> // uintptr_t
 #include <cstddef> // size_t
 
@@ -34,62 +36,191 @@ using boost::uintptr_t;
 using std::size_t;
 using std::vector;
 
+
 NATRON_NAMESPACE_ENTER;
 
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER;
 
 
-struct TessIndex {
-    // Does this point belong to the feather polygon ?
-    bool isFeather;
-
-    // The index of the segment in the feather polygon
-    std::size_t segmentIndex;
-
-    // The point index in the segment
-    std::size_t pointIndex;
-
-    TessIndex()
-    : isFeather(false)
-    , segmentIndex(0)
-    , pointIndex(0)
+struct VertexIndexCompare {
+    bool operator() (const RotoBezierTriangulation::VertexIndex& lhs, const RotoBezierTriangulation::VertexIndex& rhs) const
     {
+        if (lhs.origin < rhs.origin) {
+            return true;
+        } else if (lhs.origin > rhs.origin) {
+            return false;
+        }
 
+        return lhs.pointIndex < rhs.pointIndex;
     }
-
 };
 
-typedef boost::shared_ptr<TessIndex> TessIndexPtr;
-
-struct BoundaryParametricPoint
-{
-    double x,y,t;
-    bool isInner;
-
-};
-
+typedef std::set<RotoBezierTriangulation::VertexIndex, VertexIndexCompare> VertexIndexSet;
+typedef std::vector<RotoBezierTriangulation::VertexIndex> VertexIndexVector;
 
 
 struct PolygonCSGData
 {
-    std::vector<std::vector<BoundaryParametricPoint> >* featherPolygon;
-    std::vector<std::vector<BoundaryParametricPoint> >* bezierPolygon;
-    std::vector<TessIndexPtr> indices;
+
+    std::vector<RotoBezierTriangulation::VertexIndexPtr> indices;
+    RotoBezierTriangulation::PolygonData* outArgs;
+
+    // The primitives to render the internal shape. Each VertexIndex refers to a point
+    // in bezierPolygon or featherPolygon
+    std::vector<VertexIndexVector> internalFans, internalTriangles, internalStrips;
+
+    // Uniquely record each vertex composing the internal shape
+    VertexIndexSet internalShapeVertices;
+
+    // internal stuff for libtess callbacks
+    boost::scoped_ptr<VertexIndexVector> fanBeingEdited;
+    boost::scoped_ptr<VertexIndexVector> trianglesBeingEdited;
+    boost::scoped_ptr<VertexIndexVector> stripsBeingEdited;
+
     unsigned int error;
 
     PolygonCSGData()
-    : featherPolygon(0)
-    , bezierPolygon(0)
-    , indices()
+    : indices()
+    , outArgs(0)
+    , fanBeingEdited()
+    , trianglesBeingEdited()
+    , stripsBeingEdited()
     , error(0)
     {
 
     }
 };
 
+static void tess_begin_primitive_callback(unsigned int which,
+                                          void *polygonData)
+{
+
+    PolygonCSGData* myData = (PolygonCSGData*)polygonData;
+    assert(myData);
+
+    switch (which) {
+        case LIBTESS_GL_TRIANGLE_STRIP:
+            assert(!myData->stripsBeingEdited);
+            myData->stripsBeingEdited.reset(new VertexIndexVector);
+            break;
+        case LIBTESS_GL_TRIANGLE_FAN:
+            assert(!myData->fanBeingEdited);
+            myData->fanBeingEdited.reset(new VertexIndexVector);
+            break;
+        case LIBTESS_GL_TRIANGLES:
+            assert(!myData->trianglesBeingEdited);
+            myData->trianglesBeingEdited.reset(new VertexIndexVector);
+            break;
+        default:
+            assert(false);
+            break;
+    }
+}
+
+static void tess_end_primitive_callback(void *polygonData)
+{
+    PolygonCSGData* myData = (PolygonCSGData*)polygonData;
+    assert(myData);
+
+    assert((myData->stripsBeingEdited && !myData->fanBeingEdited && !myData->trianglesBeingEdited) ||
+           (!myData->stripsBeingEdited && myData->fanBeingEdited && !myData->trianglesBeingEdited) ||
+           (!myData->stripsBeingEdited && !myData->fanBeingEdited && myData->trianglesBeingEdited));
+
+    if (myData->stripsBeingEdited) {
+        myData->internalStrips.push_back(*myData->stripsBeingEdited);
+        myData->stripsBeingEdited.reset();
+    } else if (myData->fanBeingEdited) {
+        myData->internalFans.push_back(*myData->fanBeingEdited);
+        myData->fanBeingEdited.reset();
+    } else if (myData->trianglesBeingEdited) {
+        myData->internalTriangles.push_back(*myData->trianglesBeingEdited);
+        myData->trianglesBeingEdited.reset();
+    }
+}
+
+static void tess_vertex_callback(void* data /*per-vertex client data*/,
+                                 void *polygonData)
+{
+    PolygonCSGData* myData = (PolygonCSGData*)polygonData;
+    assert(myData);
+
+    assert((myData->stripsBeingEdited && !myData->fanBeingEdited && !myData->trianglesBeingEdited) ||
+           (!myData->stripsBeingEdited && myData->fanBeingEdited && !myData->trianglesBeingEdited) ||
+           (!myData->stripsBeingEdited && !myData->fanBeingEdited && myData->trianglesBeingEdited));
+
+
+    RotoBezierTriangulation::VertexIndex* index = (RotoBezierTriangulation::VertexIndex*)data;
+
+    myData->internalShapeVertices.insert(*index);
+
+    // If the vertex was originally part of our feather polygon or internal polygon, mark that it is assumed to be in the
+    // intersection of both polygons.
+    switch (index->origin) {
+        case RotoBezierTriangulation::eVertexPointsSetFeather:
+            assert(index->pointIndex < (int)myData->outArgs->featherPolygon.size());
+            myData->outArgs->featherPolygon[index->pointIndex].isInner = true;
+            break;
+        case RotoBezierTriangulation::eVertexPointsSetInternalShape:
+            assert(index->pointIndex < (int)myData->outArgs->bezierPolygon.size());
+            myData->outArgs->bezierPolygon[index->pointIndex].isInner = true;
+
+            break;
+        case RotoBezierTriangulation::eVertexPointsSetGeneratedPoints:
+            break;
+    }
+
+
+    if (myData->stripsBeingEdited) {
+        myData->stripsBeingEdited->push_back(*index);
+    } else if (myData->fanBeingEdited) {
+        myData->fanBeingEdited->push_back(*index);
+    } else if (myData->trianglesBeingEdited) {
+        myData->trianglesBeingEdited->push_back(*index);
+    }
+
+}
+
+static void tess_error_callback(unsigned int error,
+                                void *polygonData)
+{
+    PolygonCSGData* myData = (PolygonCSGData*)polygonData;
+    assert(myData);
+    myData->error = error;
+}
+
+static void tess_intersection_combine_callback(double coords[3],
+                                               void */*data*/[4] /*4 original vertices*/,
+                                               double /*w*/[4] /*weights*/,
+                                               void **dataOut,
+                                               void *polygonData)
+{
+    // We are at an intersection of the feather and internal bezier.
+    // We add a point to the bezier polygon.
+    // We are not going to use it anyway afterwards, 
+    PolygonCSGData* myData = (PolygonCSGData*)polygonData;
+    assert(myData);
+
+    Point v;
+    v.x = coords[0];
+    v.y = coords[1];
+    myData->outArgs->generatedPoint.push_back(v);
+
+    RotoBezierTriangulation::VertexIndexPtr index(new RotoBezierTriangulation::VertexIndex);
+    index->origin = RotoBezierTriangulation::eVertexPointsSetGeneratedPoints;
+    index->pointIndex = myData->outArgs->generatedPoint.size() - 1;
+    *dataOut = (void*)index.get();
+    myData->indices.push_back(index);
+}
+
+#if 0
+struct ContourCSGData
+{
+
+};
+
 static void contour_begin_primitive_callback(unsigned int which,
-                                          void */*polygonData*/)
+                                             void */*polygonData*/)
 {
     (void)which;
     assert(which == LIBTESS_GL_LINE_LOOP);
@@ -103,7 +234,7 @@ static void contour_end_primitive_callback(void * /*polygonData*/)
 
 static void contour_vertex_callback(void* data /*per-vertex client data*/, void *polygonData)
 {
-    PolygonCSGData* myData = (PolygonCSGData*)polygonData;
+    ContourCSGData* myData = (ContourCSGData*)polygonData;
     assert(myData);
     TessIndex* index = (TessIndex*)data;
 
@@ -122,22 +253,19 @@ static void contour_vertex_callback(void* data /*per-vertex client data*/, void 
 
 }
 
-static void contour_error_callback(unsigned int error,
-                                void *polygonData)
+static void contour_error_callback(unsigned int /*error*/,
+                                   void */*polygonData*/)
 {
-    PolygonCSGData* myData = (PolygonCSGData*)polygonData;
-    assert(myData);
-    myData->error = error;
     assert(false);
 }
 
 static void contour_intersection_combine_callback(double /*coords*/[3],
-                                               void */*data*/[4] /*4 original vertices*/,
-                                               double /*w*/[4] /*weights*/,
-                                               void **dataOut,
-                                               void *polygonData)
+                                                  void */*data*/[4] /*4 original vertices*/,
+                                                  double /*w*/[4] /*weights*/,
+                                                  void **dataOut,
+                                                  void *polygonData)
 {
-    PolygonCSGData* myData = (PolygonCSGData*)polygonData;
+    ContourCSGData* myData = (ContourCSGData*)polygonData;
     assert(myData);
 
     // In output return a fake index otherwise libtess will return an error
@@ -145,396 +273,123 @@ static void contour_intersection_combine_callback(double /*coords*/[3],
     *dataOut = (void*)index.get();
     myData->indices.push_back(index);
 }
+#endif 0
+
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT;
 
 /**
- * @brief Using libtess, union the feather polygon and the internal shape polygon so we find the actual exterior contour of the shape.
+ * @brief Using libtess, computes the intersection of the feather polygon and the internal shape polygon so we find the actual interior and exterior of the shape
  **/
-static void computeFeatherContour(const std::vector<std::vector<ParametricPoint> >& featherPolygon,
-                                  const std::vector<std::vector<ParametricPoint> >& bezierPolygon,
-                                  bool clockWise,
-                                  double featherDistPixel_xParam,
-                                  double featherDistPixel_yParam,
-                                  std::vector<std::vector<BoundaryParametricPoint> >* featherPolygonOut,
-                                  std::vector<std::vector<BoundaryParametricPoint> >* bezierPolygonOut)
+static void computeInternalPolygon(const std::vector<std::vector<ParametricPoint> >& featherPolygon,
+                                   const std::vector<std::vector<ParametricPoint> >& bezierPolygon,
+                                   bool clockWise,
+                                   double featherDistPixel_xParam,
+                                   double featherDistPixel_yParam,
+                                   RotoBezierTriangulation::PolygonData* outArgs)
 {
     // Copy the feather and bezier polygon and introduce a isInner flag to determine if a point should be drawn with an inside color (full opacity) or outter
     // color (black)
-    // Initialize the isInner flag to true since libtess will only emit vertices for the outter contour
+    // Initialize the isInner flag to false and libtess will inform us of the internal points with the vertex callback
     PolygonCSGData data;
-
+    data.outArgs = outArgs;
 
     const double featherDist_x = featherDistPixel_xParam;
     const double featherDist_y = featherDistPixel_yParam;
 
-    featherPolygonOut->resize(featherPolygon.size());
-    bezierPolygonOut->resize(bezierPolygon.size());
-
     for (std::size_t i = 0; i < bezierPolygon.size(); ++i) {
-        (*bezierPolygonOut)[i].resize(bezierPolygon[i].size());
-        for (std::size_t j = 0; j < bezierPolygon[i].size(); ++j) {
-            (*bezierPolygonOut)[i][j].x = bezierPolygon[i][j].x;
-            (*bezierPolygonOut)[i][j].y = bezierPolygon[i][j].y;
-            (*bezierPolygonOut)[i][j].t = bezierPolygon[i][j].t;
-            (*bezierPolygonOut)[i][j].isInner = true;
 
-            TessIndexPtr index(new TessIndex);
-            index->isFeather = false;
-            index->pointIndex = j;
-            index->segmentIndex = i;
+        // Skip the first point in input because it is the same as the last point of the previous segment
+        for (std::size_t j = 1; j < bezierPolygon[i].size(); ++j) {
+            const ParametricPoint& from = bezierPolygon[i][j];
+            RotoBezierTriangulation::BoundaryParametricPoint to;
+            to.x = from.x;
+            to.y = from.y;
+            // Add the index of the segment to the parametric t so further in computeFeatherMesh we do not compare 2 points
+            // which belong to 2 different segments
+            to.t = from.t + i;
+            to.isInner = false;
+            outArgs->bezierPolygon.push_back(to);
+
+            RotoBezierTriangulation::VertexIndexPtr index(new RotoBezierTriangulation::VertexIndex);
+            index->origin = RotoBezierTriangulation::eVertexPointsSetInternalShape;
+            index->pointIndex = outArgs->bezierPolygon.size() - 1;
             data.indices.push_back(index);
         }
     }
 
     // The feather point must be offset along the normal by the feather distance.
-    {
+    for (std::size_t i = 0; i < featherPolygon.size(); ++i) {
 
-        for (std::size_t i = 0; i < featherPolygon.size(); ++i) {
-            (*featherPolygonOut)[i].resize(featherPolygon[i].size());
-            for (std::size_t j = 0; j < featherPolygon[i].size(); ++j) {
+        // Skip the first point in input because it is the same as the last point of the previous segment
+        for (std::size_t j = 1; j < featherPolygon[i].size(); ++j) {
 
-                // Get the prev and next feather point along the polygon to compute the
-                // derivative
-                const ParametricPoint* prev = 0;
-                const ParametricPoint* next = 0;
-                if (j > 0) {
-                    prev = &featherPolygon[i][j - 1];
-                } else {
-                    if (i > 0) {
-                        prev = &featherPolygon[i - 1].back();
-                    } else {
-                        prev = &featherPolygon.back().back();
-                    }
-                }
+            // Get the prev and next feather point along the polygon to compute the
+            // derivative
+            const ParametricPoint* prev = 0;
+            const ParametricPoint* next = 0;
 
-                if (j < featherPolygon[i].size() - 1) {
-                    next = &featherPolygon[i][j + 1];
-                } else {
-                    if (i < featherPolygon.size() - 1) {
-                        next = &featherPolygon[i + 1].front();
-                    } else {
-                        next = &featherPolygon.front().front();
-                    }
-                }
-
-                // Add or remove the derivative multiplied by the feather distance, depending on the polygon orientation
-                {
-                    double diffx = next->x - prev->x;
-                    double diffy = next->y - prev->y;
-                    double norm = std::sqrt( diffx * diffx + diffy * diffy );
-                    double dx = (norm != 0) ? -( diffy / norm ) : 0;
-                    double dy = (norm != 0) ? ( diffx / norm ) : 1;
-
-                    (*featherPolygonOut)[i][j].x = featherPolygon[i][j].x;
-                    (*featherPolygonOut)[i][j].y = featherPolygon[i][j].y;
-                    if (!clockWise) {
-                        (*featherPolygonOut)[i][j].x -= dx * featherDist_x;
-                        (*featherPolygonOut)[i][j].y -= dy * featherDist_y;
-                    } else {
-                        (*featherPolygonOut)[i][j].x += dx * featherDist_x;
-                        (*featherPolygonOut)[i][j].y += dy * featherDist_y;
-                    }
-                }
-
-                (*featherPolygonOut)[i][j].t = featherPolygon[i][j].t;
-                (*featherPolygonOut)[i][j].isInner = true;
-
-                TessIndexPtr index(new TessIndex);
-                index->isFeather = true;
-                index->pointIndex = j;
-                index->segmentIndex = i;
-                data.indices.push_back(index);
-            }
-        }
-    }
-
-    data.featherPolygon = featherPolygonOut;
-    data.bezierPolygon = bezierPolygonOut;
-
-    libtess_GLUtesselator* tesselator = libtess_gluNewTess();
-
-    libtess_gluTessProperty(tesselator, LIBTESS_GLU_TESS_BOUNDARY_ONLY, 1);
-    libtess_gluTessProperty(tesselator, LIBTESS_GLU_TESS_WINDING_RULE, LIBTESS_GLU_TESS_WINDING_POSITIVE);
-    libtess_gluTessCallback(tesselator, LIBTESS_GLU_TESS_BEGIN_DATA, (void (*)())contour_begin_primitive_callback);
-    libtess_gluTessCallback(tesselator, LIBTESS_GLU_TESS_VERTEX_DATA, (void (*)())contour_vertex_callback);
-    libtess_gluTessCallback(tesselator, LIBTESS_GLU_TESS_END_DATA, (void (*)())contour_end_primitive_callback);
-    libtess_gluTessCallback(tesselator, LIBTESS_GLU_TESS_ERROR_DATA, (void (*)())contour_error_callback);
-    libtess_gluTessCallback(tesselator, LIBTESS_GLU_TESS_COMBINE_DATA, (void (*)())contour_intersection_combine_callback);
-
-    // From README: if you know that all polygons lie in the x-y plane, call
-    // gluTessNormal(tess, 0.0, 0.0, 1.0) before rendering any polygons.
-    libtess_gluTessNormal(tesselator, 0, 0, clockWise ? -1 : 1);
-
-    // Draw a single polygon with 2 contours
-    libtess_gluTessBeginPolygon(tesselator, &data);
-
-    // The index in the list of TessIndex associated to each point
-    std::size_t indexInIndicesList = 0;
-    {
-        libtess_gluTessBeginContour(tesselator);
-
-        for (std::size_t i = 0; i < bezierPolygonOut->size(); ++i) {
-            for (std::size_t j = 0; j < (*bezierPolygonOut)[i].size(); ++j) {
-                double coords[3] = {(*bezierPolygonOut)[i][j].x, (*bezierPolygonOut)[i][j].y, 1.};
-                libtess_gluTessVertex(tesselator, coords, reinterpret_cast<void*>(data.indices[indexInIndicesList].get()) /*per-vertex client data*/);
-                ++indexInIndicesList;
-            }
-        }
-
-        libtess_gluTessEndContour(tesselator);
-    }
-    {
-        libtess_gluTessBeginContour(tesselator);
-
-
-        for (std::size_t i = 0; i < featherPolygonOut->size(); ++i) {
-            for (std::size_t j = 0; j < (*featherPolygonOut)[i].size(); ++j) {
-                double coords[3] = {(*featherPolygonOut)[i][j].x, (*featherPolygonOut)[i][j].y, 1.};
-                libtess_gluTessVertex(tesselator, coords, reinterpret_cast<void*>(data.indices[indexInIndicesList].get()) /*per-vertex client data*/);
-                ++indexInIndicesList;
-            }
-        }
-
-        libtess_gluTessEndContour(tesselator);
-    }
-    libtess_gluTessEndPolygon(tesselator);
-    libtess_gluDeleteTess(tesselator);
-
-    // check for errors
-    assert(data.error == 0);
-
-} // computeFeatherContour
-
-
-
-/**
- * @brief Using the feather polygon and internal shape polygon and assuming they have the same number of points, iterate through each 
- * point to create a mesh composed of triangles.
- **/
-static void computeFeatherMesh(const std::vector<std::vector<ParametricPoint> >& featherPolygonIn,
-                               const std::vector<std::vector<ParametricPoint> >& bezierPolygonIn,
-                               bool clockWise,
-                               double featherDistPixel_xParam,
-                               double featherDistPixel_yParam,
-                               RotoBezierTriangulation::PolygonData* outArgs)
-{
-
-    std::vector<std::vector<BoundaryParametricPoint> > featherPolygon, bezierPolygon;
-    computeFeatherContour(featherPolygonIn, bezierPolygonIn, clockWise, featherDistPixel_xParam, featherDistPixel_yParam, &featherPolygon, &bezierPolygon);
-
-
-
-    // The discretized bezier polygon and feather polygon must have the same number of samples.
-    assert( !featherPolygon.empty() && !bezierPolygon.empty() && featherPolygon.size() == bezierPolygon.size());
-
-    // Points to the current feather bezier segment
-    vector<vector<BoundaryParametricPoint> >::const_iterator fIt = featherPolygon.begin();
-    for (vector<vector<BoundaryParametricPoint> > ::const_iterator it = bezierPolygon.begin(); it != bezierPolygon.end(); ++it, ++fIt) {
-
-
-        // Iterate over each bezier segment.
-        // There are the same number of bezier segments for the feather and the internal bezier. Each discretized segment is a contour (list of vertices)
-        assert(!it->empty() && !fIt->empty());
-
-
-        // Points to the current point of the bezier polygon
-        vector<BoundaryParametricPoint>::const_iterator bSegmentIt = it->begin();
-
-        // Points to the current point of the feather polygon
-        vector<BoundaryParametricPoint>::const_iterator fSegmentIt = fIt->begin();
-
-
-        // Initialize the state with a segment between the first inner vertex and first outter vertex
-        RotoBezierTriangulation::RotoFeatherVertex lastInnerVert,lastOutterVert;
-
-        // Initialize the first feather point
-        {
-            lastInnerVert.x = bSegmentIt->x;
-            lastInnerVert.y = bSegmentIt->y;
-            lastInnerVert.isInner = bSegmentIt->isInner;
-            outArgs->featherMesh.push_back(lastInnerVert);
-            ++bSegmentIt;
-        }
-
-        // Initialize the first bezier point
-        {
-            lastOutterVert.x = fSegmentIt->x;
-            lastOutterVert.y = fSegmentIt->y;
-            lastOutterVert.isInner = fSegmentIt->isInner;
-            outArgs->featherMesh.push_back(lastOutterVert);
-            ++fSegmentIt;
-        }
-
-        
-        while (fSegmentIt != fIt->end() || bSegmentIt != it->end()) {
-
-            // Initialize the first segment of the next triangle if we did not reach the end
-
-            outArgs->featherMesh.push_back(lastOutterVert);
-            outArgs->featherMesh.push_back(lastInnerVert);
-
-            if ( bSegmentIt != it->end() ) {
-                ++bSegmentIt;
-            }
-            if ( fSegmentIt != fIt->end() ) {
-                ++fSegmentIt;
-
-            }
-            double inner_t = (double)INT_MAX;
-            double outter_t = (double)INT_MAX;
-            if (bSegmentIt != it->end()) {
-                inner_t = bSegmentIt->t;
-            }
-            if (fSegmentIt != fIt->end()) {
-                outter_t = fSegmentIt->t;
-            }
-
-
-            // Pick the point with the minimum t
-            if (inner_t <= outter_t) {
-                if ( bSegmentIt != it->end() ) {
-                    lastInnerVert.x = bSegmentIt->x;
-                    lastInnerVert.y = bSegmentIt->y;
-                    lastInnerVert.isInner = bSegmentIt->isInner;
-                    outArgs->featherMesh.push_back(lastInnerVert);
-                    ++bSegmentIt;
-                }
+            if (j > 1) {
+                prev = &featherPolygon[i][j];
             } else {
-                if ( fSegmentIt != fIt->end() ) {
-                    lastOutterVert.x = fSegmentIt->x;
-                    lastOutterVert.y = fSegmentIt->y;
-                    lastOutterVert.isInner = fSegmentIt->isInner;
-                    outArgs->featherMesh.push_back(lastOutterVert);
+                if (i > 0) {
+                    prev = &featherPolygon[i - 1].back();
+                } else {
+                    prev = &featherPolygon.back().back();
                 }
             }
-        } // for each point
 
-    } // for each bezier segment
+            if (j < featherPolygon[i].size() - 1) {
+                next = &featherPolygon[i][j + 1];
+            } else {
+                if (i < featherPolygon.size() - 1) {
+                    next = &featherPolygon[i + 1][1];
+                } else {
+                    next = &featherPolygon[0][1];
+                }
+            }
 
-} // computeFeatherMesh
+            const ParametricPoint& from = featherPolygon[i][j];
+            RotoBezierTriangulation::BoundaryParametricPoint to;
+            to.x = from.x;
+            to.y = from.y;
 
+            // Add the index of the segment to the parametric t so further in computeFeatherMesh we do not compare 2 points
+            // which belong to 2 different segments
+            to.t = from.t + i;
+            to.isInner = false;
 
+            // Add or remove the derivative multiplied by the feather distance, depending on the polygon orientation
+            {
+                double diffx = next->x - prev->x;
+                double diffy = next->y - prev->y;
+                double norm = std::sqrt( diffx * diffx + diffy * diffy );
+                double dx = (norm != 0) ? -( diffy / norm ) : 0;
+                double dy = (norm != 0) ? ( diffx / norm ) : 1;
 
-NATRON_NAMESPACE_ANONYMOUS_ENTER;
-
-
-
-static void tess_begin_primitive_callback(unsigned int which,
-                                          void *polygonData)
-{
-
-    RotoBezierTriangulation::PolygonData* myData = (RotoBezierTriangulation::PolygonData*)polygonData;
-    assert(myData);
-
-    switch (which) {
-        case LIBTESS_GL_TRIANGLE_STRIP:
-            assert(!myData->stripsBeingEdited);
-            myData->stripsBeingEdited.reset(new RotoBezierTriangulation::RotoTriangleStrips);
-            break;
-        case LIBTESS_GL_TRIANGLE_FAN:
-            assert(!myData->fanBeingEdited);
-            myData->fanBeingEdited.reset(new RotoBezierTriangulation::RotoTriangleFans);
-            break;
-        case LIBTESS_GL_TRIANGLES:
-            assert(!myData->trianglesBeingEdited);
-            myData->trianglesBeingEdited.reset(new RotoBezierTriangulation::RotoTriangles);
-            break;
-        default:
-            assert(false);
-            break;
-    }
-}
-
-static void tess_end_primitive_callback(void *polygonData)
-{
-    RotoBezierTriangulation::PolygonData* myData = (RotoBezierTriangulation::PolygonData*)polygonData;
-    assert(myData);
-
-    assert((myData->stripsBeingEdited && !myData->fanBeingEdited && !myData->trianglesBeingEdited) ||
-           (!myData->stripsBeingEdited && myData->fanBeingEdited && !myData->trianglesBeingEdited) ||
-           (!myData->stripsBeingEdited && !myData->fanBeingEdited && myData->trianglesBeingEdited));
-
-    if (myData->stripsBeingEdited) {
-        myData->internalStrips.push_back(*myData->stripsBeingEdited);
-        myData->stripsBeingEdited.reset();
-    } else if (myData->fanBeingEdited) {
-        myData->internalFans.push_back(*myData->fanBeingEdited);
-        myData->fanBeingEdited.reset();
-    } else if (myData->trianglesBeingEdited) {
-        myData->internalTriangles.push_back(*myData->trianglesBeingEdited);
-        myData->trianglesBeingEdited.reset();
-    }
-
-}
-
-static void tess_vertex_callback(void* data /*per-vertex client data*/,
-                                 void *polygonData)
-{
-    RotoBezierTriangulation::PolygonData* myData = (RotoBezierTriangulation::PolygonData*)polygonData;
-    assert(myData);
-
-    assert((myData->stripsBeingEdited && !myData->fanBeingEdited && !myData->trianglesBeingEdited) ||
-           (!myData->stripsBeingEdited && myData->fanBeingEdited && !myData->trianglesBeingEdited) ||
-           (!myData->stripsBeingEdited && !myData->fanBeingEdited && myData->trianglesBeingEdited));
-
-    uintptr_t index = reinterpret_cast<uintptr_t>(data);
-    assert(/**p >= 0 &&*/ index < myData->bezierPolygonJoined.size());
-#ifndef NDEBUG
-    assert(myData->bezierPolygonJoined[index].x >= myData->bezierBbox.x1 && myData->bezierPolygonJoined[index].x <= myData->bezierBbox.x2 &&
-           myData->bezierPolygonJoined[index].y >= myData->bezierBbox.y1 && myData->bezierPolygonJoined[index].y <= myData->bezierBbox.y2);
-#endif
-    if (myData->stripsBeingEdited) {
-        myData->stripsBeingEdited->indices.push_back(index);
-    } else if (myData->fanBeingEdited) {
-        myData->fanBeingEdited->indices.push_back(index);
-    } else if (myData->trianglesBeingEdited) {
-        myData->trianglesBeingEdited->indices.push_back(index);
-    }
-
-}
-
-static void tess_error_callback(unsigned int error,
-                                void *polygonData)
-{
-    RotoBezierTriangulation::PolygonData* myData = (RotoBezierTriangulation::PolygonData*)polygonData;
-    assert(myData);
-    myData->error = error;
-}
-
-static void tess_intersection_combine_callback(double coords[3],
-                                               void */*data*/[4] /*4 original vertices*/,
-                                               double /*w*/[4] /*weights*/,
-                                               void **dataOut,
-                                               void *polygonData)
-{
-    RotoBezierTriangulation::PolygonData* myData = (RotoBezierTriangulation::PolygonData*)polygonData;
-    assert(myData);
-
-    ParametricPoint v;
-    v.x = coords[0];
-    v.y = coords[1];
-    v.t = 0;
-
-    uintptr_t index = myData->bezierPolygonJoined.size();
-    myData->bezierPolygonJoined.push_back(v);
-
-    assert(index < myData->bezierPolygonJoined.size());
-    *dataOut = reinterpret_cast<void*>(index);
-}
-
-NATRON_NAMESPACE_ANONYMOUS_EXIT;
+                if (!clockWise) {
+                    to.x -= dx * featherDist_x;
+                    to.y -= dy * featherDist_y;
+                } else {
+                    to.x += dx * featherDist_x;
+                    to.y += dy * featherDist_y;
+                }
+            }
+            outArgs->featherPolygon.push_back(to);
 
 
-/**
- * @brief Uses libtess to compute the primitives used to render the internal shape
- **/
-static void computeInternalShapePrimitives(bool clockWise, RotoBezierTriangulation::PolygonData* outArgs)
-{
+            RotoBezierTriangulation::VertexIndexPtr index(new RotoBezierTriangulation::VertexIndex);
+            index->origin = RotoBezierTriangulation::eVertexPointsSetFeather;
+            index->pointIndex = outArgs->featherPolygon.size() - 1;
+            data.indices.push_back(index);
+        } // for each point in a segment
+    } // for each feather bezier segment
+
 
     libtess_GLUtesselator* tesselator = libtess_gluNewTess();
 
-    libtess_gluTessProperty(tesselator, LIBTESS_GLU_TESS_WINDING_RULE, LIBTESS_GLU_TESS_WINDING_POSITIVE);
+    //libtess_gluTessProperty(tesselator, LIBTESS_GLU_TESS_BOUNDARY_ONLY, 1);
+    libtess_gluTessProperty(tesselator, LIBTESS_GLU_TESS_WINDING_RULE, LIBTESS_GLU_TESS_WINDING_ABS_GEQ_TWO);
     libtess_gluTessCallback(tesselator, LIBTESS_GLU_TESS_BEGIN_DATA, (void (*)())tess_begin_primitive_callback);
     libtess_gluTessCallback(tesselator, LIBTESS_GLU_TESS_VERTEX_DATA, (void (*)())tess_vertex_callback);
     libtess_gluTessCallback(tesselator, LIBTESS_GLU_TESS_END_DATA, (void (*)())tess_end_primitive_callback);
@@ -544,25 +399,173 @@ static void computeInternalShapePrimitives(bool clockWise, RotoBezierTriangulati
     // From README: if you know that all polygons lie in the x-y plane, call
     // gluTessNormal(tess, 0.0, 0.0, 1.0) before rendering any polygons.
     libtess_gluTessNormal(tesselator, 0, 0, clockWise ? -1 : 1);
-    libtess_gluTessBeginPolygon(tesselator, outArgs);
-    libtess_gluTessBeginContour(tesselator);
 
+    // Draw a single polygon with 2 contours
+    libtess_gluTessBeginPolygon(tesselator, &data);
 
+    // The index in the list of VertexIndex associated to each point
+    std::size_t indexInIndicesList = 0;
+    {
+        libtess_gluTessBeginContour(tesselator);
 
-    for (size_t i = 0; i < outArgs->bezierPolygonJoined.size(); ++i) {
-        double coords[3] = {outArgs->bezierPolygonJoined[i].x, outArgs->bezierPolygonJoined[i].y, 1.};
-        uintptr_t index = i;
-        assert(index < outArgs->bezierPolygonJoined.size());
-        libtess_gluTessVertex(tesselator, coords, reinterpret_cast<void*>(index) /*per-vertex client data*/);
+        for (std::size_t i = 0; i < outArgs->bezierPolygon.size(); ++i) {
+            double coords[3] = {outArgs->bezierPolygon[i].x, outArgs->bezierPolygon[i].y, 1.};
+            libtess_gluTessVertex(tesselator, coords, (void*)data.indices[indexInIndicesList].get() /*per-vertex client data*/);
+            ++indexInIndicesList;
+        }
+
+        libtess_gluTessEndContour(tesselator);
     }
+    {
+        libtess_gluTessBeginContour(tesselator);
 
-    libtess_gluTessEndContour(tesselator);
+
+        for (std::size_t i = 0; i < outArgs->featherPolygon.size(); ++i) {
+            double coords[3] = {outArgs->featherPolygon[i].x, outArgs->featherPolygon[i].y, 1.};
+            libtess_gluTessVertex(tesselator, coords, (void*)data.indices[indexInIndicesList].get() /*per-vertex client data*/);
+            ++indexInIndicesList;
+        }
+
+        libtess_gluTessEndContour(tesselator);
+    }
     libtess_gluTessEndPolygon(tesselator);
     libtess_gluDeleteTess(tesselator);
-
+    
     // check for errors
-    assert(outArgs->error == 0);
-} // computeInternalShapePrimitives
+    assert(data.error == 0);
+
+    // Now transfer the data to the outArgs
+    {
+        outArgs->internalShapeVertices.resize(data.internalShapeVertices.size());
+        int i = 0;
+        for (VertexIndexSet::const_iterator it = data.internalShapeVertices.begin(); it != data.internalShapeVertices.end(); ++it, ++i) {
+            outArgs->internalShapeVertices[i] = *it;
+        }
+    }
+    outArgs->internalShapeTriangleFans.resize(data.internalFans.size());
+    outArgs->internalShapeTriangles.resize(data.internalTriangles.size());
+    outArgs->internalShapeTriangleStrips.resize(data.internalStrips.size());
+
+    // Copy triangles
+    for (std::size_t i = 0; i < data.internalTriangles.size(); ++i) {
+        outArgs->internalShapeTriangles[i].resize(data.internalTriangles[i].size());
+        for (std::size_t j = 0; j < data.internalTriangles[i].size(); ++j) {
+            const RotoBezierTriangulation::VertexIndex& index = data.internalTriangles[i][j];
+
+            // Find the vertex in the unique set to retrieve its index
+            VertexIndexSet::iterator found = data.internalShapeVertices.find(index);
+            assert(found != data.internalShapeVertices.end());
+            if (found != data.internalShapeVertices.end()) {
+                std::size_t vertexIndexInVec = std::distance(data.internalShapeVertices.begin(), found);
+                outArgs->internalShapeTriangles[i][j] = vertexIndexInVec;
+            }
+
+        }
+    }
+
+    // Copy triangle fans
+    for (std::size_t i = 0; i < data.internalFans.size(); ++i) {
+        outArgs->internalShapeTriangleFans[i].resize(data.internalFans[i].size());
+        for (std::size_t j = 0; j < data.internalFans[i].size(); ++j) {
+            const RotoBezierTriangulation::VertexIndex& index = data.internalFans[i][j];
+
+            // Find the vertex in the unique set to retrieve its index
+            VertexIndexSet::iterator found = data.internalShapeVertices.find(index);
+            assert(found != data.internalShapeVertices.end());
+            if (found != data.internalShapeVertices.end()) {
+                std::size_t vertexIndexInVec = std::distance(data.internalShapeVertices.begin(), found);
+                outArgs->internalShapeTriangleFans[i][j] = vertexIndexInVec;
+            }
+
+        }
+    }
+
+    // Copy triangle strips
+    for (std::size_t i = 0; i < data.internalStrips.size(); ++i) {
+        outArgs->internalShapeTriangleStrips[i].resize(data.internalStrips[i].size());
+        for (std::size_t j = 0; j < data.internalStrips[i].size(); ++j) {
+            const RotoBezierTriangulation::VertexIndex& index = data.internalStrips[i][j];
+
+            // Find the vertex in the unique set to retrieve its index
+            VertexIndexSet::iterator found = data.internalShapeVertices.find(index);
+            assert(found != data.internalShapeVertices.end());
+            if (found != data.internalShapeVertices.end()) {
+                std::size_t vertexIndexInVec = std::distance(data.internalShapeVertices.begin(), found);
+                outArgs->internalShapeTriangleStrips[i][j] = vertexIndexInVec;
+            }
+
+        }
+    }
+
+} // computeFeatherContour
+
+
+
+/**
+ * @brief Using the feather polygon and internal shape polygon and assuming they have the same number of points, iterate through each 
+ * point to create a mesh composed of triangles.
+ **/
+static void computeFeatherMesh(RotoBezierTriangulation::PolygonData* outArgs)
+{
+
+    // The discretized bezier polygon and feather polygon must have the same number of samples.
+    assert( !outArgs->featherPolygon.empty() && !outArgs->bezierPolygon.empty());
+
+    // Points to the current feather bezier segment
+    vector<RotoBezierTriangulation::BoundaryParametricPoint>::const_iterator fit = outArgs->featherPolygon.begin();
+    vector<RotoBezierTriangulation::BoundaryParametricPoint> ::const_iterator it = outArgs->bezierPolygon.begin();
+
+    // Initialize the state with a segment between the first inner vertex and first outter vertex
+    RotoBezierTriangulation::BoundaryParametricPoint lastInnerVert,lastOutterVert;
+    lastInnerVert = *it;
+    lastOutterVert = *fit;
+
+    // Whether or not to increment the iterators at the start of the loop
+    bool incrFeatherIt = true;
+    bool incrBezierIt = true;
+
+    while (fit != outArgs->featherPolygon.end() || it != outArgs->bezierPolygon.end()) {
+
+        // Initialize the first segment of the next triangle if we did not reach the end
+
+        outArgs->featherMesh.push_back(lastOutterVert);
+        outArgs->featherMesh.push_back(lastInnerVert);
+        if ( incrBezierIt && it != outArgs->bezierPolygon.end() ) {
+            ++it;
+        }
+        if ( incrFeatherIt && fit != outArgs->featherPolygon.end() ) {
+            ++fit;
+
+        }
+        double inner_t = (double)INT_MAX;
+        double outter_t = (double)INT_MAX;
+        if (it != outArgs->bezierPolygon.end()) {
+            inner_t = it->t;
+        }
+        if (fit != outArgs->featherPolygon.end()) {
+            outter_t = fit->t;
+        }
+
+        // Pick the point with the minimum t
+        if (inner_t <= outter_t) {
+            incrBezierIt = true;
+            incrFeatherIt = false;
+            if ( it != outArgs->bezierPolygon.end() ) {
+                lastInnerVert = *it;
+                outArgs->featherMesh.push_back(lastInnerVert);
+            }
+        } else {
+            incrBezierIt = false;
+            incrFeatherIt = true;
+            if ( fit != outArgs->featherPolygon.end() ) {
+                lastOutterVert = *fit;
+                outArgs->featherMesh.push_back(lastOutterVert);
+            }
+        }
+    } // for each point
+
+} // computeFeatherMesh
+
 
 void
 RotoBezierTriangulation::computeTriangles(const BezierPtr& bezier,
@@ -577,45 +580,63 @@ RotoBezierTriangulation::computeTriangles(const BezierPtr& bezier,
     ///to the Natron image.
 
     assert(outArgs);
-    outArgs->error = 0;
 
     bool clockWise = bezier->isClockwiseOriented(time, view);
 
-    RectD featherPolyBBox;
-    featherPolyBBox.setupInfinity();
+    std::vector<std::vector<ParametricPoint> > featherPolygonOrig;
+    std::vector<std::vector<ParametricPoint> > bezierPolygonOrig;
 
-    std::vector<std::vector<ParametricPoint> > featherPolygon;
-    std::vector<std::vector<ParametricPoint> > bezierPolygon;
-
-
-    bezier->evaluateFeatherPointsAtTime(time, view, scale, Bezier::eDeCastelJauAlgorithmIterative, -1, 1., true /*evaluateIfEqual*/, &featherPolygon, 0, &featherPolyBBox);
-    bezier->evaluateAtTime(time, view, scale, Bezier::eDeCastelJauAlgorithmIterative, -1, 1., &bezierPolygon, 0,
+    bezier->evaluateFeatherPointsAtTime(time, view, scale, Bezier::eDeCastelJauAlgorithmIterative, -1, 1., &featherPolygonOrig, 0,
 #ifndef NDEBUG
-                                       &outArgs->bezierBbox
+                                        &outArgs->bezierBbox
 #else
-                                       0
+                                        0
 #endif
-                                       );
-
-    // Join the internal polygon into a single vector of vertices, we will need the indices for libtess
-    for (vector<vector<ParametricPoint> >::const_iterator it = bezierPolygon.begin(); it != bezierPolygon.end(); ++it) {
-
-        // don't add the first vertex which is the same as the last vertex of the last segment
-        vector<ParametricPoint>::const_iterator start = it->begin();
-        ++start;
-        outArgs->bezierPolygonJoined.insert(outArgs->bezierPolygonJoined.end(), start, it->end());
-        
-    }
+                                        );
+    bezier->evaluateAtTime(time, view, scale, Bezier::eDeCastelJauAlgorithmIterative, -1, 1., &bezierPolygonOrig, 0, 0);
 
 
-    // First compute the mesh composed of triangles of the feather.
-    computeFeatherMesh(featherPolygon, bezierPolygon, clockWise, featherDistPixel_x, featherDistPixel_y, outArgs);
+    // First compute the intersection of both polygons to extract the inner shape
+    computeInternalPolygon(featherPolygonOrig, bezierPolygonOrig, clockWise, featherDistPixel_x, featherDistPixel_y, outArgs);
 
-    // Tesselate the internal bezier
-    computeInternalShapePrimitives(clockWise, outArgs);
-
+    // Now that we have the role (inner or outter) for each vertex, compute the feather mesh
+    computeFeatherMesh(outArgs);
 
 
 } // computeTriangles
+
+Point
+RotoBezierTriangulation::getPointFromTriangulation(const RotoBezierTriangulation::PolygonData& inArgs, const RotoBezierTriangulation::VertexIndex& index)
+{
+    Point p;
+    switch (index.origin) {
+        case RotoBezierTriangulation::eVertexPointsSetFeather:
+            assert(index.pointIndex < (int)inArgs.featherPolygon.size());
+            p.x = inArgs.featherPolygon[index.pointIndex].x;
+            p.y = inArgs.featherPolygon[index.pointIndex].y;
+            break;
+
+        case RotoBezierTriangulation::eVertexPointsSetInternalShape:
+            assert(index.pointIndex < (int)inArgs.bezierPolygon.size());
+            p.x = inArgs.bezierPolygon[index.pointIndex].x;
+            p.y = inArgs.bezierPolygon[index.pointIndex].y;
+            break;
+
+        case RotoBezierTriangulation::eVertexPointsSetGeneratedPoints:
+            assert(index.pointIndex < (int)inArgs.generatedPoint.size());
+            p.x = inArgs.generatedPoint[index.pointIndex].x;
+            p.y = inArgs.generatedPoint[index.pointIndex].y;
+            break;
+            
+    }
+    return p;
+}
+
+Point
+RotoBezierTriangulation::getPointFromTriangulation(const PolygonData& inArgs, std::size_t index)
+{
+    assert(index < inArgs.internalShapeVertices.size());
+    return getPointFromTriangulation(inArgs, inArgs.internalShapeVertices[index]);
+}
 
 NATRON_NAMESPACE_EXIT;

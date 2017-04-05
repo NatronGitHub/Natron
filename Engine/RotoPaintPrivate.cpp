@@ -1931,7 +1931,7 @@ RotoPaintInteract::drawOverlay(TimeValue time,
 
                 if (featherVisible) {
                     ///Draw feather only if visible (button is toggled in the user interface)
-                    isBezier->evaluateFeatherPointsAtTime(time, view, RenderScale(1.), Bezier::eDeCastelJauAlgorithmIterative, 100, 1., true /*evaluateIfEqual*/, 0, &featherPoints, &featherBBox);
+                    isBezier->evaluateFeatherPointsAtTime(time, view, RenderScale(1.), Bezier::eDeCastelJauAlgorithmIterative, 100, 1., 0, &featherPoints, &featherBBox);
 
                     if ( !featherPoints.empty() ) {
                         GL_GPU::LineStipple(2, 0xAAAA);

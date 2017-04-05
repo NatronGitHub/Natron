@@ -452,11 +452,6 @@ public:
 
 
 
-
-
-public:
-
-
     /**
      * @brief Evaluates the bezier formed by the feather points. Segments which are equal to the control points of the bezier
      * will not be drawn.
@@ -467,7 +462,6 @@ public:
                                      DeCastelJauAlgorithmEnum algo,
                                      int nbPointsPerSegment,
                                      double errorScale,
-                                     bool evaluateIfEqual,
                                      std::vector<std::vector<ParametricPoint>  >* points,
                                      std::vector<ParametricPoint >* pointsSingleList,
                                      RectD* bbox) const;
