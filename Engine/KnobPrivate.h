@@ -55,7 +55,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/CacheEntryBase.h"
 #include "Engine/CacheEntryKeyBase.h"
 #include "Engine/DockablePanelI.h"
-#include "Engine/ExprtkFunctions.h"
+//#include "Engine/ExprtkFunctions.h"
 #include "Engine/Hash64.h"
 #include "Engine/KnobFile.h"
 #include "Engine/KnobTypes.h"
@@ -77,7 +77,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/EngineFwd.h"
 
 
+
 NATRON_NAMESPACE_ENTER
+
 
 #define EXPR_RECURSION_LEVEL() ExprRecursionLevel_RAII __recursionLevelIncrementer__(this)
 

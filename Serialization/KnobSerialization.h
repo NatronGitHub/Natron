@@ -29,6 +29,11 @@
 #include <vector>
 #include <list>
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
+#endif
+
 #include "Serialization/CurveSerialization.h"
 #include "Serialization/SerializationBase.h"
 #include "Serialization/SerializationFwd.h"
