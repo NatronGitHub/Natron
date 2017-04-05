@@ -24,6 +24,8 @@
 
 #include "ExprtkFunctions.h"
 
+#include "exprtk.hpp"
+
 #include "Engine/Noise.h"
 #include "Engine/PyExprUtils.h"
 #include "Engine/KnobPrivate.h"

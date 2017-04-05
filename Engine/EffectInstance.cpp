@@ -283,10 +283,14 @@ EffectInstance::invalidateHashCacheRecursive(const bool recurse, std::set<Hashab
     }
 
     if (recurse) {
-        NodesList outputs;
-        getNode()->getOutputsWithGroupRedirection(outputs);
-        for (NodesList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-            (*it)->getEffectInstance()->invalidateHashCacheRecursive(recurse, invalidatedObjects);
+        NodesWList outputs;
+        getNode()->getOutputs_mt_safe(outputs);
+        for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+            NodePtr outputNode = it->lock();
+            if (!outputNode) {
+                continue;
+            }
+            outputNode->getEffectInstance()->invalidateHashCacheRecursive(recurse, invalidatedObjects);
         }
     }
     return true;

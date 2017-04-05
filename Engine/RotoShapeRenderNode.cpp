@@ -326,14 +326,8 @@ static void getRoDFromItem(const RotoDrawableItemPtr& item, TimeValue time, View
 
 
 ActionRetCodeEnum
-RotoShapeRenderNode::getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, RectD* rod)
+RotoShapeRenderNode::getRegionOfDefinition(TimeValue time, const RenderScale& /*scale*/, ViewIdx view, RectD* rod)
 {
-   
-
-    ActionRetCodeEnum st = EffectInstance::getRegionOfDefinition(time, scale, view, rod);
-    if (isFailureRetCode(st)) {
-        rod->x1 = rod->y1 = rod->x2 = rod->y2 = 0.;
-    }
 
     RotoDrawableItemPtr item = getAttachedRotoItem();
     assert(item);

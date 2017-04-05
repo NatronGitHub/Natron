@@ -1174,7 +1174,7 @@ isPointCloseTo(TimeValue time,
 }
 
 static bool
-bezierSegmenEqual(TimeValue time,
+bezierSegmentEqual(TimeValue time,
                   const BezierCP & p0,
                   const BezierCP & p1,
                   const BezierCP & s0,
@@ -2905,7 +2905,6 @@ Bezier::evaluateFeatherPointsAtTime(TimeValue time,
                                     DeCastelJauAlgorithmEnum algo,
                                     int nbPointsPerSegment,
                                     double errorScale,
-                                    bool evaluateIfEqual,
                                     std::vector<std::vector<ParametricPoint>  >* points,
                                     std::vector<ParametricPoint >* pointsSingleList,
                                     RectD* bbox) const
@@ -2923,61 +2922,18 @@ Bezier::evaluateFeatherPointsAtTime(TimeValue time,
         return;
     }
 
-    if ( shape->points.empty() ) {
-        return;
-    }
-
-    BezierCPs::const_iterator itCp = shape->points.begin();
-    BezierCPs::const_iterator next = shape->featherPoints.begin();
-    if ( next != shape->featherPoints.end() ) {
-        ++next;
-    }
-    BezierCPs::const_iterator nextCp = itCp;
-    if ( nextCp != shape->points.end() ) {
-        ++nextCp;
-    }
-
-    for (BezierCPs::const_iterator it = shape->featherPoints.begin(); it != shape->featherPoints.end();
-         ++it) {
-        if ( next == shape->featherPoints.end() ) {
-            next = shape->featherPoints.begin();
-        }
-        if ( nextCp == shape->points.end() ) {
-            if (!shape->finished) {
-                break;
-            }
-            nextCp = shape->points.begin();
-        }
-        if ( !evaluateIfEqual && bezierSegmenEqual(time,  **itCp, **nextCp, **it, **next) ) {
-            continue;
-        }
-        if (points) {
-            std::vector<ParametricPoint> segmentPoints;
-            bezierSegmentEval(*(*it), *(*next), time, scale, algo, nbPointsPerSegment, errorScale, transform, &segmentPoints, bbox);
-            points->push_back(segmentPoints);
-        } else {
-            assert(pointsSingleList);
-            bezierSegmentEval(*(*it), *(*next), time, scale, algo, nbPointsPerSegment, errorScale, transform, pointsSingleList, bbox);
-
-            // If we are a closed bezier or we are not on the last segment, remove the last point so we don't add duplicates
-            if (!isOpenBezier() && next != shape->featherPoints.end()) {
-                if (!pointsSingleList->empty()) {
-                    pointsSingleList->pop_back();
-                }
-            }
-        }
-
-        // increment for next iteration
-        if ( itCp != shape->featherPoints.end() ) {
-            ++itCp;
-        }
-        if ( next != shape->featherPoints.end() ) {
-            ++next;
-        }
-        if ( nextCp != shape->featherPoints.end() ) {
-            ++nextCp;
-        }
-    } // for each control point
+    deCastelJau(isOpenBezier(),
+                shape->featherPoints,
+                time,
+                scale,
+                shape->finished,
+                algo,
+                nbPointsPerSegment,
+                errorScale,
+                transform,
+                points,
+                pointsSingleList,
+                bbox);
 
 } // evaluateFeatherPointsAtTime
 

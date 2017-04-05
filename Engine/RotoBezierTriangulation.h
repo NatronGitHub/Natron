@@ -28,6 +28,7 @@
 #include "Global/Macros.h"
 
 #include <vector>
+#include <set>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
@@ -45,25 +46,44 @@ class RotoBezierTriangulation
 public:
     RotoBezierTriangulation();
 
-    struct RotoFeatherVertex
+    enum VertexPointsSetEnum
+    {
+        // The vertex belongs to the feather polygon
+        eVertexPointsSetFeather,
+
+        // The vertex belongs to the internal shape
+        eVertexPointsSetInternalShape,
+
+        // The vertex belongs to the generated points
+        eVertexPointsSetGeneratedPoints
+    };
+
+    struct VertexIndex {
+
+        // Does this point belong to the feather polygon ?
+        VertexPointsSetEnum origin;
+
+        // The point index in the polygon
+        int pointIndex;
+
+        VertexIndex()
+        : origin(eVertexPointsSetInternalShape)
+        , pointIndex(-1)
+        {
+
+        }
+
+    };
+
+    
+    typedef boost::shared_ptr<VertexIndex> VertexIndexPtr;
+
+
+    struct BoundaryParametricPoint
     {
         double x,y,t;
         bool isInner;
-    };
-
-    struct RotoTriangleStrips
-    {
-        std::vector<unsigned  int> indices;
-    };
-
-    struct RotoTriangleFans
-    {
-        std::vector<unsigned int> indices;
-    };
-
-    struct RotoTriangles
-    {
-        std::vector<unsigned int> indices;
+        
     };
 
 
@@ -76,27 +96,30 @@ public:
         RectD bezierBbox;
 #endif
 
-        // Union of all discretized bezier segments
-        std::vector<ParametricPoint> bezierPolygonJoined;
 
-        // The computed mesh for the feather
-        std::vector<RotoFeatherVertex> featherMesh;
+        // The polygon of the bezier and feather with parametric t and flag indicating the color of each point
+        std::vector<BoundaryParametricPoint> bezierPolygon, featherPolygon;
 
-        // Stuff out of libtess
-        std::vector<RotoTriangleFans> internalFans;
-        std::vector<RotoTriangles> internalTriangles;
-        std::vector<RotoTriangleStrips> internalStrips;
+        // List of generated points by the tesselation algorithms
+        std::vector<Point> generatedPoint;
 
-        // internal stuff for libtess callbacks
-        boost::scoped_ptr<RotoTriangleFans> fanBeingEdited;
-        boost::scoped_ptr<RotoTriangles> trianglesBeingEdited;
-        boost::scoped_ptr<RotoTriangleStrips> stripsBeingEdited;
-        
-        unsigned int error;
+        // The mesh for the feather computed from bezeirPolygon and featherPolygon
+        std::vector<BoundaryParametricPoint> featherMesh;
+
+        // The vertices composing the internal shape, each single vertex once.
+        // Each VertexIndex references a real vertex in either bezierPolygon, featherPolygon or generatedPoint
+        std::vector<VertexIndex> internalShapeVertices;
+
+        // The actual primitives to render. Each index is an index in internalShapeVertices
+        std::vector<std::vector<unsigned int> > internalShapeTriangles, internalShapeTriangleFans, internalShapeTriangleStrips;
+    
     };
 
 
     static void computeTriangles(const BezierPtr& bezier, TimeValue time, ViewIdx view, const RenderScale& scale,  double featherDistPixel_x, double featherDistPixel_y, PolygonData* outArgs);
+
+    static Point getPointFromTriangulation(const PolygonData& inArgs, std::size_t index);
+    static Point getPointFromTriangulation(const PolygonData& inArgs, const VertexIndex& index);
 
 };
 

@@ -1272,7 +1272,7 @@ struct CachePrivate
 #endif
                                       );
 
-    void createTileStorage(int callingBucket_i);
+    void createTileStorage();
 
     void freeAllocatedTiles(U64 entryHash, const std::vector<U64>& tilesToAlloc, const std::vector<std::pair<U64, void*> >& allocatedTiles);
 
@@ -2934,7 +2934,7 @@ Cache<persistent>::initialize(const boost::shared_ptr<Cache<persistent> >& thisS
             _imp->reOpenTileStorage();
             if (_imp->tilesStorage.empty()) {
                 // Ensure we initialize the cache with at least one tile storage file
-                _imp->createTileStorage(-1);
+                _imp->createTileStorage();
             }
         } catch (const CorruptedCacheException&) {
             clear();
@@ -2982,7 +2982,7 @@ struct CacheTilesLockImpl
 
 template <bool persistent>
 void
-CachePrivate<persistent>::createTileStorage(int callingBucket_i)
+CachePrivate<persistent>::createTileStorage()
 {
     if (!useTileStorage) {
         return;
@@ -3022,16 +3022,15 @@ CachePrivate<persistent>::createTileStorage(int callingBucket_i)
 #endif
 
 
-        if (bucket_i != callingBucket_i) {
-            // Take the bucket mutex
+        // Take the bucket mutex
 #ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-            bucketWriteLock.reset(new Sharable_WriteLock(ipc->bucketsData[bucket_i].bucketMutex));
+        bucketWriteLock.reset(new Sharable_WriteLock(ipc->bucketsData[bucket_i].bucketMutex));
 #else
-            createTimedLock<Sharable_WriteLock>(_imp.get(), *bucketWriteLock, &ipc->bucketsData[bucket_i].bucketMutex);
+        createTimedLock<Sharable_WriteLock>(_imp.get(), *bucketWriteLock, &ipc->bucketsData[bucket_i].bucketMutex);
 #endif
-        }
-
-
+        
+        
+        
 #ifdef CACHE_TRACE_TILES_ALLOCATION
         std::cout << "[" << bucket_i << "] = " << buckets[bucket_i].ipc->freeTiles.size();
         if (bucket_i < NATRON_CACHE_BUCKETS_COUNT - 1) {
@@ -3063,6 +3062,9 @@ CachePrivate<persistent>::createTileStorage(int callingBucket_i)
                     std::size_t tocMemNeeded = tmpSet.size() * sizeof(U64) * 2;
 
                     if (!tocWriteLock) {
+
+                        // Release the bucket lock: it's only guarantee to be valid is while under the toc lock!
+                        bucketWriteLock.reset();
                         tocReadLock.reset();
 #ifndef NATRON_CACHE_INTERPROCESS_ROBUST
                         tocWriteLock.reset(new Sharable_WriteLock(ipc->bucketsData[bucket_i].tocData.segmentMutex));
@@ -3072,6 +3074,13 @@ CachePrivate<persistent>::createTileStorage(int callingBucket_i)
                     }
 
                     buckets[bucket_i].growToCFile(*tocWriteLock, tocMemNeeded);
+
+                    // Take back the bucket mutex
+#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
+                    bucketWriteLock.reset(new Sharable_WriteLock(ipc->bucketsData[bucket_i].bucketMutex));
+#else
+                    createTimedLock<Sharable_WriteLock>(_imp.get(), *bucketWriteLock, &ipc->bucketsData[bucket_i].bucketMutex);
+#endif
                 }
                 ++nAttempts;
             }
@@ -3248,7 +3257,27 @@ Cache<persistent>::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
                         createTimedLock<Sharable_WriteLock>(_imp.get(), tilesLock->tileWriteLock, &_imp->ipc->tilesStorageMutex);
 #endif
                     }
-                    _imp->createTileStorage(bucketIndex);
+
+                    // Release the locks before calling createTileStorage
+                    tocReadLock.reset();
+                    tocWriteLock.reset();
+                    bucketWriteLock.reset();
+
+                    _imp->createTileStorage();
+
+                    // Take back the locks
+                    if (!tocReadLock && !tocWriteLock) {
+                        tileBucket.checkToCMemorySegmentStatus(&tocReadLock, &tocWriteLock);
+                    }
+
+                    if (!bucketWriteLock) {
+#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
+                        bucketWriteLock.reset(new Sharable_WriteLock(_imp->ipc->bucketsData[bucketIndex].bucketMutex));
+#else
+                        createTimedLock<Sharable_WriteLock>(_imp.get(), bucketWriteLock, &_imp->ipc->bucketsData[bucketIndex].bucketMutex);
+#endif
+                    }
+
                 }
 
                 // Extract the first free tile
@@ -4126,7 +4155,7 @@ Cache<persistent>::clear()
         } // for each bucket
 
         // Ensure we initialize the cache with at least one tile storage file
-        _imp->createTileStorage(-1);
+        _imp->createTileStorage();
 
     } catch (...) {
 

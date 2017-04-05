@@ -62,6 +62,7 @@ INCLUDEPATH += $$PWD/../Global
 INCLUDEPATH += $$PWD/../Serialization
 INCLUDEPATH += $$PWD/../libs
 INCLUDEPATH += $$PWD/../libs/SequenceParsing
+INCLUDEPATH += $$PWD/../libs/exprtk
 
 INCLUDEPATH += $$PWD/../google-breakpad/src
 
@@ -547,6 +548,7 @@ HEADERS += \
     ../libs/OpenFX/include/nuke/fnPublicOfxExtensions.h \
     ../libs/OpenFX/include/tuttle/ofxReadWrite.h \
     ../libs/OpenFX_extensions/ofxhParametricParam.h \
+    ../libs/exprtk/exprtk.hpp \
     NatronEngine/natronengine_python.h \
     NatronEngine/app_wrapper.h \
     NatronEngine/effect_wrapper.h \
