@@ -1453,7 +1453,7 @@ RotoDrawableItem::fetchRenderCloneKnobs()
             _imp->invertKnob  = getKnobByNameAndType<KnobButton>(kRotoInvertedParam);
     }
     if (type == eRotoStrokeTypeSolid) {
-        _imp->color = createDuplicateOfTableKnob<KnobColor>(kRotoColorParam);
+        _imp->color = getKnobByNameAndType<KnobColor>(kRotoColorParam);
     }
 
     // Brush: only for strokes or open beziers

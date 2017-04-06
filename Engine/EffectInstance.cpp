@@ -267,7 +267,7 @@ EffectInstance::invalidateHashCacheRecursive(const bool recurse, std::set<Hashab
         return false;
     }
 
-
+    qDebug() << "Invalidating hash: " << getScriptName_mt_safe().c_str();
     // For a group, also invalidate the hash of all its nodes
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>(this);
     if (isGroup) {

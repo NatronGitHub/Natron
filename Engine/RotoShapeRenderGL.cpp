@@ -964,7 +964,7 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
 
         // Compute the feather triangles as well as the internal shape triangles.
         RotoBezierTriangulation::PolygonData data;
-        RotoBezierTriangulation::computeTriangles(bezier, t, view, scale, featherDistPixel_X, featherDistPixel_Y, &data);
+        RotoBezierTriangulation::tesselate(bezier, t, view, scale, featherDistPixel_X, featherDistPixel_Y, &data);
 
         // Tex parameters may not have been set yet in GPU mode if motion blur is disabled
         if (GL::isGPU() && !perSampleRenderTexture) {
@@ -982,7 +982,7 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
         // First upload and render the feather mesh which is composed of GL_TRIANGLES
         {
 
-            int nbVertices = data.featherMesh.size();
+            int nbVertices = data.featherTriangles.size();
             if (!nbVertices) {
                 continue;
             }
@@ -996,12 +996,12 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
             float* c_data = colorsArray.getData();
             unsigned int* i_data = indicesArray.getData();
 
-            for (std::size_t i = 0; i < data.featherMesh.size(); ++i,
+            for (std::size_t i = 0; i < data.featherTriangles.size(); ++i,
                  v_data += 2,
                  c_data += 4,
                  ++i_data) {
-                v_data[0] = data.featherMesh[i].x;
-                v_data[1] = data.featherMesh[i].y;
+                v_data[0] = data.featherTriangles[i].x;
+                v_data[1] = data.featherTriangles[i].y;
                 i_data[0] = i;
 
                 // The roi was computed from the RoD, it must include the feather points.
@@ -1014,7 +1014,7 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
                 c_data[0] = opacity;
                 c_data[1] = opacity;
                 c_data[2] = opacity;
-                if (data.featherMesh[i].isInner) {
+                if (data.featherTriangles[i].isInner) {
                     c_data[3] = opacity;
                 } else {
                     c_data[3] = 0.;
@@ -1047,8 +1047,8 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
         {
             float* v_data = verticesArray.getData();
 
-            for (std::vector<RotoBezierTriangulation::VertexIndex>::const_iterator it2 = data.internalShapeVertices.begin(); it2 != data.internalShapeVertices.end(); ++it2, v_data += 2) {
-                Point p = RotoBezierTriangulation::getPointFromTriangulation(data, *it2);
+            for (std::vector<Point>::const_iterator it2 = data.internalShapeVertices.begin(); it2 != data.internalShapeVertices.end(); ++it2, v_data += 2) {
+                const Point& p = *it2;
                 // The roi was computed from the bounds, it must include the internal shape points.
                 assert(roi.contains(p.x, p.y));
                 v_data[0] = p.x;

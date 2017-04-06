@@ -46,71 +46,41 @@ class RotoBezierTriangulation
 public:
     RotoBezierTriangulation();
 
-    enum VertexPointsSetEnum
+
+    /**
+     * @brief A vertex used in the feather mesh rendering
+     **/
+    struct BezierVertex
     {
-        // The vertex belongs to the feather polygon
-        eVertexPointsSetFeather,
+        // Coordinates + parametric t from the original segment
+        double x,y;
 
-        // The vertex belongs to the internal shape
-        eVertexPointsSetInternalShape,
-
-        // The vertex belongs to the generated points
-        eVertexPointsSetGeneratedPoints
-    };
-
-    struct VertexIndex {
-
-        // Does this point belong to the feather polygon ?
-        VertexPointsSetEnum origin;
-
-        // The point index in the polygon
-        int pointIndex;
-
-        VertexIndex()
-        : origin(eVertexPointsSetInternalShape)
-        , pointIndex(-1)
-        {
-
-        }
-
-    };
-
-    
-    typedef boost::shared_ptr<VertexIndex> VertexIndexPtr;
-
-
-    struct BoundaryParametricPoint
-    {
-        double x,y,t;
+        // If true, should be drawn with full opacity, otherwise with opacity = 0
         bool isInner;
-        
+
     };
 
 
     struct PolygonData
     {
 
-        
-#ifndef NDEBUG
-        // Used to check that all points passed to the vertex callback lie in the bbox
-        RectD bezierBbox;
-#endif
-
-
         // The mesh for the feather computed from bezeirPolygon and featherPolygon
-        std::vector<BoundaryParametricPoint> featherMesh;
+        // This vector contains vertices corresponding to a GL_TRIANGLE_STRIP primitive
+        std::vector<BezierVertex> featherTriangles;
 
         // The vertices composing the internal shape, each single vertex once.
-        // Each VertexIndex references a real vertex in either bezierPolygon, featherPolygon or generatedPoint
+        // Each vertex is used in one of the primitives in internalShapeTriangles, internalShapeTriangleFans and internalShapeTriangleStrips
         std::vector<Point> internalShapeVertices;
 
-        // The actual primitives to render. Each index is an index in internalShapeVertices
+        // The actual primitives to render. They correspond to GL_TRIANGLES, GL_TRIANGLE_FAN, GL_TRIANGLE_STRIP
         std::vector<std::vector<unsigned int> > internalShapeTriangles, internalShapeTriangleFans, internalShapeTriangleStrips;
     
     };
 
-
-    static void computeTriangles(const BezierPtr& bezier, TimeValue time, ViewIdx view, const RenderScale& scale,  double featherDistPixel_x, double featherDistPixel_y, PolygonData* outArgs);
+    /**
+     * @brief Tesselate the given bezier at the given view and time and scale. In output a set of vertices and render primitives can be fed directly to the renderer. 
+     **/
+    static void tesselate(const BezierPtr& bezier, TimeValue time, ViewIdx view, const RenderScale& scale,  double featherDistPixel_x, double featherDistPixel_y, PolygonData* outArgs);
 
 };
 

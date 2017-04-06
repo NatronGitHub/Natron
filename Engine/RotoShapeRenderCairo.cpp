@@ -1083,7 +1083,7 @@ RotoShapeRenderCairo::renderBezier_cairo(cairo_t* cr,
 
 #ifdef ROTO_CAIRO_RENDER_TRIANGLES_ONLY
     PolygonData data;
-    computeTriangles(bezier, t, scale, featherDist_pixelX, featherDist_pixelY, &data);
+    tesselate(bezier, t, scale, featherDist_pixelX, featherDist_pixelY, &data);
     renderFeather_cairo(data, fallOff, mesh);
     renderInternalShape_cairo(data, mesh);
     Q_UNUSED(opacity);
@@ -1327,26 +1327,26 @@ void
 RotoShapeRenderCairo::renderFeather_cairo(const RotoBezierTriangulation::PolygonData& inArgs, double fallOff, cairo_pattern_t * mesh)
 {
     // Roto feather is rendered as triangles
-    assert(inArgs.featherMesh.size() >= 3 && inArgs.featherMesh.size() % 3 == 0);
+    assert(inArgs.featherTriangles.size() >= 3 && inArgs.featherTriangles.size() % 3 == 0);
 
     double fallOffInverse = 1. / fallOff;
 
     double innerOpacity = 1.;
     double outterOpacity = 0.;
 
-    std::vector<RotoBezierTriangulation::BoundaryParametricPoint>::const_iterator next = inArgs.featherMesh.begin();
+    std::vector<RotoBezierTriangulation::BezierVertex>::const_iterator it = inArgs.featherTriangles.begin();
+    std::vector<RotoBezierTriangulation::BezierVertex>::const_iterator next = it;
     ++next;
-    std::vector<RotoBezierTriangulation::BoundaryParametricPoint>::const_iterator nextNext = next;
+    std::vector<RotoBezierTriangulation::BezierVertex>::const_iterator nextNext = next;
     ++nextNext;
-    int index = 0;
-    for (std::vector<RotoBezierTriangulation::BoundaryParametricPoint>::const_iterator it = inArgs.featherMesh.begin(); it!=inArgs.featherMesh.end(); index += 3) {
+    for (; nextNext!=inArgs.featherTriangles.end(); ++it, ++next, ++nextNext) {
 
 
         cairo_mesh_pattern_begin_patch(mesh);
 
         // Only 3 of the 4 vertices are valid
-        const RotoBezierTriangulation::BoundaryParametricPoint* innerVertices[2] = {0, 0};
-        const RotoBezierTriangulation::BoundaryParametricPoint* outterVertices[2] = {0, 0};
+        const RotoBezierTriangulation::BezierVertex* innerVertices[2] = {0, 0};
+        const RotoBezierTriangulation::BezierVertex* outterVertices[2] = {0, 0};
 
         {
             int innerIndex = 0;
@@ -1452,39 +1452,6 @@ RotoShapeRenderCairo::renderFeather_cairo(const RotoBezierTriangulation::Polygon
 
         //std::swap(innerOpacity, outterOpacity);
 
-        assert(nextNext != inArgs.featherMesh.end());
-        ++nextNext;
-
-        // check if we reached the end
-        if (nextNext == inArgs.featherMesh.end()) {
-            break;
-        }
-        // advance a second time
-        ++nextNext;
-        if (nextNext == inArgs.featherMesh.end()) {
-            break;
-        }
-        // advance a 3rd time
-        ++nextNext;
-        if (nextNext == inArgs.featherMesh.end()) {
-            break;
-        }
-
-        assert(next != inArgs.featherMesh.end());
-        ++next;
-        assert(next != inArgs.featherMesh.end());
-        ++next;
-        assert(next != inArgs.featherMesh.end());
-        ++next;
-        assert(next != inArgs.featherMesh.end());
-
-        assert(it != inArgs.featherMesh.end());
-        ++it;
-        assert(it != inArgs.featherMesh.end());
-        ++it;
-        assert(it != inArgs.featherMesh.end());
-        ++it;
-        assert(it != inArgs.featherMesh.end());
     } // for (std::list<RotoFeatherVertex>::const_iterator it = vertices.begin(); it!=vertices.end(); )
 } // RotoShapeRenderCairo::renderFeather_cairo
 
@@ -1501,7 +1468,8 @@ RotoShapeRenderCairo::renderInternalShape_cairo(const RotoBezierTriangulation::P
         Point coonsPatchStart;
         for (std::vector<unsigned int> ::const_iterator it2 = it->begin(); it2!=it->end(); ++it2) {
 
-            Point p = RotoBezierTriangulation::getPointFromTriangulation(inArgs, *it2);
+            assert(*it2 < inArgs.internalShapeVertices.size());
+            Point p = inArgs.internalShapeVertices[*it2];
             if (c == 0) {
                 cairo_mesh_pattern_begin_patch(mesh);
                 cairo_mesh_pattern_move_to(mesh, p.x, p.y);
@@ -1538,7 +1506,8 @@ RotoShapeRenderCairo::renderInternalShape_cairo(const RotoBezierTriangulation::P
 
         assert(it->size() >= 3);
         std::vector<unsigned int> ::const_iterator cur = it->begin();
-        Point fanStart = RotoBezierTriangulation::getPointFromTriangulation(inArgs, *cur);
+        assert(*cur < inArgs.internalShapeVertices.size());
+        Point fanStart = inArgs.internalShapeVertices[*cur];
         ++cur;
         std::vector<unsigned int> ::const_iterator next = cur;
         ++next;
@@ -1547,8 +1516,10 @@ RotoShapeRenderCairo::renderInternalShape_cairo(const RotoBezierTriangulation::P
 
             const Point p0 = fanStart;
             const Point p3 = p0;
-            const Point p1 = RotoBezierTriangulation::getPointFromTriangulation(inArgs, *cur);
-            const Point p2 = RotoBezierTriangulation::getPointFromTriangulation(inArgs, *next);
+            assert(*cur < inArgs.internalShapeVertices.size());
+            const Point p1 = inArgs.internalShapeVertices[*cur];
+            assert(*next < inArgs.internalShapeVertices.size());
+            const Point p2 = inArgs.internalShapeVertices[*next];
             cairo_mesh_pattern_move_to(mesh, p0.x, p0.y);
             cairo_mesh_pattern_line_to(mesh, p1.x, p1.y);
             cairo_mesh_pattern_line_to(mesh, p2.x, p2.y);
@@ -1578,9 +1549,11 @@ RotoShapeRenderCairo::renderInternalShape_cairo(const RotoBezierTriangulation::P
         assert(it->size() >= 3);
 
         std::vector<unsigned int> ::const_iterator cur = it->begin();
-        Point prevPrev = RotoBezierTriangulation::getPointFromTriangulation(inArgs, *cur);
+        assert(*cur < inArgs.internalShapeVertices.size());
+        Point prevPrev = inArgs.internalShapeVertices[*cur];
         ++cur;
-        Point prev = RotoBezierTriangulation::getPointFromTriangulation(inArgs, *cur);
+        assert(*cur < inArgs.internalShapeVertices.size());
+        Point prev = inArgs.internalShapeVertices[*cur];
         ++cur;
         for (; cur != it->end(); ++cur) {
             cairo_mesh_pattern_begin_patch(mesh);
@@ -1588,7 +1561,8 @@ RotoShapeRenderCairo::renderInternalShape_cairo(const RotoBezierTriangulation::P
             const Point p0 = prevPrev;
             const Point p3 = p0;
             const Point p1 = prev;
-            const Point p2 = RotoBezierTriangulation::getPointFromTriangulation(inArgs, *cur);
+            assert(*cur < inArgs.internalShapeVertices.size());
+            const Point p2 = inArgs.internalShapeVertices[*cur];
 
             cairo_mesh_pattern_move_to(mesh, p0.x, p0.y);
             cairo_mesh_pattern_line_to(mesh, p1.x, p1.y);
@@ -1611,7 +1585,8 @@ RotoShapeRenderCairo::renderInternalShape_cairo(const RotoBezierTriangulation::P
             cairo_mesh_pattern_end_patch(mesh);
 
             prevPrev = prev;
-            prev = RotoBezierTriangulation::getPointFromTriangulation(inArgs, *cur);
+            assert(*cur < inArgs.internalShapeVertices.size());
+            prev = inArgs.internalShapeVertices[*cur];
         }
     }
 } // RotoShapeRenderCairo::renderInternalShape_cairo
