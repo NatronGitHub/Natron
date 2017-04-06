@@ -24,7 +24,6 @@
 
 #include "Knob.h"
 #include "KnobPrivate.h"
-#include "ExprtkFunctions.h"
 
 #include <sstream> // stringstream
 #include <string>
@@ -38,6 +37,28 @@
 
 // reduce object size:
 // we only include exprtk.hpp here, no need have visible template instanciations since it's not used elsewhere
+
+// include everything included by exprtk.hpp, because we want to put exprtk itself in an anonymous namespace
+#include <algorithm>
+#include <cctype>
+#include <cmath>
+#include <complex>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <deque>
+#include <exception>
+#include <functional>
+#include <iterator>
+#include <limits>
+#include <list>
+#include <map>
+#include <set>
+#include <stack>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 #ifdef __GNUC__
 //#if defined(__CYGWIN__) || defined(__MINGW32__)
 // exprtk requires -Wa,-mbig-obj on mingw, but there is a bug that prevents linking if not using -O3
@@ -53,7 +74,9 @@
 #pragma GCC visibility push(hidden)
 #endif
 
+NATRON_NAMESPACE_ANONYMOUS_ENTER
 #include "exprtk.hpp"
+NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 #ifdef __GNUC__
 #pragma GCC visibility pop
@@ -63,9 +86,8 @@
 
 #endif
 
+
 NATRON_NAMESPACE_ENTER
-
-
 
 
 
@@ -77,12 +99,29 @@ NATRON_NAMESPACE_ENTER
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
-using EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t;
-using EXPRTK_FUNCTIONS_NAMESPACE::vararg_func_ptr;
-using EXPRTK_FUNCTIONS_NAMESPACE::func_ptr;
-using EXPRTK_FUNCTIONS_NAMESPACE::func_t;
-using EXPRTK_FUNCTIONS_NAMESPACE::generic_func_ptr;
-using EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t;
+
+typedef double exprtk_scalar_t;
+typedef exprtk::symbol_table<exprtk_scalar_t> symbol_table_t;
+typedef exprtk::expression<exprtk_scalar_t> expression_t;
+typedef exprtk::results_context<exprtk_scalar_t> results_context_t;
+typedef exprtk::parser<exprtk_scalar_t> parser_t;
+typedef exprtk::igeneric_function<exprtk_scalar_t> generic_func_t;
+typedef exprtk::ivararg_function<exprtk_scalar_t> vararg_func_t;
+typedef exprtk::ifunction<exprtk_scalar_t> func_t;
+
+typedef boost::shared_ptr<generic_func_t> generic_func_ptr;
+typedef boost::shared_ptr<vararg_func_t> vararg_func_ptr;
+typedef boost::shared_ptr<func_t> func_ptr;
+
+
+void addVarargFunctions(TimeValue time, std::vector<std::pair<std::string, vararg_func_ptr > >* functions);
+void addFunctions(TimeValue time, std::vector<std::pair<std::string, func_ptr > >* functions);
+void addGenericFunctions(TimeValue time, std::vector<std::pair<std::string, generic_func_ptr > >* functions);
+
+// Some functions (random) hold an internal state. Instead of using the same state for all threads,
+// We create a copy of the function update in this symbol table
+void makeLocalCopyOfStateFunctions(TimeValue time, symbol_table_t& symbol_table, std::vector<std::pair<std::string, func_ptr > >* functions);
+
 
 template <typename T, typename FuncType>
 void registerFunction(const std::string& name, std::vector<std::pair<std::string, boost::shared_ptr<FuncType> > >* functions)
@@ -425,10 +464,6 @@ struct numtostr : public exprtk::igeneric_function<exprtk_scalar_t>
 
 };
 
-NATRON_NAMESPACE_ANONYMOUS_EXIT
-
-EXPRTK_FUNCTIONS_NAMESPACE_ENTER
-
 void
 addVarargFunctions(TimeValue /*time*/, std::vector<std::pair<std::string, vararg_func_ptr > >* functions)
 {
@@ -484,7 +519,8 @@ void makeLocalCopyOfStateFunctions(TimeValue time, symbol_table_t& symbol_table,
     }
 }
 
-EXPRTK_FUNCTIONS_NAMESPACE_EXIT
+NATRON_NAMESPACE_ANONYMOUS_EXIT
+
 
 /////////////////////////////////////////
 /////// ExprtkFunctions.cpp END
@@ -793,7 +829,9 @@ extractAllOcurrences(const std::string& str,
 
     return true;
 }
+
 NATRON_NAMESPACE_ANONYMOUS_EXIT
+
 
 std::string
 KnobHelperPrivate::getReachablePythonAttributesForExpression(bool addTab,
@@ -1149,6 +1187,30 @@ static bool isDimensionIndex(const std::string& str, int* index)
     return false;
 }
 
+/**
+ * @brief All data that must be kept around for the expression to work.
+ * Since the expression is not thread safe, we compile 1 expression for each thread to enable
+ * concurrent evaluation of the same expression.
+ **/
+struct NATRON_NAMESPACE::KnobExprTkExpr::ExpressionData
+{
+    // The exprtk expression object
+    boost::shared_ptr<expression_t> expressionObject;
+
+    // We hold functions here because the expression object itself does not hold a copy of the functions
+    std::vector<std::pair<std::string, func_ptr> > functions;
+    std::vector<std::pair<std::string, vararg_func_ptr> > varargFunctions;
+    std::vector<std::pair<std::string, generic_func_ptr> > genericFunctions;
+};
+
+KnobExprTkExpr::ExpressionDataPtr
+NATRON_NAMESPACE::KnobExprTkExpr::createData()
+{
+    return KnobExprTkExpr::ExpressionDataPtr(new ExpressionData);
+}
+
+
+NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 class SymbolResolver
 {
@@ -1592,9 +1654,11 @@ private:
 
 };
 
-struct ExprUnresolvedSymbolResolver : public exprtk::parser<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::unknown_symbol_resolver
+
+
+struct ExprUnresolvedSymbolResolver : public exprtk::parser<exprtk_scalar_t>::unknown_symbol_resolver
 {
-    typedef typename exprtk::parser<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::unknown_symbol_resolver usr_t;
+    typedef typename exprtk::parser<exprtk_scalar_t>::unknown_symbol_resolver usr_t;
 
     KnobHelper* _knob;
     TimeValue _time;
@@ -1602,13 +1666,13 @@ struct ExprUnresolvedSymbolResolver : public exprtk::parser<EXPRTK_FUNCTIONS_NAM
     ViewIdx _view;
     KnobExprTkExpr* _ret;
     usr_variable_user_type _varType;
-    EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t _resolvedScalar;
-    std::vector<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t> _resolvedVector;
+    exprtk_scalar_t _resolvedScalar;
+    std::vector<exprtk_scalar_t> _resolvedVector;
     std::string _resolvedString;
 
 
     ExprUnresolvedSymbolResolver(KnobHelper* knob, TimeValue time, DimIdx dimension, ViewIdx view, KnobExprTkExpr* ret)
-    : exprtk::parser<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::unknown_symbol_resolver()
+    : exprtk::parser<exprtk_scalar_t>::unknown_symbol_resolver()
     , _knob(knob)
     , _time(time)
     , _dimension(dimension)
@@ -1632,7 +1696,7 @@ struct ExprUnresolvedSymbolResolver : public exprtk::parser<EXPRTK_FUNCTIONS_NAM
         return _varType;
     }
 
-    virtual EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t getResolvedScalar() OVERRIDE FINAL
+    virtual exprtk_scalar_t getResolvedScalar() OVERRIDE FINAL
     {
         assert(_varType == e_usr_variable_user_type_scalar);
         return _resolvedScalar;
@@ -1644,7 +1708,7 @@ struct ExprUnresolvedSymbolResolver : public exprtk::parser<EXPRTK_FUNCTIONS_NAM
         return _resolvedString;
     }
 
-    virtual std::vector<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>& getResolvedVector()  OVERRIDE FINAL
+    virtual std::vector<exprtk_scalar_t>& getResolvedVector()  OVERRIDE FINAL
     {
         assert(_varType == e_usr_variable_user_type_vector);
         return _resolvedVector;
@@ -1718,13 +1782,13 @@ struct ExprUnresolvedSymbolResolver : public exprtk::parser<EXPRTK_FUNCTIONS_NAM
                 KnobIntBasePtr isInt = toKnobIntBase(resolver._targetKnob);
                 KnobDoubleBasePtr isDouble = toKnobDoubleBase(resolver._targetKnob);
                 if (isBoolean) {
-                    _resolvedScalar = EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t(isBoolean->getValueAtTime(_time, resolver._targetDimension, resolver._targetView));
+                    _resolvedScalar = exprtk_scalar_t(isBoolean->getValueAtTime(_time, resolver._targetDimension, resolver._targetView));
                     _varType = e_usr_variable_user_type_scalar;
                 } else if (isInt) {
-                    _resolvedScalar = EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t(isInt->getValueAtTime(_time, resolver._targetDimension, resolver._targetView));
+                    _resolvedScalar = exprtk_scalar_t(isInt->getValueAtTime(_time, resolver._targetDimension, resolver._targetView));
                     _varType = e_usr_variable_user_type_scalar;
                 } else if (isDouble) {
-                    _resolvedScalar = EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t(isDouble->getValueAtTime(_time, resolver._targetDimension, resolver._targetView));
+                    _resolvedScalar = exprtk_scalar_t(isDouble->getValueAtTime(_time, resolver._targetDimension, resolver._targetView));
                     _varType = e_usr_variable_user_type_scalar;
                 } else if (isString) {
                     _varType = e_usr_variable_user_type_string;
@@ -1738,15 +1802,15 @@ struct ExprUnresolvedSymbolResolver : public exprtk::parser<EXPRTK_FUNCTIONS_NAM
 
 };
 
-struct curve_func : public exprtk::igeneric_function<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>
+struct curve_func : public exprtk::igeneric_function<exprtk_scalar_t>
 {
 
-    typedef typename exprtk::igeneric_function<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::parameter_list_t parameter_list_t;
+    typedef typename exprtk::igeneric_function<exprtk_scalar_t>::parameter_list_t parameter_list_t;
     KnobIWPtr _knob;
     ViewIdx _view;
 
     curve_func(const KnobIPtr& knob, ViewIdx view)
-    : exprtk::igeneric_function<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>("T|TT|TTS")
+    : exprtk::igeneric_function<exprtk_scalar_t>("T|TT|TTS")
     , _knob(knob)
     , _view(view)
     {
@@ -1759,9 +1823,9 @@ struct curve_func : public exprtk::igeneric_function<EXPRTK_FUNCTIONS_NAMESPACE:
     }
 
 
-    virtual EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t operator()(const std::size_t& overloadIdx, parameter_list_t parameters) OVERRIDE FINAL
+    virtual exprtk_scalar_t operator()(const std::size_t& overloadIdx, parameter_list_t parameters) OVERRIDE FINAL
     {
-        typedef typename exprtk::igeneric_function<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::generic_type generic_type;
+        typedef typename exprtk::igeneric_function<exprtk_scalar_t>::generic_type generic_type;
         typedef typename generic_type::scalar_view scalar_t;
         typedef typename generic_type::string_view string_t;
 
@@ -1807,17 +1871,17 @@ struct curve_func : public exprtk::igeneric_function<EXPRTK_FUNCTIONS_NAMESPACE:
 
 static void addStandardFunctions(const std::string& expr,
                                  TimeValue time,
-                                 EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t& symbol_table,
-                                 std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::func_ptr> >& functions,
-                                 std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::vararg_func_ptr> >& varargFunctions,
-                                 std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::generic_func_ptr> >& genericFunctions,
+                                 symbol_table_t& symbol_table,
+                                 std::vector<std::pair<std::string, func_ptr> >& functions,
+                                 std::vector<std::pair<std::string, vararg_func_ptr> >& varargFunctions,
+                                 std::vector<std::pair<std::string, generic_func_ptr> >& genericFunctions,
                                  std::string* modifiedExpression)
 {
     // Add all functions from the API to the symbol table
 
-    EXPRTK_FUNCTIONS_NAMESPACE::addFunctions(time, &functions);
-    EXPRTK_FUNCTIONS_NAMESPACE::addGenericFunctions(time, &genericFunctions);
-    EXPRTK_FUNCTIONS_NAMESPACE::addVarargFunctions(time, &varargFunctions);
+    addFunctions(time, &functions);
+    addGenericFunctions(time, &genericFunctions);
+    addVarargFunctions(time, &varargFunctions);
 
     for (std::size_t i = 0; i < functions.size(); ++i) {
         bool ok = symbol_table.add_function(functions[i].first, *functions[i].second);
@@ -1880,8 +1944,8 @@ static void addStandardFunctions(const std::string& expr,
 
 static bool parseExprtkExpression(const std::string& originalExpression,
                                   const std::string& expressionString,
-                                  EXPRTK_FUNCTIONS_NAMESPACE::parser_t& parser,
-                                  EXPRTK_FUNCTIONS_NAMESPACE::expression_t& expressionObject,
+                                  parser_t& parser,
+                                  expression_t& expressionObject,
                                   std::string* error)
 {
 
@@ -1907,9 +1971,9 @@ static bool parseExprtkExpression(const std::string& originalExpression,
 } // parseExprtkExpression
 
 
-static KnobHelper::ExpressionReturnValueTypeEnum handleExprTkReturn(EXPRTK_FUNCTIONS_NAMESPACE::expression_t& expressionObject, double* retValueIsScalar, std::string* retValueIsString, std::string* error)
+static KnobHelper::ExpressionReturnValueTypeEnum handleExprTkReturn(expression_t& expressionObject, double* retValueIsScalar, std::string* retValueIsString, std::string* error)
 {
-    const EXPRTK_FUNCTIONS_NAMESPACE::results_context_t& results = expressionObject.results();
+    const results_context_t& results = expressionObject.results();
     if (results.count() != 1) {
         std::stringstream ss;
         ss << "The expression must return one value using the \"return\" keyword";
@@ -1918,15 +1982,15 @@ static KnobHelper::ExpressionReturnValueTypeEnum handleExprTkReturn(EXPRTK_FUNCT
     }
 
     switch (results[0].type) {
-        case exprtk::type_store<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::e_scalar:
-            *retValueIsScalar = (double)*reinterpret_cast<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t*>(results[0].data);
+        case exprtk::type_store<exprtk_scalar_t>::e_scalar:
+            *retValueIsScalar = (double)*reinterpret_cast<exprtk_scalar_t*>(results[0].data);
             return KnobHelper::eExpressionReturnValueTypeScalar;
-        case exprtk::type_store<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::e_string:
+        case exprtk::type_store<exprtk_scalar_t>::e_string:
             *retValueIsString = std::string(reinterpret_cast<const char*>(results[0].data));
             return KnobHelper::eExpressionReturnValueTypeString;
 
-        case exprtk::type_store<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::e_vector:
-        case exprtk::type_store<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::e_unknown:
+        case exprtk::type_store<exprtk_scalar_t>::e_vector:
+        case exprtk::type_store<exprtk_scalar_t>::e_unknown:
             std::stringstream ss;
             ss << "The expression must either return a scalar or string value depending on the parameter type";
             *error = ss.str();
@@ -1935,6 +1999,7 @@ static KnobHelper::ExpressionReturnValueTypeEnum handleExprTkReturn(EXPRTK_FUNCT
     
 } // handleExprTkReturn
 
+NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
 void
@@ -1943,18 +2008,18 @@ KnobHelperPrivate::validateExprTKExpression(const std::string& expression, DimId
 
     // Symbol table containing all variables that the user may use but that we do not pre-declare, such
     // as knob values etc...
-    EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t unknown_var_symbol_table;
+    symbol_table_t unknown_var_symbol_table;
 
     // Symbol table containing all pre-declared variables (frame, view etc...)
-    EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t symbol_table;
+    symbol_table_t symbol_table;
 
     QThread* curThread = QThread::currentThread();
 
     KnobExprTkExpr::ExpressionDataPtr& data = ret->data[curThread];
     if (!data) {
-        data.reset(new KnobExprTkExpr::ExpressionData);
+        data = KnobExprTkExpr::createData();
     }
-    data->expressionObject.reset(new EXPRTK_FUNCTIONS_NAMESPACE::expression_t);
+    data->expressionObject.reset(new expression_t);
     data->expressionObject->register_symbol_table(unknown_var_symbol_table);
     data->expressionObject->register_symbol_table(symbol_table);
 
@@ -1974,14 +2039,14 @@ KnobHelperPrivate::validateExprTKExpression(const std::string& expression, DimId
     {
         // The object that resolves undefined knob dependencies at compile time
         ExprUnresolvedSymbolResolver musr(publicInterface, time, dimension, view, ret);
-        EXPRTK_FUNCTIONS_NAMESPACE::parser_t parser;
+        parser_t parser;
         parser.enable_unknown_symbol_resolver(&musr);
 
 
         addStandardFunctions(expression, time, symbol_table, data->functions, data->varargFunctions, data->genericFunctions, &ret->modifiedExpression);
 
 
-        EXPRTK_FUNCTIONS_NAMESPACE::generic_func_ptr curveFunc(new curve_func(thisShared, view));
+        generic_func_ptr curveFunc(new curve_func(thisShared, view));
         data->genericFunctions.push_back(std::make_pair("curve", curveFunc));
         symbol_table.add_function("curve", *curveFunc);
 
@@ -2636,7 +2701,7 @@ KnobHelper::executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimensi
         QMutexLocker k(&obj->lock);
         KnobExprTkExpr::PerThreadDataMap::iterator foundThreadData = obj->data.find(curThread);
         if (foundThreadData == obj->data.end()) {
-            data.reset(new KnobExprTkExpr::ExpressionData);
+            data = KnobExprTkExpr::createData();
             std::pair<KnobExprTkExpr::PerThreadDataMap::iterator, bool> ret = obj->data.insert(std::make_pair(curThread, data));
             assert(ret.second);
             foundThreadData = ret.first;
@@ -2649,17 +2714,17 @@ KnobHelper::executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimensi
     bool isRenderClone = getHolder()->isRenderClone();
 
 
-    EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t* unknown_symbols_table = 0;//
-    EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t* symbol_table = 0; //obj->expressionObject->get_symbol_table(1);
+    symbol_table_t* unknown_symbols_table = 0;//
+    symbol_table_t* symbol_table = 0; //obj->expressionObject->get_symbol_table(1);
 
     bool existingExpression = true;
     if (!data->expressionObject) {
 
         // We did not build the expression already
         existingExpression = false;
-        data->expressionObject.reset(new EXPRTK_FUNCTIONS_NAMESPACE::expression_t);
-        EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t tmpUnresolved;
-        EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t tmpResolved;
+        data->expressionObject.reset(new expression_t);
+        symbol_table_t tmpUnresolved;
+        symbol_table_t tmpResolved;
         data->expressionObject->register_symbol_table(tmpUnresolved);
         data->expressionObject->register_symbol_table(tmpResolved);
     }
@@ -2674,8 +2739,8 @@ KnobHelper::executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimensi
 
         // Remove from the symbol table functions that hold a state, and re-add a new fresh local copy of them so that the state
         // is local to this thread.
-        std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::func_ptr > > functionsCopy;
-        EXPRTK_FUNCTIONS_NAMESPACE::makeLocalCopyOfStateFunctions(time, *symbol_table, &functionsCopy);
+        std::vector<std::pair<std::string, func_ptr > > functionsCopy;
+        makeLocalCopyOfStateFunctions(time, *symbol_table, &functionsCopy);
 
     } else {
         double time_f = (double)time;
@@ -2688,11 +2753,11 @@ KnobHelper::executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimensi
 
         KnobIPtr thisShared = shared_from_this();
 
-        EXPRTK_FUNCTIONS_NAMESPACE::generic_func_ptr curveFunc(new curve_func(thisShared, view));
+        generic_func_ptr curveFunc(new curve_func(thisShared, view));
         data->genericFunctions.push_back(std::make_pair("curve", curveFunc));
         symbol_table->add_function("curve", *curveFunc);
 
-        EXPRTK_FUNCTIONS_NAMESPACE::parser_t parser;
+        parser_t parser;
         std::string error;
         if (!parseExprtkExpression(obj->expressionString, obj->modifiedExpression, parser, *data->expressionObject, &error)) {
             return KnobHelper::eExpressionReturnValueTypeError;
@@ -2783,12 +2848,12 @@ KnobHelper::executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimensi
                 const RectD& rod = results->getRoD();
 
                 if (existingExpression) {
-                    EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t::vector_holder_ptr vecHolderPtr = unknown_symbols_table->get_vector(it->first);
+                    symbol_table_t::vector_holder_ptr vecHolderPtr = unknown_symbols_table->get_vector(it->first);
                     assert(vecHolderPtr->size() == 4);
-                    *(*vecHolderPtr)[0] = EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t(rod.x1);
-                    *(*vecHolderPtr)[1] = EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t(rod.y1);
-                    *(*vecHolderPtr)[2] = EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t(rod.x2);
-                    *(*vecHolderPtr)[3] = EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t(rod.y2);
+                    *(*vecHolderPtr)[0] = exprtk_scalar_t(rod.x1);
+                    *(*vecHolderPtr)[1] = exprtk_scalar_t(rod.y1);
+                    *(*vecHolderPtr)[2] = exprtk_scalar_t(rod.x2);
+                    *(*vecHolderPtr)[3] = exprtk_scalar_t(rod.y2);
                 } else {
                     std::vector<double> vec(4);
                     vec[0] = rod.x1;
@@ -2946,17 +3011,17 @@ KnobHelper::executePythonExpression(const std::string& expr,
 KnobHelper::ExpressionReturnValueTypeEnum
 KnobHelper::executeExprTKExpression(const std::string& expr, double* retValueIsScalar, std::string* retValueIsString, std::string* error)
 {
-    EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t symbol_table;
+    symbol_table_t symbol_table;
 
-    EXPRTK_FUNCTIONS_NAMESPACE::expression_t expressionObj;
+    expression_t expressionObj;
     expressionObj.register_symbol_table(symbol_table);
 
-    std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::func_ptr> > functions;
-    std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::vararg_func_ptr> > varargFunctions;
-    std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::generic_func_ptr> > genericFunctions;
+    std::vector<std::pair<std::string, func_ptr> > functions;
+    std::vector<std::pair<std::string, vararg_func_ptr> > varargFunctions;
+    std::vector<std::pair<std::string, generic_func_ptr> > genericFunctions;
 
     TimeValue time(0);
-    EXPRTK_FUNCTIONS_NAMESPACE::parser_t parser;
+    parser_t parser;
     std::string modifiedExpr;
     addStandardFunctions(expr, time, symbol_table, functions, varargFunctions, genericFunctions, &modifiedExpr);
 

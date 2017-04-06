@@ -116,17 +116,6 @@ class SequenceFromFiles;
 typedef boost::shared_ptr<SequenceFromFiles> SequenceFromFilesPtr;
 }
 
-// exprtk
-namespace exprtk {
-template <typename T> class symbol_table;
-template <typename T> class expression;
-template <typename T> class results_context;
-template <typename T> class parser;
-template <typename T> class igeneric_function;
-template <typename T> class ivararg_function;
-template <typename T> class ifunction;
-}
-
 // Natron Engine
 
 NATRON_NAMESPACE_ENTER;
@@ -570,24 +559,6 @@ class Tracker;
 class UserParamHolder;
 
 NATRON_PYTHON_NAMESPACE_EXIT;
-
-EXPRTK_FUNCTIONS_NAMESPACE_ENTER;
-
-typedef double exprtk_scalar_t;
-typedef exprtk::symbol_table<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t> symbol_table_t;
-typedef exprtk::expression<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t> expression_t;
-typedef exprtk::results_context<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t> results_context_t;
-typedef exprtk::parser<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t> parser_t;
-typedef exprtk::igeneric_function<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t> generic_func_t;
-typedef exprtk::ivararg_function<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t> vararg_func_t;
-typedef exprtk::ifunction<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t> func_t;
-
-typedef boost::shared_ptr<generic_func_t> generic_func_ptr;
-typedef boost::shared_ptr<vararg_func_t> vararg_func_ptr;
-typedef boost::shared_ptr<func_t> func_ptr;
-
-
-EXPRTK_FUNCTIONS_NAMESPACE_EXIT;
 
 NATRON_NAMESPACE_EXIT;
 
