@@ -36,6 +36,8 @@
 #include "Global/StrUtils.h"
 
 
+// reduce object size:
+// we only include exprtk.hpp here, no need have visible template instanciations since it's not used elsewhere
 #ifdef __GNUC__
 //#if defined(__CYGWIN__) || defined(__MINGW32__)
 // exprtk requires -Wa,-mbig-obj on mingw, but there is a bug that prevents linking if not using -O3
@@ -43,18 +45,21 @@
 // - https://sourceforge.net/p/mingw-w64/discussion/723797/thread/c6b70624/
 // - https://github.com/assimp/assimp/issues/177#issuecomment-217605051
 // - http://discourse.chaiscript.com/t/compiled-in-std-lib-with-mingw/66/2
+#ifndef __clang__
 #pragma GCC push_options
 #pragma GCC optimize ("-O3")
+#endif
 //#endif
-
 #pragma GCC visibility push(hidden)
 #endif
-// reduce object size:
-// we only include exprtk.hpp here, no need have visible template instanciations since it's not used elsewhere
+
 #include "exprtk.hpp"
+
 #ifdef __GNUC__
 #pragma GCC visibility pop
+#ifndef __clang__
 #pragma GCC pop_options
+#endif
 
 #endif
 

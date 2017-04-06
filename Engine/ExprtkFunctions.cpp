@@ -24,22 +24,11 @@
 
 #include "ExprtkFunctions.h"
 
-#include "Engine/Noise.h"
-#include "Engine/PyExprUtils.h"
-#include "Engine/KnobPrivate.h"
+//#include "Engine/Noise.h"
+//#include "Engine/PyExprUtils.h"
+//#include "Engine/KnobPrivate.h"
 
-#if defined(__CYGWIN__) || defined(__MINGW32__)
-// exprtk requires -Wa,-mbig-obj on mingw, but there is a bug that prevents linking if not using -O3
-// see:
-// - https://sourceforge.net/p/mingw-w64/discussion/723797/thread/c6b70624/
-// - https://github.com/assimp/assimp/issues/177#issuecomment-217605051
-// - http://discourse.chaiscript.com/t/compiled-in-std-lib-with-mingw/66/2
-#pragma GCC optimize ("-O3")
-#endif
-
-#pragma GCC visibility push(hidden)
 //#include "exprtk.hpp"
-#pragma GCC visibility pop
 
 NATRON_NAMESPACE_ENTER
 
