@@ -1173,6 +1173,7 @@ isPointCloseTo(TimeValue time,
     return false;
 }
 
+#if 0
 static bool
 bezierSegmentEqual(TimeValue time,
                   const BezierCP & p0,
@@ -1204,6 +1205,7 @@ bezierSegmentEqual(TimeValue time,
         }
     }
 }
+#endif
 
 void
 Bezier::clearAllPoints()

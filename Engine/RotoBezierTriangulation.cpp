@@ -367,14 +367,12 @@ static void tess_intersection_combine_callback(double coords[3],
         assert(v.generatedOrigin1 != eVertexPointsSetGeneratedPoints);
         assert(v.generatedOrigin2 != eVertexPointsSetGeneratedPoints);
 
-        assert(originalVertices[2]->contourIndex == originalVertices[3]->contourIndex);
         v.contourIndex2 = originalVertices[2]->contourIndex;
 
         v.t = averageParametric_t(0, myData, originalVertices, weights);
         v.t2 = averageParametric_t(2, myData, originalVertices, weights);
     }
     
-    assert(originalVertices[0]->contourIndex == originalVertices[1]->contourIndex);
     v.index->contourIndex = originalVertices[0]->contourIndex;
 
     // The original point is not a generated point
@@ -477,6 +475,24 @@ static void contour_vertex_callback(void* data /*per-vertex client data*/, void 
     assert(myData);
     VertexIndex* index = (VertexIndex*)data;
     myData->contourList.back().push_back(*index);
+    
+    ContourBezierVertex* from = 0;
+    switch (index->origin) {
+        case eVertexPointsSetFeather:
+        case eVertexPointsSetInternalShape:
+            // We process the feather polygon and internal polygon with 2 different calls to ensurePolygonWindingNumberEqualsOne()
+            // So it does not matter
+            assert(index->pointIndex < (int)myData->polygon.size());
+            from = &myData->polygon[index->pointIndex];
+            break;
+            
+        case eVertexPointsSetGeneratedPoints:
+            assert(index->pointIndex < (int)myData->generatedPoints.size());
+            from = &myData->generatedPoints[index->pointIndex];
+            break;
+    }
+    
+    from->isOnContour = true;
 }
 
 static void contour_error_callback(unsigned int /*error*/,
@@ -705,8 +721,6 @@ static void ensurePolygonWindingNumberEqualsOne(std::vector<PolygonVertex>& orig
                     break;
             }
 
-            from->isOnContour = true;
-
             PolygonVertex &to = (*contours)[i][j];
             to.x = from->x;
             to.y = from->y;
@@ -911,7 +925,7 @@ inline void polygonPointToBezierVertex(const PolygonVertex& from, RotoBezierTria
  * @brief Using the feather polygon and internal shape polygon and assuming they have the same number of points, iterate through each 
  * point to create a mesh composed of triangles.
  **/
-static void computefeatherTriangles(PolygonCSGData &data, RotoBezierTriangulation::PolygonData* outArgs)
+static void computeFeatherTriangles(PolygonCSGData &data, RotoBezierTriangulation::PolygonData* outArgs)
 {
 
     // The discretized bezier polygon and feather polygon must have the same number of samples.
@@ -986,7 +1000,7 @@ static void computefeatherTriangles(PolygonCSGData &data, RotoBezierTriangulatio
     }
 
 
-} // computefeatherTriangles
+} // computeFeatherTriangles
 
 
 
@@ -1140,7 +1154,7 @@ RotoBezierTriangulation::tesselate(const BezierPtr& bezier,
     computeInternalPolygon(data, clockWise, outArgs);
 
     // Now that we have the role (inner or outter) for each vertex, compute the feather mesh
-    computefeatherTriangles(data, outArgs);
+    computeFeatherTriangles(data, outArgs);
 
 } // tesselate
 
