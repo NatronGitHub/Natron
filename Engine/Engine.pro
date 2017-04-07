@@ -105,6 +105,7 @@ SOURCES += \
     EffectInstanceRenderRoI.cpp \
     EffectOpenGLContextData.cpp \
     ExistenceCheckThread.cpp \
+    ExprTk.cpp \
     FileDownloader.cpp \
     FileSystemModel.cpp \
     FitCurve.cpp \

@@ -2,7 +2,11 @@
 
 TOOLSDIR=`dirname $0`
 
-FILES=`ls */*.cpp */*.h  |fgrep -v /moc_ |fgrep -v -v /qrc_ | fgrep -v /Macros.h`
+if [ $# -ge 1 ]; then
+    FILES="$@"
+else
+    FILES=`ls */*.cpp */*.h  |fgrep -v /moc_ |fgrep -v -v /qrc_ | fgrep -v /Macros.h`
+fi
 
 if [ -d Engine -a ! -x "$TOOLSDIR"/normalize/normalize ]; then
     echo "Error: please compile $TOOLSDIR/normalize/normalize first"
