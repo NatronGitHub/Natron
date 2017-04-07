@@ -86,8 +86,14 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 #endif
 
-
 NATRON_NAMESPACE_ENTER
+
+using std::vector;
+using std::string;
+using std::stringstream;
+using std::pair;
+using std::make_pair;
+using boost::shared_ptr;
 
 
 
@@ -101,33 +107,36 @@ NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 
 typedef double exprtk_scalar_t;
-typedef exprtk::symbol_table<exprtk_scalar_t> symbol_table_t;
-typedef exprtk::expression<exprtk_scalar_t> expression_t;
-typedef exprtk::results_context<exprtk_scalar_t> results_context_t;
-typedef exprtk::parser<exprtk_scalar_t> parser_t;
-typedef exprtk::igeneric_function<exprtk_scalar_t> generic_func_t;
-typedef exprtk::ivararg_function<exprtk_scalar_t> vararg_func_t;
-typedef exprtk::ifunction<exprtk_scalar_t> func_t;
+typedef exprtk::symbol_table<exprtk_scalar_t> exprtk_symbol_table_t;
+typedef exprtk::expression<exprtk_scalar_t> exprtk_expression_t;
+typedef exprtk::results_context<exprtk_scalar_t> exprtk_results_context_t;
+typedef exprtk::parser<exprtk_scalar_t> exprtk_parser_t;
+typedef exprtk::igeneric_function<exprtk_scalar_t> exprtk_igeneric_function_t;
+typedef exprtk::ivararg_function<exprtk_scalar_t> exprtk_ivararg_function_t;
+typedef exprtk::ifunction<exprtk_scalar_t> exprtk_ifunction_t;
 
-typedef boost::shared_ptr<generic_func_t> generic_func_ptr;
-typedef boost::shared_ptr<vararg_func_t> vararg_func_ptr;
-typedef boost::shared_ptr<func_t> func_ptr;
+typedef shared_ptr<exprtk_igeneric_function_t> exprtk_igeneric_function_ptr;
+typedef shared_ptr<exprtk_ivararg_function_t> exprtk_ivararg_function_ptr;
+typedef shared_ptr<exprtk_ifunction_t> exprtk_ifunction_ptr;
 
+typedef vector<pair<string, exprtk_igeneric_function_ptr > > exprtk_igeneric_function_table_t;
+typedef vector<pair<string, exprtk_ivararg_function_ptr > > exprtk_ivararg_function_table_t;
+typedef vector<pair<string, exprtk_ifunction_ptr > > exprtk_ifunction_table_t;
 
-void addVarargFunctions(TimeValue time, std::vector<std::pair<std::string, vararg_func_ptr > >* functions);
-void addFunctions(TimeValue time, std::vector<std::pair<std::string, func_ptr > >* functions);
-void addGenericFunctions(TimeValue time, std::vector<std::pair<std::string, generic_func_ptr > >* functions);
+void addVarargFunctions(TimeValue time, exprtk_ivararg_function_table_t* functions);
+void addFunctions(TimeValue time, exprtk_ifunction_table_t* functions);
+void addGenericFunctions(TimeValue time, exprtk_igeneric_function_table_t* functions);
 
 // Some functions (random) hold an internal state. Instead of using the same state for all threads,
 // We create a copy of the function update in this symbol table
-void makeLocalCopyOfStateFunctions(TimeValue time, symbol_table_t& symbol_table, std::vector<std::pair<std::string, func_ptr > >* functions);
+void makeLocalCopyOfStateFunctions(TimeValue time, exprtk_symbol_table_t& symbol_table, exprtk_ifunction_table_t* functions);
 
 
 template <typename T, typename FuncType>
-void registerFunction(const std::string& name, std::vector<std::pair<std::string, boost::shared_ptr<FuncType> > >* functions)
+void registerFunction(const string& name, vector<pair<string, shared_ptr<FuncType> > >* functions)
 {
-    boost::shared_ptr<FuncType> ptr(new T);
-    functions->push_back(std::make_pair(name, ptr));
+    shared_ptr<FuncType> ptr(new T);
+    functions->push_back(make_pair(name, ptr));
 }
 
 struct boxstep : public exprtk::ifunction<exprtk_scalar_t>
@@ -195,7 +204,7 @@ struct mix : public exprtk::ifunction<exprtk_scalar_t>
 
 struct hash : public exprtk::ivararg_function<exprtk_scalar_t>
 {
-    exprtk_scalar_t operator()(const std::vector<double>& arglist)
+    exprtk_scalar_t operator()(const vector<double>& arglist)
     {
         return NATRON_PYTHON_NAMESPACE::ExprUtils::hash(arglist);
 
@@ -431,7 +440,7 @@ struct numtostr : public exprtk::igeneric_function<exprtk_scalar_t>
          */
     }
     virtual exprtk_scalar_t operator()(const std::size_t& overloadIdx,
-                                       std::string& result,
+                                       string& result,
                                        parameter_list_t parameters) OVERRIDE FINAL
     {
         Q_UNUSED(overloadIdx);
@@ -443,7 +452,7 @@ struct numtostr : public exprtk::igeneric_function<exprtk_scalar_t>
         assert(parameters.size() == 1 || parameters.size() == 2 || parameters.size() == 3);
 
         double value = scalar_t(parameters[0])();
-        std::string format;
+        string format;
         format += 'f';
         if (parameters.size() > 1) {
             format = exprtk::to_str(string_t(parameters[1]));
@@ -465,13 +474,13 @@ struct numtostr : public exprtk::igeneric_function<exprtk_scalar_t>
 };
 
 void
-addVarargFunctions(TimeValue /*time*/, std::vector<std::pair<std::string, vararg_func_ptr > >* functions)
+addVarargFunctions(TimeValue /*time*/, exprtk_ivararg_function_table_t* functions)
 {
     registerFunction<hash>("hash", functions);
 }
 
 void
-addFunctions(TimeValue time, std::vector<std::pair<std::string, func_ptr > >* functions)
+addFunctions(TimeValue time, exprtk_ifunction_table_t* functions)
 {
     registerFunction<boxstep>("boxstep", functions);
     registerFunction<linearstep>("linearstep", functions);
@@ -486,17 +495,17 @@ addFunctions(TimeValue time, std::vector<std::pair<std::string, func_ptr > >* fu
     registerFunction<pnoise>("pnoise", functions);
     registerFunction<cellnoise>("cellnoise", functions);
     {
-        boost::shared_ptr<func_t> ptr(new random(time));
-        functions->push_back(std::make_pair("random", ptr));
+        shared_ptr<exprtk_ifunction_t> ptr(new random(time));
+        functions->push_back(make_pair("random", ptr));
     }
     {
-        boost::shared_ptr<func_t> ptr(new randomInt(time));
-        functions->push_back(std::make_pair("randomInt", ptr));
+        shared_ptr<exprtk_ifunction_t> ptr(new randomInt(time));
+        functions->push_back(make_pair("randomInt", ptr));
     }
 }
 
 void
-addGenericFunctions(TimeValue /*time*/, std::vector<std::pair<std::string, generic_func_ptr > >* functions)
+addGenericFunctions(TimeValue /*time*/, exprtk_igeneric_function_table_t* functions)
 {
 
 
@@ -505,17 +514,17 @@ addGenericFunctions(TimeValue /*time*/, std::vector<std::pair<std::string, gener
     registerFunction<numtostr>("str", functions);
 }
 
-void makeLocalCopyOfStateFunctions(TimeValue time, symbol_table_t& symbol_table, std::vector<std::pair<std::string, func_ptr > >* functions)
+void makeLocalCopyOfStateFunctions(TimeValue time, exprtk_symbol_table_t& symbol_table, exprtk_ifunction_table_t* functions)
 {
     symbol_table.remove_function("random");
     symbol_table.remove_function("randomInt");
     {
-        boost::shared_ptr<func_t> ptr(new random(time));
-        functions->push_back(std::make_pair("random", ptr));
+        shared_ptr<exprtk_ifunction_t> ptr(new random(time));
+        functions->push_back(make_pair("random", ptr));
     }
     {
-        boost::shared_ptr<func_t> ptr(new randomInt(time));
-        functions->push_back(std::make_pair("randomInt", ptr));
+        shared_ptr<exprtk_ifunction_t> ptr(new randomInt(time));
+        functions->push_back(make_pair("randomInt", ptr));
     }
 }
 
@@ -541,13 +550,13 @@ NATRON_NAMESPACE_ANONYMOUS_ENTER
 /**
  * @brief Given the string str, returns the position of the character "closingChar" corresponding to the "openingChar" at the given openingParenthesisPos
  * For example if the str is "((lala)+toto)" and we want to get the character matching the first '(', this function will return the last parenthesis in the string
- * @return The position of the matching closing character or std::string::npos if not found
+ * @return The position of the matching closing character or string::npos if not found
  **/
 static std::size_t
 getMatchingParenthesisPosition(std::size_t openingParenthesisPos,
                                char openingChar,
                                char closingChar,
-                               const std::string& str)
+                               const string& str)
 {
     assert(openingParenthesisPos < str.size() && str.at(openingParenthesisPos) == openingChar);
 
@@ -567,7 +576,7 @@ getMatchingParenthesisPosition(std::size_t openingParenthesisPos,
         ++i;
     }
     if ( i >= (int)str.size() ) {
-        return std::string::npos;
+        return string::npos;
     }
 
     return i;
@@ -580,14 +589,14 @@ getMatchingParenthesisPosition(std::size_t openingParenthesisPos,
 static void
 extractParameters(std::size_t startParenthesis,
                   std::size_t endParenthesis,
-                  const std::string& str,
-                  std::vector<std::string>* params)
+                  const string& str,
+                  vector<string>* params)
 {
     std::size_t i = startParenthesis + 1;
     int insideParenthesis = 0;
 
     while (i < endParenthesis || insideParenthesis < 0) {
-        std::string curParam;
+        string curParam;
         if (str.at(i) == '(') {
             ++insideParenthesis;
         } else if (str.at(i) == ')') {
@@ -624,15 +633,15 @@ extractParameters(std::size_t startParenthesis,
  **/
 static bool
 parseTokenFrom(int fromDim,
-               const std::string& fromViewName,
+               const string& fromViewName,
                int dimensionParamPos,
                int viewParamPos,
                bool returnsTuple,
-               const std::string& str,
-               const std::string& token,
+               const string& str,
+               const string& token,
                std::size_t inputPos,
                std::size_t *tokenStart,
-               std::string* output)
+               string* output)
 {
     std::size_t pos;
 
@@ -640,7 +649,7 @@ parseTokenFrom(int fromDim,
     bool foundMatchingToken = false;
     while (!foundMatchingToken) {
         pos = str.find(token, inputPos);
-        if (pos == std::string::npos) {
+        if (pos == string::npos) {
             return false;
         }
 
@@ -669,12 +678,12 @@ parseTokenFrom(int fromDim,
 
     // Get the closing parenthesis for the function
     std::size_t endingParenthesis = getMatchingParenthesisPosition(pos, '(', ')',  str);
-    if (endingParenthesis == std::string::npos) {
+    if (endingParenthesis == string::npos) {
         throw std::invalid_argument("Invalid expr");
     }
 
     // Extract parameters in between the 2 parenthesis
-    std::vector<std::string> params;
+    vector<string> params;
     extractParameters(pos, endingParenthesis, str, &params);
 
 
@@ -687,7 +696,7 @@ parseTokenFrom(int fromDim,
         // an old expression may use the old get() function without view. If we do not find any view
         // parameter, assume the view is "Main" by default.
         if (!gotViewParam && viewParamPos != -1) {
-            std::vector<std::string>::iterator it = params.begin();
+            vector<string>::iterator it = params.begin();
             if (viewParamPos >= (int)params.size()) {
                 it = params.end();
             } else {
@@ -696,7 +705,7 @@ parseTokenFrom(int fromDim,
             params.insert(it, "Main");
         }
         if (!gotDimensionParam && dimensionParamPos != -1) {
-            std::vector<std::string>::iterator it = params.begin();
+            vector<string>::iterator it = params.begin();
             if (dimensionParamPos >= (int)params.size()) {
                 it = params.end();
             } else {
@@ -717,7 +726,7 @@ parseTokenFrom(int fromDim,
         if ( ( it < str.size() ) && (str.at(it) == '[') ) {
             ///we found a tuple
             std::size_t endingBracket = getMatchingParenthesisPosition(it, '[', ']',  str);
-            if (endingBracket == std::string::npos) {
+            if (endingBracket == string::npos) {
                 throw std::invalid_argument("Invalid expr");
             }
             params.push_back( str.substr(it + 1, endingBracket - it - 1) );
@@ -749,9 +758,9 @@ parseTokenFrom(int fromDim,
         throw std::invalid_argument("Invalid expr");
     }
 
-    std::string toInsert;
+    string toInsert;
     {
-        std::stringstream ss;
+        stringstream ss;
         /*
          When replacing the getValue() (or similar function) call by addAsDepdendencyOf
          the parameter prefixing the addAsDepdendencyOf will register itself its dimension params[dimensionParamPos] as a dependency of the expression
@@ -793,7 +802,7 @@ parseTokenFrom(int fromDim,
     ++i;
 
     // This is the name of the Python attribute that called "token"
-    std::string varName = str.substr(i, *tokenStart - 1 - i);
+    string varName = str.substr(i, *tokenStart - 1 - i);
     output->append(varName + toInsert);
 
     //assert(*tokenSize > 0);
@@ -807,14 +816,14 @@ parseTokenFrom(int fromDim,
  * Note: this function can throw an exception if the expression is incorrect
  **/
 static bool
-extractAllOcurrences(const std::string& str,
-                     const std::string& token,
+extractAllOcurrences(const string& str,
+                     const string& token,
                      bool returnsTuple,
                      int dimensionParamPos,
                      int viewParamPos,
                      int fromDim,
-                     const std::string& fromViewName,
-                     std::string *outputScript)
+                     const string& fromViewName,
+                     string *outputScript)
 {
     std::size_t tokenStart = 0;
     bool couldFindToken;
@@ -833,7 +842,7 @@ extractAllOcurrences(const std::string& str,
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
-std::string
+string
 KnobHelperPrivate::getReachablePythonAttributesForExpression(bool addTab,
                                           DimIdx dimension,
                                           ViewIdx /*view*/) const
@@ -868,9 +877,9 @@ KnobHelperPrivate::getReachablePythonAttributesForExpression(bool addTab,
     }
 
     NodeGroupPtr isParentGrp = toNodeGroup(collection);
-    std::string appID = node->getApp()->getAppIDString();
-    std::string tabStr = addTab ? "    " : "";
-    std::stringstream ss;
+    string appID = node->getApp()->getAppIDString();
+    string tabStr = addTab ? "    " : "";
+    stringstream ss;
     if (appID != "app") {
         ss << tabStr << "app = " << appID << "\n";
     }
@@ -881,7 +890,7 @@ KnobHelperPrivate::getReachablePythonAttributesForExpression(bool addTab,
 
     // Define all nodes in the same group reachable by their bare script-name
     NodesList siblings = collection->getNodes();
-    std::string collectionScriptName;
+    string collectionScriptName;
     if (isParentGrp) {
         collectionScriptName = isParentGrp->getNode()->getFullyQualifiedName();
     } else {
@@ -889,8 +898,8 @@ KnobHelperPrivate::getReachablePythonAttributesForExpression(bool addTab,
     }
     for (NodesList::iterator it = siblings.begin(); it != siblings.end(); ++it) {
         if ((*it)->isActivated()) {
-            std::string scriptName = (*it)->getScriptName_mt_safe();
-            std::string fullName = appID + "." + (*it)->getFullyQualifiedName();
+            string scriptName = (*it)->getScriptName_mt_safe();
+            string fullName = appID + "." + (*it)->getFullyQualifiedName();
 
             // Do not fail the expression if the attribute do not exist to Python, use hasattr
             ss << tabStr << "if hasattr(";
@@ -915,7 +924,7 @@ KnobHelperPrivate::getReachablePythonAttributesForExpression(bool addTab,
     ss << tabStr << "thisNode = " << node->getScriptName_mt_safe() <<  "\n";
 
     if (tableItem) {
-        const std::string& tablePythonPrefix = tableItem->getModel()->getPythonPrefix();
+        const string& tablePythonPrefix = tableItem->getModel()->getPythonPrefix();
         ss << tabStr << "thisItem = thisNode." << tablePythonPrefix << tableItem->getFullyQualifiedName() << "\n";
     }
 
@@ -952,12 +961,12 @@ KnobHelperPrivate::parseListenersFromExpression(DimIdx dimension, ViewIdx view)
     // - get
     // And replace them by addAsDependencyOf(thisParam) which will register the parameters as a dependency of this parameter
 
-    std::string viewName = holder.lock()->getApp()->getProject()->getViewName(view);
+    string viewName = holder.lock()->getApp()->getProject()->getViewName(view);
     assert(!viewName.empty());
     if (viewName.empty()) {
         viewName = "Main";
     }
-    std::string expressionCopy;
+    string expressionCopy;
 
     {
         QMutexLocker k(&common->expressionMutex);
@@ -969,7 +978,7 @@ KnobHelperPrivate::parseListenersFromExpression(DimIdx dimension, ViewIdx view)
     }
 
     // Extract parameters that call the following functions
-    std::string listenersRegistrationScript;
+    string listenersRegistrationScript;
     if  ( !extractAllOcurrences(expressionCopy, "getValue", false, 0, 1, dimension, viewName, &listenersRegistrationScript) ) {
         throw std::runtime_error("KnobHelperPrivate::parseListenersFromExpression(): failed!");
         return;
@@ -996,19 +1005,19 @@ KnobHelperPrivate::parseListenersFromExpression(DimIdx dimension, ViewIdx view)
     }
 
     // Declare all attributes that may be reached through this expression
-    std::string declarations = getReachablePythonAttributesForExpression(false, dimension, view);
+    string declarations = getReachablePythonAttributesForExpression(false, dimension, view);
 
     // Make up the internal expression
-    std::stringstream ss;
+    stringstream ss;
     ss << "frame=0\n";
     ss << "view=\"Main\"\n";
     ss << declarations << '\n';
     ss << expressionCopy << '\n';
     ss << listenersRegistrationScript;
-    std::string script = ss.str();
+    string script = ss.str();
 
     // Execute the expression: this will register listeners
-    std::string error;
+    string error;
     bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error, NULL);
     if ( !error.empty() ) {
         qDebug() << error.c_str();
@@ -1021,8 +1030,8 @@ KnobHelperPrivate::parseListenersFromExpression(DimIdx dimension, ViewIdx view)
     }
 } // KnobHelperPrivate::parseListenersFromExpression
 
-std::string
-KnobHelperPrivate::validatePythonExpression(const std::string& expression, DimIdx dimension, ViewIdx view, bool hasRetVariable, std::string* resultAsString) const
+string
+KnobHelperPrivate::validatePythonExpression(const string& expression, DimIdx dimension, ViewIdx view, bool hasRetVariable, string* resultAsString) const
 {
 #ifdef NATRON_RUN_WITHOUT_PYTHON
     throw std::invalid_argument("NATRON_RUN_WITHOUT_PYTHON is defined");
@@ -1034,21 +1043,21 @@ KnobHelperPrivate::validatePythonExpression(const std::string& expression, DimId
     }
 
 
-    std::string exprCpy = expression;
+    string exprCpy = expression;
 
     //if !hasRetVariable the expression is expected to be single-line
     if (!hasRetVariable) {
         std::size_t foundNewLine = expression.find("\n");
-        if (foundNewLine != std::string::npos) {
+        if (foundNewLine != string::npos) {
             throw std::invalid_argument(publicInterface->tr("unexpected new line character \'\\n\'").toStdString());
         }
         //preprend the line with "ret = ..."
-        std::string toInsert("    ret = ");
+        string toInsert("    ret = ");
         exprCpy.insert(0, toInsert);
     } else {
         exprCpy.insert(0, "    ");
         std::size_t foundNewLine = exprCpy.find("\n");
-        while (foundNewLine != std::string::npos) {
+        while (foundNewLine != string::npos) {
             exprCpy.insert(foundNewLine + 1, "    ");
             foundNewLine = exprCpy.find("\n", foundNewLine + 1);
         }
@@ -1073,15 +1082,15 @@ KnobHelperPrivate::validatePythonExpression(const std::string& expression, DimId
     if (!node) {
         throw std::runtime_error(publicInterface->tr("Only parameters of a Node can have an expression").toStdString());
     }
-    std::string appID = holder->getApp()->getAppIDString();
-    std::string nodeName = node->getFullyQualifiedName();
-    std::string nodeFullName = appID + "." + nodeName;
-    std::string exprFuncPrefix = nodeFullName + "." + publicInterface->getName() + ".";
+    string appID = holder->getApp()->getAppIDString();
+    string nodeName = node->getFullyQualifiedName();
+    string nodeFullName = appID + "." + nodeName;
+    string exprFuncPrefix = nodeFullName + "." + publicInterface->getName() + ".";
 
     // make-up the expression function
-    std::string exprFuncName;
+    string exprFuncName;
     {
-        std::stringstream tmpSs;
+        stringstream tmpSs;
         tmpSs << "expression" << dimension << "_" << view;
         exprFuncName = tmpSs.str();
     }
@@ -1089,14 +1098,14 @@ KnobHelperPrivate::validatePythonExpression(const std::string& expression, DimId
     exprCpy.append("\n    return ret\n");
 
 
-    std::stringstream ss;
+    stringstream ss;
     ss << "def "  << exprFuncName << "(frame, view):\n";
 
     // First define the attributes that may be used by the expression
     ss << getReachablePythonAttributesForExpression(true, dimension, view);
 
 
-    std::string script = ss.str();
+    string script = ss.str();
 
     // Append the user expression
     script.append(exprCpy);
@@ -1106,8 +1115,8 @@ KnobHelperPrivate::validatePythonExpression(const std::string& expression, DimId
 
     // Try to execute the expression and evaluate it, if it doesn't have a good syntax, throw an exception
     // with the error.
-    std::string error;
-    std::string funcExecScript = "ret = " + exprFuncPrefix + exprFuncName;
+    string error;
+    string funcExecScript = "ret = " + exprFuncPrefix + exprFuncName;
 
     {
         ExprRecursionLevel_RAII __recursionLevelIncrementer__(publicInterface);
@@ -1116,7 +1125,7 @@ KnobHelperPrivate::validatePythonExpression(const std::string& expression, DimId
             throw std::runtime_error(error);
         }
 
-        std::string viewName;
+        string viewName;
         if (publicInterface->getHolder() && publicInterface->getHolder()->getApp()) {
             viewName = publicInterface->getHolder()->getApp()->getProject()->getViewName(view);
         }
@@ -1124,7 +1133,7 @@ KnobHelperPrivate::validatePythonExpression(const std::string& expression, DimId
             viewName = "Main";
         }
 
-        std::stringstream ss;
+        stringstream ss;
         ss << funcExecScript << '(' << publicInterface->getCurrentRenderTime() << ", \"" <<  viewName << "\")\n";
         if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(ss.str(), &error, 0) ) {
             throw std::runtime_error(error);
@@ -1156,7 +1165,7 @@ KnobHelperPrivate::validatePythonExpression(const std::string& expression, DimId
         } else {
             assert(isString);
             if (PyUnicode_Check(ret) || PyString_Check(ret)) {
-                *resultAsString = isString->pyObjectToType<std::string>(ret);
+                *resultAsString = isString->pyObjectToType<string>(ret);
             } else {
             }
         }
@@ -1166,7 +1175,7 @@ KnobHelperPrivate::validatePythonExpression(const std::string& expression, DimId
     return funcExecScript;
 } // validatePythonExpression
 
-static bool isDimensionIndex(const std::string& str, int* index)
+static bool isDimensionIndex(const string& str, int* index)
 {
     if (str == "r" || str == "x" || str == "0") {
         *index = 0;
@@ -1195,12 +1204,12 @@ static bool isDimensionIndex(const std::string& str, int* index)
 struct NATRON_NAMESPACE::KnobExprExprTk::ExpressionData
 {
     // The exprtk expression object
-    boost::shared_ptr<expression_t> expressionObject;
+    shared_ptr<exprtk_expression_t> expressionObject;
 
     // We hold functions here because the expression object itself does not hold a copy of the functions
-    std::vector<std::pair<std::string, func_ptr> > functions;
-    std::vector<std::pair<std::string, vararg_func_ptr> > varargFunctions;
-    std::vector<std::pair<std::string, generic_func_ptr> > genericFunctions;
+    exprtk_ifunction_table_t functions;
+    exprtk_ivararg_function_table_t varargFunctions;
+    exprtk_igeneric_function_table_t genericFunctions;
 };
 
 KnobExprExprTk::ExpressionDataPtr
@@ -1217,7 +1226,7 @@ class SymbolResolver
     KnobI* _knob;
     DimIdx _dimension;
     ViewIdx _view;
-    std::string _symbol;
+    string _symbol;
 
 public:
 
@@ -1231,8 +1240,8 @@ public:
     };
 
     ResultTypeEnum _resultType;
-    std::string _objectName;
-    std::string _error;
+    string _objectName;
+    string _error;
     bool _testingEnabled;
 
     // If result is eResultTypeEffectRoD, this is the effect on which to retrieve the property
@@ -1243,7 +1252,7 @@ public:
     ViewIdx _targetView;
     DimIdx _targetDimension;
 
-    SymbolResolver(KnobI* knob, DimIdx dimension, ViewIdx view, const std::string& symbol)
+    SymbolResolver(KnobI* knob, DimIdx dimension, ViewIdx view, const string& symbol)
     : _knob(knob)
     , _dimension(dimension)
     , _view(view)
@@ -1261,7 +1270,7 @@ private:
     {
 
         // Split the variable with dots
-        std::vector<std::string> splits = StrUtils::split(_symbol, '.');
+        vector<string> splits = StrUtils::split(_symbol, '.');
 
         EffectInstancePtr currentNode = getThisNode();
         KnobHolderPtr currentHolder = _knob->getHolder();
@@ -1279,7 +1288,7 @@ private:
         }
         for (std::size_t i = 0; i < splits.size(); ++i) {
             bool isLastToken = (i == splits.size() - 1);
-            const std::string& token = splits[i];
+            const string& token = splits[i];
 
 
             {
@@ -1296,7 +1305,7 @@ private:
                             // If testing is enabled, set the result to be valid
                             _resultType = eResultTypeKnobValue;
                         } else {
-                            std::stringstream ss;
+                            stringstream ss;
                             ss << _symbol << ": a variable can only be bound to a value";
                             _error = ss.str();
                         }
@@ -1320,7 +1329,7 @@ private:
                             // If testing is enabled, set the result to be valid
                             _resultType = eResultTypeKnobValue;
                         } else {
-                            std::stringstream ss;
+                            stringstream ss;
                             ss << _symbol << ": a variable can only be bound to a value";
                             _error = ss.str();
                         }
@@ -1344,7 +1353,7 @@ private:
                             // If testing is enabled, set the result to be valid
                             _resultType = eResultTypeKnobValue;
                         } else {
-                            std::stringstream ss;
+                            stringstream ss;
                             ss << _symbol << ": a variable can only be bound to a value";
                             _error = ss.str();
                         }
@@ -1367,7 +1376,7 @@ private:
                             // If testing is enabled, set the result to be valid
                             _resultType = eResultTypeKnobValue;
                         } else {
-                            std::stringstream ss;
+                            stringstream ss;
                             ss << _symbol << ": a variable can only be bound to a value";
                             _error = ss.str();
                         }
@@ -1392,7 +1401,7 @@ private:
                                 // If testing is enabled, set the result to be valid
                                 _resultType = eResultTypeKnobValue;
                             } else {
-                                std::stringstream ss;
+                                stringstream ss;
                                 ss << _symbol << ": this parameter has multiple dimension, please specify one";
                                 _error = ss.str();
                             }
@@ -1419,7 +1428,7 @@ private:
                 currentNode.reset();
                 currentGroup.reset();
                 if (!isLastToken) {
-                    std::stringstream ss;
+                    stringstream ss;
                     ss << _symbol << ": a variable can only be bound to a value";
                     _error = ss.str();
                     return ;
@@ -1435,7 +1444,7 @@ private:
             if (currentKnob && token == "option" && dynamic_cast<KnobChoice*>(currentKnob.get())) {
                 // For a KnobChoice, we can get the option string directly
                 if (!isLastToken) {
-                    std::stringstream ss;
+                    stringstream ss;
                     ss << _symbol << ": a variable can only be bound to a value";
                     _error = ss.str();
                     return ;
@@ -1497,7 +1506,7 @@ private:
         return thisNode->getNode()->getGroup();
     }
 
-    bool checkForGroup(const std::string& str, NodeCollectionPtr* retIsGroup) const
+    bool checkForGroup(const string& str, NodeCollectionPtr* retIsGroup) const
     {
         retIsGroup->reset();
         if (str == "thisGroup") {
@@ -1522,7 +1531,7 @@ private:
         return effect;
     }
 
-    bool checkForNode(const std::string& str, const NodeCollectionPtr& callerGroup, const EffectInstancePtr& callerIsNode, EffectInstancePtr* retIsNode) const
+    bool checkForNode(const string& str, const NodeCollectionPtr& callerGroup, const EffectInstancePtr& callerIsNode, EffectInstancePtr* retIsNode) const
     {
         retIsNode->reset();
         if (str == "thisNode") {
@@ -1539,10 +1548,10 @@ private:
 
         // Check for an inputNumber
         if (callerIsNode) {
-            std::string prefix("input");
+            string prefix("input");
             std::size_t foundPrefix = str.find(prefix);
-            if (foundPrefix != std::string::npos) {
-                std::string inputNumberStr = str.substr(prefix.size());
+            if (foundPrefix != string::npos) {
+                string inputNumberStr = str.substr(prefix.size());
                 int inputNb = -1;
                 if (inputNumberStr.empty()) {
                     inputNb = 0;
@@ -1580,7 +1589,7 @@ private:
         return toKnobTableItem(_knob->getHolder());
     }
 
-    bool checkForProject(const std::string& str) const
+    bool checkForProject(const string& str) const
     {
         if (str == "app") {
             return true;
@@ -1588,7 +1597,7 @@ private:
         return false;
     }
 
-    bool checkForTableItem(const std::string& str, const KnobHolderPtr& callerHolder, KnobTableItemPtr* retIsTableItem) const
+    bool checkForTableItem(const string& str, const KnobHolderPtr& callerHolder, KnobTableItemPtr* retIsTableItem) const
     {
         retIsTableItem->reset();
         if (str == "thisItem") {
@@ -1622,7 +1631,7 @@ private:
         return _knob->shared_from_this();
     }
 
-    bool checkForKnob(const std::string& str, const KnobHolderPtr& callerHolder, KnobIPtr* retIsKnob) const
+    bool checkForKnob(const string& str, const KnobHolderPtr& callerHolder, KnobIPtr* retIsKnob) const
     {
         retIsKnob->reset();
         if (str == "thisKnob") {
@@ -1637,7 +1646,7 @@ private:
         return false;
     }
 
-    bool checkForDimension(const std::string& str, const KnobIPtr& callerKnob, DimIdx* retIsDimension) const
+    bool checkForDimension(const string& str, const KnobIPtr& callerKnob, DimIdx* retIsDimension) const
     {
         if (str == "dimension") {
             *retIsDimension = _dimension;
@@ -1667,8 +1676,8 @@ struct ExprUnresolvedSymbolResolver : public exprtk::parser<exprtk_scalar_t>::un
     KnobExprExprTk* _ret;
     usr_variable_user_type _varType;
     exprtk_scalar_t _resolvedScalar;
-    std::vector<exprtk_scalar_t> _resolvedVector;
-    std::string _resolvedString;
+    vector<exprtk_scalar_t> _resolvedVector;
+    string _resolvedString;
 
 
     ExprUnresolvedSymbolResolver(KnobHelper* knob, TimeValue time, DimIdx dimension, ViewIdx view, KnobExprExprTk* ret)
@@ -1702,19 +1711,19 @@ struct ExprUnresolvedSymbolResolver : public exprtk::parser<exprtk_scalar_t>::un
         return _resolvedScalar;
     }
 
-    virtual std::string& getResolvedString() OVERRIDE FINAL
+    virtual string& getResolvedString() OVERRIDE FINAL
     {
         assert(_varType == e_usr_variable_user_type_string);
         return _resolvedString;
     }
 
-    virtual std::vector<exprtk_scalar_t>& getResolvedVector()  OVERRIDE FINAL
+    virtual vector<exprtk_scalar_t>& getResolvedVector()  OVERRIDE FINAL
     {
         assert(_varType == e_usr_variable_user_type_vector);
         return _resolvedVector;
     }
 
-    virtual bool process(const std::string& unknown_symbol, std::string& error_message) OVERRIDE FINAL
+    virtual bool process(const string& unknown_symbol, string& error_message) OVERRIDE FINAL
     {
 
         SymbolResolver resolver(_knob, _dimension, _view, unknown_symbol);
@@ -1729,7 +1738,7 @@ struct ExprUnresolvedSymbolResolver : public exprtk::parser<exprtk_scalar_t>::un
         }
         switch (resolver._resultType) {
             case SymbolResolver::eResultTypeInvalid: {
-                std::stringstream ss;
+                stringstream ss;
                 ss << "Error when parsing symbol " << unknown_symbol;
                 if (!resolver._error.empty()) {
                     ss << ": " << resolver._error;
@@ -1772,7 +1781,7 @@ struct ExprUnresolvedSymbolResolver : public exprtk::parser<exprtk_scalar_t>::un
                     dep.knob = resolver._targetKnob;
                     dep.dimension = resolver._targetDimension;
                     dep.view = resolver._targetView;
-                    _ret->knobDependencies.insert(std::make_pair(unknown_symbol, dep));
+                    _ret->knobDependencies.insert(make_pair(unknown_symbol, dep));
                 }
 
 
@@ -1847,13 +1856,13 @@ struct curve_func : public exprtk::igeneric_function<exprtk_scalar_t>
             dimension = DimIdx((int)scalar_t(parameters[1])());
         }
         if (parameters.size() > 2) {
-            std::string viewStr = exprtk::to_str(string_t(parameters[2]));
+            string viewStr = exprtk::to_str(string_t(parameters[2]));
             if (viewStr == "view") {
                 // use the current view
                 view = _view;
             } else {
                 // Find the view by name in the project
-                const std::vector<std::string>& views = knob->getHolder()->getApp()->getProject()->getProjectViewNames();
+                const vector<string>& views = knob->getHolder()->getApp()->getProject()->getProjectViewNames();
                 for (std::size_t i = 0; i < views.size(); ++i) {
                     if (views[i] == viewStr) {
                         view = ViewIdx(i);
@@ -1869,13 +1878,13 @@ struct curve_func : public exprtk::igeneric_function<exprtk_scalar_t>
 
 };
 
-static void addStandardFunctions(const std::string& expr,
+static void addStandardFunctions(const string& expr,
                                  TimeValue time,
-                                 symbol_table_t& symbol_table,
-                                 std::vector<std::pair<std::string, func_ptr> >& functions,
-                                 std::vector<std::pair<std::string, vararg_func_ptr> >& varargFunctions,
-                                 std::vector<std::pair<std::string, generic_func_ptr> >& genericFunctions,
-                                 std::string* modifiedExpression)
+                                 exprtk_symbol_table_t& symbol_table,
+                                 exprtk_ifunction_table_t& functions,
+                                 exprtk_ivararg_function_table_t& varargFunctions,
+                                 exprtk_igeneric_function_table_t& genericFunctions,
+                                 string* modifiedExpression)
 {
     // Add all functions from the API to the symbol table
 
@@ -1907,9 +1916,9 @@ static void addStandardFunctions(const std::string& expr,
 
             // Check for the last ';' indicating the previous statement
             std::size_t foundLastStatement = modifiedExpression->find_last_of(';');
-            std::string toPrepend = "var NatronExprtkExpressionResult := ";
+            string toPrepend = "var NatronExprtkExpressionResult := ";
             bool mustAddSemiColon = true;
-            if (foundLastStatement == std::string::npos) {
+            if (foundLastStatement == string::npos) {
                 // There's no ';', the expression is a single statement, pre-pend directly
                 modifiedExpression->insert(0, toPrepend);
             } else {
@@ -1926,7 +1935,7 @@ static void addStandardFunctions(const std::string& expr,
                     foundLastStatement = modifiedExpression->find_last_of(';', foundLastStatement - 1);
                     mustAddSemiColon = false;
                 }
-                if (foundLastStatement == std::string::npos) {
+                if (foundLastStatement == string::npos) {
                     modifiedExpression->insert(0, toPrepend);
                 } else {
                     modifiedExpression->insert(foundLastStatement + 1, toPrepend);
@@ -1935,24 +1944,24 @@ static void addStandardFunctions(const std::string& expr,
             if (mustAddSemiColon) {
                 (*modifiedExpression) += ';';
             }
-            std::string toAppend = "\nreturn [NatronExprtkExpressionResult]";
+            string toAppend = "\nreturn [NatronExprtkExpressionResult]";
             modifiedExpression->append(toAppend);
         }
     } // modifiedExpression
 
 } // addStandardFunctions
 
-static bool parseExprtkExpression(const std::string& originalExpression,
-                                  const std::string& expressionString,
-                                  parser_t& parser,
-                                  expression_t& expressionObject,
-                                  std::string* error)
+static bool parseExprtkExpression(const string& originalExpression,
+                                  const string& expressionString,
+                                  exprtk_parser_t& parser,
+                                  exprtk_expression_t& expressionObject,
+                                  string* error)
 {
 
     // Compile the expression
     if (!parser.compile(expressionString, expressionObject)) {
 
-        std::stringstream ss;
+        stringstream ss;
         ss << "Error(s) while compiling the following expression:" << std::endl;
         ss << originalExpression << std::endl;
         for (std::size_t i = 0; i < parser.error_count(); ++i) {
@@ -1971,11 +1980,11 @@ static bool parseExprtkExpression(const std::string& originalExpression,
 } // parseExprtkExpression
 
 
-static KnobHelper::ExpressionReturnValueTypeEnum handleExprTkReturn(expression_t& expressionObject, double* retValueIsScalar, std::string* retValueIsString, std::string* error)
+static KnobHelper::ExpressionReturnValueTypeEnum handleExprTkReturn(exprtk_expression_t& expressionObject, double* retValueIsScalar, string* retValueIsString, string* error)
 {
-    const results_context_t& results = expressionObject.results();
+    const exprtk_results_context_t& results = expressionObject.results();
     if (results.count() != 1) {
-        std::stringstream ss;
+        stringstream ss;
         ss << "The expression must return one value using the \"return\" keyword";
         *error = ss.str();
         return KnobHelper::eExpressionReturnValueTypeError;
@@ -1986,12 +1995,12 @@ static KnobHelper::ExpressionReturnValueTypeEnum handleExprTkReturn(expression_t
             *retValueIsScalar = (double)*reinterpret_cast<exprtk_scalar_t*>(results[0].data);
             return KnobHelper::eExpressionReturnValueTypeScalar;
         case exprtk::type_store<exprtk_scalar_t>::e_string:
-            *retValueIsString = std::string(reinterpret_cast<const char*>(results[0].data));
+            *retValueIsString = string(reinterpret_cast<const char*>(results[0].data));
             return KnobHelper::eExpressionReturnValueTypeString;
 
         case exprtk::type_store<exprtk_scalar_t>::e_vector:
         case exprtk::type_store<exprtk_scalar_t>::e_unknown:
-            std::stringstream ss;
+            stringstream ss;
             ss << "The expression must either return a scalar or string value depending on the parameter type";
             *error = ss.str();
             return KnobHelper::eExpressionReturnValueTypeError;
@@ -2003,15 +2012,15 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
 void
-KnobHelperPrivate::validateExprTkExpression(const std::string& expression, DimIdx dimension, ViewIdx view, std::string* resultAsString, KnobExprExprTk* ret) const
+KnobHelperPrivate::validateExprTkExpression(const string& expression, DimIdx dimension, ViewIdx view, string* resultAsString, KnobExprExprTk* ret) const
 {
 
     // Symbol table containing all variables that the user may use but that we do not pre-declare, such
     // as knob values etc...
-    symbol_table_t unknown_var_symbol_table;
+    exprtk_symbol_table_t unknown_var_symbol_table;
 
     // Symbol table containing all pre-declared variables (frame, view etc...)
-    symbol_table_t symbol_table;
+    exprtk_symbol_table_t symbol_table;
 
     QThread* curThread = QThread::currentThread();
 
@@ -2019,7 +2028,7 @@ KnobHelperPrivate::validateExprTkExpression(const std::string& expression, DimId
     if (!data) {
         data = KnobExprExprTk::createData();
     }
-    data->expressionObject.reset(new expression_t);
+    data->expressionObject.reset(new exprtk_expression_t);
     data->expressionObject->register_symbol_table(unknown_var_symbol_table);
     data->expressionObject->register_symbol_table(symbol_table);
 
@@ -2033,24 +2042,24 @@ KnobHelperPrivate::validateExprTkExpression(const std::string& expression, DimId
         symbol_table.add_variable("frame", time_f);
     }
 
-    std::string viewName = publicInterface->getHolder()->getApp()->getProject()->getViewName(view);
+    string viewName = publicInterface->getHolder()->getApp()->getProject()->getViewName(view);
     symbol_table.add_stringvar("view", viewName, false);
 
     {
         // The object that resolves undefined knob dependencies at compile time
         ExprUnresolvedSymbolResolver musr(publicInterface, time, dimension, view, ret);
-        parser_t parser;
+        exprtk_parser_t parser;
         parser.enable_unknown_symbol_resolver(&musr);
 
 
         addStandardFunctions(expression, time, symbol_table, data->functions, data->varargFunctions, data->genericFunctions, &ret->modifiedExpression);
 
 
-        generic_func_ptr curveFunc(new curve_func(thisShared, view));
-        data->genericFunctions.push_back(std::make_pair("curve", curveFunc));
+        exprtk_igeneric_function_ptr curveFunc(new curve_func(thisShared, view));
+        data->genericFunctions.push_back(make_pair("curve", curveFunc));
         symbol_table.add_function("curve", *curveFunc);
 
-        std::string error;
+        string error;
         if (!parseExprtkExpression(expression, ret->modifiedExpression, parser, *data->expressionObject, &error)) {
             throw std::runtime_error(error);
         }
@@ -2060,14 +2069,14 @@ KnobHelperPrivate::validateExprTkExpression(const std::string& expression, DimId
 
     data->expressionObject->value();
     double retValueIsScalar;
-    std::string error;
+    string error;
     KnobHelper::ExpressionReturnValueTypeEnum stat = handleExprTkReturn(*data->expressionObject, &retValueIsScalar, resultAsString, &error);
     switch (stat) {
         case KnobHelper::eExpressionReturnValueTypeError:
             throw std::runtime_error(error);
             break;
         case KnobHelper::eExpressionReturnValueTypeScalar: {
-            std::stringstream ss;
+            stringstream ss;
             ss << retValueIsScalar;
             *resultAsString = ss.str();
         }   break;
@@ -2078,12 +2087,12 @@ KnobHelperPrivate::validateExprTkExpression(const std::string& expression, DimId
 
 
 void
-KnobHelper::validateExpression(const std::string& expression,
+KnobHelper::validateExpression(const string& expression,
                                ExpressionLanguageEnum language,
                                DimIdx dimension,
                                ViewIdx view,
                                bool hasRetVariable,
-                               std::string* resultAsString)
+                               string* resultAsString)
 {
     switch (language) {
         case eExpressionLanguagePython:
@@ -2100,7 +2109,7 @@ NATRON_NAMESPACE_ANONYMOUS_ENTER
 struct ExprToReApply {
     ViewIdx view;
     DimIdx dimension;
-    std::string expr;
+    string expr;
     ExpressionLanguageEnum language;
     bool hasRet;
 };
@@ -2112,7 +2121,7 @@ KnobHelper::checkInvalidExpressions()
     int ndims = getNDimensions();
 
 
-    std::vector<ExprToReApply> exprToReapply;
+    vector<ExprToReApply> exprToReapply;
     {
         QMutexLocker k(&_imp->common->expressionMutex);
         for (int i = 0; i < ndims; ++i) {
@@ -2140,7 +2149,7 @@ KnobHelper::checkInvalidExpressions()
     bool isInvalid = false;
     for (std::size_t i = 0; i < exprToReapply.size(); ++i) {
         setExpressionInternal(exprToReapply[i].dimension, exprToReapply[i].view, exprToReapply[i].expr, exprToReapply[i].language, exprToReapply[i].hasRet, false /*throwOnFailure*/);
-        std::string err;
+        string err;
         if ( !isExpressionValid(exprToReapply[i].dimension, exprToReapply[i].view, &err) ) {
             isInvalid = true;
         }
@@ -2151,7 +2160,7 @@ KnobHelper::checkInvalidExpressions()
 bool
 KnobHelper::isExpressionValid(DimIdx dimension,
                               ViewIdx view,
-                              std::string* error) const
+                              string* error) const
 {
     if ( ( dimension >= (int)_imp->common->expressions.size() ) || (dimension < 0) ) {
         throw std::invalid_argument("KnobHelper::isExpressionValid(): Dimension out of range");
@@ -2172,7 +2181,7 @@ KnobHelper::isExpressionValid(DimIdx dimension,
 }
 
 void
-KnobHelper::setExpressionInvalidInternal(DimIdx dimension, ViewIdx view, bool valid, const std::string& error)
+KnobHelper::setExpressionInvalidInternal(DimIdx dimension, ViewIdx view, bool valid, const string& error)
 {
     bool wasValid;
     {
@@ -2223,7 +2232,7 @@ void
 KnobHelper::setExpressionInvalid(DimSpec dimension,
                                  ViewSetSpec view,
                                  bool valid,
-                                 const std::string& error)
+                                 const string& error)
 {
     if (!getHolder() || !getHolder()->getApp()) {
         return;
@@ -2259,7 +2268,7 @@ KnobHelper::setExpressionInvalid(DimSpec dimension,
 void
 KnobHelper::setExpressionInternal(DimIdx dimension,
                                   ViewIdx view,
-                                  const std::string& expression,
+                                  const string& expression,
                                   ExpressionLanguageEnum language, 
                                   bool hasRetVariable,
                                   bool failIfInvalid)
@@ -2280,7 +2289,7 @@ KnobHelper::setExpressionInternal(DimIdx dimension,
     }
 
 
-    std::string exprResult;
+    string exprResult;
 
     KnobExprPtr expressionObj;
     boost::scoped_ptr<PythonGILLocker> pgl;
@@ -2288,13 +2297,13 @@ KnobHelper::setExpressionInternal(DimIdx dimension,
         switch (language) {
             case eExpressionLanguagePython: {
                 pgl.reset(new PythonGILLocker);
-                boost::shared_ptr<KnobExprPython> obj(new KnobExprPython);
+                shared_ptr<KnobExprPython> obj(new KnobExprPython);
                 expressionObj = obj;
                 obj->modifiedExpression = _imp->validatePythonExpression(expression, dimension, view, hasRetVariable, &exprResult);
                 obj->hasRet = hasRetVariable;
             }   break;
             case eExpressionLanguageExprTk: {
-                boost::shared_ptr<KnobExprExprTk> obj(new KnobExprExprTk);
+                shared_ptr<KnobExprExprTk> obj(new KnobExprExprTk);
                 expressionObj = obj;
                 _imp->validateExprTkExpression(expression, dimension, view, &exprResult, obj.get());
             }   break;
@@ -2334,7 +2343,7 @@ KnobHelper::setExpressionInternal(DimIdx dimension,
                 case eExpressionLanguageExprTk: {
                     KnobExprExprTk* obj = dynamic_cast<KnobExprExprTk*>(expressionObj.get());
                     KnobIPtr thisShared = shared_from_this();
-                    for (std::map<std::string, KnobDimViewKey>::const_iterator it = obj->knobDependencies.begin(); it != obj->knobDependencies.end(); ++it) {
+                    for (std::map<string, KnobDimViewKey>::const_iterator it = obj->knobDependencies.begin(); it != obj->knobDependencies.end(); ++it) {
                         it->second.knob.lock()->addListener(dimension, it->second.dimension, view, it->second.view, thisShared, eExpressionLanguageExprTk);
                     }
                 }   break;
@@ -2351,7 +2360,7 @@ KnobHelper::setExpressionInternal(DimIdx dimension,
 void
 KnobHelper::setExpressionCommon(DimSpec dimension,
                                 ViewSetSpec view,
-                                const std::string& expression,
+                                const string& expression,
                                 ExpressionLanguageEnum language,
                                 bool hasRetVariable,
                                 bool failIfInvalid)
@@ -2391,8 +2400,8 @@ KnobHelper::setExpressionCommon(DimSpec dimension,
 void
 KnobHelper::replaceNodeNameInExpressionInternal(DimIdx dimension,
                                                 ViewIdx view,
-                                                const std::string& oldName,
-                                                const std::string& newName)
+                                                const string& oldName,
+                                                const string& newName)
 {
 
     EffectInstancePtr isEffect = toEffectInstance(getHolder());
@@ -2400,7 +2409,7 @@ KnobHelper::replaceNodeNameInExpressionInternal(DimIdx dimension,
         return;
     }
 
-    std::string hasExpr = getExpression(dimension, view);
+    string hasExpr = getExpression(dimension, view);
     if ( hasExpr.empty() ) {
         return;
     }
@@ -2420,8 +2429,8 @@ KnobHelper::replaceNodeNameInExpressionInternal(DimIdx dimension,
 void
 KnobHelper::replaceNodeNameInExpression(DimSpec dimension,
                                         ViewSetSpec view,
-                                        const std::string& oldName,
-                                        const std::string& newName)
+                                        const string& oldName,
+                                        const string& newName)
 {
     if (oldName == newName) {
         return;
@@ -2521,7 +2530,7 @@ KnobHelper::getExpressionDependencies(DimIdx dimension,
     if (isPythonExpr) {
         dependencies = isPythonExpr->dependencies;
     } else if (isExprtkExpr) {
-        for (std::map<std::string, KnobDimViewKey>::const_iterator it = isExprtkExpr->knobDependencies.begin(); it != isExprtkExpr->knobDependencies.end(); ++it) {
+        for (std::map<string, KnobDimViewKey>::const_iterator it = isExprtkExpr->knobDependencies.begin(); it != isExprtkExpr->knobDependencies.end(); ++it) {
             dependencies.insert(it->second);
         }
     } else {
@@ -2548,7 +2557,7 @@ KnobHelper::clearExpressionInternal(DimIdx dimension, ViewIdx view)
             if (isPythonExpr) {
                 dependencies = isPythonExpr->dependencies;
             } else if (isExprtkExpr) {
-                for (std::map<std::string, KnobDimViewKey>::const_iterator it = isExprtkExpr->knobDependencies.begin(); it != isExprtkExpr->knobDependencies.end(); ++it) {
+                for (std::map<string, KnobDimViewKey>::const_iterator it = isExprtkExpr->knobDependencies.begin(); it != isExprtkExpr->knobDependencies.end(); ++it) {
                     dependencies.insert(it->second);
                 }
             }
@@ -2640,7 +2649,7 @@ NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 static bool
 catchErrors(PyObject* mainModule,
-            std::string* error)
+            string* error)
 {
     if ( PyErr_Occurred() ) {
         PyErr_Print();
@@ -2670,10 +2679,10 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
 KnobHelper::ExpressionReturnValueTypeEnum
-KnobHelper::executeExprTkExpression(TimeValue time, ViewIdx view, DimIdx dimension, double* retValueIsScalar, std::string* retValueIsString, std::string* error)
+KnobHelper::executeExprTkExpression(TimeValue time, ViewIdx view, DimIdx dimension, double* retValueIsScalar, string* retValueIsString, string* error)
 {
 
-    boost::shared_ptr<KnobExprExprTk> obj;
+    shared_ptr<KnobExprExprTk> obj;
 
     // Take the expression mutex. Copying the exprtk expression does not actually copy all variables and functions, it just
     // increments a shared reference count.
@@ -2702,7 +2711,7 @@ KnobHelper::executeExprTkExpression(TimeValue time, ViewIdx view, DimIdx dimensi
         KnobExprExprTk::PerThreadDataMap::iterator foundThreadData = obj->data.find(curThread);
         if (foundThreadData == obj->data.end()) {
             data = KnobExprExprTk::createData();
-            std::pair<KnobExprExprTk::PerThreadDataMap::iterator, bool> ret = obj->data.insert(std::make_pair(curThread, data));
+            pair<KnobExprExprTk::PerThreadDataMap::iterator, bool> ret = obj->data.insert(make_pair(curThread, data));
             assert(ret.second);
             foundThreadData = ret.first;
         } else {
@@ -2714,17 +2723,17 @@ KnobHelper::executeExprTkExpression(TimeValue time, ViewIdx view, DimIdx dimensi
     bool isRenderClone = getHolder()->isRenderClone();
 
 
-    symbol_table_t* unknown_symbols_table = 0;//
-    symbol_table_t* symbol_table = 0; //obj->expressionObject->get_symbol_table(1);
+    exprtk_symbol_table_t* unknown_symbols_table = 0;//
+    exprtk_symbol_table_t* symbol_table = 0; //obj->expressionObject->get_symbol_table(1);
 
     bool existingExpression = true;
     if (!data->expressionObject) {
 
         // We did not build the expression already
         existingExpression = false;
-        data->expressionObject.reset(new expression_t);
-        symbol_table_t tmpUnresolved;
-        symbol_table_t tmpResolved;
+        data->expressionObject.reset(new exprtk_expression_t);
+        exprtk_symbol_table_t tmpUnresolved;
+        exprtk_symbol_table_t tmpResolved;
         data->expressionObject->register_symbol_table(tmpUnresolved);
         data->expressionObject->register_symbol_table(tmpResolved);
     }
@@ -2739,13 +2748,13 @@ KnobHelper::executeExprTkExpression(TimeValue time, ViewIdx view, DimIdx dimensi
 
         // Remove from the symbol table functions that hold a state, and re-add a new fresh local copy of them so that the state
         // is local to this thread.
-        std::vector<std::pair<std::string, func_ptr > > functionsCopy;
+        exprtk_ifunction_table_t functionsCopy;
         makeLocalCopyOfStateFunctions(time, *symbol_table, &functionsCopy);
 
     } else {
         double time_f = (double)time;
         symbol_table->add_variable("frame", time_f);
-        std::string viewName = getHolder()->getApp()->getProject()->getViewName(view);
+        string viewName = getHolder()->getApp()->getProject()->getViewName(view);
         symbol_table->add_stringvar("view", viewName, false);
 
         addStandardFunctions(obj->expressionString, time, *symbol_table, data->functions, data->varargFunctions, data->genericFunctions, 0);
@@ -2753,19 +2762,19 @@ KnobHelper::executeExprTkExpression(TimeValue time, ViewIdx view, DimIdx dimensi
 
         KnobIPtr thisShared = shared_from_this();
 
-        generic_func_ptr curveFunc(new curve_func(thisShared, view));
-        data->genericFunctions.push_back(std::make_pair("curve", curveFunc));
+        exprtk_igeneric_function_ptr curveFunc(new curve_func(thisShared, view));
+        data->genericFunctions.push_back(make_pair("curve", curveFunc));
         symbol_table->add_function("curve", *curveFunc);
 
-        parser_t parser;
-        std::string error;
+        exprtk_parser_t parser;
+        string error;
         if (!parseExprtkExpression(obj->expressionString, obj->modifiedExpression, parser, *data->expressionObject, &error)) {
             return KnobHelper::eExpressionReturnValueTypeError;
         }
 
     } // existingExpression
 
-    for (std::map<std::string, KnobDimViewKey>::const_iterator it = obj->knobDependencies.begin(); it != obj->knobDependencies.end(); ++it) {
+    for (std::map<string, KnobDimViewKey>::const_iterator it = obj->knobDependencies.begin(); it != obj->knobDependencies.end(); ++it) {
         KnobIPtr knob = it->second.knob.lock();
         if (!knob) {
             continue;
@@ -2812,14 +2821,14 @@ KnobHelper::executeExprTkExpression(TimeValue time, ViewIdx view, DimIdx dimensi
                 double val = isDouble->getValueAtTime(time, it->second.dimension, it->second.view);
                 unknown_symbols_table->add_variable(it->first, val);
             } else if (isString) {
-                std::string val = isString->getValueAtTime(time, it->second.dimension, it->second.view);
+                string val = isString->getValueAtTime(time, it->second.dimension, it->second.view);
                 unknown_symbols_table->add_stringvar(it->first, val);
             }
 
         }
     }
 
-    for (std::map<std::string, EffectFunctionDependency>::const_iterator it = obj->effectDependencies.begin(); it != obj->effectDependencies.end(); ++it) {
+    for (std::map<string, EffectFunctionDependency>::const_iterator it = obj->effectDependencies.begin(); it != obj->effectDependencies.end(); ++it) {
         EffectInstancePtr effect = it->second.effect.lock();
         if (!effect) {
             continue;
@@ -2840,7 +2849,7 @@ KnobHelper::executeExprTkExpression(TimeValue time, ViewIdx view, DimIdx dimensi
                 GetRegionOfDefinitionResultsPtr results;
                 ActionRetCodeEnum stat = effect->getRegionOfDefinition_public(time, RenderScale(1.), view, &results);
                 if (isFailureRetCode(stat)) {
-                    std::stringstream ss;
+                    stringstream ss;
                     ss << it->first << ": Could not get region of definition";
                     *error = ss.str();
                     return eExpressionReturnValueTypeError;
@@ -2848,14 +2857,14 @@ KnobHelper::executeExprTkExpression(TimeValue time, ViewIdx view, DimIdx dimensi
                 const RectD& rod = results->getRoD();
 
                 if (existingExpression) {
-                    symbol_table_t::vector_holder_ptr vecHolderPtr = unknown_symbols_table->get_vector(it->first);
+                    exprtk_symbol_table_t::vector_holder_ptr vecHolderPtr = unknown_symbols_table->get_vector(it->first);
                     assert(vecHolderPtr->size() == 4);
                     *(*vecHolderPtr)[0] = exprtk_scalar_t(rod.x1);
                     *(*vecHolderPtr)[1] = exprtk_scalar_t(rod.y1);
                     *(*vecHolderPtr)[2] = exprtk_scalar_t(rod.x2);
                     *(*vecHolderPtr)[3] = exprtk_scalar_t(rod.y2);
                 } else {
-                    std::vector<double> vec(4);
+                    vector<double> vec(4);
                     vec[0] = rod.x1;
                     vec[1] = rod.y1;
                     vec[2] = rod.x2;
@@ -2874,10 +2883,10 @@ KnobHelper::executeExprTkExpression(TimeValue time, ViewIdx view, DimIdx dimensi
 } // executeExprTkExpression
 
 KnobHelper::ExpressionReturnValueTypeEnum
-KnobHelper::evaluateExpression(const std::string& expr,
+KnobHelper::evaluateExpression(const string& expr,
                                ExpressionLanguageEnum language,
-                               double* retIsScalar, std::string* retIsString,
-                               std::string* error)
+                               double* retIsScalar, string* retIsString,
+                               string* error)
 {
     KnobHelper::ExpressionReturnValueTypeEnum retCode = eExpressionReturnValueTypeError;
     switch (language) {
@@ -2930,7 +2939,7 @@ KnobHelper::executePythonExpression(TimeValue time,
                                     ViewIdx view,
                                     DimIdx dimension,
                                     PyObject** ret,
-                                    std::string* error) const
+                                    string* error) const
 {
     if (dimension < 0 || dimension >= (int)_imp->common->expressions.size()) {
         throw std::invalid_argument("KnobHelper::executeExpression(): Dimension out of range");
@@ -2942,7 +2951,7 @@ KnobHelper::executePythonExpression(TimeValue time,
     }
 
 
-    std::string expr;
+    string expr;
     {
         QMutexLocker k(&_imp->common->expressionMutex);
         ExprPerViewMap::const_iterator foundView = _imp->common->expressions[dimension].find(view);
@@ -2954,9 +2963,9 @@ KnobHelper::executePythonExpression(TimeValue time,
         expr = isPythonExpr->modifiedExpression;
     }
 
-    std::stringstream ss;
+    stringstream ss;
 
-    std::string viewName;
+    string viewName;
     if (getHolder() && getHolder()->getApp()) {
         viewName = getHolder()->getApp()->getProject()->getViewName(view);
     }
@@ -2965,7 +2974,7 @@ KnobHelper::executePythonExpression(TimeValue time,
     }
 
     ss << expr << '(' << time << ", \"" << viewName << "\")\n";
-    std::string script = ss.str();
+    string script = ss.str();
 
     ///Reset the random state to reproduce the sequence
     randomSeed( time, hashFunction(dimension) );
@@ -2974,9 +2983,9 @@ KnobHelper::executePythonExpression(TimeValue time,
 } // executeExpression
 
 bool
-KnobHelper::executePythonExpression(const std::string& expr,
+KnobHelper::executePythonExpression(const string& expr,
                               PyObject** ret,
-                              std::string* error)
+                              string* error)
 {
     //returns a new ref, this function's documentation is not clear onto what it returns...
     //https://docs.python.org/2/c-api/veryhigh.html
@@ -3009,20 +3018,20 @@ KnobHelper::executePythonExpression(const std::string& expr,
 }
 
 KnobHelper::ExpressionReturnValueTypeEnum
-KnobHelper::executeExprTkExpression(const std::string& expr, double* retValueIsScalar, std::string* retValueIsString, std::string* error)
+KnobHelper::executeExprTkExpression(const string& expr, double* retValueIsScalar, string* retValueIsString, string* error)
 {
-    symbol_table_t symbol_table;
+    exprtk_symbol_table_t symbol_table;
 
-    expression_t expressionObj;
+    exprtk_expression_t expressionObj;
     expressionObj.register_symbol_table(symbol_table);
 
-    std::vector<std::pair<std::string, func_ptr> > functions;
-    std::vector<std::pair<std::string, vararg_func_ptr> > varargFunctions;
-    std::vector<std::pair<std::string, generic_func_ptr> > genericFunctions;
+    exprtk_ifunction_table_t functions;
+    exprtk_ivararg_function_table_t varargFunctions;
+    exprtk_igeneric_function_table_t genericFunctions;
 
     TimeValue time(0);
-    parser_t parser;
-    std::string modifiedExpr;
+    exprtk_parser_t parser;
+    string modifiedExpr;
     addStandardFunctions(expr, time, symbol_table, functions, varargFunctions, genericFunctions, &modifiedExpr);
 
     if (!parseExprtkExpression(expr, modifiedExpr, parser, expressionObj, error)) {
@@ -3035,7 +3044,7 @@ KnobHelper::executeExprTkExpression(const std::string& expr, double* retValueIsS
 
 } // executeExprTkExpression
 
-std::string
+string
 KnobHelper::getExpression(DimIdx dimension, ViewIdx view) const
 {
     if (dimension < 0 || dimension >= (int)_imp->common->expressions.size()) {
@@ -3045,7 +3054,7 @@ KnobHelper::getExpression(DimIdx dimension, ViewIdx view) const
     QMutexLocker k(&_imp->common->expressionMutex);
     ExprPerViewMap::const_iterator foundView = _imp->common->expressions[dimension].find(view_i);
     if (foundView == _imp->common->expressions[dimension].end() || !foundView->second) {
-        return std::string();
+        return string();
     }
     return foundView->second->expressionString;
 }
