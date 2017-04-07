@@ -1424,26 +1424,40 @@ handleExprTkReturn(exprtk_expression_t& expressionObject,
                    string* retValueIsString,
                    string* error)
 {
-    const exprtk_results_context_t& results = expressionObject.results();
+    const exprtk_scalar_t result  = expressionObject.value();
 
-    if (results.count() != 1) {
+    const exprtk_results_context_t& results = expressionObject.results();
+    const std::size_t results_count = results.count();
+
+
+    if (results_count == 0) {
+        *retValueIsScalar = result;
+        return KnobHelper::eExpressionReturnValueTypeScalar;
         *error = "The expression must return one value using the \"return\" keyword";
 
         return KnobHelper::eExpressionReturnValueTypeError;
+    } else if (results_count != 1) {
+        *error = "Multiple return values not allowed";
+        return KnobHelper::eExpressionReturnValueTypeError;
     }
 
-    switch (results[0].type) {
-    case exprtk_type_store_t::e_scalar:
-        *retValueIsScalar = (double)*reinterpret_cast<exprtk_scalar_t*>(results[0].data);
+    typedef typename exprtk_results_context_t::type_store_t type_t;
+    typedef typename type_t::scalar_view scalar_t;
+    typedef typename type_t::string_view string_t;
 
+    type_t t = expressionObject.results()[0];
+
+    switch (t.type) {
+    case type_t::e_scalar:
+        *retValueIsScalar = scalar_t(t)();
         return KnobHelper::eExpressionReturnValueTypeScalar;
-    case exprtk_type_store_t::e_string:
-        *retValueIsString = string( reinterpret_cast<const char*>(results[0].data) );
-
+    case type_t::e_string: {
+        string_t str(t);
+        retValueIsString->assign(str.begin(), str.end());
         return KnobHelper::eExpressionReturnValueTypeString;
-
-    case exprtk_type_store_t::e_vector:
-    case exprtk_type_store_t::e_unknown:
+    }
+    case type_t::e_vector:
+    case type_t::e_unknown:
         *error = "The expression must either return a scalar or string value depending on the parameter type";
 
         return KnobHelper::eExpressionReturnValueTypeError;
@@ -1507,7 +1521,6 @@ KnobHelperPrivate::validateExprTkExpression(const string& expression,
         }
     } // parser
 
-    data->expressionObject->value();
     double retValueIsScalar;
     string error;
     KnobHelper::ExpressionReturnValueTypeEnum stat = handleExprTkReturn(*data->expressionObject, &retValueIsScalar, resultAsString, &error);
@@ -1718,10 +1731,6 @@ KnobHelper::executeExprTkExpression(TimeValue time,
         }
     }
 
-
-    // Evaluate the expression
-    data->expressionObject->value();
-
     return handleExprTkReturn(*data->expressionObject, retValueIsScalar, retValueIsString, error);
 } // executeExprTkExpression
 
@@ -1748,8 +1757,6 @@ KnobHelper::executeExprTkExpression(const string& expr,
         return eExpressionReturnValueTypeError;
     }
 
-    // Evaluate the expression
-    expressionObj.value();
 
     return handleExprTkReturn(expressionObj, retValueIsScalar, retValueIsString, error);
 } // executeExprTkExpression
