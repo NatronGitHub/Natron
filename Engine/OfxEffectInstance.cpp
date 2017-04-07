@@ -399,6 +399,7 @@ OfxEffectInstance::createInstanceAction()
             throw std::runtime_error(tr("Could not create effect instance for plugin").toStdString());
         } else {
             throw std::runtime_error(foundMessage->second.message);
+
         }
     }
 

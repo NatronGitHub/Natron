@@ -2852,6 +2852,7 @@ Bezier::deCastelJau(bool isOpenBezier,
             } else {
                 bbox->merge(segbbox);
             }
+
         }
 
         // increment for next iteration

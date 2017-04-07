@@ -958,7 +958,7 @@ public:
 
     const std::vector<std::string>& getCreatedViews() const;
 
-    void refreshCreatedViews();
+    void refreshCreatedViews(bool silent);
 
     void refreshIdentityState();
 
@@ -991,6 +991,7 @@ public:
     void refreshCreatedViews(const KnobIPtr& knob);
 
 private:
+
 
 
 
