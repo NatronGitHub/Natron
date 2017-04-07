@@ -3552,10 +3552,7 @@ Bezier::isClockwiseOriented(TimeValue time, ViewIdx view) const
 
     if (shape->points.size() <= 1) {
         return false;
-    } else if (shape->points.size() == 2) {
-        //It does not matter since there are only 2 points
-        return true;
-    }
+    } 
 
     const BezierCPs& cps = shape->points;
     double polygonSurface = 0.;

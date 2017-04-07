@@ -64,9 +64,13 @@ public:
     struct PolygonData
     {
 
+        // The vertices used to render the feather
+        std::vector<BezierVertex> featherVertices;
+
         // The mesh for the feather computed from bezeirPolygon and featherPolygon
-        // This vector contains vertices corresponding to a GL_TRIANGLE_STRIP primitive
-        std::vector<BezierVertex> featherTriangles;
+        // This vector contains indices corresponding to a GL_TRIANGLE_STRIP primitive
+        // referencing the featherVertices
+        std::vector<unsigned int> featherTriangles;
 
         // The vertices composing the internal shape, each single vertex once.
         // Each vertex is used in one of the primitives in internalShapeTriangles, internalShapeTriangleFans and internalShapeTriangleStrips

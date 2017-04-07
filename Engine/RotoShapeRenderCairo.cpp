@@ -1334,10 +1334,10 @@ RotoShapeRenderCairo::renderFeather_cairo(const RotoBezierTriangulation::Polygon
     double innerOpacity = 1.;
     double outterOpacity = 0.;
 
-    std::vector<RotoBezierTriangulation::BezierVertex>::const_iterator it = inArgs.featherTriangles.begin();
-    std::vector<RotoBezierTriangulation::BezierVertex>::const_iterator next = it;
+    std::vector<unsigned int>::const_iterator it = inArgs.featherTriangles.begin();
+    std::vector<unsigned int>::const_iterator next = it;
     ++next;
-    std::vector<RotoBezierTriangulation::BezierVertex>::const_iterator nextNext = next;
+    std::vector<unsigned int>::const_iterator nextNext = next;
     ++nextNext;
     for (; nextNext!=inArgs.featherTriangles.end(); ++it, ++next, ++nextNext) {
 
@@ -1349,38 +1349,45 @@ RotoShapeRenderCairo::renderFeather_cairo(const RotoBezierTriangulation::Polygon
         const RotoBezierTriangulation::BezierVertex* outterVertices[2] = {0, 0};
 
         {
+            assert(*it < inArgs.featherVertices.size());
+            const RotoBezierTriangulation::BezierVertex& curVertex = inArgs.featherVertices[*it];
+            assert(*next < inArgs.featherVertices.size());
+            const RotoBezierTriangulation::BezierVertex& nextVertex = inArgs.featherVertices[*next];
+            assert(*nextNext < inArgs.featherVertices.size());
+            const RotoBezierTriangulation::BezierVertex& nextNextVertex = inArgs.featherVertices[*nextNext];
+
             int innerIndex = 0;
             int outterIndex = 0;
-            if (it->isInner) {
-                innerVertices[innerIndex] = &(*it);
+            if (curVertex.isInner) {
+                innerVertices[innerIndex] = &curVertex;
                 ++innerIndex;
             } else {
-                outterVertices[outterIndex] = &(*it);
+                outterVertices[outterIndex] = &curVertex;
                 ++outterIndex;
             }
-            if (next->isInner) {
+            if (nextVertex.isInner) {
                 assert(innerIndex <= 1);
                 if (innerIndex <= 1) {
-                    innerVertices[innerIndex] = &(*next);
+                    innerVertices[innerIndex] = &nextVertex;
                     ++innerIndex;
                 }
             } else {
                 assert(outterIndex <= 1);
                 if (outterIndex <= 1) {
-                    outterVertices[outterIndex] = &(*next);
+                    outterVertices[outterIndex] = &nextVertex;
                     ++outterIndex;
                 }
             }
-            if (nextNext->isInner) {
+            if (nextNextVertex.isInner) {
                 assert(innerIndex <= 1);
                 if (innerIndex <= 1) {
-                    innerVertices[innerIndex] = &(*nextNext);
+                    innerVertices[innerIndex] = &nextNextVertex;
                     ++innerIndex;
                 }
             } else {
                 assert(outterIndex <= 1);
                 if (outterIndex <= 1) {
-                    outterVertices[outterIndex] = &(*nextNext);
+                    outterVertices[outterIndex] = &nextNextVertex;
                     ++outterIndex;
                 }
             }

@@ -59,14 +59,11 @@ struct VertexIndex {
     // Does this point belong to the feather polygon ?
     VertexPointsSetEnum origin;
 
-    int contourIndex;
-
     // The point index in the polygon
     int pointIndex;
 
     VertexIndex()
     : origin(eVertexPointsSetInternalShape)
-    , contourIndex(0)
     , pointIndex(-1)
     {
 
@@ -86,11 +83,6 @@ struct VertexIndexCompare {
         if (lhs.origin < rhs.origin) {
             return true;
         } else if (lhs.origin > rhs.origin) {
-            return false;
-        }
-        if (lhs.contourIndex < rhs.contourIndex) {
-            return true;
-        } else if (lhs.contourIndex > rhs.contourIndex) {
             return false;
         }
 
@@ -137,7 +129,7 @@ struct PolygonCSGData
     std::vector<PolygonVertex> bezierPolygon, featherPolygon;
 
     // The bezierPolygon and featherPolygon contour(s) in output of ensurePolygonWindingNumberEqualsOne
-    std::vector<std::vector<PolygonVertex> > bezierProcessedContours, featherProcessContours;
+    std::vector<std::vector<VertexIndex> > bezierProcessedContours, featherProcessContours;
     
     // List of generated points by the tesselation algorithms
     std::vector<PolygonVertex> generatedPoints;
@@ -238,14 +230,13 @@ static void tess_vertex_callback(void* data /*per-vertex client data*/,
     // intersection of both polygons.
     switch (index->origin) {
         case eVertexPointsSetFeather:
-            assert(index->contourIndex < (int)myData->featherProcessContours.size());
-            assert(index->pointIndex < (int)myData->featherProcessContours[index->contourIndex].size());
-            myData->featherProcessContours[index->contourIndex][index->pointIndex].isInner = true;
+            assert(index->pointIndex < (int)myData->featherPolygon.size());
+            myData->featherPolygon[index->pointIndex].isInner = true;
             break;
         case eVertexPointsSetInternalShape:
-            assert(index->contourIndex < (int)myData->bezierProcessedContours.size());
-            assert(index->pointIndex < (int)myData->bezierProcessedContours[index->contourIndex].size());
-            myData->bezierProcessedContours[index->contourIndex][index->pointIndex].isInner = true;
+            assert(index->pointIndex < (int)myData->bezierPolygon.size());
+            myData->bezierPolygon[index->pointIndex].isInner = true;
+
             break;
         case eVertexPointsSetGeneratedPoints:
             assert(index->pointIndex < (int)myData->generatedPoints.size());
@@ -284,14 +275,13 @@ static double averageParametric_t(int startIdx, PolygonCSGData* myData, VertexIn
             double vertexT;
             switch (originalVertices[i]->origin) {
                 case eVertexPointsSetInternalShape:
-                    assert(originalVertices[i]->contourIndex < (int)myData->bezierProcessedContours.size());
-                    assert(originalVertices[i]->pointIndex < (int)myData->bezierProcessedContours[originalVertices[i]->contourIndex].size());
-                    vertexT = myData->bezierProcessedContours[originalVertices[i]->contourIndex][originalVertices[i]->pointIndex].t;
+                    assert(originalVertices[i]->pointIndex < (int)myData->bezierPolygon.size());
+                    vertexT = myData->bezierPolygon[originalVertices[i]->pointIndex].t;
                     break;
                 case eVertexPointsSetFeather:
-                    assert(originalVertices[i]->contourIndex < (int)myData->featherProcessContours.size());
-                    assert(originalVertices[i]->pointIndex < (int)myData->featherProcessContours[originalVertices[i]->contourIndex].size());
-                    vertexT = myData->featherProcessContours[originalVertices[i]->contourIndex][originalVertices[i]->pointIndex].t;
+
+                    assert(originalVertices[i]->pointIndex < (int)myData->featherPolygon.size());
+                    vertexT = myData->featherPolygon[originalVertices[i]->pointIndex].t;
 
                     break;
                 case eVertexPointsSetGeneratedPoints:
@@ -367,13 +357,11 @@ static void tess_intersection_combine_callback(double coords[3],
         assert(v.generatedOrigin1 != eVertexPointsSetGeneratedPoints);
         assert(v.generatedOrigin2 != eVertexPointsSetGeneratedPoints);
 
-        v.contourIndex2 = originalVertices[2]->contourIndex;
 
         v.t = averageParametric_t(0, myData, originalVertices, weights);
         v.t2 = averageParametric_t(2, myData, originalVertices, weights);
     }
     
-    v.index->contourIndex = originalVertices[0]->contourIndex;
 
     // The original point is not a generated point
     assert(v.generatedOrigin1 != eVertexPointsSetGeneratedPoints);
@@ -582,18 +570,66 @@ static void contour_intersection_combine_callback(double coords[3],
 
 
 
-static bool contourBezierVertexCompare(const ContourBezierVertex& lhs, const ContourBezierVertex& rhs)
+inline bool contourBezierVertexCompare(const ContourBezierVertex& lhs, const ContourBezierVertex& rhs)
 {
     return lhs.t < rhs.t;
 }
+
+typedef std::map<VertexIndex, VertexIndex, VertexIndexCompare> VertexIndicesMap;
+
+static void insertGeneratedPoint(std::vector<ContourBezierVertex>& polygon,
+                                 VertexIndicesMap& oldToNewIndicesMap,
+                                 VertexIndicesMap& newToOldIndicesMap,
+                                 const ContourBezierVertex& generated)
+{
+    std::vector<ContourBezierVertex>::iterator lb = std::lower_bound(polygon.begin(), polygon.end(), generated, contourBezierVertexCompare);
+
+    // Insert it before the first element that is greater
+    lb = polygon.insert(lb, generated);
+
+    // lb points now to the point we just inserted
+    assert(lb->index == generated.index);
+
+    // Ensure we copy the index so that the index is not modified in the generated point
+    lb->index.reset(new VertexIndex);
+    *lb->index = *generated.index;
+
+
+    // Increment the index of all points after the insertion point
+    std::size_t startIndex = std::distance(polygon.begin(), lb);
+    for (std::size_t j = startIndex; j < polygon.size(); ++j) {
+        // Check if the VertexIndex has already been modified, to retrieve the real
+        // original vertex
+        VertexIndex oldIndex;
+        VertexIndicesMap::iterator foundModified = newToOldIndicesMap.find(*polygon[j].index);
+        if (foundModified != newToOldIndicesMap.end()) {
+            oldIndex = foundModified->second;
+        } else {
+            oldIndex = *polygon[j].index;
+        }
+        polygon[j].index->pointIndex = j;
+
+        // Record the indices changes
+        oldToNewIndicesMap[oldIndex] = *polygon[j].index;
+        newToOldIndicesMap[*polygon[j].index] = oldIndex;
+    }
+} // insertGeneratedPoint
+
+
 
 /**
  * @brief Using libtess, extracts the contour of the polygon so that the winding number of the polygon is one.
  * E.g: we may have a polygon that is self intersecting, in which case this would fail the polygon intersection done
  * in computeInternalPolygon()
  **/
-static void ensurePolygonWindingNumberEqualsOne(std::vector<PolygonVertex>& originalPolygon, bool clockWise, VertexPointsSetEnum polygonType, std::vector< std::vector< PolygonVertex > >* contours)
+static void ensurePolygonWindingNumberEqualsOne(const PolygonCSGData& mainData,
+                                                std::vector<PolygonVertex>& originalPolygon,
+                                                bool clockWise,
+                                                VertexPointsSetEnum polygonType,
+                                                std::vector< std::vector< VertexIndex > >* contours)
 {
+
+    (void)mainData;
 
     ContourCSGData data;
 
@@ -602,6 +638,7 @@ static void ensurePolygonWindingNumberEqualsOne(std::vector<PolygonVertex>& orig
         data.polygon[i].x = originalPolygon[i].x;
         data.polygon[i].y = originalPolygon[i].y;
         data.polygon[i].t = originalPolygon[i].t;
+        assert(mainData.bezierBbox.contains(data.polygon[i].x, data.polygon[i].y));
 
         // Initialize all points as not being on the contour and then the libtess vertex callback will inform us of points on the contour
         data.polygon[i].isOnContour = false;
@@ -636,6 +673,7 @@ static void ensurePolygonWindingNumberEqualsOne(std::vector<PolygonVertex>& orig
 
         for (std::size_t i = 0; i < data.polygon.size(); ++i) {
             double coords[3] = {data.polygon[i].x, data.polygon[i].y, 1.};
+            assert(mainData.bezierBbox.contains(coords[0], coords[1]));
             libtess_gluTessVertex(tesselator, coords, (void*)data.polygon[i].index.get() /*per-vertex client data*/);
         }
 
@@ -646,57 +684,97 @@ static void ensurePolygonWindingNumberEqualsOne(std::vector<PolygonVertex>& orig
     libtess_gluTessEndPolygon(tesselator);
     libtess_gluDeleteTess(tesselator);
 
-#if 1
+    // Clear the original polygon,  we are going to modify it
+    originalPolygon.clear();
+
+
+
     // Insert all generated points in the polygon at their appropriate location in the polygon, according to their t
     // Since the polygon vector is already sorted by increasing t, this is very fast
 
+
+    // Since we are going to insert and remove points in the polygon, we need to update the indices and keep a mapping
+    // so that the vertex indices in data.contourList still point to a valid index.
+    VertexIndicesMap oldToNewIndicesMap, newToOldIndicesMap;
+    for (std::size_t i = 0; i < data.polygon.size(); ++i) {
+        oldToNewIndicesMap[*data.polygon[i].index] = *data.polygon[i].index;
+        newToOldIndicesMap[*data.polygon[i].index] = *data.polygon[i].index;
+    }
     for (std::size_t i = 0; i < data.generatedPoints.size(); ++i) {
 
         if (!data.generatedPoints[i].isOnContour) {
             continue;
         }
-
-
-        // lb points to the first vertex in the polygon with a parametric t greater or equal to the generated point t
-        {
-            std::vector<ContourBezierVertex>::iterator lb = std::lower_bound(data.polygon.begin(), data.polygon.end(), data.generatedPoints[i], contourBezierVertexCompare);
-            // Insert it before the first element that is greater
-            data.polygon.insert(lb, data.generatedPoints[i]);
-        }
+        assert(mainData.bezierBbox.contains(data.generatedPoints[i].x, data.generatedPoints[i].y));
+        insertGeneratedPoint(data.polygon, oldToNewIndicesMap, newToOldIndicesMap, data.generatedPoints[i]);
 
         // This point may be an intersection point and might need to be inserted twice in the polygon.
         if (data.generatedPoints[i].isIntersectionPoint) {
             // Swap t and t2 so that the contourBezierVertexCompare function finds the lower bound for t2 correctly
             std::swap(data.generatedPoints[i].t,data.generatedPoints[i].t2);
-
-            std::vector<ContourBezierVertex>::iterator lb = std::lower_bound(data.polygon.begin(), data.polygon.end(), data.generatedPoints[i], contourBezierVertexCompare);
-            // Insert it before the first element that is greater
-            data.polygon.insert(lb, data.generatedPoints[i]);
+            insertGeneratedPoint(data.polygon, oldToNewIndicesMap, newToOldIndicesMap, data.generatedPoints[i]);
         }
     }
 
+#ifdef DEBUG
+    // Check that all t and indices are increasing
+    for (std::size_t i = 1; i < data.polygon.size(); ++i) {
+        assert(data.polygon[i].t > data.polygon[i - 1].t);
+        assert(data.polygon[i].index->pointIndex > data.polygon[i - 1].index->pointIndex);
+    }
+#endif
 
     // Update the original polygon in output and remove all points that are not on the contour
     for (std::size_t i = 0; i < data.polygon.size(); ++i) {
 
         const ContourBezierVertex& from = data.polygon[i];
+        
         if (!from.isOnContour) {
-            continue;
-        }
+            // Decrement the index of all points after this one since we removed it
+            for (std::size_t j = i + 1; j < data.polygon.size(); ++j) {
 
-        PolygonVertex v;
-        v.x = from.x;
-        v.y = from.y;
-        v.t = from.t;
-        v.index.reset(new VertexIndex);
-        v.index->origin = polygonType;
-        v.index->pointIndex = originalPolygon.size();
-        v.isInner = false;
-        originalPolygon.push_back(v);
+                // Check if the VertexIndex has already been modified, to retrieve the real
+                // original vertex
+                VertexIndex oldIndex;
+                VertexIndicesMap::iterator foundModified = newToOldIndicesMap.find(*data.polygon[j].index);
+                if (foundModified != newToOldIndicesMap.end()) {
+                    oldIndex = foundModified->second;
+                } else {
+                    oldIndex = *data.polygon[j].index;
+                }
+
+                --data.polygon[j].index->pointIndex;
+
+                // Record the indices changes
+                oldToNewIndicesMap[oldIndex] = *data.polygon[j].index;
+                newToOldIndicesMap[*data.polygon[j].index] = oldIndex;
+            }
+        } else {
+
+            PolygonVertex v;
+            v.x = from.x;
+            v.y = from.y;
+            v.t = from.t;
+
+            // The index should be up to date
+            assert(from.index->pointIndex == (int)originalPolygon.size());
+            v.index.reset(new VertexIndex);
+            v.index->origin = polygonType;
+            v.index->pointIndex = originalPolygon.size();
+            v.isInner = false;
+            originalPolygon.push_back(v);
+        } // isOnContour
+    }
+
+#ifdef DEBUG
+    // Check that all indices are increasing in the new polygon
+    for (std::size_t i = 1; i < originalPolygon.size(); ++i) {
+        assert(originalPolygon[i].index->pointIndex > originalPolygon[i - 1].index->pointIndex);
     }
 #endif
 
-
+    // Finally copy the contours in output, and update the indices that still point to old polygon
+    // indices to the modified polygon indices using the indicesMap
     contours->resize(data.contourList.size());
 
     for (std::size_t i = 0; i < data.contourList.size(); ++i) {
@@ -704,40 +782,26 @@ static void ensurePolygonWindingNumberEqualsOne(std::vector<PolygonVertex>& orig
         (*contours)[i].resize(data.contourList[i].size());
         for (std::size_t j = 0; j < data.contourList[i].size(); ++j) {
 
-            const VertexIndex& index = data.contourList[i][j];
-            ContourBezierVertex* from = 0;
-            switch (index.origin) {
-                case eVertexPointsSetFeather:
-                case eVertexPointsSetInternalShape:
-                    // We process the feather polygon and internal polygon with 2 different calls to ensurePolygonWindingNumberEqualsOne()
-                    // So it does not matter
-                    assert(index.pointIndex < (int)data.polygon.size());
-                    from = &data.polygon[index.pointIndex];
-                    break;
+            const VertexIndex& originalIndex = data.contourList[i][j];
 
-                case eVertexPointsSetGeneratedPoints:
-                    assert(index.pointIndex < (int)data.generatedPoints.size());
-                    from = &data.generatedPoints[index.pointIndex];
-                    break;
-            }
+            // Find the corresponding index in the indicesMap since we modified the indices
+            VertexIndicesMap::iterator foundMapping = oldToNewIndicesMap.find(originalIndex);
+            assert(foundMapping != oldToNewIndicesMap.end());
 
-            PolygonVertex &to = (*contours)[i][j];
-            to.x = from->x;
-            to.y = from->y;
-            to.t = from->t;
-            to.index.reset(new VertexIndex);
-            to.index->contourIndex = i;
-            to.index->origin = polygonType;
-            to.index->pointIndex = j;
-            to.isInner = false;
+            const VertexIndex& mappedIndex = foundMapping->second;
 
+            VertexIndex &to = (*contours)[i][j];
+            to.pointIndex = mappedIndex.pointIndex;
+            to.origin = polygonType;
+
+            assert(to.pointIndex < (int)originalPolygon.size());
         }
     }
 
 
-
-
 } // ensurePolygonWindingNumberEqualsOne
+
+#if 0
 
 inline bool polygonVertexCompare(const PolygonVertex& lhs, const PolygonVertex& rhs)
 {
@@ -750,10 +814,10 @@ static void insertGeneratedPoint(const PolygonVertex& generatedPoint,  PolygonCS
     std::vector<PolygonVertex>* polygon = 0;
     switch (generatedPoint.generatedOrigin1) {
         case eVertexPointsSetFeather:
-            polygon = &data.featherProcessContours[generatedPoint.index->contourIndex];
+            polygon = &data.featherPolygon;
             break;
         case eVertexPointsSetInternalShape:
-            polygon = &data.bezierProcessedContours[generatedPoint.index->contourIndex];
+            polygon = &data.bezierPolygon;
             break;
         case eVertexPointsSetGeneratedPoints:
             // A point is only generated on one of the original polygons
@@ -765,6 +829,7 @@ static void insertGeneratedPoint(const PolygonVertex& generatedPoint,  PolygonCS
     // Insert it before the first element that is greater
     polygon->insert(lb, generatedPoint);
 }
+#endif
 
 /**
  * @brief Using libtess, computes the intersection of the feather polygon and the internal shape polygon so we find the actual interior and exterior of the shape
@@ -797,11 +862,12 @@ static void computeInternalPolygon(PolygonCSGData& data, bool clockWise, RotoBez
             libtess_gluTessBeginContour(tesselator);
 
             for (std::size_t j = 0; j < data.bezierProcessedContours[i].size(); ++j) {
-                assert(data.bezierProcessedContours[i][j].index->origin == eVertexPointsSetInternalShape);
-                assert(data.bezierProcessedContours[i][j].index->pointIndex == (int)j);
-                assert(data.bezierProcessedContours[i][j].index->contourIndex == (int)i);
-                double coords[3] = {data.bezierProcessedContours[i][j].x, data.bezierProcessedContours[i][j].y, 1.};
-                libtess_gluTessVertex(tesselator, coords, (void*)data.bezierProcessedContours[i][j].index.get() /*per-vertex client data*/);
+                assert(data.bezierProcessedContours[i][j].origin == eVertexPointsSetInternalShape);
+                assert(data.bezierProcessedContours[i][j].pointIndex < (int)data.bezierPolygon.size());
+                const PolygonVertex& vertex = data.bezierPolygon[data.bezierProcessedContours[i][j].pointIndex];
+                double coords[3] = {vertex.x, vertex.y, 1.};
+                assert(vertex.index);
+                libtess_gluTessVertex(tesselator, coords, (void*)vertex.index.get() /*per-vertex client data*/);
             }
 
             libtess_gluTessEndContour(tesselator);
@@ -815,11 +881,13 @@ static void computeInternalPolygon(PolygonCSGData& data, bool clockWise, RotoBez
             libtess_gluTessBeginContour(tesselator);
 
             for (std::size_t j = 0; j < data.featherProcessContours[i].size(); ++j) {
-                assert(data.featherProcessContours[i][j].index->origin == eVertexPointsSetFeather);
-                assert(data.featherProcessContours[i][j].index->pointIndex == (int)j);
-                assert(data.featherProcessContours[i][j].index->contourIndex == (int)i);
-                double coords[3] = {data.featherProcessContours[i][j].x, data.featherProcessContours[i][j].y, 1.};
-                libtess_gluTessVertex(tesselator, coords, (void*)data.featherProcessContours[i][j].index.get() /*per-vertex client data*/);
+                assert(data.featherProcessContours[i][j].origin == eVertexPointsSetFeather);
+                assert(data.featherProcessContours[i][j].pointIndex < (int)data.featherPolygon.size());
+                const PolygonVertex& vertex = data.featherPolygon[data.featherProcessContours[i][j].pointIndex];
+                double coords[3] = {vertex.x, vertex.y, 1.};
+                assert(vertex.index);
+                libtess_gluTessVertex(tesselator, coords, (void*)vertex.index.get() /*per-vertex client data*/);
+
             }
 
             libtess_gluTessEndContour(tesselator);
@@ -838,9 +906,7 @@ static void computeInternalPolygon(PolygonCSGData& data, bool clockWise, RotoBez
         int i = 0;
         for (VertexIndexSet::const_iterator it = data.internalShapeVertices.begin(); it != data.internalShapeVertices.end(); ++it, ++i) {
             outArgs->internalShapeVertices[i] =  getPointFromTriangulation(data, *it);
-#ifndef NDEBUG
-            data.bezierBbox.contains(outArgs->internalShapeVertices[i].x, outArgs->internalShapeVertices[i].y);
-#endif
+            assert(data.bezierBbox.contains(outArgs->internalShapeVertices[i].x, outArgs->internalShapeVertices[i].y));
         }
     }
     outArgs->internalShapeTriangleFans.resize(data.internalFans.size());
@@ -898,6 +964,7 @@ static void computeInternalPolygon(PolygonCSGData& data, bool clockWise, RotoBez
         }
     }
 
+#if 0
     // Insert the points generated by libtess for each intersection to their respective polygons to compute the feather
     // Since the polygon vector is already sorted by increasing t, this is very fast
     for (std::size_t i = 0; i < data.generatedPoints.size(); ++i) {
@@ -908,18 +975,14 @@ static void computeInternalPolygon(PolygonCSGData& data, bool clockWise, RotoBez
         if (data.generatedPoints[i].isIntersectionPoint) {
             // Swap t and t2 so that the contourBezierVertexCompare function finds the lower bound for t2 correctly
             std::swap(data.generatedPoints[i].t,data.generatedPoints[i].t2);
-            std::swap(data.generatedPoints[i].index->contourIndex,data.generatedPoints[i].contourIndex2);
             insertGeneratedPoint(data.generatedPoints[i], data);
         }
     }
+#endif
+
+
 } // computeInternalPolygon
 
-inline void polygonPointToBezierVertex(const PolygonVertex& from, RotoBezierTriangulation::BezierVertex* to)
-{
-    to->x = from.x;
-    to->y = from.y;
-    to->isInner = from.isInner;
-}
 
 /**
  * @brief Using the feather polygon and internal shape polygon and assuming they have the same number of points, iterate through each 
@@ -931,6 +994,10 @@ static void computeFeatherTriangles(PolygonCSGData &data, RotoBezierTriangulatio
     // The discretized bezier polygon and feather polygon must have the same number of samples.
     assert( !data.featherPolygon.empty() && !data.bezierPolygon.empty());
 
+    // In output, each unique feather vertex
+    VertexIndexSet featherVertices;
+    std::vector<VertexIndex> featherTriangleIndices;
+
     // Points to the current feather bezier segment
     vector<PolygonVertex>::const_iterator fit = data.featherPolygon.end();
     --fit;
@@ -938,9 +1005,10 @@ static void computeFeatherTriangles(PolygonCSGData &data, RotoBezierTriangulatio
     --it;
 
     // Initialize the state with a segment between the first inner vertex and first outter vertex
-    RotoBezierTriangulation::BezierVertex lastInnerVert,lastOutterVert;
+    /*RotoBezierTriangulation::BezierVertex lastInnerVert,lastOutterVert;
     polygonPointToBezierVertex(*it, &lastInnerVert);
-    polygonPointToBezierVertex(*fit, &lastOutterVert);
+    polygonPointToBezierVertex(*fit, &lastOutterVert);*/
+    VertexIndex lastInnerVertIndex = *it->index, lastOutterVertIndex = *fit->index;
 
 
     // Whether or not to increment the iterators at the start of the loop
@@ -948,8 +1016,11 @@ static void computeFeatherTriangles(PolygonCSGData &data, RotoBezierTriangulatio
     bool incrBezierIt = true;
 
     // Initialize the first segment
-    outArgs->featherTriangles.push_back(lastOutterVert);
-    outArgs->featherTriangles.push_back(lastInnerVert);
+    featherVertices.insert(lastInnerVertIndex);
+    featherVertices.insert(lastOutterVertIndex);
+
+    featherTriangleIndices.push_back(lastInnerVertIndex);
+    featherTriangleIndices.push_back(lastOutterVertIndex);
 
     fit = data.featherPolygon.begin();
     it = data.bezierPolygon.begin();
@@ -970,15 +1041,17 @@ static void computeFeatherTriangles(PolygonCSGData &data, RotoBezierTriangulatio
             incrBezierIt = true;
             incrFeatherIt = false;
             if ( it != data.bezierPolygon.end() ) {
-                polygonPointToBezierVertex(*it, &lastInnerVert);
-                outArgs->featherTriangles.push_back(lastInnerVert);
+                lastInnerVertIndex = *it->index;
+                featherVertices.insert(lastInnerVertIndex);
+                featherTriangleIndices.push_back(lastInnerVertIndex);
             }
         } else {
             incrBezierIt = false;
             incrFeatherIt = true;
             if ( fit != data.featherPolygon.end() ) {
-                polygonPointToBezierVertex(*fit, &lastOutterVert);
-                outArgs->featherTriangles.push_back(lastOutterVert);
+                lastOutterVertIndex = *fit->index;
+                featherVertices.insert(lastOutterVertIndex);
+                featherTriangleIndices.push_back(lastOutterVertIndex);
             }
         }
 
@@ -987,8 +1060,8 @@ static void computeFeatherTriangles(PolygonCSGData &data, RotoBezierTriangulatio
         }
 
         // Initialize the first segment
-        outArgs->featherTriangles.push_back(lastOutterVert);
-        outArgs->featherTriangles.push_back(lastInnerVert);
+        featherTriangleIndices.push_back(lastOutterVertIndex);
+        featherTriangleIndices.push_back(lastInnerVertIndex);
 
 
         if ( incrBezierIt && it != data.bezierPolygon.end() ) {
@@ -997,9 +1070,51 @@ static void computeFeatherTriangles(PolygonCSGData &data, RotoBezierTriangulatio
         if ( incrFeatherIt && fit != data.featherPolygon.end() ) {
             ++fit;
         }
+    } // infinite loop
+
+    // Copy back the indices & vertices to the outArgs
+    {
+        outArgs->featherVertices.resize(featherVertices.size());
+        int i = 0;
+        for (VertexIndexSet::const_iterator it2 = featherVertices.begin(); it2 != featherVertices.end(); ++it2, ++i) {
+            const VertexIndex& index = *it2;
+            const PolygonVertex* from = 0;
+            switch (it2->origin) {
+                case eVertexPointsSetFeather:
+                    assert(index.pointIndex < (int)data.featherPolygon.size());
+                    from = &data.featherPolygon[index.pointIndex];
+                    break;
+
+                case eVertexPointsSetInternalShape:
+                    assert(index.pointIndex < (int)data.bezierPolygon.size());
+                    from = &data.bezierPolygon[index.pointIndex];
+                    break;
+
+                case eVertexPointsSetGeneratedPoints:
+                    assert(false);
+                    break;
+                    
+            }
+            assert(from);
+            RotoBezierTriangulation::BezierVertex &to = outArgs->featherVertices[i];
+            to.x = from->x;
+            to.y = from->y;
+            to.isInner = from->isInner;
+            assert(data.bezierBbox.contains(to.x, to.y));
+
+        }
     }
-
-
+    {
+        outArgs->featherTriangles.resize(featherTriangleIndices.size());
+        for (std::size_t i = 0; i < featherTriangleIndices.size(); ++i) {
+            VertexIndexSet::iterator foundVertex = featherVertices.find(featherTriangleIndices[i]);
+            assert(foundVertex != featherVertices.end());
+            if (foundVertex != featherVertices.end()) {
+                std::size_t index = std::distance(featherVertices.begin(), foundVertex);
+                outArgs->featherTriangles[i] = index;
+            }
+        }
+    }
 } // computeFeatherTriangles
 
 
@@ -1030,6 +1145,7 @@ static void initializePolygons(PolygonCSGData& data,
             PolygonVertex to;
             to.x = from.x;
             to.y = from.y;
+            assert(data.bezierBbox.contains(to.x, to.y));
             // Add the index of the segment to the parametric t so further in computefeatherTriangles we do not compare 2 points
             // which belong to 2 different segments
             to.t = from.t + i;
@@ -1079,6 +1195,7 @@ static void initializePolygons(PolygonCSGData& data,
             PolygonVertex to;
             to.x = from.x;
             to.y = from.y;
+            assert(data.bezierBbox.contains(to.x, to.y));
             to.isIntersectionPoint = false;
             // Add the index of the segment to the parametric t so further in computefeatherTriangles we do not compare 2 points
             // which belong to 2 different segments
@@ -1101,6 +1218,8 @@ static void initializePolygons(PolygonCSGData& data,
                     to.y += dy * featherDist_y;
                 }
             }
+            assert(data.bezierBbox.contains(to.x, to.y));
+
 
             data.featherPolygon.push_back(to);
         } // for each point in a segment
@@ -1132,23 +1251,38 @@ RotoBezierTriangulation::tesselate(const BezierPtr& bezier,
     std::vector<std::vector<ParametricPoint> > featherPolygonOrig;
     std::vector<std::vector<ParametricPoint> > bezierPolygonOrig;
 
+#ifndef NDEBUG
+    RectD featherBbox;
+#endif
     bezier->evaluateFeatherPointsAtTime(time, view, scale, Bezier::eDeCastelJauAlgorithmIterative, 10, 1., &featherPolygonOrig, 0,
 #ifndef NDEBUG
-                                        &data.bezierBbox
+                                        &featherBbox
 #else
                                         0
 #endif
                                         );
-    bezier->evaluateAtTime(time, view, scale, Bezier::eDeCastelJauAlgorithmIterative, 10, 1., &bezierPolygonOrig, 0, 0);
-
+    bezier->evaluateAtTime(time, view, scale, Bezier::eDeCastelJauAlgorithmIterative, 10, 1., &bezierPolygonOrig, 0,
+#ifndef NDEBUG
+                           &data.bezierBbox
+#else
+                           0
+#endif
+                           );
+#ifndef NDEBUG
+    data.bezierBbox.merge(featherBbox);
+    data.bezierBbox.x1 -= featherDistPixel_x;
+    data.bezierBbox.x2 += featherDistPixel_x;
+    data.bezierBbox.y1 -= featherDistPixel_y;
+    data.bezierBbox.y2 += featherDistPixel_y;
+#endif
 
     // Merge all bezier segments into a single polygon
     initializePolygons(data, clockWise, featherPolygonOrig, bezierPolygonOrig, featherDistPixel_x, featherDistPixel_y);
 
     // Pre-process the polygons so that their winding number is 1 always so that the polygon intersection can be found
     // later on with libtess
-    ensurePolygonWindingNumberEqualsOne(data.featherPolygon, clockWise, eVertexPointsSetFeather, &data.featherProcessContours);
-    ensurePolygonWindingNumberEqualsOne(data.bezierPolygon, clockWise, eVertexPointsSetInternalShape, &data.bezierProcessedContours);
+    ensurePolygonWindingNumberEqualsOne(data, data.featherPolygon, clockWise, eVertexPointsSetFeather, &data.featherProcessContours);
+    ensurePolygonWindingNumberEqualsOne(data, data.bezierPolygon, clockWise, eVertexPointsSetInternalShape, &data.bezierProcessedContours);
     
     // Compute the intersection of both polygons to extract the inner shape
     computeInternalPolygon(data, clockWise, outArgs);
