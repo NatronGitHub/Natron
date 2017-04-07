@@ -5,6 +5,11 @@
 # History
 
 
+## Version 2.2.7
+
+- Reduce noise on the roto shape borders #1594
+
+
 ## Version 2.2.6
 
 - Multi-dimensional parameters don't automatically fold into a single dimension, except for scale and size params.
