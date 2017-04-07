@@ -844,7 +844,7 @@ AppManager::loadInternal(const CLArgs& cl)
     const QString& breakpadProcessExec = cl.getBreakpadProcessExecutableFilePath();
     if ( !breakpadProcessExec.isEmpty() && QFile::exists(breakpadProcessExec) ) {
         _imp->breakpadProcessExecutableFilePath = breakpadProcessExec;
-        _imp->breakpadProcessPID = (Q_PID)cl.getBreakpadProcessPID();
+        _imp->breakpadProcessPID = cl.getBreakpadProcessPID();
         const QString& breakpadPipePath = cl.getBreakpadPipeFilePath();
         const QString& breakpadComPipePath = cl.getBreakpadComPipeFilePath();
         int breakpad_client_fd = cl.getBreakpadClientFD();

@@ -800,7 +800,7 @@ CLArgsPrivate::parse()
                 breakpadProcessPID = it->toLongLong();
                 args.erase(it);
             } else {
-                std::cout << tr("You must specify the breakpad process executable file path").toStdString() << std::endl;
+                std::cout << tr("You must specify the breakpad process PID").toStdString() << std::endl;
                 error = 1;
 
                 return;

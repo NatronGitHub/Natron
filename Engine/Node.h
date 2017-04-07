@@ -988,7 +988,7 @@ public:
     bool isNodeUpstream(const NodeConstPtr& input) const;
 
 
-    void refreshCreatedViews(const KnobIPtr& knob);
+    void refreshCreatedViews(const KnobIPtr& knob, bool silent);
 
 private:
 
