@@ -251,7 +251,7 @@ Node::load(const CreateNodeArgsPtr& args)
     _imp->effect->restoreSublabel();
 
     // If this plug-in create views (ReadOIIO only) then refresh them
-    refreshCreatedViews();
+    refreshCreatedViews(!serialization);
 
     // Notify the container group we added this node
     group->notifyNodeActivated(thisShared);

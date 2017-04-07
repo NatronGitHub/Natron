@@ -1216,17 +1216,17 @@ Node::getCreatedViews() const
 }
 
 void
-Node::refreshCreatedViews()
+Node::refreshCreatedViews(bool silent)
 {
     KnobIPtr knob = getKnobByName(kReadOIIOAvailableViewsKnobName);
 
     if (knob) {
-        refreshCreatedViews(knob);
+        refreshCreatedViews(knob, silent);
     }
 }
 
 void
-Node::refreshCreatedViews(const KnobIPtr& knob)
+Node::refreshCreatedViews(const KnobIPtr& knob, bool silent)
 {
     assert( QThread::currentThread() == qApp->thread() );
 
@@ -1257,7 +1257,7 @@ Node::refreshCreatedViews(const KnobIPtr& knob)
         }
     }
 
-    if ( !missingViews.isEmpty() ) {
+    if ( !silent && !missingViews.isEmpty() ) {
         KnobIPtr fileKnob = getKnobByName(kOfxImageEffectFileParamName);
         KnobFilePtr inputFileKnob = toKnobFile(fileKnob);
         if (inputFileKnob) {

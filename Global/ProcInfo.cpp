@@ -27,9 +27,6 @@
 #include <vector>
 #include <cstdlib>
 
-#if defined(__NATRON_WIN32__)
-#include <windows.h>
-#endif
 
 #ifdef __NATRON_UNIX__
 #include <unistd.h>

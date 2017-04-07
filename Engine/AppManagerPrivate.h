@@ -152,7 +152,7 @@ public:
 
 #ifdef NATRON_USE_BREAKPAD
     QString breakpadProcessExecutableFilePath;
-    Q_PID breakpadProcessPID;
+    qint64 breakpadProcessPID;
     boost::shared_ptr<google_breakpad::ExceptionHandler> breakpadHandler;
     boost::shared_ptr<ExistenceCheckerThread> breakpadAliveThread;
 #endif

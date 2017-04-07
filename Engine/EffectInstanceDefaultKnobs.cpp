@@ -1725,7 +1725,7 @@ EffectInstance::handleDefaultKnobChanged(const KnobIPtr& what, ValueChangedReaso
     } else if ( what == _imp->defKnobs->hideInputs.lock() ) {
         getNode()->s_hideInputsKnobChanged( _imp->defKnobs->hideInputs.lock()->getValue() );
     } else if ( isReader() && (what->getName() == kReadOIIOAvailableViewsKnobName) ) {
-        getNode()->refreshCreatedViews(what);
+        getNode()->refreshCreatedViews(what, false /*silent*/);
     } else if ( what == _imp->defKnobs->refreshInfoButton.lock() ||
                (what == _imp->defKnobs->infoPage.lock() && reason == eValueChangedReasonUserEdited) ) {
         refreshInfos();
