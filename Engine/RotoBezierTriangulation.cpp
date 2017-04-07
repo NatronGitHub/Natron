@@ -570,29 +570,32 @@ static void contour_intersection_combine_callback(double coords[3],
 
 
 
-inline bool contourBezierVertexCompare(const ContourBezierVertex& lhs, const ContourBezierVertex& rhs)
+struct ContourBezierVertexWithIndex
 {
-    return lhs.t < rhs.t;
+    ContourBezierVertex v;
+    VertexIndex index;
+};
+
+inline bool contourBezierVertexCompare(const ContourBezierVertexWithIndex& lhs, const ContourBezierVertexWithIndex& rhs)
+{
+    return lhs.v.t < rhs.v.t;
 }
 
 typedef std::map<VertexIndex, VertexIndex, VertexIndexCompare> VertexIndicesMap;
 
-static void insertGeneratedPoint(std::vector<ContourBezierVertex>& polygon,
-                                 VertexIndicesMap& oldToNewIndicesMap,
-                                 VertexIndicesMap& newToOldIndicesMap,
-                                 const ContourBezierVertex& generated)
+
+static void insertGeneratedPoint(std::vector<ContourBezierVertexWithIndex>& polygon,
+                                 VertexIndicesMap &oldToNewIndexMap,
+                                 const ContourBezierVertexWithIndex& generated)
 {
-    std::vector<ContourBezierVertex>::iterator lb = std::lower_bound(polygon.begin(), polygon.end(), generated, contourBezierVertexCompare);
+    std::vector<ContourBezierVertexWithIndex>::iterator lb = std::lower_bound(polygon.begin(), polygon.end(), generated, contourBezierVertexCompare);
+
+
 
     // Insert it before the first element that is greater
     lb = polygon.insert(lb, generated);
 
     // lb points now to the point we just inserted
-    assert(lb->index == generated.index);
-
-    // Ensure we copy the index so that the index is not modified in the generated point
-    lb->index.reset(new VertexIndex);
-    *lb->index = *generated.index;
 
 
     // Increment the index of all points after the insertion point
@@ -600,21 +603,12 @@ static void insertGeneratedPoint(std::vector<ContourBezierVertex>& polygon,
     for (std::size_t j = startIndex; j < polygon.size(); ++j) {
         // Check if the VertexIndex has already been modified, to retrieve the real
         // original vertex
-        VertexIndex oldIndex;
-        VertexIndicesMap::iterator foundModified = newToOldIndicesMap.find(*polygon[j].index);
-        if (foundModified != newToOldIndicesMap.end()) {
-            oldIndex = foundModified->second;
-        } else {
-            oldIndex = *polygon[j].index;
-        }
-        polygon[j].index->pointIndex = j;
+        VertexIndex oldIndex = *polygon[j].v.index;
+        polygon[j].index.pointIndex = j;
+        oldToNewIndexMap[oldIndex] = polygon[j].index;
 
-        // Record the indices changes
-        oldToNewIndicesMap[oldIndex] = *polygon[j].index;
-        newToOldIndicesMap[*polygon[j].index] = oldIndex;
     }
 } // insertGeneratedPoint
-
 
 
 /**
@@ -691,73 +685,81 @@ static void ensurePolygonWindingNumberEqualsOne(const PolygonCSGData& mainData,
 
     // Insert all generated points in the polygon at their appropriate location in the polygon, according to their t
     // Since the polygon vector is already sorted by increasing t, this is very fast
+    VertexIndicesMap oldToNewIndexMap;
 
 
     // Since we are going to insert and remove points in the polygon, we need to update the indices and keep a mapping
     // so that the vertex indices in data.contourList still point to a valid index.
-    VertexIndicesMap oldToNewIndicesMap, newToOldIndicesMap;
+    std::vector<ContourBezierVertexWithIndex> polygonCopy(data.polygon.size());
     for (std::size_t i = 0; i < data.polygon.size(); ++i) {
-        oldToNewIndicesMap[*data.polygon[i].index] = *data.polygon[i].index;
-        newToOldIndicesMap[*data.polygon[i].index] = *data.polygon[i].index;
+        polygonCopy[i].v = data.polygon[i];
+        polygonCopy[i].index = *data.polygon[i].index;
+        oldToNewIndexMap[polygonCopy[i].index] = polygonCopy[i].index;
     }
+
     for (std::size_t i = 0; i < data.generatedPoints.size(); ++i) {
 
         if (!data.generatedPoints[i].isOnContour) {
             continue;
         }
         assert(mainData.bezierBbox.contains(data.generatedPoints[i].x, data.generatedPoints[i].y));
-        insertGeneratedPoint(data.polygon, oldToNewIndicesMap, newToOldIndicesMap, data.generatedPoints[i]);
+
+        {
+            ContourBezierVertexWithIndex wrapper;
+            wrapper.v = data.generatedPoints[i];
+            wrapper.index = *wrapper.v.index;
+            insertGeneratedPoint(polygonCopy, oldToNewIndexMap, wrapper);
+        }
 
         // This point may be an intersection point and might need to be inserted twice in the polygon.
         if (data.generatedPoints[i].isIntersectionPoint) {
             // Swap t and t2 so that the contourBezierVertexCompare function finds the lower bound for t2 correctly
             std::swap(data.generatedPoints[i].t,data.generatedPoints[i].t2);
-            insertGeneratedPoint(data.polygon, oldToNewIndicesMap, newToOldIndicesMap, data.generatedPoints[i]);
+
+            {
+                ContourBezierVertexWithIndex wrapper;
+                wrapper.v = data.generatedPoints[i];
+                wrapper.index = *wrapper.v.index;
+                insertGeneratedPoint(polygonCopy, oldToNewIndexMap, wrapper);
+            }
         }
     }
 
 #ifdef DEBUG
     // Check that all t and indices are increasing
-    for (std::size_t i = 1; i < data.polygon.size(); ++i) {
-        assert(data.polygon[i].t > data.polygon[i - 1].t);
-        assert(data.polygon[i].index->pointIndex > data.polygon[i - 1].index->pointIndex);
+    for (std::size_t i = 1; i < polygonCopy.size(); ++i) {
+        assert(polygonCopy[i].v.t > polygonCopy[i - 1].v.t);
+        assert(polygonCopy[i].index.pointIndex == polygonCopy[i - 1].index.pointIndex + 1);
     }
 #endif
 
     // Update the original polygon in output and remove all points that are not on the contour
-    for (std::size_t i = 0; i < data.polygon.size(); ++i) {
+    for (std::size_t i = 0; i < polygonCopy.size(); ++i) {
 
-        const ContourBezierVertex& from = data.polygon[i];
+        const ContourBezierVertexWithIndex& from = polygonCopy[i];
         
-        if (!from.isOnContour) {
+        if (!from.v.isOnContour) {
+
             // Decrement the index of all points after this one since we removed it
-            for (std::size_t j = i + 1; j < data.polygon.size(); ++j) {
+            for (std::size_t j = i + 1; j < polygonCopy.size(); ++j) {
 
                 // Check if the VertexIndex has already been modified, to retrieve the real
                 // original vertex
-                VertexIndex oldIndex;
-                VertexIndicesMap::iterator foundModified = newToOldIndicesMap.find(*data.polygon[j].index);
-                if (foundModified != newToOldIndicesMap.end()) {
-                    oldIndex = foundModified->second;
-                } else {
-                    oldIndex = *data.polygon[j].index;
-                }
-
-                --data.polygon[j].index->pointIndex;
+                VertexIndex oldIndex = *polygonCopy[j].v.index;
+                --polygonCopy[j].index.pointIndex;
 
                 // Record the indices changes
-                oldToNewIndicesMap[oldIndex] = *data.polygon[j].index;
-                newToOldIndicesMap[*data.polygon[j].index] = oldIndex;
+                oldToNewIndexMap[oldIndex] = polygonCopy[j].index;
             }
         } else {
 
             PolygonVertex v;
-            v.x = from.x;
-            v.y = from.y;
-            v.t = from.t;
+            v.x = from.v.x;
+            v.y = from.v.y;
+            v.t = from.v.t;
 
             // The index should be up to date
-            assert(from.index->pointIndex == (int)originalPolygon.size());
+            assert(from.index.pointIndex == (int)originalPolygon.size());
             v.index.reset(new VertexIndex);
             v.index->origin = polygonType;
             v.index->pointIndex = originalPolygon.size();
@@ -769,7 +771,7 @@ static void ensurePolygonWindingNumberEqualsOne(const PolygonCSGData& mainData,
 #ifdef DEBUG
     // Check that all indices are increasing in the new polygon
     for (std::size_t i = 1; i < originalPolygon.size(); ++i) {
-        assert(originalPolygon[i].index->pointIndex > originalPolygon[i - 1].index->pointIndex);
+        assert(originalPolygon[i].index->pointIndex == originalPolygon[i - 1].index->pointIndex + 1);
     }
 #endif
 
@@ -785,8 +787,8 @@ static void ensurePolygonWindingNumberEqualsOne(const PolygonCSGData& mainData,
             const VertexIndex& originalIndex = data.contourList[i][j];
 
             // Find the corresponding index in the indicesMap since we modified the indices
-            VertexIndicesMap::iterator foundMapping = oldToNewIndicesMap.find(originalIndex);
-            assert(foundMapping != oldToNewIndicesMap.end());
+            VertexIndicesMap::iterator foundMapping = oldToNewIndexMap.find(originalIndex);
+            assert(foundMapping != oldToNewIndexMap.end());
 
             const VertexIndex& mappedIndex = foundMapping->second;
 
@@ -1254,14 +1256,14 @@ RotoBezierTriangulation::tesselate(const BezierPtr& bezier,
 #ifndef NDEBUG
     RectD featherBbox;
 #endif
-    bezier->evaluateFeatherPointsAtTime(time, view, scale, Bezier::eDeCastelJauAlgorithmIterative, 10, 1., &featherPolygonOrig, 0,
+    bezier->evaluateFeatherPointsAtTime(time, view, scale, Bezier::eDeCastelJauAlgorithmIterative, -1, 1., &featherPolygonOrig, 0,
 #ifndef NDEBUG
                                         &featherBbox
 #else
                                         0
 #endif
                                         );
-    bezier->evaluateAtTime(time, view, scale, Bezier::eDeCastelJauAlgorithmIterative, 10, 1., &bezierPolygonOrig, 0,
+    bezier->evaluateAtTime(time, view, scale, Bezier::eDeCastelJauAlgorithmIterative, -1, 1., &bezierPolygonOrig, 0,
 #ifndef NDEBUG
                            &data.bezierBbox
 #else
