@@ -720,9 +720,7 @@ private:
                             // If testing is enabled, set the result to be valid
                             _resultType = eResultTypeKnobValue;
                         } else {
-                            stringstream ss;
-                            ss << _symbol << ": a variable can only be bound to a value";
-                            _error = ss.str();
+                            _error = _symbol + ": a variable can only be bound to a value";
                         }
 
                         return;
@@ -745,9 +743,7 @@ private:
                             // If testing is enabled, set the result to be valid
                             _resultType = eResultTypeKnobValue;
                         } else {
-                            stringstream ss;
-                            ss << _symbol << ": a variable can only be bound to a value";
-                            _error = ss.str();
+                            _error = _symbol + ": a variable can only be bound to a value";
                         }
 
                         return;
@@ -770,9 +766,7 @@ private:
                             // If testing is enabled, set the result to be valid
                             _resultType = eResultTypeKnobValue;
                         } else {
-                            stringstream ss;
-                            ss << _symbol << ": a variable can only be bound to a value";
-                            _error = ss.str();
+                            _error = _symbol + ": a variable can only be bound to a value";
                         }
 
                         return;
@@ -794,9 +788,7 @@ private:
                             // If testing is enabled, set the result to be valid
                             _resultType = eResultTypeKnobValue;
                         } else {
-                            stringstream ss;
-                            ss << _symbol << ": a variable can only be bound to a value";
-                            _error = ss.str();
+                            _error = _symbol + ": a variable can only be bound to a value";
                         }
 
                         return;
@@ -820,9 +812,7 @@ private:
                                 // If testing is enabled, set the result to be valid
                                 _resultType = eResultTypeKnobValue;
                             } else {
-                                stringstream ss;
-                                ss << _symbol << ": this parameter has multiple dimension, please specify one";
-                                _error = ss.str();
+                                _error = _symbol + ": this parameter has multiple dimension, please specify one";
                             }
 
                             return;
@@ -848,9 +838,7 @@ private:
                 currentNode.reset();
                 currentGroup.reset();
                 if (!isLastToken) {
-                    stringstream ss;
-                    ss << _symbol << ": a variable can only be bound to a value";
-                    _error = ss.str();
+                    _error = _symbol + ": a variable can only be bound to a value";
 
                     return;
                 }
@@ -865,9 +853,7 @@ private:
             if ( currentKnob && (token == "option") && dynamic_cast<KnobChoice*>( currentKnob.get() ) ) {
                 // For a KnobChoice, we can get the option string directly
                 if (!isLastToken) {
-                    stringstream ss;
-                    ss << _symbol << ": a variable can only be bound to a value";
-                    _error = ss.str();
+                    _error = _symbol + ": a variable can only be bound to a value";
 
                     return;
                 }
@@ -1191,12 +1177,10 @@ struct UnknownSymbolResolver
         }
         switch (resolver._resultType) {
         case SymbolResolver::eResultTypeInvalid: {
-            stringstream ss;
-            ss << "Error when parsing symbol " << unknown_symbol;
+            error_message = "Error when parsing symbol " + unknown_symbol;
             if ( !resolver._error.empty() ) {
-                ss << ": " << resolver._error;
+                error_message += ": " + resolver._error;
             }
-            error_message = ss.str();
         }
 
             return false;
@@ -1443,9 +1427,7 @@ handleExprTkReturn(exprtk_expression_t& expressionObject,
     const exprtk_results_context_t& results = expressionObject.results();
 
     if (results.count() != 1) {
-        stringstream ss;
-        ss << "The expression must return one value using the \"return\" keyword";
-        *error = ss.str();
+        *error = "The expression must return one value using the \"return\" keyword";
 
         return KnobHelper::eExpressionReturnValueTypeError;
     }
@@ -1462,9 +1444,7 @@ handleExprTkReturn(exprtk_expression_t& expressionObject,
 
     case exprtk_type_store_t::e_vector:
     case exprtk_type_store_t::e_unknown:
-        stringstream ss;
-        ss << "The expression must either return a scalar or string value depending on the parameter type";
-        *error = ss.str();
+        *error = "The expression must either return a scalar or string value depending on the parameter type";
 
         return KnobHelper::eExpressionReturnValueTypeError;
     }
@@ -1712,9 +1692,7 @@ KnobHelper::executeExprTkExpression(TimeValue time,
             GetRegionOfDefinitionResultsPtr results;
             ActionRetCodeEnum stat = effect->getRegionOfDefinition_public(time, RenderScale(1.), view, &results);
             if ( isFailureRetCode(stat) ) {
-                stringstream ss;
-                ss << it->first << ": Could not get region of definition";
-                *error = ss.str();
+                *error = it->first + ": Could not get region of definition";
 
                 return eExpressionReturnValueTypeError;
             }
