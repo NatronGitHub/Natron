@@ -100,6 +100,7 @@ NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 typedef double exprtk_scalar_t;
 typedef exprtk::symbol_table<exprtk_scalar_t> exprtk_symbol_table_t;
+typedef exprtk::type_store<exprtk_scalar_t> exprtk_type_store_t;
 typedef exprtk::expression<exprtk_scalar_t> exprtk_expression_t;
 typedef exprtk::results_context<exprtk_scalar_t> exprtk_results_context_t;
 typedef exprtk::parser<exprtk_scalar_t> exprtk_parser_t;
@@ -150,9 +151,9 @@ registerFunction(const string& name,
 }
 
 struct boxstep
-    : public exprtk::ifunction<exprtk_scalar_t>
+    : public exprtk_ifunction_t
 {
-    boxstep() : exprtk::ifunction<exprtk_scalar_t>(2) {}
+    boxstep() : exprtk_ifunction_t(2) {}
 
     exprtk_scalar_t operator()(const exprtk_scalar_t& x,
                                const exprtk_scalar_t& a)
@@ -162,9 +163,9 @@ struct boxstep
 };
 
 struct linearstep
-    : public exprtk::ifunction<exprtk_scalar_t>
+    : public exprtk_ifunction_t
 {
-    linearstep() : exprtk::ifunction<exprtk_scalar_t>(3) {}
+    linearstep() : exprtk_ifunction_t(3) {}
 
     exprtk_scalar_t operator()(const exprtk_scalar_t& x,
                                const exprtk_scalar_t& a,
@@ -175,9 +176,9 @@ struct linearstep
 };
 
 struct smoothstep
-    : public exprtk::ifunction<exprtk_scalar_t>
+    : public exprtk_ifunction_t
 {
-    smoothstep() : exprtk::ifunction<exprtk_scalar_t>(3) {}
+    smoothstep() : exprtk_ifunction_t(3) {}
 
     exprtk_scalar_t operator()(const exprtk_scalar_t& x,
                                const exprtk_scalar_t& a,
@@ -188,9 +189,9 @@ struct smoothstep
 };
 
 struct gaussstep
-    : public exprtk::ifunction<exprtk_scalar_t>
+    : public exprtk_ifunction_t
 {
-    gaussstep() : exprtk::ifunction<exprtk_scalar_t>(3) {}
+    gaussstep() : exprtk_ifunction_t(3) {}
 
     exprtk_scalar_t operator()(const exprtk_scalar_t& x,
                                const exprtk_scalar_t& a,
@@ -201,9 +202,9 @@ struct gaussstep
 };
 
 struct remap
-    : public exprtk::ifunction<exprtk_scalar_t>
+    : public exprtk_ifunction_t
 {
-    remap() : exprtk::ifunction<exprtk_scalar_t>(5) {}
+    remap() : exprtk_ifunction_t(5) {}
 
     exprtk_scalar_t operator()(const exprtk_scalar_t& x,
                                const exprtk_scalar_t& source,
@@ -216,9 +217,9 @@ struct remap
 };
 
 struct mix
-    : public exprtk::ifunction<exprtk_scalar_t>
+    : public exprtk_ifunction_t
 {
-    mix() : exprtk::ifunction<exprtk_scalar_t>(3) {}
+    mix() : exprtk_ifunction_t(3) {}
 
     exprtk_scalar_t operator()(const exprtk_scalar_t& x,
                                const exprtk_scalar_t& y,
@@ -229,7 +230,7 @@ struct mix
 };
 
 struct hash
-    : public exprtk::ivararg_function<exprtk_scalar_t>
+    : public exprtk_ivararg_function_t
 {
     exprtk_scalar_t operator()(const vector<double>& arglist)
     {
@@ -238,9 +239,9 @@ struct hash
 };
 
 struct noise1
-    : public exprtk::ifunction<exprtk_scalar_t>
+    : public exprtk_ifunction_t
 {
-    noise1() : exprtk::ifunction<exprtk_scalar_t>(1) {}
+    noise1() : exprtk_ifunction_t(1) {}
 
     exprtk_scalar_t operator()(const exprtk_scalar_t& x)
     {
@@ -255,9 +256,9 @@ struct noise1
 };
 
 struct noise2
-    : public exprtk::ifunction<exprtk_scalar_t>
+    : public exprtk_ifunction_t
 {
-    noise2() : exprtk::ifunction<exprtk_scalar_t>(2) {}
+    noise2() : exprtk_ifunction_t(2) {}
 
     exprtk_scalar_t operator()(const exprtk_scalar_t& x,
                                const exprtk_scalar_t& y)
@@ -273,9 +274,9 @@ struct noise2
 };
 
 struct noise3
-    : public exprtk::ifunction<exprtk_scalar_t>
+    : public exprtk_ifunction_t
 {
-    noise3() : exprtk::ifunction<exprtk_scalar_t>(3) {}
+    noise3() : exprtk_ifunction_t(3) {}
 
     exprtk_scalar_t operator()(const exprtk_scalar_t& x,
                                const exprtk_scalar_t& y,
@@ -292,9 +293,9 @@ struct noise3
 };
 
 struct noise4
-    : public exprtk::ifunction<exprtk_scalar_t>
+    : public exprtk_ifunction_t
 {
-    noise4() : exprtk::ifunction<exprtk_scalar_t>(4) {}
+    noise4() : exprtk_ifunction_t(4) {}
 
     exprtk_scalar_t operator()(const exprtk_scalar_t& x,
                                const exprtk_scalar_t& y,
@@ -312,19 +313,19 @@ struct noise4
 };
 
 struct turbulence
-    : public exprtk::igeneric_function<exprtk_scalar_t>
+    : public exprtk_igeneric_function_t
 {
-    typedef typename exprtk::igeneric_function<exprtk_scalar_t>::parameter_list_t parameter_list_t;
+    typedef typename exprtk_igeneric_function_t::parameter_list_t parameter_list_t;
 
     turbulence()
-        : exprtk::igeneric_function<exprtk_scalar_t>("TTT|TTTT|TTTTT|TTTTTT")
+        : exprtk_igeneric_function_t("TTT|TTTT|TTTTT|TTTTTT")
     {}
 
     virtual exprtk_scalar_t operator()(const std::size_t& overloadIdx,
                                        parameter_list_t parameters) OVERRIDE FINAL
     {
         Q_UNUSED(overloadIdx);
-        typedef typename exprtk::igeneric_function<exprtk_scalar_t>::generic_type generic_type;
+        typedef typename exprtk_igeneric_function_t::generic_type generic_type;
         typedef typename generic_type::scalar_view scalar_t;
 
         assert(parameters.size() == overloadIdx + 3);
@@ -356,19 +357,19 @@ struct turbulence
 };
 
 struct fbm
-    : public exprtk::igeneric_function<exprtk_scalar_t>
+    : public exprtk_igeneric_function_t
 {
-    typedef typename exprtk::igeneric_function<exprtk_scalar_t>::parameter_list_t parameter_list_t;
+    typedef typename exprtk_igeneric_function_t::parameter_list_t parameter_list_t;
 
     fbm()
-        : exprtk::igeneric_function<exprtk_scalar_t>("TTT|TTTT|TTTTT|TTTTTT")
+        : exprtk_igeneric_function_t("TTT|TTTT|TTTTT|TTTTTT")
     {}
 
     virtual exprtk_scalar_t operator()(const std::size_t& overloadIdx,
                                        parameter_list_t parameters) OVERRIDE FINAL
     {
         Q_UNUSED(overloadIdx);
-        typedef typename exprtk::igeneric_function<exprtk_scalar_t>::generic_type generic_type;
+        typedef typename exprtk_igeneric_function_t::generic_type generic_type;
         typedef typename generic_type::scalar_view scalar_t;
 
         assert(parameters.size() == overloadIdx + 3);
@@ -399,9 +400,9 @@ struct fbm
 };
 
 struct cellnoise
-    : public exprtk::ifunction<exprtk_scalar_t>
+    : public exprtk_ifunction_t
 {
-    cellnoise() : exprtk::ifunction<exprtk_scalar_t>(3) {}
+    cellnoise() : exprtk_ifunction_t(3) {}
 
     exprtk_scalar_t operator()(const exprtk_scalar_t& x,
                                const exprtk_scalar_t& y,
@@ -418,9 +419,9 @@ struct cellnoise
 };
 
 struct pnoise
-    : public exprtk::ifunction<exprtk_scalar_t>
+    : public exprtk_ifunction_t
 {
-    pnoise() : exprtk::ifunction<exprtk_scalar_t>(6) {}
+    pnoise() : exprtk_ifunction_t(6) {}
 
     exprtk_scalar_t operator()(const exprtk_scalar_t& x,
                                const exprtk_scalar_t& y,
@@ -445,12 +446,12 @@ struct pnoise
 };
 
 struct random
-    : public exprtk::ifunction<exprtk_scalar_t>
+    : public exprtk_ifunction_t
 {
     U32 lastRandomHash;
 
     random(TimeValue time)
-        : exprtk::ifunction<exprtk_scalar_t>(2)
+        : exprtk_ifunction_t(2)
         , lastRandomHash(0)
     {
         // Make the hash vary from time
@@ -471,12 +472,12 @@ struct random
 };
 
 struct randomInt
-    : public exprtk::ifunction<exprtk_scalar_t>
+    : public exprtk_ifunction_t
 {
     U32 lastRandomHash;
 
     randomInt(TimeValue time)
-        : exprtk::ifunction<exprtk_scalar_t>(2)
+        : exprtk_ifunction_t(2)
         , lastRandomHash(0)
     {
         // Make the hash vary from time
@@ -497,13 +498,12 @@ struct randomInt
 };
 
 struct numtostr
-    : public exprtk::igeneric_function<exprtk_scalar_t>
+    : public exprtk_igeneric_function_t
 {
-    typedef exprtk::igeneric_function<exprtk_scalar_t> generic_func;
-    typedef typename generic_func::parameter_list_t parameter_list_t;
+    typedef typename exprtk_igeneric_function_t::parameter_list_t parameter_list_t;
 
     numtostr()
-        : exprtk::igeneric_function<exprtk_scalar_t>("T|TS|TST", generic_func::e_rtrn_string)
+        : exprtk_igeneric_function_t("T|TS|TST", exprtk_igeneric_function_t::e_rtrn_string)
     {
         /*overloads:
            str(value)
@@ -517,7 +517,7 @@ struct numtostr
                                        parameter_list_t parameters) OVERRIDE FINAL
     {
         Q_UNUSED(overloadIdx);
-        typedef typename exprtk::igeneric_function<exprtk_scalar_t>::generic_type generic_type;
+        typedef typename exprtk_igeneric_function_t::generic_type generic_type;
         typedef typename generic_type::scalar_view scalar_t;
         typedef typename generic_type::string_view string_t;
 
@@ -1111,10 +1111,8 @@ private:
 
 
 struct ExprUnresolvedSymbolResolver
-    : public exprtk::parser<exprtk_scalar_t>::unknown_symbol_resolver
+    : public exprtk_parser_t::unknown_symbol_resolver
 {
-    typedef typename exprtk::parser<exprtk_scalar_t>::unknown_symbol_resolver usr_t;
-
     KnobHelper* _knob;
     TimeValue _time;
     DimIdx _dimension;
@@ -1131,7 +1129,7 @@ struct ExprUnresolvedSymbolResolver
                                  DimIdx dimension,
                                  ViewIdx view,
                                  KnobExprExprTk* ret)
-        : exprtk::parser<exprtk_scalar_t>::unknown_symbol_resolver()
+        : exprtk_parser_t::unknown_symbol_resolver()
         , _knob(knob)
         , _time(time)
         , _dimension(dimension)
@@ -1271,15 +1269,15 @@ struct ExprUnresolvedSymbolResolver
 };
 
 struct curve_func
-    : public exprtk::igeneric_function<exprtk_scalar_t>
+    : public exprtk_igeneric_function_t
 {
-    typedef typename exprtk::igeneric_function<exprtk_scalar_t>::parameter_list_t parameter_list_t;
+    typedef typename exprtk_igeneric_function_t::parameter_list_t parameter_list_t;
     KnobIWPtr _knob;
     ViewIdx _view;
 
     curve_func(const KnobIPtr& knob,
                ViewIdx view)
-        : exprtk::igeneric_function<exprtk_scalar_t>("T|TT|TTS")
+        : exprtk_igeneric_function_t("T|TT|TTS")
         , _knob(knob)
         , _view(view)
     {
@@ -1294,7 +1292,7 @@ struct curve_func
     virtual exprtk_scalar_t operator()(const std::size_t& overloadIdx,
                                        parameter_list_t parameters) OVERRIDE FINAL
     {
-        typedef typename exprtk::igeneric_function<exprtk_scalar_t>::generic_type generic_type;
+        typedef typename exprtk_igeneric_function_t::generic_type generic_type;
         typedef typename generic_type::scalar_view scalar_t;
         typedef typename generic_type::string_view string_t;
 
@@ -1453,17 +1451,17 @@ handleExprTkReturn(exprtk_expression_t& expressionObject,
     }
 
     switch (results[0].type) {
-    case exprtk::type_store<exprtk_scalar_t>::e_scalar:
+    case exprtk_type_store_t::e_scalar:
         *retValueIsScalar = (double)*reinterpret_cast<exprtk_scalar_t*>(results[0].data);
 
         return KnobHelper::eExpressionReturnValueTypeScalar;
-    case exprtk::type_store<exprtk_scalar_t>::e_string:
+    case exprtk_type_store_t::e_string:
         *retValueIsString = string( reinterpret_cast<const char*>(results[0].data) );
 
         return KnobHelper::eExpressionReturnValueTypeString;
 
-    case exprtk::type_store<exprtk_scalar_t>::e_vector:
-    case exprtk::type_store<exprtk_scalar_t>::e_unknown:
+    case exprtk_type_store_t::e_vector:
+    case exprtk_type_store_t::e_unknown:
         stringstream ss;
         ss << "The expression must either return a scalar or string value depending on the parameter type";
         *error = ss.str();
