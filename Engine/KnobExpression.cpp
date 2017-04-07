@@ -1192,7 +1192,7 @@ static bool isDimensionIndex(const std::string& str, int* index)
  * Since the expression is not thread safe, we compile 1 expression for each thread to enable
  * concurrent evaluation of the same expression.
  **/
-struct NATRON_NAMESPACE::KnobExprTkExpr::ExpressionData
+struct NATRON_NAMESPACE::KnobExprExprTk::ExpressionData
 {
     // The exprtk expression object
     boost::shared_ptr<expression_t> expressionObject;
@@ -1203,10 +1203,10 @@ struct NATRON_NAMESPACE::KnobExprTkExpr::ExpressionData
     std::vector<std::pair<std::string, generic_func_ptr> > genericFunctions;
 };
 
-KnobExprTkExpr::ExpressionDataPtr
-NATRON_NAMESPACE::KnobExprTkExpr::createData()
+KnobExprExprTk::ExpressionDataPtr
+NATRON_NAMESPACE::KnobExprExprTk::createData()
 {
-    return KnobExprTkExpr::ExpressionDataPtr(new ExpressionData);
+    return KnobExprExprTk::ExpressionDataPtr(new ExpressionData);
 }
 
 
@@ -1664,14 +1664,14 @@ struct ExprUnresolvedSymbolResolver : public exprtk::parser<exprtk_scalar_t>::un
     TimeValue _time;
     DimIdx _dimension;
     ViewIdx _view;
-    KnobExprTkExpr* _ret;
+    KnobExprExprTk* _ret;
     usr_variable_user_type _varType;
     exprtk_scalar_t _resolvedScalar;
     std::vector<exprtk_scalar_t> _resolvedVector;
     std::string _resolvedString;
 
 
-    ExprUnresolvedSymbolResolver(KnobHelper* knob, TimeValue time, DimIdx dimension, ViewIdx view, KnobExprTkExpr* ret)
+    ExprUnresolvedSymbolResolver(KnobHelper* knob, TimeValue time, DimIdx dimension, ViewIdx view, KnobExprExprTk* ret)
     : exprtk::parser<exprtk_scalar_t>::unknown_symbol_resolver()
     , _knob(knob)
     , _time(time)
@@ -2003,7 +2003,7 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
 void
-KnobHelperPrivate::validateExprTKExpression(const std::string& expression, DimIdx dimension, ViewIdx view, std::string* resultAsString, KnobExprTkExpr* ret) const
+KnobHelperPrivate::validateExprTkExpression(const std::string& expression, DimIdx dimension, ViewIdx view, std::string* resultAsString, KnobExprExprTk* ret) const
 {
 
     // Symbol table containing all variables that the user may use but that we do not pre-declare, such
@@ -2015,9 +2015,9 @@ KnobHelperPrivate::validateExprTKExpression(const std::string& expression, DimId
 
     QThread* curThread = QThread::currentThread();
 
-    KnobExprTkExpr::ExpressionDataPtr& data = ret->data[curThread];
+    KnobExprExprTk::ExpressionDataPtr& data = ret->data[curThread];
     if (!data) {
-        data = KnobExprTkExpr::createData();
+        data = KnobExprExprTk::createData();
     }
     data->expressionObject.reset(new expression_t);
     data->expressionObject->register_symbol_table(unknown_var_symbol_table);
@@ -2074,7 +2074,7 @@ KnobHelperPrivate::validateExprTKExpression(const std::string& expression, DimId
         case KnobHelper::eExpressionReturnValueTypeString:
             break;
     }
-} // validateExprTKExpression
+} // validateExprTkExpression
 
 
 void
@@ -2089,9 +2089,9 @@ KnobHelper::validateExpression(const std::string& expression,
         case eExpressionLanguagePython:
             _imp->validatePythonExpression(expression, dimension, view, hasRetVariable, resultAsString);
             break;
-        case eExpressionLanguageExprTK: {
-            KnobExprTkExpr ret;
-            _imp->validateExprTKExpression(expression, dimension, view, resultAsString, &ret);
+        case eExpressionLanguageExprTk: {
+            KnobExprExprTk ret;
+            _imp->validateExprTkExpression(expression, dimension, view, resultAsString, &ret);
         }
     }
 } // KnobHelper::validateExpression
@@ -2127,7 +2127,7 @@ KnobHelper::checkInvalidExpressions()
 
                 data.expr = it->second->expressionString;
                 data.language = it->second->language;
-                KnobPythonExpr* isPythonExpr = dynamic_cast<KnobPythonExpr*>(it->second.get());
+                KnobExprPython* isPythonExpr = dynamic_cast<KnobExprPython*>(it->second.get());
                 if (isPythonExpr) {
                     data.hasRet = isPythonExpr->hasRet;
                 } else {
@@ -2288,15 +2288,15 @@ KnobHelper::setExpressionInternal(DimIdx dimension,
         switch (language) {
             case eExpressionLanguagePython: {
                 pgl.reset(new PythonGILLocker);
-                boost::shared_ptr<KnobPythonExpr> obj(new KnobPythonExpr);
+                boost::shared_ptr<KnobExprPython> obj(new KnobExprPython);
                 expressionObj = obj;
                 obj->modifiedExpression = _imp->validatePythonExpression(expression, dimension, view, hasRetVariable, &exprResult);
                 obj->hasRet = hasRetVariable;
             }   break;
-            case eExpressionLanguageExprTK: {
-                boost::shared_ptr<KnobExprTkExpr> obj(new KnobExprTkExpr);
+            case eExpressionLanguageExprTk: {
+                boost::shared_ptr<KnobExprExprTk> obj(new KnobExprExprTk);
                 expressionObj = obj;
-                _imp->validateExprTKExpression(expression, dimension, view, &exprResult, obj.get());
+                _imp->validateExprTkExpression(expression, dimension, view, &exprResult, obj.get());
             }   break;
         }
         expressionObj->expressionString = expression;
@@ -2331,11 +2331,11 @@ KnobHelper::setExpressionInternal(DimIdx dimension,
                     EXPR_RECURSION_LEVEL();
                     _imp->parseListenersFromExpression(dimension, view);
                 }   break;
-                case eExpressionLanguageExprTK: {
-                    KnobExprTkExpr* obj = dynamic_cast<KnobExprTkExpr*>(expressionObj.get());
+                case eExpressionLanguageExprTk: {
+                    KnobExprExprTk* obj = dynamic_cast<KnobExprExprTk*>(expressionObj.get());
                     KnobIPtr thisShared = shared_from_this();
                     for (std::map<std::string, KnobDimViewKey>::const_iterator it = obj->knobDependencies.begin(); it != obj->knobDependencies.end(); ++it) {
-                        it->second.knob.lock()->addListener(dimension, it->second.dimension, view, it->second.view, thisShared, eExpressionLanguageExprTK);
+                        it->second.knob.lock()->addListener(dimension, it->second.dimension, view, it->second.view, thisShared, eExpressionLanguageExprTk);
                     }
                 }   break;
             }
@@ -2471,10 +2471,10 @@ KnobHelper::getExpressionLanguage(Natron::ViewIdx view, Natron::DimIdx dimension
     QMutexLocker k(&_imp->common->expressionMutex);
     ExprPerViewMap::const_iterator foundView = _imp->common->expressions[dimension].find(view_i);
     if (foundView == _imp->common->expressions[dimension].end()) {
-        return eExpressionLanguageExprTK;
+        return eExpressionLanguageExprTk;
     }
     if (!foundView->second) {
-        return eExpressionLanguageExprTK;
+        return eExpressionLanguageExprTk;
     }
     return foundView->second->language;
 }
@@ -2494,7 +2494,7 @@ KnobHelper::isExpressionUsingRetVariable(ViewIdx view, DimIdx dimension) const
     if (!foundView->second) {
         return false;
     }
-    KnobPythonExpr* isPythonExpr = dynamic_cast<KnobPythonExpr*>(foundView->second.get());
+    KnobExprPython* isPythonExpr = dynamic_cast<KnobExprPython*>(foundView->second.get());
     if (!isPythonExpr) {
         return false;
     }
@@ -2515,8 +2515,8 @@ KnobHelper::getExpressionDependencies(DimIdx dimension,
     if (foundView == _imp->common->expressions[dimension].end() || !foundView->second) {
         return false;
     }
-    KnobPythonExpr* isPythonExpr = dynamic_cast<KnobPythonExpr*>(foundView->second.get());
-    KnobExprTkExpr* isExprtkExpr = dynamic_cast<KnobExprTkExpr*>(foundView->second.get());
+    KnobExprPython* isPythonExpr = dynamic_cast<KnobExprPython*>(foundView->second.get());
+    KnobExprExprTk* isExprtkExpr = dynamic_cast<KnobExprExprTk*>(foundView->second.get());
     assert(isPythonExpr || isExprtkExpr);
     if (isPythonExpr) {
         dependencies = isPythonExpr->dependencies;
@@ -2542,8 +2542,8 @@ KnobHelper::clearExpressionInternal(DimIdx dimension, ViewIdx view)
         ExprPerViewMap::iterator foundView = _imp->common->expressions[dimension].find(view);
         if (foundView != _imp->common->expressions[dimension].end() && foundView->second) {
             hadExpression = true;
-            KnobPythonExpr* isPythonExpr = dynamic_cast<KnobPythonExpr*>(foundView->second.get());
-            KnobExprTkExpr* isExprtkExpr = dynamic_cast<KnobExprTkExpr*>(foundView->second.get());
+            KnobExprPython* isPythonExpr = dynamic_cast<KnobExprPython*>(foundView->second.get());
+            KnobExprExprTk* isExprtkExpr = dynamic_cast<KnobExprExprTk*>(foundView->second.get());
             assert(isPythonExpr || isExprtkExpr);
             if (isPythonExpr) {
                 dependencies = isPythonExpr->dependencies;
@@ -2670,10 +2670,10 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
 KnobHelper::ExpressionReturnValueTypeEnum
-KnobHelper::executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimension, double* retValueIsScalar, std::string* retValueIsString, std::string* error)
+KnobHelper::executeExprTkExpression(TimeValue time, ViewIdx view, DimIdx dimension, double* retValueIsScalar, std::string* retValueIsString, std::string* error)
 {
 
-    boost::shared_ptr<KnobExprTkExpr> obj;
+    boost::shared_ptr<KnobExprExprTk> obj;
 
     // Take the expression mutex. Copying the exprtk expression does not actually copy all variables and functions, it just
     // increments a shared reference count.
@@ -2687,22 +2687,22 @@ KnobHelper::executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimensi
         if (foundView == _imp->common->expressions[dimension].end() || !foundView->second) {
             return eExpressionReturnValueTypeError;
         }
-        KnobExprTkExpr* isExprtkExpr = dynamic_cast<KnobExprTkExpr*>(foundView->second.get());
+        KnobExprExprTk* isExprtkExpr = dynamic_cast<KnobExprExprTk*>(foundView->second.get());
         assert(isExprtkExpr);
         // Copy the expression object so it is local to this thread
-        obj = boost::dynamic_pointer_cast<KnobExprTkExpr>(foundView->second);
+        obj = boost::dynamic_pointer_cast<KnobExprExprTk>(foundView->second);
         assert(obj);
     }
 
     QThread* curThread = QThread::currentThread();
 
-    KnobExprTkExpr::ExpressionDataPtr data;
+    KnobExprExprTk::ExpressionDataPtr data;
     {
         QMutexLocker k(&obj->lock);
-        KnobExprTkExpr::PerThreadDataMap::iterator foundThreadData = obj->data.find(curThread);
+        KnobExprExprTk::PerThreadDataMap::iterator foundThreadData = obj->data.find(curThread);
         if (foundThreadData == obj->data.end()) {
-            data = KnobExprTkExpr::createData();
-            std::pair<KnobExprTkExpr::PerThreadDataMap::iterator, bool> ret = obj->data.insert(std::make_pair(curThread, data));
+            data = KnobExprExprTk::createData();
+            std::pair<KnobExprExprTk::PerThreadDataMap::iterator, bool> ret = obj->data.insert(std::make_pair(curThread, data));
             assert(ret.second);
             foundThreadData = ret.first;
         } else {
@@ -2871,7 +2871,7 @@ KnobHelper::executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimensi
     // Evaluate the expression
     data->expressionObject->value();
     return handleExprTkReturn(*data->expressionObject, retValueIsScalar, retValueIsString, error);
-} // executeExprTKExpression
+} // executeExprTkExpression
 
 KnobHelper::ExpressionReturnValueTypeEnum
 KnobHelper::evaluateExpression(const std::string& expr,
@@ -2916,8 +2916,8 @@ KnobHelper::evaluateExpression(const std::string& expr,
 
             Py_DECREF(ret); //< new ref
         }   break;
-        case eExpressionLanguageExprTK: {
-            retCode = KnobHelper::executeExprTKExpression(expr, retIsScalar, retIsString, error);
+        case eExpressionLanguageExprTk: {
+            retCode = KnobHelper::executeExprTkExpression(expr, retIsScalar, retIsString, error);
         }   break;
     }
     
@@ -2949,7 +2949,7 @@ KnobHelper::executePythonExpression(TimeValue time,
         if (foundView == _imp->common->expressions[dimension].end() || !foundView->second) {
             return false;
         }
-        KnobPythonExpr* isPythonExpr = dynamic_cast<KnobPythonExpr*>(foundView->second.get());
+        KnobExprPython* isPythonExpr = dynamic_cast<KnobExprPython*>(foundView->second.get());
         assert(isPythonExpr);
         expr = isPythonExpr->modifiedExpression;
     }
@@ -3009,7 +3009,7 @@ KnobHelper::executePythonExpression(const std::string& expr,
 }
 
 KnobHelper::ExpressionReturnValueTypeEnum
-KnobHelper::executeExprTKExpression(const std::string& expr, double* retValueIsScalar, std::string* retValueIsString, std::string* error)
+KnobHelper::executeExprTkExpression(const std::string& expr, double* retValueIsScalar, std::string* retValueIsString, std::string* error)
 {
     symbol_table_t symbol_table;
 
@@ -3033,7 +3033,7 @@ KnobHelper::executeExprTKExpression(const std::string& expr, double* retValueIsS
     expressionObj.value();
     return handleExprTkReturn(expressionObj, retValueIsScalar, retValueIsString, error);
 
-} // executeExprTKExpression
+} // executeExprTkExpression
 
 std::string
 KnobHelper::getExpression(DimIdx dimension, ViewIdx view) const

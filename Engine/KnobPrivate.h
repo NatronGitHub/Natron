@@ -96,13 +96,13 @@ public:
     : expressionString()
     , modifiedExpression()
     , exprInvalid()
-    , language(eExpressionLanguageExprTK)
+    , language(eExpressionLanguageExprTk)
     {}
 
     virtual ~KnobExpr() {}
 };
 
-class KnobPythonExpr : public KnobExpr
+class KnobExprPython : public KnobExpr
 {
 public:
 
@@ -112,18 +112,18 @@ public:
     // The knobs/dimension/view we depend on in the expression
     KnobDimViewKeySet dependencies;
 
-    KnobPythonExpr()
+    KnobExprPython()
     : hasRet(false)
     {
 
     }
 
-    virtual ~KnobPythonExpr() {}
+    virtual ~KnobExprPython() {}
 };
 
 struct EffectFunctionDependency;
 
-class KnobExprTkExpr : public KnobExpr
+class KnobExprExprTk : public KnobExpr
 {
     struct ExpressionData;
 public:
@@ -144,18 +144,18 @@ public:
     // effect dependencies mapped against their variable name in the expression
     std::map<std::string, EffectFunctionDependency> effectDependencies;
 
-    KnobExprTkExpr()
+    KnobExprExprTk()
     {
 
     }
     
-    virtual ~KnobExprTkExpr() {}
+    virtual ~KnobExprExprTk() {}
 
     static ExpressionDataPtr createData();
 };
 
 /**
- * @brief If a exprtk expression references a node variable such as the rod, this is registered as a dependency
+ * @brief If a ExprTk expression references a node variable such as the rod, this is registered as a dependency
  **/
 struct EffectFunctionDependency
 {
@@ -431,7 +431,7 @@ struct CommonData
     }
 };
 
-class KnobExprTkExpr;
+class KnobExprExprTk;
 
 struct KnobHelperPrivate
 {
@@ -493,7 +493,7 @@ struct KnobHelperPrivate
     }
 
     std::string validatePythonExpression(const std::string& expression, DimIdx dimension, ViewIdx view, bool hasRetVariable, std::string* resultAsString) const;
-    void validateExprTKExpression(const std::string& expression, DimIdx dimension, ViewIdx view, std::string* resultAsString, KnobExprTkExpr* ret) const;
+    void validateExprTkExpression(const std::string& expression, DimIdx dimension, ViewIdx view, std::string* resultAsString, KnobExprExprTk* ret) const;
 
 
 

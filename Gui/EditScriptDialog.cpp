@@ -140,7 +140,7 @@ struct EditScriptDialogPrivate
 
     ExpressionLanguageEnum getSelectedLanguage() const
     {
-        return expressionType->activeIndex() == 0 ? eExpressionLanguageExprTK : eExpressionLanguagePython;
+        return expressionType->activeIndex() == 0 ? eExpressionLanguageExprTk : eExpressionLanguagePython;
     }
 
     void refreshHeaderLabel(ExpressionLanguageEnum language);
@@ -172,8 +172,8 @@ EditScriptDialogPrivate::refreshHeaderLabel(ExpressionLanguageEnum language)
         case eExpressionLanguagePython: {
             labelHtml +=  _publicInterface->tr("%1 script:").arg( QString::fromUtf8("<b>Python</b>") ) + QString::fromUtf8("<br />");
         }   break;
-        case eExpressionLanguageExprTK: {
-            labelHtml +=  _publicInterface->tr("%1 script:").arg( QString::fromUtf8("<b>ExprTK</b>") ) + QString::fromUtf8("<br />");
+        case eExpressionLanguageExprTk: {
+            labelHtml +=  _publicInterface->tr("%1 script:").arg( QString::fromUtf8("<b>ExprTk</b>") ) + QString::fromUtf8("<br />");
         }   break;
     }
 
@@ -224,7 +224,7 @@ EditScriptDialog::create(ExpressionLanguageEnum language,
     _imp->midButtonsContainer = new QWidget(this);
     _imp->midButtonsLayout = new QHBoxLayout(_imp->midButtonsContainer);
 
-    QString langTooltip = NATRON_NAMESPACE::convertFromPlainText(tr("Select the language used by this expression. ExprTK-based expressions are very simple and extremely fast expressions but a bit more constrained than "
+    QString langTooltip = NATRON_NAMESPACE::convertFromPlainText(tr("Select the language used by this expression. ExprTk-based expressions are very simple and extremely fast expressions but a bit more constrained than "
                                                                     "Python-based expressions which allow all the flexibility of the Python A.P.I to the expense of being a lot more expensive to evaluate."), NATRON_NAMESPACE::WhiteSpaceNormal);
 
     _imp->languageLabel = new Label(tr("Language:"), _imp->midButtonsContainer);
@@ -232,7 +232,7 @@ EditScriptDialog::create(ExpressionLanguageEnum language,
     _imp->midButtonsLayout->addWidget(_imp->languageLabel);
 
     _imp->expressionType = new ComboBox(_imp->midButtonsContainer);
-    _imp->expressionType->addItem(tr("ExprTK"));
+    _imp->expressionType->addItem(tr("ExprTk"));
     _imp->expressionType->addItem(tr("Python"));
     connect(_imp->expressionType, SIGNAL(currentIndexChanged(int)), this, SLOT(onLanguageCurrentIndexChanged()));
     _imp->expressionType->setCurrentIndex_no_emit(language == eExpressionLanguagePython ? 1 : 0);

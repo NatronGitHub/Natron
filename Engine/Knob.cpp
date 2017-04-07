@@ -2344,13 +2344,13 @@ KnobHelper::addListener(const DimIdx listenerDimension,
 
     if (language == eExpressionLanguagePython) {
         // Add this knob as a dependency of the expression
-        // For ExprTK this is already done in validateExprTKExpression
+        // For ExprTk this is already done in validateExprTkExpression
         QMutexLocker k(&listenerIsHelper->_imp->common->expressionMutex);
         KnobExprPtr& expr = listenerIsHelper->_imp->common->expressions[listenerDimension][listenerView];
         if (expr) {
             
         }
-        KnobPythonExpr* isPythonExpr = dynamic_cast<KnobPythonExpr*>(expr.get());
+        KnobExprPython* isPythonExpr = dynamic_cast<KnobExprPython*>(expr.get());
 
         KnobDimViewKey d(thisShared, listenedToDimension, listenedToView);
         if (isPythonExpr) {
@@ -2866,7 +2866,7 @@ initializeValueSerializationStorage(const KnobIPtr& knob,
     serialization->_expresionHasReturnVariable = knob->isExpressionUsingRetVariable(view, dimension);
     ExpressionLanguageEnum lang = knob->getExpressionLanguage(view, dimension);
     switch (lang) {
-        case eExpressionLanguageExprTK:
+        case eExpressionLanguageExprTk:
             serialization->_expressionLanguage = kKnobSerializationExpressionLanguageExprtk;
             break;
         case eExpressionLanguagePython:
@@ -3974,7 +3974,7 @@ KnobHelper::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::Kn
                             if (it->second[d]._expressionLanguage == kKnobSerializationExpressionLanguagePython) {
                                 lang = eExpressionLanguagePython;
                             } else if (it->second[d]._expressionLanguage == kKnobSerializationExpressionLanguageExprtk) {
-                                lang = eExpressionLanguageExprTK;
+                                lang = eExpressionLanguageExprTk;
                             }
                             restoreExpression(DimIdx(dimIndex), view_i,  it->second[d]._expression, lang, it->second[d]._expresionHasReturnVariable);
                         }

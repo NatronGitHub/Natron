@@ -525,10 +525,10 @@ Knob<T>::evaluateExpression(TimeValue time,
             Py_DECREF(ret); //< new ref
             return true;
         }
-        case eExpressionLanguageExprTK: {
+        case eExpressionLanguageExprTk: {
             double valueAsDouble = 0.;
             std::string valueAsString;
-            KnobHelper::ExpressionReturnValueTypeEnum ret = executeExprTKExpression(time, view, dimension, &valueAsDouble, &valueAsString, error);
+            KnobHelper::ExpressionReturnValueTypeEnum ret = executeExprTkExpression(time, view, dimension, &valueAsDouble, &valueAsString, error);
             if (ret == eExpressionReturnValueTypeError) {
                 return false;
             }
@@ -576,10 +576,10 @@ Knob<T>::evaluateExpression_pod(TimeValue time,
             }
             return true;
         }
-        case eExpressionLanguageExprTK: {
+        case eExpressionLanguageExprTk: {
             double valueAsDouble = 0.;
             std::string valueAsString;
-            KnobHelper::ExpressionReturnValueTypeEnum ret = executeExprTKExpression(time, view, dimension, &valueAsDouble, &valueAsString, error);
+            KnobHelper::ExpressionReturnValueTypeEnum ret = executeExprTkExpression(time, view, dimension, &valueAsDouble, &valueAsString, error);
             switch (ret) {
                 case eExpressionReturnValueTypeError:
                     return false;

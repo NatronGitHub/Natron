@@ -277,7 +277,7 @@ PasteKnobClipBoardUndoCommand::copyFrom(const SERIALIZATION_NAMESPACE::KnobSeria
                 case eKnobClipBoardTypeCopyExpressionMultCurveLink:
                 {
                     if (isRedo) {
-                        std::string expression = makeLinkExpression(projectViewNames, internalKnob, _imp->type == eKnobClipBoardTypeCopyExpressionMultCurveLink, eExpressionLanguageExprTK, fromKnob, _imp->fromDimension, _imp->fromView, _imp->targetDimension, _imp->targetView);
+                        std::string expression = makeLinkExpression(projectViewNames, internalKnob, _imp->type == eKnobClipBoardTypeCopyExpressionMultCurveLink, eExpressionLanguageExprTk, fromKnob, _imp->fromDimension, _imp->fromView, _imp->targetDimension, _imp->targetView);
                         const bool hasRetVar = false;
                         try {
                             // Don't fail if exception is invalid, it should have been tested prior to creating an undo/redo command, otherwise user is going
@@ -394,7 +394,7 @@ PasteKnobClipBoardUndoCommand::makeLinkExpression(const std::vector<std::string>
             }
 
         }   break;
-        case eExpressionLanguageExprTK: {
+        case eExpressionLanguageExprTk: {
             /*std::list<ViewIdx> sourceViews = fromKnob->getViewsList();
             if (sourceViews.size() > 1) {
                 if (fromView.isAll()) {

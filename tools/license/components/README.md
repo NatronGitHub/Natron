@@ -9,7 +9,7 @@ Natron binaries include components from the following libraries:
 * Boost (Boost Software License) http://www.boost.org/users/license.html
 * Cairo (LGPL 2.1) http://cairographics.org/
 * GLAD (MIT) http://glad.dav1d.de/
-* exprtk (MIT) http://www.partow.net/programming/exprtk/
+* ExprTk (MIT) http://www.partow.net/programming/exprtk/
 * openfx (Modified BSD) https://github.com/ofxa/openfx
 * openfx-io (GPLv2) https://github.com/MrKepzie/openfx-io
 * openfx-misc (GPLv2) https://github.com/devernay/openfx-misc

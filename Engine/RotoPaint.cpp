@@ -1285,7 +1285,7 @@ RotoPaint::setupInitialSubGraphState()
         if (_imp->premultKnob.lock()) {
             KnobBoolPtr disablePremultKnob = premultNode->getEffectInstance()->getDisabledKnob();
             try {
-                disablePremultKnob->setExpression(DimSpec::all(), ViewSetSpec::all(), "not (thisGroup.premultiply)", eExpressionLanguageExprTK, false, true);
+                disablePremultKnob->setExpression(DimSpec::all(), ViewSetSpec::all(), "not (thisGroup.premultiply)", eExpressionLanguageExprTk, false, true);
             } catch (...) {
                 assert(false);
             }
@@ -2943,7 +2943,7 @@ RotoPaintPrivate::getOrCreateGlobalTimeBlurNode()
         // The global time blur is disabled if the motion blur is set to per-shape
         std::string expression = "thisGroup.motionBlurMode != 2";
         try {
-            disabledKnob->setExpression(DimSpec(0), ViewSetSpec(0), expression, eExpressionLanguageExprTK, false, true);
+            disabledKnob->setExpression(DimSpec(0), ViewSetSpec(0), expression, eExpressionLanguageExprTk, false, true);
         } catch (...) {
             assert(false);
         }
