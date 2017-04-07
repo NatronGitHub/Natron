@@ -422,6 +422,7 @@ public:
                             const std::list<BezierCPPtr >& cps,
                             TimeValue time,
                             const RenderScale &scale,
+
                             bool finished,
                             DeCastelJauAlgorithmEnum algo,
                             int nbPointsPerSegment,

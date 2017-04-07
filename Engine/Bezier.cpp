@@ -2837,6 +2837,7 @@ Bezier::deCastelJau(bool isOpenBezier,
             bezierSegmentEval(*(*it), *(*next), time,  scale, algo, nbPointsPerSegment, errorScale , transform, pointsSingleList, bbox ? &segbbox : 0, &segbboxSet);
             // If we are a closed bezier or we are not on the last segment, remove the last point so we don't add duplicates
             if ((!isOpenBezier && finished) && next != cps.end()) {
+
                 if (!pointsSingleList->empty()) {
                     pointsSingleList->pop_back();
                 }
@@ -2850,6 +2851,7 @@ Bezier::deCastelJau(bool isOpenBezier,
             } else {
                 bbox->merge(segbbox);
             }
+
         }
 
         // increment for next iteration
