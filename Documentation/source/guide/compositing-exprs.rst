@@ -18,27 +18,27 @@ of other parameters or apply mathematical functions to the current value.
 Natron supports 2 types of expression languages: 
 
     * Python: :ref:`Natron documentation<paramExpr>`
-    * ExprTK: exprtkURL_
+    * ExprTk: exprtkURL_
     
-ExprTK is a very fast and simple expression language which should cover 90% of the 
+ExprTk is a very fast and simple expression language which should cover 90% of the 
 needs for expressions. By default this is the language proposed to you when editing an
 expression.
 
 Python based expressions are using the same A.P.I as everything else using Python in Natron.
 It allows to write really any kind of expression referencing external functions and data,
 however it is much slower to evaluate and will impair performance compared to a simple
-ExprTK expression.
+ExprTk expression.
 
-Where possible, you should use ExprTK, unless you specifically need a feature available
-in the Python API that is not available through the ExprTK language.
+Where possible, you should use ExprTk, unless you specifically need a feature available
+in the Python API that is not available through the ExprTk language.
 
 
 For more informations on developping Python expression, please refer to :ref:`this section<paramExpr>`.
 
-The rest of this section will cover writing expressions in ExprTK.
+The rest of this section will cover writing expressions in ExprTk.
 
 
-ExprTK expressions
+ExprTk expressions
 ==================
 
 The language syntax and available mathematical functions are well covered by the `README<exprtkREADME>`.

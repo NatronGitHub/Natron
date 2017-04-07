@@ -676,7 +676,7 @@ public:
     /**
      * @brief Set an expression on the knob. If this expression is invalid, this function throws an excecption with the error from the
      * Python interpreter or exprTK compiler
-     * @param Language (python or exprtk)
+     * @param Language (Python or ExprTk)
      * @param hasRetVariable (Python only) If true the expression is expected to be multi-line and have its return value set to the variable "ret", otherwise
      * the expression is expected to be single-line.
      * @param force If set to true, this function will not check if the expression is valid nor will it attempt to compile/evaluate it, it will
@@ -1800,12 +1800,12 @@ public:
     };
 protected:
     
-    ExpressionReturnValueTypeEnum executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimension, double* retValueIsScalar, std::string* retValueIsString, std::string* error);
+    ExpressionReturnValueTypeEnum executeExprTkExpression(TimeValue time, ViewIdx view, DimIdx dimension, double* retValueIsScalar, std::string* retValueIsString, std::string* error);
 
     /// The return value must be Py_DECRREF
     /// The expression must put its result in the Python variable named "ret"
     static bool executePythonExpression(const std::string& expr, PyObject** ret, std::string* error);
-    static ExpressionReturnValueTypeEnum executeExprTKExpression(const std::string& expr, double* retValueIsScalar, std::string* retValueIsString, std::string* error);
+    static ExpressionReturnValueTypeEnum executeExprTkExpression(const std::string& expr, double* retValueIsScalar, std::string* retValueIsString, std::string* error);
 
 public:
 

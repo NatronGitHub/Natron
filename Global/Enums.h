@@ -714,7 +714,7 @@ enum CreateNodeReason
 
 enum ExpressionLanguageEnum
 {
-    eExpressionLanguageExprTK,
+    eExpressionLanguageExprTk,
     eExpressionLanguagePython
 };
 

@@ -138,7 +138,7 @@ KnobGui::onClearExprActionTriggered()
     ViewSetSpec view;
     DimSpec dimension;
     getDimViewFromActionData(act, &view, &dimension);
-    pushUndoCommand( new SetExpressionCommand(getKnob(), eExpressionLanguageExprTK, false, dimension, view, "") );
+    pushUndoCommand( new SetExpressionCommand(getKnob(), eExpressionLanguageExprTk, false, dimension, view, "") );
 }
 
 void

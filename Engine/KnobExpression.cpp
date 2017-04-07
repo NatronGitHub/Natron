@@ -24,11 +24,9 @@
 
 #include "Knob.h"
 #include "KnobPrivate.h"
-#include "ExprtkFunctions.h"
 
 #include <sstream> // stringstream
 #include <string>
-
 
 #include "Engine/KnobItemsTable.h"
 #include "Engine/Noise.h"
@@ -36,468 +34,14 @@
 #include "Global/StrUtils.h"
 
 
-// reduce object size:
-// we only include exprtk.hpp here, no need have visible template instanciations since it's not used elsewhere
-#ifdef __GNUC__
-//#if defined(__CYGWIN__) || defined(__MINGW32__)
-// exprtk requires -Wa,-mbig-obj on mingw, but there is a bug that prevents linking if not using -O3
-// see:
-// - https://sourceforge.net/p/mingw-w64/discussion/723797/thread/c6b70624/
-// - https://github.com/assimp/assimp/issues/177#issuecomment-217605051
-// - http://discourse.chaiscript.com/t/compiled-in-std-lib-with-mingw/66/2
-#ifndef __clang__
-#pragma GCC push_options
-#pragma GCC optimize ("-O3")
-#endif
-//#endif
-#pragma GCC visibility push(hidden)
-#endif
-
-#include "exprtk.hpp"
-
-#ifdef __GNUC__
-#pragma GCC visibility pop
-#ifndef __clang__
-#pragma GCC pop_options
-#endif
-
-#endif
-
 NATRON_NAMESPACE_ENTER
 
-
-
-
-
-
-
-/////////////////////////////////////////
-/////// ExprtkFunctions.cpp BEGIN
-/////////////////////////////////////////
-
-NATRON_NAMESPACE_ANONYMOUS_ENTER
-
-using EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t;
-using EXPRTK_FUNCTIONS_NAMESPACE::vararg_func_ptr;
-using EXPRTK_FUNCTIONS_NAMESPACE::func_ptr;
-using EXPRTK_FUNCTIONS_NAMESPACE::func_t;
-using EXPRTK_FUNCTIONS_NAMESPACE::generic_func_ptr;
-using EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t;
-
-template <typename T, typename FuncType>
-void registerFunction(const std::string& name, std::vector<std::pair<std::string, boost::shared_ptr<FuncType> > >* functions)
-{
-    boost::shared_ptr<FuncType> ptr(new T);
-    functions->push_back(std::make_pair(name, ptr));
-}
-
-struct boxstep : public exprtk::ifunction<exprtk_scalar_t>
-{
-    boxstep() : exprtk::ifunction<exprtk_scalar_t>(2) {}
-
-    exprtk_scalar_t operator()(const exprtk_scalar_t& x, const exprtk_scalar_t& a) {
-        return NATRON_PYTHON_NAMESPACE::ExprUtils::boxstep(x, a);
-    }
-
-};
-
-struct linearstep : public exprtk::ifunction<exprtk_scalar_t>
-{
-    linearstep() : exprtk::ifunction<exprtk_scalar_t>(3) {}
-
-    exprtk_scalar_t operator()(const exprtk_scalar_t& x, const exprtk_scalar_t& a, const exprtk_scalar_t& b) {
-        return NATRON_PYTHON_NAMESPACE::ExprUtils::linearstep(x, a, b);
-
-    }
-};
-
-struct smoothstep : public exprtk::ifunction<exprtk_scalar_t>
-{
-    smoothstep() : exprtk::ifunction<exprtk_scalar_t>(3) {}
-
-    exprtk_scalar_t operator()(const exprtk_scalar_t& x, const exprtk_scalar_t& a, const exprtk_scalar_t& b) {
-        return NATRON_PYTHON_NAMESPACE::ExprUtils::smoothstep(x, a, b);
-
-    }
-};
-
-
-struct gaussstep : public exprtk::ifunction<exprtk_scalar_t>
-{
-    gaussstep() : exprtk::ifunction<exprtk_scalar_t>(3) {}
-
-    exprtk_scalar_t operator()(const exprtk_scalar_t& x, const exprtk_scalar_t& a, const exprtk_scalar_t& b) {
-        return NATRON_PYTHON_NAMESPACE::ExprUtils::gaussstep(x, a, b);
-
-    }
-};
-
-struct remap : public exprtk::ifunction<exprtk_scalar_t>
-{
-    remap() : exprtk::ifunction<exprtk_scalar_t>(5) {}
-
-    exprtk_scalar_t operator()(const exprtk_scalar_t& x, const exprtk_scalar_t& source, const exprtk_scalar_t& range, const exprtk_scalar_t& falloff, const exprtk_scalar_t& interp)
-    {
-        return NATRON_PYTHON_NAMESPACE::ExprUtils::remap(x, source, range, falloff, interp);
-
-    }
-};
-
-struct mix : public exprtk::ifunction<exprtk_scalar_t>
-{
-    mix() : exprtk::ifunction<exprtk_scalar_t>(3) {}
-
-    exprtk_scalar_t operator()(const exprtk_scalar_t& x, const exprtk_scalar_t& y, const exprtk_scalar_t& alpha)
-    {
-        return NATRON_PYTHON_NAMESPACE::ExprUtils::mix(x, y, alpha);
-
-    }
-};
-
-struct hash : public exprtk::ivararg_function<exprtk_scalar_t>
-{
-    exprtk_scalar_t operator()(const std::vector<double>& arglist)
-    {
-        return NATRON_PYTHON_NAMESPACE::ExprUtils::hash(arglist);
-
-    }
-};
-
-struct noise1 : public exprtk::ifunction<exprtk_scalar_t>
-{
-    noise1() : exprtk::ifunction<exprtk_scalar_t>(1) {}
-    exprtk_scalar_t operator()(const exprtk_scalar_t& x) {
-        double ret = 0.;
-        double input = x;
-        // coverity[callee_ptr_arith]
-        Noise<1, 1>(&input, &ret);
-        return ret;
-    }
-};
-
-struct noise2 : public exprtk::ifunction<exprtk_scalar_t>
-{
-    noise2() : exprtk::ifunction<exprtk_scalar_t>(2) {}
-    exprtk_scalar_t operator()(const exprtk_scalar_t& x, const exprtk_scalar_t& y) {
-        double ret = 0.;
-        double input[2] = {x, y};
-        // coverity[callee_ptr_arith]
-        Noise<2, 1>(input, &ret);
-        return ret;
-    }
-};
-
-struct noise3 : public exprtk::ifunction<exprtk_scalar_t>
-{
-    noise3() : exprtk::ifunction<exprtk_scalar_t>(3) {}
-    exprtk_scalar_t operator()(const exprtk_scalar_t& x, const exprtk_scalar_t& y, const exprtk_scalar_t& z)
-    {
-        double ret = 0.;
-        double input[3] = {x, y, z};
-        // coverity[callee_ptr_arith]
-        Noise<3, 1>(input, &ret);
-        return ret;
-    }
-};
-
-struct noise4 : public exprtk::ifunction<exprtk_scalar_t>
-{
-    noise4() : exprtk::ifunction<exprtk_scalar_t>(4) {}
-    exprtk_scalar_t operator()(const exprtk_scalar_t& x, const exprtk_scalar_t& y, const exprtk_scalar_t& z, const exprtk_scalar_t& w)
-    {
-        double ret = 0.;
-        double input[4] = {x, y, z, w};
-        // coverity[callee_ptr_arith]
-        Noise<4, 1>(input, &ret);
-        return ret;
-    }
-};
-
-struct turbulence : public exprtk::igeneric_function<exprtk_scalar_t>
-{
-
-    typedef typename exprtk::igeneric_function<exprtk_scalar_t>::parameter_list_t parameter_list_t;
-
-    turbulence()
-    : exprtk::igeneric_function<exprtk_scalar_t>("TTT|TTTT|TTTTT|TTTTTT")
-    {}
-    virtual exprtk_scalar_t operator()(const std::size_t& overloadIdx, parameter_list_t parameters) OVERRIDE FINAL
-    {
-        Q_UNUSED(overloadIdx);
-        typedef typename exprtk::igeneric_function<exprtk_scalar_t>::generic_type generic_type;
-        typedef typename generic_type::scalar_view scalar_t;
-
-        assert(parameters.size() == overloadIdx + 3);
-        assert(parameters.size() == 3 || parameters.size() == 4 || parameters.size() == 5 || parameters.size() == 6);
-        assert(parameters[0].type == generic_type::e_scalar);
-        assert(parameters[1].type == generic_type::e_scalar);
-        assert(parameters[2].type == generic_type::e_scalar);
-        NATRON_PYTHON_NAMESPACE::Double3DTuple p;
-        p.x = scalar_t(parameters[0])();
-        p.y = (double)scalar_t(parameters[1])();
-        p.z = (double)scalar_t(parameters[2])();
-
-
-        double octaves = 6;
-        double lacunarity = 2.;
-        double gain = 0.5;
-        if (parameters.size() > 3) {
-            octaves = scalar_t(parameters[3])();
-        }
-        if (parameters.size() > 4) {
-            lacunarity = scalar_t(parameters[4])();
-        }
-        if (parameters.size() > 5) {
-            gain = scalar_t(parameters[5])();
-        }
-        return NATRON_PYTHON_NAMESPACE::ExprUtils::turbulence(p, octaves, lacunarity, gain);
-    }
-
-};
-
-struct fbm : public exprtk::igeneric_function<exprtk_scalar_t>
-{
-
-    typedef typename exprtk::igeneric_function<exprtk_scalar_t>::parameter_list_t parameter_list_t;
-
-    fbm()
-    : exprtk::igeneric_function<exprtk_scalar_t>("TTT|TTTT|TTTTT|TTTTTT")
-    {}
-    virtual exprtk_scalar_t operator()(const std::size_t& overloadIdx, parameter_list_t parameters) OVERRIDE FINAL
-    {
-        Q_UNUSED(overloadIdx);
-        typedef typename exprtk::igeneric_function<exprtk_scalar_t>::generic_type generic_type;
-        typedef typename generic_type::scalar_view scalar_t;
-
-        assert(parameters.size() == overloadIdx + 3);
-        assert(parameters.size() == 3 || parameters.size() == 4 || parameters.size() == 5 || parameters.size() == 6);
-        assert(parameters[0].type == generic_type::e_scalar);
-        assert(parameters[1].type == generic_type::e_scalar);
-        assert(parameters[2].type == generic_type::e_scalar);
-        NATRON_PYTHON_NAMESPACE::Double3DTuple p;
-        p.x = scalar_t(parameters[0])();
-        p.y = (double)scalar_t(parameters[1])();
-        p.z = (double)scalar_t(parameters[2])();
-
-
-        double octaves = 6;
-        double lacunarity = 2.;
-        double gain = 0.5;
-        if (parameters.size() > 3) {
-            octaves = scalar_t(parameters[3])();
-        }
-        if (parameters.size() > 4) {
-            lacunarity = scalar_t(parameters[4])();
-        }
-        if (parameters.size() > 5) {
-            gain = scalar_t(parameters[5])();
-        }
-        return NATRON_PYTHON_NAMESPACE::ExprUtils::fbm(p, octaves, lacunarity, gain);
-    }
-
-};
-
-
-struct cellnoise : public exprtk::ifunction<exprtk_scalar_t>
-{
-    cellnoise() : exprtk::ifunction<exprtk_scalar_t>(3) {}
-    exprtk_scalar_t operator()(const exprtk_scalar_t& x, const exprtk_scalar_t& y, const exprtk_scalar_t& z)
-    {
-        double result = 0.;
-        double input[3] = {x, y ,z};
-        // coverity[callee_ptr_arith]
-        CellNoise<3, 1>(input, &result);
-        return result;
-    }
-};
-
-struct pnoise : public exprtk::ifunction<exprtk_scalar_t>
-{
-    pnoise() : exprtk::ifunction<exprtk_scalar_t>(6) {}
-    exprtk_scalar_t operator()(const exprtk_scalar_t& x, const exprtk_scalar_t& y, const exprtk_scalar_t& z,
-                               const exprtk_scalar_t& px, const exprtk_scalar_t& py, const exprtk_scalar_t& pz)
-    {
-        double result = 0.;
-        double p[3] = {x, y ,z};
-        int pargs[3] = {std::max(1,(int)px),
-            std::max(1,(int)py),
-            std::max(1,(int)pz)};
-        // coverity[callee_ptr_arith]
-        PNoise<3, 1>((const double*)p, pargs, &result);
-        return result;
-    }
-};
-
-
-struct random : public exprtk::ifunction<exprtk_scalar_t>
-{
-    U32 lastRandomHash;
-
-    random(TimeValue time)
-    : exprtk::ifunction<exprtk_scalar_t>(2)
-    , lastRandomHash(0)
-    {
-        // Make the hash vary from time
-        {
-            alias_cast_float ac;
-            ac.data = (float)time;
-            lastRandomHash += ac.raw;
-        }
-    }
-    exprtk_scalar_t operator()(const exprtk_scalar_t& min, const exprtk_scalar_t& max)
-    {
-        lastRandomHash = hashFunction(lastRandomHash);
-
-        return ( (double)lastRandomHash / (double)0x100000000LL ) * (max - min)  + min;
-
-    }
-};
-
-struct randomInt : public exprtk::ifunction<exprtk_scalar_t>
-{
-    U32 lastRandomHash;
-
-    randomInt(TimeValue time)
-    : exprtk::ifunction<exprtk_scalar_t>(2)
-    , lastRandomHash(0)
-    {
-        // Make the hash vary from time
-        {
-            alias_cast_float ac;
-            ac.data = (float)time;
-            lastRandomHash += ac.raw;
-        }
-    }
-    exprtk_scalar_t operator()(const exprtk_scalar_t& min, const exprtk_scalar_t& max)
-    {
-        lastRandomHash = hashFunction(lastRandomHash);
-
-        return int(( (double)lastRandomHash / (double)0x100000000LL ) * ((int)max - (int)min)  + (int)min);
-
-    }
-};
-
-struct numtostr : public exprtk::igeneric_function<exprtk_scalar_t>
-{
-    typedef exprtk::igeneric_function<exprtk_scalar_t> generic_func;
-    typedef typename generic_func::parameter_list_t parameter_list_t;
-
-    numtostr()
-    : exprtk::igeneric_function<exprtk_scalar_t>("T|TS|TST", generic_func::e_rtrn_string)
-    {
-        /*overloads:
-         str(value)
-         str(value, format)
-         str(value, format, precision)
-         */
-    }
-    virtual exprtk_scalar_t operator()(const std::size_t& overloadIdx,
-                                       std::string& result,
-                                       parameter_list_t parameters) OVERRIDE FINAL
-    {
-        Q_UNUSED(overloadIdx);
-        typedef typename exprtk::igeneric_function<exprtk_scalar_t>::generic_type generic_type;
-        typedef typename generic_type::scalar_view scalar_t;
-        typedef typename generic_type::string_view string_t;
-
-        assert(parameters.size() == overloadIdx + 1);
-        assert(parameters.size() == 1 || parameters.size() == 2 || parameters.size() == 3);
-
-        double value = scalar_t(parameters[0])();
-        std::string format;
-        format += 'f';
-        if (parameters.size() > 1) {
-            format = exprtk::to_str(string_t(parameters[1]));
-            if (format != "f" && format != "g" && format != "e" && format != "G" && format != "E") {
-                return 0.;
-            }
-        }
-        int precision = 6;
-        if (parameters.size() > 2) {
-            precision = std::floor(scalar_t(parameters[2])());
-        }
-
-        QString str = QString::number(value, format[0], precision);
-        result = str.toStdString();
-
-        return 1.;
-    }
-
-};
-
-NATRON_NAMESPACE_ANONYMOUS_EXIT
-
-EXPRTK_FUNCTIONS_NAMESPACE_ENTER
-
-void
-addVarargFunctions(TimeValue /*time*/, std::vector<std::pair<std::string, vararg_func_ptr > >* functions)
-{
-    registerFunction<hash>("hash", functions);
-}
-
-void
-addFunctions(TimeValue time, std::vector<std::pair<std::string, func_ptr > >* functions)
-{
-    registerFunction<boxstep>("boxstep", functions);
-    registerFunction<linearstep>("linearstep", functions);
-    registerFunction<smoothstep>("smoothstep", functions);
-    registerFunction<gaussstep>("gaussstep", functions);
-    registerFunction<remap>("remap", functions);
-    registerFunction<mix>("mix", functions);
-    registerFunction<noise1>("noise1", functions);
-    registerFunction<noise2>("noise2", functions);
-    registerFunction<noise3>("noise3", functions);
-    registerFunction<noise4>("noise4", functions);
-    registerFunction<pnoise>("pnoise", functions);
-    registerFunction<cellnoise>("cellnoise", functions);
-    {
-        boost::shared_ptr<func_t> ptr(new random(time));
-        functions->push_back(std::make_pair("random", ptr));
-    }
-    {
-        boost::shared_ptr<func_t> ptr(new randomInt(time));
-        functions->push_back(std::make_pair("randomInt", ptr));
-    }
-}
-
-void
-addGenericFunctions(TimeValue /*time*/, std::vector<std::pair<std::string, generic_func_ptr > >* functions)
-{
-
-
-    registerFunction<turbulence>("turbulence", functions);
-    registerFunction<fbm>("fbm", functions);
-    registerFunction<numtostr>("str", functions);
-}
-
-void makeLocalCopyOfStateFunctions(TimeValue time, symbol_table_t& symbol_table, std::vector<std::pair<std::string, func_ptr > >* functions)
-{
-    symbol_table.remove_function("random");
-    symbol_table.remove_function("randomInt");
-    {
-        boost::shared_ptr<func_t> ptr(new random(time));
-        functions->push_back(std::make_pair("random", ptr));
-    }
-    {
-        boost::shared_ptr<func_t> ptr(new randomInt(time));
-        functions->push_back(std::make_pair("randomInt", ptr));
-    }
-}
-
-EXPRTK_FUNCTIONS_NAMESPACE_EXIT
-
-/////////////////////////////////////////
-/////// ExprtkFunctions.cpp END
-/////////////////////////////////////////
-
-
-
-
-
-
-
-
-
+using std::vector;
+using std::string;
+using std::stringstream;
+using std::pair;
+using std::make_pair;
+using boost::shared_ptr;
 
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
@@ -505,13 +49,13 @@ NATRON_NAMESPACE_ANONYMOUS_ENTER
 /**
  * @brief Given the string str, returns the position of the character "closingChar" corresponding to the "openingChar" at the given openingParenthesisPos
  * For example if the str is "((lala)+toto)" and we want to get the character matching the first '(', this function will return the last parenthesis in the string
- * @return The position of the matching closing character or std::string::npos if not found
+ * @return The position of the matching closing character or string::npos if not found
  **/
 static std::size_t
 getMatchingParenthesisPosition(std::size_t openingParenthesisPos,
                                char openingChar,
                                char closingChar,
-                               const std::string& str)
+                               const string& str)
 {
     assert(openingParenthesisPos < str.size() && str.at(openingParenthesisPos) == openingChar);
 
@@ -531,27 +75,28 @@ getMatchingParenthesisPosition(std::size_t openingParenthesisPos,
         ++i;
     }
     if ( i >= (int)str.size() ) {
-        return std::string::npos;
+        return string::npos;
     }
 
     return i;
 } // getMatchingParenthesisPosition
 
+
 /**
- * @brief Given a string str, assume that the content of the string between startParenthesis and endParenthesis 
+ * @brief Given a string str, assume that the content of the string between startParenthesis and endParenthesis
  * is a well-formed Python signature with comma separated arguments list. The list of arguments is stored in params.
  **/
 static void
 extractParameters(std::size_t startParenthesis,
                   std::size_t endParenthesis,
-                  const std::string& str,
-                  std::vector<std::string>* params)
+                  const string& str,
+                  vector<string>* params)
 {
     std::size_t i = startParenthesis + 1;
     int insideParenthesis = 0;
 
     while (i < endParenthesis || insideParenthesis < 0) {
-        std::string curParam;
+        string curParam;
         if (str.at(i) == '(') {
             ++insideParenthesis;
         } else if (str.at(i) == ')') {
@@ -574,6 +119,7 @@ extractParameters(std::size_t startParenthesis,
     }
 } // extractParameters
 
+
 /**
  * @brief Given the string str, tries to find the given function name "token" string starting from inputPos.
  * @param fromDim The dimension in the knob on which the function is called
@@ -588,15 +134,15 @@ extractParameters(std::size_t startParenthesis,
  **/
 static bool
 parseTokenFrom(int fromDim,
-               const std::string& fromViewName,
+               const string& fromViewName,
                int dimensionParamPos,
                int viewParamPos,
                bool returnsTuple,
-               const std::string& str,
-               const std::string& token,
+               const string& str,
+               const string& token,
                std::size_t inputPos,
                std::size_t *tokenStart,
-               std::string* output)
+               string* output)
 {
     std::size_t pos;
 
@@ -604,7 +150,7 @@ parseTokenFrom(int fromDim,
     bool foundMatchingToken = false;
     while (!foundMatchingToken) {
         pos = str.find(token, inputPos);
-        if (pos == std::string::npos) {
+        if (pos == string::npos) {
             return false;
         }
 
@@ -633,35 +179,35 @@ parseTokenFrom(int fromDim,
 
     // Get the closing parenthesis for the function
     std::size_t endingParenthesis = getMatchingParenthesisPosition(pos, '(', ')',  str);
-    if (endingParenthesis == std::string::npos) {
+    if (endingParenthesis == string::npos) {
         throw std::invalid_argument("Invalid expr");
     }
 
     // Extract parameters in between the 2 parenthesis
-    std::vector<std::string> params;
+    vector<string> params;
     extractParameters(pos, endingParenthesis, str, &params);
 
 
-    bool gotViewParam = viewParamPos != -1 && (viewParamPos < (int)params.size() && !params.empty());
-    bool gotDimensionParam = dimensionParamPos != -1 && (dimensionParamPos < (int)params.size() && !params.empty());
+    bool gotViewParam = viewParamPos != -1 && ( viewParamPos < (int)params.size() && !params.empty() );
+    bool gotDimensionParam = dimensionParamPos != -1 && ( dimensionParamPos < (int)params.size() && !params.empty() );
 
 
     if (!returnsTuple) {
         // Before Natron 2.2 the View parameter of the get(view) function did not exist, hence loading
         // an old expression may use the old get() function without view. If we do not find any view
         // parameter, assume the view is "Main" by default.
-        if (!gotViewParam && viewParamPos != -1) {
-            std::vector<std::string>::iterator it = params.begin();
-            if (viewParamPos >= (int)params.size()) {
+        if ( !gotViewParam && (viewParamPos != -1) ) {
+            vector<string>::iterator it = params.begin();
+            if ( viewParamPos >= (int)params.size() ) {
                 it = params.end();
             } else {
                 std::advance(it, viewParamPos);
             }
             params.insert(it, "Main");
         }
-        if (!gotDimensionParam && dimensionParamPos != -1) {
-            std::vector<std::string>::iterator it = params.begin();
-            if (dimensionParamPos >= (int)params.size()) {
+        if ( !gotDimensionParam && (dimensionParamPos != -1) ) {
+            vector<string>::iterator it = params.begin();
+            if ( dimensionParamPos >= (int)params.size() ) {
                 it = params.end();
             } else {
                 std::advance(it, dimensionParamPos);
@@ -681,7 +227,7 @@ parseTokenFrom(int fromDim,
         if ( ( it < str.size() ) && (str.at(it) == '[') ) {
             ///we found a tuple
             std::size_t endingBracket = getMatchingParenthesisPosition(it, '[', ']',  str);
-            if (endingBracket == std::string::npos) {
+            if (endingBracket == string::npos) {
                 throw std::invalid_argument("Invalid expr");
             }
             params.push_back( str.substr(it + 1, endingBracket - it - 1) );
@@ -695,14 +241,13 @@ parseTokenFrom(int fromDim,
         // Before Natron 2.2 the View parameter of the get(view) function did not exist, hence loading
         // an old expression may use the old get() function without view. If we do not find any view
         // parameter, assume the view is "Main" by default.
-        if (params.size() == 1 && viewParamPos >= 0) {
+        if ( (params.size() == 1) && (viewParamPos >= 0) ) {
             if (viewParamPos < dimensionParamPos) {
                 params.insert(params.begin(), "Main");
             } else {
                 params.push_back("Main");
             }
         }
-
     }
 
     if ( (dimensionParamPos < 0) || ( (int)params.size() <= dimensionParamPos ) ) {
@@ -713,17 +258,17 @@ parseTokenFrom(int fromDim,
         throw std::invalid_argument("Invalid expr");
     }
 
-    std::string toInsert;
+    string toInsert;
     {
-        std::stringstream ss;
+        stringstream ss;
         /*
-         When replacing the getValue() (or similar function) call by addAsDepdendencyOf
-         the parameter prefixing the addAsDepdendencyOf will register itself its dimension params[dimensionParamPos] as a dependency of the expression
-         at the "fromDim" dimension of thisParam
+           When replacing the getValue() (or similar function) call by addAsDepdendencyOf
+           the parameter prefixing the addAsDepdendencyOf will register itself its dimension params[dimensionParamPos] as a dependency of the expression
+           at the "fromDim" dimension of thisParam
          */
         ss << ".addAsDependencyOf(thisParam, " << fromDim << "," <<
-        params[dimensionParamPos] << ", \"" << fromViewName << "\", \"" <<
-        params[viewParamPos] << "\")\n";
+            params[dimensionParamPos] << ", \"" << fromViewName << "\", \"" <<
+            params[viewParamPos] << "\")\n";
         toInsert = ss.str();
     }
 
@@ -741,15 +286,15 @@ parseTokenFrom(int fromDim,
             ++nClosingParenthesisMet;
         }
         if ( std::isspace(str[i], loc) ||
-            ( str[i] == '=') ||
-            ( str[i] == '\n') ||
-            ( str[i] == '\t') ||
-            ( str[i] == '+') ||
-            ( str[i] == '-') ||
-            ( str[i] == '*') ||
-            ( str[i] == '/') ||
-            ( str[i] == '%') ||
-            ( ( str[i] == '(') && !nClosingParenthesisMet ) ) {
+             ( str[i] == '=') ||
+             ( str[i] == '\n') ||
+             ( str[i] == '\t') ||
+             ( str[i] == '+') ||
+             ( str[i] == '-') ||
+             ( str[i] == '*') ||
+             ( str[i] == '/') ||
+             ( str[i] == '%') ||
+             ( ( str[i] == '(') && !nClosingParenthesisMet ) ) {
             break;
         }
         --i;
@@ -757,12 +302,13 @@ parseTokenFrom(int fromDim,
     ++i;
 
     // This is the name of the Python attribute that called "token"
-    std::string varName = str.substr(i, *tokenStart - 1 - i);
+    string varName = str.substr(i, *tokenStart - 1 - i);
     output->append(varName + toInsert);
 
     //assert(*tokenSize > 0);
     return true;
 } // parseTokenFrom
+
 
 /**
  * @brief Calls parseTokenFrom until all tokens in the expression have been found.
@@ -771,14 +317,14 @@ parseTokenFrom(int fromDim,
  * Note: this function can throw an exception if the expression is incorrect
  **/
 static bool
-extractAllOcurrences(const std::string& str,
-                     const std::string& token,
+extractAllOcurrences(const string& str,
+                     const string& token,
                      bool returnsTuple,
                      int dimensionParamPos,
                      int viewParamPos,
                      int fromDim,
-                     const std::string& fromViewName,
-                     std::string *outputScript)
+                     const string& fromViewName,
+                     string *outputScript)
 {
     std::size_t tokenStart = 0;
     bool couldFindToken;
@@ -793,14 +339,17 @@ extractAllOcurrences(const std::string& str,
 
     return true;
 }
+
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
-std::string
+
+string
 KnobHelperPrivate::getReachablePythonAttributesForExpression(bool addTab,
-                                          DimIdx dimension,
-                                          ViewIdx /*view*/) const
+                                                             DimIdx dimension,
+                                                             ViewIdx /*view*/) const
 {
     KnobHolderPtr h = holder.lock();
+
     assert(h);
     if (!h) {
         throw std::runtime_error("This parameter cannot have an expression");
@@ -830,9 +379,9 @@ KnobHelperPrivate::getReachablePythonAttributesForExpression(bool addTab,
     }
 
     NodeGroupPtr isParentGrp = toNodeGroup(collection);
-    std::string appID = node->getApp()->getAppIDString();
-    std::string tabStr = addTab ? "    " : "";
-    std::stringstream ss;
+    string appID = node->getApp()->getAppIDString();
+    string tabStr = addTab ? "    " : "";
+    stringstream ss;
     if (appID != "app") {
         ss << tabStr << "app = " << appID << "\n";
     }
@@ -843,16 +392,16 @@ KnobHelperPrivate::getReachablePythonAttributesForExpression(bool addTab,
 
     // Define all nodes in the same group reachable by their bare script-name
     NodesList siblings = collection->getNodes();
-    std::string collectionScriptName;
+    string collectionScriptName;
     if (isParentGrp) {
         collectionScriptName = isParentGrp->getNode()->getFullyQualifiedName();
     } else {
         collectionScriptName = appID;
     }
     for (NodesList::iterator it = siblings.begin(); it != siblings.end(); ++it) {
-        if ((*it)->isActivated()) {
-            std::string scriptName = (*it)->getScriptName_mt_safe();
-            std::string fullName = appID + "." + (*it)->getFullyQualifiedName();
+        if ( (*it)->isActivated() ) {
+            string scriptName = (*it)->getScriptName_mt_safe();
+            string fullName = appID + "." + (*it)->getFullyQualifiedName();
 
             // Do not fail the expression if the attribute do not exist to Python, use hasattr
             ss << tabStr << "if hasattr(";
@@ -877,7 +426,7 @@ KnobHelperPrivate::getReachablePythonAttributesForExpression(bool addTab,
     ss << tabStr << "thisNode = " << node->getScriptName_mt_safe() <<  "\n";
 
     if (tableItem) {
-        const std::string& tablePythonPrefix = tableItem->getModel()->getPythonPrefix();
+        const string& tablePythonPrefix = tableItem->getModel()->getPythonPrefix();
         ss << tabStr << "thisItem = thisNode." << tablePythonPrefix << tableItem->getFullyQualifiedName() << "\n";
     }
 
@@ -900,10 +449,12 @@ KnobHelperPrivate::getReachablePythonAttributesForExpression(bool addTab,
     return ss.str();
 } // KnobHelperPrivate::declarePythonVariables
 
+
 void
-KnobHelperPrivate::parseListenersFromExpression(DimIdx dimension, ViewIdx view)
+KnobHelperPrivate::parseListenersFromExpression(DimIdx dimension,
+                                                ViewIdx view)
 {
-    assert(dimension >= 0 && dimension < (int)common->expressions.size());
+    assert( dimension >= 0 && dimension < (int)common->expressions.size() );
 
     // Extract pointers to knobs referred to by the expression
     // Our heuristic is quite simple: we replace in the python code all calls to:
@@ -914,63 +465,68 @@ KnobHelperPrivate::parseListenersFromExpression(DimIdx dimension, ViewIdx view)
     // - get
     // And replace them by addAsDependencyOf(thisParam) which will register the parameters as a dependency of this parameter
 
-    std::string viewName = holder.lock()->getApp()->getProject()->getViewName(view);
-    assert(!viewName.empty());
-    if (viewName.empty()) {
+    string viewName = holder.lock()->getApp()->getProject()->getViewName(view);
+    assert( !viewName.empty() );
+    if ( viewName.empty() ) {
         viewName = "Main";
     }
-    std::string expressionCopy;
+    string expressionCopy;
 
     {
         QMutexLocker k(&common->expressionMutex);
         ExprPerViewMap::const_iterator foundView = common->expressions[dimension].find(view);
-        if (foundView == common->expressions[dimension].end()) {
+        if ( foundView == common->expressions[dimension].end() ) {
             return;
         }
         expressionCopy = foundView->second->expressionString;
     }
 
     // Extract parameters that call the following functions
-    std::string listenersRegistrationScript;
+    string listenersRegistrationScript;
     if  ( !extractAllOcurrences(expressionCopy, "getValue", false, 0, 1, dimension, viewName, &listenersRegistrationScript) ) {
         throw std::runtime_error("KnobHelperPrivate::parseListenersFromExpression(): failed!");
+
         return;
     }
 
     if ( !extractAllOcurrences(expressionCopy, "getValueAtTime", false, 1, 2, dimension, viewName, &listenersRegistrationScript) ) {
         throw std::runtime_error("KnobHelperPrivate::parseListenersFromExpression(): failed!");
+
         return;
     }
 
     if ( !extractAllOcurrences(expressionCopy, "getDerivativeAtTime", false, 1, 2, dimension, viewName, &listenersRegistrationScript) ) {
         throw std::runtime_error("KnobHelperPrivate::parseListenersFromExpression(): failed!");
+
         return;
     }
 
     if ( !extractAllOcurrences(expressionCopy, "getIntegrateFromTimeToTime", false, 2, 3, dimension, viewName, &listenersRegistrationScript) ) {
         throw std::runtime_error("KnobHelperPrivate::parseListenersFromExpression(): failed!");
+
         return;
     }
 
     if ( !extractAllOcurrences(expressionCopy, "get", true, -1, 0, dimension, viewName, &listenersRegistrationScript) ) {
         throw std::runtime_error("KnobHelperPrivate::parseListenersFromExpression(): failed!");
+
         return;
     }
 
     // Declare all attributes that may be reached through this expression
-    std::string declarations = getReachablePythonAttributesForExpression(false, dimension, view);
+    string declarations = getReachablePythonAttributesForExpression(false, dimension, view);
 
     // Make up the internal expression
-    std::stringstream ss;
+    stringstream ss;
     ss << "frame=0\n";
     ss << "view=\"Main\"\n";
     ss << declarations << '\n';
     ss << expressionCopy << '\n';
     ss << listenersRegistrationScript;
-    std::string script = ss.str();
+    string script = ss.str();
 
     // Execute the expression: this will register listeners
-    std::string error;
+    string error;
     bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error, NULL);
     if ( !error.empty() ) {
         qDebug() << error.c_str();
@@ -983,8 +539,13 @@ KnobHelperPrivate::parseListenersFromExpression(DimIdx dimension, ViewIdx view)
     }
 } // KnobHelperPrivate::parseListenersFromExpression
 
-std::string
-KnobHelperPrivate::validatePythonExpression(const std::string& expression, DimIdx dimension, ViewIdx view, bool hasRetVariable, std::string* resultAsString) const
+
+string
+KnobHelperPrivate::validatePythonExpression(const string& expression,
+                                            DimIdx dimension,
+                                            ViewIdx view,
+                                            bool hasRetVariable,
+                                            string* resultAsString) const
 {
 #ifdef NATRON_RUN_WITHOUT_PYTHON
     throw std::invalid_argument("NATRON_RUN_WITHOUT_PYTHON is defined");
@@ -996,21 +557,21 @@ KnobHelperPrivate::validatePythonExpression(const std::string& expression, DimId
     }
 
 
-    std::string exprCpy = expression;
+    string exprCpy = expression;
 
     //if !hasRetVariable the expression is expected to be single-line
     if (!hasRetVariable) {
         std::size_t foundNewLine = expression.find("\n");
-        if (foundNewLine != std::string::npos) {
-            throw std::invalid_argument(publicInterface->tr("unexpected new line character \'\\n\'").toStdString());
+        if (foundNewLine != string::npos) {
+            throw std::invalid_argument( publicInterface->tr("unexpected new line character \'\\n\'").toStdString() );
         }
         //preprend the line with "ret = ..."
-        std::string toInsert("    ret = ");
+        string toInsert("    ret = ");
         exprCpy.insert(0, toInsert);
     } else {
         exprCpy.insert(0, "    ");
         std::size_t foundNewLine = exprCpy.find("\n");
-        while (foundNewLine != std::string::npos) {
+        while (foundNewLine != string::npos) {
             exprCpy.insert(foundNewLine + 1, "    ");
             foundNewLine = exprCpy.find("\n", foundNewLine + 1);
         }
@@ -1018,7 +579,7 @@ KnobHelperPrivate::validatePythonExpression(const std::string& expression, DimId
 
     KnobHolderPtr holder = publicInterface->getHolder();
     if (!holder) {
-        throw std::runtime_error(publicInterface->tr("This parameter cannot have an expression").toStdString());
+        throw std::runtime_error( publicInterface->tr("This parameter cannot have an expression").toStdString() );
     }
 
     NodePtr node;
@@ -1033,17 +594,17 @@ KnobHelperPrivate::validatePythonExpression(const std::string& expression, DimId
         }
     }
     if (!node) {
-        throw std::runtime_error(publicInterface->tr("Only parameters of a Node can have an expression").toStdString());
+        throw std::runtime_error( publicInterface->tr("Only parameters of a Node can have an expression").toStdString() );
     }
-    std::string appID = holder->getApp()->getAppIDString();
-    std::string nodeName = node->getFullyQualifiedName();
-    std::string nodeFullName = appID + "." + nodeName;
-    std::string exprFuncPrefix = nodeFullName + "." + publicInterface->getName() + ".";
+    string appID = holder->getApp()->getAppIDString();
+    string nodeName = node->getFullyQualifiedName();
+    string nodeFullName = appID + "." + nodeName;
+    string exprFuncPrefix = nodeFullName + "." + publicInterface->getName() + ".";
 
     // make-up the expression function
-    std::string exprFuncName;
+    string exprFuncName;
     {
-        std::stringstream tmpSs;
+        stringstream tmpSs;
         tmpSs << "expression" << dimension << "_" << view;
         exprFuncName = tmpSs.str();
     }
@@ -1051,14 +612,14 @@ KnobHelperPrivate::validatePythonExpression(const std::string& expression, DimId
     exprCpy.append("\n    return ret\n");
 
 
-    std::stringstream ss;
+    stringstream ss;
     ss << "def "  << exprFuncName << "(frame, view):\n";
 
     // First define the attributes that may be used by the expression
     ss << getReachablePythonAttributesForExpression(true, dimension, view);
 
 
-    std::string script = ss.str();
+    string script = ss.str();
 
     // Append the user expression
     script.append(exprCpy);
@@ -1068,8 +629,8 @@ KnobHelperPrivate::validatePythonExpression(const std::string& expression, DimId
 
     // Try to execute the expression and evaluate it, if it doesn't have a good syntax, throw an exception
     // with the error.
-    std::string error;
-    std::string funcExecScript = "ret = " + exprFuncPrefix + exprFuncName;
+    string error;
+    string funcExecScript = "ret = " + exprFuncPrefix + exprFuncName;
 
     {
         ExprRecursionLevel_RAII __recursionLevelIncrementer__(publicInterface);
@@ -1078,15 +639,15 @@ KnobHelperPrivate::validatePythonExpression(const std::string& expression, DimId
             throw std::runtime_error(error);
         }
 
-        std::string viewName;
-        if (publicInterface->getHolder() && publicInterface->getHolder()->getApp()) {
+        string viewName;
+        if ( publicInterface->getHolder() && publicInterface->getHolder()->getApp() ) {
             viewName = publicInterface->getHolder()->getApp()->getProject()->getViewName(view);
         }
-        if (viewName.empty()) {
+        if ( viewName.empty() ) {
             viewName = "Main";
         }
 
-        std::stringstream ss;
+        stringstream ss;
         ss << funcExecScript << '(' << publicInterface->getCurrentRenderTime() << ", \"" <<  viewName << "\")\n";
         if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(ss.str(), &error, 0) ) {
             throw std::runtime_error(error);
@@ -1117,929 +678,50 @@ KnobHelperPrivate::validatePythonExpression(const std::string& expression, DimId
             *resultAsString = r ? "True" : "False";
         } else {
             assert(isString);
-            if (PyUnicode_Check(ret) || PyString_Check(ret)) {
-                *resultAsString = isString->pyObjectToType<std::string>(ret);
+            if ( PyUnicode_Check(ret) || PyString_Check(ret) ) {
+                *resultAsString = isString->pyObjectToType<string>(ret);
             } else {
             }
         }
     }
-    
-    
+
     return funcExecScript;
 } // validatePythonExpression
 
-static bool isDimensionIndex(const std::string& str, int* index)
-{
-    if (str == "r" || str == "x" || str == "0") {
-        *index = 0;
-        return true;
-    }
-    if (str == "g" || str == "y" || str == "1") {
-        *index = 1;
-        return true;
-    }
-    if (str == "b" || str == "z" || str == "2") {
-        *index = 2;
-        return true;
-    }
-    if (str == "a" || str == "w" || str == "3") {
-        *index = 3;
-        return true;
-    }
-    return false;
-}
-
-
-class SymbolResolver
-{
-    KnobI* _knob;
-    DimIdx _dimension;
-    ViewIdx _view;
-    std::string _symbol;
-
-public:
-
-    enum ResultTypeEnum
-    {
-        eResultTypeInvalid,
-        eResultTypeKnobValue,
-        eResultTypeKnobChoiceOption,
-        eResultTypeEffectRoD,
-        eResultTypeObjectName,
-    };
-
-    ResultTypeEnum _resultType;
-    std::string _objectName;
-    std::string _error;
-    bool _testingEnabled;
-
-    // If result is eResultTypeEffectRoD, this is the effect on which to retrieve the property
-    EffectInstancePtr _effectProperty;
-
-    // If the result is eResultTypeKnobValue, this is the knob on which to retrieve the value
-    KnobIPtr _targetKnob;
-    ViewIdx _targetView;
-    DimIdx _targetDimension;
-
-    SymbolResolver(KnobI* knob, DimIdx dimension, ViewIdx view, const std::string& symbol)
-    : _knob(knob)
-    , _dimension(dimension)
-    , _view(view)
-    , _symbol(symbol)
-    , _resultType(eResultTypeInvalid)
-    , _error()
-    , _testingEnabled(false)
-    {
-        resolve();
-    }
-
-private:
-
-    void resolve()
-    {
-
-        // Split the variable with dots
-        std::vector<std::string> splits = StrUtils::split(_symbol, '.');
-
-        EffectInstancePtr currentNode = getThisNode();
-        KnobHolderPtr currentHolder = _knob->getHolder();
-        KnobTableItemPtr currentTableItem = getThisTableItem();
-        NodeCollectionPtr currentGroup = getThisGroup();
-        KnobIPtr currentKnob;
-        DimIdx currentDimension = _dimension;
-        ViewIdx currentView = _view;
-        assert(currentNode && currentGroup);
-
-        // If "exists" is suffixed, we never fail but instead return 0 or 1
-        _testingEnabled = !splits.empty() && splits.back() == "exists";
-        if (_testingEnabled) {
-            splits.resize(splits.size() - 1);
-        }
-        for (std::size_t i = 0; i < splits.size(); ++i) {
-            bool isLastToken = (i == splits.size() - 1);
-            const std::string& token = splits[i];
-
-
-            {
-                NodeCollectionPtr curGroupOut;
-                if (checkForGroup(token, &curGroupOut)) {
-                    // If we caught a group, check if it is a node too
-                    currentGroup = curGroupOut;
-                    currentNode = toNodeGroup(currentGroup);
-                    currentHolder = currentNode;
-                    currentTableItem.reset();
-                    currentKnob.reset();
-                    if (isLastToken) {
-                        if (_testingEnabled) {
-                            // If testing is enabled, set the result to be valid
-                            _resultType = eResultTypeKnobValue;
-                        } else {
-                            std::stringstream ss;
-                            ss << _symbol << ": a variable can only be bound to a value";
-                            _error = ss.str();
-                        }
-                        return;
-                    }
-                    continue;
-                }
-            }
-
-            {
-                EffectInstancePtr curNodeOut;
-                if (checkForNode(token, currentGroup, currentNode, &curNodeOut)) {
-                    // If we caught a node, check if it is a group too
-                    currentNode = curNodeOut;
-                    currentGroup = toNodeGroup(currentNode);
-                    currentHolder = currentNode;
-                    currentTableItem.reset();
-                    currentKnob.reset();
-                    if (isLastToken) {
-                        if (_testingEnabled) {
-                            // If testing is enabled, set the result to be valid
-                            _resultType = eResultTypeKnobValue;
-                        } else {
-                            std::stringstream ss;
-                            ss << _symbol << ": a variable can only be bound to a value";
-                            _error = ss.str();
-                        }
-                        return;
-                    }
-                    continue;
-                }
-            }
-
-            {
-                KnobTableItemPtr curTableItemOut;
-                if (checkForTableItem(token, currentHolder, &curTableItemOut)) {
-                    // If we caught a node, check if it is a group too
-                    currentTableItem = curTableItemOut;
-                    currentHolder = currentTableItem;
-                    currentNode.reset();
-                    currentGroup.reset();
-                    currentKnob.reset();
-                    if (isLastToken) {
-                        if (_testingEnabled) {
-                            // If testing is enabled, set the result to be valid
-                            _resultType = eResultTypeKnobValue;
-                        } else {
-                            std::stringstream ss;
-                            ss << _symbol << ": a variable can only be bound to a value";
-                            _error = ss.str();
-                        }
-                        return;
-                    }
-                    continue;
-                }
-            }
-
-            {
-                if (checkForProject(token)) {
-                    ProjectPtr proj = _knob->getHolder()->getApp()->getProject();
-                    currentHolder = proj;
-                    currentTableItem.reset();
-                    currentNode.reset();
-                    currentGroup = proj;
-                    currentKnob.reset();
-                    if (isLastToken) {
-                        if (_testingEnabled) {
-                            // If testing is enabled, set the result to be valid
-                            _resultType = eResultTypeKnobValue;
-                        } else {
-                            std::stringstream ss;
-                            ss << _symbol << ": a variable can only be bound to a value";
-                            _error = ss.str();
-                        }
-                        return;
-                    }
-                    continue;
-                }
-            }
-
-            {
-                KnobIPtr curKnobOut;
-                if (checkForKnob(token, currentHolder, &curKnobOut)) {
-                    // If we caught a node, check if it is a group too
-                    currentKnob = curKnobOut;
-                    currentHolder.reset();
-                    currentTableItem.reset();
-                    currentNode.reset();
-                    currentGroup.reset();
-                    if (isLastToken) {
-                        if (currentKnob->getNDimensions() > 1) {
-                            if (_testingEnabled) {
-                                // If testing is enabled, set the result to be valid
-                                _resultType = eResultTypeKnobValue;
-                            } else {
-                                std::stringstream ss;
-                                ss << _symbol << ": this parameter has multiple dimension, please specify one";
-                                _error = ss.str();
-                            }
-                            return ;
-                        } else {
-
-                            // single dimension, return the value of the knob at dimension 0
-                            _targetView = _view;
-                            _targetKnob = currentKnob;
-                            _targetDimension = DimIdx(0);
-                            _resultType = eResultTypeKnobValue;
-                            return;
-                        }
-                    }
-                    continue;
-                }
-            }
-
-
-            if (currentKnob && checkForDimension(token, currentKnob, &currentDimension)) {
-                // If we caught a node, check if it is a group too
-                currentHolder.reset();
-                currentTableItem.reset();
-                currentNode.reset();
-                currentGroup.reset();
-                if (!isLastToken) {
-                    std::stringstream ss;
-                    ss << _symbol << ": a variable can only be bound to a value";
-                    _error = ss.str();
-                    return ;
-                }
-                _targetKnob = currentKnob;
-                _targetDimension = currentDimension;
-                _targetView = currentView;
-                _resultType = eResultTypeKnobValue;
-
-                return;
-            }
-
-            if (currentKnob && token == "option" && dynamic_cast<KnobChoice*>(currentKnob.get())) {
-                // For a KnobChoice, we can get the option string directly
-                if (!isLastToken) {
-                    std::stringstream ss;
-                    ss << _symbol << ": a variable can only be bound to a value";
-                    _error = ss.str();
-                    return ;
-                }
-                _targetKnob = currentKnob;
-                _targetDimension = currentDimension;
-                _targetView = currentView;
-                _resultType = eResultTypeKnobChoiceOption;
-                return;
-            }
-
-            // Check is the user wants the region of definition of an effect
-            if (currentNode) {
-
-
-                if (token == "rod") {
-                    // The rod of the effect
-                    _resultType = eResultTypeEffectRoD;
-                    _effectProperty = currentNode;
-                    return;
-                }
-            }
-
-            // Now check if we want the name of an object
-
-            if (token == "name") {
-                bool gotName = false;
-                if (currentKnob) {
-                    gotName = true;
-                    _objectName = currentKnob->getName();
-                } else if (currentTableItem) {
-                    gotName = true;
-                    _objectName = currentTableItem->getScriptName_mt_safe();
-                } else if (currentNode) {
-                    gotName = true;
-                    _objectName = currentNode->getScriptName_mt_safe();
-                }
-
-                if (gotName) {
-                    _resultType = eResultTypeObjectName;
-                    return;
-                }
-            }
-
-            _error = "Undefined symbol " + _symbol;
-            _resultType = eResultTypeInvalid;
-            return;
-            
-        } // for each splits
-
-    } // resolve
-
-    NodeCollectionPtr getThisGroup() const
-    {
-        EffectInstancePtr thisNode = getThisNode();
-        if (!thisNode) {
-            return NodeCollectionPtr();
-        }
-        return thisNode->getNode()->getGroup();
-    }
-
-    bool checkForGroup(const std::string& str, NodeCollectionPtr* retIsGroup) const
-    {
-        retIsGroup->reset();
-        if (str == "thisGroup") {
-            *retIsGroup = getThisGroup();
-            return true;
-
-        }
-        return false;
-    }
-
-    EffectInstancePtr getThisNode() const
-    {
-        KnobHolderPtr holder = _knob->getHolder();
-        if (!holder) {
-            return EffectInstancePtr();
-        }
-        EffectInstancePtr effect = toEffectInstance(_knob->getHolder());
-        KnobTableItemPtr tableItem = toKnobTableItem(_knob->getHolder());
-        if (tableItem) {
-            effect = tableItem->getModel()->getNode()->getEffectInstance();
-        }
-        return effect;
-    }
-
-    bool checkForNode(const std::string& str, const NodeCollectionPtr& callerGroup, const EffectInstancePtr& callerIsNode, EffectInstancePtr* retIsNode) const
-    {
-        retIsNode->reset();
-        if (str == "thisNode") {
-            *retIsNode = getThisNode();
-            return true;
-        } else if (callerGroup) {
-            // Loop over all nodes within the caller group
-            NodePtr foundNode = callerGroup->getNodeByName(str);
-            if (foundNode) {
-                *retIsNode = foundNode->getEffectInstance();
-                return true;
-            }
-        }
-
-        // Check for an inputNumber
-        if (callerIsNode) {
-            std::string prefix("input");
-            std::size_t foundPrefix = str.find(prefix);
-            if (foundPrefix != std::string::npos) {
-                std::string inputNumberStr = str.substr(prefix.size());
-                int inputNb = -1;
-                if (inputNumberStr.empty()) {
-                    inputNb = 0;
-                } else {
-                    bool isValidNumber = true;
-                    for (std::size_t i = 0 ; i < inputNumberStr.size(); ++i) {
-                        if (!std::isdigit(inputNumberStr[i])) {
-                            isValidNumber = false;
-                            break;
-                        }
-                    }
-                    if (isValidNumber) {
-                        inputNb = std::atoi(inputNumberStr.c_str());
-                    }
-                }
-                if (inputNb != -1) {
-                    *retIsNode = callerIsNode->getInputMainInstance(inputNb);
-                    if (*retIsNode) {
-                        return true;
-                    }
-                }
-
-            }
-        }
-        return false;
-
-    }
-
-    KnobTableItemPtr getThisTableItem() const
-    {
-        KnobHolderPtr holder = _knob->getHolder();
-        if (!holder) {
-            return KnobTableItemPtr();
-        }
-        return toKnobTableItem(_knob->getHolder());
-    }
-
-    bool checkForProject(const std::string& str) const
-    {
-        if (str == "app") {
-            return true;
-        }
-        return false;
-    }
-
-    bool checkForTableItem(const std::string& str, const KnobHolderPtr& callerHolder, KnobTableItemPtr* retIsTableItem) const
-    {
-        retIsTableItem->reset();
-        if (str == "thisItem") {
-            *retIsTableItem = getThisTableItem();
-            return true;
-        } else if (callerHolder) {
-            EffectInstancePtr callerIsEffect = toEffectInstance(callerHolder);
-            KnobTableItemPtr callerIsTableItem = toKnobTableItem(callerHolder);
-            assert(callerIsEffect || callerIsTableItem);
-            if (callerIsEffect) {
-                KnobItemsTablePtr table = callerIsEffect->getItemsTable();
-                if (table) {
-                    *retIsTableItem = table->getTopLevelItemByScriptName(str);
-                    if (*retIsTableItem) {
-                        return true;
-                    }
-                }
-            } else if (callerIsTableItem) {
-                *retIsTableItem = callerIsTableItem->getChildItemByScriptName(str);
-                if (*retIsTableItem) {
-                    return true;
-                }
-            }
-
-        }
-        return false;
-    }
-
-    KnobIPtr getThisKnob() const
-    {
-        return _knob->shared_from_this();
-    }
-
-    bool checkForKnob(const std::string& str, const KnobHolderPtr& callerHolder, KnobIPtr* retIsKnob) const
-    {
-        retIsKnob->reset();
-        if (str == "thisKnob") {
-            *retIsKnob = getThisKnob();
-            return true;
-        } else if (callerHolder) {
-            *retIsKnob = callerHolder->getKnobByName(str);
-            if (*retIsKnob) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    bool checkForDimension(const std::string& str, const KnobIPtr& callerKnob, DimIdx* retIsDimension) const
-    {
-        if (str == "dimension") {
-            *retIsDimension = _dimension;
-            return true;
-        } else if (callerKnob) {
-            int idx;
-            if (isDimensionIndex(str, &idx)) {
-                *retIsDimension = DimIdx(idx);
-                return true;
-            }
-        }
-        return false;
-    }
-
-};
-
-struct ExprUnresolvedSymbolResolver : public exprtk::parser<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::unknown_symbol_resolver
-{
-    typedef typename exprtk::parser<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::unknown_symbol_resolver usr_t;
-
-    KnobHelper* _knob;
-    TimeValue _time;
-    DimIdx _dimension;
-    ViewIdx _view;
-    KnobExprTkExpr* _ret;
-    usr_variable_user_type _varType;
-    EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t _resolvedScalar;
-    std::vector<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t> _resolvedVector;
-    std::string _resolvedString;
-
-
-    ExprUnresolvedSymbolResolver(KnobHelper* knob, TimeValue time, DimIdx dimension, ViewIdx view, KnobExprTkExpr* ret)
-    : exprtk::parser<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::unknown_symbol_resolver()
-    , _knob(knob)
-    , _time(time)
-    , _dimension(dimension)
-    , _view(view)
-    , _ret(ret)
-    , _varType(e_usr_variable_user_type_scalar)
-    , _resolvedScalar(0)
-    , _resolvedVector()
-    , _resolvedString()
-    {
-
-    }
-    virtual usr_symbol_type getSymbolType() const OVERRIDE FINAL
-    {
-        // Values are variables since we will update them later on
-        return e_usr_variable_type;
-    }
-
-    virtual usr_variable_user_type getVariableType() const OVERRIDE FINAL
-    {
-        return _varType;
-    }
-
-    virtual EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t getResolvedScalar() OVERRIDE FINAL
-    {
-        assert(_varType == e_usr_variable_user_type_scalar);
-        return _resolvedScalar;
-    }
-
-    virtual std::string& getResolvedString() OVERRIDE FINAL
-    {
-        assert(_varType == e_usr_variable_user_type_string);
-        return _resolvedString;
-    }
-
-    virtual std::vector<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>& getResolvedVector()  OVERRIDE FINAL
-    {
-        assert(_varType == e_usr_variable_user_type_vector);
-        return _resolvedVector;
-    }
-
-    virtual bool process(const std::string& unknown_symbol, std::string& error_message) OVERRIDE FINAL
-    {
-
-        SymbolResolver resolver(_knob, _dimension, _view, unknown_symbol);
-        if (resolver._testingEnabled) {
-            _varType = e_usr_variable_user_type_scalar;
-            if (resolver._resultType == SymbolResolver::eResultTypeInvalid) {
-                _resolvedScalar = 0;
-            } else {
-                _resolvedScalar = 1;
-            }
-            return true;
-        }
-        switch (resolver._resultType) {
-            case SymbolResolver::eResultTypeInvalid: {
-                std::stringstream ss;
-                ss << "Error when parsing symbol " << unknown_symbol;
-                if (!resolver._error.empty()) {
-                    ss << ": " << resolver._error;
-                }
-                error_message = ss.str();
-            }   return false;
-            case SymbolResolver::eResultTypeObjectName: {
-                _resolvedString = resolver._objectName;
-                _varType = e_usr_variable_user_type_string;
-            }   break;
-            case SymbolResolver::eResultTypeKnobChoiceOption: {
-                KnobChoice* isChoice = dynamic_cast<KnobChoice*>(_knob);
-                if (!isChoice) {
-                    return false;
-                }
-                _resolvedString = isChoice->getActiveEntry(_view).id;
-                _varType = e_usr_variable_user_type_string;
-            }   break;
-            case SymbolResolver::eResultTypeEffectRoD: {
-                GetRegionOfDefinitionResultsPtr results;
-                ActionRetCodeEnum stat = resolver._effectProperty->getRegionOfDefinition_public(_time, RenderScale(1.), _view, &results);
-                _varType = e_usr_variable_user_type_vector;
-                _resolvedVector.resize(4);
-                if (isFailureRetCode(stat)) {
-                    _resolvedVector[0] = _resolvedVector[1] = _resolvedVector[2] = _resolvedVector[3] = 0.;
-                } else {
-                    const RectD& rod = results->getRoD();
-                    _resolvedVector[0] = rod.x1;
-                    _resolvedVector[1] = rod.y1;
-                    _resolvedVector[2] = rod.x2;
-                    _resolvedVector[3] = rod.y2;
-                }
-            }   break;
-
-            case SymbolResolver::eResultTypeKnobValue: {
-
-                // Register the target knob as a dependency of this expression
-                {
-                    KnobDimViewKey dep;
-                    dep.knob = resolver._targetKnob;
-                    dep.dimension = resolver._targetDimension;
-                    dep.view = resolver._targetView;
-                    _ret->knobDependencies.insert(std::make_pair(unknown_symbol, dep));
-                }
-
-
-                // Return the value of the knob at the given dimension
-                KnobBoolBasePtr isBoolean = toKnobBoolBase(resolver._targetKnob);
-                KnobStringBasePtr isString = toKnobStringBase(resolver._targetKnob);
-                KnobIntBasePtr isInt = toKnobIntBase(resolver._targetKnob);
-                KnobDoubleBasePtr isDouble = toKnobDoubleBase(resolver._targetKnob);
-                if (isBoolean) {
-                    _resolvedScalar = EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t(isBoolean->getValueAtTime(_time, resolver._targetDimension, resolver._targetView));
-                    _varType = e_usr_variable_user_type_scalar;
-                } else if (isInt) {
-                    _resolvedScalar = EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t(isInt->getValueAtTime(_time, resolver._targetDimension, resolver._targetView));
-                    _varType = e_usr_variable_user_type_scalar;
-                } else if (isDouble) {
-                    _resolvedScalar = EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t(isDouble->getValueAtTime(_time, resolver._targetDimension, resolver._targetView));
-                    _varType = e_usr_variable_user_type_scalar;
-                } else if (isString) {
-                    _varType = e_usr_variable_user_type_string;
-                    _resolvedString = isString->getValueAtTime(_time, resolver._targetDimension, resolver._targetView);
-                }
-            }   break;
-        }
-
-        return true;
-    } // process
-
-};
-
-struct curve_func : public exprtk::igeneric_function<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>
-{
-
-    typedef typename exprtk::igeneric_function<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::parameter_list_t parameter_list_t;
-    KnobIWPtr _knob;
-    ViewIdx _view;
-
-    curve_func(const KnobIPtr& knob, ViewIdx view)
-    : exprtk::igeneric_function<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>("T|TT|TTS")
-    , _knob(knob)
-    , _view(view)
-    {
-        /*
-         Overloads:
-         curve(frame)
-         curve(frame, dimension)
-         curve(frame, dimension, view)
-         */
-    }
-
-
-    virtual EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t operator()(const std::size_t& overloadIdx, parameter_list_t parameters) OVERRIDE FINAL
-    {
-        typedef typename exprtk::igeneric_function<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::generic_type generic_type;
-        typedef typename generic_type::scalar_view scalar_t;
-        typedef typename generic_type::string_view string_t;
-
-        assert(overloadIdx + 1 == parameters.size());
-        assert(parameters.size() == 1 || parameters.size() == 2 || parameters.size() == 3);
-        assert(parameters[0].type == generic_type::e_scalar);
-        assert(parameters[1].type == generic_type::e_scalar);
-
-        KnobIPtr knob = _knob.lock();
-        if (!knob) {
-            return 0.;
-        }
-
-        TimeValue frame(0);
-        ViewIdx view(0);
-        DimIdx dimension(0);
-        frame = TimeValue(scalar_t(parameters[0])());
-        if (parameters.size() > 1) {
-            dimension = DimIdx((int)scalar_t(parameters[1])());
-        }
-        if (parameters.size() > 2) {
-            std::string viewStr = exprtk::to_str(string_t(parameters[2]));
-            if (viewStr == "view") {
-                // use the current view
-                view = _view;
-            } else {
-                // Find the view by name in the project
-                const std::vector<std::string>& views = knob->getHolder()->getApp()->getProject()->getProjectViewNames();
-                for (std::size_t i = 0; i < views.size(); ++i) {
-                    if (views[i] == viewStr) {
-                        view = ViewIdx(i);
-                    }
-                }
-            }
-        }
-        
-
-
-        return knob->getRawCurveValueAt(frame, view, dimension);
-    }
-
-};
-
-static void addStandardFunctions(const std::string& expr,
-                                 TimeValue time,
-                                 EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t& symbol_table,
-                                 std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::func_ptr> >& functions,
-                                 std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::vararg_func_ptr> >& varargFunctions,
-                                 std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::generic_func_ptr> >& genericFunctions,
-                                 std::string* modifiedExpression)
-{
-    // Add all functions from the API to the symbol table
-
-    EXPRTK_FUNCTIONS_NAMESPACE::addFunctions(time, &functions);
-    EXPRTK_FUNCTIONS_NAMESPACE::addGenericFunctions(time, &genericFunctions);
-    EXPRTK_FUNCTIONS_NAMESPACE::addVarargFunctions(time, &varargFunctions);
-
-    for (std::size_t i = 0; i < functions.size(); ++i) {
-        bool ok = symbol_table.add_function(functions[i].first, *functions[i].second);
-        assert(ok);
-        Q_UNUSED(ok);
-    }
-    for (std::size_t i = 0; i < varargFunctions.size(); ++i) {
-        bool ok = symbol_table.add_function(varargFunctions[i].first, *varargFunctions[i].second);
-        assert(ok);
-        Q_UNUSED(ok);
-    }
-
-    for (std::size_t i = 0; i < genericFunctions.size(); ++i) {
-        bool ok = symbol_table.add_function(genericFunctions[i].first, *genericFunctions[i].second);
-        assert(ok);
-        Q_UNUSED(ok);
-    }
-
-    if (modifiedExpression) {
-        // Modify the expression so that the last line is modified by "var exprResult:= ..."; return [exprResult]"
-        *modifiedExpression = expr;
-        {
-
-            // Check for the last ';' indicating the previous statement
-            std::size_t foundLastStatement = modifiedExpression->find_last_of(';');
-            std::string toPrepend = "var NatronExprtkExpressionResult := ";
-            bool mustAddSemiColon = true;
-            if (foundLastStatement == std::string::npos) {
-                // There's no ';', the expression is a single statement, pre-pend directly
-                modifiedExpression->insert(0, toPrepend);
-            } else {
-                // Check that there's no whitespace after the last ';' otherwise the user
-                // just wrote a ';' after the last statement, which is allowed.
-                bool hasNonWhitespace = false;
-                for (std::size_t i = foundLastStatement + 1; i < modifiedExpression->size(); ++i) {
-                    if (!std::isspace((*modifiedExpression)[i])) {
-                        hasNonWhitespace = true;
-                        break;
-                    }
-                }
-                if (!hasNonWhitespace) {
-                    foundLastStatement = modifiedExpression->find_last_of(';', foundLastStatement - 1);
-                    mustAddSemiColon = false;
-                }
-                if (foundLastStatement == std::string::npos) {
-                    modifiedExpression->insert(0, toPrepend);
-                } else {
-                    modifiedExpression->insert(foundLastStatement + 1, toPrepend);
-                }
-            }
-            if (mustAddSemiColon) {
-                (*modifiedExpression) += ';';
-            }
-            std::string toAppend = "\nreturn [NatronExprtkExpressionResult]";
-            modifiedExpression->append(toAppend);
-        }
-    } // modifiedExpression
-
-} // addStandardFunctions
-
-static bool parseExprtkExpression(const std::string& originalExpression,
-                                  const std::string& expressionString,
-                                  EXPRTK_FUNCTIONS_NAMESPACE::parser_t& parser,
-                                  EXPRTK_FUNCTIONS_NAMESPACE::expression_t& expressionObject,
-                                  std::string* error)
-{
-
-    // Compile the expression
-    if (!parser.compile(expressionString, expressionObject)) {
-
-        std::stringstream ss;
-        ss << "Error(s) while compiling the following expression:" << std::endl;
-        ss << originalExpression << std::endl;
-        for (std::size_t i = 0; i < parser.error_count(); ++i) {
-            // Include the specific nature of each error
-            // and its position in the expression string.
-
-            exprtk::parser_error::type error = parser.get_error(i);
-            ss << "Error: " << i << " Position: " << error.token.position << std::endl;
-            ss << "Type: " << exprtk::parser_error::to_str(error.mode) << std::endl;
-            ss << "Message: " << error.diagnostic << std::endl;
-        }
-        *error = ss.str();
-        return false;
-    }
-    return true;
-} // parseExprtkExpression
-
-
-static KnobHelper::ExpressionReturnValueTypeEnum handleExprTkReturn(EXPRTK_FUNCTIONS_NAMESPACE::expression_t& expressionObject, double* retValueIsScalar, std::string* retValueIsString, std::string* error)
-{
-    const EXPRTK_FUNCTIONS_NAMESPACE::results_context_t& results = expressionObject.results();
-    if (results.count() != 1) {
-        std::stringstream ss;
-        ss << "The expression must return one value using the \"return\" keyword";
-        *error = ss.str();
-        return KnobHelper::eExpressionReturnValueTypeError;
-    }
-
-    switch (results[0].type) {
-        case exprtk::type_store<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::e_scalar:
-            *retValueIsScalar = (double)*reinterpret_cast<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t*>(results[0].data);
-            return KnobHelper::eExpressionReturnValueTypeScalar;
-        case exprtk::type_store<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::e_string:
-            *retValueIsString = std::string(reinterpret_cast<const char*>(results[0].data));
-            return KnobHelper::eExpressionReturnValueTypeString;
-
-        case exprtk::type_store<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::e_vector:
-        case exprtk::type_store<EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t>::e_unknown:
-            std::stringstream ss;
-            ss << "The expression must either return a scalar or string value depending on the parameter type";
-            *error = ss.str();
-            return KnobHelper::eExpressionReturnValueTypeError;
-    }
-    
-} // handleExprTkReturn
-
-
 
 void
-KnobHelperPrivate::validateExprTKExpression(const std::string& expression, DimIdx dimension, ViewIdx view, std::string* resultAsString, KnobExprTkExpr* ret) const
-{
-
-    // Symbol table containing all variables that the user may use but that we do not pre-declare, such
-    // as knob values etc...
-    EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t unknown_var_symbol_table;
-
-    // Symbol table containing all pre-declared variables (frame, view etc...)
-    EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t symbol_table;
-
-    QThread* curThread = QThread::currentThread();
-
-    KnobExprTkExpr::ExpressionDataPtr& data = ret->data[curThread];
-    if (!data) {
-        data.reset(new KnobExprTkExpr::ExpressionData);
-    }
-    data->expressionObject.reset(new EXPRTK_FUNCTIONS_NAMESPACE::expression_t);
-    data->expressionObject->register_symbol_table(unknown_var_symbol_table);
-    data->expressionObject->register_symbol_table(symbol_table);
-
-    // Pre-declare the variables with a stub value, they will be updated at evaluation time
-    TimeValue time = publicInterface->getCurrentRenderTime();
-
-    KnobIPtr thisShared = publicInterface->shared_from_this();
-
-    {
-        double time_f = (double)time;
-        symbol_table.add_variable("frame", time_f);
-    }
-
-    std::string viewName = publicInterface->getHolder()->getApp()->getProject()->getViewName(view);
-    symbol_table.add_stringvar("view", viewName, false);
-
-    {
-        // The object that resolves undefined knob dependencies at compile time
-        ExprUnresolvedSymbolResolver musr(publicInterface, time, dimension, view, ret);
-        EXPRTK_FUNCTIONS_NAMESPACE::parser_t parser;
-        parser.enable_unknown_symbol_resolver(&musr);
-
-
-        addStandardFunctions(expression, time, symbol_table, data->functions, data->varargFunctions, data->genericFunctions, &ret->modifiedExpression);
-
-
-        EXPRTK_FUNCTIONS_NAMESPACE::generic_func_ptr curveFunc(new curve_func(thisShared, view));
-        data->genericFunctions.push_back(std::make_pair("curve", curveFunc));
-        symbol_table.add_function("curve", *curveFunc);
-
-        std::string error;
-        if (!parseExprtkExpression(expression, ret->modifiedExpression, parser, *data->expressionObject, &error)) {
-            throw std::runtime_error(error);
-        }
-
-
-    } // parser
-
-    data->expressionObject->value();
-    double retValueIsScalar;
-    std::string error;
-    KnobHelper::ExpressionReturnValueTypeEnum stat = handleExprTkReturn(*data->expressionObject, &retValueIsScalar, resultAsString, &error);
-    switch (stat) {
-        case KnobHelper::eExpressionReturnValueTypeError:
-            throw std::runtime_error(error);
-            break;
-        case KnobHelper::eExpressionReturnValueTypeScalar: {
-            std::stringstream ss;
-            ss << retValueIsScalar;
-            *resultAsString = ss.str();
-        }   break;
-        case KnobHelper::eExpressionReturnValueTypeString:
-            break;
-    }
-} // validateExprTKExpression
-
-
-void
-KnobHelper::validateExpression(const std::string& expression,
+KnobHelper::validateExpression(const string& expression,
                                ExpressionLanguageEnum language,
                                DimIdx dimension,
                                ViewIdx view,
                                bool hasRetVariable,
-                               std::string* resultAsString)
+                               string* resultAsString)
 {
     switch (language) {
-        case eExpressionLanguagePython:
-            _imp->validatePythonExpression(expression, dimension, view, hasRetVariable, resultAsString);
-            break;
-        case eExpressionLanguageExprTK: {
-            KnobExprTkExpr ret;
-            _imp->validateExprTKExpression(expression, dimension, view, resultAsString, &ret);
-        }
+    case eExpressionLanguagePython:
+        _imp->validatePythonExpression(expression, dimension, view, hasRetVariable, resultAsString);
+        break;
+    case eExpressionLanguageExprTk: {
+        KnobExprExprTk ret;
+        _imp->validateExprTkExpression(expression, dimension, view, resultAsString, &ret);
+    }
     }
 } // KnobHelper::validateExpression
 
+
 NATRON_NAMESPACE_ANONYMOUS_ENTER
-struct ExprToReApply {
+
+struct ExprToReApply
+{
     ViewIdx view;
     DimIdx dimension;
-    std::string expr;
+    string expr;
     ExpressionLanguageEnum language;
     bool hasRet;
 };
+
 NATRON_NAMESPACE_ANONYMOUS_EXIT
+
 
 bool
 KnobHelper::checkInvalidExpressions()
@@ -2047,12 +729,12 @@ KnobHelper::checkInvalidExpressions()
     int ndims = getNDimensions();
 
 
-    std::vector<ExprToReApply> exprToReapply;
+    vector<ExprToReApply> exprToReapply;
     {
         QMutexLocker k(&_imp->common->expressionMutex);
         for (int i = 0; i < ndims; ++i) {
             for (ExprPerViewMap::const_iterator it = _imp->common->expressions[i].begin(); it != _imp->common->expressions[i].end(); ++it) {
-                if (!it->second || it->second->exprInvalid.empty()) {
+                if ( !it->second || it->second->exprInvalid.empty() ) {
                     continue;
                 }
                 exprToReapply.resize(exprToReapply.size() + 1);
@@ -2062,31 +744,32 @@ KnobHelper::checkInvalidExpressions()
 
                 data.expr = it->second->expressionString;
                 data.language = it->second->language;
-                KnobPythonExpr* isPythonExpr = dynamic_cast<KnobPythonExpr*>(it->second.get());
+                KnobExprPython* isPythonExpr = dynamic_cast<KnobExprPython*>( it->second.get() );
                 if (isPythonExpr) {
                     data.hasRet = isPythonExpr->hasRet;
                 } else {
                     data.hasRet = false;
                 }
-
             }
         }
     }
     bool isInvalid = false;
     for (std::size_t i = 0; i < exprToReapply.size(); ++i) {
         setExpressionInternal(exprToReapply[i].dimension, exprToReapply[i].view, exprToReapply[i].expr, exprToReapply[i].language, exprToReapply[i].hasRet, false /*throwOnFailure*/);
-        std::string err;
+        string err;
         if ( !isExpressionValid(exprToReapply[i].dimension, exprToReapply[i].view, &err) ) {
             isInvalid = true;
         }
     }
+
     return !isInvalid;
 }
+
 
 bool
 KnobHelper::isExpressionValid(DimIdx dimension,
                               ViewIdx view,
-                              std::string* error) const
+                              string* error) const
 {
     if ( ( dimension >= (int)_imp->common->expressions.size() ) || (dimension < 0) ) {
         throw std::invalid_argument("KnobHelper::isExpressionValid(): Dimension out of range");
@@ -2097,23 +780,29 @@ KnobHelper::isExpressionValid(DimIdx dimension,
         QMutexLocker k(&_imp->common->expressionMutex);
         if (error) {
             ExprPerViewMap::const_iterator foundView = _imp->common->expressions[dimension].find(view_i);
-            if (foundView != _imp->common->expressions[dimension].end() && foundView->second) {
+            if ( ( foundView != _imp->common->expressions[dimension].end() ) && foundView->second ) {
                 *error = foundView->second->exprInvalid;
+
                 return error->empty();
             }
         }
     }
+
     return true;
 }
 
+
 void
-KnobHelper::setExpressionInvalidInternal(DimIdx dimension, ViewIdx view, bool valid, const std::string& error)
+KnobHelper::setExpressionInvalidInternal(DimIdx dimension,
+                                         ViewIdx view,
+                                         bool valid,
+                                         const string& error)
 {
     bool wasValid;
     {
         QMutexLocker k(&_imp->common->expressionMutex);
         ExprPerViewMap::iterator foundView = _imp->common->expressions[dimension].find(view);
-        if (foundView == _imp->common->expressions[dimension].end() || !foundView->second) {
+        if ( ( foundView == _imp->common->expressions[dimension].end() ) || !foundView->second ) {
             return;
         }
         wasValid = foundView->second->exprInvalid.empty();
@@ -2132,7 +821,7 @@ KnobHelper::setExpressionInvalidInternal(DimIdx dimension, ViewIdx view, bool va
             for (int i = 0; i < ndims; ++i) {
                 if (i != dimension) {
                     for (ExprPerViewMap::const_iterator it = _imp->common->expressions[i].begin(); it != _imp->common->expressions[i].end(); ++it) {
-                        if (it->first != view && it->second) {
+                        if ( (it->first != view) && it->second ) {
                             if ( !it->second->exprInvalid.empty() ) {
                                 haveOtherExprInvalid = true;
                                 break;
@@ -2149,29 +838,28 @@ KnobHelper::setExpressionInvalidInternal(DimIdx dimension, ViewIdx view, bool va
             getHolder()->getApp()->removeInvalidExpressionKnob( shared_from_this() );
         }
         _signalSlotHandler->s_expressionChanged(dimension, view);
-
     }
-
 }
+
 
 void
 KnobHelper::setExpressionInvalid(DimSpec dimension,
                                  ViewSetSpec view,
                                  bool valid,
-                                 const std::string& error)
+                                 const string& error)
 {
-    if (!getHolder() || !getHolder()->getApp()) {
+    if ( !getHolder() || !getHolder()->getApp() ) {
         return;
     }
     std::list<ViewIdx> views = getViewsList();
-    if (dimension.isAll()) {
+    if ( dimension.isAll() ) {
         for (int i = 0; i < _imp->common->dimension; ++i) {
-            if (view.isAll()) {
+            if ( view.isAll() ) {
                 for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
                     setExpressionInvalidInternal(DimIdx(i), *it, valid, error);
                 }
             } else {
-                ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view.value()));
+                ViewIdx view_i = checkIfViewExistsOrFallbackMainView( ViewIdx( view.value() ) );
                 setExpressionInvalidInternal(DimIdx(i), view_i, valid, error);
             }
         }
@@ -2179,12 +867,12 @@ KnobHelper::setExpressionInvalid(DimSpec dimension,
         if ( ( dimension >= (int)_imp->common->expressions.size() ) || (dimension < 0) ) {
             throw std::invalid_argument("KnobHelper::setExpressionInvalid(): Dimension out of range");
         }
-        if (view.isAll()) {
+        if ( view.isAll() ) {
             for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
                 setExpressionInvalidInternal(DimIdx(dimension), *it, valid, error);
             }
         } else {
-            ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view.value()));
+            ViewIdx view_i = checkIfViewExistsOrFallbackMainView( ViewIdx( view.value() ) );
             setExpressionInvalidInternal(DimIdx(dimension), view_i, valid, error);
         }
     }
@@ -2194,8 +882,8 @@ KnobHelper::setExpressionInvalid(DimSpec dimension,
 void
 KnobHelper::setExpressionInternal(DimIdx dimension,
                                   ViewIdx view,
-                                  const std::string& expression,
-                                  ExpressionLanguageEnum language, 
+                                  const string& expression,
+                                  ExpressionLanguageEnum language,
                                   bool hasRetVariable,
                                   bool failIfInvalid)
 {
@@ -2206,37 +894,36 @@ KnobHelper::setExpressionInternal(DimIdx dimension,
     assert( dimension >= 0 && dimension < getNDimensions() );
 
 
-
     ///Clear previous expr
-    clearExpression(dimension, ViewSetSpec(view));
+    clearExpression( dimension, ViewSetSpec(view) );
 
     if ( expression.empty() ) {
         return;
     }
 
 
-    std::string exprResult;
-
+    string exprResult;
     KnobExprPtr expressionObj;
     boost::scoped_ptr<PythonGILLocker> pgl;
     try {
         switch (language) {
-            case eExpressionLanguagePython: {
-                pgl.reset(new PythonGILLocker);
-                boost::shared_ptr<KnobPythonExpr> obj(new KnobPythonExpr);
-                expressionObj = obj;
-                obj->modifiedExpression = _imp->validatePythonExpression(expression, dimension, view, hasRetVariable, &exprResult);
-                obj->hasRet = hasRetVariable;
-            }   break;
-            case eExpressionLanguageExprTK: {
-                boost::shared_ptr<KnobExprTkExpr> obj(new KnobExprTkExpr);
-                expressionObj = obj;
-                _imp->validateExprTKExpression(expression, dimension, view, &exprResult, obj.get());
-            }   break;
+        case eExpressionLanguagePython: {
+            pgl.reset(new PythonGILLocker);
+            shared_ptr<KnobExprPython> obj(new KnobExprPython);
+            expressionObj = obj;
+            obj->modifiedExpression = _imp->validatePythonExpression(expression, dimension, view, hasRetVariable, &exprResult);
+            obj->hasRet = hasRetVariable;
+        }
+        break;
+        case eExpressionLanguageExprTk: {
+            shared_ptr<KnobExprExprTk> obj(new KnobExprExprTk);
+            expressionObj = obj;
+            _imp->validateExprTkExpression( expression, dimension, view, &exprResult, obj.get() );
+        }
+        break;
         }
         expressionObj->expressionString = expression;
         expressionObj->language = language;
-
     } catch (const std::exception &e) {
         expressionObj->exprInvalid = e.what();
         if (failIfInvalid) {
@@ -2251,7 +938,7 @@ KnobHelper::setExpressionInternal(DimIdx dimension,
 
     KnobHolderPtr holder = getHolder();
     if (holder) {
-        if (!expressionObj->exprInvalid.empty()) {
+        if ( !expressionObj->exprInvalid.empty() ) {
             assert(!failIfInvalid);
             AppInstancePtr app = holder->getApp();
             if (app) {
@@ -2262,31 +949,33 @@ KnobHelper::setExpressionInternal(DimIdx dimension,
             // In python, the dependencies tracking is done by executing the expression itself unlike exprtk
             // where we have the dependencies list directly when compiling
             switch (language) {
-                case eExpressionLanguagePython: {
-                    EXPR_RECURSION_LEVEL();
-                    _imp->parseListenersFromExpression(dimension, view);
-                }   break;
-                case eExpressionLanguageExprTK: {
-                    KnobExprTkExpr* obj = dynamic_cast<KnobExprTkExpr*>(expressionObj.get());
-                    KnobIPtr thisShared = shared_from_this();
-                    for (std::map<std::string, KnobDimViewKey>::const_iterator it = obj->knobDependencies.begin(); it != obj->knobDependencies.end(); ++it) {
-                        it->second.knob.lock()->addListener(dimension, it->second.dimension, view, it->second.view, thisShared, eExpressionLanguageExprTK);
-                    }
-                }   break;
+            case eExpressionLanguagePython: {
+                EXPR_RECURSION_LEVEL();
+                _imp->parseListenersFromExpression(dimension, view);
             }
-            
+            break;
+            case eExpressionLanguageExprTk: {
+                KnobExprExprTk* obj = dynamic_cast<KnobExprExprTk*>( expressionObj.get() );
+                KnobIPtr thisShared = shared_from_this();
+                for (std::map<string, KnobDimViewKey>::const_iterator it = obj->knobDependencies.begin(); it != obj->knobDependencies.end(); ++it) {
+                    it->second.knob.lock()->addListener(dimension, it->second.dimension, view, it->second.view, thisShared, eExpressionLanguageExprTk);
+                }
+            }
+            break;
+            }
         }
     }
-    
+
 
     // Notify the expr. has changed
     expressionChanged(dimension, view);
 } // setExpressionInternal
 
+
 void
 KnobHelper::setExpressionCommon(DimSpec dimension,
                                 ViewSetSpec view,
-                                const std::string& expression,
+                                const string& expression,
                                 ExpressionLanguageEnum language,
                                 bool hasRetVariable,
                                 bool failIfInvalid)
@@ -2295,14 +984,14 @@ KnobHelper::setExpressionCommon(DimSpec dimension,
     ScopedChanges_RAII changes(this);
 
     std::list<ViewIdx> views = getViewsList();
-    if (dimension.isAll()) {
+    if ( dimension.isAll() ) {
         for (int i = 0; i < _imp->common->dimension; ++i) {
-            if (view.isAll()) {
+            if ( view.isAll() ) {
                 for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
                     setExpressionInternal(DimIdx(i), *it, expression, language, hasRetVariable, failIfInvalid);
                 }
             } else {
-                ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view.value()));
+                ViewIdx view_i = checkIfViewExistsOrFallbackMainView( ViewIdx( view.value() ) );
                 setExpressionInternal(DimIdx(i), view_i, expression, language, hasRetVariable, failIfInvalid);
             }
         }
@@ -2310,12 +999,12 @@ KnobHelper::setExpressionCommon(DimSpec dimension,
         if ( ( dimension >= (int)_imp->common->expressions.size() ) || (dimension < 0) ) {
             throw std::invalid_argument("KnobHelper::setExpressionCommon(): Dimension out of range");
         }
-        if (view.isAll()) {
+        if ( view.isAll() ) {
             for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
                 setExpressionInternal(DimIdx(dimension), *it, expression, language, hasRetVariable, failIfInvalid);
             }
         } else {
-            ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view.value()));
+            ViewIdx view_i = checkIfViewExistsOrFallbackMainView( ViewIdx( view.value() ) );
             setExpressionInternal(DimIdx(dimension), view_i, expression, language, hasRetVariable, failIfInvalid);
         }
     }
@@ -2323,19 +1012,20 @@ KnobHelper::setExpressionCommon(DimSpec dimension,
     evaluateValueChange(dimension, getHolder()->getCurrentRenderTime(), view, eValueChangedReasonUserEdited);
 } // setExpressionCommon
 
+
 void
 KnobHelper::replaceNodeNameInExpressionInternal(DimIdx dimension,
                                                 ViewIdx view,
-                                                const std::string& oldName,
-                                                const std::string& newName)
+                                                const string& oldName,
+                                                const string& newName)
 {
+    EffectInstancePtr isEffect = toEffectInstance( getHolder() );
 
-    EffectInstancePtr isEffect = toEffectInstance(getHolder());
     if (!isEffect) {
         return;
     }
 
-    std::string hasExpr = getExpression(dimension, view);
+    string hasExpr = getExpression(dimension, view);
     if ( hasExpr.empty() ) {
         return;
     }
@@ -2349,14 +1039,14 @@ KnobHelper::replaceNodeNameInExpressionInternal(DimIdx dimension,
         setExpression(dimension, ViewSetSpec(view), hasExpr, lang, hasRetVar, false);
     } catch (...) {
     }
-
 } // replaceNodeNameInExpressionInternal
+
 
 void
 KnobHelper::replaceNodeNameInExpression(DimSpec dimension,
                                         ViewSetSpec view,
-                                        const std::string& oldName,
-                                        const std::string& newName)
+                                        const string& oldName,
+                                        const string& newName)
 {
     if (oldName == newName) {
         return;
@@ -2365,17 +1055,17 @@ KnobHelper::replaceNodeNameInExpression(DimSpec dimension,
     if (!holder) {
         return;
     }
-    ScopedChanges_RAII changes(holder.get());
+    ScopedChanges_RAII changes( holder.get() );
 
     std::list<ViewIdx> views = getViewsList();
-    if (dimension.isAll()) {
+    if ( dimension.isAll() ) {
         for (int i = 0; i < _imp->common->dimension; ++i) {
-            if (view.isAll()) {
+            if ( view.isAll() ) {
                 for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
                     replaceNodeNameInExpressionInternal(DimIdx(i), *it, oldName, newName);
                 }
             } else {
-                ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view.value()));
+                ViewIdx view_i = checkIfViewExistsOrFallbackMainView( ViewIdx( view.value() ) );
                 replaceNodeNameInExpressionInternal(DimIdx(i), view_i, oldName, newName);
             }
         }
@@ -2383,80 +1073,85 @@ KnobHelper::replaceNodeNameInExpression(DimSpec dimension,
         if ( ( dimension >= (int)_imp->common->expressions.size() ) || (dimension < 0) ) {
             throw std::invalid_argument("KnobHelper::replaceNodeNameInExpression(): Dimension out of range");
         }
-        if (view.isAll()) {
+        if ( view.isAll() ) {
             for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
                 replaceNodeNameInExpressionInternal(DimIdx(dimension), *it, oldName, newName);
             }
         } else {
-            ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view.value()));
+            ViewIdx view_i = checkIfViewExistsOrFallbackMainView( ViewIdx( view.value() ) );
             replaceNodeNameInExpressionInternal(DimIdx(dimension), view_i, oldName, newName);
         }
     }
-
-
 } // replaceNodeNameInExpression
 
+
 ExpressionLanguageEnum
-KnobHelper::getExpressionLanguage(Natron::ViewIdx view, Natron::DimIdx dimension) const
+KnobHelper::getExpressionLanguage(Natron::ViewIdx view,
+                                  Natron::DimIdx dimension) const
 {
-    if (dimension < 0 || dimension >= (int)_imp->common->expressions.size()) {
+    if ( (dimension < 0) || ( dimension >= (int)_imp->common->expressions.size() ) ) {
         throw std::invalid_argument("KnobHelper::getExpressionLanguage(): Dimension out of range");
     }
     ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     QMutexLocker k(&_imp->common->expressionMutex);
     ExprPerViewMap::const_iterator foundView = _imp->common->expressions[dimension].find(view_i);
-    if (foundView == _imp->common->expressions[dimension].end()) {
-        return eExpressionLanguageExprTK;
+    if ( foundView == _imp->common->expressions[dimension].end() ) {
+        return eExpressionLanguageExprTk;
     }
     if (!foundView->second) {
-        return eExpressionLanguageExprTK;
+        return eExpressionLanguageExprTk;
     }
+
     return foundView->second->language;
 }
 
+
 bool
-KnobHelper::isExpressionUsingRetVariable(ViewIdx view, DimIdx dimension) const
+KnobHelper::isExpressionUsingRetVariable(ViewIdx view,
+                                         DimIdx dimension) const
 {
-    if (dimension < 0 || dimension >= (int)_imp->common->expressions.size()) {
+    if ( (dimension < 0) || ( dimension >= (int)_imp->common->expressions.size() ) ) {
         throw std::invalid_argument("KnobHelper::isExpressionUsingRetVariable(): Dimension out of range");
     }
     ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     QMutexLocker k(&_imp->common->expressionMutex);
     ExprPerViewMap::const_iterator foundView = _imp->common->expressions[dimension].find(view_i);
-    if (foundView == _imp->common->expressions[dimension].end()) {
+    if ( foundView == _imp->common->expressions[dimension].end() ) {
         return false;
     }
     if (!foundView->second) {
         return false;
     }
-    KnobPythonExpr* isPythonExpr = dynamic_cast<KnobPythonExpr*>(foundView->second.get());
+    KnobExprPython* isPythonExpr = dynamic_cast<KnobExprPython*>( foundView->second.get() );
     if (!isPythonExpr) {
         return false;
     }
+
     return isPythonExpr->hasRet;
 }
+
 
 bool
 KnobHelper::getExpressionDependencies(DimIdx dimension,
                                       ViewIdx view,
                                       KnobDimViewKeySet& dependencies) const
 {
-    if (dimension < 0 || dimension >= (int)_imp->common->expressions.size()) {
+    if ( (dimension < 0) || ( dimension >= (int)_imp->common->expressions.size() ) ) {
         throw std::invalid_argument("KnobHelper::getExpressionDependencies(): Dimension out of range");
     }
     ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     QMutexLocker k(&_imp->common->expressionMutex);
     ExprPerViewMap::const_iterator foundView = _imp->common->expressions[dimension].find(view_i);
-    if (foundView == _imp->common->expressions[dimension].end() || !foundView->second) {
+    if ( ( foundView == _imp->common->expressions[dimension].end() ) || !foundView->second ) {
         return false;
     }
-    KnobPythonExpr* isPythonExpr = dynamic_cast<KnobPythonExpr*>(foundView->second.get());
-    KnobExprTkExpr* isExprtkExpr = dynamic_cast<KnobExprTkExpr*>(foundView->second.get());
+    KnobExprPython* isPythonExpr = dynamic_cast<KnobExprPython*>( foundView->second.get() );
+    KnobExprExprTk* isExprtkExpr = dynamic_cast<KnobExprExprTk*>( foundView->second.get() );
     assert(isPythonExpr || isExprtkExpr);
     if (isPythonExpr) {
         dependencies = isPythonExpr->dependencies;
     } else if (isExprtkExpr) {
-        for (std::map<std::string, KnobDimViewKey>::const_iterator it = isExprtkExpr->knobDependencies.begin(); it != isExprtkExpr->knobDependencies.end(); ++it) {
+        for (std::map<string, KnobDimViewKey>::const_iterator it = isExprtkExpr->knobDependencies.begin(); it != isExprtkExpr->knobDependencies.end(); ++it) {
             dependencies.insert(it->second);
         }
     } else {
@@ -2466,8 +1161,10 @@ KnobHelper::getExpressionDependencies(DimIdx dimension,
     return true;
 }
 
+
 bool
-KnobHelper::clearExpressionInternal(DimIdx dimension, ViewIdx view)
+KnobHelper::clearExpressionInternal(DimIdx dimension,
+                                    ViewIdx view)
 {
     PythonGILLocker pgl;
     bool hadExpression = false;
@@ -2475,15 +1172,15 @@ KnobHelper::clearExpressionInternal(DimIdx dimension, ViewIdx view)
     {
         QMutexLocker k(&_imp->common->expressionMutex);
         ExprPerViewMap::iterator foundView = _imp->common->expressions[dimension].find(view);
-        if (foundView != _imp->common->expressions[dimension].end() && foundView->second) {
+        if ( ( foundView != _imp->common->expressions[dimension].end() ) && foundView->second ) {
             hadExpression = true;
-            KnobPythonExpr* isPythonExpr = dynamic_cast<KnobPythonExpr*>(foundView->second.get());
-            KnobExprTkExpr* isExprtkExpr = dynamic_cast<KnobExprTkExpr*>(foundView->second.get());
+            KnobExprPython* isPythonExpr = dynamic_cast<KnobExprPython*>( foundView->second.get() );
+            KnobExprExprTk* isExprtkExpr = dynamic_cast<KnobExprExprTk*>( foundView->second.get() );
             assert(isPythonExpr || isExprtkExpr);
             if (isPythonExpr) {
                 dependencies = isPythonExpr->dependencies;
             } else if (isExprtkExpr) {
-                for (std::map<std::string, KnobDimViewKey>::const_iterator it = isExprtkExpr->knobDependencies.begin(); it != isExprtkExpr->knobDependencies.end(); ++it) {
+                for (std::map<string, KnobDimViewKey>::const_iterator it = isExprtkExpr->knobDependencies.begin(); it != isExprtkExpr->knobDependencies.end(); ++it) {
                     dependencies.insert(it->second);
                 }
             }
@@ -2492,12 +1189,10 @@ KnobHelper::clearExpressionInternal(DimIdx dimension, ViewIdx view)
     }
     KnobIPtr thisShared = shared_from_this();
     {
-
         // Notify all dependencies of the expression that they no longer listen to this knob
         KnobDimViewKey listenerToRemoveKey(thisShared, dimension, view);
         for (KnobDimViewKeySet::iterator it = dependencies.begin();
              it != dependencies.end(); ++it) {
-
             KnobIPtr otherKnob = it->knob.lock();
             KnobHelper* other = dynamic_cast<KnobHelper*>( otherKnob.get() );
             if (!other) {
@@ -2506,10 +1201,9 @@ KnobHelper::clearExpressionInternal(DimIdx dimension, ViewIdx view)
 
             {
                 QMutexLocker otherMastersLocker(&other->_imp->common->expressionMutex);
-
                 KnobDimViewKeySet& otherListeners = other->_imp->common->listeners[it->dimension][it->view];
                 KnobDimViewKeySet::iterator foundListener = otherListeners.find(listenerToRemoveKey);
-                if (foundListener != otherListeners.end()) {
+                if ( foundListener != otherListeners.end() ) {
                     otherListeners.erase(foundListener);
                 }
             }
@@ -2519,24 +1213,26 @@ KnobHelper::clearExpressionInternal(DimIdx dimension, ViewIdx view)
     if (hadExpression) {
         expressionChanged(dimension, view);
     }
+
     return hadExpression;
 } // clearExpressionInternal
+
 
 void
 KnobHelper::clearExpression(DimSpec dimension,
                             ViewSetSpec view)
 {
-
     bool didSomething = false;
+
     std::list<ViewIdx> views = getViewsList();
-    if (dimension.isAll()) {
+    if ( dimension.isAll() ) {
         for (int i = 0; i < _imp->common->dimension; ++i) {
-            if (view.isAll()) {
+            if ( view.isAll() ) {
                 for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
                     didSomething |= clearExpressionInternal(DimIdx(i), *it);
                 }
             } else {
-                ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view.value()));
+                ViewIdx view_i = checkIfViewExistsOrFallbackMainView( ViewIdx( view.value() ) );
                 didSomething |= clearExpressionInternal(DimIdx(i), view_i);
             }
         }
@@ -2544,38 +1240,40 @@ KnobHelper::clearExpression(DimSpec dimension,
         if ( ( dimension >= (int)_imp->common->expressions.size() ) || (dimension < 0) ) {
             throw std::invalid_argument("KnobHelper::clearExpression(): Dimension out of range");
         }
-        if (view.isAll()) {
+        if ( view.isAll() ) {
             for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
                 didSomething |= clearExpressionInternal(DimIdx(dimension), *it);
             }
         } else {
-            ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view.value()));
+            ViewIdx view_i = checkIfViewExistsOrFallbackMainView( ViewIdx( view.value() ) );
             didSomething |= clearExpressionInternal(DimIdx(dimension), view_i);
         }
     }
 
 
     if (didSomething) {
-        if (getHolder()) {
+        if ( getHolder() ) {
             evaluateValueChange(dimension, getHolder()->getTimelineCurrentTime(), view, eValueChangedReasonUserEdited);
         }
     }
-
 } // KnobHelper::clearExpression
 
+
 void
-KnobHelper::expressionChanged(DimIdx dimension, ViewIdx view)
-{ 
+KnobHelper::expressionChanged(DimIdx dimension,
+                              ViewIdx view)
+{
     _signalSlotHandler->s_expressionChanged(dimension, view);
 
     computeHasModifications();
 }
 
+
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
-static bool
+bool
 catchErrors(PyObject* mainModule,
-            std::string* error)
+            string* error)
 {
     if ( PyErr_Occurred() ) {
         PyErr_Print();
@@ -2603,259 +1301,56 @@ catchErrors(PyObject* mainModule,
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
-
 KnobHelper::ExpressionReturnValueTypeEnum
-KnobHelper::executeExprTKExpression(TimeValue time, ViewIdx view, DimIdx dimension, double* retValueIsScalar, std::string* retValueIsString, std::string* error)
-{
-
-    boost::shared_ptr<KnobExprTkExpr> obj;
-
-    // Take the expression mutex. Copying the exprtk expression does not actually copy all variables and functions, it just
-    // increments a shared reference count.
-    // To be thread safe we have 2 solutions:
-    // 1) Compile the expression for each thread and then run it without a mutex
-    // 2) Compile only once and run the expression under a lock
-    // We picked solution 1)
-    {
-        QMutexLocker k(&_imp->common->expressionMutex);
-        ExprPerViewMap::const_iterator foundView = _imp->common->expressions[dimension].find(view);
-        if (foundView == _imp->common->expressions[dimension].end() || !foundView->second) {
-            return eExpressionReturnValueTypeError;
-        }
-        KnobExprTkExpr* isExprtkExpr = dynamic_cast<KnobExprTkExpr*>(foundView->second.get());
-        assert(isExprtkExpr);
-        // Copy the expression object so it is local to this thread
-        obj = boost::dynamic_pointer_cast<KnobExprTkExpr>(foundView->second);
-        assert(obj);
-    }
-
-    QThread* curThread = QThread::currentThread();
-
-    KnobExprTkExpr::ExpressionDataPtr data;
-    {
-        QMutexLocker k(&obj->lock);
-        KnobExprTkExpr::PerThreadDataMap::iterator foundThreadData = obj->data.find(curThread);
-        if (foundThreadData == obj->data.end()) {
-            data.reset(new KnobExprTkExpr::ExpressionData);
-            std::pair<KnobExprTkExpr::PerThreadDataMap::iterator, bool> ret = obj->data.insert(std::make_pair(curThread, data));
-            assert(ret.second);
-            foundThreadData = ret.first;
-        } else {
-            data = foundThreadData->second;
-            assert(data);
-        }
-    }
-
-    bool isRenderClone = getHolder()->isRenderClone();
-
-
-    EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t* unknown_symbols_table = 0;//
-    EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t* symbol_table = 0; //obj->expressionObject->get_symbol_table(1);
-
-    bool existingExpression = true;
-    if (!data->expressionObject) {
-
-        // We did not build the expression already
-        existingExpression = false;
-        data->expressionObject.reset(new EXPRTK_FUNCTIONS_NAMESPACE::expression_t);
-        EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t tmpUnresolved;
-        EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t tmpResolved;
-        data->expressionObject->register_symbol_table(tmpUnresolved);
-        data->expressionObject->register_symbol_table(tmpResolved);
-    }
-
-    unknown_symbols_table = &data->expressionObject->get_symbol_table(0);
-    symbol_table = &data->expressionObject->get_symbol_table(1);
-
-
-    if (existingExpression) {
-        // Update the frame & view in the know table
-        symbol_table->variable_ref("frame") = (double)time;
-
-        // Remove from the symbol table functions that hold a state, and re-add a new fresh local copy of them so that the state
-        // is local to this thread.
-        std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::func_ptr > > functionsCopy;
-        EXPRTK_FUNCTIONS_NAMESPACE::makeLocalCopyOfStateFunctions(time, *symbol_table, &functionsCopy);
-
-    } else {
-        double time_f = (double)time;
-        symbol_table->add_variable("frame", time_f);
-        std::string viewName = getHolder()->getApp()->getProject()->getViewName(view);
-        symbol_table->add_stringvar("view", viewName, false);
-
-        addStandardFunctions(obj->expressionString, time, *symbol_table, data->functions, data->varargFunctions, data->genericFunctions, 0);
-
-
-        KnobIPtr thisShared = shared_from_this();
-
-        EXPRTK_FUNCTIONS_NAMESPACE::generic_func_ptr curveFunc(new curve_func(thisShared, view));
-        data->genericFunctions.push_back(std::make_pair("curve", curveFunc));
-        symbol_table->add_function("curve", *curveFunc);
-
-        EXPRTK_FUNCTIONS_NAMESPACE::parser_t parser;
-        std::string error;
-        if (!parseExprtkExpression(obj->expressionString, obj->modifiedExpression, parser, *data->expressionObject, &error)) {
-            return KnobHelper::eExpressionReturnValueTypeError;
-        }
-
-    } // existingExpression
-
-    for (std::map<std::string, KnobDimViewKey>::const_iterator it = obj->knobDependencies.begin(); it != obj->knobDependencies.end(); ++it) {
-        KnobIPtr knob = it->second.knob.lock();
-        if (!knob) {
-            continue;
-        }
-
-        if (isRenderClone) {
-            // Get the render clone for this knob
-            // First ensure a clone is created for the effect holding the knob
-            // and then fetch the knob clone on it
-            TreeRenderPtr render = getHolder()->getCurrentRender();
-            assert(render);
-            TimeValue time = getHolder()->getCurrentRenderTime();
-            ViewIdx view = getHolder()->getCurrentRenderView();
-            FrameViewRenderKey key = {time, view, render};
-            KnobHolderPtr holderClone = knob->getHolder()->createRenderClone(key);
-
-            knob = knob->getCloneForHolderInternal(holderClone);
-
-        }
-
-        KnobBoolBasePtr isBoolean = toKnobBoolBase(knob);
-        KnobStringBasePtr isString = toKnobStringBase(knob);
-        KnobIntBasePtr isInt = toKnobIntBase(knob);
-        KnobDoubleBasePtr isDouble = toKnobDoubleBase(knob);
-        if (existingExpression) {
-            if (isBoolean) {
-                unknown_symbols_table->variable_ref(it->first) = isBoolean->getValueAtTime(time, it->second.dimension, it->second.view);
-            } else if (isInt) {
-                unknown_symbols_table->variable_ref(it->first) = isInt->getValueAtTime(time, it->second.dimension, it->second.view);
-            } else if (isDouble) {
-                double val = isDouble->getValueAtTime(time, it->second.dimension, it->second.view);
-                unknown_symbols_table->variable_ref(it->first) = val;
-            } else if (isString) {
-                unknown_symbols_table->stringvar_ref(it->first) = isString->getValueAtTime(time, it->second.dimension, it->second.view);
-            }
-        } else {
-            if (isBoolean) {
-                double value = (double)isBoolean->getValueAtTime(time, it->second.dimension, it->second.view);
-                unknown_symbols_table->add_variable(it->first, value);
-            } else if (isInt) {
-                double value = (double)isInt->getValueAtTime(time, it->second.dimension, it->second.view);;
-                unknown_symbols_table->add_variable(it->first, value);
-            } else if (isDouble) {
-                double val = isDouble->getValueAtTime(time, it->second.dimension, it->second.view);
-                unknown_symbols_table->add_variable(it->first, val);
-            } else if (isString) {
-                std::string val = isString->getValueAtTime(time, it->second.dimension, it->second.view);
-                unknown_symbols_table->add_stringvar(it->first, val);
-            }
-
-        }
-    }
-
-    for (std::map<std::string, EffectFunctionDependency>::const_iterator it = obj->effectDependencies.begin(); it != obj->effectDependencies.end(); ++it) {
-        EffectInstancePtr effect = it->second.effect.lock();
-        if (!effect) {
-            continue;
-        }
-
-        if (isRenderClone) {
-            // Get the render clone
-            TreeRenderPtr render = getHolder()->getCurrentRender();
-            assert(render);
-            TimeValue time = getHolder()->getCurrentRenderTime();
-            ViewIdx view = getHolder()->getCurrentRenderView();
-            FrameViewRenderKey key = {time, view, render};
-            effect = toEffectInstance(effect->createRenderClone(key));
-            assert(effect && effect->isRenderClone());
-        }
-        switch (it->second.type) {
-            case EffectFunctionDependency::eEffectFunctionDependencyRoD: {
-                GetRegionOfDefinitionResultsPtr results;
-                ActionRetCodeEnum stat = effect->getRegionOfDefinition_public(time, RenderScale(1.), view, &results);
-                if (isFailureRetCode(stat)) {
-                    std::stringstream ss;
-                    ss << it->first << ": Could not get region of definition";
-                    *error = ss.str();
-                    return eExpressionReturnValueTypeError;
-                }
-                const RectD& rod = results->getRoD();
-
-                if (existingExpression) {
-                    EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t::vector_holder_ptr vecHolderPtr = unknown_symbols_table->get_vector(it->first);
-                    assert(vecHolderPtr->size() == 4);
-                    *(*vecHolderPtr)[0] = EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t(rod.x1);
-                    *(*vecHolderPtr)[1] = EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t(rod.y1);
-                    *(*vecHolderPtr)[2] = EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t(rod.x2);
-                    *(*vecHolderPtr)[3] = EXPRTK_FUNCTIONS_NAMESPACE::exprtk_scalar_t(rod.y2);
-                } else {
-                    std::vector<double> vec(4);
-                    vec[0] = rod.x1;
-                    vec[1] = rod.y1;
-                    vec[2] = rod.x2;
-                    vec[3] = rod.y2;
-                    unknown_symbols_table->add_vector(it->first, &vec[0], vec.size());
-                }
-                break;
-            }
-        }
-    }
-
-
-    // Evaluate the expression
-    data->expressionObject->value();
-    return handleExprTkReturn(*data->expressionObject, retValueIsScalar, retValueIsString, error);
-} // executeExprTKExpression
-
-KnobHelper::ExpressionReturnValueTypeEnum
-KnobHelper::evaluateExpression(const std::string& expr,
+KnobHelper::evaluateExpression(const string& expr,
                                ExpressionLanguageEnum language,
-                               double* retIsScalar, std::string* retIsString,
-                               std::string* error)
+                               double* retIsScalar,
+                               string* retIsString,
+                               string* error)
 {
     KnobHelper::ExpressionReturnValueTypeEnum retCode = eExpressionReturnValueTypeError;
     switch (language) {
-        case eExpressionLanguagePython: {
-            PythonGILLocker pgl;
-            PyObject *ret;
-            bool exprOk = KnobHelper::executePythonExpression(expr, &ret, error);
-            if (!exprOk) {
-                break;
+    case eExpressionLanguagePython: {
+        PythonGILLocker pgl;
+        PyObject *ret;
+        bool exprOk = KnobHelper::executePythonExpression(expr, &ret, error);
+        if (!exprOk) {
+            break;
+        }
+        if ( PyFloat_Check(ret) ) {
+            *retIsScalar =  (double)PyFloat_AsDouble(ret);
+            retCode =  eExpressionReturnValueTypeScalar;
+        } else if ( PyInt_Check(ret) ) {
+            *retIsScalar = (double)PyInt_AsLong(ret);
+            retCode =  eExpressionReturnValueTypeScalar;
+        } else if ( PyLong_Check(ret) ) {
+            *retIsScalar = (double)PyLong_AsLong(ret);
+            retCode =  eExpressionReturnValueTypeScalar;
+        } else if (PyObject_IsTrue(ret) == 1) {
+            *retIsScalar = 1;
+            retCode = eExpressionReturnValueTypeScalar;
+        } else if ( PyUnicode_Check(ret) ) {
+            PyObject* utf8pyobj = PyUnicode_AsUTF8String(ret);     // newRef
+            if (utf8pyobj) {
+                char* cstr = PyBytes_AS_STRING(utf8pyobj);     // Borrowed pointer
+                retIsString->append(cstr);
+                Py_DECREF(utf8pyobj);
             }
-            if ( PyFloat_Check(ret) ) {
-                *retIsScalar =  (double)PyFloat_AsDouble(ret);
-                retCode =  eExpressionReturnValueTypeScalar;
-            } else if ( PyInt_Check(ret) ) {
-                *retIsScalar = (double)PyInt_AsLong(ret);
-                retCode =  eExpressionReturnValueTypeScalar;
-            } else if ( PyLong_Check(ret) ) {
-                *retIsScalar = (double)PyLong_AsLong(ret);
-                retCode =  eExpressionReturnValueTypeScalar;
-            } else if (PyObject_IsTrue(ret) == 1) {
-                *retIsScalar = 1;
-                retCode = eExpressionReturnValueTypeScalar;
-            } else if (PyUnicode_Check(ret)) {
+            retCode = eExpressionReturnValueTypeString;
+        } else {
+            *retIsScalar = 0;
+            retCode = eExpressionReturnValueTypeScalar;
+        }
 
-                PyObject* utf8pyobj = PyUnicode_AsUTF8String(ret); // newRef
-                if (utf8pyobj) {
-                    char* cstr = PyBytes_AS_STRING(utf8pyobj); // Borrowed pointer
-                    retIsString->append(cstr);
-                    Py_DECREF(utf8pyobj);
-                }
-                retCode = eExpressionReturnValueTypeString;
-            } else {
-                *retIsScalar = 0;
-                retCode = eExpressionReturnValueTypeScalar;
-            }
-
-            Py_DECREF(ret); //< new ref
-        }   break;
-        case eExpressionLanguageExprTK: {
-            retCode = KnobHelper::executeExprTKExpression(expr, retIsScalar, retIsString, error);
-        }   break;
+        Py_DECREF(ret);     //< new ref
     }
-    
+    break;
+    case eExpressionLanguageExprTk: {
+        retCode = KnobHelper::executeExprTkExpression(expr, retIsScalar, retIsString, error);
+    }
+    break;
+    }
+
     return retCode;
 }
 
@@ -2865,42 +1360,40 @@ KnobHelper::executePythonExpression(TimeValue time,
                                     ViewIdx view,
                                     DimIdx dimension,
                                     PyObject** ret,
-                                    std::string* error) const
+                                    string* error) const
 {
-    if (dimension < 0 || dimension >= (int)_imp->common->expressions.size()) {
+    if ( (dimension < 0) || ( dimension >= (int)_imp->common->expressions.size() ) ) {
         throw std::invalid_argument("KnobHelper::executeExpression(): Dimension out of range");
     }
 
-    EffectInstancePtr effect = toEffectInstance(getHolder());
+    EffectInstancePtr effect = toEffectInstance( getHolder() );
     if (effect) {
         appPTR->setLastPythonAPICaller_TLS(effect);
     }
 
 
-    std::string expr;
+    string expr;
     {
         QMutexLocker k(&_imp->common->expressionMutex);
         ExprPerViewMap::const_iterator foundView = _imp->common->expressions[dimension].find(view);
-        if (foundView == _imp->common->expressions[dimension].end() || !foundView->second) {
+        if ( ( foundView == _imp->common->expressions[dimension].end() ) || !foundView->second ) {
             return false;
         }
-        KnobPythonExpr* isPythonExpr = dynamic_cast<KnobPythonExpr*>(foundView->second.get());
+        KnobExprPython* isPythonExpr = dynamic_cast<KnobExprPython*>( foundView->second.get() );
         assert(isPythonExpr);
         expr = isPythonExpr->modifiedExpression;
     }
-
-    std::stringstream ss;
-
-    std::string viewName;
-    if (getHolder() && getHolder()->getApp()) {
+    stringstream ss;
+    string viewName;
+    if ( getHolder() && getHolder()->getApp() ) {
         viewName = getHolder()->getApp()->getProject()->getViewName(view);
     }
-    if (viewName.empty()) {
+    if ( viewName.empty() ) {
         viewName = "Main";
     }
 
     ss << expr << '(' << time << ", \"" << viewName << "\")\n";
-    std::string script = ss.str();
+    string script = ss.str();
 
     ///Reset the random state to reproduce the sequence
     randomSeed( time, hashFunction(dimension) );
@@ -2908,17 +1401,18 @@ KnobHelper::executePythonExpression(TimeValue time,
     return executePythonExpression(ss.str(), ret, error);
 } // executeExpression
 
+
 bool
-KnobHelper::executePythonExpression(const std::string& expr,
-                              PyObject** ret,
-                              std::string* error)
+KnobHelper::executePythonExpression(const string& expr,
+                                    PyObject** ret,
+                                    string* error)
 {
     //returns a new ref, this function's documentation is not clear onto what it returns...
     //https://docs.python.org/2/c-api/veryhigh.html
     PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
     PyObject* globalDict = PyModule_GetDict(mainModule);
-
     PyObject* v = PyRun_String(expr.c_str(), Py_file_input, globalDict, 0);
+
     Py_XDECREF(v);
 
     *ret = 0;
@@ -2943,48 +1437,22 @@ KnobHelper::executePythonExpression(const std::string& expr,
     return true;
 }
 
-KnobHelper::ExpressionReturnValueTypeEnum
-KnobHelper::executeExprTKExpression(const std::string& expr, double* retValueIsScalar, std::string* retValueIsString, std::string* error)
+
+string
+KnobHelper::getExpression(DimIdx dimension,
+                          ViewIdx view) const
 {
-    EXPRTK_FUNCTIONS_NAMESPACE::symbol_table_t symbol_table;
-
-    EXPRTK_FUNCTIONS_NAMESPACE::expression_t expressionObj;
-    expressionObj.register_symbol_table(symbol_table);
-
-    std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::func_ptr> > functions;
-    std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::vararg_func_ptr> > varargFunctions;
-    std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::generic_func_ptr> > genericFunctions;
-
-    TimeValue time(0);
-    EXPRTK_FUNCTIONS_NAMESPACE::parser_t parser;
-    std::string modifiedExpr;
-    addStandardFunctions(expr, time, symbol_table, functions, varargFunctions, genericFunctions, &modifiedExpr);
-
-    if (!parseExprtkExpression(expr, modifiedExpr, parser, expressionObj, error)) {
-        return eExpressionReturnValueTypeError;
-    }
-
-    // Evaluate the expression
-    expressionObj.value();
-    return handleExprTkReturn(expressionObj, retValueIsScalar, retValueIsString, error);
-
-} // executeExprTKExpression
-
-std::string
-KnobHelper::getExpression(DimIdx dimension, ViewIdx view) const
-{
-    if (dimension < 0 || dimension >= (int)_imp->common->expressions.size()) {
+    if ( (dimension < 0) || ( dimension >= (int)_imp->common->expressions.size() ) ) {
         throw std::invalid_argument("Knob::getExpression: Dimension out of range");
     }
     ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     QMutexLocker k(&_imp->common->expressionMutex);
     ExprPerViewMap::const_iterator foundView = _imp->common->expressions[dimension].find(view_i);
-    if (foundView == _imp->common->expressions[dimension].end() || !foundView->second) {
-        return std::string();
+    if ( ( foundView == _imp->common->expressions[dimension].end() ) || !foundView->second ) {
+        return string();
     }
+
     return foundView->second->expressionString;
 }
-
-
 
 NATRON_NAMESPACE_EXIT

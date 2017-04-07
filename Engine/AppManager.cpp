@@ -769,8 +769,9 @@ AppManager::setApplicationLocale()
     // see http://en.cppreference.com/w/cpp/locale/locale/global
     // Maybe this can also workaround the OSX crash in loadlocale():
     // https://discussions.apple.com/thread/3479591
-    // https://github.com/cth103/dcpomatic/blob/master/src/lib/safe_stringstream.h
-    // stringstreams don't seem to be thread-safe on OSX because the change the locale.
+    // https://github.com/cth103/dcpomatic1/blob/master/src/lib/safe_stringstream.h
+    // https://github.com/cth103/dcpomatic/commit/b1dc9c3a2f7e55c9afc5bf2d5b465371b048e14f
+    // stringstreams don't seem to be thread-safe on OSX because they change the locale.
 
     // We also set explicitely the LC_NUMERIC locale to "C" to avoid juggling
     // between locales when using stringstreams.
