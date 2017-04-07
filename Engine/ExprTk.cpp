@@ -1110,7 +1110,7 @@ private:
 };
 
 
-struct ExprUnresolvedSymbolResolver
+struct UnknownSymbolResolver
     : public exprtk_parser_t::unknown_symbol_resolver
 {
     KnobHelper* _knob;
@@ -1124,11 +1124,11 @@ struct ExprUnresolvedSymbolResolver
     string _resolvedString;
 
 
-    ExprUnresolvedSymbolResolver(KnobHelper* knob,
-                                 TimeValue time,
-                                 DimIdx dimension,
-                                 ViewIdx view,
-                                 KnobExprExprTk* ret)
+    UnknownSymbolResolver(KnobHelper* knob,
+                          TimeValue time,
+                          DimIdx dimension,
+                          ViewIdx view,
+                          KnobExprExprTk* ret)
         : exprtk_parser_t::unknown_symbol_resolver()
         , _knob(knob)
         , _time(time)
@@ -1203,8 +1203,8 @@ struct ExprUnresolvedSymbolResolver
         case SymbolResolver::eResultTypeObjectName: {
             _resolvedString = resolver._objectName;
             _varType = e_usr_variable_user_type_string;
+            break;
         }
-        break;
         case SymbolResolver::eResultTypeKnobChoiceOption: {
             KnobChoice* isChoice = dynamic_cast<KnobChoice*>(_knob);
             if (!isChoice) {
@@ -1212,8 +1212,8 @@ struct ExprUnresolvedSymbolResolver
             }
             _resolvedString = isChoice->getActiveEntry(_view).id;
             _varType = e_usr_variable_user_type_string;
+            break;
         }
-        break;
         case SymbolResolver::eResultTypeEffectRoD: {
             GetRegionOfDefinitionResultsPtr results;
             ActionRetCodeEnum stat = resolver._effectProperty->getRegionOfDefinition_public(_time, RenderScale(1.), _view, &results);
@@ -1228,8 +1228,8 @@ struct ExprUnresolvedSymbolResolver
                 _resolvedVector[2] = rod.x2;
                 _resolvedVector[3] = rod.y2;
             }
+            break;
         }
-        break;
 
         case SymbolResolver::eResultTypeKnobValue: {
             // Register the target knob as a dependency of this expression
@@ -1260,8 +1260,8 @@ struct ExprUnresolvedSymbolResolver
                 _varType = e_usr_variable_user_type_string;
                 _resolvedString = isString->getValueAtTime(_time, resolver._targetDimension, resolver._targetView);
             }
+            break;
         }
-        break;
         } // switch
 
         return true;
@@ -1509,7 +1509,7 @@ KnobHelperPrivate::validateExprTkExpression(const string& expression,
 
     {
         // The object that resolves undefined knob dependencies at compile time
-        ExprUnresolvedSymbolResolver musr(publicInterface, time, dimension, view, ret);
+        UnknownSymbolResolver musr(publicInterface, time, dimension, view, ret);
         exprtk_parser_t parser;
         parser.enable_unknown_symbol_resolver(&musr);
 
@@ -1539,8 +1539,8 @@ KnobHelperPrivate::validateExprTkExpression(const string& expression,
         stringstream ss;
         ss << retValueIsScalar;
         *resultAsString = ss.str();
+        break;
     }
-    break;
     case KnobHelper::eExpressionReturnValueTypeString:
         break;
     }
