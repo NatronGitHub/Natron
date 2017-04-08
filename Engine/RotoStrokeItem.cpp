@@ -226,21 +226,7 @@ RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other
     strokeDotPatterns = other.strokeDotPatterns;
     drawingGlCpuContext = other.drawingGlCpuContext;
     drawingGlGpuContext = other.drawingGlGpuContext;
-    effectStrength = other.effectStrength;
-    pressureOpacity = other.pressureOpacity;
-    pressureSize = other.pressureSize;
-    pressureHardness = other.pressureHardness;
-    buildUp = other.buildUp;
-    cloneTranslate = other.cloneTranslate;
-    cloneRotate = other.cloneRotate;
-    cloneScale = other.cloneScale;
-    cloneScaleUniform = other.cloneScaleUniform;
-    cloneSkewX = other.cloneSkewX;
-    cloneSkewY = other.cloneSkewY;
-    cloneSkewOrder = other.cloneSkewOrder;
-    cloneCenter = other.cloneCenter;
-    cloneFilter = other.cloneFilter;
-    cloneBlackOutside = other.cloneBlackOutside;
+
 
     assert(currentSubStroke >= 0);
 

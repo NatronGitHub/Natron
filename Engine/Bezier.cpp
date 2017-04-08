@@ -141,26 +141,8 @@ struct BezierPrivate
     , viewShapes()
     {
         QMutexLocker k(&other.itemMutex);
-
         isOpenBezier = other.isOpenBezier;
         baseName = other.baseName;
-        feather = other.feather;
-        featherFallOff = other.featherFallOff;
-        fallOffRampType = other.fallOffRampType;
-
-        for (PerViewBezierShapeMap::const_iterator it = other.viewShapes.begin(); it != other.viewShapes.end(); ++it) {
-            BezierShape& thisShape = viewShapes[it->first];
-            thisShape.finished = it->second.finished;
-            for (BezierCPs::const_iterator it2 = it->second.points.begin(); it2 != it->second.points.end(); ++it2) {
-                BezierCPPtr copy(new BezierCP(**it2));
-                thisShape.points.push_back(copy);
-            }
-            for (BezierCPs::const_iterator it2 = it->second.featherPoints.begin(); it2 != it->second.featherPoints.end(); ++it2) {
-                BezierCPPtr copy(new BezierCP(**it2));
-                thisShape.featherPoints.push_back(copy);
-            }
-
-        }
     }
     
     const BezierShape* getViewShape(ViewIdx view) const
@@ -1173,6 +1155,7 @@ isPointCloseTo(TimeValue time,
     return false;
 }
 
+#if 0
 static bool
 bezierSegmentEqual(TimeValue time,
                   const BezierCP & p0,
@@ -1204,6 +1187,7 @@ bezierSegmentEqual(TimeValue time,
         }
     }
 }
+#endif
 
 void
 Bezier::clearAllPoints()
@@ -2836,8 +2820,7 @@ Bezier::deCastelJau(bool isOpenBezier,
             assert(pointsSingleList);
             bezierSegmentEval(*(*it), *(*next), time,  scale, algo, nbPointsPerSegment, errorScale , transform, pointsSingleList, bbox ? &segbbox : 0, &segbboxSet);
             // If we are a closed bezier or we are not on the last segment, remove the last point so we don't add duplicates
-            if ((!isOpenBezier && finished) && next != cps.end()) {
-
+            if ((!isOpenBezier && finished) && next != cps.begin()) {
                 if (!pointsSingleList->empty()) {
                     pointsSingleList->pop_back();
                 }
@@ -3552,10 +3535,7 @@ Bezier::isClockwiseOriented(TimeValue time, ViewIdx view) const
 
     if (shape->points.size() <= 1) {
         return false;
-    } else if (shape->points.size() == 2) {
-        //It does not matter since there are only 2 points
-        return true;
-    }
+    } 
 
     const BezierCPs& cps = shape->points;
     double polygonSurface = 0.;
@@ -3779,6 +3759,26 @@ Bezier::initializeKnobs()
 void
 Bezier::fetchRenderCloneKnobs()
 {
+    {
+        BezierPtr mainInstance = toBezier(getMainInstance());
+        QMutexLocker k(&mainInstance->_imp->itemMutex);
+        for (PerViewBezierShapeMap::const_iterator it = mainInstance->_imp->viewShapes.begin(); it != mainInstance->_imp->viewShapes.end(); ++it) {
+            BezierShape& thisShape = _imp->viewShapes[it->first];
+            thisShape.finished = it->second.finished;
+            for (BezierCPs::const_iterator it2 = it->second.points.begin(); it2 != it->second.points.end(); ++it2) {
+                BezierCPPtr copy(new BezierCP());
+                copy->copyControlPoint(**it2);
+                thisShape.points.push_back(copy);
+            }
+            for (BezierCPs::const_iterator it2 = it->second.featherPoints.begin(); it2 != it->second.featherPoints.end(); ++it2) {
+                BezierCPPtr copy(new BezierCP());
+                copy->copyControlPoint(**it2);
+                thisShape.featherPoints.push_back(copy);
+            }
+            
+        }
+    }
+
     RotoDrawableItem::fetchRenderCloneKnobs();
     _imp->feather = getKnobByNameAndType<KnobDouble>(kRotoFeatherParam);
     _imp->featherFallOff = getKnobByNameAndType<KnobDouble>(kRotoFeatherFallOffParam);

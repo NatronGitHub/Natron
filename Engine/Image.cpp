@@ -253,7 +253,13 @@ Image::copyPixels(const Image& other, const CopyPixelsArgs& args)
 
     } 
 
-    ImagePtr tmpImage = ImagePrivate::checkIfCopyToTempImageIsNeeded(other, *this, roi);
+    ImagePtr tmpImage;
+    {
+        ActionRetCodeEnum stat = ImagePrivate::checkIfCopyToTempImageIsNeeded(other, *this, roi, &tmpImage);
+        if (isFailureRetCode(stat)) {
+            return stat;
+        }
+    }
 
     const Image* fromImage = tmpImage? tmpImage.get() : &other;
 

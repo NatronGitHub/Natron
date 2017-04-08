@@ -143,7 +143,7 @@ struct ImagePrivate
      * @brief If copying pixels from fromImage to toImage cannot be copied directly, this function
      * returns a temporary image that is suitable to copy then to the toImage.
      **/
-    static ImagePtr checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image& toImage, const RectI& roi);
+    static ActionRetCodeEnum checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image& toImage, const RectI& roi, ImagePtr* outImage);
     
     
     

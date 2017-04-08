@@ -753,6 +753,9 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(bool hasExclusiveLock,
             }
 
             *status = eTileStatusRendered;
+#ifdef TRACE_TILES_STATUS
+            qDebug() << QThread::currentThread()  << effect->getScriptName_mt_safe().c_str() << image.lock()->getLayer().getPlaneLabel().c_str() << internalCacheEntry->getHashKey() << "lookup(): tile " << coord.tx << coord.ty << "is rendered in cache at level" << lookupLevel;
+#endif
             return eLookupTileStateRetCodeUpToDate;
         }
         case eTileStatusPending: {
@@ -763,6 +766,9 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(bool hasExclusiveLock,
                 hasPendingTiles = true;
             }
             *status = eTileStatusPending;
+#ifdef TRACE_TILES_STATUS
+            qDebug() << QThread::currentThread()  << effect->getScriptName_mt_safe().c_str() << image.lock()->getLayer().getPlaneLabel().c_str() << internalCacheEntry->getHashKey() << "lookup(): tile " << coord.tx << coord.ty << "is pending in cache at level" << lookupLevel;
+#endif
             return eLookupTileStateRetCodeUpToDate;
 
         }
@@ -852,6 +858,9 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(bool hasExclusiveLock,
                         localTileState->status = eTileStatusPending;
                         hasPendingTiles = true;
                     }
+#ifdef TRACE_TILES_STATUS
+                    qDebug() << QThread::currentThread()  << effect->getScriptName_mt_safe().c_str() << image.lock()->getLayer().getPlaneLabel().c_str() << internalCacheEntry->getHashKey() << "lookup(): tile " << coord.tx << coord.ty << "is pending in cache at level" << lookupLevel;
+#endif
                     break;
                 case eTileStatusRendered:
 
@@ -872,12 +881,11 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(bool hasExclusiveLock,
                     }
 
                     // Mark this tile so it is found quickly in markCacheTilesAsAborted()
-#ifdef TRACE_TILES_STATUS
-                    qDebug() << QThread::currentThread()  << effect->getScriptName_mt_safe().c_str() << internalCacheEntry->getHashKey() << "marking " << coord.tx << coord.ty << "pending at level" << lookupLevel;
-#endif
 
                     markedTiles[lookupLevel].insert(coord);
-
+#ifdef TRACE_TILES_STATUS
+                    qDebug() << QThread::currentThread()  << effect->getScriptName_mt_safe().c_str() << image.lock()->getLayer().getPlaneLabel().c_str() << internalCacheEntry->getHashKey() << "lookup(): marking tile " << coord.tx << coord.ty << "pending (downscaled from 4 higher scale tiles) at level" << lookupLevel;
+#endif
                     retCode = eLookupTileStateRetCodeUpdated;
 
                     break;
@@ -897,7 +905,7 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(bool hasExclusiveLock,
 
                         // Mark this tile so it is found quickly in markCacheTilesAsAborted()
 #ifdef TRACE_TILES_STATUS
-                        qDebug() << QThread::currentThread() << effect->getScriptName_mt_safe().c_str() << internalCacheEntry->getHashKey() << "marking " << coord.tx << coord.ty << "pending at level" << lookupLevel;
+                        qDebug() << QThread::currentThread() << effect->getScriptName_mt_safe().c_str() << image.lock()->getLayer().getPlaneLabel().c_str() << internalCacheEntry->getHashKey() << "lookup(): marking tile " << coord.tx << coord.ty << "pending at level" << lookupLevel;
 #endif
                         markedTiles[lookupLevel].insert(coord);
 
@@ -1303,7 +1311,7 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
             assert(foundMarked != markedTiles[i].end());
             markedTiles[i].erase(foundMarked);
 #ifdef TRACE_TILES_STATUS
-            qDebug() << QThread::currentThread() << effect->getScriptName_mt_safe().c_str() << internalCacheEntry->getHashKey() << "marking " << tx << ty << "rendered with downscale at level" << i;
+            qDebug() << QThread::currentThread() << effect->getScriptName_mt_safe().c_str() << image.lock()->getLayer().getPlaneLabel().c_str() << internalCacheEntry->getHashKey() << "marking " << tx << ty << "rendered with downscale at level" << i;
 #endif
 
             // Update the state locally if we are on the appropriate mip map level
@@ -1527,7 +1535,9 @@ ImageCacheEntry::getStatus(TileStateHeader* tileStatus, bool* hasUnRenderedTile,
 
     boost::unique_lock<boost::mutex> locker(_imp->lock);
     if (tileStatus) {
-        *tileStatus = TileStateHeader(_imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY, _imp->localTilesState.bounds, _imp->localTilesState.state);
+        // Make a copy of the internal state so it does not get modified by the caller
+        tileStatus->init(_imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY, _imp->localTilesState.bounds);
+        *tileStatus->state = *_imp->localTilesState.state;
     }
     assert((!hasPendingResults && !hasUnRenderedTile) || (hasPendingResults && hasUnRenderedTile));
 
@@ -1628,7 +1638,7 @@ ImageCacheEntry::markCacheTilesAsAborted()
             cacheTileState->status = eTileStatusNotRendered;
             hasModifiedTileMap = true;
 #ifdef TRACE_TILES_STATUS
-            qDebug() << QThread::currentThread() << _imp->effect->getScriptName_mt_safe().c_str() << _imp->internalCacheEntry->getHashKey() << "marking " << it->tx << it->ty << "unrendered at level" << i;
+            qDebug() << QThread::currentThread() << _imp->effect->getScriptName_mt_safe().c_str() << _imp->image.lock()->getLayer().getPlaneLabel().c_str() << _imp->internalCacheEntry->getHashKey() << "marking " << it->tx << it->ty << "unrendered at level" << i;
 #endif
             if (i == _imp->mipMapLevel) {
                 TileState* localTileState = _imp->localTilesState.getTileAt(it->tx, it->ty);
@@ -1802,7 +1812,7 @@ ImageCacheEntry::markCacheTilesAsRendered()
             cacheTileState->status = eTileStatusRendered;
 
 #ifdef TRACE_TILES_STATUS
-            qDebug() << QThread::currentThread() << _imp->effect->getScriptName_mt_safe().c_str() << _imp->internalCacheEntry->getHashKey() <<  "marking " << it->tx << it->ty << "rendered at level" << i;
+            qDebug() << QThread::currentThread() << _imp->effect->getScriptName_mt_safe().c_str() << _imp->image.lock()->getLayer().getPlaneLabel().c_str() << _imp->internalCacheEntry->getHashKey() <<  "marking " << it->tx << it->ty << "rendered at level" << i;
 #endif
             hasModifiedTileMap = true;
 

@@ -160,36 +160,6 @@ public:
     , timeBlurNode(other.timeBlurNode)
 #endif
     , nodes(other.nodes)
-    , overlayColor(other.overlayColor)
-    , opacity(other.opacity)
-    , lifeTime(other.lifeTime)
-    , customRange(other.customRange)
-    , lifeTimeFrame(other.lifeTimeFrame)
-    , invertKnob(other.invertKnob)
-    , color(other.color)
-    , compOperator(other.compOperator)
-    , brushSize(other.brushSize)
-    , brushSpacing(other.brushSpacing)
-    , brushHardness(other.brushHardness)
-    , visiblePortion(other.visiblePortion)
-    , translate(other.translate)
-    , rotate(other.rotate)
-    , scale(other.scale)
-    , scaleUniform(other.scaleUniform)
-    , skewX(other.skewX)
-    , skewY(other.skewY)
-    , skewOrder(other.skewOrder)
-    , center(other.center)
-    , extraMatrix(other.extraMatrix)
-    , motionBlurAmount(other.motionBlurAmount)
-    , motionBlurShutter(other.motionBlurShutter)
-    , motionBlurShutterType(other.motionBlurShutterType)
-    , motionBlurCustomShutter(other.motionBlurCustomShutter)
-    , mergeAInputChoice(other.mergeAInputChoice)
-    , mergeMaskInputChoice(other.mergeMaskInputChoice)
-    , timeOffset(other.timeOffset)
-    , timeOffsetMode(other.timeOffsetMode)
-    , mixKnob(other.mixKnob)
     {
 
     }
@@ -1453,7 +1423,7 @@ RotoDrawableItem::fetchRenderCloneKnobs()
             _imp->invertKnob  = getKnobByNameAndType<KnobButton>(kRotoInvertedParam);
     }
     if (type == eRotoStrokeTypeSolid) {
-        _imp->color = createDuplicateOfTableKnob<KnobColor>(kRotoColorParam);
+        _imp->color = getKnobByNameAndType<KnobColor>(kRotoColorParam);
     }
 
     // Brush: only for strokes or open beziers
