@@ -308,18 +308,8 @@ static void getRoDFromItem(const RotoDrawableItemPtr& item, TimeValue time, View
     double interval = divisions >= 1 ? (range.max - range.min) / divisions : 1.;
 
     for (int i = 0; i < divisions; ++i) {
-        RectD maskRod;
-        try {
-            double t = divisions > 1 ? range.min + i * interval : time;
-            maskRod = item->getBoundingBox(TimeValue(t), view);
-        } catch (...) {
-        }
-
-        if ( rod->isNull() ) {
-            *rod = maskRod;
-        } else {
-            rod->merge(maskRod);
-        }
+        double t = divisions > 1 ? range.min + i * interval : time;
+        *rod = item->getBoundingBox(TimeValue(t), view);
     }
 
 }
@@ -331,6 +321,8 @@ RotoShapeRenderNode::getRegionOfDefinition(TimeValue time, const RenderScale& /*
 
     RotoDrawableItemPtr item = getAttachedRotoItem();
     assert(item);
+    assert((isRenderClone() && item->isRenderClone()) ||
+           (!isRenderClone() && !item->isRenderClone()));
     getRoDFromItem(item, time, view, rod);
 
     return eActionStatusOK;
@@ -535,6 +527,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                     }
                 } else {
                     // Render a bezier
+                    isBezier->getBoundingBox(args.time, args.view).debug();
                     RotoShapeRenderGL::renderBezier_gl(glContext, glData,
                                                        args.roi,
                                                        isBezier, outputPlane.second, opacity, args.time, args.view, range, divisions, combinedScale, GL_TEXTURE_2D);

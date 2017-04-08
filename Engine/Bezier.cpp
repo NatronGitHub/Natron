@@ -141,26 +141,8 @@ struct BezierPrivate
     , viewShapes()
     {
         QMutexLocker k(&other.itemMutex);
-
         isOpenBezier = other.isOpenBezier;
         baseName = other.baseName;
-        feather = other.feather;
-        featherFallOff = other.featherFallOff;
-        fallOffRampType = other.fallOffRampType;
-
-        for (PerViewBezierShapeMap::const_iterator it = other.viewShapes.begin(); it != other.viewShapes.end(); ++it) {
-            BezierShape& thisShape = viewShapes[it->first];
-            thisShape.finished = it->second.finished;
-            for (BezierCPs::const_iterator it2 = it->second.points.begin(); it2 != it->second.points.end(); ++it2) {
-                BezierCPPtr copy(new BezierCP(**it2));
-                thisShape.points.push_back(copy);
-            }
-            for (BezierCPs::const_iterator it2 = it->second.featherPoints.begin(); it2 != it->second.featherPoints.end(); ++it2) {
-                BezierCPPtr copy(new BezierCP(**it2));
-                thisShape.featherPoints.push_back(copy);
-            }
-
-        }
     }
     
     const BezierShape* getViewShape(ViewIdx view) const
@@ -3777,6 +3759,26 @@ Bezier::initializeKnobs()
 void
 Bezier::fetchRenderCloneKnobs()
 {
+    {
+        BezierPtr mainInstance = toBezier(getMainInstance());
+        QMutexLocker k(&mainInstance->_imp->itemMutex);
+        for (PerViewBezierShapeMap::const_iterator it = mainInstance->_imp->viewShapes.begin(); it != mainInstance->_imp->viewShapes.end(); ++it) {
+            BezierShape& thisShape = _imp->viewShapes[it->first];
+            thisShape.finished = it->second.finished;
+            for (BezierCPs::const_iterator it2 = it->second.points.begin(); it2 != it->second.points.end(); ++it2) {
+                BezierCPPtr copy(new BezierCP());
+                copy->copyControlPoint(**it2);
+                thisShape.points.push_back(copy);
+            }
+            for (BezierCPs::const_iterator it2 = it->second.featherPoints.begin(); it2 != it->second.featherPoints.end(); ++it2) {
+                BezierCPPtr copy(new BezierCP());
+                copy->copyControlPoint(**it2);
+                thisShape.featherPoints.push_back(copy);
+            }
+            
+        }
+    }
+
     RotoDrawableItem::fetchRenderCloneKnobs();
     _imp->feather = getKnobByNameAndType<KnobDouble>(kRotoFeatherParam);
     _imp->featherFallOff = getKnobByNameAndType<KnobDouble>(kRotoFeatherFallOffParam);
