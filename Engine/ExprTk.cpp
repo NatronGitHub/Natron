@@ -1350,42 +1350,23 @@ addStandardFunctions(const string& expr,
     }
 
     if (modifiedExpression) {
-        // Modify the expression so that the last line is modified by "var exprResult:= ..."; return [exprResult]"
+        // Wrap the user expression so that it becomes a sub-expression, allowing the user to return string or scalar variables in the same way.
+        // See https://github.com/MrKepzie/Natron/pull/1598 and https://github.com/MrKepzie/Natron/pull/1596
         *modifiedExpression = expr;
+
+        // If the last character is a semi colon, then remove it
         {
-            // Check for the last ';' indicating the previous statement
-            std::size_t foundLastStatement = modifiedExpression->find_last_of(';');
-            string toPrepend = "var NatronExprtkExpressionResult := ";
-            bool mustAddSemiColon = true;
-            if (foundLastStatement == string::npos) {
-                // There's no ';', the expression is a single statement, pre-pend directly
-                modifiedExpression->insert(0, toPrepend);
-            } else {
-                // Check that there's no whitespace after the last ';' otherwise the user
-                // just wrote a ';' after the last statement, which is allowed.
-                bool hasNonWhitespace = false;
-                for (std::size_t i = foundLastStatement + 1; i < modifiedExpression->size(); ++i) {
-                    if ( !std::isspace( (*modifiedExpression)[i] ) ) {
-                        hasNonWhitespace = true;
-                        break;
-                    }
-                }
-                if (!hasNonWhitespace) {
-                    foundLastStatement = modifiedExpression->find_last_of(';', foundLastStatement - 1);
-                    mustAddSemiColon = false;
-                }
-                if (foundLastStatement == string::npos) {
-                    modifiedExpression->insert(0, toPrepend);
-                } else {
-                    modifiedExpression->insert(foundLastStatement + 1, toPrepend);
-                }
+            std::size_t i = modifiedExpression->size() - 1;
+            while (i > 0 && std::isspace((*modifiedExpression)[i])) {
+                --i;
             }
-            if (mustAddSemiColon) {
-                (*modifiedExpression) += ';';
+            if (i > 0 && (*modifiedExpression)[i] == ';') {
+                modifiedExpression->replace(i, 1, "");
             }
-            string toAppend = "\nreturn [NatronExprtkExpressionResult]";
-            modifiedExpression->append(toAppend);
         }
+
+        modifiedExpression->insert(0, "return[~{");
+        modifiedExpression->append("}]");
     } // modifiedExpression
 } // addStandardFunctions
 
