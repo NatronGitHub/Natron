@@ -1316,7 +1316,7 @@ side-effects, however the latter, statement 5, is the final  statement
 in the expression and hence will be assumed to have a side-effect.
 
 During compilation when the DCE  optimisation is applied to the  above
-expression, statement 2 will be removed from the expression, as it has
+expression, statement 3 will be removed from the expression, as it has
 no  bearing  on  the  final result  of  expression,  the  rest of  the
 statements will all remain. The optimised form of the expression is as
 follows:
@@ -1325,7 +1325,7 @@ follows:
    var y := x + 2;  // Statement 2
    y := x + 3y;     // Statement 3
    x - y;           // Statement 4
-
+8
 
 (3) Conditional Statements (If-Then-Else)
 ExprTk support two forms  of conditional branching or  otherwise known
@@ -1358,7 +1358,7 @@ most imperative languages. There are two variations of the statement:
 (a) If-Statement
 This version  of the  conditional statement  returns the  value of the
 consequent expression when the  condition expression is true,  else it
-will require a quiet NaN value as its result.
+will return a quiet NaN value as its result.
 
    Example 1:
    x := if (y < z) y + 3;
@@ -2877,8 +2877,8 @@ simple user defined USR:
 
 
 In  the  example  above,  a user  specified  USR  is  defined, and  is
-registered with the parser enabling the USR functionality. The when an
-unknown  symbol is  encountered during  the  compilation  process, the
+registered with the parser  enabling the USR functionality.  Then when
+an unknown symbol is  encountered during the compilation  process, the
 USR's process method will be invoked. The USR in the example will only
 'accept' unknown symbols that have  a prefix of 'var_' as  being valid
 variables,  all other  unknown symbols  will result  in a  compilation
@@ -4338,14 +4338,16 @@ disable certain features and  capabilities. The defines can  either be
 part of a compiler command line switch or scoped around the include to
 the ExprTk header. The defines are as follows:
 
-   (1) exprtk_enable_debugging
-   (2) exprtk_disable_comments
-   (3) exprtk_disable_break_continue
-   (4) exprtk_disable_sc_andor
-   (5) exprtk_disable_enhanced_features
-   (6) exprtk_disable_string_capabilities
-   (7) exprtk_disable_superscalar_unroll
-   (8) exprtk_disable_rtl_io_file
+   (01) exprtk_enable_debugging
+   (02) exprtk_disable_comments
+   (03) exprtk_disable_break_continue
+   (04) exprtk_disable_sc_andor
+   (05) exprtk_disable_return_statement
+   (06) exprtk_disable_enhanced_features
+   (07) exprtk_disable_string_capabilities
+   (08) exprtk_disable_superscalar_unroll
+   (09) exprtk_disable_rtl_io_file
+   (10) exprtk_disable_rtl_vecops
 
 
 (1) exprtk_enable_debugging
@@ -4366,19 +4368,22 @@ in a compilation failure.
 This define  will disable  the short-circuit  '&' (and)  and '|'  (or)
 operators
 
-(5) exprtk_disable_enhanced_features
+(5) exprtk_disable_return_statement
+This define will disable use of return statements within expressions.
+
+(6) exprtk_disable_enhanced_features
 This  define  will  disable all  enhanced  features  such as  strength
 reduction and special  function optimisations and  expression specific
 type instantiations.  This feature  will reduce  compilation times and
 binary sizes but will  also result in massive  performance degradation
 of expression evaluations.
 
-(6) exprtk_disable_string_capabilities
+(7) exprtk_disable_string_capabilities
 This  define  will  disable all  string  processing  capabilities. Any
 expression that contains a string or string related syntax will result
 in a compilation failure.
 
-(7) exprtk_disable_superscalar_unroll
+(8) exprtk_disable_superscalar_unroll
 This define will set  the loop unroll batch  size to 4 operations  per
 loop  instead of  the default  8 operations.  This define  is used  in
 operations that  involve vectors  and aggregations  over vectors. When
@@ -4386,12 +4391,12 @@ targeting  non-superscalar  architectures, it  may  be recommended  to
 build using this particular option if efficiency of evaluations is  of
 concern.
 
-(8) exprtk_disable_rtl_io_file
+(9) exprtk_disable_rtl_io_file
 This  define will  disable  the  file I/O  RTL package  features. When
 present, any  attempts to register  the file I/O package with  a given
 symbol table will fail causing a compilation error.
 
-(9) exprtk_disable_rtl_vecops
+(10) exprtk_disable_rtl_vecops
 This define will  disable the extended  vector operations RTL  package
 features. When present, any attempts to register the vector operations
 package with  a given  symbol table  will fail  causing a  compilation
