@@ -114,6 +114,8 @@ public:
 
 private:
 
+    virtual KnobHolderPtr createRenderCopy(const FrameViewRenderKey& key) const OVERRIDE FINAL;
+
     virtual void fetchRenderCloneKnobs() OVERRIDE FINAL;
 
     virtual void initializeKnobs() OVERRIDE FINAL;

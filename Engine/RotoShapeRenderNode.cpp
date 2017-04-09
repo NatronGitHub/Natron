@@ -24,6 +24,8 @@
 
 #include "RotoShapeRenderNode.h"
 
+#include <QDebug>
+#include <QThread>
 
 #include "Engine/AppInstance.h"
 #include "Engine/BezierCP.h"
@@ -81,7 +83,11 @@ RotoShapeRenderNode::RotoShapeRenderNode(const EffectInstancePtr& mainInstance, 
 
 RotoShapeRenderNode::~RotoShapeRenderNode()
 {
-
+    if (isRenderClone()) {
+        RotoDrawableItemPtr itemMainInstance = getOriginalAttachedItem();
+        assert(itemMainInstance);
+        itemMainInstance->removeRenderClone(getCurrentRender());
+    }
 }
 
 bool
@@ -155,6 +161,18 @@ RotoShapeRenderNode::initializeKnobs()
         page->addKnob(param);
         _imp->renderType = param;
     }
+}
+
+KnobHolderPtr
+RotoShapeRenderNode::createRenderCopy(const FrameViewRenderKey& key) const
+{
+    RotoDrawableItemPtr mainInstanceItem = getOriginalAttachedItem();
+    assert(mainInstanceItem);
+    KnobHolderPtr itemClone = mainInstanceItem->createRenderClone(key);
+    //qDebug() << QThread::currentThread() << this << "Creating clone" << dynamic_cast<Bezier*>(itemClone.get()) << "for render" << key.render.lock().get();
+
+
+    return EffectInstance::createRenderCopy(key);
 }
 
 void
@@ -324,7 +342,6 @@ RotoShapeRenderNode::getRegionOfDefinition(TimeValue time, const RenderScale& /*
     assert((isRenderClone() && item->isRenderClone()) ||
            (!isRenderClone() && !item->isRenderClone()));
     getRoDFromItem(item, time, view, rod);
-
     return eActionStatusOK;
 
 }
@@ -527,7 +544,6 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                     }
                 } else {
                     // Render a bezier
-                    isBezier->getBoundingBox(args.time, args.view).debug();
                     RotoShapeRenderGL::renderBezier_gl(glContext, glData,
                                                        args.roi,
                                                        isBezier, outputPlane.second, opacity, args.time, args.view, range, divisions, combinedScale, GL_TEXTURE_2D);

@@ -126,12 +126,15 @@ struct BezierPrivate
     //alpha value is half the original value when at half distance from the feather distance
     KnobChoiceWPtr fallOffRampType;
 
+    // When it is a render clone, we cache the result of getBoundingBox()
+    boost::scoped_ptr<RectD> renderCloneBBoxCache;
 
     BezierPrivate(const std::string& baseName, bool isOpenBezier)
     : itemMutex()
     , viewShapes()
     , isOpenBezier(isOpenBezier)
     , baseName(baseName)
+    , renderCloneBBoxCache()
     {
         viewShapes.insert(std::make_pair(ViewIdx(0), BezierShape()));
     }
@@ -139,8 +142,8 @@ struct BezierPrivate
     BezierPrivate(const BezierPrivate& other)
     : itemMutex()
     , viewShapes()
+    , renderCloneBBoxCache()
     {
-        QMutexLocker k(&other.itemMutex);
         isOpenBezier = other.isOpenBezier;
         baseName = other.baseName;
     }
@@ -211,6 +214,7 @@ Bezier::isOpenBezier() const
 
 Bezier::~Bezier()
 {
+ 
 }
 
 KnobHolderPtr
@@ -2934,19 +2938,30 @@ Bezier::getBoundingBox(TimeValue time, ViewIdx view) const
     }
 
     ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
-    RectD bbox;
-    bool bboxSet = false;
-    RectD pointsBbox;
 
     Transform::Matrix3x3 transform;
     getTransformAtTime(time, view, &transform);
 
+    bool renderClone = isRenderClone();
     QMutexLocker l(&_imp->itemMutex);
+    if (renderClone) {
+        if (_imp->renderCloneBBoxCache) {
+            qDebug() << QThread::currentThread() <<  this << "getBoundingBox: (render cached)";
+            _imp->renderCloneBBoxCache->debug();
+            return *_imp->renderCloneBBoxCache;
+        }
+    }
+
+    RectD bbox;
+    bool bboxSet = false;
+    RectD pointsBbox;
+
+
     const BezierShape* shape = _imp->getViewShape(view_i);
     if (!shape) {
         return bbox;
     }
-
+    
 
     bezierSegmentListBboxUpdate(shape->points, shape->finished, _imp->isOpenBezier, time, RenderScale(1.), transform, &pointsBbox);
 
@@ -2979,7 +2994,14 @@ Bezier::getBoundingBox(TimeValue time, ViewIdx view) const
         bbox.merge(pointsBbox);
     }
 
+    if (renderClone) {
 
+        qDebug() << this << "getBoundingBox:";
+        bbox.debug();
+
+        _imp->renderCloneBBoxCache.reset(new RectD);
+        *_imp->renderCloneBBoxCache = bbox;
+    }
     return bbox;
 } // Bezier::getBoundingBox
 

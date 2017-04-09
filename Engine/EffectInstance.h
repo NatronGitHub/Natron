@@ -1230,11 +1230,15 @@ public:
     void refreshDynamicProperties();
 
 
+protected:
+
+    virtual KnobHolderPtr createRenderCopy(const FrameViewRenderKey& key) const OVERRIDE;
+
+    
 private:
 
     ActionRetCodeEnum launchRenderInternal(const RequestPassSharedDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestData);
 
-    virtual KnobHolderPtr createRenderCopy(const FrameViewRenderKey& key) const OVERRIDE FINAL;
 
 public:
 
