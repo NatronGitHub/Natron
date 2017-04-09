@@ -1357,8 +1357,8 @@ addStandardFunctions(const string& expr,
 
         // If the last character is a semi colon, then remove it
         modifiedExpression->resize(std::min(modifiedExpression->size(), modifiedExpression->find_last_not_of(" \t;") + 1));
-        modifiedExpression->insert(0, "return[~{");
-        modifiedExpression->append("}]");
+        modifiedExpression->insert(0, "return[~{\n");
+        modifiedExpression->append("\n}]");
     } // modifiedExpression
 } // addStandardFunctions
 
