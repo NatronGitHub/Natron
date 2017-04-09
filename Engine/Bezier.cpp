@@ -2946,8 +2946,6 @@ Bezier::getBoundingBox(TimeValue time, ViewIdx view) const
     QMutexLocker l(&_imp->itemMutex);
     if (renderClone) {
         if (_imp->renderCloneBBoxCache) {
-            qDebug() << QThread::currentThread() <<  this << "getBoundingBox: (render cached)";
-            _imp->renderCloneBBoxCache->debug();
             return *_imp->renderCloneBBoxCache;
         }
     }
@@ -2995,10 +2993,6 @@ Bezier::getBoundingBox(TimeValue time, ViewIdx view) const
     }
 
     if (renderClone) {
-
-        qDebug() << this << "getBoundingBox:";
-        bbox.debug();
-
         _imp->renderCloneBBoxCache.reset(new RectD);
         *_imp->renderCloneBBoxCache = bbox;
     }
