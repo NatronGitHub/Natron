@@ -1354,17 +1354,9 @@ addStandardFunctions(const string& expr,
         // See https://github.com/MrKepzie/Natron/pull/1598 and https://github.com/MrKepzie/Natron/pull/1596
         *modifiedExpression = expr;
 
-        // If the last character is a semi colon, then remove it
-        {
-            std::size_t i = modifiedExpression->size() - 1;
-            while (i > 0 && std::isspace((*modifiedExpression)[i])) {
-                --i;
-            }
-            if (i > 0 && (*modifiedExpression)[i] == ';') {
-                modifiedExpression->replace(i, 1, "");
-            }
-        }
 
+        // If the last character is a semi colon, then remove it
+        modifiedExpression->resize(modifiedExpression->find_last_not_of(" \t;") + 1);
         modifiedExpression->insert(0, "return[~{");
         modifiedExpression->append("}]");
     } // modifiedExpression
