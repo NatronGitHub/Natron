@@ -166,13 +166,14 @@ RotoShapeRenderNode::initializeKnobs()
 KnobHolderPtr
 RotoShapeRenderNode::createRenderCopy(const FrameViewRenderKey& key) const
 {
+    KnobHolderPtr ret =  EffectInstance::createRenderCopy(key);
     RotoDrawableItemPtr mainInstanceItem = getOriginalAttachedItem();
     assert(mainInstanceItem);
     KnobHolderPtr itemClone = mainInstanceItem->createRenderClone(key);
-    //qDebug() << QThread::currentThread() << this << "Creating clone" << dynamic_cast<Bezier*>(itemClone.get()) << "for render" << key.render.lock().get();
+    //qDebug() << QThread::currentThread() << ret.get() << "Creating clone" << dynamic_cast<Bezier*>(itemClone.get()) << "for render" << key.render.lock().get();
 
 
-    return EffectInstance::createRenderCopy(key);
+    return ret;
 }
 
 void
@@ -544,6 +545,8 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                     }
                 } else {
                     // Render a bezier
+                    //qDebug() << QThread::currentThread() << this  << isBezier.get()<< "RoD while render:";
+                    //isBezier->getBoundingBox(args.time, args.view).debug();
                     RotoShapeRenderGL::renderBezier_gl(glContext, glData,
                                                        args.roi,
                                                        isBezier, outputPlane.second, opacity, args.time, args.view, range, divisions, combinedScale, GL_TEXTURE_2D);
