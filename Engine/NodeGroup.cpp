@@ -1023,20 +1023,34 @@ NodeCollection::isSubGraphEditable() const
     return _imp->isEditable;
 }
 
+static void refreshTimeInvariantMetadataOnAllNodes_recursiveInternal(const NodePtr& caller, std::set<NodePtr>* markedNodes)
+{
+    if (markedNodes->find(caller) != markedNodes->end()) {
+        return;
+    }
+
+    markedNodes->insert(caller);
+
+    NodeGroupPtr isGroup = caller->isEffectNodeGroup();
+    if (isGroup) {
+        NodesList nodes = isGroup->getNodes();
+        for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            refreshTimeInvariantMetadataOnAllNodes_recursiveInternal(*it, markedNodes);
+        }
+    } else {
+
+        caller->getEffectInstance()->onMetadataChanged_nonRecursive_public();
+    }
+
+}
 
 void
 NodeCollection::refreshTimeInvariantMetadataOnAllNodes_recursive()
 {
+    std::set<NodePtr> markedNodes;
     NodesList nodes = getNodes();
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-
-        NodeGroupPtr isGroup = (*it)->isEffectNodeGroup();
-        if (isGroup) {
-            isGroup->refreshTimeInvariantMetadataOnAllNodes_recursive();
-        } else {
-            (*it)->getEffectInstance()->onMetadataChanged_nonRecursive_public();
-        }
-
+        refreshTimeInvariantMetadataOnAllNodes_recursiveInternal(*it, &markedNodes);
     }
 }
 

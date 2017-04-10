@@ -764,6 +764,7 @@ Project::initializeKnobs()
             param->populateChoices(entries);
         }
         param->setAnimationEnabled(false);
+        param->setIsMetadataSlave(true);
         page->addKnob(param);
         _imp->formatKnob = param;
         QObject::connect( param.get(), SIGNAL(populated()), this, SLOT(onProjectFormatPopulated()) );
@@ -795,6 +796,7 @@ Project::initializeKnobs()
         param->setDefaultValues(defFrameRange, DimIdx(0));
         param->setDimensionName(DimIdx(0), "first");
         param->setDimensionName(DimIdx(1), "last");
+        param->setIsMetadataSlave(true);
         param->setEvaluateOnChange(false);
         param->setLabel(tr("Frame Range"));
         param->setHintToolTip( tr("The frame range of the project as seen by the plug-ins. New viewers are created automatically "
@@ -824,6 +826,7 @@ Project::initializeKnobs()
                                   "special frame rates.") );
         param->setAnimationEnabled(false);
         param->setDefaultValue(24);
+        param->setIsMetadataSlave(true);
         param->setDisplayRange(0., 50.);
         page->addKnob(param);
         _imp->frameRate = param;
@@ -1666,13 +1669,7 @@ Project::onKnobValueChanged(const KnobIPtr& knob,
             (*it)->getEffectInstance()->refreshFormatParamChoice(entries, index, false);
         }
         if (found) {
-            if (reason == eValueChangedReasonUserEdited) {
-
-                invalidateHashCache();
-
-
-            }
-            ///Format change, hence probably the PAR so run getClipPreferences again
+            // Format change, hence probably the PAR so run getClipPreferences again
             refreshTimeInvariantMetadataOnAllNodes_recursive();
             Q_EMIT formatChanged(frmt);
         }

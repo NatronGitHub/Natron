@@ -2940,14 +2940,12 @@ Bezier::getBoundingBox(TimeValue time, ViewIdx view) const
         }
     }
 
-    RectD bbox;
-    bool bboxSet = false;
     RectD pointsBbox;
 
 
     const BezierShape* shape = _imp->getViewShape(view_i);
     if (!shape) {
-        return bbox;
+        return pointsBbox;
     }
     
 
@@ -2975,18 +2973,13 @@ Bezier::getBoundingBox(TimeValue time, ViewIdx view) const
         pointsBbox.y1 -= halfBrushSize;
         pointsBbox.y2 += halfBrushSize;
     }
-    if (!bboxSet) {
-        bboxSet = true;
-        bbox = pointsBbox;
-    } else {
-        bbox.merge(pointsBbox);
-    }
+
 
     if (renderClone) {
         _imp->renderCloneBBoxCache.reset(new RectD);
-        *_imp->renderCloneBBoxCache = bbox;
+        *_imp->renderCloneBBoxCache = pointsBbox;
     }
-    return bbox;
+    return pointsBbox;
 } // Bezier::getBoundingBox
 
 std::list< BezierCPPtr >
