@@ -1264,16 +1264,6 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
         // We downscaled hence we must update tiles status from eTileStatusNotRendered to eTileStatusRendered
         // Only do so for the first channel since they all share the same state
 
-        boost::scoped_ptr<boost::unique_lock<boost::shared_mutex> > writeLock;
-        if (!internalCacheEntry->isPersistent()) {
-            // In non-persistent mode, lock the cache entry since it's shared across threads.
-            // In persistent mode the entry is copied in fromMemorySegment
-            ImageCacheEntryInternal<false>* nonPersistentLocalEntry = dynamic_cast<ImageCacheEntryInternal<false>* >(internalCacheEntry.get());
-            assert(nonPersistentLocalEntry);
-            writeLock.reset(new boost::unique_lock<boost::shared_mutex>(nonPersistentLocalEntry->perMipMapTilesStateMutex));
-        }
-
-
         for (std::size_t j = 0; j  < perLevelTilesToDownscale[i].size(); ++j) {
 
             const RectI& tileBounds = perLevelTilesToDownscale[i][j]->bounds;
