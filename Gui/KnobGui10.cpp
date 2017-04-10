@@ -138,7 +138,7 @@ KnobGui::onClearExprActionTriggered()
     ViewSetSpec view;
     DimSpec dimension;
     getDimViewFromActionData(act, &view, &dimension);
-    pushUndoCommand( new SetExpressionCommand(getKnob(), eExpressionLanguageExprTK, false, dimension, view, "") );
+    pushUndoCommand( new SetExpressionCommand(getKnob(), eExpressionLanguageExprTk, false, dimension, view, "") );
 }
 
 void
@@ -742,7 +742,7 @@ KnobGui::toolTip(QWidget* w, ViewIdx view) const
                 }
                 additionalKeyboardShortcutString += QString::fromUtf8("<b>Keyboard shortcut: %1</b>");
                 // add a fake %1 because additional shortcuts start at %2
-                additionalKeyboardShortcutString.push_back(QString::fromUtf8("%1"));
+                //additionalKeyboardShortcutString.push_back(QString::fromUtf8("%1"));
 
 
                 tt += additionalKeyboardShortcutString;

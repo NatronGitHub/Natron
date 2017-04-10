@@ -136,7 +136,7 @@ EffectInstance::getLayersProducedAndNeeded_default(TimeValue time,
         std::vector<ImagePlaneDesc> clipPrefsAllComps;
 
         // The clipPrefsComps is the number of components desired by the plug-in in the
-        // getTimeInvariantMetadatas action (getClipPreferences for OpenFX) mapped to the
+        // getTimeInvariantMetadata action (getClipPreferences for OpenFX) mapped to the
         // color-plane.
         //
         // There's a special case for a plug-in that requests a 2 component image:
@@ -164,7 +164,7 @@ EffectInstance::getLayersProducedAndNeeded_default(TimeValue time,
         // Natron adds for all non multi-planar effects a default layer selector to emulate
         // multi-plane even if the plug-in is not aware of it. When calling getImagePlane(), the
         // plug-in will receive this user-selected plane, mapped to the number of components indicated
-        // by the plug-in in getTimeInvariantMetadatas
+        // by the plug-in in getTimeInvariantMetadata
         ImagePlaneDesc layer;
         bool gotUserSelectedPlane;
         {
@@ -291,8 +291,8 @@ EffectInstance::getComponentsNeededInternal(TimeValue time,
         return stat;
     }
 
-    // Ensure the plug-in made the metadata plane available.
-    {
+    // Ensure the plug-in made the metadata plane available at least
+    if (layersProduced->empty()) {
         std::list<ImagePlaneDesc> metadataPlanes;
         ImagePlaneDesc metadataPlane, metadataPairedPlane;
         getMetadataComponents(-1, &metadataPlane, &metadataPairedPlane);
@@ -763,7 +763,7 @@ EffectInstance::getDistortion_public(TimeValue inArgsTime,
         RectI format = getOutputFormat();
         RenderScale scale(1.);
         IsIdentityResultsPtr identityResults;
-        isIdentity = isIdentity_public(true, time, scale, format, view, &identityResults);
+        isIdentity = isIdentity_public(true, time, scale, format, view, ImagePlaneDesc::getRGBAComponents() /*insignificant*/, &identityResults);
     }
 
     if (!distortSupported && !isDeprecatedTransformSupportEnabled && !isIdentity) {
@@ -851,12 +851,14 @@ EffectInstance::getDistortion_public(TimeValue inArgsTime,
 
 ActionRetCodeEnum
 EffectInstance::isIdentity(TimeValue /*time*/,
-                      const RenderScale & /*scale*/,
-                      const RectI & /*roi*/,
-                      ViewIdx /*view*/,
-                      TimeValue* /*inputTime*/,
-                      ViewIdx* /*inputView*/,
-                      int* inputNb)
+                           const RenderScale & /*scale*/,
+                           const RectI & /*roi*/,
+                           ViewIdx /*view*/,
+                           const ImagePlaneDesc& /*plane*/,
+                           TimeValue* /*inputTime*/,
+                           ViewIdx* /*inputView*/,
+                           int* inputNb,
+                           ImagePlaneDesc* /*inputPlane*/)
 {
     *inputNb = -1;
     return eActionStatusReplyDefault;
@@ -869,6 +871,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
                                   const RenderScale & scale,
                                   const RectI & renderWindow,
                                   ViewIdx view,
+                                  const ImagePlaneDesc& plane,
                                   IsIdentityResultsPtr* results)
 {
     
@@ -881,7 +884,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
             // We do not cache it because for non continuous effects we only cache stuff at
             // valid frame times
             *results = IsIdentityResults::create(IsIdentityKeyPtr());
-            (*results)->setIdentityData(-2, TimeValue(roundedTime), view);
+            (*results)->setIdentityData(-2, TimeValue(roundedTime), view, plane);
             return eActionStatusOK;
         }
     }
@@ -903,7 +906,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
 
     IsIdentityKeyPtr cacheKey;
     {
-        cacheKey.reset(new IsIdentityKey(hash, getNode()->getPluginID()));
+        cacheKey.reset(new IsIdentityKey(hash, time, plane, getNode()->getPluginID()));
     }
 
 
@@ -926,7 +929,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
             }
             return eActionStatusOK;
         }
-
+        
         assert(cacheStatus == CacheEntryLockerBase::eCacheEntryStatusMustCompute);
     }
 
@@ -935,7 +938,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
 
     // Node is disabled or doesn't have any channel to process, be identity on the main input
     if ((isNodeDisabledForFrame(time, view) || !hasAtLeastOneChannelToProcess() )) {
-        (*results)->setIdentityData(getNode()->getPreferredInput(), time, view);
+        (*results)->setIdentityData(getNode()->getPreferredInput(), time, view, plane);
         caught = true;
     }
 
@@ -952,10 +955,11 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
             canonicalRenderWindow.toPixelEnclosing(mappedScale, par, &mappedRenderWindow);
         }
 
-        TimeValue identityTime;
-        ViewIdx identityView;
-        int identityInputNb;
-        ActionRetCodeEnum stat = isIdentity(time, mappedScale, mappedRenderWindow, view, &identityTime, &identityView, &identityInputNb);
+        TimeValue identityTime = time;
+        ViewIdx identityView = view;
+        int identityInputNb = -1;
+        ImagePlaneDesc identityPlane = plane;
+        ActionRetCodeEnum stat = isIdentity(time, mappedScale, mappedRenderWindow, view, plane, &identityTime, &identityView, &identityInputNb, &identityPlane);
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -964,19 +968,19 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
         // A sequential effect cannot be identity on itself
         if (identityInputNb == -2) {
             SequentialPreferenceEnum sequential = getCurrentSequentialRenderSupport();
-
+            assert(identityTime != time);
             if (sequential == eSequentialPreferenceOnlySequential) {
                 identityInputNb = -1;
             }
         }
 
-        (*results)->setIdentityData(identityInputNb, identityTime, identityView);
-
+        (*results)->setIdentityData(identityInputNb, identityTime, identityView, identityPlane);
+        
         caught = true;
 
     }
     if (!caught) {
-        (*results)->setIdentityData(-1, time, view);
+        (*results)->setIdentityData(-1, time, view, plane);
     }
 
     if (cacheAccess) {
@@ -1054,7 +1058,7 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
         RectI format = getOutputFormat();
         RenderScale scale(1.);
         IsIdentityResultsPtr identityResults;
-        ActionRetCodeEnum stat = isIdentity_public(true, time, mappedScale, format, view, &identityResults);
+        ActionRetCodeEnum stat = isIdentity_public(true, time, mappedScale, format, view, ImagePlaneDesc::getRGBAComponents() /*insignificant*/, &identityResults);
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -1063,7 +1067,8 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
         int inputIdentityNb;
         TimeValue identityTime;
         ViewIdx identityView;
-        identityResults->getIdentityData(&inputIdentityNb, &identityTime, &identityView);
+        ImagePlaneDesc identityPlane;
+        identityResults->getIdentityData(&inputIdentityNb, &identityTime, &identityView, &identityPlane);
 
         if (inputIdentityNb >= 0) {
             // This effect is identity
@@ -1441,11 +1446,12 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
         // If the effect is identity on the format, that means its bound to be identity anywhere and does not depend on the render window.
         RectI format = getOutputFormat();
         RenderScale scale(1.);
-        ActionRetCodeEnum stat = isIdentity_public(isHashCached, time, scale, format, view, &identityResults);
+        ImagePlaneDesc identityPlane;
+        ActionRetCodeEnum stat = isIdentity_public(isHashCached, time, scale, format, view, ImagePlaneDesc::getRGBAComponents() /*insignificant*/, &identityResults);
         if (isFailureRetCode(stat)) {
             return stat;
         }
-        identityResults->getIdentityData(&inputIdentityNb, &inputIdentityTime, &inputIdentityView);
+        identityResults->getIdentityData(&inputIdentityNb, &inputIdentityTime, &inputIdentityView, &identityPlane);
     }
 
     if (inputIdentityNb != -1) {
@@ -1733,10 +1739,10 @@ EffectInstance::onMetadataChanged_nonRecursive()
     NodePtr node = getNode();
 
     
-    GetTimeInvariantMetaDatasResultsPtr results;
-    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(&results);
+    GetTimeInvariantMetadataResultsPtr results;
+    ActionRetCodeEnum stat = getTimeInvariantMetadata_public(&results);
     if (!isFailureRetCode(stat)) {
-        NodeMetadataPtr metadata = results->getMetadatasResults();
+        NodeMetadataPtr metadata = results->getMetadataResults();
         assert(metadata);
         U64 currentHash = results->getHashKey();
         if (currentHash == node->getLastTimeInvariantMetadataHash()) {
@@ -1805,7 +1811,7 @@ EffectInstance::onInputChanged_public(int inputNo)
 } // onInputChanged_public
 
 ActionRetCodeEnum
-EffectInstance::getTimeInvariantMetaDatas_public(GetTimeInvariantMetaDatasResultsPtr* results)
+EffectInstance::getTimeInvariantMetadata_public(GetTimeInvariantMetadataResultsPtr* results)
 {
     // Get a hash to cache the results
     U64 hash = 0;
@@ -1821,10 +1827,10 @@ EffectInstance::getTimeInvariantMetaDatas_public(GetTimeInvariantMetaDatasResult
         hash = computeHash(hashArgs);
     }
 
-    GetTimeInvariantMetaDatasKeyPtr cacheKey(new GetTimeInvariantMetaDatasKey(hash, getNode()->getPluginID()));
-    *results = GetTimeInvariantMetaDatasResults::create(cacheKey);
+    GetTimeInvariantMetadataKeyPtr cacheKey(new GetTimeInvariantMetadataKey(hash, getNode()->getPluginID()));
+    *results = GetTimeInvariantMetadataResults::create(cacheKey);
     NodeMetadataPtr metadata(new NodeMetadata);
-    (*results)->setMetadatasResults(metadata);
+    (*results)->setMetadataResults(metadata);
 
 
     CacheEntryLockerBasePtr cacheAccess = (*results)->getFromCache();
@@ -1836,7 +1842,7 @@ EffectInstance::getTimeInvariantMetaDatas_public(GetTimeInvariantMetaDatasResult
 
     if (cacheStatus == CacheEntryLockerBase::eCacheEntryStatusCached) {
         if (!cacheAccess->isPersistent()) {
-            *results = toGetTimeInvariantMetaDatasResults(cacheAccess->getProcessLocalEntry());
+            *results = toGetTimeInvariantMetadataResults(cacheAccess->getProcessLocalEntry());
         }
         return eActionStatusOK;
     }
@@ -1844,7 +1850,7 @@ EffectInstance::getTimeInvariantMetaDatas_public(GetTimeInvariantMetaDatasResult
 
 
     // If the node is disabled return the meta-datas of the main input.
-    // Don't do that for an identity node: a render may be identity but not the metadatas (e.g: NoOp)
+    // Don't do that for an identity node: a render may be identity but not the metadata (e.g: NoOp)
     // A disabled generator still has to return some meta-datas, so let it return the default meta-datas.
     bool isDisabled = getDisabledKnobValue();
     if (isDisabled) {
@@ -1853,8 +1859,8 @@ EffectInstance::getTimeInvariantMetaDatas_public(GetTimeInvariantMetaDatasResult
             EffectInstancePtr input = getInputRenderEffectAtAnyTimeView(mainInput);
             if (input) {
 
-                GetTimeInvariantMetaDatasResultsPtr inputResults;
-                ActionRetCodeEnum stat = input->getTimeInvariantMetaDatas_public(&inputResults);
+                GetTimeInvariantMetadataResultsPtr inputResults;
+                ActionRetCodeEnum stat = input->getTimeInvariantMetadata_public(&inputResults);
                 if (isFailureRetCode(stat)) {
                     return stat;
                 }
@@ -1875,8 +1881,8 @@ EffectInstance::getTimeInvariantMetaDatas_public(GetTimeInvariantMetaDatasResult
     if (!isDisabled) {
 
         // If the node is disabled, don't call getClipPreferences on the plug-in:
-        // we don't want it to change output Format or other metadatas
-        ActionRetCodeEnum stat = getTimeInvariantMetaDatas(*metadata);
+        // we don't want it to change output Format or other metadata
+        ActionRetCodeEnum stat = getTimeInvariantMetadata(*metadata);
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -1897,7 +1903,7 @@ EffectInstance::getTimeInvariantMetaDatas_public(GetTimeInvariantMetaDatasResult
 
 
     return eActionStatusOK;
-} // getTimeInvariantMetaDatas_public
+} // getTimeInvariantMetadata_public
 
 
 int
@@ -1956,17 +1962,17 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
     int firstNonOptionalConnectedInputComps = 0;
 
 
-    std::vector<NodeMetadataPtr> inputMetadatas(nInputs);
+    std::vector<NodeMetadataPtr> inputMetadata(nInputs);
     for (int i = 0; i < nInputs; ++i) {
         const EffectInstancePtr& input = getInputRenderEffectAtAnyTimeView(i);
         if (input) {
-            GetTimeInvariantMetaDatasResultsPtr results;
-            ActionRetCodeEnum stat = input->getTimeInvariantMetaDatas_public(&results);
+            GetTimeInvariantMetadataResultsPtr results;
+            ActionRetCodeEnum stat = input->getTimeInvariantMetadata_public(&results);
             if (!isFailureRetCode(stat)) {
-                inputMetadatas[i] = results->getMetadatasResults();
+                inputMetadata[i] = results->getMetadataResults();
 
                 if ( !firstNonOptionalConnectedInputComps && !isInputOptional(i) ) {
-                    firstNonOptionalConnectedInputComps = inputMetadatas[i]->getColorPlaneNComps(-1);
+                    firstNonOptionalConnectedInputComps = inputMetadata[i]->getColorPlaneNComps(-1);
                 }
             }
 
@@ -1976,7 +1982,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
 
     for (int i = 0; i < nInputs; ++i) {
 
-        const NodeMetadataPtr& input = inputMetadatas[i];
+        const NodeMetadataPtr& input = inputMetadata[i];
         if (input) {
             frameRate = std::max( frameRate, input->getOutputFrameRate() );
         }
@@ -1996,7 +2002,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
             }
         }
 
-        int rawComp = getUnmappedNumberOfCompsForColorPlane(i, inputMetadatas, firstNonOptionalConnectedInputComps);
+        int rawComp = getUnmappedNumberOfCompsForColorPlane(i, inputMetadata, firstNonOptionalConnectedInputComps);
         ImageBitDepthEnum rawDepth = input ? input->getBitDepth(-1) : eImageBitDepthFloat;
         ImagePremultiplicationEnum rawPreMult = input ? input->getOutputPremult() : eImagePremultiplicationPremultiplied;
 
@@ -2059,10 +2065,10 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
     // Otherwise fallback on project format
     bool firstOptionalInputFormatSet = false, firstNonOptionalInputFormatSet = false;
 
-    // now add the input gubbins to the per inputs metadatas
+    // now add the input gubbins to the per inputs metadata
     for (int i = -1; i < nInputs; ++i) {
 
-        if (i >= 0 && !inputMetadatas[i]) {
+        if (i >= 0 && !inputMetadata[i]) {
             continue;
         }
         double par;
@@ -2072,8 +2078,8 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
             if (inputParSet) {
                 par = inputPar;
             } else {
-                if (i >= 0 && inputMetadatas[i]) {
-                    par = inputMetadatas[i]->getPixelAspectRatio(-1);
+                if (i >= 0 && inputMetadata[i]) {
+                    par = inputMetadata[i]->getPixelAspectRatio(-1);
                 } else {
                     par = projectPAR;
                 }
@@ -2084,13 +2090,13 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
         bool isOptional = i >= 0 && isInputOptional(i);
         if (i >= 0) {
             if (isOptional) {
-                if (!firstOptionalInputFormatSet && inputMetadatas[i]) {
-                    firstOptionalInputFormat = inputMetadatas[i]->getOutputFormat();
+                if (!firstOptionalInputFormatSet && inputMetadata[i]) {
+                    firstOptionalInputFormat = inputMetadata[i]->getOutputFormat();
                     firstOptionalInputFormatSet = true;
                 }
             } else {
-                if (!firstNonOptionalInputFormatSet && inputMetadatas[i]) {
-                    firstNonOptionalInputFormat = inputMetadatas[i]->getOutputFormat();
+                if (!firstNonOptionalInputFormatSet && inputMetadata[i]) {
+                    firstNonOptionalInputFormat = inputMetadata[i]->getOutputFormat();
                     firstNonOptionalInputFormatSet = true;
                 }
             }
@@ -2112,10 +2118,10 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
             metadata.setBitDepth(i, depth);
         } else {
 
-            int rawComps = getUnmappedNumberOfCompsForColorPlane(i, inputMetadatas, firstNonOptionalConnectedInputComps);
+            int rawComps = getUnmappedNumberOfCompsForColorPlane(i, inputMetadata, firstNonOptionalConnectedInputComps);
             ImageBitDepthEnum rawDepth;
-            if (i >= 0 && inputMetadatas[i]) {
-                rawDepth = inputMetadatas[i]->getBitDepth(-1);
+            if (i >= 0 && inputMetadata[i]) {
+                rawDepth = inputMetadata[i]->getBitDepth(-1);
             } else {
                 rawDepth = eImageBitDepthFloat;
             }
@@ -2165,7 +2171,7 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
 
     ImageBitDepthEnum outputDepth = md.getBitDepth(-1);
 
-    // First fix incorrect metadatas that could have been set by the plug-in
+    // First fix incorrect metadata that could have been set by the plug-in
     for (int i = -1; i < nInputs; ++i) {
 
         if (i >= 0) {

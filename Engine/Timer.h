@@ -27,6 +27,11 @@
 
 #include "Global/Macros.h"
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
+#endif
+
 #if defined(__NATRON_WIN32__) && !defined(__NATRON_MINGW__)
 #include <windows.h>
 #else

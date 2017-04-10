@@ -425,8 +425,11 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
     }
 
     _imp->expressionLanguageChoice = new ComboBox(_imp->buttonsContainer);
-    _imp->expressionLanguageChoice->addItem(tr("ExprTK"));
+    _imp->expressionLanguageChoice->addItem(tr("ExprTk"));
     _imp->expressionLanguageChoice->addItem(tr("Python"));
+    QString langTooltip = NATRON_NAMESPACE::convertFromPlainText(tr("Select the language used by this expression. ExprTk-based expressions are very simple and extremely fast expressions but a bit more constrained than "
+                                                                    "Python-based expressions which allow all the flexibility of the Python A.P.I to the expense of being a lot more expensive to evaluate."), NATRON_NAMESPACE::WhiteSpaceNormal);
+    _imp->expressionLanguageChoice->setToolTip(langTooltip);
     QObject::connect( _imp->expressionLanguageChoice, SIGNAL(currentIndexChanged(int)), this, SLOT(onExprLanguageCurrentIndexChanged(int)) );
 
     _imp->knobLabel = new Label(_imp->buttonsContainer);
@@ -736,7 +739,7 @@ AnimationModuleEditor::setSelectedCurveExpression(const QString& expression, Exp
             return;
         }
     }
-    pushUndoCommand( new SetExpressionCommand(knob, eExpressionLanguagePython, false /*hasRetVariable*/, dimension, view, expression.toStdString()) );
+    pushUndoCommand( new SetExpressionCommand(knob, lang, false /*hasRetVariable*/, dimension, view, expression.toStdString()) );
 }
 
 void
@@ -750,7 +753,7 @@ AnimationModuleEditor::onExprLineEditFinished()
 {
 
     try {
-        ExpressionLanguageEnum language = _imp->expressionLanguageChoice->activeIndex() == 0 ? eExpressionLanguageExprTK : eExpressionLanguagePython;
+        ExpressionLanguageEnum language = _imp->expressionLanguageChoice->activeIndex() == 0 ? eExpressionLanguageExprTk : eExpressionLanguagePython;
         setSelectedCurveExpression( _imp->knobExpressionLineEdit->text(), language );
     } catch(const std::exception& /*e*/) {
         //Dialogs::errorDialog(tr("Animation Module").toStdString(), e.what());
@@ -812,7 +815,7 @@ AnimationModuleEditor::onSelectionModelSelectionChanged(bool /*recurse*/)
             case eExpressionLanguagePython:
                 _imp->expressionLanguageChoice->setCurrentIndex_no_emit(1);
                 break;
-            case eExpressionLanguageExprTK:
+            case eExpressionLanguageExprTk:
                 _imp->expressionLanguageChoice->setCurrentIndex_no_emit(0);
                 break;
 
@@ -821,7 +824,7 @@ AnimationModuleEditor::onSelectionModelSelectionChanged(bool /*recurse*/)
         _imp->knobExpressionLineEdit->setText(currentExpression);
     }
 
-
+    _imp->expressionLanguageChoice->setVisible(expressionFieldsEnabled);
     _imp->knobExpressionLineEdit->setVisible(expressionFieldsEnabled);
     _imp->expressionResultLabel->setVisible(expressionFieldsEnabled);
 

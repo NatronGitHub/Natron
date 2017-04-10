@@ -114,6 +114,8 @@ public:
 
 private:
 
+    virtual KnobHolderPtr createRenderCopy(const FrameViewRenderKey& key) const OVERRIDE FINAL;
+
     virtual void fetchRenderCloneKnobs() OVERRIDE FINAL;
 
     virtual void initializeKnobs() OVERRIDE FINAL;
@@ -134,15 +136,19 @@ private:
 
     virtual ActionRetCodeEnum getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
 
-    virtual ActionRetCodeEnum getTimeInvariantMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL;
+    virtual ActionRetCodeEnum getTimeInvariantMetadata(NodeMetadata& metadata) OVERRIDE FINAL;
+
+    virtual ActionRetCodeEnum getFramesNeeded(TimeValue time, ViewIdx view,  FramesNeededMap* results) OVERRIDE FINAL;
 
     virtual ActionRetCodeEnum isIdentity(TimeValue time,
-                            const RenderScale & scale,
-                            const RectI & roi,
-                            ViewIdx view,
-                            TimeValue* inputTime,
-                            ViewIdx* inputView,
-                            int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
+                                         const RenderScale & scale,
+                                         const RectI & roi,
+                                         ViewIdx view,
+                                         const ImagePlaneDesc& plane,
+                                         TimeValue* inputTime,
+                                         ViewIdx* inputView,
+                                         int* inputNb,
+                                         ImagePlaneDesc* inputPlane) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual ActionRetCodeEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
 

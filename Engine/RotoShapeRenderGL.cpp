@@ -51,7 +51,8 @@ static const char* rotoRamp_FragmentShader =
 "uniform float fallOff;\n"
 "\n"
 "void main() {\n"
-"	vec4 outColor(opacity, opacity, opacity, opacity);\n"
+"	vec4 outColor;\n"
+"   outColor.rgba = vec4(opacity, opacity, opacity, opacity);\n"
 "   float t = gl_Color.a;\n"
 "#ifdef RAMP_P_LINEAR\n"
 "   t = t * t * t;\n"
@@ -711,10 +712,10 @@ void renderBezier_gl_singleDrawElements(int nbVertices, int nbIds, int vboVertic
 
     GL::BindBuffer(GL_ARRAY_BUFFER, vboColorsID);
     if (uploadVertices) {
-        GL::BufferData(GL_ARRAY_BUFFER, nbVertices * 1 * sizeof(GLfloat), colorsData, GL_DYNAMIC_DRAW);
+        GL::BufferData(GL_ARRAY_BUFFER, nbVertices * 4 * sizeof(GLfloat), colorsData, GL_DYNAMIC_DRAW);
     }
     GL::EnableClientState(GL_COLOR_ARRAY);
-    GL::ColorPointer(1, GL_FLOAT, 0, 0);
+    GL::ColorPointer(4, GL_FLOAT, 0, 0);
 
     GL::BindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboID);
     GL::BufferData(GL_ELEMENT_ARRAY_BUFFER, nbIds * sizeof(GLuint), idsData, GL_DYNAMIC_DRAW);
@@ -963,7 +964,7 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
 
         // Compute the feather triangles as well as the internal shape triangles.
         RotoBezierTriangulation::PolygonData data;
-        RotoBezierTriangulation::computeTriangles(bezier, t, view, scale, featherDistPixel_X, featherDistPixel_Y, &data);
+        RotoBezierTriangulation::tesselate(bezier, t, view, scale, featherDistPixel_X, featherDistPixel_Y, &data);
 
         // Tex parameters may not have been set yet in GPU mode if motion blur is disabled
         if (GL::isGPU() && !perSampleRenderTexture) {
@@ -981,27 +982,29 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
         // First upload and render the feather mesh which is composed of GL_TRIANGLES
         {
 
-            int nbVertices = data.featherMesh.size();
+            int nbVertices = data.featherVertices.size();
             if (!nbVertices) {
                 continue;
             }
 
+            int nbIds = data.featherTriangles.size();
+
+
             verticesArray.resize(nbVertices * 2);
-            colorsArray.resize(nbVertices);
-            indicesArray.resize(nbVertices);
+            colorsArray.resize(nbVertices * 4);
+            indicesArray.resize(nbIds);
 
             // Fill buffer
             float* v_data = verticesArray.getData();
             float* c_data = colorsArray.getData();
             unsigned int* i_data = indicesArray.getData();
 
-            for (std::size_t i = 0; i < data.featherMesh.size(); ++i,
+            for (std::size_t i = 0; i < data.featherVertices.size(); ++i,
                  v_data += 2,
-                 ++c_data,
-                 ++i_data) {
-                v_data[0] = data.featherMesh[i].x;
-                v_data[1] = data.featherMesh[i].y;
-                i_data[0] = i;
+                 c_data += 4) {
+
+                v_data[0] = data.featherVertices[i].x;
+                v_data[1] = data.featherVertices[i].y;
 
                 // The roi was computed from the RoD, it must include the feather points.
                 // If this crashes here, this is likely because either the computation of the RoD is wrong
@@ -1010,23 +1013,33 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
                 // since we are operating on a thread-local render clone.
                 assert(roi.contains(v_data[0], v_data[1]));
 
-
-                if (data.featherMesh[i].isInner) {
-                    *c_data = opacity;
+                c_data[0] = opacity;
+                c_data[1] = opacity;
+                c_data[2] = opacity;
+                if (data.featherVertices[i].isInner) {
+                    c_data[3] = opacity;
                 } else {
-                    *c_data = 0.;
+                    c_data[3] = 0.;
                 }
             }
-            renderBezier_gl_singleDrawElements<GL>(nbVertices, nbVertices, vboVerticesID, vboColorsID, iboID, GL_TRIANGLES, (const void*)verticesArray.getData(), (const void*)colorsArray.getData(), (const void*)indicesArray.getData());
+
+            for (std::size_t i = 0; i < data.featherTriangles.size(); ++i, ++i_data) {
+                *i_data = data.featherTriangles[i];
+            }
+            renderBezier_gl_singleDrawElements<GL>(nbVertices, nbIds, vboVerticesID, vboColorsID, iboID, GL_TRIANGLES, (const void*)verticesArray.getData(), (const void*)colorsArray.getData(), (const void*)indicesArray.getData());
 
         }
 
         // Unbind the Ramp shader used for the feather and bind the Fill shader for the Roto
         rampShader->unbind();
         fillShader->bind();
-        fillShader->setUniform("opacity", (float)opacity);
+        {
+            OfxRGBAColourF fillColor;
+            fillColor.r = fillColor.g = fillColor.b = fillColor.a = opacity;
+            fillShader->setUniform("fillColor", fillColor);
+        }
 
-        int nbVertices = data.bezierPolygonJoined.size();
+        int nbVertices = (int)data.internalShapeVertices.size();
         if (!nbVertices) {
             continue;
         }
@@ -1039,26 +1052,28 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
         // will reference these vertices.
         {
             float* v_data = verticesArray.getData();
-            for (std::size_t i = 0; i < data.bezierPolygonJoined.size(); ++i, v_data += 2) {
-                v_data[0] = data.bezierPolygonJoined[i].x;
-                v_data[1] = data.bezierPolygonJoined[i].y;
 
+            for (std::vector<Point>::const_iterator it2 = data.internalShapeVertices.begin(); it2 != data.internalShapeVertices.end(); ++it2, v_data += 2) {
+                const Point& p = *it2;
                 // The roi was computed from the bounds, it must include the internal shape points.
-                assert(roi.contains(v_data[0], v_data[1]));
+                assert(roi.contains(p.x, p.y));
+                v_data[0] = p.x;
+                v_data[1] = p.y;
             }
+
         }
         bool hasUploadedVertices = false;
         {
             // Render internal triangles
             // Merge all set of GL_TRIANGLES into a single call of glMultiDrawElements
-            int drawCount = (int)data.internalTriangles.size();
+            int drawCount = (int)data.internalShapeTriangles.size();
 
             if (drawCount) {
                 std::vector<const void*> perDrawsIDVec(drawCount);
                 std::vector<int> perDrawCount(drawCount);
-                for (std::size_t i = 0; i < data.internalTriangles.size(); ++i) {
-                    perDrawsIDVec[i] = (const void*)(&data.internalTriangles[i].indices[0]);
-                    perDrawCount[i] = (int)data.internalTriangles[i].indices.size();
+                for (std::size_t i = 0; i < data.internalShapeTriangles.size(); ++i) {
+                    perDrawsIDVec[i] = (const void*)(&data.internalShapeTriangles[i][0]);
+                    perDrawCount[i] = (int)data.internalShapeTriangles[i].size();
                 }
 
                 renderBezier_gl_multiDrawElements<GL>(nbVertices, vboVerticesID, GL_TRIANGLES, (const void*)verticesArray.getData(), (const int*)&perDrawCount[0], (const void**)(&perDrawsIDVec[0]), drawCount);
@@ -1072,14 +1087,14 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
         {
             // Render internal triangle fans
 
-            int drawCount = (int)data.internalFans.size();
+            int drawCount = (int)data.internalShapeTriangleFans.size();
 
             if (drawCount) {
                 std::vector<const void*> perDrawsIDVec(drawCount);
                 std::vector<int> perDrawCount(drawCount);
-                for (std::size_t i = 0; i < data.internalFans.size(); ++i) {
-                    perDrawsIDVec[i] = (const void*)(&data.internalFans[i].indices[0]);
-                    perDrawCount[i] = (int)data.internalFans[i].indices.size();
+                for (std::size_t i = 0; i < data.internalShapeTriangleFans.size(); ++i) {
+                    perDrawsIDVec[i] = (const void*)(&data.internalShapeTriangleFans[i][0]);
+                    perDrawCount[i] = (int)data.internalShapeTriangleFans[i].size();
                 }
                 renderBezier_gl_multiDrawElements<GL>(nbVertices, vboVerticesID, GL_TRIANGLE_FAN, (const void*)verticesArray.getData(), (const int*)&perDrawCount[0], (const void**)(&perDrawsIDVec[0]), drawCount, !hasUploadedVertices);
                 hasUploadedVertices = true;
@@ -1089,14 +1104,14 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
         {
             // Render internal triangle strips
 
-            int drawCount = (int)data.internalStrips.size();
+            int drawCount = (int)data.internalShapeTriangleStrips.size();
 
             if (drawCount) {
                 std::vector<const void*> perDrawsIDVec(drawCount);
                 std::vector<int> perDrawCount(drawCount);
-                for (std::size_t i = 0; i < data.internalStrips.size(); ++i) {
-                    perDrawsIDVec[i] = (const void*)(&data.internalStrips[i].indices[0]);
-                    perDrawCount[i] = (int)data.internalStrips[i].indices.size();
+                for (std::size_t i = 0; i < data.internalShapeTriangleStrips.size(); ++i) {
+                    perDrawsIDVec[i] = (const void*)(&data.internalShapeTriangleStrips[i][0]);
+                    perDrawCount[i] = (int)data.internalShapeTriangleStrips[i].size();
                 }
                 renderBezier_gl_multiDrawElements<GL>(nbVertices, vboVerticesID, GL_TRIANGLE_STRIP, (const void*)verticesArray.getData(), (const int*)&perDrawCount[0], (const void**)(&perDrawsIDVec[0]), drawCount, !hasUploadedVertices);
                 hasUploadedVertices = true;
@@ -1739,7 +1754,7 @@ RotoShapeRenderGL::renderStroke_gl(const OSGLContextPtr& glContext,
             isStroke->evaluateStroke(scale, t, view, &strokes, 0);
         } else if (isBezier && isBezier->isOpenBezier()) {
             std::vector<std::vector< ParametricPoint> > decastelJauPolygon;
-            isBezier->evaluateAtTime_DeCasteljau_autoNbPoints(t, view, scale, &decastelJauPolygon, 0);
+            isBezier->evaluateAtTime(t, view, scale, Bezier::eDeCasteljauAlgorithmIterative, -1, 1., &decastelJauPolygon, 0, 0);
             std::list<std::pair<Point, double> > points;
             for (std::vector<std::vector< ParametricPoint> > ::iterator it = decastelJauPolygon.begin(); it != decastelJauPolygon.end(); ++it) {
                 for (std::vector< ParametricPoint>::iterator it2 = it->begin(); it2 != it->end(); ++it2) {

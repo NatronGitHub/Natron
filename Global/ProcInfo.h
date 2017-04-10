@@ -23,12 +23,25 @@
 
 #include "Global/Macros.h"
 
+#if defined(__NATRON_WIN32__)
+#include <windows.h>
+#endif
+
 #include <string>
 #include <vector>
+
+
 
 NATRON_NAMESPACE_ENTER;
 
 namespace ProcInfo {
+
+#if defined(__NATRON_WIN32__)
+typedef struct _PROCESS_INFORMATION ProcPID;
+#else
+typedef long long ProcPID;
+#endif
+
 /**
  * @brief Returns the application's executable absolute file path.
  * @param argv0Param As a last resort, if system functions fail to return the

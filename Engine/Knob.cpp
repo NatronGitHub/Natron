@@ -247,7 +247,7 @@ KnobHelper::convertDimViewArgAccordingToKnobState(DimSpec dimIn, ViewSetSpec vie
 bool
 KnobHelper::getAllDimensionsVisible(ViewIdx view) const
 {
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     QMutexLocker k(&_imp->common->stateMutex);
     PerViewAllDimensionsVisible::const_iterator foundView = _imp->common->allDimensionsVisible.find(view_i);
     if (foundView == _imp->common->allDimensionsVisible.end()) {
@@ -271,10 +271,6 @@ KnobHelper::autoAdjustFoldExpandDimensions(ViewIdx view)
         if (isAutoFoldDimensionsEnabled()) {
             if (currentVisibility) {
                 setAllDimensionsVisible(view, false);
-            }
-        } else {
-            if (!currentVisibility) {
-                setAllDimensionsVisible(view, true);
             }
         }
     } else {
@@ -384,7 +380,7 @@ KnobHelper::setAllDimensionsVisible(ViewSetSpec view, bool visible)
                 setAllDimensionsVisibleInternal(*it, visible);
             }
         } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
+            ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
             setAllDimensionsVisibleInternal(view_i, visible);
         }
     }
@@ -593,7 +589,7 @@ KnobHelper::isAnimated(DimIdx dimension,
     if ( !canAnimate() ) {
         return false;
     }
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     CurvePtr curve = getAnimationCurve(view_i, dimension);
     return curve ? curve->isAnimated() : false;
 }
@@ -843,7 +839,9 @@ KnobHelper::isAutoKeyingEnabledInternal(DimIdx dimension, TimeValue time, ViewId
 
 
     // The knob doesn't have any animation don't start keying automatically
-    if (getAnimationLevel(dimension, time, view) == eAnimationLevelNone) {
+    AnimationLevelEnum level = getAnimationLevel(dimension, time, view);
+    if (level == eAnimationLevelNone ||
+        level == eAnimationLevelExpression) {
         return false;
     }
     
@@ -889,7 +887,7 @@ KnobHelper::isAutoKeyingEnabled(DimSpec dimension, TimeValue time, ViewSetSpec v
                     hasAutoKeying |= isAutoKeyingEnabledInternal(DimIdx(i), time, *it);
                 }
             } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
+                ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view.value()));
                 hasAutoKeying |= isAutoKeyingEnabledInternal(DimIdx(i), time, view_i);
             }
         }
@@ -902,7 +900,7 @@ KnobHelper::isAutoKeyingEnabled(DimSpec dimension, TimeValue time, ViewSetSpec v
                 hasAutoKeying |= isAutoKeyingEnabledInternal(DimIdx(dimension), time, *it);
             }
         } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
+            ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view.value()));
             hasAutoKeying |= isAutoKeyingEnabledInternal(DimIdx(dimension), time, view_i);
         }
     }
@@ -1014,8 +1012,9 @@ KnobHelper::refreshListenersAfterValueChangeInternal(TimeValue time, ViewIdx vie
     for (KnobDimViewKeySet::const_iterator it = allListeners.begin(); it != allListeners.end(); ++it) {
         KnobHelperPtr sharedKnob = toKnobHelper(it->knob.lock());
         if (sharedKnob && sharedKnob.get() != this) {
-            sharedKnob->evaluateValueChangeInternal(it->dimension, time, it->view, reason, evaluatedKnobs);
-            sharedKnob->refreshStaticValue(time);
+            if (sharedKnob->evaluateValueChangeInternal(it->dimension, time, it->view, reason, evaluatedKnobs)) {
+                sharedKnob->refreshStaticValue(time);
+            }
         }
     }
 
@@ -1028,7 +1027,7 @@ KnobHelper::refreshListenersAfterValueChange(TimeValue time, ViewSetSpec view, V
     std::list<ViewIdx> views = getViewsList();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
     }
     int nDims = getNDimensions();
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
@@ -1434,8 +1433,8 @@ KnobIPtr
 KnobHelper::getCloneForHolderInternal(const KnobHolderPtr& holder) const
 {
     KnobHolderPtr thisHolder = getHolder();
-    assert(!thisHolder->isRenderClone());
-    if (thisHolder == holder) {
+    assert(!thisHolder || !thisHolder->isRenderClone());
+    if (!thisHolder || thisHolder == holder) {
         return boost::const_pointer_cast<KnobI>(shared_from_this());
     }
     QMutexLocker k(&_imp->common->renderClonesMapMutex);
@@ -1690,7 +1689,7 @@ KnobHelper::copyKnob(const KnobIPtr& other,
 
         ViewIdx view_i;
         if (!view.isAll()) {
-            view_i = getViewIdxFromGetSpec(ViewIdx(view));
+            view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
         }
         std::list<ViewIdx> views = getViewsList();
         for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
@@ -1985,7 +1984,7 @@ KnobHelper::unlink(DimSpec dimension, ViewSetSpec view, bool copyState)
                         unlinkInternal(DimIdx(i), *it, copyState);
                     }
                 } else {
-                    ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
+                    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view.value()));
                     unlinkInternal(DimIdx(i), view_i, copyState);
                 }
             }
@@ -1998,7 +1997,7 @@ KnobHelper::unlink(DimSpec dimension, ViewSetSpec view, bool copyState)
                     unlinkInternal(DimIdx(dimension), *it, copyState);
                 }
             } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
+                ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view.value()));
                 unlinkInternal(DimIdx(dimension), view_i, copyState);
             }
         }
@@ -2345,13 +2344,13 @@ KnobHelper::addListener(const DimIdx listenerDimension,
 
     if (language == eExpressionLanguagePython) {
         // Add this knob as a dependency of the expression
-        // For ExprTK this is already done in validateExprTKExpression
+        // For ExprTk this is already done in validateExprTkExpression
         QMutexLocker k(&listenerIsHelper->_imp->common->expressionMutex);
         KnobExprPtr& expr = listenerIsHelper->_imp->common->expressions[listenerDimension][listenerView];
         if (expr) {
             
         }
-        KnobPythonExpr* isPythonExpr = dynamic_cast<KnobPythonExpr*>(expr.get());
+        KnobExprPython* isPythonExpr = dynamic_cast<KnobExprPython*>(expr.get());
 
         KnobDimViewKey d(thisShared, listenedToDimension, listenedToView);
         if (isPythonExpr) {
@@ -2510,7 +2509,7 @@ KnobHelper::refreshCurveMinMax(ViewSetSpec view, DimSpec dimension)
             }
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
         if (dimension.isAll()) {
             for (int i = 0;i < nDims; ++i) {
                 refreshCurveMinMaxInternal(view_i, DimIdx(i));
@@ -2867,7 +2866,7 @@ initializeValueSerializationStorage(const KnobIPtr& knob,
     serialization->_expresionHasReturnVariable = knob->isExpressionUsingRetVariable(view, dimension);
     ExpressionLanguageEnum lang = knob->getExpressionLanguage(view, dimension);
     switch (lang) {
-        case eExpressionLanguageExprTK:
+        case eExpressionLanguageExprTk:
             serialization->_expressionLanguage = kKnobSerializationExpressionLanguageExprtk;
             break;
         case eExpressionLanguagePython:
@@ -3975,7 +3974,7 @@ KnobHelper::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::Kn
                             if (it->second[d]._expressionLanguage == kKnobSerializationExpressionLanguagePython) {
                                 lang = eExpressionLanguagePython;
                             } else if (it->second[d]._expressionLanguage == kKnobSerializationExpressionLanguageExprtk) {
-                                lang = eExpressionLanguageExprTK;
+                                lang = eExpressionLanguageExprTk;
                             }
                             restoreExpression(DimIdx(dimIndex), view_i,  it->second[d]._expression, lang, it->second[d]._expresionHasReturnVariable);
                         }
@@ -4899,13 +4898,13 @@ KnobHolder::createParametricKnob(const std::string& name,
 
 
 void
-KnobHolder::invalidateCacheHashAndEvaluate(bool isSignificant, bool refreshMetadatas)
+KnobHolder::invalidateCacheHashAndEvaluate(bool isSignificant, bool refreshMetadata)
 {
     if (isEvaluationBlocked()) {
         return;
     }
     invalidateHashCache();
-    evaluate(isSignificant, refreshMetadatas);
+    evaluate(isSignificant, refreshMetadata);
 }
 
 void
@@ -4916,7 +4915,7 @@ KnobHolder::endChanges(bool discardRendering)
     }
 
     bool hasHadAnyChange = false;
-    bool mustRefreshMetadatas = false;
+    bool mustRefreshMetadata = false;
     bool hasHadSignificantChange = false;
     int evaluationBlocked;
     ValueChangedReasonEnum firstKnobReason;
@@ -4933,7 +4932,7 @@ KnobHolder::endChanges(bool discardRendering)
                 hasHadSignificantChange = true;
             }
             if (_imp->common->nbChangesRequiringMetadataRefresh) {
-                mustRefreshMetadatas = true;
+                mustRefreshMetadata = true;
             }
             if (_imp->common->nbChangesDuringEvaluationBlock) {
                 hasHadAnyChange = true;
@@ -4958,7 +4957,7 @@ KnobHolder::endChanges(bool discardRendering)
             hasHadSignificantChange = false;
         }
 
-        evaluate(hasHadSignificantChange, mustRefreshMetadatas);
+        evaluate(hasHadSignificantChange, mustRefreshMetadata);
 
     }
 
@@ -5164,6 +5163,7 @@ KnobHolder::createRenderClone(const FrameViewRenderKey& key) const
         QMutexLocker k(&_imp->common->renderClonesMutex);
         RenderCloneMap::iterator found = _imp->common->renderClones.find(key);
         if (found != _imp->common->renderClones.end()) {
+            found->second->initializeKnobsPublic();
             return found->second;
         }
     }
@@ -5172,12 +5172,15 @@ KnobHolder::createRenderClone(const FrameViewRenderKey& key) const
     if (!copy) {
         return copy;
     }
+    if (!copy->isRenderClone()) {
+        // We may not have really cloned the effect (e.g: NodeGroup)
+        return copy;
+    }
     {
         QMutexLocker k(&_imp->common->renderClonesMutex);
         _imp->common->renderClones[key] = copy;
     }
     copy->initializeKnobsPublic();
-    copy->fetchRenderCloneKnobs();
     return copy;
 }
 
@@ -5503,7 +5506,7 @@ AnimatingKnobStringHelper::stringFromInterpolatedValue(double interpolated,
                                                        std::string* returnValue) const
 {
     Q_UNUSED(view);
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     StringKnobDimViewPtr data = toStringKnobDImView(getDataForDimView(DimIdx(0), view_i));
     if (!data) {
         return;
@@ -5520,7 +5523,7 @@ AnimatingKnobStringHelper::onKeyframesRemoved( const std::list<double>& keysRemo
     int nDims = getNDimensions();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -5547,7 +5550,7 @@ AnimatingKnobStringHelper::getStringAtTime(TimeValue time,
                                            ViewIdx view)
 {
     std::string ret;
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     StringKnobDimViewPtr data = toStringKnobDImView(getDataForDimView(DimIdx(0), view_i));
     if (!data) {
         return ret;

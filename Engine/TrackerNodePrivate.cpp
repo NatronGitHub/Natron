@@ -1197,7 +1197,7 @@ fullRectFloatCPUImageToPBOForNComps(const Image::CPUData& srcImage,
 
             int x = backward ? std::max(roi.x1, start_x - 1) : start_x;
             const int end_x = backward ? roi.x1 - 1 : roi.x2;
-            assert( backward == 1 || ( x >= 0 && x < (roi.x2 - roi.x1) ) );
+            assert( backward == 1 || ( x >= 0 && x < roi.x2 ) );
 
             const float* srcPixels[4];
             int srcPixelStride;
@@ -1387,9 +1387,9 @@ void
 TrackerNodeInteract::onTrackImageRenderingFinished()
 {
     assert( QThread::currentThread() == qApp->thread() );
-    QFutureWatcher<std::pair<ImagePtr, RectI> >* future = dynamic_cast<QFutureWatcher<std::pair<ImagePtr, RectI> >*>( sender() );
+    TrackWatcher* future = dynamic_cast<TrackWatcher*>( sender() );
     assert(future);
-    std::pair<ImagePtr, RectI> ret = future->result();
+    std::pair<ImagePtr, RectD> ret = future->result();
     OverlaySupport* overlay = getLastCallingViewport();
     assert(overlay);
     OpenGLViewerI* isOpenGLViewer = dynamic_cast<OpenGLViewerI*>(overlay);
@@ -1410,7 +1410,9 @@ TrackerNodeInteract::onTrackImageRenderingFinished()
                                                  format, internalFormat, glType, true /*useGL*/) );
     }
 
-    convertImageTosRGBOpenGLTexture(ret.first, selectedMarkerTexture, ret.second);
+    RectI roi;
+    ret.second.toPixelEnclosing(0, 1., &roi);
+    convertImageTosRGBOpenGLTexture(ret.first, selectedMarkerTexture, roi);
 
     redraw();
 }

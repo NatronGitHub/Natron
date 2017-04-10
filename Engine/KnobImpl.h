@@ -525,16 +525,18 @@ Knob<T>::evaluateExpression(TimeValue time,
             Py_DECREF(ret); //< new ref
             return true;
         }
-        case eExpressionLanguageExprTK: {
+        case eExpressionLanguageExprTk: {
             double valueAsDouble = 0.;
             std::string valueAsString;
-            KnobHelper::ExpressionReturnValueTypeEnum ret = executeExprTKExpression(time, view, dimension, &valueAsDouble, &valueAsString, error);
+            KnobHelper::ExpressionReturnValueTypeEnum ret = executeExprTkExpression(time, view, dimension, &valueAsDouble, &valueAsString, error);
             if (ret == eExpressionReturnValueTypeError) {
                 return false;
             }
             return handleExprtkReturnValue(ret, valueAsDouble, valueAsString, value, error);
         }
     }
+
+    throw std::invalid_argument("KnobHelper::evaluateExpression(): Unknown expression type");
 } // evaluateExpression
 
 template <typename T>
@@ -574,10 +576,10 @@ Knob<T>::evaluateExpression_pod(TimeValue time,
             }
             return true;
         }
-        case eExpressionLanguageExprTK: {
+        case eExpressionLanguageExprTk: {
             double valueAsDouble = 0.;
             std::string valueAsString;
-            KnobHelper::ExpressionReturnValueTypeEnum ret = executeExprTKExpression(time, view, dimension, &valueAsDouble, &valueAsString, error);
+            KnobHelper::ExpressionReturnValueTypeEnum ret = executeExprTkExpression(time, view, dimension, &valueAsDouble, &valueAsString, error);
             switch (ret) {
                 case eExpressionReturnValueTypeError:
                     return false;
@@ -591,6 +593,8 @@ Knob<T>::evaluateExpression_pod(TimeValue time,
 
         }
     }
+
+    throw std::invalid_argument("KnobHelper::evaluateExpression_pod(): Unknown expression type");
 } // evaluateExpression_pod
 
 template <typename T>
@@ -601,7 +605,7 @@ Knob<T>::clearExpressionsResults(DimSpec dimension, ViewSetSpec view)
     std::list<ViewIdx> views = getViewsList();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
     }
     int nDims = getNDimensions();
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {

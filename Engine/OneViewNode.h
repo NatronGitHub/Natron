@@ -117,12 +117,14 @@ private:
     virtual void initializeKnobs() OVERRIDE FINAL;
     virtual ActionRetCodeEnum getFramesNeeded(TimeValue time, ViewIdx view, FramesNeededMap* results) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual ActionRetCodeEnum isIdentity(TimeValue time,
-                            const RenderScale & scale,
-                            const RectI & roi,
-                            ViewIdx view,
-                            TimeValue* inputTime,
-                            ViewIdx* inputView,
-                            int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
+                                         const RenderScale & scale,
+                                         const RectI & roi,
+                                         ViewIdx view,
+                                         const ImagePlaneDesc& plane,
+                                         TimeValue* inputTime,
+                                         ViewIdx* inputView,
+                                         int* inputNb,
+                                         ImagePlaneDesc* inputPlane) OVERRIDE FINAL WARN_UNUSED_RETURN;
     boost::scoped_ptr<OneViewNodePrivate> _imp;
 };
 

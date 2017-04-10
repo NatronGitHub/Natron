@@ -114,14 +114,6 @@ struct RotoItemPrivate
     {
     }
 
-    // The copy constructor makes a shallow copy and only copy knob pointers
-    RotoItemPrivate(const RotoItemPrivate& other)
-    : activatedKnob(other.activatedKnob)
-    , lockedKnob(other.lockedKnob)
-    , soloKnob(other.soloKnob)
-    {
-
-    }
 };
 
 RotoItem::RotoItem(const KnobItemsTablePtr& model)
@@ -132,7 +124,7 @@ RotoItem::RotoItem(const KnobItemsTablePtr& model)
 
 RotoItem::RotoItem(const RotoItemPtr& other, const FrameViewRenderKey& key)
 : KnobTableItem(other, key)
-, _imp(new RotoItemPrivate(*other->_imp))
+, _imp(new RotoItemPrivate())
 {
 
 }

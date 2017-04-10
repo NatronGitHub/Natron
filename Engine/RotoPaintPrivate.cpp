@@ -65,7 +65,6 @@ RotoPaintPrivate::RotoPaintPrivate(RotoPaint* publicInterface,
     , ui()
     , inputNodes()
     , premultNode()
-    , premultFixerNode()
     , knobsTable()
     , globalMergeNodes()
     , treeRefreshBlocked(0)
@@ -1433,7 +1432,7 @@ RotoPaintInteract::isNearbyFeatherBar(TimeValue time,
         if ( prevF != fps.begin() ) {
             --prevF;
         }
-        bool isClockWiseOriented = isBezier->isFeatherPolygonClockwiseOriented(time, view);
+        bool isClockWiseOriented = isBezier->isClockwiseOriented(time, view);
 
         for (std::list<BezierCPPtr >::const_iterator itCp = cps.begin();
              itCp != cps.end();
@@ -1902,13 +1901,7 @@ RotoPaintInteract::drawOverlay(TimeValue time,
 #endif
 
                 std::vector< ParametricPoint > points;
-                isBezier->evaluateAtTime_DeCasteljau(time, view, 0,
-#ifdef ROTO_BEZIER_EVAL_ITERATIVE
-                                                     100,
-#else
-                                                     1,
-#endif
-                                                     &points, NULL);
+                isBezier->evaluateAtTime(time, view, RenderScale(1.), Bezier::eDeCasteljauAlgorithmIterative, 100, 1., 0, &points, NULL);
 
                 bool locked = (*it)->isLockedRecursive();
                 ColorRgbaD overlayColor(0.8, 0.8, 0.8, 1.);
@@ -1933,18 +1926,12 @@ RotoPaintInteract::drawOverlay(TimeValue time,
                                   std::numeric_limits<double>::infinity(),
                                   -std::numeric_limits<double>::infinity(),
                                   -std::numeric_limits<double>::infinity() );
-                bool clockWise = isBezier->isFeatherPolygonClockwiseOriented(time, view);
+                bool clockWise = isBezier->isClockwiseOriented(time, view);
 
 
                 if (featherVisible) {
                     ///Draw feather only if visible (button is toggled in the user interface)
-                    isBezier->evaluateFeatherPointsAtTime_DeCasteljau(time, view, 0,
-#ifdef ROTO_BEZIER_EVAL_ITERATIVE
-                                                                      100,
-#else
-                                                                      1,
-#endif
-                                                                      true, &featherPoints, &featherBBox);
+                    isBezier->evaluateFeatherPointsAtTime(time, view, RenderScale(1.), Bezier::eDeCasteljauAlgorithmIterative, 100, 1., 0, &featherPoints, &featherBBox);
 
                     if ( !featherPoints.empty() ) {
                         GL_GPU::LineStipple(2, 0xAAAA);
@@ -2405,6 +2392,14 @@ RotoPaintInteract::onOverlayPenDown(TimeValue time,
     }
 
     const bool featherVisible = isFeatherVisible();
+    const bool stickySelectionEnabled = isBboxClickAnywhereEnabled();
+
+    if (stickySelectionEnabled) {
+        state = isMouseInteractingWithCPSBbox(pos, cpSelectionTolerance, pixelScale);
+        if (state != eEventStateNone) {
+            didSomething = true;
+        }
+    }
 
     //////////////////BEZIER SELECTION
     /////Check if the point is nearby a bezier
@@ -2417,7 +2412,7 @@ RotoPaintInteract::onOverlayPenDown(TimeValue time,
     isNearbyBezier(pos.x(), pos.y(), time, view, bezierSelectionTolerance, &nearbyBezierCPIndex, &nearbyBezierT, &isFeather);
     std::pair<BezierCPPtr, BezierCPPtr > nearbyCP;
     int nearbyCpIndex = -1;
-    if (nearbyBezier) {
+    if (!didSomething && nearbyBezier) {
         /////////////////CONTROL POINT SELECTION
         //////Check if the point is nearby a control point of a selected bezier
         ///Find out if the user selected a control point
@@ -2506,7 +2501,7 @@ RotoPaintInteract::onOverlayPenDown(TimeValue time,
             }
 
 
-            if (nearbyBezier) {
+            if (nearbyBezier && !didSomething) {
                 ///check if the user clicked nearby the cross hair of the selection rectangle in which case
                 ///we drag all the control points selected
                 if (nearbyCP.first) {
@@ -2547,7 +2542,7 @@ RotoPaintInteract::onOverlayPenDown(TimeValue time,
                     didSomething = true;
                 }
             } else {
-                if (featherBarSel.first) {
+                if (featherBarSel.first && !didSomething) {
                     clearCPSSelection();
                     featherBarBeingDragged = featherBarSel;
                     handleControlPointSelection(featherBarBeingDragged);
@@ -2565,7 +2560,7 @@ RotoPaintInteract::onOverlayPenDown(TimeValue time,
         }
         case eRotoToolSelectCurves:
 
-            if (nearbyBezier) {
+            if (nearbyBezier && !didSomething) {
                 ///If the bezier is already selected and we re-click on it, change the transform mode
                 bool found = _imp->knobsTable->isItemSelected(nearbyBezier);
                 if (!found) {
@@ -2592,7 +2587,7 @@ RotoPaintInteract::onOverlayPenDown(TimeValue time,
         case eRotoToolAddPoints:
             ///If the user clicked on a bezier and this bezier is selected add a control point by
             ///splitting up the targeted segment
-            if (nearbyBezier) {
+            if (nearbyBezier && !didSomething) {
                 bool found = _imp->knobsTable->isItemSelected(nearbyBezier);
                 if (found) {
                     ///check that the point is not too close to an existing point
@@ -2607,7 +2602,7 @@ RotoPaintInteract::onOverlayPenDown(TimeValue time,
             }
             break;
         case eRotoToolRemovePoints:
-            if (nearbyCP.first) {
+            if (nearbyCP.first && !didSomething) {
                 assert( nearbyBezier && nearbyBezier == nearbyCP.first->getBezier() );
                 if ( nearbyCP.first->isFeatherPoint() ) {
                     _imp->publicInterface->pushUndoCommand( new RemovePointUndoCommand(_imp->ui, nearbyBezier, nearbyCP.second, view) );
@@ -2618,7 +2613,7 @@ RotoPaintInteract::onOverlayPenDown(TimeValue time,
             }
             break;
         case eRotoToolRemoveFeatherPoints:
-            if (nearbyCP.first) {
+            if (nearbyCP.first && !didSomething) {
                 assert(nearbyBezier);
                 std::list<RemoveFeatherUndoCommand::RemoveFeatherData> datas;
                 RemoveFeatherUndoCommand::RemoveFeatherData data;
@@ -2630,14 +2625,14 @@ RotoPaintInteract::onOverlayPenDown(TimeValue time,
             }
             break;
         case eRotoToolOpenCloseCurve:
-            if (nearbyBezier) {
+            if (nearbyBezier && !didSomething) {
                 _imp->publicInterface->pushUndoCommand( new OpenCloseUndoCommand(_imp->ui, nearbyBezier, view) );
                 didSomething = true;
             }
             break;
         case eRotoToolSmoothPoints:
 
-            if (nearbyCP.first) {
+            if (nearbyCP.first && !didSomething) {
                 std::list<SmoothCuspUndoCommand::SmoothCuspCurveData> datas;
                 SmoothCuspUndoCommand::SmoothCuspCurveData data;
                 data.curve = nearbyBezier;

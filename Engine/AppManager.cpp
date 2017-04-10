@@ -769,8 +769,9 @@ AppManager::setApplicationLocale()
     // see http://en.cppreference.com/w/cpp/locale/locale/global
     // Maybe this can also workaround the OSX crash in loadlocale():
     // https://discussions.apple.com/thread/3479591
-    // https://github.com/cth103/dcpomatic/blob/master/src/lib/safe_stringstream.h
-    // stringstreams don't seem to be thread-safe on OSX because the change the locale.
+    // https://github.com/cth103/dcpomatic1/blob/master/src/lib/safe_stringstream.h
+    // https://github.com/cth103/dcpomatic/commit/b1dc9c3a2f7e55c9afc5bf2d5b465371b048e14f
+    // stringstreams don't seem to be thread-safe on OSX because they change the locale.
 
     // We also set explicitely the LC_NUMERIC locale to "C" to avoid juggling
     // between locales when using stringstreams.
@@ -843,7 +844,7 @@ AppManager::loadInternal(const CLArgs& cl)
     const QString& breakpadProcessExec = cl.getBreakpadProcessExecutableFilePath();
     if ( !breakpadProcessExec.isEmpty() && QFile::exists(breakpadProcessExec) ) {
         _imp->breakpadProcessExecutableFilePath = breakpadProcessExec;
-        _imp->breakpadProcessPID = (Q_PID)cl.getBreakpadProcessPID();
+        _imp->breakpadProcessPID = cl.getBreakpadProcessPID();
         const QString& breakpadPipePath = cl.getBreakpadPipeFilePath();
         const QString& breakpadComPipePath = cl.getBreakpadComPipeFilePath();
         int breakpad_client_fd = cl.getBreakpadClientFD();
@@ -888,13 +889,13 @@ AppManager::loadInternal(const CLArgs& cl)
     }
 
     // Create cache once we loaded the cache directory path wanted by the user
-    _imp->generalPurposeCache = Cache<false>::create();
+    _imp->generalPurposeCache = Cache<false>::create(false /*enableTileStorage*/);
     try {
         // If the cache is busy because another process is using it and we are not compiled
         // with NATRON_CACHE_INTERPROCESS_ROBUST, just create a process local cache instead.
-        _imp->tileCache = Cache<true>::create();
+        _imp->tileCache = Cache<true>::create(true /*enableTileStorage*/);
     } catch (const BusyCacheException&) {
-        _imp->tileCache = Cache<false>::create();
+        _imp->tileCache = Cache<false>::create(true /*enableTileStorage*/);
     }
 
     if (cl.isCacheClearRequestedOnLaunch()) {

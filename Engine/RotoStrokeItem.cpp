@@ -226,21 +226,7 @@ RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other
     strokeDotPatterns = other.strokeDotPatterns;
     drawingGlCpuContext = other.drawingGlCpuContext;
     drawingGlGpuContext = other.drawingGlGpuContext;
-    effectStrength = other.effectStrength;
-    pressureOpacity = other.pressureOpacity;
-    pressureSize = other.pressureSize;
-    pressureHardness = other.pressureHardness;
-    buildUp = other.buildUp;
-    cloneTranslate = other.cloneTranslate;
-    cloneRotate = other.cloneRotate;
-    cloneScale = other.cloneScale;
-    cloneScaleUniform = other.cloneScaleUniform;
-    cloneSkewX = other.cloneSkewX;
-    cloneSkewY = other.cloneSkewY;
-    cloneSkewOrder = other.cloneSkewOrder;
-    cloneCenter = other.cloneCenter;
-    cloneFilter = other.cloneFilter;
-    cloneBlackOutside = other.cloneBlackOutside;
+
 
     assert(currentSubStroke >= 0);
 
@@ -396,14 +382,21 @@ RotoStrokeItem::~RotoStrokeItem()
     RotoShapeRenderCairo::purgeCaches_cairo_internal(_imp->strokeDotPatterns);
 #endif
     if (!isRenderClone()) {
-        deactivateNodes();
+        const NodesList& nodes = getItemNodes();
+        for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            (*it)->destroyNode(true, false);
+        }
     }
 }
 
 KnobHolderPtr
 RotoStrokeItem::createRenderCopy(const FrameViewRenderKey& key) const
 {
-    RotoStrokeItemPtr mainInstance = toRotoStrokeItem(boost::const_pointer_cast<KnobHolder>(shared_from_this()));
+    RotoStrokeItemPtr mainInstance = toRotoStrokeItem(getMainInstance());
+    if (!mainInstance) {
+        mainInstance = toRotoStrokeItem(boost::const_pointer_cast<KnobHolder>(shared_from_this()));
+    }
+
     {
         QMutexLocker k(&_imp->lock);
         RotoStrokeItemPtr ret(new RotoStrokeItem(mainInstance, key));

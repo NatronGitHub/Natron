@@ -54,6 +54,14 @@ run-without-python {
 }
 
 win32-g++ {
+
+    # KnobExpression.cpp includes exprtk and the assembler fails with the following:
+    # as.exe: release/KnobExpression.o: too many sections (68807)
+    # {standard input}: Assembler messages:
+    # {standard input}: Fatal error: can't write release/KnobExpression.o: File too big
+    # Commented out: If defined, ld on mingw never returns.
+    #QMAKE_CXXFLAGS += -Wa,-mbig-obj
+
     # on Mingw LD is extremely slow in  debug mode and can take hours. Optimizing the build seems to make it faster
     CONFIG(debug, debug|release){
         QMAKE_CXXFLAGS += -O -g

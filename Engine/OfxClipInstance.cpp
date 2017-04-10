@@ -181,17 +181,17 @@ OfxClipInstance::getUnmappedBitDepth() const
         int firstNonOptionalConnectedInputComps = 0;
 
         int nInputs = effect->getMaxInputCount();
-        std::vector<NodeMetadataPtr> inputMetadatas(nInputs);
+        std::vector<NodeMetadataPtr> inputMetadata(nInputs);
         for (int i = 0; i < nInputs; ++i) {
             const EffectInstancePtr& input = effect->getInputRenderEffectAtAnyTimeView(i);
             if (input) {
-                GetTimeInvariantMetaDatasResultsPtr results;
-                ActionRetCodeEnum stat = input->getTimeInvariantMetaDatas_public(&results);
+                GetTimeInvariantMetadataResultsPtr results;
+                ActionRetCodeEnum stat = input->getTimeInvariantMetadata_public(&results);
                 if (!isFailureRetCode(stat)) {
-                    inputMetadatas[i] = results->getMetadatasResults();
+                    inputMetadata[i] = results->getMetadataResults();
 
                     if ( !firstNonOptionalConnectedInputComps && !effect->isInputOptional(i) ) {
-                        firstNonOptionalConnectedInputComps = inputMetadatas[i]->getColorPlaneNComps(-1);
+                        firstNonOptionalConnectedInputComps = inputMetadata[i]->getColorPlaneNComps(-1);
                     }
                 }
 
@@ -199,8 +199,8 @@ OfxClipInstance::getUnmappedBitDepth() const
             }
         }
         for (int i = 0; i < nInputs; ++i) {
-            if (inputMetadatas[i]) {
-                ImageBitDepthEnum rawDepth = inputMetadatas[i]->getBitDepth(-1);
+            if (inputMetadata[i]) {
+                ImageBitDepthEnum rawDepth = inputMetadata[i]->getBitDepth(-1);
                 if ( getSizeOfForBitDepth(deepestBitDepth) < getSizeOfForBitDepth(rawDepth) ) {
                     deepestBitDepth = rawDepth;
                 }
@@ -235,17 +235,17 @@ OfxClipInstance::getUnmappedComponents() const
         int firstNonOptionalConnectedInputComps = 0;
 
         int nInputs = effect->getMaxInputCount();
-        std::vector<NodeMetadataPtr> inputMetadatas(nInputs);
+        std::vector<NodeMetadataPtr> inputMetadata(nInputs);
         for (int i = 0; i < nInputs; ++i) {
             const EffectInstancePtr& input = effect->getInputRenderEffectAtAnyTimeView(i);
             if (input) {
-                GetTimeInvariantMetaDatasResultsPtr results;
-                ActionRetCodeEnum stat = input->getTimeInvariantMetaDatas_public(&results);
+                GetTimeInvariantMetadataResultsPtr results;
+                ActionRetCodeEnum stat = input->getTimeInvariantMetadata_public(&results);
                 if (!isFailureRetCode(stat)) {
-                    inputMetadatas[i] = results->getMetadatasResults();
+                    inputMetadata[i] = results->getMetadataResults();
 
                     if ( !firstNonOptionalConnectedInputComps && !effect->isInputOptional(i) ) {
-                        firstNonOptionalConnectedInputComps = inputMetadatas[i]->getColorPlaneNComps(-1);
+                        firstNonOptionalConnectedInputComps = inputMetadata[i]->getColorPlaneNComps(-1);
                     }
                 }
 
@@ -253,8 +253,8 @@ OfxClipInstance::getUnmappedComponents() const
             }
         }
         for (int i = 0; i < nInputs; ++i) {
-            if (inputMetadatas[i]) {
-                int rawComp = effect->getUnmappedNumberOfCompsForColorPlane(i, inputMetadatas, firstNonOptionalConnectedInputComps);
+            if (inputMetadata[i]) {
+                int rawComp = effect->getUnmappedNumberOfCompsForColorPlane(i, inputMetadata, firstNonOptionalConnectedInputComps);
                 if ( rawComp > mostComponents ) {
                     mostComponents = rawComp;
                 }
@@ -414,9 +414,12 @@ OfxClipInstance::getComponents() const
         effect->getMetadataComponents(inputNb, &metadataPlane, &metadataPairedPlane);
 
         // Default to RGBA
-        if (metadataPlane.getNumComponents() == 0) {
-            metadataPlane = ImagePlaneDesc::getRGBAComponents();
+        int nComps = metadataPlane.getNumComponents();
+        if (nComps == 0) {
+            nComps = effect->findClosestSupportedNumberOfComponents(inputNb, nComps);
+            metadataPlane = ImagePlaneDesc::mapNCompsToColorPlane(nComps);
         }
+
         ret = ImagePlaneDesc::mapPlaneToOFXComponentsTypeString(metadataPlane);
     }
 
@@ -806,6 +809,8 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     }
 
 
+    bool multiPlanar = effect->isMultiPlanar();
+
     // If we are in the render action, retrieve the current render window from the TLS
     RectI currentRenderWindow;
 
@@ -842,29 +847,36 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
         }
     } else {
 
-        // Use the results of the getLayersProducedAndNeeded action
-        GetComponentsResultsPtr actionResults;
-        ActionRetCodeEnum stat = effect->getLayersProducedAndNeeded_public(currentActionTime, currentActionView, &actionResults);
-        if (isFailureRetCode(stat)) {
-            return false;
-        }
-
-        std::map<int, std::list<ImagePlaneDesc> > neededInputLayers;
-        std::list<ImagePlaneDesc> producedLayers, availableLayers;
-        int passThroughInputNb;
-        ViewIdx passThroughView;
-        TimeValue passThroughTime;
-        std::bitset<4> processChannels;
-        bool processAll;
-        actionResults->getResults(&neededInputLayers, &producedLayers, &availableLayers, &passThroughInputNb, &passThroughTime, &passThroughView, &processChannels, &processAll);
-
-        std::map<int, std::list<ImagePlaneDesc> > ::const_iterator foundNeededLayers = neededInputLayers.find(inputNb);
-        // The planes should have been specified for this clip
-        if (foundNeededLayers == neededInputLayers.end() || foundNeededLayers->second.empty()) {
+        if (multiPlanar) {
+            // If the effect is multiplanar and did not make use of fetchImagePlane, assume it wants the color plane
             ImagePlaneDesc metadataPairedPlane;
             effect->getMetadataComponents(inputNb, &plane, &metadataPairedPlane);
+
         } else {
-            plane = foundNeededLayers->second.front();
+            // Use the results of the getLayersProducedAndNeeded action
+            GetComponentsResultsPtr actionResults;
+            ActionRetCodeEnum stat = effect->getLayersProducedAndNeeded_public(currentActionTime, currentActionView, &actionResults);
+            if (isFailureRetCode(stat)) {
+                return false;
+            }
+
+            std::map<int, std::list<ImagePlaneDesc> > neededInputLayers;
+            std::list<ImagePlaneDesc> producedLayers, availableLayers;
+            int passThroughInputNb;
+            ViewIdx passThroughView;
+            TimeValue passThroughTime;
+            std::bitset<4> processChannels;
+            bool processAll;
+            actionResults->getResults(&neededInputLayers, &producedLayers, &availableLayers, &passThroughInputNb, &passThroughTime, &passThroughView, &processChannels, &processAll);
+
+            std::map<int, std::list<ImagePlaneDesc> > ::const_iterator foundNeededLayers = neededInputLayers.find(inputNb);
+            // The planes should have been specified for this clip
+            if (foundNeededLayers == neededInputLayers.end() || foundNeededLayers->second.empty()) {
+                ImagePlaneDesc metadataPairedPlane;
+                effect->getMetadataComponents(inputNb, &plane, &metadataPairedPlane);
+            } else {
+                plane = foundNeededLayers->second.front();
+            }
         }
     }
 
@@ -907,7 +919,6 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     // If the effect is not multi-planar (most of effects) then the returned image might have a different
     // layer name than the color layer but should always have the same number of components than the components
     // set in getClipPreferences.
-    bool multiPlanar = effect->isMultiPlanar();
     std::string componentsStr;
     int nComps;
     {
@@ -959,8 +970,10 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     RectD rod;
     {
 
+        RenderScale inputCombinedScale = EffectInstance::getCombinedScale(outArgs.image->getMipMapLevel(), outArgs.image->getProxyScale());
+
         GetRegionOfDefinitionResultsPtr rodResults;
-        ActionRetCodeEnum stat = inputEffect->getRegionOfDefinition_public(inputTime, currentActionScale, inputView, &rodResults);
+        ActionRetCodeEnum stat = inputEffect->getRegionOfDefinition_public(inputTime, inputCombinedScale, inputView, &rodResults);
         if (isFailureRetCode(stat)) {
             return false;
         }

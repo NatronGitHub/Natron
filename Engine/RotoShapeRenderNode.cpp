@@ -24,6 +24,8 @@
 
 #include "RotoShapeRenderNode.h"
 
+#include <QDebug>
+#include <QThread>
 
 #include "Engine/AppInstance.h"
 #include "Engine/BezierCP.h"
@@ -72,16 +74,20 @@ RotoShapeRenderNode::RotoShapeRenderNode(NodePtr n)
 
 RotoShapeRenderNode::RotoShapeRenderNode(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key)
 : EffectInstance(mainInstance, key)
-, _imp()
+, _imp(new RotoShapeRenderNodePrivate())
 {
     RotoShapeRenderNode* other = dynamic_cast<RotoShapeRenderNode*>(mainInstance.get());
     assert(other);
-    _imp = other->_imp;
+    _imp->osmesaSmearTmpTexture = other->_imp->osmesaSmearTmpTexture;
 }
 
 RotoShapeRenderNode::~RotoShapeRenderNode()
 {
-
+    if (isRenderClone()) {
+        RotoDrawableItemPtr itemMainInstance = getOriginalAttachedItem();
+        assert(itemMainInstance);
+        itemMainInstance->removeRenderClone(getCurrentRender());
+    }
 }
 
 bool
@@ -129,13 +135,16 @@ RotoShapeRenderNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) 
 void
 RotoShapeRenderNode::fetchRenderCloneKnobs()
 {
+    assert(isRenderClone());
     EffectInstance::fetchRenderCloneKnobs();
     _imp->renderType = toKnobChoice(getKnobByName(kRotoShapeRenderNodeParamType));
+    assert(_imp->renderType.lock());
 }
 
 void
 RotoShapeRenderNode::initializeKnobs()
 {
+    assert(!isRenderClone());
     KnobPagePtr page = createKnob<KnobPage>("controlsPage");
     page->setLabel(tr("Controls"));
 
@@ -152,6 +161,19 @@ RotoShapeRenderNode::initializeKnobs()
         page->addKnob(param);
         _imp->renderType = param;
     }
+}
+
+KnobHolderPtr
+RotoShapeRenderNode::createRenderCopy(const FrameViewRenderKey& key) const
+{
+    KnobHolderPtr ret =  EffectInstance::createRenderCopy(key);
+    RotoDrawableItemPtr mainInstanceItem = getOriginalAttachedItem();
+    assert(mainInstanceItem);
+    KnobHolderPtr itemClone = mainInstanceItem->createRenderClone(key);
+    //qDebug() << QThread::currentThread() << ret.get() << "Creating clone" << dynamic_cast<Bezier*>(itemClone.get()) << "for render" << key.render.lock().get();
+
+
+    return ret;
 }
 
 void
@@ -210,6 +232,12 @@ RotoShapeRenderNode::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 
 } // appendToHash
 
+ActionRetCodeEnum
+RotoShapeRenderNode::getFramesNeeded(TimeValue /*time*/, ViewIdx /*view*/,  FramesNeededMap* /*results*/)
+{
+    // We don't need any image in input
+    return eActionStatusOK;
+} // getFramesNeeded
 
 bool
 RotoShapeRenderNode::supportsTiles() const
@@ -261,14 +289,25 @@ RotoShapeRenderNode::getLayersProducedAndNeeded(TimeValue time,
 } // getLayersProducedAndNeeded
 
 ActionRetCodeEnum
-RotoShapeRenderNode::getTimeInvariantMetaDatas(NodeMetadata& metadata)
+RotoShapeRenderNode::getTimeInvariantMetadata(NodeMetadata& metadata)
 {
 
 
+    assert(_imp->renderType.lock());
     RotoShapeRenderTypeEnum type = (RotoShapeRenderTypeEnum)_imp->renderType.lock()->getValue();
     int nComps;
     if (type == eRotoShapeRenderTypeSolid) {
-        nComps = 1;
+        // If there's an input to the RotoShapeRender node, pass-through the meta-data number of components so that downstream nodes
+        // have a good default color plane.
+        // E.g: if we have Constant--> RotoShapeRender --> Merge,  we want the Merge to have the number of components of the Constant
+        EffectInstancePtr inputEffect = getInputRenderEffectAtAnyTimeView(0);
+        if (inputEffect) {
+            ImagePlaneDesc inputPlane, paireInputPlane;
+            inputEffect->getMetadataComponents(-1, &inputPlane, &paireInputPlane);
+            nComps = inputPlane.getNumComponents();
+        } else {
+            nComps = 1;
+        }
     } else {
         nComps = 4;
     }
@@ -288,37 +327,22 @@ static void getRoDFromItem(const RotoDrawableItemPtr& item, TimeValue time, View
     double interval = divisions >= 1 ? (range.max - range.min) / divisions : 1.;
 
     for (int i = 0; i < divisions; ++i) {
-        RectD maskRod;
-        try {
-            double t = divisions > 1 ? range.min + i * interval : time;
-            maskRod = item->getBoundingBox(TimeValue(t), view);
-        } catch (...) {
-        }
-
-        if ( rod->isNull() ) {
-            *rod = maskRod;
-        } else {
-            rod->merge(maskRod);
-        }
+        double t = divisions > 1 ? range.min + i * interval : time;
+        *rod = item->getBoundingBox(TimeValue(t), view);
     }
 
 }
 
 
 ActionRetCodeEnum
-RotoShapeRenderNode::getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, RectD* rod)
+RotoShapeRenderNode::getRegionOfDefinition(TimeValue time, const RenderScale& /*scale*/, ViewIdx view, RectD* rod)
 {
-   
-
-    ActionRetCodeEnum st = EffectInstance::getRegionOfDefinition(time, scale, view, rod);
-    if (isFailureRetCode(st)) {
-        rod->x1 = rod->y1 = rod->x2 = rod->y2 = 0.;
-    }
 
     RotoDrawableItemPtr item = getAttachedRotoItem();
     assert(item);
+    assert((isRenderClone() && item->isRenderClone()) ||
+           (!isRenderClone() && !item->isRenderClone()));
     getRoDFromItem(item, time, view, rod);
-
     return eActionStatusOK;
 
 }
@@ -328,14 +352,16 @@ RotoShapeRenderNode::isIdentity(TimeValue time,
                                 const RenderScale & scale,
                                 const RectI & roi,
                                 ViewIdx view,
+                                const ImagePlaneDesc& /*plane*/,
                                 TimeValue* inputTime,
                                 ViewIdx* inputView,
-                                int* inputNb)
+                                int* inputNb,
+                                ImagePlaneDesc* /*inputPlane*/)
 {
     *inputView = view;
     NodePtr node = getNode();
-    
 
+    *inputNb = -1;
     RotoDrawableItemPtr rotoItem = getAttachedRotoItem();
     assert(rotoItem);
     Bezier* isBezier = dynamic_cast<Bezier*>(rotoItem.get());
@@ -390,6 +416,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     assert(rotoItem->isRenderClone());
 
     // Is it a smear or regular solid render ?
+    assert(_imp->renderType.lock());
     RotoShapeRenderTypeEnum type = (RotoShapeRenderTypeEnum)_imp->renderType.lock()->getValue();
 
     // We only support rendering bezier or strokes
@@ -518,6 +545,8 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                     }
                 } else {
                     // Render a bezier
+                    //qDebug() << QThread::currentThread() << this  << isBezier.get()<< "RoD while render:";
+                    //isBezier->getBoundingBox(args.time, args.view).debug();
                     RotoShapeRenderGL::renderBezier_gl(glContext, glData,
                                                        args.roi,
                                                        isBezier, outputPlane.second, opacity, args.time, args.view, range, divisions, combinedScale, GL_TEXTURE_2D);

@@ -119,6 +119,11 @@ EffectInstance::createRenderCopy(const FrameViewRenderKey& key) const
     if (!createFunc) {
         throw std::invalid_argument("EffectInstance::createRenderCopy: No kNatronPluginPropCreateRenderCloneFunc property set on plug-in!");
     }
+
+    // A node group is never cloned since its not part of the render tree
+    if (dynamic_cast<const NodeGroup*>(this)) {
+        return boost::const_pointer_cast<EffectInstance>(shared_from_this());
+    }
     EffectInstancePtr clone = createFunc(boost::const_pointer_cast<EffectInstance>(shared_from_this()), key);
 
 
@@ -262,7 +267,6 @@ EffectInstance::invalidateHashCacheRecursive(const bool recurse, std::set<Hashab
         return false;
     }
 
-
     // For a group, also invalidate the hash of all its nodes
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>(this);
     if (isGroup) {
@@ -278,10 +282,14 @@ EffectInstance::invalidateHashCacheRecursive(const bool recurse, std::set<Hashab
     }
 
     if (recurse) {
-        NodesList outputs;
-        getNode()->getOutputsWithGroupRedirection(outputs);
-        for (NodesList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-            (*it)->getEffectInstance()->invalidateHashCacheRecursive(recurse, invalidatedObjects);
+        NodesWList outputs;
+        getNode()->getOutputs_mt_safe(outputs);
+        for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+            NodePtr outputNode = it->lock();
+            if (!outputNode) {
+                continue;
+            }
+            outputNode->getEffectInstance()->invalidateHashCacheRecursive(recurse, invalidatedObjects);
         }
     }
     return true;
@@ -794,6 +802,14 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
         assert(results);
         inputRoD = results->getRoD();
     }
+
+    RenderScale inputCombinedScale = EffectInstance::getCombinedScale(inputMipMapLevel, inputProxyScale);
+
+    double inputPar = getAspectRatio(inArgs.inputNb);
+   /* RectI pixelRod;
+    inputRoD.toPixelEnclosing(inputCombinedScale, inputPar, &pixelRod);
+    qDebug() << QThread::currentThread() << "inputRod: " << pixelRod.x1 << pixelRod.y1 << pixelRod.x2 << pixelRod.y2 << "scale: " << inputCombinedScale.x << inputCombinedScale.y;*/
+
     if (!resolveRoIForGetImage(inArgs, currentMipMapLevel, currentProxyScale, &roiCanonical, &roiExpand)) {
         roiCanonical = inputRoD;
     } else {
@@ -837,23 +853,17 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
         }
     }
 
+
     // Copy in output the distortion stack
     outArgs->distortionStack = outputRequest->getDistorsionStack();
 
     // Get the RoI in pixel coordinates of the effect we rendered
-    RenderScale inputCombinedScale = EffectInstance::getCombinedScale(inputMipMapLevel, inputProxyScale);
-    double inputPar = getAspectRatio(inArgs.inputNb);
 
     RectI roiPixels;
     RectI roiExpandPixels;
     roiExpand.toPixelEnclosing(inputCombinedScale, inputPar, &roiExpandPixels);
     roiCanonical.toPixelEnclosing(inputCombinedScale, inputPar, &roiPixels);
     assert(roiExpandPixels.contains(roiPixels));
-    if (roiExpandPixels != roiPixels) {
-        outArgs->roiPixel = roiExpandPixels;
-    } else {
-        outArgs->roiPixel = roiPixels;
-    }
 
 
 
@@ -865,8 +875,9 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
     // The output image unmapped
     outArgs->image = outputRequest->getRequestedScaleImagePlane();
 
-    outArgs->roiPixel.intersect(outArgs->image->getBounds(), &outArgs->roiPixel);
-
+    if (!outArgs->image) {
+        return false;
+    }
 
     bool mustConvertImage = false;
     StorageModeEnum storage = outArgs->image->getStorageMode();
@@ -917,6 +928,15 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
         mustConvertImage = true;
     }
 
+
+    if (roiExpandPixels != roiPixels) {
+        outArgs->roiPixel = roiExpandPixels;
+    } else {
+        outArgs->roiPixel = roiPixels;
+    }
+
+    outArgs->roiPixel.intersect(outArgs->image->getBounds(), &outArgs->roiPixel);
+
     ImagePtr convertedImage = outArgs->image;
     if (mustConvertImage) {
 
@@ -957,7 +977,12 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
             copyArgs.conversionChannel = channelForMask;
             copyArgs.srcColorspace = getApp()->getDefaultColorSpaceForBitDepth(outArgs->image->getBitDepth());
             copyArgs.dstColorspace = getApp()->getDefaultColorSpaceForBitDepth(thisBitDepth);
-            copyArgs.monoConversion = Image::eMonoToPackedConversionCopyToChannelAndFillOthers;
+            copyArgs.alphaHandling = Image::eAlphaChannelHandlingFillFromChannel;
+            if (channelForMask != -1) {
+                copyArgs.monoConversion = Image::eMonoToPackedConversionCopyToChannelAndFillOthers;
+            } else {
+                copyArgs.monoConversion = Image::eMonoToPackedConversionCopyToAll;
+            }
         }
         ActionRetCodeEnum stat = convertedImage->copyPixels(*outArgs->image, copyArgs);
         if (isFailureRetCode(stat)) {
@@ -973,6 +998,9 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
             return false;
         }
     }
+
+  //  qDebug() << QThread::currentThread() << "input roi: " << outArgs->roiPixel.x1 << outArgs->roiPixel.y1 << outArgs->roiPixel.x2 << outArgs->roiPixel.y2;
+
 
     return true;
 } // getImagePlane
@@ -1005,6 +1033,36 @@ EffectInstanceTLSDataPtr
 EffectInstance::getOrCreateTLSObject() const
 {
     return EffectInstanceTLSDataPtr();
+}
+
+bool
+EffectInstance::isAllProducedPlanesAtOncePreferred() const
+{
+    return false;
+}
+
+bool
+EffectInstance::isMultiPlanar() const
+{
+    return false;
+}
+
+EffectInstance::PassThroughEnum
+EffectInstance::isPassThroughForNonRenderedPlanes() const
+{
+    return ePassThroughPassThroughNonRenderedPlanes;
+}
+
+bool
+EffectInstance::isViewAware() const
+{
+    return false;
+}
+
+EffectInstance::ViewInvarianceLevel
+EffectInstance::isViewInvariant() const
+{
+    return eViewInvarianceAllViewsVariant;
 }
 
 EffectInstance::NotifyRenderingStarted_RAII::NotifyRenderingStarted_RAII(Node* node)
@@ -1057,12 +1115,12 @@ EffectInstance::NotifyInputNRenderingStarted_RAII::~NotifyInputNRenderingStarted
 
 void
 EffectInstance::evaluate(bool isSignificant,
-                         bool refreshMetadatas)
+                         bool refreshMetadata)
 {
 
     NodePtr node = getNode();
 
-    if ( refreshMetadatas && node && node->isNodeCreated() ) {
+    if ( refreshMetadata && node && node->isNodeCreated() ) {
         
         // Force a re-compute of the meta-data if needed
         onMetadataChanged_recursive_public();
@@ -1343,13 +1401,13 @@ EffectInstance::refreshExtraStateAfterTimeChanged(bool isPlayback,
 RectI
 EffectInstance::getOutputFormat()
 {
-    GetTimeInvariantMetaDatasResultsPtr results;
-    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(&results);
+    GetTimeInvariantMetadataResultsPtr results;
+    ActionRetCodeEnum stat = getTimeInvariantMetadata_public(&results);
     if (isFailureRetCode(stat)) {
         return RectI();
     } else {
-        const NodeMetadataPtr& metadatas = results->getMetadatasResults();
-        return metadatas->getOutputFormat();
+        const NodeMetadataPtr& metadata = results->getMetadataResults();
+        return metadata->getOutputFormat();
     }
 }
 
@@ -1357,13 +1415,13 @@ EffectInstance::getOutputFormat()
 bool
 EffectInstance::isFrameVarying()
 {
-    GetTimeInvariantMetaDatasResultsPtr results;
-    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(&results);
+    GetTimeInvariantMetadataResultsPtr results;
+    ActionRetCodeEnum stat = getTimeInvariantMetadata_public(&results);
     if (isFailureRetCode(stat)) {
         return true;
     } else {
-        const NodeMetadataPtr& metadatas = results->getMetadatasResults();
-        return metadatas->getIsFrameVarying();
+        const NodeMetadataPtr& metadata = results->getMetadataResults();
+        return metadata->getIsFrameVarying();
     }
 }
 
@@ -1371,13 +1429,13 @@ EffectInstance::isFrameVarying()
 double
 EffectInstance::getFrameRate()
 {
-    GetTimeInvariantMetaDatasResultsPtr results;
-    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(&results);
+    GetTimeInvariantMetadataResultsPtr results;
+    ActionRetCodeEnum stat = getTimeInvariantMetadata_public(&results);
     if (isFailureRetCode(stat)) {
         return 24.;
     } else {
-        const NodeMetadataPtr& metadatas = results->getMetadatasResults();
-        return metadatas->getOutputFrameRate();
+        const NodeMetadataPtr& metadata = results->getMetadataResults();
+        return metadata->getOutputFrameRate();
     }
 
 }
@@ -1386,39 +1444,39 @@ EffectInstance::getFrameRate()
 ImagePremultiplicationEnum
 EffectInstance::getPremult()
 {
-    GetTimeInvariantMetaDatasResultsPtr results;
-    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(&results);
+    GetTimeInvariantMetadataResultsPtr results;
+    ActionRetCodeEnum stat = getTimeInvariantMetadata_public(&results);
     if (isFailureRetCode(stat)) {
         return eImagePremultiplicationPremultiplied;
     } else {
-        const NodeMetadataPtr& metadatas = results->getMetadatasResults();
-        return metadatas->getOutputPremult();
+        const NodeMetadataPtr& metadata = results->getMetadataResults();
+        return metadata->getOutputPremult();
     }
 }
 
 bool
 EffectInstance::canRenderContinuously()
 {
-    GetTimeInvariantMetaDatasResultsPtr results;
-    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(&results);
+    GetTimeInvariantMetadataResultsPtr results;
+    ActionRetCodeEnum stat = getTimeInvariantMetadata_public(&results);
     if (isFailureRetCode(stat)) {
         return true;
     } else {
-        const NodeMetadataPtr& metadatas = results->getMetadatasResults();
-        return metadatas->getIsContinuous();
+        const NodeMetadataPtr& metadata = results->getMetadataResults();
+        return metadata->getIsContinuous();
     }
 }
 
 ImageFieldingOrderEnum
 EffectInstance::getFieldingOrder()
 {
-    GetTimeInvariantMetaDatasResultsPtr results;
-    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(&results);
+    GetTimeInvariantMetadataResultsPtr results;
+    ActionRetCodeEnum stat = getTimeInvariantMetadata_public(&results);
     if (isFailureRetCode(stat)) {
         return eImageFieldingOrderNone;
     } else {
-        const NodeMetadataPtr& metadatas = results->getMetadatasResults();
-        return metadatas->getOutputFielding();
+        const NodeMetadataPtr& metadata = results->getMetadataResults();
+        return metadata->getOutputFielding();
     }
 }
 
@@ -1426,28 +1484,28 @@ EffectInstance::getFieldingOrder()
 double
 EffectInstance::getAspectRatio(int inputNb)
 {
-    GetTimeInvariantMetaDatasResultsPtr results;
-    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(&results);
+    GetTimeInvariantMetadataResultsPtr results;
+    ActionRetCodeEnum stat = getTimeInvariantMetadata_public(&results);
     if (isFailureRetCode(stat)) {
         return 1.;
     } else {
-        const NodeMetadataPtr& metadatas = results->getMetadatasResults();
-        return metadatas->getPixelAspectRatio(inputNb);
+        const NodeMetadataPtr& metadata = results->getMetadataResults();
+        return metadata->getPixelAspectRatio(inputNb);
     }
 }
 
 void
 EffectInstance::getMetadataComponents(int inputNb, ImagePlaneDesc* plane, ImagePlaneDesc* pairedPlane)
 {
-    GetTimeInvariantMetaDatasResultsPtr results;
-    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(&results);
+    GetTimeInvariantMetadataResultsPtr results;
+    ActionRetCodeEnum stat = getTimeInvariantMetadata_public(&results);
     if (isFailureRetCode(stat)) {
         *plane = ImagePlaneDesc::getNoneComponents();
     } else {
-        const NodeMetadataPtr& metadatas = results->getMetadatasResults();
-        std::string componentsType = metadatas->getComponentsType(inputNb);
+        const NodeMetadataPtr& metadata = results->getMetadataResults();
+        std::string componentsType = metadata->getComponentsType(inputNb);
         if (componentsType == kNatronColorPlaneID) {
-            int nComps = metadatas->getColorPlaneNComps(inputNb);
+            int nComps = metadata->getColorPlaneNComps(inputNb);
             *plane = ImagePlaneDesc::mapNCompsToColorPlane(nComps);
         } else if (componentsType == kNatronDisparityComponentsLabel) {
             *plane = ImagePlaneDesc::getDisparityLeftComponents();
@@ -1467,13 +1525,13 @@ EffectInstance::getMetadataComponents(int inputNb, ImagePlaneDesc* plane, ImageP
 ImageBitDepthEnum
 EffectInstance::getBitDepth(int inputNb)
 {
-    GetTimeInvariantMetaDatasResultsPtr results;
-    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(&results);
+    GetTimeInvariantMetadataResultsPtr results;
+    ActionRetCodeEnum stat = getTimeInvariantMetadata_public(&results);
     if (isFailureRetCode(stat)) {
         return eImageBitDepthFloat;
     } else {
-        const NodeMetadataPtr& metadatas = results->getMetadatasResults();
-        return metadatas->getBitDepth(inputNb);
+        const NodeMetadataPtr& metadata = results->getMetadataResults();
+        return metadata->getBitDepth(inputNb);
     }
 }
 
@@ -1617,7 +1675,7 @@ EffectInstance::makeInfoForInput(int inputNumber)
         }
         for (std::list<ImagePlaneDesc>::iterator it = availableLayers.begin(); it != availableLayers.end(); ++it) {
 
-            ss << " "  << it->getPlaneID();
+            ss << " "  << it->getPlaneLabel();
             if ( next != availableLayers.end() ) {
                 ss << ", ";
                 ++next;
@@ -2082,7 +2140,7 @@ EffectInstance::getAttachedRotoItem() const
     ViewIdx currentView = getCurrentRenderView();
     if (currentRender && thisItem->isRenderCloneNeeded()) {
         FrameViewRenderKey k = {currentTime, currentView, currentRender};
-        return boost::dynamic_pointer_cast<RotoDrawableItem>(toRotoItem(thisItem->getRenderClone(k)));
+        return boost::dynamic_pointer_cast<RotoDrawableItem>(toRotoItem(thisItem->createRenderClone(k)));
     }
     return thisItem;
 }

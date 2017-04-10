@@ -162,7 +162,7 @@ KnobFile::getDialogFilters() const
 std::string
 KnobFile::getValueAtTime(TimeValue time, DimIdx dimension, ViewIdx view, bool /*clampToMinMax*/)
 {
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
 
     if (_imp->dialogType == eKnobFileDialogTypeOpenFileSequences ||
         _imp->dialogType == eKnobFileDialogTypeSaveFileSequences) {

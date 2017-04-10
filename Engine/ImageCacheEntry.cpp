@@ -32,11 +32,13 @@
 #include <QDebug>
 
 #include <boost/thread/shared_mutex.hpp> // local r-w mutex
+#include <boost/thread/mutex.hpp> // local  mutex
 #include <boost/thread/locks.hpp>
 
 #include "Engine/AppManager.h"
 #include "Engine/Cache.h"
 #include "Engine/CacheEntryBase.h"
+#include "Engine/Hash64.h"
 #include "Engine/ImageCacheKey.h"
 #include "Engine/ImageStorage.h"
 #include "Engine/ImagePrivate.h"
@@ -44,6 +46,7 @@
 #include "Engine/ImageTilesState.h"
 #include "Engine/MultiThread.h"
 #include "Engine/ThreadPool.h"
+#include "Engine/Timer.h"
 
 // Define to log tiles status in the console
 //#define TRACE_TILES_STATUS
@@ -230,6 +233,31 @@ struct TileData
     int channel_i;
 
 };
+
+/**
+ * @brief Since all tiles in the cache share the same cache entry (same image) we want the allocation of the tiles from the cache to 
+ * come from different buckets so that we distribute uniformly the tile file storage.
+ **/
+static U64 makeTileCacheIndex(int tx, int ty, unsigned int mipMapLevel, int channelIndex, int /*tileSizeX*/, int /*tileSizeY*/, const RectI& /*bounds*/) {
+    Hash64 hash;
+    hash.append(channelIndex);
+    hash.append(mipMapLevel);
+    hash.append(tx);
+    hash.append(ty);
+    hash.computeHash();
+    return hash.value();
+    /*U64 ret = channelIndex;
+    ret += mipMapLevel;
+    ret += tx;
+    ret += ty;*/
+    // Normalize tx and ty which are in pixel to tile coordinates
+    /*tx = (tx - bounds.x1) / tileSizeX;
+    ty = (ty - bounds.y1) / tileSizeY;
+    int coord = tx + ty + 1;
+    ret += coord;
+    ret *= std::max(1, (int)mipMapLevel);*/
+    //return ret;
+}
 
 struct DownscaleTile : public TileData
 {
@@ -725,6 +753,9 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(bool hasExclusiveLock,
             }
 
             *status = eTileStatusRendered;
+#ifdef TRACE_TILES_STATUS
+            qDebug() << QThread::currentThread()  << effect->getScriptName_mt_safe().c_str() << image.lock()->getLayer().getPlaneLabel().c_str() << internalCacheEntry->getHashKey() << "lookup(): tile " << coord.tx << coord.ty << "is rendered in cache at level" << lookupLevel;
+#endif
             return eLookupTileStateRetCodeUpToDate;
         }
         case eTileStatusPending: {
@@ -735,6 +766,9 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(bool hasExclusiveLock,
                 hasPendingTiles = true;
             }
             *status = eTileStatusPending;
+#ifdef TRACE_TILES_STATUS
+            qDebug() << QThread::currentThread()  << effect->getScriptName_mt_safe().c_str() << image.lock()->getLayer().getPlaneLabel().c_str() << internalCacheEntry->getHashKey() << "lookup(): tile " << coord.tx << coord.ty << "is pending in cache at level" << lookupLevel;
+#endif
             return eLookupTileStateRetCodeUpToDate;
 
         }
@@ -824,6 +858,9 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(bool hasExclusiveLock,
                         localTileState->status = eTileStatusPending;
                         hasPendingTiles = true;
                     }
+#ifdef TRACE_TILES_STATUS
+                    qDebug() << QThread::currentThread()  << effect->getScriptName_mt_safe().c_str() << image.lock()->getLayer().getPlaneLabel().c_str() << internalCacheEntry->getHashKey() << "lookup(): tile " << coord.tx << coord.ty << "is pending in cache at level" << lookupLevel;
+#endif
                     break;
                 case eTileStatusRendered:
 
@@ -844,12 +881,11 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(bool hasExclusiveLock,
                     }
 
                     // Mark this tile so it is found quickly in markCacheTilesAsAborted()
-#ifdef TRACE_TILES_STATUS
-                    qDebug() << QThread::currentThread()  << effect->getScriptName_mt_safe().c_str() << internalCacheEntry->getHashKey() << "marking " << coord.tx << coord.ty << "pending at level" << lookupLevel;
-#endif
 
                     markedTiles[lookupLevel].insert(coord);
-
+#ifdef TRACE_TILES_STATUS
+                    qDebug() << QThread::currentThread()  << effect->getScriptName_mt_safe().c_str() << image.lock()->getLayer().getPlaneLabel().c_str() << internalCacheEntry->getHashKey() << "lookup(): marking tile " << coord.tx << coord.ty << "pending (downscaled from 4 higher scale tiles) at level" << lookupLevel;
+#endif
                     retCode = eLookupTileStateRetCodeUpdated;
 
                     break;
@@ -869,7 +905,7 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(bool hasExclusiveLock,
 
                         // Mark this tile so it is found quickly in markCacheTilesAsAborted()
 #ifdef TRACE_TILES_STATUS
-                        qDebug() << QThread::currentThread() << effect->getScriptName_mt_safe().c_str() << internalCacheEntry->getHashKey() << "marking " << coord.tx << coord.ty << "pending at level" << lookupLevel;
+                        qDebug() << QThread::currentThread() << effect->getScriptName_mt_safe().c_str() << image.lock()->getLayer().getPlaneLabel().c_str() << internalCacheEntry->getHashKey() << "lookup(): marking tile " << coord.tx << coord.ty << "pending at level" << lookupLevel;
 #endif
                         markedTiles[lookupLevel].insert(coord);
 
@@ -998,19 +1034,26 @@ ImageCacheEntryPrivate::readAndUpdateStateMap(bool hasExclusiveLock)
  * If this tile needs to be computed from the average of 4 upscaled tiles, this will also request a tile
  * to be allocated and recursively call the function upstream.
  **/
-static void fetchTileIndicesInPyramid(unsigned int lookupLevel, const TileCacheIndex& tile, int nComps, std::vector<U64> *tileIndicesToFetch, std::vector<U64>* tilesAllocNeeded)
+static void fetchTileIndicesInPyramid(unsigned int lookupLevel,
+                                      int tileSizeX,
+                                      int tileSizeY,
+                                      const std::vector<RectI>& perLevelBounds,
+                                      const TileCacheIndex& tile,
+                                      int nComps,
+                                      std::vector<U64> *tileIndicesToFetch,
+                                      std::vector<U64>* tilesAllocNeeded)
 {
     if (tile.upscaleTiles[0]) {
         // We must downscale the upscaled tiles
         for (int c = 0; c < nComps; ++c) {
-            U64 tileBucketHash = tile.tx + tile.ty + lookupLevel + c;
+            U64 tileBucketHash = makeTileCacheIndex(tile.tx, tile.ty, lookupLevel, c, tileSizeX, tileSizeY, perLevelBounds[lookupLevel]);
             tilesAllocNeeded->push_back(tileBucketHash);
         }
         for (int i = 0; i < 4; ++i) {
             assert(tile.upscaleTiles[i]);
             // Check that the upscaled tile exists
             if (tile.upscaleTiles[i]->tx != -1) {
-                fetchTileIndicesInPyramid(lookupLevel - 1, *tile.upscaleTiles[i], nComps, tileIndicesToFetch, tilesAllocNeeded);
+                fetchTileIndicesInPyramid(lookupLevel - 1, tileSizeX, tileSizeY, perLevelBounds, *tile.upscaleTiles[i], nComps, tileIndicesToFetch, tilesAllocNeeded);
             }
         }
     } else {
@@ -1128,10 +1171,17 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
     // Get a vector of tile indices to fetch from the cache directly
     std::vector<U64> tileIndicesToFetch;
 
+    std::vector<RectI> perLevelBounds(mipMapLevel + 1);
+    RectI mipmap0Bounds = localTilesState.bounds.upscalePowerOfTwo(mipMapLevel);
+    for (std::size_t i = 0; i < perLevelBounds.size(); ++i) {
+        perLevelBounds[i] = mipmap0Bounds.downscalePowerOfTwo(i);
+    }
+
+
     // Number of tiles to allocate to downscale
     std::vector<U64> tilesAllocNeeded;
     for (std::size_t i = 0; i < tilesToFetch.size(); ++i) {
-        fetchTileIndicesInPyramid(mipMapLevel, tilesToFetch[i], nComps, &tileIndicesToFetch, &tilesAllocNeeded);
+        fetchTileIndicesInPyramid(mipMapLevel, localTilesState.tileSizeX, localTilesState.tileSizeY, perLevelBounds, tilesToFetch[i], nComps, &tileIndicesToFetch, &tilesAllocNeeded);
     }
 
     if (tileIndicesToFetch.empty() && tilesAllocNeeded.empty()) {
@@ -1178,14 +1228,12 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
     bool stateMapUpdated = false;
 
     // Downscale in parallel each mipmap level tiles and then copy the last level tiles
-    RectI mipmap0Bounds = localTilesState.bounds.upscalePowerOfTwo(mipMapLevel);
     for (std::size_t i = 0; i < perLevelTilesToDownscale.size(); ++i) {
 
         if (perLevelTilesToDownscale[i].empty()) {
             continue;
         }
-        RectI levelBounds = mipmap0Bounds.downscalePowerOfTwo(i);
-        TileStateHeader cacheStateMap = TileStateHeader(localTilesState.tileSizeX, localTilesState.tileSizeY, levelBounds, &internalCacheEntry->perMipMapTilesState[i]);
+        TileStateHeader cacheStateMap = TileStateHeader(localTilesState.tileSizeX, localTilesState.tileSizeY, perLevelBounds[i], &internalCacheEntry->perMipMapTilesState[i]);
         assert(!cacheStateMap.state->tiles.empty());
 
 
@@ -1215,16 +1263,6 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
 
         // We downscaled hence we must update tiles status from eTileStatusNotRendered to eTileStatusRendered
         // Only do so for the first channel since they all share the same state
-
-        boost::scoped_ptr<boost::unique_lock<boost::shared_mutex> > writeLock;
-        if (!internalCacheEntry->isPersistent()) {
-            // In non-persistent mode, lock the cache entry since it's shared across threads.
-            // In persistent mode the entry is copied in fromMemorySegment
-            ImageCacheEntryInternal<false>* nonPersistentLocalEntry = dynamic_cast<ImageCacheEntryInternal<false>* >(internalCacheEntry.get());
-            assert(nonPersistentLocalEntry);
-            writeLock.reset(new boost::unique_lock<boost::shared_mutex>(nonPersistentLocalEntry->perMipMapTilesStateMutex));
-        }
-
 
         for (std::size_t j = 0; j  < perLevelTilesToDownscale[i].size(); ++j) {
 
@@ -1263,7 +1301,7 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
             assert(foundMarked != markedTiles[i].end());
             markedTiles[i].erase(foundMarked);
 #ifdef TRACE_TILES_STATUS
-            qDebug() << QThread::currentThread() << effect->getScriptName_mt_safe().c_str() << internalCacheEntry->getHashKey() << "marking " << tx << ty << "rendered with downscale at level" << i;
+            qDebug() << QThread::currentThread() << effect->getScriptName_mt_safe().c_str() << image.lock()->getLayer().getPlaneLabel().c_str() << internalCacheEntry->getHashKey() << "marking " << tx << ty << "rendered with downscale at level" << i;
 #endif
 
             // Update the state locally if we are on the appropriate mip map level
@@ -1487,7 +1525,9 @@ ImageCacheEntry::getStatus(TileStateHeader* tileStatus, bool* hasUnRenderedTile,
 
     boost::unique_lock<boost::mutex> locker(_imp->lock);
     if (tileStatus) {
-        *tileStatus = TileStateHeader(_imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY, _imp->localTilesState.bounds, _imp->localTilesState.state);
+        // Make a copy of the internal state so it does not get modified by the caller
+        tileStatus->init(_imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY, _imp->localTilesState.bounds);
+        *tileStatus->state = *_imp->localTilesState.state;
     }
     assert((!hasPendingResults && !hasUnRenderedTile) || (hasPendingResults && hasUnRenderedTile));
 
@@ -1588,7 +1628,7 @@ ImageCacheEntry::markCacheTilesAsAborted()
             cacheTileState->status = eTileStatusNotRendered;
             hasModifiedTileMap = true;
 #ifdef TRACE_TILES_STATUS
-            qDebug() << QThread::currentThread() << _imp->effect->getScriptName_mt_safe().c_str() << _imp->internalCacheEntry->getHashKey() << "marking " << it->tx << it->ty << "unrendered at level" << i;
+            qDebug() << QThread::currentThread() << _imp->effect->getScriptName_mt_safe().c_str() << _imp->image.lock()->getLayer().getPlaneLabel().c_str() << _imp->internalCacheEntry->getHashKey() << "marking " << it->tx << it->ty << "unrendered at level" << i;
 #endif
             if (i == _imp->mipMapLevel) {
                 TileState* localTileState = _imp->localTilesState.getTileAt(it->tx, it->ty);
@@ -1683,7 +1723,9 @@ ImageCacheEntry::markCacheTilesInRegionAsNotRendered(const RectI& roi)
                 for (int c = 0; c < 4; ++c) {
                     if (cacheTileState->channelsTileStorageIndex[c] != (U64)-1) {
                         cacheTileIndicesToRelease.push_back(cacheTileState->channelsTileStorageIndex[c]);
-                        localTileIndicesToRelease.push_back(tx + ty + c + i);
+
+                        U64 tileIndex = makeTileCacheIndex(tx, ty, i, c, _imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY, _imp->localTilesState.boundsRoundedToTileSize);
+                        localTileIndicesToRelease.push_back(tileIndex);
                     }
                 }
             }
@@ -1760,7 +1802,7 @@ ImageCacheEntry::markCacheTilesAsRendered()
             cacheTileState->status = eTileStatusRendered;
 
 #ifdef TRACE_TILES_STATUS
-            qDebug() << QThread::currentThread() << _imp->effect->getScriptName_mt_safe().c_str() << _imp->internalCacheEntry->getHashKey() <<  "marking " << it->tx << it->ty << "rendered at level" << i;
+            qDebug() << QThread::currentThread() << _imp->effect->getScriptName_mt_safe().c_str() << _imp->image.lock()->getLayer().getPlaneLabel().c_str() << _imp->internalCacheEntry->getHashKey() <<  "marking " << it->tx << it->ty << "rendered at level" << i;
 #endif
             hasModifiedTileMap = true;
 
@@ -1816,7 +1858,7 @@ ImageCacheEntry::markCacheTilesAsRendered()
 
     std::vector<U64> tilesAllocNeeded(tilesToCopy.size());
     for (std::size_t i = 0; i < tilesToCopy.size(); ++i) {
-        tilesAllocNeeded[i] = tilesToCopy[i]->bounds.x1 + tilesToCopy[i]->bounds.x2 + tilesToCopy[i]->channel_i + _imp->mipMapLevel;
+        tilesAllocNeeded[i] = makeTileCacheIndex(tilesToCopy[i]->bounds.x1, tilesToCopy[i]->bounds.y1, _imp->mipMapLevel, tilesToCopy[i]->channel_i, _imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY, _imp->localTilesState.boundsRoundedToTileSize);
     }
 
     // Allocated buffers for tiles
@@ -1837,6 +1879,9 @@ ImageCacheEntry::markCacheTilesAsRendered()
         tilesToCopy[i]->ptr = allocatedTiles[i].second;
 
         tilesToCopy[i]->tileCache_i = allocatedTiles[i].first;
+#ifdef DEBUG
+        assert(cache->checkTileIndex(tilesToCopy[i]->tileCache_i));
+#endif
         // update the tile indices
         int tx = (int)std::floor((double)tilesToCopy[i]->bounds.x1 / _imp->localTilesState.tileSizeX) * _imp->localTilesState.tileSizeX;
         int ty = (int)std::floor((double)tilesToCopy[i]->bounds.y1 / _imp->localTilesState.tileSizeY) * _imp->localTilesState.tileSizeY;
@@ -1929,6 +1974,11 @@ ImageCacheEntry::waitForPendingTiles()
 
 
         }
+#ifdef DEBUG
+        if (timeSpentWaitingForPendingEntryMS > 5000) {
+            qDebug() << "WARNING:" << _imp->effect->getScriptName_mt_safe().c_str() << "stuck in waitForPendingTiles() for more than " << Timer::printAsTime(timeSpentWaitingForPendingEntryMS / 1000, false);
+        }
+#endif
 
     } while(hasPendingResults && !hasUnrenderedTile && !_imp->effect->isRenderAborted());
 

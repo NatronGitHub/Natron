@@ -973,6 +973,7 @@ SettingsPrivate::initializeKnobsRendering()
                                             "(support for images with RGBA and Alpha components is always enabled). "
                                             "Un-checking this option may prevent plugins that do not well support RGB components from crashing %1. "
                                             "Changing this option requires a restart of the application.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+    _activateRGBSupport->setDefaultValue(true);
     _renderingPage->addKnob(_activateRGBSupport);
 
 

@@ -88,12 +88,14 @@ private:
      * @brief A NoOp is always an identity on its input.
      **/
     virtual ActionRetCodeEnum isIdentity(TimeValue time,
-                                  const RenderScale & scale,
-                                  const RectI & renderWindow,
-                                  ViewIdx view,
-                                  TimeValue* inputTime,
-                                  ViewIdx* inputView,
-                                  int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
+                                         const RenderScale & scale,
+                                         const RectI & roi,
+                                         ViewIdx view,
+                                         const ImagePlaneDesc& plane,
+                                         TimeValue* inputTime,
+                                         ViewIdx* inputView,
+                                         int* inputNb,
+                                         ImagePlaneDesc* inputPlane) OVERRIDE FINAL WARN_UNUSED_RETURN;
 };
 
 inline NoOpBasePtr

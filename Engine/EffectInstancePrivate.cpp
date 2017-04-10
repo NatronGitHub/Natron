@@ -103,24 +103,24 @@ EffectInstance::Implementation::getFrameRangeResults() const
 }
 
 void
-EffectInstance::Implementation::setTimeInvariantMetadataResults(const GetTimeInvariantMetaDatasResultsPtr& metadatas)
+EffectInstance::Implementation::setTimeInvariantMetadataResults(const GetTimeInvariantMetadataResultsPtr& metadata)
 {
     if (!renderData) {
         return;
     }
     QMutexLocker k(&renderData->lock);
-    renderData->metadatasResults = metadatas;
+    renderData->metadataResults = metadata;
 }
 
 
-GetTimeInvariantMetaDatasResultsPtr
+GetTimeInvariantMetadataResultsPtr
 EffectInstance::Implementation::getTimeInvariantMetadataResults() const
 {
     if (!renderData) {
-        return GetTimeInvariantMetaDatasResultsPtr();
+        return GetTimeInvariantMetadataResultsPtr();
     }
     QMutexLocker k(&renderData->lock);
-    return renderData->metadatasResults;
+    return renderData->metadataResults;
 }
 
 

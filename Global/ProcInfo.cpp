@@ -27,9 +27,6 @@
 #include <vector>
 #include <cstdlib>
 
-#if defined(__NATRON_WIN32__)
-#include <windows.h>
-#endif
 
 #ifdef __NATRON_UNIX__
 #include <unistd.h>
@@ -66,9 +63,11 @@ applicationFileName()
     buffer[MAX_PATH + 1] = 0;
 
     if (v == 0) {
-        return QString();
+        return std::string();
     } else if (v <= MAX_PATH) {
-        return std::wstring(buffer);
+        std::wstring wret(buffer);
+        std::string ret = StrUtils::utf16_to_utf8(wret);
+        return ret;
     }
 
     // MAX_PATH sized buffer wasn't large enough to contain the full path, use heap
@@ -366,7 +365,7 @@ NatronCFString::toStdString(CFStringRef str)
     assert(ok);
     std::string ret(buffer, length - 1);
     return ret;
-} // toQString
+} // toStdString
 
 NatronCFString::operator std::string() const
 {
@@ -406,7 +405,7 @@ std::string
 ProcInfo::applicationFilePath(const char* argv0Param)
 {
 #if defined(__NATRON_WIN32__)
-    Q_UNUSED(argv0Param);
+    (void)argv0Param;
     
     //The only viable solution
     return applicationFileName();

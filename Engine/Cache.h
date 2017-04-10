@@ -363,6 +363,14 @@ public:
                               std::vector<std::pair<U64, void*> >* allocatedTilesData,
                               void** cacheData) = 0;
 
+#ifdef DEBUG
+    /**
+     * @brief Debug: Ensures that the index is valid in the storage. Can only be called between retrieveAndLockTiles and 
+     * the corresponding call to unLockTiles
+     **/
+    virtual bool checkTileIndex(U64 encodedIndex) const = 0;
+#endif
+
     /**
      * @brief Free cache data allocated from a call to retrieveAndLockTiles
      * This function CANNOT be called in the implementation of CacheEntryBase::fromMemorySegment or CacheEntryBase::toMemorySegment otherwise this will
@@ -461,7 +469,7 @@ class Cache
 
     void initialize(const boost::shared_ptr<Cache<persistent> >& thisShared);
 
-    Cache();
+    Cache(bool enableTileStorage);
 
 public:
 
@@ -474,7 +482,7 @@ public:
      * @brief Create a new instance of a cache
      * If the cache is persistent, this function may throw a BusyCacheException exception if the cache is used by another process
      **/
-    static CacheBasePtr create();
+    static CacheBasePtr create(bool enableTileStorage);
 
 
     virtual bool isPersistent() const OVERRIDE FINAL;
@@ -489,7 +497,9 @@ public:
                                       std::vector<void*>* existingTilesData,
                                       std::vector<std::pair<U64, void*> >* allocatedTilesData,
                                       void** cacheData) OVERRIDE FINAL;
-
+#ifdef DEBUG
+    virtual bool checkTileIndex(U64 encodedIndex) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+#endif
     virtual void unLockTiles(void* cacheData) OVERRIDE FINAL;
     virtual void releaseTiles(const CacheEntryBasePtr& entry, const std::vector<U64>& localIndices, const std::vector<U64>& cacheIndices) OVERRIDE FINAL;
     virtual bool hasCacheEntryForHash(U64 hash) const OVERRIDE FINAL;

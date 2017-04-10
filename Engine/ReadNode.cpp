@@ -226,6 +226,11 @@ public:
     //MT only
     int creatingReadNode;
 
+    // Plugin-ID of the last read node created.
+    // If this is different, we do not load serialized knobs
+    std::string lastPluginIDCreated;
+
+
     bool wasCreatedAsHiddenNode;
 
 
@@ -242,6 +247,7 @@ public:
     , inputNode()
     , outputNode()
     , creatingReadNode(0)
+    , lastPluginIDCreated()
     , wasCreatedAsHiddenNode(false)
     {
     }
@@ -326,19 +332,18 @@ ReadNode::setEmbeddedReader(const NodePtr& node)
 void
 ReadNodePrivate::placeReadNodeKnobsInPage()
 {
-    KnobIPtr pageKnob = _publicInterface->getKnobByName("Controls");
-    KnobPagePtr isPage = toKnobPage(pageKnob);
-
-    if (!isPage) {
+    KnobPagePtr controlsPage = toKnobPage(_publicInterface->getKnobByName("Controls"));
+    if (!controlsPage) {
         return;
     }
     for (std::list<KnobIWPtr >::iterator it = readNodeKnobs.begin(); it != readNodeKnobs.end(); ++it) {
         KnobIPtr knob = it->lock();
         knob->setParentKnob( KnobIPtr() );
-        isPage->removeKnob(knob);
+        controlsPage->removeKnob(knob);
     }
 
-    KnobsVec children = isPage->getChildren();
+    KnobsVec children = controlsPage->getChildren();
+
     int index = -1;
     for (std::size_t i = 0; i < children.size(); ++i) {
         if (children[i]->getName() == kParamCustomFps) {
@@ -346,16 +351,16 @@ ReadNodePrivate::placeReadNodeKnobsInPage()
             break;
         }
     }
-    if (index != -1) {
+    {
         ++index;
         for (std::list<KnobIWPtr >::iterator it = readNodeKnobs.begin(); it != readNodeKnobs.end(); ++it) {
             KnobIPtr knob = it->lock();
-            isPage->insertKnob(index, knob);
+            controlsPage->insertKnob(index, knob);
             ++index;
         }
     }
 
-    children = isPage->getChildren();
+    children = controlsPage->getChildren();
     // Find the separatorKnob in the page and if the next parameter is also a separator, hide it
     int foundSep = -1;
     for (std::size_t i = 0; i < children.size(); ++i) {
@@ -571,18 +576,9 @@ ReadNodePrivate::createReadNode(bool throwErrors,
     readerPluginID = pluginSelectorKnob.lock()->getActiveEntry().id;
 
 
-    if ( readerPluginID.empty() ) {
-        KnobChoicePtr pluginChoiceKnob = pluginSelectorKnob.lock();
-        int pluginChoice_i = pluginChoiceKnob->getValue();
-        if (pluginChoice_i == 0) {
-            //Use default
-            readerPluginID = appPTR->getReaderPluginIDForFileType(ext);
-        } else {
-            std::vector<ChoiceOption> entries = pluginChoiceKnob->getEntries();
-            if ( (pluginChoice_i >= 0) && ( pluginChoice_i < (int)entries.size() ) ) {
-                readerPluginID = entries[pluginChoice_i].id;
-            }
-        }
+    if ( readerPluginID.empty() || readerPluginID ==  kPluginSelectorParamEntryDefault) {
+        //Use default
+        readerPluginID = appPTR->getReaderPluginIDForFileType(ext);
     }
 
     // If the plug-in is the same, do not create a new decoder.
@@ -704,15 +700,17 @@ ReadNodePrivate::createReadNode(bool throwErrors,
 
 #if 0
     if (defaultFallback) {
-
         //Destroy it to keep the default parameters
         destroyReadNode();
     }
 #endif
 
 
-    //Clone the old values of the generic knobs
-    cloneGenericKnobs();
+    // Clone the old values of the generic knobs if we created the same decoder than before
+    if (lastPluginIDCreated == readerPluginID) {
+        cloneGenericKnobs();
+    }
+    lastPluginIDCreated = readerPluginID;
 
     //This will refresh the GUI with this Reader specific parameters
     _publicInterface->recreateKnobs(true);
@@ -728,17 +726,17 @@ void
 ReadNodePrivate::refreshFileInfoVisibility(const std::string& pluginID)
 {
     KnobButtonPtr fileInfos = fileInfosKnob.lock();
-    KnobIPtr hasMetaDatasKnob = _publicInterface->getKnobByName("showMetadata");
+    KnobIPtr hasMetadataKnob = _publicInterface->getKnobByName("showMetadata");
     bool hasFfprobe = false;
-    if (!hasMetaDatasKnob) {
+    if (!hasMetadataKnob) {
         QString ffprobePath = getFFProbeBinaryPath();
         hasFfprobe = QFile::exists(ffprobePath);
     } else {
-        hasMetaDatasKnob->setSecret(true);
+        hasMetadataKnob->setSecret(true);
     }
 
 
-    if ( hasMetaDatasKnob || ( ReadNode::isVideoReader(pluginID) && hasFfprobe ) ) {
+    if ( hasMetadataKnob || ( ReadNode::isVideoReader(pluginID) && hasFfprobe ) ) {
         fileInfos->setSecret(false);
     } else {
         fileInfos->setSecret(true);
@@ -1010,17 +1008,26 @@ ReadNode::knobChanged(const KnobIPtr& k,
         } catch (const std::exception& e) {
             getNode()->setPersistentMessage( eMessageTypeError, kNatronPersistentErrorDecoderMissing, e.what() );
         }
+
+        // Make sure instance changed action is called on the decoder and not caught in our knobChanged handler.
+        if (_imp->embeddedPlugin) {
+            _imp->embeddedPlugin->getEffectInstance()->onKnobValueChanged_public(fileKnob, eValueChangedReasonUserEdited, getTimelineCurrentTime(), ViewSetSpec(0));
+        }
+
+
+
         _imp->refreshFileInfoVisibility(entry.id);
     } else if ( k == _imp->fileInfosKnob.lock() ) {
+
         NodePtr p = getEmbeddedReader();
         if (!p) {
             return false;
         }
 
 
-        KnobIPtr hasMetaDatasKnob = p->getKnobByName("showMetadata");
-        if (hasMetaDatasKnob) {
-            KnobButtonPtr showMetasKnob = toKnobButton(hasMetaDatasKnob);
+        KnobIPtr hasMetadataKnob = p->getKnobByName("showMetadata");
+        if (hasMetadataKnob) {
+            KnobButtonPtr showMetasKnob = toKnobButton(hasMetadataKnob);
             if (showMetasKnob) {
                 showMetasKnob->trigger();
             }

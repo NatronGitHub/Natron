@@ -132,18 +132,23 @@ HashableObjectPrivate::findCachedHashInternal(const HashableObject::FindHashArgs
             return findFrameViewHash(args.time, args.view, timeViewVariantHashCache, hash);
         case HashableObject::eComputeHashTypeTimeViewInvariant:
             if (!timeViewInvariantCacheValid) {
+
                 return false;
             }
             *hash = timeViewInvariantCache;
             return true;
         case HashableObject::eComputeHashTypeOnlyMetadataSlaves:
             if (!metadataSlaveCacheValid) {
+
                 return false;
             }
             *hash = metadataSlaveCache;
-            return true;
 
+            return true;
     }
+    assert(false);
+
+    return false;
 }
 
 bool
@@ -226,10 +231,14 @@ HashableObject::invalidateHashCacheInternal(std::set<HashableObject*>* invalidat
     {
         QMutexLocker k(&_imp->hashCacheMutex);
 
-        // If the cache hash is empty, then all hash listeners must also have their hash empty. 
+        // Edit: we cannot do this below: The main instance hash cache may be empty because nobody asked to compute the hash on the main thread
+        // but some other object that depend on this hash may very well need to have their hash cache cleared.
+#if 0
+        // If the cache hash is empty, then all hash listeners must also have their hash empty.
         if (_imp->timeViewVariantHashCache.empty() && !_imp->timeViewInvariantCacheValid && !_imp->metadataSlaveCacheValid) {
             return false;
         }
+#endif
         _imp->timeViewVariantHashCache.clear();
         _imp->timeViewInvariantCacheValid = false;
         _imp->metadataSlaveCacheValid = false;

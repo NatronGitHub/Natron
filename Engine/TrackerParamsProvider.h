@@ -36,17 +36,16 @@ NATRON_NAMESPACE_ENTER;
 /**
  * @brief A generic interface for all nodes that which to use the TrackScheduler
  **/
-class TrackerParamsProvider
+class TrackerParamsProviderBase
 {
-
-
 public:
 
-    TrackerParamsProvider()
+
+    TrackerParamsProviderBase()
     {
     }
 
-    virtual ~TrackerParamsProvider()
+    virtual ~TrackerParamsProviderBase()
     {
     }
 
@@ -54,11 +53,6 @@ public:
      * @brief Returns the node associated to this params provider
      **/
     virtual NodePtr getTrackerNode() const = 0;
-
-    /**
-     * @brief Returns a pointer to the tracker object used
-     **/
-    virtual TrackerHelperPtr getTracker() const = 0;
 
     /**
      * @brief Returns true if the viewer should center on markers when during tracking
@@ -69,6 +63,42 @@ public:
      * @brief Returns true if the viewer should update during tracking
      **/
     virtual bool getUpdateViewer() const = 0;
+
+    /**
+     * @brief The function that performs a tracking step at the given frame for the track at the given trackIndex
+     **/
+    virtual bool trackStepFunctor(int trackIndex, const TrackArgsBasePtr& args, int frame) = 0;
+
+    /**
+     * @brief Called prior to tracking a sequence
+     **/
+    virtual void beginTrackSequence(const TrackArgsBasePtr& /*args*/) {}
+
+    /**
+     * @brief Called when the tracking ends for the sequence
+     **/
+    virtual void endTrackSequence(const TrackArgsBasePtr& /*args*/) {}
+};
+
+class TrackerParamsProvider : public TrackerParamsProviderBase
+{
+
+
+public:
+
+    TrackerParamsProvider()
+    : TrackerParamsProviderBase()
+    {
+    }
+
+    virtual ~TrackerParamsProvider()
+    {
+    }
+
+    /**
+     * @brief Returns a pointer to the tracker object used
+     **/
+    virtual TrackerHelperPtr getTracker() const = 0;
 
     /**
      * @brief Returns channels to track

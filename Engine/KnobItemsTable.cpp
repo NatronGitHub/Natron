@@ -687,7 +687,7 @@ KnobTableItem::onItemInsertedInModel_recursive()
 }
 
 void
-KnobTableItem::evaluate(bool isSignificant, bool refreshMetadatas)
+KnobTableItem::evaluate(bool isSignificant, bool refreshMetadata)
 {
     // If the item is not part of the model, do nothing
     if (getIndexInParent() == -1) {
@@ -703,7 +703,7 @@ KnobTableItem::evaluate(bool isSignificant, bool refreshMetadatas)
     }
 
     // Evaluate the node itself
-    node->getEffectInstance()->evaluate(isSignificant, refreshMetadatas);
+    node->getEffectInstance()->evaluate(isSignificant, refreshMetadata);
 }
 
 void
@@ -2033,7 +2033,7 @@ KnobTableItem::getCurrentRenderView() const
 CurvePtr
 KnobTableItem::getAnimationCurve(ViewIdx idx, DimIdx /*dimension*/) const
 {
-    ViewIdx view_i = getViewIdxFromGetSpec(idx);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(idx);
     PerViewAnimationCurveMap::const_iterator foundView = _imp->animationCurves.find(view_i);
     if (foundView != _imp->animationCurves.end()) {
         return foundView->second;
@@ -2068,7 +2068,7 @@ KnobTableItem::setKeyFrameInternal(TimeValue time,
             ret = it->second->setOrAddKeyframe(k);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
+        ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view.value()));
         PerViewAnimationCurveMap::const_iterator it = _imp->animationCurves.find(view_i);
         if (it != _imp->animationCurves.end()) {
             ret = it->second->setOrAddKeyframe(k);
@@ -2150,7 +2150,7 @@ KnobTableItem::deleteAnimationConditional(TimeValue time, ViewSetSpec view, bool
             }
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
+        ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view.value()));
         PerViewAnimationCurveMap::const_iterator it = _imp->animationCurves.find(view_i);
         if (it != _imp->animationCurves.end()) {
             std::list<double> keysRemoved;
@@ -2251,7 +2251,7 @@ KnobTableItem::deleteValuesAtTime(const std::list<double>& times, ViewSetSpec vi
             deleteValuesAtTimeInternal(times, it->first, it->second);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
+        ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view.value()));
         PerViewAnimationCurveMap::const_iterator foundView = _imp->animationCurves.find(view_i);
         if (foundView != _imp->animationCurves.end()) {
             deleteValuesAtTimeInternal(times, view_i, foundView->second);
@@ -2295,7 +2295,7 @@ KnobTableItem::warpValuesAtTime(const std::list<double>& times, ViewSetSpec view
             ok |= warpValuesAtTimeInternal(times, it->first, it->second, warp, keyframes);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
+        ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view.value()));
         PerViewAnimationCurveMap::const_iterator foundView = _imp->animationCurves.find(view_i);
         if (foundView != _imp->animationCurves.end()) {
             ok |= warpValuesAtTimeInternal(times, view_i, foundView->second, warp, keyframes);
@@ -2336,7 +2336,7 @@ KnobTableItem::removeAnimation(ViewSetSpec view, DimSpec /*dimensions*/, ValueCh
             removeAnimationInternal(it->first, it->second);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
+        ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view.value()));
         PerViewAnimationCurveMap::const_iterator foundView = _imp->animationCurves.find(view_i);
         if (foundView != _imp->animationCurves.end()) {
             removeAnimationInternal(view_i, foundView->second);

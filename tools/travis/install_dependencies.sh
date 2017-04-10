@@ -228,7 +228,8 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # TuttleOFX's dependencies:
     #brew install scons swig ilmbase openexr jasper little-cms2 glew freetype fontconfig ffmpeg imagemagick libcaca aces_container ctl jpeg-turbo libraw seexpr openjpeg opencolorio openimageio
     # Natron's dependencies only
-    brew install qt expat cairo glew numpy
+    # install qt-webkit@2.3 if needed
+    brew install qt@4 expat cairo glew numpy
     # pyside/shiboken with python3 support take a long time to compile, see https://github.com/travis-ci/travis-ci/issues/1961
     #brew install pyside --with-python3 --without-python &
     #while true; do
@@ -241,7 +242,7 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     #    fi
     #done
     # Python 2 pyside comes precompiled!
-    brew install python pyside shiboken
+    brew install python pyside@1.2 shiboken@1.2
     if [ "$CC" = "$TEST_CC" ]; then
         # dependencies for building all OpenFX plugins
         brew install ilmbase openexr freetype fontconfig ffmpeg opencolorio openimageio seexpr

@@ -106,7 +106,7 @@ AddToUndoRedoStackHelper<T>::prepareOldValueToUndoRedoStack(ViewSetSpec view, Di
                     p.setValue(_knob->getValueAtTime(time, DimIdx(i), *it));
                 }
             } else {
-                ViewIdx view_i = _knob->getViewIdxFromGetSpec(ViewIdx(view));
+                ViewIdx view_i = _knob->checkIfViewExistsOrFallbackMainView(ViewIdx(view));
                 DimensionViewPair k = {DimIdx(i), view_i};
                 Variant& p = data.oldValues[k];
                 p.setValue(_knob->getValueAtTime(time, DimIdx(i), view_i));
@@ -121,7 +121,7 @@ AddToUndoRedoStackHelper<T>::prepareOldValueToUndoRedoStack(ViewSetSpec view, Di
                 p.setValue(_knob->getValueAtTime(time, DimIdx(dimension), *it));
             }
         } else {
-            ViewIdx view_i = _knob->getViewIdxFromGetSpec(ViewIdx(view));
+            ViewIdx view_i = _knob->checkIfViewExistsOrFallbackMainView(ViewIdx(view));
             DimensionViewPair k = {DimIdx(dimension), view_i};
             Variant& p = data.oldValues[k];
             p.setValue(_knob->getValueAtTime(time, DimIdx(dimension), view_i));
@@ -215,7 +215,7 @@ Knob<T>::setValue(const T & v,
         int nDims = getNDimensions();
         ViewIdx view_i;
         if (!view.isAll()) {
-            view_i = getViewIdxFromGetSpec(ViewIdx(view));
+            view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
         }
         for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
             if (!view.isAll()) {
@@ -223,8 +223,16 @@ Knob<T>::setValue(const T & v,
                     continue;
                 }
             }
+
+            DimSpec thisDimension = dimension;
+            // If the item has its dimensions folded and the user modifies dimension 0, also modify other dimensions
+            if (reason == eValueChangedReasonUserEdited && thisDimension == 0 && !getAllDimensionsVisible(*it)) {
+                thisDimension = DimSpec::all();
+            }
+
+
             for (int i = 0; i < nDims; ++i) {
-                if (!dimension.isAll() && dimension != i) {
+                if (!thisDimension.isAll() && thisDimension != i) {
                     continue;
                 }
 
@@ -236,7 +244,7 @@ Knob<T>::setValue(const T & v,
                 // Auto-expand the parameter dimensions if needed
                 if (hasChanged) {
                     // If dimensions are folded but a setValue call is made on one of them, expand them
-                    if (((dimension.isAll() && i == nDims - 1) || (!dimension.isAll() && i == dimension)) && nDims > 1) {
+                    if (((thisDimension.isAll() && i == nDims - 1) || (!thisDimension.isAll() && i == thisDimension)) && nDims > 1) {
                         autoAdjustFoldExpandDimensions(*it);
                     }
                 }
@@ -427,7 +435,7 @@ Knob<T>::setValueAtTime(TimeValue time,
         int nDims = getNDimensions();
         ViewIdx view_i;
         if (!view.isAll()) {
-            view_i = getViewIdxFromGetSpec(ViewIdx(view));
+            view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
         }
         for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
             if (!view.isAll()) {
@@ -436,15 +444,21 @@ Knob<T>::setValueAtTime(TimeValue time,
                 }
             }
 
+            DimSpec thisDimension = dimension;
+            // If the item has its dimensions folded and the user modifies dimension 0, also modify other dimensions
+            if (reason == eValueChangedReasonUserEdited && thisDimension == 0 && !getAllDimensionsVisible(*it)) {
+                thisDimension = DimSpec::all();
+            }
+
             for (int i = 0; i < nDims; ++i) {
-                if (!dimension.isAll() && dimension != i) {
+                if (!thisDimension.isAll() && thisDimension != i) {
                     continue;
                 }
 
                 setValueOnCurveInternal(time, v, DimIdx(i), *it, newKey, &ret);
 
                 // If dimensions are folded but a setValue call is made on one of them, auto-compute fold/expand
-                if (((dimension.isAll() && i == nDims - 1) || (!dimension.isAll() && i == dimension)) && nDims > 1) {
+                if (((thisDimension.isAll() && i == nDims - 1) || (!thisDimension.isAll() && i == thisDimension)) && nDims > 1) {
                     autoAdjustFoldExpandDimensions(*it);
                 }
             }
@@ -673,7 +687,7 @@ Knob<T>::resetToDefaultValue(DimSpec dimension, ViewSetSpec view)
             autoAdjustFoldExpandDimensions(*it);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
         autoAdjustFoldExpandDimensions(view_i);
     }
 
@@ -737,7 +751,7 @@ KnobDoubleBase::resetToDefaultValue(DimSpec dimension, ViewSetSpec view)
             autoAdjustFoldExpandDimensions(*it);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
+        ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
         autoAdjustFoldExpandDimensions(view_i);
     }
 }

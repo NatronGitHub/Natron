@@ -205,6 +205,10 @@ public:
     //MT only
     int creatingWriteNode;
 
+    // Plugin-ID of the last read node created.
+    // If this is different, we do not load serialized knobs
+    std::string lastPluginIDCreated;
+
 
     WriteNodePrivate(WriteNode* publicInterface)
         : _publicInterface(publicInterface)
@@ -220,6 +224,7 @@ public:
         , renderButtonKnob()
         , writeNodeKnobs()
         , creatingWriteNode(0)
+        , lastPluginIDCreated()
     {
     }
 
@@ -719,16 +724,9 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
     std::string writerPluginID = pluginSelectorKnob.lock()->getActiveEntry().id;
 
     if ( writerPluginID.empty() ) {
-        KnobChoicePtr pluginChoiceKnob = pluginSelectorKnob.lock();
-        int pluginChoice_i = pluginChoiceKnob->getValue();
-        if (pluginChoice_i == 0) {
+        if ( writerPluginID.empty() || writerPluginID ==  kPluginSelectorParamEntryDefault) {
             //Use default
             writerPluginID = appPTR->getWriterPluginIDForFileType(ext);
-        } else {
-            std::vector<ChoiceOption> entries = pluginChoiceKnob->getEntries();
-            if ( (pluginChoice_i >= 0) && ( pluginChoice_i < (int)entries.size() ) ) {
-                writerPluginID = entries[pluginChoice_i].id;
-            }
         }
     }
 
@@ -836,8 +834,11 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
 
     _publicInterface->findPluginFormatKnobs();
 
-    //Clone the old values of the generic knobs
-    cloneGenericKnobs();
+    // Clone the old values of the generic knobs if we created the same encoder than before
+    if (lastPluginIDCreated == writerPluginID) {
+        cloneGenericKnobs();
+    }
+    lastPluginIDCreated = writerPluginID;
 
 
     NodePtr thisNode = _publicInterface->getNode();

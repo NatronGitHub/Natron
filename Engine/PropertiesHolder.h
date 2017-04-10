@@ -31,6 +31,10 @@
 #include <map>
 #include <stdexcept>
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/shared_ptr.hpp>
+#endif
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER

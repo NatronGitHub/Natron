@@ -59,17 +59,17 @@ NoOpBase::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 }
 
 ActionRetCodeEnum
-NoOpBase::isIdentity(TimeValue time,
+NoOpBase::isIdentity(TimeValue /*time*/,
                      const RenderScale & /*scale*/,
                      const RectI & /*roi*/,
-                     ViewIdx view,
-                     TimeValue* inputTime,
-                     ViewIdx* inputView,
-                     int* inputNb)
+                     ViewIdx /*view*/,
+                     const ImagePlaneDesc& /*plane*/,
+                     TimeValue* /*inputTime*/,
+                     ViewIdx* /*inputView*/,
+                     int* inputNb,
+                     ImagePlaneDesc* /*identityPlane*/)
 {
-    *inputTime = time;
     *inputNb = 0;
-    *inputView = view;
 
     return eActionStatusOK;
 }

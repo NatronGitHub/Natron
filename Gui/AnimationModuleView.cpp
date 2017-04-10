@@ -875,9 +875,12 @@ AnimationModuleView::mousePressEvent(QMouseEvent* e)
     _imp->mustSetDragOrientation = true;
 
 
+    AnimationModuleEditor::AnimationModuleDisplayViewMode displayMode = AnimationModuleEditor::eAnimationModuleDisplayViewModeCurveEditor;
+    if (isAnimModule) {
+        displayMode = isAnimModule->getEditor()->getDisplayMode();
+    }
 
-
-    int treeWidgetBottomY = _imp->treeView ? _imp->treeView->getTreeBottomYWidgetCoords() : 0;
+    int treeWidgetBottomY = _imp->treeView && displayMode == AnimationModuleEditor::eAnimationModuleDisplayViewModeStacked ? _imp->treeView->getTreeBottomYWidgetCoords() : 0;
     bool isInsideCurveEditor = e->y() >= treeWidgetBottomY;
 
     _imp->eventTriggeredFromCurveEditor = isInsideCurveEditor;

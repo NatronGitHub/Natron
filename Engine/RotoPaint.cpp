@@ -294,11 +294,6 @@ RotoPaint::getPremultNode() const
     return _imp->premultNode.lock();
 }
 
-NodePtr
-RotoPaint::getMetadataFixerNode() const
-{
-    return _imp->premultFixerNode.lock();
-}
 
 NodePtr
 RotoPaint::getInternalInputNode(int index) const
@@ -401,7 +396,7 @@ RotoPaint::initGeneralPageKnobs()
     EffectInstancePtr effect = shared_from_this();
 
     KnobPagePtr generalPage = getOrCreateKnob<KnobPage>(kRotoPaintGeneralPageParam);
-    generalPage->setLabel(tr(kRotoPaintGeneralPageParam));
+    generalPage->setLabel(tr(kRotoPaintGeneralPageParamLabel));
 
     if (_imp->nodeType != eRotoPaintTypeComp) {
         {
@@ -433,6 +428,7 @@ RotoPaint::initGeneralPageKnobs()
         KnobButtonPtr param = createKnob<KnobButton>(kRotoAddGroupParam);
         param->setLabel(tr(kRotoAddGroupParamLabel));
         param->setHintToolTip( tr(kRotoAddGroupParamHint) );
+        param->setIconLabel("Images/rotoPaintAddGroupIcon.png");
         param->setAddNewLine(false);
         _imp->addGroupButtonKnob = param;
         generalPage->addKnob(param);
@@ -441,6 +437,7 @@ RotoPaint::initGeneralPageKnobs()
     {
         KnobButtonPtr param = createKnob<KnobButton>(kRotoRemoveItemParam);
         param->setLabel(tr(kRotoRemoveItemParamLabel));
+        param->setIconLabel("Images/rotoPaintRemoveItemIcon.png");
         param->setHintToolTip( tr(kRotoRemoveItemParamHint) );
         _imp->removeItemButtonKnob = param;
         generalPage->addKnob(param);
@@ -809,6 +806,7 @@ RotoPaint::initCompNodeKnobs(const KnobPagePtr& page)
     {
         KnobButtonPtr param = createKnob<KnobButton>(kRotoAddLayerParam);
         param->setHintToolTip( tr(kRotoAddLayerParamHint) );
+        param->setIconLabel("Images/rotoPaintAddLayerIcon.png");
         param->setLabel(tr(kRotoAddLayerParamLabel));
         param->setAddNewLine(false);
         _imp->addLayerButtonKnob = param;
@@ -817,6 +815,7 @@ RotoPaint::initCompNodeKnobs(const KnobPagePtr& page)
     {
         KnobButtonPtr param = createKnob<KnobButton>(kRotoRemoveItemParam);
         param->setHintToolTip( tr(kRotoRemoveItemParamHint) );
+        param->setIconLabel("Images/rotoPaintRemoveItemIcon.png");
         param->setLabel(tr(kRotoRemoveItemParamLabel));
         _imp->removeItemButtonKnob = param;
         page->addKnob(param);
@@ -1263,71 +1262,36 @@ RotoPaint::setupInitialSubGraphState()
     NodePtr premultNode;
     NodePtr noopNode;
     if (_imp->nodeType == eRotoPaintTypeRoto || _imp->nodeType == eRotoPaintTypeRotoPaint) {
-        {
-            CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_OFX_PREMULT, thisShared));
-            args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+
+        CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_OFX_PREMULT, thisShared));
+        args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
 #ifndef ROTO_PAINT_NODE_GRAPH_VISIBLE
-            args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+        args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
 #endif
-            // Set premult node to be identity by default
-            args->addParamDefaultValue<bool>(kNatronOfxParamProcessR, false);
-            args->addParamDefaultValue<bool>(kNatronOfxParamProcessG, false);
-            args->addParamDefaultValue<bool>(kNatronOfxParamProcessB, false);
-            args->addParamDefaultValue<bool>(kNatronOfxParamProcessA, false);
-            args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "AlphaPremult");
+        // Set premult node to be identity by default
+        args->addParamDefaultValue<bool>(kNatronOfxParamProcessR, false);
+        args->addParamDefaultValue<bool>(kNatronOfxParamProcessG, false);
+        args->addParamDefaultValue<bool>(kNatronOfxParamProcessB, false);
+        args->addParamDefaultValue<bool>(kNatronOfxParamProcessA, false);
+        args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "AlphaPremult");
 
-            premultNode = getApp()->createNode(args);
-            _imp->premultNode = premultNode;
-            assert(premultNode);
-            if (!premultNode) {
-                throw std::runtime_error( tr("Rotopaint requires the plug-in %1 in order to work").arg( QLatin1String(PLUGINID_OFX_PREMULT) ).toStdString() );
-            }
-
-            if (_imp->premultKnob.lock()) {
-                KnobBoolPtr disablePremultKnob = premultNode->getEffectInstance()->getDisabledKnob();
-                try {
-                    disablePremultKnob->setExpression(DimSpec::all(), ViewSetSpec::all(), "not thisGroup.premultiply.get()", eExpressionLanguagePython, false, true);
-                } catch (...) {
-                    assert(false);
-                }
-            }
-
+        premultNode = getApp()->createNode(args);
+        _imp->premultNode = premultNode;
+        assert(premultNode);
+        if (!premultNode) {
+            throw std::runtime_error( tr("Rotopaint requires the plug-in %1 in order to work").arg( QLatin1String(PLUGINID_OFX_PREMULT) ).toStdString() );
         }
 
-        // Make a no-op that fixes the output premultiplication state
-        {
-            CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_OFX_NOOP, thisShared));
-            args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
-#ifndef ROTO_PAINT_NODE_GRAPH_VISIBLE
-            args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
-#endif
-            // Set premult node to be identity by default
-            args->addParamDefaultValue<bool>("setPremult", true);
-            noopNode = getApp()->createNode(args);
-            _imp->premultFixerNode = noopNode;
-
-            KnobIPtr premultChoiceKnob = noopNode->getKnobByName("outputPremult");
+        if (_imp->premultKnob.lock()) {
+            KnobBoolPtr disablePremultKnob = premultNode->getEffectInstance()->getDisabledKnob();
             try {
-                const char* premultChoiceExpr =
-                "premultChecked = thisGroup.premultiply.get()\n"
-                "rChecked = thisGroup.doRed.get()\n"
-                "gChecked = thisGroup.doGreen.get()\n"
-                "bChecked = thisGroup.doBlue.get()\n"
-                "aChecked = thisGroup.doAlpha.get()\n"
-                "hasColor = rChecked or gChecked or bChecked\n"
-                "ret = 0\n"
-                "if premultChecked or hasColor or not aChecked:\n"
-                "    ret = 1\n" // premult if there's one of RGB checked or none
-                "else:\n"
-                "    ret = 2\n"
-                ;
-                premultChoiceKnob->setExpression(DimSpec::all(), ViewSetSpec::all(), premultChoiceExpr, eExpressionLanguagePython, true, true);
-            } catch (const std::exception& e) {
-                std::cerr << e.what() << std::endl;
+                disablePremultKnob->setExpression(DimSpec::all(), ViewSetSpec::all(), "not (thisGroup.premultiply)", eExpressionLanguageExprTk, false, true);
+            } catch (...) {
                 assert(false);
             }
-            
         }
+
+
     }
     if (noopNode && premultNode) {
         noopNode->connectInput(premultNode, 0);
@@ -2900,7 +2864,7 @@ RotoPaintPrivate::isRotoPaintTreeConcatenatableInternal(const std::list<RotoDraw
         RotoStrokeType type = (*it)->getBrushType();
 
         // Other item types cannot concatenate since they use a custom mask on their Merge node.
-        if (type != eRotoStrokeTypeSolid && type != eRotoStrokeTypeComp) {
+        if (type != eRotoStrokeTypeSolid && type != eRotoStrokeTypeEraser && type != eRotoStrokeTypeComp) {
             return false;
         }
 
@@ -2977,9 +2941,9 @@ RotoPaintPrivate::getOrCreateGlobalTimeBlurNode()
     assert(disabledKnob && divisionsKnob && shutterKnob && shutterTypeKnob && shutterCustomOffsetKnob);
     if (rotoPaintEffect->getMotionBlurTypeKnob()) {
         // The global time blur is disabled if the motion blur is set to per-shape
-        std::string expression = "thisGroup.motionBlurMode.get() != 2";
+        std::string expression = "thisGroup.motionBlurMode != 2";
         try {
-            disabledKnob->setExpression(DimSpec(0), ViewSetSpec(0), expression, eExpressionLanguagePython, false, true);
+            disabledKnob->setExpression(DimSpec(0), ViewSetSpec(0), expression, eExpressionLanguageExprTk, false, true);
         } catch (...) {
             assert(false);
         }
@@ -3035,7 +2999,7 @@ RotoPaintPrivate::getOrCreateGlobalMergeNode(int blendingOperator, int *availabl
     fixedNamePrefix.append( QLatin1Char('_') );
 
 
-    CreateNodeArgsPtr args(CreateNodeArgs::create( PLUGINID_OFX_MERGE,  rotoPaintEffect ));
+    CreateNodeArgsPtr args(CreateNodeArgs::create( PLUGINID_OFX_ROTOMERGE,  rotoPaintEffect ));
 #ifndef ROTO_PAINT_NODE_GRAPH_VISIBLE
     args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
 #endif
@@ -3057,6 +3021,7 @@ RotoPaintPrivate::getOrCreateGlobalMergeNode(int blendingOperator, int *availabl
             assert(ok);
             (void)ok;
         }
+
     }
     *availableInputIndex = 1;
     if (blendingOperator != -1) {
@@ -3101,21 +3066,15 @@ RotoPaintPrivate::getOrCreateGlobalMergeNode(int blendingOperator, int *availabl
 void
 RotoPaintPrivate::connectRotoPaintBottomTreeToItems(bool /*canConcatenate*/,
                                                     const RotoPaintPtr& rotoPaintEffect,
-                                                    const NodePtr& noOpNode,
                                                     const NodePtr& premultNode,
                                                     const NodePtr& globalTimeBlurNode,
                                                     const NodePtr& treeOutputNode,
                                                     const NodePtr& mergeNode)
 {
-    // If there's a noOp node (Roto/RotoPaint but not LayeredComp) connect the Output node of the tree to the NoOp node
+    // If there's a premultNode node (Roto/RotoPaint but not LayeredComp) connect the Output node of the tree to the premultNode node
     // otherwise connect it directly to the Merge node (LayeredComp)
-    NodePtr treeOutputNodeInput = noOpNode ? noOpNode : mergeNode;
+    NodePtr treeOutputNodeInput = premultNode ? premultNode : mergeNode;
     treeOutputNode->swapInput(treeOutputNodeInput, 0);
-
-    // If there's a NoOp node, connect it to the premult node
-    if (noOpNode && premultNode) {
-        noOpNode->swapInput(premultNode, 0);
-    }
 
     // If there's a Premult node, connect it to the global TimeBlur node (if global motion-blur is enabled)
     // otherwise conneet it directly to the merge Node
@@ -3171,10 +3130,12 @@ RotoPaint::refreshRotoPaintTree()
         // Ensure that all global merge nodes are disconnected so that items don't have output references
         // to the global merge nodes.
         for (NodesList::iterator it = mergeNodes.begin(); it != mergeNodes.end(); ++it) {
+            (*it)->beginInputEdition();
             int maxInputs = (*it)->getMaxInputCount();
             for (int i = 0; i < maxInputs; ++i) {
                 (*it)->disconnectInput(i);
             }
+            (*it)->endInputEdition(false /*triggerRender*/);
         }
     }
 
@@ -3257,11 +3218,7 @@ RotoPaint::refreshRotoPaintTree()
         mergeNodeBeginPos.y += 150;
         premultNode->setPosition(mergeNodeBeginPos.x, mergeNodeBeginPos.y);
     }
-    NodePtr noOpNode = rotoPaintEffect->getMetadataFixerNode();
-    if (noOpNode) {
-        mergeNodeBeginPos.y += 150;
-        noOpNode->setPosition(mergeNodeBeginPos.x, mergeNodeBeginPos.y);
-    }
+
     NodePtr treeOutputNode = rotoPaintEffect->getOutputNode();
     if (!treeOutputNode) {
         // should not happen
@@ -3302,12 +3259,12 @@ RotoPaint::refreshRotoPaintTree()
 
     if (canConcatenate) {
         // Connect the bottom of the tree to the last global merge node.
-        _imp->connectRotoPaintBottomTreeToItems(canConcatenate, rotoPaintEffect, noOpNode, premultNode,  timeBlurNode, treeOutputNode, _imp->globalMergeNodes.back());
+        _imp->connectRotoPaintBottomTreeToItems(canConcatenate, rotoPaintEffect, premultNode,  timeBlurNode, treeOutputNode, _imp->globalMergeNodes.back());
     } else {
 
         if (!items.empty()) {
             // Connect the bottom of the tree to the last item merge node.
-            _imp->connectRotoPaintBottomTreeToItems(canConcatenate, rotoPaintEffect, noOpNode, premultNode, timeBlurNode, treeOutputNode, items.back()->getMergeNode());
+            _imp->connectRotoPaintBottomTreeToItems(canConcatenate, rotoPaintEffect, premultNode, timeBlurNode, treeOutputNode, items.back()->getMergeNode());
         } else {
             // Connect output to Input, the RotoPaint is pass-through
             treeOutputNode->swapInput(rotoPaintEffect->getInternalInputNode(0), 0);

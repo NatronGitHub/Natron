@@ -66,9 +66,11 @@ public:
     virtual CacheEntryKeyBase::FromMemorySegmentRetCodeEnum fromMemorySegment(const IPCPropertyMap& properties) OVERRIDE;
 
 
-private:
+protected:
 
-    virtual void appendToHash(Hash64* hash) const OVERRIDE FINAL;
+    virtual void appendToHash(Hash64* hash) const OVERRIDE;
+
+private:
 
     struct KeyShmData
     {
@@ -220,8 +222,12 @@ class IsIdentityKey : public EffectInstanceActionKeyBase
 public:
 
     IsIdentityKey(U64 nodeTimeViewVariantHash,
+                  TimeValue time,
+                  const ImagePlaneDesc& plane,
                   const std::string& pluginID)
     : EffectInstanceActionKeyBase(nodeTimeViewVariantHash, RenderScale(1.), pluginID)
+    , _time(time)
+    , _plane(plane)
     {
 
     }
@@ -235,6 +241,16 @@ public:
     {
         return kCacheKeyUniqueIDIsIdentityResults;
     }
+
+private:
+
+    virtual void appendToHash(Hash64* hash) const OVERRIDE FINAL;
+
+    // If an effect is not frame varying, it will not encode the time in the hash, however the results of isIdentity
+    // may change across time even for non frame varying effects: e.g: A single frame Reader would return identity = -2
+    // for any time different than frame 1 and -1 otherwise.
+    TimeValue _time;
+    ImagePlaneDesc _plane;
 };
 
 
@@ -256,8 +272,8 @@ public:
     // to be the only one interacting with this object. Then all objects
     // should call the getter.
     //
-    void getIdentityData(int* identityInputNb, TimeValue* identityTime, ViewIdx* identityView) const;
-    void setIdentityData(int identityInputNb, TimeValue identityTime, ViewIdx identityView);
+    void getIdentityData(int* identityInputNb, TimeValue* identityTime, ViewIdx* identityView, ImagePlaneDesc *identityPlane) const;
+    void setIdentityData(int identityInputNb, TimeValue identityTime, ViewIdx identityView, const ImagePlaneDesc &identityPlane);
 
     virtual void toMemorySegment(IPCPropertyMap* properties) const OVERRIDE FINAL;
 
@@ -266,11 +282,13 @@ public:
 
 private:
 
+
     struct ShmData
     {
         int identityInputNb;
         TimeValue identityTime;
         ViewIdx identityView;
+        ImagePlaneDesc identityPlane;
     };
     ShmData _data;
 
@@ -413,38 +431,38 @@ toGetFrameRangeResults(const CacheEntryBasePtr& entry)
 }
 
 
-class GetTimeInvariantMetaDatasKey : public EffectInstanceActionKeyBase
+class GetTimeInvariantMetadataKey : public EffectInstanceActionKeyBase
 {
 public:
 
-    GetTimeInvariantMetaDatasKey(U64 nodeTimeInvariantHash,
+    GetTimeInvariantMetadataKey(U64 nodeTimeInvariantHash,
                                  const std::string& pluginID)
     : EffectInstanceActionKeyBase(nodeTimeInvariantHash,  RenderScale(1.), pluginID)
     {
 
     }
 
-    virtual ~GetTimeInvariantMetaDatasKey()
+    virtual ~GetTimeInvariantMetadataKey()
     {
 
     }
 
     virtual int getUniqueID() const OVERRIDE FINAL
     {
-        return kCacheKeyUniqueIDGetTimeInvariantMetaDatasResults;
+        return kCacheKeyUniqueIDGetTimeInvariantMetadataResults;
     }
 };
 
 
-class GetTimeInvariantMetaDatasResults : public CacheEntryBase
+class GetTimeInvariantMetadataResults : public CacheEntryBase
 {
-    GetTimeInvariantMetaDatasResults();
+    GetTimeInvariantMetadataResults();
 
 public:
 
-    static GetTimeInvariantMetaDatasResultsPtr create(const GetTimeInvariantMetaDatasKeyPtr& key);
+    static GetTimeInvariantMetadataResultsPtr create(const GetTimeInvariantMetadataKeyPtr& key);
 
-    virtual ~GetTimeInvariantMetaDatasResults()
+    virtual ~GetTimeInvariantMetadataResults()
     {
 
     }
@@ -454,8 +472,8 @@ public:
     // to be the only one interacting with this object. Then all objects
     // should call the getter.
     //
-    const NodeMetadataPtr& getMetadatasResults() const;
-    void setMetadatasResults(const NodeMetadataPtr& metadatas);
+    const NodeMetadataPtr& getMetadataResults() const;
+    void setMetadataResults(const NodeMetadataPtr& metadata);
 
     virtual void toMemorySegment(IPCPropertyMap* properties) const OVERRIDE FINAL;
 
@@ -464,14 +482,14 @@ public:
 
 private:
 
-    NodeMetadataPtr _metadatas;
+    NodeMetadataPtr _metadata;
 
 };
 
-inline GetTimeInvariantMetaDatasResultsPtr
-toGetTimeInvariantMetaDatasResults(const CacheEntryBasePtr& entry)
+inline GetTimeInvariantMetadataResultsPtr
+toGetTimeInvariantMetadataResults(const CacheEntryBasePtr& entry)
 {
-    return boost::dynamic_pointer_cast<GetTimeInvariantMetaDatasResults>(entry);
+    return boost::dynamic_pointer_cast<GetTimeInvariantMetadataResults>(entry);
 }
 
 

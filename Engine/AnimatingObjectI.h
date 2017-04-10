@@ -254,7 +254,7 @@ public:
      * @brief Helper function to use in any getter/setter function when the user gives a ViewIdx
      * to figure out which view to address if the view does not exists.
      **/
-    ViewIdx getViewIdxFromGetSpec(ViewIdx view) const WARN_UNUSED_RETURN;
+    ViewIdx checkIfViewExistsOrFallbackMainView(ViewIdx view) const WARN_UNUSED_RETURN;
 
 
 

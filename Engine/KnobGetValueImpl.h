@@ -53,7 +53,7 @@ Knob<T>::getValueFromExpression(TimeValue time,
         throw std::invalid_argument("Knob::getValueFromExpression: dimension out of range");
     }
 
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
 
     // Check for a cached expression result
     // TODO
@@ -83,7 +83,7 @@ Knob<T>::getValueFromExpression(TimeValue time,
                     appPTR->setLastPythonAPICaller_TLS(effect);
                 }
             }
-
+            
             exprOk = evaluateExpression(time, view_i,  dimension, ret, &error);
             if (exprOk && cachingEnabled) {
                 QMutexLocker k(&_data->expressionResultsMutex);
@@ -128,7 +128,7 @@ KnobStringBase::getValueFromExpression_pod(TimeValue time,
         throw std::invalid_argument("Knob::getValueFromExpression_pod: dimension out of range");
     }
 
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
 
     bool exprWasValid = isExpressionValid(dimension, view_i, 0);
     {
@@ -168,7 +168,7 @@ Knob<T>::getValueFromExpression_pod(TimeValue time,
         throw std::invalid_argument("Knob::getValueFromExpression_pod: dimension out of range");
     }
 
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     
     // Check for a cached expression result
     // Todo
@@ -267,7 +267,7 @@ Knob<T>::getValue(DimIdx dimension,
 
 
     // Figure out the view to read
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
 
     boost::shared_ptr<Knob<T> > thisShared = boost::dynamic_pointer_cast<Knob<T> >(shared_from_this());
 
@@ -321,7 +321,7 @@ Knob<T>::getValueFromCurve(TimeValue time,
                            T* ret)
 {
 
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     CurvePtr curve = getAnimationCurve(view_i, dimension);
 
     if ( curve && (curve->getKeyFramesCount() > 0) ) {
@@ -352,7 +352,7 @@ KnobStringBase::getValueFromCurve(TimeValue time,
         }
     }
     assert( ret->empty() );
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     CurvePtr curve = getAnimationCurve(view_i, dimension);
     if ( curve && (curve->getKeyFramesCount() > 0) ) {
         assert(isStringAnimated);
@@ -373,7 +373,7 @@ KnobStringBase::getRawCurveValueAt(TimeValue time,
                                    ViewIdx view,
                                    DimIdx dimension)
 {
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     CurvePtr curve  = getAnimationCurve(view_i, dimension);
 
     if ( curve && (curve->getKeyFramesCount() > 0) ) {
@@ -396,7 +396,7 @@ Knob<T>::getRawCurveValueAt(TimeValue time,
         //getValueAt already clamps to the range for us
         return curve->getValueAt(time, false); //< no clamping to range!
     }
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
 
     ValueKnobDimView<T>* dataForDimView = dynamic_cast<ValueKnobDimView<T>*>(getDataForDimView(dimension, view_i).get());
     if (!dataForDimView) {
@@ -443,7 +443,7 @@ Knob<T>::getValueAtTime(TimeValue time,
 
 
     // Figure out the view to read
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
 
     boost::shared_ptr<Knob<T> > thisShared = boost::dynamic_pointer_cast<Knob<T> >(shared_from_this());
 
@@ -510,7 +510,7 @@ Knob<T>::getDerivativeAtTime(TimeValue time,
         }
     }
 
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
 
     CurvePtr curve  = getAnimationCurve(view_i, dimension);
     if (curve->getKeyFramesCount() > 0) {
@@ -586,7 +586,7 @@ Knob<T>::getIntegrateFromTimeToTime(TimeValue time1,
         }
     }
 
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
 
     CurvePtr curve  = getAnimationCurve(view_i, dimension);
     if (curve->getKeyFramesCount() > 0) {

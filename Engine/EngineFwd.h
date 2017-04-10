@@ -31,17 +31,14 @@
 #include <vector>
 #include <map>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#endif
-
 #include "Serialization/SerializationFwd.h"
 
 
 // boost
 
 namespace boost {
+template<class T> class weak_ptr;
+template<class T> class shared_ptr;
 namespace archive {
 class xml_iarchive;
 class xml_oarchive;
@@ -180,8 +177,8 @@ class GetFrameRangeKey;
 class GetFrameRangeResults;
 class GetFramesNeededKey;
 class GetFramesNeededResults;
-class GetTimeInvariantMetaDatasKey;
-class GetTimeInvariantMetaDatasResults;
+class GetTimeInvariantMetadataKey;
+class GetTimeInvariantMetadataResults;
 class GetComponentsKey;
 class GetComponentsResults;
 class GroupInput;
@@ -292,6 +289,7 @@ class Texture;
 class TextureRect;
 class TimeLine;
 class TimeLapse;
+class TrackArgsBase;
 class TrackArgs;
 class TrackMarker;
 class TrackMarkerAndOptions;
@@ -299,6 +297,7 @@ class TrackMarkerPM;
 class TrackerHelper;
 class TrackerFrameAccessor;
 class TrackerNode;
+class TrackerParamsProviderBase;
 class TrackerParamsProvider;
 class TreeRender;
 class UndoCommand;
@@ -360,8 +359,8 @@ typedef boost::shared_ptr<GetFramesNeededKey> GetFramesNeededKeyPtr;
 typedef boost::shared_ptr<GetFramesNeededResults> GetFramesNeededResultsPtr;
 typedef boost::shared_ptr<GetFrameRangeKey> GetFrameRangeKeyPtr;
 typedef boost::shared_ptr<GetFrameRangeResults> GetFrameRangeResultsPtr;
-typedef boost::shared_ptr<GetTimeInvariantMetaDatasKey> GetTimeInvariantMetaDatasKeyPtr;
-typedef boost::shared_ptr<GetTimeInvariantMetaDatasResults> GetTimeInvariantMetaDatasResultsPtr;
+typedef boost::shared_ptr<GetTimeInvariantMetadataKey> GetTimeInvariantMetadataKeyPtr;
+typedef boost::shared_ptr<GetTimeInvariantMetadataResults> GetTimeInvariantMetadataResultsPtr;
 typedef boost::shared_ptr<GetComponentsKey> GetComponentsKeyPtr;
 typedef boost::shared_ptr<GetComponentsResults> GetComponentsResultsPtr;
 typedef boost::shared_ptr<GLImageStorage> GLImageStoragePtr;
@@ -452,9 +451,11 @@ typedef boost::shared_ptr<StubNode> StubNodePtr;
 typedef boost::shared_ptr<Texture> GLTexturePtr;
 typedef boost::shared_ptr<TimeLapse> TimeLapsePtr;
 typedef boost::shared_ptr<TimeLine> TimeLinePtr;
+typedef boost::shared_ptr<TrackArgsBase> TrackArgsBasePtr;
 typedef boost::shared_ptr<TrackerHelper> TrackerHelperPtr;
 typedef boost::shared_ptr<TrackerNode> TrackerNodePtr;
 typedef boost::shared_ptr<TrackMarker> TrackMarkerPtr;
+typedef boost::shared_ptr<TrackerParamsProviderBase> TrackerParamsProviderBasePtr;
 typedef boost::shared_ptr<TrackerParamsProvider> TrackerParamsProviderPtr;
 typedef boost::shared_ptr<TrackMarkerAndOptions> TrackMarkerAndOptionsPtr;
 typedef boost::shared_ptr<TrackMarkerPM> TrackMarkerPMPtr;
@@ -508,6 +509,7 @@ typedef boost::weak_ptr<RotoPaint> RotoPaintWPtr;
 typedef boost::weak_ptr<RotoDrawableItem> RotoDrawableItemWPtr;
 typedef boost::weak_ptr<RotoStrokeItem> RotoStrokeItemWPtr;
 typedef boost::weak_ptr<TimeLine> TimeLineWPtr;
+typedef boost::weak_ptr<TrackerParamsProviderBase> TrackerParamsProviderBaseWPtr;
 typedef boost::weak_ptr<TrackerParamsProvider> TrackerParamsProviderWPtr;
 typedef boost::weak_ptr<TrackerHelper> TrackerHelperWPtr;
 typedef boost::weak_ptr<TrackMarker> TrackMarkerWPtr;
@@ -557,7 +559,6 @@ class Tracker;
 class UserParamHolder;
 
 NATRON_PYTHON_NAMESPACE_EXIT;
-
 
 NATRON_NAMESPACE_EXIT;
 

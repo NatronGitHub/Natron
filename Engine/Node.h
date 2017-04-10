@@ -958,7 +958,7 @@ public:
 
     const std::vector<std::string>& getCreatedViews() const;
 
-    void refreshCreatedViews();
+    void refreshCreatedViews(bool silent);
 
     void refreshIdentityState();
 
@@ -988,9 +988,10 @@ public:
     bool isNodeUpstream(const NodeConstPtr& input) const;
 
 
-    void refreshCreatedViews(const KnobIPtr& knob);
+    void refreshCreatedViews(const KnobIPtr& knob, bool silent);
 
 private:
+
 
 
 

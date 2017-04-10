@@ -153,6 +153,7 @@ public:
     virtual std::string getInputHint(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isInputOptional(int inputNb) const OVERRIDE WARN_UNUSED_RETURN;
     virtual bool isInputMask(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isAllProducedPlanesAtOncePreferred() const OVERRIDE FINAL;
     virtual ActionRetCodeEnum getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
 
     /// calculate the default rod for this effect instance
@@ -176,14 +177,16 @@ public:
     virtual void beginEditKnobs() OVERRIDE;
     virtual ActionRetCodeEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
     virtual ActionRetCodeEnum isIdentity(TimeValue time,
-                                  const RenderScale & scale,
-                                  const RectI & renderWindow, //!< render window in pixel coords
-                                  ViewIdx view,
-                                  TimeValue* inputTime,
-                                  ViewIdx* inputView,
-                                  int* inputNb) OVERRIDE;
+                                         const RenderScale & scale,
+                                         const RectI & renderWindow, //!< render window in pixel coords
+                                         ViewIdx view,
+                                         const ImagePlaneDesc& plane,
+                                         TimeValue* inputTime,
+                                         ViewIdx* inputView,
+                                         int* inputNb,
+                                         ImagePlaneDesc* identityPlane) OVERRIDE;
     virtual void purgeCaches() OVERRIDE;
-
+    
     /**
      * @brief Does this effect supports tiling ?
      * http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsTiles
@@ -231,7 +234,7 @@ public:
     virtual void addAcceptedComponents(int inputNb, std::bitset<4>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
     virtual SequentialPreferenceEnum getSequentialPreference() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual ActionRetCodeEnum getTimeInvariantMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL;
+    virtual ActionRetCodeEnum getTimeInvariantMetadata(NodeMetadata& metadata) OVERRIDE FINAL;
     virtual void onMetadataChanged(const NodeMetadata& metadata) OVERRIDE FINAL;
     virtual ActionRetCodeEnum getLayersProducedAndNeeded(TimeValue time, ViewIdx view, std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded, std::list<ImagePlaneDesc>* layersProduced, TimeValue* passThroughTime, ViewIdx* passThroughView, int* passThroughInputNb) OVERRIDE;
 

@@ -36,8 +36,61 @@
 NATRON_NAMESPACE_ENTER;
 
 struct TrackArgsPrivate;
-class TrackArgs
+
+class TrackArgsBase
 : public GenericThreadStartArgs
+{
+public:
+
+    TrackArgsBase()
+    : GenericThreadStartArgs()
+    {
+        
+    }
+
+    virtual ~TrackArgsBase()
+    {
+
+    }
+
+    /**
+     * @brief Returns the first frame to track
+     **/
+    virtual int getStart() const = 0;
+
+    /**
+     * @brief Returns the last frame to track
+     **/
+    virtual int getEnd() const = 0;
+
+    /**
+     * @brief Returns the increment between each frame to track
+     **/
+    virtual int getStep() const = 0;
+
+    /**
+     * @brief Returns the number of tracks to track
+     **/
+    virtual int getNumTracks() const = 0;
+
+    /**
+     * @brief Returns in canonicalRects the portions to redraw on the viewer at the given frame
+     **/
+    virtual void getRedrawAreasNeeded(TimeValue time, std::list<RectD>* canonicalRects) const = 0;
+
+    /**
+     * @brief Returns a pointer to the timeline used by the tracker (generally the main application's one)
+     **/
+    virtual TimeLinePtr getTimeLine() const = 0;
+
+    /**
+     * @brief Returns the viewer node from which the tracking operation was launched
+     **/
+    virtual ViewerNodePtr getViewer() const = 0;
+};
+
+class TrackArgs
+: public TrackArgsBase
 {
 public:
 
@@ -66,22 +119,21 @@ public:
     double getFormatWidth() const;
 
     QMutex* getAutoTrackMutex() const;
-    int getStart() const;
 
-    int getEnd() const;
-
-    int getStep() const;
-
-    TimeLinePtr getTimeLine() const;
-    ViewerNodePtr getViewer() const;
-
-    int getNumTracks() const;
     const std::vector<TrackMarkerAndOptionsPtr >& getTracks() const;
     boost::shared_ptr<mv::AutoTrack> getLibMVAutoTrack() const;
 
     void getEnabledChannels(bool* r, bool* g, bool* b) const;
 
-    void getRedrawAreasNeeded(TimeValue time, std::list<RectD>* canonicalRects) const;
+    ///// Overriden from TrackArgsBase
+    virtual int getStart() const OVERRIDE FINAL;
+    virtual int getEnd() const OVERRIDE FINAL;
+    virtual int getStep() const OVERRIDE FINAL;
+    virtual TimeLinePtr getTimeLine() const OVERRIDE FINAL;
+    virtual ViewerNodePtr getViewer() const OVERRIDE FINAL;
+    virtual void getRedrawAreasNeeded(TimeValue time, std::list<RectD>* canonicalRects) const OVERRIDE FINAL;
+    virtual int getNumTracks() const OVERRIDE FINAL;
+
 
 private:
     

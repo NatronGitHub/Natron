@@ -209,7 +209,7 @@ public:
 
             return true;
         }
-        
+        assert(false);
         return false;
     }
 
@@ -222,7 +222,7 @@ public:
 
             return true;
         }
-        
+        assert(false);
         return false;
     }
 
@@ -235,7 +235,7 @@ public:
 
             return true;
         }
-        
+        assert(false);
         return false;
     }
 

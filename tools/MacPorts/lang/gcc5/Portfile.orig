@@ -104,6 +104,10 @@ pre-configure {
         #
         # https://trac.macports.org/ticket/53726
         # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=79885
+        #
+        # Note that macports toolchains will fail to compile gcc unless
+        # the DevSDK is installed due to another gcc build system bug:
+        # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=80203
         configure.args-append --with-sysroot="${configure.sdkroot}"
     }
 

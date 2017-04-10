@@ -441,7 +441,7 @@ protected:
      * @brief Reimplemented from KnobHolder.
      * This implementation forwards the evaluation request to the node holding the model.
      **/
-    virtual void evaluate(bool isSignificant, bool refreshMetadatas) OVERRIDE;
+    virtual void evaluate(bool isSignificant, bool refreshMetadata) OVERRIDE;
 
     /**
      * @brief Refresh all animated knobs and recurses on children items

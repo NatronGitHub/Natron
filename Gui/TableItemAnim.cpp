@@ -56,7 +56,7 @@ NATRON_NAMESPACE_ENTER;
 struct ItemCurve
 {
     QTreeWidgetItem* item;
-    CurveGuiPtr curve;
+    //CurveGuiPtr curve;
 };
 typedef std::map<ViewIdx, ItemCurve> PerViewItemMap;
 
@@ -83,6 +83,8 @@ public:
     PerViewItemMap animationItems;
     std::vector<KnobAnimPtr> knobs;
     std::vector<TableItemAnimPtr> children;
+
+
 };
 
 
@@ -174,12 +176,14 @@ TableItemAnim::getCurve(DimIdx dimension, ViewIdx view) const
 CurveGuiPtr
 TableItemAnim::getCurveGui(DimIdx /*dimension*/, ViewIdx view) const
 {
+    return CurveGuiPtr();
+#if 0
     PerViewItemMap::const_iterator foundView = _imp->animationItems.find(view);
     if (foundView == _imp->animationItems.end()) {
         return CurveGuiPtr();
     }
     return foundView->second.curve;
-
+#endif
 }
 
 QString
@@ -352,7 +356,7 @@ TableItemAnim::createViewItems()
     KnobTableItemPtr item = getInternalItem();
     AnimationModuleBasePtr model = getModel();
 
-    AnimationModuleView* curveWidget = model->getView();
+    //AnimationModuleView* curveWidget = model->getView();
     AnimItemBasePtr thisShared = shared_from_this();
 
     std::list<ViewIdx> views = item->getViewsList();
@@ -382,9 +386,9 @@ TableItemAnim::createViewItems()
 
         ItemCurve& ic = _imp->animationItems[*it];
         ic.item = animationItem;
-        if (curveWidget) {
+        /*if (curveWidget) {
             ic.curve.reset(new CurveGui(curveWidget, thisShared, DimIdx(0), *it));
-        }
+        }*/
 
         _imp->nameItem->addChild(animationItem);
     }
@@ -450,7 +454,8 @@ TableItemAnim::refreshVisibilityConditional(bool refreshHolder)
     }
     if (!showItem) {
         for (PerViewItemMap::const_iterator it = _imp->animationItems.begin(); it!=_imp->animationItems.end(); ++it) {
-            CurvePtr c = it->second.curve->getInternalCurve();
+
+            CurvePtr c = getInternalAnimItem()->getAnimationCurve(it->first, DimIdx(0));
             if (!c) {
                 continue;
             }

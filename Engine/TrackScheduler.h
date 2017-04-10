@@ -53,14 +53,14 @@ class TrackScheduler
 public:
 
 
-    TrackScheduler(const TrackerParamsProviderPtr& paramsProvider);
+    TrackScheduler(const TrackerParamsProviderBasePtr& paramsProvider);
 
     virtual ~TrackScheduler();
 
     /**
      * @brief The main entry point used to launch track tasks.
      **/
-    void track(const boost::shared_ptr<TrackArgs>& args);
+    void track(const TrackArgsBasePtr& args);
 
 
 private Q_SLOTS:

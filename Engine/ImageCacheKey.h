@@ -45,7 +45,7 @@ public:
 
     virtual ~ImageCacheKey();
 
-    U64 getNodeTimeInvariantHashKey() const;
+    U64 getNodeTimeVariantHashKey() const;
 
     const RenderScale& getProxyScale() const;
 

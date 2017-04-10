@@ -28,6 +28,7 @@
 #include "Global/Macros.h"
 
 #include <vector>
+#include <set>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
@@ -45,60 +46,45 @@ class RotoBezierTriangulation
 public:
     RotoBezierTriangulation();
 
-    struct RotoFeatherVertex
+
+    /**
+     * @brief A vertex used in the feather mesh rendering
+     **/
+    struct BezierVertex
     {
+        // Coordinates + parametric t from the original segment
         double x,y;
+
+        // If true, should be drawn with full opacity, otherwise with opacity = 0
         bool isInner;
-    };
 
-    struct RotoTriangleStrips
-    {
-        std::vector<unsigned  int> indices;
-    };
-
-    struct RotoTriangleFans
-    {
-        std::vector<unsigned int> indices;
-    };
-
-    struct RotoTriangles
-    {
-        std::vector<unsigned int> indices;
     };
 
 
     struct PolygonData
     {
 
-        // Discretized beziers
-        std::vector<std::vector<ParametricPoint> > featherPolygon;
-        std::vector<std::vector<ParametricPoint> > bezierPolygon;
+        // The vertices used to render the feather
+        std::vector<BezierVertex> featherVertices;
 
-#ifndef NDEBUG
-        // Used to check that all points passed to the vertex callback lie in the bbox
-        RectD bezierBbox;
-#endif
+        // The mesh for the feather computed from bezeirPolygon and featherPolygon
+        // This vector contains indices corresponding to a GL_TRIANGLE_STRIP primitive
+        // referencing the featherVertices
+        std::vector<unsigned int> featherTriangles;
 
-        // Union of all discretized bezier segments
-        std::vector<ParametricPoint> bezierPolygonJoined;
+        // The vertices composing the internal shape, each single vertex once.
+        // Each vertex is used in one of the primitives in internalShapeTriangles, internalShapeTriangleFans and internalShapeTriangleStrips
+        std::vector<Point> internalShapeVertices;
 
-        // The computed mesh for the feather
-        std::vector<RotoFeatherVertex> featherMesh;
-
-        // Stuff out of libtess
-        std::vector<RotoTriangleFans> internalFans;
-        std::vector<RotoTriangles> internalTriangles;
-        std::vector<RotoTriangleStrips> internalStrips;
-
-        // internal stuff for libtess callbacks
-        boost::scoped_ptr<RotoTriangleFans> fanBeingEdited;
-        boost::scoped_ptr<RotoTriangles> trianglesBeingEdited;
-        boost::scoped_ptr<RotoTriangleStrips> stripsBeingEdited;
-        
-        unsigned int error;
+        // The actual primitives to render. They correspond to GL_TRIANGLES, GL_TRIANGLE_FAN, GL_TRIANGLE_STRIP
+        std::vector<std::vector<unsigned int> > internalShapeTriangles, internalShapeTriangleFans, internalShapeTriangleStrips;
+    
     };
 
-    static void computeTriangles(const BezierPtr& bezier, TimeValue time, ViewIdx view, const RenderScale& scale,  double featherDistPixel_x, double featherDistPixel_y, PolygonData* outArgs);
+    /**
+     * @brief Tesselate the given bezier at the given view and time and scale. In output a set of vertices and render primitives can be fed directly to the renderer. 
+     **/
+    static void tesselate(const BezierPtr& bezier, TimeValue time, ViewIdx view, const RenderScale& scale,  double featherDistPixel_x, double featherDistPixel_y, PolygonData* outArgs);
 
 };
 

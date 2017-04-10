@@ -251,7 +251,7 @@ Node::load(const CreateNodeArgsPtr& args)
     _imp->effect->restoreSublabel();
 
     // If this plug-in create views (ReadOIIO only) then refresh them
-    refreshCreatedViews();
+    refreshCreatedViews(!serialization);
 
     // Notify the container group we added this node
     group->notifyNodeActivated(thisShared);
@@ -1791,7 +1791,7 @@ Node::activate(const std::list< NodePtr > & outputsToRestore,
             ///before connecting the outputs to this node, disconnect any link that has been made
             ///between the outputs by the user. This should normally never happen as the undo/redo
             ///stack follow always the same order.
-            NodePtr outputHasInput = output->getInput(it->second);
+            NodePtr outputHasInput = output->getRealInput(it->second);
             if (outputHasInput) {
                 bool ok = getApp()->getProject()->disconnectNodes(outputHasInput, output);
                 assert(ok);

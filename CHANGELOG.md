@@ -32,6 +32,15 @@ Natron multiple times on the same computer, the different processes will share t
 - For convenience, a PyPlug may specify a list of the nodes inside its node graph that should have their viewer overlay displayed when the PyPlug setting panel is opened. For instance, imagine that the PyPlug uses a Transform node internally, it is possible to display the Transform node handle on the viewer when the PyPlug settings panel is opened, even if the Transform node panel itself is closed
 
 
+## Version 2.2.7
+
+- Reduce noise on the roto shape borders #1594
+
+### Plugins
+
+- (beta feature) Inpaint: New plugin. Inpaint the areas indicated by the Mask input using patch-based inpainting.
+
+
 ## Version 2.2.6
 
 - Multi-dimensional parameters don't automatically fold into a single dimension, except for scale and size params.
@@ -42,15 +51,16 @@ Natron multiple times on the same computer, the different processes will share t
 
 ### Plugins
 
-- WriteFFmpeg: the preferred pixel coding and bit depth can now be selected, which is very useful for codecs that propose multiple pixel formats (e.g. ffv1, ffvhuff, huffyuv, jpeg2000, mjpeg, mpeg2video, vc2, libopenjpeg, png, qtrle, targa, tiff, libschroedinger, libtheora, libvpx, libvpx-vp9, libx264, libx265). 
+- WriteFFmpeg: the preferred pixel coding and bit depth can now be selected, which is very useful for codecs that propose multiple pixel formats (e.g. ffv1, ffvhuff, huffyuv, jpeg2000, mjpeg, mpeg2video, vc2, libopenjpeg, png, qtrle, targa, tiff, libschroedinger, libtheora, libvpx, libvpx-vp9, libx264, libx265).
+- WriteFFmpeg: Bitrate-based (VBR) encoding was removed from the following codecs in favor of quality-based (VBR) encoding, mainly because it should be used in 2-pass mode (using handbrake or the ffmpeg command-line tool): mpeg4, mpeg2video, mpeg1video, flv.
 - ColorCorrect: changed the Contrast formula to make adjustments more intuitive, see https://compositormathematic.wordpress.com/2013/07/06/gamma-contrast/ - this may affect existing projects that used the previously buggy Contrast parameter.
 - LensDistortion: add PanoTools/PTGui/PTAssembler/Hugin model.
 - Card3D can now import/export chan files from Natron, Nuke, 3D-Equalizer, Maya, etc., and txt files from Boujou.
-- Card3D and CornerPin: only show things that are in front of the camera. In cornerPin, point 1 is considered to be in front.
-- LensDistortion: add PanoTools/PTGui/PTAssembler/Hugin model.
+- Card3D and CornerPin: only show things that are in front of the camera. In cornerPin, point 1 is always considered to be in front.
 - Noise, Plasma: result is now reproductible (a given render always gives the same result).
 - ReadOIIO: add advanced options for reading RAW files.
-- STMap: Use the format of the Source input rather than its RoD to determine the texture size.
+- STMap: Use the format of the Source input rather than its RoD to determine the texture size (useful when using an STMap written by LensDistortion).
+- SmoothBilateral, SmoothBilateralGuided, SmoothRollingGuidance: The Value Std Dev. was clamped by CImg to a rather high value (0.1), making the filters almost useless. Fixed.
 
 
 ## Version 2.2.5

@@ -394,15 +394,44 @@ private:
 
 public:
 
+    enum DeCasteljauAlgorithmEnum {
+        // See http://antigrain.com/research/adaptive_bezier/
+        eDeCasteljauAlgorithmIterative,
+        eDeCasteljauAlgorithmRecursive
+    };
 
+    /**
+     * @brief The internal bezier subdivision algorithm.
+     * @param isOpenBezier Whether the shape is supposed to be closed (i.e: the last control point is connected to the first) or not
+     * @param cps The list of controls points of the bezier, in the order of drawing by the user
+     * @param time The time at which to sample each control point on the timeline
+     * @param scale The render scale to apply to the points
+     * @param finished For a closed bezier, indicates whether the shape is finished or not
+     * @param nbPointsPerSegment If iterative, this the number of points in output for each bezier segment. If -1, this is automatically
+     * using the sum of the euclidean distance of the P0-P1, P1-P2, P2-P3, P3-P0 distances:  http://antigrain.com/research/adaptive_bezier/
+     * @param errorScale If recursive, this parameter influences whether we should subdivise or not the segment at one recursion step.
+     * The greater it is, the smoother the curve will be.
+     * @param transform A transformation matrix to apply to all control points 
+     * @param points[out] In output this is for each segment the list of desctretized points. If NULL, this is expected instead that
+     * pointsSingleList is non NULL
+     * @param pointsSingleList[out] If this is non-null, this will be set to the concatenation of all descretized points for all segments.
+     * @param bbox[out] The bounding box of the descretized points at the given scale, may be NULL
+     * Note: Only one of points and pointsSingleList can be non NULL
+     **/
+    static void deCasteljau(bool isOpenBezier,
+                            const std::list<BezierCPPtr >& cps,
+                            TimeValue time,
+                            const RenderScale &scale,
 
-    static void deCastelJau(const std::list<BezierCPPtr >& cps, TimeValue time, const RenderScale &scale,
                             bool finished,
-                            int nBPointsPerSegment,
+                            DeCasteljauAlgorithmEnum algo,
+                            int nbPointsPerSegment,
+                            double errorScale,
                             const Transform::Matrix3x3& transform,
                             std::vector<std::vector<ParametricPoint> >* points,
                             std::vector<ParametricPoint >* pointsSingleList,
                             RectD* bbox);
+
     static void point_line_intersection(const Point &p1,
                                         const Point &p2,
                                         const Point &pos,
@@ -410,97 +439,34 @@ public:
 
     /**
      * @brief Evaluates the spline at the given time and returns the list of all the points on the curve.
-     * @param nbPointsPerSegment controls how many points are used to draw one Bezier segment
+     * See deCasteljau for details about each parameter
      **/
-    void evaluateAtTime_DeCasteljau(TimeValue time,
-                                    ViewIdx view,
-                                    const RenderScale &scale,
-#ifdef ROTO_BEZIER_EVAL_ITERATIVE
-                                    int nbPointsPerSegment,
-#else
-                                    double errorScale,
-#endif
-                                    std::vector<std::vector<ParametricPoint> >* points,
-                                    RectD* bbox) const;
+    void evaluateAtTime(TimeValue time,
+                        ViewIdx view,
+                        const RenderScale &scale,
+                        DeCasteljauAlgorithmEnum algo,
+                        int nbPointsPerSegment,
+                        double errorScale,
+                        std::vector<std::vector<ParametricPoint> >* points,
+                        std::vector<ParametricPoint >* pointsSingleList,
+                        RectD* bbox) const;
 
-    void evaluateAtTime_DeCasteljau(TimeValue time,
-                                    ViewIdx view,
-                                    const RenderScale &scale,
-#ifdef ROTO_BEZIER_EVAL_ITERATIVE
-                                    int nbPointsPerSegment,
-#else
-                                    double errorScale,
-#endif
-                                    std::vector<ParametricPoint >* points,
-                                    RectD* bbox) const;
 
-private:
-
-    void evaluateAtTime_DeCasteljau_internal(TimeValue time,
-                                             ViewIdx view,
-                                             const RenderScale &scale,
-#ifdef ROTO_BEZIER_EVAL_ITERATIVE
-                                             int nbPointsPerSegment,
-#else
-                                             double errorScale,
-#endif
-                                             std::vector<std::vector<ParametricPoint> >* points,
-                                             std::vector<ParametricPoint >* pointsSingleList,
-                                             RectD* bbox) const;
-
-public:
 
     /**
-     * @brief Same as evaluateAtTime_DeCasteljau but nbPointsPerSegment is approximated automatically
+     * @brief Evaluates the bezier formed by the feather points.
+     * See deCasteljau for details about each parameter
+     * Note: the generated points, nor the bounding box will not be offset by the feather distance in output.
      **/
-    void evaluateAtTime_DeCasteljau_autoNbPoints(TimeValue time,
-                                                 ViewIdx view,
-                                                 const RenderScale &scale,
-                                                 std::vector<std::vector<ParametricPoint> >* points,
-                                                 RectD* bbox) const;
-
-    /**
-     * @brief Evaluates the bezier formed by the feather points. Segments which are equal to the control points of the bezier
-     * will not be drawn.
-     **/
-    void evaluateFeatherPointsAtTime_DeCasteljau(TimeValue time,
-                                                 ViewIdx view,
-                                                 const RenderScale &scale,
-#ifdef ROTO_BEZIER_EVAL_ITERATIVE
-                                                 int nbPointsPerSegment,
-#else
-                                                 double errorScale,
-#endif
-                                                 bool evaluateIfEqual,
-                                                 std::vector<std::vector<ParametricPoint>  >* points,
-                                                 RectD* bbox) const;
-
-    void evaluateFeatherPointsAtTime_DeCasteljau(TimeValue time,
-                                                 ViewIdx view,
-                                                 const RenderScale &scale,
-#ifdef ROTO_BEZIER_EVAL_ITERATIVE
-                                                 int nbPointsPerSegment,
-#else
-                                                 double errorScale,
-#endif
-                                                 bool evaluateIfEqual,
-                                                 std::vector<ParametricPoint >* points,
-                                                 RectD* bbox) const;
-
-private:
-
-    void evaluateFeatherPointsAtTime_DeCasteljau_internal(TimeValue time,
-                                                          ViewIdx view,
-                                                          const RenderScale &scale,
-#ifdef ROTO_BEZIER_EVAL_ITERATIVE
-                                                          int nbPointsPerSegment,
-#else
-                                                          double errorScale,
-#endif
-                                                          bool evaluateIfEqual,
-                                                          std::vector<std::vector<ParametricPoint>  >* points,
-                                                          std::vector<ParametricPoint >* pointsSingleList,
-                                                          RectD* bbox) const;
+    void evaluateFeatherPointsAtTime(TimeValue time,
+                                     ViewIdx view,
+                                     const RenderScale &scale,
+                                     DeCasteljauAlgorithmEnum algo,
+                                     int nbPointsPerSegment,
+                                     double errorScale,
+                                     std::vector<std::vector<ParametricPoint>  >* points,
+                                     std::vector<ParametricPoint >* pointsSingleList,
+                                     RectD* bbox) const;
 
 public:
 
@@ -508,12 +474,11 @@ public:
      * @brief Returns the bounding box of the bezier.
      **/
     virtual RectD getBoundingBox(TimeValue time,ViewIdx view) const OVERRIDE;
-    
+
     static void bezierSegmentListBboxUpdate(const std::list<BezierCPPtr > & points,
                                             bool finished,
                                             bool isOpenBezier,
                                             TimeValue time,
-                                            const RenderScale &scale,
                                             const Transform::Matrix3x3& transform,
                                             RectD* bbox);
 
@@ -612,18 +577,10 @@ public:
         eFillRuleWinding
     };
 
-
-    bool isFeatherPolygonClockwiseOriented(TimeValue time, ViewIdx view) const;
-
     /**
-     * @brief Refresh the polygon orientation for a specific keyframe or for all keyframes. Auto polygon orientation must be set to true
-     * so make sure setAutoOrientationComputation(true) has been called before.
+     * @brief Returns true if the winding number of the polygon is positive 
      **/
-    void refreshPolygonOrientation(TimeValue time, ViewSetSpec view);
-    void refreshPolygonOrientation(ViewSetSpec view);
-    void refreshPolygonOrientationForView(ViewIdx view);
-
-    void setAutoOrientationComputation(bool autoCompute);
+    bool isClockwiseOriented(TimeValue time, ViewIdx view) const;
 
     KnobDoublePtr getFeatherKnob() const;
     KnobDoublePtr getFeatherFallOffKnob() const;
@@ -637,16 +594,6 @@ public:
     {
         return true;
     }
-    
-private:
-
-    virtual void onTransformSet(TimeValue time, ViewSetSpec view) OVERRIDE FINAL;
-
-    bool isFeatherPolygonClockwiseOrientedInternal(TimeValue time, ViewIdx view) const;
-
-    void computePolygonOrientation(TimeValue time, ViewSetSpec view, bool isStatic) const;
-
-    void computePolygonOrientationForView(TimeValue time, ViewIdx view, bool isStatic) const;
 
     void evaluateCurveModified();
 

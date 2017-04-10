@@ -130,18 +130,17 @@ JoinViewsNode::isHostChannelSelectorSupported(bool* /*defaultR*/,
 }
 
 ActionRetCodeEnum
-JoinViewsNode::isIdentity(TimeValue time,
+JoinViewsNode::isIdentity(TimeValue /*time*/,
                           const RenderScale & /*scale*/,
                           const RectI & /*roi*/,
                           ViewIdx view,
-                          TimeValue* inputTime,
-                          ViewIdx* inputView,
-                          int* inputNb)
+                          const ImagePlaneDesc& /*plane*/,
+                          TimeValue* /*inputTime*/,
+                          ViewIdx* /*inputView*/,
+                          int* inputNb,
+                          ImagePlaneDesc* /*inputPlane*/)
 {
-    *inputTime = time;
     *inputNb = getMaxInputCount() - 1 - view.value();
-    *inputView = view;
-
     return eActionStatusOK;
 }
 

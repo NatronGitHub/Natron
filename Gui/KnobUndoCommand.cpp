@@ -277,7 +277,7 @@ PasteKnobClipBoardUndoCommand::copyFrom(const SERIALIZATION_NAMESPACE::KnobSeria
                 case eKnobClipBoardTypeCopyExpressionMultCurveLink:
                 {
                     if (isRedo) {
-                        std::string expression = makeLinkExpression(projectViewNames, internalKnob, _imp->type == eKnobClipBoardTypeCopyExpressionMultCurveLink, eExpressionLanguageExprTK, fromKnob, _imp->fromDimension, _imp->fromView, _imp->targetDimension, _imp->targetView);
+                        std::string expression = makeLinkExpression(projectViewNames, internalKnob, _imp->type == eKnobClipBoardTypeCopyExpressionMultCurveLink, eExpressionLanguageExprTk, fromKnob, _imp->fromDimension, _imp->fromView, _imp->targetDimension, _imp->targetView);
                         const bool hasRetVar = false;
                         try {
                             // Don't fail if exception is invalid, it should have been tested prior to creating an undo/redo command, otherwise user is going
@@ -394,7 +394,7 @@ PasteKnobClipBoardUndoCommand::makeLinkExpression(const std::vector<std::string>
             }
 
         }   break;
-        case eExpressionLanguageExprTK: {
+        case eExpressionLanguageExprTk: {
             /*std::list<ViewIdx> sourceViews = fromKnob->getViewsList();
             if (sourceViews.size() > 1) {
                 if (fromView.isAll()) {
@@ -614,7 +614,7 @@ MultipleKnobEditsUndoCommand::undo()
                             hasChanged |= setOldValueForDimView(isInt, isBool, isDouble, isString, it2->reason, it2->setKeyFrame, it2->time, hasChanged,  it2->setValueRetCode, DimIdx(i), *it3, it2->oldValues) != eValueChangedReturnCodeNothingChanged;
                         }
                     } else {
-                        ViewIdx view_i = knob->getViewIdxFromGetSpec(ViewIdx(it2->view));
+                        ViewIdx view_i = knob->checkIfViewExistsOrFallbackMainView(ViewIdx(it2->view));
                         hasChanged |= setOldValueForDimView(isInt, isBool, isDouble, isString, it2->reason, it2->setKeyFrame, it2->time, hasChanged,  it2->setValueRetCode, DimIdx(i), view_i, it2->oldValues) != eValueChangedReturnCodeNothingChanged;
                     }
                 }
@@ -625,7 +625,7 @@ MultipleKnobEditsUndoCommand::undo()
                         hasChanged |= setOldValueForDimView(isInt, isBool, isDouble, isString, it2->reason, it2->setKeyFrame, it2->time, hasChanged,  it2->setValueRetCode, DimIdx(it2->dimension), *it3, it2->oldValues) != eValueChangedReturnCodeNothingChanged;
                     }
                 } else {
-                    ViewIdx view_i = knob->getViewIdxFromGetSpec(ViewIdx(it2->view));
+                    ViewIdx view_i = knob->checkIfViewExistsOrFallbackMainView(ViewIdx(it2->view));
                     hasChanged |= setOldValueForDimView(isInt, isBool, isDouble, isString, it2->reason, it2->setKeyFrame, it2->time, hasChanged,  it2->setValueRetCode, DimIdx(it2->dimension), view_i, it2->oldValues) != eValueChangedReturnCodeNothingChanged;
                 }
             }

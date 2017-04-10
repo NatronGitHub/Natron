@@ -141,7 +141,7 @@ private:
                              ViewSetSpec view,
                              TimeValue time) OVERRIDE FINAL;
     virtual void refreshExtraStateAfterTimeChanged(bool isPlayback, TimeValue time)  OVERRIDE FINAL;
-    virtual void evaluate(bool isSignificant, bool refreshMetadatas) OVERRIDE FINAL;
+    virtual void evaluate(bool isSignificant, bool refreshMetadata) OVERRIDE FINAL;
 
 private:
 

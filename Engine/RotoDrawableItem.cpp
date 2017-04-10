@@ -160,36 +160,6 @@ public:
     , timeBlurNode(other.timeBlurNode)
 #endif
     , nodes(other.nodes)
-    , overlayColor(other.overlayColor)
-    , opacity(other.opacity)
-    , lifeTime(other.lifeTime)
-    , customRange(other.customRange)
-    , lifeTimeFrame(other.lifeTimeFrame)
-    , invertKnob(other.invertKnob)
-    , color(other.color)
-    , compOperator(other.compOperator)
-    , brushSize(other.brushSize)
-    , brushSpacing(other.brushSpacing)
-    , brushHardness(other.brushHardness)
-    , visiblePortion(other.visiblePortion)
-    , translate(other.translate)
-    , rotate(other.rotate)
-    , scale(other.scale)
-    , scaleUniform(other.scaleUniform)
-    , skewX(other.skewX)
-    , skewY(other.skewY)
-    , skewOrder(other.skewOrder)
-    , center(other.center)
-    , extraMatrix(other.extraMatrix)
-    , motionBlurAmount(other.motionBlurAmount)
-    , motionBlurShutter(other.motionBlurShutter)
-    , motionBlurShutterType(other.motionBlurShutterType)
-    , motionBlurCustomShutter(other.motionBlurCustomShutter)
-    , mergeAInputChoice(other.mergeAInputChoice)
-    , mergeMaskInputChoice(other.mergeMaskInputChoice)
-    , timeOffset(other.timeOffset)
-    , timeOffsetMode(other.timeOffsetMode)
-    , mixKnob(other.mixKnob)
     {
 
     }
@@ -343,6 +313,11 @@ RotoDrawableItem::createNodes(bool connectNodes)
         KnobIPtr knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
         knob->linkTo(isStroke->getBrushEffectKnob());
 
+    } else if (type == eRotoStrokeTypeSolid) {
+        // Link the color parameter to the color of the constant node
+        KnobIPtr knob = _imp->effectNode->getKnobByName(kConstantParamColor);
+        knob->linkTo(getColorKnob());
+        
     } else if ( (type == eRotoStrokeTypeClone) || (type == eRotoStrokeTypeReveal) ) {
         // Link transform knobs
         KnobIPtr translateKnob = _imp->effectNode->getKnobByName(kTransformParamTranslate);
@@ -374,8 +349,6 @@ RotoDrawableItem::createNodes(bool connectNodes)
 
         KnobIPtr boKnob = _imp->effectNode->getKnobByName(kTransformParamBlackOutside);
         boKnob->linkTo(isStroke->getBrushCloneBlackOutsideKnob());
-
-
     }
 
     if (type == eRotoStrokeTypeSmear) {
@@ -437,7 +410,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
     fixedNamePrefix = baseFixedName;
     fixedNamePrefix.append( QString::fromUtf8("Merge") );
 
-    const std::string mergePluginID(PLUGINID_OFX_MERGE);
+    const std::string mergePluginID(PLUGINID_OFX_ROTOMERGE);
     CreateNodeArgsPtr args(CreateNodeArgs::create( mergePluginID, rotoPaintEffect ));
     args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
 #ifndef ROTO_PAINT_NODE_GRAPH_VISIBLE
@@ -507,6 +480,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
         }
         KnobIPtr mergeMix = _imp->mergeNode->getKnobByName(kMergeOFXParamMix);
         mergeMix->linkTo(rotoPaintMix);
+
     }
 
     if (pluginId != maskPluginID && type != eRotoStrokeTypeComp) {
@@ -817,10 +791,10 @@ RotoDrawableItem::refreshNodesConnections()
             }
 
         }   break;
-        case eRotoStrokeTypeBlur:
+        case eRotoStrokeTypeSolid:
         case eRotoStrokeTypeEraser:
         case eRotoStrokeTypeSmear:
-        case eRotoStrokeTypeSolid:
+        case eRotoStrokeTypeBlur:
         case eRotoStrokeTypeClone:
         case eRotoStrokeTypeReveal:
         case eRotoStrokeTypeSharpen: {
@@ -868,7 +842,13 @@ RotoDrawableItem::refreshNodesConnections()
             } else
 #endif
             {
-                mergeInputA = _imp->effectNode;
+                if (type != eRotoStrokeTypeSolid && type != eRotoStrokeTypeEraser) {
+                    mergeInputA = _imp->effectNode;
+                } else {
+                    assert(_imp->maskNode);
+                    mergeInputA = _imp->maskNode;
+                    _imp->maskNode->swapInput(_imp->effectNode, 0);
+                }
             }
             mergeInputB = upstreamNode;
 
@@ -903,15 +883,16 @@ RotoDrawableItem::refreshNodesConnections()
     _imp->mergeNode->swapInput(mergeInputA, 1); // A
     _imp->mergeNode->swapInput(mergeInputB, 0); // B
 
-#if 0
+
     // Connect to a mask if needed
     if (_imp->maskNode) {
-        // Connect the merge mask input to the mask node, except when the input A is a solid, we connect it to the Roto shape mask
-        // to preserve alpha
-        _imp->mergeNode->swapInput(_imp->maskNode, 2);
+        // Connect the merge mask input to the mask node, except when the input A is a solid/eraser
+        if (type != eRotoStrokeTypeSolid && type != eRotoStrokeTypeEraser) {
+            _imp->mergeNode->swapInput(_imp->maskNode, 2);
+        }
 
     }
-#endif
+
 
     if (type == eRotoStrokeTypeComp) {
         KnobChoicePtr knob = _imp->mergeMaskInputChoice.lock();
@@ -1442,7 +1423,7 @@ RotoDrawableItem::fetchRenderCloneKnobs()
             _imp->invertKnob  = getKnobByNameAndType<KnobButton>(kRotoInvertedParam);
     }
     if (type == eRotoStrokeTypeSolid) {
-        _imp->color = createDuplicateOfTableKnob<KnobColor>(kRotoColorParam);
+        _imp->color = getKnobByNameAndType<KnobColor>(kRotoColorParam);
     }
 
     // Brush: only for strokes or open beziers

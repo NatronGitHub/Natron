@@ -764,6 +764,7 @@ Project::initializeKnobs()
             param->populateChoices(entries);
         }
         param->setAnimationEnabled(false);
+        param->setIsMetadataSlave(true);
         page->addKnob(param);
         _imp->formatKnob = param;
         QObject::connect( param.get(), SIGNAL(populated()), this, SLOT(onProjectFormatPopulated()) );
@@ -795,6 +796,7 @@ Project::initializeKnobs()
         param->setDefaultValues(defFrameRange, DimIdx(0));
         param->setDimensionName(DimIdx(0), "first");
         param->setDimensionName(DimIdx(1), "last");
+        param->setIsMetadataSlave(true);
         param->setEvaluateOnChange(false);
         param->setLabel(tr("Frame Range"));
         param->setHintToolTip( tr("The frame range of the project as seen by the plug-ins. New viewers are created automatically "
@@ -824,6 +826,7 @@ Project::initializeKnobs()
                                   "special frame rates.") );
         param->setAnimationEnabled(false);
         param->setDefaultValue(24);
+        param->setIsMetadataSlave(true);
         param->setDisplayRange(0., 50.);
         page->addKnob(param);
         _imp->frameRate = param;
@@ -1642,13 +1645,13 @@ Project::onKnobValueChanged(const KnobIPtr& knob,
         getApp()->setupViewersForViews(viewNames);
         if (reason == eValueChangedReasonUserEdited) {
             ///views change, notify all OneView nodes via getClipPreferences
-            refreshTimeInvariantMetadatasOnAllNodes_recursive();
+            refreshTimeInvariantMetadataOnAllNodes_recursive();
         }
         Q_EMIT projectViewsChanged();
     } else if  ( knob == _imp->defaultLayersList ) {
         if (reason == eValueChangedReasonUserEdited) {
             ///default layers change, notify all nodes so they rebuild their layers menus
-            refreshTimeInvariantMetadatasOnAllNodes_recursive();
+            refreshTimeInvariantMetadataOnAllNodes_recursive();
         }
     } else if ( knob == _imp->setupForStereoButton ) {
         setupProjectForStereo();
@@ -1666,14 +1669,8 @@ Project::onKnobValueChanged(const KnobIPtr& knob,
             (*it)->getEffectInstance()->refreshFormatParamChoice(entries, index, false);
         }
         if (found) {
-            if (reason == eValueChangedReasonUserEdited) {
-
-                invalidateHashCache();
-
-
-            }
-            ///Format change, hence probably the PAR so run getClipPreferences again
-            refreshTimeInvariantMetadatasOnAllNodes_recursive();
+            // Format change, hence probably the PAR so run getClipPreferences again
+            refreshTimeInvariantMetadataOnAllNodes_recursive();
             Q_EMIT formatChanged(frmt);
         }
     } else if ( knob == _imp->addFormatKnob && reason != eValueChangedReasonRestoreDefault) {
@@ -1681,7 +1678,7 @@ Project::onKnobValueChanged(const KnobIPtr& knob,
     } else if ( knob == _imp->previewMode ) {
         Q_EMIT autoPreviewChanged( _imp->previewMode->getValue() );
     }  else if ( knob == _imp->frameRate ) {
-        refreshTimeInvariantMetadatasOnAllNodes_recursive();
+        refreshTimeInvariantMetadataOnAllNodes_recursive();
     } else if ( knob == _imp->frameRange ) {
         int first = _imp->frameRange->getValue(DimIdx(0));
         int last = _imp->frameRange->getValue(DimIdx(1));

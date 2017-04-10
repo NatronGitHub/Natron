@@ -55,28 +55,15 @@ EffectInstanceActionKeyBase::appendToHash(Hash64* hash) const
 }
 
 void
-EffectInstanceActionKeyBase::toMemorySegment(IPCPropertyMap* properties) const
+EffectInstanceActionKeyBase::toMemorySegment(IPCPropertyMap* /*properties*/) const
 {
-    properties->setIPCProperty<U64>("NodeHash", _data.nodeTimeViewVariantHash);
-    std::vector<double> scaleVec(2);
-    scaleVec[0] = _data.scale.x;
-    scaleVec[1] = _data.scale.y;
-    properties->setIPCPropertyN<double>("Scale", scaleVec);
+    throw std::runtime_error("EffectInstanceActionKeyBase::toMemorySegment serialization to a persistent cache unimplemented");
 } // toMemorySegment
 
 CacheEntryKeyBase::FromMemorySegmentRetCodeEnum
-EffectInstanceActionKeyBase::fromMemorySegment(const IPCPropertyMap& properties)
+EffectInstanceActionKeyBase::fromMemorySegment(const IPCPropertyMap& /*properties*/)
 {
-    if (!properties.getIPCProperty("NodeHash", 0, &_data.nodeTimeViewVariantHash)) {
-        return eFromMemorySegmentRetCodeFailed;
-    }
-    std::vector<double> scaleVec;
-    if (!properties.getIPCPropertyN("Scale", &scaleVec)) {
-        return eFromMemorySegmentRetCodeFailed;
-    }
-    _data.scale.x = scaleVec[0];
-    _data.scale.x = scaleVec[1];
-    return eFromMemorySegmentRetCodeOk;
+    throw std::runtime_error("EffectInstanceActionKeyBase::fromMemorySegment serialization to a persistent cache unimplemented");
 } // fromMemorySegment
 
 
@@ -108,30 +95,18 @@ GetRegionOfDefinitionResults::setRoD(const RectD& rod)
 }
 
 void
-GetRegionOfDefinitionResults::toMemorySegment(IPCPropertyMap* properties) const
+GetRegionOfDefinitionResults::toMemorySegment(IPCPropertyMap* /*properties*/) const
 {
-    std::vector<double> rodVec(4);
-    rodVec[0] = _rod.x1;
-    rodVec[1] = _rod.y1;
-    rodVec[2] = _rod.x2;
-    rodVec[3] = _rod.y2;
-    properties->setIPCPropertyN("RoD", rodVec);
-    CacheEntryBase::toMemorySegment(properties);
+    assert(false);
+    throw std::runtime_error("GetRegionOfDefinitionResults::toMemorySegment serialization to a persistent cache unimplemented");
 } // toMemorySegment
 
 CacheEntryBase::FromMemorySegmentRetCodeEnum
-GetRegionOfDefinitionResults::fromMemorySegment(bool isLockedForWriting,
-                                                const IPCPropertyMap& properties)
+GetRegionOfDefinitionResults::fromMemorySegment(bool /*isLockedForWriting*/,
+                                                const IPCPropertyMap& /*properties*/)
 {
-    std::vector<double> rodVec;
-    if (!properties.getIPCPropertyN("RoD", &rodVec)) {
-        return eFromMemorySegmentRetCodeFailed;
-    }
-    _rod.x1 = rodVec[0];
-    _rod.y1 = rodVec[1];
-    _rod.x2 = rodVec[2];
-    _rod.y2 = rodVec[3];
-    return CacheEntryBase::fromMemorySegment(isLockedForWriting, properties);
+    assert(false);
+    throw std::runtime_error("GetRegionOfDefinitionResults::fromMemorySegment serialization to a persistent cache unimplemented");
 } // fromMemorySegment
 
 
@@ -180,6 +155,13 @@ GetDistortionResults::fromMemorySegment(bool /*isLockedForWriting*/,
     throw std::runtime_error("GetDistortionResults::fromMemorySegment cannot be serialized from a persistent cache");
 } // fromMemorySegment
 
+void
+IsIdentityKey::appendToHash(Hash64* hash) const
+{
+    EffectInstanceActionKeyBase::appendToHash(hash);
+    hash->append((double)_time);
+    Hash64::appendQString(QString::fromUtf8(_plane.getPlaneID().c_str()), hash);
+}
 
 IsIdentityResults::IsIdentityResults()
 : CacheEntryBase(appPTR->getGeneralPurposeCache())
@@ -201,19 +183,21 @@ IsIdentityResults::create(const IsIdentityKeyPtr& key)
 
 
 void
-IsIdentityResults::getIdentityData(int* identityInputNb, TimeValue* identityTime, ViewIdx* identityView) const
+IsIdentityResults::getIdentityData(int* identityInputNb, TimeValue* identityTime, ViewIdx* identityView, ImagePlaneDesc *identityPlane) const
 {
     *identityInputNb = _data.identityInputNb;
     *identityTime = _data.identityTime;
     *identityView = _data.identityView;
+    *identityPlane = _data.identityPlane;
 }
 
 void
-IsIdentityResults::setIdentityData(int identityInputNb, TimeValue identityTime, ViewIdx identityView)
+IsIdentityResults::setIdentityData(int identityInputNb, TimeValue identityTime, ViewIdx identityView, const ImagePlaneDesc &identityPlane)
 {
     _data.identityInputNb = identityInputNb;
     _data.identityTime = identityTime;
     _data.identityView = identityView;
+    _data.identityPlane = identityPlane;
 }
 
 void
@@ -325,17 +309,17 @@ GetFrameRangeResults::fromMemorySegment(bool /*isLockedForWriting*/,
 
 
 
-GetTimeInvariantMetaDatasResults::GetTimeInvariantMetaDatasResults()
+GetTimeInvariantMetadataResults::GetTimeInvariantMetadataResults()
 : CacheEntryBase(appPTR->getGeneralPurposeCache())
-, _metadatas()
+, _metadata()
 {
 
 }
 
-GetTimeInvariantMetaDatasResultsPtr
-GetTimeInvariantMetaDatasResults::create(const GetTimeInvariantMetaDatasKeyPtr& key)
+GetTimeInvariantMetadataResultsPtr
+GetTimeInvariantMetadataResults::create(const GetTimeInvariantMetadataKeyPtr& key)
 {
-    GetTimeInvariantMetaDatasResultsPtr ret(new GetTimeInvariantMetaDatasResults());
+    GetTimeInvariantMetadataResultsPtr ret(new GetTimeInvariantMetadataResults());
     ret->setKey(key);
     return ret;
 
@@ -343,32 +327,32 @@ GetTimeInvariantMetaDatasResults::create(const GetTimeInvariantMetaDatasKeyPtr& 
 
 
 const NodeMetadataPtr&
-GetTimeInvariantMetaDatasResults::getMetadatasResults() const
+GetTimeInvariantMetadataResults::getMetadataResults() const
 {
-    return _metadatas;
+    return _metadata;
 }
 
 void
-GetTimeInvariantMetaDatasResults::setMetadatasResults(const NodeMetadataPtr &metadatas)
+GetTimeInvariantMetadataResults::setMetadataResults(const NodeMetadataPtr &metadata)
 {
-    _metadatas = metadatas;
+    _metadata = metadata;
 }
 
 
 void
-GetTimeInvariantMetaDatasResults::toMemorySegment(IPCPropertyMap* properties) const
+GetTimeInvariantMetadataResults::toMemorySegment(IPCPropertyMap* properties) const
 {
-    assert(_metadatas);
-    _metadatas->toMemorySegment(properties);
+    assert(_metadata);
+    _metadata->toMemorySegment(properties);
     CacheEntryBase::toMemorySegment(properties);
 } // toMemorySegment
 
 CacheEntryBase::FromMemorySegmentRetCodeEnum
-GetTimeInvariantMetaDatasResults::fromMemorySegment(bool isLockedForWriting,
+GetTimeInvariantMetadataResults::fromMemorySegment(bool isLockedForWriting,
                                                     const IPCPropertyMap& properties)
 {
-    assert(_metadatas);
-    _metadatas->fromMemorySegment(properties);
+    assert(_metadata);
+    _metadata->fromMemorySegment(properties);
     return CacheEntryBase::fromMemorySegment(isLockedForWriting, properties);
 } // fromMemorySegment
 

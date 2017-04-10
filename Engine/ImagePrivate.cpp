@@ -242,8 +242,8 @@ ImagePrivate::initFromExternalBuffer(const Image::InitStorageArgs& args)
  * @brief If copying pixels from fromImage to toImage cannot be copied directly, this function
  * returns a temporary image that is suitable to copy then to the toImage.
  **/
-ImagePtr
-ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image& toImage, const RectI& roi)
+ActionRetCodeEnum
+ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image& toImage, const RectI& roi, ImagePtr* outImage)
 {
     // OpenGL textures may only be read from a RGBA packed buffer
     if (fromImage.getStorageMode() == eStorageModeGLTex) {
@@ -260,15 +260,18 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
                 Image::InitStorageArgs args;
                 args.renderClone = fromImage._imp->renderClone.lock();
                 args.bounds = fromImage.getBounds();
+                args.mipMapLevel = fromImage.getMipMapLevel();
+                args.proxyScale = fromImage.getProxyScale();
                 args.plane = ImagePlaneDesc::getRGBAComponents();
                 tmpImage = Image::create(args);
                 if (!tmpImage) {
-                    return tmpImage;
+                    return eActionStatusFailed;
                 }
                 Image::CopyPixelsArgs copyArgs;
                 copyArgs.roi = roi;
                 tmpImage->copyPixels(fromImage, copyArgs);
-                return tmpImage;
+                *outImage = tmpImage;
+                return eActionStatusOK;
             }
         }
 
@@ -278,20 +281,23 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
             Image::InitStorageArgs args;
             args.renderClone = fromImage._imp->renderClone.lock();
             args.bounds = fromImage.getBounds();
+            args.mipMapLevel = fromImage.getMipMapLevel();
+            args.proxyScale = fromImage.getProxyScale();
             args.plane = ImagePlaneDesc::getRGBAComponents();
             tmpImage = Image::create(args);
             if (!tmpImage) {
-                return tmpImage;
+                return eActionStatusFailed;
             }
             Image::CopyPixelsArgs copyArgs;
             copyArgs.roi = roi;
             tmpImage->copyPixels(fromImage, copyArgs);
-            return tmpImage;
+            *outImage = tmpImage;
+            return eActionStatusOK;
 
         }
 
         // All other cases can copy fine
-        return ImagePtr();
+        return eActionStatusOK;
     }
 
     // OpenGL textures may only be written from a RGBA packed buffer
@@ -306,17 +312,18 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
             args.plane = ImagePlaneDesc::getRGBAComponents();
             tmpImage = Image::create(args);
             if (!tmpImage) {
-                return tmpImage;
+                return eActionStatusFailed;
             }
             Image::CopyPixelsArgs copyArgs;
             copyArgs.roi = roi;
             tmpImage->copyPixels(fromImage, copyArgs);
-            return tmpImage;
+            *outImage = tmpImage;
+            return eActionStatusOK;
         }
     }
 
     // All other cases can copy fine
-    return ImagePtr();
+    return eActionStatusOK;
 } // checkIfCopyToTempImageIsNeeded
 
 template <typename PIX, int maxValue, int nComps>

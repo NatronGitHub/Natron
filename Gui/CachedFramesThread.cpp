@@ -105,6 +105,9 @@ void
 CachedFramesThread::quitThread()
 {
 
+    if (!isRunning()) {
+        return;
+    }
     QMutexLocker k(&_imp->mustQuitMutex);
     _imp->mustQuit = true;
 
@@ -134,7 +137,9 @@ CachedFramesThread::Implementation::refreshCachedFramesInternal()
         return false;
     }
     ViewerInstancePtr internalViewerProcessNode = internalNode->getViewerProcessNode(0);
-
+    if (!internalViewerProcessNode) {
+        return false;
+    }
     // For all frames in the map:
     // 1) Check the hash is still valid at that frame
     // 2) Check if the cache still has a tile entry for this frame
@@ -175,7 +180,7 @@ CachedFramesThread::Implementation::refreshCachedFramesInternal()
                 nodeFrameViewHash = internalViewerProcessNode->computeHash(hashArgs);
             }
             // Check if the node hash is the same
-            U64 entryNodeHash = it->second->getNodeTimeInvariantHashKey();
+            U64 entryNodeHash = it->second->getNodeTimeVariantHashKey();
             if (nodeFrameViewHash != entryNodeHash) {
                 isValid = false;
             }

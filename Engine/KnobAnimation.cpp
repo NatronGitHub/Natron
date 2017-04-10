@@ -36,7 +36,7 @@ CurvePtr KnobHelper::getAnimationCurve(ViewIdx view,
         throw std::invalid_argument("KnobHelper::getCurve: dimension out of range");
     }
 
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     KnobDimViewBasePtr dimViewData = getDataForDimView(dimension, view_i);
     return dimViewData->animationCurve;
 } // getCurve
@@ -94,28 +94,23 @@ KnobHelper::deleteValuesAtTime(const std::list<double>& times,
     }
 
     std::list<ViewIdx> views = getViewsList();
-    if (dimension.isAll()) {
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+        if (!view.isAll() && *it != ViewIdx(view)) {
+            continue;
+        }
+        DimSpec thisDimension = dimension;
+
+        // If the item has its dimensions folded and we modify dimension 0, also modify other dimensions
+        if (thisDimension == 0 && !getAllDimensionsVisible(*it)) {
+            thisDimension = DimSpec::all();
+        }
+
         for (int i = 0; i < _imp->common->dimension; ++i) {
-            if (view.isAll()) {
-                for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                    deleteValuesAtTimeInternal(times, *it, DimIdx(i));
-                }
-            } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
-                deleteValuesAtTimeInternal(times, view_i, DimIdx(i));
+            if (!thisDimension.isAll() && thisDimension != i) {
+                continue;
             }
-        }
-    } else {
-        if ( ( dimension >= _imp->common->dimension ) || (dimension < 0) ) {
-            throw std::invalid_argument("KnobHelper::deleteValuesAtTime(): Dimension out of range");
-        }
-        if (view.isAll()) {
-            for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                deleteValuesAtTimeInternal(times, *it, DimIdx(dimension));
-            }
-        } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
-            deleteValuesAtTimeInternal(times, view_i, DimIdx(dimension));
+
+            deleteValuesAtTimeInternal(times, *it, DimIdx(i));
         }
     }
 
@@ -162,32 +157,27 @@ KnobHelper::deleteAnimationConditional(TimeValue time,
                                        DimSpec dimension,
                                        bool before)
 {
+
     std::list<ViewIdx> views = getViewsList();
-    if (dimension.isAll()) {
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+        if (!view.isAll() && *it != ViewIdx(view)) {
+            continue;
+        }
+        DimSpec thisDimension = dimension;
+
+        // If the item has its dimensions folded and we modify dimension 0, also modify other dimensions
+        if (thisDimension == 0 && !getAllDimensionsVisible(*it)) {
+            thisDimension = DimSpec::all();
+        }
+
         for (int i = 0; i < _imp->common->dimension; ++i) {
-            if (view.isAll()) {
-                for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                    deleteAnimationConditionalInternal(time, *it, DimIdx(i), before);
-                }
-            } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
-                deleteAnimationConditionalInternal(time, view_i, DimIdx(i), before);
+            if (!thisDimension.isAll() && thisDimension != i) {
+                continue;
             }
-        }
-    } else {
-        if ( ( dimension >= _imp->common->dimension ) || (dimension < 0) ) {
-            throw std::invalid_argument("KnobHelper::deleteAnimationConditional(): Dimension out of range");
-        }
-        if (view.isAll()) {
-            for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                deleteAnimationConditionalInternal(time, *it, DimIdx(dimension.value()), before);
-            }
-        } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
-            deleteAnimationConditionalInternal(time, view_i, DimIdx(dimension.value()), before);
+
+            deleteAnimationConditionalInternal(time, *it, DimIdx(i), before);
         }
     }
-
 
 
     evaluateValueChange(dimension, time, view, eValueChangedReasonUserEdited);
@@ -275,28 +265,23 @@ KnobHelper::warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  
 
     bool ret = true;
     std::list<ViewIdx> views = getViewsList();
-    if (dimension.isAll()) {
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+        if (!view.isAll() && *it != ViewIdx(view)) {
+            continue;
+        }
+        DimSpec thisDimension = dimension;
+
+        // If the item has its dimensions folded and we modify dimension 0, also modify other dimensions
+        if (thisDimension == 0 && !getAllDimensionsVisible(*it)) {
+            thisDimension = DimSpec::all();
+        }
+
         for (int i = 0; i < _imp->common->dimension; ++i) {
-            if (view.isAll()) {
-                for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                    ret &= warpValuesAtTimeInternal(times, *it, DimIdx(i), warp, outKeys);
-                }
-            } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
-                ret &= warpValuesAtTimeInternal(times, view_i, DimIdx(i), warp, outKeys);
+            if (!thisDimension.isAll() && thisDimension != i) {
+                continue;
             }
-        }
-    } else {
-        if ( ( dimension >= _imp->common->dimension ) || (dimension < 0) ) {
-            throw std::invalid_argument("KnobHelper::warpValuesAtTime(): Dimension out of range");
-        }
-        if (view.isAll()) {
-            for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                ret &= warpValuesAtTimeInternal(times, *it, DimIdx(dimension), warp, outKeys);
-            }
-        } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
-            ret &= warpValuesAtTimeInternal(times, view_i, DimIdx(dimension), warp, outKeys);
+
+            ret &= warpValuesAtTimeInternal(times, *it, DimIdx(i), warp, outKeys);
         }
     }
 
@@ -394,30 +379,26 @@ KnobHelper::setInterpolationAtTimes(ViewSetSpec view, DimSpec dimension, const s
     }
 
     std::list<ViewIdx> views = getViewsList();
-    if (dimension.isAll()) {
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+        if (!view.isAll() && *it != ViewIdx(view)) {
+            continue;
+        }
+        DimSpec thisDimension = dimension;
+
+        // If the item has its dimensions folded and we modify dimension 0, also modify other dimensions
+        if (thisDimension == 0 && !getAllDimensionsVisible(*it)) {
+            thisDimension = DimSpec::all();
+        }
+
         for (int i = 0; i < _imp->common->dimension; ++i) {
-            if (view.isAll()) {
-                for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                    setInterpolationAtTimesInternal(*it, DimIdx(i), times, interpolation, newKeys);
-                }
-            } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
-                setInterpolationAtTimesInternal(view_i, DimIdx(i), times, interpolation, newKeys);
+            if (!thisDimension.isAll() && thisDimension != i) {
+                continue;
             }
-        }
-    } else {
-        if ( ( dimension >= _imp->common->dimension ) || (dimension < 0) ) {
-            throw std::invalid_argument("KnobHelper::setInterpolationAtTimes(): Dimension out of range");
-        }
-        if (view.isAll()) {
-            for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                setInterpolationAtTimesInternal(*it, DimIdx(dimension), times, interpolation, newKeys);
-            }
-        } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
-            setInterpolationAtTimesInternal(view_i, DimIdx(dimension), times, interpolation, newKeys);
+
+            setInterpolationAtTimesInternal(*it, DimIdx(i), times, interpolation, newKeys);
         }
     }
+
 
     evaluateValueChange(dimension, TimeValue(times.front()), view, eValueChangedReasonUserEdited);
 
@@ -463,32 +444,30 @@ KnobHelper::setLeftAndRightDerivativesAtTime(ViewSetSpec view,
     if ( !canAnimate() ) {
         return false;
     }
+
     bool ok = false;
+
     std::list<ViewIdx> views = getViewsList();
-    if (dimension.isAll()) {
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+        if (!view.isAll() && *it != ViewIdx(view)) {
+            continue;
+        }
+        DimSpec thisDimension = dimension;
+
+        // If the item has its dimensions folded and we modify dimension 0, also modify other dimensions
+        if (thisDimension == 0 && !getAllDimensionsVisible(*it)) {
+            thisDimension = DimSpec::all();
+        }
+
         for (int i = 0; i < _imp->common->dimension; ++i) {
-            if (view.isAll()) {
-                for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                    ok |= setLeftAndRightDerivativesAtTimeInternal(*it, DimIdx(i), time, left, right);
-                }
-            } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
-                ok |= setLeftAndRightDerivativesAtTimeInternal(view_i, DimIdx(i), time, left, right);
+            if (!thisDimension.isAll() && thisDimension != i) {
+                continue;
             }
-        }
-    } else {
-        if ( ( dimension >= _imp->common->dimension ) || (dimension < 0) ) {
-            throw std::invalid_argument("KnobHelper::setLeftAndRightDerivativesAtTime(): Dimension out of range");
-        }
-        if (view.isAll()) {
-            for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                ok |= setLeftAndRightDerivativesAtTimeInternal(*it, DimIdx(dimension), time, left, right);
-            }
-        } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
-            ok |= setLeftAndRightDerivativesAtTimeInternal(view_i, DimIdx(dimension), time, left, right);
+
+            ok |= setLeftAndRightDerivativesAtTimeInternal(*it, DimIdx(i), time, left, right);
         }
     }
+
 
     evaluateValueChange(dimension, time, view, eValueChangedReasonUserEdited);
 
@@ -538,31 +517,28 @@ KnobHelper::setDerivativeAtTime(ViewSetSpec view,
         return false;
     }
     bool ok = false;
+
     std::list<ViewIdx> views = getViewsList();
-    if (dimension.isAll()) {
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+        if (!view.isAll() && *it != ViewIdx(view)) {
+            continue;
+        }
+        DimSpec thisDimension = dimension;
+
+        // If the item has its dimensions folded and we modify dimension 0, also modify other dimensions
+        if (thisDimension == 0 && !getAllDimensionsVisible(*it)) {
+            thisDimension = DimSpec::all();
+        }
+
         for (int i = 0; i < _imp->common->dimension; ++i) {
-            if (view.isAll()) {
-                for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                    ok |= setDerivativeAtTimeInternal(*it, DimIdx(i), time, derivative, isLeft);
-                }
-            } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
-                ok |= setDerivativeAtTimeInternal(view_i, DimIdx(i), time, derivative, isLeft);
+            if (!thisDimension.isAll() && thisDimension != i) {
+                continue;
             }
-        }
-    } else {
-        if ( ( dimension >= _imp->common->dimension ) || (dimension < 0) ) {
-            throw std::invalid_argument("KnobHelper::setDerivativeAtTime(): Dimension out of range");
-        }
-        if (view.isAll()) {
-            for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                ok |= setDerivativeAtTimeInternal(*it, DimIdx(dimension), time, derivative, isLeft);
-            }
-        } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
-            ok |= setDerivativeAtTimeInternal(view_i, DimIdx(dimension), time, derivative, isLeft);
+
+            ok |= setDerivativeAtTimeInternal(*it, DimIdx(i), time, derivative, isLeft);
         }
     }
+
 
     evaluateValueChange(dimension, time, view, eValueChangedReasonUserEdited);
 
@@ -624,29 +600,25 @@ KnobHelper::removeAnimation(ViewSetSpec view, DimSpec dimension, ValueChangedRea
         return;
     }
 
+
     std::list<ViewIdx> views = getViewsList();
-    if (dimension.isAll()) {
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+        if (!view.isAll() && *it != ViewIdx(view)) {
+            continue;
+        }
+        DimSpec thisDimension = dimension;
+
+        // If the item has its dimensions folded and we modify dimension 0, also modify other dimensions
+        if (thisDimension == 0 && !getAllDimensionsVisible(*it)) {
+            thisDimension = DimSpec::all();
+        }
+
         for (int i = 0; i < _imp->common->dimension; ++i) {
-            if (view.isAll()) {
-                for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                    removeAnimationInternal(*it, DimIdx(i));
-                }
-            } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
-                removeAnimationInternal(view_i, DimIdx(i));
+            if (!thisDimension.isAll() && thisDimension != i) {
+                continue;
             }
-        }
-    } else {
-        if ( ( dimension >= _imp->common->dimension ) || (dimension < 0) ) {
-            throw std::invalid_argument("KnobHelper::removeAnimation(): Dimension out of range");
-        }
-        if (view.isAll()) {
-            for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                removeAnimationInternal(*it, DimIdx(dimension));
-            }
-        } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
-            removeAnimationInternal(view_i, DimIdx(dimension));
+
+            removeAnimationInternal(*it, DimIdx(i));
         }
     }
     

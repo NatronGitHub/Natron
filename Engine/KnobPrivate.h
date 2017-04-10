@@ -55,7 +55,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/CacheEntryBase.h"
 #include "Engine/CacheEntryKeyBase.h"
 #include "Engine/DockablePanelI.h"
-#include "Engine/ExprtkFunctions.h"
+//#include "Engine/ExprtkFunctions.h"
 #include "Engine/Hash64.h"
 #include "Engine/KnobFile.h"
 #include "Engine/KnobTypes.h"
@@ -77,7 +77,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/EngineFwd.h"
 
 
+
 NATRON_NAMESPACE_ENTER
+
 
 #define EXPR_RECURSION_LEVEL() ExprRecursionLevel_RAII __recursionLevelIncrementer__(this)
 
@@ -94,13 +96,13 @@ public:
     : expressionString()
     , modifiedExpression()
     , exprInvalid()
-    , language(eExpressionLanguageExprTK)
+    , language(eExpressionLanguageExprTk)
     {}
 
     virtual ~KnobExpr() {}
 };
 
-class KnobPythonExpr : public KnobExpr
+class KnobExprPython : public KnobExpr
 {
 public:
 
@@ -110,17 +112,50 @@ public:
     // The knobs/dimension/view we depend on in the expression
     KnobDimViewKeySet dependencies;
 
-    KnobPythonExpr()
+    KnobExprPython()
     : hasRet(false)
     {
 
     }
 
-    virtual ~KnobPythonExpr() {}
+    virtual ~KnobExprPython() {}
+};
+
+struct EffectFunctionDependency;
+
+class KnobExprExprTk : public KnobExpr
+{
+    struct ExpressionData;
+public:
+
+
+    typedef boost::shared_ptr<ExpressionData> ExpressionDataPtr;
+
+    typedef std::map<QThread*, ExpressionDataPtr> PerThreadDataMap;
+
+    // Protects data
+    mutable QMutex lock;
+    PerThreadDataMap data;
+
+
+    // knob values dependencies mapped against their variable name in the expression
+    std::map<std::string, KnobDimViewKey> knobDependencies;
+
+    // effect dependencies mapped against their variable name in the expression
+    std::map<std::string, EffectFunctionDependency> effectDependencies;
+
+    KnobExprExprTk()
+    {
+
+    }
+    
+    virtual ~KnobExprExprTk() {}
+
+    static ExpressionDataPtr createData();
 };
 
 /**
- * @brief If a exprtk expression references a node variable such as the rod, this is registered as a dependency
+ * @brief If a ExprTk expression references a node variable such as the rod, this is registered as a dependency
  **/
 struct EffectFunctionDependency
 {
@@ -134,31 +169,6 @@ struct EffectFunctionDependency
 };
 
 
-class KnobExprTkExpr : public KnobExpr
-{
-public:
-
-    // The exprtk expression object
-    boost::shared_ptr<EXPRTK_FUNCTIONS_NAMESPACE::expression_t> expressionObject;
-
-    // We hold functions here because the expression object itself does not hold a copy of the functions
-    std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::func_ptr> > functions;
-    std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::vararg_func_ptr> > varargFunctions;
-    std::vector<std::pair<std::string, EXPRTK_FUNCTIONS_NAMESPACE::generic_func_ptr> > genericFunctions;
-
-    // knob values dependencies mapped against their variable name in the expression
-    std::map<std::string, KnobDimViewKey> knobDependencies;
-    
-    // effect dependencies mapped against their variable name in the expression
-    std::map<std::string, EffectFunctionDependency> effectDependencies;
-
-    KnobExprTkExpr()
-    {
-
-    }
-    
-    virtual ~KnobExprTkExpr() {}
-};
 
 typedef boost::shared_ptr<KnobExpr> KnobExprPtr;
 
@@ -421,6 +431,7 @@ struct CommonData
     }
 };
 
+class KnobExprExprTk;
 
 struct KnobHelperPrivate
 {
@@ -482,7 +493,7 @@ struct KnobHelperPrivate
     }
 
     std::string validatePythonExpression(const std::string& expression, DimIdx dimension, ViewIdx view, bool hasRetVariable, std::string* resultAsString) const;
-    void validateExprTKExpression(const std::string& expression, DimIdx dimension, ViewIdx view, std::string* resultAsString, KnobExprTkExpr* ret) const;
+    void validateExprTkExpression(const std::string& expression, DimIdx dimension, ViewIdx view, std::string* resultAsString, KnobExprExprTk* ret) const;
 
 
 

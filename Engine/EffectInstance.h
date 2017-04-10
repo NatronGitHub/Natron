@@ -57,6 +57,7 @@ NATRON_NAMESPACE_ENTER;
 
 // Various useful plugin IDs, @see EffectInstance::getPluginID()
 #define PLUGINID_OFX_MERGE        "net.sf.openfx.MergePlugin"
+#define PLUGINID_OFX_ROTOMERGE    "net.sf.openfx.MergeRoto"
 #define PLUGINID_OFX_TRACKERPM    "net.sf.openfx.TrackerPM"
 #define PLUGINID_OFX_DOTEXAMPLE   "net.sf.openfx.dotexample"
 #define PLUGINID_OFX_RADIAL       "net.sf.openfx.Radial"
@@ -486,7 +487,7 @@ private:
 
     /**
      * @brief The default implementation of getLayersProducedAndNeeded for non multi-planar effects.
-     * Default implementation uses the desired number of components of the images set in getTimeInvariantMetadatas.
+     * Default implementation uses the desired number of components of the images set in getTimeInvariantMetadata.
      **/
     ActionRetCodeEnum getLayersProducedAndNeeded_default(TimeValue time,
                                                ViewIdx view,
@@ -658,24 +659,27 @@ public:
      * @param inputView[out] the input view of the effect that is identity of.
      **/
     ActionRetCodeEnum isIdentity_public(bool useIdentityCache, // only set to true when calling for the whole image (not for a subrect)
-                           TimeValue time,
-                           const RenderScale & scale,
-                           const RectI & renderWindow,
-                           ViewIdx view,
-                           IsIdentityResultsPtr* results) WARN_UNUSED_RETURN;
+                                        TimeValue time,
+                                        const RenderScale & scale,
+                                        const RectI & renderWindow,
+                                        ViewIdx view,
+                                        const ImagePlaneDesc& plane,
+                                        IsIdentityResultsPtr* results) WARN_UNUSED_RETURN;
 protected:
 
 
     virtual ActionRetCodeEnum isIdentity(TimeValue time,
-                                  const RenderScale & scale,
-                                  const RectI & roi,
-                                  ViewIdx view,
-                                  TimeValue* inputTime,
-                                  ViewIdx* inputView,
-                                  int* inputNb) WARN_UNUSED_RETURN;
+                                         const RenderScale & scale,
+                                         const RectI & roi,
+                                         ViewIdx view,
+                                         const ImagePlaneDesc& plane,
+                                         TimeValue* inputTime,
+                                         ViewIdx* inputView,
+                                         int* inputNb,
+                                         ImagePlaneDesc* inputPlane) WARN_UNUSED_RETURN;
     
 public:
-
+    
     /**
      * @brief Return the region that the plugin is capable of filling.
      * This is meaningful for plugins that generate images or transform images.
@@ -865,7 +869,7 @@ public:
      * for clip Preferences, see setDefaultClipPreferences()
      *
      **/
-    ActionRetCodeEnum getTimeInvariantMetaDatas_public(GetTimeInvariantMetaDatasResultsPtr* results);
+    ActionRetCodeEnum getTimeInvariantMetadata_public(GetTimeInvariantMetadataResultsPtr* results);
 
     ActionRetCodeEnum getDefaultMetadata(NodeMetadata& metadata);
 
@@ -874,7 +878,7 @@ public:
 
 protected:
 
-    virtual ActionRetCodeEnum getTimeInvariantMetaDatas(NodeMetadata& /*metadata*/) { return eActionStatusReplyDefault; }
+    virtual ActionRetCodeEnum getTimeInvariantMetadata(NodeMetadata& /*metadata*/) { return eActionStatusReplyDefault; }
 
 
 public:
@@ -1226,11 +1230,15 @@ public:
     void refreshDynamicProperties();
 
 
+protected:
+
+    virtual KnobHolderPtr createRenderCopy(const FrameViewRenderKey& key) const OVERRIDE;
+
+    
 private:
 
     ActionRetCodeEnum launchRenderInternal(const RequestPassSharedDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestData);
 
-    virtual KnobHolderPtr createRenderCopy(const FrameViewRenderKey& key) const OVERRIDE FINAL;
 
 public:
 
@@ -1352,40 +1360,56 @@ public:
         return false;
     }
 
+    /**
+     * @brief Returns whether the effect is "plane" aware (e.g: can it handle other planes besides the color plane).
+     * If returning true, the effect is expected to implement getLayersProducedAndNeeded
+     **/
+    virtual bool isMultiPlanar() const;
 
-    virtual bool isMultiPlanar() const
-    {
-        return false;
-    }
-
+    /**
+     * @brief Controls how planes are handled by this node if it cannot produce them
+     **/
     enum PassThroughEnum
     {
+        // If a plane does not exist on this node, returns a black image
         ePassThroughBlockNonRenderedPlanes,
+
+        // If a plane does not exist on this node, ask it on the pass-through input returned by getLayersProducedAndNeeded_public
         ePassThroughPassThroughNonRenderedPlanes,
+
+        // We render any plane, this is the same as if isMultiPlanar() == false
         ePassThroughRenderAllRequestedPlanes
     };
 
-    virtual EffectInstance::PassThroughEnum isPassThroughForNonRenderedPlanes() const
-    {
-        return ePassThroughPassThroughNonRenderedPlanes;
-    }
+    virtual EffectInstance::PassThroughEnum isPassThroughForNonRenderedPlanes() const;
 
-    virtual bool isViewAware() const
-    {
-        return false;
-    }
+    /**
+     * @brief Returns true if the effect prefers to render all planes produced returned by getLayersProducedAndNeeded_public at once
+     * e.g: an optical flow node may prefer it if it can render backward and forward motion planes at once.
+     **/
+    virtual bool isAllProducedPlanesAtOncePreferred() const;
 
+    /**
+     * @brief Returns whether the effect is multi-view or not
+     **/
+    virtual bool isViewAware() const;
+
+    /**
+     * @brief Controls how views are rendered by this effect
+     **/
     enum ViewInvarianceLevel
     {
+        // All views produce a different result and will have a separate cache entry
         eViewInvarianceAllViewsVariant,
+
+        // Unused
         eViewInvarianceOnlyPassThroughPlanesVariant,
+
+        // All views are assumed to produce the same result hence they all share the same cache entry
         eViewInvarianceAllViewsInvariant,
     };
 
-    virtual ViewInvarianceLevel isViewInvariant() const
-    {
-        return eViewInvarianceAllViewsVariant;
-    }
+    virtual ViewInvarianceLevel isViewInvariant() const;
 
 
 public:
@@ -1656,9 +1680,9 @@ public:
     /**
      * @brief Called when something that should force a new evaluation (render) is done.
      * @param isSignificant If false the viewers will only be redrawn and nothing will be rendered.
-     * @param refreshMetadatas If true the meta-datas on this node and all nodes downstream recursively will be re-computed.
+     * @param refreshMetadata If true the meta-datas on this node and all nodes downstream recursively will be re-computed.
      **/
-    virtual void evaluate(bool isSignificant, bool refreshMetadatas) OVERRIDE;
+    virtual void evaluate(bool isSignificant, bool refreshMetadata) OVERRIDE;
 
     PluginMemoryPtr createMemoryChunk(std::size_t nBytes);
 

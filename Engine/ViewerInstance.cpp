@@ -386,9 +386,11 @@ ViewerInstance::isIdentity(TimeValue time,
                            const RenderScale & /*scale*/,
                            const RectI & /*roi*/,
                            ViewIdx view,
+                           const ImagePlaneDesc& /*plane*/,
                            TimeValue* inputTime,
                            ViewIdx* inputView,
-                           int* inputNb)
+                           int* inputNb,
+                           ImagePlaneDesc* /*inputPlane*/)
 {
     ImagePlaneDesc selectedLayer, selectedAlphaLayer;
     int alphaChannelIndex;
@@ -429,14 +431,14 @@ ViewerInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
     EffectInstance::appendToHash(args, hash);
 
     if (args.hashType == HashableObject::eComputeHashTypeOnlyMetadataSlaves) {
-        // We rely on the viewers bit depth setting knob in the getTimeInvariantMetaDatas() function
+        // We rely on the viewers bit depth setting knob in the getTimeInvariantMetadata() function
         // so make sure it is part of the hash.
         appPTR->getCurrentSettings()->getViewerBitDepthKnob()->appendToHash(args, hash);
     }
 }
 
 ActionRetCodeEnum
-ViewerInstance::getTimeInvariantMetaDatas(NodeMetadata& metadata)
+ViewerInstance::getTimeInvariantMetadata(NodeMetadata& metadata)
 {
 
     // For now we always output 4 channel images
@@ -451,7 +453,7 @@ ViewerInstance::getTimeInvariantMetaDatas(NodeMetadata& metadata)
 
 
     return eActionStatusOK;
-} // getTimeInvariantMetadatas
+} // getTimeInvariantMetadata
 
 
 void
@@ -484,13 +486,17 @@ ViewerInstance::getLayersProducedAndNeeded(TimeValue time,
     int alphaChannelIndex;
     _imp->getChannelOptions(time, &selectedLayer, &selectedAlphaLayer, &alphaChannelIndex, &selectedDisplayLayer);
 
-    layersProduced->push_back(selectedDisplayLayer);
+    DisplayChannelsEnum outputChannels = (DisplayChannelsEnum)_imp->displayChannels.lock()->getValue();
+
+    // In output we always produce a RGBA texture for the viewer
+    layersProduced->push_back(ImagePlaneDesc::getRGBAComponents());
 
     std::list<ImagePlaneDesc>& neededLayers = (*inputLayersNeeded)[0];
-    if (selectedLayer.getNumComponents() > 0) {
+
+    if (outputChannels != eDisplayChannelsA) {
         neededLayers.push_back(selectedLayer);
     }
-    if (selectedAlphaLayer.getNumComponents() > 0 && selectedAlphaLayer != selectedLayer) {
+    if (outputChannels == eDisplayChannelsA || (outputChannels == eDisplayChannelsMatte && selectedAlphaLayer != selectedLayer)) {
         neededLayers.push_back(selectedAlphaLayer);
     }
     return eActionStatusOK;
@@ -554,7 +560,9 @@ ViewerInstancePrivate::getComponentsFromDisplayChannels(const ImagePlaneDesc& al
             return ImagePlaneDesc::getRGBAComponents();
             break;
     }
+    assert(false);
 
+    return ImagePlaneDesc();
 } // getComponentsFromDisplayChannels
 
 void
@@ -831,6 +839,9 @@ findAutoContrastVminVmaxForComponents(const Image::CPUData& colorImage,
         case eDisplayChannelsRGB:
             return findAutoContrastVminVmax_generic<PIX, maxValue, srcNComps, eDisplayChannelsRGB>(colorImage, renderArgs, roi);
     }
+    assert(false);
+
+    return MinMaxVal(0,0);
 }
 
 
@@ -875,6 +886,9 @@ findAutoContrastVminVmax(const Image::CPUData& colorImage,
         case eImageBitDepthShort:
             return findAutoContrastVminVmaxForDepth<unsigned short, 65535>(colorImage, renderArgs, channels, roi);
     }
+    assert(false);
+
+    return MinMaxVal(0,0);
 }
 
 class FindAutoContrastProcessor : public ImageMultiThreadProcessorBase
@@ -1021,6 +1035,9 @@ genericViewerProcessFunctor(const RenderViewerArgs& args,
                     }
 
                 }
+            }
+            if (srcNComps == 1) {
+                tmpPix[1] = tmpPix[2] = tmpPix[3] = tmpPix[0];
             }
             break;
         default:
@@ -1427,15 +1444,11 @@ ViewerInstance::render(const RenderActionArgs& args)
     _imp->getChannelOptions(args.time, &selectedLayer, &selectedAlphaLayer, &alphaChannelIndex, &selectedDisplayLayer);
 
 
-    if (args.outputPlanes.size() != 1 || args.outputPlanes.begin()->first.getNumComponents() != 4) {
-        getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorGenericRenderMessage, tr("Host did not take into account output components").toStdString());
-        return eActionStatusFailed;
-    }
-
     ImagePtr dstImage = args.outputPlanes.begin()->second;
 
+    ImageBitDepthEnum bitdepth = getBitDepth(-1);
 #ifdef DEBUG
-    if (dstImage->getBitDepth() != getBitDepth(-1)) {
+    if (dstImage->getBitDepth() != bitdepth || dstImage->getLayer() != ImagePlaneDesc::getRGBAComponents()) {
         getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorGenericRenderMessage, tr("Host did not take into account bitdepth").toStdString());
         return eActionStatusFailed;
     }
@@ -1446,7 +1459,7 @@ ViewerInstance::render(const RenderActionArgs& args)
 
     // Fetch the color and alpha image
     ImagePtr colorImage, alphaImage;
-    if (selectedLayer.getNumComponents() > 0) {
+    if (displayChannels != eDisplayChannelsA) {
         GetImageOutArgs outArgs;
         GetImageInArgs inArgs(&args.mipMapLevel, &args.proxyScale, &args.roi, &args.backendType);
         inArgs.inputNb = 0;
@@ -1454,10 +1467,11 @@ ViewerInstance::render(const RenderActionArgs& args)
         bool ok = getImagePlane(inArgs, &outArgs);
         (void)ok;
         colorImage = outArgs.image;
+        alphaImage = colorImage;
     }
-    if (selectedAlphaLayer.getNumComponents() > 0) {
+    if (displayChannels == eDisplayChannelsA || displayChannels == eDisplayChannelsMatte) {
 
-        if (selectedAlphaLayer == selectedLayer) {
+        if (selectedAlphaLayer == selectedLayer && colorImage) {
             alphaImage = colorImage;
         } else {
             GetImageOutArgs outArgs;
@@ -1469,6 +1483,9 @@ ViewerInstance::render(const RenderActionArgs& args)
                 return eActionStatusFailed;
             }
             alphaImage = outArgs.image;
+            if (!colorImage) {
+                colorImage = alphaImage;
+            }
         }
     }
 
@@ -1543,7 +1560,7 @@ ViewerInstance::render(const RenderActionArgs& args)
         }
     }
 
-    renderViewerArgs.srcColorspace = lutFromColorspace(getApp()->getDefaultColorSpaceForBitDepth(renderViewerArgs.colorImage.bitDepth));
+    renderViewerArgs.srcColorspace = lutFromColorspace(getApp()->getDefaultColorSpaceForBitDepth(getBitDepth(0)));
     renderViewerArgs.dstColorspace = lutFromColorspace((ViewerColorSpaceEnum)_imp->outputColorspace.lock()->getValue());
 
 

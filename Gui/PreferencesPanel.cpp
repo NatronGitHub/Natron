@@ -713,7 +713,7 @@ PreferencesPanel::createGui()
     _imp->warningLabelDesc = new Label(_imp->warningContainer);
     _imp->warningLabelDesc->setIsBold(true);
     _imp->warningLabelDesc->setIsModified(true);
-    _imp->warningLabelDesc->setText(tr("One of the settings changed requires a restart of %1 to take effect.").arg(QString::fromUtf8(NATRON_APPLICATION_NAME)));
+    _imp->warningLabelDesc->setText(tr("One or multiple setting(s) modification requires a restart of %1 to take effect.").arg(QString::fromUtf8(NATRON_APPLICATION_NAME)));
     warningsContainerLayout->addWidget(_imp->warningLabelDesc);
     _imp->warningContainer->hide();
 

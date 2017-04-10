@@ -355,7 +355,7 @@ struct RenderCloneData
     GetFrameRangeResultsPtr frameRangeResults;
 
     // The time invariant metadas for the render
-    GetTimeInvariantMetaDatasResultsPtr metadatasResults;
+    GetTimeInvariantMetadataResultsPtr metadataResults;
 
     // Properties, local to this render
     DynamicProperties props;
@@ -367,7 +367,7 @@ struct RenderCloneData
     , renderInputs()
     , requests()
     , frameRangeResults()
-    , metadatasResults()
+    , metadataResults()
     , props()
     {
 
@@ -436,12 +436,12 @@ public:
     /**
      * @brief Set the results of the getMetadata action for this render
      **/
-    void setTimeInvariantMetadataResults(const GetTimeInvariantMetaDatasResultsPtr& metadatas);
+    void setTimeInvariantMetadataResults(const GetTimeInvariantMetadataResultsPtr& metadata);
 
     /**
      * @brief Get the results of the getFrameRange action for this render
      **/
-    GetTimeInvariantMetaDatasResultsPtr getTimeInvariantMetadataResults() const;
+    GetTimeInvariantMetadataResultsPtr getTimeInvariantMetadataResults() const;
     
 
     /**
