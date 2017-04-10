@@ -357,7 +357,8 @@ public:
      **/
     int getKeyframesCount() const;
 
-    static void deCastelJau(bool useGuiCurves,
+    static void deCastelJau(bool isOpenBezier,
+                            bool useGuiCurves,
                             const std::list<boost::shared_ptr<BezierCP> >& cps, double time, unsigned int mipMapLevel,
                             bool finished,
                             int nBPointsPerSegment,

@@ -5,6 +5,15 @@
 # History
 
 
+## Version 2.2.7
+
+- Reduce noise on the roto shape borders #1594
+
+### Plugins
+
+- (beta feature) Inpaint: New plugin. Inpaint the areas indicated by the Mask input using patch-based inpainting.
+
+
 ## Version 2.2.6
 
 - Multi-dimensional parameters don't automatically fold into a single dimension, except for scale and size params.

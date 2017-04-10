@@ -16,7 +16,6 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
 #ifndef CREATENODEARGS_H
 #define CREATENODEARGS_H
 
@@ -29,6 +28,11 @@
 #include <map>
 #include <vector>
 #include <stdexcept>
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/shared_ptr.hpp>
+#endif
+
 #include "Engine/EngineFwd.h"
 
 /**
