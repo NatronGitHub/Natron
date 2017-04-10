@@ -1042,6 +1042,7 @@ bezierSegmentEval(const BezierCP & first,
                 Bezier::bezierPoint(p0, p1, p2, p3, p.t, &cur);
                 p.x = cur.x;
                 p.y = cur.y;
+                assert(!bbox || bbox->contains(p.x, p.y));
                 points->push_back(p);
             }
         }   break;
