@@ -602,7 +602,6 @@ static void
 bezierSegmentBboxUpdate(const BezierCP & first,
                         const BezierCP & last,
                         TimeValue time,
-                        const RenderScale &scale,
                         const Transform::Matrix3x3& transform,
                         RectD* bbox,
                         bool *bboxSet) ///< input/output
@@ -638,18 +637,6 @@ bezierSegmentBboxUpdate(const BezierCP & first,
     p2.y = p2M.y / p2M.z;
     p3.y = p3M.y / p3M.z;
 
-    p0.x *= scale.x;
-    p0.y *= scale.y;
-
-    p1.x *= scale.x;
-    p1.y *= scale.y;
-
-    p2.x *= scale.x;
-    p2.y *= scale.y;
-
-    p3.x *= scale.x;
-    p3.y *= scale.y;
-
     Bezier::bezierPointBboxUpdate(p0, p1, p2, p3, bbox, bboxSet);
 }
 
@@ -658,7 +645,6 @@ Bezier::bezierSegmentListBboxUpdate(const BezierCPs & points,
                                     bool finished,
                                     bool isOpenBezier,
                                     TimeValue time,
-                                    const RenderScale &scale,
                                     const Transform::Matrix3x3& transform,
                                     RectD* bbox) ///< input/output
 {
@@ -691,7 +677,7 @@ Bezier::bezierSegmentListBboxUpdate(const BezierCPs & points,
             }
             next = points.begin();
         }
-        bezierSegmentBboxUpdate(*(*it), *(*next), time, scale, transform, bbox, &bboxSet);
+        bezierSegmentBboxUpdate(*(*it), *(*next), time, transform, bbox, &bboxSet);
 
         // increment for next iteration
         if ( next != points.end() ) {
@@ -2961,12 +2947,12 @@ Bezier::getBoundingBox(TimeValue time, ViewIdx view) const
     }
     
 
-    bezierSegmentListBboxUpdate(shape->points, shape->finished, _imp->isOpenBezier, time, RenderScale(1.), transform, &pointsBbox);
+    bezierSegmentListBboxUpdate(shape->points, shape->finished, _imp->isOpenBezier, time,  transform, &pointsBbox);
 
 
     if (useFeatherPoints() && !_imp->isOpenBezier) {
         RectD featherPointsBbox;
-        bezierSegmentListBboxUpdate( shape->featherPoints, shape->finished, _imp->isOpenBezier, time,  RenderScale(1.), transform, &featherPointsBbox);
+        bezierSegmentListBboxUpdate( shape->featherPoints, shape->finished, _imp->isOpenBezier, time, transform, &featherPointsBbox);
         pointsBbox.merge(featherPointsBbox);
         if (shape->featherPoints.size() > 1) {
             // EDIT: Partial fix, just pad the BBOX by the feather distance. This might not be accurate but gives at least something

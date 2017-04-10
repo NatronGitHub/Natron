@@ -478,7 +478,6 @@ public:
                                             bool finished,
                                             bool isOpenBezier,
                                             TimeValue time,
-                                            const RenderScale &scale,
                                             const Transform::Matrix3x3& transform,
                                             RectD* bbox);
 
