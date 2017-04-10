@@ -11,7 +11,7 @@
 
 ### Plugins
 
-- Inpaint: New plugin. Inpaint the areas indicated by the Mask input using patch-based inpainting.
+- (beta feature) Inpaint: New plugin. Inpaint the areas indicated by the Mask input using patch-based inpainting.
 
 
 ## Version 2.2.6
