@@ -585,12 +585,7 @@ Bezier::bezierPointBboxUpdate(const Point & p0,
             bbox->x1 = x1;
             bbox->x2 = x2;
         } else {
-            if (x1 < bbox->x1) {
-                bbox->x1 = x1;
-            }
-            if (x2 > bbox->x2) {
-                bbox->x2 = x2;
-            }
+            updateRange(x1, &bbox->x1, &bbox->x2);
         }
     }
     {
@@ -600,12 +595,7 @@ Bezier::bezierPointBboxUpdate(const Point & p0,
             bbox->y1 = y1;
             bbox->y2 = y2;
         } else {
-            if (y1 < bbox->y1) {
-                bbox->y1 = y1;
-            }
-            if (y2 > bbox->y2) {
-                bbox->y2 = y2;
-            }
+            updateRange(y1, &bbox->y1, &bbox->y2);
         }
     }
     if (bboxSet && !*bboxSet) {
