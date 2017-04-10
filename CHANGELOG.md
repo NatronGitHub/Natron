@@ -32,6 +32,15 @@ Natron multiple times on the same computer, the different processes will share t
 - For convenience, a PyPlug may specify a list of the nodes inside its node graph that should have their viewer overlay displayed when the PyPlug setting panel is opened. For instance, imagine that the PyPlug uses a Transform node internally, it is possible to display the Transform node handle on the viewer when the PyPlug settings panel is opened, even if the Transform node panel itself is closed
 
 
+## Version 2.2.7
+
+- Reduce noise on the roto shape borders #1594
+
+### Plugins
+
+- (beta feature) Inpaint: New plugin. Inpaint the areas indicated by the Mask input using patch-based inpainting.
+
+
 ## Version 2.2.6
 
 - Multi-dimensional parameters don't automatically fold into a single dimension, except for scale and size params.
