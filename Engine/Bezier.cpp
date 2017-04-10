@@ -450,6 +450,17 @@ bezierPolyCoeffs(double p0,
                  double *c,
                  double *d)
 {
+    /*
+     These coefficients are obtained from the Bezier formula above (bezierEval).
+     Maple code:
+     p0p1 := p0 + (p1-p0)*t:
+     p1p2 := p1 + (p2-p1)*t:
+     p2p3 := p2 + (p3-p2)*t:
+     p0p1p1p2 := p0p1 +(p1p2-p0p1)*t:
+     p1p2p2p3 := p1p2 +(p2p3-p1p2)*t:
+     p := p0p1p1p2 + (p1p2p2p3-p0p1p1p2)*t:
+     collect(p,t);
+     */
     // d = P0
     *d = p0;
     // c = 3*P1-3*P0
@@ -473,6 +484,18 @@ bezierPolyDerivativeCoeffs(double p0,
                            double *b,
                            double *c)
 {
+    /*
+     These coefficients are obtained from the Bezier formula above (bezierEval).
+     Maple code:
+     p0p1 := p0 + (p1-p0)*t:
+     p1p2 := p1 + (p2-p1)*t:
+     p2p3 := p2 + (p3-p2)*t:
+     p0p1p1p2 := p0p1 +(p1p2-p0p1)*t:
+     p1p2p2p3 := p1p2 +(p2p3-p1p2)*t:
+     p := p0p1p1p2 + (p1p2p2p3-p0p1p1p2)*t:
+     collect(p,t);
+     diff(collect(p, t), t);
+     */
     // c = 3*P1-3*P0
     *c = 3 * p1 - 3 * p0;
     // b = 2*(3*P2-6*P1+3*P0)
