@@ -1754,7 +1754,7 @@ RotoShapeRenderGL::renderStroke_gl(const OSGLContextPtr& glContext,
             isStroke->evaluateStroke(scale, t, view, &strokes, 0);
         } else if (isBezier && isBezier->isOpenBezier()) {
             std::vector<std::vector< ParametricPoint> > decastelJauPolygon;
-            isBezier->evaluateAtTime(t, view, scale, Bezier::eDeCastelJauAlgorithmIterative, -1, 1., &decastelJauPolygon, 0, 0);
+            isBezier->evaluateAtTime(t, view, scale, Bezier::eDeCasteljauAlgorithmIterative, -1, 1., &decastelJauPolygon, 0, 0);
             std::list<std::pair<Point, double> > points;
             for (std::vector<std::vector< ParametricPoint> > ::iterator it = decastelJauPolygon.begin(); it != decastelJauPolygon.end(); ++it) {
                 for (std::vector< ParametricPoint>::iterator it2 = it->begin(); it2 != it->end(); ++it2) {

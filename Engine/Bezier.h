@@ -394,10 +394,10 @@ private:
 
 public:
 
-    enum DeCastelJauAlgorithmEnum {
+    enum DeCasteljauAlgorithmEnum {
         // See http://antigrain.com/research/adaptive_bezier/
-        eDeCastelJauAlgorithmIterative,
-        eDeCastelJauAlgorithmRecursive
+        eDeCasteljauAlgorithmIterative,
+        eDeCasteljauAlgorithmRecursive
     };
 
     /**
@@ -418,13 +418,13 @@ public:
      * @param bbox[out] The bounding box of the descretized points at the given scale, may be NULL
      * Note: Only one of points and pointsSingleList can be non NULL
      **/
-    static void deCastelJau(bool isOpenBezier,
+    static void deCasteljau(bool isOpenBezier,
                             const std::list<BezierCPPtr >& cps,
                             TimeValue time,
                             const RenderScale &scale,
 
                             bool finished,
-                            DeCastelJauAlgorithmEnum algo,
+                            DeCasteljauAlgorithmEnum algo,
                             int nbPointsPerSegment,
                             double errorScale,
                             const Transform::Matrix3x3& transform,
@@ -444,7 +444,7 @@ public:
     void evaluateAtTime(TimeValue time,
                         ViewIdx view,
                         const RenderScale &scale,
-                        DeCastelJauAlgorithmEnum algo,
+                        DeCasteljauAlgorithmEnum algo,
                         int nbPointsPerSegment,
                         double errorScale,
                         std::vector<std::vector<ParametricPoint> >* points,
@@ -460,7 +460,7 @@ public:
     void evaluateFeatherPointsAtTime(TimeValue time,
                                      ViewIdx view,
                                      const RenderScale &scale,
-                                     DeCastelJauAlgorithmEnum algo,
+                                     DeCasteljauAlgorithmEnum algo,
                                      int nbPointsPerSegment,
                                      double errorScale,
                                      std::vector<std::vector<ParametricPoint>  >* points,

@@ -1256,14 +1256,14 @@ RotoBezierTriangulation::tesselate(const BezierPtr& bezier,
 #ifndef NDEBUG
     RectD featherBbox;
 #endif
-    bezier->evaluateFeatherPointsAtTime(time, view, scale, Bezier::eDeCastelJauAlgorithmIterative, -1, 1., &featherPolygonOrig, 0,
+    bezier->evaluateFeatherPointsAtTime(time, view, scale, Bezier::eDeCasteljauAlgorithmIterative, -1, 1., &featherPolygonOrig, 0,
 #ifndef NDEBUG
                                         &featherBbox
 #else
                                         0
 #endif
                                         );
-    bezier->evaluateAtTime(time, view, scale, Bezier::eDeCastelJauAlgorithmIterative, -1, 1., &bezierPolygonOrig, 0,
+    bezier->evaluateAtTime(time, view, scale, Bezier::eDeCasteljauAlgorithmIterative, -1, 1., &bezierPolygonOrig, 0,
 #ifndef NDEBUG
                            &data.bezierBbox
 #else

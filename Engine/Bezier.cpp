@@ -986,7 +986,7 @@ bezierSegmentEval(const BezierCP & first,
                   const BezierCP & last,
                   TimeValue time,
                   const RenderScale &scale,
-                  Bezier::DeCastelJauAlgorithmEnum algo,
+                  Bezier::DeCasteljauAlgorithmEnum algo,
                   int nbPointsPerSegment,
                   double errorScale,
                   const Transform::Matrix3x3& transform,
@@ -1031,7 +1031,7 @@ bezierSegmentEval(const BezierCP & first,
     p3.y *= scale.y;
 
     switch (algo) {
-        case Bezier::eDeCastelJauAlgorithmIterative: {
+        case Bezier::eDeCasteljauAlgorithmIterative: {
             if (nbPointsPerSegment == -1) {
                 /*
                  * Approximate the necessary number of line segments, using http://antigrain.com/research/adaptive_bezier/
@@ -1061,7 +1061,7 @@ bezierSegmentEval(const BezierCP & first,
             }
         }   break;
 
-        case Bezier::eDeCastelJauAlgorithmRecursive: {
+        case Bezier::eDeCasteljauAlgorithmRecursive: {
             static const int maxRecursion = 32;
             recursiveBezier(p0, p1, p2, p3, errorScale, maxRecursion, points);
         }   break;
@@ -2792,12 +2792,12 @@ Bezier::onKeyFrameRemoved(TimeValue time, ViewSetSpec view)
 
 
 void
-Bezier::deCastelJau(bool isOpenBezier,
+Bezier::deCasteljau(bool isOpenBezier,
                     const std::list<BezierCPPtr >& cps,
                     TimeValue time,
                     const RenderScale &scale,
                     bool finished,
-                    DeCastelJauAlgorithmEnum algo,
+                    DeCasteljauAlgorithmEnum algo,
                     int nbPointsPerSegment,
                     double errorScale,
                     const Transform::Matrix3x3& transform,
@@ -2855,7 +2855,7 @@ Bezier::deCastelJau(bool isOpenBezier,
             ++next;
         }
     } // for each control point
-} // deCastelJau
+} // deCasteljau
 
 
 
@@ -2863,7 +2863,7 @@ void
 Bezier::evaluateAtTime(TimeValue time,
                        ViewIdx view,
                        const RenderScale &scale,
-                       DeCastelJauAlgorithmEnum algo,
+                       DeCasteljauAlgorithmEnum algo,
                        int nbPointsPerSegment,
                        double errorScale,
                        std::vector<std::vector<ParametricPoint> >* points,
@@ -2880,7 +2880,7 @@ Bezier::evaluateAtTime(TimeValue time,
     if (!shape) {
         return;
     }
-    deCastelJau(isOpenBezier(),
+    deCasteljau(isOpenBezier(),
                 shape->points,
                 time,
                 scale,
@@ -2900,7 +2900,7 @@ void
 Bezier::evaluateFeatherPointsAtTime(TimeValue time,
                                     ViewIdx view,
                                     const RenderScale &scale,
-                                    DeCastelJauAlgorithmEnum algo,
+                                    DeCasteljauAlgorithmEnum algo,
                                     int nbPointsPerSegment,
                                     double errorScale,
                                     std::vector<std::vector<ParametricPoint>  >* points,
@@ -2920,7 +2920,7 @@ Bezier::evaluateFeatherPointsAtTime(TimeValue time,
         return;
     }
 
-    deCastelJau(isOpenBezier(),
+    deCasteljau(isOpenBezier(),
                 shape->featherPoints,
                 time,
                 scale,
