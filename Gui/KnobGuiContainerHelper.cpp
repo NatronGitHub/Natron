@@ -375,7 +375,7 @@ KnobGuiContainerHelper::initializeKnobs()
         }
         if (guiPage) {
             _imp->knobsTable = createKnobItemsTable(guiPage->tab);
-            guiPage->gridLayout->addWidget(_imp->knobsTable->getTableView(), guiPage->gridLayout->rowCount(), 0, 1, 2);
+            _imp->knobsTable->addWidgetsToLayout(guiPage->gridLayout);
         }
     }
 
@@ -812,7 +812,7 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr &knob)
             std::string knobTableName = holder->getItemsTablePreviousKnobScriptName();
             if (knobTableName == knob->getName()) {
                 _imp->knobsTable = createKnobItemsTable(page->tab);
-                gridLayout->addWidget(_imp->knobsTable->getTableView(), gridLayout->rowCount(), 0, 1, 2);
+                _imp->knobsTable->addWidgetsToLayout(gridLayout);
             }
         }
     } //  if ( !ret->hasWidgetBeenCreated() && ( !isGroup || !isGroup->isTab() ) ) {

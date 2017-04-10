@@ -33,6 +33,7 @@
 
 #include <QObject>
 #include <QSize>
+#include <QGridLayout>
 
 #include "Gui/GuiFwd.h"
 #include "Global/GlobalDefines.h"
@@ -69,7 +70,7 @@ public:
 
     std::vector<KnobGuiPtr> getKnobsForItem(const KnobTableItemPtr& item) const;
 
-    TableView* getTableView() const;
+    void addWidgetsToLayout(QGridLayout* layout);
 
     KnobItemsTablePtr getInternalTable() const;
 
@@ -77,6 +78,17 @@ public:
 
 public Q_SLOTS:
 
+    void refreshAfterTimeChanged();
+
+    void onGoToPrevKeyframeButtonClicked();
+
+    void onGoToNextKeyframeButtonClicked();
+
+    void onAddKeyframeButtonClicked();
+
+    void onRemoveKeyframeButtonClicked();
+
+    void onRemoveAnimationButtonClicked();
 
     void onDeleteItemsActionTriggered();
     void onCopyItemsActionTriggered();
@@ -95,6 +107,8 @@ public Q_SLOTS:
 
     void onItemLabelChanged(const QString& label, TableChangeReasonEnum reason);
     void onItemIconChanged(TableChangeReasonEnum reason);
+
+    void onItemAnimationCurveChanged(std::list<double> added, std::list<double> removed, ViewIdx view);
 
 private:
 

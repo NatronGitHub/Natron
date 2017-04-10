@@ -133,6 +133,11 @@ public:
      **/
     virtual bool isItemContainer() const = 0;
 
+    /**
+     * @brief Returns true if the item is selected in the model, same as item->getModel()->isItemSelected(item)
+     **/
+    bool isItemSelected() const;
+
 private:
 
     // The following methods are made private because all entry points for managing items in/out
@@ -654,7 +659,7 @@ public:
     /**
      * @brief Returns true if the given item is selected
      **/
-    bool isItemSelected(const KnobTableItemPtr& item) const;
+    bool isItemSelected(const KnobTableItemConstPtr& item) const;
 
     /**
      * @brief Get current selection

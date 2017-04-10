@@ -89,6 +89,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiDefines.h"
 #include "Gui/KnobGui.h"
 #include "Gui/KnobGuiString.h"
+#include "Gui/KnobItemsTableGui.h"
 #include "Gui/QtEnumConvert.h"
 #include "Gui/Label.h"
 #include "Gui/LineEdit.h"
@@ -2965,6 +2966,10 @@ NodeGui::refreshKnobsAfterTimeChange(bool onlyTimeEvaluationKnobs,
     NodePtr node = getNode();
 
     if ( ( _settingsPanel && !_settingsPanel->isClosed() ) ) {
+        KnobItemsTableGuiPtr knobsTable = _settingsPanel->getKnobItemsTable();
+        if (knobsTable) {
+            knobsTable->refreshAfterTimeChanged();
+        }
         if (onlyTimeEvaluationKnobs) {
             node->getEffectInstance()->refreshAfterTimeChangeOnlyKnobsWithTimeEvaluation(time);
         } else {
@@ -3788,9 +3793,14 @@ static void addKnobTableItemKeysRecursive(const KnobTableItemPtr& item, TimeLine
     // Add the master keyframes
     addAnimatingItemKeys(item, true /*isUserKey*/, keys);
 
+    if (!item->isItemSelected()) {
+        return;
+    }
     // Add knobs keyframes
     const KnobsVec& knobs = item->getKnobs();
     addKnobsKeys(knobs, keys);
+
+
 
     // Recurse on children
     std::vector<KnobTableItemPtr> children = item->getChildren();

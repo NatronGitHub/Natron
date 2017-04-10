@@ -634,6 +634,13 @@ KnobTableItem::getModel() const
     return _imp->common->model.lock();
 }
 
+bool
+KnobTableItem::isItemSelected() const
+{
+    KnobTableItemConstPtr thisShared = toKnobTableItem(shared_from_this());
+    return getModel()->isItemSelected(thisShared);
+}
+
 void
 KnobTableItem::copyItem(const KnobTableItem& other)
 {
@@ -1399,7 +1406,7 @@ KnobTableItem::getChildItemByScriptName(const std::string& scriptName) const
 }
 
 bool
-KnobItemsTable::isItemSelected(const KnobTableItemPtr& item) const
+KnobItemsTable::isItemSelected(const KnobTableItemConstPtr& item) const
 {
     QMutexLocker k(&_imp->common->selectionLock);
     for (std::list<KnobTableItemWPtr>::const_iterator it = _imp->common->selectedItems.begin(); it != _imp->common->selectedItems.end(); ++it) {
@@ -2067,9 +2074,7 @@ KnobTableItem::setKeyFrameInternal(TimeValue time,
             ret = it->second->setOrAddKeyframe(k);
         }
     }
-    if (ret == eValueChangedReturnCodeKeyframeAdded) {
-        onKeyFrameSet(time, view);
-    }
+
     return ret;
 }
 
@@ -2084,6 +2089,8 @@ KnobTableItem::setKeyFrame(TimeValue time,
         ret = setKeyFrameInternal(time, view, newKey);
     }
     if (ret == eValueChangedReturnCodeKeyframeAdded) {
+        onKeyFrameSet(time, view);
+
         std::list<double> added,removed;
         added.push_back(time);
         Q_EMIT curveAnimationChanged(added, removed, ViewIdx(0));
@@ -2115,6 +2122,9 @@ KnobTableItem::setMultipleKeyFrames(const std::list<double>& keys, ViewSetSpec v
         }
     }
     if (!added.empty()) {
+        for (std::list<double>::const_iterator it = keys.begin(); it!=keys.end(); ++it) {
+            onKeyFrameSet(TimeValue(*it), view);
+        }
         Q_EMIT curveAnimationChanged(added, removed, ViewIdx(0));
     }
 }

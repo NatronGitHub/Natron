@@ -30,6 +30,9 @@
 #include "Knob.h"
 
 #include "Engine/EngineFwd.h"
+#include "Engine/KnobItemsTable.h"
+#include "Engine/Node.h"
+#include "Engine/EffectInstance.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -41,6 +44,11 @@ AddToUndoRedoStackHelper<T>::AddToUndoRedoStackHelper(Knob<T>* k)
 {
     KnobHolderPtr holder = k->getHolder();
     if (holder) {
+        KnobTableItemPtr isTableItem = toKnobTableItem(holder);
+        // Use the effect undo stack if this is a table item
+        if (isTableItem) {
+            holder = isTableItem->getModel()->getNode()->getEffectInstance();
+        }
         KnobHolder::MultipleParamsEditEnum paramEditLevel = holder->getMultipleEditsLevel();
 
         // If we are under an overlay interact, the plug-in is going to do setValue calls, make sure the user can undo/redo
