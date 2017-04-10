@@ -213,6 +213,9 @@ KnobAnimPrivate::createItemForView(const std::vector<std::string>& projectViewNa
                                       rootItem);
         viewItems[view] = viewItem;
     }
+    // For KnobChoice and all string-based knobs, do not create a curve, the dope sheet is more intuitive for the user
+    AnimatingObjectI::KeyframeDataTypeEnum keyframeType = internalKnob->getKeyFrameDataType();
+    bool createdCurve = keyframeType != AnimatingObjectI::eKeyframeDataTypeString && !dynamic_cast<KnobChoice*>(internalKnob.get());
 
     bool dimensionsExpanded = internalKnob->getAllDimensionsVisible(view);
     // Now create an item per dimension if the knob is multi-dimensional
@@ -230,7 +233,7 @@ KnobAnimPrivate::createItemForView(const std::vector<std::string>& projectViewNa
             p.dimension = DimIdx(i);
             DimViewItem& item = dimViewItems[p];
             item.treeItem = dimItem;
-            if (curveWidget) {
+            if (createdCurve && curveWidget) {
                 item.curve.reset(new CurveGui(curveWidget, thisShared, p.dimension, p.view));
             }
 
@@ -243,7 +246,7 @@ KnobAnimPrivate::createItemForView(const std::vector<std::string>& projectViewNa
         p.dimension = DimIdx(0);
         DimViewItem& item = dimViewItems[p];
         item.treeItem = viewItem ? viewItem : rootItem;
-        if (curveWidget) {
+        if (createdCurve && curveWidget) {
             item.curve.reset(new CurveGui(curveWidget, thisShared, p.dimension, p.view));
         }
     }
@@ -390,7 +393,7 @@ KnobAnim::refreshVisibilityConditional(bool refreshHolder)
     bool mustHide = isTableItemMasterKnob || knob->getIsSecret() || !knob->isEnabled();
     {
         for (PerDimViewItemMap::const_iterator it = _imp->dimViewItems.begin(); it!=_imp->dimViewItems.end(); ++it) {
-            CurvePtr curve = it->second.curve->getInternalCurve();
+            CurvePtr curve = knob->getAnimationCurve(it->first.view, it->first.dimension);
             if (!curve) {
                 continue;
             }
