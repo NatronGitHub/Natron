@@ -439,7 +439,7 @@ public:
 
     /**
      * @brief Evaluates the spline at the given time and returns the list of all the points on the curve.
-     * @param nbPointsPerSegment controls how many points are used to draw one Bezier segment
+     * See deCasteljau for details about each parameter
      **/
     void evaluateAtTime(TimeValue time,
                         ViewIdx view,
@@ -454,8 +454,9 @@ public:
 
 
     /**
-     * @brief Evaluates the bezier formed by the feather points. Segments which are equal to the control points of the bezier
-     * will not be drawn.
+     * @brief Evaluates the bezier formed by the feather points.
+     * See deCasteljau for details about each parameter
+     * Note: the generated points, nor the bounding box will not be offset by the feather distance in output.
      **/
     void evaluateFeatherPointsAtTime(TimeValue time,
                                      ViewIdx view,

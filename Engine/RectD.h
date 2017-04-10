@@ -309,7 +309,8 @@ public:
     bool contains(double x,
                   double y) const
     {
-        return x >= x1 && x < x2 && y >= y1 && y < y2;
+        // Note that for a double rectangle, a point belongs to the rectangle even if it is on the right/top edge
+        return x >= x1 && x <= x2 && y >= y1 && y <= y2;
     }
 
 #ifdef DEBUG

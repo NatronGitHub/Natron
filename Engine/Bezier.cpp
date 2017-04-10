@@ -1011,6 +1011,10 @@ bezierSegmentEval(const BezierCP & first,
     p3.x *= scale.x;
     p3.y *= scale.y;
 
+    if (bbox) {
+        Bezier::bezierPointBboxUpdate(p0,  p1,  p2,  p3, bbox, bboxSet);
+    }
+
     switch (algo) {
         case Bezier::eDeCasteljauAlgorithmIterative: {
             if (nbPointsPerSegment == -1) {
@@ -1048,9 +1052,7 @@ bezierSegmentEval(const BezierCP & first,
         }   break;
     }
 
-    if (bbox) {
-        Bezier::bezierPointBboxUpdate(p0,  p1,  p2,  p3, bbox, bboxSet);
-    }
+
 } // bezierSegmentEval
 
 /**
@@ -2803,32 +2805,20 @@ Bezier::deCasteljau(bool isOpenBezier,
             next = cps.begin();
         }
 
-        RectD segbbox;
-        bool segbboxSet = false;
         if (points) {
             std::vector<ParametricPoint> segmentPoints;
-            bezierSegmentEval(*(*it), *(*next), time,  scale, algo, nbPointsPerSegment, errorScale, transform, &segmentPoints, bbox ? &segbbox : 0, &segbboxSet);
+            bezierSegmentEval(*(*it), *(*next), time,  scale, algo, nbPointsPerSegment, errorScale, transform, &segmentPoints, bbox, &bboxSet);
 
             points->push_back(segmentPoints);
         } else {
             assert(pointsSingleList);
-            bezierSegmentEval(*(*it), *(*next), time,  scale, algo, nbPointsPerSegment, errorScale , transform, pointsSingleList, bbox ? &segbbox : 0, &segbboxSet);
+            bezierSegmentEval(*(*it), *(*next), time,  scale, algo, nbPointsPerSegment, errorScale , transform, pointsSingleList, bbox, &bboxSet);
             // If we are a closed bezier or we are not on the last segment, remove the last point so we don't add duplicates
             if ((!isOpenBezier && finished) && next != cps.begin()) {
                 if (!pointsSingleList->empty()) {
                     pointsSingleList->pop_back();
                 }
             }
-        }
-
-        if (bbox) {
-            if (!bboxSet) {
-                *bbox = segbbox;
-                bboxSet = true;
-            } else {
-                bbox->merge(segbbox);
-            }
-
         }
 
         // increment for next iteration

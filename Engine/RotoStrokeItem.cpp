@@ -382,7 +382,10 @@ RotoStrokeItem::~RotoStrokeItem()
     RotoShapeRenderCairo::purgeCaches_cairo_internal(_imp->strokeDotPatterns);
 #endif
     if (!isRenderClone()) {
-        deactivateNodes();
+        const NodesList& nodes = getItemNodes();
+        for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            (*it)->destroyNode(true, false);
+        }
     }
 }
 
