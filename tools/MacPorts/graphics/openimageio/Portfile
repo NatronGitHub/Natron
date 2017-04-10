@@ -14,7 +14,7 @@ PortGroup       compiler_blacklist_versions 1.0
 epoch        	 1
 
 fetch.type              git
-github.setup     OpenImageIO oiio 1.7.12 tags/Release-
+github.setup     OpenImageIO oiio 1.7.13 tags/Release-
 #github.version      ${version}-dist
 #github.tarball_from downloads
 
@@ -92,7 +92,6 @@ patchfiles \
     oiio-1.5.23-invalidatespec.patch \
     oiio-1.7.10-c99math.patch \
     oiio-1.7.10-nothreads.patch \
-    oiio-1.7.12-libraw.patch \
     oiio-1.7.12-tiffposition.patch
 
 cmake.out_of_source yes
@@ -119,7 +118,7 @@ configure.args-append \
 
 default_variants    +opencolorio +openjpeg +qt4 +freetype
 
-variant natron conflicts ffmpeg requires opencolorio openjpeg qt4 freetype field3d description {Natron version} {
+variant natron conflicts ffmpeg requires opencolorio openjpeg qt4 freetype description {Natron version} {
     if {${configure.cxx_stdlib} eq "libstdc++"} {
         # configure with GCC 4.9 for proper GCC intrinsics support
         configure.compiler macports-gcc-4.9
