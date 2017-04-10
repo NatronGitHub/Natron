@@ -3363,6 +3363,10 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,
         p1.y += dy * absFeatherDist;
     }
 
+
+    double innerOpacity = 1.;
+    double outterOpacity = 0.;
+
     Point origin = p1;
     featherContour.push_back(p1);
 
@@ -3412,9 +3416,9 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,
         }
 
         ///skip it
-        if ( (cur->x == prev->x) && (cur->y == prev->y) ) {
+        /*if ( (cur->x == prev->x) && (cur->y == prev->y) ) {
             continue;
-        }
+        }*/
 
         Point p0, p0p1, p1p0, p2, p2p3, p3p2, p3;
         p0.x = prevBez->x;
@@ -3424,9 +3428,13 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,
 
         if (!mustStop) {
             norm = sqrt( (next->x - prev->x) * (next->x - prev->x) + (next->y - prev->y) * (next->y - prev->y) );
-            assert(norm != 0);
-            dx = -( (next->y - prev->y) / norm );
-            dy = ( (next->x - prev->x) / norm );
+            if (norm == 0) {
+                dx = 0;
+                dy = 0;
+            } else {
+                dx = -( (next->y - prev->y) / norm );
+                dy = ( (next->x - prev->x) / norm );
+            }
             p2.x = cur->x;
             p2.y = cur->y;
 
@@ -3474,12 +3482,12 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,
         // and approximately equal to 0.5.
         // If the bug if ixed in cairo, please use #if CAIRO_VERSION>xxx to keep compatibility with
         // older Cairo versions.
-        cairo_mesh_pattern_set_corner_color_rgba( mesh, 0, shapeColor[0], shapeColor[1], shapeColor[2], 1.);
+        cairo_mesh_pattern_set_corner_color_rgba( mesh, 0, shapeColor[0], shapeColor[1], shapeColor[2], innerOpacity);
         ///outter is faded
-        cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, shapeColor[0], shapeColor[1], shapeColor[2], 0.);
-        cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, shapeColor[0], shapeColor[1], shapeColor[2], 0.);
+        cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, shapeColor[0], shapeColor[1], shapeColor[2], outterOpacity);
+        cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, shapeColor[0], shapeColor[1], shapeColor[2], outterOpacity);
         ///inner is full color
-        cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, shapeColor[0], shapeColor[1], shapeColor[2], 1.);
+        cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, shapeColor[0], shapeColor[1], shapeColor[2], innerOpacity);
         assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
 
         cairo_mesh_pattern_end_patch(mesh);
@@ -3487,6 +3495,8 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,
         if (mustStop) {
             break;
         }
+
+        //std::swap(innerOpacity, outterOpacity);
 
         p1 = p2;
 

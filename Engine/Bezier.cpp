@@ -180,6 +180,17 @@ bezierPolyCoeffs(double p0,
                  double *c,
                  double *d)
 {
+    /*
+     These coefficients are obtained from the Bezier formula above (bezierEval).
+     Maple code:
+     p0p1 := p0 + (p1-p0)*t:
+     p1p2 := p1 + (p2-p1)*t:
+     p2p3 := p2 + (p3-p2)*t:
+     p0p1p1p2 := p0p1 +(p1p2-p0p1)*t:
+     p1p2p2p3 := p1p2 +(p2p3-p1p2)*t:
+     p := p0p1p1p2 + (p1p2p2p3-p0p1p1p2)*t:
+     collect(p,t);
+     */
     // d = P0
     *d = p0;
     // c = 3*P1-3*P0
@@ -203,6 +214,18 @@ bezierPolyDerivativeCoeffs(double p0,
                            double *b,
                            double *c)
 {
+    /*
+     These coefficients are obtained from the Bezier formula above (bezierEval).
+     Maple code:
+     p0p1 := p0 + (p1-p0)*t:
+     p1p2 := p1 + (p2-p1)*t:
+     p2p3 := p2 + (p3-p2)*t:
+     p0p1p1p2 := p0p1 +(p1p2-p0p1)*t:
+     p1p2p2p3 := p1p2 +(p2p3-p1p2)*t:
+     p := p0p1p1p2 + (p1p2p2p3-p0p1p1p2)*t:
+     collect(p,t);
+     diff(collect(p, t), t);
+     */
     // c = 3*P1-3*P0
     *c = 3 * p1 - 3 * p0;
     // b = 2*(3*P2-6*P1+3*P0)
@@ -2508,7 +2531,8 @@ Bezier::getKeyframesCount() const
 }
 
 void
-Bezier::deCastelJau(bool useGuiCurves,
+Bezier::deCastelJau(bool isOpenBezier,
+                    bool useGuiCurves,
                     const std::list<boost::shared_ptr<BezierCP> >& cps,
                     double time,
                     unsigned int mipMapLevel,
@@ -2538,10 +2562,23 @@ Bezier::deCastelJau(bool useGuiCurves,
         if (points) {
             std::list<ParametricPoint> segmentPoints;
             bezierSegmentEval(useGuiCurves, *(*it), *(*next), time, ViewIdx(0), mipMapLevel, nBPointsPerSegment, transform, &segmentPoints, bbox);
+
+            // If we are a closed bezier or we are not on the last segment, remove the last point so we don't add duplicates
+            if (!isOpenBezier || next != cps.end()) {
+                if (!segmentPoints.empty()) {
+                    segmentPoints.pop_back();
+                }
+            }
             points->push_back(segmentPoints);
         } else {
             assert(pointsSingleList);
             bezierSegmentEval(useGuiCurves, *(*it), *(*next), time, ViewIdx(0), mipMapLevel, nBPointsPerSegment, transform, pointsSingleList, bbox);
+            // If we are a closed bezier or we are not on the last segment, remove the last point so we don't add duplicates
+            if (!isOpenBezier || next != cps.end()) {
+                if (!pointsSingleList->empty()) {
+                    pointsSingleList->pop_back();
+                }
+            }
         }
 
         // increment for next iteration
@@ -2611,7 +2648,7 @@ Bezier::evaluateAtTime_DeCasteljau_internal(bool useGuiCurves,
 
     getTransformAtTime(time, &transform);
     QMutexLocker l(&itemMutex);
-    deCastelJau(useGuiCurves, _imp->points, time, mipMapLevel, _imp->finished,
+    deCastelJau(isOpenBezier(), useGuiCurves, _imp->points, time, mipMapLevel, _imp->finished,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                 nbPointsPerSegment,
 #else
@@ -2716,6 +2753,13 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau_internal(bool useGuiPoints,
                               errorScale,
 #endif
                               transform, &segmentPoints, bbox);
+
+            // If we are a closed bezier or we are not on the last segment, remove the last point so we don't add duplicates
+            if (!isOpenBezier() || next != _imp->featherPoints.end()) {
+                if (!segmentPoints.empty()) {
+                    segmentPoints.pop_back();
+                }
+            }
             points->push_back(segmentPoints);
         } else {
             assert(pointsSingleList);
@@ -2726,6 +2770,12 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau_internal(bool useGuiPoints,
                               errorScale,
 #endif
                               transform, pointsSingleList, bbox);
+            // If we are a closed bezier or we are not on the last segment, remove the last point so we don't add duplicates
+            if (!isOpenBezier() || next != _imp->featherPoints.end()) {
+                if (!pointsSingleList->empty()) {
+                    pointsSingleList->pop_back();
+                }
+            }
         }
 
         // increment for next iteration
