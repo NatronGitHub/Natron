@@ -603,26 +603,16 @@ Bezier::bezierPointBboxUpdate(const Point & p0,
     }
 }
 
-// compute a bounding box for the bezier segment
-// algorithm:
-// - compute extrema of the cubic, i.e. values of t for
-// which the derivative of the x or y coordinate of the
-// Bezier is 0. If they are in [0,1] then they take part in
-// bbox computation (there can be up to four extrema, 2 for
-// x and 2 for y). the Bbox is the Bbox of these points and the
-// extremal points (P0,P3)
-static void
-bezierSegmentBboxUpdate(const BezierCP & first,
-                        const BezierCP & last,
-                        TimeValue time,
-                        const Transform::Matrix3x3& transform,
-                        RectD* bbox,
-                        bool *bboxSet) ///< input/output
+static void getBezierControlPolygonPoints(const BezierCP & first,
+                                          const BezierCP & last,
+                                          TimeValue time,
+                                          const Transform::Matrix3x3& transform,
+                                          Point& p0,
+                                          Point& p1,
+                                          Point& p2,
+                                          Point& p3)
 {
-    Point p0, p1, p2, p3;
     Transform::Point3D p0M, p1M, p2M, p3M;
-
-    assert(bbox);
 
     try {
         first.getPositionAtTime(time, &p0M.x, &p0M.y);
@@ -649,7 +639,26 @@ bezierSegmentBboxUpdate(const BezierCP & first,
     p1.y = p1M.y / p1M.z;
     p2.y = p2M.y / p2M.z;
     p3.y = p3M.y / p3M.z;
+}
 
+// compute a bounding box for the bezier segment
+// algorithm:
+// - compute extrema of the cubic, i.e. values of t for
+// which the derivative of the x or y coordinate of the
+// Bezier is 0. If they are in [0,1] then they take part in
+// bbox computation (there can be up to four extrema, 2 for
+// x and 2 for y). the Bbox is the Bbox of these points and the
+// extremal points (P0,P3)
+static void
+bezierSegmentBboxUpdate(const BezierCP & first,
+                        const BezierCP & last,
+                        TimeValue time,
+                        const Transform::Matrix3x3& transform,
+                        RectD* bbox,
+                        bool *bboxSet) ///< input/output
+{
+    Point p0, p1, p2, p3;
+    getBezierControlPolygonPoints(first, last, time, transform, p0, p1, p2, p3);
     Bezier::bezierPointBboxUpdate(p0, p1, p2, p3, bbox, bboxSet);
 }
 
@@ -984,29 +993,11 @@ bezierSegmentEval(const BezierCP & first,
                   RectD* bbox = NULL,
                   bool* bboxSet = NULL) ///< input/output (optional)
 {
-    Transform::Point3D p0M, p1M, p2M, p3M;
+
+
     Point p0, p1, p2, p3;
+    getBezierControlPolygonPoints(first, last, time, transform, p0, p1, p2, p3);
 
-    try {
-        first.getPositionAtTime(time, &p0M.x, &p0M.y);
-        first.getRightBezierPointAtTime(time, &p1M.x, &p1M.y);
-        last.getPositionAtTime(time, &p3M.x, &p3M.y);
-        last.getLeftBezierPointAtTime(time, &p2M.x, &p2M.y);
-    } catch (const std::exception & e) {
-        assert(false);
-    }
-
-    p0M.z = p1M.z = p2M.z = p3M.z = 1;
-
-    p0M = matApply(transform, p0M);
-    p1M = matApply(transform, p1M);
-    p2M = matApply(transform, p2M);
-    p3M = matApply(transform, p3M);
-
-    p0.x = p0M.x / p0M.z; p0.y = p0M.y / p0M.z;
-    p1.x = p1M.x / p1M.z; p1.y = p1M.y / p1M.z;
-    p2.x = p2M.x / p2M.z; p2.y = p2M.y / p2M.z;
-    p3.x = p3M.x / p3M.z; p3.y = p3M.y / p3M.z;
 
     p0.x *= scale.x;
     p0.y *= scale.y;
