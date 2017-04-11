@@ -42,18 +42,18 @@ AddToUndoRedoStackHelper<T>::AddToUndoRedoStackHelper(Knob<T>* k)
 , _mustEndEdits(false)
 , _isUndoRedoStackOpened(false)
 {
-    KnobHolderPtr holder = k->getHolder();
-    if (holder) {
-        KnobTableItemPtr isTableItem = toKnobTableItem(holder);
+    _holder = k->getHolder();
+    if (_holder) {
+        KnobTableItemPtr isTableItem = toKnobTableItem(_holder);
         // Use the effect undo stack if this is a table item
         if (isTableItem) {
-            holder = isTableItem->getModel()->getNode()->getEffectInstance();
+            _holder = isTableItem->getModel()->getNode()->getEffectInstance();
         }
-        KnobHolder::MultipleParamsEditEnum paramEditLevel = holder->getMultipleEditsLevel();
+        KnobHolder::MultipleParamsEditEnum paramEditLevel = _holder->getMultipleEditsLevel();
 
         // If we are under an overlay interact, the plug-in is going to do setValue calls, make sure the user can undo/redo
-        if (paramEditLevel == KnobHolder::eMultipleParamsEditOff && holder->isDoingInteractAction()) {
-            holder->beginMultipleEdits(k->tr("%1 changed").arg(QString::fromUtf8(k->getName().c_str())).toStdString());
+        if (paramEditLevel == KnobHolder::eMultipleParamsEditOff && _holder->isDoingInteractAction()) {
+            _holder->beginMultipleEdits(k->tr("%1 changed").arg(QString::fromUtf8(k->getName().c_str())).toStdString());
             _mustEndEdits = true;
             _isUndoRedoStackOpened = true;
         } else if (paramEditLevel != KnobHolder::eMultipleParamsEditOff) {
@@ -73,7 +73,7 @@ template <typename T>
 AddToUndoRedoStackHelper<T>::~AddToUndoRedoStackHelper()
 {
     if (_mustEndEdits) {
-        _knob->getHolder()->endMultipleEdits();
+        _holder->endMultipleEdits();
     }
 }
 
@@ -83,10 +83,13 @@ AddToUndoRedoStackHelper<T>::prepareOldValueToUndoRedoStack(ViewSetSpec view, Di
 {
     // Should be checked first before calling this function.
     assert(canAddValueToUndoStack());
+    if (!_holder) {
+        return;
+    }
 
     // Ensure the state has not been changed while this object is alive.
-    assert(_knob->getHolder()->getMultipleEditsLevel() == KnobHolder::eMultipleParamsEditOnCreateNewCommand ||
-           _knob->getHolder()->getMultipleEditsLevel() == KnobHolder::eMultipleParamsEditOn);
+    assert(_holder->getMultipleEditsLevel() == KnobHolder::eMultipleParamsEditOnCreateNewCommand ||
+           _holder->getMultipleEditsLevel() == KnobHolder::eMultipleParamsEditOn);
 
     ValueToPush data;
     data.view = view;
@@ -139,9 +142,14 @@ AddToUndoRedoStackHelper<T>::addSetValueToUndoRedoStackIfNeeded(const T& value, 
     // Should be checked first before calling this function.
     assert(canAddValueToUndoStack());
 
+
+    if (!_holder) {
+        return;
+    }
+
     // Ensure the state has not been changed while this object is alive.
-    assert(_knob->getHolder()->getMultipleEditsLevel() == KnobHolder::eMultipleParamsEditOnCreateNewCommand ||
-           _knob->getHolder()->getMultipleEditsLevel() == KnobHolder::eMultipleParamsEditOn);
+    assert(_holder->getMultipleEditsLevel() == KnobHolder::eMultipleParamsEditOnCreateNewCommand ||
+           _holder->getMultipleEditsLevel() == KnobHolder::eMultipleParamsEditOn);
 
     // prepareOldValueToUndoRedoStack must have been called.
     assert(!_valuesToPushQueue.empty());

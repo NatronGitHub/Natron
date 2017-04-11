@@ -2495,6 +2495,7 @@ template <typename T>
 class AddToUndoRedoStackHelper
 {
     Knob<T>* _knob;
+    KnobHolderPtr _holder;
     bool _mustEndEdits;
     bool _isUndoRedoStackOpened;
 
