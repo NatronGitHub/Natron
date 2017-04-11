@@ -789,8 +789,7 @@ static void ensurePolygonWindingNumberEqualsOne(const PolygonCSGData& mainData,
  **/
 static void computeInternalPolygon(PolygonCSGData& data, bool clockWise, RotoBezierTriangulation::PolygonData* outArgs)
 {
-    
-    assert(!data.modifiedBezierPolygon.empty() && !data.modifiedFeatherPolygon.empty());
+
 
     libtess_GLUtesselator* tesselator = libtess_gluNewTess();
 
