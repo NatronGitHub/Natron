@@ -456,8 +456,8 @@ RotoPaint::initShapePageKnobs()
         KnobDoublePtr param = createKnob<KnobDouble>(kRotoFeatherParam);
         param->setLabel(tr(kRotoFeatherParamLabel));
         param->setHintToolTip( tr(kRotoFeatherHint) );
-        param->setRange(0, std::numeric_limits<double>::infinity());
-        param->setDisplayRange(0, 500);
+        //param->setRange(0, std::numeric_limits<double>::infinity());
+        param->setDisplayRange(-100, 500);
         param->setDefaultValue(ROTO_DEFAULT_FEATHER);
         _imp->knobsTable->addPerItemKnobMaster(param);
         shapePage->addKnob(param);

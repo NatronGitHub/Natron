@@ -569,77 +569,6 @@ bezierBounds(double p0,
     }
 }
 
-// updates param bbox with the bbox of this segment
-void
-Bezier::bezierPointBboxUpdate(const Point & p0,
-                              const Point & p1,
-                              const Point & p2,
-                              const Point & p3,
-                              RectD *bbox,
-                              bool* bboxSet) ///< input/output
-{
-    {
-        double x1, x2;
-        bezierBounds(p0.x, p1.x, p2.x, p3.x, &x1, &x2);
-        if (bboxSet && !*bboxSet) {
-            bbox->x1 = x1;
-            bbox->x2 = x2;
-        } else {
-            updateRange(x1, &bbox->x1, &bbox->x2);
-        }
-    }
-    {
-        double y1, y2;
-        bezierBounds(p0.y, p1.y, p2.y, p3.y, &y1, &y2);
-        if (bboxSet && !*bboxSet) {
-            bbox->y1 = y1;
-            bbox->y2 = y2;
-        } else {
-            updateRange(y1, &bbox->y1, &bbox->y2);
-        }
-    }
-    if (bboxSet && !*bboxSet) {
-        *bboxSet = true;
-    }
-}
-
-static void getBezierControlPolygonPoints(const BezierCP & first,
-                                          const BezierCP & last,
-                                          TimeValue time,
-                                          const Transform::Matrix3x3& transform,
-                                          Point& p0,
-                                          Point& p1,
-                                          Point& p2,
-                                          Point& p3)
-{
-    Transform::Point3D p0M, p1M, p2M, p3M;
-
-    try {
-        first.getPositionAtTime(time, &p0M.x, &p0M.y);
-        first.getRightBezierPointAtTime(time, &p1M.x, &p1M.y);
-        last.getPositionAtTime(time, &p3M.x, &p3M.y);
-        last.getLeftBezierPointAtTime(time, &p2M.x, &p2M.y);
-    } catch (const std::exception & e) {
-        assert(false);
-    }
-
-    p0M.z = p1M.z = p2M.z = p3M.z = 1;
-
-    p0M = Transform::matApply(transform, p0M);
-    p1M = Transform::matApply(transform, p1M);
-    p2M = Transform::matApply(transform, p2M);
-    p3M = Transform::matApply(transform, p3M);
-
-    p0.x = p0M.x / p0M.z;
-    p1.x = p1M.x / p1M.z;
-    p2.x = p2M.x / p2M.z;
-    p3.x = p3M.x / p3M.z;
-
-    p0.y = p0M.y / p0M.z;
-    p1.y = p1M.y / p1M.z;
-    p2.y = p2M.y / p2M.z;
-    p3.y = p3M.y / p3M.z;
-}
 
 // compute a bounding box for the bezier segment
 // algorithm:
@@ -649,29 +578,77 @@ static void getBezierControlPolygonPoints(const BezierCP & first,
 // bbox computation (there can be up to four extrema, 2 for
 // x and 2 for y). the Bbox is the Bbox of these points and the
 // extremal points (P0,P3)
-static void
-bezierSegmentBboxUpdate(const BezierCP & first,
-                        const BezierCP & last,
-                        TimeValue time,
-                        const Transform::Matrix3x3& transform,
-                        RectD* bbox,
-                        bool *bboxSet) ///< input/output
+RectD
+Bezier::getBezierSegmentControlPolygonBbox(const Point & p0,
+                                           const Point & p1,
+                                           const Point & p2,
+                                           const Point & p3)
 {
-    Point p0, p1, p2, p3;
-    getBezierControlPolygonPoints(first, last, time, transform, p0, p1, p2, p3);
-    Bezier::bezierPointBboxUpdate(p0, p1, p2, p3, bbox, bboxSet);
-}
+    RectD ret;
+    bezierBounds(p0.x, p1.x, p2.x, p3.x, &ret.x1, &ret.x2);
+    bezierBounds(p0.y, p1.y, p2.y, p3.y, &ret.y1, &ret.y2);
+    return ret;
+} // getBezierSegmentControlPolygonBbox
 
-void
-Bezier::bezierSegmentListBboxUpdate(const BezierCPs & points,
-                                    bool finished,
-                                    bool isOpenBezier,
-                                    TimeValue time,
-                                    const Transform::Matrix3x3& transform,
-                                    RectD* bbox) ///< input/output
+struct BezierPoint
 {
+    Point p, left, right;
+};
+
+static void getBezierPoints(const std::list<BezierCPPtr > & points, TimeValue time, const Transform::Matrix3x3& transform, std::list<BezierPoint> &evaluatedPoints)
+{
+    assert(!points.empty());
+    BezierCPs::const_iterator it = points.begin();
+    BezierCPs::const_iterator next = it;
+    ++next;
+    BezierCPs::const_iterator prev = points.end();
+    --prev;
+    for (; it != points.end(); ++it, ++prev, ++next) {
+        if (prev == points.end()) {
+            prev = points.begin();
+        }
+        if ( next == points.end() ) {
+            next = points.begin();
+        }
+
+        BezierPoint pt;
+
+        {
+            Transform::Point3D p, r, l;
+            p.z = r.z = l.z = 1.;
+            (*it)->getPositionAtTime(time, &p.x, &p.y);
+            (*it)->getRightBezierPointAtTime(time, &r.x, &r.y);
+            (*it)->getLeftBezierPointAtTime(time, &l.x, &l.y);
+            p = Transform::matApply(transform, p);
+            l = Transform::matApply(transform, l);
+            r = Transform::matApply(transform, r);
+
+            pt.p.x = p.x / p.z;
+            pt.left.x = l.x / p.z;
+            pt.right.x = r.x / p.z;
+
+            pt.p.y = p.y / p.z;
+            pt.left.y = l.y / l.z;
+            pt.right.y = r.y / r.z;
+
+        }
+
+
+        evaluatedPoints.push_back(pt);
+
+
+    } // for each control point
+} // getBezierExpandedPoints
+
+RectD
+Bezier::getBezierSegmentListBbox(const std::list<BezierCPPtr > & points,
+                                 double featherDistance,
+                                 TimeValue time,
+                                 const Transform::Matrix3x3& transform) ///< input/output
+{
+    RectD bbox;
     if ( points.empty() ) {
-        return;
+        return bbox;
     }
     if (points.size() == 1) {
         // only one point
@@ -680,33 +657,57 @@ Bezier::bezierSegmentListBboxUpdate(const BezierCPs & points,
         p->getPositionAtTime(time, &p0.x, &p0.y);
         p0.z = 1;
         p0 = Transform::matApply(transform, p0);
-        bbox->x1 = p0.x;
-        bbox->x2 = p0.x;
-        bbox->y1 = p0.y;
-        bbox->y2 = p0.y;
+        bbox.x1 = p0.x;
+        bbox.x2 = p0.x;
+        bbox.y1 = p0.y;
+        bbox.y2 = p0.y;
 
-        return;
+        return bbox;
     }
-    BezierCPs::const_iterator next = points.begin();
-    if ( next != points.end() ) {
-        ++next;
-    }
+
+    std::list<BezierPoint> evaluatedPoints;
+    getBezierPoints(points, time, transform, evaluatedPoints);
+
     bool bboxSet = false;
-    for (BezierCPs::const_iterator it = points.begin(); it != points.end(); ++it) {
-        if ( next == points.end() ) {
-            if (!finished && !isOpenBezier) {
-                break;
-            }
-            next = points.begin();
-        }
-        bezierSegmentBboxUpdate(*(*it), *(*next), time, transform, bbox, &bboxSet);
 
-        // increment for next iteration
-        if ( next != points.end() ) {
-            ++next;
+    std::list<BezierPoint>::iterator it = evaluatedPoints.begin();
+    std::list<BezierPoint>::iterator next = it;
+    ++next;
+    for (; it != evaluatedPoints.end(); ++it, ++next) {
+        if (next == evaluatedPoints.end()) {
+            next = evaluatedPoints.begin();
         }
-    } // for()
-}
+
+        Point p0, p1, p2, p3;
+        p0 = it->p;
+        p1 = it->right;
+        p2 = next->left;
+        p3 = next->p;
+
+        RectD segmentBbox = Bezier::getBezierSegmentControlPolygonBbox(p0, p1, p2, p3);
+
+
+        if (!bboxSet) {
+            bboxSet = true;
+            bbox = segmentBbox;
+        } else {
+            bbox.merge(segmentBbox);
+        }
+
+    }
+
+    // To account for the feather distance, we cannot just offset the control polygon points by the feather distance, we want the bounding box of all points generated on the polygon
+    // offset to the feather distance.
+    // This results to just padding the bbox by the featherDistance.
+    // Since a negative feather distance is allowed, we always grow the bbox to be sure that we do not shrink it.
+    double absFeather = std::abs(featherDistance);
+    bbox.x1 -= absFeather;
+    bbox.y1 -= absFeather;
+    bbox.x2 += absFeather;
+    bbox.y2 += absFeather;
+
+    return bbox;
+} // bezierSegmentListBboxUpdate
 
 inline double euclDist(double x1, double y1, double x2, double y2)
 {
@@ -716,13 +717,13 @@ inline double euclDist(double x1, double y1, double x2, double y2)
 }
 
 
-inline void addPointConditionnally(const Point& p, double t, std::vector< ParametricPoint >* points)
+inline void addPointConditionnally(const Point& p, double t, int segmentIndex, std::vector< ParametricPoint >* points)
 {
     if (points->empty()) {
         ParametricPoint x;
         x.x = p.x;
         x.y = p.y;
-        x.t = t;
+        x.t = t + segmentIndex;
         points->push_back(x);
     } else {
         const ParametricPoint& b = points->back();
@@ -730,7 +731,7 @@ inline void addPointConditionnally(const Point& p, double t, std::vector< Parame
             ParametricPoint x;
             x.x = p.x;
             x.y = p.y;
-            x.t = t;
+            x.t = t + segmentIndex;
             points->push_back(x);
         }
     }
@@ -741,7 +742,7 @@ inline void addPointConditionnally(const Point& p, double t, std::vector< Parame
  * The greater it is, the smoother the curve will be.
  **/
 static void
-recursiveBezierInternal(const Point& p0, const Point& p1, const Point& p2, const Point& p3,
+recursiveBezierInternal(int segmentIndex, const Point& p0, const Point& p1, const Point& p2, const Point& p3,
                         double t_p0, double t_p1, double t_p2, double t_p3,
                         double errorScale, int recursionLevel, int maxRecursion, std::vector< ParametricPoint >* points)
 {
@@ -828,12 +829,12 @@ recursiveBezierInternal(const Point& p0, const Point& p1, const Point& p2, const
             }
             if (d2 > d3) {
                 if (d2 < distanceToleranceSquare) {
-                    addPointConditionnally(p1, t_p1, points);
+                    addPointConditionnally(p1, t_p1, segmentIndex, points);
                     return;
                 }
             } else {
                 if (d3 < distanceToleranceSquare) {
-                    addPointConditionnally(p2, t_p2, points);
+                    addPointConditionnally(p2, t_p2, segmentIndex, points);
                     return;
                 }
             }
@@ -845,7 +846,7 @@ recursiveBezierInternal(const Point& p0, const Point& p1, const Point& p2, const
                     Point p;
                     p.x = x23;
                     p.y = y23;
-                    addPointConditionnally(p, t_p23, points);
+                    addPointConditionnally(p, t_p23, segmentIndex, points);
                     return;
                 }
 
@@ -856,14 +857,14 @@ recursiveBezierInternal(const Point& p0, const Point& p1, const Point& p2, const
                 }
 
                 if (da1 < angleToleranceMax) {
-                    addPointConditionnally(p1, t_p1, points);
-                    addPointConditionnally(p2, t_p2, points);
+                    addPointConditionnally(p1, t_p1, segmentIndex, points);
+                    addPointConditionnally(p2, t_p2, segmentIndex, points);
                     return;
                 }
 
                 if (cuspTolerance != 0.0) {
                     if (da1 > cuspTolerance) {
-                        addPointConditionnally(p2, t_p2, points);
+                        addPointConditionnally(p2, t_p2, segmentIndex, points);
                         return;
                     }
                 }
@@ -876,7 +877,7 @@ recursiveBezierInternal(const Point& p0, const Point& p1, const Point& p2, const
                     Point p;
                     p.x = x23;
                     p.y = y23;
-                    addPointConditionnally(p, t_p23, points);
+                    addPointConditionnally(p, t_p23, segmentIndex, points);
                     return;
                 }
                 // Check Angle
@@ -886,14 +887,14 @@ recursiveBezierInternal(const Point& p0, const Point& p1, const Point& p2, const
                 }
 
                 if (da1 < angleToleranceMax) {
-                    addPointConditionnally(p1, t_p1, points);
-                    addPointConditionnally(p2, t_p2, points);
+                    addPointConditionnally(p1, t_p1, segmentIndex, points);
+                    addPointConditionnally(p2, t_p2, segmentIndex, points);
                     return;
                 }
 
                 if (cuspTolerance != 0.0) {
                     if (da1 > cuspTolerance) {
-                        addPointConditionnally(p1, t_p1, points);
+                        addPointConditionnally(p1, t_p1, segmentIndex, points);
                         return;
                     }
                 }
@@ -907,7 +908,7 @@ recursiveBezierInternal(const Point& p0, const Point& p1, const Point& p2, const
                     Point p;
                     p.x = x23;
                     p.y = y23;
-                    addPointConditionnally(p, t_p23, points);
+                    addPointConditionnally(p, t_p23, segmentIndex, points);
                     return;
                 }
 
@@ -926,18 +927,18 @@ recursiveBezierInternal(const Point& p0, const Point& p1, const Point& p2, const
                     Point p;
                     p.x = x23;
                     p.y = y23;
-                    addPointConditionnally(p, t_p23, points);
+                    addPointConditionnally(p, t_p23, segmentIndex, points);
                     return;
                 }
 
                 if (cuspTolerance != 0.0) {
                     if (da1 > cuspTolerance) {
-                        addPointConditionnally(p1, t_p1, points);
+                        addPointConditionnally(p1, t_p1, segmentIndex, points);
                         return;
                     }
 
                     if (da2 > cuspTolerance) {
-                        addPointConditionnally(p2, t_p2, points);
+                        addPointConditionnally(p2, t_p2, segmentIndex, points);
                         return;
                     }
                 }
@@ -958,12 +959,12 @@ recursiveBezierInternal(const Point& p0, const Point& p1, const Point& p2, const
     Point p34 = {x34, y34};
 
 
-    recursiveBezierInternal(p0, p12, p123, p1234, t_p0, t_p12, t_p123, t_p1234, errorScale, recursionLevel + 1, maxRecursion, points);
-    recursiveBezierInternal(p1234, p234, p34, p3, t_p1234, t_p234, t_p34, t_p3, errorScale, recursionLevel + 1, maxRecursion, points);
+    recursiveBezierInternal(segmentIndex, p0, p12, p123, p1234, t_p0, t_p12, t_p123, t_p1234, errorScale, recursionLevel + 1, maxRecursion, points);
+    recursiveBezierInternal(segmentIndex, p1234, p234, p34, p3, t_p1234, t_p234, t_p34, t_p3, errorScale, recursionLevel + 1, maxRecursion, points);
 } // recursiveBezierInternal
 
 static void
-recursiveBezier(const Point& p0, const Point& p1, const Point& p2, const Point& p3, double errorScale, int maxRecursion, std::vector< ParametricPoint >* points)
+recursiveBezier(const Point& p0, const Point& p1, const Point& p2, const Point& p3, int segmentIndex, bool skipFirstPoint, double errorScale, int maxRecursion, std::vector< ParametricPoint >* points)
 {
     ParametricPoint p0x,p3x;
     p0x.x = p0.x;
@@ -972,8 +973,10 @@ recursiveBezier(const Point& p0, const Point& p1, const Point& p2, const Point& 
     p3x.x = p3.x;
     p3x.y = p3.y;
     p3x.t = 1.;
-    points->push_back(p0x);
-    recursiveBezierInternal(p0, p1, p2, p3, 0., 1. / 3., 2. / 3., 1., errorScale, 0, maxRecursion, points);
+    if (!skipFirstPoint) {
+        points->push_back(p0x);
+    }
+    recursiveBezierInternal(segmentIndex, p0, p1, p2, p3, 0., 1. / 3., 2. / 3., 1., errorScale, 0, maxRecursion, points);
     points->push_back(p3x);
 }
 
@@ -981,38 +984,22 @@ recursiveBezier(const Point& p0, const Point& p1, const Point& p2, const Point& 
 // segment from 'first' to 'last' evaluated at 'time'
 // If nbPointsPerSegment is -1 then it will be automatically computed
 static void
-bezierSegmentEval(const BezierCP & first,
-                  const BezierCP & last,
-                  TimeValue time,
-                  const RenderScale &scale,
+bezierSegmentEval(const Point& p0,
+                  const Point& p1,
+                  const Point& p2,
+                  const Point& p3,
+                  int segmentIndex,
+                  bool skipFirstPoint,
                   Bezier::DeCasteljauAlgorithmEnum algo,
                   int nbPointsPerSegment,
                   double errorScale,
-                  const Transform::Matrix3x3& transform,
                   std::vector< ParametricPoint >* points, ///< output
-                  RectD* bbox = NULL,
-                  bool* bboxSet = NULL) ///< input/output (optional)
+                  RectD* bbox = NULL) ///< input/output (optional)
 {
 
 
-    Point p0, p1, p2, p3;
-    getBezierControlPolygonPoints(first, last, time, transform, p0, p1, p2, p3);
-
-
-    p0.x *= scale.x;
-    p0.y *= scale.y;
-
-    p1.x *= scale.x;
-    p1.y *= scale.y;
-
-    p2.x *= scale.x;
-    p2.y *= scale.y;
-
-    p3.x *= scale.x;
-    p3.y *= scale.y;
-
     if (bbox) {
-        Bezier::bezierPointBboxUpdate(p0,  p1,  p2,  p3, bbox, bboxSet);
+        *bbox = Bezier::getBezierSegmentControlPolygonBbox(p0,  p1,  p2,  p3);
     }
 
     switch (algo) {
@@ -1036,10 +1023,11 @@ bezierSegmentEval(const BezierCP & first,
 
             double incr = 1. / (double)(nbPointsPerSegment - 1);
             Point cur;
-            for (int i = 0; i < nbPointsPerSegment; ++i) {
+            for (int i = skipFirstPoint ? 1 : 0; i < nbPointsPerSegment; ++i) {
                 ParametricPoint p;
                 p.t = incr * i;
                 Bezier::bezierPoint(p0, p1, p2, p3, p.t, &cur);
+                p.t += segmentIndex;
                 p.x = cur.x;
                 p.y = cur.y;
                 assert(!bbox || bbox->contains(p.x, p.y));
@@ -1049,7 +1037,7 @@ bezierSegmentEval(const BezierCP & first,
 
         case Bezier::eDeCasteljauAlgorithmRecursive: {
             static const int maxRecursion = 32;
-            recursiveBezier(p0, p1, p2, p3, errorScale, maxRecursion, points);
+            recursiveBezier(p0, p1, p2, p3, skipFirstPoint, segmentIndex, errorScale, maxRecursion, points);
         }   break;
     }
 
@@ -1152,39 +1140,6 @@ isPointCloseTo(TimeValue time,
     return false;
 }
 
-#if 0
-static bool
-bezierSegmentEqual(TimeValue time,
-                  const BezierCP & p0,
-                  const BezierCP & p1,
-                  const BezierCP & s0,
-                  const BezierCP & s1)
-{
-    double prevX, prevY, prevXF, prevYF;
-    double nextX, nextY, nextXF, nextYF;
-
-    p0.getPositionAtTime(time, &prevX, &prevY);
-    p1.getPositionAtTime(time, &nextX, &nextY);
-    s0.getPositionAtTime(time, &prevXF, &prevYF);
-    s1.getPositionAtTime(time, &nextXF, &nextYF);
-    if ( (prevX != prevXF) || (prevY != prevYF) || (nextX != nextXF) || (nextY != nextYF) ) {
-        return true;
-    } else {
-        ///check derivatives
-        double prevRightX, prevRightY, nextLeftX, nextLeftY;
-        double prevRightXF, prevRightYF, nextLeftXF, nextLeftYF;
-        p0.getRightBezierPointAtTime(time, &prevRightX, &prevRightY);
-        p1.getLeftBezierPointAtTime(time, &nextLeftX, &nextLeftY);
-        s0.getRightBezierPointAtTime(time, &prevRightXF, &prevRightYF);
-        s1.getLeftBezierPointAtTime(time, &nextLeftXF, &nextLeftYF);
-        if ( (prevRightX != prevRightXF) || (prevRightY != prevRightYF) || (nextLeftX != nextLeftXF) || (nextLeftY != nextLeftYF) ) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-}
-#endif
 
 void
 Bezier::clearAllPoints()
@@ -2780,53 +2735,115 @@ Bezier::deCasteljau(bool isOpenBezier,
                     const std::list<BezierCPPtr >& cps,
                     TimeValue time,
                     const RenderScale &scale,
+                    double featherDistance,
                     bool finished,
+                    bool clockWise,
                     DeCasteljauAlgorithmEnum algo,
                     int nbPointsPerSegment,
                     double errorScale,
                     const Transform::Matrix3x3& transform,
-                    std::vector<std::vector<ParametricPoint> >* points,
-                    std::vector<ParametricPoint >* pointsSingleList,
+                    std::vector<ParametricPoint>* pointsSingleList,
                     RectD* bbox)
 {
-    bool bboxSet = false;
-    assert((points && !pointsSingleList) || (!points && pointsSingleList));
-    BezierCPs::const_iterator next = cps.begin();
+    assert(!cps.empty());
+    assert(pointsSingleList);
 
-    if ( next != cps.end() ) {
+
+
+    {
+        // Do not expand the control polygon points to the feather distance otherwise the feather will have a bezier that differs from the original bezier
+        // instead, we expand each discretized point.
+        std::list<BezierPoint> evaluatedPoints;
+        getBezierPoints(cps, time, transform, evaluatedPoints);
+
+        int segmentIndex = 0;
+        std::list<BezierPoint>::iterator it = evaluatedPoints.begin();
+        std::list<BezierPoint>::iterator next = it;
         ++next;
+        for (; it != evaluatedPoints.end(); ++it, ++next, ++segmentIndex) {
+            if (next == evaluatedPoints.end()) {
+                if (!finished && !isOpenBezier) {
+                    break;
+                }
+                next = evaluatedPoints.begin();
+            }
+
+            Point p0, p1, p2, p3;
+            p0 = it->p;
+            p1 = it->right;
+            p2 = next->left;
+            p3 = next->p;
+
+            p0.x *= scale.x;
+            p0.y *= scale.y;
+
+            p1.x *= scale.x;
+            p1.y *= scale.y;
+
+            p2.x *= scale.x;
+            p2.y *= scale.y;
+
+            p3.x *= scale.x;
+            p3.y *= scale.y;
+
+            bezierSegmentEval(p0, p1, p2, p3, segmentIndex, !isOpenBezier /*skipFirstPoint*/, algo, nbPointsPerSegment, errorScale, pointsSingleList, 0);
+        } // for each control point
     }
 
+    
+    // Expand points to feather distance if needed
+    if (featherDistance != 0) {
+        double featherX = featherDistance * scale.x;
+        double featherY = featherDistance * scale.y;
 
-    for (BezierCPs::const_iterator it = cps.begin(); it != cps.end(); ++it) {
-        if ( next == cps.end() ) {
-            if (!finished) {
-                break;
+        std::vector<ParametricPoint > pointsCopy = *pointsSingleList;
+        std::vector<ParametricPoint >::iterator it = pointsCopy.begin();
+        std::vector<ParametricPoint >::iterator outIt = pointsSingleList->begin();
+        std::vector<ParametricPoint >::iterator next = it;
+        ++next;
+        std::vector<ParametricPoint >::iterator prev = pointsCopy.end();
+        --prev;
+        for (;it != pointsCopy.end(); ++it, ++prev, ++next, ++outIt) {
+            if (prev == pointsCopy.end()) {
+                prev = pointsCopy.begin();
             }
-            next = cps.begin();
-        }
+            if (next == pointsCopy.end()) {
+                next = pointsCopy.begin();
+            }
+            double diffx = next->x - prev->x;
+            double diffy = next->y - prev->y;
+            double norm = std::sqrt( diffx * diffx + diffy * diffy );
+            double dx = (norm != 0) ? -( diffy / norm ) : 0;
+            double dy = (norm != 0) ? ( diffx / norm ) : 1;
 
-        if (points) {
-            std::vector<ParametricPoint> segmentPoints;
-            bezierSegmentEval(*(*it), *(*next), time,  scale, algo, nbPointsPerSegment, errorScale, transform, &segmentPoints, bbox, &bboxSet);
-
-            points->push_back(segmentPoints);
-        } else {
-            assert(pointsSingleList);
-            bezierSegmentEval(*(*it), *(*next), time,  scale, algo, nbPointsPerSegment, errorScale , transform, pointsSingleList, bbox, &bboxSet);
-            // If we are a closed bezier or we are not on the last segment, remove the last point so we don't add duplicates
-            if ((!isOpenBezier && finished) && next != cps.begin()) {
-                if (!pointsSingleList->empty()) {
-                    pointsSingleList->pop_back();
-                }
+            if (!clockWise) {
+                outIt->x -= dx * featherX;
+                outIt->y -= dy * featherY;
+            } else {
+                outIt->x += dx * featherX;
+                outIt->y += dy * featherY;
             }
         }
+    }
 
-        // increment for next iteration
-        if ( next != cps.end() ) {
-            ++next;
+    if (bbox) {
+        bool bboxSet = false;
+        for (std::size_t i = 0; i < pointsSingleList->size(); ++i) {
+            if (!bboxSet) {
+                bboxSet = true;
+                bbox->x1 = (*pointsSingleList)[i].x;
+                bbox->x2 = (*pointsSingleList)[i].x;
+                bbox->y1 = (*pointsSingleList)[i].y;
+                bbox->y2 = (*pointsSingleList)[i].y;
+            } else {
+                bbox->x1 = std::min(bbox->x1, (*pointsSingleList)[i].x);
+                bbox->x2 = std::max(bbox->x2, (*pointsSingleList)[i].x);
+                bbox->y1 = std::min(bbox->y1, (*pointsSingleList)[i].y);
+                bbox->y2 = std::max(bbox->y2, (*pointsSingleList)[i].y);
+            }
         }
-    } // for each control point
+    }
+
 } // deCasteljau
 
 
@@ -2838,13 +2855,13 @@ Bezier::evaluateAtTime(TimeValue time,
                        DeCasteljauAlgorithmEnum algo,
                        int nbPointsPerSegment,
                        double errorScale,
-                       std::vector<std::vector<ParametricPoint> >* points,
                        std::vector<ParametricPoint >* pointsSingleList,
                        RectD* bbox) const
 {
-    assert((points && !pointsSingleList) || (!points && pointsSingleList));
     Transform::Matrix3x3 transform;
     getTransformAtTime(time, view, &transform);
+
+    bool clockWise = isClockwiseOriented(time, view);
 
     QMutexLocker l(&_imp->itemMutex);
     ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
@@ -2856,12 +2873,13 @@ Bezier::evaluateAtTime(TimeValue time,
                 shape->points,
                 time,
                 scale,
+                0, /*featherDistance*/
                 shape->finished,
+                clockWise,
                 algo,
                 nbPointsPerSegment,
                 errorScale,
                 transform,
-                points,
                 pointsSingleList,
                 bbox);
 } // evaluateAtTime
@@ -2869,21 +2887,27 @@ Bezier::evaluateAtTime(TimeValue time,
 
 
 void
-Bezier::evaluateFeatherPointsAtTime(TimeValue time,
+Bezier::evaluateFeatherPointsAtTime(bool applyFeatherDistance,
+                                    TimeValue time,
                                     ViewIdx view,
                                     const RenderScale &scale,
                                     DeCasteljauAlgorithmEnum algo,
                                     int nbPointsPerSegment,
                                     double errorScale,
-                                    std::vector<std::vector<ParametricPoint>  >* points,
                                     std::vector<ParametricPoint >* pointsSingleList,
                                     RectD* bbox) const
 {
-    assert((points && !pointsSingleList) || (!points && pointsSingleList));
     assert( useFeatherPoints() );
 
+    bool clockWise = isClockwiseOriented(time, view);
     Transform::Matrix3x3 transform;
     getTransformAtTime(time, view, &transform);
+
+    KnobDoublePtr featherKnob = _imp->feather.lock();
+    double featherDistance = 0;
+    if (applyFeatherDistance && featherKnob) {
+        featherDistance = featherKnob->getValueAtTime(time);
+    }
 
     QMutexLocker l(&_imp->itemMutex);
     ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
@@ -2896,12 +2920,13 @@ Bezier::evaluateFeatherPointsAtTime(TimeValue time,
                 shape->featherPoints,
                 time,
                 scale,
+                featherDistance,
                 shape->finished,
+                clockWise,
                 algo,
                 nbPointsPerSegment,
                 errorScale,
                 transform,
-                points,
                 pointsSingleList,
                 bbox);
 
@@ -2931,31 +2956,30 @@ Bezier::getBoundingBox(TimeValue time, ViewIdx view) const
         }
     }
 
-    RectD pointsBbox;
 
 
     const BezierShape* shape = _imp->getViewShape(view_i);
     if (!shape) {
-        return pointsBbox;
+        return RectD();
     }
     
-
-    bezierSegmentListBboxUpdate(shape->points, shape->finished, _imp->isOpenBezier, time,  transform, &pointsBbox);
+    RectD pointsBbox = getBezierSegmentListBbox(shape->points, 0 /*featherDistance*/, time,  transform);
 
 
     if (useFeatherPoints() && !_imp->isOpenBezier) {
-        RectD featherPointsBbox;
-        bezierSegmentListBboxUpdate( shape->featherPoints, shape->finished, _imp->isOpenBezier, time, transform, &featherPointsBbox);
-        pointsBbox.merge(featherPointsBbox);
-        if (shape->featherPoints.size() > 1) {
-            // EDIT: Partial fix, just pad the BBOX by the feather distance. This might not be accurate but gives at least something
-            // enclosing the real bbox and close enough
-            double featherDistance = _imp->feather.lock()->getValueAtTime(time, DimIdx(0), view);
-            pointsBbox.x1 -= featherDistance;
-            pointsBbox.x2 += featherDistance;
-            pointsBbox.y1 -= featherDistance;
-            pointsBbox.y2 += featherDistance;
+
+        // EDIT: Partial fix, just pad the BBOX by the feather distance. This might not be accurate but gives at least something
+        // enclosing the real bbox and close enough
+        KnobDoublePtr featherKnob = _imp->feather.lock();
+        double featherDistance = 0;
+        if (featherKnob) {
+            featherDistance = featherKnob->getValueAtTime(time, DimIdx(0), view);
         }
+
+
+        RectD featherPointsBbox = getBezierSegmentListBbox(shape->featherPoints, featherDistance, time, transform);
+        pointsBbox.merge(featherPointsBbox);
+
     } else if (_imp->isOpenBezier) {
         double brushSize = _imp->feather.lock()->getValueAtTime(time, DimIdx(0), view);
         double halfBrushSize = brushSize / 2. + 1;
@@ -3614,10 +3638,11 @@ Bezier::isClockwiseOriented(TimeValue time, ViewIdx view) const
  *
  * Note that the delta will be applied to fp.
  **/
-Point
+void
 Bezier::expandToFeatherDistance(const Point & cp, //< the point
-                                Point* fp, //< the feather point
-                                double featherDistance, //< feather distance
+                                Point* fp, //< the feather point (input/output)
+                                double featherDistance_x,         //< feather distance
+                                double featherDistance_y,         //< feather distance
                                 TimeValue time, //< time
                                 bool clockWise, //< is the bezier  clockwise oriented or not
                                 const Transform::Matrix3x3& transform,
@@ -3625,54 +3650,54 @@ Bezier::expandToFeatherDistance(const Point & cp, //< the point
                                 BezierCPs::const_iterator curFp, //< iterator pointing to fp
                                 BezierCPs::const_iterator nextFp) //< iterator pointing after curFp
 {
-    Point ret;
+    if (featherDistance_x == 0 && featherDistance_y == 0) {
+        return;
+    }
+    Point delta;
+    ///shortcut when the feather point is different than the control point
+    if ( (cp.x != fp->x) && (cp.y != fp->y) ) {
+        double dx = (fp->x - cp.x);
+        double dy = (fp->y - cp.y);
+        double dist = sqrt(dx * dx + dy * dy);
+        delta.x = ( dx * (dist + featherDistance_x) ) / dist;
+        delta.y = ( dy * (dist + featherDistance_y) ) / dist;
+        fp->x =  delta.x + cp.x;
+        fp->y =  delta.y + cp.y;
+    } else {
+        //compute derivatives to determine the feather extent
+        double leftX, leftY, rightX, rightY, norm;
+        Bezier::leftDerivativeAtPoint(time, **curFp, **prevFp, transform, &leftX, &leftY);
+        Bezier::rightDerivativeAtPoint(time, **curFp, **nextFp, transform, &rightX, &rightY);
+        norm = sqrt( (rightX - leftX) * (rightX - leftX) + (rightY - leftY) * (rightY - leftY) );
 
-    if (featherDistance != 0) {
-        ///shortcut when the feather point is different than the control point
-        if ( (cp.x != fp->x) && (cp.y != fp->y) ) {
-            double dx = (fp->x - cp.x);
-            double dy = (fp->y - cp.y);
-            double dist = sqrt(dx * dx + dy * dy);
-            ret.x = ( dx * (dist + featherDistance) ) / dist;
-            ret.y = ( dy * (dist + featherDistance) ) / dist;
-            fp->x =  ret.x + cp.x;
-            fp->y =  ret.y + cp.y;
+        ///normalize derivatives by their norm
+        if (norm != 0) {
+            delta.x = -( (rightY - leftY) / norm );
+            delta.y = ( (rightX - leftX) / norm );
         } else {
-            //compute derivatives to determine the feather extent
-            double leftX, leftY, rightX, rightY, norm;
-            Bezier::leftDerivativeAtPoint(time, **curFp, **prevFp, transform, &leftX, &leftY);
-            Bezier::rightDerivativeAtPoint(time, **curFp, **nextFp, transform, &rightX, &rightY);
-            norm = sqrt( (rightX - leftX) * (rightX - leftX) + (rightY - leftY) * (rightY - leftY) );
-
-            ///normalize derivatives by their norm
+            ///both derivatives are the same, use the direction of the left one
+            norm = sqrt( (leftX - cp.x) * (leftX - cp.x) + (leftY - cp.y) * (leftY - cp.y) );
             if (norm != 0) {
-                ret.x = -( (rightY - leftY) / norm );
-                ret.y = ( (rightX - leftX) / norm );
+                delta.x = -( (leftY - cp.y) / norm );
+                delta.y = ( (leftX - cp.x) / norm );
             } else {
-                ///both derivatives are the same, use the direction of the left one
-                norm = sqrt( (leftX - cp.x) * (leftX - cp.x) + (leftY - cp.y) * (leftY - cp.y) );
-                if (norm != 0) {
-                    ret.x = -( (leftY - cp.y) / norm );
-                    ret.y = ( (leftX - cp.x) / norm );
-                } else {
-                    ///both derivatives and control point are equal, just use 0
-                    ret.x = ret.y = 0;
-                }
-            }
-
-            if (clockWise) {
-                fp->x = cp.x + ret.x * featherDistance;
-                fp->y = cp.y + ret.y * featherDistance;
-            } else {
-                fp->x = cp.x - ret.x * featherDistance;
-                fp->y = cp.y - ret.y * featherDistance;
+                ///both derivatives and control point are equal, just use 0
+                delta.x = delta.y = 0;
             }
         }
-    } else {
-        ret.x = ret.y = 0;
+
+        delta.x *= featherDistance_x;
+        delta.y *= featherDistance_y;
+
+        if (clockWise) {
+            fp->x = cp.x + delta.x;
+            fp->y = cp.y + delta.y;
+        } else {
+            fp->x = cp.x - delta.x;
+            fp->y = cp.y - delta.y;
+        }
     }
 
-    return ret;
 } // expandToFeatherDistance
 
 void

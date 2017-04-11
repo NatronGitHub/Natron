@@ -134,15 +134,13 @@ public:
                             double t,
                             Point *dest);
 
-    static void bezierPointBboxUpdate(const Point & p0,
-                                      const Point & p1,
-                                      const Point & p2,
-                                      const Point & p3,
-                                      RectD *bbox,
-                                      bool* bboxSet);
-
+    static RectD getBezierSegmentControlPolygonBbox(const Point & p0,
+                                                    const Point & p1,
+                                                    const Point & p2,
+                                                    const Point & p3);
+    
     bool isOpenBezier() const;
-
+    
     /**
      * @brief Used to differentiate real shapes with feather of paint strokes which does not have a feather
      **/
@@ -412,23 +410,20 @@ public:
      * @param errorScale If recursive, this parameter influences whether we should subdivise or not the segment at one recursion step.
      * The greater it is, the smoother the curve will be.
      * @param transform A transformation matrix to apply to all control points 
-     * @param points[out] In output this is for each segment the list of desctretized points. If NULL, this is expected instead that
-     * pointsSingleList is non NULL
-     * @param pointsSingleList[out] If this is non-null, this will be set to the concatenation of all descretized points for all segments.
+     * @param pointsSingleList[out] This will be set to the concatenation of all descretized points for all segments.
      * @param bbox[out] The bounding box of the descretized points at the given scale, may be NULL
-     * Note: Only one of points and pointsSingleList can be non NULL
      **/
     static void deCasteljau(bool isOpenBezier,
                             const std::list<BezierCPPtr >& cps,
                             TimeValue time,
                             const RenderScale &scale,
-
+                            double featherDistance,
                             bool finished,
+                            bool clockWise,
                             DeCasteljauAlgorithmEnum algo,
                             int nbPointsPerSegment,
                             double errorScale,
                             const Transform::Matrix3x3& transform,
-                            std::vector<std::vector<ParametricPoint> >* points,
                             std::vector<ParametricPoint >* pointsSingleList,
                             RectD* bbox);
 
@@ -447,7 +442,6 @@ public:
                         DeCasteljauAlgorithmEnum algo,
                         int nbPointsPerSegment,
                         double errorScale,
-                        std::vector<std::vector<ParametricPoint> >* points,
                         std::vector<ParametricPoint >* pointsSingleList,
                         RectD* bbox) const;
 
@@ -458,13 +452,13 @@ public:
      * See deCasteljau for details about each parameter
      * Note: the generated points, nor the bounding box will not be offset by the feather distance in output.
      **/
-    void evaluateFeatherPointsAtTime(TimeValue time,
+    void evaluateFeatherPointsAtTime(bool applyFeatherDistance,
+                                     TimeValue time,
                                      ViewIdx view,
                                      const RenderScale &scale,
                                      DeCasteljauAlgorithmEnum algo,
                                      int nbPointsPerSegment,
                                      double errorScale,
-                                     std::vector<std::vector<ParametricPoint>  >* points,
                                      std::vector<ParametricPoint >* pointsSingleList,
                                      RectD* bbox) const;
 
@@ -475,12 +469,10 @@ public:
      **/
     virtual RectD getBoundingBox(TimeValue time,ViewIdx view) const OVERRIDE;
 
-    static void bezierSegmentListBboxUpdate(const std::list<BezierCPPtr > & points,
-                                            bool finished,
-                                            bool isOpenBezier,
-                                            TimeValue time,
-                                            const Transform::Matrix3x3& transform,
-                                            RectD* bbox);
+    static RectD getBezierSegmentListBbox(const std::list<BezierCPPtr > & points,
+                                          double featherDistance,
+                                          TimeValue time,
+                                          const Transform::Matrix3x3& transform);
 
     /**
      * @brief Returns the control points of the bezier curve. This can only ever be called on the main thread.
@@ -562,9 +554,10 @@ public:
      *
      * Note that the delta will be applied to fp.
      **/
-    static Point expandToFeatherDistance(const Point & cp,         //< the point
+    static void expandToFeatherDistance(const Point & cp,         //< the point
                                          Point* fp,         //< the feather point
-                                         double featherDistance,         //< feather distance
+                                         double featherDistance_x,         //< feather distance
+                                         double featherDistance_y,         //< feather distance
                                          TimeValue time,         //< time
                                          bool clockWise,         //< is the bezier  clockwise oriented or not
                                          const Transform::Matrix3x3& transform,

@@ -84,7 +84,7 @@ public:
     /**
      * @brief Tesselate the given bezier at the given view and time and scale. In output a set of vertices and render primitives can be fed directly to the renderer. 
      **/
-    static void tesselate(const BezierPtr& bezier, TimeValue time, ViewIdx view, const RenderScale& scale,  double featherDistPixel_x, double featherDistPixel_y, PolygonData* outArgs);
+    static void tesselate(const BezierPtr& bezier, TimeValue time, ViewIdx view, const RenderScale& scale, PolygonData* outArgs);
 
 };
 

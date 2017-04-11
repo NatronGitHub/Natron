@@ -1389,12 +1389,7 @@ CoonsRegularization::regularize(const BezierCPs &patch,
     Point pointInside = findPointInside(patch, time);
     int sign;
     {
-        RectD bbox;
-        bbox.x1 = std::numeric_limits<double>::infinity();
-        bbox.x2 = -std::numeric_limits<double>::infinity();
-        bbox.y1 = std::numeric_limits<double>::infinity();
-        bbox.y2 = -std::numeric_limits<double>::infinity();
-        Bezier::bezierSegmentListBboxUpdate(patch, true, false, time, Transform::Matrix3x3(), &bbox);
+        RectD bbox = Bezier::getBezierSegmentListBbox(patch, /*featherDistance*/0., time, Transform::Matrix3x3());
         if ( !bbox.contains(pointInside.x, pointInside.y) ) {
             sign = 0;
         } else {

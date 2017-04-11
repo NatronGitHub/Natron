@@ -1391,6 +1391,7 @@ RotoPaintInteract::isNearbyFeatherBar(TimeValue time,
                                       const QPointF & pos) const
 {
     double distFeatherX = 20. * pixelScale.first;
+    double distFeatherY = 20. * pixelScale.second;
     double acceptance = 10 * pixelScale.second;
 
     std::list<KnobTableItemPtr> selectedItems = _imp->knobsTable->getSelectedItems();
@@ -1461,7 +1462,7 @@ RotoPaintInteract::isNearbyFeatherBar(TimeValue time,
                 cp.y = controlPoint.y;
                 fp.x = featherPoint.x;
                 fp.y = featherPoint.y;
-                Bezier::expandToFeatherDistance(cp, &fp, distFeatherX, time, isClockWiseOriented, transform, prevF, itF, nextF);
+                Bezier::expandToFeatherDistance(cp, &fp, distFeatherX, distFeatherY, time, isClockWiseOriented, transform, prevF, itF, nextF);
                 featherPoint.x = fp.x;
                 featherPoint.y = fp.y;
             }
@@ -1901,7 +1902,7 @@ RotoPaintInteract::drawOverlay(TimeValue time,
 #endif
 
                 std::vector< ParametricPoint > points;
-                isBezier->evaluateAtTime(time, view, RenderScale(1.), Bezier::eDeCasteljauAlgorithmIterative, 100, 1., 0, &points, NULL);
+                isBezier->evaluateAtTime(time, view, RenderScale(1.), Bezier::eDeCasteljauAlgorithmIterative, 100, 1., &points, NULL);
 
                 bool locked = (*it)->isLockedRecursive();
                 ColorRgbaD overlayColor(0.8, 0.8, 0.8, 1.);
@@ -1922,16 +1923,12 @@ RotoPaintInteract::drawOverlay(TimeValue time,
 
                 ///draw the feather points
                 std::vector< ParametricPoint > featherPoints;
-                RectD featherBBox( std::numeric_limits<double>::infinity(),
-                                  std::numeric_limits<double>::infinity(),
-                                  -std::numeric_limits<double>::infinity(),
-                                  -std::numeric_limits<double>::infinity() );
                 bool clockWise = isBezier->isClockwiseOriented(time, view);
 
 
                 if (featherVisible) {
                     ///Draw feather only if visible (button is toggled in the user interface)
-                    isBezier->evaluateFeatherPointsAtTime(time, view, RenderScale(1.), Bezier::eDeCasteljauAlgorithmIterative, 100, 1., 0, &featherPoints, &featherBBox);
+                    isBezier->evaluateFeatherPointsAtTime(false /*applyFeatherDistance*/, time, view, RenderScale(1.), Bezier::eDeCasteljauAlgorithmIterative, 100, 1., &featherPoints, NULL);
 
                     if ( !featherPoints.empty() ) {
                         GL_GPU::LineStipple(2, 0xAAAA);
@@ -2117,7 +2114,7 @@ RotoPaintInteract::drawOverlay(TimeValue time,
                                     featherPoint.y = yF;
 
 
-                                    Bezier::expandToFeatherDistance(controlPoint, &featherPoint, distFeatherX, time, clockWise, transform, prevCp, it2, nextCp);
+                                    Bezier::expandToFeatherDistance(controlPoint, &featherPoint, distFeatherX, distFeatherY, time, clockWise, transform, prevCp, it2, nextCp);
 
                                     if ( ( (state == eEventStateDraggingFeatherBar) &&
                                           ( ( *itF == featherBarBeingDragged.first) ||

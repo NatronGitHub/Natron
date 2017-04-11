@@ -694,7 +694,7 @@ private:
         KnobIPtr currentKnob;
         DimIdx currentDimension = _dimension;
         ViewIdx currentView = _view;
-        assert(currentNode && currentGroup);
+        assert(currentGroup);
 
         // If "exists" is suffixed, we never fail but instead return 0 or 1
         _testingEnabled = !splits.empty() && splits.back() == "exists";

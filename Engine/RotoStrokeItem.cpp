@@ -1220,9 +1220,7 @@ RotoStrokeItemPrivate::computeBoundingBox(TimeValue time, ViewIdx view) const
             p2_.x = p2.x; p2_.y = p2.y;
             p3_.x = p3.x; p3_.y = p3.y;
 
-            RectD pointBox;
-            bool pointBoxSet = false;
-            Bezier::bezierPointBboxUpdate(p0_, p1_, p2_, p3_, &pointBox, &pointBoxSet);
+            RectD pointBox = Bezier::getBezierSegmentControlPolygonBbox(p0_, p1_, p2_, p3_);
             pointBox.x1 -= halfBrushSize * pressure;
             pointBox.x2 += halfBrushSize * pressure;
             pointBox.y1 -= halfBrushSize * pressure;

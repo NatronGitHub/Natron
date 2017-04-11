@@ -955,16 +955,11 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
         TimeValue t = nDivisions > 1 ? TimeValue(shutterRange.min + d * interval) : time;
 
         double fallOff = bezier->getFeatherFallOffKnob()->getValueAtTime(t, DimIdx(0), view);
-        double featherDistCanonical = bezier->getFeatherKnob()->getValueAtTime(t, DimIdx(0), view);
 
-
-        ///Adjust the feather distance so it takes the mipmap level into account
-        double featherDistPixel_X = featherDistCanonical * scale.x;
-        double featherDistPixel_Y = featherDistCanonical * scale.y;
 
         // Compute the feather triangles as well as the internal shape triangles.
         RotoBezierTriangulation::PolygonData data;
-        RotoBezierTriangulation::tesselate(bezier, t, view, scale, featherDistPixel_X, featherDistPixel_Y, &data);
+        RotoBezierTriangulation::tesselate(bezier, t, view, scale, &data);
 
         // Tex parameters may not have been set yet in GPU mode if motion blur is disabled
         if (GL::isGPU() && !perSampleRenderTexture) {
@@ -1753,14 +1748,12 @@ RotoShapeRenderGL::renderStroke_gl(const OSGLContextPtr& glContext,
         if (isStroke) {
             isStroke->evaluateStroke(scale, t, view, &strokes, 0);
         } else if (isBezier && isBezier->isOpenBezier()) {
-            std::vector<std::vector< ParametricPoint> > decastelJauPolygon;
-            isBezier->evaluateAtTime(t, view, scale, Bezier::eDeCasteljauAlgorithmIterative, -1, 1., &decastelJauPolygon, 0, 0);
+            std::vector<ParametricPoint> polygon;
+            isBezier->evaluateAtTime(t, view, scale, Bezier::eDeCasteljauAlgorithmIterative, -1, 1., &polygon, 0);
             std::list<std::pair<Point, double> > points;
-            for (std::vector<std::vector< ParametricPoint> > ::iterator it = decastelJauPolygon.begin(); it != decastelJauPolygon.end(); ++it) {
-                for (std::vector< ParametricPoint>::iterator it2 = it->begin(); it2 != it->end(); ++it2) {
-                    Point p = {it2->x, it2->y};
-                    points.push_back( std::make_pair(p, 1.) );
-                }
+            for (std::vector< ParametricPoint> ::iterator it = polygon.begin(); it != polygon.end(); ++it) {
+                Point p = {it->x, it->y};
+                points.push_back( std::make_pair(p, 1.) );
             }
             if ( !points.empty() ) {
                 strokes.push_back(points);
