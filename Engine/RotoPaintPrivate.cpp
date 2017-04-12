@@ -1900,9 +1900,14 @@ RotoPaintInteract::drawOverlay(TimeValue time,
                     continue;
                 }
 #endif
+                bool finished = isBezier->isCurveFinished(view);
 
                 std::vector< ParametricPoint > points;
                 isBezier->evaluateAtTime(time, view, RenderScale(1.), Bezier::eDeCasteljauAlgorithmIterative, 100, 1., &points, NULL);
+                if (!points.empty() && finished) {
+                    // Repeat the last point so that we can use line strips
+                    points.push_back(points.front());
+                }
 
                 bool locked = (*it)->isLockedRecursive();
                 ColorRgbaD overlayColor(0.8, 0.8, 0.8, 1.);
@@ -1930,7 +1935,11 @@ RotoPaintInteract::drawOverlay(TimeValue time,
                     ///Draw feather only if visible (button is toggled in the user interface)
                     isBezier->evaluateFeatherPointsAtTime(false /*applyFeatherDistance*/, time, view, RenderScale(1.), Bezier::eDeCasteljauAlgorithmIterative, 100, 1., &featherPoints, NULL);
 
-                    if ( !featherPoints.empty() ) {
+                    if ( !featherPoints.empty() && finished ) {
+                        // Repeat the last point so that we can use line strips
+                        featherPoints.push_back(featherPoints.front());
+
+
                         GL_GPU::LineStipple(2, 0xAAAA);
                         GL_GPU::Enable(GL_LINE_STIPPLE);
                         GL_GPU::Begin(GL_LINE_STRIP);

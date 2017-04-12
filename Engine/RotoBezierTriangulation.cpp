@@ -934,97 +934,110 @@ static void computeFeatherTriangles(PolygonCSGData &data, RotoBezierTriangulatio
     VertexIndexSet featherVertices;
     std::vector<VertexIndex> featherTriangleIndices;
 
-    // Points to the current feather bezier segment
-    vector<PolygonVertex>::iterator fit = data.originalFeatherPolygon.end();
-    --fit;
-    vector<PolygonVertex> ::iterator it = data.originalBezierPolygon.end();
-    --it;
+    // Repeat the first point of the polygon to the end so that we close the shape
+    data.originalBezierPolygon.push_back(data.originalBezierPolygon.front());
+    data.originalFeatherPolygon.push_back(data.originalFeatherPolygon.front());
 
-    // Initialize the state with a segment between the first inner vertex and first outter vertex
-    /*RotoBezierTriangulation::BezierVertex lastInnerVert,lastOutterVert;
-    polygonPointToBezierVertex(*it, &lastInnerVert);
-    polygonPointToBezierVertex(*fit, &lastOutterVert);*/
-    VertexIndex lastInnerVertIndex = *it->index, lastOutterVertIndex = *fit->index;
+    // Points to the current feather bezier segment
+    vector<PolygonVertex>::iterator it[2];
+    it[0] = data.originalBezierPolygon.end();
+    --it[0];
+    it[1] = data.originalFeatherPolygon.end();
+    --it[1];
+
+
+
+    // inner = 0, outter = 1
+    VertexIndex lastVertexIndex[2] = { *it[0]->index, *it[1]->index };
+
+    int lastIterationInnerPolygon = it[0]->isInner ? 0 : 1;
 
 
     // Initialize the first segment
-    featherVertices.insert(lastInnerVertIndex);
-    featherVertices.insert(lastOutterVertIndex);
+    featherVertices.insert(lastVertexIndex[0]);
+    featherVertices.insert(lastVertexIndex[1]);
 
-    featherTriangleIndices.push_back(lastInnerVertIndex);
-    featherTriangleIndices.push_back(lastOutterVertIndex);
+    featherTriangleIndices.push_back(lastVertexIndex[0]);
+    featherTriangleIndices.push_back(lastVertexIndex[1]);
 
-    fit = data.originalFeatherPolygon.begin();
-    it = data.originalBezierPolygon.begin();
-    bool lastIterationBezierIsInner = true;
+    vector<PolygonVertex>::iterator iteratorEnd[2] = {data.originalBezierPolygon.end(), data.originalFeatherPolygon.end()};
+    vector<PolygonVertex>::iterator lastInnerIt[2] = {iteratorEnd[0], iteratorEnd[1]};
+
+    it[0] = data.originalBezierPolygon.begin();
+    it[1] = data.originalFeatherPolygon.begin();
+
     for(;;) {
 
-        double inner_t = std::numeric_limits<double>::infinity();
-        double outter_t = std::numeric_limits<double>::infinity();
-        bool bezierIsInner = false;
-        bool featherIsInner = false;
-        if (it != data.originalBezierPolygon.end()) {
-            inner_t = it->t;
-            bezierIsInner = it->isInner;
-        }
-        if (fit != data.originalFeatherPolygon.end()) {
-            outter_t = fit->t;
-            featherIsInner = fit->isInner;
-        }
+        // The parametric t at this point on both polygons
+        double parametric_t[2] = {std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity()};
 
+        // Whether each polygon current point is considered inner (full opacity) or outter (black and transparant)
+        bool isInner[2] = {false, false};
 
-        // If both the feather and the internal polygon point are marked as being outter, that means that most likely the points were not emitted by libtess.
-        // However we still need to draw some feather there otherwise this will render black triangles.
-        // We continue along the last polygon point to create triangle fans
-        if (!bezierIsInner && !featherIsInner && it != data.originalBezierPolygon.end() && fit != data.originalFeatherPolygon.end()) {
-            if (lastIterationBezierIsInner) {
-                // Last inner point was a point of the inner bezier
-                // Iterate over the feather points and force the isInner flag
-                it->isInner = true;
-                inner_t = 1;
-                outter_t = 0;
-            } else {
-                fit->isInner = true;
-                outter_t = 1;
-                inner_t = 0;
+        for (int i = 0; i < 2; ++i) {
+            if (it[i] != iteratorEnd[i]) {
+                parametric_t[i] = it[i]->t;
+                isInner[i] = it[i]->isInner;
             }
-        } else if (bezierIsInner != featherIsInner) {
-            lastIterationBezierIsInner = bezierIsInner;
         }
 
-        bool incrementInnerIt = false;
 
+        if (isInner[0] != isInner[1]) {
+            // Regular case: remember which polygon was the inner polygon (it is possible that the bezier polygon becomes the outter polygon if the user applied a negative feather)
+            lastIterationInnerPolygon = isInner[0] ? 0 : 1;
+        } else if (!isInner[0] && !isInner[1]) {
+
+            // If both the feather and the internal polygon point are marked as being outter, that means most likely the points were not emitted by libtess.
+            // However we still need to draw some feather there otherwise this will render black triangles.
+            // We continue along the last polygon point to create triangle fans
+
+            // Force to pick the point on the outter polygon and also increment the inner polygon point to skip the points
+            // that are not marked inner
+            if (it[lastIterationInnerPolygon] != iteratorEnd[lastIterationInnerPolygon]) {
+                ++it[lastIterationInnerPolygon];
+            }
+            if (lastInnerIt[lastIterationInnerPolygon] != iteratorEnd[lastIterationInnerPolygon]) {
+                assert(lastInnerIt[lastIterationInnerPolygon]->isInner);
+                lastVertexIndex[lastIterationInnerPolygon] = *lastInnerIt[lastIterationInnerPolygon]->index;
+            }
+
+            for (int i = 0; i < 2; ++i) {
+                if (i == lastIterationInnerPolygon) {
+                    // Add a vertex of the outter polygon
+                    parametric_t[i] = 1;
+                } else {
+                    parametric_t[i] = 0;
+                }
+            }
+        }
+        
+#define ADD_POLY_VERTEX(i) \
+    if (isInner[i]) { \
+        \
+        lastInnerIt[i] = it[i]; \
+    } \
+    if ( it[i] != iteratorEnd[i] ) { \
+        lastVertexIndex[i] = *it[i]->index; \
+        featherVertices.insert(lastVertexIndex[i]); \
+        featherTriangleIndices.push_back(lastVertexIndex[i]); \
+        ++it[i]; \
+    }
         // Pick the point with the minimum t
-        if (inner_t <= outter_t) {
-            incrementInnerIt = true;
-            if ( it != data.originalBezierPolygon.end() ) {
-                lastInnerVertIndex = *it->index;
-                featherVertices.insert(lastInnerVertIndex);
-                featherTriangleIndices.push_back(lastInnerVertIndex);
-            }
+        if (parametric_t[0] <= parametric_t[1]) {
+            ADD_POLY_VERTEX(0)
         } else {
-            incrementInnerIt = false;
-            if ( fit != data.originalFeatherPolygon.end() ) {
-                lastOutterVertIndex = *fit->index;
-                featherVertices.insert(lastOutterVertIndex);
-                featherTriangleIndices.push_back(lastOutterVertIndex);
-            }
+            ADD_POLY_VERTEX(1)
         }
 
-        if (fit == data.originalFeatherPolygon.end() && it == data.originalBezierPolygon.end()) {
+        if (it[0] == iteratorEnd[0] && it[1] == iteratorEnd[1]) {
+            // We reach the end of both polygons
             break;
         }
 
-        // Initialize the first segment
-        featherTriangleIndices.push_back(lastOutterVertIndex);
-        featherTriangleIndices.push_back(lastInnerVertIndex);
+        // Initialize the first 2 vertices of the next triangle
+        featherTriangleIndices.push_back(lastVertexIndex[0]);
+        featherTriangleIndices.push_back(lastVertexIndex[1]);
 
-
-        if ( incrementInnerIt && it != data.originalBezierPolygon.end() ) {
-            ++it;
-        } else if ( !incrementInnerIt && fit != data.originalFeatherPolygon.end() ) {
-            ++fit;
-        }
     } // infinite loop
 
     // Copy back the indices & vertices to the outArgs

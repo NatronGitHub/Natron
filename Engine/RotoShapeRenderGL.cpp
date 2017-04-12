@@ -688,7 +688,7 @@ void renderBezier_gl_internal_begin(bool doBuildUp)
     GL::BlendColor(1, 1, 1, 1);
     if (!doBuildUp) {
         GL::BlendEquation(GL_MAX);
-        GL::BlendFunc(GL_ONE, GL_ZERO);
+        GL::BlendFunc(GL_ONE, GL_ZERO); // not relevant since equation is GL_MAX
 
     } else {
         GL::BlendEquationSeparate(GL_FUNC_ADD, GL_MAX);
@@ -969,6 +969,7 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
         renderBezier_gl_internal_begin<GL>(false);
 
 
+
         rampShader->bind();
         rampShader->setUniform("opacity", (float)opacity);
         rampShader->setUniform("fallOff", (float)fallOff);
@@ -1025,8 +1026,11 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
 
         }
 
+
         // Unbind the Ramp shader used for the feather and bind the Fill shader for the Roto
         rampShader->unbind();
+
+
         fillShader->bind();
         {
             OfxRGBAColourF fillColor;
