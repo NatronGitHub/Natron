@@ -1136,14 +1136,14 @@ RotoBezierTriangulation::tesselate(const BezierPtr& bezier,
 #ifndef NDEBUG
     RectD featherBbox;
 #endif
-    bezier->evaluateFeatherPointsAtTime(true /*applyFeatherDistance*/, time, view, scale, Bezier::eDeCasteljauAlgorithmIterative, -1, 1., &featherPolygonOrig,
+    bezier->evaluateFeatherPointsAtTime(true /*applyFeatherDistance*/, time, view, scale, Bezier::eDeCasteljauAlgorithmRecursive, -1, 1., &featherPolygonOrig,
 #ifndef NDEBUG
                                         &featherBbox
 #else
                                         0
 #endif
                                         );
-    bezier->evaluateAtTime(time, view, scale, Bezier::eDeCasteljauAlgorithmIterative, -1, 1., &bezierPolygonOrig,
+    bezier->evaluateAtTime(time, view, scale, Bezier::eDeCasteljauAlgorithmRecursive, -1, 1., &bezierPolygonOrig,
 #ifndef NDEBUG
                            &data.bezierBbox
 #else
@@ -1152,6 +1152,10 @@ RotoBezierTriangulation::tesselate(const BezierPtr& bezier,
                            );
 #ifndef NDEBUG
     data.bezierBbox.merge(featherBbox);
+    /*qDebug() << "tesselate: feather bbox";
+    featherBbox.debug();
+    qDebug() << "tesselate merge bbox:";
+    data.bezierBbox.debug();*/
 #endif
 
 

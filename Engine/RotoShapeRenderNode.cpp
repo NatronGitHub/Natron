@@ -326,9 +326,16 @@ static void getRoDFromItem(const RotoDrawableItemPtr& item, TimeValue time, View
     item->getMotionBlurSettings(time, view, &range, &divisions);
     double interval = divisions >= 1 ? (range.max - range.min) / divisions : 1.;
 
+    bool rodSet = false;
     for (int i = 0; i < divisions; ++i) {
         double t = divisions > 1 ? range.min + i * interval : time;
-        *rod = item->getBoundingBox(TimeValue(t), view);
+        RectD divisionRoD = item->getBoundingBox(TimeValue(t), view);
+        if (!rodSet) {
+            rodSet = true;
+            *rod = divisionRoD;
+        } else {
+            rod->merge(divisionRoD);
+        }
     }
 
 }

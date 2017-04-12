@@ -2980,6 +2980,9 @@ Bezier::getBoundingBox(TimeValue time, ViewIdx view) const
         RectD featherPointsBbox = getBezierSegmentListBbox(shape->featherPoints, featherDistance, time, transform);
         pointsBbox.merge(featherPointsBbox);
 
+        // Add one px padding so that we are sure the bounding box encloses the bounding box computed of the render points
+        pointsBbox.addPadding(1, 1);
+
     } else if (_imp->isOpenBezier) {
         double brushSize = _imp->feather.lock()->getValueAtTime(time, DimIdx(0), view);
         double halfBrushSize = brushSize / 2. + 1;
