@@ -1325,6 +1325,7 @@ Knob<T>::areDimensionsEqual(ViewIdx view)
     return valuesEqual;
 } // areDimensionsEqual
 
+
 NATRON_NAMESPACE_EXIT;
 
 #endif // KNOBIMPL_H

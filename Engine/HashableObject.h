@@ -68,6 +68,8 @@ public:
     void addHashListener(const HashableObjectPtr& parent);
     void addHashDependency(const HashableObjectPtr& parent);
 
+    void removeListener(const HashableObjectPtr& parent);
+
 
     enum ComputeHashTypeEnum
     {

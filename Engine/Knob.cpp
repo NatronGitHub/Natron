@@ -243,6 +243,19 @@ KnobHelper::convertDimViewArgAccordingToKnobState(DimSpec dimIn, ViewSetSpec vie
     }
 }
 
+bool
+KnobI::hasAnyExpression() const
+{
+    std::list<ViewIdx> views = getViewsList();
+    for (int i = 0; i < getNDimensions(); ++i) {
+        for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
+            if (hasExpression(DimIdx(i), *it)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
 
 bool
 KnobHelper::getAllDimensionsVisible(ViewIdx view) const
@@ -924,7 +937,13 @@ KnobHelper::evaluateValueChangeInternal(DimSpec dimension,
 
     KnobHolderPtr holder = getHolder();
     if (!holder) {
-        return false;
+
+        // Just refresh the gui
+        if (!isValueChangesBlocked()) {
+            _signalSlotHandler->s_mustRefreshKnobGui(view, dimension, reason);
+        }
+
+        return true;
     }
 
 
@@ -2307,6 +2326,19 @@ KnobHelper::cloneExpressions(const KnobIPtr& other, ViewSetSpec view, ViewSetSpe
     return hasChanged;
 }
 
+bool
+KnobHelper::invalidateHashCacheInternal(std::set<HashableObject*>* invalidatedObjects)
+{
+    bool hasExpr = hasAnyExpression();
+
+    // If the knob has an expression, we were invalidated most likely because a dependency got changed, hence clear the expression cache
+    // and force a refresh of the static value on the gui
+    if (hasExpr) {
+        clearExpressionsResults(DimSpec::all(), ViewSetSpec::all());
+        refreshStaticValue(getCurrentRenderTime());
+    }
+    return HashableObject::invalidateHashCacheInternal(invalidatedObjects);
+}
 
 //The knob in parameter will "listen" to this knob. Hence this knob is a dependency of the knob in parameter.
 void
@@ -2341,6 +2373,9 @@ KnobHelper::addListener(const DimIdx listenerDimension,
         listenersSet.insert(d);
     }
 
+    // The "listener" knob needs to be invalidated when this knob changes, hence register it as a listener
+    // of the hash
+    addHashListener(listener);
 
     if (language == eExpressionLanguagePython) {
         // Add this knob as a dependency of the expression

@@ -736,6 +736,10 @@ public:
     virtual void clearExpression(DimSpec dimension, ViewSetSpec view) = 0;
     virtual std::string getExpression(DimIdx dimension, ViewIdx view) const = 0;
 
+    virtual bool hasExpression(DimIdx dimension, ViewIdx view) const = 0;
+
+    bool hasAnyExpression() const;
+
     virtual void clearExpressionsResults(DimSpec dimension, ViewSetSpec view) = 0;
 
     /**
@@ -1689,6 +1693,7 @@ public:
     virtual bool isExpressionUsingRetVariable(ViewIdx view, DimIdx dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getExpressionDependencies(DimIdx dimension, ViewIdx view, KnobDimViewKeySet& dependencies) const OVERRIDE FINAL;
     virtual std::string getExpression(DimIdx dimension, ViewIdx view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool hasExpression(DimIdx dimension, ViewIdx view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAnimationEnabled(bool val) OVERRIDE FINAL;
     virtual bool isAnimationEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setKeyFrameTrackingEnabled(bool enabled) OVERRIDE FINAL;
@@ -1774,6 +1779,9 @@ public:
     virtual bool copyKnob(const KnobIPtr& other, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec::all(), ViewSetSpec otherView = ViewSetSpec::all(), DimSpec otherDimension = DimSpec::all(), const RangeD* range = 0, double offset = 0) OVERRIDE FINAL;
 
 private:
+
+    virtual bool invalidateHashCacheInternal(std::set<HashableObject*>* invalidatedObjects) OVERRIDE FINAL;
+
 
     bool cloneValueInternal(const KnobIPtr& other, ViewIdx view, ViewIdx otherView, DimIdx dimension, DimIdx otherDimension, const RangeD* range, double offset);
     bool cloneValues(const KnobIPtr& other, ViewSetSpec view, ViewSetSpec otherView, DimSpec dimension, DimSpec otherDimension, const RangeD* range, double offset);
@@ -2331,6 +2339,7 @@ public:
     virtual void refreshStaticValue(TimeValue time) OVERRIDE FINAL;
 
 protected:
+
 
     virtual void refreshCurveMinMaxInternal(ViewIdx view, DimIdx dimension) OVERRIDE FINAL;
 

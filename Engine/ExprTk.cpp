@@ -131,6 +131,9 @@ struct NATRON_NAMESPACE::KnobExprExprTk::ExpressionData
     exprtk_ifunction_table_t functions;
     exprtk_ivararg_function_table_t varargFunctions;
     exprtk_igeneric_function_table_t genericFunctions;
+
+    // Hold in the same way vector variables locally
+    std::vector<std::vector<double> > vectorVariables;
 };
 
 KnobExprExprTk::ExpressionDataPtr
@@ -656,6 +659,8 @@ public:
     string _objectName;
     string _error;
     bool _testingEnabled;
+    bool _isRenderClone;
+    FrameViewRenderKey _renderKey;
 
     // If result is eResultTypeEffectRoD, this is the effect on which to retrieve the property
     EffectInstancePtr _effectProperty;
@@ -668,14 +673,18 @@ public:
     SymbolResolver(KnobI* knob,
                    DimIdx dimension,
                    ViewIdx view,
+                   bool isRenderClone,
+                   const FrameViewRenderKey& renderKey,
                    const string& symbol)
-        : _knob(knob)
-        , _dimension(dimension)
-        , _view(view)
-        , _symbol(symbol)
-        , _resultType(eResultTypeInvalid)
-        , _error()
-        , _testingEnabled(false)
+    : _knob(knob)
+    , _dimension(dimension)
+    , _view(view)
+    , _symbol(symbol)
+    , _resultType(eResultTypeInvalid)
+    , _error()
+    , _testingEnabled(false)
+    , _isRenderClone(isRenderClone)
+    , _renderKey(renderKey)
     {
         resolve();
     }
@@ -732,7 +741,12 @@ private:
             {
                 EffectInstancePtr curNodeOut;
                 if ( checkForNode(token, currentGroup, currentNode, &curNodeOut) ) {
-                    // If we caught a node, check if it is a group too
+
+                    // Ensure we get a render clone
+                    if (_isRenderClone) {
+                        curNodeOut = toEffectInstance(curNodeOut->createRenderClone(_renderKey));
+                        assert(curNodeOut);
+                    }
                     currentNode = curNodeOut;
                     currentGroup = toNodeGroup(currentNode);
                     currentHolder = currentNode;
@@ -755,7 +769,13 @@ private:
             {
                 KnobTableItemPtr curTableItemOut;
                 if ( checkForTableItem(token, currentHolder, &curTableItemOut) ) {
-                    // If we caught a node, check if it is a group too
+
+                    // Ensure we get a render clone
+                    if (_isRenderClone) {
+                        curTableItemOut = toKnobTableItem(curTableItemOut->createRenderClone(_renderKey));
+                        assert(curTableItemOut);
+                    }
+
                     currentTableItem = curTableItemOut;
                     currentHolder = currentTableItem;
                     currentNode.reset();
@@ -800,7 +820,14 @@ private:
             {
                 KnobIPtr curKnobOut;
                 if ( checkForKnob(token, currentHolder, &curKnobOut) ) {
-                    // If we caught a node, check if it is a group too
+
+                    // Ensure we get a render clone
+                    if (_isRenderClone) {
+                        KnobHolderPtr holderClone = curKnobOut->getHolder()->createRenderClone(_renderKey);
+                        curKnobOut = curKnobOut->getCloneForHolderInternal(holderClone);
+                        assert(curKnobOut);
+                    }
+
                     currentKnob = curKnobOut;
                     currentHolder.reset();
                     currentTableItem.reset();
@@ -832,7 +859,6 @@ private:
 
 
             if ( currentKnob && checkForDimension(token, currentKnob, &currentDimension) ) {
-                // If we caught a node, check if it is a group too
                 currentHolder.reset();
                 currentTableItem.reset();
                 currentNode.reset();
@@ -1104,18 +1130,27 @@ struct UnknownSymbolResolver
     DimIdx _dimension;
     ViewIdx _view;
     KnobExprExprTk* _ret;
+    KnobExprExprTk::ExpressionDataPtr _threadData;
+    FrameViewRenderKey _renderKey;
+    bool _isRenderClone;
 
     UnknownSymbolResolver(KnobHelper* knob,
                           TimeValue time,
                           DimIdx dimension,
                           ViewIdx view,
-                          KnobExprExprTk* ret)
-        : exprtk_parser_t::unknown_symbol_resolver(exprtk_parser_t::unknown_symbol_resolver::e_usrmode_extended)
-        , _knob(knob)
-        , _time(time)
-        , _dimension(dimension)
-        , _view(view)
-        , _ret(ret)
+                          bool isRenderClone,
+                          const FrameViewRenderKey& renderKey,
+                          KnobExprExprTk* ret,
+                          KnobExprExprTk::ExpressionDataPtr threadData)
+    : exprtk_parser_t::unknown_symbol_resolver(exprtk_parser_t::unknown_symbol_resolver::e_usrmode_extended)
+    , _knob(knob)
+    , _time(time)
+    , _dimension(dimension)
+    , _view(view)
+    , _ret(ret)
+    , _threadData(threadData)
+    , _renderKey(renderKey)
+    , _isRenderClone(isRenderClone)
     {
     }
 
@@ -1125,7 +1160,7 @@ struct UnknownSymbolResolver
                          exprtk_symbol_table_t&      symbol_table,
                          std::string&        error_message) OVERRIDE FINAL
     {
-        SymbolResolver resolver(_knob, _dimension, _view, unknown_symbol);
+        SymbolResolver resolver(_knob, _dimension, _view, _isRenderClone, _renderKey, unknown_symbol);
 
         if (resolver._testingEnabled) {
 
@@ -1167,7 +1202,16 @@ struct UnknownSymbolResolver
                 GetRegionOfDefinitionResultsPtr results;
                 ActionRetCodeEnum stat = resolver._effectProperty->getRegionOfDefinition_public(_time, RenderScale(1.), _view, &results);
 
-                std::vector<double> vect(4);
+                _threadData->vectorVariables.resize(_threadData->vectorVariables.size() + 1);
+
+                if (_ret) {
+                    EffectFunctionDependency depType;
+                    depType.type = EffectFunctionDependency::eEffectFunctionDependencyRoD;
+                    depType.effect = resolver._effectProperty;
+                    _ret->effectDependencies.insert(make_pair(unknown_symbol, depType));
+                }
+                std::vector<double> &vect = _threadData->vectorVariables.back();
+                vect.resize(4);
                 if ( isFailureRetCode(stat) ) {
                     vect[0] = vect[1] = vect[2] = vect[3] = 0.;
                 } else {
@@ -1187,7 +1231,7 @@ struct UnknownSymbolResolver
 
             case SymbolResolver::eResultTypeKnobValue: {
                 // Register the target knob as a dependency of this expression
-                {
+                if (_ret) {
                     KnobDimViewKey dep;
                     dep.knob = resolver._targetKnob;
                     dep.dimension = resolver._targetDimension;
@@ -1257,7 +1301,6 @@ struct curve_func
         assert( overloadIdx + 1 == parameters.size() );
         assert(parameters.size() == 1 || parameters.size() == 2 || parameters.size() == 3);
         assert(parameters[0].type == generic_type::e_scalar);
-        assert(parameters[1].type == generic_type::e_scalar);
 
         KnobIPtr knob = _knob.lock();
         if (!knob) {
@@ -1443,14 +1486,14 @@ KnobHelperPrivate::validateExprTkExpression(const string& expression,
 
     {
         double time_f = (double)time;
-        symbol_table.add_variable("frame", time_f);
+        symbol_table.create_variable("frame", time_f);
     }
     string viewName = publicInterface->getHolder()->getApp()->getProject()->getViewName(view);
-    symbol_table.add_stringvar("view", viewName, false);
+    symbol_table.create_stringvar("view", viewName);
 
     {
         // The object that resolves undefined knob dependencies at compile time
-        UnknownSymbolResolver musr(publicInterface, time, dimension, view, ret);
+        UnknownSymbolResolver musr(publicInterface, time, dimension, view, false /*isRenderClone*/, FrameViewRenderKey(), ret, data);
         exprtk_parser_t parser;
         parser.enable_unknown_symbol_resolver(&musr);
 
@@ -1532,7 +1575,19 @@ KnobHelper::executeExprTkExpression(TimeValue time,
         }
     }
 
+    // If we are a render clone, we must also reference clones that are local to this render
     bool isRenderClone = getHolder()->isRenderClone();
+
+    FrameViewRenderKey renderKey;
+    if (isRenderClone) {
+
+        renderKey.render = getHolder()->getCurrentRender();
+        assert(renderKey.render.lock());
+        renderKey.time = getHolder()->getCurrentRenderTime();
+        renderKey.view = getHolder()->getCurrentRenderView();
+    }
+
+
     exprtk_symbol_table_t* unknown_symbols_table = 0;//
     exprtk_symbol_table_t* symbol_table = 0; //obj->expressionObject->get_symbol_table(1);
     bool existingExpression = true;
@@ -1550,6 +1605,7 @@ KnobHelper::executeExprTkExpression(TimeValue time,
     symbol_table = &data->expressionObject->get_symbol_table(1);
 
 
+
     if (existingExpression) {
         // Update the frame & view in the know table
         symbol_table->variable_ref("frame") = (double)time;
@@ -1560,9 +1616,9 @@ KnobHelper::executeExprTkExpression(TimeValue time,
         makeLocalCopyOfStateFunctions(time, *symbol_table, &functionsCopy);
     } else {
         double time_f = (double)time;
-        symbol_table->add_variable("frame", time_f);
+        symbol_table->create_variable("frame", time_f);
         string viewName = getHolder()->getApp()->getProject()->getViewName(view);
-        symbol_table->add_stringvar("view", viewName, false);
+        symbol_table->create_stringvar("view", viewName);
 
         addStandardFunctions(obj->expressionString, time, *symbol_table, data->functions, data->varargFunctions, data->genericFunctions, 0);
 
@@ -1572,111 +1628,93 @@ KnobHelper::executeExprTkExpression(TimeValue time,
         data->genericFunctions.push_back( make_pair("curve", curveFunc) );
         symbol_table->add_function("curve", *curveFunc);
 
+    } // existingExpression
+
+
+
+    // If the expression did not exist already on this thread, create a USR which will create the variables.
+    // Otherwise, update existing ones to their current value
+    if (!existingExpression) {
         exprtk_parser_t parser;
+
+        // The object that resolves undefined knob dependencies at compile time
+        // Pass a NULL object because we already registered dependencies on the main thread data
+        UnknownSymbolResolver musr(this, time, dimension, view, isRenderClone, renderKey, 0, data);
+        parser.enable_unknown_symbol_resolver(&musr);
+
         string error;
         if ( !parseExprtkExpression(obj->expressionString, obj->modifiedExpression, parser, *data->expressionObject, &error) ) {
             return KnobHelper::eExpressionReturnValueTypeError;
         }
-    } // existingExpression
-
-    for (std::map<string, KnobDimViewKey>::const_iterator it = obj->knobDependencies.begin(); it != obj->knobDependencies.end(); ++it) {
-        KnobIPtr knob = it->second.knob.lock();
-        if (!knob) {
-            continue;
-        }
-
-        if (isRenderClone) {
-            // Get the render clone for this knob
-            // First ensure a clone is created for the effect holding the knob
-            // and then fetch the knob clone on it
-            TreeRenderPtr render = getHolder()->getCurrentRender();
-            assert(render);
-            TimeValue time = getHolder()->getCurrentRenderTime();
-            ViewIdx view = getHolder()->getCurrentRenderView();
-            FrameViewRenderKey key = {time, view, render};
-            KnobHolderPtr holderClone = knob->getHolder()->createRenderClone(key);
-
-            knob = knob->getCloneForHolderInternal(holderClone);
-        }
-
-        KnobBoolBasePtr isBoolean = toKnobBoolBase(knob);
-        KnobStringBasePtr isString = toKnobStringBase(knob);
-        KnobIntBasePtr isInt = toKnobIntBase(knob);
-        KnobDoubleBasePtr isDouble = toKnobDoubleBase(knob);
-        if (existingExpression) {
-            if (isBoolean) {
-                unknown_symbols_table->variable_ref(it->first) = isBoolean->getValueAtTime(time, it->second.dimension, it->second.view);
-            } else if (isInt) {
-                unknown_symbols_table->variable_ref(it->first) = isInt->getValueAtTime(time, it->second.dimension, it->second.view);
-            } else if (isDouble) {
-                double val = isDouble->getValueAtTime(time, it->second.dimension, it->second.view);
-                unknown_symbols_table->variable_ref(it->first) = val;
-            } else if (isString) {
-                unknown_symbols_table->stringvar_ref(it->first) = isString->getValueAtTime(time, it->second.dimension, it->second.view);
+    } else {
+        for (std::map<string, KnobDimViewKey>::const_iterator it = obj->knobDependencies.begin(); it != obj->knobDependencies.end(); ++it) {
+            KnobIPtr knob = it->second.knob.lock();
+            if (!knob) {
+                continue;
             }
-        } else {
-            if (isBoolean) {
-                double value = (double)isBoolean->getValueAtTime(time, it->second.dimension, it->second.view);
-                unknown_symbols_table->add_variable(it->first, value);
-            } else if (isInt) {
-                double value = (double)isInt->getValueAtTime(time, it->second.dimension, it->second.view);;
-                unknown_symbols_table->add_variable(it->first, value);
-            } else if (isDouble) {
-                double val = isDouble->getValueAtTime(time, it->second.dimension, it->second.view);
-                unknown_symbols_table->add_variable(it->first, val);
-            } else if (isString) {
-                string val = isString->getValueAtTime(time, it->second.dimension, it->second.view);
-                unknown_symbols_table->add_stringvar(it->first, val);
+
+            if (isRenderClone) {
+                // Get the render clone for this knob
+                // First ensure a clone is created for the effect holding the knob
+                // and then fetch the knob clone on it
+                KnobHolderPtr holderClone = knob->getHolder()->createRenderClone(renderKey);
+                knob = knob->getCloneForHolderInternal(holderClone);
+            }
+
+            KnobBoolBasePtr isBoolean = toKnobBoolBase(knob);
+            KnobStringBasePtr isString = toKnobStringBase(knob);
+            KnobIntBasePtr isInt = toKnobIntBase(knob);
+            KnobDoubleBasePtr isDouble = toKnobDoubleBase(knob);
+                if (isBoolean) {
+                    unknown_symbols_table->variable_ref(it->first) = isBoolean->getValueAtTime(time, it->second.dimension, it->second.view);
+                } else if (isInt) {
+                    unknown_symbols_table->variable_ref(it->first) = isInt->getValueAtTime(time, it->second.dimension, it->second.view);
+                } else if (isDouble) {
+                    double val = isDouble->getValueAtTime(time, it->second.dimension, it->second.view);
+                    unknown_symbols_table->variable_ref(it->first) = val;
+                } else if (isString) {
+                    unknown_symbols_table->stringvar_ref(it->first) = isString->getValueAtTime(time, it->second.dimension, it->second.view);
+                }
+
+        }
+
+        for (std::map<string, EffectFunctionDependency>::const_iterator it = obj->effectDependencies.begin(); it != obj->effectDependencies.end(); ++it) {
+            EffectInstancePtr effect = it->second.effect.lock();
+            if (!effect) {
+                continue;
+            }
+
+            if (isRenderClone) {
+                // Get the render clone
+                effect = toEffectInstance( effect->createRenderClone(renderKey) );
+                assert( effect && effect->isRenderClone() );
+            }
+            switch (it->second.type) {
+                case EffectFunctionDependency::eEffectFunctionDependencyRoD: {
+                    GetRegionOfDefinitionResultsPtr results;
+                    ActionRetCodeEnum stat = effect->getRegionOfDefinition_public(time, RenderScale(1.), view, &results);
+                    if ( isFailureRetCode(stat) ) {
+                        *error = it->first + ": Could not get region of definition";
+
+                        return eExpressionReturnValueTypeError;
+                    }
+                    const RectD& rod = results->getRoD();
+
+
+                    data->vectorVariables.resize(data->vectorVariables.size() + 1);
+                    vector<double> &vec = data->vectorVariables.back();
+                    vec.resize(4);
+                    vec[0] = rod.x1;
+                    vec[1] = rod.y1;
+                    vec[2] = rod.x2;
+                    vec[3] = rod.y2;
+                    unknown_symbols_table->add_vector( it->first, &vec[0], vec.size() );
+                }
+                    break;
+                    
             }
         }
-    }
-
-    for (std::map<string, EffectFunctionDependency>::const_iterator it = obj->effectDependencies.begin(); it != obj->effectDependencies.end(); ++it) {
-        EffectInstancePtr effect = it->second.effect.lock();
-        if (!effect) {
-            continue;
-        }
-
-        if (isRenderClone) {
-            // Get the render clone
-            TreeRenderPtr render = getHolder()->getCurrentRender();
-            assert(render);
-            TimeValue time = getHolder()->getCurrentRenderTime();
-            ViewIdx view = getHolder()->getCurrentRenderView();
-            FrameViewRenderKey key = {time, view, render};
-            effect = toEffectInstance( effect->createRenderClone(key) );
-            assert( effect && effect->isRenderClone() );
-        }
-        switch (it->second.type) {
-        case EffectFunctionDependency::eEffectFunctionDependencyRoD: {
-            GetRegionOfDefinitionResultsPtr results;
-            ActionRetCodeEnum stat = effect->getRegionOfDefinition_public(time, RenderScale(1.), view, &results);
-            if ( isFailureRetCode(stat) ) {
-                *error = it->first + ": Could not get region of definition";
-
-                return eExpressionReturnValueTypeError;
-            }
-            const RectD& rod = results->getRoD();
-
-            if (existingExpression) {
-                exprtk_symbol_table_t::vector_holder_ptr vecHolderPtr = unknown_symbols_table->get_vector(it->first);
-                assert(vecHolderPtr->size() == 4);
-                *(*vecHolderPtr)[0] = exprtk_scalar_t(rod.x1);
-                *(*vecHolderPtr)[1] = exprtk_scalar_t(rod.y1);
-                *(*vecHolderPtr)[2] = exprtk_scalar_t(rod.x2);
-                *(*vecHolderPtr)[3] = exprtk_scalar_t(rod.y2);
-            } else {
-                vector<double> vec(4);
-                vec[0] = rod.x1;
-                vec[1] = rod.y1;
-                vec[2] = rod.x2;
-                vec[3] = rod.y2;
-                unknown_symbols_table->add_vector( it->first, &vec[0], vec.size() );
-            }
-            break;
-        }
-        }
-    }
+    } // !existingExpression
 
     return handleExprTkReturn(*data->expressionObject, retValueIsScalar, retValueIsString, error);
 } // executeExprTkExpression

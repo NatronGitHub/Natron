@@ -960,6 +960,15 @@ KnobHelper::setExpressionInternal(DimIdx dimension,
                 for (std::map<string, KnobDimViewKey>::const_iterator it = obj->knobDependencies.begin(); it != obj->knobDependencies.end(); ++it) {
                     it->second.knob.lock()->addListener(dimension, it->second.dimension, view, it->second.view, thisShared, eExpressionLanguageExprTk);
                 }
+
+                for (std::map<std::string, EffectFunctionDependency>::const_iterator it = obj->effectDependencies.begin(); it != obj->effectDependencies.end(); ++it) {
+                    EffectInstancePtr effect = it->second.effect.lock();
+                    if (!effect) {
+                        continue;
+                    }
+
+                    addHashListener(effect);
+                }
             }
             break;
             }
@@ -1168,6 +1177,7 @@ KnobHelper::clearExpressionInternal(DimIdx dimension,
 {
     PythonGILLocker pgl;
     bool hadExpression = false;
+    KnobIPtr thisShared = shared_from_this();
     KnobDimViewKeySet dependencies;
     {
         QMutexLocker k(&_imp->common->expressionMutex);
@@ -1183,11 +1193,19 @@ KnobHelper::clearExpressionInternal(DimIdx dimension,
                 for (std::map<string, KnobDimViewKey>::const_iterator it = isExprtkExpr->knobDependencies.begin(); it != isExprtkExpr->knobDependencies.end(); ++it) {
                     dependencies.insert(it->second);
                 }
+
+                // Remove this knob from the listeners list of the effect hash
+                for (std::map<std::string, EffectFunctionDependency>::const_iterator it = isExprtkExpr->effectDependencies.begin(); it != isExprtkExpr->effectDependencies.end(); ++it) {
+                    EffectInstancePtr effect = it->second.effect.lock();
+                    if (!effect) {
+                        continue;
+                    }
+                    effect->removeListener(thisShared);
+                }
             }
             foundView->second.reset();
         }
     }
-    KnobIPtr thisShared = shared_from_this();
     {
         // Notify all dependencies of the expression that they no longer listen to this knob
         KnobDimViewKey listenerToRemoveKey(thisShared, dimension, view);
@@ -1199,6 +1217,7 @@ KnobHelper::clearExpressionInternal(DimIdx dimension,
                 continue;
             }
 
+            // Remove from the other knob's listeners list
             {
                 QMutexLocker otherMastersLocker(&other->_imp->common->expressionMutex);
                 KnobDimViewKeySet& otherListeners = other->_imp->common->listeners[it->dimension][it->view];
@@ -1207,6 +1226,9 @@ KnobHelper::clearExpressionInternal(DimIdx dimension,
                     otherListeners.erase(foundListener);
                 }
             }
+
+            // Remove from the hash listeners
+            other->removeListener(thisShared);
         }
     }
 
@@ -1453,6 +1475,22 @@ KnobHelper::getExpression(DimIdx dimension,
     }
 
     return foundView->second->expressionString;
+}
+
+bool
+KnobHelper::hasExpression(DimIdx dimension, ViewIdx view) const
+{
+    if ( (dimension < 0) || ( dimension >= (int)_imp->common->expressions.size() ) ) {
+        throw std::invalid_argument("Knob::hasExpression: Dimension out of range");
+    }
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
+    QMutexLocker k(&_imp->common->expressionMutex);
+    ExprPerViewMap::const_iterator foundView = _imp->common->expressions[dimension].find(view_i);
+    if ( ( foundView == _imp->common->expressions[dimension].end() ) || !foundView->second ) {
+        return false;
+    }
+
+    return foundView->second->expressionString.empty();
 }
 
 NATRON_NAMESPACE_EXIT

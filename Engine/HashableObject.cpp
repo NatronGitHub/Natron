@@ -119,6 +119,17 @@ HashableObject::addHashListener(const HashableObjectPtr& parent)
 }
 
 void
+HashableObject::removeListener(const HashableObjectPtr& parent)
+{
+    for (std::list<HashableObjectWPtr>::iterator it = _imp->listeners.begin(); it != _imp->listeners.end(); ++it) {
+        if (it->lock() == parent) {
+            _imp->listeners.erase(it);
+            return;
+        }
+    }
+}
+
+void
 HashableObject::addHashDependency(const HashableObjectPtr& dep)
 {
     _imp->dependencies.push_back(dep);
