@@ -2841,7 +2841,7 @@ simple user defined USR:
                    T& default_value,
                    std::string& error_message)
       {
-         if (0 != unknown_symbol.find('var_'))
+         if (0 != unknown_symbol.find("var_"))
          {
             error_message = "Invalid symbol: " + unknown_symbol;
             return false;
@@ -2883,6 +2883,77 @@ USR's process method will be invoked. The USR in the example will only
 'accept' unknown symbols that have  a prefix of 'var_' as  being valid
 variables,  all other  unknown symbols  will result  in a  compilation
 error being raised.
+
+In the example above  the callback of the  USR that is invoked  during
+the unknown symbol resolution process only allows for scalar variables
+to be defined and resolved -  as that is the simplest and  most common
+form.
+
+There  is  also  an  extended version  of  the  callback  that can  be
+overridden that will allow for  more control and choice over  the type
+of symbol being  resolved. The following  is an example  definition of
+said extended callback:
+
+   template <typename T>
+   struct my_usr : public parser_t::unknown_symbol_resolver
+   {
+     typedef typename parser_t::unknown_symbol_resolver usr_t;
+
+     my_usr()
+     : usr_t(usr_t::e_usrmode_extended)
+     {}
+
+     virtual bool process(const std::string& unknown_symbol,
+                          symbol_table_t&      symbol_table,
+                          std::string&        error_message)
+     {
+        bool result = false;
+
+        if (0 == unknown_symbol.find("var_"))
+        {
+           // Default value of zero
+           result = symbol_table.create_variable(unknown_symbol,0);
+
+           if (!result)
+           {
+              error_message = "Failed to create variable...";
+           }
+        }
+        else if (0 == unknown_symbol.find("str_"))
+        {
+           // Default value of empty string
+           result = symbol_table.create_stringvar(unknown_symbol,"");
+
+           if (!result)
+           {
+              error_message = "Failed to create string variable...";
+           }
+        }
+        else
+           error_message = "Indeterminable symbol type.";
+
+        return result;
+     }
+   };
+
+
+In the  example above,  the USR  callback when  invoked will  pass the
+primary symbol table associated with the expression being parsed.  The
+symbol  resolution  business  logic  can  then  determine  under  what
+conditions  a  symbol will  be  resolved including  its  type (scalar,
+string, vector etc) and default value. When the callback  successfully
+returns  the  symbol  parsing and  resolution  process  will again  be
+executed by the parser. The idea here is that given the primary symbol
+table will now have the previously detected unknown symbol registered,
+it will be correctly resolved  and the general parsing processing  can
+then resume as per normal.
+
+Note: In order to have the USR's extended mode callback be invoked  It
+is  necessary to  pass the  e_usrmode_extended enum  value during  the
+constructor of the user defined USR.
+
+Note: The primary symbol table  for an expression is the  first symbol
+table to be registered with that instance of the expression.
 
      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

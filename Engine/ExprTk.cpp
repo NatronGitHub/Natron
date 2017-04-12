@@ -1104,148 +1104,122 @@ struct UnknownSymbolResolver
     DimIdx _dimension;
     ViewIdx _view;
     KnobExprExprTk* _ret;
-    usr_variable_user_type _varType;
-    exprtk_scalar_t _resolvedScalar;
-    vector<exprtk_scalar_t> _resolvedVector;
-    string _resolvedString;
-
 
     UnknownSymbolResolver(KnobHelper* knob,
                           TimeValue time,
                           DimIdx dimension,
                           ViewIdx view,
                           KnobExprExprTk* ret)
-        : exprtk_parser_t::unknown_symbol_resolver()
+        : exprtk_parser_t::unknown_symbol_resolver(exprtk_parser_t::unknown_symbol_resolver::e_usrmode_extended)
         , _knob(knob)
         , _time(time)
         , _dimension(dimension)
         , _view(view)
         , _ret(ret)
-        , _varType(e_usr_variable_user_type_scalar)
-        , _resolvedScalar(0)
-        , _resolvedVector()
-        , _resolvedString()
     {
     }
 
-    virtual usr_symbol_type getSymbolType() const OVERRIDE FINAL
-    {
-        // Values are variables since we will update them later on
-        return e_usr_variable_type;
-    }
 
-    virtual usr_variable_user_type getVariableType() const OVERRIDE FINAL
-    {
-        return _varType;
-    }
 
-    virtual exprtk_scalar_t getResolvedScalar() OVERRIDE FINAL
-    {
-        assert(_varType == e_usr_variable_user_type_scalar);
-
-        return _resolvedScalar;
-    }
-
-    virtual string& getResolvedString() OVERRIDE FINAL
-    {
-        assert(_varType == e_usr_variable_user_type_string);
-
-        return _resolvedString;
-    }
-
-    virtual vector<exprtk_scalar_t>& getResolvedVector()  OVERRIDE FINAL
-    {
-        assert(_varType == e_usr_variable_user_type_vector);
-
-        return _resolvedVector;
-    }
-
-    virtual bool process(const string& unknown_symbol,
-                         string& error_message) OVERRIDE FINAL
+    virtual bool process(const std::string& unknown_symbol,
+                         exprtk_symbol_table_t&      symbol_table,
+                         std::string&        error_message) OVERRIDE FINAL
     {
         SymbolResolver resolver(_knob, _dimension, _view, unknown_symbol);
 
         if (resolver._testingEnabled) {
-            _varType = e_usr_variable_user_type_scalar;
-            if (resolver._resultType == SymbolResolver::eResultTypeInvalid) {
-                _resolvedScalar = 0;
-            } else {
-                _resolvedScalar = 1;
-            }
 
-            return true;
+            int defValue = resolver._resultType == SymbolResolver::eResultTypeInvalid ? 0 : 1;
+            bool ok = symbol_table.create_variable(unknown_symbol, defValue);
+            if (!ok) {
+                error_message = "Could not create variable " + unknown_symbol;
+            }
+            return ok;
         }
         switch (resolver._resultType) {
-        case SymbolResolver::eResultTypeInvalid: {
-            error_message = "Error when parsing symbol " + unknown_symbol;
-            if ( !resolver._error.empty() ) {
-                error_message += ": " + resolver._error;
-            }
-        }
-
-            return false;
-        case SymbolResolver::eResultTypeObjectName: {
-            _resolvedString = resolver._objectName;
-            _varType = e_usr_variable_user_type_string;
-            break;
-        }
-        case SymbolResolver::eResultTypeKnobChoiceOption: {
-            KnobChoice* isChoice = dynamic_cast<KnobChoice*>(_knob);
-            if (!isChoice) {
+            case SymbolResolver::eResultTypeInvalid: {
+                error_message = "Error when parsing symbol " + unknown_symbol;
+                if ( !resolver._error.empty() ) {
+                    error_message += ": " + resolver._error;
+                }
                 return false;
             }
-            _resolvedString = isChoice->getActiveEntry(_view).id;
-            _varType = e_usr_variable_user_type_string;
-            break;
-        }
-        case SymbolResolver::eResultTypeEffectRoD: {
-            GetRegionOfDefinitionResultsPtr results;
-            ActionRetCodeEnum stat = resolver._effectProperty->getRegionOfDefinition_public(_time, RenderScale(1.), _view, &results);
-            _varType = e_usr_variable_user_type_vector;
-            _resolvedVector.resize(4);
-            if ( isFailureRetCode(stat) ) {
-                _resolvedVector[0] = _resolvedVector[1] = _resolvedVector[2] = _resolvedVector[3] = 0.;
-            } else {
-                const RectD& rod = results->getRoD();
-                _resolvedVector[0] = rod.x1;
-                _resolvedVector[1] = rod.y1;
-                _resolvedVector[2] = rod.x2;
-                _resolvedVector[3] = rod.y2;
+            case SymbolResolver::eResultTypeObjectName: {
+                bool ok = symbol_table.create_stringvar(unknown_symbol, resolver._objectName);
+                if (!ok) {
+                    error_message = "Could not create variable " + unknown_symbol;
+                }
+                return ok;
             }
-            break;
-        }
+            case SymbolResolver::eResultTypeKnobChoiceOption: {
+                KnobChoice* isChoice = dynamic_cast<KnobChoice*>(_knob);
+                if (!isChoice) {
+                    return false;
+                }
+                std::string value = isChoice->getActiveEntry(_view).id;
+                bool ok = symbol_table.create_stringvar(unknown_symbol, value);
+                if (!ok) {
+                    error_message = "Could not create variable " + unknown_symbol;
+                }
+                return ok;
+            }
+            case SymbolResolver::eResultTypeEffectRoD: {
+                GetRegionOfDefinitionResultsPtr results;
+                ActionRetCodeEnum stat = resolver._effectProperty->getRegionOfDefinition_public(_time, RenderScale(1.), _view, &results);
 
-        case SymbolResolver::eResultTypeKnobValue: {
-            // Register the target knob as a dependency of this expression
-            {
-                KnobDimViewKey dep;
-                dep.knob = resolver._targetKnob;
-                dep.dimension = resolver._targetDimension;
-                dep.view = resolver._targetView;
-                _ret->knobDependencies.insert( make_pair(unknown_symbol, dep) );
+                std::vector<double> vect(4);
+                if ( isFailureRetCode(stat) ) {
+                    vect[0] = vect[1] = vect[2] = vect[3] = 0.;
+                } else {
+                    const RectD& rod = results->getRoD();
+                    vect[0] = rod.x1;
+                    vect[1] = rod.y1;
+                    vect[2] = rod.x2;
+                    vect[3] = rod.y2;
+                }
+
+                bool ok = symbol_table.add_vector(unknown_symbol, vect);
+                if (!ok) {
+                    error_message = "Could not create variable " + unknown_symbol;
+                }
+                return ok;
             }
 
+            case SymbolResolver::eResultTypeKnobValue: {
+                // Register the target knob as a dependency of this expression
+                {
+                    KnobDimViewKey dep;
+                    dep.knob = resolver._targetKnob;
+                    dep.dimension = resolver._targetDimension;
+                    dep.view = resolver._targetView;
+                    _ret->knobDependencies.insert( make_pair(unknown_symbol, dep) );
+                }
 
-            // Return the value of the knob at the given dimension
-            KnobBoolBasePtr isBoolean = toKnobBoolBase(resolver._targetKnob);
-            KnobStringBasePtr isString = toKnobStringBase(resolver._targetKnob);
-            KnobIntBasePtr isInt = toKnobIntBase(resolver._targetKnob);
-            KnobDoubleBasePtr isDouble = toKnobDoubleBase(resolver._targetKnob);
-            if (isBoolean) {
-                _resolvedScalar = exprtk_scalar_t( isBoolean->getValueAtTime(_time, resolver._targetDimension, resolver._targetView) );
-                _varType = e_usr_variable_user_type_scalar;
-            } else if (isInt) {
-                _resolvedScalar = exprtk_scalar_t( isInt->getValueAtTime(_time, resolver._targetDimension, resolver._targetView) );
-                _varType = e_usr_variable_user_type_scalar;
-            } else if (isDouble) {
-                _resolvedScalar = exprtk_scalar_t( isDouble->getValueAtTime(_time, resolver._targetDimension, resolver._targetView) );
-                _varType = e_usr_variable_user_type_scalar;
-            } else if (isString) {
-                _varType = e_usr_variable_user_type_string;
-                _resolvedString = isString->getValueAtTime(_time, resolver._targetDimension, resolver._targetView);
+
+                // Return the value of the knob at the given dimension
+                KnobBoolBasePtr isBoolean = toKnobBoolBase(resolver._targetKnob);
+                KnobStringBasePtr isString = toKnobStringBase(resolver._targetKnob);
+                KnobIntBasePtr isInt = toKnobIntBase(resolver._targetKnob);
+                KnobDoubleBasePtr isDouble = toKnobDoubleBase(resolver._targetKnob);
+                bool ok = false;
+                if (isBoolean) {
+                    bool val = isBoolean->getValueAtTime(_time, resolver._targetDimension, resolver._targetView);
+                    ok = symbol_table.create_variable(unknown_symbol, val);
+                } else if (isInt) {
+                    int val = isInt->getValueAtTime(_time, resolver._targetDimension, resolver._targetView);
+                    ok = symbol_table.create_variable(unknown_symbol, val);
+                } else if (isDouble) {
+                    double val = isDouble->getValueAtTime(_time, resolver._targetDimension, resolver._targetView);
+                    ok = symbol_table.create_variable(unknown_symbol, val);
+                } else if (isString) {
+                    std::string val = isString->getValueAtTime(_time, resolver._targetDimension, resolver._targetView);
+                    ok = symbol_table.create_stringvar(unknown_symbol, val);
+                }
+                if (!ok) {
+                    error_message = "Could not create variable " + unknown_symbol;
+                }
+                return ok;
             }
-            break;
-        }
         } // switch
 
         return true;

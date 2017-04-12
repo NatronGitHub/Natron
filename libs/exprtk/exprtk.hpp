@@ -4464,14 +4464,14 @@ namespace exprtk
                }
             }
 
-            static inline control_block* create(const std::size_t& size, data_t data_ptr = data_t(0), bool dstrct = false)
+            static inline control_block* create(const std::size_t& dsize, data_t data_ptr = data_t(0), bool dstrct = false)
             {
-               if (size)
+               if (dsize)
                {
                   if (0 == data_ptr)
-                     return new control_block(size);
+                     return new control_block(dsize);
                   else
-                     return new control_block(size, data_ptr, dstrct);
+                     return new control_block(dsize, data_ptr, dstrct);
                }
                else
                   return new control_block;
@@ -18792,49 +18792,41 @@ namespace exprtk
             e_usr_constant_type = 1
          };
 
-         enum usr_variable_user_type
+         enum usr_mode
          {
-            e_usr_variable_user_type_scalar = 0,
-            e_usr_variable_user_type_string = 1,
-            e_usr_variable_user_type_vector = 2,
+            e_usrmode_default  = 0,
+            e_usrmode_extended = 1
          };
+
+         usr_mode mode;
+
+         unknown_symbol_resolver(const usr_mode m = e_usrmode_default)
+         : mode(m)
+         {}
 
          virtual ~unknown_symbol_resolver()
          {}
 
-
-         virtual usr_symbol_type getSymbolType() const
-         {
-            return e_usr_variable_type;
-         }
-
-         virtual usr_variable_user_type getVariableType() const
-         {
-            return e_usr_variable_user_type_scalar;
-         }
-
          virtual bool process(const std::string& /*unknown_symbol*/,
-                              std::string& error_message)
+                              usr_symbol_type&   st,
+                              T&                 default_value,
+                              std::string&       error_message)
          {
+            if (e_usrmode_default != mode)
+               return false;
+
+            st = e_usr_variable_type;
+            default_value = T(0);
             error_message.clear();
+
             return true;
          }
 
-         virtual T getResolvedScalar()
+         virtual bool process(const std::string& /* unknown_symbol */,
+                              symbol_table_t&    /* symbol_table   */,
+                              std::string&       /* error_message  */)
          {
-            return T(0);
-         }
-
-         virtual std::string& getResolvedString()
-         {
-            static std::string emptyString = std::string();
-            return emptyString;
-         }
-
-         virtual std::vector<T>& getResolvedVector()
-         {
-            static std::vector<T> emptyVector = std::vector<T>();
-            return emptyVector;
+            return false;
          }
       };
 
@@ -19976,6 +19968,11 @@ namespace exprtk
             unknown_symbol_resolver_ = usr;
          else
             unknown_symbol_resolver_ = &default_usr_;
+      }
+
+      inline void enable_unknown_symbol_resolver(unknown_symbol_resolver& usr)
+      {
+         enable_unknown_symbol_resolver(&usr);
       }
 
       inline void disable_unknown_symbol_resolver()
@@ -24569,95 +24566,93 @@ namespace exprtk
          {
             if (!(settings_.rsrvd_sym_usr_disabled() && details::is_reserved_symbol(symbol)))
             {
-
+               symbol_table_t& symtab = symtab_store_.get_symbol_table();
                std::string error_message;
 
-               if (unknown_symbol_resolver_->process(symbol,error_message))
+               if (unknown_symbol_resolver::e_usrmode_default == unknown_symbol_resolver_->mode)
                {
-                  typename unknown_symbol_resolver::usr_symbol_type usr_symbol_type = unknown_symbol_resolver_->getSymbolType();
-                  typename unknown_symbol_resolver::usr_variable_user_type usr_variable_type = unknown_symbol_resolver_->getVariableType();
-                  bool create_result = false;
-                  //T default_value = T(0);
+                  T default_value = T(0);
+                  typename unknown_symbol_resolver::usr_symbol_type usr_symbol_type;
 
-
-
-                  symbol_table_t& symtab = symtab_store_.get_symbol_table();
-
-                  switch (usr_symbol_type)
+                  if (unknown_symbol_resolver_->process(symbol, usr_symbol_type, default_value, error_message))
                   {
-                      case unknown_symbol_resolver::e_usr_variable_type : {
-                          switch (usr_variable_type) {
-                              case unknown_symbol_resolver::e_usr_variable_user_type_scalar: {
-                                  T default_value = unknown_symbol_resolver_->getResolvedScalar();
-                                  create_result = symtab.create_variable(symbol, default_value);
-                              } break;
-                              case unknown_symbol_resolver::e_usr_variable_user_type_string: {
-                                  std::string& default_value = unknown_symbol_resolver_->getResolvedString();
-                                  create_result = symtab.create_stringvar(symbol, default_value);
-                              } break;
-                              case unknown_symbol_resolver::e_usr_variable_user_type_vector: {
-                                  std::vector<T>& default_value = unknown_symbol_resolver_->getResolvedVector();
-                                  create_result = symtab.add_vector(symbol, &default_value[0], default_value.size());
-                              } break;
-                          }
+                     bool create_result = false;
 
-                      } break;
-
-                      case unknown_symbol_resolver::e_usr_constant_type : {
-                          switch (usr_variable_type) {
-                              case unknown_symbol_resolver::e_usr_variable_user_type_scalar: {
-                                  T default_value = unknown_symbol_resolver_->getResolvedScalar();
-                                  create_result = symtab.add_constant(symbol, default_value);
-                              } break;
-                              case unknown_symbol_resolver::e_usr_variable_user_type_string: {
-                                  std::string& default_value = unknown_symbol_resolver_->getResolvedString();
-                                  create_result = symtab.add_stringvar(symbol, default_value, true);
-                              } break;
-                              case unknown_symbol_resolver::e_usr_variable_user_type_vector: {
-                                  std::vector<T>& default_value = unknown_symbol_resolver_->getResolvedVector();
-                                  create_result = symtab.add_vector(symbol, &default_value[0], default_value.size());
-                              } break;
-                          }
-                      } break;
-
-                  }
-
-                  if (create_result)
-                  {
-                     expression_node_ptr var = symtab_store_.get_variable(symbol);
-
-                     if (var)
+                     switch (usr_symbol_type)
                      {
-                        if (symtab_store_.is_constant_node(symbol))
+                        case unknown_symbol_resolver::e_usr_variable_type : create_result = symtab.create_variable(symbol, default_value);
+                                                                            break;
+
+                        case unknown_symbol_resolver::e_usr_constant_type : create_result = symtab.add_constant(symbol, default_value);
+                                                                            break;
+
+                        default                                           : create_result = false;
+                     }
+
+                     if (create_result)
+                     {
+                        expression_node_ptr var = symtab_store_.get_variable(symbol);
+
+                        if (var)
                         {
-                           var = expression_generator_(var->value());
+                           if (symtab_store_.is_constant_node(symbol))
+                           {
+                              var = expression_generator_(var->value());
+                           }
+
+                           lodge_symbol(symbol,e_st_variable);
+
+                           if (!post_variable_process(symbol))
+                              return error_node();
+
+                           next_token();
+
+                           return var;
                         }
-
-                        lodge_symbol(symbol,e_st_variable);
-
-                        if (!post_variable_process(symbol))
-                           return error_node();
-
-                        next_token();
-
-                        return var;
                      }
                   }
 
                   set_error(
                      make_error(parser_error::e_symtab,
                                 current_token(),
-                                "ERR183 - Failed to create variable: '" + symbol + "'"));
+                                "ERR183 - Failed to create variable: '" + symbol + "'" +
+                                (error_message.empty() ? "" : " - " + error_message)));
 
-                  return error_node();
                }
+               else if (unknown_symbol_resolver::e_usrmode_extended == unknown_symbol_resolver_->mode)
+               {
+                  if (unknown_symbol_resolver_->process(symbol, symtab, error_message))
+                  {
+                     static bool usr_extmode_active = false;
+
+                     if (!usr_extmode_active)
+                     {
+                        usr_extmode_active = true;
+                        expression_node_ptr result = parse_symtab_symbol();
+                        usr_extmode_active = false;
+
+                        if (result)
+                        {
+                           return result;
+                        }
+                     }
+                  }
+
+                  set_error(
+                     make_error(parser_error::e_symtab,
+                                current_token(),
+                                "ERR184 - Failed to resolve symbol: '" + symbol + "'" +
+                                (error_message.empty() ? "" : " - " + error_message)));
+               }
+
+               return error_node();
             }
          }
 
          set_error(
             make_error(parser_error::e_syntax,
                        current_token(),
-                       "ERR184 - Undefined symbol: '" + symbol + "'"));
+                       "ERR185 - Undefined symbol: '" + symbol + "'"));
 
          return error_node();
       }
@@ -24763,7 +24758,7 @@ namespace exprtk
             set_error(
                make_error(parser_error::e_symtab,
                           current_token(),
-                          "ERR185 - Variable or function detected, yet symbol-table is invalid, Symbol: " + current_token().value));
+                          "ERR186 - Variable or function detected, yet symbol-table is invalid, Symbol: " + current_token().value));
 
             return error_node();
          }
@@ -24788,7 +24783,7 @@ namespace exprtk
                set_error(
                   make_error(parser_error::e_numeric,
                              current_token(),
-                             "ERR186 - Failed to convert '" + current_token().value + "' to a number"));
+                             "ERR187 - Failed to convert '" + current_token().value + "' to a number"));
 
                return error_node();
             }
@@ -24814,7 +24809,7 @@ namespace exprtk
                set_error(
                   make_error(parser_error::e_syntax,
                              current_token(),
-                             "ERR187 - Expected ')' instead of: '" + current_token().value + "'"));
+                             "ERR188 - Expected ')' instead of: '" + current_token().value + "'"));
 
                free_node(node_allocator_,branch);
 
@@ -24838,7 +24833,7 @@ namespace exprtk
                set_error(
                   make_error(parser_error::e_syntax,
                              current_token(),
-                             "ERR188 - Expected ']' instead of: '" + current_token().value + "'"));
+                             "ERR189 - Expected ']' instead of: '" + current_token().value + "'"));
 
                free_node(node_allocator_,branch);
 
@@ -24862,7 +24857,7 @@ namespace exprtk
                set_error(
                   make_error(parser_error::e_syntax,
                              current_token(),
-                             "ERR189 - Expected '}' instead of: '" + current_token().value + "'"));
+                             "ERR190 - Expected '}' instead of: '" + current_token().value + "'"));
 
                free_node(node_allocator_,branch);
 
@@ -24901,7 +24896,7 @@ namespace exprtk
             set_error(
                make_error(parser_error::e_syntax,
                           current_token(),
-                          "ERR190 - Premature end of expression[1]"));
+                          "ERR191 - Premature end of expression[1]"));
 
             return error_node();
          }
@@ -24910,7 +24905,7 @@ namespace exprtk
             set_error(
                make_error(parser_error::e_syntax,
                           current_token(),
-                          "ERR191 - Premature end of expression[2]"));
+                          "ERR192 - Premature end of expression[2]"));
 
             return error_node();
          }
