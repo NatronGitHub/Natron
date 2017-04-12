@@ -1700,15 +1700,13 @@ KnobHelper::executeExprTkExpression(TimeValue time,
                     }
                     const RectD& rod = results->getRoD();
 
+                    exprtk_symbol_table_t::vector_holder_ptr vecHolderPtr = unknown_symbols_table->get_vector(it->first);
+                    assert(vecHolderPtr->size() == 4);
+                    *(*vecHolderPtr)[0] = exprtk_scalar_t(rod.x1);
+                    *(*vecHolderPtr)[1] = exprtk_scalar_t(rod.y1);
+                    *(*vecHolderPtr)[2] = exprtk_scalar_t(rod.x2);
+                    *(*vecHolderPtr)[3] = exprtk_scalar_t(rod.y2);
 
-                    data->vectorVariables.resize(data->vectorVariables.size() + 1);
-                    vector<double> &vec = data->vectorVariables.back();
-                    vec.resize(4);
-                    vec[0] = rod.x1;
-                    vec[1] = rod.y1;
-                    vec[2] = rod.x2;
-                    vec[3] = rod.y2;
-                    unknown_symbols_table->add_vector( it->first, &vec[0], vec.size() );
                 }
                     break;
                     

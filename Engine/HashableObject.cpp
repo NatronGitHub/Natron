@@ -35,7 +35,7 @@ struct HashableObjectPrivate
 {
     // The list of other objects that need this hash as part of their result
     // and the list of dependencies (other hash objects) we need in order to provide our result
-    std::list<HashableObjectWPtr> listeners, dependencies;
+    std::set<HashableObjectWPtr> listeners, dependencies;
 
     // The hash cache
     mutable FrameViewHashMap timeViewVariantHashCache;
@@ -115,13 +115,13 @@ HashableObject::HashableObject(const HashableObject& other)
 void
 HashableObject::addHashListener(const HashableObjectPtr& parent)
 {
-    _imp->listeners.push_back(parent);
+    _imp->listeners.insert(parent);
 }
 
 void
 HashableObject::removeListener(const HashableObjectPtr& parent)
 {
-    for (std::list<HashableObjectWPtr>::iterator it = _imp->listeners.begin(); it != _imp->listeners.end(); ++it) {
+    for (std::set<HashableObjectWPtr>::iterator it = _imp->listeners.begin(); it != _imp->listeners.end(); ++it) {
         if (it->lock() == parent) {
             _imp->listeners.erase(it);
             return;
@@ -132,7 +132,7 @@ HashableObject::removeListener(const HashableObjectPtr& parent)
 void
 HashableObject::addHashDependency(const HashableObjectPtr& dep)
 {
-    _imp->dependencies.push_back(dep);
+    _imp->dependencies.insert(dep);
 }
 
 bool
@@ -254,7 +254,7 @@ HashableObject::invalidateHashCacheInternal(std::set<HashableObject*>* invalidat
         _imp->timeViewInvariantCacheValid = false;
         _imp->metadataSlaveCacheValid = false;
     }
-    for (std::list<HashableObjectWPtr>::const_iterator it = _imp->listeners.begin(); it != _imp->listeners.end(); ++it) {
+    for (std::set<HashableObjectWPtr>::const_iterator it = _imp->listeners.begin(); it != _imp->listeners.end(); ++it) {
         HashableObjectPtr listener = it->lock();
         if (listener) {
             listener->invalidateHashCacheInternal(invalidatedObjects);
@@ -288,7 +288,7 @@ HashableObjectPrivate::computeCachingEnabled() const
     if (!hashCacheEnabled) {
         return false;
     }
-    for (std::list<HashableObjectWPtr>::const_iterator it = dependencies.begin(); it != dependencies.end(); ++it) {
+    for (std::set<HashableObjectWPtr>::const_iterator it = dependencies.begin(); it != dependencies.end(); ++it) {
         HashableObjectPtr listener = it->lock();
         if (listener) {
             if (!listener->isHashCachingEnabled()) {
@@ -309,7 +309,7 @@ HashableObjectPrivate::computeCachingEnabledRecursive(std::set<HashableObjectPri
 
     hashCacheEnabled = computeCachingEnabled();
 
-    for (std::list<HashableObjectWPtr>::const_iterator it = listeners.begin(); it != listeners.end(); ++it) {
+    for (std::set<HashableObjectWPtr>::const_iterator it = listeners.begin(); it != listeners.end(); ++it) {
         HashableObjectPtr listener = it->lock();
         if (listener) {
             listener->_imp->computeCachingEnabledRecursive(markedObjects);

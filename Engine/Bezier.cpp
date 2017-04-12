@@ -969,10 +969,10 @@ recursiveBezier(const Point& p0, const Point& p1, const Point& p2, const Point& 
     ParametricPoint p0x,p3x;
     p0x.x = p0.x;
     p0x.y = p0.y;
-    p0x.t = 0.;
+    p0x.t = segmentIndex + 0.;
     p3x.x = p3.x;
     p3x.y = p3.y;
-    p3x.t = 1.;
+    p3x.t = segmentIndex + 1.;
     if (!skipFirstPoint) {
         points->push_back(p0x);
     }
@@ -1037,7 +1037,7 @@ bezierSegmentEval(const Point& p0,
 
         case Bezier::eDeCasteljauAlgorithmRecursive: {
             static const int maxRecursion = 32;
-            recursiveBezier(p0, p1, p2, p3, skipFirstPoint, segmentIndex, errorScale, maxRecursion, points);
+            recursiveBezier(p0, p1, p2, p3, segmentIndex, skipFirstPoint, errorScale, maxRecursion, points);
         }   break;
     }
 

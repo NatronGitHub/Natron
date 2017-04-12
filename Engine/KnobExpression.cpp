@@ -967,7 +967,7 @@ KnobHelper::setExpressionInternal(DimIdx dimension,
                         continue;
                     }
 
-                    addHashListener(effect);
+                    effect->addHashListener(thisShared);
                 }
             }
             break;
@@ -1490,7 +1490,7 @@ KnobHelper::hasExpression(DimIdx dimension, ViewIdx view) const
         return false;
     }
 
-    return foundView->second->expressionString.empty();
+    return !foundView->second->expressionString.empty();
 }
 
 NATRON_NAMESPACE_EXIT
