@@ -279,28 +279,6 @@ OfxClipInstance::getUnmappedComponents() const
             }
             ret = ImagePlaneDesc::mapPlaneToOFXComponentsTypeString(metadataPlane);
         } else {
-
-
-            // The node is not connected but optional, return the closest supported components
-            // of the first connected non optional input.
-            if (_imp->optional) {
-                effect = getEffectHolder();
-                assert(effect);
-
-                int nInputs = effect->getMaxInputCount();
-                for (int i = 0; i < nInputs; ++i) {
-
-                    ImagePlaneDesc metadataPlane, metadataPairedPlane;
-                    effect->getMetadataComponents(i, &metadataPlane, &metadataPairedPlane);
-
-
-                    if (metadataPlane.getNumComponents() > 0) {
-                        ret = ImagePlaneDesc::mapPlaneToOFXComponentsTypeString(metadataPlane);
-                    }
-                }
-            }
-            
-            
             // last-resort: black and transparent image means RGBA.
             if (ret.empty()) {
                 ret = ImagePlaneDesc::mapPlaneToOFXComponentsTypeString(ImagePlaneDesc::getRGBAComponents());

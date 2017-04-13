@@ -1340,31 +1340,22 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
         // allow only a single thread to run
         ImagePtr accumBuffer = getAccumBuffer();
 
-        if (isAccumulating) {
-
-            // Since we hold the image on the effect, we do not cache.
-            cachePolicy = eCacheAccessModeNone;
-            requestData->setCachePolicy(cachePolicy);
-
-            if (accumBuffer) {
-                // When drawing with a paint brush, we may only render the bounding box of the un-rendered points.
-
-                RectD updateAreaCanonical;
-                if (getAccumulationUpdateRoI(&updateAreaCanonical)) {
-
-                    RectI updateAreaPixel;
-                    updateAreaCanonical.toPixelEnclosing(mappedCombinedScale, par, &updateAreaPixel);
-
-
-                    // If this is the first time we compute this frame view request, erase in the tiles state map the portion that was drawn
-                    // by the user,
-                    if (!requestedImageScale) {
-                        // Get the accum buffer on the node. Note that this is not concurrent renders safe.
-                        requestedImageScale = accumBuffer;
-                        requestedImageScale->getCacheEntry()->markCacheTilesInRegionAsNotRendered(updateAreaPixel);
-                    }
+        if (isAccumulating && accumBuffer) {
+            // When drawing with a paint brush, we may only render the bounding box of the un-rendered points.
+            RectD updateAreaCanonical;
+            if (getAccumulationUpdateRoI(&updateAreaCanonical)) {
+                
+                RectI updateAreaPixel;
+                updateAreaCanonical.toPixelEnclosing(mappedCombinedScale, par, &updateAreaPixel);
+                
+                
+                // If this is the first time we compute this frame view request, erase in the tiles state map the portion that was drawn
+                // by the user,
+                if (!requestedImageScale) {
+                    // Get the accum buffer on the node. Note that this is not concurrent renders safe.
+                    requestedImageScale = accumBuffer;
+                    requestedImageScale->getCacheEntry()->markCacheTilesInRegionAsNotRendered(updateAreaPixel);
                 }
-
             }
 
         } // isAccumulating
