@@ -2917,6 +2917,7 @@ public:
     virtual ViewIdx getCurrentRenderView() const;
 
     TreeRenderPtr getCurrentRender() const;
+    
 
 protected:
 

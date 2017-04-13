@@ -135,6 +135,13 @@ RotoShapeRenderNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) 
 void
 RotoShapeRenderNode::fetchRenderCloneKnobs()
 {
+    RotoDrawableItemPtr mainInstanceItem = getOriginalAttachedItem();
+    assert(mainInstanceItem);
+    FrameViewRenderKey key = {getCurrentRenderTime(), getCurrentRenderView(), getCurrentRender()};
+    KnobHolderPtr itemClone = mainInstanceItem->createRenderClone(key);
+    assert(itemClone);
+    (void)itemClone;
+
     assert(isRenderClone());
     EffectInstance::fetchRenderCloneKnobs();
     _imp->renderType = toKnobChoice(getKnobByName(kRotoShapeRenderNodeParamType));
@@ -166,14 +173,7 @@ RotoShapeRenderNode::initializeKnobs()
 KnobHolderPtr
 RotoShapeRenderNode::createRenderCopy(const FrameViewRenderKey& key) const
 {
-    KnobHolderPtr ret =  EffectInstance::createRenderCopy(key);
-    RotoDrawableItemPtr mainInstanceItem = getOriginalAttachedItem();
-    assert(mainInstanceItem);
-    KnobHolderPtr itemClone = mainInstanceItem->createRenderClone(key);
-    //qDebug() << QThread::currentThread() << ret.get() << "Creating clone" << dynamic_cast<Bezier*>(itemClone.get()) << "for render" << key.render.lock().get();
-
-
-    return ret;
+    return EffectInstance::createRenderCopy(key);
 }
 
 void

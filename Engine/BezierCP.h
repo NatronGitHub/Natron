@@ -107,7 +107,7 @@ public:
     CurvePtr getRightXCurve() const;
     CurvePtr getRightYCurve() const;
 
-    void copyControlPoint(const BezierCP & other);
+    void copyControlPoint(const BezierCP & other, const RangeD* range = 0);
 
     void setPositionAtTime(TimeValue time, double x, double y);
 

@@ -634,6 +634,16 @@ KnobTableItem::getModel() const
     return _imp->common->model.lock();
 }
 
+EffectInstancePtr
+KnobTableItem::getHolderEffect() const
+{
+    KnobItemsTablePtr model = getModel();
+    if (!model) {
+        return EffectInstancePtr();
+    }
+    return model->getNode()->getEffectInstance();
+}
+
 bool
 KnobTableItem::isItemSelected() const
 {

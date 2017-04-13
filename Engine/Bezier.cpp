@@ -127,7 +127,7 @@ struct BezierPrivate
     KnobChoiceWPtr fallOffRampType;
 
     // When it is a render clone, we cache the result of getBoundingBox()
-    boost::scoped_ptr<RectD> renderCloneBBoxCache;
+    boost::scoped_ptr<std::map<TimeValue,RectD> > renderCloneBBoxCache;
 
     BezierPrivate(const std::string& baseName, bool isOpenBezier)
     : itemMutex()
@@ -237,11 +237,11 @@ Bezier::getBrushType() const
 bool
 Bezier::isAutoKeyingEnabled() const
 {
-    KnobItemsTablePtr model = getModel();
-    if (!model) {
+    EffectInstancePtr effect = getHolderEffect();
+    if (!effect) {
         return false;
     }
-    KnobButtonPtr knob = toKnobButton(model->getNode()->getEffectInstance()->getKnobByName(kRotoUIParamAutoKeyingEnabled));
+    KnobButtonPtr knob = toKnobButton(effect->getKnobByName(kRotoUIParamAutoKeyingEnabled));
     if (!knob) {
         return false;
     }
@@ -251,11 +251,11 @@ Bezier::isAutoKeyingEnabled() const
 bool
 Bezier::isFeatherLinkEnabled() const
 {
-    KnobItemsTablePtr model = getModel();
-    if (!model) {
+    EffectInstancePtr effect = getHolderEffect();
+    if (!effect) {
         return false;
     }
-    KnobButtonPtr knob = toKnobButton(model->getNode()->getEffectInstance()->getKnobByName(kRotoUIParamFeatherLinkEnabled));
+    KnobButtonPtr knob = toKnobButton(effect->getKnobByName(kRotoUIParamFeatherLinkEnabled));
     if (!knob) {
         return false;
     }
@@ -265,11 +265,11 @@ Bezier::isFeatherLinkEnabled() const
 bool
 Bezier::isRippleEditEnabled() const
 {
-    KnobItemsTablePtr model = getModel();
-    if (!model) {
+    EffectInstancePtr effect = getHolderEffect();
+    if (!effect) {
         return false;
     }
-    KnobButtonPtr knob = toKnobButton(model->getNode()->getEffectInstance()->getKnobByName(kRotoUIParamRippleEdit));
+    KnobButtonPtr knob = toKnobButton(effect->getKnobByName(kRotoUIParamRippleEdit));
     if (!knob) {
         return false;
     }
@@ -2937,12 +2937,6 @@ RectD
 Bezier::getBoundingBox(TimeValue time, ViewIdx view) const
 {
 
-    RotoPaintPtr rotoPaintNode;
-    KnobItemsTablePtr model = getModel();
-    if (model) {
-        rotoPaintNode = toRotoPaint(model->getNode()->getEffectInstance());
-    }
-
     ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
 
     Transform::Matrix3x3 transform;
@@ -2952,7 +2946,10 @@ Bezier::getBoundingBox(TimeValue time, ViewIdx view) const
     QMutexLocker l(&_imp->itemMutex);
     if (renderClone) {
         if (_imp->renderCloneBBoxCache) {
-            return *_imp->renderCloneBBoxCache;
+            std::map<TimeValue,RectD>::iterator foundTime = _imp->renderCloneBBoxCache->find(time);
+            if (foundTime != _imp->renderCloneBBoxCache->end()) {
+                return foundTime->second;
+            }
         }
     }
 
@@ -2994,8 +2991,11 @@ Bezier::getBoundingBox(TimeValue time, ViewIdx view) const
 
 
     if (renderClone) {
-        _imp->renderCloneBBoxCache.reset(new RectD);
-        *_imp->renderCloneBBoxCache = pointsBbox;
+
+        if (!_imp->renderCloneBBoxCache) {
+            _imp->renderCloneBBoxCache.reset(new std::map<TimeValue,RectD>);
+            _imp->renderCloneBBoxCache->insert(std::make_pair(time, pointsBbox));
+        }
     }
     return pointsBbox;
 } // Bezier::getBoundingBox
@@ -3777,6 +3777,12 @@ Bezier::initializeKnobs()
 void
 Bezier::fetchRenderCloneKnobs()
 {
+    // Only copy the range needed by the motion blur samples
+    RangeD range;
+    int nDivisions;
+    getMotionBlurSettings(getCurrentRenderTime(), getCurrentRenderView(), &range, &nDivisions);
+
+    // If motion blur is enabled, only clone
     {
         BezierPtr mainInstance = toBezier(getMainInstance());
         QMutexLocker k(&mainInstance->_imp->itemMutex);
@@ -3785,12 +3791,12 @@ Bezier::fetchRenderCloneKnobs()
             thisShape.finished = it->second.finished;
             for (BezierCPs::const_iterator it2 = it->second.points.begin(); it2 != it->second.points.end(); ++it2) {
                 BezierCPPtr copy(new BezierCP());
-                copy->copyControlPoint(**it2);
+                copy->copyControlPoint(**it2, &range);
                 thisShape.points.push_back(copy);
             }
             for (BezierCPs::const_iterator it2 = it->second.featherPoints.begin(); it2 != it->second.featherPoints.end(); ++it2) {
                 BezierCPPtr copy(new BezierCP());
-                copy->copyControlPoint(**it2);
+                copy->copyControlPoint(**it2, &range);
                 thisShape.featherPoints.push_back(copy);
             }
             

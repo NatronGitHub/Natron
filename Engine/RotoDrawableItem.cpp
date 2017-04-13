@@ -197,16 +197,6 @@ RotoDrawableItem::setNodesThreadSafetyForRotopainting()
 {
     assert( toRotoStrokeItem( boost::dynamic_pointer_cast<RotoDrawableItem>( shared_from_this() ) ) );
 
-    KnobItemsTablePtr model = getModel();
-    if (!model) {
-        return;
-    }
-    NodePtr node = model->getNode();
-    if (!node) {
-        return;
-    }
-    RotoPaintPtr isRotopaint = toRotoPaint(node->getEffectInstance());
-    node->getEffectInstance()->setRenderThreadSafety(eRenderSafetyInstanceSafe);
     for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
         (*it)->getEffectInstance()->setRenderThreadSafety(eRenderSafetyInstanceSafe);
     }
@@ -1313,16 +1303,7 @@ RotoDrawableItem::getMotionBlurSettings(const TimeValue time,
     *divisions = 1;
 
 #ifndef ROTOPAINT_MOTIONBLUR_USE_TIMEBLUR
-    KnobItemsTablePtr model = getModel();
-    if (!model) {
-        return ;
-    }
-    NodePtr node = model->getNode();
-    if (!node) {
-        return;
-    }
-
-    RotoPaintPtr rotoPaintNode = toRotoPaint(node->getEffectInstance());
+    RotoPaintPtr rotoPaintNode = toRotoPaint(getHolderEffect());
     if (!rotoPaintNode) {
         return;
     }

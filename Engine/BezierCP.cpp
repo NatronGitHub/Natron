@@ -56,7 +56,7 @@ BezierCP::BezierCP()
 BezierCP::BezierCP(const BezierCP & other)
     : _imp( new BezierCPPrivate( other._imp->holder.lock() ) )
 {
-    copyControlPoint(other);
+    copyControlPoint(other, 0);
 }
 
 BezierCP::BezierCP(const BezierPtr& curve)
@@ -637,16 +637,34 @@ BezierCP::getRightYCurve() const
 }
 
 void
-BezierCP::copyControlPoint(const BezierCP & other)
+BezierCP::copyControlPoint(const BezierCP & other, const RangeD* range)
 {
-    QMutexLocker l(&_imp->lock);
 
-    _imp->curveX->clone(*other._imp->curveX);
-    _imp->curveY->clone(*other._imp->curveY);
-    _imp->curveLeftBezierX->clone(*other._imp->curveLeftBezierX);
-    _imp->curveLeftBezierY->clone(*other._imp->curveLeftBezierY);
-    _imp->curveRightBezierX->clone(*other._imp->curveRightBezierX);
-    _imp->curveRightBezierY->clone(*other._imp->curveRightBezierY);
+
+    QMutexLocker l(&other._imp->lock);
+    QMutexLocker l2(&_imp->lock);
+    const double offset = 0;
+
+    // If a range to copy is passed, round it to the nearest enclosing keyframes
+    RangeD roundedRange;
+    if (range) {
+        roundedRange = *range;
+        KeyFrame prevKey;
+        if (other._imp->curveX->getPreviousKeyframeTime(TimeValue(range->min), &prevKey)) {
+            roundedRange.min = prevKey.getTime();
+        }
+        KeyFrame nextKey;
+        if (other._imp->curveX->getNextKeyframeTime(TimeValue(range->max), &nextKey)) {
+            roundedRange.max = nextKey.getTime();
+        }
+    }
+
+    _imp->curveX->clone(*other._imp->curveX, offset, range ? &roundedRange : 0);
+    _imp->curveY->clone(*other._imp->curveY, offset, range ? &roundedRange : 0);
+    _imp->curveLeftBezierX->clone(*other._imp->curveLeftBezierX, offset, range ? &roundedRange : 0);
+    _imp->curveLeftBezierY->clone(*other._imp->curveLeftBezierY, offset, range ? &roundedRange : 0);
+    _imp->curveRightBezierX->clone(*other._imp->curveRightBezierX, offset, range ? &roundedRange : 0);
+    _imp->curveRightBezierY->clone(*other._imp->curveRightBezierY, offset, range ? &roundedRange : 0);
 
     _imp->x = other._imp->x;
     _imp->y = other._imp->y;

@@ -86,6 +86,12 @@ public:
     KnobItemsTablePtr getModel() const;
 
     /**
+     * @brief Returns the effect owning this item. If this item is a render clone, the effect returned is also
+     * a render clone
+     **/
+    EffectInstancePtr getHolderEffect() const;
+
+    /**
      * @brief Copy all the items data except its script-name, label and parent.
      * Can be reimplemented to copy more data from subclasses.
      **/
