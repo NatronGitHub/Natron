@@ -880,9 +880,6 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
     // Disable scissors since we are going to do texture ping-pong with different frame buffer texture size
     GL::Disable(GL_SCISSOR_TEST);
 
-    GLImageStoragePtr dstTexture = dstImage->getGLImageStorage();
-    assert(dstTexture);
-
     Q_UNUSED(roi);
     int vboVerticesID = glData->getOrCreateVBOVerticesID();
     int vboColorsID = glData->getOrCreateVBOColorsID();
@@ -927,7 +924,7 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
             initArgs.bitdepth = dstImage->getBitDepth();
             initArgs.storage = eStorageModeGLTex;
             initArgs.glContext = glContext;
-            initArgs.textureTarget = dstTexture->getGLTextureTarget();
+            initArgs.textureTarget = GL_TEXTURE_2D;
             tmpTex[i] = Image::create(initArgs);
             if (!tmpTex[i]) {
                 return;

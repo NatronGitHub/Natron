@@ -44,6 +44,9 @@
 #include "Engine/RotoShapeRenderGL.h"
 #include "Engine/RotoPaint.h"
 
+#ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
+//#define ROTO_SHAPE_RENDER_CPU_USES_CAIRO
+#endif
 
 NATRON_NAMESPACE_ENTER;
 
@@ -93,7 +96,7 @@ RotoShapeRenderNode::~RotoShapeRenderNode()
 bool
 RotoShapeRenderNode::canCPUImplementationSupportOSMesa() const
 {
-#ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
+#ifdef ROTO_SHAPE_RENDER_CPU_USES_CAIRO
     return false;
 #else
     return true;
@@ -398,12 +401,12 @@ ActionRetCodeEnum
 RotoShapeRenderNode::render(const RenderActionArgs& args)
 {
 
-#if !defined(ROTO_SHAPE_RENDER_ENABLE_CAIRO) && !defined(HAVE_OSMESA)
+#if !defined(ROTO_SHAPE_RENDER_CPU_USES_CAIRO) && !defined(HAVE_OSMESA)
     getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorGenericRenderMessage, tr("Roto requires either OSMesa (CONFIG += enable-osmesa) or Cairo (CONFIG += enable-cairo) in order to render on CPU").toStdString());
     return eStatusFailed;
 #endif
 
-#if !defined(ROTO_SHAPE_RENDER_ENABLE_CAIRO)
+#if !defined(ROTO_SHAPE_RENDER_CPU_USES_CAIRO)
     if (args.backendType == eRenderBackendTypeCPU) {
         getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorGenericRenderMessage, tr("An OpenGL context is required to draw with the Roto node. This might be because you are trying to render an image too big for OpenGL.").toStdString());
         return eActionStatusFailed;
@@ -513,7 +516,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                 divisions = 1;
             }
 
-#ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
+#ifdef ROTO_SHAPE_RENDER_CPU_USES_CAIRO
             // When cairo is enabled, render with it for a CPU render
             if (args.backendType == eRenderBackendTypeCPU) {
                 RotoShapeRenderCairo::renderMaskInternal_cairo(rotoItem, args.roi, outputPlane.first, args.time, args.view, range, divisions, combinedScale, isDuringPainting, distNextIn, lastCenterIn, outputPlane.second, &distToNextOut, &lastCenterOut);
@@ -623,7 +626,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
             }
 
             bool renderedDot;
-#ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
+#ifdef ROTO_SHAPE_RENDER_CPU_USES_CAIRO
             // Render with cairo if we need to render on CPU
             if (args.backendType == eRenderBackendTypeCPU) {
                 renderedDot = RotoShapeRenderCairo::renderSmear_cairo(args.time, args.view, combinedScale, isStroke, args.roi, outputPlane.second, distNextIn, lastCenterIn, &distToNextOut, &lastCenterOut);
@@ -663,7 +666,7 @@ RotoShapeRenderNode::purgeCaches()
     if (!rotoItem) {
         return;
     }
-#ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
+#ifdef ROTO_SHAPE_RENDER_CPU_USES_CAIRO
     RotoShapeRenderCairo::purgeCaches_cairo(rotoItem);
 #endif
 }

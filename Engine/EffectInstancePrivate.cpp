@@ -348,7 +348,8 @@ template <typename GL>
 static void setupGLForRender(const ImagePtr& image,
                              const OSGLContextPtr& glContext,
                              const RectI& roi,
-                             bool callGLFinish)
+                             bool callGLFinish,
+                             OSGLContextAttacherPtr *glContextAttacher)
 {
 
     RectI imageBounds = image->getBounds();
@@ -373,6 +374,7 @@ static void setupGLForRender(const ImagePtr& image,
         glCheckError(GL);
         assert(GL::CheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
         glCheckFramebufferError(GL);
+
     } else {
 
         viewportBounds = roi;
@@ -382,16 +384,19 @@ static void setupGLForRender(const ImagePtr& image,
         Image::CPUData data;
         image->getCPUData(&data);
 
-        void* buffer = (void*)Image::pixelAtStatic(roi.x1, roi.y1, data.bounds, data.nComps, getSizeOfForBitDepth(data.bitDepth), (unsigned char*)data.ptrs[0]);
-        assert(buffer);
+        float* buffers[4];
+        int pixelStride;
+        Image::getChannelPointers<float>((const float**)data.ptrs, roi.x1, roi.y1, data.bounds, data.nComps, buffers, &pixelStride);
+        assert(buffers[0]);
+
 
         // With OSMesa we render directly to the context framebuffer
-        OSGLContextAttacherPtr glContextAttacher = OSGLContextAttacher::create(glContext,
-                                                                               roi.width(),
-                                                                               roi.height(),
-                                                                               imageBounds.width(),
-                                                                               buffer);
-        glContextAttacher->attach();
+        *glContextAttacher = OSGLContextAttacher::create(glContext,
+                                                         roi.width(),
+                                                         roi.height(),
+                                                         imageBounds.width(),
+                                                         buffers[0]);
+        (*glContextAttacher)->attach();
     }
 
     // setup the output viewport
@@ -464,7 +469,12 @@ EffectInstance::Implementation::renderHandlerPlugin(const RectToRender & rectToR
 
         actionArgs.outputPlanes = *it;
 
+        OSGLContextAttacherPtr contextAttacher;
+
         const ImagePtr& mainImagePlane = actionArgs.outputPlanes.front().second;
+
+        // For OSMesa, if the main image plane to render is not a 4 component image, we have to render first in a temporary image, then copy back the results.
+        ImagePtr osmesaRenderImage = mainImagePlane;
         if (args.backendType == eRenderBackendTypeOpenGL ||
             args.backendType == eRenderBackendTypeOSMesa) {
 
@@ -472,16 +482,30 @@ EffectInstance::Implementation::renderHandlerPlugin(const RectToRender & rectToR
             // We only bind to the framebuffer color attachment 0 the "main" output image plane
             assert(actionArgs.outputPlanes.size() == 1);
             if (args.glContext->isGPUContext()) {
-                setupGLForRender<GL_GPU>(mainImagePlane, args.glContext, actionArgs.roi, _publicInterface->getNode()->isGLFinishRequiredBeforeRender());
+                setupGLForRender<GL_GPU>(mainImagePlane, args.glContext, actionArgs.roi, _publicInterface->getNode()->isGLFinishRequiredBeforeRender(), &contextAttacher);
             } else {
-                setupGLForRender<GL_CPU>(mainImagePlane, args.glContext, actionArgs.roi, _publicInterface->getNode()->isGLFinishRequiredBeforeRender());
+                // Allocate an image with half the size of the source image
+                if (mainImagePlane->getComponentsCount() != 4) {
+                    Image::InitStorageArgs initArgs;
+                    initArgs.bounds = actionArgs.roi;
+                    initArgs.renderClone = _publicInterface->shared_from_this();
+                    initArgs.plane = ImagePlaneDesc::getRGBAComponents();
+                    initArgs.bitdepth = mainImagePlane->getBitDepth();
+                    initArgs.proxyScale = mainImagePlane->getProxyScale();
+                    initArgs.mipMapLevel = mainImagePlane->getMipMapLevel();
+                    osmesaRenderImage = Image::create(initArgs);
+                    if (!osmesaRenderImage) {
+                        return eActionStatusFailed;
+                    }
+                }
+                setupGLForRender<GL_CPU>(osmesaRenderImage, args.glContext, actionArgs.roi, _publicInterface->getNode()->isGLFinishRequiredBeforeRender(), &contextAttacher);
             }
         }
         ActionRetCodeEnum stat = _publicInterface->render_public(actionArgs);
 
         if (args.backendType == eRenderBackendTypeOpenGL ||
             args.backendType == eRenderBackendTypeOSMesa) {
-            if (args.glContext) {
+            if (args.glContext && args.glContext->isGPUContext()) {
                 GLImageStoragePtr glEntry = mainImagePlane->getGLImageStorage();
                 assert(glEntry);
                 GL_GPU::BindTexture(glEntry->getGLTextureTarget(), 0);
@@ -489,6 +513,14 @@ EffectInstance::Implementation::renderHandlerPlugin(const RectToRender & rectToR
             } else {
                 finishGLRender<GL_CPU>();
             }
+        }
+
+        if (osmesaRenderImage) {
+            Image::CopyPixelsArgs cpyArgs;
+            cpyArgs.roi = actionArgs.roi;
+            cpyArgs.conversionChannel = 3;
+            cpyArgs.alphaHandling = Image::eAlphaChannelHandlingFillFromChannel;
+            stat = mainImagePlane->copyPixels(*osmesaRenderImage, cpyArgs);
         }
 
         if (isFailureRetCode(stat)) {
