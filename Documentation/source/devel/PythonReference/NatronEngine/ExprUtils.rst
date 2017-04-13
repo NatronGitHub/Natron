@@ -4,8 +4,6 @@
 ExprUtils
 *************
 
-**Inherits** :doc:`Double2DParam`
-
 Synopsis
 --------
 

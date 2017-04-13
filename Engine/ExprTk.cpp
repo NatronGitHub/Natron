@@ -449,38 +449,60 @@ struct pnoise
 };
 
 struct random
-    : public exprtk_ifunction_t
+    : public exprtk_igeneric_function_t
 {
     U32 lastRandomHash;
 
     random(TimeValue time)
-        : exprtk_ifunction_t(2)
+        : exprtk_igeneric_function_t("Z|T|TTT")
         , lastRandomHash(0)
     {
+        exprtk::enable_zero_parameters(*this);
         // Make the hash vary from time
         {
             alias_cast_float ac;
             ac.data = (float)time;
-            lastRandomHash += ac.raw;
+            lastRandomHash = ac.raw;
         }
     }
-
-    exprtk_scalar_t operator()(const exprtk_scalar_t& min,
-                               const exprtk_scalar_t& max)
+    
+    virtual exprtk_scalar_t operator()(const std::size_t& overloadIdx,
+                                       parameter_list_t parameters) OVERRIDE FINAL
     {
+        Q_UNUSED(overloadIdx);
+        typedef typename exprtk_igeneric_function_t::generic_type generic_type;
+        typedef typename generic_type::scalar_view scalar_t;
+        
+        assert(parameters.size() == 0 || parameters.size() == 1 || parameters.size() == 3);
+        unsigned int seed = 0;
+        if (parameters.size() > 0) {
+            seed = (unsigned int)scalar_t(parameters[0])();
+        }
+        double minimum = 0.;
+        double maximum = 1.;
+        if (parameters.size() == 3) {
+            minimum = (double)scalar_t(parameters[1])();
+            maximum = (double)scalar_t(parameters[2])();
+        }
+        
+        if (seed) {
+            alias_cast_float ac;
+            ac.data = lastRandomHash + (float)seed;
+            lastRandomHash = ac.raw;
+        }
         lastRandomHash = hashFunction(lastRandomHash);
 
-        return ( (double)lastRandomHash / (double)0x100000000LL ) * (max - min)  + min;
+        return ( (double)lastRandomHash / (double)0x100000000LL ) * (maximum - minimum)  + minimum;
     }
 };
 
 struct randomInt
-    : public exprtk_ifunction_t
+    : public exprtk_igeneric_function_t
 {
     U32 lastRandomHash;
 
     randomInt(TimeValue time)
-        : exprtk_ifunction_t(2)
+        : exprtk_igeneric_function_t("Z|T|TTT")
         , lastRandomHash(0)
     {
         // Make the hash vary from time
@@ -490,14 +512,35 @@ struct randomInt
             lastRandomHash += ac.raw;
         }
     }
-
-    exprtk_scalar_t operator()(const exprtk_scalar_t& min,
-                               const exprtk_scalar_t& max)
+    virtual exprtk_scalar_t operator()(const std::size_t& overloadIdx,
+                                       parameter_list_t parameters) OVERRIDE FINAL
     {
+        Q_UNUSED(overloadIdx);
+        typedef typename exprtk_igeneric_function_t::generic_type generic_type;
+        typedef typename generic_type::scalar_view scalar_t;
+        
+        assert(parameters.size() == 0 || parameters.size() == 1 || parameters.size() == 3);
+        double seed = 0;
+        if (parameters.size() > 0) {
+            seed = (double)scalar_t(parameters[0])();
+        }
+        int minimum = INT_MIN;
+        int maximum = INT_MAX;
+        if (parameters.size() == 3) {
+            minimum = (int)scalar_t(parameters[1])();
+            maximum = (int)scalar_t(parameters[2])();
+        }
+        
+        if (seed) {
+            alias_cast_float ac;
+            ac.data = lastRandomHash + (float)seed;
+            lastRandomHash = ac.raw;
+        }
         lastRandomHash = hashFunction(lastRandomHash);
-
-        return int( ( (double)lastRandomHash / (double)0x100000000LL ) * ( (int)max - (int)min )  + (int)min );
+        
+        return int( ( (double)lastRandomHash / (double)0x100000000LL ) * ( (int)maximum - (int)minimum )  + (int)minimum );
     }
+
 };
 
 struct numtostr
@@ -556,7 +599,7 @@ addVarargFunctions(TimeValue /*time*/,
 }
 
 void
-addFunctions(TimeValue time,
+addFunctions(TimeValue /*time*/,
              exprtk_ifunction_table_t* functions)
 {
     registerFunction<boxstep>("boxstep", functions);
@@ -571,23 +614,25 @@ addFunctions(TimeValue time,
     registerFunction<noise4>("noise4", functions);
     registerFunction<pnoise>("pnoise", functions);
     registerFunction<cellnoise>("cellnoise", functions);
-    {
-        shared_ptr<exprtk_ifunction_t> ptr( new random(time) );
-        functions->push_back( make_pair("random", ptr) );
-    }
-    {
-        shared_ptr<exprtk_ifunction_t> ptr( new randomInt(time) );
-        functions->push_back( make_pair("randomInt", ptr) );
-    }
+  
 }
 
 void
-addGenericFunctions(TimeValue /*time*/,
+addGenericFunctions(TimeValue time,
                     exprtk_igeneric_function_table_t* functions)
 {
     registerFunction<turbulence>("turbulence", functions);
     registerFunction<fbm>("fbm", functions);
     registerFunction<numtostr>("str", functions);
+    
+    {
+        shared_ptr<exprtk_igeneric_function_t> ptr( new random(time) );
+        functions->push_back( make_pair("random", ptr) );
+    }
+    {
+        shared_ptr<exprtk_igeneric_function_t> ptr( new randomInt(time) );
+        functions->push_back( make_pair("randomInt", ptr) );
+    }
 }
 
 // Some functions (random) hold an internal state. Instead of using the same state for all threads,
@@ -595,16 +640,16 @@ addGenericFunctions(TimeValue /*time*/,
 void
 makeLocalCopyOfStateFunctions(TimeValue time,
                               exprtk_symbol_table_t& symbol_table,
-                              exprtk_ifunction_table_t* functions)
+                              exprtk_igeneric_function_table_t* functions)
 {
     symbol_table.remove_function("random");
     symbol_table.remove_function("randomInt");
     {
-        shared_ptr<exprtk_ifunction_t> ptr( new random(time) );
+        shared_ptr<exprtk_igeneric_function_t> ptr( new random(time) );
         functions->push_back( make_pair("random", ptr) );
     }
     {
-        shared_ptr<exprtk_ifunction_t> ptr( new randomInt(time) );
+        shared_ptr<exprtk_igeneric_function_t> ptr( new randomInt(time) );
         functions->push_back( make_pair("randomInt", ptr) );
     }
 }
@@ -1612,8 +1657,7 @@ KnobHelper::executeExprTkExpression(TimeValue time,
 
         // Remove from the symbol table functions that hold a state, and re-add a new fresh local copy of them so that the state
         // is local to this thread.
-        exprtk_ifunction_table_t functionsCopy;
-        makeLocalCopyOfStateFunctions(time, *symbol_table, &functionsCopy);
+        makeLocalCopyOfStateFunctions(time, *symbol_table, &data->genericFunctions);
     } else {
         double time_f = (double)time;
         symbol_table->create_variable("frame", time_f);

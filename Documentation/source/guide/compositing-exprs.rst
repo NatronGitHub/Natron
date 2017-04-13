@@ -7,7 +7,7 @@ Expressions
 .. toctree::
    :maxdepth: 2
    
-.. _exprtkURL: http://www.python.org/
+.. _ExprTk: http://www.partow.net/programming/exprtk/
 .. _exprtkREADME: https://raw.githubusercontent.com/ArashPartow/exprtk/master/readme.txt
    
 The value of any Node :doc:`parameter<PythonReference/NatronEngine/Param>` can be set by
@@ -17,8 +17,8 @@ of other parameters or apply mathematical functions to the current value.
 
 Natron supports 2 types of expression languages: 
 
-    * Python: :ref:`Natron documentation<paramExpr>`
-    * ExprTk: exprtkURL_
+    * :ref:`Python<paramExpr>`
+    * ExprTk_
     
 ExprTk is a very fast and simple expression language which should cover 90% of the 
 needs for expressions. By default this is the language proposed to you when editing an
@@ -39,9 +39,9 @@ The rest of this section will cover writing expressions in ExprTk.
 
 
 ExprTk expressions
-==================
+------------------
 
-The language syntax and available mathematical functions are well covered by the `README<exprtkREADME>`.
+The language syntax and available mathematical functions are well covered by the :ref:`README<exprtkREADME>`.
 
 Additional variables and functions are made available by Natron to access values of other
 parameters and effects.
@@ -123,12 +123,10 @@ An expression on a parameter can reference any other parameter on the same node
 and may also reference parameters on some other nodes, including:
 
     * Any other node in the same Group
-    * If this node belongs to a sub-group, it may reference the Group node itself using the 
-    special variable *thisGroup*
-    * If this node is a Group itself, it may reference any node within its sub-group by
-    prefixing *thisNode*, e.g: thisNode.Blur1
-    
-::
+    * If this node belongs to a sub-group, it may reference the Group node itself using the  special variable *thisGroup*
+    * If this node is a Group itself, it may reference any node within its sub-group by prefixing *thisNode*, e.g::
+        
+    thisNode.Blur1
     
     # Assuming we are editing an expression on the *disabled* parameter of the
     # Group1.Blur1 node and that the Group1 node has a boolean parameter,
@@ -165,8 +163,8 @@ When the expression is called, a number of pre-declared variables can be used:
 	* **dimension**: It indicates the dimension (0-based index) of the parameter on which the expression 
 	is evaluated, this can only be used after a parameter, e.g: Blur1.size.dimension
 	
-	* **project**: References the project settings. This can be used as a prefix to reference
-	project parameters, e.g: project.outputFormat
+	* **app**: References the project settings. This can be used as a prefix to reference
+	project parameters, e.g: app.outputFormat
 	
 	* **frame**: It references the current time on the timeline at which the expression is evaluated
 	this may be a floating point number if the parameter is referenced from a node that uses
@@ -177,8 +175,8 @@ When the expression is called, a number of pre-declared variables can be used:
 	If the parameter is a string parameter, the view will be the name of the view as seen
 	in the project settings, otherwise this will be a 0-based index.
 	
-Name of a node or parameter
----------------------------
+Script-name of a node or parameter
+---------------------------------
 
 The name of a parameter or Node can be returned in an expression using the attribute *name*::
 
@@ -214,19 +212,71 @@ Effect Region of Definition
 ---------------------------
 
 It is possible for an expression to need the region of definition (size of the image) produced
-by an effect. This can be retrieved with the variable *rod*/
+by an effect. This can be retrieved with the variable **rod***
 
-The *rod* itself is a vector variable containing 4 scalar being in order the left, bottom,
-right and top coordinates of the rectangle produced by the effect.
+The **rod** itself is a vector variable containing 4 scalar being in order the *left*, *bottom*,
+*right* and *top* coordinates of the rectangle produced by the effect.::
 
     # Expression on the translate.x parameter of a Transform node
     input0.rod[0]
+    
+Current parameter animation
+---------------------------
 
-Random and advanced functions
-------------------------------
+To achieve complex motion design, (see examples below such as loop) an
+expression may need to access the animation of the parameter for which the expression
+is evaluated.
+To access the underlying animation of a parameter the :func:`curve(frame, dimension, view)`
+function can be used::
+
+	# Loop a parameter animation curve over the [firstFrame, lastFrame] interval
+	firstFrame = 0
+	lastFrame = 10
+	curve(((frame - firstFrame) % (lastFrame - firstFrame + 1)) + firstFrame)
 
 
+Random
+------
+
+Some expression may need to use a pseudo random function. It is pseudo random because
+the results of the random function are reproducible for each frame and seed.
+
+*	 def :meth:`random<ExprTk.random>` (seed)
+*	 def :meth:`randomInt<ExprTk.randomInt>` (seed)
+
+.. method:: ExprTk.random([seed=0, min=0., max=1.])
+
+	:param seed: :class:`float`
+	:param min: :class:`float`
+	:param max: :class:`float`
+	:rtype: :class:`float`
+
+Returns a pseudo-random value in the interval [min, max[. 
+The value is produced such that for a given parameter it will always be the same for a 
+given time on the timeline, so that the value can be reproduced exactly.
+However, successive calls to this function within the same expression will yield different
+results after each call.
+By default the random is seed with the current frame, meaning that 2 expressions using
+random and evaluated at the same frame will always return the same number.
+If you want to force a different number for an expression, you can set the *seed* parameter
+to a non zero value.
+
+.. method:: ExprTk.randomInt([seed=0, min=INT_MIN, max=INT_MAX])
+
+	:param seed: :class:`int`
+	:param min: :class:`int`
+	:param max: :class:`int`
+	:rtype: :class:`int`
+
+Same as  :func:`random(seed, min,max)<ExprTk.random>` but returns an integer in the 
+range [min,max[
 
 
-Examples
-========
+Advanced noise functions
+-------------------------
+
+More advanced noise functions are available such as fractional brownian motion.
+All the functions available in Python in the :ref:`NatronEngine.ExprUtils<ExprUtils>` class are
+also available as ExprTk functions. See the their documentation in the Python API as they
+have the same signature.
+
