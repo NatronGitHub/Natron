@@ -1278,11 +1278,16 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
         }
     }
 
+    
+
+    const bool isAccumulating = isAccumulationEnabled();
+
 
     // Should the output of this render be cached ?
     CacheAccessModeEnum cachePolicy;
-    if (backendType != eRenderBackendTypeCPU) {
+    if (backendType != eRenderBackendTypeCPU || isAccumulating) {
         // For now we only cache images that were rendered on the CPU
+        // When accumulation is enabled we also disable caching as the image is anyway held as a member on the effect
         cachePolicy = eCacheAccessModeNone;
     } else {
         if (renderFullScaleThenDownScale) {
@@ -1331,29 +1336,36 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
 
 
         // When accumulating, re-use the same buffer of previous steps and resize it if needed.
-        // Note that in this mode only a single plane can be rendered at once
-        RotoStrokeItemPtr attachedStroke = toRotoStrokeItem(getAttachedRotoItem());
-        bool isAccumulating = attachedStroke && attachedStroke->isCurrentlyDrawing();
+        // Note that in this mode only a single plane can be rendered at once and the plug-in render safety must
+        // allow only a single thread to run
         ImagePtr accumBuffer = getAccumBuffer();
 
-        if (isAccumulating && accumBuffer) {
+        if (isAccumulating) {
 
-            // When drawing with a paint brush, we may only render the bounding box of the un-rendered points.
-            RectI drawingLastMovementBBoxPixel;
-            {
-                RectD lastStrokeRoD = attachedStroke->getLastStrokeMovementBbox();
-                lastStrokeRoD.toPixelEnclosing(mappedCombinedScale, par, &drawingLastMovementBBoxPixel);
+            // Since we hold the image on the effect, we do not cache.
+            cachePolicy = eCacheAccessModeNone;
+            requestData->setCachePolicy(cachePolicy);
+
+            if (accumBuffer) {
+                // When drawing with a paint brush, we may only render the bounding box of the un-rendered points.
+
+                RectD updateAreaCanonical;
+                if (getAccumulationUpdateRoI(&updateAreaCanonical)) {
+
+                    RectI updateAreaPixel;
+                    updateAreaCanonical.toPixelEnclosing(mappedCombinedScale, par, &updateAreaPixel);
+
+
+                    // If this is the first time we compute this frame view request, erase in the tiles state map the portion that was drawn
+                    // by the user,
+                    if (!requestedImageScale) {
+                        // Get the accum buffer on the node. Note that this is not concurrent renders safe.
+                        requestedImageScale = accumBuffer;
+                        requestedImageScale->getCacheEntry()->markCacheTilesInRegionAsNotRendered(updateAreaPixel);
+                    }
+                }
+
             }
-
-
-            // If this is the first time we compute this frame view request, erase in the tiles state map the portion that was drawn
-            // by the user,
-            if (!requestedImageScale) {
-                // Get the accum buffer on the node. Note that this is not concurrent renders safe.
-                requestedImageScale =  accumBuffer;
-                requestedImageScale->getCacheEntry()->markCacheTilesInRegionAsNotRendered(drawingLastMovementBBoxPixel);
-            }
-
 
         } // isAccumulating
 

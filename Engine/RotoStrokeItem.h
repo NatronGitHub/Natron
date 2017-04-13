@@ -207,9 +207,7 @@ public:
     void evaluateStroke(const RenderScale& scale,
                         TimeValue time,
                         ViewIdx view,
-                        std::list<std::list<std::pair<Point, double> > >* strokes,
-                        RectD* bbox = 0,
-                        bool ignoreTransform = false) const;
+                        std::list<std::list<std::pair<Point, double> > >* strokes) const;
 
     std::list<CurvePtr > getXControlPoints() const;
     std::list<CurvePtr > getYControlPoints() const;

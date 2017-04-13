@@ -273,10 +273,8 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
                 *outImage = tmpImage;
                 return eActionStatusOK;
             }
-        }
-
-        // Converting from OpenGL to CPU requires a RGBA buffer with the same bounds
-        if (toImage._imp->bufferFormat != eImageBufferLayoutRGBAPackedFullRect || toImage.getComponentsCount() != 4 || toImage.getBounds() != fromImage.getBounds()) {
+        } else if (toImage._imp->bufferFormat != eImageBufferLayoutRGBAPackedFullRect || (toImage.getComponentsCount() != 4) || toImage.getBounds() != fromImage.getBounds()) {
+            // Converting from OpenGL to CPU requires a RGBA buffer with the same bounds
             ImagePtr tmpImage;
             Image::InitStorageArgs args;
             args.renderClone = fromImage._imp->renderClone.lock();

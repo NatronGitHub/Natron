@@ -474,7 +474,7 @@ EffectInstance::Implementation::renderHandlerPlugin(const RectToRender & rectToR
         const ImagePtr& mainImagePlane = actionArgs.outputPlanes.front().second;
 
         // For OSMesa, if the main image plane to render is not a 4 component image, we have to render first in a temporary image, then copy back the results.
-        ImagePtr osmesaRenderImage = mainImagePlane;
+        ImagePtr osmesaRenderImage;
         if (args.backendType == eRenderBackendTypeOpenGL ||
             args.backendType == eRenderBackendTypeOSMesa) {
 
@@ -485,6 +485,7 @@ EffectInstance::Implementation::renderHandlerPlugin(const RectToRender & rectToR
                 setupGLForRender<GL_GPU>(mainImagePlane, args.glContext, actionArgs.roi, _publicInterface->getNode()->isGLFinishRequiredBeforeRender(), &contextAttacher);
             } else {
                 // Allocate an image with half the size of the source image
+                osmesaRenderImage = mainImagePlane;
                 if (mainImagePlane->getComponentsCount() != 4) {
                     Image::InitStorageArgs initArgs;
                     initArgs.bounds = actionArgs.roi;
@@ -493,6 +494,7 @@ EffectInstance::Implementation::renderHandlerPlugin(const RectToRender & rectToR
                     initArgs.bitdepth = mainImagePlane->getBitDepth();
                     initArgs.proxyScale = mainImagePlane->getProxyScale();
                     initArgs.mipMapLevel = mainImagePlane->getMipMapLevel();
+                    initArgs.glContext = args.glContext;
                     osmesaRenderImage = Image::create(initArgs);
                     if (!osmesaRenderImage) {
                         return eActionStatusFailed;

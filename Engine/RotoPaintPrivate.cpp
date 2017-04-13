@@ -3231,7 +3231,6 @@ RotoPaintInteract::onOverlayPenUp(TimeValue /*time*/,
 
     if (state == eEventStateBuildingStroke) {
         assert(strokeBeingPaint);
-        assert( strokeBeingPaint->getParent() );
 
         strokeBeingPaint->endSubStroke();
         

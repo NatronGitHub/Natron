@@ -127,10 +127,10 @@ struct CornerPinOverlayInteractPrivate
         return knob->getValueAtTime(time) == 1;
     }
 
-    bool getInteractive(TimeValue time) const
+    bool getInteractive() const
     {
         if ( interactive.lock() ) {
-            return interactive.lock()->getValueAtTime(time);
+            return interactive.lock()->getValue();
         } else {
             return !appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
         }
@@ -492,6 +492,7 @@ CornerPinOverlayInteract::onOverlayPenDown(TimeValue time,
             _imp->enableDrag[i] = enable[i];
         }
     }
+    _imp->interactiveDrag = _imp->getInteractive();
     _imp->useFromDrag = useFrom;
     _imp->lastPenPos = pos;
     

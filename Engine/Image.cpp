@@ -519,6 +519,7 @@ Image::ensureBounds(const RectI& roi)
     // Swap images so that this image becomes the resized one, but keep the internal cache entry object
     ImageCacheEntryPtr internalCacheEntry = _imp->cacheEntry;
     _imp.swap(tmpImage->_imp);
+    _imp->_publicInterface = this;
     _imp->cacheEntry = internalCacheEntry;
     _imp->cacheEntry->ensureRoI(roi);
     return eActionStatusOK;

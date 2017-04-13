@@ -1013,7 +1013,7 @@ convertRGBAPackedCPUBufferToGLTextureInternal(const RAMImageStoragePtr& buffer,
     // even if GPU is still working with the previous data.
     GL::BufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, pboDataBytes, 0, GL_DYNAMIC_DRAW_ARB);
     unsigned char* gpuData = (unsigned char*)GL::MapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
-
+    glCheckError(GL);
     if (!gpuData) {
         throw std::bad_alloc();
     }

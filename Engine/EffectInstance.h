@@ -1049,17 +1049,6 @@ public:
      **/
     virtual RenderEngine* createRenderEngine();
 
-
-
-    virtual bool isPaintingOverItselfEnabled() const WARN_UNUSED_RETURN;
-
-    /**
-     * @brief For plug-ins that accumulate (for now just RotoShapeRenderNode), this is a pointer
-     * to the last rendered image.
-     **/
-    void setAccumBuffer(const ImagePtr& lastRenderedImage);
-    ImagePtr getAccumBuffer() const;
-
     /**
      * @brief Returns true if the node is capable of generating
      * data and process data on the input as well
@@ -1705,7 +1694,7 @@ public:
 
     /**
      * @brief Returns the attached roto item. If called from a render thread, this will
-     * return a pointer to the shallow render copy.
+     * return a pointer to the render copy.
      **/
     RotoDrawableItemPtr getAttachedRotoItem() const;
 
@@ -1714,8 +1703,31 @@ public:
      **/
     RotoDrawableItemPtr getOriginalAttachedItem() const;
 
+    /**
+     * @brief If an item is returned by the getAttachedRotoItem() method and this is a paint stroke
+     * This function returns whether it is currently being drawn by the user or not.
+     **/
     bool isDuringPaintStrokeCreation() const;
-    
+
+    /**
+     * @brief Virtual function that may be implemented that can enable accumulation. By default, it calls isDuringPaintStrokeCreation()
+     **/
+    virtual bool isAccumulationEnabled() const WARN_UNUSED_RETURN;
+
+    /**
+     * @brief For plug-ins that accumulate (ie.: isAccumulationEnabled() returns true) (for now just RotoShapeRenderNode), this is a pointer
+     * to the last rendered image.
+     **/
+    void setAccumBuffer(const ImagePtr& lastRenderedImage);
+    ImagePtr getAccumBuffer() const;
+
+
+    /***
+     * @brief For a plug-in that accumates, this function may set in updateArea an update portion for the image instead of rendering the whole RoI.
+     * Typically for a paint stroke, that would be the bounding box of the user points that have not been rendered yet.
+     * @returns True if updateArea was set, false otherwise in which case the plug-in expects that the full RoI must be rendered as usual
+     */
+    virtual bool getAccumulationUpdateRoI(RectD* updateArea) const;
 
     void setProcessChannelsValues(bool doR, bool doG, bool doB, bool doA);
 

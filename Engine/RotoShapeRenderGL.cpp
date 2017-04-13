@@ -109,8 +109,8 @@ static const char* roto_DivideShader =
 "}";
 
 static const char* rotoDrawDot_FragmentShader =
-"varying float outHardness;\n"
 "uniform float opacity;\n"
+"varying float outHardness;\n"
 "float gaussLookup(float t) {\n"
 "   if (t < -0.5) {\n"
 "       t = -1.0 - t;\n"
@@ -1210,8 +1210,10 @@ getDotTriangleFan(const Point& center,
         hardness = std::pow(hardness, 0.3f);
     }
 
+    // Resize each per-vertices data vector (color, vertices, hardness vertex attribute, texture index)
+    // Below we add 2 to the nb of outside vertices to account for the center point
     int cSize = appendToData ? cdata->size() : 0;
-    cdata->resizeAndPreserve(cSize + (nbOutsideVertices + 2) * 1);
+    cdata->resizeAndPreserve(cSize + (nbOutsideVertices + 2) * 4);
     int vSize = appendToData ? vdata->size() : 0;
     vdata->resizeAndPreserve(vSize + (nbOutsideVertices + 2) * 2);
     int hSize = appendToData ? hdata->size() : 0;
@@ -1227,6 +1229,8 @@ getDotTriangleFan(const Point& center,
     float* vPtr = vdata->getData() + vSize;
     float* hPtr = hdata->getData() + hSize;
     float* tPtr = tdata ? tdata->getData() + tSize : 0;
+
+    // Initialize the dot with a vertex in the center
     vPtr[0] = center.x;
     vPtr[1] = center.y;
     assert(texBounds.contains(vPtr[0],vPtr[1]));
@@ -1235,12 +1239,14 @@ getDotTriangleFan(const Point& center,
         tPtr += 2;
     }
 
+    cPtr[0] = cPtr[1] = cPtr[2] = cPtr[3] = opacity;
     *cPtr = opacity;
     *hPtr = hardness;
     vPtr += 2;
-    ++cPtr;
+    cPtr += 4;
     ++hPtr;
 
+    // Add each vertex on the outside of the circle
     double m = 2. * M_PI / (double)nbOutsideVertices;
     for (int i = 0; i < nbOutsideVertices; ++i) {
         double theta = i * m;
@@ -1252,8 +1258,8 @@ getDotTriangleFan(const Point& center,
             tPtr += 2;
         }
         vPtr += 2;
-        *cPtr = 0.;
-        ++cPtr;
+        cPtr[0] = cPtr[1] = cPtr[2] = cPtr[3] = 0.;
+        cPtr += 4;
 
         *hPtr = hardness;
         ++hPtr;
@@ -1266,7 +1272,7 @@ getDotTriangleFan(const Point& center,
         toTexCoords(texBounds, vPtr[0], vPtr[1], &tPtr[0], &tPtr[1]);
     }
 
-    *cPtr = 0.;
+    cPtr[0] = cPtr[1] = cPtr[2] = cPtr[3] = 0.;
     *hPtr = hardness;
 
 }
@@ -1479,7 +1485,9 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
     OSGLContext::setupGLViewport<GL>(firstPassDstImage->getBounds(), roi);
 
     strokeShader->bind();
-    strokeShader->setUniform("opacity", (float)opacity);
+    if (!doBuildUp) {
+        strokeShader->setUniform("opacity", (float)opacity);
+    }
 
     GLint hardnessLoc;
     {
@@ -1501,9 +1509,9 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
 
 
     GL::BindBuffer(GL_ARRAY_BUFFER, vboColorsID);
-    GL::BufferData(GL_ARRAY_BUFFER, nbVertices * 1 * sizeof(GLfloat), colorsData, GL_DYNAMIC_DRAW);
+    GL::BufferData(GL_ARRAY_BUFFER, nbVertices * 4 * sizeof(GLfloat), colorsData, GL_DYNAMIC_DRAW);
     GL::EnableClientState(GL_COLOR_ARRAY);
-    GL::ColorPointer(1, GL_FLOAT, 0, 0);
+    GL::ColorPointer(4, GL_FLOAT, 0, 0);
 
 
     GL::MultiDrawElements(primitiveType, perDrawCount, GL_UNSIGNED_INT, perDrawIdsPtr, drawCount);
@@ -1618,11 +1626,47 @@ renderStrokeEnd_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData)
 
     if (myData->glContext->isGPUContext()) {
 
-        renderStroke_gl_multiDrawElements<GL_GPU>(nbVertices, vboVerticesID, vboColorsID, vboHardnessID, myData->glContext, strokeShader, buildUpPassShader, myData->buildUp, myData->opacity, myData->roi, myData->dstImage, dstImageIsFinalTexture, GL_TRIANGLE_FAN, (const void*)(myData->primitivesVertices.getData()), (const void*)(myData->primitivesColors.getData()), (const void*)(myData->primitivesHardness.getData()), (const int*)(&perDrawCount[0]), (const void**)(&indicesVec[0]), indicesVec.size());
+        renderStroke_gl_multiDrawElements<GL_GPU>(nbVertices,
+                                                  vboVerticesID,
+                                                  vboColorsID,
+                                                  vboHardnessID,
+                                                  myData->glContext,
+                                                  strokeShader,
+                                                  buildUpPassShader,
+                                                  myData->buildUp,
+                                                  myData->opacity,
+                                                  myData->roi,
+                                                  myData->dstImage,
+                                                  dstImageIsFinalTexture,
+                                                  GL_TRIANGLE_FAN,
+                                                  (const void*)(myData->primitivesVertices.getData()),
+                                                  (const void*)(myData->primitivesColors.getData()),
+                                                  (const void*)(myData->primitivesHardness.getData()),
+                                                  (const int*)(&perDrawCount[0]),
+                                                  (const void**)(&indicesVec[0]),
+                                                  indicesVec.size());
 
 
     } else {
-        renderStroke_gl_multiDrawElements<GL_CPU>(nbVertices, vboVerticesID, vboColorsID, vboHardnessID, myData->glContext, strokeShader, buildUpPassShader, myData->buildUp, myData->opacity, myData->roi, myData->dstImage, dstImageIsFinalTexture, GL_TRIANGLE_FAN, (const void*)(myData->primitivesVertices.getData()), (const void*)(myData->primitivesColors.getData()), (const void*)(myData->primitivesHardness.getData()), (const int*)(&perDrawCount[0]), (const void**)(&indicesVec[0]), indicesVec.size());
+        renderStroke_gl_multiDrawElements<GL_CPU>(nbVertices,
+                                                  vboVerticesID,
+                                                  vboColorsID,
+                                                  vboHardnessID,
+                                                  myData->glContext,
+                                                  strokeShader,
+                                                  buildUpPassShader,
+                                                  myData->buildUp,
+                                                  myData->opacity,
+                                                  myData->roi,
+                                                  myData->dstImage,
+                                                  dstImageIsFinalTexture,
+                                                  GL_TRIANGLE_FAN,
+                                                  (const void*)(myData->primitivesVertices.getData()),
+                                                  (const void*)(myData->primitivesColors.getData()),
+                                                  (const void*)(myData->primitivesHardness.getData()),
+                                                  (const int*)(&perDrawCount[0]),
+                                                  (const void**)(&indicesVec[0]),
+                                                  indicesVec.size());
 
     }
 }
@@ -1747,7 +1791,7 @@ RotoShapeRenderGL::renderStroke_gl(const OSGLContextPtr& glContext,
 
         std::list<std::list<std::pair<Point, double> > > strokes;
         if (isStroke) {
-            isStroke->evaluateStroke(scale, t, view, &strokes, 0);
+            isStroke->evaluateStroke(scale, t, view, &strokes);
         } else if (isBezier && isBezier->isOpenBezier()) {
             std::vector<ParametricPoint> polygon;
             isBezier->evaluateAtTime(t, view, scale, Bezier::eDeCasteljauAlgorithmIterative, -1, 1., &polygon, 0);
@@ -2123,7 +2167,7 @@ RotoShapeRenderGL::renderSmear_gl(const OSGLContextPtr& glContext,
     data.roi = roi;
 
     std::list<std::list<std::pair<Point, double> > > strokes;
-    stroke->evaluateStroke(scale, time, view, &strokes, 0);
+    stroke->evaluateStroke(scale, time, view, &strokes);
 
     bool hasRenderedDot = RotoShapeRenderNodePrivate::renderStroke_generic((RotoShapeRenderNodePrivate::RenderStrokeDataPtr)&data,
                                                                            renderSmearBegin_gl,

@@ -1034,7 +1034,7 @@ RotoShapeRenderCairo::renderSmear_cairo(TimeValue time,
     data.dstImage = dstImage;
 
     std::list<std::list<std::pair<Point, double> > > strokes;
-    rotoItem->evaluateStroke(scale, time, view, &strokes, 0);
+    rotoItem->evaluateStroke(scale, time, view, &strokes);
 
     bool renderedDot = RotoShapeRenderNodePrivate::renderStroke_generic((RotoShapeRenderNodePrivate::RenderStrokeDataPtr)&data,
                                                                         renderSmearBegin_cairo,
@@ -1832,7 +1832,7 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
 
         std::list<std::list<std::pair<Point, double> > > strokes;
         if (isStroke) {
-            isStroke->evaluateStroke(scale, t, view, &strokes, 0);
+            isStroke->evaluateStroke(scale, t, view, &strokes);
             if (strokes.empty()) {
                 continue;
             }

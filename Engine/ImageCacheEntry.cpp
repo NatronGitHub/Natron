@@ -296,7 +296,7 @@ struct ImageCacheEntryPrivate
 
     // State indicating the render status of each tiles at the mipMapLevel
     // The state is shared accross all channels because OpenFX doesn't allows yet to render only some channels
-    // This state is local to this ImageCacheEntry: any tile marked eTileStatusPending may be pending because
+    // This state is local to this ImageCacheEntry object: any tile marked eTileStatusPending may be pending because
     // we are computing it or someone else is computing it.
     // Protected by lock
     TileStateHeader localTilesState;
@@ -478,11 +478,45 @@ ImageCacheEntry::getCacheKey() const
     return _imp->key;
 }
 
+static void growTilesState(const RectI& newBounds, TileStateHeader* stateToGrow)
+{
+    TileStateHeader tmpHeader;
+    tmpHeader.init(stateToGrow->tileSizeX, stateToGrow->tileSizeY, newBounds);
+
+    // If any tile is marked rendered locally, update the copied state
+    for (int ty = tmpHeader.boundsRoundedToTileSize.y1; ty < tmpHeader.boundsRoundedToTileSize.y2; ty += tmpHeader.tileSizeY) {
+        for (int tx = tmpHeader.boundsRoundedToTileSize.x1; tx < tmpHeader.boundsRoundedToTileSize.x2; tx += tmpHeader.tileSizeX) {
+            const TileState* state = stateToGrow->getTileAt(tx, ty);
+            if (!state) {
+                continue;
+            }
+            TileState* thisState = tmpHeader.getTileAt(tx, ty);
+            assert(thisState);
+            *thisState = *state;
+        }
+    }
+    tmpHeader.ownsState = false;
+    *stateToGrow = tmpHeader;
+}
+
 void
 ImageCacheEntry::ensureRoI(const RectI& roi)
 {
+
+    // Protect all local structures against multiple threads using this object.
     boost::unique_lock<boost::mutex> locker(_imp->lock);
-    _imp->roi = roi;
+
+    RectI unionedRoi = roi;
+    RectI unionedBounds = roi;
+    unionedRoi.merge(_imp->roi);
+    unionedBounds.merge(_imp->localTilesState.bounds);
+
+    growTilesState(unionedBounds, &_imp->localTilesState);
+
+    // Reset the cache entry
+    _imp->internalCacheEntry = ImageCacheEntryInternal<false>::create(_imp->key);
+
+    _imp->roi = unionedRoi;
 }
 
 
@@ -1664,6 +1698,9 @@ ImageCacheEntry::markCacheTilesInRegionAsNotRendered(const RectI& roi)
     // Make sure to call fetchCachedTilesAndUpdateStatus() first
     assert(_imp->internalCacheEntry);
 
+    RectI roiIntersected;
+    roi.intersect(_imp->localTilesState.bounds, &roiIntersected);
+
     // Protect all local structures against multiple threads using this object.
     boost::unique_lock<boost::mutex> locker(_imp->lock);
 
@@ -1686,23 +1723,21 @@ ImageCacheEntry::markCacheTilesInRegionAsNotRendered(const RectI& roi)
 
     std::vector<U64> localTileIndicesToRelease, cacheTileIndicesToRelease;
 
-    RectI mipmap0Roi = roi.upscalePowerOfTwo(_imp->mipMapLevel);
+    RectI mipmap0Roi = roiIntersected.upscalePowerOfTwo(_imp->mipMapLevel);
     RectI mipmap0Bounds = _imp->localTilesState.bounds.upscalePowerOfTwo(_imp->mipMapLevel);
     for (std::size_t i = 0; i < _imp->internalCacheEntry->perMipMapTilesState.size(); ++i) {
         
         RectI levelBounds = mipmap0Bounds.downscalePowerOfTwo(i);
         RectI levelRoi = mipmap0Roi.downscalePowerOfTwo(i);
-
-        RectI roiRounded = levelRoi;
-        roiRounded.roundToTileSize(_imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY);
-
+        RectI levelRoIRounded = levelRoi;
+        levelRoIRounded.roundToTileSize(_imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY);
         TileStateHeader cacheStateMap = TileStateHeader(_imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY, levelBounds, &_imp->internalCacheEntry->perMipMapTilesState[i]);
         assert(!cacheStateMap.state->tiles.empty());
 
 
 
-        for (int ty = roiRounded.y1; ty < roiRounded.y2; ty += _imp->localTilesState.tileSizeY) {
-            for (int tx = roiRounded.x1; tx < roiRounded.x2; tx += _imp->localTilesState.tileSizeX) {
+        for (int ty = levelRoIRounded.y1; ty < levelRoIRounded.y2; ty += _imp->localTilesState.tileSizeY) {
+            for (int tx = levelRoIRounded.x1; tx < levelRoIRounded.x2; tx += _imp->localTilesState.tileSizeX) {
 
                 assert(tx % _imp->localTilesState.tileSizeX == 0 && ty % _imp->localTilesState.tileSizeY == 0);
 

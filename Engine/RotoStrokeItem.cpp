@@ -125,12 +125,8 @@ struct RotoStrokeItemPrivate
     mutable double distToNextOut;
     Point lastCenter;
 
-    // when creating a render clone for this stroke with the copy ctor,
-    // we automatically grow the bounding box from the previous draw step
-    // instead of re-computing it from scratch to speed-up the drawing.
-    // This avoids re-computing it using computeBoundingBox()
-    // Once drawn (finished = true), this member is no longer useful.
-    mutable RectD renderCachedBbox;
+    // For a render clone, the bbox is computed only once per time
+    boost::scoped_ptr<std::map<TimeValue,RectD> > renderCachedBbox;
 
     // While drawing the stroke, this is the bounding box of the points
     // used to render. Basically this is the bbox of the points extracted
@@ -218,7 +214,6 @@ RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other
     lastTimestamp = other.lastTimestamp;
     distToNextOut = other.distToNextOut;
     lastCenter = other.lastCenter;
-    renderCachedBbox = other.renderCachedBbox;
     lastStrokeStepBbox = other.lastStrokeStepBbox;
     lastPointIndexInSubStroke = other.lastPointIndexInSubStroke;
     pickupPointIndexInSubStroke = other.pickupPointIndexInSubStroke;
@@ -323,8 +318,6 @@ RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other
         ViewIdx view = _publicInterface->getCurrentRenderView();
 
         lastStrokeStepBbox = computeBoundingBox(time, view);
-        renderCachedBbox = other.computeBoundingBox(time, view);
-
     }
     return hasDoneSomething;
 } // copyStrokeForRendering
@@ -397,12 +390,10 @@ RotoStrokeItem::createRenderCopy(const FrameViewRenderKey& key) const
         mainInstance = toRotoStrokeItem(boost::const_pointer_cast<KnobHolder>(shared_from_this()));
     }
 
-    {
-        QMutexLocker k(&_imp->lock);
-        RotoStrokeItemPtr ret(new RotoStrokeItem(mainInstance, key));
-        ret->_imp->copyStrokeForRendering(*_imp);
-        return ret;
-    }
+
+    RotoStrokeItemPtr ret(new RotoStrokeItem(mainInstance, key));
+    return ret;
+
 
 }
 
@@ -519,9 +510,7 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
     halfBrushSize = std::max(0.5, halfBrushSize);
 
     bool bboxSet = false;
-    if (bbox) {
-        bbox->clear();
-    }
+
 
     if ( xCurve.empty() ) {
         return;
@@ -1144,7 +1133,7 @@ RotoStrokeItemPrivate::computeBoundingBox(TimeValue time, ViewIdx view) const
     Transform::Matrix3x3 transform;
 
     _publicInterface->getTransformAtTime(time, view, &transform);
-    bool pressureAffectsSize = _publicInterface->getPressureSizeKnob()->getValueAtTime(time);
+    bool pressureAffectsSize = pressureSize.lock()->getValueAtTime(time);
     bool bboxSet = false;
     double halfBrushSize = _publicInterface->getBrushSizeKnob()->getValueAtTime(time) / 2. + 1;
     halfBrushSize = std::max(0.5, halfBrushSize);
@@ -1221,10 +1210,7 @@ RotoStrokeItemPrivate::computeBoundingBox(TimeValue time, ViewIdx view) const
             p3_.x = p3.x; p3_.y = p3.y;
 
             RectD pointBox = Bezier::getBezierSegmentControlPolygonBbox(p0_, p1_, p2_, p3_);
-            pointBox.x1 -= halfBrushSize * pressure;
-            pointBox.x2 += halfBrushSize * pressure;
-            pointBox.y1 -= halfBrushSize * pressure;
-            pointBox.y2 += halfBrushSize * pressure;
+            pointBox.addPadding(halfBrushSize * pressure + 1, halfBrushSize * pressure + 1);
 
             if (!curveBoxSet) {
                 curveBoxSet = true;
@@ -1257,11 +1243,24 @@ RotoStrokeItem::getBoundingBox(TimeValue time, ViewIdx view) const
     if (!enabled) {
         return RectD();
     }
+    bool renderClone = isRenderClone();
     QMutexLocker k(&_imp->lock);
-    if (isRenderClone() && _imp->isCurrentlyDrawing) {
-        return _imp->renderCachedBbox;
+    if (renderClone) {
+        if (_imp->renderCachedBbox) {
+            std::map<TimeValue,RectD>::iterator foundBbox = _imp->renderCachedBbox->find(time);
+            if (foundBbox != _imp->renderCachedBbox->end()) {
+                return foundBbox->second;
+            }
+        }
     }
-    return _imp->computeBoundingBox(time, view);
+    RectD bbox = _imp->computeBoundingBox(time, view);
+    if (renderClone) {
+        if (!_imp->renderCachedBbox) {
+            _imp->renderCachedBbox.reset(new std::map<TimeValue,RectD>);
+            _imp->renderCachedBbox->insert(std::make_pair(time, bbox));
+        }
+    }
+    return bbox;
 }
 
 std::list<CurvePtr >
@@ -1305,20 +1304,14 @@ void
 RotoStrokeItem::evaluateStroke(const RenderScale& scale,
                                TimeValue time,
                                ViewIdx view,
-                               std::list<std::list<std::pair<Point, double> > >* strokes,
-                               RectD* bbox,
-                               bool ignoreTransform) const
+                               std::list<std::list<std::pair<Point, double> > >* strokes) const
 {
     double brushSize = getBrushSizeKnob()->getValueAtTime(time) / 2.;
     bool pressureAffectsSize = getPressureSizeKnob()->getValueAtTime(time);
     Transform::Matrix3x3 transform;
-    if (ignoreTransform) {
-        transform.setIdentity();
-    } else {
-        getTransformAtTime(time, view, &transform);
-    }
+    getTransformAtTime(time, view, &transform);
 
-    bool bboxSet = false;
+
     for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin(); it != _imp->strokes.end(); ++it) {
         KeyFrameSet xSet, ySet, pSet;
         {
@@ -1330,17 +1323,9 @@ RotoStrokeItem::evaluateStroke(const RenderScale& scale,
         assert( xSet.size() == ySet.size() && xSet.size() == pSet.size() );
 
         std::list<std::pair<Point, double> > points;
-        RectD strokeBbox;
 
-        evaluateStrokeInternal(xSet, ySet, pSet, transform, scale, brushSize, pressureAffectsSize, &points, &strokeBbox);
-        if (bbox) {
-            if (bboxSet) {
-                bbox->merge(strokeBbox);
-            } else {
-                *bbox = strokeBbox;
-                bboxSet = true;
-            }
-        }
+        evaluateStrokeInternal(xSet, ySet, pSet, transform, scale, brushSize, pressureAffectsSize, &points, 0);
+
         if (!points.empty()) {
             strokes->push_back(points);
         }
@@ -1387,6 +1372,8 @@ RotoStrokeItem::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 void
 RotoStrokeItem::fetchRenderCloneKnobs()
 {
+    RotoDrawableItem::fetchRenderCloneKnobs();
+    
     // Make a strength parameter when relevant
     if (_imp->type == eRotoStrokeTypeBlur ||
         _imp->type == eRotoStrokeTypeSharpen) {
@@ -1412,6 +1399,11 @@ RotoStrokeItem::fetchRenderCloneKnobs()
         _imp->cloneFilter = getOrCreateKnob<KnobChoice>(kRotoBrushFilterParam);
         _imp->cloneBlackOutside = getOrCreateKnob<KnobBool>(kRotoBrushBlackOutsideParam);
     }
+
+    RotoStrokeItemPtr mainInstance =toRotoStrokeItem(getMainInstance());
+    assert(mainInstance);
+    QMutexLocker k(&mainInstance->_imp->lock);
+    _imp->copyStrokeForRendering(*mainInstance->_imp);
 }
 
 void

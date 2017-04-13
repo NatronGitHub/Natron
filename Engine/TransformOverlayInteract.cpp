@@ -226,10 +226,10 @@ struct TransformOverlayInteractPrivate
         }
     }
 
-    bool getInteractive(TimeValue time) const
+    bool getInteractive() const
     {
         if ( interactive.lock() ) {
-            return interactive.lock()->getValueAtTime(time);
+            return interactive.lock()->getValue();
         } else {
             return !appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
         }
@@ -1069,6 +1069,7 @@ TransformOverlayInteract::onOverlayPenDown(TimeValue time,
     _imp->skewYDrag = skewY;
     _imp->skewOrderDrag = skewOrder;
     _imp->invertedDrag = inverted;
+    _imp->interactiveDrag = _imp->getInteractive();
 
     _imp->lastPenPos = penPosParam;
 

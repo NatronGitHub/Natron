@@ -74,11 +74,11 @@ struct PointOverlayInteractPrivate
         return TO_DPIX(12.);
     }
 
-    bool getInteractive(TimeValue time) const
+    bool getInteractive() const
     {
         KnobBoolPtr inter = interactive.lock();
         if (inter) {
-            return inter->getValueAtTime(time);
+            return inter->getValue();
         } else {
             return !appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
         }
@@ -244,7 +244,7 @@ PointOverlayInteract::onOverlayPenDown(TimeValue time,
     Q_UNUSED(motion);
     if (_imp->state == ePositionInteractStatePoised) {
         _imp->state = ePositionInteractStatePicked;
-        _imp->interactiveDrag = _imp->getInteractive(time);
+        _imp->interactiveDrag = _imp->getInteractive();
 
         return true;
     }

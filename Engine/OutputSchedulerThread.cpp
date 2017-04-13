@@ -2128,6 +2128,7 @@ struct RenderViewerProcessFunctorArgs
 {
     NodePtr viewerProcessNode;
     NodePtr colorPickerNode, colorPickerInputNode;
+    RotoStrokeItemPtr activeStrokeItem;
     TreeRenderPtr renderObject;
     TimeValue time;
     ViewIdx view;
@@ -2206,7 +2207,7 @@ public:
         args->draftMode = inArgs->isDraftModeEnabled;
         args->playback = inArgs->isPlayback;
         args->byPassCache = inArgs->byPassCache;
-
+        args->activeRotoDrawableItem = inArgs->activeStrokeItem;
         if (inArgs->colorPickerNode) {
             args->extraNodesToSample.push_back(inArgs->colorPickerNode);
         }
@@ -2348,6 +2349,7 @@ public:
                                               ViewIdx view,
                                               bool isPlayback,
                                               const RenderStatsPtr& stats,
+                                              const RotoStrokeItemPtr& activeStroke,
                                               const RectD* roiParam,
                                               ViewerRenderBufferedFrame* bufferedFrame,
                                               RenderViewerProcessFunctorArgs* outArgs)
@@ -2364,7 +2366,7 @@ public:
         } else if (!fullFrameProcessing) {
             roi = viewer->getUiContext()->getImageRectangleDisplayed();
         }
-
+        outArgs->activeStrokeItem = activeStroke;
         outArgs->isPlayback = isPlayback;
         outArgs->isDraftModeEnabled = draftModeEnabled;
         outArgs->viewerMipMapLevel = mipMapLevel;
@@ -2392,7 +2394,7 @@ private:
     void createAndLaunchRenderInThread(const RenderViewerProcessFunctorArgsPtr& processArgs, int viewerProcess_i, TimeValue time, const RenderStatsPtr& stats, ViewerRenderBufferedFrame* bufferedFrame)
     {
 
-        createRenderViewerProcessArgs(_viewer, viewerProcess_i, time, bufferedFrame->view, true /*isPlayback*/, stats, 0 /*roiParam*/,  bufferedFrame, processArgs.get());
+        createRenderViewerProcessArgs(_viewer, viewerProcess_i, time, bufferedFrame->view, true /*isPlayback*/, stats,  RotoStrokeItemPtr(), 0 /*roiParam*/,  bufferedFrame, processArgs.get());
 
         // Register the render so that it can be aborted in abortRenders()
         {
@@ -3236,10 +3238,17 @@ public:
     {
     }
 
-    void createAndLaunchRenderInThread(const ViewerNodePtr &viewer, const RenderViewerProcessFunctorArgsPtr& processArgs, int viewerProcess_i, TimeValue time, const RenderStatsPtr& stats, const RectD* roiParam, ViewerRenderBufferedFrame* bufferedFrame)
+    void createAndLaunchRenderInThread(const ViewerNodePtr &viewer,
+                                       const RenderViewerProcessFunctorArgsPtr& processArgs,
+                                       int viewerProcess_i,
+                                       TimeValue time,
+                                       const RenderStatsPtr& stats,
+                                       const RotoStrokeItemPtr& activeStroke,
+                                       const RectD* roiParam,
+                                       ViewerRenderBufferedFrame* bufferedFrame)
     {
 
-        ViewerRenderFrameRunnable::createRenderViewerProcessArgs(viewer, viewerProcess_i, time, bufferedFrame->view, false /*isPlayback*/, stats, roiParam,  bufferedFrame, processArgs.get());
+        ViewerRenderFrameRunnable::createRenderViewerProcessArgs(viewer, viewerProcess_i, time, bufferedFrame->view, false /*isPlayback*/, stats, activeStroke, roiParam,  bufferedFrame, processArgs.get());
 
         // Register the current renders and their age on the scheduler so that they can be aborted
         {
@@ -3276,8 +3285,9 @@ public:
     void computeViewsForRoI(const ViewerNodePtr &viewer, const RectD* roiParam, const ViewerRenderBufferedFrameContainerPtr& framesContainer)
     {
 
+        // Render each view sequentially. For now the viewer always asks to render 1 view since the interface can only allow 1 view at once per view
         for (std::size_t i = 0; i < _args->viewsToRender.size(); ++i) {
-            // Create a tree render object for both viewer process nodes
+
             ViewIdx view = _args->viewsToRender[i];
 
             // Create stats object if we want statistics
@@ -3287,12 +3297,13 @@ public:
             }
 
 
+            // Create the object wrapping the rendered image for this view
             ViewerRenderBufferedFramePtr bufferObject(new ViewerRenderBufferedFrame);
             bufferObject->view = view;
             bufferObject->stats = stats;
             bufferObject->isPartialRect = roiParam != 0;
 
-
+            // Create a tree render object for both viewer process nodes
             std::vector<RenderViewerProcessFunctorArgsPtr> processArgs(2);
             for (int i = 0; i < 2; ++i) {
                 processArgs[i].reset(new RenderViewerProcessFunctorArgs);
@@ -3310,12 +3321,13 @@ public:
                                                                1,
                                                                _args->time,
                                                                stats,
+                                                               _args->strokeItem,
                                                                roiParam,
                                                                bufferObject.get()));
             }
 
             // Launch the 1st viewer process in this thread
-            createAndLaunchRenderInThread(viewer, processArgs[0], 0, _args->time, stats, roiParam, bufferObject.get());
+            createAndLaunchRenderInThread(viewer, processArgs[0], 0, _args->time, stats, _args->strokeItem, roiParam, bufferObject.get());
 
             // Wait for the 2nd viewer process
             if (viewerBlend != eViewerCompositingOperatorNone) {
@@ -3339,10 +3351,15 @@ public:
 
         ViewerNodePtr viewer = _args->viewer->isEffectViewerNode();
 
+        // The object that contains frames that we want to upload to the viewer UI all at once
         ViewerRenderBufferedFrameContainerPtr framesContainer(new ViewerRenderBufferedFrameContainer);
         framesContainer->time = _args->time;
         framesContainer->recenterViewer = viewer->getViewerCenterPoint(&framesContainer->viewerCenter);
+
+
         if (viewer->isDoingPartialUpdates()) {
+            // If the viewer is doing partial updates (i.e: during tracking we only update the markers areas)
+            // Then we launch multiple renders over the partial areas
             std::list<RectD> partialUpdates = viewer->getPartialUpdateRects();
             for (std::list<RectD>::const_iterator it = partialUpdates.begin(); it != partialUpdates.end(); ++it) {
                 computeViewsForRoI(viewer, &(*it), framesContainer);
@@ -3350,6 +3367,8 @@ public:
         } else {
             computeViewsForRoI(viewer, 0, framesContainer);
         }
+
+        // Call updateViewer() on the main thread
         _args->scheduler->_publicInterface->s_doProcessFrameOnMainThread(_args->age, framesContainer);
 
         {

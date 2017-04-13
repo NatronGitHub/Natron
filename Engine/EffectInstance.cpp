@@ -1377,9 +1377,32 @@ EffectInstance::getAccumBuffer() const
 }
 
 bool
-EffectInstance::isPaintingOverItselfEnabled() const
+EffectInstance::isAccumulationEnabled() const
 {
     return isDuringPaintStrokeCreation();
+}
+
+bool
+EffectInstance::getAccumulationUpdateRoI(RectD* updateArea) const
+{
+    RotoStrokeItemPtr attachedStroke = toRotoStrokeItem(getAttachedRotoItem());
+    if (!attachedStroke) {
+        return false;
+    }
+    *updateArea = attachedStroke->getLastStrokeMovementBbox();
+    return true;
+}
+
+
+bool
+EffectInstance::isDuringPaintStrokeCreation() const
+{
+    // We should render only
+    RotoStrokeItemPtr attachedStroke = toRotoStrokeItem(getAttachedRotoItem());
+    if (!attachedStroke) {
+        return false;
+    }
+    return attachedStroke->isCurrentlyDrawing();
 }
 
 void
@@ -2142,16 +2165,6 @@ EffectInstance::getAttachedRotoItem() const
 }
 
 
-bool
-EffectInstance::isDuringPaintStrokeCreation() const
-{
-    // We should render only
-    RotoStrokeItemPtr attachedStroke = toRotoStrokeItem(getAttachedRotoItem());
-    if (!attachedStroke) {
-        return false;
-    }
-    return attachedStroke->isCurrentlyDrawing();
-}
 
 KnobBoolPtr
 EffectInstance::getPreviewEnabledKnob() const

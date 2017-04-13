@@ -183,7 +183,10 @@ void
 RotoShapeRenderNode::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 {
     RotoDrawableItemPtr item = getAttachedRotoItem();
-    assert(item);
+    if (!item) {
+        EffectInstance::appendToHash(args, hash);
+        return;
+    }
 
     if (args.hashType == HashableObject::eComputeHashTypeTimeViewVariant) {
         // The render of the Roto shape/stroke depends on the points at the current time/view
