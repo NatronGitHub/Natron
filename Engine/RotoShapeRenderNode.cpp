@@ -403,7 +403,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 
 #if !defined(ROTO_SHAPE_RENDER_CPU_USES_CAIRO) && !defined(HAVE_OSMESA)
     getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorGenericRenderMessage, tr("Roto requires either OSMesa (CONFIG += enable-osmesa) or Cairo (CONFIG += enable-cairo) in order to render on CPU").toStdString());
-    return eStatusFailed;
+    return eActionStatusFailed;
 #endif
 
 #if !defined(ROTO_SHAPE_RENDER_CPU_USES_CAIRO)

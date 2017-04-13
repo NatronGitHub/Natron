@@ -684,7 +684,7 @@ public:
      * @brief Return the region that the plugin is capable of filling.
      * This is meaningful for plugins that generate images or transform images.
      * By default it returns in rod the union of all inputs RoD and eStatusReplyDefault is returned.
-     * In case of failure the plugin should return eStatusFailed.
+     * In case of failure the plugin should return eActionStatusFailed.
      **/
     ActionRetCodeEnum getRegionOfDefinition_public(TimeValue time,
                                             const RenderScale & scale,
@@ -759,7 +759,7 @@ public:
     /**
      * @brief Can be derived to get the frame range wherein the plugin is capable of producing frames.
      * By default it merges the frame range of the inputs.
-     * In case of failure the plugin should return eStatusFailed.
+     * In case of failure the plugin should return eActionStatusFailed.
      **/
     ActionRetCodeEnum getFrameRange_public(GetFrameRangeResultsPtr* results);
 
