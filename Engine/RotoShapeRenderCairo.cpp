@@ -47,6 +47,8 @@
 //#define ROTO_USE_MESH_PATTERN_ONLY
 
 
+#define ROTO_CAIRO_RENDER_TRIANGLES_ONLY
+
 NATRON_NAMESPACE_ENTER;
 
 QString
@@ -107,13 +109,18 @@ convertCairoImageToNatronImageForAccum_noColor(cairo_surface_t* cairoImg,
             if (inverted) {
                 cairoPixel = 1.f - cairoPixel;
             }
+            if (dstNComps == 1) {
+                tmpPix[0] = cairoPixel * opacity;
+            } else {
+                tmpPix[3] = cairoPixel * opacity;
+            }
+
             if (dstNComps > 1) {
                 const int nColorComps = std::min(dstNComps, 3);
                 for (int c = 0; c < nColorComps; ++c) {
-                    tmpPix[c] = cairoPixel * opacity;
+                    tmpPix[c] = tmpPix[3];
                 }
             }
-            tmpPix[3] = cairoPixel * opacity;
 
             if (accumulate) {
                 for (int c = 0; c < dstNComps; ++c) {
@@ -1059,7 +1066,6 @@ RotoShapeRenderCairo::renderBezier_cairo(cairo_t* cr,
 {
     const TimeValue t = time;
     double fallOff = bezier->getFeatherFallOffKnob()->getValueAtTime(t, DimIdx(0), view);
-    double featherDist_canonical = bezier->getFeatherKnob()->getValueAtTime(t, DimIdx(0), view);
 
 
     cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
@@ -1074,20 +1080,20 @@ RotoShapeRenderCairo::renderBezier_cairo(cairo_t* cr,
         return;
     }
 
-    ///Adjust the feather distance so it takes the mipmap level into account
-    double featherDist_pixelX = featherDist_canonical * scale.x;
-    double featherDist_pixelY = featherDist_canonical * scale.y;
-
-
-
-
 #ifdef ROTO_CAIRO_RENDER_TRIANGLES_ONLY
-    PolygonData data;
-    tesselate(bezier, t, scale, featherDist_pixelX, featherDist_pixelY, &data);
+    RotoBezierTriangulation::PolygonData data;
+    RotoBezierTriangulation::tesselate(bezier, t, view, scale, &data);
     renderFeather_cairo(data, fallOff, mesh);
     renderInternalShape_cairo(data, mesh);
     Q_UNUSED(opacity);
 #else
+
+    ///Adjust the feather distance so it takes the mipmap level into account
+    double featherDist_canonical = bezier->getFeatherKnob()->getValueAtTime(t, DimIdx(0), view);
+    double featherDist_pixelX = featherDist_canonical * scale.x;
+    double featherDist_pixelY = featherDist_canonical * scale.y;
+
+
     renderFeather_old_cairo(bezier, t, view, scale, opacity, featherDist_pixelX, featherDist_pixelY, fallOff, mesh);
 
     Transform::Matrix3x3 transform;
@@ -1147,13 +1153,7 @@ RotoShapeRenderCairo::renderFeather_old_cairo(const BezierPtr& bezier,
     std::vector<Point> featherContour;
 
     // prepare iterators
-    std::vector<ParametricPoint>::iterator next = featherPolygon.begin();
-    ++next;  // can only be valid since we assert the list is not empty
-    if ( next == featherPolygon.end() ) {
-        next = featherPolygon.begin();
-    }
-    std::vector<ParametricPoint>::iterator prev = featherPolygon.end();
-    --prev; // can only be valid since we assert the list is not empty
+
     std::vector<ParametricPoint>::iterator bezIT = bezierPolygon.begin();
     std::vector<ParametricPoint>::iterator prevBez = bezierPolygon.end();
     --prevBez; // can only be valid since we assert the list is not empty
@@ -1164,18 +1164,6 @@ RotoShapeRenderCairo::renderFeather_old_cairo(const BezierPtr& bezier,
     Point p1;
     p1.x = featherPolygon.begin()->x;
     p1.y = featherPolygon.begin()->y;
-    double norm = sqrt( (next->x - prev->x) * (next->x - prev->x) + (next->y - prev->y) * (next->y - prev->y) );
-    assert(norm != 0);
-    double dx = (norm != 0) ? -( (next->y - prev->y) / norm ) : 0;
-    double dy = (norm != 0) ? ( (next->x - prev->x) / norm ) : 1;
-
-    if (!clockWise) {
-        p1.x -= dx * absFeatherDistX;
-        p1.y -= dy * absFeatherDistY;
-    } else {
-        p1.x += dx * absFeatherDistX;
-        p1.y += dy * absFeatherDistY;
-    }
 
     Point origin = p1;
     featherContour.push_back(p1);
@@ -1186,19 +1174,12 @@ RotoShapeRenderCairo::renderFeather_old_cairo(const BezierPtr& bezier,
     // ++cur, ++prev, ++next, ++bezIT, ++prevBez
     // all should be valid, actually
     assert( cur != featherPolygon.end() &&
-           prev != featherPolygon.end() &&
-           next != featherPolygon.end() &&
            bezIT != bezierPolygon.end() &&
            prevBez != bezierPolygon.end() );
     if ( cur != featherPolygon.end() ) {
         ++cur;
     }
-    if ( prev != featherPolygon.end() ) {
-        ++prev;
-    }
-    if ( next != featherPolygon.end() ) {
-        ++next;
-    }
+
     if ( bezIT != bezierPolygon.end() ) {
         ++bezIT;
     }
@@ -1207,12 +1188,7 @@ RotoShapeRenderCairo::renderFeather_old_cairo(const BezierPtr& bezier,
     }
 
     for (;; ++cur) { // for each point in polygon
-        if ( next == featherPolygon.end() ) {
-            next = featherPolygon.begin();
-        }
-        if ( prev == featherPolygon.end() ) {
-            prev = featherPolygon.begin();
-        }
+
         if ( bezIT == bezierPolygon.end() ) {
             bezIT = bezierPolygon.begin();
         }
@@ -1237,20 +1213,8 @@ RotoShapeRenderCairo::renderFeather_old_cairo(const BezierPtr& bezier,
         p3.y = bezIT->y;
 
         if (!mustStop) {
-            norm = sqrt( (next->x - prev->x) * (next->x - prev->x) + (next->y - prev->y) * (next->y - prev->y) );
-            assert(norm != 0);
-            dx = -( (next->y - prev->y) / norm );
-            dy = ( (next->x - prev->x) / norm );
             p2.x = cur->x;
             p2.y = cur->y;
-
-            if (!clockWise) {
-                p2.x -= dx * absFeatherDistX;
-                p2.y -= dy * absFeatherDistY;
-            } else {
-                p2.x += dx * absFeatherDistX;
-                p2.y += dy * absFeatherDistY;
-            }
         } else {
             p2.x = origin.x;
             p2.y = origin.y;
@@ -1307,13 +1271,6 @@ RotoShapeRenderCairo::renderFeather_old_cairo(const BezierPtr& bezier,
         p1 = p2;
 
         // increment for next iteration
-        // ++prev, ++next, ++bezIT, ++prevBez
-        if ( prev != featherPolygon.end() ) {
-            ++prev;
-        }
-        if ( next != featherPolygon.end() ) {
-            ++next;
-        }
         if ( bezIT != bezierPolygon.end() ) {
             ++bezIT;
         }
@@ -1339,7 +1296,7 @@ RotoShapeRenderCairo::renderFeather_cairo(const RotoBezierTriangulation::Polygon
     ++next;
     std::vector<unsigned int>::const_iterator nextNext = next;
     ++nextNext;
-    for (; nextNext!=inArgs.featherTriangles.end(); ++it, ++next, ++nextNext) {
+    for (; nextNext!=inArgs.featherTriangles.end();) {
 
 
         cairo_mesh_pattern_begin_patch(mesh);
@@ -1378,7 +1335,8 @@ RotoShapeRenderCairo::renderFeather_cairo(const RotoBezierTriangulation::Polygon
                     ++outterIndex;
                 }
             }
-            if (nextNextVertex.isInner) {
+            // OutterIndex == 2 if there's no feather
+            if (innerIndex <= 1 && (nextNextVertex.isInner || outterIndex == 2)) {
                 assert(innerIndex <= 1);
                 if (innerIndex <= 1) {
                     innerVertices[innerIndex] = &nextNextVertex;
@@ -1459,6 +1417,40 @@ RotoShapeRenderCairo::renderFeather_cairo(const RotoBezierTriangulation::Polygon
 
         //std::swap(innerOpacity, outterOpacity);
 
+        assert(nextNext != inArgs.featherTriangles.end());
+        ++nextNext;
+
+        // check if we reached the end
+        if (nextNext == inArgs.featherTriangles.end()) {
+            break;
+        }
+        // advance a second time
+        ++nextNext;
+        if (nextNext == inArgs.featherTriangles.end()) {
+            break;
+        }
+        // advance a 3rd time
+        ++nextNext;
+        if (nextNext == inArgs.featherTriangles.end()) {
+            break;
+        }
+
+        assert(next != inArgs.featherTriangles.end());
+        ++next;
+        assert(next != inArgs.featherTriangles.end());
+        ++next;
+        assert(next != inArgs.featherTriangles.end());
+        ++next;
+        assert(next != inArgs.featherTriangles.end());
+
+        assert(it != inArgs.featherTriangles.end());
+        ++it;
+        assert(it != inArgs.featherTriangles.end());
+        ++it;
+        assert(it != inArgs.featherTriangles.end());
+        ++it;
+        assert(it != inArgs.featherTriangles.end());
+
     } // for (std::list<RotoFeatherVertex>::const_iterator it = vertices.begin(); it!=vertices.end(); )
 } // RotoShapeRenderCairo::renderFeather_cairo
 
@@ -1476,7 +1468,7 @@ RotoShapeRenderCairo::renderInternalShape_cairo(const RotoBezierTriangulation::P
         for (std::vector<unsigned int> ::const_iterator it2 = it->begin(); it2!=it->end(); ++it2) {
 
             assert(*it2 < inArgs.internalShapeVertices.size());
-            Point p = inArgs.internalShapeVertices[*it2];
+            const Point& p = inArgs.internalShapeVertices[*it2];
             if (c == 0) {
                 cairo_mesh_pattern_begin_patch(mesh);
                 cairo_mesh_pattern_move_to(mesh, p.x, p.y);
@@ -1487,15 +1479,9 @@ RotoShapeRenderCairo::renderInternalShape_cairo(const RotoBezierTriangulation::P
             if (c == 2) {
 
                 // close coons patch by transforming the triangle into a degenerated coons patch
-                cairo_mesh_pattern_line_to(mesh, p.x, p.y);
-                // IMPORTANT NOTE:
-                // The two sqrt below are due to a probable cairo bug.
-                // To check wether the bug is present is a given cairo version,
-                // make any shape with a very large feather and set
-                // opacity to 0.5. Then, zoom on the polygon border to check if the intensity is continuous
-                // and approximately equal to 0.5.
-                // If the bug if ixed in cairo, please use #if CAIRO_VERSION>xxx to keep compatibility with
-                // older Cairo versions.
+                cairo_mesh_pattern_line_to(mesh, coonsPatchStart.x, coonsPatchStart.y);
+                cairo_mesh_pattern_line_to(mesh, coonsPatchStart.x, coonsPatchStart.y);
+
                 cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, 1., 1., 1., 1);
                 cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, 1., 1., 1., 1);
                 cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, 1., 1., 1., 1);
@@ -1521,24 +1507,18 @@ RotoShapeRenderCairo::renderInternalShape_cairo(const RotoBezierTriangulation::P
         for (;next != it->end();) {
             cairo_mesh_pattern_begin_patch(mesh);
 
-            const Point p0 = fanStart;
-            const Point p3 = p0;
+            const Point& p0 = fanStart;
+            const Point& p3 = p0;
             assert(*cur < inArgs.internalShapeVertices.size());
-            const Point p1 = inArgs.internalShapeVertices[*cur];
+            const Point& p1 = inArgs.internalShapeVertices[*cur];
             assert(*next < inArgs.internalShapeVertices.size());
-            const Point p2 = inArgs.internalShapeVertices[*next];
+            const Point& p2 = inArgs.internalShapeVertices[*next];
             cairo_mesh_pattern_move_to(mesh, p0.x, p0.y);
             cairo_mesh_pattern_line_to(mesh, p1.x, p1.y);
             cairo_mesh_pattern_line_to(mesh, p2.x, p2.y);
             cairo_mesh_pattern_line_to(mesh, p3.x, p3.y);
-            // IMPORTANT NOTE:
-            // The two sqrt below are due to a probable cairo bug.
-            // To check wether the bug is present is a given cairo version,
-            // make any shape with a very large feather and set
-            // opacity to 0.5. Then, zoom on the polygon border to check if the intensity is continuous
-            // and approximately equal to 0.5.
-            // If the bug if ixed in cairo, please use #if CAIRO_VERSION>xxx to keep compatibility with
-            // older Cairo versions.
+            cairo_mesh_pattern_line_to(mesh, p0.x, p0.y);
+
             cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, 1., 1., 1., 1);
             cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, 1., 1., 1., 1);
             cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, 1., 1., 1., 1);
@@ -1565,24 +1545,18 @@ RotoShapeRenderCairo::renderInternalShape_cairo(const RotoBezierTriangulation::P
         for (; cur != it->end(); ++cur) {
             cairo_mesh_pattern_begin_patch(mesh);
 
-            const Point p0 = prevPrev;
-            const Point p3 = p0;
-            const Point p1 = prev;
+            const Point& p0 = prevPrev;
+            const Point& p3 = p0;
+            const Point& p1 = prev;
             assert(*cur < inArgs.internalShapeVertices.size());
-            const Point p2 = inArgs.internalShapeVertices[*cur];
+            const Point& p2 = inArgs.internalShapeVertices[*cur];
 
             cairo_mesh_pattern_move_to(mesh, p0.x, p0.y);
             cairo_mesh_pattern_line_to(mesh, p1.x, p1.y);
             cairo_mesh_pattern_line_to(mesh, p2.x, p2.y);
             cairo_mesh_pattern_line_to(mesh, p3.x, p3.y);
-            // IMPORTANT NOTE:
-            // The two sqrt below are due to a probable cairo bug.
-            // To check wether the bug is present is a given cairo version,
-            // make any shape with a very large feather and set
-            // opacity to 0.5. Then, zoom on the polygon border to check if the intensity is continuous
-            // and approximately equal to 0.5.
-            // If the bug if ixed in cairo, please use #if CAIRO_VERSION>xxx to keep compatibility with
-            // older Cairo versions.
+            cairo_mesh_pattern_line_to(mesh, p0.x, p0.y);
+
             cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, 1., 1., 1., 1);
             cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, 1., 1., 1., 1);
             cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, 1., 1., 1., 1);

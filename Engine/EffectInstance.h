@@ -1415,7 +1415,7 @@ public:
 public:
 
 
-    virtual PluginOpenGLRenderSupport getCurrentOpenGLSupport() const WARN_UNUSED_RETURN;
+    virtual PluginOpenGLRenderSupport getOpenGLSupport() const WARN_UNUSED_RETURN;
 
 
 

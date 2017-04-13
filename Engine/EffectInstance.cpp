@@ -1299,12 +1299,6 @@ EffectInstance::getCreateChannelSelectorKnob() const
 }
 
 
-PluginOpenGLRenderSupport
-EffectInstance::getCurrentOpenGLSupport() const
-{
-    return (PluginOpenGLRenderSupport)getNode()->getPlugin()->getPropertyUnsafe<int>(kNatronPluginPropOpenGLSupport);
-}
-
 bool
 EffectInstance::onKnobValueChanged(const KnobIPtr& /*k*/,
                                    ValueChangedReasonEnum /*reason*/,
@@ -1879,9 +1873,6 @@ EffectInstance::setCurrentOpenGLRenderSupport(PluginOpenGLRenderSupport support)
 PluginOpenGLRenderSupport
 EffectInstance::getCurrentOpenGLRenderSupport()
 {
-    if (_imp->renderData) {
-        return _imp->renderData->props.currentSupportOpenGLRender;
-    }
 
     PluginPtr plugin = getNode()->getPlugin();
     if (plugin) {
@@ -2047,6 +2038,11 @@ EffectInstance::getCurrentCanTransform() const
     return _imp->common->props.currentDeprecatedTransformSupport;
 }
 
+PluginOpenGLRenderSupport
+EffectInstance::getOpenGLSupport() const
+{
+    return (PluginOpenGLRenderSupport)getNode()->getPlugin()->getPropertyUnsafe<int>(kNatronPluginPropOpenGLSupport);
+}
 
 void
 EffectInstance::refreshDynamicProperties()
@@ -2057,7 +2053,7 @@ EffectInstance::refreshDynamicProperties()
         pluginGLSupport = (PluginOpenGLRenderSupport)plugin->getPropertyUnsafe<int>(kNatronPluginPropOpenGLSupport);
         if (plugin->isOpenGLEnabled() && pluginGLSupport == ePluginOpenGLRenderSupportYes) {
             // Ok the plug-in supports OpenGL, figure out now if can be turned on/off by the instance
-            pluginGLSupport = getCurrentOpenGLSupport();
+            pluginGLSupport = getOpenGLSupport();
         }
     }
 

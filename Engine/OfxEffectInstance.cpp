@@ -1698,7 +1698,7 @@ OfxEffectInstance::isDraftRenderSupported() const
 }
 
 PluginOpenGLRenderSupport
-OfxEffectInstance::getCurrentOpenGLSupport() const
+OfxEffectInstance::getOpenGLSupport() const
 {
     const std::string& str = effectInstance()->getProps().getStringProperty(kOfxImageEffectPropOpenGLRenderSupported);
 

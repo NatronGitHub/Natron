@@ -146,7 +146,7 @@ EffectInstance::Implementation::resolveRenderBackend(const RequestPassSharedData
 
     bool canDoOpenGLRendering;
 
-    PluginOpenGLRenderSupport openGLSupport = _publicInterface->getCurrentOpenGLSupport();
+    PluginOpenGLRenderSupport openGLSupport = _publicInterface->getCurrentOpenGLRenderSupport();
     canDoOpenGLRendering = (openGLSupport == ePluginOpenGLRenderSupportNeeded || openGLSupport == ePluginOpenGLRenderSupportYes);
 
 
