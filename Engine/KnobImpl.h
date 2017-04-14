@@ -957,6 +957,9 @@ Knob<T>::populate()
 {
     KnobHelper::populate();
 
+    if (getHolder() && getHolder()->isRenderClone()) {
+        _valuesCache.reset(new ValuesCacheMap);
+    }
     int nDims = getNDimensions();
     _data->expressionResults.resize(nDims);
     for (int i = 0; i < nDims; ++i) {

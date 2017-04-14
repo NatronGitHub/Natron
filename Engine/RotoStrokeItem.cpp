@@ -33,6 +33,7 @@
 
 #include <QtCore/QLineF>
 #include <QtCore/QDebug>
+#include <QThread>
 
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
@@ -534,7 +535,6 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
         ++pNext;
     }
 
-
     if ( (xCurve.size() == 1) && ( xIt != xCurve.end() ) && ( yIt != yCurve.end() ) && ( pIt != pCurve.end() ) ) {
         assert( xNext == xCurve.end() && yNext == yCurve.end() && pNext == pCurve.end() );
         Transform::Point3D p;
@@ -595,7 +595,6 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
         p2 = Transform::matApply(transform, p2);
         p3 = Transform::matApply(transform, p3);
 
-
         // If the end-points are linear for the segment, just add a straight line to speed up evaluation.
         double nbPointsPerSegment;
         if (xIt->getInterpolation() == eKeyframeTypeLinear && yIt->getInterpolation() == eKeyframeTypeLinear) {
@@ -650,14 +649,15 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
             points->push_back( std::make_pair(p, pi) );
         }
 
-        double padding = halfBrushSize * pressure;
-        pointBox.x1 -= padding;
-        pointBox.x2 += padding;
-        pointBox.y1 -= padding;
-        pointBox.y2 += padding;
-
-        
         if (bbox) {
+
+            double padding = halfBrushSize * pressure;
+            pointBox.x1 -= padding;
+            pointBox.x2 += padding;
+            pointBox.y1 -= padding;
+            pointBox.y2 += padding;
+            
+
             if (!bboxSet) {
                 bboxSet = true;
                 *bbox = pointBox;
@@ -668,7 +668,6 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
 
 
     } // for (; xNext != xCurve.end() ;++xNext, ++yNext, ++pNext) {
-
 } // evaluateStrokeInternal
 
 bool
@@ -1131,7 +1130,7 @@ RotoStrokeItemPrivate::computeBoundingBox(TimeValue time, ViewIdx view) const
 
     RectD bbox;
     Transform::Matrix3x3 transform;
-
+    
     _publicInterface->getTransformAtTime(time, view, &transform);
     bool pressureAffectsSize = pressureSize.lock()->getValueAtTime(time);
     bool bboxSet = false;
@@ -1179,7 +1178,6 @@ RotoStrokeItemPrivate::computeBoundingBox(TimeValue time, ViewIdx view) const
             curveBox.y2 += halfBrushSize * pressure;
             curveBoxSet = true;
         }
-
 
         for (; xNext != xCurve.end(); ++xIt, ++yIt, ++pIt, ++xNext, ++yNext, ++pNext) {
 
@@ -1310,7 +1308,6 @@ RotoStrokeItem::evaluateStroke(const RenderScale& scale,
     bool pressureAffectsSize = getPressureSizeKnob()->getValueAtTime(time);
     Transform::Matrix3x3 transform;
     getTransformAtTime(time, view, &transform);
-
 
     for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin(); it != _imp->strokes.end(); ++it) {
         KeyFrameSet xSet, ySet, pSet;
