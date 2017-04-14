@@ -178,13 +178,13 @@ ImagePrivate::initAndFetchFromCache(const Image::InitStorageArgs& args)
     ImageCacheKeyPtr key(new ImageCacheKey(args.nodeTimeViewVariantHash,
                                            layerID,
                                            args.proxyScale,
-                                           args.isDraft,
                                            pluginID));
 
 
     cacheEntry.reset(new ImageCacheEntry(_publicInterface->shared_from_this(),
-                                         args.pixelRod,
+                                         args.perMipMapPixelRoD,
                                          args.bounds,
+                                         args.isDraft,
                                          args.mipMapLevel,
                                          args.bitdepth,
                                          plane.getNumComponents(),

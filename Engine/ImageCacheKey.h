@@ -40,7 +40,6 @@ public:
     ImageCacheKey(U64 nodeTimeViewVariantHash,
                   U64 layerIDHash,
                   const RenderScale& proxyScale,
-                  bool draftMode,
                   const std::string& pluginID);
 
     virtual ~ImageCacheKey();
@@ -48,8 +47,6 @@ public:
     U64 getNodeTimeVariantHashKey() const;
 
     const RenderScale& getProxyScale() const;
-
-    bool isDraftMode() const;
 
     virtual void toMemorySegment(IPCPropertyMap* properties) const OVERRIDE FINAL;
 

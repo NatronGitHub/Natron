@@ -755,9 +755,9 @@ ViewerNode::setRefreshButtonDown(bool down)
 {
     KnobButtonPtr knob = _imp->refreshButtonKnob.lock();
     // Ignore evaluation
-#pragma message WARN("uncomment")
-    //ScopedChanges_RAII changes(this, true);
-    //knob->setValue(down, ViewIdx(0), DimIdx(0), eValueChangedReasonTimeChanged);
+
+    ScopedChanges_RAII changes(this, true);
+    knob->setValue(down, ViewIdx(0), DimIdx(0), eValueChangedReasonTimeChanged);
 
 }
 

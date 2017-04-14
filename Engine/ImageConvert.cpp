@@ -323,25 +323,25 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
     } // for all lines
 } // convertToFormatInternal_sameComps
 
-#pragma message WARN("WE DO NOT NEED SUCH A HUGE MATRIX! there are 3*3*4*4*2*2=576 versions of this function!!! this is counter-productive! Only hardcode the most frequent cases, all others should be handled by a non-template function")
-template <typename SRCPIX, int srcMaxValue, typename DSTPIX, int dstMaxValue, int srcNComps, int dstNComps, bool requiresUnpremult, bool useColorspaces>
+template <typename SRCPIX, int srcMaxValue, typename DSTPIX, int dstMaxValue, int srcNComps, int dstNComps>
 void
-static convertToFormatInternalForColorSpace(const RectI & renderWindow,
-                                            ViewerColorSpaceEnum srcColorSpace,
-                                            ViewerColorSpaceEnum dstColorSpace,
-                                            int conversionChannel,
-                                            Image::AlphaChannelHandlingEnum alphaHandling,
-                                            const void* srcBufPtrs[4],
-                                            const RectI& srcBounds,
-                                            void* dstBufPtrs[4],
-                                            const RectI& dstBounds,
-                                            const EffectInstancePtr& renderClone)
+static convertToFormatInternal(const RectI & renderWindow,
+                               ViewerColorSpaceEnum srcColorSpace,
+                               ViewerColorSpaceEnum dstColorSpace,
+                               bool requiresUnpremult,
+                               int conversionChannel,
+                               Image::AlphaChannelHandlingEnum alphaHandling,
+                               const void* srcBufPtrs[4],
+                               const RectI& srcBounds,
+                               void* dstBufPtrs[4],
+                               const RectI& dstBounds,
+                               const EffectInstancePtr& renderClone)
 {
     // Other cases are optimizes in convertFromMono and convertToMono
     assert(dstNComps > 1 && srcNComps > 1);
 
-    const Color::Lut* const srcLut = useColorspaces ? lutFromColorspace( (ViewerColorSpaceEnum)srcColorSpace ) : 0;
-    const Color::Lut* const dstLut = useColorspaces ? lutFromColorspace( (ViewerColorSpaceEnum)dstColorSpace ) : 0;
+    const Color::Lut* const srcLut = lutFromColorspace( (ViewerColorSpaceEnum)srcColorSpace );
+    const Color::Lut* const dstLut = lutFromColorspace( (ViewerColorSpaceEnum)dstColorSpace );
 
     for (int y = renderWindow.y1; y < renderWindow.y2; ++y) {
         // Start of the line for error diffusion
@@ -376,22 +376,16 @@ static convertToFormatInternalForColorSpace(const RectI & renderWindow,
             int end = backward ? renderWindow.x1 - 1 : renderWindow.x2;
 
             // The error will be updated and diffused throughout the scanline
-            unsigned error[3] = {
-                0x80, 0x80, 0x80
-            };
+            unsigned error[3] = {0x80, 0x80, 0x80};
 
             while (x != end) {
 
                 // We've XY, RGB or RGBA input and outputs
                 assert(srcNComps != dstNComps);
 
-                const bool unpremultChannel = ( //srcNComps == 4 && // test already done in convertToFormatInternalForDepth
-                                               //dstNComps == 3 && // test already done in convertToFormatInternalForDepth
-                                               requiresUnpremult);
-
                 // This is only set if unpremultChannel is true
                 float alphaForUnPremult;
-                if (unpremultChannel && srcPixelPtrs[3]) {
+                if (requiresUnpremult && srcPixelPtrs[3]) {
                     alphaForUnPremult = Image::convertPixelDepth<SRCPIX, float>(*srcPixelPtrs[3]);
                 } else {
                     alphaForUnPremult = 1.;
@@ -401,19 +395,12 @@ static convertToFormatInternalForColorSpace(const RectI & renderWindow,
                 // For all channels, converting pixel depths is required at the very least.
                 for (int k = 0; k < 3 && k < dstNComps; ++k) {
 
-                    if (!dstPixelPtrs[k]) {
-                        continue;
-                    }
-                    SRCPIX sourcePixel;
+                    assert(dstPixelPtrs[k]);
 
-                    if (srcPixelPtrs[k]) {
-                        sourcePixel = *srcPixelPtrs[k];
-                    } else {
-                        sourcePixel = 0;
-                    }
+                    SRCPIX sourcePixel = srcPixelPtrs[k] ? *srcPixelPtrs[k] : 0;
 
                     DSTPIX pix;
-                    if ( !useColorspaces || (!srcLut && !dstLut) ) {
+                    if (!srcLut && !dstLut) {
                         if (dstMaxValue == 255) {
                             float pixFloat = Image::convertPixelDepth<SRCPIX, float>(sourcePixel);
                             error[k] = (error[k] & 0xff) + Color::floatToInt<0xff01>(pixFloat);
@@ -425,8 +412,8 @@ static convertToFormatInternalForColorSpace(const RectI & renderWindow,
                         ///For RGB channels
                         float pixFloat;
 
-                        ///Unpremult before doing colorspace conversion from linear to X
-                        if (unpremultChannel) {
+                        // Unpremult before doing colorspace conversion from linear to X
+                        if (requiresUnpremult) {
                             pixFloat = Image::convertPixelDepth<SRCPIX, float>(sourcePixel);
                             pixFloat = alphaForUnPremult == 0.f ? 0. : pixFloat / alphaForUnPremult;
                             if (srcLut) {
@@ -459,7 +446,8 @@ static convertToFormatInternalForColorSpace(const RectI & renderWindow,
                             }
                             pix = Image::convertPixelDepth<float, DSTPIX>(pixFloat);
                         }
-                    } // if (!useColorspaces || (!srcLut && !dstLut)) {
+                    } // use color spaces
+
                     *dstPixelPtrs[k] =  pix;
 #                 ifdef DEBUG
                     assert(*dstPixelPtrs[k] == *dstPixelPtrs[k]); // check for NaN
@@ -526,7 +514,7 @@ static convertToFormatInternalForColorSpace(const RectI & renderWindow,
         } // for (int backward = 0; backward < 2; ++backward) {
     }  // for (int y = 0; y < renderWindow.height(); ++y) {
 
-} // convertToFormatInternalForColorSpace
+} // convertToFormatInternal
 
 template <typename SRCPIX, int srcMaxValue, typename DSTPIX, int dstMaxValue, int srcNComps, Image::AlphaChannelHandlingEnum alphaHandling>
 void
@@ -679,50 +667,6 @@ static convertFromMonoImageForComps(const RectI & renderWindow,
     }
 
 }
-
-template <typename SRCPIX, int srcMaxValue, typename DSTPIX, int dstMaxValue, int srcNComps, int dstNComps,
-          bool requiresUnpremult>
-static void
-convertToFormatInternalForUnpremult(const RectI & renderWindow,
-                                    ViewerColorSpaceEnum srcColorSpace,
-                                    ViewerColorSpaceEnum dstColorSpace,
-                                    int conversionChannel,
-                                    Image::AlphaChannelHandlingEnum alphaHandling,
-                                    const void* srcBufPtrs[4],
-                                    const RectI& srcBounds,
-                                    void* dstBufPtrs[4],
-                                    const RectI& dstBounds,
-                                    const EffectInstancePtr& renderClone)
-{
-    if ( (srcColorSpace == eViewerColorSpaceLinear) && (dstColorSpace == eViewerColorSpaceLinear) ) {
-        convertToFormatInternalForColorSpace<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, dstNComps, requiresUnpremult, false>(renderWindow, srcColorSpace, dstColorSpace, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
-    } else {
-        convertToFormatInternalForColorSpace<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, dstNComps, requiresUnpremult, true>(renderWindow, srcColorSpace, dstColorSpace, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
-    }
-}
-
-template <typename SRCPIX, int srcMaxValue, typename DSTPIX, int dstMaxValue, int srcNComps, int dstNComps>
-static void
-convertToFormatInternal(const RectI & renderWindow,
-                        ViewerColorSpaceEnum srcColorSpace,
-                        ViewerColorSpaceEnum dstColorSpace,
-                        bool requiresUnpremult,
-                        int conversionChannel,
-                        Image::AlphaChannelHandlingEnum alphaHandling,
-                        const void* srcBufPtrs[4],
-                        const RectI& srcBounds,
-                        void* dstBufPtrs[4],
-                        const RectI& dstBounds,
-                        const EffectInstancePtr& renderClone)
-{
-    // General case
-    if (requiresUnpremult) {
-        convertToFormatInternalForUnpremult<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, dstNComps, true>(renderWindow, srcColorSpace, dstColorSpace, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
-    } else {
-        convertToFormatInternalForUnpremult<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, dstNComps, false>(renderWindow, srcColorSpace, dstColorSpace, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
-    }
-
-} // convertToFormatInternal
 
 
 template <typename SRCPIX, int srcMaxValue, typename DSTPIX, int dstMaxValue, int srcNComps>

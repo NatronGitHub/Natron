@@ -48,8 +48,16 @@ NATRON_NAMESPACE_ENTER;
 
 enum TileStatusEnum
 {
-    eTileStatusRendered,
+    // The tile is rendered with the highest quality possible
+    eTileStatusRenderedHighestQuality,
+
+    // The tile is rendered but in a low quality version
+    eTileStatusRenderedLowQuality,
+
+    // The tile is not rendered
     eTileStatusNotRendered,
+
+    // The tile is being rendered by a thread
     eTileStatusPending
 };
 
@@ -102,8 +110,16 @@ struct TilesState
 {
     TileStateVector tiles;
 
+    // The area covered by the tiles
+    // The next tile is at tileSizeX/tileSizeY
+    // There are boundsRoundedToTileSize / tileSizeX tiles per line
+    RectI bounds;
+    RectI boundsRoundedToTileSize;
+
     TilesState()
     : tiles()
+    , bounds()
+    , boundsRoundedToTileSize()
     {
 
     }
@@ -113,11 +129,7 @@ struct TilesState
 class TileStateHeader
 {
 public:
-    // The area covered by the tiles
-    // The next tile is at tileSizeX/tileSizeY
-    // There are boundsRoundedToTileSize / tileSizeX tiles per line
-    int tileSizeX, tileSizeY;
-    RectI bounds, boundsRoundedToTileSize;
+       int tileSizeX, tileSizeY;
     TilesState *state;
     bool ownsState;
 
@@ -126,7 +138,7 @@ public:
     TileStateHeader();
 
     // Init from an external vector
-    TileStateHeader(int tileSizeX, int tileSizeY, const RectI& bounds, TilesState* tiles);
+    TileStateHeader(int tileSizeX, int tileSizeY,  TilesState* tiles);
 
     ~TileStateHeader();
 

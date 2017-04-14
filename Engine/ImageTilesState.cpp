@@ -34,24 +34,19 @@ NATRON_NAMESPACE_ENTER;
 TileStateHeader::TileStateHeader()
 : tileSizeX(0)
 , tileSizeY(0)
-, bounds()
-, boundsRoundedToTileSize()
 , state(0)
 , ownsState(false)
 {
 
 }
 
-TileStateHeader::TileStateHeader(int tileSizeX, int tileSizeY, const RectI& bounds, TilesState* state)
+TileStateHeader::TileStateHeader(int tileSizeX, int tileSizeY, TilesState* state)
 : tileSizeX(tileSizeX)
 , tileSizeY(tileSizeY)
-, bounds(bounds)
-, boundsRoundedToTileSize(bounds)
 , state(state)
 , ownsState(false)
 {
-    boundsRoundedToTileSize.roundToTileSize(tileSizeX, tileSizeY);
-    assert(state->tiles.empty() || ((int)state->tiles.size() == ((boundsRoundedToTileSize.width() / tileSizeX) * (boundsRoundedToTileSize.height() / tileSizeY))));
+    assert(state->tiles.empty() || ((int)state->tiles.size() == ((state->boundsRoundedToTileSize.width() / tileSizeX) * (state->boundsRoundedToTileSize.height() / tileSizeY))));
 }
 
 TileStateHeader::~TileStateHeader()
@@ -66,8 +61,7 @@ TileStateHeader::init(int tileSizeXParam, int tileSizeYParam, const RectI& roi)
 {
     tileSizeX = tileSizeXParam;
     tileSizeY = tileSizeYParam;
-    bounds = boundsRoundedToTileSize = roi;
-    boundsRoundedToTileSize.roundToTileSize(tileSizeX, tileSizeY);
+
 
     if (state && ownsState) {
         delete state;
@@ -75,18 +69,22 @@ TileStateHeader::init(int tileSizeXParam, int tileSizeYParam, const RectI& roi)
     ownsState = true;
 
     state = new TilesState;
-    state->tiles.resize((boundsRoundedToTileSize.width() / tileSizeX) * (boundsRoundedToTileSize.height() / tileSizeY));
+    state->bounds = roi;
+    state->boundsRoundedToTileSize = roi;
+    state->boundsRoundedToTileSize.roundToTileSize(tileSizeX, tileSizeY);
+
+    state->tiles.resize((state->boundsRoundedToTileSize.width() / tileSizeX) * (state->boundsRoundedToTileSize.height() / tileSizeY));
 
     int tile_i = 0;
-    for (int ty = boundsRoundedToTileSize.y1; ty < boundsRoundedToTileSize.y2; ty += tileSizeY) {
-        for (int tx = boundsRoundedToTileSize.x1; tx < boundsRoundedToTileSize.x2; tx += tileSizeX, ++tile_i) {
+    for (int ty = state->boundsRoundedToTileSize.y1; ty < state->boundsRoundedToTileSize.y2; ty += tileSizeY) {
+        for (int tx = state->boundsRoundedToTileSize.x1; tx < state->boundsRoundedToTileSize.x2; tx += tileSizeX, ++tile_i) {
 
             assert(tile_i < (int)state->tiles.size());
 
-            state->tiles[tile_i].bounds.x1 = std::max(tx, bounds.x1);
-            state->tiles[tile_i].bounds.y1 = std::max(ty, bounds.y1);
-            state->tiles[tile_i].bounds.x2 = std::min(tx + tileSizeX, bounds.x2);
-            state->tiles[tile_i].bounds.y2 = std::min(ty + tileSizeY, bounds.y2);
+            state->tiles[tile_i].bounds.x1 = std::max(tx, state->bounds.x1);
+            state->tiles[tile_i].bounds.y1 = std::max(ty, state->bounds.y1);
+            state->tiles[tile_i].bounds.x2 = std::min(tx + tileSizeX, state->bounds.x2);
+            state->tiles[tile_i].bounds.y2 = std::min(ty + tileSizeY, state->bounds.y2);
             
         }
     }
@@ -97,7 +95,7 @@ TileState*
 TileStateHeader::getTileAt(int tx, int ty)
 {
     assert(tx % tileSizeX == 0 && ty % tileSizeY == 0);
-    int index = (((ty - boundsRoundedToTileSize.y1) / tileSizeY) * (boundsRoundedToTileSize.width() / tileSizeX)) + (tx - boundsRoundedToTileSize.x1) / tileSizeX;
+    int index = (((ty - state->boundsRoundedToTileSize.y1) / tileSizeY) * (state->boundsRoundedToTileSize.width() / tileSizeX)) + (tx - state->boundsRoundedToTileSize.x1) / tileSizeX;
     if (index >= 0 && index < (int)state->tiles.size()) {
         return &state->tiles[index];
     } else {
@@ -109,7 +107,7 @@ const TileState*
 TileStateHeader::getTileAt(int tx, int ty) const
 {
     assert(tx % tileSizeX == 0 && ty % tileSizeY == 0);
-    int index = (((ty - boundsRoundedToTileSize.y1) / tileSizeY) * (boundsRoundedToTileSize.width() / tileSizeX)) + (tx - boundsRoundedToTileSize.x1) / tileSizeX;
+    int index = (((ty - state->boundsRoundedToTileSize.y1) / tileSizeY) * (state->boundsRoundedToTileSize.width() / tileSizeX)) + (tx - state->boundsRoundedToTileSize.x1) / tileSizeX;
     if (index >= 0 && index < (int)state->tiles.size()) {
         return &state->tiles[index];
     } else {
@@ -162,8 +160,8 @@ ImageTilesState::getMinimalBboxToRenderFromTilesState(const RectI& roi, const Ti
         return RectI();
     }
 
-    const RectI& imageBoundsRoundedToTileSize = stateMap.boundsRoundedToTileSize;
-    const RectI& imageBoundsNotRounded = stateMap.bounds;
+    const RectI& imageBoundsRoundedToTileSize = stateMap.state->boundsRoundedToTileSize;
+    const RectI& imageBoundsNotRounded = stateMap.state->bounds;
 
     assert(imageBoundsRoundedToTileSize.contains(roi));
 

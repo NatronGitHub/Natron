@@ -34,14 +34,12 @@ struct ImageCacheKeyShmData
     U64 nodeTimeViewVariantHash;
     U64 layerIDHash;
     RenderScale proxyScale;
-    bool draftMode;
 
 
     ImageCacheKeyShmData()
     : nodeTimeViewVariantHash(0)
     , layerIDHash(0)
     , proxyScale(1.)
-    , draftMode(false)
     {
 
     }
@@ -63,7 +61,6 @@ struct ImageCacheKeyPrivate
 ImageCacheKey::ImageCacheKey(U64 nodeTimeViewVariantHash,
                              U64 layerIDHash,
                              const RenderScale& scale,
-                             bool draftMode,
                              const std::string& pluginID)
 : CacheEntryKeyBase(pluginID)
 , _imp(new ImageCacheKeyPrivate())
@@ -71,7 +68,6 @@ ImageCacheKey::ImageCacheKey(U64 nodeTimeViewVariantHash,
     _imp->data.nodeTimeViewVariantHash = nodeTimeViewVariantHash;
     _imp->data.layerIDHash = layerIDHash;
     _imp->data.proxyScale = scale;
-    _imp->data.draftMode = draftMode;
 }
 
 ImageCacheKey::ImageCacheKey()
@@ -101,12 +97,11 @@ ImageCacheKey::getUniqueID() const
 void
 ImageCacheKey::appendToHash(Hash64* hash) const
 {
-    std::vector<U64> elements(6);
+    std::vector<U64> elements(4);
     elements[0] = Hash64::toU64(_imp->data.nodeTimeViewVariantHash);
     elements[1] = Hash64::toU64(_imp->data.layerIDHash);
     elements[2] = Hash64::toU64(_imp->data.proxyScale.x);
     elements[3] = Hash64::toU64(_imp->data.proxyScale.y);
-    elements[5] = Hash64::toU64(_imp->data.draftMode);
     hash->insert(elements);
 }
 
@@ -117,13 +112,6 @@ ImageCacheKey::getProxyScale() const
     return _imp->data.proxyScale;
 }
 
-bool
-ImageCacheKey::isDraftMode() const
-{
-    return _imp->data.draftMode;
-}
-
-
 void
 ImageCacheKey::toMemorySegment(IPCPropertyMap* properties) const
 {
@@ -133,7 +121,6 @@ ImageCacheKey::toMemorySegment(IPCPropertyMap* properties) const
     scaleVec[0] = _imp->data.proxyScale.x;
     scaleVec[1] = _imp->data.proxyScale.y;
     properties->setIPCPropertyN("Scale", scaleVec);
-    properties->setIPCProperty("Draft", _imp->data.draftMode);
 }
 
 
@@ -153,9 +140,6 @@ ImageCacheKey::fromMemorySegment(const IPCPropertyMap& properties)
     _imp->data.proxyScale.x = scaleVec[0];
     _imp->data.proxyScale.y = scaleVec[1];
 
-    if (!properties.getIPCProperty("Draft", 0, &_imp->data.draftMode)) {
-        return eFromMemorySegmentRetCodeFailed;
-    }
     return eFromMemorySegmentRetCodeOk;
 }
 

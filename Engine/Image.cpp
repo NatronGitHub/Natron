@@ -82,7 +82,7 @@ Image::~Image()
 
 Image::InitStorageArgs::InitStorageArgs()
 : bounds()
-, pixelRod()
+, perMipMapPixelRoD()
 , storage(eStorageModeRAM)
 , bitdepth(eImageBitDepthFloat)
 , plane(ImagePlaneDesc::getRGBAComponents())

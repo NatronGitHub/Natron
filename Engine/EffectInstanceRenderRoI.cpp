@@ -356,7 +356,7 @@ ActionRetCodeEnum
 EffectInstance::Implementation::lookupCachedImage(unsigned int mipMapLevel,
                                                   const RenderScale& proxyScale,
                                                   const ImagePlaneDesc& plane,
-                                                  const RectI& pixelRod,
+                                                  const std::vector<RectI>& perMipMapPixelRoD,
                                                   const RectI& pixelRoi,
                                                   CacheAccessModeEnum cachePolicy,
                                                   RenderBackendTypeEnum backend,
@@ -365,7 +365,7 @@ EffectInstance::Implementation::lookupCachedImage(unsigned int mipMapLevel,
                                                   bool* hasUnrenderedTiles)
 {
     if (!*image) {
-        *image = createCachedImage(pixelRoi, pixelRod, mipMapLevel, proxyScale, plane, backend, cachePolicy, true /*delayAllocation*/);
+        *image = createCachedImage(pixelRoi, perMipMapPixelRoD, mipMapLevel, proxyScale, plane, backend, cachePolicy, true /*delayAllocation*/);
     } else {
         ActionRetCodeEnum stat = (*image)->ensureBounds(pixelRoi);
         if (isFailureRetCode(stat)) {
@@ -572,7 +572,7 @@ EffectInstance::Implementation::checkRestToRender(bool updateTilesStateFromCache
                     if (identityInputNb >= 0) {
 
                         // Mark the tile rendered
-                        it->status = eTileStatusRendered;
+                        it->status = requestData->getParentRender()->isDraftRender() ? eTileStatusRenderedLowQuality : eTileStatusRenderedHighestQuality;
 
                         // Add this rectangle to the rects to render list (it will just copy the source image and
                         // not actually call render on it)
@@ -662,7 +662,7 @@ EffectInstance::Implementation::storageModeFromBackendType(RenderBackendTypeEnum
 
 ImagePtr
 EffectInstance::Implementation::createCachedImage(const RectI& roiPixels,
-                                                  const RectI& rodPixels,
+                                                  const std::vector<RectI>& perMipMapPixelRoD,
                                                   unsigned int mappedMipMapLevel,
                                                   const RenderScale& proxyScale,
                                                   const ImagePlaneDesc& plane,
@@ -694,7 +694,7 @@ EffectInstance::Implementation::createCachedImage(const RectI& roiPixels,
     Image::InitStorageArgs initArgs;
     {
         initArgs.bounds = roiPixels;
-        initArgs.pixelRod = rodPixels;
+        initArgs.perMipMapPixelRoD = perMipMapPixelRoD;
         initArgs.cachePolicy = cachePolicy;
         initArgs.renderClone = _publicInterface->shared_from_this();
         initArgs.proxyScale = proxyScale;
@@ -1129,22 +1129,32 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
     RenderScale originalCombinedScale = EffectInstance::getCombinedScale(requestData->getMipMapLevel(), proxyScale);
     const RenderScale mappedCombinedScale = renderFullScaleThenDownScale ? RenderScale(1.) : originalCombinedScale;
 
+    const double par = getAspectRatio(-1);
+
+
     // Get the region of definition of the effect at this frame/view in canonical coordinates
-    RectD rod;
-    {
+    std::vector<RectD> perMipMapLevelRoDCanonical(requestData->getMipMapLevel() + 1);
+
+    // The RoD in pixel coordinates at the scale of mappedCombinedScale
+    std::vector<RectI> perMipMapLevelRoDPixel(perMipMapLevelRoDCanonical.size());
+    for (std::size_t m = 0; m < perMipMapLevelRoDCanonical.size(); ++m) {
         GetRegionOfDefinitionResultsPtr results;
+        RenderScale levelCombinedScale = EffectInstance::getCombinedScale(m, proxyScale);
         {
-            ActionRetCodeEnum stat = getRegionOfDefinition_public(getCurrentRenderTime(), mappedCombinedScale, getCurrentRenderView(), &results);
+            ActionRetCodeEnum stat = getRegionOfDefinition_public(getCurrentRenderTime(), levelCombinedScale, getCurrentRenderView(), &results);
             if (isFailureRetCode(stat)) {
                 return stat;
             }
         }
-        rod = results->getRoD();
+        perMipMapLevelRoDCanonical[m] = results->getRoD();
 
         // If the plug-in RoD is null, there's nothing to render.
-        if (rod.isNull()) {
+        if (perMipMapLevelRoDCanonical[m].isNull()) {
             return eActionStatusInputDisconnected;
         }
+
+
+        perMipMapLevelRoDCanonical[m].toPixelEnclosing(levelCombinedScale, par, &perMipMapLevelRoDPixel[m]);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1167,10 +1177,9 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Handle identity effects /////////////////////////////////////////////////////////////////
-    const double par = getAspectRatio(-1);
     {
         bool isIdentity;
-        ActionRetCodeEnum upstreamRetCode = _imp->handleIdentityEffect(par, rod, mappedCombinedScale, roiCanonical, requestData, requestPassSharedData, &isIdentity);
+        ActionRetCodeEnum upstreamRetCode = _imp->handleIdentityEffect(par, perMipMapLevelRoDCanonical[mappedMipMapLevel], mappedCombinedScale, roiCanonical, requestData, requestPassSharedData, &isIdentity);
         if (isFailureRetCode(upstreamRetCode)) {
             return upstreamRetCode;
         }
@@ -1208,13 +1217,11 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
     // of the function that the RoI was Null, either the RoD was checked for NULL.
     assert(!renderMappedRoI.isNull());
 
-    // The RoD in pixel coordinates at the scale of mappedCombinedScale
-    RectI pixelRoDRenderMapped;
-    rod.toPixelEnclosing(mappedCombinedScale, par, &pixelRoDRenderMapped);
+
 
     if (!getCurrentSupportTiles()) {
         // If tiles are not supported the RoI is the full image bounds
-        renderMappedRoI = pixelRoDRenderMapped;
+        renderMappedRoI = perMipMapLevelRoDPixel[mappedMipMapLevel];
     } else {
 
         // Round the roi to the tile size if the render is cached
@@ -1225,21 +1232,21 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
 
 
         // Make sure the RoI falls within the image bounds
-        if ( !renderMappedRoI.intersect(pixelRoDRenderMapped, &renderMappedRoI) ) {
+        if ( !renderMappedRoI.intersect(perMipMapLevelRoDPixel[mappedMipMapLevel], &renderMappedRoI) ) {
             requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusRendered);
             return eActionStatusOK;
         }
 
         // The RoI falls into the effect pixel region of definition
-        assert(renderMappedRoI.x1 >= pixelRoDRenderMapped.x1 && renderMappedRoI.y1 >= pixelRoDRenderMapped.y1 &&
-               renderMappedRoI.x2 <= pixelRoDRenderMapped.x2 && renderMappedRoI.y2 <= pixelRoDRenderMapped.y2);
+        assert(renderMappedRoI.x1 >= perMipMapLevelRoDPixel[mappedMipMapLevel].x1 && renderMappedRoI.y1 >= perMipMapLevelRoDPixel[mappedMipMapLevel].y1 &&
+               renderMappedRoI.x2 <= perMipMapLevelRoDPixel[mappedMipMapLevel].x2 && renderMappedRoI.y2 <= perMipMapLevelRoDPixel[mappedMipMapLevel].y2);
     }
 
     assert(!renderMappedRoI.isNull());
 
     // The requested portion to render in canonical coordinates
     RectD roundedCanonicalRoI;
-    renderMappedRoI.toCanonical(mappedCombinedScale, par, rod, &roundedCanonicalRoI);
+    renderMappedRoI.toCanonical(mappedCombinedScale, par, perMipMapLevelRoDCanonical[mappedMipMapLevel], &roundedCanonicalRoI);
 
     // Merge the roi requested onto the existing RoI requested for this frame/view
     {
@@ -1260,9 +1267,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
     // Get the pixel RoD/RoI at the mipmap level requested
     RenderScale downscaledCombinedScale = EffectInstance::getCombinedScale(requestData->getMipMapLevel(), requestData->getProxyScale());
     RectI downscaledRoI;
-    RectI downscaledPixelRoD;
     roundedCanonicalRoI.toPixelEnclosing(downscaledCombinedScale, par, &downscaledRoI);
-    rod.toPixelEnclosing(downscaledCombinedScale, par, &downscaledPixelRoD);
 
 
     // Get the render device
@@ -1280,7 +1285,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
 
     
 
-    const bool isAccumulating = isAccumulationEnabled();
+    const bool isAccumulating = false; //isAccumulationEnabled();
 
 
     // Should the output of this render be cached ?
@@ -1368,7 +1373,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
         // at our desired mipmap level
         bool hasUnRenderedTile = true;
         bool hasPendingTiles = false;
-        ActionRetCodeEnum stat = _imp->lookupCachedImage(requestData->getMipMapLevel(), requestData->getProxyScale(), requestData->getPlaneDesc(), downscaledPixelRoD, downscaledRoI, cachePolicy, backendType, &requestedImageScale, &hasPendingTiles, &hasUnRenderedTile);
+        ActionRetCodeEnum stat = _imp->lookupCachedImage(requestData->getMipMapLevel(), requestData->getProxyScale(), requestData->getPlaneDesc(), perMipMapLevelRoDPixel, downscaledRoI, cachePolicy, backendType, &requestedImageScale, &hasPendingTiles, &hasUnRenderedTile);
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -1382,7 +1387,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
             requestedImageScale->getCacheEntry()->markCacheTilesAsAborted();
             requestedImageScale.reset();
 
-            stat = _imp->lookupCachedImage(mappedMipMapLevel, requestData->getProxyScale(), requestData->getPlaneDesc(), pixelRoDRenderMapped, renderMappedRoI, cachePolicy, backendType, &fullScaleImage, &hasPendingTiles, &hasUnRenderedTile);
+            stat = _imp->lookupCachedImage(mappedMipMapLevel, requestData->getProxyScale(), requestData->getPlaneDesc(), perMipMapLevelRoDPixel, renderMappedRoI, cachePolicy, backendType, &fullScaleImage, &hasPendingTiles, &hasUnRenderedTile);
             if (isFailureRetCode(stat)) {
                 return stat;
             }
@@ -1477,23 +1482,31 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPa
     RectI renderMappedRoI;
     requestData->getCurrentRoI().toPixelEnclosing(mappedCombinedScale, par, &renderMappedRoI);
 
-    // The RoD in pixel coordinates at the scale of mappedCombinedScale
-    RectI pixelRoDRenderMapped;
-    RectD rod;
-    {
 
+    // Get the region of definition of the effect at this frame/view in canonical coordinates
+    std::vector<RectD> perMipMapLevelRoDCanonical(requestData->getMipMapLevel() + 1);
+
+    // The RoD in pixel coordinates at the scale of mappedCombinedScale
+    std::vector<RectI> perMipMapLevelRoDPixel(perMipMapLevelRoDCanonical.size());
+    for (std::size_t m = 0; m < perMipMapLevelRoDCanonical.size(); ++m) {
         GetRegionOfDefinitionResultsPtr results;
+        RenderScale levelCombinedScale = EffectInstance::getCombinedScale(m, requestData->getProxyScale());
         {
-            ActionRetCodeEnum stat = getRegionOfDefinition_public(getCurrentRenderTime(), mappedCombinedScale, getCurrentRenderView(), &results);
+            ActionRetCodeEnum stat = getRegionOfDefinition_public(getCurrentRenderTime(), levelCombinedScale, getCurrentRenderView(), &results);
             if (isFailureRetCode(stat)) {
                 return stat;
-
             }
         }
-        rod = results->getRoD();
-        rod.toPixelEnclosing(mappedCombinedScale, par, &pixelRoDRenderMapped);
-    }
+        perMipMapLevelRoDCanonical[m] = results->getRoD();
 
+        // If the plug-in RoD is null, there's nothing to render.
+        if (perMipMapLevelRoDCanonical[m].isNull()) {
+            return eActionStatusInputDisconnected;
+        }
+
+
+        perMipMapLevelRoDCanonical[m].toPixelEnclosing(levelCombinedScale, par, &perMipMapLevelRoDPixel[m]);
+    }
 
 #ifdef DEBUG
     // Check that the image rendered in output is always rounded to the tile size intersected to the RoD
@@ -1501,10 +1514,10 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPa
         ImageBitDepthEnum outputBitDepth = getBitDepth(-1);
         int tileWidth, tileHeight;
         CacheBase::getTileSizePx(outputBitDepth, &tileWidth, &tileHeight);
-        assert(renderMappedRoI.x1 % tileWidth == 0 || renderMappedRoI.x1 == pixelRoDRenderMapped.x1);
-        assert(renderMappedRoI.y1 % tileWidth == 0 || renderMappedRoI.y1 == pixelRoDRenderMapped.y1);
-        assert(renderMappedRoI.x2 % tileWidth == 0 || renderMappedRoI.x2 == pixelRoDRenderMapped.x2);
-        assert(renderMappedRoI.y2 % tileWidth == 0 || renderMappedRoI.y2 == pixelRoDRenderMapped.y2);
+        assert(renderMappedRoI.x1 % tileWidth == 0 || renderMappedRoI.x1 == perMipMapLevelRoDPixel[mappedMipMapLevel].x1);
+        assert(renderMappedRoI.y1 % tileWidth == 0 || renderMappedRoI.y1 == perMipMapLevelRoDPixel[mappedMipMapLevel].y1);
+        assert(renderMappedRoI.x2 % tileWidth == 0 || renderMappedRoI.x2 == perMipMapLevelRoDPixel[mappedMipMapLevel].x2);
+        assert(renderMappedRoI.y2 % tileWidth == 0 || renderMappedRoI.y2 == perMipMapLevelRoDPixel[mappedMipMapLevel].y2);
     }
 #endif
 
@@ -1531,7 +1544,7 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPa
             if (!renderAllProducedPlanes) {
                 continue;
             } else {
-                imagePlane = _imp->createCachedImage(renderMappedRoI, pixelRoDRenderMapped, mappedMipMapLevel, requestData->getProxyScale(), *it, backendType, requestData->getCachePolicy(), false /*delayAllocation*/);
+                imagePlane = _imp->createCachedImage(renderMappedRoI, perMipMapLevelRoDPixel, mappedMipMapLevel, requestData->getProxyScale(), *it, backendType, requestData->getCachePolicy(), false /*delayAllocation*/);
                 ActionRetCodeEnum stat = imagePlane->getCacheEntry()->fetchCachedTilesAndUpdateStatus(NULL, NULL, NULL);
                 if (isFailureRetCode(stat)) {
                     finishProducedPlanesTilesStatesMap(cachedImagePlanes, true);
@@ -1635,10 +1648,8 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPa
         RenderScale downscaledCombinedScale = EffectInstance::getCombinedScale(dstMipMapLevel,requestData->getProxyScale());
 
         RectI downscaledRoI;
-        RectI downscaledPixelRoD;
-
         requestData->getCurrentRoI().toPixelEnclosing(downscaledCombinedScale, par, &downscaledRoI);
-        rod.toPixelEnclosing(downscaledCombinedScale, par, &downscaledPixelRoD);
+
 
         // Since the node does not support render scale, we cached the image, thus we can just fetch the image
         // at a our originally requested mipmap level, this will downscale the fullscale image and cache the
@@ -1646,7 +1657,7 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPa
 
         ImagePtr downscaledImage;
         bool hasUnrenderedTile, hasPendingTiles;
-        ActionRetCodeEnum stat = _imp->lookupCachedImage(dstMipMapLevel, requestData->getProxyScale(), requestData->getPlaneDesc(), downscaledPixelRoD, downscaledRoI, eCacheAccessModeReadWrite, backendType, &downscaledImage, &hasPendingTiles, &hasUnrenderedTile);
+        ActionRetCodeEnum stat = _imp->lookupCachedImage(dstMipMapLevel, requestData->getProxyScale(), requestData->getPlaneDesc(), perMipMapLevelRoDPixel, downscaledRoI, eCacheAccessModeReadWrite, backendType, &downscaledImage, &hasPendingTiles, &hasUnrenderedTile);
 
         if (isFailureRetCode(stat)) {
             return stat;

@@ -506,7 +506,7 @@ public:
     static StorageModeEnum storageModeFromBackendType(RenderBackendTypeEnum backend);
 
     ImagePtr createCachedImage(const RectI& roiPixels,
-                               const RectI& rodPixels,
+                               const std::vector<RectI>& perMipMapPixelRoD,
                                unsigned int mappedMipMapLevel,
                                const RenderScale& proxyScale,
                                const ImagePlaneDesc& plane,
@@ -550,7 +550,7 @@ public:
     ActionRetCodeEnum lookupCachedImage(unsigned int mipMapLevel,
                                         const RenderScale& proxyScale,
                                         const ImagePlaneDesc& plane,
-                                        const RectI& pixelRod,
+                                        const std::vector<RectI>& perMipMapPixelRoD,
                                         const RectI& pixelRoi,
                                         CacheAccessModeEnum cachePolicy,
                                         RenderBackendTypeEnum backend,

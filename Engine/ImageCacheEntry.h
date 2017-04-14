@@ -56,8 +56,10 @@ public:
 
     /**
      * @brief An image cache entry associated to an image.
-     * @param pixelRod is the maximal size the image could have at the mipMapLevel
+     * @param mipMapPixelRods is the maximal size the image could have at each mipmap level up to the mipMapLevel given in parameter. The vector must be of size mipMapLevel + 1
+     * We use a vector because we cannot compute them only by upscaling the RoD at the given mipmap level: the RoD might change given the mipmap level (e.g Blur)
      * @param roi is the region we are interested in for this image
+     * @param isDraft Are we rendering a low quality version of the image ?
      * @param mipMapLevel Indicates the mipmap we are interested in. The roi/pixelRod are scaled to this level
      * @param depth The bitdepth of the image
      * @param nComps the number of channels in the image (1 to 4)
@@ -70,8 +72,9 @@ public:
      *                    If set to eCacheAccessModeReadWrite, the entry will be read from the cache and written to if needed
      **/
     ImageCacheEntry(const ImagePtr& image,
-                    const RectI& pixelRod,
+                    const std::vector<RectI>& mipMapPixelRods,
                     const RectI& roi,
+                    bool isDraft,
                     unsigned int mipMapLevel,
                     ImageBitDepthEnum depth,
                     int nComps,
@@ -121,7 +124,7 @@ public:
     /**
      * @brief This function should be called if the render was aborted to mark tiles that were marked pending
      * in an unrendered state.
-     * If not called when a render is aborted, this may stall the application.
+     * If not called when a render is aborted, this may stall the application. For safety this is called in the dtor of this class.
      **/
     void markCacheTilesAsAborted();
 

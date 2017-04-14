@@ -92,10 +92,12 @@ public:
         // Must be set
         RectI bounds;
 
-        // The RoD of the image in pixel coordinates at the given mipMapLevel.
+        // The RoD of the image in pixel coordinates at all the mipmap levels including the given mipMapLevel
+        // This is required since the RoD at a given mipmap level cannot be inferred with the RoD at another
+        // mipmap level (e.g: Blur)
         //
         // This must be set if cachePolicy is != eCacheAccessModeNone
-        RectI pixelRod;
+        std::vector<RectI> perMipMapPixelRoD;
 
         // The storage for the image.
         //
