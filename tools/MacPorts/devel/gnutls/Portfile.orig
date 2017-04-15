@@ -41,7 +41,8 @@ depends_lib     port:gmp \
                 port:nettle \
                 port:zlib
 
-patchfiles      patch-tests-pkcs11-pkcs11-mock.c.diff
+patchfiles      patch-lib-system-certs.c.diff \
+                patch-tests-pkcs11-pkcs11-mock.c.diff
 
 post-patch {
     # Remove comments which confuse at least Leopard's assembler.
