@@ -119,14 +119,14 @@ public:
 
 
     ///Fill with 1 the roi
-    void markForRendered(const RectI & roi);
+    void markForRendered(const RectI & roi) { markFor(roi, 1); }
 
 #if NATRON_ENABLE_TRIMAP
     ///Fill with 2 the roi
     void markForRendering(const RectI & roi);
 #endif
 
-    void clear(const RectI& roi);
+    void clear(const RectI& roi) { markFor(roi, 0); }
 
     void swap(Bitmap& other);
 
@@ -152,6 +152,9 @@ public:
         _dirtyZone = zone;
         _dirtyZoneSet = true;
     }
+
+private:
+    void markFor(const RectI & roi, char value);
 
 private:
     RectI _bounds;

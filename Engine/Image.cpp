@@ -528,14 +528,19 @@ Bitmap::minimalNonMarkedRects_trimap(const RectI & roi,
 #endif
 
 void
-Bitmap::markForRendered(const RectI & roi)
+Bitmap::markFor(const RectI & roi, char value)
 {
-    char* buf = BM_GET( roi.bottom(), roi.left() );
-    int w = _bounds.width();
-    int roiw = roi.width();
+    int y1 = std::max(roi.y1, _bounds.y1);
+    int y2 = std::min(roi.y2, _bounds.y2);
+    int x1 = std::max(roi.x1, _bounds.x1);
+    int x2 = std::min(roi.x2, _bounds.x2);
 
-    for (int i = roi.y1; i < roi.y2; ++i, buf += w) {
-        std::memset( buf, 1, roiw);
+    char* buf = BM_GET(x1, y1);
+    int w = _bounds.width();
+    int roiw = x2 - x1;
+
+    for (int i = y1; i < y2; ++i, buf += w) {
+        std::memset( buf, value, roiw);
     }
 }
 
@@ -543,28 +548,10 @@ Bitmap::markForRendered(const RectI & roi)
 void
 Bitmap::markForRendering(const RectI & roi)
 {
-    char* buf = BM_GET( roi.bottom(), roi.left() );
-    int w = _bounds.width();
-    int roiw = roi.width();
-
-    for (int i = roi.y1; i < roi.y2; ++i, buf += w) {
-        std::memset( buf, PIXEL_UNAVAILABLE, roiw );
-    }
+    return markFor(roi, PIXEL_UNAVAILABLE);
 }
 
 #endif
-
-void
-Bitmap::clear(const RectI& roi)
-{
-    char* buf = BM_GET( roi.bottom(), roi.left() );
-    int w = _bounds.width();
-    int roiw = roi.width();
-
-    for (int i = roi.y1; i < roi.y2; ++i, buf += w) {
-        std::memset( buf, 0, roiw );
-    }
-}
 
 void
 Bitmap::swap(Bitmap& other)
