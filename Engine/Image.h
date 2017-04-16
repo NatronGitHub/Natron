@@ -117,6 +117,8 @@ public:
     void minimalNonMarkedRects(const RectI & roi, std::list<RectI>& ret) const;
     RectI minimalNonMarkedBbox(const RectI & roi) const;
 
+    // returns true if the roi only contains 0s
+    bool isNonMarked(const RectI & roi) const;
 
     ///Fill with 1 the roi
     void markForRendered(const RectI & roi) { markFor(roi, 1); }

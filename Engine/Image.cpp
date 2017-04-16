@@ -39,7 +39,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-#define BM_GET(i, j) & _map[( i - _bounds.bottom() ) * _bounds.width() + ( j - _bounds.left() )]
+#define BM_GET(i, j) (&_map[( i - _bounds.bottom() ) * _bounds.width() + ( j - _bounds.left() )])
 
 #define PIXEL_UNAVAILABLE 2
 
@@ -200,6 +200,32 @@ minimalNonMarkedBbox_internal(const RectI& roi,
 
     return bbox;
 } // minimalNonMarkedBbox_internal
+
+#ifndef NDEBUG
+static bool
+isNonMarked_internal(const RectI & roi,
+                     const RectI& _bounds,
+                     const std::vector<char>& _map)
+{
+    int x1 = std::max(roi.x1, _bounds.x1);
+    int y1 = std::max(roi.y1, _bounds.y1);
+    int x2 = std::min(roi.x2, _bounds.x2);
+    int y2 = std::min(roi.y2, _bounds.y2);
+
+    const char* buf = &_map[( x1 - _bounds.bottom() ) * _bounds.width() + ( y1 - _bounds.left() )];
+    int w = _bounds.width();
+    int roiw = x2 - x1;
+
+    for (int i = y1; i < y2; ++i, buf += w) {
+        for (int j = 0; j < roiw; ++j) {
+            if (buf[j]) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+#endif
 
 template <int trimap>
 void
@@ -486,6 +512,11 @@ Bitmap::minimalNonMarkedRects(const RectI & roi,
     } else {
         minimalNonMarkedRects_internal<0>(roi, _bounds, _map, ret, NULL);
     }
+#ifdef DEBUG
+    for (std::list<RectI>::iterator it = ret.begin(); it != ret.end(); ++it) {
+        assert(isNonMarked(*it));
+    }
+#endif
 }
 
 #if NATRON_ENABLE_TRIMAP
@@ -530,18 +561,40 @@ Bitmap::minimalNonMarkedRects_trimap(const RectI & roi,
 void
 Bitmap::markFor(const RectI & roi, char value)
 {
-    int y1 = std::max(roi.y1, _bounds.y1);
-    int y2 = std::min(roi.y2, _bounds.y2);
     int x1 = std::max(roi.x1, _bounds.x1);
+    int y1 = std::max(roi.y1, _bounds.y1);
     int x2 = std::min(roi.x2, _bounds.x2);
+    int y2 = std::min(roi.y2, _bounds.y2);
 
-    char* buf = BM_GET(x1, y1);
+    char* buf = BM_GET(y1, x1);
     int w = _bounds.width();
     int roiw = x2 - x1;
 
     for (int i = y1; i < y2; ++i, buf += w) {
         std::memset( buf, value, roiw);
     }
+}
+
+bool
+Bitmap::isNonMarked(const RectI & roi) const
+{
+    int x1 = std::max(roi.x1, _bounds.x1);
+    int y1 = std::max(roi.y1, _bounds.y1);
+    int x2 = std::min(roi.x2, _bounds.x2);
+    int y2 = std::min(roi.y2, _bounds.y2);
+
+    const char* buf = BM_GET(y1, x1);
+    int w = _bounds.width();
+    int roiw = x2 - x1;
+
+    for (int i = y1; i < y2; ++i, buf += w) {
+        for (int j = 0; j < roiw; ++j) {
+            if (buf[j]) {
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 #if NATRON_ENABLE_TRIMAP
