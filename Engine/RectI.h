@@ -70,11 +70,11 @@ public:
     {
     }
 
-    RectI(int l,
-          int b,
-          int r,
-          int t)
-        : x1(l), y1(b), x2(r), y2(t)
+    RectI(int x1_,
+          int y1_,
+          int x2_,
+          int y2_)
+        : x1(x1_), y1(y1_), x2(x2_), y2(y2_)
     {
         assert( (x2 >= x1) && (y2 >= y1) );
     }
@@ -139,15 +139,15 @@ public:
         return y2 - y1;
     }
 
-    void set(int l,
-             int b,
-             int r,
-             int t)
+    void set(int x1_,
+             int y1_,
+             int x2_,
+             int y2_)
     {
-        x1 = l;
-        y1 = b;
-        x2 = r;
-        y2 = t;
+        x1 = x1_;
+        y1 = y1_;
+        x2 = x2_;
+        y2 = y2_;
         /*assert( (x2 >= x1) && (y2 >= y1) );*/
     }
 
@@ -319,18 +319,25 @@ public:
        (not the union, which is not a box).*/
     void merge(const RectI & box)
     {
-        merge( box.left(), box.bottom(), box.right(), box.top() );
+        merge(box.x1, box.y1, box.x2, box.y2);
     }
 
-    void merge(int l,
-               int b,
-               int r,
-               int t)
+    void merge(int x1_,
+               int y1_,
+               int x2_,
+               int y2_)
     {
-        x1 = std::min(x1, l);
-        x2 = std::max(x2, r);
-        y1 = std::min(y1, b);
-        y2 = std::max(y2, t);
+        if ( isNull() ) {
+            x1 = x1_;
+            y1 = y1_;
+            x2 = x2_;
+            y2 = y2_;
+        } else {
+            x1 = std::min(x1, x1_);
+            y1 = std::min(y1, y1_);
+            x2 = std::max(x2, x2_);
+            y2 = std::max(y2, y2_);
+        }
     }
 
     /*intersection of two boxes*/
@@ -342,9 +349,9 @@ public:
         }
 
         intersection->x1 = std::max(x1, r.x1);
+        intersection->y1 = std::max(y1, r.y1);
         // the region must be *at least* empty, thus the maximin.
         intersection->x2 = std::max( intersection->x1, std::min(x2, r.x2) );
-        intersection->y1 = std::max(y1, r.y1);
         // the region must be *at least* empty, thus the maximin.
         intersection->y2 = std::max( intersection->y1, std::min(y2, r.y2) );
 
@@ -353,13 +360,13 @@ public:
         return true;
     }
 
-    bool intersect(int l,
-                   int b,
-                   int r,
-                   int t,
+    bool intersect(int x1_,
+                   int y1_,
+                   int x2_,
+                   int y2_,
                    RectI* intersection) const
     {
-        return intersect(RectI(l, b, r, t), intersection);
+        return intersect(RectI(x1_, y1_, x2_, y2_), intersection);
     }
 
     /// returns true if the rect passed as parameter  intersects this one
@@ -375,12 +382,12 @@ public:
         return true;
     }
 
-    bool intersects(int l,
-                    int b,
-                    int r,
-                    int t) const
+    bool intersects(int x1_,
+                    int y1_,
+                    int x2_,
+                    int y2_) const
     {
-        return intersects( RectI(l, b, r, t) );
+        return intersects( RectI(x1_, y1_, x2_, y2_) );
     }
 
     /*the area : w*h*/
@@ -391,10 +398,10 @@ public:
 
     RectI & operator=(const RectI & other)
     {
-        x1 = other.left();
-        y1 = other.bottom();
-        x2 = other.right();
-        y2 = other.top();
+        x1 = other.x1;
+        y1 = other.y1;
+        x2 = other.x2;
+        y2 = other.y2;
 
         return *this;
     }
@@ -458,10 +465,10 @@ inline bool
 operator==(const RectI & b1,
            const RectI & b2)
 {
-    return b1.left() == b2.left() &&
-           b1.bottom() == b2.bottom() &&
-           b1.right() == b2.right() &&
-           b1.top() == b2.top();
+    return (b1.x1 == b2.x1 &&
+            b1.y1 == b2.y1 &&
+            b1.x2 == b2.x2 &&
+            b1.y2 == b2.y2);
 }
 
 /// inequality of boxes
@@ -469,10 +476,7 @@ inline bool
 operator!=(const RectI & b1,
            const RectI & b2)
 {
-    return b1.left() != b2.left() ||
-           b1.bottom() != b2.bottom() ||
-           b1.right() != b2.right() ||
-           b1.top() != b2.top();
+    return !(b1 == b2);
 }
 
 NATRON_NAMESPACE_EXIT;

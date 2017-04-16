@@ -2267,22 +2267,16 @@ ViewerGL::setRegionOfDefinition(const RectD & rod,
         _imp->infoViewer[textureIndex]->setDataWindow(pixelRoD);
     }
 
+    const RectI& r = pixelRoD;
+    QString x1, y1, x2, y2;
+    x1.setNum(r.x1);
+    y1.setNum(r.y1);
+    x2.setNum(r.x2);
+    y2.setNum(r.y2);
 
-    QString left, btm, right, top;
-    left.setNum( pixelRoD.left() );
-    btm.setNum( pixelRoD.bottom() );
-    right.setNum( pixelRoD.right() );
-    top.setNum( pixelRoD.top() );
 
-
-    _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].clear();
-    _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].append(left);
-    _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].append( QLatin1Char(',') );
-    _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].append(btm);
-    _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex].clear();
-    _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex].append(right);
-    _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex].append( QLatin1Char(',') );
-    _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex].append(top);
+    _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex] = x1 + QLatin1Char(',') + y1;
+    _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex] = x2 + QLatin1Char(',') + y2;
 }
 
 void
