@@ -235,6 +235,7 @@ minimalNonMarkedRects_internal(const RectI & roi,
                                std::list<RectI>& ret,
                                bool* isBeingRenderedElsewhere)
 {
+    assert(ret.empty());
     ///Any out of bounds portion is pushed to the rectangles to render
     RectI intersection;
 
@@ -512,11 +513,6 @@ Bitmap::minimalNonMarkedRects(const RectI & roi,
     } else {
         minimalNonMarkedRects_internal<0>(roi, _bounds, _map, ret, NULL);
     }
-#ifdef DEBUG
-    for (std::list<RectI>::iterator it = ret.begin(); it != ret.end(); ++it) {
-        assert(isNonMarked(*it));
-    }
-#endif
 }
 
 #if NATRON_ENABLE_TRIMAP
