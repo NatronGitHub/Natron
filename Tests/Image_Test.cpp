@@ -52,7 +52,8 @@ TEST(BitmapTest,
 
     ///assert that the "underlying" bitmap is clean
     const char* map = bm.getBitmap();
-    ASSERT_TRUE( !memchr( map, 1, rod.area() ) );
+    ASSERT_TRUE( !std::memchr( map, 1, rod.area() ) );
+    ASSERT_TRUE( bm.isNonMarked(rod) );
 
     RectI halfRoD(0, 0, 100, 50);
     bm.markForRendered(halfRoD);

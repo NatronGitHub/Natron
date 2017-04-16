@@ -406,18 +406,18 @@ InfoViewerWidget::setDataWindow(const RectI & r)
 {
     QString bbox;
     const QFont& font = coordDispWindow->font();
-    QString left, btm, right, top;
+    QString x1, y1, x2, y2;
 
-    left.setNum( r.left() );
-    btm.setNum( r.bottom() );
-    right.setNum( r.right() );
-    top.setNum( r.top() );
+    x1.setNum(r.x1);
+    y1.setNum(r.y1);
+    x2.setNum(r.x2);
+    y2.setNum(r.y2);
 
     bbox = QString::fromUtf8("<font color=\"#DBE0E0\" face=\"%5\" size=%6>RoD: %1 %2 %3 %4</font>")
-           .arg(left)
-           .arg(btm)
-           .arg(right)
-           .arg(top)
+           .arg(x1)
+           .arg(y1)
+           .arg(x2)
+           .arg(y2)
            .arg( font.family() )
            .arg( font.pixelSize() );
 
