@@ -5,6 +5,9 @@
 # History
 
 
+## Version 2.2.8
+
+
 ## Version 2.2.7
 
 - Reduce noise on the roto shape borders #1594
