@@ -1218,6 +1218,10 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
     // of the function that the RoI was Null, either the RoD was checked for NULL.
     assert(!renderMappedRoI.isNull());
 
+    // Round the roi to the tile size if the render is cached
+    ImageBitDepthEnum outputBitDepth = getBitDepth(-1);
+    int tileWidth, tileHeight;
+    CacheBase::getTileSizePx(outputBitDepth, &tileWidth, &tileHeight);
 
 
     if (!getCurrentSupportTiles()) {
@@ -1225,22 +1229,13 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
         renderMappedRoI = perMipMapLevelRoDPixel[mappedMipMapLevel];
     } else {
 
-        // Round the roi to the tile size if the render is cached
-        ImageBitDepthEnum outputBitDepth = getBitDepth(-1);
-        int tileWidth, tileHeight;
-        CacheBase::getTileSizePx(outputBitDepth, &tileWidth, &tileHeight);
         renderMappedRoI.roundToTileSize(tileWidth, tileHeight);
-
 
         // Make sure the RoI falls within the image bounds
         if ( !renderMappedRoI.intersect(perMipMapLevelRoDPixel[mappedMipMapLevel], &renderMappedRoI) ) {
             requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusRendered);
             return eActionStatusOK;
         }
-
-        // The RoI falls into the effect pixel region of definition
-        assert(renderMappedRoI.x1 >= perMipMapLevelRoDPixel[mappedMipMapLevel].x1 && renderMappedRoI.y1 >= perMipMapLevelRoDPixel[mappedMipMapLevel].y1 &&
-               renderMappedRoI.x2 <= perMipMapLevelRoDPixel[mappedMipMapLevel].x2 && renderMappedRoI.y2 <= perMipMapLevelRoDPixel[mappedMipMapLevel].y2);
     }
 
     assert(!renderMappedRoI.isNull());
@@ -1269,6 +1264,14 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
     RenderScale downscaledCombinedScale = EffectInstance::getCombinedScale(requestData->getMipMapLevel(), requestData->getProxyScale());
     RectI downscaledRoI;
     roundedCanonicalRoI.toPixelEnclosing(downscaledCombinedScale, par, &downscaledRoI);
+
+    downscaledRoI.roundToTileSize(tileWidth, tileHeight);
+
+    // Make sure the RoI falls within the image bounds
+    if ( !downscaledRoI.intersect(perMipMapLevelRoDPixel[requestData->getMipMapLevel()], &downscaledRoI) ) {
+        requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusRendered);
+        return eActionStatusOK;
+    }
 
 
     // Get the render device
@@ -1657,6 +1660,18 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPa
 
         RectI downscaledRoI;
         requestData->getCurrentRoI().toPixelEnclosing(downscaledCombinedScale, par, &downscaledRoI);
+
+
+        ImageBitDepthEnum outputBitDepth = getBitDepth(-1);
+        int tileWidth, tileHeight;
+        CacheBase::getTileSizePx(outputBitDepth, &tileWidth, &tileHeight);
+        downscaledRoI.roundToTileSize(tileWidth, tileHeight);
+        // Make sure the RoI falls within the image bounds
+        if ( !downscaledRoI.intersect(perMipMapLevelRoDPixel[requestData->getMipMapLevel()], &downscaledRoI) ) {
+            requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusRendered);
+            return eActionStatusOK;
+        }
+
 
 
         // Since the node does not support render scale, we cached the image, thus we can just fetch the image
