@@ -223,7 +223,7 @@ Image::copyPixels(const Image& other, const CopyPixelsArgs& args)
     if (!other._imp->originalBounds.intersect(args.roi, &roi)) {
         return eActionStatusOK;
     }
-    if (!_imp->originalBounds.intersect(args.roi, &roi)) {
+    if (!_imp->originalBounds.intersect(roi, &roi)) {
         return eActionStatusOK;
     }
 
@@ -263,10 +263,11 @@ Image::copyPixels(const Image& other, const CopyPixelsArgs& args)
 
     const Image* fromImage = tmpImage? tmpImage.get() : &other;
 
-    assert(_imp->originalBounds.contains(args.roi) && other._imp->originalBounds.contains(args.roi));
+    assert(_imp->originalBounds.contains(roi) && other._imp->originalBounds.contains(roi));
 
     // Ensure the channelIndex to copy from/to is valid according to the number of components of the image
     CopyPixelsArgs tmpArgs = args;
+    tmpArgs.roi = roi;
     if (tmpArgs.alphaHandling == eAlphaChannelHandlingFillFromChannel) {
         if (tmpArgs.conversionChannel < 0 || tmpArgs.conversionChannel >= (int)fromImage->getComponentsCount()) {
             if (fromImage->getComponentsCount() == 4) {
