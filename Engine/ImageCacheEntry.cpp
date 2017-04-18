@@ -284,7 +284,7 @@ struct ImageCacheEntryPrivate
     ImageBufferLayoutEnum format;
 
     // Pointer to the effect for fast abort when copying tiles from/to the cache
-    EffectInstancePtr effect;
+    EffectInstanceWPtr effect;
 
     // The mipmap level we are interested in
     unsigned int mipMapLevel;
@@ -483,10 +483,10 @@ ImageCacheEntry::getCacheKey() const
     return _imp->key;
 }
 
-static void growTilesState(const RectI& newBounds, TileStateHeader* stateToGrow)
+static void growTilesState(const RectI& newPixelRoD, TileStateHeader* stateToGrow)
 {
     TileStateHeader tmpHeader;
-    tmpHeader.init(stateToGrow->tileSizeX, stateToGrow->tileSizeY, newBounds);
+    tmpHeader.init(stateToGrow->tileSizeX, stateToGrow->tileSizeY, newPixelRoD);
 
     // If any tile is marked rendered locally, update the copied state
     for (int ty = tmpHeader.state->boundsRoundedToTileSize.y1; ty < tmpHeader.state->boundsRoundedToTileSize.y2; ty += tmpHeader.tileSizeY) {
@@ -500,28 +500,28 @@ static void growTilesState(const RectI& newBounds, TileStateHeader* stateToGrow)
             *thisState = *state;
         }
     }
-    tmpHeader.ownsState = false;
-    *stateToGrow = tmpHeader;
+    *stateToGrow->state = *tmpHeader.state;
 }
 
 void
-ImageCacheEntry::ensureRoI(const RectI& roi)
+ImageCacheEntry::ensureRoI(const RectI& roi, const std::vector<RectI>& perMipMapLevelRoDPixel)
 {
+
+    // This does not work for cache image
+    assert(_imp->cachePolicy == eCacheAccessModeNone);
 
     // Protect all local structures against multiple threads using this object.
     boost::unique_lock<boost::mutex> locker(_imp->lock);
+    _imp->roi.merge(roi);
+    _imp->perMipMapPixelRod = perMipMapLevelRoDPixel;
+    assert(perMipMapLevelRoDPixel.size() >= _imp->mipMapLevel + 1);
+    growTilesState(perMipMapLevelRoDPixel[_imp->mipMapLevel], &_imp->localTilesState);
+    assert(_imp->localTilesState.state->bounds.contains(_imp->roi));
 
-    RectI unionedRoi = roi;
-    RectI unionedBounds = roi;
-    unionedRoi.merge(_imp->roi);
-    unionedBounds.merge(_imp->localTilesState.state->bounds);
-
-    growTilesState(unionedBounds, &_imp->localTilesState);
-
-    // Reset the cache entry
-    _imp->internalCacheEntry = ImageCacheEntryInternal<false>::create(_imp->key);
-
-    _imp->roi = unionedRoi;
+    for (std::size_t i = 0; i < _imp->internalCacheEntry->perMipMapTilesState.size(); ++i) {
+        TileStateHeader cachedTilesState(_imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY, &_imp->internalCacheEntry->perMipMapTilesState[i]);
+        growTilesState(perMipMapLevelRoDPixel[i], &cachedTilesState);
+    }
 }
 
 
@@ -1048,6 +1048,7 @@ ImageCacheEntryPrivate::readAndUpdateStateMap(bool hasExclusiveLock)
             assert(tx % localTilesState.tileSizeX == 0 && ty % localTilesState.tileSizeY == 0);
 
             TileState* localTileState = localTilesState.getTileAt(tx, ty);
+            assert(localTileState);
 
             // If the tile in the old status is already rendered, do not update
             if (localTileState->status == eTileStatusRenderedHighestQuality ||
@@ -1263,6 +1264,8 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
         }
     }
 
+    EffectInstancePtr renderClone = effect.lock();
+
     // If we downscaled some tiles, we updated the tiles status map
     bool stateMapUpdated = false;
 
@@ -1277,13 +1280,13 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
         boost::scoped_ptr<DownscaleMipMapProcessorBase> processor;
         switch (bitdepth) {
             case eImageBitDepthByte:
-                processor.reset(new DownscaleMipMapProcessor<unsigned char>(effect));
+                processor.reset(new DownscaleMipMapProcessor<unsigned char>(renderClone));
                 break;
             case eImageBitDepthShort:
-                processor.reset(new DownscaleMipMapProcessor<unsigned short>(effect));
+                processor.reset(new DownscaleMipMapProcessor<unsigned short>(renderClone));
                 break;
             case eImageBitDepthFloat:
-                processor.reset(new DownscaleMipMapProcessor<float>(effect));
+                processor.reset(new DownscaleMipMapProcessor<float>(renderClone));
                 break;
             default:
                 break;
@@ -1365,13 +1368,13 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
     boost::scoped_ptr<CachePixelsTransferProcessorBase> processor;
     switch (bitdepth) {
         case eImageBitDepthByte:
-            processor.reset(new CachePixelsTransferProcessor<false /*copyToCache*/, unsigned char>(effect));
+            processor.reset(new CachePixelsTransferProcessor<false /*copyToCache*/, unsigned char>(renderClone));
             break;
         case eImageBitDepthShort:
-            processor.reset(new CachePixelsTransferProcessor<false /*copyToCache*/, unsigned short>(effect));
+            processor.reset(new CachePixelsTransferProcessor<false /*copyToCache*/, unsigned short>(renderClone));
             break;
         case eImageBitDepthFloat:
-            processor.reset(new CachePixelsTransferProcessor<false /*copyToCache*/, float>(effect));
+            processor.reset(new CachePixelsTransferProcessor<false /*copyToCache*/, float>(renderClone));
             break;
         default:
             break;
@@ -1928,18 +1931,19 @@ ImageCacheEntry::markCacheTilesAsRendered()
         localTileState->channelsTileStorageIndex[tilesToCopy[i]->channel_i] = allocatedTiles[i].first;
     }
 
+    EffectInstancePtr renderClone = _imp->effect.lock();
 
     // Finally copy over multiple threads each tile
     boost::scoped_ptr<CachePixelsTransferProcessorBase> processor;
     switch (_imp->bitdepth) {
         case eImageBitDepthByte:
-            processor.reset(new CachePixelsTransferProcessor<true /*copyToCache*/, unsigned char>(_imp->effect));
+            processor.reset(new CachePixelsTransferProcessor<true /*copyToCache*/, unsigned char>(renderClone));
             break;
         case eImageBitDepthShort:
-            processor.reset(new CachePixelsTransferProcessor<true /*copyToCache*/, unsigned short>(_imp->effect));
+            processor.reset(new CachePixelsTransferProcessor<true /*copyToCache*/, unsigned short>(renderClone));
             break;
         case eImageBitDepthFloat:
-            processor.reset(new CachePixelsTransferProcessor<true /*copyToCache*/, float>(_imp->effect));
+            processor.reset(new CachePixelsTransferProcessor<true /*copyToCache*/, float>(renderClone));
             break;
         default:
             break;
@@ -2011,11 +2015,11 @@ ImageCacheEntry::waitForPendingTiles()
         }
 #ifdef DEBUG
         if (timeSpentWaitingForPendingEntryMS > 5000) {
-            qDebug() << "WARNING:" << _imp->effect->getScriptName_mt_safe().c_str() << "stuck in waitForPendingTiles() for more than " << Timer::printAsTime(timeSpentWaitingForPendingEntryMS / 1000, false);
+            qDebug() << "WARNING:" << _imp->effect.lock()->getScriptName_mt_safe().c_str() << "stuck in waitForPendingTiles() for more than " << Timer::printAsTime(timeSpentWaitingForPendingEntryMS / 1000, false);
         }
 #endif
 
-    } while(hasPendingResults && !hasUnrenderedTile && !_imp->effect->isRenderAborted());
+    } while(hasPendingResults && !hasUnrenderedTile && !_imp->effect.lock()->isRenderAborted());
 
     if (hasReleasedThread) {
         QThreadPool::globalInstance()->reserveThread();

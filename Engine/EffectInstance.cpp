@@ -1347,20 +1347,26 @@ EffectInstance::setCurrentCursor(const QString& customCursorFilePath)
 void
 EffectInstance::clearLastRenderedImage()
 {
+    std::map<ImagePlaneDesc,ImagePtr> accumBuffer;
     {
         QMutexLocker k(&_imp->common->accumBufferMutex);
-        _imp->common->accumBuffer.reset();
+        accumBuffer = _imp->common->accumBuffer;
     }
+    accumBuffer.clear();
 }
 
 void
-EffectInstance::setAccumBuffer(const ImagePtr& accumBuffer)
+EffectInstance::setAccumBuffer(const ImagePlaneDesc& plane, const ImagePtr& accumBuffer)
 {
     ImagePtr curAccumBuffer;
     {
         QMutexLocker k(&_imp->common->accumBufferMutex);
-        curAccumBuffer = _imp->common->accumBuffer;
-        _imp->common->accumBuffer = accumBuffer;
+        std::map<ImagePlaneDesc,ImagePtr>::iterator found = _imp->common->accumBuffer.find(plane);
+        if (found != _imp->common->accumBuffer.end()) {
+            curAccumBuffer = found->second;
+            _imp->common->accumBuffer.erase(found);
+        }
+        _imp->common->accumBuffer.insert(std::make_pair(plane, accumBuffer));
     }
     // Ensure it is not destroyed while under the mutex, this could lead to a deadlock if the OpenGL context
     // switches during the texture destruction.
@@ -1368,12 +1374,17 @@ EffectInstance::setAccumBuffer(const ImagePtr& accumBuffer)
 }
 
 ImagePtr
-EffectInstance::getAccumBuffer() const
+EffectInstance::getAccumBuffer(const ImagePlaneDesc& plane) const
 {
     {
         QMutexLocker k(&_imp->common->accumBufferMutex);
-        return _imp->common->accumBuffer;
+        std::map<ImagePlaneDesc,ImagePtr>::const_iterator found = _imp->common->accumBuffer.find(plane);
+        if (found != _imp->common->accumBuffer.end()) {
+            return found->second;
+        }
+
     }
+    return ImagePtr();
 }
 
 bool
@@ -1393,16 +1404,62 @@ EffectInstance::getAccumulationUpdateRoI(RectD* updateArea) const
     return true;
 }
 
+static bool hasActiveStrokeItemNodeDrawingUpstream(const EffectInstancePtr& effect,
+                                            const RotoDrawableItemPtr& activeItem,
+                                            std::set<EffectInstancePtr>* markedEffects)
+{
+    if (markedEffects->find(effect) != markedEffects->end()) {
+        return false;
+    }
+
+    markedEffects->insert(effect);
+
+    RotoStrokeItemPtr attachedStroke = toRotoStrokeItem(effect->getAttachedRotoItem());
+    if (attachedStroke) {
+        bool isDrawing = attachedStroke->isCurrentlyDrawing();
+
+        // Only one single item can be drawn at once
+        assert(!isDrawing || attachedStroke->getMainInstance() == activeItem);
+
+        if (isDrawing) {
+            return true;
+        }
+    }
+
+    int nInputs = effect->getMaxInputCount();
+    for (int i = 0; i < nInputs; ++i) {
+        EffectInstancePtr inputEffect = effect->getInputRenderEffectAtAnyTimeView(i);
+        if (!inputEffect) {
+            continue;
+        }
+        bool inputIsDrawing = hasActiveStrokeItemNodeDrawingUpstream(inputEffect, activeItem, markedEffects);
+        if (inputIsDrawing) {
+            return true;
+        }
+    }
+
+
+    return false;
+} // hasActiveStrokeItemNodeDrawingUpstream
 
 bool
 EffectInstance::isDuringPaintStrokeCreation() const
 {
-    // We should render only
-    RotoStrokeItemPtr attachedStroke = toRotoStrokeItem(getAttachedRotoItem());
-    if (!attachedStroke) {
+    TreeRenderPtr render = getCurrentRender();
+    if (!render) {
+        // Not during a render
         return false;
     }
-    return attachedStroke->isCurrentlyDrawing();
+
+    RotoDrawableItemPtr activeItem = render->getCurrentlyDrawingItem();
+    if (!activeItem) {
+        return false;
+    }
+
+    // Now if this node has the item attached to itself (i.e: it is a node of the internal roto paint graph for this item)
+    // or it is below the node attached to this item then we can check if it is currently drawing
+    std::set<EffectInstancePtr> markedEffects;
+    return hasActiveStrokeItemNodeDrawingUpstream(boost::const_pointer_cast<EffectInstance>(shared_from_this()), activeItem, &markedEffects);
 }
 
 void
@@ -1532,8 +1589,6 @@ EffectInstance::getMetadataComponents(int inputNb, ImagePlaneDesc* plane, ImageP
             *pairedPlane = ImagePlaneDesc::getForwardMotionComponents();
         } else {
             *plane = ImagePlaneDesc::getNoneComponents();
-            assert(false);
-            throw std::logic_error("");
         }
 
     }

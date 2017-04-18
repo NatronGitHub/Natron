@@ -581,7 +581,9 @@ public:
      * In output of this function, the image bounds contain at least the RoI.
      *
      **/
-    ActionRetCodeEnum ensureBounds(const RectI& roi) WARN_UNUSED_RETURN;
+    ActionRetCodeEnum ensureBounds(const RectI& roi,
+                                   unsigned int mipmapLevel,
+                                   const std::vector<RectI>& perMipMapLevelRoDPixel) WARN_UNUSED_RETURN;
 
     /**
      * @brief Fill everything outside the roi in black and transparant

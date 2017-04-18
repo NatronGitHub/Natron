@@ -1373,6 +1373,11 @@ EffectInstance::initializeDefaultKnobs(bool loadingSerialization, bool hasGUI)
         createChannelSelectors(hasMaskChannelSelector, inputLabels, mainPage, &lastKnobBeforeAdvancedOption);
     }
 
+    // If multi-planar, try to detect the "all" layers knob
+    if (isMultiPlanar()) {
+        _imp->defKnobs->processAllLayersKnob = toKnobBool(getKnobByName(kNodeParamProcessAllLayers));
+    }
+
 
     findOrCreateChannelEnabled();
 

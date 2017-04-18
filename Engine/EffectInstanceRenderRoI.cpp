@@ -161,6 +161,7 @@ EffectInstance::Implementation::handlePassThroughPlanes(const FrameViewRequestPt
             // If the effect is not set to "All plane" and the pass-through input nb is not set then fail
             if (!processAllLayers) {
                 if (passThroughInputNb == -1) {
+                    //_publicInterface->getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorGenericRenderMessage, _publicInterface->tr("Could not fetch plane \"%1\" because it is not available on this node").arg(QString::fromUtf8(plane.getPlaneLabel().c_str())).toStdString());
                     return eActionStatusFailed;
                 } else {
                     // Fetch the plane on the pass-through input
@@ -367,7 +368,7 @@ EffectInstance::Implementation::lookupCachedImage(unsigned int mipMapLevel,
     if (!*image) {
         *image = createCachedImage(pixelRoi, perMipMapPixelRoD, mipMapLevel, proxyScale, plane, backend, cachePolicy, true /*delayAllocation*/);
     } else {
-        ActionRetCodeEnum stat = (*image)->ensureBounds(pixelRoi);
+        ActionRetCodeEnum stat = (*image)->ensureBounds(pixelRoi, mipMapLevel, perMipMapPixelRoD);
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -1285,7 +1286,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
 
     
 
-    const bool isAccumulating = false; //isAccumulationEnabled();
+    const bool isAccumulating = isAccumulationEnabled();
 
 
     // Should the output of this render be cached ?
@@ -1343,9 +1344,13 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
         // When accumulating, re-use the same buffer of previous steps and resize it if needed.
         // Note that in this mode only a single plane can be rendered at once and the plug-in render safety must
         // allow only a single thread to run
-        ImagePtr accumBuffer = getAccumBuffer();
+        ImagePtr accumBuffer = getAccumBuffer(requestData->getPlaneDesc());
+        if (accumBuffer && accumBuffer->getMipMapLevel() != mappedMipMapLevel) {
+            accumBuffer.reset();
+        }
 
         if (isAccumulating && accumBuffer) {
+
             // When drawing with a paint brush, we may only render the bounding box of the un-rendered points.
             RectD updateAreaCanonical;
             if (getAccumulationUpdateRoI(&updateAreaCanonical)) {
@@ -1409,7 +1414,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
 
         // Set the accumulation buffer if it was not already set
         if (isAccumulating && !accumBuffer) {
-            setAccumBuffer(requestedImageScale);
+            setAccumBuffer(requestData->getPlaneDesc(), requestedImageScale);
         }
 
         requestData->initStatus(requestStatus);
@@ -1532,6 +1537,9 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPa
     assert(fullscalePlane);
     fullscalePlane->ensureBuffersAllocated();
 
+    cachedImagePlanes[requestData->getPlaneDesc()] = fullscalePlane;
+
+
     RenderBackendTypeEnum backendType = requestData->getRenderDevice();
 
     const bool renderAllProducedPlanes = isAllProducedPlanesAtOncePreferred();
@@ -1539,7 +1547,7 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPa
     for (std::list<ImagePlaneDesc>::const_iterator it = producedPlanes.begin(); it != producedPlanes.end(); ++it) {
         ImagePtr imagePlane;
         if (*it == requestData->getPlaneDesc()) {
-            imagePlane = fullscalePlane;
+            continue;
         } else {
             if (!renderAllProducedPlanes) {
                 continue;

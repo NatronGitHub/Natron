@@ -198,9 +198,9 @@ ViewerNode::initializeKnobs()
 
 
     {
-        KnobButtonPtr param = createKnob<KnobButton>(kViewerNodeParamClipToFormat);
-        param->setLabel(tr(kViewerNodeParamClipToFormatLabel));
-        param->setHintToolTip(tr(kViewerNodeParamClipToFormatHint));
+        KnobButtonPtr param = createKnob<KnobButton>(kViewerInstanceParamClipToFormat);
+        param->setLabel(tr(kViewerInstanceParamClipToFormatLabel));
+        param->setHintToolTip(tr(kViewerInstanceParamClipToFormatHint));
         page->addKnob(param);
         param->setSecret(true);
         param->setInViewerContextCanHaveShortcut(true);
@@ -225,9 +225,9 @@ ViewerNode::initializeKnobs()
     }
 
     {
-        KnobButtonPtr param = createKnob<KnobButton>(kViewerNodeParamEnableUserRoI);
-        param->setLabel(tr(kViewerNodeParamEnableUserRoILabel));
-        param->setHintToolTip(tr(kViewerNodeParamEnableUserRoIHint));
+        KnobButtonPtr param = createKnob<KnobButton>(kViewerInstanceParamEnableUserRoI);
+        param->setLabel(tr(kViewerInstanceParamEnableUserRoILabel));
+        param->setHintToolTip(tr(kViewerInstanceParamEnableUserRoIHint));
         param->addInViewerContextShortcutsReference(kViewerNodeParamActionCreateNewRoI);
         param->setCheckable(true);
         page->addKnob(param);
@@ -240,7 +240,7 @@ ViewerNode::initializeKnobs()
     }
 
     {
-        KnobDoublePtr param = createKnob<KnobDouble>(std::string(kViewerNodeParamUserRoIBottomLeft), 2 );
+        KnobDoublePtr param = createKnob<KnobDouble>(std::string(kViewerInstanceParamUserRoIBottomLeft), 2 );
         param->setDefaultValuesAreNormalized(true);
         param->setSecret(true);
         param->setDefaultValue(0.2, DimIdx(0));
@@ -249,7 +249,7 @@ ViewerNode::initializeKnobs()
         _imp->userRoIBtmLeftKnob = param;
     }
     {
-        KnobDoublePtr param = createKnob<KnobDouble>(std::string(kViewerNodeParamUserRoISize), 2 );
+        KnobDoublePtr param = createKnob<KnobDouble>(std::string(kViewerInstanceParamUserRoISize), 2 );
         param->setDefaultValuesAreNormalized(true);
         param->setDefaultValue(.6, DimIdx(0));
         param->setDefaultValue(.6, DimIdx(1));

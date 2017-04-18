@@ -958,7 +958,7 @@ Histogram::computeHistogramAndRefresh(bool forceEvenIfNotVisible)
 
     RectD roiParam;
     if (!fullImage) {
-        roiParam = viewer->getViewer()->getImageRectangleDisplayed();
+        roiParam = viewer->getInternalNode()->getViewerProcessNode(textureIndex)->getViewerRoI();
     }
 
     QPointF btmLeft = _imp->zoomCtx.toZoomCoordinates(0, height() - 1);

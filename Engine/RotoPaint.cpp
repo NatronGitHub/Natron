@@ -100,6 +100,8 @@
 #define ROTO_DEFAULT_FEATHER 1.5
 #define ROTO_DEFAULT_FEATHERFALLOFF 1.
 
+#define kPremultNodeParamPremultChannel "premultChannel"
+
 
 #define ROTOPAINT_VIEWER_UI_SECTIONS_SPACING_PX 5
 
@@ -1269,9 +1271,9 @@ RotoPaint::setupInitialSubGraphState()
         args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
 #endif
         // Set premult node to be identity by default
-        args->addParamDefaultValue<bool>(kNatronOfxParamProcessR, false);
+        /*args->addParamDefaultValue<bool>(kNatronOfxParamProcessR, false);
         args->addParamDefaultValue<bool>(kNatronOfxParamProcessG, false);
-        args->addParamDefaultValue<bool>(kNatronOfxParamProcessB, false);
+        args->addParamDefaultValue<bool>(kNatronOfxParamProcessB, false);*/
         args->addParamDefaultValue<bool>(kNatronOfxParamProcessA, false);
         args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "AlphaPremult");
 
@@ -1290,7 +1292,9 @@ RotoPaint::setupInitialSubGraphState()
                 assert(false);
             }
         }
-
+        KnobChoicePtr premultChannelKnob = toKnobChoice(premultNode->getKnobByName(kPremultNodeParamPremultChannel));
+        assert(premultChannelKnob);
+        premultChannelKnob->setActiveEntry(ChoiceOption("RotoMask.A"));
 
     }
     if (noopNode && premultNode) {
@@ -2167,6 +2171,7 @@ RotoPaint::initializeKnobs()
     RotoPaintPtr thisShared = toRotoPaint(shared_from_this());
 
     _imp->knobsTable.reset(new RotoPaintKnobItemsTable(_imp.get(), KnobItemsTable::eKnobItemsTableTypeTree));
+    _imp->knobsTable->setUserKeyframesWidgetsEnabled(_imp->nodeType != eRotoPaintTypeComp);
     _imp->knobsTable->setIconsPath(NATRON_IMAGES_PATH);
 
     QObject::connect( _imp->knobsTable.get(), SIGNAL(selectionChanged(std::list<KnobTableItemPtr>,std::list<KnobTableItemPtr>,TableChangeReasonEnum)), this, SLOT(onModelSelectionChanged(std::list<KnobTableItemPtr>,std::list<KnobTableItemPtr>,TableChangeReasonEnum)) );
@@ -2842,7 +2847,7 @@ RotoPaintPrivate::isRotoPaintTreeConcatenatableInternal(const std::list<RotoDraw
             }
         }
 
-        RotoPaintItemLifeTimeTypeEnum lifeTime = (RotoPaintItemLifeTimeTypeEnum)(*it)->getLifeTimeFrameKnob()->getValue();
+        /*RotoPaintItemLifeTimeTypeEnum lifeTime = (RotoPaintItemLifeTimeTypeEnum)(*it)->getLifeTimeFrameKnob()->getValue();
         if (lifeTime != eRotoPaintItemLifeTimeTypeAll && lifeTime != eRotoPaintItemLifeTimeTypeCustom) {
             // An item with a varying lifetime makes the concatenation impossible: we cannot disconenct and reconnect the A input of the global
             // Merge through time.
@@ -2854,7 +2859,7 @@ RotoPaintPrivate::isRotoPaintTreeConcatenatableInternal(const std::list<RotoDraw
             if (customRange->hasAnimation() || !customRange->getValue()) {
                 return false;
             }
-        }
+        }*/
 
         // Now check the global activated/solo switches
         if (!(*it)->isGloballyActivated()) {

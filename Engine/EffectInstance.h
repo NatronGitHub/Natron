@@ -1718,8 +1718,8 @@ public:
      * @brief For plug-ins that accumulate (ie.: isAccumulationEnabled() returns true) (for now just RotoShapeRenderNode), this is a pointer
      * to the last rendered image.
      **/
-    void setAccumBuffer(const ImagePtr& lastRenderedImage);
-    ImagePtr getAccumBuffer() const;
+    void setAccumBuffer(const ImagePlaneDesc& plane, const ImagePtr& lastRenderedImage);
+    ImagePtr getAccumBuffer(const ImagePlaneDesc& plane) const;
 
 
     /***

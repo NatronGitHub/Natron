@@ -76,6 +76,11 @@ struct ViewerInstancePrivate
     KnobDoubleWPtr gainKnob;
     KnobButtonWPtr autoContrastKnob;
 
+    KnobDoubleWPtr userRoIBottomLeftKnob, userRoISizeKnob;
+    KnobButtonWPtr userRoIEnabled;
+
+    KnobButtonWPtr clipToFormatButtonKnob;
+
     bool viewerChannelsAutoswitchedToAlpha;
     bool layerAndAlphaChoiceRefreshEnabled;
 
@@ -88,6 +93,10 @@ struct ViewerInstancePrivate
     , gammaKnob()
     , gainKnob()
     , autoContrastKnob()
+    , userRoIBottomLeftKnob()
+    , userRoISizeKnob()
+    , userRoIEnabled()
+    , clipToFormatButtonKnob()
     , viewerChannelsAutoswitchedToAlpha(false)
     , layerAndAlphaChoiceRefreshEnabled(true)
     {
@@ -241,6 +250,43 @@ ViewerInstance::fetchRenderCloneKnobs()
     _imp->gammaKnob = getKnobByNameAndType<KnobDouble>(kViewerInstanceParamGamma);
     _imp->outputColorspace = getKnobByNameAndType<KnobChoice>(kViewerInstanceParamColorspace);
     _imp->autoContrastKnob = getKnobByNameAndType<KnobButton>(kViewerInstanceParamEnableAutoContrast);
+    _imp->userRoIEnabled = getKnobByNameAndType<KnobButton>(kViewerInstanceParamEnableUserRoI);
+    _imp->userRoIBottomLeftKnob = getKnobByNameAndType<KnobDouble>(kViewerInstanceParamUserRoIBottomLeft);
+    _imp->userRoISizeKnob = getKnobByNameAndType<KnobDouble>(kViewerInstanceParamUserRoISize);
+    _imp->clipToFormatButtonKnob = getKnobByNameAndType<KnobButton>(kViewerInstanceParamClipToFormat);
+}
+
+RectD
+ViewerInstance::getViewerRoI()
+{
+    ViewerNodePtr viewerNode = getViewerNodeGroup();
+    assert(viewerNode);
+    RectD rod;
+    RectD viewerRoI = viewerNode->getUiContext()->getImageRectangleDisplayed();
+    bool clipToFormat = _imp->clipToFormatButtonKnob.lock()->getValue();
+    if (!clipToFormat) {
+        rod = viewerRoI;
+    } else {
+        RectI format = getOutputFormat();
+        double par = getAspectRatio(-1);
+        RectD formatCanonical;
+        format.toCanonical_noClipping(0, par, &formatCanonical);
+        viewerRoI.intersect(formatCanonical, &rod);
+    }
+
+    bool userRoiEnabled = _imp->userRoIEnabled.lock()->getValue();
+    if (userRoiEnabled) {
+        RectD userRoI;
+        KnobDoublePtr btmLeft = _imp->userRoIBottomLeftKnob.lock();
+        KnobDoublePtr size = _imp->userRoISizeKnob.lock();
+        userRoI.x1 = btmLeft->getValue();
+        userRoI.y1 = btmLeft->getValue(DimIdx(1));
+        userRoI.x2 = userRoI.x1 + size->getValue();
+        userRoI.y2 = userRoI.y1 + size->getValue(DimIdx(1));
+
+        rod.intersect(userRoI, &rod);
+    }
+    return rod;
 }
 
 void
@@ -325,7 +371,45 @@ ViewerInstance::initializeKnobs()
         param->setCheckable(true);
         _imp->autoContrastKnob = param;
     }
+    {
+        KnobButtonPtr param = createKnob<KnobButton>(kViewerInstanceParamEnableUserRoI);
+        param->setLabel(tr(kViewerInstanceParamEnableUserRoILabel));
+        param->setHintToolTip(tr(kViewerInstanceParamEnableUserRoIHint));
+        param->setCheckable(true);
+        page->addKnob(param);
+        param->setSecret(true);
+        _imp->userRoIEnabled = param;
+    }
 
+    {
+        KnobDoublePtr param = createKnob<KnobDouble>(std::string(kViewerInstanceParamUserRoIBottomLeft), 2 );
+        param->setDefaultValuesAreNormalized(true);
+        param->setSecret(true);
+        param->setDefaultValue(0.2, DimIdx(0));
+        param->setDefaultValue(0.2, DimIdx(1));
+        page->addKnob(param);
+        _imp->userRoIBottomLeftKnob = param;
+    }
+    {
+        KnobDoublePtr param = createKnob<KnobDouble>(std::string(kViewerInstanceParamUserRoISize), 2 );
+        param->setDefaultValuesAreNormalized(true);
+        param->setDefaultValue(.6, DimIdx(0));
+        param->setDefaultValue(.6, DimIdx(1));
+        param->setSecret(true);
+        page->addKnob(param);
+        _imp->userRoISizeKnob = param;
+    }
+
+    {
+        KnobButtonPtr param = createKnob<KnobButton>(kViewerInstanceParamClipToFormat);
+        param->setLabel(tr(kViewerInstanceParamClipToFormatLabel));
+        param->setHintToolTip(tr(kViewerInstanceParamClipToFormatHint));
+        page->addKnob(param);
+        param->setSecret(true);
+        param->setCheckable(true);
+        param->setDefaultValue(true);
+        _imp->clipToFormatButtonKnob = param;
+    }
 
 } // initializeKnobs
 

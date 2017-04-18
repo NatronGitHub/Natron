@@ -310,7 +310,7 @@ RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other
     // During painting, we copy on the clone only the points that were not rendered yet.
     // In order for the getBoundingBox function to return something decent, we still need
     // to know the bounding box of the full stroke
-    if (isCurrentlyDrawing && hasDoneSomething) {
+    if (isCurrentlyDrawing) {
 
         // The bounding box computation requires a time and view parameters:
         // we are OK to assume that the time view are the current ones in the UI
@@ -318,7 +318,16 @@ RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other
         TimeValue time = _publicInterface->getCurrentRenderTime();
         ViewIdx view = _publicInterface->getCurrentRenderView();
 
-        lastStrokeStepBbox = computeBoundingBox(time, view);
+        if (hasDoneSomething) {
+            // This is the bounding box of just the points we did not draw
+            lastStrokeStepBbox = computeBoundingBox(time, view);
+        }
+
+        // This is the bounding box of the full stroke. Since we only copied from the curve the portion
+        // we did not draw yet, we can only compute it on the main instance
+        renderCachedBbox.reset(new std::map<TimeValue,RectD>);
+        RectD fullStrokeBbox = other.computeBoundingBox(time, view);
+        renderCachedBbox->insert(std::make_pair(time, fullStrokeBbox));
     }
     return hasDoneSomething;
 } // copyStrokeForRendering
@@ -1228,7 +1237,9 @@ RotoStrokeItemPrivate::computeBoundingBox(TimeValue time, ViewIdx view) const
         }
 
     } // for all sub-strokes
-
+    if (_publicInterface->isRenderClone() && bbox.isNull()) {
+        assert(true);
+    }
     return bbox;
 } // RotoStrokeItem::computeBoundingBox
 
@@ -1251,7 +1262,9 @@ RotoStrokeItem::getBoundingBox(TimeValue time, ViewIdx view) const
             }
         }
     }
-    RectD bbox = _imp->computeBoundingBox(time, view);
+    RectD bbox;
+    bbox = _imp->computeBoundingBox(time, view);
+    
     if (renderClone) {
         if (!_imp->renderCachedBbox) {
             _imp->renderCachedBbox.reset(new std::map<TimeValue,RectD>);

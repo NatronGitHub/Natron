@@ -352,7 +352,12 @@ EffectInstance::getComponentsNeededInternal(TimeValue time,
         (*processChannels)[i] = getProcessChannel(i);
     }
 
-    *processAllRequested = false;
+    KnobBoolPtr processAllKnob = getProcessAllLayersKnob();
+    if (processAllKnob) {
+        *processAllRequested = processAllKnob->getValue();
+    } else {
+        *processAllRequested = false;
+    }
 
     return eActionStatusOK;
 
@@ -370,15 +375,8 @@ EffectInstance::getAvailableLayers(TimeValue time, ViewIdx view, int inputNb,  s
         effect = shared_from_this();
     }
     if (!effect) {
-        // If input is diconnected, at least return the metadata plane
-        ImagePlaneDesc metadataPlane, metadataPairedPlane;
-        getMetadataComponents(inputNb, &metadataPlane, &metadataPairedPlane);
-        if (metadataPairedPlane.getNumComponents() > 0) {
-            availableLayers->push_back(metadataPairedPlane);
-        }
-        if (metadataPlane.getNumComponents() > 0) {
-            availableLayers->push_back(metadataPlane);
-        }
+        // If input is diconnected, at least return RGBA by default
+        availableLayers->push_back(ImagePlaneDesc::getRGBAComponents());
         return eActionStatusInputDisconnected;
     }
 

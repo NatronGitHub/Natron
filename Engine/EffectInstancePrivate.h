@@ -255,7 +255,7 @@ struct EffectInstanceCommonData
     // During painting we keep track of the image that was rendered
     // at the previous step so that we can accumulate the renders
     mutable QMutex accumBufferMutex;
-    ImagePtr accumBuffer;
+    std::map<ImagePlaneDesc,ImagePtr> accumBuffer;
 
     // Active interacts, only accessed on the main thread
     std::list<OverlayInteractBasePtr> interacts;

@@ -45,7 +45,7 @@
 #include "Engine/RotoPaint.h"
 
 #ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
-//#define ROTO_SHAPE_RENDER_CPU_USES_CAIRO
+#define ROTO_SHAPE_RENDER_CPU_USES_CAIRO
 #endif
 
 NATRON_NAMESPACE_ENTER;
@@ -621,7 +621,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                 if (!glContext->isGPUContext() && strokeStartPointIndex == 0) {
                     // Ensure the tmp texture has correct size
                     assert(_imp->osmesaSmearTmpTexture);
-                    ActionRetCodeEnum stat = _imp->osmesaSmearTmpTexture->ensureBounds(outputPlane.second->getBounds());
+                    ActionRetCodeEnum stat = _imp->osmesaSmearTmpTexture->ensureBounds(outputPlane.second->getBounds(), args.mipMapLevel, std::vector<RectI>());
                     if (isFailureRetCode(stat)) {
                         return stat;
                     }

@@ -78,6 +78,7 @@ struct KnobItemsTableCommon
     bool uniformRowsHeight;
     bool supportsDnD;
     bool dndSupportsExternalSource;
+    bool userKeyframesWidgetsEnabled;
 
     mutable QMutex topLevelItemsLock, selectionLock;
 
@@ -108,6 +109,7 @@ struct KnobItemsTableCommon
     , uniformRowsHeight(false)
     , supportsDnD(false)
     , dndSupportsExternalSource(false)
+    , userKeyframesWidgetsEnabled(true)
     , topLevelItemsLock()
     , selectionLock(QMutex::Recursive)
     , beginSelectionCounter(0)
@@ -286,6 +288,18 @@ bool
 KnobItemsTable::isDropFromExternalSourceSupported() const
 {
     return _imp->common->dndSupportsExternalSource;
+}
+
+void
+KnobItemsTable::setUserKeyframesWidgetsEnabled(bool enabled)
+{
+    _imp->common->userKeyframesWidgetsEnabled = enabled;
+}
+
+bool
+KnobItemsTable::isUserKeyframesWidgetsEnabled() const
+{
+    return _imp->common->userKeyframesWidgetsEnabled;
 }
 
 KnobHolderPtr

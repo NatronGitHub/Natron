@@ -254,6 +254,10 @@ public:
     OSGLContextPtr getGPUOpenGLContext() const;
     OSGLContextPtr getCPUOpenGLContext() const;
 
+    /**
+     * @brief If this render is triggered while drawing a roto item, this is the main instance of the item
+     **/
+    RotoDrawableItemPtr getCurrentlyDrawingItem() const;
 
 private:
 

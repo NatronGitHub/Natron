@@ -76,23 +76,9 @@ NATRON_NAMESPACE_ENTER;
 #define kViewerNodeParamDisplayChannelsLabel "Display Channels"
 #define kViewerNodeParamDisplayChannelsHint "The channels to display on the viewer from the selected layer"
 
-#define kViewerNodeParamClipToFormat "clipToFormat"
-#define kViewerNodeParamClipToFormatLabel "Clip To Format"
-#define kViewerNodeParamClipToFormatHint "Clips the portion of the image displayed " \
-"on the viewer to the format upstream. When off everything in " \
-"region of definition is displayed"
-
 #define kViewerNodeParamFullFrame "fullFrame"
 #define kViewerNodeParamFullFrameLabel "Full Frame"
 #define kViewerNodeParamFullFrameHint "When checked, the viewer will render the image in its entirety (at full resolution) not just the visible portion. The \"Downscale Level\" parameter is meaningless when this is checked. This may be useful when panning/zooming during playback"
-
-#define kViewerNodeParamEnableUserRoI "enableRegionOfInterest"
-#define kViewerNodeParamEnableUserRoILabel "Region Of Interest"
-#define kViewerNodeParamEnableUserRoIHint "When active, enables the region of interest that limits " \
-"the portion of the viewer that is kept updated. Press %2 to create and drag a new region."
-
-#define kViewerNodeParamUserRoIBottomLeft "userRoIBtmLeft"
-#define kViewerNodeParamUserRoISize "userRoISize"
 
 #define kViewerNodeParamProxyLevel "downscaleLevel"
 #define kViewerNodeParamProxyLevelLabel "Downscale Level"

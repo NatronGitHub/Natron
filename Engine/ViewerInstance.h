@@ -70,6 +70,24 @@ NATRON_NAMESPACE_ENTER;
 #define kViewerInstanceParamColorspaceHint "The operation applied to the image before it is displayed " \
 "on screen. The image is converted to this colorspace before being displayed on the monitor"
 
+
+#define kViewerInstanceParamEnableUserRoI "enableRegionOfInterest"
+#define kViewerInstanceParamEnableUserRoILabel "Region Of Interest"
+#define kViewerInstanceParamEnableUserRoIHint "When active, enables the region of interest that limits " \
+"the portion of the viewer that is kept updated. Press %2 to create and drag a new region."
+
+#define kViewerInstanceParamUserRoIBottomLeft "userRoIBtmLeft"
+#define kViewerInstanceParamUserRoISize "userRoISize"
+
+#define kViewerInstanceParamClipToFormat "clipToFormat"
+#define kViewerInstanceParamClipToFormatLabel "Clip To Format"
+#define kViewerInstanceParamClipToFormatHint "Clips the portion of the image displayed " \
+"on the viewer to the format upstream. When off everything in " \
+"region of definition is displayed"
+
+#define kViewerInstanceParamUIProjectionBottomLeft "projectionBottomLeft"
+#define kViewerInstanceParamUIProjectionTopRight "projectionTopRight"
+
 typedef std::map<NodePtr, NodeRenderStats > RenderStatsMap;
 
 struct ViewerInstancePrivate;
@@ -137,6 +155,8 @@ public:
      **/
     void setRefreshLayerAndAlphaChoiceEnabled(bool enabled);
 
+    RectD getViewerRoI();
+
 private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
@@ -169,6 +189,8 @@ private:
     virtual ActionRetCodeEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
 
     virtual void appendToHash(const ComputeHashArgs& args, Hash64* hash) OVERRIDE;
+
+
 
 private:
 
