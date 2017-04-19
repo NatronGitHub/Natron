@@ -633,13 +633,6 @@ copyUnProcessedChannelsGLInternal(const GLImageStoragePtr& originalTexture,
     shader->bind();
     shader->setUniform("originalImageTex", 1);
     shader->setUniform("outputImageTex", 0);
-    OfxRGBAColourF procChannelsV = {
-        processChannels[0] ? 1.f : 0.f,
-        processChannels[1] ? 1.f : 0.f,
-        processChannels[2] ? 1.f : 0.f,
-        processChannels[3] ? 1.f : 0.f
-    };
-    shader->setUniform("processChannels", procChannelsV);
     OSGLContext::applyTextureMapping<GL>(srcBounds, dstBounds, roi);
     shader->unbind();
 

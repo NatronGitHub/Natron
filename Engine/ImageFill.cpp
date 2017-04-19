@@ -105,13 +105,46 @@ ImagePrivate::fillGL(const RectI & roi,
     // th old context will be restored when saveCurrentContext is destroyed
 } // fillGL
 
-static void
+template <typename PIX>
+ActionRetCodeEnum
+fillCPUBlackForDepth(void* ptrs[4],
+                     int nComps,
+                     const RectI& bounds,
+                     const RectI& roi,
+                     const EffectInstancePtr& renderClone)
+{
+    int dataSizeOf = sizeof(PIX);
+    
+    // memset for each scan-line
+    for (int y = roi.y1; y < roi.y2; ++y) {
+
+        if (renderClone && renderClone->isRenderAborted()) {
+            return eActionStatusAborted;
+        }
+
+        PIX* dstPixelPtrs[4];
+        int dstPixelStride;
+        Image::getChannelPointers<PIX>((const PIX**)ptrs, roi.x1, y, bounds, nComps, dstPixelPtrs, &dstPixelStride);
+
+        std::size_t rowSize = roi.width() * dstPixelStride * dataSizeOf;
+
+        for (int i = 0; i < 4; ++i) {
+            if (dstPixelPtrs[i]) {
+                memset(dstPixelPtrs[i], 0, rowSize);
+            }
+        }
+
+    }
+    return eActionStatusOK;
+}
+
+static ActionRetCodeEnum
 fillCPUBlack(void* ptrs[4],
-                           int nComps,
-                           ImageBitDepthEnum bitDepth,
-                           const RectI& bounds,
-                           const RectI& roi,
-                           const EffectInstancePtr& renderClone)
+             int nComps,
+             ImageBitDepthEnum bitDepth,
+             const RectI& bounds,
+             const RectI& roi,
+             const EffectInstancePtr& renderClone)
 {
     if (roi == bounds) {
         // memset the whole bounds at once
@@ -127,33 +160,24 @@ fillCPUBlack(void* ptrs[4],
             }
         }
     } else {
-        int dataSizeOf = getSizeOfForBitDepth(bitDepth);
-
-        // memset for each scan-line
-        for (int y = roi.y1; y < roi.y2; ++y) {
-
-            if (renderClone && renderClone->isRenderAborted()) {
-                return;
-            }
-
-            char* dstPixelPtrs[4];
-            int dstPixelStride;
-            Image::getChannelPointers<char>((const char**)ptrs, roi.x1, y, bounds, nComps, dstPixelPtrs, &dstPixelStride);
-
-            std::size_t rowSize = roi.width() * dstPixelStride * dataSizeOf;
-
-            for (int i = 0; i < 4; ++i) {
-                if (dstPixelPtrs[i]) {
-                    memset(dstPixelPtrs[i], 0, rowSize);
-                }
-            }
-
+        switch (bitDepth) {
+            case eImageBitDepthByte:
+                return fillCPUBlackForDepth<unsigned char>(ptrs, nComps, bounds, roi, renderClone);
+            case eImageBitDepthShort:
+                return fillCPUBlackForDepth<unsigned short>(ptrs, nComps, bounds, roi, renderClone);
+            case eImageBitDepthFloat:
+                return fillCPUBlackForDepth<float>(ptrs, nComps, bounds, roi, renderClone);
+            default:
+                return eActionStatusFailed;
         }
+
     }
+
+    return eActionStatusOK;
 } // fillCPUBlack
 
 template <typename PIX, int maxValue, int nComps>
-static void
+static ActionRetCodeEnum
 fillForDepthForComponents(void* ptrs[4],
                           float r,
                           float g,
@@ -184,7 +208,7 @@ fillForDepthForComponents(void* ptrs[4],
     for (int y = roi.y1; y < roi.y2; ++y) {
 
         if (renderClone && renderClone->isRenderAborted()) {
-            return;
+            return eActionStatusAborted;
         }
 
         for (int x = roi.x1; x < roi.x2; ++x) {
@@ -201,12 +225,12 @@ fillForDepthForComponents(void* ptrs[4],
             }
         }
     }
-
+    return eActionStatusOK;
 } // fillForDepthForComponents
 
 
 template <typename PIX, int maxValue>
-static void
+static ActionRetCodeEnum
 fillForDepth(void* ptrs[4],
              float r,
              float g,
@@ -219,24 +243,21 @@ fillForDepth(void* ptrs[4],
 {
     switch (nComps) {
         case 1:
-            fillForDepthForComponents<PIX, maxValue, 1>(ptrs, r, g, b, a, bounds, roi, renderClone);
-            break;
+            return fillForDepthForComponents<PIX, maxValue, 1>(ptrs, r, g, b, a, bounds, roi, renderClone);
         case 2:
-            fillForDepthForComponents<PIX, maxValue, 2>(ptrs, r, g, b, a, bounds, roi, renderClone);
-            break;
+            return fillForDepthForComponents<PIX, maxValue, 2>(ptrs, r, g, b, a, bounds, roi, renderClone);
         case 3:
-            fillForDepthForComponents<PIX, maxValue, 3>(ptrs, r, g, b, a, bounds, roi, renderClone);
-            break;
+            return fillForDepthForComponents<PIX, maxValue, 3>(ptrs, r, g, b, a, bounds, roi, renderClone);
         case 4:
-            fillForDepthForComponents<PIX, maxValue, 4>(ptrs, r, g, b, a, bounds, roi, renderClone);
-            break;
+            return fillForDepthForComponents<PIX, maxValue, 4>(ptrs, r, g, b, a, bounds, roi, renderClone);
         default:
             break;
     }
+    return eActionStatusFailed;
 } // fillForDepth
 
 
-void
+ActionRetCodeEnum
 ImagePrivate::fillCPU(void* ptrs[4],
                       float r,
                       float g,
@@ -249,24 +270,21 @@ ImagePrivate::fillCPU(void* ptrs[4],
                       const EffectInstancePtr& renderClone)
 {
     if (r == 0 && g == 0 &&  b == 0 && a == 0) {
-        fillCPUBlack(ptrs, nComps, bitDepth, bounds, roi, renderClone);
-        return;
+        return fillCPUBlack(ptrs, nComps, bitDepth, bounds, roi, renderClone);
     }
 
     switch (bitDepth) {
         case eImageBitDepthByte:
-            fillForDepth<unsigned char, 255>(ptrs, r, g, b, a, nComps, bounds, roi, renderClone);
-            break;
+            return fillForDepth<unsigned char, 255>(ptrs, r, g, b, a, nComps, bounds, roi, renderClone);
         case eImageBitDepthFloat:
-            fillForDepth<float, 1>(ptrs, r, g, b, a, nComps, bounds, roi, renderClone);
-            break;
+            return fillForDepth<float, 1>(ptrs, r, g, b, a, nComps, bounds, roi, renderClone);
         case eImageBitDepthShort:
-            fillForDepth<unsigned short, 65535>(ptrs, r, g, b, a, nComps, bounds, roi, renderClone);
-            break;
+            return fillForDepth<unsigned short, 65535>(ptrs, r, g, b, a, nComps, bounds, roi, renderClone);
         case eImageBitDepthHalf:
         default:
             break;
     }
+    return eActionStatusFailed;
 
 
 } // fillCPU

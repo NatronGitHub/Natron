@@ -104,10 +104,6 @@ ImagePrivate::initAndFetchFromCache(const Image::InitStorageArgs& args)
     EffectInstancePtr effect = renderClone.lock();
     std::string pluginID;
     if (effect) {
-        // If the effect is aborted, do not even bother fetching all tiles
-        if (effect->isRenderAborted()) {
-            return eActionStatusAborted;
-        }
         pluginID = effect->getNode()->getPluginID();
     }
 
@@ -287,7 +283,10 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
                 return eActionStatusFailed;
             }
             Image::CopyPixelsArgs copyArgs;
-            copyArgs.roi = roi;
+
+            // Copy the full bounds since we are converting the OpenGL texture to RAM (we have no other choice since glReadPixels
+            // expect a buffer with the appropriate size)
+            copyArgs.roi = args.bounds;
             tmpImage->copyPixels(fromImage, copyArgs);
             *outImage = tmpImage;
             return eActionStatusOK;

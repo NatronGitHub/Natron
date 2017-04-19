@@ -881,7 +881,7 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
 
     bool mustConvertImage = false;
     StorageModeEnum storage = outArgs->image->getStorageMode();
-    StorageModeEnum preferredStorage = storage;
+    StorageModeEnum preferredStorage;
     if (inArgs.renderBackend) {
         switch (*inArgs.renderBackend) {
             case eRenderBackendTypeOpenGL: {
@@ -942,7 +942,13 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
 
         Image::InitStorageArgs initArgs;
         {
-            initArgs.bounds = outArgs->roiPixel;
+            // If the image is an OpenGL texture and we must convert it to CPU, we have to unpack in a buffer with the size of the bounds
+            // of the texture, so actually create a buffer with the appropriate size. Otherwise it would have to be done in Image::copyPixels
+            if (storage == eStorageModeGLTex && preferredStorage == eStorageModeRAM) {
+                initArgs.bounds = outArgs->image->getBounds();
+            } else {
+                initArgs.bounds = outArgs->roiPixel;
+            }
             initArgs.proxyScale = outArgs->image->getProxyScale();
             initArgs.mipMapLevel = outArgs->image->getMipMapLevel();
             initArgs.plane = preferredLayer;

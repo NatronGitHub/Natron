@@ -433,8 +433,7 @@ private:
 
     virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow) OVERRIDE FINAL
     {
-        ImagePrivate::fillCPU(_ptrs, _color.r, _color.g, _color.b, _color.a, _nComps, _bitDepth, _bounds, renderWindow, _effect);
-        return eActionStatusOK;
+        return ImagePrivate::fillCPU(_ptrs, _color.r, _color.g, _color.b, _color.a, _nComps, _bitDepth, _bounds, renderWindow, _effect);
     }
 };
 

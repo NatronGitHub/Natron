@@ -191,20 +191,20 @@ struct ImagePrivate
                        float a,
                        const GLImageStoragePtr& texture);
 
-    static void fillCPU(void* ptrs[4],
-                        float r,
-                        float g,
-                        float b,
-                        float a,
-                        int nComps,
-                        ImageBitDepthEnum bitDepth,
-                        const RectI& bounds,
-                        const RectI& roi,
-                        const EffectInstancePtr& renderClone);
+    static ActionRetCodeEnum fillCPU(void* ptrs[4],
+                                     float r,
+                                     float g,
+                                     float b,
+                                     float a,
+                                     int nComps,
+                                     ImageBitDepthEnum bitDepth,
+                                     const RectI& bounds,
+                                     const RectI& roi,
+                                     const EffectInstancePtr& renderClone);
 
     static ActionRetCodeEnum halveImage(const void* srcPtrs[4],
-                           int nComps,
-                           ImageBitDepthEnum bitdepth,
+                                        int nComps,
+                                        ImageBitDepthEnum bitdepth,
                            const RectI& srcBounds,
                            void* dstPtrs[4],
                            const RectI& dstBounds,

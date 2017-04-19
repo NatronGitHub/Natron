@@ -1549,9 +1549,10 @@ ViewerInstance::render(const RenderActionArgs& args)
         inArgs.inputNb = 0;
         inArgs.plane = &selectedLayer;
         bool ok = getImagePlane(inArgs, &outArgs);
-        (void)ok;
-        colorImage = outArgs.image;
-        alphaImage = colorImage;
+        if (ok) {
+            colorImage = outArgs.image;
+            alphaImage = colorImage;
+        }
     }
     if (displayChannels == eDisplayChannelsA || displayChannels == eDisplayChannelsMatte) {
 

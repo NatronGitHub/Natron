@@ -920,7 +920,7 @@ copyGLTexture(const GLImageStoragePtr& from,
 }
 
 template <typename GL>
-static void
+static ActionRetCodeEnum
 convertRGBAPackedCPUBufferToGLTextureInternal(const RAMImageStoragePtr& buffer,
                                               const RectI& roi,
                                               const GLImageStoragePtr& outTexture,
@@ -959,9 +959,10 @@ convertRGBAPackedCPUBufferToGLTextureInternal(const RAMImageStoragePtr& buffer,
     unsigned char* gpuData = (unsigned char*)GL::MapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     glCheckError(GL);
     if (!gpuData) {
-        throw std::bad_alloc();
+        return eActionStatusFailed;
     }
-
+    const RectI toBounds = outTexture->getBounds();
+    assert(toBounds.contains(roi));
     // Copy the CPU buffer to the PBO
     {
         const RectI fromBounds = buffer->getBounds();
@@ -974,9 +975,21 @@ convertRGBAPackedCPUBufferToGLTextureInternal(const RAMImageStoragePtr& buffer,
             unsigned char* dstData = gpuData;
             const unsigned char* srcPixels = Image::pixelAtStatic(roi.x1, roi.y1, fromBounds, srcNComps, dataSizeOf, srcBuffer);
             for (int y = roi.y1; y < roi.y2; ++y) {
+#ifdef DEBUG
+                float* dstLineData = (float*)dstData;
+                const float* srcLineData = (const float*)srcPixels;
+                for (int x = roi.x1; x < roi.x2; ++x, dstLineData += 4, srcLineData += srcNComps) {
+                    for (int c = 0; c < 4; ++c) {
+                        assert(srcLineData[c] == srcLineData[c]); // Check for NaNs
+                        dstLineData[c] = srcLineData[c];
+                    }
+                }
+#else
                 memcpy(dstData, srcPixels, pboRowBytes);
+#endif
                 srcPixels += srcRowBytes;
                 dstData += pboRowBytes;
+
             }
         }
 
@@ -993,17 +1006,17 @@ convertRGBAPackedCPUBufferToGLTextureInternal(const RAMImageStoragePtr& buffer,
 
     // bind the texture
     GL::BindTexture( target, outTextureID );
-
+    glCheckError(GL);
     // copy pixels from PBO to texture object
     // Use offset instead of pointer (last parameter is 0).
     GL::TexSubImage2D(target,
                       0,              // level
-                      roi.x1, roi.y1,               // xoffset, yoffset
+                      roi.x1 - toBounds.x1, roi.y1 - toBounds.y1,               // xoffset, yoffset
                       roi.width(), roi.height(),
                       outTexture->getGLTextureFormat(),            // format
                       outTexture->getGLTextureType(),       // type
                       0);
-
+    glCheckError(GL);
     GL::BindTexture(target, 0);
 
 
@@ -1011,11 +1024,11 @@ convertRGBAPackedCPUBufferToGLTextureInternal(const RAMImageStoragePtr& buffer,
     // Once bound with 0, all pixel operations are back to normal ways.
     GL::BindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
     glCheckError(GL);
-
+    return eActionStatusOK;
 }  // convertRGBAPackedCPUBufferToGLTextureInternal
 
 
-static void
+static ActionRetCodeEnum
 convertRGBAPackedCPUBufferToGLTexture(const RAMImageStoragePtr& buffer, const RectI& roi, const GLImageStoragePtr& outTexture)
 {
     OSGLContextPtr glContext = outTexture->getOpenGLContext();
@@ -1028,7 +1041,7 @@ convertRGBAPackedCPUBufferToGLTexture(const RAMImageStoragePtr& buffer, const Re
 }
 
 template <typename GL>
-static void
+static ActionRetCodeEnum
 convertGLTextureToRGBAPackedCPUBufferInternal(const GLImageStoragePtr& texture,
                                               const RectI& roi,
                                               const RAMImageStoragePtr& outBuffer,
@@ -1040,6 +1053,9 @@ convertGLTextureToRGBAPackedCPUBufferInternal(const GLImageStoragePtr& texture,
 
     // This function only supports reading to a RGBA float buffer.
     assert(outBuffer->getNumComponents() == 4 && outBuffer->getBitDepth() == eImageBitDepthFloat);
+
+    // glReadPixels expects the CPU buffer to have the appropriate size: we don't have any means to specify a stride.
+    assert(outBuffer->getBounds() == roi);
 
     GLuint fboID = glContext->getOrCreateFBOId();
 
@@ -1055,15 +1071,16 @@ convertGLTextureToRGBAPackedCPUBufferInternal(const GLImageStoragePtr& texture,
     GL::BindTexture( target, texID );
     GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, texID, 0 /*LoD*/);
 
-    GL::Viewport( roi.x1 - texBounds.x1, roi.y1 - texBounds.y1, roi.width(), roi.height() );
+    GL::Viewport( texBounds.x1, texBounds.y1, texBounds.width(), texBounds.height() );
     glCheckFramebufferError(GL);
 
     // Ensure all drawing commands are finished
+    // Transfer the texture to the CPU buffer. Note that we do not use a PBO here because we cannot let OpenGL do asynchronous drawing commands: we
+    // need the data now.
     GL::Flush();
     GL::Finish();
     glCheckError(GL);
 
-    // Transfer the texture to the CPU buffer
     {
         unsigned char* data = Image::pixelAtStatic(roi.x1, roi.y1, texBounds, outBuffer->getNumComponents(), getSizeOfForBitDepth(outBuffer->getBitDepth()), (unsigned char*)outBuffer->getData());
         GL::ReadPixels(roi.x1 - texBounds.x1, roi.y1 - texBounds.y1, roi.width(), roi.height(), texture->getGLTextureFormat(), texture->getGLTextureType(), (GLvoid*)data);
@@ -1072,19 +1089,20 @@ convertGLTextureToRGBAPackedCPUBufferInternal(const GLImageStoragePtr& texture,
     GL::BindTexture(target, 0);
     GL::BindFramebuffer(GL_FRAMEBUFFER, 0);
     glCheckError(GL);
+    return eActionStatusOK;
 
 } // convertGLTextureToRGBAPackedCPUBufferInternal
 
-static void
+static ActionRetCodeEnum
 convertGLTextureToRGBAPackedCPUBuffer(const GLImageStoragePtr& texture,
                                       const RectI& roi,
                                       const RAMImageStoragePtr& outBuffer,
                                       const OSGLContextPtr& glContext)
 {
     if (glContext->isGPUContext()) {
-        convertGLTextureToRGBAPackedCPUBufferInternal<GL_GPU>(texture, roi, outBuffer, glContext);
+        return convertGLTextureToRGBAPackedCPUBufferInternal<GL_GPU>(texture, roi, outBuffer, glContext);
     } else {
-        convertGLTextureToRGBAPackedCPUBufferInternal<GL_CPU>(texture, roi, outBuffer, glContext);
+        return convertGLTextureToRGBAPackedCPUBufferInternal<GL_CPU>(texture, roi, outBuffer, glContext);
     }
 }
 
@@ -1198,14 +1216,14 @@ ImagePrivate::copyPixelsInternal(const ImagePrivate* fromImage,
 
         // Save the current context
         OSGLContextSaver saveCurrentContext;
-
+        ActionRetCodeEnum stat;
         {
             // Ensure this context is attached
             OSGLContextAttacherPtr contextAttacher = OSGLContextAttacher::create(fromIsGLTexture->getOpenGLContext());
             contextAttacher->attach();
-            convertGLTextureToRGBAPackedCPUBuffer(fromIsGLTexture, args.roi, toIsRAMBuffer, contextAttacher->getContext());
+            stat = convertGLTextureToRGBAPackedCPUBuffer(fromIsGLTexture, args.roi, toIsRAMBuffer, contextAttacher->getContext());
         }
-        return eActionStatusOK;
+        return stat;
 
     } else if (fromImage->storage != eStorageModeGLTex && toImage->storage == eStorageModeGLTex) {
 
@@ -1224,14 +1242,15 @@ ImagePrivate::copyPixelsInternal(const ImagePrivate* fromImage,
         // Save the current context
         OSGLContextSaver saveCurrentContext;
 
+        ActionRetCodeEnum stat;
         {
             // Ensure this context is attached
             OSGLContextAttacherPtr contextAttacher = OSGLContextAttacher::create(toIsGLTexture->getOpenGLContext());
             contextAttacher->attach();
 
-            convertRGBAPackedCPUBufferToGLTexture(fromIsRAMBuffer, args.roi, toIsGLTexture);
+            stat = convertRGBAPackedCPUBufferToGLTexture(fromIsRAMBuffer, args.roi, toIsGLTexture);
         }
-        return eActionStatusOK;
+        return stat;
     } else {
 
         // CPU to CPU

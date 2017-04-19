@@ -3121,10 +3121,6 @@ RotoPaint::refreshRotoPaintTree()
     int globalMergeIndex = -1;
 
 
-    // Get the first global merge node.
-    globalMerge = _imp->getOrCreateGlobalMergeNode(blendingOperator, &globalMergeIndex);
-
-
     {
         NodesList mergeNodes;
         {
@@ -3143,6 +3139,12 @@ RotoPaint::refreshRotoPaintTree()
             (*it)->endInputEdition(false /*triggerRender*/);
         }
     }
+
+    
+
+    // Get the first global merge node.
+    globalMerge = _imp->getOrCreateGlobalMergeNode(blendingOperator, &globalMergeIndex);
+
 
     RotoPaintPtr rotoPaintEffect = toRotoPaint(getNode()->getEffectInstance());
     assert(rotoPaintEffect);

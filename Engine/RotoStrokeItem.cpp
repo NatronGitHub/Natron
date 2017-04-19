@@ -1237,9 +1237,7 @@ RotoStrokeItemPrivate::computeBoundingBox(TimeValue time, ViewIdx view) const
         }
 
     } // for all sub-strokes
-    if (_publicInterface->isRenderClone() && bbox.isNull()) {
-        assert(true);
-    }
+
     return bbox;
 } // RotoStrokeItem::computeBoundingBox
 

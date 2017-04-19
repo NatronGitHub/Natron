@@ -311,6 +311,7 @@ EffectInstance::Implementation::renderHandlerIdentity(const RectToRender & rectT
 {
 
     TreeRenderPtr render = _publicInterface->getCurrentRender();
+    const bool checkNaNs = render->isNaNHandlingEnabled();
 
     for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = args.cachedPlanes.begin(); it != args.cachedPlanes.end(); ++it) {
         boost::scoped_ptr<EffectInstance::GetImageInArgs> inArgs( new EffectInstance::GetImageInArgs() );
@@ -325,20 +326,46 @@ EffectInstance::Implementation::renderHandlerIdentity(const RectToRender & rectT
         inArgs->inputNb = rectToRender.identityInputNumber;
         inArgs->plane = &it->first;
 
+        RectI roi;
+        rectToRender.rect.intersect(it->second->getBounds(), &roi);
+
         GetImageOutArgs inputResults;
-        {
-            bool gotPlanes = _publicInterface->getImagePlane(*inArgs, &inputResults);
-            if (!gotPlanes) {
-                return eActionStatusFailed;
+
+        bool gotPlanes = _publicInterface->getImagePlane(*inArgs, &inputResults);
+        if (!gotPlanes) {
+            ActionRetCodeEnum stat = it->second->fillZero(roi);
+            if (isFailureRetCode(stat)) {
+                return stat;
+            }
+        } else {
+            Image::CopyPixelsArgs cpyArgs;
+            cpyArgs.roi = roi;
+            ActionRetCodeEnum stat = it->second->copyPixels(*inputResults.image, cpyArgs);
+            if (isFailureRetCode(stat)) {
+                return stat;
             }
         }
 
-        Image::CopyPixelsArgs cpyArgs;
-        rectToRender.rect.intersect(it->second->getBounds(), &cpyArgs.roi);
-        ActionRetCodeEnum stat = it->second->copyPixels(*inputResults.image, cpyArgs);
-        if (isFailureRetCode(stat)) {
-            return stat;
-        }
+        if (checkNaNs) {
+
+            if (!it->second->checkForNaNs(roi)) {
+                _publicInterface->getNode()->clearPersistentMessage(kNatronPersistentWarningCheckForNan);
+            } else {
+                QString warning;
+                warning.append( tr("NaN values detected in (") );
+                warning.append( QString::number(roi.x1) );
+                warning.append( QChar::fromLatin1(',') );
+                warning.append( QString::number(roi.y1) );
+                warning.append( QString::fromUtf8(")-(") );
+                warning.append( QString::number(roi.x2) );
+                warning.append( QChar::fromLatin1(',') );
+                warning.append( QString::number(roi.y2) );
+                warning.append( QString::fromUtf8("). ") );
+                warning.append( tr("They have been converted to 1") );
+                _publicInterface->getNode()->setPersistentMessage( eMessageTypeWarning, kNatronPersistentWarningCheckForNan, warning.toStdString() );
+            }
+        } // checkNaNs
+
     }
 
     return render->isRenderAborted() ? eActionStatusAborted : eActionStatusOK;
@@ -605,9 +632,8 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
             if (!it->second->checkForNaNs(rectToRender.rect)) {
                 _publicInterface->getNode()->clearPersistentMessage(kNatronPersistentWarningCheckForNan);
             } else {
-                QString warning = QString::fromUtf8( _publicInterface->getNode()->getScriptName_mt_safe().c_str() );
-                warning.append( QString::fromUtf8(": ") );
-                warning.append( tr("rendered rectangle (") );
+                QString warning;
+                warning.append( tr("NaN values detected in (") );
                 warning.append( QString::number(rectToRender.rect.x1) );
                 warning.append( QChar::fromLatin1(',') );
                 warning.append( QString::number(rectToRender.rect.y1) );
@@ -615,8 +641,8 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
                 warning.append( QString::number(rectToRender.rect.x2) );
                 warning.append( QChar::fromLatin1(',') );
                 warning.append( QString::number(rectToRender.rect.y2) );
-                warning.append( QString::fromUtf8(") ") );
-                warning.append( tr("contains NaN values. They have been converted to 1.") );
+                warning.append( QString::fromUtf8("). ") );
+                warning.append( tr("They have been converted to 1") );
                 _publicInterface->getNode()->setPersistentMessage( eMessageTypeWarning, kNatronPersistentWarningCheckForNan, warning.toStdString() );
             }
         } // checkNaNs
