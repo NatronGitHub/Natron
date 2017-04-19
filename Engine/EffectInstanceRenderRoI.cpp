@@ -555,7 +555,10 @@ EffectInstance::Implementation::checkRestToRender(bool updateTilesStateFromCache
             // If identity mark as rendered, and add to the RectToRender list.
             for (TileStateVector::iterator it = tilesState.state->tiles.begin(); it != tilesState.state->tiles.end(); ++it) {
 
-
+                if (it->status != eTileStatusNotRendered) {
+                    continue;
+                }
+                
                 if ( !it->bounds.intersects(inputRodIntersectionPixel) ) {
                     TimeValue identityInputTime;
                     int identityInputNb;

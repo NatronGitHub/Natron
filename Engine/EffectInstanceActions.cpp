@@ -1006,13 +1006,10 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
     const RenderScale mappedScale = renderScaleSupported ? scale : RenderScale(1.);
 
 
-    // When drawing a paint-stroke, never use the getRegionOfDefinition cache because the RoD changes at each render step
-    // but the hash does not (so that each draw step can re-use the same image.)
-    bool useCache = !isDuringPaintStrokeCreation();
 
     U64 hash = 0;
     // Get a hash to cache the results
-    if (useCache) {
+    {
         ComputeHashArgs hashArgs;
         hashArgs.time = time;
         hashArgs.view = view;
@@ -1027,7 +1024,7 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
     *results = GetRegionOfDefinitionResults::create(cacheKey);
 
     CacheEntryLockerBasePtr cacheAccess;
-    if (useCache) {
+    {
 
         cacheAccess = (*results)->getFromCache();
 

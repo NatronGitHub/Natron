@@ -281,6 +281,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
 
     // If this tile is identity, copy input image instead
     ActionRetCodeEnum stat;
+    //qDebug() << _publicInterface->getScriptName_mt_safe().c_str() << "render " << rectToRender.rect.x1 << rectToRender.rect.y1 << rectToRender.rect.x2 << rectToRender.rect.y2 << "(identity ? " << (rectToRender.identityInputNumber !=-1)<< ")" ;
     if (rectToRender.identityInputNumber != -1) {
         stat = renderHandlerIdentity(rectToRender, args);
     } else {

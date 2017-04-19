@@ -1008,7 +1008,6 @@ ViewerNode::disconnectTexture(int index,bool clearRod)
     }
 }
 
-#if 0
 void
 ViewerNode::clearLastRenderedImage()
 {
@@ -1019,7 +1018,6 @@ ViewerNode::clearLastRenderedImage()
         uiContext->clearLastRenderedImage();
     }
 }
-#endif
 
 double
 ViewerNode::getUIZoomFactor() const
@@ -1052,18 +1050,6 @@ ViewerNode::getMipMapLevelFromZoomFactor() const
     double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) );
     return std::log(closestPowerOf2) / M_LN2;
 
-}
-
-void
-ViewerNode::clearLastRenderedImage()
-{
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    OpenGLViewerI* uiContext = getUiContext();
-    if (!uiContext) {
-        return;
-    }
-    uiContext->clearLastRenderedImage();
 }
 
 void

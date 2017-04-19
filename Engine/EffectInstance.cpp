@@ -1357,6 +1357,7 @@ EffectInstance::clearLastRenderedImage()
     {
         QMutexLocker k(&_imp->common->accumBufferMutex);
         accumBuffer = _imp->common->accumBuffer;
+        _imp->common->accumBuffer.clear();
     }
     accumBuffer.clear();
 }
@@ -1402,7 +1403,21 @@ EffectInstance::isAccumulationEnabled() const
 bool
 EffectInstance::getAccumulationUpdateRoI(RectD* updateArea) const
 {
-    RotoStrokeItemPtr attachedStroke = toRotoStrokeItem(getAttachedRotoItem());
+    TreeRenderPtr render = getCurrentRender();
+    if (!render) {
+        return false;
+    }
+
+    RotoDrawableItemPtr activeItem = render->getCurrentlyDrawingItem();
+    if (!activeItem) {
+        return false;
+    }
+
+    FrameViewRenderKey renderKey;
+    renderKey.render = render;
+    renderKey.time = getCurrentRenderTime();
+    renderKey.view = getCurrentRenderView();
+    RotoStrokeItemPtr attachedStroke = toRotoStrokeItem(activeItem->createRenderClone(renderKey));
     if (!attachedStroke) {
         return false;
     }
