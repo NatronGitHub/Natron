@@ -845,9 +845,7 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(bool hasExclusiveLock,
                 // Initialize the status to rendered
                 stat = eTileStatusRenderedHighestQuality;
 
-#ifdef DEBUG
                 int nInvalid = 0;
-#endif
                 for (int i = 0; i < 4; ++i) {
 
                     tile->upscaleTiles[i].reset(new TileCacheIndex);
@@ -856,9 +854,7 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(bool hasExclusiveLock,
                         upscaledCords[i].tx >= perMipMapTilesState[lookupLevel -1].state->boundsRoundedToTileSize.x2 ||
                         upscaledCords[i].ty < perMipMapTilesState[lookupLevel -1].state->boundsRoundedToTileSize.y1 ||
                         upscaledCords[i].ty >= perMipMapTilesState[lookupLevel -1].state->boundsRoundedToTileSize.y2) {
-#ifdef DEBUG
                         ++nInvalid;
-#endif
                         continue;
                     }
 
@@ -894,9 +890,27 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(bool hasExclusiveLock,
                         break;
                     }
                 } // for each upscaled mipmap
-#ifdef DEBUG
+
+                // We may be in a non valid tile, e.g:
+                //
+                // Tile Size: 64 * 64
+                // Pixel RoD at level 2: -97, -32, 386, 250
+                // Pixel RoD at level 2 rounded to tile size: -128, -64, 448, 256
+
+                // Pixel RoD at level 1: -193, 44, 770, 499
+                // Pixel RoD at level 1 rounded to tile size: -256, -64, 832, 512
+                //
+                // Pixel RoD at level 0: -394, -86, 1538, 996
+                // Pixel RoD at level 0 rounded to tile size: -384, -128, 1600, 1024
+                //
+                // If we wanted to lookup at level 2, the tile with its bottom left corner being (-128, -64)
+                // We would need to lookup the following tiles at level 1: (-256, -128) (invalid), (-192, -128) (invalid), (-256, -64)(valid), (-192, -64)(valid)
+                // To in-turn lookup the valid tile at (-256, -64),
+                // We would need to lookup the following tiles at level 0: (-512, -128) (invalid), (-448, -128) (invalid), (-512, -64)(invalid), (-448, -64)(invalid): None of them are valid
+                if (nInvalid == 4) {
+                    stat = eTileStatusNotRendered;
+                }
                 assert(stat == eTileStatusNotRendered || (nInvalid == 0 || nInvalid == 2 || nInvalid == 3));
-#endif
             } // lookupLevel > 0
 
             *status = stat;

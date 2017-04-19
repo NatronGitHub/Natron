@@ -128,9 +128,17 @@ fillCPUBlackForDepth(void* ptrs[4],
 
         std::size_t rowSize = roi.width() * dstPixelStride * dataSizeOf;
 
-        for (int i = 0; i < 4; ++i) {
-            if (dstPixelPtrs[i]) {
-                memset(dstPixelPtrs[i], 0, rowSize);
+        if ((dstPixelPtrs[1] - dstPixelPtrs[0]) == 1) {
+            // If all channels belong to the same buffer, use memset
+            memset(dstPixelPtrs[0], 0, rowSize);
+        } else {
+            for (int i = 0; i < 4; ++i) {
+                if (dstPixelPtrs[i]) {
+                    PIX* dstPixels = dstPixelPtrs[i];
+                    for (int x = roi.x1; x < roi.x2; ++x, dstPixels += dstPixelStride) {
+                        *dstPixels = 0;
+                    }
+                }
             }
         }
 
@@ -146,19 +154,10 @@ fillCPUBlack(void* ptrs[4],
              const RectI& roi,
              const EffectInstancePtr& renderClone)
 {
-    if (roi == bounds) {
-        // memset the whole bounds at once
-        int nCompsPerPixel = nComps;
-        if (nComps > 1 && ptrs[1]) {
-            // Co-planar buffers have 1 comp
-            nCompsPerPixel = 1;
-        }
-        std::size_t planeSize = nCompsPerPixel * bounds.area() * getSizeOfForBitDepth(bitDepth);
-        for (int i = 0; i < 4; ++i) {
-            if (ptrs[i]) {
-                memset(ptrs[i], 0, planeSize);
-            }
-        }
+    // memset the whole bounds at once if we can.
+    if (roi == bounds && !ptrs[1]) {
+        std::size_t planeSize = nComps * bounds.area() * getSizeOfForBitDepth(bitDepth);
+        memset(ptrs[0], 0, planeSize);
     } else {
         switch (bitDepth) {
             case eImageBitDepthByte:
