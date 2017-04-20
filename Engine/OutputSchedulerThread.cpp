@@ -2360,11 +2360,14 @@ public:
         unsigned int mipMapLevel = getViewerMipMapLevel(viewer, draftModeEnabled, fullFrameProcessing);
         bool byPassCache = viewer->isRenderWithoutCacheEnabledAndTurnOff();
 
+        ViewerInstancePtr viewerProcess = viewer->getViewerProcessNode(viewerProcess_i);
+        outArgs->viewerProcessNode = viewerProcess->getNode();
+
         RectD roi;
         if (roiParam) {
             roi = *roiParam;
         } else if (!fullFrameProcessing) {
-            roi = viewer->getUiContext()->getImageRectangleDisplayed();
+            roi = viewerProcess->getViewerRoI();
         }
         outArgs->activeStrokeItem = activeStroke;
         outArgs->isPlayback = isPlayback;
@@ -2383,7 +2386,6 @@ public:
                 outArgs->colorPickerInputNode = outArgs->colorPickerNode->getInput(mainInput);
             }
         }
-        outArgs->viewerProcessNode = viewer->getViewerProcessNode(viewerProcess_i)->getNode();
         createRenderViewerObject(outArgs);
         bufferedFrame->canonicalRoi[viewerProcess_i] = roi;
 

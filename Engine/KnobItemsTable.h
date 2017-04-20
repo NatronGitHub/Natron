@@ -566,6 +566,13 @@ public:
     bool isDropFromExternalSourceSupported() const;
 
     /**
+     * @brief Set whether the user keyframe widgets (go to previous/go to next/add key) etc... should
+     * be created or not
+     **/
+    void setUserKeyframesWidgetsEnabled(bool enabled);
+    bool isUserKeyframesWidgetsEnabled() const;
+
+    /**
      * @brief The path where to look for icons
      **/
     void setIconsPath(const std::string& iconPath);

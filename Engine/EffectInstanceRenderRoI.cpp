@@ -161,6 +161,7 @@ EffectInstance::Implementation::handlePassThroughPlanes(const FrameViewRequestPt
             // If the effect is not set to "All plane" and the pass-through input nb is not set then fail
             if (!processAllLayers) {
                 if (passThroughInputNb == -1) {
+                    //_publicInterface->getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorGenericRenderMessage, _publicInterface->tr("Could not fetch plane \"%1\" because it is not available on this node").arg(QString::fromUtf8(plane.getPlaneLabel().c_str())).toStdString());
                     return eActionStatusFailed;
                 } else {
                     // Fetch the plane on the pass-through input
@@ -367,7 +368,7 @@ EffectInstance::Implementation::lookupCachedImage(unsigned int mipMapLevel,
     if (!*image) {
         *image = createCachedImage(pixelRoi, perMipMapPixelRoD, mipMapLevel, proxyScale, plane, backend, cachePolicy, true /*delayAllocation*/);
     } else {
-        ActionRetCodeEnum stat = (*image)->ensureBounds(pixelRoi);
+        ActionRetCodeEnum stat = (*image)->ensureBounds(pixelRoi, mipMapLevel, perMipMapPixelRoD);
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -554,7 +555,10 @@ EffectInstance::Implementation::checkRestToRender(bool updateTilesStateFromCache
             // If identity mark as rendered, and add to the RectToRender list.
             for (TileStateVector::iterator it = tilesState.state->tiles.begin(); it != tilesState.state->tiles.end(); ++it) {
 
-
+                if (it->status != eTileStatusNotRendered) {
+                    continue;
+                }
+                
                 if ( !it->bounds.intersects(inputRodIntersectionPixel) ) {
                     TimeValue identityInputTime;
                     int identityInputNb;
@@ -1217,6 +1221,10 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
     // of the function that the RoI was Null, either the RoD was checked for NULL.
     assert(!renderMappedRoI.isNull());
 
+    // Round the roi to the tile size if the render is cached
+    ImageBitDepthEnum outputBitDepth = getBitDepth(-1);
+    int tileWidth, tileHeight;
+    CacheBase::getTileSizePx(outputBitDepth, &tileWidth, &tileHeight);
 
 
     if (!getCurrentSupportTiles()) {
@@ -1224,22 +1232,13 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
         renderMappedRoI = perMipMapLevelRoDPixel[mappedMipMapLevel];
     } else {
 
-        // Round the roi to the tile size if the render is cached
-        ImageBitDepthEnum outputBitDepth = getBitDepth(-1);
-        int tileWidth, tileHeight;
-        CacheBase::getTileSizePx(outputBitDepth, &tileWidth, &tileHeight);
         renderMappedRoI.roundToTileSize(tileWidth, tileHeight);
-
 
         // Make sure the RoI falls within the image bounds
         if ( !renderMappedRoI.intersect(perMipMapLevelRoDPixel[mappedMipMapLevel], &renderMappedRoI) ) {
             requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusRendered);
             return eActionStatusOK;
         }
-
-        // The RoI falls into the effect pixel region of definition
-        assert(renderMappedRoI.x1 >= perMipMapLevelRoDPixel[mappedMipMapLevel].x1 && renderMappedRoI.y1 >= perMipMapLevelRoDPixel[mappedMipMapLevel].y1 &&
-               renderMappedRoI.x2 <= perMipMapLevelRoDPixel[mappedMipMapLevel].x2 && renderMappedRoI.y2 <= perMipMapLevelRoDPixel[mappedMipMapLevel].y2);
     }
 
     assert(!renderMappedRoI.isNull());
@@ -1269,6 +1268,14 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
     RectI downscaledRoI;
     roundedCanonicalRoI.toPixelEnclosing(downscaledCombinedScale, par, &downscaledRoI);
 
+    downscaledRoI.roundToTileSize(tileWidth, tileHeight);
+
+    // Make sure the RoI falls within the image bounds
+    if ( !downscaledRoI.intersect(perMipMapLevelRoDPixel[requestData->getMipMapLevel()], &downscaledRoI) ) {
+        requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusRendered);
+        return eActionStatusOK;
+    }
+
 
     // Get the render device
     RenderBackendTypeEnum backendType;
@@ -1285,7 +1292,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
 
     
 
-    const bool isAccumulating = false; //isAccumulationEnabled();
+    const bool isAccumulating = isAccumulationEnabled();
 
 
     // Should the output of this render be cached ?
@@ -1343,9 +1350,13 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
         // When accumulating, re-use the same buffer of previous steps and resize it if needed.
         // Note that in this mode only a single plane can be rendered at once and the plug-in render safety must
         // allow only a single thread to run
-        ImagePtr accumBuffer = getAccumBuffer();
+        ImagePtr accumBuffer = getAccumBuffer(requestData->getPlaneDesc());
+        if (accumBuffer && accumBuffer->getMipMapLevel() != mappedMipMapLevel) {
+            accumBuffer.reset();
+        }
 
         if (isAccumulating && accumBuffer) {
+
             // When drawing with a paint brush, we may only render the bounding box of the un-rendered points.
             RectD updateAreaCanonical;
             if (getAccumulationUpdateRoI(&updateAreaCanonical)) {
@@ -1409,7 +1420,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
 
         // Set the accumulation buffer if it was not already set
         if (isAccumulating && !accumBuffer) {
-            setAccumBuffer(requestedImageScale);
+            setAccumBuffer(requestData->getPlaneDesc(), requestedImageScale);
         }
 
         requestData->initStatus(requestStatus);
@@ -1532,6 +1543,9 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPa
     assert(fullscalePlane);
     fullscalePlane->ensureBuffersAllocated();
 
+    cachedImagePlanes[requestData->getPlaneDesc()] = fullscalePlane;
+
+
     RenderBackendTypeEnum backendType = requestData->getRenderDevice();
 
     const bool renderAllProducedPlanes = isAllProducedPlanesAtOncePreferred();
@@ -1539,7 +1553,7 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPa
     for (std::list<ImagePlaneDesc>::const_iterator it = producedPlanes.begin(); it != producedPlanes.end(); ++it) {
         ImagePtr imagePlane;
         if (*it == requestData->getPlaneDesc()) {
-            imagePlane = fullscalePlane;
+            continue;
         } else {
             if (!renderAllProducedPlanes) {
                 continue;
@@ -1649,6 +1663,18 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPa
 
         RectI downscaledRoI;
         requestData->getCurrentRoI().toPixelEnclosing(downscaledCombinedScale, par, &downscaledRoI);
+
+
+        ImageBitDepthEnum outputBitDepth = getBitDepth(-1);
+        int tileWidth, tileHeight;
+        CacheBase::getTileSizePx(outputBitDepth, &tileWidth, &tileHeight);
+        downscaledRoI.roundToTileSize(tileWidth, tileHeight);
+        // Make sure the RoI falls within the image bounds
+        if ( !downscaledRoI.intersect(perMipMapLevelRoDPixel[requestData->getMipMapLevel()], &downscaledRoI) ) {
+            requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusRendered);
+            return eActionStatusOK;
+        }
+
 
 
         // Since the node does not support render scale, we cached the image, thus we can just fetch the image

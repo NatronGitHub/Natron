@@ -46,9 +46,9 @@ ViewerNode::createPlugin()
     ret->setProperty<int>(kNatronPluginPropShortcut, (int)Key_I, 0);
     ret->setProperty<int>(kNatronPluginPropShortcut, (int)eKeyboardModifierControl, 1
                           );
-    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamClipToFormat, kViewerNodeParamClipToFormatLabel, kViewerNodeParamClipToFormatHint, Key_C, eKeyboardModifierShift) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerInstanceParamClipToFormat, kViewerInstanceParamClipToFormatLabel, kViewerInstanceParamClipToFormatHint, Key_C, eKeyboardModifierShift) );
     ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamFullFrame, kViewerNodeParamFullFrameLabel, kViewerNodeParamFullFrameHint) );
-    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamEnableUserRoI, kViewerNodeParamEnableUserRoILabel, kViewerNodeParamEnableUserRoIHint, Key_W, eKeyboardModifierShift) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerInstanceParamEnableUserRoI, kViewerInstanceParamEnableUserRoILabel, kViewerInstanceParamEnableUserRoIHint, Key_W, eKeyboardModifierShift) );
     ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamPauseRender, kViewerNodeParamPauseRenderLabel, kViewerNodeParamPauseRenderHint, Key_P) );
     ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamEnableGain, kViewerNodeParamEnableGainLabel, kViewerNodeParamEnableGainHint) );
     ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamEnableAutoContrast, kViewerNodeParamEnableAutoContrastLabel, kViewerNodeParamEnableAutoContrastHint) );
@@ -359,6 +359,18 @@ ViewerNode::createViewerProcessNode()
 
         KnobIPtr viewerProcessAutoColorspaceKnob = internalViewerNode[i]->getKnobByName(kViewerInstanceParamColorspace);
         viewerProcessAutoColorspaceKnob->linkTo(_imp->colorspaceKnob.lock());
+
+        KnobIPtr userRoiEnabledKnob = internalViewerNode[i]->getKnobByName(kViewerInstanceParamEnableUserRoI);
+        userRoiEnabledKnob->linkTo(_imp->toggleUserRoIButtonKnob.lock());
+
+        KnobIPtr userRoiBtmLeftKnob = internalViewerNode[i]->getKnobByName(kViewerInstanceParamUserRoIBottomLeft);
+        userRoiBtmLeftKnob->linkTo(_imp->userRoIBtmLeftKnob.lock());
+
+        KnobIPtr userRoiSizeKnob = internalViewerNode[i]->getKnobByName(kViewerInstanceParamUserRoISize);
+        userRoiSizeKnob->linkTo(_imp->userRoISizeKnob.lock());
+
+        KnobIPtr clipToFormatKnob = internalViewerNode[i]->getKnobByName(kViewerInstanceParamClipToFormat);
+        clipToFormatKnob->linkTo(_imp->clipToFormatButtonKnob.lock());
 
 
         // A ViewerNode is composed of 2 ViewerProcess nodes but it only has 1 layer and 1 alpha channel choices.
@@ -996,7 +1008,6 @@ ViewerNode::disconnectTexture(int index,bool clearRod)
     }
 }
 
-#if 0
 void
 ViewerNode::clearLastRenderedImage()
 {
@@ -1007,7 +1018,6 @@ ViewerNode::clearLastRenderedImage()
         uiContext->clearLastRenderedImage();
     }
 }
-#endif
 
 double
 ViewerNode::getUIZoomFactor() const
@@ -1040,18 +1050,6 @@ ViewerNode::getMipMapLevelFromZoomFactor() const
     double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) );
     return std::log(closestPowerOf2) / M_LN2;
 
-}
-
-void
-ViewerNode::clearLastRenderedImage()
-{
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    OpenGLViewerI* uiContext = getUiContext();
-    if (!uiContext) {
-        return;
-    }
-    uiContext->clearLastRenderedImage();
 }
 
 void

@@ -1869,7 +1869,7 @@ RotoPaintInteract::drawOverlay(TimeValue time,
                 }
 
                 std::list<std::list<std::pair<Point, double> > > strokes;
-                isStroke->evaluateStroke(0, time, view, &strokes);
+                isStroke->evaluateStroke(RenderScale(1.), time, view, &strokes);
                 bool locked = (*it)->isLockedRecursive();
                 ColorRgbaD overlayColor(0.8, 0.8, 0.8, 1.);
                 if (!locked) {
@@ -2168,7 +2168,7 @@ RotoPaintInteract::drawOverlay(TimeValue time,
 
 
 
-        if ( _imp->nodeType == RotoPaint::eRotoPaintTypeRotoPaint &&
+        if ( (_imp->nodeType == RotoPaint::eRotoPaintTypeRotoPaint || _imp->nodeType == RotoPaint::eRotoPaintTypeRoto) &&
             ( ( selectedRole == eRotoRoleMergeBrush) ||
              ( selectedRole == eRotoRolePaintBrush) ||
              ( selectedRole == eRotoRoleEffectBrush) ||

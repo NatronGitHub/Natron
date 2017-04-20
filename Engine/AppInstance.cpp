@@ -1447,9 +1447,7 @@ AppInstance::clearOpenFXPluginsCaches()
 void
 AppInstance::clearAllLastRenderedImages()
 {
-    NodesList activeNodes;
-
-    _imp->_currentProject->getNodes_recursive(activeNodes, false);
+    NodesList activeNodes = _imp->_currentProject->getNodes();
 
     for (NodesList::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
         (*it)->getEffectInstance()->clearLastRenderedImage();

@@ -1091,6 +1091,9 @@ GuiAppInstance::setUserIsPainting(const RotoStrokeItemPtr& stroke)
         QMutexLocker k(&_imp->rotoDataMutex);
         _imp->strokeBeingPainted = stroke;
     }
+    if (!stroke) {
+        clearAllLastRenderedImages();
+    }
 }
 
 RotoStrokeItemPtr

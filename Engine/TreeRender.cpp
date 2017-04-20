@@ -228,6 +228,11 @@ TreeRender::getCPUOpenGLContext() const
     return _imp->cpuOpenGLContext.lock();
 }
 
+RotoDrawableItemPtr
+TreeRender::getCurrentlyDrawingItem() const
+{
+    return _imp->ctorArgs->activeRotoDrawableItem;
+}
 
 bool
 TreeRender::isRenderAborted() const

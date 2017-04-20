@@ -1522,7 +1522,7 @@ NodeGroup::clearLastRenderedImage()
     NodesList nodes = getNodes();
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        (*it)->getEffectInstance()->purgeCaches_public();
+        (*it)->getEffectInstance()->clearLastRenderedImage();
     }
 }
 

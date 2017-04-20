@@ -986,14 +986,6 @@ ViewerGL::getImageRectangleDisplayed() const
         visibleArea.y1 = bottomRight.y();
     }
 
-
-    ViewerNodePtr viewerNode = getInternalNode();
-    bool userRoiEnabled = viewerNode->isUserRoIEnabled();
-    if (userRoiEnabled) {
-        RectD userRoI = viewerNode->getUserRoI();
-        visibleArea.intersect(userRoI, &visibleArea);
-    }
-
     return visibleArea;
 } // ViewerGL::getImageRectangleDisplayed
 
@@ -1597,8 +1589,6 @@ ViewerGL::penMotionInternal(int x,
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
         zoomPos = _imp->zoomCtx.toZoomCoordinates(x, y);
-        //zoomScreenPixelWidth = _imp->zoomCtx.screenPixelWidth();
-        //zoomScreenPixelHeight = _imp->zoomCtx.screenPixelHeight();
     }
 
     ViewerNodePtr viewerNode = getInternalNode();
@@ -1954,7 +1944,7 @@ ViewerGL::checkIfViewPortRoIValidOrRenderForInput(int texIndex)
     }
 
 
-    RectD roiCanonical = getImageRectangleDisplayed();
+    RectD roiCanonical = viewerNode->getViewerProcessNode(texIndex)->getViewerRoI();
 
     QMutexLocker k(&_imp->displayDataMutex);
     if (_imp->displayTextures[texIndex].mipMapLevel != mipMapLevel) {

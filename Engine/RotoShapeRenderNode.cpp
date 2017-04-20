@@ -45,7 +45,7 @@
 #include "Engine/RotoPaint.h"
 
 #ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
-//#define ROTO_SHAPE_RENDER_CPU_USES_CAIRO
+#define ROTO_SHAPE_RENDER_CPU_USES_CAIRO
 #endif
 
 NATRON_NAMESPACE_ENTER;
@@ -276,12 +276,26 @@ RotoShapeRenderNode::getLayersProducedAndNeeded(TimeValue time,
     if (renderType_i == 1) { // Smear
         return EffectInstance::getLayersProducedAndNeeded(time, view, inputLayersNeeded, layersProduced, passThroughTime, passThroughView, passThroughInputNb);
     } else {
+
         // Solid
         ImagePlaneDesc inputPlane, pairedInputPlane;
         getMetadataComponents(0, &inputPlane, &pairedInputPlane);
+
         (*inputLayersNeeded)[0].push_back(inputPlane);
 
-        {
+        // If we are identity, we do not produce the RotoMask plane
+        IsIdentityResultsPtr identityResults;
+        int identityInputNb = -1;
+        RectI outputFormat = getOutputFormat();
+        ActionRetCodeEnum stat = isIdentity_public(true, time, RenderScale(1.), outputFormat, view, inputPlane, &identityResults);
+        if (!isFailureRetCode(stat)) {
+            TimeValue identityTime;
+            ViewIdx identityView;
+            ImagePlaneDesc identityPlane;
+            identityResults->getIdentityData(&identityInputNb, &identityTime, &identityView, &identityPlane);
+        }
+
+        if (identityInputNb == -1) {
             std::vector<std::string> channels(1);
             channels[0] = "A";
             ImagePlaneDesc rotoMaskPlane("RotoMask", "", "Alpha", channels);
@@ -545,7 +559,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                 }
 
                 // Figure out the opacity
-                double opacity = rotoItem->getOpacityKnob()->getValueAtTime(args.time, DimIdx(0), args.view);
+                double opacity = rotoItem->getOpacityKnob() ? rotoItem->getOpacityKnob()->getValueAtTime(args.time, DimIdx(0), args.view) : 1.;
 
                 // For a stroke or an opened bezier, use the generic stroke algorithm
                 if ( isStroke || ( isBezier && isBezier->isOpenBezier() ) ) {
@@ -621,7 +635,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                 if (!glContext->isGPUContext() && strokeStartPointIndex == 0) {
                     // Ensure the tmp texture has correct size
                     assert(_imp->osmesaSmearTmpTexture);
-                    ActionRetCodeEnum stat = _imp->osmesaSmearTmpTexture->ensureBounds(outputPlane.second->getBounds());
+                    ActionRetCodeEnum stat = _imp->osmesaSmearTmpTexture->ensureBounds(outputPlane.second->getBounds(), args.mipMapLevel, std::vector<RectI>());
                     if (isFailureRetCode(stat)) {
                         return stat;
                     }

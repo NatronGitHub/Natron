@@ -92,8 +92,12 @@ public:
     /**
      * @brief Ensure the given RoI is tracked by the tiles state map. This function does not grow the associated storage
      * and assumes that the caller has taken care that the storage size matches the unioned roi
+     * Note that this function only works if this ImageCacheEntry has a cachePolicy of eCacheAccessModeNone.
+     * @param roi The ImageCacheEntry will grow its internal state to include at least this area
+     * @param perMipMapLevelRoDPixel For each mipmap level, the new RoD in pixel coordinates
      **/
-    void ensureRoI(const RectI& roi);
+    void ensureRoI(const RectI& roi,
+                   const std::vector<RectI>& perMipMapLevelRoDPixel);
 
 
     /**

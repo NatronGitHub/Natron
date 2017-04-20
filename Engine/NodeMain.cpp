@@ -240,6 +240,7 @@ Node::load(const CreateNodeArgsPtr& args)
     }
 #endif
 
+    _imp->effect->onMetadataChanged_nonRecursive_public();
 
     // Refresh dynamic props such as tiles support, OpenGL support, multi-thread etc...
     _imp->effect->refreshDynamicProperties();

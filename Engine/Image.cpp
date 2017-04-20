@@ -223,7 +223,7 @@ Image::copyPixels(const Image& other, const CopyPixelsArgs& args)
     if (!other._imp->originalBounds.intersect(args.roi, &roi)) {
         return eActionStatusOK;
     }
-    if (!_imp->originalBounds.intersect(args.roi, &roi)) {
+    if (!_imp->originalBounds.intersect(roi, &roi)) {
         return eActionStatusOK;
     }
 
@@ -263,10 +263,11 @@ Image::copyPixels(const Image& other, const CopyPixelsArgs& args)
 
     const Image* fromImage = tmpImage? tmpImage.get() : &other;
 
-    assert(_imp->originalBounds.contains(args.roi) && other._imp->originalBounds.contains(args.roi));
+    assert(_imp->originalBounds.contains(roi) && other._imp->originalBounds.contains(roi));
 
     // Ensure the channelIndex to copy from/to is valid according to the number of components of the image
     CopyPixelsArgs tmpArgs = args;
+    tmpArgs.roi = roi;
     if (tmpArgs.alphaHandling == eAlphaChannelHandlingFillFromChannel) {
         if (tmpArgs.conversionChannel < 0 || tmpArgs.conversionChannel >= (int)fromImage->getComponentsCount()) {
             if (fromImage->getComponentsCount() == 4) {
@@ -432,8 +433,7 @@ private:
 
     virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow) OVERRIDE FINAL
     {
-        ImagePrivate::fillCPU(_ptrs, _color.r, _color.g, _color.b, _color.a, _nComps, _bitDepth, _bounds, renderWindow, _effect);
-        return eActionStatusOK;
+        return ImagePrivate::fillCPU(_ptrs, _color.r, _color.g, _color.b, _color.a, _nComps, _bitDepth, _bounds, renderWindow, _effect);
     }
 };
 
@@ -482,7 +482,9 @@ Image::fillBoundsZero()
 }
 
 ActionRetCodeEnum
-Image::ensureBounds(const RectI& roi)
+Image::ensureBounds(const RectI& roi,
+                    unsigned int mipmapLevel,
+                    const std::vector<RectI>& perMipMapLevelRoDPixel)
 {
     if (_imp->originalBounds.contains(roi)) {
         return eActionStatusOK;
@@ -501,7 +503,9 @@ Image::ensureBounds(const RectI& roi)
         initArgs.bufferFormat = getBufferFormat();
         initArgs.storage = getStorageMode();
         initArgs.mipMapLevel = getMipMapLevel();
+        assert(mipmapLevel == initArgs.mipMapLevel);
         initArgs.proxyScale = getProxyScale();
+        initArgs.renderClone = _imp->renderClone.lock();
         GLImageStoragePtr isGlEntry = getGLImageStorage();
         if (isGlEntry) {
             initArgs.textureTarget = isGlEntry->getGLTextureTarget();
@@ -511,6 +515,10 @@ Image::ensureBounds(const RectI& roi)
         if (!tmpImage) {
             return eActionStatusFailed;
         }
+        ActionRetCodeEnum stat = tmpImage->fillBoundsZero();
+        if (isFailureRetCode(stat)) {
+            return stat;
+        }
     }
     Image::CopyPixelsArgs cpyArgs;
     cpyArgs.roi = oldBounds;
@@ -518,10 +526,15 @@ Image::ensureBounds(const RectI& roi)
 
     // Swap images so that this image becomes the resized one, but keep the internal cache entry object
     ImageCacheEntryPtr internalCacheEntry = _imp->cacheEntry;
+    CacheAccessModeEnum cachePolicy = getCachePolicy();
     _imp.swap(tmpImage->_imp);
+    _imp->cachePolicy = cachePolicy;
     _imp->_publicInterface = this;
-    _imp->cacheEntry = internalCacheEntry;
-    _imp->cacheEntry->ensureRoI(roi);
+    if (internalCacheEntry) {
+        assert(perMipMapLevelRoDPixel.size() >= _imp->mipMapLevel + 1);
+        _imp->cacheEntry = internalCacheEntry;
+        _imp->cacheEntry->ensureRoI(roi, perMipMapLevelRoDPixel);
+    }
     return eActionStatusOK;
 
 } // ensureBounds
