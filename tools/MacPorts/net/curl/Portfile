@@ -3,7 +3,7 @@
 PortSystem                      1.0
 
 name                            curl
-version                         7.53.1
+version                         7.54.0
 categories                      net www
 platforms                       darwin freebsd
 maintainers                     ryandesign
@@ -27,8 +27,8 @@ set curl_distfile               ${distfiles}
 distfiles                       ${curl_distfile}:curl
 
 checksums                       ${curl_distfile} \
-                                rmd160  9b8bee9e4833d65a4531c86a34011817aa1fea36 \
-                                sha256  1c7207c06d75e9136a944a2e0528337ce76f15b9ec9ae4bb30d703b59bf530e8
+                                rmd160  853ff262182b071c5cf93ffecaf6ee049c3fffc7 \
+                                sha256  f50ebaf43c507fa7cc32be4b8108fa8bbd0f5022e90794388f3c7694a302ff06
 
 if {${name} eq ${subport}} {
     PortGroup                   muniversal 1.0
@@ -211,7 +211,7 @@ if {${name} eq ${subport}} {
 }
 
 subport curl-ca-bundle {
-    revision                    1
+    revision                    0
     categories                  net
     license                     {MPL-2 LGPL-2.1+}
     supported_archs             noarch
