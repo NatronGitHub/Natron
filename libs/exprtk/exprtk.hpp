@@ -4709,8 +4709,8 @@ namespace exprtk
                   case e_xnor   : return xnor_opr<T>(arg0,arg1);
                   case e_root   : return root<T>    (arg0,arg1);
                   case e_roundn : return roundn<T>  (arg0,arg1);
-                  case e_equal  : return equal<T>   (arg0,arg1);
-                  case e_nequal : return nequal<T>  (arg0,arg1);
+                  case e_equal  : return equal      (arg0,arg1);
+                  case e_nequal : return nequal     (arg0,arg1);
                   case e_hypot  : return hypot<T>   (arg0,arg1);
                   case e_shr    : return shr<T>     (arg0,arg1);
                   case e_shl    : return shl<T>     (arg0,arg1);
@@ -11971,7 +11971,7 @@ namespace exprtk
       struct equal_op : public opr_base<T>
       {
          typedef typename opr_base<T>::Type Type;
-         static inline T process(Type t1, Type t2) { return (numeric::equal<T>(t1,t2) ? T(1) : T(0)); }
+         static inline T process(Type t1, Type t2) { return numeric::equal(t1,t2); }
          static inline T process(const std::string& t1, const std::string& t2) { return ((t1 == t2) ? T(1) : T(0)); }
          static inline typename expression_node<T>::node_type type() { return expression_node<T>::e_eq; }
          static inline details::operator_type operation() { return details::e_equal; }
@@ -22635,7 +22635,7 @@ namespace exprtk
          // Perform compile-time range check
          if (details::is_constant_node(index_expr))
          {
-            const std::size_t index    = std::size_t(index_expr->value());
+            const std::size_t index    = static_cast<std::size_t>(details::numeric::to_int32(index_expr->value()));
             const std::size_t vec_size = vec->size();
 
             if (index >= vec_size)
@@ -26571,12 +26571,14 @@ namespace exprtk
             else if (all_nodes_variables(arg_list))
                return varnode_optimise_varargfunc(operation,arg_list);
 
+            #ifndef exprtk_disable_string_capabilities
             if (details::e_smulti == operation)
             {
                return node_allocator_->
                  allocate<details::str_vararg_node<Type,details::vararg_multi_op<Type> > >(arg_list);
             }
             else
+            #endif
             {
                switch (operation)
                {
@@ -33731,6 +33733,12 @@ namespace exprtk
          register_sf3(24) register_sf3(25) register_sf3(26) register_sf3(27)
          register_sf3(28) register_sf3(29) register_sf3(30)
          #undef register_sf3
+
+         #define register_sf3_extid(Id, Op)                                        \
+         sf3_map[Id] = pair_t(details::sf##Op##_op<T>::process,details::e_sf##Op); \
+
+         register_sf3_extid("(t-t)-t",23)  // (t-t)-t --> t-(t+t)
+         #undef register_sf3_extid
       }
 
       inline void load_sf4_map(sf4_map_t& sf4_map)
