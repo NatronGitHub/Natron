@@ -475,6 +475,7 @@ public:
                                           int inputNbInRequester,
                                           const RenderScale& renderScale,
                                           const RectD& canonicalRoi,
+                                          bool draftRender,
                                           bool *concatenated);
 
 

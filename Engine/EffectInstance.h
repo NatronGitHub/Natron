@@ -629,9 +629,10 @@ public:
      * the bottom will do the final rendering.
      **/
     ActionRetCodeEnum getDistortion_public(TimeValue time,
-                                    const RenderScale & renderScale,
-                                    ViewIdx view,
-                                    GetDistortionResultsPtr* results) WARN_UNUSED_RETURN;
+                                           const RenderScale & renderScale,
+                                           bool draftRender,
+                                           ViewIdx view,
+                                           GetDistortionResultsPtr* results) WARN_UNUSED_RETURN;
 
 
 
@@ -640,9 +641,10 @@ protected:
 
 
     virtual ActionRetCodeEnum getDistortion(TimeValue time,
-                                     const RenderScale & renderScale,
-                                     ViewIdx view,
-                                     DistortionFunction2D* distortion) WARN_UNUSED_RETURN;
+                                            const RenderScale & renderScale,
+                                            bool draftRender,
+                                            ViewIdx view,
+                                            DistortionFunction2D* distortion) WARN_UNUSED_RETURN;
     
 public:
 

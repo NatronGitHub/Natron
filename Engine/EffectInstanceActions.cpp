@@ -724,9 +724,10 @@ EffectInstance::endSequenceRender_public(double first,
 
 ActionRetCodeEnum
 EffectInstance::getDistortion(TimeValue /*time*/,
-                                 const RenderScale & /*renderScale*/,
-                                 ViewIdx /*view*/,
-                                 DistortionFunction2D* /*distortion*/)
+                              const RenderScale & /*renderScale*/,
+                              bool /*draftRender*/,
+                              ViewIdx /*view*/,
+                              DistortionFunction2D* /*distortion*/)
 {
     return eActionStatusReplyDefault;
 }
@@ -734,6 +735,7 @@ EffectInstance::getDistortion(TimeValue /*time*/,
 ActionRetCodeEnum
 EffectInstance::getDistortion_public(TimeValue inArgsTime,
                                      const RenderScale & renderScale,
+                                     bool draftRender,
                                      ViewIdx view,
                                      GetDistortionResultsPtr* results) {
     assert(results);
@@ -820,7 +822,7 @@ EffectInstance::getDistortion_public(TimeValue inArgsTime,
 
         DistortionFunction2DPtr disto(new DistortionFunction2D);
         // Call the action
-        ActionRetCodeEnum stat = getDistortion(time, mappedScale, view, disto.get());
+        ActionRetCodeEnum stat = getDistortion(time, mappedScale, draftRender, view, disto.get());
         if (isFailureRetCode(stat)) {
             return stat;
         }

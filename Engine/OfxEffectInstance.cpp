@@ -2255,6 +2255,7 @@ OfxEffectInstance::getInputCanReceiveDistortion(int inputNb) const
 ActionRetCodeEnum
 OfxEffectInstance::getDistortion(TimeValue time,
                                  const RenderScale & renderScale, //< the plug-in accepted scale
+                                 bool draftRender,
                                  ViewIdx view,
                                  DistortionFunction2D* distortion)
 {
@@ -2262,6 +2263,7 @@ OfxEffectInstance::getDistortion(TimeValue time,
     std::string clipName;
     double tmpTransform[9];
     OfxStatus stat;
+    bool isTransformPixel = false;
     {
 
         EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
@@ -2278,10 +2280,10 @@ OfxEffectInstance::getDistortion(TimeValue time,
         ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
         
         try {
-            if (effectInstance()->canDistort()) {
-                stat = effectInstance()->getDistortionAction( (OfxTime)time, field, renderScale, view, clipName, tmpTransform, &distortion->func, &distortion->customData, &distortion->customDataSizeHintInBytes, &distortion->customDataFreeFunc );
-            } else {
-                stat = effectInstance()->getTransformAction( (OfxTime)time, field, renderScale, view, clipName, tmpTransform);
+            stat = effectInstance()->getDistortionAction( (OfxTime)time, field, renderScale, draftRender, view, clipName, tmpTransform, &distortion->func, &distortion->customData, &distortion->customDataSizeHintInBytes, &distortion->customDataFreeFunc );
+            if (stat == kOfxStatReplyDefault) {
+                stat = effectInstance()->getTransformAction( (OfxTime)time, field, renderScale, draftRender, view, clipName, tmpTransform);
+                isTransformPixel = true;
             }
         } catch (...) {
             return eActionStatusFailed;
@@ -2296,12 +2298,6 @@ OfxEffectInstance::getDistortion(TimeValue time,
 
 
     assert(stat == kOfxStatOK);
-    if (!distortion->func) {
-        distortion->transformMatrix.reset(new Transform::Matrix3x3);
-        distortion->transformMatrix->a = tmpTransform[0]; distortion->transformMatrix->b = tmpTransform[1]; distortion->transformMatrix->c = tmpTransform[2];
-        distortion->transformMatrix->d = tmpTransform[3]; distortion->transformMatrix->e = tmpTransform[4]; distortion->transformMatrix->f = tmpTransform[5];
-        distortion->transformMatrix->g = tmpTransform[6]; distortion->transformMatrix->h = tmpTransform[7]; distortion->transformMatrix->i = tmpTransform[8];
-    }
 
 
     OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(clipName);
@@ -2311,7 +2307,36 @@ OfxEffectInstance::getDistortion(TimeValue time,
         return eActionStatusFailed;
     }
     distortion->inputNbToDistort = natronClip->getInputNb();
-   
+    if (!distortion->func) {
+        if (isTransformPixel) {
+            // transform from pixel to canonical
+            // see also getDistortion() in ofxsImageEffect.cpp
+            double par = clip->getAspectRatio();
+            const bool fielded = false; // TODO: support interlaced data
+            // FS = fielded ? 0.5 : 1.
+            // canonical to pixel:
+            // X' = (X * SX)/PAR -> multiply first column by SX/PAR
+            // Y' = Y * SY * FS -> multiply second column by SY*FS
+            // pixel to canonical:
+            // X' = (X * PAR)/SX -> divide first line by SX/PAR
+            // Y' = Y/(SY * FS) -> divide second line by SY*FS
+            double fx = renderScale.x / par;
+            double fy = renderScale.y * (fielded ? 0.5 : 1.);
+            //tmpTransform[0] *= 1.;
+            tmpTransform[1] *= fy/fx;
+            tmpTransform[2] *= 1./fx;
+            tmpTransform[3] *= fx/fy;
+            //tmpTransform[4] *= 1.;
+            tmpTransform[5] *= 1./fy;
+            tmpTransform[6] *= fx;
+            tmpTransform[7] *= fy;
+            //transformMatrix[8] *= 1.;
+        }
+        distortion->transformMatrix.reset( new Transform::Matrix3x3(tmpTransform[0], tmpTransform[1], tmpTransform[2],
+                                                                    tmpTransform[3], tmpTransform[4], tmpTransform[5],
+                                                                    tmpTransform[6], tmpTransform[7], tmpTransform[8]) );
+    }
+
     return eActionStatusOK;
 }
 

@@ -253,6 +253,7 @@ EffectInstance::Implementation::handleConcatenation(const RequestPassSharedDataP
                                                     int inputNbInRequester,
                                                     const RenderScale& renderScale,
                                                     const RectD& canonicalRoi,
+                                                    bool draftRender,
                                                     bool *concatenated)
 
 
@@ -291,7 +292,7 @@ EffectInstance::Implementation::handleConcatenation(const RequestPassSharedDataP
     {
         GetDistortionResultsPtr results = requestData->getDistortionResults();
         if (!results) {
-            ActionRetCodeEnum stat = _publicInterface->getDistortion_public(_publicInterface->getCurrentRenderTime(), renderScale, _publicInterface->getCurrentRenderView(), &results);
+            ActionRetCodeEnum stat = _publicInterface->getDistortion_public(_publicInterface->getCurrentRenderTime(), renderScale, draftRender, _publicInterface->getCurrentRenderView(), &results);
             if (isFailureRetCode(stat)) {
                 return stat;
             }
@@ -333,12 +334,32 @@ EffectInstance::Implementation::handleConcatenation(const RequestPassSharedDataP
     }
 
     if (disto->transformMatrix) {
-        
+        // the matrix is in canonical coords
         // The caller expects a transformation matrix in pixel coordinates
+        // transform from pixel to canonical
+
         double par = _publicInterface->getAspectRatio(-1);
-        Transform::Matrix3x3 canonicalToPixel = Transform::matCanonicalToPixel(par, renderScale.x, renderScale.y, false);
-        Transform::Matrix3x3 pixelToCanonical = Transform::matPixelToCanonical(par, renderScale.x, renderScale.y, false);
-        Transform::Matrix3x3 transform = Transform::matMul(Transform::matMul(canonicalToPixel, *disto->transformMatrix), pixelToCanonical);
+        const bool fielded = false; //args.fieldToRender == eFieldLower || args.fieldToRender == eFieldUpper;
+        // FS = fielded ? 0.5 : 1.
+        // canonical to pixel:
+        // X' = (X * SX)/PAR -> multiply first line by SX/PAR
+        // Y' = Y * SY * FS -> multiply second line by SY*FS
+        // pixel to canonical:
+        // X' = (X * PAR)/SX -> divide first column by SX/PAR
+        // Y' = Y/(SY * FS) -> divide second column by SY*FS
+        double fx = renderScale.x / par;
+        double fy = renderScale.y * (fielded ? 0.5 : 1.);
+        Transform::Matrix3x3 transform = *disto->transformMatrix;
+        //transform.a *= 1.;
+        transform.b *= fx/fy;
+        transform.c *= fx;
+        transform.d *= fy/fx;
+        //transform.e *= 1.;
+        transform.f *= fy;
+        transform.g *= 1./fx;
+        transform.h *= 1./fy;
+        //transform.i *= 1.;
+
         distoStack->pushTransformMatrix(transform);
     } else {
         distoStack->pushDistortionFunction(disto);
@@ -1198,7 +1219,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
     {
 
         bool concatenated;
-        ActionRetCodeEnum upstreamRetCode = _imp->handleConcatenation(requestPassSharedData, requestData, requester, inputNbInRequester, mappedCombinedScale, roiCanonical, &concatenated);
+        ActionRetCodeEnum upstreamRetCode = _imp->handleConcatenation(requestPassSharedData, requestData, requester, inputNbInRequester, mappedCombinedScale, roiCanonical, render->isDraftRender(), &concatenated);
         if (isFailureRetCode(upstreamRetCode)) {
             return upstreamRetCode;
         }
