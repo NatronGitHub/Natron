@@ -35,6 +35,7 @@
 
 NATRON_NAMESPACE_USING
 
+
 TEST(ImageKeyTest, Equality) {
     srand(2000);
     // coverity[dont_call]
