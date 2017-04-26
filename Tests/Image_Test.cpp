@@ -52,13 +52,15 @@ TEST(BitmapTest,
 
     ///assert that the "underlying" bitmap is clean
     const char* map = bm.getBitmap();
-    ASSERT_TRUE( !memchr( map, 1, rod.area() ) );
+    ASSERT_TRUE( !std::memchr( map, 1, rod.area() ) );
+    ASSERT_TRUE( bm.isNonMarked(rod) );
 
     RectI halfRoD(0, 0, 100, 50);
     bm.markForRendered(halfRoD);
 
     ///assert that non of the rendered rects interesect the non rendered half
     RectI nonRenderedHalf(0, 50, 100, 100);
+    nonRenderedRects.clear();
     bm.minimalNonMarkedRects(rod, nonRenderedRects);
     for (std::list<RectI>::iterator it = nonRenderedRects.begin(); it != nonRenderedRects.end(); ++it) {
         ASSERT_TRUE( (*it).intersects(nonRenderedHalf) );

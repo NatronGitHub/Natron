@@ -3026,22 +3026,16 @@ ViewerGL::setRegionOfDefinition(const RectD & rod,
         _imp->infoViewer[textureIndex]->setDataWindow(pixelRoD);
     }
 
+    const RectI& r = pixelRoD;
+    QString x1, y1, x2, y2;
+    x1.setNum(r.x1);
+    y1.setNum(r.y1);
+    x2.setNum(r.x2);
+    y2.setNum(r.y2);
 
-    QString left, btm, right, top;
-    left.setNum( pixelRoD.left() );
-    btm.setNum( pixelRoD.bottom() );
-    right.setNum( pixelRoD.right() );
-    top.setNum( pixelRoD.top() );
 
-
-    _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].clear();
-    _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].append(left);
-    _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].append( QLatin1Char(',') );
-    _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].append(btm);
-    _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex].clear();
-    _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex].append(right);
-    _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex].append( QLatin1Char(',') );
-    _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex].append(top);
+    _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex] = x1 + QLatin1Char(',') + y1;
+    _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex] = x2 + QLatin1Char(',') + y2;
 }
 
 void
@@ -4409,12 +4403,12 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
 
     ///Convert to pixel coords
     RectI rectPixel;
-    rectPixel.set_left(  int( std::floor( rect.left() ) ) >> mipMapLevel);
-    rectPixel.set_right( int( std::floor( rect.right() ) ) >> mipMapLevel);
-    rectPixel.set_bottom(int( std::floor( rect.bottom() ) ) >> mipMapLevel);
-    rectPixel.set_top(   int( std::floor( rect.top() ) ) >> mipMapLevel);
+    rectPixel.x1 = int( std::floor( rect.left() ) ) >> mipMapLevel;
+    rectPixel.y1 = int( std::floor( rect.bottom() ) ) >> mipMapLevel;
+    rectPixel.x2 = int( std::floor( rect.right() ) ) >> mipMapLevel;
+    rectPixel.y2 = int( std::floor( rect.top() ) ) >> mipMapLevel;
     assert( rect.bottom() <= rect.top() && rect.left() <= rect.right() );
-    assert( rectPixel.bottom() <= rectPixel.top() && rectPixel.left() <= rectPixel.right() );
+    assert( rectPixel.y1 <= rectPixel.y2 && rectPixel.x1 <= rectPixel.x2 );
     double rSum = 0.;
     double gSum = 0.;
     double bSum = 0.;
@@ -4521,7 +4515,7 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
 
     unsigned long area = 0;
     for (int yPixel = rectPixel.bottom(); yPixel < rectPixel.top(); ++yPixel) {
-        for (int xPixel = rectPixel.left(); xPixel < rectPixel.right(); ++xPixel) {
+        for (int xPixel = rectPixel.x1; xPixel < rectPixel.x2; ++xPixel) {
             float rPix, gPix, bPix, aPix;
             bool gotval = false;
             switch (depth) {

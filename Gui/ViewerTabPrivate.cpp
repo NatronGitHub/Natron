@@ -177,7 +177,9 @@ ViewerTabPrivate::getOverlayTransform(double time,
     // http://openfx.sourceforge.net/Documentation/1.4/ofxProgrammingReference.html#mainEntryPoint
     // "the value kOfxStatReplyDefault is returned if the plug-in does not trap the action"
     if ( !currentNode->getNode()->isNodeDisabled() /*&& currentNode->getNode()->getCurrentCanTransform()*/ ) {
-        stat = currentNode->getTransform_public(time, s, view, &input, &mat);
+        // Always use draft mode to draw overlay (so that transforms are applied,
+        // even in case of motion blur, see Transform3x3Plugin::getTransform() )
+        stat = currentNode->getTransform_public(time, s, /*draftRender=*/true, view, &input, &mat);
     }
     if (stat == eStatusFailed) {
         return false;

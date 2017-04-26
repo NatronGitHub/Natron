@@ -2981,6 +2981,7 @@ OfxEffectInstance::getInputsHoldingTransform(std::list<int>* inputs) const
 StatusEnum
 OfxEffectInstance::getTransform(double time,
                                 const RenderScale & renderScale, //< the plug-in accepted scale
+                                bool draftRender,
                                 ViewIdx view,
                                 EffectInstPtr* inputToTransform,
                                 Transform::Matrix3x3* transform)
@@ -2998,7 +2999,7 @@ OfxEffectInstance::getTransform(double time,
                                              Image::getLevelFromScale(renderScale.x) );
 
         try {
-            stat = effectInstance()->getTransformAction( (OfxTime)time, field, renderScale, view, clipName, tmpTransform );
+            stat = effectInstance()->getTransformAction( (OfxTime)time, field, renderScale, draftRender, view, clipName, tmpTransform );
         } catch (...) {
             return eStatusFailed;
         }

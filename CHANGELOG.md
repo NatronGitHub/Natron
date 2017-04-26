@@ -1,9 +1,17 @@
-# Bugs
+# Known Bugs
 
 - Windows: If Natron is not installed in Program Files using the installer, the Text node does not work because fontconfig does not initialize properly.
 
 # History
 
+
+## Version 2.2.8
+
+- OpenGL interact is now always affected by transforms even if there is motion blur.
+
+### Plugins
+
+- Radial, Rectangle and generators: whhen the Extent is set to Size, and Reformat is not checked, Bottom Left and Size can be animated.
 
 ## Version 2.2.7
 
@@ -11,7 +19,8 @@
 
 ### Plugins
 
-- (beta feature) Inpaint: New plugin. Inpaint the areas indicated by the Mask input using patch-based inpainting.
+- ReadOIIO: fix bug when reading EXRs with datawindow different from displaywindow.
+- (beta feature) Inpaint: New plugin. Inpaint the areas indicated by the Mask input using patch-based inpainting. Please read the plugin documentation.
 
 
 ## Version 2.2.6
@@ -25,7 +34,7 @@
 ### Plugins
 
 - WriteFFmpeg: the preferred pixel coding and bit depth can now be selected, which is very useful for codecs that propose multiple pixel formats (e.g. ffv1, ffvhuff, huffyuv, jpeg2000, mjpeg, mpeg2video, vc2, libopenjpeg, png, qtrle, targa, tiff, libschroedinger, libtheora, libvpx, libvpx-vp9, libx264, libx265).
-- WriteFFmpeg: Bitrate-based (VBR) encoding was removed from the following codecs in favor of quality-based (VBR) encoding, mainly because it should be used in 2-pass mode (using handbrake or the ffmpeg command-line tool): mpeg4, mpeg2video, mpeg1video, flv.
+- WriteFFmpeg: Bitrate-based (CBR) encoding was removed from the following codecs in favor of quality-based (VBR) encoding, mainly because CBR should be used in 2-pass mode (using handbrake or the ffmpeg command-line tool): mpeg4, mpeg2video, mpeg1video, flv.
 - ColorCorrect: changed the Contrast formula to make adjustments more intuitive, see https://compositormathematic.wordpress.com/2013/07/06/gamma-contrast/ - this may affect existing projects that used the previously buggy Contrast parameter.
 - LensDistortion: add PanoTools/PTGui/PTAssembler/Hugin model.
 - Card3D can now import/export chan files from Natron, Nuke, 3D-Equalizer, Maya, etc., and txt files from Boujou.
@@ -351,7 +360,7 @@ You may contribute to this user guide, follow (these)[http://natron.readthedocs.
 - Python: fix issue where the argument of *saveProject(filename)* would be ignored 
 
 
-## Version 2.0 - stable 
+## Version 2.0
 
 - Python: PyPlugs can now be used to create toolsets, such as Split And Join in the views menu
 - New Glow PyPlug 
@@ -377,7 +386,7 @@ You may contribute to this user guide, follow (these)[http://natron.readthedocs.
 It contains a fully-featured project demonstrating the use of a complex node-graph including usage of PyPlugs.
 
 
-## Version 2.0 - RC4
+## Version 2.0rc4
 
 - Write nodes now have a Frame Increment parameter which allows to skip frames while rendering.
 - The command-line parameters and Python API have been updated in this regard (see Python documentation).
@@ -388,7 +397,7 @@ It contains a fully-featured project demonstrating the use of a complex node-gra
 - NodeGraph: optimize for speed when the scene contains a lot of nodes and add auto-scrolling when reaching the border of the view
 
 
-## Version 2.0 - RC3
+## Version 2.0rc3
 
 - The Read node can now read multi-view EXR files. Decoding speed of EXR has been greatly improved.
 - The Write node can now write multi-view and multi-layered EXR files. Encoding speed of EXR has been greatly improved.
@@ -400,7 +409,7 @@ The pass-through input will also be indicated with a plain arrow whereas all oth
 - Python API: it is now possible to retrieve the layers available on a node with the getAvailableLayers() function, see [Python Reference](http://natron.rtfd.org)
 
 
-## Version 2.0
+## Version 2.0rc2
 
 - Python 2.7 API: 
   - Parameters expressions
@@ -537,7 +546,7 @@ to avoid creating new beziers by mistake
 for the occasion. The warning notification can be disabled in the preferences of Natron. The tooltip of the field with the filename now indicates the last modification date of the file.
 
 
-## Version 1.0.0RC3
+## Version 1.0.0rc3
 
 - The internal renderer now estimates the amount of RAM needed by a compositing tree to render out a single frame and will thus limit the number of parallel renders so that all parallel renders can fit in RAM if possible. Before this change the renderer would only take into account CPU load which would seriously slow down computers without enough RAM to support all the CPU power available.
 - Focus has been re-worked through all the interface so the focus switches correctly among the widgets when pressing Tab. Drop-downs can now get the focus so the user can
@@ -591,7 +600,7 @@ scroll the items by pressing the up/down arrows. Checkbox can now also have focu
 - The ColorLookUp node’s curve editor now properly gets keyboard focus
 
 
-## Version 1.0.0RC2
+## Version 1.0.0rc2
 
 - New nodes using the CImg library :
   - Blur
@@ -645,7 +654,7 @@ specification so that more plug-ins can be used in Natron. In particular you can
 use the TuttleHistogramKeyer node.
 
 
-## Version 1.0.0RC1
+## Version 1.0.0rc1
 
 - New ResizeOIIO node to reformat footage. It internally uses the OpenImageIO library and offers numerous optimized filters. One should prefer Lanczos filter for downscaling and Blackman-harris filter for upscaling.
 - New ColorMatrix node to apply a matrix to colors
@@ -701,8 +710,8 @@ anything any word , e.g: "Blur" and it will propose all types of Blurs.
 - Value parameters can now have their increment based on where the mouse cursor is
 - New nodes menu icons were made by Jean Christophe Levet.
 
-Natron 0.96 "Beta"
------------------
+
+## Version 0.96
 
 - Roto can now output RGBA colors and all beziers have a blending mode. It is now easier to layer your work within the same roto node.
 - New Dot node to break connections and make cleaner graphs
@@ -775,7 +784,7 @@ Natron 0.96 "Beta"
 - Holding control while moving a backdrop now allows to move only the backdrop without moving the nodes within it.
 - Connecting a viewer to the selected node using the 1,2,3,4... shortcuts will now select back the viewer afterwards so that the user doesn't have to deselect the node to switch quickly between inputs.
 
-## Bug fixes:
+### Bug fixes
 
 - Fixed preview images rendering
 - Fixed a bug where the curves in the RGBLut plug-in would not allow to move the control points in more than 1 direction at a time.
@@ -786,7 +795,3 @@ Natron 0.96 "Beta"
 - Fixed a bug in the color correct node where the saturation would not be applied correctly
 - Fixed a bug in the transform/corner pin nodes that wouldn't work when proxy mode would be activated.
 - Fixed the ReadFFMPEG node as a whole, it should now work properly.
-
-We will enhance the WriteFFMPEG node in the future by adding presets so it is
-less complicated to handle all the parameters of that node.
-

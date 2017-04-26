@@ -406,7 +406,8 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
         ///Concatenate transforms if needed
         if (useTransforms) {
             fvRequest->globalData.transforms.reset(new InputMatrixMap);
-            effect->tryConcatenateTransforms( time, view, nodeRequest->mappedScale, fvRequest->globalData.transforms.get() );
+#pragma message WARN("TODO: can set draftRender properly here?")
+            effect->tryConcatenateTransforms( time, /*draftRender=*/false, view, nodeRequest->mappedScale, fvRequest->globalData.transforms.get() );
         }
 
         ///Get the frame/views needed for this frame/view

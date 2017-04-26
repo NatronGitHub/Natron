@@ -76,7 +76,7 @@ public:
     }
 
     Format(const Format & other)
-        : RectI( other.left(), other.bottom(), other.right(), other.top() )
+        : RectI(other)
         , _par( other.getPixelAspectRatio() )
         , _name( other.getName() )
     {
@@ -124,7 +124,7 @@ public:
 
     Format & operator=(const Format & other)
     {
-        set( other.left(), other.bottom(), other.right(), other.top() );
+        set(other);
         setName( other.getName() );
         setPixelAspectRatio( other.getPixelAspectRatio() );
 
@@ -133,11 +133,8 @@ public:
 
     bool operator==(const Format & other) const
     {
-        return ( _par == other.getPixelAspectRatio() &&
-                 left() == other.left() &&
-                 bottom() == other.bottom() &&
-                 right() == other.right() &&
-                 top() == other.top() );
+        return (_par == other.getPixelAspectRatio() &&
+                (const RectI&)*this == (const RectI&)other);
     }
 
     template<class Archive>

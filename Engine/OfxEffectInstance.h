@@ -281,6 +281,7 @@ public:
     virtual bool getInputsHoldingTransform(std::list<int>* inputs) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual StatusEnum getTransform(double time,
                                     const RenderScale & renderScale,
+                                    bool draftRender,
                                     ViewIdx view,
                                     EffectInstPtr* inputToTransform,
                                     Transform::Matrix3x3* transform) OVERRIDE FINAL WARN_UNUSED_RETURN;

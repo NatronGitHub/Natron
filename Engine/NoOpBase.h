@@ -89,6 +89,7 @@ public:
 
     virtual StatusEnum getTransform(double time,
                                     const RenderScale & renderScale,
+                                    bool draftRender,
                                     ViewIdx view,
                                     EffectInstPtr* inputToTransform,
                                     Transform::Matrix3x3* transform) OVERRIDE FINAL WARN_UNUSED_RETURN;
