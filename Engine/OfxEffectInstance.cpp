@@ -78,7 +78,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 
 NATRON_NAMESPACE_ENTER;
 
-using std::cout; using std::endl;
+using std::cout; using std::endl; using std::string;
 
 
 namespace  {
@@ -1850,12 +1850,19 @@ OfxEffectInstance::isIdentity(double time,
 
         assert(_imp->effect);
 
+        int identityView = view;
+        string identityPlane = kFnOfxImagePlaneColour;
         if (getRecursionLevel() > 1) {
-            stat = _imp->effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scale, view, inputclip);
+            stat = _imp->effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scale, identityView, identityPlane, inputclip);
         } else {
             ///Take the preferences lock so that it cannot be modified throughout the action.
             QReadLocker preferencesLocker(&_imp->preferencesLock);
-            stat = _imp->effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scale, view, inputclip);
+            stat = _imp->effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scale, identityView, identityPlane, inputclip);
+        }
+        if (identityView != view || identityPlane != kFnOfxImagePlaneColour) {
+#pragma message WARN("can Natron RB2-multiplane2 handle isIdentity accross views and planes?")
+            // Natron 2 cannot handle isIdentity accross planes
+            stat = kOfxStatOK;
         }
     }
 
