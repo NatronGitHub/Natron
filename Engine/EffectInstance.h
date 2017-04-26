@@ -981,6 +981,7 @@ protected:
 
     virtual StatusEnum getTransform(double /*time*/,
                                     const RenderScale & /*renderScale*/,
+                                    bool /*draftRender*/,
                                     ViewIdx /*view*/,
                                     EffectInstPtr* /*inputToTransform*/,
                                     Transform::Matrix3x3* /*transform*/) WARN_UNUSED_RETURN
@@ -994,6 +995,7 @@ public:
     StatusEnum render_public(const RenderActionArgs & args) WARN_UNUSED_RETURN;
     StatusEnum getTransform_public(double time,
                                    const RenderScale & renderScale,
+                                   bool draftRender,
                                    ViewIdx view,
                                    EffectInstPtr* inputToTransform,
                                    Transform::Matrix3x3* transform) WARN_UNUSED_RETURN;
@@ -1824,6 +1826,7 @@ public:
      * @brief Check if Transform effects concatenation is possible on the current node and node upstream.
      **/
     void tryConcatenateTransforms(double time,
+                                  bool draftRender,
                                   ViewIdx view,
                                   const RenderScale & scale,
                                   InputMatrixMap* inputTransforms);

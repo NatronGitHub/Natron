@@ -83,6 +83,7 @@ NoOpBase::isHostChannelSelectorSupported(bool* /*defaultR*/,
 StatusEnum
 NoOpBase::getTransform(double /*time*/,
                        const RenderScale & /*renderScale*/,
+                       bool /*draftRender*/,
                        ViewIdx /*view*/,
                        EffectInstPtr* inputToTransform,
                        Transform::Matrix3x3* transform)
