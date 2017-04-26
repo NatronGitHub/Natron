@@ -1800,6 +1800,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
 
 void
 EffectInstance::tryConcatenateTransforms(double time,
+                                         bool draftRender,
                                          ViewIdx view,
                                          const RenderScale & scale,
                                          InputMatrixMap* inputTransforms)
@@ -1820,7 +1821,7 @@ EffectInstance::tryConcatenateTransforms(double time,
         /*
          * If getting the transform does not succeed, then this effect is treated as any other ones.
          */
-        StatusEnum stat = getTransform_public(time, scale, view, &inputToTransform, &thisNodeTransform);
+        StatusEnum stat = getTransform_public(time, scale, draftRender, view, &inputToTransform, &thisNodeTransform);
         if (stat == eStatusOK) {
             getTransformSucceeded = true;
         }
@@ -1865,7 +1866,7 @@ EffectInstance::tryConcatenateTransforms(double time,
                 } else if (inputCanTransform) {
                     Transform::Matrix3x3 m;
                     inputToTransform.reset();
-                    StatusEnum stat = input->getTransform_public(time, scale, view, &inputToTransform, &m);
+                    StatusEnum stat = input->getTransform_public(time, scale, draftRender, view, &inputToTransform, &m);
                     if (stat == eStatusOK) {
                         matricesByOrder.push_back(m);
                         if (inputToTransform) {
@@ -3650,6 +3651,7 @@ EffectInstance::render_public(const RenderActionArgs & args)
 StatusEnum
 EffectInstance::getTransform_public(double time,
                                     const RenderScale & renderScale,
+                                    bool draftRender,
                                     ViewIdx view,
                                     EffectInstPtr* inputToTransform,
                                     Transform::Matrix3x3* transform)
@@ -3657,7 +3659,7 @@ EffectInstance::getTransform_public(double time,
     RECURSIVE_ACTION();
     //assert( getNode()->getCurrentCanTransform() ); // called in every case for overlays
 
-    return getTransform(time, renderScale, view, inputToTransform, transform);
+    return getTransform(time, renderScale, draftRender, view, inputToTransform, transform);
 }
 
 bool

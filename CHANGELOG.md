@@ -7,6 +7,11 @@
 
 ## Version 2.2.8
 
+- OpenGL interact is now always affected by transforms even if there is motion blur.
+
+### Plugins
+
+- Radial, Rectangle and generators: whhen the Extent is set to Size, and Reformat is not checked, Bottom Left and Size can be animated.
 
 ## Version 2.2.7
 
