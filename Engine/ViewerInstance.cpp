@@ -1182,7 +1182,7 @@ applyViewerProcess8bit_generic(const RenderViewerArgs& args, const RectI & roi)
 
         for (int backward = 0; backward < 2; ++backward) {
 
-            int x = backward ? std::max(roi.x1, startX - 1) : startX;
+            int x = backward ? std::max(roi.x1 - 1, startX - 1) : startX;
 
             const int endX = backward ? roi.x1 - 1 : roi.x2;
 
@@ -1200,9 +1200,12 @@ applyViewerProcess8bit_generic(const RenderViewerArgs& args, const RectI & roi)
             int dstPixelStride;
             unsigned char* dst_pixels[4];
             Image::getChannelPointers<unsigned char>((const unsigned char**)args.dstImage.ptrs, x, y, args.dstImage.bounds, args.dstImage.nComps, (unsigned char**)dst_pixels, &dstPixelStride);
-            assert(dst_pixels[0]);
 
             while (x != endX) {
+
+                assert(args.colorImage.bounds.isNull() || args.colorImage.bounds.contains(x, y));
+                assert(args.alphaImage.bounds.isNull() || args.alphaImage.bounds.contains(x, y));
+
                 float tmpPix[4];
                 double alphaMatteValue;
                 genericViewerProcessFunctor<PIX, maxValue, srcNComps, channels>(args, color_pixels, alpha_pixels, tmpPix, &alphaMatteValue);
@@ -1234,6 +1237,7 @@ applyViewerProcess8bit_generic(const RenderViewerArgs& args, const RectI & roi)
                     uTmpPix[0] = Image::clampIfInt<unsigned char>( (double)uTmpPix[0] + matteA );
 
                 }
+       
                 // The viewer has the particularity to write-out BGRA 8-bit images instead of RGBA since the resulting
                 // image is directly fed to the GL_BGRA OpenGL texture format.
                 *reinterpret_cast<unsigned int*>(dst_pixels[0]) = toBGRA(uTmpPix[0], uTmpPix[1], uTmpPix[2], uTmpPix[3]);
@@ -1653,7 +1657,6 @@ ViewerInstance::render(const RenderActionArgs& args)
     processor.setValues(renderViewerArgs);
     processor.setRenderWindow(args.roi);
     processor.process();
-
     return eActionStatusOK;
 } // render
 

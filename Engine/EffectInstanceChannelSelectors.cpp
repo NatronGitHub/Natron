@@ -762,18 +762,23 @@ bool
 EffectInstance::addUserComponents(const ImagePlaneDesc& comps)
 {
 
+    KnobLayersPtr knob = _imp->defKnobs->createPlanesKnob.lock();
+    if (!knob) {
+        return false;
+    }
+    std::list<ImagePlaneDesc> existingPlanes = knob->decodePlanesList();
 
-    {
-        QMutexLocker k(&_imp->common->createdPlanesMutex);
-        for (std::list<ImagePlaneDesc>::iterator it = _imp->common->createdPlanes.begin(); it != _imp->common->createdPlanes.end(); ++it) {
-            if ( it->getPlaneID() == comps.getPlaneID() ) {
-                return false;
-            }
+    for (std::list<ImagePlaneDesc>::iterator it = existingPlanes.begin(); it != existingPlanes.end(); ++it) {
+        if ( it->getPlaneID() == comps.getPlaneID() ) {
+            return false;
         }
-
-        _imp->common->createdPlanes.push_back(comps);
     }
 
+    existingPlanes.push_back(comps);
+
+    std::string encoded = knob->encodePlanesList(existingPlanes);
+    knob->setValue(encoded);
+    
     {
         ///The node has node channel selector, don't allow adding a custom plane.
         KnobIPtr outputLayerKnob = getKnobByName(kNatronOfxParamOutputChannels);
@@ -801,12 +806,28 @@ EffectInstance::addUserComponents(const ImagePlaneDesc& comps)
     return true;
 } // addUserComponents
 
-void
-EffectInstance::getUserCreatedComponents(std::list<ImagePlaneDesc>* comps)
+KnobLayersPtr
+EffectInstance::getOrCreateUserPlanesKnob(const KnobPagePtr& page)
 {
-    QMutexLocker k(&_imp->common->createdPlanesMutex);
+    KnobLayersPtr param = _imp->defKnobs->createPlanesKnob.lock();
+    if (param) {
+        return param;
+    }
+    param = createKnob<KnobLayers>(kNodeParamUserLayers);
+    param->setLabel(tr(kNodeParamUserLayersLabel));
+    param->setHintToolTip(tr(kNodeParamUserLayersHint));
+    param->setDeclaredByPlugin(false);
+    param->setAnimationEnabled(false);
+    param->setSecret(true);
+    page->addKnob(param);
+    _imp->defKnobs->createPlanesKnob = param;
+    return param;
+}
 
-    *comps = _imp->common->createdPlanes;
+KnobLayersPtr
+EffectInstance::getUserPlanesKnob() const
+{
+    return _imp->defKnobs->createPlanesKnob.lock();
 }
 
 void

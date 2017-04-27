@@ -340,6 +340,12 @@ struct OSGLContextPrivate
 
 };
 
+OSGLContext::OSGLContext(bool useGPUContext)
+: _imp(new OSGLContextPrivate(useGPUContext))
+{
+
+}
+
 OSGLContext::OSGLContext(const FramebufferConfig& pixelFormatAttrs,
                          const OSGLContext* shareContext,
                          bool useGPUContext,
@@ -524,16 +530,29 @@ OSGLContext::getOrCreateFBOId()
     return _imp->fboID;
 }
 
+void
+OSGLContext::makeGPUContextCurrent()
+{
+    if (_imp->_platformContext
+#ifdef HAVE_OSMESA
+        || _imp->_osmesaContext
+#endif
+        ) {
 
+#     ifdef __NATRON_WIN32__
+        OSGLContext_win::makeContextCurrent( _imp->_platformContext.get() );
+#     elif defined(__NATRON_OSX__)
+        OSGLContext_mac::makeContextCurrent( _imp->_platformContext.get() );
+#     elif defined(__NATRON_LINUX__)
+        OSGLContext_x11::makeContextCurrent( _imp->_platformContext.get() );
+#     endif
+    }
+}
 
 void
 OSGLContext::setContextCurrentInternal(int width, int height, int rowWidth, void* buffer)
 {
-    assert(_imp && (_imp->_platformContext
-#ifdef HAVE_OSMESA
-                    || _imp->_osmesaContext
-#endif
-                    ));
+
 
     QThread* curThread = QThread::currentThread();
 
@@ -546,13 +565,7 @@ OSGLContext::setContextCurrentInternal(int width, int height, int rowWidth, void
     ++_imp->threadOwningContextCount;
 
     if (_imp->useGPUContext) {
-#     ifdef __NATRON_WIN32__
-        OSGLContext_win::makeContextCurrent( _imp->_platformContext.get() );
-#     elif defined(__NATRON_OSX__)
-        OSGLContext_mac::makeContextCurrent( _imp->_platformContext.get() );
-#     elif defined(__NATRON_LINUX__)
-        OSGLContext_x11::makeContextCurrent( _imp->_platformContext.get() );
-#     endif
+        makeGPUContextCurrent();
     } else {
 #     ifdef HAVE_OSMESA
         if (buffer) {
@@ -573,17 +586,32 @@ OSGLContext::setContextCurrentInternal(int width, int height, int rowWidth, void
 
 }
 
+static void unsetGPUContextStatic()
+{
+#     ifdef __NATRON_WIN32__
+    OSGLContext_win::makeContextCurrent(0);
+#     elif defined(__NATRON_OSX__)
+    OSGLContext_mac::makeContextCurrent(0);
+#     elif defined(__NATRON_LINUX__)
+    OSGLContext_x11::makeContextCurrent(0);
+#     endif
+}
+
 void
-OSGLContext::unsetCurrentContextNoRenderInternal(bool useGPU, const Natron::OSGLContext* context)
+OSGLContext::unsetGPUContext()
+{
+    unsetGPUContextStatic();
+}
+
+void
+OSGLContext::unsetCurrentContextNoRenderInternal(bool useGPU, Natron::OSGLContext* context)
 {
     if (useGPU) {
-#     ifdef __NATRON_WIN32__
-        OSGLContext_win::makeContextCurrent(0);
-#     elif defined(__NATRON_OSX__)
-        OSGLContext_mac::makeContextCurrent(0);
-#     elif defined(__NATRON_LINUX__)
-        OSGLContext_x11::makeContextCurrent(0);
-#     endif
+        if (context) {
+            context->unsetGPUContext();
+        } else {
+            unsetGPUContextStatic();
+        }
     } else {
 #     ifdef HAVE_OSMESA
         OSGLContext_osmesa::unSetContext(context ? context->_imp->_osmesaContext.get() : 0);

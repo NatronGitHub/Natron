@@ -2039,7 +2039,7 @@ KnobItemsTableGuiPrivate::refreshUserKeyFramesWidgets()
     double currentTime = _publicInterface->getGui()->getApp()->getProject()->currentFrame();
 
     if ( keys.empty() ) {
-        currentKeyFrameSpinBox->setValue(1.);
+        currentKeyFrameSpinBox->setValue(0.);
         currentKeyFrameSpinBox->setAnimation(0);
     } else {
         ///get the first time that is equal or greater to the current time

@@ -590,7 +590,7 @@ KnobGuiTable::updateToolTip()
 KnobGuiLayers::KnobGuiLayers(const KnobGuiPtr& knob, ViewIdx view)
     : KnobGuiTable(knob, view)
 {
-    _knob = boost::dynamic_pointer_cast<KnobLayers>(knob);
+    _knob = boost::dynamic_pointer_cast<KnobLayers>(knob->getKnob());
 }
 
 KnobGuiLayers::~KnobGuiLayers()

@@ -108,6 +108,9 @@ struct GuiAppInstancePrivate
 
     // When drawing a stroke, this is a pointer to the stroke being painted.
     RotoStrokeItemPtr strokeBeingPainted;
+
+    // We remember what was the last stroke drawn
+    RotoStrokeItemWPtr lastStrokeBeingPainted;
     KnobDnDData knobDnd;
 
     // The viewer that's mastering others when all viewports are in sync
@@ -1087,11 +1090,18 @@ GuiAppInstance::getOfxHostOSHandle() const
 void
 GuiAppInstance::setUserIsPainting(const RotoStrokeItemPtr& stroke)
 {
+    RotoStrokeItemPtr lastStroke;
     {
         QMutexLocker k(&_imp->rotoDataMutex);
         _imp->strokeBeingPainted = stroke;
+        lastStroke = _imp->lastStrokeBeingPainted.lock();
+        if (stroke) {
+            _imp->lastStrokeBeingPainted = stroke;
+        }
+
     }
-    if (!stroke) {
+    if (stroke && lastStroke != stroke) {
+        // We are starting a new stroke, we need to clear any preview data that is stored on effects in the tree.
         clearAllLastRenderedImages();
     }
 }

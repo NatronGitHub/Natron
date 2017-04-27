@@ -1186,9 +1186,11 @@ RotoPaint::setupInitialSubGraphState()
             std::stringstream ss;
             if (i == 0) {
                 ss << "Bg";
-            } else if (i == ROTOPAINT_MASK_INPUT_INDEX) {
+            }
+            /*else if (i == ROTOPAINT_MASK_INPUT_INDEX) {
                 ss << "Mask";
-            } else {
+            }*/
+             else {
                 ss << "Bg" << i + 1;
             }
             {
@@ -1199,10 +1201,10 @@ RotoPaint::setupInitialSubGraphState()
 #endif
                 args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, ss.str());
                 args->addParamDefaultValue<bool>(kNatronGroupInputIsOptionalParamName, true);
-                if (i == ROTOPAINT_MASK_INPUT_INDEX) {
+                /*if (i == ROTOPAINT_MASK_INPUT_INDEX) {
                     args->addParamDefaultValue<bool>(kNatronGroupInputIsMaskParamName, true);
 
-                }
+                }*/
                 NodePtr input = getApp()->createNode(args);
                 assert(input);
                 _imp->inputNodes.push_back(input);
@@ -2163,6 +2165,12 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
     _imp->ui->onToolChangedInternal(defaultAction);
 } // initViewerUIKnobs
 
+KnobChoicePtr
+RotoPaint::getOutputComponentsKnob() const
+{
+    return _imp->outputComponentsKnob.lock();
+}
+
 void
 RotoPaint::initializeKnobs()
 {
@@ -2234,19 +2242,35 @@ RotoPaint::initializeKnobs()
 
 
     if (_imp->nodeType != eRotoPaintTypeComp) {
-        KnobBoolPtr premultKnob = createKnob<KnobBool>("premultiply");
-        premultKnob->setLabel(tr("Premultiply"));
-        premultKnob->setHintToolTip( tr("When checked, the red, green and blue channels of the output are premultiplied by the alpha channel.\n"
-                                        "This will result in the pixels outside of the shapes and paint strokes being black and transparent.\n"
-                                        "This should only be used if all the inputs are Opaque or UnPremultiplied, and only the Alpha channel "
-                                        "is selected to be drawn by this node.") );
-        premultKnob->setDefaultValue(false);
-        premultKnob->setAnimationEnabled(false);
-        premultKnob->setIsMetadataSlave(true);
-        _imp->premultKnob = premultKnob;
-        generalPage->addKnob(premultKnob);
+        {
+            KnobBoolPtr premultKnob = createKnob<KnobBool>("premultiply");
+            premultKnob->setLabel(tr("Premultiply"));
+            premultKnob->setHintToolTip( tr("When checked, the red, green and blue channels of the output are premultiplied by the alpha channel.\n"
+                                            "This will result in the pixels outside of the shapes and paint strokes being black and transparent.\n"
+                                            "This should only be used if all the inputs are Opaque or UnPremultiplied, and only the Alpha channel "
+                                            "is selected to be drawn by this node.") );
+            premultKnob->setDefaultValue(false);
+            premultKnob->setAnimationEnabled(false);
+            _imp->premultKnob = premultKnob;
+            generalPage->addKnob(premultKnob);
+        }
+        {
+            KnobChoicePtr param = createKnob<KnobChoice>(kRotoOutputComponentsParam);
+            param->setLabel(tr(kRotoOutputComponentsParamLabel));
+            param->setHintToolTip(tr(kRotoOutputComponentsParamHint));
+            std::vector<ChoiceOption> options;
+            options.push_back(ChoiceOption("RGBA"));
+            options.push_back(ChoiceOption("RGB"));
+            options.push_back(ChoiceOption("XY"));
+            options.push_back(ChoiceOption("Alpha"));
+            param->populateChoices(options);
+            param->setAnimationEnabled(false);
+            generalPage->addKnob(param);
+            param->setDefaultValue(_imp->nodeType == eRotoPaintTypeRoto ? 3 : 0);
+            _imp->outputComponentsKnob = param;
+        }
     }
-
+    
     if (_imp->nodeType != eRotoPaintTypeComp) {
         initViewerUIKnobs(generalPage);
     }
@@ -3090,12 +3114,6 @@ RotoPaintPrivate::connectRotoPaintBottomTreeToItems(bool /*canConcatenate*/,
         } else {
             premultNode->swapInput(mergeNode, 0);
         }
-    }
-
-    // Connect the mask of the merge to the Mask input
-    if (nodeType == RotoPaint::eRotoPaintTypeRoto ||
-        nodeType == RotoPaint::eRotoPaintTypeRotoPaint) {
-        mergeNode->swapInput(rotoPaintEffect->getInternalInputNode(ROTOPAINT_MASK_INPUT_INDEX), 2);
     }
 
 }

@@ -78,6 +78,78 @@ public:
      **/
     virtual void clearPartialUpdateTextures()  = 0;
 
+    struct TextureTransferArgs
+    {
+        enum TypeEnum
+        {
+            // The newly created texture will replace the existing one in the given viewer input
+            eTextureTransferTypeReplace,
+
+            // The newly created texture will be drawn as an overlay over the current texture.
+            // This is used for example during tracking to only update small areas of the viewer
+            eTextureTransferTypeOverlay,
+
+            // If no texture already exists or it does not contain the image bounds
+            // this mode is similar to eTextureTransferTypeReplace.
+            // Otherwise only the portion corresponding to the image bounds is updated in the current texture.
+            // This mode is used while drawing a preview with the RotoPaint node.
+            eTextureTransferTypeModify
+        };
+
+        // What should the viewer do with the provided image, see the enum
+        TypeEnum type;
+
+        // 0 or 1: Indicates if we want to upload to the A(=0) viewer input or the B (=1) viewer input
+        int textureIndex;
+
+        // The image to upload as a texture: this must be a RAM image
+        ImagePtr image;
+
+        // The color picker image: this is the image produced by the node upstream of the
+        // ViewerProcess node corresponding to the given textureIndex
+        ImagePtr colorPickerImage;
+
+        // The color picker image input: this is the image produced by the input node of the node
+        // upstrea m of the ViewerProcess node corresponding to the given textureIndex
+        ImagePtr colorPickerInputImage;
+
+        // This is the time at which the image was rendered.
+        TimeValue time;
+
+        // This is the view at which the image was rendered
+        ViewIdx view;
+
+        // This is the region of definition that was used to produce this image
+        RectD rod;
+
+        // If true, the viewport will center its projection on the viewportCenter point
+        bool recenterViewer;
+
+        // If recenterViewer is true, the viewport will center its projection on this point
+        Point viewportCenter;
+
+        // This is the image cache key of the image produced by the viewer process node at the bottom
+        // of the tree. This is used in turn by the timeline to update the cached frames line.
+        ImageCacheKeyPtr viewerProcessNodeKey;
+
+        TextureTransferArgs()
+        : type(eTextureTransferTypeReplace)
+        , textureIndex(0)
+        , image()
+        , colorPickerImage()
+        , colorPickerInputImage()
+        , time(0)
+        , view(0)
+        , rod()
+        , recenterViewer(false)
+        , viewportCenter()
+        , viewerProcessNodeKey()
+        {
+
+        }
+
+    };
+
     /**
      * @brief This function must do the following:
      * 1) glMapBuffer to map a GPU buffer to the RAM
@@ -85,18 +157,7 @@ public:
      * 3) glUnmapBuffer to unmap the GPU buffer
      * 4) glTexSubImage2D or glTexImage2D depending whether yo need to resize the texture or not.
      **/
-    virtual void transferBufferFromRAMtoGPU(const ImagePtr& image,
-                                            const ImagePtr& colorPickerImage,
-                                            const ImagePtr& colorPickerInputImage,
-                                            int textureIndex,
-                                            bool isPartialRect,
-                                            TimeValue time,
-                                            ViewIdx view,
-                                            const RectD& originalCanonicalRoi,
-                                            const RectD& rod,
-                                            bool recenterViewer,
-                                            const Point& viewportCenter,
-                                            const ImageCacheKeyPtr& viewerProcessNodeTileKey) = 0;
+    virtual void transferBufferFromRAMtoGPU(const TextureTransferArgs& args) = 0;
 
     /**
      * @brief Clear the image pointers of the last image sent to transferBufferFromRAMtoGPU
@@ -119,11 +180,6 @@ public:
      * X and Y are in canonical coordinates
      **/
     virtual void getTextureColorAt(int x, int y, double* r, double *g, double *b, double *a) = 0;
-
-    /**
-     * @brief Make the OpenGL context current to the thread.
-     **/
-    virtual void makeOpenGLcontextCurrent()  = 0;
 
     /**
      * @brief Called when the viewer should refresh the foramt
@@ -249,6 +305,8 @@ public:
      * @brief Set triple sync enabled
      **/
     virtual void setTripleSyncEnabled(bool toggled) = 0;
+
+    virtual OSGLContextPtr getOpenGLViewerContext() const = 0;
 };
 
 NATRON_NAMESPACE_EXIT;

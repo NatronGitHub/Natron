@@ -877,42 +877,25 @@ Project::initializeKnobs()
         _imp->setupForStereoButton = param;
     }
 
-    KnobPagePtr layersPage = createKnob<KnobPage>("layersPage");
-    layersPage->setLabel(tr("Layers"));
+    KnobPagePtr layersPage = createKnob<KnobPage>("planesPage");
+    layersPage->setLabel(tr("Planes"));
     
     {
-        KnobLayersPtr param = createKnob<KnobLayers>("defaultLayers");
-        param->setLabel(tr("Default Layers"));
-        param->setHintToolTip( tr("The list of the default layers available in layers menus on nodes.") );
+        KnobLayersPtr param = createKnob<KnobLayers>("defaultPlanes");
+        param->setLabel(tr("Default Planes"));
+        param->setHintToolTip( tr("The list of the planes available by default on a Node's plane selector") );
         param->setAnimationEnabled(false);
         param->setEvaluateOnChange(false);
-        std::list<std::vector<std::string> > defaultLayers;
+
+        std::list<ImagePlaneDesc> defaultComponents;
         {
-            std::vector<ImagePlaneDesc> defaultComponents;
+
             defaultComponents.push_back(ImagePlaneDesc::getDisparityLeftComponents());
             defaultComponents.push_back(ImagePlaneDesc::getDisparityRightComponents());
             defaultComponents.push_back(ImagePlaneDesc::getBackwardMotionComponents());
             defaultComponents.push_back(ImagePlaneDesc::getForwardMotionComponents());
-
-
-            for (std::size_t i = 0; i < defaultComponents.size(); ++i) {
-                const ImagePlaneDesc& comps = defaultComponents[i];
-                std::vector<std::string> row(3);
-                row[0] = comps.getPlaneLabel();
-                std::string channelsStr;
-                const std::vector<std::string>& channels = comps.getChannels();
-                for (std::size_t c = 0; c < channels.size(); ++c) {
-                    if (c > 0) {
-                        channelsStr += ' ';
-                    }
-                    channelsStr += channels[c];
-                }
-                row[1] = channelsStr;
-                row[2] = comps.getChannelsLabel();
-                defaultLayers.push_back(row);
-            }
         }
-        std::string encodedDefaultLayers = param->encodeToKnobTableFormat(defaultLayers);
+        std::string encodedDefaultLayers = param->encodePlanesList(defaultComponents);
         param->setDefaultValue(encodedDefaultLayers);
         layersPage->addKnob(param);
         _imp->defaultLayersList = param;
@@ -1319,53 +1302,7 @@ Project::isGPURenderingEnabledInProject() const
 std::list<ImagePlaneDesc>
 Project::getProjectDefaultLayers() const
 {
-    std::list<ImagePlaneDesc> ret;
-    std::list<std::vector<std::string> > table;
-
-    _imp->defaultLayersList->getTable(&table);
-    for (std::list<std::vector<std::string> >::iterator it = table.begin();
-         it != table.end(); ++it) {
-
-        const std::string& planeLabel = (*it)[0];
-        std::string planeID = planeLabel;
-
-        // The layers knob only propose the user to display the label of the plane desc,
-        // but we need to recover the ID for the built-in planes to ensure compatibility
-        // with the old Nuke multi-plane suite.
-        if (planeID == kNatronColorPlaneLabel) {
-            planeID = kNatronColorPlaneID;
-        } else if (planeID == kNatronBackwardMotionVectorsPlaneLabel) {
-            planeID = kNatronBackwardMotionVectorsPlaneID;
-        } else if (planeID == kNatronForwardMotionVectorsPlaneLabel) {
-            planeID = kNatronForwardMotionVectorsPlaneLabel;
-        } else if (planeID == kNatronDisparityLeftPlaneLabel) {
-            planeID = kNatronDisparityLeftPlaneID;
-        } else if (planeID == kNatronDisparityRightPlaneLabel) {
-            planeID = kNatronDisparityRightPlaneID;
-        }
-
-        bool found = false;
-        for (std::list<ImagePlaneDesc>::const_iterator it2 = ret.begin(); it2 != ret.end(); ++it2) {
-            if (it2->getPlaneID() == planeID) {
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            std::vector<std::string> componentsName;
-            QString str = QString::fromUtf8( (*it)[1].c_str() );
-            QStringList channels = str.split( QLatin1Char(' ') );
-            componentsName.resize( channels.size() );
-            for (int i = 0; i < channels.size(); ++i) {
-                componentsName[i] = channels[i].toStdString();
-            }
-            ImagePlaneDesc c( planeID, planeLabel, std::string(), componentsName );
-            ret.push_back(c);
-        }
-    }
-
-
-    return ret;
+    return _imp->defaultLayersList->decodePlanesList();
 }
 
 void

@@ -244,6 +244,14 @@ public:
     FrameViewRequestPtr getExtraRequestedResultsForNode(const NodePtr& node) const;
 
     /**
+     * @brief While drawing a preview with the RotoPaint node, this is the bounding box of the area
+     * to update on the viewer.
+     * This is in pixel coordinates at the mipmap level given to render
+     **/
+    bool getRotoPaintActiveStrokeUpdateArea(RectI* area) const;
+    void setActiveStrokeUpdateArea(const RectI& area);
+
+    /**
      * @brief Returns the object used to gather stats for this rende
      **/
     RenderStatsPtr getStatsObject() const;
@@ -259,10 +267,12 @@ public:
      **/
     RotoDrawableItemPtr getCurrentlyDrawingItem() const;
 
+    void registerRenderClone(const KnobHolderPtr& holder);
+
 private:
 
 
-
+    friend class CleanupRenderClones_RAII;
     boost::scoped_ptr<TreeRenderPrivate> _imp;
 };
 

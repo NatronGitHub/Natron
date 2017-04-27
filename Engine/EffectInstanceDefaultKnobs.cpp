@@ -162,7 +162,9 @@ EffectInstance::createChannelSelector(int inputNb,
             hint = tr("Select here the plane that will be used in input %1.").arg( QString::fromUtf8( inputName.c_str() ));
         }
 
-        param->setNewOptionCallback(&Node::choiceParamAddLayerCallback);
+        if (isOutput) {
+            param->setNewOptionCallback(&Node::choiceParamAddLayerCallback);
+        }
         param->setLabel(label);
         param->setHintToolTip(hint);
         param->setAnimationEnabled(false);
@@ -303,6 +305,8 @@ EffectInstance::findPluginFormatKnobs(const KnobsVec & knobs, bool loadingSerial
 void
 EffectInstance::createNodePage(const KnobPagePtr& settingsPage)
 {
+
+
     {
         KnobBoolPtr param = createKnob<KnobBool>("hideInputs");
         param->setLabel(tr("Hide inputs"));
@@ -1320,6 +1324,7 @@ EffectInstance::initializeDefaultKnobs(bool loadingSerialization, bool hasGUI)
 
 
     //Create the "Label" knob
+    NodeGroup* isGrpNode = dynamic_cast<NodeGroup*>(this);
     Backdrop* isBackdropNode = dynamic_cast<Backdrop*>(this);
     QString labelKnobLabel = isBackdropNode ? tr("Name label") : tr("Label");
     createLabelKnob( settingsPage, labelKnobLabel.toStdString() );
@@ -1378,6 +1383,10 @@ EffectInstance::initializeDefaultKnobs(bool loadingSerialization, bool hasGUI)
         _imp->defKnobs->processAllLayersKnob = toKnobBool(getKnobByName(kNodeParamProcessAllLayers));
     }
 
+    if (!isGrpNode && mainPage) {
+        // Add a knob so we can create layers for this effect
+        getOrCreateUserPlanesKnob(mainPage);
+    }
 
     findOrCreateChannelEnabled();
 
@@ -1459,7 +1468,6 @@ EffectInstance::initializeDefaultKnobs(bool loadingSerialization, bool hasGUI)
 
     createNodePage(settingsPage);
 
-    NodeGroup* isGrpNode = dynamic_cast<NodeGroup*>(this);
     if (!isGrpNode && !isBackdropNode) {
         createInfoPage();
     } else if (isGrpNode) {

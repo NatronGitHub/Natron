@@ -131,7 +131,6 @@ Texture::ensureTextureHasSize(const RectI& bounds,
         return false;
     }
     _bounds = bounds;
-
     if (_useOpenGL) {
         ensureTextureHasSizeInternal<GL_GPU>(originalRAMBuffer, _target, _texID, _minFilter, _magFilter, _clamp, _internalFormat, _format, _glType, w(), h());
     } else {
@@ -149,34 +148,50 @@ void fillOrAllocateTextureInternal(const RectI & bounds,
                                    int target,
                                    int texID,
                                    int format,
-                                   int glType,
-                                   int w,
-                                   int h)
+                                   int glType)
 {
     //GLuint savedTexture;
     //glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
     {
         GLProtectAttrib<GL> a(GL_ENABLE_BIT);
-        int width = roiParam ? roiParam->width() : w;
-        int height = roiParam ? roiParam->height() : h;
-        int x1 = roiParam ? roiParam->x1 - bounds.x1 : 0;
-        int y1 = roiParam ? roiParam->y1 - bounds.y1 : 0;
 
-        if ( !texture->ensureTextureHasSize(bounds, originalRAMBuffer) ) {
+
+        if (!texture->getBounds().contains(bounds)) {
+            bool ok = texture->ensureTextureHasSize(bounds, originalRAMBuffer);
+            assert(ok);
+        } else {
+
+
+            // The bounds of the texture might be different than the bounds of the buffer
+            const RectI& texBounds = texture->getBounds();
+
+            int x1, y1, width, height;
+            if (roiParam) {
+                x1 = roiParam->x1 - texBounds.x1;
+                y1 = roiParam->y1 - texBounds.y1;
+                width = roiParam->width();
+                height = roiParam->height();
+            } else {
+                x1 = bounds.x1 - texBounds.x1;
+                y1 = bounds.y1 - texBounds.y1;
+                width = bounds.width();
+                height = bounds.height();
+            }
             GL::Enable(target);
             GL::BindTexture (target, texID);
 
             GL::TexSubImage2D(target,
-                            0,              // level
-                            x1, y1,               // xoffset, yoffset
-                            width, height,
-                            format,            // format
-                            glType,       // type
-                            originalRAMBuffer);
+                              0,              // level
+                              x1, y1,               // xoffset, yoffset
+                              width, height,
+                              format,            // format
+                              glType,       // type
+                              originalRAMBuffer);
 
             GL::BindTexture (target, 0);
             glCheckError(GL);
         }
+    
     } // GLProtectAttrib a(GL_ENABLE_BIT);
 }
 
@@ -186,9 +201,9 @@ Texture::fillOrAllocateTexture(const RectI & bounds,
                                const unsigned char* originalRAMBuffer)
 {
     if (_useOpenGL) {
-        fillOrAllocateTextureInternal<GL_GPU>(bounds, this, roiParam, originalRAMBuffer, _target, _texID, _format, _glType, w(), h());
+        fillOrAllocateTextureInternal<GL_GPU>(bounds, this, roiParam, originalRAMBuffer, _target, _texID, _format, _glType);
     } else {
-        fillOrAllocateTextureInternal<GL_CPU>(bounds, this, roiParam, originalRAMBuffer, _target, _texID, _format, _glType, w(), h());
+        fillOrAllocateTextureInternal<GL_CPU>(bounds, this, roiParam, originalRAMBuffer, _target, _texID, _format, _glType);
     }
 } // fillOrAllocateTexture
 

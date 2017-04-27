@@ -75,6 +75,13 @@ private:
                          const GLRendererID& rendererID = GLRendererID(),
                          bool coreProfile = false);
 
+protected:
+
+    /**
+     * @brief Convenience ctor for derived classes
+     **/
+    OSGLContext(bool useGPUContext);
+
 public:
 
     static OSGLContextPtr create(const FramebufferConfig& pixelFormatAttrs,
@@ -134,7 +141,7 @@ public:
 
 
 
-    static void unsetCurrentContextNoRenderInternal(bool useGPU, const OSGLContext* context);
+    static void unsetCurrentContextNoRenderInternal(bool useGPU, OSGLContext* context);
 
     /**
      * @brief Returns all renderers capable of rendering OpenGL
@@ -203,6 +210,15 @@ public:
 private:
 
     void setContextCurrentInternal(int width, int height, int rowWidth, void* buffer);
+
+protected:
+
+    virtual void makeGPUContextCurrent();
+
+    virtual void unsetGPUContext();
+
+private:
+
 
     /**
      * @brief Releases the OpenGL context from this thread.

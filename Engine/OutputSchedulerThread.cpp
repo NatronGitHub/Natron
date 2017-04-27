@@ -2082,9 +2082,8 @@ public:
 
     ViewerRenderBufferedFrame()
     : BufferedFrame()
-    , isPartialRect(false)
+    , type(OpenGLViewerI::TextureTransferArgs::eTextureTransferTypeReplace)
     , viewerProcessImages()
-    , canonicalRoi()
     , viewerProcessImageKey()
     {
 
@@ -2094,12 +2093,11 @@ public:
 
 public:
 
-    bool isPartialRect;
+    OpenGLViewerI::TextureTransferArgs::TypeEnum type;
     ImagePtr viewerProcessImages[2];
     ImagePtr colorPickerImages[2];
     ImagePtr colorPickerInputImages[2];
     ActionRetCodeEnum retCode[2];
-    RectD canonicalRoi[2];
     ImageCacheKeyPtr viewerProcessImageKey[2];
 };
 
@@ -2126,6 +2124,7 @@ typedef boost::shared_ptr<ViewerRenderBufferedFrameContainer> ViewerRenderBuffer
 
 struct RenderViewerProcessFunctorArgs
 {
+    OpenGLViewerI::TextureTransferArgs::TypeEnum type;
     NodePtr viewerProcessNode;
     NodePtr colorPickerNode, colorPickerInputNode;
     RotoStrokeItemPtr activeStrokeItem;
@@ -2135,6 +2134,7 @@ struct RenderViewerProcessFunctorArgs
     RenderStatsPtr stats;
     ActionRetCodeEnum retCode;
     RectD roi;
+
 
     // Store the key of the first tile in the outputImage
     // so that we can later on check in the gui if
@@ -2150,7 +2150,8 @@ struct RenderViewerProcessFunctorArgs
     bool byPassCache;
 
     RenderViewerProcessFunctorArgs()
-    : retCode(eActionStatusOK)
+    : type(OpenGLViewerI::TextureTransferArgs::eTextureTransferTypeReplace)
+    , retCode(eActionStatusOK)
     {
 
     }
@@ -2220,16 +2221,22 @@ public:
 
     }
 
-    static ImagePtr convertImageForViewerDisplay(const ImagePtr& image)
+    static ImagePtr convertImageForViewerDisplay(const RectI& bounds,
+                                                 bool forceCopy,
+                                                 const ImagePtr& image)
     {
         if (!image) {
             return image;
         }
+        if (!forceCopy && image->getComponentsCount() == 4 &&
+            image->getStorageMode() == eStorageModeRAM &&
+            image->getBufferFormat() == eImageBufferLayoutRGBAPackedFullRect) {
+            return image;
+        }
         Image::InitStorageArgs initArgs;
-        initArgs.bounds = image->getBounds();
+        initArgs.bounds = bounds;
 
         // Viewer textures are always RGBA
-
         initArgs.plane = ImagePlaneDesc::getRGBAComponents();
         initArgs.mipMapLevel = image->getMipMapLevel();
         initArgs.proxyScale = image->getProxyScale();
@@ -2243,6 +2250,7 @@ public:
         Image::CopyPixelsArgs copyArgs;
         copyArgs.roi = initArgs.bounds;
         copyArgs.monoConversion = Image::eMonoToPackedConversionCopyToAll;
+        copyArgs.forceCopyEvenIfBuffersHaveSameLayout = forceCopy;
         mappedImage->copyPixels(*image, copyArgs);
         return mappedImage;
     }
@@ -2275,10 +2283,23 @@ public:
             }
 
 
+            RectI imageConvertRoI = inArgs->outputImage->getBounds();
+            // If we are drawing with the RotoPaint node, only update the texture portion
+            if (inArgs->type == OpenGLViewerI::TextureTransferArgs::eTextureTransferTypeModify) {
+                RectI strokeArea;
+                bool strokeAreaSet = inArgs->renderObject->getRotoPaintActiveStrokeUpdateArea(&strokeArea);
+                if (strokeAreaSet) {
+                    imageConvertRoI = strokeArea;
+                }
+            }
+
             // The viewer-process node may not have rendered a 4 channel image, but this is required but the OpenGL viewer
             // which only draws RGBA images.
-    
-            inArgs->outputImage = convertImageForViewerDisplay(inArgs->outputImage);
+
+            // If we are in accumulation, force a copy of the image because another render thread might modify it in a future render whilst it may
+            // still be read from the main-thread when updating the ViewerGL texture.
+            const bool forceOutputImageCopy = inArgs->outputImage == inArgs->viewerProcessNode->getEffectInstance()->getAccumBuffer(inArgs->outputImage->getLayer());
+            inArgs->outputImage = convertImageForViewerDisplay(imageConvertRoI, forceOutputImageCopy,inArgs->outputImage);
 
             // Extra color-picker images as-well.
             if (inArgs->colorPickerNode) {
@@ -2286,14 +2307,14 @@ public:
                     FrameViewRequestPtr req = inArgs->renderObject->getExtraRequestedResultsForNode(inArgs->colorPickerNode);
                     if (req) {
                         inArgs->colorPickerImage = req->getRequestedScaleImagePlane();
-                        inArgs->colorPickerImage = convertImageForViewerDisplay(inArgs->colorPickerImage);
+                        inArgs->colorPickerImage = convertImageForViewerDisplay(inArgs->colorPickerImage->getBounds(), false, inArgs->colorPickerImage);
                     }
                 }
                 if (inArgs->colorPickerInputNode) {
                     FrameViewRequestPtr req = inArgs->renderObject->getExtraRequestedResultsForNode(inArgs->colorPickerInputNode);
                     if (req) {
                         inArgs->colorPickerInputImage = req->getRequestedScaleImagePlane();
-                        inArgs->colorPickerInputImage = convertImageForViewerDisplay(inArgs->colorPickerInputImage);
+                        inArgs->colorPickerInputImage = convertImageForViewerDisplay(inArgs->colorPickerInputImage->getBounds(), false, inArgs->colorPickerInputImage);
                     }
                 }
             }
@@ -2349,9 +2370,9 @@ public:
                                               ViewIdx view,
                                               bool isPlayback,
                                               const RenderStatsPtr& stats,
+                                              OpenGLViewerI::TextureTransferArgs::TypeEnum type,
                                               const RotoStrokeItemPtr& activeStroke,
                                               const RectD* roiParam,
-                                              ViewerRenderBufferedFrame* bufferedFrame,
                                               RenderViewerProcessFunctorArgs* outArgs)
     {
 
@@ -2369,6 +2390,7 @@ public:
         } else if (!fullFrameProcessing) {
             roi = viewerProcess->getViewerRoI();
         }
+        outArgs->type = type;
         outArgs->activeStrokeItem = activeStroke;
         outArgs->isPlayback = isPlayback;
         outArgs->isDraftModeEnabled = draftModeEnabled;
@@ -2378,7 +2400,7 @@ public:
         outArgs->stats = stats;
         outArgs->time = time;
         outArgs->view = view;
-        if (!isPlayback) {
+        if (!isPlayback && type == OpenGLViewerI::TextureTransferArgs::eTextureTransferTypeReplace && !activeStroke) {
             outArgs->colorPickerNode = viewerProcess_i == 0 ? viewer->getCurrentAInput() : viewer->getCurrentBInput();
             if (outArgs->colorPickerNode) {
                 // Also sample the "main" input of the color picker node, this is useful for keyers.
@@ -2387,7 +2409,6 @@ public:
             }
         }
         createRenderViewerObject(outArgs);
-        bufferedFrame->canonicalRoi[viewerProcess_i] = roi;
 
     }
 
@@ -2396,7 +2417,7 @@ private:
     void createAndLaunchRenderInThread(const RenderViewerProcessFunctorArgsPtr& processArgs, int viewerProcess_i, TimeValue time, const RenderStatsPtr& stats, ViewerRenderBufferedFrame* bufferedFrame)
     {
 
-        createRenderViewerProcessArgs(_viewer, viewerProcess_i, time, bufferedFrame->view, true /*isPlayback*/, stats,  RotoStrokeItemPtr(), 0 /*roiParam*/,  bufferedFrame, processArgs.get());
+        createRenderViewerProcessArgs(_viewer, viewerProcess_i, time, bufferedFrame->view, true /*isPlayback*/, stats, bufferedFrame->type, RotoStrokeItemPtr(), 0 /*roiParam*/, processArgs.get());
 
         // Register the render so that it can be aborted in abortRenders()
         {
@@ -2439,7 +2460,7 @@ private:
             ViewerRenderBufferedFramePtr bufferObject(new ViewerRenderBufferedFrame);
             bufferObject->view = viewsToRender[i];
             bufferObject->stats = stats;
-            bufferObject->isPartialRect = false;
+            bufferObject->type = OpenGLViewerI::TextureTransferArgs::eTextureTransferTypeReplace;
 
             std::vector<RenderViewerProcessFunctorArgsPtr> processArgs(2);
             for (int i = 0; i < 2; ++i) {
@@ -2524,13 +2545,12 @@ ViewerDisplayScheduler::processFrame(const BufferedFrameContainerPtr& frames)
         ViewerNode::UpdateViewerArgs args;
         args.time = framesContainer->time;
         args.view = (*it)->view;
-        args.isPartialRect = false;
+        args.type = viewerObject->type;
         args.recenterViewer = false;
 
 
         for (int i = 0; i < 2; ++i) {
             ViewerNode::UpdateViewerArgs::TextureUpload upload;
-            upload.canonicalRoI = viewerObject->canonicalRoi[i];
             upload.image = viewerObject->viewerProcessImages[i];
             upload.colorPickerImage = viewerObject->colorPickerImages[i];
             upload.colorPickerInputImage = viewerObject->colorPickerInputImages[i];
@@ -3250,7 +3270,7 @@ public:
                                        ViewerRenderBufferedFrame* bufferedFrame)
     {
 
-        ViewerRenderFrameRunnable::createRenderViewerProcessArgs(viewer, viewerProcess_i, time, bufferedFrame->view, false /*isPlayback*/, stats, activeStroke, roiParam,  bufferedFrame, processArgs.get());
+        ViewerRenderFrameRunnable::createRenderViewerProcessArgs(viewer, viewerProcess_i, time, bufferedFrame->view, false /*isPlayback*/, stats, bufferedFrame->type, activeStroke, roiParam, processArgs.get());
 
         // Register the current renders and their age on the scheduler so that they can be aborted
         {
@@ -3284,7 +3304,7 @@ public:
     }
 
 
-    void computeViewsForRoI(const ViewerNodePtr &viewer, const RectD* roiParam, const ViewerRenderBufferedFrameContainerPtr& framesContainer)
+    void computeViewsForRoI(const ViewerNodePtr &viewer, const RectD* partialUpdateArea, const ViewerRenderBufferedFrameContainerPtr& framesContainer)
     {
 
         // Render each view sequentially. For now the viewer always asks to render 1 view since the interface can only allow 1 view at once per view
@@ -3303,7 +3323,17 @@ public:
             ViewerRenderBufferedFramePtr bufferObject(new ViewerRenderBufferedFrame);
             bufferObject->view = view;
             bufferObject->stats = stats;
-            bufferObject->isPartialRect = roiParam != 0;
+            if (partialUpdateArea) {
+                bufferObject->type = OpenGLViewerI::TextureTransferArgs::eTextureTransferTypeOverlay;
+            } else if (_args->strokeItem && _args->strokeItem->getRenderCloneCurrentStrokeStartPointIndex() > 0) {
+
+              // Upon painting ticks, we just have to update the viewer for the area that was painted
+                bufferObject->type = OpenGLViewerI::TextureTransferArgs::eTextureTransferTypeModify;
+            } 
+            else {
+                bufferObject->type = OpenGLViewerI::TextureTransferArgs::eTextureTransferTypeReplace;
+            }
+
 
             // Create a tree render object for both viewer process nodes
             std::vector<RenderViewerProcessFunctorArgsPtr> processArgs(2);
@@ -3324,12 +3354,12 @@ public:
                                                                _args->time,
                                                                stats,
                                                                _args->strokeItem,
-                                                               roiParam,
+                                                               partialUpdateArea,
                                                                bufferObject.get()));
             }
 
             // Launch the 1st viewer process in this thread
-            createAndLaunchRenderInThread(viewer, processArgs[0], 0, _args->time, stats, _args->strokeItem, roiParam, bufferObject.get());
+            createAndLaunchRenderInThread(viewer, processArgs[0], 0, _args->time, stats, _args->strokeItem, partialUpdateArea, bufferObject.get());
 
             // Wait for the 2nd viewer process
             if (viewerBlend != eViewerCompositingOperatorNone) {
@@ -3440,13 +3470,12 @@ ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(U64 age, const B
         ViewerNode::UpdateViewerArgs args;
         args.time = isViewerFrameContainer->time;
         args.view = viewerObject->view;
-        args.isPartialRect = viewerObject->isPartialRect;
+        args.type = viewerObject->type;
         args.recenterViewer = isViewerFrameContainer->recenterViewer;
         args.viewerCenter = isViewerFrameContainer->viewerCenter;
 
         for (int i = 0; i < 2; ++i) {
             ViewerNode::UpdateViewerArgs::TextureUpload upload;
-            upload.canonicalRoI = viewerObject->canonicalRoi[i];
             upload.image = viewerObject->viewerProcessImages[i];
             upload.colorPickerImage = viewerObject->colorPickerImages[i];
             upload.colorPickerInputImage = viewerObject->colorPickerInputImages[i];
@@ -3455,9 +3484,7 @@ ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(U64 age, const B
                 (viewerObject->retCode[i] == eActionStatusOK && !upload.image)) {
                 continue;
             }
-            if (upload.canonicalRoI.isNull()) {
-                continue;
-            }
+
             args.viewerUploads[i].push_back(upload);
         }
         if (!args.viewerUploads[0].empty() || !args.viewerUploads[1].empty()) {

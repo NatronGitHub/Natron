@@ -159,18 +159,7 @@ public:
      * 3) glUnmapBuffer
      * 4) glTexSubImage2D or glTexImage2D depending whether we resize the texture or not.
      **/
-    virtual void transferBufferFromRAMtoGPU(const ImagePtr& image,
-                                            const ImagePtr& colorPickerImage,
-                                            const ImagePtr& colorPickerInputImage,
-                                            int textureIndex,
-                                            bool isPartialRect,
-                                            TimeValue time,
-                                            ViewIdx view,
-                                            const RectD& originalCanonicalRoi,
-                                            const RectD& rod,
-                                            bool recenterViewer,
-                                            const Point& viewportCenter,
-                                            const ImageCacheKeyPtr& viewerProcessNodeTileKey) OVERRIDE FINAL;
+    virtual void transferBufferFromRAMtoGPU(const TextureTransferArgs& args) OVERRIDE FINAL;
 
 
     virtual void disconnectInputTexture(int textureIndex, bool clearRoD) OVERRIDE FINAL;
@@ -232,8 +221,7 @@ public Q_SLOTS:
 
 public:
 
-
-    virtual void makeOpenGLcontextCurrent() OVERRIDE FINAL;
+    virtual OSGLContextPtr getOpenGLViewerContext() const OVERRIDE FINAL;
     virtual void removeGUI() OVERRIDE FINAL;
     virtual TimeLinePtr getTimeline() const OVERRIDE FINAL;
 

@@ -168,7 +168,7 @@ OneViewNode::getFramesNeeded(TimeValue time,
 }
 
 void
-OneViewNode::onMetadataChanged(const NodeMetadata& /*metadata*/)
+OneViewNode::onMetadataChanged(const NodeMetadata& metadata)
 {
     const std::vector<std::string>& views = getApp()->getProject()->getProjectViewNames();
     KnobChoicePtr viewKnob = _imp->viewKnob.lock();
@@ -191,6 +191,7 @@ OneViewNode::onMetadataChanged(const NodeMetadata& /*metadata*/)
     if (!foundView) {
         viewKnob->setValue(0);
     }
+    EffectInstance::onMetadataChanged(metadata);
 } // onMetadataChanged
 
 

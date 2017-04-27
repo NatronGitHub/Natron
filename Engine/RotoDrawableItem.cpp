@@ -70,8 +70,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "Serialization/NodeSerialization.h"
 
-// When defined items are blurred using a TimeBlur node instead of doing it natively in their render action
-//#define ROTOPAINT_MOTIONBLUR_USE_TIMEBLUR
 
 NATRON_NAMESPACE_ENTER;
 
@@ -99,9 +97,7 @@ public:
     NodePtr effectNode, maskNode;
     NodePtr mergeNode;
     NodePtr timeOffsetNode, frameHoldNode;
-#ifdef ROTOPAINT_MOTIONBLUR_USE_TIMEBLUR
-    NodePtr timeBlurNode;
-#endif
+
     std::list<NodePtr> nodes;
     KnobColorWPtr overlayColor; //< the color the shape overlay should be drawn with, defaults to smooth red
     KnobDoubleWPtr opacity; //< opacity of the rendered shape between 0 and 1
@@ -156,9 +152,6 @@ public:
     , mergeNode(other.mergeNode)
     , timeOffsetNode(other.timeOffsetNode)
     , frameHoldNode(other.frameHoldNode)
-#ifdef ROTOPAINT_MOTIONBLUR_USE_TIMEBLUR
-    , timeBlurNode(other.timeBlurNode)
-#endif
     , nodes(other.nodes)
     {
 
@@ -301,7 +294,11 @@ RotoDrawableItem::createNodes(bool connectNodes)
         assert(isStroke);
         // Link effect knob to size
         KnobIPtr knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
-        knob->linkTo(isStroke->getBrushEffectKnob());
+        for (int i = 0; i < 2; ++i) {
+            // The Effect Strength knob is 1 dimensional whereas the blur size is 2-dim
+            knob->linkTo(isStroke->getBrushEffectKnob(), DimIdx(i), DimIdx(0));
+        }
+
 
     } else if (type == eRotoStrokeTypeSolid) {
         // Link the color parameter to the color of the constant node
@@ -348,6 +345,14 @@ RotoDrawableItem::createNodes(bool connectNodes)
         KnobChoicePtr typeChoice = toKnobChoice(knob);
         assert(typeChoice);
         typeChoice->setValue(1);
+    }
+
+    if (type == eRotoStrokeTypeEraser || type == eRotoStrokeTypeSolid) {
+        // For a constant, link the Output components knob of the constant node to the output components
+        // of the Roto node.
+        KnobChoicePtr outputComponentsnKnob = rotoPaintEffect->getOutputComponentsKnob();
+        KnobIPtr knob = _imp->effectNode->getKnobByName(kConstantParamOutputComponents);
+        knob->linkTo(outputComponentsnKnob);
     }
 
     if ( (type == eRotoStrokeTypeClone) || (type == eRotoStrokeTypeReveal) || (type == eRotoStrokeTypeComp) ) {
@@ -443,12 +448,9 @@ RotoDrawableItem::createNodes(bool connectNodes)
         MergingFunctionEnum op;
         if ( (type == eRotoStrokeTypeDodge) || (type == eRotoStrokeTypeBurn) ) {
             op = (type == eRotoStrokeTypeDodge ? eMergeColorDodge : eMergeColorBurn);
-        } else if (type == eRotoStrokeTypeSolid || type == eRotoStrokeTypeComp) {
-            op = eMergeOver;
         } else {
-            op = eMergeCopy;
+            op = eMergeOver;
         }
-
         compOp->setDefaultValueFromID(Merge::getOperatorString(op));
 
         // Make sure it is not serialized
@@ -494,39 +496,6 @@ RotoDrawableItem::createNodes(bool connectNodes)
             _imp->nodes.push_back(_imp->maskNode);
         }
     }
-
-#ifdef ROTOPAINT_MOTIONBLUR_USE_TIMEBLUR
-    if (type == eRotoStrokeTypeSolid) {
-        // For solid (Bezier/paint stroke) add a TimeBlur node right away after the RotoShapeRender node
-        // so the user can add per-shape motion blur.
-        fixedNamePrefix = baseFixedName;
-        fixedNamePrefix.append( QString::fromUtf8("PerShapeMotionBlur") );
-        CreateNodeArgsPtr args(CreateNodeArgs::create( PLUGINID_OFX_TIMEBLUR, rotoPaintEffect ));
-        args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
-#ifndef ROTO_PAINT_NODE_GRAPH_VISIBLE
-        args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
-#endif
-        args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
-        args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
-        _imp->timeBlurNode = app->createNode(args);
-        assert(_imp->timeBlurNode);
-        if (!_imp->timeBlurNode) {
-            throw std::runtime_error(tr("Rotopaint requires the plug-in %1 in order to work").arg(QLatin1String(PLUGINID_OFX_TIMEBLUR)).toStdString());
-        }
-        _imp->nodes.push_back(_imp->timeBlurNode);
-
-        KnobIPtr divisionsKnob = _imp->timeBlurNode->getKnobByName(kTimeBlurParamDivisions);
-        KnobIPtr shutterKnob = _imp->timeBlurNode->getKnobByName(kTimeBlurParamShutter);
-        KnobIPtr shutterTypeKnob = _imp->timeBlurNode->getKnobByName(kTimeBlurParamShutterOffset);
-        KnobIPtr shutterCustomOffsetKnob = _imp->timeBlurNode->getKnobByName(kTimeBlurParamCustomOffset);
-        assert(divisionsKnob && shutterKnob && shutterTypeKnob && shutterCustomOffsetKnob);
-        divisionsKnob->slaveTo(_imp->motionBlurAmount.lock());
-        shutterKnob->slaveTo(_imp->motionBlurShutter.lock());
-        shutterTypeKnob->slaveTo(_imp->motionBlurShutterType.lock());
-        shutterCustomOffsetKnob->slaveTo(_imp->motionBlurCustomShutter.lock());
-
-    }
-#endif // ROTOPAINT_MOTIONBLUR_USE_TIMEBLUR
 
     // Whenever the hash of the item changes, invalidate the hash of the RotoPaint nodes and all nodes within it.
     // This needs to be done because the hash needs to be recomputed if the Solo state changes for instance?
@@ -670,12 +639,6 @@ RotoDrawableItem::refreshNodesPositions(double x, double y)
         _imp->maskNode->setPosition(x - 100, y);
     }
     double yOffset = 100;
-#ifdef ROTOPAINT_MOTIONBLUR_USE_TIMEBLUR
-    if (_imp->timeBlurNode) {
-        _imp->timeBlurNode->setPosition(x, y - yOffset);
-        yOffset += 100;
-    }
-#endif
 
     if (_imp->effectNode) {
         _imp->effectNode->setPosition(x, y - yOffset);
@@ -783,6 +746,11 @@ RotoDrawableItem::refreshNodesConnections()
         }   break;
         case eRotoStrokeTypeSolid:
         case eRotoStrokeTypeEraser:
+        {
+            _imp->effectNode->swapInput(_imp->maskNode, 0);
+            mergeInputA = _imp->effectNode;
+            mergeInputB = upstreamNode;
+        }   break;
         case eRotoStrokeTypeSmear:
         case eRotoStrokeTypeBlur:
         case eRotoStrokeTypeClone:
@@ -797,6 +765,37 @@ RotoDrawableItem::refreshNodesConnections()
              (B) ------------------------------------Upstream Node
 
              */
+
+
+            // The input A of the merge is the effect node
+            // Connect the RotoShapeRender node to the input of the effect so that we can ouptut the RotoMask plane
+            // from the A input if requested
+            if (_imp->maskNode) {
+                _imp->maskNode->swapInput(_imp->effectNode, 0);
+                mergeInputA = _imp->maskNode;
+            } else {
+                mergeInputA = _imp->effectNode;
+            }
+            mergeInputB = upstreamNode;
+
+            // Determine what we should connect to upstream of the A input
+            NodePtr mergeAUpstreamInput;
+            mergeAUpstreamInput = upstreamNode;
+            if ((type == eRotoStrokeTypeReveal) || ( type == eRotoStrokeTypeClone)) {
+                KnobChoicePtr mergeAKnob = _imp->mergeAInputChoice.lock();
+                int reveal_i = mergeAKnob->getValue();
+                if (reveal_i == 0) {
+                    mergeAUpstreamInput = upstreamNode;
+                } else {
+                    // For reveal & clone, the user can select a RotoPaint node's input.
+                    // Find an input of the RotoPaint node with the given input label
+
+                    ChoiceOption inputAName = mergeAKnob->getActiveEntry();
+                    int inputNb = QString::fromUtf8(inputAName.id.c_str()).toInt();
+                    mergeAUpstreamInput = rotoPaintNode->getInternalInputNode(inputNb);
+
+                }
+            }
 
             // This is the node that we should connect to the A source upstream.
             NodePtr effectInput;
@@ -820,50 +819,6 @@ RotoDrawableItem::refreshNodesConnections()
 
             }
 
-
-#ifdef ROTOPAINT_MOTIONBLUR_USE_TIMEBLUR
-            RotoMotionBlurModeEnum mbType = (RotoMotionBlurModeEnum)rotoPaintNode->getMotionBlurTypeKnob()->getValue();
-            if (_imp->timeBlurNode) {
-                _imp->timeBlurNode->swapInput(mbType == eRotoMotionBlurModePerShape ? _imp->effectNode : NodePtr(), 0);
-            }
-
-            if (mbType == eRotoMotionBlurModePerShape && _imp->timeBlurNode) {
-                mergeInputA = _imp->timeBlurNode;
-            } else
-#endif
-            {
-                if (type != eRotoStrokeTypeSolid && type != eRotoStrokeTypeEraser) {
-                    mergeInputA = _imp->effectNode;
-                } else {
-                    assert(_imp->maskNode);
-                    mergeInputA = _imp->maskNode;
-                    _imp->maskNode->swapInput(_imp->effectNode, 0);
-                }
-            }
-            mergeInputB = upstreamNode;
-
-            // Determine what we should connect to upstream of the A input
-            NodePtr mergeAUpstreamInput;
-
-            // For a solid, don't connect anything on its input
-            if (type != eRotoStrokeTypeSolid && type != eRotoStrokeTypeEraser) {
-                mergeAUpstreamInput = upstreamNode;
-            } else if ((type == eRotoStrokeTypeReveal) || ( type == eRotoStrokeTypeClone)) {
-                KnobChoicePtr mergeAKnob = _imp->mergeAInputChoice.lock();
-                int reveal_i = mergeAKnob->getValue();
-                if (reveal_i == 0) {
-                    mergeAUpstreamInput = upstreamNode;
-                } else {
-                    // For reveal & clone, the user can select a RotoPaint node's input.
-                    // Find an input of the RotoPaint node with the given input label
-
-                    ChoiceOption inputAName = mergeAKnob->getActiveEntry();
-                    int inputNb = QString::fromUtf8(inputAName.id.c_str()).toInt();
-                    mergeAUpstreamInput = rotoPaintNode->getInternalInputNode(inputNb);
-                    
-                }
-            }
-            
             effectInput->swapInput(mergeAUpstreamInput, 0);
 
         }   break;
@@ -1302,7 +1257,6 @@ RotoDrawableItem::getMotionBlurSettings(const TimeValue time,
     range->max = time;
     *divisions = 1;
 
-#ifndef ROTOPAINT_MOTIONBLUR_USE_TIMEBLUR
     RotoPaintPtr rotoPaintNode = toRotoPaint(getHolderEffect());
     if (!rotoPaintNode) {
         return;
@@ -1352,8 +1306,6 @@ RotoDrawableItem::getMotionBlurSettings(const TimeValue time,
             break;
     }
 
-#endif // #ifdef ROTOPAINT_MOTIONBLUR_USE_TIMEBLUR
-    
 }
 
 RectD

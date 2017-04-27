@@ -51,6 +51,7 @@
 #include "Engine/KnobFile.h"
 #include "Engine/KnobGuiI.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/TreeRender.h"
 
 SERIALIZATION_NAMESPACE_USING
 
@@ -4027,7 +4028,7 @@ KnobHelper::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::Kn
 
 /***************************KNOB HOLDER******************************************/
 
-typedef std::map<FrameViewRenderKey, KnobHolderPtr, FrameViewRenderKey_compare_less> RenderCloneMap;
+typedef std::map<FrameViewRenderKey, KnobHolderWPtr, FrameViewRenderKey_compare_less> RenderCloneMap;
 
 struct KnobHolderCommonData
 {
@@ -5165,7 +5166,7 @@ KnobHolder::removeRenderClone(const TreeRenderPtr& render)
         RenderCloneMap newMap;
         for (RenderCloneMap::iterator it = _imp->common->renderClones.begin(); it != _imp->common->renderClones.end(); ++it) {
             if (it->first.render.lock() == render) {
-                clones.push_back(it->second);
+                clones.push_back(it->second.lock());
                 continue;
             }
             newMap.insert(*it);
@@ -5198,8 +5199,11 @@ KnobHolder::createRenderClone(const FrameViewRenderKey& key) const
         QMutexLocker k(&_imp->common->renderClonesMutex);
         RenderCloneMap::iterator found = _imp->common->renderClones.find(key);
         if (found != _imp->common->renderClones.end()) {
-            found->second->initializeKnobsPublic();
-            return found->second;
+            KnobHolderPtr clone = found->second.lock();
+            if (clone) {
+                clone->initializeKnobsPublic();
+                return clone;
+            }
         }
     }
 
@@ -5211,6 +5215,7 @@ KnobHolder::createRenderClone(const FrameViewRenderKey& key) const
         // We may not have really cloned the effect (e.g: NodeGroup)
         return copy;
     }
+    key.render.lock()->registerRenderClone(copy);
     {
         QMutexLocker k(&_imp->common->renderClonesMutex);
         _imp->common->renderClones[key] = copy;
@@ -5228,7 +5233,7 @@ KnobHolder::getRenderClone(const FrameViewRenderKey& key) const
     QMutexLocker k(&_imp->common->renderClonesMutex);
     RenderCloneMap::iterator found = _imp->common->renderClones.find(key);
     if (found != _imp->common->renderClones.end()) {
-        return found->second;
+        return found->second.lock();
     }
     return KnobHolderPtr();
 }

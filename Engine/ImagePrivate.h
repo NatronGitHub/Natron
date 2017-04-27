@@ -167,29 +167,30 @@ struct ImagePrivate
      * @param requiresUnpremult If true, if a component conversion from RGBA to RGB happens
      * the RGB channels will be divided by the alpha channel when copied to the output image
      **/
-    static void convertCPUImage(const RectI & renderWindow,
-                                ViewerColorSpaceEnum srcColorSpace,
-                                ViewerColorSpaceEnum dstColorSpace,
-                                bool requiresUnpremult,
-                                int conversionChannel,
-                                Image::AlphaChannelHandlingEnum alphaHandling,
-                                Image::MonoToPackedConversionEnum monoConversion,
-                                const void* srcBufPtrs[4],
-                                int srcNComps,
-                                ImageBitDepthEnum srcBitDepth,
-                                const RectI& srcBounds,
-                                void* dstBufPtrs[4],
-                                int dstNComps,
-                                ImageBitDepthEnum dstBitDepth,
-                                const RectI& dstBounds,
-                                const EffectInstancePtr& renderClone);
+    static ActionRetCodeEnum convertCPUImage(const RectI & renderWindow,
+                                             ViewerColorSpaceEnum srcColorSpace,
+                                             ViewerColorSpaceEnum dstColorSpace,
+                                             bool requiresUnpremult,
+                                             int conversionChannel,
+                                             Image::AlphaChannelHandlingEnum alphaHandling,
+                                             Image::MonoToPackedConversionEnum monoConversion,
+                                             const void* srcBufPtrs[4],
+                                             int srcNComps,
+                                             ImageBitDepthEnum srcBitDepth,
+                                             const RectI& srcBounds,
+                                             void* dstBufPtrs[4],
+                                             int dstNComps,
+                                             ImageBitDepthEnum dstBitDepth,
+                                             const RectI& dstBounds,
+                                             const EffectInstancePtr& renderClone);
 
     static void fillGL(const RectI & roi,
                        float r,
                        float g,
                        float b,
                        float a,
-                       const GLImageStoragePtr& texture);
+                       const GLTexturePtr& texture,
+                       const OSGLContextPtr& glContext);
 
     static ActionRetCodeEnum fillCPU(void* ptrs[4],
                                      float r,
@@ -249,11 +250,32 @@ struct ImagePrivate
                                            ImageBitDepthEnum dstImgBitDepth,
                                            int dstImgNComps,
                                            const RectI& dstBounds,
-                                           const std::bitset<4> processChannels,
-                                           const RectI& roi,
-                                           const EffectInstancePtr& renderClone);
-    
-    
+                                                        const std::bitset<4> processChannels,
+                                                        const RectI& roi,
+                                                        const EffectInstancePtr& renderClone);
+
+    static void copyGLTexture(const GLTexturePtr& from,
+                              const GLTexturePtr& to,
+                              const RectI& roi,
+                              const OSGLContextPtr& glContext);
+
+
+    static ActionRetCodeEnum convertRGBAPackedCPUBufferToGLTexture(const float* srcData,
+                                                                   const RectI& srcBounds,
+                                                                   int srcNComps,
+                                                                   const RectI& roi,
+                                                                   const GLTexturePtr& outTexture,
+                                                                   const OSGLContextPtr& glContext);
+
+    static ActionRetCodeEnum convertGLTextureToRGBAPackedCPUBuffer(const GLTexturePtr& texture,
+                                                                   const RectI& roi,
+                                                                   float* outBuffer,
+                                                                   const RectI& dstBounds,
+                                                                   int dstNComps,
+                                                                   const OSGLContextPtr& glContext);
+
+
+
 };
 
 NATRON_NAMESPACE_EXIT;

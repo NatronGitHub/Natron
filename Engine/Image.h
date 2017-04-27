@@ -216,6 +216,8 @@ public:
      **/
     void ensureBuffersAllocated();
 
+    bool isBufferAllocated() const;
+
     /**
      * @brief Returns the internal buffer formating
      **/
@@ -583,7 +585,11 @@ public:
      **/
     ActionRetCodeEnum ensureBounds(const RectI& roi,
                                    unsigned int mipmapLevel,
-                                   const std::vector<RectI>& perMipMapLevelRoDPixel) WARN_UNUSED_RETURN;
+                                   const std::vector<RectI>& perMipMapLevelRoDPixel,
+                                   const EffectInstancePtr& newRenderClone) WARN_UNUSED_RETURN;
+
+    // Do not use, for debug only
+    void updateRenderCloneAndImage(const EffectInstancePtr& newRenderClone);
 
     /**
      * @brief Fill everything outside the roi in black and transparant

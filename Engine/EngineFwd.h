@@ -488,6 +488,7 @@ typedef boost::weak_ptr<KnobHolder> KnobHolderWPtr;
 typedef boost::weak_ptr<KnobI> KnobIWPtr;
 typedef boost::weak_ptr<KnobI const> KnobIConstWPtr;
 typedef boost::weak_ptr<KnobInt> KnobIntWPtr;
+typedef boost::weak_ptr<KnobLayers> KnobLayersWPtr;
 typedef boost::weak_ptr<KnobPage> KnobPageWPtr;
 typedef boost::weak_ptr<KnobPath> KnobPathWPtr;
 typedef boost::weak_ptr<KnobParametric> KnobParametricWPtr;

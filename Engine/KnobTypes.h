@@ -1528,10 +1528,10 @@ public:
     }
 
 
-    static KnobLayersPtr createRenderClone(const KnobHolderPtr& holder,
+    static KnobHelperPtr createRenderClone(const KnobHolderPtr& holder,
                                             const KnobIPtr& mainInstance)
     {
-        return KnobLayersPtr(new KnobLayers(holder, mainInstance));
+        return KnobHelperPtr(new KnobLayers(holder, mainInstance));
     }
     
 
@@ -1575,6 +1575,9 @@ public:
     }
 
     static const std::string & typeNameStatic() WARN_UNUSED_RETURN;
+
+    std::string encodePlanesList(const std::list<ImagePlaneDesc>& planes);
+    std::list<ImagePlaneDesc> decodePlanesList();
 
 private:
 

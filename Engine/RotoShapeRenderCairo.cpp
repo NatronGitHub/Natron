@@ -1030,7 +1030,7 @@ RotoShapeRenderCairo::renderSmear_cairo(TimeValue time,
 {
 
     RenderSmearCairoData data;
-    data.opacity = rotoItem->getOpacityKnob()->getValueAtTime(time, DimIdx(0), view);
+    data.opacity = 1;
     data.dstImage = dstImage;
 
     std::list<std::list<std::pair<Point, double> > > strokes;
@@ -1142,8 +1142,6 @@ RotoShapeRenderCairo::renderFeather_old_cairo(const BezierPtr& bezier,
     bezier->evaluateFeatherPointsAtTime(true /*applyFeatherDistance*/, time, view, scale, Bezier::eDeCasteljauAlgorithmIterative , 50, 1., &featherPolygon, &featherPolyBBox);
     bezier->evaluateAtTime(time, view, scale, Bezier::eDeCasteljauAlgorithmIterative, 50, 1.,  &bezierPolygon, NULL);
 
-    bool clockWise = bezier->isClockwiseOriented(time, view);
-
     assert( !featherPolygon.empty() && !bezierPolygon.empty() );
 
 
@@ -1159,8 +1157,6 @@ RotoShapeRenderCairo::renderFeather_old_cairo(const BezierPtr& bezier,
     --prevBez; // can only be valid since we assert the list is not empty
 
     // prepare p1
-    double absFeatherDistX = std::abs(featherDist_pixelsX);
-    double absFeatherDistY = std::abs(featherDist_pixelsY);
     Point p1;
     p1.x = featherPolygon.begin()->x;
     p1.y = featherPolygon.begin()->y;
@@ -1856,7 +1852,7 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
         }
 
 
-        double opacity = rotoItem->getOpacityKnob()->getValueAtTime(t, DimIdx(0), view);
+        double opacity = rotoItem->getOpacityKnob() ? rotoItem->getOpacityKnob()->getValueAtTime(t, DimIdx(0), view) : 1.;
 
         Image::CPUData imageData;
         dstImage->getCPUData(&imageData);

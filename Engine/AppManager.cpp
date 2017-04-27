@@ -83,6 +83,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Global/QtCompat.h"
 #include "Global/StrUtils.h"
 
+#include "Engine/AddPlaneNode.h"
 #include "Engine/AppInstance.h"
 #include "Engine/Backdrop.h"
 #include "Engine/CLArgs.h"
@@ -113,6 +114,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Project.h"
 #include "Engine/PrecompNode.h"
 #include "Engine/ReadNode.h"
+#include "Engine/RemovePlaneNode.h"
 #include "Engine/RotoPaint.h"
 #include "Engine/RotoShapeRenderNode.h"
 #include "Engine/RotoShapeRenderCairo.h"
@@ -1599,6 +1601,7 @@ void
 AppManager::loadBuiltinNodePlugins(IOPluginsMap* /*readersMap*/,
                                    IOPluginsMap* /*writersMap*/)
 {
+    registerPlugin(AddPlaneNode::createPlugin());
     registerPlugin(Backdrop::createPlugin());
     registerPlugin(GroupOutput::createPlugin());
     registerPlugin(GroupInput::createPlugin());
@@ -1614,6 +1617,7 @@ AppManager::loadBuiltinNodePlugins(IOPluginsMap* /*readersMap*/,
     registerPlugin(JoinViewsNode::createPlugin());
     registerPlugin(OneViewNode::createPlugin());
     registerPlugin(ReadNode::createPlugin());
+    registerPlugin(RemovePlaneNode::createPlugin());
     registerPlugin(StubNode::createPlugin());
     registerPlugin(WriteNode::createPlugin());
     registerPlugin(ViewerNode::createPlugin());

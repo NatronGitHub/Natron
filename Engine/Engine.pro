@@ -76,6 +76,7 @@ DEPENDPATH += $$PWD/NatronEngine
 DEPENDPATH += $$PWD/../Global
 
 SOURCES += \
+    AddPlaneNode.cpp \
     AnimatingObjectI.cpp \
     AppInstance.cpp \
     AppManager.cpp \
@@ -202,6 +203,7 @@ SOURCES += \
     ReadNode.cpp \
     RectD.cpp \
     RectI.cpp \
+    RemovePlaneNode.cpp \
     RenderStats.cpp \
     RenderQueue.cpp \
     RotoBezierTriangulation.cpp \
@@ -319,6 +321,7 @@ SOURCES += \
 
 
 HEADERS += \
+    AddPlaneNode.h \
     AfterQuitProcessingI.h \
     AnimatingObjectI.h \
     AppInstance.h \
@@ -453,6 +456,7 @@ HEADERS += \
     PyPanelI.h \
     QtEnumConvert.h \
     RamBuffer.h \
+    RemovePlaneNode.h \
     ReadNode.h \
     RectD.h \
     RectI.h \

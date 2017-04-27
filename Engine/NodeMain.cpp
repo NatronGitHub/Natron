@@ -708,15 +708,6 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
         }
     }
 
-    // User created components
-    std::list<ImagePlaneDesc> userComps;
-    _imp->effect->getUserCreatedComponents(&userComps);
-    for (std::list<ImagePlaneDesc>::iterator it = userComps.begin(); it!=userComps.end(); ++it) {
-        SERIALIZATION_NAMESPACE::ImagePlaneDescSerialization s;
-        it->toSerialization(&s);
-        serialization->_userComponents.push_back(s);
-    }
-
     getPosition(&serialization->_nodePositionCoords[0], &serialization->_nodePositionCoords[1]);
 
     // Only save the size for backdrops, that's the only node where the user can resize
@@ -870,6 +861,7 @@ Node::loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializatio
     _imp->effect->onKnobsAboutToBeLoaded(serialization);
 
 
+    // Load the deprecated user planes. It is now a Knob so we don't need custom code
     for (std::list<SERIALIZATION_NAMESPACE::ImagePlaneDescSerialization>::const_iterator it = serialization._userComponents.begin(); it!=serialization._userComponents.end(); ++it) {
         ImagePlaneDesc s;
         s.fromSerialization(*it);
@@ -1918,7 +1910,6 @@ Node::doDestroyNodeInternalEnd(bool autoReconnect)
     }
 
     _imp->effect.reset();
-
 
 } // doDestroyNodeInternalEnd
 

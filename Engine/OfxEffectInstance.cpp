@@ -429,6 +429,8 @@ OfxEffectInstance::isInitialized() const
 OfxEffectInstance::~OfxEffectInstance()
 {
     if (_imp->common.use_count() == 1 && _imp->common->effect) {
+        // Make sure overlay's destroy action is called before the image effect destroy action
+        clearOverlays();
         _imp->common->overlayInteract.reset();
         _imp->common->effect->destroyInstanceAction();
     }

@@ -141,6 +141,7 @@ SOURCES += \
     KnobGuiFile.cpp \
     KnobGuiWidgets.cpp \
     FileTypeMainWindow_win.cpp \
+    GuiGLContext.cpp \
     KnobGuiButton.cpp \
     KnobGuiBool.cpp \
     KnobGuiChoice.cpp \
@@ -280,6 +281,7 @@ HEADERS += \
     GuiFwd.h \
     GuiMacros.h \
     GuiPrivate.h \
+    GuiGLContext.h \
     Histogram.h \
     InfoViewerWidget.h \
     KnobAnim.h \

@@ -324,7 +324,7 @@ struct GLImageStoragePrivate
 {
 
     OSGLContextWPtr glContext;
-    boost::scoped_ptr<Texture> texture;
+    GLTexturePtr texture;
 
     GLImageStoragePrivate()
     : glContext()
@@ -360,6 +360,12 @@ OSGLContextPtr
 GLImageStorage::getOpenGLContext() const
 {
     return _imp->glContext.lock();
+}
+
+GLTexturePtr
+GLImageStorage::getTexture() const
+{
+    return _imp->texture;
 }
 
 RectI

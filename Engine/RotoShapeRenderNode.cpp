@@ -248,7 +248,9 @@ RotoShapeRenderNode::getFramesNeeded(TimeValue /*time*/, ViewIdx /*view*/,  Fram
 bool
 RotoShapeRenderNode::supportsTiles() const
 {
-    return false;
+    RotoShapeRenderTypeEnum type = (RotoShapeRenderTypeEnum)_imp->renderType.lock()->getValue();
+    return type == eRotoShapeRenderTypeSmear;
+    //return false;
 }
 
 bool
@@ -362,7 +364,7 @@ static void getRoDFromItem(const RotoDrawableItemPtr& item, TimeValue time, View
 
 
 ActionRetCodeEnum
-RotoShapeRenderNode::getRegionOfDefinition(TimeValue time, const RenderScale& /*scale*/, ViewIdx view, RectD* rod)
+RotoShapeRenderNode::getRegionOfDefinition(TimeValue time, const RenderScale& scale, ViewIdx view, RectD* rod)
 {
 
     RotoDrawableItemPtr item = getAttachedRotoItem();
@@ -370,6 +372,23 @@ RotoShapeRenderNode::getRegionOfDefinition(TimeValue time, const RenderScale& /*
     assert((isRenderClone() && item->isRenderClone()) ||
            (!isRenderClone() && !item->isRenderClone()));
     getRoDFromItem(item, time, view, rod);
+
+    RotoShapeRenderTypeEnum type = (RotoShapeRenderTypeEnum)_imp->renderType.lock()->getValue();
+    switch (type) {
+        case eRotoShapeRenderTypeSmear: {
+            RectD defaultRod;
+            ActionRetCodeEnum stat = EffectInstance::getRegionOfDefinition(time, scale, view, &defaultRod);
+            if (isFailureRetCode(stat)) {
+                return stat;
+            }
+            if (!defaultRod.isNull()) {
+                rod->merge(defaultRod);
+            }
+        }   break;
+        default:
+            break;
+    }
+
     return eActionStatusOK;
 
 }
@@ -390,7 +409,9 @@ RotoShapeRenderNode::isIdentity(TimeValue time,
 
     *inputNb = -1;
     RotoDrawableItemPtr rotoItem = getAttachedRotoItem();
-    assert(rotoItem);
+    if (!rotoItem) {
+        return eActionStatusFailed;
+    }
     Bezier* isBezier = dynamic_cast<Bezier*>(rotoItem.get());
     if (!rotoItem || !rotoItem->isActivated(time, view) || (isBezier && (!isBezier->isCurveFinished(view) || isBezier->getControlPointsCount(view) <= 1))) {
         *inputTime = time;
@@ -491,11 +512,11 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 
     // Ensure that the indices of the draw step are valid.
 #ifdef DEBUG
-    if (isDuringPainting) {
+    if (isDuringPainting && isStroke->getRenderCloneCurrentStrokeEndPointIndex() >= strokeStartPointIndex) {
         if (strokeStartPointIndex == 0) {
-            assert((isStroke->getRenderCloneCurrentStrokeEndPointIndex() + 1 - strokeStartPointIndex) == isStroke->getNumControlPoints(0));
+            assert((isStroke->getRenderCloneCurrentStrokeEndPointIndex() + 1) == isStroke->getNumControlPoints(0));
         } else {
-            // +2 because we also add the last point of the previous draw step
+            // +2 because we also add the last point of the previous draw step in the call to cloneIndexRange(), otherwise it would make holes in the drawing
             assert((isStroke->getRenderCloneCurrentStrokeEndPointIndex() + 2 - strokeStartPointIndex) == isStroke->getNumControlPoints(0));
         }
     }
@@ -583,8 +604,9 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
         case eRotoShapeRenderTypeSmear: {
 
             OSGLContextAttacherPtr contextAttacher;
-            if (!glContext->isGPUContext()) {
+            if (args.backendType == eRenderBackendTypeOSMesa && !glContext->isGPUContext()) {
                 // When rendering smear with OSMesa we need to write to the full image bounds and not only the RoI, so re-attach the default framebuffer
+                // with the image bounds
                 Image::CPUData imageData;
                 outputPlane.second->getCPUData(&imageData);
 
@@ -605,15 +627,16 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                 ImagePtr bgImage = outArgs.image;
 
 
-                if (glContext->isGPUContext()) {
+                if (args.backendType == eRenderBackendTypeCPU || glContext->isGPUContext()) {
 
-                    // Copy the BG image
+                    // Copy the BG image to the output image
                     Image::CopyPixelsArgs cpyArgs;
                     cpyArgs.roi = outputPlane.second->getBounds();
                     outputPlane.second->copyPixels(*bgImage, cpyArgs);
                 } else {
 
                     // With OSMesa we cannot re-use the existing output plane as source because mesa clears the framebuffer out upon the first draw
+                    // after a binding.
                     // The only option is to draw in a tmp texture that will live for the whole stroke painting life
 
                     Image::InitStorageArgs initArgs;
@@ -632,10 +655,10 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                     GL_CPU::Finish();
                 }
             } else {
-                if (!glContext->isGPUContext() && strokeStartPointIndex == 0) {
+                if (args.backendType == eRenderBackendTypeOSMesa && !glContext->isGPUContext() && strokeStartPointIndex == 0) {
                     // Ensure the tmp texture has correct size
                     assert(_imp->osmesaSmearTmpTexture);
-                    ActionRetCodeEnum stat = _imp->osmesaSmearTmpTexture->ensureBounds(outputPlane.second->getBounds(), args.mipMapLevel, std::vector<RectI>());
+                    ActionRetCodeEnum stat = _imp->osmesaSmearTmpTexture->ensureBounds(outputPlane.second->getBounds(), args.mipMapLevel, std::vector<RectI>(), shared_from_this());
                     if (isFailureRetCode(stat)) {
                         return stat;
                     }
@@ -652,11 +675,9 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
             if (args.backendType == eRenderBackendTypeOpenGL || args.backendType == eRenderBackendTypeOSMesa) {
 
                 // Render with OpenGL
-
-                double opacity = rotoItem->getOpacityKnob()->getValueAtTime(args.time, DimIdx(0), args.view);
                 ImagePtr dstImage = glContext->isGPUContext() ? outputPlane.second : _imp->osmesaSmearTmpTexture;
                 assert(dstImage);
-                renderedDot = RotoShapeRenderGL::renderSmear_gl(glContext, glData, args.roi, dstImage, distNextIn, lastCenterIn, isStroke, opacity, args.time, args.view, combinedScale, &distToNextOut, &lastCenterOut);
+                renderedDot = RotoShapeRenderGL::renderSmear_gl(glContext, glData, args.roi, dstImage, distNextIn, lastCenterIn, isStroke, 1., args.time, args.view, combinedScale, &distToNextOut, &lastCenterOut);
             }
 
             // Update the stroke algorithm in output

@@ -178,12 +178,12 @@ EffectInstance::getLayersProducedAndNeeded_default(TimeValue time,
                 mergeLayersList(projectLayers, &availableLayersInOutput);
             }
 
-            {
-                std::list<ImagePlaneDesc> userCreatedLayers;
-                getUserCreatedComponents(&userCreatedLayers);
+            KnobLayersPtr userPlanesKnob = _imp->defKnobs->createPlanesKnob.lock();
+            if (userPlanesKnob) {
+                std::list<ImagePlaneDesc> userCreatedLayers = userPlanesKnob->decodePlanesList();
                 mergeLayersList(userCreatedLayers, &availableLayersInOutput);
             }
-
+            
             gotUserSelectedPlane = getSelectedLayer(-1, availableLayersInOutput, processChannels, processAllRequested, &layer);
         }
 
@@ -420,10 +420,13 @@ EffectInstance::getAvailableLayers(TimeValue time, ViewIdx view, int inputNb,  s
 
     mergeLayersList(passThroughLayers, availableLayers);
 
-    if (inputNb == -1) {
-        std::list<ImagePlaneDesc> userCreatedLayers;
-        getUserCreatedComponents(&userCreatedLayers);
-        mergeLayersList(userCreatedLayers, availableLayers);
+    {
+        KnobLayersPtr userPlanesKnob = effect->getUserPlanesKnob();
+        if (userPlanesKnob) {
+            std::list<ImagePlaneDesc> userCreatedLayers = userPlanesKnob->decodePlanesList();
+            mergeLayersList(userCreatedLayers, availableLayers);
+        }
+
     }
 
 

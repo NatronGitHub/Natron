@@ -4166,6 +4166,80 @@ KnobLayers::typeNameStatic()
     return _typeNameStr;
 }
 
+std::string
+KnobLayers::encodePlanesList(const std::list<ImagePlaneDesc>& planes)
+{
+    std::list<std::vector<std::string> > layerStrings;
+    for (std::list<ImagePlaneDesc>::const_iterator it = planes.begin(); it!=planes.end();++it) {
+        const ImagePlaneDesc& comps = *it;
+        std::vector<std::string> row(3);
+        row[0] = comps.getPlaneLabel();
+        std::string channelsStr;
+        const std::vector<std::string>& channels = comps.getChannels();
+        for (std::size_t c = 0; c < channels.size(); ++c) {
+            if (c > 0) {
+                channelsStr += ' ';
+            }
+            channelsStr += channels[c];
+        }
+        row[1] = channelsStr;
+        row[2] = comps.getChannelsLabel();
+        layerStrings.push_back(row);
+    }
+    return encodeToKnobTableFormat(layerStrings);
+}
+
+std::list<ImagePlaneDesc>
+KnobLayers::decodePlanesList() 
+{
+    std::list<ImagePlaneDesc> ret;
+
+    std::list<std::vector<std::string> > table;
+    getTable(&table);
+    for (std::list<std::vector<std::string> >::iterator it = table.begin();
+         it != table.end(); ++it) {
+
+        const std::string& planeLabel = (*it)[0];
+        std::string planeID = planeLabel;
+
+        // The layers knob only propose the user to display the label of the plane desc,
+        // but we need to recover the ID for the built-in planes to ensure compatibility
+        // with the old Nuke multi-plane suite.
+        if (planeID == kNatronColorPlaneLabel) {
+            planeID = kNatronColorPlaneID;
+        } else if (planeID == kNatronBackwardMotionVectorsPlaneLabel) {
+            planeID = kNatronBackwardMotionVectorsPlaneID;
+        } else if (planeID == kNatronForwardMotionVectorsPlaneLabel) {
+            planeID = kNatronForwardMotionVectorsPlaneLabel;
+        } else if (planeID == kNatronDisparityLeftPlaneLabel) {
+            planeID = kNatronDisparityLeftPlaneID;
+        } else if (planeID == kNatronDisparityRightPlaneLabel) {
+            planeID = kNatronDisparityRightPlaneID;
+        }
+
+        bool found = false;
+        for (std::list<ImagePlaneDesc>::const_iterator it2 = ret.begin(); it2 != ret.end(); ++it2) {
+            if (it2->getPlaneID() == planeID) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            std::vector<std::string> componentsName;
+            QString str = QString::fromUtf8( (*it)[1].c_str() );
+            QStringList channels = str.split( QLatin1Char(' ') );
+            componentsName.resize( channels.size() );
+            for (int i = 0; i < channels.size(); ++i) {
+                componentsName[i] = channels[i].toStdString();
+            }
+            ImagePlaneDesc c( planeID, planeLabel, std::string(), componentsName );
+            ret.push_back(c);
+        }
+    }
+
+    return ret;
+} // decodePlanesList
+
 NATRON_NAMESPACE_EXIT;
 
 NATRON_NAMESPACE_USING;

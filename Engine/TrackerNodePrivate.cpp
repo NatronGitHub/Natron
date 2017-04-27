@@ -36,6 +36,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Node.h"
 #include "Engine/OpenGLViewerI.h"
 #include "Engine/OSGLFunctions.h"
+#include "Engine/OSGLContext.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/TimeLine.h"
 #include "Engine/TrackerNode.h"
@@ -1195,7 +1196,7 @@ fullRectFloatCPUImageToPBOForNComps(const Image::CPUData& srcImage,
         for (int backward = 0; backward < 2; ++backward) {
 
 
-            int x = backward ? std::max(roi.x1, start_x - 1) : start_x;
+            int x = backward ? std::max(roi.x1 - 1, start_x - 1) : start_x;
             const int end_x = backward ? roi.x1 - 1 : roi.x2;
             assert( backward == 1 || ( x >= 0 && x < roi.x2 ) );
 
@@ -1400,7 +1401,9 @@ TrackerNodeInteract::onTrackImageRenderingFinished()
     if (!ret.first) {
         return;
     }
-    isOpenGLViewer->makeOpenGLcontextCurrent();
+    OSGLContextPtr viewerGLContext = isOpenGLViewer->getOpenGLViewerContext();
+    OSGLContextAttacherPtr locker = OSGLContextAttacher::create(viewerGLContext);
+    locker->attach();
 
     showMarkerTexture = true;
     if (!selectedMarkerTexture) {
@@ -1436,7 +1439,9 @@ TrackerNodeInteract::onKeyFrameImageRenderingFinished()
         return;
     }
 
-    isOpenGLViewer->makeOpenGLcontextCurrent();
+    OSGLContextPtr viewerGLContext = isOpenGLViewer->getOpenGLViewerContext();
+    OSGLContextAttacherPtr locker = OSGLContextAttacher::create(viewerGLContext);
+    locker->attach();
 
     for (TrackKeyframeRequests::iterator it = trackRequestsMap.begin(); it != trackRequestsMap.end(); ++it) {
         if (it->second.get() == future) {

@@ -37,6 +37,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include <QtCore/QDebug>
 
 #include "Engine/AppManager.h"
+#include "Engine/Texture.h"
 #include "Engine/Lut.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -134,7 +135,7 @@ lutFromColorspace(ViewerColorSpaceEnum cs)
 
 ///Fast version when components are the same
 template <typename SRCPIX, int srcMaxValue, typename DSTPIX, int dstMaxValue>
-static void
+ActionRetCodeEnum
 convertToFormatInternal_sameComps(const RectI & renderWindow,
                                   ViewerColorSpaceEnum srcColorSpace,
                                   ViewerColorSpaceEnum dstColorSpace,
@@ -160,7 +161,7 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
     for (int y = renderWindow.y1; y < renderWindow.y2; ++y) {
 
         if (renderClone && renderClone->isRenderAborted()) {
-            return;
+            return eActionStatusAborted;
         }
 
         if (srcMaxValue == dstMaxValue && !srcLut && !dstLut) {
@@ -228,7 +229,7 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
             
 
             for (int backward = 0; backward < 2; ++backward) {
-                int x = backward ? std::max(renderWindow.x1, start - 1) : start;
+                int x = backward ? std::max(renderWindow.x1 - 1, start - 1) : start;
                 int end = backward ? renderWindow.x1 - 1 : renderWindow.x2;
                 unsigned error[3] = {
                     0x80, 0x80, 0x80
@@ -321,11 +322,12 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
             } // backward
         } // !useMemcpy
     } // for all lines
+    return eActionStatusOK;
 } // convertToFormatInternal_sameComps
 
 template <typename SRCPIX, int srcMaxValue, typename DSTPIX, int dstMaxValue, int srcNComps, int dstNComps>
-void
-static convertToFormatInternal(const RectI & renderWindow,
+ActionRetCodeEnum
+convertToFormatInternal(const RectI & renderWindow,
                                ViewerColorSpaceEnum srcColorSpace,
                                ViewerColorSpaceEnum dstColorSpace,
                                bool requiresUnpremult,
@@ -348,7 +350,7 @@ static convertToFormatInternal(const RectI & renderWindow,
         // coverity[dont_call]
 
         if (renderClone && renderClone->isRenderAborted()) {
-            return;
+            return eActionStatusAborted;
         }
 
         int start = rand() % renderWindow.width() + renderWindow.x1;
@@ -370,7 +372,7 @@ static convertToFormatInternal(const RectI & renderWindow,
         // We do twice the loop, once from starting point to end and once from starting point - 1 to real start
         for (int backward = 0; backward < 2; ++backward) {
 
-            int x = backward ? std::max(renderWindow.x1, start - 1) : start;
+            int x = backward ? std::max(renderWindow.x1 - 1, start - 1) : start;
 
             // End is pointing to the first pixel outside the line a la stl
             int end = backward ? renderWindow.x1 - 1 : renderWindow.x2;
@@ -513,12 +515,12 @@ static convertToFormatInternal(const RectI & renderWindow,
             }
         } // for (int backward = 0; backward < 2; ++backward) {
     }  // for (int y = 0; y < renderWindow.height(); ++y) {
-
+    return eActionStatusOK;
 } // convertToFormatInternal
 
 template <typename SRCPIX, int srcMaxValue, typename DSTPIX, int dstMaxValue, int srcNComps, Image::AlphaChannelHandlingEnum alphaHandling>
-void
-static convertToMonoImage(const RectI & renderWindow,
+ActionRetCodeEnum
+convertToMonoImage(const RectI & renderWindow,
                           int conversionChannel,
                           const void* srcBufPtrs[4],
                           const RectI& srcBounds,
@@ -536,7 +538,7 @@ static convertToMonoImage(const RectI & renderWindow,
 
 
         if (renderClone && renderClone->isRenderAborted()) {
-            return;
+            return eActionStatusAborted;
         }
 
         const SRCPIX* srcPixelPtrs[4];
@@ -569,11 +571,12 @@ static convertToMonoImage(const RectI & renderWindow,
             dstPixelPtrs[0] += dstPixelStride;
         }
     }
+    return eActionStatusOK;
 } // convertToMonoImage
 
 template <typename SRCPIX, int srcMaxValue, typename DSTPIX, int dstMaxValue, int dstNComps, Image::MonoToPackedConversionEnum monoConversion>
-void
-static convertFromMonoImage(const RectI & renderWindow,
+ActionRetCodeEnum
+convertFromMonoImage(const RectI & renderWindow,
                             int conversionChannel,
                             const void* srcBufPtrs[4],
                             const RectI& srcBounds,
@@ -592,7 +595,7 @@ static convertFromMonoImage(const RectI & renderWindow,
         // coverity[dont_call]
 
         if (renderClone && renderClone->isRenderAborted()) {
-            return;
+            return eActionStatusAborted;
         }
 
         const SRCPIX* srcPixelPtrs[4];
@@ -638,11 +641,12 @@ static convertFromMonoImage(const RectI & renderWindow,
             }
         }
     }
+    return eActionStatusOK;
 } // convertFromMonoImage
 
 template <typename SRCPIX, int srcMaxValue, typename DSTPIX, int dstMaxValue, Image::MonoToPackedConversionEnum monoConversion>
-void
-static convertFromMonoImageForComps(const RectI & renderWindow,
+ActionRetCodeEnum
+convertFromMonoImageForComps(const RectI & renderWindow,
                                     int conversionChannel,
                                     const void* srcBufPtrs[4],
                                     const RectI& srcBounds,
@@ -653,24 +657,22 @@ static convertFromMonoImageForComps(const RectI & renderWindow,
 {
     switch (dstNComps) {
         case 2:
-            convertFromMonoImage<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, 2, monoConversion>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
-            break;
+            return convertFromMonoImage<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, 2, monoConversion>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
         case 3:
-            convertFromMonoImage<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, 3, monoConversion>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
-            break;
+            return convertFromMonoImage<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, 3, monoConversion>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
         case 4:
-            convertFromMonoImage<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, 4, monoConversion>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
-            break;
+            return convertFromMonoImage<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, 4, monoConversion>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
         default:
             assert(false);
             break;
     }
+    return eActionStatusFailed;
 
 }
 
 
 template <typename SRCPIX, int srcMaxValue, typename DSTPIX, int dstMaxValue, int srcNComps>
-static void
+ActionRetCodeEnum
 convertToFormatInternalForSrcComps(const RectI & renderWindow,
                                    ViewerColorSpaceEnum srcColorSpace,
                                    ViewerColorSpaceEnum dstColorSpace,
@@ -691,33 +693,28 @@ convertToFormatInternalForSrcComps(const RectI & renderWindow,
             // optimize the conversion
             switch (alphaHandling) {
                 case Image::eAlphaChannelHandlingFillFromChannel:
-                    convertToMonoImage<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, Image::eAlphaChannelHandlingFillFromChannel>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
-                    break;
+                    return convertToMonoImage<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, Image::eAlphaChannelHandlingFillFromChannel>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
                 case Image::eAlphaChannelHandlingCreateFill1:
-                    convertToMonoImage<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, Image::eAlphaChannelHandlingCreateFill1>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
-                    break;
+                    return convertToMonoImage<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, Image::eAlphaChannelHandlingCreateFill1>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
                 case Image::eAlphaChannelHandlingCreateFill0:
-                    convertToMonoImage<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, Image::eAlphaChannelHandlingCreateFill0>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
-                    break;
+                    return convertToMonoImage<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, Image::eAlphaChannelHandlingCreateFill0>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
             }
         }   break;
         case 2:
-            convertToFormatInternal<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, 2>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
-            break;
+            return convertToFormatInternal<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, 2>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
         case 3:
-            convertToFormatInternal<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, 3>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
-            break;
+            return convertToFormatInternal<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, 3>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
         case 4:
-            convertToFormatInternal<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, 4>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
-            break;
+            return convertToFormatInternal<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, 4>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
         default:
             assert(false);
             break;
     }
+    return eActionStatusFailed;
 }
 
 template <typename SRCPIX, int srcMaxValue, typename DSTPIX, int dstMaxValue>
-static void
+ActionRetCodeEnum
 convertToFormatInternalForDstDepth(const RectI & renderWindow,
                                    ViewerColorSpaceEnum srcColorSpace,
                                    ViewerColorSpaceEnum dstColorSpace,
@@ -736,44 +733,36 @@ convertToFormatInternalForDstDepth(const RectI & renderWindow,
 
     if (srcNComps == dstNComps) {
         // Optimize same number of components
-        convertToFormatInternal_sameComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue>(renderWindow, srcColorSpace, dstColorSpace, srcBufPtrs, srcNComps, srcBounds, dstBufPtrs, dstBounds, renderClone);
-        return;
+        return convertToFormatInternal_sameComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue>(renderWindow, srcColorSpace, dstColorSpace, srcBufPtrs, srcNComps, srcBounds, dstBufPtrs, dstBounds, renderClone);
     }
 
     if (srcNComps == 1) {
         // Mono image to something else, optimize
         switch (monoConversion) {
             case Image::eMonoToPackedConversionCopyToChannelAndLeaveOthers:
-                convertFromMonoImageForComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, Image::eMonoToPackedConversionCopyToChannelAndLeaveOthers>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderClone);
-                break;
+                return convertFromMonoImageForComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, Image::eMonoToPackedConversionCopyToChannelAndLeaveOthers>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderClone);
             case Image::eMonoToPackedConversionCopyToChannelAndFillOthers:
-                convertFromMonoImageForComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, Image::eMonoToPackedConversionCopyToChannelAndFillOthers>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderClone);
-                break;
+                return convertFromMonoImageForComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, Image::eMonoToPackedConversionCopyToChannelAndFillOthers>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderClone);
             case Image::eMonoToPackedConversionCopyToAll:
-                convertFromMonoImageForComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, Image::eMonoToPackedConversionCopyToAll>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderClone);
-                break;
+                return convertFromMonoImageForComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, Image::eMonoToPackedConversionCopyToAll>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderClone);
         }
-        return;
     }
     switch (srcNComps) {
 
         case 2:
-            convertToFormatInternalForSrcComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, 2>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderClone);
-            break;
+            return convertToFormatInternalForSrcComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, 2>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderClone);
         case 3:
-            convertToFormatInternalForSrcComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, 3>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderClone);
-            break;
+            return convertToFormatInternalForSrcComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, 3>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderClone);
         case 4:
-            convertToFormatInternalForSrcComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, 4>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderClone);
-            break;
+            return convertToFormatInternalForSrcComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, 4>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderClone);
         default:
-            assert(false);
             break;
     }
+    return eActionStatusFailed;
 } // convertToFormatInternalForDstDepth
 
 template <typename SRCPIX, int srcMaxValue>
-static void
+ActionRetCodeEnum
 convertToFormatInternalForSrcDepth(const RectI & renderWindow,
                                    ViewerColorSpaceEnum srcColorSpace,
                                    ViewerColorSpaceEnum dstColorSpace,
@@ -793,23 +782,20 @@ convertToFormatInternalForSrcDepth(const RectI & renderWindow,
     switch ( dstBitDepth ) {
         case eImageBitDepthByte:
             ///Same as a copy
-            convertToFormatInternalForDstDepth<SRCPIX, srcMaxValue, unsigned char, 255>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, monoConversion, srcBufPtrs, srcNComps, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderClone);
-            break;
+            return convertToFormatInternalForDstDepth<SRCPIX, srcMaxValue, unsigned char, 255>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, monoConversion, srcBufPtrs, srcNComps, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderClone);
         case eImageBitDepthShort:
-            convertToFormatInternalForDstDepth<SRCPIX, srcMaxValue, unsigned short, 65535>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, monoConversion, srcBufPtrs, srcNComps, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderClone);
-            break;
+            return convertToFormatInternalForDstDepth<SRCPIX, srcMaxValue, unsigned short, 65535>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, monoConversion, srcBufPtrs, srcNComps, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderClone);
         case eImageBitDepthHalf:
             break;
         case eImageBitDepthFloat:
-            convertToFormatInternalForDstDepth<SRCPIX, srcMaxValue, float, 1>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, monoConversion, srcBufPtrs, srcNComps, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderClone);
-            break;
+            return convertToFormatInternalForDstDepth<SRCPIX, srcMaxValue, float, 1>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, monoConversion, srcBufPtrs, srcNComps, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderClone);
         case eImageBitDepthNone:
             break;
     }
-
+    return eActionStatusFailed;
 }
 
-void
+ActionRetCodeEnum
 ImagePrivate::convertCPUImage(const RectI & renderWindow,
                               ViewerColorSpaceEnum srcColorSpace,
                               ViewerColorSpaceEnum dstColorSpace,
@@ -832,38 +818,34 @@ ImagePrivate::convertCPUImage(const RectI & renderWindow,
     switch ( srcBitDepth ) {
         case eImageBitDepthByte:
             ///Same as a copy
-            convertToFormatInternalForSrcDepth<unsigned char, 255>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, monoConversion, srcBufPtrs, srcNComps, srcBounds, dstBufPtrs, dstNComps, dstBitDepth, dstBounds, renderClone);
-            break;
+            return convertToFormatInternalForSrcDepth<unsigned char, 255>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, monoConversion, srcBufPtrs, srcNComps, srcBounds, dstBufPtrs, dstNComps, dstBitDepth, dstBounds, renderClone);
         case eImageBitDepthShort:
-            convertToFormatInternalForSrcDepth<unsigned short, 65535>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, monoConversion, srcBufPtrs, srcNComps, srcBounds, dstBufPtrs, dstNComps, dstBitDepth, dstBounds, renderClone);
-            break;
+            return convertToFormatInternalForSrcDepth<unsigned short, 65535>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, monoConversion, srcBufPtrs, srcNComps, srcBounds, dstBufPtrs, dstNComps, dstBitDepth, dstBounds, renderClone);
         case eImageBitDepthHalf:
             break;
         case eImageBitDepthFloat:
-            convertToFormatInternalForSrcDepth<float, 1>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, monoConversion, srcBufPtrs, srcNComps, srcBounds, dstBufPtrs, dstNComps, dstBitDepth, dstBounds, renderClone);
-            break;
+            return convertToFormatInternalForSrcDepth<float, 1>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, monoConversion, srcBufPtrs, srcNComps, srcBounds, dstBufPtrs, dstNComps, dstBitDepth, dstBounds, renderClone);
         case eImageBitDepthNone:
             break;
     }
+    return eActionStatusFailed;
 } // convertCPUImage
 
 template <typename GL>
-static void
-copyGLTextureInternal(const GLImageStoragePtr& from,
-                      const GLImageStoragePtr& to,
+void
+copyGLTextureInternal(const GLTexturePtr& from,
+                      const GLTexturePtr& to,
                       const RectI& roi,
                       const OSGLContextPtr& glContext)
 {
     // The OpenGL context must be current to this thread.
     assert(appPTR->getGPUContextPool()->getThreadLocalContext()->getContext() == glContext);
 
-    // Textures must belong to the same context
-    assert(glContext == from->getOpenGLContext() &&
-           glContext == to->getOpenGLContext());
+
 
     // Texture targets must be the same
-    int target = from->getGLTextureTarget();
-    assert(target == to->getGLTextureTarget());
+    int target = from->getTexTarget();
+    assert(target == to->getTexTarget());
 
     GLuint fboID = glContext->getOrCreateFBOId();
     GL::Disable(GL_SCISSOR_TEST);
@@ -871,8 +853,8 @@ copyGLTextureInternal(const GLImageStoragePtr& from,
     GL::Enable(target);
     GL::ActiveTexture(GL_TEXTURE0);
 
-    U32 toTexID = to->getGLTextureID();
-    U32 fromTexID = from->getGLTextureID();
+    U32 toTexID = to->getTexID();
+    U32 fromTexID = from->getTexID();
 
     GL::BindTexture( target, toTexID );
 
@@ -906,11 +888,11 @@ copyGLTextureInternal(const GLImageStoragePtr& from,
     glCheckError(GL);
 } // copyGLTextureInternal
 
-static void
-copyGLTexture(const GLImageStoragePtr& from,
-              const GLImageStoragePtr& to,
-              const RectI& roi,
-              const OSGLContextPtr& glContext)
+void
+ImagePrivate::copyGLTexture(const GLTexturePtr& from,
+                            const GLTexturePtr& to,
+                            const RectI& roi,
+                            const OSGLContextPtr& glContext)
 {
     if (glContext->isGPUContext()) {
         copyGLTextureInternal<GL_GPU>(from, to, roi, glContext);
@@ -919,22 +901,36 @@ copyGLTexture(const GLImageStoragePtr& from,
     }
 }
 
+static void
+copyGLTextureWrapper(const GLImageStoragePtr& from,
+              const GLImageStoragePtr& to,
+              const RectI& roi,
+              const OSGLContextPtr& glContext)
+{
+
+    // Textures must belong to the same context
+    assert(glContext == from->getOpenGLContext() &&
+           glContext == to->getOpenGLContext());
+
+    ImagePrivate::copyGLTexture(from->getTexture(), to->getTexture(), roi, glContext);
+
+}
+
 template <typename GL>
-static ActionRetCodeEnum
-convertRGBAPackedCPUBufferToGLTextureInternal(const RAMImageStoragePtr& buffer,
+ActionRetCodeEnum
+convertRGBAPackedCPUBufferToGLTextureInternal(const float* srcData,
+                                              const RectI& srcBounds,
+                                              int srcNComps,
                                               const RectI& roi,
-                                              const GLImageStoragePtr& outTexture,
+                                              const GLTexturePtr& outTexture,
                                               const OSGLContextPtr& glContext)
 {
 
     // The OpenGL context must be current to this thread.
     assert(appPTR->getGPUContextPool()->getThreadLocalContext()->getContext() == glContext);
-    assert(glContext == outTexture->getOpenGLContext());
-    
-    // This function only supports RGBA float input buffer
-    assert(buffer->getNumComponents() == 4 && buffer->getBitDepth() == eImageBitDepthFloat);;
 
     // Only RGBA 32-bit textures for now
+    assert(srcNComps == 4);
     assert(outTexture->getBitDepth() == eImageBitDepthFloat);
 
     GLuint pboID = glContext->getOrCreatePBOId();
@@ -965,15 +961,10 @@ convertRGBAPackedCPUBufferToGLTextureInternal(const RAMImageStoragePtr& buffer,
     assert(toBounds.contains(roi));
     // Copy the CPU buffer to the PBO
     {
-        const RectI fromBounds = buffer->getBounds();
-        const std::size_t srcNComps = buffer->getNumComponents();
-        const std::size_t dataSizeOf = getSizeOfForBitDepth(buffer->getBitDepth());
-        const std::size_t srcRowBytes = buffer->getRowSize();
-        const unsigned char* srcBuffer = (const unsigned char*)buffer->getData();
-
+        const std::size_t srcRowBytes = srcBounds.width() * srcNComps * sizeof(float);
         {
             unsigned char* dstData = gpuData;
-            const unsigned char* srcPixels = Image::pixelAtStatic(roi.x1, roi.y1, fromBounds, srcNComps, dataSizeOf, srcBuffer);
+            const unsigned char* srcPixels = Image::pixelAtStatic(roi.x1, roi.y1, srcBounds, srcNComps, sizeof(float), (const unsigned char*)srcData);
             for (int y = roi.y1; y < roi.y2; ++y) {
 #ifdef DEBUG
                 float* dstLineData = (float*)dstData;
@@ -1001,8 +992,8 @@ convertRGBAPackedCPUBufferToGLTextureInternal(const RAMImageStoragePtr& buffer,
         glCheckError(GL);
     }
 
-    U32 target = outTexture->getGLTextureTarget();
-    U32 outTextureID = outTexture->getGLTextureID();
+    U32 target = outTexture->getTexTarget();
+    U32 outTextureID = outTexture->getTexID();
 
     // bind the texture
     GL::BindTexture( target, outTextureID );
@@ -1013,8 +1004,8 @@ convertRGBAPackedCPUBufferToGLTextureInternal(const RAMImageStoragePtr& buffer,
                       0,              // level
                       roi.x1 - toBounds.x1, roi.y1 - toBounds.y1,               // xoffset, yoffset
                       roi.width(), roi.height(),
-                      outTexture->getGLTextureFormat(),            // format
-                      outTexture->getGLTextureType(),       // type
+                      outTexture->getFormat(),            // format
+                      outTexture->getGLType(),       // type
                       0);
     glCheckError(GL);
     GL::BindTexture(target, 0);
@@ -1027,44 +1018,57 @@ convertRGBAPackedCPUBufferToGLTextureInternal(const RAMImageStoragePtr& buffer,
     return eActionStatusOK;
 }  // convertRGBAPackedCPUBufferToGLTextureInternal
 
+ActionRetCodeEnum
+ImagePrivate::convertRGBAPackedCPUBufferToGLTexture(const float* srcData,
+                                      const RectI& srcBounds,
+                                      int srcNComps,
+                                      const RectI& roi,
+                                      const GLTexturePtr& outTexture,
+                                      const OSGLContextPtr& glContext)
+{
+    if (glContext->isGPUContext()) {
+        return convertRGBAPackedCPUBufferToGLTextureInternal<GL_GPU>(srcData, srcBounds, srcNComps, roi, outTexture, glContext);
+    } else {
+        return convertRGBAPackedCPUBufferToGLTextureInternal<GL_CPU>(srcData, srcBounds, srcNComps, roi, outTexture, glContext);
+    }
+}
 
 static ActionRetCodeEnum
-convertRGBAPackedCPUBufferToGLTexture(const RAMImageStoragePtr& buffer, const RectI& roi, const GLImageStoragePtr& outTexture)
+convertRGBAPackedCPUBufferToGLTextureWrapper(const RAMImageStoragePtr& buffer, const RectI& roi, const GLImageStoragePtr& outTexture)
 {
     OSGLContextPtr glContext = outTexture->getOpenGLContext();
+    assert(glContext == outTexture->getOpenGLContext());
+    // This function only supports RGBA float input buffer
+    assert(buffer->getNumComponents() == 4 && buffer->getBitDepth() == eImageBitDepthFloat);
+    return ImagePrivate::convertRGBAPackedCPUBufferToGLTexture((const float*)buffer->getData(), buffer->getBounds(), 4, roi, outTexture->getTexture(), glContext);
 
-    if (glContext->isGPUContext()) {
-        return convertRGBAPackedCPUBufferToGLTextureInternal<GL_GPU>(buffer, roi, outTexture, glContext);
-    } else {
-        return convertRGBAPackedCPUBufferToGLTextureInternal<GL_CPU>(buffer, roi, outTexture, glContext);
-    }
 }
 
 template <typename GL>
 static ActionRetCodeEnum
-convertGLTextureToRGBAPackedCPUBufferInternal(const GLImageStoragePtr& texture,
+convertGLTextureToRGBAPackedCPUBufferInternal(const GLTexturePtr& texture,
                                               const RectI& roi,
-                                              const RAMImageStoragePtr& outBuffer,
+                                              float* outBuffer,
+                                              const RectI& dstBounds,
+                                              int dstNComps,
                                               const OSGLContextPtr& glContext)
 {
     // The OpenGL context must be current to this thread.
     assert(appPTR->getGPUContextPool()->getThreadLocalContext()->getContext() == glContext);
-    assert(glContext == texture->getOpenGLContext());
 
-    // This function only supports reading to a RGBA float buffer.
-    assert(outBuffer->getNumComponents() == 4 && outBuffer->getBitDepth() == eImageBitDepthFloat);
 
     // glReadPixels expects the CPU buffer to have the appropriate size: we don't have any means to specify a stride.
-    assert(outBuffer->getBounds() == roi);
+    assert(dstBounds == roi);
+    assert(dstNComps == 4);
 
     GLuint fboID = glContext->getOrCreateFBOId();
 
-    int target = texture->getGLTextureTarget();
-    U32 texID = texture->getGLTextureID();
+    int target = texture->getTexTarget();
+    U32 texID = texture->getTexID();
     RectI texBounds = texture->getBounds();
 
     // The texture must be read in a buffer with the same bounds
-    assert(outBuffer->getBounds() == texBounds);
+    assert(dstBounds == texBounds);
 
     GL::BindFramebuffer(GL_FRAMEBUFFER, fboID);
     GL::Enable(target);
@@ -1082,8 +1086,8 @@ convertGLTextureToRGBAPackedCPUBufferInternal(const GLImageStoragePtr& texture,
     glCheckError(GL);
 
     {
-        unsigned char* data = Image::pixelAtStatic(roi.x1, roi.y1, texBounds, outBuffer->getNumComponents(), getSizeOfForBitDepth(outBuffer->getBitDepth()), (unsigned char*)outBuffer->getData());
-        GL::ReadPixels(roi.x1 - texBounds.x1, roi.y1 - texBounds.y1, roi.width(), roi.height(), texture->getGLTextureFormat(), texture->getGLTextureType(), (GLvoid*)data);
+        unsigned char* data = Image::pixelAtStatic(roi.x1, roi.y1, dstBounds, dstNComps, sizeof(float), (unsigned char*)outBuffer);
+        GL::ReadPixels(roi.x1 - texBounds.x1, roi.y1 - texBounds.y1, roi.width(), roi.height(), texture->getFormat(), texture->getGLType(), (GLvoid*)data);
     }
 
     GL::BindTexture(target, 0);
@@ -1093,17 +1097,33 @@ convertGLTextureToRGBAPackedCPUBufferInternal(const GLImageStoragePtr& texture,
 
 } // convertGLTextureToRGBAPackedCPUBufferInternal
 
+ActionRetCodeEnum
+ImagePrivate::convertGLTextureToRGBAPackedCPUBuffer(const GLTexturePtr& texture,
+                                                    const RectI& roi,
+                                                    float* outBuffer,
+                                                    const RectI& dstBounds,
+                                                    int dstNComps,
+                                                    const OSGLContextPtr& glContext)
+{
+    if (glContext->isGPUContext()) {
+        return convertGLTextureToRGBAPackedCPUBufferInternal<GL_GPU>(texture, roi, outBuffer, dstBounds, dstNComps, glContext);
+    } else {
+        return convertGLTextureToRGBAPackedCPUBufferInternal<GL_CPU>(texture, roi, outBuffer, dstBounds, dstNComps, glContext);
+    }
+
+}
+
 static ActionRetCodeEnum
-convertGLTextureToRGBAPackedCPUBuffer(const GLImageStoragePtr& texture,
+convertGLTextureToRGBAPackedCPUBufferWrapper(const GLImageStoragePtr& texture,
                                       const RectI& roi,
                                       const RAMImageStoragePtr& outBuffer,
                                       const OSGLContextPtr& glContext)
 {
-    if (glContext->isGPUContext()) {
-        return convertGLTextureToRGBAPackedCPUBufferInternal<GL_GPU>(texture, roi, outBuffer, glContext);
-    } else {
-        return convertGLTextureToRGBAPackedCPUBufferInternal<GL_CPU>(texture, roi, outBuffer, glContext);
-    }
+    assert(glContext == texture->getOpenGLContext());
+
+    // This function only supports reading to a RGBA float buffer.
+    assert(outBuffer->getNumComponents() == 4 && outBuffer->getBitDepth() == eImageBitDepthFloat);
+    return ImagePrivate::convertGLTextureToRGBAPackedCPUBuffer(texture->getTexture(), roi, (float*)outBuffer->getData(), outBuffer->getBounds(), outBuffer->getNumComponents(), glContext);
 }
 
 
@@ -1141,7 +1161,7 @@ private:
     {
         // This function is very optimized and templated for most common cases
         // In the best optimized case, memcpy is used
-        ImagePrivate::convertCPUImage(renderWindow,
+        return ImagePrivate::convertCPUImage(renderWindow,
                                       _copyArgs.srcColorspace,
                                       _copyArgs.dstColorspace,
                                       _copyArgs.unPremultIfNeeded,
@@ -1157,10 +1177,7 @@ private:
                                       _dstTileData.bitDepth,
                                       _dstTileData.bounds,
                                       _effect);
-        if (_effect && _effect->isRenderAborted()) {
-            return eActionStatusAborted;
-        }
-        return eActionStatusOK;
+
     }
 };
 
@@ -1195,7 +1212,7 @@ ImagePrivate::copyPixelsInternal(const ImagePrivate* fromImage,
             // Ensure this context is attached
             OSGLContextAttacherPtr contextAttacher = OSGLContextAttacher::create(fromIsGLTexture->getOpenGLContext());
             contextAttacher->attach();
-            copyGLTexture(fromIsGLTexture, toIsGLTexture, args.roi, fromIsGLTexture->getOpenGLContext());
+            copyGLTextureWrapper(fromIsGLTexture, toIsGLTexture, args.roi, fromIsGLTexture->getOpenGLContext());
         }
         return eActionStatusOK;
 
@@ -1221,7 +1238,7 @@ ImagePrivate::copyPixelsInternal(const ImagePrivate* fromImage,
             // Ensure this context is attached
             OSGLContextAttacherPtr contextAttacher = OSGLContextAttacher::create(fromIsGLTexture->getOpenGLContext());
             contextAttacher->attach();
-            stat = convertGLTextureToRGBAPackedCPUBuffer(fromIsGLTexture, args.roi, toIsRAMBuffer, contextAttacher->getContext());
+            stat = convertGLTextureToRGBAPackedCPUBufferWrapper(fromIsGLTexture, args.roi, toIsRAMBuffer, contextAttacher->getContext());
         }
         return stat;
 
@@ -1248,7 +1265,7 @@ ImagePrivate::copyPixelsInternal(const ImagePrivate* fromImage,
             OSGLContextAttacherPtr contextAttacher = OSGLContextAttacher::create(toIsGLTexture->getOpenGLContext());
             contextAttacher->attach();
 
-            stat = convertRGBAPackedCPUBufferToGLTexture(fromIsRAMBuffer, args.roi, toIsGLTexture);
+            stat = convertRGBAPackedCPUBufferToGLTextureWrapper(fromIsRAMBuffer, args.roi, toIsGLTexture);
         }
         return stat;
     } else {

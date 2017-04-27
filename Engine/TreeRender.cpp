@@ -84,6 +84,8 @@ struct FrameViewRequestComparePriority
 
     bool operator() (const FrameViewRequestPtr& lhs, const FrameViewRequestPtr& rhs) const
     {
+#if 0
+        // This code doesn't work 
         if (lhs.get() == rhs.get()) {
             return false;
         }
@@ -97,6 +99,9 @@ struct FrameViewRequestComparePriority
             // Same number of listeners...there's no specific ordering
             return lhs.get() < rhs.get();
         }
+#endif
+
+        return lhs.get() < rhs.get();
     }
 };
 
@@ -115,6 +120,9 @@ struct TreeRenderPrivate
     // The state of the object to avoid calling render on a failed tree
     ActionRetCodeEnum state;
 
+    // All cloned knob holders for this render
+    mutable QMutex renderClonesMutex;
+    std::list<KnobHolderPtr> renderClones;
 
     // Map of nodes that belong to the tree upstream of tree root for which we desire
     // a pointer of the resulting image. This is useful for the Viewer to enable color-picking:
@@ -123,6 +131,12 @@ struct TreeRenderPrivate
     // These images can then be retrieved using the getExtraRequestedResultsForNode() function.
     std::map<NodePtr, FrameViewRequestPtr> extraRequestedResults;
     mutable QMutex extraRequestedResultsMutex;
+
+    // While drawing a preview with the RotoPaint node, this is the bounding box of the area
+    // to update on the viewer
+    // Protected by extraRequestedResultsMutex
+    RectI activeStrokeUpdateArea;
+    bool activeStrokeUpdateAreaSet;
 
     // the OpenGL contexts
     OSGLContextWPtr openGLContext, cpuOpenGLContext;
@@ -140,8 +154,12 @@ struct TreeRenderPrivate
     , ctorArgs()
     , stateMutex()
     , state(eActionStatusOK)
+    , renderClonesMutex()
+    , renderClones()
     , extraRequestedResults()
     , extraRequestedResultsMutex()
+    , activeStrokeUpdateArea()
+    , activeStrokeUpdateAreaSet(false)
     , openGLContext()
     , cpuOpenGLContext()
     , aborted()
@@ -214,6 +232,25 @@ TreeRender::getExtraRequestedResultsForNode(const NodePtr& node) const
         return FrameViewRequestPtr();
     }
     return found->second;
+}
+
+bool
+TreeRender::getRotoPaintActiveStrokeUpdateArea(RectI* updateArea) const
+{
+    QMutexLocker k(&_imp->extraRequestedResultsMutex);
+    if (!_imp->activeStrokeUpdateAreaSet) {
+        return false;
+    }
+    *updateArea = _imp->activeStrokeUpdateArea;
+    return true;
+}
+
+void
+TreeRender::setActiveStrokeUpdateArea(const RectI& area)
+{
+    QMutexLocker k(&_imp->extraRequestedResultsMutex);
+    _imp->activeStrokeUpdateArea = area;
+    _imp->activeStrokeUpdateAreaSet = true;
 }
 
 OSGLContextPtr
@@ -309,6 +346,13 @@ RenderStatsPtr
 TreeRender::getStatsObject() const
 {
     return _imp->ctorArgs->stats;
+}
+
+void
+TreeRender::registerRenderClone(const KnobHolderPtr& holder)
+{
+    QMutexLocker k(&_imp->renderClonesMutex);
+    _imp->renderClones.push_back(holder);
 }
 
 void
@@ -474,38 +518,44 @@ void
 RequestPassSharedData::addTaskToRender(const FrameViewRequestPtr& render)
 {
      QMutexLocker k(&_imp->dependencyFreeRendersMutex);
-    _imp->allRenderTasksToProcess.insert(render);
-    if (render->getNumDependencies(shared_from_this()) == 0) {
-
-        if (_imp->dependencyFreeRenders->find(render) == _imp->dependencyFreeRenders->end()) {
-            std::pair<DependencyFreeRenderSet::iterator, bool> ret = _imp->dependencyFreeRenders->insert(render);
-            assert(ret.second);
+    {
+        std::pair<DependencyFreeRenderSet::iterator, bool> ret = _imp->allRenderTasksToProcess.insert(render);
 #ifdef TRACE_RENDER_DEPENDENCIES
-            if (ret.second) {
-                qDebug() << this << "Adding" << render->getEffect()->getScriptName_mt_safe().c_str() << "(" << render.get() << ") to the dependency-free list";
-            }
-#endif
+        if (ret.second) {
+            qDebug() << this << "Adding" << render->getEffect()->getScriptName_mt_safe().c_str() << render->getPlaneDesc().getPlaneLabel().c_str() << "(" << render.get() << ") to the global list";
         }
+#endif
+    }
+    if (render->getNumDependencies(shared_from_this()) == 0) {
+        std::pair<DependencyFreeRenderSet::iterator, bool> ret = _imp->dependencyFreeRenders->insert(render);
+#ifdef TRACE_RENDER_DEPENDENCIES
+        if (ret.second) {
+            qDebug() << this << "Adding" << render->getEffect()->getScriptName_mt_safe().c_str() << render->getPlaneDesc().getPlaneLabel().c_str() << "(" << render.get() << ") to the dependency-free list";
+        }
+#endif
+
     }
 }
 
 class CleanupRenderClones_RAII
 {
-    EffectInstancePtr rootClone;
     TreeRenderPtr render;
 public:
 
-    CleanupRenderClones_RAII(const EffectInstancePtr& rootClone, const TreeRenderPtr& render)
-    : rootClone(rootClone)
-    , render(render)
+    CleanupRenderClones_RAII(const TreeRenderPtr& render)
+    : render(render)
     {
 
     }
 
     ~CleanupRenderClones_RAII()
     {
-        if (rootClone) {
-            rootClone->removeRenderCloneRecursive(render);
+        if (render) {
+            QMutexLocker k(&render->_imp->renderClonesMutex);
+            for (std::list<KnobHolderPtr>::const_iterator it = render->_imp->renderClones.begin(); it != render->_imp->renderClones.end(); ++it) {
+                (*it)->getMainInstance()->removeRenderClone(render);
+            }
+            render->_imp->renderClones.clear();
         }
     }
 };
@@ -550,12 +600,12 @@ private:
 
         if (!isFailureRetCode(stat)) {
 #ifdef TRACE_RENDER_DEPENDENCIES
-            qDebug() << sharedData.get() << "Launching render of" << renderClone->getScriptName_mt_safe().c_str();
+            qDebug() << sharedData.get() << "Launching render of" << renderClone->getScriptName_mt_safe().c_str() << request->getPlaneDesc().getPlaneLabel().c_str();
 #endif
             stat = renderClone->launchRender(sharedData, request);
         }
 
-        // Remove all stashes input frame view requests that we kept around.
+        // Remove all stashed input frame view requests that we kept around.
         request->clearRenderedDependencies(sharedData);
 
         QMutexLocker k(&sharedData->_imp->dependencyFreeRendersMutex);
@@ -582,7 +632,7 @@ private:
             if (numDepsLeft == 0) {
                 if (sharedData->_imp->dependencyFreeRenders->find(*it) == sharedData->_imp->dependencyFreeRenders->end()) {
 #ifdef TRACE_RENDER_DEPENDENCIES
-                    qDebug() << sharedData.get() << "Adding" << (*it)->getEffect()->getScriptName_mt_safe().c_str() << "(" << it->get() << ") to the dependency-free list";
+                    qDebug() << sharedData.get() << "Adding" << (*it)->getEffect()->getScriptName_mt_safe().c_str() << (*it)->getPlaneDesc().getPlaneLabel().c_str()  << "(" << it->get() << ") to the dependency-free list";
 #endif
                     assert(sharedData->_imp->allRenderTasksToProcess.find(*it) != sharedData->_imp->allRenderTasksToProcess.end());
                     sharedData->_imp->dependencyFreeRenders->insert(*it);
@@ -636,7 +686,7 @@ TreeRenderPrivate::launchRenderInternal(bool removeRenderClonesWhenFinished,
     // we don't want to remove clones yet. Clean the clones when the render tree is done executing the last call to launchRenderInternal.
     boost::scoped_ptr<CleanupRenderClones_RAII> clonesCleaner;
     if (removeRenderClonesWhenFinished) {
-        clonesCleaner.reset(new CleanupRenderClones_RAII(rootRenderClone, _publicInterface->shared_from_this()));
+        clonesCleaner.reset(new CleanupRenderClones_RAII(_publicInterface->shared_from_this()));
     }
 
     assert(rootRenderClone->isRenderClone());

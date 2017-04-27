@@ -134,9 +134,7 @@ EffectInstance::createRenderCopy(const FrameViewRenderKey& key) const
 
     FrameViewPair p = {key.time, key.view};
     for (int i = 0; i < nInputs; ++i) {
-        if (clone->isInputMask(i) && !clone->isMaskEnabled(i)) {
-            continue;
-        }
+       
         EffectInstancePtr mainInstanceInput = getInputMainInstance(i);
         clone->_imp->renderData->mainInstanceInputs[i] = mainInstanceInput;
         if (mainInstanceInput) {
@@ -263,9 +261,12 @@ bool
 EffectInstance::invalidateHashCacheRecursive(const bool recurse, std::set<HashableObject*>* invalidatedObjects)
 {
     // Clear hash on this node
+#if 0
     if (!HashableObject::invalidateHashCacheInternal(invalidatedObjects)) {
         return false;
     }
+#endif
+    HashableObject::invalidateHashCacheInternal(invalidatedObjects);
 
     // For a group, also invalidate the hash of all its nodes
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>(this);
@@ -282,10 +283,10 @@ EffectInstance::invalidateHashCacheRecursive(const bool recurse, std::set<Hashab
     }
 
     if (recurse) {
-        NodesWList outputs;
-        getNode()->getOutputs_mt_safe(outputs);
-        for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-            NodePtr outputNode = it->lock();
+        NodesList outputs;
+        getNode()->getOutputsWithGroupRedirection(outputs);
+        for (NodesList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+            const NodePtr& outputNode = *it;
             if (!outputNode) {
                 continue;
             }
@@ -572,24 +573,6 @@ EffectInstance::getInputRenderEffectAtAnyTimeView(int n) const
     }
 }
 
-void
-EffectInstance::removeRenderCloneRecursive(const TreeRenderPtr& render)
-{
-    bool foundClone = removeRenderClone(render);
-    if (!foundClone) {
-        return;
-    }
-
-    // Recurse on inputs
-    int nInputs = getMaxInputCount();
-    for (int i = 0; i < nInputs; ++i) {
-        EffectInstancePtr input = getInputMainInstance(i);
-        if (input) {
-            input->removeRenderCloneRecursive(render);
-        }
-    }
-} // removeRenderCloneRecursive
-
 
 std::string
 EffectInstance::getInputLabel(int inputNb) const
@@ -814,7 +797,9 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
         roiCanonical = inputRoD;
     } else {
         roiExpand.intersect(inputRoD, &roiExpand);
-        roiCanonical.intersect(inputRoD, &roiCanonical);
+        if (!roiCanonical.intersect(inputRoD, &roiCanonical)) {
+            return false;
+        }
     }
 
     // Empty RoI
@@ -875,7 +860,7 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
     // The output image unmapped
     outArgs->image = outputRequest->getRequestedScaleImagePlane();
 
-    if (!outArgs->image) {
+    if (!outArgs->image || !outArgs->image->isBufferAllocated()) {
         return false;
     }
 
@@ -942,13 +927,8 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
 
         Image::InitStorageArgs initArgs;
         {
-            // If the image is an OpenGL texture and we must convert it to CPU, we have to unpack in a buffer with the size of the bounds
-            // of the texture, so actually create a buffer with the appropriate size. Otherwise it would have to be done in Image::copyPixels
-            if (storage == eStorageModeGLTex && preferredStorage == eStorageModeRAM) {
-                initArgs.bounds = outArgs->image->getBounds();
-            } else {
-                initArgs.bounds = outArgs->roiPixel;
-            }
+
+            initArgs.bounds = outArgs->roiPixel;
             initArgs.proxyScale = outArgs->image->getProxyScale();
             initArgs.mipMapLevel = outArgs->image->getMipMapLevel();
             initArgs.plane = preferredLayer;
@@ -1006,7 +986,6 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
     }
 
   //  qDebug() << QThread::currentThread() << "input roi: " << outArgs->roiPixel.x1 << outArgs->roiPixel.y1 << outArgs->roiPixel.x2 << outArgs->roiPixel.y2;
-
 
     return true;
 } // getImagePlane
@@ -1252,6 +1231,12 @@ EffectInstance::removeOverlay(const OverlayInteractBasePtr& overlay)
     if (found != _imp->common->interacts.end()) {
         _imp->common->interacts.erase(found);
     }
+}
+
+void
+EffectInstance::clearOverlays()
+{
+    _imp->common->interacts.clear();
 }
 
 void

@@ -489,16 +489,69 @@ Gui::getRegisteredTabs() const
     return _imp->_registeredTabs;
 }
 
+template <typename PIX>
+void debugImageInternal(const RectI& renderWindow,
+                        const Image::CPUData &imageData,
+                        QImage& output)
+{
+    const Color::Lut* lut = Color::LutManager::sRGBLut();
+    lut->validate();
+
+
+    int dstY = renderWindow.height() - 1;
+    for ( int y = renderWindow.y2 - 1; y >= renderWindow.y1; --y , --dstY) {
+
+        const PIX* src_pixels[4];
+        int pixelStride;
+        Image::getChannelPointers<PIX>((const PIX**)imageData.ptrs, renderWindow.x1, y, imageData.bounds, imageData.nComps, (PIX**)src_pixels, &pixelStride);
+
+        QRgb* dstPixels = (QRgb*)output.scanLine(dstY);
+        assert(dstPixels);
+
+        unsigned error[3] = {0x80, 0x80, 0x80};
+
+        for (int x = renderWindow.x1; x < renderWindow.x2; ++x, ++dstPixels) {
+            float tmpPix[4] = {0, 0, 0, 1};
+            switch (imageData.nComps) {
+                case 1:
+                    tmpPix[0] = tmpPix[1] = tmpPix[2] = Image::convertPixelDepth<PIX, float>(*src_pixels[0]);
+                    tmpPix[3] = 1;
+                    break;
+                case 2:
+                case 3:
+                case 4: {
+                    for (int i = 0; i < imageData.nComps; ++i) {
+                        tmpPix[i] = Image::convertPixelDepth<PIX, float>(*src_pixels[i]);
+                        if (i < 3) {
+                            error[i] = (error[i] & 0xff) + lut->toColorSpaceUint8xxFromLinearFloatFast(tmpPix[i]);
+                            assert(error[i] < 0x10000);
+                        }
+                        src_pixels[i] += pixelStride;
+                    }
+                }   break;
+
+                default:
+                    assert(false);
+
+                    return;
+            }
+            *dstPixels = qRgba( U8(error[0] >> 8),
+                               U8(error[1] >> 8),
+                               U8(error[2] >> 8),
+                               U8(tmpPix[3] * 255) );
+
+
+        }
+    }
+
+} // debugImageInternal
+
 void
 Gui::debugImage(const Image* image,
                 const RectI& roi,
                 const QString & filename )
 {
-    if (image->getBitDepth() != eImageBitDepthFloat) {
-        qDebug() << "Debug image only works on float images.";
 
-        return;
-    }
     RectI renderWindow;
     RectI bounds = image->getBounds();
     if ( roi.isNull() ) {
@@ -517,62 +570,24 @@ Gui::debugImage(const Image* image,
         return;
     }
 
-    if (image->getBitDepth() != eImageBitDepthFloat) {
-        qDebug() << "Only float image supported";
-        return;
-    }
-
     Image::CPUData imageData;
     image->getCPUData(&imageData);
  
 
     QImage output(renderWindow.width(), renderWindow.height(), QImage::Format_ARGB32);
-    const Color::Lut* lut = Color::LutManager::sRGBLut();
-    lut->validate();
-
-
-    for ( int y = renderWindow.height() - 1; y >= 0; --y ) {
-
-        const float* src_pixels[4];
-        int pixelStride;
-        Image::getChannelPointers<float>((const float**)imageData.ptrs, renderWindow.x1, y, imageData.bounds, imageData.nComps, (float**)src_pixels, &pixelStride);
-
-        QRgb* dstPixels = (QRgb*)output.scanLine(y);
-        assert(dstPixels);
-
-        unsigned error[3] = {0x80, 0x80, 0x80};
-
-        for (int x = 0; x < renderWindow.width(); ++x, ++dstPixels) {
-            float tmpPix[4] = {0, 0, 0, 1};
-            switch (imageData.nComps) {
-                case 1:
-                    tmpPix[0] = tmpPix[1] = tmpPix[2] = *src_pixels[0];
-                    tmpPix[3] = 1;
-                    break;
-                case 2:
-                case 3:
-                case 4: {
-                    for (int i = 0; i < imageData.nComps; ++i) {
-                        tmpPix[i] = *src_pixels[i];
-                        if (i < 3) {
-                            error[i] = (error[i] & 0xff) + lut->toColorSpaceUint8xxFromLinearFloatFast(tmpPix[i]);
-                            assert(error[i] < 0x10000);
-                        }
-                    }
-                }   break;
-
-                default:
-                    assert(false);
-                    
-                    return;
-            }
-            *dstPixels = qRgba( U8(error[0] >> 8),
-                                U8(error[1] >> 8),
-                                U8(error[2] >> 8),
-                                U8(tmpPix[3] * 255) );
-        }
+    switch (image->getBitDepth()) {
+        case eImageBitDepthByte:
+            debugImageInternal<unsigned char>(roi, imageData, output);
+            break;
+        case eImageBitDepthFloat:
+            debugImageInternal<float>(roi, imageData, output);
+            break;
+        case eImageBitDepthShort:
+            debugImageInternal<unsigned short>(roi, imageData, output);
+            break;
+        default:
+            return;
     }
-
     U64 hashKey = rand();
     QString hashKeyStr = QString::number(hashKey);
     QString realFileName = filename.isEmpty() ? QString( hashKeyStr + QString::fromUtf8(".png") ) : filename;

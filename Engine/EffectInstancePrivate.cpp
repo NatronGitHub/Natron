@@ -281,7 +281,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
 
     // If this tile is identity, copy input image instead
     ActionRetCodeEnum stat;
-    //qDebug() << _publicInterface->getScriptName_mt_safe().c_str() << "render " << rectToRender.rect.x1 << rectToRender.rect.y1 << rectToRender.rect.x2 << rectToRender.rect.y2 << "(identity ? " << (rectToRender.identityInputNumber !=-1)<< ")" ;
+    qDebug() << _publicInterface->getScriptName_mt_safe().c_str() << "render" << args.cachedPlanes.begin()->first.getPlaneLabel().c_str() << rectToRender.rect.x1 << rectToRender.rect.y1 << rectToRender.rect.x2 << rectToRender.rect.y2 << "(identity ? " << (rectToRender.identityInputNumber !=-1)<< ")" ;
     if (rectToRender.identityInputNumber != -1) {
         stat = renderHandlerIdentity(rectToRender, args);
     } else {
@@ -315,25 +315,19 @@ EffectInstance::Implementation::renderHandlerIdentity(const RectToRender & rectT
     const bool checkNaNs = render->isNaNHandlingEnabled();
 
     for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = args.cachedPlanes.begin(); it != args.cachedPlanes.end(); ++it) {
-        boost::scoped_ptr<EffectInstance::GetImageInArgs> inArgs( new EffectInstance::GetImageInArgs() );
-        inArgs->renderBackend = &args.backendType;
-        inArgs->currentRenderWindow = &rectToRender.rect;
-        inArgs->inputTime = &rectToRender.identityTime;
-        inArgs->inputView = &rectToRender.identityView;
-        unsigned int curMipMap = args.requestData->getRenderMappedMipMapLevel();
-        inArgs->currentActionMipMapLevel = &curMipMap;
-        const RenderScale& curProxyScale = args.requestData->getProxyScale();
-        inArgs->currentActionProxyScale = &curProxyScale;
-        inArgs->inputNb = rectToRender.identityInputNumber;
-        inArgs->plane = &it->first;
+        IdentityPlaneKey p;
+        p.identityInputNb = rectToRender.identityInputNumber;
+        p.identityPlane = it->first;
+        p.identityTime = rectToRender.identityTime;
+        p.identityView = rectToRender.identityView;
 
         RectI roi;
         rectToRender.rect.intersect(it->second->getBounds(), &roi);
 
-        GetImageOutArgs inputResults;
 
-        bool gotPlanes = _publicInterface->getImagePlane(*inArgs, &inputResults);
-        if (!gotPlanes) {
+        IdentityPlanesMap::const_iterator foundFetchedPlane = args.identityPlanes.find(p);
+
+        if (foundFetchedPlane == args.identityPlanes.end()) {
             ActionRetCodeEnum stat = it->second->fillZero(roi);
             if (isFailureRetCode(stat)) {
                 return stat;
@@ -341,7 +335,7 @@ EffectInstance::Implementation::renderHandlerIdentity(const RectToRender & rectT
         } else {
             Image::CopyPixelsArgs cpyArgs;
             cpyArgs.roi = roi;
-            ActionRetCodeEnum stat = it->second->copyPixels(*inputResults.image, cpyArgs);
+            ActionRetCodeEnum stat = it->second->copyPixels(*foundFetchedPlane->second, cpyArgs);
             if (isFailureRetCode(stat)) {
                 return stat;
             }

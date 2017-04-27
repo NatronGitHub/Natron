@@ -189,7 +189,8 @@ public:
     // If this node is a group or a multi-instance, this is the children
     NodeSerializationList _children;
 
-    // This is the user created components on the node
+    // Deprecated: This is the user created components on the node in Natron < 3
+    // In Natron >= 3, this is a Knob
     std::list<ImagePlaneDescSerialization> _userComponents;
 
     // UI stuff

@@ -99,6 +99,9 @@ public:
     void ensureRoI(const RectI& roi,
                    const std::vector<RectI>& perMipMapLevelRoDPixel);
 
+    // Change the image pointer and render clone. Do not use, for debug only
+    void updateRenderCloneAndImage(const ImagePtr& image, const EffectInstancePtr& newRenderClone);
+
 
     /**
      * @brief Fetch possibly cached tiles from the cache and update the tiles state for the given mipmap level.

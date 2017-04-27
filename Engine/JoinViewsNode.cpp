@@ -145,7 +145,7 @@ JoinViewsNode::isIdentity(TimeValue /*time*/,
 }
 
 void
-JoinViewsNode::onMetadataChanged(const NodeMetadata& /*metadata*/)
+JoinViewsNode::onMetadataChanged(const NodeMetadata& metadata)
 {
     std::size_t nInputs, oldNInputs;
     {
@@ -184,6 +184,7 @@ JoinViewsNode::onMetadataChanged(const NodeMetadata& /*metadata*/)
 
         node->endInputEdition(true);
     }
+    EffectInstance::onMetadataChanged(metadata);
 }
 
 NATRON_NAMESPACE_EXIT;

@@ -36,7 +36,7 @@
 
 #include "Engine/NodeGroup.h"
 #include "Engine/ViewIdx.h"
-
+#include "Engine/OpenGLViewerI.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -259,12 +259,10 @@ public:
     {
         TimeValue time;
         ViewIdx view;
-        bool isPartialRect;
+        OpenGLViewerI::TextureTransferArgs::TypeEnum type;
 
         struct TextureUpload
         {
-            // The RoI that was originally requested to render this image
-            RectD canonicalRoI;
 
             // A pointer to the image on CPU
             ImagePtr image;

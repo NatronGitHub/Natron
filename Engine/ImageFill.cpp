@@ -23,7 +23,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "ImagePrivate.h"
-
+#include "Engine/Texture.h"
 NATRON_NAMESPACE_ENTER;
 
 template <typename GL>
@@ -33,7 +33,7 @@ fillGLInternal(const RectI & roi,
                float g,
                float b,
                float a,
-               const GLImageStoragePtr& texture,
+               const GLTexturePtr& texture,
                const OSGLContextPtr& glContext)
 {
     RectI bounds = texture->getBounds();
@@ -43,8 +43,8 @@ fillGLInternal(const RectI & roi,
 
     GLuint fboID = glContext->getOrCreateFBOId();
 
-    int target = texture->getGLTextureTarget();
-    U32 texID = texture->getGLTextureID();
+    int target = texture->getTexTarget();
+    U32 texID = texture->getTexID();
 
 
     GL::BindFramebuffer(GL_FRAMEBUFFER, fboID);
@@ -76,15 +76,9 @@ ImagePrivate::fillGL(const RectI & roi,
                      float g,
                      float b,
                      float a,
-                     const GLImageStoragePtr& texture)
+                     const GLTexturePtr& texture,
+                     const OSGLContextPtr& glContext)
 {
-
-    OSGLContextPtr glContext = texture->getOpenGLContext();
-    if (!glContext) {
-        // No context - This is a bug, OpenGL contexts should live as long as the application lives, much longer than an image.
-        assert(false);
-        return;
-    }
 
     // Save the current context
     OSGLContextSaver saveCurrentContext;
@@ -126,17 +120,15 @@ fillCPUBlackForDepth(void* ptrs[4],
         int dstPixelStride;
         Image::getChannelPointers<PIX>((const PIX**)ptrs, roi.x1, y, bounds, nComps, dstPixelPtrs, &dstPixelStride);
 
-        std::size_t rowSize = roi.width() * dstPixelStride * dataSizeOf;
-
         if ((dstPixelPtrs[1] - dstPixelPtrs[0]) == 1) {
             // If all channels belong to the same buffer, use memset
+            std::size_t rowSize = roi.width() * dstPixelStride * dataSizeOf;
             memset(dstPixelPtrs[0], 0, rowSize);
         } else {
             for (int i = 0; i < 4; ++i) {
                 if (dstPixelPtrs[i]) {
-                    PIX* dstPixels = dstPixelPtrs[i];
-                    for (int x = roi.x1; x < roi.x2; ++x, dstPixels += dstPixelStride) {
-                        *dstPixels = 0;
+                    for (int x = roi.x1; x < roi.x2; ++x, dstPixelPtrs[i] += dstPixelStride) {
+                        *dstPixelPtrs[i] = 0;
                     }
                 }
             }

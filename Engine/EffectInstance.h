@@ -104,6 +104,8 @@ NATRON_NAMESPACE_ENTER;
 #define PLUGINID_NATRON_VIEWER_INTERNAL     (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.ViewerInternal")
 #define PLUGINID_NATRON_DISKCACHE           (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.DiskCache")
 #define PLUGINID_NATRON_DOT                 (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Dot")
+#define PLUGINID_NATRON_REMOVE_PLANE        (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.RemovePlane")
+#define PLUGINID_NATRON_ADD_PLANE           (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.AddPlane")
 #define PLUGINID_NATRON_READQT              (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.ReadQt")
 #define PLUGINID_NATRON_WRITEQT             (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.WriteQt")
 #define PLUGINID_NATRON_GROUP               (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Group")
@@ -224,6 +226,10 @@ NATRON_NAMESPACE_ENTER;
 #define kNodeParamProcessAllLayersLabel "All Planes"
 #define kNodeParamProcessAllLayersHint "When checked all planes in input will be processed and output to the same plane as in input. It is useful for example to apply a Transform effect on all planes."
 
+
+#define kNodeParamUserLayers "userPlanes"
+#define kNodeParamUserLayersLabel "Planes"
+#define kNodeParamUserLayersHint "Add here any plane that should be created by this node"
 
 // A persistent message that will always be cleared upon a successful render, this may be useful to report errors in render without taking care of clearing the persistent message manually
 #define kNatronPersistentErrorGenericRenderMessage "NatronPersistentErrorGenericRenderMessage"
@@ -1170,11 +1176,6 @@ public:
     ActionRetCodeEnum launchRender(const RequestPassSharedDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestData);
 
     /**
-     * @brief Remove the render clone on this node and all its inputs recursively
-     **/
-    void removeRenderCloneRecursive(const TreeRenderPtr& render);
-
-    /**
      * @brief Convenience function for getCurrentRender()->isRenderAborted()
      **/
     bool isRenderAborted() const;
@@ -1603,6 +1604,8 @@ public:
      **/
     void removeOverlay(const OverlayInteractBasePtr& overlay);
 
+    void clearOverlays();
+
     /**
      * @brief Returns the list of all registered overlays
      **/
@@ -1747,9 +1750,11 @@ public:
 
     bool addUserComponents(const ImagePlaneDesc& comps);
 
-    void getUserCreatedComponents(std::list<ImagePlaneDesc>* comps);
-
     bool getProcessChannel(int channelIndex) const;
+
+    KnobLayersPtr getOrCreateUserPlanesKnob(const KnobPagePtr& page);
+
+    KnobLayersPtr getUserPlanesKnob() const;
 
     KnobBoolPtr getProcessChannelKnob(int channelIndex) const;
 

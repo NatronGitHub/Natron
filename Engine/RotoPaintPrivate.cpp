@@ -694,14 +694,13 @@ RotoPaintInteract::onToolChangedInternal(const KnobButtonPtr& actionButton)
             sourceTypeChoice.lock()->setValue(2);
         }
 
-        if ( (tool == eRotoToolSolidBrush ) || ( tool == eRotoToolOpenBezier ) ) {
-            compositingOperatorChoice.lock()->setValue( (int)eMergeOver );
-        } else if (tool == eRotoToolBurn) {
+
+        if (tool == eRotoToolBurn) {
             compositingOperatorChoice.lock()->setValue( (int)eMergeColorBurn );
         } else if (tool == eRotoToolDodge) {
             compositingOperatorChoice.lock()->setValue( (int)eMergeColorDodge );
         } else {
-            compositingOperatorChoice.lock()->setValue( (int)eMergeCopy );
+            compositingOperatorChoice.lock()->setValue( (int)eMergeOver );
         }
     }
 
@@ -1068,7 +1067,7 @@ RotoPaintInteract::makeStroke(bool prepareForLater,
     }
     if (!prepareForLater) {
         RotoLayerPtr layer = _imp->publicInterface->getLayerForNewItem();
-        _imp->knobsTable->addItem(strokeBeingPaint, layer, eTableChangeReasonInternal);
+        _imp->knobsTable->insertItem(0, strokeBeingPaint, layer, eTableChangeReasonInternal);
         strokeBeingPaint->beginSubStroke();
         strokeBeingPaint->appendPoint(point);
     }
@@ -2757,7 +2756,8 @@ RotoPaintInteract::onOverlayPenDown(TimeValue time,
                     }
 
                     KnobIntPtr lifeTimeFrameKnob = strokeBeingPaint->getLifeTimeFrameKnob();
-                    lifeTimeFrameKnob->setValue(time);
+                    // We use eValueChangedReasonPluginEdited so that the value change does not break the multi-stroke
+                    lifeTimeFrameKnob->setValue(time, ViewIdx(0), DimIdx(0), eValueChangedReasonPluginEdited);
 
                     strokeBeingPaint->beginSubStroke();
                     strokeBeingPaint->appendPoint( RotoPoint(pos.x(), pos.y(), pressure, timestamp) );

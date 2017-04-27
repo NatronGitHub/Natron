@@ -548,6 +548,7 @@ struct RotoPaintPrivate
     RotoPaint* publicInterface; // can not be a smart ptr
     RotoPaint::RotoPaintTypeEnum nodeType;
     KnobBoolWPtr premultKnob;
+    KnobChoiceWPtr outputComponentsKnob;
     KnobBoolWPtr enabledKnobs[4];
 
     RotoPaintInteractPtr ui;

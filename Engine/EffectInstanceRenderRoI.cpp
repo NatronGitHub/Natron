@@ -389,7 +389,7 @@ EffectInstance::Implementation::lookupCachedImage(unsigned int mipMapLevel,
     if (!*image) {
         *image = createCachedImage(pixelRoi, perMipMapPixelRoD, mipMapLevel, proxyScale, plane, backend, cachePolicy, true /*delayAllocation*/);
     } else {
-        ActionRetCodeEnum stat = (*image)->ensureBounds(pixelRoi, mipMapLevel, perMipMapPixelRoD);
+        ActionRetCodeEnum stat = (*image)->ensureBounds(pixelRoi, mipMapLevel, perMipMapPixelRoD, _publicInterface->shared_from_this());
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -910,6 +910,7 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const RequestPassShar
             continue;
         }
 
+        const bool isOptional = _publicInterface->isInputOptional(inputNb);
 
         ///There cannot be frames needed without components needed.
         const std::list<ImagePlaneDesc>* inputPlanesNeeded = 0;
@@ -991,6 +992,9 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const RequestPassShar
                             FrameViewRequestPtr createdRequest;
                             ActionRetCodeEnum stat = inputEffect->requestRender(inputTime, viewIt->first, proxyScale, mipMapLevel, *planeIt, inputRoI, inputNb, requestPassData, requestPassSharedData, &createdRequest, 0);
                             if (isFailureRetCode(stat)) {
+                                if (isOptional) {
+                                    continue;
+                                }
                                 return stat;
                             }
                             ++nbRequestedFramesForInput;
@@ -1013,25 +1017,6 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const RequestPassShar
     return eActionStatusOK;
 } // handleUpstreamFramesNeeded
 
-class AddDependencyFreeRender_RAII
-{
-    FrameViewRequestPtr _requestData;
-    RequestPassSharedDataPtr _requestPassSharedData;
-public:
-
-    AddDependencyFreeRender_RAII(const RequestPassSharedDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestData)
-    : _requestData(requestData)
-    , _requestPassSharedData(requestPassSharedData)
-    {
-
-    }
-
-    ~AddDependencyFreeRender_RAII()
-    {
-
-        _requestPassSharedData->addTaskToRender(_requestData);
-    }
-};
 
 ActionRetCodeEnum
 EffectInstance::requestRender(TimeValue timeInArgs,
@@ -1098,17 +1083,17 @@ EffectInstance::requestRender(TimeValue timeInArgs,
         renderClone->_imp->renderData->requests.insert(std::make_pair(requestKey, *createdRequest));
     }
 
+    ActionRetCodeEnum stat = renderClone->requestRenderInternal(roiCanonical, inputNbInRequester, *createdRequest, requester, requestPassSharedData);
+    if (!isFailureRetCode(stat)) {
+        // Add this frame/view as depdency of the requester
+        if (requester) {
+            requester->addDependency(requestPassSharedData, *createdRequest);
+            (*createdRequest)->addListener(requestPassSharedData, requester);
+        }
 
-    // When exiting this function, add the request to the dependency free list if it has no dependencies.
-    AddDependencyFreeRender_RAII addDependencyFreeRender(requestPassSharedData, *createdRequest);
-
-    // Add this frame/view as depdency of the requester
-    if (requester) {
-        requester->addDependency(requestPassSharedData, *createdRequest);
-        (*createdRequest)->addListener(requestPassSharedData, requester);
+        requestPassSharedData->addTaskToRender(*createdRequest);
     }
-
-    return renderClone->requestRenderInternal(roiCanonical, inputNbInRequester, *createdRequest, requester, requestPassSharedData);
+    return stat;
 } // requestRender
 
 ActionRetCodeEnum
@@ -1311,8 +1296,6 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
         }
     }
 
-    
-
     const bool isAccumulating = isAccumulationEnabled();
 
 
@@ -1372,26 +1355,39 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
         // Note that in this mode only a single plane can be rendered at once and the plug-in render safety must
         // allow only a single thread to run
         ImagePtr accumBuffer = getAccumBuffer(requestData->getPlaneDesc());
-        if (accumBuffer && accumBuffer->getMipMapLevel() != mappedMipMapLevel) {
+        if ((isAccumulating && accumBuffer && accumBuffer->getMipMapLevel() != mappedMipMapLevel)) {
             accumBuffer.reset();
         }
 
         if (isAccumulating && accumBuffer) {
 
+            accumBuffer->updateRenderCloneAndImage(shared_from_this());
             // When drawing with a paint brush, we may only render the bounding box of the un-rendered points.
             RectD updateAreaCanonical;
             if (getAccumulationUpdateRoI(&updateAreaCanonical)) {
                 
                 RectI updateAreaPixel;
                 updateAreaCanonical.toPixelEnclosing(mappedCombinedScale, par, &updateAreaPixel);
-                
-                
+                updateAreaPixel.intersect(renderMappedRoI, &updateAreaPixel);
+
+                // Notify the TreeRender of the update area so that in turn the OpenGL viewer can update only the required portion
+                // of the texture
+                getCurrentRender()->setActiveStrokeUpdateArea(updateAreaPixel);
+                //qDebug() << getScriptName_mt_safe().c_str() << "update area";
+                //updateAreaCanonical.debug();
+                if (updateAreaPixel.isNull()) {
+                    // Nothing to update, return quickly
+                    requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusRendered);
+                    requestData->setRequestedScaleImagePlane(accumBuffer);
+                    return eActionStatusOK;
+                }
                 // If this is the first time we compute this frame view request, erase in the tiles state map the portion that was drawn
                 // by the user,
                 if (!requestedImageScale) {
                     // Get the accum buffer on the node. Note that this is not concurrent renders safe.
                     requestedImageScale = accumBuffer;
                     requestedImageScale->getCacheEntry()->markCacheTilesInRegionAsNotRendered(updateAreaPixel);
+
                 }
             }
 
@@ -1721,7 +1717,7 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPa
 
         requestData->setRequestedScaleImagePlane(downscaledImage);
     }
-
+ 
     return isRenderAborted() ? eActionStatusAborted : eActionStatusOK;
 } // launchRenderInternal
 
@@ -1851,6 +1847,41 @@ EffectInstance::Implementation::launchPluginRenderAndHostFrameThreading(const Fr
     functorArgs->requestData = requestData;
     functorArgs->cachedPlanes = cachedPlanes;
     functorArgs->backendType = backendType;
+
+    // Pre-fetch all input images that will be needed by identity rectangles so that the call to getImagePlane
+    // is done once for each of them.
+    for (std::list<RectToRender>::const_iterator it = renderRects.begin(); it != renderRects.end(); ++it) {
+        for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it2 = cachedPlanes.begin(); it2 != cachedPlanes.end(); ++it2) {
+            IdentityPlaneKey p;
+            p.identityInputNb = it->identityInputNumber;
+            p.identityPlane = it2->first;
+            p.identityTime = it->identityTime;
+            p.identityView = it->identityView;
+            IdentityPlanesMap::const_iterator foundFetchedPlane = functorArgs->identityPlanes.find(p);
+            if (foundFetchedPlane != functorArgs->identityPlanes.end()) {
+                // It was already fetched
+                continue;
+            }
+
+            boost::scoped_ptr<EffectInstance::GetImageInArgs> inArgs( new EffectInstance::GetImageInArgs() );
+            inArgs->renderBackend = &backendType;
+            inArgs->currentRenderWindow = &it->rect;
+            inArgs->inputTime = &it->identityTime;
+            inArgs->inputView = &it->identityView;
+            unsigned int curMipMap = requestData->getRenderMappedMipMapLevel();
+            inArgs->currentActionMipMapLevel = &curMipMap;
+            const RenderScale& curProxyScale = requestData->getProxyScale();
+            inArgs->currentActionProxyScale = &curProxyScale;
+            inArgs->inputNb = it->identityInputNumber;
+            inArgs->plane = &it2->first;
+
+            GetImageOutArgs inputResults;
+
+            if (_publicInterface->getImagePlane(*inArgs, &inputResults)) {
+                functorArgs->identityPlanes.insert(std::make_pair(p, inputResults.image));
+            }
+        }
+    }
 
     if (!attemptHostFrameThreading) {
 

@@ -70,7 +70,15 @@ Image::~Image()
     std::list<ImageStorageBasePtr> toDeleteInDeleterThread;
     for (int i = 0; i < 4; ++i) {
         if (_imp->channels[i]) {
-            toDeleteInDeleterThread.push_back(_imp->channels[i]);
+
+            // The buffer may be shared with another image, in which case we do not destroy it now.
+            bool channelBufferIsShared =
+            (!_imp->cacheEntry && _imp->channels[i].use_count() == 1) ||
+            (_imp->cacheEntry && _imp->channels[i].use_count() == 2);
+
+            if (!channelBufferIsShared) {
+                toDeleteInDeleterThread.push_back(_imp->channels[i]);
+            }
         }
     }
    
@@ -239,7 +247,7 @@ Image::copyPixels(const Image& other, const CopyPixelsArgs& args)
 
 
     // Optimize: try to just copy the memory buffer pointers instead of copying the memory itself
-    if (!args.forceCopyEvenIfBuffersHaveSameLayout && roi == _imp->originalBounds) {
+    if (!args.forceCopyEvenIfBuffersHaveSameLayout && roi == _imp->originalBounds && roi == other._imp->originalBounds) {
         bool copyNeeded = isCopyPixelsNeeded(_imp.get(), other._imp.get());
         if (!copyNeeded) {
             for (std::size_t c = 0; c < 4; ++c) {
@@ -281,6 +289,13 @@ Image::copyPixels(const Image& other, const CopyPixelsArgs& args)
     return ImagePrivate::copyPixelsInternal(fromImage->_imp.get(), _imp.get(), tmpArgs, _imp->renderClone.lock());
 
 } // copyPixels
+
+bool
+Image::isBufferAllocated() const
+{
+    QMutexLocker k(&_imp->tilesAllocatedMutex);
+    return _imp->tilesAllocated;
+}
 
 void
 Image::ensureBuffersAllocated()
@@ -447,7 +462,7 @@ Image::fill(const RectI & roi,
 
     if (getStorageMode() == eStorageModeGLTex) {
         GLImageStoragePtr glEntry = toGLImageStorage(_imp->channels[0]);
-        _imp->fillGL(roi, r, g, b, a, glEntry);
+        _imp->fillGL(roi, r, g, b, a, glEntry->getTexture(), glEntry->getOpenGLContext());
         return eActionStatusOK;
     }
 
@@ -481,14 +496,26 @@ Image::fillBoundsZero()
     return fillZero(getBounds());
 }
 
+void
+Image::updateRenderCloneAndImage(const EffectInstancePtr& newRenderClone)
+{
+    _imp->renderClone = newRenderClone;
+    if (_imp->cacheEntry) {
+        _imp->cacheEntry->updateRenderCloneAndImage(shared_from_this(), newRenderClone);
+    }
+}
+
 ActionRetCodeEnum
 Image::ensureBounds(const RectI& roi,
                     unsigned int mipmapLevel,
-                    const std::vector<RectI>& perMipMapLevelRoDPixel)
+                    const std::vector<RectI>& perMipMapLevelRoDPixel,
+                    const EffectInstancePtr& newRenderClone)
 {
     if (_imp->originalBounds.contains(roi)) {
         return eActionStatusOK;
     }
+
+    ensureBuffersAllocated();
 
     RectI oldBounds = _imp->originalBounds;
     RectI newBounds = oldBounds;
@@ -503,6 +530,7 @@ Image::ensureBounds(const RectI& roi,
         initArgs.bufferFormat = getBufferFormat();
         initArgs.storage = getStorageMode();
         initArgs.mipMapLevel = getMipMapLevel();
+        initArgs.renderClone = newRenderClone;
         assert(mipmapLevel == initArgs.mipMapLevel);
         initArgs.proxyScale = getProxyScale();
         initArgs.renderClone = _imp->renderClone.lock();
@@ -522,7 +550,10 @@ Image::ensureBounds(const RectI& roi,
     }
     Image::CopyPixelsArgs cpyArgs;
     cpyArgs.roi = oldBounds;
-    tmpImage->copyPixels(*this, cpyArgs);
+    ActionRetCodeEnum stat = tmpImage->copyPixels(*this, cpyArgs);
+    if (isFailureRetCode(stat)) {
+        return stat;
+    }
 
     // Swap images so that this image becomes the resized one, but keep the internal cache entry object
     ImageCacheEntryPtr internalCacheEntry = _imp->cacheEntry;
@@ -534,6 +565,7 @@ Image::ensureBounds(const RectI& roi,
         assert(perMipMapLevelRoDPixel.size() >= _imp->mipMapLevel + 1);
         _imp->cacheEntry = internalCacheEntry;
         _imp->cacheEntry->ensureRoI(roi, perMipMapLevelRoDPixel);
+        _imp->cacheEntry->updateRenderCloneAndImage(shared_from_this(), newRenderClone);
     }
     return eActionStatusOK;
 

@@ -37,6 +37,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Image.h"
 #include "Gui/TextRenderer.h"
 #include "Gui/ViewerGL.h"
+#include "Gui/GuiGLContext.h"
 #include "Gui/ZoomContext.h"
 #include "Gui/GuiFwd.h"
 
@@ -81,7 +82,6 @@ struct TextureInfo
     , mipMapLevel(0)
     , premult(eImagePremultiplicationOpaque)
     , time(0)
-    , originalCanonicalRoi()
     , rod()
     , format()
     , pixelAspectRatio(1.)
@@ -99,7 +99,6 @@ struct TextureInfo
     // These are meta-datas at the time the texture was uploaded
     ImagePremultiplicationEnum premult;
     TimeValue time;
-    RectD originalCanonicalRoi;
     RectD rod;
     RectD format;
     double pixelAspectRatio;
@@ -189,10 +188,11 @@ struct ViewerGL::Implementation
     // Protects uploadedTexturesViewerHash
     mutable QMutex uploadedTexturesViewerHashMutex;
 
-    // Used to ensure a single thread is using the QGLWidget opengl context.
-    mutable QMutex openglContextLockedMutex;
-    QWaitCondition openglContextLockedCond;
-    int openglContextLocked;
+    // A wrapper around the OpenGL context managed by QGLWidget
+    // so that we can use the same API for the internal background rendering functions
+    // as with OSGLContext
+    boost::shared_ptr<GuiGLContext> glContextWrapper;
+
 
 public:
 
@@ -230,9 +230,6 @@ public:
 
     void drawCheckerboardTexture(const QPolygonF& polygon);
 
-    void lockGLContext();
-
-    void releaseGLContext();
 
 private:
     /**

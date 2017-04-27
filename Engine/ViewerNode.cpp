@@ -1071,7 +1071,20 @@ ViewerNode::updateViewer(const UpdateViewerArgs& args)
         }
 
         for (std::list<UpdateViewerArgs::TextureUpload>::const_iterator it = args.viewerUploads[i].begin(); it!= args.viewerUploads[i].end(); ++it) {
-            uiContext->transferBufferFromRAMtoGPU(it->image, it->colorPickerImage, it->colorPickerInputImage, i, args.isPartialRect, args.time, args.view, it->canonicalRoI, rod, args.recenterViewer, args.viewerCenter, it->viewerProcessImageKey);
+
+            OpenGLViewerI::TextureTransferArgs transferArgs;
+            transferArgs.image = it->image;
+            transferArgs.colorPickerImage = it->colorPickerImage;
+            transferArgs.colorPickerInputImage = it->colorPickerInputImage;
+            transferArgs.textureIndex = i;
+            transferArgs.time = args.time;
+            transferArgs.view = args.view;
+            transferArgs.rod = rod;
+            transferArgs.recenterViewer = args.recenterViewer;
+            transferArgs.viewportCenter = args.viewerCenter;
+            transferArgs.viewerProcessNodeKey = it->viewerProcessImageKey;
+            transferArgs.type = args.type;
+            uiContext->transferBufferFromRAMtoGPU(transferArgs);
         }
 
     }

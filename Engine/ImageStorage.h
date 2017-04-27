@@ -291,6 +291,8 @@ public:
 
     OSGLContextPtr getOpenGLContext() const;
 
+    GLTexturePtr getTexture() const;
+
     U32 getGLTextureID() const;
 
     int getGLTextureTarget() const;

@@ -129,6 +129,10 @@ struct RotoStrokeItemPrivate
     // For a render clone, the bbox is computed only once per time
     boost::scoped_ptr<std::map<TimeValue,RectD> > renderCachedBbox;
 
+    // Similarly, the hash is computed from the main instance curves since the clone only
+    // contains the portion that was not rendered yet
+    boost::scoped_ptr<std::map<TimeValue,U64> > renderCachedHash;
+
     // While drawing the stroke, this is the bounding box of the points
     // used to render. Basically this is the bbox of the points extracted
     // in the copy ctor.
@@ -178,6 +182,7 @@ struct RotoStrokeItemPrivate
     , distToNextOut(0)
     , lastCenter()
     , renderCachedBbox()
+    , renderCachedHash()
     , lastStrokeStepBbox()
     , lastPointIndexInSubStroke(-1)
     , pickupPointIndexInSubStroke(0)
@@ -198,7 +203,7 @@ struct RotoStrokeItemPrivate
 
     RectD computeBoundingBox(TimeValue time, ViewIdx view) const;
 
-    U64 computeHashFromStrokes();
+    U64 computeHashFromStrokes() const;
 
 };
 
@@ -217,7 +222,6 @@ RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other
     lastCenter = other.lastCenter;
     lastStrokeStepBbox = other.lastStrokeStepBbox;
     lastPointIndexInSubStroke = other.lastPointIndexInSubStroke;
-    pickupPointIndexInSubStroke = other.pickupPointIndexInSubStroke;
     currentSubStroke = other.currentSubStroke;
     strokeDotPatterns = other.strokeDotPatterns;
     drawingGlCpuContext = other.drawingGlCpuContext;
@@ -307,10 +311,24 @@ RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other
         }
     }
 
+
+    other.pickupPointIndexInSubStroke = pickupPointIndexInSubStroke;
+
     // During painting, we copy on the clone only the points that were not rendered yet.
     // In order for the getBoundingBox function to return something decent, we still need
     // to know the bounding box of the full stroke
     if (isCurrentlyDrawing) {
+
+#ifdef DEBUG
+        if (lastPointIndexInSubStroke >= pickupPointIndexInSubStroke) {
+            if (pickupPointIndexInSubStroke == 0) {
+                assert(lastPointIndexInSubStroke + 1 == strokes.back().xCurve->getKeyFramesCount());
+            } else {
+                // +2 because we also add the last point of the previous draw step in the call to cloneIndexRange(), otherwise it would make holes in the drawing
+                assert((lastPointIndexInSubStroke + 2 - pickupPointIndexInSubStroke) == strokes.back().xCurve->getKeyFramesCount());
+            }
+        }
+#endif
 
         // The bounding box computation requires a time and view parameters:
         // we are OK to assume that the time view are the current ones in the UI
@@ -318,16 +336,20 @@ RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other
         TimeValue time = _publicInterface->getCurrentRenderTime();
         ViewIdx view = _publicInterface->getCurrentRenderView();
 
-        if (hasDoneSomething) {
+
             // This is the bounding box of just the points we did not draw
-            lastStrokeStepBbox = computeBoundingBox(time, view);
-        }
+        lastStrokeStepBbox = computeBoundingBox(time, view);
+
 
         // This is the bounding box of the full stroke. Since we only copied from the curve the portion
         // we did not draw yet, we can only compute it on the main instance
         renderCachedBbox.reset(new std::map<TimeValue,RectD>);
         RectD fullStrokeBbox = other.computeBoundingBox(time, view);
         renderCachedBbox->insert(std::make_pair(time, fullStrokeBbox));
+
+        renderCachedHash.reset(new std::map<TimeValue,U64>);
+        U64 strokesHash = other.computeHashFromStrokes();
+        renderCachedHash->insert(std::make_pair(time, strokesHash));
     }
     return hasDoneSomething;
 } // copyStrokeForRendering
@@ -355,7 +377,6 @@ RotoStrokeItem::getRenderCloneCurrentStrokeEndPointIndex() const
 int
 RotoStrokeItem::getRenderCloneCurrentStrokeStartPointIndex() const
 {
-    assert(isRenderClone());
     QMutexLocker k(&_imp->lock);
     if (_imp->isCurrentlyDrawing) {
         return _imp->pickupPointIndexInSubStroke;
@@ -1341,7 +1362,7 @@ RotoStrokeItem::evaluateStroke(const RenderScale& scale,
 }
 
 U64
-RotoStrokeItemPrivate::computeHashFromStrokes()
+RotoStrokeItemPrivate::computeHashFromStrokes() const
 {
     // Private- should not lock
     assert(!lock.tryLock());
@@ -1369,7 +1390,18 @@ RotoStrokeItem::appendToHash(const ComputeHashArgs& args, Hash64* hash)
     {
         // Append the item knobs
         QMutexLocker k(&_imp->lock);
-        U64 strokesHash = _imp->computeHashFromStrokes();
+        bool gotHash = false;
+        U64 strokesHash;
+        if (_imp->renderCachedHash) {
+            std::map<TimeValue,U64>::const_iterator found = _imp->renderCachedHash->find(args.time);
+            if (found != _imp->renderCachedHash->end()) {
+                strokesHash = found->second;
+                gotHash = true;
+            }
+        }
+        if (!gotHash) {
+             strokesHash = _imp->computeHashFromStrokes();
+        }
         hash->append(strokesHash);
     }
 
@@ -1417,7 +1449,6 @@ RotoStrokeItem::fetchRenderCloneKnobs()
 void
 RotoStrokeItem::initializeKnobs()
 {
-    RotoDrawableItem::initializeKnobs();
 
 
     // Make a strength parameter when relevant
@@ -1445,7 +1476,8 @@ RotoStrokeItem::initializeKnobs()
         _imp->cloneFilter = createDuplicateOfTableKnob<KnobChoice>(kRotoBrushFilterParam);
         _imp->cloneBlackOutside = createDuplicateOfTableKnob<KnobBool>(kRotoBrushBlackOutsideParam);
     }
-    
+    RotoDrawableItem::initializeKnobs();
+
 }
 
 

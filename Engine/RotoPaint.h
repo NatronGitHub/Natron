@@ -38,8 +38,8 @@
 
 NATRON_NAMESPACE_ENTER;
 
-#define ROTOPAINT_MAX_INPUTS_COUNT 11
-#define ROTOPAINT_MASK_INPUT_INDEX 10
+#define ROTOPAINT_MAX_INPUTS_COUNT 10
+//#define ROTOPAINT_MASK_INPUT_INDEX 10
 
 // Same number of masks than of sources
 #define LAYERED_COMP_MAX_SOURCE_COUNT 10
@@ -386,6 +386,11 @@ enum RotoMotionBlurModeEnum
 #define kRotoRemoveItemParamLabel "Remove"
 #define kRotoRemoveItemParamHint "Remove the selected item(s) from the table"
 
+#define kRotoOutputComponentsParam "outputComponents"
+#define kRotoOutputComponentsParamLabel "Components"
+#define kRotoOutputComponentsParamHint "Components type of the image for the solid brush and for shapes. "\
+"By default, the Roto node outputs Alpha only whereas the RotoPaint node outputs RGBA"
+
 struct RotoPaintPrivate;
 class RotoPaint
     : public NodeGroup
@@ -493,6 +498,8 @@ public:
     KnobChoicePtr getMotionBlurTypeKnob() const;
 
     KnobDoublePtr getMixKnob() const;
+
+    KnobChoicePtr getOutputComponentsKnob() const;
 
     void refreshSourceKnobs(const RotoDrawableItemPtr& item);
 

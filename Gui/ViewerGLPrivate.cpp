@@ -112,9 +112,6 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     , isUpdatingTexture(false)
     , renderOnPenUp(false)
     , updateViewerPboIndex(0)
-    , openglContextLockedMutex()
-    , openglContextLockedCond()
-    , openglContextLocked(0)
 {
     infoViewer[0] = 0;
     infoViewer[1] = 0;
@@ -127,6 +124,8 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     //        sizeH = r.size();
     sizeH.setWidth(10000);
     sizeH.setHeight(10000);
+
+    glContextWrapper.reset(new GuiGLContext(this_));
 }
 
 ViewerGL::Implementation::~Implementation()
@@ -216,7 +215,6 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
     ///the texture rectangle in image coordinates. The values in it are multiples of tile size.
     ///
     const RectI &textureBounds = this->displayTextures[textureIndex].texture->getBounds();
-    //const RectD& originalCanonicalRoI = this->displayTextures[textureIndex].originalCanonicalRoi;
 
     ///This is the coordinates in the image being rendered where datas are valid, this is in pixel coordinates
     ///at the time we initialize it but we will convert it later to canonical coordinates. See 1)
@@ -774,23 +772,6 @@ ViewerGL::Implementation::refreshSelectionRectangle(const QPointF & pos)
     selectionRectangle.setRect(xmin, ymin, xmax - xmin, ymax - ymin);
 }
 
-void
-ViewerGL::Implementation::lockGLContext()
-{
-    openglContextLockedMutex.lock();
-    while (openglContextLocked > 0) {
-        openglContextLockedCond.wait(&openglContextLockedMutex);
-    }
-    ++openglContextLocked;
-}
 
-void
-ViewerGL::Implementation::releaseGLContext()
-{
-    assert(openglContextLocked > 0);
-    --openglContextLocked;
-    openglContextLockedCond.wakeOne();
-    openglContextLockedMutex.unlock();
-}
 
 NATRON_NAMESPACE_EXIT;

@@ -141,6 +141,7 @@ struct DefaultKnobs
     std::map<int, ChannelSelector> channelsSelectors;
     KnobBoolWPtr processAllLayersKnob;
     std::map<int, MaskSelector> maskSelectors;
+    KnobLayersWPtr createPlanesKnob;
 
     // True if the effect has isHostChannelSelectorSupported() returning true
     bool hostChannelSelectorEnabled;
@@ -238,15 +239,9 @@ struct EffectInstanceCommonData
     std::vector< std::bitset<4> > supportedInputComponents;
     std::bitset<4> supportedOutputComponents;
 
-
     // List of supported bitdepth by the plug-in
     std::list <ImageBitDepthEnum> supportedDepths;
 
-    // Protects created component
-    mutable QMutex createdPlanesMutex;
-
-    // Comps created by the user in the stream.
-    std::list<ImagePlaneDesc> createdPlanes;
 
     // If this node is part of a RotoPaint item implementation
     // this is a pointer to the roto item itself
@@ -272,8 +267,6 @@ struct EffectInstanceCommonData
     , supportedInputComponents()
     , supportedOutputComponents()
     , supportedDepths()
-    , createdPlanesMutex()
-    , createdPlanes()
     , paintStroke()
     , accumBufferMutex()
     , accumBuffer()
@@ -559,6 +552,39 @@ public:
                                         bool* hasPendingTiles,
                                         bool* hasUnrenderedTiles);
 
+    struct IdentityPlaneKey
+    {
+        int identityInputNb;
+        ViewIdx identityView;
+        TimeValue identityTime;
+        ImagePlaneDesc identityPlane;
+    };
+
+    struct IdentityPlaneKeyCompare
+    {
+        bool operator()(const IdentityPlaneKey& lhs, const IdentityPlaneKey& rhs) const
+        {
+            if (lhs.identityInputNb < rhs.identityInputNb) {
+                return true;
+            } else if (lhs.identityInputNb > rhs.identityInputNb) {
+                return false;
+            }
+            if (lhs.identityView < rhs.identityView) {
+                return true;
+            } else if (lhs.identityView > rhs.identityView) {
+                return false;
+            }
+            if (lhs.identityTime < rhs.identityTime) {
+                return true;
+            } else if (lhs.identityTime > rhs.identityTime) {
+                return false;
+            }
+            return lhs.identityPlane < rhs.identityPlane;
+        }
+    };
+
+    typedef std::map<IdentityPlaneKey, ImagePtr, IdentityPlaneKeyCompare> IdentityPlanesMap;
+
     struct TiledRenderingFunctorArgs
     {
         FrameViewRequestPtr requestData;
@@ -566,6 +592,9 @@ public:
         EffectOpenGLContextDataPtr glContextData;
         RenderBackendTypeEnum backendType;
         std::map<ImagePlaneDesc, ImagePtr> cachedPlanes;
+
+        // For identity rectangles, this is the input identity image for each plane
+        IdentityPlanesMap identityPlanes;
     };
 
     ActionRetCodeEnum tiledRenderingFunctor(const RectToRender & rectToRender,

@@ -1275,7 +1275,7 @@ getDotTriangleFan(const Point& center,
     cPtr[0] = cPtr[1] = cPtr[2] = cPtr[3] = 0.;
     *hPtr = hardness;
 
-}
+} // getDotTriangleFan
 
 static void renderDot_gl(RenderStrokeGLData& data, const Point &center, double radius_x, double radius_y, double opacity, double hardness)
 {
@@ -1996,19 +1996,24 @@ static bool renderSmearDotInternal(RenderSmearGLData* myData,
         RectI roi;
         prevDotBounds.intersect(dstBounds, &roi);
 
-        Image::InitStorageArgs initArgs;
-        initArgs.bounds = prevDotBounds;
-        initArgs.bitdepth = dstImage->getBitDepth();
-        initArgs.storage = eStorageModeGLTex;
-        initArgs.glContext = glContext;
-        initArgs.textureTarget = GL_TEXTURE_2D;
-        tmpImage = Image::create(initArgs);
+
+        // Create a temporary image, containing the portion of image that will be copied over
+        // to the new location
+        {
+            Image::InitStorageArgs initArgs;
+            initArgs.bounds = prevDotBounds;
+            initArgs.bitdepth = dstImage->getBitDepth();
+            initArgs.storage = eStorageModeGLTex;
+            initArgs.glContext = glContext;
+            initArgs.textureTarget = GL_TEXTURE_2D;
+            tmpImage = Image::create(initArgs);
+        }
         if (!tmpImage) {
             return false;
         }
         tmpTexture = tmpImage->getGLImageStorage();
-        // Copy the content of the existing dstImage
 
+        // Copy the content of the existing dstImage to our temporary image
         GL::BindTexture( target, tmpTexture->getGLTextureID() );
         setupTexParams<GL>(target);
         GL::BindFramebuffer(GL_FRAMEBUFFER, fboID);
@@ -2021,15 +2026,14 @@ static bool renderSmearDotInternal(RenderSmearGLData* myData,
         GL::ClearColor(0., 0., 0., 0.);
         GL::Clear(GL_COLOR_BUFFER_BIT);
 
-        // Now draw onto the intersection with the dstBOunds with the smear shader
-
+        // Now draw onto the intersection with the dstBounds with the smear shader:
+        // This will copy the portion of the dstImage to the temporary image and premultiply it with the alpha mask
+        // of the dot in the same pass
         OSGLContext::setupGLViewport<GL>(prevDotBounds, roi);
 
 
         GL::BindTexture( target, dstTexture->getGLTextureID() );
 
-
-        OfxRGBAColourF fillColor = {(float)1., (float)1., (float)1., (float)opacity};
 
         GLShaderBasePtr smearShader = myData->glData->getOrCreateSmearShader();
         unsigned int iboID = myData->glData->getOrCreateIBOID();
@@ -2040,7 +2044,7 @@ static bool renderSmearDotInternal(RenderSmearGLData* myData,
 
         smearShader->bind();
         smearShader->setUniform("tex", 0);
-        smearShader->setUniform("fillColor", fillColor);
+        smearShader->setUniform("opacity", (float)opacity);
         GLint hardnessLoc;
         {
             bool ok = smearShader->getAttribLocation("inHardness", &hardnessLoc);
@@ -2064,9 +2068,9 @@ static bool renderSmearDotInternal(RenderSmearGLData* myData,
 
 
         GL::BindBuffer(GL_ARRAY_BUFFER, vboColorsID);
-        GL::BufferData(GL_ARRAY_BUFFER, nbVertices * 1 * sizeof(GLfloat), myData->primitivesColors.getData(), GL_DYNAMIC_DRAW);
+        GL::BufferData(GL_ARRAY_BUFFER, nbVertices * 4 * sizeof(GLfloat), myData->primitivesColors.getData(), GL_DYNAMIC_DRAW);
         GL::EnableClientState(GL_COLOR_ARRAY);
-        GL::ColorPointer(1, GL_FLOAT, 0, 0);
+        GL::ColorPointer(4, GL_FLOAT, 0, 0);
 
 
         GL::BindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboID);
@@ -2093,7 +2097,7 @@ static bool renderSmearDotInternal(RenderSmearGLData* myData,
         }
     }
 
-    // Now copy to the destination rect with blending on
+    // Now copy our temporary image to the destination rect with blending enabled
     GL::Enable(GL_BLEND);
     GL::BlendEquation(GL_FUNC_ADD);
     GL::BlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
@@ -2185,7 +2189,8 @@ RotoShapeRenderGL::renderSmear_gl(const OSGLContextPtr& glContext,
                                                                            distToNextOut,
                                                                            lastCenterPointOut);
 
-    // Also report the results to the dst image on the default framebuffer
+    // With OSMesa, we have drawn the smear image into a temporary GL texture, we must now report the results to the default framebuffer
+    // which is backed by the final RAM image.
     if (!glContext->isGPUContext()) {
         // Disable scissors because we are going to use opengl outside of RoI
         GL_CPU::Disable(GL_SCISSOR_TEST);

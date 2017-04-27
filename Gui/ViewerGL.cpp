@@ -58,6 +58,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Node.h"
 #include "Engine/NodeGuiI.h"
 #include "Engine/Image.h"
+#include "Engine/ImagePrivate.h"
 #include "Engine/Project.h"
 #include "Engine/OfxOverlayInteract.h"
 #include "Engine/KnobTypes.h"
@@ -112,22 +113,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
    Everything related to OpenGL will (almost always) be in this class */
 
 NATRON_NAMESPACE_ENTER;
-
-struct OpenGLContextLocker
-{
-    ViewerGL::Implementation *_imp;
-
-    OpenGLContextLocker(ViewerGL::Implementation* imp)
-    : _imp(imp)
-    {
-        _imp->lockGLContext();
-    }
-
-    ~OpenGLContextLocker()
-    {
-        _imp->releaseGLContext();
-    }
-};
 
 
 ViewerGL::ViewerGL(ViewerTab* parent,
@@ -187,6 +172,12 @@ ViewerGL::displayingImage() const
     // always running in the main thread
     QMutexLocker k(&_imp->displayDataMutex);
     return _imp->displayTextures[0].isVisible || _imp->displayTextures[1].isVisible;
+}
+
+OSGLContextPtr
+ViewerGL::getOpenGLViewerContext() const
+{
+    return _imp->glContextWrapper;
 }
 
 void
@@ -277,7 +268,8 @@ public:
 void
 ViewerGL::glDraw()
 {
-    OpenGLContextLocker locker(_imp.get());
+    OSGLContextAttacherPtr locker = OSGLContextAttacher::create(_imp->glContextWrapper);
+    locker->attach();
     QGLWidget::glDraw();
 }
 
@@ -286,7 +278,7 @@ ViewerGL::paintGL()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-
+    assert(QGLContext::currentContext() == context());
     //if app is closing, just return
     if ( !_imp->viewerTab->getGui() ) {
         return;
@@ -1096,23 +1088,12 @@ ViewerGL::removeViewerProcessHashAtTime(TimeValue time, ViewIdx view)
 
 
 void
-ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
-                                     const ImagePtr& colorPickerImage,
-                                     const ImagePtr& colorPickerInputImage,
-                                     int textureIndex,
-                                     bool isPartialRect,
-                                     TimeValue time,
-                                     ViewIdx view,
-                                     const RectD& originalCanonicalRoi,
-                                     const RectD& rod,
-                                     bool recenterViewer,
-                                     const Point& viewportCenter,
-                                     const ImageCacheKeyPtr& viewerProcessNodeTileKey)
+ViewerGL::transferBufferFromRAMtoGPU(const TextureTransferArgs& args)
 {
     // always running in the main thread
-    OpenGLContextLocker locker(_imp.get());
+    OSGLContextAttacherPtr locker = OSGLContextAttacher::create(_imp->glContextWrapper);
+    locker->attach();
     
-    makeCurrent();
     assert(QGLContext::currentContext() == context());
 
     glCheckError(GL_GPU);
@@ -1124,40 +1105,40 @@ ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
     // We use 2 PBOs to make use of asynchronous data uploading
     GLuint pboId = getPboID(_imp->updateViewerPboIndex);
 
-    assert(textureIndex == 0 || textureIndex == 1);
+    assert(args.textureIndex == 0 || args.textureIndex == 1);
 
-    // Only RGBA images at this point can be provided
-    assert(!image || image->getLayer().getNumComponents() == 4);
+    // Only RAM RGBA images at this point can be provided
+    assert(!args.image || (args.image->getStorageMode() == eStorageModeRAM && args.image->getLayer().getNumComponents() == 4));
 
     // The bitdepth of the texture
     ImageBitDepthEnum bitdepth = eImageBitDepthFloat;
-    if (image) {
-        bitdepth = image->getBitDepth();
+    if (args.image) {
+        bitdepth = args.image->getBitDepth();
     }
 
     // Other formats are not supported yet
     assert(bitdepth == eImageBitDepthByte || bitdepth == eImageBitDepthFloat);
 
     Image::CPUData imageData;
-    if (image) {
-        image->getCPUData(&imageData);
+    if (args.image) {
+        args.image->getCPUData(&imageData);
     }
 
 
     // Insert the hash in the frame/hash map so we can update the timeline's cache bar
-    if (!isPartialRect && textureIndex == 0 && viewerProcessNodeTileKey) {
+    if (args.type == TextureTransferArgs::eTextureTransferTypeReplace && args.textureIndex == 0 && args.viewerProcessNodeKey) {
         QMutexLocker k(&_imp->uploadedTexturesViewerHashMutex);
-        FrameViewPair p = {time, view};
-        _imp->uploadedTexturesViewerHash[p] = viewerProcessNodeTileKey;
+        FrameViewPair p = {args.time, args.view};
+        _imp->uploadedTexturesViewerHash[p] = args.viewerProcessNodeKey;
     }
 
 
     GLTexturePtr tex;
     {
         QMutexLocker displayDataLocker(&_imp->displayDataMutex);
-        if (isPartialRect) {
+        if (args.type == TextureTransferArgs::eTextureTransferTypeOverlay) {
 
-            assert(image);
+            assert(args.image);
 
             // For small partial updates overlays, we make new textures
             int format, internalFormat, glType;
@@ -1171,62 +1152,95 @@ ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
 
             TextureInfo info;
             info.texture = tex;
-            info.mipMapLevel = image ? image->getMipMapLevel() : 0;
+            info.mipMapLevel = args.image ? args.image->getMipMapLevel() : 0;
             info.premult = _imp->displayTextures[0].premult;
             info.pixelAspectRatio = _imp->displayTextures[0].pixelAspectRatio;
-            info.time = time;
+            info.time = args.time;
             info.isPartialImage = true;
-            info.originalCanonicalRoi = originalCanonicalRoi;
             info.isVisible = true;
             _imp->partialUpdateTextures.push_back(info);
 
             // Update time otherwise overlays won't refresh since we are not updating the displayTextures
-            _imp->displayTextures[0].time = time;
-            _imp->displayTextures[1].time = time;
+            _imp->displayTextures[0].time = args.time;
+            _imp->displayTextures[1].time = args.time;
         } else {
 
-            _imp->displayTextures[textureIndex].colorPickerImage = colorPickerImage;
-            _imp->displayTextures[textureIndex].colorPickerInputImage = colorPickerInputImage;
-            _imp->displayTextures[textureIndex].originalCanonicalRoi = originalCanonicalRoi;
+            if (args.type == TextureTransferArgs::eTextureTransferTypeReplace) {
+                _imp->displayTextures[args.textureIndex].colorPickerImage = args.colorPickerImage;
+                _imp->displayTextures[args.textureIndex].colorPickerInputImage = args.colorPickerInputImage;
+            }
             // re-use the existing texture if possible
-            if (!image) {
-                _imp->displayTextures[textureIndex].isVisible = false;
+            if (!args.image) {
+                _imp->displayTextures[args.textureIndex].isVisible = false;
             } else {
-                tex = _imp->displayTextures[textureIndex].texture;
-                if (tex->getBitDepth() != bitdepth) {
-                    int format, internalFormat, glType;
 
-                    if (bitdepth == eImageBitDepthFloat) {
-                        Texture::getRecommendedTexParametersForRGBAFloatTexture(&format, &internalFormat, &glType);
-                    } else {
-                        Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
-                    }
-                    _imp->displayTextures[textureIndex].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, bitdepth, format, internalFormat, glType, true) );
+                int format, internalFormat, glType;
+
+                if (bitdepth == eImageBitDepthFloat) {
+                    Texture::getRecommendedTexParametersForRGBAFloatTexture(&format, &internalFormat, &glType);
+                } else {
+                    Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
                 }
 
-                tex->ensureTextureHasSize(imageData.bounds, 0);
+                if (_imp->displayTextures[args.textureIndex].texture->getBitDepth() != bitdepth) {
+                    _imp->displayTextures[args.textureIndex].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, bitdepth, format, internalFormat, glType, true) );
+                }
+
+                tex = _imp->displayTextures[args.textureIndex].texture;
 
 
-                _imp->displayTextures[textureIndex].isVisible = true;
-                _imp->displayTextures[textureIndex].mipMapLevel = image ? image->getMipMapLevel() : 0;
-                _imp->displayTextures[textureIndex].time = time;
+                if (args.type == TextureTransferArgs::eTextureTransferTypeReplace || tex->getBounds().isNull()) {
+                    tex->ensureTextureHasSize(imageData.bounds, 0);
+                } else {
+                    // If we just want to update a portion of the texture, check if we are inside the bounds of the texture, otherwise create a new one.
+                    if (!tex->getBounds().contains(imageData.bounds)) {
+                        RectI unionedBounds = tex->getBounds();
+                        unionedBounds.merge(imageData.bounds);
+
+
+                        // Make a temporary texture, fill it with black and copy the origin texture into it before uploading the image
+                        GLTexturePtr tmpTex(new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, bitdepth, format, internalFormat, glType, true) );
+                        tmpTex->ensureTextureHasSize(unionedBounds, 0);
+
+                        saveOpenGLContext();
+
+                        ImagePrivate::fillGL(unionedBounds, 0., 0., 0., 0., tmpTex, _imp->glContextWrapper);
+                        ImagePrivate::copyGLTexture(tex, tmpTex, tex->getBounds(), _imp->glContextWrapper);
+
+                        restoreOpenGLContext();
+                        // Unbind the frame buffer used in fillGL and copyGLTexture
+                        GL_GPU::BindFramebuffer(GL_FRAMEBUFFER, 0);
+
+                        _imp->displayTextures[args.textureIndex].texture = tmpTex;
+                        tex = tmpTex;
+
+                    }
+                }
+
+
+                _imp->displayTextures[args.textureIndex].isVisible = true;
+                _imp->displayTextures[args.textureIndex].mipMapLevel = args.image->getMipMapLevel();
+                _imp->displayTextures[args.textureIndex].time = args.time;
             }
 
             displayDataLocker.unlock();
-            setRegionOfDefinition(rod, _imp->displayTextures[textureIndex].pixelAspectRatio, textureIndex);
-            
-            Q_EMIT imageChanged(textureIndex);
+
+            setRegionOfDefinition(args.rod, _imp->displayTextures[args.textureIndex].pixelAspectRatio, args.textureIndex);
+            if (args.type == TextureTransferArgs::eTextureTransferTypeReplace) {
+
+                Q_EMIT imageChanged(args.textureIndex);
+            }
         }
     } // displayDataLocker
 
-    if (recenterViewer) {
+    if (args.recenterViewer) {
         QMutexLocker k(&_imp->zoomCtxMutex);
         double curCenterX = ( _imp->zoomCtx.left() + _imp->zoomCtx.right() ) / 2.;
         double curCenterY = ( _imp->zoomCtx.bottom() + _imp->zoomCtx.top() ) / 2.;
-        _imp->zoomCtx.translate(viewportCenter.x - curCenterX, viewportCenter.y - curCenterY);
+        _imp->zoomCtx.translate(args.viewportCenter.x - curCenterX, args.viewportCenter.y - curCenterY);
     }
 
-    if (!image) {
+    if (!args.image) {
         return;
     }
 
@@ -1271,9 +1285,6 @@ ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
     glCheckError(GL_GPU);
 
     _imp->updateViewerPboIndex = (_imp->updateViewerPboIndex + 1) % 2;
-
-
-
 
 } // ViewerGL::transferBufferFromRAMtoGPU
 
@@ -2374,7 +2385,8 @@ ViewerGL::leaveEvent(QEvent* e)
 QPixmap
 ViewerGL::renderPixmap(int w, int h, bool useContext)
 {
-    OpenGLContextLocker locker(_imp.get());
+    OSGLContextAttacherPtr locker = OSGLContextAttacher::create(_imp->glContextWrapper);
+    locker->attach();
 
     return QGLWidget::renderPixmap(w, h, useContext);
 }
@@ -2382,7 +2394,8 @@ ViewerGL::renderPixmap(int w, int h, bool useContext)
 QImage
 ViewerGL::grabFrameBuffer(bool withAlpha)
 {
-    OpenGLContextLocker locker(_imp.get());
+    OSGLContextAttacherPtr locker = OSGLContextAttacher::create(_imp->glContextWrapper);
+    locker->attach();
 
     return QGLWidget::grabFrameBuffer(withAlpha);
 }
@@ -2393,7 +2406,8 @@ ViewerGL::resizeEvent(QResizeEvent* e)
   // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    OpenGLContextLocker locker(_imp.get());
+    OSGLContextAttacherPtr locker = OSGLContextAttacher::create(_imp->glContextWrapper);
+    locker->attach();
     QGLWidget::resizeEvent(e);
 }
 
@@ -2701,13 +2715,6 @@ ViewerGL::getStringWidthForCurrentFont(const std::string& string) const
     return fontMetrics().width( QString::fromUtf8( string.c_str() ) );
 }
 
-void
-ViewerGL::makeOpenGLcontextCurrent()
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    makeCurrent();
-}
 
 void
 ViewerGL::removeGUI()
@@ -2989,9 +2996,9 @@ ViewerGL::getTextureColorAt(int x,
                             double *a)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    OpenGLContextLocker locker(_imp.get());
+    OSGLContextAttacherPtr locker = OSGLContextAttacher::create(_imp->glContextWrapper);
+    locker->attach();
 
-    makeCurrent();
 
     *r = 0;
     *g = 0;
