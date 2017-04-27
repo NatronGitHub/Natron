@@ -101,7 +101,7 @@ ViewerTabPrivate::getOverlayTransform(TimeValue time,
 
     {
         GetDistortionResultsPtr results;
-        stat = currentNode->getDistortion_public(time, s, /*draftRender=*/false, view, &results);
+        stat = currentNode->getDistortion_public(time, s, /*draftRender=*/true, view, &results);
         if (isFailureRetCode(stat)) {
             return false;
         }
