@@ -794,7 +794,7 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
     qDebug() << QThread::currentThread() << "inputRod: " << pixelRod.x1 << pixelRod.y1 << pixelRod.x2 << pixelRod.y2 << "scale: " << inputCombinedScale.x << inputCombinedScale.y;*/
 
     if (!resolveRoIForGetImage(inArgs, currentMipMapLevel, currentProxyScale, &roiCanonical, &roiExpand)) {
-        roiCanonical = inputRoD;
+        roiCanonical = roiExpand = inputRoD;
     } else {
         roiExpand.intersect(inputRoD, &roiExpand);
         if (!roiCanonical.intersect(inputRoD, &roiCanonical)) {

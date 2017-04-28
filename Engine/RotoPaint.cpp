@@ -2871,20 +2871,6 @@ RotoPaintPrivate::isRotoPaintTreeConcatenatableInternal(const std::list<RotoDraw
             }
         }
 
-        /*RotoPaintItemLifeTimeTypeEnum lifeTime = (RotoPaintItemLifeTimeTypeEnum)(*it)->getLifeTimeFrameKnob()->getValue();
-        if (lifeTime != eRotoPaintItemLifeTimeTypeAll && lifeTime != eRotoPaintItemLifeTimeTypeCustom) {
-            // An item with a varying lifetime makes the concatenation impossible: we cannot disconenct and reconnect the A input of the global
-            // Merge through time.
-            return false;
-        }
-        if (lifeTime == eRotoPaintItemLifeTimeTypeCustom) {
-            // If custom and the custom range checkbox is animated or unchecked, do not concatenate
-            KnobBoolPtr customRange = (*it)->getCustomRangeKnob();
-            if (customRange->hasAnimation() || !customRange->getValue()) {
-                return false;
-            }
-        }*/
-
         // Now check the global activated/solo switches
         if (!(*it)->isGloballyActivated()) {
             return false;

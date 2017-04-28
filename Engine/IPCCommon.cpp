@@ -129,7 +129,9 @@ IPCProperty::getNumDimensions() const
 void
 IPCProperty::resize(std::size_t nDims)
 {
-    data.resize(nDims);
+    if (data.size() != nDims) {
+        data.resize(nDims);
+    }
 }
 
 void

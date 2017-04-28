@@ -5052,6 +5052,10 @@ KnobHolder::onKnobValueChangedInternal(const KnobIPtr& knob,
 void
 KnobHolder::beginChanges()
 {
+    if (QThread::currentThread() != qApp->thread()) {
+        return;
+    }
+
     /*
      * Start a begin/end block, actually blocking all evaluations (renders) but not value changed callback.
      */

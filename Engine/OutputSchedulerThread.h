@@ -122,6 +122,7 @@ public:
     bool enableRenderStats;
     TimeValue firstFrame;
     TimeValue lastFrame;
+    TimeValue startingFrame;
     TimeValue frameStep;
     std::vector<ViewIdx> viewsToRender;
     RenderDirectionEnum direction;
@@ -131,6 +132,7 @@ public:
                                    bool enableRenderStats,
                                    TimeValue firstFrame,
                                    TimeValue lastFrame,
+                                   TimeValue startingFrame,
                                    TimeValue frameStep,
                                    const std::vector<ViewIdx>& viewsToRender,
                                    RenderDirectionEnum forward)
@@ -139,6 +141,7 @@ public:
         , enableRenderStats(enableRenderStats)
         , firstFrame(firstFrame)
         , lastFrame(lastFrame)
+        , startingFrame(startingFrame)
         , frameStep(frameStep)
         , viewsToRender(viewsToRender)
         , direction(forward)
@@ -214,6 +217,7 @@ public:
                                 const std::vector<ViewIdx>& viewsToRender,
                                 RenderDirectionEnum forward);
 
+    void clearSequentialRendersQueue();
 
     /**
      * @brief Called when a frame has been rendered completetly

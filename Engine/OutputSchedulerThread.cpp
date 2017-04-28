@@ -220,6 +220,7 @@ struct OutputSchedulerThreadPrivate
         TimeValue firstFrame;
         TimeValue lastFrame;
         TimeValue frameStep;
+        TimeValue startingFrame;
         bool useStats;
         bool blocking;
         RenderDirectionEnum direction;
@@ -423,8 +424,7 @@ OutputSchedulerThreadPrivate::getNextFrameInSequence(PlaybackModeEnum pMode,
             break;
         case ePlaybackModeBounce:
             if (direction == eRenderDirectionForward) {
-                *newDirection = eRenderDirectionBackward;
-                *nextFrame  = TimeValue(lastFrame - frameStep);
+                *nextFrame = TimeValue(frame + frameStep);
             } else {
                 *newDirection = eRenderDirectionForward;
                 *nextFrame  = TimeValue(firstFrame + frameStep);
@@ -453,8 +453,7 @@ OutputSchedulerThreadPrivate::getNextFrameInSequence(PlaybackModeEnum pMode,
                 *newDirection = eRenderDirectionBackward;
                 *nextFrame = TimeValue(lastFrame - frameStep);
             } else {
-                *newDirection = eRenderDirectionForward;
-                *nextFrame = TimeValue(firstFrame + frameStep);
+                *nextFrame = TimeValue(frame - frameStep);
             }
             break;
         case ePlaybackModeOnce:
@@ -622,7 +621,7 @@ OutputSchedulerThread::startRender()
         firstFrame = args->firstFrame;
         lastFrame = args->lastFrame;
         frameStep = args->frameStep;
-        startingFrame = timelineGetTime();
+        startingFrame = args->startingFrame;
         direction = args->direction;
     }
     aboutToStartRender();
@@ -739,7 +738,6 @@ OutputSchedulerThread::stopRender()
     // Remove the render request and launch any pending renders
     {
         QMutexLocker k(&_imp->sequentialRenderQueueMutex);
-        assert(!_imp->sequentialRenderQueue.empty());
         if (!_imp->sequentialRenderQueue.empty()) {
             _imp->sequentialRenderQueue.pop_front();
         }
@@ -1324,13 +1322,9 @@ OutputSchedulerThreadPrivate::launchNextSequentialRender()
         lastPlaybackRenderDirection = args.direction;
         lastPlaybackViewsToRender = args.viewsToRender;
     }
-    if (args.direction == eRenderDirectionForward) {
-        _publicInterface->timelineGoTo(args.firstFrame);
-    } else {
-        _publicInterface->timelineGoTo(args.lastFrame);
-    }
+    _publicInterface->timelineGoTo(args.startingFrame);
 
-    OutputSchedulerThreadStartArgsPtr threadArgs( new OutputSchedulerThreadStartArgs(args.blocking, args.useStats, args.firstFrame, args.lastFrame, args.frameStep, args.viewsToRender, args.direction) );
+    OutputSchedulerThreadStartArgsPtr threadArgs( new OutputSchedulerThreadStartArgs(args.blocking, args.useStats, args.firstFrame, args.lastFrame, args.startingFrame, args.frameStep, args.viewsToRender, args.direction) );
 
     {
         QMutexLocker k(&renderFinishedMutex);
@@ -1358,6 +1352,7 @@ OutputSchedulerThread::renderFrameRange(bool isBlocking,
         args.useStats = enableRenderStats;
         args.firstFrame = firstFrame;
         args.lastFrame = lastFrame;
+        args.startingFrame = direction == eRenderDirectionForward ? args.firstFrame : args.lastFrame;
         args.frameStep = frameStep;
         args.viewsToRender = viewsToRender;
         args.direction = direction;
@@ -1392,17 +1387,37 @@ OutputSchedulerThread::renderFromCurrentFrame(bool isBlocking,
     TimeValue currentTime = timelineGetTime();
     OutputSchedulerThreadPrivate::getNearestInSequence(timelineDirection, currentTime, firstFrame, lastFrame, &currentTime);
 
-    switch (timelineDirection) {
-        case eRenderDirectionForward:
-            firstFrame = currentTime;
-            lastFrame = lastFrame;
-            break;
-        case eRenderDirectionBackward:
-            lastFrame = currentTime;
-            break;
+    OutputSchedulerThreadPrivate::RenderSequenceArgs args;
+    {
+        args.blocking = isBlocking;
+        args.useStats = enableRenderStats;
+        args.firstFrame = firstFrame;
+        args.lastFrame = lastFrame;
+        args.startingFrame = currentTime;
+        args.frameStep = frameStep;
+        args.viewsToRender = viewsToRender;
+        args.direction = timelineDirection;
     }
-    renderFrameRange(isBlocking, enableRenderStats, firstFrame, lastFrame, frameStep, viewsToRender, timelineDirection);
 
+    _imp->validateRenderSequenceArgs(args);
+
+    {
+        QMutexLocker k(&_imp->sequentialRenderQueueMutex);
+        _imp->sequentialRenderQueue.push_back(args);
+
+        // If we are already doing a sequential render, wait for it to complete first
+        if (_imp->sequentialRenderQueue.size() > 1) {
+            return;
+        }
+    }
+    _imp->launchNextSequentialRender();
+}
+
+void
+OutputSchedulerThread::clearSequentialRendersQueue()
+{
+    QMutexLocker k(&_imp->sequentialRenderQueueMutex);
+    _imp->sequentialRenderQueue.clear();
 }
 
 void
@@ -1896,11 +1911,7 @@ DefaultScheduler::aboutToStartRender()
 
     {
         QMutexLocker k(&_currentTimeMutex);
-        if (args->direction == eRenderDirectionForward) {
-            _currentTime  = args->firstFrame;
-        } else {
-            _currentTime  = args->lastFrame;
-        }
+        _currentTime  = args->startingFrame;
     }
     bool isBackGround = appPTR->isBackground();
 
@@ -2901,6 +2912,9 @@ bool
 RenderEngine::abortRenderingNoRestart()
 {
     if ( abortRenderingInternal(false) ) {
+        if (_imp->scheduler) {
+            _imp->scheduler->clearSequentialRendersQueue();
+        }
         setPlaybackAutoRestartEnabled(false);
 
         return true;

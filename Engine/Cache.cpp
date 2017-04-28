@@ -2017,7 +2017,7 @@ CacheEntryLockerPrivate<persistent>::lookupAndSetStatusInternal(bool hasWriteRig
 
         bool recursionDetected = !processLocalEntry->allowMultipleFetchForThread() && (found->second->computeThreadMagic == reinterpret_cast<U64>(QThread::currentThread()));
         if (recursionDetected) {
-            qDebug() << "[BUG]: Detected recursion while computing" << hash << ". This means that the same thread is attempting to compute an entry recursively that it already started to compute. You should release the associated CacheEntryLocker first.";
+            qDebug() << "[BUG]: Detected recursion while computing" << hash << ". This means this thread is attempting to compute an entry recursively that it already started to compute. You should release the associated CacheEntryLocker first.";
         } else {
             // If a timeout was provided, takeover after the timeout
             if (timeout == 0 || *timeSpentWaitingForPendingEntryMS < timeout) {

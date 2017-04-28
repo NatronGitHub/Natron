@@ -1003,9 +1003,14 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
 
     // Get the current action arguments. The action must be the render action, otherwise it fails.
     if (!gotTLS) {
-        assert(false);
-        std::cerr << effect->getScriptName_mt_safe() << ": clipGetImage on the output clip may only be called during the render action" << std::endl;
-        return false;
+
+        // Some OpenFX plug-ins ask for the image on the output clip even in overlay actions. Allow that by returning a temp image
+        gotTLS = effectTLS->getCurrentActionArgs(&currentActionTime, &currentActionView, &currentActionProxyScale, 0);
+        if (!gotTLS) {
+            assert(false);
+            std::cerr << effect->getScriptName_mt_safe() << ": clipGetImage on the output clip may only be called during the render action" << std::endl;
+            return false;
+        }
     }
 
     // Figure out the plane requested

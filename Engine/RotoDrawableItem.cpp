@@ -583,7 +583,7 @@ RotoDrawableItem::onKnobValueChanged(const KnobIPtr& knob,
             rotoPaintEffect->refreshRotoPaintTree();
         }
         return ret;
-    } else if (reason != eValueChangedReasonTimeChanged && (knob == _imp->compOperator.lock() || knob == _imp->mixKnob.lock() || knob == _imp->mergeAInputChoice.lock() || knob == _imp->mergeMaskInputChoice.lock() || knob == _imp->customRange.lock() || knob == _imp->lifeTime.lock())) {
+    } else if (reason != eValueChangedReasonTimeChanged && (knob == _imp->compOperator.lock() || knob == _imp->mixKnob.lock() || knob == _imp->mergeAInputChoice.lock() || knob == _imp->mergeMaskInputChoice.lock())) {
         if (getIndexInParent() != -1) {
             rotoPaintEffect->refreshRotoPaintTree();
         }
@@ -1422,7 +1422,7 @@ RotoDrawableItem::initializeKnobs()
     RotoStrokeType type = getBrushType();
 
     // Only solids may have an opacity
-    if (type == eRotoStrokeTypeSolid) {
+    if (type != eRotoStrokeTypeEraser && type != eRotoStrokeTypeComp && type != eRotoStrokeTypeSmear) {
         _imp->opacity = createDuplicateOfTableKnob<KnobDouble>(kRotoOpacityParam);
     }
 
