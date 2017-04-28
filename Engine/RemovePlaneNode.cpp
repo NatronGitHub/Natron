@@ -186,7 +186,7 @@ RemovePlaneNode::getLayersProducedAndNeeded(TimeValue time,
             continue;
         }
 
-        for (std::list<ImagePlaneDesc>::const_iterator it2 = availablePlanes.begin(); it2 != availablePlanes.end(); ++it2) {
+        for (std::list<ImagePlaneDesc>::iterator it2 = availablePlanes.begin(); it2 != availablePlanes.end(); ++it2) {
             if (planeID == it2->getPlaneID()) {
                 if (operationIsRemove) {
                     availablePlanes.erase(it2);
