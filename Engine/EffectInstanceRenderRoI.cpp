@@ -1082,13 +1082,16 @@ EffectInstance::requestRender(TimeValue timeInArgs,
         createdRequest->reset(new FrameViewRequest(plane, mipMapLevel, proxyScale, renderClone, requestPassSharedData->getTreeRender()));
         renderClone->_imp->renderData->requests.insert(std::make_pair(requestKey, *createdRequest));
     }
-
+    if (requester) {
+        // Add the requester request as a listener of this request. This has to be done before the call to requestRenderInternal()
+        // Since the function shouldCacheOutput() called inside depends on the number of listeners returned by getNumListeners()
+        (*createdRequest)->addListener(requestPassSharedData, requester);
+    }
     ActionRetCodeEnum stat = renderClone->requestRenderInternal(roiCanonical, inputNbInRequester, *createdRequest, requester, requestPassSharedData);
     if (!isFailureRetCode(stat)) {
         // Add this frame/view as depdency of the requester
         if (requester) {
             requester->addDependency(requestPassSharedData, *createdRequest);
-            (*createdRequest)->addListener(requestPassSharedData, requester);
         }
 
         requestPassSharedData->addTaskToRender(*createdRequest);
@@ -1283,25 +1286,12 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
     }
 
 
-    // Get the render device
-    RenderBackendTypeEnum backendType;
-    if (requestData->isFallbackRenderDeviceEnabled()) {
-        backendType = requestData->getFallbackRenderDevice();
-    } else {
-        if (!requestData->isRenderDeviceSet()) {
-            _imp->resolveRenderBackend(requestPassSharedData, requestData, renderMappedRoI, &backendType);
-            requestData->setRenderDevice(backendType);
-        } else {
-            backendType = requestData->getRenderDevice();
-        }
-    }
-
     const bool isAccumulating = isAccumulationEnabled();
 
 
     // Should the output of this render be cached ?
     CacheAccessModeEnum cachePolicy;
-    if (backendType != eRenderBackendTypeCPU || isAccumulating) {
+    if (isAccumulating) {
         // For now we only cache images that were rendered on the CPU
         // When accumulation is enabled we also disable caching as the image is anyway held as a member on the effect
         cachePolicy = eCacheAccessModeNone;
@@ -1318,6 +1308,21 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
             cachePolicy = _imp->shouldRenderUseCache(requestPassSharedData, requestData);
         }
     }
+
+    // Get the render device
+    RenderBackendTypeEnum backendType;
+    if (requestData->isFallbackRenderDeviceEnabled()) {
+        backendType = requestData->getFallbackRenderDevice();
+    } else {
+        if (!requestData->isRenderDeviceSet()) {
+            _imp->resolveRenderBackend(requestPassSharedData, requestData, renderMappedRoI, &cachePolicy, &backendType);
+            requestData->setRenderDevice(backendType);
+        } else {
+            backendType = requestData->getRenderDevice();
+        }
+    }
+
+
     requestData->setCachePolicy(cachePolicy);
     
     

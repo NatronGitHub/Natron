@@ -476,7 +476,7 @@ public:
     /**
      * @brief Helper function in the implementation of renderRoI to determine the image backend (OpenGL, CPU...)
      **/
-    ActionRetCodeEnum resolveRenderBackend(const RequestPassSharedDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestPassData, const RectI& roi, RenderBackendTypeEnum* renderBackend);
+    ActionRetCodeEnum resolveRenderBackend(const RequestPassSharedDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestPassData, const RectI& roi, CacheAccessModeEnum *cachePolicy, RenderBackendTypeEnum* renderBackend);
 
     /**
      * @brief Helper function in the implementation of renderRoI to determine if a render should use the Cache or not.

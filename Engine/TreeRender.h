@@ -244,6 +244,11 @@ public:
     FrameViewRequestPtr getExtraRequestedResultsForNode(const NodePtr& node) const;
 
     /**
+     * @brief Return true if an image was requested in output for the given node
+     **/
+    bool isExtraResultsRequestedForNode(const NodePtr& node) const;
+
+    /**
      * @brief While drawing a preview with the RotoPaint node, this is the bounding box of the area
      * to update on the viewer.
      * This is in pixel coordinates at the mipmap level given to render

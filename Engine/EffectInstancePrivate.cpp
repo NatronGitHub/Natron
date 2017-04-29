@@ -135,7 +135,7 @@ EffectInstance::getCombinedScale(unsigned int mipMapLevel, const RenderScale& pr
 }
 
 ActionRetCodeEnum
-EffectInstance::Implementation::resolveRenderBackend(const RequestPassSharedDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestPassData, const RectI& roi, RenderBackendTypeEnum* renderBackend)
+EffectInstance::Implementation::resolveRenderBackend(const RequestPassSharedDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestPassData, const RectI& roi, CacheAccessModeEnum *cachePolicy, RenderBackendTypeEnum* renderBackend)
 {
     // Default to CPU
     *renderBackend = eRenderBackendTypeCPU;
@@ -165,10 +165,15 @@ EffectInstance::Implementation::resolveRenderBackend(const RequestPassSharedData
         *renderBackend = eRenderBackendTypeOpenGL;
 
         // If the plug-in knows how to render on CPU, check if we should actually render on CPU instead.
-        if (openGLSupport == ePluginOpenGLRenderSupportYes) {
+        if (openGLSupport == ePluginOpenGLRenderSupportNeeded) {
+            // We do not want to cache OpenGL renders
+            if (*cachePolicy != eCacheAccessModeNone) {
+                *cachePolicy = eCacheAccessModeNone;
+            }
+        } else if (openGLSupport == ePluginOpenGLRenderSupportYes) {
 
-            // User want to force caching of this node but we cannot cache OpenGL renders, so fallback on CPU.
-            if ( _publicInterface->isForceCachingEnabled() ) {
+            // We do not want to cache OpenGL renders, so fallback on CPU.
+            if (*cachePolicy != eCacheAccessModeNone) {
                 *renderBackend = eRenderBackendTypeCPU;
             }
 
@@ -219,9 +224,14 @@ EffectInstance::Implementation::shouldRenderUseCache(const RequestPassSharedData
     }
 
     if (!retSet) {
-        EffectInstancePtr treeRoot = _publicInterface->getCurrentRender()->getOriginalTreeRoot();
-        if (treeRoot == _publicInterface->getNode()->getEffectInstance())  {
-            // Always cache the root node because a subsequent render may ask for it
+        TreeRenderPtr render = _publicInterface->getCurrentRender();
+
+        // Always cache the root node because a subsequent render may ask for it
+        EffectInstancePtr treeRoot = render->getOriginalTreeRoot();
+
+        // Always cache an image if the color picker requested it
+        const bool imageRequestedForColorPicker = render->isExtraResultsRequestedForNode(_publicInterface->getNode());
+        if (treeRoot == _publicInterface->getNode()->getEffectInstance() || imageRequestedForColorPicker)  {
             ret = eCacheAccessModeReadWrite;
             retSet = true;
         }

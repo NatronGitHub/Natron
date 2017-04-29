@@ -456,11 +456,7 @@ EffectInstance::shouldCacheOutput(bool isFrameVaryingOrAnimated,
         // Very heavy to compute since many frames are fetched upstream. Cache it.
         return true;
     }
-    if ( !getCurrentSupportTiles() ) {
-        // No tiles, image is going to be produced fully, cache it to prevent multiple access
-        // with different RoIs
-        return true;
-    }
+   
     if ( isForceCachingEnabled() ) {
         // Users wants it cached
         return true;

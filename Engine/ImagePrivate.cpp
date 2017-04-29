@@ -307,6 +307,8 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
             args.renderClone = fromImage._imp->renderClone.lock();
             args.bounds = fromImage.getBounds();
             args.plane = ImagePlaneDesc::getRGBAComponents();
+            args.mipMapLevel = fromImage.getMipMapLevel();
+            args.proxyScale = fromImage.getProxyScale();
             tmpImage = Image::create(args);
             if (!tmpImage) {
                 return eActionStatusFailed;

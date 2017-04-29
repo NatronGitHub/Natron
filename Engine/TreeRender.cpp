@@ -235,6 +235,17 @@ TreeRender::getExtraRequestedResultsForNode(const NodePtr& node) const
 }
 
 bool
+TreeRender::isExtraResultsRequestedForNode(const NodePtr& node) const
+{
+    QMutexLocker k(&_imp->extraRequestedResultsMutex);
+    std::map<NodePtr, FrameViewRequestPtr>::const_iterator found = _imp->extraRequestedResults.find(node);
+    if (found == _imp->extraRequestedResults.end()) {
+        return false;
+    }
+    return true;
+}
+
+bool
 TreeRender::getRotoPaintActiveStrokeUpdateArea(RectI* updateArea) const
 {
     QMutexLocker k(&_imp->extraRequestedResultsMutex);
