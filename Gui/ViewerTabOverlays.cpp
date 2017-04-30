@@ -299,6 +299,8 @@ ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
                 // to any other interactive object it may own that shares the same view.
                 _imp->lastOverlayNode = node;
 
+                // Only enable draft render for subsequent penMotion events if the node allows it
+                _imp->canEnableDraftOnPenMotion = node->isDraftEnabledForOverlayActions();
                 return true;
             }
         }
@@ -531,7 +533,7 @@ ViewerTab::notifyOverlaysPenMotion_internal(const NodePtr& node,
     bool isInActiveViewerUI = _imp->hasInactiveNodeViewerContext(node);
     if (!isInActiveViewerUI) {
         ///If we are dragging with mouse, set draft mode (not for roto though)
-        if ( _imp->hasPenDown && !getGui()->isDraftRenderEnabled() ) {
+        if ( _imp->hasPenDown && _imp->canEnableDraftOnPenMotion && !getGui()->isDraftRenderEnabled() ) {
             getGui()->setDraftRenderEnabled(true);
         }
 

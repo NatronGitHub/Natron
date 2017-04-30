@@ -1855,6 +1855,19 @@ EffectInstance::Implementation::launchPluginRenderAndHostFrameThreading(const Fr
 
     // Pre-fetch all input images that will be needed by identity rectangles so that the call to getImagePlane
     // is done once for each of them.
+
+    // Get the bbox to fetch in input for identity rectangles
+    RectI identityRectanglesBbox;
+    for (std::list<RectToRender>::const_iterator it = renderRects.begin(); it != renderRects.end(); ++it) {
+        if (it->identityInputNumber == -1) {
+            continue;
+        }
+        if (identityRectanglesBbox.isNull()) {
+            identityRectanglesBbox = it->rect;
+        } else {
+            identityRectanglesBbox.merge(it->rect);
+        }
+    }
     for (std::list<RectToRender>::const_iterator it = renderRects.begin(); it != renderRects.end(); ++it) {
         if (it->identityInputNumber == -1) {
             continue;
@@ -1873,7 +1886,7 @@ EffectInstance::Implementation::launchPluginRenderAndHostFrameThreading(const Fr
 
             boost::scoped_ptr<EffectInstance::GetImageInArgs> inArgs( new EffectInstance::GetImageInArgs() );
             inArgs->renderBackend = &backendType;
-            inArgs->currentRenderWindow = &it->rect;
+            inArgs->currentRenderWindow = &identityRectanglesBbox;
             inArgs->inputTime = &it->identityTime;
             inArgs->inputView = &it->identityView;
             unsigned int curMipMap = requestData->getRenderMappedMipMapLevel();

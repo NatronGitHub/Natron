@@ -162,6 +162,10 @@ ViewerNode::~ViewerNode()
 void
 ViewerNode::initializeOverlayInteract()
 {
+    // Do not enable draft render during the viewer interacts: we don't want a low res image to show while moving
+    // the wipe cursor
+    getNode()->setDraftEnabledForOverlayActions(false);
+
     _imp->ui.reset(new ViewerNodeOverlay(_imp.get()));
     registerOverlay(_imp->ui, std::map<std::string, std::string>());
 }

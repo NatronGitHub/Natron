@@ -1567,7 +1567,19 @@ Node::getNodeIsSelected() const
     return _imp->nodeIsSelected;
 }
 
+void
+Node::setDraftEnabledForOverlayActions(bool enabled)
+{
+    QMutexLocker k(&_imp->nodeUIDataMutex);
+    _imp->overlayActionsDraftEnabled = enabled;
+}
 
+bool
+Node::isDraftEnabledForOverlayActions() const
+{
+    QMutexLocker k(&_imp->nodeUIDataMutex);
+    return _imp->overlayActionsDraftEnabled;
+}
 
 void
 Node::setNodeGuiPointer(const NodeGuiIPtr& gui)

@@ -3385,7 +3385,9 @@ public:
             createAndLaunchRenderInThread(viewer, processArgs[0], 0, _args->time, stats, _args->strokeItem, partialUpdateArea, bufferObject.get());
 
             // Wait for the 2nd viewer process
-            if (viewerBlend != eViewerCompositingOperatorNone) {
+            if (viewerBlend == eViewerCompositingOperatorNone) {
+                bufferObject->retCode[1] = eActionStatusFailed;
+            } else {
                 if (!viewerBEqualsViewerA) {
                     processBFuture.waitForFinished();
                 } else  {

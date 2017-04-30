@@ -3469,7 +3469,7 @@ Cache<persistent>::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
                     storage = &_imp->tilesStorage[fileIndex];
                 }
                 if (!storage) {
-                    assert(false);
+                    // The cache may have been cleared since
                     return false;
                 }
 

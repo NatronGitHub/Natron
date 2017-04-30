@@ -66,6 +66,7 @@ ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,
     , isFileDialogViewer(false)
     , lastOverlayNode()
     , hasPenDown(false)
+    , canEnableDraftOnPenMotion(false)
     , hasCaughtPenMotionWhileDragging(false)
 {
     viewerNode = node_ui->getNode()->isEffectViewerNode();

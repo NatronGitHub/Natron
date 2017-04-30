@@ -591,7 +591,8 @@ public:
     void onNodeUISelectionChanged(bool isSelected);
     bool getNodeIsSelected() const;
 
-
+    void setDraftEnabledForOverlayActions(bool enabled);
+    bool isDraftEnabledForOverlayActions() const;
 
 
     void runChangedParamCallback(const KnobIPtr& k, bool userEdited);

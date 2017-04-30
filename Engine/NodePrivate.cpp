@@ -94,6 +94,7 @@ NodePrivate::NodePrivate(Node* publicInterface,
 , nodeSize()
 , nodeColor()
 , overlayColor()
+, overlayActionsDraftEnabled(true)
 , nodeIsSelected(false)
 , restoringDefaults(false)
 {

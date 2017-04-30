@@ -1164,7 +1164,7 @@ genericViewerProcessFunctor(const RenderViewerArgs& args,
 } // genericViewerProcessFunctor
 
 template <typename PIX, int maxValue, int srcNComps, DisplayChannelsEnum channels>
-void
+ActionRetCodeEnum
 applyViewerProcess8bit_generic(const RenderViewerArgs& args, const RectI & roi)
 {
 
@@ -1173,7 +1173,7 @@ applyViewerProcess8bit_generic(const RenderViewerArgs& args, const RectI & roi)
 
         // Check for abort on every scan-line
         if (args.renderArgs && args.renderArgs->isRenderAborted()) {
-            return;
+            return eActionStatusAborted;
         }
 
         // For error diffusion, we start at each line at a random pixel along the line so it does
@@ -1275,87 +1275,71 @@ applyViewerProcess8bit_generic(const RenderViewerArgs& args, const RectI & roi)
         } // backward?
 
     } // for each scan-line
-
+    return eActionStatusOK;
 } // applyViewerProcess8bit_generic
 
 template <typename PIX, int maxValue, int srcNComps>
-void
+ActionRetCodeEnum
 applyViewerProcess8bitForComponents(const RenderViewerArgs& args, const RectI & roi)
 {
     switch (args.channels) {
         case eDisplayChannelsA:
-            applyViewerProcess8bit_generic<PIX, maxValue, srcNComps, eDisplayChannelsA>(args, roi);
-            break;
+            return applyViewerProcess8bit_generic<PIX, maxValue, srcNComps, eDisplayChannelsA>(args, roi);
         case eDisplayChannelsR:
-            applyViewerProcess8bit_generic<PIX, maxValue, srcNComps, eDisplayChannelsR>(args, roi);
-            break;
+            return applyViewerProcess8bit_generic<PIX, maxValue, srcNComps, eDisplayChannelsR>(args, roi);
         case eDisplayChannelsG:
-            applyViewerProcess8bit_generic<PIX, maxValue, srcNComps, eDisplayChannelsG>(args, roi);
-            break;
+            return applyViewerProcess8bit_generic<PIX, maxValue, srcNComps, eDisplayChannelsG>(args, roi);
         case eDisplayChannelsB:
-            applyViewerProcess8bit_generic<PIX, maxValue, srcNComps, eDisplayChannelsB>(args, roi);
-            break;
+            return applyViewerProcess8bit_generic<PIX, maxValue, srcNComps, eDisplayChannelsB>(args, roi);
         case eDisplayChannelsRGB:
-            applyViewerProcess8bit_generic<PIX, maxValue, srcNComps, eDisplayChannelsRGB>(args, roi);
-            break;
+            return applyViewerProcess8bit_generic<PIX, maxValue, srcNComps, eDisplayChannelsRGB>(args, roi);
         case eDisplayChannelsY:
-            applyViewerProcess8bit_generic<PIX, maxValue, srcNComps, eDisplayChannelsY>(args, roi);
-            break;
+            return applyViewerProcess8bit_generic<PIX, maxValue, srcNComps, eDisplayChannelsY>(args, roi);
         case eDisplayChannelsMatte:
-            applyViewerProcess8bit_generic<PIX, maxValue, srcNComps, eDisplayChannelsMatte>(args, roi);
-            break;
+            return applyViewerProcess8bit_generic<PIX, maxValue, srcNComps, eDisplayChannelsMatte>(args, roi);
 
     }
 }
 
 template <typename PIX, int maxValue>
-void
+ActionRetCodeEnum
 applyViewerProcess8bitForDepth(const RenderViewerArgs& args, const RectI & roi)
 {
     switch (args.colorImage.nComps) {
         case 1:
-            applyViewerProcess8bitForComponents<PIX, maxValue, 1>(args, roi);
-            break;
+            return applyViewerProcess8bitForComponents<PIX, maxValue, 1>(args, roi);
         case 2:
-            applyViewerProcess8bitForComponents<PIX, maxValue, 2>(args, roi);
-            break;
+            return applyViewerProcess8bitForComponents<PIX, maxValue, 2>(args, roi);
         case 3:
-            applyViewerProcess8bitForComponents<PIX, maxValue, 3>(args, roi);
-            break;
+            return applyViewerProcess8bitForComponents<PIX, maxValue, 3>(args, roi);
         case 4:
-            applyViewerProcess8bitForComponents<PIX, maxValue, 4>(args, roi);
-            break;
+            return applyViewerProcess8bitForComponents<PIX, maxValue, 4>(args, roi);
         default:
-            break;
+            return eActionStatusFailed;
     }
 }
 
 
-static void
+static ActionRetCodeEnum
 applyViewerProcess8bit(const RenderViewerArgs& args, const RectI & roi)
 {
     switch ( args.colorImage.bitDepth ) {
         case eImageBitDepthFloat:
-            applyViewerProcess8bitForDepth<float, 1>(args, roi);
-            break;
+            return applyViewerProcess8bitForDepth<float, 1>(args, roi);
         case eImageBitDepthByte:
-            applyViewerProcess8bitForDepth<unsigned char, 255>(args, roi);
-            break;
+            return applyViewerProcess8bitForDepth<unsigned char, 255>(args, roi);
         case eImageBitDepthShort:
-            applyViewerProcess8bitForDepth<unsigned short, 65535>(args, roi);
-            break;
+            return applyViewerProcess8bitForDepth<unsigned short, 65535>(args, roi);
         case eImageBitDepthHalf:
-            assert(false);
-            break;
         case eImageBitDepthNone:
-            break;
+            return eActionStatusFailed;
     }
 }
 
 
 
 template <typename PIX, int maxValue, int srcNComps, DisplayChannelsEnum channels>
-void
+ActionRetCodeEnum
 applyViewerProcess32bit_Generic(const RenderViewerArgs& args, const RectI & roi)
 {
 
@@ -1364,7 +1348,7 @@ applyViewerProcess32bit_Generic(const RenderViewerArgs& args, const RectI & roi)
 
         // Check for abort on every scan-line
         if (args.renderArgs && args.renderArgs->isRenderAborted()) {
-            return;
+            return eActionStatusAborted;
         }
 
 
@@ -1405,79 +1389,63 @@ applyViewerProcess32bit_Generic(const RenderViewerArgs& args, const RectI & roi)
         } // for each pixel along the line
 
     } // for each scan-line
-
+    return eActionStatusOK;
 } // applyViewerProcess32bit_Generic
 
 template <typename PIX, int maxValue, int srcNComps>
-void
+ActionRetCodeEnum
 applyViewerProcess32bitForComponents(const RenderViewerArgs& args, const RectI & roi)
 {
     switch (args.channels) {
         case eDisplayChannelsA:
-            applyViewerProcess32bit_Generic<PIX, maxValue, srcNComps, eDisplayChannelsA>(args, roi);
-            break;
+            return applyViewerProcess32bit_Generic<PIX, maxValue, srcNComps, eDisplayChannelsA>(args, roi);
         case eDisplayChannelsR:
-            applyViewerProcess32bit_Generic<PIX, maxValue, srcNComps, eDisplayChannelsR>(args, roi);
-            break;
+            return applyViewerProcess32bit_Generic<PIX, maxValue, srcNComps, eDisplayChannelsR>(args, roi);
         case eDisplayChannelsG:
-            applyViewerProcess32bit_Generic<PIX, maxValue, srcNComps, eDisplayChannelsG>(args, roi);
-            break;
+            return applyViewerProcess32bit_Generic<PIX, maxValue, srcNComps, eDisplayChannelsG>(args, roi);
         case eDisplayChannelsB:
-            applyViewerProcess32bit_Generic<PIX, maxValue, srcNComps, eDisplayChannelsB>(args, roi);
-            break;
+            return applyViewerProcess32bit_Generic<PIX, maxValue, srcNComps, eDisplayChannelsB>(args, roi);
         case eDisplayChannelsRGB:
-            applyViewerProcess32bit_Generic<PIX, maxValue, srcNComps, eDisplayChannelsRGB>(args, roi);
-            break;
+            return applyViewerProcess32bit_Generic<PIX, maxValue, srcNComps, eDisplayChannelsRGB>(args, roi);
         case eDisplayChannelsY:
-            applyViewerProcess32bit_Generic<PIX, maxValue, srcNComps, eDisplayChannelsY>(args, roi);
-            break;
+            return applyViewerProcess32bit_Generic<PIX, maxValue, srcNComps, eDisplayChannelsY>(args, roi);
         case eDisplayChannelsMatte:
-            applyViewerProcess32bit_Generic<PIX, maxValue, srcNComps, eDisplayChannelsMatte>(args, roi);
-            break;
+            return applyViewerProcess32bit_Generic<PIX, maxValue, srcNComps, eDisplayChannelsMatte>(args, roi);
     }
 }
 
 template <typename PIX, int maxValue>
-void
+ActionRetCodeEnum
 applyViewerProcess32bitForDepth(const RenderViewerArgs& args, const RectI & roi)
 {
     switch (args.colorImage.nComps) {
         case 1:
-            applyViewerProcess32bitForComponents<PIX, maxValue, 1>(args, roi);
-            break;
+            return applyViewerProcess32bitForComponents<PIX, maxValue, 1>(args, roi);
         case 2:
-            applyViewerProcess32bitForComponents<PIX, maxValue, 2>(args, roi);
-            break;
+            return applyViewerProcess32bitForComponents<PIX, maxValue, 2>(args, roi);
         case 3:
-            applyViewerProcess32bitForComponents<PIX, maxValue, 3>(args, roi);
-            break;
+            return applyViewerProcess32bitForComponents<PIX, maxValue, 3>(args, roi);
         case 4:
-            applyViewerProcess32bitForComponents<PIX, maxValue, 4>(args, roi);
-            break;
+            return applyViewerProcess32bitForComponents<PIX, maxValue, 4>(args, roi);
         default:
-            break;
+            return eActionStatusFailed;
     }
 }
 
 
-static void
+static ActionRetCodeEnum
 applyViewerProcess32bit(const RenderViewerArgs& args, const RectI & roi)
 {
     switch ( args.colorImage.bitDepth ) {
         case eImageBitDepthFloat:
-            applyViewerProcess32bitForDepth<float, 1>(args, roi);
-            break;
+            return applyViewerProcess32bitForDepth<float, 1>(args, roi);
         case eImageBitDepthByte:
-            applyViewerProcess32bitForDepth<unsigned char, 255>(args, roi);
-            break;
+            return applyViewerProcess32bitForDepth<unsigned char, 255>(args, roi);
         case eImageBitDepthShort:
-            applyViewerProcess32bitForDepth<unsigned short, 65535>(args, roi);
-            break;
+            return applyViewerProcess32bitForDepth<unsigned short, 65535>(args, roi);
         case eImageBitDepthHalf:
-            assert(false);
-            break;
         case eImageBitDepthNone:
-            break;
+            return eActionStatusFailed;
     }
 }
 
@@ -1509,15 +1477,14 @@ private:
     virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow) OVERRIDE FINAL
     {
         if (_args.dstImage.bitDepth == eImageBitDepthFloat) {
-            applyViewerProcess32bit(_args, renderWindow);
+            return applyViewerProcess32bit(_args, renderWindow);
         } else if (_args.dstImage.bitDepth == eImageBitDepthByte) {
-            applyViewerProcess8bit(_args, renderWindow);
+            return applyViewerProcess8bit(_args, renderWindow);
         } else {
             throw std::runtime_error("Unsupported bit-depth");
             assert(false);
             return eActionStatusFailed;
         }
-        return eActionStatusOK;
     }
 };
 
@@ -1632,7 +1599,10 @@ ViewerInstance::render(const RenderActionArgs& args)
         processor.setValues(renderViewerArgs.colorImage, displayChannels);
 #pragma message WARN("The viewer will always compute vmin/vmax for autocontrast on a region rounded to tile size. We should add a rectangle parameter specific to this feature.")
         processor.setRenderWindow(args.roi);
-        processor.process();
+        ActionRetCodeEnum stat = processor.process();
+        if (isFailureRetCode(stat)) {
+            return stat;
+        }
 
         MinMaxVal minMax = processor.getResults();
 
@@ -1656,8 +1626,7 @@ ViewerInstance::render(const RenderActionArgs& args)
     ViewerProcessor processor(shared_from_this());
     processor.setValues(renderViewerArgs);
     processor.setRenderWindow(args.roi);
-    processor.process();
-    return eActionStatusOK;
+    return processor.process();
 } // render
 
 

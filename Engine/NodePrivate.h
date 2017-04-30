@@ -294,6 +294,7 @@ public:
     double nodeSize[2]; // width, height, W=H=-1 if there is no size info
     double nodeColor[3]; // node color (RGB), between 0. and 1. If R=G=B=-1 then no color
     double overlayColor[3]; // overlay color (RGB), between 0. and 1. If R=G=B=-1 then no color
+    bool overlayActionsDraftEnabled;// If true, modyfing a parameter during an overlay action will issue a draft render
     bool nodeIsSelected; // is this node selected by the user ?
 
     // The name of the preset with which this node was created

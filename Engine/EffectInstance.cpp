@@ -725,7 +725,6 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
     TreeRenderPtr currentRender = getCurrentRender();
 
     TimeValue inputTime = inArgs.inputTime ? *inArgs.inputTime : getCurrentRenderTime();
-    qDebug() << getScriptName_mt_safe().c_str() << "->getImage (t=" << (double)inputTime <<")";
 
     if (inputTime != inputTime) {
         // time is NaN
