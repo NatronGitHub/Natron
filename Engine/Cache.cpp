@@ -2923,17 +2923,23 @@ Cache<persistent>::initialize(const boost::shared_ptr<Cache<persistent> >& thisS
 
         try {
 
-            boost::scoped_ptr<Sharable_WriteLock> writeLock;
-            // Take the tilesStorageMutex in read mode to indicate that we are operating on it (flush)
+            bool createStorage = false;
+            {
+                boost::scoped_ptr<Sharable_WriteLock> writeLock;
+                // Take the tilesStorageMutex in read mode to indicate that we are operating on it (flush)
 #ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-            writeLock.reset(new Sharable_WriteLock(_imp->ipc->tilesStorageMutex));
+                writeLock.reset(new Sharable_WriteLock(_imp->ipc->tilesStorageMutex));
 #else
-            // Take read lock on the tile data
-            createTimedLock<Sharable_WriteLock>(_imp.get(), writeLock, _imp->ipc->tilesStorageMutex);
+                // Take read lock on the tile data
+                createTimedLock<Sharable_WriteLock>(_imp.get(), writeLock, _imp->ipc->tilesStorageMutex);
 #endif
-            _imp->reOpenTileStorage();
-            if (_imp->tilesStorage.empty()) {
-                // Ensure we initialize the cache with at least one tile storage file
+                _imp->reOpenTileStorage();
+                if (_imp->tilesStorage.empty()) {
+                    // Ensure we initialize the cache with at least one tile storage file
+                    createStorage = true;
+                }
+            }
+            if (createStorage) {
                 _imp->createTileStorage();
             }
         } catch (const CorruptedCacheException&) {
@@ -2963,7 +2969,6 @@ struct CacheTilesLockImpl
 
     // Mutex that protects access to the tiles memory mapped file
     boost::scoped_ptr<Sharable_ReadLock> tileReadLock;
-    boost::scoped_ptr<Sharable_WriteLock> tileWriteLock;
 
     CacheTilesLockImpl()
     {
@@ -2974,7 +2979,6 @@ struct CacheTilesLockImpl
     {
         // ensure the lock is released before the shm access
         tileReadLock.reset();
-        tileWriteLock.reset();
     }
 
 
@@ -2987,19 +2991,29 @@ CachePrivate<persistent>::createTileStorage()
     if (!useTileStorage) {
         return;
     }
-    // The lock must be taken in write mode
-    assert(!ipc->tilesStorageMutex.try_lock());
 
-    StoragePtrType data(new StorageType);
-    if (persistent) {
-        std::stringstream ss;
-        ss << directoryContainingCachePath << "/" <<  NATRON_CACHE_DIRECTORY_NAME << "/TilesStorage" << tilesStorage.size() + 1;
-        openStorage(data, ss.str(), (int)MemoryFile::eFileOpenModeOpenOrCreate);
+    U64 fileIndex;
+    {
+        // The lock must be taken in write mode
+        boost::scoped_ptr<Sharable_WriteLock> tileWriteLock;
+#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
+        tileWriteLock.reset(new Sharable_WriteLock(ipc->tilesStorageMutex));
+#else
+        createTimedLock<Sharable_WriteLock>(this, tileWriteLock, &ipc->tilesStorageMutex);
+#endif
+
+
+        StoragePtrType data(new StorageType);
+        if (persistent) {
+            std::stringstream ss;
+            ss << directoryContainingCachePath << "/" <<  NATRON_CACHE_DIRECTORY_NAME << "/TilesStorage" << tilesStorage.size() + 1;
+            openStorage(data, ss.str(), (int)MemoryFile::eFileOpenModeOpenOrCreate);
+        }
+        resizeStorage(data, NATRON_TILE_STORAGE_FILE_SIZE);
+
+        fileIndex = tilesStorage.size();
+        tilesStorage.push_back(data);
     }
-    resizeStorage(data, NATRON_TILE_STORAGE_FILE_SIZE);
-
-    U64 fileIndex = tilesStorage.size();
-    tilesStorage.push_back(data);
 
     // The number of tiles should be a multiple of the buckets count
     assert(NATRON_NUM_TILES_PER_FILE % NATRON_CACHE_BUCKETS_COUNT == 0);
@@ -3248,15 +3262,8 @@ Cache<persistent>::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
 
                 if (tileBucket.ipc->freeTiles.empty()) {
                     // No free tile in the bucket: make a new file
-                    // To create a file, we need a write lock on the tiles storage
-                    if (!tilesLock->tileWriteLock) {
-                        tilesLock->tileReadLock.reset();
-#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-                        tilesLock->tileWriteLock.reset(new Sharable_WriteLock(_imp->ipc->tilesStorageMutex));
-#else
-                        createTimedLock<Sharable_WriteLock>(_imp.get(), tilesLock->tileWriteLock, &_imp->ipc->tilesStorageMutex);
-#endif
-                    }
+                    // To create a file, we need a write lock on the tiles storage, release the read lock now
+                    tilesLock->tileReadLock.reset();
 
                     // Release the locks before calling createTileStorage
                     tocReadLock.reset();
@@ -3269,6 +3276,14 @@ Cache<persistent>::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
                     if (!tocReadLock && !tocWriteLock) {
                         tileBucket.checkToCMemorySegmentStatus(&tocReadLock, &tocWriteLock);
                     }
+
+                    // Take the tilesStorageMutex in read mode to indicate that we are operating on it
+#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
+                    tilesLock->tileReadLock.reset(new Sharable_ReadLock(_imp->ipc->tilesStorageMutex));
+#else
+                    // Take read lock on the tile data
+                    createTimedLock<Sharable_ReadLock>(_imp.get(), tilesLock->tileReadLock, &_imp->ipc->tilesStorageMutex);
+#endif
 
                     if (!bucketWriteLock) {
 #ifndef NATRON_CACHE_INTERPROCESS_ROBUST
@@ -3468,7 +3483,6 @@ Cache<persistent>::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
     } catch (...) {
 
         tilesLock->tileReadLock.reset();
-        tilesLock->tileWriteLock.reset();
 
         // Any exception caught here means the cache is corrupted
         _imp->recoverFromInconsistentState(
@@ -4137,19 +4151,20 @@ Cache<persistent>::clear()
 #endif
     try {
 
+        {
 
-        boost::scoped_ptr<Sharable_WriteLock> tileWriteLock;
+            boost::scoped_ptr<Sharable_WriteLock> tileWriteLock;
 #ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-        tileWriteLock.reset(new Sharable_WriteLock(_imp->ipc->tilesStorageMutex));
+            tileWriteLock.reset(new Sharable_WriteLock(_imp->ipc->tilesStorageMutex));
 #else
-        createTimedLock<Sharable_WriteLock>(this, tileWriteLock, &_imp->ipc->tilesStorageMutex);
+            createTimedLock<Sharable_WriteLock>(this, tileWriteLock, &_imp->ipc->tilesStorageMutex);
 #endif
-        for (std::size_t i = 0; i < _imp->tilesStorage.size(); ++i) {
-            clearStorage(_imp->tilesStorage[i]);
+            for (std::size_t i = 0; i < _imp->tilesStorage.size(); ++i) {
+                clearStorage(_imp->tilesStorage[i]);
+            }
+            _imp->tilesStorage.clear();
+
         }
-        _imp->tilesStorage.clear();
-
-
         for (int bucket_i = 0; bucket_i < NATRON_CACHE_BUCKETS_COUNT; ++bucket_i) {
             _imp->clearCacheBucket(bucket_i);
         } // for each bucket

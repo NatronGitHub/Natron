@@ -287,6 +287,7 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
             // Copy the full bounds since we are converting the OpenGL texture to RAM (we have no other choice since glReadPixels
             // expect a buffer with the appropriate size)
             copyArgs.roi = args.bounds;
+            copyArgs.alphaHandling = Image::eAlphaChannelHandlingCreateFill1;
             tmpImage->copyPixels(fromImage, copyArgs);
             *outImage = tmpImage;
             return eActionStatusOK;
@@ -315,6 +316,7 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
             }
             Image::CopyPixelsArgs copyArgs;
             copyArgs.roi = roi;
+            copyArgs.alphaHandling = Image::eAlphaChannelHandlingCreateFill1;
             tmpImage->copyPixels(fromImage, copyArgs);
             *outImage = tmpImage;
             return eActionStatusOK;

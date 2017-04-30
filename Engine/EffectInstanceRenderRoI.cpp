@@ -1856,6 +1856,9 @@ EffectInstance::Implementation::launchPluginRenderAndHostFrameThreading(const Fr
     // Pre-fetch all input images that will be needed by identity rectangles so that the call to getImagePlane
     // is done once for each of them.
     for (std::list<RectToRender>::const_iterator it = renderRects.begin(); it != renderRects.end(); ++it) {
+        if (it->identityInputNumber == -1) {
+            continue;
+        }
         for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it2 = cachedPlanes.begin(); it2 != cachedPlanes.end(); ++it2) {
             IdentityPlaneKey p;
             p.identityInputNb = it->identityInputNumber;

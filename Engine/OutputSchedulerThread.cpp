@@ -2440,7 +2440,12 @@ private:
 
         }
 
-        launchRenderFunctor(processArgs);
+
+        if (_viewer->isViewerPaused(viewerProcess_i)) {
+            processArgs->retCode = eActionStatusAborted;
+        } else {
+            launchRenderFunctor(processArgs);
+        }
 
         bufferedFrame->retCode[viewerProcess_i] = processArgs->retCode;
         bufferedFrame->viewerProcessImageKey[viewerProcess_i] = processArgs->viewerProcessImageCacheKey;
@@ -3307,7 +3312,11 @@ public:
 
         }
 
-        ViewerRenderFrameRunnable::launchRenderFunctor(processArgs);
+        if (viewer->isViewerPaused(viewerProcess_i)) {
+            processArgs->retCode = eActionStatusAborted;
+        } else {
+            ViewerRenderFrameRunnable::launchRenderFunctor(processArgs);
+        }
 
         bufferedFrame->retCode[viewerProcess_i] = processArgs->retCode;
         bufferedFrame->viewerProcessImageKey[viewerProcess_i] = processArgs->viewerProcessImageCacheKey;
