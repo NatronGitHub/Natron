@@ -498,8 +498,8 @@ void debugImageInternal(const RectI& renderWindow,
     lut->validate();
 
 
-    int dstY = renderWindow.height() - 1;
-    for ( int y = renderWindow.y2 - 1; y >= renderWindow.y1; --y , --dstY) {
+    int dstY = 0;
+    for ( int y = renderWindow.y2 - 1; y >= renderWindow.y1; --y , ++dstY) {
 
         const PIX* src_pixels[4];
         int pixelStride;
