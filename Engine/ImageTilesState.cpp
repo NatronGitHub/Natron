@@ -161,9 +161,14 @@ ImageTilesState::getMinimalBboxToRenderFromTilesState(const RectI& roi, const Ti
     }
 
     const RectI& imageBoundsRoundedToTileSize = stateMap.state->boundsRoundedToTileSize;
-    const RectI& imageBoundsNotRounded = stateMap.state->bounds;
 
     assert(imageBoundsRoundedToTileSize.contains(roi));
+
+    // The roi must be rounded to the tile size and clipped the pixel RoD
+    assert(roi.x1 % stateMap.tileSizeX == 0 || roi.x1 == stateMap.state->bounds.x1);
+    assert(roi.y1 % stateMap.tileSizeY == 0 || roi.y1 == stateMap.state->bounds.y1);
+    assert(roi.x2 % stateMap.tileSizeX == 0 || roi.x2 == stateMap.state->bounds.x2);
+    assert(roi.y2 % stateMap.tileSizeY == 0 || roi.y2 == stateMap.state->bounds.y2);
 
     RectI roiRoundedToTileSize = roi;
     roiRoundedToTileSize.roundToTileSize(stateMap.tileSizeX, stateMap.tileSizeY);
@@ -173,7 +178,7 @@ ImageTilesState::getMinimalBboxToRenderFromTilesState(const RectI& roi, const Ti
 
         bool hasTileUnrenderedOnLine = false;
         for (int x = roiRoundedToTileSize.x1; x < roiRoundedToTileSize.x2; x += stateMap.tileSizeX) {
-
+            assert(x % stateMap.tileSizeX == 0 && y % stateMap.tileSizeY == 0);
             const TileState* tile = stateMap.getTileAt(x, y);
             if (tile->status == eTileStatusNotRendered) {
                 hasTileUnrenderedOnLine = true;
@@ -192,7 +197,7 @@ ImageTilesState::getMinimalBboxToRenderFromTilesState(const RectI& roi, const Ti
 
         bool hasTileUnrenderedOnLine = false;
         for (int x = roiRoundedToTileSize.x1; x < roiRoundedToTileSize.x2; x += stateMap.tileSizeX) {
-
+            assert(x % stateMap.tileSizeX == 0 && y % stateMap.tileSizeY == 0);
             const TileState* tile = stateMap.getTileAt(x, y);
             if (tile->status == eTileStatusNotRendered) {
                 hasTileUnrenderedOnLine = true;
@@ -217,7 +222,7 @@ ImageTilesState::getMinimalBboxToRenderFromTilesState(const RectI& roi, const Ti
 
         bool hasTileUnrenderedOnCol = false;
         for (int y = roiRoundedToTileSize.y1; y < roiRoundedToTileSize.y2; y += stateMap.tileSizeY) {
-
+            assert(x % stateMap.tileSizeX == 0 && y % stateMap.tileSizeY == 0);
             const TileState* tile = stateMap.getTileAt(x, y);
             if (tile->status == eTileStatusNotRendered) {
                 hasTileUnrenderedOnCol = true;
@@ -241,7 +246,7 @@ ImageTilesState::getMinimalBboxToRenderFromTilesState(const RectI& roi, const Ti
 
         bool hasTileUnrenderedOnCol = false;
         for (int y = roiRoundedToTileSize.y1; y < roiRoundedToTileSize.y2; y += stateMap.tileSizeY) {
-
+            assert(x % stateMap.tileSizeX == 0 && y % stateMap.tileSizeY == 0);
             const TileState* tile = stateMap.getTileAt(x, y);
             if (tile->status == eTileStatusNotRendered) {
                 hasTileUnrenderedOnCol = true;
@@ -255,9 +260,9 @@ ImageTilesState::getMinimalBboxToRenderFromTilesState(const RectI& roi, const Ti
         }
     }
 
-    // Intersect the result to the actual image bounds (because the tiles are rounded to tile size)
+    // Intersect the result to the original roi (because the tiles are rounded to tile size)
     RectI ret;
-    roiRoundedToTileSize.intersect(imageBoundsNotRounded, &ret);
+    roiRoundedToTileSize.intersect(roi, &ret);
     return ret;
 
 
@@ -270,14 +275,18 @@ ImageTilesState::getMinimalRectsToRenderFromTilesState(const RectI& roi, const T
         return;
     }
 
-    RectI roiRoundedToTileSize = roi;
-    roiRoundedToTileSize.roundToTileSize(stateMap.tileSizeX, stateMap.tileSizeY);
+    // The roi must be rounded to the tile size and clipped the pixel RoD
+    assert(roi.x1 % stateMap.tileSizeX == 0 || roi.x1 == stateMap.state->bounds.x1);
+    assert(roi.y1 % stateMap.tileSizeY == 0 || roi.y1 == stateMap.state->bounds.y1);
+    assert(roi.x2 % stateMap.tileSizeX == 0 || roi.x2 == stateMap.state->bounds.x2);
+    assert(roi.y2 % stateMap.tileSizeY == 0 || roi.y2 == stateMap.state->bounds.y2);
 
     RectI bboxM = getMinimalBboxToRenderFromTilesState(roi, stateMap);
     if (bboxM.isNull()) {
         return;
     }
 
+    // Round to the tile size because the tile states is only valid for tiles
     bboxM.roundToTileSize(stateMap.tileSizeX, stateMap.tileSizeY);
 
     // optimization by Fred, Jan 31, 2014
@@ -309,6 +318,7 @@ ImageTilesState::getMinimalRectsToRenderFromTilesState(const RectI& roi, const T
     for (int y = bboxX.y1; y < bboxX.y2; y += stateMap.tileSizeY) {
         bool hasRenderedTileOnLine = false;
         for (int x = bboxX.x1; x < bboxX.x2; x += stateMap.tileSizeX) {
+            assert(x % stateMap.tileSizeX == 0 && y % stateMap.tileSizeY == 0);
             const TileState* tile = stateMap.getTileAt(x, y);
             if (tile->status != eTileStatusNotRendered) {
                 hasRenderedTileOnLine = true;
@@ -337,6 +347,7 @@ ImageTilesState::getMinimalRectsToRenderFromTilesState(const RectI& roi, const T
     for (int y = bboxX.y2 - stateMap.tileSizeY; y >= bboxX.y1; y -= stateMap.tileSizeY) {
         bool hasRenderedTileOnLine = false;
         for (int x = bboxX.x1; x < bboxX.x2; x += stateMap.tileSizeX) {
+            assert(x % stateMap.tileSizeX == 0 && y % stateMap.tileSizeY == 0);
             const TileState* tile = stateMap.getTileAt(x, y);
             if (tile->status != eTileStatusNotRendered) {
                 hasRenderedTileOnLine = true;
@@ -365,6 +376,7 @@ ImageTilesState::getMinimalRectsToRenderFromTilesState(const RectI& roi, const T
         for (int x = bboxX.x1; x < bboxX.x2; x += stateMap.tileSizeX) {
             bool hasRenderedTileOnCol = false;
             for (int y = bboxX.y1; y < bboxX.y2; y += stateMap.tileSizeY) {
+                assert(x % stateMap.tileSizeX == 0 && y % stateMap.tileSizeY == 0);
                 const TileState* tile = stateMap.getTileAt(x, y);
                 if (tile->status != eTileStatusNotRendered) {
                     hasRenderedTileOnCol = true;
@@ -394,6 +406,7 @@ ImageTilesState::getMinimalRectsToRenderFromTilesState(const RectI& roi, const T
         for (int x = bboxX.x2 - stateMap.tileSizeX; x >= bboxX.x1; x -= stateMap.tileSizeX) {
             bool hasRenderedTileOnCol = false;
             for (int y = bboxX.y1; y < bboxX.y2; y += stateMap.tileSizeY) {
+                assert(x % stateMap.tileSizeX == 0 && y % stateMap.tileSizeY == 0);
                 const TileState* tile = stateMap.getTileAt(x, y);
                 if (tile->status != eTileStatusNotRendered) {
                     hasRenderedTileOnCol = true;

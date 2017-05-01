@@ -2134,7 +2134,7 @@ ViewerGL::zoomViewport(double newZoomFactor)
         _imp->zoomCtx.zoom(centerX, centerY, scale);
         _imp->zoomOrPannedSinceLastFit = true;
     }
-
+    _imp->viewerTab->updateZoomComboBox(std::floor(newZoomFactor * 100 + 0.5));
     checkIfViewPortRoIValidOrRender();
 }
 

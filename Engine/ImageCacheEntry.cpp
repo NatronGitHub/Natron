@@ -669,7 +669,6 @@ public:
                 RectI renderWindow;
                 tileBoundsRounded.intersect(_imp->roi, &renderWindow);
 
-
                 const PIX* localPix = (const PIX*)Image::pixelAtStatic(renderWindow.x1, renderWindow.y1, _imp->roi, _imp->nComps, sizeof(PIX), (const unsigned char*)_localBuffers[task.channel_i]);
                 assert(localPix);
 
@@ -692,7 +691,7 @@ public:
                 // When copying from the cache, clip to the tile bounds for the tiles on the border
                 RectI renderWindow;
                 task.bounds.intersect(_imp->roi, &renderWindow);
-
+         
                 const PIX* tilePix = ImageCacheEntryProcessing::getPix((const PIX*)task.ptr, renderWindow.x1, renderWindow.y1, tileBoundsRounded);
                 assert(tilePix);
 
@@ -1140,8 +1139,16 @@ ImageCacheEntryPrivate::readAndUpdateStateMap(bool hasExclusiveLock)
             // Traverse the mipmaps pyramid from lower scale to higher scale to find a rendered tile and then downscale if necessary
             LookupTileStateRetCodeEnum stat = lookupTileStateInPyramid(hasExclusiveLock, perMipMapCacheTilesState, coord);
             switch (stat) {
-                case eLookupTileStateRetCodeNeedWriteLock:
+                case eLookupTileStateRetCodeNeedWriteLock: {
+                    // Switch all local states that we set to copy from the cache back to not rendered
+                    for (std::vector<TileCacheIndex>::iterator it = tilesToFetch.begin(); it != tilesToFetch.end(); ++it) {
+                        TileState* tileState = localTilesState.getTileAt(it->tx, it->ty);
+                        assert(tileState);
+                        tileState->status = eTileStatusNotRendered;
+                    }
+
                     return ImageCacheEntryPrivate::eUpdateStateMapRetCodeNeedWriteLock;
+                }
                 case eLookupTileStateRetCodeUpdated:
                     stateMapModified = true;
                     break;
@@ -1358,6 +1365,9 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
     std::vector<TilesSet> tilesToUpdate(perLevelTilesToDownscale.size());
     for (std::size_t i = 0; i < perLevelTilesToDownscale.size(); ++i) {
 
+        if (perLevelTilesToDownscale[i].empty()) {
+            continue;
+        }
 
         TileStateHeader cacheStateMap = TileStateHeader(localTilesState.tileSizeX, localTilesState.tileSizeY, &internalCacheEntry->perMipMapTilesState[i]);
         assert(!cacheStateMap.state->tiles.empty());

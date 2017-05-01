@@ -527,12 +527,15 @@ public:
         }
 
         CPUData(const CPUData& other)
-        : ptrs()
-        , bounds(other.bounds)
-        , bitDepth(other.bitDepth)
-        , nComps(other.nComps)
         {
+            *this = other;
+        }
+
+        void operator=(const CPUData& other) {
             memcpy(ptrs, other.ptrs, sizeof(void*) * 4);
+            bounds = other.bounds;
+            bitDepth = other.bitDepth;
+            nComps = other.nComps;
         }
     };
 

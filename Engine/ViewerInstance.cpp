@@ -805,10 +805,11 @@ struct MinMaxVal {
 };
 
 template <typename PIX, int maxValue, int srcNComps, DisplayChannelsEnum channels>
-MinMaxVal
+ActionRetCodeEnum
 findAutoContrastVminVmax_generic(const Image::CPUData& colorImage,
                                  const EffectInstancePtr& renderArgs,
-                                 const RectI & roi)
+                                 const RectI & roi,
+                                 MinMaxVal* retValue)
 {
     double localVmin = std::numeric_limits<double>::infinity();
     double localVmax = -std::numeric_limits<double>::infinity();
@@ -816,7 +817,8 @@ findAutoContrastVminVmax_generic(const Image::CPUData& colorImage,
     for (int y = roi.y1; y < roi.y2; ++y) {
 
         if (renderArgs && renderArgs->isRenderAborted()) {
-            return MinMaxVal(localVmin, localVmax);
+            *retValue = MinMaxVal(localVmin, localVmax);
+            return eActionStatusAborted;
         }
 
         int pixelStride;
@@ -895,84 +897,82 @@ findAutoContrastVminVmax_generic(const Image::CPUData& colorImage,
         }
     }
 
-    return MinMaxVal(localVmin, localVmax);
+    *retValue = MinMaxVal(localVmin, localVmax);
+    return eActionStatusOK;
 } // findAutoContrastVminVmax_generic
 
 template <typename PIX, int maxValue, int srcNComps>
-MinMaxVal
+ActionRetCodeEnum
 findAutoContrastVminVmaxForComponents(const Image::CPUData& colorImage,
                                       const EffectInstancePtr& renderArgs,
                                       DisplayChannelsEnum channels,
-                                      const RectI & roi)
+                                      const RectI & roi,
+                                      MinMaxVal* ret)
     
 
 {
     switch (channels) {
         case eDisplayChannelsA:
-            return findAutoContrastVminVmax_generic<PIX, maxValue, srcNComps, eDisplayChannelsA>(colorImage, renderArgs, roi);
+            return findAutoContrastVminVmax_generic<PIX, maxValue, srcNComps, eDisplayChannelsA>(colorImage, renderArgs, roi, ret);
         case eDisplayChannelsR:
-            return findAutoContrastVminVmax_generic<PIX, maxValue, srcNComps, eDisplayChannelsR>(colorImage, renderArgs, roi);
+            return findAutoContrastVminVmax_generic<PIX, maxValue, srcNComps, eDisplayChannelsR>(colorImage, renderArgs, roi, ret);
         case eDisplayChannelsG:
-            return findAutoContrastVminVmax_generic<PIX, maxValue, srcNComps, eDisplayChannelsG>(colorImage, renderArgs, roi);
+            return findAutoContrastVminVmax_generic<PIX, maxValue, srcNComps, eDisplayChannelsG>(colorImage, renderArgs, roi, ret);
         case eDisplayChannelsB:
-            return findAutoContrastVminVmax_generic<PIX, maxValue, srcNComps, eDisplayChannelsB>(colorImage, renderArgs, roi);
+            return findAutoContrastVminVmax_generic<PIX, maxValue, srcNComps, eDisplayChannelsB>(colorImage, renderArgs, roi, ret);
         case eDisplayChannelsY:
-            return findAutoContrastVminVmax_generic<PIX, maxValue, srcNComps, eDisplayChannelsY>(colorImage, renderArgs, roi);
+            return findAutoContrastVminVmax_generic<PIX, maxValue, srcNComps, eDisplayChannelsY>(colorImage, renderArgs, roi, ret);
         case eDisplayChannelsMatte:
-            return findAutoContrastVminVmax_generic<PIX, maxValue, srcNComps, eDisplayChannelsMatte>(colorImage, renderArgs, roi);
+            return findAutoContrastVminVmax_generic<PIX, maxValue, srcNComps, eDisplayChannelsMatte>(colorImage, renderArgs, roi, ret);
         case eDisplayChannelsRGB:
-            return findAutoContrastVminVmax_generic<PIX, maxValue, srcNComps, eDisplayChannelsRGB>(colorImage, renderArgs, roi);
+            return findAutoContrastVminVmax_generic<PIX, maxValue, srcNComps, eDisplayChannelsRGB>(colorImage, renderArgs, roi, ret);
     }
-    assert(false);
-
-    return MinMaxVal(0,0);
 }
 
 
 template <typename PIX, int maxValue>
-MinMaxVal
+ActionRetCodeEnum
 findAutoContrastVminVmaxForDepth(const Image::CPUData& colorImage,
                                  const EffectInstancePtr& renderArgs,
                                  DisplayChannelsEnum channels,
-                                 const RectI & roi)
+                                 const RectI & roi,
+                                 MinMaxVal* ret)
 
 
 {
     switch (colorImage.nComps) {
         case 1:
-            return findAutoContrastVminVmaxForComponents<PIX, maxValue, 1>(colorImage, renderArgs, channels, roi);
+            return findAutoContrastVminVmaxForComponents<PIX, maxValue, 1>(colorImage, renderArgs, channels, roi, ret);
         case 2:
-            return findAutoContrastVminVmaxForComponents<PIX, maxValue, 2>(colorImage, renderArgs, channels, roi);
+            return findAutoContrastVminVmaxForComponents<PIX, maxValue, 2>(colorImage, renderArgs, channels, roi, ret);
         case 3:
-            return findAutoContrastVminVmaxForComponents<PIX, maxValue, 3>(colorImage, renderArgs, channels, roi);
+            return findAutoContrastVminVmaxForComponents<PIX, maxValue, 3>(colorImage, renderArgs, channels, roi, ret);
         case 4:
-            return findAutoContrastVminVmaxForComponents<PIX, maxValue, 4>(colorImage, renderArgs, channels, roi);
+            return findAutoContrastVminVmaxForComponents<PIX, maxValue, 4>(colorImage, renderArgs, channels, roi, ret);
         default:
-            assert(false);
-            return MinMaxVal(0,0);
+            return eActionStatusFailed;
+
     }
 }
 
-MinMaxVal
+ActionRetCodeEnum
 findAutoContrastVminVmax(const Image::CPUData& colorImage,
                          const EffectInstancePtr& renderArgs,
                          DisplayChannelsEnum channels,
-                         const RectI & roi)
+                         const RectI & roi,
+                         MinMaxVal* ret)
 {
     switch (colorImage.bitDepth) {
         case eImageBitDepthByte:
-            return findAutoContrastVminVmaxForDepth<unsigned char, 255>(colorImage, renderArgs, channels, roi);
+            return findAutoContrastVminVmaxForDepth<unsigned char, 255>(colorImage, renderArgs, channels, roi, ret);
         case eImageBitDepthFloat:
-            return findAutoContrastVminVmaxForDepth<float, 1>(colorImage, renderArgs, channels, roi);
+            return findAutoContrastVminVmaxForDepth<float, 1>(colorImage, renderArgs, channels, roi, ret);
         case eImageBitDepthHalf:
         case eImageBitDepthNone:
-            return MinMaxVal(0,0);
+            return eActionStatusFailed;
         case eImageBitDepthShort:
-            return findAutoContrastVminVmaxForDepth<unsigned short, 65535>(colorImage, renderArgs, channels, roi);
+            return findAutoContrastVminVmaxForDepth<unsigned short, 65535>(colorImage, renderArgs, channels, roi, ret);
     }
-    assert(false);
-
-    return MinMaxVal(0,0);
 }
 
 class FindAutoContrastProcessor : public ImageMultiThreadProcessorBase
@@ -1011,7 +1011,11 @@ private:
 
     virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow) OVERRIDE FINAL
     {
-        MinMaxVal localResult = findAutoContrastVminVmax(_colorImage, _effect, _channels, renderWindow);
+        MinMaxVal localResult;
+        ActionRetCodeEnum stat = findAutoContrastVminVmax(_colorImage, _effect, _channels, renderWindow, &localResult);
+        if (isFailureRetCode(stat)) {
+            return stat;
+        }
 
         QMutexLocker k(&_resultMutex);
         _result.min = std::min(_result.min, localResult.min);
@@ -1178,7 +1182,7 @@ applyViewerProcess8bit_generic(const RenderViewerArgs& args, const RectI & roi)
 
         // For error diffusion, we start at each line at a random pixel along the line so it does
         // not create a pattern in the output image.
-        const int startX = (int)( rand() % (roi.width()) ) + roi.x1;
+        const int startX = rand() % roi.width() + roi.x1;
 
         for (int backward = 0; backward < 2; ++backward) {
 
@@ -1195,7 +1199,12 @@ applyViewerProcess8bit_generic(const RenderViewerArgs& args, const RectI & roi)
 
             int alphaPixelStride;
             const PIX* alpha_pixels[4];
+            if (channels == eDisplayChannelsMatte || channels == eDisplayChannelsA) {
             Image::getChannelPointers<PIX>((const PIX**)args.alphaImage.ptrs, x, y, args.alphaImage.bounds, args.alphaImage.nComps, (PIX**)alpha_pixels, &alphaPixelStride);
+            } else {
+                alphaPixelStride = 0;
+                memset(alpha_pixels, 0, sizeof(PIX*) * 4);
+            }
 
             int dstPixelStride;
             unsigned char* dst_pixels[4];
@@ -1358,17 +1367,30 @@ applyViewerProcess32bit_Generic(const RenderViewerArgs& args, const RectI & roi)
 
         int alphaPixelStride;
         const PIX* alpha_pixels[4];
-        Image::getChannelPointers<PIX>((const PIX**)args.alphaImage.ptrs, roi.x1, y, args.alphaImage.bounds, args.alphaImage.nComps, (PIX**)alpha_pixels, &alphaPixelStride);
+        if (channels == eDisplayChannelsMatte || channels == eDisplayChannelsA) {
+            Image::getChannelPointers<PIX>((const PIX**)args.alphaImage.ptrs, roi.x1, y, args.alphaImage.bounds, args.alphaImage.nComps, (PIX**)alpha_pixels, &alphaPixelStride);
+        } else {
+            alphaPixelStride = 0;
+            memset(alpha_pixels, 0, sizeof(PIX*) * 4);
+        }
 
         int dstPixelStride;
         float* dst_pixels[4];
         Image::getChannelPointers<float>((const float**)args.dstImage.ptrs, roi.x1, y, args.dstImage.bounds, args.dstImage.nComps, (float**)dst_pixels, &dstPixelStride);
+        assert(dst_pixels[0]);
 
         for (int x = roi.x1; x < roi.x2; ++x) {
 
             float tmpPix[4];
             double alphaMatteValue;
             genericViewerProcessFunctor<PIX, maxValue, srcNComps, channels>(args, color_pixels, alpha_pixels, tmpPix, &alphaMatteValue);
+
+            if (args.dstColorspace) {
+                for (int i = 0; i < 3; ++i) {
+                    tmpPix[i] = args.dstColorspace->toColorSpaceFloatFromLinearFloat(tmpPix[i]);
+                }
+            }
+
             if (channels == eDisplayChannelsMatte) {
                 tmpPix[0] += alphaMatteValue * 0.5;
             }
@@ -1626,7 +1648,8 @@ ViewerInstance::render(const RenderActionArgs& args)
     ViewerProcessor processor(shared_from_this());
     processor.setValues(renderViewerArgs);
     processor.setRenderWindow(args.roi);
-    return processor.process();
+    ActionRetCodeEnum stat = processor.process();
+    return stat;
 } // render
 
 
