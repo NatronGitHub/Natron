@@ -1,6 +1,6 @@
 --- base/unix-dll.mak.orig	2013-08-30 19:37:28.000000000 +0900
 +++ base/unix-dll.mak	2013-09-10 14:06:01.000000000 +0900
-@@ -64,12 +64,12 @@
+@@ -91,12 +91,12 @@
  
  
  # MacOS X
@@ -14,7 +14,7 @@
 +GS_SONAME_MAJOR_MINOR=$(GS_SONAME_BASE).$(GS_VERSION_MAJOR).$(GS_VERSION_MINOR).$(GS_SOEXT)
  #LDFLAGS_SO=-dynamiclib -flat_namespace
 -#LDFLAGS_SO_MAC=-dynamiclib -install_name $(GS_SONAME_MAJOR_MINOR)
-+LDFLAGS_SO=-dynamiclib -install_name __PREFIX__/lib/$(GS_SONAME_MAJOR_MINOR)
++GS_LDFLAGS_SO=-dynamiclib -install_name __PREFIX__/lib/$(GS_SONAME_MAJOR_MINOR)
  #LDFLAGS_SO=-dynamiclib -install_name $(FRAMEWORK_NAME)
  
  GS_SO=$(BINDIR)/$(GS_SONAME)
