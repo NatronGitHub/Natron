@@ -1277,7 +1277,7 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimensionIn, ViewSetSpec viewI
         resetDefaultAction->setData(actionData);
         QObject::connect( resetDefaultAction, SIGNAL(triggered()), this, SLOT(onResetDefaultValuesActionTriggered()) );
         menu->addAction(resetDefaultAction);
-        if (!!isEnabled) {
+        if (!isEnabled) {
             resetDefaultAction->setEnabled(false);
         }
     }

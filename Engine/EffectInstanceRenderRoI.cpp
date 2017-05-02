@@ -1548,9 +1548,9 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPa
         int tileWidth, tileHeight;
         CacheBase::getTileSizePx(outputBitDepth, &tileWidth, &tileHeight);
         assert(renderMappedRoI.x1 % tileWidth == 0 || renderMappedRoI.x1 == perMipMapLevelRoDPixel[mappedMipMapLevel].x1);
-        assert(renderMappedRoI.y1 % tileWidth == 0 || renderMappedRoI.y1 == perMipMapLevelRoDPixel[mappedMipMapLevel].y1);
+        assert(renderMappedRoI.y1 % tileHeight == 0 || renderMappedRoI.y1 == perMipMapLevelRoDPixel[mappedMipMapLevel].y1);
         assert(renderMappedRoI.x2 % tileWidth == 0 || renderMappedRoI.x2 == perMipMapLevelRoDPixel[mappedMipMapLevel].x2);
-        assert(renderMappedRoI.y2 % tileWidth == 0 || renderMappedRoI.y2 == perMipMapLevelRoDPixel[mappedMipMapLevel].y2);
+        assert(renderMappedRoI.y2 % tileHeight == 0 || renderMappedRoI.y2 == perMipMapLevelRoDPixel[mappedMipMapLevel].y2);
     }
 #endif
 

@@ -880,7 +880,6 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
         }
     }
 
-
     ImageBufferLayoutEnum imageLayout = outArgs->image->getBufferFormat();
     if (imageLayout != thisEffectSupportedImageLayout) {
         mustConvertImage = true;
@@ -944,7 +943,7 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
         ImagePlaneDesc maskComps;
         {
             std::list<ImagePlaneDesc> upstreamAvailableLayers;
-            ActionRetCodeEnum stat = getAvailableLayers(getCurrentRenderTime(), getCurrentRenderView(), inArgs.inputNb, &upstreamAvailableLayers);
+            ActionRetCodeEnum stat = getAvailableLayers(inputTime, inputView, inArgs.inputNb, &upstreamAvailableLayers);
             if (isFailureRetCode(stat)) {
                 return false;
             }

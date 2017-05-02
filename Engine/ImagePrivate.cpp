@@ -265,7 +265,10 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
                 }
                 Image::CopyPixelsArgs copyArgs;
                 copyArgs.roi = roi;
-                tmpImage->copyPixels(fromImage, copyArgs);
+                ActionRetCodeEnum stat = tmpImage->copyPixels(fromImage, copyArgs);
+                if (isFailureRetCode(stat)) {
+                    return stat;
+                }
                 *outImage = tmpImage;
                 return eActionStatusOK;
             }
@@ -288,7 +291,10 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
             // expect a buffer with the appropriate size)
             copyArgs.roi = args.bounds;
             copyArgs.alphaHandling = Image::eAlphaChannelHandlingCreateFill1;
-            tmpImage->copyPixels(fromImage, copyArgs);
+            ActionRetCodeEnum stat = tmpImage->copyPixels(fromImage, copyArgs);
+            if (isFailureRetCode(stat)) {
+                return stat;
+            }
             *outImage = tmpImage;
             return eActionStatusOK;
 
@@ -317,7 +323,10 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
             Image::CopyPixelsArgs copyArgs;
             copyArgs.roi = roi;
             copyArgs.alphaHandling = Image::eAlphaChannelHandlingCreateFill1;
-            tmpImage->copyPixels(fromImage, copyArgs);
+            ActionRetCodeEnum stat = tmpImage->copyPixels(fromImage, copyArgs);
+            if (isFailureRetCode(stat)) {
+                return stat;
+            }
             *outImage = tmpImage;
             return eActionStatusOK;
         }

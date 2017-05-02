@@ -65,6 +65,9 @@ struct CachedFramesThread::Implementation
     : viewer(viewer)
     , cachedFramesMutex()
     , cachedFrames()
+    , mustQuitMutex()
+    , mustQuitCond()
+    , mustQuit(false)
     , regulatingTimer()
     {
 

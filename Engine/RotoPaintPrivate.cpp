@@ -763,24 +763,24 @@ RotoPaintInteract::setCurrentTool(const KnobButtonPtr& tool)
     KnobGroupPtr curGroup = selectedToolRole.lock();
     KnobButtonPtr curToolButton = selectedToolAction.lock();
     if ( curGroup && (curGroup != parentGroup) ) {
-        curGroup->setValue(false);
+        curGroup->setValue(false, ViewIdx(0), DimIdx(0), eValueChangedReasonPluginEdited);
     }
 
     // If we changed group, just keep this action on
     if ( curToolButton && (curGroup == parentGroup) ) {
-        curToolButton->setValue(false);
+        curToolButton->setValue(false, ViewIdx(0), DimIdx(0), eValueChangedReasonPluginEdited);
     }
     selectedToolAction = tool;
     selectedToolRole = parentGroup;
     if (parentGroup != curGroup) {
         if (!parentGroup->getValue()) {
-            parentGroup->setValue(true);
+            parentGroup->setValue(true, ViewIdx(0), DimIdx(0), eValueChangedReasonPluginEdited);
         } else {
             onRoleChangedInternal(parentGroup);
         }
     }
     if (tool->getValue() != true) {
-        tool->setValue(true);
+        tool->setValue(true, ViewIdx(0), DimIdx(0), eValueChangedReasonPluginEdited);
     } else {
         // We must notify of the change
         onToolChangedInternal(tool);

@@ -213,6 +213,7 @@ EditScriptDialog::create(ExpressionLanguageEnum language,
 
 
     _imp->expressionLabel = new Label(QString(), this);
+    _imp->expressionLabel->setOpenExternalLinks(true);
     _imp->mainLayout->addWidget(_imp->expressionLabel);
 
     _imp->expressionEdit = new InputScriptTextEdit(_imp->gui, _imp->knobExpressionReceiver.lock(), _imp->knobDimension, _imp->knobView, this);

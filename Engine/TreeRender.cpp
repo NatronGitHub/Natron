@@ -53,6 +53,9 @@
 
 //#define TRACE_RENDER_DEPENDENCIES
 
+// Define to disable multi-threading of branch evaluation in the compositing tree
+//#define TREE_RENDER_DISABLE_MT
+
 
 NATRON_NAMESPACE_ENTER;
 
@@ -531,6 +534,7 @@ RequestPassSharedData::addTaskToRender(const FrameViewRequestPtr& render)
      QMutexLocker k(&_imp->dependencyFreeRendersMutex);
     {
         std::pair<DependencyFreeRenderSet::iterator, bool> ret = _imp->allRenderTasksToProcess.insert(render);
+        (void)ret;
 #ifdef TRACE_RENDER_DEPENDENCIES
         if (ret.second) {
             qDebug() << this << "Adding" << render->getEffect()->getScriptName_mt_safe().c_str() << render->getPlaneDesc().getPlaneLabel().c_str() << "(" << render.get() << ") to the global list";
@@ -539,6 +543,7 @@ RequestPassSharedData::addTaskToRender(const FrameViewRequestPtr& render)
     }
     if (render->getNumDependencies(shared_from_this()) == 0) {
         std::pair<DependencyFreeRenderSet::iterator, bool> ret = _imp->dependencyFreeRenders->insert(render);
+        (void)ret;
 #ifdef TRACE_RENDER_DEPENDENCIES
         if (ret.second) {
             qDebug() << this << "Adding" << render->getEffect()->getScriptName_mt_safe().c_str() << render->getPlaneDesc().getPlaneLabel().c_str() << "(" << render.get() << ") to the dependency-free list";
@@ -592,8 +597,6 @@ public:
     virtual ~FrameViewRenderRunnable()
     {
     }
-
-private:
 
     virtual void run() OVERRIDE FINAL
     {
@@ -756,9 +759,11 @@ TreeRenderPrivate::launchRenderInternal(bool removeRenderClonesWhenFinished,
             QMutexLocker k(&requestData->_imp->dependencyFreeRendersMutex);
             numTasksRemaining = requestData->_imp->allRenderTasksToProcess.size();
         }
-        QThreadPool* threadPool = QThreadPool::globalInstance();
 
+#ifndef TREE_RENDER_DISABLE_MT
+        QThreadPool* threadPool = QThreadPool::globalInstance();
         bool isThreadPoolThread = isRunningInThreadPoolThread();
+#endif
 
         // See bug https://bugreports.qt.io/browse/QTBUG-20251
         // The Qt thread-pool mem-leaks the runnable if using release/reserveThread
@@ -779,11 +784,18 @@ TreeRenderPrivate::launchRenderInternal(bool removeRenderClonesWhenFinished,
                 qDebug() << "Queuing " << request->getEffect()->getScriptName_mt_safe().c_str() << " in task pool";
 #endif
                 boost::shared_ptr<FrameViewRenderRunnable> runnable(new FrameViewRenderRunnable(this, requestData, request));
+#ifdef TREE_RENDER_DISABLE_MT
+                k.unlock();
+                runnable->run();
+                k.relock();
+#else
                 runnable->setAutoDelete(false);
                 runnables.push_back(runnable);
                 threadPool->start(runnable.get());
+#endif
             }
 
+#ifndef TREE_RENDER_DISABLE_MT
             // If this thread is a threadpool thread, it may wait for a while that results gets available.
             // Release the thread to the thread pool so that it may use this thread for other runnables
             // and reserve it back when done waiting.
@@ -797,7 +809,7 @@ TreeRenderPrivate::launchRenderInternal(bool removeRenderClonesWhenFinished,
             if (isThreadPoolThread) {
                 QThreadPool::globalInstance()->reserveThread();
             }
-            
+#endif   
             numTasksRemaining = requestData->_imp->allRenderTasksToProcess.size();
         }
         runnables.clear();

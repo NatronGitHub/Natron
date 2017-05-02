@@ -1201,7 +1201,7 @@ OfxImageEffectInstance::getClipPreferences_safe(NodeMetadata& defaultPrefs)
             if ( foundClip == clipInputs.end() ) {
                 continue;
             }
-            if (!foundClip->first->getConnected()) {
+            if (!foundClip->first->isOutput() && !foundClip->first->getConnected()) {
                 continue;
             }
             int inputNb = foundClip->second;
