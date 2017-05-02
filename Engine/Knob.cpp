@@ -5456,6 +5456,9 @@ KnobHolder::appendToHash(const ComputeHashArgs& args, Hash64* hash)
         if (!(*it)->getEvaluateOnChange()) {
             continue;
         }
+        if (args.hashType == eComputeHashTypeOnlyMetadataSlaves && !(*it)->getIsMetadataSlave()) {
+            continue;
+        }
         U64 knobHash = (*it)->computeHash(args);
         hash->append(knobHash);
 

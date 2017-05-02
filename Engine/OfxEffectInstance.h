@@ -287,6 +287,9 @@ public:
     void onClipHintChanged(int inputNb, const std::string& hint);
     void onClipSecretChanged(int inputNb, bool isSecret);
 
+    const std::vector<std::string>& getUserPlanes() const;
+
+
 public Q_SLOTS:
 
     void onSyncPrivateDataRequested();

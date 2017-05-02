@@ -1088,13 +1088,7 @@ RotoShapeRenderCairo::renderBezier_cairo(cairo_t* cr,
     Q_UNUSED(opacity);
 #else
 
-    ///Adjust the feather distance so it takes the mipmap level into account
-    double featherDist_canonical = bezier->getFeatherKnob()->getValueAtTime(t, DimIdx(0), view);
-    double featherDist_pixelX = featherDist_canonical * scale.x;
-    double featherDist_pixelY = featherDist_canonical * scale.y;
-
-
-    renderFeather_old_cairo(bezier, t, view, scale, opacity, featherDist_pixelX, featherDist_pixelY, fallOff, mesh);
+    renderFeather_old_cairo(bezier, t, view, scale, opacity, fallOff, mesh);
 
     Transform::Matrix3x3 transform;
     bezier->getTransformAtTime(t, view, &transform);
@@ -1116,8 +1110,6 @@ RotoShapeRenderCairo::renderFeather_old_cairo(const BezierPtr& bezier,
                                               ViewIdx view,
                                               const RenderScale &scale,
                                               double /*opacity*/,
-                                              double featherDist_pixelsX,
-                                              double featherDist_pixelsY,
                                               double fallOff,
                                               cairo_pattern_t* mesh)
 {

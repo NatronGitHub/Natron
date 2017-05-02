@@ -49,7 +49,8 @@ NATRON_NAMESPACE_ENTER;
  * @brief Add the layers from the inputList to the toList if they do not already exist in the list.
  * For the color plane, if it already existed in toList it is replaced by the value in inputList
  **/
-static void mergeLayersList(const std::list<ImagePlaneDesc>& inputList,
+void
+EffectInstance::mergeLayersList(const std::list<ImagePlaneDesc>& inputList,
                             std::list<ImagePlaneDesc>* toList)
 {
     for (std::list<ImagePlaneDesc>::const_iterator it = inputList.begin(); it != inputList.end(); ++it) {
@@ -384,22 +385,21 @@ EffectInstance::getAvailableLayers(TimeValue time, ViewIdx view, int inputNb,  s
     {
         GetComponentsResultsPtr actionResults;
         ActionRetCodeEnum stat = effect->getLayersProducedAndNeeded_public(time, view, &actionResults);
-        if (isFailureRetCode(stat)) {
-            return stat;
+        if (!isFailureRetCode(stat)) {
+
+            std::map<int, std::list<ImagePlaneDesc> > inputLayersNeeded;
+            std::list<ImagePlaneDesc> layersProduced;
+            TimeValue passThroughTime;
+            ViewIdx passThroughView;
+            int passThroughInputNb;
+            std::bitset<4> processChannels;
+            bool processAll;
+            actionResults->getResults(&inputLayersNeeded, &layersProduced, &passThroughLayers, &passThroughInputNb, &passThroughTime, &passThroughView, &processChannels, &processAll);
+
+            // Merge pass-through planes produced + pass-through available planes and make it as the pass-through planes for this node
+            // if they are not produced by this node
+            mergeLayersList(layersProduced, &passThroughLayers);
         }
-
-        std::map<int, std::list<ImagePlaneDesc> > inputLayersNeeded;
-        std::list<ImagePlaneDesc> layersProduced;
-        TimeValue passThroughTime;
-        ViewIdx passThroughView;
-        int passThroughInputNb;
-        std::bitset<4> processChannels;
-        bool processAll;
-        actionResults->getResults(&inputLayersNeeded, &layersProduced, &passThroughLayers, &passThroughInputNb, &passThroughTime, &passThroughView, &processChannels, &processAll);
-
-        // Merge pass-through planes produced + pass-through available planes and make it as the pass-through planes for this node
-        // if they are not produced by this node
-        mergeLayersList(layersProduced, &passThroughLayers);
     }
 
     // Ensure the color layer is always the first one available in the list

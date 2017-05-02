@@ -1023,13 +1023,11 @@ NodeCollection::isSubGraphEditable() const
     return _imp->isEditable;
 }
 
-static void refreshTimeInvariantMetadataOnAllNodes_recursiveInternal(const NodePtr& caller, std::set<NodePtr>* markedNodes)
+static void refreshTimeInvariantMetadataOnAllNodes_recursiveInternal(const NodePtr& caller, std::set<HashableObject*>* markedNodes)
 {
-    if (markedNodes->find(caller) != markedNodes->end()) {
+    if (markedNodes->find(caller->getEffectInstance().get()) != markedNodes->end()) {
         return;
     }
-
-    markedNodes->insert(caller);
 
     NodeGroupPtr isGroup = caller->isEffectNodeGroup();
     if (isGroup) {
@@ -1038,7 +1036,7 @@ static void refreshTimeInvariantMetadataOnAllNodes_recursiveInternal(const NodeP
             refreshTimeInvariantMetadataOnAllNodes_recursiveInternal(*it, markedNodes);
         }
     } else {
-
+        caller->getEffectInstance()->invalidateHashCacheInternal(markedNodes);
         caller->getEffectInstance()->onMetadataChanged_nonRecursive_public();
     }
 
@@ -1047,7 +1045,7 @@ static void refreshTimeInvariantMetadataOnAllNodes_recursiveInternal(const NodeP
 void
 NodeCollection::refreshTimeInvariantMetadataOnAllNodes_recursive()
 {
-    std::set<NodePtr> markedNodes;
+    std::set<HashableObject*> markedNodes;
     NodesList nodes = getNodes();
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         refreshTimeInvariantMetadataOnAllNodes_recursiveInternal(*it, &markedNodes);

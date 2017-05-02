@@ -1468,15 +1468,6 @@ OfxChoiceInstance::OfxChoiceInstance(const OfxEffectInstancePtr& node,
     choice->setDefaultValue(def);
     bool cascading = properties.getIntProperty(kNatronOfxParamPropChoiceCascading) != 0;
     choice->setCascading(cascading);
-
-    bool canAddOptions = (int)properties.getIntProperty(kNatronOfxParamPropChoiceHostCanAddOptions);
-    if (canAddOptions) {
-        // Currently the extension does not provide a way to specify a callback function pointer so only use
-        // it for the shuffle node to add new layers.
-        if ((descriptor.getName() == kNatronOfxParamOutputChannels)) {
-            choice->setNewOptionCallback(&Node::choiceParamAddLayerCallback);
-        }
-    }
     QObject::connect( choice.get(), SIGNAL(populated()), this, SLOT(onChoiceMenuPopulated()) );
     QObject::connect( choice.get(), SIGNAL(entryAppended()), this, SLOT(onChoiceMenuEntryAppended()) );
     QObject::connect( choice.get(), SIGNAL(entriesReset()), this, SLOT(onChoiceMenuReset()) );

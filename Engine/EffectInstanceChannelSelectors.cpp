@@ -788,7 +788,6 @@ EffectInstance::addUserComponents(const ImagePlaneDesc& comps)
         }
 
         if (!outputLayerKnob) {
-            //The effect does not have kNatronOfxParamOutputChannels but maybe the selector provided by Natron
             std::map<int, ChannelSelector>::iterator found = _imp->defKnobs->channelsSelectors.find(-1);
             if ( found == _imp->defKnobs->channelsSelectors.end() ) {
                 return false;

@@ -46,6 +46,9 @@ struct EffectInstanceTLSDataPrivate
     // the current action.
     std::list<GenericActionTLSArgsPtr> actionsArgsStack;
 
+    // Used to implement suite functions that return strings
+    // to ensure that the string lives as long as the action runs
+    std::vector<std::string> userPlaneStrings;
 
     EffectInstanceTLSDataPrivate()
     : lock()
@@ -232,6 +235,10 @@ EffectInstanceTLSData::clearActionStack()
     _imp->actionsArgsStack.clear();
 }
 
-
+std::vector<std::string>&
+EffectInstanceTLSData::getUserPlanesVector()
+{
+    return _imp->userPlaneStrings;
+}
 
 NATRON_NAMESPACE_EXIT

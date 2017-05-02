@@ -577,11 +577,13 @@ ViewerInstance::getLayersProducedAndNeeded(TimeValue time,
 
     std::list<ImagePlaneDesc>& neededLayers = (*inputLayersNeeded)[0];
 
-    if (outputChannels != eDisplayChannelsA) {
+    if (outputChannels != eDisplayChannelsA && selectedLayer.getNumComponents() > 0) {
         neededLayers.push_back(selectedLayer);
     }
-    if (outputChannels == eDisplayChannelsA || (outputChannels == eDisplayChannelsMatte && selectedAlphaLayer != selectedLayer)) {
-        neededLayers.push_back(selectedAlphaLayer);
+    if (selectedAlphaLayer.getNumComponents() > 0) {
+        if (outputChannels == eDisplayChannelsA || (outputChannels == eDisplayChannelsMatte && selectedAlphaLayer != selectedLayer)) {
+            neededLayers.push_back(selectedAlphaLayer);
+        }
     }
     return eActionStatusOK;
 } // getComponentsNeededInternal
@@ -1551,7 +1553,7 @@ ViewerInstance::render(const RenderActionArgs& args)
 
         if (selectedAlphaLayer == selectedLayer && colorImage) {
             alphaImage = colorImage;
-        } else {
+        } else if (selectedAlphaLayer.getNumComponents() > 0) {
             GetImageOutArgs outArgs;
             GetImageInArgs inArgs(&args.mipMapLevel, &args.proxyScale, &args.roi, &args.backendType);
             inArgs.inputNb = 0;

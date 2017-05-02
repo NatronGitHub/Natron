@@ -187,6 +187,8 @@ public:
                                     RectI* renderWindow,
                                     std::map<ImagePlaneDesc, ImagePtr>* outputPlanes) const;
 
+    std::vector<std::string>& getUserPlanesVector();
+
     
 private:
     

@@ -2518,7 +2518,26 @@ OfxEffectInstance::dettachOpenGLContext( const OSGLContextPtr& /*glContext*/, co
     }
 }
 
+const std::vector<std::string>&
+OfxEffectInstance::getUserPlanes() const
+{
+    EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
+    std::vector<std::string>& planeStrings = tls->getUserPlanesVector();
+    planeStrings.clear();
+    std::list<ImagePlaneDesc> projectLayers = getApp()->getProject()->getProjectDefaultLayers();
 
+    KnobLayersPtr userPlanesKnob = getUserPlanesKnob();
+    if (userPlanesKnob) {
+        std::list<ImagePlaneDesc> userCreatedLayers = userPlanesKnob->decodePlanesList();
+        mergeLayersList(userCreatedLayers, &projectLayers);
+    }
+
+    for (std::list<ImagePlaneDesc>::iterator it = projectLayers.begin(); it != projectLayers.end(); ++it) {
+        std::string ofxPlane = ImagePlaneDesc::mapPlaneToOFXPlaneString(*it);
+        planeStrings.push_back(ofxPlane);
+    }
+    return planeStrings;
+}
 
 NATRON_NAMESPACE_EXIT;
 

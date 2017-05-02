@@ -957,7 +957,9 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
             copyArgs.conversionChannel = channelForMask;
             copyArgs.srcColorspace = getApp()->getDefaultColorSpaceForBitDepth(outArgs->image->getBitDepth());
             copyArgs.dstColorspace = getApp()->getDefaultColorSpaceForBitDepth(thisBitDepth);
-            copyArgs.alphaHandling = Image::eAlphaChannelHandlingFillFromChannel;
+
+            // If converting from single component image to multiple component image, use the single channel, otherwise if creating alpha use 1 to fill
+            copyArgs.alphaHandling = outArgs->image->getComponentsCount() == 1 ? Image::eAlphaChannelHandlingFillFromChannel : Image::eAlphaChannelHandlingCreateFill0;
             if (channelForMask != -1) {
                 copyArgs.monoConversion = Image::eMonoToPackedConversionCopyToChannelAndFillOthers;
             } else {

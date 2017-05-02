@@ -211,30 +211,6 @@ EffectInstance::createChannelSelector(int inputNb,
     _imp->defKnobs->channelsSelectors[inputNb] = sel;
 } // createChannelSelector
 
-
-KnobChoicePtr
-EffectInstance::getChannelSelectorKnob(int inputNb) const
-{
-    std::map<int, ChannelSelector>::const_iterator found = _imp->defKnobs->channelsSelectors.find(inputNb);
-
-    if ( found == _imp->defKnobs->channelsSelectors.end() ) {
-        if (inputNb == -1) {
-            ///The effect might be multi-planar and supply its own
-            KnobIPtr knob = getKnobByName(kNatronOfxParamOutputChannels);
-            if (!knob) {
-                return KnobChoicePtr();
-            }
-
-            return toKnobChoice(knob);
-        }
-        
-        return KnobChoicePtr();
-    }
-    
-    return found->second.layer.lock();
-}
-
-
 void
 EffectInstance::findPluginFormatKnobs()
 {

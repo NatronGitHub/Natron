@@ -4210,7 +4210,7 @@ KnobLayers::decodePlanesList()
         } else if (planeID == kNatronBackwardMotionVectorsPlaneLabel) {
             planeID = kNatronBackwardMotionVectorsPlaneID;
         } else if (planeID == kNatronForwardMotionVectorsPlaneLabel) {
-            planeID = kNatronForwardMotionVectorsPlaneLabel;
+            planeID = kNatronForwardMotionVectorsPlaneID;
         } else if (planeID == kNatronDisparityLeftPlaneLabel) {
             planeID = kNatronDisparityLeftPlaneID;
         } else if (planeID == kNatronDisparityRightPlaneLabel) {
@@ -4232,7 +4232,9 @@ KnobLayers::decodePlanesList()
             for (int i = 0; i < channels.size(); ++i) {
                 componentsName[i] = channels[i].toStdString();
             }
-            ImagePlaneDesc c( planeID, planeLabel, std::string(), componentsName );
+
+            const std::string& componentsLabel = (*it)[2];
+            ImagePlaneDesc c( planeID, planeLabel, componentsLabel, componentsName );
             ret.push_back(c);
         }
     }

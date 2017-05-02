@@ -1224,7 +1224,9 @@ ViewerGL::transferBufferFromRAMtoGPU(const TextureTransferArgs& args)
             }
 
             displayDataLocker.unlock();
-
+            if (args.colorPickerImage) {
+                getViewerTab()->setImageFormat(args.textureIndex, args.colorPickerImage->getLayer(), args.colorPickerImage->getBitDepth());
+            }
             setRegionOfDefinition(args.rod, _imp->displayTextures[args.textureIndex].pixelAspectRatio, args.textureIndex);
             if (args.type == TextureTransferArgs::eTextureTransferTypeReplace) {
 

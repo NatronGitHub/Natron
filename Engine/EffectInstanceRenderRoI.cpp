@@ -1722,7 +1722,8 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPa
 
         requestData->setRequestedScaleImagePlane(downscaledImage);
     }
- 
+    //QString name = QString::fromUtf8(getScriptName_mt_safe().c_str()) + QDateTime::currentDateTime().toString() + QString::fromUtf8(".png");
+    //appPTR->debugImage(requestData->getRequestedScaleImagePlane().get(), requestData->getRequestedScaleImagePlane()->getBounds(), name);
     return isRenderAborted() ? eActionStatusAborted : eActionStatusOK;
 } // launchRenderInternal
 

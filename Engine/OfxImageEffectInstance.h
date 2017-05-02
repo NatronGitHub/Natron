@@ -104,9 +104,12 @@ public:
                                            va_list args) OVERRIDE FINAL;
     virtual OfxStatus clearPersistentMessage() OVERRIDE FINAL;
 
+    virtual int getDimension(const std::string &name) const OFX_EXCEPTION_SPEC OVERRIDE FINAL;
+
     //
     // live parameters
     //
+    virtual const std::vector<std::string>& getUserCreatedPlanes() const OVERRIDE FINAL;
 
     // The size of the current project in canonical coordinates.
     // The size of a project is a sub set of the kOfxImageEffectPropProjectExtent. For example a
@@ -250,6 +253,7 @@ public:
     static const OFX::Host::Property::PropSpec* getOfxParamOverlayInteractDescProps();
 
 private:
+
     boost::weak_ptr<OfxEffectInstance> _ofxEffectInstance; /* FIXME: OfxImageEffectInstance should be able to work without the node_ //
                                                               Not easy since every Knob need a valid pointer to a node when
                                                               AppManager::createKnob() is called. That's why we need to pass a pointer

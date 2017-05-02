@@ -471,6 +471,10 @@ public:
      **/
     ActionRetCodeEnum getAvailableLayers(TimeValue time, ViewIdx view, int inputNb, std::list<ImagePlaneDesc>* availableLayers) ;
 
+
+    static void mergeLayersList(const std::list<ImagePlaneDesc>& inputList,
+                                std::list<ImagePlaneDesc>* toList);
+
 protected:
 
     /**
@@ -1759,8 +1763,6 @@ public:
     KnobBoolPtr getProcessChannelKnob(int channelIndex) const;
 
     KnobBoolPtr getPreviewEnabledKnob() const;
-
-    KnobChoicePtr getChannelSelectorKnob(int inputNb) const;
 
     KnobBoolPtr getProcessAllLayersKnob() const;
 

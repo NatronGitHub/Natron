@@ -797,7 +797,6 @@ Project::initializeKnobs()
         param->setDimensionName(DimIdx(0), "first");
         param->setDimensionName(DimIdx(1), "last");
         param->setIsMetadataSlave(true);
-        param->setEvaluateOnChange(false);
         param->setLabel(tr("Frame Range"));
         param->setHintToolTip( tr("The frame range of the project as seen by the plug-ins. New viewers are created automatically "
                                              "with this frame-range. By default when a new Reader node is created, its frame range "
@@ -859,12 +858,12 @@ Project::initializeKnobs()
         param->setLabel(tr("Views List"));
         param->setHintToolTip( tr("The list of the views in the project") );
         param->setAnimationEnabled(false);
-        param->setEvaluateOnChange(false);
         param->setAsStringList(true);
         std::list<std::string> defaultViews;
         defaultViews.push_back("Main");
         std::string encodedDefaultViews = param->encodeToKnobTableFormatSingleCol(defaultViews);
         param->setDefaultValue(encodedDefaultViews);
+        param->setIsMetadataSlave(true);
         viewsPage->addKnob(param);
         _imp->viewsList = param;
     }
@@ -885,11 +884,10 @@ Project::initializeKnobs()
         param->setLabel(tr("Default Planes"));
         param->setHintToolTip( tr("The list of the planes available by default on a Node's plane selector") );
         param->setAnimationEnabled(false);
-        param->setEvaluateOnChange(false);
 
         std::list<ImagePlaneDesc> defaultComponents;
         {
-
+            defaultComponents.push_back(ImagePlaneDesc::getRGBAComponents());
             defaultComponents.push_back(ImagePlaneDesc::getDisparityLeftComponents());
             defaultComponents.push_back(ImagePlaneDesc::getDisparityRightComponents());
             defaultComponents.push_back(ImagePlaneDesc::getBackwardMotionComponents());
@@ -897,6 +895,7 @@ Project::initializeKnobs()
         }
         std::string encodedDefaultLayers = param->encodePlanesList(defaultComponents);
         param->setDefaultValue(encodedDefaultLayers);
+        param->setIsMetadataSlave(true);
         layersPage->addKnob(param);
         _imp->defaultLayersList = param;
     }

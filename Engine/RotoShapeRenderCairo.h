@@ -132,7 +132,7 @@ public:
     /**
      * @brief Low level: renders the given bezier feather onto the given mesh pattern. This uses the old algorithm which does not use triangulation.
      **/
-    static void renderFeather_old_cairo(const BezierPtr& bezier, TimeValue time, ViewIdx view, const RenderScale& scale,  double opacity, double featherDist_pixelsX, double featherDist_pixelsY, double fallOff, cairo_pattern_t * mesh);
+    static void renderFeather_old_cairo(const BezierPtr& bezier, TimeValue time, ViewIdx view, const RenderScale& scale,  double opacity, double fallOff, cairo_pattern_t * mesh);
 
 
     /**

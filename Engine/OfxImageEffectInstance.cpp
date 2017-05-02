@@ -110,6 +110,7 @@ OfxImageEffectInstance::OfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffe
     : OFX::Host::ImageEffect::Instance(plugin, desc, context, interactive)
     , _ofxEffectInstance()
 {
+    getProps().setGetHook(kNatronOfxExtraCreatedPlanes, (OFX::Host::Property::GetHook*)this);
 }
 
 OfxImageEffectInstance::OfxImageEffectInstance(const OfxImageEffectInstance& other)
@@ -246,6 +247,32 @@ OfxImageEffectInstance::vmessage(const char* msgtype,
     }
 
     return kOfxStatReplyDefault;
+}
+
+const std::vector<std::string>&
+OfxImageEffectInstance::getUserCreatedPlanes() const
+{
+    OfxEffectInstancePtr effect = _ofxEffectInstance.lock();
+    const std::vector<std::string>& planes = effect->getUserPlanes();
+    return planes;
+}
+
+int
+OfxImageEffectInstance::getDimension(const std::string &name) const OFX_EXCEPTION_SPEC
+{
+    OfxEffectInstancePtr effect = _ofxEffectInstance.lock();
+    if (!effect) {
+        return 0;
+    }
+    if (name != kNatronOfxExtraCreatedPlanes) {
+        return OFX::Host::ImageEffect::Instance::getDimension(name);
+    }
+    try {
+        const std::vector<std::string>& planes = effect->getUserPlanes();
+        return (int)planes.size();
+    } catch (...) {
+        throw OFX::Host::Property::Exception(kOfxStatErrUnknown);
+    }
 }
 
 // The size of the current project in canonical coordinates.

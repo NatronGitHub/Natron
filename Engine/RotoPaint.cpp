@@ -3080,7 +3080,7 @@ RotoPaintPrivate::getOrCreateGlobalMergeNode(int blendingOperator, int *availabl
 
 void
 RotoPaintPrivate::connectRotoPaintBottomTreeToItems(bool /*canConcatenate*/,
-                                                    const RotoPaintPtr& rotoPaintEffect,
+                                                    const RotoPaintPtr& /*rotoPaintEffect*/,
                                                     const NodePtr& premultNode,
                                                     const NodePtr& globalTimeBlurNode,
                                                     const NodePtr& treeOutputNode,
