@@ -38,6 +38,8 @@ variant docs description {build documentation} {
     depends_build-append                \
         port:doxygen                    \
         port:texlive-latex              \
+        port:texlive-latex-extra        \
+        port:texlive-fonts-recommended  \
         port:texlive-latex-recommended
 
     configure.args-delete   -DJAS_ENABLE_DOC=false
