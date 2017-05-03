@@ -52,7 +52,6 @@ static const char* rotoRamp_FragmentShader =
 "\n"
 "void main() {\n"
 "	vec4 outColor;\n"
-"   outColor.rgba = vec4(opacity, opacity, opacity, opacity);\n"
 "   float t = gl_Color.a;\n"
 "#ifdef RAMP_P_LINEAR\n"
 "   t = t * t * t;\n"
@@ -66,8 +65,7 @@ static const char* rotoRamp_FragmentShader =
 "#ifdef RAMP_SMOOTH\n"
 "   t = t * t * (3.0 - 2.0 * t); \n"
 "#endif\n"
-"   outColor.a = pow(t,fallOff);\n"
-"   outColor.rgb *= outColor.a;\n"
+"   outColor.a = opacity * pow(t,fallOff);\n"
 "   gl_FragColor = outColor;\n"
 "}";
 
@@ -1010,7 +1008,7 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
                 c_data[1] = 1;
                 c_data[2] = 1;
                 if (data.featherVertices[i].isInner) {
-                    c_data[3] = opacity;
+                    c_data[3] = 1.;
                 } else {
                     c_data[3] = 0.;
                 }

@@ -1001,14 +1001,9 @@ static void computeFeatherTriangles(PolygonCSGData &data, RotoBezierTriangulatio
                 lastVertexIndex[lastIterationInnerPolygon] = *lastInnerIt[lastIterationInnerPolygon]->index;
             }
 
-            for (int i = 0; i < 2; ++i) {
-                if (i == lastIterationInnerPolygon) {
-                    // Add a vertex of the outter polygon
-                    parametric_t[i] = 1;
-                } else {
-                    parametric_t[i] = 0;
-                }
-            }
+            // Add a vertex of the outter polygon
+            parametric_t[lastIterationInnerPolygon] = 1;
+            parametric_t[(lastIterationInnerPolygon + 1) % 2] = 0;
         }
         
 #define ADD_POLY_VERTEX(i) \
