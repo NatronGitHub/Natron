@@ -823,7 +823,7 @@ TreeRenderPrivate::launchRenderInternal(bool removeRenderClonesWhenFinished,
         for (std::map<NodePtr, FrameViewRequestPtr>::iterator it = extraRequestedResults.begin(); it != extraRequestedResults.end(); ++it) {
             if (!it->second) {
                 FrameViewRequestPtr colorPickerRequest;
-                ActionRetCodeEnum tmpStat =  launchRenderInternal(false /*removeRenderClonesWhenFinished*/, it->first->getEffectInstance(), ctorArgs->time, ctorArgs->view, ctorArgs->proxyScale, ctorArgs->mipMapLevel, ctorArgs->plane, ctorArgs->canonicalRoI, &colorPickerRequest);
+                ActionRetCodeEnum tmpStat =  launchRenderInternal(false /*removeRenderClonesWhenFinished*/, it->first->getEffectInstance(), ctorArgs->time, ctorArgs->view, ctorArgs->proxyScale, ctorArgs->mipMapLevel, &plane, ctorArgs->canonicalRoI, &colorPickerRequest);
                 if (isFailureRetCode(tmpStat)) {
                     return tmpStat;
                 }

@@ -2234,12 +2234,13 @@ public:
 
     static ImagePtr convertImageForViewerDisplay(const RectI& bounds,
                                                  bool forceCopy,
+                                                 bool force4Components,
                                                  const ImagePtr& image)
     {
         if (!image) {
             return image;
         }
-        if (!forceCopy && image->getComponentsCount() == 4 &&
+        if (!forceCopy && (image->getComponentsCount() == 4 || !force4Components) &&
             image->getStorageMode() == eStorageModeRAM &&
             image->getBufferFormat() == eImageBufferLayoutRGBAPackedFullRect) {
             return image;
@@ -2247,8 +2248,12 @@ public:
         Image::InitStorageArgs initArgs;
         initArgs.bounds = bounds;
 
-        // Viewer textures are always RGBA
-        initArgs.plane = ImagePlaneDesc::getRGBAComponents();
+        // Viewer textures are always RGBA: preserve layer if possible, otherwise convert to RGBA
+        if (image->getLayer().getNumComponents() == 4 || !force4Components) {
+            initArgs.plane = image->getLayer();
+        } else {
+            initArgs.plane = ImagePlaneDesc::getRGBAComponents();
+        }
         initArgs.mipMapLevel = image->getMipMapLevel();
         initArgs.proxyScale = image->getProxyScale();
         initArgs.bitdepth = image->getBitDepth();
@@ -2310,7 +2315,7 @@ public:
             // If we are in accumulation, force a copy of the image because another render thread might modify it in a future render whilst it may
             // still be read from the main-thread when updating the ViewerGL texture.
             const bool forceOutputImageCopy = inArgs->outputImage == inArgs->viewerProcessNode->getEffectInstance()->getAccumBuffer(inArgs->outputImage->getLayer());
-            inArgs->outputImage = convertImageForViewerDisplay(imageConvertRoI, forceOutputImageCopy,inArgs->outputImage);
+            inArgs->outputImage = convertImageForViewerDisplay(imageConvertRoI, forceOutputImageCopy, true /*the texture must have 4 channels*/, inArgs->outputImage);
 
             // Extra color-picker images as-well.
             if (inArgs->colorPickerNode) {
@@ -2318,14 +2323,14 @@ public:
                     FrameViewRequestPtr req = inArgs->renderObject->getExtraRequestedResultsForNode(inArgs->colorPickerNode);
                     if (req) {
                         inArgs->colorPickerImage = req->getRequestedScaleImagePlane();
-                        inArgs->colorPickerImage = convertImageForViewerDisplay(inArgs->colorPickerImage->getBounds(), false, inArgs->colorPickerImage);
+                        inArgs->colorPickerImage = convertImageForViewerDisplay(inArgs->colorPickerImage->getBounds(), false, false /*the picker can accept non 4-channel image*/, inArgs->colorPickerImage);
                     }
                 }
                 if (inArgs->colorPickerInputNode) {
                     FrameViewRequestPtr req = inArgs->renderObject->getExtraRequestedResultsForNode(inArgs->colorPickerInputNode);
                     if (req) {
                         inArgs->colorPickerInputImage = req->getRequestedScaleImagePlane();
-                        inArgs->colorPickerInputImage = convertImageForViewerDisplay(inArgs->colorPickerInputImage->getBounds(), false, inArgs->colorPickerInputImage);
+                        inArgs->colorPickerInputImage = convertImageForViewerDisplay(inArgs->colorPickerInputImage->getBounds(), false, false /*the picker can accept non 4-channel image*/, inArgs->colorPickerInputImage);
                     }
                 }
             }

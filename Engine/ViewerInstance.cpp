@@ -573,7 +573,7 @@ ViewerInstance::getLayersProducedAndNeeded(TimeValue time,
     DisplayChannelsEnum outputChannels = (DisplayChannelsEnum)_imp->displayChannels.lock()->getValue();
 
     // In output we always produce a RGBA texture for the viewer
-    layersProduced->push_back(ImagePlaneDesc::getRGBAComponents());
+    layersProduced->push_back(selectedLayer);
 
     std::list<ImagePlaneDesc>& neededLayers = (*inputLayersNeeded)[0];
 
@@ -1039,18 +1039,6 @@ struct RenderViewerArgs
 };
 
 
-/**
- *@brief Actually converting to ARGB... but it is called BGRA by
- the texture format GL_UNSIGNED_INT_8_8_8_8_REV
- **/
-inline unsigned int
-toBGRA(unsigned char r,
-       unsigned char g,
-       unsigned char b,
-       unsigned char a)
-{
-    return (a << 24) | (r << 16) | (g << 8) | b;
-}
 
 template <typename PIX, int maxValue, int srcNComps, DisplayChannelsEnum channels>
 void
@@ -1251,8 +1239,10 @@ applyViewerProcess8bit_generic(const RenderViewerArgs& args, const RectI & roi)
        
                 // The viewer has the particularity to write-out BGRA 8-bit images instead of RGBA since the resulting
                 // image is directly fed to the GL_BGRA OpenGL texture format.
-                *reinterpret_cast<unsigned int*>(dst_pixels[0]) = toBGRA(uTmpPix[0], uTmpPix[1], uTmpPix[2], uTmpPix[3]);
-                
+                for (int c = 0; c < srcNComps; ++c) {
+                    *dst_pixels[c] = uTmpPix[c];
+                }
+
                 if (backward) {
                     --x;
                     for (int i = 0; i < 4; ++i) {
@@ -1527,7 +1517,7 @@ ViewerInstance::render(const RenderActionArgs& args)
 
     ImageBitDepthEnum bitdepth = getBitDepth(-1);
 #ifdef DEBUG
-    if (dstImage->getBitDepth() != bitdepth || dstImage->getLayer() != ImagePlaneDesc::getRGBAComponents()) {
+    if (dstImage->getBitDepth() != bitdepth) {
         getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorGenericRenderMessage, tr("Host did not take into account bitdepth").toStdString());
         return eActionStatusFailed;
     }
@@ -1581,6 +1571,10 @@ ViewerInstance::render(const RenderActionArgs& args)
             getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorGenericRenderMessage, tr("Could not fetch source image for selected alpha channel").toStdString());
             return eActionStatusFailed;
         }
+    }
+    if (colorImage && colorImage->getComponentsCount() != dstImage->getComponentsCount()) {
+        getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorGenericRenderMessage, tr("Host did not take into account requested bit-depth").toStdString());
+        return eActionStatusFailed;
     }
 
     if (colorImage && alphaImage && colorImage->getBitDepth() != alphaImage->getBitDepth()) {
