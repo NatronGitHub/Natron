@@ -64,6 +64,7 @@ OfxMemory::alloc(size_t nBytes)
     if (_lockedCount) {
         return false;
     }
+    deallocateMemory();
 
     PluginMemAllocateMemoryArgs args(nBytes);
     try {
@@ -75,7 +76,7 @@ OfxMemory::alloc(size_t nBytes)
     return true;
 }
 
-void
+bool
 OfxMemory::freeMem()
 {
     // A plug-in is calling freeMem, either this memory is held on the effect itself, in which case
@@ -85,8 +86,9 @@ OfxMemory::freeMem()
     EffectInstancePtr effect = _effect.lock();
     if (effect) {
         effect->releasePluginMemory(this);
+        return false; // the call to releasePluginMemory is in charge of deleting this
     } else {
-        delete this;
+        return true; // object can be deleted
     }
 }
 

@@ -55,7 +55,7 @@ public:
     virtual ~OfxMemory();
 
     virtual bool alloc(size_t nBytes) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void freeMem() OVERRIDE FINAL;
+    virtual bool freeMem() OVERRIDE FINAL; // returns true if object can be deleted
     virtual void* getPtr() OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void lock() OVERRIDE FINAL;
     virtual void unlock() OVERRIDE FINAL;
