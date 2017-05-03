@@ -2025,6 +2025,11 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
                 deepestBitDepth = rawDepth;
             }
 
+            if (mostComponents == 1 && mostComponents != rawComp) {
+                // one is alpha, the other is anything else than just alpha: the union is RGBA
+                mostComponents = 4;
+            }
+
             if ( rawComp > mostComponents ) {
                 mostComponents = rawComp;
             }
