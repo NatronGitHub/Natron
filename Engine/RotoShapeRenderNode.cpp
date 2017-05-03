@@ -45,7 +45,7 @@
 #include "Engine/RotoPaint.h"
 
 #ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
-#define ROTO_SHAPE_RENDER_CPU_USES_CAIRO
+//#define ROTO_SHAPE_RENDER_CPU_USES_CAIRO
 #endif
 
 NATRON_NAMESPACE_ENTER;
@@ -337,6 +337,25 @@ RotoShapeRenderNode::getTimeInvariantMetadata(NodeMetadata& metadata)
     metadata.setColorPlaneNComps(-1, nComps);
     metadata.setColorPlaneNComps(0, nComps);
     metadata.setIsContinuous(true);
+
+    // If the item is not animated and its lifetime is set to "All", we can mark this node as non frame varying
+    // This will help the cache a lot!
+    RotoDrawableItemPtr item = getAttachedRotoItem();
+    bool frameVarying = true;
+    if (item) {
+        bool hasAnimation = item->getHasAnimation();
+        if (hasAnimation) {
+            std::vector<RangeD> ranges = item->getActivatedRanges(ViewIdx(0));
+            if (ranges.size() == 1) {
+                const RangeD& range = ranges.front();
+                if (range.min == INT_MIN && range.max == INT_MAX) {
+                    // No animation and lifetime is set to "all"
+                    frameVarying = false;
+                }
+            }
+        }
+    }
+    metadata.setIsFrameVarying(frameVarying);
     return eActionStatusOK;
 }
 

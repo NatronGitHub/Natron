@@ -1006,9 +1006,9 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
                 // since we are operating on a thread-local render clone.
                 assert(roi.contains(v_data[0], v_data[1]));
 
-                c_data[0] = opacity;
-                c_data[1] = opacity;
-                c_data[2] = opacity;
+                c_data[0] = 1;
+                c_data[1] = 1;
+                c_data[2] = 1;
                 if (data.featherVertices[i].isInner) {
                     c_data[3] = opacity;
                 } else {

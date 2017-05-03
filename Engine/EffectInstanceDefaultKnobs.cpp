@@ -1153,11 +1153,6 @@ EffectInstance::isNodeDisabledForFrame(TimeValue time, ViewIdx view) const
         return ioContainer->getEffectInstance()->isNodeDisabledForFrame(time, view);
     }
 
-    RotoDrawableItemPtr attachedItem = getAttachedRotoItem();
-    if (attachedItem && !attachedItem->isActivated(time, view)) {
-        return true;
-    }
-
     // Check lifetime
     int lifeTimeFirst, lifeTimeEnd;
     bool lifeTimeEnabled = isLifetimeActivated(&lifeTimeFirst, &lifeTimeEnd);

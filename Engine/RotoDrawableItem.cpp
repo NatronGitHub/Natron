@@ -1430,6 +1430,7 @@ RotoDrawableItem::initializeKnobs()
     {
         KnobChoicePtr lifeTimeKnob = createDuplicateOfTableKnob<KnobChoice>(kRotoDrawableItemLifeTimeParam);
         _imp->lifeTime = lifeTimeKnob;
+        lifeTimeKnob->setIsMetadataSlave(true);
         if (isBezier) {
             lifeTimeKnob->setDefaultValue(eRotoPaintItemLifeTimeTypeAll);
         }
