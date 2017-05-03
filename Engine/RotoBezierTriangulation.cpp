@@ -938,33 +938,89 @@ static void computeFeatherTriangles(PolygonCSGData &data, RotoBezierTriangulatio
     data.originalBezierPolygon.push_back(data.originalBezierPolygon.front());
     data.originalFeatherPolygon.push_back(data.originalFeatherPolygon.front());
 
-    // Points to the current feather bezier segment
-    vector<PolygonVertex>::iterator it[2];
-    it[0] = data.originalBezierPolygon.end();
-    --it[0];
-    it[1] = data.originalFeatherPolygon.end();
-    --it[1];
 
-
+    // Points to the end of each polygon
+    const vector<PolygonVertex>::iterator iteratorEnd[2] = {data.originalBezierPolygon.end(), data.originalFeatherPolygon.end()};
+    const vector<PolygonVertex>::iterator iteratorBegin[2] = {data.originalBezierPolygon.begin(), data.originalFeatherPolygon.begin()};
 
     // inner = 0, outter = 1
-    VertexIndex lastVertexIndex[2] = { *it[0]->index, *it[1]->index };
 
-    int lastIterationInnerPolygon = it[0]->isInner ? 0 : 1;
+    // Points to the current feather bezier segment
+    vector<PolygonVertex>::iterator it[2];
+    for (int i = 0; i < 2; ++i) {
+        it[i] = iteratorEnd[i];
+        --it[i];
+    }
+
+#if 0
+    // If both polygon have an outter point for starter, skip these points
+    {
+        bool hasInner = false;
+
+        // True if we passed iteratorEnd, to avoid infinite looping
+        bool loopedOnce[2] = {false, false};
+        while (!hasInner) {
+            for (int i = 0; i < 2; ++i) {
+                if (it[i] == iteratorEnd[i]) {
+                    if (loopedOnce[i]) {
+                        return;
+                    }
+                    loopedOnce[i] = true;
+                    it[i] = iteratorBegin[i];
+                }
+                if (it[i]->isInner) {
+                    hasInner = true;
+                }
+            }
+            if (!hasInner) {
+                ++it[0];
+                ++it[1];
+            }
+        }
+    }
+
+    if (it[0] == iteratorEnd[0] || it[1] == iteratorEnd[1]) {
+        // We never found a inner point, don't draw anything
+        return;
+    }
+#endif
+
+    // The last vertex added to the mesh for each polygon
+    VertexIndex lastVertexIndex[2];
+    for (int i = 0; i < 2; ++i) {
+        lastVertexIndex[i] = *it[i]->index;
+    }
 
 
-    // Initialize the first segment
+    // Tells which polygon had the role of the feather in the last iteration
+    int lastIterationInnerPolygon = (it[0] != iteratorEnd[0] && it[0]->isInner) ? 0 : 1;
+
+    // Initialize the first segment with 1 vertex from each polygon
     featherVertices.insert(lastVertexIndex[0]);
     featherVertices.insert(lastVertexIndex[1]);
 
     featherTriangleIndices.push_back(lastVertexIndex[0]);
     featherTriangleIndices.push_back(lastVertexIndex[1]);
 
-    vector<PolygonVertex>::iterator iteratorEnd[2] = {data.originalBezierPolygon.end(), data.originalFeatherPolygon.end()};
+    // Iterator to the last inner point for each polygon
     vector<PolygonVertex>::iterator lastInnerIt[2] = {iteratorEnd[0], iteratorEnd[1]};
+    for (int i = 0; i < 2; ++i) {
+        if (it[i] != iteratorEnd[i] && it[i]->isInner) {
+            lastInnerIt[i] = it[i];
+        }
+    }
 
-    it[0] = data.originalBezierPolygon.begin();
-    it[1] = data.originalFeatherPolygon.begin();
+
+    for (int i = 0; i < 2; ++i) {
+        if (it[i] == iteratorEnd[i]) {
+            it[i] = iteratorBegin[i];
+        } else {
+            ++it[i];
+            if (it[i] == iteratorEnd[i]) {
+                it[i] = iteratorBegin[i];
+            }
+        }
+    }
 
     for(;;) {
 
@@ -1131,14 +1187,14 @@ RotoBezierTriangulation::tesselate(const BezierPtr& bezier,
 #ifndef NDEBUG
     RectD featherBbox;
 #endif
-    bezier->evaluateFeatherPointsAtTime(true /*applyFeatherDistance*/, time, view, scale, Bezier::eDeCasteljauAlgorithmRecursive, -1, 1., &featherPolygonOrig,
+    bezier->evaluateFeatherPointsAtTime(true /*applyFeatherDistance*/, time, view, scale, Bezier::eDeCasteljauAlgorithmIterative, -1, 1., &featherPolygonOrig,
 #ifndef NDEBUG
                                         &featherBbox
 #else
                                         0
 #endif
                                         );
-    bezier->evaluateAtTime(time, view, scale, Bezier::eDeCasteljauAlgorithmRecursive, -1, 1., &bezierPolygonOrig,
+    bezier->evaluateAtTime(time, view, scale, Bezier::eDeCasteljauAlgorithmIterative, -1, 1., &bezierPolygonOrig,
 #ifndef NDEBUG
                            &data.bezierBbox
 #else

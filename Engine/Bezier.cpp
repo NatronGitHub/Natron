@@ -2696,7 +2696,7 @@ static bool cuspPoint(TimeValue time,
     right = Transform::matApply(transform, right);
 
     Point newLeft, newRight;
-    newLeft.y = left.x;
+    newLeft.x = left.x;
     newLeft.y = left.y;
     newRight.x = right.x;
     newRight.y = right.y;
