@@ -2456,14 +2456,27 @@ RotoPaint::knobChanged(const KnobIPtr& k,
         _imp->ui->iSelectingwithCtrlA = true;
         ///if no bezier are selected, select all beziers
         SelectedItems selection = _imp->knobsTable->getSelectedDrawableItems();
+
         if ( selection.empty() ) {
-            _imp->knobsTable->selectAll(eTableChangeReasonInternal);
+            _imp->knobsTable->beginEditSelection();
+            std::vector<KnobTableItemPtr> allItems = _imp->knobsTable->getAllItems();
+            for (std::size_t i = 0; i < allItems.size(); ++i) {
+                KnobHolderPtr item = allItems[i];
+                RotoItemPtr rotoItem = toRotoItem(item);
+                assert(rotoItem);
+                if (rotoItem->isLockedRecursive()) {
+                    continue;
+                }
+                _imp->knobsTable->addToSelection(allItems[i], eTableChangeReasonInternal);
+
+            }
+            _imp->knobsTable->endEditSelection(eTableChangeReasonInternal);
         } else {
             ///select all the control points of all selected beziers
             _imp->ui->selectedCps.clear();
             for (SelectedItems::iterator it = selection.begin(); it != selection.end(); ++it) {
                 BezierPtr isBezier = toBezier(*it);
-                if (!isBezier) {
+                if (!isBezier || isBezier->isLockedRecursive()) {
                     continue;
                 }
                 std::list<BezierCPPtr > cps = isBezier->getControlPoints(view_i);

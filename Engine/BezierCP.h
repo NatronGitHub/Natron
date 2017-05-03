@@ -121,13 +121,6 @@ public:
 
     void setRightBezierStaticPosition(double x, double y);
 
-    ///returns true if a keyframe was set
-    bool cuspPoint(TimeValue time,bool autoKeying, bool rippleEdit, const std::pair<double, double>& pixelScale);
-
-    ///returns true if a keyframe was set
-    bool smoothPoint(TimeValue time, ViewIdx view, bool autoKeying, bool rippleEdit, const std::pair<double, double>& pixelScale);
-
-
     virtual bool isFeatherPoint() const
     {
         return false;

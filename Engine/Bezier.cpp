@@ -2535,12 +2535,254 @@ Bezier::removeFeatherAtIndex(int index, ViewSetSpec view)
     evaluateCurveModified();
 }
 
+#define TANGENTS_CUSP_LIMIT 25
+
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+
+static void
+cuspTangent(double x,
+            double y,
+            double *tx,
+            double *ty,
+            const std::pair<double, double>& pixelScale)
+{
+    ///decrease the tangents distance by 1 fourth
+    ///if the tangents are equal to the control point, make them 10 pixels long
+    double dx = *tx - x;
+    double dy = *ty - y;
+    double distSquare = dx * dx + dy * dy;
+
+    if (distSquare <= pixelScale.first * pixelScale.second * TANGENTS_CUSP_LIMIT * TANGENTS_CUSP_LIMIT) {
+        *tx = x;
+        *ty = y;
+    } else {
+        double newDx = 0.9 * dx;
+        double newDy = 0.9 * dy;
+        *tx = x + newDx;
+        *ty = y + newDy;
+    }
+}
+
+
+static void
+smoothTangent(TimeValue time,
+              bool left,
+              const BezierCPPtr& p,
+              const std::list < BezierCPPtr > & cps,
+              const Transform::Matrix3x3& transform,
+              double x,
+              double y,
+              double *tx,
+              double *ty,
+              const std::pair<double, double>& pixelScale)
+{
+    if ( (x == *tx) && (y == *ty) ) {
+
+
+        if (cps.size() == 1) {
+            return;
+        }
+
+        std::list < BezierCPPtr >::const_iterator prev = cps.end();
+        if ( prev != cps.begin() ) {
+            --prev;
+        }
+        std::list < BezierCPPtr >::const_iterator next = cps.begin();
+        if ( next != cps.end() ) {
+            ++next;
+        }
+
+        int index = 0;
+        int cpCount = (int)cps.size();
+        for (std::list < BezierCPPtr >::const_iterator it = cps.begin();
+             it != cps.end();
+             ++it) {
+            if ( prev == cps.end() ) {
+                prev = cps.begin();
+            }
+            if ( next == cps.end() ) {
+                next = cps.begin();
+            }
+            if (*it == p) {
+                break;
+            }
+
+            // increment for next iteration
+            if ( prev != cps.end() ) {
+                ++prev;
+            }
+            if ( next != cps.end() ) {
+                ++next;
+            }
+            ++index;
+        } // for(it)
+        if ( prev == cps.end() ) {
+            prev = cps.begin();
+        }
+        if ( next == cps.end() ) {
+            next = cps.begin();
+        }
+
+        assert(index < cpCount);
+        Q_UNUSED(cpCount);
+
+        double leftDx, leftDy, rightDx, rightDy;
+        Bezier::leftDerivativeAtPoint(time, *p, **prev, transform, &leftDx, &leftDy);
+        Bezier::rightDerivativeAtPoint(time, *p, **next, transform, &rightDx, &rightDy);
+        double norm = sqrt( (rightDx - leftDx) * (rightDx - leftDx) + (rightDy - leftDy) * (rightDy - leftDy) );
+        Point delta;
+        ///normalize derivatives by their norm
+        if (norm != 0) {
+            delta.x = ( (rightDx - leftDx) / norm ) * TANGENTS_CUSP_LIMIT * pixelScale.first;
+            delta.y = ( (rightDy - leftDy) / norm ) * TANGENTS_CUSP_LIMIT * pixelScale.second;
+        } else {
+            ///both derivatives are the same, use the direction of the left one
+            norm = sqrt( (leftDx - x) * (leftDx - x) + (leftDy - y) * (leftDy - y) );
+            if (norm != 0) {
+                delta.x = ( (rightDx - x) / norm ) * TANGENTS_CUSP_LIMIT * pixelScale.first;
+                delta.y = ( (leftDy - y) / norm ) * TANGENTS_CUSP_LIMIT * pixelScale.second;
+            } else {
+                ///both derivatives and control point are equal, just use 0
+                delta.x = delta.y = 0;
+            }
+        }
+
+        if (!left) {
+            *tx = x + delta.x;
+            *ty = y + delta.y;
+        } else {
+            *tx = x - delta.x;
+            *ty = y - delta.y;
+        }
+    } else {
+        ///increase the tangents distance by 1 fourth
+        ///if the tangents are equal to the control point, make them 10 pixels long
+        double dx = *tx - x;
+        double dy = *ty - y;
+        double newDx, newDy;
+        if ( (dx == 0) && (dy == 0) ) {
+            dx = (dx < 0 ? -TANGENTS_CUSP_LIMIT : TANGENTS_CUSP_LIMIT) * pixelScale.first;
+            dy = (dy < 0 ? -TANGENTS_CUSP_LIMIT : TANGENTS_CUSP_LIMIT) * pixelScale.second;
+        }
+        newDx = dx * 1.1;
+        newDy = dy * 1.1;
+
+        *tx = x + newDx;
+        *ty = y + newDy;
+    }
+} // smoothTangent
+
+
+static bool cuspPoint(TimeValue time,
+                      const Transform::Matrix3x3& transform,
+                      const BezierCPPtr& cp,
+                      bool autoKeying,
+                      bool rippleEdit,
+                      const std::pair<double, double>& pixelScale)
+{
+    ///only called on the main-thread
+    assert( QThread::currentThread() == qApp->thread() );
+
+    Transform::Point3D pos, left, right;
+    pos.z = left.z = right.z = 1.;
+
+    cp->getPositionAtTime(time,  &pos.x, &pos.y);
+    cp->getLeftBezierPointAtTime(time,  &left.x, &left.y);
+    bool isOnKeyframe = cp->getRightBezierPointAtTime(time,  &right.x, &right.y);
+
+
+    pos = Transform::matApply(transform, pos);
+    left = Transform::matApply(transform, left);
+    right = Transform::matApply(transform, right);
+
+    Point newLeft, newRight;
+    newLeft.y = left.x;
+    newLeft.y = left.y;
+    newRight.x = right.x;
+    newRight.y = right.y;
+    cuspTangent(pos.x, pos.y, &newLeft.x, &newLeft.y, pixelScale);
+    cuspTangent(pos.x, pos.y, &newRight.x, &newRight.y, pixelScale);
+
+    bool keyframeSet = false;
+
+    if (autoKeying || isOnKeyframe) {
+        cp->setLeftBezierPointAtTime(time, newLeft.x, newLeft.y);
+        cp->setRightBezierPointAtTime(time, newRight.x, newRight.y);
+        if (!isOnKeyframe) {
+            keyframeSet = true;
+        }
+    }
+
+    if (rippleEdit) {
+        std::set<double> times;
+        cp->getKeyframeTimes(&times);
+        for (std::set<double>::iterator it = times.begin(); it != times.end(); ++it) {
+            cp->setLeftBezierPointAtTime(TimeValue(*it), newLeft.x, newLeft.y);
+            cp->setRightBezierPointAtTime(TimeValue(*it), newRight.x, newRight.y);
+        }
+    }
+
+    return keyframeSet;
+}
+
+static bool smoothPoint(TimeValue time,
+                        const Transform::Matrix3x3& transform,
+                        const BezierCPPtr& cp,
+                        const std::list < BezierCPPtr > & cps,
+                        bool autoKeying,
+                        bool rippleEdit,
+                        const std::pair<double, double>& pixelScale)
+{
+    ///only called on the main-thread
+    assert( QThread::currentThread() == qApp->thread() );
+
+
+    Transform::Point3D pos, left, right;
+    pos.z = left.z = right.z = 1.;
+
+    cp->getPositionAtTime(time,  &pos.x, &pos.y);
+    cp->getLeftBezierPointAtTime(time,  &left.x, &left.y);
+    bool isOnKeyframe = cp->getRightBezierPointAtTime(time,  &right.x, &right.y);
+
+    pos = Transform::matApply(transform, pos);
+    left = Transform::matApply(transform, left);
+    right = Transform::matApply(transform, right);
+
+    smoothTangent(time, true, cp, cps, transform, pos.x, pos.y, &left.x, &left.y, pixelScale);
+    smoothTangent(time, false, cp, cps, transform, pos.x, pos.y, &right.x, &right.y, pixelScale);
+
+    bool keyframeSet = false;
+
+    if (autoKeying || isOnKeyframe) {
+        cp->setLeftBezierPointAtTime(time, left.x, left.y);
+        cp->setRightBezierPointAtTime(time, right.x, right.y);
+        if (!isOnKeyframe) {
+            keyframeSet = true;
+        }
+    }
+
+    if (rippleEdit) {
+        std::set<double> times;
+        cp->getKeyframeTimes(&times);
+        for (std::set<double>::iterator it = times.begin(); it != times.end(); ++it) {
+            cp->setLeftBezierPointAtTime(TimeValue(*it), left.x, left.y);
+            cp->setRightBezierPointAtTime(TimeValue(*it), right.x, right.y);
+        }
+    }
+    
+    return keyframeSet;
+} // smoothPoint
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 void
 Bezier::smoothOrCuspPointAtIndexInternal(bool isSmooth, int index, TimeValue time, ViewIdx view, const std::pair<double, double>& pixelScale)
 {
     bool autoKeying = isAutoKeyingEnabled();
     bool rippleEdit = isRippleEditEnabled();
+
+    Transform::Matrix3x3 transform;
+    getTransformAtTime(time, view, &transform);
 
 
     {
@@ -2564,14 +2806,14 @@ Bezier::smoothOrCuspPointAtIndexInternal(bool isSmooth, int index, TimeValue tim
         }
         assert( cp != shape->points.end() && fp != shape->featherPoints.end() );
         if (isSmooth) {
-            (*cp)->smoothPoint(time, view, autoKeying, rippleEdit, pixelScale);
+            smoothPoint(time, transform, *cp, shape->points, autoKeying, rippleEdit, pixelScale);
             if (useFeather) {
-                (*fp)->smoothPoint(time, view,autoKeying, rippleEdit, pixelScale);
+                smoothPoint(time, transform, *fp, shape->featherPoints,autoKeying, rippleEdit, pixelScale);
             }
         } else {
-            (*cp)->cuspPoint(time, autoKeying, rippleEdit, pixelScale);
+            cuspPoint(time, transform, *cp, autoKeying, rippleEdit, pixelScale);
             if (useFeather) {
-                (*fp)->cuspPoint(time,  autoKeying, rippleEdit, pixelScale);
+                cuspPoint(time, transform, *fp,  autoKeying, rippleEdit, pixelScale);
             }
         }
     }
