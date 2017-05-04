@@ -14,7 +14,7 @@ PortGroup       compiler_blacklist_versions 1.0
 epoch        	 1
 
 fetch.type              git
-github.setup     OpenImageIO oiio 1.7.13 tags/Release-
+github.setup     OpenImageIO oiio 1.7.14 tags/Release-
 #github.version      ${version}-dist
 #github.tarball_from downloads
 
@@ -38,7 +38,7 @@ homepage         http://sites.google.com/site/openimageio/
 depends_lib      port:boost path:lib/libjpeg.dylib:jpeg port:tiff port:libpng port:openexr port:glew port:ilmbase port:libraw port:giflib port:webp
 
 # can't compile openimageio when another version is installed, because the include path is wrong
-conflicts_build  ${name}
+#conflicts_build  ${name}
 
 depends_build    port:txt2man
 depends_skip_archcheck txt2man
