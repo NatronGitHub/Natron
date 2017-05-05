@@ -243,7 +243,7 @@ struct MetadataValueIPC
     double podValue;
 
 
-    MetadataValueIPC(const void_allocator& alloc)
+    MetadataValueIPC(const external_void_allocator& alloc)
     : stringValue(alloc)
     , podValue(0)
     {
@@ -268,7 +268,7 @@ struct MetadataValuesIPC
     NodeMetadataDataTypeEnum type;
 
 
-    MetadataValuesIPC(const void_allocator& alloc)
+    MetadataValuesIPC(const external_void_allocator& alloc)
     : values(alloc)
     , type(eNodeMetadataDataTypeInt)
     {

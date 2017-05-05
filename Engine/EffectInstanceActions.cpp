@@ -763,10 +763,14 @@ EffectInstance::getDistortion_public(TimeValue inArgsTime,
     bool isIdentity;
     {
         // If the effect is identity on the format, that means its bound to be identity anywhere and does not depend on the render window.
-        RectI format = getOutputFormat();
+        RectI identityWindow;
+        identityWindow.x1 = INT_MIN;
+        identityWindow.y1 = INT_MIN;
+        identityWindow.x2 = INT_MAX;
+        identityWindow.y2 = INT_MAX;
         RenderScale scale(1.);
         IsIdentityResultsPtr identityResults;
-        isIdentity = isIdentity_public(true, time, scale, format, view, ImagePlaneDesc::getRGBAComponents() /*insignificant*/, &identityResults);
+        isIdentity = isIdentity_public(true, time, scale, identityWindow, view, ImagePlaneDesc::getRGBAComponents() /*insignificant*/, &identityResults);
     }
 
     if (!distortSupported && !isDeprecatedTransformSupportEnabled && !isIdentity) {
@@ -1054,11 +1058,15 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
     // identity time and view.
 
     {
-        // If the effect is identity on the format, that means its bound to be identity anywhere and does not depend on the render window.
-        RectI format = getOutputFormat();
+        // If the effect is identity and infinite window, that means its bound to be identity anywhere and does not depend on the render window.
+        RectI identityWindow;
+        identityWindow.x1 = INT_MIN;
+        identityWindow.y1 = INT_MIN;
+        identityWindow.x2 = INT_MAX;
+        identityWindow.y2 = INT_MAX;
         RenderScale scale(1.);
         IsIdentityResultsPtr identityResults;
-        ActionRetCodeEnum stat = isIdentity_public(true, time, mappedScale, format, view, ImagePlaneDesc::getRGBAComponents() /*insignificant*/, &identityResults);
+        ActionRetCodeEnum stat = isIdentity_public(true, time, mappedScale, identityWindow, view, ImagePlaneDesc::getRGBAComponents() /*insignificant*/, &identityResults);
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -1444,10 +1452,14 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
     IsIdentityResultsPtr identityResults;
     {
         // If the effect is identity on the format, that means its bound to be identity anywhere and does not depend on the render window.
-        RectI format = getOutputFormat();
+        RectI identityWindow;
+        identityWindow.x1 = INT_MIN;
+        identityWindow.y1 = INT_MIN;
+        identityWindow.x2 = INT_MAX;
+        identityWindow.y2 = INT_MAX;
         RenderScale scale(1.);
         ImagePlaneDesc identityPlane;
-        ActionRetCodeEnum stat = isIdentity_public(isHashCached, time, scale, format, view, ImagePlaneDesc::getRGBAComponents() /*insignificant*/, &identityResults);
+        ActionRetCodeEnum stat = isIdentity_public(isHashCached, time, scale, identityWindow, view, ImagePlaneDesc::getRGBAComponents() /*insignificant*/, &identityResults);
         if (isFailureRetCode(stat)) {
             return stat;
         }

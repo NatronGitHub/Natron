@@ -1450,6 +1450,12 @@ KnobHelper::setActualCloneForHolder(const KnobHolderPtr& holder)
 }
 
 KnobIPtr
+KnobHelper::getMainInstance() const
+{
+    return _imp->mainInstance.lock();
+}
+
+KnobIPtr
 KnobHelper::getCloneForHolderInternal(const KnobHolderPtr& holder) const
 {
     KnobHolderPtr thisHolder = getHolder();
@@ -2942,31 +2948,36 @@ initializeValueSerializationStorage(const KnobIPtr& knob,
             serialization->_slaveMasterLink.hasLink = true;
             gotValue = true;
             if (masterKnob != knob) {
-                NamedKnobHolderPtr holder = boost::dynamic_pointer_cast<NamedKnobHolder>( masterKnob->getHolder() );
-                assert(holder);
-                KnobTableItemPtr isTableItem = toKnobTableItem(masterKnob->getHolder());
-                if (isTableItem) {
-                    if (isTableItem) {
-                        serialization->_slaveMasterLink.masterTableItemName = isTableItem->getFullyQualifiedName();
-                        if (isTableItem->getModel()->getNode()->getEffectInstance() != holder) {
-                            serialization->_slaveMasterLink.masterNodeName = isTableItem->getModel()->getNode()->getScriptName_mt_safe();
+                NamedKnobHolderPtr masterHolder = boost::dynamic_pointer_cast<NamedKnobHolder>( masterKnob->getHolder() );
+                assert(masterHolder);
+                KnobTableItemPtr masterIsTableItem = toKnobTableItem(masterKnob->getHolder());
+                EffectInstancePtr masterIsEffect = toEffectInstance(masterKnob->getHolder());
+                if (masterIsTableItem) {
+                    if (masterIsTableItem) {
+                        serialization->_slaveMasterLink.masterTableItemName = masterIsTableItem->getFullyQualifiedName();
+                        if (masterIsTableItem->getModel()->getNode()->getEffectInstance() != masterHolder) {
+                            serialization->_slaveMasterLink.masterNodeName = masterIsTableItem->getModel()->getNode()->getScriptName_mt_safe();
                         }
                     }
                 } else {
                     // coverity[dead_error_line]
-                    if (holder && holder != knob->getHolder()) {
+                    if (masterIsEffect && !masterIsEffect->getNode()->isPersistent()) {
+                        // If the knob is linked to a knob of a non persistent node, do not save it
+                        serialization->_slaveMasterLink.hasLink = false;
+                    }
+                    if (masterIsEffect && masterIsEffect != knob->getHolder()) {
                         // If the master knob is on  the group containing the node holding this knob
                         // then don't serialize the node name
 
                         EffectInstancePtr thisHolderIsEffect = toEffectInstance(knob->getHolder());
                         if (thisHolderIsEffect) {
                             NodeGroupPtr isGrp = toNodeGroup(thisHolderIsEffect->getNode()->getGroup());
-                            if (isGrp && isGrp == holder) {
+                            if (isGrp && isGrp == masterHolder) {
                                 serialization->_slaveMasterLink.masterNodeName = kKnobMasterNodeIsGroup;
                             }
                         }
                         if (serialization->_slaveMasterLink.masterNodeName.empty()) {
-                            serialization->_slaveMasterLink.masterNodeName = holder->getScriptName_mt_safe();
+                            serialization->_slaveMasterLink.masterNodeName = masterHolder->getScriptName_mt_safe();
                         }
                     }
                 }

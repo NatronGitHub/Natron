@@ -1652,8 +1652,10 @@ KnobItemsTableGuiPrivate::selectionFromIndexList(const QModelIndexList& indexes,
         
         // Get the table item corresponding to the index
         TableItemPtr tableItem = tableModel->getItem(it->row(), it->parent());
-        assert(tableItem);
-        
+        if (!tableItem) {
+            continue;
+        }
+
         // Get the internal knobtableitem corresponding to the table item
         ModelItemsVec::iterator found = findItem(tableItem);
         assert(found != items.end());

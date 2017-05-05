@@ -226,12 +226,23 @@ ActionRetCodeEnum
 Image::copyPixels(const Image& other, const CopyPixelsArgs& args)
 {
 
-    // Roi must intersect both images bounds
+    // First intersect the RoI with the destination image. If it does not, do nothing.
     RectI roi;
-    if (!other._imp->originalBounds.intersect(args.roi, &roi)) {
+    if (!_imp->originalBounds.intersect(args.roi, &roi)) {
         return eActionStatusOK;
     }
-    if (!_imp->originalBounds.intersect(roi, &roi)) {
+
+    // If the source image does not contain entirely the roi, we must clear to black
+    // the roi in the destination image first
+    if (!other._imp->originalBounds.contains(roi)) {
+        ActionRetCodeEnum stat = fillZero(roi);
+        if (isFailureRetCode(stat)) {
+            return stat;
+        }
+    }
+
+    // Intersect the roi with the source image bounds to figure out the remaining portion to copy
+    if (!other._imp->originalBounds.intersect(roi, &roi)) {
         return eActionStatusOK;
     }
 

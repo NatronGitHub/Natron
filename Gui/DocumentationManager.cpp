@@ -112,7 +112,7 @@ DocumentationManager::handler(QHttpRequest *req,
 {
     Q_UNUSED(req)
 
-    QString docDir = appPTR->getApplicationBinaryPath() + QString::fromUtf8("/../Resources/docs/html/");
+    QString docDir = QString::fromUtf8(appPTR->getApplicationBinaryDirPath().c_str()) + QString::fromUtf8("/../Resources/docs/html/");
     QString page = req->url().toString();
     QByteArray body;
 

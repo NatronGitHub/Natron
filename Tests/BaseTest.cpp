@@ -262,9 +262,9 @@ TEST_F(BaseTest, GenerateDot)
     Format f(0, 0, 200, 200, "toto", 1.);
     generator->getApp()->getProject()->setOrAddProjectFormat(f);
 
-    const QString& binPath = appPTR->getApplicationBinaryPath();
-    QString filePath = binPath + QString::fromUtf8("/test_dot_generator.jpg");
-    writer->getEffectInstance()->setOutputFilesForWriter( filePath.toStdString() );
+    std::string binPath = appPTR->getApplicationBinaryDirPath();
+    std::string filePath = binPath + std::string("/test_dot_generator.jpg");
+    writer->getEffectInstance()->setOutputFilesForWriter( filePath);
 
     ///attempt to connect the 2 nodes together
     connectNodes(generator, writer, 0, true);
@@ -276,8 +276,8 @@ TEST_F(BaseTest, GenerateDot)
     works.push_back(w);
     getApp()->getRenderQueue()->renderBlocking(works);
 
-    EXPECT_TRUE( QFile::exists(filePath) );
-    QFile::remove(filePath);
+    EXPECT_TRUE( QFile::exists(QString::fromUtf8(filePath.c_str())) );
+    QFile::remove(QString::fromUtf8(filePath.c_str()));
 }
 
 TEST_F(BaseTest, SetValues)

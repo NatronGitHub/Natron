@@ -50,6 +50,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/AppManager.h"
 #include "Engine/Cache.h"
+#include "Engine/ExistenceCheckThread.h"
 #include "Engine/StorageDeleterThread.h"
 #include "Engine/Image.h"
 #include "Engine/GPUContextPool.h"
@@ -114,7 +115,9 @@ public:
 
     boost::scoped_ptr<KnobFactory> _knobFactory; //< knob maker
 
-    CacheBasePtr generalPurposeCache, tileCache; 
+    CacheBasePtr generalPurposeCache, tileCache;
+
+    boost::scoped_ptr<MappedProcessWatcherThread> mappedProcessWatcher;
 
     boost::scoped_ptr<StorageDeleterThread> storageDeleteThread; // thread used to kill cache entries without blocking a render thread
 
@@ -123,7 +126,7 @@ public:
     //if this app is background, see the ProcessInputChannel def
     bool _loaded; //< true when the first instance is completly loaded.
 
-    QString _binaryPath; //< the path to the application's binary
+    std::string binaryPath;
 
     mutable QMutex errorLogMutex;
 

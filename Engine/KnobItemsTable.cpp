@@ -1183,7 +1183,12 @@ getNextNonContainerItemInternal(const std::vector<KnobTableItemPtr>& siblings, c
         // If there's a next items in the siblings, return it
         ++found;
         if ( found != siblings.end() ) {
-            return *found;
+            if ((*found)->isItemContainer()) {
+                std::vector<KnobTableItemPtr> containerChildren = (*found)->getChildren();
+                return getNextNonContainerItemInternal(containerChildren, *found);
+            } else {
+                return *found;
+            }
         }
     }
 

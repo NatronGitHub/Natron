@@ -211,7 +211,8 @@ public:
     void abortAnyProcessing();
 
     virtual void setLoadingStatus(const QString & str);
-    const QString & getApplicationBinaryPath() const;
+    std::string getApplicationBinaryFilePath() const;
+    std::string getApplicationBinaryDirPath() const;
     static bool parseCmdLineArgs(int argc, char* argv[],
                                  bool* isBackground,
                                  QString & projectFilename,

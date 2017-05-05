@@ -255,7 +255,7 @@ IPCPropertyMap::getIPCProperty(const std::string& name) const
 
 } // getOrCreateIPCProperty
 
-IPCPropertyMap::IPCPropertyMap(const void_allocator& alloc)
+IPCPropertyMap::IPCPropertyMap(const external_void_allocator& alloc)
 : _properties(alloc)
 {
 

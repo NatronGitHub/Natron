@@ -443,7 +443,7 @@ AppManager::checkForOlderProjectFile(const AppInstancePtr& app, const QString& f
         std::getline(ifile, firstLine);
         if (firstLine.find("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>") != std::string::npos) {
             // This is an old boost serialization file, convert the project first
-            QString path = appPTR->getApplicationBinaryPath();
+            QString path = QString::fromUtf8(appPTR->getApplicationBinaryDirPath().c_str());
             StrUtils::ensureLastPathSeparator(path);
             path += QString::fromUtf8("NatronProjectConverter");
 
@@ -603,6 +603,10 @@ AppManager::~AppManager()
         _imp->breakpadAliveThread->quitThread();
     }
 #endif
+
+    if (_imp->mappedProcessWatcher) {
+        _imp->mappedProcessWatcher->quitThread();
+    }
 
     bool appsEmpty;
     {
@@ -825,8 +829,8 @@ AppManager::loadInternal(const CLArgs& cl)
 {
     assert(!_imp->_loaded);
 
-    _imp->_binaryPath = QCoreApplication::applicationDirPath();
-    assert(StrUtils::is_utf8(_imp->_binaryPath.toStdString().c_str()));
+    _imp->binaryPath = QCoreApplication::applicationFilePath().toStdString();
+    assert(StrUtils::is_utf8(_imp->binaryPath.c_str()));
 
     registerEngineMetaTypes();
     registerGuiMetaTypes();
@@ -896,6 +900,10 @@ AppManager::loadInternal(const CLArgs& cl)
         // If the cache is busy because another process is using it and we are not compiled
         // with NATRON_CACHE_INTERPROCESS_ROBUST, just create a process local cache instead.
         _imp->tileCache = Cache<true>::create(true /*enableTileStorage*/);
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+        _imp->mappedProcessWatcher.reset(new MappedProcessWatcherThread);
+        _imp->mappedProcessWatcher->startWatching();
+#endif
     } catch (const BusyCacheException&) {
         _imp->tileCache = Cache<false>::create(true /*enableTileStorage*/);
     }
@@ -2567,13 +2575,21 @@ AppManager::printCacheMemoryStats() const
 
 
 
-const QString &
-AppManager::getApplicationBinaryPath() const
+std::string
+AppManager::getApplicationBinaryFilePath() const
 {
-    return _imp->_binaryPath;
+    return _imp->binaryPath;
 }
 
-
+std::string
+AppManager::getApplicationBinaryDirPath() const
+{
+    std::size_t foundSlash = _imp->binaryPath.find_last_of('/');
+    if (foundSlash == std::string::npos) {
+        return std::string();
+    }
+    return _imp->binaryPath.substr(0, foundSlash);
+}
 
 bool
 AppManager::isAggressiveCachingEnabled() const

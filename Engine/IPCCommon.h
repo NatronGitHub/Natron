@@ -54,10 +54,16 @@ NATRON_NAMESPACE_ENTER;
 
 
 typedef boost::interprocess::managed_external_buffer ExternalSegmentType;
-typedef boost::interprocess::allocator<void, ExternalSegmentType::segment_manager> void_allocator;
+typedef boost::interprocess::managed_shared_memory SharedMemorySegmentType;
+
+
+typedef boost::interprocess::allocator<void, ExternalSegmentType::segment_manager> external_void_allocator;
 typedef boost::interprocess::allocator<char, ExternalSegmentType::segment_manager> CharAllocator_ExternalSegment;
 typedef boost::interprocess::basic_string<char, std::char_traits<char>, CharAllocator_ExternalSegment> String_ExternalSegment;
 
+typedef boost::interprocess::allocator<void, SharedMemorySegmentType::segment_manager> shm_void_allocator;
+typedef boost::interprocess::allocator<char, SharedMemorySegmentType::segment_manager> CharAllocator_shm;
+typedef boost::interprocess::basic_string<char, std::char_traits<char>, CharAllocator_shm> String_Shm;
 
 /**
  * @brief Function to serialize to the given memory segment the given object.
@@ -271,7 +277,7 @@ class IPCProperty
 
 public:
 
-    IPCProperty(IPCVariantTypeEnum type, const void_allocator& alloc)
+    IPCProperty(IPCVariantTypeEnum type, const external_void_allocator& alloc)
     : type(type)
     , data(alloc)
     {
@@ -360,7 +366,7 @@ public:
     typedef IPCVariantMap::iterator iterator;
     typedef IPCVariantMap::const_iterator const_iterator;
 
-    IPCPropertyMap(const void_allocator& alloc);
+    IPCPropertyMap(const external_void_allocator& alloc);
 
     ~IPCPropertyMap();
 

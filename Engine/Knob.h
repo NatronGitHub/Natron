@@ -1224,6 +1224,11 @@ public:
      **/
     virtual void setActualCloneForHolder(const KnobHolderPtr& holder) = 0;
 
+    /**
+     * @brief Returns the main-instance knob if this is a render  clone, otherwise NULL
+     **/
+    virtual KnobIPtr getMainInstance() const = 0;
+
 protected:
 
 
@@ -1499,6 +1504,8 @@ public:
 
 
     virtual void setActualCloneForHolder(const KnobHolderPtr& holder) OVERRIDE FINAL;
+
+    virtual KnobIPtr getMainInstance() const OVERRIDE FINAL;
 
     virtual void autoFoldDimensions(ViewIdx view) OVERRIDE FINAL;
 

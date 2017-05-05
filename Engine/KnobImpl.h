@@ -962,14 +962,16 @@ Knob<T>::populate()
     }
     int nDims = getNDimensions();
     _data->expressionResults.resize(nDims);
-    for (int i = 0; i < nDims; ++i) {
-        T defValue;
-        initDefaultValue<T>(&defValue);
-        _data->defaultValues[i].value = defValue;
-        _data->defaultValues[i].defaultValueSet = false;
-    }
-    refreshCurveMinMax(ViewSetSpec::all(), DimSpec::all());
 
+    if (!getMainInstance()) {
+        for (int i = 0; i < nDims; ++i) {
+            T defValue;
+            initDefaultValue<T>(&defValue);
+            _data->defaultValues[i].value = defValue;
+            _data->defaultValues[i].defaultValueSet = false;
+        }
+        refreshCurveMinMax(ViewSetSpec::all(), DimSpec::all());
+    }
 }
 
 template<typename T>

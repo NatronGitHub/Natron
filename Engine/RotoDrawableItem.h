@@ -139,7 +139,7 @@ public:
      * @brief Connects nodes used by this item in the rotopaint tree. createNodes() must have been called prior
      * to calling this function.
      **/
-    void refreshNodesConnections();
+    void refreshNodesConnections(const RotoDrawableItemPtr& previousItem);
 
     /**
      * @brief Refresh the internal tree of the item so that it's nodes are centered around the point at (x,y)

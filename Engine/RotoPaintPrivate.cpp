@@ -1827,7 +1827,7 @@ RotoPaintInteract::drawOverlay(TimeValue time,
                        ViewIdx view)
 {
     
-    std::list< RotoDrawableItemPtr > drawables = _imp->knobsTable->getRotoItemsByRenderOrder(time, view);
+    std::list< RotoDrawableItemPtr > drawables = _imp->knobsTable->getActivatedRotoPaintItemsByRenderOrder(time, view);
     std::pair<double, double> pixelScale;
     std::pair<double, double> viewportSize;
 
@@ -2286,7 +2286,7 @@ RotoPaintInteract::onViewportSelectionUpdated(const RectD& rectangle,
     ViewIdx view = _imp->publicInterface->getCurrentRenderView();
 
     bool featherVisible = isFeatherVisible();
-    std::list<RotoDrawableItemPtr > curves = _imp->knobsTable->getRotoItemsByRenderOrder(time, view);
+    std::list<RotoDrawableItemPtr > curves = _imp->knobsTable->getActivatedRotoPaintItemsByRenderOrder(time, view);
     for (std::list<RotoDrawableItemPtr >::const_iterator it = curves.begin(); it != curves.end(); ++it) {
         BezierPtr isBezier = toBezier(*it);
         if ( (*it)->isLockedRecursive() ) {

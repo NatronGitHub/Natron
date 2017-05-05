@@ -38,6 +38,28 @@
 
 NATRON_NAMESPACE_ENTER;
 
+struct MappedProcessWatcherThreadPrivate;
+class MappedProcessWatcherThread
+: public QThread
+{
+
+
+public:
+
+    MappedProcessWatcherThread();
+
+    virtual ~MappedProcessWatcherThread();
+
+    void quitThread();
+
+    void startWatching();
+
+private:
+
+    virtual void run() OVERRIDE FINAL;
+    boost::scoped_ptr<MappedProcessWatcherThreadPrivate> _imp;
+};
+
 struct ExistenceCheckerThreadPrivate;
 class ExistenceCheckerThread
     : public QThread

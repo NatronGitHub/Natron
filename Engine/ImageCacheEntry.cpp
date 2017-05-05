@@ -845,6 +845,16 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(bool hasExclusiveLock,
         *status = eTileStatusNotRendered;
     }
 
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+    if (*status == eTileStatusPending) {
+        // If a tile is pending, check if the compute process is still active, otherwise mark it not rendered
+        CacheBasePtr cache = appPTR->getTileCache();
+        if (cache->isPersistent() && !cache->isUUIDCurrentlyActive(cacheTileState->uuid)) {
+            *status = eTileStatusNotRendered;
+        }
+    }
+#endif
+
     switch (*status) {
         case eTileStatusRenderedHighestQuality:
         case eTileStatusRenderedLowQuality: {
@@ -1009,11 +1019,17 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(bool hasExclusiveLock,
                         cacheTileState->status = eTileStatusPending;
                         // Mark it not rendered locally, this will be switched to rendered once the downscale operation is performed
                         localTileState->status = eTileStatusNotRendered;
+
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+                        boost::uuids::uuid sessionUUID = appPTR->getTileCache()->getCurrentProcessUUID();
+                        cacheTileState->uuid = sessionUUID;
+                        localTileState->uuid = sessionUUID;
+#endif
                         tilesToFetch.push_back(*tile);
                     }
 
-                    // Mark this tile so it is found quickly in markCacheTilesAsAborted()
 
+                    // Mark this tile so it is found quickly in markCacheTilesAsAborted()
                     markedTiles[lookupLevel].insert(coord);
 #ifdef TRACE_TILES_STATUS
                     qDebug() << QThread::currentThread() << debugId << "lookup(): marking tile " << coord.tx << coord.ty << "pending (downscaled from 4 higher scale tiles) at level" << lookupLevel;
@@ -1034,6 +1050,12 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(bool hasExclusiveLock,
 
                         // Mark it pending in the cache
                         cacheTileState->status = eTileStatusPending;
+
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+                        boost::uuids::uuid sessionUUID = appPTR->getTileCache()->getCurrentProcessUUID();
+                        cacheTileState->uuid = sessionUUID;
+                        localTileState->uuid = sessionUUID;
+#endif
 
                         // Mark this tile so it is found quickly in markCacheTilesAsAborted()
 #ifdef TRACE_TILES_STATUS
@@ -2176,6 +2198,11 @@ static std::string getBoundsPropName(unsigned int mipMapLevel)
     return getPropNameInternal("Bounds", mipMapLevel);
 }
 
+static std::string getUUIDPropName(unsigned int mipMapLevel)
+{
+    return getPropNameInternal("UUID", mipMapLevel);
+}
+
 /**
  * @brief Read the tiles state map for each mipmap level from the cache properties
  **/
@@ -2197,16 +2224,26 @@ static CacheEntryBase::FromMemorySegmentRetCodeEnum fromMemorySegmentInternal(in
         std::string statusPropName = getStatusPropName(m);
         std::string tileIndicesPropName = getTileIndicesPropName(m);
         std::string boundsPropName = getBoundsPropName(m);
+        std::string uuidPropName = getUUIDPropName(m);
 
         const IPCProperty* statusProp = properties.getIPCProperty(statusPropName);
         const IPCProperty* indicesProp = properties.getIPCProperty(tileIndicesPropName);
         const IPCProperty* boundsProp = properties.getIPCProperty(boundsPropName);
+        const IPCProperty* uuidProp = properties.getIPCProperty(uuidPropName);
 
         if (!statusProp || statusProp->getType() != eIPCVariantTypeInt) {
             return CacheEntryBase::eFromMemorySegmentRetCodeFailed;
         }
 
         if (!indicesProp || indicesProp->getType() != eIPCVariantTypeULongLong) {
+            return CacheEntryBase::eFromMemorySegmentRetCodeFailed;
+        }
+
+        if (!indicesProp || indicesProp->getType() != eIPCVariantTypeULongLong) {
+            return CacheEntryBase::eFromMemorySegmentRetCodeFailed;
+        }
+
+        if (!uuidProp || uuidProp->getType() != eIPCVariantTypeULongLong || uuidProp->getNumDimensions() != statusProp->getNumDimensions() * 2) {
             return CacheEntryBase::eFromMemorySegmentRetCodeFailed;
         }
 
@@ -2222,6 +2259,7 @@ static CacheEntryBase::FromMemorySegmentRetCodeEnum fromMemorySegmentInternal(in
         IPCProperty::getIntValue(boundsProp->getData(), 1, &localState.bounds.y1);
         IPCProperty::getIntValue(boundsProp->getData(), 2, &localState.bounds.x2);
         IPCProperty::getIntValue(boundsProp->getData(), 3, &localState.bounds.y2);
+
 
         localState.boundsRoundedToTileSize = localState.bounds;
         localState.boundsRoundedToTileSize.roundToTileSize(tileSizeX, tileSizeY);
@@ -2239,6 +2277,16 @@ static CacheEntryBase::FromMemorySegmentRetCodeEnum fromMemorySegmentInternal(in
             int status_i;
             IPCProperty::getIntValue(statusProp->getData(), i, &status_i);
             state.status = (TileStatusEnum)status_i;
+
+            // The UUID is a 128-bit value that can be encoded with 2 unsigned long long
+            U64 encodedUUID[2];
+            IPCProperty::getULongLongValue(uuidProp->getData(), i * 2, &encodedUUID[0]);
+            IPCProperty::getULongLongValue(uuidProp->getData(), i * 2 + 1, &encodedUUID[1]);
+            assert(sizeof(U64) * 2 == 16);
+            // See http://www.boost.org/doc/libs/1_63_0/libs/uuid/uuid.html
+            // A boost::uuids::uuid is exactly 16 bytes
+            memcpy(&state.uuid, encodedUUID, 16);
+
 
             for (int c = 0; c < 4; ++c) {
                 IPCProperty::getULongLongValue(indicesProp->getData(), i * 4 + c, &state.channelsTileStorageIndex[c]);
@@ -2313,9 +2361,11 @@ static void toMemorySegmentInternal(bool copyPendingStatusToCache,
         std::string statusPropName = getStatusPropName(m);
         std::string tileIndicesPropName = getTileIndicesPropName(m);
         std::string boundsPropName = getBoundsPropName(m);
+        std::string uuidPropName = getUUIDPropName(m);
 
         IPCProperty* statusProp = properties->getOrCreateIPCProperty(statusPropName, eIPCVariantTypeInt);
         IPCProperty* indicesProp = properties->getOrCreateIPCProperty(tileIndicesPropName, eIPCVariantTypeULongLong);
+        IPCProperty* uuidProp = properties->getOrCreateIPCProperty(uuidPropName, eIPCVariantTypeULongLong);
         IPCProperty* boundsProp = properties->getOrCreateIPCProperty(boundsPropName, eIPCVariantTypeInt);
 
         // If the properties did not exist yet, resize the properties
@@ -2325,6 +2375,9 @@ static void toMemorySegmentInternal(bool copyPendingStatusToCache,
 
             // Each tile has up to 4 channels allocated in the cache
             indicesProp->resize(mipmapState.tiles.size() * 4);
+
+            // Each tile has a uuid that takes 2 U64 in memory (16 bytes)
+            uuidProp->resize(mipmapState.tiles.size() * 2);
 
             // Each tile bounds is 4 double
             boundsProp->resize(4);
@@ -2340,6 +2393,14 @@ static void toMemorySegmentInternal(bool copyPendingStatusToCache,
 #ifdef TRACE_TILES_STATUS
                 qDebug() << QThread::currentThread() << persistentEntry->_imp->debugId << "initializing status in cache of " << mipmapState.tiles[i].bounds.x1 << mipmapState.tiles[i].bounds.y1 << "at level" << m << "to" << getTileStatusString(mipmapState.tiles[i].status).c_str();
 #endif
+
+                U64 encodedUUID[2];
+                // See http://www.boost.org/doc/libs/1_63_0/libs/uuid/uuid.html
+                // A boost::uuids::uuid is exactly 16 bytes
+                memcpy(encodedUUID, &mipmapState.tiles[i].uuid, 16);
+                IPCProperty::setULongLongValue(i * 2, encodedUUID[0], uuidProp->getData());
+                IPCProperty::setULongLongValue(i * 2 + 1, encodedUUID[0], uuidProp->getData());
+
                 for (int c = 0; c < 4; ++c) {
                     IPCProperty::setULongLongValue(i * 4 + c, mipmapState.tiles[i].channelsTileStorageIndex[c], indicesProp->getData());
                 }
@@ -2348,7 +2409,8 @@ static void toMemorySegmentInternal(bool copyPendingStatusToCache,
 
         } else {
             assert(statusProp->getNumDimensions() == mipmapState.tiles.size() &&
-                   indicesProp->getNumDimensions() == mipmapState.tiles.size() * 4);
+                   indicesProp->getNumDimensions() == mipmapState.tiles.size() * 4 &&
+                   uuidProp->getNumDimensions() == mipmapState.tiles.size() * 2);
 
 
             assert(boundsProp->getNumDimensions() == 4);
@@ -2402,6 +2464,14 @@ static void toMemorySegmentInternal(bool copyPendingStatusToCache,
                         qDebug() << QThread::currentThread() << persistentEntry->_imp->debugId <<  "updating status in cache of " << mipmapState.tiles[i].bounds.x1 << mipmapState.tiles[i].bounds.y1 << "at level" << m << "to" << getTileStatusString(mipmapState.tiles[i].status).c_str() << "(from" << getTileStatusString((TileStatusEnum)cacheStatus_i).c_str() << ")";
                     }
 #endif
+
+                    U64 encodedUUID[2];
+                    // See http://www.boost.org/doc/libs/1_63_0/libs/uuid/uuid.html
+                    // A boost::uuids::uuid is exactly 16 bytes
+                    memcpy(encodedUUID, &mipmapState.tiles[i].uuid, 16);
+                    IPCProperty::setULongLongValue(i * 2, encodedUUID[0], uuidProp->getData());
+                    IPCProperty::setULongLongValue(i * 2 + 1, encodedUUID[0], uuidProp->getData());
+
 
                     IPCProperty::setIntValue(i, (int)mipmapState.tiles[i].status, statusProp->getData());
                     for (int c = 0; c < 4; ++c) {

@@ -511,6 +511,8 @@ public:
 
     bool shouldDrawHostOverlay() const;
 
+    std::list< RotoDrawableItemPtr > getRotoPaintItemsByRenderOrder() const;
+    std::list< RotoDrawableItemPtr > getActivatedRotoPaintItemsByRenderOrder(TimeValue time, ViewIdx view) const;
 
 public Q_SLOTS:
 

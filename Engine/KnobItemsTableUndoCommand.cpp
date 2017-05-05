@@ -143,9 +143,9 @@ RemoveItemsCommand::undo()
             prevIndex = prevItem->getIndexInParent();
         }
         if (prevIndex != -1) {
-            model->insertItem(prevIndex, it->item, KnobTableItemPtr(), eTableChangeReasonInternal);
+            model->insertItem(prevIndex, it->item, it->item->getParent(), eTableChangeReasonInternal);
         } else {
-            model->addItem(it->item, KnobTableItemPtr(), eTableChangeReasonInternal);
+            model->addItem(it->item, it->item->getParent(), eTableChangeReasonInternal);
         }
         model->addToSelection(it->item, eTableChangeReasonInternal);
     }

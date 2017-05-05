@@ -1557,8 +1557,24 @@ KnobChoice::setCurrentDefaultValueAsInitialValue()
 std::string
 KnobChoice::getDefaultEntryID() const
 {
-    QMutexLocker l(&_imp->defaultEntryMutex);
-    return _imp->defaultEntryID;
+    {
+        QMutexLocker l(&_imp->defaultEntryMutex);
+        if (!_imp->defaultEntryID.empty()) {
+            return _imp->defaultEntryID;
+        }
+    }
+    int defIndex = getDefaultValue(DimIdx(0));
+    {
+        ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), ViewIdx(0)));
+        if (!data) {
+            return std::string();
+        }
+        QMutexLocker k(&data->valueMutex);
+        if (defIndex < 0 || (int)data->menuOptions.size() <= defIndex ) {
+            return std::string();
+        }
+        return data->menuOptions[defIndex].id;
+    }
 }
 
 void

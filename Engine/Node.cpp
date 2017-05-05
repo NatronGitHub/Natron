@@ -1317,8 +1317,12 @@ Node::onRefreshIdentityStateRequestReceived()
     bool viewAware =  _imp->effect->isViewAware();
     int nViews = !viewAware ? 1 : project->getProjectViewsCount();
 
-    RectI format = _imp->effect->getOutputFormat();
 
+    RectI identityWindow;
+    identityWindow.x1 = INT_MIN;
+    identityWindow.y1 = INT_MIN;
+    identityWindow.x2 = INT_MAX;
+    identityWindow.y2 = INT_MAX;
     //The one view node might report it is identity, but we do not want it to display it
 
 
@@ -1328,7 +1332,7 @@ Node::onRefreshIdentityStateRequestReceived()
         for (int i = 0; i < nViews; ++i) {
 
             IsIdentityResultsPtr isIdentityResults;
-            ActionRetCodeEnum stat = _imp->effect->isIdentity_public(true, time, scale, format, ViewIdx(i), ImagePlaneDesc::getRGBAComponents()/*irrelevant*/, &isIdentityResults);
+            ActionRetCodeEnum stat = _imp->effect->isIdentity_public(true, time, scale, identityWindow, ViewIdx(i), ImagePlaneDesc::getRGBAComponents()/*irrelevant*/, &isIdentityResults);
             if (isFailureRetCode(stat)) {
                 continue;
             }

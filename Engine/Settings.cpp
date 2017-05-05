@@ -376,7 +376,7 @@ Settings::~Settings()
 static QStringList
 getDefaultOcioConfigPaths()
 {
-    QString binaryPath = appPTR->getApplicationBinaryPath();
+    QString binaryPath = QString::fromUtf8(appPTR->getApplicationBinaryDirPath().c_str());
     StrUtils::ensureLastPathSeparator(binaryPath);
 
 #ifdef __NATRON_LINUX__

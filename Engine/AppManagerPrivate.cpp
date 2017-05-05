@@ -53,7 +53,6 @@
 
 #include "Engine/CLArgs.h"
 #include "Engine/Cache.h"
-#include "Engine/ExistenceCheckThread.h"
 #include "Engine/Format.h"
 #include "Engine/MultiThread.h"
 #include "Engine/Image.h"
@@ -90,7 +89,7 @@ AppManagerPrivate::AppManagerPrivate()
     , tileCache()
     , _backgroundIPC()
     , _loaded(false)
-    , _binaryPath()
+    , binaryPath()
     , errorLogMutex()
     , errorLog()
     , idealThreadCount(0)

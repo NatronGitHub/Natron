@@ -42,6 +42,7 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/uuid/uuid.hpp>
 #endif
 
 #include "Engine/CacheEntryBase.h"
@@ -101,7 +102,7 @@
 // the cache may not be placed in a network drive.
 // If not defined, the cache supports only a single process writing/reading from the cache concurrently, other processes will resort
 // in a process-local cache.
-//#define NATRON_CACHE_INTERPROCESS_ROBUST
+#define NATRON_CACHE_INTERPROCESS_ROBUST
 
 NATRON_NAMESPACE_ENTER;
 
@@ -195,6 +196,14 @@ public:
      **/
     virtual CacheEntryBasePtr getProcessLocalEntry() const = 0;
 
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+    /**
+     * @brief Returns the process that is in charge of computing the entry UUID.
+     * This can be used to determine if the entry was abandonned.
+     **/
+    virtual boost::uuids::uuid getComputeProcessUUID() const = 0;
+#endif
+
     static void sleep_milliseconds(std::size_t amountMS);
 
 };
@@ -246,6 +255,9 @@ public:
      **/
     virtual CacheEntryStatusEnum waitForPendingEntry(std::size_t timeout = 0) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+    virtual boost::uuids::uuid getComputeProcessUUID() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+#endif
 
     /**
      * @brief Get the entry that was originally passed to the ctor.
@@ -425,6 +437,25 @@ public:
      **/
     virtual void getMemoryStats(std::map<std::string, CacheReportInfo>* infos) const = 0;
 
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+    /**
+     * @brief Scans the set of currently registered processes to check if they are still alive.
+     * If a process is no longer active, it is removed from the mapped process list, potentially
+     * unblocking pending cached entries.
+     * This should be called periodically from a dedicated thread.
+     **/
+    virtual void cleanupMappedProcessList() = 0;
+
+    /**
+     * @brief Returns the uuid of the current process in the cache. This is only relevant for a persistent cache.
+     **/
+    virtual boost::uuids::uuid getCurrentProcessUUID() const = 0;
+
+    /**
+     * @brief Returns true if the given uuid is still registered in the mapped process set.
+     **/
+    virtual bool isUUIDCurrentlyActive(const boost::uuids::uuid& tag) const = 0;
+#endif
 
 };
 
@@ -508,8 +539,11 @@ public:
     virtual void removeEntry(const CacheEntryBasePtr& entry) OVERRIDE FINAL;
     virtual void flushCacheOnDisk(bool async) OVERRIDE FINAL;
     virtual void getMemoryStats(std::map<std::string, CacheReportInfo>* infos) const OVERRIDE FINAL;
-
-
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+    virtual void cleanupMappedProcessList() OVERRIDE FINAL;
+    virtual boost::uuids::uuid getCurrentProcessUUID() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isUUIDCurrentlyActive(const boost::uuids::uuid& tag) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+#endif
 private:
 
     boost::scoped_ptr<CachePrivate<persistent> > _imp;

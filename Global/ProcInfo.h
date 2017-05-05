@@ -36,11 +36,11 @@ NATRON_NAMESPACE_ENTER;
 
 namespace ProcInfo {
 
-#if defined(__NATRON_WIN32__)
-typedef struct _PROCESS_INFORMATION ProcPID;
-#else
-typedef long long ProcPID;
-#endif
+
+/**
+* @brief Returns the current process pid
+**/
+long long getCurrentProcessPID();
 
 /**
  * @brief Returns the application's executable absolute file path.

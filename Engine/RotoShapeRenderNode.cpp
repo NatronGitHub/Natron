@@ -288,8 +288,14 @@ RotoShapeRenderNode::getLayersProducedAndNeeded(TimeValue time,
         // If we are identity, we do not produce the RotoMask plane
         IsIdentityResultsPtr identityResults;
         int identityInputNb = -1;
-        RectI outputFormat = getOutputFormat();
-        ActionRetCodeEnum stat = isIdentity_public(true, time, RenderScale(1.), outputFormat, view, inputPlane, &identityResults);
+
+        RectI identityWindow;
+        identityWindow.x1 = INT_MIN;
+        identityWindow.y1 = INT_MIN;
+        identityWindow.x2 = INT_MAX;
+        identityWindow.y2 = INT_MAX;
+
+        ActionRetCodeEnum stat = isIdentity_public(true, time, RenderScale(1.), identityWindow, view, inputPlane, &identityResults);
         if (!isFailureRetCode(stat)) {
             TimeValue identityTime;
             ViewIdx identityView;

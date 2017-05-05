@@ -535,7 +535,8 @@ public:
      * Non-active curves will not be inserted into the list.
      * MT-safe
      **/
-    std::list< RotoDrawableItemPtr > getRotoItemsByRenderOrder(TimeValue time, ViewIdx view, bool onlyActivated = true) const;
+    std::list< RotoDrawableItemPtr > getRotoPaintItemsByRenderOrder() const;
+    std::list< RotoDrawableItemPtr > getActivatedRotoPaintItemsByRenderOrder(TimeValue time, ViewIdx view) const;
 
     SelectedItems getSelectedDrawableItems() const;
 

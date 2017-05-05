@@ -35,6 +35,7 @@
 #include <QtCore/QDebug>
 
 #include "Engine/AppManager.h"
+#include "Engine/Cache.h"
 
 //This will check every X ms whether the crash reporter process still exist when
 //Natron was spawned from the crash reporter process
@@ -44,6 +45,87 @@
 #define NATRON_BREAKPAD_WAIT_FOR_CRASH_REPORTER_ACK_MS 5000
 
 NATRON_NAMESPACE_ENTER;
+
+struct MappedProcessWatcherThreadPrivate
+{
+    mutable QMutex mustQuitMutex;
+    bool mustQuit;
+    QWaitCondition mustQuitCond;
+    CacheBasePtr cache;
+
+    MappedProcessWatcherThreadPrivate()
+    : mustQuitMutex()
+    , mustQuit(false)
+    , mustQuitCond()
+    {
+    }
+};
+
+MappedProcessWatcherThread::MappedProcessWatcherThread()
+: QThread()
+, _imp( new MappedProcessWatcherThreadPrivate() )
+{
+    setObjectName( QString::fromUtf8("MappedProcessWatcherThread") );
+}
+
+MappedProcessWatcherThread::~MappedProcessWatcherThread()
+{
+}
+
+void
+MappedProcessWatcherThread::quitThread()
+{
+    if ( !isRunning() ) {
+        return;
+    }
+    {
+        QMutexLocker k(&_imp->mustQuitMutex);
+        assert(!_imp->mustQuit);
+        _imp->mustQuit = true;
+        while (_imp->mustQuit) {
+            _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
+        }
+    }
+    wait();
+}
+
+void
+MappedProcessWatcherThread::startWatching()
+{
+    _imp->cache = appPTR->getTileCache();
+    if (!_imp->cache->isPersistent()) {
+        return;
+    }
+    if (isRunning()) {
+        return;
+    }
+    start();
+}
+
+void
+MappedProcessWatcherThread::run()
+{
+    for (;;) {
+        {
+            QMutexLocker k(&_imp->mustQuitMutex);
+            if (_imp->mustQuit) {
+                _imp->mustQuit = false;
+                _imp->mustQuitCond.wakeOne();
+
+                return;
+            }
+        }
+
+
+        //Sleep until we need to check again
+        msleep(NATRON_BREAKPAD_CHECK_FOR_CRASH_REPORTER_EXISTENCE_MS);
+
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+        _imp->cache->cleanupMappedProcessList();
+#endif
+    }
+}
+
 
 struct ExistenceCheckerThreadPrivate
 {

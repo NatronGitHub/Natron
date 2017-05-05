@@ -34,6 +34,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_OFF(unused-parameter)
 #include <boost/interprocess/containers/map.hpp>
 #include <boost/interprocess/containers/vector.hpp>
+#include <boost/uuid/uuid.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
 
@@ -75,10 +76,15 @@ struct TileState
     // The indices of the buffers in the cache
     U64 channelsTileStorageIndex[4];
 
+    // If the tile status is eTileStatusPending, this is the uuid of the process that is in charge of computing
+    // the tile. This can be used to detect tile abandonnement.
+    boost::uuids::uuid uuid;
+
     TileState()
     : bounds()
     , status(eTileStatusNotRendered)
     , channelsTileStorageIndex()
+    , uuid()
     {
         channelsTileStorageIndex[0] = channelsTileStorageIndex[1] = channelsTileStorageIndex[2] = channelsTileStorageIndex[3] = (U64)-1;
     }
@@ -92,6 +98,7 @@ struct TileState
     {
         bounds = other.bounds;
         status = other.status;
+        uuid = other.uuid;
         memcpy(channelsTileStorageIndex, other.channelsTileStorageIndex, sizeof(U64) * 4);
     }
 };

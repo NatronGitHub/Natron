@@ -556,17 +556,34 @@ ProcInfo::ensureCommandLineArgsUtf8(int argc, wchar_t **argv, std::vector<std::s
     }
 }
 
-bool
-ProcInfo::checkIfProcessIsRunning(const char* /*processAbsoluteFilePath*/,
-                                  long long /*pid*/)
+long long
+ProcInfo::getCurrentProcessPID()
 {
-    //Not working yet
-    return true;
-#if 0
 #if defined(__NATRON_WIN32__)
+    return GetCurrentProcessId();
+#else
+    return getpid();
+#endif
+}
+
+bool
+ProcInfo::checkIfProcessIsRunning(const char* processAbsoluteFilePath,
+                                  long long pid)
+{
+#if defined(__NATRON_WIN32__)
+
+    HANDLE processHandle = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pid);
+    if (!processHandle) {
+        qDebug() << "checkIfProcessIsRunning: process" << pid << "is not running.";
+        return false;
+    }
     DWORD dwExitCode = 9999;
     //See https://login.live.com/login.srf?wa=wsignin1.0&rpsnv=12&checkda=1&ct=1451385015&rver=6.0.5276.0&wp=MCMBI&wlcxt=msdn%24msdn%24msdn&wreply=https%3a%2f%2fmsdn.microsoft.com%2fen-us%2flibrary%2fwindows%2fdesktop%2fms683189%2528v%3dvs.85%2529.aspx&lc=1033&id=254354&mkt=en-US
-    if ( GetExitCodeProcess(pid, &dwExitCode) ) {
+
+    bool caughtExitCode = GetExitCodeProcess(processHandle, &dwExitCode)
+    CloseHandle(processHandle);
+    if (caughtExitCode) {
+
         if (dwExitCode == STILL_ACTIVE) {
             return true;
         }
@@ -626,7 +643,8 @@ ProcInfo::checkIfProcessIsRunning(const char* /*processAbsoluteFilePath*/,
     if ( (err == 0) && (procBufferSize != 0) ) {
         //Process exist and is running, now check that it's actual path is the given one
         char pathbuf[PROC_PIDPATHINFO_MAXSIZE];
-        if ( proc_pidpath ( pid, pathbuf, (sizeof(pathbuf) > 0) ) ) {
+        int len = proc_pidpath ( pid, pathbuf, sizeof(pathbuf));
+        if (len > 0) {
             return !std::strcmp(pathbuf, processAbsoluteFilePath);
         }
 
@@ -640,7 +658,6 @@ ProcInfo::checkIfProcessIsRunning(const char* /*processAbsoluteFilePath*/,
 
     return false;
 #endif // ifdef Q_OS_WIN
-#endif // if 0
 } // ProcInfo::checkIfProcessIsRunning
 
 NATRON_NAMESPACE_EXIT;

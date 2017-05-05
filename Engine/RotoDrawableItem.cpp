@@ -518,7 +518,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
     }
 
     if (connectNodes) {
-        refreshNodesConnections();
+        refreshNodesConnections(RotoDrawableItemPtr());
     }
 } // RotoDrawableItem::createNodes
 
@@ -588,7 +588,16 @@ RotoDrawableItem::onKnobValueChanged(const KnobIPtr& knob,
             rotoPaintEffect->refreshRotoPaintTree();
         }
     } else if ( (knob == _imp->timeOffsetMode.lock()) && _imp->timeOffsetNode ) {
-        refreshNodesConnections();
+        // Get the items by render order. In the GUI they appear from bottom to top.
+        std::list<RotoDrawableItemPtr> rotoItems = rotoPaintEffect->getRotoPaintItemsByRenderOrder();
+        RotoDrawableItemPtr thisShared = boost::dynamic_pointer_cast<RotoDrawableItem>(shared_from_this());
+        RotoDrawableItemPtr prev;
+        std::list<RotoDrawableItemPtr>::iterator found = std::find(rotoItems.begin(), rotoItems.end(), thisShared);
+        if (found != rotoItems.end() && found != rotoItems.begin()) {
+            --found;
+            prev = *found;
+        }
+        refreshNodesConnections(prev);
     } else {
         return RotoItem::onKnobValueChanged(knob, reason, time, view);
     }
@@ -656,7 +665,7 @@ RotoDrawableItem::refreshNodesPositions(double x, double y)
 }
 
 void
-RotoDrawableItem::refreshNodesConnections()
+RotoDrawableItem::refreshNodesConnections(const RotoDrawableItemPtr& previous)
 {
     KnobItemsTablePtr model = getModel();
     if (!model) {
@@ -671,8 +680,6 @@ RotoDrawableItem::refreshNodesConnections()
     if (!rotoPaintNode) {
         return;
     }
-
-    RotoDrawableItemPtr previous = boost::dynamic_pointer_cast<RotoDrawableItem>(getNextNonContainerItem());
 
     NodePtr rotoPaintInput0 = rotoPaintNode->getInternalInputNode(0);
 
