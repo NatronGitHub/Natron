@@ -26,7 +26,7 @@
 #include <cstring> // for std::memcpy, std::memset, std::strcmp
 #include <vector>
 #include <cstdlib>
-
+#include <cstdio>
 
 #ifdef __NATRON_UNIX__
 #include <unistd.h>
