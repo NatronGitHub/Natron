@@ -574,7 +574,9 @@ ProcInfo::checkIfProcessIsRunning(const char* processAbsoluteFilePath,
 
     HANDLE processHandle = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pid);
     if (!processHandle) {
-        qDebug() << "checkIfProcessIsRunning: process" << pid << "is not running.";
+#ifdef DEBUG
+        std::cerr << "checkIfProcessIsRunning: process " << pid << " is not running." << std::endl;
+#endif
         return false;
     }
     DWORD dwExitCode = 9999;
@@ -590,8 +592,9 @@ ProcInfo::checkIfProcessIsRunning(const char* processAbsoluteFilePath,
 
         return false;
     } else {
-        qDebug() << "Call to GetExitCodeProcess failed.";
-
+#ifdef DEBUG
+        std::cerr << "Call to GetExitCodeProcess failed." << std::endl;
+#endif
         return false;
     }
 #elif defined(__NATRON_LINUX__)
@@ -622,7 +625,9 @@ ProcInfo::checkIfProcessIsRunning(const char* processAbsoluteFilePath,
     char state;
     //See http://man7.org/linux/man-pages/man5/proc.5.html
     if ( ( fscanf(fp, "%ld (%[^)]) %c", &pid, pname, &state) ) != 3 ) {
-        qDebug() << "ProcInfo::checkIfProcessIsRunning(): fscanf call on" << procFile << "failed";
+#ifdef DEBUG
+        std::cerr << "ProcInfo::checkIfProcessIsRunning(): fscanf call on " << procFile << " failed";
+#endif
         fclose(fp);
 
         return false;
