@@ -492,8 +492,9 @@ KnobHelper::deleteKnob()
         }
     }
 
-    if ( getHolder() && getHolder()->getApp() ) {
-        getHolder()->getApp()->recheckInvalidExpressions();
+    KnobHolder* holder = getHolder();
+    if ( holder && holder->getApp() ) {
+        holder->getApp()->recheckInvalidExpressions();
     }
 
     for (int i = 0; i < getDimension(); ++i) {
@@ -502,22 +503,21 @@ KnobHelper::deleteKnob()
 
     resetParent();
 
-    KnobGroup* isGrp =  dynamic_cast<KnobGroup*>(this);
-    KnobPage* isPage = dynamic_cast<KnobPage*>(this);
-    if (isGrp) {
-        KnobsVec children = isGrp->getChildren();
-        for (KnobsVec::iterator it = children.begin(); it != children.end(); ++it) {
-            _imp->holder->deleteKnob(it->get(), true);
-        }
-    } else if (isPage) {
-        KnobsVec children = isPage->getChildren();
-        for (KnobsVec::iterator it = children.begin(); it != children.end(); ++it) {
-            _imp->holder->deleteKnob(it->get(), true);
-        }
-    }
-
-    KnobHolder* holder = getHolder();
     if (holder) {
+        KnobGroup* isGrp =  dynamic_cast<KnobGroup*>(this);
+        KnobPage* isPage = dynamic_cast<KnobPage*>(this);
+        if (isGrp) {
+            KnobsVec children = isGrp->getChildren();
+            for (KnobsVec::iterator it = children.begin(); it != children.end(); ++it) {
+                _imp->holder->deleteKnob(it->get(), true);
+            }
+        } else if (isPage) {
+            KnobsVec children = isPage->getChildren();
+            for (KnobsVec::iterator it = children.begin(); it != children.end(); ++it) {
+                _imp->holder->deleteKnob(it->get(), true);
+            }
+        }
+
         EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
         if (effect) {
             if ( useHostOverlayHandle() ) {
