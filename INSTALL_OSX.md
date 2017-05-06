@@ -269,6 +269,8 @@ First, install clang 3.9. On OS X 10.9 and later, simply execute:
 
 On older systems, follow the procedure described in "[https://trac.macports.org/wiki/LibcxxOnOlderSystems](Using libc++ on older system)". Note that we noticed clang 3.9.1 generates wrong code with `-Os` when compiling openexr, so it is safer to also change `default configure.optflags      {-Os}` to `default configure.optflags      {-O2}` in `/opt/local/libexec/macports/lib/port1.0/portconfigure.tcl` (type `sudo nano /opt/local/libexec/macports/lib/port1.0/portconfigure.tcl` to edit it).
 
+On older systems, if you also want to install clang-4.0, you may have to `sudo mv /usr/bin/libtool /usr/bin/libtool.orig; sudo mv /Developer/usr/bin/libtool /Developer/usr/bin/libtool.orig; sudo ln -s /opt/local/bin/libtool /usr/bin/libtool; sudo ln -s /opt/local/bin/libtool /Developer/usr/bin/libtool`
+
 Then, configure using the following qmake command:
 
     /opt/local/libexec/qt4/bin/qmake -spec unsupported/macx-clang-libc++ QMAKE_CXX=clang++-mp-3.9 QMAKE_CXX=clang++-mp-3.9 QMAKE_CC=clang-mp-3.9 QMAKE_OBJECTIVE_CXX=clang++-mp-3.9 QMAKE_OBJECTIVE_CC=clang-mp-3.9 QMAKE_LD=clang++-mp-3.9 -r CONFIG+=openmp

@@ -60,6 +60,7 @@ OfxMemory::alloc(size_t nBytes)
 {
     bool ret = false;
 
+    freeMem(); // ignore return value
     try {
         ret = _memory->alloc(nBytes);
     } catch (const std::bad_alloc &) {
@@ -69,11 +70,11 @@ OfxMemory::alloc(size_t nBytes)
     return ret;
 }
 
-void
+bool
 OfxMemory::freeMem()
 {
     _memory->freeMem();
-    delete this;
+    return true;
 }
 
 void

@@ -321,7 +321,7 @@ getAmountFreePhysicalRAM()
 #elif defined(__FreeBSD__) || defined(__FreeBSD_kernel__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) || defined(__APPLE__)
     // and http://source.winehq.org/git/wine.git/blob/HEAD:/dlls/kernel32/heap.c
     unsigned long long ullAvailPhys;
-    unsigned long long ullTotalPhys;
+    unsigned long long ullTotalPhys = 0;
     uint64_t total;
 #ifdef __APPLE__
     unsigned int val;
