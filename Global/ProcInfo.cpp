@@ -571,7 +571,7 @@ ProcInfo::checkIfProcessIsRunning(const char* processAbsoluteFilePath,
                                   long long pid)
 {
 #if defined(__NATRON_WIN32__)
-
+    (void)processAbsoluteFilePath;
     HANDLE processHandle = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pid);
     if (!processHandle) {
 #ifdef DEBUG
@@ -582,7 +582,7 @@ ProcInfo::checkIfProcessIsRunning(const char* processAbsoluteFilePath,
     DWORD dwExitCode = 9999;
     //See https://login.live.com/login.srf?wa=wsignin1.0&rpsnv=12&checkda=1&ct=1451385015&rver=6.0.5276.0&wp=MCMBI&wlcxt=msdn%24msdn%24msdn&wreply=https%3a%2f%2fmsdn.microsoft.com%2fen-us%2flibrary%2fwindows%2fdesktop%2fms683189%2528v%3dvs.85%2529.aspx&lc=1033&id=254354&mkt=en-US
 
-    bool caughtExitCode = GetExitCodeProcess(processHandle, &dwExitCode)
+    bool caughtExitCode = GetExitCodeProcess(processHandle, &dwExitCode);
     CloseHandle(processHandle);
     if (caughtExitCode) {
 
