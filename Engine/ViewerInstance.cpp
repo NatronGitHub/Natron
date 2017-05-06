@@ -116,7 +116,7 @@ struct ViewerInstancePrivate
 
     ImagePlaneDesc getComponentsFromDisplayChannels(const ImagePlaneDesc& alphaLayer) const;
 
-    void getChannelOptions(TimeValue time, ImagePlaneDesc* rgbLayer, ImagePlaneDesc* alphaLayer, int* alphaChannelIndex, ImagePlaneDesc* displayChannels) const;
+    ActionRetCodeEnum getChannelOptions(TimeValue time, ImagePlaneDesc* rgbLayer, ImagePlaneDesc* alphaLayer, int* alphaChannelIndex, ImagePlaneDesc* displayChannels) const;
 
     void setDisplayChannelsFromLayer(const std::list<ImagePlaneDesc>& availableLayers);
     
@@ -478,7 +478,12 @@ ViewerInstance::isIdentity(TimeValue time,
 {
     ImagePlaneDesc selectedLayer, selectedAlphaLayer;
     int alphaChannelIndex;
-    _imp->getChannelOptions(time, &selectedLayer, &selectedAlphaLayer, &alphaChannelIndex, 0);
+    {
+        ActionRetCodeEnum stat = _imp->getChannelOptions(time, &selectedLayer, &selectedAlphaLayer, &alphaChannelIndex, 0);
+        if (isFailureRetCode(stat)) {
+            return stat;
+        }
+    }
     DisplayChannelsEnum displayChannels = (DisplayChannelsEnum)_imp->displayChannels.lock()->getValue();
 
     if (displayChannels != eDisplayChannelsRGB) {
@@ -568,12 +573,19 @@ ViewerInstance::getLayersProducedAndNeeded(TimeValue time,
 
     ImagePlaneDesc selectedLayer, selectedAlphaLayer, selectedDisplayLayer;
     int alphaChannelIndex;
-    _imp->getChannelOptions(time, &selectedLayer, &selectedAlphaLayer, &alphaChannelIndex, &selectedDisplayLayer);
+    {
+        ActionRetCodeEnum stat = _imp->getChannelOptions(time, &selectedLayer, &selectedAlphaLayer, &alphaChannelIndex, &selectedDisplayLayer);
+        if (isFailureRetCode(stat)) {
+            return stat;
+        }
+    }
 
     DisplayChannelsEnum outputChannels = (DisplayChannelsEnum)_imp->displayChannels.lock()->getValue();
 
     // In output we always produce a RGBA texture for the viewer
-    layersProduced->push_back(selectedLayer);
+    if (selectedLayer.getNumComponents() > 0) {
+        layersProduced->push_back(selectedLayer);
+    }
 
     std::list<ImagePlaneDesc>& neededLayers = (*inputLayersNeeded)[0];
 
@@ -601,14 +613,16 @@ ViewerInstance::getChannelOptions(TimeValue time, ImagePlaneDesc* rgbLayer, Imag
     _imp->getChannelOptions(time, rgbLayer, alphaLayer, alphaChannelIndex, displayChannels);
 }
 
-void
+ActionRetCodeEnum
 ViewerInstancePrivate::getChannelOptions(TimeValue time, ImagePlaneDesc* rgbLayer, ImagePlaneDesc* alphaLayer, int* alphaChannelIndex, ImagePlaneDesc* displayChannels) const
 {
     std::list<ImagePlaneDesc> upstreamAvailableLayers;
     {
         const int passThroughPlanesInputNb = 0;
         ActionRetCodeEnum stat = _publicInterface->getAvailableLayers(time, ViewIdx(0), passThroughPlanesInputNb, &upstreamAvailableLayers);
-        (void)stat;
+        if (isFailureRetCode(stat)) {
+            return stat;
+        }
     }
     if (rgbLayer) {
         *rgbLayer = getSelectedLayer(upstreamAvailableLayers);
@@ -619,6 +633,7 @@ ViewerInstancePrivate::getChannelOptions(TimeValue time, ImagePlaneDesc* rgbLaye
     if (displayChannels && alphaLayer) {
         *displayChannels = getComponentsFromDisplayChannels(*alphaLayer);
     }
+    return eActionStatusOK;
 
 } // getChannelOptions
 
@@ -1510,7 +1525,12 @@ ViewerInstance::render(const RenderActionArgs& args)
 
     ImagePlaneDesc selectedLayer, selectedAlphaLayer, selectedDisplayLayer;
     int alphaChannelIndex;
-    _imp->getChannelOptions(args.time, &selectedLayer, &selectedAlphaLayer, &alphaChannelIndex, &selectedDisplayLayer);
+    {
+        ActionRetCodeEnum stat = _imp->getChannelOptions(args.time, &selectedLayer, &selectedAlphaLayer, &alphaChannelIndex, &selectedDisplayLayer);
+        if (isFailureRetCode(stat)) {
+            return stat;
+        }
+    }
 
 
     ImagePtr dstImage = args.outputPlanes.begin()->second;
@@ -1572,10 +1592,11 @@ ViewerInstance::render(const RenderActionArgs& args)
             return eActionStatusFailed;
         }
     }
-    if (colorImage && colorImage->getComponentsCount() != dstImage->getComponentsCount()) {
+
+    /*if (displayChannels != eDisplayChannelsA && colorImage && colorImage->getComponentsCount() != dstImage->getComponentsCount()) {
         getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorGenericRenderMessage, tr("Host did not take into account requested bit-depth").toStdString());
         return eActionStatusFailed;
-    }
+    }*/
 
     if (colorImage && alphaImage && colorImage->getBitDepth() != alphaImage->getBitDepth()) {
         getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorGenericRenderMessage, tr("Host did not take into account requested bit-depth").toStdString());

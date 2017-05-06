@@ -1397,7 +1397,7 @@ RotoPaintInteract::isNearbyFeatherBar(TimeValue time,
     for (std::list<KnobTableItemPtr>::const_iterator it = selectedItems.begin(); it != selectedItems.end(); ++it) {
         BezierPtr isBezier = toBezier(*it);
         RotoStrokeItemPtr isStroke = toRotoStrokeItem(*it);
-        if ( !isBezier || isBezier->isOpenBezier() ) {
+        if ( !isBezier || isBezier->isOpenBezier() || !isBezier->isFillEnabled() ) {
             continue;
         }
 
@@ -2111,7 +2111,7 @@ RotoPaintInteract::drawOverlay(TimeValue time,
                         } else if (featherVisible) {
                             ///if the feather point is identical to the control point
                             ///draw a small hint line that the user can drag to move the feather point
-                            if ( !isBezier->isOpenBezier() && ( (selectedTool == eRotoToolSelectAll) || (selectedTool == eRotoToolSelectFeatherPoints) ) ) {
+                            if ( !isBezier->isOpenBezier() && isBezier->isFillEnabled() && ( (selectedTool == eRotoToolSelectAll) || (selectedTool == eRotoToolSelectFeatherPoints) ) ) {
                                 int cpCount = (*it2)->getBezier()->getControlPointsCount(view);
                                 if (cpCount > 1) {
                                     Point controlPoint;

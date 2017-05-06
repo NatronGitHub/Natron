@@ -214,6 +214,10 @@ Gui::abortProject(bool quitApp,
                   bool warnUserIfSaveNeeded,
                   bool blocking)
 {
+    AppInstancePtr app = getApp();
+    if (!app) {
+        return false;
+    }
     if (getApp()->getProject()->hasNodes() && warnUserIfSaveNeeded) {
         int ret = saveWarning();
         if (ret == 0) {

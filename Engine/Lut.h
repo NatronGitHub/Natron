@@ -86,6 +86,8 @@ public:
      **/
     static const Lut * getLut(const std::string & name, fromColorSpaceFunctionV1 fromFunc, toColorSpaceFunctionV1 toFunc);
 
+    static const Lut * findLut(const std::string& name);
+
     ///buit-ins color-spaces
     static const Lut* sRGBLut();
     static const Lut* Rec709Lut();

@@ -1414,6 +1414,7 @@ SettingsPrivate::initializeKnobsGuiColors()
     _sunkenColor =  _publicInterface->createKnob<KnobColor>("sunken", 3);
     _sunkenColor->setLabel(tr("Sunken"));
     _sunkenColor->setSimplified(true);
+    _sunkenColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _sunkenColor->setDefaultValue(0.12, DimIdx(0));
     _sunkenColor->setDefaultValue(0.12, DimIdx(1));
     _sunkenColor->setDefaultValue(0.12, DimIdx(2));
@@ -1423,6 +1424,7 @@ SettingsPrivate::initializeKnobsGuiColors()
     _baseColor =  _publicInterface->createKnob<KnobColor>("base", 3);
     _baseColor->setLabel(tr("Base"));
     _baseColor->setSimplified(true);
+    _baseColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _baseColor->setDefaultValue(0.19, DimIdx(0));
     _baseColor->setDefaultValue(0.19, DimIdx(1));
     _baseColor->setDefaultValue(0.19, DimIdx(2));
@@ -1432,6 +1434,7 @@ SettingsPrivate::initializeKnobsGuiColors()
     _raisedColor =  _publicInterface->createKnob<KnobColor>("raised", 3);
     _raisedColor->setLabel(tr("Raised"));
     _raisedColor->setSimplified(true);
+    _raisedColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _raisedColor->setDefaultValue(0.28, DimIdx(0));
     _raisedColor->setDefaultValue(0.28, DimIdx(1));
     _raisedColor->setDefaultValue(0.28, DimIdx(2));
@@ -1441,6 +1444,7 @@ SettingsPrivate::initializeKnobsGuiColors()
     _selectionColor =  _publicInterface->createKnob<KnobColor>("selection", 3);
     _selectionColor->setLabel(tr("Selection"));
     _selectionColor->setSimplified(true);
+    _selectionColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _selectionColor->setDefaultValue(0.95, DimIdx(0));
     _selectionColor->setDefaultValue(0.54, DimIdx(1));
     _selectionColor->setDefaultValue(0., DimIdx(2));
@@ -1450,6 +1454,7 @@ SettingsPrivate::initializeKnobsGuiColors()
     _textColor =  _publicInterface->createKnob<KnobColor>("text", 3);
     _textColor->setLabel(tr("Text"));
     _textColor->setSimplified(true);
+    _textColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _textColor->setDefaultValue(0.78, DimIdx(0));
     _textColor->setDefaultValue(0.78, DimIdx(1));
     _textColor->setDefaultValue(0.78, DimIdx(2));
@@ -1459,6 +1464,7 @@ SettingsPrivate::initializeKnobsGuiColors()
     _altTextColor =  _publicInterface->createKnob<KnobColor>("unmodifiedText", 3);
     _altTextColor->setLabel(tr("Unmodified text"));
     _altTextColor->setSimplified(true);
+    _altTextColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _altTextColor->setDefaultValue(0.6, DimIdx(0));
     _altTextColor->setDefaultValue(0.6, DimIdx(1));
     _altTextColor->setDefaultValue(0.6, DimIdx(2));
@@ -1468,6 +1474,7 @@ SettingsPrivate::initializeKnobsGuiColors()
     _timelinePlayheadColor =  _publicInterface->createKnob<KnobColor>("timelinePlayhead", 3);
     _timelinePlayheadColor->setLabel(tr("Timeline playhead"));
     _timelinePlayheadColor->setSimplified(true);
+    _timelinePlayheadColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _timelinePlayheadColor->setDefaultValue(0.95, DimIdx(0));
     _timelinePlayheadColor->setDefaultValue(0.54, DimIdx(1));
     _timelinePlayheadColor->setDefaultValue(0., DimIdx(2));
@@ -1478,6 +1485,7 @@ SettingsPrivate::initializeKnobsGuiColors()
     _timelineBGColor =  _publicInterface->createKnob<KnobColor>("timelineBG", 3);
     _timelineBGColor->setLabel(tr("Timeline background"));
     _timelineBGColor->setSimplified(true);
+    _timelineBGColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _timelineBGColor->setDefaultValue(0, DimIdx(0));
     _timelineBGColor->setDefaultValue(0, DimIdx(1));
     _timelineBGColor->setDefaultValue(0., DimIdx(2));
@@ -1487,6 +1495,7 @@ SettingsPrivate::initializeKnobsGuiColors()
     _timelineBoundsColor =  _publicInterface->createKnob<KnobColor>("timelineBound", 3);
     _timelineBoundsColor->setLabel(tr("Timeline bounds"));
     _timelineBoundsColor->setSimplified(true);
+    _timelineBoundsColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _timelineBoundsColor->setDefaultValue(0.81, DimIdx(0));
     _timelineBoundsColor->setDefaultValue(0.27, DimIdx(1));
     _timelineBoundsColor->setDefaultValue(0.02, DimIdx(2));
@@ -1496,6 +1505,7 @@ SettingsPrivate::initializeKnobsGuiColors()
     _cachedFrameColor =  _publicInterface->createKnob<KnobColor>("cachedFrame", 3);
     _cachedFrameColor->setLabel(tr("Cached frame"));
     _cachedFrameColor->setSimplified(true);
+    _cachedFrameColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _cachedFrameColor->setDefaultValue(0.56, DimIdx(0));
     _cachedFrameColor->setDefaultValue(0.79, DimIdx(1));
     _cachedFrameColor->setDefaultValue(0.4, DimIdx(2));
@@ -1506,6 +1516,7 @@ SettingsPrivate::initializeKnobsGuiColors()
     _interpolatedColor =  _publicInterface->createKnob<KnobColor>("interpValue", 3);
     _interpolatedColor->setLabel(tr("Interpolated value"));
     _interpolatedColor->setSimplified(true);
+    _interpolatedColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _interpolatedColor->setDefaultValue(0.34, DimIdx(0));
     _interpolatedColor->setDefaultValue(0.46, DimIdx(1));
     _interpolatedColor->setDefaultValue(0.6, DimIdx(2));
@@ -1515,6 +1526,7 @@ SettingsPrivate::initializeKnobsGuiColors()
     _keyframeColor =  _publicInterface->createKnob<KnobColor>("keyframe", 3);
     _keyframeColor->setLabel(tr("Keyframe"));
     _keyframeColor->setSimplified(true);
+    _keyframeColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _keyframeColor->setDefaultValue(0.08, DimIdx(0));
     _keyframeColor->setDefaultValue(0.38, DimIdx(1));
     _keyframeColor->setDefaultValue(0.97, DimIdx(2));
@@ -1524,6 +1536,7 @@ SettingsPrivate::initializeKnobsGuiColors()
     _trackerKeyframeColor =  _publicInterface->createKnob<KnobColor>("trackUserKeyframe", 3);
     _trackerKeyframeColor->setLabel(tr("Track User Keyframes"));
     _trackerKeyframeColor->setSimplified(true);
+    _trackerKeyframeColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _trackerKeyframeColor->setDefaultValue(0.7, DimIdx(0));
     _trackerKeyframeColor->setDefaultValue(0.78, DimIdx(1));
     _trackerKeyframeColor->setDefaultValue(0.39, DimIdx(2));
@@ -1533,6 +1546,7 @@ SettingsPrivate::initializeKnobsGuiColors()
     _exprColor =  _publicInterface->createKnob<KnobColor>("exprCoor", 3);
     _exprColor->setLabel(tr("Expression"));
     _exprColor->setSimplified(true);
+    _exprColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _exprColor->setDefaultValue(0.7, DimIdx(0));
     _exprColor->setDefaultValue(0.78, DimIdx(1));
     _exprColor->setDefaultValue(0.39, DimIdx(2));
@@ -1542,6 +1556,7 @@ SettingsPrivate::initializeKnobsGuiColors()
     _sliderColor =  _publicInterface->createKnob<KnobColor>("slider", 3);
     _sliderColor->setLabel(tr("Slider"));
     _sliderColor->setSimplified(true);
+    _sliderColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _sliderColor->setDefaultValue(0.33, DimIdx(0));
     _sliderColor->setDefaultValue(0.45, DimIdx(1));
     _sliderColor->setDefaultValue(0.44, DimIdx(2));
@@ -1562,6 +1577,7 @@ SettingsPrivate::initializeKnobsDopeSheetColors()
     _animationViewBackgroundColor = _publicInterface->createKnob<KnobColor>("animationViewBGColor", 3);
     _animationViewBackgroundColor->setLabel(tr("Background Color"));
     _animationViewBackgroundColor->setSimplified(true);
+    _animationViewBackgroundColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _animationViewBackgroundColor->setDefaultValue(0.19, DimIdx(0));
     _animationViewBackgroundColor->setDefaultValue(0.19, DimIdx(1));
     _animationViewBackgroundColor->setDefaultValue(0.19, DimIdx(2));
@@ -1571,6 +1587,7 @@ SettingsPrivate::initializeKnobsDopeSheetColors()
     _dopesheetRootSectionBackgroundColor = _publicInterface->createKnob<KnobColor>("dopesheetRootSectionBackground", 4);
     _dopesheetRootSectionBackgroundColor->setLabel(tr("Root section background color"));
     _dopesheetRootSectionBackgroundColor->setSimplified(true);
+    _dopesheetRootSectionBackgroundColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _dopesheetRootSectionBackgroundColor->setDefaultValue(0.204, DimIdx(0));
     _dopesheetRootSectionBackgroundColor->setDefaultValue(0.204, DimIdx(1));
     _dopesheetRootSectionBackgroundColor->setDefaultValue(0.204, DimIdx(2));
@@ -1581,6 +1598,7 @@ SettingsPrivate::initializeKnobsDopeSheetColors()
     _dopesheetKnobSectionBackgroundColor = _publicInterface->createKnob<KnobColor>("dopesheetParamSectionBackground", 4);
     _dopesheetKnobSectionBackgroundColor->setLabel(tr("Parameter background color"));
     _dopesheetKnobSectionBackgroundColor->setSimplified(true);
+    _dopesheetKnobSectionBackgroundColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _dopesheetKnobSectionBackgroundColor->setDefaultValue(0.443, DimIdx(0));
     _dopesheetKnobSectionBackgroundColor->setDefaultValue(0.443, DimIdx(1));
     _dopesheetKnobSectionBackgroundColor->setDefaultValue(0.443, DimIdx(2));
@@ -1591,6 +1609,7 @@ SettingsPrivate::initializeKnobsDopeSheetColors()
     _animationViewScaleColor = _publicInterface->createKnob<KnobColor>("animationViewScaleColor", 3);
     _animationViewScaleColor->setLabel(tr("Scale Text Color"));
     _animationViewScaleColor->setSimplified(true);
+    _animationViewScaleColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _animationViewScaleColor->setDefaultValue(0.714, DimIdx(0));
     _animationViewScaleColor->setDefaultValue(0.718, DimIdx(1));
     _animationViewScaleColor->setDefaultValue(0.714, DimIdx(2));
@@ -1600,6 +1619,7 @@ SettingsPrivate::initializeKnobsDopeSheetColors()
     _animationViewGridColor = _publicInterface->createKnob<KnobColor>("animationViewGridColor", 3);
     _animationViewGridColor->setLabel(tr("Grid Color"));
     _animationViewGridColor->setSimplified(true);
+    _animationViewGridColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _animationViewGridColor->setDefaultValue(0.35, DimIdx(0));
     _animationViewGridColor->setDefaultValue(0.35, DimIdx(1));
     _animationViewGridColor->setDefaultValue(0.35, DimIdx(2));
@@ -1636,6 +1656,7 @@ SettingsPrivate::initializeKnobsNodeGraphColors()
     _defaultNodeColor = _publicInterface->createKnob<KnobColor>("defaultNodeColor", 3);
     _defaultNodeColor->setLabel(tr("Default node color"));
     _defaultNodeColor->setSimplified(true);
+    _defaultNodeColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _defaultNodeColor->setHintToolTip( tr("The default color used for newly created nodes.") );
     _defaultNodeColor->setDefaultValue(0.7, DimIdx(0));
     _defaultNodeColor->setDefaultValue(0.7, DimIdx(1));
@@ -1647,6 +1668,7 @@ SettingsPrivate::initializeKnobsNodeGraphColors()
     _cloneColor = _publicInterface->createKnob<KnobColor>("cloneColor", 3);
     _cloneColor->setLabel(tr("Clone Color"));
     _cloneColor->setSimplified(true);
+    _cloneColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _cloneColor->setHintToolTip( tr("The default color used for clone nodes.") );
     _cloneColor->setDefaultValue(0.78, DimIdx(0));
     _cloneColor->setDefaultValue(0.27, DimIdx(1));
@@ -1659,6 +1681,7 @@ SettingsPrivate::initializeKnobsNodeGraphColors()
     _defaultBackdropColor =  _publicInterface->createKnob<KnobColor>("backdropColor", 3);
     _defaultBackdropColor->setLabel(tr("Default backdrop color"));
     _defaultBackdropColor->setSimplified(true);
+    _defaultBackdropColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _defaultBackdropColor->setHintToolTip( tr("The default color used for newly created backdrop nodes.") );
     _defaultBackdropColor->setDefaultValue(0.45, DimIdx(0));
     _defaultBackdropColor->setDefaultValue(0.45, DimIdx(1));
@@ -1669,6 +1692,7 @@ SettingsPrivate::initializeKnobsNodeGraphColors()
     _defaultReaderColor =  _publicInterface->createKnob<KnobColor>("readerColor", 3);
     _defaultReaderColor->setLabel(tr(PLUGIN_GROUP_IMAGE_READERS));
     _defaultReaderColor->setSimplified(true);
+    _defaultReaderColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _defaultReaderColor->setHintToolTip( tr("The color used for newly created Reader nodes.") );
     _defaultReaderColor->setDefaultValue(0.7, DimIdx(0));
     _defaultReaderColor->setDefaultValue(0.7, DimIdx(1));
@@ -1679,6 +1703,7 @@ SettingsPrivate::initializeKnobsNodeGraphColors()
     _defaultWriterColor =  _publicInterface->createKnob<KnobColor>("writerColor", 3);
     _defaultWriterColor->setLabel(tr(PLUGIN_GROUP_IMAGE_WRITERS));
     _defaultWriterColor->setSimplified(true);
+    _defaultWriterColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _defaultWriterColor->setHintToolTip( tr("The color used for newly created Writer nodes.") );
     _defaultWriterColor->setDefaultValue(0.75, DimIdx(0));
     _defaultWriterColor->setDefaultValue(0.75, DimIdx(1));
@@ -1689,6 +1714,7 @@ SettingsPrivate::initializeKnobsNodeGraphColors()
     _defaultGeneratorColor =  _publicInterface->createKnob<KnobColor>("generatorColor", 3);
     _defaultGeneratorColor->setLabel(tr("Generators"));
     _defaultGeneratorColor->setSimplified(true);
+    _defaultGeneratorColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _defaultGeneratorColor->setHintToolTip( tr("The color used for newly created Generator nodes.") );
     _defaultGeneratorColor->setDefaultValue(0.3, DimIdx(0));
     _defaultGeneratorColor->setDefaultValue(0.5, DimIdx(1));
@@ -1699,6 +1725,7 @@ SettingsPrivate::initializeKnobsNodeGraphColors()
     _defaultColorGroupColor =  _publicInterface->createKnob<KnobColor>("colorNodesColor", 3);
     _defaultColorGroupColor->setLabel(tr("Color group"));
     _defaultColorGroupColor->setSimplified(true);
+    _defaultColorGroupColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _defaultColorGroupColor->setHintToolTip( tr("The color used for newly created Color nodes.") );
     _defaultColorGroupColor->setDefaultValue(0.48, DimIdx(0));
     _defaultColorGroupColor->setDefaultValue(0.66, DimIdx(1));
@@ -1709,6 +1736,7 @@ SettingsPrivate::initializeKnobsNodeGraphColors()
     _defaultFilterGroupColor =  _publicInterface->createKnob<KnobColor>("filterNodesColor", 3);
     _defaultFilterGroupColor->setLabel(tr("Filter group"));
     _defaultFilterGroupColor->setSimplified(true);
+    _defaultFilterGroupColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _defaultFilterGroupColor->setHintToolTip( tr("The color used for newly created Filter nodes.") );
     _defaultFilterGroupColor->setDefaultValue(0.8, DimIdx(0));
     _defaultFilterGroupColor->setDefaultValue(0.5, DimIdx(1));
@@ -1719,6 +1747,7 @@ SettingsPrivate::initializeKnobsNodeGraphColors()
     _defaultTransformGroupColor =  _publicInterface->createKnob<KnobColor>("transformNodesColor", 3);
     _defaultTransformGroupColor->setLabel(tr("Transform group"));
     _defaultTransformGroupColor->setSimplified(true);
+    _defaultTransformGroupColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _defaultTransformGroupColor->setHintToolTip( tr("The color used for newly created Transform nodes.") );
     _defaultTransformGroupColor->setDefaultValue(0.7, DimIdx(0));
     _defaultTransformGroupColor->setDefaultValue(0.3, DimIdx(1));
@@ -1729,6 +1758,7 @@ SettingsPrivate::initializeKnobsNodeGraphColors()
     _defaultTimeGroupColor =  _publicInterface->createKnob<KnobColor>("timeNodesColor", 3);
     _defaultTimeGroupColor->setLabel(tr("Time group"));
     _defaultTimeGroupColor->setSimplified(true);
+    _defaultTimeGroupColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _defaultTimeGroupColor->setHintToolTip( tr("The color used for newly created Time nodes.") );
     _defaultTimeGroupColor->setDefaultValue(0.7, DimIdx(0));
     _defaultTimeGroupColor->setDefaultValue(0.65, DimIdx(1));
@@ -1739,6 +1769,7 @@ SettingsPrivate::initializeKnobsNodeGraphColors()
     _defaultDrawGroupColor =  _publicInterface->createKnob<KnobColor>("drawNodesColor", 3);
     _defaultDrawGroupColor->setLabel(tr("Draw group"));
     _defaultDrawGroupColor->setSimplified(true);
+    _defaultDrawGroupColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _defaultDrawGroupColor->setHintToolTip( tr("The color used for newly created Draw nodes.") );
     _defaultDrawGroupColor->setDefaultValue(0.75, DimIdx(0));
     _defaultDrawGroupColor->setDefaultValue(0.75, DimIdx(1));
@@ -1749,6 +1780,7 @@ SettingsPrivate::initializeKnobsNodeGraphColors()
     _defaultKeyerGroupColor =  _publicInterface->createKnob<KnobColor>("keyerNodesColor", 3);
     _defaultKeyerGroupColor->setLabel( tr("Keyer group"));
     _defaultKeyerGroupColor->setSimplified(true);
+    _defaultKeyerGroupColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _defaultKeyerGroupColor->setHintToolTip( tr("The color used for newly created Keyer nodes.") );
     _defaultKeyerGroupColor->setDefaultValue(0., DimIdx(0));
     _defaultKeyerGroupColor->setDefaultValue(1, DimIdx(1));
@@ -1759,6 +1791,7 @@ SettingsPrivate::initializeKnobsNodeGraphColors()
     _defaultChannelGroupColor =  _publicInterface->createKnob<KnobColor>("channelNodesColor", 3);
     _defaultChannelGroupColor->setLabel(tr("Channel group"));
     _defaultChannelGroupColor->setSimplified(true);
+    _defaultChannelGroupColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _defaultChannelGroupColor->setHintToolTip( tr("The color used for newly created Channel nodes.") );
     _defaultChannelGroupColor->setDefaultValue(0.6, DimIdx(0));
     _defaultChannelGroupColor->setDefaultValue(0.24, DimIdx(1));
@@ -1769,6 +1802,7 @@ SettingsPrivate::initializeKnobsNodeGraphColors()
     _defaultMergeGroupColor =  _publicInterface->createKnob<KnobColor>("defaultMergeColor", 3);
     _defaultMergeGroupColor->setLabel(tr("Merge group"));
     _defaultMergeGroupColor->setSimplified(true);
+    _defaultMergeGroupColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _defaultMergeGroupColor->setHintToolTip( tr("The color used for newly created Merge nodes.") );
     _defaultMergeGroupColor->setDefaultValue(0.3, DimIdx(0));
     _defaultMergeGroupColor->setDefaultValue(0.37, DimIdx(1));
@@ -1779,6 +1813,7 @@ SettingsPrivate::initializeKnobsNodeGraphColors()
     _defaultViewsGroupColor =  _publicInterface->createKnob<KnobColor>("defaultViewsColor", 3);
     _defaultViewsGroupColor->setLabel(tr("Views group"));
     _defaultViewsGroupColor->setSimplified(true);
+    _defaultViewsGroupColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _defaultViewsGroupColor->setHintToolTip( tr("The color used for newly created Views nodes.") );
     _defaultViewsGroupColor->setDefaultValue(0.5, DimIdx(0));
     _defaultViewsGroupColor->setDefaultValue(0.9, DimIdx(1));
@@ -1789,6 +1824,7 @@ SettingsPrivate::initializeKnobsNodeGraphColors()
     _defaultDeepGroupColor =  _publicInterface->createKnob<KnobColor>("defaultDeepColor", 3);
     _defaultDeepGroupColor->setLabel(tr("Deep group"));
     _defaultDeepGroupColor->setSimplified(true);
+    _defaultDeepGroupColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _defaultDeepGroupColor->setHintToolTip( tr("The color used for newly created Deep nodes.") );
     _defaultDeepGroupColor->setDefaultValue(0., DimIdx(0));
     _defaultDeepGroupColor->setDefaultValue(0., DimIdx(1));
@@ -1823,6 +1859,7 @@ SettingsPrivate::initializeKnobsScriptEditorColors()
     _curLineColor = _publicInterface->createKnob<KnobColor>("currentLineColor", 3);
     _curLineColor->setLabel(tr("Current Line Color"));
     _curLineColor->setSimplified(true);
+    _curLineColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _curLineColor->setDefaultValue(0.35, DimIdx(0));
     _curLineColor->setDefaultValue(0.35, DimIdx(1));
     _curLineColor->setDefaultValue(0.35, DimIdx(2));
@@ -1832,6 +1869,7 @@ SettingsPrivate::initializeKnobsScriptEditorColors()
     _keywordColor = _publicInterface->createKnob<KnobColor>("keywordColor", 3);
     _keywordColor->setLabel(tr("Keyword Color"));
     _keywordColor->setSimplified(true);
+    _keywordColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _keywordColor->setDefaultValue(0.7, DimIdx(0));
     _keywordColor->setDefaultValue(0.7, DimIdx(1));
     _keywordColor->setDefaultValue(0., DimIdx(2));
@@ -1841,6 +1879,7 @@ SettingsPrivate::initializeKnobsScriptEditorColors()
     _operatorColor = _publicInterface->createKnob<KnobColor>("operatorColor", 3);
     _operatorColor->setLabel(tr("Operator Color"));
     _operatorColor->setSimplified(true);
+    _operatorColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _operatorColor->setDefaultValue(0.78, DimIdx(0));
     _operatorColor->setDefaultValue(0.78, DimIdx(1));
     _operatorColor->setDefaultValue(0.78, DimIdx(2));
@@ -1850,6 +1889,7 @@ SettingsPrivate::initializeKnobsScriptEditorColors()
     _braceColor = _publicInterface->createKnob<KnobColor>("braceColor", 3);
     _braceColor->setLabel(tr("Brace Color"));
     _braceColor->setSimplified(true);
+    _braceColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _braceColor->setDefaultValue(0.85, DimIdx(0));
     _braceColor->setDefaultValue(0.85, DimIdx(1));
     _braceColor->setDefaultValue(0.85, DimIdx(2));
@@ -1859,6 +1899,7 @@ SettingsPrivate::initializeKnobsScriptEditorColors()
     _defClassColor = _publicInterface->createKnob<KnobColor>("classDefColor", 3);
     _defClassColor->setLabel(tr("Class Def Color"));
     _defClassColor->setSimplified(true);
+    _defClassColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _defClassColor->setDefaultValue(0.7, DimIdx(0));
     _defClassColor->setDefaultValue(0.7, DimIdx(1));
     _defClassColor->setDefaultValue(0., DimIdx(2));
@@ -1868,6 +1909,7 @@ SettingsPrivate::initializeKnobsScriptEditorColors()
     _stringsColor = _publicInterface->createKnob<KnobColor>("stringsColor", 3);
     _stringsColor->setLabel( tr("Strings Color"));
     _stringsColor->setSimplified(true);
+    _stringsColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _stringsColor->setDefaultValue(0.8, DimIdx(0));
     _stringsColor->setDefaultValue(0.2, DimIdx(1));
     _stringsColor->setDefaultValue(0., DimIdx(2));
@@ -1877,6 +1919,7 @@ SettingsPrivate::initializeKnobsScriptEditorColors()
     _commentsColor = _publicInterface->createKnob<KnobColor>("commentsColor", 3);
     _commentsColor->setLabel(tr("Comments Color"));
     _commentsColor->setSimplified(true);
+    _commentsColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _commentsColor->setDefaultValue(0.25, DimIdx(0));
     _commentsColor->setDefaultValue(0.6, DimIdx(1));
     _commentsColor->setDefaultValue(0.25, DimIdx(2));
@@ -1886,6 +1929,7 @@ SettingsPrivate::initializeKnobsScriptEditorColors()
     _selfColor = _publicInterface->createKnob<KnobColor>("selfColor", 3);
     _selfColor->setLabel(tr("Self Color"));
     _selfColor->setSimplified(true);
+    _selfColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _selfColor->setDefaultValue(0.7, DimIdx(0));
     _selfColor->setDefaultValue(0.7, DimIdx(1));
     _selfColor->setDefaultValue(0., DimIdx(2));
@@ -1895,6 +1939,7 @@ SettingsPrivate::initializeKnobsScriptEditorColors()
     _numbersColor = _publicInterface->createKnob<KnobColor>("numbersColor", 3);
     _numbersColor->setLabel(tr("Numbers Color"));
     _numbersColor->setSimplified(true);
+    _numbersColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _numbersColor->setDefaultValue(0.25, DimIdx(0));
     _numbersColor->setDefaultValue(0.8, DimIdx(1));
     _numbersColor->setDefaultValue(0.9, DimIdx(2));

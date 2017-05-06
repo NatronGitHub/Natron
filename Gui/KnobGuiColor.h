@@ -176,11 +176,19 @@ private:
 
 private:
 
+    void convertFromUIToInternalColorspace(double *r, double *g, double* b);
+    void convertFromInternalToUIColorspace(double *r, double *g, double* b);
+
+    void convertFromUIToInternalColorspace(double *value);
+    void convertFromInternalToUIColorspace(double *value);
+
+
     KnobColorWPtr _knob;
     ColorPickerLabel *_colorLabel;
     Button *_colorDialogButton;
     std::vector<double> _lastColor;
     bool _useSimplifiedUI;
+    const Color::Lut* _uiColorspaceLut, *_internalColorspaceLut;
 };
 
 inline KnobGuiColorPtr

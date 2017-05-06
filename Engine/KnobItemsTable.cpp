@@ -1728,6 +1728,7 @@ void
 KnobItemsTable::endSelection(TableChangeReasonEnum reason)
 {
 
+    bool didSomething = false;
     std::list<KnobTableItemPtr> itemsAdded, itemsRemoved;
     {
         // Avoid recursions
@@ -1749,6 +1750,7 @@ KnobItemsTable::endSelection(TableChangeReasonEnum reason)
                 if ( it2->lock() == *it) {
                     itemsRemoved.push_back(*it);
                     _imp->common->selectedItems.erase(it2);
+                    didSomething = true;
                     break;
                 }
 
@@ -1767,91 +1769,94 @@ KnobItemsTable::endSelection(TableChangeReasonEnum reason)
             }
             if (!found) {
                 itemsAdded.push_back(*it);
+                didSomething = true;
                 _imp->common->selectedItems.push_back(*it);
             }
         }
 
 
-        // For each master knobs, look in selected items for a knob with the same script-name. If found, then slave the item's
-        // knob to the master knob.
-        for (std::list<KnobIWPtr>::iterator it = _imp->common->perItemMasterKnobs.begin(); it != _imp->common->perItemMasterKnobs.end(); ++it) {
-            KnobIPtr masterKnob = it->lock();
-            if (!masterKnob) {
-                continue;
-            }
-
-            // Get the number of selected items with the given knob
-            int nItemsWithKnob = 0;
-            for (std::list<KnobTableItemWPtr>::iterator it2 = _imp->common->selectedItems.begin(); it2!= _imp->common->selectedItems.end(); ++it2) {
-                KnobTableItemPtr item = it2->lock();
-                if (!item) {
-                    continue;
-                }
-                KnobIPtr itemKnob = item->getKnobByName(masterKnob->getName());
-                if (itemKnob && itemKnob->isEnabled()) {
-                    ++nItemsWithKnob;
-                }
-            }
-
-            // The master knob is enabled as long as the selection contains at least 1 item with the given knob.
-            masterKnob->setEnabled(nItemsWithKnob > 0);
-
-            // The master knob is set "dirty" if multiple selected items have the given knob, to indicate to the user
-            // that modifying the master knob modifies all selected items.
-            masterKnob->setKnobSelectedMultipleTimes(nItemsWithKnob > 1);
-
-            // We need this otherwise the copyKnob() function would emit the value changed signal of the master knob
-            // which would in turn call onMasterKnobValueChanged and recurse.
-            ++_imp->common->masterKnobUpdatesBlocked;
-
-            for (std::set<KnobTableItemPtr>::const_iterator it = _imp->common->newItemsInSelection.begin(); it != _imp->common->newItemsInSelection.end(); ++it) {
-                KnobIPtr itemKnob = (*it)->getKnobByName(masterKnob->getName());
-                if (!itemKnob) {
-                    continue;
-                }
-                // Ensure the master knob reflects the state of the last item that was added to the selection.
-                // We ensure the state change does not affect already slaved knobs otherwise all items would
-                // get the value of the item we are copying.
-                masterKnob->copyKnob(itemKnob);
-
-                // Connect the item knob's value changed signal so that we can refresh the master knob when it changes
-                KnobSignalSlotHandler* handler = itemKnob->getSignalSlotHandler().get();
-                if (handler) {
-                    QObject::connect(handler, SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)), this, SLOT(onSelectionKnobValueChanged(ViewSetSpec,DimSpec,ValueChangedReasonEnum)), Qt::UniqueConnection);
-                }
-            }
-
-            for (std::set<KnobTableItemPtr>::const_iterator it = _imp->common->itemsRemovedFromSelection.begin(); it != _imp->common->itemsRemovedFromSelection.end(); ++it) {
-                KnobIPtr itemKnob = (*it)->getKnobByName(masterKnob->getName());
-                if (!itemKnob) {
+        if (didSomething) {
+            // For each master knobs, look in selected items for a knob with the same script-name. If found, then slave the item's
+            // knob to the master knob.
+            for (std::list<KnobIWPtr>::iterator it = _imp->common->perItemMasterKnobs.begin(); it != _imp->common->perItemMasterKnobs.end(); ++it) {
+                KnobIPtr masterKnob = it->lock();
+                if (!masterKnob) {
                     continue;
                 }
 
-                // Disconnect previous connection established above.
-                KnobSignalSlotHandler* handler = itemKnob->getSignalSlotHandler().get();
-                if (handler) {
-                    QObject::disconnect(handler, SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)), this, SLOT(onSelectionKnobValueChanged(ViewSetSpec,DimSpec,ValueChangedReasonEnum)));
+                // Get the number of selected items with the given knob
+                int nItemsWithKnob = 0;
+                for (std::list<KnobTableItemWPtr>::iterator it2 = _imp->common->selectedItems.begin(); it2!= _imp->common->selectedItems.end(); ++it2) {
+                    KnobTableItemPtr item = it2->lock();
+                    if (!item) {
+                        continue;
+                    }
+                    KnobIPtr itemKnob = item->getKnobByName(masterKnob->getName());
+                    if (itemKnob && itemKnob->isEnabled()) {
+                        ++nItemsWithKnob;
+                    }
                 }
-            }
 
-            --_imp->common->masterKnobUpdatesBlocked;
+                // The master knob is enabled as long as the selection contains at least 1 item with the given knob.
+                masterKnob->setEnabled(nItemsWithKnob > 0);
 
-        } // for all master knobs
+                // The master knob is set "dirty" if multiple selected items have the given knob, to indicate to the user
+                // that modifying the master knob modifies all selected items.
+                masterKnob->setKnobSelectedMultipleTimes(nItemsWithKnob > 1);
 
+                // We need this otherwise the copyKnob() function would emit the value changed signal of the master knob
+                // which would in turn call onMasterKnobValueChanged and recurse.
+                ++_imp->common->masterKnobUpdatesBlocked;
+
+                for (std::set<KnobTableItemPtr>::const_iterator it = _imp->common->newItemsInSelection.begin(); it != _imp->common->newItemsInSelection.end(); ++it) {
+                    KnobIPtr itemKnob = (*it)->getKnobByName(masterKnob->getName());
+                    if (!itemKnob) {
+                        continue;
+                    }
+                    // Ensure the master knob reflects the state of the last item that was added to the selection.
+                    // We ensure the state change does not affect already slaved knobs otherwise all items would
+                    // get the value of the item we are copying.
+                    masterKnob->copyKnob(itemKnob);
+
+                    // Connect the item knob's value changed signal so that we can refresh the master knob when it changes
+                    KnobSignalSlotHandler* handler = itemKnob->getSignalSlotHandler().get();
+                    if (handler) {
+                        QObject::connect(handler, SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)), this, SLOT(onSelectionKnobValueChanged(ViewSetSpec,DimSpec,ValueChangedReasonEnum)), Qt::UniqueConnection);
+                    }
+                }
+
+                for (std::set<KnobTableItemPtr>::const_iterator it = _imp->common->itemsRemovedFromSelection.begin(); it != _imp->common->itemsRemovedFromSelection.end(); ++it) {
+                    KnobIPtr itemKnob = (*it)->getKnobByName(masterKnob->getName());
+                    if (!itemKnob) {
+                        continue;
+                    }
+
+                    // Disconnect previous connection established above.
+                    KnobSignalSlotHandler* handler = itemKnob->getSignalSlotHandler().get();
+                    if (handler) {
+                        QObject::disconnect(handler, SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)), this, SLOT(onSelectionKnobValueChanged(ViewSetSpec,DimSpec,ValueChangedReasonEnum)));
+                    }
+                }
+                
+                --_imp->common->masterKnobUpdatesBlocked;
+                
+            } // for all master knobs
+        } // didSomething
 
         _imp->common->itemsRemovedFromSelection.clear();
         _imp->common->newItemsInSelection.clear();
 
     } //  QMutexLocker k(&_imp->selectionLock);
 
-    Q_EMIT selectionChanged(itemsAdded, itemsRemoved, reason);
+    if (didSomething) {
+        Q_EMIT selectionChanged(itemsAdded, itemsRemoved, reason);
 
-    // Run the Python callback if it is set
-    NodePtr node = getNode();
-    if (node) {
-        node->runAfterTableItemsSelectionChangedCallback(itemsRemoved, itemsAdded, reason);
+        // Run the Python callback if it is set
+        NodePtr node = getNode();
+        if (node) {
+            node->runAfterTableItemsSelectionChangedCallback(itemsRemoved, itemsAdded, reason);
+        }
     }
-
     QMutexLocker k(&_imp->common->selectionLock);
     --_imp->common->selectionRecursion;
 

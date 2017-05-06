@@ -581,15 +581,7 @@ public:
      **/
     bool removeItem(const TableItemPtr& item);
 
-    /**
-     * @brief Is item selected ?
-     **/
-    bool isItemSelected(const TableItemConstPtr& item) const;
-    void setItemSelected(const TableItemPtr& item, bool select);
-
-
-
-
+ 
     virtual int rowCount( const QModelIndex &parent = QModelIndex() ) const OVERRIDE FINAL;
     virtual int columnCount( const QModelIndex &parent = QModelIndex() ) const OVERRIDE FINAL;
     virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const OVERRIDE FINAL;

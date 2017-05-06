@@ -58,6 +58,8 @@ NATRON_NAMESPACE_ENTER;
 #define kItalicStartTag "<i>"
 #define kItalicEndTag "</i>"
 
+#define kColorKnobDefaultUIColorspaceName "sRGB"
+
 inline KnobBoolBasePtr
 toKnobBoolBase(const KnobIPtr& knob)
 {
@@ -860,6 +862,12 @@ public:
      **/
     void setSimplified(bool simp);
     bool isSimplified() const;
+
+    void setUIColorspaceName(const std::string& csName);
+    const std::string& getUIColorspaceName() const;
+
+    void setInternalColorspaceName(const std::string& csName);
+    const std::string& getInternalColorspaceName() const;
 
     virtual bool supportsInViewerContext() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {

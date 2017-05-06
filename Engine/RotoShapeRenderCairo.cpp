@@ -1825,7 +1825,7 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
                 continue;
             }
 
-        } else if (isBezier && isBezier->isOpenBezier()) {
+        } else if (isBezier && (isBezier->isOpenBezier() || !isBezier->isFillEnabled())) {
             std::vector< ParametricPoint> polygon;
 
             isBezier->evaluateAtTime(t, view, scale, Bezier::eDeCasteljauAlgorithmIterative, -1, 1., &polygon, 0);
@@ -1888,7 +1888,7 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
 
 
         assert(isStroke || isBezier);
-        if ( isStroke  || ( isBezier && isBezier->isOpenBezier() ) ) {
+        if ( isStroke  || ( isBezier && (isBezier->isOpenBezier() || !isBezier->isFillEnabled()) ) ) {
             std::vector<cairo_pattern_t*> dotPatterns;
             if (isDuringPainting && isStroke) {
                 dotPatterns = isStroke->getPatternCache();

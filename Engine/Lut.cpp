@@ -133,6 +133,18 @@ LutManager LutManager::m_instance = LutManager();
 LutManager::LutManager()
     : luts()
 {
+    // Create lut objects without initializing them
+    sRGBLut();
+    Rec709Lut();
+    CineonLut();
+    Gamma1_8Lut();
+    Gamma2_2Lut();
+    PanalogLut();
+    ViperLogLut();
+    REDLogLut();
+    AlexaV3LogCLut();
+    SLog1Lut();
+    SLog2Lut();
 }
 
 const Lut*
@@ -154,6 +166,17 @@ LutManager::getLut(const std::string & name,
     }
 
     return NULL;
+}
+
+const Lut*
+LutManager::findLut(const std::string& name)
+{
+    LutsMap::const_iterator found = LutManager::m_instance.luts.find(name);
+    QMutexLocker k(&LutManager::m_instance.lutsMutex);
+    if ( found != LutManager::m_instance.luts.end() ) {
+        return found->second;
+    }
+    return 0;
 }
 
 LutManager::~LutManager()

@@ -54,6 +54,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Image.h"
 #include "Engine/KnobFile.h"
 #include "Engine/Hash64.h"
+#include "Engine/Lut.h"
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/TimeLine.h"
@@ -1704,9 +1705,13 @@ struct KnobColorPrivate
 {
     bool simplifiedMode;
 
+    // Color-space name (mapped to the ones in Lut.cpp, but could be changed for OCIO in the future)
+    std::string uiColorspace, internalColorspace;
 
     KnobColorPrivate()
     : simplifiedMode(false)
+    , uiColorspace(kColorKnobDefaultUIColorspaceName)
+    , internalColorspace()
     {
         
     }
@@ -1752,6 +1757,30 @@ const std::string &
 KnobColor::typeName() const
 {
     return typeNameStatic();
+}
+
+void
+KnobColor::setUIColorspaceName(const std::string& csName)
+{
+    _imp->uiColorspace = csName;
+}
+
+const std::string&
+KnobColor::getUIColorspaceName() const
+{
+    return _imp->uiColorspace;
+}
+
+void
+KnobColor::setInternalColorspaceName(const std::string& csName)
+{
+    _imp->internalColorspace = csName;
+}
+
+const std::string&
+KnobColor::getInternalColorspaceName() const
+{
+    return _imp->internalColorspace;
 }
 
 void

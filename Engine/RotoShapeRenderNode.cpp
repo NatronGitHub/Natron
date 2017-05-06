@@ -608,9 +608,9 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                 double opacity = rotoItem->getOpacityKnob() ? rotoItem->getOpacityKnob()->getValueAtTime(args.time, DimIdx(0), args.view) : 1.;
 
                 // For a stroke or an opened bezier, use the generic stroke algorithm
-                if ( isStroke || ( isBezier && isBezier->isOpenBezier() ) ) {
-                    bool doBuildUp = isStroke->getBuildupKnob()->getValueAtTime(args.time, DimIdx(0), args.view);
-                    RotoShapeRenderGL::renderStroke_gl(glContext, glData, args.roi, outputPlane.second, isDuringPainting, distNextIn, lastCenterIn, isStroke, doBuildUp, opacity, args.time, args.view, range, divisions, combinedScale, &distToNextOut, &lastCenterOut);
+                if ( isStroke || ( isBezier && (isBezier->isOpenBezier() || !isBezier->isFillEnabled()) ) ) {
+                    const bool doBuildUp = !isStroke ? false : isStroke->getBuildupKnob()->getValueAtTime(args.time, DimIdx(0), args.view);
+                    RotoShapeRenderGL::renderStroke_gl(glContext, glData, args.roi, outputPlane.second, isDuringPainting, distNextIn, lastCenterIn, rotoItem, doBuildUp, opacity, args.time, args.view, range, divisions, combinedScale, &distToNextOut, &lastCenterOut);
 
                     // Update the stroke algorithm in output
                     if (isDuringPainting && isStroke) {

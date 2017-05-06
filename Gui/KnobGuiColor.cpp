@@ -218,6 +218,8 @@ KnobGuiColor::KnobGuiColor(const KnobGuiPtr& knobUI, ViewIdx view)
     , _colorLabel(0)
     , _colorDialogButton(0)
     , _useSimplifiedUI( _knob.lock()->isSimplified() )
+    , _uiColorspaceLut(0)
+    , _internalColorspaceLut(0)
 {
     if (!_useSimplifiedUI) {
         DimIdx singleDim;
@@ -226,6 +228,10 @@ KnobGuiColor::KnobGuiColor(const KnobGuiPtr& knobUI, ViewIdx view)
             _useSimplifiedUI = true;
         }
     }
+    const std::string& uiName = _knob.lock()->getUIColorspaceName();
+    const std::string& internalName = _knob.lock()->getInternalColorspaceName();
+    _uiColorspaceLut = Color::LutManager::findLut(uiName);
+    _internalColorspaceLut = Color::LutManager::findLut(internalName);
 }
 
 void
@@ -318,11 +324,11 @@ KnobGuiColor::updateLabel(double r,
 {
     QColor color;
     KnobColorPtr knob = _knob.lock();
-    bool simple = _useSimplifiedUI;
 
-    color.setRgbF( Image::clamp<qreal>(simple ? r : Color::to_func_srgb(r), 0., 1.),
-                   Image::clamp<qreal>(simple ? g : Color::to_func_srgb(g), 0., 1.),
-                   Image::clamp<qreal>(simple ? b : Color::to_func_srgb(b), 0., 1.),
+    convertFromInternalToUIColorspace(&r, &g, &b);
+    color.setRgbF( Image::clamp<qreal>(r, 0., 1.),
+                   Image::clamp<qreal>(g, 0., 1.),
+                   Image::clamp<qreal>(b, 0., 1.),
                    Image::clamp<qreal>(a, 0., 1.) );
     _colorLabel->setColor(color);
 }
@@ -445,19 +451,21 @@ void
 KnobGuiColor::onDialogCurrentColorChanged(const QColor & color)
 {
     KnobColorPtr knob = _knob.lock();
-    bool isSimple = _useSimplifiedUI;
     int nDims = knob->getNDimensions();
 
     std::vector<double> values(nDims);
-    values[0] = isSimple ? color.redF() : Color::from_func_srgb( color.redF() );
-
-
-    if (nDims >= 3) {
-        values[1] = isSimple ? color.greenF() : Color::from_func_srgb( color.greenF() );
-        values[2] = isSimple ? color.blueF() : Color::from_func_srgb( color.blueF() );
-        if (nDims == 4) {
-            values[3] = color.alphaF();
-        }
+    values[0] = color.redF();
+    convertFromUIToInternalColorspace(&values[0]);
+    if (nDims > 1) {
+        values[1] =  color.greenF();
+        convertFromUIToInternalColorspace(&values[1]);
+    }
+    if (nDims > 2) {
+        values[2] = color.blueF();
+        convertFromUIToInternalColorspace(&values[2]);
+    }
+    if (nDims > 3) {
+        values[3] = color.alphaF();
     }
 
     KnobGuiPtr knobUI = getKnobGui();
@@ -465,6 +473,44 @@ KnobGuiColor::onDialogCurrentColorChanged(const QColor & color)
     if ( knobUI->getGui() ) {
         knobUI->getGui()->setDraftRenderEnabled(true);
     }
+}
+
+void
+KnobGuiColor::convertFromUIToInternalColorspace(double *value)
+{
+    if (_uiColorspaceLut) {
+        *value = _uiColorspaceLut->fromColorSpaceFloatToLinearFloat(*value);
+    }
+    if (_internalColorspaceLut) {
+        *value = _internalColorspaceLut->toColorSpaceFloatFromLinearFloat(*value);
+    }
+}
+
+void
+KnobGuiColor::convertFromInternalToUIColorspace(double *value)
+{
+    if (_internalColorspaceLut) {
+        *value = _internalColorspaceLut->fromColorSpaceFloatToLinearFloat(*value);
+    }
+    if (_uiColorspaceLut) {
+        *value = _uiColorspaceLut->toColorSpaceFloatFromLinearFloat(*value);
+    }
+}
+
+void
+KnobGuiColor::convertFromUIToInternalColorspace(double *r, double *g, double* b)
+{
+    convertFromUIToInternalColorspace(r);
+    convertFromUIToInternalColorspace(g);
+    convertFromUIToInternalColorspace(b);
+}
+
+void
+KnobGuiColor::convertFromInternalToUIColorspace(double *r, double *g, double* b)
+{
+    convertFromInternalToUIColorspace(r);
+    convertFromInternalToUIColorspace(g);
+    convertFromInternalToUIColorspace(b);
 }
 
 void
@@ -495,11 +541,13 @@ KnobGuiColor::showColorDialog()
         _lastColor[3] = curA;
     }
 
-    bool isSimple = _useSimplifiedUI;
+    convertFromInternalToUIColorspace(&curR, &curG, &curB);
+
+
     QColor curColor;
-    curColor.setRgbF( Image::clamp<qreal>(isSimple ? curR : Color::to_func_srgb(curR), 0., 1.),
-                      Image::clamp<qreal>(isSimple ? curG : Color::to_func_srgb(curG), 0., 1.),
-                      Image::clamp<qreal>(isSimple ? curB : Color::to_func_srgb(curB), 0., 1.),
+    curColor.setRgbF( Image::clamp<qreal>(curR, 0., 1.),
+                      Image::clamp<qreal>(curG, 0., 1.),
+                      Image::clamp<qreal>(curB, 0., 1.),
                       Image::clamp<qreal>(curA, 0., 1.) );
     dialog.setCurrentColor(curColor);
     QObject::connect( &dialog, SIGNAL(currentColorChanged(QColor)), this, SLOT(onDialogCurrentColorChanged(QColor)) );
@@ -508,16 +556,21 @@ KnobGuiColor::showColorDialog()
     } else {
         QColor userColor = dialog.currentColor();
         std::vector<double> color(nDims);
-        color[0] = isSimple ? userColor.redF() : Color::from_func_srgb( userColor.redF() );
+        color[0] = userColor.redF();
+        convertFromUIToInternalColorspace(&color[0]);
         if (nDims > 1) {
-            color[1] = isSimple ? userColor.greenF() : Color::from_func_srgb( userColor.greenF() );
+            color[1] =  userColor.greenF();
+            convertFromUIToInternalColorspace(&color[1]);
         }
         if (nDims > 2) {
-            color[2] = isSimple ? userColor.blueF() : Color::from_func_srgb( userColor.blueF() );
+            color[2] = userColor.blueF();
+            convertFromUIToInternalColorspace(&color[2]);
         }
         if (nDims > 3) {
             color[3] = userColor.alphaF();
         }
+
+
 
         for (int i = 0; i < 3; ++i) {
             SpinBox* sb = 0;

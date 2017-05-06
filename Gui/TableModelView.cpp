@@ -857,7 +857,6 @@ TableModel::removeItem(const TableItemPtr& item)
 }
 
 
-
 TableItemPtr
 TableModel::getItem(int row, const QModelIndex& parent) const
 {
@@ -1594,7 +1593,9 @@ bool
 TableView::isItemSelected(const TableItemConstPtr &item) const
 {
     QModelIndex index = getTableModel()->getItemIndex(item);
-
+    if (!index.isValid()) {
+        return false;
+    }
     return selectionModel()->isSelected(index);
 }
 

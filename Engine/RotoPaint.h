@@ -88,6 +88,11 @@ NATRON_NAMESPACE_ENTER;
 #define kRotoFeatherFallOffTypeSmooth "Smooth"
 #define kRotoFeatherFallOffTypeSmoothHint "Traditional smoothstep ramp"
 
+
+#define kBezierParamFillShape "enableFill"
+#define kBezierParamFillShapeLabel "Fill Shape"
+#define kBezierParamFillShapeHint "If checked, the shape will be filled with its solid color, otherwise only the contour will be drawn"
+
 #define kRotoLifeTimeCustomRangeParam "customRange"
 #define kRotoLifeTimeCustomRangeParamLabel "Custom Range"
 #define kRotoLifeTimeCustomRangeParamHint \

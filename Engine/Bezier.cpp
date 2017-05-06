@@ -125,6 +125,7 @@ struct BezierPrivate
     KnobDoubleWPtr featherFallOff; //< the rate of fall-off for the feather, between 0 and 1,  0.5 meaning the
     //alpha value is half the original value when at half distance from the feather distance
     KnobChoiceWPtr fallOffRampType;
+    KnobBoolWPtr fillShapeKnob;
 
     // When it is a render clone, we cache the result of getBoundingBox()
     boost::scoped_ptr<std::map<TimeValue,RectD> > renderCloneBBoxCache;
@@ -209,6 +210,20 @@ bool
 Bezier::isOpenBezier() const
 {
     return _imp->isOpenBezier;
+}
+
+bool
+Bezier::isFillEnabled() const
+{
+    if (_imp->isOpenBezier) {
+        return false;
+    }
+    KnobBoolPtr knob = _imp->fillShapeKnob.lock();
+    if (!knob) {
+        return true;
+    }
+
+    return knob->getValue();
 }
 
 
@@ -1492,15 +1507,17 @@ Bezier::addControlPointAfterIndexInternal(int index, double t, ViewIdx view)
         }
 
 
-        ///If auto-keying is enabled, set a new keyframe
-        AppInstancePtr app = getApp();
-        assert(app);
-        TimeValue currentTime = TimeValue(app->getTimeLine()->currentFrame());
-        if ( !hasMasterKeyframeAtTime(currentTime, view) && isAutoKeyingEnabled() ) {
-            setKeyFrame(currentTime, view, 0);
-        }
     }
-    
+
+
+    ///If auto-keying is enabled, set a new keyframe
+    AppInstancePtr app = getApp();
+    assert(app);
+    TimeValue currentTime = TimeValue(app->getTimeLine()->currentFrame());
+    if ( !hasMasterKeyframeAtTime(currentTime, view) && isAutoKeyingEnabled() ) {
+        setKeyFrame(currentTime, view, 0);
+    }
+
     evaluateCurveModified();
     
     return p;
@@ -3205,7 +3222,8 @@ Bezier::getBoundingBox(TimeValue time, ViewIdx view) const
     RectD pointsBbox = getBezierSegmentListBbox(shape->points, 0 /*featherDistance*/, time,  transform);
 
 
-    if (useFeatherPoints() && !_imp->isOpenBezier) {
+    const bool isOpen = isOpenBezier() || !isFillEnabled();
+    if (useFeatherPoints() && !isOpen) {
 
         // EDIT: Partial fix, just pad the BBOX by the feather distance. This might not be accurate but gives at least something
         // enclosing the real bbox and close enough
@@ -3222,8 +3240,8 @@ Bezier::getBoundingBox(TimeValue time, ViewIdx view) const
         // Add one px padding so that we are sure the bounding box encloses the bounding box computed of the render points
         pointsBbox.addPadding(1, 1);
 
-    } else if (_imp->isOpenBezier) {
-        double brushSize = _imp->feather.lock()->getValueAtTime(time, DimIdx(0), view);
+    } else if (isOpen) {
+        double brushSize = getBrushSizeKnob()->getValueAtTime(time, DimIdx(0), view);
         double halfBrushSize = brushSize / 2. + 1;
         pointsBbox.x1 -= halfBrushSize;
         pointsBbox.x2 += halfBrushSize;
@@ -4013,6 +4031,9 @@ Bezier::initializeKnobs()
     _imp->feather = createDuplicateOfTableKnob<KnobDouble>(kRotoFeatherParam);
     _imp->featherFallOff = createDuplicateOfTableKnob<KnobDouble>(kRotoFeatherFallOffParam);
     _imp->fallOffRampType = createDuplicateOfTableKnob<KnobChoice>(kRotoFeatherFallOffType);
+    if (!_imp->isOpenBezier) {
+        _imp->fillShapeKnob = createDuplicateOfTableKnob<KnobBool>(kBezierParamFillShape);
+    }
 
 } // initializeKnobs
 
@@ -4049,6 +4070,9 @@ Bezier::fetchRenderCloneKnobs()
     _imp->feather = getKnobByNameAndType<KnobDouble>(kRotoFeatherParam);
     _imp->featherFallOff = getKnobByNameAndType<KnobDouble>(kRotoFeatherFallOffParam);
     _imp->fallOffRampType = getKnobByNameAndType<KnobChoice>(kRotoFeatherFallOffType);
+    if (!_imp->isOpenBezier) {
+        _imp->fillShapeKnob = getKnobByNameAndType<KnobBool>(kBezierParamFillShape);
+    }
 }
 
 KnobDoublePtr

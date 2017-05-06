@@ -496,6 +496,14 @@ RotoPaint::initShapePageKnobs()
         _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
+    {
+        KnobBoolPtr param = createKnob<KnobBool>(kBezierParamFillShape);
+        param->setLabel(tr(kBezierParamFillShapeLabel));
+        param->setHintToolTip( tr(kBezierParamFillShapeHint) );
+        param->setDefaultValue(true);
+        _imp->knobsTable->addPerItemKnobMaster(param);
+        shapePage->addKnob(param);
+    }
 
 } // initShapePageKnobs
 
@@ -2544,6 +2552,9 @@ RotoPaint::knobChanged(const KnobIPtr& k,
 void
 RotoPaintPrivate::refreshMotionBlurKnobsVisibility()
 {
+    if (!motionBlurTypeKnob.lock()) {
+        return;
+    }
     RotoMotionBlurModeEnum mbType = (RotoMotionBlurModeEnum)motionBlurTypeKnob.lock()->getValue();
     motionBlurKnob.lock()->setSecret(mbType != eRotoMotionBlurModePerShape);
     shutterKnob.lock()->setSecret(mbType != eRotoMotionBlurModePerShape);
@@ -3041,8 +3052,8 @@ RotoPaintPrivate::getOrCreateGlobalMergeNode(int blendingOperator, int *availabl
     fixedNamePrefix.append( QString::fromUtf8("globalMerge") );
     fixedNamePrefix.append( QLatin1Char('_') );
 
-
-    CreateNodeArgsPtr args(CreateNodeArgs::create( PLUGINID_OFX_ROTOMERGE,  rotoPaintEffect ));
+    const std::string mergePluginID = rotoPaintEffect->getRotoPaintNodeType() == RotoPaint::eRotoPaintTypeComp ? PLUGINID_OFX_MERGE : PLUGINID_OFX_ROTOMERGE;
+    CreateNodeArgsPtr args(CreateNodeArgs::create( mergePluginID,  rotoPaintEffect ));
 #ifndef ROTO_PAINT_NODE_GRAPH_VISIBLE
     args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
 #endif
@@ -3572,12 +3583,12 @@ RotoPaint::getMergeChoices(std::vector<ChoiceOption>* inputAChoices, std::vector
         inputAChoices->push_back(noneChoice);
     }
     for (int i = 1; i < LAYERED_COMP_MAX_INPUTS_COUNT; ++i) {
-        EffectInstancePtr input = getInputMainInstance(i);
+        NodePtr input = getNode()->getRealInput(i);
         if (!input) {
             continue;
         }
-        QObject::connect(input->getNode().get(), SIGNAL(labelChanged(QString,QString)), this, SLOT(onSourceNodeLabelChanged(QString,QString)), Qt::UniqueConnection);
-        const std::string& inputLabel = input->getNode()->getLabel();
+        QObject::connect(input.get(), SIGNAL(labelChanged(QString,QString)), this, SLOT(onSourceNodeLabelChanged(QString,QString)), Qt::UniqueConnection);
+        const std::string& inputLabel = input->getLabel();
         ChoiceOption opt(QString::number(i).toStdString(), inputLabel, "");
         bool isMask = i >= LAYERED_COMP_FIRST_MASK_INPUT_INDEX;
         if (!isMask) {

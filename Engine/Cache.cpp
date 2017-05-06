@@ -1496,11 +1496,6 @@ CacheEntryLocker<persistent>::create(const boost::shared_ptr<Cache<persistent> >
     }
     boost::shared_ptr<CacheEntryLocker<persistent> >  ret(new CacheEntryLocker<persistent>(cache, entry));
 
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
-    // Lock the SHM for reading to ensure all process shared mutexes and other IPC structures remains valid.
-    // This will prevent any other thread from calling ensureSharedMemoryIntegrity()
-    boost::scoped_ptr<SharedMemoryProcessLocalReadLocker<persistent> > shmAccess(new SharedMemoryProcessLocalReadLocker<persistent>(cache->_imp.get()));
-#endif
 
     // Lookup and find an existing entry.
     // Never take over an entry upon timeout.

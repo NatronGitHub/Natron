@@ -140,6 +140,8 @@ public:
                                                     const Point & p3);
     
     bool isOpenBezier() const;
+
+    bool isFillEnabled() const;
     
     /**
      * @brief Used to differentiate real shapes with feather of paint strokes which does not have a feather

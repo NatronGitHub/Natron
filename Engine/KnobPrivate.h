@@ -456,7 +456,7 @@ struct KnobHelperPrivate
     , common(new CommonData)
     {
         common->dimension = nDims;
-        common->name = scriptName;
+        common->name = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(scriptName);
         common->originalName = scriptName;
         common->label = scriptName;
 

@@ -1790,7 +1790,7 @@ RotoShapeRenderGL::renderStroke_gl(const OSGLContextPtr& glContext,
         std::list<std::list<std::pair<Point, double> > > strokes;
         if (isStroke) {
             isStroke->evaluateStroke(scale, t, view, &strokes);
-        } else if (isBezier && isBezier->isOpenBezier()) {
+        } else if (isBezier && (isBezier->isOpenBezier() || !isBezier->isFillEnabled())) {
             std::vector<ParametricPoint> polygon;
             isBezier->evaluateAtTime(t, view, scale, Bezier::eDeCasteljauAlgorithmIterative, -1, 1., &polygon, 0);
             std::list<std::pair<Point, double> > points;

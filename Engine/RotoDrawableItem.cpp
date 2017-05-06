@@ -405,7 +405,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
     fixedNamePrefix = baseFixedName;
     fixedNamePrefix.append( QString::fromUtf8("Merge") );
 
-    const std::string mergePluginID(PLUGINID_OFX_ROTOMERGE);
+    const std::string mergePluginID = type == eRotoStrokeTypeComp ? PLUGINID_OFX_MERGE : PLUGINID_OFX_ROTOMERGE;
     CreateNodeArgsPtr args(CreateNodeArgs::create( mergePluginID, rotoPaintEffect ));
     args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
 #ifndef ROTO_PAINT_NODE_GRAPH_VISIBLE
@@ -993,9 +993,9 @@ RotoDrawableItem::getActivatedRanges(ViewIdx view) const
 void
 RotoDrawableItem::getDefaultOverlayColor(double *r, double *g, double *b)
 {
-    *r = 0.85164;
-    *g = 0.196936;
-    *b = 0.196936;
+    *r = 0.7;
+    *g = 0.027;
+    *b = 0.027;
 }
 
 
@@ -1341,8 +1341,6 @@ RotoDrawableItem::fetchRenderCloneKnobs()
     RotoItem::fetchRenderCloneKnobs();
 
     RotoStrokeType type = getBrushType();
-    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(this);
-    Bezier* isBezier = dynamic_cast<Bezier*>(this);
     if (type == eRotoStrokeTypeSolid) {
         _imp->opacity = getKnobByNameAndType<KnobDouble>(kRotoOpacityParam);
     }
@@ -1366,17 +1364,17 @@ RotoDrawableItem::fetchRenderCloneKnobs()
         _imp->color = getKnobByNameAndType<KnobColor>(kRotoColorParam);
     }
 
-    // Brush: only for strokes or open beziers
-    if (isStroke || (isBezier && isBezier->isOpenBezier())) {
+
+    // The comp item doesn't have a vector graphics mask hence cannot have a transform on it
+    if (type != eRotoStrokeTypeComp) {
+
+        // Brush: only for strokes or open beziers
         _imp->brushSize = getKnobByNameAndType<KnobDouble>(kRotoBrushSizeParam);
         _imp->brushSpacing = getKnobByNameAndType<KnobDouble>(kRotoBrushSpacingParam);
         _imp->brushHardness = getKnobByNameAndType<KnobDouble>(kRotoBrushHardnessParam);
         _imp->visiblePortion = getKnobByNameAndType<KnobDouble>(kRotoBrushVisiblePortionParam);
-    }
+        
 
-
-    // The comp item doesn't have a vector graphics mask hence cannot have a transform on it
-    if (type != eRotoStrokeTypeComp) {
         // Transform
         _imp->translate = getKnobByNameAndType<KnobDouble>(kRotoDrawableItemTranslateParam);
         _imp->rotate = getKnobByNameAndType<KnobDouble>(kRotoDrawableItemRotateParam);
@@ -1492,19 +1490,18 @@ RotoDrawableItem::initializeKnobs()
         _imp->color = createDuplicateOfTableKnob<KnobColor>(kRotoColorParam);
     }
 
-
-
-    // Brush: only for strokes or open beziers
-    if (isStroke || (isBezier && isBezier->isOpenBezier())) {
-        _imp->brushSize = createDuplicateOfTableKnob<KnobDouble>(kRotoBrushSizeParam);
-        _imp->brushSpacing = createDuplicateOfTableKnob<KnobDouble>(kRotoBrushSpacingParam);
-        _imp->brushHardness = createDuplicateOfTableKnob<KnobDouble>(kRotoBrushHardnessParam);
-        _imp->visiblePortion = createDuplicateOfTableKnob<KnobDouble>(kRotoBrushVisiblePortionParam);
-    }
   
 
     // The comp item doesn't have a vector graphics mask hence cannot have a transform on it
     if (type != eRotoStrokeTypeComp) {
+
+        // Brush: only for strokes or open beziers
+        _imp->brushSize = createDuplicateOfTableKnob<KnobDouble>(kRotoBrushSizeParam);
+        _imp->brushSpacing = createDuplicateOfTableKnob<KnobDouble>(kRotoBrushSpacingParam);
+        _imp->brushHardness = createDuplicateOfTableKnob<KnobDouble>(kRotoBrushHardnessParam);
+        _imp->visiblePortion = createDuplicateOfTableKnob<KnobDouble>(kRotoBrushVisiblePortionParam);
+
+
         // Transform
         _imp->translate = createDuplicateOfTableKnob<KnobDouble>(kRotoDrawableItemTranslateParam);
         _imp->rotate = createDuplicateOfTableKnob<KnobDouble>(kRotoDrawableItemRotateParam);

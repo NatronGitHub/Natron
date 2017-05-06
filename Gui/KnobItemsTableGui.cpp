@@ -29,6 +29,7 @@
 #include <sstream> // stringstream
 
 #include <QApplication>
+#include <QDebug>
 #include <QHBoxLayout>
 #include <QStyledItemDelegate>
 #include <QPainter>
@@ -830,6 +831,8 @@ KnobItemsTableView::drawRow(QPainter * painter, const QStyleOptionViewItem & opt
     // Draw the label section which is the only one using a regular item and not a KnobGui
     KnobTableItemPtr internalItem = found->internalItem.lock();
     bool isSelected = internalItem->getModel()->isItemSelected(internalItem);
+    bool isSelectedInView = _imp->tableView->isItemSelected(item);
+    //assert((!isSelected && !_imp->tableView->isItemSelected(item)) || (isSelected && _imp->tableView->isItemSelected(item)));
     int labelCol = internalItem->getLabelColumnIndex();
     int xOffset = itemRect.x();
     {
@@ -1686,9 +1689,8 @@ KnobItemsTableGuiPrivate::itemsToSelection(const std::list<KnobTableItemPtr>& in
             continue;
         }
         assert(!found->columnItems.empty());
-        int row_i = found->item->getRowInParent();
-        QModelIndex leftMost = tableModel->index(row_i, 0);
-        QModelIndex rightMost = tableModel->index(row_i, tableModel->columnCount() - 1);
+        QModelIndex leftMost = tableModel->getItemIndex(found->item);
+        QModelIndex rightMost = tableModel->index(leftMost.row(), tableModel->columnCount() - 1, leftMost.parent());
         QItemSelectionRange t(leftMost, rightMost);
         for (std::size_t i = 0; i < found->columnItems.size(); ++i) {
             selection->append(t);
@@ -1748,8 +1750,12 @@ KnobItemsTableGui::onModelSelectionChanged(const std::list<KnobTableItemPtr>& ad
     
     // Ensure we don't recurse indefinitely in the selection
     ++_imp->selectingModelRecursion;
-    selectionModel->select(selectionToRemove, QItemSelectionModel::Deselect);
-    selectionModel->select(selectionToAdd, QItemSelectionModel::Select);
+    if (!removedFromSelection.empty()) {
+        selectionModel->select(selectionToRemove, QItemSelectionModel::Deselect);
+    }
+    if (!addedToSelection.empty()) {
+        selectionModel->select(selectionToAdd, QItemSelectionModel::Select);
+    }
     --_imp->selectingModelRecursion;
 
     _imp->refreshUserKeyFramesWidgets();
