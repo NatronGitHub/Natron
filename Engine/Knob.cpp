@@ -456,6 +456,21 @@ KnobHelper::isKeyFrameTrackingEnabled() const
     return _imp->common->keyframeTrackingEnabled;
 }
 
+static
+std::string
+unsignedToString(unsigned i)
+{
+    if (i == 0) {
+        return "0";
+    }
+    std::string nb;
+    for (unsigned j = i; j != 0; j /= 10) {
+        nb = (char)( '0' + (j % 10) ) + nb;
+    }
+
+    return nb;
+}
+
 void
 KnobHelper::populate()
 {
@@ -513,7 +528,7 @@ KnobHelper::populate()
     } else if (isStringBase) {
         curveType = Curve::eCurveTypeString;
     }
-    
+
     for (int i = 0; i < _imp->common->dimension; ++i) {
         KnobDimViewBasePtr data = createDimViewData();
         data->sharedKnobs.insert(KnobDimViewKey(thisKnob, DimIdx(i), ViewIdx(0)));
@@ -522,40 +537,34 @@ KnobHelper::populate()
         if ( canAnimate() ) {
             data->animationCurve.reset(new Curve(curveType));
         }
+    }
 
+    if (_imp->common->dimension > 4) {
+        for (int i = 0; i < getNDimensions(); ++i) {
+            _imp->common->dimensionNames[i] = unsignedToString(i);
+        }
+    } else {
         if (!isColor) {
-            switch (i) {
-            case 0:
-                _imp->common->dimensionNames[i] = "x";
-                break;
-            case 1:
-                _imp->common->dimensionNames[i] = "y";
-                break;
-            case 2:
-                _imp->common->dimensionNames[i] = "z";
-                break;
-            case 3:
-                _imp->common->dimensionNames[i] = "w";
-                break;
-            default:
-                break;
+            _imp->common->dimensionNames[0] = "x";
+            if (_imp->common->dimensionNames.size() > 1) {
+                _imp->common->dimensionNames[1] = "y";
+            }
+            if (_imp->common->dimensionNames.size() > 2) {
+                _imp->common->dimensionNames[2] = "z";
+            }
+            if (_imp->common->dimensionNames.size() > 3) {
+                _imp->common->dimensionNames[3] = "w";
             }
         } else {
-            switch (i) {
-            case 0:
-                _imp->common->dimensionNames[i] = "r";
-                break;
-            case 1:
-                _imp->common->dimensionNames[i] = "g";
-                break;
-            case 2:
-                _imp->common->dimensionNames[i] = "b";
-                break;
-            case 3:
-                _imp->common->dimensionNames[i] = "a";
-                break;
-            default:
-                break;
+            _imp->common->dimensionNames[0] = "r";
+            if (_imp->common->dimensionNames.size() > 1) {
+                _imp->common->dimensionNames[1] = "g";
+            }
+            if (_imp->common->dimensionNames.size() > 2) {
+                _imp->common->dimensionNames[2] = "b";
+            }
+            if (_imp->common->dimensionNames.size() > 3) {
+                _imp->common->dimensionNames[3] = "a";
             }
         }
     }
@@ -4092,6 +4101,7 @@ struct KnobHolderCommonData
 
     // The script-name of the knob right before where the table should be inserted in the gui
     std::string knobsTableParamBefore;
+    KnobHolder::KnobItemsTablePositionEnum knobsTablePosition;
 
     mutable QMutex renderClonesMutex;
     RenderCloneMap renderClones;
@@ -4112,6 +4122,7 @@ struct KnobHolderCommonData
     , knobsTable()
     , overlaySlaves()
     , knobsTableParamBefore()
+    , knobsTablePosition(KnobHolder::eKnobItemsTablePositionBottomOfAllPages)
     , renderClonesMutex()
     , renderClones()
     {
@@ -4231,17 +4242,23 @@ KnobHolder::isRenderClone() const
 
 
 void
-KnobHolder::setItemsTable(const KnobItemsTablePtr& table, const std::string& paramScriptNameBefore)
+KnobHolder::setItemsTable(const KnobItemsTablePtr& table, KnobItemsTablePositionEnum position, const std::string& paramScriptNameBefore)
 {
-    assert(!paramScriptNameBefore.empty());
     _imp->common->knobsTableParamBefore = paramScriptNameBefore;
     _imp->common->knobsTable = table;
+    _imp->common->knobsTablePosition = position;
 }
 
 KnobItemsTablePtr
 KnobHolder::getItemsTable() const
 {
     return _imp->common->knobsTable;
+}
+
+KnobHolder::KnobItemsTablePositionEnum
+KnobHolder::getItemsTablePosition() const
+{
+    return _imp->common->knobsTablePosition;
 }
 
 std::string

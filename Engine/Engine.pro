@@ -211,6 +211,7 @@ SOURCES += \
     RotoItem.cpp \
     RotoLayer.cpp \
     RotoPaint.cpp \
+    RotoPaintInteract.cpp \
     RotoPaintPrivate.cpp \
     RotoShapeRenderNode.cpp \
     RotoShapeRenderNodePrivate.cpp \
@@ -233,6 +234,7 @@ SOURCES += \
     TimeLine.cpp \
     Timer.cpp \
     TrackArgs.cpp \
+    TrackerDetect.cpp \
     TrackerHelper.cpp \
     TrackerHelperPrivate.cpp \
     TrackerFrameAccessor.cpp \
@@ -494,6 +496,7 @@ HEADERS += \
     Timer.h \
     TimeValue.h \
     TrackArgs.h \
+    TrackerDetect.h \
     TrackerHelper.h \
     TrackerHelperPrivate.h \
     TrackerFrameAccessor.h \

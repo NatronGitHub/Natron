@@ -219,7 +219,7 @@ KnobGui::isSecretRecursive() const
     KnobIPtr parentKnob = knob->getParentKnob();
     KnobGroupPtr parentIsGroup = toKnobGroup(parentKnob);
 
-    while (showit && parentKnob && parentIsGroup) {
+    while (showit && parentKnob && parentIsGroup && !parentIsGroup->isTab()) {
         KnobGuiPtr parentKnobGui = _imp->container->getKnobGui(parentKnob);
         if (!parentKnobGui) {
             break;
@@ -621,6 +621,7 @@ KnobGui::toolTip(QWidget* w, ViewIdx view) const
 
             KnobDimViewKeySet sharedKnobs;
             knob->getSharedValues(DimIdx(i), view, &sharedKnobs);
+            bool isNonPersistentLink = false;
             if (!sharedKnobs.empty()) {
                 const KnobDimViewKey& sharingMaster = *sharedKnobs.begin();
                 KnobIPtr sharingMasterKnob = sharingMaster.knob.lock();
@@ -632,12 +633,17 @@ KnobGui::toolTip(QWidget* w, ViewIdx view) const
                         sharingHolderIsEffect = sharingHolderIsTableItem->getModel()->getNode()->getEffectInstance();
                     }
                     if (sharingHolderIsEffect) {
+                        if (!sharingHolderIsEffect->getNode()->isPersistent()) {
+                            isNonPersistentLink = true;
+                        }
                         knobName = sharingHolderIsEffect->getNode()->getFullyQualifiedName();
                         knobName += ".";
                     }
-                    knobName += sharingMasterKnob->getName();
-                    linkString[i].first = knobName;
-                    linkString[i].second = eDimensionLinkTypeSimpleLink;
+                    if (!isNonPersistentLink) {
+                        knobName += sharingMasterKnob->getName();
+                        linkString[i].first = knobName;
+                        linkString[i].second = eDimensionLinkTypeSimpleLink;
+                    }
                 }
             }
         }
@@ -828,6 +834,7 @@ KnobGui::hide()
     if (_imp->tabGroup) {
         _imp->tabGroup->hide();
     }
+
 } // KnobGui::hide
 
 void
@@ -851,6 +858,7 @@ KnobGui::show()
     if (_imp->tabGroup) {
         _imp->tabGroup->show();
     }
+
 }
 
 void

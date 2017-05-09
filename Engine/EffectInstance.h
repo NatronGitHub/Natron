@@ -146,6 +146,8 @@ NATRON_NAMESPACE_ENTER;
 #define kEnablePreviewKnobName "enablePreview"
 #define kOutputChannelsKnobName "channels"
 
+#define kNatronRightClickMenuSeparator "NatronRightClickMenuSeparator"
+
 #define kHostMixingKnobName "hostMix"
 #define kHostMixingKnobLabel "Mix"
 #define kHostMixingKnobHint "Mix between the source image at 0 and the full effect at 1"

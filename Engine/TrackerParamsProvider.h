@@ -28,7 +28,7 @@
 #include "Global/Macros.h"
 
 #include "Engine/RectD.h"
-
+#include "Engine/ImagePlaneDesc.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -53,6 +53,21 @@ public:
      * @brief Returns the node associated to this params provider
      **/
     virtual NodePtr getTrackerNode() const = 0;
+
+    /**
+     * @brief Returns the node from which to pull the source image stream to track
+     **/
+    virtual NodePtr getSourceImageNode() const = 0;
+
+    /**
+     * @brief Returns the node from which to pull a mask for the pattern of the reference image
+     **/
+    virtual NodePtr getMaskImageNode() const = 0;
+
+    /**
+     * @brief Returns the image plane to fetch for the mask image node
+     **/
+    virtual ImagePlaneDesc getMaskImagePlane(int *channelIndex) const = 0;
 
     /**
      * @brief Returns true if the viewer should center on markers when during tracking

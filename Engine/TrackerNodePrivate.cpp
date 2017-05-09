@@ -1204,7 +1204,7 @@ fullRectFloatCPUImageToPBOForNComps(const Image::CPUData& srcImage,
             int srcPixelStride;
             Image::getChannelPointers<float, srcNComps>((const float**)srcImage.ptrs, x, y, srcImage.bounds, (float**)srcPixels, &srcPixelStride);
 
-            unsigned int* dstPixels = buf + y * roi.width() + x;
+            unsigned int* dstPixels = buf + (y - roi.y1) * roi.width() + (x - roi.x1);
 
             unsigned error[3] = {0x80, 0x80, 0x80};
 
@@ -1214,7 +1214,6 @@ fullRectFloatCPUImageToPBOForNComps(const Image::CPUData& srcImage,
                 for (int c = 0; c < srcNComps; ++c) {
                     if (srcPixels[c]) {
                         tmpPix[c] = *srcPixels[c];
-                        srcPixels[c] += srcPixelStride;
                         error[c] = (error[c] & 0xff) + lut->toColorSpaceUint8xxFromLinearFloatFast(tmpPix[c]);
                         assert(error[c] < 0x10000);
                     }
@@ -1224,9 +1223,15 @@ fullRectFloatCPUImageToPBOForNComps(const Image::CPUData& srcImage,
                 if (backward) {
                     --x;
                     --dstPixels;
+                    for (int c = 0; c < srcNComps; ++c) {
+                        srcPixels[c] -= srcPixelStride;
+                    }
                 } else {
                     ++x;
                     ++dstPixels;
+                    for (int c = 0; c < srcNComps; ++c) {
+                        srcPixels[c] += srcPixelStride;
+                    }
                 }
             } // for each pixels along the line
         } // backward ?
@@ -1332,9 +1337,9 @@ TrackerNodeInteract::onTrackingStarted(int step)
 {
     isTracking = true;
     if (step > 0) {
-        trackFwButton.lock()->setValue(true);
+        trackFwButton.lock()->setValue(true, ViewIdx(0), DimIdx(0), eValueChangedReasonPluginEdited);
     } else {
-        trackBwButton.lock()->setValue(true);
+        trackBwButton.lock()->setValue(true, ViewIdx(0), DimIdx(0), eValueChangedReasonPluginEdited);
     }
 }
 
@@ -1342,8 +1347,8 @@ void
 TrackerNodeInteract::onTrackingEnded()
 {
     _imp->solveTransformParams();
-    trackBwButton.lock()->setValue(false);
-    trackFwButton.lock()->setValue(false);
+    trackBwButton.lock()->setValue(false, ViewIdx(0), DimIdx(0), eValueChangedReasonPluginEdited);
+    trackFwButton.lock()->setValue(false, ViewIdx(0), DimIdx(0), eValueChangedReasonPluginEdited);
     isTracking = false;
     redraw();
 }

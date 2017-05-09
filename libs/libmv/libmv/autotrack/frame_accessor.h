@@ -55,6 +55,13 @@ struct FrameAccessor {
     RGBA
   };
 
+  enum GetImageTypeEnum
+  {
+    eGetImageTypeSource,
+    eGetImageTypeMask
+  };
+
+
   typedef void* Key;
 
   // Get a possibly-filtered version of a frame of a video. Downscale will
@@ -66,6 +73,7 @@ struct FrameAccessor {
   // When done with an image, you must call ReleaseImage with the returned key.
   virtual Key GetImage(int clip,
                        int frame,
+                       GetImageTypeEnum sourceType,
                        InputMode input_mode,
                        int downscale,               // Downscale by 2^downscale.
                        const Region* region,        // Get full image if NULL.

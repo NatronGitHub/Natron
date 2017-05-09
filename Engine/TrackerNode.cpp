@@ -170,7 +170,19 @@ TrackerNode::setupInitialSubGraphState()
         }
 
     }
+    {
+        CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_INPUT, thisShared));
+        args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+        args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+        args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "Mask");
+        args->addParamDefaultValue<bool>(kNatronGroupInputIsOptionalParamName, true);
+        args->addParamDefaultValue<bool>(kNatronGroupInputIsMaskParamName, true);
+        _imp->maskNode = getApp()->createNode(args);
+        if (!_imp->maskNode.lock()) {
+            throw std::runtime_error(tr("The Tracker node requires the plug-in %1 to be installed.").arg(QLatin1String(PLUGINID_NATRON_INPUT)).toStdString());
+        }
 
+    }
 
     {
         QString cornerPinName = fixedNamePrefix + QLatin1String("CornerPin");
@@ -524,7 +536,7 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         {
             std::vector<ChoiceOption> choices;
             std::map<int, std::string> icons;
-            TrackerNodePrivate::getMotionModelsAndHelps(false, &choices, &icons);
+            TrackerNodePrivate::getMotionModelsAndHelps(true, &choices, &icons);
             param->populateChoices(choices);
             param->setIcons(icons);
         }
@@ -932,7 +944,7 @@ TrackerNode::initializeTrackingPageKnobs(const KnobPagePtr& trackingPage)
         {
             std::vector<ChoiceOption> choices;
             std::map<int, std::string> icons;
-            TrackerNodePrivate::getMotionModelsAndHelps(false, &choices, &icons);
+            TrackerNodePrivate::getMotionModelsAndHelps(true, &choices, &icons);
             param->populateChoices(choices);
             param->setIcons(icons);
         }
@@ -1406,7 +1418,7 @@ TrackerNode::initializeKnobs()
     initializeRightClickMenuKnobs(trackingPage);
     initializeViewerUIKnobs(trackingPage);
 
-    setItemsTable(_imp->knobsTable, "trackTableSep");
+    setItemsTable(_imp->knobsTable, KnobHolder::eKnobItemsTablePositionAfterKnob, "trackTableSep");
 
 
     QObject::connect( getNode().get(), SIGNAL(s_refreshPreviewsAfterProjectLoadRequested()), _imp->ui.get(), SLOT(rebuildMarkerTextures()) );
@@ -1965,6 +1977,29 @@ NodePtr
 TrackerNodePrivate::getTrackerNode() const
 {
     return publicInterface->getNode();
+}
+
+NodePtr
+TrackerNodePrivate::getSourceImageNode() const
+{
+    NodePtr node =  publicInterface->getNode();
+    if (!node) {
+        return NodePtr();
+    }
+    return node->getInput(0);
+}
+
+ImagePlaneDesc
+TrackerNodePrivate::getMaskImagePlane(int *channelIndex) const
+{
+    *channelIndex = 0;
+    return ImagePlaneDesc::getAlphaComponents();
+}
+
+NodePtr
+TrackerNodePrivate::getMaskImageNode() const
+{
+    return maskNode.lock();
 }
 
 TrackerHelperPtr

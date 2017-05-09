@@ -108,9 +108,6 @@ struct RotoItemPrivate
     KnobButtonWPtr soloKnob;
     
     RotoItemPrivate()
-    : activatedKnob()
-    , lockedKnob()
-    , soloKnob()
     {
     }
 
@@ -131,6 +128,37 @@ RotoItem::RotoItem(const RotoItemPtr& other, const FrameViewRenderKey& key)
 
 RotoItem::~RotoItem()
 {
+}
+
+bool
+RotoItem::getTransformAtTimeInternal(TimeValue /*time*/, ViewIdx /*view*/, Transform::Matrix3x3* /*matrix*/) const
+{
+    return false;
+}
+
+void
+RotoItem::getTransformAtTime(TimeValue time, ViewIdx view, Transform::Matrix3x3* matrix) const
+{
+    Transform::Matrix3x3 tmpMat;
+    if (getTransformAtTimeInternal(time, view, &tmpMat)) {
+        *matrix = tmpMat;
+    } else {
+        matrix->setIdentity();
+    }
+    // Get the transform recursively by concatenating transform matrices
+    // on parent groups
+
+    KnobHolderPtr parentHolder = getParent();
+    RotoItemPtr parent = toRotoItem(parentHolder);
+    while (parent) {
+        Transform::Matrix3x3 tmpMat;
+        if (parent->getTransformAtTimeInternal(time, view, &tmpMat)) {
+            *matrix = Transform::matMul(*matrix, tmpMat);
+        }
+        parentHolder = parent->getParent();
+        parent = toRotoItem(parentHolder);
+    }
+
 }
 
 void
@@ -191,6 +219,8 @@ RotoItem::initializeKnobs()
         type == RotoPaint::eRotoPaintTypeRotoPaint) {
         addColumn(kParamRotoItemLocked, DimIdx(0));
     }
+
+    KnobTableItem::initializeKnobs();
 
 }
 

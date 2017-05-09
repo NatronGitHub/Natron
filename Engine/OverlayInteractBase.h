@@ -102,6 +102,8 @@ public:
      **/
     const KnobsDescMap& getDescription() const;
 
+    void fetchKnobs_public(const std::map<std::string, std::string>& knobs);
+
 protected:
 
     /**
@@ -172,6 +174,14 @@ public:
      * @brief Returns the effect holding this overlay
      **/
     EffectInstancePtr getEffect() const;
+
+    /**
+     * @brief Set the interact enabled or disabled. When disabled the user can no longer interact with it
+     * and it is no longer displayed in the viewport.
+     * By default an interact is always enabled.
+     **/
+    void setInteractEnabled(bool enabled);
+    bool isInteractEnabled() const;
 
     /**
      * @brief Return true if the color picker is required for this interact

@@ -53,6 +53,7 @@
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 
+#include "Gui/ActionShortcuts.h"
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/Button.h"
 #include "Gui/ComboBox.h"
@@ -67,6 +68,7 @@
 #include "Gui/GuiMacros.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiDefines.h"
+#include "Gui/Menu.h"
 #include "Gui/NodeGui.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeSettingsPanel.h"
@@ -129,6 +131,8 @@ struct KnobItemsTableGuiPrivate
     KnobItemsTableGui* _publicInterface;
     KnobItemsTableWPtr internalModel;
     DockablePanel* panel;
+
+    KnobTableItemWPtr rightClickedItem;
 
     TableModelPtr tableModel;
     TableView* tableView;
@@ -624,6 +628,8 @@ KnobItemsTableGui::KnobItemsTableGui(const KnobItemsTablePtr& table, DockablePan
 
     _imp->tableView = new KnobItemsTableView(_imp.get(), panel->getGui(), parent);
 
+    connect(_imp->tableView, SIGNAL(itemRightClicked(QPoint,TableItemPtr)), this, SLOT(onViewItemRightClicked(QPoint,TableItemPtr)));
+
 #if QT_VERSION < 0x050000
     _imp->tableView->header()->setResizeMode(QHeaderView::ResizeToContents);
 #else
@@ -726,14 +732,28 @@ KnobItemsTableGui::~KnobItemsTableGui()
 }
 
 void
-KnobItemsTableGui::addWidgetsToLayout(QGridLayout* layout)
+KnobItemsTableGui::addWidgetsToLayout(QLayout* layout)
 {
-    int rc = layout->rowCount();
-    if (_imp->keyframesContainerWidget) {
-        layout->addWidget(_imp->userKeyframeLabel, rc, 0, 1, 1, Qt::AlignRight);
-        layout->addWidget(_imp->keyframesContainerWidget, rc, 1, 1, 1);
+
+    QGridLayout* isGridLayout = dynamic_cast<QGridLayout*>(layout);
+    QBoxLayout* isBoxLayout = dynamic_cast<QBoxLayout*>(layout);
+    if (isGridLayout) {
+        int rc = isGridLayout->rowCount();
+        if (_imp->keyframesContainerWidget) {
+            isGridLayout->addWidget(_imp->userKeyframeLabel, rc, 0, 1, 1, Qt::AlignRight);
+            isGridLayout->addWidget(_imp->keyframesContainerWidget, rc, 1, 1, 1);
+        }
+        isGridLayout->addWidget(_imp->tableView, rc + 1, 0, 1, 2);
+    } else if (isBoxLayout) {
+        QWidget* rowContainer = new QWidget(layout->widget());
+        QHBoxLayout* rowContainerLayout = new QHBoxLayout(rowContainer);
+        rowContainerLayout->addWidget(_imp->userKeyframeLabel);
+        rowContainerLayout->addWidget(_imp->keyframesContainerWidget);
+        isBoxLayout->addWidget(rowContainer);
+        isBoxLayout->addWidget(_imp->tableView);
+    } else {
+        assert(false);
     }
-    layout->addWidget(_imp->tableView, rc + 1, 0, 1, 2);
 
 }
 
@@ -831,8 +851,6 @@ KnobItemsTableView::drawRow(QPainter * painter, const QStyleOptionViewItem & opt
     // Draw the label section which is the only one using a regular item and not a KnobGui
     KnobTableItemPtr internalItem = found->internalItem.lock();
     bool isSelected = internalItem->getModel()->isItemSelected(internalItem);
-    bool isSelectedInView = _imp->tableView->isItemSelected(item);
-    //assert((!isSelected && !_imp->tableView->isItemSelected(item)) || (isSelected && _imp->tableView->isItemSelected(item)));
     int labelCol = internalItem->getLabelColumnIndex();
     int xOffset = itemRect.x();
     {
@@ -956,6 +974,126 @@ KnobItemsTableView::dragEnterEvent(QDragEnterEvent *e)
 
 }
 
+void
+KnobItemsTableGui::onViewItemRightClicked(const QPoint& globalPos, const TableItemPtr& item)
+{
+    ModelItemsVec::iterator foundItem = _imp->findItem(item);
+    if (foundItem == _imp->items.end()) {
+        return;
+    }
+    KnobTableItemPtr internalItem = foundItem->internalItem.lock();
+    if (!internalItem) {
+        return;
+    }
+
+    _imp->rightClickedItem = internalItem;
+
+    std::string actionShortcutGroup;
+    NodeGuiPtr node = _imp->panel->getNodeGui();
+    if (node) {
+        actionShortcutGroup = node->getNode()->getPlugin()->getPluginShortcutGroup();
+    }
+
+    Menu m(_imp->panel);
+    // Add basic menu actions
+    {
+        ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupNodegraph,
+                                                            kShortcutActionGraphRemoveNodes,
+                                                            tr("Delete").toStdString(),
+                                                            &m);
+        QObject::connect( action, SIGNAL(triggered()), this, SLOT(onDeleteItemsActionTriggered()) );
+        m.addAction(action);
+
+    }
+    {
+        ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupNodegraph,
+                                                            kShortcutActionGraphCopy,
+                                                            tr("Copy").toStdString(),
+                                                            &m);
+        QObject::connect( action, SIGNAL(triggered()), this, SLOT(onCopyItemsActionTriggered()) );
+        m.addAction(action);
+    }
+    {
+        ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupNodegraph,
+                                                            kShortcutActionGraphCut,
+                                                            tr("Cut").toStdString(),
+                                                            &m);
+        QObject::connect( action, SIGNAL(triggered()), this, SLOT(onCutItemsActionTriggered()) );
+        m.addAction(action);
+    }
+    {
+        ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupNodegraph,
+                                                            kShortcutActionGraphPaste,
+                                                            tr("Paste").toStdString(),
+                                                            &m);
+        QObject::connect( action, SIGNAL(triggered()), this, SLOT(onPasteItemsActionTriggered()) );
+        m.addAction(action);
+    }
+    {
+        ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupNodegraph,
+                                                            kShortcutActionGraphDuplicate,
+                                                            tr("Duplicate").toStdString(),
+                                                            &m);
+        QObject::connect( action, SIGNAL(triggered()), this, SLOT(onDuplicateItemsActionTriggered()) );
+        m.addAction(action);
+    }
+    {
+        ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupNodegraph,
+                                                            kShortcutActionGraphSelectAll,
+                                                            tr("Select All").toStdString(),
+                                                            &m);
+        QObject::connect( action, SIGNAL(triggered()), this, SLOT(onSelectAllItemsActionTriggered()) );
+        m.addAction(action);
+    }
+
+    m.addSeparator();
+
+    KnobChoicePtr rightClickMenuKnob = toKnobChoice(internalItem->getKnobByName(kNatronOfxParamRightClickMenu));
+    if (rightClickMenuKnob) {
+        internalItem->refreshRightClickMenu();
+        NodeGui::populateMenuRecursive(rightClickMenuKnob, internalItem, actionShortcutGroup, this, &m);
+    }
+
+    m.exec(globalPos);
+    _imp->rightClickedItem.reset();
+}
+
+void
+KnobItemsTableGui::onRightClickActionTriggered()
+{
+    ActionWithShortcut* action = dynamic_cast<ActionWithShortcut*>( sender() );
+
+    if (!action) {
+        return;
+    }
+
+
+    KnobTableItemPtr internalItem = _imp->rightClickedItem.lock();
+    assert(internalItem);
+    if (!internalItem) {
+        return;
+    }
+
+
+    const std::vector<std::pair<QString, QKeySequence> >& shortcuts = action->getShortcuts();
+    assert( !shortcuts.empty() );
+    std::string knobName = shortcuts.front().first.toStdString();
+    KnobIPtr knob = internalItem->getKnobByName(knobName);
+    if (!knob) {
+        // Plug-in specified invalid knob name in the menu
+        return;
+    }
+    KnobButtonPtr button = toKnobButton(knob);
+    if (!button) {
+        // Plug-in must only use buttons inside menu
+        return;
+    }
+    if ( button->getIsCheckable() ) {
+        button->setValue( !button->getValue() );
+    } else {
+        button->trigger();
+    }
+}
 
 void
 KnobItemsTableView::keyPressEvent(QKeyEvent* e)

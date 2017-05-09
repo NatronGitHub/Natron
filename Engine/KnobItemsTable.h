@@ -355,7 +355,11 @@ public:
      **/
     virtual std::string getBaseItemName() const = 0;
 
+    KnobChoicePtr refreshRightClickMenu();
+
 protected:
+
+    virtual void refreshRightClickMenu(const KnobChoicePtr& refreshRightClickMenuInternal);
 
     /**
      * @brief Utility function to create a duplicate of a knob that was first registered on the KnobItemsTable
@@ -403,7 +407,7 @@ protected:
     /**
      * @brief Implement to initialize the knobs of the item and add them to the table by calling setColumn
      **/
-    virtual void initializeKnobs() OVERRIDE = 0;
+    virtual void initializeKnobs() OVERRIDE;
 
     
     /**

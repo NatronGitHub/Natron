@@ -37,7 +37,7 @@ SERIALIZATION_NAMESPACE_ENTER;
 
 static KnobTableItemSerializationPtr createSerializationObjectForItemTag(const std::string& tag)
 {
-    if (tag == kSerializationRotoGroupTag || tag == kSerializationCompLayerTag) {
+    if (tag == kSerializationRotoGroupTag || tag == kSerializationCompLayerTag || tag == kSerializationRotoPlanarTrackGroupTag) {
         KnobTableItemSerializationPtr ret(new KnobTableItemSerialization);
         return ret;
     } else if (tag == kSerializationClosedBezierTag) {

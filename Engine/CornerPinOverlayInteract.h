@@ -39,6 +39,19 @@ public:
 
     virtual ~CornerPinOverlayInteract();
 
+    /**
+     * @brief Enables auto-keying of the to points upon interaction.
+     * Defaults to false
+     **/
+    void setAutoKeyEnabledOnToPoints(bool enabled);
+
+    /**
+     * @brief If disabled, the user cannot interact with the to points and they will not
+     * be visible.
+     * Defaults to true
+     **/
+    void setToPointsEnabledIfNotAnimated(bool enabled);
+
 private:
 
     virtual void describeKnobs(OverlayInteractBase::KnobsDescMap* desc) const OVERRIDE FINAL;

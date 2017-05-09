@@ -30,6 +30,7 @@
 #include "Serialization/SerializationFwd.h"
 
 #define kSerializationRotoGroupTag "Group"
+#define kSerializationRotoPlanarTrackGroupTag "PlanarTrackGroup"
 #define kSerializationTrackTag "Track"
 #define kSerializationCompLayerTag "Layer"
 #define kSerializationOpenedBezierTag "OpenedBezier"

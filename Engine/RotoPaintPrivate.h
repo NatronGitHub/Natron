@@ -40,11 +40,16 @@
 
 #include "Engine/BezierCP.h"
 #include "Engine/Bezier.h"
+#include "Engine/CornerPinOverlayInteract.h"
 #include "Engine/OverlayInteractBase.h"
 #include "Engine/RotoPaint.h"
 #include "Engine/KnobItemsTable.h"
 #include "Engine/TransformOverlayInteract.h"
-
+#include "Engine/TrackArgs.h"
+#include "Engine/TrackerParamsProvider.h"
+#include "Engine/TrackerHelper.h"
+#include "Engine/TrackerHelperPrivate.h"
+#include "Engine/TrackMarker.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -66,6 +71,28 @@ NATRON_NAMESPACE_ENTER;
 
 // parameters
 
+#define kRotoTrackingParamExportType "exportNodeType"
+#define kRotoTrackingParamExportTypeLabel "Node"
+#define kRotoTrackingParamExportTypeHint "What kind of node should be created as result of this track"
+
+#define kRotoTrackingParamExportTypeCornerPinMatchMove "CornerPin (relative)"
+#define kRotoTrackingParamExportTypeCornerPinMatchMoveHint "Warp the image according to the relative transform between the current frame and the reference frame"
+
+#define kRotoTrackingParamExportTypeCornerPinStabilize "CornerPin (stablize)"
+#define kRotoTrackingParamExportTypeCornerPinStabilizeHint "Similar to CornerPin relative but the transform is inversed thus stabilizing the tracked motion"
+
+#define kRotoTrackingParamExportTypeCornerPinTracker "Tracker"
+#define kRotoTrackingParamExportTypeCornerPinTrackerHint "Exports to a Tracker node with each of the tracks taking 1 corner of the planar surface.\n" \
+"This allows you to use the Tracker node's transform functions to stabilize, add jitter, reduce jitter and others."
+
+#define kRotoTrackingParamShowCornerPinOverlay "showCornerPin"
+#define kRotoTrackingParamShowCornerPinOverlayLabel "Show CornerPin"
+#define kRotoTrackingParamShowCornerPinOverlayHint "If checked the CornerPin will be visible on the viewer and it can be modified. Any modification will create a keyframe: \n" \
+"this can be use to contrain the CornerPin to a certain location at a given keyframe"
+
+#define kRotoTrackingParamRefreshPlanarTrackTransform "refreshPlanarTrack"
+#define kRotoTrackingParamRefreshPlanarTrackTransformLabel "Refresh PlanarTrack Transform"
+#define kRotoTrackingParamRefreshPlanarTrackTransformHint "Refresh the currently selected PlanarTrack group from the CornerPin values"
 
 // The toolbar
 #define kRotoUIParamToolbar "Toolbar"
@@ -219,6 +246,9 @@ NATRON_NAMESPACE_ENTER;
 
 #define kRotoUIParamRightClickMenuActionLockShapes "lockShapesAction"
 #define kRotoUIParamRightClickMenuActionLockShapesLabel "Lock Shape(s)"
+
+#define kRotoUIParamRightClickMenuActionCreatePlanarTrack "createPlanarTrack"
+#define kRotoUIParamRightClickMenuActionCreatePlanarTrackLabel "Planar-Track"
 
 // Viewer UI buttons
 
@@ -540,12 +570,16 @@ public:
 
     SelectedItems getSelectedDrawableItems() const;
 
+    PlanarTrackLayerPtr getSelectedPlanarTrack() const;
+
 };
 
 
 class RotoPaintInteract;
-struct RotoPaintPrivate
+class RotoPaintPrivate : public TrackerParamsProvider
 {
+public:
+
     RotoPaint* publicInterface; // can not be a smart ptr
     RotoPaint::RotoPaintTypeEnum nodeType;
     KnobBoolWPtr premultKnob;
@@ -553,6 +587,7 @@ struct RotoPaintPrivate
     KnobBoolWPtr enabledKnobs[4];
 
     RotoPaintInteractPtr ui;
+    boost::shared_ptr<CornerPinOverlayInteract> cornerPinInteract;
     boost::shared_ptr<TransformOverlayInteract> transformInteract, cloneTransformInteract;
 
     // The group internal input nodes
@@ -569,6 +604,11 @@ struct RotoPaintPrivate
     // The temporary solo items
     mutable QMutex soloItemsMutex;
     std::set<RotoDrawableItemWPtr> soloItems;
+
+    TrackerHelperPtr tracker;
+
+    // Set if we are currently tracking
+    PlanarTrackLayerPtr activePlanarTrack;
 
     // Recursive counter to prevent refreshing of the node tree
     int treeRefreshBlocked;
@@ -610,9 +650,81 @@ struct RotoPaintPrivate
 
     KnobDoubleWPtr mixKnob;
     KnobButtonWPtr addGroupButtonKnob, addLayerButtonKnob, removeItemButtonKnob;
+
+    KnobPageWPtr trackingPage;
+    KnobBoolWPtr enableTrackRed, enableTrackGreen, enableTrackBlue;
+    KnobDoubleWPtr maxError;
+    KnobIntWPtr maxIterations;
+    KnobBoolWPtr bruteForcePreTrack, useNormalizedIntensities;
+    KnobDoubleWPtr preBlurSigma;
+    KnobChoiceWPtr motionModel;
+    KnobIntWPtr trackerReferenceFrame;
+    KnobButtonWPtr setReferenceFrameToCurrentFrameKnob;
+
+    KnobGroupWPtr fromGroup, toGroup;
+    KnobDoubleWPtr fromPoints[4], toPoints[4];
+    KnobButtonWPtr setFromPointsToInputRodButton;
+    KnobBoolWPtr cornerPinInteractiveKnob;
+
+    KnobButtonWPtr showCornerPinOverlay;
+    KnobChoiceWPtr cornerPinOverlayPoints;
+
+    KnobButtonWPtr refreshPlanarTrackTransformButton;
+
+
+    KnobSeparatorWPtr exportDataSep;
+    KnobChoiceWPtr exportType;
+    KnobBoolWPtr exportLink;
+    KnobButtonWPtr exportButton;
+
+    KnobButtonWPtr trackRangeButton;
+    KnobButtonWPtr trackBwButton;
+    KnobButtonWPtr trackPrevButton;
+    KnobButtonWPtr stopTrackingButton; //< invisible
+    KnobButtonWPtr trackNextButton;
+    KnobButtonWPtr trackFwButton;
+    KnobButtonWPtr clearAllAnimationButton;
+    KnobButtonWPtr clearBwAnimationButton;
+    KnobButtonWPtr clearFwAnimationButton;
+    KnobButtonWPtr updateViewerButton;
+    KnobButtonWPtr centerViewerButton;
+    KnobButtonWPtr removeKeyframeButton;
+
+    // Track range dialog
+    KnobGroupWPtr trackRangeDialogGroup;
+    KnobIntWPtr trackRangeDialogFirstFrame;
+    KnobIntWPtr trackRangeDialogLastFrame;
+    KnobIntWPtr trackRangeDialogStep;
+    KnobButtonWPtr trackRangeDialogOkButton;
+    KnobButtonWPtr trackRangeDialogCancelButton;
+
     
     RotoPaintPrivate(RotoPaint* publicInterface,
                      RotoPaint::RotoPaintTypeEnum type);
+
+
+    //////////////////// Overriden from TrackerParamsProvider
+    virtual bool trackStepFunctor(int trackIndex, const TrackArgsBasePtr& args, int frame) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual NodePtr getTrackerNode() const OVERRIDE FINAL;
+    virtual NodePtr getSourceImageNode() const OVERRIDE FINAL;
+    virtual ImagePlaneDesc getMaskImagePlane(int *channelIndex) const OVERRIDE FINAL;
+    virtual NodePtr getMaskImageNode() const OVERRIDE FINAL;
+    virtual TrackerHelperPtr getTracker() const OVERRIDE FINAL;
+    virtual bool getCenterOnTrack() const OVERRIDE FINAL;
+    virtual bool getUpdateViewer() const OVERRIDE FINAL;
+    virtual void getTrackChannels(bool* doRed, bool* doGreen, bool* doBlue) const OVERRIDE FINAL;
+    virtual bool canDisableMarkersAutomatically() const OVERRIDE FINAL;
+    virtual double getMaxError() const OVERRIDE FINAL;
+    virtual int getMaxNIterations() const OVERRIDE FINAL;
+    virtual bool isBruteForcePreTrackEnabled() const OVERRIDE FINAL;
+    virtual bool isNormalizeIntensitiesEnabled() const OVERRIDE FINAL;
+    virtual double getPreBlurSigma() const OVERRIDE FINAL;
+    virtual RectD getNormalizationRoD(TimeValue time, ViewIdx view) const OVERRIDE FINAL;
+    ////////////////////
+
+    RectD getInputRoD(TimeValue time, ViewIdx view) const;
+
+    void setFromPointsToInputRod();
 
     NodePtr getOrCreateGlobalMergeNode(int blendingOperator, int *availableInputIndex);
 
@@ -621,6 +733,7 @@ struct RotoPaintPrivate
     bool isRotoPaintTreeConcatenatableInternal(const std::list<RotoDrawableItemPtr >& items,
                                                int* blendingMode) const;
 
+    void exportTrackDataFromExportOptions();
 
     void refreshMotionBlurKnobsVisibility();
 
@@ -657,7 +770,43 @@ struct RotoPaintPrivate
                                            const NodePtr& mergeNode);
 
     void refreshRegisteredOverlays();
-    
+
+    void onTrackRangeClicked();
+
+    void onTrackRangeOkClicked();
+
+    void onTrackBwClicked();
+
+    void onTrackPrevClicked();
+
+    void onStopButtonClicked();
+
+    void onTrackNextClicked();
+
+    void onTrackFwClicked();
+
+    void onClearAllAnimationClicked();
+
+    void onClearBwAnimationClicked();
+
+    void onClearFwAnimationClicked();
+
+    void onRemoveKeyframeButtonClicked();
+
+    TrackMarkerPtr createTrackForTracking(TimeValue startingFrame);
+
+    void updateCornerPinFromTrack(const TrackMarkerPtr& track, TimeValue time);
+
+
+    void updatePlanarTrackExtraMatrixForAllKeyframes();
+
+    void createPlanarTrackForSelectedShapes();
+
+    void refreshTrackingControlsVisiblity();
+
+    void updatePlanarTrackExtraMatrix(TimeValue time, const PlanarTrackLayerPtr& planarTrack);
+
+    void startTrackingInternal(TimeValue startFrame, TimeValue lastFrame, TimeValue step, OverlaySupport* overlay);
 
 };
 
@@ -760,6 +909,7 @@ public:
     KnobButtonWPtr smoothItemMenuAction;
     KnobButtonWPtr removeItemFeatherMenuAction;
     KnobButtonWPtr nudgeLeftMenuAction, nudgeRightMenuAction, nudgeBottomMenuAction, nudgeTopMenuAction;
+    KnobButtonWPtr createPlanarTrackAction;
 
     // Right click on curve
     KnobButtonWPtr selectAllMenuAction;

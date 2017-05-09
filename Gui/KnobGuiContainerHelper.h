@@ -314,9 +314,15 @@ protected:
     virtual void refreshCurrentPage() = 0;
 
     /**
-     * @brief Returns the main container
+     * @brief Returns the pages container
      **/
     virtual QWidget* getPagesContainer() const = 0;
+
+    /**
+     * @brief Returns the root widget
+     **/
+    virtual QWidget* getMainContainer() const = 0;
+    virtual QLayout* getMainContainerLayout() const = 0;
 
     /**
      * @brief Creates the container for knobs within a page

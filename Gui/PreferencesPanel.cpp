@@ -948,6 +948,18 @@ PreferencesPanel::refreshCurrentPage()
 }
 
 QWidget*
+PreferencesPanel::getMainContainer() const
+{
+    return const_cast<PreferencesPanel*>(this);
+}
+
+QLayout*
+PreferencesPanel::getMainContainerLayout() const
+{
+    return _imp->mainLayout;
+}
+
+QWidget*
 PreferencesPanel::getPagesContainer() const
 {
     return const_cast<PreferencesPanel*>(this);

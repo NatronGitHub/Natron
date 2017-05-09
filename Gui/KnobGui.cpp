@@ -205,6 +205,12 @@ KnobGui::pushUndoCommand(QUndoCommand* cmd)
 }
 
 TabGroup*
+KnobGui::getTabWidget() const
+{
+    return _imp->tabGroup;
+}
+
+TabGroup*
 KnobGui::getOrCreateTabWidget()
 {
     if (_imp->tabGroup) {
@@ -572,7 +578,7 @@ KnobGuiPrivate::addWidgetsToPreviousKnobLayout()
 
     // Check if we need to add spacing or stretch
     if (layoutType == KnobGui::eKnobLayoutTypeViewerUI) {
-        switch (prev->getInViewerContextLayoutType()) {
+        switch (thisKnob->getInViewerContextLayoutType()) {
             case eViewerContextLayoutTypeSeparator:
                 addVerticalLineSpacer(firstKnobOnLineMainLayout);
                 break;
@@ -583,12 +589,10 @@ KnobGuiPrivate::addWidgetsToPreviousKnobLayout()
                 }
             }   break;
             case eViewerContextLayoutTypeStretchAfter:
-                firstKnobOnLineMainLayout->addStretch();
+            case eViewerContextLayoutTypeAddNewLine:
+                //firstKnobOnLineMainLayout->addStretch();
                 break;
             default:
-                // We cannot be here, this function should not be called if we were
-                // to add a new line in the layout.
-                assert(false);
                 break;
         }
     } else if (layoutType == KnobGui::eKnobLayoutTypePage) {
@@ -683,6 +687,14 @@ KnobGui::createGUI(QWidget* parentWidget)
             if (_imp->mustAddSpacerByDefault) {
                 addSpacerItemAtEndOfLine();
             }
+        } else if (_imp->layoutType == eKnobLayoutTypeViewerUI && knob->getInViewerContextLayoutType() == eViewerContextLayoutTypeStretchAfter) {
+            KnobGuiPtr firstKnobGuiOnLine = _imp->firstKnobOnLine.lock();
+            if (firstKnobGuiOnLine) {
+                firstKnobGuiOnLine->_imp->mainLayout->addStretch();
+            } else {
+                _imp->mainLayout->addStretch();
+            }
+
         }
     }
 

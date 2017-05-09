@@ -2271,7 +2271,7 @@ public:
         return mappedImage;
     }
 
-    static void launchRenderFunctor(const RenderViewerProcessFunctorArgsPtr& inArgs)
+    static void launchRenderFunctor(const RenderViewerProcessFunctorArgsPtr& inArgs, const RectD* roiParam)
     {
         assert(inArgs->renderObject);
         FrameViewRequestPtr outputRequest;
@@ -2299,7 +2299,14 @@ public:
             }
 
 
-            RectI imageConvertRoI = inArgs->outputImage->getBounds();
+            RectI imageConvertRoI;
+            if (roiParam) {
+                RenderScale scale = EffectInstance::getCombinedScale(inArgs->outputImage->getMipMapLevel(), inArgs->outputImage->getProxyScale());
+                double par = inArgs->viewerProcessNode->getEffectInstance()->getAspectRatio(-1);
+                roiParam->toPixelEnclosing(scale, par, &imageConvertRoI);
+            } else {
+                imageConvertRoI = inArgs->outputImage->getBounds();
+            }
             // If we are drawing with the RotoPaint node, only update the texture portion
             if (inArgs->type == OpenGLViewerI::TextureTransferArgs::eTextureTransferTypeModify) {
                 RectI strokeArea;
@@ -2449,7 +2456,7 @@ private:
         if (_viewer->isViewerPaused(viewerProcess_i)) {
             processArgs->retCode = eActionStatusAborted;
         } else {
-            launchRenderFunctor(processArgs);
+            launchRenderFunctor(processArgs, 0);
         }
 
         bufferedFrame->retCode[viewerProcess_i] = processArgs->retCode;
@@ -3320,7 +3327,7 @@ public:
         if (viewer->isViewerPaused(viewerProcess_i)) {
             processArgs->retCode = eActionStatusAborted;
         } else {
-            ViewerRenderFrameRunnable::launchRenderFunctor(processArgs);
+            ViewerRenderFrameRunnable::launchRenderFunctor(processArgs, roiParam);
         }
 
         bufferedFrame->retCode[viewerProcess_i] = processArgs->retCode;

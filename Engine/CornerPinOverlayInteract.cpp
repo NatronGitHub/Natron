@@ -49,7 +49,8 @@ struct CornerPinOverlayInteractPrivate
     bool enableDrag[4];
     bool useFromDrag;
     bool interactiveDrag;
-
+    bool toPointsAutoKeyingEnabled;
+    bool toPointsEnabledIfNotAnimated;
 
 
     CornerPinOverlayInteractPrivate()
@@ -58,6 +59,8 @@ struct CornerPinOverlayInteractPrivate
     , hovering(-1)
     , useFromDrag(false)
     , interactiveDrag(false)
+    , toPointsAutoKeyingEnabled(false)
+    , toPointsEnabledIfNotAnimated(true)
     {
 
     }
@@ -104,7 +107,9 @@ struct CornerPinOverlayInteractPrivate
     {
         KnobBoolPtr knob = enable[index].lock();
 
-        assert(knob);
+        if (!knob) {
+            return true;
+        }
 
         return knob->getValueAtTime(time);
     }
@@ -113,7 +118,9 @@ struct CornerPinOverlayInteractPrivate
     {
         KnobBoolPtr knob = invert.lock();
 
-        assert(knob);
+        if (!knob) {
+            return false;
+        }
 
         return knob->getValueAtTime(time);
     }
@@ -136,6 +143,25 @@ struct CornerPinOverlayInteractPrivate
         }
     }
 
+    bool areToPointsAnimated() const
+    {
+        bool hasAnimation = true;
+        for (int i = 0; i < 4; ++i) {
+            KnobDoublePtr knob = to[i].lock();
+            for (int d = 0; d < 2; ++d) {
+                bool dimHasAnim = knob->isAnimated(DimIdx(d), ViewIdx(0));
+                if (!dimHasAnim) {
+                    hasAnimation = false;
+                    break;
+                }
+            }
+            if (!hasAnimation) {
+                break;
+            }
+        }
+        return hasAnimation;
+    }
+
 };
 
 CornerPinOverlayInteract::CornerPinOverlayInteract()
@@ -152,6 +178,19 @@ CornerPinOverlayInteract::CornerPinOverlayInteract()
 CornerPinOverlayInteract::~CornerPinOverlayInteract()
 {
 
+}
+
+void
+CornerPinOverlayInteract::setAutoKeyEnabledOnToPoints(bool enabled)
+{
+    _imp->toPointsAutoKeyingEnabled = enabled;
+}
+
+
+void
+CornerPinOverlayInteract::setToPointsEnabledIfNotAnimated(bool enabled)
+{
+    _imp->toPointsEnabledIfNotAnimated = enabled;
 }
 
 void
@@ -267,11 +306,11 @@ CornerPinOverlayInteract::fetchKnobs(const std::map<std::string, std::string>& k
                 ss << "enable" << i + 1;
                 name = ss.str();
             }
-            _imp->enable[i] = getEffectKnobByRole<KnobBool>(knobs, name, 1, false);
+            _imp->enable[i] = getEffectKnobByRole<KnobBool>(knobs, name, 1, true);
         }
     }
     _imp->overlayPoints = getEffectKnobByRole<KnobChoice>(knobs, "overlayPoints", 1, false);
-    _imp->invert = getEffectKnobByRole<KnobBool>(knobs, "invert", 1, false);
+    _imp->invert = getEffectKnobByRole<KnobBool>(knobs, "invert", 1, true);
     _imp->interactive = getEffectKnobByRole<KnobBool>(knobs, "interactive", 1, true);
 }
 
@@ -316,6 +355,10 @@ CornerPinOverlayInteract::drawOverlay(TimeValue time,
             enable[i] = _imp->enableDrag[i];
         }
         useFrom = _imp->useFromDrag;
+    }
+
+    if (!useFrom && !_imp->areToPointsAnimated()) {
+        return;
     }
 
     OfxPointD p[4];
@@ -456,6 +499,10 @@ CornerPinOverlayInteract::onOverlayPenDown(TimeValue time,
         useFrom = _imp->useFromDrag;
     }
 
+    if (!useFrom && !_imp->areToPointsAnimated()) {
+        return false;
+    }
+
     OfxPointD p[4];
     OfxPointD q[4];
     int enableBegin = 4;
@@ -543,6 +590,10 @@ CornerPinOverlayInteract::onOverlayPenMotion(TimeValue time,
         useFrom = _imp->useFromDrag;
     }
 
+    if (!useFrom && !_imp->areToPointsAnimated()) {
+        return false;
+    }
+
     OfxPointD p[4];
     OfxPointD q[4];
     int enableBegin = 4;
@@ -608,7 +659,24 @@ CornerPinOverlayInteract::onOverlayPenMotion(TimeValue time,
             std::vector<double> val(2);
             val[0] = to[_imp->dragging].x;
             val[1] = to[_imp->dragging].y;
-            knob->setValueAcrossDimensions(val, DimIdx(0), view, eValueChangedReasonUserEdited);
+
+            if (_imp->toPointsAutoKeyingEnabled) {
+                knob->setValueAtTimeAcrossDimensions(time, val, DimIdx(0), view, eValueChangedReasonUserEdited);
+
+                // Also set a keyframe on other points
+                for (int i = 0; i < 4; ++i) {
+                    if (i == _imp->dragging) {
+                        continue;
+                    }
+                    std::vector<double> values(2);
+                    KnobDoublePtr toPoint = _imp->to[i].lock();
+                    values[0] = toPoint->getValueAtTime(time, DimIdx(0));
+                    values[1] = toPoint->getValueAtTime(time, DimIdx(1));
+                    toPoint->setValueAtTimeAcrossDimensions(time, values, DimIdx(0), view, eValueChangedReasonUserEdited);
+                }
+            } else {
+                knob->setValueAcrossDimensions(val, DimIdx(0), view, eValueChangedReasonUserEdited);
+            }
         }
     }
 
@@ -618,7 +686,7 @@ CornerPinOverlayInteract::onOverlayPenMotion(TimeValue time,
 } // onOverlayPenMotion
 
 bool
-CornerPinOverlayInteract::onOverlayPenUp(TimeValue /*time*/,
+CornerPinOverlayInteract::onOverlayPenUp(TimeValue time,
                                          const RenderScale & /*renderScale*/,
                                          ViewIdx view,
                                          const QPointF & /*viewportPos*/,
@@ -651,7 +719,24 @@ CornerPinOverlayInteract::onOverlayPenUp(TimeValue /*time*/,
             std::vector<double> val(2);
             val[0] = _imp->toDrag[_imp->dragging].x;
             val[1] = _imp->toDrag[_imp->dragging].y;
-            knob->setValueAcrossDimensions(val, DimIdx(0), view, eValueChangedReasonUserEdited);
+
+            if (_imp->toPointsAutoKeyingEnabled) {
+                knob->setValueAtTimeAcrossDimensions(time, val, DimIdx(0), view, eValueChangedReasonUserEdited);
+
+                // Also set a keyframe on other points
+                for (int i = 0; i < 4; ++i) {
+                    if (i == _imp->dragging) {
+                        continue;
+                    }
+                    std::vector<double> values(2);
+                    KnobDoublePtr toPoint = _imp->to[i].lock();
+                    values[0] = toPoint->getValueAtTime(time, DimIdx(0));
+                    values[1] = toPoint->getValueAtTime(time, DimIdx(1));
+                    toPoint->setValueAtTimeAcrossDimensions(time, values, DimIdx(0), view, eValueChangedReasonUserEdited);
+                }
+            } else {
+                knob->setValueAcrossDimensions(val, DimIdx(0), view, eValueChangedReasonUserEdited);
+            }
         }
     }
     _imp->dragging = -1;

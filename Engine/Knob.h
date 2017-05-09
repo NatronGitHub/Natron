@@ -2910,14 +2910,23 @@ public:
      **/
     virtual bool isFullAnimationToHashEnabled() const;
 
+    enum KnobItemsTablePositionEnum
+    {
+        // The table will be placed at the bottom of all pages
+        eKnobItemsTablePositionBottomOfAllPages,
+
+        // The table will be placed after the named knob in the named knob page
+        eKnobItemsTablePositionAfterKnob,
+    };
 
     /**
      * @brief Set the holder to have the given table to display in its settings panel.
      * The KnobHolder takes ownership of the table.
      * @param paramScriptNameBefore The script-name of the knob right before where the table should be inserted in the layout or the script-name of a page.
      **/
-    void setItemsTable(const KnobItemsTablePtr& table, const std::string& paramScriptNameBefore);
+    void setItemsTable(const KnobItemsTablePtr& table, KnobItemsTablePositionEnum positioning, const std::string& paramScriptNameBefore);
     KnobItemsTablePtr getItemsTable() const;
+    KnobItemsTablePositionEnum getItemsTablePosition() const;
     std::string getItemsTablePreviousKnobScriptName() const;
 
     virtual TimeValue getCurrentRenderTime() const;

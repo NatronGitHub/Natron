@@ -31,11 +31,43 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
+GCC_DIAG_OFF(unused-function)
+GCC_DIAG_OFF(unused-parameter)
+#include <libmv/image/array_nd.h>
 #include <libmv/autotrack/frame_accessor.h>
-
+GCC_DIAG_ON(unused-function)
+GCC_DIAG_ON(unused-parameter)
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
+
+class MvFloatImage
+: public libmv::Array3D<float>
+{
+public:
+
+    MvFloatImage()
+    : libmv::Array3D<float>()
+    {
+    }
+
+    MvFloatImage(int height,
+                 int width)
+    : libmv::Array3D<float>(height, width)
+    {
+    }
+
+    MvFloatImage(float* data,
+                 int height,
+                 int width)
+    : libmv::Array3D<float>(data, height, width)
+    {
+    }
+
+    virtual ~MvFloatImage()
+    {
+    }
+};
 
 struct TrackerFrameAccessorPrivate;
 class TrackerFrameAccessor
@@ -43,7 +75,10 @@ class TrackerFrameAccessor
 {
 public:
 
-    TrackerFrameAccessor(const NodePtr& node,
+    TrackerFrameAccessor(const NodePtr& sourceImageProvider,
+                         const NodePtr& maskImageProvider,
+                         const ImagePlaneDesc& maskImagePlane,
+                         int maskPlaneIndex,
                          bool enabledChannels[3],
                          int formatHeight);
 
@@ -51,6 +86,14 @@ public:
 
 
     void getEnabledChannels(bool* r, bool* g, bool* b) const;
+
+
+   
+    mv::FrameAccessor::Key GetImageInternal(GetImageTypeEnum sourceType,
+                                            int frame,
+                                            int downscale,               // Downscale by 2^downscale.
+                                            const mv::Region* region,        // Get full image if NULL.
+                                            mv::FloatImage** destination);
 
 
     // Get a possibly-filtered version of a frame of a video. Downscale will
@@ -62,6 +105,7 @@ public:
     // When done with an image, you must call ReleaseImage with the returned key.
     virtual mv::FrameAccessor::Key GetImage(int clip,
                                             int frame,
+                                            GetImageTypeEnum sourceType,
                                             mv::FrameAccessor::InputMode input_mode,
                                             int downscale,               // Downscale by 2^downscale.
                                             const mv::Region* region,        // Get full image if NULL.
@@ -76,6 +120,13 @@ public:
     virtual int NumFrames(int clip) OVERRIDE FINAL;
     static double invertYCoordinate(double yIn, double formatHeight);
     static void convertLibMVRegionToRectI(const mv::Region& region, int formatHeight, RectI* roi);
+
+    static void natronImageToLibMvFloatImage(bool enabledChannels[3],
+                                 const Image& source,
+                                 const RectI& roi,
+                                 bool takeDstFromAlpha,
+                                 MvFloatImage& mvImg);
+
 
 private:
 

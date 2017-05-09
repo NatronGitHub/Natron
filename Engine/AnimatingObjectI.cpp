@@ -352,4 +352,69 @@ AnimatingObjectI::setInterpolationAtTime(ViewSetSpec view, DimSpec dimension, Ti
     }
 }
 
+enum DeleteKnobAnimationEnum
+{
+    eDeleteKnobAnimationBeforeTime,
+    eDeleteKnobAnimationAfterTime
+};
+
+static void deleteValuesConditionalInternal(AnimatingObjectI* obj, DeleteKnobAnimationEnum type, const std::set<double>& keyframesToIgnore, TimeValue time, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason)
+{
+    std::list<ViewIdx> views = obj->getViewsList();
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+        if (!view.isAll() && *it != view) {
+            continue;
+        }
+        for (int i = 0; i < obj->getNDimensions(); ++i) {
+            if (!dimension.isAll() && i != dimension) {
+                continue;
+            }
+            CurvePtr curve = obj->getAnimationCurve(ViewIdx(0), DimIdx(i));
+            assert(curve);
+            KeyFrameSet keys = curve->getKeyFrames_mt_safe();
+            std::list<double> toRemove;
+            switch (type) {
+                case eDeleteKnobAnimationBeforeTime: {
+                    for (KeyFrameSet::iterator it = keys.begin(); it != keys.end(); ++it) {
+                        if (it->getTime() >= time) {
+                            break;
+                        }
+                        std::set<double>::iterator found = keyframesToIgnore.find( it->getTime() );
+                        if ( found == keyframesToIgnore.end() ) {
+                            toRemove.push_back( it->getTime() );
+                        }
+                    }
+                    break;
+                }
+                case eDeleteKnobAnimationAfterTime: {
+                    for (KeyFrameSet::reverse_iterator it = keys.rbegin(); it != keys.rend(); ++it) {
+                        if (it->getTime() <= time) {
+                            break;
+                        }
+                        std::set<double>::iterator found = keyframesToIgnore.find( it->getTime() );
+                        if ( found == keyframesToIgnore.end() ) {
+                            toRemove.push_back( it->getTime() );
+                        }
+                    }
+                    break;
+                }
+            }
+            obj->deleteValuesAtTime(toRemove, *it, DimIdx(i), reason);
+        }
+    }
+}
+
+void
+AnimatingObjectI::deleteValuesBeforeTime(const std::set<double>& keyframesToIgnore, TimeValue time, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason)
+{
+    deleteValuesConditionalInternal(this, eDeleteKnobAnimationBeforeTime, keyframesToIgnore, time, view, dimension, reason);
+}
+
+
+void
+AnimatingObjectI::deleteValuesAfterTime(const std::set<double>& keyframesToIgnore, TimeValue time, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason)
+{
+    deleteValuesConditionalInternal(this, eDeleteKnobAnimationAfterTime, keyframesToIgnore, time, view, dimension, reason);
+}
+
 NATRON_NAMESPACE_EXIT;

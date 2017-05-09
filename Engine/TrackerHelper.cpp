@@ -160,6 +160,18 @@ motionModelIndexToLivMVMode(int mode_i)
     }
 }
 
+void
+TrackerHelper::trackMarker(const TrackMarkerPtr& mark,
+                 TimeValue start,
+                 TimeValue end,
+                 TimeValue frameStep,
+                 const ViewerNodePtr& viewer)
+{
+    std::list<TrackMarkerPtr > markers;
+    markers.push_back(mark);
+    trackMarkers(markers, start, end, frameStep, viewer);
+}
+
 
 void
 TrackerHelper::trackMarkers(const std::list<TrackMarkerPtr >& markers,
@@ -179,18 +191,18 @@ TrackerHelper::trackMarkers(const std::list<TrackMarkerPtr >& markers,
         return;
     }
 
-    NodePtr trackerNode = provider->getTrackerNode();
-    if (!trackerNode) {
+    NodePtr trackerNodeSource = provider->getSourceImageNode();
+    NodePtr trackerNodeMask = provider->getMaskImageNode();
+    if (!trackerNodeSource) {
         Q_EMIT trackingFinished();
         return;
     }
 
-    if (trackerNode->hasMandatoryInputDisconnected()) {
-        Q_EMIT trackingFinished();
-        return;
+    ImagePlaneDesc maskImagePlane;
+    int maskPlaneIndex = 0;
+    if (trackerNodeMask) {
+        maskImagePlane = provider->getMaskImagePlane(&maskPlaneIndex);
     }
-
-
 
     // The channels we are going to use for tracking
     bool enabledChannels[3];
@@ -199,14 +211,14 @@ TrackerHelper::trackMarkers(const std::list<TrackMarkerPtr >& markers,
 
     double formatWidth, formatHeight;
     Format f;
-    trackerNode->getApp()->getProject()->getProjectDefaultFormat(&f);
+    trackerNodeSource->getApp()->getProject()->getProjectDefaultFormat(&f);
     formatWidth = f.width();
     formatHeight = f.height();
 
     bool autoKeyingOnEnabledParamEnabled = provider->canDisableMarkersAutomatically();
 
     /// The accessor and its cache is local to a track operation, it is wiped once the whole sequence track is finished.
-    boost::shared_ptr<TrackerFrameAccessor> accessor( new TrackerFrameAccessor(trackerNode, enabledChannels, formatHeight) );
+    boost::shared_ptr<TrackerFrameAccessor> accessor( new TrackerFrameAccessor(trackerNodeSource, trackerNodeMask, maskImagePlane, maskPlaneIndex, enabledChannels, formatHeight) );
     boost::shared_ptr<mv::AutoTrack> trackContext( new mv::AutoTrack( accessor.get() ) );
     std::vector<TrackMarkerAndOptionsPtr > trackAndOptions;
     mv::TrackRegionOptions mvOptions;
@@ -267,7 +279,7 @@ TrackerHelper::trackMarkers(const std::list<TrackMarkerPtr >& markers,
             t->natronMarker->setKeyFrame(start, ViewSetSpec(0), 0);
         }
 
-        PreviouslyTrackedFrameSet previousFramesOrdered;
+        PreviouslyTrackedFrameSet keyframesOrdered;
 
         // Make sure to create a marker at the start time
         userKeys.insert(start);
@@ -275,11 +287,7 @@ TrackerHelper::trackMarkers(const std::list<TrackMarkerPtr >& markers,
 
         // Add a libmv marker for all keyframes
         for (std::set<double>::iterator it2 = userKeys.begin(); it2 != userKeys.end(); ++it2) {
-
-            // Add the marker to the markers ordered only if it can contribute to predicting its next position
-            if ( ( (frameStep > 0) && (*it2 <= start) ) || ( (frameStep < 0) && (*it2 >= start) ) ) {
-                previousFramesOrdered.insert( PreviouslyComputedTrackFrame(TimeValue(*it2), true) );
-            }
+            keyframesOrdered.insert( PreviouslyComputedTrackFrame(TimeValue(*it2), true) );
         }
 
 
@@ -292,10 +300,7 @@ TrackerHelper::trackMarkers(const std::list<TrackMarkerPtr >& markers,
                 continue;
             }
 
-            // Add the marker to the markers ordered only if it can contribute to predicting its next position
-            if ( ( ( (frameStep > 0) && (*it2 < start) ) || ( (frameStep < 0) && (*it2 > start) ) ) ) {
-                previousFramesOrdered.insert( PreviouslyComputedTrackFrame(TimeValue(*it2), false) );
-            }
+            keyframesOrdered.insert( PreviouslyComputedTrackFrame(TimeValue(*it2), false) );
         }
 
 
@@ -304,51 +309,79 @@ TrackerHelper::trackMarkers(const std::list<TrackMarkerPtr >& markers,
         std::list<mv::Marker> previouslyComputedMarkersOrdered;
 
         // Find the first keyframe that's not considered to go before start or end
-        PreviouslyTrackedFrameSet::iterator prevFramesIt = previousFramesOrdered.lower_bound(PreviouslyComputedTrackFrame(start, false));
+        PreviouslyTrackedFrameSet::iterator prevFramesIt = keyframesOrdered.lower_bound(PreviouslyComputedTrackFrame(start, false));
         if (frameStep < 0) {
-            if (prevFramesIt != previousFramesOrdered.end()) {
-                while (prevFramesIt != previousFramesOrdered.end() && (int)previouslyComputedMarkersOrdered.size() != max_frames_to_predict_from) {
+            if (prevFramesIt != keyframesOrdered.end()) {
+
+                while (prevFramesIt != keyframesOrdered.end()) {
+
 
                     mv::Marker mvMarker;
-
                     TrackerHelperPrivate::natronTrackerToLibMVTracker(true, enabledChannels, *t->natronMarker, trackIndex, TimeValue(prevFramesIt->frame), frameStep, formatHeight, &mvMarker);
-                    trackContext->AddMarker(mvMarker);
+                    
 
-                    // insert in the front of the list so that the order is reversed
-                    previouslyComputedMarkersOrdered.push_front(mvMarker);
+                    if ( ( ( (frameStep > 0) && (prevFramesIt->frame <= start) ) || ( (frameStep < 0) && (prevFramesIt->frame >= start) ) ) ) {
+
+                        if ((int)previouslyComputedMarkersOrdered.size() != max_frames_to_predict_from) {
+                            // insert in the front of the list so that the order is reversed
+                            previouslyComputedMarkersOrdered.push_front(mvMarker);
+                        }
+
+                    }
+
+                    trackContext->AddMarker(mvMarker);
                     ++prevFramesIt;
                 }
             }
             // previouslyComputedMarkersOrdered is now ordererd by decreasing order
         } else {
 
-            if (prevFramesIt != previousFramesOrdered.end()) {
-                while (prevFramesIt != previousFramesOrdered.begin() && (int)previouslyComputedMarkersOrdered.size() != max_frames_to_predict_from) {
+            if (prevFramesIt != keyframesOrdered.end()) {
+
+
+
+                while (prevFramesIt != keyframesOrdered.begin()) {
 
                     mv::Marker mvMarker;
-
                     TrackerHelperPrivate::natronTrackerToLibMVTracker(true, enabledChannels, *t->natronMarker, trackIndex, TimeValue(prevFramesIt->frame), frameStep, formatHeight, &mvMarker);
-                    trackContext->AddMarker(mvMarker);
+                    if ( ( ( (frameStep > 0) && (prevFramesIt->frame <= start) ) || ( (frameStep < 0) && (prevFramesIt->frame >= start) ) ) ) {
 
-                    // insert in the front of the list so that the order is reversed
-                    previouslyComputedMarkersOrdered.push_front(mvMarker);
+                        if ((int)previouslyComputedMarkersOrdered.size() != max_frames_to_predict_from) {
+                            // insert in the front of the list so that the order is reversed
+                            previouslyComputedMarkersOrdered.push_front(mvMarker);
+                        }
+                        
+                    }
+
+                    trackContext->AddMarker(mvMarker);
                     --prevFramesIt;
                 }
-                if (prevFramesIt == previousFramesOrdered.begin() && (int)previouslyComputedMarkersOrdered.size() != max_frames_to_predict_from) {
-                    mv::Marker mvMarker;
 
-                    TrackerHelperPrivate::natronTrackerToLibMVTracker(true, enabledChannels, *t->natronMarker, trackIndex, TimeValue(prevFramesIt->frame), frameStep, formatHeight, &mvMarker);
-                    trackContext->AddMarker(mvMarker);
 
-                    // insert in the front of the list so that the order is reversed
-                    previouslyComputedMarkersOrdered.push_front(mvMarker);
 
+                mv::Marker mvMarker;
+                TrackerHelperPrivate::natronTrackerToLibMVTracker(true, enabledChannels, *t->natronMarker, trackIndex, TimeValue(prevFramesIt->frame), frameStep, formatHeight, &mvMarker);
+
+                if ( ( ( (frameStep > 0) && (prevFramesIt->frame <= start) ) || ( (frameStep < 0) && (prevFramesIt->frame >= start) ) ) ) {
+
+                    if (prevFramesIt == keyframesOrdered.begin()) {
+
+                        if ((int)previouslyComputedMarkersOrdered.size() != max_frames_to_predict_from) {
+                            // insert in the front of the list so that the order is reversed
+                            previouslyComputedMarkersOrdered.push_front(mvMarker);
+                        }
+
+                    }
                 }
+
+                trackContext->AddMarker(mvMarker);
+
+
             }
             // previouslyComputedMarkersOrdered is now ordererd by increasing order
-        }
-
-
+        } // frameStep < 0
+        
+        
         // There must be at least 1 marker at the start time
         assert( !previouslyComputedMarkersOrdered.empty() );
 
@@ -375,7 +408,7 @@ TrackerHelper::trackMarkers(const std::list<TrackMarkerPtr >& markers,
     /*
      Launch tracking in the scheduler thread.
      */
-    boost::shared_ptr<TrackArgs> args( new TrackArgs(start, end, frameStep, trackerNode->getApp()->getTimeLine(), viewer, trackContext, accessor, trackAndOptions, formatWidth, formatHeight, autoKeyingOnEnabledParamEnabled) );
+    boost::shared_ptr<TrackArgs> args( new TrackArgs(start, end, frameStep, trackerNodeSource->getApp()->getTimeLine(), viewer, trackContext, accessor, trackAndOptions, formatWidth, formatHeight, autoKeyingOnEnabledParamEnabled) );
     _imp->scheduler->track(args);
 } // TrackerHelper::trackMarkers
 

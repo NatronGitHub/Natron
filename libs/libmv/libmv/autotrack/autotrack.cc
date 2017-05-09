@@ -92,6 +92,7 @@ void MarkerToArrays(const Marker& marker, double* x, double* y) {
 
 FrameAccessor::Key GetImageForMarker(const Marker& marker,
                                      FrameAccessor* frame_accessor,
+                                     FrameAccessor::GetImageTypeEnum sourceType,
                                      FloatImage** image) {
   // TODO(sergey): Currently we pass float region to the accessor,
   // but we don't want the accessor to decide the rounding, so we
@@ -99,11 +100,12 @@ FrameAccessor::Key GetImageForMarker(const Marker& marker,
   // Ideally we would need to pass IntRegion to the frame accessor.
   Region region = marker.search_region.Rounded();
   libmv::scoped_ptr<FrameAccessor::Transform> transform = NULL;
-  if (marker.disabled_channels != 0) {
+  if (marker.disabled_channels != 0 && sourceType == FrameAccessor::eGetImageTypeSource) {
     transform.reset(new DisableChannelsTransform(marker.disabled_channels));
   }
   return frame_accessor->GetImage(marker.clip,
                                   marker.frame,
+                                  sourceType,
                                   FrameAccessor::MONO,
                                   0,  // No downscale for now.
                                   &region,
@@ -149,6 +151,7 @@ bool AutoTrack::TrackMarker(Marker* tracked_marker,
   FloatImage* reference_image;
   FrameAccessor::Key reference_key = GetImageForMarker(reference_marker,
                                                        frame_accessor_,
+                                                       FrameAccessor::eGetImageTypeSource,
                                                        &reference_image);
   if (!reference_key) {
     LG << "Couldn't get frame for reference marker: " << reference_marker;
@@ -158,12 +161,23 @@ bool AutoTrack::TrackMarker(Marker* tracked_marker,
   FloatImage* tracked_image;
   FrameAccessor::Key tracked_key = GetImageForMarker(*tracked_marker,
                                                      frame_accessor_,
+                                                     FrameAccessor::eGetImageTypeSource,
                                                      &tracked_image);
   if (!tracked_key) {
     frame_accessor_->ReleaseImage(reference_key);
     LG << "Couldn't get frame for tracked marker: " << tracked_marker;
     return false;
   }
+
+  // If non-null, this is used as the pattern mask. It should match the size of
+  // image1, even though only values inside the image1 quad are examined. The
+  // values must be in the range 0.0 to 0.1.
+  FloatImage *image1_mask = 0;
+  FrameAccessor::Key mask_key = GetImageForMarker(reference_marker,
+                                                    frame_accessor_,
+                                                    FrameAccessor::eGetImageTypeMask,
+                                                    &image1_mask);
+
 
   // Store original position befoer tracking, so we can claculate offset later.
   Vec2f original_center = tracked_marker->center;
@@ -177,6 +191,7 @@ bool AutoTrack::TrackMarker(Marker* tracked_marker,
   local_track_region_options.attempt_refine_before_brute = predicted_position;
   TrackRegion(*reference_image,
               *tracked_image,
+              image1_mask,
               x1, y1,
               local_track_region_options,
               x2, y2,
@@ -200,6 +215,10 @@ bool AutoTrack::TrackMarker(Marker* tracked_marker,
   // Release the images from the accessor cache.
   frame_accessor_->ReleaseImage(reference_key);
   frame_accessor_->ReleaseImage(tracked_key);
+
+  if (image1_mask) {
+      frame_accessor_->ReleaseImage(mask_key);
+  }
 
   // Update the kalman filter with the new measurement
   if (predictionState && result->is_usable()) {

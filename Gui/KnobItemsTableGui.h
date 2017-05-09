@@ -70,7 +70,7 @@ public:
 
     std::vector<KnobGuiPtr> getKnobsForItem(const KnobTableItemPtr& item) const;
 
-    void addWidgetsToLayout(QGridLayout* layout);
+    void addWidgetsToLayout(QLayout* layout);
 
     KnobItemsTablePtr getInternalTable() const;
 
@@ -107,6 +107,10 @@ public Q_SLOTS:
 
     void onItemLabelChanged(const QString& label, TableChangeReasonEnum reason);
     void onItemIconChanged(TableChangeReasonEnum reason);
+
+    void onViewItemRightClicked(const QPoint& globalPos, const TableItemPtr& item);
+
+    void onRightClickActionTriggered();
 
     void onItemAnimationCurveChanged(std::list<double> added, std::list<double> removed, ViewIdx view);
 

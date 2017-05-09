@@ -2639,6 +2639,7 @@ AppManager::registerEngineMetaTypes() const
     qRegisterMetaType<std::list<double> >("std::list<double>");
     qRegisterMetaType<DimIdx>("DimIdx");
     qRegisterMetaType<DimSpec>("DimSpec");
+    qRegisterMetaType<ViewerNodePtr>("ViewerNodePtr");
     qRegisterMetaType<ValueChangedReturnCodeEnum>("ValueChangedReturnCodeEnum");
     qRegisterMetaType<ValueChangedReasonEnum>("ValueChangedReasonEnum");
     qRegisterMetaType<DimensionViewPair>("DimensionViewPair");

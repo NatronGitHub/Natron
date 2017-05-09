@@ -396,7 +396,7 @@ enum RotoMotionBlurModeEnum
 #define kRotoOutputComponentsParamHint "Components type of the image for the solid brush and for shapes. "\
 "By default, the Roto node outputs Alpha only whereas the RotoPaint node outputs RGBA"
 
-struct RotoPaintPrivate;
+class RotoPaintPrivate;
 class RotoPaint
     : public NodeGroup
 {
@@ -519,6 +519,9 @@ public:
     std::list< RotoDrawableItemPtr > getRotoPaintItemsByRenderOrder() const;
     std::list< RotoDrawableItemPtr > getActivatedRotoPaintItemsByRenderOrder(TimeValue time, ViewIdx view) const;
 
+    void createPlanarTrackForShape(const RotoDrawableItemPtr& item);
+
+
 public Q_SLOTS:
 
     void onModelSelectionChanged(std::list<KnobTableItemPtr> addedToSelection, std::list<KnobTableItemPtr> removedFromSelection, TableChangeReasonEnum reason);
@@ -527,6 +530,10 @@ public Q_SLOTS:
 
     void onSourceNodeLabelChanged(const QString& oldLabel, const QString& newLabel);
 
+    void onTrackingStarted(int step);
+
+    void onTrackingEnded();
+    
 protected:
 
     void initLifeTimeKnobs(const KnobPagePtr& generalPage);
@@ -537,6 +544,9 @@ protected:
     void initTransformPageKnobs();
     void initClonePageKnobs();
     void initMotionBlurPageKnobs();
+    void initTrackingPageKnobs();
+    void initTrackingViewerKnobs(const KnobPagePtr &trackingPage);
+    void initializeTrackRangeDialogKnobs(const KnobPagePtr& trackingPage);
 
     void initCompNodeKnobs(const KnobPagePtr& page);
 
@@ -554,7 +564,7 @@ private:
     virtual void refreshExtraStateAfterTimeChanged(bool isPlayback, TimeValue time)  OVERRIDE FINAL;
 
     
-    boost::scoped_ptr<RotoPaintPrivate> _imp;
+    boost::shared_ptr<RotoPaintPrivate> _imp;
 };
 
 /**

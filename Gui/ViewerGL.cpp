@@ -1138,7 +1138,10 @@ ViewerGL::transferBufferFromRAMtoGPU(const TextureTransferArgs& args)
         QMutexLocker displayDataLocker(&_imp->displayDataMutex);
         if (args.type == TextureTransferArgs::eTextureTransferTypeOverlay) {
 
-            assert(args.image);
+            if (!args.image) {
+                // Nothing to do
+                return;
+            }
 
             // For small partial updates overlays, we make new textures
             int format, internalFormat, glType;

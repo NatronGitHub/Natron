@@ -71,7 +71,7 @@ TrackScheduler::TrackScheduler(const TrackerParamsProviderBasePtr& paramsProvide
 : GenericSchedulerThread()
 , _imp( new TrackSchedulerPrivate(paramsProvider) )
 {
-    QObject::connect( this, SIGNAL(renderCurrentFrameForViewer(ViewerInstancePtr)), this, SLOT(doRenderCurrentFrameForViewer(ViewerInstancePtr)) );
+    QObject::connect( this, SIGNAL(renderCurrentFrameForViewer(ViewerNodePtr)), this, SLOT(doRenderCurrentFrameForViewer(ViewerNodePtr)) );
 
     setThreadName("TrackScheduler");
 }
@@ -89,24 +89,20 @@ private:
     ViewerNodePtr _v;
     EffectInstancePtr _effect;
     TrackScheduler* _base;
-    bool _reportProgress;
     bool _doPartialUpdates;
 
 public:
 
     IsTrackingFlagSetter_RAII(TrackScheduler* base,
                               int step,
-                              bool reportProgress,
                               const ViewerNodePtr& viewer,
                               bool doPartialUpdates)
     : _v(viewer)
     , _base(base)
-    , _reportProgress(reportProgress)
     , _doPartialUpdates(doPartialUpdates)
     {
-        if (_reportProgress) {
-            _base->emit_trackingStarted(step);
-        }
+        _base->emit_trackingStarted(step);
+
 
         if (viewer && doPartialUpdates) {
             viewer->setDoingPartialUpdates(doPartialUpdates);
@@ -118,9 +114,7 @@ public:
         if (_v && _doPartialUpdates) {
             _v->setDoingPartialUpdates(false);
         }
-        if (_reportProgress) {
-            _base->emit_trackingFinished();
-        }
+        _base->emit_trackingFinished();
     }
 };
 
@@ -158,14 +152,13 @@ TrackScheduler::threadLoopOnce(const GenericThreadStartArgsPtr& inArgs)
     // than just render the whole viewer RoI
     const bool doPartialUpdates = numTracks < TRACKER_MAX_TRACKS_FOR_PARTIAL_VIEWER_UPDATE;
     int lastValidFrame = frameStep > 0 ? start - 1 : start + 1;
-    bool reportProgress = numTracks > 1 || framesCount > 1;
     timeval lastProgressUpdateTime;
     gettimeofday(&lastProgressUpdateTime, 0);
 
     bool allTrackFailed = false;
     {
         ///Use RAII style for setting the isDoingPartialUpdates flag so we're sure it gets removed
-        IsTrackingFlagSetter_RAII __istrackingflag__(this, frameStep, reportProgress, viewer, doPartialUpdates);
+        IsTrackingFlagSetter_RAII __istrackingflag__(this, frameStep, viewer, doPartialUpdates);
 
         if ( (frameStep == 0) || ( (frameStep > 0) && (start >= end) ) || ( (frameStep < 0) && (start <= end) ) ) {
             // Invalid range
@@ -247,7 +240,7 @@ TrackScheduler::threadLoopOnce(const GenericThreadStartArgsPtr& inArgs)
                 }
             }
 
-            if (enoughTimePassedToReportProgress && reportProgress) {
+            if (enoughTimePassedToReportProgress) {
                 ///Notify we progressed of 1 frame
                 Q_EMIT trackingProgress(progress);
             }

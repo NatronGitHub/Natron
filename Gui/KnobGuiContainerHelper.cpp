@@ -354,33 +354,47 @@ KnobGuiContainerHelper::initializeKnobs()
     _imp->refreshPagesEnabledness();
     refreshCurrentPage();
 
-    // Add the table if not done before
-    KnobHolderPtr holder = _imp->holder.lock();
-    KnobItemsTablePtr table = holder->getItemsTable();
-    if (table && !_imp->knobsTable) {
-        std::string knobTableName = holder->getItemsTablePreviousKnobScriptName();
-        KnobIPtr foundKnob = holder->getKnobByName(knobTableName);
-        KnobPagePtr page = toKnobPage(foundKnob);
-        KnobPageGuiPtr guiPage;
-        if (!page) {
-            // Look for the first page available
-            if (!_imp->pages.empty()) {
-                guiPage = _imp->pages.begin()->second;
+    onKnobsInitialized();
+
+    if (!_imp->dialogKnob.lock()) {
+        // Add the table if not done before
+        KnobHolderPtr holder = _imp->holder.lock();
+        KnobItemsTablePtr table = holder->getItemsTable();
+        if (table && !_imp->knobsTable) {
+            std::string knobTableName = holder->getItemsTablePreviousKnobScriptName();
+            KnobHolder::KnobItemsTablePositionEnum knobTablePosition = holder->getItemsTablePosition();
+            switch (knobTablePosition) {
+                case KnobHolder::eKnobItemsTablePositionAfterKnob: {
+                    KnobIPtr foundKnob = holder->getKnobByName(knobTableName);
+                    KnobPagePtr page = toKnobPage(foundKnob);
+                    KnobPageGuiPtr guiPage;
+                    if (!page) {
+                        // Look for the first page available
+                        if (!_imp->pages.empty()) {
+                            guiPage = _imp->pages.begin()->second;
+                        }
+                    } else {
+                        PagesMap::const_iterator found = _imp->pages.find(page);
+                        if (found != _imp->pages.end()) {
+                            guiPage = found->second;
+                        }
+                    }
+                    if (guiPage) {
+                        _imp->knobsTable = createKnobItemsTable(guiPage->tab);
+                        _imp->knobsTable->addWidgetsToLayout(guiPage->gridLayout);
+                    }
+
+                }   break;
+                case KnobHolder::eKnobItemsTablePositionBottomOfAllPages: {
+                    QWidget* container = getMainContainer();
+                    QLayout* mainLayout = getMainContainerLayout();
+                    _imp->knobsTable = createKnobItemsTable(container);
+                    _imp->knobsTable->addWidgetsToLayout(mainLayout);
+                }   break;
             }
-        } else {
-            PagesMap::const_iterator found = _imp->pages.find(page);
-            if (found != _imp->pages.end()) {
-                guiPage = found->second;
-            }
-        }
-        if (guiPage) {
-            _imp->knobsTable = createKnobItemsTable(guiPage->tab);
-            _imp->knobsTable->addWidgetsToLayout(guiPage->gridLayout);
         }
     }
-
-
-    onKnobsInitialized();
+    
 }
 
 void
@@ -743,12 +757,14 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr &knob)
                     TabGroup* groupAsTab = parentParentGui->getOrCreateTabWidget();
                     assert(groupAsTab);
                     gridLayout = groupAsTab->addTab( closestParentGroupTab, QString::fromUtf8( closestParentGroupTab->getLabel().c_str() ) );
+                    groupAsTab->refreshTabSecretNess(closestParentGroupTab);
                 }
             } else if (parentParentIsPage) {
                 KnobPageGuiPtr page = getOrCreatePage(parentParentIsPage);
                 assert(page);
                 assert(page->groupAsTab);
                 gridLayout = page->groupAsTab->addTab( closestParentGroupTab, QString::fromUtf8( closestParentGroupTab->getLabel().c_str() ) );
+                page->groupAsTab->refreshTabSecretNess(closestParentGroupTab);
             }
             assert(gridLayout);
         }
@@ -808,7 +824,8 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr &knob)
         // If the node wants a knobtable after this knob, create it
         KnobHolderPtr holder = _imp->holder.lock();
         KnobItemsTablePtr table = holder->getItemsTable();
-        if (table && !_imp->knobsTable) {
+        KnobHolder::KnobItemsTablePositionEnum knobTablePosition = holder->getItemsTablePosition();
+        if (table && !_imp->knobsTable && knobTablePosition == KnobHolder::eKnobItemsTablePositionAfterKnob) {
             std::string knobTableName = holder->getItemsTablePreviousKnobScriptName();
             if (knobTableName == knob->getName()) {
                 _imp->knobsTable = createKnobItemsTable(page->tab);

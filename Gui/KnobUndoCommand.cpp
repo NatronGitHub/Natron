@@ -749,7 +749,11 @@ MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
 
     // Check that the holder is the same, otherwise don't merge
     {
-        KnobHolderPtr holder = knobs.begin()->first.lock()->getHolder();
+        KnobIPtr knob = knobs.begin()->first.lock();
+        if (!knob) {
+            return false;
+        }
+        KnobHolderPtr holder = knob->getHolder();
         KnobHolderPtr otherHolder = knobCommand->knobs.begin()->first.lock()->getHolder();
         if (holder != otherHolder) {
             return false;

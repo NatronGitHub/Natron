@@ -73,6 +73,11 @@ struct OverlayInteractBasePrivate
     // Ptr to the current viewport, valid only during an action
     OverlaySupport* currentViewport;
 
+    bool fetchKnobCalledOnce;
+
+    // Should the overlay be active
+    bool overlayEnabled;
+
     OverlayInteractBasePrivate()
     : effect()
     , description()
@@ -80,6 +85,8 @@ struct OverlayInteractBasePrivate
     , hasColorPicker(false)
     , pickerColor()
     , currentViewport(0)
+    , fetchKnobCalledOnce(false)
+    , overlayEnabled(true)
     {
         
     }
@@ -138,6 +145,16 @@ void
 OverlayInteractBase::describeKnobs(KnobsDescMap* /*knobs*/) const
 {
 
+}
+
+void
+OverlayInteractBase::fetchKnobs_public(const std::map<std::string, std::string>& knobs)
+{
+    if (_imp->fetchKnobCalledOnce) {
+        return;
+    }
+    fetchKnobs(knobs);
+    _imp->fetchKnobCalledOnce = true;
 }
 
 void
@@ -305,6 +322,21 @@ OverlayInteractBase::getEffect() const
     return _imp->effect.lock();
 }
 
+void
+OverlayInteractBase::setInteractEnabled(bool enabled)
+{
+    if (enabled != _imp->overlayEnabled) {
+        _imp->overlayEnabled = enabled;
+        redraw();
+    }
+}
+
+bool
+OverlayInteractBase::isInteractEnabled() const
+{
+    return _imp->overlayEnabled;
+}
+
 bool
 OverlayInteractBase::getOverlayColor(double &r, double &g, double &b) const
 {
@@ -347,7 +379,11 @@ OverlayInteractBase::drawOverlay_public(OverlaySupport* viewport,
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
-    
+
+    if (!isInteractEnabled()) {
+        return;
+    }
+
     ViewportSetter_RAII viewportSetter(_imp.get(), viewport);
     {
 
@@ -383,6 +419,10 @@ OverlayInteractBase::onOverlayPenDown_public(OverlaySupport* viewport,
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
 
+    if (!isInteractEnabled()) {
+        return false;
+    }
+
     ViewportSetter_RAII viewportSetter(_imp.get(), viewport);
     
     EffectInstancePtr effect = getEffect();
@@ -416,6 +456,10 @@ OverlayInteractBase::onOverlayPenDoubleClicked_public(OverlaySupport* viewport,
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
+
+    if (!isInteractEnabled()) {
+        return false;
+    }
 
     ViewportSetter_RAII viewportSetter(_imp.get(), viewport);
 
@@ -453,6 +497,10 @@ OverlayInteractBase::onOverlayPenMotion_public(OverlaySupport* viewport,
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
 
+    if (!isInteractEnabled()) {
+        return false;
+    }
+
     ViewportSetter_RAII viewportSetter(_imp.get(), viewport);
 
     EffectInstancePtr effect = getEffect();
@@ -484,6 +532,10 @@ OverlayInteractBase::onOverlayPenUp_public(OverlaySupport* viewport,
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
+
+    if (!isInteractEnabled()) {
+        return false;
+    }
 
     ViewportSetter_RAII viewportSetter(_imp.get(), viewport);
 
@@ -519,6 +571,10 @@ OverlayInteractBase::onOverlayKeyDown_public(OverlaySupport* viewport,
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
+
+    if (!isInteractEnabled()) {
+        return false;
+    }
 
     ViewportSetter_RAII viewportSetter(_imp.get(), viewport);
 
@@ -556,6 +612,10 @@ OverlayInteractBase::onOverlayKeyUp_public(OverlaySupport* viewport,
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
 
+    if (!isInteractEnabled()) {
+        return false;
+    }
+
     ViewportSetter_RAII viewportSetter(_imp.get(), viewport);
 
     EffectInstancePtr effect = getEffect();
@@ -591,6 +651,10 @@ OverlayInteractBase::onOverlayKeyRepeat_public(OverlaySupport* viewport,
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
 
+    if (!isInteractEnabled()) {
+        return false;
+    }
+
     ViewportSetter_RAII viewportSetter(_imp.get(), viewport);
 
     EffectInstancePtr effect = getEffect();
@@ -625,6 +689,10 @@ OverlayInteractBase::onOverlayFocusGained_public(OverlaySupport* viewport,
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
 
+    if (!isInteractEnabled()) {
+        return false;
+    }
+
     ViewportSetter_RAII viewportSetter(_imp.get(), viewport);
 
     EffectInstancePtr effect = getEffect();
@@ -657,6 +725,10 @@ OverlayInteractBase::onOverlayFocusLost_public(OverlaySupport* viewport,
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
+
+    if (!isInteractEnabled()) {
+        return false;
+    }
 
     ViewportSetter_RAII viewportSetter(_imp.get(), viewport);
 

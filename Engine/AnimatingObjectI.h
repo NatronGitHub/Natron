@@ -30,6 +30,7 @@
 #include <vector>
 #include <list>
 #include <string>
+#include <set>
 #include <map>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -458,6 +459,18 @@ public:
      * at the given index will receive the change, otherwise no change occurs.
      **/
     virtual void deleteValuesAtTime(const std::list<double>& times, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason) = 0;
+
+    /**
+     * @brief Remove animation on the object before the given time (excluded). 
+     * @param keyframesToIgnore All keyframes included in this list will not be removed
+     **/
+    void deleteValuesBeforeTime(const std::set<double>& keyframesToIgnore, TimeValue time, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason);
+
+    /**
+     * @brief Remove animation on the object after the given time (excluded).
+     * @param keyframesToIgnore All keyframes included in this list will not be removed
+     **/
+    void deleteValuesAfterTime(const std::set<double>& keyframesToIgnore, TimeValue time, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason);
 
     /**
      * @brief If a keyframe at the given time exists in the curve at the given view and dimension then it will be moved by dt in time

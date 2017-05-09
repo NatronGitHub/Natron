@@ -1020,6 +1020,11 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
             symbol = Key_B;
         }
 
+        if (openfxId == PLUGINID_OFX_ROTOMERGE) {
+            // RotoMerge is to be used only be the RotoPaint tree
+            natronPlugin->setProperty<bool>(kNatronPluginPropIsInternalOnly, true);
+        }
+
         natronPlugin->setProperty<int>(kNatronPluginPropShortcut, (int)symbol, 0);
         natronPlugin->setProperty<int>(kNatronPluginPropShortcut, (int)mods, 1);
 

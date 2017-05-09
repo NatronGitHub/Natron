@@ -37,6 +37,7 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/FrameViewRequest.h"
 #include "Engine/GPUContextPool.h"
+#include "Engine/GroupInput.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/RotoStrokeItem.h"
@@ -463,6 +464,25 @@ TreeRenderPtr
 TreeRender::create(const CtorArgsPtr& inArgs)
 {
     TreeRenderPtr render(new TreeRender());
+
+
+    if (dynamic_cast<GroupInput*>(inArgs->treeRootEffect.get())) {
+        // Hack for the GroupInput node: if the treeRoot passed is a GroupInput node we must forward to the corresponding input of the enclosing
+        // group node, otherwise the render will fail because the GroupInput node itself does not have any input.
+        NodeGroupPtr enclosingNodeGroup = toNodeGroup(inArgs->treeRootEffect->getNode()->getGroup());
+        if (!enclosingNodeGroup) {
+            render->_imp->state = eActionStatusFailed;
+            return render;
+        }
+
+        NodePtr realInput = enclosingNodeGroup->getRealInputForInput(inArgs->treeRootEffect->getNode());
+        if (!realInput) {
+            render->_imp->state = eActionStatusFailed;
+            return render;
+        }
+        inArgs->treeRootEffect = realInput->getEffectInstance();
+    }
+
 
     assert(!inArgs->treeRootEffect->isRenderClone());
     

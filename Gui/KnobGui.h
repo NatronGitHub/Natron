@@ -214,6 +214,7 @@ public:
      **/
     bool pasteKnob(const KnobIPtr& fromKnob, KnobClipBoardType type, DimSpec fromDim, ViewSetSpec fromView, DimSpec targetDimension, ViewSetSpec targetView);
 
+    TabGroup* getTabWidget() const;
     TabGroup* getOrCreateTabWidget();
 
     void addSpacerItemAtEndOfLine();

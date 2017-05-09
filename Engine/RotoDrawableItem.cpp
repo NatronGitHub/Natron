@@ -71,6 +71,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Serialization/NodeSerialization.h"
 
 
+#define kRotoDrawableItemRightClickMenuPlanarTrackParam "planarTrack"
+#define kRotoDrawableItemRightClickMenuPlanarTrackParamLabel "Planar-Track"
+
 NATRON_NAMESPACE_ENTER;
 
 
@@ -140,6 +143,9 @@ public:
     KnobIntWPtr timeOffset;
     KnobChoiceWPtr timeOffsetMode;
     KnobDoubleWPtr mixKnob;
+
+    // Right click menu
+    KnobButtonWPtr createPlanarTrackButton;
 
     RotoDrawableItemPrivate()
     {
@@ -411,6 +417,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
 #ifndef ROTO_PAINT_NODE_GRAPH_VISIBLE
     args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
 #endif
+    args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
     args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
 
     _imp->mergeNode = app->createNode(args);
@@ -566,6 +573,8 @@ RotoDrawableItem::onKnobValueChanged(const KnobIPtr& knob,
     if (!node) {
         return false;
     }
+    RotoDrawableItemPtr thisShared = boost::dynamic_pointer_cast<RotoDrawableItem>(shared_from_this());
+
 
     RotoPaintPtr rotoPaintEffect = toRotoPaint(node->getEffectInstance());
 
@@ -590,7 +599,6 @@ RotoDrawableItem::onKnobValueChanged(const KnobIPtr& knob,
     } else if ( (knob == _imp->timeOffsetMode.lock()) && _imp->timeOffsetNode ) {
         // Get the items by render order. In the GUI they appear from bottom to top.
         std::list<RotoDrawableItemPtr> rotoItems = rotoPaintEffect->getRotoPaintItemsByRenderOrder();
-        RotoDrawableItemPtr thisShared = boost::dynamic_pointer_cast<RotoDrawableItem>(shared_from_this());
         RotoDrawableItemPtr prev;
         std::list<RotoDrawableItemPtr>::iterator found = std::find(rotoItems.begin(), rotoItems.end(), thisShared);
         if (found != rotoItems.end() && found != rotoItems.begin()) {
@@ -598,6 +606,8 @@ RotoDrawableItem::onKnobValueChanged(const KnobIPtr& knob,
             prev = *found;
         }
         refreshNodesConnections(prev);
+    } else if (knob == _imp->createPlanarTrackButton.lock()) {
+        rotoPaintEffect->createPlanarTrackForShape(thisShared);
     } else {
         return RotoItem::onKnobValueChanged(knob, reason, time, view);
     }
@@ -1128,15 +1138,14 @@ RotoDrawableItem::setKeyframeOnAllTransformParameters(TimeValue time)
 }
 
 
-void
-RotoDrawableItem::getTransformAtTime(TimeValue time,
+bool
+RotoDrawableItem::getTransformAtTimeInternal(TimeValue time,
                                      ViewIdx view,
                                      Transform::Matrix3x3* matrix) const
 {
     KnobDoublePtr translate = _imp->translate.lock();
     if (!translate) {
-        matrix->setIdentity();
-        return;
+        return false;
     }
     KnobDoublePtr rotate = _imp->rotate.lock();
     KnobBoolPtr scaleUniform = _imp->scaleUniform.lock();
@@ -1166,32 +1175,10 @@ RotoDrawableItem::getTransformAtTime(TimeValue time,
     extraMat.d = extraMatrix->getValueAtTime(time, DimIdx(3), view); extraMat.e = extraMatrix->getValueAtTime(time, DimIdx(4), view); extraMat.f = extraMatrix->getValueAtTime(time, DimIdx(5), view);
     extraMat.g = extraMatrix->getValueAtTime(time, DimIdx(6), view); extraMat.h = extraMatrix->getValueAtTime(time, DimIdx(7), view); extraMat.i = extraMatrix->getValueAtTime(time, DimIdx(8), view);
     *matrix = Transform::matMul(*matrix, extraMat);
-}
+    return true;
+} // getTransformAtTimeInternal
 
 
-void
-RotoDrawableItem::setExtraMatrix(bool setKeyframe,
-                                 TimeValue time,
-                                 ViewSetSpec view,
-                                 const Transform::Matrix3x3& mat)
-{
-    KnobDoublePtr extraMatrix = _imp->extraMatrix.lock();
-    if (!extraMatrix) {
-        return;
-    }
-    ScopedChanges_RAII changes(extraMatrix.get());
-    if (setKeyframe) {
-        std::vector<double> matValues(9);
-        memcpy(&matValues[0], &mat.a, 9 * sizeof(double));
-        extraMatrix->setValueAtTime(time, mat.a, view, DimIdx(0)); extraMatrix->setValueAtTime(time, mat.b, view, DimIdx(1)); extraMatrix->setValueAtTime(time, mat.c, view, DimIdx(2));
-        extraMatrix->setValueAtTime(time, mat.d, view, DimIdx(3)); extraMatrix->setValueAtTime(time, mat.e, view, DimIdx(4)); extraMatrix->setValueAtTime(time, mat.f, view, DimIdx(5));
-        extraMatrix->setValueAtTime(time, mat.g, view, DimIdx(6)); extraMatrix->setValueAtTime(time, mat.h, view, DimIdx(7)); extraMatrix->setValueAtTime(time, mat.i, view, DimIdx(8));
-    } else {
-        extraMatrix->setValue(mat.a, view, DimIdx(0)); extraMatrix->setValue(mat.b, view, DimIdx(1)); extraMatrix->setValue(mat.c, view, DimIdx(2));
-        extraMatrix->setValue(mat.d, view, DimIdx(3)); extraMatrix->setValue(mat.e, view, DimIdx(4)); extraMatrix->setValue(mat.f, view, DimIdx(5));
-        extraMatrix->setValue(mat.g, view, DimIdx(6)); extraMatrix->setValue(mat.h, view, DimIdx(7)); extraMatrix->setValue(mat.i, view, DimIdx(8));
-    }
-}
 
 void
 RotoDrawableItem::resetTransformCenter()
@@ -1213,10 +1200,6 @@ RotoDrawableItem::resetTransformCenter()
     values[0] = (bbox.x1 + bbox.x2) / 2.;
     values[1] = (bbox.y1 + bbox.y2) / 2.;
     centerKnob->setValueAcrossDimensions(values);
-    /*KnobIPtr masterKnob = linkData.masterKnob.lock();
-    if (masterKnob) {
-        centerKnob->slaveTo(masterKnob, DimSpec::all(), DimSpec::all(), view, view);
-    }*/
 }
 
 
@@ -1580,7 +1563,25 @@ RotoDrawableItem::initializeKnobs()
         addColumn(kRotoColorParam, DimSpec::all());
     }
 
+    {
+        KnobButtonPtr param = createKnob<KnobButton>(kRotoDrawableItemRightClickMenuPlanarTrackParam);
+        param->setSecret(true);
+        param->setLabel(tr(kRotoDrawableItemRightClickMenuPlanarTrackParamLabel));
+        _imp->createPlanarTrackButton = param;
+    }
+
 } // initializeKnobs
+
+void
+RotoDrawableItem::refreshRightClickMenu(const KnobChoicePtr& refreshRightClickMenuInternal)
+{
+    if (getBrushType() == eRotoStrokeTypeComp) {
+        return;
+    }
+
+    refreshRightClickMenuInternal->appendChoice(ChoiceOption(kRotoDrawableItemRightClickMenuPlanarTrackParam));
+    
+}
 
 NATRON_NAMESPACE_EXIT;
 

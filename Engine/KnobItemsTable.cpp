@@ -212,6 +212,7 @@ struct KnobTableItemCommon
     // Locks all members
     mutable QMutex lock;
 
+    KnobChoiceWPtr rightClickMenuKnob;
 
     KnobTableItemCommon(const KnobItemsTablePtr& model)
     : parent()
@@ -620,7 +621,7 @@ KnobItemsTable::generateUniqueName(const KnobTableItemPtr& item, const std::stri
 }
 
 KnobTableItem::KnobTableItem(const KnobItemsTablePtr& model)
-: NamedKnobHolder(model->getOriginalHolder()->getApp())
+: NamedKnobHolder(model ? model->getOriginalHolder()->getApp() : AppInstancePtr())
 , AnimatingObjectI()
 , _imp(new KnobTableItemPrivate(model))
 {
@@ -980,6 +981,31 @@ KnobTableItem::ensureItemInitialized()
 
 }
 
+KnobChoicePtr
+KnobTableItem::refreshRightClickMenu()
+{
+    KnobChoicePtr rightClickMenu = _imp->common->rightClickMenuKnob.lock();
+    rightClickMenu->resetChoices();
+    refreshRightClickMenu(rightClickMenu);
+    return rightClickMenu;
+}
+
+void
+KnobTableItem::refreshRightClickMenu(const KnobChoicePtr& /*refreshRightClickMenuInternal*/)
+{
+
+}
+
+void
+KnobTableItem::initializeKnobs()
+{
+
+    KnobChoicePtr rightClickMenu = createKnob<KnobChoice>(std::string(kNatronOfxParamRightClickMenu) );
+    rightClickMenu->setSecret(true);
+    rightClickMenu->setEvaluateOnChange(false);
+    _imp->common->rightClickMenuKnob = rightClickMenu;
+} //
+
 KnobTableItemPtr
 KnobTableItem::getParent() const
 {
@@ -1003,7 +1029,9 @@ KnobTableItem::getIndexInParent() const
 
     } else {
         KnobItemsTablePtr table = _imp->common->model.lock();
-        assert(table);
+        if (!table) {
+            return -1;
+        }
         QMutexLocker k(&table->_imp->common->topLevelItemsLock);
         for (std::size_t i = 0; i < table->_imp->common->topLevelItems.size(); ++i) {
             if (table->_imp->common->topLevelItems[i].get() == this) {

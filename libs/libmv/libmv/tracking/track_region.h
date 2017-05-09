@@ -107,10 +107,6 @@ struct TrackRegionOptions {
   // successful. The solver termination becomes PARAMETER_TOLERANCE.
   double minimum_corner_shift_tolerance_pixels;
 
-  // If non-null, this is used as the pattern mask. It should match the size of
-  // image1, even though only values inside the image1 quad are examined. The
-  // values must be in the range 0.0 to 0.1.
-  FloatImage *image1_mask;
 };
 
 struct TrackRegionResult {
@@ -145,6 +141,7 @@ struct TrackRegionResult {
 // Always needs 4 correspondences.
 void TrackRegion(const FloatImage &image1,
                  const FloatImage &image2,
+                 const FloatImage *image1_mask,
                  const double *x1, const double *y1,
                  const TrackRegionOptions &options,
                  double *x2, double *y2,

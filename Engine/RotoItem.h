@@ -53,6 +53,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 NATRON_NAMESPACE_ENTER;
 
 #define kRotoLayerBaseName "Group"
+#define kPlanarTrackLayerBaseName "PlanarTrackGroup"
 #define kRotoBezierBaseName "Bezier"
 #define kRotoOpenBezierBaseName "Pencil"
 #define kRotoEllipseBaseName "Ellipse"
@@ -113,7 +114,11 @@ public:
 
     virtual std::string getBaseItemName() const OVERRIDE = 0;
 
+    void getTransformAtTime(TimeValue time, ViewIdx view, Transform::Matrix3x3* matrix) const;
+
 protected:
+
+    virtual bool getTransformAtTimeInternal(TimeValue time, ViewIdx view, Transform::Matrix3x3* matrix) const;
 
     virtual void fetchRenderCloneKnobs() OVERRIDE;
 

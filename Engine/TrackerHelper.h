@@ -123,6 +123,12 @@ public:
                       TimeValue frameStep,
                       const ViewerNodePtr& viewer);
 
+    void trackMarker(const TrackMarkerPtr& mark,
+                      TimeValue start,
+                      TimeValue end,
+                      TimeValue frameStep,
+                      const ViewerNodePtr& viewer);
+
     /**
      * @brief Abort any ongoing tracking. Non blocking: it is not guaranteed the tracking is finished
      * once returning this function returns.

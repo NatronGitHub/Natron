@@ -149,6 +149,8 @@ private:
     virtual void refreshUndoRedoButtonsEnabledNess(bool canUndo, bool canRedo) OVERRIDE FINAL;
     virtual QWidget* createKnobHorizontalFieldContainer(QWidget* parent) const OVERRIDE FINAL;
     virtual QWidget* getPagesContainer() const OVERRIDE FINAL;
+    virtual QWidget* getMainContainer() const OVERRIDE FINAL;
+    virtual QLayout* getMainContainerLayout() const OVERRIDE FINAL;
     virtual QWidget* createPageMainWidget(QWidget* parent) const OVERRIDE FINAL;
     virtual void addPageToPagesContainer(const KnobPageGuiPtr& page) OVERRIDE FINAL;
     virtual void removePageFromContainer(const KnobPageGuiPtr& page) OVERRIDE FINAL;

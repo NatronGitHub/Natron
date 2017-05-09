@@ -32,6 +32,7 @@ SOURCES += \
         libmv/multiview/projection.cc \
         libmv/numeric/numeric.cc \
         libmv/tracking/track_region.cc \
+        libmv/simple_pipeline/detect.cc
 
 HEADERS += \
         libmv/autotrack/autotrack.h \

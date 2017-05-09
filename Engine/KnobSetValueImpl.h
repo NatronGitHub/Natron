@@ -47,7 +47,10 @@ AddToUndoRedoStackHelper<T>::AddToUndoRedoStackHelper(Knob<T>* k)
         KnobTableItemPtr isTableItem = toKnobTableItem(_holder);
         // Use the effect undo stack if this is a table item
         if (isTableItem) {
-            _holder = isTableItem->getModel()->getNode()->getEffectInstance();
+            KnobItemsTablePtr model = isTableItem->getModel();
+            if (model) {
+                _holder = model->getNode()->getEffectInstance();
+            }
         }
         KnobHolder::MultipleParamsEditEnum paramEditLevel = _holder->getMultipleEditsLevel();
 

@@ -353,6 +353,27 @@ public:
 
     void refreshLinkIndicators(const std::list<std::pair<NodePtr, bool> >& links);
 
+    struct RightClickMenuAction
+    {
+        std::string id, label, hint;
+        std::vector<RightClickMenuAction> subOptions;
+    };
+
+    /**
+     * @brief Builds the given GUI menu from a list of knob actions to fetch on the given KnobHolder. 
+     * Actions are assigned a shortcut from the knob name to be found in the pluginShortcutGroup.
+     * @param knobsToFetch The list of knob names that should be mapped to actions in the menu. 
+     * If an action is triggered, the corresponding knobChanged handler will be called for the given knob.
+     * The special value of kNatronRightClickMenuSeparator indicates that a separator should be added in the menu.
+     * Note that a menu can be cascading by providing more than 1 sub-list by main entry items
+     **/
+    static void populateMenuRecursive(const std::vector<RightClickMenuAction>& knobsToFetch,  const KnobHolderPtr& holder, const std::string& pluginShortcutGroup, const QObject* actionSlotReceiver, Menu* m);
+
+    /**
+     * @brief Convenience function where the menu is read from the choice menu knob. If an item of KnobChoice points to another KnobChoice, it will be used as a sub-menu 
+     **/
+    static void populateMenuRecursive(const KnobChoicePtr& choiceKnob, const KnobHolderPtr& holder, const std::string& pluginShortcutGroup, const QObject* actionSlotReceiver, Menu* m);
+
 protected:
 
     virtual int getBaseDepth() const { return 20; }

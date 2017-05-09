@@ -154,9 +154,11 @@ TrackMarker::initializeKnobs()
     }
     KnobIntPtr defPatternSizeKnob, defSearchSizeKnob;
     KnobChoicePtr defMotionModelKnob;
-    defPatternSizeKnob = toKnobInt(effect->getKnobByName(kTrackerUIParamDefaultMarkerPatternWinSize));
-    defSearchSizeKnob = toKnobInt(effect->getKnobByName(kTrackerUIParamDefaultMarkerSearchWinSize));
-    defMotionModelKnob = toKnobChoice(effect->getKnobByName(kTrackerUIParamDefaultMotionModel));
+    if (effect) {
+        defPatternSizeKnob = toKnobInt(effect->getKnobByName(kTrackerUIParamDefaultMarkerPatternWinSize));
+        defSearchSizeKnob = toKnobInt(effect->getKnobByName(kTrackerUIParamDefaultMarkerSearchWinSize));
+        defMotionModelKnob = toKnobChoice(effect->getKnobByName(kTrackerUIParamDefaultMotionModel));
+    }
 
     double patternHalfSize = defPatternSizeKnob ? defPatternSizeKnob->getValue() / 2. : 21;
     double searchHalfSize = defSearchSizeKnob ? defSearchSizeKnob->getValue() / 2. : 71;
@@ -260,6 +262,8 @@ TrackMarker::initializeKnobs()
     addColumn(kTrackerParamOffset, DimIdx(0));
     addColumn(kTrackerParamOffset, DimIdx(1));
     addColumn(kTrackerParamError, DimIdx(0));
+
+    KnobTableItem::initializeKnobs();
 
 } // TrackMarker::initializeKnobs
 
@@ -446,62 +450,7 @@ TrackMarker::resetCenter()
     }
 }
 
-enum DeleteKnobAnimationEnum
-{
-    eDeleteKnobAnimationAll,
-    eDeleteKnobAnimationBeforeTime,
-    eDeleteKnobAnimationAfterTime
-};
 
-static void
-deleteKnobAnimation(const std::set<double>& userKeyframes,
-                    const KnobIPtr& knob,
-                    DeleteKnobAnimationEnum type,
-                    double currentTime)
-{
-    for (int i = 0; i < knob->getNDimensions(); ++i) {
-        CurvePtr curve = knob->getAnimationCurve(ViewIdx(0), DimIdx(i));
-        assert(curve);
-        KeyFrameSet keys = curve->getKeyFrames_mt_safe();
-        std::list<double> toRemove;
-        switch (type) {
-        case eDeleteKnobAnimationAll: {
-            for (KeyFrameSet::iterator it = keys.begin(); it != keys.end(); ++it) {
-                std::set<double>::iterator found = userKeyframes.find( it->getTime() );
-                if ( found == userKeyframes.end() ) {
-                    toRemove.push_back( it->getTime() );
-                }
-            }
-            break;
-        }
-        case eDeleteKnobAnimationBeforeTime: {
-            for (KeyFrameSet::iterator it = keys.begin(); it != keys.end(); ++it) {
-                if (it->getTime() >= currentTime) {
-                    break;
-                }
-                std::set<double>::iterator found = userKeyframes.find( it->getTime() );
-                if ( found == userKeyframes.end() ) {
-                    toRemove.push_back( it->getTime() );
-                }
-            }
-            break;
-        }
-        case eDeleteKnobAnimationAfterTime: {
-            for (KeyFrameSet::reverse_iterator it = keys.rbegin(); it != keys.rend(); ++it) {
-                if (it->getTime() <= currentTime) {
-                    break;
-                }
-                std::set<double>::iterator found = userKeyframes.find( it->getTime() );
-                if ( found == userKeyframes.end() ) {
-                    toRemove.push_back( it->getTime() );
-                }
-            }
-            break;
-        }
-        }
-        knob->deleteValuesAtTime(toRemove, ViewSetSpec::all(), DimIdx(i), eValueChangedReasonUserEdited);
-    }
-}
 
 void
 TrackMarker::clearAnimation()
@@ -512,15 +461,15 @@ TrackMarker::clearAnimation()
 
     KnobIPtr offsetKnob = getOffsetKnob();
     assert(offsetKnob);
-    deleteKnobAnimation(userKeyframes, offsetKnob, eDeleteKnobAnimationAll, 0);
+    offsetKnob->removeAnimation(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonUserEdited);
 
     KnobIPtr centerKnob = getCenterKnob();
     assert(centerKnob);
-    deleteKnobAnimation(userKeyframes, centerKnob, eDeleteKnobAnimationAll, 0);
+    centerKnob->removeAnimation(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonUserEdited);
 
     KnobIPtr errorKnob = getErrorKnob();
     assert(errorKnob);
-    deleteKnobAnimation(userKeyframes, errorKnob, eDeleteKnobAnimationAll, 0);
+    errorKnob->removeAnimation(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonUserEdited);
 }
 
 void
@@ -532,15 +481,15 @@ TrackMarker::clearAnimationBeforeTime(TimeValue time)
 
     KnobIPtr offsetKnob = getOffsetKnob();
     assert(offsetKnob);
-    deleteKnobAnimation(userKeyframes, offsetKnob, eDeleteKnobAnimationBeforeTime, time);
+    offsetKnob->deleteValuesBeforeTime(userKeyframes, time, ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonUserEdited);
 
     KnobIPtr centerKnob = getCenterKnob();
     assert(centerKnob);
-    deleteKnobAnimation(userKeyframes, centerKnob, eDeleteKnobAnimationBeforeTime, time);
+    centerKnob->deleteValuesBeforeTime(userKeyframes, time, ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonUserEdited);
 
     KnobIPtr errorKnob = getErrorKnob();
     assert(errorKnob);
-    deleteKnobAnimation(userKeyframes, errorKnob, eDeleteKnobAnimationBeforeTime, time);
+    errorKnob->deleteValuesBeforeTime(userKeyframes, time, ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonUserEdited);
 }
 
 void
@@ -552,15 +501,15 @@ TrackMarker::clearAnimationAfterTime(TimeValue time)
 
     KnobIPtr offsetKnob = getOffsetKnob();
     assert(offsetKnob);
-    deleteKnobAnimation(userKeyframes, offsetKnob, eDeleteKnobAnimationAfterTime, time);
+    offsetKnob->deleteValuesAfterTime(userKeyframes, time, ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonUserEdited);
 
     KnobIPtr centerKnob = getCenterKnob();
     assert(centerKnob);
-    deleteKnobAnimation(userKeyframes, centerKnob, eDeleteKnobAnimationAfterTime, time);
+    centerKnob->deleteValuesAfterTime(userKeyframes, time, ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonUserEdited);
 
     KnobIPtr errorKnob = getErrorKnob();
     assert(errorKnob);
-    deleteKnobAnimation(userKeyframes, errorKnob, eDeleteKnobAnimationAfterTime, time);
+    errorKnob->deleteValuesAfterTime(userKeyframes, time, ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonUserEdited);
 }
 
 void

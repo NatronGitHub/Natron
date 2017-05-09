@@ -434,10 +434,10 @@ DockablePanel::DockablePanel(Gui* gui,
     }
 
     if (useScrollAreasForTabs) {
-        _imp->_tabWidget = new QTabWidget(_imp->_horizContainer);
+        _imp->_tabWidget = new QTabWidget(_imp->_rightContainer);
         _imp->_tabWidget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     } else {
-        DockablePanelTabWidget* tabWidget = new DockablePanelTabWidget(this);
+        DockablePanelTabWidget* tabWidget = new DockablePanelTabWidget(_imp->_rightContainer);
         _imp->_tabWidget = tabWidget;
         tabWidget->getTabBar()->setObjectName( QString::fromUtf8("DockablePanelTabWidget") );
         _imp->_tabWidget->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
@@ -484,6 +484,18 @@ DockablePanel::getPagesContainer() const
     } else {
         return (QWidget*)_imp->_horizContainer;
     }
+}
+
+QWidget*
+DockablePanel::getMainContainer() const
+{
+    return _imp->_rightContainer;
+}
+
+QLayout*
+DockablePanel::getMainContainerLayout() const
+{
+    return _imp->_rightContainerLayout;
 }
 
 QWidget*

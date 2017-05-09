@@ -459,7 +459,13 @@ NATRON_NAMESPACE_ENTER;
 #define kCornerPinParamEnable3 "enable3"
 #define kCornerPinParamEnable4 "enable4"
 
+#define kCornerPinParamEnableHint "Enables the point on the left."
+
+#define kCornerPinParamInteractive "interactive"
+
 #define kCornerPinParamOverlayPoints "overlayPoints"
+#define kCornerPinParamOverlayPointsLabel "Overlay Points"
+#define kCornerPinParamOverlayPointsHint "Whether to display the \"from\" or the \"to\" points in the overlay"
 
 #define kCornerPinParamMatrix "transform"
 
@@ -673,7 +679,7 @@ public:
     KnobButtonWPtr averageTracksButton;
     KnobButtonWPtr removeSelectedTracksButton;
 
-    NodeWPtr cornerPinNode, transformNode;
+    NodeWPtr cornerPinNode, transformNode, maskNode;
 
     boost::shared_ptr<TrackerKnobItemsTable> knobsTable;
     TrackerHelperPtr tracker;
@@ -765,6 +771,9 @@ public:
 
     //////////////////// Overriden from TrackerParamsProvider
     virtual NodePtr getTrackerNode() const OVERRIDE FINAL;
+    virtual NodePtr getSourceImageNode() const OVERRIDE FINAL;
+    virtual ImagePlaneDesc getMaskImagePlane(int *channelIndex) const OVERRIDE FINAL;
+    virtual NodePtr getMaskImageNode() const OVERRIDE FINAL;
     virtual TrackerHelperPtr getTracker() const OVERRIDE FINAL;
     virtual bool getCenterOnTrack() const OVERRIDE FINAL;
     virtual bool getUpdateViewer() const OVERRIDE FINAL;

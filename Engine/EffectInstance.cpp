@@ -68,6 +68,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/GPUContextPool.h"
 #include "Engine/OSGLContext.h"
+#include "Engine/GroupInput.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/PluginMemory.h"
 #include "Engine/Project.h"
@@ -129,6 +130,8 @@ EffectInstance::createRenderCopy(const FrameViewRenderKey& key) const
 
     // Make a copy of the main instance input locally so the state of the graph does not change throughout the render
     int nInputs = getMaxInputCount();
+
+  
     clone->_imp->renderData->mainInstanceInputs.resize(nInputs);
     clone->_imp->renderData->renderInputs.resize(nInputs);
 
@@ -1211,7 +1214,7 @@ EffectInstance::registerOverlay(const OverlayInteractBasePtr& overlay, const std
 {
 
     overlay->setEffect(shared_from_this());
-    overlay->fetchKnobs(knobs);
+    overlay->fetchKnobs_public(knobs);
 
     assert(QThread::currentThread() == qApp->thread());
     std::list<OverlayInteractBasePtr>::iterator found = std::find(_imp->common->interacts.begin(), _imp->common->interacts.end(), overlay);

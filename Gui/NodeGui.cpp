@@ -3611,15 +3611,12 @@ NodeGui::showGroupKnobAsDialog(const KnobGroupPtr& group)
     }
 }
 
-static void populateMenuRecursive(const KnobChoicePtr& choiceKnob, const NodePtr& node, const NodeGui* self, Menu* m)
+void
+NodeGui::populateMenuRecursive(const std::vector<RightClickMenuAction>& knobsToFetch,  const KnobHolderPtr& holder, const std::string& pluginShortcutGroup, const QObject* actionSlotReceiver, Menu* m)
 {
-    std::vector<ChoiceOption> entries = choiceKnob->getEntries();
-    if ( entries.empty() ) {
-        return;
-    }
 
-    for (std::vector<ChoiceOption>::iterator it = entries.begin(); it != entries.end(); ++it) {
-        KnobIPtr knob = node->getKnobByName(it->id);
+    for (std::vector<RightClickMenuAction>::const_iterator it = knobsToFetch.begin(); it != knobsToFetch.end(); ++it) {
+        KnobIPtr knob = holder->getKnobByName(it->id);
         if (!knob) {
             // Plug-in specified invalid knob name in the menu
             continue;
@@ -3631,7 +3628,7 @@ static void populateMenuRecursive(const KnobChoicePtr& choiceKnob, const NodePtr
             subMenu->setTitle(QString::fromUtf8(isChoice->getLabel().c_str()));
             QAction* menuAction = subMenu->menuAction();
             m->addAction(menuAction);
-            populateMenuRecursive(isChoice, node, self, subMenu);
+            populateMenuRecursive(isChoice, holder, pluginShortcutGroup, actionSlotReceiver, subMenu);
             continue;
         }
         if (!button) {
@@ -3639,7 +3636,7 @@ static void populateMenuRecursive(const KnobChoicePtr& choiceKnob, const NodePtr
             continue;
         }
         bool checkable = button->getIsCheckable();
-        ActionWithShortcut* action = new ActionWithShortcut(node->getOriginalPlugin()->getPluginShortcutGroup(),
+        ActionWithShortcut* action = new ActionWithShortcut(pluginShortcutGroup /*node->getOriginalPlugin()->getPluginShortcutGroup()*/,
                                                             button->getName(),
                                                             button->getLabel(),
                                                             m);
@@ -3647,10 +3644,46 @@ static void populateMenuRecursive(const KnobChoicePtr& choiceKnob, const NodePtr
             action->setCheckable(true);
             action->setChecked( button->getValue() );
         }
-        QObject::connect( action, SIGNAL(triggered()), self, SLOT(onRightClickActionTriggered()) );
+        QObject::connect( action, SIGNAL(triggered()), actionSlotReceiver, SLOT(onRightClickActionTriggered()) );
         m->addAction(action);
     }
 
+}
+
+static void
+readMenuFromKnobChoiceRecursive(const KnobChoicePtr& choiceKnob,  const KnobHolderPtr& holder, std::vector<NodeGui::RightClickMenuAction> &actions)
+{
+    std::vector<ChoiceOption> entries = choiceKnob->getEntries();
+    for (std::vector<ChoiceOption>::iterator it = entries.begin(); it != entries.end(); ++it) {
+        NodeGui::RightClickMenuAction act;
+        act.id = it->id;
+        act.label = it->label;
+        act.hint = it->tooltip;
+        if (it->id == kNatronRightClickMenuSeparator) {
+            // Special value, pass it along
+            actions.push_back(act);
+            continue;
+        }
+        KnobIPtr knob = holder->getKnobByName(it->id);
+        if (!knob) {
+            // Plug-in specified invalid knob name in the menu
+            continue;
+        }
+        KnobButtonPtr button = toKnobButton(knob);
+        KnobChoicePtr isChoice = toKnobChoice(knob);
+        if (isChoice) {
+            readMenuFromKnobChoiceRecursive(isChoice, holder, act.subOptions);
+        }
+        actions.push_back(act);
+    }
+}
+
+void
+NodeGui::populateMenuRecursive(const KnobChoicePtr& choiceKnob,  const KnobHolderPtr& holder, const std::string& pluginShortcutGroup, const QObject* actionSlotReceiver, Menu* m)
+{
+    std::vector<RightClickMenuAction> actions;
+    readMenuFromKnobChoiceRecursive(choiceKnob, holder, actions);
+    populateMenuRecursive(actions, holder, pluginShortcutGroup, actionSlotReceiver, m);
 }
 
 void
@@ -3685,7 +3718,7 @@ NodeGui::onRightClickMenuKnobPopulated()
         return;
     }
     Menu m(isViewer);
-    populateMenuRecursive(isChoice, node, this, &m);
+    populateMenuRecursive(isChoice, node->getEffectInstance(), node->getPlugin()->getPluginShortcutGroup(), this, &m);
     m.exec( QCursor::pos() );
 } // NodeGui::onRightClickMenuKnobPopulated
 

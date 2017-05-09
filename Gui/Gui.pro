@@ -197,7 +197,6 @@ SOURCES += \
     RenderStatsDialog.cpp \
     ResizableMessageBox.cpp \
     RightClickableWidget.cpp \
-    RotoPanel.cpp \
     ScaleSliderQWidget.cpp \
     ScriptEditor.cpp \
     ScriptTextEdit.cpp \
@@ -216,7 +215,6 @@ SOURCES += \
     ticks.cpp \
     ToolButton.cpp \
     TimeLineGui.cpp \
-    TrackerPanel.cpp \
     VerticalColorBar.cpp \
     ViewerGL.cpp \
     ViewerGLPrivate.cpp \
@@ -339,7 +337,6 @@ HEADERS += \
     RenderStatsDialog.h \
     ResizableMessageBox.h \
     RightClickableWidget.h \
-    RotoPanel.h \
     ScaleSliderQWidget.h \
     ScriptEditor.h \
     ScriptTextEdit.h \
@@ -358,7 +355,6 @@ HEADERS += \
     ticks.h \
     TimeLineGui.h \
     ToolButton.h \
-    TrackerPanel.h \
     VerticalColorBar.h \
     ViewerGL.h \
     ViewerGLPrivate.h \

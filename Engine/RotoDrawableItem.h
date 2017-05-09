@@ -205,9 +205,6 @@ public:
 
     virtual RectD getBoundingBox(TimeValue time, ViewIdx view) const = 0;
 
-    void getTransformAtTime(TimeValue time, ViewIdx view, Transform::Matrix3x3* matrix) const;
-
-    void setExtraMatrix(bool setKeyframe, TimeValue time, ViewSetSpec view, const Transform::Matrix3x3& mat);
 
     /**
      * @brief Return pointer to internal node
@@ -239,10 +236,14 @@ Q_SIGNALS:
 
 protected:
 
+    virtual bool getTransformAtTimeInternal(TimeValue time, ViewIdx view, Transform::Matrix3x3* matrix) const OVERRIDE ;
+
     virtual bool onKnobValueChanged(const KnobIPtr& k,
                                     ValueChangedReasonEnum reason,
                                     TimeValue time,
                                     ViewSetSpec view) OVERRIDE;
+
+    virtual void refreshRightClickMenu(const KnobChoicePtr& refreshRightClickMenuInternal) OVERRIDE;
 
 
 private:

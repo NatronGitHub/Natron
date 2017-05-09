@@ -61,7 +61,6 @@ NATRON_NAMESPACE_ENTER;
  * i.e: the last item will be rendered first, etc...
  * Visually, in the GUI the top-most item of a layer corresponds to the first item in the children list
  **/
-struct RotoLayerPrivate;
 class RotoLayer
     : public RotoItem
 {
@@ -69,19 +68,68 @@ public:
 
     RotoLayer(const KnobItemsTablePtr& model);
 
+    RotoLayer(const RotoLayerPtr& other, const FrameViewRenderKey& key);
+
     virtual ~RotoLayer();
 
     virtual bool isItemContainer() const OVERRIDE FINAL;
 
-    virtual std::string getBaseItemName() const OVERRIDE FINAL;
+    virtual std::string getBaseItemName() const OVERRIDE;
 
-    virtual std::string getSerializationClassName() const OVERRIDE FINAL;
+    virtual std::string getSerializationClassName() const OVERRIDE;
 };
 
 inline RotoLayerPtr
 toRotoLayer(const KnobHolderPtr& item)
 {
     return boost::dynamic_pointer_cast<RotoLayer>(item);
+}
+
+struct PlanarTrackLayerPrivate;
+class PlanarTrackLayer : public RotoLayer
+{
+public:
+
+    PlanarTrackLayer(const KnobItemsTablePtr& model);
+
+    PlanarTrackLayer(const PlanarTrackLayerPtr& other, const FrameViewRenderKey& key);
+
+    virtual ~PlanarTrackLayer();
+
+    virtual std::string getBaseItemName() const OVERRIDE FINAL;
+
+    virtual std::string getSerializationClassName() const OVERRIDE FINAL;
+
+    virtual bool isRenderCloneNeeded() const OVERRIDE FINAL
+    {
+        return true;
+    }
+
+    virtual bool getTransformAtTimeInternal(TimeValue time, ViewIdx view, Transform::Matrix3x3* matrix) const OVERRIDE FINAL;
+
+    void setExtraMatrix(bool setKeyframe, TimeValue time, ViewSetSpec view, const Transform::Matrix3x3& mat);
+
+    void clearTransformAnimation();
+    void clearTransformAnimationBeforeTime(TimeValue time);
+    void clearTransformAnimationAfterTime(TimeValue time);
+    void deleteTransformKeyframe(TimeValue time);
+
+private:
+
+    virtual void initializeKnobs() OVERRIDE FINAL;
+
+    virtual void fetchRenderCloneKnobs() OVERRIDE FINAL;
+
+    virtual KnobHolderPtr createRenderCopy(const FrameViewRenderKey& render) const OVERRIDE FINAL;
+
+    boost::scoped_ptr<PlanarTrackLayerPrivate> _imp;
+
+};
+
+inline PlanarTrackLayerPtr
+toPlanarTrackLayer(const KnobHolderPtr& item)
+{
+    return boost::dynamic_pointer_cast<PlanarTrackLayer>(item);
 }
 
 NATRON_NAMESPACE_EXIT;
