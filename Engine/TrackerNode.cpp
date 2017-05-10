@@ -131,6 +131,9 @@ TrackerNode::TrackerNode(const NodePtr& node)
 
 TrackerNode::~TrackerNode()
 {
+    if (_imp->tracker) {
+        _imp->tracker->quitTrackerThread_blocking(false);
+    }
 }
 
 

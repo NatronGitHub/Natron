@@ -354,6 +354,7 @@ AnimatingObjectI::setInterpolationAtTime(ViewSetSpec view, DimSpec dimension, Ti
 
 enum DeleteKnobAnimationEnum
 {
+    eDeleteKnobAnimationAll,
     eDeleteKnobAnimationBeforeTime,
     eDeleteKnobAnimationAfterTime
 };
@@ -374,6 +375,16 @@ static void deleteValuesConditionalInternal(AnimatingObjectI* obj, DeleteKnobAni
             KeyFrameSet keys = curve->getKeyFrames_mt_safe();
             std::list<double> toRemove;
             switch (type) {
+                case eDeleteKnobAnimationAll: {
+                    for (KeyFrameSet::iterator it = keys.begin(); it != keys.end(); ++it) {
+                        std::set<double>::iterator found = keyframesToIgnore.find( it->getTime() );
+                        if ( found == keyframesToIgnore.end() ) {
+                            toRemove.push_back( it->getTime() );
+                        }
+                    }
+
+                    break;
+                }
                 case eDeleteKnobAnimationBeforeTime: {
                     for (KeyFrameSet::iterator it = keys.begin(); it != keys.end(); ++it) {
                         if (it->getTime() >= time) {
@@ -402,6 +413,12 @@ static void deleteValuesConditionalInternal(AnimatingObjectI* obj, DeleteKnobAni
             obj->deleteValuesAtTime(toRemove, *it, DimIdx(i), reason);
         }
     }
+} // deleteValuesConditionalInternal
+
+void
+AnimatingObjectI::deleteValuesExceptAtTime(const std::set<double>& keyframesToIgnore, TimeValue time, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason)
+{
+    deleteValuesConditionalInternal(this, eDeleteKnobAnimationAll, keyframesToIgnore, time, view, dimension, reason);
 }
 
 void

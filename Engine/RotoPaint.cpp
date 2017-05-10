@@ -237,6 +237,10 @@ RotoPaint::RotoPaint(const NodePtr& node,
 
 RotoPaint::~RotoPaint()
 {
+    if (_imp->tracker) {
+        _imp->tracker->quitTrackerThread_blocking(false);
+    }
+
 }
 
 void

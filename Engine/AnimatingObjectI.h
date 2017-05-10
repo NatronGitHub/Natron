@@ -461,6 +461,11 @@ public:
     virtual void deleteValuesAtTime(const std::list<double>& times, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason) = 0;
 
     /**
+     * @brief Similar to deleteValuesAtTime, except that the given keyframe times are kept whereas all other keyframes are deleted.
+     **/
+    void deleteValuesExceptAtTime(const std::set<double>& keyframesToIgnore, TimeValue time, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason);
+
+    /**
      * @brief Remove animation on the object before the given time (excluded). 
      * @param keyframesToIgnore All keyframes included in this list will not be removed
      **/
