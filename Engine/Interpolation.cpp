@@ -725,6 +725,19 @@ Interpolation::integrate_clamp(double tcur,
                                KeyframeTypeEnum interp,
                                KeyframeTypeEnum interpNext)
 {
+    if ( vmin == -std::numeric_limits<double>::infinity() &&
+         vmax == +std::numeric_limits<double>::infinity() ) {
+        return integrate(tcur,
+                         vcur,              //start control point
+                         vcurDerivRight, //being the derivative dv/dt at tcur
+                         vnextDerivLeft, //being the derivative dv/dt at tnext
+                         tnext,
+                         vnext,               //end control point
+                         time1,
+                         time2,
+                         interp,
+                         interpNext);
+    }
     double P0 = vcur;
     double P3 = vnext;
     // Hermite coefficients P0' and P3' are the derivatives with respect to x \in [0,1]
@@ -780,22 +793,21 @@ Interpolation::integrate_clamp(double tcur,
     const double t2 = (time2 - tcur) / (tnext - tcur);
     const double t1 = (time1 - tcur) / (tnext - tcur);
 
-    // special case: no solution
+    // special case: no solution, do the same as Interpolation::integrate()
     if ( sols.empty() ) {
         // no solution.
         // function never crosses vmin or vmax:
         // - either it's entirely below vmin or above vmax
         // - or it' constant
-        // Just evaluate at t1 to determine where it is.
-        double val = cubicEval(c0, c1, c2, c3, t1);
-        assert(val == val);
-        if (val < vmin) {
-            val = vmin;
-        } else if (val > vmax) {
-            val = vmax;
-        }
 
-        return val * (time2 - time1);
+        double ret = cubicIntegrate(c0, c1, c2, c3, t2);
+        if (time1 != tcur) {
+            ret -= cubicIntegrate(c0, c1, c2, c3, t1);
+        }
+        // cubicDerive: divide the result by (tnext-tcur)
+
+        // cubicIntegrate: multiply the result by (tnext-tcur)
+        return ret * (tnext - tcur);
     }
 
     // sort the solutions wrt time
