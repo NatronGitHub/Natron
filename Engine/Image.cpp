@@ -575,7 +575,7 @@ Image::ensureBounds(const RectI& roi,
     if (internalCacheEntry) {
         assert(perMipMapLevelRoDPixel.size() >= _imp->mipMapLevel + 1);
         _imp->cacheEntry = internalCacheEntry;
-        _imp->cacheEntry->ensureRoI(roi, perMipMapLevelRoDPixel);
+        _imp->cacheEntry->ensureRoI(roi, _imp->channels, perMipMapLevelRoDPixel);
         _imp->cacheEntry->updateRenderCloneAndImage(shared_from_this(), newRenderClone);
     }
     return eActionStatusOK;

@@ -658,44 +658,16 @@ Gui::showSettings()
 }
 
 void
-Gui::registerNewUndoStack(QUndoStack* stack)
+Gui::registerNewUndoStack(const boost::shared_ptr<QUndoStack>& stack)
 {
-    _imp->_undoStacksGroup->addStack(stack);
-    QAction* undo = stack->createUndoAction(stack);
-    undo->setShortcut(QKeySequence::Undo);
-    QAction* redo = stack->createRedoAction(stack);
-    redo->setShortcut(QKeySequence::Redo);
-    _imp->_undoStacksActions.insert( std::make_pair( stack, std::make_pair(undo, redo) ) );
+    _imp->_undoStacksGroup->addStack(stack.get());
 }
 
 void
-Gui::removeUndoStack(QUndoStack* stack)
+Gui::removeUndoStack(const boost::shared_ptr<QUndoStack>& stack)
 {
-    std::map<QUndoStack*, std::pair<QAction*, QAction*> >::iterator it = _imp->_undoStacksActions.find(stack);
-
-    if ( it == _imp->_undoStacksActions.end() ) {
-        return;
-    }
-    if (_imp->_currentUndoAction == it->second.first) {
-        _imp->menuEdit->removeAction(_imp->_currentUndoAction);
-    }
-    if (_imp->_currentRedoAction == it->second.second) {
-        _imp->menuEdit->removeAction(_imp->_currentRedoAction);
-    }
-    if ( it != _imp->_undoStacksActions.end() ) {
-        _imp->_undoStacksActions.erase(it);
-    }
+    _imp->_undoStacksGroup->removeStack(stack.get());
 }
 
-void
-Gui::onCurrentUndoStackChanged(QUndoStack* stack)
-{
-    std::map<QUndoStack*, std::pair<QAction*, QAction*> >::iterator it = _imp->_undoStacksActions.find(stack);
-
-    //the stack must have been registered first with registerNewUndoStack()
-    if ( it != _imp->_undoStacksActions.end() ) {
-        _imp->setUndoRedoActions(it->second.first, it->second.second);
-    }
-}
 
 NATRON_NAMESPACE_EXIT;

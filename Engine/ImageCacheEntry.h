@@ -97,6 +97,7 @@ public:
      * @param perMipMapLevelRoDPixel For each mipmap level, the new RoD in pixel coordinates
      **/
     void ensureRoI(const RectI& roi,
+                   const ImageStorageBasePtr storage[4],
                    const std::vector<RectI>& perMipMapLevelRoDPixel);
 
     // Change the image pointer and render clone. Do not use, for debug only

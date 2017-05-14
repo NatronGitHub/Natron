@@ -114,8 +114,17 @@ typedef vector<pair<string, exprtk_igeneric_function_ptr > > exprtk_igeneric_fun
 typedef vector<pair<string, exprtk_ivararg_function_ptr > > exprtk_ivararg_function_table_t;
 typedef vector<pair<string, exprtk_ifunction_ptr > > exprtk_ifunction_table_t;
 
+struct KnobValueFunction;
+
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
+struct KnobFunctionData
+{
+    boost::shared_ptr<KnobValueFunction> function;
+    std::string symbolName;
+};
+
+typedef std::map<KnobIWPtr, KnobFunctionData> KnobFunctionsMap;
 
 /**
  * @brief All data that must be kept around for the expression to work.
@@ -131,6 +140,11 @@ struct NATRON_NAMESPACE::KnobExprExprTk::ExpressionData
     exprtk_ifunction_table_t functions;
     exprtk_ivararg_function_table_t varargFunctions;
     exprtk_igeneric_function_table_t genericFunctions;
+
+    // For each referenced knobs, we create a function to retrieve its value
+    KnobFunctionsMap knobFunctions;
+
+    std::vector<std::string> projectViewNames;
 
     // Hold in the same way vector variables locally
     std::vector<std::vector<double> > vectorVariables;
@@ -448,15 +462,20 @@ struct pnoise
     }
 };
 
-struct random
+struct random_func
     : public exprtk_igeneric_function_t
 {
     U32 lastRandomHash;
 
-    random(TimeValue time)
+    random_func(TimeValue time)
         : exprtk_igeneric_function_t("Z|T|TTT")
-        , lastRandomHash(0)
     {
+        resetHash(time);
+    }
+
+    void resetHash(TimeValue time)
+    {
+        lastRandomHash = 0;
         exprtk::enable_zero_parameters(*this);
         // Make the hash vary from time
         {
@@ -464,6 +483,7 @@ struct random
             ac.data = (float)time;
             lastRandomHash = ac.raw;
         }
+
     }
     
     virtual exprtk_scalar_t operator()(const std::size_t& overloadIdx,
@@ -496,22 +516,31 @@ struct random
     }
 };
 
-struct randomInt
+struct randomInt_func
     : public exprtk_igeneric_function_t
 {
     U32 lastRandomHash;
 
-    randomInt(TimeValue time)
+    randomInt_func(TimeValue time)
         : exprtk_igeneric_function_t("Z|T|TTT")
-        , lastRandomHash(0)
     {
+        resetHash(time);
+    }
+
+
+    void resetHash(TimeValue time)
+    {
+        lastRandomHash = 0;
+        exprtk::enable_zero_parameters(*this);
         // Make the hash vary from time
         {
             alias_cast_float ac;
             ac.data = (float)time;
-            lastRandomHash += ac.raw;
+            lastRandomHash = ac.raw;
         }
+
     }
+
     virtual exprtk_scalar_t operator()(const std::size_t& overloadIdx,
                                        parameter_list_t parameters) OVERRIDE FINAL
     {
@@ -591,6 +620,219 @@ struct numtostr
     }
 };
 
+
+
+struct KnobValueFunction
+: public exprtk_igeneric_function_t
+{
+
+    KnobIWPtr _knob;
+    DimIdx _dimension;
+    TimeValue _evalTime;
+    ViewIdx _evalView;
+    KnobExprExprTk::ExpressionDataWPtr _exprData;
+
+
+    KnobValueFunction(const KnobExprExprTk::ExpressionDataPtr& data,
+                      const KnobIPtr& knob,
+                      DimIdx dimension,
+                      TimeValue expressionTime,
+                      ViewIdx expressionView,
+                      bool evaluateAsString)
+    : exprtk_igeneric_function_t()
+    , _knob(knob)
+    , _dimension(dimension)
+    , _evalTime(expressionTime)
+    , _evalView(expressionView)
+    , _exprData(data)
+    {
+        parameter_sequence = "Z|T|TS";
+        if (evaluateAsString) {
+            rtrn_type = exprtk_igeneric_function_t::e_rtrn_string;
+        } else {
+            rtrn_type = exprtk_igeneric_function_t::e_rtrn_scalar;
+        }
+    }
+
+    typedef typename exprtk_igeneric_function_t::generic_type generic_type;
+    typedef typename generic_type::scalar_view scalar_t;
+    typedef typename generic_type::string_view string_t;
+
+
+    void getTimeAndViewFromParameters(parameter_list_t parameters, TimeValue* time, ViewIdx* view)
+    {
+        assert(parameters.size() == 0 || parameters.size() == 1 || parameters.size() == 2);
+
+        *time = _evalTime;
+        if (parameters.size() > 0) {
+            *time = TimeValue(scalar_t(parameters[0])());
+        }
+        *view = _evalView;
+        if (parameters.size() > 1) {
+            string viewStr = exprtk::to_str( string_t(parameters[1]) );
+            if (viewStr == "view") {
+                // use the current view
+                *view = _evalView;
+            } else {
+                // Find the view by name in the project
+                KnobExprExprTk::ExpressionDataPtr data = _exprData.lock();
+                assert(data);
+                for (std::size_t i = 0; i < data->projectViewNames.size(); ++i) {
+                    if (data->projectViewNames[i] == viewStr) {
+                        *view = ViewIdx(i);
+                    }
+                }
+            }
+        }
+
+    }
+
+    virtual exprtk_scalar_t operator()(const std::size_t& overloadIdx,
+                                       string& result,
+                                       parameter_list_t parameters) OVERRIDE FINAL
+
+    {
+        assert(rtrn_type == exprtk_igeneric_function_t::e_rtrn_string);
+
+        Q_UNUSED(overloadIdx);
+
+        assert(parameters.size() == 0 || parameters.size() == 1 || parameters.size() == 2);
+
+        TimeValue time;
+        ViewIdx view;
+        getTimeAndViewFromParameters(parameters, &time, &view);
+
+        KnobIPtr knob = _knob.lock();
+        if (!knob) {
+            return 0.;
+        }
+        KnobStringBasePtr isString = toKnobStringBase(knob);
+        KnobChoicePtr isChoice = toKnobChoice(knob);
+
+        if (isChoice) {
+            try {
+                result = isChoice->getEntry(isChoice->getValueAtTime(time, _dimension, view)).id;
+            } catch (...) {
+                return 0.;
+            }
+            return 1.;
+        } else if (isString) {
+            result = isString->getValueAtTime(time, _dimension, view);
+            return 1.;
+        } else {
+            assert(false);
+            return 0.;
+        }
+
+    }
+
+
+    virtual exprtk_scalar_t operator()(const std::size_t& overloadIdx,
+                                       parameter_list_t parameters) OVERRIDE FINAL
+    {
+        assert(rtrn_type == exprtk_igeneric_function_t::e_rtrn_scalar);
+
+        Q_UNUSED(overloadIdx);
+
+        TimeValue time;
+        ViewIdx view;
+        getTimeAndViewFromParameters(parameters, &time, &view);
+
+        KnobIPtr knob = _knob.lock();
+        if (!knob) {
+            return 0.;
+        }
+        KnobBoolBasePtr isBoolean = toKnobBoolBase(knob);
+        KnobIntBasePtr isInt = toKnobIntBase(knob);
+        KnobDoubleBasePtr isDouble = toKnobDoubleBase(knob);
+
+
+        if (isBoolean) {
+            bool val = isBoolean->getValueAtTime(time, _dimension, view);
+            return (exprtk_scalar_t)val;
+        } else if (isInt) {
+            int val = isInt->getValueAtTime(time, _dimension, view);
+            return (exprtk_scalar_t)val;
+        } else if (isDouble) {
+            double val = isDouble->getValueAtTime(time, _dimension, view);
+            return (exprtk_scalar_t)val;
+        } else {
+            assert(false);
+        }
+        return 0.;
+    }
+};
+
+
+struct curve_func
+: public exprtk_igeneric_function_t
+{
+    typedef typename exprtk_igeneric_function_t::parameter_list_t parameter_list_t;
+    KnobIWPtr _knob;
+    ViewIdx _view;
+    KnobExprExprTk::ExpressionDataWPtr _exprData;
+
+    curve_func(const KnobExprExprTk::ExpressionDataPtr& data,
+               const KnobIPtr& knob,
+               ViewIdx view)
+    : exprtk_igeneric_function_t("T|TT|TTS")
+    , _knob(knob)
+    , _view(view)
+    , _exprData(data)
+    {
+        /*
+         Overloads:
+         curve(frame)
+         curve(frame, dimension)
+         curve(frame, dimension, view)
+         */
+    }
+
+    virtual exprtk_scalar_t operator()(const std::size_t& overloadIdx,
+                                       parameter_list_t parameters) OVERRIDE FINAL
+    {
+        typedef typename exprtk_igeneric_function_t::generic_type generic_type;
+        typedef typename generic_type::scalar_view scalar_t;
+        typedef typename generic_type::string_view string_t;
+
+        assert( overloadIdx + 1 == parameters.size() );
+        assert(parameters.size() == 1 || parameters.size() == 2 || parameters.size() == 3);
+        assert(parameters[0].type == generic_type::e_scalar);
+
+        KnobIPtr knob = _knob.lock();
+        if (!knob) {
+            return 0.;
+        }
+
+        TimeValue frame(0);
+        ViewIdx view(0);
+        DimIdx dimension(0);
+        frame = TimeValue( scalar_t(parameters[0])() );
+        if (parameters.size() > 1) {
+            dimension = DimIdx( (int)scalar_t(parameters[1])() );
+        }
+        if (parameters.size() > 2) {
+            string viewStr = exprtk::to_str( string_t(parameters[2]) );
+            if (viewStr == "view") {
+                // use the current view
+                view = _view;
+            } else {
+                // Find the view by name in the project
+                KnobExprExprTk::ExpressionDataPtr data = _exprData.lock();
+                assert(data);
+                for (std::size_t i = 0; i < data->projectViewNames.size(); ++i) {
+                    if (data->projectViewNames[i] == viewStr) {
+                        view = ViewIdx(i);
+                    }
+                }
+
+            }
+        }
+
+        return knob->getRawCurveValueAt(frame, view, dimension);
+    }
+};
+
 void
 addVarargFunctions(TimeValue /*time*/,
                    exprtk_ivararg_function_table_t* functions)
@@ -626,31 +868,57 @@ addGenericFunctions(TimeValue time,
     registerFunction<numtostr>("str", functions);
     
     {
-        shared_ptr<exprtk_igeneric_function_t> ptr( new random(time) );
+        shared_ptr<exprtk_igeneric_function_t> ptr( new random_func(time) );
         functions->push_back( make_pair("random", ptr) );
     }
     {
-        shared_ptr<exprtk_igeneric_function_t> ptr( new randomInt(time) );
+        shared_ptr<exprtk_igeneric_function_t> ptr( new randomInt_func(time) );
         functions->push_back( make_pair("randomInt", ptr) );
     }
+}
+
+static exprtk_igeneric_function_ptr findGenericFunction(const std::string& name,
+                                  const KnobExprExprTk::ExpressionDataPtr& data)
+{
+    for (exprtk_igeneric_function_table_t::iterator it = data->genericFunctions.begin(); it != data->genericFunctions.end(); ++it) {
+        if (it->first == name) {
+            return it->second;
+        }
+    }
+    return exprtk_igeneric_function_ptr();
 }
 
 // Some functions (random) hold an internal state. Instead of using the same state for all threads,
 // We create a copy of the function update in this symbol table
 void
-makeLocalCopyOfStateFunctions(TimeValue time,
-                              exprtk_symbol_table_t& symbol_table,
-                              exprtk_igeneric_function_table_t* functions)
+resetStateFunctions(const KnobExprExprTk::ExpressionDataPtr& data,
+                    TimeValue time,
+                    bool isRenderClone,
+                    const FrameViewRenderKey& renderKey)
 {
-    symbol_table.remove_function("random");
-    symbol_table.remove_function("randomInt");
-    {
-        shared_ptr<exprtk_igeneric_function_t> ptr( new random(time) );
-        functions->push_back( make_pair("random", ptr) );
-    }
-    {
-        shared_ptr<exprtk_igeneric_function_t> ptr( new randomInt(time) );
-        functions->push_back( make_pair("randomInt", ptr) );
+    boost::shared_ptr<random_func> randomFunction = boost::dynamic_pointer_cast<random_func>(findGenericFunction("random", data));
+    boost::shared_ptr<randomInt_func> randomIntFunction = boost::dynamic_pointer_cast<randomInt_func>(findGenericFunction("randomInt", data));
+
+    randomFunction->resetHash(time);
+    randomIntFunction->resetHash(time);
+
+
+
+    for (KnobFunctionsMap::iterator it = data->knobFunctions.begin(); it != data->knobFunctions.end(); ++it) {
+        const boost::shared_ptr<KnobValueFunction>& func = it->second.function;
+        func->_evalTime = time;
+
+        if (isRenderClone) {
+            // Get the render clone for this knob
+            // First ensure a clone is created for the effect holding the knob
+            // and then fetch the knob clone on it
+            KnobIPtr knob = it->first.lock();
+            if (!knob) {
+                continue;
+            }
+            KnobHolderPtr holderClone = knob->getHolder()->createRenderClone(renderKey);
+            func->_knob = knob->getCloneForHolderInternal(holderClone);
+        }
     }
 }
 
@@ -679,7 +947,13 @@ isDimensionIndex(const string& str,
         return true;
     }
 
-    return false;
+    // Check for a number
+    std::stringstream ss(str);
+    if (!(ss >> *index)) {
+        return false;
+    }
+
+    return true;
 }
 
 class SymbolResolver
@@ -712,18 +986,15 @@ public:
 
     // If the result is eResultTypeKnobValue, this is the knob on which to retrieve the value
     KnobIPtr _targetKnob;
-    ViewIdx _targetView;
     DimIdx _targetDimension;
 
     SymbolResolver(KnobI* knob,
                    DimIdx dimension,
-                   ViewIdx view,
                    bool isRenderClone,
                    const FrameViewRenderKey& renderKey,
                    const string& symbol)
     : _knob(knob)
     , _dimension(dimension)
-    , _view(view)
     , _symbol(symbol)
     , _resultType(eResultTypeInvalid)
     , _error()
@@ -747,8 +1018,8 @@ private:
         NodeCollectionPtr currentGroup = getThisGroup();
         KnobIPtr currentKnob;
         DimIdx currentDimension = _dimension;
-        ViewIdx currentView = _view;
         assert(currentGroup);
+        bool hasEnteredTablePrefix = false;
 
         // If "exists" is suffixed, we never fail but instead return 0 or 1
         _testingEnabled = !splits.empty() && splits.back() == "exists";
@@ -762,7 +1033,7 @@ private:
 
             {
                 NodeCollectionPtr curGroupOut;
-                if ( checkForGroup(token, &curGroupOut) ) {
+                if ( !hasEnteredTablePrefix  && checkForGroup(token, &curGroupOut) ) {
                     // If we caught a group, check if it is a node too
                     currentGroup = curGroupOut;
                     currentNode = toNodeGroup(currentGroup);
@@ -785,7 +1056,7 @@ private:
 
             {
                 EffectInstancePtr curNodeOut;
-                if ( checkForNode(token, currentGroup, currentNode, &curNodeOut) ) {
+                if ( !hasEnteredTablePrefix && checkForNode(token, currentGroup, currentNode, &curNodeOut) ) {
 
                     // Ensure we get a render clone
                     if (_isRenderClone) {
@@ -808,6 +1079,28 @@ private:
                         return;
                     }
                     continue;
+                }
+            }
+
+            // Check for the table prefix
+            if (!hasEnteredTablePrefix && currentHolder) {
+                KnobItemsTablePtr table = currentHolder->getItemsTable();
+                if (table) {
+                    if (token == table->getPythonPrefix()) {
+                        hasEnteredTablePrefix = true;
+
+                        if (isLastToken) {
+                            if (_testingEnabled) {
+                                // If testing is enabled, set the result to be valid
+                                _resultType = eResultTypeKnobValue;
+                            } else {
+                                _error = _symbol + ": a variable can only be bound to a value";
+                            }
+
+                            return;
+                        }
+                        continue;
+                    }
                 }
             }
 
@@ -890,7 +1183,6 @@ private:
                             return;
                         } else {
                             // single dimension, return the value of the knob at dimension 0
-                            _targetView = _view;
                             _targetKnob = currentKnob;
                             _targetDimension = DimIdx(0);
                             _resultType = eResultTypeKnobValue;
@@ -915,7 +1207,6 @@ private:
                 }
                 _targetKnob = currentKnob;
                 _targetDimension = currentDimension;
-                _targetView = currentView;
                 _resultType = eResultTypeKnobValue;
 
                 return;
@@ -930,7 +1221,6 @@ private:
                 }
                 _targetKnob = currentKnob;
                 _targetDimension = currentDimension;
-                _targetView = currentView;
                 _resultType = eResultTypeKnobChoiceOption;
 
                 return;
@@ -1156,6 +1446,9 @@ private:
         } else if (callerKnob) {
             int idx;
             if ( isDimensionIndex(str, &idx) ) {
+                if (idx < 0 || idx >= callerKnob->getNDimensions()) {
+                    return false;
+                }
                 *retIsDimension = DimIdx(idx);
 
                 return true;
@@ -1186,7 +1479,7 @@ struct UnknownSymbolResolver
                           bool isRenderClone,
                           const FrameViewRenderKey& renderKey,
                           KnobExprExprTk* ret,
-                          KnobExprExprTk::ExpressionDataPtr threadData)
+                          const KnobExprExprTk::ExpressionDataPtr& threadData)
     : exprtk_parser_t::unknown_symbol_resolver(exprtk_parser_t::unknown_symbol_resolver::e_usrmode_extended)
     , _knob(knob)
     , _time(time)
@@ -1205,7 +1498,7 @@ struct UnknownSymbolResolver
                          exprtk_symbol_table_t&      symbol_table,
                          std::string&        error_message) OVERRIDE FINAL
     {
-        SymbolResolver resolver(_knob, _dimension, _view, _isRenderClone, _renderKey, unknown_symbol);
+        SymbolResolver resolver(_knob, _dimension, _isRenderClone, _renderKey, unknown_symbol);
 
         if (resolver._testingEnabled) {
 
@@ -1226,18 +1519,6 @@ struct UnknownSymbolResolver
             }
             case SymbolResolver::eResultTypeObjectName: {
                 bool ok = symbol_table.create_stringvar(unknown_symbol, resolver._objectName);
-                if (!ok) {
-                    error_message = "Could not create variable " + unknown_symbol;
-                }
-                return ok;
-            }
-            case SymbolResolver::eResultTypeKnobChoiceOption: {
-                KnobChoice* isChoice = dynamic_cast<KnobChoice*>(_knob);
-                if (!isChoice) {
-                    return false;
-                }
-                std::string value = isChoice->getActiveEntry(_view).id;
-                bool ok = symbol_table.create_stringvar(unknown_symbol, value);
                 if (!ok) {
                     error_message = "Could not create variable " + unknown_symbol;
                 }
@@ -1274,40 +1555,42 @@ struct UnknownSymbolResolver
                 return ok;
             }
 
-            case SymbolResolver::eResultTypeKnobValue: {
+            case SymbolResolver::eResultTypeKnobValue:
+            case SymbolResolver::eResultTypeKnobChoiceOption:
+            {
                 // Register the target knob as a dependency of this expression
                 if (_ret) {
                     KnobDimViewKey dep;
                     dep.knob = resolver._targetKnob;
                     dep.dimension = resolver._targetDimension;
-                    dep.view = resolver._targetView;
                     _ret->knobDependencies.insert( make_pair(unknown_symbol, dep) );
                 }
 
+                bool returnString = false;
 
-                // Return the value of the knob at the given dimension
-                KnobBoolBasePtr isBoolean = toKnobBoolBase(resolver._targetKnob);
                 KnobStringBasePtr isString = toKnobStringBase(resolver._targetKnob);
-                KnobIntBasePtr isInt = toKnobIntBase(resolver._targetKnob);
-                KnobDoubleBasePtr isDouble = toKnobDoubleBase(resolver._targetKnob);
-                bool ok = false;
-                if (isBoolean) {
-                    bool val = isBoolean->getValueAtTime(_time, resolver._targetDimension, resolver._targetView);
-                    ok = symbol_table.create_variable(unknown_symbol, val);
-                } else if (isInt) {
-                    int val = isInt->getValueAtTime(_time, resolver._targetDimension, resolver._targetView);
-                    ok = symbol_table.create_variable(unknown_symbol, val);
-                } else if (isDouble) {
-                    double val = isDouble->getValueAtTime(_time, resolver._targetDimension, resolver._targetView);
-                    ok = symbol_table.create_variable(unknown_symbol, val);
-                } else if (isString) {
-                    std::string val = isString->getValueAtTime(_time, resolver._targetDimension, resolver._targetView);
-                    ok = symbol_table.create_stringvar(unknown_symbol, val);
+                KnobChoicePtr isChoice = toKnobChoice(resolver._targetKnob);
+
+                if (isString || (isChoice && resolver._resultType == SymbolResolver::eResultTypeKnobChoiceOption)) {
+                    returnString = true;
                 }
-                if (!ok) {
-                    error_message = "Could not create variable " + unknown_symbol;
+                // Create a function that will return the value of the knob
+                KnobFunctionData funcData;
+                funcData.function.reset( new KnobValueFunction(_threadData, resolver._targetKnob, resolver._targetDimension, _time, _view, returnString) );
+                funcData.symbolName = unknown_symbol;
+
+                // If this is a render clone, getMainInstance() returns the main instance, otherwise it returns NULL, meaning the caller
+                // is the main instance.
+                KnobIPtr mainInstanceKnob = resolver._targetKnob->getMainInstance();
+                if (!mainInstanceKnob) {
+                    mainInstanceKnob = resolver._targetKnob;
                 }
+
+                _threadData->knobFunctions.insert(std::make_pair(mainInstanceKnob, funcData));
+                bool ok = symbol_table.add_function(unknown_symbol, *funcData.function);
                 return ok;
+
+                break;
             }
         } // switch
 
@@ -1315,69 +1598,6 @@ struct UnknownSymbolResolver
     } // process
 };
 
-struct curve_func
-    : public exprtk_igeneric_function_t
-{
-    typedef typename exprtk_igeneric_function_t::parameter_list_t parameter_list_t;
-    KnobIWPtr _knob;
-    ViewIdx _view;
-
-    curve_func(const KnobIPtr& knob,
-               ViewIdx view)
-        : exprtk_igeneric_function_t("T|TT|TTS")
-        , _knob(knob)
-        , _view(view)
-    {
-        /*
-           Overloads:
-           curve(frame)
-           curve(frame, dimension)
-           curve(frame, dimension, view)
-         */
-    }
-
-    virtual exprtk_scalar_t operator()(const std::size_t& overloadIdx,
-                                       parameter_list_t parameters) OVERRIDE FINAL
-    {
-        typedef typename exprtk_igeneric_function_t::generic_type generic_type;
-        typedef typename generic_type::scalar_view scalar_t;
-        typedef typename generic_type::string_view string_t;
-
-        assert( overloadIdx + 1 == parameters.size() );
-        assert(parameters.size() == 1 || parameters.size() == 2 || parameters.size() == 3);
-        assert(parameters[0].type == generic_type::e_scalar);
-
-        KnobIPtr knob = _knob.lock();
-        if (!knob) {
-            return 0.;
-        }
-
-        TimeValue frame(0);
-        ViewIdx view(0);
-        DimIdx dimension(0);
-        frame = TimeValue( scalar_t(parameters[0])() );
-        if (parameters.size() > 1) {
-            dimension = DimIdx( (int)scalar_t(parameters[1])() );
-        }
-        if (parameters.size() > 2) {
-            string viewStr = exprtk::to_str( string_t(parameters[2]) );
-            if (viewStr == "view") {
-                // use the current view
-                view = _view;
-            } else {
-                // Find the view by name in the project
-                const vector<string>& views = knob->getHolder()->getApp()->getProject()->getProjectViewNames();
-                for (std::size_t i = 0; i < views.size(); ++i) {
-                    if (views[i] == viewStr) {
-                        view = ViewIdx(i);
-                    }
-                }
-            }
-        }
-
-        return knob->getRawCurveValueAt(frame, view, dimension);
-    }
-};
 
 void
 addStandardFunctions(const string& expr,
@@ -1525,6 +1745,8 @@ KnobHelperPrivate::validateExprTkExpression(const string& expression,
     data->expressionObject->register_symbol_table(unknown_var_symbol_table);
     data->expressionObject->register_symbol_table(symbol_table);
 
+    data->projectViewNames = publicInterface->getHolder()->getApp()->getProject()->getProjectViewNames();
+
     // Pre-declare the variables with a stub value, they will be updated at evaluation time
     TimeValue time = publicInterface->getCurrentRenderTime();
     KnobIPtr thisShared = publicInterface->shared_from_this();
@@ -1546,7 +1768,7 @@ KnobHelperPrivate::validateExprTkExpression(const string& expression,
         addStandardFunctions(expression, time, symbol_table, data->functions, data->varargFunctions, data->genericFunctions, &ret->modifiedExpression);
 
 
-        exprtk_igeneric_function_ptr curveFunc( new curve_func(thisShared, view) );
+        exprtk_igeneric_function_ptr curveFunc( new curve_func(data, thisShared, view) );
         data->genericFunctions.push_back( make_pair("curve", curveFunc) );
         symbol_table.add_function("curve", *curveFunc);
 
@@ -1652,13 +1874,16 @@ KnobHelper::executeExprTkExpression(TimeValue time,
 
 
     if (existingExpression) {
-        // Update the frame & view in the know table
+        // Update the frame & view in the table
         symbol_table->variable_ref("frame") = (double)time;
 
         // Remove from the symbol table functions that hold a state, and re-add a new fresh local copy of them so that the state
         // is local to this thread.
-        makeLocalCopyOfStateFunctions(time, *symbol_table, &data->genericFunctions);
+        resetStateFunctions(data, time, isRenderClone, renderKey);
     } else {
+
+
+        data->projectViewNames = getHolder()->getApp()->getProject()->getProjectViewNames();
         double time_f = (double)time;
         symbol_table->create_variable("frame", time_f);
         string viewName = getHolder()->getApp()->getProject()->getViewName(view);
@@ -1668,7 +1893,7 @@ KnobHelper::executeExprTkExpression(TimeValue time,
 
 
         KnobIPtr thisShared = shared_from_this();
-        exprtk_igeneric_function_ptr curveFunc( new curve_func(thisShared, view) );
+        exprtk_igeneric_function_ptr curveFunc( new curve_func(data, thisShared, view) );
         data->genericFunctions.push_back( make_pair("curve", curveFunc) );
         symbol_table->add_function("curve", *curveFunc);
 
@@ -1691,37 +1916,6 @@ KnobHelper::executeExprTkExpression(TimeValue time,
             return KnobHelper::eExpressionReturnValueTypeError;
         }
     } else {
-        for (std::map<string, KnobDimViewKey>::const_iterator it = obj->knobDependencies.begin(); it != obj->knobDependencies.end(); ++it) {
-            KnobIPtr knob = it->second.knob.lock();
-            if (!knob) {
-                continue;
-            }
-
-            if (isRenderClone) {
-                // Get the render clone for this knob
-                // First ensure a clone is created for the effect holding the knob
-                // and then fetch the knob clone on it
-                KnobHolderPtr holderClone = knob->getHolder()->createRenderClone(renderKey);
-                knob = knob->getCloneForHolderInternal(holderClone);
-            }
-
-            KnobBoolBasePtr isBoolean = toKnobBoolBase(knob);
-            KnobStringBasePtr isString = toKnobStringBase(knob);
-            KnobIntBasePtr isInt = toKnobIntBase(knob);
-            KnobDoubleBasePtr isDouble = toKnobDoubleBase(knob);
-                if (isBoolean) {
-                    unknown_symbols_table->variable_ref(it->first) = isBoolean->getValueAtTime(time, it->second.dimension, it->second.view);
-                } else if (isInt) {
-                    unknown_symbols_table->variable_ref(it->first) = isInt->getValueAtTime(time, it->second.dimension, it->second.view);
-                } else if (isDouble) {
-                    double val = isDouble->getValueAtTime(time, it->second.dimension, it->second.view);
-                    unknown_symbols_table->variable_ref(it->first) = val;
-                } else if (isString) {
-                    unknown_symbols_table->stringvar_ref(it->first) = isString->getValueAtTime(time, it->second.dimension, it->second.view);
-                }
-
-        }
-
         for (std::map<string, EffectFunctionDependency>::const_iterator it = obj->effectDependencies.begin(); it != obj->effectDependencies.end(); ++it) {
             EffectInstancePtr effect = it->second.effect.lock();
             if (!effect) {

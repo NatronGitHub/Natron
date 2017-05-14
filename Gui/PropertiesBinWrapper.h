@@ -50,7 +50,7 @@ private:
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
-    virtual QUndoStack* getUndoStack() const OVERRIDE FINAL;
+    virtual boost::shared_ptr<QUndoStack> getUndoStack() const OVERRIDE FINAL;
 };
 
 NATRON_NAMESPACE_EXIT;

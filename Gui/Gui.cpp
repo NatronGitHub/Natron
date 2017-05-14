@@ -607,6 +607,11 @@ Gui::createMenuActions()
 
     _imp->menuEdit->addAction(_imp->actionPreferences);
 
+    QAction* undoAction = _imp->_undoStacksGroup->createUndoAction(_imp->menuEdit);
+    QAction* redoAction = _imp->_undoStacksGroup->createRedoAction(_imp->menuEdit);
+    _imp->menuEdit->addAction(undoAction);
+    _imp->menuEdit->addAction(redoAction);
+
     _imp->menuLayout->addAction(_imp->actionImportLayout);
     _imp->menuLayout->addAction(_imp->actionExportLayout);
     _imp->menuLayout->addAction(_imp->actionRestoreDefaultLayout);

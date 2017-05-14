@@ -1048,6 +1048,13 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
             break;
         }
     }
+
+    if (!ofxPlane && outputPlanes.size() == 1) {
+        // If the plane was not specified and there's a single output plane, select it: the plane may not be set correctly
+        // if the plug-in is set to render all planes
+        image = outputPlanes.begin()->second;
+    }
+
     double par = effect->getAspectRatio(-1);
 
     // The output image MAY not exist in the TLS in some cases:

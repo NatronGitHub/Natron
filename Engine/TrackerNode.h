@@ -115,6 +115,8 @@ public:
 
     TrackerHelperPtr getTracker() const;
 
+    TrackMarkerPtr createMarker();
+
 public Q_SLOTS:
 
 

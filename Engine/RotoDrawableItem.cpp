@@ -143,10 +143,10 @@ public:
     KnobIntWPtr timeOffset;
     KnobChoiceWPtr timeOffsetMode;
     KnobDoubleWPtr mixKnob;
-
+#ifdef ROTOPAINT_ENABLE_PLANARTRACKER
     // Right click menu
     KnobButtonWPtr createPlanarTrackButton;
-
+#endif
     RotoDrawableItemPrivate()
     {
 
@@ -606,9 +606,13 @@ RotoDrawableItem::onKnobValueChanged(const KnobIPtr& knob,
             prev = *found;
         }
         refreshNodesConnections(prev);
-    } else if (knob == _imp->createPlanarTrackButton.lock()) {
+    }
+#ifdef ROTOPAINT_ENABLE_PLANARTRACKER
+    else if (knob == _imp->createPlanarTrackButton.lock()) {
         rotoPaintEffect->createPlanarTrackForShape(thisShared);
-    } else {
+    }
+#endif
+    else {
         return RotoItem::onKnobValueChanged(knob, reason, time, view);
     }
 
@@ -1405,7 +1409,6 @@ RotoDrawableItem::initializeKnobs()
     RotoItem::initializeKnobs();
     
     KnobHolderPtr thisShared = shared_from_this();
-    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(this);
     Bezier* isBezier = dynamic_cast<Bezier*>(this);
     RotoStrokeType type = getBrushType();
 
@@ -1562,14 +1565,14 @@ RotoDrawableItem::initializeKnobs()
         addColumn(kRotoOverlayColor, DimSpec::all());
         addColumn(kRotoColorParam, DimSpec::all());
     }
-
+#ifdef ROTOPAINT_ENABLE_PLANARTRACKER
     {
         KnobButtonPtr param = createKnob<KnobButton>(kRotoDrawableItemRightClickMenuPlanarTrackParam);
         param->setSecret(true);
         param->setLabel(tr(kRotoDrawableItemRightClickMenuPlanarTrackParamLabel));
         _imp->createPlanarTrackButton = param;
     }
-
+#endif
 } // initializeKnobs
 
 void

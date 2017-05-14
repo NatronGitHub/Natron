@@ -177,7 +177,7 @@ public:
     bool cacheSizeHidden;
     QTimer _refreshCacheTextTimer;
     Navigator* _navigator;
-    QUndoStack* _undoStack;
+    boost::shared_ptr<QUndoStack> _undoStack;
     QMenu* _menu;
     QGraphicsItem *_tL, *_tR, *_bR, *_bL;
     bool _refreshOverlays;

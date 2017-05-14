@@ -40,8 +40,10 @@
 
 #include "Engine/BezierCP.h"
 #include "Engine/Bezier.h"
-#include "Engine/CornerPinOverlayInteract.h"
 #include "Engine/OverlayInteractBase.h"
+#ifdef ROTOPAINT_ENABLE_PLANARTRACKER
+#include "Engine/PlanarTrackerInteract.h"
+#endif
 #include "Engine/RotoPaint.h"
 #include "Engine/KnobItemsTable.h"
 #include "Engine/TransformOverlayInteract.h"
@@ -71,6 +73,40 @@ NATRON_NAMESPACE_ENTER;
 
 // parameters
 
+#define kRotoTrackingParamCornerPinPoint1 "cornerPinPoint1"
+#define kRotoTrackingParamCornerPinPoint2 "cornerPinPoint2"
+#define kRotoTrackingParamCornerPinPoint3 "cornerPinPoint3"
+#define kRotoTrackingParamCornerPinPoint4 "cornerPinPoint4"
+
+#define kRotoTrackingParamCornerPinPointLabel1 "Point 1"
+#define kRotoTrackingParamCornerPinPointLabel2 "Point 2"
+#define kRotoTrackingParamCornerPinPointLabel3 "Point 3"
+#define kRotoTrackingParamCornerPinPointLabel4 "Point 4"
+
+#define kRotoTrackingParamOffsetPoint1 "cornerPinOffset1"
+#define kRotoTrackingParamOffsetPoint2 "cornerPinOffset2"
+#define kRotoTrackingParamOffsetPoint3 "cornerPinOffset3"
+#define kRotoTrackingParamOffsetPoint4 "cornerPinOffset4"
+#define kRotoTrackingParamOffsetPointLabel1 "Offset 1"
+#define kRotoTrackingParamOffsetPointLabel2 "Offset 2"
+#define kRotoTrackingParamOffsetPointLabel3 "Offset 3"
+#define kRotoTrackingParamOffsetPointLabel4 "Offset 4"
+#define kRotoTrackingParamOffsetPointHint "This offset records the modification made by you to the CornerPin points"
+
+
+#define kRotoTrackingParamReferenceFrame "referenceFrame"
+#define kRotoTrackingParamReferenceFrameLabel "Reference frame"
+#define kRotoTrackingParamReferenceFrameHint "This is the frame number at which the CornerPin is an identity"
+
+#define kRotoTrackingParamGoToReferenceFrame "goToReferenceFrame"
+#define kRotoTrackingParamGoToReferenceFrameLabel "Go to Reference"
+#define kRotoTrackingParamGoToReferenceFrameHint "Move the timeline to the reference frame"
+
+
+#define kRotoTrackingParamSetToInputRoD "setToInputRod"
+#define kRotoTrackingParamSetToInputRoDLabel "Set To Input Rod"
+#define kRotoTrackingParamSetToInputRoDHint "Set the 4 CornerPin points to the image rectangle in input of the RotoPaint node"
+
 #define kRotoTrackingParamExportType "exportNodeType"
 #define kRotoTrackingParamExportTypeLabel "Node"
 #define kRotoTrackingParamExportTypeHint "What kind of node should be created as result of this track"
@@ -81,18 +117,48 @@ NATRON_NAMESPACE_ENTER;
 #define kRotoTrackingParamExportTypeCornerPinStabilize "CornerPin (stablize)"
 #define kRotoTrackingParamExportTypeCornerPinStabilizeHint "Similar to CornerPin relative but the transform is inversed thus stabilizing the tracked motion"
 
-#define kRotoTrackingParamExportTypeCornerPinTracker "Tracker"
+#define kRotoTrackingParamExportTypeCornerPinTracker "Tracker (copy only)"
 #define kRotoTrackingParamExportTypeCornerPinTrackerHint "Exports to a Tracker node with each of the tracks taking 1 corner of the planar surface.\n" \
-"This allows you to use the Tracker node's transform functions to stabilize, add jitter, reduce jitter and others."
+"This allows you to use the Tracker node's transform functions to stabilize, add jitter, reduce jitter and others.\n" \
+"Note that the tracks will contain a copy of the animation of the planar surface and will not be linked."
 
 #define kRotoTrackingParamShowCornerPinOverlay "showCornerPin"
 #define kRotoTrackingParamShowCornerPinOverlayLabel "Show CornerPin"
 #define kRotoTrackingParamShowCornerPinOverlayHint "If checked the CornerPin will be visible on the viewer and it can be modified. Any modification will create a keyframe: \n" \
 "this can be use to contrain the CornerPin to a certain location at a given keyframe"
 
-#define kRotoTrackingParamRefreshPlanarTrackTransform "refreshPlanarTrack"
-#define kRotoTrackingParamRefreshPlanarTrackTransformLabel "Refresh PlanarTrack Transform"
-#define kRotoTrackingParamRefreshPlanarTrackTransformHint "Refresh the currently selected PlanarTrack group from the CornerPin values"
+#define kRotoTrackingParamRefreshViewer "refreshViewer"
+#define kRotoTrackingParamRefreshViewerLabel "Refresh Viewer"
+#define kRotoTrackingParamRefreshViewerHint "Update viewer during tracking"
+
+#define kRotoTrackingParamCenterViewer "centerViewer"
+#define kRotoTrackingParamCenterViewerLabel "Center Viewer"
+#define kRotoTrackingParamCenterViewerHint "Center the viewer on the Planar-Track during tracking"
+
+#define kRotoTrackingParamShowPlanarSurfaceGrid "showPlaneGrid"
+#define kRotoTrackingParamShowPlanarSurfaceGridLabel "Show Grid"
+#define kRotoTrackingParamShowPlanarSurfaceGridHint "Display a grid mapped onto the current plane"
+
+#define kRotoTrackingParamRefreshPlanarTrackTransform "refreshCornerPin"
+#define kRotoTrackingParamRefreshPlanarTrackTransformLabel "Refresh CornerPin"
+#define kRotoTrackingParamRefreshPlanarTrackTransformHint "Refresh the CornerPin values"
+
+#define kRotoTrackingParamGotoPreviousKeyFrame "goToPrevKeyframe"
+#define kRotoTrackingParamGotoPreviousKeyFrameLabel "Previous Key"
+#define kRotoTrackingParamGotoPreviousKeyFrameHint "Move the timeline to the previous Planar Surface keyframe"
+
+#define kRotoTrackingParamGotoNextKeyFrame "goToNextKeyframe"
+#define kRotoTrackingParamGotoNextKeyFrameLabel "Next Key"
+#define kRotoTrackingParamGotoNextKeyFrameHint "Move the timeline to the next Planar Surface keyframe"
+
+#define kRotoTrackingParamSetKeyFrame "setKeyframe"
+#define kRotoTrackingParamSetKeyFrameLabel "Set Keyframe"
+#define kRotoTrackingParamSetKeyFrameHint "Set a keyframe on the Planar Surface"
+
+#define kRotoTrackingParamRemoveKeyFrame "removeKeyframe"
+#define kRotoTrackingParamRemoveKeyFrameLabel "Remove Keyframe"
+#define kRotoTrackingParamRemoveKeyFrameHint "Delete the current keyframe on the Planar Surface"
+
 
 // The toolbar
 #define kRotoUIParamToolbar "Toolbar"
@@ -248,7 +314,8 @@ NATRON_NAMESPACE_ENTER;
 #define kRotoUIParamRightClickMenuActionLockShapesLabel "Lock Shape(s)"
 
 #define kRotoUIParamRightClickMenuActionCreatePlanarTrack "createPlanarTrack"
-#define kRotoUIParamRightClickMenuActionCreatePlanarTrackLabel "Planar-Track"
+#define kRotoUIParamRightClickMenuActionCreatePlanarTrackLabel "Create Planar-Track"
+#define kRotoUIParamRightClickMenuActionCreatePlanarTrackHint "Create a Planar-Track group from the selected shape(s)"
 
 // Viewer UI buttons
 
@@ -570,13 +637,17 @@ public:
 
     SelectedItems getSelectedDrawableItems() const;
 
-    PlanarTrackLayerPtr getSelectedPlanarTrack() const;
-
+#ifdef ROTOPAINT_ENABLE_PLANARTRACKER
+    PlanarTrackLayerPtr getSelectedPlanarTrack(bool alsoLookForParentIfShapeSelected) const;
+#endif
 };
 
 
 class RotoPaintInteract;
-class RotoPaintPrivate : public TrackerParamsProvider
+class RotoPaintPrivate
+#ifdef ROTOPAINT_ENABLE_PLANARTRACKER
+: public TrackerParamsProvider
+#endif
 {
 public:
 
@@ -587,7 +658,9 @@ public:
     KnobBoolWPtr enabledKnobs[4];
 
     RotoPaintInteractPtr ui;
-    boost::shared_ptr<CornerPinOverlayInteract> cornerPinInteract;
+#ifdef ROTOPAINT_ENABLE_PLANARTRACKER
+    boost::shared_ptr<PlanarTrackerInteract> planarTrackInteract;
+#endif
     boost::shared_ptr<TransformOverlayInteract> transformInteract, cloneTransformInteract;
 
     // The group internal input nodes
@@ -608,7 +681,9 @@ public:
     TrackerHelperPtr tracker;
 
     // Set if we are currently tracking
+#ifdef ROTOPAINT_ENABLE_PLANARTRACKER
     PlanarTrackLayerPtr activePlanarTrack;
+#endif
 
     // Recursive counter to prevent refreshing of the node tree
     int treeRefreshBlocked;
@@ -659,17 +734,17 @@ public:
     KnobDoubleWPtr preBlurSigma;
     KnobChoiceWPtr motionModel;
     KnobIntWPtr trackerReferenceFrame;
+    KnobButtonWPtr goToReferenceFrameKnob;
     KnobButtonWPtr setReferenceFrameToCurrentFrameKnob;
 
-    KnobGroupWPtr fromGroup, toGroup;
-    KnobDoubleWPtr fromPoints[4], toPoints[4];
+    KnobGroupWPtr cornerPinGroup;
+    KnobDoubleWPtr offsetPoints[4], toPoints[4];
     KnobButtonWPtr setFromPointsToInputRodButton;
-    KnobBoolWPtr cornerPinInteractiveKnob;
 
     KnobButtonWPtr showCornerPinOverlay;
-    KnobChoiceWPtr cornerPinOverlayPoints;
+    KnobButtonWPtr showPlaneGrid;
 
-    KnobButtonWPtr refreshPlanarTrackTransformButton;
+    KnobButtonWPtr refreshCornerPinButton;
 
 
     KnobSeparatorWPtr exportDataSep;
@@ -688,7 +763,11 @@ public:
     KnobButtonWPtr clearFwAnimationButton;
     KnobButtonWPtr updateViewerButton;
     KnobButtonWPtr centerViewerButton;
-    KnobButtonWPtr removeKeyframeButton;
+
+    KnobButtonWPtr goToPreviousCornerPinKeyframeButton;
+    KnobButtonWPtr goToNextCornerPinKeyframeButton;
+    KnobButtonWPtr setCornerPinKeyframeButton;
+    KnobButtonWPtr removeCornerPinKeyframeButton;
 
     // Track range dialog
     KnobGroupWPtr trackRangeDialogGroup;
@@ -703,6 +782,7 @@ public:
                      RotoPaint::RotoPaintTypeEnum type);
 
 
+#ifdef ROTOPAINT_ENABLE_PLANARTRACKER
     //////////////////// Overriden from TrackerParamsProvider
     virtual bool trackStepFunctor(int trackIndex, const TrackArgsBasePtr& args, int frame) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual NodePtr getTrackerNode() const OVERRIDE FINAL;
@@ -725,6 +805,7 @@ public:
     RectD getInputRoD(TimeValue time, ViewIdx view) const;
 
     void setFromPointsToInputRod();
+#endif
 
     NodePtr getOrCreateGlobalMergeNode(int blendingOperator, int *availableInputIndex);
 
@@ -771,6 +852,7 @@ public:
 
     void refreshRegisteredOverlays();
 
+#ifdef ROTOPAINT_ENABLE_PLANARTRACKER
     void onTrackRangeClicked();
 
     void onTrackRangeOkClicked();
@@ -785,29 +867,50 @@ public:
 
     void onTrackFwClicked();
 
+    void onSetReferenceFrameClicked();
+
     void onClearAllAnimationClicked();
 
     void onClearBwAnimationClicked();
 
     void onClearFwAnimationClicked();
 
-    void onRemoveKeyframeButtonClicked();
+    void onGotoReferenceFrameButtonClicked();
 
-    TrackMarkerPtr createTrackForTracking(TimeValue startingFrame);
+    void onGotoPreviousCornerPinKeyframeButtonClicked();
+    void onGotoNextCornerPinKeyframeButtonClicked();
 
-    void updateCornerPinFromTrack(const TrackMarkerPtr& track, TimeValue time);
+    void onSetCornerPinKeyframeButtonClicked();
+    void onRemoveCornerPinKeyframeButtonClicked();
 
+    void onCornerPinPointChangedByUser(TimeValue time, int index);
 
-    void updatePlanarTrackExtraMatrixForAllKeyframes();
+    TrackMarkerPtr createTrackForTracking(TimeValue startingFrame, const std::list<RotoDrawableItemPtr>& shapes);
+
+    void updateMatrixFromTrack(const TrackMarkerPtr& track, TimeValue time);
+
+    void updateCornerPinFromMatrixAtAllTracks(const PlanarTrackLayerPtr& planarTrack);
+    void updateCornerPinFromMatrixAtAllTrack_threaded();
+
+    void updateCornerPinFromMatrixAtTime(TimeValue time, const Transform::Matrix3x3& transform, const PlanarTrackLayerPtr& planarTrack);
+
+    void updateMatrixFromCornerPinAtTime(TimeValue time, const PlanarTrackLayerPtr& planarTrack);
+    void updateMatrixFromCornerPinForAllKeyframes(const PlanarTrackLayerPtr& planarTrack);
+    void updateMatrixFromCornerPinForAllKeyframes_threaded();
 
     void createPlanarTrackForSelectedShapes();
 
     void refreshTrackingControlsVisiblity();
 
-    void updatePlanarTrackExtraMatrix(TimeValue time, const PlanarTrackLayerPtr& planarTrack);
+    void refreshTrackingControlsEnabledness();
 
-    void startTrackingInternal(TimeValue startFrame, TimeValue lastFrame, TimeValue step, OverlaySupport* overlay);
 
+    void startTrackingInternal(TimeValue startFrame, TimeValue lastFrame, TimeValue step, const std::list<RotoDrawableItemPtr>& shapes, OverlaySupport* overlay);
+
+    static void getTransformFromPoints(Point fromPoints[4], Point toPoints[4], Transform::Matrix3x3* transform);
+
+    void getTransformFromCornerPinParamsAtTime(TimeValue time, const PlanarTrackLayerPtr& planarTrack, Transform::Matrix3x3* transform);
+#endif // #ifdef ROTOPAINT_ENABLE_PLANARTRACKER
 };
 
 class BlockTreeRefreshRAII

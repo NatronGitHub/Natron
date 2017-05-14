@@ -145,7 +145,7 @@ public:
 
     void renameSelectedNode();
 
-    QUndoStack* getUndoStack() const;
+    boost::shared_ptr<QUndoStack> getUndoStack() const;
 
 Q_SIGNALS:
     

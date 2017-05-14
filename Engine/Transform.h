@@ -203,11 +203,11 @@ Matrix3x3 matInverse(const Matrix3x3& M, double det);
 Matrix3x3 matRotation(double rads);
 // Matrix3x3 matRotationAroundPoint(double rads, double pointX, double pointY);
 
-// Matrix3x3 matTranslation(double translateX, double translateY);
+Matrix3x3 matTranslation(double translateX, double translateY);
 
 Matrix3x3 matScale(double scaleX, double scaleY);
-// Matrix3x3 matScale(double scale);
-// Matrix3x3 matScaleAroundPoint(double scaleX, double scaleY, double pointX, double pointY);
+Matrix3x3 matScale(double scale);
+Matrix3x3 matScaleAroundPoint(double scaleX, double scaleY, double pointX, double pointY);
 
 Matrix3x3 matSkewXY(double skewX, double skewY, bool skewOrderYX);
 

@@ -157,9 +157,9 @@ public:
 
     const std::vector<ToolButton*> & getToolButtons() const;
 
-    void registerNewUndoStack(QUndoStack* stack);
+    void registerNewUndoStack(const boost::shared_ptr<QUndoStack>& stack);
 
-    void removeUndoStack(QUndoStack* stack);
+    void removeUndoStack(const boost::shared_ptr<QUndoStack>& stack);
 
     /**
      * @brief An error dialog with title and text customizable
@@ -617,8 +617,6 @@ public Q_SLOTS:
     void buildTabFocusOrderPropertiesBin();
 
     void addToolButttonsToToolBar();
-
-    void onCurrentUndoStackChanged(QUndoStack* stack);
 
     void showSettings();
 

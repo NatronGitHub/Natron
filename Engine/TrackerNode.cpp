@@ -173,6 +173,7 @@ TrackerNode::setupInitialSubGraphState()
         }
 
     }
+#ifdef ROTOPAINT_ENABLE_PLANARTRACKER
     {
         CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_INPUT, thisShared));
         args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
@@ -186,7 +187,7 @@ TrackerNode::setupInitialSubGraphState()
         }
 
     }
-
+#endif
     {
         QString cornerPinName = fixedNamePrefix + QLatin1String("CornerPin");
         CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_OFX_CORNERPIN, thisShared));
@@ -616,7 +617,6 @@ TrackerNode::initializeTrackRangeDialogKnobs(const KnobPagePtr& trackingPage)
         KnobIntPtr param = createKnob<KnobInt>(kTrackerUIParamTrackRangeDialogFirstFrame );
         param->setLabel(tr(kTrackerUIParamTrackRangeDialogFirstFrameLabel));
         param->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogFirstFrameHint) );
-        param->setSecret(true);
         param->setEvaluateOnChange(false);
         param->setAnimationEnabled(false);
         param->setIsPersistent(false);
@@ -629,7 +629,6 @@ TrackerNode::initializeTrackRangeDialogKnobs(const KnobPagePtr& trackingPage)
         KnobIntPtr param = createKnob<KnobInt>(kTrackerUIParamTrackRangeDialogLastFrame);
         param->setLabel(tr(kTrackerUIParamTrackRangeDialogLastFrameLabel) );
         param->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogLastFrameHint) );
-        param->setSecret(true);
         param->setEvaluateOnChange(false);
         param->setAnimationEnabled(false);
         param->setIsPersistent(false);
@@ -642,7 +641,6 @@ TrackerNode::initializeTrackRangeDialogKnobs(const KnobPagePtr& trackingPage)
         KnobIntPtr param = createKnob<KnobInt>(kTrackerUIParamTrackRangeDialogStep);
         param->setLabel(tr(kTrackerUIParamTrackRangeDialogStepLabel) );
         param->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogStepHint) );
-        param->setSecret(true);
         param->setEvaluateOnChange(false);
         param->setAnimationEnabled(false);
         param->setIsPersistent(false);
@@ -655,7 +653,6 @@ TrackerNode::initializeTrackRangeDialogKnobs(const KnobPagePtr& trackingPage)
         KnobButtonPtr param = createKnob<KnobButton>(kTrackerUIParamTrackRangeDialogOkButton);
         param->setLabel(tr(kTrackerUIParamTrackRangeDialogOkButtonLabel) );
         param->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogOkButtonHint) );
-        param->setSecret(true);
         param->setAddNewLine(false);
         param->setEvaluateOnChange(false);
         param->setSpacingBetweenItems(3);
@@ -668,7 +665,6 @@ TrackerNode::initializeTrackRangeDialogKnobs(const KnobPagePtr& trackingPage)
         KnobButtonPtr param = createKnob<KnobButton>(kTrackerUIParamTrackRangeDialogCancelButton);
         param->setLabel(tr(kTrackerUIParamTrackRangeDialogCancelButtonLabel) );
         param->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogCancelButtonHint) );
-        param->setSecret(true);
         param->setEvaluateOnChange(false);
         dialog->addKnob(param);
         _imp->ui->trackRangeDialogCancelButton = param;
@@ -971,6 +967,7 @@ TrackerNode::initializeTrackingPageKnobs(const KnobPagePtr& trackingPage)
         param->setLabel(tr(kTrackerAddTrackParamLabel));
         param->setHintToolTip( tr(kTrackerAddTrackParamHint) );
         param->setEvaluateOnChange(false);
+        param->setIconLabel("Images/addTrack.png");
         param->setAddNewLine(false);
         trackingPage->addKnob(param);
         _imp->addTrackFromPanelButton = param;
@@ -980,6 +977,7 @@ TrackerNode::initializeTrackingPageKnobs(const KnobPagePtr& trackingPage)
         param->setLabel(tr(kTrackerRemoveTracksParamLabel));
         param->setHintToolTip( tr(kTrackerRemoveTracksParamHint) );
         param->setEvaluateOnChange(false);
+        param->setIconLabel("Images/rotoPaintRemoveItemIcon.png");
         param->setAddNewLine(false);
         trackingPage->addKnob(param);
         _imp->removeSelectedTracksButton = param;
@@ -2002,7 +2000,11 @@ TrackerNodePrivate::getMaskImagePlane(int *channelIndex) const
 NodePtr
 TrackerNodePrivate::getMaskImageNode() const
 {
+#ifdef ROTOPAINT_ENABLE_PLANARTRACKER
     return maskNode.lock();
+#else
+    return NodePtr();
+#endif
 }
 
 TrackerHelperPtr
@@ -2016,6 +2018,13 @@ TrackerNode::getTracker() const
 {
     return _imp->tracker;
 }
+
+TrackMarkerPtr
+TrackerNode::createMarker()
+{
+    return _imp->createMarker();
+}
+
 
 bool
 TrackerNodePrivate::getCenterOnTrack() const

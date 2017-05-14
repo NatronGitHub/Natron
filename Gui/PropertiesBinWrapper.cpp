@@ -98,7 +98,7 @@ PropertiesBinWrapper::keyReleaseEvent(QKeyEvent* e)
     QWidget::keyReleaseEvent(e);
 }
 
-QUndoStack*
+boost::shared_ptr<QUndoStack>
 PropertiesBinWrapper::getUndoStack() const
 {
     QWidget* w = qApp->widgetAt( QCursor::pos() );
@@ -107,10 +107,10 @@ PropertiesBinWrapper::getUndoStack() const
     if (panel) {
         boost::shared_ptr<QUndoStack> stack = panel->getPanel()->getUndoStack();
 
-        return stack.get();
+        return stack;
     }
 
-    return 0;
+    return boost::shared_ptr<QUndoStack>();
 }
 
 QIcon

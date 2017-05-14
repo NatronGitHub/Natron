@@ -75,6 +75,20 @@ INCLUDEPATH += $$PWD/NatronEngine
 DEPENDPATH += $$PWD/NatronEngine
 DEPENDPATH += $$PWD/../Global
 
+enable-planartracker {
+
+    DEFINES += ROTOPAINT_ENABLE_PLANARTRACKER
+    SOURCES += \
+    ConvexHull.cpp \
+    PlanarTrackerInteract.cpp \
+    RotoPaintPlanarTrackerImpl.cpp
+
+    HEADERS += \
+    ConvexHull.h \
+    PlanarTrackerInteract.h
+
+}
+
 SOURCES += \
     AddPlaneNode.cpp \
     AnimatingObjectI.cpp \
@@ -316,10 +330,6 @@ SOURCES += \
     NatronEngine/pyoverlayparamdesc_wrapper.cpp \
     NatronEngine/pypointoverlayinteract_wrapper.cpp \
     NatronEngine/pytransformoverlayinteract_wrapper.cpp
-
-
-
-
 
 
 HEADERS += \

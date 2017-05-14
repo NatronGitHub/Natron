@@ -519,8 +519,9 @@ public:
     std::list< RotoDrawableItemPtr > getRotoPaintItemsByRenderOrder() const;
     std::list< RotoDrawableItemPtr > getActivatedRotoPaintItemsByRenderOrder(TimeValue time, ViewIdx view) const;
 
+#ifdef ROTOPAINT_ENABLE_PLANARTRACKER
     void createPlanarTrackForShape(const RotoDrawableItemPtr& item);
-
+#endif
 
 public Q_SLOTS:
 
@@ -530,9 +531,11 @@ public Q_SLOTS:
 
     void onSourceNodeLabelChanged(const QString& oldLabel, const QString& newLabel);
 
+#ifdef ROTOPAINT_ENABLE_PLANARTRACKER
     void onTrackingStarted(int step);
 
     void onTrackingEnded();
+#endif
     
 protected:
 
@@ -544,10 +547,11 @@ protected:
     void initTransformPageKnobs();
     void initClonePageKnobs();
     void initMotionBlurPageKnobs();
+#ifdef ROTOPAINT_ENABLE_PLANARTRACKER
     void initTrackingPageKnobs();
     void initTrackingViewerKnobs(const KnobPagePtr &trackingPage);
     void initializeTrackRangeDialogKnobs(const KnobPagePtr& trackingPage);
-
+#endif
     void initCompNodeKnobs(const KnobPagePtr& page);
 
     void initViewerUIKnobs(const KnobPagePtr& generalPage);

@@ -26,7 +26,9 @@
 
 #include "Engine/KnobTypes.h"
 #include "Engine/RotoPaint.h"
+#include "Engine/RotoPaintPrivate.h"
 #include "Engine/Transform.h"
+#include "Engine/TrackMarker.h"
 #include "Serialization/KnobTableItemSerialization.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -79,7 +81,11 @@ struct PlanarTrackLayerPrivate
     KnobChoiceWPtr skewOrder;
     KnobDoubleWPtr center;
     KnobDoubleWPtr extraMatrix;
-    
+
+    KnobIntWPtr referenceFrame;
+    KnobChoiceWPtr motionModel;
+    KnobDoubleWPtr offsetPoints[4], toPoints[4];
+
     PlanarTrackLayerPrivate()
     {
 
@@ -116,6 +122,30 @@ PlanarTrackLayer::getSerializationClassName() const
     return kSerializationRotoPlanarTrackGroupTag;
 }
 
+TimeValue
+PlanarTrackLayer::getReferenceFrame() const
+{
+    return TimeValue(_imp->referenceFrame.lock()->getValue());
+}
+
+KnobDoublePtr
+PlanarTrackLayer::getCornerPinPointKnob(int index) const
+{
+    return _imp->toPoints[index].lock();
+}
+
+KnobDoublePtr
+PlanarTrackLayer::getCornerPinPointOffsetKnob(int index) const
+{
+    return _imp->offsetPoints[index].lock();
+}
+
+KnobChoicePtr
+PlanarTrackLayer::getMotionModelKnob() const
+{
+    return _imp->motionModel.lock();
+}
+
 void
 PlanarTrackLayer::initializeKnobs()
 {
@@ -129,6 +159,17 @@ PlanarTrackLayer::initializeKnobs()
     _imp->skewOrder = createDuplicateOfTableKnob<KnobChoice>(kRotoDrawableItemSkewOrderParam);
     _imp->center = createDuplicateOfTableKnob<KnobDouble>(kRotoDrawableItemCenterParam);
     _imp->extraMatrix = createDuplicateOfTableKnob<KnobDouble>(kRotoDrawableItemExtraMatrixParam);
+    _imp->referenceFrame = createDuplicateOfTableKnob<KnobInt>(kRotoTrackingParamReferenceFrame);
+
+    const char* offsetPointNames[4] = {kRotoTrackingParamOffsetPoint1, kRotoTrackingParamOffsetPoint2, kRotoTrackingParamOffsetPoint3, kRotoTrackingParamOffsetPoint4};
+    const char* toPointNames[4] = {kRotoTrackingParamCornerPinPoint1, kRotoTrackingParamCornerPinPoint2, kRotoTrackingParamCornerPinPoint3, kRotoTrackingParamCornerPinPoint4};
+    for (int i = 0;i < 4; ++i) {
+        _imp->toPoints[i] = createDuplicateOfTableKnob<KnobDouble>(toPointNames[i]);
+        _imp->offsetPoints[i] = createDuplicateOfTableKnob<KnobDouble>(offsetPointNames[i]);
+    }
+
+    _imp->motionModel = createDuplicateOfTableKnob<KnobChoice>(kTrackerParamMotionModel);
+
 
     RotoLayer::initializeKnobs();
 
@@ -147,6 +188,16 @@ PlanarTrackLayer::fetchRenderCloneKnobs()
     _imp->skewOrder = getKnobByNameAndType<KnobChoice>(kRotoDrawableItemSkewOrderParam);
     _imp->center = getKnobByNameAndType<KnobDouble>(kRotoDrawableItemCenterParam);
     _imp->extraMatrix = getKnobByNameAndType<KnobDouble>(kRotoDrawableItemExtraMatrixParam);
+
+    _imp->referenceFrame = getKnobByNameAndType<KnobInt>(kRotoTrackingParamReferenceFrame);
+
+    const char* offsetPointNames[4] = {kRotoTrackingParamOffsetPoint1, kRotoTrackingParamOffsetPoint2, kRotoTrackingParamOffsetPoint3, kRotoTrackingParamOffsetPoint4};
+    const char* toPointNames[4] = {kRotoTrackingParamCornerPinPoint1, kRotoTrackingParamCornerPinPoint2, kRotoTrackingParamCornerPinPoint3, kRotoTrackingParamCornerPinPoint4};
+    for (int i = 0;i < 4; ++i) {
+        _imp->toPoints[i] = getKnobByNameAndType<KnobDouble>(toPointNames[i]);
+        _imp->offsetPoints[i] = getKnobByNameAndType<KnobDouble>(offsetPointNames[i]);
+    }
+    _imp->motionModel = getKnobByNameAndType<KnobChoice>(kTrackerParamMotionModel);
 
     RotoLayer::fetchRenderCloneKnobs();
 
@@ -212,19 +263,36 @@ PlanarTrackLayer::setExtraMatrix(bool setKeyframe,
     if (!extraMatrix) {
         return;
     }
-    ScopedChanges_RAII changes(extraMatrix.get());
+
+    std::vector<double> matValues(9);
+    memcpy(&matValues[0], &mat.a, 9 * sizeof(double));
     if (setKeyframe) {
-        std::vector<double> matValues(9);
-        memcpy(&matValues[0], &mat.a, 9 * sizeof(double));
-        extraMatrix->setValueAtTime(time, mat.a, view, DimIdx(0)); extraMatrix->setValueAtTime(time, mat.b, view, DimIdx(1)); extraMatrix->setValueAtTime(time, mat.c, view, DimIdx(2));
-        extraMatrix->setValueAtTime(time, mat.d, view, DimIdx(3)); extraMatrix->setValueAtTime(time, mat.e, view, DimIdx(4)); extraMatrix->setValueAtTime(time, mat.f, view, DimIdx(5));
-        extraMatrix->setValueAtTime(time, mat.g, view, DimIdx(6)); extraMatrix->setValueAtTime(time, mat.h, view, DimIdx(7)); extraMatrix->setValueAtTime(time, mat.i, view, DimIdx(8));
+        extraMatrix->setValueAtTimeAcrossDimensions(time, matValues, DimIdx(0), view);
     } else {
-        extraMatrix->setValue(mat.a, view, DimIdx(0)); extraMatrix->setValue(mat.b, view, DimIdx(1)); extraMatrix->setValue(mat.c, view, DimIdx(2));
-        extraMatrix->setValue(mat.d, view, DimIdx(3)); extraMatrix->setValue(mat.e, view, DimIdx(4)); extraMatrix->setValue(mat.f, view, DimIdx(5));
-        extraMatrix->setValue(mat.g, view, DimIdx(6)); extraMatrix->setValue(mat.h, view, DimIdx(7)); extraMatrix->setValue(mat.i, view, DimIdx(8));
+        extraMatrix->setValueAcrossDimensions(matValues, DimIdx(0), view);
     }
 }
+
+void
+PlanarTrackLayer::getExtraMatrixAtTime(TimeValue time, ViewIdx view, Transform::Matrix3x3* m) const
+{
+    KnobDoublePtr extraMatrix = _imp->extraMatrix.lock();
+    m->a = extraMatrix->getValueAtTime(time, DimIdx(0), view); m->b = extraMatrix->getValueAtTime(time, DimIdx(1), view); m->c = extraMatrix->getValueAtTime(time, DimIdx(2), view);
+    m->d = extraMatrix->getValueAtTime(time, DimIdx(3), view); m->e = extraMatrix->getValueAtTime(time, DimIdx(4), view); m->f = extraMatrix->getValueAtTime(time, DimIdx(5), view);
+    m->g = extraMatrix->getValueAtTime(time, DimIdx(6), view); m->h = extraMatrix->getValueAtTime(time, DimIdx(7), view); m->i = extraMatrix->getValueAtTime(time, DimIdx(8), view);
+}
+
+void
+PlanarTrackLayer::getTransformKeyframes(std::list<double>* keys) const
+{
+    KnobDoublePtr extraMatrix = _imp->extraMatrix.lock();
+
+    KeyFrameSet keysSet = extraMatrix->getAnimationCurve(ViewIdx(0), DimIdx(0))->getKeyFrames_mt_safe();
+    for (KeyFrameSet::iterator it = keysSet.begin(); it != keysSet.end(); ++it) {
+        keys->push_back(it->getTime());
+    }
+}
+
 
 void
 PlanarTrackLayer::clearTransformAnimation()

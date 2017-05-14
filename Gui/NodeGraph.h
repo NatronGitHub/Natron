@@ -290,7 +290,7 @@ private:
     virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
-    virtual QUndoStack* getUndoStack() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual boost::shared_ptr<QUndoStack> getUndoStack() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 private:
 

@@ -111,7 +111,7 @@ public:
     AnimationModule *_publicInterface;
     std::list<NodeAnimPtr> nodes;
     AnimationModuleSelectionModelPtr selectionModel;
-    boost::scoped_ptr<QUndoStack> undoStack;
+    boost::shared_ptr<QUndoStack> undoStack;
     TimeLineWPtr timeline;
     AnimationModuleEditor* editor;
 };
@@ -126,11 +126,14 @@ AnimationModule::AnimationModule(Gui *gui,
 {
     _imp->timeline = timeline;
 
-    gui->registerNewUndoStack( _imp->undoStack.get() );
+    gui->registerNewUndoStack(_imp->undoStack);
 }
 
 AnimationModule::~AnimationModule()
 {
+    if (!_imp->editor->getGui()->getApp()->isClosing()) {
+        _imp->editor->getGui()->removeUndoStack(_imp->undoStack);
+    }
 }
 
 bool
@@ -276,10 +279,10 @@ AnimationModulePrivate::getInputs_recursive(const NodePtr& node,
     }
 }
 
-QUndoStack*
+boost::shared_ptr<QUndoStack>
 AnimationModule::getUndoStack() const
 {
-    return _imp->undoStack.get();
+    return _imp->undoStack;
 }
 
 

@@ -2756,6 +2756,7 @@ KnobItemsTable::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationOb
         return;
     }
 
+    resetModel(eTableChangeReasonInternal);
     assert(_imp->common->topLevelItems.empty());
 
     for (std::list<SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr>::const_iterator it = serialization->items.begin(); it != serialization->items.end(); ++it) {

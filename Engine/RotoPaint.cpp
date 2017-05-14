@@ -131,25 +131,31 @@ static void addPluginShortcuts(const PluginPtr& plugin)
     plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamBuildUp, kRotoUIParamBuildUpLabel, kRotoUIParamBuildUpHint) );
     plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamResetCloneOffset, kRotoUIParamResetCloneOffsetLabel, kRotoUIParamResetCloneOffsetHint) );
 
+#ifdef ROTOPAINT_ENABLE_PLANARTRACKER
 
     // Tracking
-    plugin->addActionShortcut( PluginActionShortcut(kTrackerUIParamTrackBW, kTrackerUIParamTrackBWLabel, kTrackerUIParamTrackBWHint, Key_Z) );
-    plugin->addActionShortcut( PluginActionShortcut(kTrackerUIParamTrackPrevious, kTrackerUIParamTrackPreviousLabel, kTrackerUIParamTrackPreviousHint, Key_X) );
-    plugin->addActionShortcut( PluginActionShortcut(kTrackerUIParamTrackNext, kTrackerUIParamTrackNextLabel, kTrackerUIParamTrackNextHint, Key_C) );
+    plugin->addActionShortcut( PluginActionShortcut(kTrackerUIParamTrackBW, kTrackerUIParamTrackBWLabel, kTrackerUIParamTrackBWHint) );
+    plugin->addActionShortcut( PluginActionShortcut(kTrackerUIParamTrackPrevious, kTrackerUIParamTrackPreviousLabel, kTrackerUIParamTrackPreviousHint) );
+    plugin->addActionShortcut( PluginActionShortcut(kTrackerUIParamTrackNext, kTrackerUIParamTrackNextLabel, kTrackerUIParamTrackNextHint) );
     plugin->addActionShortcut( PluginActionShortcut(kTrackerUIParamStopTracking, kTrackerUIParamStopTrackingLabel, kTrackerUIParamStopTrackingHint, Key_Escape) );
-    plugin->addActionShortcut( PluginActionShortcut(kTrackerUIParamTrackFW, kTrackerUIParamTrackFWLabel, kTrackerUIParamTrackFWHint, Key_V) );
+    plugin->addActionShortcut( PluginActionShortcut(kTrackerUIParamTrackFW, kTrackerUIParamTrackFWLabel, kTrackerUIParamTrackFWHint) );
     plugin->addActionShortcut( PluginActionShortcut(kTrackerUIParamTrackRange, kTrackerUIParamTrackRangeLabel, kTrackerUIParamTrackRangeHint) );
-    plugin->addActionShortcut( PluginActionShortcut(kTrackerUIParamTrackAllKeyframes, kTrackerUIParamTrackAllKeyframesLabel, kTrackerUIParamTrackAllKeyframesHint, Key_V, eKeyboardModifierControl) );
-    plugin->addActionShortcut( PluginActionShortcut(kTrackerUIParamTrackCurrentKeyframe, kTrackerUIParamTrackCurrentKeyframeLabel, kTrackerUIParamTrackCurrentKeyframeHint, Key_C, eKeyboardModifierControl) );
     plugin->addActionShortcut( PluginActionShortcut(kTrackerUIParamClearAllAnimation, kTrackerUIParamClearAllAnimationLabel, kTrackerUIParamClearAllAnimationHint) );
     plugin->addActionShortcut( PluginActionShortcut(kTrackerUIParamClearAnimationBw, kTrackerUIParamClearAnimationBwLabel, kTrackerUIParamClearAnimationBwHint) );
     plugin->addActionShortcut( PluginActionShortcut(kTrackerUIParamClearAnimationFw, kTrackerUIParamClearAnimationFwLabel, kTrackerUIParamClearAnimationFwHint) );
-    plugin->addActionShortcut( PluginActionShortcut(kTrackerUIParamRefreshViewer, kTrackerUIParamRefreshViewerLabel, kTrackerUIParamRefreshViewerHint) );
-    plugin->addActionShortcut( PluginActionShortcut(kTrackerUIParamCenterViewer, kTrackerUIParamCenterViewerLabel, kTrackerUIParamCenterViewerHint) );
-    plugin->addActionShortcut( PluginActionShortcut(kTrackerUIParamCreateKeyOnMove, kTrackerUIParamCreateKeyOnMoveLabel, kTrackerUIParamCreateKeyOnMoveHint) );
-    plugin->addActionShortcut( PluginActionShortcut(kTrackerUIParamShowError, kTrackerUIParamShowErrorLabel, kTrackerUIParamShowErrorHint) );
-    plugin->addActionShortcut( PluginActionShortcut(kTrackerUIParamRemovePatternKeyFrame, kTrackerUIParamRemovePatternKeyFrameLabel, kTrackerUIParamRemovePatternKeyFrameHint) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoTrackingParamRefreshViewer, kRotoTrackingParamRefreshViewerLabel, kRotoTrackingParamRefreshViewerHint) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoTrackingParamCenterViewer, kRotoTrackingParamCenterViewerLabel, kRotoTrackingParamCenterViewerHint) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoTrackingParamShowCornerPinOverlay, kRotoTrackingParamShowCornerPinOverlayLabel, kRotoTrackingParamShowCornerPinOverlayHint) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoTrackingParamShowPlanarSurfaceGrid, kRotoTrackingParamShowPlanarSurfaceGridLabel, kRotoTrackingParamShowPlanarSurfaceGridHint) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoTrackingParamGoToReferenceFrame, kRotoTrackingParamGoToReferenceFrameLabel, kRotoTrackingParamGoToReferenceFrameHint) );
+    plugin->addActionShortcut( PluginActionShortcut(kTrackerParamSetReferenceFrame, kTrackerParamSetReferenceFrameLabel, kTrackerParamSetReferenceFrameHint) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoTrackingParamSetToInputRoD, kRotoTrackingParamSetToInputRoDLabel, kRotoTrackingParamSetToInputRoDHint) );
 
+    plugin->addActionShortcut( PluginActionShortcut(kRotoTrackingParamGotoPreviousKeyFrame, kRotoTrackingParamGotoPreviousKeyFrameLabel, kRotoTrackingParamGotoPreviousKeyFrameHint) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoTrackingParamGotoNextKeyFrame, kRotoTrackingParamGotoNextKeyFrameLabel, kRotoTrackingParamGotoNextKeyFrameHint) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoTrackingParamSetKeyFrame, kRotoTrackingParamSetKeyFrameLabel, kRotoTrackingParamSetKeyFrameHint) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoTrackingParamRemoveKeyFrame, kRotoTrackingParamRemoveKeyFrameLabel, kRotoTrackingParamRemoveKeyFrameHint) );
+#endif // #ifdef ROTOPAINT_ENABLE_PLANARTRACKER
 
     // Toolbuttons
     plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamSelectionToolButton, kRotoUIParamSelectionToolButtonLabel, "", Key_Q) );
@@ -1211,6 +1217,7 @@ RotoPaint::initMotionBlurPageKnobs()
     _imp->refreshMotionBlurKnobsVisibility();
 } // void initMotionBlurPageKnobs();
 
+#ifdef ROTOPAINT_ENABLE_PLANARTRACKER
 void
 RotoPaint::initTrackingPageKnobs()
 {
@@ -1218,6 +1225,17 @@ RotoPaint::initTrackingPageKnobs()
     trackingPage->setLabel(tr("Tracking"));
     _imp->trackingPage = trackingPage;
 
+    {
+        KnobButtonPtr param = createKnob<KnobButton>(kRotoUIParamRightClickMenuActionCreatePlanarTrack);
+        param->setLabel(tr(kRotoUIParamRightClickMenuActionCreatePlanarTrackLabel));
+        param->setHintToolTip(tr(kRotoUIParamRightClickMenuActionCreatePlanarTrackHint));
+        param->setEvaluateOnChange(false);
+        param->setIconLabel("Images/addTrack.png");
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setEnabled(false);
+        trackingPage->addKnob(param);
+        _imp->ui->createPlanarTrackAction = param;
+    }
     {
         KnobBoolPtr param = createKnob<KnobBool>(kTrackerParamTrackRed);
         param->setLabel(tr(kTrackerParamTrackRedLabel));
@@ -1321,113 +1339,76 @@ RotoPaint::initTrackingPageKnobs()
         param->setDefaultValue(5); // Perspective by default
         param->setAnimationEnabled(false);
         param->setEvaluateOnChange(false);
+        _imp->knobsTable->addPerItemKnobMaster(param);
         _imp->motionModel = param;
         trackingPage->addKnob(param);
     }
 
     {
-        KnobIntPtr param = createKnob<KnobInt>(kTrackerParamReferenceFrame);
-        param->setLabel(tr(kTrackerParamReferenceFrameLabel));
-        param->setHintToolTip( tr(kTrackerParamReferenceFrameHint) );
+        KnobIntPtr param = createKnob<KnobInt>(kRotoTrackingParamReferenceFrame);
+        param->setLabel(tr(kRotoTrackingParamReferenceFrameLabel));
+        param->setHintToolTip( tr(kRotoTrackingParamReferenceFrameHint) );
         param->setAnimationEnabled(false);
         param->setDefaultValue(0);
-        param->setAddNewLine(false);
         param->setEvaluateOnChange(false);
+        _imp->knobsTable->addPerItemKnobMaster(param);
         trackingPage->addKnob(param);
         _imp->trackerReferenceFrame = param;
     }
 
-    {
-        KnobButtonPtr param = createKnob<KnobButton>(kTrackerParamSetReferenceFrame);
-        param->setLabel(tr(kTrackerParamSetReferenceFrameLabel));
-        param->setHintToolTip( tr(kTrackerParamSetReferenceFrameHint) );
-        param->setEvaluateOnChange(false);
-        trackingPage->addKnob(param);
-        _imp->setReferenceFrameToCurrentFrameKnob = param;
-    }
 
-    KnobGroupPtr  toGroupKnob = createKnob<KnobGroup>(kCornerPinParamTo);
-    toGroupKnob->setLabel(tr(kCornerPinParamTo));
-    toGroupKnob->setAsTab();
-    trackingPage->addKnob(toGroupKnob);
-    _imp->toGroup = toGroupKnob;
+    KnobGroupPtr cornerPinGroup = createKnob<KnobGroup>("planarSurfaceGroup");
+    cornerPinGroup->setLabel(tr("Planar Surface"));
+    cornerPinGroup->setDefaultValue(false);
+    trackingPage->addKnob(cornerPinGroup);
+    _imp->cornerPinGroup = cornerPinGroup;
 
-    KnobGroupPtr  fromGroupKnob = createKnob<KnobGroup>(kCornerPinParamFrom);
-    fromGroupKnob->setLabel(tr(kCornerPinParamFrom));
-    fromGroupKnob->setAsTab();
-    trackingPage->addKnob(fromGroupKnob);
-    _imp->fromGroup = fromGroupKnob;
 
-    const char* fromPointNames[4] = {kCornerPinParamFrom1, kCornerPinParamFrom2, kCornerPinParamFrom3, kCornerPinParamFrom4};
-    const char* toPointNames[4] = {kCornerPinParamTo1, kCornerPinParamTo2, kCornerPinParamTo3, kCornerPinParamTo4};
+    const char* offsetPointNames[4] = {kRotoTrackingParamOffsetPoint1, kRotoTrackingParamOffsetPoint2, kRotoTrackingParamOffsetPoint3, kRotoTrackingParamOffsetPoint4};
+    const char* offsetPointLabels[4] = {kRotoTrackingParamOffsetPointLabel1, kRotoTrackingParamOffsetPointLabel2, kRotoTrackingParamOffsetPointLabel3, kRotoTrackingParamOffsetPointLabel4};
+    const char* toPointNames[4] = {kRotoTrackingParamCornerPinPoint1, kRotoTrackingParamCornerPinPoint2, kRotoTrackingParamCornerPinPoint3, kRotoTrackingParamCornerPinPoint4};
+    const char* toPointLabels[4] = {kRotoTrackingParamCornerPinPointLabel1, kRotoTrackingParamCornerPinPointLabel2, kRotoTrackingParamCornerPinPointLabel3, kRotoTrackingParamCornerPinPointLabel4};
     const Point pointDefault[4] = {{0,0}, {1,0}, {1,1}, {0,1}};
 
     for (int i = 0; i < 4; ++i) {
-        {
-            KnobDoublePtr param = createKnob<KnobDouble>(fromPointNames[i], 2);
-            param->setDefaultValuesAreNormalized(true);
-            param->setSpatial(true);
-            param->setIncrement(1.);
-            std::vector<double> def(2);
-            def[0] = pointDefault[i].x;
-            def[1] = pointDefault[i].y;
-            fromGroupKnob->addKnob(param);
-            param->setDefaultValues(def, DimIdx(0));
-            _imp->fromPoints[i] = param;
-        }
-        {
             KnobDoublePtr param = createKnob<KnobDouble>(toPointNames[i], 2);
+            param->setLabel(tr(toPointLabels[i]));
             param->setDefaultValuesAreNormalized(true);
             param->setSpatial(true);
             param->setIncrement(1.);
             std::vector<double> def(2);
             def[0] = pointDefault[i].x;
             def[1] = pointDefault[i].y;
-            toGroupKnob->addKnob(param);
+            cornerPinGroup->addKnob(param);
             param->setDefaultValues(def, DimIdx(0));
+            _imp->knobsTable->addPerItemKnobMaster(param);
             _imp->toPoints[i] = param;
-        }
-    }
-    {
-        // Make an interactive param always secret so that the knobChanged callback is called only on mouse release
-        // when the user drag a point
-        KnobBoolPtr param = createKnob<KnobBool>(kCornerPinParamInteractive);
-        param->setEvaluateOnChange(false);
-        param->setSecret(true);
-        param->setDefaultValue(false);
-        trackingPage->addKnob(param);
-        _imp->cornerPinInteractiveKnob = param;
-    }
-    {
-        KnobButtonPtr param = createKnob<KnobButton>(kCornerPinParamSetToInputRoD);
-        param->setLabel(tr(kCornerPinParamSetToInputRoDLabel));
-        param->setHintToolTip( tr(kCornerPinParamSetToInputRoDHint) );
-        fromGroupKnob->addKnob(param);
-        _imp->setFromPointsToInputRodButton = param;
-    }
-    {
-        KnobButtonPtr param = createKnob<KnobButton>(kRotoTrackingParamShowCornerPinOverlay);
-        param->setLabel(tr(kRotoTrackingParamShowCornerPinOverlay));
-        param->setHintToolTip(tr(kRotoTrackingParamShowCornerPinOverlayHint));
-        param->setDefaultValue(false);
-        param->setCheckable(true);
-        param->setIconLabel("Images/CornerPinIcon.png", true);
-        param->setIconLabel("Images/CornerPinIcon.png", false);
-        param->setAddNewLine(false);
-        trackingPage->addKnob(param);
-        _imp->showCornerPinOverlay  = param;
 
     }
     {
-        KnobChoicePtr param = createKnob<KnobChoice>(kCornerPinParamOverlayPoints);
-        param->setLabel(tr(kCornerPinParamOverlayPointsLabel));
-        param->setHintToolTip( tr(kCornerPinParamOverlayPointsHint) );
-        std::vector<ChoiceOption> options;
-        options.push_back(ChoiceOption("To"));
-        options.push_back(ChoiceOption("From"));
-        param->populateChoices(options);
-        trackingPage->addKnob(param);
-        _imp->cornerPinOverlayPoints = param;
+        KnobSeparatorPtr sep = createKnob<KnobSeparator>("cornerPinOffsetsSep");
+        sep->setLabel(tr("Offsets"));
+        cornerPinGroup->addKnob(sep);
+
+    }
+    for (int i = 0; i < 4; ++i) {
+        KnobDoublePtr param = createKnob<KnobDouble>(offsetPointNames[i], 2);
+        param->setLabel(tr(offsetPointLabels[i]));
+        param->setDefaultValuesAreNormalized(true);
+        param->setSpatial(true);
+        param->setIncrement(1.);
+        cornerPinGroup->addKnob(param);
+        _imp->knobsTable->addPerItemKnobMaster(param);
+        _imp->offsetPoints[i] = param;
+
+    }
+    {
+        KnobButtonPtr param = createKnob<KnobButton>(kRotoTrackingParamSetToInputRoD);
+        param->setLabel(tr(kRotoTrackingParamSetToInputRoDLabel));
+        param->setHintToolTip( tr(kRotoTrackingParamSetToInputRoDHint) );
+        param->setInViewerContextCanHaveShortcut(true);
+        cornerPinGroup->addKnob(param);
+        _imp->setFromPointsToInputRodButton = param;
     }
 
     {
@@ -1435,7 +1416,7 @@ RotoPaint::initTrackingPageKnobs()
         param->setLabel(tr(kRotoTrackingParamRefreshPlanarTrackTransformLabel));
         param->setHintToolTip( tr(kRotoTrackingParamRefreshPlanarTrackTransformHint) );
         trackingPage->addKnob(param);
-        _imp->refreshPlanarTrackTransformButton = param;
+        _imp->refreshCornerPinButton = param;
     }
 
     {
@@ -1563,17 +1544,6 @@ RotoPaint::initTrackingViewerKnobs(const KnobPagePtr &trackingPage)
         _imp->trackRangeButton = param;
     }
     {
-        KnobButtonPtr param = createKnob<KnobButton>(kTrackerUIParamRemovePatternKeyFrame);
-        param->setLabel(tr(kTrackerUIParamRemovePatternKeyFrameLabel) );
-        param->setHintToolTip( tr(kTrackerUIParamRemovePatternKeyFrameHint) );
-        param->setEvaluateOnChange(false);
-        param->setSecret(true);
-        param->setInViewerContextCanHaveShortcut(true);
-        param->setIconLabel("Images/removeUserKey.png");
-        trackingPage->addKnob(param);
-        _imp->removeKeyframeButton = param;
-    }
-    {
         KnobButtonPtr param = createKnob<KnobButton>(kTrackerUIParamClearAllAnimation);
         param->setLabel(tr(kTrackerUIParamClearAllAnimationLabel) );
         param->setHintToolTip( tr(kTrackerUIParamClearAllAnimationHint) );
@@ -1635,6 +1605,103 @@ RotoPaint::initTrackingViewerKnobs(const KnobPagePtr &trackingPage)
         trackingPage->addKnob(param);
         _imp->centerViewerButton = param;
     }
+    {
+        KnobButtonPtr param = createKnob<KnobButton>(kRotoTrackingParamShowPlanarSurfaceGrid);
+        param->setLabel(tr(kRotoTrackingParamShowPlanarSurfaceGridLabel));
+        param->setHintToolTip(tr(kRotoTrackingParamShowPlanarSurfaceGridHint));
+        param->setDefaultValue(false);
+        param->setCheckable(true);
+        param->setInViewerContextCanHaveShortcut(true);
+        //param->setIconLabel("Images/CornerPinIcon.png", true);
+        //param->setIconLabel("Images/CornerPinIcon.png", false);
+        param->setAddNewLine(false);
+        addOverlaySlaveParam(param);
+        trackingPage->addKnob(param);
+        _imp->showPlaneGrid  = param;
+    }
+
+    {
+        KnobButtonPtr param = createKnob<KnobButton>(kRotoTrackingParamShowCornerPinOverlay);
+        param->setLabel(tr(kRotoTrackingParamShowCornerPinOverlay));
+        param->setHintToolTip(tr(kRotoTrackingParamShowCornerPinOverlayHint));
+        param->setDefaultValue(false);
+        param->setCheckable(true);
+        param->setInViewerContextCanHaveShortcut(true);
+        addOverlaySlaveParam(param);
+        param->setIconLabel("Images/CornerPinIcon.png", true);
+        param->setIconLabel("Images/CornerPinIcon.png", false);
+        param->setAddNewLine(false);
+        trackingPage->addKnob(param);
+        _imp->showCornerPinOverlay  = param;
+    }
+
+    {
+        KnobButtonPtr param = createKnob<KnobButton>(kRotoTrackingParamGoToReferenceFrame);
+        param->setLabel(tr(kRotoTrackingParamGoToReferenceFrameLabel) );
+        param->setHintToolTip( tr(kRotoTrackingParamGoToReferenceFrameHint) );
+        param->setEvaluateOnChange(false);
+        param->setSecret(true);
+        param->setInViewerContextCanHaveShortcut(true);
+        //param->setIconLabel("Images/prevKF.png");
+        trackingPage->addKnob(param);
+        _imp->goToReferenceFrameKnob = param;
+    }
+
+    {
+        KnobButtonPtr param = createKnob<KnobButton>(kTrackerParamSetReferenceFrame);
+        param->setLabel(tr(kTrackerParamSetReferenceFrameLabel));
+        param->setHintToolTip( tr(kTrackerParamSetReferenceFrameHint) );
+        param->setEvaluateOnChange(false);
+        param->setSecret(true);
+        param->setInViewerContextCanHaveShortcut(true);
+        trackingPage->addKnob(param);
+        _imp->setReferenceFrameToCurrentFrameKnob = param;
+    }
+
+    {
+        KnobButtonPtr param = createKnob<KnobButton>(kRotoTrackingParamGotoPreviousKeyFrame);
+        param->setLabel(tr(kRotoTrackingParamGotoPreviousKeyFrameLabel) );
+        param->setHintToolTip( tr(kRotoTrackingParamGotoPreviousKeyFrameHint) );
+        param->setEvaluateOnChange(false);
+        param->setSecret(true);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setIconLabel("Images/prevKF.png");
+        trackingPage->addKnob(param);
+        _imp->goToPreviousCornerPinKeyframeButton = param;
+    }
+    {
+        KnobButtonPtr param = createKnob<KnobButton>(kRotoTrackingParamGotoNextKeyFrame);
+        param->setLabel(tr(kRotoTrackingParamGotoNextKeyFrameLabel) );
+        param->setHintToolTip( tr(kRotoTrackingParamGotoNextKeyFrameHint) );
+        param->setEvaluateOnChange(false);
+        param->setSecret(true);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setIconLabel("Images/nextKF.png");
+        trackingPage->addKnob(param);
+        _imp->goToNextCornerPinKeyframeButton = param;
+    }
+    {
+        KnobButtonPtr param = createKnob<KnobButton>(kRotoTrackingParamSetKeyFrame);
+        param->setLabel(tr(kRotoTrackingParamSetKeyFrameLabel) );
+        param->setHintToolTip( tr(kRotoTrackingParamSetKeyFrameHint) );
+        param->setEvaluateOnChange(false);
+        param->setSecret(true);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setIconLabel("Images/addUserKey.png");
+        trackingPage->addKnob(param);
+        _imp->setCornerPinKeyframeButton = param;
+    }
+    {
+        KnobButtonPtr param = createKnob<KnobButton>(kRotoTrackingParamRemoveKeyFrame);
+        param->setLabel(tr(kRotoTrackingParamRemoveKeyFrameLabel) );
+        param->setHintToolTip( tr(kRotoTrackingParamRemoveKeyFrameHint) );
+        param->setEvaluateOnChange(false);
+        param->setSecret(true);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setIconLabel("Images/removeUserKey.png");
+        trackingPage->addKnob(param);
+        _imp->removeCornerPinKeyframeButton = param;
+    }
 
     _imp->refreshTrackingControlsVisiblity();
 
@@ -1659,7 +1726,6 @@ RotoPaint::initializeTrackRangeDialogKnobs(const KnobPagePtr& trackingPage)
         KnobIntPtr param = createKnob<KnobInt>(kTrackerUIParamTrackRangeDialogFirstFrame );
         param->setLabel(tr(kTrackerUIParamTrackRangeDialogFirstFrameLabel));
         param->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogFirstFrameHint) );
-        param->setSecret(true);
         param->setEvaluateOnChange(false);
         param->setAnimationEnabled(false);
         param->setIsPersistent(false);
@@ -1672,7 +1738,6 @@ RotoPaint::initializeTrackRangeDialogKnobs(const KnobPagePtr& trackingPage)
         KnobIntPtr param = createKnob<KnobInt>(kTrackerUIParamTrackRangeDialogLastFrame);
         param->setLabel(tr(kTrackerUIParamTrackRangeDialogLastFrameLabel) );
         param->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogLastFrameHint) );
-        param->setSecret(true);
         param->setEvaluateOnChange(false);
         param->setAnimationEnabled(false);
         param->setIsPersistent(false);
@@ -1685,7 +1750,6 @@ RotoPaint::initializeTrackRangeDialogKnobs(const KnobPagePtr& trackingPage)
         KnobIntPtr param = createKnob<KnobInt>(kTrackerUIParamTrackRangeDialogStep);
         param->setLabel(tr(kTrackerUIParamTrackRangeDialogStepLabel) );
         param->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogStepHint) );
-        param->setSecret(true);
         param->setEvaluateOnChange(false);
         param->setAnimationEnabled(false);
         param->setIsPersistent(false);
@@ -1698,7 +1762,6 @@ RotoPaint::initializeTrackRangeDialogKnobs(const KnobPagePtr& trackingPage)
         KnobButtonPtr param = createKnob<KnobButton>(kTrackerUIParamTrackRangeDialogOkButton);
         param->setLabel(tr(kTrackerUIParamTrackRangeDialogOkButtonLabel) );
         param->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogOkButtonHint) );
-        param->setSecret(true);
         param->setAddNewLine(false);
         param->setEvaluateOnChange(false);
         param->setSpacingBetweenItems(3);
@@ -1711,12 +1774,12 @@ RotoPaint::initializeTrackRangeDialogKnobs(const KnobPagePtr& trackingPage)
         KnobButtonPtr param = createKnob<KnobButton>(kTrackerUIParamTrackRangeDialogCancelButton);
         param->setLabel(tr(kTrackerUIParamTrackRangeDialogCancelButtonLabel) );
         param->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogCancelButtonHint) );
-        param->setSecret(true);
         param->setEvaluateOnChange(false);
         dialog->addKnob(param);
         _imp->trackRangeDialogCancelButton = param;
     }
 } // initializeTrackRangeDialogKnobs
+#endif // #ifdef ROTOPAINT_ENABLE_PLANARTRACKER
 
 void
 RotoPaint::setupInitialSubGraphState()
@@ -2207,6 +2270,9 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
     addKnobToViewerUI(resetCloneOffset);
     resetCloneOffset->setInViewerContextLayoutType(eViewerContextLayoutTypeAddNewLine);
 
+#ifndef ROTOPAINT_ENABLE_PLANARTRACKER
+    resetCloneOffset->setInViewerContextLayoutType(eViewerContextLayoutTypeStretchAfter);
+#else
     // Tracking
     {
         addKnobToViewerUI(_imp->trackBwButton.lock());
@@ -2219,8 +2285,6 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
         _imp->trackFwButton.lock()->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
         addKnobToViewerUI(_imp->trackRangeButton.lock());
         _imp->trackRangeButton.lock()->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
-        addKnobToViewerUI(_imp->removeKeyframeButton.lock());
-        _imp->removeKeyframeButton.lock()->setInViewerContextItemSpacing(0);
         addKnobToViewerUI(_imp->clearAllAnimationButton.lock());
         _imp->clearAllAnimationButton.lock()->setInViewerContextItemSpacing(0);
         addKnobToViewerUI(_imp->clearBwAnimationButton.lock());
@@ -2230,12 +2294,29 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
         addKnobToViewerUI(_imp->updateViewerButton.lock());
         _imp->updateViewerButton.lock()->setInViewerContextItemSpacing(0);
         addKnobToViewerUI(_imp->centerViewerButton.lock());
-        _imp->centerViewerButton.lock()->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
+        _imp->centerViewerButton.lock()->setInViewerContextItemSpacing(0);
         addKnobToViewerUI(_imp->showCornerPinOverlay.lock());
-        _imp->showCornerPinOverlay.lock()->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
+        _imp->showCornerPinOverlay.lock()->setInViewerContextItemSpacing(0);
+        addKnobToViewerUI(_imp->showPlaneGrid.lock());
+        _imp->showPlaneGrid.lock()->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
+        addKnobToViewerUI(_imp->goToReferenceFrameKnob.lock());
+        _imp->goToReferenceFrameKnob.lock()->setInViewerContextItemSpacing(0);
+        addKnobToViewerUI(_imp->setReferenceFrameToCurrentFrameKnob.lock());
+        _imp->setReferenceFrameToCurrentFrameKnob.lock()->setInViewerContextItemSpacing(0);
+        addKnobToViewerUI(_imp->setFromPointsToInputRodButton.lock());
+        _imp->setFromPointsToInputRodButton.lock()->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
+        addKnobToViewerUI(_imp->goToPreviousCornerPinKeyframeButton.lock());
+        _imp->goToPreviousCornerPinKeyframeButton.lock()->setInViewerContextItemSpacing(0);
+        addKnobToViewerUI(_imp->goToNextCornerPinKeyframeButton.lock());
+        _imp->goToNextCornerPinKeyframeButton.lock()->setInViewerContextItemSpacing(0);
+        addKnobToViewerUI(_imp->setCornerPinKeyframeButton.lock());
+        _imp->setCornerPinKeyframeButton.lock()->setInViewerContextItemSpacing(0);
+        addKnobToViewerUI(_imp->removeCornerPinKeyframeButton.lock());
+        _imp->removeCornerPinKeyframeButton.lock()->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
         addKnobToViewerUI(_imp->motionModel.lock());
         _imp->motionModel.lock()->setInViewerContextLayoutType(eViewerContextLayoutTypeStretchAfter);
     }
+#endif // #ifdef ROTOPAINT_ENABLE_PLANARTRACKER
 
     KnobPagePtr toolbar = createKnob<KnobPage>(std::string(kRotoUIParamToolbar) );
     toolbar->setAsToolBar(true);
@@ -2722,15 +2803,7 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
         generalPage->addKnob(action);
         _imp->ui->lockShapeMenuAction = action;
     }
-    {
-        KnobButtonPtr action = createKnob<KnobButton>(kRotoUIParamRightClickMenuActionCreatePlanarTrack);
-        action->setLabel(tr(kRotoUIParamRightClickMenuActionCreatePlanarTrackLabel));
-        action->setSecret(true);
-        action->setEvaluateOnChange(false);
-        action->setInViewerContextCanHaveShortcut(true);
-        generalPage->addKnob(action);
-        _imp->ui->createPlanarTrackAction = action;
-    }
+
     KnobButtonPtr defaultAction;
     KnobGroupPtr defaultRole;
     if (_imp->nodeType == eRotoPaintTypeRotoPaint) {
@@ -2777,7 +2850,9 @@ RotoPaint::initializeKnobs()
         initTransformPageKnobs();
         initClonePageKnobs();
         initMotionBlurPageKnobs();
+#ifdef ROTOPAINT_ENABLE_PLANARTRACKER
         initTrackingPageKnobs();
+#endif
     }
 
     setItemsTable(_imp->knobsTable, KnobHolder::eKnobItemsTablePositionBottomOfAllPages, std::string());
@@ -2786,30 +2861,15 @@ RotoPaint::initializeKnobs()
 
     if (_imp->nodeType != eRotoPaintTypeComp) {
 
-
+#ifdef ROTOPAINT_ENABLE_PLANARTRACKER
         _imp->tracker.reset(new TrackerHelper(_imp));
         QObject::connect( _imp->tracker.get(), SIGNAL(trackingFinished()), this, SLOT(onTrackingEnded()) );
         QObject::connect( _imp->tracker.get(), SIGNAL(trackingStarted(int)), this, SLOT(onTrackingStarted(int)) );
 
-        _imp->cornerPinInteract.reset(new CornerPinOverlayInteract());
-        _imp->cornerPinInteract->setInteractEnabled(false);
-        _imp->cornerPinInteract->setAutoKeyEnabledOnToPoints(true);
-        _imp->cornerPinInteract->setToPointsEnabledIfNotAnimated(false);
-        {
-            std::map<std::string, std::string> cpKnobs;
-            cpKnobs["from1"] = kCornerPinParamFrom1;
-            cpKnobs["from2"] = kCornerPinParamFrom2;
-            cpKnobs["from3"] = kCornerPinParamFrom3;
-            cpKnobs["from4"] = kCornerPinParamFrom4;
-            cpKnobs["to1"] = kCornerPinParamTo1;
-            cpKnobs["to2"] = kCornerPinParamTo2;
-            cpKnobs["to3"] = kCornerPinParamTo3;
-            cpKnobs["to4"] = kCornerPinParamTo4;
-            cpKnobs["overlayPoints"] = kCornerPinParamOverlayPoints;
-            cpKnobs["interactive"] = kCornerPinParamInteractive;
-            registerOverlay(_imp->cornerPinInteract, cpKnobs);
-        }
 
+        _imp->planarTrackInteract.reset(new PlanarTrackerInteract(_imp.get()));
+        registerOverlay(_imp->planarTrackInteract, std::map<std::string, std::string>());
+#endif
 
         // The mix knob is per-item
         {
@@ -2877,7 +2937,9 @@ RotoPaint::initializeKnobs()
     }
     
     if (_imp->nodeType != eRotoPaintTypeComp) {
+#ifdef ROTOPAINT_ENABLE_PLANARTRACKER
         initTrackingViewerKnobs(_imp->trackingPage.lock());
+#endif
         initViewerUIKnobs(generalPage);
     }
 
@@ -2961,8 +3023,12 @@ RotoPaint::onKnobsLoaded()
             _imp->soloItems.insert(*it);
         }
     }
+#ifdef ROTOPAINT_ENABLE_PLANARTRACKER
+    if (_imp->trackBwButton.lock()) {
+        _imp->refreshTrackingControlsVisiblity();
+    }
+#endif
 
-    _imp->refreshTrackingControlsVisiblity();
 }
 
 bool
@@ -2971,6 +3037,7 @@ RotoPaint::knobChanged(const KnobIPtr& k,
                        ViewSetSpec view,
                        TimeValue time)
 {
+    (void)reason;
     if (!k) {
         return false;
     }
@@ -3143,14 +3210,17 @@ RotoPaint::knobChanged(const KnobIPtr& k,
         pushUndoCommand(new AddItemsCommand(item));
     } else if (k == _imp->ui->showTransformHandle.lock()) {
         _imp->refreshRegisteredOverlays();
-    } else if (k == _imp->setReferenceFrameToCurrentFrameKnob.lock()) {
-        KnobIntPtr refFrame = _imp->trackerReferenceFrame.lock();
-        refFrame->setValue(time);
+    }
+#ifdef ROTOPAINT_ENABLE_PLANARTRACKER
+    else if (k == _imp->setReferenceFrameToCurrentFrameKnob.lock()) {
+        _imp->onSetReferenceFrameClicked();
     } else if ( k == _imp->trackRangeDialogOkButton.lock() ) {
         _imp->onTrackRangeOkClicked();
+    } else if ( k == _imp->trackRangeDialogCancelButton.lock() ) {
+        _imp->trackRangeDialogGroup.lock()->setValue(false);
     } else if ( k == _imp->setFromPointsToInputRodButton.lock() ) {
         _imp->setFromPointsToInputRod();
-        _imp->updatePlanarTrackExtraMatrixForAllKeyframes();
+        _imp->updateCornerPinFromMatrixAtAllTrack_threaded();
     } else if ( ( k == _imp->stopTrackingButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->onStopButtonClicked();
     } else if ( ( k == _imp->trackBwButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
@@ -3171,24 +3241,31 @@ RotoPaint::knobChanged(const KnobIPtr& k,
         _imp->onClearFwAnimationClicked();
     } else if ( k == _imp->exportButton.lock() ) {
         _imp->exportTrackDataFromExportOptions();
-    } else if ( k == _imp->showCornerPinOverlay.lock() ) {
-        bool enabled = _imp->showCornerPinOverlay.lock()->getValue();
-        _imp->cornerPinInteract->setInteractEnabled(enabled);
-    } else if (reason == eValueChangedReasonUserEdited && (k == _imp->fromPoints[0].lock() ||
-                                                           k == _imp->fromPoints[1].lock() ||
-                                                           k == _imp->fromPoints[2].lock() ||
-                                                           k == _imp->fromPoints[3].lock() ||
-                                                           k == _imp->toPoints[0].lock() ||
-                                                           k == _imp->toPoints[1].lock() ||
-                                                           k == _imp->toPoints[2].lock() ||
-                                                           k == _imp->toPoints[3].lock())) {
-        // Any change by the user to the corner pin requires a refresh of the extra matrix of the selected planar track
-        _imp->updatePlanarTrackExtraMatrixForAllKeyframes();
-    } else if (k == _imp->refreshPlanarTrackTransformButton.lock()) {
-         _imp->updatePlanarTrackExtraMatrixForAllKeyframes();
-    } else if ( k == _imp->ui->lockShapeMenuAction.lock() ) {
+    } else if (reason == eValueChangedReasonUserEdited && k == _imp->toPoints[0].lock()) {
+        _imp->onCornerPinPointChangedByUser(time, 0);
+    } else if (reason == eValueChangedReasonUserEdited && k == _imp->toPoints[1].lock()) {
+        _imp->onCornerPinPointChangedByUser(time, 1);
+    } else if (reason == eValueChangedReasonUserEdited && k == _imp->toPoints[2].lock()) {
+        _imp->onCornerPinPointChangedByUser(time, 2);
+    } else if (reason == eValueChangedReasonUserEdited && k == _imp->toPoints[3].lock()) {
+        _imp->onCornerPinPointChangedByUser(time, 3);
+    } else if (k == _imp->refreshCornerPinButton.lock()) {
+        _imp->updateCornerPinFromMatrixAtAllTrack_threaded();
+    } else if ( k == _imp->ui->createPlanarTrackAction.lock() ) {
         _imp->createPlanarTrackForSelectedShapes();
-    } else {
+    } else if (k == _imp->goToReferenceFrameKnob.lock()) {
+        _imp->onGotoReferenceFrameButtonClicked();
+    } else if (k == _imp->goToPreviousCornerPinKeyframeButton.lock()) {
+        _imp->onGotoPreviousCornerPinKeyframeButtonClicked();
+    } else if (k == _imp->goToNextCornerPinKeyframeButton.lock()) {
+        _imp->onGotoNextCornerPinKeyframeButtonClicked();
+    } else if (k == _imp->removeCornerPinKeyframeButton.lock()) {
+        _imp->onRemoveCornerPinKeyframeButtonClicked();
+    } else if (k == _imp->setCornerPinKeyframeButton.lock()) {
+        _imp->onSetCornerPinKeyframeButtonClicked();
+    }
+#endif
+    else {
         ret = false;
     }
 
@@ -3289,12 +3366,16 @@ RotoPaintKnobItemsTable::getRotoPaintItemsByRenderOrder() const
     std::list< RotoDrawableItemPtr > ret;
     std::vector<KnobTableItemPtr> topLevelItems;
 
+#ifdef ROTOPAINT_ENABLE_PLANARTRACKER
     // When tracking, the RotoPaint tree only uses the shapes in the selected planar track group
     if (_imp->activePlanarTrack) {
         topLevelItems.push_back(_imp->activePlanarTrack);
     } else {
         topLevelItems = getTopLevelItems();
     }
+#else
+    topLevelItems = getTopLevelItems();
+#endif
 
     // Roto should have only a single top level layer
     if (topLevelItems.size() == 0) {
@@ -3320,13 +3401,27 @@ RotoPaintKnobItemsTable::getSelectedDrawableItems() const
     return drawables;
 }
 
+#ifdef ROTOPAINT_ENABLE_PLANARTRACKER
 PlanarTrackLayerPtr
-RotoPaintKnobItemsTable::getSelectedPlanarTrack() const
+RotoPaintKnobItemsTable::getSelectedPlanarTrack(bool alsoLookForParentIfShapeSelected) const
 {
     std::list<KnobTableItemPtr> selection = getSelectedItems();
     std::list<PlanarTrackLayerPtr> planarTracks;
+    std::list<RotoDrawableItemPtr> selectedDrawables;
     for (std::list<KnobTableItemPtr>::const_iterator it = selection.begin(); it != selection.end(); ++it) {
         PlanarTrackLayerPtr track = toPlanarTrackLayer(*it);
+        if (track) {
+            planarTracks.push_back(track);
+        }
+        RotoDrawableItemPtr isDrawable = boost::dynamic_pointer_cast<RotoDrawableItem>(*it);
+        if (isDrawable) {
+            selectedDrawables.push_back(isDrawable);
+        }
+    }
+
+    if (alsoLookForParentIfShapeSelected && planarTracks.empty() && selectedDrawables.size() == 1) {
+        // If no planar track is selected, check if there's a single shape selected if it's parent is a planar track
+        PlanarTrackLayerPtr track = toPlanarTrackLayer(selectedDrawables.front()->getParent());
         if (track) {
             planarTracks.push_back(track);
         }
@@ -3339,6 +3434,7 @@ RotoPaintKnobItemsTable::getSelectedPlanarTrack() const
         return PlanarTrackLayerPtr();
     }
 }
+#endif // #ifdef ROTOPAINT_ENABLE_PLANARTRACKER
 
 void
 RotoPaintKnobItemsTable::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj)
@@ -3352,9 +3448,9 @@ RotoPaintKnobItemsTable::fromSerialization(const SERIALIZATION_NAMESPACE::Serial
 void
 RotoPaintKnobItemsTable::onModelReset()
 {
-    if (_imp->nodeType != RotoPaint::eRotoPaintTypeComp) {
+    /*if (_imp->nodeType != RotoPaint::eRotoPaintTypeComp) {
         _imp->createBaseLayer();
-    }
+    }*/
 }
 
 
@@ -3495,6 +3591,21 @@ RotoPaint::onEnableOpenGLKnobValueChanged(bool /*activated*/)
 void
 RotoPaint::onModelSelectionChanged(std::list<KnobTableItemPtr> /*addedToSelection*/, std::list<KnobTableItemPtr> /*removedFromSelection*/, TableChangeReasonEnum /*reason*/)
 {
+#ifdef ROTOPAINT_ENABLE_PLANARTRACKER
+
+    // Refresh the "Create Planar-Track" button enabledness
+    KnobButtonPtr createTrackAction = _imp->ui->createPlanarTrackAction.lock();
+    if (createTrackAction) {
+        SelectedItems selection = _imp->knobsTable->getSelectedDrawableItems();
+        createTrackAction->setEnabled(selection.size() > 0);
+    }
+
+    // Refresh the tracking controls enabledness
+    if (_imp->trackingPage.lock()) {
+        _imp->refreshTrackingControlsEnabledness();
+    }
+#endif
+
     _imp->ui->redraw();
 }
 
@@ -3524,10 +3635,12 @@ RotoPaintKnobItemsTable::createItemFromSerialization(const SERIALIZATION_NAMESPA
         ret->fromSerialization(*data);
         return ret;
     } else if (data->verbatimTag == kSerializationRotoPlanarTrackGroupTag) {
+#ifdef ROTOPAINT_ENABLE_PLANARTRACKER
         PlanarTrackLayerPtr ret(new PlanarTrackLayer(_imp->knobsTable));
         ret->initializeKnobsPublic();
         ret->fromSerialization(*data);
         return ret;
+#endif
     } else if (data->verbatimTag == kSerializationCompLayerTag) {
         CompNodeItemPtr ret(new CompNodeItem(_imp->knobsTable));
         ret->initializeKnobsPublic();

@@ -136,7 +136,6 @@ GuiPrivate::GuiPrivate(const GuiAppInstancePtr& app,
     , _currentUndoAction(0)
     , _currentRedoAction(0)
     , _undoStacksGroup(0)
-    , _undoStacksActions()
     , _isTripleSyncEnabled(false)
     , areRenderStatsEnabledMutex()
     , areRenderStatsEnabled(false)

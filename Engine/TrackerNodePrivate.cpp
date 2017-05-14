@@ -38,6 +38,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/OSGLFunctions.h"
 #include "Engine/OSGLContext.h"
 #include "Engine/OutputSchedulerThread.h"
+#include "Engine/Project.h"
 #include "Engine/TimeLine.h"
 #include "Engine/TrackerNode.h"
 #include "Engine/TrackerHelper.h"
@@ -148,19 +149,18 @@ TrackerNodePrivate::getMotionModelsAndHelps(bool addPerspective,
 void
 TrackerNodeInteract::onTrackRangeClicked()
 {
-    OverlaySupport* overlay = getLastCallingViewport();
 
-    assert(overlay);
-    RangeD range = overlay->getFrameRange();
+    TimeValue projFirst,projLast;
+    _imp->publicInterface->getApp()->getProject()->getFrameRange(&projFirst, &projLast);
 
     int first = trackRangeDialogFirstFrame.lock()->getValue();
     int last = trackRangeDialogLastFrame.lock()->getValue();
     int step = trackRangeDialogStep.lock()->getValue();
     if (first == INT_MIN) {
-        trackRangeDialogFirstFrame.lock()->setValue(range.min);
+        trackRangeDialogFirstFrame.lock()->setValue(projFirst);
     }
     if (last == INT_MIN) {
-        trackRangeDialogLastFrame.lock()->setValue(range.max);
+        trackRangeDialogLastFrame.lock()->setValue(projLast);
     }
     if (step == INT_MIN) {
         trackRangeDialogStep.lock()->setValue(1);

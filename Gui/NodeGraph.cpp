@@ -135,7 +135,7 @@ NodeGraph::NodeGraph(Gui* gui,
     QObject::connect( &_imp->_refreshCacheTextTimer, SIGNAL(timeout()), this, SLOT(updateCacheSizeText()) );
     _imp->_refreshCacheTextTimer.start(NATRON_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS);
 
-    _imp->_undoStack = new QUndoStack(this);
+    _imp->_undoStack.reset(new QUndoStack(this));
     _imp->_undoStack->setUndoLimit( appPTR->getCurrentSettings()->getMaximumUndoRedoNodeGraph() );
     getGui()->registerNewUndoStack(_imp->_undoStack);
 
@@ -180,6 +180,7 @@ NodeGraph::NodeGraph(Gui* gui,
 
 NodeGraph::~NodeGraph()
 {
+
     for (NodesGuiList::iterator it = _imp->_nodes.begin();
          it != _imp->_nodes.end();
          ++it) {
@@ -192,6 +193,10 @@ NodeGraph::~NodeGraph()
     }
 
     if ( getGui() ) {
+
+        if (!getGui()->getApp()->isClosing()) {
+            getGui()->removeUndoStack(_imp->_undoStack);
+        }
         QGraphicsScene* scene = _imp->_hintInputEdge->scene();
         if (scene) {
             scene->removeItem(_imp->_hintInputEdge);
@@ -418,7 +423,7 @@ NodeGraph::getIcon() const
 }
 
 
-QUndoStack*
+boost::shared_ptr<QUndoStack>
 NodeGraph::getUndoStack() const
 {
     return _imp->_undoStack;

@@ -681,10 +681,10 @@ AnimationModuleEditor::onInputEventCalled()
     takeClickFocus();
 }
 
-QUndoStack*
+boost::shared_ptr<QUndoStack>
 AnimationModuleEditor::getUndoStack() const
 {
-    return _imp->model ? _imp->model->getUndoStack() : 0;
+    return _imp->model ? _imp->model->getUndoStack() : boost::shared_ptr<QUndoStack>();
 }
 
 bool

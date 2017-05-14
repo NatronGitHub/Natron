@@ -519,15 +519,12 @@ matScale(double x,
                      0., 0., 1.);
 }
 
-#if 0
-static
 Matrix3x3
 matScale(double s)
 {
     return matScale(s, s);
 }
 
-static
 Matrix3x3
 matScaleAroundPoint(double scaleX,
                     double scaleY,
@@ -537,7 +534,6 @@ matScaleAroundPoint(double scaleX,
     return matMul( matTranslation(px, py), matMul( matScale(scaleX, scaleY), matTranslation(-px, -py) ) );
 }
 
-#endif
 
 
 Matrix3x3

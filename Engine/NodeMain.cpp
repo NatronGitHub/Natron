@@ -894,7 +894,6 @@ Node::loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializatio
     // now restore the roto context if the node has a roto context
     KnobItemsTablePtr table = _imp->effect->getItemsTable();
     if (serialization._tableModel && table) {
-        table->resetModel(eTableChangeReasonInternal);
         table->fromSerialization(*serialization._tableModel);
         table->declareItemsToPython();
     }

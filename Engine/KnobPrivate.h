@@ -130,6 +130,7 @@ public:
 
 
     typedef boost::shared_ptr<ExpressionData> ExpressionDataPtr;
+    typedef boost::weak_ptr<ExpressionData> ExpressionDataWPtr;
 
     typedef std::map<QThread*, ExpressionDataPtr> PerThreadDataMap;
 

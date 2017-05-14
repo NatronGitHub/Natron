@@ -424,9 +424,11 @@ EffectInstance::Implementation::canSplitRenderWindowWithIdentityRectangles(const
     TimeValue time = _publicInterface->getCurrentRenderTime();
     ViewIdx view = _publicInterface->getCurrentRenderView();
 
+    RotoStrokeItemPtr attachedStroke = toRotoStrokeItem(_publicInterface->getAttachedRotoItem());
+
+
     for (int i = 0; i < maxInput; ++i) {
 
-        hasMask |= _publicInterface->isInputMask(i);
         RectD inputRod;
 
         EffectInstancePtr input = _publicInterface->getInputRenderEffect(i, time, view);
@@ -434,7 +436,9 @@ EffectInstance::Implementation::canSplitRenderWindowWithIdentityRectangles(const
             continue;
         }
 
-        RotoStrokeItemPtr attachedStroke = toRotoStrokeItem(_publicInterface->getAttachedRotoItem());
+        hasMask |= _publicInterface->isInputMask(i);
+
+
         if (attachedStroke) {
             inputRod = attachedStroke->getLastStrokeMovementBbox();
         } else {

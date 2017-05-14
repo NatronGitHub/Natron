@@ -298,7 +298,7 @@ NodeGui::initialize(NodeGraph* dag,
     initializeInputs();
 
     if (_undoStack) {
-        getDagGui()->getGui()->registerNewUndoStack( _undoStack.get() );
+        getDagGui()->getGui()->registerNewUndoStack(_undoStack);
     }
 
     // For a viewer, it creates its own viewer knobs in createViewerGui
@@ -692,13 +692,6 @@ NodeGui::togglePreview()
     togglePreview_internal();
 }
 
-void
-NodeGui::removeUndoStack()
-{
-    if (_graph && _graph->getGui() && _undoStack) {
-        _graph->getGui()->removeUndoStack( _undoStack.get() );
-    }
-}
 
 void
 NodeGui::discardGraphPointer()
@@ -2307,7 +2300,9 @@ NodeGui::destroyGui()
     }
 
     //Remove undo stack
-    removeUndoStack();
+    if (guiObj && _undoStack) {
+        guiObj->removeUndoStack( _undoStack);
+    }
 
 
     NodeGuiPtr thisShared = shared_from_this();

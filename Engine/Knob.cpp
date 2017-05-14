@@ -1737,7 +1737,7 @@ KnobHelper::copyKnob(const KnobIPtr& other,
 
         if (hasChanged) {
             TimeValue time = getHolder()->getTimelineCurrentTime();
-            evaluateValueChange(dimension, time, view, eValueChangedReasonUserEdited);
+            evaluateValueChange(dimension, time, view, eValueChangedReasonPluginEdited);
         }
     }
 

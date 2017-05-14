@@ -97,7 +97,7 @@ PanelWidget::enterEventBase()
         _thisWidget->setFocus();
 
         //Make this stack the active one
-        QUndoStack* stack = getUndoStack();
+        boost::shared_ptr<QUndoStack> stack = getUndoStack();
         if (stack) {
             stack->setActive();
         }
@@ -109,7 +109,7 @@ PanelWidget::enterEventBase()
 void
 PanelWidget::pushUndoCommand(QUndoCommand* command)
 {
-    QUndoStack* stack = getUndoStack();
+    boost::shared_ptr<QUndoStack> stack = getUndoStack();
 
     if (stack) {
         stack->setActive();

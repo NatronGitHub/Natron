@@ -150,7 +150,7 @@ TrackScheduler::threadLoopOnce(const GenericThreadStartArgsPtr& inArgs)
 
     // Beyond TRACKER_MAX_TRACKS_FOR_PARTIAL_VIEWER_UPDATE it becomes more expensive to render all partial rectangles
     // than just render the whole viewer RoI
-    const bool doPartialUpdates = numTracks < TRACKER_MAX_TRACKS_FOR_PARTIAL_VIEWER_UPDATE;
+    const bool doPartialUpdates = false; //numTracks < TRACKER_MAX_TRACKS_FOR_PARTIAL_VIEWER_UPDATE;
     int lastValidFrame = frameStep > 0 ? start - 1 : start + 1;
     timeval lastProgressUpdateTime;
     gettimeofday(&lastProgressUpdateTime, 0);
@@ -231,8 +231,19 @@ TrackScheduler::threadLoopOnce(const GenericThreadStartArgsPtr& inArgs)
                 if (enoughTimePassedToReportProgress) {
                     if (doPartialUpdates) {
                         std::list<RectD> updateRects;
+
+                        double unionPx = 0;
                         args->getRedrawAreasNeeded(TimeValue(cur), &updateRects);
-                        viewer->setPartialUpdateParams(updateRects, isCenterViewerEnabled);
+                        for (std::list<RectD>::const_iterator it = updateRects.begin(); it != updateRects.end(); ++it) {
+                            unionPx += it->area();
+                        }
+                        double totalPx = args->getFormatHeight() * args->getFormatWidth();
+                        if (totalPx > 0 && unionPx / totalPx >= 0.5) {
+                            // If the update areas cover more than half the image, redraw it all as usual
+                            viewer->clearPartialUpdateParams();
+                        } else {
+                            viewer->setPartialUpdateParams(updateRects, isCenterViewerEnabled);
+                        }
                     } else {
                         viewer->clearPartialUpdateParams();
                     }

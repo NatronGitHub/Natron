@@ -114,6 +114,16 @@ public:
     void clearTransformAnimationAfterTime(TimeValue time);
     void deleteTransformKeyframe(TimeValue time);
 
+    void getTransformKeyframes(std::list<double>* keys) const;
+
+    void getExtraMatrixAtTime(TimeValue time, ViewIdx view, Transform::Matrix3x3* mat) const;
+
+    TimeValue getReferenceFrame() const;
+
+    KnobDoublePtr getCornerPinPointKnob(int index) const;
+    KnobDoublePtr getCornerPinPointOffsetKnob(int index) const;
+    KnobChoicePtr getMotionModelKnob() const;
+
 private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;

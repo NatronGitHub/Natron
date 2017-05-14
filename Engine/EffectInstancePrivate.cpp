@@ -481,15 +481,47 @@ EffectInstance::Implementation::renderHandlerPlugin(const RectToRender & rectToR
 
     std::list< std::list<std::pair<ImagePlaneDesc, ImagePtr> > > planesLists;
 
+    // If the plug-in not multi-planar, we must provide images matching the color plane N components
+    // specified by the getTimeInvariantMetadata action.
+    std::map<ImagePlaneDesc, ImagePtr> nonMultiplanarPlanes;
+
     bool multiPlanar = _publicInterface->isMultiPlanar();
     // If we can render all planes at once, do it, otherwise just render them all sequentially
     if (!multiPlanar) {
+        assert(args.cachedPlanes.size() == 1);
+
         for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = args.cachedPlanes.begin(); it != args.cachedPlanes.end(); ++it) {
+
+
+            ImagePlaneDesc metadataPlane, pairedPlane;
+            _publicInterface->getMetadataComponents(-1, &metadataPlane, &pairedPlane);
+
+            std::pair<ImagePlaneDesc, ImagePtr> p;
+            if (metadataPlane == it->first) {
+                p = *it;
+            } else {
+                Image::InitStorageArgs initArgs;
+                initArgs.bounds = actionArgs.roi;
+                initArgs.renderClone = _publicInterface->shared_from_this();
+                initArgs.plane = metadataPlane;
+                initArgs.bitdepth = it->second->getBitDepth();
+                initArgs.proxyScale = it->second->getProxyScale();
+                initArgs.mipMapLevel = it->second->getMipMapLevel();
+                initArgs.glContext = args.glContext;
+                ImagePtr tmpImage = Image::create(initArgs);
+                if (!tmpImage) {
+                    return eActionStatusFailed;
+                }
+                p = std::make_pair(it->first, tmpImage);
+            }
+
+            nonMultiplanarPlanes.insert(p);
             std::list<std::pair<ImagePlaneDesc, ImagePtr> > tmp;
-            tmp.push_back(*it);
+            tmp.push_back(p);
             planesLists.push_back(tmp);
         }
     } else {
+        nonMultiplanarPlanes = args.cachedPlanes;
         std::list<std::pair<ImagePlaneDesc, ImagePtr> > tmp;
         for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = args.cachedPlanes.begin(); it != args.cachedPlanes.end(); ++it) {
             tmp.push_back(*it);
@@ -516,7 +548,6 @@ EffectInstance::Implementation::renderHandlerPlugin(const RectToRender & rectToR
             if (args.glContext->isGPUContext()) {
                 setupGLForRender<GL_GPU>(mainImagePlane, args.glContext, actionArgs.roi, _publicInterface->getNode()->isGLFinishRequiredBeforeRender(), &contextAttacher);
             } else {
-                // Allocate an image with half the size of the source image
                 osmesaRenderImage = mainImagePlane;
                 if (mainImagePlane->getComponentsCount() != 4) {
                     Image::InitStorageArgs initArgs;
@@ -563,7 +594,26 @@ EffectInstance::Implementation::renderHandlerPlugin(const RectToRender & rectToR
 
     } // for (std::list<std::list<std::pair<ImagePlaneDesc,ImagePtr> > >::iterator it = planesLists.begin(); it != planesLists.end(); ++it)
 
-    return render->isRenderAborted() ? eActionStatusAborted : eActionStatusOK;
+    bool aborted = render->isRenderAborted();
+    if (aborted) {
+        return eActionStatusAborted;
+    }
+
+    // If we created a temporary plane because the plug-in is not multiplanar, copy back to the final plane
+    std::map<ImagePlaneDesc, ImagePtr>::const_iterator itOther = nonMultiplanarPlanes.begin();
+    for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = args.cachedPlanes.begin(); it != args.cachedPlanes.end(); ++it, ++itOther) {
+        if (it->second != itOther->second) {
+            Image::CopyPixelsArgs copyArgs;
+            copyArgs.roi = actionArgs.roi;
+            copyArgs.alphaHandling = itOther->second->getComponentsCount() == 1 || itOther->second->getComponentsCount() == 4 ? Image::eAlphaChannelHandlingFillFromChannel : Image::eAlphaChannelHandlingCreateFill0;
+            ActionRetCodeEnum stat = it->second->copyPixels(*itOther->second, copyArgs);
+            if (isFailureRetCode(stat)) {
+                return stat;
+            }
+        }
+    }
+
+    return eActionStatusOK;
 } // renderHandlerPlugin
 
 ActionRetCodeEnum

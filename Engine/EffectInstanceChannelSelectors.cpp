@@ -817,6 +817,7 @@ EffectInstance::getOrCreateUserPlanesKnob(const KnobPagePtr& page)
     param->setHintToolTip(tr(kNodeParamUserLayersHint));
     param->setDeclaredByPlugin(false);
     param->setAnimationEnabled(false);
+    param->setIsMetadataSlave(true);
     param->setSecret(true);
     page->addKnob(param);
     _imp->defKnobs->createPlanesKnob = param;

@@ -29,6 +29,9 @@
 
 #include "Knob.h"
 
+#include <QThread>
+#include <QCoreApplication>
+
 #include "Engine/EngineFwd.h"
 #include "Engine/KnobItemsTable.h"
 #include "Engine/Node.h"
@@ -43,7 +46,7 @@ AddToUndoRedoStackHelper<T>::AddToUndoRedoStackHelper(Knob<T>* k)
 , _isUndoRedoStackOpened(false)
 {
     _holder = k->getHolder();
-    if (_holder) {
+    if (_holder && QThread::currentThread() == qApp->thread()) {
         KnobTableItemPtr isTableItem = toKnobTableItem(_holder);
         // Use the effect undo stack if this is a table item
         if (isTableItem) {

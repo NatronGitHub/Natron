@@ -79,7 +79,6 @@ Gui::setupUi()
 
 
     _imp->_undoStacksGroup = new QUndoGroup;
-    QObject::connect( _imp->_undoStacksGroup, SIGNAL(activeStackChanged(QUndoStack*)), this, SLOT(onCurrentUndoStackChanged(QUndoStack*)) );
 
     createMenuActions();
 

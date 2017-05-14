@@ -87,6 +87,10 @@ public:
      * @brief Returns the viewer node from which the tracking operation was launched
      **/
     virtual ViewerNodePtr getViewer() const = 0;
+
+    virtual double getFormatHeight() const = 0;
+    virtual double getFormatWidth() const = 0;
+
 };
 
 class TrackArgs
@@ -115,8 +119,8 @@ public:
 
     bool isAutoKeyingEnabledParamEnabled() const;
 
-    double getFormatHeight() const;
-    double getFormatWidth() const;
+    virtual double getFormatHeight() const OVERRIDE FINAL;
+    virtual double getFormatWidth() const OVERRIDE FINAL;
 
     QMutex* getAutoTrackMutex() const;
 

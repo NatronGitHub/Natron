@@ -84,7 +84,6 @@ public:
 
     ///all the undo stacks of Natron are gathered here
     QUndoGroup* _undoStacksGroup;
-    std::map<QUndoStack*, std::pair<QAction*, QAction*> > _undoStacksActions;
 
     ///all the splitters used to separate the "panes" of the application
     std::map<NATRON_PYTHON_NAMESPACE::PyPanel*, std::string> _userPanels;

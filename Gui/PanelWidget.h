@@ -34,6 +34,11 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/shared_ptr.hpp>
+#endif
+
+
 #include "Engine/ScriptObject.h"
 
 #include "Gui/GuiFwd.h"
@@ -104,7 +109,7 @@ protected:
 
     virtual void onLabelChanged() OVERRIDE;
 
-    virtual QUndoStack* getUndoStack() const { return 0; }
+    virtual boost::shared_ptr<QUndoStack> getUndoStack() const { return boost::shared_ptr<QUndoStack>(); }
 
     virtual void notifyGuiClosing() {}
 

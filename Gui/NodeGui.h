@@ -271,8 +271,6 @@ public:
 
     boost::shared_ptr<QUndoStack> getUndoStack() const;
 
-    void removeUndoStack();
-
     void discardGraphPointer();
     /**
      * @brief Given the rectangle r, move the node down so it doesn't belong

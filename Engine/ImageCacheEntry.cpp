@@ -460,6 +460,11 @@ struct ImageCacheEntryPrivate
     ActionRetCodeEnum fetchAndCopyCachedTiles() WARN_UNUSED_RETURN;
 
     /**
+     * @brief Mark pending tiles as non rendered. Returns true if at least one tile state was changed.
+     **/
+    bool markCacheEntriesAsAbortedInternal();
+
+    /**
      * @brief Only relevant if the cache entry is persistent: update the cache from our local cache entry
      **/
     void updateCachedTilesStateMap(const std::vector<TilesSet>& tilesToUpdate, bool updateAllTilesRegardless);
@@ -556,14 +561,21 @@ ImageCacheEntry::updateRenderCloneAndImage(const ImagePtr& image, const EffectIn
 
 void
 ImageCacheEntry::ensureRoI(const RectI& roi,
+                           const ImageStorageBasePtr storage[4],
                            const std::vector<RectI>& perMipMapLevelRoDPixel)
 {
 
-    // This does not work for cache image
-    assert(_imp->cachePolicy == eCacheAccessModeNone);
+    // We assume fetchCachedTilesAndUpdateStatus() was called once at least
+    assert(_imp->internalCacheEntry);
 
     // Protect all local structures against multiple threads using this object.
     boost::unique_lock<boost::mutex> locker(_imp->lock);
+
+    for (int i = 0; i < 4; ++i) {
+        _imp->imageBuffers[i] = storage[i];
+    }
+
+    // Grow the local tiles state map
     _imp->roi.merge(roi);
     _imp->perMipMapPixelRod = perMipMapLevelRoDPixel;
     assert(perMipMapLevelRoDPixel.size() >= _imp->mipMapLevel + 1);
@@ -571,9 +583,37 @@ ImageCacheEntry::ensureRoI(const RectI& roi,
     growTilesState(perMipMapLevelRoDPixel[_imp->mipMapLevel], &_imp->localTilesState);
     assert(_imp->localTilesState.state->bounds.contains(_imp->roi));
 
-    for (std::size_t i = 0; i < _imp->internalCacheEntry->perMipMapTilesState.size(); ++i) {
-        TileStateHeader cachedTilesState(_imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY, &_imp->internalCacheEntry->perMipMapTilesState[i]);
-        growTilesState(perMipMapLevelRoDPixel[i], &cachedTilesState);
+
+    // In non cached, we can grow the tiles state map because it is local (but maybe shared by multiple threads
+    // However in cached mode, we need to ensure that the cache holds the same local map.
+    // Since there's no assumption on the state of the local map, we do the following:
+    // 1 - We mark all tiles that we previously marked pending as non rendered to ensure we don't push pending tiles to the cache
+    // 2 - We mark grow the tiles state
+    // 3 - We push the new tiles state to the cache
+
+    bool mustUpdateCache = _imp->cachePolicy != eCacheAccessModeNone && _imp->internalCacheEntry->isPersistent();
+    if (mustUpdateCache) {
+        _imp->markCacheEntriesAsAbortedInternal();
+    }
+
+    // For a cached non persistent entry, we must take the entry lock because the internalCacheEntry may be shared by multiple instances
+    ImageCacheEntryInternal<false>* nonPersistentLocalEntry = dynamic_cast<ImageCacheEntryInternal<false>* >(_imp->internalCacheEntry.get());
+
+    {
+        boost::scoped_ptr<boost::unique_lock<boost::shared_mutex> > writeLock;
+        if (nonPersistentLocalEntry && _imp->cachePolicy != eCacheAccessModeNone) {
+            writeLock.reset(new boost::unique_lock<boost::shared_mutex>(nonPersistentLocalEntry->perMipMapTilesStateMutex));
+        }
+        std::size_t nDims = std::min(perMipMapLevelRoDPixel.size(), _imp->internalCacheEntry->perMipMapTilesState.size());
+        for (std::size_t i = 0; i < nDims; ++i) {
+            TileStateHeader cachedTilesState(_imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY, &_imp->internalCacheEntry->perMipMapTilesState[i]);
+            growTilesState(perMipMapLevelRoDPixel[i], &cachedTilesState);
+        }
+    }
+
+    if (mustUpdateCache) {
+        _imp->updateCachedTilesStateMap(_imp->markedTiles, false);
+        _imp->markedTiles.clear();
     }
 }
 
@@ -1526,7 +1566,7 @@ ImageCacheEntry::fetchCachedTilesAndUpdateStatus(TileStateHeader* tileStatus, bo
 
 
         if (_imp->cachePolicy == eCacheAccessModeNone) {
-            // When not interacting with the cache, the internalCacheEntry is actual local to this object
+            // When not interacting with the cache, the internalCacheEntry is actually local to this object
             ImageCacheEntryPrivate::UpdateStateMapRetCodeEnum stat = _imp->readAndUpdateStateMap(true /*hasExlcusiveLock*/);
             if (stat == ImageCacheEntryPrivate::eUpdateStateMapRetCodeFailed) {
                 return eActionStatusFailed;
@@ -1760,68 +1800,7 @@ ImageCacheEntry::markCacheTilesAsAborted()
     // Protect all local structures against multiple threads using this object.
     boost::unique_lock<boost::mutex> locker(_imp->lock);
 
-    if (_imp->markedTiles.empty()) {
-        return;
-    }
-
-#if defined(TRACE_TILES_STATUS) || defined(TRACE_TILES_STATUS_SHORT)
-    _imp->writeDebugStatus("markCacheTilesAsAborted");
-#endif
-
-
-    boost::scoped_ptr<boost::unique_lock<boost::shared_mutex> > writeLock;
-    if (!_imp->internalCacheEntry->isPersistent()) {
-        // In non-persistent mode, lock the cache entry since it's shared across threads.
-        // In persistent mode the entry is copied in fromMemorySegment
-        ImageCacheEntryInternal<false>* nonPersistentLocalEntry = dynamic_cast<ImageCacheEntryInternal<false>* >(_imp->internalCacheEntry.get());
-        assert(nonPersistentLocalEntry);
-        writeLock.reset(new boost::unique_lock<boost::shared_mutex>(nonPersistentLocalEntry->perMipMapTilesStateMutex));
-    }
-
-    // We should have gotten the state map from the cache in fetchCachedTilesAndUpdateStatus()
-    assert(!_imp->internalCacheEntry->perMipMapTilesState.empty());
-
-
-    // Read the cache map and update our local map
-    CacheBasePtr cache = _imp->internalCacheEntry->getCache();
-    bool hasModifiedTileMap = false;
-
-    for (std::size_t i = 0; i < _imp->markedTiles.size(); ++i) {
-
-        if (_imp->internalCacheEntry->perMipMapTilesState[i].tiles.empty()) {
-            continue;
-        }
-        TileStateHeader cacheStateMap = TileStateHeader(_imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY, &_imp->internalCacheEntry->perMipMapTilesState[i]);
-
-
-        for (TilesSet::iterator it = _imp->markedTiles[i].begin(); it != _imp->markedTiles[i].end(); ++it) {
-
-
-            TileState* cacheTileState = cacheStateMap.getTileAt(it->tx, it->ty);
-
-
-            // We marked the cache tile status to eTileStatusPending previously in
-            // readAndUpdateStateMap
-            // Mark it as eTileStatusNotRendered now
-            assert(i != _imp->mipMapLevel || cacheTileState->status == eTileStatusPending);
-            cacheTileState->status = eTileStatusNotRendered;
-            hasModifiedTileMap = true;
-#ifdef TRACE_TILES_STATUS
-            qDebug() << QThread::currentThread() << _imp->debugId << "marking " << it->tx << it->ty << "unrendered at level" << i;
-#endif
-            if (i == _imp->mipMapLevel) {
-                TileState* localTileState = _imp->localTilesState.getTileAt(it->tx, it->ty);
-                assert(localTileState->status == eTileStatusNotRendered);
-                if (localTileState->status == eTileStatusNotRendered) {
-
-                    localTileState->status = eTileStatusNotRendered;
-                }
-            }
-        }
-    }
-
-    if (!hasModifiedTileMap) {
-        _imp->markedTiles.clear();
+    if (!_imp->markCacheEntriesAsAbortedInternal()) {
         return;
     }
 
@@ -1837,6 +1816,81 @@ ImageCacheEntry::markCacheTilesAsAborted()
 
 
 } // markCacheTilesAsAborted
+
+bool
+ImageCacheEntryPrivate::markCacheEntriesAsAbortedInternal()
+{
+
+    assert(!lock.try_lock());
+
+    if (markedTiles.empty()) {
+        return false;
+    }
+
+#if defined(TRACE_TILES_STATUS) || defined(TRACE_TILES_STATUS_SHORT)
+    writeDebugStatus("markCacheTilesAsAborted");
+#endif
+
+
+    boost::scoped_ptr<boost::unique_lock<boost::shared_mutex> > writeLock;
+    if (!internalCacheEntry->isPersistent()) {
+        // In non-persistent mode, lock the cache entry since it's shared across threads.
+        // In persistent mode the entry is copied in fromMemorySegment
+        ImageCacheEntryInternal<false>* nonPersistentLocalEntry = dynamic_cast<ImageCacheEntryInternal<false>* >(internalCacheEntry.get());
+        assert(nonPersistentLocalEntry);
+        writeLock.reset(new boost::unique_lock<boost::shared_mutex>(nonPersistentLocalEntry->perMipMapTilesStateMutex));
+    }
+
+    // We should have gotten the state map from the cache in fetchCachedTilesAndUpdateStatus()
+    assert(!internalCacheEntry->perMipMapTilesState.empty());
+
+
+    // Read the cache map and update our local map
+    CacheBasePtr cache = internalCacheEntry->getCache();
+    bool hasModifiedTileMap = false;
+
+    for (std::size_t i = 0; i < markedTiles.size(); ++i) {
+
+        if (internalCacheEntry->perMipMapTilesState[i].tiles.empty()) {
+            continue;
+        }
+        TileStateHeader cacheStateMap = TileStateHeader(localTilesState.tileSizeX, localTilesState.tileSizeY, &internalCacheEntry->perMipMapTilesState[i]);
+
+
+        for (TilesSet::iterator it = markedTiles[i].begin(); it != markedTiles[i].end(); ++it) {
+
+
+            TileState* cacheTileState = cacheStateMap.getTileAt(it->tx, it->ty);
+
+
+            // We marked the cache tile status to eTileStatusPending previously in
+            // readAndUpdateStateMap
+            // Mark it as eTileStatusNotRendered now
+            assert(i != mipMapLevel || cacheTileState->status == eTileStatusPending);
+            cacheTileState->status = eTileStatusNotRendered;
+            hasModifiedTileMap = true;
+#ifdef TRACE_TILES_STATUS
+            qDebug() << QThread::currentThread() << debugId << "marking " << it->tx << it->ty << "unrendered at level" << i;
+#endif
+            if (i == mipMapLevel) {
+                TileState* localTileState = localTilesState.getTileAt(it->tx, it->ty);
+                assert(localTileState->status == eTileStatusNotRendered);
+                if (localTileState->status == eTileStatusNotRendered) {
+
+                    localTileState->status = eTileStatusNotRendered;
+                }
+            }
+        }
+    }
+
+
+    if (!hasModifiedTileMap) {
+        markedTiles.clear();
+        return false;
+    }
+
+    return true;
+} // markCacheEntriesAsAbortedInternal
 
 void
 ImageCacheEntry::markCacheTilesInRegionAsNotRendered(const RectI& roi)
@@ -2368,8 +2422,12 @@ static void toMemorySegmentInternal(bool copyPendingStatusToCache,
         IPCProperty* uuidProp = properties->getOrCreateIPCProperty(uuidPropName, eIPCVariantTypeULongLong);
         IPCProperty* boundsProp = properties->getOrCreateIPCProperty(boundsPropName, eIPCVariantTypeInt);
 
-        // If the properties did not exist yet, resize the properties
-        if (statusProp->getNumDimensions() == 0) {
+        // If the properties do not have the appropriate size, resize them
+
+        if (statusProp->getNumDimensions() != mipmapState.tiles.size() ||
+            indicesProp->getNumDimensions() != mipmapState.tiles.size() * 4 ||
+            uuidProp->getNumDimensions() != mipmapState.tiles.size() * 2 ||
+            boundsProp->getNumDimensions() != 4) {
 
             statusProp->resize(mipmapState.tiles.size());
 
@@ -2379,7 +2437,7 @@ static void toMemorySegmentInternal(bool copyPendingStatusToCache,
             // Each tile has a uuid that takes 2 U64 in memory (16 bytes)
             uuidProp->resize(mipmapState.tiles.size() * 2);
 
-            // Each tile bounds is 4 double
+            // The bounds of the this mipmap level tiles state map
             boundsProp->resize(4);
 
             IPCProperty::setIntValue(0, mipmapState.bounds.x1, boundsProp->getData());
