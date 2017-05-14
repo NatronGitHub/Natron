@@ -24643,18 +24643,11 @@ namespace exprtk
                {
                   if (unknown_symbol_resolver_->process(symbol, symtab, error_message))
                   {
-                     static bool usr_extmode_active = false;
+                     expression_node_ptr result = parse_symtab_symbol();
 
-                     if (!usr_extmode_active)
+                     if (result)
                      {
-                        usr_extmode_active = true;
-                        expression_node_ptr result = parse_symtab_symbol();
-                        usr_extmode_active = false;
-
-                        if (result)
-                        {
-                           return result;
-                        }
+                        return result;
                      }
                   }
 
