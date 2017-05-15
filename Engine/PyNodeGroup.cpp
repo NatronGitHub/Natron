@@ -30,7 +30,7 @@
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/PyNode.h"
-
+#include "Engine/ReadNode.h"
 NATRON_NAMESPACE_ENTER;
 NATRON_PYTHON_NAMESPACE_ENTER;
 
@@ -76,6 +76,16 @@ Group::getChildren() const
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( (*it)->isActivated() && (*it)->getParentMultiInstanceName().empty() ) {
+
+
+#if NATRON_VERSION_ENCODED < NATRON_VERSION_ENCODE(3,0,0)
+            // In Natron 2, the meta Read node is NOT a Group, hence the internal decoder node is not a child of the Read node.
+            // As a result of it, if the user deleted the meta Read node, the internal decoder is node destroyed
+            if ((*it)->getIOContainer()) {
+                continue;
+            }
+#endif
+
             ret.push_back( new Effect(*it) );
         }
     }
