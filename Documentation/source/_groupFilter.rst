@@ -13,6 +13,7 @@ The following sections contain documentation about every node in the  Filter gro
     plugins/net.sf.openfx.DenoiseSharpen.rst
     plugins/net.sf.cimg.CImgDilate.rst
     plugins/net.sf.openfx.DirBlur.rst
+    plugins/eu.cimg.Distance.rst
     plugins/fr.inria.DropShadow.rst
     plugins/fr.inria.EdgeBlur.rst
     plugins/eu.cimg.EdgeDetect.rst
