@@ -1300,10 +1300,10 @@ OfxImageCommon::getComponentsString() const
     return _imp->components;
 }
 
-static void ofxaApplyDistortionStack(double distortedX, double distortedY, const void* stack, double* undistortedX, double* undistortedY)
+static void ofxaApplyDistortionStack(double distortedX, double distortedY, const void* stack, double* undistortedX, double* undistortedY, bool wantsJacobian, bool* gotJacobianOut, double jacobian[4])
 {
     const Distortion2DStack* dstack = (const Distortion2DStack*)stack;
-    Distortion2DStack::applyDistortionStack(distortedX, distortedY, *dstack, undistortedX, undistortedY);
+    Distortion2DStack::applyDistortionStack(distortedX, distortedY, *dstack, undistortedX, undistortedY, wantsJacobian, gotJacobianOut, jacobian);
 }
 
 OfxImageCommon::OfxImageCommon(const EffectInstancePtr& outputClipEffect,
@@ -1423,25 +1423,69 @@ OfxImageCommon::OfxImageCommon(const EffectInstancePtr& outputClipEffect,
                 }
             }
             if (mat) {
-                ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->a, 0);
-                ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->b, 1);
-                ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->c, 2);
 
-                ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->d, 3);
-                ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->e, 4);
-                ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->f, 5);
+                if (supportsDeprecatedTransforms) {
 
-                ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->g, 6);
-                ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->h, 7);
-                ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->i, 8);
+                    OFX::Host::Property::PropSpec propSpec[] = {
+                        // If the clip descriptor has kFnOfxImageEffectCanTransform set to 1,
+                        // this property contains a 3x3 matrix corresponding to a transform
+                        // in PIXEL coordinate space, going from the source image to the destination, defaults to the identity matrix.
+                        // A matrix filled with zeroes is considered as the identity matrix (i.e. no transform)
+
+                        { kFnOfxPropMatrix2D, OFX::Host::Property::eDouble, 9, true, "0" },
+                        OFX::Host::Property::propSpecEnd
+                    };
+                    ofxImageBase->addProperties(propSpec);
+
+                    // The matrix is in canonical coordinates but the old kFnOfxPropMatrix2D propert expects pixel coordinates
+                    const bool fielded = fielding == eImageFieldingOrderLower || fielding == eImageFieldingOrderUpper;
+                    *mat = mat->toPixel(scale.x, scale.y, par, fielded);
+                } else {
+                    OFX::Host::Property::PropSpec propSpec[] = {
+                        // If the clip descriptor has kOfxImageEffectPropCanDistort set to 1,
+                        // this property contains a 3x3 matrix corresponding to a transform
+                        // in CANONICAL coordinate space, going from the source image to the destination, defaults to the identity matrix.
+                        // A matrix filled with zeroes is considered as the identity matrix (i.e. no transform)
+                        { kOfxPropMatrix3x3, OFX::Host::Property::eDouble, 9, true, "0" },
+                        OFX::Host::Property::propSpecEnd
+                    };
+                    ofxImageBase->addProperties(propSpec);
+                }
+
+                
+                for (int i = 0; i < 3; ++i) {
+                    for (int j = 0; j < 3; ++j) {
+                        int index = i * 3 + j;
+                        if (supportsDeprecatedTransforms) {
+                            ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, (*mat)(i,j), index);
+                        } else {
+                            ofxImageBase->setDoubleProperty(kOfxPropMatrix3x3, (*mat)(i,j), index);
+                        }
+                    }
+                }
+
             } else {
                 for (int i = 0; i < 9; ++i) {
-                    ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, 0., i);
+                    if (supportsDeprecatedTransforms) {
+                        ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, 0., i);
+                    } else {
+                        ofxImageBase->setDoubleProperty(kOfxPropMatrix3x3, 0., i);
+                    }
                 }
             }
         } else if (supportsDistortion) {
-            ofxImageBase->setPointerProperty(kOfxPropDistortionFunction, (void*)&ofxaApplyDistortionStack);
-            ofxImageBase->setPointerProperty(kOfxPropDistortionFunctionData, (void*)distortion.get());
+            OFX::Host::Property::PropSpec propSpec[] = {
+                // If the clip descriptor has kOfxImageEffectPropCanDistort set to 1, this property contains a pointer to a distortion function going from a position in the output distorted image in canonical coordinates to a position in the source image.
+                { kOfxPropInverseDistortionFunction, OFX::Host::Property::ePointer, 1, true, NULL },
+                // if kOfxPropDistortionFunction is set, this a pointer to the data that must be passed to the distortion function
+                { kOfxPropInverseDistortionFunctionData, OFX::Host::Property::ePointer, 1, true, NULL },
+                OFX::Host::Property::propSpecEnd
+            };
+            ofxImageBase->addProperties(propSpec);
+
+
+            ofxImageBase->setPointerProperty(kOfxPropInverseDistortionFunction, (void*)&ofxaApplyDistortionStack);
+            ofxImageBase->setPointerProperty(kOfxPropInverseDistortionFunctionData, (void*)distortion.get());
         }
 
 

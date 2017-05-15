@@ -266,7 +266,7 @@ public:
 
     virtual bool getInputCanReceiveTransform(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getInputCanReceiveDistortion(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual ActionRetCodeEnum getDistortion(TimeValue time,
+    virtual ActionRetCodeEnum getInverseDistortion(TimeValue time,
                                             const RenderScale & renderScale,
                                             bool draftRender,
                                             ViewIdx view,

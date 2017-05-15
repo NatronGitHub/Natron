@@ -404,9 +404,11 @@ public:
         AffineKeyFrameWarp(const Transform::Matrix3x3& transform)
         : KeyFrameWarp()
         , _transform(transform)
-        , _inverseTransform(Transform::matInverse(transform))
+        , _inverseTransform()
         {
-
+            if (!transform.inverse(&_inverseTransform)) {
+                _inverseTransform.setIdentity();
+            }
         }
 
         virtual ~AffineKeyFrameWarp()

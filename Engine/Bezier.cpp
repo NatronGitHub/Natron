@@ -1749,7 +1749,10 @@ Bezier::movePointByIndexInternalForView(int index, TimeValue time, ViewIdx view,
     bool keySet = false;
     Transform::Matrix3x3 trans, invTrans;
     getTransformAtTime(time, view, &trans);
-    invTrans = Transform::matInverse(trans);
+
+    if (!trans.inverse(&invTrans)) {
+        trans.setIdentity();
+    }
 
     {
         QMutexLocker l(&_imp->itemMutex);
@@ -1941,7 +1944,9 @@ Bezier::setPointByIndexInternalForView(int index, TimeValue time, ViewIdx view, 
 {
     Transform::Matrix3x3 trans, invTrans;
     getTransformAtTime(time, view, &trans);
-    invTrans = Transform::matInverse(trans);
+    if (!trans.inverse(&invTrans)) {
+        trans.setIdentity();
+    }
 
 
     double dx, dy;
@@ -2041,8 +2046,9 @@ Bezier::moveBezierPointInternalForView(BezierCP* cpParam,
     bool rippleEdit = isRippleEditEnabled();
     Transform::Matrix3x3 trans, invTrans;
     getTransformAtTime(time, view, &trans);
-    invTrans = Transform::matInverse(trans);
-
+    if (!trans.inverse(&invTrans)) {
+        trans.setIdentity();
+    }
 
     {
         QMutexLocker l(&_imp->itemMutex);

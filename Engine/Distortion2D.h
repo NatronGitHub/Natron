@@ -60,7 +60,7 @@ public:
     // These below are set if the distortion cannot be represented as a 3x3 matrix
 
     // A pointer to the distortion function of the plug-in
-    OfxDistortionFunctionV1 func;
+    OfxInverseDistortionFunctionV1 func;
 
     // A pointer to plug-in data that should be passed back to the distortion function
     void* customData;
@@ -69,7 +69,7 @@ public:
     int customDataSizeHintInBytes;
 
     // A pointer to a function to free the customData
-    OfxDistortionFreeDataFunctionV1 customDataFreeFunc;
+    OfxInverseDistortionDataFreeFunctionV1 customDataFreeFunc;
 
     // Hold a weak ref to the effect, if it is no longer valid when destroying this object
     // then we do not attempt to call the free function
@@ -108,7 +108,7 @@ public:
     /**
      * @brief Applies a distortion stack onto a 2D position in canonical coordinates.
      **/
-    static void applyDistortionStack(double distortedX, double distortedY, const Distortion2DStack& stack, double* undistortedX, double* undistortedY);
+    static void applyDistortionStack(double distortedX, double distortedY, const Distortion2DStack& stack, double* undistortedX, double* undistortedY, bool wantsJacobian, bool* gotJacobian, double jacobian[4]);
 
 private:
 

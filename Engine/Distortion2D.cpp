@@ -111,23 +111,80 @@ Distortion2DStack::getStack() const
     return _imp->stack;
 }
 
-
 void
-Distortion2DStack::applyDistortionStack(double distortedX, double distortedY, const Distortion2DStack& stack, double* undistortedX, double* undistortedY)
+Distortion2DStack::applyDistortionStack(double distortedX, double distortedY, const Distortion2DStack& stack, double* undistortedX, double* undistortedY, bool wantsJacobian, bool* gotJacobianOut, double jacobian[4])
 {
+
+    // The jacobian is in the form : dFx/dx, dFx/dy, dFy/dx, dFy/dy
+    // We always compute the jacobian if requested
+    *gotJacobianOut = wantsJacobian;
+
     Transform::Point3D p(distortedX, distortedY, 1.);
-    for (std::list<DistortionFunction2DPtr>::const_iterator it = stack._imp->stack.begin(); it != stack._imp->stack.end(); ++it) {
+
+    bool jacobianSet = false;
+    for (std::list<DistortionFunction2DPtr>::const_reverse_iterator it = stack._imp->stack.rbegin(); it != stack._imp->stack.rend(); ++it) {
         // If there's a matrix, apply, otherwise call the distortion function
+
+        double J[4];
         if ((*it)->transformMatrix) {
-            p = Transform::matApply(*(*it)->transformMatrix, p);
+
+            const Transform::Matrix3x3& H = *(*it)->transformMatrix;
+            p = Transform::matApply(H, p);
+
+            if (wantsJacobian) {
+                // Compute the jacobian of the transformation
+                J[0] = (H(0,0) * p.z - p.x * H(2,0)) / (p.z * p.z);
+                J[1] = (H(0,1) * p.z - p.x * H(2,1)) / (p.z * p.z);
+                J[2] = (H(1,0) * p.z - p.y * H(2,0)) / (p.z * p.z);
+                J[3] = (H(1,1) * p.z - p.y * H(2,1)) / (p.z * p.z);
+            }
             p.x /= p.z;
             p.y /= p.z;
+
         } else {
-            (*it)->func(p.x, p.y, (*it)->customData, &p.x, &p.y);
+            bool gotJacobian;
+            (*it)->func( (*it)->customData, p.x, p.y, wantsJacobian, &p.x, &p.y, &gotJacobian, J);
+
+            if (wantsJacobian && !gotJacobian) {
+                // Compute the jacobian with centered finite differences
+                // The epsilon used for finite differences here is 0.5 because we want to evaluate the jacobian for a pixel at its center point (0.5,0.5)
+                Point pxHigh,pxLow;
+                (*it)->func((*it)->customData, p.x + 0.5, p.y, false, &pxHigh.x, &pxHigh.y, 0, 0);
+                (*it)->func((*it)->customData, p.x - 0.5, p.y, false, &pxLow.x, &pxLow.y, 0, 0);
+
+                Point pyHigh,pyLow;
+                (*it)->func( (*it)->customData, p.x, p.y + 0.5, false, &pyHigh.x, &pyHigh.y, 0, 0);
+                (*it)->func( (*it)->customData, p.x, p.y - 0.5, false, &pyLow.x, &pyLow.y, 0, 0);
+
+                // dFx/dx = (f(x + h) - f(x - h)) / 2h   here h = 0.5 so 2h = 1
+                J[0] = pxHigh.x - pxLow.x;
+
+                // dFx/dy
+                J[1] = pyHigh.x - pyLow.x;
+
+                // dFy/dx
+                J[2] = pxHigh.y - pxLow.y;
+
+                // dFy/dy
+                J[3] = pyHigh.y - pyLow.y;
+            }
+        }
+
+        if (wantsJacobian) {
+            if (!jacobianSet) {
+                jacobianSet = true;
+                memcpy(jacobian, J, sizeof(double) * 4);
+            } else {
+                // Concatenate jacobians
+                jacobian[0] = J[0] * jacobian[0] + J[1] * jacobian[2];
+                jacobian[1] = J[0] * jacobian[1] + J[1] * jacobian[3];
+                jacobian[2] = J[2] * jacobian[0] + J[3] * jacobian[2];
+                jacobian[3] = J[2] * jacobian[1] + J[3] * jacobian[3];
+            }
         }
     }
     *undistortedX = p.x;
     *undistortedY = p.y;
-}
+} // applyDistortionStack
 
 NATRON_NAMESPACE_EXIT;

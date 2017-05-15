@@ -652,7 +652,7 @@ protected:
 
 
 
-    virtual ActionRetCodeEnum getDistortion(TimeValue time,
+    virtual ActionRetCodeEnum getInverseDistortion(TimeValue time,
                                             const RenderScale & renderScale,
                                             bool draftRender,
                                             ViewIdx view,

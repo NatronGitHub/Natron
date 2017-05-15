@@ -335,32 +335,12 @@ EffectInstance::Implementation::handleConcatenation(const RequestPassSharedDataP
 
     if (disto->transformMatrix) {
         // the matrix is in canonical coords
-        // The caller expects a transformation matrix in pixel coordinates
-        // transform from pixel to canonical
+        
+        //double par = _publicInterface->getAspectRatio(-1);
+        //const bool fielded = false; //args.fieldToRender == eFieldLower || args.fieldToRender == eFieldUpper;
+        //Transform::Matrix3x3 transform = disto->transformMatrix->toPixel(renderScale.x, renderScale.y, par, fielded);
 
-        double par = _publicInterface->getAspectRatio(-1);
-        const bool fielded = false; //args.fieldToRender == eFieldLower || args.fieldToRender == eFieldUpper;
-        // FS = fielded ? 0.5 : 1.
-        // canonical to pixel:
-        // X' = (X * SX)/PAR -> multiply first line by SX/PAR
-        // Y' = Y * SY * FS -> multiply second line by SY*FS
-        // pixel to canonical:
-        // X' = (X * PAR)/SX -> divide first column by SX/PAR
-        // Y' = Y/(SY * FS) -> divide second column by SY*FS
-        double fx = renderScale.x / par;
-        double fy = renderScale.y * (fielded ? 0.5 : 1.);
-        Transform::Matrix3x3 transform = *disto->transformMatrix;
-        //transform.a *= 1.;
-        transform.b *= fx/fy;
-        transform.c *= fx;
-        transform.d *= fy/fx;
-        //transform.e *= 1.;
-        transform.f *= fy;
-        transform.g *= 1./fx;
-        transform.h *= 1./fy;
-        //transform.i *= 1.;
-
-        distoStack->pushTransformMatrix(transform);
+        distoStack->pushTransformMatrix(*disto->transformMatrix);
     } else {
         distoStack->pushDistortionFunction(disto);
     }

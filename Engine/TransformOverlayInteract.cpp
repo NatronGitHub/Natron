@@ -1344,9 +1344,12 @@ TransformOverlayInteract::onOverlayPenMotion(TimeValue time,
         //_center->setValue(center.x, center.y);
         centerChanged = true;
         // recompute dxrot,dyrot after rounding
-        double det = Transform::matDeterminant(R);
+        double det = R.determinant();
         if (det != 0.) {
-            Transform::Matrix3x3 Rinv = Transform::matInverse(R, det);
+            Transform::Matrix3x3 Rinv;
+            if (!R.inverse(&Rinv)) {
+                Rinv.setIdentity();
+            }
 
             dxrot = newx - currentCenter.x;
             dyrot = newy - currentCenter.y;

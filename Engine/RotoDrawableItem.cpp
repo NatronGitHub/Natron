@@ -1175,9 +1175,9 @@ RotoDrawableItem::getTransformAtTimeInternal(TimeValue time,
     *matrix = Transform::matTransformCanonical(tx, ty, sx, sy, skewX, skewY, skewOrderYX, rot, centerX, centerY);
 
     Transform::Matrix3x3 extraMat;
-    extraMat.a = extraMatrix->getValueAtTime(time, DimIdx(0), view); extraMat.b = extraMatrix->getValueAtTime(time, DimIdx(1), view); extraMat.c = extraMatrix->getValueAtTime(time, DimIdx(2), view);
-    extraMat.d = extraMatrix->getValueAtTime(time, DimIdx(3), view); extraMat.e = extraMatrix->getValueAtTime(time, DimIdx(4), view); extraMat.f = extraMatrix->getValueAtTime(time, DimIdx(5), view);
-    extraMat.g = extraMatrix->getValueAtTime(time, DimIdx(6), view); extraMat.h = extraMatrix->getValueAtTime(time, DimIdx(7), view); extraMat.i = extraMatrix->getValueAtTime(time, DimIdx(8), view);
+    for (int i = 0; i < 9; ++i) {
+        extraMat.m[i] =  extraMatrix->getValueAtTime(time, DimIdx(i), view);
+    }
     *matrix = Transform::matMul(*matrix, extraMat);
     return true;
 } // getTransformAtTimeInternal

@@ -234,9 +234,9 @@ PlanarTrackLayer::getTransformAtTimeInternal(TimeValue time, ViewIdx view, Trans
     *matrix = Transform::matTransformCanonical(tx, ty, sx, sy, skewX, skewY, skewOrderYX, rot, centerX, centerY);
 
     Transform::Matrix3x3 extraMat;
-    extraMat.a = extraMatrix->getValueAtTime(time, DimIdx(0), view); extraMat.b = extraMatrix->getValueAtTime(time, DimIdx(1), view); extraMat.c = extraMatrix->getValueAtTime(time, DimIdx(2), view);
-    extraMat.d = extraMatrix->getValueAtTime(time, DimIdx(3), view); extraMat.e = extraMatrix->getValueAtTime(time, DimIdx(4), view); extraMat.f = extraMatrix->getValueAtTime(time, DimIdx(5), view);
-    extraMat.g = extraMatrix->getValueAtTime(time, DimIdx(6), view); extraMat.h = extraMatrix->getValueAtTime(time, DimIdx(7), view); extraMat.i = extraMatrix->getValueAtTime(time, DimIdx(8), view);
+    for (int i = 0; i < 9; ++i) {
+        extraMat.m[i] =  extraMatrix->getValueAtTime(time, DimIdx(i), view);
+    }
     *matrix = Transform::matMul(*matrix, extraMat);
     return true;
 }
@@ -265,7 +265,7 @@ PlanarTrackLayer::setExtraMatrix(bool setKeyframe,
     }
 
     std::vector<double> matValues(9);
-    memcpy(&matValues[0], &mat.a, 9 * sizeof(double));
+    memcpy(&matValues[0], mat.m, 9 * sizeof(double));
     if (setKeyframe) {
         extraMatrix->setValueAtTimeAcrossDimensions(time, matValues, DimIdx(0), view);
     } else {
@@ -277,9 +277,9 @@ void
 PlanarTrackLayer::getExtraMatrixAtTime(TimeValue time, ViewIdx view, Transform::Matrix3x3* m) const
 {
     KnobDoublePtr extraMatrix = _imp->extraMatrix.lock();
-    m->a = extraMatrix->getValueAtTime(time, DimIdx(0), view); m->b = extraMatrix->getValueAtTime(time, DimIdx(1), view); m->c = extraMatrix->getValueAtTime(time, DimIdx(2), view);
-    m->d = extraMatrix->getValueAtTime(time, DimIdx(3), view); m->e = extraMatrix->getValueAtTime(time, DimIdx(4), view); m->f = extraMatrix->getValueAtTime(time, DimIdx(5), view);
-    m->g = extraMatrix->getValueAtTime(time, DimIdx(6), view); m->h = extraMatrix->getValueAtTime(time, DimIdx(7), view); m->i = extraMatrix->getValueAtTime(time, DimIdx(8), view);
+    for (int i = 0; i < 9; ++i) {
+        m->m[i] =  extraMatrix->getValueAtTime(time, DimIdx(i), view);
+    }
 }
 
 void

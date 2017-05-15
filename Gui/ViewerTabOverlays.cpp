@@ -66,10 +66,10 @@ static void
 transformToOpenGLMatrix(const Transform::Matrix3x3& mat,
                         GLdouble* oglMat)
 {
-    oglMat[0] = mat.a; oglMat[4] = mat.b; oglMat[8]  = 0; oglMat[12] = mat.c;
-    oglMat[1] = mat.d; oglMat[5] = mat.e; oglMat[9]  = 0; oglMat[13] = mat.f;
+    oglMat[0] = mat(0,0); oglMat[4] = mat(0,1); oglMat[8] = 0; oglMat[12] = mat(0,2);
+    oglMat[1] = mat(1,0); oglMat[5] = mat(1,1); oglMat[9]  = 0; oglMat[13] = mat(1,2);
     oglMat[2] = 0;     oglMat[6] = 0;     oglMat[10] = 1; oglMat[14] = 0;
-    oglMat[3] = mat.g; oglMat[7] = mat.h; oglMat[11] = 0; oglMat[15] = mat.i;
+    oglMat[3] = mat(2,0); oglMat[7] = mat(2,1); oglMat[11] = 0; oglMat[15] = mat(2,2);
 }
 
 #endif
@@ -267,7 +267,11 @@ ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
     if (!ok) {
         transformPos = pos;
     } else {
-        mat = Transform::matInverse(mat);
+        Transform::Matrix3x3 inverse;
+        if (!mat.inverse(&inverse)) {
+            inverse.setIdentity();
+        }
+        mat = inverse;
         {
             Transform::Point3D p;
             p.x = pos.x();
@@ -422,7 +426,12 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
         if (!ok) {
             transformPos = pos;
         } else {
-            mat = Transform::matInverse(mat);
+            Transform::Matrix3x3 inverse;
+            if (!mat.inverse(&inverse)) {
+                inverse.setIdentity();
+            }
+            mat = inverse;
+
             {
                 Transform::Point3D p;
                 p.x = pos.x();
@@ -513,7 +522,12 @@ ViewerTab::notifyOverlaysPenMotion_internal(const NodePtr& node,
     if (!ok) {
         transformPos = pos;
     } else {
-        mat = Transform::matInverse(mat);
+        Transform::Matrix3x3 inverse;
+        if (!mat.inverse(&inverse)) {
+            inverse.setIdentity();
+        }
+        mat = inverse;
+
         {
             Transform::Point3D p;
             p.x = pos.x();
@@ -709,7 +723,12 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
         if (!ok) {
             transformPos = pos;
         } else {
-            mat = Transform::matInverse(mat);
+            Transform::Matrix3x3 inverse;
+            if (!mat.inverse(&inverse)) {
+                inverse.setIdentity();
+            }
+            mat = inverse;
+
             {
                 Transform::Point3D p;
                 p.x = pos.x();
