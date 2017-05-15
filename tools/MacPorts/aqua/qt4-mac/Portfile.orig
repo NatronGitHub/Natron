@@ -11,7 +11,7 @@ PortGroup           compiler_blacklist_versions 1.0
 
 name                qt4-mac
 version             4.8.7
-revision            4
+revision            5
 set branch          [join [lrange [split ${version} .] 0 1] .]
 
 categories          aqua
@@ -154,13 +154,19 @@ patchfiles-append   \
 
 patchfiles-append   patch-qmake_project.cpp.diff
 
-# (13) In QMake: (a) enable correct "-framework foo,bar" parsing as
+# (13a) In QMake: (a) enable correct "-framework foo,bar" parsing as
 # specified by Apple's LD; (b) disable "/Library/Frameworks" as a
 # default search path; use "PREFIX/Library/Frameworks" and replace
 # PREFIX in post-patch.  Also set "PREFIX/lib" as a default library
 # search path.
 
-patchfiles-append   patch-qmake_generators_unix_unixmakke.cpp.diff
+patchfiles-append   patch-qmake_generators_unix_unixmake.cpp.framework.diff
+
+# (13b) In QMake: fix issue for when LFLAGS and env LDFLAGS contain
+# multiple "-arch FOO" duplicate flags, which would result in output
+# such as "-arch x86_64 -arch -Xarch_x86_64 ...".
+
+patchfiles-append   patch-qmake_generators_unix_unixmake.cpp.fix_arch.diff
 
 # (14) Allow easy replacement of MACOSX_DEPLOYMENT_TARGET: build for
 # just the user's current OS.
@@ -274,6 +280,12 @@ platform darwin {
         patchfiles-append patch-src_gui_kernel_qmime_mac.cpp.diff
     }
 }
+
+# (28) Better invalid fonttable handling
+# Qt commit 0a2f2382 on July 10, 2015 at 7:22:32 AM EDT.
+# not included in 4.8.7 release.
+
+patchfiles-append patch-better-invalid-fonttable-handling.diff
 
 # error out if trying to build on a new OSX version (> 10.12).
 
