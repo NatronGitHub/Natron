@@ -253,6 +253,7 @@ const std::vector<std::string>&
 OfxImageEffectInstance::getUserCreatedPlanes() const
 {
     OfxEffectInstancePtr effect = _ofxEffectInstance.lock();
+
     const std::vector<std::string>& planes = effect->getUserPlanes();
     return planes;
 }
@@ -261,6 +262,7 @@ int
 OfxImageEffectInstance::getDimension(const std::string &name) const OFX_EXCEPTION_SPEC
 {
     OfxEffectInstancePtr effect = _ofxEffectInstance.lock();
+
     if (!effect) {
         return 0;
     }

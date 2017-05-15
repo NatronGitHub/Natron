@@ -79,6 +79,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/ViewerInstance.h"
 #include "Engine/WriteNode.h"
 
+
 #include "Serialization/NodeSerialization.h"
 
 
@@ -1427,6 +1428,7 @@ OfxEffectInstance::isIdentity(TimeValue time,
         assert(_imp->common->effect);
 
         EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
+
 
         EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxImageEffectActionIsIdentity, time, view, scale
 #ifdef DEBUG

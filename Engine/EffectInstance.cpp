@@ -131,7 +131,7 @@ EffectInstance::createRenderCopy(const FrameViewRenderKey& key) const
     // Make a copy of the main instance input locally so the state of the graph does not change throughout the render
     int nInputs = getMaxInputCount();
 
-  
+
     clone->_imp->renderData->mainInstanceInputs.resize(nInputs);
     clone->_imp->renderData->renderInputs.resize(nInputs);
 
@@ -143,6 +143,7 @@ EffectInstance::createRenderCopy(const FrameViewRenderKey& key) const
         if (mainInstanceInput) {
             EffectInstancePtr inputClone = toEffectInstance(mainInstanceInput->createRenderClone(key));
             clone->_imp->renderData->renderInputs[i][p] = inputClone;
+
         }
     }
 
@@ -1268,11 +1269,13 @@ EffectInstance::setInteractColourPicker_public(const ColorRgba<double>& color, b
         OverlayInteractBasePtr interact = k->getCustomInteract();
         if (!interact) {
             continue;
+
         }
         interact->setInteractColourPicker(color, setColor, hasColor);
     }
     for (std::list<OverlayInteractBasePtr>::iterator it = _imp->common->interacts.begin(); it != _imp->common->interacts.end(); ++it) {
         (*it)->setInteractColourPicker(color, setColor, hasColor);
+
     }
 
 

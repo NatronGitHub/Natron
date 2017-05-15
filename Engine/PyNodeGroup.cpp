@@ -82,6 +82,7 @@ Group::getChildren() const
             Effect* effect = App::createEffectFromNodeWrapper(*it);
             assert(effect);
             ret.push_back(effect);
+
         }
     }
 

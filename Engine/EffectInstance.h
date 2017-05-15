@@ -1766,6 +1766,7 @@ public:
 
     KnobBoolPtr getPreviewEnabledKnob() const;
 
+
     KnobBoolPtr getProcessAllLayersKnob() const;
 
     KnobChoicePtr getOrCreateOpenGLEnabledKnob();
@@ -1807,6 +1808,7 @@ public:
     std::string getAfterSelectionChangedCallback() const;
 
     std::string getNodeExtraLabel() const;
+
 
     bool isPluginUsingHostChannelSelectors() const;
 

@@ -841,6 +841,7 @@ Node::message(MessageTypeEnum type,
         if (type == eMessageTypeError) {
             appPTR->showErrorLog();
         }
+
         return true;
     }
 
