@@ -1802,6 +1802,13 @@ EffectInstance::makeInfoForInput(int inputNumber)
         }
         ss << "<b>" << tr("Alpha premultiplication:").toStdString() << "</b> <font color=#c8c8c8>" << premultStr.toStdString() << "</font><br />";
     }
+    {
+        RectI format = input->getOutputFormat();
+        if ( !format.isNull() ) {
+            ss << "<b>" << tr("Format (pixels):").arg(time).toStdString() << "</b> <font color=#c8c8c8>";
+            ss << tr("left = %1 bottom = %2 right = %3 top = %4").arg(format.x1).arg(format.y1).arg(format.x2).arg(format.y2).toStdString() << "</font><br />";
+        }
+    }
     { // par
         double par = input->getAspectRatio(-1);
         ss << "<b>" << tr("Pixel aspect ratio:").toStdString() << "</b> <font color=#c8c8c8>" << par << "</font><br />";
