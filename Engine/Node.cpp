@@ -3309,7 +3309,6 @@ Node::makeInfoForInput(int inputNumber) const
         ss << "<b>" << tr("Alpha premultiplication:").toStdString() << "</b> <font color=#c8c8c8>" << premultStr.toStdString() << "</font><br />";
     }
     {
-        RenderScale scale(1.);
         RectI format = input->getOutputFormat();
         if ( !format.isNull() ) {
             ss << "<b>" << tr("Format (pixels):").arg(time).toStdString() << "</b> <font color=#c8c8c8>";
