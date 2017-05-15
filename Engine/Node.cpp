@@ -6321,6 +6321,18 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
     _imp->effect->dettachAllOpenGLContexts();
 
 
+#if NATRON_VERSION_ENCODED < NATRON_VERSION_ENCODE(3,0,0)
+    // In Natron 2, the meta Read node is NOT a Group, hence the internal decoder node is not a child of the Read node.
+    // As a result of it, if the user deleted the meta Read node, the internal decoder is node destroyed
+    ReadNode* isReader = dynamic_cast<ReadNode*>(_imp->effect.get());
+    if (isReader) {
+        NodePtr internalDecoder = isReader->getEmbeddedReader();
+        if (internalDecoder) {
+            internalDecoder->deactivate();
+        }
+    }
+#endif
+
     ///Free all memory used by the plug-in.
 
     ///COMMENTED-OUT: Don't do this, the node may still be rendering here since the abort call is not blocking.
@@ -6424,6 +6436,18 @@ Node::activate(const std::list< NodePtr > & outputsToRestore,
             output->connectInput(thisShared, it->second);
         }
     }
+
+#if NATRON_VERSION_ENCODED < NATRON_VERSION_ENCODE(3,0,0)
+    // In Natron 2, the meta Read node is NOT a Group, hence the internal decoder node is not a child of the Read node.
+    // As a result of it, if the user deleted the meta Read node, the internal decoder is node destroyed
+    ReadNode* isReader = dynamic_cast<ReadNode*>(_imp->effect.get());
+    if (isReader) {
+        NodePtr internalDecoder = isReader->getEmbeddedReader();
+        if (internalDecoder) {
+            internalDecoder->activate();
+        }
+    }
+#endif
 
     {
         QMutexLocker l(&_imp->activatedMutex);
