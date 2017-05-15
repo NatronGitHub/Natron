@@ -3311,7 +3311,7 @@ Node::makeInfoForInput(int inputNumber) const
     {
         RectI format = input->getOutputFormat();
         if ( !format.isNull() ) {
-            ss << "<b>" << tr("Format (pixels):").arg(time).toStdString() << "</b> <font color=#c8c8c8>";
+            ss << "<b>" << tr("Format (pixels):").toStdString() << "</b> <font color=#c8c8c8>";
             ss << tr("left = %1 bottom = %2 right = %3 top = %4").arg(format.x1).arg(format.y1).arg(format.x2).arg(format.y2).toStdString() << "</font><br />";
         }
     }
