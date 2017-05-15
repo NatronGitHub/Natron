@@ -392,7 +392,7 @@ TrackerHelperPrivate::trackStepLibMV(int trackIndex,
 #ifdef CERES_USE_OPENMP
     // Set the number of threads Ceres may use
     QThreadPool* tp = QThreadPool::globalInstance();
-    omp_set_num_threads(tp->maxThreadCount() - tp->activeThreadCount() - 1);
+    omp_set_num_threads(tp->maxThreadCount() - tp->activeThreadCount() + 1);
 #endif
 
     const std::vector<TrackMarkerAndOptionsPtr >& tracks = args.getTracks();
