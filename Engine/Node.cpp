@@ -832,7 +832,6 @@ Node::message(MessageTypeEnum type,
     // See https://github.com/MrKepzie/Natron/issues/1313
     // Messages posted from a separate thread should be logged and not show a pop-up
     if ( QThread::currentThread() != qApp->thread() ) {
-
         LogEntry::LogEntryColor c;
         if (getColor(&c.r, &c.g, &c.b)) {
             c.colorSet = true;
