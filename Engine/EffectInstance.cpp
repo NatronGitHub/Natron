@@ -149,6 +149,65 @@ EffectInstance::unlock(const boost::shared_ptr<Image> & entry)
     n->unlock(entry);
 }
 
+
+/**
+ * @brief Add the layers from the inputList to the toList if they do not already exist in the list.
+ * For the color plane, if it already existed in toList it is replaced by the value in inputList
+ **/
+static void mergeLayersList(const std::list<ImagePlaneDesc>& inputList,
+                            std::list<ImagePlaneDesc>* toList)
+{
+    for (std::list<ImagePlaneDesc>::const_iterator it = inputList.begin(); it != inputList.end(); ++it) {
+
+        std::list<ImagePlaneDesc>::iterator foundMatch = ImagePlaneDesc::findEquivalentLayer(*it, toList->begin(), toList->end());
+
+        // If we found the color plane, replace it by this color plane which may have changed (e.g: input was Color.RGB but this node Color.RGBA)
+        if (foundMatch != toList->end()) {
+            toList->erase(foundMatch);
+        }
+        toList->push_back(*it);
+
+    } // for each input components
+} // mergeLayersList
+
+/**
+ * @brief Remove any layer from the toRemove list from toList.
+ **/
+static void removeFromLayersList(const std::list<ImagePlaneDesc>& toRemove,
+                                 std::list<ImagePlaneDesc>* toList)
+{
+    for (std::list<ImagePlaneDesc>::const_iterator it = toRemove.begin(); it != toRemove.end(); ++it) {
+        std::list<ImagePlaneDesc>::iterator foundMatch = ImagePlaneDesc::findEquivalentLayer<std::list<ImagePlaneDesc>::iterator>(*it, toList->begin(), toList->end());
+        if (foundMatch != toList->end()) {
+            toList->erase(foundMatch);
+        }
+    } // for each input components
+
+} // removeFromLayersList
+
+
+const std::vector<std::string>&
+EffectInstance::getUserPlanes() const
+{
+    EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
+    assert(tls);
+    tls->userPlaneStrings.clear();
+
+    std::list<ImagePlaneDesc> projectLayers = getApp()->getProject()->getProjectDefaultLayers();
+
+
+    std::list<ImagePlaneDesc> userCreatedLayers;
+    getNode()->getUserCreatedComponents(&userCreatedLayers);
+    mergeLayersList(userCreatedLayers, &projectLayers);
+
+
+    for (std::list<ImagePlaneDesc>::iterator it = projectLayers.begin(); it != projectLayers.end(); ++it) {
+        std::string ofxPlane = ImagePlaneDesc::mapPlaneToOFXPlaneString(*it);
+        tls->userPlaneStrings.push_back(ofxPlane);
+    }
+    return tls->userPlaneStrings;
+}
+
 void
 EffectInstance::clearPluginMemoryChunks()
 {
@@ -4138,41 +4197,6 @@ EffectInstance::clearActionsCache()
 
 
 
-/**
- * @brief Add the layers from the inputList to the toList if they do not already exist in the list.
- * For the color plane, if it already existed in toList it is replaced by the value in inputList
- **/
-static void mergeLayersList(const std::list<ImagePlaneDesc>& inputList,
-                            std::list<ImagePlaneDesc>* toList)
-{
-    for (std::list<ImagePlaneDesc>::const_iterator it = inputList.begin(); it != inputList.end(); ++it) {
-
-        std::list<ImagePlaneDesc>::iterator foundMatch = ImagePlaneDesc::findEquivalentLayer(*it, toList->begin(), toList->end());
-
-        // If we found the color plane, replace it by this color plane which may have changed (e.g: input was Color.RGB but this node Color.RGBA)
-        if (foundMatch != toList->end()) {
-            toList->erase(foundMatch);
-        }
-        toList->push_back(*it);
-
-    } // for each input components
-} // mergeLayersList
-
-/**
- * @brief Remove any layer from the toRemove list from toList.
- **/
-static void removeFromLayersList(const std::list<ImagePlaneDesc>& toRemove,
-                                 std::list<ImagePlaneDesc>* toList)
-{
-    for (std::list<ImagePlaneDesc>::const_iterator it = toRemove.begin(); it != toRemove.end(); ++it) {
-        std::list<ImagePlaneDesc>::iterator foundMatch = ImagePlaneDesc::findEquivalentLayer<std::list<ImagePlaneDesc>::iterator>(*it, toList->begin(), toList->end());
-        if (foundMatch != toList->end()) {
-            toList->erase(foundMatch);
-        }
-    } // for each input components
-
-} // removeFromLayersList
-
 void
 EffectInstance::getComponentsNeededAndProduced(double time,
                                                ViewIdx view,
@@ -4466,8 +4490,10 @@ EffectInstance::getAvailableLayers(double time, ViewIdx view, int inputNb, std::
     }
 
     // Ensure the color layer is always the first one available in the list
+    bool hasColorPlane = false;
     for (std::list<ImagePlaneDesc>::iterator it = passThroughLayers.begin(); it != passThroughLayers.end(); ++it) {
         if (it->isColorPlane()) {
+            hasColorPlane = true;
             availableLayers->push_front(*it);
             passThroughLayers.erase(it);
             break;
@@ -4478,12 +4504,21 @@ EffectInstance::getAvailableLayers(double time, ViewIdx view, int inputNb, std::
     if (inputNb == -1) {
 
         std::list<ImagePlaneDesc> projectLayers = getApp()->getProject()->getProjectDefaultLayers();
+        if (hasColorPlane) {
+            // Don't add the color plane from the default alyers if already present
+            for (std::list<ImagePlaneDesc>::iterator it = projectLayers.begin(); it != projectLayers.end(); ++it) {
+                if (it->isColorPlane()) {
+                    projectLayers.erase(it);
+                    break;
+                }
+            }
+        }
         mergeLayersList(projectLayers, availableLayers);
     }
 
     mergeLayersList(passThroughLayers, availableLayers);
 
-    if (inputNb == -1) {
+     {
         std::list<ImagePlaneDesc> userCreatedLayers;
         getNode()->getUserCreatedComponents(&userCreatedLayers);
         mergeLayersList(userCreatedLayers, availableLayers);

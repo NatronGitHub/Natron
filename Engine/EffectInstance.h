@@ -1809,6 +1809,8 @@ public:
 
     void getAvailableLayers(double time, ViewIdx view, int inputNb, std::list<ImagePlaneDesc>* availableLayers) ;
 
+    const std::vector<std::string>& getUserPlanes() const;
+
 private:
 
     void getComponentsNeededDefault(double time, ViewIdx view,
@@ -1911,6 +1913,8 @@ public:
         std::list<boost::shared_ptr<ParallelRenderArgs> > frameArgs;
         EffectInstance::RenderArgs currentRenderArgs;
 
+        std::vector<std::string> userPlaneStrings;
+
         EffectTLSData()
             : beginEndRenderCount(0)
             , actionRecursionLevel(0)
@@ -1919,6 +1923,7 @@ public:
 #endif
             , frameArgs()
             , currentRenderArgs()
+            , userPlaneStrings()
         {
         }
     };

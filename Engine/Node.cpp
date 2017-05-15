@@ -4020,7 +4020,9 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
         createChannelSelectors(hasMaskChannelSelector, inputLabels, mainPage, &lastKnobBeforeAdvancedOption);
     }
 
-
+    if (!mainPage) {
+        mainPage = getOrCreateMainPage();
+    }
     findOrCreateChannelEnabled(mainPage);
 
     ///Find in the plug-in the Mask/Mix related parameter to re-order them so it is consistent across nodes

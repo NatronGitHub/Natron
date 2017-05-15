@@ -864,6 +864,7 @@ Project::initializeKnobs()
     std::list<std::vector<std::string> > defaultLayers;
     {
         std::vector<ImagePlaneDesc> defaultComponents;
+        defaultComponents.push_back(ImagePlaneDesc::getRGBAComponents());
         defaultComponents.push_back(ImagePlaneDesc::getDisparityLeftComponents());
         defaultComponents.push_back(ImagePlaneDesc::getDisparityRightComponents());
         defaultComponents.push_back(ImagePlaneDesc::getBackwardMotionComponents());
