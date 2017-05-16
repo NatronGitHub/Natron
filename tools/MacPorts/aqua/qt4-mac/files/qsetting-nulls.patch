@@ -1,0 +1,76 @@
+From 38ca587a64499707cb375738758430f8d105fc7d Mon Sep 17 00:00:00 2001
+From: Mikkel Krautz <mikkel@krautz.dk>
+Date: Fri, 2 Dec 2016 22:55:56 +0100
+Subject: [PATCH] Backport
+ qt5-macos-handle-qsetting-strings-with-embedded-zero-bytes-QTBUG-56124.patch
+ from mumble-releng to Qt 4.
+
+---
+ src/corelib/io/qsettings.cpp     |  6 +++++-
+ src/corelib/io/qsettings_mac.cpp | 22 +++++++++++++++++++---
+ 2 files changed, 24 insertions(+), 4 deletions(-)
+
+diff --git a/src/corelib/io/qsettings.cpp b/src/corelib/io/qsettings.cpp
+index a4750c5..eb8ab5e 100644
+--- a/src/corelib/io/qsettings.cpp
++++ b/src/corelib/io/qsettings.cpp
+@@ -487,7 +487,9 @@ QString QSettingsPrivate::variantToString(const QVariant &v)
+         case QVariant::Double:
+         case QVariant::KeySequence: {
+             result = v.toString();
+-            if (result.startsWith(QLatin1Char('@')))
++            if (result.contains(QChar::Null))
++                result = QLatin1String("@String(") + result + QLatin1Char(')');
++            else if (result.startsWith(QLatin1Char('@')))
+                 result.prepend(QLatin1Char('@'));
+             break;
+         }
+@@ -554,6 +556,8 @@ QVariant QSettingsPrivate::stringToVariant(const QString &s)
+         if (s.endsWith(QLatin1Char(')'))) {
+             if (s.startsWith(QLatin1String("@ByteArray("))) {
+                 return QVariant(s.toLatin1().mid(11, s.size() - 12));
++            } else if (s.startsWith(QLatin1String("@String("))) {
++                return QVariant(s.midRef(8, s.size() - 9).toString());
+             } else if (s.startsWith(QLatin1String("@Variant("))) {
+ #ifndef QT_NO_DATASTREAM
+                 QByteArray a(s.toLatin1().mid(9));
+diff --git a/src/corelib/io/qsettings_mac.cpp b/src/corelib/io/qsettings_mac.cpp
+index 3504907..edbe103 100644
+--- a/src/corelib/io/qsettings_mac.cpp
++++ b/src/corelib/io/qsettings_mac.cpp
+@@ -218,7 +218,14 @@ static QCFType<CFPropertyListRef> macValue(const QVariant &value)
+     case QVariant::String:
+     string_case:
+     default:
+-        result = QCFString::toCFStringRef(QSettingsPrivate::variantToString(value));
++        QString string = QSettingsPrivate::variantToString(value);
++        if (string.contains(QChar::Null)) {
++            QByteArray ba = string.toUtf8();
++            result = CFDataCreate(kCFAllocatorDefault, reinterpret_cast<const UInt8 *>(ba.data()),
++                                  CFIndex(ba.size()));
++        } else {
++            result = QCFString::toCFStringRef(string);
++        }
+     }
+     return result;
+ }
+@@ -269,8 +276,17 @@ static QVariant qtValue(CFPropertyListRef cfvalue)
+         return (bool)CFBooleanGetValue(static_cast<CFBooleanRef>(cfvalue));
+     } else if (typeId == CFDataGetTypeID()) {
+         CFDataRef cfdata = static_cast<CFDataRef>(cfvalue);
+-        return QByteArray(reinterpret_cast<const char *>(CFDataGetBytePtr(cfdata)),
+-                          CFDataGetLength(cfdata));
++        QByteArray byteArray = QByteArray(reinterpret_cast<const char *>(CFDataGetBytePtr(cfdata)),
++                                          CFDataGetLength(cfdata));
++
++        // Fast-path for QByteArray, so that we don't have to go
++        // though the expensive and lossy conversion via UTF-8.
++        if (!byteArray.startsWith('@'))
++            return byteArray;
++
++        const QString str = QString::fromUtf8(byteArray.constData(), byteArray.size());
++        return QSettingsPrivate::stringToVariant(str);
++
+     } else if (typeId == CFDictionaryGetTypeID()) {
+         CFDictionaryRef cfdict = static_cast<CFDictionaryRef>(cfvalue);
+         CFTypeID arrayTypeId = CFArrayGetTypeID();
