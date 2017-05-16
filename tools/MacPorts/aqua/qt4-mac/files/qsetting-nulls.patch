@@ -10,10 +10,10 @@ Subject: [PATCH] Backport
  src/corelib/io/qsettings_mac.cpp | 22 +++++++++++++++++++---
  2 files changed, 24 insertions(+), 4 deletions(-)
 
-diff --git a/src/corelib/io/qsettings.cpp b/src/corelib/io/qsettings.cpp
+diff --git src/corelib/io/qsettings.cpp.orig src/corelib/io/qsettings.cpp
 index a4750c5..eb8ab5e 100644
---- a/src/corelib/io/qsettings.cpp
-+++ b/src/corelib/io/qsettings.cpp
+--- src/corelib/io/qsettings.cpp.orig
++++ src/corelib/io/qsettings.cpp
 @@ -487,7 +487,9 @@ QString QSettingsPrivate::variantToString(const QVariant &v)
          case QVariant::Double:
          case QVariant::KeySequence: {
@@ -34,10 +34,10 @@ index a4750c5..eb8ab5e 100644
              } else if (s.startsWith(QLatin1String("@Variant("))) {
  #ifndef QT_NO_DATASTREAM
                  QByteArray a(s.toLatin1().mid(9));
-diff --git a/src/corelib/io/qsettings_mac.cpp b/src/corelib/io/qsettings_mac.cpp
+diff --git src/corelib/io/qsettings_mac.cpp.orig src/corelib/io/qsettings_mac.cpp
 index 3504907..edbe103 100644
---- a/src/corelib/io/qsettings_mac.cpp
-+++ b/src/corelib/io/qsettings_mac.cpp
+--- src/corelib/io/qsettings_mac.cpp.orig
++++ src/corelib/io/qsettings_mac.cpp
 @@ -218,7 +218,14 @@ static QCFType<CFPropertyListRef> macValue(const QVariant &value)
      case QVariant::String:
      string_case:
