@@ -584,7 +584,12 @@ ViewerInstance::getLayersProducedAndNeeded(TimeValue time,
 
     // In output we always produce a RGBA texture for the viewer
     if (selectedLayer.getNumComponents() > 0) {
-        layersProduced->push_back(selectedLayer);
+        if (selectedLayer.isColorPlane()) {
+            layersProduced->push_back(ImagePlaneDesc::getRGBAComponents());
+        } else {
+            layersProduced->push_back(selectedLayer);
+        }
+
     }
 
     std::list<ImagePlaneDesc>& neededLayers = (*inputLayersNeeded)[0];
