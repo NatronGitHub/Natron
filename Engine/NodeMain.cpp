@@ -1683,7 +1683,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
                 }
             }
         }
-        if (dc) {
+        if (dc && !beingDestroyed) {
             int inputNb = output->getInputIndex(shared_from_this());
             if (inputNb != -1) {
                 _imp->deactivatedState.insert( std::make_pair(*it, inputNb) );

@@ -195,7 +195,7 @@ unix:LIBS += $$QMAKE_LIBS_DYNLOAD
    }
 }
 
-*clang* {
+*clang*|*xcode* {
   openmp {
     QMAKE_CXXFLAGS += -fopenmp
     QMAKE_CFLAGS += -fopenmp

@@ -39,7 +39,9 @@
 #include "Engine/TrackMarker.h"
 #include "Engine/TrackerHelper.h"
 
-
+#ifdef CERES_USE_OPENMP
+#include <omp.h>
+#endif
 
 NATRON_NAMESPACE_ENTER;
 

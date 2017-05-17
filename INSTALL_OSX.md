@@ -285,6 +285,7 @@ Or, if you have MangledOSMesa32 installed in `OSMESA_PATH` and LLVM installed in
     LLVM_PATH=/opt/llvm
     make CXX=clang++-mp-3.9 CXXFLAGS_ADD="-fopenmp" LDFLAGS_ADD="-fopenmp" CXXFLAGS_MESA="-DHAVE_OSMESA" LDFLAGS_MESA="-L${OSMESA_PATH}/lib -lMangledOSMesa32 `${LLVM_PATH}/bin/llvm-config --ldflags --libs engine mcjit mcdisassembler | tr '\n' ' '`" OSMESA_PATH="${OSMESA_PATH}"
 
+
 ## Build on Xcode
 
 Follow the instruction of build but
@@ -317,6 +318,37 @@ It is also recommended in Xcode Preferences, select "Locations", then
 "Locations", to set the Derived Data location to be Relative, and in
 the advanced settings to set the build location to Legacy (if not,
 build files are somewhere under `~/Library/Developer/Xcode`.
+
+### Build on Xcode with openmp clang
+
+See instructions under "Using clang-omp with Xcode" at the following page https://clang-omp.github.io
+
+On Macports clang now ships with openmp by default, to install:
+sudo port install clang-4.0
+
+
+In your config.pri file, add the following lines and change the paths according to your installation of clang
+
+openmp {
+INCLUDEPATH += /opt/local/include/libomp
+LIBS += -L/opt/local/lib/libomp -liomp5
+
+cc_setting.name = CC
+cc_setting.value = /opt/local/bin/clang-mp-4.0
+cxx_setting.name = CXX
+cxx_setting.value = /opt/local/bin/clang++-mp-4.0
+QMAKE_MAC_XCODE_SETTINGS += cc_setting cxx_setting
+QMAKE_LFLAGS += "-B /usr/bin"
+
+}
+
+
+The qmake call should add CONFIG+=openmp
+
+qmake -r -spec macx-xcode CONFIG+=debug CONFIG+=enable-osmesa LLVM_PATH=/opt/llvm OSMESA_PATH=/opt/osmesa CONFIG+=openmp
+
+
+Then you can just build and run using Xcode
 
 ### Xcode caveats
 
