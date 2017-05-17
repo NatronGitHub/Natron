@@ -640,6 +640,13 @@ public:
                       bool maskInvert,
                       float mix);
 
+    typedef void (*ImageCPUPixelShaderFunction)(const void* customData, ImageBitDepthEnum depth, int nComps, void* pixelsPtr[4]);
+
+    /**
+     * @brief Applies a per-pixel custom function over all pixels
+     **/
+    ActionRetCodeEnum applyCPUPixelShader(const RectI& roi, const void* customData, ImageCPUPixelShaderFunction func);
+
 
     /**
      * @brief Clamp the pixel to the given minval and maxval

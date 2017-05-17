@@ -224,7 +224,7 @@ struct ImagePrivate
                                bool invertMask,
                                const RectI& roi);
 
-    static void applyMaskMixCPU(const void* originalImgPtrs[4],
+    static ActionRetCodeEnum applyMaskMixCPU(const void* originalImgPtrs[4],
                                 const RectI& originalImgBounds,
                                 int originalImgNComps,
                                 const void* maskImgPtrs[4],
@@ -274,6 +274,11 @@ struct ImagePrivate
                                                                    int dstNComps,
                                                                    const OSGLContextPtr& glContext);
 
+    static ActionRetCodeEnum applyCPUPixelShader(const RectI& roi,
+                                                 const void* customData, 
+                                                 const EffectInstancePtr& renderClone,
+                                                 const Image::CPUData& cpuData,
+                                                 Image::ImageCPUPixelShaderFunction func);
 
 
 };

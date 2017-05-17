@@ -139,6 +139,7 @@ SOURCES += \
     ImageCacheKey.cpp \
     ImageConvert.cpp \
     ImagePlaneDesc.cpp  \
+    ImageApplyShader.cpp \
     ImageCopyChannels.cpp \
     ImageFill.cpp \
     ImagePrivate.cpp \
