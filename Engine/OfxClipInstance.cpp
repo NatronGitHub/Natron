@@ -1493,6 +1493,17 @@ OfxImageCommon::OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
 
     //Attach the transform matrix if any
     if (mat) {
+        OFX::Host::Property::PropSpec propSpec[] = {
+            // If the clip descriptor has kFnOfxImageEffectCanTransform set to 1,
+            // this property contains a 3x3 matrix corresponding to a transform
+            // in PIXEL coordinate space, going from the source image to the destination, defaults to the identity matrix.
+            // A matrix filled with zeroes is considered as the identity matrix (i.e. no transform)
+
+            { kFnOfxPropMatrix2D, OFX::Host::Property::eDouble, 9, true, "0" },
+            OFX::Host::Property::propSpecEnd
+        };
+        ofxImageBase->addProperties(propSpec);
+
         ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->a, 0);
         ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->b, 1);
         ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->c, 2);
