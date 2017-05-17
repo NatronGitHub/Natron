@@ -640,12 +640,17 @@ public:
                       bool maskInvert,
                       float mix);
 
-    typedef void (*ImageCPUPixelShaderFunction)(const void* customData, ImageBitDepthEnum depth, int nComps, void* pixelsPtr[4]);
+    typedef void (*ImageCPUPixelShaderFloat)(const void* customData, int nComps, float* pixelsPtr[4]);
+    typedef void (*ImageCPUPixelShaderShort)(const void* customData, int nComps, unsigned short* pixelsPtr[4]);
+    typedef void (*ImageCPUPixelShaderByte)(const void* customData, int nComps, unsigned char* pixelsPtr[4]);
 
     /**
-     * @brief Applies a per-pixel custom function over all pixels
+     * @brief Applies a per-pixel custom function over all pixels. Note that the bit-depth of the image must correspond to the functor
+     * you are passing!
      **/
-    ActionRetCodeEnum applyCPUPixelShader(const RectI& roi, const void* customData, ImageCPUPixelShaderFunction func);
+    ActionRetCodeEnum applyCPUPixelShader_Float(const RectI& roi, const void* customData, ImageCPUPixelShaderFloat func);
+    ActionRetCodeEnum applyCPUPixelShader_Short(const RectI& roi, const void* customData, ImageCPUPixelShaderShort func);
+    ActionRetCodeEnum applyCPUPixelShader_Byte(const RectI& roi, const void* customData, ImageCPUPixelShaderByte func);
 
 
     /**

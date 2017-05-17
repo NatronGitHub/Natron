@@ -1026,7 +1026,7 @@ class ApplyPixelShaderProcessor : public ImageMultiThreadProcessorBase
 {
     Image::CPUData  _dstImgData;
     const void* _customData;
-    Image::ImageCPUPixelShaderFunction _func;
+    void* _func;
 public:
 
     ApplyPixelShaderProcessor(const EffectInstancePtr& renderClone)
@@ -1039,7 +1039,7 @@ public:
     {
     }
 
-    void setValues(const Image::CPUData& dstImgData, Image::ImageCPUPixelShaderFunction func, const void* customData)
+    void setValues(const Image::CPUData& dstImgData, void* func, const void* customData)
     {
         _func = func;
         _dstImgData = dstImgData;
@@ -1056,23 +1056,43 @@ private:
 
 
 ActionRetCodeEnum
-Image::applyCPUPixelShader(const RectI& roi,
+ImagePrivate::applyCPUPixelShaderForDepth(const RectI& roi,
                            const void* customData,
-                           ImageCPUPixelShaderFunction func)
+                           void* func)
 {
-    if (getStorageMode() != eStorageModeRAM) {
+    if (storage != eStorageModeRAM) {
         return eActionStatusFailed;
     }
     Image::CPUData dstImgData;
-    getCPUData(&dstImgData);
+    _publicInterface->getCPUData(&dstImgData);
 
     RectI tileRoI;
     roi.intersect(dstImgData.bounds, &tileRoI);
 
-    ApplyPixelShaderProcessor processor(_imp->renderClone.lock());
+    ApplyPixelShaderProcessor processor(renderClone.lock());
     processor.setValues(dstImgData, func, customData);
     processor.setRenderWindow(tileRoI);
     return processor.process();
 }
+
+ActionRetCodeEnum
+Image::applyCPUPixelShader_Float(const RectI& roi, const void* customData, ImageCPUPixelShaderFloat func)
+{
+
+}
+
+ActionRetCodeEnum
+Image::applyCPUPixelShader_Short(const RectI& roi, const void* customData, ImageCPUPixelShaderShort func)
+{
+
+}
+
+ActionRetCodeEnum
+Image::applyCPUPixelShader_Byte(const RectI& roi, const void* customData, ImageCPUPixelShaderByte func)
+{
+
+}
+
+
 
 NATRON_NAMESPACE_EXIT;

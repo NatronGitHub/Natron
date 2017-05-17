@@ -278,8 +278,12 @@ struct ImagePrivate
                                                  const void* customData, 
                                                  const EffectInstancePtr& renderClone,
                                                  const Image::CPUData& cpuData,
-                                                 Image::ImageCPUPixelShaderFunction func);
+                                                 void* func);
 
+    ActionRetCodeEnum applyCPUPixelShaderForDepth(const RectI& roi,
+                                                 const void* customData,
+                                                 void* func);
+    
 
 };
 

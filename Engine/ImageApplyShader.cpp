@@ -32,7 +32,7 @@ applyCPUPixelShaderInternal(const RectI& roi,
                             const void* customData,
                             const EffectInstancePtr& renderClone,
                             const Image::CPUData& cpuData,
-                            Image::ImageCPUPixelShaderFunction func)
+                            void (*func)(const void*, int, PIX*[4]))
 {
     PIX* dstPixelPtrs[4];
     int dstPixelStride;
@@ -47,7 +47,8 @@ applyCPUPixelShaderInternal(const RectI& roi,
         }
         for (int x = roi.x1; x < roi.x2; ++x) {
 
-            func(customData, cpuData.bitDepth, nComps, dstPixelPtrs);
+            func(customData, nComps, dstPixelPtrs);
+
             for (int c = 0; c < nComps; ++c) {
                 dstPixelPtrs[c] += dstPixelStride;
             }
@@ -66,7 +67,7 @@ applyCPUPixelShaderForNComps(const RectI& roi,
                              const void* customData,
                             const EffectInstancePtr& renderClone,
                             const Image::CPUData& cpuData,
-                            Image::ImageCPUPixelShaderFunction func)
+                            void (*func)(const void*, int , PIX* [4]))
 {
     switch (cpuData.nComps) {
         case 1:
@@ -88,15 +89,15 @@ ImagePrivate::applyCPUPixelShader(const RectI& roi,
                                   const void* customData,
                                   const EffectInstancePtr& renderClone,
                                   const Image::CPUData& cpuData,
-                                  Image::ImageCPUPixelShaderFunction func)
+                                  void* func)
 {
     switch (cpuData.bitDepth) {
         case eImageBitDepthByte:
-            return applyCPUPixelShaderForNComps<unsigned char>(roi, customData, renderClone, cpuData, func);
+            return applyCPUPixelShaderForNComps<unsigned char>(roi, customData, renderClone, cpuData, (Image::ImageCPUPixelShaderByte)func);
         case eImageBitDepthFloat:
-            return applyCPUPixelShaderForNComps<float>(roi, customData, renderClone, cpuData, func);
+            return applyCPUPixelShaderForNComps<float>(roi, customData, renderClone, cpuData, (Image::ImageCPUPixelShaderFloat)func);
         case eImageBitDepthShort:
-            return applyCPUPixelShaderForNComps<unsigned short>(roi, customData, renderClone, cpuData, func);
+            return applyCPUPixelShaderForNComps<unsigned short>(roi, customData, renderClone, cpuData, (Image::ImageCPUPixelShaderShort)func);
         default:
             return eActionStatusFailed;
     }
