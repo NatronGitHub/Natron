@@ -142,7 +142,26 @@ AboutWindow::AboutWindow(QWidget* parent)
                            + QString::fromUtf8(GIT_COMMIT).mid(0, 7)
                            + QString::fromUtf8("</a>") );
 #ifdef _OPENMP
-#define OPENMP_STRING " with OpenMP " STRINGIZE_CPP_NAME(_OPENMP)
+#if _OPENMP == 200505
+// since GCC 4.2
+#define OPENMP_VERSION_STRING "2.5"
+#elif _OPENMP == 200805
+// since GCC 4.4
+#define OPENMP_VERSION_STRING "3.0"
+#elif _OPENMP == 201107
+// since GCC 4.7
+#define OPENMP_VERSION_STRING "3.1"
+#elif _OPENMP == 201307
+// since GCC 4.9
+#define OPENMP_VERSION_STRING "4.0"
+#elif _OPENMP == 201511
+// since GCC 6.1
+#define OPENMP_VERSION_STRING "4.5"
+#else
+#define OPENMP_VERSION_STRING STRINGIZE_CPP_NAME(_OPENMP)
+#endif
+
+#define OPENMP_STRING " with OpenMP " OPENMP_VERSION_STRING
 #else
 #define OPENMP_STRING ""
 #endif

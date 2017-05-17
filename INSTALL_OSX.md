@@ -216,6 +216,16 @@ config.pri:
 cat > config.pri << EOF
 boost: INCLUDEPATH += /opt/local/include
 boost: LIBS += -L/opt/local/lib -lboost_serialization-mt
+openmp {
+  INCLUDEPATH += /opt/local/include/libomp
+  LIBS += -L/opt/local/lib/libomp -liomp5
+  cc_setting.name = CC
+  cc_setting.value = /opt/local/bin/clang-mp-4.0
+  cxx_setting.name = CXX
+  cxx_setting.value = /opt/local/bin/clang++-mp-4.0
+  QMAKE_MAC_XCODE_SETTINGS += cc_setting cxx_setting
+  QMAKE_FLAGS = "-B /usr/bin"
+}
 EOF
 ```
 
@@ -230,6 +240,15 @@ boost: LIBS += -L/usr/local/lib -lboost_serialization-mt -lboost_thread-mt -lboo
 expat: PKGCONFIG -= expat
 expat: INCLUDEPATH += /usr/local/opt/expat/include
 expat: LIBS += -L/usr/local/opt/expat/lib -lexpat
+openmp {
+  LIBS += -L/usr/local/opt/llvm/lib -liomp5
+  cc_setting.name = CC
+  cc_setting.value = /usr/local/opt/llvm/bin/clang
+  cxx_setting.name = CXX
+  cxx_setting.value = /usr/local/opt/llvm/bin/clang++
+  QMAKE_MAC_XCODE_SETTINGS += cc_setting cxx_setting
+  QMAKE_FLAGS = "-B /usr/bin"
+}
 EOF
 ```
 
