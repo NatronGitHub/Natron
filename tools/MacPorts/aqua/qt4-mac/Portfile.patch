@@ -1,5 +1,5 @@
 --- Portfile.orig	2017-05-16 10:24:01.000000000 +0200
-+++ Portfile	2017-05-18 14:09:26.000000000 +0200
++++ Portfile	2017-05-18 14:51:09.000000000 +0200
 @@ -11,7 +11,7 @@
  
  name                qt4-mac
@@ -18,7 +18,7 @@
  
  # find a way to specify the OS MINOR version.  For OSX 10.X, this
  # value will be X.  The type is this variable is integer, so we can
-@@ -287,6 +287,21 @@
+@@ -287,6 +287,23 @@
  
  patchfiles-append patch-better-invalid-fonttable-handling.diff
  
@@ -35,7 +35,9 @@
 +# fix build failure with clang-4.0
 +# https://trac.macports.org/ticket/54183
 +# https://svnweb.freebsd.org/ports?view=revision&revision=431846
++# https://svnweb.freebsd.org/ports?view=revision&revision=431847
 +patchfiles-append patch-src_3rdparty_webkit_Source_WebCore_html_HTMLImageElement.cpp
++patchfiles-append patch-tools_linguist_linguist_messagemodel.cpp.diff 
 +
  # error out if trying to build on a new OSX version (> 10.12).
  
