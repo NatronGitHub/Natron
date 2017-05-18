@@ -844,12 +844,18 @@ private:
 
     virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow) OVERRIDE FINAL
     {
-        ImagePrivate::applyMaskMixCPU((const void**)_srcTileData.ptrs, _srcTileData.bounds, _srcTileData.nComps, (const void**)_maskTileData.ptrs, _maskTileData.bounds, _dstTileData.ptrs, _dstTileData.bitDepth, _dstTileData.nComps, _mix, _maskInvert, _dstTileData.bounds, renderWindow, _effect);
-        if (_effect && _effect->isRenderAborted()) {
-            return eActionStatusAborted;
-        }
-        return eActionStatusOK;
-
+        return ImagePrivate::applyMaskMixCPU((const void**)_srcTileData.ptrs,
+                                             _srcTileData.bounds,
+                                             _srcTileData.nComps,
+                                             (const void**)_maskTileData.ptrs,
+                                             _maskTileData.bounds, _dstTileData.ptrs,
+                                             _dstTileData.bitDepth,
+                                             _dstTileData.nComps,
+                                             _mix,
+                                             _maskInvert,
+                                             _dstTileData.bounds,
+                                             renderWindow,
+                                             _effect);
     }
 };
 
@@ -1015,5 +1021,78 @@ Image::copyUnProcessedChannels(const RectI& roi,
     return processor.process();
 
 } // copyUnProcessedChannels
+
+class ApplyPixelShaderProcessor : public ImageMultiThreadProcessorBase
+{
+    Image::CPUData  _dstImgData;
+    const void* _customData;
+    void* _func;
+public:
+
+    ApplyPixelShaderProcessor(const EffectInstancePtr& renderClone)
+    : ImageMultiThreadProcessorBase(renderClone)
+    {
+
+    }
+
+    virtual ~ApplyPixelShaderProcessor()
+    {
+    }
+
+    void setValues(const Image::CPUData& dstImgData, void* func, const void* customData)
+    {
+        _func = func;
+        _dstImgData = dstImgData;
+        _customData = customData;
+    }
+
+private:
+
+    virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow) OVERRIDE FINAL
+    {
+        return ImagePrivate::applyCPUPixelShader(renderWindow, _customData, _effect, _dstImgData, _func);
+    }
+};
+
+
+ActionRetCodeEnum
+ImagePrivate::applyCPUPixelShaderForDepth(const RectI& roi,
+                           const void* customData,
+                           void* func)
+{
+    if (storage != eStorageModeRAM) {
+        return eActionStatusFailed;
+    }
+    Image::CPUData dstImgData;
+    _publicInterface->getCPUData(&dstImgData);
+
+    RectI tileRoI;
+    roi.intersect(dstImgData.bounds, &tileRoI);
+
+    ApplyPixelShaderProcessor processor(renderClone.lock());
+    processor.setValues(dstImgData, func, customData);
+    processor.setRenderWindow(tileRoI);
+    return processor.process();
+}
+
+ActionRetCodeEnum
+Image::applyCPUPixelShader_Float(const RectI& roi, const void* customData, ImageCPUPixelShaderFloat func)
+{
+
+}
+
+ActionRetCodeEnum
+Image::applyCPUPixelShader_Short(const RectI& roi, const void* customData, ImageCPUPixelShaderShort func)
+{
+
+}
+
+ActionRetCodeEnum
+Image::applyCPUPixelShader_Byte(const RectI& roi, const void* customData, ImageCPUPixelShaderByte func)
+{
+
+}
+
+
 
 NATRON_NAMESPACE_EXIT;

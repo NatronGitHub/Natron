@@ -27,7 +27,7 @@
 NATRON_NAMESPACE_ENTER;
 
 template<int srcNComps, int dstNComps, typename PIX, int maxValue, bool masked, bool maskInvert>
-static void
+static ActionRetCodeEnum
 applyMaskMixForMaskInvert(const void* originalImgPtrs[4],
                           const RectI& originalImgBounds,
                           const void* maskImgPtrs[4],
@@ -48,7 +48,7 @@ applyMaskMixForMaskInvert(const void* originalImgPtrs[4],
     for ( int y = roi.y1; y < roi.y2; ++y) {
 
         if (renderClone && renderClone->isRenderAborted()) {
-            return;
+            return eActionStatusAborted;
         }
         for (int x = roi.x1; x < roi.x2; ++x) {
 
@@ -105,10 +105,11 @@ applyMaskMixForMaskInvert(const void* originalImgPtrs[4],
             dstPixelPtrs[c] += (dstRowElements - roi.width() * dstPixelStride);
         }
     }
+    return eActionStatusOK;
 } // applyMaskMixForMaskInvert
 
 template<int srcNComps, int dstNComps, typename PIX, int maxValue, bool masked>
-static void
+static ActionRetCodeEnum
 applyMaskMixForMasked(const void* originalImgPtrs[4],
                       const RectI& originalImgBounds,
                       const void* maskImgPtrs[4],
@@ -121,14 +122,14 @@ applyMaskMixForMasked(const void* originalImgPtrs[4],
                       const EffectInstancePtr& renderClone)
 {
     if (invertMask) {
-        applyMaskMixForMaskInvert<srcNComps, dstNComps, PIX, maxValue, masked, true>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, bounds, roi, renderClone);
+        return applyMaskMixForMaskInvert<srcNComps, dstNComps, PIX, maxValue, masked, true>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, bounds, roi, renderClone);
     } else {
-        applyMaskMixForMaskInvert<srcNComps, dstNComps, PIX, maxValue, masked, false>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, bounds, roi, renderClone);
+        return applyMaskMixForMaskInvert<srcNComps, dstNComps, PIX, maxValue, masked, false>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, bounds, roi, renderClone);
     }
 }
 
 template<int srcNComps, int dstNComps, typename PIX, int maxValue>
-static void
+static ActionRetCodeEnum
 applyMaskMixForDepth(const void* originalImgPtrs[4],
                      const RectI& originalImgBounds,
                      const void* maskImgPtrs[4],
@@ -141,14 +142,14 @@ applyMaskMixForDepth(const void* originalImgPtrs[4],
                      const EffectInstancePtr& renderClone)
 {
     if (maskImgPtrs[0]) {
-        applyMaskMixForMasked<srcNComps, dstNComps, PIX, maxValue, true>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, invertMask, bounds, roi, renderClone);
+        return applyMaskMixForMasked<srcNComps, dstNComps, PIX, maxValue, true>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, invertMask, bounds, roi, renderClone);
     } else {
-        applyMaskMixForMasked<srcNComps, dstNComps, PIX, maxValue, false>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, invertMask, bounds, roi, renderClone);
+        return applyMaskMixForMasked<srcNComps, dstNComps, PIX, maxValue, false>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, invertMask, bounds, roi, renderClone);
     }
 }
 
 template <int srcNComps, int dstNComps>
-static void
+static ActionRetCodeEnum
 applyMaskMixForDstComponents(const void* originalImgPtrs[4],
                              const RectI& originalImgBounds,
                              const void* maskImgPtrs[4],
@@ -163,22 +164,19 @@ applyMaskMixForDstComponents(const void* originalImgPtrs[4],
 {
     switch (dstImgBitDepth) {
         case eImageBitDepthByte:
-            applyMaskMixForDepth<srcNComps, dstNComps, unsigned char, 255>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, invertMask, bounds, roi, renderClone);
-            break;
+            return applyMaskMixForDepth<srcNComps, dstNComps, unsigned char, 255>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, invertMask, bounds, roi, renderClone);
         case eImageBitDepthShort:
-            applyMaskMixForDepth<srcNComps, dstNComps, unsigned short, 65535>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, invertMask, bounds, roi, renderClone);
-            break;
+            return applyMaskMixForDepth<srcNComps, dstNComps, unsigned short, 65535>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, invertMask, bounds, roi, renderClone);
         case eImageBitDepthFloat:
-            applyMaskMixForDepth<srcNComps, dstNComps, float, 1>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, invertMask, bounds, roi, renderClone);
-            break;
+            return applyMaskMixForDepth<srcNComps, dstNComps, float, 1>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, invertMask, bounds, roi, renderClone);
         default:
             assert(false);
-            break;
+            return eActionStatusFailed;
     }
 }
 
 template<int srcNComps>
-static void
+static ActionRetCodeEnum
 applyMaskMixForSrcComponents(const void* originalImgPtrs[4],
                              const RectI& originalImgBounds,
                              const void* maskImgPtrs[4],
@@ -195,23 +193,19 @@ applyMaskMixForSrcComponents(const void* originalImgPtrs[4],
 
     switch (dstImgNComps) {
         case 1:
-            applyMaskMixForDstComponents<srcNComps, 1>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, mix, invertMask, bounds, roi, renderClone);
-            break;
+            return applyMaskMixForDstComponents<srcNComps, 1>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, mix, invertMask, bounds, roi, renderClone);
         case 2:
-            applyMaskMixForDstComponents<srcNComps, 2>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, mix, invertMask, bounds, roi, renderClone);
-            break;
+            return applyMaskMixForDstComponents<srcNComps, 2>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, mix, invertMask, bounds, roi, renderClone);
         case 3:
-            applyMaskMixForDstComponents<srcNComps, 3>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, mix, invertMask, bounds, roi, renderClone);
-            break;
+            return applyMaskMixForDstComponents<srcNComps, 3>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, mix, invertMask, bounds, roi, renderClone);
         case 4:
-            applyMaskMixForDstComponents<srcNComps, 4>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, mix, invertMask, bounds, roi, renderClone);
-            break;
+            return applyMaskMixForDstComponents<srcNComps, 4>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, mix, invertMask, bounds, roi, renderClone);
         default:
-            break;
+            return eActionStatusFailed;
     }
 }
 
-void
+ActionRetCodeEnum
 ImagePrivate::applyMaskMixCPU(const void* originalImgPtrs[4],
                               const RectI& originalImgBounds,
                               int originalImgNComps,
@@ -228,19 +222,15 @@ ImagePrivate::applyMaskMixCPU(const void* originalImgPtrs[4],
 {
     switch (originalImgNComps) {
         case 1:
-            applyMaskMixForSrcComponents<1>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, dstImgNComps, mix, invertMask, bounds, roi, renderClone);
-            break;
+            return applyMaskMixForSrcComponents<1>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, dstImgNComps, mix, invertMask, bounds, roi, renderClone);
         case 2:
-            applyMaskMixForSrcComponents<2>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, dstImgNComps, mix, invertMask, bounds, roi, renderClone);
-            break;
+            return applyMaskMixForSrcComponents<2>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, dstImgNComps, mix, invertMask, bounds, roi, renderClone);
         case 3:
-            applyMaskMixForSrcComponents<3>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, dstImgNComps, mix, invertMask, bounds, roi, renderClone);
-            break;
+            return applyMaskMixForSrcComponents<3>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, dstImgNComps, mix, invertMask, bounds, roi, renderClone);
         case 4:
-            applyMaskMixForSrcComponents<4>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, dstImgNComps, mix, invertMask, bounds, roi, renderClone);
-            break;
+            return applyMaskMixForSrcComponents<4>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, dstImgNComps, mix, invertMask, bounds, roi, renderClone);
         default:
-            break;
+            return eActionStatusFailed;
     }
 
 }

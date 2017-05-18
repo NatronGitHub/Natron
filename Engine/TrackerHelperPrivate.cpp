@@ -378,6 +378,7 @@ TrackerHelperPrivate::trackStepTrackerPM(const TrackMarkerPMPtr& track,
     return track->trackMarker(frameStep > 0, refTime, trackTime);
 }
 
+
 /*
  * @brief This is the internal tracking function that makes use of LivMV to do 1 track step
  * @param trackingIndex This is the index of the Marker we should track in the args
@@ -390,12 +391,6 @@ TrackerHelperPrivate::trackStepLibMV(int trackIndex,
                                       int trackTime)
 {
     assert( trackIndex >= 0 && trackIndex < args.getNumTracks() );
-
-#ifdef CERES_USE_OPENMP
-    // Set the number of threads Ceres may use
-    QThreadPool* tp = QThreadPool::globalInstance();
-    omp_set_num_threads(tp->maxThreadCount() - tp->activeThreadCount() + 1);
-#endif
 
     const std::vector<TrackMarkerAndOptionsPtr >& tracks = args.getTracks();
     const TrackMarkerAndOptionsPtr& track = tracks[trackIndex];
@@ -446,9 +441,26 @@ TrackerHelperPrivate::trackStepLibMV(int trackIndex,
             "with reference frame" << track->mvMarker.reference_frame;
 #endif
 
+
+#ifdef CERES_USE_OPENMP
+        // Set the number of threads Ceres may use
+        QThreadPool* tp = QThreadPool::globalInstance();
+
+        // Allocate max threads for tracking and reserve them from the thread pool
+        int nOmpThreads = tp->maxThreadCount() - tp->activeThreadCount() + 1;
+        omp_set_num_threads(nOmpThreads);
+
+#endif
+
+
         // Do the actual tracking
         libmv::TrackRegionResult result;
-        if ( !autoTrack->TrackMarker(&track->mvMarker, &result,  &track->mvState, &track->mvOptions) || !result.is_usable() ) {
+        bool trackOk = autoTrack->TrackMarker(&track->mvMarker, &result,  &track->mvState, &track->mvOptions);
+        if (!result.is_usable()) {
+            trackOk = false;
+        }
+
+        if (!trackOk) {
 #ifdef TRACE_LIB_MV
             qDebug() << QThread::currentThread() << "Tracking FAILED (" << (int)result.termination <<  ") for track" << trackIndex << "at frame" << trackTime;
 #endif
@@ -456,6 +468,8 @@ TrackerHelperPrivate::trackStepLibMV(int trackIndex,
             // Todo: report error to user
             return false;
         }
+
+
 
         //Ok the tracking has succeeded, now the marker is in this state:
         //the source is TRACKED, the search_window has been offset by the center delta,  the center has been offset

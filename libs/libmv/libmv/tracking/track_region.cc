@@ -41,6 +41,8 @@
 #include "libmv/multiview/homography.h"
 #include "libmv/numeric/numeric.h"
 
+
+
 // Expand the Jet functionality of Ceres to allow mixed numeric/autodiff.
 //
 // TODO(keir): Push this (or something similar) into upstream Ceres.
@@ -297,6 +299,8 @@ class PixelDifferenceCostFunctor {
   void ComputeCanonicalPatchAndNormalizer() {
     src_mean_ = 0.0;
     double num_samples = 0.0;
+
+    libmv_pragma_openmp(parallel for collapse(2) if(num_samples_y_ * num_samples_x_ > libmv_omp_min_pixels) reduction(+:num_samples,src_mean_))
     for (int r = 0; r < num_samples_y_; ++r) {
       for (int c = 0; c < num_samples_x_; ++c) {
         // Compute the position; cache it.
@@ -342,7 +346,8 @@ class PixelDifferenceCostFunctor {
                                     &dst_mean);
     }
 
-    int cursor = 0;
+
+    libmv_pragma_openmp(parallel for collapse(2) if(num_samples_y_ * num_samples_x_ > libmv_omp_min_pixels))
     for (int r = 0; r < num_samples_y_; ++r) {
       for (int c = 0; c < num_samples_x_; ++c) {
         // Use the pre-computed image1 position.
@@ -365,7 +370,7 @@ class PixelDifferenceCostFunctor {
         if (image1_mask_ != NULL) {
           mask_value = pattern_mask_(r, c);
           if (mask_value == 0.0) {
-            residuals[cursor++] = T(0.0);
+            residuals[r * num_samples_x_ + c] = T(0.0);
             continue;
           }
         }
@@ -431,7 +436,7 @@ class PixelDifferenceCostFunctor {
         if (image1_mask_ != NULL) {
           error *= T(mask_value);
         }
-        residuals[cursor++] = error;
+        residuals[r * num_samples_x_ + c] = error;
       }
     }
     return true;
@@ -443,6 +448,8 @@ class PixelDifferenceCostFunctor {
                                      T *dst_mean) const {
     *dst_mean = T(0.0);
     double num_samples = 0.0;
+      T& dst_meanref = *dst_mean;
+    libmv_pragma_openmp(parallel for collapse(2) if(num_samples_y_ * num_samples_x_ > libmv_omp_min_pixels) reduction(+:num_samples,dst_meanref))
     for (int r = 0; r < num_samples_y_; ++r) {
       for (int c = 0; c < num_samples_x_; ++c) {
         // Use the pre-computed image1 position.
@@ -505,6 +512,7 @@ class PixelDifferenceCostFunctor {
     // For example, samples with a 50% mask are counted as a half sample.
     double num_samples = 0;
 
+    libmv_pragma_openmp(parallel for collapse(2) if(num_samples_y_ * num_samples_x_ > libmv_omp_min_pixels) reduction(+:num_samples,sX,sY,sXX,sYY,sXY))
     for (int r = 0; r < num_samples_y_; ++r) {
       for (int c = 0; c < num_samples_x_; ++c) {
         // Use the pre-computed image1 position.
@@ -1151,6 +1159,7 @@ void CreateBrutePattern(const double *x1, const double *y1,
   Warp inverse_warp(x2, y2, x1, y1);
 
   // r,c are in the coordinate frame of image2.
+ libmv_pragma_openmp(parallel for collapse(2) if((max_y - min_y) * (max_x - min_x) > libmv_omp_min_pixels))
   for (int r = min_y; r < max_y; ++r) {
     for (int c = min_x; c < max_x; ++c) {
       // i and j are in the coordinate frame of the pattern in image2.
@@ -1245,8 +1254,11 @@ bool BruteTranslationOnlyInitialize(const FloatImage &image1,
   int best_c = -1;
   int w = pattern.cols();
   int h = pattern.rows();
-
+  libmv_pragma_openmp(for)
   for (int r = 0; r < (image2.Height() - h); ++r) {
+    int best_r_line = -1;
+    int best_c_line = -1;
+    double best_sad_line = std::numeric_limits<double>::max();
     for (int c = 0; c < (image2.Width() - w); ++c) {
       // Compute the weighted sum of absolute differences, Eigen style. Note
       // that the block from the search image is never stored in a variable, to
@@ -1263,12 +1275,21 @@ bool BruteTranslationOnlyInitialize(const FloatImage &image1,
       } else {
         sad = (mask * (pattern - search.block(r, c, h, w))).abs().sum();
       }
-      if (sad < best_sad) {
-        best_r = r;
-        best_c = c;
-        best_sad = sad;
+
+      if (sad < best_sad_line) {
+        best_r_line = r;
+        best_c_line = c;
+        best_sad_line = sad;
       }
     }
+      libmv_pragma_openmp(critical)
+      {
+          if (best_sad_line < best_sad) {
+              best_r = best_r_line;
+              best_c = best_c_line;
+              best_sad = best_sad_line;
+          }
+      }
   }
 
   // This mean the effective pattern area is zero. This check could go earlier,
