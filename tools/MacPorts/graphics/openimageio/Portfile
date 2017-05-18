@@ -48,11 +48,20 @@ depends_skip_archcheck txt2man
 # tested with openimageio 1.4.6rc1:
 # macports-clang-3.3 and later work
 # gcc-4.2 doesn't work
-# llvm-gcc-4.2 works
+# llvm-gcc-4.2 doesn't work
 # macports-clang < 3.3 untested
 # clang < 300 doesn't work
-#compiler.fallback-append macports-gcc-4.8 macports-gcc-4.9 macports-clang-3.3 macports-clang-3.4 macports-clang-3.5
-compiler.blacklist apple-gcc-4.0 apple-gcc-4.2 gcc-3.3 gcc-4.0 gcc-4.2 macports-gcc-4.0 macports-gcc-4.2 {clang < 300}
+# see also https://github.com/OpenImageIO/oiio/issues/1363
+# for some reason, if we compile oiio with gcc 4.9 and boost with gcc 4.2, idiff a.png b.png crashes
+#compiler.fallback-append macports-clang-3.4 macports-gcc-4.8 macports-gcc-4.9 macports-clang-3.3 macports-clang-3.4 macports-clang-3.5
+if {${configure.cxx_stdlib} eq "libstdc++"} {
+  if {[vercmp $xcodeversion 3.0] >= 0} {
+    compiler.fallback-append macports-clang-3.4
+  } else {
+    compiler.fallback-append macports-clang-3.3
+  }
+}
+compiler.blacklist apple-gcc-4.0 apple-gcc-4.2 gcc-3.3 gcc-4.0 gcc-4.2 macports-gcc-4.0 macports-gcc-4.2 llvm-gcc-4.2 {clang < 300}
 
 # The PowerPC build requires GCC >= 4.8, which doesn't recognize the -arch flag, and requires libatomic
 # Unfortunately, the resulting binaries don't work (at least on PPC), so we build without threads
@@ -121,7 +130,7 @@ default_variants    +opencolorio +openjpeg +qt4 +freetype
 variant natron conflicts ffmpeg requires opencolorio openjpeg qt4 freetype description {Natron version} {
     if {${configure.cxx_stdlib} eq "libstdc++"} {
         # configure with GCC 4.9 for proper GCC intrinsics support
-        configure.compiler macports-gcc-4.9
+        #configure.compiler macports-gcc-4.9
         # but disable C++11 if not required (OIIO 1.8 requires C++11)
         configure.args-append -DUSE_CPP11:BOOL=FALSE
     }

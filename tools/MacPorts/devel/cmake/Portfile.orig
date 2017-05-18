@@ -54,20 +54,22 @@ if {${subport} eq ${name}} {
 
     # devel
 
-    version         20170511
-    set dist_branch 3.8
-    set dist_date   20170506
-    set dist_hash   gcbee4
-    checksums       rmd160 caeeb20bde2f5fd810cb2bdb76156436c33534ee \
-                    sha256 1c66097b405f4131c19217c29bc30e46541dff3046c2e3f74716a5ddf491cf48
+    version         20170516
+    set commit      3f25f873f8f0cd4c9c8d5dce29535c6b2757eaea
+    checksums       rmd160 e6144adeee31232d7f0d08678c97dd0532a12dfc \
+                    sha256 dd1525b3e9a4e651485de69aeab57d65c7e62892b203f8494dd8919ed9adca84
 
-    master_sites    http://www.cmake.org/files/dev/
-    distname        ${name}-${dist_branch}.${dist_date}-${dist_hash}
+    master_sites    https://gitlab.kitware.com/cmake/cmake/repository/archive.tar.bz2?ref=${commit}&
+    distname        ${name}-${commit}
+
+    post-extract {
+        move ${workpath}/${name}-${commit}-${commit} ${workpath}/${name}-${commit}
+    }
+
     conflicts       cmake
-
     long_description ${base_long_description} \
         The ${subport} port is updated roughly every week.
-
+    
     # devel-only patches
     patchfiles-append \
         patch-Modules-FindQt4.cmake.devel.diff \
@@ -77,9 +79,9 @@ if {${subport} eq ${name}} {
         patch-Source_CMakeVersionCompute.cmake.devel.diff
 
     livecheck.type  regex
-    livecheck.regex (${name}-\[0-9a-g.-\]+)${extract.suffix}
-    livecheck.version ${distname}
-    livecheck.url   http://www.cmake.org/files/dev/
+    livecheck.regex /cmake/cmake/commit/(\[0-9a-g\]+)
+    livecheck.version ${commit}
+    livecheck.url   https://gitlab.kitware.com/cmake/cmake/tree/master
 
 }
 
