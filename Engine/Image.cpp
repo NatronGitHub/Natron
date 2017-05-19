@@ -1078,19 +1078,28 @@ ImagePrivate::applyCPUPixelShaderForDepth(const RectI& roi,
 ActionRetCodeEnum
 Image::applyCPUPixelShader_Float(const RectI& roi, const void* customData, ImageCPUPixelShaderFloat func)
 {
-
+    if (getBitDepth() != eImageBitDepthFloat) {
+        return eActionStatusFailed;
+    }
+    return _imp->applyCPUPixelShaderForDepth(roi, customData, (void*)func);
 }
 
 ActionRetCodeEnum
 Image::applyCPUPixelShader_Short(const RectI& roi, const void* customData, ImageCPUPixelShaderShort func)
 {
-
+    if (getBitDepth() != eImageBitDepthShort) {
+        return eActionStatusFailed;
+    }
+    return _imp->applyCPUPixelShaderForDepth(roi, customData, (void*)func);
 }
 
 ActionRetCodeEnum
 Image::applyCPUPixelShader_Byte(const RectI& roi, const void* customData, ImageCPUPixelShaderByte func)
 {
-
+    if (getBitDepth() != eImageBitDepthByte) {
+        return eActionStatusFailed;
+    }
+    return _imp->applyCPUPixelShaderForDepth(roi, customData, (void*)func);
 }
 
 
