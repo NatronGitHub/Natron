@@ -609,6 +609,8 @@ Gui::createMenuActions()
 
     QAction* undoAction = _imp->_undoStacksGroup->createUndoAction(_imp->menuEdit);
     QAction* redoAction = _imp->_undoStacksGroup->createRedoAction(_imp->menuEdit);
+    undoAction->setShortcuts(QKeySequence::Undo);
+    redoAction->setShortcuts(QKeySequence::Redo);
     _imp->menuEdit->addAction(undoAction);
     _imp->menuEdit->addAction(redoAction);
 

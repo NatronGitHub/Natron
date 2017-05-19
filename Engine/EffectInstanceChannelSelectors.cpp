@@ -277,20 +277,6 @@ EffectInstance::refreshLayersSelectorsVisibility()
         }
     }
 
-    for (std::map<int, MaskSelector>::iterator it = _imp->defKnobs->maskSelectors.begin(); it != _imp->defKnobs->maskSelectors.end(); ++it) {
-        EffectInstancePtr inp = getInputMainInstance(it->first);
-
-        KnobBoolPtr enabledKnob = it->second.enabled.lock();
-        assert(enabledKnob);
-        bool curValue = enabledKnob->getValue();
-        bool newValue = inp ? true : false;
-        bool changed = curValue != newValue;
-        if (changed) {
-            enabledKnob->setValue(newValue);
-        }
-
-    }
-
 
     // Refresh RGBA checkbox visibility
     KnobBoolPtr enabledChan[4];

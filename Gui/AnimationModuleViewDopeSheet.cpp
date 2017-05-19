@@ -1431,6 +1431,9 @@ AnimationModuleViewPrivate::dopeSheetMousePressEvent(QMouseEvent *e)
 bool
 AnimationModuleViewPrivate::dopeSheetAddKeyFrame(const QPoint& p)
 {
+    if (!treeView) {
+        return false;
+    }
     AnimationModuleBasePtr model = _model.lock();
 
     QTreeWidgetItem *itemUnderPoint = treeView->itemAt(TO_DPIX(5), p.y());

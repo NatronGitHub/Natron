@@ -504,7 +504,7 @@ KnobGuiChoice::updateGUI()
     if ( !activeEntry.id.empty() ) {
         bool activeIndexPresent = knob->isActiveEntryPresentInEntries(getView());
         if (!activeIndexPresent) {
-            QString error = tr("The value %1 no longer exist in the menu.").arg(activeEntryLabel);
+            QString error = tr("The value %1 no longer exists in the menu").arg(activeEntryLabel);
             getKnobGui()->setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, NATRON_NAMESPACE::convertFromPlainText(error, NATRON_NAMESPACE::WhiteSpaceNormal) );
         } else {
             getKnobGui()->setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );

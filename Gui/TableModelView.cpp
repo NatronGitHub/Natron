@@ -1372,7 +1372,7 @@ TableView::TableView(Gui* gui, QWidget* parent)
 
     ///The table model here doesn't support sorting
     setSortingEnabled(false);
-
+    setMouseTracking(true);
     header()->setStretchLastSection(false);
     header()->setFont( QApplication::font() ); // necessary, or the header font will have the default size, not the application font size
     setTextElideMode(Qt::ElideMiddle);

@@ -83,7 +83,6 @@ EffectInstance::createMaskSelectors(const std::vector<std::pair<bool, bool> >& h
             param->setDeclaredByPlugin(false);
             param->setDefaultValue(false);
             param->setAddNewLine(false);
-            param->setIsMetadataSlave(true);
             param->setAnimationEnabled(false);
             if (mainPage) {
                 mainPage->addKnob(param);

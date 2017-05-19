@@ -738,6 +738,11 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
         return false;
     }
 
+    const bool inputIsMask = isInputMask(inArgs.inputNb);
+    if (inputIsMask && !isMaskEnabled(inArgs.inputNb)) {
+        return false;
+    }
+
     unsigned int currentMipMapLevel = inArgs.currentActionMipMapLevel ? *inArgs.currentActionMipMapLevel : 0;
 
     RenderScale currentProxyScale = inArgs.currentActionProxyScale ? *inArgs.currentActionProxyScale : RenderScale(1.);
@@ -943,15 +948,19 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
             return false;
         }
 
+        // inputIsMask
         int channelForMask = - 1;
         ImagePlaneDesc maskComps;
-        {
+        if (inputIsMask) {
             std::list<ImagePlaneDesc> upstreamAvailableLayers;
             ActionRetCodeEnum stat = getAvailableLayers(inputTime, inputView, inArgs.inputNb, &upstreamAvailableLayers);
             if (isFailureRetCode(stat)) {
                 return false;
             }
             channelForMask = getMaskChannel(inArgs.inputNb, upstreamAvailableLayers, &maskComps);
+            if (channelForMask == -1) {
+                return false;
+            }
         }
         
         

@@ -653,7 +653,7 @@ WarpKeysCommand::warpKeys()
             KeyFrameWithStringIndexSet::const_iterator keysIt = keyStringSet.begin();
             for (std::size_t i = 0; i < newKeyframe.size(); ++i, ++keysIt) {
 
-                // Copy the new key, it's time and Y value may have changed
+                // Copy the new key, its time and Y value may have changed
                 KeyFrameWithStringIndex k;
                 k.k.key = newKeyframe[i];
 
