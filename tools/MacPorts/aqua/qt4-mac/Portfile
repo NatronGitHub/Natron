@@ -301,7 +301,7 @@ patchfiles-append qsetting-nulls.patch
 # https://trac.macports.org/ticket/54183
 # https://svnweb.freebsd.org/ports?view=revision&revision=431846
 # https://svnweb.freebsd.org/ports?view=revision&revision=431847
-patchfiles-append patch-src_3rdparty_webkit_Source_WebCore_html_HTMLImageElement.cpp
+patchfiles-append patch-src_3rdparty_webkit_Source_WebCore_html_HTMLImageElement.cpp.diff
 patchfiles-append patch-tools_linguist_linguist_messagemodel.cpp.diff 
 
 # error out if trying to build on a new OSX version (> 10.12).
