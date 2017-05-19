@@ -449,9 +449,15 @@ class PixelDifferenceCostFunctor {
   void ComputeNormalizingCoefficient(const T *warp_parameters,
                                      T *dst_mean) const {
     *dst_mean = T(0.0);
+
+    // Accumulate for each thread separatly without synchronization, then do a final loop on the master thread
+#ifdef CERES_USE_OPENMP
+    int nThreads = omp_get_num_threads();
+    std::vector<T> perThreadResults(nThreads, T(0.0));
+#endif
+
     double num_samples = 0.0;
-    double dst_meansum = 0.0;
-    libmv_pragma_openmp(parallel for collapse(2) if(num_samples_y_ * num_samples_x_ > libmv_omp_min_pixels) reduction(+:num_samples,dst_meansum))
+    libmv_pragma_openmp(parallel for collapse(2) if(num_samples_y_ * num_samples_x_ > libmv_omp_min_pixels) reduction(+:num_samples))
     for (int r = 0; r < num_samples_y_; ++r) {
       for (int c = 0; c < num_samples_x_; ++c) {
         // Use the pre-computed image1 position.
@@ -489,12 +495,20 @@ class PixelDifferenceCostFunctor {
         if (image1_mask_ != NULL) {
           dst_sample *= T(mask_value);
         }
-
-        dst_meansum += dst_sample;
+#ifdef CERES_USE_OPENMP
+        perThreadResults[omp_get_thread_num()] += dst_sample;
+#else
+        *dst_mean += dst_sample;
+#endif
         num_samples += mask_value;
       }
     }
-    *dst_mean += dst_meansum;
+#ifdef CERES_USE_OPENMP
+    // Accumulate each thread results
+      for (std::size_t i = 0; i < perThreadResults.size(); ++i) {
+          *dst_mean += perThreadResults[i];
+      }
+#endif
     *dst_mean /= T(num_samples);
     LG << "Normalization for dst:" << *dst_mean;
   }
