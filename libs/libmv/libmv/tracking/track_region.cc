@@ -300,7 +300,8 @@ class PixelDifferenceCostFunctor {
     src_mean_ = 0.0;
     double num_samples = 0.0;
 
-    libmv_pragma_openmp(parallel for collapse(2) if(num_samples_y_ * num_samples_x_ > libmv_omp_min_pixels) reduction(+:num_samples,src_mean_))
+    double src_mean_local = 0.0;
+    libmv_pragma_openmp(parallel for collapse(2) if(num_samples_y_ * num_samples_x_ > libmv_omp_min_pixels) reduction(+:num_samples,src_mean_local))
     for (int r = 0; r < num_samples_y_; ++r) {
       for (int c = 0; c < num_samples_x_; ++c) {
         // Compute the position; cache it.
@@ -324,10 +325,11 @@ class PixelDifferenceCostFunctor {
                        &pattern_mask_(r, c, 0));
           mask_value = pattern_mask_(r, c);
         }
-        src_mean_ += pattern_and_gradient_(r, c, 0) * mask_value;
+        src_mean_local += pattern_and_gradient_(r, c, 0) * mask_value;
         num_samples += mask_value;
       }
     }
+    src_mean_ = src_mean_local;
     src_mean_ /= num_samples;
   }
 
@@ -448,8 +450,8 @@ class PixelDifferenceCostFunctor {
                                      T *dst_mean) const {
     *dst_mean = T(0.0);
     double num_samples = 0.0;
-      T& dst_meanref = *dst_mean;
-    libmv_pragma_openmp(parallel for collapse(2) if(num_samples_y_ * num_samples_x_ > libmv_omp_min_pixels) reduction(+:num_samples,dst_meanref))
+    double dst_meansum = 0.0;
+    libmv_pragma_openmp(parallel for collapse(2) if(num_samples_y_ * num_samples_x_ > libmv_omp_min_pixels) reduction(+:num_samples,dst_meansum))
     for (int r = 0; r < num_samples_y_; ++r) {
       for (int c = 0; c < num_samples_x_; ++c) {
         // Use the pre-computed image1 position.
@@ -488,10 +490,11 @@ class PixelDifferenceCostFunctor {
           dst_sample *= T(mask_value);
         }
 
-        *dst_mean += dst_sample;
+        dst_meansum += dst_sample;
         num_samples += mask_value;
       }
     }
+    *dst_mean += dst_meansum;
     *dst_mean /= T(num_samples);
     LG << "Normalization for dst:" << *dst_mean;
   }
