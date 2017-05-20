@@ -969,7 +969,7 @@ TrackerNode::initializeTrackingPageKnobs(const KnobPagePtr& trackingPage)
         param->setEvaluateOnChange(false);
         param->setIconLabel("Images/addTrack.png");
         param->setAddNewLine(false);
-        trackingPage->addKnob(param);
+        _imp->knobsTable->addTableControlKnob(param);
         _imp->addTrackFromPanelButton = param;
     }
     {
@@ -979,7 +979,7 @@ TrackerNode::initializeTrackingPageKnobs(const KnobPagePtr& trackingPage)
         param->setEvaluateOnChange(false);
         param->setIconLabel("Images/rotoPaintRemoveItemIcon.png");
         param->setAddNewLine(false);
-        trackingPage->addKnob(param);
+        _imp->knobsTable->addTableControlKnob(param);
         _imp->removeSelectedTracksButton = param;
     }
     {
@@ -987,7 +987,7 @@ TrackerNode::initializeTrackingPageKnobs(const KnobPagePtr& trackingPage)
         param->setLabel(tr(kTrackerAverageTracksParamLabel));
         param->setHintToolTip( tr(kTrackerAverageTracksParamHint) );
         param->setEvaluateOnChange(false);
-        trackingPage->addKnob(param);
+        _imp->knobsTable->addTableControlKnob(param);
         _imp->averageTracksButton = param;
 
     }
@@ -1419,7 +1419,8 @@ TrackerNode::initializeKnobs()
     initializeRightClickMenuKnobs(trackingPage);
     initializeViewerUIKnobs(trackingPage);
 
-    setItemsTable(_imp->knobsTable, KnobHolder::eKnobItemsTablePositionAfterKnob, "trackTableSep");
+    // Add the table at the bottom of the tracking page
+    setItemsTable(_imp->knobsTable, KnobHolder::eKnobItemsTablePositionAfterKnob, trackingPage->getName());
 
 
     QObject::connect( getNode().get(), SIGNAL(s_refreshPreviewsAfterProjectLoadRequested()), _imp->ui.get(), SLOT(rebuildMarkerTextures()) );

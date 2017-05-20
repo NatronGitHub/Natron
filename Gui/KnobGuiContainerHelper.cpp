@@ -35,11 +35,13 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QApplication>
 #include <QUndoStack>
 #include <QUndoCommand>
+#include <QDebug>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/EffectInstance.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/KnobItemsTable.h"
 #include "Engine/Node.h"
 
 #include "Gui/KnobGui.h"
@@ -392,6 +394,9 @@ KnobGuiContainerHelper::initializeKnobs()
                     _imp->knobsTable->addWidgetsToLayout(mainLayout);
                 }   break;
             }
+
+            KnobsVec tableControlKnobs = table->getTableControlKnobs();
+            initializeKnobVectorInternal(tableControlKnobs, 0);
         }
     }
     
@@ -446,6 +451,19 @@ KnobGuiContainerHelper::initializeKnobVector(const KnobsVec& knobs)
         // Create its children
         KnobsVec children = (*it)->getChildren();
         initializeKnobVectorInternal(children, &regularKnobs);
+    }
+
+    // Remove from the regularKnobs left the knobs that want to be with the knobsTable (if any)
+    KnobItemsTablePtr table = _imp->holder.lock()->getItemsTable();
+    if (table) {
+        KnobsVec tmp;
+        for (KnobsVec::const_iterator it = regularKnobs.begin(); it != regularKnobs.end(); ++it) {
+            if (table->isTableControlKnob(*it)) {
+                continue;
+            }
+            tmp.push_back(*it);
+        }
+        regularKnobs = tmp;
     }
 
     // For knobs that did not belong to a page,  create them
@@ -663,10 +681,17 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr &knob)
         }
     }
 
+    // A knob that is a table control (e.g: "Add Item" "Remove item") does not literally belong to a page and is
+    // dependent of the location of the table
+    KnobItemsTablePtr knobsTable = _imp->holder.lock()->getItemsTable();
+    const bool isKnobTableControl = !knobsTable ? false : knobsTable->isTableControlKnob(knob);
+
     KnobIPtr parentKnob = knob->getParentKnob();
 
     // If this assert triggers, that means a knob was not added to a KnobPage.
-    assert(parentKnob || !isPagingEnabled());
+    if (!isKnobTableControl && !parentKnob && isPagingEnabled()) {
+        qDebug() << parentKnob->getName().c_str() << "does not belong to any page";
+    }
 
     KnobGroupPtr parentIsGroup = toKnobGroup(parentKnob);
 
@@ -686,20 +711,28 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr &knob)
 
 
     // So far the knob could have no parent, in which case we force it to be in the default page.
-    if (!parentKnob) {
+    if (!parentKnob && !isKnobTableControl) {
         KnobPageGuiPtr defPage = getOrCreateDefaultPage();
         defPage->pageKnob.lock()->addKnob(knob);
         parentKnob = defPage->pageKnob.lock();
+        assert(parentKnob);
+
     }
 
-    assert(parentKnob);
 
-    // For group only create the widgets if it is not a tab, otherwise do a special case
     if ( isGroup  && isGroup->isTab() ) {
+        // A group set as a tab must add a tab to the parent tabwidget
         createTabedGroupGui(isGroup);
-    } else {
-        // Get the top level parent
+        KnobsVec children = isGroup->getChildren();
+        initializeKnobVector(children);
+        return ret;
+    }
+
+    // Get the top level parent page
+    KnobPageGuiPtr page;
+    if (!isKnobTableControl) {
         KnobPagePtr isTopLevelParentAPage = toKnobPage(parentKnob);
+
         KnobIPtr parentKnobTmp = parentKnob;
         while (parentKnobTmp && !isTopLevelParentAPage) {
             parentKnobTmp = parentKnobTmp->getParentKnob();
@@ -707,25 +740,39 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr &knob)
                 isTopLevelParentAPage = toKnobPage(parentKnobTmp);
             }
         }
-
-        // Find in which page the knob should be
         assert(isTopLevelParentAPage);
-        KnobPageGuiPtr page = getOrCreatePage(isTopLevelParentAPage);
 
-        if (!page) {
-            return ret;
-        }
-        // Retrieve the main grid layout
-        QGridLayout* gridLayout = page->gridLayout;
+        page = getOrCreatePage(isTopLevelParentAPage);
+    }
 
-        /*
-         * Find out in which layout the knob should be: either in the layout of the page or in the layout of
-         * the nearest parent group tab in the hierarchy
-         */
-        KnobGroupPtr closestParentGroupTab;
+    if (!page && !isKnobTableControl) {
+        return ret;
+    }
+
+    // Retrieve the main grid layout of the page
+    QGridLayout* gridLayout = 0;
+    QBoxLayout* boxLayout = 0;
+    QLayout* knobTablesLayout = 0;
+
+    if (!isKnobTableControl) {
+        gridLayout = page->gridLayout;
+    } else {
+        // For a table control, retrieve the layout on the knobs table itself.
+        // It can be either a grid or box layout
+        assert(_imp->knobsTable);
+        knobTablesLayout = _imp->knobsTable->getContainerLayout();
+        gridLayout = dynamic_cast<QGridLayout*>(knobTablesLayout);
+        boxLayout = dynamic_cast<QBoxLayout*>(knobTablesLayout);
+    }
+
+    /*
+     * Find out in which layout the knob should be: either in the layout of the page or in the layout of
+     * the nearest parent group tab in the hierarchy
+     */
+    KnobGroupPtr closestParentGroupTab;
+    if (!isKnobTableControl) {
         KnobIPtr parentTmp = parentKnob;
-        assert(parentKnobTmp);
-        while (!closestParentGroupTab) {
+        while (!closestParentGroupTab && parentTmp) {
             KnobGroupPtr parentGroup = toKnobGroup(parentTmp);
             if ( parentGroup && parentGroup->isTab() ) {
                 closestParentGroupTab = parentGroup;
@@ -735,60 +782,73 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr &knob)
                 break;
             }
         }
+    }
 
-        if (closestParentGroupTab) {
-            /*
-             * At this point we know that the parent group (which is a tab in the TabWidget) will have at least 1 knob
-             * so ensure it is added to the TabWidget.
-             * There are 2 possibilities, either the parent of the group tab is another group, in which case we have to
-             * make sure the TabWidget is visible in the parent TabWidget of the group, otherwise we just add the TabWidget
-             * to the on of the page.
-             */
+    if (closestParentGroupTab && !isKnobTableControl) {
+        /*
+         * At this point we know that the parent group (which is a tab in the TabWidget) will have at least 1 knob
+         * so ensure it is added to the TabWidget.
+         * There are 2 possibilities, either the parent of the group tab is another group, in which case we have to
+         * make sure the TabWidget is visible in the parent TabWidget of the group, otherwise we just add the TabWidget
+         * to the on of the page.
+         */
 
-            KnobIPtr parentParent = closestParentGroupTab->getParentKnob();
-            KnobGroupPtr parentParentIsGroup = toKnobGroup(parentParent);
-            KnobPagePtr parentParentIsPage = toKnobPage(parentParent);
+        KnobIPtr parentParent = closestParentGroupTab->getParentKnob();
+        KnobGroupPtr parentParentIsGroup = toKnobGroup(parentParent);
+        KnobPagePtr parentParentIsPage = toKnobPage(parentParent);
 
-            assert(parentParentIsGroup || parentParentIsPage);
-            if (parentParentIsGroup) {
-                KnobGuiPtr parentParentGui = findKnobGuiOrCreate(parentParent);
-                assert(parentParentGui);
-                if (parentParentGui) {
-                    TabGroup* groupAsTab = parentParentGui->getOrCreateTabWidget();
-                    assert(groupAsTab);
-                    gridLayout = groupAsTab->addTab( closestParentGroupTab, QString::fromUtf8( closestParentGroupTab->getLabel().c_str() ) );
-                    groupAsTab->refreshTabSecretNess(closestParentGroupTab);
-                }
-            } else if (parentParentIsPage) {
-                KnobPageGuiPtr page = getOrCreatePage(parentParentIsPage);
-                assert(page);
-                assert(page->groupAsTab);
-                gridLayout = page->groupAsTab->addTab( closestParentGroupTab, QString::fromUtf8( closestParentGroupTab->getLabel().c_str() ) );
-                page->groupAsTab->refreshTabSecretNess(closestParentGroupTab);
+        assert(parentParentIsGroup || parentParentIsPage);
+        if (parentParentIsGroup) {
+            KnobGuiPtr parentParentGui = findKnobGuiOrCreate(parentParent);
+            assert(parentParentGui);
+            if (parentParentGui) {
+                TabGroup* groupAsTab = parentParentGui->getOrCreateTabWidget();
+                assert(groupAsTab);
+                gridLayout = groupAsTab->addTab( closestParentGroupTab, QString::fromUtf8( closestParentGroupTab->getLabel().c_str() ) );
+                groupAsTab->refreshTabSecretNess(closestParentGroupTab);
             }
-            assert(gridLayout);
+        } else if (parentParentIsPage) {
+            KnobPageGuiPtr page = getOrCreatePage(parentParentIsPage);
+            assert(page);
+            assert(page->groupAsTab);
+            gridLayout = page->groupAsTab->addTab( closestParentGroupTab, QString::fromUtf8( closestParentGroupTab->getLabel().c_str() ) );
+            page->groupAsTab->refreshTabSecretNess(closestParentGroupTab);
+        }
+        assert(gridLayout);
+    }
+
+    // Create the actual gui for the knob. If there was a knob decribed previously that had the onNewLine flag
+    // set to false, the knob will already be added to the layout
+    {
+        QWidget* parentWidget = 0;
+        if (isKnobTableControl) {
+            parentWidget = knobTablesLayout->parentWidget();
+        } else {
+            assert(page);
+            parentWidget = page->tab;
+        }
+        ret->createGUI(parentWidget);
+    }
+
+
+    // Add the knob to the layotu
+    if (ret->isOnNewLine()) {
+
+        const bool labelOnSameColumn = ret->isLabelOnSameColumn();
+        Qt::Alignment labelAlignment;
+        Qt::Alignment fieldAlignment;
+
+        if (isGroup) {
+            labelAlignment = Qt::AlignLeft;
+        } else {
+            labelAlignment = Qt::AlignRight;
         }
 
-        // Fill the fieldLayout with the widgets
-        ret->createGUI(page->tab);
+        QWidget* labelContainer = ret->getLabelContainer();
+        QWidget* fieldContainer = ret->getFieldContainer();
 
-
-        // Must add the row to the layout before calling setSecret()
-        if (ret->isOnNewLine()) {
-
-            const bool labelOnSameColumn = ret->isLabelOnSameColumn();
-            Qt::Alignment labelAlignment;
-            Qt::Alignment fieldAlignment;
-
-            if (isGroup) {
-                labelAlignment = Qt::AlignLeft;
-            } else {
-                labelAlignment = Qt::AlignRight;
-            }
-
+        if (gridLayout) {
             int rowIndex = gridLayout->rowCount();
-            QWidget* labelContainer = ret->getLabelContainer();
-            QWidget* fieldContainer = ret->getFieldContainer();
             if (!labelContainer) {
                 gridLayout->addWidget(fieldContainer, rowIndex, 0, 1, 2);
             } else {
@@ -799,18 +859,32 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr &knob)
                     gridLayout->addWidget(labelContainer, rowIndex, 0, 1, 1, labelAlignment);
                     gridLayout->addWidget(fieldContainer, rowIndex, 1, 1, 1);
                 }
-
             }
-
-
             workAroundGridLayoutBug(gridLayout);
 
-        }  // makeNewLine
+        } else if (boxLayout) {
+            // Add both label + content to a horizontal wifget and add them to the box layout
+            QWidget* container = new QWidget(boxLayout->parentWidget());
+            QHBoxLayout* hLayout = new QHBoxLayout(container);
+            hLayout->setContentsMargins(0, 0, 0, 0);
+            hLayout->setSpacing(0);
+            if (labelContainer) {
+                hLayout->addWidget(labelContainer);
+            }
 
+            hLayout->addWidget(fieldContainer);
+            boxLayout->addWidget(container);
+            hLayout->addStretch();
+        }
+
+
+    }
+
+    // If this knob is within a group, add this KnobGui to the KnobGroupGui
+
+    {
         boost::shared_ptr<KnobGuiGroup> parentGroupGui;
         KnobGuiPtr parentKnobGui;
-        KnobGroupPtr parentIsGroup = toKnobGroup(parentKnob);
-        // If this knob is within a group, make sure the group is created so far
         if (parentIsGroup) {
             parentKnobGui = findKnobGuiOrCreate(parentKnob);
             if (parentKnobGui) {
@@ -820,22 +894,25 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr &knob)
         if (parentGroupGui) {
             parentGroupGui->addKnob(ret);
         }
+    }
 
-        // If the node wants a knobtable after this knob, create it
-        KnobHolderPtr holder = _imp->holder.lock();
-        KnobItemsTablePtr table = holder->getItemsTable();
-        KnobHolder::KnobItemsTablePositionEnum knobTablePosition = holder->getItemsTablePosition();
-        if (table && !_imp->knobsTable && knobTablePosition == KnobHolder::eKnobItemsTablePositionAfterKnob) {
-            std::string knobTableName = holder->getItemsTablePreviousKnobScriptName();
-            if (knobTableName == knob->getName()) {
-                _imp->knobsTable = createKnobItemsTable(page->tab);
-                _imp->knobsTable->addWidgetsToLayout(gridLayout);
-            }
+    // If the node wants a KnobItemsTable after this knob, create it
+    KnobHolderPtr holder = _imp->holder.lock();
+    KnobItemsTablePtr table = holder->getItemsTable();
+    KnobHolder::KnobItemsTablePositionEnum knobTablePosition = holder->getItemsTablePosition();
+    if (table && !_imp->knobsTable && knobTablePosition == KnobHolder::eKnobItemsTablePositionAfterKnob) {
+        std::string knobTableName = holder->getItemsTablePreviousKnobScriptName();
+        if (knobTableName == knob->getName()) {
+            _imp->knobsTable = createKnobItemsTable(page->tab);
+            _imp->knobsTable->addWidgetsToLayout(gridLayout);
+
+            KnobsVec tableControlKnobs = table->getTableControlKnobs();
+            initializeKnobVectorInternal(tableControlKnobs, 0);
         }
-    } //  if ( !ret->hasWidgetBeenCreated() && ( !isGroup || !isGroup->isTab() ) ) {
+    }
 
 
-    // If the knob is a group, create all the children
+    // If the knob is a group, create all the children now recursively
     if (isGroup) {
         KnobsVec children = isGroup->getChildren();
         initializeKnobVector(children);

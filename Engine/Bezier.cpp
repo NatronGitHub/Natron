@@ -3873,7 +3873,11 @@ Bezier::isClockwiseOriented(TimeValue time, ViewIdx view) const
         if ( next != allPoints.end() ) {
             ++next;
         }
-        for (; next != allPoints.end(); ++it, ++next) {
+        for (; it != allPoints.end(); ++it, ++next) {
+
+            if (next == allPoints.end()) {
+                next = allPoints.begin();
+            }
             Point u;
             u.x = it->x - originalPoint.x;
             u.y = it->y - originalPoint.y;

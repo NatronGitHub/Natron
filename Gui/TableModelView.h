@@ -111,6 +111,11 @@ public:
      * @brief Returns the children of this item. The ownership of the children is handled by this item.
      **/
     const std::vector<TableItemPtr>& getChildren() const;
+
+    /**
+     * @brief Returns true if the given item is a child of this item or any sub item recursively
+     **/
+    bool isChildRecursive(const TableItemPtr& item) const;
     
     /**
      * @brief Inserts a child at the given row.
@@ -393,12 +398,12 @@ protected:
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
 
     virtual void setupAndExecDragObject(QDrag* drag,
-                                        const QModelIndexList& rows,
+                                        const std::list<TableItemPtr>& rows,
                                         Qt::DropActions supportedActions,
                                         Qt::DropAction defaultAction);
 private:
     
-    virtual void startDrag(Qt::DropActions /*supportedActions*/) OVERRIDE FINAL {}
+    virtual void startDrag(Qt::DropActions supportedActions) OVERRIDE FINAL;
 
     void setupDragObject(Qt::DropActions supportedActions);
     
@@ -410,7 +415,7 @@ private:
 
     void adjustViewOptionsForIndex(QStyleOptionViewItemV4 *option, const TableItemPtr &item, const QModelIndex& index) const;
     QStyleOptionViewItemV4 viewOptionsV4() const;
-    QPixmap renderToPixmap(const QModelIndexList& rows, QRect *r) const;
+    QPixmap renderToPixmap(const std::list<TableItemPtr>& rows, QRect *r) const;
 
 
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;

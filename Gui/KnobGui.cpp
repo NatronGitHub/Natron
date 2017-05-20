@@ -247,17 +247,22 @@ KnobGuiPrivate::refreshIsOnNewLineFlag()
         if (layoutType == KnobGui::eKnobLayoutTypeViewerUI && k->getHolder()->getInViewerContextKnobIndex(k) != -1) {
             siblings = k->getHolder()->getViewerUIKnobs();
         } else {
-            KnobIPtr parentKnob = k->getParentKnob();
-            KnobGroupPtr isParentGroup = toKnobGroup(parentKnob);
-            if (isParentGroup) {
-                // If the parent knob is a group, knobs on the same line have to be found in the children
-                // of the parent
-                siblings = isParentGroup->getChildren();
+            KnobItemsTablePtr table = k->getHolder()->getItemsTable();
+            if (table && table->isTableControlKnob(k)) {
+                siblings = table->getTableControlKnobs();
             } else {
-                // Parent is a page, find the siblings in the children of the page
-                KnobPagePtr isParentPage = toKnobPage(parentKnob);
-                if (isParentPage) {
-                    siblings = isParentPage->getChildren();
+                KnobIPtr parentKnob = k->getParentKnob();
+                KnobGroupPtr isParentGroup = toKnobGroup(parentKnob);
+                if (isParentGroup) {
+                    // If the parent knob is a group, knobs on the same line have to be found in the children
+                    // of the parent
+                    siblings = isParentGroup->getChildren();
+                } else {
+                    // Parent is a page, find the siblings in the children of the page
+                    KnobPagePtr isParentPage = toKnobPage(parentKnob);
+                    if (isParentPage) {
+                        siblings = isParentPage->getChildren();
+                    }
                 }
             }
         }

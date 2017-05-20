@@ -143,6 +143,9 @@ struct KnobItemsTableGuiPrivate
     // Prevent recursion from selectionChanged signal of QItemSelectionModel
     int selectingModelRecursion;
 
+    // The main layout containing table + other buttons
+    QLayout* containerLayout;
+
     Label* userKeyframeLabel;
     SpinBox* currentKeyFrameSpinBox;
     Label* ofTotalKeyFramesLabel;
@@ -164,6 +167,7 @@ struct KnobItemsTableGuiPrivate
     , itemEditorFactory()
     , items()
     , selectingModelRecursion(0)
+    , containerLayout(0)
     , userKeyframeLabel(0)
     , currentKeyFrameSpinBox(0)
     , ofTotalKeyFramesLabel(0)
@@ -607,12 +611,43 @@ private:
     virtual void dragEnterEvent(QDragEnterEvent *e) OVERRIDE FINAL;
     virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
     virtual void setupAndExecDragObject(QDrag* drag,
-                                        const QModelIndexList& rows,
+                                        const std::list<TableItemPtr>& rows,
                                         Qt::DropActions supportedActions,
                                         Qt::DropAction defaultAction) OVERRIDE FINAL;
 
     virtual void drawBranches(QPainter *painter, const QRect &rect, const QModelIndex &index) const OVERRIDE FINAL;
     virtual void drawRow(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const OVERRIDE FINAL;
+};
+
+class KnobItemsTableModel : public TableModel
+{
+private:
+
+    KnobItemsTableModel(int cols, TableModelTypeEnum type)
+    : TableModel(cols, type)
+    {
+
+    }
+
+public:
+
+    virtual QStringList mimeTypes() const OVERRIDE FINAL
+    {
+        QStringList ret;
+        ret.push_back(QLatin1String(kNatronKnobItemsTableGuiMimeType));
+        return ret;
+    }
+
+    static TableModelPtr create(int columns, TableModelTypeEnum type)
+    {
+        return TableModelPtr(new KnobItemsTableModel(columns, type));
+    }
+
+    virtual ~KnobItemsTableModel()
+    {
+
+    }
+
 };
 
 KnobItemsTableGui::KnobItemsTableGui(const KnobItemsTablePtr& table, DockablePanel* panel, QWidget* parent)
@@ -654,7 +689,7 @@ KnobItemsTableGui::KnobItemsTableGui(const KnobItemsTablePtr& table, DockablePan
             type = TableModel::eTableModelTypeTree;
             break;
     }
-    _imp->tableModel = TableModel::create(nCols, type);
+    _imp->tableModel = KnobItemsTableModel::create(nCols, type);
     QObject::connect( _imp->tableModel.get(), SIGNAL(itemDataChanged(TableItemPtr,int, int)), this, SLOT(onTableItemDataChanged(TableItemPtr,int, int)) );
     _imp->tableView->setTableModel(_imp->tableModel);
 
@@ -708,6 +743,9 @@ KnobItemsTableGui::KnobItemsTableGui(const KnobItemsTablePtr& table, DockablePan
     _imp->tableView->setAcceptDrops(dndSupported);
 
     if (dndSupported) {
+        // We move items only
+        //_imp->tableModel->setSupportedDragActions(Qt::MoveAction);
+        //_imp->tableView->setDefaultDropAction(Qt::MoveAction);
         if (table->isDropFromExternalSourceSupported()) {
             _imp->tableView->setDragDropMode(QAbstractItemView::DragDrop);
         } else {
@@ -731,10 +769,17 @@ KnobItemsTableGui::~KnobItemsTableGui()
     
 }
 
+QLayout*
+KnobItemsTableGui::getContainerLayout() const
+{
+    return _imp->containerLayout;
+}
+
 void
 KnobItemsTableGui::addWidgetsToLayout(QLayout* layout)
 {
 
+    _imp->containerLayout = layout;
     QGridLayout* isGridLayout = dynamic_cast<QGridLayout*>(layout);
     QBoxLayout* isBoxLayout = dynamic_cast<QBoxLayout*>(layout);
     if (isGridLayout) {
@@ -882,21 +927,16 @@ KnobItemsTableView::drawRow(QPainter * painter, const QStyleOptionViewItem & opt
 
 void
 KnobItemsTableView::setupAndExecDragObject(QDrag* drag,
-                                           const QModelIndexList& rows,
+                                           const std::list<TableItemPtr>& rows,
                                            Qt::DropActions supportedActions,
                                            Qt::DropAction defaultAction)
 
 {
 
     std::list<KnobTableItemPtr> items;
-    for (QModelIndexList::const_iterator it = rows.begin(); it!=rows.end(); ++it) {
-        // Get the first col item
-        TableItemPtr item = _imp->tableModel->getItem(*it);
-        assert(item);
-        if (!item) {
-            continue;
-        }
-        ModelItemsVec::iterator found = _imp->findItem(item);
+    for (std::list<TableItemPtr>::const_iterator it = rows.begin(); it!=rows.end(); ++it) {
+
+        ModelItemsVec::iterator found = _imp->findItem(*it);
         if (found == _imp->items.end()) {
             continue;
         }
@@ -915,13 +955,15 @@ KnobItemsTableView::setupAndExecDragObject(QDrag* drag,
     // Make up drag data
     SERIALIZATION_NAMESPACE::KnobItemsTableSerialization obj;
 
+    KnobItemsTablePtr model = _imp->internalModel.lock();
+    model->setDuringDragDropOperation(true);
+
     NodeGuiPtr nodeUI = _imp->panel->getNodeGui();
     assert(nodeUI);
     obj.nodeScriptName = nodeUI->getNode()->getFullyQualifiedName();
 
     for (std::list<KnobTableItemPtr>::iterator it = items.begin(); it!= items.end(); ++it) {
-        SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr s(new SERIALIZATION_NAMESPACE::KnobTableItemSerialization);
-        (*it)->toSerialization(s.get());
+        SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr s = model->createSerializationFromItem(*it);
         obj.items.push_back(s);
     }
 
@@ -934,18 +976,10 @@ KnobItemsTableView::setupAndExecDragObject(QDrag* drag,
     data->setData(QLatin1String(kNatronKnobItemsTableGuiMimeType), dataArray);
     drag->setMimeData(data);
     
-    if (drag->exec(supportedActions, defaultAction) == Qt::MoveAction) {
+    drag->exec(supportedActions, defaultAction);
         
-        // If the target is NULL, we have no choice but to remove data from the original table.
-        // This means the drop finished on another instance of Natron
-        if (!drag->target()) {
-            KnobItemsTablePtr model = _imp->internalModel.lock();
-            // If the target table is not this one, we have no choice but to remove from this table the items out of undo/redo operation
-            for (std::list<KnobTableItemPtr>::iterator it = items.begin(); it!= items.end(); ++it) {
-                model->removeItem(*it, eTableChangeReasonInternal);
-            }
-        }
-    }
+
+    model->setDuringDragDropOperation(false);
     
 } // setupAndExecDragObject
 
@@ -953,8 +987,9 @@ void
 KnobItemsTableView::dragMoveEvent(QDragMoveEvent *e)
 {
     const QMimeData* mimedata = e->mimeData();
-    if ( !mimedata->hasFormat( QLatin1String(kNatronKnobItemsTableGuiMimeType) ) || !_imp->internalModel.lock()->isDragAndDropSupported() ) {
+    if ( !mimedata->hasFormat( QLatin1String(kNatronKnobItemsTableGuiMimeType) ) || !(e->dropAction() & _imp->tableModel->supportedDropActions()) || !_imp->internalModel.lock()->isDragAndDropSupported() ) {
         e->ignore();
+        return;
     } else {
         e->accept();
     }
@@ -969,8 +1004,8 @@ KnobItemsTableView::dragEnterEvent(QDragEnterEvent *e)
         e->ignore();
     } else {
         e->accept();
+        setState(QAbstractItemView::DraggingState);
     }
-    TableView::dragEnterEvent(e);
 
 }
 
@@ -1233,7 +1268,7 @@ public:
 
     struct Item
     {
-        KnobTableItemPtr item;
+        KnobTableItemPtr item, oldItem;
         KnobTableItemWPtr oldParent;
         KnobTableItemWPtr newParent;
         int indexInOldParent, indexInNewParent;
@@ -1241,7 +1276,7 @@ public:
 
 
     DragItemsUndoCommand(KnobItemsTableGuiPrivate* table,
-                         const KnobItemsTablePtr& originalTable,
+                         KnobItemsTableGuiPrivate* originalTable,
                          const std::list<DragItemsUndoCommand::Item>& items)
     : QUndoCommand()
     , _table(table)
@@ -1261,18 +1296,33 @@ public:
 
 private:
 
-    void moveItem(int indexInparent, const KnobTableItemPtr& parent, const KnobTableItemPtr& item, const KnobItemsTablePtr& fromTable, const KnobItemsTablePtr& toTable);
+    void moveItem(int indexInParent,
+                  const KnobTableItemPtr& parent,
+                  const KnobTableItemPtr& oldItem,
+                  const KnobTableItemPtr& newItem,
+                  KnobItemsTableGuiPrivate* fromTable,
+                  KnobItemsTableGuiPrivate* toTable);
 
     KnobItemsTableGuiPrivate* _table;
-    KnobItemsTablePtr _originalTable;
+    KnobItemsTableGuiPrivate* _originalTable;
     std::list<Item> _items;
 };
 
 void
-DragItemsUndoCommand::moveItem(int indexInParent, const KnobTableItemPtr& parent, const KnobTableItemPtr& item, const KnobItemsTablePtr& fromTable, const KnobItemsTablePtr& toTable)
+DragItemsUndoCommand::moveItem(int indexInParent,
+                               const KnobTableItemPtr& parent,
+                               const KnobTableItemPtr& oldItem,
+                               const KnobTableItemPtr& newItem,
+                               KnobItemsTableGuiPrivate* fromTable,
+                               KnobItemsTableGuiPrivate* toTable)
 {
-    fromTable->removeItem(item, eTableChangeReasonInternal);
-    toTable->insertItem(indexInParent, item, parent, eTableChangeReasonInternal);
+    // Remove the old item if it is from the same table
+    if (oldItem && fromTable && fromTable == toTable) {
+        fromTable->internalModel.lock()->removeItem(oldItem, eTableChangeReasonInternal);
+    }
+    if (toTable && newItem) {
+        toTable->internalModel.lock()->insertItem(indexInParent, newItem, parent, eTableChangeReasonInternal);
+    }
     if (parent) {
         ModelItemsVec::iterator foundParent = _table->findItem(parent);
         if (foundParent != _table->items.end()) {
@@ -1281,7 +1331,9 @@ DragItemsUndoCommand::moveItem(int indexInParent, const KnobTableItemPtr& parent
     }
 
 
-    _table->createCustomWidgetRecursively(item);
+    if (newItem) {
+        toTable->createCustomWidgetRecursively(newItem);
+    }
 
 
 }
@@ -1290,7 +1342,7 @@ void
 DragItemsUndoCommand::undo()
 {
     for (std::list<Item>::iterator it = _items.begin(); it != _items.end(); ++it) {
-        moveItem(it->indexInOldParent, it->oldParent.lock(), it->item, _table->internalModel.lock(), _originalTable);
+        moveItem(it->indexInOldParent, it->oldParent.lock(), it->item, it->oldItem, _table, _originalTable);
     }
 }
 
@@ -1298,7 +1350,7 @@ void
 DragItemsUndoCommand::redo()
 {
     for (std::list<Item>::iterator it = _items.begin(); it != _items.end(); ++it) {
-        moveItem(it->indexInNewParent, it->newParent.lock(), it->item, _originalTable, _table->internalModel.lock());
+        moveItem(it->indexInNewParent, it->newParent.lock(), it->oldItem, it->item, _originalTable, _table);
     }
 
 }
@@ -1322,36 +1374,37 @@ KnobItemsTableView::dropEvent(QDropEvent* e)
         e->accept();
     }
 
-    QVariant data = mimedata->data(mimeDataType);
-    QString serializationStr = data.toString();
-    std::stringstream ss(serializationStr.toStdString());
     SERIALIZATION_NAMESPACE::KnobItemsTableSerialization obj;
-    try {
-        SERIALIZATION_NAMESPACE::read(std::string(), ss, &obj);
-    } catch (...) {
-        e->ignore();
-        return;
+    {
+        QVariant data = mimedata->data(mimeDataType);
+        QString serializationStr = data.toString();
+        std::stringstream ss(serializationStr.toStdString());
+        try {
+            SERIALIZATION_NAMESPACE::read(std::string(), ss, &obj);
+        } catch (...) {
+            e->ignore();
+            return;
+        }
     }
 
 
     // Find the original table from which the knob was from
-    // Operation was move, hence remove items from this view
+    // (if it is not from another process)
     KnobItemsTablePtr originalTable;
+    KnobItemsTableGuiPtr originalTableUI;
     {
         NodePtr originalNode = _imp->_publicInterface->getGui()->getApp()->getProject()->getNodeByFullySpecifiedName(obj.nodeScriptName);
-        if (!originalNode) {
-            e->ignore();
-            return;
-        }
+        if (originalNode) {
+            NodeGuiPtr originalNodeUI = boost::dynamic_pointer_cast<NodeGui>(originalNode->getNodeGui());
+            assert(originalNodeUI);
+            NodeSettingsPanel* originalPanel = originalNodeUI->getSettingPanel();
+            assert(originalPanel);
+            if (originalPanel) {
+                originalTableUI = originalPanel->getKnobItemsTable();
+                if (originalTableUI) {
+                    originalTable = originalTableUI->getInternalTable();
 
-        NodeGuiPtr originalNodeUI = boost::dynamic_pointer_cast<NodeGui>(originalNode->getNodeGui());
-        assert(originalNodeUI);
-        NodeSettingsPanel* originalPanel = originalNodeUI->getSettingPanel();
-        assert(originalPanel);
-        if (originalPanel) {
-            KnobItemsTableGuiPtr originalTableUI = originalPanel->getKnobItemsTable();
-            if (originalTableUI) {
-                originalTable = originalTableUI->getInternalTable();
+                }
             }
         }
     }
@@ -1368,30 +1421,32 @@ KnobItemsTableView::dropEvent(QDropEvent* e)
         }
     }
 
-    std::list<KnobTableItemPtr> droppedItems;
-    for (std::list<SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr>::const_iterator it = obj.items.begin(); it != obj.items.end(); ++it) {
-        KnobTableItemPtr newItem = table->createItemFromSerialization(*it);
-        if (newItem) {
-            droppedItems.push_back(newItem);
-        }
-    }
-    if (droppedItems.empty()) {
-        return;
-    }
-
-
     //OnItem, AboveItem, BelowItem, OnViewport
     DropIndicatorPosition position = dropIndicatorPosition();
-
     e->accept();
 
     std::list<DragItemsUndoCommand::Item> dndItems;
-    for (std::list<KnobTableItemPtr>::const_iterator it = droppedItems.begin(); it!=droppedItems.end(); ++it) {
+    for (std::list<SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr>::const_iterator it = obj.items.begin(); it != obj.items.end(); ++it) {
 
         DragItemsUndoCommand::Item d;
-        d.oldParent = (*it)->getParent();
-        d.indexInOldParent = (*it)->getIndexInParent();
-        d.item = (*it);
+
+        if (originalTable) {
+            d.oldItem = originalTable->getItemByFullyQualifiedScriptName((*it)->scriptName);
+            if (d.oldItem) {
+                d.oldParent = d.oldItem->getParent();
+                d.indexInOldParent = d.oldItem->getIndexInParent();
+            }
+        }
+
+        d.item = table->createItemFromSerialization(*it);
+        
+        if (!d.item) {
+            continue;
+        }
+
+
+
+
         switch (position) {
             case QAbstractItemView::AboveItem: {
 
@@ -1451,12 +1506,21 @@ KnobItemsTableView::dropEvent(QDropEvent* e)
                 break;
             }
         }
+
+
         dndItems.push_back(d);
 
+
     }
-    if (!dndItems.empty()) {
-        _imp->panel->pushUndoCommand(new DragItemsUndoCommand(_imp, originalTable, dndItems));
+    if (dndItems.empty()) {
+        return;
     }
+
+    KnobItemsTableGuiPrivate* originalTableUIPrivate = 0;
+    if (originalTableUI) {
+        originalTableUIPrivate = originalTableUI->_imp.get();
+    }
+    _imp->panel->pushUndoCommand(new DragItemsUndoCommand(_imp, originalTableUIPrivate, dndItems));
 
     
 } // dropEvent
@@ -1494,7 +1558,7 @@ public:
         
         // Remember the state of the target item
         if (target) {
-            target->toSerialization(&_originalTargetItemSerialization);
+            _originalTargetItemSerialization = target->getModel()->createSerializationFromItem(target);
         }
         
         // If this is a tree and the item can receive children, add as sub children
@@ -1524,7 +1588,7 @@ public:
 private:
 
     KnobTableItemPtr _targetItem;
-    SERIALIZATION_NAMESPACE::KnobTableItemSerialization _originalTargetItemSerialization;
+    SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr _originalTargetItemSerialization;
     
     // Only used when pasting multiple items as children of a container
     std::list<KnobTableItemPtr> _sourceItemsCopies;
@@ -1554,7 +1618,9 @@ PasteItemUndoCommand::undo()
     if (_sourceItemSerialization) {
         // We paste 1 item onto another
         assert(_targetItem);
-        _targetItem->fromSerialization(_originalTargetItemSerialization);
+        if (_originalTargetItemSerialization) {
+            _targetItem->fromSerialization(*_originalTargetItemSerialization);
+        }
     } else {
         // We paste multiple items as children of a container
         for (std::list<KnobTableItemPtr>::const_iterator it = _sourceItemsCopies.begin(); it!=_sourceItemsCopies.end(); ++it) {
@@ -1575,14 +1641,14 @@ public:
                              const std::list<KnobTableItemPtr>& items)
     : QUndoCommand()
     , _table(table)
-    , _items()
+    , _items(items)
     {
         for (std::list<KnobTableItemPtr>::const_iterator it = items.begin(); it != items.end(); ++it) {
-            SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr s(new SERIALIZATION_NAMESPACE::KnobTableItemSerialization);
-            (*it)->toSerialization(s.get());
+            SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr s = _table->internalModel.lock()->createSerializationFromItem(*it);
             KnobTableItemPtr dup = table->internalModel.lock()->createItemFromSerialization(s);
             assert(dup);
             _duplicates.push_back(dup);
+
         }
         
         
@@ -1649,8 +1715,7 @@ KnobItemsTableGui::onCopyItemsActionTriggered()
     obj.tableIdentifier = model->getTableIdentifier();
     obj.nodeScriptName = model->getNode()->getFullyQualifiedName();
     for (std::list<KnobTableItemPtr>::const_iterator it = selection.begin(); it!=selection.end(); ++it) {
-        SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr s(new SERIALIZATION_NAMESPACE::KnobTableItemSerialization);
-        (*it)->toSerialization(s.get());
+        SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr s = model->createSerializationFromItem(*it);
         obj.items.push_back(s);
     }
     
@@ -1692,6 +1757,9 @@ KnobItemsTableGui::onPasteItemsActionTriggered()
         if (array.data()) {
             str = std::string(array.data());
         }
+        if (str.empty()) {
+            return;
+        }
     }
     
     std::istringstream ss(str);
@@ -1699,13 +1767,13 @@ KnobItemsTableGui::onPasteItemsActionTriggered()
     try {
         SERIALIZATION_NAMESPACE::read(std::string(), ss, &obj);
     } catch (...) {
-        Dialogs::errorDialog(tr("Paste").toStdString(), tr("You cannot copy this kind of data here").toStdString());
+        Dialogs::errorDialog(tr("Paste").toStdString(), tr("Failed to read content from the clipboard").toStdString());
         return;
     }
     
     // Check that table is of the same type
     if (obj.tableIdentifier != model->getTableIdentifier()) {
-        Dialogs::errorDialog(tr("Paste").toStdString(), tr("You cannot copy this kind of data here").toStdString());
+        Dialogs::errorDialog(tr("Paste").toStdString(), tr("Failed to read content from the clipboard").toStdString());
         return;
     }
     
@@ -2005,7 +2073,7 @@ KnobItemsTableGui::onModelItemRemoved(const KnobTableItemPtr& item, TableChangeR
     if (reason == eTableChangeReasonPanel) {
         return;
     }
-    disconnect(item.get(), SIGNAL(curveAnimationChanged(std::list<double>, std::list<double>, ViewIdx)), this, SLOT(onItemAnimationCurveChanged(std::list<double>,std::list<double>, ViewIdx)));
+
     _imp->removeTableItem(item);
 }
 
@@ -2015,8 +2083,24 @@ KnobItemsTableGui::onModelItemInserted(int /*index*/, const KnobTableItemPtr& it
     if (reason == eTableChangeReasonPanel) {
         return;
     }
-    connect(item.get(), SIGNAL(curveAnimationChanged(std::list<double>,std::list<double>, ViewIdx)), this, SLOT(onItemAnimationCurveChanged(std::list<double>, std::list<double>, ViewIdx)), Qt::UniqueConnection);
+
+    // If the item has a parent but the parent is not yet in the model, do not create the gui for the item.
+    // Instead the parent will create its children gui afterwards
+    KnobTableItemPtr parentItem = item->getParent();
+    if (parentItem) {
+        if (parentItem->getIndexInParent() == -1) {
+            return;
+        }
+    }
+
     _imp->createTableItems(item);
+
+    const std::vector<KnobTableItemPtr>& children = item->getChildren();
+    if (!children.empty()) {
+        _imp->createItemsVecRecursive(children);
+    }
+
+
 }
 
 void
@@ -2052,6 +2136,9 @@ labelToolTipFromScriptName(const KnobTableItemPtr& item)
 void
 KnobItemsTableGuiPrivate::removeTableItem(const KnobTableItemPtr& item)
 {
+
+    QObject::disconnect(item.get(), SIGNAL(curveAnimationChanged(std::list<double>, std::list<double>, ViewIdx)), _publicInterface, SLOT(onItemAnimationCurveChanged(std::list<double>,std::list<double>, ViewIdx)));
+
     ModelItemsVec::iterator foundItem = findItem(item);
     if (foundItem == items.end()) {
         return;
@@ -2069,6 +2156,8 @@ KnobItemsTableGuiPrivate::createTableItems(const KnobTableItemPtr& item)
 {
     // The item should not exist in the table GUI yet.
     assert(findItem(item) == items.end());
+
+    QObject::connect(item.get(), SIGNAL(curveAnimationChanged(std::list<double>,std::list<double>, ViewIdx)), _publicInterface, SLOT(onItemAnimationCurveChanged(std::list<double>, std::list<double>, ViewIdx)), Qt::UniqueConnection);
     
     int itemRow = item->getIndexInParent();
     
@@ -2107,6 +2196,7 @@ KnobItemsTableGuiPrivate::createTableItems(const KnobTableItemPtr& item)
         if (d.knob.lock()) {
             // If we have a knob, create the custom widget
             createItemCustomWidgetAtCol(item, itemRow, i);
+            mitem.item->setFlags(i, Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled);
         } else {
             // Ok the column must be kKnobTableItemColumnLabel
             // otherwise we don't know what the user want
@@ -2114,11 +2204,11 @@ KnobItemsTableGuiPrivate::createTableItems(const KnobTableItemPtr& item)
             if (columnID == kKnobTableItemColumnLabel) {
                 mitem.labelColIndex = i;
                 mitem.item->setToolTip(i, labelToolTipFromScriptName(item) );
-                mitem.item->setFlags(i, Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
+                mitem.item->setFlags(i, Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled);
                 mitem.item->setText(i, QString::fromUtf8( item->getLabel().c_str() ) );
                 setItemIcon(mitem.item, i, item);
             } else {
-                mitem.item->setFlags(i, Qt::ItemIsEnabled | Qt::ItemIsSelectable);
+                mitem.item->setFlags(i, Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled);
             }
 
 

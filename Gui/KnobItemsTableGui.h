@@ -72,6 +72,8 @@ public:
 
     void addWidgetsToLayout(QLayout* layout);
 
+    QLayout* getContainerLayout() const;
+
     KnobItemsTablePtr getInternalTable() const;
 
     virtual QWidget* createKnobHorizontalFieldContainer(QWidget* parent) const OVERRIDE FINAL;
@@ -115,6 +117,8 @@ public Q_SLOTS:
     void onItemAnimationCurveChanged(std::list<double> added, std::list<double> removed, ViewIdx view);
 
 private:
+
+    friend class KnobItemsTableView;
 
     boost::scoped_ptr<KnobItemsTableGuiPrivate> _imp;
 };

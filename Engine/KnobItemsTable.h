@@ -570,6 +570,12 @@ public:
     bool isDropFromExternalSourceSupported() const;
 
     /**
+     * @brief Set/Get whether a D&D operation is being performed from this table
+     **/
+    void setDuringDragDropOperation(bool during);
+    bool isDuringDragDropOperation() const;
+
+    /**
      * @brief Set whether the user keyframe widgets (go to previous/go to next/add key) etc... should
      * be created or not
      **/
@@ -715,6 +721,13 @@ public:
     bool isPerItemKnobMaster(const KnobIPtr& masterKnob);
 
     /**
+     * @brief Add a knob that should be attached to the table in the user interface, such as "Add item", "Remove item" buttons, etc...
+     **/
+    void addTableControlKnob(const KnobIPtr& knob);
+    bool isTableControlKnob(const KnobIPtr& knob) const;
+    std::vector<KnobIPtr> getTableControlKnobs() const;
+
+    /**
      * @brief Call declareItemAsPythonField on all items in the model that are attributes of the given python prefix.
      * The pythonPrefix will be an attribute of the node object itself.
      **/
@@ -811,6 +824,8 @@ protected:
     virtual std::string getTablePythonPrefix() const = 0;
     
     std::string generateUniqueName(const KnobTableItemPtr& item, const std::string& name) const;
+
+    void adjustNameForDuplicate(const KnobTableItemPtr& item, const KnobTableItemPtr& parent) const;
 
     /**
      * @brief Callback called once the model has been reset, that is: once all items have been removed.

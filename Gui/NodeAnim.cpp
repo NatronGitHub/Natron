@@ -48,8 +48,9 @@ NATRON_NAMESPACE_ENTER;
 class NodeAnimPrivate
 {
 public:
-    NodeAnimPrivate()
-    : model()
+    NodeAnimPrivate(NodeAnim* publicInterface)
+    : _publicInterface(publicInterface)
+    , model()
     , nodeType()
     , nodeGui()
     , nameItem(0)
@@ -63,6 +64,7 @@ public:
 
 
     /* attributes */
+    NodeAnim* _publicInterface;
     AnimationModuleWPtr model;
     AnimatedItemTypeEnum nodeType;
     NodeGuiWPtr nodeGui;
@@ -88,6 +90,9 @@ public:
 
     void refreshParentContainerRange();
 
+    void removeItem(const KnobTableItemPtr& item, TableChangeReasonEnum reason);
+    void insertItem(int index, const KnobTableItemPtr& item, TableChangeReasonEnum reason);
+
 };
 
 // Small RAII style class to prevent recursion in frame range computation
@@ -111,7 +116,7 @@ public:
 
 NodeAnim::NodeAnim(const AnimationModulePtr &model,
                    const NodeGuiPtr &nodeGui)
-: _imp(new NodeAnimPrivate)
+: _imp(new NodeAnimPrivate(this))
 {
     _imp->model = model;
     _imp->nodeGui = nodeGui;
@@ -303,14 +308,20 @@ NodeAnim::findTableItem(const KnobTableItemPtr& item) const
 }
 
 void
-NodeAnim::onTableItemRemoved(const KnobTableItemPtr& item, TableChangeReasonEnum)
+NodeAnim::onTableItemRemoved(const KnobTableItemPtr& item, TableChangeReasonEnum reason)
 {
+    _imp->removeItem(item, reason);
+}
 
+void
+NodeAnimPrivate::removeItem(const KnobTableItemPtr& item, TableChangeReasonEnum /*reason*/)
+{
     TableItemAnimPtr found;
-    for (std::vector<TableItemAnimPtr>::iterator it = _imp->topLevelTableItems.begin(); it!=_imp->topLevelTableItems.end(); ++it) {
+    for (std::vector<TableItemAnimPtr>::iterator it = topLevelTableItems.begin(); it!=topLevelTableItems.end(); ++it) {
         if ((*it)->getInternalItem() == item) {
             found = *it;
-            _imp->topLevelTableItems.erase(it);
+            topLevelTableItems.erase(it);
+            model.lock()->getSelectionModel()->removeAnyReferenceFromSelection(found);
             break;
         } else {
             TableItemAnimPtr found = (*it)->removeItem(item);
@@ -319,34 +330,53 @@ NodeAnim::onTableItemRemoved(const KnobTableItemPtr& item, TableChangeReasonEnum
             }
         }
     }
-    if (found) {
-        getModel()->getSelectionModel()->removeAnyReferenceFromSelection(found);
-    }
 }
 
 void
-NodeAnim::onTableItemInserted(int index, const KnobTableItemPtr& item, TableChangeReasonEnum)
+NodeAnimPrivate::insertItem(int index, const KnobTableItemPtr& item, TableChangeReasonEnum reason)
 {
+
+    // The item already exists
+    if (_publicInterface->findTableItem(item)) {
+        return;
+    }
     KnobTableItemPtr parentItem = item->getParent();
     TableItemAnimPtr parentAnim;
     if (parentItem) {
-        parentAnim = findTableItem(parentItem);
+
+        // If the parent item is not yet in the model, do not create item, the parent will create its children recursively
+        if (parentItem->getIndexInParent() == -1) {
+            return;
+        }
+        parentAnim = _publicInterface->findTableItem(parentItem);
     }
-    KnobItemsTableGuiPtr table = getNodeGui()->getKnobItemsTable();
+    KnobItemsTableGuiPtr table = _publicInterface->getNodeGui()->getKnobItemsTable();
     if (parentItem) {
-        TableItemAnimPtr anim(TableItemAnim::create(getModel(), table, shared_from_this(), item, parentAnim->getRootItem()));
+        TableItemAnimPtr anim(TableItemAnim::create(_publicInterface->getModel(), table, _publicInterface->shared_from_this(), item, parentAnim->getRootItem()));
         parentAnim->insertChild(index, anim);
     } else {
-        TableItemAnimPtr anim(TableItemAnim::create(getModel(), table, shared_from_this(), item, _imp->nameItem));
-        if (index < 0 || index >= (int)_imp->topLevelTableItems.size()) {
-            _imp->topLevelTableItems.push_back(anim);
+        TableItemAnimPtr anim(TableItemAnim::create(_publicInterface->getModel(), table, _publicInterface->shared_from_this(), item, nameItem));
+        if (index < 0 || index >= (int)topLevelTableItems.size()) {
+            topLevelTableItems.push_back(anim);
         } else {
-            std::vector<TableItemAnimPtr>::iterator it = _imp->topLevelTableItems.begin();
+            std::vector<TableItemAnimPtr>::iterator it = topLevelTableItems.begin();
             std::advance(it, index);
-            _imp->topLevelTableItems.insert(it, anim);
+            topLevelTableItems.insert(it, anim);
         }
     }
 
+    // Create children recursively
+    std::vector<KnobTableItemPtr> children = item->getChildren();
+    for (std::size_t i = 0; i < children.size(); ++i) {
+        insertItem(i, children[i], reason);
+    }
+
+}
+
+void
+NodeAnim::onTableItemInserted(int index, const KnobTableItemPtr& item, TableChangeReasonEnum reason)
+{
+    _imp->insertItem(index, item, reason);
 }
 
 

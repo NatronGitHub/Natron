@@ -117,6 +117,7 @@ private:
     TableItemAnimPtr removeItem(const KnobTableItemPtr& item);
 
     friend class NodeAnim;
+    friend class NodeAnimPrivate;
 
     void initializeKnobsAnim();
 

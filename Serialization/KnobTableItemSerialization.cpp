@@ -75,7 +75,21 @@ KnobTableItemSerialization::encode(YAML::Emitter& em) const
         em << YAML::BeginMap;
     }
     em << YAML::Key << "Name" << YAML::Value << scriptName;
-    if (label != scriptName) {
+
+    // During D&D operations, this scriptname is in fact the fully qualified script-name of the item in the table
+    // so that we can figure out its ancestors.
+    // Otherwise when saving the project, this is a regular script-name.
+    std::string actualScriptName;
+    {
+        std::size_t foundDot = scriptName.find_last_of(".");
+        if (foundDot != std::string::npos) {
+            actualScriptName = scriptName.substr(foundDot + 1);
+        } else {
+            actualScriptName = scriptName;
+        }
+    }
+
+    if (label != actualScriptName) {
         em << YAML::Key << "Label" << YAML::Value << label;
     }
     if (!children.empty()) {
@@ -127,7 +141,16 @@ KnobTableItemSerialization::decode(const YAML::Node& node)
     if (node["Label"]) {
         label = node["Label"].as<std::string>();
     } else {
-        label = scriptName;
+        std::string actualScriptName;
+        {
+            std::size_t foundDot = scriptName.find_last_of(".");
+            if (foundDot != std::string::npos) {
+                actualScriptName = scriptName.substr(foundDot + 1);
+            } else {
+                actualScriptName = scriptName;
+            }
+        }
+        label = actualScriptName;
     }
     if (node["Children"]) {
         YAML::Node childrenNode = node["Children"];

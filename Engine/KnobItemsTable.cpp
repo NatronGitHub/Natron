@@ -79,6 +79,7 @@ struct KnobItemsTableCommon
     bool supportsDnD;
     bool dndSupportsExternalSource;
     bool userKeyframesWidgetsEnabled;
+    bool duringDragDropOperation;
 
     mutable QMutex topLevelItemsLock, selectionLock;
 
@@ -97,6 +98,9 @@ struct KnobItemsTableCommon
     // List of knobs on the holder which controls each knob with the same script-name on each item in the table
     std::list<KnobIWPtr> perItemMasterKnobs;
 
+    // Knobs that should be always next to the table in the user interface
+    std::vector<KnobIWPtr> tableControlKnobs;
+
     std::string pythonPrefix;
 
     KnobItemsTableCommon()
@@ -110,6 +114,7 @@ struct KnobItemsTableCommon
     , supportsDnD(false)
     , dndSupportsExternalSource(false)
     , userKeyframesWidgetsEnabled(true)
+    , duringDragDropOperation(false)
     , topLevelItemsLock()
     , selectionLock(QMutex::Recursive)
     , beginSelectionCounter(0)
@@ -118,6 +123,7 @@ struct KnobItemsTableCommon
     , newItemsInSelection()
     , itemsRemovedFromSelection()
     , perItemMasterKnobs()
+    , tableControlKnobs()
     , pythonPrefix()
     {
 
@@ -283,6 +289,18 @@ void
 KnobItemsTable::setDropSupportsExternalSources(bool supports)
 {
     _imp->common->dndSupportsExternalSource = supports;
+}
+
+void
+KnobItemsTable::setDuringDragDropOperation(bool during)
+{
+    _imp->common->duringDragDropOperation = during;
+}
+
+bool
+KnobItemsTable::isDuringDragDropOperation() const
+{
+    return _imp->common->duringDragDropOperation;
 }
 
 bool
@@ -457,11 +475,11 @@ KnobItemsTable::insertItem(int index, const KnobTableItemPtr& item, const KnobTa
 
     removeItem(item, reason);
 
+    adjustNameForDuplicate(item, parent);
     if (parent) {
         parent->insertChild(index, item);
     } else {
         int insertIndex;
-
         {
             QMutexLocker k(&_imp->common->topLevelItemsLock);
             if (index < 0 || index >= (int)_imp->common->topLevelItems.size()) {
@@ -589,6 +607,48 @@ KnobItemsTable::getTopLevelItem(int index) const
     }
     return _imp->common->topLevelItems[index];
 }
+
+void
+KnobItemsTable::adjustNameForDuplicate(const KnobTableItemPtr& item, const KnobTableItemPtr& parent) const
+{
+
+    std::string baseName = item->getScriptName_mt_safe();
+    std::string baseLabel = item->getLabel();
+
+    if (baseName.empty()) {
+        return;
+    }
+
+    std::string name = baseName;
+    std::string label = baseLabel;
+    KnobTableItemPtr foundItem = parent ? parent->getChildItemByScriptName(name) : item->getModel()->getTopLevelItemByScriptName(name);
+    int no = 1;
+    
+    while (foundItem) {
+
+        {
+            std::stringstream ss;
+            ss << baseName;
+            ss << "_" << no;
+            name = ss.str();
+        }
+        {
+            std::stringstream ss;
+            ss << baseLabel;
+            ss << "_" << no;
+            label = ss.str();
+        }
+        foundItem = parent ? parent->getChildItemByScriptName(name) : item->getModel()->getTopLevelItemByScriptName(name);
+        ++no;
+    }
+    if (name != baseName) {
+        item->setScriptName(name);
+    }
+    if (label != baseLabel) {
+        item->setLabel(label, eTableChangeReasonInternal);
+    }
+
+} // adjustNameForDuplicate
 
 std::string
 KnobItemsTable::generateUniqueName(const KnobTableItemPtr& item, const std::string& baseName) const
@@ -1277,8 +1337,18 @@ KnobTableItem::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase*
 
     std::vector<std::string> projectViewNames = getApp()->getProject()->getProjectViewNames();
     {
+
+
+        // During D&D operations, this scriptname is in fact the fully qualified script-name of the item in the table
+        // so that we can figure out its ancestors.
+        // Otherwise when saving the project, this is a regular script-name
+        if (getModel()->isDuringDragDropOperation()) {
+            serialization->scriptName = getFullyQualifiedName();
+        } else {
+            serialization->scriptName = getScriptName_mt_safe();
+        }
+        
         QMutexLocker k(&_imp->common->lock);
-        serialization->scriptName = _imp->common->scriptName;
         serialization->label = _imp->common->label;
 
         for (PerViewAnimationCurveMap::const_iterator it = _imp->animationCurves.begin(); it != _imp->animationCurves.end(); ++it) {
@@ -1367,7 +1437,19 @@ KnobTableItem::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObj
     {
         QMutexLocker k(&_imp->common->lock);
         _imp->common->label = serialization->label;
-        _imp->common->scriptName = serialization->scriptName;
+
+        // During D&D operations, this scriptname is in fact the fully qualified script-name of the item in the table
+        // so that we can figure out its ancestors.
+        // Otherwise when saving the project, this is a regular script-name
+        {
+            std::size_t foundDot = serialization->scriptName.find_last_of(".");
+            if (foundDot != std::string::npos) {
+                _imp->common->scriptName = serialization->scriptName.substr(foundDot + 1);
+            } else {
+                _imp->common->scriptName = serialization->scriptName;
+            }
+        }
+
         for (std::map<std::string, SERIALIZATION_NAMESPACE::CurveSerialization>::const_iterator it = serialization->animationCurves.begin(); it != serialization->animationCurves.end(); ++it) {
             ViewIdx view_i(0);
             getApp()->getProject()->getViewIndex(projectViewNames, it->first, &view_i);
@@ -1657,6 +1739,45 @@ KnobItemsTable::findDeepestSelectedItemContainer() const
     }
     return minContainer;
 }
+
+void
+KnobItemsTable::addTableControlKnob(const KnobIPtr& knob)
+{
+    for (std::size_t i = 0; i < _imp->common->tableControlKnobs.size(); ++i) {
+        KnobIPtr k = _imp->common->tableControlKnobs[i].lock();
+        if (k == knob) {
+            return;
+        }
+    }
+
+    _imp->common->tableControlKnobs.push_back(knob);
+}
+
+bool
+KnobItemsTable::isTableControlKnob(const KnobIPtr& knob) const
+{
+    for (std::size_t i = 0; i < _imp->common->tableControlKnobs.size(); ++i) {
+        KnobIPtr k = _imp->common->tableControlKnobs[i].lock();
+        if (k == knob) {
+            return true;
+        }
+    }
+    return false;
+}
+
+std::vector<KnobIPtr>
+KnobItemsTable::getTableControlKnobs() const
+{
+    std::vector<KnobIPtr> ret;
+    for (std::vector<KnobIWPtr>::const_iterator it = _imp->common->tableControlKnobs.begin(); it != _imp->common->tableControlKnobs.end(); ++it) {
+        KnobIPtr k = it->lock();
+        if (k) {
+            ret.push_back(k);
+        }
+    }
+    return ret;
+}
+
 
 bool
 KnobItemsTable::isPerItemKnobMaster(const KnobIPtr& masterKnob)

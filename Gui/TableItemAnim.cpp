@@ -42,6 +42,7 @@
 
 
 #include "Gui/AnimationModule.h"
+#include "Gui/AnimationModuleSelectionModel.h"
 #include "Gui/AnimationModuleView.h"
 #include "Gui/AnimationModuleEditor.h"
 #include "Gui/AnimationModuleTreeView.h"
@@ -64,8 +65,9 @@ class TableItemAnimPrivate
 {
 public:
 
-    TableItemAnimPrivate()
-    : tableItem()
+    TableItemAnimPrivate(const AnimationModuleBasePtr& model)
+    : model(model)
+    , tableItem()
     , table()
     , parentNode()
     , nameItem(0)
@@ -76,6 +78,7 @@ public:
 
     }
 
+    AnimationModuleBaseWPtr model;
     KnobTableItemWPtr tableItem;
     KnobItemsTableGuiWPtr table;
     NodeAnimWPtr parentNode;
@@ -93,7 +96,7 @@ TableItemAnim::TableItemAnim(const AnimationModuleBasePtr& model,
                              const NodeAnimPtr &parentNode,
                              const KnobTableItemPtr& item)
 : AnimItemBase(model)
-, _imp(new TableItemAnimPrivate())
+, _imp(new TableItemAnimPrivate(model))
 {
     _imp->table = table;
     _imp->parentNode = parentNode;
@@ -292,19 +295,23 @@ TableItemAnim::findTableItem(const KnobTableItemPtr& item) const
 TableItemAnimPtr
 TableItemAnim::removeItem(const KnobTableItemPtr& item)
 {
+    TableItemAnimPtr ret;
     for (std::vector<TableItemAnimPtr>::iterator it = _imp->children.begin(); it!=_imp->children.end(); ++it) {
         if ((*it)->getInternalItem() == item) {
-            TableItemAnimPtr ret = *it;
+            ret = *it;
             _imp->children.erase(it);
-            return ret;
+            break;
         } else {
-            TableItemAnimPtr foundChild = (*it)->removeItem(item);
-            if (foundChild) {
-                return foundChild;
+            ret = (*it)->removeItem(item);
+            if (ret) {
+                break;
             }
         }
     }
-    return TableItemAnimPtr();
+    if (ret) {
+        _imp->model.lock()->getSelectionModel()->removeAnyReferenceFromSelection(ret);
+    }
+    return ret;
 }
 
 

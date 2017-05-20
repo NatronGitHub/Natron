@@ -556,6 +556,8 @@ protected:
 
     void initViewerUIKnobs(const KnobPagePtr& generalPage);
 
+    void initKnobsTableControls();
+
 private:
 
     virtual void fetchRenderCloneKnobs() OVERRIDE;

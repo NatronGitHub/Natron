@@ -682,9 +682,9 @@ PreferencesPanel::createGui()
     QTreeWidgetItem* uiTabTreeItem = 0;
     for (std::size_t i = 0; i < _imp->tabs.size(); ++i) {
         KnobPagePtr pageKnob = _imp->tabs[i].page.lock()->pageKnob.lock();
-        if (pageKnob->getName() == "plugins") {
+        if (pageKnob->getName() == "pluginsPage") {
             pluginsFrameLayout = _imp->tabs[i].page.lock()->gridLayout;
-        } else if (pageKnob->getName() == "userInterfacePage") {
+        } else if (pageKnob->getName() == "uiPage") {
             uiTabTreeItem = _imp->tabs[i].treeItem;
         }
         QString label = QString::fromUtf8( pageKnob->getLabel().c_str() );
@@ -1189,12 +1189,12 @@ PreferencesPanel::refreshShortcutsFromSettings()
     _imp->appShortcuts.clear();
 
     KeybindShortcut currentSelection;
-    QList<QTreeWidgetItem*> selectedItems = _imp->tree->selectedItems();
+    QList<QTreeWidgetItem*> selectedItems = _imp->shortcutsTree->selectedItems();
     if (!selectedItems.empty()) {
         currentSelection = _imp->getActionForTreeItem(selectedItems.front());
     }
 
-    _imp->tree->clear();
+    _imp->shortcutsTree->clear();
 
     const ApplicationShortcutsMap & appShortcuts = appPTR->getCurrentSettings()->getAllShortcuts();
     

@@ -85,6 +85,9 @@ public:
 
     RangeD getFrameRange() const;
 
+    TableItemAnimPtr findTableItem(const KnobTableItemPtr& item) const;
+
+
 public Q_SLOTS:
 
     void onFrameRangeKnobChanged();
@@ -97,7 +100,6 @@ public Q_SLOTS:
 
 private:
 
-    TableItemAnimPtr findTableItem(const KnobTableItemPtr& item) const;
 
     void initialize(AnimatedItemTypeEnum itemType);
 

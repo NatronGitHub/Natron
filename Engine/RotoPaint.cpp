@@ -459,7 +459,13 @@ RotoPaint::initGeneralPageKnobs()
     }
     initLifeTimeKnobs(generalPage);
 
-  
+} // initGeneralPageKnobs
+
+void
+RotoPaint::initKnobsTableControls()
+{
+
+
     {
         KnobButtonPtr param = createKnob<KnobButton>(kRotoAddGroupParam);
         param->setLabel(tr(kRotoAddGroupParamLabel));
@@ -467,7 +473,7 @@ RotoPaint::initGeneralPageKnobs()
         param->setIconLabel("Images/rotoPaintAddGroupIcon.png");
         param->setAddNewLine(false);
         _imp->addGroupButtonKnob = param;
-        generalPage->addKnob(param);
+        _imp->knobsTable->addTableControlKnob(param);
     }
 
     {
@@ -475,10 +481,29 @@ RotoPaint::initGeneralPageKnobs()
         param->setLabel(tr(kRotoRemoveItemParamLabel));
         param->setIconLabel("Images/rotoPaintRemoveItemIcon.png");
         param->setHintToolTip( tr(kRotoRemoveItemParamHint) );
+#ifdef ROTOPAINT_ENABLE_PLANARTRACKER
+        param->setAddNewLine(false);
+#else
+        param->setAddNewLine(true);
+#endif
         _imp->removeItemButtonKnob = param;
-        generalPage->addKnob(param);
+        _imp->knobsTable->addTableControlKnob(param);
     }
-} // initGeneralPageKnobs
+#ifdef ROTOPAINT_ENABLE_PLANARTRACKER
+
+    {
+        KnobButtonPtr param = createKnob<KnobButton>(kRotoUIParamRightClickMenuActionCreatePlanarTrack);
+        param->setLabel(tr(kRotoUIParamRightClickMenuActionCreatePlanarTrackLabel));
+        param->setHintToolTip(tr(kRotoUIParamRightClickMenuActionCreatePlanarTrackHint));
+        param->setEvaluateOnChange(false);
+        param->setIconLabel("Images/addTrack.png");
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setEnabled(false);
+        _imp->knobsTable->addTableControlKnob(param);
+        _imp->ui->createPlanarTrackAction = param;
+    }
+#endif
+}
 
 void
 RotoPaint::initShapePageKnobs()
@@ -1225,17 +1250,6 @@ RotoPaint::initTrackingPageKnobs()
     trackingPage->setLabel(tr("Tracking"));
     _imp->trackingPage = trackingPage;
 
-    {
-        KnobButtonPtr param = createKnob<KnobButton>(kRotoUIParamRightClickMenuActionCreatePlanarTrack);
-        param->setLabel(tr(kRotoUIParamRightClickMenuActionCreatePlanarTrackLabel));
-        param->setHintToolTip(tr(kRotoUIParamRightClickMenuActionCreatePlanarTrackHint));
-        param->setEvaluateOnChange(false);
-        param->setIconLabel("Images/addTrack.png");
-        param->setInViewerContextCanHaveShortcut(true);
-        param->setEnabled(false);
-        trackingPage->addKnob(param);
-        _imp->ui->createPlanarTrackAction = param;
-    }
     {
         KnobBoolPtr param = createKnob<KnobBool>(kTrackerParamTrackRed);
         param->setLabel(tr(kTrackerParamTrackRedLabel));
@@ -2853,6 +2867,7 @@ RotoPaint::initializeKnobs()
 #ifdef ROTOPAINT_ENABLE_PLANARTRACKER
         initTrackingPageKnobs();
 #endif
+        initKnobsTableControls();
     }
 
     setItemsTable(_imp->knobsTable, KnobHolder::eKnobItemsTablePositionBottomOfAllPages, std::string());

@@ -64,6 +64,9 @@ public:
     // Tag type to uniquely identify the item type to YAML
     std::string verbatimTag;
 
+    // During D&D operations, this scriptname is in fact the fully qualified script-name of the item in the table
+    // so that we can figure out its ancestors.
+    // Otherwise when saving the project, this is a regular script-name.
     std::string scriptName;
     std::string label;
 

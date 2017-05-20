@@ -262,6 +262,21 @@ TableItem::getChildren() const
 }
 
 bool
+TableItem::isChildRecursive(const TableItemPtr& item) const
+{
+    for (std::size_t i = 0; i < _imp->children.size(); ++i) {
+        if (_imp->children[i] == item) {
+            return true;
+        }
+        bool recursiveRet = _imp->children[i]->isChildRecursive(item);
+        if (recursiveRet) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
 TableItem::insertChild(int row, const TableItemPtr& child)
 {
     TableModelPtr model = getModel();
@@ -1527,15 +1542,15 @@ TableView::mousePressEvent(QMouseEvent* e)
     if (!item) {
         selectionModel()->clear();
     } else {
+
         QTreeView::mousePressEvent(e);
     }
 }
 
 void TableView::mouseMoveEvent(QMouseEvent *event)
 {
-    QPoint topLeft;
+    /*QPoint topLeft;
     QPoint bottomRight = event->pos();
-    
     if (state() == ExpandingState || state() == CollapsingState)
         return;
     
@@ -1547,7 +1562,7 @@ void TableView::mouseMoveEvent(QMouseEvent *event)
             stopAutoScroll();
         }
         return;
-    }
+    }*/
     QTreeView::mouseMoveEvent(event);
 }
 
@@ -1721,7 +1736,7 @@ struct DraggablePaintItem
     TableItemPtr tableItem;
 };
 
-QPixmap TableView::renderToPixmap(const QModelIndexList& rows, QRect *r) const
+QPixmap TableView::renderToPixmap(const std::list<TableItemPtr>& rows, QRect *r) const
 {
     assert(r);
 
@@ -1731,11 +1746,13 @@ QPixmap TableView::renderToPixmap(const QModelIndexList& rows, QRect *r) const
     const int colsCount = model->columnCount();;
 
     std::vector<DraggablePaintItem> paintItems;
-    for (QModelIndexList::const_iterator it = rows.begin(); it!=rows.end(); ++it) {
+    for (std::list<TableItemPtr>::const_iterator it = rows.begin(); it!=rows.end(); ++it) {
 
-        TableItemPtr modelItem = model->getItem(*it);
+        const TableItemPtr& modelItem = *it;
+        QModelIndex firstColIndex = model->getItemIndex(modelItem);
+
         for (int c = 0; c < colsCount; ++c) {
-            QModelIndex idx = model->index(it->row(), c);
+            QModelIndex idx = c == 0 ? firstColIndex : model->index(firstColIndex.row(), c, firstColIndex.parent());
             const QRect itemRect = visualRect(idx);
             if (itemRect.intersects(viewportRect)) {
                 DraggablePaintItem d;
@@ -1773,13 +1790,54 @@ void
 TableView::rebuildDraggedItemsFromSelection()
 {
     _imp->draggedItems.clear();
+
+    std::set<TableItemPtr> itemsSet;
     QModelIndexList indexes = selectionModel()->selectedIndexes();
     for (QModelIndexList::Iterator it = indexes.begin(); it != indexes.end(); ++it) {
         TableItemPtr i = getTableModel()->getItem(*it);
         if (i) {
-            _imp->draggedItems.push_back(i);
+
+            // If any child of this item is already selected for drag, remove the child
+            {
+                std::set<TableItemPtr> newItems;
+                bool hasChanged = false;
+                for (std::set<TableItemPtr>::const_iterator it = itemsSet.begin(); it != itemsSet.end(); ++it) {
+                    if ((*it)->isChildRecursive(i)) {
+                        hasChanged = true;
+                        continue;
+                    }
+                    newItems.insert(*it);
+                }
+                if (hasChanged) {
+                    itemsSet = newItems;
+                }
+            }
+
+            // If a parent of the item is already selected for drag, don't insert it
+            TableItemPtr parent = i->getParentItem();
+            bool parentSelected = false;
+            while (parent) {
+                std::set<TableItemPtr>::iterator foundParent = itemsSet.find(parent);
+                if (foundParent != itemsSet.end()) {
+                    parentSelected = true;
+                    break;
+                }
+                parent = parent->getParentItem();
+            }
+            if (!parentSelected) {
+                itemsSet.insert(i);
+            }
         }
     }
+    for (std::set<TableItemPtr>::const_iterator it = itemsSet.begin(); it != itemsSet.end(); ++it) {
+        _imp->draggedItems.push_back(*it);
+    }
+}
+
+void
+TableView::startDrag(Qt::DropActions supportedActions)
+{
+    setupDragObject(supportedActions);
 }
 
 void
@@ -1788,32 +1846,20 @@ TableView::setupDragObject(Qt::DropActions supportedActions)
     
     rebuildDraggedItemsFromSelection();
     
-    
-    QModelIndexList rowsIndices;
-    
-    // Extract only model indices for column 0 that are drag enabled
-    {
-        QModelIndexList indexes = selectedIndexes();
-        if (indexes.isEmpty()) {
-            return;
-        }
-        for (QModelIndexList::iterator it = indexes.begin(); it != indexes.end(); ++it) {
-            if (it->column() == 0 && model()->flags(*it) & Qt::ItemIsDragEnabled) {
-                rowsIndices.push_back(*it);
-            }
-        }
-    }
-    if (rowsIndices.isEmpty()) {
+    if (_imp->draggedItems.empty()) {
         return;
     }
     QDrag *drag = new QDrag(this);
     QRect rect;
-    QPixmap pixmap = renderToPixmap(rowsIndices, &rect);
+    QPixmap pixmap = renderToPixmap(_imp->draggedItems, &rect);
     rect.adjust(horizontalOffset(), verticalOffset(), 0, 0);
     drag->setPixmap(pixmap);
     drag->setHotSpot(_imp->lastMousePressPosition - rect.topLeft());
     
     Qt::DropAction action = Qt::IgnoreAction;
+
+    // Use the default drop action if it is supported
+    // Otherwise fallback on copy
     if (defaultDropAction() != Qt::IgnoreAction && (supportedActions & defaultDropAction())) {
         action = defaultDropAction();
     } else if (supportedActions & Qt::CopyAction && dragDropMode() != QAbstractItemView::InternalMove) {
@@ -1821,16 +1867,16 @@ TableView::setupDragObject(Qt::DropActions supportedActions)
     }
     
     // Call implementation dependent drag mimedata setup
-    setupAndExecDragObject(drag, rowsIndices, supportedActions, action);
+    setupAndExecDragObject(drag, _imp->draggedItems, supportedActions, action);
 }
 
 void
 TableView::setupAndExecDragObject(QDrag* drag,
-                                  const QModelIndexList& rows,
+                                  const std::list<TableItemPtr>& rows,
                                   Qt::DropActions supportedActions,
                                   Qt::DropAction defaultAction)
 {
-    QMimeData *data = getTableModel()->mimeData(rows);
+    QMimeData *data = new QMimeData;//getTableModel()->mimeData(rows);
     if (!data) {
         return;
     }
@@ -1839,11 +1885,8 @@ TableView::setupAndExecDragObject(QDrag* drag,
         
         TableModelPtr model = getTableModel();
         // If the target table is not this one, we have no choice but to remove from this table the items out of undo/redo operation
-        for (QModelIndexList::const_iterator it = rows.begin(); it != rows.end(); ++it) {
-            TableItemPtr item = model->getItem(*it);
-            if (item) {
-                model->removeItem(item);
-            }
+        for (std::list<TableItemPtr>::const_iterator it = rows.begin(); it != rows.end(); ++it) {
+            model->removeItem(*it);
         }
         
     }
