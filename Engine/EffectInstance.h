@@ -1189,7 +1189,7 @@ public:
     /**
      * @brief Effects are always copied throughout a render
      **/
-    virtual bool isRenderCloneNeeded() const OVERRIDE FINAL
+    virtual bool isRenderCloneNeeded() const OVERRIDE 
     {
         return true;
     }

@@ -24,7 +24,6 @@ UserPages:
         Max: 2147483647
         DisplayMax: 1
       - Name: Merge1operation
-        String: {N: Merge1, K: operation}
         DefaultString: over
         NDims: 1
         TypeName: Choice
@@ -39,20 +38,18 @@ UserPages:
         Label: Mask
         Props: [NoNewLine]
       - Name: Merge1maskChannel_Mask
-        DefaultString: RGBA.A
+        DefaultString: uk.co.thefoundry.OfxImagePlaneColour.A
         NDims: 1
         TypeName: Choice
         Label: ""
-        Entries: [None, RGBA.R, RGBA.G, RGBA.B, RGBA.A, Forward.Motion.U, Forward.Motion.V, DisparityRight.Disparity.X, DisparityRight.Disparity.Y]
+        Entries: [None, uk.co.thefoundry.OfxImagePlaneColour.R, uk.co.thefoundry.OfxImagePlaneColour.G, uk.co.thefoundry.OfxImagePlaneColour.B, uk.co.thefoundry.OfxImagePlaneColour.A]
       - Name: Merge1maskInvert
-        Bool: {N: Merge1, K: maskInvert}
         DefaultBool: false
         NDims: 1
         TypeName: Bool
         Label: Invert Mask
         Props: [NoNewLine]
       - Name: Merge1mix
-        Float: {N: Merge1, K: mix}
         DefaultFloat: 1
         NDims: 1
         TypeName: Double
@@ -82,10 +79,6 @@ Children:
     Params:
       - Name: AChannelsA
         Bool: false
-      - Name: enableMask_Mask
-        Bool: {N: "@thisGroup", K: Merge1enableMask_Mask}
-      - Name: maskChannel_Mask
-        String: {N: "@thisGroup", K: Merge1maskChannel_Mask}
     Pos: [1036, 302]
   - PluginID: net.sf.openfx.Solid
     Name: Solid1
@@ -94,24 +87,11 @@ Children:
         String: PC_Video 640x480
       - Name: size
         Float: [1920, 1080]
-      - Name: color
-        Float: [{N: "@thisGroup", K: Solid1color, D: r}, {N: "@thisGroup", K: Solid1color, D: g}, {N: "@thisGroup", K: Solid1color, D: b}]
     Pos: [1261, 187]
   - PluginID: net.sf.openfx.ShufflePlugin
     Name: Shuffle1
     Version: [2, 0]
     Inputs: {A: Merge1, B: Dot1}
-    Params:
-      - Name: outputChannelsChoice
-        String: RGBA
-      - Name: outputRChoice
-        String: A.r
-      - Name: outputGChoice
-        String: A.g
-      - Name: outputBChoice
-        String: A.b
-      - Name: outputAChoice
-        String: B.a
     Pos: [764, 314]
   - PluginID: net.sf.openfx.Premult
     Name: Premult1

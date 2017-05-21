@@ -4407,8 +4407,7 @@ KnobHolder::removeKnobFromList(const KnobIConstPtr& knob)
     for (KnobsVec::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
         if (*it == knob) {
             _imp->knobs.erase(it);
-
-            return;
+            break;
         }
     }
     std::map<std::string, KnobIWPtr>::iterator found = _imp->knobsOrdered.find(knob->getName());
@@ -5227,6 +5226,10 @@ KnobHolder::removeRenderClone(const TreeRenderPtr& render)
 KnobHolderPtr
 KnobHolder::createRenderClone(const FrameViewRenderKey& key) const
 {
+    if (!isRenderCloneNeeded()) {
+        KnobHolderConstPtr thisShared = shared_from_this();
+        return boost::const_pointer_cast<KnobHolder>(thisShared);
+    }
     {
         QMutexLocker k(&_imp->common->renderClonesMutex);
         RenderCloneMap::iterator found = _imp->common->renderClones.find(key);
@@ -5262,6 +5265,10 @@ KnobHolder::getRenderClone(const FrameViewRenderKey& key) const
 
     // This must be the main instance!
     assert(!_imp->mainInstance);
+    if (!isRenderCloneNeeded()) {
+        KnobHolderConstPtr thisShared = shared_from_this();
+        return boost::const_pointer_cast<KnobHolder>(thisShared);
+    }
     QMutexLocker k(&_imp->common->renderClonesMutex);
     RenderCloneMap::iterator found = _imp->common->renderClones.find(key);
     if (found != _imp->common->renderClones.end()) {

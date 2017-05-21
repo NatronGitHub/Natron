@@ -690,7 +690,7 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr &knob)
 
     // If this assert triggers, that means a knob was not added to a KnobPage.
     if (!isKnobTableControl && !parentKnob && isPagingEnabled()) {
-        qDebug() << parentKnob->getName().c_str() << "does not belong to any page";
+        qDebug() << knob->getName().c_str() << "does not belong to any page";
     }
 
     KnobGroupPtr parentIsGroup = toKnobGroup(parentKnob);

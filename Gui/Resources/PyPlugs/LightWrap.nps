@@ -365,7 +365,7 @@ Children:
     Inputs: {Source: Dot1}
     Params:
       - Name: softnessLower
-        Float: {Expr: thisGroup.lumaTolerance.getValue() - 1}
+        Float: {pyExpr: thisGroup.lumaTolerance.getValue() - 1}
       - Name: softnessUpper
         Float: 0
     Pos: [752, 164]
@@ -381,8 +381,6 @@ Children:
     Params:
       - Name: NatronOfxParamProcessA
         Bool: true
-      - Name: size
-        Float: [{N: "@thisGroup", K: bgblur, D: x}, {N: "@thisGroup", K: bgblur, D: y}]
       - Name: expandRoD
         Bool: false
     Pos: [752, 316]
@@ -393,8 +391,6 @@ Children:
         String: PC_Video 640x480
       - Name: size
         Float: [960, 540]
-      - Name: color
-        Float: [{N: "@thisGroup", K: constantcolor, D: r}, {N: "@thisGroup", K: constantcolor, D: g}, {N: "@thisGroup", K: constantcolor, D: b}, {N: "@thisGroup", K: constantcolor, D: a}]
       - Name: NatronOfxParamProcessA
         Bool: false
     Pos: [968, 185]
@@ -402,17 +398,6 @@ Children:
     Name: Shufflecopy1
     Version: [2, 0]
     Inputs: {A: BGBlur, B: Constant1}
-    Params:
-      - Name: outputChannelsChoice
-        String: Color.RGBA
-      - Name: outputRChoice
-        String: B.r
-      - Name: outputGChoice
-        String: B.g
-      - Name: outputBChoice
-        String: B.b
-      - Name: outputAChoice
-        String: A.a
     Pos: [968, 316]
   - PluginID: net.sf.openfx.Premult
     Name: Premult2
@@ -424,14 +409,14 @@ Children:
     Inputs: {0: Premult2, 1: Constant1}
     Params:
       - Name: which
-        Int: {Expr: thisGroup.disableLuma.getValue()}
+        Int: {pyExpr: thisGroup.disableLuma.getValue()}
     Pos: [1172, 380]
   - PluginID: net.sf.openfx.switchPlugin
     Name: DisableLuma1
     Inputs: {0: BGBlur, 1: Keyer1}
     Params:
       - Name: which
-        Int: {Expr: thisGroup.disableLuma.getValue()}
+        Int: {pyExpr: thisGroup.disableLuma.getValue()}
     Pos: [579, 319]
   - PluginID: fr.inria.built-in.Dot
     Name: Dot1
@@ -442,7 +427,7 @@ Children:
     Inputs: {0: DisableLuma1, 1: DisableLuma}
     Params:
       - Name: which
-        Int: {Expr: thisGroup.useConstant.getValue()}
+        Int: {pyExpr: thisGroup.useConstant.getValue()}
     Pos: [758, 448]
   - PluginID: fr.inria.built-in.Dot
     Name: Dot2
@@ -461,10 +446,6 @@ Children:
         Bool: false
       - Name: NatronOfxParamProcessA
         Bool: true
-      - Name: size
-        Float: [{N: "@thisGroup", K: fgblur, D: x}, {N: "@thisGroup", K: fgblur, D: y}]
-      - Name: boundary
-        String: {N: "@thisGroup", K: fgblurBoundary}
       - Name: expandRoD
         Bool: false
     Pos: [434, 433]
@@ -503,8 +484,6 @@ Children:
     Params:
       - Name: NatronOfxParamProcessA
         Bool: true
-      - Name: size
-        Float: [{N: "@thisGroup", K: diffuse, D: x}, {N: "@thisGroup", K: diffuse, D: y}]
       - Name: expandRoD
         Bool: false
     Pos: [758, 633]
@@ -516,17 +495,19 @@ Children:
       - Name: NatronOfxParamProcessA
         Bool: true
       - Name: value
-        Float: {Expr: thisGroup.intensity.getValue()}
+        Float: {pyExpr: thisGroup.intensity.getValue()}
+      - Name: premult
+        Bool: true
     Pos: [758, 697]
   - PluginID: net.sf.openfx.SaturationPlugin
     Name: Saturation1
     Version: [2, 0]
     Inputs: Intensity
     Params:
-      - Name: saturation
-        Float: {N: "@thisGroup", K: saturation}
       - Name: clampBlack
         Bool: false
+      - Name: premult
+        Bool: true
     Pos: [758, 761]
   - PluginID: net.sf.openfx.ColorCorrectPlugin
     Name: ColorCorrect1
@@ -535,54 +516,10 @@ Children:
     Params:
       - Name: NatronOfxParamProcessA
         Bool: true
-      - Name: MasterSaturation
-        Float: [{N: "@thisGroup", K: ColorCorrect1MasterSaturation, D: r}, {N: "@thisGroup", K: ColorCorrect1MasterSaturation, D: g}, {N: "@thisGroup", K: ColorCorrect1MasterSaturation, D: b}, {N: "@thisGroup", K: ColorCorrect1MasterSaturation, D: a}]
-      - Name: MasterContrast
-        Float: [{N: "@thisGroup", K: ColorCorrect1MasterContrast, D: r}, {N: "@thisGroup", K: ColorCorrect1MasterContrast, D: g}, {N: "@thisGroup", K: ColorCorrect1MasterContrast, D: b}, {N: "@thisGroup", K: ColorCorrect1MasterContrast, D: a}]
-      - Name: MasterGamma
-        Float: [{N: "@thisGroup", K: ColorCorrect1MasterGamma, D: r}, {N: "@thisGroup", K: ColorCorrect1MasterGamma, D: g}, {N: "@thisGroup", K: ColorCorrect1MasterGamma, D: b}, {N: "@thisGroup", K: ColorCorrect1MasterGamma, D: a}]
-      - Name: MasterGain
-        Float: [{N: "@thisGroup", K: ColorCorrect1MasterGain, D: r}, {N: "@thisGroup", K: ColorCorrect1MasterGain, D: g}, {N: "@thisGroup", K: ColorCorrect1MasterGain, D: b}, {N: "@thisGroup", K: ColorCorrect1MasterGain, D: a}]
-      - Name: MasterOffset
-        Float: [{N: "@thisGroup", K: ColorCorrect1MasterOffset, D: r}, {N: "@thisGroup", K: ColorCorrect1MasterOffset, D: g}, {N: "@thisGroup", K: ColorCorrect1MasterOffset, D: b}, {N: "@thisGroup", K: ColorCorrect1MasterOffset, D: a}]
-      - Name: ShadowsEnable
-        Bool: {N: "@thisGroup", K: ColorCorrect1ShadowsEnable}
-      - Name: ShadowsSaturation
-        Float: [{N: "@thisGroup", K: ColorCorrect1ShadowsSaturation, D: r}, {N: "@thisGroup", K: ColorCorrect1ShadowsSaturation, D: g}, {N: "@thisGroup", K: ColorCorrect1ShadowsSaturation, D: b}, {N: "@thisGroup", K: ColorCorrect1ShadowsSaturation, D: a}]
-      - Name: ShadowsContrast
-        Float: [{N: "@thisGroup", K: ColorCorrect1ShadowsContrast, D: r}, {N: "@thisGroup", K: ColorCorrect1ShadowsContrast, D: g}, {N: "@thisGroup", K: ColorCorrect1ShadowsContrast, D: b}, {N: "@thisGroup", K: ColorCorrect1ShadowsContrast, D: a}]
-      - Name: ShadowsGamma
-        Float: [{N: "@thisGroup", K: ColorCorrect1ShadowsGamma, D: r}, {N: "@thisGroup", K: ColorCorrect1ShadowsGamma, D: g}, {N: "@thisGroup", K: ColorCorrect1ShadowsGamma, D: b}, {N: "@thisGroup", K: ColorCorrect1ShadowsGamma, D: a}]
-      - Name: ShadowsGain
-        Float: [{N: "@thisGroup", K: ColorCorrect1ShadowsGain, D: r}, {N: "@thisGroup", K: ColorCorrect1ShadowsGain, D: g}, {N: "@thisGroup", K: ColorCorrect1ShadowsGain, D: b}, {N: "@thisGroup", K: ColorCorrect1ShadowsGain, D: a}]
-      - Name: ShadowsOffset
-        Float: [{N: "@thisGroup", K: ColorCorrect1ShadowsOffset, D: r}, {N: "@thisGroup", K: ColorCorrect1ShadowsOffset, D: g}, {N: "@thisGroup", K: ColorCorrect1ShadowsOffset, D: b}, {N: "@thisGroup", K: ColorCorrect1ShadowsOffset, D: a}]
-      - Name: MidtonesEnable
-        Bool: {N: "@thisGroup", K: ColorCorrect1MidtonesEnable}
-      - Name: MidtonesSaturation
-        Float: [{N: "@thisGroup", K: ColorCorrect1MidtonesSaturation, D: r}, {N: "@thisGroup", K: ColorCorrect1MidtonesSaturation, D: g}, {N: "@thisGroup", K: ColorCorrect1MidtonesSaturation, D: b}, {N: "@thisGroup", K: ColorCorrect1MidtonesSaturation, D: a}]
-      - Name: MidtonesContrast
-        Float: [{N: "@thisGroup", K: ColorCorrect1MidtonesContrast, D: r}, {N: "@thisGroup", K: ColorCorrect1MidtonesContrast, D: g}, {N: "@thisGroup", K: ColorCorrect1MidtonesContrast, D: b}, {N: "@thisGroup", K: ColorCorrect1MidtonesContrast, D: a}]
-      - Name: MidtonesGamma
-        Float: [{N: "@thisGroup", K: ColorCorrect1MidtonesGamma, D: r}, {N: "@thisGroup", K: ColorCorrect1MidtonesGamma, D: g}, {N: "@thisGroup", K: ColorCorrect1MidtonesGamma, D: b}, {N: "@thisGroup", K: ColorCorrect1MidtonesGamma, D: a}]
-      - Name: MidtonesGain
-        Float: [{N: "@thisGroup", K: ColorCorrect1MidtonesGain, D: r}, {N: "@thisGroup", K: ColorCorrect1MidtonesGain, D: g}, {N: "@thisGroup", K: ColorCorrect1MidtonesGain, D: b}, {N: "@thisGroup", K: ColorCorrect1MidtonesGain, D: a}]
-      - Name: MidtonesOffset
-        Float: [{N: "@thisGroup", K: ColorCorrect1MidtonesOffset, D: r}, {N: "@thisGroup", K: ColorCorrect1MidtonesOffset, D: g}, {N: "@thisGroup", K: ColorCorrect1MidtonesOffset, D: b}, {N: "@thisGroup", K: ColorCorrect1MidtonesOffset, D: a}]
-      - Name: HighlightsEnable
-        Bool: {N: "@thisGroup", K: ColorCorrect1HighlightsEnable}
-      - Name: HighlightsSaturation
-        Float: [{N: "@thisGroup", K: ColorCorrect1HighlightsSaturation, D: r}, {N: "@thisGroup", K: ColorCorrect1HighlightsSaturation, D: g}, {N: "@thisGroup", K: ColorCorrect1HighlightsSaturation, D: b}, {N: "@thisGroup", K: ColorCorrect1HighlightsSaturation, D: a}]
-      - Name: HighlightsContrast
-        Float: [{N: "@thisGroup", K: ColorCorrect1HighlightsContrast, D: r}, {N: "@thisGroup", K: ColorCorrect1HighlightsContrast, D: g}, {N: "@thisGroup", K: ColorCorrect1HighlightsContrast, D: b}, {N: "@thisGroup", K: ColorCorrect1HighlightsContrast, D: a}]
-      - Name: HighlightsGamma
-        Float: [{N: "@thisGroup", K: ColorCorrect1HighlightsGamma, D: r}, {N: "@thisGroup", K: ColorCorrect1HighlightsGamma, D: g}, {N: "@thisGroup", K: ColorCorrect1HighlightsGamma, D: b}, {N: "@thisGroup", K: ColorCorrect1HighlightsGamma, D: a}]
-      - Name: HighlightsGain
-        Float: [{N: "@thisGroup", K: ColorCorrect1HighlightsGain, D: r}, {N: "@thisGroup", K: ColorCorrect1HighlightsGain, D: g}, {N: "@thisGroup", K: ColorCorrect1HighlightsGain, D: b}, {N: "@thisGroup", K: ColorCorrect1HighlightsGain, D: a}]
-      - Name: HighlightsOffset
-        Float: [{N: "@thisGroup", K: ColorCorrect1HighlightsOffset, D: r}, {N: "@thisGroup", K: ColorCorrect1HighlightsOffset, D: g}, {N: "@thisGroup", K: ColorCorrect1HighlightsOffset, D: b}, {N: "@thisGroup", K: ColorCorrect1HighlightsOffset, D: a}]
       - Name: clampBlack
         Bool: false
+      - Name: premult
+        Bool: true
     Pos: [758, 825]
   - PluginID: net.sf.openfx.MergePlugin
     Name: MaskMerge2
@@ -590,33 +527,18 @@ Children:
     Params:
       - Name: operation
         String: mask
-      - Name: disableNode
-        Bool: {N: "@thisGroup", K: enableGlow}
     Pos: [761, 909]
   - PluginID: net.sf.openfx.ShufflePlugin
     Name: Shuffle1
     Version: [2, 0]
     Inputs: {A: MaskMerge2}
     Params:
-      - Name: outputChannelsChoice
-        String: Color.RGBA
-      - Name: outputRChoice
-        String: A.r
-      - Name: outputGChoice
-        String: A.g
-      - Name: outputBChoice
-        String: A.b
-      - Name: outputAChoice
+      - Name: outputA
         String: 0
     Pos: [761, 1026]
   - PluginID: net.sf.openfx.MergePlugin
     Name: HighlightMerge
     Inputs: {A: Dot2, B: Shuffle1}
-    Params:
-      - Name: operation
-        String: {N: "@thisGroup", K: highlightmerge}
-      - Name: disableNode
-        Bool: {N: "@thisGroup", K: onlyWrap}
     Pos: [761, 1108]
   - PluginID: fr.inria.built-in.Dot
     Name: Dot4

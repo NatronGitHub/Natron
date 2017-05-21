@@ -925,6 +925,9 @@ public:
                     const std::list<QString>& optionLabels,
                     const std::list<QString>& optionHelps);
 
+    // Backward compatibility with Natron 2
+    void setOptions(const std::list<std::pair<QString, QString> >& options);
+
     /**
      * @brief Returns the option at the given index
      **/

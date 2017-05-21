@@ -329,7 +329,7 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
         *createdNodesOut = createdNodes;
     }
     // If we created all sub-groups recursively, then we are in the top-level group. We may now restore all links
-    if (!group->getApplication()->isCreatingNode()) {
+    if (!group->getApplication()->getProject()->isLoadingProject() || !group->getApplication()->isCreatingNode()) {
 
         // Now that we created all nodes. There may be cross-graph link(s) and they can only be truely restored now.
         restoreLinksRecursive(group, serializedNodes, createdNodesOut);

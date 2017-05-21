@@ -51,23 +51,24 @@ UserPages:
         DisplayMin: 0.2
         DisplayMax: 5
       - Name: invertGradient
+        Bool: {N: Invert1, K: disableNode}
         DefaultBool: false
         NDims: 1
         TypeName: Bool
         Label: Invert Gradient
       - Name: Source_channels
-        DefaultString: Color.RGBA
+        DefaultString: uk.co.thefoundry.OfxImagePlaneColour
         NDims: 1
         TypeName: Choice
         Label: Source Layer
-        Entries: [None, Color.RGBA, Backward.Motion, DisparityLeft.Disparity, DisparityRight.Disparity, Forward.Motion]
+        Entries: [None, uk.co.thefoundry.OfxImagePlaneColour]
       - Name: channels
-        String: Color.RGBA
-        DefaultString: Backward.Motion
+        String: {N: Invert1, K: channels}
+        DefaultString: uk.co.thefoundry.OfxImagePlaneStereoDisparityLeft
         NDims: 1
         TypeName: Choice
         Label: Output Layer
-        Entries: [Color.RGBA, Backward.Motion, DisparityLeft.Disparity, DisparityRight.Disparity, Forward.Motion]
+        Entries: [uk.co.thefoundry.OfxImagePlaneColour, uk.co.thefoundry.OfxImagePlaneStereoDisparityLeft, uk.co.thefoundry.OfxImagePlaneStereoDisparityRight, uk.co.thefoundry.OfxImagePlaneBackMotionVector, uk.co.thefoundry.OfxImagePlaneForwardMotionVector]
 PagesOrder: [controls, nodePage]
 Children:
   - PluginID: net.sf.openfx.GradePlugin
@@ -75,19 +76,8 @@ Children:
     Version: [2, 0]
     Inputs: InputSource
     Params:
-      - Name: blackPoint
-        Float: [{N: "@thisGroup", K: closeLimit, D: r}, {N: "@thisGroup", K: closeLimit, D: g}, {N: "@thisGroup", K: closeLimit, D: b}, {N: "@thisGroup", K: closeLimit, D: a}]
-      - Name: whitePoint
-        Float: [{N: "@thisGroup", K: farLimit, D: r}, {N: "@thisGroup", K: farLimit, D: g}, {N: "@thisGroup", K: farLimit, D: b}, {N: "@thisGroup", K: farLimit, D: a}]
-      - Name: gamma
-        Float: [{N: "@thisGroup", K: gamma, D: r}, {N: "@thisGroup", K: gamma, D: g}, {N: "@thisGroup", K: gamma, D: b}, {N: "@thisGroup", K: gamma, D: a}]
-      - Name: clampBlack
-        Bool: true
-        DefaultBool: false
       - Name: premultChanged
         Bool: true
-      - Name: Source_channels
-        String: {N: "@thisGroup", K: Source_channels}
       - Name: enableMask_Mask
         Bool: true
     Pos: [726, 92]
@@ -98,10 +88,6 @@ Children:
     Params:
       - Name: premultChanged
         Bool: true
-      - Name: channels
-        String: {N: "@thisGroup", K: channels}
-      - Name: disableNode
-        Bool: {N: "@thisGroup", K: invertGradient}
     Pos: [726, 230]
   - PluginID: fr.inria.built-in.Output
     Name: Output
@@ -116,7 +102,7 @@ Children:
     Inputs: {0: Invert1, 1: InputSource}
     Params:
       - Name: which
-        Int: {Expr: thisGroup.zPicking.get()}
+        Int: {pyExpr: thisGroup.zPicking.get()}
       - Name: p1_channels
-        String: {Expr: thisGroup.Source_channels.get()}
+        String: {pyExpr: thisGroup.Source_channels.get()}
     Pos: [882, 381]

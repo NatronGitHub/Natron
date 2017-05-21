@@ -142,25 +142,27 @@ extern SbkConverter** SbkNatronEngineTypeConverters;
 #define SBK_NATRONENGINE_STD_VECTOR_STD_STRING_IDX                   2 // std::vector<std::string >
 #define SBK_NATRONENGINE_STD_LIST_STD_VECTOR_STD_STRING_IDX          3 // std::list<std::vector<std::string > > *
 #define SBK_NATRONENGINE_STD_LIST_QSTRING_IDX                        4 // std::list<QString > *
-#define SBK_NATRONENGINE_STD_MAP_QSTRING_PYOVERLAYPARAMDESC_IDX      5 // std::map<QString, PyOverlayParamDesc >
-#define SBK_NATRONENGINE_STD_MAP_QSTRING_QSTRING_IDX                 6 // const std::map<QString, QString > &
-#define SBK_NATRONENGINE_STD_LIST_ITEMBASEPTR_IDX                    7 // std::list<ItemBase * >
-#define SBK_NATRONENGINE_STD_LIST_TRACKPTR_IDX                       8 // const std::list<Track * > &
-#define SBK_NATRONENGINE_STD_LIST_PARAMPTR_IDX                       9 // std::list<Param * >
-#define SBK_NATRONENGINE_STD_LIST_DOUBLE_IDX                         10 // std::list<double > *
-#define SBK_NATRONENGINE_STD_LIST_STROKEPOINT_IDX                    11 // std::list<StrokePoint >
-#define SBK_NATRONENGINE_STD_LIST_STD_LIST_STROKEPOINT_IDX           12 // std::list<std::list<StrokePoint > >
-#define SBK_NATRONENGINE_STD_VECTOR_DOUBLE_IDX                       13 // const std::vector<double > &
-#define SBK_NATRONENGINE_STD_VECTOR_BOOL_IDX                         14 // const std::vector<bool > &
-#define SBK_NATRONENGINE_STD_VECTOR_INT_IDX                          15 // const std::vector<int > &
-#define SBK_NATRONENGINE_STD_LIST_EFFECTPTR_IDX                      16 // std::list<Effect * >
-#define SBK_NATRONENGINE_STD_LIST_IMAGELAYER_IDX                     17 // std::list<ImageLayer >
-#define SBK_NATRONENGINE_STD_MAP_QSTRING_NODECREATIONPROPERTYPTR_IDX 18 // const std::map<QString, NodeCreationProperty * > &
-#define SBK_NATRONENGINE_STD_LIST_INT_IDX                            19 // const std::list<int > &
-#define SBK_NATRONENGINE_QLIST_QVARIANT_IDX                          20 // QList<QVariant >
-#define SBK_NATRONENGINE_QLIST_QSTRING_IDX                           21 // QList<QString >
-#define SBK_NATRONENGINE_QMAP_QSTRING_QVARIANT_IDX                   22 // QMap<QString, QVariant >
-#define SBK_NatronEngine_CONVERTERS_IDX_COUNT                        23
+#define SBK_NATRONENGINE_STD_PAIR_QSTRING_QSTRING_IDX                5 // std::pair<QString, QString >
+#define SBK_NATRONENGINE_STD_LIST_STD_PAIR_QSTRING_QSTRING_IDX       6 // const std::list<std::pair<QString, QString > > &
+#define SBK_NATRONENGINE_STD_MAP_QSTRING_PYOVERLAYPARAMDESC_IDX      7 // std::map<QString, PyOverlayParamDesc >
+#define SBK_NATRONENGINE_STD_MAP_QSTRING_QSTRING_IDX                 8 // const std::map<QString, QString > &
+#define SBK_NATRONENGINE_STD_LIST_ITEMBASEPTR_IDX                    9 // std::list<ItemBase * >
+#define SBK_NATRONENGINE_STD_LIST_TRACKPTR_IDX                       10 // const std::list<Track * > &
+#define SBK_NATRONENGINE_STD_LIST_PARAMPTR_IDX                       11 // std::list<Param * >
+#define SBK_NATRONENGINE_STD_LIST_DOUBLE_IDX                         12 // std::list<double > *
+#define SBK_NATRONENGINE_STD_LIST_STROKEPOINT_IDX                    13 // std::list<StrokePoint >
+#define SBK_NATRONENGINE_STD_LIST_STD_LIST_STROKEPOINT_IDX           14 // std::list<std::list<StrokePoint > >
+#define SBK_NATRONENGINE_STD_VECTOR_DOUBLE_IDX                       15 // const std::vector<double > &
+#define SBK_NATRONENGINE_STD_VECTOR_BOOL_IDX                         16 // const std::vector<bool > &
+#define SBK_NATRONENGINE_STD_VECTOR_INT_IDX                          17 // const std::vector<int > &
+#define SBK_NATRONENGINE_STD_LIST_EFFECTPTR_IDX                      18 // std::list<Effect * >
+#define SBK_NATRONENGINE_STD_LIST_IMAGELAYER_IDX                     19 // std::list<ImageLayer >
+#define SBK_NATRONENGINE_STD_MAP_QSTRING_NODECREATIONPROPERTYPTR_IDX 20 // const std::map<QString, NodeCreationProperty * > &
+#define SBK_NATRONENGINE_STD_LIST_INT_IDX                            21 // const std::list<int > &
+#define SBK_NATRONENGINE_QLIST_QVARIANT_IDX                          22 // QList<QVariant >
+#define SBK_NATRONENGINE_QLIST_QSTRING_IDX                           23 // QList<QString >
+#define SBK_NATRONENGINE_QMAP_QSTRING_QVARIANT_IDX                   24 // QMap<QString, QVariant >
+#define SBK_NatronEngine_CONVERTERS_IDX_COUNT                        25
 
 // Macros for type check
 

@@ -70,18 +70,18 @@ UserPages:
         TypeName: Bool
         Label: Invert Gradient
       - Name: Source_channels
-        DefaultString: Color.RGBA
+        DefaultString: uk.co.thefoundry.OfxImagePlaneColour
         NDims: 1
         TypeName: Choice
         Label: Source Layer
-        Entries: [None, Color.RGBA, Backward.Motion, DisparityLeft.Disparity, DisparityRight.Disparity, Forward.Motion]
+        Entries: [None, uk.co.thefoundry.OfxImagePlaneColour]
       - Name: channels
-        String: Color.RGB
-        DefaultString: Backward.Motion
+        String: uk.co.thefoundry.OfxImagePlaneColour
+        DefaultString: uk.co.thefoundry.OfxImagePlaneStereoDisparityLeft
         NDims: 1
         TypeName: Choice
         Label: Output Layer
-        Entries: [Color.RGB, Backward.Motion, DisparityLeft.Disparity, DisparityRight.Disparity, Forward.Motion]
+        Entries: [uk.co.thefoundry.OfxImagePlaneColour, uk.co.thefoundry.OfxImagePlaneStereoDisparityLeft, uk.co.thefoundry.OfxImagePlaneStereoDisparityRight, uk.co.thefoundry.OfxImagePlaneBackMotionVector, uk.co.thefoundry.OfxImagePlaneForwardMotionVector]
 PagesOrder: [controls, nodePage]
 Children:
   - PluginID: net.sf.openfx.MergePlugin
@@ -94,8 +94,6 @@ Children:
         Bool: false
       - Name: userTextArea
         String: <Natron>(difference)</Natron>
-      - Name: B_channels
-        String: {N: "@thisGroup", K: Source_channels}
     Pos: [764, 248]
   - PluginID: net.sf.openfx.Solid
     Name: Solid1
@@ -104,8 +102,6 @@ Children:
         String: PC_Video 640x480
       - Name: size
         Float: [1920, 1080]
-      - Name: color
-        Float: [{N: "@thisGroup", K: centerValue, D: r}, {N: "@thisGroup", K: centerValue, D: g}, {N: "@thisGroup", K: centerValue, D: b}]
     Pos: [776, 134]
   - PluginID: net.sf.openfx.Invert
     Name: Invert1
@@ -114,10 +110,6 @@ Children:
     Params:
       - Name: premultChanged
         Bool: true
-      - Name: channels
-        String: {N: "@thisGroup", K: channels}
-      - Name: disableNode
-        Bool: {N: "@thisGroup", K: invertGradient}
     Pos: [764, 546]
   - PluginID: net.sf.openfx.Clamp
     Name: Clamp1
@@ -132,14 +124,6 @@ Children:
     Version: [2, 0]
     Inputs: Merge1
     Params:
-      - Name: MasterContrast
-        Float: [{N: "@thisGroup", K: contrast, D: r}, {N: "@thisGroup", K: contrast, D: g}, {N: "@thisGroup", K: contrast, D: b}, {N: "@thisGroup", K: contrast, D: a}]
-      - Name: MasterGamma
-        Float: [{N: "@thisGroup", K: gamma, D: r}, {N: "@thisGroup", K: gamma, D: g}, {N: "@thisGroup", K: gamma, D: b}, {N: "@thisGroup", K: gamma, D: a}]
-      - Name: MasterGain
-        Float: [{N: "@thisGroup", K: tightness, D: r}, {N: "@thisGroup", K: tightness, D: g}, {N: "@thisGroup", K: tightness, D: b}, {N: "@thisGroup", K: tightness, D: a}]
-      - Name: MasterOffset
-        Float: [{N: "@thisGroup", K: offset, D: r}, {N: "@thisGroup", K: offset, D: g}, {N: "@thisGroup", K: offset, D: b}, {N: "@thisGroup", K: offset, D: a}]
       - Name: premultChanged
         Bool: true
     Pos: [764, 344]
@@ -156,7 +140,7 @@ Children:
     Inputs: {0: Invert1, 1: InputSource}
     Params:
       - Name: which
-        Int: {Expr: thisGroup.zPicking.get()}
+        Int: {pyExpr: thisGroup.zPicking.get()}
       - Name: p1_channels
-        String: {Expr: thisGroup.Source_channels.get()}
+        String: {pyExpr: thisGroup.Source_channels.get()}
     Pos: [764, 638]

@@ -224,7 +224,7 @@ Children:
       - Name: operation
         String: plus
       - Name: AChannelsA
-        Bool: {Expr: thisGroup.alpha.get()}
+        Bool: {pyExpr: thisGroup.alpha.get()}
       - Name: aChannelsChanged
         Bool: true
       - Name: userTextArea
@@ -235,7 +235,7 @@ Children:
     Inputs: {0: Bloom, 1: Merge6}
     Params:
       - Name: which
-        Int: {Expr: thisGroup.addInput.get()}
+        Int: {pyExpr: thisGroup.addInput.get()}
     Pos: [1141, 550]
   - PluginID: net.sf.openfx.MergePlugin
     Name: RoD
@@ -244,7 +244,7 @@ Children:
       - Name: operation
         String: copy
       - Name: bbox
-        String: {Expr: 3-thisGroup.expRoD.get()}
+        String: {pyExpr: 3-thisGroup.expRoD.get()}
       - Name: userTextArea
         String: <Natron>(copy)</Natron>
     Pos: [1141, 794]
@@ -257,7 +257,7 @@ Children:
     Inputs: {0: Dot18, 1: RotateOutPrev}
     Params:
       - Name: which
-        Int: {Expr: thisGroup.preview.get()}
+        Int: {pyExpr: thisGroup.preview.get()}
     Pos: [1474, 1741]
   - PluginID: fr.inria.built-in.Dot
     Name: Dot17
@@ -272,7 +272,7 @@ Children:
     Inputs: {0: screenSwitch, 1: Dot6}
     Params:
       - Name: which
-        Int: {Expr: thisGroup.glowOnly.get()}
+        Int: {pyExpr: thisGroup.glowOnly.get()}
     Pos: [1203, 1571]
   - PluginID: fr.inria.built-in.Dot
     Name: Dot7
@@ -283,7 +283,7 @@ Children:
     Inputs: Dot19
     Params:
       - Name: rotate
-        Float: {Expr: thisGroup.rotate.get()}
+        Float: {pyExpr: thisGroup.rotate.get()}
       - Name: center
         Float: [980, 540]
       - Name: transformCenterChanged
@@ -298,9 +298,9 @@ Children:
     Inputs: PostGrade
     Params:
       - Name: rotate
-        Float: {Expr: -thisGroup.rotate.get()}
+        Float: {pyExpr: -thisGroup.rotate.get()}
       - Name: center
-        Float: [{Expr: "thisGroup.RotateIn.center.get()[dimension]"}, {Expr: "thisGroup.RotateIn.center.get()[dimension]"}]
+        Float: [{pyExpr: "thisGroup.RotateIn.center.get()[dimension]"}, {pyExpr: "thisGroup.RotateIn.center.get()[dimension]"}]
       - Name: transformCenterChanged
         Bool: true
     Pos: [1141, 1252]
@@ -309,9 +309,9 @@ Children:
     Inputs: Dot13
     Params:
       - Name: rotate
-        Float: {Expr: -thisGroup.rotate.get()}
+        Float: {pyExpr: -thisGroup.rotate.get()}
       - Name: center
-        Float: [{Expr: "thisGroup.RotateIn.center.get()[dimension]"}, {Expr: "thisGroup.RotateIn.center.get()[dimension]"}]
+        Float: [{pyExpr: "thisGroup.RotateIn.center.get()[dimension]"}, {pyExpr: "thisGroup.RotateIn.center.get()[dimension]"}]
       - Name: transformCenterChanged
         Bool: true
     Pos: [1474, 1537]
@@ -331,7 +331,7 @@ Children:
       - Name: operation
         String: copy
       - Name: bbox
-        String: {Expr: 3-thisGroup.expRoD.get()}
+        String: {pyExpr: 3-thisGroup.expRoD.get()}
       - Name: userTextArea
         String: <Natron>(copy)</Natron>
     Pos: [1622, 1728]
@@ -353,10 +353,7 @@ Children:
     Inputs: Saturation2
     Params:
       - Name: blackPoint
-        Float: {Expr: thisGroup.isolateHighlights.get()}
-      - Name: clampBlack
-        Bool: true
-        DefaultBool: false
+        Float: {pyExpr: thisGroup.isolateHighlights.get()}
       - Name: clampWhite
         Bool: true
       - Name: premultChanged
@@ -391,15 +388,7 @@ Children:
     Version: [2, 0]
     Inputs: {A: mask}
     Params:
-      - Name: outputChannelsChoice
-        String: Color.RGBA
-      - Name: outputRChoice
-        String: A.a
-      - Name: outputGChoice
-        String: A.a
-      - Name: outputBChoice
-        String: A.a
-      - Name: outputAChoice
+      - Name: outputA
         String: 0
     Pos: [957, -113]
   - PluginID: fr.inria.built-in.Input
@@ -416,13 +405,7 @@ Children:
     Inputs: RoD
     Params:
       - Name: NatronOfxParamProcessA
-        Bool: {Expr: thisGroup.alpha.get()}
-      - Name: MasterSaturation
-        Float: [{N: "@thisGroup", K: PostGradeMasterSaturation, D: r}, {N: "@thisGroup", K: PostGradeMasterSaturation, D: g}, {N: "@thisGroup", K: PostGradeMasterSaturation, D: b}, {N: "@thisGroup", K: PostGradeMasterSaturation, D: a}]
-      - Name: MasterGamma
-        Float: [{N: "@thisGroup", K: PostGradeMasterGamma, D: r}, {N: "@thisGroup", K: PostGradeMasterGamma, D: g}, {N: "@thisGroup", K: PostGradeMasterGamma, D: b}, {N: "@thisGroup", K: PostGradeMasterGamma, D: a}]
-      - Name: MasterGain
-        Float: [{N: "@thisGroup", K: PostGradeMasterGain, D: r}, {N: "@thisGroup", K: PostGradeMasterGain, D: g}, {N: "@thisGroup", K: PostGradeMasterGain, D: b}, {N: "@thisGroup", K: PostGradeMasterGain, D: a}]
+        Bool: {pyExpr: thisGroup.alpha.get()}
       - Name: premultChanged
         Bool: true
     Pos: [1141, 1073]
@@ -449,7 +432,7 @@ Children:
       - Name: operation
         String: multiply
       - Name: mix
-        Float: {Expr: thisGroup.isolateHue.get()}
+        Float: {pyExpr: thisGroup.isolateHue.get()}
       - Name: userTextArea
         String: <Natron>(multiply)</Natron>
     Pos: [1292, -119]
@@ -457,17 +440,6 @@ Children:
     Name: Shuffle1
     Version: [2, 0]
     Inputs: {A: HSVTool1}
-    Params:
-      - Name: outputChannelsChoice
-        String: Color.RGBA
-      - Name: outputRChoice
-        String: A.a
-      - Name: outputGChoice
-        String: A.a
-      - Name: outputBChoice
-        String: A.a
-      - Name: outputAChoice
-        String: A.a
     Pos: [1290, -206]
   - PluginID: net.sf.openfx.HSVToolPlugin
     Name: HSVTool1
@@ -477,14 +449,14 @@ Children:
         Float: [960, 540]
       - Name: size
         Float: [960, 540]
-      - Name: srcColor
-        Float: [{N: "@thisGroup", K: HSVTool1srcColor, D: r}, {N: "@thisGroup", K: HSVTool1srcColor, D: g}, {N: "@thisGroup", K: HSVTool1srcColor, D: b}]
       - Name: hueRangeRolloff
         Float: 50
       - Name: saturationRangeRolloff
         Float: 0.3
       - Name: brightnessRangeRolloff
         Float: 0.3
+      - Name: premult
+        Bool: true
       - Name: maskInvert
         Bool: true
     Pos: [1294, -302]
@@ -494,19 +466,15 @@ Children:
     Inputs: Dot14
     Params:
       - Name: NatronOfxParamProcessA
-        Bool: {Expr: thisGroup.alpha.get()}
+        Bool: {pyExpr: thisGroup.alpha.get()}
       - Name: size
-        Float: [{Expr: thisGroup.size.get()}, {Expr: thisGroup.size.get()*(1-thisGroup.stretch.get())}]
-      - Name: bloomRatio
-        Float: {N: "@thisGroup", K: BloombloomRatio}
+        Float: [{pyExpr: thisGroup.size.get()}, {pyExpr: thisGroup.size.get()*(1-thisGroup.stretch.get())}]
       - Name: bloomCount
-        Int: {Expr: thisGroup.iterations.get()}
+        Int: {pyExpr: thisGroup.iterations.get()}
       - Name: boundary
         String: Black
-      - Name: filter
-        String: {N: "@thisGroup", K: Bloomfilter}
       - Name: expandRoD
-        Bool: {Expr: thisGroup.expRoD.get()}
+        Bool: {pyExpr: thisGroup.expRoD.get()}
       - Name: premultChanged
         Bool: true
     Pos: [975, 363]
@@ -538,7 +506,7 @@ Children:
       - Name: operation
         String: screen
       - Name: AChannelsA
-        Bool: {Expr: thisGroup.alpha.get()}
+        Bool: {pyExpr: thisGroup.alpha.get()}
       - Name: aChannelsChanged
         Bool: true
       - Name: userTextArea
@@ -549,7 +517,7 @@ Children:
     Inputs: {0: Merge1, 1: Merge2}
     Params:
       - Name: which
-        Int: {Expr: thisGroup.screen.get()}
+        Int: {pyExpr: thisGroup.screen.get()}
     Pos: [1339, 1465]
   - PluginID: fr.inria.built-in.Dot
     Name: Dot1
@@ -577,7 +545,7 @@ Children:
     Inputs: GlowOnly
     Params:
       - Name: NatronOfxParamProcessA
-        Bool: {Expr: thisGroup.alpha.get()}
+        Bool: {pyExpr: thisGroup.alpha.get()}
       - Name: premultChanged
         Bool: true
     Pos: [1203, 1685]

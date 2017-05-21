@@ -426,6 +426,11 @@ Q_SIGNALS:
 
 private:
 
+    virtual bool isRenderCloneNeeded() const OVERRIDE FINAL;
+
+
+    virtual KnobHolderPtr createRenderCopy(const FrameViewRenderKey& key) const OVERRIDE FINAL;
+
     virtual void onNodeRemoved(const Node* node) OVERRIDE FINAL;
 
     // A group render function should never get called

@@ -47,7 +47,7 @@ Children:
     Inputs: Source
     Params:
       - Name: rotate
-        Float: {Expr: thisGroup.angleBlur_angle.get()}
+        Float: {pyExpr: thisGroup.angleBlur_angle.get()}
       - Name: center
         Float: [480, 270]
       - Name: transformCenterChanged
@@ -58,9 +58,9 @@ Children:
     Inputs: Blur2
     Params:
       - Name: rotate
-        Float: {Expr: thisGroup.angleBlur_angle.get()}
+        Float: {pyExpr: thisGroup.angleBlur_angle.get()}
       - Name: center
-        Float: [{Expr: "thisGroup.Transform1.center.get()[dimension]"}, {Expr: "thisGroup.Transform1.center.get()[dimension]"}]
+        Float: [{pyExpr: "thisGroup.Transform1.center.get()[dimension]"}, {pyExpr: "thisGroup.Transform1.center.get()[dimension]"}]
       - Name: transformCenterChanged
         Bool: true
       - Name: invert
@@ -74,5 +74,5 @@ Children:
       - Name: NatronOfxParamProcessA
         Bool: true
       - Name: size
-        Float: [{Expr: thisGroup.angleBlur_distance.get()}, 0]
+        Float: [{pyExpr: thisGroup.angleBlur_distance.get()}, 0]
     Pos: [1000, 246]

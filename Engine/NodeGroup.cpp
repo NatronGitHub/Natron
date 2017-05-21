@@ -1124,6 +1124,21 @@ NodeGroup::NodeGroup(const EffectInstancePtr& mainInstance, const FrameViewRende
 }
 
 bool
+NodeGroup::isRenderCloneNeeded() const
+{
+    // A group never has a render copy
+    return false;
+}
+
+KnobHolderPtr
+NodeGroup::createRenderCopy(const FrameViewRenderKey& /*key*/) const
+{
+    // A group never has a render copy
+    assert(false);
+    return KnobHolderPtr();
+}
+
+bool
 NodeGroup::getIsDeactivatingGroup() const
 {
     assert( QThread::currentThread() == qApp->thread() );

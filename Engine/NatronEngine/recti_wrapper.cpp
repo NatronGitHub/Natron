@@ -32,7 +32,7 @@ RectIWrapper::RectIWrapper() : RectI() {
     // ... middle
 }
 
-RectIWrapper::RectIWrapper(int l, int b, int r, int t) : RectI(l, b, r, t) {
+RectIWrapper::RectIWrapper(int x1_, int y1_, int x2_, int y2_) : RectI(x1_, y1_, x2_, y2_) {
     // ... middle
 }
 
@@ -111,7 +111,7 @@ Sbk_RectI_Init(PyObject* self, PyObject* args, PyObject* kwds)
             }
             break;
         }
-        case 2: // RectI(int l, int b, int r, int t)
+        case 2: // RectI(int x1_, int y1_, int x2_, int y2_)
         {
             int cppArg0;
             pythonToCpp[0](pyArgs[0], &cppArg0);
@@ -386,7 +386,7 @@ static PyObject* Sbk_RectIFunc_intersect(PyObject* self, PyObject* args)
             }
             break;
         }
-        case 1: // intersect(int l, int b, int r, int t, RectI * intersection) const
+        case 1: // intersect(int x1_, int y1_, int x2_, int y2_, RectI * intersection) const
         {
             int cppArg0;
             pythonToCpp[0](pyArgs[0], &cppArg0);
@@ -481,7 +481,7 @@ static PyObject* Sbk_RectIFunc_intersects(PyObject* self, PyObject* args)
             }
             break;
         }
-        case 1: // intersects(int l, int b, int r, int t) const
+        case 1: // intersects(int x1_, int y1_, int x2_, int y2_) const
         {
             int cppArg0;
             pythonToCpp[0](pyArgs[0], &cppArg0);
@@ -644,7 +644,7 @@ static PyObject* Sbk_RectIFunc_merge(PyObject* self, PyObject* args)
             }
             break;
         }
-        case 1: // merge(int l, int b, int r, int t)
+        case 1: // merge(int x1_, int y1_, int x2_, int y2_)
         {
             int cppArg0;
             pythonToCpp[0](pyArgs[0], &cppArg0);
@@ -808,7 +808,7 @@ static PyObject* Sbk_RectIFunc_set(PyObject* self, PyObject* args)
             }
             break;
         }
-        case 1: // set(int l, int b, int r, int t)
+        case 1: // set(int x1_, int y1_, int x2_, int y2_)
         {
             int cppArg0;
             pythonToCpp[0](pyArgs[0], &cppArg0);

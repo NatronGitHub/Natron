@@ -3125,6 +3125,18 @@ ChoiceParam::addOption(const QString& optionID,
 }
 
 void
+ChoiceParam::setOptions(const std::list<std::pair<QString, QString> >& options)
+{
+    std::list<QString> ids, labels, helps;
+    for (std::list<std::pair<QString, QString> >::const_iterator it = options.begin(); it != options.end(); ++it) {
+        ids.push_back(it->first);
+        labels.push_back(it->first);
+        helps.push_back(it->second);
+    }
+    setOptions(ids, labels, helps);
+}
+
+void
 ChoiceParam::setOptions(const std::list<QString>& optionIDs,
                         const std::list<QString>& optionLabels,
                         const std::list<QString>& optionHelps)

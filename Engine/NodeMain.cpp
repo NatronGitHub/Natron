@@ -476,17 +476,17 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
             knob = found;
         } else {
             if (isInt) {
-                knob = _imp->effect->createKnob<KnobInt>(serialization->_scriptName);
+                knob = _imp->effect->createKnob<KnobInt>(serialization->_scriptName, serialization->_dimension);
             } else if (isDouble) {
-                knob = _imp->effect->createKnob<KnobDouble>(serialization->_scriptName);
+                knob = _imp->effect->createKnob<KnobDouble>(serialization->_scriptName, serialization->_dimension);
             } else if (isBool) {
                 knob = _imp->effect->createKnob<KnobBool>(serialization->_scriptName);
             } else if (isChoice) {
                 knob = _imp->effect->createKnob<KnobChoice>(serialization->_scriptName);
             } else if (isColor) {
-                knob = _imp->effect->createKnob<KnobColor>(serialization->_scriptName);
+                knob = _imp->effect->createKnob<KnobColor>(serialization->_scriptName, serialization->_dimension);
             } else if (isString) {
-                knob = _imp->effect->createKnob<KnobString>(serialization->_scriptName);
+                knob = _imp->effect->createKnob<KnobString>(serialization->_scriptName, serialization->_dimension);
             } else if (isFile) {
                 knob = _imp->effect->createKnob<KnobFile>(serialization->_scriptName);
             } else if (isPath) {
@@ -496,7 +496,7 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
             } else if (isSeparator) {
                 knob = _imp->effect->createKnob<KnobSeparator>(serialization->_scriptName);
             } else if (isParametric) {
-                knob = _imp->effect->createKnob<KnobParametric>(serialization->_scriptName);
+                knob = _imp->effect->createKnob<KnobParametric>(serialization->_scriptName, serialization->_dimension);
             }
 
         } // found

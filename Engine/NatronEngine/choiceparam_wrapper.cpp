@@ -24,6 +24,7 @@ NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
 #include <PyNode.h>
 #include <PyParameter.h>
 #include <list>
+#include <utility>
 
 
 // Native ---------------------------------------------------------
@@ -957,7 +958,10 @@ static PyObject* Sbk_ChoiceParamFunc_setOptions(PyObject* self, PyObject* pyArg)
 
     // Overloaded function decisor
     // 0: setOptions(std::list<QString>,std::list<QString>,std::list<QString>)
-    if (PySequence_Check(pyArg)) {
+    // 1: setOptions(std::list<std::pair<QString,QString> >)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_PAIR_QSTRING_QSTRING_IDX], (pyArg)))) {
+        overloadId = 1; // setOptions(std::list<std::pair<QString,QString> >)
+    } else if (PySequence_Check(pyArg)) {
         overloadId = 0; // setOptions(std::list<QString>,std::list<QString>,std::list<QString>)
     }
 
@@ -965,56 +969,71 @@ static PyObject* Sbk_ChoiceParamFunc_setOptions(PyObject* self, PyObject* pyArg)
     if (overloadId == -1) goto Sbk_ChoiceParamFunc_setOptions_TypeError;
 
     // Call function/method
-    {
+    switch (overloadId) {
+        case 0: // setOptions(const std::list<QString > & optionIDs, const std::list<QString > & optionLabels, const std::list<QString > & optionHelps)
+        {
 
-        if (!PyErr_Occurred()) {
-            // setOptions(std::list<QString>,std::list<QString>,std::list<QString>)
-            // Begin code injection
+            if (!PyErr_Occurred()) {
+                // setOptions(std::list<QString>,std::list<QString>,std::list<QString>)
+                // Begin code injection
 
 
-            if (!PyList_Check(pyArg)) {
-                PyErr_SetString(PyExc_ValueError, "Argument must be a list of tuples");
-                return 0;
-            }
-
-            int listSize = PyList_Size(pyArg);
-            if (listSize == 0) {
-                PyErr_SetString(PyExc_ValueError, "Argument must be a list of tuples");
-                return 0;
-            }
-
-            std::list<QString> optionIDs, optionLabels, optionHelps;
-            for (int i = 0; i < listSize; ++i) {
-                PyObject* obj = PyList_GetItem(pyArg, i);
-                if (!PyTuple_Check(obj)) {
+                if (!PyList_Check(pyArg)) {
                     PyErr_SetString(PyExc_ValueError, "Argument must be a list of tuples");
                     return 0;
                 }
-                int tupleSize = PyTuple_Size(obj);
-                if (tupleSize != 3) {
-                    PyErr_SetString(PyExc_ValueError, "Each option must be a tuple of 3 strings");
+
+                int listSize = PyList_Size(pyArg);
+                if (listSize == 0) {
+                    PyErr_SetString(PyExc_ValueError, "Argument must be a list of tuples");
                     return 0;
                 }
-                PyObject* pyOptionId = PyTuple_GetItem(obj, 0);
-                PyObject* pyOptionLabel = PyTuple_GetItem(obj, 1);
-                PyObject* pyOptionHnt = PyTuple_GetItem(obj, 2);
-                ::QString optionId = ::QString();
-                Shiboken::Conversions::pythonToCppCopy(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], pyOptionId, &(optionId));
-                ::QString optionLabel = ::QString();
-                Shiboken::Conversions::pythonToCppCopy(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], pyOptionLabel, &(optionLabel));
-                ::QString optionHint = ::QString();
-                Shiboken::Conversions::pythonToCppCopy(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], pyOptionHnt, &(optionHint));
-                optionIDs.push_back(optionId);
-                optionLabels.push_back(optionLabel);
-                optionHelps.push_back(optionHint);
+
+                std::list<QString> optionIDs, optionLabels, optionHelps;
+                for (int i = 0; i < listSize; ++i) {
+                    PyObject* obj = PyList_GetItem(pyArg, i);
+                    if (!PyTuple_Check(obj)) {
+                        PyErr_SetString(PyExc_ValueError, "Argument must be a list of tuples");
+                        return 0;
+                    }
+                    int tupleSize = PyTuple_Size(obj);
+                    if (tupleSize != 3) {
+                        PyErr_SetString(PyExc_ValueError, "Each option must be a tuple of 3 strings");
+                        return 0;
+                    }
+                    PyObject* pyOptionId = PyTuple_GetItem(obj, 0);
+                    PyObject* pyOptionLabel = PyTuple_GetItem(obj, 1);
+                    PyObject* pyOptionHnt = PyTuple_GetItem(obj, 2);
+                    ::QString optionId = ::QString();
+                    Shiboken::Conversions::pythonToCppCopy(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], pyOptionId, &(optionId));
+                    ::QString optionLabel = ::QString();
+                    Shiboken::Conversions::pythonToCppCopy(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], pyOptionLabel, &(optionLabel));
+                    ::QString optionHint = ::QString();
+                    Shiboken::Conversions::pythonToCppCopy(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], pyOptionHnt, &(optionHint));
+                    optionIDs.push_back(optionId);
+                    optionLabels.push_back(optionLabel);
+                    optionHelps.push_back(optionHint);
+                }
+
+                cppSelf->setOptions(optionIDs, optionLabels, optionHelps);
+
+
+                // End of code injection
+
+
             }
+            break;
+        }
+        case 1: // setOptions(const std::list<std::pair<QString, QString > > & options)
+        {
+            ::std::list<std::pair<QString, QString > > cppArg0;
+            pythonToCpp(pyArg, &cppArg0);
 
-            cppSelf->setOptions(optionIDs, optionLabels, optionHelps);
-
-
-            // End of code injection
-
-
+            if (!PyErr_Occurred()) {
+                // setOptions(std::list<std::pair<QString,QString> >)
+                cppSelf->setOptions(cppArg0);
+            }
+            break;
         }
     }
 
@@ -1024,7 +1043,7 @@ static PyObject* Sbk_ChoiceParamFunc_setOptions(PyObject* self, PyObject* pyArg)
     Py_RETURN_NONE;
 
     Sbk_ChoiceParamFunc_setOptions_TypeError:
-        const char* overloads[] = {"list, list, list", 0};
+        const char* overloads[] = {"list, list, list", "list", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ChoiceParam.setOptions", overloads);
         return 0;
 }
