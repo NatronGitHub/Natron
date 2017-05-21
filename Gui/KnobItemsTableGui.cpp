@@ -1387,6 +1387,11 @@ KnobItemsTableView::dropEvent(QDropEvent* e)
         }
     }
 
+    if (obj.tableIdentifier != table->getTableIdentifier()) {
+        Dialogs::errorDialog(tr("Copy").toStdString(), tr("You can only drop items from the same node type").toStdString());
+        return;
+    }
+
 
     // Find the original table from which the knob was from
     // (if it is not from another process)
@@ -1454,15 +1459,15 @@ KnobItemsTableView::dropEvent(QDropEvent* e)
                 int targetItemIndex = targetInternalItem->getIndexInParent();
 
                 assert(d.indexInOldParent != -1 && targetItemIndex != -1);
+                d.newParent = targetInternalItem->getParent();
 
                 // If the dropped item is already into the children and after the found index don't decrement
-                if (d.indexInOldParent > targetItemIndex) {
+                if (d.oldParent.lock() == d.newParent.lock() && d.indexInOldParent > targetItemIndex) {
                     d.indexInNewParent = targetItemIndex;
                 } else {
                     //The item "above" in the tree is index - 1 in the internal list which is ordered from bottom to top
                     d.indexInNewParent = targetItemIndex == 0 ? 0 : targetItemIndex - 1;
                 }
-                d.newParent = targetInternalItem->getParent();
 
                 break;
             }
@@ -1471,15 +1476,15 @@ KnobItemsTableView::dropEvent(QDropEvent* e)
                 int targetItemIndex = targetInternalItem->getIndexInParent();
 
                 assert(d.indexInOldParent != -1 && targetItemIndex != -1);
+                d.newParent = targetInternalItem->getParent();
 
                 // If the dropped item is already into the children and before the found index don't decrement
-                if (d.indexInOldParent < targetItemIndex) {
+                if (d.oldParent.lock() == d.newParent.lock() && d.indexInOldParent < targetItemIndex) {
                     d.indexInNewParent = targetItemIndex;
                 } else {
                     // The item "below" in the tree is index + 1 in the internal list which is ordered from bottom to top
                     d.indexInNewParent = targetItemIndex + 1;
                 }
-                d.newParent = targetInternalItem->getParent();
 
                 dndItems.push_back(d);
                 break;

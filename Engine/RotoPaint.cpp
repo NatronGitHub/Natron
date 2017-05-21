@@ -472,6 +472,7 @@ RotoPaint::initKnobsTableControls()
         param->setHintToolTip( tr(kRotoAddGroupParamHint) );
         param->setIconLabel("Images/rotoPaintAddGroupIcon.png");
         param->setAddNewLine(false);
+        param->setSpacingBetweenItems(5);
         _imp->addGroupButtonKnob = param;
         _imp->knobsTable->addTableControlKnob(param);
     }
@@ -486,6 +487,7 @@ RotoPaint::initKnobsTableControls()
 #else
         param->setAddNewLine(true);
 #endif
+        param->setSpacingBetweenItems(5);
         _imp->removeItemButtonKnob = param;
         _imp->knobsTable->addTableControlKnob(param);
     }

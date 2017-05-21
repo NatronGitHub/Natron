@@ -522,6 +522,11 @@ RotoDrawableItem::createNodes(bool connectNodes)
     ///Attach this stroke to the underlying nodes used
     for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
         attachStrokeToNode(*it, rotoPaintEffect->getNode(), thisShared);
+        // Whenever the hash of the item changes, invalidate the hash of the RotoPaint nodes and all nodes within it.
+        // This needs to be done because the hash needs to be recomputed if the Solo state changes for instance?
+        addHashListener((*it)->getEffectInstance());
+        (*it)->getEffectInstance()->addHashDependency(thisShared);
+
     }
 
     if (connectNodes) {

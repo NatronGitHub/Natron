@@ -1070,6 +1070,11 @@ convertGLTextureToRGBAPackedCPUBufferInternal(const GLTexturePtr& texture,
     // The texture must be read in a buffer with the same bounds
     assert(dstBounds == texBounds);
 
+
+    GLint currentFBO, currentTex;
+    GL::GetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &currentFBO);
+    GL::GetIntegerv(GL_TEXTURE_BINDING_2D, &currentTex);
+
     GL::BindFramebuffer(GL_FRAMEBUFFER, fboID);
     GL::Enable(target);
     GL::BindTexture( target, texID );
@@ -1090,8 +1095,8 @@ convertGLTextureToRGBAPackedCPUBufferInternal(const GLTexturePtr& texture,
         GL::ReadPixels(roi.x1 - texBounds.x1, roi.y1 - texBounds.y1, roi.width(), roi.height(), texture->getFormat(), texture->getGLType(), (GLvoid*)data);
     }
 
-    GL::BindTexture(target, 0);
-    GL::BindFramebuffer(GL_FRAMEBUFFER, 0);
+    GL::BindTexture(target, currentTex);
+    GL::BindFramebuffer(GL_FRAMEBUFFER, currentFBO);
     glCheckError(GL);
     return eActionStatusOK;
 

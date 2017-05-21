@@ -265,14 +265,16 @@ bool
 EffectInstance::invalidateHashCacheRecursive(const bool recurse, std::set<HashableObject*>* invalidatedObjects)
 {
     // Clear hash on this node
-#if 0
+
     if (!HashableObject::invalidateHashCacheInternal(invalidatedObjects)) {
         return false;
     }
-#endif
-    HashableObject::invalidateHashCacheInternal(invalidatedObjects);
+
+    //qDebug() << "Invalidate hash of" << getScriptName_mt_safe().c_str();
+
 
     // For a group, also invalidate the hash of all its nodes
+#if 0
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>(this);
     if (isGroup) {
         NodesList groupNodes = isGroup->getNodes();
@@ -285,6 +287,7 @@ EffectInstance::invalidateHashCacheRecursive(const bool recurse, std::set<Hashab
             subNodeEffect->invalidateHashCacheRecursive(false /*recurse*/, invalidatedObjects);
         }
     }
+#endif
 
     if (recurse) {
         NodesList outputs;

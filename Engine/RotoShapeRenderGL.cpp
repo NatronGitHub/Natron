@@ -774,10 +774,10 @@ void motionBlurEndSample(int nDivisions,
 
             GL::BindTexture( target, accumulationTexture->getGLTextureID() );
             setupTexParams<GL>(target);
-
+            glCheckError(GL);
             GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, accumulationTexture->getGLTextureID(), 0 /*LoD*/);
             glCheckFramebufferError(GL);
-
+            glCheckError(GL);
             GL::BindTexture( target, perSampleRenderTexture->getGLTextureID() );
             copyShader->bind();
             copyShader->setUniform("srcTex", 0);
@@ -791,10 +791,10 @@ void motionBlurEndSample(int nDivisions,
 
             GL::BindTexture( target, tmpAccumulationCpy->getGLTextureID() );
             setupTexParams<GL>(target);
-
+            glCheckError(GL);
             GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, tmpAccumulationCpy->getGLTextureID(), 0 /*LoD*/);
             glCheckFramebufferError(GL);
-
+            glCheckError(GL);
             GL::BindTexture( target, accumulationTexture->getGLTextureID() );
             copyShader->bind();
             copyShader->setUniform("srcTex", 0);
@@ -822,6 +822,7 @@ void motionBlurEndSample(int nDivisions,
 
         }
     } // nDivisions > 1
+    glCheckError(GL);
 } // motionBlurEndSample
 
 
@@ -877,11 +878,12 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
 
     // Disable scissors since we are going to do texture ping-pong with different frame buffer texture size
     GL::Disable(GL_SCISSOR_TEST);
-
+  
     Q_UNUSED(roi);
     int vboVerticesID = glData->getOrCreateVBOVerticesID();
     int vboColorsID = glData->getOrCreateVBOColorsID();
     int iboID = glData->getOrCreateIBOID();
+    int fboID = glContext->getOrCreateFBOId();
 
     RamBuffer<float> verticesArray;
     RamBuffer<float> colorsArray;
@@ -936,17 +938,20 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
         // If motion-blur enabled, bind the per sample texture so we render on it
         if (perSampleRenderTexture) {
             GL::BindTexture( target, perSampleRenderTexture->getGLTextureID() );
+            assert(GL::IsTexture(perSampleRenderTexture->getGLTextureID()));
             setupTexParams<GL>(target);
 
+            GL::BindFramebuffer(GL_FRAMEBUFFER, fboID);
             GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, perSampleRenderTexture->getGLTextureID(), 0 /*LoD*/);
             GL::BindTexture( target, 0 );
+            glCheckError(GL);
         }
 
         // First clear-out everything to black and transparant
         glCheckFramebufferError(GL);
         GL::ClearColor(0.,0.,0.,0.);
         GL::Clear(GL_COLOR_BUFFER_BIT);
-
+        glCheckError(GL);
         TimeValue t = nDivisions > 1 ? TimeValue(shutterRange.min + d * interval) : time;
 
         double fallOff = bezier->getFeatherFallOffKnob()->getValueAtTime(t, DimIdx(0), view);
@@ -968,7 +973,7 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
         rampShader->bind();
         rampShader->setUniform("opacity", (float)opacity);
         rampShader->setUniform("fallOff", (float)fallOff);
-
+        glCheckError(GL);
 
         // First upload and render the feather mesh which is composed of GL_TRIANGLES
         {
@@ -1032,7 +1037,7 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
             fillColor.r = fillColor.g = fillColor.b = fillColor.a = opacity;
             fillShader->setUniform("fillColor", fillColor);
         }
-
+        glCheckError(GL);
         int nbVertices = (int)data.internalShapeVertices.size();
         if (!nbVertices) {
             continue;
@@ -1113,7 +1118,7 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
             
         }
         Q_UNUSED(hasUploadedVertices);
-
+        glCheckError(GL);
         motionBlurEndSample<GL>(nDivisions, d, accumShader, copyShader, target, perSampleRenderTexture, accumulationTexture, tmpAccumulationCpy, roi);
 
     } // for all samples

@@ -969,6 +969,7 @@ TrackerNode::initializeTrackingPageKnobs(const KnobPagePtr& trackingPage)
         param->setEvaluateOnChange(false);
         param->setIconLabel("Images/addTrack.png");
         param->setAddNewLine(false);
+        param->setSpacingBetweenItems(5);
         _imp->knobsTable->addTableControlKnob(param);
         _imp->addTrackFromPanelButton = param;
     }
@@ -979,6 +980,7 @@ TrackerNode::initializeTrackingPageKnobs(const KnobPagePtr& trackingPage)
         param->setEvaluateOnChange(false);
         param->setIconLabel("Images/rotoPaintRemoveItemIcon.png");
         param->setAddNewLine(false);
+        param->setSpacingBetweenItems(5);
         _imp->knobsTable->addTableControlKnob(param);
         _imp->removeSelectedTracksButton = param;
     }
