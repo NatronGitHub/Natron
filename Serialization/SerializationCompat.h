@@ -27,11 +27,70 @@
 
 // This file contains all implementation of old boost serialization involving Engine and Gui classes
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-
 #include <sstream> // stringstream
 
 #include "Global/Macros.h"
+
+
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+GCC_DIAG_OFF(unused-parameter)
+#include <boost/algorithm/string/predicate.hpp> // iequals
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+GCC_DIAG_ON(unused-parameter)
+
+#include "Engine/ImagePlaneDesc.h"
+
+SERIALIZATION_NAMESPACE_ENTER;
+
+namespace Compat {
+inline void
+checkForPreNatron226String(std::string* choiceString)
+{
+    if (boost::iequals(*choiceString,std::string("Color.RGBA")) || boost::iequals(*choiceString,std::string("Color.RGB")) || boost::iequals(*choiceString,std::string("Color.Alpha"))) {
+        *choiceString = kNatronColorPlaneID;
+    } else if (boost::iequals(*choiceString,std::string("Backward.Motion"))) {
+        *choiceString = kNatronBackwardMotionVectorsPlaneID "." kNatronMotionComponentsLabel;
+    } else if (boost::iequals(*choiceString,std::string("Forward.Motion"))) {
+        *choiceString = kNatronForwardMotionVectorsPlaneID "." kNatronMotionComponentsLabel;
+    } else if (boost::iequals(*choiceString, std::string("DisparityLeft.Disparity"))) {
+        *choiceString = kNatronDisparityLeftPlaneID "." kNatronDisparityComponentsLabel;
+    } else if (boost::iequals(*choiceString, std::string("DisparityRight.Disparity"))) {
+        *choiceString = kNatronDisparityRightPlaneID "." kNatronDisparityComponentsLabel;
+    }
+
+    // Map also channels
+    if (boost::iequals(*choiceString, std::string("RGBA.R")) || boost::iequals(*choiceString, std::string("UV.r"))) {
+        *choiceString = kNatronColorPlaneID ".R";
+    } else if (boost::iequals(*choiceString, std::string("RGBA.G")) || boost::iequals(*choiceString, std::string("UV.g"))) {
+        *choiceString = kNatronColorPlaneID ".G";
+    } else if (boost::iequals(*choiceString, std::string("RGBA.B")) || boost::iequals(*choiceString, std::string("UV.b"))) {
+        *choiceString = kNatronColorPlaneID ".B";
+    } else if (boost::iequals(*choiceString, std::string("RGBA.A")) || boost::iequals(*choiceString, std::string("UV.a"))) {
+        *choiceString = kNatronColorPlaneID ".A";
+    } else if (boost::iequals(*choiceString, std::string("A.r"))) {
+        *choiceString = "A." kNatronColorPlaneID ".r";
+    } else if (boost::iequals(*choiceString, std::string("A.g"))) {
+        *choiceString = "A." kNatronColorPlaneID ".g";
+    } else if (boost::iequals(*choiceString, std::string("A.b"))) {
+        *choiceString = "A." kNatronColorPlaneID ".b";
+    } else if (boost::iequals(*choiceString, std::string("A.a"))) {
+        *choiceString = "A." kNatronColorPlaneID ".a";
+    } else if (boost::iequals(*choiceString, std::string("B.r"))) {
+        *choiceString = "B." kNatronColorPlaneID ".r";
+    } else if (boost::iequals(*choiceString, std::string("B.g"))) {
+        *choiceString = "B." kNatronColorPlaneID ".g";
+    } else if (boost::iequals(*choiceString, std::string("B.b"))) {
+        *choiceString = "B." kNatronColorPlaneID ".b";
+    } else if (boost::iequals(*choiceString, std::string("B.a"))) {
+        *choiceString = "B." kNatronColorPlaneID ".a";
+    }
+}
+}
+
+SERIALIZATION_NAMESPACE_EXIT;
+
+#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
+
 
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_OFF(unused-parameter)
@@ -478,48 +537,7 @@ public:
     }
 };
 
-inline void
-checkForPreNatron226String(std::string* choiceString)
-{
-    if (boost::iequals(*choiceString,std::string("Color.RGBA")) || boost::iequals(*choiceString,std::string("Color.RGB")) || boost::iequals(*choiceString,std::string("Color.Alpha"))) {
-        *choiceString = kNatronColorPlaneID;
-    } else if (boost::iequals(*choiceString,std::string("Backward.Motion"))) {
-        *choiceString = kNatronBackwardMotionVectorsPlaneID "." kNatronMotionComponentsLabel;
-    } else if (boost::iequals(*choiceString,std::string("Forward.Motion"))) {
-        *choiceString = kNatronForwardMotionVectorsPlaneID "." kNatronMotionComponentsLabel;
-    } else if (boost::iequals(*choiceString, std::string("DisparityLeft.Disparity"))) {
-        *choiceString = kNatronDisparityLeftPlaneID "." kNatronDisparityComponentsLabel;
-    } else if (boost::iequals(*choiceString, std::string("DisparityRight.Disparity"))) {
-        *choiceString = kNatronDisparityRightPlaneID "." kNatronDisparityComponentsLabel;
-    }
 
-    // Map also channels
-    if (boost::iequals(*choiceString, std::string("RGBA.R")) || boost::iequals(*choiceString, std::string("UV.r"))) {
-        *choiceString = kNatronColorPlaneID ".R";
-    } else if (boost::iequals(*choiceString, std::string("RGBA.G")) || boost::iequals(*choiceString, std::string("UV.g"))) {
-        *choiceString = kNatronColorPlaneID ".G";
-    } else if (boost::iequals(*choiceString, std::string("RGBA.B")) || boost::iequals(*choiceString, std::string("UV.b"))) {
-        *choiceString = kNatronColorPlaneID ".B";
-    } else if (boost::iequals(*choiceString, std::string("RGBA.A")) || boost::iequals(*choiceString, std::string("UV.a"))) {
-        *choiceString = kNatronColorPlaneID ".A";
-    } else if (boost::iequals(*choiceString, std::string("A.r"))) {
-        *choiceString = "A." kNatronColorPlaneID ".r";
-    } else if (boost::iequals(*choiceString, std::string("A.g"))) {
-        *choiceString = "A." kNatronColorPlaneID ".g";
-    } else if (boost::iequals(*choiceString, std::string("A.b"))) {
-        *choiceString = "A." kNatronColorPlaneID ".b";
-    } else if (boost::iequals(*choiceString, std::string("A.a"))) {
-        *choiceString = "A." kNatronColorPlaneID ".a";
-    } else if (boost::iequals(*choiceString, std::string("B.r"))) {
-        *choiceString = "B." kNatronColorPlaneID ".r";
-    } else if (boost::iequals(*choiceString, std::string("B.g"))) {
-        *choiceString = "B." kNatronColorPlaneID ".g";
-    } else if (boost::iequals(*choiceString, std::string("B.b"))) {
-        *choiceString = "B." kNatronColorPlaneID ".b";
-    } else if (boost::iequals(*choiceString, std::string("B.a"))) {
-        *choiceString = "B." kNatronColorPlaneID ".a";
-    }
-}
 
 
 } // namespace Compat

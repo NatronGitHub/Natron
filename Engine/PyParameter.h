@@ -881,6 +881,8 @@ public:
      **/
     void setValue(int value, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
+    void setValue(const QString& label,  const QString& view = QLatin1String(kPyParamViewSetSpecAll));
+
     /**
      * @brief If this parameter is animated for the given dimension, this function returns a value interpolated between the
      * 2 keyframes surrounding the given time. If time is exactly one keyframe then the value of the keyframe is returned.

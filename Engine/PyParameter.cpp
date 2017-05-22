@@ -47,6 +47,8 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/EffectInstance.h"
 #include "Engine/KnobItemsTable.h"
 #include "Engine/Node.h"
+#include "Engine/AppInstance.h"
+
 #include "Engine/Curve.h"
 #include "Engine/Project.h"
 #include "Engine/ViewIdx.h"
@@ -54,6 +56,10 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/PyAppInstance.h"
 #include "Engine/PyNode.h"
 #include "Engine/PyItemsTable.h"
+
+#include "Serialization/SerializationCompat.h"
+
+
 
 NATRON_NAMESPACE_ENTER;
 NATRON_PYTHON_NAMESPACE_ENTER;
@@ -2985,7 +2991,14 @@ ChoiceParam::set(const QString& label, const QString& view)
         return;
     }
     try {
-        ValueChangedReturnCodeEnum s = knob->setValueFromID(label.toStdString(), thisViewSpec);
+        std::string choiceID = label.toStdString();
+        if (knob->getHolder()->getApp()->isCreatingNode()) {
+            // Before Natron 2.2.3, all dynamic choice parameters for multiplane had a string parameter.
+            // The string parameter had the same name as the choice parameter plus "Choice" appended.
+            // If we found such a parameter, retrieve the string from it.
+            SERIALIZATION_NAMESPACE::Compat::checkForPreNatron226String(&choiceID);
+        }
+        ValueChangedReturnCodeEnum s = knob->setValueFromID(choiceID, thisViewSpec);
         Q_UNUSED(s);
     } catch (const std::exception& e) {
         KnobHolderPtr holder = knob->getHolder();
@@ -3003,7 +3016,6 @@ ChoiceParam::set(const QString& label, const QString& view)
             PyErr_SetString(PyExc_ValueError, e.what());
         }
 
-
     }
 }
 
@@ -3018,6 +3030,13 @@ void
 ChoiceParam::setValue(int value, const QString& view)
 {
     set(value, view);
+}
+
+
+void
+ChoiceParam::setValue(const QString& label,  const QString& view)
+{
+    set(label,view);
 }
 
 int

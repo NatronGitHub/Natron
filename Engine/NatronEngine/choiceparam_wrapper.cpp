@@ -1076,12 +1076,19 @@ static PyObject* Sbk_ChoiceParamFunc_setValue(PyObject* self, PyObject* args, Py
 
 
     // Overloaded function decisor
-    // 0: setValue(int,QString)
+    // 0: setValue(QString,QString)
+    // 1: setValue(int,QString)
     if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))) {
         if (numArgs == 1) {
-            overloadId = 0; // setValue(int,QString)
+            overloadId = 1; // setValue(int,QString)
         } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
-            overloadId = 0; // setValue(int,QString)
+            overloadId = 1; // setValue(int,QString)
+        }
+    } else if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))) {
+        if (numArgs == 1) {
+            overloadId = 0; // setValue(QString,QString)
+        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
+            overloadId = 0; // setValue(QString,QString)
         }
     }
 
@@ -1089,26 +1096,54 @@ static PyObject* Sbk_ChoiceParamFunc_setValue(PyObject* self, PyObject* args, Py
     if (overloadId == -1) goto Sbk_ChoiceParamFunc_setValue_TypeError;
 
     // Call function/method
-    {
-        if (kwds) {
-            PyObject* value = PyDict_GetItemString(kwds, "view");
-            if (value && pyArgs[1]) {
-                PyErr_SetString(PyExc_TypeError, "NatronEngine.ChoiceParam.setValue(): got multiple values for keyword argument 'view'.");
-                return 0;
-            } else if (value) {
-                pyArgs[1] = value;
-                if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1]))))
-                    goto Sbk_ChoiceParamFunc_setValue_TypeError;
+    switch (overloadId) {
+        case 0: // setValue(const QString & label, const QString & view)
+        {
+            if (kwds) {
+                PyObject* value = PyDict_GetItemString(kwds, "view");
+                if (value && pyArgs[1]) {
+                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ChoiceParam.setValue(): got multiple values for keyword argument 'view'.");
+                    return 0;
+                } else if (value) {
+                    pyArgs[1] = value;
+                    if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1]))))
+                        goto Sbk_ChoiceParamFunc_setValue_TypeError;
+                }
             }
-        }
-        int cppArg0;
-        pythonToCpp[0](pyArgs[0], &cppArg0);
-        ::QString cppArg1 = QLatin1String("All");
-        if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
+            ::QString cppArg0 = ::QString();
+            pythonToCpp[0](pyArgs[0], &cppArg0);
+            ::QString cppArg1 = QLatin1String("All");
+            if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
 
-        if (!PyErr_Occurred()) {
-            // setValue(int,QString)
-            cppSelf->setValue(cppArg0, cppArg1);
+            if (!PyErr_Occurred()) {
+                // setValue(QString,QString)
+                cppSelf->setValue(cppArg0, cppArg1);
+            }
+            break;
+        }
+        case 1: // setValue(int value, const QString & view)
+        {
+            if (kwds) {
+                PyObject* value = PyDict_GetItemString(kwds, "view");
+                if (value && pyArgs[1]) {
+                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ChoiceParam.setValue(): got multiple values for keyword argument 'view'.");
+                    return 0;
+                } else if (value) {
+                    pyArgs[1] = value;
+                    if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1]))))
+                        goto Sbk_ChoiceParamFunc_setValue_TypeError;
+                }
+            }
+            int cppArg0;
+            pythonToCpp[0](pyArgs[0], &cppArg0);
+            ::QString cppArg1 = QLatin1String("All");
+            if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
+
+            if (!PyErr_Occurred()) {
+                // setValue(int,QString)
+                cppSelf->setValue(cppArg0, cppArg1);
+            }
+            break;
         }
     }
 
@@ -1118,7 +1153,7 @@ static PyObject* Sbk_ChoiceParamFunc_setValue(PyObject* self, PyObject* args, Py
     Py_RETURN_NONE;
 
     Sbk_ChoiceParamFunc_setValue_TypeError:
-        const char* overloads[] = {"int, unicode = QLatin1String(\"All\")", 0};
+        const char* overloads[] = {"unicode, unicode = QLatin1String(\"All\")", "int, unicode = QLatin1String(\"All\")", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ChoiceParam.setValue", overloads);
         return 0;
 }

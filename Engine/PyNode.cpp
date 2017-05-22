@@ -721,11 +721,25 @@ Effect::getParam(const QString& name) const
         PythonSetNullError();
         return 0;
     }
+    QString fallbackSearchName;
+    if (n->getApp()->isCreatingNode()) {
+        // Before Natron 2.2.3, all dynamic choice parameters for multiplane had a string parameter.
+        // The string parameter had the same name as the choice parameter plus "Choice" appended.
+        // If we found such a parameter, retrieve the string from it.
+        QString str = QString::fromUtf8("Choice");
+        if (name.endsWith(str)) {
+            fallbackSearchName = name.mid(0, name.size() - str.size());
+        }
+    }
+
     KnobIPtr knob = n->getKnobByName( name.toStdString() );
 
     if (knob) {
         return createParamWrapperForKnob(knob);
     } else {
+        if (!fallbackSearchName.isEmpty()) {
+            return getParam(fallbackSearchName);
+        }
         return NULL;
     }
 }
