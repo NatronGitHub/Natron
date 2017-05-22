@@ -79,6 +79,8 @@ Children:
     Params:
       - Name: AChannelsA
         Bool: false
+      - Name: userTextArea
+        String: <Natron>(over)</Natron>
     Pos: [1036, 302]
   - PluginID: net.sf.openfx.Solid
     Name: Solid1
@@ -92,6 +94,9 @@ Children:
     Name: Shuffle1
     Version: [2, 0]
     Inputs: {A: Merge1, B: Dot1}
+    Params:
+      - Name: outputA
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.A
     Pos: [764, 314]
   - PluginID: net.sf.openfx.Premult
     Name: Premult1

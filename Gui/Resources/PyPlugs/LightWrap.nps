@@ -73,6 +73,7 @@ UserPages:
         Entries: [Black, Nearest]
         Hints: ["Dirichlet boundary condition: pixel values out of the image domain are zero.", "Neumann boundary condition: pixel values out of the image domain are those of the closest pixel location in the image domain."]
       - Name: bgblur
+        Float: [{N: BGBlur, K: size, D: x}, {N: BGBlur, K: size, D: y}]
         DefaultFloat: [0, 0]
         NDims: 2
         TypeName: Double
@@ -368,6 +369,8 @@ Children:
         Float: {pyExpr: thisGroup.lumaTolerance.getValue() - 1}
       - Name: softnessUpper
         Float: 0
+      - Name: userTextArea
+        String: <Natron>(Luminance)</Natron>
     Pos: [752, 164]
   - PluginID: net.sf.openfx.Premult
     Name: Premult1
@@ -398,6 +401,13 @@ Children:
     Name: Shufflecopy1
     Version: [2, 0]
     Inputs: {A: BGBlur, B: Constant1}
+    Params:
+      - Name: outputR
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.R
+      - Name: outputG
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.G
+      - Name: outputB
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.B
     Pos: [968, 316]
   - PluginID: net.sf.openfx.Premult
     Name: Premult2
@@ -467,6 +477,8 @@ Children:
         Bool: false
       - Name: OutputChannelsB
         Bool: false
+      - Name: userTextArea
+        String: <Natron>(out)</Natron>
     Pos: [434, 545]
   - PluginID: net.sf.openfx.MergePlugin
     Name: MaskMerge
@@ -476,6 +488,8 @@ Children:
         String: in
       - Name: OutputChannelsA
         Bool: false
+      - Name: userTextArea
+        String: <Natron>(in)</Natron>
     Pos: [758, 545]
   - PluginID: net.sf.cimg.CImgBlur
     Name: Diffuse
@@ -527,6 +541,8 @@ Children:
     Params:
       - Name: operation
         String: mask
+      - Name: userTextArea
+        String: <Natron>(mask)</Natron>
     Pos: [761, 909]
   - PluginID: net.sf.openfx.ShufflePlugin
     Name: Shuffle1
@@ -539,6 +555,9 @@ Children:
   - PluginID: net.sf.openfx.MergePlugin
     Name: HighlightMerge
     Inputs: {A: Dot2, B: Shuffle1}
+    Params:
+      - Name: userTextArea
+        String: <Natron>(plus)</Natron>
     Pos: [761, 1108]
   - PluginID: fr.inria.built-in.Dot
     Name: Dot4

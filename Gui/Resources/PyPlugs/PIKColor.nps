@@ -169,6 +169,12 @@ Children:
     Version: [2, 0]
     Inputs: {A: Erode1, B: Dot3}
     Params:
+      - Name: outputR
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.R
+      - Name: outputG
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.G
+      - Name: outputB
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.B
       - Name: userTextArea
         String: <font size="6" color="#000000" face="Droid Sans">(A.a->B.a)</font>
     Pos: [272, 35]
@@ -213,6 +219,12 @@ Children:
     Version: [2, 0]
     Inputs: {A: Clamp1, B: Dot4}
     Params:
+      - Name: outputR
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.R
+      - Name: outputG
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.G
+      - Name: outputB
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.B
       - Name: userTextArea
         String: <font size="6" color="#000000" face="Droid Sans">(A.a->B.a)</font>
     Pos: [411, 292]
@@ -225,6 +237,12 @@ Children:
     Version: [2, 0]
     Inputs: {A: Switch1, B: Unpremult1}
     Params:
+      - Name: outputR
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.R
+      - Name: outputG
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.G
+      - Name: outputB
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.B
       - Name: userTextArea
         String: <font size="6" color="#000000" face="Droid Sans">(A.a->B.a)</font>
     Pos: [413, 602]
@@ -272,6 +290,13 @@ Children:
     Name: ChannelCopy2
     Version: [2, 0]
     Inputs: {A: Dot6, B: Unpremult2}
+    Params:
+      - Name: outputR
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.R
+      - Name: outputG
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.G
+      - Name: outputB
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.B
     Pos: [272, 886]
   - PluginID: fr.inria.built-in.Dot
     Name: Dot6

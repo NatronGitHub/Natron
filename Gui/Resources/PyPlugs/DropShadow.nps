@@ -31,7 +31,6 @@ UserPages:
         Max: 2147483647
         DisplayMax: 2000
       - Name: shadowBlur
-        Float: [{N: Blur1, K: size, D: x}, {N: Blur1, K: size, D: y}]
         DefaultFloat: [0, 0]
         NDims: 2
         TypeName: Double
@@ -50,6 +49,7 @@ UserPages:
         DisplayMin: 0
         DisplayMax: 1
       - Name: shadowColor
+        Float: [{N: Solid1, K: color, D: r}, {N: Solid1, K: color, D: g}, {N: Solid1, K: color, D: b}]
         DefaultFloat: [0, 0, 0]
         NDims: 3
         TypeName: Color
@@ -62,6 +62,7 @@ UserPages:
         TypeName: Bool
         Label: Color from source
       - Name: shadowOnly
+        Bool: {N: Merge1, K: disableNode}
         DefaultBool: false
         NDims: 1
         TypeName: Bool
@@ -72,6 +73,13 @@ Children:
     Name: Shuffle1
     Version: [2, 0]
     Inputs: {A: Multiply1, B: Solid1}
+    Params:
+      - Name: outputR
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.R
+      - Name: outputG
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.G
+      - Name: outputB
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.B
     Pos: [759, 87]
   - PluginID: net.sf.openfx.TransformPlugin
     Name: Transform2
@@ -137,4 +145,6 @@ Children:
     Params:
       - Name: maskInvert
         Bool: true
+      - Name: userTextArea
+        String: <Natron>(over)</Natron>
     Pos: [1000, 329]

@@ -42,6 +42,7 @@ UserPages:
         DisplayMin: 0
         DisplayMax: 100
       - Name: gamma
+        Float: [{N: Grade1, K: gamma, D: r}, {N: Grade1, K: gamma, D: g}, {N: Grade1, K: gamma, D: b}, {N: Grade1, K: gamma, D: a}]
         DefaultFloat: [1, 1, 1, 1]
         NDims: 4
         TypeName: Color
@@ -51,24 +52,24 @@ UserPages:
         DisplayMin: 0.2
         DisplayMax: 5
       - Name: invertGradient
-        Bool: {N: Invert1, K: disableNode}
         DefaultBool: false
         NDims: 1
         TypeName: Bool
         Label: Invert Gradient
       - Name: Source_channels
+        String: {N: Grade1, K: Source_channels}
         DefaultString: uk.co.thefoundry.OfxImagePlaneColour
         NDims: 1
         TypeName: Choice
         Label: Source Layer
         Entries: [None, uk.co.thefoundry.OfxImagePlaneColour]
       - Name: channels
-        String: {N: Invert1, K: channels}
-        DefaultString: uk.co.thefoundry.OfxImagePlaneStereoDisparityLeft
+        String: uk.co.thefoundry.OfxImagePlaneStereoDisparityLeft
+        DefaultString: uk.co.thefoundry.OfxImagePlaneStereoDisparityRight
         NDims: 1
         TypeName: Choice
         Label: Output Layer
-        Entries: [uk.co.thefoundry.OfxImagePlaneColour, uk.co.thefoundry.OfxImagePlaneStereoDisparityLeft, uk.co.thefoundry.OfxImagePlaneStereoDisparityRight, uk.co.thefoundry.OfxImagePlaneBackMotionVector, uk.co.thefoundry.OfxImagePlaneForwardMotionVector]
+        Entries: [uk.co.thefoundry.OfxImagePlaneColour, uk.co.thefoundry.OfxImagePlaneStereoDisparityRight, uk.co.thefoundry.OfxImagePlaneBackMotionVector, uk.co.thefoundry.OfxImagePlaneForwardMotionVector, uk.co.thefoundry.OfxImagePlaneStereoDisparityLeft]
 PagesOrder: [controls, nodePage]
 Children:
   - PluginID: net.sf.openfx.GradePlugin

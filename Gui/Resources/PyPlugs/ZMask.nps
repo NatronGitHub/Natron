@@ -76,12 +76,12 @@ UserPages:
         Label: Source Layer
         Entries: [None, uk.co.thefoundry.OfxImagePlaneColour]
       - Name: channels
-        String: uk.co.thefoundry.OfxImagePlaneColour
-        DefaultString: uk.co.thefoundry.OfxImagePlaneStereoDisparityLeft
+        String: uk.co.thefoundry.OfxImagePlaneStereoDisparityLeft
+        DefaultString: uk.co.thefoundry.OfxImagePlaneStereoDisparityRight
         NDims: 1
         TypeName: Choice
         Label: Output Layer
-        Entries: [uk.co.thefoundry.OfxImagePlaneColour, uk.co.thefoundry.OfxImagePlaneStereoDisparityLeft, uk.co.thefoundry.OfxImagePlaneStereoDisparityRight, uk.co.thefoundry.OfxImagePlaneBackMotionVector, uk.co.thefoundry.OfxImagePlaneForwardMotionVector]
+        Entries: [uk.co.thefoundry.OfxImagePlaneColour, uk.co.thefoundry.OfxImagePlaneStereoDisparityRight, uk.co.thefoundry.OfxImagePlaneBackMotionVector, uk.co.thefoundry.OfxImagePlaneForwardMotionVector, uk.co.thefoundry.OfxImagePlaneStereoDisparityLeft]
 PagesOrder: [controls, nodePage]
 Children:
   - PluginID: net.sf.openfx.MergePlugin

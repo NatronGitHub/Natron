@@ -388,6 +388,12 @@ Children:
     Version: [2, 0]
     Inputs: {A: mask}
     Params:
+      - Name: outputR
+        String: A.uk.co.thefoundry.OfxImagePlaneColour.A
+      - Name: outputG
+        String: A.uk.co.thefoundry.OfxImagePlaneColour.A
+      - Name: outputB
+        String: A.uk.co.thefoundry.OfxImagePlaneColour.A
       - Name: outputA
         String: 0
     Pos: [957, -113]
@@ -440,6 +446,13 @@ Children:
     Name: Shuffle1
     Version: [2, 0]
     Inputs: {A: HSVTool1}
+    Params:
+      - Name: outputR
+        String: A.uk.co.thefoundry.OfxImagePlaneColour.A
+      - Name: outputG
+        String: A.uk.co.thefoundry.OfxImagePlaneColour.A
+      - Name: outputB
+        String: A.uk.co.thefoundry.OfxImagePlaneColour.A
     Pos: [1290, -206]
   - PluginID: net.sf.openfx.HSVToolPlugin
     Name: HSVTool1
