@@ -3498,7 +3498,9 @@ ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(U64 age, const B
     assert(isViewerFrameContainer);
     
     ViewerNodePtr viewerNode = viewer->isEffectViewerNode();
-
+    if (!viewerNode)  {
+        return;
+    }
 
     for (std::list<BufferedFramePtr>::const_iterator it2 = isViewerFrameContainer->frames.begin(); it2 != isViewerFrameContainer->frames.end(); ++it2) {
         ViewerRenderBufferedFrame* viewerObject = dynamic_cast<ViewerRenderBufferedFrame*>(it2->get());

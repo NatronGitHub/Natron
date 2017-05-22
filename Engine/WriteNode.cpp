@@ -528,7 +528,7 @@ getFileNameFromSerialization(const SERIALIZATION_NAMESPACE::KnobSerializationLis
     std::string filePattern;
 
     for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = serializations.begin(); it != serializations.end(); ++it) {
-        if ( (*it)->getName() == kOfxImageEffectFileParamName && (*it)->getTypeName() == KnobFile::typeNameStatic()) {
+        if ( (*it)->getName() == kOfxImageEffectFileParamName  && (*it)->_dataType == SERIALIZATION_NAMESPACE::eSerializationValueVariantTypeString) {
             SERIALIZATION_NAMESPACE::ValueSerialization& value = (*it)->_values.begin()->second[0];
             filePattern = value._value.isString;
             break;
