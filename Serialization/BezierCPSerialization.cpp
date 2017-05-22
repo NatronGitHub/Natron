@@ -56,12 +56,16 @@ BezierCPSerialization::encode(YAML::Emitter& em) const
 static void decodeBezierCPCurve(const YAML::Node& node, double* x, CurveSerialization* curve)
 {
     try {
-        *x = node.as<double>();
-    } catch (const YAML::BadConversion& /*e*/) {
-        curve->decode(node);
-        if (!curve->keys.empty()) {
-            *x = curve->keys.front().value;
+        if (node.IsSequence()) {
+            curve->decode(node);
+            if (!curve->keys.empty()) {
+                *x = curve->keys.front().value;
+            }
+        } else {
+            *x = node.as<double>();
         }
+    } catch (const YAML::BadConversion& /*e*/) {
+        assert(false);
     }
 }
 

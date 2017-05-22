@@ -1800,11 +1800,9 @@ ImageCacheEntry::markCacheTilesAsAborted()
     // Protect all local structures against multiple threads using this object.
     boost::unique_lock<boost::mutex> locker(_imp->lock);
 
-    if (!_imp->markCacheEntriesAsAbortedInternal()) {
-        return;
-    }
+    bool didSomething = _imp->markCacheEntriesAsAbortedInternal();
 
-    if (_imp->cachePolicy != eCacheAccessModeNone) {
+    if (didSomething && _imp->cachePolicy != eCacheAccessModeNone) {
         // In persistent mode we have to actually copy the cache entry tiles state map to the cache
         if (_imp->internalCacheEntry->isPersistent()) {
             _imp->updateCachedTilesStateMap(_imp->markedTiles, false);
@@ -1866,7 +1864,7 @@ ImageCacheEntryPrivate::markCacheEntriesAsAbortedInternal()
             // We marked the cache tile status to eTileStatusPending previously in
             // readAndUpdateStateMap
             // Mark it as eTileStatusNotRendered now
-            assert(i != mipMapLevel || cacheTileState->status == eTileStatusPending);
+            assert(i != mipMapLevel || (cacheTileState->status == eTileStatusPending || cacheTileState->status == eTileStatusNotRendered));
             cacheTileState->status = eTileStatusNotRendered;
             hasModifiedTileMap = true;
 #ifdef TRACE_TILES_STATUS

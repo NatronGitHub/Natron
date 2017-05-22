@@ -688,7 +688,7 @@ public:
     bool isCascading() const;
 
     /// set the KnobChoice value from the label
-    ValueChangedReturnCodeEnum setValueFromID(const std::string & value, ViewSetSpec view = ViewSetSpec::all());
+    ValueChangedReturnCodeEnum setValueFromID(const std::string & value, ViewSetSpec view = ViewSetSpec::all(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited);
 
     /// set the KnobChoice default value from the label
     void setDefaultValueFromID(const std::string & value);

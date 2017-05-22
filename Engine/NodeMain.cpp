@@ -616,7 +616,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
             // Don't serialize non persistant knobs
             continue;
         }
-
+       
         if (knobs[i]->isUserKnob()) {
             // Don't serialize user knobs, its taken care of by user pages
             continue;
@@ -884,7 +884,14 @@ Node::loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializatio
             }
 
 
+            bool isUserKnob = knob->isUserKnob();
             knob->fromSerialization(**it);
+
+            if (!isUserKnob) {
+                // We need to do this little hack in case we are loading an old serialization of Natron 2
+                // which marked knobs of a pyplug as user knobs
+                knob->setAsUserKnob(false);
+            }
 
         }
 

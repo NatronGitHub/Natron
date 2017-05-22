@@ -2992,13 +2992,15 @@ ChoiceParam::set(const QString& label, const QString& view)
     }
     try {
         std::string choiceID = label.toStdString();
-        if (knob->getHolder()->getApp()->isCreatingNode()) {
+        bool isCreatingNode = knob->getHolder()->getApp()->isCreatingNode();
+        if (isCreatingNode) {
             // Before Natron 2.2.3, all dynamic choice parameters for multiplane had a string parameter.
             // The string parameter had the same name as the choice parameter plus "Choice" appended.
             // If we found such a parameter, retrieve the string from it.
             SERIALIZATION_NAMESPACE::Compat::checkForPreNatron226String(&choiceID);
         }
-        ValueChangedReturnCodeEnum s = knob->setValueFromID(choiceID, thisViewSpec);
+        // use eValueChangedReasonPluginEdited for compat with Shuffle setChannelsFromRed()
+        ValueChangedReturnCodeEnum s = knob->setValueFromID(choiceID, thisViewSpec, isCreatingNode ? eValueChangedReasonPluginEdited : eValueChangedReasonUserEdited);
         Q_UNUSED(s);
     } catch (const std::exception& e) {
         KnobHolderPtr holder = knob->getHolder();

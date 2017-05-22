@@ -1432,7 +1432,7 @@ KnobChoice::getHintToolTipFull() const
 } // KnobChoice::getHintToolTipFull
 
 ValueChangedReturnCodeEnum
-KnobChoice::setValueFromID(const std::string & value, ViewSetSpec view)
+KnobChoice::setValueFromID(const std::string & value, ViewSetSpec view, ValueChangedReasonEnum reason)
 {
     std::list<ViewIdx> views = getViewsList();
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
@@ -1454,7 +1454,7 @@ KnobChoice::setValueFromID(const std::string & value, ViewSetSpec view)
             index = choiceMatch(value, data->menuOptions, &data->activeEntry);
         }
         if (index != -1) {
-            return setValue(index, view);
+            return setValue(index, view, DimIdx(0), reason);
         }
 
     }
