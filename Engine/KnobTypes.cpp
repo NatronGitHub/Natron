@@ -1443,6 +1443,7 @@ KnobChoice::setValueFromID(const std::string & value, ViewSetSpec view)
             }
         }
 
+
         ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), *it));
         if (!data) {
             continue;
