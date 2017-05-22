@@ -1034,13 +1034,12 @@ def createInstance(app,group):
 
     lastNode.userNatron = lastNode.createPageParam("userNatron", "User")
     # Refresh the GUI with the newly created parameters
-    lastNode.setPagesOrder(['controlsPage', 'colorCorrectPage', 'Node', 'Info', 'Settings', 'userNatron'])
+    lastNode.setPagesOrder(['controlsPage', 'colorCorrectPage', 'Node', 'Settings', 'userNatron'])
     lastNode.refreshUserParamsGUI()
     del lastNode
 
     # Start of node "Output1"
     lastNode = app.createNode("fr.inria.built-in.Output", 1, group)
-    lastNode.setScriptName("Output1")
     lastNode.setLabel("Output1")
     lastNode.setPosition(761, 1308)
     lastNode.setSize(104, 34)
@@ -1067,7 +1066,7 @@ def createInstance(app,group):
     lastNode.setScriptName("Keyer1")
     lastNode.setLabel("Keyer1")
     lastNode.setPosition(752, 164)
-    lastNode.setSize(104, 51)
+    lastNode.setSize(104, 56)
     lastNode.setColor(0, 1, 0)
     groupKeyer1 = lastNode
 
@@ -1079,6 +1078,11 @@ def createInstance(app,group):
     param = lastNode.getParam("softnessUpper")
     if param is not None:
         param.setValue(0, 0)
+        del param
+
+    param = lastNode.getParam("userTextArea")
+    if param is not None:
+        param.setValue("<Natron>(Luminance)</Natron>")
         del param
 
     del lastNode
@@ -1127,6 +1131,11 @@ def createInstance(app,group):
     lastNode.setColor(0.3, 0.5, 0.2)
     groupConstant1 = lastNode
 
+    param = lastNode.getParam("NatronParamFormatChoice")
+    if param is not None:
+        param.set("PC_Video 640x480")
+        del param
+
     param = lastNode.getParam("size")
     if param is not None:
         param.setValue(960, 0)
@@ -1158,44 +1167,19 @@ def createInstance(app,group):
     lastNode.setColor(0.6, 0.24, 0.39)
     groupShufflecopy1 = lastNode
 
-    param = lastNode.getParam("outputChannelsChoice")
-    if param is not None:
-        param.setValue("Color.RGBA")
-        del param
-
     param = lastNode.getParam("outputR")
     if param is not None:
-        param.set("B.r")
-        del param
-
-    param = lastNode.getParam("outputRChoice")
-    if param is not None:
-        param.setValue("B.r")
+        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.R")
         del param
 
     param = lastNode.getParam("outputG")
     if param is not None:
-        param.set("B.g")
-        del param
-
-    param = lastNode.getParam("outputGChoice")
-    if param is not None:
-        param.setValue("B.g")
+        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.G")
         del param
 
     param = lastNode.getParam("outputB")
     if param is not None:
-        param.set("B.b")
-        del param
-
-    param = lastNode.getParam("outputBChoice")
-    if param is not None:
-        param.setValue("B.b")
-        del param
-
-    param = lastNode.getParam("outputAChoice")
-    if param is not None:
-        param.setValue("A.a")
+        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.B")
         del param
 
     del lastNode
@@ -1323,11 +1307,6 @@ def createInstance(app,group):
         param.setValue(1, 1)
         del param
 
-    param = lastNode.getParam("boundary")
-    if param is not None:
-        param.set("Black")
-        del param
-
     param = lastNode.getParam("expandRoD")
     if param is not None:
         param.setValue(False)
@@ -1341,7 +1320,7 @@ def createInstance(app,group):
     lastNode.setScriptName("EdgeMerge")
     lastNode.setLabel("EdgeMerge")
     lastNode.setPosition(434, 545)
-    lastNode.setSize(104, 51)
+    lastNode.setSize(104, 56)
     lastNode.setColor(0.3, 0.37, 0.776)
     groupEdgeMerge = lastNode
 
@@ -1385,6 +1364,11 @@ def createInstance(app,group):
         param.setValue(False)
         del param
 
+    param = lastNode.getParam("userTextArea")
+    if param is not None:
+        param.setValue("<Natron>(out)</Natron>")
+        del param
+
     del lastNode
     # End of node "EdgeMerge"
 
@@ -1393,7 +1377,7 @@ def createInstance(app,group):
     lastNode.setScriptName("MaskMerge")
     lastNode.setLabel("MaskMerge")
     lastNode.setPosition(758, 545)
-    lastNode.setSize(104, 51)
+    lastNode.setSize(104, 56)
     lastNode.setColor(0.3, 0.37, 0.776)
     groupMaskMerge = lastNode
 
@@ -1410,6 +1394,11 @@ def createInstance(app,group):
     param = lastNode.getParam("OutputChannelsA")
     if param is not None:
         param.setValue(False)
+        del param
+
+    param = lastNode.getParam("userTextArea")
+    if param is not None:
+        param.setValue("<Natron>(in)</Natron>")
         del param
 
     del lastNode
@@ -1477,11 +1466,6 @@ def createInstance(app,group):
     lastNode.setColor(0.48, 0.66, 1)
     groupSaturation1 = lastNode
 
-    param = lastNode.getParam("saturation")
-    if param is not None:
-        param.setValue(1, 0)
-        del param
-
     param = lastNode.getParam("clampBlack")
     if param is not None:
         param.setValue(False)
@@ -1502,149 +1486,6 @@ def createInstance(app,group):
     param = lastNode.getParam("NatronOfxParamProcessA")
     if param is not None:
         param.setValue(True)
-        del param
-
-    param = lastNode.getParam("MasterSaturation")
-    if param is not None:
-        param.setValue(1, 0)
-        param.setValue(1, 1)
-        param.setValue(1, 2)
-        param.setValue(1, 3)
-        del param
-
-    param = lastNode.getParam("MasterContrast")
-    if param is not None:
-        param.setValue(1, 0)
-        param.setValue(1, 1)
-        param.setValue(1, 2)
-        param.setValue(1, 3)
-        del param
-
-    param = lastNode.getParam("MasterGamma")
-    if param is not None:
-        param.setValue(1, 0)
-        param.setValue(1, 1)
-        param.setValue(1, 2)
-        param.setValue(1, 3)
-        del param
-
-    param = lastNode.getParam("MasterGain")
-    if param is not None:
-        param.setValue(1, 0)
-        param.setValue(1, 1)
-        param.setValue(1, 2)
-        param.setValue(1, 3)
-        del param
-
-    param = lastNode.getParam("ShadowsEnable")
-    if param is not None:
-        param.setValue(True)
-        del param
-
-    param = lastNode.getParam("ShadowsSaturation")
-    if param is not None:
-        param.setValue(1, 0)
-        param.setValue(1, 1)
-        param.setValue(1, 2)
-        param.setValue(1, 3)
-        del param
-
-    param = lastNode.getParam("ShadowsContrast")
-    if param is not None:
-        param.setValue(1, 0)
-        param.setValue(1, 1)
-        param.setValue(1, 2)
-        param.setValue(1, 3)
-        del param
-
-    param = lastNode.getParam("ShadowsGamma")
-    if param is not None:
-        param.setValue(1, 0)
-        param.setValue(1, 1)
-        param.setValue(1, 2)
-        param.setValue(1, 3)
-        del param
-
-    param = lastNode.getParam("ShadowsGain")
-    if param is not None:
-        param.setValue(1, 0)
-        param.setValue(1, 1)
-        param.setValue(1, 2)
-        param.setValue(1, 3)
-        del param
-
-    param = lastNode.getParam("MidtonesEnable")
-    if param is not None:
-        param.setValue(True)
-        del param
-
-    param = lastNode.getParam("MidtonesSaturation")
-    if param is not None:
-        param.setValue(1, 0)
-        param.setValue(1, 1)
-        param.setValue(1, 2)
-        param.setValue(1, 3)
-        del param
-
-    param = lastNode.getParam("MidtonesContrast")
-    if param is not None:
-        param.setValue(1, 0)
-        param.setValue(1, 1)
-        param.setValue(1, 2)
-        param.setValue(1, 3)
-        del param
-
-    param = lastNode.getParam("MidtonesGamma")
-    if param is not None:
-        param.setValue(1, 0)
-        param.setValue(1, 1)
-        param.setValue(1, 2)
-        param.setValue(1, 3)
-        del param
-
-    param = lastNode.getParam("MidtonesGain")
-    if param is not None:
-        param.setValue(1, 0)
-        param.setValue(1, 1)
-        param.setValue(1, 2)
-        param.setValue(1, 3)
-        del param
-
-    param = lastNode.getParam("HighlightsEnable")
-    if param is not None:
-        param.setValue(True)
-        del param
-
-    param = lastNode.getParam("HighlightsSaturation")
-    if param is not None:
-        param.setValue(1, 0)
-        param.setValue(1, 1)
-        param.setValue(1, 2)
-        param.setValue(1, 3)
-        del param
-
-    param = lastNode.getParam("HighlightsContrast")
-    if param is not None:
-        param.setValue(1, 0)
-        param.setValue(1, 1)
-        param.setValue(1, 2)
-        param.setValue(1, 3)
-        del param
-
-    param = lastNode.getParam("HighlightsGamma")
-    if param is not None:
-        param.setValue(1, 0)
-        param.setValue(1, 1)
-        param.setValue(1, 2)
-        param.setValue(1, 3)
-        del param
-
-    param = lastNode.getParam("HighlightsGain")
-    if param is not None:
-        param.setValue(1, 0)
-        param.setValue(1, 1)
-        param.setValue(1, 2)
-        param.setValue(1, 3)
         del param
 
     param = lastNode.getParam("toneRanges")
@@ -1672,7 +1513,7 @@ def createInstance(app,group):
     lastNode.setScriptName("MaskMerge2")
     lastNode.setLabel("MaskMerge2")
     lastNode.setPosition(761, 909)
-    lastNode.setSize(104, 51)
+    lastNode.setSize(104, 56)
     lastNode.setColor(0.3, 0.37, 0.776)
     groupMaskMerge2 = lastNode
 
@@ -1684,6 +1525,11 @@ def createInstance(app,group):
     param = lastNode.getParam("operation")
     if param is not None:
         param.set("mask")
+        del param
+
+    param = lastNode.getParam("userTextArea")
+    if param is not None:
+        param.setValue("<Natron>(mask)</Natron>")
         del param
 
     del lastNode
@@ -1698,34 +1544,9 @@ def createInstance(app,group):
     lastNode.setColor(0.6, 0.24, 0.39)
     groupShuffle1 = lastNode
 
-    param = lastNode.getParam("outputChannelsChoice")
-    if param is not None:
-        param.setValue("Color.RGBA")
-        del param
-
-    param = lastNode.getParam("outputRChoice")
-    if param is not None:
-        param.setValue("A.r")
-        del param
-
-    param = lastNode.getParam("outputGChoice")
-    if param is not None:
-        param.setValue("A.g")
-        del param
-
-    param = lastNode.getParam("outputBChoice")
-    if param is not None:
-        param.setValue("A.b")
-        del param
-
     param = lastNode.getParam("outputA")
     if param is not None:
         param.set("0")
-        del param
-
-    param = lastNode.getParam("outputAChoice")
-    if param is not None:
-        param.setValue("0")
         del param
 
     del lastNode
@@ -1736,7 +1557,7 @@ def createInstance(app,group):
     lastNode.setScriptName("HighlightMerge")
     lastNode.setLabel("HighlightMerge")
     lastNode.setPosition(761, 1108)
-    lastNode.setSize(104, 51)
+    lastNode.setSize(104, 56)
     lastNode.setColor(0.3, 0.37, 0.776)
     groupHighlightMerge = lastNode
 
@@ -1748,6 +1569,11 @@ def createInstance(app,group):
     param = lastNode.getParam("operation")
     if param is not None:
         param.set("plus")
+        del param
+
+    param = lastNode.getParam("userTextArea")
+    if param is not None:
+        param.setValue("<Natron>(plus)</Natron>")
         del param
 
     del lastNode

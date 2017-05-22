@@ -72,7 +72,7 @@ def createInstance(app,group):
 
     lastNode.userNatron = lastNode.createPageParam("userNatron", "User")
     # Refresh the GUI with the newly created parameters
-    lastNode.setPagesOrder(['controls', 'Node', 'Info', 'Settings', 'userNatron'])
+    lastNode.setPagesOrder(['controls', 'Node', 'Settings', 'userNatron'])
     lastNode.refreshUserParamsGUI()
     del lastNode
 
@@ -90,7 +90,6 @@ def createInstance(app,group):
 
     # Start of node "Output1"
     lastNode = app.createNode("fr.inria.built-in.Output", 1, group)
-    lastNode.setScriptName("Output1")
     lastNode.setLabel("Output1")
     lastNode.setPosition(1000, 497)
     lastNode.setSize(104, 34)
@@ -120,6 +119,11 @@ def createInstance(app,group):
         param.setValue(270, 1)
         del param
 
+    param = lastNode.getParam("transformCenterChanged")
+    if param is not None:
+        param.setValue(True)
+        del param
+
     del lastNode
     # End of node "Transform1"
 
@@ -141,6 +145,11 @@ def createInstance(app,group):
     if param is not None:
         param.setValue(480, 0)
         param.setValue(270, 1)
+        del param
+
+    param = lastNode.getParam("transformCenterChanged")
+    if param is not None:
+        param.setValue(True)
         del param
 
     param = lastNode.getParam("invert")

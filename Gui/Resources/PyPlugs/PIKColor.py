@@ -61,7 +61,6 @@ def createInstance(app,group):
 
     param = lastNode.createDoubleParam("size", "Size")
     param.setMinimum(0, 0)
-    #param.setMaximum(100, 0)
     param.setDisplayMinimum(0, 0)
     param.setDisplayMaximum(100, 0)
     param.setDefaultValue(10, 0)
@@ -78,16 +77,10 @@ def createInstance(app,group):
     del param
 
     param = lastNode.createColorParam("off", "Darks", False)
-    #param.setMinimum(-1, 0)
-    #param.setMaximum(1, 0)
     param.setDisplayMinimum(-1, 0)
     param.setDisplayMaximum(1, 0)
-    #param.setMinimum(-1, 1)
-    #param.setMaximum(1, 1)
     param.setDisplayMinimum(-1, 1)
     param.setDisplayMaximum(1, 1)
-    #param.setMinimum(-1, 2)
-    #param.setMaximum(1, 2)
     param.setDisplayMinimum(-1, 2)
     param.setDisplayMaximum(1, 2)
 
@@ -103,19 +96,16 @@ def createInstance(app,group):
 
     param = lastNode.createColorParam("mult", "Lights", False)
     param.setMinimum(0, 0)
-    #param.setMaximum(2, 0)
     param.setDisplayMinimum(0, 0)
     param.setDisplayMaximum(2, 0)
     param.setDefaultValue(1, 0)
     param.restoreDefaultValue(0)
     param.setMinimum(0, 1)
-    #param.setMaximum(2, 1)
     param.setDisplayMinimum(0, 1)
     param.setDisplayMaximum(2, 1)
     param.setDefaultValue(1, 1)
     param.restoreDefaultValue(1)
     param.setMinimum(0, 2)
-    #param.setMaximum(2, 2)
     param.setDisplayMinimum(0, 2)
     param.setDisplayMaximum(2, 2)
     param.setDefaultValue(1, 2)
@@ -146,7 +136,6 @@ def createInstance(app,group):
 
     param = lastNode.createDoubleParam("erode", "Erode")
     param.setMinimum(0, 0)
-    #param.setMaximum(5, 0)
     param.setDisplayMinimum(0, 0)
     param.setDisplayMaximum(5, 0)
 
@@ -175,7 +164,6 @@ def createInstance(app,group):
 
     param = lastNode.createDoubleParam("multi", "Patch Black")
     param.setMinimum(0, 0)
-    #param.setMaximum(5, 0)
     param.setDisplayMinimum(0, 0)
     param.setDisplayMaximum(5, 0)
 
@@ -233,7 +221,7 @@ def createInstance(app,group):
     del param
 
     # Refresh the GUI with the newly created parameters
-    lastNode.setPagesOrder(['controls', 'Node'])
+    lastNode.setPagesOrder(['controls', 'Node', 'Settings'])
     lastNode.refreshUserParamsGUI()
     del lastNode
 
@@ -259,6 +247,11 @@ def createInstance(app,group):
         param.setValue(0, 0)
         param.setValue(0, 1)
         param.setValue(0, 2)
+        del param
+
+    param = lastNode.getParam("clampBlack")
+    if param is not None:
+        param.setValue(True)
         del param
 
     param = lastNode.getParam("mix")
@@ -296,11 +289,6 @@ def createInstance(app,group):
     param = lastNode.getParam("userTextArea")
     if param is not None:
         param.setValue("<font size=\"6\" color=\"#000000\" face=\"Droid Sans\">>0 (rgb)</font>")
-        del param
-
-    param = lastNode.getParam("channels")
-    if param is not None:
-        param.set("All")
         del param
 
     del lastNode
@@ -403,29 +391,19 @@ def createInstance(app,group):
     lastNode.setColor(0.6, 0.24, 0.39)
     groupShuffleCopy3 = lastNode
 
-    param = lastNode.getParam("outputChannelsChoice")
+    param = lastNode.getParam("outputR")
     if param is not None:
-        param.setValue("Color.RGBA")
+        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.R")
         del param
 
-    param = lastNode.getParam("outputRChoice")
+    param = lastNode.getParam("outputG")
     if param is not None:
-        param.setValue("B.r")
+        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.G")
         del param
 
-    param = lastNode.getParam("outputGChoice")
+    param = lastNode.getParam("outputB")
     if param is not None:
-        param.setValue("B.g")
-        del param
-
-    param = lastNode.getParam("outputBChoice")
-    if param is not None:
-        param.setValue("B.b")
-        del param
-
-    param = lastNode.getParam("outputAChoice")
-    if param is not None:
-        param.setValue("A.a")
+        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.B")
         del param
 
     param = lastNode.getParam("userTextArea")
@@ -521,29 +499,19 @@ def createInstance(app,group):
     lastNode.setColor(0.6, 0.24, 0.39)
     groupChannelCopy1 = lastNode
 
-    param = lastNode.getParam("outputChannelsChoice")
+    param = lastNode.getParam("outputR")
     if param is not None:
-        param.setValue("Color.RGBA")
+        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.R")
         del param
 
-    param = lastNode.getParam("outputRChoice")
+    param = lastNode.getParam("outputG")
     if param is not None:
-        param.setValue("B.r")
+        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.G")
         del param
 
-    param = lastNode.getParam("outputGChoice")
+    param = lastNode.getParam("outputB")
     if param is not None:
-        param.setValue("B.g")
-        del param
-
-    param = lastNode.getParam("outputBChoice")
-    if param is not None:
-        param.setValue("B.b")
-        del param
-
-    param = lastNode.getParam("outputAChoice")
-    if param is not None:
-        param.setValue("A.a")
+        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.B")
         del param
 
     param = lastNode.getParam("userTextArea")
@@ -575,29 +543,19 @@ def createInstance(app,group):
     lastNode.setColor(0.6, 0.24, 0.39)
     groupShuffleCopy2 = lastNode
 
-    param = lastNode.getParam("outputChannelsChoice")
+    param = lastNode.getParam("outputR")
     if param is not None:
-        param.setValue("Color.RGBA")
+        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.R")
         del param
 
-    param = lastNode.getParam("outputRChoice")
+    param = lastNode.getParam("outputG")
     if param is not None:
-        param.setValue("B.r")
+        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.G")
         del param
 
-    param = lastNode.getParam("outputGChoice")
+    param = lastNode.getParam("outputB")
     if param is not None:
-        param.setValue("B.g")
-        del param
-
-    param = lastNode.getParam("outputBChoice")
-    if param is not None:
-        param.setValue("B.b")
-        del param
-
-    param = lastNode.getParam("outputAChoice")
-    if param is not None:
-        param.setValue("A.a")
+        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.B")
         del param
 
     param = lastNode.getParam("userTextArea")
@@ -712,29 +670,19 @@ def createInstance(app,group):
     lastNode.setColor(0.6, 0.24, 0.39)
     groupChannelCopy2 = lastNode
 
-    param = lastNode.getParam("outputChannelsChoice")
+    param = lastNode.getParam("outputR")
     if param is not None:
-        param.setValue("Color.RGBA")
+        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.R")
         del param
 
-    param = lastNode.getParam("outputRChoice")
+    param = lastNode.getParam("outputG")
     if param is not None:
-        param.setValue("B.r")
+        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.G")
         del param
 
-    param = lastNode.getParam("outputGChoice")
+    param = lastNode.getParam("outputB")
     if param is not None:
-        param.setValue("B.g")
-        del param
-
-    param = lastNode.getParam("outputBChoice")
-    if param is not None:
-        param.setValue("B.b")
-        del param
-
-    param = lastNode.getParam("outputAChoice")
-    if param is not None:
-        param.setValue("A.a")
+        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.B")
         del param
 
     del lastNode
@@ -767,6 +715,11 @@ def createInstance(app,group):
         param.setValue(1, 1)
         param.setValue(1, 2)
         param.setValue(1, 3)
+        del param
+
+    param = lastNode.getParam("clampBlack")
+    if param is not None:
+        param.setValue(True)
         del param
 
     del lastNode
@@ -1049,34 +1002,14 @@ def createInstance(app,group):
     lastNode.setColor(0.6, 0.24, 0.39)
     groupShuffle1 = lastNode
 
-    param = lastNode.getParam("outputChannelsChoice")
-    if param is not None:
-        param.setValue("Color.RGBA")
-        del param
-
     param = lastNode.getParam("outputComponents")
     if param is not None:
         param.set("Alpha")
         del param
 
-    param = lastNode.getParam("outputRChoice")
+    param = lastNode.getParam("outputA")
     if param is not None:
-        param.setValue("A.r")
-        del param
-
-    param = lastNode.getParam("outputGChoice")
-    if param is not None:
-        param.setValue("A.g")
-        del param
-
-    param = lastNode.getParam("outputBChoice")
-    if param is not None:
-        param.setValue("A.b")
-        del param
-
-    param = lastNode.getParam("outputAChoice")
-    if param is not None:
-        param.setValue("A.b")
+        param.set("A.uk.co.thefoundry.OfxImagePlaneColour.B")
         del param
 
     param = lastNode.getParam("userTextArea")
