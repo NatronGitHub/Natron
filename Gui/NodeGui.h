@@ -160,7 +160,7 @@ public:
 
     ~NodeGui() OVERRIDE;
 
-    virtual void restoreStateAfterCreation() OVERRIDE FINAL;
+    void restoreStateAfterCreation(const CreateNodeArgs& args);
 
 
     NodePtr getNode() const

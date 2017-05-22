@@ -985,7 +985,7 @@ NodeCollection::setSubGraphEditedByUser(bool edited)
 
             KnobIPtr convertToGroupKnob = isGrp->getNode()->getKnobByName(kNatronNodeKnobConvertToGroupButton);
             if (convertToGroupKnob) {
-                convertToGroupKnob->setSecret(edited || isSubGraphEditable());
+                convertToGroupKnob->setSecret(edited || !isSubGraphEditable());
             }
         }
 

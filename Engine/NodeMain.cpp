@@ -366,6 +366,7 @@ void
 Node::restoreUserKnob(const KnobGroupPtr& group,
                       const KnobPagePtr& page,
                       const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase,
+                      bool isPyPlugSerialization,
                       unsigned int recursionLevel)
 {
 
@@ -402,7 +403,7 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
                 page = _imp->effect->createKnob<KnobPage>(groupSerialization->_name);
                 page->setLabel(groupSerialization->_label);
                 page->setDeclaredByPlugin(false);
-                page->setAsUserKnob(true);
+                page->setAsUserKnob(!isPyPlugSerialization);
             } else {
                 page = toKnobPage(found);
             }
@@ -411,7 +412,7 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
             }
 
             for (std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase> >::const_iterator it = groupSerialization->_children.begin(); it != groupSerialization->_children.end(); ++it) {
-                restoreUserKnob(KnobGroupPtr(), page, **it, recursionLevel + 1);
+                restoreUserKnob(KnobGroupPtr(), page, **it, recursionLevel + 1,isPyPlugSerialization);
             }
 
         } else if (isGroup) { //!ispage
@@ -427,7 +428,7 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
             if (!grp) {
                 return;
             }
-            grp->setAsUserKnob(true);
+            grp->setAsUserKnob(!isPyPlugSerialization);
             grp->setName(groupSerialization->_name);
             if (groupSerialization->_isSetAsTab) {
                 grp->setAsTab();
@@ -442,7 +443,7 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
 
             grp->setValue(groupSerialization->_isOpened);
             for (std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase> >::const_iterator it = groupSerialization->_children.begin(); it != groupSerialization->_children.end(); ++it) {
-                restoreUserKnob(grp, page, **it, recursionLevel + 1);
+                restoreUserKnob(grp, page, **it, recursionLevel + 1,isPyPlugSerialization);
             }
         } // ispage
 
@@ -509,7 +510,12 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
         knob->setDeclaredByPlugin(false);
         knob->setLabel(serialization->_label);
         knob->fromSerialization(*serialization);
-        
+
+        if (isPyPlugSerialization) {
+            // If this is a pyplug serialization, make sure the knob is no longer marked as a user knob
+            knob->setAsUserKnob(false);
+        }
+
         if (group) {
             group->addKnob(knob);
         } else if (page) {
@@ -755,7 +761,7 @@ Node::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& 
     }
 
     // Load all knobs as well as user knobs and roto/tracking data
-    loadKnobsFromSerialization(*serialization);
+    loadKnobsFromSerialization(*serialization, false);
 
     // Remember the UI
     {
@@ -848,13 +854,11 @@ static void checkForOldStringParametersForChoices(const AppInstancePtr& app, con
                 break;
             }
         }
-
-
     }
 } // checkForOldStringParametersForChoices
 
 void
-Node::loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization)
+Node::loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization, bool isPyPlugSerialization)
 {
 
     _imp->effect->beginChanges();
@@ -879,6 +883,7 @@ Node::loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializatio
                 continue;
             }
 
+
             knob->fromSerialization(**it);
 
         }
@@ -900,7 +905,7 @@ Node::loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializatio
 
     {
         for (std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::GroupKnobSerialization> >::const_iterator it = serialization._userPages.begin(); it != serialization._userPages.end(); ++it) {
-            restoreUserKnob(KnobGroupPtr(), KnobPagePtr(), **it, 0);
+            restoreUserKnob(KnobGroupPtr(), KnobPagePtr(), **it, 0, isPyPlugSerialization);
         }
     }
 
@@ -1018,12 +1023,12 @@ Node::getNodeSerializationFromPresetName(const std::string& presetName, SERIALIZ
 }
 
 void
-Node::loadPresetsInternal(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization,bool setKnobsDefault)
+Node::loadPresetsInternal(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization,bool setKnobsDefault, bool isPyPlugSerialization)
 {
     assert(QThread::currentThread() == qApp->thread());
 
 
-    loadKnobsFromSerialization(*serialization);
+    loadKnobsFromSerialization(*serialization, isPyPlugSerialization);
 
     if (setKnobsDefault) {
         // set non animated knobs to be their default values
@@ -1281,13 +1286,13 @@ Node::restoreNodeToDefaultState(const CreateNodeArgsPtr& args)
 
     // If this is a pyplug, load the node state (and its internal subgraph)
     if (pyPlugSerialization) {
-        loadPresetsInternal(pyPlugSerialization, false);
+        loadPresetsInternal(pyPlugSerialization, false, true /*isPyPlug*/);
     }
 
     if (presetSerialization) {
 
         // Load presets from serialization if any
-        loadPresetsInternal(presetSerialization, true);
+        loadPresetsInternal(presetSerialization, true, false /*isPyPlug*/);
     } else {
 
         // Reset knob default values to their initial default value if we had a different preset before

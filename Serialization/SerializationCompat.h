@@ -1455,6 +1455,8 @@ inline void addUserKnobToRegularKnobsRecursive(const SERIALIZATION_NAMESPACE::Gr
     }
 }
 
+
+
 template<class Archive>
 void
 SERIALIZATION_NAMESPACE::NodeSerialization::serialize(Archive & ar,
@@ -1589,13 +1591,9 @@ SERIALIZATION_NAMESPACE::NodeSerialization::serialize(Archive & ar,
         for (int i = 0; i < userPagesCount; ++i) {
             boost::shared_ptr<GroupKnobSerialization> s( new GroupKnobSerialization() );
             ar & ::boost::serialization::make_nvp("item", *s);
-            if (pythonModule.empty()) {
-                // Only remember user pages for NON python modules. Before Natron 2.2 we used to serialize knobs declared by
-                // the Python script as user knobs. This is no longer the case, so just deserialize them as regular knobs
-                _userPages.push_back(s);
-            } else {
-                addUserKnobToRegularKnobsRecursive(*s, this);
-            }
+
+            addUserKnobToRegularKnobsRecursive(*s, this);
+            
         }
         if (version >= NODE_SERIALIZATION_SERIALIZE_PAGE_INDEX) {
             int count;

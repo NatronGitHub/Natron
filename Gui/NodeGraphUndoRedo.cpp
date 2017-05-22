@@ -1927,7 +1927,7 @@ RestoreNodeToDefaultCommand::undo()
         if (!internalNode) {
             continue;
         }
-        internalNode->loadKnobsFromSerialization(*it->serialization);
+        internalNode->loadKnobsFromSerialization(*it->serialization, false);
     }
 }
 

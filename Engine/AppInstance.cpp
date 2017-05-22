@@ -878,6 +878,8 @@ AppInstance::createNodeFromPyPlug(const PluginPtr& plugin, const CreateNodeArgsP
             if (serialization) {
                 containerNode->fromSerialization(*serialization);
             }
+
+
             
             // Now that we ran the python script, refresh the default page order so it doesn't get serialized into the project for nothing
             containerNode->refreshDefaultPagesOrder();

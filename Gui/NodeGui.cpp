@@ -293,7 +293,7 @@ NodeGui::initialize(NodeGraph* dag,
         _outputEdge = new Edge( thisAsShared, parentItem() );
     }
 
-    restoreStateAfterCreation();
+    restoreStateAfterCreation(args);
 
     initializeInputs();
 
@@ -329,15 +329,29 @@ NodeGui::setColorFromGrouping()
 }
 
 void
-NodeGui::restoreStateAfterCreation()
+NodeGui::restoreStateAfterCreation(const CreateNodeArgs& args)
 {
     NodePtr internalNode = getNode();
     if (!internalNode) {
         return;
     }
-    ///Refresh the disabled knob
-
-    setColorFromGrouping();
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+    if (!serialization) {
+        setColorFromGrouping();
+    } else {
+        double r, g, b;
+        internalNode->getColor(&r, &g, &b);
+        if (r == -1 && g == -1 && b == -1) {
+            // Use default
+            setColorFromGrouping();
+        } else {
+            QColor color;
+            color.setRgbF( Image::clamp<double>(r, 0., 1.),
+                          Image::clamp<double>(g, 0., 1.),
+                          Image::clamp<double>(b, 0., 1.) );
+            setCurrentColor(color);
+        }
+    }
     KnobBoolPtr disabledknob = internalNode->getEffectInstance()->getDisabledKnob();
     if ( disabledknob && disabledknob->getValue() ) {
         onDisabledKnobToggled(true);

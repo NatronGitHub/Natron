@@ -2880,12 +2880,17 @@ KnobItemsTable::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationOb
     resetModel(eTableChangeReasonInternal);
     assert(_imp->common->topLevelItems.empty());
 
+    // Clear the python prefix, to prevent each addItem() call to call declareItemAsPythonField().
+    // It would create errors because children would attempt to be declared to Python recursively before their parent.
+    // Instead we manually call it once all items are deserialized.
+    _imp->common->pythonPrefix.clear();
     for (std::list<SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr>::const_iterator it = serialization->items.begin(); it != serialization->items.end(); ++it) {
         KnobTableItemPtr item = createItemFromSerialization(*it);
         if (item) {
             addItem(item, KnobTableItemPtr(), eTableChangeReasonInternal);
         }
     }
+    declareItemsToPython();
 }
 
 void
