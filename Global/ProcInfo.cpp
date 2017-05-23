@@ -454,7 +454,14 @@ ProcInfo::applicationDirPath(const char* argv0Param)
     std::size_t foundSlash = filePath.find_last_of('/');
 
     if (foundSlash == std::string::npos) {
+#ifdef __NATRON_WIN32__
+        foundSlash = filePath.find_last_of('\\');
+        if (foundSlash == std::string::npos) {
+            return std::string();
+        }
+#else
         return std::string();
+#endif
     }
 
     return filePath.substr(0, foundSlash);
