@@ -3072,7 +3072,7 @@ Cache<persistent>::initialize(const boost::shared_ptr<Cache<persistent> >& thisS
             if (createStorage) {
                 _imp->createTileStorage();
             }
-        } catch (const CorruptedCacheException&) {
+        } catch (...) {
             clear();
         }
     } // persistent
