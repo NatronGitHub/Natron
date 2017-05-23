@@ -154,7 +154,7 @@ CONFIG(enable-osmesa) {
     osmesa {
         DEFINES += HAVE_OSMESA
         INCLUDEPATH += $$OSMESA_INCLUDES
-        QMAKE_LFLAGS += $$OSMESA_LIBS
+        LIBS += $$OSMESA_LIBS
     }
 }
 
