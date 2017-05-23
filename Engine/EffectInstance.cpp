@@ -1223,42 +1223,82 @@ EffectInstance::releasePluginMemory(const PluginMemory* mem)
 }
 
 void
-EffectInstance::registerOverlay(const OverlayInteractBasePtr& overlay, const std::map<std::string,std::string>& knobs)
+EffectInstance::registerOverlay(OverlayViewportTypeEnum type, const OverlayInteractBasePtr& overlay, const std::map<std::string,std::string>& knobs)
 {
 
     overlay->setEffect(shared_from_this());
     overlay->fetchKnobs_public(knobs);
 
     assert(QThread::currentThread() == qApp->thread());
-    std::list<OverlayInteractBasePtr>::iterator found = std::find(_imp->common->interacts.begin(), _imp->common->interacts.end(), overlay);
-    if (found == _imp->common->interacts.end()) {
 
-        _imp->common->interacts.push_back(overlay);
+    std::list<OverlayInteractBasePtr>* list = 0;
+    switch (type) {
+        case eOverlayViewportTypeViewer:
+            list = &_imp->common->interacts;
+            break;
+
+        case eOverlayViewportTypeTimeline:
+            list = &_imp->common->timelineInteracts;
+            break;
+    }
+
+    std::list<OverlayInteractBasePtr>::iterator found = std::find(list->begin(), list->end(), overlay);
+    if (found != list->end()) {
+
+        list->push_back(overlay);
         overlay->redraw();
     }
 }
 
 void
-EffectInstance::removeOverlay(const OverlayInteractBasePtr& overlay)
+EffectInstance::removeOverlay(OverlayViewportTypeEnum type, const OverlayInteractBasePtr& overlay)
 {
     assert(QThread::currentThread() == qApp->thread());
-    std::list<OverlayInteractBasePtr>::iterator found = std::find(_imp->common->interacts.begin(), _imp->common->interacts.end(), overlay);
-    if (found != _imp->common->interacts.end()) {
-        _imp->common->interacts.erase(found);
+
+    std::list<OverlayInteractBasePtr>* list = 0;
+    switch (type) {
+        case eOverlayViewportTypeViewer:
+            list = &_imp->common->interacts;
+            break;
+
+        case eOverlayViewportTypeTimeline:
+            list = &_imp->common->timelineInteracts;
+            break;
+    }
+    std::list<OverlayInteractBasePtr>::iterator found = std::find(list->begin(), list->end(), overlay);
+    if (found != list->end()) {
+        list->erase(found);
     }
 }
 
 void
-EffectInstance::clearOverlays()
+EffectInstance::clearOverlays(OverlayViewportTypeEnum type)
 {
-    _imp->common->interacts.clear();
+    switch (type) {
+        case eOverlayViewportTypeViewer:
+            _imp->common->interacts.clear();
+            break;
+
+        case eOverlayViewportTypeTimeline:
+            _imp->common->timelineInteracts.clear();
+            break;
+    }
 }
 
 void
-EffectInstance::getOverlays(std::list<OverlayInteractBasePtr> *overlays) const
+EffectInstance::getOverlays(OverlayViewportTypeEnum type, std::list<OverlayInteractBasePtr> *overlays) const
 {
     assert(QThread::currentThread() == qApp->thread());
-    *overlays = _imp->common->interacts;
+    switch (type) {
+        case eOverlayViewportTypeViewer:
+            *overlays = _imp->common->interacts;
+            break;
+
+        case eOverlayViewportTypeTimeline:
+            *overlays = _imp->common->timelineInteracts;
+            break;
+    }
+
 }
 
 bool

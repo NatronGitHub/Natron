@@ -43,6 +43,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QPointF>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
+#include "Engine/OverlaySupport.h"
 
 #include "Global/GlobalDefines.h"
 
@@ -54,6 +55,7 @@ struct TimelineGuiPrivate;
 
 class TimeLineGui
     : public QGLWidget
+    , public OverlaySupport
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -126,6 +128,35 @@ public:
 
     void getVisibleRange(SequenceTime* left, SequenceTime* right) const;
 
+
+    // Overriden from OverlaySupport
+    virtual void toWidgetCoordinates(double *x, double *y) const OVERRIDE FINAL;
+    virtual void toCanonicalCoordinates(double *x, double *y) const OVERRIDE FINAL;
+    virtual int getWidgetFontHeight() const OVERRIDE FINAL;
+    virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE FINAL;
+    virtual RectD getViewportRect() const OVERRIDE FINAL;
+    virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
+    virtual RangeD getFrameRange() const OVERRIDE FINAL;
+    virtual bool renderText(double x,
+                            double y,
+                            const std::string &string,
+                            double r,
+                            double g,
+                            double b,
+                            double a,
+                            int flags = 0) OVERRIDE FINAL;
+    virtual void swapOpenGLBuffers() OVERRIDE FINAL;
+    virtual void redraw() OVERRIDE FINAL;
+    virtual void getOpenGLContextFormat(int* depthPerComponents, bool* hasAlpha) const OVERRIDE FINAL;
+    virtual void getViewportSize(double &width, double &height) const OVERRIDE FINAL;
+    virtual void getPixelScale(double & xScale, double & yScale) const  OVERRIDE FINAL;
+    virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
+    virtual void saveOpenGLContext() OVERRIDE FINAL;
+    virtual void restoreOpenGLContext() OVERRIDE FINAL;
+    virtual unsigned int getCurrentRenderScale() const OVERRIDE FINAL;
+
+    ////
+
 public Q_SLOTS:
 
 
@@ -152,6 +183,10 @@ private:
     virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
+    virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual QSize sizeHint() const OVERRIDE FINAL;
 
 Q_SIGNALS:

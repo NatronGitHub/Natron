@@ -431,7 +431,7 @@ OfxEffectInstance::~OfxEffectInstance()
 {
     if (_imp->common.use_count() == 1 && _imp->common->effect) {
         // Make sure overlay's destroy action is called before the image effect destroy action
-        clearOverlays();
+        clearOverlays(eOverlayViewportTypeViewer);
         _imp->common->overlayInteract.reset();
         _imp->common->effect->destroyInstanceAction();
     }
@@ -519,7 +519,7 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
             }
         }
 
-        registerOverlay(_imp->common->overlayInteract, std::map<std::string, std::string>());
+        registerOverlay(eOverlayViewportTypeViewer, _imp->common->overlayInteract, std::map<std::string, std::string>());
         (void)stat;
     }
 
@@ -1851,7 +1851,7 @@ OfxEffectInstance::knobChanged(const KnobIPtr& k,
     if (isDoingInteractAction()) {
         // Get the render scale on an interact viewport
         std::list<OverlayInteractBasePtr> overlays;
-        getOverlays(&overlays);
+        getOverlays(eOverlayViewportTypeViewer, &overlays);
         if (!overlays.empty()) {
             OverlaySupport* viewport = (*overlays.begin())->getLastCallingViewport();
             assert(viewport);

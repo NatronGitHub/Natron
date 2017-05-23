@@ -36,7 +36,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QtCore/QCoreApplication>
 #include <QtCore/QThread>
 #include <QtCore/QTimer>
-
+#include <QFontMetrics>
 #include "Global/GlobalDefines.h"
 
 #include "Engine/Cache.h"
@@ -44,12 +44,14 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/OSGLFunctions.h"
+#include "Engine/OverlayInteractBase.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/TimeLineKeys.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/ViewerInstance.h"
+
 
 #include "Gui/AnimationModuleEditor.h"
 #include "Gui/Gui.h"
@@ -60,8 +62,9 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiMacros.h"
 #include "Gui/TextRenderer.h"
 #include "Gui/ViewerTab.h"
+#include "Gui/QtEnumConvert.h"
 #include "Gui/ticks.h"
-
+#include "Gui/ZoomContext.h"
 NATRON_NAMESPACE_ENTER;
 
 #define TICK_HEIGHT 7
@@ -76,20 +79,6 @@ NATRON_NAMESPACE_ENTER;
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
-struct TimeLineZoomContext
-{
-    TimeLineZoomContext()
-        : bottom(0.)
-        , left(0.)
-        , zoomFactor(1.)
-    {
-    }
-
-    QPoint oldClick; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
-    double bottom; /// the bottom edge of orthographic projection
-    double left; /// the left edge of the orthographic projection
-    double zoomFactor; /// the zoom factor applied to the current image
-};
 
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT
@@ -109,7 +98,7 @@ struct TimelineGuiPrivate
     TimelineStateEnum state; ///< state machine for mouse events
     int mousePressX; ///< widget X coordinate of last click
     int mouseMoveX; ///< widget X coordinate of last mousemove position
-    TimeLineZoomContext tlZoomCtx;
+    ZoomContext zoomCtx;
     TextRenderer textRenderer;
     QFont font;
     bool firstPaint;
@@ -133,7 +122,7 @@ struct TimelineGuiPrivate
         , state(eTimelineStateIdle)
         , mousePressX(0)
         , mouseMoveX(0)
-        , tlZoomCtx()
+        , zoomCtx()
         , textRenderer()
         , font(appFont, appFontSize)
         , firstPaint(true)
@@ -148,24 +137,30 @@ struct TimelineGuiPrivate
 
     void updateEditorFrameRanges()
     {
-        double zoomRight = parent->toTimeLine(parent->width() - 1);
-
-        gui->getAnimationModuleEditor()->centerOn(tlZoomCtx.left - 5, zoomRight - 5);
+        gui->getAnimationModuleEditor()->centerOn(zoomCtx.left() - 5, zoomCtx.right() - 5);
     }
 
     void updateOpenedViewersFrameRanges()
     {
-        double zoomRight = parent->toTimeLine(parent->width() - 1);
         const std::list<ViewerTab *> &viewers = gui->getViewersList();
 
         for (std::list<ViewerTab *>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
             if ( (*it) != viewerTab ) {
-                (*it)->centerOn(tlZoomCtx.left, zoomRight);
+                (*it)->centerOn(zoomCtx.left(), zoomCtx.right());
             }
         }
     }
 
 
+    void drawOverlays(SequenceTime currentFrame);
+    bool penDown(SequenceTime currentFrame, PenType pen, const QPointF & viewportPos, const QPointF & pos);
+    bool penMotion(SequenceTime currentFrame, const QPointF & viewportPos, const QPointF & pos);
+    bool penUp(SequenceTime currentFrame, const QPointF & viewportPos, const QPointF & pos);
+    bool keyDown(SequenceTime currentFrame, Key k, KeyboardModifiers km);
+    bool keyUp(SequenceTime currentFrame, Key k, KeyboardModifiers km);
+    bool keyRepeat(SequenceTime currentFrame, Key k, KeyboardModifiers km);
+    bool focusLost(SequenceTime currentFrame);
+    bool focusGain(SequenceTime currentFrame);
 };
 
 TimeLineGui::TimeLineGui(const ViewerNodePtr& viewer,
@@ -230,6 +225,7 @@ TimeLineGui::resizeGL(int width,
     if (height == 0) {
         height = 1;
     }
+    _imp->zoomCtx.setScreenSize(width, height, /*alignTop=*/ true, /*alignRight=*/ false);
     GL_GPU::Viewport (0, 0, width, height);
 }
 
@@ -272,17 +268,14 @@ TimeLineGui::paintGL()
         }
     }
 
-    double w = (double)width();
-    double h = (double)height();
-    //assert(_tlZoomCtx._zoomFactor > 0);
-    if (_imp->tlZoomCtx.zoomFactor <= 0) {
+    if (_imp->zoomCtx.factor() <= 0) {
         return;
     }
     //assert(_tlZoomCtx._zoomFactor <= 1024);
-    double bottom = _imp->tlZoomCtx.bottom;
-    double left = _imp->tlZoomCtx.left;
-    double top = bottom +  h / (double)_imp->tlZoomCtx.zoomFactor;
-    double right = left +  (w / (double)_imp->tlZoomCtx.zoomFactor);
+    double bottom = _imp->zoomCtx.bottom();
+    double left = _imp->zoomCtx.left();
+    double top = _imp->zoomCtx.top();
+    double right = _imp->zoomCtx.right();
     double clearR, clearG, clearB;
     SettingsPtr settings = appPTR->getCurrentSettings();
     settings->getTimelineBGColor(&clearR, &clearG, &clearB);
@@ -706,10 +699,10 @@ TimeLineGui::renderText(double x,
 
     double w = (double)width();
     double h = (double)height();
-    double bottom = _imp->tlZoomCtx.bottom;
-    double left = _imp->tlZoomCtx.left;
-    double top = bottom +  h / (double)_imp->tlZoomCtx.zoomFactor;
-    double right = left +  (w / (double)_imp->tlZoomCtx.zoomFactor);
+    double bottom = _imp->zoomCtx.bottom();
+    double left = _imp->zoomCtx.left();
+    double top = _imp->zoomCtx.top();
+    double right = _imp->zoomCtx.right();
     if ( (w <= 0) || (h <= 0) || (right <= left) || (top <= bottom) ) {
         return;
     }
@@ -749,6 +742,22 @@ TimeLineGui::mousePressEvent(QMouseEvent* e)
 {
     _imp->mousePressX = e->x();
     _imp->mouseMoveX = _imp->mousePressX;
+
+
+    PenType pen = ePenTypeLMB;
+    if ( (e->buttons() == Qt::LeftButton) && !(e->modifiers() &  Qt::MetaModifier) ) {
+        pen = ePenTypeLMB;
+    } else if ( (e->buttons() == Qt::RightButton) || (e->buttons() == Qt::LeftButton  && (e->modifiers() &  Qt::MetaModifier)) ) {
+        pen = ePenTypeRMB;
+    } else if ( (e->buttons() == Qt::MiddleButton)  || (e->buttons() == Qt::LeftButton  && (e->modifiers() &  Qt::AltModifier)) ) {
+        pen = ePenTypeMMB;
+    }
+    QPointF zoomPos = _imp->zoomCtx.toZoomCoordinates(e->x(), e->y());
+    if (_imp->penDown(toTimeLine(_imp->mouseMoveX), pen, e->pos(), zoomPos)) {
+        update();
+        return;
+    }
+
     if ( buttonDownIsMiddle(e) ) {
         _imp->state = eTimelineStatePanning;
     } else if ( buttonDownIsRight(e) ) {
@@ -788,12 +797,14 @@ TimeLineGui::mouseMoveEvent(QMouseEvent* e)
 
     _imp->lastMouseEventWidgetCoord = e->pos();
     _imp->mouseMoveX = e->x();
-    const double t = toTimeLine(_imp->mouseMoveX);
+
+    QPointF timelinePos = _imp->zoomCtx.toZoomCoordinates(e->x(), e->y());
+    const double t = timelinePos.x();
     SequenceTime tseq = std::floor(t + 0.5);
     bool distortViewPort = false;
     bool onEditingFinishedOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
     if (_imp->state == eTimelineStatePanning) {
-        _imp->tlZoomCtx.left += toTimeLine(mouseMoveXprev) - toTimeLine(_imp->mouseMoveX);
+        _imp->zoomCtx.translate(toTimeLine(mouseMoveXprev) - toTimeLine(_imp->mouseMoveX), 0);
         update();
         if ( _imp->gui->isTripleSyncEnabled() ) {
             _imp->updateEditorFrameRanges();
@@ -835,6 +846,9 @@ TimeLineGui::mouseMoveEvent(QMouseEvent* e)
         }
         distortViewPort = true;
         _imp->alphaCursor = false;
+    } else if (_imp->penMotion(t, e->pos(), timelinePos)) {
+        update();
+        return;
     } else {
         _imp->alphaCursor = true;
     }
@@ -855,6 +869,27 @@ TimeLineGui::mouseMoveEvent(QMouseEvent* e)
     }
 } // TimeLineGui::mouseMoveEvent
 
+
+
+void
+TimeLineGui::focusInEvent(QFocusEvent* e)
+{
+
+    if (_imp->focusGain(_imp->timeline->currentFrame())) {
+        update();
+    }
+    QGLWidget::focusInEvent(e);
+}
+
+void
+TimeLineGui::focusOutEvent(QFocusEvent* e)
+{
+    if (_imp->focusLost(_imp->timeline->currentFrame())) {
+        update();
+    }
+    QGLWidget::focusOutEvent(e);
+}
+
 void
 TimeLineGui::enterEvent(QEvent* e)
 {
@@ -874,11 +909,13 @@ TimeLineGui::leaveEvent(QEvent* e)
 void
 TimeLineGui::mouseReleaseEvent(QMouseEvent* e)
 {
+    QPointF timelinePos = _imp->zoomCtx.toZoomCoordinates(e->x(), e->y());
+    double t = timelinePos.x();
+
     if (_imp->state == eTimelineStateSelectingZoomRange) {
         // - if the last selected frame is the same as the first selected frame, zoom on the PROJECT range
         //   (NOT the playback range as in the following, and NOT adding margins as centerOn() does)
         // - if they are different, zoom on that range
-        double t = toTimeLine( e->x() );
         int leftBound = std::floor(t + 0.5);
         int rightBound = std::floor(toTimeLine(_imp->mousePressX) + 0.5);
         if (leftBound > rightBound) {
@@ -924,6 +961,10 @@ TimeLineGui::mouseReleaseEvent(QMouseEvent* e)
         } else if (autoProxyEnabled && wasScrubbing) {
             _imp->gui->getApp()->renderAllViewers();
         }
+    } else {
+        if (_imp->penUp(t, e->pos(), timelinePos)) {
+            update();
+        }
     }
 
     _imp->state = eTimelineStateIdle;
@@ -936,19 +977,29 @@ TimeLineGui::wheelEvent(QWheelEvent* e)
     if (e->orientation() != Qt::Vertical) {
         return;
     }
-    const double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() );
-    double newZoomFactor = _imp->tlZoomCtx.zoomFactor * scaleFactor;
-    if (newZoomFactor <= 0.01) { // 1 pixel for 100 frames
-        newZoomFactor = 0.01;
-    } else if (newZoomFactor > 100.) { // 100 pixels per frame seems reasonable, see also DopeSheetView::wheelEvent()
-        newZoomFactor = 100.;
-    }
-    QPointF zoomCenter = toTimeLineCoordinates( e->x(), e->y() );
-    double zoomRatio =   _imp->tlZoomCtx.zoomFactor / newZoomFactor;
-    _imp->tlZoomCtx.left = zoomCenter.x() - (zoomCenter.x() - _imp->tlZoomCtx.left) * zoomRatio;
-    _imp->tlZoomCtx.bottom = zoomCenter.y() - (zoomCenter.y() - _imp->tlZoomCtx.bottom) * zoomRatio;
 
-    _imp->tlZoomCtx.zoomFactor = newZoomFactor;
+
+    const double par_min = 0.0001;
+    const double par_max = 10000.;
+
+    double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() );
+
+    QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
+
+
+    // Alt + Wheel: zoom time only, keep point under mouse
+    double par = _imp->zoomCtx.aspectRatio() * scaleFactor;
+    if (par <= par_min) {
+        par = par_min;
+        scaleFactor = par / _imp->zoomCtx.aspectRatio();
+    } else if (par > par_max) {
+        par = par_max;
+        scaleFactor = par / _imp->zoomCtx.factor();
+    }
+
+
+    _imp->zoomCtx.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactor);
+
 
     update();
 
@@ -956,6 +1007,52 @@ TimeLineGui::wheelEvent(QWheelEvent* e)
         _imp->updateEditorFrameRanges();
         _imp->updateOpenedViewersFrameRanges();
     }
+}
+
+void
+TimeLineGui::keyPressEvent(QKeyEvent* e)
+{
+    Qt::KeyboardModifiers qMods = e->modifiers();
+    Qt::Key qKey = (Qt::Key)Gui::handleNativeKeys( e->key(), e->nativeScanCode(), e->nativeVirtualKey() );
+
+
+
+    Key natronKey = QtEnumConvert::fromQtKey(qKey);
+    KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers(qMods);
+
+    if (e->isAutoRepeat()) {
+        if (_imp->keyRepeat(_imp->timeline->currentFrame(), natronKey, natronMod)) {
+            update();
+            return;
+        }
+    } else {
+        if (_imp->keyDown(_imp->timeline->currentFrame(), natronKey, natronMod)) {
+            update();
+            return;
+        }
+    }
+
+    QGLWidget::keyPressEvent(e);
+
+}
+
+void
+TimeLineGui::keyReleaseEvent(QKeyEvent* e)
+{
+    Qt::KeyboardModifiers qMods = e->modifiers();
+    Qt::Key qKey = (Qt::Key)Gui::handleNativeKeys( e->key(), e->nativeScanCode(), e->nativeVirtualKey() );
+
+    Key natronKey = QtEnumConvert::fromQtKey(qKey );
+    KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers(qMods);
+
+
+    if (_imp->keyUp(_imp->timeline->currentFrame(), natronKey, natronMod)) {
+        update();
+        return;
+    }
+
+    QGLWidget::keyReleaseEvent(e);
+
 }
 
 void
@@ -998,11 +1095,8 @@ void
 TimeLineGui::centerOn_tripleSync(SequenceTime left,
                                  SequenceTime right)
 {
-    double curveWidth = right - left;
-    double w = width();
 
-    _imp->tlZoomCtx.left = left;
-    _imp->tlZoomCtx.zoomFactor = w / curveWidth;
+    _imp->zoomCtx.fill( left, right, _imp->zoomCtx.bottom(), _imp->zoomCtx.top() );
 
     update();
 }
@@ -1011,10 +1105,8 @@ void
 TimeLineGui::getVisibleRange(SequenceTime* left,
                              SequenceTime* right) const
 {
-    *left = _imp->tlZoomCtx.left;
-    double w = width();
-    double curveWidth = w / _imp->tlZoomCtx.zoomFactor;
-    *right = *left + curveWidth;
+    *left = _imp->zoomCtx.left();
+    *right = _imp->zoomCtx.right();
 }
 
 void
@@ -1022,11 +1114,7 @@ TimeLineGui::centerOn(SequenceTime left,
                       SequenceTime right,
                       int margin)
 {
-    double curveWidth = right - left + 2 * margin;
-    double w = width();
-
-    _imp->tlZoomCtx.left = left - margin;
-    _imp->tlZoomCtx.zoomFactor = w / curveWidth;
+    _imp->zoomCtx.fill( left - margin, right + margin, _imp->zoomCtx.bottom(), _imp->zoomCtx.top() );
 
     update();
 }
@@ -1066,43 +1154,28 @@ TimeLineGui::currentFrame() const
 double
 TimeLineGui::toTimeLine(double x) const
 {
-    double w = (double)width();
-    double left = _imp->tlZoomCtx.left;
-    double right = left +  w / _imp->tlZoomCtx.zoomFactor;
-
-    return ( ( (right - left) * x ) / w ) + left;
+    return _imp->zoomCtx.toZoomCoordinates(x, 0).x();
 }
 
 double
 TimeLineGui::toWidget(double t) const
 {
-    double w = (double)width();
-    double left = _imp->tlZoomCtx.left;
-    double right = left +  w / _imp->tlZoomCtx.zoomFactor;
-
-    return ( (t - left) / (right - left) ) * w;
+    return _imp->zoomCtx.toWidgetCoordinates(t, 0).x();
 }
 
 QPointF
 TimeLineGui::toTimeLineCoordinates(double x,
                                    double y) const
 {
-    double h = (double)height();
-    double bottom = _imp->tlZoomCtx.bottom;
-    double top =  bottom +  h / _imp->tlZoomCtx.zoomFactor;
+    return _imp->zoomCtx.toZoomCoordinates(x, y);
 
-    return QPointF( toTimeLine(x), ( ( (bottom - top) * y ) / h ) + top );
 }
 
 QPointF
 TimeLineGui::toWidgetCoordinates(double x,
                                  double y) const
 {
-    double h = (double)height();
-    double bottom = _imp->tlZoomCtx.bottom;
-    double top =  bottom +  h / _imp->tlZoomCtx.zoomFactor;
-
-    return QPoint( toWidget(x), ( (y - top) / (bottom - top) ) * h );
+    return _imp->zoomCtx.toWidgetCoordinates(x, y);
 }
 
 void
@@ -1136,6 +1209,380 @@ TimeLineGui::setFrameRangeEdited(bool edited)
 
     _imp->isFrameRangeEdited = edited;
 }
+
+
+void TimeLineGui::toWidgetCoordinates(double *x, double *y) const {
+    QPointF ret = _imp->zoomCtx.toWidgetCoordinates(*x, *y);
+    *x = ret.x();
+    *y = ret.y();
+}
+
+void TimeLineGui::toCanonicalCoordinates(double *x, double *y) const {
+    QPointF ret = _imp->zoomCtx.toZoomCoordinates(*x, *y);
+    *x = ret.x();
+    *y = ret.y();
+}
+
+int TimeLineGui::getWidgetFontHeight() const {
+    return fontMetrics().height();
+}
+
+int TimeLineGui::getStringWidthForCurrentFont(const std::string& string) const {
+    return fontMetrics().width(QString::fromUtf8(string.c_str()));
+}
+
+RectD TimeLineGui::getViewportRect() const {
+    RectD bbox;
+    {
+        bbox.x1 = _imp->zoomCtx.left();
+        bbox.y1 = _imp->zoomCtx.bottom();
+        bbox.x2 = _imp->zoomCtx.right();
+        bbox.y2 = _imp->zoomCtx.top();
+    }
+
+    return bbox;
+}
+
+void TimeLineGui::getCursorPosition(double& x, double& y) const {
+    QPoint p = QCursor::pos();
+
+    p = mapFromGlobal(p);
+    QPointF mappedPos = _imp->zoomCtx.toZoomCoordinates(p.x(), p.y());
+    x = mappedPos.x();
+    y = mappedPos.y();
+}
+
+RangeD TimeLineGui::getFrameRange() const {
+    RangeD ret;
+    SequenceTime min,max;
+    getBounds(&min, &max);
+    ret.min = min;
+    ret.max = max;
+    return ret;
+}
+
+bool TimeLineGui::renderText(double x,
+                        double y,
+                        const std::string &string,
+                        double r,
+                        double g,
+                        double b,
+                        double a,
+                        int flags) {
+    QColor c;
+    c.setRgbF( Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.) );
+    c.setAlphaF(Image::clamp(a, 0., 1.));
+    renderText(x, y, QString::fromUtf8(string.c_str()), c, font(), flags);
+    return true;
+}
+
+void TimeLineGui::swapOpenGLBuffers() {
+    swapBuffers();
+}
+
+void TimeLineGui::redraw() {
+    update();
+}
+
+void TimeLineGui::getOpenGLContextFormat(int* depthPerComponents, bool* hasAlpha) const {
+    QGLFormat f = format();
+    *hasAlpha = f.alpha();
+    int r = f.redBufferSize();
+    if (r == -1) {
+        r = 8;// taken from qgl.h
+    }
+    int g = f.greenBufferSize();
+    if (g == -1) {
+        g = 8;// taken from qgl.h
+    }
+    int b = f.blueBufferSize();
+    if (b == -1) {
+        b = 8;// taken from qgl.h
+    }
+    int size = r;
+    size = std::min(size, g);
+    size = std::min(size, b);
+    *depthPerComponents = size;
+
+}
+
+void TimeLineGui::getViewportSize(double &width, double &height) const {
+    width = _imp->zoomCtx.screenWidth();
+    height = _imp->zoomCtx.screenHeight();
+}
+
+void TimeLineGui::getPixelScale(double & xScale, double & yScale) const  {
+    xScale = _imp->zoomCtx.screenPixelWidth();
+    yScale = _imp->zoomCtx.screenPixelHeight();
+}
+
+void TimeLineGui::getBackgroundColour(double &r, double &g, double &b) const {
+    SettingsPtr settings = appPTR->getCurrentSettings();
+    settings->getTimelineBGColor(&r, &g, &b);
+}
+
+void TimeLineGui::saveOpenGLContext() {
+    assert( QThread::currentThread() == qApp->thread() );
+
+    //glGetIntegerv(GL_ACTIVE_TEXTURE, (GLint*)&_imp->activeTexture);
+    glCheckAttribStack(GL_GPU);
+    GL_GPU::PushAttrib(GL_ALL_ATTRIB_BITS);
+    glCheckClientAttribStack(GL_GPU);
+    GL_GPU::PushClientAttrib(GL_ALL_ATTRIB_BITS);
+    GL_GPU::MatrixMode(GL_PROJECTION);
+    glCheckProjectionStack(GL_GPU);
+    GL_GPU::PushMatrix();
+    GL_GPU::MatrixMode(GL_MODELVIEW);
+    glCheckModelviewStack(GL_GPU);
+    GL_GPU::PushMatrix();
+
+    // set defaults to work around OFX plugin bugs
+    GL_GPU::Enable(GL_BLEND); // or TuttleHistogramKeyer doesn't work - maybe other OFX plugins rely on this
+    //glEnable(GL_TEXTURE_2D);					//Activate texturing
+    //glActiveTexture (GL_TEXTURE0);
+    GL_GPU::BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // or TuttleHistogramKeyer doesn't work - maybe other OFX plugins rely on this
+    //glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE); // GL_MODULATE is the default, set it
+
+}
+
+void TimeLineGui::restoreOpenGLContext() {
+    //glActiveTexture(_imp->activeTexture);
+    GL_GPU::MatrixMode(GL_PROJECTION);
+    GL_GPU::PopMatrix();
+    GL_GPU::MatrixMode(GL_MODELVIEW);
+    GL_GPU::PopMatrix();
+    GL_GPU::PopClientAttrib();
+    GL_GPU::PopAttrib();
+
+}
+
+unsigned int TimeLineGui::getCurrentRenderScale() const {
+    return 0;
+}
+
+void
+TimelineGuiPrivate::drawOverlays(SequenceTime time)
+{
+    NodesList nodes;
+    viewerTab->getNodesEntitledForOverlays(TimeValue(time), ViewIdx(0), nodes);
+
+    ///Draw overlays in reverse order of appearance so that the first (top) panel is drawn on top of everything else
+    for (NodesList::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
+        EffectInstancePtr effect = (*it)->getEffectInstance();
+        assert(effect);
+        std::list<OverlayInteractBasePtr> overlays;
+        effect->getOverlays(EffectInstance::eOverlayViewportTypeTimeline, &overlays);
+        for (std::list<OverlayInteractBasePtr>::const_iterator it = overlays.begin(); it != overlays.end(); ++it) {
+            (*it)->drawOverlay_public(parent, TimeValue(time), RenderScale(1.), ViewIdx(0));
+        }
+    }
+} // drawOverlays
+
+bool
+TimelineGuiPrivate::penDown(SequenceTime time, PenType pen, const QPointF & viewportPos, const QPointF & pos)
+{
+    NodesList nodes;
+    viewerTab->getNodesEntitledForOverlays(TimeValue(time), ViewIdx(0), nodes);
+
+
+    ///Draw overlays in reverse order of appearance so that the first (top) panel is drawn on top of everything else
+    for (NodesList::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
+        EffectInstancePtr effect = (*it)->getEffectInstance();
+        assert(effect);
+        std::list<OverlayInteractBasePtr> overlays;
+        effect->getOverlays(EffectInstance::eOverlayViewportTypeTimeline, &overlays);
+        for (std::list<OverlayInteractBasePtr>::const_iterator it = overlays.begin(); it != overlays.end(); ++it) {
+            bool caught = (*it)->onOverlayPenDown_public(parent, TimeValue(time), RenderScale(1.), ViewIdx(0), viewportPos, pos, 1., TimeValue(0), pen);
+            if (caught) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool
+TimelineGuiPrivate::penMotion(SequenceTime time, const QPointF & viewportPos, const QPointF & pos)
+{
+    NodesList nodes;
+    viewerTab->getNodesEntitledForOverlays(TimeValue(time), ViewIdx(0), nodes);
+
+
+    ///Draw overlays in reverse order of appearance so that the first (top) panel is drawn on top of everything else
+    for (NodesList::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
+        EffectInstancePtr effect = (*it)->getEffectInstance();
+        assert(effect);
+        std::list<OverlayInteractBasePtr> overlays;
+        effect->getOverlays(EffectInstance::eOverlayViewportTypeTimeline, &overlays);
+        for (std::list<OverlayInteractBasePtr>::const_iterator it = overlays.begin(); it != overlays.end(); ++it) {
+            bool caught = (*it)->onOverlayPenMotion_public(parent, TimeValue(time), RenderScale(1.), ViewIdx(0), viewportPos, pos, 1., TimeValue(0));
+            if (caught) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool
+TimelineGuiPrivate::penUp(SequenceTime time, const QPointF & viewportPos, const QPointF & pos)
+{
+    NodesList nodes;
+    viewerTab->getNodesEntitledForOverlays(TimeValue(time), ViewIdx(0), nodes);
+
+
+    ///Draw overlays in reverse order of appearance so that the first (top) panel is drawn on top of everything else
+    for (NodesList::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
+        EffectInstancePtr effect = (*it)->getEffectInstance();
+        assert(effect);
+        std::list<OverlayInteractBasePtr> overlays;
+        effect->getOverlays(EffectInstance::eOverlayViewportTypeTimeline, &overlays);
+        for (std::list<OverlayInteractBasePtr>::const_iterator it = overlays.begin(); it != overlays.end(); ++it) {
+            bool caught = (*it)->onOverlayPenUp_public(parent, TimeValue(time), RenderScale(1.), ViewIdx(0), viewportPos, pos, 1., TimeValue(0));
+            if (caught) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool
+TimelineGuiPrivate::keyDown(SequenceTime currentFrame, Key k, KeyboardModifiers km)
+{
+    NodesList nodes;
+    viewerTab->getNodesEntitledForOverlays(TimeValue(currentFrame), ViewIdx(0), nodes);
+
+
+    /*
+     Modifiers key down/up should be passed to all active interacts always so that they can properly figure out
+     whether they are up or down
+     */
+    const bool isModifier = k == Key_Control_L || k == Key_Control_R || k == Key_Alt_L || k == Key_Alt_R || k == Key_Shift_L || k == Key_Shift_R || k == Key_Meta_L || k == Key_Meta_R;
+
+    bool caught = false;
+
+    ///Draw overlays in reverse order of appearance so that the first (top) panel is drawn on top of everything else
+    for (NodesList::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
+        EffectInstancePtr effect = (*it)->getEffectInstance();
+        assert(effect);
+        std::list<OverlayInteractBasePtr> overlays;
+        effect->getOverlays(EffectInstance::eOverlayViewportTypeTimeline, &overlays);
+        for (std::list<OverlayInteractBasePtr>::const_iterator it = overlays.begin(); it != overlays.end(); ++it) {
+            caught |= (*it)->onOverlayKeyDown_public(parent, TimeValue(currentFrame), RenderScale(1.), ViewIdx(0), k, km);
+            if (!isModifier && caught) {
+                return true;
+            }
+        }
+    }
+    return caught;
+
+}
+
+bool
+TimelineGuiPrivate::keyUp(SequenceTime currentFrame, Key k, KeyboardModifiers km)
+{
+    NodesList nodes;
+    viewerTab->getNodesEntitledForOverlays(TimeValue(currentFrame), ViewIdx(0), nodes);
+
+
+    /*
+     Modifiers key down/up should be passed to all active interacts always so that they can properly figure out
+     whether they are up or down
+     */
+    const bool isModifier = k == Key_Control_L || k == Key_Control_R || k == Key_Alt_L || k == Key_Alt_R || k == Key_Shift_L || k == Key_Shift_R || k == Key_Meta_L || k == Key_Meta_R;
+
+    bool caught = false;
+    ///Draw overlays in reverse order of appearance so that the first (top) panel is drawn on top of everything else
+    for (NodesList::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
+        EffectInstancePtr effect = (*it)->getEffectInstance();
+        assert(effect);
+        std::list<OverlayInteractBasePtr> overlays;
+        effect->getOverlays(EffectInstance::eOverlayViewportTypeTimeline, &overlays);
+        for (std::list<OverlayInteractBasePtr>::const_iterator it = overlays.begin(); it != overlays.end(); ++it) {
+            caught |= (*it)->onOverlayKeyUp_public(parent, TimeValue(currentFrame), RenderScale(1.), ViewIdx(0), k, km);
+            if (!isModifier && caught) {
+                return true;
+            }
+        }
+    }
+    return caught;
+}
+
+bool
+TimelineGuiPrivate::keyRepeat(SequenceTime currentFrame, Key k, KeyboardModifiers km)
+{
+    NodesList nodes;
+    viewerTab->getNodesEntitledForOverlays(TimeValue(currentFrame), ViewIdx(0), nodes);
+    /*
+     Modifiers key down/up should be passed to all active interacts always so that they can properly figure out
+     whether they are up or down
+     */
+    const bool isModifier = k == Key_Control_L || k == Key_Control_R || k == Key_Alt_L || k == Key_Alt_R || k == Key_Shift_L || k == Key_Shift_R || k == Key_Meta_L || k == Key_Meta_R;
+
+    bool caught = false;
+
+    ///Draw overlays in reverse order of appearance so that the first (top) panel is drawn on top of everything else
+    for (NodesList::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
+        EffectInstancePtr effect = (*it)->getEffectInstance();
+        assert(effect);
+        std::list<OverlayInteractBasePtr> overlays;
+        effect->getOverlays(EffectInstance::eOverlayViewportTypeTimeline, &overlays);
+        for (std::list<OverlayInteractBasePtr>::const_iterator it = overlays.begin(); it != overlays.end(); ++it) {
+            caught |= (*it)->onOverlayKeyRepeat_public(parent, TimeValue(currentFrame), RenderScale(1.), ViewIdx(0), k, km);
+            if (!isModifier && caught) {
+                return true;
+            }
+        }
+    }
+    return caught;
+}
+
+bool
+TimelineGuiPrivate::focusLost(SequenceTime currentFrame)
+{
+    NodesList nodes;
+    viewerTab->getNodesEntitledForOverlays(TimeValue(currentFrame), ViewIdx(0), nodes);
+
+    bool caught = false;
+
+    ///Draw overlays in reverse order of appearance so that the first (top) panel is drawn on top of everything else
+    for (NodesList::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
+        EffectInstancePtr effect = (*it)->getEffectInstance();
+        assert(effect);
+        std::list<OverlayInteractBasePtr> overlays;
+        effect->getOverlays(EffectInstance::eOverlayViewportTypeTimeline, &overlays);
+        for (std::list<OverlayInteractBasePtr>::const_iterator it = overlays.begin(); it != overlays.end(); ++it) {
+            caught |= (*it)->onOverlayFocusLost_public(parent, TimeValue(currentFrame), RenderScale(1.), ViewIdx(0));
+
+        }
+    }
+    return caught;
+}
+
+bool
+TimelineGuiPrivate::focusGain(SequenceTime currentFrame)
+{
+    NodesList nodes;
+    viewerTab->getNodesEntitledForOverlays(TimeValue(currentFrame), ViewIdx(0), nodes);
+
+
+    bool caught = false;
+
+    ///Draw overlays in reverse order of appearance so that the first (top) panel is drawn on top of everything else
+    for (NodesList::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
+        EffectInstancePtr effect = (*it)->getEffectInstance();
+        assert(effect);
+        std::list<OverlayInteractBasePtr> overlays;
+        effect->getOverlays(EffectInstance::eOverlayViewportTypeTimeline, &overlays);
+        for (std::list<OverlayInteractBasePtr>::const_iterator it = overlays.begin(); it != overlays.end(); ++it) {
+            caught |= (*it)->onOverlayFocusGained_public(parent, TimeValue(currentFrame), RenderScale(1.), ViewIdx(0));
+
+        }
+    }
+    return caught;
+}
+
 
 NATRON_NAMESPACE_EXIT;
 

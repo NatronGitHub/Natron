@@ -3327,7 +3327,7 @@ NodeGui::setCurrentCursor(CursorEnum defaultCursor)
         return;
     }
     std::list<OverlayInteractBasePtr> overlays;
-    node->getEffectInstance()->getOverlays(&overlays);
+    node->getEffectInstance()->getOverlays(EffectInstance::eOverlayViewportTypeViewer, &overlays);
     if (overlays.empty()) {
         return;
     }
@@ -3360,7 +3360,7 @@ NodeGui::setCurrentCursor(const QString& customCursorFilePath)
         return false;
     }
     std::list<OverlayInteractBasePtr> overlays;
-    node->getEffectInstance()->getOverlays(&overlays);
+    node->getEffectInstance()->getOverlays(EffectInstance::eOverlayViewportTypeViewer, &overlays);
     if (overlays.empty()) {
         return false;
     }
@@ -3705,7 +3705,7 @@ NodeGui::onRightClickMenuKnobPopulated()
     }
 
     std::list<OverlayInteractBasePtr> overlays;
-    node->getEffectInstance()->getOverlays(&overlays);
+    node->getEffectInstance()->getOverlays(EffectInstance::eOverlayViewportTypeViewer, &overlays);
     if (overlays.empty()) {
         return;
     }

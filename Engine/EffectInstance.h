@@ -1592,6 +1592,15 @@ public:
 
     virtual bool isDoingInteractAction() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+    enum OverlayViewportTypeEnum
+    {
+        // An overlay that is drawn in the viewer
+        eOverlayViewportTypeViewer,
+
+        // An overlay that is drawn in the timeline (not the animation module)
+        eOverlayViewportTypeTimeline
+    };
+
     /**
      * @brief Register a new overlay that will be drawn on the viewer when this node settings panel is opened.
      * @param knobs The key of the map must match a key in the overlay's knobs description. The value associated
@@ -1603,19 +1612,19 @@ public:
      *
      * This function throws an std::invalid_argument() exception if the descriptor cannot find a required knob.
      **/
-    void registerOverlay(const OverlayInteractBasePtr& overlay, const std::map<std::string,std::string>& knobs);
+    void registerOverlay(OverlayViewportTypeEnum type, const OverlayInteractBasePtr& overlay, const std::map<std::string,std::string>& knobs);
 
     /**
      * @brief Remove a previously registered overlay
      **/
-    void removeOverlay(const OverlayInteractBasePtr& overlay);
+    void removeOverlay(OverlayViewportTypeEnum type, const OverlayInteractBasePtr& overlay);
 
-    void clearOverlays();
+    void clearOverlays(OverlayViewportTypeEnum type);
 
     /**
      * @brief Returns the list of all registered overlays
      **/
-    void getOverlays(std::list<OverlayInteractBasePtr> *overlays) const;
+    void getOverlays(OverlayViewportTypeEnum type, std::list<OverlayInteractBasePtr> *overlays) const;
 
     /**
      * @brief Convenience function that returns true if at least one overlay was registered

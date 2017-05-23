@@ -252,7 +252,7 @@ RotoPaint::~RotoPaint()
 void
 RotoPaint::initializeOverlayInteract()
 {
-    registerOverlay(_imp->ui, std::map<std::string, std::string>());
+    registerOverlay(eOverlayViewportTypeViewer, _imp->ui, std::map<std::string, std::string>());
 }
 
 bool
@@ -852,7 +852,7 @@ RotoPaint::initTransformPageKnobs()
 
     
     boost::shared_ptr<TransformOverlayInteract> transformInteract(new TransformOverlayInteract());
-    registerOverlay(transformInteract, transformKnobs);
+    registerOverlay(eOverlayViewportTypeViewer, transformInteract, transformKnobs);
 } // initTransformPageKnobs
 
 void
@@ -1044,7 +1044,7 @@ RotoPaint::initClonePageKnobs()
 
 
     boost::shared_ptr<TransformOverlayInteract> transformInteract(new TransformOverlayInteract());
-    registerOverlay(transformInteract, transformKnobs);
+    registerOverlay(eOverlayViewportTypeViewer, transformInteract, transformKnobs);
 
 
     {
@@ -2885,7 +2885,7 @@ RotoPaint::initializeKnobs()
 
 
         _imp->planarTrackInteract.reset(new PlanarTrackerInteract(_imp.get()));
-        registerOverlay(_imp->planarTrackInteract, std::map<std::string, std::string>());
+        registerOverlay(eOverlayViewportTypeViewer, _imp->planarTrackInteract, std::map<std::string, std::string>());
 #endif
 
         // The mix knob is per-item

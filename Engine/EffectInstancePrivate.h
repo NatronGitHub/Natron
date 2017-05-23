@@ -252,8 +252,11 @@ struct EffectInstanceCommonData
     mutable QMutex accumBufferMutex;
     std::map<ImagePlaneDesc,ImagePtr> accumBuffer;
 
-    // Active interacts, only accessed on the main thread
+    // Active Viewer interacts, only accessed on the main thread
     std::list<OverlayInteractBasePtr> interacts;
+
+    // Active Timeline interacts, only accesses on the main thread
+    std::list<OverlayInteractBasePtr> timelineInteracts;
 
 
     EffectInstanceCommonData()
@@ -271,6 +274,7 @@ struct EffectInstanceCommonData
     , accumBufferMutex()
     , accumBuffer()
     , interacts()
+    , timelineInteracts()
     {
 
     }
