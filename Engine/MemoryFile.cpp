@@ -220,7 +220,7 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
      *********************************************************/
     std::wstring wpath = StrUtils::utf8_to_utf16(path);
     file_handle = ::CreateFileW(wpath.c_str(), GENERIC_READ | GENERIC_WRITE,
-                                0, 0, windows_open_mode, FILE_ATTRIBUTE_NORMAL, 0);
+                                FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, 0, windows_open_mode, FILE_ATTRIBUTE_NORMAL, 0);
 
 
     if (file_handle == INVALID_HANDLE_VALUE) {
