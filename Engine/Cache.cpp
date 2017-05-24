@@ -2894,7 +2894,11 @@ Cache<persistent>::initialize(const boost::shared_ptr<Cache<persistent> >& thisS
     //      - If it fails, another process is still actively using the globalMemorySegment shared memory: it must still be valid
     bool gotFileLock = true;
     if (persistent) {
-        gotFileLock = _imp->globalFileLock->try_lock();
+        try {
+            gotFileLock = _imp->globalFileLock->try_lock();
+        } catch (...) {
+            throw std::runtime_error("Failure while attempting to call try_lock() on the cache file lock");
+        }
 
 
 #ifndef NATRON_CACHE_INTERPROCESS_ROBUST
@@ -2964,17 +2968,25 @@ Cache<persistent>::initialize(const boost::shared_ptr<Cache<persistent> >& thisS
 #endif
 
     if (persistent && gotFileLock) {
-        _imp->globalFileLock->unlock();
-        // Indicate that we use the shared memory by taking the file lock in read mode.
-        if (_imp->globalFileLock) {
-            _imp->globalFileLock->lock_sharable();
+        try {
+            _imp->globalFileLock->unlock();
+        } catch (...) {
+            throw std::runtime_error("Failed to unlock the cache file lock");
+        }
+        try {
+            // Indicate that we use the shared memory by taking the file lock in read mode.
+            if (_imp->globalFileLock) {
+                _imp->globalFileLock->lock_sharable();
+            }
+        } catch (...) {
+            throw std::runtime_error("Failed to lock for sharing the cache file lock");
         }
 
     }
 
 #ifdef NATRON_CACHE_INTERPROCESS_ROBUST
     if (persistent) {
-
+        
         // Clean-up active processes list
         cleanupMappedProcessList();
 
@@ -4214,7 +4226,11 @@ Cache<persistent>::clear()
 {
 
 #ifdef NATRON_CACHE_INTERPROCESS_ROBUST
-    _imp->ensureSharedMemoryIntegrity();
+    try {
+        _imp->ensureSharedMemoryIntegrity();
+    } catch (const std::exception& e) {
+        std::cerr << "Exception while calling ensureSharedMemoryIntegrity(): " << e.what() << std::endl;
+    }
     boost::scoped_ptr<SharedMemoryProcessLocalReadLocker<persistent> > shmReader(new SharedMemoryProcessLocalReadLocker<persistent>(_imp.get()));
 #endif
     try {
