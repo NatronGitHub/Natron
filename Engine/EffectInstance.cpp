@@ -1243,7 +1243,7 @@ EffectInstance::registerOverlay(OverlayViewportTypeEnum type, const OverlayInter
     }
 
     std::list<OverlayInteractBasePtr>::iterator found = std::find(list->begin(), list->end(), overlay);
-    if (found != list->end()) {
+    if (found == list->end()) {
 
         list->push_back(overlay);
         overlay->redraw();
