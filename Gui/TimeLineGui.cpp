@@ -676,7 +676,11 @@ TimeLineGui::paintGL()
                renderText(kfTextPos,kfTopLeft.y(), kfStr, userKeyColor, _imp->font, Qt::AlignHCenter);*/
         }
         glCheckErrorIgnoreOSXBug(GL_GPU);
+        _imp->drawOverlays(currentTime);
+
         GL_GPU::Disable(GL_POLYGON_SMOOTH);
+
+
     } // GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_POLYGON_BIT | GL_LINE_BIT | GL_ENABLE_BIT | GL_HINT_BIT | GL_SCISSOR_BIT | GL_TRANSFORM_BIT);
 
     glCheckError(GL_GPU);
