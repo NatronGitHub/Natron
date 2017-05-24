@@ -3504,6 +3504,10 @@ ViewerGL::getColorAtRect(const RectD &roi, // rectangle in canonical coordinates
             break;
     }
 
+    *r = pixelSums[0];
+    *g = pixelSums[1];
+    *b = pixelSums[2];
+    *a = pixelSums[3];
 
 
 
