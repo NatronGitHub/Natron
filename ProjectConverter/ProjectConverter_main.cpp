@@ -518,7 +518,6 @@ static void tryReadAndConvertOlderPyPlugFile(const QString& filename, const QStr
     }
     CreateNodeArgsPtr args(CreateNodeArgs::create(pluginID, NodeCollectionPtr() ));
     args->setProperty(kCreateNodeArgsPropNoNodeGUI, true);
-    args->setProperty(kCreateNodeArgsPropVolatile, true);
     args->setProperty(kCreateNodeArgsPropSilent, true);
     NodePtr node = instance->createNode(args);
     if (!node) {

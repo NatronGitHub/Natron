@@ -22,6 +22,7 @@ UserPages:
         TypeName: Bool
         Label: Z Picking mode
       - Name: closeLimit
+        Float: [{N: Grade1, K: blackPoint, D: r}, {N: Grade1, K: blackPoint, D: g}, {N: Grade1, K: blackPoint, D: b}, {N: Grade1, K: blackPoint, D: a}]
         DefaultFloat: [0, 0, 0, 0]
         NDims: 4
         TypeName: Color
@@ -42,7 +43,6 @@ UserPages:
         DisplayMin: 0
         DisplayMax: 100
       - Name: gamma
-        Float: [{N: Grade1, K: gamma, D: r}, {N: Grade1, K: gamma, D: g}, {N: Grade1, K: gamma, D: b}, {N: Grade1, K: gamma, D: a}]
         DefaultFloat: [1, 1, 1, 1]
         NDims: 4
         TypeName: Color
@@ -77,6 +77,10 @@ Children:
     Version: [2, 0]
     Inputs: InputSource
     Params:
+      - Name: whitePoint
+        Float: [{N: "@thisGroup", K: farLimit, D: r}, {N: "@thisGroup", K: farLimit, D: g}, {N: "@thisGroup", K: farLimit, D: b}, {N: "@thisGroup", K: farLimit, D: a}]
+      - Name: gamma
+        Float: [{N: "@thisGroup", K: gamma, D: r}, {N: "@thisGroup", K: gamma, D: g}, {N: "@thisGroup", K: gamma, D: b}, {N: "@thisGroup", K: gamma, D: a}]
       - Name: premultChanged
         Bool: true
       - Name: enableMask_Mask
@@ -89,6 +93,10 @@ Children:
     Params:
       - Name: premultChanged
         Bool: true
+      - Name: channels
+        String: {N: "@thisGroup", K: channels}
+      - Name: disableNode
+        Bool: {N: "@thisGroup", K: invertGradient}
     Pos: [726, 230]
   - PluginID: fr.inria.built-in.Output
     Name: Output

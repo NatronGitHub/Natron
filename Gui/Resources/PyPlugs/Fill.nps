@@ -77,10 +77,20 @@ Children:
     Inputs: {A: Solid1, B: Unpremult1}
     Masks: Input2
     Params:
+      - Name: operation
+        String: {N: "@thisGroup", K: Merge1operation}
       - Name: AChannelsA
         Bool: false
+      - Name: maskInvert
+        Bool: {N: "@thisGroup", K: Merge1maskInvert}
+      - Name: mix
+        Float: {N: "@thisGroup", K: Merge1mix}
       - Name: userTextArea
         String: <Natron>(over)</Natron>
+      - Name: enableMask_Mask
+        Bool: {N: "@thisGroup", K: Merge1enableMask_Mask}
+      - Name: maskChannel_Mask
+        String: {N: "@thisGroup", K: Merge1maskChannel_Mask}
     Pos: [1036, 302]
   - PluginID: net.sf.openfx.Solid
     Name: Solid1
@@ -89,6 +99,8 @@ Children:
         String: PC_Video 640x480
       - Name: size
         Float: [1920, 1080]
+      - Name: color
+        Float: [{N: "@thisGroup", K: Solid1color, D: r}, {N: "@thisGroup", K: Solid1color, D: g}, {N: "@thisGroup", K: Solid1color, D: b}]
     Pos: [1261, 187]
   - PluginID: net.sf.openfx.ShufflePlugin
     Name: Shuffle1
