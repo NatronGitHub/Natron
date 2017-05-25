@@ -456,8 +456,9 @@ FrameViewRequest::markDependencyAsRendered(const RequestPassSharedDataPtr& reque
     }
 
     std::set<FrameViewRequestPtr>::iterator foundDep = data.dependencies.find(deps);
-    assert(foundDep != data.dependencies.end());
     if (foundDep != data.dependencies.end()) {
+        // The dependency might not exist if we did not call addDependency.
+        // This may happen if we were aborted
         data.dependencies.erase(foundDep);
         data.renderedDependencies.insert(deps);
     }
