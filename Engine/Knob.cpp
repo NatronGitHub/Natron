@@ -3983,7 +3983,7 @@ KnobHelper::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::Kn
                             otherDimIndex = 0;
                         } else {
                             for (int dm = 0; dm < master->getNDimensions(); ++dm) {
-                                if ( boost::iequals(master->getDimensionName(DimIdx(dm)), it->second[dm]._slaveMasterLink.masterDimensionName) ) {
+                                if ( boost::iequals(master->getDimensionName(DimIdx(dm)), it->second[dimIndex]._slaveMasterLink.masterDimensionName) ) {
                                     otherDimIndex = dm;
                                     break;
                                 }
