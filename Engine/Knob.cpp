@@ -366,6 +366,7 @@ KnobHelper::setAllDimensionsVisibleInternal(ViewIdx view, bool visible)
         }
         curValue = visible;
     }
+#if 0
     if (!visible) {
         // Prevent copyKnob from recomputing the allDimensionsVisible flag
         setAdjustFoldExpandStateAutomatically(false);
@@ -381,6 +382,7 @@ KnobHelper::setAllDimensionsVisibleInternal(ViewIdx view, bool visible)
         }
         setAdjustFoldExpandStateAutomatically(true);
     }
+#endif
 }
 
 void
@@ -1041,6 +1043,7 @@ KnobHelper::refreshListenersAfterValueChangeInternal(TimeValue time, ViewIdx vie
     for (KnobDimViewKeySet::const_iterator it = allListeners.begin(); it != allListeners.end(); ++it) {
         KnobHelperPtr sharedKnob = toKnobHelper(it->knob.lock());
         if (sharedKnob && sharedKnob.get() != this) {
+            sharedKnob->autoAdjustFoldExpandDimensions(view);
             if (sharedKnob->evaluateValueChangeInternal(it->dimension, time, it->view, reason, evaluatedKnobs)) {
                 sharedKnob->refreshStaticValue(time);
             }

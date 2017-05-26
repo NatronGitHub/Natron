@@ -1270,7 +1270,21 @@ Knob<std::string>::getKeyFrameDataType() const
 }
 
 
+inline bool compareKnobDimVieKeySetEquality(const KnobDimViewKeySet& a, const KnobDimViewKeySet& b)
+{
+    if (a.size() != b.size()) {
+        return false;
+    }
+    KnobDimViewKeySet::const_iterator ita = a.begin();
+    for (;ita != a.end(); ++ita) {
+        KnobDimViewKeySet::const_iterator foundB = b.find(*ita);
+        if (foundB == b.end()) {
+            return false;
+        }
+    }
+    return true;
 
+}
 
 template <typename T>
 bool
@@ -1281,15 +1295,28 @@ Knob<T>::areDimensionsEqual(ViewIdx view)
         return true;
     }
 
-    bool valuesEqual = true;
     {
         // First check if there's an expression
         std::string dim0Expr = getExpression(DimIdx(0), view);
         for (int i = 1; i < nDims; ++i) {
             std::string dimExpr = getExpression(DimIdx(i), view);
-            valuesEqual = dimExpr == dim0Expr;
+            bool valuesEqual = dimExpr == dim0Expr;
             if (!valuesEqual) {
-                break;
+                return false;
+            }
+        }
+    }
+
+    // Check links
+    {
+        KnobDimViewKeySet dim0Knobs;
+        getSharedValues(DimIdx(0), view, &dim0Knobs);
+
+        for (int i = 1; i < nDims; ++i) {
+            KnobDimViewKeySet dimKnobs;
+            getSharedValues(DimIdx(i), view, &dimKnobs);
+            if (!compareKnobDimVieKeySetEquality(dim0Knobs, dimKnobs)) {
+                return false;
             }
         }
     }
@@ -1307,27 +1334,22 @@ Knob<T>::areDimensionsEqual(ViewIdx view)
 
 
         // Check animation curves
-        if (valuesEqual) {
-            CurvePtr dimCurve = dimData->animationCurve;
-            if (dimCurve && curve0) {
-                if (*dimCurve != *curve0) {
-                    valuesEqual = false;
-                    break;
-                }
-            }
-        }
-        
-        // Check if values are equal
-        if (valuesEqual) {
-            T val = getValue(DimIdx(i), view, true /*doClamp*/);
-            if (val0 != val) {
-                valuesEqual = false;
-                break;
+        CurvePtr dimCurve = dimData->animationCurve;
+        if (dimCurve && curve0) {
+            if (*dimCurve != *curve0) {
+                return false;
             }
         }
 
+
+        // Check if values are equal
+        T val = getValue(DimIdx(i), view, true /*doClamp*/);
+        if (val0 != val) {
+            return false;
+        }
+        
     }
-    return valuesEqual;
+    return true;
 } // areDimensionsEqual
 
 

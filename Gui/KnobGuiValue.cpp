@@ -691,6 +691,10 @@ KnobGuiValue::onDimensionSwitchClicked(bool clicked)
     // User clicked once on the dimension switch, disable auto switch
     KnobIPtr knob = getKnobGui()->getKnob();
     knob->setAllDimensionsVisible(getView(), clicked);
+
+    // If the user clicked on the button, prevent any programatic setValue* call to undo the user operation,
+    // unless the user clicked fold.
+    knob->setCanAutoFoldDimensions(!clicked);
 }
 
 
