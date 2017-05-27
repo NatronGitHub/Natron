@@ -484,6 +484,7 @@ FrameViewRequest::getNumDependencies(const RequestPassSharedDataPtr& request) co
 void
 FrameViewRequest::addListener(const RequestPassSharedDataPtr& request, const FrameViewRequestPtr& other)
 {
+    assert(other);
     QMutexLocker k(&_imp->lock);
     PerLaunchRequestData& data = _imp->requestData[request];
     data.listeners.insert(other);
@@ -496,7 +497,10 @@ FrameViewRequest::getListeners(const RequestPassSharedDataPtr& request) const
     QMutexLocker k(&_imp->lock);
     PerLaunchRequestData& data = _imp->requestData[request];
     for (std::set<FrameViewRequestWPtr>::const_iterator it = data.listeners.begin(); it != data.listeners.end(); ++it) {
-        ret.push_back(it->lock());
+        FrameViewRequestPtr l = it->lock();
+        if (l) {
+            ret.push_back(l);
+        }
     }
     return ret;
 }

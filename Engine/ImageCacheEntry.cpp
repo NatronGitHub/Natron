@@ -50,6 +50,7 @@
 
 // Define to log tiles status in the console
 //#define TRACE_TILES_STATUS
+//#define TRACE_TILES_ONLY_PRINT_FIRST_TILE
 //#define TRACE_RENDERED_TILES
 //#define TRACE_TILES_STATUS_SHORT
 
@@ -476,16 +477,38 @@ struct ImageCacheEntryPrivate
         eLookupTileStateRetCodeNeedWriteLock
     };
 
-    LookupTileStateRetCodeEnum lookupTileStateInPyramidRecursive(bool hasExclusiveLock,
-                                                                 std::vector<TileStateHeader>& perMipMapTilesState,
-                                                                 unsigned int mipMapLevel,
-                                                                 TileCoord coord,
-                                                                 TileCacheIndex* tile,
-                                                                 TileStatusEnum* status);
+    static LookupTileStateRetCodeEnum lookupTileStateInPyramidRecursive(
+#ifdef TRACE_TILES_STATUS
+                                                                        const QString& debugId,
+#endif
+                                                                        bool hasExclusiveLock,
+                                                                        std::vector<TileStateHeader>& perMipMapTilesState,
+                                                                        unsigned int mipMapLevel,
+                                                                        TileCoord coord,
+                                                                        unsigned int originalMipMapLevel,
+                                                                        bool isDraftModeEnabled,
+                                                                        int nComps,
+                                                                        std::vector<TileCacheIndex>& localTilesToFetch,
+                                                                        TileStateHeader& localTilesState,
+                                                                        std::vector<TilesSet>& localMarkedTiles,
+                                                                        bool* hasPendingTile,
+                                                                        TileCacheIndex* tile,
+                                                                        TileStatusEnum* status);
 
-    LookupTileStateRetCodeEnum lookupTileStateInPyramid(bool hasExclusiveLock,
-                                                        std::vector<TileStateHeader>& perMipMapTilesState,
-                                                        TileCoord coord);
+    static LookupTileStateRetCodeEnum lookupTileStateInPyramid(
+#ifdef TRACE_TILES_STATUS
+                                                               const QString& debugId,
+#endif
+                                                               bool hasExclusiveLock,
+                                                               std::vector<TileStateHeader>& perMipMapTilesState,
+                                                               TileCoord coord,
+                                                               unsigned int originalMipMapLevel,
+                                                               bool isDraftModeEnabled,
+                                                               int nComps,
+                                                               std::vector<TileCacheIndex>& localTilesToFetch,
+                                                               TileStateHeader& localTilesState,
+                                                               std::vector<TilesSet>& localMarkedTiles,
+                                                               bool* hasPendingTile);
 
     std::vector<boost::shared_ptr<TileData> > buildTaskPyramidRecursive(unsigned int lookupLevel,
                                                                         const TileCacheIndex &tile,
@@ -497,7 +520,7 @@ struct ImageCacheEntryPrivate
                                                                         std::vector<std::vector<boost::shared_ptr<DownscaleTile> > >  *downscaleTilesPerLevel);
 
 #if defined(TRACE_TILES_STATUS) || defined(TRACE_TILES_STATUS_SHORT)
-    void writeDebugStatus(const std::string& function);
+    void writeDebugStatus(const std::string& function, bool entering);
 #endif
 
 
@@ -534,6 +557,9 @@ ImageCacheEntry::getCacheKey() const
 
 static void growTilesState(const RectI& newPixelRoD, TileStateHeader* stateToGrow)
 {
+    if (newPixelRoD == stateToGrow->state->bounds) {
+        return;
+    }
     TileStateHeader tmpHeader;
     tmpHeader.init(stateToGrow->tileSizeX, stateToGrow->tileSizeY, newPixelRoD);
 
@@ -564,6 +590,10 @@ ImageCacheEntry::ensureRoI(const RectI& roi,
                            const ImageStorageBasePtr storage[4],
                            const std::vector<RectI>& perMipMapLevelRoDPixel)
 {
+
+#if defined(TRACE_TILES_STATUS) || defined(TRACE_TILES_STATUS_SHORT)
+    _imp->writeDebugStatus("ensureRoI", true);
+#endif
 
     // We assume fetchCachedTilesAndUpdateStatus() was called once at least
     assert(_imp->internalCacheEntry);
@@ -615,17 +645,23 @@ ImageCacheEntry::ensureRoI(const RectI& roi,
         _imp->updateCachedTilesStateMap(_imp->markedTiles, false);
         _imp->markedTiles.clear();
     }
-}
+} // ensureRoI
 
 #if defined(TRACE_TILES_STATUS) || defined(TRACE_TILES_STATUS_SHORT)
 void
-ImageCacheEntryPrivate::writeDebugStatus(const std::string& function)
+ImageCacheEntryPrivate::writeDebugStatus(const std::string& function, bool entering)
 {
+    
     {
         QString message;
         QTextStream ts(&message);
         ts << QThread::currentThread() << " " << QThread::currentThread()->objectName() << " " << debugId;
-        ts << " : Entering " << function.c_str() << " at level " << mipMapLevel;
+        if (entering) {
+            ts << " : Entering ";
+        } else {
+            ts << " : Leaving ";
+        }
+        ts << function.c_str() << " at level " << mipMapLevel;
         qDebug() << message;
     }
 }
@@ -844,20 +880,46 @@ struct CacheDataLock_RAII
 };
 
 ImageCacheEntryPrivate::LookupTileStateRetCodeEnum
-ImageCacheEntryPrivate::lookupTileStateInPyramid(bool hasExclusiveLock,
-                                                    std::vector<TileStateHeader>& perMipMapTilesState,
-                                                    TileCoord coord)
+ImageCacheEntryPrivate::lookupTileStateInPyramid(
+#ifdef TRACE_TILES_STATUS
+                                                 const QString& debugId,
+#endif
+                                                 bool hasExclusiveLock,
+                                                 std::vector<TileStateHeader>& perMipMapTilesState,
+                                                 TileCoord coord,
+                                                 unsigned int originalMipMapLevel,
+                                                 bool isDraftModeEnabled,
+                                                 int nComps,
+                                                 std::vector<TileCacheIndex>& localTilesToFetch,
+                                                 TileStateHeader& localTilesState,
+                                                 std::vector<TilesSet>& localMarkedTiles,
+                                                 bool* hasPendingTile)
 {
     TileCacheIndex tile;
     TileStatusEnum status;
-    return lookupTileStateInPyramidRecursive(hasExclusiveLock, perMipMapTilesState, mipMapLevel, coord, &tile, &status);
+    return lookupTileStateInPyramidRecursive(
+#ifdef TRACE_TILES_STATUS
+                                             debugId,
+#endif
+                                             hasExclusiveLock, perMipMapTilesState, originalMipMapLevel, coord, originalMipMapLevel, isDraftModeEnabled, nComps, localTilesToFetch, localTilesState, localMarkedTiles, hasPendingTile, &tile, &status);
 }
 
 ImageCacheEntryPrivate::LookupTileStateRetCodeEnum
-ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(bool hasExclusiveLock,
+ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(
+#ifdef TRACE_TILES_STATUS
+                                                          const QString& debugId,
+#endif
+                                                          bool hasExclusiveLock,
                                                           std::vector<TileStateHeader>& perMipMapTilesState,
                                                           unsigned int lookupLevel,
                                                           TileCoord coord,
+                                                          unsigned int originalMipMapLevel,
+                                                          bool isDraftModeEnabled,
+                                                          int nComps,
+                                                          std::vector<TileCacheIndex>& localTilesToFetch,
+                                                          TileStateHeader& localTilesState,
+                                                          std::vector<TilesSet>& localMarkedTiles,
+                                                          bool* hasPendingTile,
                                                           TileCacheIndex* tile,
                                                           TileStatusEnum* status)
 {
@@ -865,7 +927,7 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(bool hasExclusiveLock,
     
     TileStateHeader& cachedTilesState = perMipMapTilesState[lookupLevel];
 
-    if (markedTiles[lookupLevel].find(coord) != markedTiles[lookupLevel].end()) {
+    if (localMarkedTiles[lookupLevel].find(coord) != localMarkedTiles[lookupLevel].end()) {
         // We may already marked this tile before
         return eLookupTileStateRetCodeUpToDate;
     }
@@ -876,7 +938,7 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(bool hasExclusiveLock,
     *status = cacheTileState->status;
 
     // There's a local tile state only for the requested mipmap level
-    TileState* localTileState = lookupLevel == mipMapLevel ? localTilesState.getTileAt(coord.tx, coord.ty) : 0;
+    TileState* localTileState = lookupLevel == originalMipMapLevel ? localTilesState.getTileAt(coord.tx, coord.ty) : 0;
     tile->tx = coord.tx;
     tile->ty = coord.ty;
 
@@ -907,27 +969,33 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(bool hasExclusiveLock,
             // If the tile has become rendered at the requested mipmap level, mark it in the tiles to
             // fetch list. This will be fetched later on (when outside of the cache
             // scope) in fetchAndCopyCachedTiles()
-            if (lookupLevel == mipMapLevel) {
-                tilesToFetch.push_back(*tile);
+            if (lookupLevel == originalMipMapLevel) {
+                localTilesToFetch.push_back(*tile);
                 // Locally, update the status to rendered
                 localTileState->status = *status;
             }
 
 #if defined(TRACE_TILES_STATUS) && defined(TRACE_RENDERED_TILES)
-            qDebug() << QThread::currentThread() << debugId << "lookup(): tile " << coord.tx << coord.ty << "is rendered in cache at level" << lookupLevel;
+#ifdef TRACE_TILES_ONLY_PRINT_FIRST_TILE
+            if (coord.tx == 0 && coord.ty == 0)
+#endif
+                qDebug() << QThread::currentThread() << debugId << "lookup(): tile " << coord.tx << coord.ty << "is rendered in cache at level" << lookupLevel;
 #endif
             return eLookupTileStateRetCodeUpToDate;
         }
         case eTileStatusPending: {
             assert(cacheTileState);
             // If the tile is pending in the cache, leave it pending locally
-            if (lookupLevel == mipMapLevel) {
+            if (lookupLevel == originalMipMapLevel) {
                 localTileState->status = eTileStatusPending;
-                hasPendingTiles = true;
+                *hasPendingTile = true;
             }
             *status = eTileStatusPending;
 #ifdef TRACE_TILES_STATUS
-            qDebug() << QThread::currentThread() << debugId << "lookup(): tile " << coord.tx << coord.ty << "is pending in cache at level" << lookupLevel;
+#ifdef TRACE_TILES_ONLY_PRINT_FIRST_TILE
+            if (coord.tx == 0 && coord.ty == 0)
+#endif
+                qDebug() << QThread::currentThread() << debugId << "lookup(): tile " << coord.tx << coord.ty << "is pending in cache at level" << lookupLevel;
 #endif
             return eLookupTileStateRetCodeUpToDate;
 
@@ -976,7 +1044,11 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(bool hasExclusiveLock,
 
                     // Recurse on the higher scale tile and get its status
                     TileStatusEnum higherScaleStatus;
-                    LookupTileStateRetCodeEnum recurseRet = lookupTileStateInPyramidRecursive(hasExclusiveLock, perMipMapTilesState, lookupLevel - 1, upscaledCords[i], tile->upscaleTiles[i].get(), &higherScaleStatus);
+                    LookupTileStateRetCodeEnum recurseRet = lookupTileStateInPyramidRecursive(
+#ifdef TRACE_TILES_STATUS
+                                                                                              debugId,
+#endif
+                                                                                              hasExclusiveLock, perMipMapTilesState, lookupLevel - 1, upscaledCords[i], originalMipMapLevel, isDraftModeEnabled, nComps, localTilesToFetch, localTilesState, localMarkedTiles, hasPendingTile, tile->upscaleTiles[i].get(), &higherScaleStatus);
                     switch (recurseRet) {
                         case eLookupTileStateRetCodeNeedWriteLock:
                             return eLookupTileStateRetCodeNeedWriteLock;
@@ -1033,11 +1105,14 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(bool hasExclusiveLock,
             switch (stat) {
                 case eTileStatusPending:
                     // One or more of the upscaled tile(s) in the pyramid is pending, but all others are rendered. Wait for them to be computed
-                    if (lookupLevel == mipMapLevel) {
+                    if (lookupLevel == originalMipMapLevel) {
                         localTileState->status = eTileStatusPending;
-                        hasPendingTiles = true;
+                        *hasPendingTile = true;
                     }
 #ifdef TRACE_TILES_STATUS
+#ifdef TRACE_TILES_ONLY_PRINT_FIRST_TILE
+                    if (coord.tx == 0 && coord.ty == 0)
+#endif
                     qDebug() << QThread::currentThread() << debugId << "lookup(): tile " << coord.tx << coord.ty << "is pending in cache at level" << lookupLevel << "because another tile is pending in higher scale";
 #endif
                     break;
@@ -1055,7 +1130,7 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(bool hasExclusiveLock,
                     }
 
         
-                    if (lookupLevel == mipMapLevel) {
+                    if (lookupLevel == originalMipMapLevel) {
                         cacheTileState->status = eTileStatusPending;
                         // Mark it not rendered locally, this will be switched to rendered once the downscale operation is performed
                         localTileState->status = eTileStatusNotRendered;
@@ -1065,20 +1140,23 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(bool hasExclusiveLock,
                         cacheTileState->uuid = sessionUUID;
                         localTileState->uuid = sessionUUID;
 #endif
-                        tilesToFetch.push_back(*tile);
+                        localTilesToFetch.push_back(*tile);
                     }
 
 
                     // Mark this tile so it is found quickly in markCacheTilesAsAborted()
-                    markedTiles[lookupLevel].insert(coord);
+                    localMarkedTiles[lookupLevel].insert(coord);
 #ifdef TRACE_TILES_STATUS
+#ifdef TRACE_TILES_ONLY_PRINT_FIRST_TILE
+                    if (coord.tx == 0 && coord.ty == 0)
+#endif
                     qDebug() << QThread::currentThread() << debugId << "lookup(): marking tile " << coord.tx << coord.ty << "pending (downscaled from 4 higher scale tiles) at level" << lookupLevel;
 #endif
                     retCode = eLookupTileStateRetCodeUpdated;
 
                     break;
                 case eTileStatusNotRendered:
-                    if (lookupLevel == mipMapLevel) {
+                    if (lookupLevel == originalMipMapLevel) {
 
                         // We are going to modify the state, we need exclusive rights
                         if (!hasExclusiveLock) {
@@ -1099,9 +1177,13 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(bool hasExclusiveLock,
 
                         // Mark this tile so it is found quickly in markCacheTilesAsAborted()
 #ifdef TRACE_TILES_STATUS
+#ifdef TRACE_TILES_ONLY_PRINT_FIRST_TILE
+                        if (coord.tx == 0 && coord.ty == 0)
+#endif
                         qDebug() << QThread::currentThread() << debugId << "lookup(): marking tile " << coord.tx << coord.ty << "pending at level" << lookupLevel;
 #endif
-                        markedTiles[lookupLevel].insert(coord);
+
+                        localMarkedTiles[lookupLevel].insert(coord);
 
                         retCode = eLookupTileStateRetCodeUpdated;
                     }
@@ -1160,7 +1242,7 @@ ImageCacheEntryPrivate::readAndUpdateStateMap(bool hasExclusiveLock)
                 tmp.init(localTilesState.tileSizeX, localTilesState.tileSizeY, perMipMapPixelRod[i]);
                 *perMipMapCacheTilesState[i].state = *tmp.state;
             //}
-#if defined(TRACE_TILES_STATUS) || defined(TRACE_TILES_STATUS_SHORT)
+#if defined(TRACE_TILES_STATUS)
             qDebug() << QThread::currentThread() << debugId << "init tiles at level " << i;
 #endif
             assert(!perMipMapCacheTilesState[i].state->tiles.empty());
@@ -1177,6 +1259,19 @@ ImageCacheEntryPrivate::readAndUpdateStateMap(bool hasExclusiveLock)
     // Clear the tiles to fetch list
     tilesToFetch.clear();
     hasPendingTiles = false;
+
+    // Work on a temporary copy of markedTiles if we happen to return early because
+    // lookupTileStateInPyramid returns eUpdateStateMapRetCodeNeedWriteLock
+    std::vector<TilesSet> tmpMarkedTiles = markedTiles;
+    bool tmpHasPendingTiles = false;
+    std::vector<TileCacheIndex> tmpTilesToFetch;
+    TileStateHeader tmpLocalState;
+    tmpLocalState.ownsState = true;
+    tmpLocalState.state = new TilesState;
+    *tmpLocalState.state = *localTilesState.state;
+    tmpLocalState.tileSizeX = localTilesState.tileSizeX;
+    tmpLocalState.tileSizeY = localTilesState.tileSizeY;
+
 
     // For each tile in the RoI (rounded to the tile size):
     // Check the tile status, only copy from the cache if rendered
@@ -1199,7 +1294,11 @@ ImageCacheEntryPrivate::readAndUpdateStateMap(bool hasExclusiveLock)
             TileCoord coord = {tx, ty};
 
             // Traverse the mipmaps pyramid from lower scale to higher scale to find a rendered tile and then downscale if necessary
-            LookupTileStateRetCodeEnum stat = lookupTileStateInPyramid(hasExclusiveLock, perMipMapCacheTilesState, coord);
+            LookupTileStateRetCodeEnum stat = lookupTileStateInPyramid(
+#ifdef TRACE_TILES_STATUS
+                                                                       debugId,
+#endif
+                                                                       hasExclusiveLock, perMipMapCacheTilesState, coord, mipMapLevel, isDraftModeEnabled, nComps, tmpTilesToFetch, tmpLocalState, tmpMarkedTiles, &tmpHasPendingTiles);
             switch (stat) {
                 case eLookupTileStateRetCodeNeedWriteLock: {
                     // Switch all local states that we set to copy from the cache back to not rendered
@@ -1219,6 +1318,12 @@ ImageCacheEntryPrivate::readAndUpdateStateMap(bool hasExclusiveLock)
             }
         }
     }
+
+    // Update local fields
+    tilesToFetch = tmpTilesToFetch;
+    hasPendingTiles |= tmpHasPendingTiles;
+    markedTiles = tmpMarkedTiles;
+    *localTilesState.state = *tmpLocalState.state;
 
     // If persistent, indicate tiles to update
     ImageCacheEntryInternal<true>* isPersistent = dynamic_cast<ImageCacheEntryInternal<true>*>(internalCacheEntry.get());
@@ -1498,6 +1603,9 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
             tilesToUpdate[i].insert(*foundMarked);
             markedTiles[i].erase(foundMarked);
 #ifdef TRACE_TILES_STATUS
+#ifdef TRACE_TILES_ONLY_PRINT_FIRST_TILE
+            if (coord.tx == 0 && coord.ty == 0)
+#endif
             qDebug() << QThread::currentThread() << debugId << "marking " << tx << ty << "rendered with downscale at level" << i;
 #endif
 
@@ -1548,7 +1656,7 @@ ActionRetCodeEnum
 ImageCacheEntry::fetchCachedTilesAndUpdateStatus(TileStateHeader* tileStatus, bool* hasUnRenderedTile, bool *hasPendingResults)
 {
 #if defined(TRACE_TILES_STATUS) || defined(TRACE_TILES_STATUS_SHORT)
-    _imp->writeDebugStatus("fetchCachedTilesAndUpdateStatus");
+    _imp->writeDebugStatus("fetchCachedTilesAndUpdateStatus", true);
 #endif
 
 
@@ -1759,7 +1867,7 @@ ImageCacheEntryPrivate::updateCachedTilesStateMap(const std::vector<TilesSet>& t
     }
 
 #if defined(TRACE_TILES_STATUS) || defined(TRACE_TILES_STATUS_SHORT)
-    writeDebugStatus("updateCachedTilesStateMap");
+    writeDebugStatus("updateCachedTilesStateMap", true);
 #endif
 
 
@@ -1826,7 +1934,7 @@ ImageCacheEntryPrivate::markCacheEntriesAsAbortedInternal()
     }
 
 #if defined(TRACE_TILES_STATUS) || defined(TRACE_TILES_STATUS_SHORT)
-    writeDebugStatus("markCacheTilesAsAborted");
+    writeDebugStatus("markCacheTilesAsAborted", true);
 #endif
 
 
@@ -1868,6 +1976,9 @@ ImageCacheEntryPrivate::markCacheEntriesAsAbortedInternal()
             cacheTileState->status = eTileStatusNotRendered;
             hasModifiedTileMap = true;
 #ifdef TRACE_TILES_STATUS
+#ifdef TRACE_TILES_ONLY_PRINT_FIRST_TILE
+            if (it->tx == 0 && it->ty == 0)
+#endif
             qDebug() << QThread::currentThread() << debugId << "marking " << it->tx << it->ty << "unrendered at level" << i;
 #endif
             if (i == mipMapLevel) {
@@ -1905,7 +2016,7 @@ ImageCacheEntry::markCacheTilesInRegionAsNotRendered(const RectI& roi)
     boost::unique_lock<boost::mutex> locker(_imp->lock);
 
 #if defined(TRACE_TILES_STATUS) || defined(TRACE_TILES_STATUS_SHORT)
-    _imp->writeDebugStatus("markCacheTilesInRegionAsNotRendered");
+    _imp->writeDebugStatus("markCacheTilesInRegionAsNotRendered", true);
 #endif
 
     boost::scoped_ptr<boost::unique_lock<boost::shared_mutex> > writeLock;
@@ -1957,6 +2068,9 @@ ImageCacheEntry::markCacheTilesInRegionAsNotRendered(const RectI& roi)
                 cacheTileState->status = eTileStatusNotRendered;
                 hasModifiedTileMap = true;
 #ifdef TRACE_TILES_STATUS
+#ifdef TRACE_TILES_ONLY_PRINT_FIRST_TILE
+                if (tx == 0 && ty == 0)
+#endif
                 qDebug() << QThread::currentThread() << _imp->effect.lock().get() << _imp->effect.lock()->getScriptName_mt_safe().c_str() << _imp->internalCacheEntry->getHashKey() << "marking " << tx << ty << "unrendered at level" << i;
 #endif
 
@@ -2019,7 +2133,7 @@ ImageCacheEntry::markCacheTilesAsRendered()
     bool hasModifiedTileMap = false;
 
 #if defined(TRACE_TILES_STATUS) || defined(TRACE_TILES_STATUS_SHORT)
-    _imp->writeDebugStatus("markCacheTilesAsRendered");
+    _imp->writeDebugStatus("markCacheTilesAsRendered", true);
 #endif
 
     std::vector<boost::shared_ptr<TileData> > tilesToCopy;
@@ -2039,6 +2153,9 @@ ImageCacheEntry::markCacheTilesAsRendered()
             cacheTileState->status = _imp->isDraftModeEnabled ? eTileStatusRenderedLowQuality : eTileStatusRenderedHighestQuality;
 
 #ifdef TRACE_TILES_STATUS
+#ifdef TRACE_TILES_ONLY_PRINT_FIRST_TILE
+            if (it->tx == 0 && it->ty == 0)
+#endif
             qDebug() << QThread::currentThread() << _imp->effect.lock().get()  << _imp->effect.lock()->getScriptName_mt_safe().c_str() << _imp->image.lock()->getLayer().getPlaneLabel().c_str() << _imp->internalCacheEntry->getHashKey() <<  "marking " << it->tx << it->ty << "rendered at level" << _imp->mipMapLevel;
 #endif
             hasModifiedTileMap = true;
@@ -2173,6 +2290,11 @@ ImageCacheEntry::waitForPendingTiles()
         }
     }
 
+#if defined(TRACE_TILES_STATUS) || defined(TRACE_TILES_STATUS_SHORT)
+    _imp->writeDebugStatus("waitForPendingTiles", true);
+#endif
+
+
     // When the cache is persistent, we don't hold a lock on the entry since it would also require locking
     // some mutexes protecting the memory mapping of the cache itself.
     //
@@ -2220,6 +2342,10 @@ ImageCacheEntry::waitForPendingTiles()
 #endif
 
     } while(hasPendingResults && !hasUnrenderedTile && !_imp->effect.lock()->isRenderAborted());
+
+#if defined(TRACE_TILES_STATUS) || defined(TRACE_TILES_STATUS_SHORT)
+    _imp->writeDebugStatus("waitForPendingTiles", false);
+#endif
 
     if (hasReleasedThread) {
         QThreadPool::globalInstance()->reserveThread();
@@ -2447,6 +2573,9 @@ static void toMemorySegmentInternal(bool copyPendingStatusToCache,
 
                 IPCProperty::setIntValue(i, (int)mipmapState.tiles[i].status, statusProp->getData());
 #ifdef TRACE_TILES_STATUS
+#ifdef TRACE_TILES_ONLY_PRINT_FIRST_TILE
+                if (mipmapState.tiles[i].bounds.x1 == 0 && mipmapState.tiles[i].bounds.y1 == 0)
+#endif
                 qDebug() << QThread::currentThread() << persistentEntry->_imp->debugId << "initializing status in cache of " << mipmapState.tiles[i].bounds.x1 << mipmapState.tiles[i].bounds.y1 << "at level" << m << "to" << getTileStatusString(mipmapState.tiles[i].status).c_str();
 #endif
 
@@ -2455,7 +2584,7 @@ static void toMemorySegmentInternal(bool copyPendingStatusToCache,
                 // A boost::uuids::uuid is exactly 16 bytes
                 memcpy(encodedUUID, &mipmapState.tiles[i].uuid, 16);
                 IPCProperty::setULongLongValue(i * 2, encodedUUID[0], uuidProp->getData());
-                IPCProperty::setULongLongValue(i * 2 + 1, encodedUUID[0], uuidProp->getData());
+                IPCProperty::setULongLongValue(i * 2 + 1, encodedUUID[1], uuidProp->getData());
 
                 for (int c = 0; c < 4; ++c) {
                     IPCProperty::setULongLongValue(i * 4 + c, mipmapState.tiles[i].channelsTileStorageIndex[c], indicesProp->getData());
@@ -2517,6 +2646,9 @@ static void toMemorySegmentInternal(bool copyPendingStatusToCache,
 
 #ifdef TRACE_TILES_STATUS
                     if ((int)mipmapState.tiles[i].status != cacheStatus_i) {
+#ifdef TRACE_TILES_ONLY_PRINT_FIRST_TILE
+                        if (mipmapState.tiles[i].bounds.x1 == 0 && mipmapState.tiles[i].bounds.y1 == 0)
+#endif
                         qDebug() << QThread::currentThread() << persistentEntry->_imp->debugId <<  "updating status in cache of " << mipmapState.tiles[i].bounds.x1 << mipmapState.tiles[i].bounds.y1 << "at level" << m << "to" << getTileStatusString(mipmapState.tiles[i].status).c_str() << "(from" << getTileStatusString((TileStatusEnum)cacheStatus_i).c_str() << ")";
                     }
 #endif
@@ -2526,7 +2658,7 @@ static void toMemorySegmentInternal(bool copyPendingStatusToCache,
                     // A boost::uuids::uuid is exactly 16 bytes
                     memcpy(encodedUUID, &mipmapState.tiles[i].uuid, 16);
                     IPCProperty::setULongLongValue(i * 2, encodedUUID[0], uuidProp->getData());
-                    IPCProperty::setULongLongValue(i * 2 + 1, encodedUUID[0], uuidProp->getData());
+                    IPCProperty::setULongLongValue(i * 2 + 1, encodedUUID[1], uuidProp->getData());
 
 
                     IPCProperty::setIntValue(i, (int)mipmapState.tiles[i].status, statusProp->getData());
