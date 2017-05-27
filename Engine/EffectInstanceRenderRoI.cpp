@@ -1857,10 +1857,19 @@ EffectInstance::Implementation::launchPluginRenderAndHostFrameThreading(const Fr
         if (it->identityInputNumber == -1) {
             continue;
         }
+
+        // Use the plane specified with the getLayersProducedAndNeeded action
+        const std::map<int, std::list<ImagePlaneDesc> >& neededInputPlanes = requestData->getComponentsResults()->getNeededInputPlanes();
+        std::map<int, std::list<ImagePlaneDesc> >::const_iterator foundInputPlane = neededInputPlanes.find(it->identityInputNumber);
+
         for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it2 = cachedPlanes.begin(); it2 != cachedPlanes.end(); ++it2) {
             IdentityPlaneKey p;
             p.identityInputNb = it->identityInputNumber;
-            p.identityPlane = it2->first;
+            if (foundInputPlane != neededInputPlanes.end() && foundInputPlane->second.size() > 0) {
+                p.identityPlane = foundInputPlane->second.front();
+            } else {
+                p.identityPlane = it2->first;
+            }
             p.identityTime = it->identityTime;
             p.identityView = it->identityView;
             IdentityPlanesMap::const_iterator foundFetchedPlane = functorArgs->identityPlanes.find(p);
@@ -1879,7 +1888,7 @@ EffectInstance::Implementation::launchPluginRenderAndHostFrameThreading(const Fr
             const RenderScale& curProxyScale = requestData->getProxyScale();
             inArgs->currentActionProxyScale = &curProxyScale;
             inArgs->inputNb = it->identityInputNumber;
-            inArgs->plane = &it2->first;
+            inArgs->plane = &p.identityPlane;
 
             GetImageOutArgs inputResults;
 

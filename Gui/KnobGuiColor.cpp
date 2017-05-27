@@ -423,19 +423,18 @@ KnobGuiColor::onDimensionsMadeVisible(bool visible)
     colors[3].setRgbF(0.398979, 0.398979, 0.398979);
 
 
-    if (!visible) {
-        for (int i = 0; i < nDims; ++i) {
-            SpinBox* sb = 0;
-            getSpinBox(DimIdx(i), &sb);
-            assert(sb);
-            if (!visible) {
-                sb->setAdditionalDecorationTypeEnabled(LineEdit::eAdditionalDecorationColoredUnderlinedText, false);
-            } else {
-                sb->setAdditionalDecorationTypeEnabled(LineEdit::eAdditionalDecorationColoredUnderlinedText, true, colors[i]);
-            }
+    for (int i = 0; i < nDims; ++i) {
+        SpinBox* sb = 0;
+        getSpinBox(DimIdx(i), &sb);
+        assert(sb);
+        if (!visible) {
+            sb->setAdditionalDecorationTypeEnabled(LineEdit::eAdditionalDecorationColoredUnderlinedText, false);
+        } else {
+            sb->setAdditionalDecorationTypeEnabled(LineEdit::eAdditionalDecorationColoredUnderlinedText, true, colors[i]);
         }
-        
     }
+
+
 }
 
     void
