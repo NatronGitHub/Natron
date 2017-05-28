@@ -3022,6 +3022,22 @@ RenderEngine::hasThreadsAlive() const
 }
 
 bool
+RenderEngine::hasActiveRender() const
+{
+    if (_imp->scheduler) {
+        if (_imp->scheduler->getNActiveRenderThreads() > 0) {
+            return true;
+        }
+    }
+    if (_imp->currentFrameScheduler) {
+        if (_imp->currentFrameScheduler->hasThreadsAlive()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
 RenderEngine::isDoingSequentialRender() const
 {
     return _imp->scheduler ? _imp->scheduler->isWorking() : false;
@@ -3471,6 +3487,7 @@ ViewerCurrentFrameRequestScheduler::~ViewerCurrentFrameRequestScheduler()
     }
 }
 
+
 void
 ViewerCurrentFrameRequestScheduler::onDoProcessFrameOnMainThreadReceived(U64 age, const BufferedFrameContainerPtr& frames)
 {
@@ -3706,7 +3723,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats)
 bool
 ViewerCurrentFrameRequestScheduler::hasThreadsAlive() const
 {
-    QMutexLocker k(&_imp->currentFrameRenderTasksMutex);
+    QMutexLocker k(&_imp->renderAgeMutex);
     return _imp->currentRenders.size() > 0;
 }
 

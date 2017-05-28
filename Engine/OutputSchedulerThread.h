@@ -679,6 +679,11 @@ public:
     bool hasThreadsAlive() const;
 
     /**
+     * @brief Returns true if a render is active from this RenderEngine
+     **/
+    bool hasActiveRender() const;
+
+    /**
      * @brief Returns true if playback is active
      **/
     bool isDoingSequentialRender() const;

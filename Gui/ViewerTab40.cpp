@@ -278,8 +278,9 @@ ViewerTab::refreshViewerRenderingState()
         if (!viewerNode) {
             continue;
         }
-        int value = viewerNode->getNode()->getIsNodeRenderingCounter();
-        if (value > 0) {
+        RenderEnginePtr engine = viewerNode->getNode()->getRenderEngine();
+        bool hasActiveRender = engine ? engine->hasActiveRender() : 0;
+        if (hasActiveRender) {
             internalNode->setRefreshButtonDown(true);
             return;
         }
