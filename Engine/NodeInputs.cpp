@@ -1268,9 +1268,9 @@ Node::onInputChanged(int inputNb)
     }
 
 
-
-    ///Don't do clip preferences while loading a project, they will be refreshed globally once the project is loaded.
-    _imp->effect->onInputChanged_public(inputNb);
+    if (!getApp()->isCreatingNode()) {
+        _imp->effect->onInputChanged_public(inputNb);
+    }
     _imp->inputsModified.insert(inputNb);
 
 
