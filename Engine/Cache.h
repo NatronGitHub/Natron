@@ -457,6 +457,7 @@ public:
     virtual bool isUUIDCurrentlyActive(const boost::uuids::uuid& tag) const = 0;
 #endif
 
+
 };
 
 /**
@@ -544,6 +545,7 @@ public:
     virtual boost::uuids::uuid getCurrentProcessUUID() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isUUIDCurrentlyActive(const boost::uuids::uuid& tag) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 #endif
+    
 private:
 
     boost::scoped_ptr<CachePrivate<persistent> > _imp;

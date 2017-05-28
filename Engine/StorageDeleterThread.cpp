@@ -195,4 +195,86 @@ StorageDeleterThread::run()
     }
 } // run
 
+struct StorageAllocatorThreadPrivate
+{
+    QMutex mustQuitMutex;
+    QWaitCondition mustQuitCond;
+    bool mustQuit;
+    QMutex checkStorageMutex;
+    QWaitCondition checkStorageCond;
+
+    StorageAllocatorThreadPrivate()
+    : mustQuitMutex()
+    , mustQuitCond()
+    , mustQuit(false)
+    {
+
+    }
+};
+
+#if 0
+
+StorageAllocatorThread::StorageAllocatorThread()
+: QThread()
+, _imp(new StorageAllocatorThreadPrivate())
+{
+    setObjectName( QString::fromUtf8("StorageAllocator") );
+}
+
+StorageAllocatorThread::~StorageAllocatorThread()
+{
+
+}
+
+void
+StorageAllocatorThread::quitThread()
+{
+    if ( !isRunning() ) {
+        return;
+    }
+    QMutexLocker k(&_imp->mustQuitMutex);
+    assert(!_imp->mustQuit);
+    _imp->mustQuit = true;
+
+    {
+
+    }
+    while (_imp->mustQuit) {
+        _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
+    }
+    wait();
+}
+
+void
+StorageAllocatorThread::requestTilesStorageAllocation()
+{
+
+}
+
+bool
+StorageAllocatorThread::isWorking() const
+{
+
+}
+
+void
+StorageAllocatorThread::run()
+{
+    for (;;) {
+        bool quit;
+        {
+            QMutexLocker k(&_imp->mustQuitMutex);
+            quit = _imp->mustQuit;
+        }
+        if (quit) {
+            return;
+        }
+
+
+
+
+    }
+} // run
+#endif
+
 NATRON_NAMESPACE_EXIT;

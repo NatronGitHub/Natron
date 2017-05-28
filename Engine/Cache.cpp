@@ -580,7 +580,8 @@ struct LRUListNode
 typedef bip::allocator<U64, ExternalSegmentType::segment_manager> U64_Allocator_ExternalSegment;
 
 // The unordered set of free tiles indices in a bucket
-typedef bip::set<U64, std::less<U64>, U64_Allocator_ExternalSegment> U64_Set;
+//typedef bip::set<U64, std::less<U64>, U64_Allocator_ExternalSegment> U64_Set;
+typedef bip::list<U64, U64_Allocator_ExternalSegment> U64_List;
 
 typedef boost::interprocess::allocator<U64, ExternalSegmentType::segment_manager> ExternalSegmentTypeULongLongAllocator;
 typedef boost::interprocess::list<U64, ExternalSegmentTypeULongLongAllocator> ExternalSegmentTypeULongLongList;
@@ -848,7 +849,7 @@ struct CacheBucketIPCData
     // Indices of the chunks of memory available in the tileAligned memory-mapped file.
     // Protected by the bucketMutex
     //
-    U64_Set freeTiles;
+    U64_List freeTiles;
 
     CacheBucketIPCData(const external_void_allocator& allocator)
     : lruListFront(0)
@@ -1360,7 +1361,14 @@ struct CachePrivate
 #endif
                                       );
 
-    void createTileStorage();
+    /**
+     * @brief Retrieves 1 tile from the tile storage. Allocates new memory mapped file backend if not enough space.
+     **/
+    U64 getOrCreateTileStorage(int requestingBucketIndex);
+
+    bool getFreeTileInternal(int requestingBucketIndex, U64* index);
+
+    void createTileStorageInternal();
 
     void freeAllocatedTiles(U64 entryHash, const std::vector<U64>& tilesToAlloc, const std::vector<std::pair<U64, void*> >& allocatedTiles);
 
@@ -1960,10 +1968,7 @@ CacheBucket<persistent>::deallocateCacheEntryImpl(typename EntriesMap::iterator 
 #ifdef CACHE_TRACE_TILES_ALLOCATION
             qDebug() << "Bucket" << bucketIndex << ": tile freed" << tileIndex << " Nb free tiles left:" << c->_imp->buckets[tileBucketIndex].ipc->freeTiles.size();
 #endif
-            // free tiles are all shared in the FIRST bucket
-            std::pair<U64_Set::iterator, bool>  insertOk = c->_imp->buckets[tileBucketIndex].ipc->freeTiles.insert(*it);
-            assert(insertOk.second);
-            (void)insertOk;
+            c->_imp->buckets[tileBucketIndex].ipc->freeTiles.push_back(*it);
         }
         cacheEntryIt->second->tileIndices.clear();
     }
@@ -3080,9 +3085,8 @@ Cache<persistent>::initialize(const boost::shared_ptr<Cache<persistent> >& thisS
                     // Ensure we initialize the cache with at least one tile storage file
                     createStorage = true;
                 }
-            }
-            if (createStorage) {
-                _imp->createTileStorage();
+
+                _imp->createTileStorageInternal();
             }
         } catch (...) {
             clear();
@@ -3129,19 +3133,15 @@ struct CacheTilesLockImpl
 
 template <bool persistent>
 void
-CachePrivate<persistent>::createTileStorage()
+CachePrivate<persistent>::createTileStorageInternal()
 {
-    if (!useTileStorage) {
-        return;
-    }
+    // The tile storage mutex must be taken!
+    assert(!ipc->tilesStorageMutex.try_lock());
+
+    // Allocate storage
 
     U64 fileIndex;
     {
-        // The lock must be taken in write mode
-        boost::scoped_ptr<Sharable_WriteLock> tileWriteLock;
-        createLock<Sharable_WriteLock>(this, tileWriteLock, &ipc->tilesStorageMutex);
-
-
         StoragePtrType data(new StorageType);
         if (persistent) {
             std::stringstream ss;
@@ -3153,6 +3153,8 @@ CachePrivate<persistent>::createTileStorage()
         fileIndex = tilesStorage.size();
         tilesStorage.push_back(data);
     }
+    
+
 
     // The number of tiles should be a multiple of the buckets count
     assert(NATRON_NUM_TILES_PER_FILE % NATRON_CACHE_BUCKETS_COUNT == 0);
@@ -3174,8 +3176,8 @@ CachePrivate<persistent>::createTileStorage()
         // Take the bucket mutex
         createLock<Sharable_WriteLock>(this, bucketWriteLock, &ipc->bucketsData[bucket_i].bucketMutex);
 
-        
-        
+
+
 #ifdef CACHE_TRACE_TILES_ALLOCATION
         std::cout << "[" << bucket_i << "] = " << buckets[bucket_i].ipc->freeTiles.size();
         if (bucket_i < NATRON_CACHE_BUCKETS_COUNT - 1) {
@@ -3185,21 +3187,29 @@ CachePrivate<persistent>::createTileStorage()
 
         // Insert the new available tiles in the freeTiles set.
         // First insert in a temporary set and then assign to the free tiles set to avoid out of memory exceptions
-        std::set<U64> tmpSet;
-        tmpSet.insert(buckets[bucket_i].ipc->freeTiles.begin(), buckets[bucket_i].ipc->freeTiles.end());
-        U64 nTiles = bucket_i * NATRON_NUM_TILES_PER_BUCKET_FILE;
-        for (U64 i = nTiles; i < nTiles + NATRON_NUM_TILES_PER_BUCKET_FILE; ++i) {
-            U64 encodedIndex = 0;
-            encodedIndex = ((i << 32) | fileIndex);
-            tmpSet.insert(encodedIndex);
+        std::vector<U64> tmpSet(buckets[bucket_i].ipc->freeTiles.size() + NATRON_NUM_TILES_PER_BUCKET_FILE);
+        {
+            int tmpSetIndex = 0;
+            for (U64_List::const_iterator it = buckets[bucket_i].ipc->freeTiles.begin(); it != buckets[bucket_i].ipc->freeTiles.end(); ++it, ++tmpSetIndex) {
+                assert(tmpSetIndex < (int)tmpSet.size());
+                tmpSet[tmpSetIndex] = *it;
+            }
+            U64 nTiles = bucket_i * NATRON_NUM_TILES_PER_BUCKET_FILE;
+            for (U64 i = nTiles; i < nTiles + NATRON_NUM_TILES_PER_BUCKET_FILE; ++i, ++tmpSetIndex) {
+                U64 encodedIndex = 0;
+                encodedIndex = ((i << 32) | fileIndex);
+                assert(tmpSetIndex < (int)tmpSet.size());
+                tmpSet[tmpSetIndex] = encodedIndex;
+            }
         }
+
         {
 
             int nAttempts = 0;
             while (nAttempts < 2) {
                 try {
                     buckets[bucket_i].ipc->freeTiles.clear();
-                    buckets[bucket_i].ipc->freeTiles.insert(tmpSet.begin(), tmpSet.end());
+                    buckets[bucket_i].ipc->freeTiles.insert(buckets[bucket_i].ipc->freeTiles.end(), tmpSet.begin(), tmpSet.end());
                     break;
                 } catch (const bip::bad_alloc&) {
 
@@ -3222,13 +3232,68 @@ CachePrivate<persistent>::createTileStorage()
                 ++nAttempts;
             }
         }
-
+        
     } // for each bucket
 #ifdef CACHE_TRACE_TILES_ALLOCATION
     std::cout << "\n=============================================" << std::endl;
 #endif
 
+} // createTileStorageInternal
 
+template <bool persistent>
+bool
+CachePrivate<persistent>::getFreeTileInternal(int requestingBucketIndex, U64* index)
+{
+    CacheBucket<persistent>& bucket = buckets[requestingBucketIndex];
+
+    boost::scoped_ptr<Sharable_WriteLock> bucketWriteLock;
+    boost::scoped_ptr<Sharable_ReadLock> tocReadLock;
+    boost::scoped_ptr<Sharable_WriteLock> tocWriteLock;
+
+    // Take the ToC write lock
+    createLock<Sharable_ReadLock>(this, tocReadLock, &ipc->bucketsData[requestingBucketIndex].tocData.segmentMutex);
+
+
+    // Take the bucket mutex
+    createLock<Sharable_WriteLock>(this, bucketWriteLock, &ipc->bucketsData[requestingBucketIndex].bucketMutex);
+
+    if (!bucket.ipc->freeTiles.empty()) {
+        U64 freeTileEncodedIndex;
+        {
+            U64_List::iterator freeTileIt = bucket.ipc->freeTiles.begin();
+            freeTileEncodedIndex = *freeTileIt;
+            bucket.ipc->freeTiles.erase(freeTileIt);
+#ifdef CACHE_TRACE_TILES_ALLOCATION
+            qDebug() << "Bucket" << requestingBucketIndex << ": removing tile" << freeTileEncodedIndex << " Nb free tiles left:" << bucket.ipc->freeTiles.size();
+#endif
+        }
+        *index = freeTileEncodedIndex;
+        return true;
+    }
+    return false;
+}
+
+template <bool persistent>
+U64
+CachePrivate<persistent>::getOrCreateTileStorage(int requestingBucketIndex)
+{
+    // The tile storage mutex must be taken!
+    assert(!ipc->tilesStorageMutex.try_lock());
+
+    assert(useTileStorage);
+    assert(requestingBucketIndex >= 0 && requestingBucketIndex < NATRON_CACHE_BUCKETS_COUNT);
+
+    U64 encodedTileIndex;
+    if (getFreeTileInternal(requestingBucketIndex, &encodedTileIndex)) {
+        return encodedTileIndex;
+    }
+
+    createTileStorageInternal();
+
+    bool ok = getFreeTileInternal(requestingBucketIndex, &encodedTileIndex);
+    assert(ok);
+    (void)ok;
+    return encodedTileIndex;
 } // createTileStorage
 
 template <>
@@ -3295,7 +3360,7 @@ CachePrivate<persistent>::freeAllocatedTiles(U64 entryHash, const std::vector<U6
 
         // Re-insert the tile index in the freeTiles list. Since we are adding data, this may throw an exception
         // because the ToC might run out of memory. In this case, we grow it and try again.
-        tileBucket.ipc->freeTiles.insert(allocatedTiles[i].first);
+        tileBucket.ipc->freeTiles.push_back(allocatedTiles[i].first);
 
     } // for each allocated tile
 
@@ -3346,67 +3411,17 @@ Cache<persistent>::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
         if (tilesToAlloc && tilesToAlloc->size() > 0) {
             allocatedTilesData->resize(tilesToAlloc->size());
 
+
+            // The lock must be taken in write mode otherwise multiple threads could attempt to create storage at once
+
+
             for (std::size_t i = 0; i < tilesToAlloc->size(); ++i) {
 
                 // The bucket index for the tile depends on the bucket of the cache entry + a number based off the tile index so that
                 // we ensure that we distribute uniformly all tiles across buckets.
                 int bucketIndex = getBucketIndexForTile(entryHash, (*tilesToAlloc)[i]);
 
-                CacheBucket<persistent>& tileBucket = _imp->buckets[bucketIndex];
-
-                boost::scoped_ptr<Sharable_WriteLock> bucketWriteLock;
-                boost::scoped_ptr<Sharable_ReadLock> tocReadLock;
-                boost::scoped_ptr<Sharable_WriteLock> tocWriteLock;
-
-
-                // Take the read lock on the toc file mapping of the bucket
-                if (!tocReadLock && !tocWriteLock) {
-                    tileBucket.checkToCMemorySegmentStatus(&tocReadLock, &tocWriteLock);
-                }
-
-                // Lock the bucket in write mode to edit the freeTiles list
-                if (!bucketWriteLock) {
-                    createLock<Sharable_WriteLock>(_imp.get(), bucketWriteLock, &_imp->ipc->bucketsData[bucketIndex].bucketMutex);
-                }
-
-
-                if (tileBucket.ipc->freeTiles.empty()) {
-                    // No free tile in the bucket: make a new file
-                    // To create a file, we need a write lock on the tiles storage, release the read lock now
-                    tilesLock->tileReadLock.reset();
-
-                    // Release the locks before calling createTileStorage
-                    tocReadLock.reset();
-                    tocWriteLock.reset();
-                    bucketWriteLock.reset();
-
-                    _imp->createTileStorage();
-
-                    // Take back the locks
-                    if (!tocReadLock && !tocWriteLock) {
-                        tileBucket.checkToCMemorySegmentStatus(&tocReadLock, &tocWriteLock);
-                    }
-
-                    // Take the tilesStorageMutex in read mode to indicate that we are operating on it
-                    createLock<Sharable_ReadLock>(_imp.get(), tilesLock->tileReadLock, &_imp->ipc->tilesStorageMutex);
-
-                    if (!bucketWriteLock) {
-                        createLock<Sharable_WriteLock>(_imp.get(), bucketWriteLock, &_imp->ipc->bucketsData[bucketIndex].bucketMutex);
-                    }
-
-                }
-
-                // Extract the first free tile
-                assert(tileBucket.ipc->freeTiles.size() >= 1);
-                U64 freeTileEncodedIndex;
-                {
-                    U64_Set::iterator freeTileIt = tileBucket.ipc->freeTiles.begin();
-                    freeTileEncodedIndex = *freeTileIt;
-                    tileBucket.ipc->freeTiles.erase(freeTileIt);
-#ifdef CACHE_TRACE_TILES_ALLOCATION
-                    qDebug() << "Bucket" << bucketIndex << ": removing tile" << freeTileEncodedIndex << " Nb free tiles left:" << tileBucket.ipc->freeTiles.size();
-#endif
-                }
+                U64 freeTileEncodedIndex = _imp->getOrCreateTileStorage(bucketIndex);
 
 
                 // Get the pointer to the data corresponding to the free tile index
@@ -3702,7 +3717,7 @@ Cache<persistent>::releaseTiles(const CacheEntryBasePtr& entry, const std::vecto
                 // Lock the bucket in write mode to edit the freeTiles list
                 createLock<Sharable_WriteLock>(_imp.get(), bucketWriteLock, &_imp->ipc->bucketsData[bucketIndex].bucketMutex);
 
-                tileBucket.ipc->freeTiles.insert(cacheIndices[i]);
+                tileBucket.ipc->freeTiles.push_back(cacheIndices[i]);
             }
         }
 
@@ -4235,6 +4250,12 @@ Cache<persistent>::clear()
 #endif
     try {
 
+        for (int bucket_i = 0; bucket_i < NATRON_CACHE_BUCKETS_COUNT; ++bucket_i) {
+            _imp->clearCacheBucket(bucket_i);
+        } // for each bucket
+
+        
+
         {
 
             boost::scoped_ptr<Sharable_WriteLock> tileWriteLock;
@@ -4243,14 +4264,9 @@ Cache<persistent>::clear()
                 clearStorage(_imp->tilesStorage[i]);
             }
             _imp->tilesStorage.clear();
-
+            // Ensure we initialize the cache with at least one tile storage file
+            _imp->createTileStorageInternal();
         }
-        for (int bucket_i = 0; bucket_i < NATRON_CACHE_BUCKETS_COUNT; ++bucket_i) {
-            _imp->clearCacheBucket(bucket_i);
-        } // for each bucket
-
-        // Ensure we initialize the cache with at least one tile storage file
-        _imp->createTileStorage();
 
     } catch (...) {
 
@@ -4454,7 +4470,7 @@ Cache<persistent>::flushCacheOnDisk(bool async)
                 boost::scoped_ptr<Sharable_ReadLock> tilesStorageReadLock;
                 createLock<Sharable_WriteLock>(this, tilesStorageReadLock, &_imp->ipc->tilesStorageMutex);
 
-                for (U64_Set::const_iterator it = _imp->buckets[bucket_i].ipc->freeTiles.begin(); it != _imp->buckets[bucket_i].ipc->freeTiles.end(); ++it) {
+                for (U64_List::const_iterator it = _imp->buckets[bucket_i].ipc->freeTiles.begin(); it != _imp->buckets[bucket_i].ipc->freeTiles.end(); ++it) {
                     U32 tileIndex, fileIndex;
                     getTileIndex(*it, &tileIndex, &fileIndex);
 

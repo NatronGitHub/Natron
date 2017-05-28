@@ -72,6 +72,40 @@ private:
     boost::scoped_ptr<StorageDeleterThreadPrivate> _imp;
 };
 
+#if 0
+/**
+ * @brief The point of this thread is to monitor the cache tiles storage and create storage when needed.
+ **/
+struct StorageAllocatorThreadPrivate;
+class StorageAllocatorThread
+: public QThread
+{
+
+
+public:
+
+    StorageAllocatorThread();
+
+    virtual ~StorageAllocatorThread();
+
+    /**
+     * @brief To be called when a Cache bucket no longer has sufficient free tiles. 
+     * This call is blocking and returns once all buckets are guaranteed to contain at least 1 free tile. 
+     **/
+    void requestTilesStorageAllocation();
+
+    void quitThread();
+
+    bool isWorking() const;
+
+private:
+
+    virtual void run() OVERRIDE FINAL;
+
+    boost::scoped_ptr<StorageAllocatorThreadPrivate> _imp;
+};
+#endif 
+
 
 NATRON_NAMESPACE_EXIT;
 
