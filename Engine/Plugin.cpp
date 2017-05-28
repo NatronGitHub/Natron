@@ -65,6 +65,8 @@ Plugin::initializeProperties() const
     createProperty<bool>(kNatronPluginPropIsInternalOnly, false);
     createProperty<int>(kNatronPluginPropOpenGLSupport, (int)ePluginOpenGLRenderSupportNone);
     createProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyUnsafe);
+    createProperty<bool>(kNatronPluginPropAlphaFillWith1, true);
+
 }
 
 PluginPtr

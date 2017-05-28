@@ -1225,6 +1225,9 @@ public:
     void setCurrentSupportRenderScale(bool support);
     bool getCurrentSupportRenderScale() const;
 
+    void setCurrentAlphaFillWith1(bool enabled);
+    bool getCurrentAlphaFillWith1() const;
+
     void refreshDynamicProperties();
 
 
@@ -1519,11 +1522,18 @@ public:
         return false;
     }
 
+    /**
+     * @brief If this function returns true, this flags that images may be retrieved at different timeline times for a single render
+     **/
     virtual bool doesTemporalClipAccess() const
     {
         return false;
     }
 
+    /**
+     * @brief If this function returns true, all knobs of thie KnobHolder will have their curve appended to their hash
+     * regardless of their hashing strategy.
+     **/
     virtual bool isFullAnimationToHashEnabled() const OVERRIDE FINAL;
 
     /**

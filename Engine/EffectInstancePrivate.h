@@ -189,6 +189,9 @@ struct DynamicProperties
     bool currentCanDistort;
     bool currentDeprecatedTransformSupport;
 
+    // When creating an alpha channel, should we fill with 1 or 0
+    bool currentAlphaFillWith1;
+
     DynamicProperties()
     : currentThreadSafety(eRenderSafetyInstanceSafe)
     , currentTemporalImagesAccess(false)
@@ -199,6 +202,7 @@ struct DynamicProperties
     , currentSupportSequentialRender(eSequentialPreferenceNotSequential)
     , currentCanDistort(false)
     , currentDeprecatedTransformSupport(false)
+    , currentAlphaFillWith1(true)
     {
 
     }
@@ -228,7 +232,6 @@ struct EffectInstanceCommonData
     bool pluginSafetyLocked;
 
     DynamicProperties props;
-
 
     // Protects supportedInputComponents & supportedOutputComponents
     mutable QMutex supportedComponentsMutex;

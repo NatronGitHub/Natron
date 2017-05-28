@@ -203,6 +203,12 @@ NATRON_NAMESPACE_ENTER;
  **/
 #define kNatronPluginPropRenderSafety "NatronPluginPropRenderSafety"
 
+/**
+ * @brief x1 bool property (optional) indicating whether the plug-in prefers an alpha channel created with 0 (false)
+ * or with 1 (true)
+ * Default value - true
+ **/
+#define kNatronPluginPropAlphaFillWith1 "NatronPluginPropAlphaFillWith1"
 
 /**
  * @brief A node of a tree data structure representing the grouping hierarchy of plug-ins. This is mainly for the GUI so it can create its toolbuttons and menus

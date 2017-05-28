@@ -974,11 +974,31 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
             copyArgs.srcColorspace = getApp()->getDefaultColorSpaceForBitDepth(outArgs->image->getBitDepth());
             copyArgs.dstColorspace = getApp()->getDefaultColorSpaceForBitDepth(thisBitDepth);
 
+            // The alphaHandling flag is used when converting anything to Alpha or when converting to RGBA
+            // By deafult always us
+            {
+                int imageNComps = outArgs->image->getComponentsCount();
+                if (imageNComps == 1 || imageNComps == 4) {
+                    copyArgs.alphaHandling = Image::eAlphaChannelHandlingFillFromChannel;
+                    if (copyArgs.conversionChannel == -1 || copyArgs.conversionChannel >= imageNComps) {
+                        if (imageNComps == 4) {
+                            // If converting from RGBA, use the last channel
+                            copyArgs.conversionChannel = 3;
+                        } else {
+                            copyArgs.conversionChannel = 0;
+                        }
+                    }
+                } else {
+                    // When converty XY or RGB to something else, use alpha 0 or 1 to fill depending on the plug-in property.
+                    if (getCurrentAlphaFillWith1()) {
+                        copyArgs.alphaHandling = Image::eAlphaChannelHandlingCreateFill1;
+                    } else {
+                        copyArgs.alphaHandling = Image::eAlphaChannelHandlingCreateFill0;
+                    }
+                }
+            }
 
-            copyArgs.alphaHandling = outArgs->image->getComponentsCount() == 1 || outArgs->image->getComponentsCount() == 4 ? Image::eAlphaChannelHandlingFillFromChannel : Image::eAlphaChannelHandlingCreateFill0;
-
-
-            // If converting from single component image to multiple component image, use the single channel, otherwise if creating alpha use 1 to fill
+            // If converting from single component image to multiple component image, use the single channel
             if (channelForMask != -1) {
                 copyArgs.monoConversion = Image::eMonoToPackedConversionCopyToChannelAndFillOthers;
             } else {
@@ -2110,6 +2130,25 @@ EffectInstance::getCurrentSupportTiles() const
 }
 
 void
+EffectInstance::setCurrentAlphaFillWith1(bool enabled)
+{
+    QMutexLocker k(&_imp->common->pluginsPropMutex);
+
+    _imp->common->props.currentAlphaFillWith1 = enabled;
+}
+
+bool
+EffectInstance::getCurrentAlphaFillWith1() const
+{
+    if (_imp->renderData) {
+        return _imp->renderData->props.currentAlphaFillWith1;
+    }
+    QMutexLocker k(&_imp->common->pluginsPropMutex);
+
+    return _imp->common->props.currentAlphaFillWith1;
+}
+
+void
 EffectInstance::setCurrentSupportMultiRes(bool support)
 {
     QMutexLocker k(&_imp->common->pluginsPropMutex);
@@ -2205,6 +2244,8 @@ EffectInstance::refreshDynamicProperties()
         }
     }
 
+    bool pluginAlphaFillWith1 = plugin->getPropertyUnsafe<bool>(kNatronPluginPropAlphaFillWith1);
+
 
     setCurrentOpenGLRenderSupport(pluginGLSupport);
     bool tilesSupported = supportsTiles();
@@ -2239,7 +2280,6 @@ EffectInstance::refreshDynamicProperties()
         }
     }
 
-
     setCurrentTemporalImageAccess(temporal);
     setCurrentSupportMultiRes(multiResSupported);
     setCurrentSupportTiles(tilesSupported);
@@ -2247,6 +2287,7 @@ EffectInstance::refreshDynamicProperties()
     setCurrentSequentialRenderSupport( getSequentialPreference() );
     setCurrentCanDistort(canDistort);
     setCurrentCanTransform(currentDeprecatedTransformSupport);
+    setCurrentAlphaFillWith1(pluginAlphaFillWith1);
 } // refreshDynamicProperties
 
 bool

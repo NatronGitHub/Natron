@@ -1023,6 +1023,10 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
         if (openfxId == PLUGINID_OFX_ROTOMERGE) {
             // RotoMerge is to be used only be the RotoPaint tree
             natronPlugin->setProperty<bool>(kNatronPluginPropIsInternalOnly, true);
+
+            // RotoMerge needs to set alpha to 0 by default when converting RGB-->RGBA otherwise the Roto is not visible
+            // when there's an existing alpha
+            natronPlugin->setProperty<bool>(kNatronPluginPropAlphaFillWith1, false);
         }
 
         natronPlugin->setProperty<int>(kNatronPluginPropShortcut, (int)symbol, 0);
