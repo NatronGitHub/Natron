@@ -476,8 +476,6 @@ Children:
         Float: 0.3
       - Name: brightnessRangeRolloff
         Float: 0.3
-      - Name: premult
-        Bool: true
       - Name: maskInvert
         Bool: true
     Pos: [1294, -302]
@@ -569,6 +567,12 @@ Children:
     Version: [2, 0]
     Inputs: GlowOnly
     Params:
+      - Name: NatronOfxParamProcessR
+        Bool: false
+      - Name: NatronOfxParamProcessG
+        Bool: false
+      - Name: NatronOfxParamProcessB
+        Bool: false
       - Name: NatronOfxParamProcessA
         Bool: {pyExpr: thisGroup.alpha.get()}
       - Name: premultChanged

@@ -22,7 +22,6 @@ UserPages:
         TypeName: Bool
         Label: Z Picking mode
       - Name: closeLimit
-        Float: [{N: Grade1, K: blackPoint, D: r}, {N: Grade1, K: blackPoint, D: g}, {N: Grade1, K: blackPoint, D: b}, {N: Grade1, K: blackPoint, D: a}]
         DefaultFloat: [0, 0, 0, 0]
         NDims: 4
         TypeName: Color
@@ -57,7 +56,6 @@ UserPages:
         TypeName: Bool
         Label: Invert Gradient
       - Name: Source_channels
-        String: {N: Grade1, K: Source_channels}
         DefaultString: uk.co.thefoundry.OfxImagePlaneColour
         NDims: 1
         TypeName: Choice
@@ -77,12 +75,16 @@ Children:
     Version: [2, 0]
     Inputs: InputSource
     Params:
+      - Name: blackPoint
+        Float: [{N: "@thisGroup", K: closeLimit, D: r}, {N: "@thisGroup", K: closeLimit, D: g}, {N: "@thisGroup", K: closeLimit, D: b}, {N: "@thisGroup", K: closeLimit, D: a}]
       - Name: whitePoint
         Float: [{N: "@thisGroup", K: farLimit, D: r}, {N: "@thisGroup", K: farLimit, D: g}, {N: "@thisGroup", K: farLimit, D: b}, {N: "@thisGroup", K: farLimit, D: a}]
       - Name: gamma
         Float: [{N: "@thisGroup", K: gamma, D: r}, {N: "@thisGroup", K: gamma, D: g}, {N: "@thisGroup", K: gamma, D: b}, {N: "@thisGroup", K: gamma, D: a}]
       - Name: premultChanged
         Bool: true
+      - Name: Source_channels
+        String: {N: "@thisGroup", K: Source_channels}
       - Name: enableMask_Mask
         Bool: true
     Pos: [726, 92]

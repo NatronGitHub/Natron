@@ -90,8 +90,6 @@ Children:
     Params:
       - Name: operation
         String: difference
-      - Name: AChannelsA
-        Bool: false
       - Name: userTextArea
         String: <Natron>(difference)</Natron>
       - Name: B_channels

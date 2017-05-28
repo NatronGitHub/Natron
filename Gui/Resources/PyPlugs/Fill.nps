@@ -79,8 +79,6 @@ Children:
     Params:
       - Name: operation
         String: {N: "@thisGroup", K: Merge1operation}
-      - Name: AChannelsA
-        Bool: false
       - Name: maskInvert
         Bool: {N: "@thisGroup", K: Merge1maskInvert}
       - Name: mix

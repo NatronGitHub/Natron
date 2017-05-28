@@ -197,12 +197,6 @@ Children:
     Version: [2, 0]
     Inputs: Shuffle1
     Params:
-      - Name: NatronOfxParamProcessR
-        Bool: false
-      - Name: NatronOfxParamProcessG
-        Bool: false
-      - Name: NatronOfxParamProcessB
-        Bool: false
       - Name: maximum
         Float: 0
       - Name: minClampToEnable

@@ -519,8 +519,6 @@ Children:
         Bool: true
       - Name: value
         Float: {pyExpr: thisGroup.intensity.getValue()}
-      - Name: premult
-        Bool: true
     Pos: [758, 697]
   - PluginID: net.sf.openfx.SaturationPlugin
     Name: Saturation1
@@ -531,8 +529,6 @@ Children:
         Float: {N: "@thisGroup", K: saturation}
       - Name: clampBlack
         Bool: false
-      - Name: premult
-        Bool: true
     Pos: [758, 761]
   - PluginID: net.sf.openfx.ColorCorrectPlugin
     Name: ColorCorrect1
@@ -589,8 +585,6 @@ Children:
         Float: [{N: "@thisGroup", K: ColorCorrect1HighlightsOffset, D: r}, {N: "@thisGroup", K: ColorCorrect1HighlightsOffset, D: g}, {N: "@thisGroup", K: ColorCorrect1HighlightsOffset, D: b}, {N: "@thisGroup", K: ColorCorrect1HighlightsOffset, D: a}]
       - Name: clampBlack
         Bool: false
-      - Name: premult
-        Bool: true
     Pos: [758, 825]
   - PluginID: net.sf.openfx.MergePlugin
     Name: MaskMerge2
