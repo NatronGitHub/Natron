@@ -620,7 +620,8 @@ EffectInstance::resolveRoIForGetImage(const GetImageInArgs& inArgs,
 
     // Use the provided image bounds if any
     if (inArgs.optionalBounds) {
-        *roiCanonical = * inArgs.optionalBounds;
+        *roiCanonical = *inArgs.optionalBounds;
+        *roiExpand = *inArgs.optionalBounds;
         return true;
     }
 
