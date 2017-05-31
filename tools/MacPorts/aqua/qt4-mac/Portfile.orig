@@ -287,6 +287,11 @@ platform darwin {
 
 patchfiles-append patch-better-invalid-fonttable-handling.diff
 
+# (29) Fix pointer comparison with 0
+# These error out on clang 4.0, whereas they didn't in 3.9.
+
+patchfiles-append patch-fix_pointer_comparison_to_0.diff
+
 # error out if trying to build on a new OSX version (> 10.12).
 
 platform darwin {

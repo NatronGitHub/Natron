@@ -10,7 +10,7 @@ name                ffmpeg
 conflicts           ffmpeg-devel
 epoch               1
 version             3.2.4
-revision            2
+revision            4
 license             LGPL-2.1+
 categories          multimedia
 maintainers         {devans @dbevans} {jeremyhu @jeremyhu} openmaintainer
@@ -296,11 +296,10 @@ variant librtmp description {Use librtmp (from rtmpdump) as rtmp[t][es]:// proto
 }
 
 # x265 currently does not support OS X < 10.6 (#48336, #48338)
-# x265 cmake issues cause universal build to fail (#48331)
-# only enable libx265 support for non-universal builds on 10.6 or greater
+# only enable libx265 support on 10.6 or greater
 
 platform darwin {
-    if {${os.major} > 9 && [variant_isset gpl2] && ![variant_isset universal]} {
+    if {${os.major} > 9 && [variant_isset gpl2]} {
         configure.args-append   --enable-libx265
         depends_lib-append      port:x265
     }
