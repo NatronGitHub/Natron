@@ -1268,7 +1268,7 @@ Node::onInputChanged(int inputNb)
     }
 
 
-    if (!getApp()->isCreatingNode()) {
+    if (!getApp()->isDuringPythonPyPlugCreation()) {
         _imp->effect->onInputChanged_public(inputNb);
     }
     _imp->inputsModified.insert(inputNb);

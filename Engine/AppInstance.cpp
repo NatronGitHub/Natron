@@ -168,19 +168,7 @@ public:
     {
 
     }
-/*
-    bool isWithinPyPlugRecursive() const
-    {
-        if (isPyPlug) {
-            return true;
-        }
-        CreateNodeStackItemPtr p = parent.lock();
-        if (p) {
-            return p->isWithinPyPlugRecursive();
-        }
-        return false;
-    }
-*/
+
     bool isGuiDisabledRecursive() const
     {
         assert(args);
@@ -190,6 +178,35 @@ public:
         CreateNodeStackItemPtr p = parent.lock();
         if (p) {
             return p->isGuiDisabledRecursive();
+        }
+        return false;
+    }
+
+    bool isPythonPyPlug() const
+    {
+        std::string pyPlugID = args->getPropertyUnsafe<std::string>(kCreateNodeArgsPropPyPlugID);
+        if (pyPlugID.empty()) {
+            return false;
+        }
+        PluginPtr pyPlugPlugin;
+        try {
+            pyPlugPlugin = appPTR->getPluginBinary(QString::fromUtf8(pyPlugID.c_str()), -1, -1, true);
+        } catch (...) {
+            return false;
+        }
+        assert(pyPlugPlugin);
+        bool isPyPlugEncodedWithPythonScript = pyPlugPlugin->getPropertyUnsafe<bool>(kNatronPluginPropPyPlugIsPythonScript);
+        return isPyPlugEncodedWithPythonScript;
+    }
+
+    bool isPythonPyPlugRecursive() const
+    {
+        if (isPythonPyPlug()) {
+            return true;
+        }
+        CreateNodeStackItemPtr p = parent.lock();
+        if (p) {
+            return p->isPythonPyPlug();
         }
         return false;
     }
@@ -282,7 +299,14 @@ AppInstance::isTopLevelNodeBeingCreated(const NodePtr& node) const
     return _imp->createNodeStack.root->node == node;
 }
 
-
+bool
+AppInstance::isDuringPythonPyPlugCreation() const
+{
+    if (_imp->createNodeStack.recursionStack.empty()) {
+        return false;
+    }
+    return _imp->createNodeStack.recursionStack.back()->isPythonPyPlugRecursive();
+}
 
 void
 AppInstance::checkForNewVersion() const

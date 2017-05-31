@@ -322,6 +322,8 @@ public:
 
     bool isTopLevelNodeBeingCreated(const NodePtr& node) const;
 
+    bool isDuringPythonPyPlugCreation() const;
+
     virtual bool isDraftRenderEnabled() const { return false; }
 
     virtual void setDraftRenderEnabled(bool /*b*/) {}
