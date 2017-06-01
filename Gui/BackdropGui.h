@@ -58,7 +58,6 @@ public:
 
     virtual ~BackdropGui();
 
-    void refreshTextLabelFromKnob();
 
 public Q_SLOTS:
 

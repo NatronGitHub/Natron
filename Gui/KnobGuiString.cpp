@@ -434,6 +434,7 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
 {
     KnobStringPtr knob = _knob.lock();
 
+    connect(this, SIGNAL(fontPropertyChanged()),this,SLOT(onFontPropertyChanged()));
     KnobGuiPtr knobUI = getKnobGui();
     if ( knob->isMultiLine() ) {
         _container = new QWidget( layout->parentWidget() );
@@ -565,6 +566,16 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
 
 KnobGuiString::~KnobGuiString()
 {
+}
+
+void
+KnobGuiString::onFontPropertyChanged()
+{
+    KnobStringPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->evaluateValueChange(DimSpec(0), knob->getCurrentRenderTime(), ViewIdx(0), eValueChangedReasonUserEdited);
 }
 
 bool

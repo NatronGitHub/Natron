@@ -77,6 +77,8 @@ public:
         return 0;
     }
 
+    KnobStringPtr getTextAreaKnob() const;
+
 Q_SIGNALS:
 
     void labelChanged(QString);

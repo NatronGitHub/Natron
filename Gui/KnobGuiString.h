@@ -183,11 +183,14 @@ public Q_SLOTS:
 
     static bool parseFont(const QString & s, QFont* f, QColor* color);
 
+    void onFontPropertyChanged();
+
 Q_SIGNALS:
 
     void fontPropertyChanged();
 
 private:
+
 
     QFont makeFontFromState() const;
 

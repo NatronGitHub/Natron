@@ -37,6 +37,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
+#include "Engine/Image.h"
 #include "Engine/Backdrop.h"
 #include "Engine/Settings.h"
 
@@ -55,39 +56,30 @@ struct BackdropGuiPrivate
 {
     BackdropGui* _publicInterface; // can not be a smart ptr
     NodeGraphTextItem* label;
+    boost::weak_ptr<Backdrop> backdropEffect;
 
     BackdropGuiPrivate(BackdropGui* publicInterface)
         : _publicInterface(publicInterface)
         , label(0)
+        , backdropEffect()
     {
     }
 
-    void refreshLabelText(int nameHeight, const QString & text);
+    void refreshLabelText();
 
-    std::string getLabelValue() const;
 };
 
 BackdropGui::BackdropGui(QGraphicsItem* parent)
     : NodeGui(parent)
     , _imp( new BackdropGuiPrivate(this) )
 {
+
 }
 
 BackdropGui::~BackdropGui()
 {
 }
 
-std::string
-BackdropGuiPrivate::getLabelValue() const
-{
-    KnobIPtr k = _publicInterface->getNode()->getKnobByName("label");
-
-    assert(k);
-    KnobStringPtr isStr = toKnobString(k);
-    assert(isStr);
-
-    return isStr ? isStr->getValue() : "";
-}
 
 void
 BackdropGui::getInitialSize(int *w,
@@ -102,6 +94,9 @@ BackdropGui::createGui()
 {
     NodeGui::createGui();
 
+    _imp->backdropEffect = boost::dynamic_pointer_cast<Backdrop>(getNode()->getEffectInstance());
+    assert(_imp->backdropEffect.lock());
+
     _imp->label = new NodeGraphTextItem(getDagGui(), this, false);
     _imp->label->setDefaultTextColor( QColor(0, 0, 0, 255) );
     _imp->label->setZValue(getBaseDepth() + 1);
@@ -113,7 +108,7 @@ BackdropGui::createGui()
 
     QObject::connect( isBd, SIGNAL(labelChanged(QString)), this, SLOT(onLabelChanged(QString)) );
 
-    refreshTextLabelFromKnob();
+    _imp->refreshLabelText();
 
     // Make the backdrop large enough to contain the selected nodes and position it correctly
     const NodesGuiList& selectedNodes =  getDagGui()->getSelectedNodes();
@@ -135,11 +130,9 @@ BackdropGui::createGui()
 }
 
 void
-BackdropGui::onLabelChanged(const QString& label)
+BackdropGui::onLabelChanged(const QString& /*label*/)
 {
-    int nameHeight = getFrameNameHeight();
-
-    _imp->refreshLabelText(nameHeight, label);
+    _imp->refreshLabelText();
 }
 
 void
@@ -170,35 +163,36 @@ BackdropGui::resizeExtraContent(int /*w*/,
 }
 
 void
-BackdropGui::refreshTextLabelFromKnob()
+BackdropGuiPrivate::refreshLabelText()
 {
-    int nameHeight = getFrameNameHeight();
+    KnobStringPtr labelKnob = backdropEffect.lock()->getTextAreaKnob();
+    int nameHeight = _publicInterface->getFrameNameHeight();
 
-    _imp->refreshLabelText( nameHeight, QString::fromUtf8( _imp->getLabelValue().c_str() ) );
-}
+    QString textLabel = QString::fromUtf8(labelKnob->getValue().c_str());
 
-void
-BackdropGuiPrivate::refreshLabelText(int nameHeight,
-                                     const QString &text)
-{
-    QString textLabel = text;
+    double fontColorD[3];
+    labelKnob->getFontColor(&fontColorD[0], &fontColorD[1], &fontColorD[2]);
+
+    QColor color;
+    color.setRgbF(Image::clamp(fontColorD[0], 0., 1.), Image::clamp(fontColorD[1], 0., 1.), Image::clamp(fontColorD[2], 0., 1.));
 
     textLabel.replace( QString::fromUtf8("\n"), QString::fromUtf8("<br>") );
     textLabel.prepend( QString::fromUtf8("<div align=\"left\">") );
     textLabel.append( QString::fromUtf8("</div>") );
     QFont f;
-    QColor color;
-    if ( !text.isEmpty() ) {
-        KnobGuiString::parseFont(textLabel, &f, &color);
-        bool antialias = appPTR->getCurrentSettings()->isNodeGraphAntiAliasingEnabled();
-        if (!antialias) {
-            f.setStyleStrategy(QFont::NoAntialias);
-        }
-        label->setFont(f);
+    f.setFamily(QString::fromUtf8(labelKnob->getFontFamily().c_str()));
+    f.setItalic(labelKnob->getItalicActivated());
+    f.setBold(labelKnob->getBoldActivated());
+    f.setPointSize(labelKnob->getFontSize());
+    bool antialias = appPTR->getCurrentSettings()->isNodeGraphAntiAliasingEnabled();
+    if (!antialias) {
+        f.setStyleStrategy(QFont::NoAntialias);
     }
 
-    label->setHtml(textLabel);
+    label->setDefaultTextColor(color);
+    label->setFont(f);
 
+    label->setHtml(textLabel);
 
     QRectF bbox = _publicInterface->boundingRect();
 

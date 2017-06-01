@@ -75,6 +75,12 @@ Backdrop::~Backdrop()
 {
 }
 
+KnobStringPtr
+Backdrop::getTextAreaKnob() const
+{
+    return _imp->knobLabel.lock();
+}
+
 void
 Backdrop::initializeKnobs()
 {
