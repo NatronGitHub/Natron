@@ -429,7 +429,7 @@ private:
     virtual bool isRenderCloneNeeded() const OVERRIDE FINAL;
 
 
-    virtual KnobHolderPtr createRenderCopy(const FrameViewRenderKey& key) const OVERRIDE FINAL;
+    virtual KnobHolderPtr createRenderCopy(const FrameViewRenderKey& key) const OVERRIDE;
 
     virtual void onNodeRemoved(const Node* node) OVERRIDE FINAL;
 

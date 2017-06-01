@@ -1118,9 +1118,7 @@ NodeGroup::NodeGroup(const EffectInstancePtr& mainInstance, const FrameViewRende
 , NodeCollection(mainInstance->getApp())
 , _imp(new NodeGroupPrivate())
 {
-    // Groups are never part of a render tree!
-    assert(false);
-    throw std::logic_error("A group cannot have a render clone");
+    
 }
 
 bool
@@ -1131,11 +1129,11 @@ NodeGroup::isRenderCloneNeeded() const
 }
 
 KnobHolderPtr
-NodeGroup::createRenderCopy(const FrameViewRenderKey& /*key*/) const
+NodeGroup::createRenderCopy(const FrameViewRenderKey& key) const
 {
-    // A group never has a render copy
-    assert(false);
-    return KnobHolderPtr();
+    // For a node group, even if the node does not perform any rendering, we still need to make copy of the knobs
+    // so they are local to the render.
+    return EffectInstance::createRenderCopy(key);
 }
 
 bool
