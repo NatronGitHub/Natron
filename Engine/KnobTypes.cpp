@@ -933,7 +933,7 @@ KnobChoice::setValueFromID(const std::string & value,
         _currentEntryLabel = value;
        }
        return setValue(-1, ViewIdx(0), dimension, turnOffAutoKeying);*/
-    throw std::runtime_error(std::string("KnobChoice::setValueFromLabel: unknown label ") + value);
+    return eValueChangedReturnCodeNothingChanged;
 }
 
 void

@@ -137,7 +137,7 @@ def createInstance(app,group):
 
     lastNode.userNatron = lastNode.createPageParam("userNatron", "User")
     # Refresh the GUI with the newly created parameters
-    lastNode.setPagesOrder(['controls', 'Node', 'Info', 'Settings', 'userNatron'])
+    lastNode.setPagesOrder(['controls', 'Node', 'Settings', 'userNatron'])
     lastNode.refreshUserParamsGUI()
     del lastNode
 
@@ -175,18 +175,13 @@ def createInstance(app,group):
     lastNode.setScriptName("Merge1")
     lastNode.setLabel("Merge1")
     lastNode.setPosition(1036, 302)
-    lastNode.setSize(104, 51)
+    lastNode.setSize(104, 56)
     lastNode.setColor(0.3, 0.37, 0.776)
     groupMerge1 = lastNode
 
-    param = lastNode.getParam("operation")
+    param = lastNode.getParam("userTextArea")
     if param is not None:
-        param.set("over")
-        del param
-
-    param = lastNode.getParam("mix")
-    if param is not None:
-        param.setValue(1, 0)
+        param.setValue("<Natron>(over)</Natron>")
         del param
 
     del lastNode
@@ -201,16 +196,9 @@ def createInstance(app,group):
     lastNode.setColor(0.3, 0.5, 0.2)
     groupSolid1 = lastNode
 
-    param = lastNode.getParam("color")
+    param = lastNode.getParam("NatronParamFormatChoice")
     if param is not None:
-        param.setValue(0, 0)
-        param.setValue(0, 1)
-        param.setValue(0, 2)
-        del param
-
-    param = lastNode.getParam("NatronOfxParamProcessA")
-    if param is not None:
-        param.setValue(True)
+        param.set("PC_Video 640x480")
         del param
 
     del lastNode
@@ -225,34 +213,9 @@ def createInstance(app,group):
     lastNode.setColor(0.6, 0.24, 0.39)
     groupShuffle1 = lastNode
 
-    param = lastNode.getParam("outputChannelsChoice")
-    if param is not None:
-        param.setValue("RGBA")
-        del param
-
-    param = lastNode.getParam("outputRChoice")
-    if param is not None:
-        param.setValue("A.r")
-        del param
-
-    param = lastNode.getParam("outputGChoice")
-    if param is not None:
-        param.setValue("A.g")
-        del param
-
-    param = lastNode.getParam("outputBChoice")
-    if param is not None:
-        param.setValue("A.b")
-        del param
-
     param = lastNode.getParam("outputA")
     if param is not None:
-        param.set("B.a")
-        del param
-
-    param = lastNode.getParam("outputAChoice")
-    if param is not None:
-        param.setValue("B.a")
+        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.A")
         del param
 
     del lastNode
@@ -289,7 +252,6 @@ def createInstance(app,group):
 
     # Start of node "Output1"
     lastNode = app.createNode("fr.inria.built-in.Output", 1, group)
-    lastNode.setScriptName("Output1")
     lastNode.setLabel("Output1")
     lastNode.setPosition(584, 442)
     lastNode.setSize(104, 34)

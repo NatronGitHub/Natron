@@ -46,6 +46,7 @@ def createInstance(app,group):
     lastNode.controlsPage.addParam(param)
 
     # Set param properties
+    param.setHelp("")
     param.setAddNewLine(True)
     param.setAnimationEnabled(False)
     lastNode.Blur1NatronOfxParamProcessR = param
@@ -59,6 +60,7 @@ def createInstance(app,group):
     lastNode.controlsPage.addParam(param)
 
     # Set param properties
+    param.setHelp("")
     param.setAddNewLine(False)
     param.setAnimationEnabled(False)
     lastNode.Blur1NatronOfxParamProcessG = param
@@ -72,6 +74,7 @@ def createInstance(app,group):
     lastNode.controlsPage.addParam(param)
 
     # Set param properties
+    param.setHelp("")
     param.setAddNewLine(False)
     param.setAnimationEnabled(False)
     lastNode.Blur1NatronOfxParamProcessB = param
@@ -85,6 +88,7 @@ def createInstance(app,group):
     lastNode.controlsPage.addParam(param)
 
     # Set param properties
+    param.setHelp("")
     param.setAddNewLine(False)
     param.setAnimationEnabled(False)
     lastNode.Blur1NatronOfxParamProcessA = param
@@ -113,6 +117,7 @@ def createInstance(app,group):
     lastNode.controlsPage.addParam(param)
 
     # Set param properties
+    param.setHelp("")
     param.setAddNewLine(True)
     param.setAnimationEnabled(True)
     lastNode.size = param
@@ -126,6 +131,7 @@ def createInstance(app,group):
     lastNode.controlsPage.addParam(param)
 
     # Set param properties
+    param.setHelp("")
     param.setAddNewLine(True)
     param.setAnimationEnabled(False)
     lastNode.filter = param
@@ -139,6 +145,7 @@ def createInstance(app,group):
     lastNode.controlsPage.addParam(param)
 
     # Set param properties
+    param.setHelp("")
     param.setAddNewLine(False)
     param.setAnimationEnabled(False)
     lastNode.cropToFormat = param
@@ -168,6 +175,7 @@ def createInstance(app,group):
     lastNode.controlsPage.addParam(param)
 
     # Set param properties
+    param.setHelp("")
     param.setAddNewLine(True)
     param.setAnimationEnabled(False)
     lastNode.Merge1maskInvert = param
@@ -185,13 +193,14 @@ def createInstance(app,group):
     lastNode.controlsPage.addParam(param)
 
     # Set param properties
+    param.setHelp("")
     param.setAddNewLine(True)
     param.setAnimationEnabled(True)
     lastNode.Blur1mix = param
     del param
 
     # Refresh the GUI with the newly created parameters
-    lastNode.setPagesOrder(['controlsPage', 'Node'])
+    lastNode.setPagesOrder(['controlsPage', 'Node', 'Settings'])
     lastNode.refreshUserParamsGUI()
     del lastNode
 
@@ -309,34 +318,9 @@ def createInstance(app,group):
     lastNode.setColor(0.6, 0.24, 0.39)
     groupShuffle1 = lastNode
 
-    param = lastNode.getParam("outputChannelsChoice")
-    if param is not None:
-        param.setValue("Color.RGBA")
-        del param
-
     param = lastNode.getParam("outputComponents")
     if param is not None:
         param.set("Alpha")
-        del param
-
-    param = lastNode.getParam("outputRChoice")
-    if param is not None:
-        param.setValue("A.r")
-        del param
-
-    param = lastNode.getParam("outputGChoice")
-    if param is not None:
-        param.setValue("A.g")
-        del param
-
-    param = lastNode.getParam("outputBChoice")
-    if param is not None:
-        param.setValue("A.b")
-        del param
-
-    param = lastNode.getParam("outputAChoice")
-    if param is not None:
-        param.setValue("A.a")
         del param
 
     del lastNode
@@ -423,9 +407,9 @@ def createInstance(app,group):
         param.set("A")
         del param
 
-    param = lastNode.getParam("enableMask_Mask")
+    param = lastNode.getParam("userTextArea")
     if param is not None:
-        param.setValue(True)
+        param.setValue("<Natron>(copy)</Natron>")
         del param
 
     del lastNode

@@ -14,7 +14,7 @@ public:
     {
     }
 
-    RectIWrapper(int l, int b, int r, int t);
+    RectIWrapper(int x1_, int y1_, int x2_, int y2_);
     virtual ~RectIWrapper();
     static void pysideInitQtMetaTypes();
 };

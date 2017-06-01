@@ -649,22 +649,40 @@ static PyObject* Sbk_ChoiceParamFunc_setValue(PyObject* self, PyObject* pyArg)
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: setValue(int)
+    // 0: setValue(QString)
+    // 1: setValue(int)
     if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArg)))) {
-        overloadId = 0; // setValue(int)
+        overloadId = 1; // setValue(int)
+    } else if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
+        overloadId = 0; // setValue(QString)
     }
 
     // Function signature not found.
     if (overloadId == -1) goto Sbk_ChoiceParamFunc_setValue_TypeError;
 
     // Call function/method
-    {
-        int cppArg0;
-        pythonToCpp(pyArg, &cppArg0);
+    switch (overloadId) {
+        case 0: // setValue(const QString & label)
+        {
+            ::QString cppArg0 = ::QString();
+            pythonToCpp(pyArg, &cppArg0);
 
-        if (!PyErr_Occurred()) {
-            // setValue(int)
-            cppSelf->setValue(cppArg0);
+            if (!PyErr_Occurred()) {
+                // setValue(QString)
+                cppSelf->setValue(cppArg0);
+            }
+            break;
+        }
+        case 1: // setValue(int value)
+        {
+            int cppArg0;
+            pythonToCpp(pyArg, &cppArg0);
+
+            if (!PyErr_Occurred()) {
+                // setValue(int)
+                cppSelf->setValue(cppArg0);
+            }
+            break;
         }
     }
 
@@ -674,7 +692,7 @@ static PyObject* Sbk_ChoiceParamFunc_setValue(PyObject* self, PyObject* pyArg)
     Py_RETURN_NONE;
 
     Sbk_ChoiceParamFunc_setValue_TypeError:
-        const char* overloads[] = {"int", 0};
+        const char* overloads[] = {"unicode", "int", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ChoiceParam.setValue", overloads);
         return 0;
 }

@@ -29,6 +29,8 @@
 
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
+#include "Engine/AppInstance.h"
+#include "Engine/KnobSerialization.h"
 #include "Engine/Curve.h"
 #include "Engine/ViewIdx.h"
 
@@ -1643,7 +1645,14 @@ ChoiceParam::set(const QString& label)
     if (!knob) {
         return;
     }
-    KnobHelper::ValueChangedReturnCodeEnum s = knob->setValueFromID(label.toStdString(), 0);
+    std::string choiceID = label.toStdString();
+    if (knob->getHolder()->getApp()->isCreatingPythonGroup()) {
+        // Before Natron 2.2.3, all dynamic choice parameters for multiplane had a string parameter.
+        // The string parameter had the same name as the choice parameter plus "Choice" appended.
+        // If we found such a parameter, retrieve the string from it.
+        KnobSerialization::checkForPreNatron226String(&choiceID);
+    }
+    KnobHelper::ValueChangedReturnCodeEnum s = knob->setValueFromID(choiceID, 0);
 
     Q_UNUSED(s);
 }
@@ -1666,6 +1675,12 @@ ChoiceParam::setValue(int value)
         return;
     }
     knob->setValue(value, ViewSpec::current(), 0);
+}
+
+void
+ChoiceParam::setValue(const QString& label)
+{
+    set(label);
 }
 
 int
