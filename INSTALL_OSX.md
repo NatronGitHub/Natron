@@ -56,7 +56,7 @@ Now, if you want to use turbojpeg instead of jpeg:
     
 And finally install the required packages:
 
-    sudo port -v install qt4-mac boost cairo expat gsed py27-pyside py27-sphinx
+    yes | sudo port -v install qt4-mac boost cairo expat gsed py27-pyside py27-sphinx
     sudo ln -s python2.7-config /opt/local/bin/python2-config
 
 Create the file /opt/local/lib/pkgconfig/glu.pc containing GLU
@@ -82,11 +82,11 @@ EOF
 
 If you intend to build the [openfx-io](https://github.com/MrKepzie/openfx-io) plugins too, you will need these additional packages:
 
-    sudo port -v install x264 +high10 libvpx +highbitdepth libraw +gpl2 openexr ffmpeg +gpl2 +high10 +highbitdepth opencolorio openimageio +natron seexpr
+    yes | sudo port -v install x264 +high10 libvpx +highbitdepth libraw +gpl2 openexr ffmpeg +gpl2 +high10 +highbitdepth opencolorio openimageio +natron seexpr
 
 and for [openfx-arena](https://github.com/olear/openfx-arena) (note that it installs a version of ImageMagick without support for many image I/O libraries):
 
-    sudo port -v install librsvg ImageMagick +natron poppler librevenge libcdr-0.1 libzip
+    yes | sudo port -v install librsvg ImageMagick +natron poppler librevenge libcdr-0.1 libzip
 
 ### Homebrew
 
@@ -336,6 +336,37 @@ It is also recommended in Xcode Preferences, select "Locations", then
 "Locations", to set the Derived Data location to be Relative, and in
 the advanced settings to set the build location to Legacy (if not,
 build files are somewhere under `~/Library/Developer/Xcode`.
+
+### Build on Xcode with openmp clang
+
+See instructions under "Using clang-omp with Xcode" at the following page https://clang-omp.github.io
+
+On Macports clang now ships with openmp by default, to install:
+sudo port install clang-4.0
+
+
+In your config.pri file, add the following lines and change the paths according to your installation of clang
+
+openmp {
+INCLUDEPATH += /opt/local/include/libomp
+LIBS += -L/opt/local/lib/libomp -liomp5
+
+cc_setting.name = CC
+cc_setting.value = /opt/local/bin/clang-mp-4.0
+cxx_setting.name = CXX
+cxx_setting.value = /opt/local/bin/clang++-mp-4.0
+QMAKE_MAC_XCODE_SETTINGS += cc_setting cxx_setting
+QMAKE_LFLAGS += "-B /usr/bin"
+
+}
+
+
+The qmake call should add CONFIG+=openmp
+
+qmake -r -spec macx-xcode CONFIG+=debug CONFIG+=enable-osmesa LLVM_PATH=/opt/llvm OSMESA_PATH=/opt/osmesa CONFIG+=openmp
+
+
+Then you can just build and run using Xcode
 
 ### Xcode caveats
 

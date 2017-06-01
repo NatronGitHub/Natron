@@ -1221,6 +1221,7 @@ TrackerNodeInteract::convertImageTosRGBOpenGLTexture(const boost::shared_ptr<Ima
             unsigned char alpha = 255;
 
             for (int y = roi.y1; y < roi.y2; ++y, dstPixels += w, srcPixels += srcRowElements) {
+                // coverity[dont_call]
                 int start = (int)( rand() % (roi.x2 - roi.x1) );
 
                 for (int backward = 0; backward < 2; ++backward) {
