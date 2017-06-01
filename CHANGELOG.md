@@ -13,6 +13,7 @@
 
 - Radial, Rectangle and generators: when the Extent is set to Size, and Reformat is not checked, Bottom Left and Size can be animated.
 - add Box filter to Transform, CornerPin, GodRays, and all Distortion nodes.
+- ContactSheet: Make a contact sheet from several inputs or frames (beta)
 
 ## Version 2.2.7
 
