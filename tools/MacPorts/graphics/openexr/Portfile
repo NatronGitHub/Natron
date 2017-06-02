@@ -68,6 +68,10 @@ if {${subport} eq ${name}} {
     if { ${configure.compiler} eq "macports-clang-3.9" } {
         configure.optflags "-O2"
     }
+    # clang-4.0 was not yet tested, use -O2 just to be on the safe side
+    if { ${configure.compiler} eq "macports-clang-4.0" } {
+        configure.optflags "-O2"
+    }
 }
 
 subport ilmbase {

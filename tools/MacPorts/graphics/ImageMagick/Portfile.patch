@@ -1,6 +1,6 @@
---- Portfile.orig	2017-02-10 15:17:00.000000000 +0100
-+++ Portfile	2017-02-10 16:41:09.000000000 +0100
-@@ -65,6 +65,8 @@
+--- Portfile.orig	2017-05-06 17:53:02.000000000 +0200
++++ Portfile	2017-06-02 13:26:34.000000000 +0200
+@@ -66,6 +66,8 @@
                              port:expat \
                              port:libxml2
  
@@ -9,7 +9,7 @@
  # Magick-config etc. use pkg-config
  depends_lib-append          port:pkgconfig
  
-@@ -91,11 +93,13 @@
+@@ -92,11 +94,13 @@
                              --with-dps \
                              --with-bzlib \
                              --with-djvu \
@@ -23,18 +23,18 @@
                              --with-openjp2 \
                              --with-png \
                              --with-tiff \
-@@ -113,6 +117,74 @@
+@@ -114,6 +118,74 @@
                              --without-x \
                              --with-gs-font-dir=${prefix}/share/fonts/urw-fonts
  
-+variant natron conflicts x11 requires pango rsvg q32 hdri universal description {Natron version} {
++variant natron conflicts x11 requires pango rsvg q32 hdri description {Natron version} {
 +    if {${configure.cxx_stdlib} eq "libstdc++"} {
 +        # configure with GCC 4.9 for proper OpenMP support
 +        configure.compiler macports-gcc-4.9
 +    } else {
 +        # libc++-based build
-+        # configure with clang-3.9 for proper OpenMP support
-+        configure.compiler macports-clang-3.9
++        # configure with clang-4.0 for proper OpenMP support
++        configure.compiler macports-clang-4.0
 +    }
 +    configure.args-append --enable-openmp
 +    patchfiles-append pango-align-hack.diff
@@ -98,7 +98,7 @@
  test.run                    yes
  test.target                 check
  test.env                    DYLD_LIBRARY_PATH=${worksrcpath}/magick/.libs
-@@ -120,6 +192,23 @@
+@@ -121,6 +193,23 @@
  # ImageMagick uses .la files at runtime to find its coder modules.
  destroot.delete_la_files    no
  
@@ -122,7 +122,7 @@
  variant graphviz description {Support Graphviz} {
      depends_lib-append      path:bin/dot:graphviz
      configure.args-replace  --without-gvc --with-gvc
-@@ -154,6 +243,11 @@
+@@ -155,6 +244,11 @@
  
  default_variants            +x11
  

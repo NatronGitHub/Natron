@@ -1,5 +1,5 @@
---- Portfile.orig	2017-01-03 10:50:19.000000000 +0100
-+++ Portfile	2017-01-10 23:50:19.000000000 +0100
+--- Portfile.orig	2017-05-06 17:53:02.000000000 +0200
++++ Portfile	2017-06-02 13:28:53.000000000 +0200
 @@ -28,7 +28,7 @@
  }
  
@@ -9,7 +9,7 @@
  
      depends_lib-append port:ilmbase
  
-@@ -60,8 +60,13 @@
+@@ -60,8 +60,17 @@
      # avoid "can't find a register in class 'BREG' while reloading 'asm'
      # see #51470 for MacPorts report
      # see https://github.com/openexr/openexr/issues/128 for upstream report
@@ -21,10 +21,14 @@
 +    # -O, -O2, -O3 work, though
 +    if { ${configure.compiler} eq "macports-clang-3.9" } {
 +        configure.optflags "-O2"
++    }
++    # clang-4.0 was not yet tested, use -O2 just to be on the safe side
++    if { ${configure.compiler} eq "macports-clang-4.0" } {
++        configure.optflags "-O2"
      }
  }
  
-@@ -71,6 +76,11 @@
+@@ -71,6 +80,11 @@
          rmd160  b1adb0c96eff6b3554ddaf8f8bafe2cba8c114e3 \
          sha256  ecf815b60695555c1fbc73679e84c7c9902f4e8faa6e8000d2f905b8b86cedc7
  

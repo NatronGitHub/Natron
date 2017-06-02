@@ -118,14 +118,14 @@ configure.args              --enable-shared \
                             --without-x \
                             --with-gs-font-dir=${prefix}/share/fonts/urw-fonts
 
-variant natron conflicts x11 requires pango rsvg q32 hdri universal description {Natron version} {
+variant natron conflicts x11 requires pango rsvg q32 hdri description {Natron version} {
     if {${configure.cxx_stdlib} eq "libstdc++"} {
         # configure with GCC 4.9 for proper OpenMP support
         configure.compiler macports-gcc-4.9
     } else {
         # libc++-based build
-        # configure with clang-3.9 for proper OpenMP support
-        configure.compiler macports-clang-3.9
+        # configure with clang-4.0 for proper OpenMP support
+        configure.compiler macports-clang-4.0
     }
     configure.args-append --enable-openmp
     patchfiles-append pango-align-hack.diff
