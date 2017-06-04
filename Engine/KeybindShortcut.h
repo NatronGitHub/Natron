@@ -320,8 +320,8 @@
 #define kShortcutActionGraphForcePreviewHint "Force a refresh of the preview image on the selected node(s)"
 
 #define kShortcutActionGraphShowCacheSize "cacheSize"
-#define kShortcutActionGraphShowCacheSizeLabel "Diplay Cache Memory Consumption"
-#define kShortcutActionGraphShowCacheSizeHint "Diplay the memory currently taken by the cache on disk"
+#define kShortcutActionGraphShowCacheSizeLabel "Display Cache Memory Consumption"
+#define kShortcutActionGraphShowCacheSizeHint "Display the memory currently taken by the cache on disk"
 
 #define kShortcutActionGraphOpenNodePanel "openSettingsPanel"
 #define kShortcutActionGraphOpenNodePanelLabel "Open Node Settings Panel"
