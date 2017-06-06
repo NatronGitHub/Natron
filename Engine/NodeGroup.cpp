@@ -1124,8 +1124,7 @@ NodeGroup::NodeGroup(const EffectInstancePtr& mainInstance, const FrameViewRende
 bool
 NodeGroup::isRenderCloneNeeded() const
 {
-    // A group never has a render copy
-    return false;
+    return true;
 }
 
 KnobHolderPtr

@@ -3832,12 +3832,14 @@ static void addKnobsKeys(const KnobsVec& knobs, TimeLineKeysSet* keys)
 
 static void addKnobTableItemKeysRecursive(const KnobTableItemPtr& item, TimeLineKeysSet* keys)
 {
-    // Add the master keyframes
-    addAnimatingItemKeys(item, true /*isUserKey*/, keys);
-
     if (!item->isItemSelected()) {
         return;
     }
+    
+    // Add the master keyframes
+    addAnimatingItemKeys(item, true /*isUserKey*/, keys);
+
+
     // Add knobs keyframes
     const KnobsVec& knobs = item->getKnobs();
     addKnobsKeys(knobs, keys);
