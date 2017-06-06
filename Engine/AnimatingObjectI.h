@@ -462,8 +462,9 @@ public:
 
     /**
      * @brief Similar to deleteValuesAtTime, except that the given keyframe times are kept whereas all other keyframes are deleted.
+     * @param range If non NULL, any keyframes outside this range will not be deleted.
      **/
-    void deleteValuesExceptAtTime(const std::set<double>& keyframesToIgnore, TimeValue time, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason);
+    void deleteValuesExceptAtTime(const std::set<double>& keyframesToIgnore, const RangeD* range, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason);
 
     /**
      * @brief Remove animation on the object before the given time (excluded). 

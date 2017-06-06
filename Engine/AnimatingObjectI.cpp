@@ -359,7 +359,7 @@ enum DeleteKnobAnimationEnum
     eDeleteKnobAnimationAfterTime
 };
 
-static void deleteValuesConditionalInternal(AnimatingObjectI* obj, DeleteKnobAnimationEnum type, const std::set<double>& keyframesToIgnore, TimeValue time, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason)
+static void deleteValuesConditionalInternal(AnimatingObjectI* obj, DeleteKnobAnimationEnum type, const std::set<double>& keyframesToIgnore, const RangeD* range, TimeValue time, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason)
 {
     std::list<ViewIdx> views = obj->getViewsList();
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
@@ -377,6 +377,12 @@ static void deleteValuesConditionalInternal(AnimatingObjectI* obj, DeleteKnobAni
             switch (type) {
                 case eDeleteKnobAnimationAll: {
                     for (KeyFrameSet::iterator it = keys.begin(); it != keys.end(); ++it) {
+                        if (range && it->getTime() < range->min) {
+                            continue;
+                        }
+                        if (range && it->getTime() > range->max) {
+                            break;
+                        }
                         std::set<double>::iterator found = keyframesToIgnore.find( it->getTime() );
                         if ( found == keyframesToIgnore.end() ) {
                             toRemove.push_back( it->getTime() );
@@ -416,22 +422,22 @@ static void deleteValuesConditionalInternal(AnimatingObjectI* obj, DeleteKnobAni
 } // deleteValuesConditionalInternal
 
 void
-AnimatingObjectI::deleteValuesExceptAtTime(const std::set<double>& keyframesToIgnore, TimeValue time, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason)
+AnimatingObjectI::deleteValuesExceptAtTime(const std::set<double>& keyframesToIgnore, const RangeD* range, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason)
 {
-    deleteValuesConditionalInternal(this, eDeleteKnobAnimationAll, keyframesToIgnore, time, view, dimension, reason);
+    deleteValuesConditionalInternal(this, eDeleteKnobAnimationAll, keyframesToIgnore, range, TimeValue(0), view, dimension, reason);
 }
 
 void
 AnimatingObjectI::deleteValuesBeforeTime(const std::set<double>& keyframesToIgnore, TimeValue time, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason)
 {
-    deleteValuesConditionalInternal(this, eDeleteKnobAnimationBeforeTime, keyframesToIgnore, time, view, dimension, reason);
+    deleteValuesConditionalInternal(this, eDeleteKnobAnimationBeforeTime, keyframesToIgnore, 0, time, view, dimension, reason);
 }
 
 
 void
 AnimatingObjectI::deleteValuesAfterTime(const std::set<double>& keyframesToIgnore, TimeValue time, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason)
 {
-    deleteValuesConditionalInternal(this, eDeleteKnobAnimationAfterTime, keyframesToIgnore, time, view, dimension, reason);
+    deleteValuesConditionalInternal(this, eDeleteKnobAnimationAfterTime, keyframesToIgnore, 0, time, view, dimension, reason);
 }
 
 NATRON_NAMESPACE_EXIT;
