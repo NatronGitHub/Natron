@@ -114,6 +114,7 @@ platform darwin 8 {
 }
 
 if { ${build_arch} eq "i386" || ${build_arch} eq "x86_64" } {
+    compiler.blacklist-append *gcc-4.0
     compiler.blacklist-append *gcc-4.2
     compiler.blacklist-append {clang < 400}
 }
