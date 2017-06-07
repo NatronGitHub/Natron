@@ -279,6 +279,7 @@ bool timed_lock_impl(Mutex* m, std::size_t timeoutMilliseconds, double frequency
             if ((m->*try_lock_func)()) {
                 return true;
             }
+            now = getTimestampInSeconds();
             timeElapsedMS = getTimeElapsed(startTime, now, frequency) * 1000.;
         } while(timeElapsedMS < timeoutMilliseconds);
     }
