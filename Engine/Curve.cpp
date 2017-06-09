@@ -416,8 +416,10 @@ Curve::addKeyFrame(KeyFrame key)
 {
     QMutexLocker l(&_imp->_lock);
 
+    // the default interpolation for bool, string, choice, int is constant
     if ( (_imp->type == Curve::eCurveTypeBool) || (_imp->type == Curve::eCurveTypeString) ||
-         ( _imp->type == Curve::eCurveTypeIntConstantInterp) ) {
+         (_imp->type == Curve::eCurveTypeInt) ||
+         (_imp->type == Curve::eCurveTypeIntConstantInterp) ) {
         key.setInterpolation(eKeyframeTypeConstant);
     }
 
