@@ -425,7 +425,9 @@ Curve::addKeyFrame(KeyFrame key)
 {
     QMutexLocker l(&_imp->_lock);
 
+    // the default interpolation for bool, string, chaice, int is constant
     if ( (_imp->type == CurvePrivate::eCurveTypeBool) || (_imp->type == CurvePrivate::eCurveTypeString) ||
+         ( _imp->type == CurvePrivate::eCurveTypeInt) ||
          ( _imp->type == CurvePrivate::eCurveTypeIntConstantInterp) ) {
         key.setInterpolation(eKeyframeTypeConstant);
     }
