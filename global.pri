@@ -317,7 +317,6 @@ win32-g++ {
    # On MingW everything is defined with pkgconfig except boost
     QT_CONFIG -= no-pkg-config
     CONFIG += link_pkgconfig
-    message("PKG_CONFIG_PATH is $$PKG_CONFIG_PATH")
     PKGCONFIG += freetype2 fontconfig
 
     expat:     PKGCONFIG += expat
