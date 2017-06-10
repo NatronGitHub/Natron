@@ -8,7 +8,15 @@ Distance node
 Description
 -----------
 
-Compute Euclidean distance function to pixels that have a value of zero. The distance is normalized with respect to the largest image dimension, so that it is always between 0 and 1.
+Compute at each pixel the distance to pixels that have a value of zero.
+
+The distance is normalized with respect to the largest image dimension, so that it is between 0 and 1.
+
+Optionally, a signed distance to the frontier between zero and nonzero values can be computed.
+
+The distance transform can then be thresholded using the Threshold effect, or transformed using the ColorLookup effect, in order to generate a mask for another effect.
+
+See alse https://en.wikipedia.org/wiki/Distance\_transform
 
 Uses the 'distance' function from the CImg library.
 
@@ -32,19 +40,19 @@ Controls
 
 .. cssclass:: longtable
 
-+--------------------------------+-----------+-------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Parameter / script name        | Type      | Default     | Function                                                                                                                                                      |
-+================================+===========+=============+===============================================================================================================================================================+
-| Metric / ``metric``            | Choice    | Euclidean   | | Type of metric.                                                                                                                                             |
-|                                |           |             | | **Chebyshev**: max(abs(x-xborder),abs(y-yborder))                                                                                                           |
-|                                |           |             | | **Manhattan**: abs(x-xborder) + abs(y-yborder)                                                                                                              |
-|                                |           |             | | **Euclidean**: sqrt(sqr(x-xborder) + sqr(y-yborder))                                                                                                        |
-|                                |           |             | | **Squared Euclidean**: sqr(x-xborder) + sqr(y-yborder)                                                                                                      |
-|                                |           |             | | **Spherical**: Compute the Euclidean distance, and draw a sphere at each point. Gives a round shape rather than a conical shape to the distance function.   |
-+--------------------------------+-----------+-------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| (Un)premult / ``premult``      | Boolean   | Off         | Divide the image by the alpha channel before processing, and re-multiply it afterwards. Use if the input images are premultiplied.                            |
-+--------------------------------+-----------+-------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Invert Mask / ``maskInvert``   | Boolean   | Off         | When checked, the effect is fully applied where the mask is 0.                                                                                                |
-+--------------------------------+-----------+-------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Mix / ``mix``                  | Double    | 1           | Mix factor between the original and the transformed image.                                                                                                    |
-+--------------------------------+-----------+-------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------+
++--------------------------------+-----------+-------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Parameter / script name        | Type      | Default     | Function                                                                                                                                                                                                                                                                |
++================================+===========+=============+=========================================================================================================================================================================================================================================================================+
+| Metric / ``metric``            | Choice    | Euclidean   | | Type of metric.                                                                                                                                                                                                                                                       |
+|                                |           |             | | **Chebyshev**: max(abs(x-xborder),abs(y-yborder))                                                                                                                                                                                                                     |
+|                                |           |             | | **Manhattan**: abs(x-xborder) + abs(y-yborder)                                                                                                                                                                                                                        |
+|                                |           |             | | **Euclidean**: sqrt(sqr(x-xborder) + sqr(y-yborder))                                                                                                                                                                                                                  |
++--------------------------------+-----------+-------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Signed Distance / ``signed``   | Boolean   | Off         | Instead of computing the distance to pixels with a value of zero, compute the signed distance to the contour between zero and non-zero pixels. On output, non-zero-valued pixels have a positive signed distance, zero-valued pixels have a negative signed distance.   |
++--------------------------------+-----------+-------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| (Un)premult / ``premult``      | Boolean   | Off         | Divide the image by the alpha channel before processing, and re-multiply it afterwards. Use if the input images are premultiplied.                                                                                                                                      |
++--------------------------------+-----------+-------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Invert Mask / ``maskInvert``   | Boolean   | Off         | When checked, the effect is fully applied where the mask is 0.                                                                                                                                                                                                          |
++--------------------------------+-----------+-------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Mix / ``mix``                  | Double    | 1           | Mix factor between the original and the transformed image.                                                                                                                                                                                                              |
++--------------------------------+-----------+-------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
