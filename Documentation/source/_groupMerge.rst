@@ -7,10 +7,12 @@ The following sections contain documentation about every node in the  Merge grou
     :maxdepth: 1
 
     plugins/net.sf.openfx.MergeDifference.rst
+    plugins/net.sf.openfx.ContactSheetOFX.rst
     plugins/net.sf.openfx.CopyRectanglePlugin.rst
     plugins/net.sf.openfx.DissolvePlugin.rst
     plugins/net.sf.openfx.MergeIn.rst
     plugins/net.sf.openfx.KeyMix.rst
+    plugins/net.sf.openfx.LayerContactSheetOFX.rst
     plugins/net.sf.openfx.MergeMatte.rst
     plugins/net.sf.openfx.MergeMax.rst
     plugins/net.sf.openfx.MergePlugin.rst

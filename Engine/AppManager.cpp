@@ -1027,7 +1027,7 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
 
     setLoadingStatus( tr("Restoring the image cache...") );
 
-    if (oldCacheVersion != NATRON_CACHE_VERSION) {
+    if (oldCacheVersion != NATRON_CACHE_VERSION || cl.isCacheClearRequestedOnLaunch()) {
         wipeAndCreateDiskCacheStructure();
     } else {
         _imp->restoreCaches();
