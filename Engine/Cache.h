@@ -509,6 +509,13 @@ public:
 
     virtual ~Cache();
 
+    /**
+     * @brief Clear any data on disk saved by the Cache. This function can be called before any Cache object is created 
+     * to ensure the Cache does not try to load any data when initializing. Note that this function may be called whilst a
+     * process is using the Cache resources, but it will not remove data from shared memory until all process is done using
+     * this resource.
+     **/
+    static void clearDiskCache();
 
     /**
      * @brief Create a new instance of a cache

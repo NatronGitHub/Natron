@@ -1211,6 +1211,27 @@ struct CacheIPCData
 };
 
 
+static std::string getCacheDirPath()
+{
+    std::string cachePath = appPTR->getCurrentSettings()->getDiskCachePath();
+    // Check that the user provided path exists otherwise fallback on default.
+    bool userDirExists;
+    if (cachePath.empty()) {
+        userDirExists = false;
+    } else {
+        QString userDirectoryCache = QString::fromUtf8(cachePath.c_str());
+        QDir d(userDirectoryCache);
+        userDirExists = d.exists();
+    }
+    if (userDirExists) {
+        return cachePath;
+    } else {
+        return StandardPaths::writableLocation(StandardPaths::eStandardLocationCache).toStdString();
+    }
+
+}
+
+
 template <bool persistent>
 struct CachePrivate
 {
@@ -1330,15 +1351,13 @@ struct CachePrivate
     }
 
 
-    void initializeCacheDirPath();
-
     void ensureCacheDirectoryExists();
 
     QString getBucketAbsoluteDirPath(int bucketIndex) const;
 
-    std::string getSharedMemoryName() const;
+    static std::string getSharedMemoryName();
 
-    std::size_t getSharedMemorySize() const;
+    static std::size_t getSharedMemorySize();
 
 #ifdef NATRON_CACHE_INTERPROCESS_ROBUST
     /**
@@ -2774,7 +2793,7 @@ Cache<persistent>::~Cache()
 
 template <bool persistent>
 std::string
-CachePrivate<persistent>::getSharedMemoryName() const
+CachePrivate<persistent>::getSharedMemoryName()
 {
 
     std::stringstream ss;
@@ -2785,7 +2804,7 @@ CachePrivate<persistent>::getSharedMemoryName() const
 
 template <bool persistent>
 std::size_t
-CachePrivate<persistent>::getSharedMemorySize() const
+CachePrivate<persistent>::getSharedMemorySize()
 {
     // Allocate space rounded to page size for the global data.
     std::size_t pageSize = bip::mapped_region::get_page_size();
@@ -2864,7 +2883,8 @@ Cache<persistent>::initialize(const boost::shared_ptr<Cache<persistent> >& thisS
     if (persistent) {
         // Open or create the file lock
 
-        _imp->initializeCacheDirPath();
+        _imp->directoryContainingCachePath = getCacheDirPath();
+
         _imp->ensureCacheDirectoryExists();
 
         std::string cacheDir;
@@ -3990,26 +4010,6 @@ static void createIfNotExistBucketDirs(const QDir& d)
 
 }
 
-template <bool persistent>
-void
-CachePrivate<persistent>::initializeCacheDirPath()
-{
-    std::string cachePath = appPTR->getCurrentSettings()->getDiskCachePath();
-    // Check that the user provided path exists otherwise fallback on default.
-    bool userDirExists;
-    if (cachePath.empty()) {
-        userDirExists = false;
-    } else {
-        QString userDirectoryCache = QString::fromUtf8(cachePath.c_str());
-        QDir d(userDirectoryCache);
-        userDirExists = d.exists();
-    }
-    if (userDirExists) {
-        directoryContainingCachePath = cachePath;
-    } else {
-        directoryContainingCachePath = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache).toStdString();
-    }
-} // initializeCacheDirPath
 
 template <bool persistent>
 void
@@ -4276,6 +4276,50 @@ Cache<persistent>::clear()
     
     
 } // clear()
+
+template <bool persistent>
+void
+Cache<persistent>::clearDiskCache()
+{
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+    // Remove semaphores and shared memory
+    try {
+        std::string semValidStr, semInvalidStr;
+        {
+            std::string semBaseName;
+            {
+                std::stringstream ss;
+                ss << NATRON_APPLICATION_NAME << NATRON_CACHE_DIRECTORY_NAME;
+                semBaseName = ss.str();
+            }
+            semValidStr = std::string(semBaseName + "nSHMValidSem");
+            semInvalidStr = std::string(semBaseName + "nSHMInvalidSem");
+        }
+        bip::named_semaphore::remove(semValidStr.c_str());
+        bip::named_semaphore::remove(semInvalidStr.c_str());
+        std::string sharedMemoryName = CachePrivate<persistent>::getSharedMemoryName();
+        bip::shared_memory_object::remove(sharedMemoryName.c_str());
+
+    } catch (...) {
+
+    }
+#endif
+
+    // Remove cache dir recursively but preserve the directory itself
+
+    QDir dir(QString::fromUtf8(getCacheDirPath().c_str()));
+
+    if ( dir.exists() ) {
+        Q_FOREACH( QFileInfo info, dir.entryInfoList(QDir::NoDotAndDotDot | QDir::System | QDir::Hidden  | QDir::AllDirs | QDir::Files, QDir::DirsFirst) ) {
+            if ( info.isDir() ) {
+                QtCompat::removeRecursively( info.absoluteFilePath() );
+            } else {
+                QFile::remove( info.absoluteFilePath() );
+            }
+        }
+    }
+
+}
 
 template <bool persistent>
 void

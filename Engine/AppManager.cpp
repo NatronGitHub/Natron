@@ -894,9 +894,17 @@ AppManager::loadInternal(const CLArgs& cl)
         _imp->_settings->loadSettingsFromFile(Settings::eLoadSettingsTypeKnobs);
     }
 
+    if (cl.isCacheClearRequestedOnLaunch()) {
+        // Clear the cache before attempting to load any data.
+        // It is important to call it AFTER _settings->loadSettingsFromFile() because the settings hold the cache
+        // location given by the user in the Preferences.
+        Cache<true>::clearDiskCache();
+    }
+
     // Create cache once we loaded the cache directory path wanted by the user
     _imp->generalPurposeCache = Cache<false>::create(false /*enableTileStorage*/);
     try {
+
         // If the cache is busy because another process is using it and we are not compiled
         // with NATRON_CACHE_INTERPROCESS_ROBUST, just create a process local cache instead.
         _imp->tileCache = Cache<true>::create(true /*enableTileStorage*/);
@@ -908,9 +916,7 @@ AppManager::loadInternal(const CLArgs& cl)
         _imp->tileCache = Cache<false>::create(true /*enableTileStorage*/);
     }
 
-    if (cl.isCacheClearRequestedOnLaunch()) {
-        _imp->tileCache->clear();
-    }
+
     _imp->tileCache->setMaximumCacheSize(_imp->_settings->getTileCacheSize());
     _imp->generalPurposeCache->setMaximumCacheSize(_imp->_settings->getGeneralPurposeCacheSize());
 
