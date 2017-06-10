@@ -59,6 +59,7 @@ public:
     std::list<std::string> settingCommands; //!< executed after loading the settings
     bool isBackground;
     bool useDefaultSettings;
+    bool clearCacheOnLaunch;
     QString ipcPipe;
     int error;
     bool isInterpreterMode;
@@ -85,6 +86,7 @@ public:
         , settingCommands()
         , isBackground(false)
         , useDefaultSettings(false)
+        , clearCacheOnLaunch(false)
         , ipcPipe()
         , error(0)
         , isInterpreterMode(false)
@@ -215,6 +217,7 @@ CLArgs::operator=(const CLArgs& other)
     _imp->filename = other._imp->filename;
     _imp->isPythonScript = other._imp->isPythonScript;
     _imp->defaultOnProjectLoadedScript = other._imp->defaultOnProjectLoadedScript;
+    _imp->clearCacheOnLaunch = other._imp->clearCacheOnLaunch;
     _imp->writers = other._imp->writers;
     _imp->readers = other._imp->readers;
     _imp->pythonCommands = other._imp->pythonCommands;
@@ -441,6 +444,13 @@ CLArgs::isLoadedUsingDefaultSettings() const
 {
     return _imp->useDefaultSettings;
 }
+
+bool
+CLArgs::isCacheClearRequestedOnLaunch() const
+{
+    return _imp->clearCacheOnLaunch;
+}
+
 
 bool
 CLArgs::isBackgroundMode() const
@@ -740,6 +750,14 @@ CLArgsPrivate::parse()
             error = 1;
 
             return;
+        }
+    }
+
+    {
+        QStringList::iterator it = hasToken( QString::fromUtf8("clear-cache"), QString() );
+        if ( it != args.end() ) {
+            clearCacheOnLaunch = true;
+            args.erase(it);
         }
     }
 
