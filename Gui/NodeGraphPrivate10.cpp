@@ -164,6 +164,7 @@ NodeGraphPrivate::pasteNode(const boost::shared_ptr<NodeSerialization> & interna
     args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
     args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
     args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+    args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
     
     NodePtr n = _publicInterface->getGui()->getApp()->createNode(args);
 
