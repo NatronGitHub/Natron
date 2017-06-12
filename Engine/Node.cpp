@@ -9236,7 +9236,7 @@ Node::Implementation::onLayerChanged(int inputNb,
             if (it->first >= 0) {
                 inp = _publicInterface->getInput(it->first);
             }
-            bool mustBeSecret = !inp.get() || outputIsAll;
+            bool mustBeSecret = (it->first >= 0 && !inp.get()) || outputIsAll;
             it->second.layer.lock()->setSecret(mustBeSecret);
             
         }
