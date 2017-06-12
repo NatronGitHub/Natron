@@ -1502,6 +1502,7 @@ GroupFromSelectionCommand::redo()
     Project::extractTreesFromNodes(originalNodes, trees);
     int inputNb = 0;
 
+
     // The output node position is the average of all trees root
     QPointF outputNodePosition = QPointF(0,0);
 
@@ -1516,46 +1517,51 @@ GroupFromSelectionCommand::redo()
             _savedLinks[it2->node] = originalNodeInputs;
             for (std::size_t i = 0; i < originalNodeInputs.size(); ++i) {
                 NodePtr originalInput = originalNodeInputs[i].lock();
+
+                //Create an input node corresponding to this input
+                CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_INPUT, containerGroup));
+                args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+                args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+                args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+
+
+                NodePtr input = containerNode->getApp()->createNode(args);
+                assert(input);
+
+                // Name the Input node with the label of the node and the input label
+                std::string inputLabel = it2->node->getLabel() + '_' + it2->node->getInputLabel(i);
+                input->setLabel(inputLabel);
+
+                // Position the input node correctly
+                double offsetX, offsetY;
+
+
+                double inputX, inputY;
+                originalInput->getPosition(&inputX, &inputY);
+                double outputX, outputY;
+                it->output.node->getPosition(&outputX, &outputY);
+                if (originalInput) {
+                    offsetX = inputX - outputX;
+                    offsetY = inputY - outputY;
+                } else {
+                    offsetX = inputX;
+                    offsetY = inputY - 100;
+                }
+                double thisInputX, thisInputY;
+                it2->node->getPosition(&thisInputX, &thisInputY);
+
+                thisInputX += offsetX;
+                thisInputY += offsetY;
+
+                input->setPosition(thisInputX, thisInputY);
+
+                it2->node->swapInput(input, i);
                 if (originalInput) {
 
-                    //Create an input node corresponding to this input
-                    CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_INPUT, containerGroup));
-                    args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
-                    args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-                    args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-
-
-                    NodePtr input = containerNode->getApp()->createNode(args);
-                    assert(input);
-
-                    // Name the Input node with the label of the node and the input label
-                    std::string inputLabel = it2->node->getLabel() + '_' + it2->node->getInputLabel(i);
-                    input->setLabel(inputLabel);
-
-                    // Position the input node correctly
-                    double offsetX, offsetY;
-                    {
-                        double inputX, inputY;
-                        originalInput->getPosition(&inputX, &inputY);
-                        double outputX, outputY;
-                        it->output.node->getPosition(&outputX, &outputY);
-                        offsetX = inputX - outputX;
-                        offsetY = inputY - outputY;
-                    }
-                    double thisInputX, thisInputY;
-                    it2->node->getPosition(&thisInputX, &thisInputY);
-
-                    thisInputX += offsetX;
-                    thisInputY += offsetY;
-
-                    input->setPosition(thisInputX, thisInputY);
-
-                    it2->node->swapInput(input, i);
-
                     containerGroup->getNode()->connectInput(originalInput, inputNb);
-
-                    ++inputNb;
                 }
+                ++inputNb;
+                
             } // for all node's inputs
 
 
