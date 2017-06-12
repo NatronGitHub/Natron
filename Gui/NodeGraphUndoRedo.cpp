@@ -1536,11 +1536,12 @@ GroupFromSelectionCommand::redo()
                 double offsetX, offsetY;
 
 
-                double inputX, inputY;
-                originalInput->getPosition(&inputX, &inputY);
+
                 double outputX, outputY;
                 it->output.node->getPosition(&outputX, &outputY);
                 if (originalInput) {
+                    double inputX, inputY;
+                    originalInput->getPosition(&inputX, &inputY);
                     offsetX = inputX - outputX;
                     offsetY = inputY - outputY;
                 } else {
