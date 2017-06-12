@@ -1659,43 +1659,43 @@ GroupFromSelectionCommand::redo()
                 const std::vector<NodeWPtr >& originalNodeInputs = originalNodeInternal->getInputs();
                 for (std::size_t i = 0; i < originalNodeInputs.size(); ++i) {
                     NodePtr originalInput = originalNodeInputs[i].lock();
+
+                    //Create an input node corresponding to this input
+                    CreateNodeArgs args(PLUGINID_NATRON_INPUT, isGrp);
+                    args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+                    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+                    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+
+
+                    NodePtr input = _graph->getGui()->getApp()->createNode(args);
+                    assert(input);
+                    std::string inputLabel = originalNodeInternal->getLabel() + '_' + originalNodeInternal->getInputLabel(i);
+                    input->setLabel(inputLabel);
+
+                    // Position the input node correctly
+                    double offsetX, offsetY;
                     if (originalInput) {
-                        //Create an input node corresponding to this input
-                        CreateNodeArgs args(PLUGINID_NATRON_INPUT, isGrp);
-                        args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
-                        args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-                        args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-
-
-                        NodePtr input = _graph->getGui()->getApp()->createNode(args);
-                        assert(input);
-                        std::string inputLabel = originalNodeInternal->getLabel() + '_' + originalNodeInternal->getInputLabel(i);
-                        input->setLabel(inputLabel);
-
-                        // Position the input node correctly
-                        double offsetX, offsetY;
-                        {
-                            double inputX, inputY;
-                            originalInput->getPosition(&inputX, &inputY);
-                            double originalX, originalY;
-                            foundOriginalNode->getPosition(&originalX, &originalY);
-                            offsetX = inputX - originalX;
-                            offsetY = inputY - originalY;
-                        }
-                        double thisInputX, thisInputY;
-                        it2->node->getPosition(&thisInputX, &thisInputY);
-
-                        thisInputX += offsetX;
-                        thisInputY += offsetY;
-
-                        input->setPosition(thisInputX, thisInputY);
-
-                        it2->node->connectInput(input, i);
-
-                        isGrp->getNode()->connectInput(originalInput, inputNb);
-
-                        ++inputNb;
+                        double inputX, inputY;
+                        originalInput->getPosition(&inputX, &inputY);
+                        double originalX, originalY;
+                        foundOriginalNode->getPosition(&originalX, &originalY);
+                        offsetX = inputX - originalX;
+                        offsetY = inputY - originalY;
                     }
+                    double thisInputX, thisInputY;
+                    it2->node->getPosition(&thisInputX, &thisInputY);
+
+                    thisInputX += offsetX;
+                    thisInputY += offsetY;
+
+                    input->setPosition(thisInputX, thisInputY);
+
+                    it2->node->connectInput(input, i);
+                    if (originalInput) {
+                        isGrp->getNode()->connectInput(originalInput, inputNb);
+                    }
+                    ++inputNb;
+
                 } // for all node's inputs
             } // for all inputs in the tree
             //Create only a single output
