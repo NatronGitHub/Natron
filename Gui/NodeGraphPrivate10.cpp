@@ -124,7 +124,6 @@ NodeGraphPrivate::pasteNodesInternal(const std::list<std::pair<NodePtr, SERIALIZ
         serializationList.push_back(it->second);
     }
     
-
     // Create nodes
     std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > > createdNodes;
     Project::restoreGroupFromSerialization(serializationList, group.lock(), &createdNodes);
