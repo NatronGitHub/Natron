@@ -670,7 +670,7 @@ ChoiceKnobDimView::ChoiceKnobDimView()
 bool
 ChoiceKnobDimView::setValueAndCheckIfChanged(const int& v)
 {
-    ValueKnobDimView<int>::setValueAndCheckIfChanged(v);
+    bool changed = ValueKnobDimView<int>::setValueAndCheckIfChanged(v);
 
     QMutexLocker k(&valueMutex);
     ChoiceOption newChoice;
@@ -684,7 +684,7 @@ ChoiceKnobDimView::setValueAndCheckIfChanged(const int& v)
         activeEntry = newChoice;
         return true;
     }
-    return false;
+    return changed;
 }
 
 bool
