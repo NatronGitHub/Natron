@@ -1674,17 +1674,22 @@ GroupFromSelectionCommand::redo()
 
                     // Position the input node correctly
                     double offsetX, offsetY;
+
+
+                    double originalX, originalY;
+                    foundOriginalNode->getPosition(&originalX, &originalY);
                     if (originalInput) {
                         double inputX, inputY;
                         originalInput->getPosition(&inputX, &inputY);
-                        double originalX, originalY;
-                        foundOriginalNode->getPosition(&originalX, &originalY);
                         offsetX = inputX - originalX;
                         offsetY = inputY - originalY;
+                    } else {
+                        offsetX = originalX;
+                        offsetX = originalY - 100;
                     }
                     double thisInputX, thisInputY;
                     it2->node->getPosition(&thisInputX, &thisInputY);
-
+                    
                     thisInputX += offsetX;
                     thisInputY += offsetY;
 
