@@ -101,12 +101,7 @@ BackdropGui::createGui()
     _imp->label->setDefaultTextColor( QColor(0, 0, 0, 255) );
     _imp->label->setZValue(getBaseDepth() + 1);
 
-    EffectInstancePtr effect = getNode()->getEffectInstance();
-    assert(effect);
-    Backdrop* isBd = dynamic_cast<Backdrop*>( effect.get() );
-    assert(isBd);
-
-    QObject::connect( isBd, SIGNAL(labelChanged(QString)), this, SLOT(onLabelChanged(QString)) );
+    QObject::connect( _imp->backdropEffect.lock().get(), SIGNAL(labelChanged(QString)), this, SLOT(onLabelChanged(QString)) );
 
     _imp->refreshLabelText();
 

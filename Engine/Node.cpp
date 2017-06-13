@@ -382,6 +382,11 @@ Node::getLinkedNodes(std::list<std::pair<NodePtr, bool> >* nodes) const
                     // Increment the number of references to that node
                     NodePtr sharedNode = sharedHolderIsEffect->getNode();
 
+                    // If the shared node is deactivated, do not count it
+                    if (!sharedNode->isActivated()) {
+                        continue;
+                    }
+
                     // If the shared node is a child of this group, don't count as link
                     if (std::find(groupNodes.begin(), groupNodes.end(), sharedNode) != groupNodes.end()) {
                         continue;

@@ -206,6 +206,7 @@ NodeGraph::pasteClipboard(const QPointF& pos)
     } else {
         position = pos;
     }
+    position = _imp->_root->mapFromScene(position);
 
     QClipboard* clipboard = QApplication::clipboard();
     const QMimeData* mimedata = clipboard->mimeData();

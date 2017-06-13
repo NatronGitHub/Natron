@@ -255,12 +255,20 @@ NodeGui::initialize(NodeGraph* dag,
 
     ViewerNodePtr isViewerNode = internalNode->isEffectViewerNode();
 
+    bool hasResized = false;
 
-    double x,y;
-    internalNode->getPosition(&x, &y);
-    createGui();
-    refreshPosition(x, y, true);
-
+    {
+        double x,y;
+        internalNode->getPosition(&x, &y);
+        double w,h;
+        internalNode->getSize(&w,&h);
+        createGui();
+        refreshPosition(x, y, true);
+        if (w != -1 && h != -1) {
+            resize(w,h);
+            hasResized = true;
+        }
+    }
 
     {
         bool isTopLevelNodeBeingCreated = internalNode->getApp()->isTopLevelNodeBeingCreated(internalNode);
@@ -276,12 +284,14 @@ NodeGui::initialize(NodeGraph* dag,
         ///It calls resize
         togglePreview_internal(false);
     } else {
-        double x,y;
-        internalNode->getPosition(&x ,&y);
-        refreshPosition(x, y);
-        int w, h;
-        getInitialSize(&w, &h);
-        resize(w, h);
+        /*double x,y;
+         internalNode->getPosition(&x ,&y);
+         refreshPosition(x, y);*/
+        if (!hasResized) {
+            int w, h;
+            getInitialSize(&w, &h);
+            resize(w, h);
+        }
     }
 
 
