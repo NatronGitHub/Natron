@@ -951,27 +951,66 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             if (doCacheLookup) {
                 int nLookups = draftModeSupported && frameArgs->draftMode ? 2 : 1;
 
+                // If the node does'nt support render scale, first lookup the cache with requested level, if not cached then lookup
+                // with full scale
+                unsigned int lookupMipMapLevel = renderMappedMipMapLevel != mipMapLevel ? mipMapLevel : renderMappedMipMapLevel;
                 for (int n = 0; n < nLookups; ++n) {
-                    getImageFromCacheAndConvertIfNeeded(createInCache, storage, args.returnStorage, n == 0 ? *nonDraftKey : *key, renderMappedMipMapLevel,
-                                                        renderFullScaleThenDownscale ? &upscaledImageBounds : &downscaledImageBounds,
-                                                        &rod, roi,
+                    getImageFromCacheAndConvertIfNeeded(createInCache, storage, args.returnStorage, n == 0 ? *nonDraftKey : *key, lookupMipMapLevel,
+                                                        &downscaledImageBounds,
+                                                        &rod, args.roi,
                                                         args.bitdepth, *it,
                                                         args.inputImagesList,
                                                         frameArgs->stats,
                                                         glContextLocker,
                                                         &plane.fullscaleImage);
                     if (plane.fullscaleImage) {
+                        if (byPassCache) {
+                            if (plane.fullscaleImage) {
+                                appPTR->removeFromNodeCache( key->getHash() );
+                                plane.fullscaleImage.reset();
+                            }
+                        } else if (renderMappedMipMapLevel != mipMapLevel) {
+                            // Only keep the cached image if it covers the roi
+                            std::list<RectI> restToRender;
+                            plane.fullscaleImage->getRestToRender(args.roi, restToRender);
+                            if ( !restToRender.empty() ) {
+                                plane.fullscaleImage.reset();
+                            } else {
+                                renderFullScaleThenDownscale = false;
+                                renderMappedMipMapLevel = mipMapLevel;
+                                roi = args.roi;
+                            }
+                        }
                         break;
                     }
                 }
+                if (!plane.fullscaleImage && renderMappedMipMapLevel != mipMapLevel) {
+                    // Not found at requested mipmap level, look at full scale
+                    for (int n = 0; n < nLookups; ++n) {
+                        getImageFromCacheAndConvertIfNeeded(createInCache, storage, args.returnStorage, n == 0 ? *nonDraftKey : *key, renderMappedMipMapLevel,
+                                                            &upscaledImageBounds,
+                                                            &rod, roi,
+                                                            args.bitdepth, *it,
+                                                            args.inputImagesList,
+                                                            frameArgs->stats,
+                                                            glContextLocker,
+                                                            &plane.fullscaleImage);
+                        if (plane.fullscaleImage) {
+                            if (byPassCache) {
+                                if (plane.fullscaleImage) {
+                                    appPTR->removeFromNodeCache( key->getHash() );
+                                    plane.fullscaleImage.reset();
+                                }
+                            }
+                            break;
+                        }
+
+                    }
+                }
+                
+
             }
 
-            if (byPassCache) {
-                if (plane.fullscaleImage) {
-                    appPTR->removeFromNodeCache( key->getHash() );
-                    plane.fullscaleImage.reset();
-                }
-            }
             if (plane.fullscaleImage) {
                 if (missingPlane) {
                     std::list<RectI> restToRender;
@@ -1225,7 +1264,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         optimizeRectsToRender(this, inputsRoDIntersectionPixel, rectsLeftToRender, args.time, args.view, renderMappedScale, &planesToRender->rectsToRender);
     } else {
         // If plug-in wants host frame threading and there is only 1 rect to render, split it
-        if (safety == eRenderSafetyFullySafeFrame && rectsLeftToRender.size() == 1 && frameArgs->tilesSupported) {
+        /*if (safety == eRenderSafetyFullySafeFrame && rectsLeftToRender.size() == 1 && frameArgs->tilesSupported) {
             QThreadPool* tp = QThreadPool::globalInstance();
             int nThreads = (tp->maxThreadCount() - tp->activeThreadCount());
 
@@ -1241,7 +1280,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 r.isIdentity = false;
                 planesToRender->rectsToRender.push_back(r);
             }
-        }
+        }*/
         for (std::list<RectI>::iterator it = rectsLeftToRender.begin(); it != rectsLeftToRender.end(); ++it) {
             RectToRender r;
             r.rect = *it;
@@ -1543,6 +1582,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
          }*/
 # endif
 
+        if (!args.inputImagesList.empty()) {
+            assert(true);
+        }
 
         bool attachGLOK = true;
         if (storage == eStorageModeGLTex) {
