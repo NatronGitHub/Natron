@@ -1582,10 +1582,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
          }*/
 # endif
 
-        if (!args.inputImagesList.empty()) {
-            assert(true);
-        }
-
         bool attachGLOK = true;
         if (storage == eStorageModeGLTex) {
             assert(glContext);
