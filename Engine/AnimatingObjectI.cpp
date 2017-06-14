@@ -440,4 +440,111 @@ AnimatingObjectI::deleteValuesAfterTime(const std::set<double>& keyframesToIgnor
     deleteValuesConditionalInternal(this, eDeleteKnobAnimationAfterTime, keyframesToIgnore, 0, time, view, dimension, reason);
 }
 
+bool
+AnimatingObjectI::getKeyFrameTime(ViewIdx view,
+                            int index,
+                            DimIdx dimension,
+                            TimeValue* time) const
+{
+    CurvePtr curve = getAnimationCurve(view, dimension);
+    if (!curve) {
+        return false;
+    }
+
+    KeyFrame kf;
+    bool ret = curve->getKeyFrameWithIndex(index, &kf);
+    if (ret) {
+        *time = kf.getTime();
+    }
+
+    return ret;
+}
+
+bool
+AnimatingObjectI::getLastKeyFrameTime(ViewIdx view,
+                                DimIdx dimension,
+                                TimeValue* time) const
+{
+    CurvePtr curve = getAnimationCurve(view, dimension);
+    if (!curve) {
+        return false;
+    }
+    if (!curve->isAnimated()) {
+        return false;
+    }
+    *time = TimeValue(curve->getMaximumTimeCovered());
+    return true;
+}
+
+bool
+AnimatingObjectI::getFirstKeyFrameTime(ViewIdx view,
+                                 DimIdx dimension,
+                                 TimeValue* time) const
+{
+    return getKeyFrameTime(view, 0, dimension, time);
+}
+
+int
+AnimatingObjectI::getKeyFramesCount(ViewIdx view,
+                              DimIdx dimension) const
+{
+    CurvePtr curve = getAnimationCurve(view, dimension);
+    if (!curve) {
+        return false;
+    }
+
+    return curve->getKeyFramesCount();
+}
+
+bool
+AnimatingObjectI::getPreviousKeyFrameTime(ViewIdx view, DimIdx dimension, TimeValue time, TimeValue* keyframeTime) const
+{
+
+    CurvePtr curve = getAnimationCurve(view, dimension);
+    if (!curve) {
+        return false;
+    }
+
+    KeyFrame kf;
+    if (curve->getPreviousKeyframeTime(time, &kf)) {
+        *keyframeTime = kf.getTime();
+        return true;
+    }
+
+    return false;
+}
+
+bool
+AnimatingObjectI::getNextKeyFrameTime(ViewIdx view, DimIdx dimension, TimeValue time, TimeValue* keyframeTime) const
+{
+
+    CurvePtr curve = getAnimationCurve(view, dimension);
+    if (!curve) {
+        return false;
+    }
+
+    KeyFrame kf;
+    if (curve->getNextKeyframeTime(time, &kf)) {
+        *keyframeTime = kf.getTime();
+        return true;
+    }
+
+    return false;
+}
+
+
+int
+AnimatingObjectI::getKeyFrameIndex(ViewIdx view,
+                             DimIdx dimension,
+                             TimeValue time) const
+{
+    CurvePtr curve = getAnimationCurve(view, dimension);
+    if (!curve) {
+        return -1;
+    }
+    return curve->keyFrameIndex(time);
+}
+
+
+
 NATRON_NAMESPACE_EXIT;

@@ -1127,7 +1127,12 @@ AnimatedParam::getKeyTime(int index,
         return false;
     }
 
-    return knob->getKeyFrameTime(thisViewSpec, index, DimIdx(dimension), time);
+    TimeValue tmp;
+    bool ok = knob->getKeyFrameTime(thisViewSpec, index, DimIdx(dimension), &tmp);
+    if (ok) {
+        *time = tmp;
+    }
+    return ok;
 
 }
 

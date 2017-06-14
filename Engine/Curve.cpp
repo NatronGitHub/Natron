@@ -712,37 +712,15 @@ Curve::getPreviousKeyframeTime(TimeValue time,
     if ( _imp->keyFrames.empty() ) {
         return false;
     }
-    KeyFrameSet::const_iterator upper = _imp->keyFrames.end();
-    for (KeyFrameSet::const_iterator it = _imp->keyFrames.begin(); it != _imp->keyFrames.end(); ++it) {
-        if (it->getTime() > time) {
-            upper = it;
-            break;
-        } else if (it->getTime() == time) {
-            if ( it == _imp->keyFrames.begin() ) {
-                return false;
-            } else {
-                --it;
-                *k = *it;
-
-                return true;
-            }
-        }
-    }
-    if ( upper == _imp->keyFrames.end() ) {
-        *k = *_imp->keyFrames.rbegin();
-
-        return true;
-    } else if ( upper == _imp->keyFrames.begin() ) {
+    KeyFrame tmp;
+    tmp.setTime(time);
+    KeyFrameSet::const_iterator lowerBound = _imp->keyFrames.lower_bound(tmp);
+    if (lowerBound == _imp->keyFrames.end() || lowerBound == _imp->keyFrames.begin()) {
         return false;
-    } else {
-        ///If we reach here the previous keyframe is exactly the previous to upper because we already checked
-        ///in the for loop that the previous key wasn't equal to the given time
-        --upper;
-        assert(upper->getTime() < time);
-        *k = *upper;
-
-        return true;
     }
+    --lowerBound;
+    *k = *lowerBound;
+    return true;
 }
 
 bool
@@ -754,20 +732,14 @@ Curve::getNextKeyframeTime(TimeValue time,
     if ( _imp->keyFrames.empty() ) {
         return false;
     }
-    KeyFrameSet::const_iterator upper = _imp->keyFrames.end();
-    for (KeyFrameSet::const_iterator it = _imp->keyFrames.begin(); it != _imp->keyFrames.end(); ++it) {
-        if (it->getTime() > time) {
-            upper = it;
-            break;
-        }
-    }
+    KeyFrame tmp;
+    tmp.setTime(time);
+    KeyFrameSet::const_iterator upper = _imp->keyFrames.upper_bound(tmp);
     if ( upper == _imp->keyFrames.end() ) {
         return false;
-    } else {
-        *k = *upper;
-
-        return true;
     }
+    *k = *upper;
+    return true;
 }
 
 int

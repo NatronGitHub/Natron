@@ -2156,7 +2156,7 @@ TrackerNodePrivate::averageSelectedTracks()
     keyframesRange.max = INT_MIN;
     for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
         KnobDoublePtr markCenter = (*it)->getCenterKnob();
-        double mini, maxi;
+        TimeValue mini, maxi;
         bool hasKey = markCenter->getFirstKeyFrameTime(ViewIdx(0), DimIdx(0), &mini);
         if (!hasKey) {
             continue;

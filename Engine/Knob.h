@@ -807,58 +807,6 @@ public:
      **/
     virtual double getIntegrateFromTimeToTime(TimeValue time1, TimeValue time2, ViewIdx view, DimIdx dimension)  = 0;
 
-    /**
-     * @brief Places in time the keyframe time at the given index.
-     * If it exists the function returns true, false otherwise.
-     * @param view The view of the corresponding curve. If view is current, then the current view
-     * in the thread-local storage (if while rendering) will be used, otherwise the view must correspond
-     * to a valid view index.
-     **/
-    virtual bool getKeyFrameTime(ViewIdx view, int index, DimIdx dimension, double* time) const = 0;
-
-    /**
-     * @brief Convenience function, does the same as getKeyFrameWithIndex but returns the last
-     * keyframe.
-     * @param view The view of the corresponding curve. If view is current, then the current view
-     * in the thread-local storage (if while rendering) will be used, otherwise the view must correspond
-     * to a valid view index.
-     **/
-    virtual bool getLastKeyFrameTime(ViewIdx view, DimIdx dimension, double* time) const = 0;
-
-    /**
-     * @brief Convenience function, does the same as getKeyFrameWithIndex but returns the first
-     * keyframe.
-     * @param view The view of the corresponding curve. If view is current, then the current view
-     * in the thread-local storage (if while rendering) will be used, otherwise the view must correspond
-     * to a valid view index.
-     **/
-    virtual bool getFirstKeyFrameTime(ViewIdx view, DimIdx dimension, double* time) const = 0;
-
-    /**
-     * @brief Returns the count of keyframes in the given dimension.
-     * @param view The view of the corresponding curve. If view is current, then the current view
-     * in the thread-local storage (if while rendering) will be used, otherwise the view must correspond
-     * to a valid view index.
-     **/
-    virtual int getKeyFramesCount(ViewIdx view, DimIdx dimension) const = 0;
-
-    /**
-     * @brief Returns the nearest keyframe time if it was found.
-     * @param view The view of the corresponding curve. If view is current, then the current view
-     * in the thread-local storage (if while rendering) will be used, otherwise the view must correspond
-     * to a valid view index.
-     * @return true if it succeeded, false otherwise.
-     **/
-    virtual bool getNearestKeyFrameTime(ViewIdx view, DimIdx dimension, TimeValue time, double* nearestTime) const = 0;
-
-    /**
-     * @brief Returns the keyframe index if there's any keyframe in the curve
-     * at the given dimension and the given time. -1 otherwise.
-     * @param view The view of the corresponding curve. If view is current, then the current view
-     * in the thread-local storage (if while rendering) will be used, otherwise the view must correspond
-     * to a valid view index.
-     **/
-    virtual int getKeyFrameIndex(ViewIdx view, DimIdx dimension, TimeValue time) const = 0;
 
     /**
      * @brief Returns true if the curve corresponding to the dimension/view is animated with keyframes.
@@ -1611,12 +1559,7 @@ private:
 public:
 
 
-    virtual bool getKeyFrameTime(ViewIdx view, int index, DimIdx dimension, double* time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool getLastKeyFrameTime(ViewIdx view, DimIdx dimension, double* time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool getFirstKeyFrameTime(ViewIdx view, DimIdx dimension, double* time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual int getKeyFramesCount(ViewIdx view, DimIdx dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool getNearestKeyFrameTime(ViewIdx view, DimIdx dimension, TimeValue time, double* nearestTime) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual int getKeyFrameIndex(ViewIdx view, DimIdx dimension, TimeValue time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
     virtual bool isAnimated( DimIdx dimension, ViewIdx view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool hasAnimation() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool checkInvalidExpressions() OVERRIDE FINAL;

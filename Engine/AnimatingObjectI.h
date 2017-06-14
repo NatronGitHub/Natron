@@ -191,12 +191,7 @@ public:
     virtual int getNDimensions() const { return 1; }
 
     /**
-     * @brief Returns a pointer to the underlying animation curve for the given view/dimension
-     **/
-    virtual CurvePtr getAnimationCurve(ViewIdx idx, DimIdx dimension) const = 0;
-
-    /**
-     * @brief For an object that supports animating strings, this is should return a pointer to it
+     * @brief For an object that supports animating strings, this should return a pointer to it
      **/
     virtual StringAnimationManagerPtr getStringAnimation(ViewIdx view) const {
         Q_UNUSED(view);
@@ -256,7 +251,6 @@ public:
      * to figure out which view to address if the view does not exists.
      **/
     ViewIdx checkIfViewExistsOrFallbackMainView(ViewIdx view) const WARN_UNUSED_RETURN;
-
 
 
     ////////////////////////// Integer based animating objects
@@ -427,6 +421,72 @@ public:
      * really needs the status code then another function giving that result should be considered.
      **/
     virtual void setMultipleStringValueAtTimeAcrossDimensions(const PerCurveStringValuesList& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonUserEdited);
+
+    ///////////////////////// Curve access
+
+
+    /**
+     * @brief Returns a pointer to the underlying animation curve for the given view/dimension
+     **/
+    virtual CurvePtr getAnimationCurve(ViewIdx idx, DimIdx dimension) const = 0;
+
+    /**
+     * @brief Places in time the keyframe time at the given index.
+     * If it exists the function returns true, false otherwise.
+     * @param view The view of the corresponding curve. If view is current, then the current view
+     * in the thread-local storage (if while rendering) will be used, otherwise the view must correspond
+     * to a valid view index.
+     **/
+    virtual bool getKeyFrameTime(ViewIdx view, int index, DimIdx dimension, TimeValue* time) const ;
+
+    /**
+     * @brief Convenience function, does the same as getKeyFrameWithIndex but returns the last
+     * keyframe.
+     * @param view The view of the corresponding curve. If view is current, then the current view
+     * in the thread-local storage (if while rendering) will be used, otherwise the view must correspond
+     * to a valid view index.
+     **/
+    virtual bool getLastKeyFrameTime(ViewIdx view, DimIdx dimension, TimeValue* time) const ;
+
+    /**
+     * @brief Convenience function, does the same as getKeyFrameWithIndex but returns the first
+     * keyframe.
+     * @param view The view of the corresponding curve. If view is current, then the current view
+     * in the thread-local storage (if while rendering) will be used, otherwise the view must correspond
+     * to a valid view index.
+     **/
+    virtual bool getFirstKeyFrameTime(ViewIdx view, DimIdx dimension, TimeValue* time) const ;
+
+    /**
+     * @brief Returns the count of keyframes in the given dimension.
+     * @param view The view of the corresponding curve. If view is current, then the current view
+     * in the thread-local storage (if while rendering) will be used, otherwise the view must correspond
+     * to a valid view index.
+     **/
+    virtual int getKeyFramesCount(ViewIdx view, DimIdx dimension) const ;
+
+    /**
+     * @brief Returns the index of the keyframe with a time lesser than the given time that is the closest
+     * to the given time.
+     * If no keyframe greater or equal to the given time could be found, returns -1
+     **/
+    virtual bool getPreviousKeyFrameTime(ViewIdx view, DimIdx dimension, TimeValue time, TimeValue* keyframeTime) const ;
+
+    /**
+     * @brief Returns the index of the keyframe with a time greater than the given time that is the closest to the given time.
+     * If no keyframe greater or equal to the given time could be found, returns -1
+     **/
+    virtual bool getNextKeyFrameTime(ViewIdx view, DimIdx dimension, TimeValue time, TimeValue* keyframeTime) const ;
+
+    /**
+     * @brief Returns the keyframe index if there's any keyframe in the curve
+     * at the given dimension and the given time. -1 otherwise.
+     * @param view The view of the corresponding curve. If view is current, then the current view
+     * in the thread-local storage (if while rendering) will be used, otherwise the view must correspond
+     * to a valid view index.
+     **/
+    virtual int getKeyFrameIndex(ViewIdx view, DimIdx dimension, TimeValue time) const ;
+
 
     ///////////////////////// Curve manipulation
 
