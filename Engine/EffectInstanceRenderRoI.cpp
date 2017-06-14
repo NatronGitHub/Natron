@@ -1540,6 +1540,7 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPa
     }
 #endif
 
+
     // Fetch or create a cache image for all other planes that the plug-in produces but are not requested
     std::map<ImagePlaneDesc, ImagePtr> cachedImagePlanes;
     assert(requestData->getComponentsResults());
