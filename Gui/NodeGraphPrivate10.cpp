@@ -123,6 +123,7 @@ NodeGraphPrivate::pasteNodesInternal(const std::list<std::pair<NodePtr, SERIALIZ
          it != originalNodes.end(); ++it) {
         serializationList.push_back(it->second);
     }
+
     
     // Create nodes
     std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > > createdNodes;

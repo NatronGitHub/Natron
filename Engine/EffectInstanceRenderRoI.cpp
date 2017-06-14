@@ -951,6 +951,7 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const RequestPassShar
                         qDebug() << "WARNING:" <<  _publicInterface->getScriptName_mt_safe().c_str() << "is requesting a non integer frame range [" << viewIt->second[range].min << ","
                         << viewIt->second[range].max <<"], this is border-line and not specified if this is supported by OpenFX. Natron will render "
                         "this range assuming an interval of 1 between frame times.";
+
                     }
 
 
@@ -1198,6 +1199,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
         if (concatenated) {
             requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusPassThrough);
             return eActionStatusOK;
+
         }
     }
 
@@ -1550,7 +1552,6 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPa
     fullscalePlane->ensureBuffersAllocated();
 
     cachedImagePlanes[requestData->getPlaneDesc()] = fullscalePlane;
-
 
     RenderBackendTypeEnum backendType = requestData->getRenderDevice();
 

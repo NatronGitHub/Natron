@@ -1487,6 +1487,7 @@ GroupFromSelectionCommand::redo()
 
     _newGroup = containerNode;
 
+
     // Set the position of the group
     containerNode->setPosition( groupPosition.x(), groupPosition.y() );
 
