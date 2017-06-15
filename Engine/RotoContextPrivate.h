@@ -862,6 +862,7 @@ public:
         lifeTime->setName(kRotoDrawableItemLifeTimeParam);
         {
             std::vector<std::string> choices;
+            choices.push_back(kRotoDrawableItemLifeTimeAll);
             choices.push_back(kRotoDrawableItemLifeTimeSingle);
             choices.push_back(kRotoDrawableItemLifeTimeFromStart);
             choices.push_back(kRotoDrawableItemLifeTimeToEnd);
@@ -1439,6 +1440,8 @@ public:
         lifeTimeKnob->setAnimationEnabled(false);
         {
             std::vector<std::string> choices, helps;
+            choices.push_back(kRotoDrawableItemLifeTimeAll);
+            helps.push_back( tr(kRotoDrawableItemLifeTimeAllHelp).toStdString() );
             choices.push_back(kRotoDrawableItemLifeTimeSingle);
             helps.push_back( tr(kRotoDrawableItemLifeTimeSingleHelp).toStdString() );
             choices.push_back(kRotoDrawableItemLifeTimeFromStart);
