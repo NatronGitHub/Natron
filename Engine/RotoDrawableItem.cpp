@@ -1038,10 +1038,12 @@ RotoDrawableItem::isActivated(double time) const
     try {
         int lifetime_i = _imp->lifeTime->getValue();
         if (lifetime_i == 0) {
-            return time == _imp->lifeTimeFrame->getValue();
+            return true;
         } else if (lifetime_i == 1) {
-            return time <= _imp->lifeTimeFrame->getValue();
+            return time == _imp->lifeTimeFrame->getValue();
         } else if (lifetime_i == 2) {
+            return time <= _imp->lifeTimeFrame->getValue();
+        } else if (lifetime_i == 3) {
             return time >= _imp->lifeTimeFrame->getValue();
         } else {
             return _imp->activated->getValueAtTime(time);
