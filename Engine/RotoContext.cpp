@@ -735,10 +735,10 @@ RotoContext::onLifeTimeKnobValueChanged(ViewSpec view,
         return;
     }
     int lifetime_i = _imp->lifeTime.lock()->getValue();
-    _imp->activated.lock()->setSecret(lifetime_i != 3);
+    _imp->activated.lock()->setSecret(lifetime_i != 4);
     boost::shared_ptr<KnobInt> frame = _imp->lifeTimeFrame.lock();
-    frame->setSecret(lifetime_i == 3);
-    if (lifetime_i != 3) {
+    frame->setSecret(lifetime_i == 4 || lifetime_i == 0);
+    if (lifetime_i != 4) {
         frame->setValue(getTimelineCurrentTime(), view);
     }
 }
@@ -1287,8 +1287,8 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
 
         //show activated/frame knob according to lifetime
         int lifetime_i = _imp->lifeTime.lock()->getValue();
-        _imp->activated.lock()->setSecret(lifetime_i != 3);
-        _imp->lifeTimeFrame.lock()->setSecret(lifetime_i == 3);
+        _imp->activated.lock()->setSecret(lifetime_i != 4);
+        _imp->lifeTimeFrame.lock()->setSecret(lifetime_i == 4 || lifetime_i == 0);
     }
 
     QMutexLocker l(&_imp->rotoContextMutex);
