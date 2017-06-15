@@ -866,6 +866,7 @@ public:
             choices.push_back(ChoiceOption(kRotoDrawableItemLifeTimeFromStart));
             choices.push_back(ChoiceOption(kRotoDrawableItemLifeTimeToEnd));
             choices.push_back(ChoiceOption(kRotoDrawableItemLifeTimeCustom));
+
             lifeTime->populateChoices(choices);
         }
         lifeTime->setDefaultValue(isPaintingNode ? 0 : 3);
@@ -1435,6 +1436,7 @@ public:
             choices.push_back(ChoiceOption(kRotoDrawableItemLifeTimeToEnd, "" ,tr(kRotoDrawableItemLifeTimeToEndHelp).toStdString()));
             choices.push_back(ChoiceOption(kRotoDrawableItemLifeTimeCustom, "", tr(kRotoDrawableItemLifeTimeCustomHelp).toStdString()));
             lifeTimeKnob->populateChoices(choices);
+
         }
         lifeTimeKnob->setDefaultValue(isPaintNode ? 0 : 3);
         generalPage->addKnob(lifeTimeKnob);
