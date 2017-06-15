@@ -904,6 +904,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                           false,
                                                           renderMappedMipMapLevel == 0 && !renderScaleOneUpstreamIfRenderScaleSupportDisabled) );
 
+    bool isDuringPaintStroke = isDuringPaintStrokeCreationThreadLocal();
 
     /*
      * Get the bitdepth and output components that the plug-in expects to render. The cached image does not necesserarily has the bitdepth
@@ -953,7 +954,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
                 // If the node does'nt support render scale, first lookup the cache with requested level, if not cached then lookup
                 // with full scale
-                unsigned int lookupMipMapLevel = renderMappedMipMapLevel != mipMapLevel ? mipMapLevel : renderMappedMipMapLevel;
+                unsigned int lookupMipMapLevel = (renderMappedMipMapLevel != mipMapLevel && !isDuringPaintStroke)? mipMapLevel : renderMappedMipMapLevel;
                 for (int n = 0; n < nLookups; ++n) {
                     getImageFromCacheAndConvertIfNeeded(createInCache, storage, args.returnStorage, n == 0 ? *nonDraftKey : *key, lookupMipMapLevel,
                                                         &downscaledImageBounds,
@@ -984,7 +985,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                         break;
                     }
                 }
-                if (!plane.fullscaleImage && renderMappedMipMapLevel != mipMapLevel) {
+                if (!plane.fullscaleImage && renderMappedMipMapLevel != lookupMipMapLevel) {
                     // Not found at requested mipmap level, look at full scale
                     for (int n = 0; n < nLookups; ++n) {
                         getImageFromCacheAndConvertIfNeeded(createInCache, storage, args.returnStorage, n == 0 ? *nonDraftKey : *key, renderMappedMipMapLevel,
@@ -1093,7 +1094,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////////////////// Determine rectangles left to render /////////////////////////////////////////////////////
 
     std::list<RectI> rectsLeftToRender;
-    bool isDuringPaintStroke = isDuringPaintStrokeCreationThreadLocal();
     bool fillGrownBoundsWithZeroes = false;
 
     //While painting, clear only the needed portion of the bitmap
