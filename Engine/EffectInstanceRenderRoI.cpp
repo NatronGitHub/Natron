@@ -923,8 +923,8 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const RequestPassShar
 
         if (inputRoI.isNull()) {
             continue;
-
         }
+
 
         if ( inputRoI.isInfinite() ) {
             _publicInterface->getNode()->setPersistentMessage( eMessageTypeError, kNatronPersistentErrorInfiniteRoI, _publicInterface->tr("%1 asked for an infinite region of interest upstream.").arg( QString::fromUtf8( _publicInterface->getNode()->getScriptName_mt_safe().c_str() ) ).toStdString() );
@@ -953,7 +953,6 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const RequestPassShar
                         "this range assuming an interval of 1 between frame times.";
 
                     }
-
 
                     // For all frames in the range
                     for (double f = viewIt->second[range].min; f <= viewIt->second[range].max; f += 1.) {
