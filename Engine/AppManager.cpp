@@ -2562,8 +2562,7 @@ AppManager::printCacheMemoryStats() const
             }
 
             if (it->second.nEntries > 0) {
-                reportStr += tr(" Number of Cache Entries: ");
-                reportStr += QString::number(it->second.nEntries);
+                reportStr += tr(" taken by %1 entries").arg(QString::number(it->second.nEntries));
             }
             reportStr += QLatin1String("\n");
         }

@@ -167,7 +167,7 @@ StorageDeleterThread::run()
 
                     return;
                 }
-                while ( _imp->entriesQueue.empty() ) {
+                while ( _imp->entriesQueue.empty() && _imp->cacheEvictChecksRequest <= 0) {
                     _imp->noworkCond.wait(&_imp->entriesQueueMutex);
                 }
 
@@ -176,8 +176,8 @@ StorageDeleterThread::run()
                     _imp->entriesQueue.pop_front();
                 }
                 if (_imp->cacheEvictChecksRequest > 0) {
-                    _imp->cacheEvictChecksRequest = 0;
                     evictRequest = _imp->cacheEvictChecksRequest;
+                    _imp->cacheEvictChecksRequest = 0;
                 }
             }
             if (front) {
@@ -194,6 +194,7 @@ StorageDeleterThread::run()
       
     }
 } // run
+#if 0
 
 struct StorageAllocatorThreadPrivate
 {
@@ -212,7 +213,6 @@ struct StorageAllocatorThreadPrivate
     }
 };
 
-#if 0
 
 StorageAllocatorThread::StorageAllocatorThread()
 : QThread()

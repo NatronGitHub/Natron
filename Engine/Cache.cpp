@@ -104,7 +104,7 @@ GCC_DIAG_ON(unused-parameter)
 #define NATRON_CACHE_SERIALIZATION_VERSION 5
 
 // If we change the MemorySegmentEntryHeader struct, we must increment this version so we do not attempt to read an invalid structure.
-#define NATRON_MEMORY_SEGMENT_ENTRY_HEADER_VERSION 1
+#define NATRON_MEMORY_SEGMENT_ENTRY_HEADER_VERSION 2
 
 
 // After this amount of milliseconds, if a thread is not able to access a mutex, the cache is assumed to be inconsistent
@@ -653,31 +653,24 @@ void disconnectLinkedListNode(const LRUListNodePtr& node)
         node->prev->next = node->next;
     }
 
-    node->prev = 0;
-
-
     // Make the next item predecessor point to this item predecessor
     if (node->next) {
         node->next->prev = node->prev;
     }
+
+    node->prev = 0;
     node->next = 0;
 }
 
 inline
-void insertLinkedListNode(const LRUListNodePtr& node, const LRUListNodePtr& prev, const LRUListNodePtr& next)
+void appendLinkedListNode(const LRUListNodePtr& node, const LRUListNodePtr& back)
 {
-    assert(node);
-    if (prev) {
-        prev->next = node;
-        assert(prev->next);
-    }
-    node->prev = prev;
-
-    if (next) {
-        next->prev = node;
-        assert(next->prev);
-    }
-    node->next = next;
+    assert(node && back);
+    assert(!back->next);
+    assert(!node->prev && !node->next);
+    back->next = node;
+    node->prev = back;
+    node->next = 0;
 }
 
 /**
@@ -719,6 +712,13 @@ struct MemorySegmentEntryHeaderBase
     // The corresponding node in the LRU list
     LRUListNode lruNode;
 
+    // Timestamp of the last access date.
+    // This is useful for the evictLRUEntries function:
+    // Even though we have a LRU list within a bucket, we don't have the full LRU list accross the cache.
+    // To better determine which entry is truely older than others accross buckets, we compare the timestamp of the
+    // LRU entries across all buckets to find out which is the oldest one.
+    TimestampVal timestamp;
+
     // List of tile indices allocated for this entry
     ExternalSegmentTypeULongLongList tileIndices;
 
@@ -728,6 +728,7 @@ struct MemorySegmentEntryHeaderBase
     , computeThreadMagic(0)
     , computeProcessUUID()
     , lruNode()
+    , timestamp()
     , tileIndices(allocator)
     {}
 
@@ -828,6 +829,7 @@ struct CacheBucketIPCData
     // Pointers in shared memory to the lru list from node and back node
     // Protected by lruListMutex
     LRUListNodePtr lruListFront, lruListBack;
+
 
     // A version indicator for the serialization. If the cache version doesn't correspond
     // to NATRON_MEMORY_SEGMENT_ENTRY_HEADER_VERSION, we wipe it.
@@ -1903,16 +1905,32 @@ CacheBucket<persistent>::readFromSharedMemoryEntryImpl(EntryType* cacheEntry,
         boost::scoped_ptr<ExclusiveLock> lruWriteLock;
         createLock<ExclusiveLock>(c->_imp.get(), lruWriteLock, &c->_imp->ipc->bucketsData[bucketIndex].lruListMutex);
 
+        // Ensure the back pointer doesn't have a next element
         assert(ipc->lruListBack && !ipc->lruListBack->next);
+
+        // Make this node is the back node
         if (getRawPointer(ipc->lruListBack) != &cacheEntry->lruNode) {
 
+            // If we are not the back pointer we must have a next element.
+            assert(cacheEntry->lruNode.next);
+
             LRUListNodePtr entryNode(&cacheEntry->lruNode);
+
+            if (&cacheEntry->lruNode == getRawPointer(ipc->lruListFront)) {
+                // We are the first node, we can't have a previous entry
+                assert(!cacheEntry->lruNode.prev);
+                ipc->lruListFront = cacheEntry->lruNode.next;
+            }
+
             disconnectLinkedListNode(entryNode);
 
             // And push_back to the tail of the list...
-            insertLinkedListNode(entryNode, ipc->lruListBack, LRUListNodePtr(0));
+            appendLinkedListNode(entryNode, ipc->lruListBack);
             ipc->lruListBack = entryNode;
         }
+
+        // Update the entry access timestamp
+        cacheEntry->timestamp = getTimestampInSeconds();
     } // lruWriteLock
 
     return eShmEntryReadRetCodeOk;
@@ -1978,9 +1996,13 @@ CacheBucket<persistent>::deallocateCacheEntryImpl(typename EntriesMap::iterator 
             // Retrieve the bucket index directly from the tile index: we know that each file contains exactly NATRON_NUM_TILES_PER_BUCKET_FILE * NATRON_CACHE_BUCKETS_COUNT
             int tileBucketIndex = tileIndex % NATRON_NUM_TILES_PER_BUCKET_FILE;
             assert(tileBucketIndex >= 0 && tileBucketIndex < NATRON_CACHE_BUCKETS_COUNT);
+
             // Take the bucket mutex except if this is the current bucket
             boost::scoped_ptr<Sharable_WriteLock> bucketWriteLock;
+            boost::scoped_ptr<Sharable_ReadLock> tocReadLock;
+            boost::scoped_ptr<Sharable_WriteLock> tocWriteLock;
             if (tileBucketIndex != bucketIndex) {
+                c->_imp->buckets[tileBucketIndex].checkToCMemorySegmentStatus(&tocReadLock, &tocWriteLock);
                 createLock<Sharable_WriteLock>(c->_imp.get(), bucketWriteLock, &c->_imp->ipc->bucketsData[tileBucketIndex].bucketMutex);
             }
 
@@ -1988,7 +2010,31 @@ CacheBucket<persistent>::deallocateCacheEntryImpl(typename EntriesMap::iterator 
 #ifdef CACHE_TRACE_TILES_ALLOCATION
             qDebug() << "Bucket" << bucketIndex << ": tile freed" << tileIndex << " Nb free tiles left:" << c->_imp->buckets[tileBucketIndex].ipc->freeTiles.size();
 #endif
-            c->_imp->buckets[tileBucketIndex].ipc->freeTiles.push_back(*it);
+            int nAttempts = 0;
+            while (nAttempts < 2) {
+                try {
+                    c->_imp->buckets[tileBucketIndex].ipc->freeTiles.push_back(*it);
+                    break;
+                } catch (const bip::bad_alloc&) {
+
+                    // We may not have enough memory to store all indices, so grow the ToC mapping
+                    std::size_t tocMemNeeded = c->_imp->buckets[tileBucketIndex].ipc->freeTiles.size() * sizeof(U64) * 2;
+
+                    if (!tocWriteLock) {
+
+                        // Release the bucket lock: it's only guarantee to be valid is while under the toc lock!
+                        bucketWriteLock.reset();
+                        tocReadLock.reset();
+                        createLock<Sharable_WriteLock>(c->_imp.get(), tocWriteLock, &c->_imp->ipc->bucketsData[tileBucketIndex].tocData.segmentMutex);
+                    }
+
+                    c->_imp->buckets[tileBucketIndex].growToCFile(*tocWriteLock, tocMemNeeded);
+
+                    // Take back the bucket mutex
+                    createLock<Sharable_WriteLock>(c->_imp.get(), bucketWriteLock, &c->_imp->ipc->bucketsData[tileBucketIndex].bucketMutex);
+                }
+                ++nAttempts;
+            }
         }
         cacheEntryIt->second->tileIndices.clear();
     }
@@ -2006,7 +2052,9 @@ CacheBucket<persistent>::deallocateCacheEntryImpl(typename EntriesMap::iterator 
             ipc->lruListBack = cacheEntryIt->second->lruNode.prev;
         }
         if (&cacheEntryIt->second->lruNode == getRawPointer(ipc->lruListFront)) {
-            ipc->lruListFront = cacheEntryIt->second->lruNode.prev;
+            // We are the first node, we can't have a previous entry
+            assert(!cacheEntryIt->second->lruNode.prev);
+            ipc->lruListFront = cacheEntryIt->second->lruNode.next;
         }
 
         // Remove this entry's node from the list
@@ -2572,11 +2620,15 @@ CacheEntryLockerPrivate<persistent>::insertInternal()
             // Append to the tail of the list
             assert(bucket->ipc->lruListFront && bucket->ipc->lruListBack);
 
-            insertLinkedListNode(thisNodePtr, bucket->ipc->lruListBack, LRUListNodePtr(0));
+            appendLinkedListNode(thisNodePtr, bucket->ipc->lruListBack);
             // Update back node
             bucket->ipc->lruListBack = thisNodePtr;
 
         }
+
+        // Update the entry access timestamp
+        cacheEntryIt->second->timestamp = getTimestampInSeconds();
+
     } // lruWriteLock
     cacheEntryIt->second->computeThreadMagic = 0;
     cacheEntryIt->second->status = MemorySegmentEntryHeaderBase::eEntryStatusReady;
@@ -3616,6 +3668,7 @@ Cache<persistent>::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
 #endif
                                            );
         delete tilesLock;
+        *cacheData = 0;
         return false;
     }
 
@@ -4340,17 +4393,18 @@ Cache<persistent>::evictLRUEntries(std::size_t nBytesToFree)
 
     std::size_t curSize = getCurrentSize();
 
-    bool mustEvictEntries = curSize > maxSize;
-
-    while (mustEvictEntries) {
-        
-        bool foundBucketThatCanEvict = false;
+    while (curSize > maxSize) {
 
 #ifdef NATRON_CACHE_INTERPROCESS_ROBUST
         boost::scoped_ptr<SharedMemoryProcessLocalReadLocker<persistent> > shmReader(new SharedMemoryProcessLocalReadLocker<persistent>(_imp.get()));
 #endif
 
-        // Check each bucket
+        // Cycle through each bucket, and establish which LRU entry of the buckets is the entry that
+        // has the oldest timestamp
+        U64 oldestEntryHash = (U64)-1;
+        bool oldestEntryTimeStampSet = false;
+        TimestampVal oldestEntryTimeStamp;
+
         for (int bucket_i = 0; bucket_i < NATRON_CACHE_BUCKETS_COUNT; ++bucket_i) {
             CacheBucket<persistent> & bucket = _imp->buckets[bucket_i];
 
@@ -4365,7 +4419,6 @@ Cache<persistent>::evictLRUEntries(std::size_t nBytesToFree)
                 boost::scoped_ptr<Sharable_WriteLock> bucketLock;
                 createLock<Sharable_WriteLock>(_imp.get(), bucketLock, &_imp->ipc->bucketsData[bucket_i].bucketMutex);
 
-                BucketStateHandler_RAII<persistent> bucketStateHandler(&bucket);
 
 
                 U64 hash = 0;
@@ -4383,7 +4436,6 @@ Cache<persistent>::evictLRUEntries(std::size_t nBytesToFree)
                     continue;
                 }
 
-                // Deallocate the memory taken by the cache entry in the ToC
                 typename CacheBucket<persistent>::EntriesMap::iterator cacheEntryIt;
                 typename CacheBucket<persistent>::EntriesMap* storage;
                 if (!bucket.tryCacheLookupImpl(hash, &cacheEntryIt, &storage)) {
@@ -4391,38 +4443,78 @@ Cache<persistent>::evictLRUEntries(std::size_t nBytesToFree)
                 }
 
 
-                // We evicted one, decrease the size
-                curSize -= cacheEntryIt->second->size;
-                curSize -= cacheEntryIt->second->tileIndices.size() * NATRON_TILE_SIZE_BYTES;
-                
-                bucket.deallocateCacheEntryImpl(cacheEntryIt, storage);
-
+                if (!oldestEntryTimeStampSet) {
+                    oldestEntryTimeStampSet = true;
+                    oldestEntryTimeStamp = cacheEntryIt->second->timestamp;
+                    oldestEntryHash = hash;
+                } else {
+                    if (cacheEntryIt->second->timestamp < oldestEntryTimeStamp) {
+                        oldestEntryTimeStamp = cacheEntryIt->second->timestamp;
+                        oldestEntryHash = hash;
+                    }
+                }
 
 
             } catch (...) {
                 // Any exception caught here means the cache is corrupted
                 _imp->recoverFromInconsistentState(
 #ifdef NATRON_CACHE_INTERPROCESS_ROBUST
-                                                    shmReader
+                                                   shmReader
 #endif
                                                    );
                 return;
             }
-            
-            foundBucketThatCanEvict = true;
-            
+
+
         } // for each bucket
 
-        // No bucket can be evicted anymore, exit.
-        if (!foundBucketThatCanEvict) {
+        if (!oldestEntryTimeStampSet) {
             break;
         }
 
-        // Update mustEvictEntries for next iteration
-        mustEvictEntries = curSize > maxSize;
 
-    } // while(mustEvictEntries)
+        int bucket_i = getBucketCacheBucketIndex(oldestEntryHash);
+        CacheBucket<persistent> & bucket = _imp->buckets[bucket_i];
 
+        // Take the read lock on the toc file mapping
+        boost::scoped_ptr<Sharable_ReadLock> tocReadLock;
+        boost::scoped_ptr<Sharable_WriteLock> tocWriteLock;
+        bucket.checkToCMemorySegmentStatus(&tocReadLock, &tocWriteLock);
+
+
+        // Take write lock on the bucket
+        boost::scoped_ptr<Sharable_WriteLock> bucketLock;
+        createLock<Sharable_WriteLock>(_imp.get(), bucketLock, &_imp->ipc->bucketsData[bucket_i].bucketMutex);
+
+
+        // Deallocate the memory taken by the cache entry in the ToC
+
+        typename CacheBucket<persistent>::EntriesMap::iterator cacheEntryIt;
+        typename CacheBucket<persistent>::EntriesMap* storage;
+        if (!bucket.tryCacheLookupImpl(oldestEntryHash, &cacheEntryIt, &storage)) {
+            continue;
+        }
+
+        try {
+            BucketStateHandler_RAII<persistent> bucketStateHandler(&bucket);
+
+            // We evicted one, decrease the size
+            std::size_t entrySize = cacheEntryIt->second->size;
+            curSize -= entrySize;
+            curSize -= cacheEntryIt->second->tileIndices.size() * NATRON_TILE_SIZE_BYTES;
+
+            bucket.deallocateCacheEntryImpl(cacheEntryIt, storage);
+        } catch (...) {
+            // Any exception caught here means the cache is corrupted
+            _imp->recoverFromInconsistentState(
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+                                               shmReader
+#endif
+                                               );
+            return;
+        }
+    } // while(curSize < maxSize)
+    
 } // evictLRUEntries
 
 template <bool persistent>
@@ -4463,6 +4555,7 @@ Cache<persistent>::getMemoryStats(std::map<std::string, CacheReportInfo>* infos)
                     CacheReportInfo& entryData = (*infos)[pluginID];
                     ++entryData.nEntries;
                     entryData.nBytes += cacheEntryIt->second->size;
+                    entryData.nBytes += cacheEntryIt->second->tileIndices.size() * NATRON_TILE_SIZE_BYTES;
                 }
                 it = it->next;
             }
