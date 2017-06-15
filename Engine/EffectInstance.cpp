@@ -3673,7 +3673,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
                                   ViewIdx* inputView,
                                   int* inputNb)
 {
-    assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(scale.x == 1. && scale.y == 1.) ) );
+    //assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(scale.x == 1. && scale.y == 1.) ) );
 
     if (useIdentityCache) {
         double timeF = 0.;
