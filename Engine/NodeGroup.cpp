@@ -290,10 +290,7 @@ NodeCollection::quitAnyProcessingInternal(bool blocking)
         if (isGrp) {
             isGrp->quitAnyProcessingInternal(blocking);
         }
-        PrecompNodePtr isPrecomp = (*it)->isEffectPrecompNode();
-        if (isPrecomp) {
-            isPrecomp->getPrecompApp()->getProject()->quitAnyProcessingInternal(blocking);
-        }
+  
     }
 }
 
@@ -403,10 +400,7 @@ NodeCollection::clearNodesInternal(bool blocking)
         if (isGrp) {
             isGrp->clearNodesInternal(blocking);
         }
-        PrecompNodePtr isPrecomp = (*it)->isEffectPrecompNode();
-        if (isPrecomp) {
-            isPrecomp->getPrecompApp()->getProject()->clearNodesInternal(blocking);
-        }
+
     }
 
     ///Kill effects
@@ -538,7 +532,7 @@ NodeCollection::initNodeName(const std::string& pluginID,
         }
     }
 }
-
+#if 0
 bool
 NodeCollection::connectNodes(int inputNumber,
                              const NodePtr& input,
@@ -635,6 +629,7 @@ NodeCollection::disconnectNodes(const NodePtr& input,
 
     return true;
 }
+#endif
 
 bool
 NodeCollection::autoConnectNodes(const NodePtr& selected,
@@ -698,33 +693,31 @@ NodeCollection::autoConnectNodes(const NodePtr& selected,
         ///connect it to the first input
         int selectedInput = selected->getPreferredInputForConnection();
         if (selectedInput != -1) {
-            bool ok = connectNodes(selectedInput, created, selected, true);
-            assert(ok);
-            Q_UNUSED(ok);
+            selected->swapInput(created, selectedInput);
             ret = true;
         } else {
             ret = false;
         }
     } else {
         if ( !created->isOutputNode() ) {
+
             ///we find all the nodes that were previously connected to the selected node,
             ///and connect them to the created node instead.
-            std::map<NodePtr, int> outputsConnectedToSelectedNode;
-            selected->getOutputsConnectedToThisNode(&outputsConnectedToSelectedNode);
-            for (std::map<NodePtr, int>::iterator it = outputsConnectedToSelectedNode.begin();
+            OutputNodesMap outputsConnectedToSelectedNode;
+            selected->getOutputs(outputsConnectedToSelectedNode);
+            for (OutputNodesMap::iterator it = outputsConnectedToSelectedNode.begin();
                  it != outputsConnectedToSelectedNode.end(); ++it) {
-                bool ok = disconnectNodes(selected, it->first);
-                assert(ok);
-                ok = connectNodes(it->second, created, it->first);
-                Q_UNUSED(ok);
+                it->first->disconnectInput(selected);
+
+                for (std::list<int>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+                    it->first->swapInput(created, *it2);
+                }
             }
         }
         ///finally we connect the created node to the selected node
         int createdInput = created->getPreferredInputForConnection();
         if (createdInput != -1) {
-            bool ok = connectNodes(createdInput, selected, created);
-            assert(ok);
-            Q_UNUSED(ok);
+            created->swapInput(selected, createdInput);
             ret = true;
         } else {
             ret = false;
@@ -1367,15 +1360,13 @@ NodeGroup::notifyNodeDeactivated(const NodePtr& node)
     }
 
     ///Notify outputs of the group nodes that their inputs may have changed
-    const NodesWList& outputs = thisNode->getOutputs();
-    for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        NodePtr output = it->lock();
-        if (!output) {
-            continue;
+    OutputNodesMap outputs;
+    thisNode->getOutputs(outputs);
+    for (OutputNodesMap::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+
+        for (std::list<int>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            it->first->onInputChanged(*it2);
         }
-        int idx = output->getInputIndex(thisNode);
-        assert(idx != -1);
-        output->onInputChanged(idx);
     }
 } // NodeGroup::notifyNodeDeactivated
 
@@ -1400,16 +1391,13 @@ NodeGroup::notifyNodeActivated(const NodePtr& node)
             _imp->outputs.push_back(node);
         }
     }
-    ///Notify outputs of the group nodes that their inputs may have changed
-    const NodesWList& outputs = thisNode->getOutputs();
-    for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        NodePtr output = it->lock();
-        if (!output) {
-            continue;
+    // Notify outputs of the group nodes that their inputs may have changed
+    OutputNodesMap outputs;
+    thisNode->getOutputs(outputs);
+    for (OutputNodesMap::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        for (std::list<int>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            it->first->onInputChanged(*it2);
         }
-        int idx = output->getInputIndex(thisNode);
-        assert(idx != -1);
-        output->onInputChanged(idx);
     }
 }
 
@@ -1485,17 +1473,16 @@ NodeGroup::getInputsOutputs(NodesList* nodes) const
     QMutexLocker k(&_imp->nodesLock);
 
     for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-        NodesWList outputs;
+
         NodePtr input = _imp->inputs[i].lock();
         if (!input) {
             continue;
         }
-        input->getOutputs_mt_safe(outputs);
-        for (NodesWList::iterator it = outputs.begin(); it != outputs.end(); ++it) {
-            NodePtr node = it->lock();
-            if (node) {
-                nodes->push_back(node);
-            }
+
+        OutputNodesMap outputs;
+        input->getOutputs(outputs);
+        for (OutputNodesMap::iterator it = outputs.begin(); it != outputs.end(); ++it) {
+            nodes->push_back(it->first);
         }
     }
 }
@@ -1547,7 +1534,7 @@ NodeGroup::setupInitialSubGraphState()
 
     NodePtr input, output;
 
-    NodeGroupPtr thisShared = toNodeGroup(shared_from_this());
+    NodeGroupPtr thisShared = toNodeGroup(EffectInstance::shared_from_this());
     {
         CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_OUTPUT, thisShared));
         args->setProperty(kCreateNodeArgsPropAutoConnect, false);
@@ -1588,7 +1575,7 @@ NodeGroup::loadSubGraph(const SERIALIZATION_NAMESPACE::NodeSerialization* projec
 
         assert(pyPlugSerialization);
         // This will create internal nodes and restore their links.
-        Project::restoreGroupFromSerialization(pyPlugSerialization->_children, toNodeGroup(shared_from_this()), 0);
+        createNodesFromSerialization(pyPlugSerialization->_children, eCreateNodesFromSerializationFlagsNone, 0);
 
         // For PyPlugs, the graph s not editable anyway
         setSubGraphEditedByUser(false);
@@ -1603,7 +1590,7 @@ NodeGroup::loadSubGraph(const SERIALIZATION_NAMESPACE::NodeSerialization* projec
         clearNodesBlocking();
         
         // This will create internal nodes.
-        Project::restoreGroupFromSerialization(projectSerialization->_children, toNodeGroup(shared_from_this()),  0);
+        createNodesFromSerialization(projectSerialization->_children, eCreateNodesFromSerializationFlagsNone,  0);
 
         // A group always appear edited
         setSubGraphEditedByUser(true);
@@ -1613,6 +1600,265 @@ NodeGroup::loadSubGraph(const SERIALIZATION_NAMESPACE::NodeSerialization* projec
     }
 }
 
+NodePtr
+NodeCollection::findSerializedNodeWithScriptName(const std::string& nodeScriptName,
+                                            const std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>& createdNodes,
+                                            const NodesList& allNodesInGroup,
+                                            bool allowSearchInAllNodes)
+{
+    for (std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
+        if (it->first->_nodeScriptName == nodeScriptName) {
+            return it->second;
+        }
+    }
+
+    if (allowSearchInAllNodes) {
+        for (NodesList::const_iterator it = allNodesInGroup.begin(); it != allNodesInGroup.end(); ++it) {
+            if ((*it)->getScriptName() == nodeScriptName) {
+                return *it;
+            }
+        }
+    }
+
+
+    return NodePtr();
+}
+
+
+static void
+restoreInput(const NodePtr& node,
+             const std::string& inputLabel,
+             const std::string& inputNodeScriptName,
+             const std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>& createdNodes,
+             const NodesList& allNodesInGroup,
+             bool allowSearchInAllNodes,
+             bool isMaskInput)
+{
+    if ( inputNodeScriptName.empty() ) {
+        return;
+    }
+    int index = inputLabel.empty() ? -1 : node->getInputNumberFromLabel(inputLabel);
+    if (index == -1) {
+
+        // If the name of the input was not serialized, the string is the index
+        bool ok;
+        index = QString::fromUtf8(inputLabel.c_str()).toInt(&ok);
+        if (!ok) {
+            index = -1;
+        }
+        if (index == -1) {
+            appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(node->getScriptName().c_str()), QDateTime::currentDateTime(),
+                                            node->tr("Could not find input named %1")
+                                            .arg( QString::fromUtf8( inputNodeScriptName.c_str() ) ) );
+
+        }
+
+        // If the node had a single mask, the inputLabel was "0", indicating the index of the mask
+        // So iterate through masks to find it
+        if (isMaskInput) {
+            // Find the mask corresponding to the index
+            int nInputs = node->getMaxInputCount();
+            int maskIndex = 0;
+            for (int i = 0; i < nInputs; ++i) {
+                if (node->getEffectInstance()->isInputMask(i)) {
+                    if (maskIndex == index) {
+                        index = i;
+                        break;
+                    }
+                    ++maskIndex;
+                    break;
+                }
+            }
+        }
+    }
+
+    NodeCollectionPtr nodeGroup = node->getGroup();
+    if (!nodeGroup) {
+        return;
+    }
+    // The nodes created from the serialization may have changed name if another node with the same script-name already existed.
+    // By chance since we created all nodes within the same Group at the same time, we have a list of the old node serialization
+    // and the corresponding created node (with its new script-name).
+    // If we find a match, make sure we use the new node script-name to restore the input.
+    NodePtr foundNode = NodeGroup::findSerializedNodeWithScriptName(inputNodeScriptName, createdNodes, allNodesInGroup, allowSearchInAllNodes);
+    if (!foundNode) {
+        return;
+
+
+        // Commented-out: Do not attempt to get the node in the nodes list: all nodes within a sub-graph should be connected to nodes at this level.
+        // If it cannot be found in the allCreatedNodesInGroup then this is likely the user does not want the input to connect.
+        //foundNode = nodeGroup->getNodeByName(inputNodeScriptName);
+    }
+
+    node->swapInput(foundNode, index);
+
+} //restoreInput
+
+static void
+restoreInputs(const NodePtr& node,
+              const std::map<std::string, std::string>& inputsMap,
+              const std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>& createdNodes,
+              const NodesList& allNodesInGroup,
+              bool allowSearchInAllNodes,
+              bool isMaskInputs)
+{
+    for (std::map<std::string, std::string>::const_iterator it = inputsMap.begin(); it != inputsMap.end(); ++it) {
+        restoreInput(node, it->first, it->second, createdNodes, allNodesInGroup, allowSearchInAllNodes, isMaskInputs);
+    }
+} // restoreInputs
+
+static void
+restoreLinksRecursive(const NodeCollectionPtr& group,
+                      const SERIALIZATION_NAMESPACE::NodeSerializationList& nodes,
+                      const std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>* createdNodes)
+{
+    for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+
+        // The nodes created from the serialization may have changed name if another node with the same script-name already existed.
+        // By chance since we created all nodes within the same Group at the same time, we have a list of the old node serialization
+        // and the corresponding created node (with its new script-name).
+        // If we find a match, make sure we use the new node script-name to restore the input.
+        NodePtr foundNode;
+        if (createdNodes) {
+            foundNode = NodeCollection::findSerializedNodeWithScriptName((*it)->_nodeScriptName, *createdNodes, NodesList(), false);
+        }
+        if (!foundNode) {
+            // We did not find the node in the serialized nodes list, the last resort is to look into already created nodes
+            // and find an exact match, hoping the script-name of the node did not change.
+            foundNode = group->getNodeByName((*it)->_nodeScriptName);
+        }
+        if (!foundNode) {
+            continue;
+        }
+
+        // The allCreatedNodes list is useful if the nodes that we created had their script-name changed from what was inside the node serialization object.
+        // It may have changed if a node would already exist in the group with the same script-name.
+        // This kind of conflict may only occur in the top-level graph that we are restoring: sub-graphs are created entirely so script-names should remain
+        // the same between the serilization object and the created node.
+        foundNode->restoreKnobsLinks(**it, createdNodes ? *createdNodes : std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>());
+
+        NodeGroupPtr isGroup = toNodeGroup(foundNode->getEffectInstance());
+        if (isGroup) {
+
+            // For sub-groupe, we don't have the list of created nodes, and their serialization list, but we should not need it:
+            // It's only the top-level group that we create that may have conflicts with script-names, sub-groups are conflict free since
+            // we just created them.
+            restoreLinksRecursive(isGroup, (*it)->_children, 0);
+        }
+    }
+} // restoreLinksRecursive
+
+
+bool
+NodeCollection::createNodesFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializationList & serializedNodes,
+                                             CreateNodesFromSerializationFlagsEnum flags,
+                                             std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>* createdNodesOut)
+{
+
+    // True if the restoration process had errors
+    bool hasError = false;
+    
+    NodeCollectionPtr thisShared = getThisShared();
+
+    // When loading a Project, use the Group name to update the loading status to the user
+    QString groupStatusLabel;
+    {
+        NodeGroupPtr isNodeGroup = toNodeGroup(thisShared);
+        if (isNodeGroup) {
+            groupStatusLabel = QString::fromUtf8( isNodeGroup->getNode()->getLabel().c_str() );
+        } else {
+            groupStatusLabel = tr("top-level");
+        }
+        getApplication()->updateProjectLoadStatus( tr("Creating nodes in group: %1").arg(groupStatusLabel) );
+    }
+
+    std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr> localCreatedNodes;
+
+
+    // Loop over all node serialization and create them first
+    for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
+        
+        NodePtr node = appPTR->createNodeForProjectLoading(*it, thisShared);
+        if (!node) {
+            QString text( tr("ERROR: The node %1 version %2.%3"
+                             " was found in the script but does not"
+                             " exist in the loaded plug-ins.")
+                         .arg( QString::fromUtf8( (*it)->_pluginID.c_str() ) )
+                         .arg((*it)->_pluginMajorVersion).arg((*it)->_pluginMinorVersion) );
+            appPTR->writeToErrorLog_mt_safe(tr("Project"), QDateTime::currentDateTime(), text);
+            hasError = true;
+            continue;
+        } else {
+            if (node->getPluginID() == PLUGINID_NATRON_STUB) {
+                // If the node could not be created and we made a stub instead, warn the user
+                QString text( tr("WARNING: The node %1 (%2 version %3.%4) "
+                                 "was found in the script but the plug-in could not be found. It has been replaced by a pass-through node instead.")
+                             .arg( QString::fromUtf8( (*it)->_nodeScriptName.c_str() ) )
+                             .arg( QString::fromUtf8( (*it)->_pluginID.c_str() ) )
+                             .arg((*it)->_pluginMajorVersion)
+                             .arg((*it)->_pluginMinorVersion));
+                appPTR->writeToErrorLog_mt_safe(tr("Project"), QDateTime::currentDateTime(), text);
+                hasError = true;
+            } else if ( (*it)->_pluginMajorVersion != -1 && (node->getMajorVersion() != (int)(*it)->_pluginMajorVersion) ) {
+                // If the node has a IOContainer don't do this check: when loading older projects that had a
+                // ReadOIIO node for example in version 2, we would now create a new Read meta-node with version 1 instead
+                QString text( tr("WARNING: The node %1 (%2 version %3.%4) "
+                                 "was found in the script but was loaded "
+                                 "with version %5.%6 instead.")
+                             .arg( QString::fromUtf8( (*it)->_nodeScriptName.c_str() ) )
+                             .arg( QString::fromUtf8( (*it)->_pluginID.c_str() ) )
+                             .arg((*it)->_pluginMajorVersion)
+                             .arg((*it)->_pluginMinorVersion)
+                             .arg( node->getPlugin()->getPropertyUnsafe<unsigned int>(kNatronPluginPropVersion, 0) )
+                             .arg( node->getPlugin()->getPropertyUnsafe<unsigned int>(kNatronPluginPropVersion, 1) ) );
+                appPTR->writeToErrorLog_mt_safe(tr("Project"), QDateTime::currentDateTime(), text);
+            }
+        }
+
+        assert(node);
+
+        localCreatedNodes.insert(std::make_pair(*it, node));
+
+    } // for all nodes
+
+
+    getApplication()->updateProjectLoadStatus( tr("Restoring graph links in group: %1").arg(groupStatusLabel) );
+
+
+    NodesList allNodesInGroup = getNodes();
+
+    // Connect the nodes together
+    for (std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>::const_iterator it = localCreatedNodes.begin(); it != localCreatedNodes.end(); ++it) {
+
+
+        // Loop over the inputs map
+        // This is a map <input label, input node name>
+        //
+        // When loading projects before Natron 2.2, the inputs contain both masks and inputs.
+        //
+
+        restoreInputs(it->second, it->first->_inputs, localCreatedNodes, allNodesInGroup, flags & eCreateNodesFromSerializationFlagsConnectToExternalNodes, false /*isMasks*/);
+
+        // After Natron 2.2, masks are saved separatly
+        restoreInputs(it->second, it->first->_masks, localCreatedNodes, allNodesInGroup, flags & eCreateNodesFromSerializationFlagsConnectToExternalNodes, true /*isMasks*/);
+
+    } // for all nodes
+
+    // If we created all sub-groups recursively, then we are in the top-level group. We may now restore all links
+#pragma message WARN("Check condition")
+    if (!getApplication()->getProject()->isLoadingProject() /*|| getApplication()->isCreatingNode()*/) {
+
+        // Now that we created all nodes. There may be cross-graph link(s) and they can only be truely restored now.
+        restoreLinksRecursive(thisShared, serializedNodes, &localCreatedNodes);
+    }
+
+    if (createdNodesOut) {
+        *createdNodesOut = localCreatedNodes;
+    }
+
+    return !hasError;
+
+} // createNodesFromSerialization
 
 NATRON_NAMESPACE_EXIT;
 

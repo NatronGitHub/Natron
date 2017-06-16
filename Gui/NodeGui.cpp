@@ -226,8 +226,8 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( internalNode.get(), SIGNAL(inputsInitialized()), this, SLOT(initializeInputs()) );
     QObject::connect( internalNode.get(), SIGNAL(previewImageChanged()), this, SLOT(updatePreviewImage()) );
     QObject::connect( internalNode.get(), SIGNAL(previewRefreshRequested()), this, SLOT(forceComputePreview()) );
-    QObject::connect( internalNode.get(), SIGNAL(deactivated(bool)), this, SLOT(deactivate(bool)) );
-    QObject::connect( internalNode.get(), SIGNAL(activated(bool)), this, SLOT(activate(bool)) );
+    QObject::connect( internalNode.get(), SIGNAL(deactivated()), this, SLOT(deactivate()) );
+    QObject::connect( internalNode.get(), SIGNAL(activated()), this, SLOT(activate()) );
     QObject::connect( internalNode.get(), SIGNAL(inputChanged(int)), this, SLOT(connectEdge(int)) );
     QObject::connect( internalNode.get(), SIGNAL(persistentMessageChanged()), this, SLOT(onPersistentMessageChanged()) );
     QObject::connect( internalNode.get(), SIGNAL(outputsChanged()), this, SLOT(refreshOutputEdgeVisibility()) );
@@ -973,13 +973,11 @@ NodeGui::refreshPositionEnd(double x,
     NodePtr node = getNode();
     if (node) {
         node->onNodeUIPositionChanged(x,y);
-        const NodesWList & outputs = node->getOutputs();
+        OutputNodesMap outputs;
+        node->getOutputs(outputs);
 
-        for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-            NodePtr output = it->lock();
-            if (output) {
-                output->doRefreshEdgesGUI();
-            }
+        for (OutputNodesMap::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+            it->first->doRefreshEdgesGUI();
         }
     }
     Q_EMIT positionChanged(x, y);
@@ -1088,12 +1086,11 @@ NodeGui::refreshPosition(double x,
 
             if ( ( !_magnecEnabled.x() || !_magnecEnabled.y() ) ) {
                 ///check now the outputs
-                const NodesWList & outputs = node->getOutputs();
-                for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-                    NodePtr output = it->lock();
-                    if (!output) {
-                        continue;
-                    }
+                OutputNodesMap outputs;
+                node->getOutputs(outputs);
+                for (OutputNodesMap::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+                    const NodePtr& output = it->first;
+
                     NodeGuiIPtr node_gui_i = output->getNodeGui();
                     if (!node_gui_i) {
                         continue;
@@ -1893,12 +1890,10 @@ NodeGui::showGui()
         _outputEdge->setActive(true);
     }
     refreshEdges();
-    const NodesWList & outputs = node->getOutputs();
-    for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        NodePtr output = it->lock();
-        if (output) {
-            output->doRefreshEdgesGUI();
-        }
+    OutputNodesMap outputs;
+    node->getOutputs(outputs);
+    for (OutputNodesMap::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        it->first->doRefreshEdgesGUI();
     }
     ViewerNodePtr viewer = node->isEffectViewerNode();
     if (viewer) {
@@ -1921,7 +1916,7 @@ NodeGui::showGui()
 } // NodeGui::showGui
 
 void
-NodeGui::activate(bool triggerRender)
+NodeGui::activate()
 {
     ///first activate all child instance if any
     NodePtr node = getNode();
@@ -1930,9 +1925,9 @@ NodeGui::activate(bool triggerRender)
 
     _graph->restoreFromTrash( shared_from_this() );
 
-    if (triggerRender) {
+    /*if (triggerRender) {
         _graph->getGui()->getApp()->renderAllViewers();
-    }
+    }*/
 }
 
 void
@@ -1991,7 +1986,7 @@ NodeGui::hideGui()
 } // hideGui
 
 void
-NodeGui::deactivate(bool triggerRender)
+NodeGui::deactivate()
 {
     ///first deactivate all child instance if any
     NodePtr node = getNode();
@@ -2009,9 +2004,9 @@ NodeGui::deactivate(bool triggerRender)
         }
     }
 
-    if (triggerRender) {
+    /*if (triggerRender) {
         _graph->getGui()->getApp()->renderAllViewers();
-    }
+    }*/
 }
 
 void
@@ -2256,12 +2251,11 @@ NodeGui::moveBelowPositionRecursively(const QRectF & r)
 
     if ( r.intersects(sceneRect) ) {
         changePosition(0, r.height() + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
-        const NodesWList & outputs = getNode()->getOutputs();
-        for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-            NodePtr output = it->lock();
-            if (!output) {
-                continue;
-            }
+        OutputNodesMap outputs;
+        getNode()->getOutputs(outputs);
+        for (OutputNodesMap::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+            const NodePtr& output = it->first;
+
             NodeGuiIPtr outputGuiI = output->getNodeGui();
             if (!outputGuiI) {
                 continue;
@@ -2300,7 +2294,9 @@ void
 NodeGui::refreshOutputEdgeVisibility()
 {
     if (_outputEdge) {
-        if ( getNode()->getOutputs().empty() ) {
+        OutputNodesMap outputs;
+        getNode()->getOutputs(outputs);
+        if ( outputs.empty() ) {
             if ( !_outputEdge->isVisible() ) {
                 _outputEdge->setActive(true);
                 _outputEdge->show();
@@ -2589,12 +2585,10 @@ NodeGui::setScale_natron(double scale)
         _outputEdge->setScale(scale);
     }
     refreshEdges();
-    const NodesWList & outputs = getNode()->getOutputs();
-    for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        NodePtr output = it->lock();
-        if (output) {
-            output->doRefreshEdgesGUI();
-        }
+    OutputNodesMap  outputs;
+    getNode()->getOutputs(outputs);
+    for (OutputNodesMap::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        it->first->doRefreshEdgesGUI();
     }
     update();
 }

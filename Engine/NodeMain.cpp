@@ -550,9 +550,9 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
 
     // Check if pages ordering changed, if not do not serialize
     bool pageOrderChanged = true;
-    if (serialization->_encodeType == SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationTypeRegular) {
+    if ((serialization->_encodeFlags & (SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsPreset | SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsPyPlug)) == 0) {
         pageOrderChanged = hasPageOrderChangedSinceDefault();
-    } else if (serialization->_encodeType == SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationTypePresets) {
+    } else if (serialization->_encodeFlags & SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsPreset) {
         // Never serialize page order in a Preset
         pageOrderChanged = false;
     }
@@ -560,7 +560,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
     bool isFullSaveMode = appPTR->getCurrentSettings()->getIsFullRecoverySaveModeEnabled();
 
     // Always store the sub-graph when encoding as a PyPlug
-    const bool subGraphEdited = serialization->_encodeType == SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationTypePyPlug || isSubGraphEditedByUser();
+    const bool subGraphEdited = serialization->_encodeFlags  & SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsPyPlug || isSubGraphEditedByUser();
 
     KnobPagePtr pyPlugPage = getEffectInstance()->getPyPlugPage();
 
@@ -578,13 +578,13 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
             }
 
             // Save pages order if it has changed or if we are encoding a PyPlug
-            if (!isPage->getIsSecret() && (pageOrderChanged || serialization->_encodeType == SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationTypePyPlug)) {
+            if (!isPage->getIsSecret() && (pageOrderChanged || serialization->_encodeFlags & SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsPyPlug)) {
                 serialization->_pagesIndexes.push_back( knobs[i]->getName() );
             }
 
             // Save user pages if they were added by the user with respect to the initial plug-in state, or if we are encoding as a PyPlug
-            if (serialization->_encodeType != SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationTypePresets) {
-                if ( knobs[i]->isUserKnob() && (!knobs[i]->isDeclaredByPlugin() || serialization->_encodeType == SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationTypePyPlug)) {
+            if ((serialization->_encodeFlags & SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsPreset) == 0) {
+                if ( knobs[i]->isUserKnob() && (!knobs[i]->isDeclaredByPlugin() || serialization->_encodeFlags & SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsPyPlug)) {
                     userPages.push_back(knobs[i]);
                 }
             }
@@ -634,7 +634,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
 
         // If the knob is in the PyPlug page, only serialize if the PyPlug page is visible or if we are exporting as a
         // Pyplug
-        if (pyPlugPage && pyPlugPage->getIsSecret() && knobs[i]->getTopLevelPage() == pyPlugPage && serialization->_encodeType != SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationTypePyPlug) {
+        if (pyPlugPage && pyPlugPage->getIsSecret() && knobs[i]->getTopLevelPage() == pyPlugPage && (serialization->_encodeFlags & SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsPyPlug) == 0) {
             continue;
         }
 
@@ -661,7 +661,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
     serialization->_nodeScriptName = getScriptName_mt_safe();
 
     // When serializing as pyplug, always set in the plugin-id the original plug-in ID.
-    if (serialization->_encodeType == SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationTypePyPlug) {
+    if (serialization->_encodeFlags & SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsPyPlug) {
         serialization->_pluginID = getOriginalPlugin()->getPluginID();
     } else {
         serialization->_pluginID = getPluginID();
@@ -677,7 +677,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
     serialization->_pluginMinorVersion = getMinorVersion();
 
     // Only serialize inputs for regular serialization
-    if (serialization->_encodeType == SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationTypeRegular) {
+    if ((serialization->_encodeFlags & (SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsPreset | SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsPyPlug)) == 0) {
         getInputNames(serialization->_inputs, serialization->_masks);
     }
 
@@ -728,7 +728,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
 
     // Only serialize viewer UI knobs order if it has changed
 
-    bool serializeViewerKnobs = serialization->_encodeType != SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationTypeRegular;
+    bool serializeViewerKnobs = (serialization->_encodeFlags & (SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsPreset | SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsPyPlug));
     KnobsVec viewerUIKnobs = getEffectInstance()->getViewerUIKnobs();
     if (!serializeViewerKnobs) {
         if (viewerUIKnobs.size() != _imp->defaultViewerKnobsOrder.size()) {
@@ -1168,7 +1168,7 @@ Node::exportNodeToPyPlug(const std::string& filePath)
 
 
     SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization(new SERIALIZATION_NAMESPACE::NodeSerialization);
-    serialization->_encodeType = SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationTypePyPlug;
+    serialization->_encodeFlags = SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsPyPlug;
     toSerialization(serialization.get());
 
     SERIALIZATION_NAMESPACE::NodeClipBoard cb;
@@ -1213,7 +1213,7 @@ Node::exportNodeToPresets(const std::string& filePath,
 
 
     SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization(new SERIALIZATION_NAMESPACE::NodeSerialization);
-    serialization->_encodeType = SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationTypePresets;
+    serialization->_encodeFlags = SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsPreset;
     serialization->_presetsIdentifierLabel = presetsLabel;
     serialization->_presetsIconFilePath = iconFilePath;
     serialization->_presetShortcutSymbol = shortcutSymbol;
@@ -1384,7 +1384,7 @@ Node::restoreNodeToDefaultState(const CreateNodeArgsPtr& args)
 
 void
 Node::restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & serialization,
-                        const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >& allCreatedNodesInGroup)
+                        const std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>& allCreatedNodesInGroup)
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -1530,22 +1530,18 @@ Node::moveToGroup(const NodeCollectionPtr& group)
 
 
 void
-Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
-                 bool disconnectAll,
-                 bool reconnect,
-                 bool hideGui,
-                 bool triggerRender,
-                 bool unslaveKnobs)
+Node::deactivate(DeactivateFlagEnum flags)
 {
 
     if ( !_imp->effect || !isActivated() ) {
+        // The node is not created or it is already deactivated: do nothing.
         return;
     }
-    //first tell the gui to clear any persistent message linked to this node
-    clearAllPersistentMessages(false);
 
+    // Clear any persistent message linked to this node
+    clearAllPersistentMessages(false /*recurse*/);
 
-
+    // Is this called while in destroyNode() ? If so, we do not call shared_from_this() which may be no longer valid.
     bool beingDestroyed;
     {
         QMutexLocker k(&_imp->isBeingDestroyedMutex);
@@ -1560,7 +1556,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
     NodeCollectionPtr parentCol = getGroup();
 
 
-    if (unslaveKnobs) {
+    {
         ///For all knobs that have listeners, invalidate expressions
         NodeGroupPtr isParentGroup = toNodeGroup(parentCol);
 
@@ -1608,109 +1604,57 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
                 ss << getFullyQualifiedName();
                 ss << ' ';
                 ss << tr("in expression.").toStdString();
-                listener->setExpressionInvalid( it->dimension, it->view, false, ss.str() );
+                listener->setLinkStatus( it->dimension, it->view, false, ss.str() );
             }
 
         }
 
     }
 
-    ///if the node has 1 non-optional input, attempt to connect the outputs to the input of the current node
-    ///this node is the node the outputs should attempt to connect to
-    NodePtr inputToConnectTo;
-    NodePtr firstOptionalInput;
-    int firstNonOptionalInput = -1;
-    if (reconnect) {
-        bool hasOnlyOneInputConnected = false;
 
-        ///No need to lock inputs is only written to by the mainthread
-        for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
-            NodePtr input = _imp->inputs[i].lock();
-            if (input) {
-                if ( !_imp->effect->isInputOptional(i) ) {
-                    if (firstNonOptionalInput == -1) {
-                        firstNonOptionalInput = i;
-                        hasOnlyOneInputConnected = true;
-                    } else {
-                        hasOnlyOneInputConnected = false;
-                    }
-                } else if (!firstOptionalInput) {
-                    firstOptionalInput = input;
-                    if (hasOnlyOneInputConnected) {
-                        hasOnlyOneInputConnected = false;
-                    } else {
-                        hasOnlyOneInputConnected = true;
-                    }
-                }
-            }
-        }
-
-        if (hasOnlyOneInputConnected) {
-            if (firstNonOptionalInput != -1) {
-                inputToConnectTo = getRealInput(firstNonOptionalInput);
-            } else if (firstOptionalInput) {
-                inputToConnectTo = firstOptionalInput;
-            }
+    NodePtr mainInputNode;
+    if (flags & eDeactivateFlagConnectOutputsToMainInput) {
+        int prefInput_i = getPreferredInput();
+        if (prefInput_i != -1) {
+            mainInputNode = getRealInput(prefInput_i);
         }
     }
-    /*Removing this node from the output of all inputs*/
-    _imp->deactivatedState.clear();
 
-
+    // Removing this node from the output of all inputs
     std::vector<NodePtr > inputsQueueCopy;
 
 
-    if (hideGui) {
+    if (!beingDestroyed) {
+        NodePtr thisShared = shared_from_this();
         for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
             NodePtr input = _imp->inputs[i].lock();
             if (input) {
-                input->disconnectOutput(this);
+                input->disconnectOutput(thisShared, i);
             }
         }
     }
 
 
-    ///For each output node we remember that the output node  had its input number inputNb connected
-    ///to this node
-    NodesWList outputsQueueCopy;
+    // For each output node we remember that the output node  had its input number inputNb connected to this node
     {
         QMutexLocker l(&_imp->outputsMutex);
-        outputsQueueCopy = _imp->outputs;
+        _imp->deactivatedState.outputs = _imp->outputs;
     }
-
-
-    for (NodesWList::iterator it = outputsQueueCopy.begin(); it != outputsQueueCopy.end(); ++it) {
-        NodePtr output = it->lock();
+    for (InternalOutputNodesMap::const_iterator it = _imp->deactivatedState.outputs.begin(); it != _imp->deactivatedState.outputs.end(); ++it) {
+        NodePtr output = it->first.lock();
         if (!output) {
             continue;
         }
-        bool dc = false;
-        if (disconnectAll) {
-            dc = true;
-        } else {
-            for (NodesList::const_iterator found = outputsToDisconnect.begin(); found != outputsToDisconnect.end(); ++found) {
-                if (*found == output) {
-                    dc = true;
-                    break;
-                }
-            }
-        }
-        if (dc && !beingDestroyed) {
-            int inputNb = output->getInputIndex(shared_from_this());
-            if (inputNb != -1) {
-                _imp->deactivatedState.insert( std::make_pair(*it, inputNb) );
-
-                output->replaceInputInternal(inputToConnectTo, inputNb, false);
-
-            }
+        for (std::list<int>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            output->swapInput(mainInputNode, *it2);
         }
     }
-
+       
     // If the effect was doing OpenGL rendering and had context(s) bound, dettach them.
     _imp->effect->dettachAllOpenGLContexts();
 
 
-    ///Free all memory used by the plug-in.
+    // Free all memory used by the plug-in.
 
     _imp->effect->clearLastRenderedImage();
 
@@ -1718,8 +1662,8 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
         parentCol->notifyNodeDeactivated( shared_from_this() );
     }
 
-    if (hideGui && !beingDestroyed) {
-        Q_EMIT deactivated(triggerRender);
+    if (!beingDestroyed) {
+        Q_EMIT deactivated();
     }
     {
         QMutexLocker l(&_imp->activatedMutex);
@@ -1733,7 +1677,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
         isGrp->setIsDeactivatingGroup(true);
         NodesList nodes = isGrp->getNodes();
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            (*it)->deactivate(std::list< NodePtr >(), false, false, true, false);
+            (*it)->deactivate();
         }
         isGrp->setIsDeactivatingGroup(false);
     }
@@ -1748,9 +1692,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
 } // deactivate
 
 void
-Node::activate(const std::list< NodePtr > & outputsToRestore,
-               bool restoreAll,
-               bool triggerRender)
+Node::activate(ActivateFlagEnum flags)
 {
     ///Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -1766,45 +1708,26 @@ Node::activate(const std::list< NodePtr > & outputsToRestore,
     for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
         NodePtr input = _imp->inputs[i].lock();
         if (input) {
-            input->connectOutput(thisShared);
+            input->connectOutput(thisShared, i);
         }
     }
 
 
     ///Restore all outputs that was connected to this node
-    for (std::map<NodeWPtr, int >::iterator it = _imp->deactivatedState.begin();
-         it != _imp->deactivatedState.end(); ++it) {
+    if (flags & eActivateFlagRestoreOutputs) {
+    for (InternalOutputNodesMap::iterator it = _imp->deactivatedState.outputs.begin();
+         it != _imp->deactivatedState.outputs.end(); ++it) {
         NodePtr output = it->first.lock();
         if (!output) {
             continue;
         }
 
-        bool restore = false;
-        if (restoreAll) {
-            restore = true;
-        } else {
-            for (NodesList::const_iterator found = outputsToRestore.begin(); found != outputsToRestore.end(); ++found) {
-                if (*found == output) {
-                    restore = true;
-                    break;
-                }
-            }
+
+        for (std::list<int>::const_iterator it2 =it->second.begin(); it2 != it->second.end(); ++it2) {
+            output->swapInput(thisShared, *it2);
         }
 
-        if (restore) {
-            ///before connecting the outputs to this node, disconnect any link that has been made
-            ///between the outputs by the user. This should normally never happen as the undo/redo
-            ///stack follow always the same order.
-            NodePtr outputHasInput = output->getRealInput(it->second);
-            if (outputHasInput) {
-                bool ok = getApp()->getProject()->disconnectNodes(outputHasInput, output);
-                assert(ok);
-                Q_UNUSED(ok);
-            }
-
-            ///and connect the output to this node
-            output->connectInput(thisShared, it->second);
-        }
+    }
     }
 
     {
@@ -1816,11 +1739,11 @@ Node::activate(const std::list< NodePtr > & outputsToRestore,
     if (group) {
         group->notifyNodeActivated( shared_from_this() );
     }
-    Q_EMIT activated(triggerRender);
+    Q_EMIT activated();
 
 
     declareAllPythonAttributes();
-    getApp()->recheckInvalidExpressions();
+    getApp()->recheckInvalidLinks();
 
 
     ///If the node is a group, activate all nodes within the group first
@@ -1829,7 +1752,7 @@ Node::activate(const std::list< NodePtr > & outputsToRestore,
         isGrp->setIsActivatingGroup(true);
         NodesList nodes = isGrp->getNodes();
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            (*it)->activate(std::list< NodePtr >(), false, false);
+            (*it)->activate();
         }
         isGrp->setIsActivatingGroup(false);
     }
@@ -1873,11 +1796,7 @@ Node::onProcessingQuitInDestroyNodeInternal(int taskID,
 void
 Node::doDestroyNodeInternalEnd(bool autoReconnect)
 {
-    deactivate(NodesList(),
-               true,
-               autoReconnect,
-               true,
-               false);
+    deactivate();
 
     {
         NodeGuiIPtr guiPtr = _imp->guiPointer.lock();
@@ -1907,7 +1826,7 @@ Node::doDestroyNodeInternalEnd(bool autoReconnect)
     // Removing this node might invalidate some expressions, check it now
     AppInstancePtr app = getApp();
     if (app) {
-        app->recheckInvalidExpressions();
+        app->recheckInvalidLinks();
     }
 
 

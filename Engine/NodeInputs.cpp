@@ -105,11 +105,6 @@ applyNodeRedirectionsUpstream(const NodePtr& node)
         return applyNodeRedirectionsUpstream(isGrp->getOutputNodeInput());
     }
 
-    PrecompNodePtr isPrecomp = node->isEffectPrecompNode();
-    if (isPrecomp) {
-        //The node is a precomp, instead jump directly to the output node of the precomp
-        return applyNodeRedirectionsUpstream(isPrecomp->getOutputNode());
-    }
 
     GroupInputPtr isInput = node->isEffectGroupInput();
     if (isInput) {
@@ -159,19 +154,16 @@ applyNodeRedirectionsDownstream(int recurseCounter,
         }
         isGrp = toNodeGroup(collection);
         if (isGrp) {
-            NodesWList groupOutputs;
+            OutputNodesMap groupOutputs;
 
             NodePtr grpNode = isGrp->getNode();
             if (grpNode) {
-                grpNode->getOutputs_mt_safe(groupOutputs);
+                grpNode->getOutputs(groupOutputs);
             }
 
-            for (NodesWList::iterator it2 = groupOutputs.begin(); it2 != groupOutputs.end(); ++it2) {
+            for (OutputNodesMap::iterator it2 = groupOutputs.begin(); it2 != groupOutputs.end(); ++it2) {
                 //Call recursively on them
-                NodePtr output = it2->lock();
-                if (output) {
-                    applyNodeRedirectionsDownstream(recurseCounter + 1, output, translated);
-                }
+                applyNodeRedirectionsDownstream(recurseCounter + 1, it2->first, translated);
             }
         }
 
@@ -187,6 +179,7 @@ applyNodeRedirectionsDownstream(int recurseCounter,
 void
 Node::getOutputsWithGroupRedirection(NodesList& outputs) const
 {
+#pragma message WARN("This function is confusing, we should probably re-think it")
     NodesList redirections;
     NodePtr thisShared = boost::const_pointer_cast<Node>( shared_from_this() );
 
@@ -195,8 +188,8 @@ Node::getOutputsWithGroupRedirection(NodesList& outputs) const
         outputs.insert( outputs.begin(), redirections.begin(), redirections.end() );
     } else {
         QMutexLocker l(&_imp->outputsMutex);
-        for (NodesWList::const_iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
-            NodePtr output = it->lock();
+        for (InternalOutputNodesMap::const_iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
+            NodePtr output = it->first.lock();
             if (output) {
                 outputs.push_back(output);
             }
@@ -243,18 +236,18 @@ Node::getRealInput(int index) const
     return getInputInternal(false, index);
 }
 
-int
-Node::getInputIndex(const NodeConstPtr& node) const
+std::list<int>
+Node::getInputIndicesConnectedToThisNode(const NodeConstPtr& outputNode) const
 {
-    QMutexLocker l(&_imp->inputsMutex);
-
-    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-        if (_imp->inputs[i].lock() == node) {
-            return i;
-        }
+    std::list<int> ret;
+    QMutexLocker l(&_imp->outputsMutex);
+    NodePtr tmp = boost::const_pointer_cast<Node>(outputNode);
+    InternalOutputNodesMap::const_iterator found = _imp->outputs.find(tmp);
+    if (found != _imp->outputs.end()) {
+        ret = found->second;
+        return ret;
     }
-
-    return -1;
+    return ret;
 }
 
 const std::vector<NodeWPtr > &
@@ -667,22 +660,11 @@ Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool failIfExi
 {
     assert(_imp->inputsInitialized);
 
-    ///Check for cycles: they are forbidden in the graph
+    // Check for cycles: they are forbidden in the graph
     if ( input && !checkIfConnectingInputIsOk( input ) ) {
         return false;
     }
 
-
-#if 0
-    ///For effects that do not support multi-resolution, make sure the input effect is correct
-    ///otherwise the rendering might crash
-    if ( input && !_imp->effect->supportsMultiResolution() ) {
-        CanConnectInputReturnValue ret = checkCanConnectNoMultiRes(this, input);
-        if (ret != eCanConnectInput_ok) {
-            return false;
-        }
-    }
-#endif 
     {
         ///Check for invalid index
         QMutexLocker l(&_imp->inputsMutex);
@@ -714,13 +696,14 @@ Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool failIfExi
             return true;
         }
 
+        NodePtr thisShared = shared_from_this();
         if (curIn) {
             QObject::connect( curIn.get(), SIGNAL(labelChanged(QString,QString)), this, SLOT(onInputLabelChanged(QString,QString)), Qt::UniqueConnection );
-            curIn->disconnectOutput(this);
+            curIn->disconnectOutput(thisShared, inputNumber);
         }
         if (input) {
             _imp->inputs[inputNumber] = input;
-            input->connectOutput(shared_from_this() );
+            input->connectOutput(thisShared, inputNumber);
         } else {
             _imp->inputs[inputNumber].reset();
         }
@@ -732,7 +715,7 @@ Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool failIfExi
     }
 
     // Make the application recheck expressions, they may now be valid again.
-    getApp()->recheckInvalidExpressions();
+    getApp()->recheckInvalidLinks();
 
     ///Get notified when the input name has changed
     if (input) {
@@ -759,7 +742,7 @@ Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool failIfExi
     endInputEdition(true);
 
     return true;
-}
+} // replaceInputInternal
 
 bool
 Node::swapInput(const NodePtr& input,
@@ -876,13 +859,18 @@ Node::onInputLabelChanged(const QString& /*oldName*/, const QString & newName)
 }
 
 void
-Node::connectOutput(const NodePtr& output)
+Node::connectOutput(const NodePtr& output, int outputInputIndex)
 {
     assert(output);
 
     {
         QMutexLocker l(&_imp->outputsMutex);
-        _imp->outputs.push_back(output);
+        std::list<int>& indices = _imp->outputs[output];
+        std::list<int>::const_iterator foundIndex = std::find(indices.begin(), indices.end(), outputInputIndex);
+        if (foundIndex != indices.end()) {
+            return;
+        }
+        indices.push_back(outputInputIndex);
     }
     Q_EMIT outputsChanged();
 }
@@ -898,39 +886,34 @@ Node::disconnectInput(int inputNumber)
 bool
 Node::disconnectInput(const NodePtr& input)
 {
-    int found = -1;
-    NodePtr inputShared;
-    {
-        QMutexLocker l(&_imp->inputsMutex);
-        for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
-            NodePtr curInput = _imp->inputs[i].lock();
-            if (curInput == input) {
-                inputShared = curInput;
-                found = (int)i;
-                break;
-            }
-        }
+    std::list<int> indices = input->getInputIndicesConnectedToThisNode(shared_from_this());
 
-    }
-    if (found != -1) {
-        return replaceInputInternal(NodePtr(), found, false);
+    if (!indices.empty()) {
+        for (std::list<int>::const_iterator it = indices.begin(); it != indices.end(); ++it) {
+            swapInput(NodePtr(), *it);
+        }
+        return true;
     }
     return false;
 
 } // Node::disconnectInput
 
-int
-Node::disconnectOutput(const Node* output)
+bool
+Node::disconnectOutput(const NodePtr& output, int outputInputIndex)
 {
     assert(output);
-    int ret = -1;
+    bool ret = false;
     {
         QMutexLocker l(&_imp->outputsMutex);
-        int ret = 0;
-        for (NodesWList::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it, ++ret) {
-            if (it->lock().get() == output) {
-                _imp->outputs.erase(it);
-                break;
+        InternalOutputNodesMap::iterator found = _imp->outputs.find(output);
+        if (found != _imp->outputs.end()) {
+            std::list<int>::iterator foundIndex = std::find(found->second.begin(), found->second.end(), outputInputIndex);
+            if (foundIndex != found->second.end()) {
+                found->second.erase(foundIndex);
+                ret = true;
+            }
+            if (found->second.empty()) {
+                _imp->outputs.erase(found);
             }
         }
     }
@@ -940,30 +923,6 @@ Node::disconnectOutput(const Node* output)
     
     return ret;
 }
-
-int
-Node::inputIndex(const NodePtr& n) const
-{
-    if (!n) {
-        return -1;
-    }
-    
-    ///Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-    assert(_imp->inputsInitialized);
-    
-    ///No need to lock this is only called by the main-thread
-    for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
-        if (_imp->inputs[i].lock() == n) {
-            return i;
-        }
-    }
-    
-    
-    return -1;
-}
-
-
 
 const std::vector<std::string> &
 Node::getInputLabels() const
@@ -976,21 +935,18 @@ Node::getInputLabels() const
     return _imp->inputLabels;
 }
 
-const NodesWList &
-Node::getOutputs() const
-{
-    ////Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    return _imp->outputs;
-}
 
 void
-Node::getOutputs_mt_safe(NodesWList& outputs) const
+Node::getOutputs(OutputNodesMap& outputs) const
 {
     QMutexLocker l(&_imp->outputsMutex);
-
-    outputs =  _imp->outputs;
+    for (InternalOutputNodesMap::const_iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
+        NodePtr output = it->first.lock();
+        if (!output) {
+            continue;
+        }
+        outputs[output] = it->second;
+    }
 }
 
 void
@@ -1161,7 +1117,6 @@ NodePtr
 Node::getPreferredInputNode() const
 {
     GroupInputPtr isInput = isEffectGroupInput();
-    PrecompNodePtr isPrecomp = isEffectPrecompNode();
 
     if (isInput) {
         NodeGroupPtr isGroup = toNodeGroup(getGroup());
@@ -1183,8 +1138,6 @@ Node::getPreferredInputNode() const
 
             return input;
         }
-    } else if (isPrecomp) {
-        return isPrecomp->getOutputNode();
     } else {
         int idx = getPreferredInput();
         if (idx != -1) {
@@ -1194,28 +1147,6 @@ Node::getPreferredInputNode() const
 
     return NodePtr();
 }
-
-void
-Node::getOutputsConnectedToThisNode(std::map<NodePtr, int>* outputs)
-{
-    ////Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    NodePtr thisShared = shared_from_this();
-    for (NodesWList::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
-        NodePtr output = it->lock();
-        if (!output) {
-            continue;
-        }
-
-        int indexOfThis = output->inputIndex(thisShared);
-        assert(indexOfThis != -1);
-        if (indexOfThis >= 0) {
-            outputs->insert( std::make_pair(output, indexOfThis) );
-        }
-    }
-}
-
 
 
 void
@@ -1283,10 +1214,12 @@ Node::onInputChanged(int inputNb)
         std::vector<NodePtr> groupInputs;
         isGroup->getInputs(&groupInputs);
         if ( (inputNb >= 0) && ( inputNb < (int)groupInputs.size() ) && groupInputs[inputNb] ) {
-            std::map<NodePtr, int> inputOutputs;
-            groupInputs[inputNb]->getOutputsConnectedToThisNode(&inputOutputs);
-            for (std::map<NodePtr, int> ::iterator it = inputOutputs.begin(); it != inputOutputs.end(); ++it) {
-                it->first->onInputChanged(it->second);
+            OutputNodesMap inputOutputs;
+            groupInputs[inputNb]->getOutputs(inputOutputs);
+            for (OutputNodesMap::iterator it = inputOutputs.begin(); it != inputOutputs.end(); ++it) {
+                for (std::list<int>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+                    it->first->onInputChanged(*it2);
+                }
             }
         }
     }
@@ -1298,10 +1231,12 @@ Node::onInputChanged(int inputNb)
     if (isGroupOutput) {
         NodeGroupPtr containerGroup = toNodeGroup( isGroupOutput->getNode()->getGroup() );
         if (containerGroup) {
-            std::map<NodePtr, int> groupOutputs;
-            containerGroup->getNode()->getOutputsConnectedToThisNode(&groupOutputs);
-            for (std::map<NodePtr, int> ::iterator it = groupOutputs.begin(); it != groupOutputs.end(); ++it) {
-                it->first->onInputChanged(it->second);
+            OutputNodesMap groupOutputs;
+            containerGroup->getNode()->getOutputs(groupOutputs);
+            for (OutputNodesMap::iterator it = groupOutputs.begin(); it != groupOutputs.end(); ++it) {
+                for (std::list<int>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+                    it->first->onInputChanged(*it2);
+                }
             }
         }
     }

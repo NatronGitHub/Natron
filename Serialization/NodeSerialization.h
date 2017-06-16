@@ -67,6 +67,17 @@ public:
     
 };
 
+/**
+ * @brief An external node not part of the serialization is referencing this node
+ **/
+struct OutputNodeConnection
+{
+    // The script-name (relative to the Group) of the output node connected to this node
+    std::string outputNodeScriptName;
+
+    // The input indices of the Output node connected to this node
+    std::list<int> outputNodeIndices;
+};
 
 
 /**
@@ -80,15 +91,23 @@ class NodeSerialization : public SerializationObjectBase
 {
 public:
 
-    enum NodeSerializationTypeEnum
+    enum NodeSerializationFlagsEnum
     {
-        eNodeSerializationTypeRegular,
-        eNodeSerializationTypePyPlug,
-        eNodeSerializationTypePresets
+        eNodeSerializationFlagsNone = 0x0,
+
+        // The serialization is used to encode a preset
+        eNodeSerializationFlagsPreset = 0x1,
+
+        // The serialization is used to encode a PyPlug
+        eNodeSerializationFlagsPyPlug = 0x2,
+
+        // If set, the outputs of the node will be serialized.
+        // This is useful for example when destroying a node and undoing.
+        eNodeSerializationFlagsSerializeOutputs = 0x4,
     };
 
     explicit NodeSerialization()
-    : _encodeType(eNodeSerializationTypeRegular)
+    : _encodeFlags(eNodeSerializationFlagsNone)
     , _presetsIdentifierLabel()
     , _presetsIconFilePath()
     , _presetShortcutSymbol(0)
@@ -128,7 +147,7 @@ public:
 
     // This is a hint for the encode() function so it skips
     // serializing unneeded stuff given the type
-    NodeSerializationTypeEnum _encodeType;
+    NodeSerializationFlagsEnum _encodeFlags;
 
     //////// Presets only
     ///////////////////////////////////////////////////////
@@ -176,6 +195,9 @@ public:
 
     // Serialization of inputs, this is a map of the input label to the script-name (not full) of the input node
     std::map<std::string, std::string> _inputs, _masks;
+
+    // List of nodes connected to this node. This is useful for example when destroying a node and undoing.
+    std::list<OutputNodeConnection> _outputs;
 
     // If this node has an item model (Roto, tracker...), this points to its serialization
     KnobItemsTableSerializationPtr _tableModel;

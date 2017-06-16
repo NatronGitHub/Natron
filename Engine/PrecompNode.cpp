@@ -182,7 +182,7 @@ PrecompNode::getOutputNode() const
 void
 PrecompNode::setupInitialSubGraphState()
 {
-    NodeGroupPtr thisShared = toNodeGroup(shared_from_this());
+    NodeGroupPtr thisShared = toNodeGroup(EffectInstance::shared_from_this());
     {
         CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_OUTPUT, thisShared));
         args->setProperty(kCreateNodeArgsPropNoNodeGUI, true);
@@ -592,12 +592,16 @@ PrecompNodePrivate::refreshOutputNode()
     }
 
     ///Notify outputs that the node has changed
-    std::map<NodePtr, int> outputs;
+    OutputNodesMap outputs;
     NodePtr thisNode = _publicInterface->getNode();
-    thisNode->getOutputsConnectedToThisNode(&outputs);
+    thisNode->getOutputs(outputs);
 
-    for (std::map<NodePtr, int>::iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        it->first->onInputChanged(it->second);
+    for (OutputNodesMap::iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        const NodePtr& output = it->first;
+
+        for (std::list<int>::iterator it2 = it->second.begin(); it2 !=it->second.end(); ++it2) {
+            output->onInputChanged(*it2);
+        }
     }
 }
 

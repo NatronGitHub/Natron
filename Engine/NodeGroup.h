@@ -58,10 +58,16 @@ class NodeCollection
 {
     Q_DECLARE_TR_FUNCTIONS(NodeCollection)
 
-public:
+protected:
+
+    // You must inherit this class
     NodeCollection(const AppInstancePtr& app);
 
+public:
+
     virtual ~NodeCollection();
+
+    virtual NodeCollectionPtr getThisShared() = 0;
 
     void setNodeGraphPointer(NodeGraphI* graph);
 
@@ -128,27 +134,6 @@ public:
      * @brief Returns true if there is one or more nodes in the collection.
      **/
     bool hasNodes() const;
-
-
-    /**
-     * @brief Connects the node 'input' to the node 'output' on the input number 'inputNumber'
-     * of the node 'output'. If 'force' is true, then it will disconnect any previous connection
-     * existing on 'inputNumber' and connect the previous input as input of the new 'input' node.
-     **/
-    static bool connectNodes(int inputNumber, const NodePtr& input, const NodePtr& output, bool force = false);
-
-    /**
-     * @brief Same as above where inputName is the name of the node input.
-     **/
-    bool connectNodes(int inputNumber, const std::string & inputName, const NodePtr& output);
-
-    /**
-     * @brief Disconnects the node 'input' and 'output' if any connection between them is existing.
-     * If autoReconnect is true, after disconnecting 'input' and 'output', if the 'input' had only
-     * 1 input, and it was connected, it will connect output to the input of  'input'.
-     **/
-    static bool disconnectNodes(const NodePtr& input, const NodePtr& output, bool autoReconnect = false);
-
 
     /**
      * @brief Attempts to connect automatically selected and created together, depending on their role (output / filter / input).
@@ -248,6 +233,45 @@ public:
      **/
     void refreshTimeInvariantMetadataOnAllNodes_recursive();
 
+    enum CreateNodesFromSerializationFlagsEnum
+    {
+        eCreateNodesFromSerializationFlagsNone = 0x0,
+
+        // When creating the node, its serialization contains a list of input nodes to connect to.
+        // This flag indicates whether we should attempt to connect to these nodes, even if they are
+        // not part of the serializedNodes list.
+        // For example, we might have a list of nodes that the user copied from the NodeGraph.
+        // We want to restore connections between nodes of that list so that the tree is preserved,
+        // however we do not want the input nodes of that tree to connect to their original input which may
+        // not be in this list. If this flag is passed, this will also attempt to restore inputs which are
+        // not in this list.
+        eCreateNodesFromSerializationFlagsConnectToExternalNodes = 0x1
+    };
+
+    /**
+     * @brief Create nodes within this NodeCollection from their serialization.
+     * This function is recursive because a serialized node may be a Group and contain serialization of nodes within itself.
+     * @param serializedNodes List of nodes serialization to be created
+     * @param createdNodes[out] For each serialization passed in input, a pointer to the created node. This parameter is optional
+     * and may be set to NULL. Note that this will return only node pointers for the passed serializedNodes, not for their children
+     * in case of a Group.
+     * @returns True if everything went fine, false otherwise
+     **/
+    bool createNodesFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializationList & serializedNodes,
+                                      CreateNodesFromSerializationFlagsEnum flags,
+                                      std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>* createdNodes);
+
+    /**
+     * @brief Find a node by its script-name within the list of createdNodes. 
+     * If allowSearchInAllNodes, this will also look for it in allNodesInGroup if it could not be found in createdNodes.
+     * This function is useful when restoring serialized nodes, because when instanciated, their corresponding node may be attributed
+     * a different script-name from what's within the serialization. 
+     **/
+    static NodePtr findSerializedNodeWithScriptName(const std::string& nodeScriptName,
+                                                    const std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>& createdNodes,
+                                                    const NodesList& allNodesInGroup,
+                                                    bool allowSearchInAllNodes);
+    
 public:
 
 
@@ -328,6 +352,12 @@ public:
     static EffectInstancePtr createRenderClone(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key) WARN_UNUSED_RETURN
     {
         return EffectInstancePtr( new NodeGroup(mainInstance, key) );
+    }
+
+    virtual NodeCollectionPtr getThisShared() OVERRIDE FINAL
+    {
+        NodeGroupPtr isGroup = boost::dynamic_pointer_cast<NodeGroup>(shared_from_this());
+        return boost::dynamic_pointer_cast<NodeCollection>(isGroup);
     }
 
     static PluginPtr createPlugin();

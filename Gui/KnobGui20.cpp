@@ -500,7 +500,7 @@ KnobGui::onExprChanged(DimIdx dimension, ViewIdx view)
             int dims = knob->getNDimensions();
             for (int i = 0; i < dims; ++i) {
                 std::string err;
-                if ( !knob->isExpressionValid(DimIdx(i), view, &err) ) {
+                if ( !knob->isLinkValid(DimIdx(i), view, &err) ) {
                     invalid = true;
                 }
                 if ( (dims > 1) && invalid ) {

@@ -179,14 +179,9 @@ BaseTest::disconnectNodes(const NodePtr& input,
 
         ///the input must have in its output the node 'output'
         EXPECT_TRUE( input->hasOutputConnected() );
-        const NodesWList & outputs = input->getOutputs();
-        bool foundOutput = false;
-        for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-            if (it->lock() == output) {
-                foundOutput = true;
-                break;
-            }
-        }
+        OutputNodesMap outputs;
+        input->getOutputs(outputs);
+        OutputNodesMap::const_iterator foundOutput = outputs.find(output);
 
         ///the output must have in its inputs the node 'input'
         const std::vector<NodeWPtr> & inputs = output->getInputs();
@@ -201,7 +196,7 @@ BaseTest::disconnectNodes(const NodePtr& input,
         }
 
         EXPECT_TRUE(foundInput);
-        EXPECT_TRUE(foundOutput);
+        EXPECT_TRUE(foundOutput != outputs.end());
         EXPECT_EQ(output->getInput(inputIndex), input);
         EXPECT_TRUE( output->isInputConnected(inputIndex) );
     }
@@ -213,14 +208,10 @@ BaseTest::disconnectNodes(const NodePtr& input,
     if (expectedReturnvalue) {
         ///check that the disconnection went OK
 
-        const NodesWList & outputs = input->getOutputs();
-        bool foundOutput = false;
-        for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-            if (it->lock() == output) {
-                foundOutput = true;
-                break;
-            }
-        }
+        OutputNodesMap outputs;
+        input->getOutputs(outputs);
+        OutputNodesMap::const_iterator foundOutput = outputs.find(output);
+
 
         ///the output must have in its inputs the node 'input'
         const std::vector<NodeWPtr> & inputs = output->getInputs();
@@ -234,7 +225,7 @@ BaseTest::disconnectNodes(const NodePtr& input,
             ++inputIndex;
         }
 
-        EXPECT_FALSE(foundOutput);
+        EXPECT_FALSE(foundOutput == outputs.end());
         EXPECT_FALSE(foundInput);
         EXPECT_EQ( (Node*)NULL, output->getInput(inputIndex).get() );
         EXPECT_FALSE( output->isInputConnected(inputIndex) );

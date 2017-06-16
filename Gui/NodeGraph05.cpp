@@ -202,8 +202,7 @@ NodeGraph::doAutoConnectHeuristic(const NodeGuiPtr &node, const NodeGuiPtr &sele
 
             int selectedInput = selectedNodeInternal->getPreferredInputForConnection();
             if (selectedInput != -1) {
-                bool ok = proj->connectNodes(selectedInput, createdNodeInternal, selectedNodeInternal, true);
-                Q_UNUSED(ok);
+                selectedNodeInternal->swapInput(createdNodeInternal, selectedInput);
             }
         } else {
             //ViewerInstancePtr isSelectedViewer = selectedNodeInternal->isEffectViewerInstance();
@@ -224,8 +223,7 @@ NodeGraph::doAutoConnectHeuristic(const NodeGuiPtr &node, const NodeGuiPtr &sele
 
             int index = selectedNodeInternal->getPreferredInputForConnection();
             if (index != -1) {
-                bool ok = proj->connectNodes(index, createdNodeInternal, selectedNodeInternal, true);
-                Q_UNUSED(ok);
+                selectedNodeInternal->swapInput(createdNodeInternal, index);
             }
             //} // if (isSelectedViewer) {*/
         } // if (nbConnectedInput == 0) {
@@ -233,7 +231,8 @@ NodeGraph::doAutoConnectHeuristic(const NodeGuiPtr &node, const NodeGuiPtr &sele
 
         // Pop it below the selected node
 
-        const NodesWList& outputs = selectedNodeInternal->getOutputs();
+        OutputNodesMap outputs;
+        selectedNodeInternal->getOutputs(outputs);
         if ( !createdNodeInternal->isOutputNode() || outputs.empty() ) {
             QSize selectedNodeSize = selected->getSize();
             QSize createdNodeSize = node->getSize();
@@ -247,12 +246,9 @@ NodeGraph::doAutoConnectHeuristic(const NodeGuiPtr &node, const NodeGuiPtr &sele
             QRectF createdNodeRect( position.x(), position.y(), createdNodeSize.width(), createdNodeSize.height() );
 
             ///and move the selected node below recusively
-            for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-                NodePtr output = it->lock();
-                if (!output) {
-                    continue;
-                }
-                NodeGuiIPtr output_i = output->getNodeGui();
+            for (OutputNodesMap::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+
+                NodeGuiIPtr output_i = it->first->getNodeGui();
                 if (!output_i) {
                     continue;
                 }
@@ -273,18 +269,17 @@ NodeGraph::doAutoConnectHeuristic(const NodeGuiPtr &node, const NodeGuiPtr &sele
             if ( !createdNodeInternal->isOutputNode() ) {
                 ///we find all the nodes that were previously connected to the selected node,
                 ///and connect them to the created node instead.
-                std::map<NodePtr, int> outputsConnectedToSelectedNode;
-                selectedNodeInternal->getOutputsConnectedToThisNode(&outputsConnectedToSelectedNode);
+                OutputNodesMap outputsConnectedToSelectedNode;
+                selectedNodeInternal->getOutputs(outputsConnectedToSelectedNode);
 
-                for (std::map<NodePtr, int>::iterator it = outputsConnectedToSelectedNode.begin();
-                     it != outputsConnectedToSelectedNode.end(); ++it) {
-                    if ( (it->first != createdNodeInternal) ) {
-
-
-                        ignore_result( it->first->swapInput(createdNodeInternal, it->second) );
-
+                for (OutputNodesMap::iterator it = outputsConnectedToSelectedNode.begin(); it != outputsConnectedToSelectedNode.end(); ++it) {
+                    const NodePtr &output = it->first;
+                    for (std::list<int>::iterator it2 = it->second.begin(); it2 !=it->second.end(); ++it2) {
+                        output->swapInput(createdNodeInternal, *it2);
                     }
                 }
+
+
             }
         } else {
             ///the created node is an output node and the selected node already has several outputs, create it aside
@@ -302,8 +297,7 @@ NodeGraph::doAutoConnectHeuristic(const NodeGuiPtr &node, const NodeGuiPtr &sele
             //Don't pop a dot, it will most likely annoy the user, just fallback on behavior 0
 
             int index = createdNodeInternal->getPreferredInputForConnection();
-            bool ok = proj->connectNodes(index, selectedNodeInternal, createdNodeInternal, true);
-            Q_UNUSED(ok);
+            createdNodeInternal->swapInput(selectedNodeInternal, index);
         }
     }
     position = node->mapFromScene(position);

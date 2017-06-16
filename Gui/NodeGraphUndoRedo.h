@@ -133,10 +133,7 @@ public:
 private:
     struct NodeToRemove
     {
-        ///This contains the output nodes whose input should be reconnected to this node afterwards.
-        ///This list contains only nodes that are not part of the selection: we restore only the
-        ///inputs of the outputs nodes of the graph that were not removed
-        NodesWList outputsToRestore;
+
         boost::weak_ptr<NodeGui> node;
     };
 

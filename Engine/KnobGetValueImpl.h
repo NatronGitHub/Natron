@@ -59,7 +59,7 @@ Knob<T>::getValueFromExpression(TimeValue time,
     // TODO
 
     bool cachingEnabled = isExpressionsResultsCachingEnabled();
-    bool exprWasValid = isExpressionValid(dimension, view_i, 0);
+    bool exprWasValid = isLinkValid(dimension, view_i, 0);
     {
         EXPR_RECURSION_LEVEL();
 
@@ -91,12 +91,12 @@ Knob<T>::getValueFromExpression(TimeValue time,
             }
         }
         if (!exprOk) {
-            setExpressionInvalid(dimension, view_i, false, error);
+            setLinkStatus(dimension, view_i, false, error);
 
             return false;
         } else {
             if (!exprWasValid) {
-                setExpressionInvalid(dimension, view_i, true, error);
+                setLinkStatus(dimension, view_i, true, error);
             }
         }
     }
@@ -130,18 +130,18 @@ KnobStringBase::getValueFromExpression_pod(TimeValue time,
 
     ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
 
-    bool exprWasValid = isExpressionValid(dimension, view_i, 0);
+    bool exprWasValid = isLinkValid(dimension, view_i, 0);
     {
         EXPR_RECURSION_LEVEL();
         std::string error;
         bool exprOk = evaluateExpression_pod(time, view_i,  dimension, ret, &error);
         if (!exprOk) {
-            setExpressionInvalid(dimension, ViewSetSpec(view_i), false, error);
+            setLinkStatus(dimension, ViewSetSpec(view_i), false, error);
 
             return false;
         } else {
             if (!exprWasValid) {
-                setExpressionInvalid(dimension, ViewSetSpec(view_i), true, error);
+                setLinkStatus(dimension, ViewSetSpec(view_i), true, error);
             }
         }
     }
@@ -174,7 +174,7 @@ Knob<T>::getValueFromExpression_pod(TimeValue time,
     // Todo
 
     bool cachingEnabled = isExpressionsResultsCachingEnabled();
-    bool exprWasValid = isExpressionValid(dimension, view_i, 0);
+    bool exprWasValid = isLinkValid(dimension, view_i, 0);
     {
         EXPR_RECURSION_LEVEL();
         std::string error;
@@ -197,12 +197,12 @@ Knob<T>::getValueFromExpression_pod(TimeValue time,
             }
         }
         if (!exprOk) {
-            setExpressionInvalid(dimension, ViewSetSpec(view_i), false, error);
+            setLinkStatus(dimension, ViewSetSpec(view_i), false, error);
 
             return false;
         } else {
             if (!exprWasValid) {
-                setExpressionInvalid(dimension, ViewSetSpec(view_i), true, error);
+                setLinkStatus(dimension, ViewSetSpec(view_i), true, error);
             }
         }
     }
@@ -416,7 +416,7 @@ Knob<T>::getValueAtWithExpression(TimeValue time,
                                   ViewIdx view,
                                   DimIdx dimension)
 {
-    bool exprValid = isExpressionValid(dimension, view, 0);
+    bool exprValid = isLinkValid(dimension, view, 0);
     std::string expr = getExpression(dimension, view);
 
     if (!expr.empty() && exprValid) {

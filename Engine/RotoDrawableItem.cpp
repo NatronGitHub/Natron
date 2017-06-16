@@ -552,7 +552,7 @@ void
 RotoDrawableItem::deactivateNodes()
 {
     for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        (*it)->deactivate(std::list< NodePtr >(), true, false, false, false);
+        (*it)->deactivate();
     }
 }
 
@@ -560,7 +560,7 @@ void
 RotoDrawableItem::activateNodes()
 {
     for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        (*it)->activate(std::list< NodePtr >(), false, false);
+        (*it)->activate();
     }
 }
 

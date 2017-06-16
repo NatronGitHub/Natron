@@ -724,7 +724,7 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
 bool
-KnobHelper::checkInvalidExpressions()
+KnobHelper::checkInvalidLinks()
 {
     int ndims = getNDimensions();
 
@@ -733,22 +733,29 @@ KnobHelper::checkInvalidExpressions()
     {
         QMutexLocker k(&_imp->common->expressionMutex);
         for (int i = 0; i < ndims; ++i) {
-            for (ExprPerViewMap::const_iterator it = _imp->common->expressions[i].begin(); it != _imp->common->expressions[i].end(); ++it) {
-                if ( !it->second || it->second->exprInvalid.empty() ) {
+            for (PerViewInvalidLinkError::const_iterator it = _imp->common->linkErrors[i].begin(); it != _imp->common->linkErrors[i].end(); ++it) {
+                if ( it->second.empty() ) {
                     continue;
                 }
-                exprToReapply.resize(exprToReapply.size() + 1);
-                ExprToReApply& data = exprToReapply.back();
-                data.view = it->first;
-                data.dimension = DimIdx(i);
 
-                data.expr = it->second->expressionString;
-                data.language = it->second->language;
-                KnobExprPython* isPythonExpr = dynamic_cast<KnobExprPython*>( it->second.get() );
-                if (isPythonExpr) {
-                    data.hasRet = isPythonExpr->hasRet;
+                KnobExprPtr& expr = _imp->common->expressions[i][it->first];
+                if (!expr || expr->expressionString.empty()) {
+                    exprToReapply.resize(exprToReapply.size() + 1);
+                    ExprToReApply& data = exprToReapply.back();
+                    data.view = it->first;
+                    data.dimension = DimIdx(i);
+
+                    data.expr = expr->expressionString;
+                    data.language = expr->language;
+                    KnobExprPython* isPythonExpr = dynamic_cast<KnobExprPython*>( expr.get() );
+                    if (isPythonExpr) {
+                        data.hasRet = isPythonExpr->hasRet;
+                    } else {
+                        data.hasRet = false;
+                    }
                 } else {
-                    data.hasRet = false;
+                    // For a getValue call which will refresh error if needed
+                    refreshStaticValue(getCurrentRenderTime());
                 }
             }
         }
@@ -757,21 +764,21 @@ KnobHelper::checkInvalidExpressions()
     for (std::size_t i = 0; i < exprToReapply.size(); ++i) {
         setExpressionInternal(exprToReapply[i].dimension, exprToReapply[i].view, exprToReapply[i].expr, exprToReapply[i].language, exprToReapply[i].hasRet, false /*throwOnFailure*/);
         string err;
-        if ( !isExpressionValid(exprToReapply[i].dimension, exprToReapply[i].view, &err) ) {
+        if ( !isLinkValid(exprToReapply[i].dimension, exprToReapply[i].view, &err) ) {
             isInvalid = true;
         }
     }
 
     return !isInvalid;
-}
+} // checkInvalidLinks
 
 
 bool
-KnobHelper::isExpressionValid(DimIdx dimension,
+KnobHelper::isLinkValid(DimIdx dimension,
                               ViewIdx view,
                               string* error) const
 {
-    if ( ( dimension >= (int)_imp->common->expressions.size() ) || (dimension < 0) ) {
+    if ( ( dimension >= getNDimensions() ) || (dimension < 0) ) {
         throw std::invalid_argument("KnobHelper::isExpressionValid(): Dimension out of range");
     }
 
@@ -793,7 +800,7 @@ KnobHelper::isExpressionValid(DimIdx dimension,
 
 
 void
-KnobHelper::setExpressionInvalidInternal(DimIdx dimension,
+KnobHelper::setLinkStatusInternal(DimIdx dimension,
                                          ViewIdx view,
                                          bool valid,
                                          const string& error)
@@ -801,12 +808,9 @@ KnobHelper::setExpressionInvalidInternal(DimIdx dimension,
     bool wasValid;
     {
         QMutexLocker k(&_imp->common->expressionMutex);
-        ExprPerViewMap::iterator foundView = _imp->common->expressions[dimension].find(view);
-        if ( ( foundView == _imp->common->expressions[dimension].end() ) || !foundView->second ) {
-            return;
-        }
-        wasValid = foundView->second->exprInvalid.empty();
-        foundView->second->exprInvalid = error;
+        std::string& linkError = _imp->common->linkErrors[dimension][view];
+        wasValid = linkError.empty();
+        linkError = error;
     }
 
     if (wasValid && !valid) {
@@ -820,9 +824,9 @@ KnobHelper::setExpressionInvalidInternal(DimIdx dimension,
             QMutexLocker k(&_imp->common->expressionMutex);
             for (int i = 0; i < ndims; ++i) {
                 if (i != dimension) {
-                    for (ExprPerViewMap::const_iterator it = _imp->common->expressions[i].begin(); it != _imp->common->expressions[i].end(); ++it) {
-                        if ( (it->first != view) && it->second ) {
-                            if ( !it->second->exprInvalid.empty() ) {
+                    for (PerViewInvalidLinkError::const_iterator it = _imp->common->linkErrors[i].begin(); it != _imp->common->linkErrors[i].end(); ++it) {
+                        if ( (it->first != view) ) {
+                            if ( !it->second.empty() ) {
                                 haveOtherExprInvalid = true;
                                 break;
                             }
@@ -839,44 +843,31 @@ KnobHelper::setExpressionInvalidInternal(DimIdx dimension,
         }
         _signalSlotHandler->s_expressionChanged(dimension, view);
     }
-}
+} // setLinkStatusInternal
 
 
 void
-KnobHelper::setExpressionInvalid(DimSpec dimension,
-                                 ViewSetSpec view,
-                                 bool valid,
-                                 const string& error)
+KnobHelper::setLinkStatus(DimSpec dimension,
+                           ViewSetSpec view,
+                           bool valid,
+                           const string& error)
 {
     if ( !getHolder() || !getHolder()->getApp() ) {
         return;
     }
     std::list<ViewIdx> views = getViewsList();
-    if ( dimension.isAll() ) {
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+        if (!view.isAll() && *it != ViewIdx(view)) {
+            continue;
+        }
         for (int i = 0; i < _imp->common->dimension; ++i) {
-            if ( view.isAll() ) {
-                for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                    setExpressionInvalidInternal(DimIdx(i), *it, valid, error);
-                }
-            } else {
-                ViewIdx view_i = checkIfViewExistsOrFallbackMainView( ViewIdx( view.value() ) );
-                setExpressionInvalidInternal(DimIdx(i), view_i, valid, error);
+            if (!dimension.isAll() && DimIdx(i) != dimension) {
+                continue;
             }
-        }
-    } else {
-        if ( ( dimension >= (int)_imp->common->expressions.size() ) || (dimension < 0) ) {
-            throw std::invalid_argument("KnobHelper::setExpressionInvalid(): Dimension out of range");
-        }
-        if ( view.isAll() ) {
-            for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                setExpressionInvalidInternal(DimIdx(dimension), *it, valid, error);
-            }
-        } else {
-            ViewIdx view_i = checkIfViewExistsOrFallbackMainView( ViewIdx( view.value() ) );
-            setExpressionInvalidInternal(DimIdx(dimension), view_i, valid, error);
+            setLinkStatusInternal(DimIdx(i), *it, valid, error);
         }
     }
-} // setExpressionInvalid
+} // setLinkStatus
 
 
 void
@@ -936,24 +927,20 @@ KnobHelper::setExpressionInternal(DimIdx dimension,
         _imp->common->expressions[dimension][view] = expressionObj;
     }
 
-    KnobHolderPtr holder = getHolder();
-    if (holder) {
-        if ( !expressionObj->exprInvalid.empty() ) {
-            assert(!failIfInvalid);
-            AppInstancePtr app = holder->getApp();
-            if (app) {
-                app->addInvalidExpressionKnob( shared_from_this() );
-            }
-        } else {
-            // Populate the listeners set so we can keep track of user links.
-            // In python, the dependencies tracking is done by executing the expression itself unlike exprtk
-            // where we have the dependencies list directly when compiling
-            switch (language) {
+    setLinkStatus(dimension, view, !expressionObj->exprInvalid.empty(), expressionObj->exprInvalid);
+
+
+    if ( expressionObj->exprInvalid.empty() ) {
+
+        // Populate the listeners set so we can keep track of user links.
+        // In python, the dependencies tracking is done by executing the expression itself unlike exprtk
+        // where we have the dependencies list directly when compiling
+        switch (language) {
             case eExpressionLanguagePython: {
                 EXPR_RECURSION_LEVEL();
                 _imp->parseListenersFromExpression(dimension, view);
             }
-            break;
+                break;
             case eExpressionLanguageExprTk: {
                 KnobExprExprTk* obj = dynamic_cast<KnobExprExprTk*>( expressionObj.get() );
                 KnobIPtr thisShared = shared_from_this();
@@ -970,10 +957,10 @@ KnobHelper::setExpressionInternal(DimIdx dimension,
                     effect->addHashListener(thisShared);
                 }
             }
-            break;
-            }
+                break;
         }
     }
+
 
 
     // Notify the expr. has changed

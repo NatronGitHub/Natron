@@ -471,7 +471,7 @@ WriteNodePrivate::destroyWriteNode()
 void
 WriteNodePrivate::createDefaultWriteNode()
 {
-    NodeGroupPtr isGrp = toNodeGroup( _publicInterface->shared_from_this() );
+    NodeGroupPtr isGrp = toNodeGroup( _publicInterface->EffectInstance::shared_from_this() );
     CreateNodeArgsPtr args(CreateNodeArgs::create( WRITE_NODE_DEFAULT_WRITER, isGrp ));
     args->setProperty(kCreateNodeArgsPropNoNodeGUI, true);
     args->setProperty(kCreateNodeArgsPropVolatile, true);
@@ -593,7 +593,7 @@ WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
 {
     QString qpattern = QString::fromUtf8( filename.c_str() );
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
-    NodeGroupPtr isGrp = toNodeGroup( _publicInterface->shared_from_this() );
+    NodeGroupPtr isGrp = toNodeGroup( _publicInterface->EffectInstance::shared_from_this() );
     std::string readerPluginID = appPTR->getReaderPluginIDForFileType(ext);
     NodePtr writeNode = embeddedPlugin.lock();
 
@@ -666,7 +666,7 @@ WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
 void
 WriteNode::setupInitialSubGraphState()
 {
-    NodeGroupPtr thisShared = toNodeGroup(shared_from_this());
+    NodeGroupPtr thisShared = toNodeGroup(EffectInstance::shared_from_this());
     NodePtr inputNode, outputNode;
     {
         CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_OUTPUT, thisShared));
@@ -714,7 +714,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         return;
     }
 
-    NodeGroupPtr isGrp = toNodeGroup( _publicInterface->shared_from_this() );
+    NodeGroupPtr isGrp = toNodeGroup( _publicInterface->EffectInstance::shared_from_this() );
     NodePtr input = inputNode.lock(), output = outputNode.lock();
 
 

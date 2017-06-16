@@ -490,7 +490,7 @@ ReadNodePrivate::destroyReadNode()
 void
 ReadNodePrivate::createDefaultReadNode()
 {
-    CreateNodeArgsPtr args(CreateNodeArgs::create(READ_NODE_DEFAULT_READER, toNodeGroup(_publicInterface->shared_from_this())));
+    CreateNodeArgsPtr args(CreateNodeArgs::create(READ_NODE_DEFAULT_READER, toNodeGroup(_publicInterface->EffectInstance::shared_from_this())));
 
     args->setProperty(kCreateNodeArgsPropNoNodeGUI, true);
     args->setProperty(kCreateNodeArgsPropSilent, true);
@@ -637,7 +637,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
             readerPluginID = READ_NODE_DEFAULT_READER;
         }
 
-        CreateNodeArgsPtr args(CreateNodeArgs::create(readerPluginID, toNodeGroup(_publicInterface->shared_from_this()) ));
+        CreateNodeArgsPtr args(CreateNodeArgs::create(readerPluginID, toNodeGroup(_publicInterface->EffectInstance::shared_from_this()) ));
         args->setProperty(kCreateNodeArgsPropNoNodeGUI, true);
         args->setProperty(kCreateNodeArgsPropVolatile, true);
         args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "internalDecoderNode");
@@ -869,7 +869,7 @@ ReadNode::initializeKnobs()
 void
 ReadNode::setupInitialSubGraphState()
 {
-    NodeGroupPtr thisShared = toNodeGroup(shared_from_this());
+    NodeGroupPtr thisShared = toNodeGroup(EffectInstance::shared_from_this());
     NodePtr inputNode, outputNode;
     {
         CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_OUTPUT, thisShared));

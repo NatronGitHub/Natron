@@ -715,14 +715,14 @@ public:
      * This function throws an exception if no serialization is valid in the object
      **/
     virtual void restoreKnobLinks(const SERIALIZATION_NAMESPACE::KnobSerializationBasePtr& serialization,
-                                  const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >& allCreatedNodesInGroup) = 0;
+                                  const std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>& allCreatedNodesInGroup) = 0;
 
     /**
      * @brief Tries to re-apply invalid expressions, returns true if they are all valid
      **/
-    virtual bool checkInvalidExpressions() = 0;
-    virtual bool isExpressionValid(DimIdx dimension, ViewIdx view, std::string* error) const = 0;
-    virtual void setExpressionInvalid(DimSpec dimension, ViewSetSpec view, bool valid, const std::string& error) = 0;
+    virtual bool checkInvalidLinks() = 0;
+    virtual bool isLinkValid(DimIdx dimension, ViewIdx view, std::string* error) const = 0;
+    virtual void setLinkStatus(DimSpec dimension, ViewSetSpec view, bool valid, const std::string& error) = 0;
 
 
     /**
@@ -1562,10 +1562,10 @@ public:
     
     virtual bool isAnimated( DimIdx dimension, ViewIdx view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool hasAnimation() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool checkInvalidExpressions() OVERRIDE FINAL;
-    virtual bool isExpressionValid(DimIdx dimension, ViewIdx view, std::string* error) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool checkInvalidLinks() OVERRIDE FINAL;
+    virtual bool isLinkValid(DimIdx dimension, ViewIdx view, std::string* error) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual ExpressionLanguageEnum getExpressionLanguage(ViewIdx view, DimIdx dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void setExpressionInvalid(DimSpec dimension, ViewSetSpec view, bool valid, const std::string& error) OVERRIDE FINAL;
+    virtual void setLinkStatus(DimSpec dimension, ViewSetSpec view, bool valid, const std::string& error) OVERRIDE FINAL;
 
 protected:
 
@@ -1573,7 +1573,7 @@ protected:
 
 private:
 
-    void setExpressionInvalidInternal(DimIdx dimension, ViewIdx view, bool valid, const std::string& error);
+    void setLinkStatusInternal(DimIdx dimension, ViewIdx view, bool valid, const std::string& error);
 
     void replaceNodeNameInExpressionInternal(DimIdx dimension,
                                              ViewIdx view,
@@ -1586,14 +1586,14 @@ public:
     virtual void setExpressionCommon(DimSpec dimension, ViewSetSpec view, const std::string& expression, ExpressionLanguageEnum language, bool hasRetVariable, bool failIfInvalid) OVERRIDE FINAL;
 
     virtual void restoreKnobLinks(const SERIALIZATION_NAMESPACE::KnobSerializationBasePtr& serialization,
-                                  const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >& allCreatedNodesInGroup) OVERRIDE FINAL;
+                                  const std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>& allCreatedNodesInGroup) OVERRIDE FINAL;
 
 private:
 
     KnobIPtr findMasterKnob(const std::string& masterKnobName,
                             const std::string& masterNodeName,
                             const std::string& masterItemName,
-                            const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >& allCreatedNodesInGroup);
+                            const std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>& allCreatedNodesInGroup);
 
 
 public:

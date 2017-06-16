@@ -68,6 +68,7 @@ struct PersistentMessage
 
 // Each message, mapped against an ID to check if a message of this type is present or not
 typedef std::map<std::string, PersistentMessage> PersistentMessageMap;
+typedef std::map<NodePtr, std::list<int> > OutputNodesMap;
 
 struct NodePrivate;
 class Node
@@ -250,7 +251,7 @@ public:
     ///This cannot be done in loadKnobs as to call this all the nodes in the project must have
     ///been loaded first.
     void restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & serialization,
-                           const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >& allCreatedNodesInGroup);
+                           const std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>& allCreatedNodesInGroup);
 
     void setPagesOrder(const std::list<std::string>& pages);
 
@@ -370,10 +371,13 @@ public:
     /**
      * @brief Returns a pointer to the input Node at index 'index'
      * or NULL if it couldn't find such node.
+     * Note that this function cycles through Group nodes:
+     * If the return value is a Group node, the return value will actually be the
+     * input of the GroupOutput node itself.
+     * If the return value is a GroupInput node, the return value will actually be the
+     * corresponding input of the GroupInput node 
+     *
      * MT-safe
-     * This function uses thread-local storage because several render thread can be rendering concurrently
-     * and we want the rendering of a frame to have a "snap-shot" of the tree throughout the rendering of the
-     * frame.
      **/
     NodePtr getInput(int index) const;
 
@@ -388,10 +392,28 @@ private:
 
 public:
 
+
     /**
-     * @brief Returns the input index of the node if it is an input of this node, -1 otherwise.
+     * @brief Returns a map of nodes connected in output of this node.
+     * Each output node has a list of indices corresponding to each input index of the
+     * output node connected to this node.
      **/
-    int getInputIndex(const NodeConstPtr& node) const;
+    void getOutputs(OutputNodesMap& outputs) const;
+
+    /**
+     * @brief Returns the list of outputs of this node but accounts for Groups:
+     * If this node is a Group, this returns the list of all nodes in output of the GroupInput
+     * nodes within the Group.
+     * If this node is a GroupOutput, this returns the list of all nodes in output of the Group node itself.
+     **/
+    void getOutputsWithGroupRedirection(NodesList& outputs) const;
+
+
+    /**
+     * @brief Returns a list of all input indices of outputNode connected to this node
+     **/
+    std::list<int> getInputIndicesConnectedToThisNode(const NodeConstPtr& outputNode) const;
+
 
     /**
      * @brief Returns true if the node is currently executing the onInputChanged handler.
@@ -406,11 +428,6 @@ public:
     const std::vector<NodeWPtr > & getInputs() const WARN_UNUSED_RETURN;
     std::vector<NodeWPtr > getInputs_copy() const WARN_UNUSED_RETURN;
 
-    /**
-     * @brief Returns the input index of the node n if it exists,
-     * -1 otherwise.
-     **/
-    int inputIndex(const NodePtr& n) const;
 
     const std::vector<std::string> & getInputLabels() const;
     std::string getInputLabel(int inputNb) const;
@@ -468,21 +485,6 @@ private:
 
 public:
 
-
-    /**
-     * @brief Returns in 'outputs' a map of all nodes connected to this node
-     * where the value of the map is the input index from which these outputs
-     * are connected to this node.
-     **/
-    void getOutputsConnectedToThisNode(std::map<NodePtr, int>* outputs);
-
-    const NodesWList & getOutputs() const;
-    void getOutputs_mt_safe(NodesWList& outputs) const;
-
-    /**
-     * @brief Same as above but enters into subgroups
-     **/
-    void getOutputsWithGroupRedirection(NodesList& outputs) const;
 
     /**
      * @brief Each input label is mapped against the script-name of the input
@@ -608,12 +610,12 @@ private:
     /**
      * @brief Adds an output to this node.
      **/
-    void connectOutput(const NodePtr& output);
+    void connectOutput(const NodePtr& output, int outputInputIndex);
 
     /** @brief Removes the node output of the
      * node outputs. Returns the outputNumber if it could remove it,
        otherwise returns -1.*/
-    int disconnectOutput(const Node* output);
+    bool disconnectOutput(const NodePtr& output, int outputInputIndex);
 
 public:
 
@@ -659,22 +661,38 @@ public:
     AppInstancePtr getApp() const;
 
 
-    /* @brief Make this node inactive. It will appear
-       as if it was removed from the graph editor
-       but the object still lives to allow
-       undo/redo operations.
-       @param outputsToDisconnect A list of the outputs whose inputs must be disconnected
-       @param disconnectAll If set to true the parameter outputsToDisconnect is ignored and all outputs' inputs are disconnected
-       @param reconnect If set to true Natron will attempt to re-connect disconnected output to an input of this node
-       @param hideGui When true, the node gui will be notified so it gets hidden
-     */
-    void deactivate(const std::list< NodePtr > & outputsToDisconnect = std::list< NodePtr >(),
-                    bool disconnectAll = true,
-                    bool reconnect = true,
-                    bool hideGui = true,
-                    bool triggerRender = true,
-                    bool unslaveKnobs = true);
+    enum DeactivateFlagEnum
+    {
+        // No meaning
+        eDeactivateFlagNone = 0x0,
 
+        // When deactivating the node, the output nodes connected to this node will be redirected
+        // directly to the main input of this node
+        eDeactivateFlagConnectOutputsToMainInput = 0x1,
+    };
+
+    /* @brief Make this node inactive. 
+     * It will appear as if it was removed from the graph editor
+     * but the node still lives to allow undo/redo operations.
+     * Note that in this mode the node does not perform any rendering anymore and it will not be saved in the project.
+     * Also note that all other nodes in the project that refer to this node will remove any reference to this node, being
+     * reference from inputs or outputs or by parameters link.
+     *
+     * Internally this node saves any other external node reference so that it can be restored in activate()
+     *
+     * @param flags Specific flags to control the behavior. @see DeactivateFlagEnum
+     */
+    void deactivate(DeactivateFlagEnum flags = eDeactivateFlagNone);
+
+
+    enum ActivateFlagEnum
+    {
+        // No meaning
+        eActivateFlagNone = 0x0,
+
+        // When activating the node, restores the outputs
+        eActivateFlagRestoreOutputs = 0x1,
+    };
 
     /* @brief Make this node active. It will appear
        again on the node graph.
@@ -685,9 +703,7 @@ public:
      * deactivate() will be reconnected as output to this node.
      * @param restoreAll If true, the parameter outputsToRestore will be ignored.
      */
-    void activate(const std::list< NodePtr > & outputsToRestore = std::list< NodePtr >(),
-                  bool restoreAll = true,
-                  bool triggerRender = true);
+    void activate(ActivateFlagEnum flags = eActivateFlagNone);
 
     /**
      * @brief Calls deactivate() and then remove the node from the project. The object will be destroyed
@@ -836,16 +852,6 @@ public:
     bool canOthersConnectToThisNode() const;
 
 
-    
-
-    struct KnobLink
-    {
-        KnobIWPtr masterKnob;
-        KnobIWPtr slaveKnob;
-
-        // The master node to which the knob is slaved to
-        NodeWPtr masterNode;
-    };
 
     /*Initialises inputs*/
     void initializeInputs();
@@ -1105,9 +1111,9 @@ Q_SIGNALS:
 
     void outputsChanged();
 
-    void activated(bool triggerRender);
+    void activated();
 
-    void deactivated(bool triggerRender);
+    void deactivated();
 
     void canUndoChanged(bool);
 

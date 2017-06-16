@@ -857,7 +857,7 @@ AnimationModuleEditorPrivate::refreshExpressionResult()
     bool expressionIsError = false;
 
     std::string exprError;
-    internalKnob->isExpressionValid(id.dim, id.view, &exprError);
+    internalKnob->isLinkValid(id.dim, id.view, &exprError);
     if (!exprError.empty()) {
         expressionIsError = true;
     }

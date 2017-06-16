@@ -1501,7 +1501,7 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
     std::vector<std::pair<U64, void*> > allocatedTiles;
     void* cacheData;
     bool gotTiles = tileCache->retrieveAndLockTiles(internalCacheEntry, &tileIndicesToFetch, &tilesAllocNeeded, &fetchedExistingTiles, &allocatedTiles, &cacheData);
-    CacheDataLock_RAII cacheDataDeleter(tileCache, cacheData);
+    boost::scoped_ptr<CacheDataLock_RAII> cacheDataDeleter(new CacheDataLock_RAII(tileCache, cacheData));
     if (!gotTiles) {
         return eActionStatusFailed;
     }
@@ -1622,11 +1622,6 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
 
     } // for each mip map level
 
-    // In persistent mode we have to actually copy the states map from the cache entry to the cache
-    if (internalCacheEntry->isPersistent() && stateMapUpdated) {
-        updateCachedTilesStateMap(tilesToUpdate, false);
-    } // stateMapUpdated
-
 
     // Now add the tiles we just downscaled to our level to the list of tiles to copy
     tilesToCopy.insert(tilesToCopy.end(), perLevelTilesToDownscale[mipMapLevel].begin(), perLevelTilesToDownscale[mipMapLevel].end());
@@ -1648,6 +1643,17 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
     }
     processor->setValues(this, tilesToCopy);
     ActionRetCodeEnum stat = processor->launchThreadsBlocking();
+
+
+    // Release the tiles lock before calling updateCachedTilesStateMap which may try to take a write lock on an already taken read lock
+    cacheDataDeleter.reset();
+
+    // In persistent mode we have to actually copy the states map from the cache entry to the cache
+    if (internalCacheEntry->isPersistent() && stateMapUpdated) {
+        updateCachedTilesStateMap(tilesToUpdate, false);
+    } // stateMapUpdated
+
+
     return stat;
 
 } // fetchAndCopyCachedTiles
@@ -2220,7 +2226,9 @@ ImageCacheEntry::markCacheTilesAsRendered()
     std::vector<std::pair<U64, void*> > allocatedTiles;
     void* cacheData;
     bool gotTiles = cache->retrieveAndLockTiles(_imp->internalCacheEntry, 0 /*existingTiles*/, &tilesAllocNeeded, NULL, &allocatedTiles, &cacheData);
-    CacheDataLock_RAII cacheDataDeleter(cache, cacheData);
+
+
+    boost::scoped_ptr<CacheDataLock_RAII> cacheDataDeleter(new CacheDataLock_RAII(cache, cacheData));
     if (!gotTiles) {
         return;
     }
@@ -2272,6 +2280,10 @@ ImageCacheEntry::markCacheTilesAsRendered()
     // We never abort when copying tiles to the cache since they are anyway already rendered.
     assert(stat != eActionStatusAborted);
     (void)stat;
+
+    // We must delete the CacheDataLock_RAII now because updateCachedTilesStateMap may attempt to get a write lock on an already taken read lock
+
+    cacheDataDeleter.reset();
 
     // In persistent mode we have to actually copy the cache entry tiles state map to the cache
     if (_imp->internalCacheEntry->isPersistent()) {

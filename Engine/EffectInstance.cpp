@@ -273,22 +273,6 @@ EffectInstance::invalidateHashCacheRecursive(const bool recurse, std::set<Hashab
     //qDebug() << "Invalidate hash of" << getScriptName_mt_safe().c_str();
 
 
-    // For a group, also invalidate the hash of all its nodes
-#if 0
-    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(this);
-    if (isGroup) {
-        NodesList groupNodes = isGroup->getNodes();
-        for (NodesList::const_iterator it = groupNodes.begin(); it!=groupNodes.end(); ++it) {
-            EffectInstancePtr subNodeEffect = (*it)->getEffectInstance();
-            if (!subNodeEffect) {
-                continue;
-            }
-            // Do not recurse on outputs, since we iterate on all nodes in the group
-            subNodeEffect->invalidateHashCacheRecursive(false /*recurse*/, invalidatedObjects);
-        }
-    }
-#endif
-
     if (recurse) {
         NodesList outputs;
         getNode()->getOutputsWithGroupRedirection(outputs);
@@ -433,8 +417,8 @@ EffectInstance::shouldCacheOutput(bool isFrameVaryingOrAnimated,
 
     NodePtr node = getNode();
 
-    std::list<NodeWPtr> outputs;
-    node->getOutputs_mt_safe(outputs);
+    OutputNodesMap outputs;
+    node->getOutputs(outputs);
     std::size_t nOutputNodes = outputs.size();
 
     if (nOutputNodes == 0) {
@@ -448,7 +432,7 @@ EffectInstance::shouldCacheOutput(bool isFrameVaryingOrAnimated,
         return true;
     }
 
-    NodePtr output = outputs.front().lock();
+    NodePtr output = outputs.begin()->first;
 
     if (!isFrameVaryingOrAnimated) {
         // This image never changes, cache it once.

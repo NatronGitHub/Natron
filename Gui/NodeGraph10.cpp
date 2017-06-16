@@ -294,8 +294,8 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         ///disconnect previous connection
         NodePtr outputNode = nearbyEdge->getDest()->getNode();
         assert(outputNode);
-        int inputNb = outputNode->inputIndex(inputNode);
-        if (inputNb == -1) {
+        std::list<int> inputIndicesConnected = inputNode->getInputIndicesConnectedToThisNode(outputNode);
+        if (inputIndicesConnected.empty()) {
             return;
         }
 
@@ -317,20 +317,14 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         assert(guiApp);
         ProjectPtr project = guiApp->getProject();
         assert(project);
-        bool ok = project->disconnectNodes(inputNode, outputNode);
-        if (!ok) {
-            return;
+
+        outputNode->disconnectInput(inputNode);
+        dotNode->swapInput(inputNode, 0);
+
+        for (std::list<int>::const_iterator it = inputIndicesConnected.begin(); it != inputIndicesConnected.end(); ++it) {
+            outputNode->swapInput(dotNode, *it);
         }
 
-        ok = project->connectNodes(0, inputNode, dotNode);
-        if (!ok) {
-            return;
-        }
-
-        ok = project->connectNodes(inputNb, dotNode, outputNode);
-        if (!ok) {
-            return;
-        }
 
         QPointF pos = dotNodeGui->mapToParent( dotNodeGui->mapFromScene(lastMousePosScene) );
 

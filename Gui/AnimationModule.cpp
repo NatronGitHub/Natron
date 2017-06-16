@@ -191,7 +191,8 @@ AnimationModulePrivate::getNearestTimeNodeFromOutputs_recursive(const NodePtr& n
                                                                 const NodeCollectionPtr& collection,
                                                                 std::list<NodePtr>& markedNodes) const
 {
-    const NodesWList &outputs = node->getOutputs();
+    OutputNodesMap outputs;
+    node->getOutputs(outputs);
 
     if ( std::find(markedNodes.begin(), markedNodes.end(), node) != markedNodes.end() ) {
         return NodePtr();
@@ -202,14 +203,13 @@ AnimationModulePrivate::getNearestTimeNodeFromOutputs_recursive(const NodePtr& n
         return NodePtr();
     }
     markedNodes.push_back(node);
-    for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        NodePtr output = it->lock();
-        std::string pluginID = output->getPluginID();
+    for (OutputNodesMap::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
 
+        std::string pluginID = it->first->getPluginID();
         if ( (pluginID == PLUGINID_OFX_RETIME) || ( pluginID == PLUGINID_OFX_TIMEOFFSET) || ( pluginID == PLUGINID_OFX_FRAMERANGE) ) {
-            return output;
+            return it->first;
         } else {
-            NodePtr ret =  getNearestTimeNodeFromOutputs_recursive(output, collection, markedNodes);
+            NodePtr ret =  getNearestTimeNodeFromOutputs_recursive(it->first, collection, markedNodes);
             if (ret) {
                 return ret;
             }

@@ -370,7 +370,7 @@ RotoPaint::getEnabledChannelKnobs(KnobBoolPtr* r,KnobBoolPtr* g, KnobBoolPtr* b,
 void
 RotoPaint::initLifeTimeKnobs(const KnobPagePtr& generalPage)
 {
-    EffectInstancePtr effect = shared_from_this();
+    EffectInstancePtr effect = EffectInstance::shared_from_this();
     RotoPaintItemLifeTimeTypeEnum defaultLifeTime = _imp->nodeType == eRotoPaintTypeRotoPaint ? eRotoPaintItemLifeTimeTypeSingle : eRotoPaintItemLifeTimeTypeAll;
     {
         KnobChoicePtr param = createKnob<KnobChoice>(kRotoDrawableItemLifeTimeParam);

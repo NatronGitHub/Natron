@@ -126,18 +126,18 @@ NodeGraphPrivate::pasteNodesInternal(const std::list<std::pair<NodePtr, SERIALIZ
 
     
     // Create nodes
-    std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > > createdNodes;
-    Project::restoreGroupFromSerialization(serializationList, group.lock(), &createdNodes);
+    std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr> createdNodes;
+    group.lock()->createNodesFromSerialization(serializationList, NodeCollection::eCreateNodesFromSerializationFlagsNone, &createdNodes);
 
     // Link the created node to the original node if needed
     if (flags & ePasteNodesFlagCloneNodes) {
-        for (std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >::const_iterator it = createdNodes.begin(); it!=createdNodes.end(); ++it) {
-            NodePtr createdNode = it->first;
+        for (std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>::const_iterator it = createdNodes.begin(); it!=createdNodes.end(); ++it) {
+            const NodePtr& createdNode = it->second;
             NodePtr originalNode;
             // Find the original node with the serialization object
             for (std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >::const_iterator it2 = originalNodes.begin();
                       it2 != originalNodes.end(); ++it2) {
-                if (it2->second == it->second) {
+                if (it2->first == it->second) {
                     originalNode = it2->first;
                     break;
                 }
@@ -155,8 +155,8 @@ NodeGraphPrivate::pasteNodesInternal(const std::list<std::pair<NodePtr, SERIALIZ
     // Add an undo command if we need to
     if (flags & ePasteNodesFlagUseUndoCommand) {
         NodesList newNodesList;
-        for (std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >::const_iterator it = createdNodes.begin(); it!=createdNodes.end(); ++it) {
-            newNodesList.push_back(it->first);
+        for (std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>::const_iterator it = createdNodes.begin(); it!=createdNodes.end(); ++it) {
+            newNodesList.push_back(it->second);
         }
         if (!newNodesList.empty()) {
             _publicInterface->pushUndoCommand( new AddMultipleNodesCommand(_publicInterface, newNodesList) );

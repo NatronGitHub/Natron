@@ -177,7 +177,7 @@ KnobHelper::deleteKnob()
         if (expression.empty()) {
             continue;
         }
-        knob->setExpressionInvalid( it->dimension, it->view, false, tr("%1: parameter does not exist").arg( QString::fromUtf8( getName().c_str() ) ).toStdString() );
+        knob->setLinkStatus( it->dimension, it->view, false, tr("%1: parameter does not exist").arg( QString::fromUtf8( getName().c_str() ) ).toStdString() );
         if (knob.get() != this) {
             knob->unlink(DimSpec::all(), ViewSetSpec::all(), false);
         }
@@ -186,7 +186,7 @@ KnobHelper::deleteKnob()
     KnobHolderPtr holder = getHolder();
 
     if ( holder && holder->getApp() ) {
-        holder->getApp()->recheckInvalidExpressions();
+        holder->getApp()->recheckInvalidLinks();
     }
 
     clearExpression(DimSpec::all(), ViewSetSpec::all());
@@ -3649,7 +3649,7 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
 static NodePtr findMasterNode(const NodeCollectionPtr& group,
                               int recursionLevel,
                               const std::string& masterNodeName,
-                              const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >& allCreatedNodesInGroup)
+                              const std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>& allCreatedNodesInGroup)
 {
     assert(group);
 
@@ -3674,7 +3674,7 @@ static NodePtr findMasterNode(const NodeCollectionPtr& group,
         // By chance since we created all nodes within the same Group at the same time, we have a list of the old node serialization
         // and the corresponding created node (with its new script-name).
         // If we find a match, make sure we use the new node script-name to restore the input.
-        NodePtr foundNode = Project::findNodeWithScriptName(masterNodeName, allCreatedNodesInGroup);
+        NodePtr foundNode = NodeGroup::findSerializedNodeWithScriptName(masterNodeName, allCreatedNodesInGroup, NodesList(), false);
         if (!foundNode) {
             // We did not find the node in the serialized nodes list, the last resort is to look into already created nodes
             // and find an exact match, hoping the script-name of the node did not change.
@@ -3722,7 +3722,7 @@ KnobIPtr
 KnobHelper::findMasterKnob(const std::string& masterKnobName,
                            const std::string& masterNodeName,
                            const std::string& masterItemName,
-                           const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >& allCreatedNodesInGroup)
+                           const std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>& allCreatedNodesInGroup)
 {
     KnobTableItemPtr tableItem = toKnobTableItem(getHolder());
     EffectInstancePtr effect = toEffectInstance(getHolder());
@@ -3776,7 +3776,7 @@ KnobHelper::findMasterKnob(const std::string& masterKnobName,
 
 void
 KnobHelper::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase>& serialization,
-                             const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >& allCreatedNodesInGroup)
+                             const std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>& allCreatedNodesInGroup)
 {
 
 

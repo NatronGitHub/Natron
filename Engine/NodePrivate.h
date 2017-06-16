@@ -71,11 +71,16 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 NATRON_NAMESPACE_ENTER
 
+typedef std::map<NodeWPtr, std::list<int> > InternalOutputNodesMap;
 
-/*The output node was connected from inputNumber to this...*/
-typedef std::map<NodeWPtr, int > DeactivatedState;
-typedef std::list<Node::KnobLink> KnobLinkList;
 typedef std::vector<NodeWPtr> InputsV;
+
+
+struct DeactivatedSavedState
+{
+    InternalOutputNodesMap outputs;
+
+};
 
 struct NodePrivate
 {
@@ -147,8 +152,12 @@ public:
     // Protects outputs
     mutable QMutex outputsMutex;
 
-    // List of weak references to the output nodes
-    NodesWList outputs;
+    // Map of weak references to the output nodes (and the list of input numbers of the output node connected to this node)
+    InternalOutputNodesMap outputs;
+
+    // When deactivating the node, remembers any other nodes reference to this node
+    // to restore it in activate()
+    DeactivatedSavedState deactivatedState;
 
     // Protects inputs
     mutable QMutex inputsMutex; //< protects inputs so the serialization thread can access them
@@ -186,10 +195,6 @@ public:
 
     // Whether an input should be made visible at all in the GUI or not.
     std::vector<bool> inputsVisibility;
-
-    // When deactivating the node, remembers each node that was connected in output
-    // and its input index which was connected to this node.
-    DeactivatedState deactivatedState;
 
     // Protects activated
     mutable QMutex activatedMutex;

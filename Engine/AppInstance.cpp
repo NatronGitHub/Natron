@@ -1751,7 +1751,7 @@ AppInstance::removeInvalidExpressionKnob(const KnobIConstPtr& knob)
 }
 
 void
-AppInstance::recheckInvalidExpressions()
+AppInstance::recheckInvalidLinks()
 {
     if (getProject()->isProjectClosing()) {
         return;
@@ -1770,7 +1770,7 @@ AppInstance::recheckInvalidExpressions()
     std::list<KnobIWPtr> newInvalidKnobs;
 
     for (std::list<KnobIPtr>::iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        if ( !(*it)->checkInvalidExpressions() ) {
+        if ( !(*it)->checkInvalidLinks() ) {
             newInvalidKnobs.push_back(*it);
         }
     }

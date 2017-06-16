@@ -2614,24 +2614,19 @@ static bool
 hasNodeOutputsInList(const NodesList& nodes,
                      const NodePtr& node)
 {
-    const NodesWList& outputs = node->getOutputs();
-    bool foundOutput = false;
-
+    OutputNodesMap outputs;
+    node->getOutputs(outputs);
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if (*it != node) {
-            for (NodesWList::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
-                if (it2->lock() == *it) {
-                    foundOutput = true;
-                    break;
-                }
-            }
-            if (foundOutput) {
-                break;
+            OutputNodesMap::const_iterator foundOutput = outputs.find(*it);
+
+            if (foundOutput != outputs.end()) {
+                return true;
             }
         }
     }
 
-    return foundOutput;
+    return false;
 }
 
 static bool
@@ -2707,14 +2702,13 @@ Project::extractTreesFromNodes(const NodesList& nodes,
         if (isOutput) {
             NodesTree tree;
             tree.output.node = *it;
-            const NodesWList& outputs = (*it)->getOutputs();
-            for (NodesWList::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
-                NodePtr output = it2->lock();
-                if (!output) {
-                    continue;
+            OutputNodesMap outputs;
+            (*it)->getOutputs(outputs);
+            for (OutputNodesMap::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
+                for (std::list<int>::const_iterator it3 = it2->second.begin() ; it3 != it2->second.end(); ++it3) {
+                    tree.output.outputs.push_back( std::make_pair(*it3, it2->first) );
                 }
-                int idx = output->inputIndex(*it);
-                tree.output.outputs.push_back( std::make_pair(idx, *it2) );
+
             }
 
             const std::vector<NodeWPtr >& inputs = (*it)->getInputs();
@@ -3000,9 +2994,7 @@ Project::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBas
 
 
     // Restore the nodes
-    Project::restoreGroupFromSerialization(serialization->_nodes, shared_from_this(),  0);
-
-
+    createNodesFromSerialization(serialization->_nodes, eCreateNodesFromSerializationFlagsNone, 0);
 
     QDateTime time = QDateTime::currentDateTime();
     _imp->hasProjectBeenSavedByUser = true;

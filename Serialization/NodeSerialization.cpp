@@ -106,7 +106,7 @@ NodeSerialization::encode(YAML::Emitter& em) const
     em << YAML::Key << "PluginID" << YAML::Value << _pluginID;
 
     //  Presets specific
-    if (_encodeType == eNodeSerializationTypePresets) {
+    if (_encodeFlags & eNodeSerializationFlagsPreset) {
         em << YAML::Key << "PresetName" << YAML::Value << _presetsIdentifierLabel;
         if (!_presetsIconFilePath.empty()) {
             em << YAML::Key << "PresetIcon" << YAML::Value << _presetsIconFilePath;
@@ -122,7 +122,7 @@ NodeSerialization::encode(YAML::Emitter& em) const
 
 
     // Only serialize this for non pyplugs and non presets
-    if (_encodeType == eNodeSerializationTypeRegular) {
+    if ((_encodeFlags & (eNodeSerializationFlagsPreset | eNodeSerializationFlagsPyPlug)) == 0) {
         em << YAML::Key << "Name" << YAML::Value << _nodeScriptName;
         if (_nodeLabel != _nodeScriptName) {
             em << YAML::Key << "Label" << YAML::Value << _nodeLabel;
@@ -131,16 +131,36 @@ NodeSerialization::encode(YAML::Emitter& em) const
 
 
     // If version is 1.0 do not serialize
-    if (_encodeType != eNodeSerializationTypePyPlug  && ((_pluginMajorVersion != 1 && _pluginMajorVersion != -1) || (_pluginMinorVersion != 0 && _pluginMinorVersion != -1))) {
+    if ((_encodeFlags & eNodeSerializationFlagsPyPlug) == 0  && ((_pluginMajorVersion != 1 && _pluginMajorVersion != -1) || (_pluginMinorVersion != 0 && _pluginMinorVersion != -1))) {
         em << YAML::Key << "Version" << YAML::Value << YAML::Flow << YAML::BeginSeq;
         em << _pluginMajorVersion << _pluginMinorVersion;
         em << YAML::EndSeq;
     }
 
     // When PyPlug or preset, no need to serialize inputs
-    if (_encodeType == eNodeSerializationTypeRegular) {
+    if ((_encodeFlags & (eNodeSerializationFlagsPreset | eNodeSerializationFlagsPyPlug)) == 0) {
         serializeInputsMap(_inputs, "Inputs", em);
         serializeInputsMap(_masks, "Masks", em);
+    }
+
+    if (!_outputs.empty()) {
+        em << YAML::Key << "Outputs" << YAML::Value << YAML::BeginSeq;
+        for (std::list<OutputNodeConnection>::const_iterator it = _outputs.begin(); it != _outputs.end(); ++it) {
+            if (it->outputNodeIndices.size() == 0) {
+                continue;
+            }
+            em << it->outputNodeScriptName;
+            if (it->outputNodeIndices.size() == 1) {
+                em << it->outputNodeIndices.front();
+            } else {
+                em << YAML::BeginSeq;
+                for (std::list<int>::const_iterator it2 = it->outputNodeIndices.begin(); it2 != it->outputNodeIndices.end(); ++it2) {
+                    em << *it2;
+                }
+                em << YAML::EndSeq;
+            }
+        }
+        em << YAML::EndSeq;
     }
 
     if (!_knobsValues.empty()) {
@@ -185,17 +205,8 @@ NodeSerialization::encode(YAML::Emitter& em) const
         em << YAML::Key << "Preset" << YAML::Value << _presetInstanceLabel;
     }
 
-    // Only serialize created components for non pyplugs/non presets
-    if (_encodeType == eNodeSerializationTypeRegular && !_userComponents.empty()) {
-        em << YAML::Key << "NewLayers" << YAML::Value << YAML::Flow << YAML::BeginSeq;
-        for (std::list<ImagePlaneDescSerialization>::const_iterator it = _userComponents.begin(); it!=_userComponents.end(); ++it) {
-            it->encode(em);
-        }
-        em << YAML::EndSeq;
-    }
-
     // Only serialize UI stuff for non pyplug/non presets
-    if (_encodeType == eNodeSerializationTypeRegular) {
+    if ((_encodeFlags & (eNodeSerializationFlagsPreset | eNodeSerializationFlagsPyPlug)) == 0) {
         if (_nodePositionCoords[0] != INT_MIN && _nodePositionCoords[1] != INT_MIN) {
             em << YAML::Key << "Pos" << YAML::Value << YAML::Flow << YAML::BeginSeq << roundDecimals(_nodePositionCoords[0], 1) << roundDecimals(_nodePositionCoords[1], 1) << YAML::EndSeq;
         }
@@ -246,7 +257,7 @@ NodeSerialization::decode(const YAML::Node& node)
     _pluginID = node["PluginID"].as<std::string>();
 
     if (node["PresetName"]) {
-        _encodeType = eNodeSerializationTypePresets;
+        _encodeFlags = eNodeSerializationFlagsPreset;
 
         // This is a presets or pyplug
         _presetsIdentifierLabel = node["PresetName"].as<std::string>();
@@ -282,6 +293,28 @@ NodeSerialization::decode(const YAML::Node& node)
 
     tryDecodeInputsMap(node, "Inputs", &_inputs);
     tryDecodeInputsMap(node, "Masks", &_masks);
+
+    if (node["Outputs"]) {
+        YAML::Node outputsNode = node["Outputs"];
+        bool expectName = true;
+        OutputNodeConnection connection;
+        for (std::size_t i = 0; i < outputsNode.size(); ++i) {
+            if (expectName) {
+                connection.outputNodeScriptName = outputsNode[i].as<std::string>();
+                expectName = false;
+            } else {
+                if (outputsNode[i].IsSequence()) {
+                    for (std::size_t j = 0; j < outputsNode[i].size(); ++j) {
+                        connection.outputNodeIndices.push_back(outputsNode[i][j].as<int>());
+                    }
+                } else {
+                    connection.outputNodeIndices.push_back(outputsNode[i].as<int>());
+                }
+                _outputs.push_back(connection);
+                expectName = true;
+            }
+        }
+    }
 
     
     if (node["Params"]) {
@@ -323,14 +356,7 @@ NodeSerialization::decode(const YAML::Node& node)
         _presetInstanceLabel = node["Preset"].as<std::string>();
     }
     
-    if (node["NewLayers"]) {
-        YAML::Node layersNode = node["NewLayers"];
-        for (std::size_t i = 0; i < layersNode.size(); ++i) {
-            ImagePlaneDescSerialization s;
-            s.decode(layersNode[i]);
-            _userComponents.push_back(s);
-        }
-    }
+
     if (node["Pos"]) {
         YAML::Node posNode = node["Pos"];
         if (posNode.size() != 2) {

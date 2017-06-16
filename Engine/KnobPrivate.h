@@ -199,6 +199,10 @@ typedef std::vector<PerViewEnabledMap> PerDimensionEnabledMap;
 
 typedef std::map<ViewIdx, bool> PerViewAllDimensionsVisible;
 
+
+typedef std::map<ViewIdx, std::string> PerViewInvalidLinkError;
+typedef std::vector<PerViewInvalidLinkError> PerDimensionInvalidLinkError;
+
 // Contains all datas shared amongst render clones and main instance
 struct CommonData
 {
@@ -321,6 +325,9 @@ struct CommonData
 
     // For each dimension, the other knobs referencing this knob
     PerDimensionListenersMap listeners;
+
+    // For each link/expression, is there an error ?
+    PerDimensionInvalidLinkError linkErrors;
 
     // Used to prevent expressions from creating infinite loops
     // It doesn't have to be thread-local even if getValue can be called on multiple threads:
@@ -472,6 +479,7 @@ struct KnobHelperPrivate
         common->hasModifications.resize(nDims);
         common->allDimensionsVisible[ViewIdx(0)] = true;
         common->expressions.resize(nDims);
+        common->linkErrors.resize(nDims);
         common->listeners.resize(nDims);
         common->perDimViewSavedData.resize(nDims);
         for (int i = 0; i < nDims; ++i) {

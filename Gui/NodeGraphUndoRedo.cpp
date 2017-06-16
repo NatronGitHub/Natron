@@ -160,11 +160,7 @@ AddMultipleNodesCommand::undo()
             continue;
         }
 
-        node->deactivate(NodesList(), //outputs to disconnect
-                         true, //disconnect all nodes, disregarding the first parameter.
-                         true, //reconnect outputs to inputs of this node?
-                         true, //hide nodeGui?
-                         false); // triggerRender
+        node->deactivate(Node::eDeactivateFlagConnectOutputsToMainInput); // triggerRender
     }
 
     _graph->clearSelection();
@@ -192,9 +188,7 @@ AddMultipleNodesCommand::redo()
     }
     if (_firstRedoCalled) {
         for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            (*it)->activate(NodesList(), //inputs to restore
-                            true, //restore all inputs ?
-                            false); //triggerRender
+            (*it)->activate(Node::eActivateFlagRestoreOutputs); //triggerRender
         }
     }
 
@@ -203,7 +197,7 @@ AddMultipleNodesCommand::redo()
         _graph->setSelection(nodes);
     }
 
-    _graph->getGui()->getApp()->recheckInvalidExpressions();
+    _graph->getGui()->getApp()->recheckInvalidLinks();
     _graph->getGui()->getApp()->triggerAutoSave();
     _graph->getGui()->getApp()->renderAllViewers();
 
@@ -222,25 +216,6 @@ RemoveMultipleNodesCommand::RemoveMultipleNodesCommand(NodeGraph* graph,
     for (std::list<NodeGuiPtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         NodeToRemove n;
         n.node = *it;
-
-        ///find all outputs to restore
-        const NodesWList & outputs = (*it)->getNode()->getOutputs();
-        for (NodesWList::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
-            NodePtr output = it2->lock();
-            if (!output) {
-                continue;
-            }
-            bool restore = true;
-            for (std::list<NodeGuiPtr >::const_iterator it3 = nodes.begin(); it3 != nodes.end(); ++it3) {
-                if ( (*it3)->getNode() == output ) {
-                    ///we found the output in the selection, don't restore it
-                    restore = false;
-                }
-            }
-            if (restore) {
-                n.outputsToRestore.push_back(output);
-            }
-        }
         _nodes.push_back(n);
     }
 }
@@ -270,15 +245,7 @@ RemoveMultipleNodesCommand::undo()
          it != _nodes.end();
          ++it) {
         NodeGuiPtr node = it->node.lock();
-        NodesList outputsToRestore;
-        for (NodesWList::const_iterator it2 = it->outputsToRestore.begin(); it2 != it->outputsToRestore.end(); ++it2) {
-            NodePtr output = it2->lock();
-            if (output) {
-                outputsToRestore.push_back(output);
-            }
-        }
-
-        node->getNode()->activate(outputsToRestore, false, false);
+        node->getNode()->activate(Node::eActivateFlagRestoreOutputs);
 
 
         // increment for next iteration
@@ -312,27 +279,22 @@ RemoveMultipleNodesCommand::redo()
          ++it) {
         NodeGuiPtr node = it->node.lock();
         ///Make a copy before calling deactivate which will modify the list
-        NodesWList outputs = node->getNode()->getOutputs();
+        OutputNodesMap outputs;
+        node->getNode()->getOutputs(outputs);
 
         NodesList outputsToRestore;
-        for (NodesWList::const_iterator it2 = it->outputsToRestore.begin(); it2 != it->outputsToRestore.end(); ++it2) {
-            NodePtr output = it2->lock();
-            if (output) {
-                outputsToRestore.push_back(output);
-            }
+        for (OutputNodesMap::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
+            outputsToRestore.push_back(it2->first);
         }
 
-        node->getNode()->deactivate(outputsToRestore, false, _nodes.size() == 1, true, false);
+        node->getNode()->deactivate(Node::eDeactivateFlagConnectOutputsToMainInput);
 
 
         if (_nodes.size() == 1) {
             ///If we're deleting a single node and there's a viewer in output,reconnect the viewer to another connected input it has
-            for (NodesWList::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
-                NodePtr output = it2->lock();
+            for (OutputNodesMap::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
+                const NodePtr& output = it2->first;
 
-                if (!output) {
-                    continue;
-                }
 
                 ///the output must be in the outputs to restore
                 NodesList::const_iterator found = std::find(outputsToRestore.begin(), outputsToRestore.end(), output);
@@ -477,10 +439,16 @@ ConnectCommand::doConnect(const NodeGuiPtr &oldSrc,
             if (connectionOk) {
                 internalDst->swapInput(internalNewSrc, inputNb);
             } else {
-                internalDst->disconnectInput( internalDst->getInputIndex( internalOldSrc ) );
+                std::list<int> inputsConnectedToOldSrc = internalOldSrc->getInputIndicesConnectedToThisNode(internalDst);
+                for (std::list<int>::const_iterator it = inputsConnectedToOldSrc.begin(); it != inputsConnectedToOldSrc.end(); ++it) {
+                    internalDst->disconnectInput(*it);
+                }
             }
         } else if (internalOldSrc && !internalNewSrc) {
-            internalDst->disconnectInput( internalDst->getInputIndex( internalOldSrc ) );
+            std::list<int> inputsConnectedToOldSrc = internalOldSrc->getInputIndicesConnectedToThisNode(internalDst);
+            for (std::list<int>::const_iterator it = inputsConnectedToOldSrc.begin(); it != inputsConnectedToOldSrc.end(); ++it) {
+                internalDst->disconnectInput(*it);
+            }
         } else if (!internalOldSrc && internalNewSrc) {
             Node::CanConnectInputReturnValue ret = internalDst->canConnectInput(internalNewSrc, inputNb);
             bool connectionOk = ret == Node::eCanConnectInput_ok ||
@@ -489,7 +457,10 @@ ConnectCommand::doConnect(const NodeGuiPtr &oldSrc,
             if (connectionOk) {
                 internalDst->connectInput(internalNewSrc, inputNb);
             } else {
-                internalDst->disconnectInput( internalDst->getInputIndex( internalOldSrc ) );
+                std::list<int> inputsConnectedToOldSrc = internalOldSrc->getInputIndicesConnectedToThisNode(internalDst);
+                for (std::list<int>::const_iterator it = inputsConnectedToOldSrc.begin(); it != inputsConnectedToOldSrc.end(); ++it) {
+                    internalDst->disconnectInput(*it);
+                }
             }
         }
     }
@@ -909,26 +880,19 @@ static bool
 hasNodeOutputsInList(const std::list<NodeGuiPtr >& nodes,
                      const NodeGuiPtr& node)
 {
-    const NodesWList& outputs = node->getNode()->getOutputs();
-    bool foundOutput = false;
-
+    OutputNodesMap outputs;
+    node->getNode()->getOutputs(outputs);
     for (std::list<NodeGuiPtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if (*it != node) {
             NodePtr n = (*it)->getNode();
-
-            for (NodesWList::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
-                if (it2->lock() == n) {
-                    foundOutput = true;
-                    break;
-                }
-            }
-            if (foundOutput) {
-                break;
+            OutputNodesMap::const_iterator foundOutput = outputs.find(n);
+            if (foundOutput != outputs.end()) {
+                return true;
             }
         }
     }
 
-    return foundOutput;
+    return false;
 }
 
 static bool
@@ -1183,14 +1147,12 @@ extractTreesFromNodes(const std::list<NodeGuiPtr >& nodes,
             ExtractedTree tree;
             tree.output.node = *it;
             NodePtr n = (*it)->getNode();
-            const NodesWList& outputs = n->getOutputs();
-            for (NodesWList::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
-                NodePtr output = it2->lock();
-                if (!output) {
-                    continue;
+            OutputNodesMap outputs;
+            n->getOutputs(outputs);
+            for (OutputNodesMap::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
+                for (std::list<int>::const_iterator it3 = it2->second.begin(); it3 != it2->second.end(); ++it3) {
+                    tree.output.outputs.push_back( std::make_pair(*it3, it2->first) );
                 }
-                int idx = output->inputIndex(n);
-                tree.output.outputs.push_back( std::make_pair(idx, output) );
             }
 
             const std::vector<Edge*>& inputs = (*it)->getInputsArrows();
@@ -1578,14 +1540,10 @@ GroupFromSelectionCommand::redo()
         } // for all inputs in the tree
 
         // Connect all outputs of the original node to the new Group
-        NodesWList originalOutputs;
-        it->output.node->getOutputs_mt_safe(originalOutputs);
-        for (NodesWList::const_iterator it2 = originalOutputs.begin(); it2 != originalOutputs.end(); ++it2) {
-            NodePtr output = it2->lock();
-            if (!output) {
-                continue;
-            }
-            _savedLinks[output] = output->getInputs();
+        OutputNodesMap originalOutputs;
+        it->output.node->getOutputs(originalOutputs);
+        for (OutputNodesMap::const_iterator it2 = originalOutputs.begin(); it2 != originalOutputs.end(); ++it2) {
+            _savedLinks[it2->first] = it2->first->getInputs();
 
         }
     } // for all trees
@@ -1658,18 +1616,20 @@ InlineGroupCommand::InlineGroupCommand(const NodeCollectionPtr& newGroup, const 
         NodePtr outputNode = group->getOutputNode();
         for (std::size_t i = 0; i < inputNodes.size(); ++i) {
 
-            const NodesWList& inputOutputs = inputNodes[i]->getOutputs();
-            for (NodesWList::const_iterator it2 = inputOutputs.begin(); it2 != inputOutputs.end(); ++it2) {
-                NodePtr inputOutput = it2->lock();
-                if (!inputOutput) {
-                    continue;
+            OutputNodesMap inputOutputs;
+            inputNodes[i]->getOutputs(inputOutputs);
+            for (OutputNodesMap::const_iterator it2 = inputOutputs.begin(); it2 != inputOutputs.end(); ++it2) {
+                const NodePtr& inputOutput = it2->first;
+
+                for (std::list<int>::const_iterator it3 = it2->second.begin(); it3 != it2->second.end(); ++it3) {
+                    InlinedGroup::InputOutput p;
+                    p.output = inputOutput;
+                    p.inputNodes = inputOutput->getInputs();
+                    p.inputIndex = i;
+                    p.outputInputIndex = *it3;
+                    inlinedGroup.inputsMap.push_back(p);
                 }
-                InlinedGroup::InputOutput p;
-                p.output = inputOutput;
-                p.inputNodes = inputOutput->getInputs();
-                p.inputIndex = i;
-                p.outputInputIndex = inputOutput->getInputIndex(inputNodes[i]);
-                inlinedGroup.inputsMap.push_back(p);
+
             }
 
         }
@@ -1677,21 +1637,22 @@ InlineGroupCommand::InlineGroupCommand(const NodeCollectionPtr& newGroup, const 
             inlinedGroup.outputNodeInput = outputNode->getInput(0);
         }
 
-        const NodesWList& groupOutputs = (*it)->getOutputs();
-        for (NodesWList::const_iterator it2 = groupOutputs.begin(); it2 != groupOutputs.end(); ++it2) {
-            NodePtr groupOutput = it2->lock();
-            if (!groupOutput) {
-                continue;
+        OutputNodesMap groupOutputs;
+        (*it)->getOutputs(groupOutputs);
+        for (OutputNodesMap::const_iterator it2 = groupOutputs.begin(); it2 != groupOutputs.end(); ++it2) {
+            const NodePtr& groupOutput = it2->first;
+
+            for (std::list<int>::const_iterator it3 = it2->second.begin(); it3 != it2->second.end(); ++it3) {
+                InlinedGroup::GroupNodeOutput outp;
+                outp.output = groupOutput;
+                outp.inputIndex = *it3;
+                outp.outputNodeInputs = groupOutput->getInputs();
+                groupOutput->getPosition(&outp.position[0], &outp.position[1]);
+                inlinedGroup.groupOutputs.push_back(outp);
             }
-            InlinedGroup::GroupNodeOutput outp;
-            outp.output = groupOutput;
-            outp.inputIndex = groupOutput->getInputIndex(*it);
-            outp.outputNodeInputs = groupOutput->getInputs();
-            groupOutput->getPosition(&outp.position[0], &outp.position[1]);
-            inlinedGroup.groupOutputs.push_back(outp);
         }
-
-
+        
+        
         NodesList nodes = group->getNodes();
         // Only move the nodes that are not GroupInput and GroupOutput
         // Compute the BBox of the inlined nodes so we can make space
@@ -1748,7 +1709,7 @@ InlineGroupCommand::undo()
         app = group->getApp();
 
         // Re-activate the group node
-        group->getNode()->activate(NodesList(), true, false);
+        group->getNode()->activate(Node::eActivateFlagRestoreOutputs);
 
         // Re-position back all moved nodes
         for (std::list<InlinedGroup::MovedNode>::const_iterator it2 = it->movedNodes.begin(); it2 != it->movedNodes.end(); ++it2) {
@@ -1893,7 +1854,7 @@ InlineGroupCommand::redo()
         }
 
         // Deactivate the group node
-        group->getNode()->deactivate(NodesList(), true, false, true, false, false);
+        group->getNode()->deactivate(Node::eDeactivateFlagConnectOutputsToMainInput);
         
     } // for each group
 

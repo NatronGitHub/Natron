@@ -276,7 +276,7 @@ public:
 
     void addInvalidExpressionKnob(const KnobIPtr& knob);
     void removeInvalidExpressionKnob(const KnobIConstPtr& knob);
-    void recheckInvalidExpressions();
+    void recheckInvalidLinks();
 
     virtual void toggleAutoHideGraphInputs() {}
 

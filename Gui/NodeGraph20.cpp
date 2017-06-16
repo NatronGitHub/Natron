@@ -101,19 +101,11 @@ NodeGraph::checkForHints(bool shiftdown,
 
     {
         for (std::set<NodeGuiPtr>::iterator it = nodesWithinRect.begin(); it != nodesWithinRect.end(); ++it) {
-            bool isAlreadyAnOutput = false;
-            const NodesWList& outputs = internalNode->getOutputs();
-            for (NodesWList::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
-                NodePtr node = it2->lock();
-                if (!node) {
-                    continue;
-                }
-                if ( node == (*it)->getNode() ) {
-                    isAlreadyAnOutput = true;
-                    break;
-                }
-            }
-            if (isAlreadyAnOutput) {
+            OutputNodesMap outputs;
+            internalNode->getOutputs(outputs);
+
+            OutputNodesMap::const_iterator foundAsOutput = outputs.find((*it)->getNode());
+            if (foundAsOutput != outputs.end()) {
                 continue;
             }
             QRectF nodeBbox = (*it)->boundingRectWithEdges();

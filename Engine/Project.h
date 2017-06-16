@@ -86,6 +86,12 @@ public:
         return boost::dynamic_pointer_cast<Project>(KnobHolder::shared_from_this());
     }
 
+    virtual NodeCollectionPtr getThisShared() OVERRIDE FINAL
+    {
+        return shared_from_this();
+    }
+
+
     virtual ~Project();
 
     //these are per project thread-local data
@@ -368,24 +374,6 @@ public:
 
     virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase) OVERRIDE FINAL;
 
-
-    static bool restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializationList & serializedNodes,
-                                              const NodeCollectionPtr& group,
-                                              std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >* createdNodes);
-
-
-    static NodePtr findNodeWithScriptName(const std::string& nodeScriptName, const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >& allCreatedNodesInGroup);
-
-    static void restoreInputs(const NodePtr& node,
-                          const std::map<std::string, std::string>& inputsMap,
-                          const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >& allCreatedNodesInGroup,
-                          bool isMaskInputs);
-
-    static void restoreInput(const NodePtr& node,
-                         const std::string& inputLabel,
-                         const std::string& inputNodeScriptName,
-                         const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >& allCreatedNodesInGroup,
-                         bool isMaskInput);
 
 
 public Q_SLOTS:
