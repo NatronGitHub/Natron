@@ -159,7 +159,7 @@ BaseTest::connectNodes(const NodePtr& input,
     }
 
 
-    bool ret = output->swapInput(input, inputNumber);
+    bool ret = output->connectInput(input, inputNumber);
     EXPECT_EQ(expectedReturnValue, ret);
 
     if (expectedReturnValue) {
@@ -184,21 +184,14 @@ BaseTest::disconnectNodes(const NodePtr& input,
         OutputNodesMap::const_iterator foundOutput = outputs.find(output);
 
         ///the output must have in its inputs the node 'input'
-        const std::vector<NodeWPtr> & inputs = output->getInputs();
-        int inputIndex = 0;
-        bool foundInput = false;
-        for (U32 i = 0; i < inputs.size(); ++i) {
-            if (inputs[i].lock() == input) {
-                foundInput = true;
-                break;
-            }
-            ++inputIndex;
-        }
+        std::list<int> connectedInputs = input->getInputIndicesConnectedToThisNode(output);
 
-        EXPECT_TRUE(foundInput);
+        EXPECT_TRUE(!connectedInputs.empty());
         EXPECT_TRUE(foundOutput != outputs.end());
-        EXPECT_EQ(output->getInput(inputIndex), input);
-        EXPECT_TRUE( output->isInputConnected(inputIndex) );
+        for (std::list<int>::const_iterator it = connectedInputs.begin(); it!=connectedInputs.end(); ++it) {
+            EXPECT_EQ(output->getInput(*it), input);
+            EXPECT_TRUE( output->isInputConnected(*it) );
+        }
     }
 
     ///call disconnect
@@ -214,21 +207,14 @@ BaseTest::disconnectNodes(const NodePtr& input,
 
 
         ///the output must have in its inputs the node 'input'
-        const std::vector<NodeWPtr> & inputs = output->getInputs();
-        int inputIndex = 0;
-        bool foundInput = false;
-        for (U32 i = 0; i < inputs.size(); ++i) {
-            if (inputs[i].lock() == input) {
-                foundInput = true;
-                break;
-            }
-            ++inputIndex;
-        }
+        std::list<int> connectedInputs = input->getInputIndicesConnectedToThisNode(output);
 
-        EXPECT_FALSE(foundOutput == outputs.end());
-        EXPECT_FALSE(foundInput);
-        EXPECT_EQ( (Node*)NULL, output->getInput(inputIndex).get() );
-        EXPECT_FALSE( output->isInputConnected(inputIndex) );
+        EXPECT_TRUE(foundOutput == outputs.end());
+        EXPECT_TRUE(connectedInputs.empty());
+        for (std::list<int>::const_iterator it = connectedInputs.begin(); it!=connectedInputs.end(); ++it) {
+            EXPECT_EQ( (Node*)NULL, output->getInput(*it).get() );
+            EXPECT_FALSE( output->isInputConnected(*it) );
+        }
     }
 } // disconnectNodes
 

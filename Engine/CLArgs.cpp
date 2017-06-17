@@ -61,6 +61,7 @@ public:
     bool isBackground;
     bool useDefaultSettings;
     bool clearCacheOnLaunch;
+    bool clearPluginCacheOnLaunch;
     QString ipcPipe;
     int error;
     bool isInterpreterMode;
@@ -88,6 +89,7 @@ public:
         , isBackground(false)
         , useDefaultSettings(false)
         , clearCacheOnLaunch(false)
+        , clearPluginCacheOnLaunch(false)
         , ipcPipe()
         , error(0)
         , isInterpreterMode(false)
@@ -283,6 +285,8 @@ CLArgs::printUsage(const std::string& programName)
         "    init.py script is loaded.\n"
         "  --clear-cache\n"
         "    Clears the cache on startup.\n"
+        "  --clear-plugins-cache\n"
+        "    Clears the plug-ins load cache on startup, forcing them to reload entirely.\n"
         "  --no-settings\n"
         "    When passed on the command-line, the %1 settings will not be restored\n"
         "    from the preferences file on disk so that %1 uses the default ones.\n"
@@ -446,6 +450,12 @@ bool
 CLArgs::isCacheClearRequestedOnLaunch() const
 {
     return _imp->clearCacheOnLaunch;
+}
+
+bool
+CLArgs::isPluginLoadCacheClearRequestedOnLaunch() const
+{
+    return _imp->clearPluginCacheOnLaunch;
 }
 
 bool
@@ -756,6 +766,16 @@ CLArgsPrivate::parse()
             args.erase(it);
         }
     }
+
+    {
+        QStringList::iterator it = hasToken( QString::fromUtf8("clear-plugins-cache"), QString() );
+        if ( it != args.end() ) {
+            clearPluginCacheOnLaunch = true;
+            args.erase(it);
+        }
+    }
+
+
 
     {
         QStringList::iterator it = hasToken( QString::fromUtf8("no-settings"), QString() );

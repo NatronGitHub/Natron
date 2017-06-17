@@ -24,6 +24,12 @@ An optional Python script filename can be specified to source a script before th
 Note that Natron will not start rendering any Write node of the sourced script, you must explicitly start it.
 *NatronRenderer* and *Natron* will do the same thing in this mode, only the *init.py* script will be loaded.
 
+**[--clear-cache]** will clear the image cache on startup
+
+**[--clear-plugins-cache]** will clear the plug-ins load cache on start-up, forcing them
+to reaload
+
+
 
 Options for the execution of Natron projects:
 ---------------------------------------------

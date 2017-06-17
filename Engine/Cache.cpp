@@ -4365,6 +4365,10 @@ Cache<persistent>::clearDiskCache()
     if ( dir.exists() ) {
         Q_FOREACH( QFileInfo info, dir.entryInfoList(QDir::NoDotAndDotDot | QDir::System | QDir::Hidden  | QDir::AllDirs | QDir::Files, QDir::DirsFirst) ) {
             if ( info.isDir() ) {
+                if (info.fileName().toStdString() == "OFXLoadCache") {
+                    // Do not delete the OFX cache
+                    continue;
+                }
                 QtCompat::removeRecursively( info.absoluteFilePath() );
             } else {
                 QFile::remove( info.absoluteFilePath() );

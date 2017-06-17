@@ -1136,6 +1136,10 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
         // ignore
     }
 
+    if (cl.isPluginLoadCacheClearRequestedOnLaunch()) {
+        clearPluginsLoadedCache();
+    }
+
     /*loading all plugins*/
     try {
         loadAllPlugins();

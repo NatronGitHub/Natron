@@ -112,6 +112,8 @@ public:
 
     bool isCacheClearRequestedOnLaunch() const;
 
+    bool isPluginLoadCacheClearRequestedOnLaunch() const;
+
     /*
      * @brief Has a Natron project or Python script been passed to the command line ?
      */
