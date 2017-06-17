@@ -753,9 +753,6 @@ KnobHelper::checkInvalidLinks()
                     } else {
                         data.hasRet = false;
                     }
-                } else {
-                    // For a getValue call which will refresh error if needed
-                    refreshStaticValue(getCurrentRenderTime());
                 }
             }
         }
@@ -768,6 +765,9 @@ KnobHelper::checkInvalidLinks()
             isInvalid = true;
         }
     }
+
+    // For a getValue call which will refresh error if needed
+    refreshStaticValue(getCurrentRenderTime());
 
     return !isInvalid;
 } // checkInvalidLinks
