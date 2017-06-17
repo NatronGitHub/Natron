@@ -159,7 +159,7 @@ BaseTest::connectNodes(const NodePtr& input,
     }
 
 
-    bool ret = getApp()->getProject()->connectNodes(inputNumber, input, output);
+    bool ret = output->swapInput(input, inputNumber);
     EXPECT_EQ(expectedReturnValue, ret);
 
     if (expectedReturnValue) {
@@ -202,7 +202,7 @@ BaseTest::disconnectNodes(const NodePtr& input,
     }
 
     ///call disconnect
-    bool ret = getApp()->getProject()->disconnectNodes(input, output);
+    bool ret = output->disconnectInput(input);
     EXPECT_EQ(expectedReturnvalue, ret);
 
     if (expectedReturnvalue) {
