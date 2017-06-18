@@ -1839,14 +1839,8 @@ NodeCollection::createNodesFromSerialization(const SERIALIZATION_NAMESPACE::Node
 
     } // for all nodes
 
-    // If we created all sub-groups recursively, then we are in the top-level group. We may now restore all links
-#pragma message WARN("Check condition")
-    if (!getApplication()->getProject()->isLoadingProject() /*|| getApplication()->isCreatingNode()*/) {
-
-        // Now that we created all nodes. There may be cross-graph link(s) and they can only be truely restored now.
-        restoreLinksRecursive(thisShared, serializedNodes, &localCreatedNodes);
-    }
-
+    // We may now restore all links
+    restoreLinksRecursive(thisShared, serializedNodes, &localCreatedNodes);
     return !hasError;
 
 } // createNodesFromSerialization
