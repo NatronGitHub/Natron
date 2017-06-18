@@ -502,7 +502,7 @@ PrecompNodePrivate::createReadNode()
 
     if (oldReadNode) {
         //Ensure it is no longer part of the tree
-        oldReadNode->destroyNode(false, false);
+        oldReadNode->destroyNode();
 
 
         //Reset the pointer

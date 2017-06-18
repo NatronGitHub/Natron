@@ -194,12 +194,15 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
             }
         } else if ( !_imp->_selection.empty() ) {
             NodesGuiList nodesToMove;
-            for (NodesGuiList::iterator it = _imp->_selection.begin();
+            for (NodesGuiWList::iterator it = _imp->_selection.begin();
                  it != _imp->_selection.end(); ++it) {
-                const NodeGuiPtr& node = *it;
+                NodeGuiPtr node = it->lock();
+                if (!node) {
+                    continue;
+                }
                 nodesToMove.push_back(node);
 
-                std::map<NodeGuiPtr, NodesGuiList>::iterator foundBd = _imp->_nodesWithinBDAtPenDown.find(*it);
+                std::map<NodeGuiPtr, NodesGuiList>::iterator foundBd = _imp->_nodesWithinBDAtPenDown.find(node);
                 if ( !modCASIsControl(e) && ( foundBd != _imp->_nodesWithinBDAtPenDown.end() ) ) {
                     for (NodesGuiList::iterator it2 = foundBd->second.begin();
                          it2 != foundBd->second.end(); ++it2) {
@@ -226,32 +229,35 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
             if (_imp->_highLightedEdge) {
                 _imp->_highLightedEdge->setUseHighlight(false);
 
-                NodeGuiPtr selectedNode = _imp->_selection.front();
+                NodeGuiPtr selectedNode = _imp->_selection.front().lock();
 
-                _imp->_highLightedEdge->setUseHighlight(false);
-                if ( _imp->_highLightedEdge->isOutputEdge() ) {
-                    int prefInput = selectedNode->getNode()->getPreferredInputForConnection();
-                    if (prefInput != -1) {
-                        Edge* inputEdge = selectedNode->getInputArrow(prefInput);
-                        assert(inputEdge);
-                        pushUndoCommand( new ConnectCommand( this, inputEdge, inputEdge->getSource(),
-                                                             _imp->_highLightedEdge->getSource(), -1 ) );
-                    }
-                } else {
-                    pushUndoCommand( new InsertNodeCommand(this, _imp->_highLightedEdge, selectedNode) );
-                } // if ( _imp->_highLightedEdge->isOutputEdge() )
-
+                if (selectedNode) {
+                    _imp->_highLightedEdge->setUseHighlight(false);
+                    if ( _imp->_highLightedEdge->isOutputEdge() ) {
+                        int prefInput = selectedNode->getNode()->getPreferredInputForConnection();
+                        if (prefInput != -1) {
+                            Edge* inputEdge = selectedNode->getInputArrow(prefInput);
+                            assert(inputEdge);
+                            pushUndoCommand( new ConnectCommand( this, inputEdge, inputEdge->getSource(),
+                                                                _imp->_highLightedEdge->getSource(), -1 ) );
+                        }
+                    } else {
+                        pushUndoCommand( new InsertNodeCommand(this, _imp->_highLightedEdge, selectedNode) );
+                    } // if ( _imp->_highLightedEdge->isOutputEdge() )
+                }
                 _imp->_highLightedEdge = 0;
                 _imp->_hintInputEdge->hide();
                 _imp->_hintOutputEdge->hide();
-            } else if (_imp->_mergeHintNode) {
-                _imp->_mergeHintNode->setMergeHintActive(false);
-                NodeGuiPtr selectedNode = _imp->_selection.front();
-                selectedNode->setMergeHintActive(false);
+            } else if (_imp->_mergeHintNode.lock()) {
+                _imp->_mergeHintNode.lock()->setMergeHintActive(false);
+                NodeGuiPtr selectedNode = _imp->_selection.front().lock();
+                if (selectedNode) {
+                    selectedNode->setMergeHintActive(false);
+                }
 
-                if ( getGui() ) {
+                if ( getGui() && selectedNode) {
                     QRectF selectedNodeBbox = selectedNode->mapToScene( selectedNode->boundingRect() ).boundingRect();
-                    QRectF mergeHintNodeBbox = _imp->_mergeHintNode->mapToScene( _imp->_mergeHintNode->boundingRect() ).boundingRect();
+                    QRectF mergeHintNodeBbox = _imp->_mergeHintNode.lock()->mapToScene( _imp->_mergeHintNode.lock()->boundingRect() ).boundingRect();
                     QPointF mergeHintCenter = mergeHintNodeBbox.center();
 
                     ///Place the selected node on the right of the hint node
@@ -290,7 +296,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                         int bIndex = mergeNode->getInputNumberFromLabel("B");
                         assert(aIndex != -1 && bIndex != -1);
                         mergeNode->connectInput(selectedNode->getNode(), aIndex);
-                        mergeNode->connectInput(_imp->_mergeHintNode->getNode(), bIndex);
+                        mergeNode->connectInput(_imp->_mergeHintNode.lock()->getNode(), bIndex);
                     }
                 }
 

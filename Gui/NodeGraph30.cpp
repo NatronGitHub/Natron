@@ -102,24 +102,19 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB,
         return;
     }
 
-    ///if the node is no longer active (i.e: it was deleted by the user), don't do anything.
-    if ( !viewerNode->getNode()->isActivated() ) {
-        return;
-    }
-
     ///get a ptr to the NodeGui
     NodeGuiIPtr gui_i = viewerNode->getNode()->getNodeGui();
     NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
     assert(gui);
     ///if there's no selected node or the viewer is selected, then try refreshing that input nb if it is connected.
-    bool viewerAlreadySelected = std::find(_imp->_selection.begin(), _imp->_selection.end(), gui) != _imp->_selection.end();
+    bool viewerAlreadySelected = _imp->findSelectedNode(gui) != _imp->_selection.end();
     if (_imp->_selection.empty() || (_imp->_selection.size() > 1) || viewerAlreadySelected) {
         viewerNode->connectInputToIndex(inputNB, isASide ? 0 : 1);
         return;
     }
 
-    NodeGuiPtr selected = _imp->_selection.front();
-    if (!selected->getNode()) {
+    NodeGuiPtr selected = _imp->_selection.front().lock();
+    if (selected && !selected->getNode()) {
         return;
     }
 
@@ -168,12 +163,12 @@ NodeGraph::wheelEventInternal(bool ctrlDown,
         return;
     }
 
-    if (ctrlDown && _imp->_magnifiedNode) {
+    if (ctrlDown && _imp->_magnifiedNode.lock()) {
         if (!_imp->_magnifOn) {
             _imp->_magnifOn = true;
-            _imp->_nodeSelectedScaleBeforeMagnif = _imp->_magnifiedNode->scale();
+            _imp->_nodeSelectedScaleBeforeMagnif = _imp->_magnifiedNode.lock()->scale();
         }
-        _imp->_magnifiedNode->setScale_natron(_imp->_magnifiedNode->scale() * scaleFactor);
+        _imp->_magnifiedNode.lock()->setScale_natron(_imp->_magnifiedNode.lock()->scale() * scaleFactor);
     } else {
         _imp->_accumDelta += delta;
         if (std::abs(_imp->_accumDelta) > 60) {
@@ -203,7 +198,7 @@ NodeGraph::keyReleaseEvent(QKeyEvent* e)
     if (e->key() == Qt::Key_Control) {
         if (_imp->_magnifOn) {
             _imp->_magnifOn = false;
-            _imp->_magnifiedNode->setScale_natron(_imp->_nodeSelectedScaleBeforeMagnif);
+            _imp->_magnifiedNode.lock()->setScale_natron(_imp->_nodeSelectedScaleBeforeMagnif);
         }
         if (_imp->_bendPointsVisible) {
             _imp->setNodesBendPointsVisible(false);
@@ -236,7 +231,7 @@ NodeGraph::removeNode(const NodeGuiPtr & node)
                 continue;
             }
             EffectInstancePtr isEffect = toEffectInstance( listener->getHolder() );
-            if (!isEffect || !isEffect->getNode()->getGroup() || !isEffect->getNode()->isActivated() || !isEffect->getNode()->getNodeGui()) {
+            if (!isEffect || !isEffect->getNode()->getGroup() || !isEffect->getNode()->getNodeGui()) {
                 continue;
             }
             if ( isGrp && (isEffect->getNode()->getGroup() == isGrp) ) {
@@ -274,12 +269,16 @@ void
 NodeGraph::deleteSelection()
 {
     if ( !_imp->_selection.empty() ) {
-        NodesGuiList nodesToRemove = _imp->_selection;
+        NodesGuiList nodesToRemove = getSelectedNodes();
 
 
         ///For all backdrops also move all the nodes contained within it
         for (NodesGuiList::iterator it = nodesToRemove.begin(); it != nodesToRemove.end(); ++it) {
-            NodesGuiList nodesWithinBD = getNodesWithinBackdrop(*it);
+            const NodeGuiPtr& node = *it;
+            if (!node) {
+                continue;
+            }
+            NodesGuiList nodesWithinBD = getNodesWithinBackdrop(node);
             for (NodesGuiList::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
                 NodesGuiList::iterator found = std::find(nodesToRemove.begin(), nodesToRemove.end(), *it2);
                 if ( found == nodesToRemove.end() ) {
@@ -312,7 +311,7 @@ NodeGraph::deleteSelection()
                     }
                     EffectInstancePtr isEffect = toEffectInstance( listener->getHolder() );
 
-                    if (!isEffect || !isEffect->getNode()->getGroup() || !isEffect->getNode()->isActivated() || !isEffect->getNode()->getNodeGui()) {
+                    if (!isEffect || !isEffect->getNode()->getGroup()  || !isEffect->getNode()->getNodeGui()) {
                         continue;
                     }
                     if ( isGrp && (isEffect->getNode()->getGroup() == isGrp) ) {
@@ -367,17 +366,19 @@ NodeGraph::deselectNode(const NodeGuiPtr& n)
 {
     {
         QMutexLocker k(&_imp->_nodesMutex);
-        NodesGuiList::iterator it = std::find(_imp->_selection.begin(), _imp->_selection.end(), n);
-        if ( it != _imp->_selection.end() ) {
-            _imp->_selection.erase(it);
+        for (NodesGuiWList::iterator it = _imp->_selection.begin(); it!= _imp->_selection.end(); ++it) {
+            if ( it->lock() == n) {
+                _imp->_selection.erase(it);
+                break;
+            }
         }
     }
     n->setUserSelected(false);
 
     //Stop magnification if active
-    if ( (_imp->_magnifiedNode == n) && _imp->_magnifOn ) {
+    if ( (_imp->_magnifiedNode.lock() == n) && _imp->_magnifOn ) {
         _imp->_magnifOn = false;
-        _imp->_magnifiedNode->setScale_natron(_imp->_nodeSelectedScaleBeforeMagnif);
+        _imp->_magnifiedNode.lock()->setScale_natron(_imp->_nodeSelectedScaleBeforeMagnif);
     }
 }
 
@@ -388,7 +389,7 @@ NodeGraph::selectNode(const NodeGuiPtr & n,
     if ( !n->isVisible() ) {
         return;
     }
-    bool alreadyInSelection = std::find(_imp->_selection.begin(), _imp->_selection.end(), n) != _imp->_selection.end();
+    bool alreadyInSelection = _imp->findSelectedNode(n) != _imp->_selection.end();
 
 
     assert(n);
@@ -416,13 +417,13 @@ NodeGraph::selectNode(const NodeGuiPtr & n,
     }
 
     bool magnifiedNodeSelected = false;
-    if (_imp->_magnifiedNode) {
-        magnifiedNodeSelected = std::find(_imp->_selection.begin(), _imp->_selection.end(), _imp->_magnifiedNode)
-                                != _imp->_selection.end();
+    if (_imp->_magnifiedNode.lock()) {
+        magnifiedNodeSelected = _imp->findSelectedNode(_imp->_magnifiedNode.lock()) != _imp->_selection.end();
+                                
     }
     if (magnifiedNodeSelected && _imp->_magnifOn) {
         _imp->_magnifOn = false;
-        _imp->_magnifiedNode->setScale_natron(_imp->_nodeSelectedScaleBeforeMagnif);
+        _imp->_magnifiedNode.lock()->setScale_natron(_imp->_nodeSelectedScaleBeforeMagnif);
     }
 }
 
@@ -466,8 +467,11 @@ NodeGraph::clearSelection()
 {
     {
         QMutexLocker l(&_imp->_nodesMutex);
-        for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
-            (*it)->setUserSelected(false);
+        for (NodesGuiWList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
+            NodeGuiPtr n = it->lock();
+            if (n) {
+                n->setUserSelected(false);
+            }
         }
     }
 

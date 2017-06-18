@@ -1240,7 +1240,7 @@ public:
         eListenersTypeExpression = 0x1,
         eListenersTypeSharedValue = 0x2
     };
-    typedef QFlags<ListenersTypeEnum> ListenersTypeFlags;
+    DECLARE_FLAGS(ListenersTypeFlags, ListenersTypeEnum);
     /**
      * @brief Returns a list of all the knobs whose value depends upon this knob.
      **/
@@ -3121,5 +3121,8 @@ public:
 
 
 NATRON_NAMESPACE_EXIT;
+
+DECLARE_OPERATORS_FOR_FLAGS(NATRON_NAMESPACE::KnobI::ListenersTypeFlags);
+
 
 #endif // Engine_Knob_h

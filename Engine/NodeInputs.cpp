@@ -624,6 +624,9 @@ Node::canConnectInput(const NodePtr& input,
 bool
 Node::canOthersConnectToThisNode() const
 {
+    if (isBeingDestroyed()) {
+        return false;
+    }
     if ( isEffectBackdrop() ) {
         return false;
     } else if ( isEffectGroupOutput() ) {
@@ -662,6 +665,10 @@ Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool failIfExi
 
     // Check for cycles: they are forbidden in the graph
     if ( input && !checkIfConnectingInputIsOk( input ) ) {
+        return false;
+    }
+
+    if (isBeingDestroyed()) {
         return false;
     }
 
@@ -751,6 +758,26 @@ Node::swapInput(const NodePtr& input,
 
     return replaceInputInternal(input, inputNumber, false);
 } // Node::replaceInput
+
+void
+Node::connectOutputsToMainInput()
+{
+    NodePtr mainInputNode;
+    int prefInput_i = getPreferredInput();
+    if (prefInput_i != -1) {
+        mainInputNode = getRealInput(prefInput_i);
+    }
+
+
+    OutputNodesMap outputs;
+    getOutputs(outputs);
+    for (OutputNodesMap::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        for (std::list<int>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            it->first->swapInput(mainInputNode, *it2);
+        }
+    }
+
+} // connectOutputsToMainInput
 
 void
 Node::switchInput0And1()
@@ -988,6 +1015,9 @@ Node::getInputNames(std::map<std::string, std::string> & inputNames,
 int
 Node::getPreferredInputInternal(bool connected) const
 {
+    if (isBeingDestroyed()) {
+        return -1;
+    }
     {
         int prefInput;
         if (_imp->effect->getDefaultInput(connected, &prefInput)) {
@@ -1159,6 +1189,9 @@ Node::beginInputEdition()
 void
 Node::endInputEdition(bool triggerRender)
 {
+    if (isBeingDestroyed()) {
+        return;
+    }
     assert( QThread::currentThread() == qApp->thread() );
     if (_imp->inputModifiedRecursion > 0) {
         --_imp->inputModifiedRecursion;
@@ -1188,7 +1221,7 @@ Node::endInputEdition(bool triggerRender)
 void
 Node::onInputChanged(int inputNb)
 {
-    if ( getApp()->getProject()->isProjectClosing() ) {
+    if ( getApp()->getProject()->isProjectClosing() || isBeingDestroyed() ) {
         return;
     }
     assert( QThread::currentThread() == qApp->thread() );
@@ -1319,6 +1352,9 @@ Node::getMaxInputCount() const
 bool
 Node::hasSequentialOnlyNodeUpstream(std::string & nodeName) const
 {
+    if (isBeingDestroyed()) {
+        return false;
+    }
     ///Just take into account sequentiallity for writers
     if ( (_imp->effect->getSequentialPreference() == eSequentialPreferenceOnlySequential) && _imp->effect->isWriter() ) {
         nodeName = getScriptName_mt_safe();

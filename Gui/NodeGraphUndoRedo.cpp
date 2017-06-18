@@ -114,7 +114,9 @@ AddMultipleNodesCommand::AddMultipleNodesCommand(NodeGraph* graph,
     , _isUndone(false)
 {
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        _nodes.push_back(*it);
+        NodeToAdd n;
+        n.node = *it;
+        _nodes.push_back(n);
     }
     setText( tr("Add node") );
 
@@ -129,22 +131,15 @@ AddMultipleNodesCommand::AddMultipleNodesCommand(NodeGraph* graph,
     , _firstRedoCalled(false)
     , _isUndone(false)
 {
-    _nodes.push_back(node);
+    NodeToAdd n;
+    n.node = node;
+    _nodes.push_back(n);
     setText( tr("Add node") );
 
 }
 
 AddMultipleNodesCommand::~AddMultipleNodesCommand()
 {
-    // If the nodes we removed due to a undo, destroy them
-    if (_isUndone) {
-        for (NodesWList::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-            NodePtr node = it->lock();
-            if (node) {
-                node->destroyNode(false, false);
-            }
-        }
-    }
 }
 
 void
@@ -154,19 +149,24 @@ AddMultipleNodesCommand::undo()
     std::list<ViewerInstancePtr> viewersToRefresh;
 
 
-    for (NodesWList::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        NodePtr node = it->lock();
+    for (std::list<NodeToAdd>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+        NodePtr node = it->node.lock();
         if (!node) {
             continue;
         }
-
-        node->deactivate(Node::eDeactivateFlagConnectOutputsToMainInput); // triggerRender
+        it->serialization.reset(new SERIALIZATION_NAMESPACE::NodeSerialization);
+        it->serialization->_encodeFlags = SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsSerializeOutputs;
+        node->toSerialization(it->serialization.get());
+        if (_nodes.size() == 1) {
+            node->connectOutputsToMainInput();
+        }
+        node->destroyNode();
     }
 
     _graph->clearSelection();
 
     _graph->getGui()->getApp()->triggerAutoSave();
-    _graph->getGui()->getApp()->renderAllViewers();
+    //_graph->getGui()->getApp()->renderAllViewers();
 
 
 }
@@ -175,31 +175,39 @@ void
 AddMultipleNodesCommand::redo()
 {
     _isUndone = false;
-    NodesList nodes;
-    for (NodesWList::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        NodePtr n = it->lock();
-        if (!n) {
-            continue;
-        }
-        nodes.push_back(n);
-    }
-    if (nodes.empty()) {
-        return;
-    }
+
+    NodesList createdNodes;
+
     if (_firstRedoCalled) {
-        for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            (*it)->activate(Node::eActivateFlagRestoreOutputs); //triggerRender
+        SERIALIZATION_NAMESPACE::NodeSerializationList serializationList;
+
+        for (std::list<NodeToAdd>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+            assert(it->serialization && !it->node.lock());
+            serializationList.push_back(it->serialization);
+        }
+        _graph->getGroup()->createNodesFromSerialization(serializationList, NodeCollection::eCreateNodesFromSerializationFlagsConnectToExternalNodes, &createdNodes);
+
+        std::list<NodeToAdd>::iterator itNodes = _nodes.begin();
+        assert(createdNodes.size() == _nodes.size());
+        for (NodesList::iterator it = createdNodes.begin(); it!=createdNodes.end(); ++it, ++itNodes) {
+            itNodes->node = *it;
+        }
+    } else {
+        for (std::list<NodeToAdd>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+            NodePtr n = it->node.lock();
+            if (n) {
+                createdNodes.push_back(n);
+            }
         }
     }
 
 
-    if ( (nodes.size() != 1) || !nodes.front()->isEffectNodeGroup() ) {
-        _graph->setSelection(nodes);
+    if ( (createdNodes.size() != 1) || !createdNodes.front()->isEffectNodeGroup() ) {
+        _graph->setSelection(createdNodes);
     }
 
-    _graph->getGui()->getApp()->recheckInvalidLinks();
     _graph->getGui()->getApp()->triggerAutoSave();
-    _graph->getGui()->getApp()->renderAllViewers();
+    //_graph->getGui()->getApp()->renderAllViewers();
 
 
     _firstRedoCalled = true;
@@ -215,121 +223,74 @@ RemoveMultipleNodesCommand::RemoveMultipleNodesCommand(NodeGraph* graph,
 {
     for (std::list<NodeGuiPtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         NodeToRemove n;
-        n.node = *it;
+        n.node = (*it)->getNode();
         _nodes.push_back(n);
     }
+    setText( tr("Remove node") );
 }
 
 RemoveMultipleNodesCommand::~RemoveMultipleNodesCommand()
 {
-    if (_isRedone) {
-        for (std::list<NodeToRemove>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-            NodeGuiPtr n = it->node.lock();
-            if (n) {
-                n->getNode()->destroyNode(false, false);
-            }
-        }
-    }
+
 }
 
 void
 RemoveMultipleNodesCommand::undo()
 {
-    std::list<SequenceTime> allKeysToAdd;
-    std::list<NodeToRemove>::iterator next = _nodes.begin();
 
-    if ( next != _nodes.end() ) {
-        ++next;
+    SERIALIZATION_NAMESPACE::NodeSerializationList serializationList;
+    for (std::list<NodeToRemove>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+        assert(it->serialization && !it->node.lock());
+        serializationList.push_back(it->serialization);
     }
-    for (std::list<NodeToRemove>::iterator it = _nodes.begin();
-         it != _nodes.end();
-         ++it) {
-        NodeGuiPtr node = it->node.lock();
-        node->getNode()->activate(Node::eActivateFlagRestoreOutputs);
 
+    
+    NodesList createdNodes;
+    _graph->getGroup()->createNodesFromSerialization(serializationList, NodeCollection::eCreateNodesFromSerializationFlagsConnectToExternalNodes, &createdNodes);
 
-        // increment for next iteration
-        if ( next != _nodes.end() ) {
-            ++next;
+    {
+        assert(createdNodes.size() == _nodes.size());
+        std::list<NodeToRemove>::iterator itNodes = _nodes.begin();
+        for (NodesList::iterator it = createdNodes.begin(); it!=createdNodes.end(); ++it, ++itNodes) {
+            itNodes->node = *it;
         }
-    } // for(it)
-
+    }
+    
 
     _graph->getGui()->getApp()->triggerAutoSave();
-    _graph->getGui()->getApp()->renderAllViewers();
-    _graph->getGui()->getApp()->redrawAllViewers();
-    _graph->updateNavigator();
+    //_graph->getGui()->getApp()->renderAllViewers();
+    //_graph->getGui()->getApp()->redrawAllViewers();
 
     _isRedone = false;
-    _graph->scene()->update();
-    setText( tr("Remove node") );
+
 } // RemoveMultipleNodesCommand::undo
 
 void
 RemoveMultipleNodesCommand::redo()
 {
     _isRedone = true;
-
-    std::list<NodeToRemove>::iterator next = _nodes.begin();
-    if ( next != _nodes.end() ) {
-        ++next;
-    }
+    
     for (std::list<NodeToRemove>::iterator it = _nodes.begin();
          it != _nodes.end();
          ++it) {
-        NodeGuiPtr node = it->node.lock();
-        ///Make a copy before calling deactivate which will modify the list
-        OutputNodesMap outputs;
-        node->getNode()->getOutputs(outputs);
-
-        NodesList outputsToRestore;
-        for (OutputNodesMap::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
-            outputsToRestore.push_back(it2->first);
+        NodePtr node = it->node.lock();
+        if (!node) {
+            continue;
         }
-
-        node->getNode()->deactivate(Node::eDeactivateFlagConnectOutputsToMainInput);
-
-
+        it->serialization.reset(new SERIALIZATION_NAMESPACE::NodeSerialization);
+        it->serialization->_encodeFlags = SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsSerializeOutputs;
+        node->toSerialization(it->serialization.get());
         if (_nodes.size() == 1) {
-            ///If we're deleting a single node and there's a viewer in output,reconnect the viewer to another connected input it has
-            for (OutputNodesMap::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
-                const NodePtr& output = it2->first;
-
-
-                ///the output must be in the outputs to restore
-                NodesList::const_iterator found = std::find(outputsToRestore.begin(), outputsToRestore.end(), output);
-
-                if ( found != outputsToRestore.end() ) {
-                    ViewerNodePtr isViewer = output->isEffectViewerNode();
-                    ///if the node is an viewer, when disconnecting the active input just activate another input instead
-                    if (isViewer) {
-                        const std::vector<NodeWPtr> & inputs = output->getInputs();
-                        ///set as active input the first non null input
-                        for (std::size_t i = 0; i < inputs.size(); ++i) {
-                            NodePtr input = inputs[i].lock();
-                            if (input) {
-                                isViewer->connectInputToIndex(i, 0);
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
+            node->connectOutputsToMainInput();
         }
+        node->destroyNode();
 
-        // increment for next iteration
-        if ( next != _nodes.end() ) {
-            ++next;
-        }
     } // for(it)
 
     _graph->getGui()->getApp()->triggerAutoSave();
-    _graph->getGui()->getApp()->renderAllViewers();
-    _graph->getGui()->getApp()->redrawAllViewers();
-    _graph->updateNavigator();
+    //_graph->getGui()->getApp()->renderAllViewers();
+    //_graph->getGui()->getApp()->redrawAllViewers();
 
-    _graph->scene()->update();
-    setText( tr("Remove node") );
 } // redo
 
 ConnectCommand::ConnectCommand(NodeGraph* graph,
@@ -1381,7 +1342,7 @@ GroupFromSelectionCommand::undo()
     {
         NodePtr groupNode = _newGroup.lock();
         if (groupNode) {
-            groupNode->destroyNode(true, false);
+            groupNode->destroyNode();
         }
         _newGroup.reset();
     }
@@ -1408,14 +1369,15 @@ GroupFromSelectionCommand::redo()
         groupPosition.ry() += y;
     }
 
-    unsigned sz = originalNodes.size();
-    if (sz) {
-        groupPosition.rx() /= sz;
-        groupPosition.ry() /= sz;
+    {
+        unsigned sz = originalNodes.size();
+        if (sz) {
+            groupPosition.rx() /= sz;
+            groupPosition.ry() /= sz;
+        }
     }
-
-
-    // Create the actual Group node
+    
+    // Create the actual Group node within this Group
     NodeCollectionPtr oldContainer = _oldGroup.lock();
     if (!oldContainer) {
         return;
@@ -1433,7 +1395,7 @@ GroupFromSelectionCommand::redo()
     groupArgs->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
 
 
-    NodePtr containerNode = oldContainerGraph->getGui()->getApp()->createNode(groupArgs);
+    NodePtr containerNode = oldContainer->getApplication()->createNode(groupArgs);
 
     NodeGroupPtr containerGroup = containerNode->isEffectNodeGroup();
     assert(containerGroup);
@@ -1450,7 +1412,7 @@ GroupFromSelectionCommand::redo()
     _newGroup = containerNode;
 
 
-    // Set the position of the group
+    // Set the position of the group to the centroid of selected nodes
     containerNode->setPosition( groupPosition.x(), groupPosition.y() );
 
     // Move all the selected nodes to the newly created Group
@@ -1461,12 +1423,14 @@ GroupFromSelectionCommand::redo()
     // Just moving nodes into the group is not enough: we need to create the appropriate number
     // of Input nodes in the group to match the input of the selection so that the graph is not broken
     // and undoing this operation would restore the state.
+
+    // First, extract all different trees within the selected node so we can identify outputs and inputs
     std::list<Project::NodesTree> trees;
     Project::extractTreesFromNodes(originalNodes, trees);
     int inputNb = 0;
 
 
-    // The output node position is the average of all trees root
+    // The output node position in the Group is the average of all trees output
     QPointF outputNodePosition = QPointF(0,0);
 
     for (std::list<Project::NodesTree>::iterator it = trees.begin(); it != trees.end(); ++it) {
@@ -1480,7 +1444,9 @@ GroupFromSelectionCommand::redo()
             _savedLinks[it2->node] = originalNodeInputs;
             for (std::size_t i = 0; i < originalNodeInputs.size(); ++i) {
                 NodePtr originalInput = originalNodeInputs[i].lock();
-
+                if (!originalInput) {
+                    continue;
+                }
                 //Create an input node corresponding to this input
                 CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_INPUT, containerGroup));
                 args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
@@ -1702,14 +1668,30 @@ InlineGroupCommand::undo()
 
     AppInstancePtr app;
     for (std::list<InlinedGroup>::const_iterator it = _oldGroups.begin(); it != _oldGroups.end(); ++it) {
-        NodeGroupPtr group = it->oldGroupNode.lock();
+
+        assert(it->groupNodeSerialization);
+        NodeCollectionPtr newGroup = _newGroup.lock();
+        if (!newGroup) {
+            continue;
+        }
+        NodePtr groupNode;
+        {
+            SERIALIZATION_NAMESPACE::NodeSerializationList serializationList;
+            serializationList.push_back(it->groupNodeSerialization);
+            NodesList createdNodes;
+            newGroup->createNodesFromSerialization(serializationList, NodeCollection::eCreateNodesFromSerializationFlagsConnectToExternalNodes, &createdNodes);
+            if (!createdNodes.empty()) {
+                groupNode = createdNodes.front();
+            }
+        }
+        if (!groupNode) {
+            continue;
+        }
+        NodeGroupPtr group = groupNode->isEffectNodeGroup();
         if (!group) {
             continue;
         }
         app = group->getApp();
-
-        // Re-activate the group node
-        group->getNode()->activate(Node::eActivateFlagRestoreOutputs);
 
         // Re-position back all moved nodes
         for (std::list<InlinedGroup::MovedNode>::const_iterator it2 = it->movedNodes.begin(); it2 != it->movedNodes.end(); ++it2) {
@@ -1761,7 +1743,7 @@ InlineGroupCommand::redo()
 
     NodeCollectionPtr newGroup = _newGroup.lock();
     AppInstancePtr app;
-    for (std::list<InlinedGroup>::const_iterator it = _oldGroups.begin(); it != _oldGroups.end(); ++it) {
+    for (std::list<InlinedGroup>::iterator it = _oldGroups.begin(); it != _oldGroups.end(); ++it) {
         NodeGroupPtr group = it->oldGroupNode.lock();
         if (!group) {
             continue;
@@ -1854,7 +1836,12 @@ InlineGroupCommand::redo()
         }
 
         // Deactivate the group node
-        group->getNode()->deactivate(Node::eDeactivateFlagConnectOutputsToMainInput);
+        it->groupNodeSerialization.reset(new SERIALIZATION_NAMESPACE::NodeSerialization);
+        it->groupNodeSerialization->_encodeFlags = SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsSerializeOutputs;
+        group->getNode()->toSerialization(it->groupNodeSerialization.get());
+        group->getNode()->connectOutputsToMainInput();
+        group->getNode()->destroyNode();
+
         
     } // for each group
 

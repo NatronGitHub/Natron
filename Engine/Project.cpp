@@ -1685,18 +1685,7 @@ Project::isLoadingProjectInternal() const
 bool
 Project::isGraphWorthLess() const
 {
-    /*
-       bool worthLess = true;
-       for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
-        if (!_imp->currentNodes[i]->isOutputNode() && _imp->currentNodes[i]->isActivated()) {
-            worthLess = false;
-            break;
-        }
-       }
-       return worthLess;
-     */
-
-    ///If it has never auto-saved, then the user didn't do anything, hence the project is worthless.
+    // If it has never auto-saved, then the user didn't do anything, hence the project is worthless.
     return ( !hasEverAutoSaved() && !hasProjectBeenSavedByUser() ) || !hasNodes();
 }
 

@@ -48,7 +48,7 @@ public:
         SelectionTypeRecurse = 0x8
     };
 
-    Q_DECLARE_FLAGS(SelectionTypeFlags, SelectionType)
+    DECLARE_FLAGS(SelectionTypeFlags, SelectionType);
 
     AnimationModuleSelectionModel(const AnimationModuleSelectionProviderPtr& model);
 
@@ -169,8 +169,9 @@ private:
 };
 
 
+
 NATRON_NAMESPACE_EXIT;
 
-Q_DECLARE_OPERATORS_FOR_FLAGS(NATRON_NAMESPACE::AnimationModuleSelectionModel::SelectionTypeFlags)
+DECLARE_OPERATORS_FOR_FLAGS(NATRON_NAMESPACE::AnimationModuleSelectionModel::SelectionTypeFlags)
 
 #endif // NATRON_GUI_ANIMATIONMODULESELECTIONMODEL_H

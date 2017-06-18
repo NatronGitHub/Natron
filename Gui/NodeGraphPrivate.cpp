@@ -58,7 +58,6 @@ NodeGraphPrivate::NodeGraphPrivate(NodeGraph* p,
     , _arrowSelected(NULL)
     , _nodesMutex()
     , _nodes()
-    , _nodesTrash()
     , _nodeCreationShortcutEnabled(false)
     , _lastPluginCreatedID()
     , _root(NULL)
@@ -107,8 +106,11 @@ NodeGraphPrivate::getPyPlugUnlockPos() const
 void
 NodeGraphPrivate::resetSelection()
 {
-    for (NodesGuiList::iterator it = _selection.begin(); it != _selection.end(); ++it) {
-        (*it)->setUserSelected(false);
+    for (NodesGuiWList::iterator it = _selection.begin(); it != _selection.end(); ++it) {
+        NodeGuiPtr n = it->lock();
+        if (n) {
+            n->setUserSelected(false);
+        }
     }
 
     _selection.clear();
@@ -126,7 +128,7 @@ NodeGraphPrivate::editSelectionFromSelectionRectangle(bool addToSelection)
     for (NodesGuiList::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         QRectF bbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
         if ( selection.contains(bbox) ) {
-            NodesGuiList::iterator foundInSel = std::find(_selection.begin(), _selection.end(), *it);
+            NodesGuiWList::iterator foundInSel = findSelectedNode(*it);
             if ( foundInSel != _selection.end() ) {
                 continue;
             }
@@ -141,7 +143,7 @@ bool
 NodeGraphPrivate::rearrangeSelectedNodes()
 {
     if ( !_selection.empty() ) {
-        _publicInterface->pushUndoCommand( new RearrangeNodesCommand(_selection) );
+        _publicInterface->pushUndoCommand( new RearrangeNodesCommand(_publicInterface->getSelectedNodes()) );
 
         return true;
     }

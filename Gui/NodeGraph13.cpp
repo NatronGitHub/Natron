@@ -96,16 +96,20 @@ NodeGraph::deselect()
 {
     {
         QMutexLocker l(&_imp->_nodesMutex);
-        for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
-            (*it)->setUserSelected(false);
+        for (NodesGuiWList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
+            NodeGuiPtr n = it->lock();
+            if (n) {
+                n->setUserSelected(false);
+            }
         }
     }
 
     _imp->_selection.clear();
 
-    if (_imp->_magnifiedNode && _imp->_magnifOn) {
+    NodeGuiPtr magNode = _imp->_magnifiedNode.lock();
+    if (magNode && _imp->_magnifOn) {
         _imp->_magnifOn = false;
-        _imp->_magnifiedNode->setScale_natron(_imp->_nodeSelectedScaleBeforeMagnif);
+        magNode->setScale_natron(_imp->_nodeSelectedScaleBeforeMagnif);
     }
 }
 

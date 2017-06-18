@@ -259,11 +259,16 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             if ( !selectedNode->getIsSelected() ) {
                 selectNode( selectedNode, modCASIsShift(e) );
             } else if ( modCASIsShift(e) ) {
-                NodesGuiList::iterator it = std::find(_imp->_selection.begin(),
-                                                      _imp->_selection.end(), selectedNode);
-                if ( it != _imp->_selection.end() ) {
-                    (*it)->setUserSelected(false);
-                    _imp->_selection.erase(it);
+
+                for (NodesGuiWList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
+                    NodeGuiPtr n = it->lock();
+                    if ( n == selectedNode ) {
+
+                        if (n) {
+                            n->setUserSelected(false);
+                        }
+                        _imp->_selection.erase(it);
+                    }
                 }
             }
             if ( groupEdited && (_imp->_evtState != eEventStateResizingBackdrop) ) {
@@ -271,10 +276,10 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             }
             ///build the _nodesWithinBDAtPenDown map
             _imp->_nodesWithinBDAtPenDown.clear();
-            for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
-                BackdropGuiPtr isBd = toBackdropGui(*it);
+            for (NodesGuiWList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
+                BackdropGuiPtr isBd = toBackdropGui(it->lock());
                 if (isBd) {
-                    NodesGuiList nodesWithin = getNodesWithinBackdrop(*it);
+                    NodesGuiList nodesWithin = getNodesWithinBackdrop(isBd);
                     _imp->_nodesWithinBDAtPenDown.insert( std::make_pair(*it, nodesWithin) );
                 }
             }

@@ -625,6 +625,11 @@ public:
     void switchInput0And1();
 
     /**
+     * @brief Redirects all outputs of this node to the main input (if connected);
+     **/
+    void connectOutputsToMainInput();
+
+    /**
      * @brief Forwarded to the live effect instance
      **/
     std::string getPluginID() const;
@@ -660,67 +665,21 @@ public:
 
     AppInstancePtr getApp() const;
 
-
-    enum DeactivateFlagEnum
-    {
-        // No meaning
-        eDeactivateFlagNone = 0x0,
-
-        // When deactivating the node, the output nodes connected to this node will be redirected
-        // directly to the main input of this node
-        eDeactivateFlagConnectOutputsToMainInput = 0x1,
-    };
-
-    /* @brief Make this node inactive. 
-     * It will appear as if it was removed from the graph editor
-     * but the node still lives to allow undo/redo operations.
-     * Note that in this mode the node does not perform any rendering anymore and it will not be saved in the project.
-     * Also note that all other nodes in the project that refer to this node will remove any reference to this node, being
-     * reference from inputs or outputs or by parameters link.
-     *
-     * Internally this node saves any other external node reference so that it can be restored in activate()
-     *
-     * @param flags Specific flags to control the behavior. @see DeactivateFlagEnum
-     */
-    void deactivate(DeactivateFlagEnum flags = eDeactivateFlagNone);
-
-
-    enum ActivateFlagEnum
-    {
-        // No meaning
-        eActivateFlagNone = 0x0,
-
-        // When activating the node, restores the outputs
-        eActivateFlagRestoreOutputs = 0x1,
-    };
-
-    /* @brief Make this node active. It will appear
-       again on the node graph.
-       WARNING: this function can only be called
-       after a call to deactivate() has been made.
-     *
-     * @param outputsToRestore Only the outputs specified that were previously connected to the node prior to the call to
-     * deactivate() will be reconnected as output to this node.
-     * @param restoreAll If true, the parameter outputsToRestore will be ignored.
-     */
-    void activate(ActivateFlagEnum flags = eActivateFlagNone);
+    /**
+     * @brief Returns true if destroyNode() was called
+     **/
+    bool isBeingDestroyed() const;
 
     /**
-     * @brief Calls deactivate() and then remove the node from the project. The object will be destroyed
-     * when the caller releases the reference to this Node
-     * @param blockingDestroy This function needs to ensure no processing occurs when the node is destroyed. If this parameter
-     * is set to true, the function will sit and wait until all processing is done, otherwise it will return immediatelely even if the node
-     * is not yet detroyed
-     * @param autoReconnect If set to true, outputs connected to this node will try to connect to the input of this node automatically.
+     * @brief Removes the node from the project and destroy any data structure associated with it.
+     * The object will be destroyed when the caller releases the reference to this Node
      **/
-    void destroyNode(bool blockingDestroy, bool autoReconnect);
-
-
+    void destroyNode();
 
 private:
     
     
-    void doDestroyNodeInternalEnd(bool autoReconnect);
+    void invalidateExpressionLinks();
 
 public:
 
@@ -755,12 +714,6 @@ public:
      * @brief Returns true if the node is currently rendering a preview image.
      **/
     bool isRenderingPreview() const;
-
-
-    /**
-     * @brief Returns true if the node is active for use in the graph editor. MT-safe
-     **/
-    bool isActivated() const;
 
 
     /**
@@ -1019,8 +972,6 @@ private:
 public Q_SLOTS:
 
 
-    void onProcessingQuitInDestroyNodeInternal(int taskID, const WatcherCallerArgsPtr& args);
-
     void onRefreshIdentityStateRequestReceived();
 
 
@@ -1110,10 +1061,6 @@ Q_SIGNALS:
     void inputChanged(int);
 
     void outputsChanged();
-
-    void activated();
-
-    void deactivated();
 
     void canUndoChanged(bool);
 

@@ -247,9 +247,8 @@ public:
 
     /**
      * @brief Removes the node from the project. It will no longer be possible to use it.
-     * @param autoReconnect If set to true, outputs connected to this node will try to connect to the input of this node automatically.
      **/
-    void destroy(bool autoReconnect = true);
+    void destroy();
 
     /**
      * @brief Returns the maximum number of inputs that can be connected to the node.
@@ -363,16 +362,6 @@ public:
      * @brief Returns true if the node is selected in the nodegraph
      **/
     bool isNodeSelected() const;
-
-
-    /**
-     * @brief Returns whether the node is activated or not. When deactivated, the user cannot interact with the node.
-     * A node is in a deactivated state after the user removed it from the node-graph: it still lives a little longer
-     * so that an undo operation can insert it again in the nodegraph.
-     * This state has nothing to do with the "Disabled" parameter in the "Node" tab of the settings panel.
-     **/
-    bool isNodeActivated() const;
-
     /**
      * @brief Get the user page param. Note that user created params (with the function above) may only be added to user created pages,
      * that is, the page returned by getUserPageParam() or in any page created by createPageParam().

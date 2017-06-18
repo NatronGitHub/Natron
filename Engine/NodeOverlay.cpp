@@ -59,10 +59,6 @@ Node::shouldDrawOverlay(TimeValue time, ViewIdx view) const
         return false;
     }
 
-    if ( !isActivated() ) {
-        return false;
-    }
-
     if ( _imp->effect->isNodeDisabledForFrame(time, view) ) {
         return false;
     }

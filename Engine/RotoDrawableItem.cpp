@@ -548,21 +548,6 @@ RotoDrawableItem::disconnectNodes()
     }
 }
 
-void
-RotoDrawableItem::deactivateNodes()
-{
-    for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        (*it)->deactivate();
-    }
-}
-
-void
-RotoDrawableItem::activateNodes()
-{
-    for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        (*it)->activate();
-    }
-}
 
 bool
 RotoDrawableItem::onKnobValueChanged(const KnobIPtr& knob,

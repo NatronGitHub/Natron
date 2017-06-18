@@ -322,7 +322,7 @@ Effect::isWriterNode()
 }
 
 void
-Effect::destroy(bool autoReconnect)
+Effect::destroy()
 {
     NodePtr n = getInternalNode();
 
@@ -331,7 +331,7 @@ Effect::destroy(bool autoReconnect)
         return;
     }
 
-    n->destroyNode(false, autoReconnect);
+    n->destroyNode();
 }
 
 int
@@ -849,17 +849,6 @@ Effect::isNodeSelected() const
     return n->isUserSelected();
 }
 
-bool
-Effect::isNodeActivated() const
-{
-    NodePtr n = getInternalNode();
-
-    if (!n) {
-        PythonSetNullError();
-        return false;
-    }
-    return n->isActivated();
-}
 
 void
 Effect::beginChanges()

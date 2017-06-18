@@ -126,24 +126,20 @@ NodeGraphPrivate::pasteNodesInternal(const std::list<std::pair<NodePtr, SERIALIZ
 
     
     // Create nodes
-    std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr> createdNodes;
+    NodesList createdNodes;
     group.lock()->createNodesFromSerialization(serializationList, NodeCollection::eCreateNodesFromSerializationFlagsNone, &createdNodes);
 
     // Link the created node to the original node if needed
     if (flags & ePasteNodesFlagCloneNodes) {
-        for (std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>::const_iterator it = createdNodes.begin(); it!=createdNodes.end(); ++it) {
-            const NodePtr& createdNode = it->second;
-            NodePtr originalNode;
-            // Find the original node with the serialization object
-            for (std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >::const_iterator it2 = originalNodes.begin();
-                      it2 != originalNodes.end(); ++it2) {
-                if (it2->first == it->second) {
-                    originalNode = it2->first;
-                    break;
-                }
-            };
-
-            if (!createdNode || !originalNode) {
+        assert(createdNodes.size() == serializationList.size());
+        std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >::const_iterator itOrig = originalNodes.begin();
+        for (NodesList::const_iterator it = createdNodes.begin(); it!=createdNodes.end(); ++it, ++itOrig) {
+            const NodePtr& createdNode = *it;
+            if (!createdNode) {
+                continue;
+            }
+            NodePtr originalNode = itOrig->first;
+            if (!originalNode) {
                 continue;
             }
             
@@ -154,12 +150,8 @@ NodeGraphPrivate::pasteNodesInternal(const std::list<std::pair<NodePtr, SERIALIZ
 
     // Add an undo command if we need to
     if (flags & ePasteNodesFlagUseUndoCommand) {
-        NodesList newNodesList;
-        for (std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>::const_iterator it = createdNodes.begin(); it!=createdNodes.end(); ++it) {
-            newNodesList.push_back(it->second);
-        }
-        if (!newNodesList.empty()) {
-            _publicInterface->pushUndoCommand( new AddMultipleNodesCommand(_publicInterface, newNodesList) );
+        if (!createdNodes.empty()) {
+            _publicInterface->pushUndoCommand( new AddMultipleNodesCommand(_publicInterface, createdNodes) );
         }
     }
 } // pasteNodesInternal
@@ -171,23 +163,27 @@ NodeGraphPrivate::toggleSelectedNodesEnabled()
 {
     NodesGuiList toProcess;
 
-    for (NodesGuiList::iterator it = _selection.begin(); it != _selection.end(); ++it) {
-        KnobBoolPtr k = (*it)->getNode()->getEffectInstance()->getDisabledKnob();
+    for (NodesGuiWList::iterator it = _selection.begin(); it != _selection.end(); ++it) {
+        NodeGuiPtr n = it->lock();
+        if (!n) {
+            continue;
+        }
+        KnobBoolPtr k = n->getNode()->getEffectInstance()->getDisabledKnob();
         if (!k) {
             continue;
         }
         if ( k->getValue() ) {
-            toProcess.push_back(*it);
+            toProcess.push_back(n);
         }
     }
     ///if some nodes are disabled , enable them before
 
     if ( toProcess.size() == _selection.size() ) {
-        _publicInterface->pushUndoCommand( new EnableNodesCommand(_selection) );
+        _publicInterface->pushUndoCommand( new EnableNodesCommand(_publicInterface->getSelectedNodes()) );
     } else if (toProcess.size() > 0) {
         _publicInterface->pushUndoCommand( new EnableNodesCommand(toProcess) );
     } else {
-        _publicInterface->pushUndoCommand( new DisableNodesCommand(_selection) );
+        _publicInterface->pushUndoCommand( new DisableNodesCommand(_publicInterface->getSelectedNodes()) );
     }
 }
 

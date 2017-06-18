@@ -482,7 +482,7 @@ ReadNodePrivate::destroyReadNode()
 #pragma message WARN("TODO: if Gui, refresh pluginID, version, help tooltip in DockablePanel to reflect embedded node change")
 
     QMutexLocker k(&embeddedPluginMutex);
-    embeddedPlugin->destroyNode(true, false);
+    embeddedPlugin->destroyNode();
     embeddedPlugin.reset();
 
 } // ReadNodePrivate::destroyReadNode

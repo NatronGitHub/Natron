@@ -515,7 +515,7 @@ Gui::removeViewerTab(ViewerTab* tab,
         }
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             ViewerNodePtr isViewer = (*it)->isEffectViewerNode();
-            if ( !isViewer || ( isViewer == tab->getInternalNode() ) || !(*it)->isActivated() ) {
+            if ( !isViewer || ( isViewer == tab->getInternalNode() ) ) {
                 continue;
             }
             OpenGLViewerI* viewerI = isViewer->getUiContext();

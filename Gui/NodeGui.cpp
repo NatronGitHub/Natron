@@ -226,8 +226,6 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( internalNode.get(), SIGNAL(inputsInitialized()), this, SLOT(initializeInputs()) );
     QObject::connect( internalNode.get(), SIGNAL(previewImageChanged()), this, SLOT(updatePreviewImage()) );
     QObject::connect( internalNode.get(), SIGNAL(previewRefreshRequested()), this, SLOT(forceComputePreview()) );
-    QObject::connect( internalNode.get(), SIGNAL(deactivated()), this, SLOT(deactivate()) );
-    QObject::connect( internalNode.get(), SIGNAL(activated()), this, SLOT(activate()) );
     QObject::connect( internalNode.get(), SIGNAL(inputChanged(int)), this, SLOT(connectEdge(int)) );
     QObject::connect( internalNode.get(), SIGNAL(persistentMessageChanged()), this, SLOT(onPersistentMessageChanged()) );
     QObject::connect( internalNode.get(), SIGNAL(outputsChanged()), this, SLOT(refreshOutputEdgeVisibility()) );
@@ -1250,7 +1248,7 @@ NodeGui::updatePreviewImage()
         return;
     }
 
-    if ( isVisible() && node->isPreviewEnabled() && node->isActivated() && node->getApp()->getProject()->isAutoPreviewEnabled() ) {
+    if ( isVisible() && node->isPreviewEnabled() && node->getApp()->getProject()->isAutoPreviewEnabled() ) {
         if ( (node->getScriptName().find(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) != std::string::npos) ||
              ( node->getScriptName().find(NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME) != std::string::npos) ) {
             return;
@@ -1272,7 +1270,7 @@ NodeGui::forceComputePreview()
 {
     NodePtr node = getNode();
 
-    if ( !node || !node->isActivated() ) {
+    if (!node) {
         return;
     }
     if ( isVisible() && node->isPreviewEnabled() && !node->getApp()->getProject()->isLoadingProject() ) {
@@ -1915,20 +1913,6 @@ NodeGui::showGui()
 
 } // NodeGui::showGui
 
-void
-NodeGui::activate()
-{
-    ///first activate all child instance if any
-    NodePtr node = getNode();
-
-    showGui();
-
-    _graph->restoreFromTrash( shared_from_this() );
-
-    /*if (triggerRender) {
-        _graph->getGui()->getApp()->renderAllViewers();
-    }*/
-}
 
 void
 NodeGui::hideGui()
@@ -1985,29 +1969,7 @@ NodeGui::hideGui()
     }
 } // hideGui
 
-void
-NodeGui::deactivate()
-{
-    ///first deactivate all child instance if any
-    NodePtr node = getNode();
 
-    hideGui();
-
-    OfxEffectInstancePtr ofxNode = !node ? OfxEffectInstancePtr() : toOfxEffectInstance( node->getEffectInstance() );
-    if (ofxNode) {
-        ofxNode->effectInstance()->endInstanceEditAction();
-    }
-    if (_graph) {
-        _graph->moveToTrash( shared_from_this() );
-        if ( _graph->getGui() ) {
-            _graph->getGui()->getAnimationModuleEditor()->removeNode( shared_from_this() );
-        }
-    }
-
-    /*if (triggerRender) {
-        _graph->getGui()->getApp()->renderAllViewers();
-    }*/
-}
 
 void
 NodeGui::initializeKnobs()
@@ -2384,6 +2346,8 @@ NodeGui::destroyGui()
     _settingsPanel = 0;
 
     _graph->refreshNodeLinksLater();
+
+    _graph->update();
     
 } // NodeGui::destroyGui
 

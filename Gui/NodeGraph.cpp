@@ -186,12 +186,7 @@ NodeGraph::~NodeGraph()
          ++it) {
         (*it)->discardGraphPointer();
     }
-    for (NodesGuiList::iterator it = _imp->_nodesTrash.begin();
-         it != _imp->_nodesTrash.end();
-         ++it) {
-        (*it)->discardGraphPointer();
-    }
-
+ 
     if ( getGui() ) {
 
         if (!getGui()->getApp()->isClosing()) {
@@ -222,10 +217,18 @@ NodeGraph::isDoingNavigatorRender() const
     return _imp->isDoingPreviewRender;
 }
 
-const std::list< NodeGuiPtr > &
+NodesGuiList
 NodeGraph::getSelectedNodes() const
 {
-    return _imp->_selection;
+    NodesGuiList ret;
+    for (NodesGuiWList::const_iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
+        NodeGuiPtr n = it->lock();
+        if (!n) {
+            continue;
+        }
+        ret.push_back(n);
+    }
+    return ret;
 }
 
 NodeCollectionPtr
@@ -253,11 +256,6 @@ NodeGraph::notifyGuiClosing()
 void
 NodeGraph::onNodesCleared()
 {
-    {
-        QMutexLocker l(&_imp->_nodesMutex);
-        _imp->_nodesTrash.clear();
-    }
-
     _imp->_selection.clear();
     _imp->_magnifiedNode.reset();
     _imp->_undoStack->clear();

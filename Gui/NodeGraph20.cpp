@@ -296,12 +296,15 @@ NodeGraph::moveSelectedNodesBy(bool shiftdown,
     //Get the nodes to move, taking into account the backdrops
     bool ignoreMagnet = false;
     std::set<NodeGuiPtr> nodesToMove;
-    for (NodesGuiList::iterator it = _imp->_selection.begin();
+    for (NodesGuiWList::iterator it = _imp->_selection.begin();
          it != _imp->_selection.end(); ++it) {
-        const NodeGuiPtr& node = *it;
+        NodeGuiPtr node = it->lock();
+        if (!node) {
+            continue;
+        }
         nodesToMove.insert(node);
 
-        std::map<NodeGuiPtr, NodesGuiList>::iterator foundBd = _imp->_nodesWithinBDAtPenDown.find(*it);
+        std::map<NodeGuiPtr, NodesGuiList>::iterator foundBd = _imp->_nodesWithinBDAtPenDown.find(node);
         if ( !controlDown && ( foundBd != _imp->_nodesWithinBDAtPenDown.end() ) ) {
             ignoreMagnet = true; // we move a backdrop, ignore magnet
             for (NodesGuiList::iterator it2 = foundBd->second.begin();
@@ -366,7 +369,7 @@ NodeGraph::moveSelectedNodesBy(bool shiftdown,
         return;
     }
 
-    checkForHints(shiftdown, controlDown, _imp->_selection.front(), visibleSceneR);
+    checkForHints(shiftdown, controlDown, _imp->_selection.front().lock(), visibleSceneR);
 } // NodeGraph::moveSelectedNodesBy
 
 void
@@ -488,13 +491,13 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     }
     case eEventStateResizingBackdrop: {
         mustUpdateNavigator = true;
-        assert(_imp->_backdropResized);
-        QPointF p = _imp->_backdropResized->scenePos();
+        assert(_imp->_backdropResized.lock());
+        QPointF p = _imp->_backdropResized.lock()->scenePos();
         int w = newPos.x() - p.x();
         int h = newPos.y() - p.y();
         checkAndStartAutoScrollTimer(newPos);
         mustUpdate = true;
-        pushUndoCommand( new ResizeBackdropCommand(_imp->_backdropResized, w, h) );
+        pushUndoCommand( new ResizeBackdropCommand(_imp->_backdropResized.lock(), w, h) );
         break;
     }
     case eEventStateSelectionRect: {

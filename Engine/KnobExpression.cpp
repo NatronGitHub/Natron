@@ -399,19 +399,17 @@ KnobHelperPrivate::getReachablePythonAttributesForExpression(bool addTab,
         collectionScriptName = appID;
     }
     for (NodesList::iterator it = siblings.begin(); it != siblings.end(); ++it) {
-        if ( (*it)->isActivated() ) {
-            string scriptName = (*it)->getScriptName_mt_safe();
-            string fullName = appID + "." + (*it)->getFullyQualifiedName();
+        string scriptName = (*it)->getScriptName_mt_safe();
+        string fullName = appID + "." + (*it)->getFullyQualifiedName();
 
-            // Do not fail the expression if the attribute do not exist to Python, use hasattr
-            ss << tabStr << "if hasattr(";
-            if (isParentGrp) {
-                ss << appID << ".";
-            }
-            ss << collectionScriptName << ",\"" <<  scriptName << "\"):\n";
-
-            ss << tabStr << "    " << scriptName << " = " << fullName << "\n";
+        // Do not fail the expression if the attribute do not exist to Python, use hasattr
+        ss << tabStr << "if hasattr(";
+        if (isParentGrp) {
+            ss << appID << ".";
         }
+        ss << collectionScriptName << ",\"" <<  scriptName << "\"):\n";
+
+        ss << tabStr << "    " << scriptName << " = " << fullName << "\n";
     }
 
     // Define thisGroup
@@ -729,6 +727,9 @@ KnobHelper::checkInvalidLinks()
     int ndims = getNDimensions();
 
 
+    // For a getValue call which will refresh error if needed
+    refreshStaticValue(getCurrentRenderTime());
+    
     vector<ExprToReApply> exprToReapply;
     {
         QMutexLocker k(&_imp->common->expressionMutex);
@@ -739,7 +740,7 @@ KnobHelper::checkInvalidLinks()
                 }
 
                 KnobExprPtr& expr = _imp->common->expressions[i][it->first];
-                if (!expr || expr->expressionString.empty()) {
+                if (expr && !expr->expressionString.empty()) {
                     exprToReapply.resize(exprToReapply.size() + 1);
                     ExprToReApply& data = exprToReapply.back();
                     data.view = it->first;
@@ -757,19 +758,23 @@ KnobHelper::checkInvalidLinks()
             }
         }
     }
-    bool isInvalid = false;
     for (std::size_t i = 0; i < exprToReapply.size(); ++i) {
         setExpressionInternal(exprToReapply[i].dimension, exprToReapply[i].view, exprToReapply[i].expr, exprToReapply[i].language, exprToReapply[i].hasRet, false /*throwOnFailure*/);
-        string err;
-        if ( !isLinkValid(exprToReapply[i].dimension, exprToReapply[i].view, &err) ) {
-            isInvalid = true;
+    }
+    {
+
+        QMutexLocker k(&_imp->common->expressionMutex);
+        for (int i = 0;i < ndims; ++i) {
+            for (PerViewInvalidLinkError::const_iterator it = _imp->common->linkErrors[i].begin(); it != _imp->common->linkErrors[i].end(); ++it) {
+                if (!it->second.empty()) {
+                    return false;
+                }
+            }
         }
     }
+    
 
-    // For a getValue call which will refresh error if needed
-    refreshStaticValue(getCurrentRenderTime());
-
-    return !isInvalid;
+    return true;
 } // checkInvalidLinks
 
 
@@ -786,10 +791,9 @@ KnobHelper::isLinkValid(DimIdx dimension,
     {
         QMutexLocker k(&_imp->common->expressionMutex);
         if (error) {
-            ExprPerViewMap::const_iterator foundView = _imp->common->expressions[dimension].find(view_i);
-            if ( ( foundView != _imp->common->expressions[dimension].end() ) && foundView->second ) {
-                *error = foundView->second->exprInvalid;
-
+            PerViewInvalidLinkError::const_iterator foundView = _imp->common->linkErrors[dimension].find(view_i);
+            if ( ( foundView != _imp->common->linkErrors[dimension].end() ) ) {
+                *error = foundView->second;
                 return error->empty();
             }
         }
@@ -805,6 +809,9 @@ KnobHelper::setLinkStatusInternal(DimIdx dimension,
                                          bool valid,
                                          const string& error)
 {
+
+    clearExpressionsResults(dimension, view);
+    
     bool wasValid;
     {
         QMutexLocker k(&_imp->common->expressionMutex);
@@ -896,12 +903,15 @@ KnobHelper::setExpressionInternal(DimIdx dimension,
     string exprResult;
     KnobExprPtr expressionObj;
     boost::scoped_ptr<PythonGILLocker> pgl;
+    std::string error;
     try {
         switch (language) {
         case eExpressionLanguagePython: {
             pgl.reset(new PythonGILLocker);
             shared_ptr<KnobExprPython> obj(new KnobExprPython);
             expressionObj = obj;
+            expressionObj->expressionString = expression;
+            expressionObj->language = language;
             obj->modifiedExpression = _imp->validatePythonExpression(expression, dimension, view, hasRetVariable, &exprResult);
             obj->hasRet = hasRetVariable;
         }
@@ -909,16 +919,17 @@ KnobHelper::setExpressionInternal(DimIdx dimension,
         case eExpressionLanguageExprTk: {
             shared_ptr<KnobExprExprTk> obj(new KnobExprExprTk);
             expressionObj = obj;
+            expressionObj->expressionString = expression;
+            expressionObj->language = language;
             _imp->validateExprTkExpression( expression, dimension, view, &exprResult, obj.get() );
         }
         break;
         }
-        expressionObj->expressionString = expression;
-        expressionObj->language = language;
+
     } catch (const std::exception &e) {
-        expressionObj->exprInvalid = e.what();
+        error = e.what();
         if (failIfInvalid) {
-            throw std::invalid_argument(expressionObj->exprInvalid);
+            throw std::invalid_argument(error);
         }
     }
 
@@ -927,10 +938,10 @@ KnobHelper::setExpressionInternal(DimIdx dimension,
         _imp->common->expressions[dimension][view] = expressionObj;
     }
 
-    setLinkStatus(dimension, view, !expressionObj->exprInvalid.empty(), expressionObj->exprInvalid);
+    setLinkStatus(dimension, view, error.empty(), error);
 
 
-    if ( expressionObj->exprInvalid.empty() ) {
+    if ( error.empty() ) {
 
         // Populate the listeners set so we can keep track of user links.
         // In python, the dependencies tracking is done by executing the expression itself unlike exprtk

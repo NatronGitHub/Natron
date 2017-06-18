@@ -890,11 +890,12 @@ static exprtk_igeneric_function_ptr findGenericFunction(const std::string& name,
 
 // Some functions (random) hold an internal state. Instead of using the same state for all threads,
 // We create a copy of the function update in this symbol table
-void
+bool
 resetStateFunctions(const KnobExprExprTk::ExpressionDataPtr& data,
                     TimeValue time,
                     bool isRenderClone,
-                    const FrameViewRenderKey& renderKey)
+                    const FrameViewRenderKey& renderKey,
+                    std::string* error)
 {
     boost::shared_ptr<random_func> randomFunction = boost::dynamic_pointer_cast<random_func>(findGenericFunction("random", data));
     boost::shared_ptr<randomInt_func> randomIntFunction = boost::dynamic_pointer_cast<randomInt_func>(findGenericFunction("randomInt", data));
@@ -907,19 +908,21 @@ resetStateFunctions(const KnobExprExprTk::ExpressionDataPtr& data,
     for (KnobFunctionsMap::iterator it = data->knobFunctions.begin(); it != data->knobFunctions.end(); ++it) {
         const boost::shared_ptr<KnobValueFunction>& func = it->second.function;
         func->_evalTime = time;
+        KnobIPtr knob = it->first.lock();
+        if (!knob) {
+            *error = std::string("Could not find a parameter matching ") + it->second.symbolName;
+            return false;
+        }
 
         if (isRenderClone) {
             // Get the render clone for this knob
             // First ensure a clone is created for the effect holding the knob
             // and then fetch the knob clone on it
-            KnobIPtr knob = it->first.lock();
-            if (!knob) {
-                continue;
-            }
             KnobHolderPtr holderClone = knob->getHolder()->createRenderClone(renderKey);
             func->_knob = knob->getCloneForHolderInternal(holderClone);
         }
     }
+    return true;
 }
 
 bool
@@ -1106,7 +1109,7 @@ private:
 
             {
                 KnobTableItemPtr curTableItemOut;
-                if ( checkForTableItem(token, currentHolder, &curTableItemOut) ) {
+                if ( hasEnteredTablePrefix && checkForTableItem(token, currentHolder, &curTableItemOut) ) {
 
                     // Ensure we get a render clone
                     if (_isRenderClone) {
@@ -1774,6 +1777,13 @@ KnobHelperPrivate::validateExprTkExpression(const string& expression,
 
         string error;
         if ( !parseExprtkExpression(expression, ret->modifiedExpression, parser, *data->expressionObject, &error) ) {
+            {
+                QMutexLocker k(&ret->lock);
+                KnobExprExprTk::PerThreadDataMap::iterator foundThreadData = ret->data.find(curThread);
+                if (foundThreadData != ret->data.end()) {
+                    ret->data.erase(foundThreadData);
+                }
+            }
             throw std::runtime_error(error);
         }
     } // parser
@@ -1818,6 +1828,7 @@ KnobHelper::executeExprTkExpression(TimeValue time,
         if ( ( foundView == _imp->common->expressions[dimension].end() ) || !foundView->second ) {
             return eExpressionReturnValueTypeError;
         }
+
         KnobExprExprTk* isExprtkExpr = dynamic_cast<KnobExprExprTk*>( foundView->second.get() );
         assert(isExprtkExpr);
         // Copy the expression object so it is local to this thread
@@ -1879,7 +1890,9 @@ KnobHelper::executeExprTkExpression(TimeValue time,
 
         // Remove from the symbol table functions that hold a state, and re-add a new fresh local copy of them so that the state
         // is local to this thread.
-        resetStateFunctions(data, time, isRenderClone, renderKey);
+        if (!resetStateFunctions(data, time, isRenderClone, renderKey, error)){
+            return eExpressionReturnValueTypeError;
+        }
     } else {
 
 
@@ -1911,8 +1924,14 @@ KnobHelper::executeExprTkExpression(TimeValue time,
         UnknownSymbolResolver musr(this, time, dimension, view, isRenderClone, renderKey, 0, data);
         parser.enable_unknown_symbol_resolver(&musr);
 
-        string error;
-        if ( !parseExprtkExpression(obj->expressionString, obj->modifiedExpression, parser, *data->expressionObject, &error) ) {
+        if ( !parseExprtkExpression(obj->expressionString, obj->modifiedExpression, parser, *data->expressionObject, error) ) {
+            {
+                QMutexLocker k(&obj->lock);
+                KnobExprExprTk::PerThreadDataMap::iterator foundThreadData = obj->data.find(curThread);
+                if (foundThreadData != obj->data.end()) {
+                    obj->data.erase(foundThreadData);
+                }
+            }
             return KnobHelper::eExpressionReturnValueTypeError;
         }
     } else {

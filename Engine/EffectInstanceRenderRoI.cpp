@@ -1040,7 +1040,9 @@ EffectInstance::requestRender(TimeValue timeInArgs,
 
     FrameViewRenderKey frameViewKey = {time, view, requestPassSharedData->getTreeRender()};
     EffectInstancePtr renderClone = toEffectInstance(createRenderClone(frameViewKey));
-    assert(renderClone);
+    if (!renderClone) {
+        return eActionStatusFailed;
+    }
     if (createdRenderClone) {
         *createdRenderClone = renderClone;
     }

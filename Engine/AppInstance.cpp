@@ -882,7 +882,7 @@ AppInstance::createNodeFromPyPlug(const PluginPtr& plugin, const CreateNodeArgsP
             if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(ss.str(), &err, &output) ) {
                 Dialogs::errorDialog(tr("Group plugin creation error").toStdString(), err);
                 if (containerNode) {
-                    containerNode->destroyNode(false, false);
+                    containerNode->destroyNode();
                 }
 
                 return node;
@@ -1730,7 +1730,7 @@ AppInstance::addInvalidExpressionKnob(const KnobIPtr& knob)
     QMutexLocker k(&_imp->invalidExprKnobsMutex);
 
     for (std::list<KnobIWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it != _imp->invalidExprKnobs.end(); ++it) {
-        if ( it->lock().get() ) {
+        if ( it->lock() == knob ) {
             return;
         }
     }

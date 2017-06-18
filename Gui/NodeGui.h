@@ -455,9 +455,8 @@ public Q_SLOTS:
 
     void initializeKnobs();
 
-    void activate();
-
-    void deactivate();
+    //void activate();
+    //void deactivate();
 
     void hideGui();
 

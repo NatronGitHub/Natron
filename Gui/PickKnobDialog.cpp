@@ -146,7 +146,7 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel,
     NodeGroupPtr isCollecGroup = toNodeGroup(collec);
     NodesList collectNodes = collec->getNodes();
     for (NodesList::iterator it = collectNodes.begin(); it != collectNodes.end(); ++it) {
-        if ((*it)->isActivated() && (*it)->getNodeGui() && ( (*it)->getKnobs().size() > 0 ) ) {
+        if ((*it)->getNodeGui() && ( (*it)->getKnobs().size() > 0 ) ) {
             _imp->allNodes.push_back(*it);
         }
     }
@@ -157,7 +157,6 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel,
         NodesList groupnodes = isGroup->getNodes();
         for (NodesList::iterator it = groupnodes.begin(); it != groupnodes.end(); ++it) {
             if ( (*it)->getNodeGui() &&
-                (*it)->isActivated() &&
                 ( (*it)->getKnobs().size() > 0 ) ) {
                 _imp->allNodes.push_back(*it);
             }

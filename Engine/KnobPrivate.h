@@ -89,13 +89,11 @@ public:
 
     std::string expressionString;
     std::string modifiedExpression;
-    std::string exprInvalid;
     ExpressionLanguageEnum language;
 
     KnobExpr()
     : expressionString()
     , modifiedExpression()
-    , exprInvalid()
     , language(eExpressionLanguageExprTk)
     {}
 

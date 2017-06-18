@@ -781,7 +781,7 @@ RotoPaintInteract::computeSelectedCpsBBOX()
 {
     NodePtr n = _imp->publicInterface->getNode();
 
-    if ( !n || !n->isActivated() ) {
+    if (!n) {
         return;
     }
 

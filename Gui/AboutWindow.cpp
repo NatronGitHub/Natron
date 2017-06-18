@@ -503,7 +503,7 @@ AboutWindow::AboutWindow(Gui* gui, QWidget* parent)
         }
         TableItemPtr item = TableItem::create(_model);
         item->setText(0, rowsTmp[i].remove( QString::fromUtf8("LICENSE-") ).remove( QString::fromUtf8(".txt") ).remove( QString::fromUtf8(".md") ) );
-        item->setFlags(0, Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+        item->setFlags(0, Qt::ItemFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled));
         _model->setRow(i, item);
         if ( rowsTmp[i] == QString::fromUtf8("README") ) {
             readmeIndex = item;

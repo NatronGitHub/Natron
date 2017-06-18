@@ -313,14 +313,12 @@ GuiApp::getSelectedNodes(Group* group) const
     if (!graph) {
         throw std::logic_error("");
     }
-    const NodesGuiList& nodes = graph->getSelectedNodes();
+    NodesGuiList nodes = graph->getSelectedNodes();
     for (NodesGuiList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         NodePtr node = (*it)->getNode();
-        if ( node->isActivated() ) {
-            Effect* eff = App::createEffectFromNodeWrapper(node);
-            assert(eff);
-            ret.push_back(eff);
-        }
+        Effect* eff = App::createEffectFromNodeWrapper(node);
+        assert(eff);
+        ret.push_back(eff);
     }
 
     return ret;

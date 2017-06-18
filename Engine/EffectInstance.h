@@ -922,10 +922,7 @@ public:
     /**
      * @brief Returns a pointer to the node holding this effect.
      **/
-    NodePtr getNode() const WARN_UNUSED_RETURN
-    {
-        return _node.lock();
-    }
+    NodePtr getNode() const WARN_UNUSED_RETURN;
 
     virtual void appendToHash(const ComputeHashArgs& args, Hash64* hash) OVERRIDE;
 
@@ -1973,8 +1970,6 @@ protected:
     virtual void fetchRenderCloneKnobs() OVERRIDE;
 
 
-
-    NodeWPtr _node; //< the node holding this effect
 
 private:
 

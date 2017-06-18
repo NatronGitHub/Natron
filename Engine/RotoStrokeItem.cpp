@@ -408,7 +408,7 @@ RotoStrokeItem::~RotoStrokeItem()
     if (!isRenderClone()) {
         const NodesList& nodes = getItemNodes();
         for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            (*it)->destroyNode(true, false);
+            (*it)->destroyNode();
         }
     }
 }

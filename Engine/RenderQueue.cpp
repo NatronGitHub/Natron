@@ -229,7 +229,7 @@ RenderQueuePrivate::dispatchQueue(bool doBlockingRender, const std::list<RenderQ
         RenderQueueItem item;
         item.work = *it;
 
-        if (!it->treeRoot->isActivated() || it->treeRoot->getEffectInstance()->getDisabledKnobValue()) {
+        if (it->treeRoot->getEffectInstance()->getDisabledKnobValue()) {
             continue;
         }
 
@@ -325,7 +325,7 @@ RenderQueuePrivate::createRenderRequestsFromCommandLineArgsInternal(const std::l
                 }
             }
 
-            if (!writerNode->isActivated() || writerNode->getEffectInstance()->getDisabledKnobValue()) {
+            if (writerNode->getEffectInstance()->getDisabledKnobValue()) {
                 continue;
             }
             if ( !it->filename.isEmpty() ) {

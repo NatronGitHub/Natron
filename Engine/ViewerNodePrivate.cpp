@@ -201,9 +201,6 @@ ViewerNodePrivate::getAllViewerNodes(bool inGroupOnly, std::list<ViewerNodePtr>&
         collection->getNodes_recursive(nodes, false);
     }
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if (!(*it)->isActivated()) {
-            continue;
-        }
         ViewerNodePtr isViewer = (*it)->isEffectViewerNode();
         if (isViewer) {
             viewerNodes.push_back(isViewer);

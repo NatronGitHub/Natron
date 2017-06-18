@@ -78,7 +78,7 @@ public:
 
     static void makeFullyQualifiedLabel(const NodePtr& node, std::string* ret);
     NodeCollectionPtr getGroup() const;
-    const std::list< NodeGuiPtr > & getSelectedNodes() const;
+    NodesGuiList getSelectedNodes() const;
 
     virtual void createNodeGui(const NodePtr& node, const CreateNodeArgs& args) OVERRIDE FINAL;
 
@@ -109,11 +109,6 @@ public:
 
     const NodesGuiList & getAllActiveNodes() const;
     NodesGuiList getAllActiveNodes_mt_safe() const;
-
-    void moveToTrash(const NodeGuiPtr& node);
-
-    void restoreFromTrash(const NodeGuiPtr& node);
-
     QGraphicsItem* getRootItem() const;
     virtual void notifyGuiClosing() OVERRIDE FINAL;
     void discardScenePointer();

@@ -173,42 +173,6 @@ NodeGraph::getAllActiveNodes_mt_safe() const
     return _imp->_nodes;
 }
 
-void
-NodeGraph::moveToTrash(const NodeGuiPtr& node)
-{
-    assert(node);
-    for (NodesGuiList::iterator it = _imp->_selection.begin();
-         it != _imp->_selection.end(); ++it) {
-        if (*it == node) {
-            (*it)->setUserSelected(false);
-            _imp->_selection.erase(it);
-            break;
-        }
-    }
-
-    QMutexLocker l(&_imp->_nodesMutex);
-    for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
-        if ( *it == node ) {
-            _imp->_nodesTrash.push_back(*it);
-            _imp->_nodes.erase(it);
-            break;
-        }
-    }
-}
-
-void
-NodeGraph::restoreFromTrash(const NodeGuiPtr& node)
-{
-    assert(node);
-    QMutexLocker l(&_imp->_nodesMutex);
-    for (NodesGuiList::iterator it = _imp->_nodesTrash.begin(); it != _imp->_nodesTrash.end(); ++it) {
-        if ( *it == node ) {
-            _imp->_nodes.push_back(*it);
-            _imp->_nodesTrash.erase(it);
-            break;
-        }
-    }
-}
 
 // grabbed from QDirModelPrivate::size() in qtbase/src/widgets/itemviews/qdirmodel.cpp
 static
@@ -404,7 +368,7 @@ NodeGraph::showMenu(const QPoint & pos)
     QObject::connect( displayCacheInfoAction, SIGNAL(triggered()), this, SLOT(toggleCacheInfo()) );
     _imp->_menu->addAction(displayCacheInfoAction);
 
-    const NodesGuiList& selectedNodes = getSelectedNodes();
+    NodesGuiList selectedNodes = getSelectedNodes();
     if ( !selectedNodes.empty() ) {
         QAction* turnOffPreviewAction = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutActionGraphTogglePreview,
                                                                kShortcutActionGraphTogglePreviewLabel, _imp->_menu);

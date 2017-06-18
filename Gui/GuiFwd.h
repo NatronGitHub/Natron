@@ -244,6 +244,7 @@ typedef boost::weak_ptr<TableItem> TableItemWPtr;
 typedef boost::weak_ptr<TableItemAnim> TableItemAnimWPtr;
 typedef boost::weak_ptr<TableModel> TableModelWPtr;
 typedef std::list<NodeGuiPtr> NodesGuiList;
+typedef std::list<NodeGuiWPtr> NodesGuiWList;
 //typedef std::list<AnimKeyFramePtr> AnimKeyFramePtrList;
 
 NATRON_PYTHON_NAMESPACE_ENTER;

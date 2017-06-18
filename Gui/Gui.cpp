@@ -350,13 +350,6 @@ Gui::createViewerGui(const NodeGuiPtr& node)
     graph->setLastSelectedViewer(tab);
 }
 
-const NodesGuiList &
-Gui::getSelectedNodes() const
-{
-    assert(_imp->_nodeGraphArea);
-
-    return _imp->_nodeGraphArea->getSelectedNodes();
-}
 
 void
 Gui::createGui()

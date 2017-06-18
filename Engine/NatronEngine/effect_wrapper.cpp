@@ -317,66 +317,20 @@ static PyObject* Sbk_EffectFunc_connectInput(PyObject* self, PyObject* args)
         return 0;
 }
 
-static PyObject* Sbk_EffectFunc_destroy(PyObject* self, PyObject* args, PyObject* kwds)
+static PyObject* Sbk_EffectFunc_destroy(PyObject* self)
 {
     ::Effect* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
     cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0 };
-    SBK_UNUSED(pythonToCpp)
-    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
-    int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0};
-
-    // invalid argument lengths
-    if (numArgs + numNamedArgs > 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.Effect.destroy(): too many arguments");
-        return 0;
-    }
-
-    if (!PyArg_ParseTuple(args, "|O:destroy", &(pyArgs[0])))
-        return 0;
-
-
-    // Overloaded function decisor
-    // 0: destroy(bool)
-    if (numArgs == 0) {
-        overloadId = 0; // destroy(bool)
-    } else if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[0])))) {
-        overloadId = 0; // destroy(bool)
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_EffectFunc_destroy_TypeError;
 
     // Call function/method
     {
-        if (kwds) {
-            PyObject* value = PyDict_GetItemString(kwds, "autoReconnect");
-            if (value && pyArgs[0]) {
-                PyErr_SetString(PyExc_TypeError, "NatronEngine.Effect.destroy(): got multiple values for keyword argument 'autoReconnect'.");
-                return 0;
-            } else if (value) {
-                pyArgs[0] = value;
-                if (!(pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[0]))))
-                    goto Sbk_EffectFunc_destroy_TypeError;
-            }
-        }
-        bool cppArg0 = true;
-        if (pythonToCpp[0]) pythonToCpp[0](pyArgs[0], &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // destroy(bool)
-            // Begin code injection
-
-            cppSelf->destroy(cppArg0);
-
-            // End of code injection
-
-
+            // destroy()
+            cppSelf->destroy();
         }
     }
 
@@ -384,11 +338,6 @@ static PyObject* Sbk_EffectFunc_destroy(PyObject* self, PyObject* args, PyObject
         return 0;
     }
     Py_RETURN_NONE;
-
-    Sbk_EffectFunc_destroy_TypeError:
-        const char* overloads[] = {"bool = true", 0};
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.destroy", overloads);
-        return 0;
 }
 
 static PyObject* Sbk_EffectFunc_disconnectInput(PyObject* self, PyObject* pyArg)
@@ -1321,32 +1270,6 @@ static PyObject* Sbk_EffectFunc_insertParamInViewerUI(PyObject* self, PyObject* 
         return 0;
 }
 
-static PyObject* Sbk_EffectFunc_isNodeActivated(PyObject* self)
-{
-    ::Effect* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // isNodeActivated()const
-            bool cppResult = const_cast<const ::Effect*>(cppSelf)->isNodeActivated();
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
 static PyObject* Sbk_EffectFunc_isNodeSelected(PyObject* self)
 {
     ::Effect* cppSelf = 0;
@@ -1931,7 +1854,7 @@ static PyMethodDef Sbk_Effect_methods[] = {
     {"canConnectInput", (PyCFunction)Sbk_EffectFunc_canConnectInput, METH_VARARGS},
     {"clearViewerUIParameters", (PyCFunction)Sbk_EffectFunc_clearViewerUIParameters, METH_NOARGS},
     {"connectInput", (PyCFunction)Sbk_EffectFunc_connectInput, METH_VARARGS},
-    {"destroy", (PyCFunction)Sbk_EffectFunc_destroy, METH_VARARGS|METH_KEYWORDS},
+    {"destroy", (PyCFunction)Sbk_EffectFunc_destroy, METH_NOARGS},
     {"disconnectInput", (PyCFunction)Sbk_EffectFunc_disconnectInput, METH_O},
     {"endChanges", (PyCFunction)Sbk_EffectFunc_endChanges, METH_NOARGS},
     {"endParametersUndoCommand", (PyCFunction)Sbk_EffectFunc_endParametersUndoCommand, METH_NOARGS},
@@ -1957,7 +1880,6 @@ static PyMethodDef Sbk_Effect_methods[] = {
     {"getSize", (PyCFunction)Sbk_EffectFunc_getSize, METH_NOARGS},
     {"getUserPageParam", (PyCFunction)Sbk_EffectFunc_getUserPageParam, METH_NOARGS},
     {"insertParamInViewerUI", (PyCFunction)Sbk_EffectFunc_insertParamInViewerUI, METH_VARARGS|METH_KEYWORDS},
-    {"isNodeActivated", (PyCFunction)Sbk_EffectFunc_isNodeActivated, METH_NOARGS},
     {"isNodeSelected", (PyCFunction)Sbk_EffectFunc_isNodeSelected, METH_NOARGS},
     {"isReaderNode", (PyCFunction)Sbk_EffectFunc_isReaderNode, METH_NOARGS},
     {"isWriterNode", (PyCFunction)Sbk_EffectFunc_isWriterNode, METH_NOARGS},

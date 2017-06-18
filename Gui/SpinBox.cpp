@@ -40,7 +40,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QApplication>
 #include <QtCore/QDebug>
 #include <QMenu>
-#include <QFlags>
 #include <QPainter>
 
 #include "Engine/Variant.h"

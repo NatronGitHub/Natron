@@ -457,13 +457,13 @@ WriteNodePrivate::destroyWriteNode()
 #pragma message WARN("TODO: if Gui, refresh pluginID, version, help tooltip in DockablePanel to reflect embedded node change")
 
     if (embeddedNode) {
-        embeddedNode->destroyNode(true, false);
+        embeddedNode->destroyNode();
     }
     embeddedPlugin.reset();
 
     NodePtr readBack = readBackNode.lock();
     if (readBack) {
-        readBack->destroyNode(true, false);
+        readBack->destroyNode();
     }
     readBackNode.reset();
 } // WriteNodePrivate::destroyWriteNode

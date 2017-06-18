@@ -929,10 +929,10 @@ LinkArrow::paint(QPainter *painter,
 {
     NodeGuiPtr slave  = _slave.lock();
     NodeGuiPtr master  = _master.lock();
-    if (!slave || !slave->getNode() || !slave->getNode()->isActivated()) {
+    if (!slave || !slave->getNode()) {
         return;
     }
-    if (!master || !master->getNode() || !master->getNode()->isActivated()) {
+    if (!master || !master->getNode()) {
         return;
     }
     if (master->getDagGui() != slave->getDagGui()) {

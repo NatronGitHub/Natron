@@ -107,7 +107,14 @@ public:
 
 private:
 
-    NodesWList _nodes;
+    struct NodeToAdd
+    {
+
+        NodeWPtr node;
+        SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization;
+    };
+
+    std::list<NodeToAdd> _nodes;
     NodeGraph* _graph;
     bool _firstRedoCalled;
     bool _isUndone;
@@ -134,7 +141,8 @@ private:
     struct NodeToRemove
     {
 
-        boost::weak_ptr<NodeGui> node;
+        NodeWPtr node;
+        SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization;
     };
 
     std::list<NodeToRemove> _nodes;
@@ -423,6 +431,7 @@ private:
     struct InlinedGroup
     {
         boost::weak_ptr<NodeGroup> oldGroupNode;
+        SERIALIZATION_NAMESPACE::NodeSerializationPtr groupNodeSerialization;
 
         // For each output of the GroupInput node, the inputs vector
         struct InputOutput

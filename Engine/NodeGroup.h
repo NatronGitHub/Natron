@@ -110,7 +110,7 @@ public:
 
 private:
 
-    void clearNodesInternal(bool blocking);
+    void clearNodesInternal();
 
 public:
 
@@ -252,14 +252,15 @@ public:
      * @brief Create nodes within this NodeCollection from their serialization.
      * This function is recursive because a serialized node may be a Group and contain serialization of nodes within itself.
      * @param serializedNodes List of nodes serialization to be created
-     * @param createdNodes[out] For each serialization passed in input, a pointer to the created node. This parameter is optional
-     * and may be set to NULL. Note that this will return only node pointers for the passed serializedNodes, not for their children
-     * in case of a Group.
+     * @param createdNodes[out] For each serialization passed in input, a pointer to the created node, or NULL if the node could not be created.
+     * This parameter is optional and may be set to NULL.
+     * Note that this will return node pointers for the passed serializedNodes in the same order as they were
+     * given. This will not include children nodes in case of groups.
      * @returns True if everything went fine, false otherwise
      **/
     bool createNodesFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializationList & serializedNodes,
                                       CreateNodesFromSerializationFlagsEnum flags,
-                                      std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>* createdNodes);
+                                      NodesList* createdNodes);
 
     /**
      * @brief Find a node by its script-name within the list of createdNodes. 

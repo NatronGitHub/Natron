@@ -288,7 +288,7 @@ KnobGuiFile::checkFileModificationAndWarnInternal(bool doCheck,
     }
     EffectInstancePtr effect = toEffectInstance( knob->getHolder() );
     assert(effect);
-    if ( !effect || !effect->getNode()->isActivated() ) {
+    if (!effect ) {
         return false;
     }
 

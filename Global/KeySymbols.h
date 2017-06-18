@@ -20,7 +20,7 @@
 #define KEYSYMBOLS_H
 
 #include <ofxKeySyms.h>
-#include <QtCore/QFlags>
+#include "Global/Enums.h"
 #include "Global/Macros.h"
 NATRON_NAMESPACE_ENTER;
 enum Key
@@ -420,8 +420,10 @@ enum KeyboardModifierEnum
     eKeyboardModifierMask = 0xfe000000
 };
 
-typedef QFlags<KeyboardModifierEnum> KeyboardModifiers;
-
+DECLARE_FLAGS(KeyboardModifiers, KeyboardModifierEnum);
 NATRON_NAMESPACE_EXIT;
+
+DECLARE_OPERATORS_FOR_FLAGS(NATRON_NAMESPACE::KeyboardModifiers);
+
 
 #endif // KEYSYMBOLS_H

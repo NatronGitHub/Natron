@@ -146,15 +146,6 @@ public:
      **/
     void refreshNodesPositions(double x, double y);
 
-    /**
-     * @brief Deactivates all nodes used by this item
-     **/
-    void deactivateNodes();
-
-    /**
-     * @brief Activates all nodes used by this item
-     **/
-    void activateNodes();
 
     /**
      * @brief Deactivate all nodes used by this item

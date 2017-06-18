@@ -142,7 +142,7 @@ NodeCollection::getNodes_recursive(NodesList& nodes,
     {
         QMutexLocker k(&_imp->nodesMutex);
         for (NodesList::const_iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-            if ( onlyActive && !(*it)->isActivated() ) {
+            if (onlyActive) {
                 continue;
             }
             nodes.push_back(*it);
@@ -219,9 +219,7 @@ NodeCollection::getActiveNodes(NodesList* nodes) const
     QMutexLocker k(&_imp->nodesMutex);
 
     for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        if ( (*it)->isActivated() ) {
-            nodes->push_back(*it);
-        }
+        nodes->push_back(*it);
     }
 }
 
@@ -231,12 +229,10 @@ NodeCollection::getActiveNodesExpandGroups(NodesList* nodes) const
     QMutexLocker k(&_imp->nodesMutex);
 
     for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        if ( (*it)->isActivated() ) {
-            nodes->push_back(*it);
-            NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
-            if (isGrp) {
-                isGrp->getActiveNodesExpandGroups(nodes);
-            }
+        nodes->push_back(*it);
+        NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
+        if (isGrp) {
+            isGrp->getActiveNodesExpandGroups(nodes);
         }
     }
 }
@@ -264,7 +260,7 @@ NodeCollection::getWriters(std::list<EffectInstancePtr>* writers) const
     QMutexLocker k(&_imp->nodesMutex);
 
     for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        if ( (*it)->getGroup() && (*it)->isActivated() && (*it)->getEffectInstance()->isWriter() && (*it)->isPersistent() ) {
+        if ( (*it)->getGroup() && (*it)->getEffectInstance()->isWriter() && (*it)->isPersistent() ) {
             writers->push_back((*it)->getEffectInstance());
         }
         NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
@@ -385,7 +381,7 @@ NodeCollection::forceRefreshPreviews()
 
 
 void
-NodeCollection::clearNodesInternal(bool blocking)
+NodeCollection::clearNodesInternal()
 {
     NodesList nodesToDelete;
     {
@@ -398,7 +394,7 @@ NodeCollection::clearNodesInternal(bool blocking)
 
         NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
         if (isGrp) {
-            isGrp->clearNodesInternal(blocking);
+            isGrp->clearNodesInternal();
         }
 
     }
@@ -406,7 +402,7 @@ NodeCollection::clearNodesInternal(bool blocking)
     ///Kill effects
 
     for (NodesList::iterator it = nodesToDelete.begin(); it != nodesToDelete.end(); ++it) {
-        (*it)->destroyNode(blocking, false);
+        (*it)->destroyNode();
     }
 
 
@@ -427,13 +423,13 @@ void
 NodeCollection::clearNodesBlocking()
 {
     quitAnyProcessingForAllNodes_blocking();
-    clearNodesInternal(true);
+    clearNodesInternal();
 }
 
 void
 NodeCollection::clearNodesNonBlocking()
 {
-    clearNodesInternal(false);
+    clearNodesInternal();
 }
 
 void
@@ -813,7 +809,6 @@ NodeCollection::fixRelativeFilePaths(const std::string& projectPathName,
 
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( (*it)->isActivated() ) {
             {
                 ScopedChanges_RAII changes((*it)->getEffectInstance().get());
 
@@ -840,7 +835,7 @@ NodeCollection::fixRelativeFilePaths(const std::string& projectPathName,
             if (isGrp) {
                 isGrp->fixRelativeFilePaths(projectPathName, newProjectPath, blockEval);
             }
-        }
+
     }
 }
 
@@ -856,30 +851,28 @@ NodeCollection::fixPathName(const std::string& oldName,
     ProjectPtr project = appInst->getProject();
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( (*it)->isActivated() ) {
-            const KnobsVec& knobs = (*it)->getKnobs();
-            for (U32 j = 0; j < knobs.size(); ++j) {
-                KnobStringBasePtr isString = toKnobStringBase(knobs[j]);
-                KnobStringPtr isStringKnob = toKnobString(isString);
-                if ( !isString || isStringKnob || ( knobs[j] == project->getEnvVarKnob() ) ) {
-                    continue;
-                }
-
-                std::string filepath = isString->getValue();
-
-                if ( ( filepath.size() >= (oldName.size() + 2) ) &&
-                     ( filepath[0] == '[') &&
-                     ( filepath[oldName.size() + 1] == ']') &&
-                     ( filepath.substr( 1, oldName.size() ) == oldName) ) {
-                    filepath.replace(1, oldName.size(), newName);
-                    isString->setValue(filepath);
-                }
+        const KnobsVec& knobs = (*it)->getKnobs();
+        for (U32 j = 0; j < knobs.size(); ++j) {
+            KnobStringBasePtr isString = toKnobStringBase(knobs[j]);
+            KnobStringPtr isStringKnob = toKnobString(isString);
+            if ( !isString || isStringKnob || ( knobs[j] == project->getEnvVarKnob() ) ) {
+                continue;
             }
 
-            NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
-            if (isGrp) {
-                isGrp->fixPathName(oldName, newName);
+            std::string filepath = isString->getValue();
+
+            if ( ( filepath.size() >= (oldName.size() + 2) ) &&
+                ( filepath[0] == '[') &&
+                ( filepath[oldName.size() + 1] == ']') &&
+                ( filepath.substr( 1, oldName.size() ) == oldName) ) {
+                filepath.replace(1, oldName.size(), newName);
+                isString->setValue(filepath);
             }
+        }
+
+        NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
+        if (isGrp) {
+            isGrp->fixPathName(oldName, newName);
         }
     }
 }
@@ -922,29 +915,27 @@ NodeCollection::recomputeFrameRangeForAllReadersInternal(int* firstFrame,
     NodesList nodes = getNodes();
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( (*it)->isActivated() ) {
-            if ( (*it)->getEffectInstance()->isReader() ) {
+        if ( (*it)->getEffectInstance()->isReader() ) {
 
 
-                GetFrameRangeResultsPtr results;
-                ActionRetCodeEnum stat = (*it)->getEffectInstance()->getFrameRange_public(&results );
-                if (!isFailureRetCode(stat)) {
-                    RangeD thisRange;
+            GetFrameRangeResultsPtr results;
+            ActionRetCodeEnum stat = (*it)->getEffectInstance()->getFrameRange_public(&results );
+            if (!isFailureRetCode(stat)) {
+                RangeD thisRange;
 
-                    results->getFrameRangeResults(&thisRange);
-                    if (thisRange.min != INT_MIN) {
-                        *firstFrame = setFrameRange ? thisRange.min : std::min(*firstFrame, (int)thisRange.min);
-                    }
-                    if (thisRange.max != INT_MAX) {
-                        *lastFrame = setFrameRange ? thisRange.max : std::max(*lastFrame, (int)thisRange.max);
-                    }
+                results->getFrameRangeResults(&thisRange);
+                if (thisRange.min != INT_MIN) {
+                    *firstFrame = setFrameRange ? thisRange.min : std::min(*firstFrame, (int)thisRange.min);
                 }
-
-            } else {
-                NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
-                if (isGrp) {
-                    isGrp->recomputeFrameRangeForAllReadersInternal(firstFrame, lastFrame, false);
+                if (thisRange.max != INT_MAX) {
+                    *lastFrame = setFrameRange ? thisRange.max : std::max(*lastFrame, (int)thisRange.max);
                 }
+            }
+
+        } else {
+            NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
+            if (isGrp) {
+                isGrp->recomputeFrameRangeForAllReadersInternal(firstFrame, lastFrame, false);
             }
         }
     }
@@ -1752,7 +1743,7 @@ restoreLinksRecursive(const NodeCollectionPtr& group,
 bool
 NodeCollection::createNodesFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializationList & serializedNodes,
                                              CreateNodesFromSerializationFlagsEnum flags,
-                                             std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>* createdNodesOut)
+                                             NodesList* createdNodesOut)
 {
 
     // True if the restoration process had errors
@@ -1779,6 +1770,9 @@ NodeCollection::createNodesFromSerialization(const SERIALIZATION_NAMESPACE::Node
     for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
         
         NodePtr node = appPTR->createNodeForProjectLoading(*it, thisShared);
+        if (createdNodesOut) {
+            createdNodesOut->push_back(node);
+        }
         if (!node) {
             QString text( tr("ERROR: The node %1 version %2.%3"
                              " was found in the script but does not"
@@ -1819,6 +1813,7 @@ NodeCollection::createNodesFromSerialization(const SERIALIZATION_NAMESPACE::Node
 
         localCreatedNodes.insert(std::make_pair(*it, node));
 
+
     } // for all nodes
 
 
@@ -1850,10 +1845,6 @@ NodeCollection::createNodesFromSerialization(const SERIALIZATION_NAMESPACE::Node
 
         // Now that we created all nodes. There may be cross-graph link(s) and they can only be truely restored now.
         restoreLinksRecursive(thisShared, serializedNodes, &localCreatedNodes);
-    }
-
-    if (createdNodesOut) {
-        *createdNodesOut = localCreatedNodes;
     }
 
     return !hasError;

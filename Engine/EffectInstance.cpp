@@ -90,21 +90,39 @@ NATRON_NAMESPACE_ENTER;
 
 EffectInstance::EffectInstance(const NodePtr& node)
     : NamedKnobHolder( node ? node->getApp() : AppInstancePtr() )
-    , _node(node)
     , _imp( new Implementation(this) )
 {
-  
+    _imp->common->node = node;
 }
 
 EffectInstance::EffectInstance(const EffectInstancePtr& other, const FrameViewRenderKey& key)
     : NamedKnobHolder(other, key)
-    , _node( other->getNode() )
     , _imp( new Implementation(this, *other->_imp) )
 {
+    _imp->renderData->node = other->getNode();
+    _imp->common->node = _imp->renderData->node;
+    assert(_imp->renderData->node);
 }
 
 EffectInstance::~EffectInstance()
 {
+}
+
+NodePtr
+EffectInstance::getNode() const
+{
+
+    NodePtr ret = _imp->common->node.lock();
+    if (ret) {
+        return ret;
+    }
+
+    // At this point, the main node pointer is not alive, if we are a RenderClone, we should still have a shared pointer
+    // to the node for safety, this pointer will die when the render is finished.
+    if (_imp->renderData) {
+        return _imp->renderData->node;
+    }
+    return NodePtr();
 }
 
 bool
@@ -125,8 +143,16 @@ EffectInstance::createRenderCopy(const FrameViewRenderKey& key) const
     if (dynamic_cast<const NodeGroup*>(this)) {
         return boost::const_pointer_cast<EffectInstance>(shared_from_this());
     }
-    EffectInstancePtr clone = createFunc(boost::const_pointer_cast<EffectInstance>(shared_from_this()), key);
 
+    NodePtr node = getNode();
+    if (!node) {
+        // No node pointer ? It is probably because destroyNode() has been called, return a NULL pointer to
+        // fail the render.
+        return KnobHolderPtr();
+    }
+
+    EffectInstancePtr clone = createFunc(boost::const_pointer_cast<EffectInstance>(shared_from_this()), key);
+    
 
     // Make a copy of the main instance input locally so the state of the graph does not change throughout the render
     int nInputs = getMaxInputCount();
@@ -281,7 +307,10 @@ EffectInstance::invalidateHashCacheRecursive(const bool recurse, std::set<Hashab
             if (!outputNode) {
                 continue;
             }
-            outputNode->getEffectInstance()->invalidateHashCacheRecursive(recurse, invalidatedObjects);
+            EffectInstancePtr effect = outputNode->getEffectInstance();
+            if (effect) {
+                effect->invalidateHashCacheRecursive(recurse, invalidatedObjects);
+            }
         }
     }
     return true;

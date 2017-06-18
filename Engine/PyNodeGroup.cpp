@@ -58,7 +58,7 @@ Group::getNode(const QString& fullySpecifiedName) const
         return 0;
     }
     NodePtr node = _collection.lock()->getNodeByFullySpecifiedName( fullySpecifiedName.toStdString() );
-    if ( node && node->isActivated() ) {
+    if (node) {
         return App::createEffectFromNodeWrapper(node);
     } else {
         return NULL;
@@ -78,12 +78,9 @@ Group::getChildren() const
     NodesList nodes = _collection.lock()->getNodes();
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( (*it)->isActivated() ) {
-            Effect* effect = App::createEffectFromNodeWrapper(*it);
-            assert(effect);
-            ret.push_back(effect);
-
-        }
+        Effect* effect = App::createEffectFromNodeWrapper(*it);
+        assert(effect);
+        ret.push_back(effect);
     }
 
     return ret;

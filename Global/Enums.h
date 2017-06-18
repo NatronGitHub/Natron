@@ -21,7 +21,6 @@
 
 #include "Global/Macros.h"
 
-#include <QtCore/QFlags>
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMetaType>
 CLANG_DIAG_ON(deprecated)
@@ -32,6 +31,77 @@ NATRON_NAMESPACE_ENTER;
 NATRON_NAMESPACE_EXIT;
 namespace NATRON_NAMESPACE {
 #endif
+
+
+class Flag
+{
+        int i;
+    public:
+        inline Flag(int i);
+        inline operator int() const { return i; }
+};
+
+inline Flag::Flag(int ai) : i(ai) {}
+
+class IncompatibleFlag
+{
+    int i;
+    public:
+    inline explicit IncompatibleFlag(int i);
+    inline operator int() const { return i; }
+};
+    
+inline IncompatibleFlag::IncompatibleFlag(int ai) : i(ai) {}
+
+
+template<typename Enum>
+class Flags
+{
+    typedef void **Zero;
+    int i;
+public:
+    typedef Enum enum_type;
+    inline Flags(const Flags &f) : i(f.i) {}
+    inline Flags(Enum f) : i(f) {}
+    inline Flags(Zero = 0) : i(0) {}
+    inline Flags(Flag f) : i(f) {}
+
+    inline Flags &operator=(const Flags &f) { i = f.i; return *this; }
+    inline Flags &operator&=(int mask) { i &= mask; return *this; }
+    inline Flags &operator&=(uint mask) { i &= mask; return *this; }
+    inline Flags &operator|=(Flags f) { i |= f.i; return *this; }
+    inline Flags &operator|=(Enum f) { i |= f; return *this; }
+    inline Flags &operator^=(Flags f) { i ^= f.i; return *this; }
+    inline Flags &operator^=(Enum f) { i ^= f; return *this; }
+
+    inline operator int() const { return i; }
+
+    inline Flags operator|(Flags f) const { return Flags(Enum(i | f.i)); }
+    inline Flags operator|(Enum f) const { return Flags(Enum(i | f)); }
+    inline Flags operator^(Flags f) const { return Flags(Enum(i ^ f.i)); }
+    inline Flags operator^(Enum f) const { return Flags(Enum(i ^ f)); }
+    inline Flags operator&(int mask) const { return Flags(Enum(i & mask)); }
+    inline Flags operator&(uint mask) const { return Flags(Enum(i & mask)); }
+    inline Flags operator&(Enum f) const { return Flags(Enum(i & f)); }
+    inline Flags operator~() const { return Flags(Enum(~i)); }
+
+    inline bool operator!() const { return !i; }
+
+    inline bool testFlag(Enum f) const { return (i & f) == f && (f != 0 || i == int(f) ); }
+};
+
+#define DECLARE_FLAGS(f, Enum)\
+typedef Flags<Enum> f;
+
+#define DECLARE_INCOMPATIBLE_FLAGS(f) \
+inline NATRON_NAMESPACE::IncompatibleFlag operator|(f::enum_type f1, int f2) \
+{ return NATRON_NAMESPACE::IncompatibleFlag(int(f1) | f2); }
+
+#define DECLARE_OPERATORS_FOR_FLAGS(f) \
+inline NATRON_NAMESPACE::Flags<f::enum_type> operator|(f::enum_type f1, f::enum_type f2) \
+{ return NATRON_NAMESPACE::Flags<f::enum_type>(f1) | f2; } \
+inline NATRON_NAMESPACE::Flags<f::enum_type> operator|(f::enum_type f1, NATRON_NAMESPACE::Flags<f::enum_type> f2) \
+{ return f2 | f1; } DECLARE_INCOMPATIBLE_FLAGS(f)
 
 enum ScaleTypeEnum
 {
@@ -816,8 +886,7 @@ enum TableChangeReasonEnum
 };
 
 
-//typedef QFlags<StandardButtonEnum> StandardButtons;
-Q_DECLARE_FLAGS(StandardButtons, StandardButtonEnum)
+DECLARE_FLAGS(StandardButtons, StandardButtonEnum);
 
 #ifdef SBK_RUN
 }
@@ -827,6 +896,7 @@ NATRON_NAMESPACE_ENTER;
 
 NATRON_NAMESPACE_EXIT;
 
+DECLARE_OPERATORS_FOR_FLAGS(NATRON_NAMESPACE::StandardButtons);
 Q_DECLARE_METATYPE(NATRON_NAMESPACE::StandardButtons)
 
 

@@ -94,8 +94,6 @@ public:
     void addNodeGuiToAnimationModuleEditor(const NodeGuiPtr &node);
     void removeNodeGuiFromAnimationModuleEditor(const NodeGuiPtr& node);
 
-    const NodesGuiList & getSelectedNodes() const;
-
     void createViewerGui(const NodeGuiPtr& viewer);
 
     void createGroupGui(const NodePtr& group, const CreateNodeArgs& args);

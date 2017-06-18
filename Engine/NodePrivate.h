@@ -76,12 +76,6 @@ typedef std::map<NodeWPtr, std::list<int> > InternalOutputNodesMap;
 typedef std::vector<NodeWPtr> InputsV;
 
 
-struct DeactivatedSavedState
-{
-    InternalOutputNodesMap outputs;
-
-};
-
 struct NodePrivate
 {
     Q_DECLARE_TR_FUNCTIONS(Node)
@@ -155,9 +149,6 @@ public:
     // Map of weak references to the output nodes (and the list of input numbers of the output node connected to this node)
     InternalOutputNodesMap outputs;
 
-    // When deactivating the node, remembers any other nodes reference to this node
-    // to restore it in activate()
-    DeactivatedSavedState deactivatedState;
 
     // Protects inputs
     mutable QMutex inputsMutex; //< protects inputs so the serialization thread can access them
@@ -195,13 +186,7 @@ public:
 
     // Whether an input should be made visible at all in the GUI or not.
     std::vector<bool> inputsVisibility;
-
-    // Protects activated
-    mutable QMutex activatedMutex;
-
-    // When false the node is not part of the nodegraph at all and will not be serialized as well.
-    bool activated;
-
+    
     // The plugin which stores the function to instantiate the effect
     PluginWPtr plugin;
 
@@ -263,10 +248,6 @@ public:
 
     // true when the node is in the destroyNode function
     bool isBeingDestroyed;
-
-    // Pointer to the thread used to wait for all renders to quit instead
-    // of the main-thread
-    boost::shared_ptr<NodeRenderWatcher> renderWatcher;
 
     // Used to bracket calls to onInputChanged to ensure stuff that needs to be recomputed
     // when inputs are changed is computed once.

@@ -159,13 +159,13 @@ GuiAppInstance::deletePreviewProvider()
     if (_imp->_previewProvider) {
         if (_imp->_previewProvider->viewerNode) {
             //_imp->_gui->removeViewerTab(_imp->_previewProvider->viewerUI, true, true);
-            _imp->_previewProvider->viewerNodeInternal->destroyNode(true, false);
+            _imp->_previewProvider->viewerNodeInternal->destroyNode();
             _imp->_previewProvider->viewerNodeInternal.reset();
         }
 
 
         if (_imp->_previewProvider->readerNode) {
-            _imp->_previewProvider->readerNode->destroyNode(true, false);
+            _imp->_previewProvider->readerNode->destroyNode();
             _imp->_previewProvider->readerNode.reset();
         }
 

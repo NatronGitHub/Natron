@@ -488,7 +488,7 @@ App::redrawViewer(Effect* viewerNode)
         return;
     }
     NodePtr internalNode = viewerNode->getInternalNode();
-    if (!internalNode || !internalNode->isActivated()) {
+    if (!internalNode) {
         return;
     }
     ViewerNodePtr viewer = internalNode->isEffectViewerNode();
@@ -505,7 +505,7 @@ App::refreshViewer(Effect* viewerNode, bool useCache)
         return;
     }
     NodePtr internalNode = viewerNode->getInternalNode();
-    if (!internalNode || !internalNode->isActivated()) {
+    if (!internalNode) {
         return;
     }
     ViewerNodePtr viewer = internalNode->isEffectViewerNode();

@@ -129,7 +129,8 @@ Node::Node(const AppInstancePtr& app,
 
 Node::~Node()
 {
-    destroyNode(true, false);
+    // At this point, destroyNode() must have been called, or load() never called.
+    assert(!_imp->effect);
 }
 
 bool
@@ -382,11 +383,6 @@ Node::getLinkedNodes(std::list<std::pair<NodePtr, bool> >* nodes) const
                     // Increment the number of references to that node
                     NodePtr sharedNode = sharedHolderIsEffect->getNode();
 
-                    // If the shared node is deactivated, do not count it
-                    if (!sharedNode->isActivated()) {
-                        continue;
-                    }
-
                     // If the shared node is a child of this group, don't count as link
                     if (std::find(groupNodes.begin(), groupNodes.end(), sharedNode) != groupNodes.end()) {
                         continue;
@@ -463,6 +459,7 @@ void
 Node::quitAnyProcessing_non_blocking()
 {
     //If this effect has a RenderEngine, make sure it is finished
+    abortAnyProcessing_non_blocking();
 
     if (_imp->renderEngine) {
         _imp->renderEngine->quitEngine(true);
@@ -485,7 +482,7 @@ Node::quitAnyProcessing_non_blocking()
 void
 Node::quitAnyProcessing_blocking(bool allowThreadsToRestart)
 {
-
+    abortAnyProcessing_blocking();
 
     //If this effect has a RenderEngine, make sure it is finished
 
@@ -552,18 +549,12 @@ Node::getApp() const
     return _imp->app.lock();
 }
 
-bool
-Node::isActivated() const
-{
-    QMutexLocker l(&_imp->activatedMutex);
-
-    return _imp->activated;
-}
-
-
 void
 Node::beginEditKnobs()
 {
+    if (isBeingDestroyed()) {
+        return;
+    }
     _imp->effect->beginEditKnobs_public();
 }
 
@@ -616,12 +607,18 @@ bool
 Node::isInputNode() const
 {
     ///MT-safe, never changes
+    if (isBeingDestroyed()) {
+        return false;
+    }
     return _imp->effect->isGenerator();
 }
 
 bool
 Node::isOutputNode() const
 {   ///MT-safe, never changes
+    if (isBeingDestroyed()) {
+        return false;
+    }
     return _imp->effect->isOutput();
 }
 
@@ -711,6 +708,10 @@ const KnobsVec &
 Node::getKnobs() const
 {
     ///MT-safe from EffectInstance::getKnobs()
+    if (isBeingDestroyed()) {
+        static const KnobsVec emptyVec;
+        return emptyVec;
+    }
     return _imp->effect->getKnobs();
 }
 

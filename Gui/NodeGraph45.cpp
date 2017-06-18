@@ -79,15 +79,13 @@ NodeGraph::toggleAutoHideInputs(bool setSettings)
     for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
         (*it)->refreshEdgesVisility();
     }
-    for (NodesGuiList::iterator it = _imp->_nodesTrash.begin(); it != _imp->_nodesTrash.end(); ++it) {
-        (*it)->refreshEdgesVisility();
-    }
+ 
 }
 
 void
 NodeGraph::toggleHideInputs()
 {
-    const NodesGuiList& selectedNodes = getSelectedNodes();
+    NodesGuiList selectedNodes = getSelectedNodes();
 
     if ( selectedNodes.empty() ) {
         Dialogs::warningDialog( tr("Hide Inputs").toStdString(), tr("You must select a node first").toStdString() );
@@ -213,10 +211,13 @@ NodeGraph::renameNode()
     NodeGuiPtr node;
 
     if (_imp->_selection.size() == 1) {
-        node = _imp->_selection.front();
+        node = _imp->_selection.front().lock();
     } else {
         Dialogs::errorDialog( tr("Rename node").toStdString(), tr("You must select exactly 1 node to rename.").toStdString() );
 
+        return;
+    }
+    if (!node) {
         return;
     }
 
@@ -548,7 +549,7 @@ void
 NodeGraph::extractSelectedNode()
 {
     if ( !_imp->_selection.empty() ) {
-        pushUndoCommand( new ExtractNodeUndoRedoCommand(this, _imp->_selection) );
+        pushUndoCommand( new ExtractNodeUndoRedoCommand(this, getSelectedNodes()) );
     }
 }
 
@@ -557,8 +558,12 @@ NodeGraph::createGroupFromSelection()
 {
     if ( !_imp->_selection.empty() ) {
         NodesList selection;
-        for (NodesGuiList::const_iterator it = _imp->_selection.begin(); it!=_imp->_selection.end(); ++it) {
-            selection.push_back((*it)->getNode());
+        for (NodesGuiWList::const_iterator it = _imp->_selection.begin(); it!=_imp->_selection.end(); ++it) {
+            NodeGuiPtr n  = it->lock();
+            if (!n) {
+                continue;
+            }
+            selection.push_back(n->getNode());
         }
         pushUndoCommand( new GroupFromSelectionCommand(selection) );
     }
@@ -568,10 +573,14 @@ void
 NodeGraph::expandSelectedGroups()
 {
     NodesList nodes;
-    for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
-        NodeGroupPtr isGroup = (*it)->getNode()->isEffectNodeGroup();
+    for (NodesGuiWList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
+        NodeGuiPtr n = it->lock();
+        if (!n) {
+            continue;
+        }
+        NodeGroupPtr isGroup = n->getNode()->isEffectNodeGroup();
         if ( isGroup && (isGroup->getNode()->getPluginID() == PLUGINID_NATRON_GROUP) ) {
-            nodes.push_back((*it)->getNode());
+            nodes.push_back(n->getNode());
         }
     }
     if ( !nodes.empty() ) {

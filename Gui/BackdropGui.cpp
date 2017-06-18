@@ -106,7 +106,7 @@ BackdropGui::createGui()
     _imp->refreshLabelText();
 
     // Make the backdrop large enough to contain the selected nodes and position it correctly
-    const NodesGuiList& selectedNodes =  getDagGui()->getSelectedNodes();
+    NodesGuiList selectedNodes =  getDagGui()->getSelectedNodes();
     QRectF bbox;
     for (NodesGuiList::const_iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
         QRectF nodeBbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();

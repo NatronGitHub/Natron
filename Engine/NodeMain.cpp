@@ -285,6 +285,9 @@ Node::load(const CreateNodeArgsPtr& args)
     
     // Resume knobChanged calls
     _imp->effect->endChanges();
+
+    // Check for invalid expressions which may become valid again
+    getApp()->recheckInvalidLinks();
 } // load
 
 
@@ -681,6 +684,17 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
         getInputNames(serialization->_inputs, serialization->_masks);
     }
 
+    if (serialization->_encodeFlags & SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsSerializeOutputs) {
+        OutputNodesMap outputs;
+        getOutputs(outputs);
+        for (OutputNodesMap::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+            SERIALIZATION_NAMESPACE::OutputNodeConnection n;
+            n.outputNodeScriptName = it->first->getScriptName_mt_safe();
+            n.outputNodeIndices = it->second;
+            serialization->_outputs.push_back(n);
+        }
+    }
+
 
     KnobItemsTablePtr table = _imp->effect->getItemsTable();
     if (table && table->getNumTopLevelItems() > 0) {
@@ -776,6 +790,20 @@ Node::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& 
         _imp->overlayColor[0] = serialization->_overlayColor[0];
         _imp->overlayColor[1] = serialization->_overlayColor[1];
         _imp->overlayColor[2] = serialization->_overlayColor[2];
+    }
+
+    // If we have outputs to restore, do it now
+    if (serialization->_encodeFlags & SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsSerializeOutputs) {
+        NodePtr thisShared = shared_from_this();
+        for (std::list<SERIALIZATION_NAMESPACE::OutputNodeConnection>::const_iterator it = serialization->_outputs.begin(); it != serialization->_outputs.end(); ++it) {
+            NodePtr foundNode = getGroup()->getNodeByName(it->outputNodeScriptName);
+            if (!foundNode) {
+                continue;
+            }
+            for (std::list<int>::const_iterator it2 = it->outputNodeIndices.begin(); it2 != it->outputNodeIndices.end(); ++it2) {
+                foundNode->swapInput(thisShared, *it2);
+            }
+        }
     }
 
 } // fromSerialization
@@ -1468,7 +1496,7 @@ Node::moveToGroup(const NodeCollectionPtr& group)
 {
     NodeCollectionPtr currentGroup = getGroup();
     assert(currentGroup);
-
+    assert(group);
     if (currentGroup == group) {
         return;
     }
@@ -1529,237 +1557,6 @@ Node::moveToGroup(const NodeCollectionPtr& group)
 
 
 
-void
-Node::deactivate(DeactivateFlagEnum flags)
-{
-
-    if ( !_imp->effect || !isActivated() ) {
-        // The node is not created or it is already deactivated: do nothing.
-        return;
-    }
-
-    // Clear any persistent message linked to this node
-    clearAllPersistentMessages(false /*recurse*/);
-
-    // Is this called while in destroyNode() ? If so, we do not call shared_from_this() which may be no longer valid.
-    bool beingDestroyed;
-    {
-        QMutexLocker k(&_imp->isBeingDestroyedMutex);
-        beingDestroyed = _imp->isBeingDestroyed;
-    }
-
-
-    if (!beingDestroyed) {
-        abortAnyProcessing_non_blocking();
-    }
-
-    NodeCollectionPtr parentCol = getGroup();
-
-
-    {
-        ///For all knobs that have listeners, invalidate expressions
-        NodeGroupPtr isParentGroup = toNodeGroup(parentCol);
-
-        KnobDimViewKeySet globalListenersSet;
-        KnobsVec knobs = _imp->effect->getKnobs_mt_safe();
-        for (U32 i = 0; i < knobs.size(); ++i) {
-            KnobDimViewKeySet listeners;
-            knobs[i]->getListeners(listeners, KnobI::eListenersTypeExpression);
-            globalListenersSet.insert(listeners.begin(), listeners.end());
-        }
-        for (KnobDimViewKeySet::iterator it = globalListenersSet.begin(); it != globalListenersSet.end(); ++it) {
-            KnobIPtr listener = it->knob.lock();
-            if (!listener) {
-                continue;
-            }
-            KnobHolderPtr holder = listener->getHolder();
-            if (!holder) {
-                continue;
-            }
-            if ( ( holder == _imp->effect ) || (holder == isParentGroup) ) {
-                continue;
-            }
-
-            EffectInstancePtr isEffect = toEffectInstance(holder);
-            if (!isEffect) {
-                continue;
-            }
-
-            NodePtr effectNode = isEffect->getNode();
-            if (!effectNode) {
-                continue;
-            }
-            NodeCollectionPtr effectParent = effectNode->getGroup();
-            if (!effectParent) {
-                continue;
-            }
-            NodeGroupPtr isEffectParentGroup = toNodeGroup(effectParent);
-            if ( isEffectParentGroup && (isEffectParentGroup == _imp->effect) ) {
-                continue;
-            }
-            std::string hasExpr = listener->getExpression(it->dimension, it->view);
-            if ( !hasExpr.empty() ) {
-                std::stringstream ss;
-                ss << tr("Missing node ").toStdString();
-                ss << getFullyQualifiedName();
-                ss << ' ';
-                ss << tr("in expression.").toStdString();
-                listener->setLinkStatus( it->dimension, it->view, false, ss.str() );
-            }
-
-        }
-
-    }
-
-
-    NodePtr mainInputNode;
-    if (flags & eDeactivateFlagConnectOutputsToMainInput) {
-        int prefInput_i = getPreferredInput();
-        if (prefInput_i != -1) {
-            mainInputNode = getRealInput(prefInput_i);
-        }
-    }
-
-    // Removing this node from the output of all inputs
-    std::vector<NodePtr > inputsQueueCopy;
-
-
-    if (!beingDestroyed) {
-        NodePtr thisShared = shared_from_this();
-        for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
-            NodePtr input = _imp->inputs[i].lock();
-            if (input) {
-                input->disconnectOutput(thisShared, i);
-            }
-        }
-    }
-
-
-    // For each output node we remember that the output node  had its input number inputNb connected to this node
-    {
-        QMutexLocker l(&_imp->outputsMutex);
-        _imp->deactivatedState.outputs = _imp->outputs;
-    }
-    for (InternalOutputNodesMap::const_iterator it = _imp->deactivatedState.outputs.begin(); it != _imp->deactivatedState.outputs.end(); ++it) {
-        NodePtr output = it->first.lock();
-        if (!output) {
-            continue;
-        }
-        for (std::list<int>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            output->swapInput(mainInputNode, *it2);
-        }
-    }
-       
-    // If the effect was doing OpenGL rendering and had context(s) bound, dettach them.
-    _imp->effect->dettachAllOpenGLContexts();
-
-
-    // Free all memory used by the plug-in.
-
-    _imp->effect->clearLastRenderedImage();
-
-    if (parentCol && !beingDestroyed) {
-        parentCol->notifyNodeDeactivated( shared_from_this() );
-    }
-
-    if (!beingDestroyed) {
-        Q_EMIT deactivated();
-    }
-    {
-        QMutexLocker l(&_imp->activatedMutex);
-        _imp->activated = false;
-    }
-
-
-    ///If the node is a group, deactivate all nodes within the group
-    NodeGroupPtr isGrp = isEffectNodeGroup();
-    if (isGrp) {
-        isGrp->setIsDeactivatingGroup(true);
-        NodesList nodes = isGrp->getNodes();
-        for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            (*it)->deactivate();
-        }
-        isGrp->setIsDeactivatingGroup(false);
-    }
-
-
-    AppInstancePtr app = getApp();
-    if ( app && !app->getProject()->isProjectClosing() ) {
-        _imp->runOnNodeDeleteCB();
-    }
-
-    deleteNodeVariableToPython( getFullyQualifiedName() );
-} // deactivate
-
-void
-Node::activate(ActivateFlagEnum flags)
-{
-    ///Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-    if ( !_imp->effect || isActivated() ) {
-        return;
-    }
-
-
-    ///No need to lock, inputs is only written to by the main-thread
-    NodePtr thisShared = shared_from_this();
-
-    ///for all inputs, reconnect their output to this node
-    for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
-        NodePtr input = _imp->inputs[i].lock();
-        if (input) {
-            input->connectOutput(thisShared, i);
-        }
-    }
-
-
-    ///Restore all outputs that was connected to this node
-    if (flags & eActivateFlagRestoreOutputs) {
-    for (InternalOutputNodesMap::iterator it = _imp->deactivatedState.outputs.begin();
-         it != _imp->deactivatedState.outputs.end(); ++it) {
-        NodePtr output = it->first.lock();
-        if (!output) {
-            continue;
-        }
-
-
-        for (std::list<int>::const_iterator it2 =it->second.begin(); it2 != it->second.end(); ++it2) {
-            output->swapInput(thisShared, *it2);
-        }
-
-    }
-    }
-
-    {
-        QMutexLocker l(&_imp->activatedMutex);
-        _imp->activated = true; //< flag it true before notifying the GUI because the gui rely on this flag (espcially the Viewer)
-    }
-
-    NodeCollectionPtr group = getGroup();
-    if (group) {
-        group->notifyNodeActivated( shared_from_this() );
-    }
-    Q_EMIT activated();
-
-
-    declareAllPythonAttributes();
-    getApp()->recheckInvalidLinks();
-
-
-    ///If the node is a group, activate all nodes within the group first
-    NodeGroupPtr isGrp = isEffectNodeGroup();
-    if (isGrp) {
-        isGrp->setIsActivatingGroup(true);
-        NodesList nodes = isGrp->getNodes();
-        for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            (*it)->activate();
-        }
-        isGrp->setIsActivatingGroup(false);
-    }
-
-
-    _imp->runOnNodeCreatedCB(true);
-} // activate
 
 class NodeDestroyNodeInternalArgs
 : public GenericWatcherCallerArgs
@@ -1776,28 +1573,110 @@ public:
     virtual ~NodeDestroyNodeInternalArgs() {}
 };
 
+
 void
-Node::onProcessingQuitInDestroyNodeInternal(int taskID,
-                                            const WatcherCallerArgsPtr& args)
+Node::invalidateExpressionLinks()
 {
-    assert(_imp->renderWatcher);
-    assert(taskID == (int)NodeRenderWatcher::eBlockingTaskQuitAnyProcessing);
-    Q_UNUSED(taskID);
-    assert(args);
-    NodeDestroyNodeInternalArgs* thisArgs = dynamic_cast<NodeDestroyNodeInternalArgs*>( args.get() );
-    assert(thisArgs);
-    doDestroyNodeInternalEnd(thisArgs ? thisArgs->autoReconnect : false);
-    _imp->renderWatcher.reset();
+    NodeCollectionPtr parentCol = getGroup();
+    // For all knobs that have listeners, invalidate expressions
+    NodeGroupPtr isParentGroup = toNodeGroup(parentCol);
+
+    KnobDimViewKeySet globalListenersSet;
+    KnobsVec knobs = _imp->effect->getKnobs_mt_safe();
+    for (U32 i = 0; i < knobs.size(); ++i) {
+        KnobDimViewKeySet listeners;
+        knobs[i]->getListeners(listeners, KnobI::eListenersTypeExpression);
+        globalListenersSet.insert(listeners.begin(), listeners.end());
+    }
+    for (KnobDimViewKeySet::iterator it = globalListenersSet.begin(); it != globalListenersSet.end(); ++it) {
+        KnobIPtr listener = it->knob.lock();
+        if (!listener) {
+            continue;
+        }
+        KnobHolderPtr holder = listener->getHolder();
+        if (!holder) {
+            continue;
+        }
+        if ( ( holder == _imp->effect ) || (holder == isParentGroup) ) {
+            continue;
+        }
+
+        EffectInstancePtr isEffect = toEffectInstance(holder);
+        if (!isEffect) {
+            continue;
+        }
+
+        NodePtr effectNode = isEffect->getNode();
+        if (!effectNode) {
+            continue;
+        }
+        NodeCollectionPtr effectParent = effectNode->getGroup();
+        if (!effectParent) {
+            continue;
+        }
+        NodeGroupPtr isEffectParentGroup = toNodeGroup(effectParent);
+        if ( isEffectParentGroup && (isEffectParentGroup == _imp->effect) ) {
+            continue;
+        }
+        std::string hasExpr = listener->getExpression(it->dimension, it->view);
+        if ( !hasExpr.empty() ) {
+            std::stringstream ss;
+            ss << tr("Missing node ").toStdString();
+            ss << getFullyQualifiedName();
+            ss << ' ';
+            ss << tr("in expression.").toStdString();
+            listener->setLinkStatus( it->dimension, it->view, false, ss.str() );
+        }
+    }
+
+} //invalidateExpressionLinks
+
+bool
+Node::isBeingDestroyed() const
+{
+    QMutexLocker k(&_imp->isBeingDestroyedMutex);
+    return _imp->isBeingDestroyed;
 }
 
-
-
-
 void
-Node::doDestroyNodeInternalEnd(bool autoReconnect)
-{
-    deactivate();
+Node::destroyNode()
 
+{
+    if (!_imp->effect) {
+        // Load has never been called or destroyed is already called
+        return;
+    }
+
+    // Flag that the node is going to be destroyed so that we do not attempt to further use it during a render
+    {
+        QMutexLocker k(&_imp->isBeingDestroyedMutex);
+        _imp->isBeingDestroyed = true;
+    }
+
+    quitAnyProcessing_blocking(false);
+
+    // Clear any persistent message linked to this node
+    clearAllPersistentMessages(false /*recurse*/);
+
+    // Invalidate expression of any external knob referencing knobs of this node
+    invalidateExpressionLinks();
+
+    // If the effect was doing OpenGL rendering and had context(s) bound, dettach them.
+    _imp->effect->dettachAllOpenGLContexts();
+
+
+    // Free all memory used by the plug-in.
+    _imp->effect->clearLastRenderedImage();
+
+
+    // Run on node deleted Python callback
+    AppInstancePtr app = getApp();
+    if ( app && !app->getProject()->isProjectClosing() ) {
+        _imp->runOnNodeDeleteCB();
+    }
+
+
+    // Destroy node gui
     {
         NodeGuiIPtr guiPtr = _imp->guiPointer.lock();
         if (guiPtr) {
@@ -1812,10 +1691,10 @@ Node::doDestroyNodeInternalEnd(bool autoReconnect)
     }
 
 
-    // Quit any rendering
+    // Quit any rendering issued by this node
     {
         if (_imp->renderEngine) {
-            _imp->renderEngine->quitEngine(true);
+            _imp->renderEngine->quitEngine(false);
         }
     }
 
@@ -1823,12 +1702,7 @@ Node::doDestroyNodeInternalEnd(bool autoReconnect)
     // Remove the Python node
     deleteNodeVariableToPython( getFullyQualifiedName() );
 
-    // Removing this node might invalidate some expressions, check it now
-    AppInstancePtr app = getApp();
-    if (app) {
-        app->recheckInvalidLinks();
-    }
-
+    NodePtr thisShared = shared_from_this();
 
     // If inside the group, remove it from the group
     // the use_count() after the call to removeNode should be 2 and should be the shared_ptr held by the caller and the
@@ -1836,47 +1710,18 @@ Node::doDestroyNodeInternalEnd(bool autoReconnect)
 
     NodeCollectionPtr thisGroup = getGroup();
     if ( thisGroup ) {
-        thisGroup->removeNode(this);
+        thisGroup->removeNode(thisShared);
     }
 
+    // Removing this node might invalidate some expressions, check it now
+    if (app) {
+        app->recheckInvalidLinks();
+    }
+
+    
     _imp->effect.reset();
 
-} // doDestroyNodeInternalEnd
 
-void
-Node::destroyNode(bool blockingDestroy,
-                  bool autoReconnect)
-
-{
-    if (!_imp->effect) {
-        return;
-    }
-
-    {
-        QMutexLocker k(&_imp->activatedMutex);
-        _imp->isBeingDestroyed = true;
-    }
-
-    bool allProcessingQuit = areAllProcessingThreadsQuit();
-    if (allProcessingQuit || blockingDestroy) {
-        if (!allProcessingQuit) {
-            quitAnyProcessing_blocking(false);
-        }
-        doDestroyNodeInternalEnd(false);
-    } else {
-        NodeGroupPtr isGrp = isEffectNodeGroup();
-
-        NodesList nodesToWatch;
-        nodesToWatch.push_back( shared_from_this() );
-        if (isGrp) {
-            isGrp->getNodes_recursive(nodesToWatch, false);
-        }
-        _imp->renderWatcher.reset( new NodeRenderWatcher(nodesToWatch) );
-        QObject::connect( _imp->renderWatcher.get(), SIGNAL(taskFinished(int,WatcherCallerArgsPtr)), this, SLOT(onProcessingQuitInDestroyNodeInternal(int,WatcherCallerArgsPtr)) );
-        boost::shared_ptr<NodeDestroyNodeInternalArgs> args( new NodeDestroyNodeInternalArgs() );
-        args->autoReconnect = autoReconnect;
-        _imp->renderWatcher->scheduleBlockingTask(NodeRenderWatcher::eBlockingTaskQuitAnyProcessing, args);
-    }
-} // Node::destroyNodeInternal
+} // destroyNode
 
 NATRON_NAMESPACE_EXIT;

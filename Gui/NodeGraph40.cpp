@@ -68,10 +68,13 @@ NodeGraph::togglePreviewsForSelectedNodes()
     {
         QMutexLocker l(&_imp->_nodesMutex);
         empty = _imp->_selection.empty();
-        for (NodesGuiList::iterator it = _imp->_selection.begin();
+        for (NodesGuiWList::iterator it = _imp->_selection.begin();
              it != _imp->_selection.end();
              ++it) {
-            (*it)->togglePreview();
+            NodeGuiPtr n = it->lock();
+            if (n) {
+                n->togglePreview();
+            }
         }
     }
 
@@ -84,7 +87,7 @@ void
 NodeGraph::showSelectedNodeSettingsPanel()
 {
     if (_imp->_selection.size() == 1) {
-        showNodePanel(false, false, _imp->_selection.front());
+        showNodePanel(false, false, _imp->_selection.front().lock());
     }
 }
 
@@ -93,10 +96,13 @@ NodeGraph::switchInputs1and2ForSelectedNodes()
 {
     QMutexLocker l(&_imp->_nodesMutex);
 
-    for (NodesGuiList::iterator it = _imp->_selection.begin();
+    for (NodesGuiWList::iterator it = _imp->_selection.begin();
          it != _imp->_selection.end();
          ++it) {
-        (*it)->onSwitchInputActionTriggered();
+        NodeGuiPtr n = it->lock();
+        if (n) {
+            n->onSwitchInputActionTriggered();
+        }
     }
 }
 
@@ -124,7 +130,7 @@ NodeGraph::copySelectedNodes()
     }
 
     SERIALIZATION_NAMESPACE::NodeClipBoard cb;
-    _imp->copyNodesInternal(_imp->_selection, &cb.nodes);
+    _imp->copyNodesInternal(getSelectedNodes(), &cb.nodes);
 
     std::ostringstream ss;
 
@@ -239,7 +245,7 @@ NodeGraph::duplicateSelectedNodes(const QPointF& pos)
     }
 
     std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > > nodesToPaste;
-    _imp->copyNodesInternal(_imp->_selection, &nodesToPaste);
+    _imp->copyNodesInternal(getSelectedNodes(), &nodesToPaste);
 
 
     _imp->pasteNodesInternal(nodesToPaste, pos, NodeGraphPrivate::PasteNodesFlags(NodeGraphPrivate::ePasteNodesFlagRelativeToCentroid | NodeGraphPrivate::ePasteNodesFlagUseUndoCommand));
@@ -262,7 +268,7 @@ NodeGraph::cloneSelectedNodes(const QPointF& pos)
         return;
     }
     std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > > nodesToPaste;
-    _imp->copyNodesInternal(_imp->_selection, &nodesToPaste);
+    _imp->copyNodesInternal(getSelectedNodes(), &nodesToPaste);
 
     _imp->pasteNodesInternal(nodesToPaste, pos, NodeGraphPrivate::PasteNodesFlags(NodeGraphPrivate::ePasteNodesFlagCloneNodes | NodeGraphPrivate::ePasteNodesFlagRelativeToCentroid | NodeGraphPrivate::ePasteNodesFlagUseUndoCommand));
 } // NodeGraph::cloneSelectedNodes
@@ -286,11 +292,15 @@ NodeGraph::decloneSelectedNodes()
     std::map<NodeGuiPtr, NodePtr> nodesToDeclone;
 
 
-    for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
-        BackdropGuiPtr isBd = toBackdropGui(*it);
+    for (NodesGuiWList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
+        NodeGuiPtr n = it->lock();
+        if (!n) {
+            continue;
+        }
+        BackdropGuiPtr isBd = toBackdropGui(n);
         if (isBd) {
             // Also clone all nodes within the backdrop
-            NodesGuiList nodesWithinBD = getNodesWithinBackdrop(*it);
+            NodesGuiList nodesWithinBD = getNodesWithinBackdrop(n);
             for (NodesGuiList::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
                 std::map<NodeGuiPtr, NodePtr>::iterator found = nodesToDeclone.find(*it2);
                 if ( found == nodesToDeclone.end() ) {
@@ -304,9 +314,9 @@ NodeGraph::decloneSelectedNodes()
             }
         }
         std::list<NodePtr> linkedNodes;
-        (*it)->getNode()->getCloneLinkedNodes(&linkedNodes);
+        n->getNode()->getCloneLinkedNodes(&linkedNodes);
         if (!linkedNodes.empty()) {
-            nodesToDeclone[*it] = linkedNodes.front();
+            nodesToDeclone[n] = linkedNodes.front();
         }
     }
 
@@ -324,12 +334,7 @@ void
 NodeGraph::deleteNodePermanantly(const NodeGuiPtr& n)
 {
     assert(n);
-    NodesGuiList::iterator it = std::find(_imp->_nodesTrash.begin(), _imp->_nodesTrash.end(), n);
-
-    if ( it != _imp->_nodesTrash.end() ) {
-        _imp->_nodesTrash.erase(it);
-    }
-
+   
     {
         QMutexLocker l(&_imp->_nodesMutex);
         NodesGuiList::iterator it = std::find(_imp->_nodes.begin(), _imp->_nodes.end(), n);
@@ -338,7 +343,7 @@ NodeGraph::deleteNodePermanantly(const NodeGuiPtr& n)
         }
     }
 
-    NodesGuiList::iterator found = std::find(_imp->_selection.begin(), _imp->_selection.end(), n);
+    NodesGuiWList::iterator found = _imp->findSelectedNode(n);
     if ( found != _imp->_selection.end() ) {
         n->setUserSelected(false);
         _imp->_selection.erase(found);
@@ -354,12 +359,7 @@ NodeGraph::invalidateAllNodesParenting()
             (*it)->scene()->removeItem((*it).get());
         }
     }
-    for (NodesGuiList::iterator it = _imp->_nodesTrash.begin(); it != _imp->_nodesTrash.end(); ++it) {
-        (*it)->setParentItem(NULL);
-        if ( (*it)->scene() ) {
-            (*it)->scene()->removeItem((*it).get());
-        }
-    }
+
 }
 
 void
@@ -386,10 +386,11 @@ NodeGraph::centerOnAllNodes()
             }
         }
     } else {
-        for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
-            if ( /*(*it)->isActive() && */ (*it)->isVisible() ) {
-                QSize size = (*it)->getSize();
-                QPointF pos = (*it)->mapToScene( (*it)->mapFromParent( (*it)->pos() ) );
+        for (NodesGuiWList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
+            NodeGuiPtr n =it->lock();
+            if ( n && n->isVisible() ) {
+                QSize size = n->getSize();
+                QPointF pos = n->mapToScene( n->mapFromParent( n->pos() ) );
                 xmin = std::min( xmin, pos.x() );
                 xmax = std::max( xmax, pos.x() + size.width() );
                 ymin = std::min( ymin, pos.y() );

@@ -261,6 +261,12 @@ struct EffectInstanceCommonData
     // Active Timeline interacts, only accesses on the main thread
     std::list<OverlayInteractBasePtr> timelineInteracts;
 
+    // Weak pointer to the node holding this EffectInstance.
+    // The node itself manages the lifetime of the main-thread EffectInstance.
+    // However, render clones are managed themselves by the main EffectInstance.
+    // To ensure that the node pointer is not NULL suddenly on a render thread because the main-thread is destroying it,
+    // we keep another shared pointer for render clones only, in  RenderCloneData
+    NodeWPtr node;
 
     EffectInstanceCommonData()
     : attachedContextsMutex(QMutex::Recursive)
@@ -278,6 +284,7 @@ struct EffectInstanceCommonData
     , accumBuffer()
     , interacts()
     , timelineInteracts()
+    , node()
     {
 
     }
@@ -360,6 +367,9 @@ struct RenderCloneData
     // Properties, local to this render
     DynamicProperties props;
 
+    // A shared pointer to the node, to ensure it does not get deleted while rendering
+    NodePtr node;
+
     RenderCloneData()
     : lock()
     , instanceSafeRenderMutex()
@@ -369,11 +379,10 @@ struct RenderCloneData
     , frameRangeResults()
     , metadataResults()
     , props()
+    , node()
     {
 
     }
-
-    
 
 };
 

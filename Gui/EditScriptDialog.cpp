@@ -335,7 +335,11 @@ EditScriptDialog::onUseRetButtonClicked(bool useRet)
 
 EditScriptDialog::~EditScriptDialog()
 {
-    _imp->knobExpressionReceiver.lock()->getContainer()->getGui()->setEditExpressionDialogLanguageValid(false);
+    KnobGuiPtr k = _imp->knobExpressionReceiver.lock();
+    if (k) {
+        k->getContainer()->getGui()->setEditExpressionDialogLanguageValid(false);
+    }
+
 }
 
 void

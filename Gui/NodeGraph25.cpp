@@ -277,22 +277,24 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         ///We try to find if the last selected node has an input, if so move selection (or add to selection)
         ///the first valid input node
         if ( !_imp->_selection.empty() ) {
-            NodeGuiPtr lastSelected = ( *_imp->_selection.rbegin() );
-            const std::vector<Edge*> & inputs = lastSelected->getInputsArrows();
-            for (U32 i = 0; i < inputs.size(); ++i) {
-                if ( inputs[i]->hasSource() ) {
-                    NodeGuiPtr input = inputs[i]->getSource();
-                    if ( input->getIsSelected() && modCASIsShift(e) ) {
-                        NodesGuiList::iterator found = std::find(_imp->_selection.begin(),
-                                                                 _imp->_selection.end(), lastSelected);
-                        if ( found != _imp->_selection.end() ) {
-                            lastSelected->setUserSelected(false);
-                            _imp->_selection.erase(found);
+            NodeGuiPtr lastSelected = _imp->_selection.rbegin()->lock();
+            if (lastSelected) {
+                const std::vector<Edge*> & inputs = lastSelected->getInputsArrows();
+                for (U32 i = 0; i < inputs.size(); ++i) {
+                    if ( inputs[i]->hasSource() ) {
+                        NodeGuiPtr input = inputs[i]->getSource();
+                        if ( input->getIsSelected() && modCASIsShift(e) ) {
+                            for (NodesGuiWList::iterator it = _imp->_selection.begin(); it!=_imp->_selection.end(); ++it) {
+                                if ( it->lock() != lastSelected ) {
+                                    lastSelected->setUserSelected(false);
+                                    _imp->_selection.erase(it);
+                                }
+                            }
+                        } else {
+                            selectNode( inputs[i]->getSource(), modCASIsShift(e) );
                         }
-                    } else {
-                        selectNode( inputs[i]->getSource(), modCASIsShift(e) );
+                        break;
                     }
-                    break;
                 }
             }
         }
@@ -300,27 +302,30 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         ///We try to find if the last selected node has an output, if so move selection (or add to selection)
         ///the first valid output node
         if ( !_imp->_selection.empty() ) {
-            NodeGuiPtr lastSelected = ( *_imp->_selection.rbegin() );
+            NodeGuiPtr lastSelected = _imp->_selection.rbegin()->lock();
             OutputNodesMap  outputs;
-            lastSelected->getNode()->getOutputs(outputs);
-            if ( !outputs.empty() ) {
-                const NodePtr& firstOutput = outputs.begin()->first;
-                if (firstOutput) {
-                    NodeGuiIPtr output_i = firstOutput->getNodeGui();
-                    NodeGuiPtr output = boost::dynamic_pointer_cast<NodeGui>(output_i);
-                    if (output) {
-                        if ( output->getIsSelected() && modCASIsShift(e) ) {
-                            NodesGuiList::iterator found = std::find(_imp->_selection.begin(),
-                                                                     _imp->_selection.end(), lastSelected);
-                            if ( found != _imp->_selection.end() ) {
-                                lastSelected->setUserSelected(false);
-                                _imp->_selection.erase(found);
+            if (lastSelected) {
+                lastSelected->getNode()->getOutputs(outputs);
+                if ( !outputs.empty() ) {
+                    const NodePtr& firstOutput = outputs.begin()->first;
+                    if (firstOutput) {
+                        NodeGuiIPtr output_i = firstOutput->getNodeGui();
+                        NodeGuiPtr output = boost::dynamic_pointer_cast<NodeGui>(output_i);
+                        if (output) {
+                            if ( output->getIsSelected() && modCASIsShift(e) ) {
+                                for (NodesGuiWList::iterator it = _imp->_selection.begin(); it!=_imp->_selection.end(); ++it) {
+                                    if ( it->lock() != lastSelected ) {
+                                        lastSelected->setUserSelected(false);
+                                        _imp->_selection.erase(it);
+                                    }
+                                }
+
+                            } else {
+                                selectNode( output, modCASIsShift(e) );
                             }
-                        } else {
-                            selectNode( output, modCASIsShift(e) );
                         }
-                    }
-                } // firstOutput
+                    } // firstOutput
+                }
             }
         }
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphRearrangeNodes, modifiers, key) ) {
@@ -342,7 +347,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphRenameNode, modifiers, key) ) {
         renameNode();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphExtractNode, modifiers, key) ) {
-        pushUndoCommand( new ExtractNodeUndoRedoCommand(this, _imp->_selection) );
+        pushUndoCommand( new ExtractNodeUndoRedoCommand(this, getSelectedNodes()) );
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphTogglePreview, modifiers, key) ) {
         togglePreviewsForSelectedNodes();
     } else if ( key == Qt::Key_Plus) { // zoom in/out doesn't care about modifiers
@@ -353,7 +358,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         wheelEvent(&e);
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphOpenNodePanel, modifiers, key) ) {
         if (_imp->_selection.size() == 1) {
-            showNodePanel(modCASIsControl(e), modCASIsControl(e), _imp->_selection.front());
+            showNodePanel(modCASIsControl(e), modCASIsControl(e), _imp->_selection.front().lock());
         } else {
             accept = false;
         }

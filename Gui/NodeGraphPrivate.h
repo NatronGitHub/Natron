@@ -42,7 +42,6 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QPainter>
 #include <QtCore/QPointF>
 #include <QColor>
-#include <QFlags>
 #include <QPen>
 #include <QStyleOptionGraphicsItem>
 CLANG_DIAG_ON(deprecated)
@@ -159,13 +158,12 @@ public:
     QPoint _lastMousePos;
     QPointF _lastSelectionStartPointScene;
     EventStateEnum _evtState;
-    NodeGuiPtr _magnifiedNode;
+    NodeGuiWPtr _magnifiedNode;
     double _nodeSelectedScaleBeforeMagnif;
     bool _magnifOn;
     Edge* _arrowSelected;
     mutable QMutex _nodesMutex;
     NodesGuiList _nodes;
-    NodesGuiList _nodesTrash;
 
     ///Enables the "Tab" shortcut to popup the node creation dialog.
     ///This is set to true on enterEvent and set back to false on leaveEvent
@@ -182,13 +180,13 @@ public:
     QGraphicsItem *_tL, *_tR, *_bR, *_bL;
     bool _refreshOverlays;
     Edge* _highLightedEdge;
-    NodeGuiPtr _mergeHintNode;
+    NodeGuiWPtr _mergeHintNode;
 
     ///This is a hint edge we show when _highLightedEdge is not NULL to display a possible connection.
     Edge* _hintInputEdge;
     Edge* _hintOutputEdge;
-    NodeGuiPtr _backdropResized; //< the backdrop being resized
-    NodesGuiList _selection;
+    NodeGuiWPtr _backdropResized; //< the backdrop being resized
+    NodesGuiWList _selection;
 
     //To avoid calling unsetCursor too much
     bool cursorSet;
@@ -260,7 +258,8 @@ public:
         // If not specified, the node pointer of the original is not necessary and can be left to NULL.
         ePasteNodesFlagCloneNodes = 0x4
     };
-    typedef QFlags<PasteNodesFlagEnum> PasteNodesFlags;
+
+    DECLARE_FLAGS(PasteNodesFlags, PasteNodesFlagEnum);
 
     /**
      * @brief Paste the given nodes with flags. This will create new copies of the nodes
@@ -281,6 +280,17 @@ public:
         SERIALIZATION_NAMESPACE::NodeSerializationPtr nodeSerialization;
     };
 
+    NodesGuiWList::iterator findSelectedNode(const NodeGuiPtr& node)
+    {
+        for (NodesGuiWList::iterator it = _selection.begin(); it != _selection.end(); ++it) {
+            NodeGuiPtr n = it->lock();
+            if ( n == node ) {
+                return it;
+            }
+        }
+        return _selection.end();
+    }
+
     void editSelectionFromSelectionRectangle(bool addToSelection);
 
     void resetSelection();
@@ -293,5 +303,8 @@ public:
 };
 
 NATRON_NAMESPACE_EXIT;
+
+DECLARE_OPERATORS_FOR_FLAGS(NATRON_NAMESPACE::NodeGraphPrivate::PasteNodesFlags);
+
 
 #endif // Gui_NodeGraphPrivate_h
