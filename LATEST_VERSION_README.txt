@@ -1,4 +1,4 @@
-The Natron version number (eg 2.2.8) appears in:
+The Natron version number (eg 2.2.9) appears in:
 
 - Documentation/source/conf.py in variables version and release
 - App/App.pro in variable VERSION
