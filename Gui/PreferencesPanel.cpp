@@ -1189,7 +1189,10 @@ PreferencesPanel::saveChangesAndClose()
     ///Steal focus from other widgets so that we are sure all LineEdits and Spinboxes get the focusOut event and their editingFinished
     ///signal is emitted.
     _imp->okB->setFocus();
-    appPTR->getCurrentSettings()->saveSettings(_imp->changedKnobs, true, _imp->pluginSettingsChanged);
+    SettingsPtr settings = appPTR->getCurrentSettings();
+    if (settings) {
+        settings->saveSettings(_imp->changedKnobs, true, _imp->pluginSettingsChanged);
+    }
     appPTR->saveShortcuts();
     _imp->closeIsOK = true;
     close();

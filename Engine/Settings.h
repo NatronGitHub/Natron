@@ -132,6 +132,11 @@ public:
 
     void populateSystemFonts(const QSettings& settings, const std::vector<std::string>& fonts);
 
+    // should settings be saved?
+    void setSaveSettings(bool);
+
+    bool getSaveSettings() const;
+
     ///save the settings to the application's settings
     void saveSettings(const std::vector<KnobI*>& settings, bool doWarnings, bool pluginSettings);
 
@@ -407,6 +412,7 @@ private:
 
 
     boost::shared_ptr<KnobBool> _natronSettingsExist;
+    boost::shared_ptr<KnobBool> _saveSettings;
 
 
     // General
