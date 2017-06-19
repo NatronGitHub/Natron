@@ -148,7 +148,7 @@ public:
     }
 
     ///restores the settings from disk
-    void restoreSettings();
+    void restoreSettings(bool useDefault);
 
     void restoreKnobsFromSettings(const KnobsVec& knobs);
     void restoreKnobsFromSettings(const std::vector<KnobI*>& knobs);
