@@ -195,7 +195,7 @@ def createInstance(app,group):
 
     lastNode.userNatron = lastNode.createPageParam("userNatron", "User")
     # Refresh the GUI with the newly created parameters
-    lastNode.setPagesOrder(['controls', 'Node', 'Info', 'Settings', 'userNatron'])
+    lastNode.setPagesOrder(['controls', 'Node', 'Settings', 'userNatron'])
     lastNode.refreshUserParamsGUI()
     del lastNode
 
@@ -216,14 +216,6 @@ def createInstance(app,group):
         param.setValue(100, 3)
         del param
 
-    param = lastNode.getParam("gamma")
-    if param is not None:
-        param.setValue(1, 0)
-        param.setValue(1, 1)
-        param.setValue(1, 2)
-        param.setValue(1, 3)
-        del param
-
     param = lastNode.getParam("clampBlack")
     if param is not None:
         param.setValue(True)
@@ -232,11 +224,6 @@ def createInstance(app,group):
     param = lastNode.getParam("premultChanged")
     if param is not None:
         param.setValue(True)
-        del param
-
-    param = lastNode.getParam("Source_channels")
-    if param is not None:
-        param.set("Color.RGBA")
         del param
 
     param = lastNode.getParam("enableMask_Mask")
@@ -263,7 +250,7 @@ def createInstance(app,group):
 
     param = lastNode.getParam("channels")
     if param is not None:
-        param.set("Color.RGBA")
+        param.set("uk.co.thefoundry.OfxImagePlaneStereoDisparityLeft")
         del param
 
     del lastNode
@@ -271,7 +258,6 @@ def createInstance(app,group):
 
     # Start of node "Output1"
     lastNode = app.createNode("fr.inria.built-in.Output", 1, group)
-    lastNode.setScriptName("Output1")
     lastNode.setLabel("Output1")
     lastNode.setPosition(882, 496)
     lastNode.setSize(104, 34)
@@ -309,7 +295,7 @@ def createInstance(app,group):
 
     param = lastNode.getParam("p1_channels")
     if param is not None:
-        param.set("Color.RGBA")
+        param.set("")
         del param
 
     del lastNode

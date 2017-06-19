@@ -735,7 +735,7 @@ Image::Image(const ImageKey & key,
 /*This constructor can be used to allocate a local Image. The deallocation should
    then be handled by the user. Note that no view number is passed in parameter
    as it is not needed.*/
-Image::Image(const ImageComponents& components,
+Image::Image(const ImagePlaneDesc& components,
              const RectD & regionOfDefinition, //!< rod in canonical coordinates
              const RectI & bounds, //!< bounds in pixel coordinates
              unsigned int mipMapLevel,
@@ -825,7 +825,7 @@ Image::makeParams(const RectD & rod,
                   const double par,
                   unsigned int mipMapLevel,
                   bool isRoDProjectFormat,
-                  const ImageComponents& components,
+                  const ImagePlaneDesc& components,
                   ImageBitDepthEnum bitdepth,
                   ImagePremultiplicationEnum premult,
                   ImageFieldingOrderEnum fielding,
@@ -855,7 +855,7 @@ Image::makeParams(const RectD & rod,    // the image rod in canonical coordinate
                   const double par,
                   unsigned int mipMapLevel,
                   bool isRoDProjectFormat,
-                  const ImageComponents& components,
+                  const ImagePlaneDesc& components,
                   ImageBitDepthEnum bitdepth,
                   ImagePremultiplicationEnum premult,
                   ImageFieldingOrderEnum fielding,
@@ -898,7 +898,7 @@ Image::pasteFromForDepth(const Image & srcImg,
 
     QWriteLocker k(&_entryLock);
     boost::shared_ptr<QReadLocker> k2;
-    if (takeSrcLock) {
+    if (takeSrcLock && &srcImg != this) {
         k2.reset( new QReadLocker(&srcImg._entryLock) );
     }
 
@@ -1267,7 +1267,7 @@ Image::pasteFrom(const Image & src,
         assert(gpuData);
         if (gpuData) {
             // update data directly on the mapped buffer
-            ImagePtr tmpImg( new Image( ImageComponents::getRGBAComponents(), src.getRoD(), roi, 0, src.getPixelAspectRatio(), src.getBitDepth(), src.getPremultiplication(), src.getFieldingOrder(), false, eStorageModeRAM) );
+            ImagePtr tmpImg( new Image( ImagePlaneDesc::getRGBAComponents(), src.getRoD(), roi, 0, src.getPixelAspectRatio(), src.getBitDepth(), src.getPremultiplication(), src.getFieldingOrder(), false, eStorageModeRAM) );
             tmpImg->pasteFrom(src, roi);
 
             Image::ReadAccess racc(tmpImg ? tmpImg.get() : this);
@@ -1330,7 +1330,7 @@ Image::pasteFrom(const Image & src,
         glFinish();
         glCheckError();
         // Read to a temporary RGBA buffer then conver to the image which may not be RGBA
-        ImagePtr tmpImg( new Image( ImageComponents::getRGBAComponents(), getRoD(), roi, 0, getPixelAspectRatio(), getBitDepth(), getPremultiplication(), getFieldingOrder(), false, eStorageModeRAM) );
+        ImagePtr tmpImg( new Image( ImagePlaneDesc::getRGBAComponents(), getRoD(), roi, 0, getPixelAspectRatio(), getBitDepth(), getPremultiplication(), getFieldingOrder(), false, eStorageModeRAM) );
 
         {
             Image::WriteAccess tmpAcc(tmpImg ? tmpImg.get() : this);
@@ -1656,8 +1656,8 @@ Image::getComponentsCount() const
 }
 
 bool
-Image::hasEnoughDataToConvert(ImageComponentsEnum from,
-                              ImageComponentsEnum to)
+Image::hasEnoughDataToConvert(ImagePlaneDescEnum from,
+                              ImagePlaneDescEnum to)
 {
     switch (from) {
     case eImageComponentRGBA:
@@ -1705,10 +1705,10 @@ Image::hasEnoughDataToConvert(ImageComponentsEnum from,
 }
 
 std::string
-Image::getFormatString(const ImageComponents& comps,
+Image::getFormatString(const ImagePlaneDesc& comps,
                        ImageBitDepthEnum depth)
 {
-    std::string s = comps.getLayerName() + '.' + comps.getComponentsGlobalName();
+    std::string s = comps.getPlaneLabel() + '.' + comps.getChannelsLabel();
 
     s.append( getDepthString(depth) );
 

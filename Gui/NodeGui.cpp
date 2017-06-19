@@ -2974,23 +2974,40 @@ NodeGui::setNameItemHtml(const QString & name,
 void
 NodeGui::onOutputLayerChanged()
 {
-    QString extraLayerStr;
-    std::string selectedLayer;
-    bool foundLayer = getNode()->getSelectedLayerChoiceRaw(-1, selectedLayer);
-
-    if (!foundLayer) {
+    NodePtr internalNode = getNode();
+    if (!internalNode) {
         return;
     }
 
-    bool isCurLayerColorComp = selectedLayer == kNatronAlphaPlaneUserName || selectedLayer == kNatronRGBPlaneUserName || selectedLayer == kNatronRGBAPlaneUserName;
+    QString extraLayerStr;
+    boost::shared_ptr<KnobBool> processAllKnob = internalNode->getProcessAllLayersKnob();
+    bool processAll = false;
+    if (processAllKnob && processAllKnob->hasModifications()) {
+        processAll = processAllKnob->getValue();
+        if (processAll) {
+            //extraLayerStr.append( QString::fromUtf8("<br>") );
+            extraLayerStr += tr("(All)");
+        }
+    }
+    boost::shared_ptr<KnobChoice> layerKnob = internalNode->getChannelSelectorKnob(-1);
+    ImagePlaneDesc outputLayer;
+    {
+        bool isAll;
+        std::list<ImagePlaneDesc> availableLayers;
+        internalNode->getEffectInstance()->getAvailableLayers(internalNode->getApp()->getTimeLine()->currentFrame(), ViewIdx(0), -1,  &availableLayers);
 
-    if ( !isCurLayerColorComp &&
-         ( selectedLayer != "None") &&
-         ( selectedLayer != "All") ) {
-        extraLayerStr.append( QString::fromUtf8("<br>") );
-        extraLayerStr.push_back( QLatin1Char('(') );
-        extraLayerStr.append( QString::fromUtf8( selectedLayer.c_str() ) );
-        extraLayerStr.push_back( QLatin1Char(')') );
+
+        internalNode->getSelectedLayer(-1, availableLayers, 0, &isAll, &outputLayer);
+    }
+    if (!processAll && outputLayer.getNumComponents() > 0) {
+        if (!outputLayer.isColorPlane()) {
+            if (!extraLayerStr.isEmpty()) {
+                extraLayerStr.append( QString::fromUtf8("<br>") );
+            }
+            extraLayerStr.push_back( QLatin1Char('(') );
+            extraLayerStr.append( QString::fromUtf8( outputLayer.getPlaneLabel().c_str() ) );
+            extraLayerStr.push_back( QLatin1Char(')') );
+        }
     }
     if (extraLayerStr == _channelsExtraLabel) {
         return;
@@ -3914,14 +3931,14 @@ NodeGui::onRightClickMenuKnobPopulated()
     if (!isChoice) {
         return;
     }
-    std::vector<std::string> entries = isChoice->getEntries_mt_safe();
+    std::vector<ChoiceOption> entries = isChoice->getEntries_mt_safe();
     if ( entries.empty() ) {
         return;
     }
 
     Menu m(isViewer);
-    for (std::vector<std::string>::iterator it = entries.begin(); it != entries.end(); ++it) {
-        KnobPtr knob = node->getKnobByName(*it);
+    for (std::vector<ChoiceOption>::iterator it = entries.begin(); it != entries.end(); ++it) {
+        KnobPtr knob = node->getKnobByName(it->id);
         if (!knob) {
             // Plug-in specified invalid knob name in the menu
             continue;

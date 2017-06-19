@@ -34,8 +34,6 @@ Uses the 'vanvliet' and 'deriche' functions from the CImg library.
 
 CImg is a free, open-source library distributed under the CeCILL-C (close to the GNU LGPL) or CeCILL (compatible with the GNU GPL) licenses. It can be used in commercial applications (see http://cimg.eu).
 
-This plugin was compiled without debug, without assertions, with optimizations, with OpenMP 201307, using GNU C++ version 4.9.4.
-
 Inputs
 ------
 

@@ -62,7 +62,7 @@ FrameKey::FrameKey(const CacheEntryHolder* holder,
                    const TextureRect & textureRect,
                    unsigned int mipMapLevel,
                    const std::string & inputName,
-                   const ImageComponents& layer,
+                   const ImagePlaneDesc& layer,
                    const std::string& alphaChannelFullName,
                    bool useShaders,
                    bool draftMode)
@@ -104,8 +104,8 @@ FrameKey::fillHash(Hash64* hash) const
     hash->append(_textureRect.y2);
     hash->append(_textureRect.closestPo2);
     hash->append(_mipMapLevel);
-    Hash64_appendQString( hash, QString::fromUtf8( _layer.getLayerName().c_str() ) );
-    const std::vector<std::string>& channels = _layer.getComponentsNames();
+    Hash64_appendQString( hash, QString::fromUtf8( _layer.getPlaneID().c_str() ) );
+    const std::vector<std::string>& channels = _layer.getChannels();
     for (std::size_t i = 0; i < channels.size(); ++i) {
         Hash64_appendQString( hash, QString::fromUtf8( channels[i].c_str() ) );
     }

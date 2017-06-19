@@ -29,7 +29,7 @@
 
 #include "Engine/KeyHelper.h"
 #include "Engine/TextureRect.h"
-#include "Engine/ImageComponents.h"
+#include "Engine/ImagePlaneDesc.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
@@ -53,7 +53,7 @@ public:
              const TextureRect & textureRect,
              unsigned int mipMapLevel,
              const std::string & inputName,
-             const ImageComponents& layer,
+             const ImagePlaneDesc& layer,
              const std::string& alphaChannelFullName,
              bool useShaders,
              bool draftMode);
@@ -133,7 +133,7 @@ private:
     TextureRect _textureRect;     // texture rectangle definition (bounds in the original image + width and height)
     unsigned int _mipMapLevel; // The scale of the image from which this texture was made
     std::string _inputName; // The name of the input node used (to not mix up input 1, 2, 3 etc...)
-    ImageComponents _layer; // The Layer of the image
+    ImagePlaneDesc _layer; // The Layer of the image
     std::string _alphaChannelFullName; /// e.g: color.a , only used if _channels if A
     bool _useShaders; // Whether GLSL shaders are active or not
     bool _draftMode; // Whether draft mode is enabled or not

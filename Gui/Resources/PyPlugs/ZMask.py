@@ -254,7 +254,7 @@ def createInstance(app,group):
 
     lastNode.userNatron = lastNode.createPageParam("userNatron", "User")
     # Refresh the GUI with the newly created parameters
-    lastNode.setPagesOrder(['controls', 'Node', 'Info', 'Settings', 'userNatron'])
+    lastNode.setPagesOrder(['controls', 'Node', 'Settings', 'userNatron'])
     lastNode.refreshUserParamsGUI()
     del lastNode
 
@@ -282,11 +282,6 @@ def createInstance(app,group):
         param.setValue("<Natron>(difference)</Natron>")
         del param
 
-    param = lastNode.getParam("B_channels")
-    if param is not None:
-        param.set("Color.RGBA")
-        del param
-
     del lastNode
     # End of node "Merge1"
 
@@ -298,6 +293,11 @@ def createInstance(app,group):
     lastNode.setSize(80, 34)
     lastNode.setColor(0.3, 0.5, 0.2)
     groupSolid1 = lastNode
+
+    param = lastNode.getParam("NatronParamFormatChoice")
+    if param is not None:
+        param.set("PC_Video 640x480")
+        del param
 
     param = lastNode.getParam("color")
     if param is not None:
@@ -325,7 +325,7 @@ def createInstance(app,group):
 
     param = lastNode.getParam("channels")
     if param is not None:
-        param.set("Color.RGBA")
+        param.set("uk.co.thefoundry.OfxImagePlaneStereoDisparityLeft")
         del param
 
     del lastNode
@@ -357,30 +357,6 @@ def createInstance(app,group):
     lastNode.setColor(0.48, 0.66, 1)
     groupColorCorrect1 = lastNode
 
-    param = lastNode.getParam("MasterContrast")
-    if param is not None:
-        param.setValue(1, 0)
-        param.setValue(1, 1)
-        param.setValue(1, 2)
-        param.setValue(1, 3)
-        del param
-
-    param = lastNode.getParam("MasterGamma")
-    if param is not None:
-        param.setValue(1, 0)
-        param.setValue(1, 1)
-        param.setValue(1, 2)
-        param.setValue(1, 3)
-        del param
-
-    param = lastNode.getParam("MasterGain")
-    if param is not None:
-        param.setValue(1, 0)
-        param.setValue(1, 1)
-        param.setValue(1, 2)
-        param.setValue(1, 3)
-        del param
-
     param = lastNode.getParam("toneRanges")
     if param is not None:
         param.setCurveColor(0, 0.6, 0.4, 0.6)
@@ -403,7 +379,6 @@ def createInstance(app,group):
 
     # Start of node "Output1"
     lastNode = app.createNode("fr.inria.built-in.Output", 1, group)
-    lastNode.setScriptName("Output1")
     lastNode.setLabel("Output1")
     lastNode.setPosition(764, 774)
     lastNode.setSize(104, 34)
@@ -441,7 +416,7 @@ def createInstance(app,group):
 
     param = lastNode.getParam("p1_channels")
     if param is not None:
-        param.set("Color.RGBA")
+        param.set("")
         del param
 
     del lastNode

@@ -807,10 +807,9 @@ AppManager::loadInternal(const CLArgs& cl)
 
 
     // Settings: we must load these and set the custom settings (using python) ASAP, before creating the OFX Plugin Cache
-    if (!cl.isLoadedUsingDefaultSettings()) {
-        ///Call restore after initializing knobs
-        _imp->_settings->restoreSettings();
-    }
+    // Settings: always call restoreSettings, but call restoreKnobsFromSettings conditionally
+    // Call restore after initializing knobs
+    _imp->_settings->restoreSettings( cl.isLoadedUsingDefaultSettings() );
 
     _imp->declareSettingsToPython();
 
@@ -1027,7 +1026,7 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
 
     setLoadingStatus( tr("Restoring the image cache...") );
 
-    if (oldCacheVersion != NATRON_CACHE_VERSION) {
+    if (oldCacheVersion != NATRON_CACHE_VERSION || cl.isCacheClearRequestedOnLaunch()) {
         wipeAndCreateDiskCacheStructure();
     } else {
         _imp->restoreCaches();

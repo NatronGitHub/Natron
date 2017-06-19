@@ -452,10 +452,7 @@ DockablePanel::DockablePanel(Gui* gui,
 
 DockablePanel::~DockablePanel()
 {
-    Gui* gui = getGui();
-    if (gui) {
-        gui->removeVisibleDockablePanel(this);
-    }
+    
 }
 
 bool

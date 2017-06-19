@@ -466,13 +466,12 @@ def createInstance(app,group):
 
     lastNode.userNatron = lastNode.createPageParam("userNatron", "User")
     # Refresh the GUI with the newly created parameters
-    lastNode.setPagesOrder(['controls', 'Node', 'Info', 'Settings', 'userNatron'])
+    lastNode.setPagesOrder(['controls', 'Node', 'Settings', 'userNatron'])
     lastNode.refreshUserParamsGUI()
     del lastNode
 
     # Start of node "Output1"
     lastNode = app.createNode("fr.inria.built-in.Output", 1, group)
-    lastNode.setScriptName("Output1")
     lastNode.setLabel("Output1")
     lastNode.setPosition(1622, 1973)
     lastNode.setSize(104, 32)
@@ -516,6 +515,11 @@ def createInstance(app,group):
     param = lastNode.getParam("AChannelsA")
     if param is not None:
         param.setValue(False)
+        del param
+
+    param = lastNode.getParam("aChannelsChanged")
+    if param is not None:
+        param.setValue(True)
         del param
 
     param = lastNode.getParam("userTextArea")
@@ -676,6 +680,11 @@ def createInstance(app,group):
         param.setValue(980, 0)
         del param
 
+    param = lastNode.getParam("transformCenterChanged")
+    if param is not None:
+        param.setValue(True)
+        del param
+
     del lastNode
     # End of node "RotateIn"
 
@@ -711,6 +720,11 @@ def createInstance(app,group):
         param.setValue(540, 1)
         del param
 
+    param = lastNode.getParam("transformCenterChanged")
+    if param is not None:
+        param.setValue(True)
+        del param
+
     del lastNode
     # End of node "RotateOut"
 
@@ -732,6 +746,11 @@ def createInstance(app,group):
     if param is not None:
         param.setValue(980, 0)
         param.setValue(540, 1)
+        del param
+
+    param = lastNode.getParam("transformCenterChanged")
+    if param is not None:
+        param.setValue(True)
         del param
 
     del lastNode
@@ -889,6 +908,11 @@ def createInstance(app,group):
         param.setValue(False)
         del param
 
+    param = lastNode.getParam("aChannelsChanged")
+    if param is not None:
+        param.setValue(True)
+        del param
+
     param = lastNode.getParam("userTextArea")
     if param is not None:
         param.setValue("<Natron>(multiply)</Natron>")
@@ -933,49 +957,24 @@ def createInstance(app,group):
     lastNode.setColor(0.6, 0.24, 0.39)
     groupShuffle2 = lastNode
 
-    param = lastNode.getParam("outputChannelsChoice")
-    if param is not None:
-        param.setValue("Color.RGBA")
-        del param
-
     param = lastNode.getParam("outputR")
     if param is not None:
-        param.set("A.a")
-        del param
-
-    param = lastNode.getParam("outputRChoice")
-    if param is not None:
-        param.setValue("A.a")
+        param.set("A.uk.co.thefoundry.OfxImagePlaneColour.A")
         del param
 
     param = lastNode.getParam("outputG")
     if param is not None:
-        param.set("A.a")
-        del param
-
-    param = lastNode.getParam("outputGChoice")
-    if param is not None:
-        param.setValue("A.a")
+        param.set("A.uk.co.thefoundry.OfxImagePlaneColour.A")
         del param
 
     param = lastNode.getParam("outputB")
     if param is not None:
-        param.set("A.a")
-        del param
-
-    param = lastNode.getParam("outputBChoice")
-    if param is not None:
-        param.setValue("A.a")
+        param.set("A.uk.co.thefoundry.OfxImagePlaneColour.A")
         del param
 
     param = lastNode.getParam("outputA")
     if param is not None:
         param.set("0")
-        del param
-
-    param = lastNode.getParam("outputAChoice")
-    if param is not None:
-        param.setValue("0")
         del param
 
     del lastNode
@@ -1015,30 +1014,6 @@ def createInstance(app,group):
     param = lastNode.getParam("NatronOfxParamProcessA")
     if param is not None:
         param.setValue(False)
-        del param
-
-    param = lastNode.getParam("MasterSaturation")
-    if param is not None:
-        param.setValue(1, 0)
-        param.setValue(1, 1)
-        param.setValue(1, 2)
-        param.setValue(1, 3)
-        del param
-
-    param = lastNode.getParam("MasterGamma")
-    if param is not None:
-        param.setValue(1, 0)
-        param.setValue(1, 1)
-        param.setValue(1, 2)
-        param.setValue(1, 3)
-        del param
-
-    param = lastNode.getParam("MasterGain")
-    if param is not None:
-        param.setValue(1, 0)
-        param.setValue(1, 1)
-        param.setValue(1, 2)
-        param.setValue(1, 3)
         del param
 
     param = lastNode.getParam("toneRanges")
@@ -1150,44 +1125,19 @@ def createInstance(app,group):
     lastNode.setColor(0.6, 0.24, 0.39)
     groupShuffle1 = lastNode
 
-    param = lastNode.getParam("outputChannelsChoice")
-    if param is not None:
-        param.setValue("Color.RGBA")
-        del param
-
     param = lastNode.getParam("outputR")
     if param is not None:
-        param.set("A.a")
-        del param
-
-    param = lastNode.getParam("outputRChoice")
-    if param is not None:
-        param.setValue("A.a")
+        param.set("A.uk.co.thefoundry.OfxImagePlaneColour.A")
         del param
 
     param = lastNode.getParam("outputG")
     if param is not None:
-        param.set("A.a")
-        del param
-
-    param = lastNode.getParam("outputGChoice")
-    if param is not None:
-        param.setValue("A.a")
+        param.set("A.uk.co.thefoundry.OfxImagePlaneColour.A")
         del param
 
     param = lastNode.getParam("outputB")
     if param is not None:
-        param.set("A.a")
-        del param
-
-    param = lastNode.getParam("outputBChoice")
-    if param is not None:
-        param.setValue("A.a")
-        del param
-
-    param = lastNode.getParam("outputAChoice")
-    if param is not None:
-        param.setValue("A.a")
+        param.set("A.uk.co.thefoundry.OfxImagePlaneColour.A")
         del param
 
     del lastNode
@@ -1276,11 +1226,6 @@ def createInstance(app,group):
         param.set("Black")
         del param
 
-    param = lastNode.getParam("filter")
-    if param is not None:
-        param.set("Quasi-Gaussian")
-        del param
-
     param = lastNode.getParam("expandRoD")
     if param is not None:
         param.setValue(False)
@@ -1316,6 +1261,11 @@ def createInstance(app,group):
     param = lastNode.getParam("BChannelsA")
     if param is not None:
         param.setValue(False)
+        del param
+
+    param = lastNode.getParam("bChannelsChanged")
+    if param is not None:
+        param.setValue(True)
         del param
 
     param = lastNode.getParam("userTextArea")
@@ -1372,6 +1322,11 @@ def createInstance(app,group):
     param = lastNode.getParam("AChannelsA")
     if param is not None:
         param.setValue(False)
+        del param
+
+    param = lastNode.getParam("aChannelsChanged")
+    if param is not None:
+        param.setValue(True)
         del param
 
     param = lastNode.getParam("userTextArea")

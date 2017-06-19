@@ -29,8 +29,9 @@
 
 #include <map>
 #include <vector>
+#include <string>
 
-#ifndef Q_MOC_RUN
+#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
 GCC_DIAG_OFF(unused-parameter)
 GCC_DIAG_OFF(sign-compare)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
@@ -53,6 +54,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Variant.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
+#include "Engine/ImagePlaneDesc.h"
 #include "Engine/CurveSerialization.h"
 #include "Engine/StringAnimationManager.h"
 #include "Engine/ViewIdx.h"
@@ -71,7 +73,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define KNOB_SERIALIZATION_INTRODUCES_ALIAS 11
 #define KNOB_SERIALIZATION_REMOVE_SLAVED_TRACKS 12
 #define KNOB_SERIALIZATION_REMOVE_DEFAULT_VALUES 13
-#define KNOB_SERIALIZATION_VERSION KNOB_SERIALIZATION_REMOVE_DEFAULT_VALUES
+#define KNOB_SERIALIZATION_CHANGE_PLANES_SERIALIZATION 14
+#define KNOB_SERIALIZATION_VERSION KNOB_SERIALIZATION_CHANGE_PLANES_SERIALIZATION
 
 #define VALUE_SERIALIZATION_INTRODUCES_CHOICE_LABEL 2
 #define VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS 3
@@ -277,10 +280,10 @@ struct ValueSerialization
         } else if (isChoice) {
             int v = isChoice->getValue(_dimension);
             int defV = isChoice->getDefaultValue(_dimension);
-            std::vector<std::string> entries = isChoice->getEntries_mt_safe();
+            std::vector<ChoiceOption> entries = isChoice->getEntries_mt_safe();
             std::string label;
             if ( ( v < (int)entries.size() ) && (v >= 0) ) {
-                label = entries[v];
+                label = entries[v].id;
             }
             ar & ::boost::serialization::make_nvp("Value", v);
             ar & ::boost::serialization::make_nvp("Default", defV);
@@ -481,6 +484,11 @@ class KnobSerialization
     bool _useHostOverlay;
     mutable std::vector<ValueSerialization> _values;
 
+public:
+
+    unsigned int _version;
+private:
+    
     virtual void setChoiceExtraString(const std::string& label) OVERRIDE FINAL;
 
     friend class ::boost::serialization::access;
@@ -488,6 +496,7 @@ class KnobSerialization
     void save(Archive & ar,
               const unsigned int /*version*/) const
     {
+
         assert(_knob);
         AnimatingKnobStringHelper* isString = dynamic_cast<AnimatingKnobStringHelper*>( _knob.get() );
         KnobParametric* isParametric = dynamic_cast<KnobParametric*>( _knob.get() );
@@ -564,6 +573,7 @@ class KnobSerialization
     void load(Archive & ar,
               const unsigned int version)
     {
+        _version = version;
         assert(!_knob);
         std::string name;
         ar & ::boost::serialization::make_nvp("Name", name);
@@ -646,6 +656,12 @@ class KnobSerialization
                 assert(cData);
                 if (cData) {
                     ar & ::boost::serialization::make_nvp("ChoiceLabel", cData->_choiceString);
+                    if (version < KNOB_SERIALIZATION_CHANGE_PLANES_SERIALIZATION) {
+                        // In Natron 2.2.6 we changed the encoding of planes: they no longer are planeLabel + "." + channels
+                        // but planeID + "." + channels
+                        // Hard-code the mapping
+                        checkForPreNatron226String(&cData->_choiceString);
+                    }
                     //_extraData = cData;
                 }
             }
@@ -756,9 +772,13 @@ public:
         , _animationEnabled(false)
         , _tooltip()
         , _useHostOverlay(false)
+        , _version(KNOB_SERIALIZATION_VERSION)
     {
+
         initialize(knob);
     }
+
+    static void checkForPreNatron226String(std::string* string);
 
     ///Doing the empty param constructor + this function is the same
     ///as calling the constructore above
@@ -792,8 +812,13 @@ public:
         KnobChoice* isChoice = dynamic_cast<KnobChoice*>( _knob.get() );
         if (isChoice) {
             ChoiceExtraData* extraData = new ChoiceExtraData;
-            extraData->_entries = isChoice->getEntries_mt_safe();
-            extraData->_helpStrings = isChoice->getEntriesHelp_mt_safe();
+            std::vector<ChoiceOption> options = isChoice->getEntries_mt_safe();
+            extraData->_entries.resize(options.size());
+            extraData->_helpStrings.resize(options.size());
+            for (std::size_t i = 0; i < options.size(); ++i) {
+                extraData->_entries[i] = options[i].id;
+                extraData->_helpStrings[i] = options[i].tooltip;
+            }
             int idx = isChoice->getValue();
             if ( (idx >= 0) && ( idx < (int)extraData->_entries.size() ) ) {
                 extraData->_choiceString = extraData->_entries[idx];
@@ -867,6 +892,7 @@ public:
         , _animationEnabled(false)
         , _tooltip()
         , _useHostOverlay(false)
+        , _version(KNOB_SERIALIZATION_VERSION)
     {
     }
 

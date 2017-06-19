@@ -183,7 +183,7 @@ public Q_SLOTS:
     void onKnobAnimationLevelChanged(ViewSpec view, int dimension);
     void onChoiceMenuReset();
     void onChoiceMenuPopulated();
-    void onChoiceMenuEntryAppended(const QString& entry, const QString& help);
+    void onChoiceMenuEntryAppended();
     void onInViewportSecretChanged();
     void onInViewportLabelChanged();
 protected:

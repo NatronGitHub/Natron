@@ -112,17 +112,17 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
         _publicInterface->getApp()->updateProjectLoadStatus( tr("Restoring project settings...") );
 
         /*we must restore the entries in the combobox before restoring the value*/
-        std::vector<std::string> entries;
+        std::vector<ChoiceOption> entries;
 
         for (std::list<Format>::const_iterator it = builtinFormats.begin(); it != builtinFormats.end(); ++it) {
             QString formatStr = ProjectPrivate::generateStringFromFormat(*it);
-            entries.push_back( formatStr.toStdString() );
+            entries.push_back( ChoiceOption(formatStr.toStdString()) );
         }
 
         const std::list<Format> & objAdditionalFormats = obj.getAdditionalFormats();
         for (std::list<Format>::const_iterator it = objAdditionalFormats.begin(); it != objAdditionalFormats.end(); ++it) {
             QString formatStr = ProjectPrivate::generateStringFromFormat(*it);
-            entries.push_back( formatStr.toStdString() );
+            entries.push_back( ChoiceOption(formatStr.toStdString()) );
         }
         additionalFormats = objAdditionalFormats;
 

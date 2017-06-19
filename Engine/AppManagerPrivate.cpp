@@ -336,7 +336,9 @@ saveCache(Cache<T>* cache)
 void
 AppManagerPrivate::saveCaches()
 {
-    saveCache<FrameEntry>( _viewerCache.get() );
+    if (!appPTR->isBackground()) {
+        saveCache<FrameEntry>( _viewerCache.get() );
+    }
     saveCache<Image>( _diskCache.get() );
 } // saveCaches
 

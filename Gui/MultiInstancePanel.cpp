@@ -205,7 +205,7 @@ public:
         } else if (isChoice) {
             boost::shared_ptr<KnobChoice> choice = AppManager::createKnob<KnobChoice>(publicInterface,
                                                                                       ref->getLabel(), ref->getDimension(), declaredByPlugin);
-            choice->populateChoices( isChoice->getEntries_mt_safe(), isChoice->getEntriesHelp_mt_safe() );
+            choice->populateChoices( isChoice->getEntries_mt_safe() );
             ret = choice;
         } else if (isString) {
             boost::shared_ptr<KnobString> strKnob = AppManager::createKnob<KnobString>(publicInterface,

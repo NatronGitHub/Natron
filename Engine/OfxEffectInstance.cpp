@@ -78,7 +78,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 
 NATRON_NAMESPACE_ENTER;
 
-using std::cout; using std::endl;
+using std::cout; using std::endl; using std::string;
 
 
 namespace  {
@@ -107,7 +107,7 @@ public:
             OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->second);
             assert(clip);
             if (clip) {
-                clip->setClipTLS( view, mipmapLevel, ImageComponents::getNoneComponents() );
+                clip->setClipTLS( view, mipmapLevel, ImagePlaneDesc::getNoneComponents() );
             }
         }
     }
@@ -136,7 +136,7 @@ public:
     RenderThreadStorageSetter(OfxImageEffectInstance* effect,
                               ViewIdx view,
                               unsigned int mipmapLevel,
-                              const ImageComponents& currentPlane,
+                              const ImagePlaneDesc& currentPlane,
                               const EffectInstance::InputImagesMap& inputImages)
         : effect(effect)
     {
@@ -157,7 +157,7 @@ public:
                         assert(img);
                         clip->setClipTLS( view, mipmapLevel, img->getComponents() );
                     } else {
-                        clip->setClipTLS( view, mipmapLevel, ImageComponents::getNoneComponents() );
+                        clip->setClipTLS( view, mipmapLevel, ImagePlaneDesc::getNoneComponents() );
                     }
                 }
             }
@@ -1317,9 +1317,23 @@ OfxEffectInstance::onMetadataRefreshed(const NodeMetadata& metadata)
                 continue;
             }
             int inputNb = clip->getInputNb();
-            const ImageComponents& components = metadata.getImageComponents(inputNb);
 
-            clip->setComponents( OfxClipInstance::natronsComponentsToOfxComponents(components) );
+            std::string ofxClipComponentStr;
+            std::string componentsType = metadata.getComponentsType(inputNb);
+            int nComps = metadata.getNComps(inputNb);
+            ImagePlaneDesc natronPlane = ImagePlaneDesc::mapNCompsToColorPlane(nComps);
+            if (componentsType == kNatronColorPlaneID) {
+                ofxClipComponentStr = ImagePlaneDesc::mapPlaneToOFXComponentsTypeString(natronPlane);
+            } else if (componentsType == kNatronDisparityComponentsLabel) {
+                ofxClipComponentStr = kFnOfxImageComponentStereoDisparity;
+            } else if (componentsType == kNatronMotionComponentsLabel) {
+                ofxClipComponentStr = kFnOfxImageComponentMotionVectors;
+            } else {
+                ofxClipComponentStr = ImagePlaneDesc::mapPlaneToOFXComponentsTypeString(natronPlane);
+            }
+
+
+            clip->setComponents(ofxClipComponentStr);
             clip->setPixelDepth( OfxClipInstance::natronsDepthToOfxDepth( metadata.getBitDepth(inputNb) ) );
             clip->setAspectRatio( metadata.getPixelAspectRatio(inputNb) );
         }
@@ -1836,12 +1850,19 @@ OfxEffectInstance::isIdentity(double time,
 
         assert(_imp->effect);
 
+        int identityView = view;
+        string identityPlane = kFnOfxImagePlaneColour;
         if (getRecursionLevel() > 1) {
-            stat = _imp->effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scale, view, inputclip);
+            stat = _imp->effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scale, identityView, identityPlane, inputclip);
         } else {
             ///Take the preferences lock so that it cannot be modified throughout the action.
             QReadLocker preferencesLocker(&_imp->preferencesLock);
-            stat = _imp->effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scale, view, inputclip);
+            stat = _imp->effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scale, identityView, identityPlane, inputclip);
+        }
+        if (identityView != view || identityPlane != kFnOfxImagePlaneColour) {
+#pragma message WARN("can Natron RB2-multiplane2 handle isIdentity accross views and planes?")
+            // Natron 2 cannot handle isIdentity accross planes
+            stat = kOfxStatOK;
         }
     }
 
@@ -2005,7 +2026,7 @@ OfxEffectInstance::render(const RenderActionArgs& args)
 
     assert( !args.outputPlanes.empty() );
 
-    const std::pair<ImageComponents, ImagePtr>& firstPlane = args.outputPlanes.front();
+    const std::pair<ImagePlaneDesc, ImagePtr>& firstPlane = args.outputPlanes.front();
     OfxRectI ofxRoI;
     ofxRoI.x1 = args.roi.left();
     ofxRoI.x2 = args.roi.right();
@@ -2016,13 +2037,13 @@ OfxEffectInstance::render(const RenderActionArgs& args)
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
     bool multiPlanar = isMultiPlanar();
     std::list<std::string> ofxPlanes;
-    for (std::list<std::pair<ImageComponents, boost::shared_ptr<Image> > >::const_iterator it = args.outputPlanes.begin();
+    for (std::list<std::pair<ImagePlaneDesc, boost::shared_ptr<Image> > >::const_iterator it = args.outputPlanes.begin();
          it != args.outputPlanes.end(); ++it) {
         if (!multiPlanar) {
             // When not multi-planar, the components of the image will be the colorplane
-            OfxClipInstance::natronsPlaneToOfxPlane(it->second->getComponents(), &ofxPlanes);
+            ofxPlanes.push_back(ImagePlaneDesc::mapPlaneToOFXPlaneString(it->second->getComponents()));
         } else {
-            OfxClipInstance::natronsPlaneToOfxPlane(it->first, &ofxPlanes);
+            ofxPlanes.push_back(ImagePlaneDesc::mapPlaneToOFXPlaneString(it->first));
         }
     }
 
@@ -2787,7 +2808,7 @@ OfxEffectInstance::onSyncPrivateDataRequested()
 
 void
 OfxEffectInstance::addAcceptedComponents(int inputNb,
-                                         std::list<ImageComponents>* comps)
+                                         std::list<ImagePlaneDesc>* comps)
 {
     if (inputNb >= 0) {
         OfxClipInstance* clip = getClipCorrespondingToInput(inputNb);
@@ -2795,8 +2816,9 @@ OfxEffectInstance::addAcceptedComponents(int inputNb,
         const std::vector<std::string> & supportedComps = clip->getSupportedComponents();
         for (U32 i = 0; i < supportedComps.size(); ++i) {
             try {
-                ImageComponents ofxComp = OfxClipInstance::ofxComponentsToNatronComponents(supportedComps[i]);
-                comps->push_back(ofxComp);
+                ImagePlaneDesc comp, pairedComp;
+                ImagePlaneDesc::mapOFXComponentsTypeStringToPlanes(supportedComps[i], &comp, &pairedComp);
+                comps->push_back(ImagePlaneDesc::mapNCompsToColorPlane(comp.getNumComponents()));
             } catch (const std::runtime_error &e) {
                 // ignore unsupported components
             }
@@ -2808,8 +2830,9 @@ OfxEffectInstance::addAcceptedComponents(int inputNb,
         const std::vector<std::string> & supportedComps = clip->getSupportedComponents();
         for (U32 i = 0; i < supportedComps.size(); ++i) {
             try {
-                ImageComponents ofxComp = OfxClipInstance::ofxComponentsToNatronComponents(supportedComps[i]);
-                comps->push_back(ofxComp);
+                ImagePlaneDesc comp, pairedComp;
+                ImagePlaneDesc::mapOFXComponentsTypeStringToPlanes(supportedComps[i], &comp, &pairedComp);
+                comps->push_back(ImagePlaneDesc::mapNCompsToColorPlane(comp.getNumComponents()));
             } catch (const std::runtime_error &e) {
                 // ignore unsupported components
             }
@@ -2837,9 +2860,9 @@ void
 OfxEffectInstance::getComponentsNeededAndProduced(double time,
                                                   ViewIdx view,
                                                   EffectInstance::ComponentsNeededMap* comps,
-                                                  SequenceTime* passThroughTime,
+                                                  double* passThroughTime,
                                                   int* passThroughView,
-                                                  NodePtr* passThroughInput)
+                                                  int* passThroughInputNb)
 {
     OfxStatus stat;
     {
@@ -2854,10 +2877,11 @@ OfxEffectInstance::getComponentsNeededAndProduced(double time,
         OfxTime ptTime;
         stat = effectInstance()->getClipComponentsAction( (OfxTime)time, view, compMap, ptClip, ptTime, *passThroughView );
         if (stat != kOfxStatFailed) {
+            *passThroughInputNb = -1;
             if (ptClip) {
                 OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(ptClip);
-                if ( clip && clip->getAssociatedNode() ) {
-                    *passThroughInput = clip->getAssociatedNode()->getNode();
+                if (clip) {
+                    *passThroughInputNb = clip->getInputNb();
                 }
             }
             *passThroughTime = (SequenceTime)ptTime;
@@ -2867,14 +2891,19 @@ OfxEffectInstance::getComponentsNeededAndProduced(double time,
                 assert(clip);
                 if (clip) {
                     int index = clip->getInputNb();
-                    std::vector<ImageComponents> compNeeded;
+                    std::list<ImagePlaneDesc>& compNeeded = (*comps)[index];
                     for (std::list<std::string>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-                        ImageComponents ofxComp = OfxClipInstance::ofxComponentsToNatronComponents(*it2);
-                        if (ofxComp.getNumComponents() > 0) {
-                            compNeeded.push_back(ofxComp);
+
+                        ImagePlaneDesc plane;
+                        if ((*it2) == kFnOfxImagePlaneColour) {
+                            plane = ImagePlaneDesc::mapNCompsToColorPlane(getMetadataNComps(index));
+                        } else {
+                            plane = ImagePlaneDesc::mapOFXPlaneStringToPlane(*it2);
+                        }
+                        if (plane.getNumComponents() > 0) {
+                            compNeeded.push_back(plane);
                         }
                     }
-                    comps->insert( std::make_pair(index, compNeeded) );
                 }
             }
         }

@@ -5,13 +5,21 @@
 # History
 
 
+## Version 2.2.9
+
+- Fix a bug where the channel selector would be wrong when loading older projects (e.g. Spaceship).
+
+
 ## Version 2.2.8
 
 - OpenGL interact is now always affected by transforms even if there is motion blur.
 
 ### Plugins
 
-- Radial, Rectangle and generators: whhen the Extent is set to Size, and Reformat is not checked, Bottom Left and Size can be animated.
+- Radial, Rectangle and generators: when the Extent is set to Size, and Reformat is not checked, Bottom Left and Size can be animated.
+- add Box filter to Transform, CornerPin, GodRays, and all Distortion nodes.
+- ContactSheet, LayerContactSheet: Make a contact sheet from several inputs, frames or layers (beta)
+
 
 ## Version 2.2.7
 

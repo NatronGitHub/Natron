@@ -115,6 +115,8 @@ public:
 
     bool isInterpreterMode() const;
 
+    bool isCacheClearRequestedOnLaunch() const;
+    
     /*
      * @brief Has a Natron project or Python script been passed to the command line ?
      */

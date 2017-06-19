@@ -3,6 +3,8 @@
 HueKeyer node
 =============
 
+|pluginIcon| 
+
 *This documentation is for version 1.0 of HueKeyer.*
 
 Description
@@ -39,3 +41,6 @@ Controls
 |                           |              |                           | | amount: transparency (1-alpha) amount for the given hue                                          |
 |                           |              |                           | | sat\_thrsh: if source saturation is below this value, transparency is decreased progressively.   |
 +---------------------------+--------------+---------------------------+----------------------------------------------------------------------------------------------------+
+
+.. |pluginIcon| image:: net.sf.openfx.HueKeyer.png
+   :width: 10.0%

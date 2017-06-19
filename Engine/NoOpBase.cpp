@@ -40,11 +40,11 @@ NoOpBase::NoOpBase(NodePtr n)
 
 void
 NoOpBase::addAcceptedComponents(int /*inputNb*/,
-                                std::list<ImageComponents>* comps)
+                                std::list<ImagePlaneDesc>* comps)
 {
-    comps->push_back( ImageComponents::getRGBComponents() );
-    comps->push_back( ImageComponents::getRGBAComponents() );
-    comps->push_back( ImageComponents::getAlphaComponents() );
+    comps->push_back( ImagePlaneDesc::getRGBComponents() );
+    comps->push_back( ImagePlaneDesc::getRGBAComponents() );
+    comps->push_back( ImagePlaneDesc::getAlphaComponents() );
 }
 
 void

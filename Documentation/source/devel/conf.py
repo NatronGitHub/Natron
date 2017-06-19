@@ -56,13 +56,13 @@ copyright = '2013-2017 The Natron documentation authors, licensed under CC BY-SA
 
 # the list of currently maintained versions (those that have to be merged into the master branch)
 version_21 = '2.1.10'
-version_22 = '2.2.8'
+version_22 = '2.2.9'
 version_23 = '2.3'
 version_30 = '3.0'
 
 # The version for this branch
 # The full version, including alpha/beta/rc tags.
-release = version_22
+release = version_23
 #
 # The short X.Y version.
 version = '.'.join(release.split('.')[0:2])

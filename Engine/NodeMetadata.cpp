@@ -33,12 +33,14 @@ struct PerInputData
 {
     //Either 1 or 2 components in the case of MotionVectors/Disparity
     double pixelAspectRatio;
-    ImageComponents components;
+    int nComps;
+    std::string componentsType;
     ImageBitDepthEnum bitdepth;
 
     PerInputData()
         : pixelAspectRatio(1.)
-        , components()
+        , nComps(0)
+        , componentsType()
         , bitdepth(eImageBitDepthFloat)
     {
     }
@@ -150,7 +152,10 @@ NodeMetadata::operator==(const NodeMetadata& other) const
     if (_imp->outputData.pixelAspectRatio != other._imp->outputData.pixelAspectRatio) {
         return false;
     }
-    if (_imp->outputData.components != other._imp->outputData.components) {
+    if (_imp->outputData.nComps != other._imp->outputData.nComps) {
+        return false;
+    }
+    if (_imp->outputData.componentsType != other._imp->outputData.componentsType) {
         return false;
     }
     if ( _imp->inputsData.size() != other._imp->inputsData.size() ) {
@@ -166,7 +171,10 @@ NodeMetadata::operator==(const NodeMetadata& other) const
         if (_imp->inputsData[i].bitdepth != other._imp->inputsData[i].bitdepth) {
             return false;
         }
-        if (_imp->inputsData[i].components != other._imp->inputsData[i].components) {
+        if (_imp->inputsData[i].componentsType != other._imp->inputsData[i].componentsType) {
+            return false;
+        }
+        if (_imp->inputsData[i].nComps != other._imp->inputsData[i].nComps) {
             return false;
         }
     }
@@ -289,29 +297,57 @@ NodeMetadata::getBitDepth(int inputNb) const
     }
 }
 
+
 void
-NodeMetadata::setImageComponents(int inputNb,
-                                 const ImageComponents& components)
+NodeMetadata::setNComps(int inputNb, int nComps)
 {
     if (inputNb == -1) {
-        _imp->outputData.components = components;
+        _imp->outputData.nComps = nComps;
     } else {
         if ( inputNb < (int)_imp->inputsData.size() ) {
-            _imp->inputsData[inputNb].components = components;
+            _imp->inputsData[inputNb].nComps = nComps;
         }
     }
 }
 
-const ImageComponents&
-NodeMetadata::getImageComponents(int inputNb) const
+
+int
+NodeMetadata::getNComps(int inputNb) const
 {
     if (inputNb == -1) {
-        return _imp->outputData.components;
+        return _imp->outputData.nComps;
     } else {
         if ( inputNb < (int)_imp->inputsData.size() ) {
-            return _imp->inputsData[inputNb].components;
+            return _imp->inputsData[inputNb].nComps;
         } else {
-            return ImageComponents::getRGBAComponents();
+            return 4;
+        }
+    }
+}
+
+void
+NodeMetadata::setComponentsType(int inputNb,const std::string& componentsType)
+{
+    if (inputNb == -1) {
+        _imp->outputData.componentsType = componentsType;
+    } else {
+        if ( inputNb < (int)_imp->inputsData.size() ) {
+            _imp->inputsData[inputNb].componentsType = componentsType;
+        }
+    }
+}
+
+std::string
+NodeMetadata::getComponentsType(int inputNb) const
+{
+    if (inputNb == -1) {
+        return _imp->outputData.componentsType;
+    } else {
+        if ( inputNb < (int)_imp->inputsData.size() ) {
+
+            return _imp->inputsData[inputNb].componentsType;
+        } else {
+            return kNatronColorPlaneID;
         }
     }
 }
