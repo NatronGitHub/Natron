@@ -272,6 +272,7 @@ struct FindNodeDialogPrivate
     Label* resultLabel;
     LineEdit* filter;
     DialogButtonBox* buttons;
+    QPushButton* nextButton;
 
 
     FindNodeDialogPrivate(NodeGraph* graph)
@@ -286,6 +287,7 @@ struct FindNodeDialogPrivate
         , resultLabel(0)
         , filter(0)
         , buttons(0)
+        , nextButton(0)
     {
     }
 };
@@ -331,8 +333,8 @@ FindNodeDialog::FindNodeDialog(NodeGraph* graph,
     //_imp->resultLabel->setFont(QFont(appFont,appFontSize));
 
     _imp->buttons = new DialogButtonBox(QDialogButtonBox::NoButton, Qt::Horizontal, this);
-    _imp->buttons->addButton(tr("&Next"), QDialogButtonBox::ActionRole);
-    QObject::connect( _imp->buttons, SIGNAL(accepted()), this, SLOT(onNextClicked()) );
+    _imp->nextButton = _imp->buttons->addButton(tr("&Next"), QDialogButtonBox::ActionRole);
+    QObject::connect( _imp->buttons, SIGNAL(clicked(QAbstractButton*)), this, SLOT(onButtonClicked(QAbstractButton*)) );
 
     _imp->mainLayout->addWidget(_imp->buttons);
     _imp->filter->setFocus();
@@ -426,14 +428,16 @@ FindNodeDialog::forceUpdateFindResults()
 }
 
 void
-FindNodeDialog::onNextClicked()
+FindNodeDialog::onButtonClicked(QAbstractButton* button)
 {
-    QString filterText = _imp->filter->text();
+    if (button == (QAbstractButton*)_imp->nextButton) {
+        QString filterText = _imp->filter->text();
 
-    if (_imp->currentFilter != filterText) {
-        updateFindResults(filterText);
-    } else {
-        selectNextResult();
+        if (_imp->currentFilter != filterText) {
+            updateFindResults(filterText);
+        } else {
+            selectNextResult();
+        }
     }
 }
 
