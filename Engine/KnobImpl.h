@@ -1308,6 +1308,7 @@ Knob<T>::areDimensionsEqual(ViewIdx view)
     }
 
     // Check links
+#if 0
     {
         KnobDimViewKeySet dim0Knobs;
         getSharedValues(DimIdx(0), view, &dim0Knobs);
@@ -1320,7 +1321,7 @@ Knob<T>::areDimensionsEqual(ViewIdx view)
             }
         }
     }
-
+#endif 
     ValueKnobDimView<T>* dim0Data = dynamic_cast<ValueKnobDimView<T>*>(getDataForDimView(DimIdx(0), view).get());
     CurvePtr curve0 = dim0Data->animationCurve;
     T val0 = getValue(DimIdx(0), view, true /*doClamp*/);
