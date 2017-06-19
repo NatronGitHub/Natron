@@ -2560,14 +2560,17 @@ AppManager::registerEngineMetaTypes() const
 void
 AppManager::setDiskCacheLocation(const QString& path)
 {
-    QDir d(path);
     QMutexLocker k(&_imp->diskCachesLocationMutex);
 
-    if ( d.exists() && !path.isEmpty() ) {
-        _imp->diskCachesLocation = path;
-    } else {
-        _imp->diskCachesLocation = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache);
+    if ( !path.isEmpty() ) {
+        QDir d(path);
+        // create the full path if the directory does not exist
+        if ( d.exists() || d.mkpath(path) ) {
+            _imp->diskCachesLocation = path;
+            return;
+        }
     }
+    _imp->diskCachesLocation = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache);
 }
 
 const QString&
