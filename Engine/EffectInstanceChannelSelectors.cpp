@@ -852,7 +852,7 @@ EffectInstance::Implementation::onMaskSelectorChanged(int inputNb,
     if ( (index == 0) && enabled->isEnabled() ) {
         enabled->setValue(false);
         enabled->setEnabled(false);
-    } else if ( !enabled->isEnabled() ) {
+    } else {
         enabled->setEnabled(true);
         if ( _publicInterface->getInputMainInstance(inputNb) ) {
             enabled->setValue(true);

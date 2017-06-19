@@ -1819,6 +1819,12 @@ EffectInstance::onInputChanged_public(int inputNo)
 {
 
     REPORT_CURRENT_THREAD_ACTION( kOfxActionInstanceChanged, getNode() );
+    {
+        std::map<int, MaskSelector >::iterator it = _imp->defKnobs->maskSelectors.find(inputNo);
+        if (it != _imp->defKnobs->maskSelectors.end()) {
+            _imp->onMaskSelectorChanged(it->first, it->second);
+        }
+    }
     onInputChanged(inputNo);
 } // onInputChanged_public
 
