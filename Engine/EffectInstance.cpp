@@ -236,10 +236,19 @@ EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
             for (FrameRangesMap::const_iterator viewIt = it->second.begin(); viewIt != it->second.end(); ++viewIt) {
 
                 // For all ranges in this view
-                for (U32 range = 0; range < viewIt->second.size(); ++range) {
+                for (U32 range_index = 0; range_index < viewIt->second.size(); ++range_index) {
+
+                    const RangeD& range = viewIt->second[range_index];
+
+                    if (range.min == INT_MIN || range.max == INT_MAX) {
+                        // Infinite range ? This is probably because the upstream node returned the default value for
+                        // EffectInstance::getFrameRange() and no input node was connected.
+                        // Just do not do anything
+                        continue;
+                    }
 
                     // For all frames in the range
-                    for (double f = viewIt->second[range].min; f <= viewIt->second[range].max; f += 1.) {
+                    for (double f = range.min; f <= range.max; f += 1.) {
 
                         ComputeHashArgs inputArgs = args;
                         inputArgs.time = TimeValue(f);

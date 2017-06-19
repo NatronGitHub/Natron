@@ -470,21 +470,26 @@ OfxClipInstance::getFrameRange(double &startFrame,
                                double &endFrame) const
 {
     EffectInstancePtr effect = getAssociatedNode();
-
+    bool fallbackProjectRange = false;
     if (!effect) {
-        TimeValue left,right;
-        _imp->effect->getOfxEffectInstance()->getApp()->getProject()->getFrameRange(&left, &right);
-        startFrame = left;
-        endFrame = right;
+        fallbackProjectRange = true;
     } else {
         GetFrameRangeResultsPtr results;
         ActionRetCodeEnum stat = effect->getFrameRange_public(&results);
-        if (!isFailureRetCode(stat)) {
+        if (isFailureRetCode(stat)) {
+            fallbackProjectRange = true;
+        } else {
             RangeD range;
             results->getFrameRangeResults(&range);
             startFrame = range.min;
             endFrame = range.max;
         }
+    }
+    if (fallbackProjectRange) {
+        TimeValue left,right;
+        _imp->effect->getOfxEffectInstance()->getApp()->getProject()->getFrameRange(&left, &right);
+        startFrame = left;
+        endFrame = right;
     }
 }
 
