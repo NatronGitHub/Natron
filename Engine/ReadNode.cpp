@@ -190,17 +190,17 @@ isGenericKnob(const std::string& knobName,
 bool
 ReadNode::isBundledReader(const std::string& pluginID)
 {
-    return (pluginID == PLUGINID_OFX_READOIIO ||
-            pluginID == PLUGINID_OFX_READFFMPEG ||
-            pluginID == PLUGINID_OFX_READPFM ||
-            pluginID == PLUGINID_OFX_READPSD ||
-            pluginID == PLUGINID_OFX_READKRITA ||
-            pluginID == PLUGINID_OFX_READSVG ||
-            pluginID == PLUGINID_OFX_READMISC ||
-            pluginID == PLUGINID_OFX_READORA ||
-            pluginID == PLUGINID_OFX_READCDR ||
-            pluginID == PLUGINID_OFX_READPNG ||
-            pluginID == PLUGINID_OFX_READPDF);
+    return ( boost::iequals(pluginID, PLUGINID_OFX_READOIIO) ||
+            boost::iequals(pluginID, PLUGINID_OFX_READFFMPEG) ||
+            boost::iequals(pluginID, PLUGINID_OFX_READPFM) ||
+            boost::iequals(pluginID, PLUGINID_OFX_READPSD) ||
+            boost::iequals(pluginID, PLUGINID_OFX_READKRITA) ||
+            boost::iequals(pluginID, PLUGINID_OFX_READSVG) ||
+            boost::iequals(pluginID, PLUGINID_OFX_READMISC) ||
+            boost::iequals(pluginID, PLUGINID_OFX_READORA) ||
+            boost::iequals(pluginID, PLUGINID_OFX_READCDR) ||
+            boost::iequals(pluginID, PLUGINID_OFX_READPNG) ||
+            boost::iequals(pluginID, PLUGINID_OFX_READPDF) );
 }
 
 struct ReadNodePrivate

@@ -268,6 +268,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
                             n->setUserSelected(false);
                         }
                         _imp->_selection.erase(it);
+                        break;
                     }
                 }
             }

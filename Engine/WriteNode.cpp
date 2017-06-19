@@ -161,10 +161,10 @@ isGenericKnob(const std::string& knobName,
 bool
 WriteNode::isBundledWriter(const std::string& pluginID)
 {
-    return (pluginID == PLUGINID_OFX_WRITEOIIO ||
-            pluginID == PLUGINID_OFX_WRITEFFMPEG ||
-            pluginID == PLUGINID_OFX_WRITEPFM ||
-            pluginID == PLUGINID_OFX_WRITEPNG);
+    return ( boost::iequals(pluginID, PLUGINID_OFX_WRITEOIIO) ||
+            boost::iequals(pluginID, PLUGINID_OFX_WRITEFFMPEG) ||
+            boost::iequals(pluginID, PLUGINID_OFX_WRITEPFM) ||
+            boost::iequals(pluginID, PLUGINID_OFX_WRITEPNG) );
 }
 
 PluginPtr

@@ -1142,6 +1142,7 @@ AppInstance::createNodeInternal(const CreateNodeArgsPtr& args)
         if (argsGroup) {
             argsGroup->removeNode(node.get());
         }
+        node->destroyNode();
         std::string error( e.what() );
         if ( !error.empty() ) {
             std::string title("Error while creating node");
