@@ -1471,9 +1471,12 @@ KnobIPtr
 KnobHelper::getCloneForHolderInternal(const KnobHolderPtr& holder) const
 {
     KnobHolderPtr thisHolder = getHolder();
-    assert(!thisHolder || !thisHolder->isRenderClone());
     if (!thisHolder || thisHolder == holder) {
         return boost::const_pointer_cast<KnobI>(shared_from_this());
+    }
+    if (thisHolder->isRenderClone()) {
+        assert(getMainInstance());
+        thisHolder = getMainInstance()->getHolder();
     }
     QMutexLocker k(&_imp->common->renderClonesMapMutex);
     std::map<KnobHolderWPtr, KnobIWPtr>::const_iterator found = _imp->common->renderClonesMap.find(holder);
@@ -2231,14 +2234,14 @@ KnobHelper::cloneExpressions(const KnobIPtr& other, ViewSetSpec view, ViewSetSpe
 bool
 KnobHelper::invalidateHashCacheInternal(std::set<HashableObject*>* invalidatedObjects)
 {
-    bool hasExpr = hasAnyExpression();
+    /*bool hasExpr = hasAnyExpression();
 
     // If the knob has an expression, we were invalidated most likely because a dependency got changed, hence clear the expression cache
     // and force a refresh of the static value on the gui
     if (hasExpr) {
         clearExpressionsResults(DimSpec::all(), ViewSetSpec::all());
         refreshStaticValue(getCurrentRenderTime());
-    }
+    }*/
     return HashableObject::invalidateHashCacheInternal(invalidatedObjects);
 }
 
@@ -2277,7 +2280,7 @@ KnobHelper::addListener(const DimIdx listenerDimension,
 
     // The "listener" knob needs to be invalidated when this knob changes, hence register it as a listener
     // of the hash
-    addHashListener(listener);
+    //addHashListener(listener);
 
     if (language == eExpressionLanguagePython) {
         // Add this knob as a dependency of the expression

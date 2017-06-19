@@ -1226,7 +1226,7 @@ KnobHelper::clearExpressionInternal(DimIdx dimension,
             }
 
             // Remove from the hash listeners
-            other->removeListener(thisShared);
+            //other->removeListener(thisShared);
         }
     }
 
