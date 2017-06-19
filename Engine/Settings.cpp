@@ -2024,12 +2024,15 @@ Settings::restoreKnobsFromSettings(const KnobsVec& knobs)
 }
 
 void
-Settings::restoreSettings()
+Settings::restoreSettings(bool useDefault)
 {
     _restoringSettings = true;
 
-    const KnobsVec& knobs = getKnobs();
-    restoreKnobsFromSettings(knobs);
+    // call restoreKnobsFromSettings only if --no-settings is not part of the command-line arguments
+    if (!useDefault) {
+        const KnobsVec& knobs = getKnobs();
+        restoreKnobsFromSettings(knobs);
+    }
 
     if (!_ocioRestored) {
         ///Load even though there's no settings!
@@ -2114,10 +2117,11 @@ Settings::restoreSettings()
 bool
 Settings::tryLoadOpenColorIOConfig()
 {
-    QString configFile;
+    // the default value is the environment variable "OCIO"
+    QString configFile = QFile::decodeName( qgetenv(NATRON_OCIO_ENV_VAR_NAME) );
 
-
-    if ( _customOcioConfigFile->isEnabled(0) ) {
+    // OCIO environment variable overrides everything, then try the custom config...
+    if ( configFile.isEmpty() && _customOcioConfigFile->isEnabled(0) ) {
         ///try to load from the file
         std::string file;
         try {
@@ -2125,17 +2129,19 @@ Settings::tryLoadOpenColorIOConfig()
         } catch (...) {
             // ignore exceptions
         }
-
         if ( file.empty() ) {
             return false;
         }
-        if ( !QFile::exists( QString::fromUtf8( file.c_str() ) ) ) {
-            Dialogs::errorDialog( "OpenColorIO", tr("%1: No such file.").arg( QString::fromUtf8( file.c_str() ) ).toStdString() );
+        configFile = QString::fromUtf8( file.c_str() );
+    }
+    if ( !configFile.isEmpty() ) {
+        if ( !QFile::exists(configFile) )  {
+            Dialogs::errorDialog( "OpenColorIO", tr("%1: No such file.").arg(configFile).toStdString() );
 
             return false;
         }
-        configFile = QString::fromUtf8( file.c_str() );
     } else {
+        // ... and finally try the setting from the choice menu.
         try {
             ///try to load from the combobox
             QString activeEntryText  = QString::fromUtf8( _ocioConfigKnob->getActiveEntryText_mt_safe().c_str() );
