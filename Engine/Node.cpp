@@ -1774,7 +1774,7 @@ Node::loadKnobs(const NodeSerialization & serialization,
     const std::vector< KnobPtr > & nodeKnobs = getKnobs();
     ///for all knobs of the node
     for (U32 j = 0; j < nodeKnobs.size(); ++j) {
-        loadKnob(nodeKnobs[j], serialization.getKnobsValues(), updateKnobGui);
+        loadKnob(nodeKnobs[j], serialization, updateKnobGui);
     }
     ///now restore the roto context if the node has a roto context
     if (serialization.hasRotoContext() && _imp->rotoContext) {
@@ -1833,16 +1833,18 @@ Node::restoreSublabel()
 
 void
 Node::loadKnob(const KnobPtr & knob,
-               const std::list< boost::shared_ptr<KnobSerialization> > & knobsValues,
+               const NodeSerialization & serialization,
                bool /*updateKnobGui*/)
 {
+
+    const NodeSerialization::KnobValues& knobsValues = serialization.getKnobsValues();
+
     ///try to find a serialized value for this knob
-    bool found = false;
+    const ProjectBeingLoadedInfo projectInfos = getApp()->getProjectBeingLoadedInfo();
 
     KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
     if (isChoice) {
 
-        const ProjectBeingLoadedInfo projectInfos = getApp()->getProjectBeingLoadedInfo();
         if (projectInfos.vMajor == 2 && projectInfos.vMinor < 3) {
             // Before Natron 2.2.3, all dynamic choice parameters for multiplane had a string parameter.
             // The string parameter had the same name as the choice parameter plus "Choice" appended.
@@ -1854,7 +1856,7 @@ Node::loadKnob(const KnobPtr & knob,
                     if (stringKnob) {
                         std::string serializedString = stringKnob->getValue();
                         if ((*it)->_version < KNOB_SERIALIZATION_CHANGE_PLANES_SERIALIZATION) {
-                            KnobSerialization::checkForPreNatron226String(&serializedString);
+                            filterKnobChoiceOption(getPluginID(), serialization.getPluginMajorVersion(), serialization.getPluginMinorVersion(), projectInfos.vMajor, projectInfos.vMinor, isChoice->getName(), &serializedString);
                         }
                         isChoice->setActiveEntry(ChoiceOption(serializedString));
                     }
@@ -1865,30 +1867,24 @@ Node::loadKnob(const KnobPtr & knob,
         }
     }
 
-    bool isR = knob->getName() == kNatronOfxParamProcessR;
-    bool isG = knob->getName() == kNatronOfxParamProcessG;
-    bool isB = knob->getName() == kNatronOfxParamProcessB;
-    bool isA = knob->getName() == kNatronOfxParamProcessA;
-
     for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
 
+        std::string serializedName = (*it)->getName();
         bool foundMatch = false;
-        if ((*it)->getName() == knob->getName()) {
+        if (serializedName == knob->getName()) {
             foundMatch = true;
-        } else if (isR && (*it)->getName() == "r") {
-            foundMatch = true;
-        } else if (isG && (*it)->getName() == "g") {
-            foundMatch = true;
-        } else if (isB && (*it)->getName() == "b") {
-            foundMatch = true;
-        } else if (isA && (*it)->getName() == "a") {
-            foundMatch = true;
+        } else {
+            if (filterKnobNameCompat(getPluginID(), projectInfos.vMajor, projectInfos.vMinor, &serializedName)) {
+                if (serializedName == knob->getName()) {
+                    foundMatch = true;
+                }
+            }
+
         }
         if (!foundMatch) {
             continue;
         }
 
-        found = true;
         // don't load the value if the Knob is not persistent! (it is just the default value in this case)
         ///EDIT: Allow non persistent params to be loaded if we found a valid serialization for them
         //if ( knob->getIsPersistent() ) {
@@ -1909,7 +1905,9 @@ Node::loadKnob(const KnobPtr & knob,
                 KnobChoice* choiceSerialized = dynamic_cast<KnobChoice*>( serializedKnob.get() );
                 assert(choiceSerialized);
                 if (choiceSerialized) {
-                    isChoice->choiceRestoration(choiceSerialized, choiceData);
+                    std::string optionID = choiceData->_choiceString;
+                    filterKnobChoiceOption(getPluginID(), serialization.getPluginMajorVersion(), serialization.getPluginMinorVersion(), projectInfos.vMajor, projectInfos.vMinor, serializedName, &optionID);
+                    isChoice->choiceRestoration(choiceSerialized, optionID);
                 }
             }
         } else {
@@ -2368,7 +2366,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 if (data && createdKnob) {
                     KnobChoice* sKnobChoice = dynamic_cast<KnobChoice*>( sKnob.get() );
                     if (sKnobChoice) {
-                        createdKnob->choiceRestoration(sKnobChoice, data);
+                        createdKnob->choiceRestoration(sKnobChoice, data->_choiceString);
                     }
                 }
             } else {

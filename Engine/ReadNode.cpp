@@ -416,7 +416,7 @@ ReadNodePrivate::cloneGenericKnobs()
                     const ChoiceExtraData* extraData = dynamic_cast<const ChoiceExtraData*>( (*it)->getExtraData() );
                     assert(extraData);
                     if (extraData) {
-                        isChoice->choiceRestoration(serializedIsChoice, extraData);
+                        isChoice->choiceRestoration(serializedIsChoice, extraData->_choiceString);
                     }
                 } else {
                     (*it2)->clone( serializedKnob.get() );
@@ -1169,7 +1169,7 @@ ReadNode::onKnobsAboutToBeLoaded(const boost::shared_ptr<NodeSerialization>& ser
     NodePtr node = getNode();
 
     //Load the pluginID to create first.
-    node->loadKnob( _imp->pluginIDStringKnob.lock(), serialization->getKnobsValues() );
+    node->loadKnob( _imp->pluginIDStringKnob.lock(), *serialization );
 
     std::string filename = getFileNameFromSerialization( serialization->getKnobsValues() );
     //Create the Reader with the serialization

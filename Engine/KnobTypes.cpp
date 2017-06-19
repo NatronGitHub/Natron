@@ -1043,9 +1043,9 @@ KnobChoice::choiceMatch(const std::string& choice,
 
 void
 KnobChoice::choiceRestoration(KnobChoice* knob,
-                              const ChoiceExtraData* data)
+                              const std::string &optionID)
 {
-    assert(knob && data);
+    assert(knob);
 
     ///Clone first and then handle restoration of the static value
     clone(knob);
@@ -1055,14 +1055,15 @@ KnobChoice::choiceRestoration(KnobChoice* knob,
             setEnabled( i, knob->isEnabled(i) );
         }
     }
+    
 
     {
         QMutexLocker k(&_entriesMutex);
-        _currentEntry.id = data->_choiceString;
+        _currentEntry.id = optionID;
     }
 
     int serializedIndex = knob->getValue();
-    if ( ( serializedIndex < (int)_entries.size() ) && (_entries[serializedIndex].id == data->_choiceString) ) {
+    if ( ( serializedIndex < (int)_entries.size() ) && (_entries[serializedIndex].id == optionID) ) {
         // we're lucky, entry hasn't changed
         setValue(serializedIndex);
 
@@ -1071,7 +1072,7 @@ KnobChoice::choiceRestoration(KnobChoice* knob,
         int i;
         {
             QMutexLocker k(&_entriesMutex);
-            i = choiceMatch(data->_choiceString, _entries, &_currentEntry);
+            i = choiceMatch(optionID, _entries, &_currentEntry);
         }
 
         if (i >= 0) {

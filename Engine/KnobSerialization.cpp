@@ -28,6 +28,8 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <ofxNatron.h>
+
 #if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/algorithm/string/predicate.hpp> // iequals
@@ -309,47 +311,128 @@ KnobSerialization::setChoiceExtraString(const std::string& label)
     }
 }
 
-void
-KnobSerialization::checkForPreNatron226String(std::string* choiceString)
+
+bool
+filterKnobNameCompat(const std::string& pluginID, int versionMajor, int versionMinor, std::string* name)
 {
-    if (boost::iequals(*choiceString,std::string("Color.RGBA")) || boost::iequals(*choiceString,std::string("Color.RGB")) || boost::iequals(*choiceString,std::string("Color.Alpha"))) {
-        *choiceString = kNatronColorPlaneID;
-    } else if (boost::iequals(*choiceString,std::string("Backward.Motion"))) {
-        *choiceString = kNatronBackwardMotionVectorsPlaneID "." kNatronMotionComponentsLabel;
-    } else if (boost::iequals(*choiceString,std::string("Forward.Motion"))) {
-        *choiceString = kNatronForwardMotionVectorsPlaneID "." kNatronMotionComponentsLabel;
-    } else if (boost::iequals(*choiceString, std::string("DisparityLeft.Disparity"))) {
-        *choiceString = kNatronDisparityLeftPlaneID "." kNatronDisparityComponentsLabel;
-    } else if (boost::iequals(*choiceString, std::string("DisparityRight.Disparity"))) {
-        *choiceString = kNatronDisparityRightPlaneID "." kNatronDisparityComponentsLabel;
+    (void)pluginID;
+    (void)versionMajor;
+    (void)versionMinor;
+    bool ret = true;
+    if (versionMajor < 2 && *name == "r") {
+        *name = kNatronOfxParamProcessR;
+    } else if (versionMajor < 2 && *name == "g") {
+        *name = kNatronOfxParamProcessG;
+    } else if (versionMajor < 2 && *name == "b") {
+        *name = kNatronOfxParamProcessB;
+    } else if (versionMajor < 2 && *name == "a") {
+        *name = kNatronOfxParamProcessA;
+    } else if (versionMajor <= 2 && versionMinor <= 8 && *name == "doRed") {
+        *name = kNatronOfxParamProcessR;
+    } else if (versionMajor <= 2 && versionMinor <= 8 && *name == "doGreen") {
+        *name = kNatronOfxParamProcessG;
+    } else if (versionMajor <= 2 && versionMinor <= 8 && *name == "doBlue") {
+        *name = kNatronOfxParamProcessB;
+    } else if (versionMajor <= 2 && versionMinor <= 8 && *name == "doAlpha") {
+        *name = kNatronOfxParamProcessA;
+    } else {
+        ret = false;
+    }
+    return ret;
+}
+
+static bool
+startsWith(const std::string& str,
+           const std::string& prefix)
+{
+    return str.substr( 0, prefix.size() ) == prefix;
+    // case insensitive version:
+    //return ci_string(str.substr(0,prefix.size()).c_str()) == prefix.c_str();
+}
+
+static bool
+endsWith(const std::string &str,
+         const std::string &suffix)
+{
+    return ( ( str.size() >= suffix.size() ) &&
+            (str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0) );
+}
+
+bool
+filterKnobChoiceOption(const std::string& pluginID, int pluginVersionMajor, int pluginVersionMinor, int versionMajor, int versionMinor, const std::string& paramName,  std::string* optionID)
+{
+    (void)pluginID;
+    (void)versionMajor;
+    (void)versionMinor;
+    (void)pluginVersionMajor;
+    (void)pluginVersionMinor;
+    (void)paramName;
+    (void)optionID;
+
+    bool gotIt = false;
+    if (versionMajor <= 2 && versionMinor <= 8 && (paramName == "outputChannels" || endsWith(paramName,"channels"))) {
+        gotIt = true;
+        if (boost::iequals(*optionID,std::string("Color.RGBA")) || boost::iequals(*optionID,std::string("Color.RGB")) || boost::iequals(*optionID,std::string("Color.Alpha"))) {
+            *optionID = kNatronColorPlaneID;
+        } else if (boost::iequals(*optionID,std::string("Backward.Motion"))) {
+            *optionID = kNatronBackwardMotionVectorsPlaneID "." kNatronMotionComponentsLabel;
+        } else if (boost::iequals(*optionID,std::string("Forward.Motion"))) {
+            *optionID = kNatronForwardMotionVectorsPlaneID "." kNatronMotionComponentsLabel;
+        } else if (boost::iequals(*optionID, std::string("DisparityLeft.Disparity"))) {
+            *optionID = kNatronDisparityLeftPlaneID "." kNatronDisparityComponentsLabel;
+        } else if (boost::iequals(*optionID, std::string("DisparityRight.Disparity"))) {
+            *optionID = kNatronDisparityRightPlaneID "." kNatronDisparityComponentsLabel;
+        } else {
+            gotIt = false;
+        }
     }
 
     // Map also channels
-    if (boost::iequals(*choiceString, std::string("RGBA.R")) || boost::iequals(*choiceString, std::string("UV.r"))) {
-        *choiceString = kNatronColorPlaneID ".R";
-    } else if (boost::iequals(*choiceString, std::string("RGBA.G")) || boost::iequals(*choiceString, std::string("UV.g"))) {
-        *choiceString = kNatronColorPlaneID ".G";
-    } else if (boost::iequals(*choiceString, std::string("RGBA.B")) || boost::iequals(*choiceString, std::string("UV.b"))) {
-        *choiceString = kNatronColorPlaneID ".B";
-    } else if (boost::iequals(*choiceString, std::string("RGBA.A")) || boost::iequals(*choiceString, std::string("UV.a"))) {
-        *choiceString = kNatronColorPlaneID ".A";
-    } else if (boost::iequals(*choiceString, std::string("A.r"))) {
-        *choiceString = "A." kNatronColorPlaneID ".r";
-    } else if (boost::iequals(*choiceString, std::string("A.g"))) {
-        *choiceString = "A." kNatronColorPlaneID ".g";
-    } else if (boost::iequals(*choiceString, std::string("A.b"))) {
-        *choiceString = "A." kNatronColorPlaneID ".b";
-    } else if (boost::iequals(*choiceString, std::string("A.a"))) {
-        *choiceString = "A." kNatronColorPlaneID ".a";
-    } else if (boost::iequals(*choiceString, std::string("B.r"))) {
-        *choiceString = "B." kNatronColorPlaneID ".r";
-    } else if (boost::iequals(*choiceString, std::string("B.g"))) {
-        *choiceString = "B." kNatronColorPlaneID ".g";
-    } else if (boost::iequals(*choiceString, std::string("B.b"))) {
-        *choiceString = "B." kNatronColorPlaneID ".b";
-    } else if (boost::iequals(*choiceString, std::string("B.a"))) {
-        *choiceString = "B." kNatronColorPlaneID ".a";
+    if (!gotIt) {
+        if (versionMajor <= 2 && versionMinor <= 8) {
+            bool mapChannels = false;
+            mapChannels |= startsWith(paramName, "maskChannel");
+            mapChannels |= (paramName == "channelU" || paramName == "channelV");
+            mapChannels |= (pluginID == "net.sf.openfx.ShufflePlugin") && pluginVersionMajor >= 2 && (paramName == "outputR" || paramName == "outputG" || paramName == "outputB" || paramName == "outputA");
+            mapChannels |= paramName == "premultChannel";
+            if (mapChannels) {
+                gotIt = true;
+                if (boost::iequals(*optionID, std::string("RGBA.R")) || boost::iequals(*optionID, std::string("UV.r")) || boost::iequals(*optionID, std::string("red")) || boost::iequals(*optionID, std::string("r"))) {
+                    *optionID = kNatronColorPlaneID ".R";
+                } else if (boost::iequals(*optionID, std::string("RGBA.G")) || boost::iequals(*optionID, std::string("UV.g"))  || boost::iequals(*optionID, std::string("green")) || boost::iequals(*optionID, std::string("g"))) {
+                    *optionID = kNatronColorPlaneID ".G";
+                } else if (boost::iequals(*optionID, std::string("RGBA.B")) || boost::iequals(*optionID, std::string("UV.b"))  || boost::iequals(*optionID, std::string("blue")) || boost::iequals(*optionID, std::string("b"))) {
+                    *optionID = kNatronColorPlaneID ".B";
+                } else if (boost::iequals(*optionID, std::string("RGBA.A")) || boost::iequals(*optionID, std::string("UV.a"))  || boost::iequals(*optionID, std::string("alpha")) || boost::iequals(*optionID, std::string("a"))) {
+                    *optionID = kNatronColorPlaneID ".A";
+                } else if (boost::iequals(*optionID, std::string("A.r"))) {
+                    *optionID = "A." kNatronColorPlaneID ".R";
+                } else if (boost::iequals(*optionID, std::string("A.g"))) {
+                    *optionID = "A." kNatronColorPlaneID ".G";
+                } else if (boost::iequals(*optionID, std::string("A.b"))) {
+                    *optionID = "A." kNatronColorPlaneID ".B";
+                } else if (boost::iequals(*optionID, std::string("A.a"))) {
+                    *optionID = "A." kNatronColorPlaneID ".A";
+                } else if (boost::iequals(*optionID, std::string("B.r"))) {
+                    *optionID = "B." kNatronColorPlaneID ".R";
+                } else if (boost::iequals(*optionID, std::string("B.g"))) {
+                    *optionID = "B." kNatronColorPlaneID ".G";
+                } else if (boost::iequals(*optionID, std::string("B.b"))) {
+                    *optionID = "B." kNatronColorPlaneID ".B";
+                } else if (boost::iequals(*optionID, std::string("B.a"))) {
+                    *optionID = "B." kNatronColorPlaneID ".A";
+                } else {
+                    gotIt = false;
+                }
+            }
+        }
     }
-}
+
+    if (versionMajor <= 2 && pluginID.find("fr.inria.openfx") != std::string::npos && paramName == "frameRange" && *optionID == "Timeline bounds") {
+        *optionID = "Project frame range";
+    }
+    return gotIt;
+} // filterKnobChoiceOption
+
 
 NATRON_NAMESPACE_EXIT;

@@ -149,7 +149,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
                             KnobChoice* serializedKnob = dynamic_cast<KnobChoice*>( (*it)->getKnob().get() );
                             assert(serializedKnob);
                             if (serializedKnob) {
-                                isChoice->choiceRestoration(serializedKnob, choiceData);
+                                isChoice->choiceRestoration(serializedKnob, choiceData->_choiceString);
                             }
                         }
                     } else {
