@@ -1865,91 +1865,88 @@ Node::loadKnob(const KnobPtr & knob,
         }
     }
 
+    bool isR = knob->getName() == kNatronOfxParamProcessR;
+    bool isG = knob->getName() == kNatronOfxParamProcessG;
+    bool isB = knob->getName() == kNatronOfxParamProcessB;
+    bool isA = knob->getName() == kNatronOfxParamProcessA;
+
     for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
-        if ( (*it)->getName() == knob->getName() ) {
-            found = true;
-            // don't load the value if the Knob is not persistent! (it is just the default value in this case)
-            ///EDIT: Allow non persistent params to be loaded if we found a valid serialization for them
-            //if ( knob->getIsPersistent() ) {
-            KnobPtr serializedKnob = (*it)->getKnob();
 
-            // A knob might change its type between versions, do not load it
-            if ( knob->typeName() != serializedKnob->typeName() ) {
-                continue;
+        bool foundMatch = false;
+        if ((*it)->getName() == knob->getName()) {
+            foundMatch = true;
+        } else if (isR && (*it)->getName() == "r") {
+            foundMatch = true;
+        } else if (isG && (*it)->getName() == "g") {
+            foundMatch = true;
+        } else if (isB && (*it)->getName() == "b") {
+            foundMatch = true;
+        } else if (isA && (*it)->getName() == "a") {
+            foundMatch = true;
+        }
+        if (!foundMatch) {
+            continue;
+        }
+
+        found = true;
+        // don't load the value if the Knob is not persistent! (it is just the default value in this case)
+        ///EDIT: Allow non persistent params to be loaded if we found a valid serialization for them
+        //if ( knob->getIsPersistent() ) {
+        KnobPtr serializedKnob = (*it)->getKnob();
+
+        // A knob might change its type between versions, do not load it
+        if ( knob->typeName() != serializedKnob->typeName() ) {
+            continue;
+        }
+
+        knob->cloneDefaultValues( serializedKnob.get() );
+
+        if (isChoice) {
+            const TypeExtraData* extraData = (*it)->getExtraData();
+            const ChoiceExtraData* choiceData = dynamic_cast<const ChoiceExtraData*>(extraData);
+            assert(choiceData);
+            if (choiceData) {
+                KnobChoice* choiceSerialized = dynamic_cast<KnobChoice*>( serializedKnob.get() );
+                assert(choiceSerialized);
+                if (choiceSerialized) {
+                    isChoice->choiceRestoration(choiceSerialized, choiceData);
+                }
             }
-
-            knob->cloneDefaultValues( serializedKnob.get() );
-
-            if (isChoice) {
-                const TypeExtraData* extraData = (*it)->getExtraData();
-                const ChoiceExtraData* choiceData = dynamic_cast<const ChoiceExtraData*>(extraData);
-                assert(choiceData);
-                if (choiceData) {
-                    KnobChoice* choiceSerialized = dynamic_cast<KnobChoice*>( serializedKnob.get() );
-                    assert(choiceSerialized);
-                    if (choiceSerialized) {
-                        isChoice->choiceRestoration(choiceSerialized, choiceData);
-                    }
+        } else {
+            // There is a case where the dimension of a parameter might have changed between versions, e.g:
+            // the size parameter of the Blur node was previously a Double1D and has become a Double2D to control
+            // both dimensions.
+            // For compatibility, we do not load only the first dimension, otherwise the result wouldn't be the same,
+            // instead we replicate the last dimension of the serialized knob to all other remaining dimensions to fit the
+            // knob's dimensions.
+            if ( serializedKnob->getDimension() < knob->getDimension() ) {
+                int nSerDims = serializedKnob->getDimension();
+                for (int i = 0; i < nSerDims; ++i) {
+                    knob->cloneAndUpdateGui(serializedKnob.get(), i);
+                }
+                for (int i = nSerDims; i < knob->getDimension(); ++i) {
+                    knob->cloneAndUpdateGui(serializedKnob.get(), i, nSerDims - 1);
                 }
             } else {
-                // There is a case where the dimension of a parameter might have changed between versions, e.g:
-                // the size parameter of the Blur node was previously a Double1D and has become a Double2D to control
-                // both dimensions.
-                // For compatibility, we do not load only the first dimension, otherwise the result wouldn't be the same,
-                // instead we replicate the last dimension of the serialized knob to all other remaining dimensions to fit the
-                // knob's dimensions.
-                if ( serializedKnob->getDimension() < knob->getDimension() ) {
-                    int nSerDims = serializedKnob->getDimension();
-                    for (int i = 0; i < nSerDims; ++i) {
-                        knob->cloneAndUpdateGui(serializedKnob.get(), i);
-                    }
-                    for (int i = nSerDims; i < knob->getDimension(); ++i) {
-                        knob->cloneAndUpdateGui(serializedKnob.get(), i, nSerDims - 1);
-                    }
-                } else {
-                    knob->cloneAndUpdateGui( serializedKnob.get() );
-                }
-                knob->setSecret( serializedKnob->getIsSecret() );
-                if ( knob->getDimension() == serializedKnob->getDimension() ) {
-                    for (int i = 0; i < knob->getDimension(); ++i) {
-                        knob->setEnabled( i, serializedKnob->isEnabled(i) );
-                    }
-                }
+                knob->cloneAndUpdateGui( serializedKnob.get() );
             }
-
-            if (knob->getName() == kOfxImageEffectFileParamName) {
-                computeFrameRangeForReader( knob.get() );
-            }
-
-            //}
-            break;
-        }
-    }
-    if (!found) {
-        ///Hack for old RGBA checkboxes which have a different name now
-        bool isR = knob->getName() == "r";
-        bool isG = knob->getName() == "g";
-        bool isB = knob->getName() == "b";
-        bool isA = knob->getName() == "a";
-        if (isR || isG || isB || isA) {
-            for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
-                if ( ( isR && ( (*it)->getName() == kNatronOfxParamProcessR ) ) ||
-                     ( isG && ( (*it)->getName() == kNatronOfxParamProcessG ) ) ||
-                     ( isB && ( (*it)->getName() == kNatronOfxParamProcessB ) ) ||
-                     ( isA && ( (*it)->getName() == kNatronOfxParamProcessA ) ) ) {
-                    KnobPtr serializedKnob = (*it)->getKnob();
-                    knob->cloneAndUpdateGui( serializedKnob.get() );
-
-                    knob->setSecret( serializedKnob->getIsSecret() );
-                    if ( knob->getDimension() == serializedKnob->getDimension() ) {
-                        for (int i = 0; i < knob->getDimension(); ++i) {
-                            knob->setEnabled( i, serializedKnob->isEnabled(i) );
-                        }
-                    }
+            knob->setSecret( serializedKnob->getIsSecret() );
+            if ( knob->getDimension() == serializedKnob->getDimension() ) {
+                for (int i = 0; i < knob->getDimension(); ++i) {
+                    knob->setEnabled( i, serializedKnob->isEnabled(i) );
                 }
             }
         }
+
+        if (knob->getName() == kOfxImageEffectFileParamName) {
+            computeFrameRangeForReader( knob.get() );
+        }
+
+        //}
+        break;
+
     }
+  
 } // Node::loadKnob
 
 void
