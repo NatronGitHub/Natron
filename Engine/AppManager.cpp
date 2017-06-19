@@ -810,6 +810,9 @@ AppManager::loadInternal(const CLArgs& cl)
     // Settings: always call restoreSettings, but call restoreKnobsFromSettings conditionally
     // Call restore after initializing knobs
     _imp->_settings->restoreSettings( cl.isLoadedUsingDefaultSettings() );
+    if (cl.isLoadedUsingDefaultSettings()) {
+        _imp->_settings->setSaveSettings(false);
+    }
 
     _imp->declareSettingsToPython();
 
@@ -817,6 +820,10 @@ AppManager::loadInternal(const CLArgs& cl)
     {
         const std::list<std::string>& commands = cl.getSettingCommands();
 
+        // do not save settings if there is a --setting option
+        if ( !commands.empty() ) {
+            _imp->_settings->setSaveSettings(false);
+        }
         for (std::list<std::string>::const_iterator it = commands.begin(); it != commands.end(); ++it) {
             std::string err;
             std::string output;

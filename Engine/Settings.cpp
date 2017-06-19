@@ -143,6 +143,12 @@ Settings::initializeKnobsGeneral()
     _natronSettingsExist->setSecretByDefault(true);
     _generalTab->addKnob(_natronSettingsExist);
 
+    _saveSettings = AppManager::createKnob<KnobBool>( this, tr("Save settings on change") );
+    _saveSettings->setName("saveSettings");
+    _saveSettings->setDefaultValue(true);
+    _saveSettings->setSecretByDefault(true);
+    _generalTab->addKnob(_saveSettings);
+
     _checkForUpdates = AppManager::createKnob<KnobBool>( this, tr("Always check for updates on start-up") );
     _checkForUpdates->setName("checkForUpdates");
     _checkForUpdates->setHintToolTip( tr("When checked, %1 will check for new updates on start-up of the application.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
@@ -1776,6 +1782,9 @@ Settings::warnChangedKnobs(const std::vector<KnobI*>& knobs)
 void
 Settings::saveAllSettings()
 {
+    if ( !_saveSettings->getValue() ) {
+        return;
+    }
     const KnobsVec &knobs = getKnobs();
     std::vector<KnobI*> k( knobs.size() );
 
@@ -1876,10 +1885,25 @@ Settings::savePluginsSettings()
 }
 
 void
+Settings::setSaveSettings(bool v)
+{
+    _saveSettings->setValue(v);
+}
+
+bool
+Settings::getSaveSettings() const
+{
+    return _saveSettings->getValue();
+}
+
+void
 Settings::saveSettings(const std::vector<KnobI*>& knobs,
                        bool doWarnings,
                        bool pluginSettings)
 {
+    if ( !_saveSettings->getValue() ) {
+        return;
+    }
     if (pluginSettings) {
         savePluginsSettings();
     }
