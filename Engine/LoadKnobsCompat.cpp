@@ -414,16 +414,44 @@ public:
         }
         {
             KnobChoiceOptionFilter f;
-            f.replacement = "Project frame range";
+            f.replacement = "project";
             {
                 KnobMatch& m = addKnobFilter(f, "frameRange", equalsStringCaseSensitive);
                 {
-                    PluginMatch& p = addPluginMatch(m, "fr.inria.openfx");
+                    PluginMatch& p = addPluginMatch(m, "fr.inria."); // fr.inria.openfx.Write* and fr.inria.built-in.Write
                     p.func = containsString;
                 }
             }
             addOptionFilter(f, "Timeline bounds", equalsStringCaseInsensitive);
             setNatronVersionMax(f, 1);
+            filters.push_back(f);
+        }
+        {
+            KnobChoiceOptionFilter f;
+            f.replacement = "8u";
+            {
+                KnobMatch& m = addKnobFilter(f, "bitDepth", equalsStringCaseSensitive);
+                {
+                    PluginMatch& p = addPluginMatch(m, "fr.inria."); // fr.inria.openfx.Write* and fr.inria.built-in.Write
+                    p.func = containsString;
+                }
+            }
+            addOptionFilter(f, "8i", equalsStringCaseInsensitive);
+            //setNatronVersionMax(f, 1);
+            filters.push_back(f);
+        }
+        {
+            KnobChoiceOptionFilter f;
+            f.replacement = "16u";
+            {
+                KnobMatch& m = addKnobFilter(f, "bitDepth", equalsStringCaseSensitive);
+                {
+                    PluginMatch& p = addPluginMatch(m, "fr.inria."); // fr.inria.openfx.Write* and fr.inria.built-in.Write
+                    p.func = containsString;
+                }
+            }
+            addOptionFilter(f, "16i", equalsStringCaseInsensitive);
+            //setNatronVersionMax(f, 1);
             filters.push_back(f);
         }
     }
@@ -535,7 +563,6 @@ filterKnobChoiceOptionCompat(const std::string& pluginID, int pluginVersionMajor
                              const std::string& paramName,
                              std::string* name)
 {
- 
     for (std::size_t i = 0; i < knobChoiceOptionFilters.filters.size(); ++i) {
         const KnobChoiceOptionFilter& filter = knobChoiceOptionFilters.filters[i];
         assert(!filter.replacement.empty());
