@@ -1463,6 +1463,13 @@ KnobChoice::setValueFromID(const std::string & value, ViewSetSpec view, ValueCha
     return eValueChangedReturnCodeNothingChanged;
 }
 
+// try to match entry id first, then label
+static
+const std::string&
+entryStr(const ChoiceOption& opt, int s)
+{
+    return s == 0 ? opt.id : opt.label;
+}
 
 // Choice restoration tries several options to restore a choice value:
 // 1- exact string match, same index
@@ -1473,78 +1480,80 @@ KnobChoice::setValueFromID(const std::string & value, ViewSetSpec view, ValueCha
 // 6- if the choice ends with " 1" try to match exactly everything before that  (for formats with PAR=1, where the PAR was removed)
 // returns index if choice was matched, -1 if not matched
 int
-KnobChoice::choiceMatch(const std::string& choiceID,
+KnobChoice::choiceMatch(const std::string& choice,
                         const std::vector<ChoiceOption>& entries,
                         ChoiceOption* matchedEntry)
 {
-    // 2- try exact match, other index
-    for (std::size_t i = 0; i < entries.size(); ++i) {
-        if (entries[i].id == choiceID) {
-            if (matchedEntry) {
-                *matchedEntry = entries[i];
-            }
-            return i;
-        }
-    }
-
-    // 3- match the part before '\t' with the part before '\t'. This is for value-tab-description options such as in the WriteFFmpeg codec
-    std::size_t choicetab = choiceID.find('\t'); // returns string::npos if no tab was found
-    std::string choicemain = choiceID.substr(0, choicetab); // gives the entire string if no tabs were found
-    for (std::size_t i = 0; i < entries.size(); ++i) {
-        const std::string& entry(entries[i].id);
-        std::size_t entrytab = entry.find('\t'); // returns string::npos if no tab was found
-        std::string entrymain = entry.substr(0, entrytab); // gives the entire string if no tabs were found
-
-        if (entrymain == choicemain) {
-            if (matchedEntry) {
-                *matchedEntry = entries[i];
-            }
-            return i;
-        }
-    }
-
-    // 4- case-insensitive match
-    for (std::size_t i = 0; i < entries.size(); ++i) {
-        if ( boost::iequals(entries[i].id, choiceID) ) {
-            if (matchedEntry) {
-                *matchedEntry = entries[i];
-            }
-            return i;
-        }
-    }
-
-    // 5- paren/bracket-insensitive match (for WriteFFmpeg's format and codecs)
-    std::string choiceparen = choiceID;
-    std::replace( choiceparen.begin(), choiceparen.end(), '[', '(');
-    std::replace( choiceparen.begin(), choiceparen.end(), ']', ')');
-    for (std::size_t i = 0; i < entries.size(); ++i) {
-        std::string entryparen = entries[i].id;
-        std::replace( entryparen.begin(), entryparen.end(), '[', '(');
-        std::replace( entryparen.begin(), entryparen.end(), ']', ')');
-
-        if (choiceparen == entryparen) {
-            if (matchedEntry) {
-                *matchedEntry = entries[i];
-            }
-            return i;
-        }
-    }
-
-    // 6- if the choice ends with " 1" try to match exactly everything before that  (for formats with par=1, where the PAR was removed)
-
-    if ( boost::algorithm::ends_with(choiceID, " 1") ) {
-        std::string choicenopar(choiceID, 0, choiceID.size()-2);
-        boost::trim(choicenopar);
-        boost::erase_all(choicenopar, " ");
+    // try to match entry id first, then label
+    for (int s = 0; s < 2; ++s) {
+        // 2- try exact match, other index
         for (std::size_t i = 0; i < entries.size(); ++i) {
-            if (entries[i].id == choicenopar) {
+            if (entryStr(entries[i], s) == choice) {
                 if (matchedEntry) {
                     *matchedEntry = entries[i];
                 }
                 return i;
             }
         }
-    }
+
+        // 3- match the part before '\t' with the part before '\t'. This is for value-tab-description options such as in the WriteFFmpeg codec
+        std::size_t choicetab = choice.find('\t'); // returns string::npos if no tab was found
+        std::string choicemain = choice.substr(0, choicetab); // gives the entire string if no tabs were found
+        for (std::size_t i = 0; i < entries.size(); ++i) {
+            const ChoiceOption& entry(entries[i]);
+            std::size_t entrytab = entry.id.find('\t'); // returns string::npos if no tab was found
+            std::string entrymain = entry.id.substr(0, entrytab); // gives the entire string if no tabs were found
+
+            if (entrymain == choicemain) {
+                if (matchedEntry) {
+                    *matchedEntry = entries[i];
+                }
+                return i;
+            }
+        }
+
+        // 4- case-insensitive match
+        for (std::size_t i = 0; i < entries.size(); ++i) {
+            if ( boost::iequals(entryStr(entries[i], s), choice) ) {
+                if (matchedEntry) {
+                    *matchedEntry = entries[i];
+                }
+                return i;
+            }
+        }
+
+        // 5- paren/bracket-insensitive match (for WriteFFmpeg's format and codecs)
+        std::string choiceparen = choice;
+        std::replace( choiceparen.begin(), choiceparen.end(), '[', '(');
+        std::replace( choiceparen.begin(), choiceparen.end(), ']', ')');
+        for (std::size_t i = 0; i < entries.size(); ++i) {
+            std::string entryparen = entryStr(entries[i], s);
+            std::replace( entryparen.begin(), entryparen.end(), '[', '(');
+            std::replace( entryparen.begin(), entryparen.end(), ']', ')');
+
+            if (choiceparen == entryparen) {
+                if (matchedEntry) {
+                    *matchedEntry = entries[i];
+                }
+                return i;
+            }
+        }
+
+        // 6- if the choice ends with " 1" try to match exactly everything before that  (for formats with par=1, where the PAR was removed)
+        if ( boost::algorithm::ends_with(choice, " 1") ) {
+            std::string choicenopar(choice, 0, choice.size()-2);
+            boost::trim(choicenopar);
+            boost::erase_all(choicenopar, " ");
+            for (std::size_t i = 0; i < entries.size(); ++i) {
+                if (entryStr(entries[i], s) == choicenopar) {
+                    if (matchedEntry) {
+                        *matchedEntry = entries[i];
+                    }
+                    return i;
+                }
+            }
+        }
+    } // for s
 
     // no match
     return -1;
