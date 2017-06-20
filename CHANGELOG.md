@@ -9,6 +9,10 @@
 
 - Fix a bug where the channel selector would be wrong when loading older projects (e.g. Spaceship).
 
+### Plugins
+
+- SpriteSheet: convert a sprite sheet to an animation.
+
 
 ## Version 2.2.8
 
