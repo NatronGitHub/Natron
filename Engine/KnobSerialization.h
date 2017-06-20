@@ -203,6 +203,21 @@ public:
     double dmax;
 };
 
+/*
+ * @brief Maps a knob name that existed in a specific version of Natron to the actual knob name in the current version.
+ * @param pluginID The plugin ID of the plug-in being loaded.
+ * @param natronVersionMajor/Minor/Revision The version of Natron that saved the project being loaded. This is -1 if the version of Natron could not be determined.
+ * @param pluginVersionMajor/Minor The version of the plug-in that saved the project being loaded. This is -1 if the version of the plug-in could not be determined.
+ * @param name[in][out] In input and output the name of the knob which may be modified by this function
+ * @returns true if a filter was applied, false otherwise
+ */
+bool filterKnobNameCompat(const std::string& pluginID,
+                          int pluginVersionMajor, int pluginVersionMinor,
+                          int natronVersionMajor, int natronVersionMinor, int natronVersionRevision,
+                          std::string* name);
+
+
+
 class KnobSerializationBase;
 struct ValueSerialization
 {

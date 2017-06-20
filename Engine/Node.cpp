@@ -80,6 +80,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/NodeGuiI.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/OfxEffectInstance.h"
+#include "Engine/ProjectSerialization.h"
 #include "Engine/OfxHost.h"
 #include "Engine/OneViewNode.h"
 #include "Engine/OpenGLViewerI.h"
@@ -1845,24 +1846,21 @@ Node::loadKnob(const KnobPtr & knob,
                bool /*updateKnobGui*/)
 {
 
-    bool isR = knob->getName() == kNatronOfxParamProcessR;
-    bool isG = knob->getName() == kNatronOfxParamProcessG;
-    bool isB = knob->getName() == kNatronOfxParamProcessB;
-    bool isA = knob->getName() == kNatronOfxParamProcessA;
+    const ProjectBeingLoadedInfo projectInfos = getApp()->getProjectBeingLoadedInfo();
 
     for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
 
+        std::string serializedName = (*it)->getName();
         bool foundMatch = false;
-        if ((*it)->getName() == knob->getName()) {
+        if (serializedName == knob->getName()) {
             foundMatch = true;
-        } else if (isR && (*it)->getName() == "r") {
-            foundMatch = true;
-        } else if (isG && (*it)->getName() == "g") {
-            foundMatch = true;
-        } else if (isB && (*it)->getName() == "b") {
-            foundMatch = true;
-        } else if (isA && (*it)->getName() == "a") {
-            foundMatch = true;
+        } else {
+            if (filterKnobNameCompat(getPluginID(), getMajorVersion(), getMinorVersion(), projectInfos.vMajor, projectInfos.vMinor, projectInfos.vRev, &serializedName)) {
+                if (serializedName == knob->getName()) {
+                    foundMatch = true;
+                }
+            }
+
         }
         if (!foundMatch) {
             continue;
