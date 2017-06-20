@@ -365,6 +365,7 @@ WriteNodePrivate::cloneGenericKnobs()
         for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
             if ( (*it2)->getName() == (*it)->getName() ) {
                 (*it2)->fromSerialization(**it);
+
                 break;
             }
         }
@@ -1026,6 +1027,13 @@ WriteNode::onEffectCreated(const CreateNodeArgs& args)
 
     //If we already loaded the Writer, do not do anything
     if ( _imp->embeddedPlugin.lock() ) {
+        // Ensure the plug-in ID knob has the same value as the created reader:
+        // The reader might have been created in onKnobsAboutToBeLoaded() however the knobs
+        // get loaded afterwards and the plug-in ID could not reflect the underlying plugin
+        KnobChoicePtr pluginIDKnob = _imp->pluginSelectorKnob.lock();
+        if (pluginIDKnob) {
+            pluginIDKnob->setActiveEntry(ChoiceOption(_imp->embeddedPlugin.lock()->getPluginID()));
+        }
         return;
     }
     bool throwErrors = false;
@@ -1055,6 +1063,7 @@ WriteNode::onKnobsAboutToBeLoaded(const SERIALIZATION_NAMESPACE::NodeSerializati
 
     //Load the pluginID to create first.
     node->loadKnob( _imp->pluginSelectorKnob.lock(), serialization._knobsValues );
+
 
     std::string filename = getFileNameFromSerialization( serialization._knobsValues );
     //Create the Reader with the serialization

@@ -101,8 +101,6 @@ ProjectPrivate::ProjectPrivate(Project* project)
 }
 
 
-
-
 bool
 ProjectPrivate::findFormat(int index,
                            Format* format) const

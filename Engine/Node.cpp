@@ -862,6 +862,7 @@ Node::message(MessageTypeEnum type,
         }
     }
 
+
     switch (type) {
     case eMessageTypeInfo:
         Dialogs::informationDialog(getLabel_mt_safe(), content);

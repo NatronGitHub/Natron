@@ -28,6 +28,7 @@
 
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OutputSchedulerThread.h"
+#include "Engine/LoadKnobsCompat.h"
 #include "Engine/Settings.h"
 #include "Engine/StubNode.h"
 #include "Serialization/NodeSerialization.h"
@@ -848,13 +849,9 @@ Node::loadInternalNodeGraph(bool initialSetupAllowed,
 
 } // loadInternalNodeGraph
 
-static void checkForOldStringParametersForChoices(const AppInstancePtr& app, const KnobsVec& knobs, const SERIALIZATION_NAMESPACE::KnobSerializationList& knobValues)
+static void checkForOldStringParametersForChoices(const SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo& projectInfos, const KnobsVec& knobs, const SERIALIZATION_NAMESPACE::KnobSerializationList& knobValues)
 {
-    SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo projectInfos;
-    bool gotProjectInfos = app->getProject()->getProjectLoadedVersionInfo(&projectInfos);
-    if (!gotProjectInfos) {
-        return;
-    }
+
 
     // Before Natron 2.2.3, all dynamic choice parameters for multiplane had a string parameter.
     // The string parameter had the same name as the choice parameter plus "Choice" appended.
@@ -900,13 +897,27 @@ Node::loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializatio
         _imp->effect->addUserComponents(s);
     }
 
+    boost::scoped_ptr<SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo> projectInfos;
+    {
+        projectInfos.reset(new SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo);
+        bool gotProjectInfos = getApp()->getProject()->getProjectLoadedVersionInfo(projectInfos.get());
+        if (!gotProjectInfos) {
+            projectInfos.reset();
+        }
+    }
+
 
     {
         // Load all knobs
-        checkForOldStringParametersForChoices(getApp(), getKnobs(), serialization._knobsValues);
+        if (projectInfos) {
+            checkForOldStringParametersForChoices(*projectInfos, getKnobs(), serialization._knobsValues);
+        }
 
         for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = serialization._knobsValues.begin(); it!=serialization._knobsValues.end(); ++it) {
-            KnobIPtr knob = getKnobByName((*it)->_scriptName);
+
+            std::string knobName = (*it)->_scriptName;
+            filterKnobNameCompat(serialization._pluginID, serialization._pluginMajorVersion, serialization._pluginMinorVersion, projectInfos ? projectInfos->vMajor : -1, projectInfos ? projectInfos->vMinor : -1, projectInfos ? projectInfos->vRev : -1, &knobName);
+            KnobIPtr knob = getKnobByName(knobName);
             if (!knob) {
                 continue;
             }

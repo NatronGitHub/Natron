@@ -42,50 +42,6 @@ GCC_DIAG_ON(unused-parameter)
 
 SERIALIZATION_NAMESPACE_ENTER;
 
-namespace Compat {
-inline void
-checkForPreNatron226String(std::string* choiceString)
-{
-    if (boost::iequals(*choiceString,std::string("Color.RGBA")) || boost::iequals(*choiceString,std::string("Color.RGB")) || boost::iequals(*choiceString,std::string("Color.Alpha"))) {
-        *choiceString = kNatronColorPlaneID;
-    } else if (boost::iequals(*choiceString,std::string("Backward.Motion"))) {
-        *choiceString = kNatronBackwardMotionVectorsPlaneID "." kNatronMotionComponentsLabel;
-    } else if (boost::iequals(*choiceString,std::string("Forward.Motion"))) {
-        *choiceString = kNatronForwardMotionVectorsPlaneID "." kNatronMotionComponentsLabel;
-    } else if (boost::iequals(*choiceString, std::string("DisparityLeft.Disparity"))) {
-        *choiceString = kNatronDisparityLeftPlaneID "." kNatronDisparityComponentsLabel;
-    } else if (boost::iequals(*choiceString, std::string("DisparityRight.Disparity"))) {
-        *choiceString = kNatronDisparityRightPlaneID "." kNatronDisparityComponentsLabel;
-    }
-
-    // Map also channels
-    if (boost::iequals(*choiceString, std::string("RGBA.R")) || boost::iequals(*choiceString, std::string("UV.r"))) {
-        *choiceString = kNatronColorPlaneID ".R";
-    } else if (boost::iequals(*choiceString, std::string("RGBA.G")) || boost::iequals(*choiceString, std::string("UV.g"))) {
-        *choiceString = kNatronColorPlaneID ".G";
-    } else if (boost::iequals(*choiceString, std::string("RGBA.B")) || boost::iequals(*choiceString, std::string("UV.b"))) {
-        *choiceString = kNatronColorPlaneID ".B";
-    } else if (boost::iequals(*choiceString, std::string("RGBA.A")) || boost::iequals(*choiceString, std::string("UV.a"))) {
-        *choiceString = kNatronColorPlaneID ".A";
-    } else if (boost::iequals(*choiceString, std::string("A.r"))) {
-        *choiceString = "A." kNatronColorPlaneID ".r";
-    } else if (boost::iequals(*choiceString, std::string("A.g"))) {
-        *choiceString = "A." kNatronColorPlaneID ".g";
-    } else if (boost::iequals(*choiceString, std::string("A.b"))) {
-        *choiceString = "A." kNatronColorPlaneID ".b";
-    } else if (boost::iequals(*choiceString, std::string("A.a"))) {
-        *choiceString = "A." kNatronColorPlaneID ".a";
-    } else if (boost::iequals(*choiceString, std::string("B.r"))) {
-        *choiceString = "B." kNatronColorPlaneID ".r";
-    } else if (boost::iequals(*choiceString, std::string("B.g"))) {
-        *choiceString = "B." kNatronColorPlaneID ".g";
-    } else if (boost::iequals(*choiceString, std::string("B.b"))) {
-        *choiceString = "B." kNatronColorPlaneID ".b";
-    } else if (boost::iequals(*choiceString, std::string("B.a"))) {
-        *choiceString = "B." kNatronColorPlaneID ".a";
-    }
-}
-}
 
 SERIALIZATION_NAMESPACE_EXIT;
 
@@ -1300,12 +1256,12 @@ SERIALIZATION_NAMESPACE::KnobSerialization::serialize(Archive & ar,
             std::string stringChoice;
             ar & ::boost::serialization::make_nvp("ChoiceLabel", stringChoice);
 
-            if (version < KNOB_SERIALIZATION_CHANGE_PLANES_SERIALIZATION) {
+            /*if (version < KNOB_SERIALIZATION_CHANGE_PLANES_SERIALIZATION) {
                 // In Natron 2.2.3 we changed the encoding of planes: they no longer are planeLabel + "." + channels
                 // but planeID + "." + channels
                 // Hard-code the mapping
                 Compat::checkForPreNatron226String(&stringChoice);
-            }
+            }*/
             //_extraData = cData;
 
             values[0]._value.isString = stringChoice;
@@ -1534,9 +1490,9 @@ SERIALIZATION_NAMESPACE::NodeSerialization::serialize(Archive & ar,
                     choiceDimValues.resize(1);
                     choiceDimValues[0]._value.isString = perDimValues[0]._value.isString;
 
-                    if ((*it)->_boostSerializationVersion < KNOB_SERIALIZATION_CHANGE_PLANES_SERIALIZATION) {
+                    /*if ((*it)->_boostSerializationVersion < KNOB_SERIALIZATION_CHANGE_PLANES_SERIALIZATION) {
                         Compat::checkForPreNatron226String(&choiceDimValues[0]._value.isString);
-                    }
+                    }*/
                 }
                 
                 break;

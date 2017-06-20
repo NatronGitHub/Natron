@@ -998,32 +998,30 @@ CLArgsPrivate::parse()
             break;
         }
 
-        if (!isBackground) {
-            std::cout << tr("You cannot use the --setting option in interactive mode").toStdString() << std::endl;
-            error = 1;
-
-            return;
-        }
-
         QStringList::iterator next = it;
         if ( next != args.end() ) {
             ++next;
         }
         if ( next == args.end() ) {
-            std::cout << tr("You must specify a setting name and value as \"name=value\" when using the -setting option").toStdString() << std::endl;
+            std::cout << tr("You must specify a setting name and value as \"name=value\" when using the --setting option").toStdString() << std::endl;
             error = 1;
 
             return;
         }
         int pos = next->indexOf( QLatin1Char('=') );
         if (pos == -1) {
-            std::cout << tr("You must specify a setting name and value as \"name=value\" when using the -setting option").toStdString() << std::endl;
+            std::cout << tr("You must specify a setting name and value as \"name=value\" when using the --setting option").toStdString() << std::endl;
             error = 1;
 
             return;
         }
         QString name = next->left(pos);
         QString value = next->mid(pos+1);
+
+        // note: if there is any --setting option, settingCommands is non-empty, and
+        // AppManager::loadInternal() sets _saveSettings Knob in Settings class to false,
+        // so that settings are not saved.
+
         settingCommands.push_back( "NatronEngine.natron.getSettings().getParam(\"" + name.toStdString() + "\").setValue(" + value.toStdString() + ")");
 
         ++next;

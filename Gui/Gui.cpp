@@ -239,6 +239,7 @@ Gui::abortProject(bool quitApp,
             app->quit();
         }
     } else {
+     
         setGuiAboutToClose(true);
         GuiAppInstancePtr app = getApp();
         if (app) {

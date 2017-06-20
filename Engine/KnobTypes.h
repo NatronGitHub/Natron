@@ -676,6 +676,7 @@ public:
 
     static int choiceMatch(const std::string& choiceID, const std::vector<ChoiceOption>& entries, ChoiceOption* matchedEntry);
 
+
     /**
      * @brief When set the menu will have a "New" entry which the user can select to create a new entry on its own.
      **/

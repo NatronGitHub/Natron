@@ -911,6 +911,13 @@ ReadNode::onEffectCreated(const CreateNodeArgs& args)
     //If we already loaded the Reader, do not do anything
     NodePtr p = getEmbeddedReader();
     if (p) {
+        // Ensure the plug-in ID knob has the same value as the created reader:
+        // The reader might have been created in onKnobsAboutToBeLoaded() however the knobs
+        // get loaded afterwards and the plug-in ID could not reflect the underlying plugin
+        KnobChoicePtr pluginIDKnob = _imp->pluginSelectorKnob.lock();
+        if (pluginIDKnob) {
+            pluginIDKnob->setActiveEntry(ChoiceOption(p->getPluginID()));
+        }
         return;
     }
 
@@ -923,7 +930,6 @@ ReadNode::onEffectCreated(const CreateNodeArgs& args)
     }
 
     bool throwErrors = false;
-
     std::string pattern;
 
     std::vector<std::string> defaultParamValues = args.getPropertyNUnsafe<std::string>(kCreateNodeArgsPropNodeInitialParamValues);
@@ -947,6 +953,7 @@ ReadNode::onKnobsAboutToBeLoaded(const SERIALIZATION_NAMESPACE::NodeSerializatio
 
     //Load the pluginID to create first.
     node->loadKnob( _imp->pluginSelectorKnob.lock(), serialization._knobsValues );
+
 
     std::string filename = getFileNameFromSerialization( serialization._knobsValues );
     //Create the Reader with the serialization

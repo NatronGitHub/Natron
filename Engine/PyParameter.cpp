@@ -52,13 +52,14 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/Curve.h"
 #include "Engine/Project.h"
 #include "Engine/ViewIdx.h"
+#include "Engine/LoadKnobsCompat.h"
 
 #include "Engine/PyAppInstance.h"
 #include "Engine/PyNode.h"
 #include "Engine/PyItemsTable.h"
 
 #include "Serialization/SerializationCompat.h"
-
+#include "Serialization/ProjectSerialization.h"
 
 
 NATRON_NAMESPACE_ENTER;
@@ -3002,7 +3003,20 @@ ChoiceParam::set(const QString& label, const QString& view)
             // Before Natron 2.2.3, all dynamic choice parameters for multiplane had a string parameter.
             // The string parameter had the same name as the choice parameter plus "Choice" appended.
             // If we found such a parameter, retrieve the string from it.
-            SERIALIZATION_NAMESPACE::Compat::checkForPreNatron226String(&choiceID);
+            EffectInstancePtr isEffect = toEffectInstance(knob->getHolder());
+            if (isEffect) {
+                PluginPtr plugin = isEffect->getNode()->getPyPlugPlugin();
+                SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo projectInfos;
+                bool gotProjectInfos = isEffect->getApp()->getProject()->getProjectLoadedVersionInfo(&projectInfos);
+                int natronMajor = -1,natronMinor = -1,natronRev =-1;
+                if (gotProjectInfos) {
+                    natronMajor = projectInfos.vMajor;
+                    natronMinor = projectInfos.vMinor;
+                    natronRev = projectInfos.vRev;
+                }
+
+                filterKnobChoiceOptionCompat(plugin->getPluginID(), plugin->getMajorVersion(), plugin->getMinorVersion(), natronMajor, natronMinor, natronRev, knob->getName(), &choiceID);
+            }
         }
         // use eValueChangedReasonPluginEdited for compat with Shuffle setChannelsFromRed()
         ValueChangedReturnCodeEnum s = knob->setValueFromID(choiceID, thisViewSpec, isCreatingNode ? eValueChangedReasonPluginEdited : eValueChangedReasonUserEdited);

@@ -47,11 +47,14 @@
 #include "Engine/DockablePanelI.h"
 #include "Engine/FrameViewRequest.h"
 #include "Engine/OverlayInteractBase.h"
+#include "Engine/LoadKnobsCompat.h"
 #include "Engine/Hash64.h"
 #include "Engine/KnobFile.h"
 #include "Engine/KnobGuiI.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/TreeRender.h"
+
+#include "Serialization/ProjectSerialization.h"
 
 SERIALIZATION_NAMESPACE_USING
 
@@ -3074,8 +3077,27 @@ KnobHelper::restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSe
     } else if (isStringBase) {
         isStringBase->setValue(obj._value.isString, view, targetDimension, eValueChangedReasonUserEdited, 0);
     } else if (isChoice) {
+
+        std::string choiceID = obj._value.isString;
+
+        EffectInstancePtr isEffect = toEffectInstance(getHolder());
+        if (isEffect) {
+            PluginPtr plugin = isEffect->getNode()->getPlugin();
+
+            SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo projectInfos;
+            bool gotProjectInfos = isEffect->getApp()->getProject()->getProjectLoadedVersionInfo(&projectInfos);
+            int natronMajor = -1,natronMinor = -1,natronRev =-1;
+            if (gotProjectInfos) {
+                natronMajor = projectInfos.vMajor;
+                natronMinor = projectInfos.vMinor;
+                natronRev = projectInfos.vRev;
+            }
+
+            filterKnobChoiceOptionCompat(plugin->getPluginID(), plugin->getMajorVersion(), plugin->getMinorVersion(), natronMajor, natronMinor, natronRev, getName(), &choiceID);
+        }
+
         ChoiceOption matchedEntry;
-        int foundValue = KnobChoice::choiceMatch(obj._value.isString, isChoice->getEntries(), &matchedEntry);
+        int foundValue = KnobChoice::choiceMatch(choiceID, isChoice->getEntries(), &matchedEntry);
 
         if (foundValue == -1) {
             // Just remember the active entry if not found

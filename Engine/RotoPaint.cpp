@@ -465,7 +465,6 @@ void
 RotoPaint::initKnobsTableControls()
 {
 
-
     {
         KnobButtonPtr param = createKnob<KnobButton>(kRotoAddGroupParam);
         param->setLabel(tr(kRotoAddGroupParamLabel));

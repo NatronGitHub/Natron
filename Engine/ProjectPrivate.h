@@ -144,8 +144,10 @@ public:
     {
         QString formatStr;
 
-        formatStr.append( QString::fromUtf8( f.getName().c_str() ) );
-        formatStr.append( QLatin1Char(' ') );
+        if (!f.getName().empty()) {
+            formatStr.append( QString::fromUtf8( f.getName().c_str() ) );
+            formatStr.append( QLatin1Char(' ') );
+        }
         formatStr.append( QString::number( f.width() ) );
         formatStr.append( QLatin1Char('x') );
         formatStr.append( QString::number( f.height() ) );

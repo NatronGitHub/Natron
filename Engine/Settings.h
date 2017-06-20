@@ -139,12 +139,18 @@ public:
 
     bool doesKnobChangeRequireOFXCacheClear(const KnobIPtr& knob);
 
+    // should settings be saved?
+    void setSaveSettings(bool);
+
+    bool getSaveSettings() const;
+
     enum LoadSettingsType
     {
         eLoadSettingsTypeKnobs = 0x1,
         eLoadSettingsTypePlugins = 0x2,
         eLoadSettingsTypeShortcuts = 0x4
     };
+
 
     /**
      * @brief Load the all the settings from the settings file.

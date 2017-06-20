@@ -1515,6 +1515,7 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPa
             ActionRetCodeEnum stat = getRegionOfDefinition_public(getCurrentRenderTime(), levelCombinedScale, getCurrentRenderView(), &results);
             if (isFailureRetCode(stat)) {
                 return stat;
+
             }
         }
         perMipMapLevelRoDCanonical[m] = results->getRoD();

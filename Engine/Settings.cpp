@@ -311,6 +311,7 @@ public:
     bool _restoringSettings;
     bool _ocioRestored;
     bool _defaultAppearanceOutdated;
+    bool saveSettings;
 
 
 
@@ -322,6 +323,7 @@ public:
     , _restoringSettings(false)
     , _ocioRestored(false)
     , _defaultAppearanceOutdated(false)
+    , saveSettings(true)
     {
         
     }
@@ -2332,8 +2334,23 @@ Settings::getSettingsAbsoluteFilePath() const
 }
 
 void
+Settings::setSaveSettings(bool enable)
+{
+    _imp->saveSettings = enable;
+}
+
+bool
+Settings::getSaveSettings() const
+{
+    return _imp->saveSettings;
+}
+
+void
 Settings::saveSettingsToFile()
 {
+    if (!_imp->saveSettings) {
+        return;
+    }
 
     std::string userDataDirPath = _imp->ensureUserDataDirectory();
     std::string settingsFilePath = _imp->getSettingsAbsoluteFilepath(userDataDirPath);
@@ -2348,6 +2365,7 @@ Settings::saveSettingsToFile()
     }
 
     bool hasWrittenSomething = false;
+
 
     SERIALIZATION_NAMESPACE::SettingsSerialization serialization;
     serialization.pluginsData = _imp->pluginsData;
@@ -2396,6 +2414,7 @@ Settings::saveSettingsToFile()
 
     for (ApplicationShortcutsMap::const_iterator it = _imp->shortcuts.begin(); it != _imp->shortcuts.end(); ++it) {
         for (GroupShortcutsMap::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+
 
             if (it2->second.modifiers == it2->second.defaultModifiers && it2->second.currentShortcut == it2->second.defaultShortcut) {
                 continue;
@@ -2479,6 +2498,7 @@ void
 Settings::loadSettingsFromFile(int loadType)
 {
     _imp->_restoringSettings = true;
+
 
 
     std::string userDataDirPath = _imp->ensureUserDataDirectory();
@@ -2599,10 +2619,11 @@ SettingsPrivate::ensureUserDataDirectory()
 bool
 SettingsPrivate::tryLoadOpenColorIOConfig()
 {
-    QString configFile;
+    // the default value is the environment variable "OCIO"
+    QString configFile = QFile::decodeName( qgetenv(NATRON_OCIO_ENV_VAR_NAME) );
 
-
-    if ( _customOcioConfigFile->isEnabled() ) {
+    // OCIO environment variable overrides everything, then try the custom config...
+    if ( configFile.isEmpty() && _customOcioConfigFile->isEnabled() ) {
         ///try to load from the file
         std::string file;
         try {
@@ -2610,17 +2631,19 @@ SettingsPrivate::tryLoadOpenColorIOConfig()
         } catch (...) {
             // ignore exceptions
         }
-
         if ( file.empty() ) {
             return false;
         }
-        if ( !QFile::exists( QString::fromUtf8( file.c_str() ) ) ) {
-            Dialogs::errorDialog( "OpenColorIO", tr("%1: No such file.").arg( QString::fromUtf8( file.c_str() ) ).toStdString() );
+        configFile = QString::fromUtf8( file.c_str() );
+    }
+    if ( !configFile.isEmpty() ) {
+        if ( !QFile::exists(configFile) )  {
+            Dialogs::errorDialog( "OpenColorIO", tr("%1: No such file.").arg(configFile).toStdString() );
 
             return false;
         }
-        configFile = QString::fromUtf8( file.c_str() );
     } else {
+        // ... and finally try the setting from the choice menu.
         try {
             ///try to load from the combobox
             QString activeEntryText  = QString::fromUtf8( _ocioConfigKnob->getActiveEntry().id.c_str() );

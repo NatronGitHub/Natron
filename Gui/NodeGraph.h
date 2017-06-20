@@ -330,7 +330,7 @@ public:
 
 public Q_SLOTS:
 
-    void onNextClicked();
+    void onButtonClicked(QAbstractButton* button);
 
     void updateFindResults(const QString& filter);
 

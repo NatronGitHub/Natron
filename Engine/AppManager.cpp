@@ -891,6 +891,7 @@ AppManager::loadInternal(const CLArgs& cl)
 
     if (!cl.isLoadedUsingDefaultSettings()) {
         ///Call restore after initializing knobs
+        _imp->_settings->setSaveSettings(false);
         _imp->_settings->loadSettingsFromFile(Settings::eLoadSettingsTypeKnobs);
     }
 
@@ -928,6 +929,10 @@ AppManager::loadInternal(const CLArgs& cl)
     {
         const std::list<std::string>& commands = cl.getSettingCommands();
 
+        // do not save settings if there is a --setting option
+        if ( !commands.empty() ) {
+            _imp->_settings->setSaveSettings(false);
+        }
         for (std::list<std::string>::const_iterator it = commands.begin(); it != commands.end(); ++it) {
             std::string err;
             std::string output;
