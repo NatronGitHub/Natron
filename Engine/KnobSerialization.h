@@ -209,24 +209,31 @@ public:
 /*
  * @brief Maps a knob name that existed in a specific version of Natron to the actual knob name in the current version.
  * @param pluginID The plugin ID of the plug-in being loaded.
- * @param versionMajor The major version of Natron that saved the project being loaded
- * @param versionMinor The minor version of Natron that saved the project being loaded
+ * @param natronVersionMajor/Minor/Revision The version of Natron that saved the project being loaded. This is -1 if the version of Natron could not be determined.
+ * @param pluginVersionMajor/Minor The version of the plug-in that saved the project being loaded. This is -1 if the version of the plug-in could not be determined.
  * @param name[in][out] In input and output the name of the knob which may be modified by this function
  * @returns true if a filter was applied, false otherwise
  */
-bool filterKnobNameCompat(const std::string& pluginID, int versionMajor, int versionMinor, std::string* name);
+bool filterKnobNameCompat(const std::string& pluginID,
+                          int pluginVersionMajor, int pluginVersionMinor,
+                          int natronVersionMajor, int natronVersionMinor, int natronVersionRevision,
+                          std::string* name);
 
 /*
  * @brief Maps a KnobChoice option ID that existed in a specific version of Natron to the actual option in the current version.
  * @param pluginID The plugin ID of the plug-in being loaded
- * @param versionMajor The major version of Natron that saved the project being loaded
- * @param versionMinor The minor version of Natron that saved the project being loaded
+ * @param natronVersionMajor/Minor/Revision The version of Natron that saved the project being loaded
+ * @param pluginVersionMajor/Minor The version of the plug-in that saved the project being loaded
  * @param paramName The name of the parameter being loaded. Note that this is the name of the parameter in the saved project, prior to being passed to filterKnobNameCompat
  * dynamic choice parameters: we used to store the value in a string parameter with the suffix "Choice".
  * @param optionID[in][out] In input and output the optionID which may be modified by this function
  * @returns true if a filter was applied, false otherwise
  */
-bool filterKnobChoiceOption(const std::string& pluginID, int pluginVersionMajor, int pluginVersionMinor, int versionMajor, int versionMinor, const std::string& paramName, std::string* optionID);
+bool filterKnobChoiceOptionCompat(const std::string& pluginID,
+                            int pluginVersionMajor, int pluginVersionMinor,
+                            int natronVersionMajor, int natronVersionMinor, int natronVersionRevision,
+                            const std::string& paramName,
+                            std::string* optionID);
 
 class KnobSerializationBase;
 struct ValueSerialization

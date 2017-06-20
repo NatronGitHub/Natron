@@ -1842,6 +1842,26 @@ Node::loadKnob(const KnobPtr & knob,
     ///try to find a serialized value for this knob
     const ProjectBeingLoadedInfo projectInfos = getApp()->getProjectBeingLoadedInfo();
 
+    std::string pluginID = getPluginID();
+
+    {
+        // Use the plug-in ID of the encoder/decoder for reader and writer
+        ReadNode* isReadNode = dynamic_cast<ReadNode*>( getEffectInstance().get() );
+        WriteNode* isWriteNode = dynamic_cast<WriteNode*>( getEffectInstance().get() );
+        if (isReadNode) {
+            NodePtr p = isReadNode->getEmbeddedReader();
+            if (p) {
+                pluginID = p->getPluginID();
+            }
+        } else if (isWriteNode) {
+            NodePtr p = isWriteNode->getEmbeddedWriter();
+            if (p) {
+                pluginID = p->getPluginID();
+            }
+        }
+    }
+
+
     KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
     if (isChoice) {
 
@@ -1856,7 +1876,7 @@ Node::loadKnob(const KnobPtr & knob,
                     if (stringKnob) {
                         std::string serializedString = stringKnob->getValue();
                         if ((*it)->_version < KNOB_SERIALIZATION_CHANGE_PLANES_SERIALIZATION) {
-                            filterKnobChoiceOption(getPluginID(), serialization.getPluginMajorVersion(), serialization.getPluginMinorVersion(), projectInfos.vMajor, projectInfos.vMinor, isChoice->getName(), &serializedString);
+                            filterKnobChoiceOptionCompat(getPluginID(), getMajorVersion(), getMinorVersion(), projectInfos.vMajor, projectInfos.vMinor, projectInfos.vRev, isChoice->getName(), &serializedString);
                         }
                         isChoice->setActiveEntry(ChoiceOption(serializedString));
                     }
@@ -1874,7 +1894,7 @@ Node::loadKnob(const KnobPtr & knob,
         if (serializedName == knob->getName()) {
             foundMatch = true;
         } else {
-            if (filterKnobNameCompat(getPluginID(), projectInfos.vMajor, projectInfos.vMinor, &serializedName)) {
+            if (filterKnobNameCompat(getPluginID(), getMajorVersion(), getMinorVersion(), projectInfos.vMajor, projectInfos.vMinor, projectInfos.vRev, &serializedName)) {
                 if (serializedName == knob->getName()) {
                     foundMatch = true;
                 }
@@ -1906,7 +1926,7 @@ Node::loadKnob(const KnobPtr & knob,
                 assert(choiceSerialized);
                 if (choiceSerialized) {
                     std::string optionID = choiceData->_choiceString;
-                    filterKnobChoiceOption(getPluginID(), serialization.getPluginMajorVersion(), serialization.getPluginMinorVersion(), projectInfos.vMajor, projectInfos.vMinor, serializedName, &optionID);
+                    filterKnobChoiceOptionCompat(getPluginID(), serialization.getPluginMajorVersion(), serialization.getPluginMinorVersion(), projectInfos.vMajor, projectInfos.vMinor, projectInfos.vRev, serializedName, &optionID);
                     isChoice->choiceRestoration(choiceSerialized, optionID);
                 }
             }

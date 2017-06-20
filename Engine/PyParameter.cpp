@@ -1650,7 +1650,7 @@ ChoiceParam::set(const QString& label)
         // Before Natron 2.2.3, all dynamic choice parameters for multiplane had a string parameter.
         // The string parameter had the same name as the choice parameter plus "Choice" appended.
         // If we found such a parameter, retrieve the string from it.
-        filterKnobChoiceOption(std::string(), -1, -1, -1, -1, knob->getName(), &choiceID);
+        filterKnobChoiceOptionCompat(std::string(), -1, -1, -1, -1, -1, knob->getName(), &choiceID);
     }
     KnobHelper::ValueChangedReturnCodeEnum s = knob->setValueFromID(choiceID, 0);
 

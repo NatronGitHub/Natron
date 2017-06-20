@@ -1682,6 +1682,10 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
                 }
             }
 
+            if ((*it)->getBounds().isNull()) {
+                continue;
+            }
+
             ///Throw away images that are not even what the node want to render
             /*if ( ( imgComps.isColorPlane() && nodePrefComps.isColorPlane() && (imgComps != nodePrefComps) ) || (imgDepth != nodePrefDepth) ) {
                 appPTR->removeFromNodeCache(*it);

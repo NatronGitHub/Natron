@@ -37,6 +37,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/math/special_functions/fpclassify.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
@@ -1027,6 +1028,8 @@ KnobChoice::choiceMatch(const std::string& choice,
     // 6- if the choice ends with " 1" try to match exactly everything before that  (for formats with par=1, where the PAR was removed)
     if ( boost::algorithm::ends_with(choice, " 1") ) {
         std::string choicenopar(choice, 0, choice.size()-2);
+        boost::trim(choicenopar);
+        boost::erase_all(choicenopar, " ");
         for (std::size_t i = 0; i < entries.size(); ++i) {
             if (entries[i].id == choicenopar) {
                 if (matchedEntry) {

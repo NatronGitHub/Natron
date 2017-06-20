@@ -682,7 +682,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
 
     }
 
-    if ( !defaultFallback && !ReadNode::isBundledReader(readerPluginID, false) ) {
+    if ( !defaultFallback && !ReadNode::isBundledReader(readerPluginID, _publicInterface->getApp()->wasProjectCreatedWithLowerCaseIDs()) ) {
         if (throwErrors) {
             QString message = tr("%1 is not a bundled reader, please create it from the Image->Readers menu or with the tab menu in the Nodegraph")
                               .arg( QString::fromUtf8( readerPluginID.c_str() ) );
@@ -1127,13 +1127,19 @@ ReadNode::onEffectCreated(bool mayCreateFileDialog,
     //If we already loaded the Reader, do not do anything
     NodePtr p = getEmbeddedReader();
     if (p) {
+        // Ensure the plug-in ID knob has the same value as the created reader:
+        // The reader might have been created in onKnobsAboutToBeLoaded() however the knobs
+        // get loaded afterwards and the plug-in ID could not reflect the underlying plugin
+        boost::shared_ptr<KnobString> pluginIDKnob = _imp->pluginIDStringKnob.lock();
+        if (pluginIDKnob) {
+            pluginIDKnob->setValue(p->getPluginID());
+        }
         return;
     }
 
     _imp->wasCreatedAsHiddenNode = args.getProperty<bool>(kCreateNodeArgsPropNoNodeGUI);
 
     bool throwErrors = false;
-    boost::shared_ptr<KnobString> pluginIdParam = _imp->pluginIDStringKnob.lock();
     std::string pattern;
 
     if (mayCreateFileDialog) {

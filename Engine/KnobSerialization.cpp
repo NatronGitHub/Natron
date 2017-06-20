@@ -311,36 +311,6 @@ KnobSerialization::setChoiceExtraString(const std::string& label)
     }
 }
 
-
-bool
-filterKnobNameCompat(const std::string& pluginID, int versionMajor, int versionMinor, std::string* name)
-{
-    (void)pluginID;
-    (void)versionMajor;
-    (void)versionMinor;
-    bool ret = true;
-    if (versionMajor < 2 && *name == "r") {
-        *name = kNatronOfxParamProcessR;
-    } else if (versionMajor < 2 && *name == "g") {
-        *name = kNatronOfxParamProcessG;
-    } else if (versionMajor < 2 && *name == "b") {
-        *name = kNatronOfxParamProcessB;
-    } else if (versionMajor < 2 && *name == "a") {
-        *name = kNatronOfxParamProcessA;
-    } else if (versionMajor <= 2 && versionMinor <= 8 && *name == "doRed") {
-        *name = kNatronOfxParamProcessR;
-    } else if (versionMajor <= 2 && versionMinor <= 8 && *name == "doGreen") {
-        *name = kNatronOfxParamProcessG;
-    } else if (versionMajor <= 2 && versionMinor <= 8 && *name == "doBlue") {
-        *name = kNatronOfxParamProcessB;
-    } else if (versionMajor <= 2 && versionMinor <= 8 && *name == "doAlpha") {
-        *name = kNatronOfxParamProcessA;
-    } else {
-        ret = false;
-    }
-    return ret;
-}
-
 static bool
 startsWith(const std::string& str,
            const std::string& prefix)
@@ -358,81 +328,510 @@ endsWith(const std::string &str,
             (str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0) );
 }
 
-bool
-filterKnobChoiceOption(const std::string& pluginID, int pluginVersionMajor, int pluginVersionMinor, int versionMajor, int versionMinor, const std::string& paramName,  std::string* optionID)
+static bool
+containsString(const std::string& str, const std::string& substring)
 {
-    (void)pluginID;
-    (void)versionMajor;
-    (void)versionMinor;
-    (void)pluginVersionMajor;
-    (void)pluginVersionMinor;
-    (void)paramName;
-    (void)optionID;
+    return str.find(substring) != std::string::npos;
+}
 
-    bool gotIt = false;
-    if (versionMajor <= 2 && versionMinor <= 8 && (paramName == "outputChannels" || endsWith(paramName,"channels"))) {
-        gotIt = true;
-        if (boost::iequals(*optionID,std::string("Color.RGBA")) || boost::iequals(*optionID,std::string("Color.RGB")) || boost::iequals(*optionID,std::string("Color.Alpha"))) {
-            *optionID = kNatronColorPlaneID;
-        } else if (boost::iequals(*optionID,std::string("Backward.Motion"))) {
-            *optionID = kNatronBackwardMotionVectorsPlaneID "." kNatronMotionComponentsLabel;
-        } else if (boost::iequals(*optionID,std::string("Forward.Motion"))) {
-            *optionID = kNatronForwardMotionVectorsPlaneID "." kNatronMotionComponentsLabel;
-        } else if (boost::iequals(*optionID, std::string("DisparityLeft.Disparity"))) {
-            *optionID = kNatronDisparityLeftPlaneID "." kNatronDisparityComponentsLabel;
-        } else if (boost::iequals(*optionID, std::string("DisparityRight.Disparity"))) {
-            *optionID = kNatronDisparityRightPlaneID "." kNatronDisparityComponentsLabel;
-        } else {
-            gotIt = false;
+static bool
+equalsStringCaseSensitive(const std::string& str1, const std::string& str2)
+{
+    return str1 == str2;
+}
+
+static bool
+equalsStringCaseInsensitive(const std::string& str1, const std::string& str2)
+{
+    return boost::iequals(str1, str2);
+}
+
+typedef bool (*stringFuncPtr)(const std::string&,const std::string&);
+
+struct FilterMatcher
+{
+    // The second string parameter that is passed to the nameMatcher function
+    std::string nameToMatch;
+
+    // The function used to compare the knob name to detemrine if it matches the input or not
+    stringFuncPtr func;
+};
+
+struct PluginMatch
+{
+    // The ID of the plug-in that is concerned by this filter.
+    std::string pluginID;
+
+    // The minimal version of the plug-in to which this filter can be applied
+    // If -1 the filter is always applied on version below version max
+    int pluginVersionMajorMin;
+    int pluginVersionMinorMin;
+
+    // The version of the plug-in up to which the filter must be applied
+    // If these values are -1, the filter is always applied above version min
+    int pluginVersionMajorMax;
+    int pluginVersionMinorMax;
+
+    stringFuncPtr func;
+};
+
+struct KnobMatch
+{
+    // List of plug-ins to which it applies to. If empty, applies to any plug-in
+    std::list<PluginMatch> plugin;
+    FilterMatcher filter;
+};
+
+struct NatronVersionMatch
+{
+    // The version of Natron up to which the filter must be applied.
+    // If these values are -1, the filter is always applied.
+    int major, minor, rev;
+
+    NatronVersionMatch()
+    : major(-1)
+    , minor(-1)
+    , rev(-1)
+    {
+
+    }
+};
+
+
+struct KnobNameFilter
+{
+
+    // All elements in the string will be checked, if one is matched, the filter applies.
+    std::list<KnobMatch> filters;
+
+    // If the string is matched using nameMatcher, this is the string that should replace it
+    std::string replacement;
+
+    // The version of Natron min/max for which it applies to.
+    NatronVersionMatch natronVersionMin, natronVersionMax;
+
+    KnobNameFilter()
+    : filters()
+    , replacement()
+    , natronVersionMin()
+    , natronVersionMax()
+    {
+
+    }
+};
+
+struct KnobChoiceOptionFilter
+{
+
+    // All elements in the string will be checked, if one is matched, the filter applies.
+    std::list<KnobMatch> filters;
+    std::list<FilterMatcher> optionFilters;
+
+    // If the string is matched using nameMatcher, this is the string that should replace it
+    std::string replacement;
+
+    // The version of Natron min/max for which it applies to.
+    NatronVersionMatch natronVersionMin, natronVersionMax;
+
+    KnobChoiceOptionFilter()
+    : filters()
+    , optionFilters()
+    , replacement()
+    , natronVersionMin()
+    , natronVersionMax()
+    {
+
+    }
+};
+
+PluginMatch& addPluginMatch(KnobMatch& f, const std::string& pluginID, int pluginMajorMin = -1, int pluginMinorMin = -1, int pluginMajorMax = -1, int pluginMinorMax = -1)
+{
+    PluginMatch m = {pluginID, pluginMajorMin, pluginMinorMin, pluginMajorMax, pluginMinorMax, equalsStringCaseInsensitive};
+    f.plugin.push_back(m);
+    return f.plugin.back();
+}
+
+
+template <typename FILTER>
+KnobMatch& addKnobFilter(FILTER& f, const std::string& nameToMatch, stringFuncPtr func)
+{
+    KnobMatch m;
+    m.filter.nameToMatch = nameToMatch;
+    m.filter.func = func;
+    f.filters.push_back(m);
+    return f.filters.back();
+}
+
+void addOptionFilter(KnobChoiceOptionFilter& f, const std::string& nameToMatch, stringFuncPtr func)
+{
+    FilterMatcher m = {nameToMatch, func};
+    f.optionFilters.push_back(m);
+}
+
+template <typename FILTER>
+void setNatronVersionMin(FILTER &f, int major = -1, int minor = -1, int rev = -1) {
+    f.natronVersionMin.major = major;
+    f.natronVersionMin.minor = minor;
+    f.natronVersionMin.rev = rev;
+}
+
+template <typename FILTER>
+void setNatronVersionMax(FILTER &f, int major = -1, int minor = -1, int rev = -1) {
+    f.natronVersionMax.major = major;
+    f.natronVersionMax.minor = minor;
+    f.natronVersionMax.rev = rev;
+}
+
+class KnobNameFilters
+{
+public:
+
+    std::vector<KnobNameFilter> filters;
+
+    KnobNameFilters()
+    {
+        {
+            KnobNameFilter f;
+            f.replacement = kNatronOfxParamProcessR;
+            addKnobFilter(f, "r", equalsStringCaseSensitive);
+            addKnobFilter(f, "doRed", equalsStringCaseSensitive);
+            setNatronVersionMax(f, 1);
+            filters.push_back(f);
+        }
+        {
+            KnobNameFilter f;
+            f.replacement = kNatronOfxParamProcessG;
+            addKnobFilter(f, "g", equalsStringCaseSensitive);
+            addKnobFilter(f, "doGreen", equalsStringCaseSensitive);
+            setNatronVersionMax(f, 1);
+            filters.push_back(f);
+        }
+        {
+            KnobNameFilter f;
+            f.replacement = kNatronOfxParamProcessB;
+            addKnobFilter(f, "b", equalsStringCaseSensitive);
+            addKnobFilter(f, "doBlue", equalsStringCaseSensitive);
+            setNatronVersionMax(f, 1);
+            filters.push_back(f);
+        }
+        {
+            KnobNameFilter f;
+            f.replacement = kNatronOfxParamProcessA;
+            addKnobFilter(f, "a", equalsStringCaseSensitive);
+            addKnobFilter(f, "doAlpha", equalsStringCaseSensitive);
+            setNatronVersionMax(f, 1);
+            filters.push_back(f);
+        }
+    }
+};
+
+class KnobChoiceOptionFilters
+{
+public:
+
+    std::vector<KnobChoiceOptionFilter> filters;
+
+    KnobChoiceOptionFilters()
+    {
+        {
+            KnobChoiceOptionFilter f;
+            f.replacement = kNatronColorPlaneID;
+            addKnobFilter(f, "outputChannels", equalsStringCaseSensitive);
+            addKnobFilter(f, "channels", endsWith);
+            setNatronVersionMax(f, 2, 2, 8);
+            addOptionFilter(f, "Color.RGBA", equalsStringCaseInsensitive);
+            addOptionFilter(f, "Color.RGB", equalsStringCaseInsensitive);
+            addOptionFilter(f, "Color.Alpha", equalsStringCaseInsensitive);
+            filters.push_back(f);
+        }
+        {
+            KnobChoiceOptionFilter f;
+            f.replacement = kNatronBackwardMotionVectorsPlaneID "." kNatronMotionComponentsLabel;
+            addKnobFilter(f, "outputChannels", equalsStringCaseSensitive);
+            addKnobFilter(f, "channels", endsWith);
+            setNatronVersionMax(f, 2, 2, 8);
+            addOptionFilter(f, "Backward.Motion", equalsStringCaseInsensitive);
+            filters.push_back(f);
+        }
+        {
+            KnobChoiceOptionFilter f;
+            f.replacement = kNatronForwardMotionVectorsPlaneID "." kNatronMotionComponentsLabel;
+            addKnobFilter(f, "outputChannels", equalsStringCaseSensitive);
+            addKnobFilter(f, "channels", endsWith);
+            setNatronVersionMax(f, 2, 2, 8);
+            addOptionFilter(f, "Forward.Motion", equalsStringCaseInsensitive);
+            filters.push_back(f);
+        }
+        {
+            KnobChoiceOptionFilter f;
+            f.replacement = kNatronDisparityLeftPlaneID "." kNatronDisparityComponentsLabel;
+            addKnobFilter(f, "outputChannels", equalsStringCaseSensitive);
+            addKnobFilter(f, "channels", endsWith);
+            setNatronVersionMax(f, 2, 2, 8);
+            addOptionFilter(f, "DisparityLeft.Disparity", equalsStringCaseInsensitive);
+            filters.push_back(f);
+        }
+        {
+            KnobChoiceOptionFilter f;
+            f.replacement = kNatronDisparityRightPlaneID "." kNatronDisparityComponentsLabel;
+            addKnobFilter(f, "outputChannels", equalsStringCaseSensitive);
+            addKnobFilter(f, "channels", endsWith);
+            setNatronVersionMax(f, 2, 2, 8);
+            addOptionFilter(f, "DisparityRight.Disparity", equalsStringCaseInsensitive);
+            filters.push_back(f);
+        }
+
+        KnobChoiceOptionFilter channelsFilterBase;
+        {
+            KnobChoiceOptionFilter& f = channelsFilterBase;
+            addKnobFilter(f, "maskChannel", startsWith);
+            addKnobFilter(f, "premultChannel", equalsStringCaseSensitive);
+            {
+                KnobMatch& m = addKnobFilter(f, "channelU", equalsStringCaseSensitive);
+                addPluginMatch(m, "net.sf.openfx.IDistort");
+                addPluginMatch(m, "net.sf.openfx.STMap");
+            }
+            {
+                KnobMatch& m = addKnobFilter(f, "channelV", equalsStringCaseSensitive);
+                addPluginMatch(m, "net.sf.openfx.IDistort");
+                addPluginMatch(m, "net.sf.openfx.STMap");
+            }
+            {
+                KnobMatch& m = addKnobFilter(f, "outputR", equalsStringCaseSensitive);
+                addPluginMatch(m, "net.sf.openfx.ShufflePlugin", 2);
+            }
+            {
+                KnobMatch& m = addKnobFilter(f, "outputG", equalsStringCaseSensitive);
+                addPluginMatch(m, "net.sf.openfx.ShufflePlugin", 2);
+            }
+            setNatronVersionMax(f, 2, 2, 8);
+        }
+        {
+            KnobChoiceOptionFilter f = channelsFilterBase;
+            addOptionFilter(f, "RGBA.R", equalsStringCaseInsensitive);
+            addOptionFilter(f, "UV.r", equalsStringCaseInsensitive);
+            addOptionFilter(f, "red", equalsStringCaseInsensitive);
+            addOptionFilter(f, "r", equalsStringCaseInsensitive);
+            f.replacement = kNatronColorPlaneID ".R";
+            filters.push_back(f);
+        }
+        {
+            KnobChoiceOptionFilter f = channelsFilterBase;
+            addOptionFilter(f, "RGBA.G", equalsStringCaseInsensitive);
+            addOptionFilter(f, "UV.g", equalsStringCaseInsensitive);
+            addOptionFilter(f, "green", equalsStringCaseInsensitive);
+            addOptionFilter(f, "g", equalsStringCaseInsensitive);
+            f.replacement = kNatronColorPlaneID ".G";
+            filters.push_back(f);
+        }
+        {
+            KnobChoiceOptionFilter f = channelsFilterBase;
+            addOptionFilter(f, "RGBA.B", equalsStringCaseInsensitive);
+            addOptionFilter(f, "UV.b", equalsStringCaseInsensitive);
+            addOptionFilter(f, "blue", equalsStringCaseInsensitive);
+            addOptionFilter(f, "b", equalsStringCaseInsensitive);
+            f.replacement = kNatronColorPlaneID ".B";
+            filters.push_back(f);
+        }
+        {
+            KnobChoiceOptionFilter f = channelsFilterBase;
+            addOptionFilter(f, "RGBA.A", equalsStringCaseInsensitive);
+            addOptionFilter(f, "UV.a", equalsStringCaseInsensitive);
+            addOptionFilter(f, "alpha", equalsStringCaseInsensitive);
+            addOptionFilter(f, "a", equalsStringCaseInsensitive);
+            f.replacement = kNatronColorPlaneID ".A";
+            filters.push_back(f);
+        }
+        {
+            KnobChoiceOptionFilter f = channelsFilterBase;
+            addOptionFilter(f, "A.r", equalsStringCaseInsensitive);
+            f.replacement = "A." kNatronColorPlaneID ".R";
+            filters.push_back(f);
+        }
+        {
+            KnobChoiceOptionFilter f = channelsFilterBase;
+            addOptionFilter(f, "A.g", equalsStringCaseInsensitive);
+            f.replacement = "A." kNatronColorPlaneID ".G";
+            filters.push_back(f);
+        }
+        {
+            KnobChoiceOptionFilter f = channelsFilterBase;
+            addOptionFilter(f, "A.b", equalsStringCaseInsensitive);
+            f.replacement = "A." kNatronColorPlaneID ".b";
+            filters.push_back(f);
+        }
+        {
+            KnobChoiceOptionFilter f = channelsFilterBase;
+            addOptionFilter(f, "A.a", equalsStringCaseInsensitive);
+            f.replacement = "A." kNatronColorPlaneID ".A";
+            filters.push_back(f);
+        }
+        {
+            KnobChoiceOptionFilter f = channelsFilterBase;
+            addOptionFilter(f, "B.r", equalsStringCaseInsensitive);
+            f.replacement = "B." kNatronColorPlaneID ".R";
+            filters.push_back(f);
+        }
+        {
+            KnobChoiceOptionFilter f = channelsFilterBase;
+            addOptionFilter(f, "B.g", equalsStringCaseInsensitive);
+            f.replacement = "B." kNatronColorPlaneID ".G";
+            filters.push_back(f);
+        }
+        {
+            KnobChoiceOptionFilter f = channelsFilterBase;
+            addOptionFilter(f, "B.b", equalsStringCaseInsensitive);
+            f.replacement = "B." kNatronColorPlaneID ".B";
+            filters.push_back(f);
+        }
+        {
+            KnobChoiceOptionFilter f = channelsFilterBase;
+            addOptionFilter(f, "B.a", equalsStringCaseInsensitive);
+            f.replacement = "B." kNatronColorPlaneID ".A";
+            filters.push_back(f);
+        }
+        {
+            KnobChoiceOptionFilter f;
+            f.replacement = "Project frame range";
+            {
+                KnobMatch& m = addKnobFilter(f, "frameRange", equalsStringCaseSensitive);
+                {
+                    PluginMatch& p = addPluginMatch(m, "fr.inria.openfx");
+                    p.func = containsString;
+                }
+            }
+            addOptionFilter(f, "Timeline bounds", equalsStringCaseInsensitive);
+            setNatronVersionMax(f, 1);
+            filters.push_back(f);
+        }
+    }
+};
+
+static const KnobNameFilters knobNameFilters = KnobNameFilters();
+static const KnobChoiceOptionFilters knobChoiceOptionFilters = KnobChoiceOptionFilters();
+
+template <typename FILTER>
+bool matchKnobFilterInternal(const FILTER& filter, const std::string& name, const std::string& pluginID, int pluginVersionMajor, int pluginVersionMinor,
+                             int natronVersionMajor, int natronVersionMinor, int natronVersionRevision)
+{
+    assert(!filter.replacement.empty());
+
+    // match natron version
+    {
+        if (natronVersionMajor != -1 && filter.natronVersionMin.major != -1 && natronVersionMajor < filter.natronVersionMin.major) {
+            return false;
+        }
+        if (natronVersionMajor != -1 && filter.natronVersionMax.major != -1 && natronVersionMajor > filter.natronVersionMax.major) {
+            return false;
+        }
+    }
+    {
+        if (natronVersionMinor != -1 && filter.natronVersionMin.minor != -1 && natronVersionMinor < filter.natronVersionMin.minor) {
+            return false;
+        }
+        if (natronVersionMinor != -1 && filter.natronVersionMax.minor != -1 && natronVersionMinor > filter.natronVersionMax.minor) {
+            return false;
+        }
+    }
+    {
+        if (natronVersionRevision != -1 && filter.natronVersionMin.rev != -1 && natronVersionRevision < filter.natronVersionMin.rev) {
+            return false;
+        }
+        if (natronVersionRevision != -1 && filter.natronVersionMax.rev != -1 && natronVersionRevision > filter.natronVersionMax.rev) {
+            return false;
         }
     }
 
-    // Map also channels
-    if (!gotIt) {
-        if (versionMajor <= 2 && versionMinor <= 8) {
-            bool mapChannels = false;
-            mapChannels |= startsWith(paramName, "maskChannel");
-            mapChannels |= (paramName == "channelU" || paramName == "channelV");
-            mapChannels |= (pluginID == "net.sf.openfx.ShufflePlugin") && pluginVersionMajor >= 2 && (paramName == "outputR" || paramName == "outputG" || paramName == "outputB" || paramName == "outputA");
-            mapChannels |= paramName == "premultChannel";
-            if (mapChannels) {
-                gotIt = true;
-                if (boost::iequals(*optionID, std::string("RGBA.R")) || boost::iequals(*optionID, std::string("UV.r")) || boost::iequals(*optionID, std::string("red")) || boost::iequals(*optionID, std::string("r"))) {
-                    *optionID = kNatronColorPlaneID ".R";
-                } else if (boost::iequals(*optionID, std::string("RGBA.G")) || boost::iequals(*optionID, std::string("UV.g"))  || boost::iequals(*optionID, std::string("green")) || boost::iequals(*optionID, std::string("g"))) {
-                    *optionID = kNatronColorPlaneID ".G";
-                } else if (boost::iequals(*optionID, std::string("RGBA.B")) || boost::iequals(*optionID, std::string("UV.b"))  || boost::iequals(*optionID, std::string("blue")) || boost::iequals(*optionID, std::string("b"))) {
-                    *optionID = kNatronColorPlaneID ".B";
-                } else if (boost::iequals(*optionID, std::string("RGBA.A")) || boost::iequals(*optionID, std::string("UV.a"))  || boost::iequals(*optionID, std::string("alpha")) || boost::iequals(*optionID, std::string("a"))) {
-                    *optionID = kNatronColorPlaneID ".A";
-                } else if (boost::iequals(*optionID, std::string("A.r"))) {
-                    *optionID = "A." kNatronColorPlaneID ".R";
-                } else if (boost::iequals(*optionID, std::string("A.g"))) {
-                    *optionID = "A." kNatronColorPlaneID ".G";
-                } else if (boost::iequals(*optionID, std::string("A.b"))) {
-                    *optionID = "A." kNatronColorPlaneID ".B";
-                } else if (boost::iequals(*optionID, std::string("A.a"))) {
-                    *optionID = "A." kNatronColorPlaneID ".A";
-                } else if (boost::iequals(*optionID, std::string("B.r"))) {
-                    *optionID = "B." kNatronColorPlaneID ".R";
-                } else if (boost::iequals(*optionID, std::string("B.g"))) {
-                    *optionID = "B." kNatronColorPlaneID ".G";
-                } else if (boost::iequals(*optionID, std::string("B.b"))) {
-                    *optionID = "B." kNatronColorPlaneID ".B";
-                } else if (boost::iequals(*optionID, std::string("B.a"))) {
-                    *optionID = "B." kNatronColorPlaneID ".A";
-                } else {
-                    gotIt = false;
+
+    // match plugin
+    if (!filter.filters.empty()) {
+        for (std::list<KnobMatch>::const_iterator it = filter.filters.begin(); it != filter.filters.end(); ++it) {
+
+            if (!it->plugin.empty()) {
+                bool matchPlugin = false;
+                for (std::list<PluginMatch>::const_iterator it2 = it->plugin.begin(); it2 != it->plugin.end(); ++it2) {
+                    if (!it2->func(pluginID, it2->pluginID)) {
+                        continue;
+                    }
+                    {
+                        if (pluginVersionMajor != -1 && it2->pluginVersionMajorMin != -1 && pluginVersionMajor < it2->pluginVersionMajorMin) {
+                            return false;
+                        }
+                        if (pluginVersionMajor != -1 && it2->pluginVersionMajorMax != -1 && pluginVersionMajor > it2->pluginVersionMajorMax) {
+                            return false;
+                        }
+                    }
+                    {
+                        if (pluginVersionMinor != -1 && it2->pluginVersionMinorMin != -1 && pluginVersionMinor < it2->pluginVersionMinorMin) {
+                            return false;
+                        }
+                        if (pluginVersionMinor != -1 && it2->pluginVersionMinorMax != -1 && pluginVersionMinor > it2->pluginVersionMinorMax) {
+                            return false;
+                        }
+                    }
+
+                    matchPlugin = true;
+                    break;
+                }
+                if (!matchPlugin) {
+                    continue;
+                }
+            }
+
+            if (it->filter.func(name, it->filter.nameToMatch)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+    return true;
+}
+
+bool
+filterKnobNameCompat(const std::string& pluginID, int pluginVersionMajor, int pluginVersionMinor,
+                     int natronVersionMajor, int natronVersionMinor, int natronVersionRevision, std::string* name)
+{
+    for (std::size_t i = 0; i < knobNameFilters.filters.size(); ++i) {
+        const KnobNameFilter& filter = knobNameFilters.filters[i];
+        assert(!filter.replacement.empty());
+        if (!matchKnobFilterInternal(filter, *name, pluginID, pluginVersionMajor, pluginVersionMinor, natronVersionMajor, natronVersionMinor, natronVersionRevision)) {
+            continue;
+        } else {
+            *name = filter.replacement;
+            return true;
+        }
+
+    }
+    return false;
+}
+
+bool
+filterKnobChoiceOptionCompat(const std::string& pluginID, int pluginVersionMajor, int pluginVersionMinor,
+                             int natronVersionMajor, int natronVersionMinor, int natronVersionRevision,
+                             const std::string& paramName,
+                             std::string* name)
+{
+    if (*name == "Timeline bounds") {
+        assert(true);
+    }
+    for (std::size_t i = 0; i < knobChoiceOptionFilters.filters.size(); ++i) {
+        const KnobChoiceOptionFilter& filter = knobChoiceOptionFilters.filters[i];
+        assert(!filter.replacement.empty());
+        assert(!filter.optionFilters.empty());
+        if (matchKnobFilterInternal(filter, paramName, pluginID, pluginVersionMajor, pluginVersionMinor, natronVersionMajor, natronVersionMinor, natronVersionRevision)) {
+            for (std::list<FilterMatcher>::const_iterator it = filter.optionFilters.begin(); it != filter.optionFilters.end(); ++it) {
+                if (it->func(*name, it->nameToMatch)) {
+                    *name = filter.replacement;
+                    return true;
                 }
             }
         }
-    }
 
-    if (versionMajor <= 2 && pluginID.find("fr.inria.openfx") != std::string::npos && paramName == "frameRange" && *optionID == "Timeline bounds") {
-        *optionID = "Project frame range";
     }
-    return gotIt;
-} // filterKnobChoiceOption
+    return false;
+}
 
 
 NATRON_NAMESPACE_EXIT;

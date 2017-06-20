@@ -231,6 +231,12 @@ Gui::abortProject(bool quitApp,
             app->quit();
         }
     } else {
+        {
+            // we do not need this list anymore, avoid using it
+            QMutexLocker k(&_imp->openedPanelsMutex);
+            _imp->openedPanels.clear();
+        }
+
         setGuiAboutToClose(true);
         GuiAppInstPtr app = getApp();
         if (app) {

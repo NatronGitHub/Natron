@@ -1083,6 +1083,13 @@ WriteNode::onEffectCreated(bool mayCreateFileDialog,
 
     //If we already loaded the Writer, do not do anything
     if ( _imp->embeddedPlugin.lock() ) {
+        // Ensure the plug-in ID knob has the same value as the created reader:
+        // The reader might have been created in onKnobsAboutToBeLoaded() however the knobs
+        // get loaded afterwards and the plug-in ID could not reflect the underlying plugin
+        boost::shared_ptr<KnobString> pluginIDKnob = _imp->pluginIDStringKnob.lock();
+        if (pluginIDKnob) {
+            pluginIDKnob->setValue(_imp->embeddedPlugin.lock()->getPluginID());
+        }
         return;
     }
     bool throwErrors = false;
