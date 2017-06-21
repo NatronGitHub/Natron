@@ -870,10 +870,11 @@ KnobChoice::getHintToolTipFull() const
 
     int gothelp = 0;
 
+    // list values that either have help or have label != id
     if ( !_entries.empty() ) {
         assert( _entries.size() == _entries.size() );
         for (U32 i = 0; i < _entries.size(); ++i) {
-            if ( !_entries.empty() && !_entries[i].tooltip.empty() ) {
+            if ( !_entries.empty() && ( (_entries[i].id != _entries[i].label) || !_entries[i].tooltip.empty() ) ) {
                 ++gothelp;
             }
         }
@@ -897,6 +898,9 @@ KnobChoice::getHintToolTipFull() const
             if ( !_entries[i].tooltip.empty() ) { // no help line is needed if help is unavailable for this option
                 std::string entry = boost::trim_copy(_entries[i].label);
                 std::replace_if(entry.begin(), entry.end(), ::isspace, ' ');
+                if ( !_entries[i].id.empty() ) {
+                    entry += "  (" + _entries[i].id + ")";
+                }
                 std::string help = boost::trim_copy(_entries[i].tooltip);
                 std::replace_if(help.begin(), help.end(), ::isspace, ' ');
                 if ( isHintInMarkdown() ) {

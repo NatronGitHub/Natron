@@ -4470,6 +4470,7 @@ Node::makeDocumentation(bool genHTML) const
 
                 if (!isBtn && !isSep && !isParametric) {
                     if (isChoice) {
+                        // see also KnobChoice::getHintToolTipFull()
                         int index = isChoice->getDefaultValue(i);
                         std::vector<ChoiceOption> entries = isChoice->getEntries_mt_safe();
                         if ( (index >= 0) && ( index < (int)entries.size() ) ) {
@@ -4477,13 +4478,18 @@ Node::makeDocumentation(bool genHTML) const
                         }
                         bool first = true;
                         for (size_t i = 0; i < entries.size(); i++) {
-                            QString entry = QString::fromUtf8( entries[i].label.c_str() );
                             QString entryHelp = QString::fromUtf8( entries[i].tooltip.c_str() );
-                            if (!entry.isEmpty() && !entryHelp.isEmpty() ) {
+                            QString entry;
+                            if (entries[i].id != entries[i].label) {
+                                entry = QString::fromUtf8( "%1 (%2)" ).arg(QString::fromUtf8( entries[i].label.c_str() )).arg(QString::fromUtf8( entries[i].id.c_str() ));
+                            } else {
+                                entry = QString::fromUtf8( entries[i].label.c_str() );
+                            }
+                            if (!entry.isEmpty()) {
                                 if (first) {
                                     // empty line before the option descriptions
                                     if (genHTML) {
-                                        knobHint.append( QString::fromUtf8("<br />") );
+                                        knobHint.append( QString::fromUtf8("<br />") + tr("Possible values:") + QString::fromUtf8("<br />") );
                                     } else {
                                         // we do a hack for multiline elements, because the markdown->rst conversion by pandoc doesn't use the line block syntax.
                                         // what we do here is put a supplementary dot at the beginning of each line, which is then converted to a pipe '|' in the
@@ -4491,7 +4497,7 @@ Node::makeDocumentation(bool genHTML) const
                                         if (!knobHint.startsWith( QString::fromUtf8(". ") )) {
                                             knobHint.prepend( QString::fromUtf8(". ") );
                                         }
-                                        knobHint.append( QString::fromUtf8("\\\n") );
+                                        knobHint.append( QString::fromUtf8("\\\n") + tr("Possible values:") +  QString::fromUtf8("\\\n") );
                                     }
                                     first = false;
                                 }
@@ -4504,7 +4510,11 @@ Node::makeDocumentation(bool genHTML) const
                                     // genStaticDocs.sh script by a simple sed command after converting to RsT
                                     knobHint.append( QString::fromUtf8(". ") );
                                 }
-                                knobHint.append( QString::fromUtf8("**%1**: %2").arg( convertFromPlainTextToMarkdown(entry, genHTML, true) ).arg( convertFromPlainTextToMarkdown(entryHelp, genHTML, true) ) );
+                                if (entryHelp.isEmpty()) {
+                                    knobHint.append( QString::fromUtf8("**%1**").arg( convertFromPlainTextToMarkdown(entry, genHTML, true) ) );
+                                } else {
+                                    knobHint.append( QString::fromUtf8("**%1**: %2").arg( convertFromPlainTextToMarkdown(entry, genHTML, true) ).arg( convertFromPlainTextToMarkdown(entryHelp, genHTML, true) ) );
+                                }
                             }
                         }
 
