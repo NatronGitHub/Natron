@@ -37,7 +37,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/algorithm/clamp.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
+#include <QWaitCondition>
 #include <QtConcurrentRun>
+#include <QMutex>
 
 #include "Engine/AppInstance.h"
 #include "Engine/Node.h"

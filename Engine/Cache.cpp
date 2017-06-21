@@ -3148,7 +3148,7 @@ Cache<persistent>::initialize(const boost::shared_ptr<Cache<persistent> >& thisS
 
         try {
 
-            bool createStorage = false;
+            
             {
                 boost::scoped_ptr<Sharable_WriteLock> writeLock;
                 // Take the tilesStorageMutex in read mode to indicate that we are operating on it (flush)
@@ -3156,10 +3156,10 @@ Cache<persistent>::initialize(const boost::shared_ptr<Cache<persistent> >& thisS
                 _imp->reOpenTileStorage();
                 if (_imp->tilesStorage.empty()) {
                     // Ensure we initialize the cache with at least one tile storage file
-                    createStorage = true;
+                    _imp->createTileStorageInternal();
                 }
 
-                _imp->createTileStorageInternal();
+
             }
         } catch (...) {
             clear();
