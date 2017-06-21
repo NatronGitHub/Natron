@@ -116,13 +116,21 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
 
         for (std::list<Format>::const_iterator it = builtinFormats.begin(); it != builtinFormats.end(); ++it) {
             QString formatStr = ProjectPrivate::generateStringFromFormat(*it);
-            entries.push_back( ChoiceOption(formatStr.toStdString()) );
+            if ( !it->getName().empty() ) {
+                entries.push_back( ChoiceOption(it->getName(), formatStr.toStdString(), "") );
+            } else {
+                entries.push_back( ChoiceOption( formatStr.toStdString() ) );
+            }
         }
 
         const std::list<Format> & objAdditionalFormats = obj.getAdditionalFormats();
         for (std::list<Format>::const_iterator it = objAdditionalFormats.begin(); it != objAdditionalFormats.end(); ++it) {
             QString formatStr = ProjectPrivate::generateStringFromFormat(*it);
-            entries.push_back( ChoiceOption(formatStr.toStdString()) );
+            if ( !it->getName().empty() ) {
+                entries.push_back( ChoiceOption(it->getName(), formatStr.toStdString(), "") );
+            } else {
+                entries.push_back( ChoiceOption( formatStr.toStdString() ) );
+            }
         }
         additionalFormats = objAdditionalFormats;
 
