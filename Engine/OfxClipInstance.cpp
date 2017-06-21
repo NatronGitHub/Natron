@@ -62,14 +62,9 @@
 
 NATRON_NAMESPACE_ENTER;
 
-class OfxClipInstancePrivate
+struct OfxClipInstancePrivate
 {
-<<<<<<< HEAD
     OfxClipInstance* _publicInterface; // can not be a smart ptr
-=======
-public:
-    OfxClipInstance* _publicInterface;
->>>>>>> origin/RB-2-multiplane2
     boost::weak_ptr<OfxEffectInstance> nodeInstance;
     OfxImageEffectInstance* const effect;
     double aspectRatio;

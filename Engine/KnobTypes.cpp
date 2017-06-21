@@ -1002,7 +1002,6 @@ KnobChoice::findAndSetOldChoice()
         }
 
 
-<<<<<<< HEAD
         if (found != -1) {
             // Make sure we don't call knobChanged if we found the value
             blockValueChanges();
@@ -1386,13 +1385,6 @@ KnobChoice::getHintToolTipFull() const
     if ( !data->menuOptions.empty() ) {
         for (std::size_t i = 0; i < data->menuOptions.size(); ++i) {
             if ( (data->menuOptions[i].id != data->menuOptions[i].label) || !data->menuOptions[i].tooltip.empty() ) {
-=======
-    // list values that either have help or have label != id
-    if ( !_entries.empty() ) {
-        assert( _entries.size() == _entries.size() );
-        for (U32 i = 0; i < _entries.size(); ++i) {
-            if ( !_entries.empty() && ( (_entries[i].id != _entries[i].label) || !_entries[i].tooltip.empty() ) ) {
->>>>>>> origin/RB-2-multiplane2
                 ++gothelp;
             }
         }
@@ -1416,17 +1408,10 @@ KnobChoice::getHintToolTipFull() const
             if ( !data->menuOptions[i].tooltip.empty() || data->menuOptions[i].id != data->menuOptions[i].label ) { // no help line is needed if help is unavailable for this option
                 std::string entry = boost::trim_copy(data->menuOptions[i].label);
                 std::replace_if(entry.begin(), entry.end(), ::isspace, ' ');
-<<<<<<< HEAD
                 if ( !data->menuOptions[i].id.empty() ) {
                     entry += "  (" + data->menuOptions[i].id + ")";
                 }
                 std::string help = boost::trim_copy(data->menuOptions[i].tooltip);
-=======
-                if ( !_entries[i].id.empty() ) {
-                    entry += "  (" + _entries[i].id + ")";
-                }
-                std::string help = boost::trim_copy(_entries[i].tooltip);
->>>>>>> origin/RB-2-multiplane2
                 std::replace_if(help.begin(), help.end(), ::isspace, ' ');
                 if ( isHintInMarkdown() ) {
                     ss << "* **" << entry << "**";
@@ -1609,13 +1594,7 @@ KnobChoice::choiceRestorationId(KnobChoice* knob,
 }
 
 void
-<<<<<<< HEAD
 KnobChoice::setCurrentDefaultValueAsInitialValue()
-=======
-KnobChoice::choiceRestoration(KnobChoice* knob,
-                              const std::string &optionID,
-                              int id)
->>>>>>> origin/RB-2-multiplane2
 {
     {
         QMutexLocker l(&_imp->defaultEntryMutex);
@@ -1628,9 +1607,9 @@ std::string
 KnobChoice::getDefaultEntryID() const
 {
     {
-<<<<<<< HEAD
         QMutexLocker l(&_imp->defaultEntryMutex);
         if (!_imp->defaultEntryID.empty()) {
+
             return _imp->defaultEntryID;
         }
     }
@@ -1644,20 +1623,8 @@ KnobChoice::getDefaultEntryID() const
         if (defIndex < 0 || (int)data->menuOptions.size() <= defIndex ) {
             return std::string();
         }
-        return data->menuOptions[defIndex].id;
-=======
-        QMutexLocker k(&_entriesMutex);
-        if (id >= 0) {
-            // we found a reasonable id
-            _currentEntry = _entries[id]; // avoid numerous warnings in the GUI
-        } else {
-            _currentEntry.id = optionID;
-        }
-    }
 
-    if (id >= 0) {
-        setValue(id);
->>>>>>> origin/RB-2-multiplane2
+        return data->menuOptions[defIndex].id;
     }
 }
 

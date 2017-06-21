@@ -841,7 +841,6 @@ Project::initializeKnobs()
             param->populateChoices(entries);
 
         }
-<<<<<<< HEAD
         param->setAnimationEnabled(false);
         param->setHintToolTip( tr("Select when to activate GPU rendering for plug-ins. Note that if the OpenGL Rendering parameter in the Preferences/GPU Rendering is set to disabled then GPU rendering will not be activated regardless of that value.") );
         param->setEvaluateOnChange(false);
@@ -850,15 +849,6 @@ Project::initializeKnobs()
         }
         page->addKnob(param);
         _imp->gpuSupport = param;
-=======
-        if ( !f.getName().empty() ) {
-            entries.push_back( ChoiceOption(f.getName(), formatStr.toStdString(), "") );
-        } else {
-            entries.push_back( ChoiceOption( formatStr.toStdString() ) );
-        }
-
-        _imp->builtinFormats.push_back(f);
->>>>>>> origin/RB-2-multiplane2
     }
 
     KnobPagePtr viewsPage = createKnob<KnobPage>("viewsPage");
@@ -1201,7 +1191,6 @@ Project::tryAddProjectFormat(const Format & f, bool addAsAdditionalFormat, bool*
     int ret = -1;
     std::vector<ChoiceOption> entries;
     for (std::list<Format>::iterator it = _imp->builtinFormats.begin(); it != _imp->builtinFormats.end(); ++it) {
-<<<<<<< HEAD
         QString str = ProjectPrivate::generateStringFromFormat(*it);
         entries.push_back(ChoiceOption( str.toStdString(), "", "") );
     }
@@ -1224,33 +1213,6 @@ Project::tryAddProjectFormat(const Format & f, bool addAsAdditionalFormat, bool*
         _imp->builtinFormats.push_back(f);
     }
     _imp->formatKnob->populateChoices(entries);
-=======
-        const Format & f = *it;
-        QString formatStr = ProjectPrivate::generateStringFromFormat(f);
-        if ( !f.getName().empty() ) {
-            entries.push_back( ChoiceOption(f.getName(), formatStr.toStdString(), "") );
-        } else {
-            entries.push_back( ChoiceOption( formatStr.toStdString() ) );
-        }
-    }
-    for (std::list<Format>::iterator it = _imp->additionalFormats.begin(); it != _imp->additionalFormats.end(); ++it) {
-        const Format & f = *it;
-        QString formatStr = ProjectPrivate::generateStringFromFormat(f);
-        if ( !f.getName().empty() ) {
-            entries.push_back( ChoiceOption(f.getName(), formatStr.toStdString(), "") );
-        } else {
-            entries.push_back( ChoiceOption( formatStr.toStdString() ) );
-        }
-    }
-    QString formatStr = ProjectPrivate::generateStringFromFormat(f);
-    _imp->additionalFormats.push_back(f);
-    if ( !f.getName().empty() ) {
-        _imp->formatKnob->appendChoice( ChoiceOption(f.getName(), formatStr.toStdString(), "") );
-    } else {
-        _imp->formatKnob->appendChoice( ChoiceOption( formatStr.toStdString() ) );
-    }
->>>>>>> origin/RB-2-multiplane2
-
 
     return ret;
 }
