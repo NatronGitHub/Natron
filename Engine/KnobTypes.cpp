@@ -1381,14 +1381,11 @@ KnobChoice::getHintToolTipFull() const
     QMutexLocker k(&data->valueMutex);
 
     int gothelp = 0;
-    int gotIdDifferentThanLabel = 0;
+    // list values that either have help or have label != id
     if ( !data->menuOptions.empty() ) {
         for (std::size_t i = 0; i < data->menuOptions.size(); ++i) {
-            if ( !data->menuOptions[i].tooltip.empty() ) {
+            if ( (data->menuOptions[i].id != data->menuOptions[i].label) || !data->menuOptions[i].tooltip.empty() ) {
                 ++gothelp;
-            }
-            if (data->menuOptions[i].id != data->menuOptions[i].label) {
-                ++gotIdDifferentThanLabel;
             }
         }
     }
@@ -1400,23 +1397,26 @@ KnobChoice::getHintToolTipFull() const
     std::stringstream ss;
     if ( !getHintToolTip().empty() ) {
         ss << boost::trim_copy( getHintToolTip() );
-        if (gothelp || gotIdDifferentThanLabel) {
+        if (gothelp) {
             // if there are per-option help strings, separate them from main hint
             ss << "\n\n";
         }
     }
     // param may have no hint but still have per-option help
-    if (gothelp || gotIdDifferentThanLabel) {
+    if (gothelp) {
         for (std::size_t i = 0; i < data->menuOptions.size(); ++i) {
             if ( !data->menuOptions[i].tooltip.empty() || data->menuOptions[i].id != data->menuOptions[i].label ) { // no help line is needed if help is unavailable for this option
-                std::string entryID = boost::trim_copy(data->menuOptions[i].id);
-                std::replace_if(entryID.begin(), entryID.end(), ::isspace, ' ');
+                std::string entry = boost::trim_copy(data->menuOptions[i].label);
+                std::replace_if(entry.begin(), entry.end(), ::isspace, ' ');
+                if ( !data->menuOptions[i].id.empty() ) {
+                    entry += "  (" + data->menuOptions[i].id + ")";
+                }
                 std::string help = boost::trim_copy(data->menuOptions[i].tooltip);
                 std::replace_if(help.begin(), help.end(), ::isspace, ' ');
                 if ( isHintInMarkdown() ) {
-                    ss << "* **" << entryID << "**";
+                    ss << "* **" << entry << "**";
                 } else {
-                    ss << entryID;
+                    ss << entry;
                 }
                 if (!data->menuOptions[i].tooltip.empty()) {
                     ss << ": ";
