@@ -59,8 +59,9 @@
 
 NATRON_NAMESPACE_ENTER;
 
-struct OfxClipInstancePrivate
+class OfxClipInstancePrivate
 {
+public:
     OfxClipInstance* _publicInterface;
     boost::weak_ptr<OfxEffectInstance> nodeInstance;
     OfxImageEffectInstance* const effect;
@@ -69,6 +70,7 @@ struct OfxClipInstancePrivate
     bool mask;
     boost::shared_ptr<TLSHolder<OfxClipInstance::ClipTLSData> > tlsData;
 
+public:
     OfxClipInstancePrivate(OfxClipInstance* publicInterface,
                            const boost::shared_ptr<OfxEffectInstance>& nodeInstance,
                            OfxImageEffectInstance* effect)
