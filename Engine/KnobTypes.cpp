@@ -1471,14 +1471,6 @@ entryStr(const ChoiceOption& opt, int s)
     return s == 0 ? opt.id : opt.label;
 }
 
-// try to match entry id first, then label
-static
-const std::string&
-entryStr(const ChoiceOption& opt, int s)
-{
-    return s == 0 ? opt.id : opt.label;
-}
-
 // Choice restoration tries several options to restore a choice value:
 // 1- exact string match, same index
 // 2- exact string match, other index
@@ -1564,32 +1556,6 @@ KnobChoice::choiceMatch(const std::string& choice,
     } // for s
 
     // no match
-    return -1;
-}
-
-int
-KnobChoice::choiceRestorationId(KnobChoice* knob,
-                                const std::string &optionID)
-{
-    assert(knob);
-
-    int serializedIndex = knob->getValue();
-    if ( ( serializedIndex < (int)_entries.size() ) && (_entries[serializedIndex].id == optionID) ) {
-        // we're lucky, entry hasn't changed
-        return serializedIndex;
-
-    }
-
-    // try to find the same label at some other index
-    int i;
-    {
-        QMutexLocker k(&_entriesMutex);
-        i = choiceMatch(optionID, _entries, &_currentEntry);
-    }
-
-    if (i >= 0) {
-        return i;
-    }
     return -1;
 }
 
