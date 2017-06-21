@@ -80,6 +80,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/NodeGuiI.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/OfxEffectInstance.h"
+#include "Engine/ProjectSerialization.h"
 #include "Engine/OfxHost.h"
 #include "Engine/OneViewNode.h"
 #include "Engine/OpenGLViewerI.h"

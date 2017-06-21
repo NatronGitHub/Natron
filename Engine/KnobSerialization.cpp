@@ -39,6 +39,15 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include <QtCore/QDateTime>
 #include <QtCore/QDebug>
 
+#include <ofxNatron.h>
+
+#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <boost/algorithm/string/predicate.hpp> // iequals
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#endif
+
+
 #include "Engine/Knob.h"
 #include "Engine/Curve.h"
 #include "Engine/Node.h"
@@ -450,8 +459,8 @@ struct KnobChoiceOptionFilter
 static
 PluginMatch&
 addPluginMatch(KnobMatch& f,
-               const std::string& pluginID
-               , int pluginMajorMin = -1,
+               const std::string& pluginID,
+               int pluginMajorMin = -1,
                int pluginMinorMin = -1,
                int pluginMajorMax = -1,
                int pluginMinorMax = -1)
@@ -841,7 +850,6 @@ filterKnobNameCompat(const std::string& pluginID, int pluginVersionMajor, int pl
             *name = filter.replacement;
             return true;
         }
-
     }
     return false;
 }
