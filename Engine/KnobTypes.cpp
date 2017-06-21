@@ -1059,9 +1059,36 @@ KnobChoice::choiceMatch(const std::string& choice,
     return -1;
 }
 
+int
+KnobChoice::choiceRestorationId(KnobChoice* knob,
+                                const std::string &optionID)
+{
+    assert(knob);
+
+    int serializedIndex = knob->getValue();
+    if ( ( serializedIndex < (int)_entries.size() ) && (_entries[serializedIndex].id == optionID) ) {
+        // we're lucky, entry hasn't changed
+        return serializedIndex;
+
+    }
+
+    // try to find the same label at some other index
+    int i;
+    {
+        QMutexLocker k(&_entriesMutex);
+        i = choiceMatch(optionID, _entries, &_currentEntry);
+    }
+
+    if (i >= 0) {
+        return i;
+    }
+    return -1;
+}
+
 void
 KnobChoice::choiceRestoration(KnobChoice* knob,
-                              const std::string &optionID)
+                              const std::string &optionID,
+                              int id)
 {
     assert(knob);
 
@@ -1077,26 +1104,16 @@ KnobChoice::choiceRestoration(KnobChoice* knob,
 
     {
         QMutexLocker k(&_entriesMutex);
-        _currentEntry.id = optionID;
+        if (id >= 0) {
+            // we found a reasonable id
+            _currentEntry = _entries[id]; // avoid numerous warnings in the GUI
+        } else {
+            _currentEntry.id = optionID;
+        }
     }
 
-    int serializedIndex = knob->getValue();
-    if ( ( serializedIndex < (int)_entries.size() ) && (_entries[serializedIndex].id == optionID) ) {
-        // we're lucky, entry hasn't changed
-        setValue(serializedIndex);
-
-    } else {
-        // try to find the same label at some other index
-        int i;
-        {
-            QMutexLocker k(&_entriesMutex);
-            i = choiceMatch(optionID, _entries, &_currentEntry);
-        }
-
-        if (i >= 0) {
-            setValue(i);
-        }
-        //   setValue(-1);
+    if (id >= 0) {
+        setValue(id);
     }
 }
 

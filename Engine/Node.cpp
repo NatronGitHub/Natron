@@ -1926,8 +1926,17 @@ Node::loadKnob(const KnobPtr & knob,
                 assert(choiceSerialized);
                 if (choiceSerialized) {
                     std::string optionID = choiceData->_choiceString;
-                    filterKnobChoiceOptionCompat(getPluginID(), serialization.getPluginMajorVersion(), serialization.getPluginMinorVersion(), projectInfos.vMajor, projectInfos.vMinor, projectInfos.vRev, serializedName, &optionID);
-                    isChoice->choiceRestoration(choiceSerialized, optionID);
+                    // first, try to get the id the easy way ( see choiceMatch() )
+                    int id = isChoice->choiceRestorationId(choiceSerialized, optionID);
+                    if (id < 0) {
+                        // no luck, try the filters
+                        filterKnobChoiceOptionCompat(getPluginID(), serialization.getPluginMajorVersion(), serialization.getPluginMinorVersion(), projectInfos.vMajor, projectInfos.vMinor, projectInfos.vRev, serializedName, &optionID);
+                        id = isChoice->choiceRestorationId(choiceSerialized, optionID);
+                    }
+                    isChoice->choiceRestoration(choiceSerialized, optionID, id);
+                    //if (id >= 0) {
+                    //    choiceData->_choiceString = isChoice->getEntry(id).id;
+                    //}
                 }
             }
         } else {
@@ -2379,14 +2388,23 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             }
             knob->cloneDefaultValues( sKnob.get() );
             if (isChoice) {
-                const ChoiceExtraData* data = dynamic_cast<const ChoiceExtraData*>( isRegular->getExtraData() );
-                assert(data);
-                KnobChoice* createdKnob = dynamic_cast<KnobChoice*>( knob.get() );
-                assert(createdKnob);
-                if (data && createdKnob) {
-                    KnobChoice* sKnobChoice = dynamic_cast<KnobChoice*>( sKnob.get() );
-                    if (sKnobChoice) {
-                        createdKnob->choiceRestoration(sKnobChoice, data->_choiceString);
+                const ChoiceExtraData* choiceData = dynamic_cast<const ChoiceExtraData*>( isRegular->getExtraData() );
+                assert(choiceData);
+                KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
+                assert(isChoice);
+                if (choiceData && isChoice) {
+                    KnobChoice* choiceSerialized = dynamic_cast<KnobChoice*>( sKnob.get() );
+                    if (choiceSerialized) {
+                        std::string optionID = choiceData->_choiceString;
+                        // first, try to get the id the easy way ( see choiceMatch() )
+                        int id = isChoice->choiceRestorationId(choiceSerialized, optionID);
+#pragma message WARN("TODO: choice id filters")
+                        //if (id < 0) {
+                        //    // no luck, try the filters
+                        //    filterKnobChoiceOptionCompat(getPluginID(), serialization.getPluginMajorVersion(), serialization.getPluginMinorVersion(), projectInfos.vMajor, projectInfos.vMinor, projectInfos.vRev, serializedName, &optionID);
+                        //    id = isChoice->choiceRestorationId(choiceSerialized, optionID);
+                        //}
+                        isChoice->choiceRestoration(choiceSerialized, optionID, id);
                     }
                 }
             } else {

@@ -376,12 +376,21 @@ WriteNodePrivate::cloneGenericKnobs()
         for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
             if ( (*it2)->getName() == serializedKnob->getName() ) {
                 KnobChoice* isChoice = dynamic_cast<KnobChoice*>( (*it2).get() );
-                KnobChoice* serializedIsChoice = dynamic_cast<KnobChoice*>( serializedKnob.get() );;
-                if (isChoice && serializedIsChoice) {
-                    const ChoiceExtraData* extraData = dynamic_cast<const ChoiceExtraData*>( (*it)->getExtraData() );
-                    assert(extraData);
-                    if (extraData) {
-                        isChoice->choiceRestoration(serializedIsChoice, extraData->_choiceString);
+                KnobChoice* choiceSerialized = dynamic_cast<KnobChoice*>( serializedKnob.get() );;
+                if (isChoice && choiceSerialized) {
+                    const ChoiceExtraData* choiceData = dynamic_cast<const ChoiceExtraData*>( (*it)->getExtraData() );
+                    assert(choiceData);
+                    if (choiceData) {
+                        std::string optionID = choiceData->_choiceString;
+                        // first, try to get the id the easy way ( see choiceMatch() )
+                        int id = isChoice->choiceRestorationId(choiceSerialized, optionID);
+#pragma message WARN("TODO: choice id filters")
+                        //if (id < 0) {
+                        //    // no luck, try the filters
+                        //    filterKnobChoiceOptionCompat(getPluginID(), serialization.getPluginMajorVersion(), serialization.getPluginMinorVersion(), projectInfos.vMajor, projectInfos.vMinor, projectInfos.vRev, serializedName, &optionID);
+                        //    id = isChoice->choiceRestorationId(choiceSerialized, optionID);
+                        //}
+                        isChoice->choiceRestoration(choiceSerialized, optionID, id);
                     }
                 } else {
                     (*it2)->clone( serializedKnob.get() );

@@ -531,7 +531,8 @@ public:
 
     static int choiceMatch(const std::string& choice, const std::vector<ChoiceOption>& entries, ChoiceOption* matchedEntry);
     
-    void choiceRestoration(KnobChoice* knob, const std::string& optionID);
+    int choiceRestorationId(KnobChoice* knob, const std::string& optionID);
+    void choiceRestoration(KnobChoice* knob, const std::string& optionID, int id);
 
     /**
      * @brief When set the menu will have a "New" entry which the user can select to create a new entry on its own.
