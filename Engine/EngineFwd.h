@@ -249,6 +249,7 @@ class OfxStringInstance;
 class OneViewNode;
 class OpenGLRendererInfo;
 class OpenGLViewerI;
+class OutputSchedulerThread;
 class OverlayInteractBase;
 class OverlaySupport;
 class PlanarTrackLayer;
@@ -265,6 +266,7 @@ class RAMImageStorage;
 class ReadNode;
 class RectD;
 class RectI;
+class RenderThreadTask;
 class RenderEngine;
 class RenderStats;
 class RenderActionTLSData;
@@ -306,6 +308,8 @@ class ViewIdx;
 class ViewerCurrentFrameRequestSchedulerStartArgs;
 class ViewerInstance;
 class ViewerNode;
+class ViewerCurrentFrameRequestScheduler;
+class ViewerCurrentFrameRequestRendererBackup;
 class WriteNode;
 
 namespace Color {

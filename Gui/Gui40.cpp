@@ -53,6 +53,7 @@
 #include "Engine/ProcessHandler.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/RenderQueue.h"
+#include "Engine/RenderEngine.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewerNode.h"

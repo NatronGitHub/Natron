@@ -670,6 +670,14 @@ enum PlaybackModeEnum
     ePlaybackModeOnce
 };
 
+enum RenderDirectionEnum
+{
+    eRenderDirectionForward = 0,
+    eRenderDirectionBackward
+};
+    
+
+
 enum SchedulingPolicyEnum
 {
     eSchedulingPolicyFFA = 0, ///frames will be rendered concurrently without ordering (free for all)

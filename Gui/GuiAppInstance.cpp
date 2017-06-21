@@ -49,6 +49,7 @@
 #include "Engine/DiskCacheNode.h"
 #include "Engine/KnobFile.h"
 #include "Engine/RotoStrokeItem.h"
+#include "Engine/RenderEngine.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/ViewerInstance.h"

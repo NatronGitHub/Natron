@@ -85,6 +85,7 @@
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/Plugin.h"
 #include "Engine/PrecompNode.h"
+#include "Engine/RenderEngine.h"
 #include "Engine/Project.h"
 #include "Engine/ReadNode.h"
 #include "Engine/RotoLayer.h"

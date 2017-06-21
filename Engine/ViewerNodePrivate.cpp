@@ -26,6 +26,8 @@
 
 #include "ViewerNodePrivate.h"
 
+#include "Engine/RenderEngine.h"
+
 NATRON_NAMESPACE_ENTER;
 
 

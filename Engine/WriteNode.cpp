@@ -55,6 +55,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
 #include "Engine/ReadNode.h"
+#include "Engine/RenderEngine.h"
 #include "Engine/Settings.h"
 
 //The plug-in that is instanciated whenever this node is created and doesn't point to any valid or known extension

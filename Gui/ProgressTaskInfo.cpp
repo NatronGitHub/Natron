@@ -48,6 +48,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/ProcessHandler.h"
 #include "Engine/Settings.h"
 #include "Engine/RenderQueue.h"
+#include "Engine/RenderEngine.h"
 #include "Engine/Timer.h"
 #include "Engine/Utils.h" // convertFromPlainText
 

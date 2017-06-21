@@ -50,6 +50,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Node.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/TrackerParamsProvider.h"
+#include "Engine/RenderEngine.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewerNode.h"
 

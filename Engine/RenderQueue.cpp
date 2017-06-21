@@ -41,6 +41,7 @@
 #include "Engine/ProcessHandler.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
+#include "Engine/RenderEngine.h"
 
 
 NATRON_NAMESPACE_ENTER;

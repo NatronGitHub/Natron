@@ -487,6 +487,7 @@ bool matchKnobFilterInternal(const FILTER& filter, const std::string& name, cons
             natronVersionMajor == filter.natronVersionMin.vMajor && // major == min.major &&
             natronVersionMinor == filter.natronVersionMin.vMinor && // minor == min.minor &&
             natronVersionRevision < filter.natronVersionMin.vRev) ) ) ) ) { // rev < min.rev
+
         return false;
     }
     if (natronVersionMajor != -1 &&
@@ -499,6 +500,7 @@ bool matchKnobFilterInternal(const FILTER& filter, const std::string& name, cons
             natronVersionMajor == filter.natronVersionMax.vMajor && // major == max.major &&
             natronVersionMinor == filter.natronVersionMax.vMinor && // minor == max.minor &&
             natronVersionRevision > filter.natronVersionMax.vRev) ) ) ) ) { // rev > max.rev
+
         return false;
     }
 
@@ -518,8 +520,10 @@ bool matchKnobFilterInternal(const FILTER& filter, const std::string& name, cons
                          (it2->pluginVersionMinorMin != -1 &&
                           pluginVersionMajor == it2->pluginVersionMajorMin &&
                           pluginVersionMinor < it2->pluginVersionMinorMin) ) ) {
+
                         return false;
                     }
+
                     if (pluginVersionMajor != -1 &&
                         it2->pluginVersionMajorMax != -1 &&
                         ( (pluginVersionMajor > it2->pluginVersionMajorMax) ||

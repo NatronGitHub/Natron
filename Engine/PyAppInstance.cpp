@@ -48,6 +48,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/EffectInstance.h"
 #include "Engine/Settings.h"
 #include "Engine/RenderQueue.h"
+#include "Engine/RenderEngine.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/OutputSchedulerThread.h"
