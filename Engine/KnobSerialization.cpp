@@ -566,9 +566,7 @@ bool matchKnobFilterInternal(const FILTER& filter, const std::string& name, cons
     return true;
 }
 
-
 NATRON_NAMESPACE_ANONYMOUS_EXIT
-
 
 bool
 filterKnobNameCompat(const std::string& pluginID, int pluginVersionMajor, int pluginVersionMinor,
