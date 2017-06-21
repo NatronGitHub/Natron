@@ -1408,7 +1408,7 @@ KnobChoice::getHintToolTipFull() const
             if ( !data->menuOptions[i].tooltip.empty() || data->menuOptions[i].id != data->menuOptions[i].label ) { // no help line is needed if help is unavailable for this option
                 std::string entry = boost::trim_copy(data->menuOptions[i].label);
                 std::replace_if(entry.begin(), entry.end(), ::isspace, ' ');
-                if ( !data->menuOptions[i].id.empty() ) {
+                if (data->menuOptions[i].label != data->menuOptions[i].id) {
                     entry += "  (" + data->menuOptions[i].id + ")";
                 }
                 std::string help = boost::trim_copy(data->menuOptions[i].tooltip);
