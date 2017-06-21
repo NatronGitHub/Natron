@@ -31,6 +31,7 @@
 
 #include "Engine/GenericSchedulerThread.h"
 #include "Engine/OutputSchedulerThread.h"
+#include "Engine/RenderEngine.h"
 #include "Engine/Node.h"
 
 

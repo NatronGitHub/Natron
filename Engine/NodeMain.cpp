@@ -30,6 +30,7 @@
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/LoadKnobsCompat.h"
 #include "Engine/Settings.h"
+#include "Engine/RenderEngine.h"
 #include "Engine/StubNode.h"
 #include "Serialization/NodeSerialization.h"
 

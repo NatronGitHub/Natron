@@ -41,6 +41,7 @@
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/RenderEngine.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewerNode.h"

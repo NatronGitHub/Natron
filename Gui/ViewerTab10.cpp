@@ -43,6 +43,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/KnobTypes.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewIdx.h"
+#include "Engine/RenderEngine.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewerNode.h"
 

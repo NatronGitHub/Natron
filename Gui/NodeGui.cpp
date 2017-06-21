@@ -72,6 +72,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/RotoPaint.h"
 #include "Engine/RotoDrawableItem.h"
 #include "Engine/RotoLayer.h"
+#include "Engine/RenderEngine.h"
 #include "Engine/Settings.h"
 #include "Engine/Utils.h" // convertFromPlainText
 #include "Engine/ViewerInstance.h"

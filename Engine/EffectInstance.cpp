@@ -74,6 +74,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Project.h"
 #include "Engine/RenderStats.h"
 #include "Engine/RotoDrawableItem.h"
+#include "Engine/RenderEngine.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/ReadNode.h"
 #include "Engine/Settings.h"

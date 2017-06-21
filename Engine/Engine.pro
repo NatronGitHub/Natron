@@ -107,6 +107,8 @@ SOURCES += \
     CornerPinOverlayInteract.cpp \
     CreateNodeArgs.cpp \
     Curve.cpp \
+    CurrentFrameRequestScheduler.cpp \
+    DefaultRenderScheduler.cpp \
     DiskCacheNode.cpp \
     Distortion2D.cpp \
     Dot.cpp \
@@ -200,6 +202,7 @@ SOURCES += \
     Plugin.cpp \
     PluginMemory.cpp \
     PrecompNode.cpp \
+    ProcessFrameThread.cpp \
     ProcessHandler.cpp \
     Project.cpp \
     ProjectPrivate.cpp \
@@ -221,7 +224,9 @@ SOURCES += \
     RectI.cpp \
     RemovePlaneNode.cpp \
     RenderStats.cpp \
+    RenderThreadTask.cpp \
     RenderQueue.cpp \
+    RenderEngine.cpp \
     RotoBezierTriangulation.cpp \
     RotoDrawableItem.cpp \
     RotoItem.cpp \
@@ -264,6 +269,8 @@ SOURCES += \
     Transform.cpp \
     TransformOverlayInteract.cpp \
     Utils.cpp \
+    ViewerDisplayScheduler.cpp \
+    ViewerRenderFrameRunnable.cpp \
     ViewerInstance.cpp \
     ViewerNode.cpp \
     ViewerNodePrivate.cpp \
@@ -356,8 +363,10 @@ HEADERS += \
     Color.h \
     ColorParser.h \
     CreateNodeArgs.h \
+    CurrentFrameRequestScheduler.h \
     Curve.h \
     CurvePrivate.h \
+    DefaultRenderScheduler.h \
     DimensionIdx.h \
     Distortion2D.h \
     DockablePanelI.h \
@@ -449,6 +458,7 @@ HEADERS += \
     OverlaySupport.h \
     OverlayInteractBase.h \
     PointOverlayInteract.h \
+    ProcessFrameThread.h \
     Plugin.h \
     PluginActionShortcut.h \
     PluginMemory.h \
@@ -473,8 +483,10 @@ HEADERS += \
     RamBuffer.h \
     RemovePlaneNode.h \
     ReadNode.h \
+    RenderEngine.h \
     RectD.h \
     RectI.h \
+    RenderThreadTask.h \
     RenderStats.h \
     RenderQueue.h \
     RotoBezierTriangulation.h \
@@ -526,6 +538,8 @@ HEADERS += \
     UndoCommand.h \
     Utils.h \
     Variant.h \
+    ViewerDisplayScheduler.h \
+    ViewerRenderFrameRunnable.h \
     ViewerInstance.h \
     ViewerNode.h \
     ViewerNodePrivate.h \

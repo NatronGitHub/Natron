@@ -39,6 +39,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/OSGLContext.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/Project.h"
+#include "Engine/RenderEngine.h"
 #include "Engine/TimeLine.h"
 #include "Engine/TrackerNode.h"
 #include "Engine/TrackerHelper.h"

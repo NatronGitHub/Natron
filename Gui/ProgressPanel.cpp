@@ -50,6 +50,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/Image.h"
 #include "Engine/ProcessHandler.h"
+#include "Engine/RenderEngine.h"
 #include "Engine/Settings.h"
 #include "Engine/Utils.h" // convertFromPlainText
 

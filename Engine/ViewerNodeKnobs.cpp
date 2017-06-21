@@ -24,6 +24,9 @@
 
 #include "ViewerNodePrivate.h"
 
+#include "Engine/RenderEngine.h"
+
+
 #define VIEWER_UI_SECTIONS_SPACING_PX 5
 
 

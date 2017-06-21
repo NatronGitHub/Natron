@@ -95,6 +95,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Project.h"
 #include "Engine/PyParameter.h" // StringParam
 #include "Engine/Settings.h"
+#include "Engine/RenderEngine.h"
 #include "Engine/Utils.h" // convertFromPlainText
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewerNode.h"
