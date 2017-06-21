@@ -3079,26 +3079,29 @@ KnobHelper::restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSe
     } else if (isChoice) {
 
         std::string choiceID = obj._value.isString;
-
-        EffectInstancePtr isEffect = toEffectInstance(getHolder());
-        if (isEffect) {
-            PluginPtr plugin = isEffect->getNode()->getPlugin();
-
-            SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo projectInfos;
-            bool gotProjectInfos = isEffect->getApp()->getProject()->getProjectLoadedVersionInfo(&projectInfos);
-            int natronMajor = -1,natronMinor = -1,natronRev =-1;
-            if (gotProjectInfos) {
-                natronMajor = projectInfos.vMajor;
-                natronMinor = projectInfos.vMinor;
-                natronRev = projectInfos.vRev;
-            }
-
-            filterKnobChoiceOptionCompat(plugin->getPluginID(), plugin->getMajorVersion(), plugin->getMinorVersion(), natronMajor, natronMinor, natronRev, getName(), &choiceID);
-        }
-
+        // first, try to get the id the easy way ( see choiceMatch() )
         ChoiceOption matchedEntry;
         int foundValue = KnobChoice::choiceMatch(choiceID, isChoice->getEntries(), &matchedEntry);
+        if (foundValue == -1) {
+            // no luck, try the filters
+            EffectInstancePtr isEffect = toEffectInstance(getHolder());
+            if (isEffect) {
+                PluginPtr plugin = isEffect->getNode()->getPlugin();
 
+                SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo projectInfos;
+                bool gotProjectInfos = isEffect->getApp()->getProject()->getProjectLoadedVersionInfo(&projectInfos);
+                int natronMajor = -1,natronMinor = -1,natronRev =-1;
+                if (gotProjectInfos) {
+                    natronMajor = projectInfos.vMajor;
+                    natronMinor = projectInfos.vMinor;
+                    natronRev = projectInfos.vRev;
+                }
+
+                filterKnobChoiceOptionCompat(plugin->getPluginID(), plugin->getMajorVersion(), plugin->getMinorVersion(), natronMajor, natronMinor, natronRev, getName(), &choiceID);
+            }
+
+            foundValue = KnobChoice::choiceMatch(choiceID, isChoice->getEntries(), &matchedEntry);
+        }
         if (foundValue == -1) {
             // Just remember the active entry if not found
             ChoiceOption activeEntry(obj._value.isString, "", "");
