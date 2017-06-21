@@ -2,6 +2,7 @@
 
 PortSystem          1.0
 PortGroup           compiler_blacklist_versions 1.0
+PortGroup           cxx11 1.1
 PortGroup           gobject_introspection 1.0
 PortGroup           muniversal 1.0
 
@@ -76,7 +77,6 @@ subport poppler-qt4-mac {
 
 subport poppler-qt5 {
     PortGroup qt5 1.0
-    PortGroup cxx11 1.1
 
     configure.env-append    MOCQT5=${qt_bins_dir}/moc
     configure.args-delete   --disable-poppler-qt5

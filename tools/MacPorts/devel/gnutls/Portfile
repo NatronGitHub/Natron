@@ -6,8 +6,7 @@ PortGroup       compiler_blacklist_versions 1.0
 PortGroup       muniversal 1.0
 
 name            gnutls
-version         3.5.12
-revision        2
+version         3.5.13
 set branch      [join [lrange [split ${version} .] 0 1] .]
 categories      devel security
 # yes, some of the libs are GPL only
@@ -26,8 +25,8 @@ long_description \
 master_sites    ftp://ftp.gnutls.org/gcrypt/gnutls/v${branch}/ \
                 http://mirrors.dotsrc.org/gcrypt/gnutls/v${branch}/
 
-checksums       rmd160  ffdd1b7af9376cee94e81fefd929ee6a41cd8fcb \
-                sha256  63cb39a5eaa029381df2e49a74cfb7be89fc4a592445191818ffe1e66bde57cb
+checksums       rmd160  8d425288302672ae9617e6e827f7d2721a361b95 \
+                sha256  79f5480ad198dad5bc78e075f4a40c4a315a1b2072666919d2d05a08aec13096
 
 use_xz          yes
 
