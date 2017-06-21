@@ -826,7 +826,8 @@ bool matchKnobFilterInternal(const FILTER& filter, const std::string& name, cons
     return true;
 }
 
-static
+NATRON_NAMESPACE_ANONYMOUS_EXIT
+
 bool
 filterKnobNameCompat(const std::string& pluginID, int pluginVersionMajor, int pluginVersionMinor,
                      int natronVersionMajor, int natronVersionMinor, int natronVersionRevision, std::string* name)
@@ -845,7 +846,6 @@ filterKnobNameCompat(const std::string& pluginID, int pluginVersionMajor, int pl
     return false;
 }
 
-static
 bool
 filterKnobChoiceOptionCompat(const std::string& pluginID, int pluginVersionMajor, int pluginVersionMinor,
                              int natronVersionMajor, int natronVersionMinor, int natronVersionRevision,
@@ -869,6 +869,5 @@ filterKnobChoiceOptionCompat(const std::string& pluginID, int pluginVersionMajor
     return false;
 }
 
-NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 NATRON_NAMESPACE_EXIT;
