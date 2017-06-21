@@ -70,6 +70,8 @@ equalsStringCaseInsensitive(const std::string& str1, const std::string& str2)
 
 typedef bool (*stringFuncPtr)(const std::string&,const std::string&);
 
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+
 struct FilterMatcher
 {
     // The second string parameter that is passed to the nameMatcher function
@@ -166,7 +168,15 @@ struct KnobChoiceOptionFilter
     }
 };
 
-PluginMatch& addPluginMatch(KnobMatch& f, const std::string& pluginID, int pluginMajorMin = -1, int pluginMinorMin = -1, int pluginMajorMax = -1, int pluginMinorMax = -1)
+
+static
+PluginMatch&
+addPluginMatch(KnobMatch& f,
+               const std::string& pluginID
+               , int pluginMajorMin = -1,
+               int pluginMinorMin = -1,
+               int pluginMajorMax = -1,
+               int pluginMinorMax = -1)
 {
     PluginMatch m = {pluginID, pluginMajorMin, pluginMinorMin, pluginMajorMax, pluginMinorMax, equalsStringCaseInsensitive};
     f.plugin.push_back(m);
@@ -414,16 +424,44 @@ public:
         }
         {
             KnobChoiceOptionFilter f;
-            f.replacement = "Project frame range";
+            f.replacement = "project";
             {
                 KnobMatch& m = addKnobFilter(f, "frameRange", equalsStringCaseSensitive);
                 {
-                    PluginMatch& p = addPluginMatch(m, "fr.inria.openfx");
+                    PluginMatch& p = addPluginMatch(m, "fr.inria."); // fr.inria.openfx.Write* and fr.inria.built-in.Write
                     p.func = containsString;
                 }
             }
             addOptionFilter(f, "Timeline bounds", equalsStringCaseInsensitive);
             setNatronVersionMax(f, 1);
+            filters.push_back(f);
+        }
+        {
+            KnobChoiceOptionFilter f;
+            f.replacement = "8u";
+            {
+                KnobMatch& m = addKnobFilter(f, "bitDepth", equalsStringCaseSensitive);
+                {
+                    PluginMatch& p = addPluginMatch(m, "fr.inria."); // fr.inria.openfx.Write* and fr.inria.built-in.Write
+                    p.func = containsString;
+                }
+            }
+            addOptionFilter(f, "8i", equalsStringCaseInsensitive);
+            //setNatronVersionMax(f, 1);
+            filters.push_back(f);
+        }
+        {
+            KnobChoiceOptionFilter f;
+            f.replacement = "16u";
+            {
+                KnobMatch& m = addKnobFilter(f, "bitDepth", equalsStringCaseSensitive);
+                {
+                    PluginMatch& p = addPluginMatch(m, "fr.inria."); // fr.inria.openfx.Write* and fr.inria.built-in.Write
+                    p.func = containsString;
+                }
+            }
+            addOptionFilter(f, "16i", equalsStringCaseInsensitive);
+            //setNatronVersionMax(f, 1);
             filters.push_back(f);
         }
     }
@@ -449,9 +487,9 @@ bool matchKnobFilterInternal(const FILTER& filter, const std::string& name, cons
             natronVersionMajor == filter.natronVersionMin.vMajor && // major == min.major &&
             natronVersionMinor == filter.natronVersionMin.vMinor && // minor == min.minor &&
             natronVersionRevision < filter.natronVersionMin.vRev) ) ) ) ) { // rev < min.rev
-               return false;
-               }
 
+        return false;
+    }
     if (natronVersionMajor != -1 &&
         filter.natronVersionMax.vMajor != -1 &&
         ( (natronVersionMajor > filter.natronVersionMax.vMajor) || // major > max.major
@@ -462,8 +500,9 @@ bool matchKnobFilterInternal(const FILTER& filter, const std::string& name, cons
             natronVersionMajor == filter.natronVersionMax.vMajor && // major == max.major &&
             natronVersionMinor == filter.natronVersionMax.vMinor && // minor == max.minor &&
             natronVersionRevision > filter.natronVersionMax.vRev) ) ) ) ) { // rev > max.rev
-               return false;
-           }
+
+        return false;
+    }
 
     // match plugin
     if (!filter.filters.empty()) {
@@ -481,16 +520,19 @@ bool matchKnobFilterInternal(const FILTER& filter, const std::string& name, cons
                          (it2->pluginVersionMinorMin != -1 &&
                           pluginVersionMajor == it2->pluginVersionMajorMin &&
                           pluginVersionMinor < it2->pluginVersionMinorMin) ) ) {
-                             return false;
-                         }
+
+                        return false;
+                    }
+
                     if (pluginVersionMajor != -1 &&
                         it2->pluginVersionMajorMax != -1 &&
                         ( (pluginVersionMajor > it2->pluginVersionMajorMax) ||
                          (it2->pluginVersionMinorMax != -1 &&
                           pluginVersionMajor == it2->pluginVersionMajorMax &&
                           pluginVersionMinor > it2->pluginVersionMinorMax) ) ) {
-                             return false;
-                         }
+                        return false;
+                    }
+
                     matchPlugin = true;
                     break;
                 }
@@ -509,6 +551,8 @@ bool matchKnobFilterInternal(const FILTER& filter, const std::string& name, cons
 
     return true;
 }
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 bool
 filterKnobNameCompat(const std::string& pluginID, int pluginVersionMajor, int pluginVersionMinor,
@@ -534,7 +578,6 @@ filterKnobChoiceOptionCompat(const std::string& pluginID, int pluginVersionMajor
                              const std::string& paramName,
                              std::string* name)
 {
- 
     for (std::size_t i = 0; i < knobChoiceOptionFilters.filters.size(); ++i) {
         const KnobChoiceOptionFilter& filter = knobChoiceOptionFilters.filters[i];
         assert(!filter.replacement.empty());

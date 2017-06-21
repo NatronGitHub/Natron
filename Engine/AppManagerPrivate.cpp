@@ -216,6 +216,7 @@ AppManagerPrivate::loadBuiltinFormats()
         double par;
     };
 
+    // list of formats: the names must match those in ofxsFormatResolution.h
     BuiltinFormat formats[] = {
         { "PC_Video",              640,  480, 1 },
         { "NTSC",                  720,  486, 0.91 },
