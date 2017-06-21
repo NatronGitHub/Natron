@@ -353,7 +353,12 @@ EffectInstance::Implementation::renderHandlerIdentity(const RectToRender & rectT
 
         if (checkNaNs) {
 
-            if (!it->second->checkForNaNs(roi)) {
+            bool foundNan = false;
+            ActionRetCodeEnum stat = it->second->checkForNaNs(roi, &foundNan);
+            if (isFailureRetCode(stat)) {
+                return stat;
+            }
+            if (!foundNan) {
                 _publicInterface->getNode()->clearPersistentMessage(kNatronPersistentWarningCheckForNan);
             } else {
                 QString warning;
@@ -684,7 +689,12 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
 
         if (checkNaNs) {
 
-            if (!it->second->checkForNaNs(rectToRender.rect)) {
+            bool foundNan = false;
+            ActionRetCodeEnum stat = it->second->checkForNaNs(rectToRender.rect, &foundNan);
+            if (isFailureRetCode(stat)) {
+                return stat;
+            }
+            if (!foundNan) {
                 _publicInterface->getNode()->clearPersistentMessage(kNatronPersistentWarningCheckForNan);
             } else {
                 QString warning;

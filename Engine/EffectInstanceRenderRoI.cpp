@@ -1495,6 +1495,9 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPa
 {
     assert(isRenderClone() && getCurrentRender());
 
+    // Hint the multi-thread suite that we may use it so that it attempts to better distribute threads amongst concurrent effect renders
+    MultiThreadGetNumCPUHint multiThreadSuiteHint;
+
     const double par = getAspectRatio(-1);
     const unsigned int mappedMipMapLevel = requestData->getRenderMappedMipMapLevel();
     const RenderScale mappedCombinedScale = EffectInstance::getCombinedScale(mappedMipMapLevel, requestData->getProxyScale());

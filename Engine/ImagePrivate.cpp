@@ -468,26 +468,31 @@ ImagePrivate::halveImage(const void* srcPtrs[4],
 
 
 template <typename PIX, int maxValue, int nComps>
-bool
+ActionRetCodeEnum
 checkForNaNsInternal(void* ptrs[4],
                      const RectI& bounds,
-                     const RectI& roi)
+                     const RectI& roi,
+                     const EffectInstancePtr& effect,
+                     bool* foundNan)
 {
+    *foundNan = false;
 
     PIX* dstPixelPtrs[4];
     int dstPixelStride;
     Image::getChannelPointers<PIX, nComps>((const PIX**)ptrs, roi.x1, roi.y1, bounds, (PIX**)dstPixelPtrs, &dstPixelStride);
     const int rowElementsCount = bounds.width() * dstPixelStride;
 
-    bool hasnan = false;
     for (int y = roi.y1; y < roi.y2; ++y) {
+        if (effect && effect->isRenderAborted()) {
+            return eActionStatusAborted;
+        }
         for (int x = roi.x1; x < roi.x2; ++x) {
             for (int k = 0; k < nComps; ++k) {
                 // we remove NaNs, but infinity values should pose no problem
                 // (if they do, please explain here which ones)
                 if (*dstPixelPtrs[k] != *dstPixelPtrs[k]) { // check for NaN
                     *dstPixelPtrs[k] = 1.;
-                    hasnan = true;
+                    *foundNan = true;
                 }
                 dstPixelPtrs[k] += dstPixelStride;
             }
@@ -497,62 +502,58 @@ checkForNaNsInternal(void* ptrs[4],
             dstPixelPtrs[k] += (rowElementsCount - roi.width() * dstPixelStride);
         }
     } // for each scan-line
-
-    return hasnan;
+    return eActionStatusOK;
 } // checkForNaNsInternal
 
 template <typename PIX, int maxValue>
-bool
+ActionRetCodeEnum
 checkForNaNsForDepth(void* ptrs[4],
                      int nComps,
                      const RectI& bounds,
-                     const RectI& roi)
+                     const RectI& roi,
+                     const EffectInstancePtr& effect,
+                     bool* foundNan)
 {
     switch (nComps) {
         case 1:
-            return checkForNaNsInternal<PIX, maxValue, 1>(ptrs, bounds, roi);
-            break;
+            return checkForNaNsInternal<PIX, maxValue, 1>(ptrs, bounds, roi, effect, foundNan);
         case 2:
-            return checkForNaNsInternal<PIX, maxValue, 2>(ptrs, bounds, roi);
-            break;
+            return checkForNaNsInternal<PIX, maxValue, 2>(ptrs, bounds, roi, effect, foundNan);
         case 3:
-            return checkForNaNsInternal<PIX, maxValue, 3>(ptrs, bounds, roi);
-            break;
+            return checkForNaNsInternal<PIX, maxValue, 3>(ptrs, bounds, roi, effect, foundNan);
         case 4:
-            return checkForNaNsInternal<PIX, maxValue, 4>(ptrs, bounds, roi);
-            break;
+            return checkForNaNsInternal<PIX, maxValue, 4>(ptrs, bounds, roi, effect, foundNan);
         default:
             break;
     }
-    return false;
+    return eActionStatusFailed;
 
 }
 
 
-bool
+ActionRetCodeEnum
 ImagePrivate::checkForNaNs(void* ptrs[4],
                            int nComps,
                            ImageBitDepthEnum bitdepth,
                            const RectI& bounds,
-                           const RectI& roi)
+                           const RectI& roi,
+                           const EffectInstancePtr& effect,
+                           bool* foundNan)
 {
     switch ( bitdepth ) {
         case eImageBitDepthByte:
-            return checkForNaNsForDepth<unsigned char, 255>(ptrs, nComps, bounds, roi);
-            break;
+            return checkForNaNsForDepth<unsigned char, 255>(ptrs, nComps, bounds, roi, effect, foundNan);
         case eImageBitDepthShort:
-            return checkForNaNsForDepth<unsigned short, 65535>(ptrs, nComps, bounds, roi);
-            break;
+            return checkForNaNsForDepth<unsigned short, 65535>(ptrs, nComps, bounds, roi, effect, foundNan);
         case eImageBitDepthHalf:
             assert(false);
-            break;
+            return eActionStatusFailed;
         case eImageBitDepthFloat:
-            return checkForNaNsForDepth<float, 1>(ptrs, nComps, bounds, roi);
-            break;
+            return checkForNaNsForDepth<float, 1>(ptrs, nComps, bounds, roi, effect, foundNan);
         case eImageBitDepthNone:
-            break;
+            return eActionStatusFailed;
     }
-    return false;
+    return eActionStatusFailed;
 }
 
 NATRON_NAMESPACE_EXIT;

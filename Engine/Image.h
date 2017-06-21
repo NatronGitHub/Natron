@@ -614,7 +614,7 @@ public:
      * @brief Returns true if the image contains NaNs or infinite values, and fix them.
      * Currently, no OpenGL implementation is provided.
      */
-    bool checkForNaNs(const RectI& roi) WARN_UNUSED_RETURN;
+    ActionRetCodeEnum checkForNaNs(const RectI& roi, bool* foundNan) WARN_UNUSED_RETURN;
 
 
     /**

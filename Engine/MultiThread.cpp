@@ -38,6 +38,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QDebug>
 #include <QtCore/QThread>
 #include <QtCore/QReadWriteLock>
+#include <QtCore/QAtomicInt>
 #include <QtCore/QThreadStorage>
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
 CLANG_DIAG_ON(deprecated-register)
@@ -78,11 +79,17 @@ struct MultiThreadPrivate
     PerThreadMultiThreadDataMap threadsData;
     mutable QReadWriteLock threadsDataMutex;
 
+    // This atomic integers count the number of potential users of the multi-thread suite.
+    // Each EffectInstance for which a render is started adds 1 to this integer. We then use
+    // it in getNumCPU to better distribute threads accross effects.
+    QAtomicInt nPotentialUsers;
+
     MultiThreadPrivate()
     : threadsData()
     , threadsDataMutex()
+    , nPotentialUsers()
     {
-
+        nPotentialUsers = 0;
     }
 
     void pushThreadIndex(QThread* thread, unsigned int index)
@@ -486,6 +493,14 @@ MultiThread::getNCPUsAvailable()
     assert(maxThreadsCount >= 0);
 
     int ret = std::max(1, maxThreadsCount - activeThreadsCount);
+    if (ret > 1) {
+        // Distribute threads accross the number of active users of the multi-thread suite
+        MultiThreadPrivate* imp = appPTR->getMultiThreadHandler()->_imp.get();
+        int nUsers = imp->nPotentialUsers;
+        if (nUsers > 1) {
+            ret /= nUsers;
+        }
+    }
     return ret;
 } // getNCPUsAvailable
 
@@ -512,6 +527,23 @@ MultiThread::isCurrentThreadSpawnedThread()
     ActionRetCodeEnum stat = getCurrentThreadIndex(&index);
     (void)index;
     return stat == eActionStatusOK;
+}
+
+void
+MultiThread::registerPotentialUser()
+{
+    // Get the global multi-thread handler data
+    MultiThreadPrivate* imp = appPTR->getMultiThreadHandler()->_imp.get();
+    imp->nPotentialUsers.fetchAndAddAcquire(1);
+}
+
+
+void
+MultiThread::unregisterPotentialUser()
+{
+    // Get the global multi-thread handler data
+    MultiThreadPrivate* imp = appPTR->getMultiThreadHandler()->_imp.get();
+    imp->nPotentialUsers.fetchAndAddAcquire(-1);
 }
 
 MultiThreadProcessorBase::MultiThreadProcessorBase(const EffectInstancePtr& effect)

@@ -138,9 +138,35 @@ public:
      **/
     static bool isCurrentThreadSpawnedThread();
 
+    /**
+     * Increments/decrements an atomic integer which counts the number of potential users of the multi-thread suite.
+     * Each EffectInstance for which a render is started adds 1 to this integer. We then use
+     * it in getNumCPU to better distribute threads accross effects.
+     **/
+    static void registerPotentialUser();
+    static void unregisterPotentialUser();
+
 private:
 
     boost::scoped_ptr<MultiThreadPrivate> _imp;
+};
+
+/**
+ * @brief Safely register a potential user of the multi-thread suite in a RAII style
+ **/
+class MultiThreadGetNumCPUHint
+{
+public:
+
+    MultiThreadGetNumCPUHint()
+    {
+        MultiThread::registerPotentialUser();
+    }
+
+    ~MultiThreadGetNumCPUHint()
+    {
+        MultiThread::unregisterPotentialUser();
+    }
 };
 
 /**

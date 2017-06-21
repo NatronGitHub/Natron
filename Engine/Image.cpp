@@ -782,25 +782,75 @@ Image::downscaleMipMap(const RectI & roi, unsigned int downscaleLevels) const
 
 } // downscaleMipMap
 
-bool
-Image::checkForNaNs(const RectI& roi)
+
+class CheckNaNsProcessor : public ImageMultiThreadProcessorBase
 {
-    if (getBitDepth() != eImageBitDepthFloat) {
-        return false;
-    }
-    if (getStorageMode() == eStorageModeGLTex) {
-        return false;
+
+    Image::CPUData _data;
+    mutable QMutex _foundNaNMutex;
+    bool _foundNan;
+
+public:
+
+    CheckNaNsProcessor(const EffectInstancePtr& renderClone)
+    : ImageMultiThreadProcessorBase(renderClone)
+    , _data()
+    , _foundNan(false)
+    {
+
     }
 
-    bool hasNan = false;
+    virtual ~CheckNaNsProcessor()
+    {
+    }
+
+    void setValues(const Image::CPUData& data)
+    {
+        _data = data;
+    }
+
+    bool hasNaN() const
+    {
+        QMutexLocker k(&_foundNaNMutex);
+        return _foundNan;
+    }
+
+private:
+
+    virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow) OVERRIDE FINAL
+    {
+        bool foundNaN = false;
+        ActionRetCodeEnum stat = ImagePrivate::checkForNaNs(_data.ptrs, _data.nComps, _data.bitDepth, _data.bounds, renderWindow, _effect, &foundNaN);
+        if (foundNaN) {
+            QMutexLocker k(&_foundNaNMutex);
+            _foundNan = true;
+        }
+        return stat;
+    }
+};
+
+ActionRetCodeEnum
+Image::checkForNaNs(const RectI& roi, bool* foundNan)
+{
+    if (getBitDepth() != eImageBitDepthFloat) {
+        return eActionStatusFailed;
+    }
+    if (getStorageMode() == eStorageModeGLTex) {
+        return eActionStatusFailed;
+    }
+
     Image::CPUData data;
     getCPUData(&data);
 
     RectI clippedRoi;
     roi.intersect(data.bounds, &clippedRoi);
-    hasNan |= _imp->checkForNaNs(data.ptrs, data.nComps, data.bitDepth, data.bounds, clippedRoi);
 
-    return hasNan;
+    CheckNaNsProcessor processor(_imp->renderClone.lock());
+    processor.setValues(data);
+    processor.setRenderWindow(clippedRoi);
+    ActionRetCodeEnum stat = processor.process();
+    *foundNan = processor.hasNaN();
+    return stat;
 
 } // checkForNaNs
 

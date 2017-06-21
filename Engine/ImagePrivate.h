@@ -211,11 +211,13 @@ struct ImagePrivate
                            const RectI& dstBounds,
                            const EffectInstancePtr& renderClone);
 
-    static bool checkForNaNs(void* ptrs[4],
-                             int nComps,
-                             ImageBitDepthEnum bitdepth,
-                             const RectI& bounds,
-                             const RectI& roi);
+    static ActionRetCodeEnum checkForNaNs(void* ptrs[4],
+                                          int nComps,
+                                          ImageBitDepthEnum bitdepth,
+                                          const RectI& bounds,
+                                          const RectI& roi,
+                                          const EffectInstancePtr& effect,
+                                          bool* foundNan);
 
     static void applyMaskMixGL(const GLImageStoragePtr& originalTexture,
                                const GLImageStoragePtr& maskTexture,
