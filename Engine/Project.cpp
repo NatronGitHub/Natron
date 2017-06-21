@@ -756,7 +756,12 @@ Project::initializeKnobs()
         if ( (f.width() == 1920) && (f.height() == 1080) && (f.getPixelAspectRatio() == 1) ) {
             _imp->formatKnob->setDefaultValue(i, 0);
         }
-        entries.push_back( ChoiceOption(formatStr.toStdString()) );
+        if ( !f.getName().empty() ) {
+            entries.push_back( ChoiceOption(f.getName(), formatStr.toStdString(), "") );
+        } else {
+            entries.push_back( ChoiceOption( formatStr.toStdString() ) );
+        }
+
         _imp->builtinFormats.push_back(f);
     }
     _imp->formatKnob->setAddNewLine(false);
@@ -1085,8 +1090,11 @@ Project::getProjectDefaultFormat(Format *f) const
     assert(f);
     QMutexLocker l(&_imp->formatMutex);
     ChoiceOption formatSpec = _imp->formatKnob->getActiveEntry();
-    if ( !formatSpec.id.empty() ) {
-        ProjectPrivate::generateFormatFromString(QString::fromUtf8( formatSpec.id.c_str() ), f);
+    // use the label here, because the id does not contain the format specifications.
+    // see ProjectPrivate::generateStringFromFormat()
+#pragma message WARN("TODO: can't we store the format somewhere instead of parsing the label???")
+    if ( !formatSpec.label.empty() ) {
+        ProjectPrivate::generateFormatFromString(QString::fromUtf8( formatSpec.label.c_str() ), f);
     } else {
         _imp->findFormat(_imp->formatKnob->getValue(), f);
     }
@@ -1142,16 +1150,28 @@ Project::tryAddProjectFormat(const Format & f, bool* existed)
     for (std::list<Format>::iterator it = _imp->builtinFormats.begin(); it != _imp->builtinFormats.end(); ++it) {
         const Format & f = *it;
         QString formatStr = ProjectPrivate::generateStringFromFormat(f);
-        entries.push_back( ChoiceOption(formatStr.toStdString()) );
+        if ( !f.getName().empty() ) {
+            entries.push_back( ChoiceOption(f.getName(), formatStr.toStdString(), "") );
+        } else {
+            entries.push_back( ChoiceOption( formatStr.toStdString() ) );
+        }
     }
     for (std::list<Format>::iterator it = _imp->additionalFormats.begin(); it != _imp->additionalFormats.end(); ++it) {
         const Format & f = *it;
         QString formatStr = ProjectPrivate::generateStringFromFormat(f);
-        entries.push_back( ChoiceOption(formatStr.toStdString()) );
+        if ( !f.getName().empty() ) {
+            entries.push_back( ChoiceOption(f.getName(), formatStr.toStdString(), "") );
+        } else {
+            entries.push_back( ChoiceOption( formatStr.toStdString() ) );
+        }
     }
     QString formatStr = ProjectPrivate::generateStringFromFormat(f);
     _imp->additionalFormats.push_back(f);
-    _imp->formatKnob->appendChoice( ChoiceOption(formatStr.toStdString()) );
+    if ( !f.getName().empty() ) {
+        _imp->formatKnob->appendChoice( ChoiceOption(f.getName(), formatStr.toStdString(), "") );
+    } else {
+        _imp->formatKnob->appendChoice( ChoiceOption( formatStr.toStdString() ) );
+    }
 
     return ( _imp->builtinFormats.size() + _imp->additionalFormats.size() ) - 1;
 }

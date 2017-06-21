@@ -76,6 +76,18 @@ struct ProjectBeingLoadedInfo
     std::string gitBranch,gitCommit;
     std::string osStr;
     int bits;
+
+    ProjectBeingLoadedInfo()
+    : vMajor(-1)
+    , vMinor(-1)
+    , vRev(-1)
+    , gitBranch()
+    , gitCommit()
+    , osStr()
+    , bits(-1)
+    {
+
+    }
 };
 
 class ProjectSerialization

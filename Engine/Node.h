@@ -136,7 +136,8 @@ public:
     void loadKnobs(const NodeSerialization & serialization, bool updateKnobGui = false);
 
 
-    void loadKnob(const KnobPtr & knob, const std::list< boost::shared_ptr<KnobSerialization> > & serialization,
+    void loadKnob(const KnobPtr & knob,
+                  const NodeSerialization & serialization,
                   bool updateKnobGui = false);
 
     ///Set values for Knobs given their serialization

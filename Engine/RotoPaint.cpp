@@ -195,7 +195,7 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(sep);
 
 
-    std::string channelNames[4] = {"doRed", "doGreen", "doBlue", "doAlpha"};
+    std::string channelNames[4] = {kNatronOfxParamProcessR, kNatronOfxParamProcessG, kNatronOfxParamProcessB, kNatronOfxParamProcessA};
     std::string channelLabels[4] = {"R", "G", "B", "A"};
     bool defaultValues[4];
     bool channelSelectorSupported = isHostChannelSelectorSupported(&defaultValues[0], &defaultValues[1], &defaultValues[2], &defaultValues[3]);

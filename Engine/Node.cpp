@@ -80,6 +80,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/NodeGuiI.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/OfxEffectInstance.h"
+#include "Engine/ProjectSerialization.h"
 #include "Engine/OfxHost.h"
 #include "Engine/OneViewNode.h"
 #include "Engine/OpenGLViewerI.h"
@@ -1774,7 +1775,7 @@ Node::loadKnobs(const NodeSerialization & serialization,
     const std::vector< KnobPtr > & nodeKnobs = getKnobs();
     ///for all knobs of the node
     for (U32 j = 0; j < nodeKnobs.size(); ++j) {
-        loadKnob(nodeKnobs[j], serialization.getKnobsValues(), updateKnobGui);
+        loadKnob(nodeKnobs[j], serialization, updateKnobGui);
     }
     ///now restore the roto context if the node has a roto context
     if (serialization.hasRotoContext() && _imp->rotoContext) {
@@ -1833,16 +1834,38 @@ Node::restoreSublabel()
 
 void
 Node::loadKnob(const KnobPtr & knob,
-               const std::list< boost::shared_ptr<KnobSerialization> > & knobsValues,
+               const NodeSerialization & serialization,
                bool /*updateKnobGui*/)
 {
+
+    const NodeSerialization::KnobValues& knobsValues = serialization.getKnobsValues();
+
     ///try to find a serialized value for this knob
-    bool found = false;
+    const ProjectBeingLoadedInfo projectInfos = getApp()->getProjectBeingLoadedInfo();
+
+    std::string pluginID = getPluginID();
+
+    {
+        // Use the plug-in ID of the encoder/decoder for reader and writer
+        ReadNode* isReadNode = dynamic_cast<ReadNode*>( getEffectInstance().get() );
+        WriteNode* isWriteNode = dynamic_cast<WriteNode*>( getEffectInstance().get() );
+        if (isReadNode) {
+            NodePtr p = isReadNode->getEmbeddedReader();
+            if (p) {
+                pluginID = p->getPluginID();
+            }
+        } else if (isWriteNode) {
+            NodePtr p = isWriteNode->getEmbeddedWriter();
+            if (p) {
+                pluginID = p->getPluginID();
+            }
+        }
+    }
+
 
     KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
     if (isChoice) {
 
-        const ProjectBeingLoadedInfo projectInfos = getApp()->getProjectBeingLoadedInfo();
         if (projectInfos.vMajor == 2 && projectInfos.vMinor < 3) {
             // Before Natron 2.2.3, all dynamic choice parameters for multiplane had a string parameter.
             // The string parameter had the same name as the choice parameter plus "Choice" appended.
@@ -1854,7 +1877,7 @@ Node::loadKnob(const KnobPtr & knob,
                     if (stringKnob) {
                         std::string serializedString = stringKnob->getValue();
                         if ((*it)->_version < KNOB_SERIALIZATION_CHANGE_PLANES_SERIALIZATION) {
-                            KnobSerialization::checkForPreNatron226String(&serializedString);
+                            filterKnobChoiceOptionCompat(getPluginID(), getMajorVersion(), getMinorVersion(), projectInfos.vMajor, projectInfos.vMinor, projectInfos.vRev, isChoice->getName(), &serializedString);
                         }
                         isChoice->setActiveEntry(ChoiceOption(serializedString));
                     }
@@ -1865,30 +1888,24 @@ Node::loadKnob(const KnobPtr & knob,
         }
     }
 
-    bool isR = knob->getName() == kNatronOfxParamProcessR;
-    bool isG = knob->getName() == kNatronOfxParamProcessG;
-    bool isB = knob->getName() == kNatronOfxParamProcessB;
-    bool isA = knob->getName() == kNatronOfxParamProcessA;
-
     for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
 
+        std::string serializedName = (*it)->getName();
         bool foundMatch = false;
-        if ((*it)->getName() == knob->getName()) {
+        if (serializedName == knob->getName()) {
             foundMatch = true;
-        } else if (isR && (*it)->getName() == "r") {
-            foundMatch = true;
-        } else if (isG && (*it)->getName() == "g") {
-            foundMatch = true;
-        } else if (isB && (*it)->getName() == "b") {
-            foundMatch = true;
-        } else if (isA && (*it)->getName() == "a") {
-            foundMatch = true;
+        } else {
+            if (filterKnobNameCompat(getPluginID(), getMajorVersion(), getMinorVersion(), projectInfos.vMajor, projectInfos.vMinor, projectInfos.vRev, &serializedName)) {
+                if (serializedName == knob->getName()) {
+                    foundMatch = true;
+                }
+            }
+
         }
         if (!foundMatch) {
             continue;
         }
 
-        found = true;
         // don't load the value if the Knob is not persistent! (it is just the default value in this case)
         ///EDIT: Allow non persistent params to be loaded if we found a valid serialization for them
         //if ( knob->getIsPersistent() ) {
@@ -1909,7 +1926,18 @@ Node::loadKnob(const KnobPtr & knob,
                 KnobChoice* choiceSerialized = dynamic_cast<KnobChoice*>( serializedKnob.get() );
                 assert(choiceSerialized);
                 if (choiceSerialized) {
-                    isChoice->choiceRestoration(choiceSerialized, choiceData);
+                    std::string optionID = choiceData->_choiceString;
+                    // first, try to get the id the easy way ( see choiceMatch() )
+                    int id = isChoice->choiceRestorationId(choiceSerialized, optionID);
+                    if (id < 0) {
+                        // no luck, try the filters
+                        filterKnobChoiceOptionCompat(getPluginID(), serialization.getPluginMajorVersion(), serialization.getPluginMinorVersion(), projectInfos.vMajor, projectInfos.vMinor, projectInfos.vRev, serializedName, &optionID);
+                        id = isChoice->choiceRestorationId(choiceSerialized, optionID);
+                    }
+                    isChoice->choiceRestoration(choiceSerialized, optionID, id);
+                    //if (id >= 0) {
+                    //    choiceData->_choiceString = isChoice->getEntry(id).id;
+                    //}
                 }
             }
         } else {
@@ -2361,14 +2389,23 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             }
             knob->cloneDefaultValues( sKnob.get() );
             if (isChoice) {
-                const ChoiceExtraData* data = dynamic_cast<const ChoiceExtraData*>( isRegular->getExtraData() );
-                assert(data);
-                KnobChoice* createdKnob = dynamic_cast<KnobChoice*>( knob.get() );
-                assert(createdKnob);
-                if (data && createdKnob) {
-                    KnobChoice* sKnobChoice = dynamic_cast<KnobChoice*>( sKnob.get() );
-                    if (sKnobChoice) {
-                        createdKnob->choiceRestoration(sKnobChoice, data);
+                const ChoiceExtraData* choiceData = dynamic_cast<const ChoiceExtraData*>( isRegular->getExtraData() );
+                assert(choiceData);
+                KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
+                assert(isChoice);
+                if (choiceData && isChoice) {
+                    KnobChoice* choiceSerialized = dynamic_cast<KnobChoice*>( sKnob.get() );
+                    if (choiceSerialized) {
+                        std::string optionID = choiceData->_choiceString;
+                        // first, try to get the id the easy way ( see choiceMatch() )
+                        int id = isChoice->choiceRestorationId(choiceSerialized, optionID);
+#pragma message WARN("TODO: choice id filters")
+                        //if (id < 0) {
+                        //    // no luck, try the filters
+                        //    filterKnobChoiceOptionCompat(getPluginID(), serialization.getPluginMajorVersion(), serialization.getPluginMinorVersion(), projectInfos.vMajor, projectInfos.vMinor, projectInfos.vRev, serializedName, &optionID);
+                        //    id = isChoice->choiceRestorationId(choiceSerialized, optionID);
+                        //}
+                        isChoice->choiceRestoration(choiceSerialized, optionID, id);
                     }
                 }
             } else {
@@ -4452,6 +4489,7 @@ Node::makeDocumentation(bool genHTML) const
 
                 if (!isBtn && !isSep && !isParametric) {
                     if (isChoice) {
+                        // see also KnobChoice::getHintToolTipFull()
                         int index = isChoice->getDefaultValue(i);
                         std::vector<ChoiceOption> entries = isChoice->getEntries_mt_safe();
                         if ( (index >= 0) && ( index < (int)entries.size() ) ) {
@@ -4459,13 +4497,18 @@ Node::makeDocumentation(bool genHTML) const
                         }
                         bool first = true;
                         for (size_t i = 0; i < entries.size(); i++) {
-                            QString entry = QString::fromUtf8( entries[i].label.c_str() );
                             QString entryHelp = QString::fromUtf8( entries[i].tooltip.c_str() );
-                            if (!entry.isEmpty() && !entryHelp.isEmpty() ) {
+                            QString entry;
+                            if (entries[i].id != entries[i].label) {
+                                entry = QString::fromUtf8( "%1 (%2)" ).arg(QString::fromUtf8( entries[i].label.c_str() )).arg(QString::fromUtf8( entries[i].id.c_str() ));
+                            } else {
+                                entry = QString::fromUtf8( entries[i].label.c_str() );
+                            }
+                            if (!entry.isEmpty()) {
                                 if (first) {
                                     // empty line before the option descriptions
                                     if (genHTML) {
-                                        knobHint.append( QString::fromUtf8("<br />") );
+                                        knobHint.append( QString::fromUtf8("<br />") + tr("Possible values:") + QString::fromUtf8("<br />") );
                                     } else {
                                         // we do a hack for multiline elements, because the markdown->rst conversion by pandoc doesn't use the line block syntax.
                                         // what we do here is put a supplementary dot at the beginning of each line, which is then converted to a pipe '|' in the
@@ -4473,7 +4516,7 @@ Node::makeDocumentation(bool genHTML) const
                                         if (!knobHint.startsWith( QString::fromUtf8(". ") )) {
                                             knobHint.prepend( QString::fromUtf8(". ") );
                                         }
-                                        knobHint.append( QString::fromUtf8("\\\n") );
+                                        knobHint.append( QString::fromUtf8("\\\n") + tr("Possible values:") +  QString::fromUtf8("\\\n") );
                                     }
                                     first = false;
                                 }
@@ -4486,7 +4529,11 @@ Node::makeDocumentation(bool genHTML) const
                                     // genStaticDocs.sh script by a simple sed command after converting to RsT
                                     knobHint.append( QString::fromUtf8(". ") );
                                 }
-                                knobHint.append( QString::fromUtf8("**%1**: %2").arg( convertFromPlainTextToMarkdown(entry, genHTML, true) ).arg( convertFromPlainTextToMarkdown(entryHelp, genHTML, true) ) );
+                                if (entryHelp.isEmpty()) {
+                                    knobHint.append( QString::fromUtf8("**%1**").arg( convertFromPlainTextToMarkdown(entry, genHTML, true) ) );
+                                } else {
+                                    knobHint.append( QString::fromUtf8("**%1**: %2").arg( convertFromPlainTextToMarkdown(entry, genHTML, true) ).arg( convertFromPlainTextToMarkdown(entryHelp, genHTML, true) ) );
+                                }
                             }
                         }
 

@@ -116,13 +116,21 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
 
         for (std::list<Format>::const_iterator it = builtinFormats.begin(); it != builtinFormats.end(); ++it) {
             QString formatStr = ProjectPrivate::generateStringFromFormat(*it);
-            entries.push_back( ChoiceOption(formatStr.toStdString()) );
+            if ( !it->getName().empty() ) {
+                entries.push_back( ChoiceOption(it->getName(), formatStr.toStdString(), "") );
+            } else {
+                entries.push_back( ChoiceOption( formatStr.toStdString() ) );
+            }
         }
 
         const std::list<Format> & objAdditionalFormats = obj.getAdditionalFormats();
         for (std::list<Format>::const_iterator it = objAdditionalFormats.begin(); it != objAdditionalFormats.end(); ++it) {
             QString formatStr = ProjectPrivate::generateStringFromFormat(*it);
-            entries.push_back( ChoiceOption(formatStr.toStdString()) );
+            if ( !it->getName().empty() ) {
+                entries.push_back( ChoiceOption(it->getName(), formatStr.toStdString(), "") );
+            } else {
+                entries.push_back( ChoiceOption( formatStr.toStdString() ) );
+            }
         }
         additionalFormats = objAdditionalFormats;
 
@@ -146,10 +154,19 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
                         const ChoiceExtraData* choiceData = dynamic_cast<const ChoiceExtraData*>(extraData);
                         assert(choiceData);
                         if (choiceData) {
-                            KnobChoice* serializedKnob = dynamic_cast<KnobChoice*>( (*it)->getKnob().get() );
-                            assert(serializedKnob);
-                            if (serializedKnob) {
-                                isChoice->choiceRestoration(serializedKnob, choiceData);
+                            KnobChoice* choiceSerialized = dynamic_cast<KnobChoice*>( (*it)->getKnob().get() );
+                            assert(choiceSerialized);
+                            if (choiceSerialized) {
+                                std::string optionID = choiceData->_choiceString;
+                                // first, try to get the id the easy way ( see choiceMatch() )
+                                int id = isChoice->choiceRestorationId(choiceSerialized, optionID);
+#pragma message WARN("TODO: choice id filters")
+                                //if (id < 0) {
+                                //    // no luck, try the filters
+                                //    filterKnobChoiceOptionCompat(getPluginID(), serialization.getPluginMajorVersion(), serialization.getPluginMinorVersion(), projectInfos.vMajor, projectInfos.vMinor, projectInfos.vRev, serializedName, &optionID);
+                                //    id = isChoice->choiceRestorationId(choiceSerialized, optionID);
+                                //}
+                                isChoice->choiceRestoration(choiceSerialized, optionID, id);
                             }
                         }
                     } else {
