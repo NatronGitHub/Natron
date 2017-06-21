@@ -674,8 +674,15 @@ public:
     static const std::string & typeNameStatic();
     std::string getHintToolTipFull() const;
 
+<<<<<<< HEAD
     static int choiceMatch(const std::string& choiceID, const std::vector<ChoiceOption>& entries, ChoiceOption* matchedEntry);
 
+=======
+    static int choiceMatch(const std::string& choice, const std::vector<ChoiceOption>& entries, ChoiceOption* matchedEntry);
+    
+    int choiceRestorationId(KnobChoice* knob, const std::string& optionID);
+    void choiceRestoration(KnobChoice* knob, const std::string& optionID, int id);
+>>>>>>> origin/RB-2-multiplane2
 
     /**
      * @brief When set the menu will have a "New" entry which the user can select to create a new entry on its own.

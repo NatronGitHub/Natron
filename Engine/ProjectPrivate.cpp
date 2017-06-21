@@ -100,6 +100,141 @@ ProjectPrivate::ProjectPrivate(Project* project)
     autoSaveTimer->setSingleShot(true);
 }
 
+<<<<<<< HEAD
+=======
+bool
+ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
+                                         const QString& name,
+                                         const QString& path,
+                                         bool* mustSave)
+{
+    /*1st OFF RESTORE THE PROJECT KNOBS*/
+    bool ok;
+    {
+        CreatingNodeTreeFlag_RAII creatingNodeTreeFlag( _publicInterface->getApp() );
+
+        projectCreationTime = QDateTime::fromMSecsSinceEpoch( obj.getCreationDate() );
+
+        _publicInterface->getApp()->updateProjectLoadStatus( tr("Restoring project settings...") );
+
+        /*we must restore the entries in the combobox before restoring the value*/
+        std::vector<ChoiceOption> entries;
+
+        for (std::list<Format>::const_iterator it = builtinFormats.begin(); it != builtinFormats.end(); ++it) {
+            QString formatStr = ProjectPrivate::generateStringFromFormat(*it);
+            if ( !it->getName().empty() ) {
+                entries.push_back( ChoiceOption(it->getName(), formatStr.toStdString(), "") );
+            } else {
+                entries.push_back( ChoiceOption( formatStr.toStdString() ) );
+            }
+        }
+
+        const std::list<Format> & objAdditionalFormats = obj.getAdditionalFormats();
+        for (std::list<Format>::const_iterator it = objAdditionalFormats.begin(); it != objAdditionalFormats.end(); ++it) {
+            QString formatStr = ProjectPrivate::generateStringFromFormat(*it);
+            if ( !it->getName().empty() ) {
+                entries.push_back( ChoiceOption(it->getName(), formatStr.toStdString(), "") );
+            } else {
+                entries.push_back( ChoiceOption( formatStr.toStdString() ) );
+            }
+        }
+        additionalFormats = objAdditionalFormats;
+
+        formatKnob->populateChoices(entries);
+        autoSetProjectFormat = false;
+
+        const std::list< boost::shared_ptr<KnobSerialization> > & projectSerializedValues = obj.getProjectKnobsValues();
+        const std::vector< KnobPtr > & projectKnobs = _publicInterface->getKnobs();
+
+        /// 1) restore project's knobs.
+        for (U32 i = 0; i < projectKnobs.size(); ++i) {
+            ///try to find a serialized value for this knob
+            for (std::list< boost::shared_ptr<KnobSerialization> >::const_iterator it = projectSerializedValues.begin(); it != projectSerializedValues.end(); ++it) {
+                if ( (*it)->getName() == projectKnobs[i]->getName() ) {
+                    ///EDIT: Allow non persistent params to be loaded if we found a valid serialization for them
+                    //if ( projectKnobs[i]->getIsPersistent() ) {
+
+                    KnobChoice* isChoice = dynamic_cast<KnobChoice*>( projectKnobs[i].get() );
+                    if (isChoice) {
+                        const TypeExtraData* extraData = (*it)->getExtraData();
+                        const ChoiceExtraData* choiceData = dynamic_cast<const ChoiceExtraData*>(extraData);
+                        assert(choiceData);
+                        if (choiceData) {
+                            KnobChoice* choiceSerialized = dynamic_cast<KnobChoice*>( (*it)->getKnob().get() );
+                            assert(choiceSerialized);
+                            if (choiceSerialized) {
+                                std::string optionID = choiceData->_choiceString;
+                                // first, try to get the id the easy way ( see choiceMatch() )
+                                int id = isChoice->choiceRestorationId(choiceSerialized, optionID);
+#pragma message WARN("TODO: choice id filters")
+                                //if (id < 0) {
+                                //    // no luck, try the filters
+                                //    filterKnobChoiceOptionCompat(getPluginID(), serialization.getPluginMajorVersion(), serialization.getPluginMinorVersion(), projectInfos.vMajor, projectInfos.vMinor, projectInfos.vRev, serializedName, &optionID);
+                                //    id = isChoice->choiceRestorationId(choiceSerialized, optionID);
+                                //}
+                                isChoice->choiceRestoration(choiceSerialized, optionID, id);
+                            }
+                        }
+                    } else {
+                        projectKnobs[i]->clone( (*it)->getKnob() );
+                    }
+                    //}
+                    break;
+                }
+            }
+            if (projectKnobs[i] == envVars) {
+                ///For eAppTypeBackgroundAutoRunLaunchedFromGui don't change the project path since it is controlled
+                ///by the main GUI process
+                if (appPTR->getAppType() != AppManager::eAppTypeBackgroundAutoRunLaunchedFromGui) {
+                    autoSetProjectDirectory(path);
+                }
+                _publicInterface->onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(), false);
+            } else if (projectKnobs[i] == natronVersion) {
+                std::string v = natronVersion->getValue();
+                if (v == "Natron v1.0.0") {
+                    _publicInterface->getApp()->setProjectWasCreatedWithLowerCaseIDs(true);
+                }
+            }
+        }
+
+        /// 2) restore the timeline
+        timeline->seekFrame(obj.getCurrentTime(), false, 0, eTimelineChangeReasonOtherSeek);
+
+
+        /// 3) Restore the nodes
+
+        std::map<std::string, bool> processedModules;
+        ok = NodeCollectionSerialization::restoreFromSerialization(obj.getNodesSerialization().getNodesSerialization(),
+                                                                   _publicInterface->shared_from_this(), true, &processedModules);
+        for (std::map<std::string, bool>::iterator it = processedModules.begin(); it != processedModules.end(); ++it) {
+            if (it->second) {
+                *mustSave = true;
+                break;
+            }
+        }
+
+
+        _publicInterface->getApp()->updateProjectLoadStatus( tr("Restoring graph stream preferences...") );
+    } // CreatingNodeTreeFlag_RAII creatingNodeTreeFlag(_publicInterface->getApp());
+
+    _publicInterface->forceComputeInputDependentDataOnAllTrees();
+
+    QDateTime time = QDateTime::currentDateTime();
+    autoSetProjectFormat = false;
+    hasProjectBeenSavedByUser = true;
+    projectName->setValue( name.toStdString() );
+    projectPath->setValue( path.toStdString() );
+    ageSinceLastSave = time;
+    lastAutoSave = time;
+    _publicInterface->getApp()->setProjectWasCreatedWithLowerCaseIDs(false);
+
+    if (obj.getVersion() < PROJECT_SERIALIZATION_REMOVES_TIMELINE_BOUNDS) {
+        _publicInterface->recomputeFrameRangeFromReaders();
+    }
+
+    return ok;
+} // restoreFromSerialization
+>>>>>>> origin/RB-2-multiplane2
 
 bool
 ProjectPrivate::findFormat(int index,

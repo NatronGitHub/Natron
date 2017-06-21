@@ -1002,6 +1002,7 @@ KnobChoice::findAndSetOldChoice()
         }
 
 
+<<<<<<< HEAD
         if (found != -1) {
             // Make sure we don't call knobChanged if we found the value
             blockValueChanges();
@@ -1385,6 +1386,13 @@ KnobChoice::getHintToolTipFull() const
     if ( !data->menuOptions.empty() ) {
         for (std::size_t i = 0; i < data->menuOptions.size(); ++i) {
             if ( (data->menuOptions[i].id != data->menuOptions[i].label) || !data->menuOptions[i].tooltip.empty() ) {
+=======
+    // list values that either have help or have label != id
+    if ( !_entries.empty() ) {
+        assert( _entries.size() == _entries.size() );
+        for (U32 i = 0; i < _entries.size(); ++i) {
+            if ( !_entries.empty() && ( (_entries[i].id != _entries[i].label) || !_entries[i].tooltip.empty() ) ) {
+>>>>>>> origin/RB-2-multiplane2
                 ++gothelp;
             }
         }
@@ -1408,10 +1416,17 @@ KnobChoice::getHintToolTipFull() const
             if ( !data->menuOptions[i].tooltip.empty() || data->menuOptions[i].id != data->menuOptions[i].label ) { // no help line is needed if help is unavailable for this option
                 std::string entry = boost::trim_copy(data->menuOptions[i].label);
                 std::replace_if(entry.begin(), entry.end(), ::isspace, ' ');
+<<<<<<< HEAD
                 if ( !data->menuOptions[i].id.empty() ) {
                     entry += "  (" + data->menuOptions[i].id + ")";
                 }
                 std::string help = boost::trim_copy(data->menuOptions[i].tooltip);
+=======
+                if ( !_entries[i].id.empty() ) {
+                    entry += "  (" + _entries[i].id + ")";
+                }
+                std::string help = boost::trim_copy(_entries[i].tooltip);
+>>>>>>> origin/RB-2-multiplane2
                 std::replace_if(help.begin(), help.end(), ::isspace, ' ');
                 if ( isHintInMarkdown() ) {
                     ss << "* **" << entry << "**";
@@ -1461,6 +1476,14 @@ KnobChoice::setValueFromID(const std::string & value, ViewSetSpec view, ValueCha
     }
 
     return eValueChangedReturnCodeNothingChanged;
+}
+
+// try to match entry id first, then label
+static
+const std::string&
+entryStr(const ChoiceOption& opt, int s)
+{
+    return s == 0 ? opt.id : opt.label;
 }
 
 // try to match entry id first, then label
@@ -1559,8 +1582,40 @@ KnobChoice::choiceMatch(const std::string& choice,
     return -1;
 }
 
+int
+KnobChoice::choiceRestorationId(KnobChoice* knob,
+                                const std::string &optionID)
+{
+    assert(knob);
+
+    int serializedIndex = knob->getValue();
+    if ( ( serializedIndex < (int)_entries.size() ) && (_entries[serializedIndex].id == optionID) ) {
+        // we're lucky, entry hasn't changed
+        return serializedIndex;
+
+    }
+
+    // try to find the same label at some other index
+    int i;
+    {
+        QMutexLocker k(&_entriesMutex);
+        i = choiceMatch(optionID, _entries, &_currentEntry);
+    }
+
+    if (i >= 0) {
+        return i;
+    }
+    return -1;
+}
+
 void
+<<<<<<< HEAD
 KnobChoice::setCurrentDefaultValueAsInitialValue()
+=======
+KnobChoice::choiceRestoration(KnobChoice* knob,
+                              const std::string &optionID,
+                              int id)
+>>>>>>> origin/RB-2-multiplane2
 {
     {
         QMutexLocker l(&_imp->defaultEntryMutex);
@@ -1573,6 +1628,7 @@ std::string
 KnobChoice::getDefaultEntryID() const
 {
     {
+<<<<<<< HEAD
         QMutexLocker l(&_imp->defaultEntryMutex);
         if (!_imp->defaultEntryID.empty()) {
             return _imp->defaultEntryID;
@@ -1589,6 +1645,19 @@ KnobChoice::getDefaultEntryID() const
             return std::string();
         }
         return data->menuOptions[defIndex].id;
+=======
+        QMutexLocker k(&_entriesMutex);
+        if (id >= 0) {
+            // we found a reasonable id
+            _currentEntry = _entries[id]; // avoid numerous warnings in the GUI
+        } else {
+            _currentEntry.id = optionID;
+        }
+    }
+
+    if (id >= 0) {
+        setValue(id);
+>>>>>>> origin/RB-2-multiplane2
     }
 }
 
