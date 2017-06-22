@@ -756,7 +756,11 @@ Project::initializeKnobs()
                 if ( (f.width() == 1920) && (f.height() == 1080) && (f.getPixelAspectRatio() == 1) ) {
                     param->setDefaultValue(i);
                 }
-                entries.push_back( ChoiceOption(formatStr.toStdString(),"", "") );
+                if ( !f.getName().empty() ) {
+                    entries.push_back( ChoiceOption(f.getName(), formatStr.toStdString(), "") );
+                } else {
+                    entries.push_back( ChoiceOption( formatStr.toStdString() ) );
+                }
                 _imp->builtinFormats.push_back(f);
             }
             param->setAddNewLine(false);
@@ -2946,8 +2950,12 @@ Project::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBas
     // We must restore the entries in the combobox before restoring the value
     std::vector<ChoiceOption> entries;
     for (std::list<Format>::const_iterator it = _imp->builtinFormats.begin(); it != _imp->builtinFormats.end(); ++it) {
-        QString formatStr = ProjectPrivate::generateStringFromFormat(*it);
-        entries.push_back( ChoiceOption(formatStr.toStdString(), "", "") );
+        QString str = ProjectPrivate::generateStringFromFormat(*it);
+        if ( !it->getName().empty() ) {
+            entries.push_back( ChoiceOption(it->getName(), str.toStdString(), "") );
+        } else {
+            entries.push_back( ChoiceOption( str.toStdString() ) );
+        }
     }
 
     {
@@ -2963,8 +2971,12 @@ Project::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBas
             _imp->additionalFormats.push_back(f);
         }
         for (std::list<Format>::const_iterator it = _imp->additionalFormats.begin(); it != _imp->additionalFormats.end(); ++it) {
-            QString formatStr = ProjectPrivate::generateStringFromFormat(*it);
-            entries.push_back( ChoiceOption(formatStr.toStdString(), "","") );
+            QString str = ProjectPrivate::generateStringFromFormat(*it);
+            if ( !it->getName().empty() ) {
+                entries.push_back( ChoiceOption(it->getName(), str.toStdString(), "") );
+            } else {
+                entries.push_back( ChoiceOption( str.toStdString() ) );
+            }
         }
     }
 
