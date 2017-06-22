@@ -60,23 +60,25 @@
 #include "Global/GlobalDefines.h"
 
 #define kFilterImpulse "Impulse"
-#define kFilterImpulseHint "(nearest neighbor / box) Use original values"
+#define kFilterImpulseHint "(nearest neighbor / box) Use original values."
+#define kFilterBox "Box"
+#define kFilterBoxHint "Integrate the source image over the bounding box of the back-transformed pixel."
 #define kFilterBilinear "Bilinear"
-#define kFilterBilinearHint "(tent / triangle) Bilinear interpolation between original values"
+#define kFilterBilinearHint "(tent / triangle) Bilinear interpolation between original values."
 #define kFilterCubic "Cubic"
-#define kFilterCubicHint "(cubic spline) Some smoothing"
+#define kFilterCubicHint "(cubic spline) Some smoothing."
 #define kFilterKeys "Keys"
-#define kFilterKeysHint "(Catmull-Rom / Hermite spline) Some smoothing, plus minor sharpening (*)"
+#define kFilterKeysHint "(Catmull-Rom / Hermite spline) Some smoothing, plus minor sharpening (*)."
 #define kFilterSimon "Simon"
-#define kFilterSimonHint "Some smoothing, plus medium sharpening (*)"
+#define kFilterSimonHint "Some smoothing, plus medium sharpening (*)."
 #define kFilterRifman "Rifman"
-#define kFilterRifmanHint "Some smoothing, plus significant sharpening (*)"
+#define kFilterRifmanHint "Some smoothing, plus significant sharpening (*)."
 #define kFilterMitchell "Mitchell"
-#define kFilterMitchellHint "Some smoothing, plus blurring to hide pixelation (*+)"
+#define kFilterMitchellHint "Some smoothing, plus blurring to hide pixelation (*+)."
 #define kFilterParzen "Parzen"
-#define kFilterParzenHint "(cubic B-spline) Greatest smoothing of all filters (+)"
+#define kFilterParzenHint "(cubic B-spline) Greatest smoothing of all filters (+)."
 #define kFilterNotch "Notch"
-#define kFilterNotchHint "Flat smoothing (which tends to hide moire' patterns) (+)"
+#define kFilterNotchHint "Flat smoothing (which tends to hide moire' patterns) (+)."
 
 //KnobPagePtr generalPage = AppManager::checkIfKnobExistsWithNameOrCreate<KnobPage>(effect, "generalPage", tr("General"));
 
@@ -1050,21 +1052,26 @@ RotoPaint::initClonePageKnobs()
         KnobChoicePtr param = createKnob<KnobChoice>(kRotoBrushFilterParam);
         param->setLabel(tr(kRotoBrushFilterParamLabel));
         param->setHintToolTip( tr(kRotoBrushFilterParamHint) );
+        int defVal = 0;
         {
             std::vector<ChoiceOption> choices;
-            choices.push_back(ChoiceOption(kFilterImpulse, "", tr(kFilterImpulseHint).toStdString()));
-            choices.push_back(ChoiceOption(kFilterBilinear, "", tr(kFilterBilinearHint).toStdString()));
-            choices.push_back(ChoiceOption(kFilterCubic, "", tr(kFilterCubicHint).toStdString()));
-            choices.push_back(ChoiceOption(kFilterKeys, "", tr(kFilterKeysHint).toStdString()));
-            choices.push_back(ChoiceOption(kFilterSimon, "", tr(kFilterSimonHint).toStdString()));
-            choices.push_back(ChoiceOption(kFilterRifman, "", tr(kFilterRifmanHint).toStdString()));
-            choices.push_back(ChoiceOption(kFilterMitchell, "", tr(kFilterMitchellHint).toStdString()));
-            choices.push_back(ChoiceOption(kFilterParzen, "", tr(kFilterParzenHint).toStdString()));
-            choices.push_back(ChoiceOption(kFilterNotch, "", tr(kFilterNotchHint).toStdString()));
+#pragma message WARN("TODO: better sync with OFX filter param")
+            // must be kept in sync with ofxsFilter.h
+            choices.push_back(ChoiceOption("impulse", kFilterImpulse, tr(kFilterImpulseHint).toStdString()));
+            choices.push_back(ChoiceOption("box", kFilterBox, tr(kFilterBoxHint).toStdString()));
+            choices.push_back(ChoiceOption("bilinear", kFilterBilinear, tr(kFilterBilinearHint).toStdString()));
+            defVal = choices.size(); // cubic
+            choices.push_back(ChoiceOption("cubic", kFilterCubic, tr(kFilterCubicHint).toStdString()));
+            choices.push_back(ChoiceOption("keys", kFilterKeys, tr(kFilterKeysHint).toStdString()));
+            choices.push_back(ChoiceOption("simon", kFilterSimon, tr(kFilterSimonHint).toStdString()));
+            choices.push_back(ChoiceOption("rifman", kFilterRifman, tr(kFilterRifmanHint).toStdString()));
+            choices.push_back(ChoiceOption("mitchell", kFilterMitchell, tr(kFilterMitchellHint).toStdString()));
+            choices.push_back(ChoiceOption("parzen", kFilterParzen, tr(kFilterParzenHint).toStdString()));
+            choices.push_back(ChoiceOption("notch", kFilterNotch, tr(kFilterNotchHint).toStdString()));
 
             param->populateChoices(choices);
         }
-        param->setDefaultValue(2);
+        param->setDefaultValue(defVal);
         param->setAddNewLine(false);
         clonePage->addKnob(param);
         _imp->knobsTable->addPerItemKnobMaster(param);
@@ -1163,10 +1170,11 @@ RotoPaint::initMotionBlurPageKnobs()
         param->setDefaultValue(0);
         {
             std::vector<ChoiceOption> options;
-            options.push_back(ChoiceOption("Centered", "", tr(kRotoShutterOffsetCenteredHint).toStdString()));
-            options.push_back(ChoiceOption("Start", "", tr(kRotoShutterOffsetStartHint).toStdString()));
-            options.push_back(ChoiceOption("End", "", tr(kRotoShutterOffsetEndHint).toStdString()));
-            options.push_back(ChoiceOption("Custom", "", tr(kRotoShutterOffsetCustomHint).toStdString()));
+#pragma message WARN("TODO: sync with ofxsShutter")
+            options.push_back(ChoiceOption("centered", "Centered", tr(kRotoShutterOffsetCenteredHint).toStdString()));
+            options.push_back(ChoiceOption("start", "Start", tr(kRotoShutterOffsetStartHint).toStdString()));
+            options.push_back(ChoiceOption("end", "End", tr(kRotoShutterOffsetEndHint).toStdString()));
+            options.push_back(ChoiceOption("custom", "Custom", tr(kRotoShutterOffsetCustomHint).toStdString()));
 
             param->populateChoices(options);
         }
@@ -1217,10 +1225,11 @@ RotoPaint::initMotionBlurPageKnobs()
         param->setDefaultValue(0);
         {
             std::vector<ChoiceOption> options;
-            options.push_back(ChoiceOption("Centered", "", tr(kRotoShutterOffsetCenteredHint).toStdString()));
-            options.push_back(ChoiceOption("Start", "", tr(kRotoShutterOffsetStartHint).toStdString()));
-            options.push_back(ChoiceOption("End", "", tr(kRotoShutterOffsetEndHint).toStdString()));
-            options.push_back(ChoiceOption("Custom", "", tr(kRotoShutterOffsetCustomHint).toStdString()));
+#pragma message WARN("TODO: sync with ofxsShutter")
+            options.push_back(ChoiceOption("centered", "Centered", tr(kRotoShutterOffsetCenteredHint).toStdString()));
+            options.push_back(ChoiceOption("start", "Start", tr(kRotoShutterOffsetStartHint).toStdString()));
+            options.push_back(ChoiceOption("end", "End", tr(kRotoShutterOffsetEndHint).toStdString()));
+            options.push_back(ChoiceOption("custom", "Custom", tr(kRotoShutterOffsetCustomHint).toStdString()));
 
             param->populateChoices(options);
         }
