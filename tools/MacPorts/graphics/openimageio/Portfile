@@ -97,7 +97,6 @@ if {${configure.build_arch} eq "ppc" || ${configure.build_arch} eq "ppc64"} {
 
 patch.pre_args	-p1
 patchfiles \
-    oiio-1.5.23-checkmaxmem.patch \
     oiio-1.5.23-invalidatespec.patch \
     oiio-1.7.10-c99math.patch \
     oiio-1.7.10-nothreads.patch \
