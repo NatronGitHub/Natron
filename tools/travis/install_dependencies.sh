@@ -75,7 +75,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     fi
 
     # Note: Python 3 packages are python3-dev and python3-pyside
-    PKGS="$PKGS libqt4-dev libglew-dev libexpat1-dev gdb libcairo2-dev python-dev python-pyside libpyside-dev libshiboken-dev"
+    PKGS="$PKGS libqt4-dev libqt4-opengl-dev libglew-dev libexpat1-dev gdb libcairo2-dev python-dev python-pyside libpyside-dev libshiboken-dev"
 
     echo "*** Python version:"
     python --version
