@@ -1192,18 +1192,34 @@ Project::tryAddProjectFormat(const Format & f, bool addAsAdditionalFormat, bool*
     std::vector<ChoiceOption> entries;
     for (std::list<Format>::iterator it = _imp->builtinFormats.begin(); it != _imp->builtinFormats.end(); ++it) {
         QString str = ProjectPrivate::generateStringFromFormat(*it);
-        entries.push_back(ChoiceOption( str.toStdString(), "", "") );
+        if ( !it->getName().empty() ) {
+            entries.push_back( ChoiceOption(it->getName(), str.toStdString(), "") );
+        } else {
+            entries.push_back( ChoiceOption( str.toStdString() ) );
+        }
     }
     if (!addAsAdditionalFormat) {
-        entries.push_back( ChoiceOption(formatStr.toStdString(),"","") );
+        if ( !f.getName().empty() ) {
+            entries.push_back( ChoiceOption(f.getName(), formatStr.toStdString(), "") );
+        } else {
+            entries.push_back( ChoiceOption( formatStr.toStdString() ) );
+        }
         ret = (entries.size() - 1);
     }
     for (std::list<Format>::iterator it = _imp->additionalFormats.begin(); it != _imp->additionalFormats.end(); ++it) {
         QString str = ProjectPrivate::generateStringFromFormat(*it);
-        entries.push_back( ChoiceOption(str.toStdString(),"","") );
+        if ( !it->getName().empty() ) {
+            entries.push_back( ChoiceOption(it->getName(), str.toStdString(), "") );
+        } else {
+            entries.push_back( ChoiceOption( str.toStdString() ) );
+        }
     }
     if (addAsAdditionalFormat) {
-        entries.push_back( ChoiceOption(formatStr.toStdString(),"","") );
+        if ( !f.getName().empty() ) {
+            entries.push_back( ChoiceOption(f.getName(), formatStr.toStdString(), "") );
+        } else {
+            entries.push_back( ChoiceOption( formatStr.toStdString() ) );
+        }
         ret = (entries.size() - 1);
     }
 
