@@ -25,8 +25,14 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/scoped_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
+#endif
+
 #include "Engine/EngineFwd.h"
 #include "Engine/ProcessFrameThread.h"
+#include "Engine/TreeRenderQueueProvider.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -43,11 +49,27 @@ class CurrentFrameFunctorArgs;
  * Note that this is not a thread, rendering is spawned in render threads in the main thread pool using RenderCurrentFrameFunctorRunnable (in the cpp)
  **/
 struct ViewerCurrentFrameRequestSchedulerPrivate;
-class ViewerCurrentFrameRequestScheduler : public QObject, public ProcessFrameI
+class ViewerCurrentFrameRequestScheduler
+: public QObject
+, public ProcessFrameI
+, public TreeRenderQueueProvider
+, public boost::enable_shared_from_this<ViewerCurrentFrameRequestScheduler>
 {
-public:
+protected:
 
     ViewerCurrentFrameRequestScheduler(const NodePtr& viewer);
+
+    virtual TreeRenderQueueProviderConstPtr getThisTreeRenderQueueProviderShared() const OVERRIDE FINAL
+    {
+        return shared_from_this();
+    }
+
+public:
+
+    static ViewerCurrentFrameRequestSchedulerPtr create(const NodePtr& viewer)
+    {
+        return ViewerCurrentFrameRequestSchedulerPtr(new ViewerCurrentFrameRequestScheduler(viewer));
+    }
 
     ~ViewerCurrentFrameRequestScheduler();
 

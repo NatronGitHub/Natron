@@ -459,7 +459,7 @@ public:
      * nodes.
      **/
     ActionRetCodeEnum handlePassThroughPlanes(const FrameViewRequestPtr& requestData,
-                                              const RequestPassSharedDataPtr& requestPassSharedData,
+                                              const TreeRenderExecutionDataPtr& requestPassSharedData,
                                               const RectD& roiCanonical,
                                               std::map<int, std::list<ImagePlaneDesc> >* neededComp,
                                               bool *isPassThrough);
@@ -472,13 +472,13 @@ public:
                                            const RenderScale& combinedScale,
                                            const RectD& canonicalRoi,
                                            const FrameViewRequestPtr& requestData,
-                                           const RequestPassSharedDataPtr& requestPassSharedData,
+                                           const TreeRenderExecutionDataPtr& requestPassSharedData,
                                            bool *isIdentity);
 
     /**
      * @brief Helper function in the implementation of renderRoI to handle effects that can concatenate (distortion etc...)
      **/
-    ActionRetCodeEnum handleConcatenation(const RequestPassSharedDataPtr& requestPassSharedData,
+    ActionRetCodeEnum handleConcatenation(const TreeRenderExecutionDataPtr& requestPassSharedData,
                                           const FrameViewRequestPtr& requestData,
                                           const FrameViewRequestPtr& requester,
                                           int inputNbInRequester,
@@ -492,15 +492,15 @@ public:
     /**
      * @brief Helper function in the implementation of renderRoI to determine the image backend (OpenGL, CPU...)
      **/
-    ActionRetCodeEnum resolveRenderBackend(const RequestPassSharedDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestPassData, const RectI& roi, CacheAccessModeEnum *cachePolicy, RenderBackendTypeEnum* renderBackend);
+    ActionRetCodeEnum resolveRenderBackend(const TreeRenderExecutionDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestPassData, const RectI& roi, CacheAccessModeEnum *cachePolicy, RenderBackendTypeEnum* renderBackend);
 
     /**
      * @brief Helper function in the implementation of renderRoI to determine if a render should use the Cache or not.
      * @returns The cache access type, i.e: none, write only or read/write
      **/
-    CacheAccessModeEnum shouldRenderUseCache(const RequestPassSharedDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestPassData);
+    CacheAccessModeEnum shouldRenderUseCache(const TreeRenderExecutionDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestPassData);
 
-    ActionRetCodeEnum handleUpstreamFramesNeeded(const RequestPassSharedDataPtr& requestPassSharedData,
+    ActionRetCodeEnum handleUpstreamFramesNeeded(const TreeRenderExecutionDataPtr& requestPassSharedData,
                                                  const FrameViewRequestPtr& requestPassData,
                                                  const RenderScale& proxyScale,
                                                  unsigned int mipMapLevel,

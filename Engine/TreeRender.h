@@ -34,6 +34,9 @@
 #include <boost/enable_shared_from_this.hpp>
 #endif
 
+#include <QRunnable>
+
+
 #include "Engine/ImagePlaneDesc.h"
 #include "Engine/TimeValue.h"
 #include "Engine/ViewIdx.h"
@@ -44,34 +47,109 @@
 
 NATRON_NAMESPACE_ENTER;
 
+
 /**
- * @brief Used in the implementation of the TreeRender to determine FrameViewRequest that are available to be rendered
- * and holds the global render status of the tree.
+ * @brief Ordered tasks (FrameViewRenderRunnable) list (with their dependencies) produced by building a topological sort of the TreeRender 
  **/
-struct RequestPassSharedDataPrivate;
-class RequestPassSharedData : public boost::enable_shared_from_this<RequestPassSharedData>
+struct TreeRenderExecutionDataPrivate;
+class TreeRenderExecutionData : public boost::enable_shared_from_this<TreeRenderExecutionData>
 {
 public:
-    RequestPassSharedData();
 
-    ~RequestPassSharedData();
+    TreeRenderExecutionData();
 
-    void addTaskToRender(const FrameViewRequestPtr& render);
+    virtual ~TreeRenderExecutionData();
 
+    /**
+     * @brief A TreeRender may have multiple executions: One is the main execution that returns the image
+     * of the requested arguments passed to the ctor, but sub-executions may be created for example
+     * in getImagePlane or to retrieve extraneous images for the color-picker
+     **/
+    bool isTreeMainExecution() const;
+
+    /**
+     * @brief Returns a pointer to the TreeRender that created this object.
+     **/
     TreeRenderPtr getTreeRender() const;
+
+    /**
+     * @brief Returns the status of this object. If returning eActionStatusFailed, this object should not be used anymore.
+     **/
+    ActionRetCodeEnum getStatus() const;
+
+    /**
+     * @brief Returns the request object of the output node of the tree render execution
+     **/
+    FrameViewRequestPtr getOutputRequest() const;
+
+    /**
+     * @brief Starts tasks that are available for rendering and queue them in the thread pool
+     * @param nTasks The number maximum of tasks to start. If -1,  this will queue all available
+     * tasks. This cannot be 0.
+     * @returns The number of tasks that were effectively started
+     **/
+    int executeAvailableTasks(int nTasks);
+
+    /**
+     * @brief Returns whether there's anything to be done in executeAvailableTasks(). If false, the tree render
+     * execution is assumed to be finished.
+     **/
+    bool hasTasksToExecute() const;
+
+    /**
+     *
+     **/
+    void waitForExecutionFinished();
 
 private:
 
+    void addTaskToRender(const FrameViewRequestPtr& render);
+
+
+    friend class EffectInstance;
     friend class FrameViewRenderRunnable;
     friend struct TreeRenderPrivate;
-    boost::scoped_ptr<RequestPassSharedDataPrivate> _imp;
+    boost::scoped_ptr<TreeRenderExecutionDataPrivate> _imp;
+};
+
+class FrameViewRenderRunnable;
+typedef boost::shared_ptr<FrameViewRenderRunnable> FrameViewRenderRunnablePtr;
+/**
+ * @brief A runnable that executes the render of 1 node (FrameViewRequest) within a TreeRenderExecutionData. 
+ * Once rendered, this task will make tasks that depend on this task's results available for render.
+ **/
+class FrameViewRenderRunnable : public QRunnable, boost::enable_shared_from_this<FrameViewRenderRunnable>
+{
+    struct Implementation;
+
+    FrameViewRenderRunnable(const TreeRenderExecutionDataPtr& sharedData, const FrameViewRequestPtr& request);
+
+public:
+
+    static FrameViewRenderRunnablePtr create(const TreeRenderExecutionDataPtr& sharedData, const FrameViewRequestPtr& request)
+    {
+        return FrameViewRenderRunnablePtr(new FrameViewRenderRunnable(sharedData, request));
+    }
+
+
+    virtual ~FrameViewRenderRunnable();
+
+    virtual void run() OVERRIDE FINAL;
+
+private:
+
+    boost::scoped_ptr<Implementation> _imp;
 };
 
 /**
- * @brief Setup thread local storage through a render tree starting from the tree root.
- * This is mandatory to create an instance of this class before calling renderRoI on the treeRoot.
- * Without this a lot of the compositing engine intelligence cannot work properly.
- * Dependencies are computed recursively. The constructor may throw an exception upon failure.
+ * @brief This object represents a single render request for a compositing tree. 
+ * The arguments to be passed to render are passed in the CtorArgs struct.
+ * A TreeRender may also report extrenous results of nodes along the tree:
+ * this is most useful for example for the color picker which may need an image which 
+ * is not the root of the tree.
+ * Each render execution is represented by a TreeRenderExecutionData which is a topologically sorted
+ * execution list of the nodes to render. The rendering of TreeRenderExecutionData themselves is managed by the
+ * TreeRenderQueueManager which is able to distribute threads amongst multiple concurrent renders.
  **/
 struct TreeRenderPrivate;
 class TreeRender
@@ -82,6 +160,10 @@ public:
 
     struct CtorArgs
     {
+        // Pointer to the object that issued the render.
+        // This is used by the TreeRenderQueueManager and must be set
+        TreeRenderQueueProviderConstPtr provider;
+
         // The time at which to render
         TimeValue time;
 
@@ -151,35 +233,19 @@ public:
     
     /**
      * @brief Create a new render and initialize some data such as OpenGL context.
-     * For OpenFX this also set thread-local storage on all nodes that will be visited to ensure OpenFX
-     * does not loose context.
-     * This function may throw an exception in case of failure
      **/
     static TreeRenderPtr create(const CtorArgsPtr& inArgs);
 
-    /**
-     * @brief Launch the actual render on the tree that was constructed in create().
-     * @param outputResults[out] The output results if the render succeeded. The image
-     * can be retrieved on the request with getImagePlane().
-     * @returns The status, eActionStatusOK if everything went fine.
-     **/
-    ActionRetCodeEnum launchRender(FrameViewRequestPtr* outputRequest);
 
-    /**
-     * @brief Same as launchRender() except that it launches the render on a different node than the root
-     * of the tree with different parameters. 
-     **/
-    ActionRetCodeEnum launchRenderWithArgs(const EffectInstancePtr& root,
-                                           TimeValue time,
-                                           ViewIdx view,
-                                           const RenderScale& proxyScale,
-                                           unsigned int mipMapLevel,
-                                           const ImagePlaneDesc* plane,
-                                           const RectD* canonicalRoI,
-                                           FrameViewRequestPtr* outputRequest);
 public:
 
     virtual ~TreeRender();
+
+
+    /**
+     * @brief Returns a pointer to the original issuer of the tree render
+     **/
+    TreeRenderQueueProviderConstPtr getProvider() const;
 
     /**
     * @brief Get the frame of the render
@@ -244,6 +310,16 @@ public:
     FrameViewRequestPtr getExtraRequestedResultsForNode(const NodePtr& node) const;
 
     /**
+     * @brief Returns the request object of the output node of the tree render execution
+     **/
+    FrameViewRequestPtr getOutputRequest() const;
+
+    /**
+     * @brief Get the current of the render
+     **/
+    ActionRetCodeEnum getStatus() const;
+
+    /**
      * @brief Return true if an image was requested in output for the given node
      **/
     bool isExtraResultsRequestedForNode(const NodePtr& node) const;
@@ -272,11 +348,48 @@ public:
      **/
     RotoDrawableItemPtr getCurrentlyDrawingItem() const;
 
+    /**
+     * @brief Internal function to register a render-clone associated to this TreeRender. This is used to track clones and properly
+     * destroy them once the render is finished.
+     **/
     void registerRenderClone(const KnobHolderPtr& holder);
+
 
 private:
 
+    // These functions below are accessed by TreeRenderQueueManager
+    /**
+     * @brief Create execution data for the main render of the TreeRender. Note that this object must be passed to the TreeRenderQueueManager which will 
+     * schedule the execution of the render
+     **/
+    TreeRenderExecutionDataPtr createMainExecutionData();
 
+    /**
+     * @brief Create execution data for a sub-execution of the tree render: this is used in the implementation of getImagePlane to re-use the same render clones
+     * for the same TreeRender.
+     * This is also used to retrieve extraneous images (such as color-picker) for the TreeRender
+     **/
+    TreeRenderExecutionDataPtr createSubExecutionData(const EffectInstancePtr& treeRoot,
+                                                      TimeValue time,
+                                                      ViewIdx view,
+                                                      const RenderScale& proxyScale,
+                                                      unsigned int mipMapLevel,
+                                                      const ImagePlaneDesc* planeParam,
+                                                      const RectD* canonicalRoIParam);
+
+    /**
+     * @brief Calls createSubExecutionData for each extra requested node result
+     **/
+    std::list<TreeRenderExecutionDataPtr> getExtraRequestedResultsExecutionData();
+
+    void setResults(const FrameViewRequestPtr& request, ActionRetCodeEnum status);
+
+
+    
+private:
+
+    friend class TreeRenderQueueManager;
+    friend struct TreeRenderExecutionDataPrivate;
     friend class CleanupRenderClones_RAII;
     boost::scoped_ptr<TreeRenderPrivate> _imp;
 };

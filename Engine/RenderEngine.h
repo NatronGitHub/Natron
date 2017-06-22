@@ -286,7 +286,7 @@ protected:
     /**
      * @brief Must create the main-scheduler that will be used for scheduling playback/writing on disk.
      **/
-    virtual OutputSchedulerThread* createScheduler(const NodePtr& effect);
+    virtual OutputSchedulerThreadPtr createScheduler(const NodePtr& effect);
 
 private:
 
@@ -314,7 +314,7 @@ public:
                              const RenderStatsPtr& stats) OVERRIDE FINAL;
 private:
     
-    virtual OutputSchedulerThread* createScheduler(const NodePtr& effect) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual OutputSchedulerThreadPtr createScheduler(const NodePtr& effect) OVERRIDE FINAL WARN_UNUSED_RETURN;
 };
 
 NATRON_NAMESPACE_EXIT;

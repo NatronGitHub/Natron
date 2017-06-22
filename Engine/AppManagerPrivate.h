@@ -55,6 +55,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Image.h"
 #include "Engine/GPUContextPool.h"
 #include "Engine/GenericSchedulerThreadWatcher.h"
+#include "Engine/TreeRenderQueueManager.h"
 #include "Engine/TLSHolder.h"
 
 // include breakpad after Engine, because it includes /usr/include/AssertMacros.h on OS X which defines a check(x) macro, which conflicts with boost
@@ -202,6 +203,8 @@ public:
     // User add custom menu entries that point to python commands
     std::list<PythonUserCommand> pythonCommands;
 
+    // The application global manager that schedules render and maximizes CPU utilization
+    TreeRenderQueueManagerPtr tasksQueueManager;
 
 public:
     AppManagerPrivate();

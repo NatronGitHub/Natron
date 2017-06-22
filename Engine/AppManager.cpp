@@ -608,6 +608,10 @@ AppManager::~AppManager()
         _imp->mappedProcessWatcher->quitThread();
     }
 
+    if (_imp->tasksQueueManager) {
+        _imp->tasksQueueManager->quitThread();
+    }
+
     bool appsEmpty;
     {
         QMutexLocker k(&_imp->_appInstancesMutex);
@@ -2603,6 +2607,13 @@ AppManager::getApplicationBinaryDirPath() const
         return std::string();
     }
     return _imp->binaryPath.substr(0, foundSlash);
+}
+
+
+TreeRenderQueueManagerPtr
+AppManager::getTasksQueueManager() const
+{
+    return _imp->tasksQueueManager;
 }
 
 bool

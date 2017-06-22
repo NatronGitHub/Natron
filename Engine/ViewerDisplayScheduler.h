@@ -38,10 +38,22 @@ class ViewerDisplayScheduler
 : public OutputSchedulerThread
 {
 
-public:
+protected:
+
+
 
     ViewerDisplayScheduler(RenderEngine* engine,
                            const NodePtr& viewer);
+
+
+public:
+
+    static OutputSchedulerThreadPtr create(RenderEngine* engine,
+                                           const NodePtr& viewer)
+    {
+        return OutputSchedulerThreadPtr(new ViewerDisplayScheduler(engine, viewer));
+    }
+
 
     virtual ~ViewerDisplayScheduler();
 

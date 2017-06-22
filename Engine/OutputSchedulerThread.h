@@ -33,6 +33,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/weak_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #endif
 
 #include <QtCore/QThread>
@@ -46,6 +47,7 @@
 #include "Engine/ViewIdx.h"
 #include "Engine/ThreadPool.h"
 #include "Engine/TimeValue.h"
+#include "Engine/TreeRenderQueueProvider.h"
 
 #include "Engine/EngineFwd.h"
 
@@ -105,6 +107,8 @@ struct OutputSchedulerThreadPrivate;
 class OutputSchedulerThread
     : public GenericSchedulerThread
     , public ProcessFrameI
+    , public TreeRenderQueueProvider
+    , public boost::enable_shared_from_this<OutputSchedulerThread>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -119,9 +123,20 @@ public:
         eProcessFrameByMainThread //< the processFrame function will be called by the application's main-thread.
     };
 
+protected:
+
+    virtual TreeRenderQueueProviderConstPtr getThisTreeRenderQueueProviderShared() const OVERRIDE FINAL
+    {
+        return shared_from_this();
+    }
+
     OutputSchedulerThread(RenderEngine* engine,
                           const NodePtr& effect,
                           ProcessFrameModeEnum mode);
+
+public:
+
+    
 
     virtual ~OutputSchedulerThread();
 

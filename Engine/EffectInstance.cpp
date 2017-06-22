@@ -77,6 +77,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/RenderEngine.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/ReadNode.h"
+#include "Engine/TreeRenderQueueManager.h"
 #include "Engine/Settings.h"
 #include "Engine/Timer.h"
 #include "Engine/TreeRender.h"
@@ -844,10 +845,14 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
     {
         ActionRetCodeEnum status;
         if (currentRender) {
-            status = currentRender->launchRenderWithArgs(inputEffect, inputTime, inputView, inputProxyScale, inputMipMapLevel, inArgs.plane, &roiCanonical, &outputRequest);
+            TreeRenderExecutionDataPtr subLaunchData = launchSubRender(inputEffect, inputTime, inputView, inputProxyScale, inputMipMapLevel, inArgs.plane, &roiCanonical, currentRender);
+            waitForTreeRenderExecutionFinished(subLaunchData);
+            outputRequest = subLaunchData->getOutputRequest();
+            status = subLaunchData->getStatus();
         } else {
             // We are not during a render, create one.
             TreeRender::CtorArgsPtr rargs(new TreeRender::CtorArgs());
+            rargs->provider = getThisTreeRenderQueueProviderShared();
             rargs->time = inputTime;
             rargs->view = inputView;
             rargs->treeRootEffect = inputEffect;
@@ -862,11 +867,16 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
             if (!currentRender) {
                 currentRender = renderObject;
             }
-            status = renderObject->launchRender(&outputRequest);
+            TreeRenderLauncherI::launchRender(renderObject);
+            waitForRenderFinished(renderObject);
+            outputRequest = renderObject->getOutputRequest();
+            status = renderObject->getStatus();
         }
+
         if (isFailureRetCode(status)) {
             return false;
         }
+        assert(outputRequest);
     }
 
 

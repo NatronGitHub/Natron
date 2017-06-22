@@ -112,8 +112,10 @@ AppManagerPrivate::AppManagerPrivate()
     , glVersionMinor(0)
     , renderingContextPool()
     , openGLRenderers()
+    , tasksQueueManager()
 {
     setMaxCacheFiles();
+    tasksQueueManager.reset(new TreeRenderQueueManager);
 }
 
 AppManagerPrivate::~AppManagerPrivate()

@@ -31,7 +31,6 @@
 #include <QTimer>
 #include <QDebug>
 #include <QWaitCondition>
-#include <QRunnable>
 
 #include "Engine/Image.h"
 #include "Engine/EffectInstance.h"
@@ -44,6 +43,7 @@
 #include "Engine/Settings.h"
 #include "Engine/Timer.h"
 #include "Engine/ThreadPool.h"
+#include "Engine/TreeRenderQueueManager.h"
 #include "Engine/TLSHolder.h"
 
 // After this amount of time, if any thread identified in this render is still remaining
@@ -71,16 +71,16 @@ enum TreeRenderStateEnum
 struct FrameViewRequestSharedDataPair
 {
     FrameViewRequestPtr request;
-    RequestPassSharedDataPtr launchData;
+    TreeRenderExecutionDataPtr launchData;
 };
 
 // Render first the tasks with more dependencies: it has more chance to make more dependency-free new renders
 // to enable better concurrency
 struct FrameViewRequestComparePriority
 {
-    RequestPassSharedDataPtr _launchData;
+    TreeRenderExecutionDataPtr _launchData;
 
-    FrameViewRequestComparePriority(const RequestPassSharedDataPtr& launchData)
+    FrameViewRequestComparePriority(const TreeRenderExecutionDataPtr& launchData)
     : _launchData(launchData)
     {
 
@@ -128,6 +128,9 @@ struct TreeRenderPrivate
     mutable QMutex renderClonesMutex;
     std::list<KnobHolderPtr> renderClones;
 
+    // The request output results
+    FrameViewRequestPtr outputRequest;
+
     // Map of nodes that belong to the tree upstream of tree root for which we desire
     // a pointer of the resulting image. This is useful for the Viewer to enable color-picking:
     // the output image is the image out of the ViewerProcess node, but what the user really
@@ -160,6 +163,7 @@ struct TreeRenderPrivate
     , state(eActionStatusOK)
     , renderClonesMutex()
     , renderClones()
+    , outputRequest()
     , extraRequestedResults()
     , extraRequestedResultsMutex()
     , activeStrokeUpdateArea()
@@ -187,15 +191,19 @@ struct TreeRenderPrivate
 
     static ActionRetCodeEnum getTreeRootPlane(const EffectInstancePtr& effect, TimeValue time, ViewIdx view, ImagePlaneDesc* plane);
 
-    ActionRetCodeEnum launchRenderInternal(bool removeRenderClonesWhenFinished,
-                                           const EffectInstancePtr& treeRoot,
-                                           TimeValue time,
-                                           ViewIdx view,
-                                           const RenderScale& proxyScale,
-                                           unsigned int mipMapLevel,
-                                           const ImagePlaneDesc* plane,
-                                           const RectD* canonicalRoI,
-                                           FrameViewRequestPtr* outputRequest);
+    /**
+     * @brief Creates a TreeRenderExecutionData object to be used by the TreeRenderQueueManager
+     **/
+    TreeRenderExecutionDataPtr createExecutionDataInternal(bool isMainExecution,
+                                                           const EffectInstancePtr& treeRoot,
+                                                           TimeValue time,
+                                                           ViewIdx view,
+                                                           const RenderScale& proxyScale,
+                                                           unsigned int mipMapLevel,
+                                                           const ImagePlaneDesc* planeParam,
+                                                           const RectD* canonicalRoIParam);
+
+
 };
 
 TreeRender::CtorArgs::CtorArgs()
@@ -333,6 +341,12 @@ TreeRender::isConcatenationEnabled() const
     return _imp->useConcatenations;
 }
 
+TreeRenderQueueProviderConstPtr
+TreeRender::getProvider() const
+{
+    return _imp->ctorArgs->provider;
+}
+
 TimeValue
 TreeRender::getTime() const
 {
@@ -460,6 +474,30 @@ TreeRenderPrivate::init(const TreeRender::CtorArgsPtr& inArgs)
 
 } // init
 
+void
+TreeRender::setResults(const FrameViewRequestPtr& request, ActionRetCodeEnum status)
+{
+    if (isFailureRetCode(status)) {
+        QMutexLocker k(&_imp->stateMutex);
+        _imp->state = status;
+    }
+    if (request) {
+        QMutexLocker k(&_imp->extraRequestedResultsMutex);
+
+        EffectInstancePtr effect = request->getEffect();
+        if (effect->getNode() == _imp->ctorArgs->treeRootEffect->getNode()) {
+            _imp->outputRequest = request;
+        } else {
+            std::map<NodePtr, FrameViewRequestPtr>::iterator foundRequested = _imp->extraRequestedResults.find(effect->getNode());
+            if (foundRequested != _imp->extraRequestedResults.end() && !foundRequested->second) {
+                foundRequested->second = request;
+            }
+        }
+    }
+
+
+} // addExtraResultsForNode
+
 TreeRenderPtr
 TreeRender::create(const CtorArgsPtr& inArgs)
 {
@@ -501,78 +539,6 @@ TreeRender::create(const CtorArgsPtr& inArgs)
 }
 
 
-struct RequestPassSharedDataPrivate
-{
-    // Protects dependencyFreeRenders and allRenderTasks
-    mutable QMutex dependencyFreeRendersMutex;
-
-    QWaitCondition dependencyFreeRendersEmptyCond;
-
-    // A set of renders that we can launch right now
-    boost::scoped_ptr<DependencyFreeRenderSet> dependencyFreeRenders;
-
-    // All renders left to do
-    std::set<FrameViewRequestPtr> allRenderTasksToProcess;
-
-    // The status global to the tasks, protected by dependencyFreeRendersMutex
-    ActionRetCodeEnum stat;
-
-    TreeRenderWPtr treeRender;
-
-    RequestPassSharedDataPrivate()
-    : dependencyFreeRendersMutex()
-    , dependencyFreeRendersEmptyCond()
-    , dependencyFreeRenders()
-    , allRenderTasksToProcess()
-    , stat(eActionStatusOK)
-    , treeRender()
-    {
-        
-    }
-};
-
-RequestPassSharedData::RequestPassSharedData()
-: _imp(new RequestPassSharedDataPrivate())
-{
-
-}
-
-RequestPassSharedData::~RequestPassSharedData()
-{
-
-}
-
-TreeRenderPtr
-RequestPassSharedData::getTreeRender() const
-{
-    return _imp->treeRender.lock();
-}
-
-void
-RequestPassSharedData::addTaskToRender(const FrameViewRequestPtr& render)
-{
-     QMutexLocker k(&_imp->dependencyFreeRendersMutex);
-    {
-        std::pair<DependencyFreeRenderSet::iterator, bool> ret = _imp->allRenderTasksToProcess.insert(render);
-        (void)ret;
-#ifdef TRACE_RENDER_DEPENDENCIES
-        if (ret.second) {
-            qDebug() << this << "Adding" << render->getEffect()->getScriptName_mt_safe().c_str() << render->getPlaneDesc().getPlaneLabel().c_str() << "(" << render.get() << ") to the global list";
-        }
-#endif
-    }
-    if (render->getNumDependencies(shared_from_this()) == 0) {
-        std::pair<DependencyFreeRenderSet::iterator, bool> ret = _imp->dependencyFreeRenders->insert(render);
-        (void)ret;
-#ifdef TRACE_RENDER_DEPENDENCIES
-        if (ret.second) {
-            qDebug() << this << "Adding" << render->getEffect()->getScriptName_mt_safe().c_str() << render->getPlaneDesc().getPlaneLabel().c_str() << "(" << render.get() << ") to the dependency-free list";
-        }
-#endif
-
-    }
-}
-
 class CleanupRenderClones_RAII
 {
     TreeRenderPtr render;
@@ -597,293 +563,430 @@ public:
 };
 
 
-class FrameViewRenderRunnable : public QRunnable
+struct TreeRenderExecutionDataPrivate
 {
 
-    RequestPassSharedDataWPtr _sharedData;
-    FrameViewRequestWPtr _request;
-    TreeRenderPrivate* _imp;
-public:
+    TreeRenderExecutionData* _publicInterface;
 
-    FrameViewRenderRunnable(TreeRenderPrivate* imp, const RequestPassSharedDataPtr& sharedData, const FrameViewRequestPtr& request)
-    : QRunnable()
-    , _sharedData(sharedData)
-    , _request(request)
-    , _imp(imp)
+    // a TreeRender may have multiple executions: One is the main execution that returns the image
+    // of the requested arguments passed to the ctor, but sub-executions may be created for example
+    // in getImagePlane or to retrieve extraneous images for the color-picker
+    bool isMainExecutionOfTree;
+
+    // Protects dependencyFreeRenders and allRenderTasks
+    mutable QMutex dependencyFreeRendersMutex;
+
+    // A set of renders that we can launch right now
+    boost::scoped_ptr<DependencyFreeRenderSet> dependencyFreeRenders;
+
+    // All renders left to do
+    std::set<FrameViewRequestPtr> allRenderTasksToProcess;
+
+    // The status global to the tasks, protected by dependencyFreeRendersMutex
+    ActionRetCodeEnum status;
+
+    // Pointer to the tree render that produced this TreeRenderExecutionData
+    TreeRenderWPtr treeRender;
+
+    // The canonical region of interest on the tree root
+    RectD canonicalRoI;
+
+    // The plane requested on the tree root
+    ImagePlaneDesc plane;
+
+    // Used to clean-up render clones across the tree once everything is done
+    boost::scoped_ptr<CleanupRenderClones_RAII> renderClonesCleaner;
+
+    // The request created in output
+    FrameViewRequestPtr outputRequest;
+
+    // See bug https://bugreports.qt.io/browse/QTBUG-20251
+    // The Qt thread-pool mem-leaks the runnable if using release/reserveThread
+    // Instead we explicitly manage them and ensure they do not hold any external strong refs.
+    std::set<FrameViewRenderRunnablePtr> launchedRunnables;
+
+    TreeRenderExecutionDataPrivate(TreeRenderExecutionData* publicInterface)
+    : _publicInterface(publicInterface)
+    , isMainExecutionOfTree(false)
+    , dependencyFreeRendersMutex()
+    , dependencyFreeRenders()
+    , allRenderTasksToProcess()
+    , status(eActionStatusOK)
+    , treeRender()
+    , canonicalRoI()
+    , plane()
+    , renderClonesCleaner()
+    , outputRequest()
+    , launchedRunnables()
     {
-        assert(request);
+        
     }
 
-    virtual ~FrameViewRenderRunnable()
+    void onTaskFinished(const FrameViewRequestPtr& request, ActionRetCodeEnum stat);
+
+    void removeTaskFromGlobalTaskList(const FrameViewRequestPtr& request)
     {
+        assert(!dependencyFreeRendersMutex.tryLock());
+
+        std::set<FrameViewRequestPtr>::const_iterator foundTask = allRenderTasksToProcess.find(request);
+        assert(foundTask != allRenderTasksToProcess.end());
+        if (foundTask != allRenderTasksToProcess.end()) {
+            allRenderTasksToProcess.erase(foundTask);
+        }
     }
 
-    virtual void run() OVERRIDE FINAL
+    void removeDependencyLinkFromRequest(const FrameViewRequestPtr& request);
+
+
+};
+
+TreeRenderExecutionData::TreeRenderExecutionData()
+: _imp(new TreeRenderExecutionDataPrivate(this))
+{
+
+}
+
+TreeRenderExecutionData::~TreeRenderExecutionData()
+{
+
+}
+
+bool
+TreeRenderExecutionData::isTreeMainExecution() const
+{
+    return _imp->isMainExecutionOfTree;
+}
+
+TreeRenderPtr
+TreeRenderExecutionData::getTreeRender() const
+{
+    return _imp->treeRender.lock();
+}
+
+ActionRetCodeEnum
+TreeRenderExecutionData::getStatus() const
+{
+    QMutexLocker k(&_imp->dependencyFreeRendersMutex);
+    return _imp->status;
+}
+
+FrameViewRequestPtr
+TreeRenderExecutionData::getOutputRequest() const
+{
+    return _imp->outputRequest;
+}
+
+void
+TreeRenderExecutionData::addTaskToRender(const FrameViewRequestPtr& render)
+{
+     QMutexLocker k(&_imp->dependencyFreeRendersMutex);
+    {
+        std::pair<DependencyFreeRenderSet::iterator, bool> ret = _imp->allRenderTasksToProcess.insert(render);
+        (void)ret;
+#ifdef TRACE_RENDER_DEPENDENCIES
+        if (ret.second) {
+            qDebug() << this << "Adding" << render->getEffect()->getScriptName_mt_safe().c_str() << render->getPlaneDesc().getPlaneLabel().c_str() << "(" << render.get() << ") to the global list";
+        }
+#endif
+    }
+    if (render->getNumDependencies(shared_from_this()) == 0) {
+        std::pair<DependencyFreeRenderSet::iterator, bool> ret = _imp->dependencyFreeRenders->insert(render);
+        (void)ret;
+#ifdef TRACE_RENDER_DEPENDENCIES
+        if (ret.second) {
+            qDebug() << this << "Adding" << render->getEffect()->getScriptName_mt_safe().c_str() << render->getPlaneDesc().getPlaneLabel().c_str() << "(" << render.get() << ") to the dependency-free list";
+        }
+#endif
+
+    }
+}
+
+void
+TreeRenderExecutionDataPrivate::removeDependencyLinkFromRequest(const FrameViewRequestPtr& request)
+{
+    assert(!dependencyFreeRendersMutex.tryLock());
+
+    TreeRenderExecutionDataPtr thisShared = _publicInterface->shared_from_this();
+
+    std::list<FrameViewRequestPtr> listeners = request->getListeners(thisShared);
+    for (std::list<FrameViewRequestPtr>::const_iterator it = listeners.begin(); it != listeners.end(); ++it) {
+        int numDepsLeft = (*it)->markDependencyAsRendered(thisShared, request);
+
+        // If the task has all its dependencies available, add it to the render queue.
+        if (numDepsLeft == 0) {
+            if (dependencyFreeRenders->find(*it) == dependencyFreeRenders->end()) {
+#ifdef TRACE_RENDER_DEPENDENCIES
+                qDebug() << sharedData.get() << "Adding" << (*it)->getEffect()->getScriptName_mt_safe().c_str() << (*it)->getPlaneDesc().getPlaneLabel().c_str()  << "(" << it->get() << ") to the dependency-free list";
+#endif
+                assert(allRenderTasksToProcess.find(*it) != allRenderTasksToProcess.end());
+                dependencyFreeRenders->insert(*it);
+            }
+        }
+    }
+
+}
+
+void
+TreeRenderExecutionDataPrivate::onTaskFinished(const FrameViewRequestPtr& request, ActionRetCodeEnum requestStatus)
+{
+
+
+    TreeRenderExecutionDataPtr sharedData = _publicInterface->shared_from_this();
+
+    // Remove all stashed input frame view requests that we kept around.
+    request->clearRenderedDependencies(sharedData);
+
+    QMutexLocker k(&dependencyFreeRendersMutex);
+
+    if (isFailureRetCode(requestStatus)) {
+        status = requestStatus;
+    }
+
+
+    // Remove this render from all tasks left
+    removeTaskFromGlobalTaskList(request);
+
+    // For each frame/view that depend on this frame, remove it from the dependencies list.
+    removeDependencyLinkFromRequest(request);
+
+    // If the results for this node were requested by the caller, insert them
+    TreeRenderPtr render = treeRender.lock();
+    render->setResults(request, status);
+    
+    appPTR->getTasksQueueManager()->notifyTaskInRenderFinished(sharedData);
+
+
+} // onTaskFinished
+
+struct FrameViewRenderRunnable::Implementation
+{
+
+
+    TreeRenderExecutionDataWPtr sharedData;
+    FrameViewRequestPtr request;
+    //TreeRenderPrivate* _imp;
+
+    Implementation(const TreeRenderExecutionDataPtr& sharedData, const FrameViewRequestPtr& request)
+    : sharedData(sharedData)
+    , request(request)
     {
 
-        RequestPassSharedDataPtr sharedData = _sharedData.lock();
-
-        ActionRetCodeEnum stat;
-        {
-            QMutexLocker k(&sharedData->_imp->dependencyFreeRendersMutex);
-            stat = sharedData->_imp->stat;
-        }
-
-        FrameViewRequestPtr request = _request.lock();
-        EffectInstancePtr renderClone = request->getEffect();
-
-        if (!isFailureRetCode(stat)) {
-#ifdef TRACE_RENDER_DEPENDENCIES
-            qDebug() << sharedData.get() << "Launching render of" << renderClone->getScriptName_mt_safe().c_str() << request->getPlaneDesc().getPlaneLabel().c_str();
-#endif
-            stat = renderClone->launchRender(sharedData, request);
-        }
-
-        // Remove all stashed input frame view requests that we kept around.
-        request->clearRenderedDependencies(sharedData);
-
-        QMutexLocker k(&sharedData->_imp->dependencyFreeRendersMutex);
-
-        if (isFailureRetCode(stat)) {
-            sharedData->_imp->stat = stat;
-        }
-
-        // Remove this render from all tasks left
-        {
-            std::set<FrameViewRequestPtr>::const_iterator foundTask = sharedData->_imp->allRenderTasksToProcess.find(request);
-            assert(foundTask != sharedData->_imp->allRenderTasksToProcess.end());
-            if (foundTask != sharedData->_imp->allRenderTasksToProcess.end()) {
-                sharedData->_imp->allRenderTasksToProcess.erase(foundTask);
-            }
-        }
-
-        // For each frame/view that depend on this frame, remove it from the dependencies list.
-        std::list<FrameViewRequestPtr> listeners = request->getListeners(sharedData);
-        for (std::list<FrameViewRequestPtr>::const_iterator it = listeners.begin(); it != listeners.end(); ++it) {
-            int numDepsLeft = (*it)->markDependencyAsRendered(sharedData, request);
-
-            // If the task has all its dependencies available, add it to the render queue.
-            if (numDepsLeft == 0) {
-                if (sharedData->_imp->dependencyFreeRenders->find(*it) == sharedData->_imp->dependencyFreeRenders->end()) {
-#ifdef TRACE_RENDER_DEPENDENCIES
-                    qDebug() << sharedData.get() << "Adding" << (*it)->getEffect()->getScriptName_mt_safe().c_str() << (*it)->getPlaneDesc().getPlaneLabel().c_str()  << "(" << it->get() << ") to the dependency-free list";
-#endif
-                    assert(sharedData->_imp->allRenderTasksToProcess.find(*it) != sharedData->_imp->allRenderTasksToProcess.end());
-                    sharedData->_imp->dependencyFreeRenders->insert(*it);
-                }
-            }
-        }
-
-
-        // If the results for this node were requested by the caller, insert them
-        {
-            QMutexLocker k(&_imp->extraRequestedResultsMutex);
-            std::map<NodePtr, FrameViewRequestPtr>::iterator foundRequested = _imp->extraRequestedResults.find(renderClone->getNode());
-            if (foundRequested != _imp->extraRequestedResults.end() && !foundRequested->second) {
-                foundRequested->second = request;
-            }
-        }
-
-        // Notify the main render thread that some more stuff can be rendered (or that we are done)
-        sharedData->_imp->dependencyFreeRendersEmptyCond.wakeOne();
     }
 };
 
+FrameViewRenderRunnable::FrameViewRenderRunnable(const TreeRenderExecutionDataPtr& sharedData, const FrameViewRequestPtr& request)
+: QRunnable()
+, _imp(new FrameViewRenderRunnable::Implementation(sharedData, request))
+{
+    assert(request);
+}
 
-ActionRetCodeEnum
-TreeRenderPrivate::launchRenderInternal(bool removeRenderClonesWhenFinished,
-                                        const EffectInstancePtr& treeRoot,
-                                        TimeValue time,
-                                        ViewIdx view,
-                                        const RenderScale& proxyScale,
-                                        unsigned int mipMapLevel,
-                                        const ImagePlaneDesc* planeParam,
-                                        const RectD* canonicalRoIParam,
-                                        FrameViewRequestPtr* outputRequest)
+FrameViewRenderRunnable::~FrameViewRenderRunnable()
+{
+}
+
+void
+FrameViewRenderRunnable::run()
 {
 
-    // Get the combined scale
-    RenderScale scale = ctorArgs->proxyScale;
-    {
-        double mipMapScale = Image::getScaleFromMipMapLevel(mipMapLevel);
-        scale.x *= mipMapScale;
-        scale.y *= mipMapScale;
+    TreeRenderExecutionDataPtr sharedData = _imp->sharedData.lock();
+
+    // Check the status of the execution tasks because another concurrent render might have failed
+    ActionRetCodeEnum stat = sharedData->getStatus();
+
+    if (!isFailureRetCode(stat)) {
+#ifdef TRACE_RENDER_DEPENDENCIES
+        qDebug() << sharedData.get() << "Launching render of" << renderClone->getScriptName_mt_safe().c_str() << request->getPlaneDesc().getPlaneLabel().c_str();
+#endif
+        EffectInstancePtr renderClone = _imp->request->getEffect();
+        stat = renderClone->launchRender(sharedData, _imp->request);
+    }
+
+    sharedData->_imp->onTaskFinished(_imp->request, stat);
+
+
+} // run
+
+TreeRenderExecutionDataPtr
+TreeRenderPrivate::createExecutionDataInternal(bool isMainExecution,
+                                               const EffectInstancePtr& treeRoot,
+                                               TimeValue time,
+                                               ViewIdx view,
+                                               const RenderScale& proxyScale,
+                                               unsigned int mipMapLevel,
+                                               const ImagePlaneDesc* planeParam,
+                                               const RectD* canonicalRoIParam)
+{
+    TreeRenderExecutionDataPtr requestData(new TreeRenderExecutionData());
+
+    TreeRenderPtr thisShared = _publicInterface->shared_from_this();
+    requestData->_imp->treeRender = thisShared;
+    requestData->_imp->isMainExecutionOfTree = isMainExecution;
+    
+    if (isFailureRetCode(state)) {
+        return requestData;
     }
 
     EffectInstancePtr rootRenderClone;
     {
-        FrameViewRenderKey key = {time, view, _publicInterface->shared_from_this()};
+        FrameViewRenderKey key = {time, view, thisShared};
         rootRenderClone = toEffectInstance(treeRoot->createRenderClone(key));
+        assert(rootRenderClone->isRenderClone());
     }
 
     // If we are within a EffectInstance::getImagePlane() call, the treeRoot may already be a render clone spawned by this tree, in which case
     // we don't want to remove clones yet. Clean the clones when the render tree is done executing the last call to launchRenderInternal.
-    boost::scoped_ptr<CleanupRenderClones_RAII> clonesCleaner;
-    if (removeRenderClonesWhenFinished) {
-        clonesCleaner.reset(new CleanupRenderClones_RAII(_publicInterface->shared_from_this()));
+    if (isMainExecution) {
+        requestData->_imp->renderClonesCleaner.reset(new CleanupRenderClones_RAII(thisShared));
     }
 
-    assert(rootRenderClone->isRenderClone());
-
     // Resolve plane to render if not provided
-    ImagePlaneDesc plane;
     if (planeParam) {
-        plane = *planeParam;
+        requestData->_imp->plane = *planeParam;
     } else {
-        ActionRetCodeEnum stat = TreeRenderPrivate::getTreeRootPlane(rootRenderClone, time, view, &plane);
-        if (isFailureRetCode(stat)) {
-            return stat;
+        requestData->_imp->status = TreeRenderPrivate::getTreeRootPlane(rootRenderClone, time, view, &requestData->_imp->plane);
+        if (isFailureRetCode(requestData->_imp->status)) {
+            return requestData;
         }
     }
 
     // Resolve RoI to render if not provided
-    RectD canonicalRoI;
     if (canonicalRoIParam) {
-        canonicalRoI = *canonicalRoIParam;
+        requestData->_imp->canonicalRoI = *canonicalRoIParam;
     } else {
-        ActionRetCodeEnum stat = TreeRenderPrivate::getTreeRootRoD(rootRenderClone, time, view, scale, &canonicalRoI);
-        if (isFailureRetCode(stat)) {
-            return stat;
-        }
-    }
-    ActionRetCodeEnum stat = eActionStatusOK;
-    {
-        RequestPassSharedDataPtr requestData(new RequestPassSharedData());
-        requestData->_imp->dependencyFreeRenders.reset(new DependencyFreeRenderSet(FrameViewRequestComparePriority(requestData)));
-
-        requestData->_imp->treeRender = _publicInterface->shared_from_this();
-
-
-#ifdef TRACE_RENDER_DEPENDENCIES
-        qDebug() << "Starting launchRenderInternal" << requestData.get();
-#endif
-
-        // Cycle through the tree to find and requested frames and RoIs
-        {
-            stat = treeRoot->requestRender(time, view, proxyScale, mipMapLevel, plane, canonicalRoI, -1, FrameViewRequestPtr(), requestData, outputRequest, 0);
-
-            if (isFailureRetCode(stat)) {
-                return stat;
-            }
-        }
-
-        // At this point, the request pass should have created the first batch of dependency-free renders.
-        // The list cannot be empty, otherwise it should have failed before.
-        assert(!requestData->_imp->dependencyFreeRenders->empty());
-        if (requestData->_imp->dependencyFreeRenders->empty()) {
-            return eActionStatusFailed;
-        }
-
-        int numTasksRemaining;
-        {
-            QMutexLocker k(&requestData->_imp->dependencyFreeRendersMutex);
-            numTasksRemaining = requestData->_imp->allRenderTasksToProcess.size();
-        }
-
-#ifndef TREE_RENDER_DISABLE_MT
-        QThreadPool* threadPool = QThreadPool::globalInstance();
-        bool isThreadPoolThread = isRunningInThreadPoolThread();
-#endif
-
-        // See bug https://bugreports.qt.io/browse/QTBUG-20251
-        // The Qt thread-pool mem-leaks the runnable if using release/reserveThread
-        // Instead we explicitly manage them and ensure they do not hold any external strong refs.
-        std::vector<boost::shared_ptr<FrameViewRenderRunnable> > runnables;
-
-        // While we still have tasks to render loop
-        while (numTasksRemaining > 0) {
-
-
-            // Launch all dependency-free tasks in parallel
-            QMutexLocker k(&requestData->_imp->dependencyFreeRendersMutex);
-            while (requestData->_imp->dependencyFreeRenders->size() > 0) {
-
-                FrameViewRequestPtr request = *requestData->_imp->dependencyFreeRenders->begin();
-                requestData->_imp->dependencyFreeRenders->erase(requestData->_imp->dependencyFreeRenders->begin());
-#ifdef TRACE_RENDER_DEPENDENCIES
-                qDebug() << "Queuing " << request->getEffect()->getScriptName_mt_safe().c_str() << " in task pool";
-#endif
-                boost::shared_ptr<FrameViewRenderRunnable> runnable(new FrameViewRenderRunnable(this, requestData, request));
-#ifdef TREE_RENDER_DISABLE_MT
-                k.unlock();
-                runnable->run();
-                k.relock();
-#else
-                runnable->setAutoDelete(false);
-                runnables.push_back(runnable);
-                threadPool->start(runnable.get());
-#endif
-            }
-
-#ifndef TREE_RENDER_DISABLE_MT
-            // If this thread is a threadpool thread, it may wait for a while that results gets available.
-            // Release the thread to the thread pool so that it may use this thread for other runnables
-            // and reserve it back when done waiting.
-            if (isThreadPoolThread) {
-                QThreadPool::globalInstance()->releaseThread();
-            }
-
-            // Wait until a task is finished: we should be able to launch more tasks afterwards.
-            requestData->_imp->dependencyFreeRendersEmptyCond.wait(&requestData->_imp->dependencyFreeRendersMutex);
-            
-            if (isThreadPoolThread) {
-                QThreadPool::globalInstance()->reserveThread();
-            }
-#endif   
-            numTasksRemaining = requestData->_imp->allRenderTasksToProcess.size();
-        }
-        runnables.clear();
-
-        stat = requestData->_imp->stat;
-    } // requestData
-
-
-    if (removeRenderClonesWhenFinished) {
-        // Now if the image to render was cached, we may not have retrieved the requested color picker images, in which case we have to render them
-        for (std::map<NodePtr, FrameViewRequestPtr>::iterator it = extraRequestedResults.begin(); it != extraRequestedResults.end(); ++it) {
-            if (!it->second) {
-                FrameViewRequestPtr colorPickerRequest;
-                ActionRetCodeEnum tmpStat =  launchRenderInternal(false /*removeRenderClonesWhenFinished*/, it->first->getEffectInstance(), ctorArgs->time, ctorArgs->view, ctorArgs->proxyScale, ctorArgs->mipMapLevel, &plane, ctorArgs->canonicalRoI, &colorPickerRequest);
-                if (isFailureRetCode(tmpStat)) {
-                    return tmpStat;
-                }
-                it->second = colorPickerRequest;
-            }
+        // Get the combined scale
+        RenderScale combinedScale = EffectInstance::getCombinedScale(mipMapLevel, proxyScale);
+        requestData->_imp->status = TreeRenderPrivate::getTreeRootRoD(rootRenderClone, time, view, combinedScale, &requestData->_imp->canonicalRoI);
+        if (isFailureRetCode(requestData->_imp->status)) {
+            return requestData;
         }
     }
 
-    return stat;
-} // launchRenderInternal
+    requestData->_imp->dependencyFreeRenders.reset(new DependencyFreeRenderSet(FrameViewRequestComparePriority(requestData)));
 
-ActionRetCodeEnum
-TreeRender::launchRenderWithArgs(const EffectInstancePtr& root,
-                                 TimeValue time,
-                                 ViewIdx view,
-                                 const RenderScale& proxyScale,
-                                 unsigned int mipMapLevel,
-                                 const ImagePlaneDesc* plane,
-                                 const RectD* canonicalRoI,
-                                 FrameViewRequestPtr* outputRequest)
+
+    // Execute the request pass on the tree. This is a recursive pass that builds the topological sort of FrameViewRequest to render with their dependencies.
+    requestData->_imp->status = treeRoot->requestRender(time, view, proxyScale, mipMapLevel, requestData->_imp->plane, requestData->_imp->canonicalRoI, -1, FrameViewRequestPtr(), requestData, &requestData->_imp->outputRequest, 0 /*createdRenderClone*/);
+
+    if (isFailureRetCode(requestData->_imp->status)) {
+        return requestData;
+    }
+
+    // At this point, the request pass should have created the first batch of dependency-free renders.
+    // The list cannot be empty, otherwise it should have failed before.
+    assert(!requestData->_imp->dependencyFreeRenders->empty());
+    if (requestData->_imp->dependencyFreeRenders->empty()) {
+        requestData->_imp->status = eActionStatusFailed;
+    }
+    return requestData;
+
+} // createExecutionDataInternal
+
+TreeRenderExecutionDataPtr
+TreeRender::createSubExecutionData(const EffectInstancePtr& treeRoot,
+                                TimeValue time,
+                                ViewIdx view,
+                                const RenderScale& proxyScale,
+                                unsigned int mipMapLevel,
+                                const ImagePlaneDesc* planeParam,
+                                const RectD* canonicalRoIParam)
 {
-    ActionRetCodeEnum stat =  _imp->launchRenderInternal(false /*removeRenderClonesWhenFinished*/, root, time, view, proxyScale, mipMapLevel, plane, canonicalRoI, outputRequest);
-    return stat;
+
+
+    return _imp->createExecutionDataInternal(/*removeRenderClonesWhenFinished*/ false, treeRoot, time, view, proxyScale, mipMapLevel, planeParam, canonicalRoIParam);
+}
+
+TreeRenderExecutionDataPtr
+TreeRender::createMainExecutionData()
+{
+    return _imp->createExecutionDataInternal(true /*removeRenderClonesWhenFinished*/, _imp->ctorArgs->treeRootEffect, _imp->ctorArgs->time, _imp->ctorArgs->view, _imp->ctorArgs->proxyScale, _imp->ctorArgs->mipMapLevel, _imp->ctorArgs->plane, _imp->ctorArgs->canonicalRoI);
+}
+
+std::list<TreeRenderExecutionDataPtr>
+TreeRender::getExtraRequestedResultsExecutionData()
+{
+    std::list<TreeRenderExecutionDataPtr> ret;
+    // Now if the image to render was cached, we may not have retrieved the requested color picker images, in which case we have to render them
+    for (std::map<NodePtr, FrameViewRequestPtr>::iterator it = _imp->extraRequestedResults.begin(); it != _imp->extraRequestedResults.end(); ++it) {
+        if (!it->second) {
+            TreeRenderExecutionDataPtr execData =  createSubExecutionData(it->first->getEffectInstance(), _imp->ctorArgs->time, _imp->ctorArgs->view, _imp->ctorArgs->proxyScale, _imp->ctorArgs->mipMapLevel, _imp->ctorArgs->plane, _imp->ctorArgs->canonicalRoI);
+            ret.push_back(execData);
+        }
+    }
+    return ret;
+}
+
+
+FrameViewRequestPtr
+TreeRender::getOutputRequest() const
+{
+    return _imp->outputRequest;
 }
 
 ActionRetCodeEnum
-TreeRender::launchRender(FrameViewRequestPtr* outputRequest)
+TreeRender::getStatus() const
 {
-    
-#ifdef TRACE_RENDER_DEPENDENCIES
-    qDebug() << "Starting Tree Render";
-#endif
-    // init() may have failed, return early then.
-    if (isFailureRetCode(_imp->state)) {
-        return _imp->state;
-    }
-    _imp->state = _imp->launchRenderInternal(true /*removeRenderClonesWhenFinished*/, _imp->ctorArgs->treeRootEffect, _imp->ctorArgs->time, _imp->ctorArgs->view, _imp->ctorArgs->proxyScale, _imp->ctorArgs->mipMapLevel, _imp->ctorArgs->plane, _imp->ctorArgs->canonicalRoI, outputRequest);
-
+    QMutexLocker k(&_imp->stateMutex);
     return _imp->state;
-} // launchRender
+}
+
+bool
+TreeRenderExecutionData::hasTasksToExecute() const
+{
+    QMutexLocker k(&_imp->dependencyFreeRendersMutex);
+    return !isFailureRetCode(_imp->status) && _imp->allRenderTasksToProcess.size() > 0;
+} // hasTasksToExecute
+
+int
+TreeRenderExecutionData::executeAvailableTasks(int nTasks)
+{
+
+    assert(nTasks != 0);
+
+#ifndef TREE_RENDER_DISABLE_MT
+    QThreadPool* threadPool = QThreadPool::globalInstance();
+    //bool isThreadPoolThread = isRunningInThreadPoolThread();
+#endif
+
+    int nTasksRemaining = nTasks;
+
+    TreeRenderExecutionDataPtr thisShared = shared_from_this();
+
+    QMutexLocker k(&_imp->dependencyFreeRendersMutex);
+
+    // Don't launch any task if the execution is failed
+    if (isFailureRetCode(_imp->status)) {
+        return 0;
+    }
+
+    int nTasksStarted = 0;
+
+    // Launch all dependency-free tasks in parallel
+    while ((nTasksRemaining == -1 || nTasksRemaining > 0) && _imp->dependencyFreeRenders->size() > 0) {
+
+        FrameViewRequestPtr request = *_imp->dependencyFreeRenders->begin();
+        _imp->dependencyFreeRenders->erase(_imp->dependencyFreeRenders->begin());
+#ifdef TRACE_RENDER_DEPENDENCIES
+        qDebug() << "Queuing " << request->getEffect()->getScriptName_mt_safe().c_str() << " in task pool";
+#endif
+        FrameViewRenderRunnablePtr runnable = FrameViewRenderRunnable::create(thisShared, request);
+#ifdef TREE_RENDER_DISABLE_MT
+        k.unlock();
+        runnable->run();
+        k.relock();
+#else
+        runnable->setAutoDelete(false);
+        _imp->launchedRunnables.insert(runnable);
+        threadPool->start(runnable.get());
+#endif
+        --nTasksRemaining;
+        ++nTasksStarted;
+    }
+
+    return nTasksStarted;
+
+} // executeAvailableTasks
+
 
 NATRON_NAMESPACE_EXIT;
 

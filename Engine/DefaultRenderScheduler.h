@@ -39,10 +39,17 @@ class DefaultScheduler
     Q_OBJECT
     GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-public:
+protected:
 
     DefaultScheduler(RenderEngine* engine,
                      const NodePtr& effect);
+public:
+
+    static OutputSchedulerThreadPtr create(RenderEngine* engine,
+                                           const NodePtr& effect)
+    {
+        return OutputSchedulerThreadPtr(new DefaultScheduler(engine, effect));
+    }
 
     virtual ~DefaultScheduler();
 

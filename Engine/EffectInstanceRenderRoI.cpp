@@ -106,7 +106,7 @@ NATRON_NAMESPACE_ENTER;
  **/
 ActionRetCodeEnum
 EffectInstance::Implementation::handlePassThroughPlanes(const FrameViewRequestPtr& requestData,
-                                                        const RequestPassSharedDataPtr& requestPassSharedData,
+                                                        const TreeRenderExecutionDataPtr& requestPassSharedData,
                                                         const RectD& roiCanonical,
                                                         std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded,
                                                         bool *isPassThrough)
@@ -191,7 +191,7 @@ EffectInstance::Implementation::handleIdentityEffect(double par,
                                                      const RenderScale& combinedScale,
                                                      const RectD& canonicalRoi,
                                                      const FrameViewRequestPtr& requestData,
-                                                     const RequestPassSharedDataPtr& requestPassSharedData,
+                                                     const TreeRenderExecutionDataPtr& requestPassSharedData,
                                                      bool *isIdentity)
 {
 
@@ -247,7 +247,7 @@ EffectInstance::Implementation::handleIdentityEffect(double par,
 } // EffectInstance::Implementation::handleIdentityEffect
 
 ActionRetCodeEnum
-EffectInstance::Implementation::handleConcatenation(const RequestPassSharedDataPtr& requestPassSharedData,
+EffectInstance::Implementation::handleConcatenation(const TreeRenderExecutionDataPtr& requestPassSharedData,
                                                     const FrameViewRequestPtr& requestData,
                                                     const FrameViewRequestPtr& requester,
                                                     int inputNbInRequester,
@@ -844,7 +844,7 @@ EffectInstance::Implementation::launchRenderForSafetyAndBackend(const FrameViewR
 
 
 ActionRetCodeEnum
-EffectInstance::Implementation::handleUpstreamFramesNeeded(const RequestPassSharedDataPtr& requestPassSharedData,
+EffectInstance::Implementation::handleUpstreamFramesNeeded(const TreeRenderExecutionDataPtr& requestPassSharedData,
                                                            const FrameViewRequestPtr& requestPassData,
                                                            const RenderScale& proxyScale,
                                                            unsigned int mipMapLevel,
@@ -1011,7 +1011,7 @@ EffectInstance::requestRender(TimeValue timeInArgs,
                               const RectD & roiCanonical,
                               int inputNbInRequester,
                               const FrameViewRequestPtr& requester,
-                              const RequestPassSharedDataPtr& requestPassSharedData,
+                              const TreeRenderExecutionDataPtr& requestPassSharedData,
                               FrameViewRequestPtr* createdRequest,
                               EffectInstancePtr* createdRenderClone)
 {
@@ -1090,7 +1090,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
                                       int inputNbInRequester,
                                       const FrameViewRequestPtr& requestData,
                                       const FrameViewRequestPtr& requester,
-                                      const RequestPassSharedDataPtr& requestPassSharedData)
+                                      const TreeRenderExecutionDataPtr& requestPassSharedData)
 {
 
 
@@ -1450,7 +1450,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
 
 
 ActionRetCodeEnum
-EffectInstance::launchRender(const RequestPassSharedDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestData)
+EffectInstance::launchRender(const TreeRenderExecutionDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestData)
 {
 
     {
@@ -1491,7 +1491,7 @@ static void finishProducedPlanesTilesStatesMap(const std::map<ImagePlaneDesc, Im
 }
 
 ActionRetCodeEnum
-EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPassSharedData*/, const FrameViewRequestPtr& requestData)
+EffectInstance::launchRenderInternal(const TreeRenderExecutionDataPtr& /*requestPassSharedData*/, const FrameViewRequestPtr& requestData)
 {
     assert(isRenderClone() && getCurrentRender());
 

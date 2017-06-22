@@ -56,7 +56,7 @@ NATRON_NAMESPACE_ENTER;
 struct RenderEnginePrivate
 {
     QMutex schedulerCreationLock;
-    OutputSchedulerThread* scheduler;
+    OutputSchedulerThreadPtr scheduler;
 
     //If true then a current frame render can start playback, protected by abortedRequestedMutex
     bool canAutoRestartPlayback;
@@ -64,7 +64,7 @@ struct RenderEnginePrivate
     NodeWPtr output;
     mutable QMutex pbModeMutex;
     PlaybackModeEnum pbMode;
-    ViewerCurrentFrameRequestScheduler* currentFrameScheduler;
+    ViewerCurrentFrameRequestSchedulerPtr currentFrameScheduler;
 
     // Only used on the main-thread
     boost::scoped_ptr<RenderEngineWatcher> engineWatcher;
@@ -83,13 +83,13 @@ struct RenderEnginePrivate
 
     RenderEnginePrivate(const NodePtr& output)
     : schedulerCreationLock()
-    , scheduler(0)
+    , scheduler()
     , canAutoRestartPlayback(false)
     , canAutoRestartPlaybackMutex()
     , output(output)
     , pbModeMutex()
     , pbMode(ePlaybackModeLoop)
-    , currentFrameScheduler(0)
+    , currentFrameScheduler()
     , refreshQueue()
     {
     }
@@ -103,16 +103,12 @@ RenderEngine::RenderEngine(const NodePtr& output)
 
 RenderEngine::~RenderEngine()
 {
-    delete _imp->currentFrameScheduler;
-    _imp->currentFrameScheduler = 0;
-    delete _imp->scheduler;
-    _imp->scheduler = 0;
 }
 
-OutputSchedulerThread*
+OutputSchedulerThreadPtr
 RenderEngine::createScheduler(const NodePtr& effect)
 {
-    return new DefaultScheduler(this, effect);
+    return DefaultScheduler::create(this, effect);
 }
 
 NodePtr
@@ -253,7 +249,7 @@ RenderEngine::renderCurrentFrameNowInternal(bool enableRenderStats)
 
     if (!_imp->currentFrameScheduler) {
         NodePtr output = getOutput();
-        _imp->currentFrameScheduler = new ViewerCurrentFrameRequestScheduler(output);
+        _imp->currentFrameScheduler = ViewerCurrentFrameRequestScheduler::create(output);
     }
 
     _imp->currentFrameScheduler->renderCurrentFrame(enableRenderStats);
@@ -547,10 +543,10 @@ RenderEngine::reportStats(TimeValue time,
     }
 } // reportStats
 
-OutputSchedulerThread*
+OutputSchedulerThreadPtr
 ViewerRenderEngine::createScheduler(const NodePtr& effect)
 {
-    return new ViewerDisplayScheduler( this, effect );
+    return ViewerDisplayScheduler::create( this, effect );
 }
 
 void

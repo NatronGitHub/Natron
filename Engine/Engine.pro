@@ -265,6 +265,8 @@ SOURCES += \
     TrackerNodeTransformExport.cpp \
     TrackScheduler.cpp \
     TreeRender.cpp \
+    TreeRenderQueueManager.cpp \
+    TreeRenderQueueProvider.cpp \
     TLSHolder.cpp \
     Transform.cpp \
     TransformOverlayInteract.cpp \
@@ -532,6 +534,8 @@ HEADERS += \
     TrackMarker.h \
     TransformOverlayInteract.h \
     TreeRender.h \
+    TreeRenderQueueManager.h \
+    TreeRenderQueueProvider.h \
     TLSHolder.h \
     TLSHolderImpl.h \
     Transform.h \
