@@ -291,9 +291,9 @@ PrecompNode::initializeKnobs()
     error->setAnimationEnabled(false);
     {
         std::vector<ChoiceOption> choices;
-        choices.push_back(ChoiceOption("Load Previous", "", tr("Loads the previous frame in the sequence.").toStdString() ));
-        choices.push_back(ChoiceOption("Load Next", "", tr("Loads the next frame in the sequence.").toStdString()));
-        choices.push_back(ChoiceOption("Load Nearest", "", tr("Loads the nearest frame in the sequence.").toStdString()));
+        choices.push_back(ChoiceOption("Load previous", "", tr("Loads the previous frame in the sequence.").toStdString() ));
+        choices.push_back(ChoiceOption("Load next", "", tr("Loads the next frame in the sequence.").toStdString()));
+        choices.push_back(ChoiceOption("Load nearest", "", tr("Loads the nearest frame in the sequence.").toStdString()));
         choices.push_back(ChoiceOption("Error", "", tr("Fails to render.").toStdString()));
         choices.push_back(ChoiceOption("Black", "", tr("Black Image.").toStdString()));
 
