@@ -1113,7 +1113,7 @@ KnobChoice::choiceMatch(const std::string& choice,
     // - if the choice contains " x ", try to remove one space before and after the x
     {
         bool choiceformatfound = false;
-        std::string choiceformat(choice);
+        std::string choiceformat = boost::trim_copy(choice); // trim leading and trailing whitespace
         if (choiceformat.find("  ") != std::string::npos) { // remove duplicate spaces
             std::string::iterator new_end = std::unique(choiceformat.begin(), choiceformat.end(), BothAreSpaces);
             choiceformat.erase(new_end, choiceformat.end());
