@@ -754,7 +754,7 @@ AppManager::loadInternal(const CLArgs& cl)
     qApp->setApplicationName( QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
     //Set it once setApplicationName is set since it relies on it
-    _imp->diskCachesLocation = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache);
+    refreshDiskCacheLocation();
 
     // Set the locale AGAIN, because Qt resets it in the QCoreApplication constructor
     // see http://doc.qt.io/qt-4.8/qcoreapplication.html#locale-settings
@@ -2558,10 +2558,10 @@ AppManager::registerEngineMetaTypes() const
 }
 
 void
-AppManager::setDiskCacheLocation(const QString& path)
+AppManager::refreshDiskCacheLocation()
 {
     QMutexLocker k(&_imp->diskCachesLocationMutex);
-
+    QString path = QString::fromUtf8(qgetenv(NATRON_DISK_CACHE_PATH_ENV_VAR));
     if ( !path.isEmpty() ) {
         QDir d(path);
         // create the full path if the directory does not exist

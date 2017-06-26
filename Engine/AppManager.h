@@ -452,7 +452,7 @@ public:
 
     bool isAggressiveCachingEnabled() const;
 
-    void setDiskCacheLocation(const QString& path);
+    void refreshDiskCacheLocation();
     const QString& getDiskCacheLocation() const;
 
     void saveCaches() const;

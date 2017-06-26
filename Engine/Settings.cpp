@@ -2231,7 +2231,9 @@ Settings::onKnobValueChanged(KnobI* k,
         }
         setCachingLabels();
     } else if ( k == _diskCachePath.get() ) {
-        appPTR->setDiskCacheLocation( QString::fromUtf8( _diskCachePath->getValue().c_str() ) );
+        QString path = QString::fromUtf8(_diskCachePath->getValue().c_str());
+        qputenv(NATRON_DISK_CACHE_PATH_ENV_VAR, path.toUtf8());
+        appPTR->refreshDiskCacheLocation();
     } else if ( k == _wipeDiskCache.get() ) {
         appPTR->wipeAndCreateDiskCacheStructure();
     } else if ( k == _numberOfThreads.get() ) {

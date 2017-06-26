@@ -1073,6 +1073,7 @@ KnobChoice::choiceMatch(const std::string& choice,
                             *matchedEntry = entries[i];
                         }
                         return i;
+
                     }
                 }
             }
