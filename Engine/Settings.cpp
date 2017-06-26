@@ -2786,7 +2786,6 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
     } else if ( k == _imp->_ocioConfigKnob ) {
         if (_imp->_ocioConfigKnob->getActiveEntry().id == NATRON_CUSTOM_OCIO_CONFIG_NAME) {
             _imp->_customOcioConfigFile->setEnabled(true);
-
         } else {
             _imp->_customOcioConfigFile->setEnabled(false);
         }

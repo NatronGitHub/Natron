@@ -839,6 +839,7 @@ AppManager::loadInternal(const CLArgs& cl)
     qApp->setOrganizationDomain( QString::fromUtf8(NATRON_ORGANIZATION_DOMAIN) );
     qApp->setApplicationName( QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
+
     // Set the locale AGAIN, because Qt resets it in the QCoreApplication constructor
     // see http://doc.qt.io/qt-4.8/qcoreapplication.html#locale-settings
     setApplicationLocale();
