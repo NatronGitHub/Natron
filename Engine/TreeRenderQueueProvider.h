@@ -25,7 +25,15 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+
+
 #include "Engine/EngineFwd.h"
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/scoped_ptr.hpp>
+#endif
+
+
 #include "Global/GlobalDefines.h"
 #include "Engine/TimeValue.h"
 #include "Engine/ViewIdx.h"
@@ -49,12 +57,13 @@ public:
      * @brief Launch a new render to be processed and returns immediately. To retrieve results for that render you
      * must call waitForRenderFinished()
      **/
-    virtual void launchRender(const TreeRenderPtr& render) = 0;
+    virtual ActionRetCodeEnum launchRender(const TreeRenderPtr& render) = 0;
 
     /**
      * @brief Launch a sub-render execution for the given tree render. This assumes that launchRender() was called
      * already for this TreeRender. this is used in the implementation of getImagePlane to re-use the same render clones
      * for the same TreeRender.
+     * Note that this function is blocking and will return only once the execution is finished.
      **/
     virtual TreeRenderExecutionDataPtr launchSubRender(const EffectInstancePtr& treeRoot,
                                                        TimeValue time,
@@ -71,11 +80,6 @@ public:
      **/
     virtual void waitForRenderFinished(const TreeRenderPtr& render) = 0;
 
-    /**
-     * @brief Used to wait for the execution of a render to be finished. Do not call directly
-     **/
-    virtual void waitForTreeRenderExecutionFinished(const TreeRenderExecutionDataPtr& execData) = 0;
-
 };
 
 /**
@@ -83,16 +87,19 @@ public:
  **/
 class TreeRenderQueueProvider : public TreeRenderLauncherI
 {
+
+    struct Implementation;
+
 public:
 
-    TreeRenderQueueProvider() {}
+    TreeRenderQueueProvider();
 
-    virtual ~TreeRenderQueueProvider() {}
+    virtual ~TreeRenderQueueProvider();
 
     /// Overiden from TreeRenderLauncherI
 
     // Every method is fowarded to the TreeRenderQueueManager
-    virtual void launchRender(const TreeRenderPtr& render) OVERRIDE FINAL;
+    virtual ActionRetCodeEnum launchRender(const TreeRenderPtr& render) OVERRIDE FINAL;
     virtual TreeRenderExecutionDataPtr launchSubRender(const EffectInstancePtr& treeRoot,
                                  TimeValue time,
                                  ViewIdx view,
@@ -102,25 +109,45 @@ public:
                                  const RectD* canonicalRoIParam,
                                  const TreeRenderPtr& render) OVERRIDE FINAL;
     virtual void waitForRenderFinished(const TreeRenderPtr& render) OVERRIDE FINAL;
-    virtual void waitForTreeRenderExecutionFinished(const TreeRenderExecutionDataPtr& execData) OVERRIDE FINAL;
     bool hasTreeRendersFinished() const;
+    bool hasTreeRendersLaunched() const;
     TreeRenderPtr waitForAnyTreeRenderFinished();
+    void waitForAllTreeRenders();
     ///
-
-    /**
-     * @brief This is called by the TreeRenderQueueManager when under-used to let the provider
-     * launch more renders. This is called on the TreeRenderQueueManager thread.
-     * Note that this function is called only if you passed the "playback" flag to the CtorArgs of a previous tree render
-     * passed to launchRender(). 
-     * It should return a TreeRender object that the implementation knows will be needed in the future, e.g: the TreeRender for
-     * the next frame in the sequence. 
-     * The implementation does not have to call launchRender(), the manager takes care of it
-     **/
-    virtual TreeRenderPtr fetchTreeRenderToLaunch() { return TreeRenderPtr(); };
 
 protected:
 
+    /**
+     * @brief Implement to return a shared ptr to this
+     **/
     virtual TreeRenderQueueProviderConstPtr getThisTreeRenderQueueProviderShared() const = 0;
+
+    /**
+     * @brief This is called by the TreeRenderQueueManager thread when under-used to let the provider
+     * launch more renders. This is called on the TreeRenderQueueManager thread.
+     * Note that this function is called only if you passed the "playback" flag to the CtorArgs of a previous tree render
+     * passed to launchRender().
+     * This should call launchRender on a TreeRender that the implementation knows will be needed in the future, e.g: the TreeRender for
+     * the next frame in the sequence.
+     **/
+    virtual void requestMoreRenders() { };
+
+    /**
+     * @brief Callback called on a thread-pool thread once a render is finished. Even if implementing this callback, you must call
+     * waitForRenderFinished(render) to remove data associated to that render. If called within this function, this would return
+     * immediately since the render is finished.
+     **/
+    virtual void onTreeRenderFinished(const TreeRenderPtr& /*render*/) {}
+
+private:
+
+    // Called by TreeRenderQueueManager
+    friend class TreeRenderQueueManager;
+
+    void notifyNeedMoreRenders();
+    void notifyTreeRenderFinished(const TreeRenderPtr& render);
+
+    boost::scoped_ptr<Implementation> _imp;
 
 };
 

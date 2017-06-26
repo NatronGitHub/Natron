@@ -104,7 +104,7 @@ NATRON_NAMESPACE_ENTER;
 
 struct TrackMarkerPrivate;
 class TrackMarker
-    : public KnobTableItem
+: public KnobTableItem
 {
 
 
@@ -112,6 +112,7 @@ protected: // derives from KnobHolder
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     TrackMarker(const KnobItemsTablePtr& context);
+
 
 public:
     static TrackMarkerPtr create(const KnobItemsTablePtr& model) WARN_UNUSED_RETURN
@@ -122,6 +123,11 @@ public:
     TrackMarkerPtr shared_from_this() {
         return boost::dynamic_pointer_cast<TrackMarker>(KnobHolder::shared_from_this());
     }
+
+    TrackMarkerConstPtr shared_from_this() const {
+        return boost::dynamic_pointer_cast<const TrackMarker>(KnobHolder::shared_from_this());
+    }
+
 
     virtual ~TrackMarker();
 
@@ -177,7 +183,7 @@ public:
     void clearAnimationAfterTime(TimeValue time);
 
 
-    std::pair<ImagePtr, RectD> getMarkerImage(TimeValue time, const RectD& roi) const;
+    std::pair<ImagePtr, RectD> getMarkerImage(TimeValue time, const RectD& roi) ;
 
     RectD getMarkerImageRoI(TimeValue time) const;
 

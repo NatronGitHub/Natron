@@ -68,17 +68,12 @@ enum TreeRenderStateEnum
     eTreeRenderStateInitFailed,
 };
 
-struct FrameViewRequestSharedDataPair
-{
-    FrameViewRequestPtr request;
-    TreeRenderExecutionDataPtr launchData;
-};
 
 // Render first the tasks with more dependencies: it has more chance to make more dependency-free new renders
 // to enable better concurrency
 struct FrameViewRequestComparePriority
 {
-    TreeRenderExecutionDataPtr _launchData;
+    TreeRenderExecutionDataWPtr _launchData;
 
     FrameViewRequestComparePriority(const TreeRenderExecutionDataPtr& launchData)
     : _launchData(launchData)
@@ -88,23 +83,6 @@ struct FrameViewRequestComparePriority
 
     bool operator() (const FrameViewRequestPtr& lhs, const FrameViewRequestPtr& rhs) const
     {
-#if 0
-        // This code doesn't work 
-        if (lhs.get() == rhs.get()) {
-            return false;
-        }
-        int lNum = lhs->getNumListeners(_launchData);
-        int rNum = rhs->getNumListeners(_launchData);
-        if (lNum < rNum) {
-            return true;
-        } else if (lNum > rNum) {
-            return false;
-        } else {
-            // Same number of listeners...there's no specific ordering
-            return lhs.get() < rhs.get();
-        }
-#endif
-
         return lhs.get() < rhs.get();
     }
 };
@@ -213,13 +191,14 @@ TreeRender::CtorArgs::CtorArgs()
 , extraNodesToSample()
 , activeRotoDrawableItem()
 , stats()
-, canonicalRoI(0)
-, plane(0)
+, canonicalRoI()
+, plane()
 , proxyScale(1.)
 , mipMapLevel(0)
 , draftMode(false)
 , playback(false)
 , byPassCache(false)
+, preventConcurrentTreeRenders(false)
 {
 
 }
@@ -227,11 +206,11 @@ TreeRender::CtorArgs::CtorArgs()
 TreeRender::TreeRender()
 : _imp(new TreeRenderPrivate(this))
 {
+
 }
 
 TreeRender::~TreeRender()
 {
-
 }
 
 
@@ -357,6 +336,18 @@ ViewIdx
 TreeRender::getView() const
 {
     return _imp->ctorArgs->view;
+}
+
+RectD
+TreeRender::getCtorRoI() const
+{
+    return _imp->ctorArgs->canonicalRoI;
+}
+
+bool
+TreeRender::isConcurrentRendersAllowed() const
+{
+    return !_imp->ctorArgs->preventConcurrentTreeRenders;
 }
 
 const RenderScale&
@@ -534,33 +525,19 @@ TreeRender::create(const CtorArgsPtr& inArgs)
 
     }
 
-
     return render;
 }
 
-
-class CleanupRenderClones_RAII
+void
+TreeRender::cleanupRenderClones()
 {
-    TreeRenderPtr render;
-public:
-
-    CleanupRenderClones_RAII(const TreeRenderPtr& render)
-    : render(render)
-    {
-
+    TreeRenderPtr thisShared = shared_from_this();
+    QMutexLocker k(&_imp->renderClonesMutex);
+    for (std::list<KnobHolderPtr>::const_iterator it = _imp->renderClones.begin(); it != _imp->renderClones.end(); ++it) {
+        (*it)->getMainInstance()->removeRenderClone(thisShared);
     }
-
-    ~CleanupRenderClones_RAII()
-    {
-        if (render) {
-            QMutexLocker k(&render->_imp->renderClonesMutex);
-            for (std::list<KnobHolderPtr>::const_iterator it = render->_imp->renderClones.begin(); it != render->_imp->renderClones.end(); ++it) {
-                (*it)->getMainInstance()->removeRenderClone(render);
-            }
-            render->_imp->renderClones.clear();
-        }
-    }
-};
+    _imp->renderClones.clear();
+}
 
 
 struct TreeRenderExecutionDataPrivate
@@ -594,9 +571,6 @@ struct TreeRenderExecutionDataPrivate
     // The plane requested on the tree root
     ImagePlaneDesc plane;
 
-    // Used to clean-up render clones across the tree once everything is done
-    boost::scoped_ptr<CleanupRenderClones_RAII> renderClonesCleaner;
-
     // The request created in output
     FrameViewRequestPtr outputRequest;
 
@@ -615,7 +589,6 @@ struct TreeRenderExecutionDataPrivate
     , treeRender()
     , canonicalRoI()
     , plane()
-    , renderClonesCleaner()
     , outputRequest()
     , launchedRunnables()
     {
@@ -648,7 +621,6 @@ TreeRenderExecutionData::TreeRenderExecutionData()
 
 TreeRenderExecutionData::~TreeRenderExecutionData()
 {
-
 }
 
 bool
@@ -736,24 +708,26 @@ TreeRenderExecutionDataPrivate::onTaskFinished(const FrameViewRequestPtr& reques
     // Remove all stashed input frame view requests that we kept around.
     request->clearRenderedDependencies(sharedData);
 
-    QMutexLocker k(&dependencyFreeRendersMutex);
+    {
+        QMutexLocker k(&dependencyFreeRendersMutex);
 
-    if (isFailureRetCode(requestStatus)) {
-        status = requestStatus;
+        if (isFailureRetCode(requestStatus)) {
+            status = requestStatus;
+        }
+
+
+        // Remove this render from all tasks left
+        removeTaskFromGlobalTaskList(request);
+
+        // For each frame/view that depend on this frame, remove it from the dependencies list.
+        removeDependencyLinkFromRequest(request);
     }
-
-
-    // Remove this render from all tasks left
-    removeTaskFromGlobalTaskList(request);
-
-    // For each frame/view that depend on this frame, remove it from the dependencies list.
-    removeDependencyLinkFromRequest(request);
-
+    
     // If the results for this node were requested by the caller, insert them
     TreeRenderPtr render = treeRender.lock();
     render->setResults(request, status);
     
-    appPTR->getTasksQueueManager()->notifyTaskInRenderFinished(sharedData);
+    appPTR->getTasksQueueManager()->notifyTaskInRenderFinished(sharedData, isRunningInThreadPoolThread());
 
 
 } // onTaskFinished
@@ -799,7 +773,7 @@ FrameViewRenderRunnable::run()
         qDebug() << sharedData.get() << "Launching render of" << renderClone->getScriptName_mt_safe().c_str() << request->getPlaneDesc().getPlaneLabel().c_str();
 #endif
         EffectInstancePtr renderClone = _imp->request->getEffect();
-        stat = renderClone->launchRender(sharedData, _imp->request);
+        stat = renderClone->launchNodeRender(sharedData, _imp->request);
     }
 
     sharedData->_imp->onTaskFinished(_imp->request, stat);
@@ -834,11 +808,7 @@ TreeRenderPrivate::createExecutionDataInternal(bool isMainExecution,
         assert(rootRenderClone->isRenderClone());
     }
 
-    // If we are within a EffectInstance::getImagePlane() call, the treeRoot may already be a render clone spawned by this tree, in which case
-    // we don't want to remove clones yet. Clean the clones when the render tree is done executing the last call to launchRenderInternal.
-    if (isMainExecution) {
-        requestData->_imp->renderClonesCleaner.reset(new CleanupRenderClones_RAII(thisShared));
-    }
+
 
     // Resolve plane to render if not provided
     if (planeParam) {
@@ -899,7 +869,7 @@ TreeRender::createSubExecutionData(const EffectInstancePtr& treeRoot,
 TreeRenderExecutionDataPtr
 TreeRender::createMainExecutionData()
 {
-    return _imp->createExecutionDataInternal(true /*removeRenderClonesWhenFinished*/, _imp->ctorArgs->treeRootEffect, _imp->ctorArgs->time, _imp->ctorArgs->view, _imp->ctorArgs->proxyScale, _imp->ctorArgs->mipMapLevel, _imp->ctorArgs->plane, _imp->ctorArgs->canonicalRoI);
+    return _imp->createExecutionDataInternal(true /*removeRenderClonesWhenFinished*/, _imp->ctorArgs->treeRootEffect, _imp->ctorArgs->time, _imp->ctorArgs->view, _imp->ctorArgs->proxyScale, _imp->ctorArgs->mipMapLevel, _imp->ctorArgs->plane.getNumComponents() == 0 ? 0 : &_imp->ctorArgs->plane, _imp->ctorArgs->canonicalRoI.isNull() ? 0 : &_imp->ctorArgs->canonicalRoI);
 }
 
 std::list<TreeRenderExecutionDataPtr>
@@ -909,7 +879,7 @@ TreeRender::getExtraRequestedResultsExecutionData()
     // Now if the image to render was cached, we may not have retrieved the requested color picker images, in which case we have to render them
     for (std::map<NodePtr, FrameViewRequestPtr>::iterator it = _imp->extraRequestedResults.begin(); it != _imp->extraRequestedResults.end(); ++it) {
         if (!it->second) {
-            TreeRenderExecutionDataPtr execData =  createSubExecutionData(it->first->getEffectInstance(), _imp->ctorArgs->time, _imp->ctorArgs->view, _imp->ctorArgs->proxyScale, _imp->ctorArgs->mipMapLevel, _imp->ctorArgs->plane, _imp->ctorArgs->canonicalRoI);
+            TreeRenderExecutionDataPtr execData =  createSubExecutionData(it->first->getEffectInstance(), _imp->ctorArgs->time, _imp->ctorArgs->view, _imp->ctorArgs->proxyScale, _imp->ctorArgs->mipMapLevel, _imp->ctorArgs->plane.getNumComponents() == 0 ? 0 : &_imp->ctorArgs->plane, _imp->ctorArgs->canonicalRoI.isNull() ? 0 : &_imp->ctorArgs->canonicalRoI);
             ret.push_back(execData);
         }
     }
@@ -975,12 +945,20 @@ TreeRenderExecutionData::executeAvailableTasks(int nTasks)
         runnable->run();
         k.relock();
 #else
-        runnable->setAutoDelete(false);
-        _imp->launchedRunnables.insert(runnable);
-        threadPool->start(runnable.get());
+        if (request->getStatus() == FrameViewRequest::eFrameViewRequestStatusNotRendered) {
+            // Only launch the runnable in a separate thread if its actually going to do any rendering.
+            runnable->setAutoDelete(false);
+            _imp->launchedRunnables.insert(runnable);
+            threadPool->start(runnable.get());
+            --nTasksRemaining;
+            ++nTasksStarted;
+        } else {
+            k.unlock();
+            runnable->run();
+            k.relock();
+        }
 #endif
-        --nTasksRemaining;
-        ++nTasksStarted;
+
     }
 
     return nTasksStarted;

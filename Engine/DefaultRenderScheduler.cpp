@@ -32,15 +32,54 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
 #include "Engine/RenderEngine.h"
-#include "Engine/RenderThreadTask.h"
+#include "Engine/TreeRender.h"
 #include "Engine/WriteNode.h"
 
 
 NATRON_NAMESPACE_ENTER;
 
-DefaultScheduler::DefaultScheduler(RenderEngine* engine,
+class DefaultRenderFrameSubResult : public RenderFrameSubResult
+{
+public:
+
+    DefaultRenderFrameSubResult()
+    : RenderFrameSubResult()
+    {}
+
+    virtual ~DefaultRenderFrameSubResult()
+    {
+
+    }
+
+    virtual ActionRetCodeEnum waitForResultsReady(const TreeRenderQueueProviderPtr& provider) OVERRIDE FINAL
+    {
+        provider->waitForRenderFinished(render);
+
+        ActionRetCodeEnum stat = render->getStatus();
+
+        // We no longer need the render object since the processFrame() function does nothing.
+        render.reset();
+
+        return stat;
+    }
+
+    virtual ActionRetCodeEnum launchRenders(const TreeRenderQueueProviderPtr& provider) OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return provider->launchRender(render);
+    }
+
+    virtual void abortRender() OVERRIDE FINAL
+    {
+        render->setRenderAborted();
+    }
+
+
+    TreeRenderPtr render;
+};
+
+DefaultScheduler::DefaultScheduler(const RenderEnginePtr& engine,
                                    const NodePtr& effect)
-: OutputSchedulerThread(engine, effect, eProcessFrameBySchedulerThread)
+: OutputSchedulerThread(engine, effect)
 , _currentTimeMutex()
 , _currentTime(0)
 {
@@ -51,29 +90,84 @@ DefaultScheduler::~DefaultScheduler()
 {
 }
 
-
-
-RenderThreadTask*
-DefaultScheduler::createRunnable(TimeValue frame,
-                                 bool useRenderStarts,
-                                 const std::vector<ViewIdx>& viewsToRender)
+ActionRetCodeEnum
+DefaultScheduler::createFrameRenderResults(TimeValue time, const std::vector<ViewIdx>& viewsToRender, bool enableRenderStats, RenderFrameResultsContainerPtr* future)
 {
-    return new DefaultRenderFrameRunnable(getOutputNode(), this, frame, useRenderStarts, viewsToRender);
-}
+    // Even if enableRenderStats is false, we at least profile the time spent rendering the frame when rendering with a Write node.
+    // Though we don't enable render stats for sequential renders (e.g: WriteFFMPEG) since this is 1 file.
+    RenderStatsPtr stats;
+
+    NodePtr outputNode = getOutputNode();
+    WriteNodePtr isWrite;
+    // If the output is a Write node, actually write is the internal write node encoder
+    {
+        isWrite = toWriteNode(outputNode->getEffectInstance());
+        if (isWrite) {
+            NodePtr embeddedWriter = isWrite->getEmbeddedWriter();
+            if (embeddedWriter) {
+                outputNode = embeddedWriter;
+            }
+        }
+    }
+    assert(outputNode);
+
+    if (isWrite) {
+        stats.reset( new RenderStats(enableRenderStats) );
+    }
+
+    TreeRenderQueueProviderPtr thisShared = shared_from_this();
+
+    future->reset(new RenderFrameResultsContainer(thisShared));
+    (*future)->time = time;
+
+    for (std::size_t view = 0; view < viewsToRender.size(); ++view) {
+
+        boost::shared_ptr<DefaultRenderFrameSubResult> subResults(new DefaultRenderFrameSubResult);
+        subResults->view = viewsToRender[view];
+        subResults->stats = stats;
+
+        {
+            TreeRender::CtorArgsPtr args(new TreeRender::CtorArgs);
+            args->provider = thisShared;
+            args->treeRootEffect = outputNode->getEffectInstance();
+            args->time = time;
+            args->view = viewsToRender[view];
+
+            // Render by default on disk is always using a mipmap level of 0 but using the proxy scale of the project
+            args->mipMapLevel = 0;
+
+#pragma message WARN("Todo: set proxy scale here")
+            args->proxyScale = RenderScale(1.);
+
+            args->stats = stats;
+            args->draftMode = false;
+            args->playback = true;
+            args->byPassCache = false;
+
+            subResults->render = TreeRender::create(args);
+            if (!subResults->render) {
+                return eActionStatusFailed;
+            }
+
+        }
+        (*future)->frames.push_back(subResults);
+    }
+    return eActionStatusOK;
+} // createFrameRenderResults
 
 
 void
 DefaultScheduler::processFrame(const ProcessFrameArgsBase& /*args*/)
 {
-    // We don't have anymore writer that need to process things in order. WriteFFMPEG is doing it for us
-} // DefaultScheduler::processFrame
+    // We don't have to do anything: the write node's render action writes to the file for us.
+
+} // processFrame
 
 
 void
 DefaultScheduler::timelineGoTo(TimeValue time)
 {
     QMutexLocker k(&_currentTimeMutex);
-
     _currentTime =  time;
 }
 
@@ -81,7 +175,6 @@ TimeValue
 DefaultScheduler::timelineGetTime() const
 {
     QMutexLocker k(&_currentTimeMutex);
-
     return _currentTime;
 }
 
@@ -96,19 +189,20 @@ DefaultScheduler::getFrameRangeToRender(TimeValue& first,
 }
 
 void
-DefaultScheduler::handleRenderFailure(ActionRetCodeEnum /*stat*/, const std::string& errorMessage)
+DefaultScheduler::onRenderFailed(ActionRetCodeEnum status)
 {
     if ( appPTR->isBackground() ) {
-        if (!errorMessage.empty()) {
-            std::cerr << errorMessage << std::endl;
+        std::string message;
+
+        if (status == eActionStatusFailed) {
+            message = tr("Render Failed").toStdString();
+        } else if (status == eActionStatusAborted) {
+            message = tr("Render Aborted").toStdString();
+        }
+        if (!message.empty()) {
+            std::cerr << message << std::endl;
         }
     }
-}
-
-SchedulingPolicyEnum
-DefaultScheduler::getSchedulingPolicy() const
-{
-    return eSchedulingPolicyFFA;
 }
 
 void
@@ -134,56 +228,11 @@ DefaultScheduler::aboutToStartRender()
         isWrite->onSequenceRenderStarted();
     }
 
-    std::string cb = outputNode->getEffectInstance()->getBeforeRenderCallback();
-    if ( !cb.empty() ) {
-        std::vector<std::string> args;
-        std::string error;
-        try {
-            NATRON_PYTHON_NAMESPACE::getFunctionArguments(cb, &error, &args);
-        } catch (const std::exception& e) {
-            outputNode->getApp()->appendToScriptEditor( std::string("Failed to run beforeRender callback: ")
-                                                       + e.what() );
 
-            return;
-        }
-
-        if ( !error.empty() ) {
-            outputNode->getApp()->appendToScriptEditor("Failed to run beforeRender callback: " + error);
-
-            return;
-        }
-
-        std::string signatureError;
-        signatureError.append("The beforeRender callback supports the following signature(s):\n");
-        signatureError.append("- callback(thisNode, app)");
-        if (args.size() != 2) {
-            outputNode->getApp()->appendToScriptEditor("Failed to run beforeRender callback: " + signatureError);
-
-            return;
-        }
-
-        if ( (args[0] != "thisNode") || (args[1] != "app") ) {
-            outputNode->getApp()->appendToScriptEditor("Failed to run beforeRender callback: " + signatureError);
-
-            return;
-        }
-
-
-        std::stringstream ss;
-        std::string appStr = outputNode->getApp()->getAppIDString();
-        std::string outputNodeName = appStr + "." + outputNode->getFullyQualifiedName();
-        ss << cb << "(" << outputNodeName << ", " << appStr << ")";
-        std::string script = ss.str();
-        try {
-            runCallbackWithVariables( QString::fromUtf8( script.c_str() ) );
-        } catch (const std::exception &e) {
-            notifyRenderFailure( eActionStatusFailed, e.what() );
-        }
-    }
 } // DefaultScheduler::aboutToStartRender
 
 void
-DefaultScheduler::onRenderStopped(bool aborted)
+DefaultScheduler::onRenderStopped(bool /*aborted*/)
 {
     NodePtr outputNode = getOutputNode();
 
@@ -192,59 +241,6 @@ DefaultScheduler::onRenderStopped(bool aborted)
         appPTR->writeToOutputPipe(longText, QString::fromUtf8(kRenderingFinishedStringShort), true);
     }
 
-
-    std::string cb = outputNode->getEffectInstance()->getAfterRenderCallback();
-    if ( !cb.empty() ) {
-        std::vector<std::string> args;
-        std::string error;
-        try {
-            NATRON_PYTHON_NAMESPACE::getFunctionArguments(cb, &error, &args);
-        } catch (const std::exception& e) {
-            outputNode->getApp()->appendToScriptEditor( std::string("Failed to run afterRender callback: ")
-                                                       + e.what() );
-
-            return;
-        }
-
-        if ( !error.empty() ) {
-            outputNode->getApp()->appendToScriptEditor("Failed to run afterRender callback: " + error);
-
-            return;
-        }
-
-        std::string signatureError;
-        signatureError.append("The after render callback supports the following signature(s):\n");
-        signatureError.append("- callback(aborted, thisNode, app)");
-        if (args.size() != 3) {
-            outputNode->getApp()->appendToScriptEditor("Failed to run afterRender callback: " + signatureError);
-
-            return;
-        }
-
-        if ( (args[0] != "aborted") || (args[1] != "thisNode") || (args[2] != "app") ) {
-            outputNode->getApp()->appendToScriptEditor("Failed to run afterRender callback: " + signatureError);
-
-            return;
-        }
-
-
-        std::stringstream ss;
-        std::string appStr = outputNode->getApp()->getAppIDString();
-        std::string outputNodeName = appStr + "." + outputNode->getFullyQualifiedName();
-        ss << cb << "(";
-        if (aborted) {
-            ss << "True, ";
-        } else {
-            ss << "False, ";
-        }
-        ss << outputNodeName << ", " << appStr << ")";
-        std::string script = ss.str();
-        try {
-            runCallbackWithVariables( QString::fromUtf8( script.c_str() ) );
-        } catch (...) {
-            //Ignore expcetions in callback since the render is finished anyway
-        }
-    }
 } // DefaultScheduler::onRenderStopped
 
 NATRON_NAMESPACE_EXIT;

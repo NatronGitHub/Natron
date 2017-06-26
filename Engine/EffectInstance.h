@@ -1066,7 +1066,7 @@ public:
      * The default render engine just renders the requested tree and doesn't do
      * extra-stuff.
      **/
-    virtual RenderEngine* createRenderEngine();
+    virtual RenderEnginePtr createRenderEngine();
 
     /**
      * @brief Returns true if the node is capable of generating
@@ -1184,7 +1184,7 @@ public:
      * is rendered. Only a single thread will be able to call launchRender on the same frame view request.
      * This function must be called on the FrameViewRequest object returned by requestRender()
      **/
-    ActionRetCodeEnum launchRender(const TreeRenderExecutionDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestData);
+    ActionRetCodeEnum launchNodeRender(const TreeRenderExecutionDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestData);
 
     /**
      * @brief Convenience function for getCurrentRender()->isRenderAborted()

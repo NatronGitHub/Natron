@@ -30,16 +30,30 @@
 #include <QWaitCondition>
 #include <QThreadPool>
 
+#include <QtConcurrentRun>
+
 #include "Engine/FrameViewRequest.h"
 #include "Engine/TreeRender.h"
+#include "Engine/ThreadPool.h"
 
 NATRON_NAMESPACE_ENTER;
 
 struct PerProviderRenders
 {
 
+    // Any render launched in the launchRender() function is queue here
+    // It is removed from this list after calling waitForRenderFinished() or waitForAnyTreeRenderFinished().
     std::list<TreeRenderPtr> launchedRenders;
+
+    // It is removed from this list after calling waitForRenderFinished() or waitForAnyTreeRenderFinished().
     std::set<TreeRenderPtr> finishedRenders;
+
+    // List of render (and sub-render) executions that are finished.
+    // Executions are inserted in this list at the same time they are removed from the global executionQueue
+    // of the TreeRenderQueueManager.
+    // Executions are removed from this list once
+    // waitForTreeRenderExecutionFinished is called.
+    std::set<TreeRenderExecutionDataPtr> finishedExecutions;
 };
 
 typedef boost::shared_ptr<PerProviderRenders> PerProviderRendersPtr;
@@ -48,38 +62,48 @@ typedef std::map<TreeRenderQueueProviderConstWPtr, PerProviderRendersPtr> PerPro
 
 struct TreeRenderQueueManager::Implementation
 {
+    TreeRenderQueueManager* _publicInterface;
+
+    // Protects executionQueue
     QMutex executionQueueMutex;
+
+    // If no work is requested, the TreeRenderQueueManager thread sleeps until renders are requested
     QWaitCondition executionQueueNotEmptyCond;
+
+    // The main execution queue in order
     std::list<TreeRenderExecutionDataPtr> executionQueue;
 
-    QMutex finishedExecutionsMutex;
-    QWaitCondition finishedExecutionsCond;
-    std::set<TreeRenderExecutionDataPtr> finishedExecutions;
+    // Protected by executionQueueMutex
+    // Count the number of active runnables that launched a Node render.
+    // This is decremented in notifyTaskInRenderFinished() and incremented in the run() function
+    int nActiveTasks;
 
-    QMutex executionTasksFinishedCountMutex;
-    QWaitCondition executionTasksFinishedCountCond;
-    int executionTasksFinishedCount;
+    // Protects perProviderRenders
+    QMutex perProviderRendersMutex;
 
-    QMutex finishedRendersMutex;
-    QWaitCondition finishedRendersCond;
+    // Allows to notify threads that call waitForAnyTreeRenderFinished() or waitForRenderFinished() that a render execution is finished
+    QWaitCondition perProviderRendersCond;
+
+    // For each queue provider, a list of the launched renders, finished renders and finished executions
     PerProviderRendersMap perProviderRenders;
 
+    // Protects mustQuit
     QMutex mustQuitMutex;
+
+    // The thread calling quitThread() waits in this condition until the TreeRenderQueueManager() caught the mustQuit flag and set it back
+    // to false.
     QWaitCondition mustQuitCond;
+
+    // True when somebody called quitThread()
     bool mustQuit;
 
-    Implementation()
-    : executionQueueMutex()
+    Implementation(TreeRenderQueueManager* publicInterface)
+    : _publicInterface(publicInterface)
+    , executionQueueMutex()
     , executionQueueNotEmptyCond()
     , executionQueue()
-    , finishedExecutionsMutex()
-    , finishedExecutionsCond()
-    , finishedExecutions()
-    , executionTasksFinishedCountMutex()
-    , executionTasksFinishedCountCond()
-    , executionTasksFinishedCount(0)
-    , finishedRendersMutex()
-    , finishedRendersCond()
+    , perProviderRendersMutex()
+    , perProviderRendersCond()
     , perProviderRenders()
     , mustQuitMutex()
     , mustQuitCond()
@@ -88,13 +112,33 @@ struct TreeRenderQueueManager::Implementation
 
     }
 
+    /**
+     * @brief Called in a separate thread once the main execution of a render finishes. 
+     * This will launch the extra requested executions (including image(s) for color-picker)
+     * and wait for it
+     **/
+    void launchAndWaitExtraExecutionTasks(const TreeRenderExecutionDataPtr& mainFinishedExecution, const std::list<TreeRenderExecutionDataPtr>& executions);
+
+    /**
+     * @brief Used to wait for the execution of a render to be finished. Do not call directly
+     **/
+    void waitForTreeRenderExecutionFinished(const TreeRenderExecutionDataPtr& execData) ;
+
+    void waitForTreeRenderInternal(const TreeRenderPtr& render,
+                                   std::set<TreeRenderPtr>::iterator finishedRendersIt,
+                                   std::list<TreeRenderPtr>::iterator launchedIt,
+                                   PerProviderRendersMap::iterator providersMapIt);
+
+    int launchMoreTasks(int nTasksHint);
+
+    void notifyTaskInRenderFinishedInternal(const TreeRenderExecutionDataPtr& render, bool launchExtraRenders, bool isRunningInThreadPoolThread);
 };
 
 
 
 TreeRenderQueueManager::TreeRenderQueueManager()
 : QThread()
-, _imp(new Implementation())
+, _imp(new Implementation(this))
 {
     setObjectName(QString::fromUtf8("TreeRenderQueueManager"));
 }
@@ -104,7 +148,7 @@ TreeRenderQueueManager::~TreeRenderQueueManager()
 
 }
 
-void
+ActionRetCodeEnum
 TreeRenderQueueManager::launchRender(const TreeRenderPtr& render)
 {
     assert(render && render->getProvider());
@@ -113,7 +157,7 @@ TreeRenderQueueManager::launchRender(const TreeRenderPtr& render)
         render->setResults(FrameViewRequestPtr(), execData->getStatus());
     } else {
         {
-            QMutexLocker k(&_imp->finishedRendersMutex);
+            QMutexLocker k(&_imp->perProviderRendersMutex);
             PerProviderRendersPtr& renders = _imp->perProviderRenders[render->getProvider()];
             if (!renders) {
                 renders.reset(new PerProviderRenders);
@@ -122,6 +166,7 @@ TreeRenderQueueManager::launchRender(const TreeRenderPtr& render)
         }
         appendTreeRenderExecution(execData);
     }
+    return render->getStatus();
 } // launchRender
 
 TreeRenderExecutionDataPtr
@@ -139,7 +184,7 @@ TreeRenderQueueManager::launchSubRender(const EffectInstancePtr& treeRoot,
 #ifdef DEBUG
     // Check that the render was already registered with launchRender()
     {
-        QMutexLocker k(&_imp->finishedRendersMutex);
+        QMutexLocker k(&_imp->perProviderRendersMutex);
         PerProviderRendersPtr& renders = _imp->perProviderRenders[render->getProvider()];
         assert(renders);
         if (renders) {
@@ -155,13 +200,70 @@ TreeRenderQueueManager::launchSubRender(const EffectInstancePtr& treeRoot,
     } else {
         appendTreeRenderExecution(execData);
     }
+
+    // The sub task is launched from a thread pool thread, so temporarily uncount it as an active task.
+    // If we do not do so, if all maxThreadsCount are busy in this function, all threads would deadlock in the wait
+    // call below.
+    {
+        QMutexLocker k(&_imp->executionQueueMutex);
+        --_imp->nActiveTasks;
+        _imp->executionQueueNotEmptyCond.wakeOne();
+    }
+
+    _imp->waitForTreeRenderExecutionFinished(execData);
+
+    {
+        QMutexLocker k(&_imp->executionQueueMutex);
+        ++_imp->nActiveTasks;
+    }
+
+
     return execData;
 } // launchSubRender
+
+
+// A helper RAII style class to release the thread from the thread-pool and reserve it back upon destruction
+// if the current thread is a thread-pool thread.
+class ReleaseTPThread_RAII
+{
+    bool releasedThread;
+
+public:
+
+    ReleaseTPThread_RAII()
+    : releasedThread(false)
+    {
+        // We may potentially wait for a long time so release the thread if we are in a thread pool thread.
+        if (isRunningInThreadPoolThread()) {
+            QThreadPool::globalInstance()->releaseThread();
+            releasedThread = true;
+        }
+
+    }
+
+    ~ReleaseTPThread_RAII()
+    {
+        if (releasedThread) {
+            QThreadPool::globalInstance()->reserveThread();
+        }
+    }
+};
+
+bool
+TreeRenderQueueManager::hasTreeRendersLaunched(const TreeRenderQueueProviderConstPtr& provider) const
+{
+    QMutexLocker k(&_imp->perProviderRendersMutex);
+    PerProviderRendersMap::const_iterator foundProvider = _imp->perProviderRenders.find(provider);
+    if (foundProvider == _imp->perProviderRenders.end()) {
+        return false;
+    }
+    return !foundProvider->second->launchedRenders.empty() || !foundProvider->second->finishedRenders.empty();
+}
 
 bool
 TreeRenderQueueManager::hasTreeRendersFinished(const TreeRenderQueueProviderConstPtr& provider) const
 {
-    QMutexLocker k(&_imp->executionQueueMutex);
+    QMutexLocker k(&_imp->perProviderRendersMutex);
     PerProviderRendersMap::const_iterator foundProvider = _imp->perProviderRenders.find(provider);
     if (foundProvider == _imp->perProviderRenders.end()) {
         return false;
@@ -169,10 +271,34 @@ TreeRenderQueueManager::hasTreeRendersFinished(const TreeRenderQueueProviderCons
     return !foundProvider->second->finishedRenders.empty();
 }
 
+void
+TreeRenderQueueManager::Implementation::waitForTreeRenderInternal(const TreeRenderPtr& render,
+                                                                  std::set<TreeRenderPtr>::iterator finishedRendersIt,
+                                                                  std::list<TreeRenderPtr>::iterator launchedIt,
+                                                                  PerProviderRendersMap::iterator providersMapIt)
+{
+    PerProviderRenders& renders = *providersMapIt->second;
+
+    renders.launchedRenders.erase(launchedIt);
+    renders.finishedRenders.erase(finishedRendersIt);
+
+    // Remove any render clone from this render
+    render->cleanupRenderClones();
+
+    // No more active renders for this provider
+    if (renders.finishedRenders.empty() && renders.launchedRenders.empty()) {
+        perProviderRenders.erase(providersMapIt);
+    }
+
+} // waitForTreeRenderInternal
+
 TreeRenderPtr
 TreeRenderQueueManager::waitForAnyTreeRenderFinished(const TreeRenderQueueProviderConstPtr& provider)
 {
-    QMutexLocker k(&_imp->finishedRendersMutex);
+
+    ReleaseTPThread_RAII tpThreadRelease;
+    
+    QMutexLocker k(&_imp->perProviderRendersMutex);
 
     PerProviderRendersMap::iterator foundProvider = _imp->perProviderRenders.find(provider);
     if (foundProvider == _imp->perProviderRenders.end()) {
@@ -182,9 +308,14 @@ TreeRenderQueueManager::waitForAnyTreeRenderFinished(const TreeRenderQueueProvid
 
     PerProviderRenders& renders = *foundProvider->second;
 
+    // Nothing was launched
+    if (renders.launchedRenders.empty() && renders.finishedRenders.empty()) {
+        return TreeRenderPtr();
+    }
+
     // Wait for a render to finish
     while (!renders.launchedRenders.empty() && renders.finishedRenders.empty()) {
-        _imp->finishedRendersCond.wait(&_imp->finishedRendersMutex);
+        _imp->perProviderRendersCond.wait(&_imp->perProviderRendersMutex);
 
         // Lookup the iterator again, it could have been invalidated since we released the mutex.
         foundProvider = _imp->perProviderRenders.find(provider);
@@ -193,31 +324,35 @@ TreeRenderQueueManager::waitForAnyTreeRenderFinished(const TreeRenderQueueProvid
             return TreeRenderPtr();
         }
         renders = *foundProvider->second;
-    }
 
-    TreeRenderPtr ret;
-    if (renders.finishedRenders.empty()) {
-        ret = *renders.finishedRenders.begin();
-        renders.finishedRenders.erase(renders.finishedRenders.begin());
-
-        std::list<TreeRenderPtr>::iterator foundLaunched = std::find(renders.launchedRenders.begin(), renders.launchedRenders.end(), ret);
-        assert(foundLaunched != renders.launchedRenders.end());
-        if (foundLaunched != renders.launchedRenders.end()) {
-            renders.launchedRenders.erase(foundLaunched);
+        // Nothing was launched
+        if (renders.launchedRenders.empty() && renders.finishedRenders.empty()) {
+            return TreeRenderPtr();
         }
+
     }
 
-    // No more active renders for this provider
-    if (renders.finishedRenders.empty() && renders.launchedRenders.empty()) {
-        _imp->perProviderRenders.erase(foundProvider);
-    }
+    assert(!renders.finishedRenders.empty());
+
+
+    // Remove the first finished render
+    std::set<TreeRenderPtr>::iterator foundFinishedRender = renders.finishedRenders.begin();
+    TreeRenderPtr ret = *foundFinishedRender;
+
+    // Also remove from the launched list
+    std::list<TreeRenderPtr>::iterator foundLaunched = std::find(renders.launchedRenders.begin(), renders.launchedRenders.end(), ret);
+    assert(foundLaunched != renders.launchedRenders.end());
+
+    _imp->waitForTreeRenderInternal(ret, foundFinishedRender, foundLaunched, foundProvider);
     return ret;
 } // waitForAnyTreeRenderFinished
 
 void
 TreeRenderQueueManager::waitForRenderFinished(const TreeRenderPtr& render)
 {
-    QMutexLocker k(&_imp->finishedRendersMutex);
+    ReleaseTPThread_RAII tpThreadRelease;
+
+    QMutexLocker k(&_imp->perProviderRendersMutex);
 
     PerProviderRendersMap::iterator foundProvider = _imp->perProviderRenders.find(render->getProvider());
     if (foundProvider == _imp->perProviderRenders.end()) {
@@ -235,7 +370,7 @@ TreeRenderQueueManager::waitForRenderFinished(const TreeRenderPtr& render)
 
     std::set<TreeRenderPtr>::iterator foundFinishedRender = renders.finishedRenders.find(render);
     while (foundFinishedRender == renders.finishedRenders.end()) {
-        _imp->finishedRendersCond.wait(&_imp->finishedRendersMutex);
+        _imp->perProviderRendersCond.wait(&_imp->perProviderRendersMutex);
 
         // Lookup the iterator again, it could have been invalidated since we released the mutex.
         foundProvider = _imp->perProviderRenders.find(render->getProvider());
@@ -253,51 +388,99 @@ TreeRenderQueueManager::waitForRenderFinished(const TreeRenderPtr& render)
 
         foundFinishedRender = renders.finishedRenders.find(render);
     }
-    renders.launchedRenders.erase(foundLaunched);
-    renders.finishedRenders.erase(foundFinishedRender);
+    _imp->waitForTreeRenderInternal(render, foundFinishedRender, foundLaunched, foundProvider);
 
-    // No more active renders for this provider
-    if (renders.finishedRenders.empty() && renders.launchedRenders.empty()) {
-        _imp->perProviderRenders.erase(foundProvider);
-    }
 } // waitForRenderFinished
 
 void
-TreeRenderQueueManager::waitForTreeRenderExecutionFinished(const TreeRenderExecutionDataPtr& execData)
+TreeRenderQueueManager::Implementation::waitForTreeRenderExecutionFinished(const TreeRenderExecutionDataPtr& execData)
 {
-    QMutexLocker k(&_imp->executionQueueMutex);
+    ReleaseTPThread_RAII tpThreadRelease;
 
-    std::set<TreeRenderExecutionDataPtr>::iterator foundFinishedRender = _imp->finishedExecutions.find(execData);
-    while (foundFinishedRender == _imp->finishedExecutions.end()) {
-        _imp->finishedExecutionsCond.wait(&_imp->executionQueueMutex);
-        foundFinishedRender = _imp->finishedExecutions.find(execData);
+    // Did we find the render in the currently launched renders
+    bool isLaunchedExecution;
+    {
+        QMutexLocker k(&executionQueueMutex);
+        std::list<TreeRenderExecutionDataPtr>::iterator foundLaunched = std::find(executionQueue.begin(), executionQueue.end(), execData);
+        isLaunchedExecution = foundLaunched != executionQueue.end();
     }
-    _imp->finishedExecutions.erase(foundFinishedRender);
-}
+
+
+    QMutexLocker k(&perProviderRendersMutex);
+    PerProviderRendersMap::iterator foundProvider = perProviderRenders.find(execData->getTreeRender()->getProvider());
+    if (foundProvider == perProviderRenders.end()) {
+        // No render has been requested for this provider
+        return;
+    }
+
+    std::set<TreeRenderExecutionDataPtr>::iterator foundFinishedRender = foundProvider->second->finishedExecutions.find(execData);
+
+    if (!isLaunchedExecution && foundFinishedRender == foundProvider->second->finishedExecutions.end()) {
+        // Not launched and not finished: this is an unknown execution
+        return;
+    }
+
+    while (foundFinishedRender == foundProvider->second->finishedExecutions.end()) {
+        perProviderRendersCond.wait(&perProviderRendersMutex);
+
+        // Get the iterator to the provider data since it might have been invalidated
+        foundProvider = perProviderRenders.find(execData->getTreeRender()->getProvider());
+        if (foundProvider == perProviderRenders.end()) {
+            // No render has been requested for this provider
+            return;
+        }
+
+        foundFinishedRender = foundProvider->second->finishedExecutions.find(execData);
+    }
+
+    foundProvider->second->finishedExecutions.erase(foundFinishedRender);
+
+} // waitForTreeRenderExecutionFinished
 
 void
 TreeRenderQueueManager::appendTreeRenderExecution(const TreeRenderExecutionDataPtr& render)
 {
+    // Push the execution to the queue and notify the thread
+    {
+        QMutexLocker k(&_imp->executionQueueMutex);
+        _imp->executionQueue.push_back(render);
 
-    QMutexLocker k(&_imp->executionQueueMutex);
-    _imp->executionQueue.push_back(render);
-
-    if (!isRunning()) {
-        start();
-    } else {
-        _imp->executionQueueNotEmptyCond.wakeOne();
+        if (!isRunning()) {
+            start();
+        } else {
+            _imp->executionQueueNotEmptyCond.wakeOne();
+        }
     }
-}
+
+} // appendTreeRenderExecution
 
 void
-TreeRenderQueueManager::notifyTaskInRenderFinished(const TreeRenderExecutionDataPtr& render)
+TreeRenderQueueManager::Implementation::launchAndWaitExtraExecutionTasks(const TreeRenderExecutionDataPtr& mainFinishedExecution, const std::list<TreeRenderExecutionDataPtr>& extraExecutions)
 {
+    for (std::list<TreeRenderExecutionDataPtr>::const_iterator it = extraExecutions.begin(); it != extraExecutions.end(); ++it) {
+        if (!isFailureRetCode((*it)->getStatus())) {
+            _publicInterface->appendTreeRenderExecution(*it);
+            waitForTreeRenderExecutionFinished(*it);
+        }
+    }
 
+    notifyTaskInRenderFinishedInternal(mainFinishedExecution, false /*notifyTaskInRenderFinishedInternal*/, false);
+
+} // launchAndWaitExtraExecutionTasks
+
+void
+TreeRenderQueueManager::Implementation::notifyTaskInRenderFinishedInternal(const TreeRenderExecutionDataPtr& render,
+                                                                           bool launchExtraRenders,
+                                                                           bool isRunningInThreadPoolThread)
+{
     // Inform the TreeRenderQueueManager thread that one task is finished so it can start scheduling again
-    {
-        QMutexLocker k(&_imp->executionTasksFinishedCountMutex);
-        ++_imp->executionTasksFinishedCount;
-        _imp->executionTasksFinishedCountCond.wakeOne();
+    if (isRunningInThreadPoolThread) {
+        QMutexLocker k(&executionQueueMutex);
+        // Note that this MAY decrease below 0 if this function is called in the TreeRenderQueueManager:
+        // in other words if the task was not launched in a thread-pool thread
+        // but instead in this thread, the TreeRenderQueueManager did not get a chance yet to increase _imp->nActiveTasks
+        --nActiveTasks;
+        executionQueueNotEmptyCond.wakeOne();
     }
 
     if (render->hasTasksToExecute()) {
@@ -310,41 +493,61 @@ TreeRenderQueueManager::notifyTaskInRenderFinished(const TreeRenderExecutionData
 
     // The render may have requested extraneous images to render for the color-picker. Launch their execution now.
     // This should be fast since the results should be cached from the main execution of the tree.
-    if (render->isTreeMainExecution()) {
+    if (launchExtraRenders && render->isTreeMainExecution()) {
         std::list<TreeRenderExecutionDataPtr> extraExecutions = render->getTreeRender()->getExtraRequestedResultsExecutionData();
-        for (std::list<TreeRenderExecutionDataPtr>::const_iterator it = extraExecutions.begin(); it != extraExecutions.end(); ++it) {
-            if (!isFailureRetCode((*it)->getStatus())) {
-                appendTreeRenderExecution(*it);
-                waitForTreeRenderExecutionFinished(*it);
+        if (!extraExecutions.empty()) {
+            // Launch the executions in a separate thread if we are in the TreeRenderQueueManager thread because it will require the
+            // TreeRenderQueueManager thread to schedule the tasks
+            if (!isRunningInThreadPoolThread) {
+                QtConcurrent::run(this, &TreeRenderQueueManager::Implementation::launchAndWaitExtraExecutionTasks, render, extraExecutions);
+            } else {
+                launchAndWaitExtraExecutionTasks(render, extraExecutions);
             }
+            return;
         }
     }
 
     {
-        QMutexLocker k(&_imp->executionQueueMutex);
-        // The execution must exist in the queue
-        std::list<TreeRenderExecutionDataPtr>::iterator found = std::find(_imp->executionQueue.begin(), _imp->executionQueue.end(), render);
-        if (found != _imp->executionQueue.end()) {
-            _imp->executionQueue.erase(found);
+        QMutexLocker k(&perProviderRendersMutex);
+        PerProviderRendersMap::iterator foundProvider = perProviderRenders.find(render->getTreeRender()->getProvider());
+        assert(foundProvider != perProviderRenders.end());
+        if (foundProvider == perProviderRenders.end()) {
+            // No render has been requested for this provider
+            return;
         }
+
+        // Insert the exeuction in the finishedExecutions list if this is not the main execution, otherwise no need to do so
+        // since we insert the render in the finishedRenders list
+        if (render->isTreeMainExecution()) {
+            foundProvider->second->finishedRenders.insert(render->getTreeRender());
+        } else {
+            foundProvider->second->finishedExecutions.insert(render);
+        }
+        perProviderRendersCond.wakeAll();
     }
     {
-        QMutexLocker k(&_imp->finishedExecutionsMutex);
-        _imp->finishedExecutions.insert(render);
-        _imp->finishedExecutionsCond.wakeAll();
+        QMutexLocker k(&executionQueueMutex);
+        // The execution must exist in the queue. Remove it now because we don't want the run() function to use it again.
+        std::list<TreeRenderExecutionDataPtr>::iterator found = std::find(executionQueue.begin(), executionQueue.end(), render);
+        assert(found != executionQueue.end());
+        if (found != executionQueue.end()) {
+            executionQueue.erase(found);
+        }
     }
+
 
     if (render->isTreeMainExecution()) {
         TreeRenderPtr treeRender = render->getTreeRender();
-
-
-        QMutexLocker k(&_imp->finishedRendersMutex);
-        PerProviderRendersPtr& providerData = _imp->perProviderRenders[treeRender->getProvider()];
-        providerData->finishedRenders.insert(treeRender);
-        _imp->finishedRendersCond.wakeAll();
+        TreeRenderQueueProviderPtr provider = boost::const_pointer_cast<TreeRenderQueueProvider>(treeRender->getProvider());
+        provider->notifyTreeRenderFinished(treeRender);
     }
+} // notifyTaskInRenderFinishedInternal
 
-
+void
+TreeRenderQueueManager::notifyTaskInRenderFinished(const TreeRenderExecutionDataPtr& render, bool isRunningInThreadPoolThread)
+{
+    _imp->notifyTaskInRenderFinishedInternal(render, true /*notifyTaskInRenderFinishedInternal*/, isRunningInThreadPoolThread);
+    
 } // notifyTaskInRenderFinished
 
 void
@@ -368,7 +571,118 @@ TreeRenderQueueManager::quitThread()
         }
     }
     wait();
-}
+} // quitThread
+
+int
+TreeRenderQueueManager::Implementation::launchMoreTasks(int nTasksHint)
+{
+    QThreadPool* tp = QThreadPool::globalInstance();
+
+    int nTasksLaunched = 0;
+
+    // A TreeRender may not allow rendering of concurrent TreeRenders (e.g: when drawing, to ensure renders are processed in order)
+    bool allowConcurrentRenders = true;
+
+    // Copy the execution queue so we do not hold the mutex
+    std::list<TreeRenderExecutionDataPtr> queue;
+    {
+        QMutexLocker k(&executionQueueMutex);
+        queue = executionQueue;
+    }
+
+    // Execute available tasks on the first requested render
+    TreeRenderExecutionDataPtr firstRenderExecution;
+    if (!queue.empty()) {
+        firstRenderExecution = queue.front();
+    }
+    TreeRenderPtr firstRenderTree;
+    if (firstRenderExecution) {
+        firstRenderTree = firstRenderExecution->getTreeRender();
+    }
+
+    if (!firstRenderTree) {
+        // Nothing to do
+        return nTasksLaunched;
+    }
+
+
+    TreeRenderQueueProviderPtr provider;
+    if (firstRenderTree) {
+        provider = boost::const_pointer_cast<TreeRenderQueueProvider>(firstRenderTree->getProvider());
+        assert(provider);
+    }
+
+    const int maxThreadsCount = tp->maxThreadCount();
+
+    int nTasksToLaunch = nTasksHint;
+
+    // Start as many concurrent renders as we can on the first task: this is the oldest task that was requested by the user
+    nTasksLaunched = firstRenderExecution->executeAvailableTasks(nTasksToLaunch);
+
+    // If we launched at least as many tasks as required, stop
+    if (nTasksLaunched >= nTasksHint) {
+        return nTasksLaunched;
+    }
+
+    // Decrement the number of tasks remaining to launch by what was launched before
+    nTasksToLaunch -= nTasksLaunched;
+
+    allowConcurrentRenders = firstRenderTree->isConcurrentRendersAllowed();
+
+    // If we've got remaining threads, cycle through other execution trees in the queue to launch other tasks
+    // until we reach the max threads count
+    std::list<TreeRenderExecutionDataPtr>::iterator it = queue.begin();
+    ++it; // skip the first execution
+    for (; it != queue.end(); ++it) {
+        if (!(*it)) {
+            // Might happen when quitThread() is called
+            continue;
+        }
+        if (!allowConcurrentRenders && (*it)->getTreeRender() != firstRenderTree) {
+            // This tree render may not allow concurrent executions.
+            continue;
+        }
+
+        // If we reached the maximum threads count, stop
+        int availableThreads = maxThreadsCount - tp->activeThreadCount();
+        if (availableThreads <= 0) {
+            return nTasksLaunched;
+        }
+
+        // Launch tasks
+        int nLaunched = (*it)->executeAvailableTasks(nTasksToLaunch);
+        nTasksLaunched += nLaunched;
+        nTasksToLaunch -= nLaunched;
+
+        if (nTasksLaunched >= nTasksHint || nTasksToLaunch <= 0) {
+            return nTasksLaunched;
+        }
+    }
+
+    // If we still have threads idle and the last request is playback, fetch more renders for that provider
+    if (allowConcurrentRenders && firstRenderTree->isPlayback() && nTasksToLaunch > 0) {
+
+        // If more than maxThreadsCount renders are finished or launched, do not launch more for this provider
+        bool providerMaxQueueReached = true;
+        {
+            QMutexLocker k(&perProviderRendersMutex);
+            PerProviderRendersMap::iterator foundProvider = perProviderRenders.find(provider);
+            // The provider may no longer be in the queue, because the executionQueue might be already empty since we made a copy of it.
+            if (foundProvider != perProviderRenders.end()) {
+                providerMaxQueueReached = ((int)foundProvider->second->finishedRenders.size() >= maxThreadsCount || (int)foundProvider->second->launchedRenders.size() >= maxThreadsCount);
+            }
+        }
+
+
+        // Do not spawn more renders if the execution queue reaches the max threads count.
+        // After that we know that these executions will never be launched before
+        // at least one of the previous renders finishes.
+        if ((int)queue.size() < maxThreadsCount && !providerMaxQueueReached) {
+            provider->notifyNeedMoreRenders();
+        }
+    }
+    return nTasksLaunched;
+} // launchMoreTasks
 
 void
 TreeRenderQueueManager::run()
@@ -378,6 +692,8 @@ TreeRenderQueueManager::run()
 
 
     for (;;) {
+
+        const int maxTasksToLaunch = 2;//tp->maxThreadCount();
 
         {
             // Check for exit
@@ -389,74 +705,46 @@ TreeRenderQueueManager::run()
             }
         }
 
-        // Cycle through the list of execution task and attempt to schedule jobs
+        // Check the current number of active tasks
+        int currentNActiveTasks;
+        int currentNExecutions;
         {
-            QMutexLocker k(&_imp->executionTasksFinishedCountMutex);
-            _imp->executionTasksFinishedCount = 0;
+            QMutexLocker k(&_imp->executionQueueMutex);
+            currentNActiveTasks = _imp->nActiveTasks;
+            currentNExecutions = (int)_imp->executionQueue.size();
         }
 
         int nTasksLaunched = 0;
 
-        TreeRenderExecutionDataPtr firstRender;
+        // Launch tasks if possible
+        if (currentNActiveTasks < maxTasksToLaunch) {
 
-        // Execute available tasks on the first requested render
-        {
+            // Launch at most maxThreadsCount parallel runnables (where each runnable is the render of a node).
+            // This will make sure that at least all cores are occupied with a render of a different node.
+            // Node renders are prioritized by how far the TreeRenderExecutionDataPtr object is in the queue.
+            // This hint is used in the MultiThread suite
+            int nTasksToLaunch = maxTasksToLaunch - std::max(0,currentNActiveTasks);
 
-            QMutexLocker k(&_imp->executionQueueMutex);
+            assert(nTasksToLaunch > 0);
+            nTasksLaunched = _imp->launchMoreTasks(nTasksToLaunch);
 
-            if (!_imp->executionQueue.empty()) {
-                firstRender = _imp->executionQueue.front();
-            }
-
-            // Start as many concurrent renders as we can on the first task: this is the oldest task that was requested by the user
-            if (firstRender) {
-                nTasksLaunched += firstRender->executeAvailableTasks(-1);
-
-                // If we've got remaining threads,  cycle through other execution trees to launch other tasks
-
-                std::list<TreeRenderExecutionDataPtr>::iterator it = _imp->executionQueue.begin();
-                ++it;
-                for (; it != _imp->executionQueue.end(); ++it) {
-                    if (!(*it)) {
-                        continue;
-                    }
-                    int availableThreads = tp->maxThreadCount() - tp->activeThreadCount();
-                    if (availableThreads <= 0) {
-                        break;
-                    }
-
-                    nTasksLaunched += (*it)->executeAvailableTasks(-1);
-                }
+            if (nTasksLaunched > 0) {
+                QMutexLocker k(&_imp->executionQueueMutex);
+                _imp->nActiveTasks += nTasksLaunched;
+                currentNActiveTasks = _imp->nActiveTasks;
             }
         }
-
-        // If we still have threads idle and the last request is playback, fetch more renders
-        if (firstRender && firstRender->getTreeRender()->isPlayback()) {
-            int availableThreads = tp->maxThreadCount() - tp->activeThreadCount();
-            if (availableThreads > 0) {
-                TreeRenderQueueProviderPtr provider = boost::const_pointer_cast<TreeRenderQueueProvider>(firstRender->getTreeRender()->getProvider());
-                TreeRenderPtr newRender = provider->fetchTreeRenderToLaunch();
-                if (newRender) {
-                    launchRender(newRender);
-                }
-            }
-        }
-
-        // If we launched some tasks, wait for at least 1 to finish before repeating again
-        {
-            QMutexLocker k(&_imp->executionTasksFinishedCountMutex);
-            while (nTasksLaunched > 0 && _imp->executionTasksFinishedCount == 0) {
-                _imp->executionTasksFinishedCountCond.wait(&_imp->executionTasksFinishedCountMutex);
-            }
-        }
-
-        // Wait if no task is available
+        
+        // Wait if:
+        // - No execution is requested or
+        // - No new execution was requested and no task has finished since the last launch
         QMutexLocker k(&_imp->executionQueueMutex);
-        while (_imp->executionQueue.empty()) {
+        while (_imp->executionQueue.empty() ||
+               (((int)_imp->executionQueue.size() == currentNExecutions) && nTasksLaunched > 0 &&  _imp->nActiveTasks != 0 && _imp->nActiveTasks == currentNActiveTasks)) {
             _imp->executionQueueNotEmptyCond.wait(&_imp->executionQueueMutex);
         }
     } // for(;;)
-}
+} // run
 
 
 NATRON_NAMESPACE_EXIT;

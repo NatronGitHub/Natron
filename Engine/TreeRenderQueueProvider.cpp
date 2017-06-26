@@ -26,16 +26,40 @@
 
 #include "TreeRenderQueueProvider.h"
 
+#include <QMutex>
+
 #include "Engine/AppManager.h"
 #include "Engine/TreeRenderQueueManager.h"
 
 NATRON_NAMESPACE_ENTER
 
-
-
-void TreeRenderQueueProvider::launchRender(const TreeRenderPtr& render)
+struct TreeRenderQueueProvider::Implementation
 {
-    appPTR->getTasksQueueManager()->launchRender(render);
+    QMutex isWaitingForAnyRendersFinishedMutex;
+    bool isWaitingForAnyRendersFinished;
+
+    Implementation()
+    : isWaitingForAnyRendersFinishedMutex()
+    , isWaitingForAnyRendersFinished(false)
+    {
+        
+    }
+};
+
+TreeRenderQueueProvider::TreeRenderQueueProvider()
+: _imp(new Implementation())
+{
+
+}
+
+TreeRenderQueueProvider::~TreeRenderQueueProvider()
+{
+
+}
+
+ActionRetCodeEnum TreeRenderQueueProvider::launchRender(const TreeRenderPtr& render)
+{
+    return appPTR->getTasksQueueManager()->launchRender(render);
 }
 
 TreeRenderExecutionDataPtr
@@ -52,28 +76,69 @@ TreeRenderQueueProvider::launchSubRender(const EffectInstancePtr& treeRoot,
 }
 
 void
-TreeRenderQueueProvider::waitForTreeRenderExecutionFinished(const TreeRenderExecutionDataPtr& execData)
-{
-    appPTR->getTasksQueueManager()->waitForTreeRenderExecutionFinished(execData);
-}
-
-void
 TreeRenderQueueProvider::waitForRenderFinished(const TreeRenderPtr& render)
 {
     appPTR->getTasksQueueManager()->waitForRenderFinished(render);
 }
 
 bool
+TreeRenderQueueProvider::hasTreeRendersLaunched() const
+{
+    return appPTR->getTasksQueueManager()->hasTreeRendersLaunched(getThisTreeRenderQueueProviderShared());
+}
+
+bool
 TreeRenderQueueProvider::hasTreeRendersFinished() const
 {
-    appPTR->getTasksQueueManager()->hasTreeRendersFinished(getThisTreeRenderQueueProviderShared());
+    return appPTR->getTasksQueueManager()->hasTreeRendersFinished(getThisTreeRenderQueueProviderShared());
 }
 
 TreeRenderPtr
 TreeRenderQueueProvider::waitForAnyTreeRenderFinished()
 {
-    appPTR->getTasksQueueManager()->waitForAnyTreeRenderFinished(getThisTreeRenderQueueProviderShared());
+    return appPTR->getTasksQueueManager()->waitForAnyTreeRenderFinished(getThisTreeRenderQueueProviderShared());
 }
 
+
+void
+TreeRenderQueueProvider::waitForAllTreeRenders()
+{
+    {
+        QMutexLocker k(&_imp->isWaitingForAnyRendersFinishedMutex);
+        _imp->isWaitingForAnyRendersFinished = true;
+    }
+
+    TreeRenderQueueManagerPtr mngr = appPTR->getTasksQueueManager();
+    TreeRenderQueueProviderConstPtr thisShared = getThisTreeRenderQueueProviderShared();
+
+    while (mngr->hasTreeRendersLaunched(thisShared)) {
+        mngr->waitForAnyTreeRenderFinished(thisShared);
+    }
+
+    {
+        QMutexLocker k(&_imp->isWaitingForAnyRendersFinishedMutex);
+        _imp->isWaitingForAnyRendersFinished = false;
+    }
+}
+
+void
+TreeRenderQueueProvider::notifyNeedMoreRenders()
+{
+    // If we are in waitForAllTreeRenders(), do not start more renders because another thread is anyway trying
+    // to make all render finish.
+    {
+        QMutexLocker k(&_imp->isWaitingForAnyRendersFinishedMutex);
+        if (_imp->isWaitingForAnyRendersFinished) {
+            return;
+        }
+    }
+    requestMoreRenders();
+}
+
+void
+TreeRenderQueueProvider::notifyTreeRenderFinished(const TreeRenderPtr& render)
+{
+    onTreeRenderFinished(render);
+}
 
 NATRON_NAMESPACE_EXIT

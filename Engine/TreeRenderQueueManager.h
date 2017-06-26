@@ -69,7 +69,7 @@ private:
     friend class TreeRenderQueueProvider;
 
     /// Overriden from TreeRenderLauncherI
-    virtual void launchRender(const TreeRenderPtr& render) OVERRIDE FINAL;
+    virtual ActionRetCodeEnum launchRender(const TreeRenderPtr& render) OVERRIDE FINAL;
     virtual TreeRenderExecutionDataPtr launchSubRender(const EffectInstancePtr& treeRoot,
                                                        TimeValue time,
                                                        ViewIdx view,
@@ -79,9 +79,14 @@ private:
                                                        const RectD* canonicalRoIParam,
                                                        const TreeRenderPtr& render) OVERRIDE FINAL;
     virtual void waitForRenderFinished(const TreeRenderPtr& render) OVERRIDE FINAL;
- 
-    virtual void waitForTreeRenderExecutionFinished(const TreeRenderExecutionDataPtr& execData) OVERRIDE FINAL;
+
     ///
+
+
+    /**
+     * @brief Returns true if there's any ongoing render execution for this provider.
+     **/
+    bool hasTreeRendersLaunched(const TreeRenderQueueProviderConstPtr& provider) const;
 
     /**
      * @brief Returns true if there's any render execution finished for this provider.
@@ -108,7 +113,7 @@ private:
     /**
      * @brief Executed on a thread-pool thread when a FrameViewRenderRunnable is finished
      **/
-    void notifyTaskInRenderFinished(const TreeRenderExecutionDataPtr& render);
+    void notifyTaskInRenderFinished(const TreeRenderExecutionDataPtr& render, bool isRunningInThreadPoolThread);
 
     friend struct TreeRenderExecutionDataPrivate;
     boost::scoped_ptr<Implementation> _imp;

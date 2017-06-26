@@ -120,7 +120,7 @@ public:
         , gValueStr()
         , bValueStr()
         , filterSize(0)
-        , histogramThread()
+        , histogramThread(HistogramCPUThread::create())
         , histogram1()
         , histogram2()
         , histogram3()
@@ -185,7 +185,7 @@ public:
     QString rValueStr, gValueStr, bValueStr;
     int filterSize;
 
-    HistogramCPU histogramThread;
+    HistogramCPUThreadPtr histogramThread;
 
     ///up to 3 histograms (in the RGB) case. FOr all other cases just histogram1 is used.
     std::vector<float> histogram1;
@@ -214,7 +214,7 @@ Histogram::Histogram(const std::string& scriptName,
 
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     setMouseTracking(true);
-    QObject::connect( &_imp->histogramThread, SIGNAL(histogramProduced()), this, SLOT(onCPUHistogramComputed()) );
+    QObject::connect( _imp->histogramThread.get(), SIGNAL(histogramProduced()), this, SLOT(onCPUHistogramComputed()) );
 
 //    QDesktopWidget* desktop = QApplication::desktop();
 //    _imp->sizeH = desktop->screenGeometry().size();
@@ -963,7 +963,7 @@ Histogram::computeHistogramAndRefresh(bool forceEvenIfNotVisible)
     QPointF topRight = _imp->zoomCtx.toZoomCoordinates(width() - 1, 0);
     double vmin = btmLeft.x();
     double vmax = topRight.x();
-    _imp->histogramThread.computeHistogram(_imp->mode, viewer->getInternalNode(), textureIndex, roiParam, width(), vmin, vmax, _imp->filterSize);
+    _imp->histogramThread->computeHistogram(_imp->mode, viewer->getInternalNode(), textureIndex, roiParam, width(), vmin, vmax, _imp->filterSize);
 
     QPointF oldClick_opengl = _imp->zoomCtx.toZoomCoordinates( _imp->oldClick.x(), _imp->oldClick.y() );
     _imp->updatePicker( oldClick_opengl.x() );
@@ -979,7 +979,7 @@ Histogram::onCPUHistogramComputed()
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     int mode;
-    bool success = _imp->histogramThread.getMostRecentlyProducedHistogram(&_imp->histogram1, &_imp->histogram2, &_imp->histogram3, &_imp->binsCount, &_imp->pixelsCount, &mode, &_imp->vmin, &_imp->vmax, &_imp->mipMapLevel);
+    bool success = _imp->histogramThread->getMostRecentlyProducedHistogram(&_imp->histogram1, &_imp->histogram2, &_imp->histogram3, &_imp->binsCount, &_imp->pixelsCount, &mode, &_imp->vmin, &_imp->vmax, &_imp->mipMapLevel);
     assert(success);
     if (success) {
         _imp->hasImage = true;

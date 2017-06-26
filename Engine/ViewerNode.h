@@ -134,7 +134,7 @@ public:
         return true;
     }
 
-    virtual RenderEngine* createRenderEngine() OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual RenderEnginePtr createRenderEngine() OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual void initializeOverlayInteract() OVERRIDE FINAL;
 

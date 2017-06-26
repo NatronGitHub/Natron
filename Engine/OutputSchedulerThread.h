@@ -41,7 +41,6 @@
 
 #include "Global/GlobalDefines.h"
 
-#include "Engine/BufferableObject.h"
 #include "Engine/GenericSchedulerThread.h"
 #include "Engine/ProcessFrameThread.h"
 #include "Engine/ViewIdx.h"
@@ -100,6 +99,115 @@ public:
 typedef boost::shared_ptr<OutputSchedulerThreadStartArgs> OutputSchedulerThreadStartArgsPtr;
 
 /**
+ * @brief A result of one execution of a tree in createFrameRenderResults()
+ * Each sub-result is listed in a RenderFrameResultsContainer
+ **/
+class RenderFrameSubResult
+{
+
+public:
+
+    RenderFrameSubResult()
+    : view()
+    {}
+
+    virtual ~RenderFrameSubResult() {}
+
+    /**
+     * @brief Waits for all TreeRender(s) composing the sub-results to be finished and return the status code
+     **/
+    virtual ActionRetCodeEnum waitForResultsReady(const TreeRenderQueueProviderPtr& provider) = 0;
+
+    /**
+     * @brief Abort all TreeRender(s) composing the sub-results
+     **/
+    virtual void abortRender() = 0;
+
+    /**
+     * @brief Launch all TreeRender(s) composing the sub-results
+     **/
+    virtual ActionRetCodeEnum launchRenders(const TreeRenderQueueProviderPtr& provider) = 0;
+
+    // Which view is rendered by this sub-result ?
+    ViewIdx view;
+
+    // Render statistics for this sub result
+    RenderStatsPtr stats;
+};
+
+typedef boost::shared_ptr<RenderFrameSubResult> RenderFrameSubResultPtr;
+
+
+/**
+ * @brief A class that encapsulates all the results produced by createFrameRenderResults()
+ * It contains for a single frame the list of images that were produced
+ **/
+class RenderFrameResultsContainer
+{
+public:
+
+    RenderFrameResultsContainer(const TreeRenderQueueProviderPtr& provider)
+    : provider(provider)
+    , time()
+    , frames()
+    {
+
+    }
+
+    virtual ~RenderFrameResultsContainer() {}
+
+    ActionRetCodeEnum waitForRendersFinished() WARN_UNUSED_RETURN
+    {
+        TreeRenderQueueProviderPtr p = provider.lock();
+        assert(p);
+        for (std::list<RenderFrameSubResultPtr>::const_iterator it = frames.begin(); it != frames.end(); ++it) {
+            ActionRetCodeEnum stat = (*it)->waitForResultsReady(p);
+            if (isFailureRetCode(stat)) {
+                return stat;
+            }
+        }
+        return eActionStatusOK;
+    }
+
+    ActionRetCodeEnum launchRenders() WARN_UNUSED_RETURN
+    {
+        TreeRenderQueueProviderPtr p = provider.lock();
+        assert(p);
+        for (std::list<RenderFrameSubResultPtr>::const_iterator it = frames.begin(); it != frames.end(); ++it) {
+            ActionRetCodeEnum stat = (*it)->launchRenders(p);
+            if (isFailureRetCode(stat)) {
+                return stat;
+            }
+        }
+        return eActionStatusOK;
+    }
+
+    void abortRenders()
+    {
+        for (std::list<RenderFrameSubResultPtr>::const_iterator it = frames.begin(); it != frames.end(); ++it) {
+            (*it)->abortRender();
+        }
+    }
+
+private:
+
+    TreeRenderQueueProviderWPtr provider;
+
+public:
+
+
+    // The frame at which we launched the render
+    TimeValue time;
+
+    // The list of frames that should be processed together by the scheduler
+    std::list<RenderFrameSubResultPtr> frames;
+
+    
+};
+
+typedef boost::shared_ptr<RenderFrameResultsContainer> RenderFrameResultsContainerPtr;
+
+/**
  * @brief Interface for the thread that starts RenderThreadTask and order the results. Its may task is to schedule jobs and regulate the output.
  * This interface is used to implement Viewer playback and also rendering on disk for writers.
  **/
@@ -119,7 +227,7 @@ public:
     friend class RenderThreadTask;
     enum ProcessFrameModeEnum
     {
-        eProcessFrameBySchedulerThread = 0, //< the processFrame function will be called by the OutputSchedulerThread thread.
+        eProcessFrameBySchedulerThread = 0, //< the processFrame function will be called by the ProcessFrameThread thread.
         eProcessFrameByMainThread //< the processFrame function will be called by the application's main-thread.
     };
 
@@ -130,9 +238,8 @@ protected:
         return shared_from_this();
     }
 
-    OutputSchedulerThread(RenderEngine* engine,
-                          const NodePtr& effect,
-                          ProcessFrameModeEnum mode);
+    OutputSchedulerThread(const RenderEnginePtr& engine,
+                          const NodePtr& effect);
 
 public:
 
@@ -141,16 +248,13 @@ public:
     virtual ~OutputSchedulerThread();
 
     /**
-     * @brief When a render thread has finished rendering a frame, it must
-     * append it here for buffering to make sure the output device (Viewer, Writer, etc...) will proceed the frames
-     * in respect to the time parameter.
-     * This wakes up the scheduler thread waiting on the bufCondition. If you need to append several frames
-     * use the other version of this function.
+     * @brief When enabled, after a frame is rendered, the processFrame function is called. Note that the processFrame
+     * function is called in the ordered that renders were launched with createFrameRenderResults. 
+     * This is used for example by the Viewer to upload the rendered frames to the OpenGL texture.
+     * @mode Controls whether the processFrame call should be operated on the main-thread or on a dedicated thread.
+     * By default processFrame is disabled.
      **/
-    void appendToBuffer(const BufferedFrameContainerPtr& frames);
-
-
-public:
+    void setProcessFrameEnabled(bool enabled, OutputSchedulerThread::ProcessFrameModeEnum mode);
 
     /**
      * @brief Call this to render from firstFrame to lastFrame included using an interval of frameStep
@@ -178,21 +282,11 @@ public:
 
     void clearSequentialRendersQueue();
 
-    /**
-     * @brief Called when a frame has been rendered completetly
-     * @param policy If eSchedulingPolicyFFA the render thread is not using the appendToBuffer API
-     * but is directly rendering (e.g: a Writer rendering image sequences doesn't need to be ordered)
-     * then the scheduler takes this as a hint to know how many frames have been rendered.
-     **/
-    void notifyFrameRendered(const BufferedFrameContainerPtr& stats,
-                             SchedulingPolicyEnum policy);
-
-    void runAfterFrameRenderedCallback(TimeValue frame);
 
     /**
-     * @brief To be called by concurrent worker threads in case of failure, all renders will be aborted
+     * @brief To be called upon a failed render, all concurrent renders will be aborted
      **/
-    void notifyRenderFailure(ActionRetCodeEnum stat, const std::string& errorMessage);
+    void notifyRenderFailure(ActionRetCodeEnum status);
 
 
     /**
@@ -203,20 +297,6 @@ public:
 
     void getLastRunArgs(RenderDirectionEnum* direction, std::vector<ViewIdx>* viewsToRender) const;
 
-    /**
-     * @brief Returns the current number of render threads
-     **/
-    int getNRenderThreads() const;
-
-    /**
-     * @brief Returns the current number of render threads doing work
-     **/
-    int getNActiveRenderThreads() const;
-
-    /**
-     * @brief Called by the render-threads when mustQuit() is true on the thread
-     **/
-    void notifyThreadAboutToQuit(RenderThreadTask* thread);
 
     /**
      *@brief The slot called by the GUI to set the requested fps.
@@ -229,19 +309,10 @@ public:
      **/
     double getDesiredFPS() const;
 
-    void runCallbackWithVariables(const QString& callback);
-
     NodePtr getOutputNode() const;
 
-    /**
-     * @brief Must return the scheduling policy that the output device will have
-     **/
-    virtual SchedulingPolicyEnum getSchedulingPolicy() const = 0;
 
-    RenderEngine* getEngine() const;
-
-    virtual void processFrame(const ProcessFrameArgsBase& args) OVERRIDE = 0;
-
+    RenderEnginePtr getEngine() const;
 
 Q_SIGNALS:
 
@@ -249,6 +320,11 @@ Q_SIGNALS:
 
 protected:
 
+
+    // Overriden from ProcessFrameI
+    virtual void processFrame(const ProcessFrameArgsBase& args) OVERRIDE = 0;
+    virtual void onFrameProcessed(const ProcessFrameArgsBase& args) OVERRIDE;
+    
 
     /**
      * @brief Set the timeline to the next frame to be rendered, this is used by startSchedulerAtFrame()
@@ -272,16 +348,14 @@ protected:
     virtual TimeValue timelineGetTime() const = 0;
 
     /**
-     * @brief Must create a runnable task that will render 1 frame in a separate thread.
-     * The internal thread pool will take care of the thread
-     * The task will pick frames to render until there are no more to be rendered.
+     * @brief Must create TreeRender object(s) for the given frame (and potentially multiple views)
      **/
-    virtual RenderThreadTask* createRunnable(TimeValue frame, bool useRenderStarts, const std::vector<ViewIdx>& viewsToRender) = 0;
+    virtual ActionRetCodeEnum createFrameRenderResults(TimeValue time, const std::vector<ViewIdx>& viewsToRender, bool enableRenderStats, RenderFrameResultsContainerPtr* future) = 0;
 
     /**
      * @brief Called upon failure of a thread to render an image
      **/
-    virtual void handleRenderFailure(ActionRetCodeEnum stat, const std::string& errorMessage) = 0;
+    virtual void onRenderFailed(ActionRetCodeEnum status) = 0;
 
 
 
@@ -304,8 +378,15 @@ protected:
 
 
 private:
+    // Overriden from TreeRenderQueueProvider
+    virtual void requestMoreRenders() OVERRIDE FINAL;
 
+    // Overriden from GenericSchedulerThread
+    virtual void onWaitForAbortCompleted() OVERRIDE FINAL;
+    virtual void onWaitForThreadToQuit() OVERRIDE FINAL;
     virtual void onAbortRequested(bool keepOldestRender) OVERRIDE FINAL;
+    virtual void onQuitRequested(bool allowRestarts) OVERRIDE FINAL;
+
 
     /**
      * @brief How to pick the task to process from the consumer thread
@@ -320,14 +401,14 @@ private:
      **/
     virtual ThreadStateEnum threadLoopOnce(const GenericThreadStartArgsPtr& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    void startRender();
+    void beginSequenceRender();
 
-    void stopRender();
+    void endSequenceRender();
 
 
-    void startTasksFromLastStartedFrame();
+    void startFrameRenderFromLastStartedFrame();
     
-    void startTasks(TimeValue startingFrame);
+    void startFrameRender(TimeValue startingFrame);
 
     friend struct OutputSchedulerThreadPrivate;
     boost::scoped_ptr<OutputSchedulerThreadPrivate> _imp;

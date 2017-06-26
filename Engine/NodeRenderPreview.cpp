@@ -287,6 +287,7 @@ Node::makePreviewImage(TimeValue time,
 
     TreeRender::CtorArgsPtr args(new TreeRender::CtorArgs);
     {
+        args->provider = getEffectInstance();
         args->treeRootEffect = getEffectInstance();
         args->time = time;
         args->view = ViewIdx(0);
@@ -301,10 +302,16 @@ Node::makePreviewImage(TimeValue time,
     TreeRenderPtr render = TreeRender::create(args);
     {
         FrameViewRequestPtr outputRequest;
-        ActionRetCodeEnum stat = render->launchRender(&outputRequest);
+        ActionRetCodeEnum stat = getEffectInstance()->launchRender(render);
         if (isFailureRetCode(stat)) {
             return false;
         }
+        getEffectInstance()->waitForRenderFinished(render);
+        stat = render->getStatus();
+        if (isFailureRetCode(stat)) {
+            return false;
+        }
+        outputRequest = render->getOutputRequest();
         img = outputRequest->getRequestedScaleImagePlane();
     }
 

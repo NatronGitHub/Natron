@@ -196,7 +196,7 @@ Node::load(const CreateNodeArgsPtr& args)
 
     // For an ouptut node, create its render engine
     if (_imp->effect->isOutput()) {
-        _imp->renderEngine.reset(_imp->effect->createRenderEngine());
+        _imp->renderEngine = _imp->effect->createRenderEngine();
     }
 
     // Set the node name

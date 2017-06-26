@@ -392,23 +392,30 @@ TrackerFrameAccessor::GetImageInternal(GetImageTypeEnum sourceType,
     TreeRender::CtorArgsPtr args(new TreeRender::CtorArgs);
     {
         args->treeRootEffect = sourceNode->getEffectInstance();
+        args->provider = args->treeRootEffect;
         args->time = TimeValue(frame);
         args->view = ViewIdx(0);
 
-        // Render all layers produced
-        args->plane = sourceType == eGetImageTypeMask ? &_imp->maskImagePlane : 0;
+        if (sourceType == eGetImageTypeMask) {
+            args->plane = _imp->maskImagePlane;
+        }
         args->mipMapLevel = downscale;
         args->proxyScale = RenderScale(1.);
 
-        args->canonicalRoI = &roiCanonical;
+        args->canonicalRoI = roiCanonical;
         args->draftMode = false;
         args->playback = false;
         args->byPassCache = false;
     }
 
     TreeRenderPtr render = TreeRender::create(args);
-    FrameViewRequestPtr outputRequest;
-    ActionRetCodeEnum stat = render->launchRender(&outputRequest);
+
+    ActionRetCodeEnum stat = args->treeRootEffect->launchRender(render);
+    if (!isFailureRetCode(stat)) {
+        args->treeRootEffect->waitForRenderFinished(render);
+        stat = render->getStatus();
+    }
+
     if (isFailureRetCode(stat)) {
 
 #ifdef TRACE_LIB_MV
@@ -417,7 +424,7 @@ TrackerFrameAccessor::GetImageInternal(GetImageTypeEnum sourceType,
 #endif
         return (mv::FrameAccessor::Key)0;
     }
-
+    FrameViewRequestPtr outputRequest = render->getOutputRequest();
 
     ImagePtr sourceImage = outputRequest->getRequestedScaleImagePlane();
     const RectI& sourceBounds = sourceImage->getBounds();

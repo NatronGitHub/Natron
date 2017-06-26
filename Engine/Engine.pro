@@ -224,7 +224,6 @@ SOURCES += \
     RectI.cpp \
     RemovePlaneNode.cpp \
     RenderStats.cpp \
-    RenderThreadTask.cpp \
     RenderQueue.cpp \
     RenderEngine.cpp \
     RotoBezierTriangulation.cpp \
@@ -272,7 +271,6 @@ SOURCES += \
     TransformOverlayInteract.cpp \
     Utils.cpp \
     ViewerDisplayScheduler.cpp \
-    ViewerRenderFrameRunnable.cpp \
     ViewerInstance.cpp \
     ViewerNode.cpp \
     ViewerNodePrivate.cpp \
@@ -354,7 +352,6 @@ HEADERS += \
     Bezier.h \
     BezierCP.h \
     BezierCPPrivate.h \
-    BufferableObject.h \
     CLArgs.h \
     Cache.h \
     CacheEntryBase.h \
@@ -488,7 +485,6 @@ HEADERS += \
     RenderEngine.h \
     RectD.h \
     RectI.h \
-    RenderThreadTask.h \
     RenderStats.h \
     RenderQueue.h \
     RotoBezierTriangulation.h \
@@ -543,7 +539,6 @@ HEADERS += \
     Utils.h \
     Variant.h \
     ViewerDisplayScheduler.h \
-    ViewerRenderFrameRunnable.h \
     ViewerInstance.h \
     ViewerNode.h \
     ViewerNodePrivate.h \

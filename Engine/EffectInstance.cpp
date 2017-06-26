@@ -178,10 +178,10 @@ EffectInstance::createRenderCopy(const FrameViewRenderKey& key) const
     return clone;
 }
 
-RenderEngine*
+RenderEnginePtr
 EffectInstance::createRenderEngine()
 {
-    return new RenderEngine(getNode());
+    return RenderEngine::create(getNode());
 }
 
 
@@ -846,7 +846,6 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
         ActionRetCodeEnum status;
         if (currentRender) {
             TreeRenderExecutionDataPtr subLaunchData = launchSubRender(inputEffect, inputTime, inputView, inputProxyScale, inputMipMapLevel, inArgs.plane, &roiCanonical, currentRender);
-            waitForTreeRenderExecutionFinished(subLaunchData);
             outputRequest = subLaunchData->getOutputRequest();
             status = subLaunchData->getStatus();
         } else {
@@ -856,10 +855,12 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
             rargs->time = inputTime;
             rargs->view = inputView;
             rargs->treeRootEffect = inputEffect;
-            rargs->canonicalRoI = &roiCanonical;
+            rargs->canonicalRoI = roiCanonical;
             rargs->proxyScale = inputProxyScale;
             rargs->mipMapLevel = inputMipMapLevel;
-            rargs->plane = inArgs.plane;
+            if (inArgs.plane) {
+                rargs->plane = *inArgs.plane;
+            }
             rargs->draftMode = isDraftMode;
             rargs->playback = isPlayback;
             rargs->byPassCache = false;

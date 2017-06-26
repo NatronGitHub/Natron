@@ -44,10 +44,10 @@ class ProcessFrameArgsBase
 {
 public:
 
-    BufferedFrameContainerPtr frames;
+    RenderFrameResultsContainerPtr results;
 
     ProcessFrameArgsBase()
-    : frames()
+    : results()
     {
     }
 
@@ -77,6 +77,8 @@ public:
 
     }
 
+protected:
+
     /**
      * @brief Called whenever there are images available to process in the buffer.
      * Once processed, the frame will be removed from the buffer.
@@ -84,6 +86,26 @@ public:
      * depending on the executeOnMainThread flag passed to ProcessFrameThreadStartArgs
      **/
     virtual void processFrame(const ProcessFrameArgsBase& args) = 0;
+
+    /**
+     * @brief Callback called on the ProcessFrameThread once the processFrame() function returns
+     **/
+    virtual void onFrameProcessed(const ProcessFrameArgsBase& args) = 0;
+
+private:
+
+    // Called by ProcessFrameThread
+    friend class ProcessFrameThread;
+    void notifyProcessFrame(const ProcessFrameArgsBase& args) 
+    {
+        processFrame(args);
+    }
+
+
+    void notifyFrameProcessed(const ProcessFrameArgsBase& args)
+    {
+        onFrameProcessed(args);
+    }
 };
 
 /**

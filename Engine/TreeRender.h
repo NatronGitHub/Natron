@@ -118,7 +118,9 @@ typedef boost::shared_ptr<FrameViewRenderRunnable> FrameViewRenderRunnablePtr;
  * @brief A runnable that executes the render of 1 node (FrameViewRequest) within a TreeRenderExecutionData. 
  * Once rendered, this task will make tasks that depend on this task's results available for render.
  **/
-class FrameViewRenderRunnable : public QRunnable, boost::enable_shared_from_this<FrameViewRenderRunnable>
+class FrameViewRenderRunnable
+: public QRunnable
+, public boost::enable_shared_from_this<FrameViewRenderRunnable>
 {
     struct Implementation;
 
@@ -188,13 +190,13 @@ public:
         // Pointer to stats object if any.
         RenderStatsPtr stats;
         
-        // If non null, this is the portion of the input image to render, otherwise the
+        // If non empty, this is the portion of the input image to render, otherwise the
         // full region of definition wil be rendered.
-        const RectD* canonicalRoI;
+        RectD canonicalRoI;
 
-        // The plane to render. If NULL this will be set to the first
+        // The plane to render. If none, this will be set to the first
         // plane the node produces (usually the color plane)
-        const ImagePlaneDesc* plane;
+        ImagePlaneDesc plane;
 
         // Proxy scale is the scale to apply to the parameters (that are expressed in the full format)
         // to obtain their value in the proxy format.
@@ -214,6 +216,11 @@ public:
 
         // Make sure each node in the tree gets rendered at least once
         bool byPassCache;
+
+        // If true, this TreeRender will not have any other concurrent TreeRender.
+        // This is used for example when RotoPainting to ensure
+        // mouse move event renders are processed in order.
+        bool preventConcurrentTreeRenders;
 
         CtorArgs();
     };
@@ -256,6 +263,16 @@ public:
      * @brief Get the view of the render
      **/
     ViewIdx getView() const;
+
+    /**
+     * @brief Get the RoI passed in the CtorArgs
+     **/
+    RectD getCtorRoI() const;
+
+    /**
+     * @brief Returns preventConcurrentTreeRenders from the CtorArgs
+     **/
+    bool isConcurrentRendersAllowed() const;
 
     /**
      * @brief The proxy scale requested
@@ -385,6 +402,7 @@ private:
     void setResults(const FrameViewRequestPtr& request, ActionRetCodeEnum status);
 
 
+    void cleanupRenderClones();
     
 private:
 

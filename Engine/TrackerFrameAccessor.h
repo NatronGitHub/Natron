@@ -29,6 +29,7 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #endif
 
 GCC_DIAG_OFF(unused-function)
@@ -38,7 +39,6 @@ GCC_DIAG_OFF(unused-parameter)
 GCC_DIAG_ON(unused-function)
 GCC_DIAG_ON(unused-parameter)
 #include "Engine/EngineFwd.h"
-
 NATRON_NAMESPACE_ENTER;
 
 class MvFloatImage
@@ -71,9 +71,11 @@ public:
 
 struct TrackerFrameAccessorPrivate;
 class TrackerFrameAccessor
-    : public mv::FrameAccessor
+: public mv::FrameAccessor
+, public boost::enable_shared_from_this<TrackerFrameAccessor>
 {
-public:
+
+protected:
 
     TrackerFrameAccessor(const NodePtr& sourceImageProvider,
                          const NodePtr& maskImageProvider,
@@ -81,6 +83,19 @@ public:
                          int maskPlaneIndex,
                          bool enabledChannels[3],
                          int formatHeight);
+
+public:
+
+    static TrackerFrameAccessorPtr create(const NodePtr& sourceImageProvider,
+                         const NodePtr& maskImageProvider,
+                         const ImagePlaneDesc& maskImagePlane,
+                         int maskPlaneIndex,
+                         bool enabledChannels[3],
+                         int formatHeight)
+    {
+        return TrackerFrameAccessorPtr(new TrackerFrameAccessor(sourceImageProvider, maskImageProvider, maskImagePlane, maskPlaneIndex, enabledChannels, formatHeight));
+    }
+
 
     virtual ~TrackerFrameAccessor();
 

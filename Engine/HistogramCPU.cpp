@@ -134,19 +134,19 @@ struct HistogramCPUPrivate
     }
 };
 
-HistogramCPU::HistogramCPU()
+HistogramCPUThread::HistogramCPUThread()
     : QThread()
     , _imp( new HistogramCPUPrivate() )
 {
 }
 
-HistogramCPU::~HistogramCPU()
+HistogramCPUThread::~HistogramCPUThread()
 {
     quitAnyComputation();
 }
 
 void
-HistogramCPU::computeHistogram(int mode,      //< corresponds to the enum Histogram::DisplayModeEnum
+HistogramCPUThread::computeHistogram(int mode,      //< corresponds to the enum Histogram::DisplayModeEnum
                                const ViewerNodePtr & viewer,
                                int viewerInputNb,
                                const RectD& roiParam,
@@ -172,7 +172,7 @@ HistogramCPU::computeHistogram(int mode,      //< corresponds to the enum Histog
 }
 
 void
-HistogramCPU::quitAnyComputation()
+HistogramCPUThread::quitAnyComputation()
 {
     if ( isRunning() ) {
         QMutexLocker l(&_imp->mustQuitMutex);
@@ -190,7 +190,7 @@ HistogramCPU::quitAnyComputation()
 }
 
 bool
-HistogramCPU::hasProducedHistogram() const
+HistogramCPUThread::hasProducedHistogram() const
 {
     QMutexLocker l(&_imp->producedMutex);
 
@@ -198,7 +198,7 @@ HistogramCPU::hasProducedHistogram() const
 }
 
 bool
-HistogramCPU::getMostRecentlyProducedHistogram(std::vector<float>* histogram1,
+HistogramCPUThread::getMostRecentlyProducedHistogram(std::vector<float>* histogram1,
                                                std::vector<float>* histogram2,
                                                std::vector<float>* histogram3,
                                                unsigned int* binsCount,
@@ -432,7 +432,7 @@ computeHistogramStatic(const HistogramRequest & request,
 } // computeHistogramStatic
 
 void
-HistogramCPU::run()
+HistogramCPUThread::run()
 {
     for (;; ) {
         HistogramRequest request;
@@ -468,6 +468,7 @@ HistogramCPU::run()
         {
             TreeRender::CtorArgsPtr args(new TreeRender::CtorArgs);
             args->treeRootEffect = treeRoot->getEffectInstance();
+            args->provider = args->treeRootEffect;
             assert(args->treeRootEffect);
             args->time = request.viewer->getTimelineCurrentTime();
             args->view = request.viewer->getCurrentRenderView();
@@ -482,17 +483,24 @@ HistogramCPU::run()
             }
             
             args->proxyScale = RenderScale(1.);
-            args->canonicalRoI = request.roiParam.isNull() ? 0 : &request.roiParam;
+            args->canonicalRoI = request.roiParam;
             args->draftMode = false;
             args->playback = false;
             args->byPassCache = false;
             
             TreeRenderPtr render = TreeRender::create(args);
             FrameViewRequestPtr outputRequest;
-            ActionRetCodeEnum stat = render->launchRender(&outputRequest);
+
+            ActionRetCodeEnum stat = args->treeRootEffect->launchRender(render);
             if (isFailureRetCode(stat)) {
                 continue;
             }
+            args->treeRootEffect->waitForRenderFinished(render);
+            stat = render->getStatus();
+            if (isFailureRetCode(stat)) {
+                continue;
+            }
+
             image = outputRequest->getRequestedScaleImagePlane();
 
             // We only support full rect float RAM images

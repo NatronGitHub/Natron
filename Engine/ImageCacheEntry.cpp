@@ -333,7 +333,7 @@ struct ImageCacheEntryPrivate
 
     // When reading the state map, this is the list of tiles to fetch from the cache in fetchAndCopyCachedTiles()
     // Protected by lock
-    std::vector<TileCacheIndex> tilesToFetch;
+    std::vector<TileCacheIndex> tilesToFetch, tilesToDownscale;
 
     // If set to eCacheAccessModeWriteOnly the entry will be removed from the cache before reading it so we get a clean image
     // If set to eCacheAccessModeNone, a local tiles state will be created without looking up the cache.
@@ -377,6 +377,7 @@ struct ImageCacheEntryPrivate
     , lock()
     , internalCacheEntry()
     , tilesToFetch()
+    , tilesToDownscale()
     , cachePolicy(cachePolicy)
     , image(image)
     {
@@ -489,6 +490,7 @@ struct ImageCacheEntryPrivate
                                                                         bool isDraftModeEnabled,
                                                                         int nComps,
                                                                         std::vector<TileCacheIndex>& localTilesToFetch,
+                                                                        std::vector<TileCacheIndex>& localTilesToDownscale,
                                                                         TileStateHeader& localTilesState,
                                                                         std::vector<TilesSet>& localMarkedTiles,
                                                                         bool* hasPendingTile,
@@ -506,6 +508,7 @@ struct ImageCacheEntryPrivate
                                                                bool isDraftModeEnabled,
                                                                int nComps,
                                                                std::vector<TileCacheIndex>& localTilesToFetch,
+                                                               std::vector<TileCacheIndex>& localTilesToDownscale,
                                                                TileStateHeader& localTilesState,
                                                                std::vector<TilesSet>& localMarkedTiles,
                                                                bool* hasPendingTile);
@@ -891,6 +894,7 @@ ImageCacheEntryPrivate::lookupTileStateInPyramid(
                                                  bool isDraftModeEnabled,
                                                  int nComps,
                                                  std::vector<TileCacheIndex>& localTilesToFetch,
+                                                 std::vector<TileCacheIndex>& localTilesToDownscale,
                                                  TileStateHeader& localTilesState,
                                                  std::vector<TilesSet>& localMarkedTiles,
                                                  bool* hasPendingTile)
@@ -901,7 +905,7 @@ ImageCacheEntryPrivate::lookupTileStateInPyramid(
 #ifdef TRACE_TILES_STATUS
                                              debugId,
 #endif
-                                             hasExclusiveLock, perMipMapTilesState, originalMipMapLevel, coord, originalMipMapLevel, isDraftModeEnabled, nComps, localTilesToFetch, localTilesState, localMarkedTiles, hasPendingTile, &tile, &status);
+                                             hasExclusiveLock, perMipMapTilesState, originalMipMapLevel, coord, originalMipMapLevel, isDraftModeEnabled, nComps, localTilesToFetch, localTilesToDownscale, localTilesState, localMarkedTiles, hasPendingTile, &tile, &status);
 }
 
 ImageCacheEntryPrivate::LookupTileStateRetCodeEnum
@@ -917,6 +921,7 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(
                                                           bool isDraftModeEnabled,
                                                           int nComps,
                                                           std::vector<TileCacheIndex>& localTilesToFetch,
+                                                          std::vector<TileCacheIndex>& localTilesToDownscale,
                                                           TileStateHeader& localTilesState,
                                                           std::vector<TilesSet>& localMarkedTiles,
                                                           bool* hasPendingTile,
@@ -924,8 +929,6 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(
                                                           TileStatusEnum* status)
 {
     *status = eTileStatusNotRendered;
-    
-    TileStateHeader& cachedTilesState = perMipMapTilesState[lookupLevel];
 
     if (localMarkedTiles[lookupLevel].find(coord) != localMarkedTiles[lookupLevel].end()) {
         // We may already marked this tile before
@@ -933,12 +936,12 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(
     }
 
     // Find this tile in the current state
-    TileState* cacheTileState = cachedTilesState.getTileAt(coord.tx, coord.ty);
+    TileState* cacheTileState = perMipMapTilesState[lookupLevel].getTileAt(coord.tx, coord.ty);
     assert(cacheTileState);
     *status = cacheTileState->status;
 
     // There's a local tile state only for the requested mipmap level
-    TileState* localTileState = lookupLevel == originalMipMapLevel ? localTilesState.getTileAt(coord.tx, coord.ty) : 0;
+    TileState* localTileState = (lookupLevel == originalMipMapLevel) ? localTilesState.getTileAt(coord.tx, coord.ty) : 0;
     tile->tx = coord.tx;
     tile->ty = coord.ty;
 
@@ -969,7 +972,7 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(
             // If the tile has become rendered at the requested mipmap level, mark it in the tiles to
             // fetch list. This will be fetched later on (when outside of the cache
             // scope) in fetchAndCopyCachedTiles()
-            if (lookupLevel == originalMipMapLevel) {
+            if (localTileState) {
                 localTilesToFetch.push_back(*tile);
                 // Locally, update the status to rendered
                 localTileState->status = *status;
@@ -986,7 +989,7 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(
         case eTileStatusPending: {
             assert(cacheTileState);
             // If the tile is pending in the cache, leave it pending locally
-            if (lookupLevel == originalMipMapLevel) {
+            if (localTileState) {
                 localTileState->status = eTileStatusPending;
                 *hasPendingTile = true;
             }
@@ -1006,7 +1009,7 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(
             // If we are in a mipmap level > 0, check in higher scales if the image is not yet available, in which
             // case we just have to downscale by a power of 2 (4 tiles become 1 tile)
             // If the upscaled state is not yet initialized, skip it
-            TileStatusEnum stat = eTileStatusNotRendered;
+            TileStatusEnum downscaledTileStatus = eTileStatusNotRendered;
             LookupTileStateRetCodeEnum retCode = eLookupTileStateRetCodeUpToDate;
             if (lookupLevel > 0) {
 
@@ -1027,7 +1030,7 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(
 
 
                 // Initialize the status to rendered
-                stat = eTileStatusRenderedHighestQuality;
+                downscaledTileStatus = eTileStatusRenderedHighestQuality;
 
                 int nInvalid = 0;
                 for (int i = 0; i < 4; ++i) {
@@ -1048,7 +1051,7 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(
 #ifdef TRACE_TILES_STATUS
                                                                                               debugId,
 #endif
-                                                                                              hasExclusiveLock, perMipMapTilesState, lookupLevel - 1, upscaledCords[i], originalMipMapLevel, isDraftModeEnabled, nComps, localTilesToFetch, localTilesState, localMarkedTiles, hasPendingTile, tile->upscaleTiles[i].get(), &higherScaleStatus);
+                                                                                              hasExclusiveLock, perMipMapTilesState, lookupLevel - 1, upscaledCords[i], originalMipMapLevel, isDraftModeEnabled, nComps, localTilesToFetch, localTilesToDownscale, localTilesState, localMarkedTiles, hasPendingTile, tile->upscaleTiles[i].get(), &higherScaleStatus);
                     switch (recurseRet) {
                         case eLookupTileStateRetCodeNeedWriteLock:
                             return eLookupTileStateRetCodeNeedWriteLock;
@@ -1061,20 +1064,20 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(
 
                     switch (higherScaleStatus) {
                         case eTileStatusNotRendered:
-                            stat = eTileStatusNotRendered;
+                            downscaledTileStatus = eTileStatusNotRendered;
                             break;
                         case eTileStatusRenderedHighestQuality:
                             // Higher scale tile is already rendered
                             break;
                         case eTileStatusRenderedLowQuality:
                             // Higher scale tile is already rendered but with lower quality
-                            stat = eTileStatusRenderedLowQuality;
+                            downscaledTileStatus = eTileStatusRenderedLowQuality;
                             break;
                         case eTileStatusPending:
-                            stat = eTileStatusPending;
+                            downscaledTileStatus = eTileStatusPending;
                             break;
                     }
-                    if (stat == eTileStatusNotRendered) {
+                    if (downscaledTileStatus == eTileStatusNotRendered) {
                         break;
                     }
                 } // for each upscaled mipmap
@@ -1096,16 +1099,16 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(
                 // To in-turn lookup the valid tile at (-256, -64),
                 // We would need to lookup the following tiles at level 0: (-512, -128) (invalid), (-448, -128) (invalid), (-512, -64)(invalid), (-448, -64)(invalid): None of them are valid
                 if (nInvalid == 4) {
-                    stat = eTileStatusNotRendered;
+                    downscaledTileStatus = eTileStatusNotRendered;
                 }
-                assert(stat == eTileStatusNotRendered || (nInvalid == 0 || nInvalid == 2 || nInvalid == 3));
+                assert(downscaledTileStatus == eTileStatusNotRendered || (nInvalid == 0 || nInvalid == 2 || nInvalid == 3));
             } // lookupLevel > 0
 
-            *status = stat;
-            switch (stat) {
+            *status = downscaledTileStatus;
+            switch (downscaledTileStatus) {
                 case eTileStatusPending:
                     // One or more of the upscaled tile(s) in the pyramid is pending, but all others are rendered. Wait for them to be computed
-                    if (lookupLevel == originalMipMapLevel) {
+                    if (localTileState) {
                         localTileState->status = eTileStatusPending;
                         *hasPendingTile = true;
                     }
@@ -1117,32 +1120,44 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(
 #endif
                     break;
                 case eTileStatusRenderedHighestQuality:
-                case eTileStatusRenderedLowQuality:
+                case eTileStatusRenderedLowQuality: {
 
-                    // If we reach here, it is because upscaled tile are cached
+                    // If we reach here, it is because upscaled tiles are cached
                     assert(tile->upscaleTiles[0]);
 
                     // All 4 upscaled tiles are rendered, just fetch all upscaled tiles and downscale afterwards
                     // If this tile is not yet rendered at this level but we found a higher scale mipmap,
                     // we must write this tile as pending in the cache state map so that another thread does not attempt to downscale too
+                    // We need an exclusive lock to do so
                     if (!hasExclusiveLock) {
                         return eLookupTileStateRetCodeNeedWriteLock;
                     }
 
-        
-                    if (lookupLevel == originalMipMapLevel) {
-                        cacheTileState->status = eTileStatusPending;
+                    // Mark the tile with the UUID of the cache so we know by which process this tile is computed.
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+                    boost::uuids::uuid sessionUUID = appPTR->getTileCache()->getCurrentProcessUUID();
+#endif
+
+                    if (localTileState) {
                         // Mark it not rendered locally, this will be switched to rendered once the downscale operation is performed
                         localTileState->status = eTileStatusNotRendered;
 
 #ifdef NATRON_CACHE_INTERPROCESS_ROBUST
-                        boost::uuids::uuid sessionUUID = appPTR->getTileCache()->getCurrentProcessUUID();
-                        cacheTileState->uuid = sessionUUID;
                         localTileState->uuid = sessionUUID;
 #endif
-                        localTilesToFetch.push_back(*tile);
+
+                        // Only append in the localTilesToDownscale list at the originally requested mipmap level:
+                        // the fetchTileIndicesInPyramid() function will recursively fetch tiles at higher scale
+                        localTilesToDownscale.push_back(*tile);
+
                     }
 
+
+
+                    cacheTileState->status = eTileStatusPending;
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+                    cacheTileState->uuid = sessionUUID;
+#endif
 
                     // Mark this tile so it is found quickly in markCacheTilesAsAborted()
                     localMarkedTiles[lookupLevel].insert(coord);
@@ -1154,8 +1169,12 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(
 #endif
                     retCode = eLookupTileStateRetCodeUpdated;
 
-                    break;
+                }   break;
                 case eTileStatusNotRendered:
+
+                    // We must render the tile. If we are on the originally requested
+                    // mipmap level, mark the tile pending. Otherwise if this is a higher scale tile and it is not rendered,
+                    // there's no point to mark it: we can render directly the downscale tile.
                     if (lookupLevel == originalMipMapLevel) {
 
                         // We are going to modify the state, we need exclusive rights
@@ -1164,6 +1183,7 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(
                         }
 
                         // Mark it not rendered locally
+                        assert(localTileState);
                         localTileState->status = eTileStatusNotRendered;
 
                         // Mark it pending in the cache
@@ -1256,22 +1276,19 @@ ImageCacheEntryPrivate::readAndUpdateStateMap(bool hasExclusiveLock)
         markedTiles.resize(mipMapLevel + 1);
     }
 
-    // Clear the tiles to fetch list
-    tilesToFetch.clear();
-    hasPendingTiles = false;
-
-    // Work on a temporary copy of markedTiles if we happen to return early because
-    // lookupTileStateInPyramid returns eUpdateStateMapRetCodeNeedWriteLock
+    // Work on a temporary copy of the following members if we happen to return early because
+    // lookupTileStateInPyramid returned eUpdateStateMapRetCodeNeedWriteLock
     std::vector<TilesSet> tmpMarkedTiles = markedTiles;
     bool tmpHasPendingTiles = false;
-    std::vector<TileCacheIndex> tmpTilesToFetch;
+    std::vector<TileCacheIndex> tmpTilesToFetch, tmpTilesToDownscale;
     TileStateHeader tmpLocalState;
-    tmpLocalState.ownsState = true;
-    tmpLocalState.state = new TilesState;
-    *tmpLocalState.state = *localTilesState.state;
-    tmpLocalState.tileSizeX = localTilesState.tileSizeX;
-    tmpLocalState.tileSizeY = localTilesState.tileSizeY;
-
+    {
+        tmpLocalState.ownsState = true;
+        tmpLocalState.state = new TilesState;
+        *tmpLocalState.state = *localTilesState.state;
+        tmpLocalState.tileSizeX = localTilesState.tileSizeX;
+        tmpLocalState.tileSizeY = localTilesState.tileSizeY;
+    }
 
     // For each tile in the RoI (rounded to the tile size):
     // Check the tile status, only copy from the cache if rendered
@@ -1298,7 +1315,7 @@ ImageCacheEntryPrivate::readAndUpdateStateMap(bool hasExclusiveLock)
 #ifdef TRACE_TILES_STATUS
                                                                        debugId,
 #endif
-                                                                       hasExclusiveLock, perMipMapCacheTilesState, coord, mipMapLevel, isDraftModeEnabled, nComps, tmpTilesToFetch, tmpLocalState, tmpMarkedTiles, &tmpHasPendingTiles);
+                                                                       hasExclusiveLock, perMipMapCacheTilesState, coord, mipMapLevel, isDraftModeEnabled, nComps, tmpTilesToFetch, tmpTilesToDownscale, tmpLocalState, tmpMarkedTiles, &tmpHasPendingTiles);
             switch (stat) {
                 case eLookupTileStateRetCodeNeedWriteLock: {
                     // Switch all local states that we set to copy from the cache back to not rendered
@@ -1321,7 +1338,8 @@ ImageCacheEntryPrivate::readAndUpdateStateMap(bool hasExclusiveLock)
 
     // Update local fields
     tilesToFetch = tmpTilesToFetch;
-    hasPendingTiles |= tmpHasPendingTiles;
+    tilesToDownscale = tmpTilesToDownscale;
+    hasPendingTiles = tmpHasPendingTiles;
     markedTiles = tmpMarkedTiles;
     *localTilesState.state = *tmpLocalState.state;
 
@@ -1354,14 +1372,17 @@ static void fetchTileIndicesInPyramid(unsigned int lookupLevel,
                                       std::vector<U64>* tilesAllocNeeded)
 {
     if (tile.upscaleTiles[0]) {
-        // We must downscale the upscaled tiles
+        // We must downscale the upscaled tiles. Allocate 1 tile for the resulting tile
+        assert(tilesAllocNeeded);
         for (int c = 0; c < nComps; ++c) {
             U64 tileBucketHash = makeTileCacheIndex(tile.tx, tile.ty, lookupLevel, c);
             tilesAllocNeeded->push_back(tileBucketHash);
         }
+
+        // For each upscaled tile
         for (int i = 0; i < 4; ++i) {
             assert(tile.upscaleTiles[i]);
-            // Check that the upscaled tile exists
+            // Check that the upscaled tile exists and recurse: on the edges and corner of the images a tile may not necessarily have 4 upscaled tiles
             if (tile.upscaleTiles[i]->tx != -1) {
                 fetchTileIndicesInPyramid(lookupLevel - 1, tileSizeX, tileSizeY, *tile.upscaleTiles[i], nComps, tileIndicesToFetch, tilesAllocNeeded);
             }
@@ -1480,7 +1501,12 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
     // Number of tiles to allocate to downscale
     std::vector<U64> tilesAllocNeeded;
     for (std::size_t i = 0; i < tilesToFetch.size(); ++i) {
-        fetchTileIndicesInPyramid(mipMapLevel, localTilesState.tileSizeX, localTilesState.tileSizeY, tilesToFetch[i], nComps, &tileIndicesToFetch, &tilesAllocNeeded);
+        // Fetch all tiles that should be copied from the cache. We don't need to allocate any tile in the cache, so pass a NULL pointer for the tilesAllocNeeded
+        fetchTileIndicesInPyramid(mipMapLevel, localTilesState.tileSizeX, localTilesState.tileSizeY, tilesToFetch[i], nComps, &tileIndicesToFetch, 0);
+    }
+    for (std::size_t i = 0; i < tilesToDownscale.size(); ++i) {
+        // Fetch all tiles to downscale: it will recursively fetch upscaled tiles and mark new tiles to allocate in output
+        fetchTileIndicesInPyramid(mipMapLevel, localTilesState.tileSizeX, localTilesState.tileSizeY, tilesToDownscale[i], nComps, &tileIndicesToFetch, &tilesAllocNeeded);
     }
 
     if (tileIndicesToFetch.empty() && tilesAllocNeeded.empty()) {
@@ -1521,6 +1547,11 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
         for (std::size_t i = 0; i < tilesToFetch.size(); ++i) {
             buildTaskPyramidRecursive(mipMapLevel, tilesToFetch[i], fetchedExistingTiles, allocatedTiles, &existingTiles_i, &allocatedTiles_i, &tilesToCopy, &perLevelTilesToDownscale);
         }
+        // The buildTaskPyramidRecursive call for tilesToFetch should not have allocated any tile
+        assert(allocatedTiles_i == 0);
+        for (std::size_t i = 0; i < tilesToDownscale.size(); ++i) {
+            buildTaskPyramidRecursive(mipMapLevel, tilesToDownscale[i], fetchedExistingTiles, allocatedTiles, &existingTiles_i, &allocatedTiles_i, &tilesToCopy, &perLevelTilesToDownscale);
+        }
     }
 
     EffectInstancePtr renderClone = effect.lock();
@@ -1555,8 +1586,9 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
                 break;
         }
         processor->setValues(localTilesState.tileSizeX, localTilesState.tileSizeY, perLevelTilesToDownscale[i]);
-        ActionRetCodeEnum stat = processor->launchThreadsBlocking();
-        (void)stat;
+        ActionRetCodeEnum downscaleStatus = processor->launchThreadsBlocking();
+        (void)downscaleStatus;
+        assert(downscaleStatus == eActionStatusOK);
 
         stateMapUpdated = true;
 
@@ -1626,7 +1658,7 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
     // Now add the tiles we just downscaled to our level to the list of tiles to copy
     tilesToCopy.insert(tilesToCopy.end(), perLevelTilesToDownscale[mipMapLevel].begin(), perLevelTilesToDownscale[mipMapLevel].end());
     
-    // Finally copy over multiple threads each tile
+    // Finally copy with multiple threads each tile from the cache
     boost::scoped_ptr<CachePixelsTransferProcessorBase> processor;
     switch (bitdepth) {
         case eImageBitDepthByte:

@@ -1450,7 +1450,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
 
 
 ActionRetCodeEnum
-EffectInstance::launchRender(const TreeRenderExecutionDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestData)
+EffectInstance::launchNodeRender(const TreeRenderExecutionDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestData)
 {
 
     {
@@ -1475,7 +1475,7 @@ EffectInstance::launchRender(const TreeRenderExecutionDataPtr& requestPassShared
     // Notify that we are done rendering
     requestData->notifyRenderFinished(stat);
     return stat;
-} // launchRender
+} // launchNodeRender
 
 static void finishProducedPlanesTilesStatesMap(const std::map<ImagePlaneDesc, ImagePtr>& producedPlanes,
                                                bool aborted)
@@ -1656,9 +1656,9 @@ EffectInstance::launchRenderInternal(const TreeRenderExecutionDataPtr& /*request
         // Recurse by calling launchRenderWithArgs(), this will call requestRender() and this function again.
         RectD roi = requestData->getCurrentRoI();
         ImagePlaneDesc plane = requestData->getPlaneDesc();
-        FrameViewRequestPtr outputRequest;
-        ActionRetCodeEnum stat = render->launchRenderWithArgs(shared_from_this(), getCurrentRenderTime(), getCurrentRenderView(), requestData->getProxyScale(), requestData->getMipMapLevel(), &plane, &roi, &outputRequest);
 
+        TreeRenderExecutionDataPtr execData = launchSubRender(shared_from_this(), getCurrentRenderTime(), getCurrentRenderView(), requestData->getProxyScale(), requestData->getMipMapLevel(), &plane, &roi, render);
+        ActionRetCodeEnum stat = render->getStatus();
         return stat;
 
     }
