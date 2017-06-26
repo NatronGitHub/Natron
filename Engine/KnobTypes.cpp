@@ -1090,7 +1090,7 @@ KnobChoice::choiceMatch(const std::string& choice,
         }
     }
 
-    // 5- paren/bracket-insensitive match (for WriteFFmpeg's format and codecs)
+    // 5- paren/bracket-insensitive match (for WriteFFmpeg's format and codecs, parameter names "format" and "codec" in fr.inria.openfx.WriteFFmpeg)
     std::string choiceparen = choice;
     std::replace( choiceparen.begin(), choiceparen.end(), '[', '(');
     std::replace( choiceparen.begin(), choiceparen.end(), ']', ')');
@@ -1111,9 +1111,13 @@ KnobChoice::choiceMatch(const std::string& choice,
     // - remove duplicate spaces
     // - if the choice ends with " 1" try to match exactly everything before that  (for formats with par=1, where the PAR was removed)
     // - if the choice contains " x ", try to remove one space before and after the x
+    // Note: the parameter name is "outputFormat" in project serialization
     {
         bool choiceformatfound = false;
         std::string choiceformat = boost::trim_copy(choice); // trim leading and trailing whitespace
+        if (choiceformat != choice) {
+            choiceformatfound = true;
+        }
         if (choiceformat.find("  ") != std::string::npos) { // remove duplicate spaces
             std::string::iterator new_end = std::unique(choiceformat.begin(), choiceformat.end(), BothAreSpaces);
             choiceformat.erase(new_end, choiceformat.end());
