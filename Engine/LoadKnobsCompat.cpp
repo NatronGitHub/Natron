@@ -270,7 +270,7 @@ public:
             f.replacement = kNatronColorPlaneID;
             addKnobFilter(f, "outputChannels", equalsStringCaseSensitive);
             addKnobFilter(f, "channels", endsWith);
-            setNatronVersionMax(f, 2, 2, 8);
+            setNatronVersionMax(f, 2, 2, 99);
             addOptionFilter(f, "Color.RGBA", equalsStringCaseInsensitive);
             addOptionFilter(f, "Color.RGB", equalsStringCaseInsensitive);
             addOptionFilter(f, "Color.Alpha", equalsStringCaseInsensitive);
@@ -281,7 +281,7 @@ public:
             f.replacement = kNatronBackwardMotionVectorsPlaneID "." kNatronMotionComponentsLabel;
             addKnobFilter(f, "outputChannels", equalsStringCaseSensitive);
             addKnobFilter(f, "channels", endsWith);
-            setNatronVersionMax(f, 2, 2, 8);
+            setNatronVersionMax(f, 2, 2, 99);
             addOptionFilter(f, "Backward.Motion", equalsStringCaseInsensitive);
             filters.push_back(f);
         }
@@ -290,7 +290,7 @@ public:
             f.replacement = kNatronForwardMotionVectorsPlaneID "." kNatronMotionComponentsLabel;
             addKnobFilter(f, "outputChannels", equalsStringCaseSensitive);
             addKnobFilter(f, "channels", endsWith);
-            setNatronVersionMax(f, 2, 2, 8);
+            setNatronVersionMax(f, 2, 2, 99);
             addOptionFilter(f, "Forward.Motion", equalsStringCaseInsensitive);
             filters.push_back(f);
         }
@@ -299,7 +299,7 @@ public:
             f.replacement = kNatronDisparityLeftPlaneID "." kNatronDisparityComponentsLabel;
             addKnobFilter(f, "outputChannels", equalsStringCaseSensitive);
             addKnobFilter(f, "channels", endsWith);
-            setNatronVersionMax(f, 2, 2, 8);
+            setNatronVersionMax(f, 2, 2, 99);
             addOptionFilter(f, "DisparityLeft.Disparity", equalsStringCaseInsensitive);
             filters.push_back(f);
         }
@@ -308,7 +308,7 @@ public:
             f.replacement = kNatronDisparityRightPlaneID "." kNatronDisparityComponentsLabel;
             addKnobFilter(f, "outputChannels", equalsStringCaseSensitive);
             addKnobFilter(f, "channels", endsWith);
-            setNatronVersionMax(f, 2, 2, 8);
+            setNatronVersionMax(f, 2, 2, 99);
             addOptionFilter(f, "DisparityRight.Disparity", equalsStringCaseInsensitive);
             filters.push_back(f);
         }
@@ -336,7 +336,15 @@ public:
                 KnobMatch& m = addKnobFilter(f, "outputG", equalsStringCaseSensitive);
                 addPluginMatch(m, "net.sf.openfx.ShufflePlugin", 2);
             }
-            setNatronVersionMax(f, 2, 2, 8);
+            {
+                KnobMatch& m = addKnobFilter(f, "outputB", equalsStringCaseSensitive);
+                addPluginMatch(m, "net.sf.openfx.ShufflePlugin", 2);
+            }
+            {
+                KnobMatch& m = addKnobFilter(f, "outputA", equalsStringCaseSensitive);
+                addPluginMatch(m, "net.sf.openfx.ShufflePlugin", 2);
+            }
+            setNatronVersionMax(f, 2, 2, 99);
         }
         {
             KnobChoiceOptionFilter f = channelsFilterBase;
