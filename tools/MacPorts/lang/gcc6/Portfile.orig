@@ -53,6 +53,9 @@ platform darwin {
 
     # see https://gcc.gnu.org/ml/gcc-patches/2012-05/msg00672.html
     patchfiles-append         patch-float128.diff
+
+    # gcc started compiling darwin-driver.c as C++, so make it valid
+    patchfiles-append patch-darwin-driver.c.as.cxx
 }
 
 configure.dir       ${workpath}/build
