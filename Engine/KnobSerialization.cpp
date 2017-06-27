@@ -512,33 +512,113 @@ public:
         {
             KnobNameFilter f;
             f.replacement = kNatronOfxParamProcessR;
-            addKnobFilter(f, "r", equalsStringCaseSensitive);
-            addKnobFilter(f, "doRed", equalsStringCaseSensitive);
-            setNatronVersionMax(f, 1);
+            {
+                KnobMatch& m = addKnobFilter(f, "r", equalsStringCaseSensitive); // Natron 1.0
+                {
+                    PluginMatch& p = addPluginMatch(m, "fr.inria.");
+                    p.func = startsWith;
+                }
+                {
+                    PluginMatch& p = addPluginMatch(m, "net.sf.openfx.");
+                    p.func = startsWith;
+                }
+            }
+            {
+                KnobMatch& m = addKnobFilter(f, "doRed", equalsStringCaseSensitive); // Natron 2.0-2.2 (Roto)
+                {
+                    PluginMatch& p = addPluginMatch(m, "fr.inria.");
+                    p.func = startsWith;
+                }
+                {
+                    PluginMatch& p = addPluginMatch(m, "net.sf.openfx.");
+                    p.func = startsWith;
+                }
+            }
+            setNatronVersionMax(f, 2, 2, 99);
             filters.push_back(f);
         }
         {
             KnobNameFilter f;
             f.replacement = kNatronOfxParamProcessG;
-            addKnobFilter(f, "g", equalsStringCaseSensitive);
-            addKnobFilter(f, "doGreen", equalsStringCaseSensitive);
-            setNatronVersionMax(f, 1);
+            {
+                KnobMatch& m = addKnobFilter(f, "g", equalsStringCaseSensitive); // Natron 1.0
+                {
+                    PluginMatch& p = addPluginMatch(m, "fr.inria.");
+                    p.func = startsWith;
+                }
+                {
+                    PluginMatch& p = addPluginMatch(m, "net.sf.openfx.");
+                    p.func = startsWith;
+                }
+            }
+            {
+                KnobMatch& m = addKnobFilter(f, "doGreen", equalsStringCaseSensitive); // Natron 2.0-2.2 (Roto)
+                {
+                    PluginMatch& p = addPluginMatch(m, "fr.inria.");
+                    p.func = startsWith;
+                }
+                {
+                    PluginMatch& p = addPluginMatch(m, "net.sf.openfx.");
+                    p.func = startsWith;
+                }
+            }
+            setNatronVersionMax(f, 2, 2, 99);
             filters.push_back(f);
         }
         {
             KnobNameFilter f;
             f.replacement = kNatronOfxParamProcessB;
-            addKnobFilter(f, "b", equalsStringCaseSensitive);
-            addKnobFilter(f, "doBlue", equalsStringCaseSensitive);
-            setNatronVersionMax(f, 1);
+            {
+                KnobMatch& m = addKnobFilter(f, "b", equalsStringCaseSensitive); // Natron 1.0
+                {
+                    PluginMatch& p = addPluginMatch(m, "fr.inria.");
+                    p.func = startsWith;
+                }
+                {
+                    PluginMatch& p = addPluginMatch(m, "net.sf.openfx.");
+                    p.func = startsWith;
+                }
+            }
+            {
+                KnobMatch& m = addKnobFilter(f, "doBlue", equalsStringCaseSensitive); // Natron 2.0-2.2 (Roto)
+                {
+                    PluginMatch& p = addPluginMatch(m, "fr.inria.");
+                    p.func = startsWith;
+                }
+                {
+                    PluginMatch& p = addPluginMatch(m, "net.sf.openfx.");
+                    p.func = startsWith;
+                }
+            }
+            setNatronVersionMax(f, 2, 2, 99);
             filters.push_back(f);
         }
         {
             KnobNameFilter f;
             f.replacement = kNatronOfxParamProcessA;
-            addKnobFilter(f, "a", equalsStringCaseSensitive);
-            addKnobFilter(f, "doAlpha", equalsStringCaseSensitive);
-            setNatronVersionMax(f, 1);
+            {
+                KnobMatch& m = addKnobFilter(f, "a", equalsStringCaseSensitive); // Natron 1.0
+                {
+                    PluginMatch& p = addPluginMatch(m, "fr.inria.");
+                    p.func = startsWith;
+                }
+                {
+                    PluginMatch& p = addPluginMatch(m, "net.sf.openfx.");
+                    p.func = startsWith;
+                }
+            }
+            {
+                KnobMatch& m = addKnobFilter(f, "doAlpha", equalsStringCaseSensitive); // Natron 2.0-2.2 (Roto)
+                {
+                    PluginMatch& p = addPluginMatch(m, "fr.inria.");
+                    p.func = startsWith;
+                }
+                {
+                    PluginMatch& p = addPluginMatch(m, "net.sf.openfx.");
+                    p.func = startsWith;
+                }
+            }
+            setNatronVersionMax(f, 2, 2, 99);
             filters.push_back(f);
         }
     }
@@ -724,7 +804,7 @@ public:
                 KnobMatch& m = addKnobFilter(f, "frameRange", equalsStringCaseSensitive);
                 {
                     PluginMatch& p = addPluginMatch(m, "fr.inria."); // fr.inria.openfx.Write* and fr.inria.built-in.Write
-                    p.func = containsString;
+                    p.func = startsWith;
                 }
             }
             addOptionFilter(f, "Timeline bounds", equalsStringCaseInsensitive);
@@ -738,7 +818,7 @@ public:
                 KnobMatch& m = addKnobFilter(f, "bitDepth", equalsStringCaseSensitive);
                 {
                     PluginMatch& p = addPluginMatch(m, "fr.inria."); // fr.inria.openfx.Write* and fr.inria.built-in.Write
-                    p.func = containsString;
+                    p.func = startsWith;
                 }
             }
             addOptionFilter(f, "8i", equalsStringCaseInsensitive);
@@ -752,7 +832,7 @@ public:
                 KnobMatch& m = addKnobFilter(f, "bitDepth", equalsStringCaseSensitive);
                 {
                     PluginMatch& p = addPluginMatch(m, "fr.inria."); // fr.inria.openfx.Write* and fr.inria.built-in.Write
-                    p.func = containsString;
+                    p.func = startsWith;
                 }
             }
             addOptionFilter(f, "16i", equalsStringCaseInsensitive);
