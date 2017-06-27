@@ -196,7 +196,10 @@ DockablePanel::DockablePanel(Gui* gui,
             _imp->_headerLayout->addWidget(_imp->_iconLabel);
 
 
-            std::string iconFilePath = nodeForDocumentation->getPluginIconFilePath();
+            std::string iconFilePath;
+            if (nodeForDocumentation) {
+                iconFilePath = nodeForDocumentation->getPluginIconFilePath();
+            }
             if ( !iconFilePath.empty() ) {
                 QPixmap ic;
                 if ( ic.load( QString::fromUtf8( iconFilePath.c_str() ) ) ) {
