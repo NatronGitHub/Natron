@@ -192,30 +192,31 @@ DockablePanel::DockablePanel(Gui* gui,
             _imp->_iconLabel->setToolTip(pluginLabelVersioned);
             _imp->_headerLayout->addWidget(_imp->_iconLabel);
 
-            PluginPtr plugin = nodeForDocumentation->getPlugin();
-            assert(plugin);
+            if (nodeForDocumentation) {
+                PluginPtr plugin = nodeForDocumentation->getPlugin();
+                assert(plugin);
 
-            QString resourcesPath = QString::fromUtf8(plugin->getPropertyUnsafe<std::string>(kNatronPluginPropResourcesPath).c_str());
+                QString resourcesPath = QString::fromUtf8(plugin->getPropertyUnsafe<std::string>(kNatronPluginPropResourcesPath).c_str());
 
-            QString iconFilePath = resourcesPath;
-            StrUtils::ensureLastPathSeparator(iconFilePath);
-            iconFilePath += QString::fromUtf8(plugin->getPropertyUnsafe<std::string>(kNatronPluginPropIconFilePath).c_str());
-;
-            if (QFile::exists(iconFilePath)) {
-                QPixmap ic(iconFilePath);
-                if (!ic.isNull()) {
-                    int size = TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
-                    if (std::max( ic.width(), ic.height() ) != size) {
-                        ic = ic.scaled(size, size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+                QString iconFilePath = resourcesPath;
+                StrUtils::ensureLastPathSeparator(iconFilePath);
+                iconFilePath += QString::fromUtf8(plugin->getPropertyUnsafe<std::string>(kNatronPluginPropIconFilePath).c_str());
+                ;
+                if (QFile::exists(iconFilePath)) {
+                    QPixmap ic(iconFilePath);
+                    if (!ic.isNull()) {
+                        int size = TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
+                        if (std::max( ic.width(), ic.height() ) != size) {
+                            ic = ic.scaled(size, size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+                        }
+                        _imp->_iconLabel->setPixmap(ic);
+                    } else {
+                        _imp->_iconLabel->hide();
                     }
-                    _imp->_iconLabel->setPixmap(ic);
                 } else {
                     _imp->_iconLabel->hide();
                 }
-            } else {
-                _imp->_iconLabel->hide();
             }
-
 
             QPixmap pixCenter;
             appPTR->getIcon(NATRON_PIXMAP_VIEWER_CENTER, iconSize, &pixCenter);
