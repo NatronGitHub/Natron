@@ -3068,7 +3068,7 @@ RotoContextPrivate::renderStroke(cairo_t* cr,
         return distToNext;
     }
 
-    if ( !stroke->isActivated(time) ) {
+    if ( !stroke || !stroke->isActivated(time) ) {
         return distToNext;
     }
 
