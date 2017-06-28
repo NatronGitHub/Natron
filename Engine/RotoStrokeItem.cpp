@@ -356,7 +356,7 @@ RotoStrokeItem::appendPoint(bool newStroke,
         }
         stroke = &_imp->strokes.back();
         assert(stroke);
-        if (!stroke) {
+        if (!stroke || !stroke->xCurve || !stroke->yCurve) {
             throw std::logic_error("");
         }
 
@@ -589,7 +589,7 @@ RotoStrokeItem::getMostRecentStrokeChangesSinceAge(double time,
         stroke = &_imp->strokes[lastMultiStrokeIndex];
         *strokeIndex = lastMultiStrokeIndex;
     }
-    if (!stroke) {
+    if (!stroke || !stroke->xCurve || !stroke->yCurve) {
         return false;
     }
     assert( stroke && stroke->xCurve->getKeyFramesCount() == stroke->yCurve->getKeyFramesCount() && stroke->xCurve->getKeyFramesCount() == stroke->pressureCurve->getKeyFramesCount() );
