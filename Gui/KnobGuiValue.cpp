@@ -1186,31 +1186,51 @@ KnobGuiDouble::KnobGuiDouble(KnobPtr knob,
 bool
 KnobGuiDouble::isSliderDisabled() const
 {
-    return _knob.lock()->isSliderDisabled();
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return false;
+    }
+    return knob->isSliderDisabled();
 }
 
 bool
 KnobGuiDouble::isAutoFoldDimensionsEnabled() const
 {
-    return _knob.lock()->isAutoFoldDimensionsEnabled();
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return false;
+    }
+    return knob->isAutoFoldDimensionsEnabled();
 }
 
 bool
 KnobGuiDouble::isRectangleType() const
 {
-    return _knob.lock()->isRectangle();
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return false;
+    }
+    return knob->isRectangle();
 }
 
 bool
 KnobGuiDouble::isSpatialType() const
 {
-    return _knob.lock()->getIsSpatial();
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return false;
+    }
+    return knob->getIsSpatial();
 }
 
 ValueIsNormalizedEnum
 KnobGuiDouble::getNormalizationPolicy(int dimension) const
 {
-    return _knob.lock()->getValueIsNormalized(dimension);
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return eValueIsNormalizedNone;
+    }
+    return knob->getValueIsNormalized(dimension);
 }
 
 double
@@ -1218,7 +1238,11 @@ KnobGuiDouble::denormalize(int dimension,
                            double time,
                            double value) const
 {
-    return _knob.lock()->denormalize(dimension, time, value);
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return value;
+    }
+    return knob->denormalize(dimension, time, value);
 }
 
 double
@@ -1226,7 +1250,11 @@ KnobGuiDouble::normalize(int dimension,
                          double time,
                          double value) const
 {
-    return _knob.lock()->normalize(dimension, time, value);
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return value;
+    }
+    return knob->normalize(dimension, time, value);
 }
 
 void
@@ -1240,19 +1268,31 @@ KnobGuiDouble::connectKnobSignalSlots()
 void
 KnobGuiDouble::disableSlider()
 {
-    return _knob.lock()->disableSlider();
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    return knob->disableSlider();
 }
 
 void
 KnobGuiDouble::getIncrements(std::vector<double>* increments) const
 {
-    *increments = _knob.lock()->getIncrements();
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    *increments = knob->getIncrements();
 }
 
 void
 KnobGuiDouble::getDecimals(std::vector<int>* decimals) const
 {
-    *decimals = _knob.lock()->getDecimals();
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    *decimals = knob->getDecimals();
 }
 
 KnobGuiInt::KnobGuiInt(KnobPtr knob,
@@ -1265,19 +1305,31 @@ KnobGuiInt::KnobGuiInt(KnobPtr knob,
 bool
 KnobGuiInt::isSliderDisabled() const
 {
-    return _knob.lock()->isSliderDisabled();
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return false;
+    }
+    return knob->isSliderDisabled();
 }
 
 bool
 KnobGuiInt::isAutoFoldDimensionsEnabled() const
 {
-    return _knob.lock()->isAutoFoldDimensionsEnabled();
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return false;
+    }
+    return knob->isAutoFoldDimensionsEnabled();
 }
 
 bool
 KnobGuiInt::isRectangleType() const
 {
-    return _knob.lock()->isRectangle();
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return false;
+    }
+    return knob->isRectangle();
 }
 
 void
@@ -1290,13 +1342,21 @@ KnobGuiInt::connectKnobSignalSlots()
 void
 KnobGuiInt::disableSlider()
 {
-    return _knob.lock()->disableSlider();
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    return knob->disableSlider();
 }
 
 void
 KnobGuiInt::getIncrements(std::vector<double>* increments) const
 {
-    const std::vector<int>& incr = _knob.lock()->getIncrements();
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    const std::vector<int>& incr = knob->getIncrements();
 
     increments->resize( incr.size() );
     for (std::size_t i = 0; i < incr.size(); ++i) {

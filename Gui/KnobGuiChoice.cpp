@@ -229,7 +229,11 @@ void
 KnobGuiChoice::createWidget(QHBoxLayout* layout)
 {
     _comboBox = new KnobComboBox( shared_from_this(), 0, layout->parentWidget() );
-    _comboBox->setCascading( _knob.lock()->isCascading() );
+    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    _comboBox->setCascading( knob->isCascading() );
     onEntriesPopulated();
 
     QObject::connect( _comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)) );
@@ -244,7 +248,11 @@ void
 KnobGuiChoice::onCurrentIndexChanged(int i)
 {
     setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
-    pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(), _knob.lock()->getValue(0), i, 0, false, 0) );
+    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(), knob->getValue(0), i, 0, false, 0) );
 }
 
 void
@@ -367,7 +375,11 @@ KnobGuiChoice::onItemNewSelected()
 
             return;
         }
-        KnobHolder* holder = _knob.lock()->getHolder();
+        boost::shared_ptr<KnobChoice> knob = _knob.lock();
+        if (!knob) {
+            return;
+        }
+        KnobHolder* holder = knob->getHolder();
         assert(holder);
         EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
         assert(effect);
@@ -385,7 +397,11 @@ KnobGuiChoice::reflectExpressionState(int /*dimension*/,
                                       bool hasExpr)
 {
     _comboBox->setAnimation(3);
-    bool isEnabled = _knob.lock()->isEnabled(0);
+    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    bool isEnabled = knob->isEnabled(0);
     _comboBox->setEnabled_natron(!hasExpr && isEnabled);
 }
 
@@ -491,7 +507,11 @@ KnobGuiChoice::getKnob() const
 void
 KnobGuiChoice::reflectModificationsState()
 {
-    bool hasModif = _knob.lock()->hasModifications();
+    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    bool hasModif = knob->hasModifications();
 
     _comboBox->setAltered(!hasModif);
 }

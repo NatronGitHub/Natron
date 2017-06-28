@@ -183,7 +183,7 @@ KnobGuiButton::emitValueChanged(bool clicked)
         _button->setDown(clicked);
         _button->setChecked(clicked);
 
-        pushUndoCommand( new KnobUndoCommand<bool>(shared_from_this(), _knob.lock()->getValue(), clicked, 0, false) );
+        pushUndoCommand( new KnobUndoCommand<bool>(shared_from_this(), k->getValue(), clicked, 0, false) );
     } else {
         k->trigger();
     }

@@ -663,7 +663,11 @@ KnobGuiLayers::addNewUserEntry(QStringList& row)
         row.push_back( QString::fromUtf8( comps.getLayerName().c_str() ) );
 
         std::list<std::vector<std::string> > table;
-        _knob.lock()->getTable(&table);
+        boost::shared_ptr<KnobLayers> knob = _knob.lock();
+        if (!knob) {
+            return;
+        }
+        knob->getTable(&table);
         for (std::list<std::vector<std::string> >::iterator it = table.begin(); it != table.end(); ++it) {
             if ( (*it)[0] == comps.getLayerName() ) {
                 Dialogs::errorDialog( tr("Layer").toStdString(), tr("A Layer with the same name already exists").toStdString() );
@@ -711,8 +715,12 @@ KnobGuiLayers::editUserEntry(QStringList& row)
         std::string oldLayerName = row[0].toStdString();
         row[0] = ( QString::fromUtf8( comps.getLayerName().c_str() ) );
 
+        boost::shared_ptr<KnobLayers> knob = _knob.lock();
+        if (!knob) {
+            return false;
+        }
         std::list<std::vector<std::string> > table;
-        _knob.lock()->getTable(&table);
+        knob->getTable(&table);
         for (std::list<std::vector<std::string> >::iterator it = table.begin(); it != table.end(); ++it) {
             if ( ( (*it)[0] == comps.getLayerName() ) && ( (*it)[0] != oldLayerName ) ) {
                 Dialogs::errorDialog( tr("Layer").toStdString(), tr("A Layer with the same name already exists").toStdString() );
