@@ -283,6 +283,7 @@ KnobGuiChoice::removeSpecificGui()
 void
 KnobGuiChoice::createWidget(QHBoxLayout* layout)
 {
+<<<<<<< HEAD
     KnobChoicePtr knob = _knob.lock();
     KnobGuiPtr knobUI = getKnobGui();
 
@@ -291,7 +292,15 @@ KnobGuiChoice::createWidget(QHBoxLayout* layout)
 
 
 
-    _comboBox->setCascading( _knob.lock()->isCascading() );
+    _comboBox->setCascading( knob->isCascading() );
+=======
+    _comboBox = new KnobComboBox( shared_from_this(), 0, layout->parentWidget() );
+    KnobChoicePtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    _comboBox->setCascading( knob->isCascading() );
+>>>>>>> origin/RB-2.3
     onEntriesPopulated();
 
     std::string textToFitHorizontally = knob->getTextToFitHorizontally();
@@ -312,10 +321,19 @@ KnobGuiChoice::createWidget(QHBoxLayout* layout)
 void
 KnobGuiChoice::onCurrentIndexChanged(int i)
 {
+<<<<<<< HEAD
     KnobGuiPtr knobUI = getKnobGui();
     knobUI->setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
     KnobChoicePtr knob = _knob.lock();
     knobUI->pushUndoCommand( new KnobUndoCommand<int>(knob, knob->getValue(DimIdx(0), getView()), i, DimIdx(0), getView()));
+=======
+    setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
+    KnobChoicePtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(), knob->getValue(0), i, 0, false, 0) );
+>>>>>>> origin/RB-2.3
 }
 
 void
@@ -379,7 +397,7 @@ KnobGuiChoice::getCombobox() const
 QString
 KnobGuiChoice::getPixmapPathFromFilePath(const QString &filePath) const
 {
-    return getPixmapPathFromFilePath(_knob.lock()->getHolder(),filePath);
+    return getPixmapPathFromFilePath(knob->getHolder(),filePath);
 }
 
 void
@@ -428,6 +446,7 @@ KnobGuiChoice::onEntriesPopulated()
                 icon.addPixmap(pix);
             }
         }
+<<<<<<< HEAD
 
         if (!shortcutID.empty() && !pluginShortcutGroup.empty() && !_comboBox->isCascading()) {
             QAction* action = new ActionWithShortcut(pluginShortcutGroup,
@@ -436,6 +455,20 @@ KnobGuiChoice::onEntriesPopulated()
                                                      _comboBox);
             if (!icon.isNull()) {
                 action->setIcon(icon);
+=======
+        KnobChoicePtr knob = _knob.lock();
+        if (!knob) {
+            return;
+        }
+        KnobHolder* holder = knob->getHolder();
+        assert(holder);
+        EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
+        assert(effect);
+        if (effect) {
+            assert( effect->getNode() );
+            if ( !effect->getNode()->addUserComponents(comps) ) {
+                Dialogs::errorDialog( tr("Layer").toStdString(), tr("A Layer with the same name already exists").toStdString() );
+>>>>>>> origin/RB-2.3
             }
             _comboBox->addAction(action);
 
@@ -462,6 +495,7 @@ KnobGuiChoice::onEntriesPopulated()
 void
 KnobGuiChoice::onItemNewSelected()
 {
+<<<<<<< HEAD
     KnobChoicePtr knob = _knob.lock();
     if (!knob) {
         return;
@@ -472,6 +506,15 @@ KnobGuiChoice::onItemNewSelected()
     }
     callback(knob);
   
+=======
+    _comboBox->setAnimation(3);
+    KnobChoicePtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    bool isEnabled = knob->isEnabled(0);
+    _comboBox->setEnabled_natron(!hasExpr && isEnabled);
+>>>>>>> origin/RB-2.3
 }
 
 void
@@ -522,7 +565,7 @@ KnobGuiChoice::reflectAnimationLevel(DimIdx /*dimension*/,
                                      AnimationLevelEnum level)
 {
 
-    bool isEnabled = _knob.lock()->isEnabled();
+    bool isEnabled = knob->isEnabled();
     _comboBox->setEnabled_natron(level != eAnimationLevelExpression && isEnabled);
 
     if ( level != (AnimationLevelEnum)_comboBox->getAnimation() ) {
@@ -566,7 +609,11 @@ KnobGuiChoice::reflectLinkedState(DimIdx /*dimension*/, bool linked)
 void
 KnobGuiChoice::reflectModificationsState()
 {
-    bool hasModif = _knob.lock()->hasModifications();
+    KnobChoicePtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    bool hasModif = knob->hasModifications();
 
     _comboBox->setIsModified(hasModif);
 }

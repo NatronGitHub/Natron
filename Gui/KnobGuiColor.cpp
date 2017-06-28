@@ -217,7 +217,8 @@ KnobGuiColor::KnobGuiColor(const KnobGuiPtr& knobUI, ViewIdx view)
     , _knob( toKnobColor(knobUI->getKnob()) )
     , _colorLabel(0)
     , _colorDialogButton(0)
-    , _useSimplifiedUI( _knob.lock()->isSimplified() )
+<<<<<<< HEAD
+    , _useSimplifiedUI( knob->isSimplified() )
     , _uiColorspaceLut(0)
     , _internalColorspaceLut(0)
 {
@@ -228,10 +229,19 @@ KnobGuiColor::KnobGuiColor(const KnobGuiPtr& knobUI, ViewIdx view)
             _useSimplifiedUI = true;
         }
     }
-    const std::string& uiName = _knob.lock()->getUIColorspaceName();
-    const std::string& internalName = _knob.lock()->getInternalColorspaceName();
+    const std::string& uiName = knob->getUIColorspaceName();
+    const std::string& internalName = knob->getInternalColorspaceName();
     _uiColorspaceLut = Color::LutManager::findLut(uiName);
     _internalColorspaceLut = Color::LutManager::findLut(internalName);
+=======
+    , _lastColor( knob->getDimension() )
+    , _useSimplifiedUI(true)
+{
+    if (knob) {
+        KnobColorPtr k = _knob.lock();
+        _useSimplifiedUI = isViewerUIKnob() || ( k && k->isSimplified() );
+    }
+>>>>>>> origin/RB-2.3
 }
 
 void
@@ -244,7 +254,15 @@ KnobGuiColor::connectKnobSignalSlots()
 void
 KnobGuiColor::getIncrements(std::vector<double>* increments) const
 {
-    int nDims = _knob.lock()->getNDimensions();
+<<<<<<< HEAD
+    int nDims = knob->getNDimensions();
+=======
+    KnobColorPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    int nDims = knob->getDimension();
+>>>>>>> origin/RB-2.3
 
     increments->resize(nDims);
     for (int i = 0; i < nDims; ++i) {
@@ -255,7 +273,15 @@ KnobGuiColor::getIncrements(std::vector<double>* increments) const
 void
 KnobGuiColor::getDecimals(std::vector<int>* decimals) const
 {
-    int nDims = _knob.lock()->getNDimensions();
+<<<<<<< HEAD
+    int nDims = knob->getNDimensions();
+=======
+    KnobColorPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    int nDims = knob->getDimension();
+>>>>>>> origin/RB-2.3
 
     decimals->resize(nDims);
     for (int i = 0; i < nDims; ++i) {
@@ -593,6 +619,19 @@ KnobGuiColor::showColorDialog()
     }
 } // showColorDialog
 
+<<<<<<< HEAD
+=======
+bool
+KnobGuiColor::isAutoFoldDimensionsEnabled() const
+{
+    KnobColorPtr knob = _knob.lock();
+    if (!knob) {
+        return false;
+    }
+    return knob->getDimension() == 3;
+}
+
+>>>>>>> origin/RB-2.3
 NATRON_NAMESPACE_EXIT;
 
 NATRON_NAMESPACE_USING;

@@ -1415,10 +1415,29 @@ GroupFromSelectionCommand::redo()
     // Set the position of the group to the centroid of selected nodes
     containerNode->setPosition( groupPosition.x(), groupPosition.y() );
 
+<<<<<<< HEAD
     // Move all the selected nodes to the newly created Group
     for (NodesList::const_iterator it = originalNodes.begin(); it!=originalNodes.end(); ++it) {
         (*it)->moveToGroup(containerGroup);
     }
+=======
+                    double originalX, originalY;
+                    foundOriginalNode->getPosition(&originalX, &originalY);
+                    if (originalInput) {
+                        double inputX, inputY;
+                        originalInput->getPosition(&inputX, &inputY);
+                        offsetX = inputX - originalX;
+                        offsetY = inputY - originalY;
+                    } else {
+                        offsetX = originalX;
+                        offsetY = originalY;
+                    }
+                    double thisInputX, thisInputY;
+                    it2->node->getPosition(&thisInputX, &thisInputY);
+                    
+                    thisInputX += offsetX;
+                    thisInputY += offsetY;
+>>>>>>> origin/RB-2.3
 
     // Just moving nodes into the group is not enough: we need to create the appropriate number
     // of Input nodes in the group to match the input of the selection so that the graph is not broken

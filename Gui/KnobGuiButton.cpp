@@ -256,8 +256,12 @@ KnobGuiButton::emitValueChanged(bool clicked)
         _button->setDown(clicked);
         _button->setChecked(clicked);
 
+<<<<<<< HEAD
         KnobButtonPtr knob = _knob.lock();
         getKnobGui()->pushUndoCommand( new KnobUndoCommand<bool>(knob, knob->getValue(DimIdx(0), getView()), clicked, DimIdx(0), getView()) );
+=======
+        pushUndoCommand( new KnobUndoCommand<bool>(shared_from_this(), k->getValue(), clicked, 0, false) );
+>>>>>>> origin/RB-2.3
     } else {
         k->trigger();
     }
@@ -320,7 +324,7 @@ void
 KnobGuiButton::onLabelChanged()
 {
     if (_button) {
-        _button->setText(QString::fromUtf8(_knob.lock()->getLabel().c_str()));
+        _button->setText(QString::fromUtf8(knob->getLabel().c_str()));
     }
 }
 

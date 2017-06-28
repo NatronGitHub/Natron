@@ -123,7 +123,15 @@ KnobGuiGroup::createWidget(QHBoxLayout* layout)
     if ( knobUI->hasToolTip() ) {
         knobUI->toolTip(_button, getView());
     }
-    _checked = _knob.lock()->getValue(DimIdx(0), getView());
+<<<<<<< HEAD
+    _checked = knob->getValue(DimIdx(0), getView());
+=======
+    boost::shared_ptr<KnobGroup> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    _checked = knob->getValue();
+>>>>>>> origin/RB-2.3
     _button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _button->setChecked(_checked);
     QObject::connect( _button, SIGNAL(checked(bool)), this, SLOT(onCheckboxChecked(bool)) );
@@ -198,7 +206,15 @@ KnobGuiGroup::eventFilter(QObject */*target*/,
 void
 KnobGuiGroup::updateGUI()
 {
-    bool b = _knob.lock()->getValue();
+<<<<<<< HEAD
+    bool b = knob->getValue();
+=======
+    boost::shared_ptr<KnobGroup> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    bool b = knob->getValue(0);
+>>>>>>> origin/RB-2.3
 
     setCheckedInternal(b, false);
     if (_button) {

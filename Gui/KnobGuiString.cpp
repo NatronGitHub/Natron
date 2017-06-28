@@ -634,8 +634,16 @@ KnobGuiString::onLineChanged()
     if ( !_lineEdit->isEnabled() || _lineEdit->isReadOnly() ) {
         return;
     }
+<<<<<<< HEAD
     KnobStringPtr knob = _knob.lock();
     std::string oldText = knob->getValue(DimIdx(0), getView());
+=======
+    boost::shared_ptr<KnobString> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    std::string oldText = knob->getValue(0);
+>>>>>>> origin/RB-2.3
     std::string newText = _lineEdit->text().toStdString();
 
     if (oldText != newText) {
@@ -649,10 +657,72 @@ void
 KnobGuiString::onTextChanged()
 {
     QString txt = _textEdit->toPlainText();
+<<<<<<< HEAD
     KnobGuiPtr knobUI = getKnobGui();
     KnobStringPtr knob = _knob.lock();
     std::string oldText = knob->getValue(DimIdx(0), getView());
     knobUI->pushUndoCommand( new KnobUndoCommand<std::string>( knob, oldText, txt.toStdString(), DimIdx(0), getView() ) );
+=======
+
+    //txt = stripWhitespaces(txt);
+    boost::shared_ptr<KnobString> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    if ( knob->usesRichText() ) {
+        txt = addHtmlTags(txt);
+    }
+    pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(), knob->getValue(0), txt.toStdString() ) );
+}
+
+QString
+KnobGuiString::addHtmlTags(QString text) const
+{
+    QString fontTag = makeFontTag(_fontFamily, _fontSize, _fontColor);
+
+    text.prepend(fontTag);
+    text.append( QString::fromUtf8(kFontEndTag) );
+
+    if (_boldActivated) {
+        text.prepend( QString::fromUtf8(kBoldStartTag) );
+        text.append( QString::fromUtf8(kBoldEndTag) );
+    }
+    if (_italicActivated) {
+        text.prepend( QString::fromUtf8(kItalicStartTag) );
+        text.append( QString::fromUtf8(kItalicEndTag) );
+    }
+
+    ///if the knob had custom data, set them
+    boost::shared_ptr<KnobString> knob = _knob.lock();
+    if (!knob) {
+        return text;
+    }
+    QString knobOldtext = QString::fromUtf8( knob->getValue(0).c_str() );
+    QString startCustomTag( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_START) );
+    int startCustomData = knobOldtext.indexOf(startCustomTag);
+    if (startCustomData != -1) {
+        QString customEndTag( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_END) );
+        int endCustomData = knobOldtext.indexOf(customEndTag, startCustomData);
+        assert(endCustomData != -1);
+        startCustomData += startCustomTag.size();
+
+        int fontStart = text.indexOf( QString::fromUtf8(kFontSizeTag) );
+        assert(fontStart != -1);
+
+        QString endFontTag( QString::fromUtf8("\">") );
+        int fontTagEnd = text.indexOf(endFontTag, fontStart);
+        assert(fontTagEnd != -1);
+        fontTagEnd += endFontTag.size();
+
+        QString customData = knobOldtext.mid(startCustomData, endCustomData - startCustomData);
+
+        text.insert(fontTagEnd, startCustomTag);
+        text.insert(fontTagEnd + startCustomTag.size(), customData);
+        text.insert(fontTagEnd + startCustomTag.size() + customData.size(), customEndTag);
+    }
+
+    return text;
+>>>>>>> origin/RB-2.3
 }
 
 
@@ -762,6 +832,12 @@ KnobGuiString::updateGUI()
         int selectionEnd = cursor.selectionEnd();
 
         QString txt = QString::fromUtf8( value.c_str() );
+<<<<<<< HEAD
+=======
+        if ( knob->usesRichText() ) {
+            txt = removeAutoAddedHtmlTags(txt);
+        }
+>>>>>>> origin/RB-2.3
 
         if ( knob->isCustomHTMLText() ) {
             QString oldText = _textEdit->toHtml();
@@ -900,10 +976,24 @@ KnobGuiString::reflectAnimationLevel(DimIdx /*dimension*/,
 void
 KnobGuiString::reflectMultipleSelection(bool dirty)
 {
+    boost::shared_ptr<KnobString> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
     if (_textEdit) {
+<<<<<<< HEAD
         _textEdit->setIsSelectedMultipleTimes(dirty);
     } else if (_lineEdit) {
         _lineEdit->setIsSelectedMultipleTimes(dirty);
+=======
+        if ( !knob->isCustomHTMLText() ) {
+            _textEdit->setReadOnlyNatron(readOnly);
+        }
+    } else if (_lineEdit) {
+        if ( !knob->isCustomKnob() ) {
+            _lineEdit->setReadOnly_NoFocusRect(readOnly);
+        }
+>>>>>>> origin/RB-2.3
     }
 }
 
@@ -918,6 +1008,29 @@ KnobGuiString::reflectSelectionState(bool selected)
 
 }
 
+<<<<<<< HEAD
+=======
+void
+KnobGuiString::reflectExpressionState(int /*dimension*/,
+                                      bool hasExpr)
+{
+    boost::shared_ptr<KnobString> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    bool isEnabled = knob->isEnabled(0);
+
+    if (_textEdit) {
+        _textEdit->setAnimation(3);
+        if ( !knob->isCustomHTMLText() ) {
+            _textEdit->setReadOnlyNatron(hasExpr || !isEnabled);
+        }
+    } else if (_lineEdit) {
+        _lineEdit->setAnimation(3);
+        _lineEdit->setReadOnly_NoFocusRect(hasExpr || !isEnabled);
+    }
+}
+>>>>>>> origin/RB-2.3
 
 void
 KnobGuiString::updateToolTip()
@@ -926,8 +1039,16 @@ KnobGuiString::updateToolTip()
     if ( knobUI->hasToolTip() ) {
 
         if (_textEdit) {
-            bool useRichText = _knob.lock()->usesRichText();
+<<<<<<< HEAD
+            bool useRichText = knob->usesRichText();
             QString tt = knobUI->toolTip(0, getView());
+=======
+            boost::shared_ptr<KnobString> knob = _knob.lock();
+            if (!knob) {
+                return;
+            }
+            bool useRichText = knob->usesRichText();
+>>>>>>> origin/RB-2.3
             if (useRichText) {
                 tt += tr("This text area supports html encoding. "
                          "Please check <a href=http://qt-project.org/doc/qt-5/richtext-html-subset.html>Qt website</a> for more info.");
@@ -946,7 +1067,11 @@ KnobGuiString::updateToolTip()
 void
 KnobGuiString::reflectModificationsState()
 {
-    bool hasModif = _knob.lock()->hasModifications();
+    boost::shared_ptr<KnobString> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    bool hasModif = knob->hasModifications();
 
     if (_lineEdit) {
         _lineEdit->setIsModified(hasModif);
