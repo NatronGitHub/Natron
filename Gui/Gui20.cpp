@@ -479,6 +479,9 @@ Gui::removeViewerTab(ViewerTab* tab,
                      bool deleteData)
 {
     assert(tab);
+    if (!tab) {
+        throw std::logic_error("");
+    }
     unregisterTab(tab);
 
     if (tab == _imp->_activeViewer) {

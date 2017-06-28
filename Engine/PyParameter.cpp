@@ -79,6 +79,10 @@ Param::getRenderCloneKnobInternal() const
 {
     // The main instance knob
     KnobIPtr mainInstanceKnob = _knob.lock();
+    if (!mainInstanceKnob) {
+        PythonSetNullError();
+        return KnobIPtr();
+    }
     EffectInstancePtr mainInstanceHolder = toEffectInstance(mainInstanceKnob->getHolder());
     if (!mainInstanceHolder) {
         return mainInstanceKnob;

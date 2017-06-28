@@ -88,7 +88,10 @@ NodeGraph::showNodePanel(bool casIsCtrl, bool casIsShift, const NodeGuiPtr& near
                     assert(tab);
 
                     TabWidget* foundTab = 0;
-                    QWidget* parent = tab->parentWidget();
+                    QWidget* parent = 0;
+                    if (tab) {
+                        parent = tab->parentWidget();
+                    }
                     while (parent) {
                         foundTab = dynamic_cast<TabWidget*>(parent);
                         if (foundTab) {
@@ -101,7 +104,9 @@ NodeGraph::showNodePanel(bool casIsCtrl, bool casIsShift, const NodeGuiPtr& near
                     } else {
                         //try to find a floating window
                         FloatingWidget* floating = 0;
-                        parent = tab->parentWidget();
+                        if (tab) {
+                            parent = tab->parentWidget();
+                        }
                         while (parent) {
                             floating = dynamic_cast<FloatingWidget*>(parent);
                             if (floating) {

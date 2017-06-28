@@ -123,7 +123,11 @@ KnobGuiGroup::createWidget(QHBoxLayout* layout)
     if ( knobUI->hasToolTip() ) {
         knobUI->toolTip(_button, getView());
     }
-    _checked = _knob.lock()->getValue(DimIdx(0), getView());
+    KnobGroupPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    _checked = knob->getValue(DimIdx(0), getView());
     _button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _button->setChecked(_checked);
     QObject::connect( _button, SIGNAL(checked(bool)), this, SLOT(onCheckboxChecked(bool)) );
@@ -198,7 +202,11 @@ KnobGuiGroup::eventFilter(QObject */*target*/,
 void
 KnobGuiGroup::updateGUI()
 {
-    bool b = _knob.lock()->getValue();
+    KnobGroupPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    bool b = knob->getValue();
 
     setCheckedInternal(b, false);
     if (_button) {
@@ -232,7 +240,6 @@ KnobGuiGroup::setWidgetsVisible(bool visible)
 void
 KnobGuiGroup::setEnabled(const std::vector<bool>& perDimEnabled)
 {
-    KnobGroupPtr knob = _knob.lock();
     if (_button) {
         _button->setEnabled(perDimEnabled[0]);
     }

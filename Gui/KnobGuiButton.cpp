@@ -102,6 +102,9 @@ KnobGuiButton::loadPixmapInternal(bool checked, bool applyColorOverlay, const QC
 {
     KnobGuiPtr knobUI = getKnobGui();
     KnobButtonPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
     EffectInstancePtr isEffect = toEffectInstance( knob->getHolder() );
     KnobTableItemPtr isTableItem = toKnobTableItem(knob->getHolder());
     if (isTableItem) {
@@ -185,6 +188,9 @@ KnobGuiButton::loadPixmaps(bool applyColorOverlay, const QColor& overlayColor)
         _button->setIcon(icon);
     } else {
         KnobButtonPtr knob = _knob.lock();
+        if (!knob) {
+            return;
+        }
         QString label = QString::fromUtf8( knob->getLabel().c_str() );
         _button->setText(label);
     }
@@ -195,6 +201,9 @@ KnobGuiButton::createWidget(QHBoxLayout* layout)
 {
     KnobGuiPtr knobUI = getKnobGui();
     KnobButtonPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
 
     _button = new Button( layout->parentWidget() );
     if (knobUI->getLayoutType() == KnobGui::eKnobLayoutTypeTableItemWidget) {
@@ -248,18 +257,17 @@ KnobGuiButton::removeSpecificGui()
 void
 KnobGuiButton::emitValueChanged(bool clicked)
 {
-    KnobButtonPtr k = _knob.lock();
-
-    assert(k);
-
-    if ( k->getIsCheckable() ) {
+    KnobButtonPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    if ( knob->getIsCheckable() ) {
         _button->setDown(clicked);
         _button->setChecked(clicked);
 
-        KnobButtonPtr knob = _knob.lock();
         getKnobGui()->pushUndoCommand( new KnobUndoCommand<bool>(knob, knob->getValue(DimIdx(0), getView()), clicked, DimIdx(0), getView()) );
     } else {
-        k->trigger();
+        knob->trigger();
     }
 }
 
@@ -274,10 +282,13 @@ KnobGuiButton::setWidgetsVisible(bool visible)
 void
 KnobGuiButton::updateGUI()
 {
-    KnobButtonPtr k = _knob.lock();
+    KnobButtonPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
 
-    if ( k && k->getIsCheckable() ) {
-        bool checked = k->getValue();
+    if ( knob->getIsCheckable() ) {
+        bool checked = knob->getValue();
         if (_button->isChecked() == checked) {
             return;
         }
@@ -289,8 +300,6 @@ KnobGuiButton::updateGUI()
 void
 KnobGuiButton::setEnabled(const std::vector<bool>& perDimEnabled)
 {
-    KnobButtonPtr knob = _knob.lock();
-
     _button->setEnabled(perDimEnabled[0]);
 }
 
@@ -320,7 +329,11 @@ void
 KnobGuiButton::onLabelChanged()
 {
     if (_button) {
-        _button->setText(QString::fromUtf8(_knob.lock()->getLabel().c_str()));
+        KnobButtonPtr knob = _knob.lock();
+        if (!knob) {
+            return;
+        }
+        _button->setText(QString::fromUtf8(knob->getLabel().c_str()));
     }
 }
 
