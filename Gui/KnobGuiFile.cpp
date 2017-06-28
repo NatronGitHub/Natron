@@ -664,7 +664,7 @@ KnobGuiPath::addNewUserEntry(QStringList& row)
 {
     KnobPathPtr knob = _knob.lock();
     if (!knob) {
-        return;
+        return false;
     }
 
     std::vector<std::string> filters;
