@@ -971,7 +971,6 @@ void
 SetExpressionCommand::undo()
 {
     KnobIPtr knob = _knob.lock();
-
     if (!knob) {
         return;
     }
@@ -1009,7 +1008,6 @@ void
 SetExpressionCommand::redo()
 {
     KnobIPtr knob = _knob.lock();
-
     if (!knob) {
         return;
     }

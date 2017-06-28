@@ -260,26 +260,7 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
 TimeLinePtr
 KnobGuiParametricAnimationModel::getTimeline() const
 {
-<<<<<<< HEAD
     return TimeLinePtr();
-=======
-    if ( (dimension < 0) || ( dimension >= (int)_curves.size() ) ) {
-        return;
-    }
-    double r, g, b;
-    KnobParametricPtr knob = _knob.lock();
-    if (!knob) {
-        return;
-    }
-    knob->getCurveColor(dimension, &r, &g, &b);
-
-    CurveDescriptor& found = _curves[dimension];
-    QColor c;
-    c.setRgbF(r, g, b);
-    found.curve->setColor(c);
-
-    _curveWidget->update();
->>>>>>> origin/RB-2.3
 }
 
 void

@@ -1176,28 +1176,16 @@ KnobGuiDouble::KnobGuiDouble(const KnobGuiPtr& knob, ViewIdx view)
     : KnobGuiValue(knob, view)
     , _knob( boost::dynamic_pointer_cast<KnobDouble>(knob->getKnob()) )
 {
-<<<<<<< HEAD
-=======
-    KnobDoublePtr knob = _knob.lock();
-    if (!knob) {
-        return false;
-    }
-    return knob->isSliderDisabled();
->>>>>>> origin/RB-2.3
 }
 
 bool
 KnobGuiDouble::isSliderDisabled() const
 {
-<<<<<<< HEAD
-    return knob->isSliderDisabled();
-=======
     KnobDoublePtr knob = _knob.lock();
     if (!knob) {
         return false;
     }
-    return knob->isAutoFoldDimensionsEnabled();
->>>>>>> origin/RB-2.3
+    return knob->isSliderDisabled();
 }
 
 bool
@@ -1258,6 +1246,9 @@ void
 KnobGuiDouble::connectKnobSignalSlots()
 {
     KnobDoublePtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
     QObject::connect( knob.get(), SIGNAL(incrementChanged(double,DimIdx)), this, SLOT(onIncrementChanged(double,DimIdx)) );
     QObject::connect( knob.get(), SIGNAL(decimalsChanged(int,DimIdx)), this, SLOT(onDecimalsChanged(int,DimIdx)) );
 }
@@ -1310,19 +1301,6 @@ KnobGuiInt::isSliderDisabled() const
 }
 
 bool
-<<<<<<< HEAD
-=======
-KnobGuiInt::isAutoFoldDimensionsEnabled() const
-{
-    KnobIntPtr knob = _knob.lock();
-    if (!knob) {
-        return false;
-    }
-    return knob->isAutoFoldDimensionsEnabled();
-}
-
-bool
->>>>>>> origin/RB-2.3
 KnobGuiInt::isRectangleType() const
 {
     KnobIntPtr knob = _knob.lock();
@@ -1336,6 +1314,9 @@ void
 KnobGuiInt::connectKnobSignalSlots()
 {
     KnobIntPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
     QObject::connect( knob.get(), SIGNAL(incrementChanged(double,DimIdx)), this, SLOT(onIncrementChanged(double,DimIdx)) );
 }
 
@@ -1368,6 +1349,9 @@ Qt::Alignment
 KnobGuiInt::getSpinboxAlignment() const 
 {
     KnobIntPtr knob = _knob.lock();
+    if (!knob) {
+        return 0;
+    }
     if (knob->isValueCenteredInSpinBox()) {
         return Qt::AlignVCenter | Qt::AlignHCenter;
     } else {
@@ -1379,6 +1363,9 @@ void
 KnobGuiInt::createWidget(QHBoxLayout* layout)
 {
     KnobIntPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
     if (!knob->isShortcutKnob()) {
         KnobGuiValue::createWidget(layout);
     } else {
@@ -1412,7 +1399,9 @@ KnobGuiInt::onKeybindRecorderEditingFinished()
     newValues.push_back(mods);
 
     KnobIntPtr knob = _knob.lock();
-
+    if (!knob) {
+        return;
+    }
 
     std::vector<int> oldValuesVec(knob->getNDimensions());
     for (int i = 0; i < knob->getNDimensions(); ++i) {
@@ -1428,6 +1417,9 @@ KnobGuiInt::updateGUI()
         KnobGuiValue::updateGUI();
     } else {
         KnobIntPtr knob = _knob.lock();
+        if (!knob) {
+            return;
+        }
         assert(knob->getNDimensions() == 2);
         Key symbol = (Key)knob->getValue(DimIdx(0));
         KeyboardModifiers modifiers = (KeyboardModifiers)knob->getValue(DimIdx(1));
@@ -1475,6 +1467,9 @@ KnobGuiInt::reflectAnimationLevel(DimIdx dimension, AnimationLevelEnum level)
         KnobGuiValue::reflectAnimationLevel(dimension, level);
     } else {
         KnobIntPtr knob = _knob.lock();
+        if (!knob) {
+            return;
+        }
         bool isEnabled = knob->isEnabled();
         _shortcutRecorder->setReadOnly_NoFocusRect(level == eAnimationLevelExpression || !isEnabled);
         _shortcutRecorder->setAnimation((int)level);
@@ -1497,6 +1492,10 @@ KnobGuiInt::reflectModificationsState()
     if (!_shortcutRecorder) {
         KnobGuiValue::reflectModificationsState();
     } else {
+        KnobIntPtr knob = _knob.lock();
+        if (!knob) {
+            return;
+        }
         bool hasModif = knob->hasModifications();
 
         if (_shortcutRecorder) {

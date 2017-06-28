@@ -616,7 +616,7 @@ KnobGuiLayers::addNewUserEntry(QStringList& row)
         std::list<std::vector<std::string> > table;
         boost::shared_ptr<KnobLayers> knob = _knob.lock();
         if (!knob) {
-            return;
+            return false;
         }
         knob->getTable(&table);
         for (std::list<std::vector<std::string> >::iterator it = table.begin(); it != table.end(); ++it) {

@@ -239,19 +239,15 @@ KnobGuiBool::removeSpecificGui()
 void
 KnobGuiBool::updateGUI()
 {
-<<<<<<< HEAD
+    KnobBoolPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
     bool checked = knob->getValue(DimIdx(0), getView());
     if (_checkBox->isChecked() == checked) {
         return;
     }
     _checkBox->setChecked(checked);
-=======
-    KnobBoolPtr knob = _knob.lock();
-    if (!knob) {
-        return;
-    }
-    _checkBox->setChecked( knob->getValue(0) );
->>>>>>> origin/RB-2.3
 }
 
 void
@@ -260,6 +256,10 @@ KnobGuiBool::reflectAnimationLevel(DimIdx /*dimension*/,
 {
     int value = (int)level;
     if ( value != _checkBox->getAnimation() ) {
+        KnobBoolPtr knob = _knob.lock();
+        if (!knob) {
+            return;
+        }
         bool isEnabled = knob->isEnabled();
         _checkBox->setReadOnly(level == eAnimationLevelExpression || !isEnabled);
         _checkBox->setAnimation(value);
@@ -303,16 +303,11 @@ KnobGuiBool::onLabelClicked(bool b)
         return;
     }
     _checkBox->setChecked(b);
-<<<<<<< HEAD
-
     KnobBoolPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
     getKnobGui()->pushUndoCommand( new KnobUndoCommand<bool>(knob, knob->getValue(DimIdx(0), getView()), b, DimIdx(0), getView()) );
-=======
-    KnobBoolPtr knob = _knob.lock();
-    if (!knob) {
-        return;
-    }
-    pushUndoCommand( new KnobUndoCommand<bool>(shared_from_this(), knob->getValue(0), b, 0, false) );
 }
 
 void
@@ -322,14 +317,6 @@ KnobGuiBool::onCheckBoxStateChanged(bool b)
     if (!knob) {
         return;
     }
-    pushUndoCommand( new KnobUndoCommand<bool>(shared_from_this(), knob->getValue(0), b, 0, false) );
->>>>>>> origin/RB-2.3
-}
-
-void
-KnobGuiBool::onCheckBoxStateChanged(bool b)
-{
-    KnobBoolPtr knob = _knob.lock();
     getKnobGui()->pushUndoCommand( new KnobUndoCommand<bool>(knob, knob->getValue(DimIdx(0), getView()), b, DimIdx(0), getView()) );
 }
 
@@ -342,8 +329,6 @@ KnobGuiBool::setWidgetsVisible(bool visible)
 void
 KnobGuiBool::setEnabled(const std::vector<bool>& perDimEnabled)
 {
-    KnobBoolPtr knob = _knob.lock();
-
     _checkBox->setReadOnly(!perDimEnabled[0]);
 }
 
@@ -362,38 +347,21 @@ KnobGuiBool::reflectSelectionState(bool selected)
 void
 KnobGuiBool::reflectLinkedState(DimIdx /*dimension*/, bool linked)
 {
-<<<<<<< HEAD
     _checkBox->setLinked(linked);
-=======
-    KnobBoolPtr knob = _knob.lock();
-    if (!knob) {
-        return;
-    }
-    bool isEnabled = knob->isEnabled(0);
-
-    _checkBox->setAnimation(3);
-    _checkBox->setReadOnly(hasExpr || !isEnabled);
->>>>>>> origin/RB-2.3
 }
 
 void
 KnobGuiBool::updateToolTip()
 {
-<<<<<<< HEAD
-    KnobGuiPtr knob = getKnobGui();
-    if ( knob->hasToolTip() ) {
-        for (int i = 0; i < knob->getNDimensions(); ++i) {
-            knob->toolTip(_checkBox, getView());
-=======
-    if ( hasToolTip() ) {
-        QString tt = toolTip();
+    KnobGuiPtr knobgui = getKnobGui();
+    if ( knobgui->hasToolTip() ) {
         KnobBoolPtr knob = _knob.lock();
         if (!knob) {
             return;
         }
-        for (int i = 0; i < knob->getDimension(); ++i) {
-            _checkBox->setToolTip( tt );
->>>>>>> origin/RB-2.3
+        for (int i = 0; i < knob->getNDimensions(); ++i) {
+#pragma message WARN("STRANGE: why do that ndimensions times? - check other KnobGuis too")
+            knobgui->toolTip(_checkBox, getView());
         }
     }
 }

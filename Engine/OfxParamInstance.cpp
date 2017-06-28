@@ -1788,6 +1788,9 @@ OfxChoiceInstance::setOption(int num)
      */
     int dim = getProperties().getDimension(kOfxParamPropChoiceOption);
     KnobChoicePtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
     if (dim == 0) {
         knob->resetChoices();
         return;
@@ -3152,8 +3155,6 @@ void
 OfxInteger2DInstance::setRange()
 {
     DYNAMIC_PROPERTY_CHECK();
-
-    KnobIntPtr knob = _knob.lock();
     std::vector<int> mins(2);
     std::vector<int> maxs(2);
     _properties.getIntPropertyN(kOfxParamPropMin, &mins[0], mins.size());
@@ -3528,8 +3529,6 @@ OfxDouble3DInstance::setDisplayRange()
     DYNAMIC_PROPERTY_CHECK();
     std::vector<double> displayMins(3);
     std::vector<double> displayMaxs(3);
-    KnobDoublePtr knob = _knob.lock();
-
     _properties.getDoublePropertyN(kOfxParamPropDisplayMin, &displayMins[0], displayMins.size());
     _properties.getDoublePropertyN(kOfxParamPropDisplayMax, &displayMaxs[0], displayMaxs.size());
     KnobDoublePtr knob = _knob.lock();
@@ -5018,7 +5017,7 @@ OfxParametricInstance::OfxParametricInstance(const OfxEffectInstancePtr& node,
     }
     for (int i = 0; i < parametricDimension; ++i) {
         const std::string & curveName = getProperties().getStringProperty(kOfxParamPropDimensionLabel, i);
-        knob->setDimensionName(i, curveName);
+        knob->setDimensionName(DimIdx(i), curveName);
     }
 }
 
