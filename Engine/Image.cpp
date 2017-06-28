@@ -1821,10 +1821,10 @@ Image::halveRoIForDepth(const RectI & roi,
     RectI srcRoI = roi;
     srcRoI.intersect(srcBounds, &srcRoI); // intersect srcRoI with the region of definition
 
-    dstRoI.x1 = std::floor(srcRoI.x1 / 2.);
-    dstRoI.y1 = std::floor(srcRoI.y1 / 2.);
-    dstRoI.x2 = std::ceil(srcRoI.x2 / 2.);
-    dstRoI.y2 = std::ceil(srcRoI.y2 / 2.);
+    dstRoI.x1 = (srcRoI.x1 + 1) / 2; // equivalent to ceil(srcRoI.x1/2.0)
+    dstRoI.y1 = (srcRoI.y1 + 1) / 2; // equivalent to ceil(srcRoI.y1/2.0)
+    dstRoI.x2 = srcRoI.x2 / 2; // equivalent to floor(srcRoI.x2/2.0)
+    dstRoI.y2 = srcRoI.y2 / 2; // equivalent to floor(srcRoI.y2/2.0)
 
 
     const PIX* const srcPixels      = (const PIX*)pixelAt(srcBounds.x1,   srcBounds.y1);
