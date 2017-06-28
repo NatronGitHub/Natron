@@ -208,8 +208,12 @@ KnobGuiColor::KnobGuiColor(KnobPtr knob,
     , _colorLabel(0)
     , _colorDialogButton(0)
     , _lastColor( knob->getDimension() )
-    , _useSimplifiedUI( isViewerUIKnob() || _knob.lock()->isSimplified() )
+    , _useSimplifiedUI(true)
 {
+    if (knob) {
+        boost::shared_ptr<KnobColor> k = _knob.lock();
+        _useSimplifiedUI = isViewerUIKnob() || ( k && k->isSimplified() );
+    }
 }
 
 void
@@ -224,7 +228,11 @@ KnobGuiColor::connectKnobSignalSlots()
 void
 KnobGuiColor::getIncrements(std::vector<double>* increments) const
 {
-    int nDims = _knob.lock()->getDimension();
+    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    int nDims = knob->getDimension();
 
     increments->resize(nDims);
     for (int i = 0; i < nDims; ++i) {
@@ -235,7 +243,11 @@ KnobGuiColor::getIncrements(std::vector<double>* increments) const
 void
 KnobGuiColor::getDecimals(std::vector<int>* decimals) const
 {
-    int nDims = _knob.lock()->getDimension();
+    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    int nDims = knob->getDimension();
 
     decimals->resize(nDims);
     for (int i = 0; i < nDims; ++i) {
@@ -524,7 +536,11 @@ KnobGuiColor::showColorDialog()
 bool
 KnobGuiColor::isAutoFoldDimensionsEnabled() const
 {
-    return _knob.lock()->getDimension() == 3;
+    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    if (!knob) {
+        return false;
+    }
+    return knob->getDimension() == 3;
 }
 
 NATRON_NAMESPACE_EXIT;

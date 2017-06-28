@@ -184,7 +184,11 @@ KnobGuiParametric::onColorChanged(int dimension)
         return;
     }
     double r, g, b;
-    _knob.lock()->getCurveColor(dimension, &r, &g, &b);
+    boost::shared_ptr<KnobParametric> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->getCurveColor(dimension, &r, &g, &b);
 
     CurveDescriptor& found = _curves[dimension];
     QColor c;

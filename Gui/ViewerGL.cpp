@@ -3675,7 +3675,7 @@ ViewerGL::removeGUI()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    if ( _imp->viewerTab->getGui() ) {
+    if ( _imp->viewerTab && _imp->viewerTab->getGui() ) {
         _imp->viewerTab->discardInternalNodePointer();
         _imp->viewerTab->getGui()->removeViewerTab(_imp->viewerTab, true, true);
     }

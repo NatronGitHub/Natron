@@ -600,14 +600,22 @@ void
 OfxPushButtonInstance::setEnabled()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setAllDimensionsEnabled( getEnabled() );
+    boost::shared_ptr<KnobButton> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setAllDimensionsEnabled( getEnabled() );
 }
 
 void
 OfxPushButtonInstance::setHint()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setHintToolTip(getHint());
+    boost::shared_ptr<KnobButton> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setHintToolTip(getHint());
 }
 
 
@@ -616,21 +624,33 @@ void
 OfxPushButtonInstance::setSecret()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setSecret( getSecret() );
+    boost::shared_ptr<KnobButton> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setSecret( getSecret() );
 }
 
 void
 OfxPushButtonInstance::setInViewportSecret()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setInViewerContextSecret( getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret) );
+    boost::shared_ptr<KnobButton> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setInViewerContextSecret( getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret) );
 }
 
 void
 OfxPushButtonInstance::setInViewportLabel()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setInViewerContextLabel(QString::fromUtf8(getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel).c_str()));
+    boost::shared_ptr<KnobButton> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setInViewerContextLabel(QString::fromUtf8(getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel).c_str()));
 
 }
 
@@ -638,14 +658,22 @@ void
 OfxPushButtonInstance::setLabel()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setLabel( getParamLabel(this) );
+    boost::shared_ptr<KnobButton> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setLabel( getParamLabel(this) );
 }
 
 void
 OfxPushButtonInstance::setEvaluateOnChange()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
+    boost::shared_ptr<KnobButton> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
 KnobPtr
@@ -725,7 +753,11 @@ void
 OfxIntegerInstance::setEnabled()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setAllDimensionsEnabled( getEnabled() );
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setAllDimensionsEnabled( getEnabled() );
 }
 
 // callback which should set secret state as appropriate
@@ -733,7 +765,11 @@ void
 OfxIntegerInstance::setSecret()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setSecret( getSecret() );
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setSecret( getSecret() );
 }
 
 
@@ -741,14 +777,22 @@ void
 OfxIntegerInstance::setInViewportSecret()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setInViewerContextSecret( getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret) );
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setInViewerContextSecret( getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret) );
 }
 
 void
 OfxIntegerInstance::setInViewportLabel()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setInViewerContextLabel(QString::fromUtf8(getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel).c_str()));
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setInViewerContextLabel(QString::fromUtf8(getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel).c_str()));
 
 }
 
@@ -756,28 +800,44 @@ void
 OfxIntegerInstance::setHint()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setHintToolTip(getHint());
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setHintToolTip(getHint());
 }
 
 void
 OfxIntegerInstance::setDefault()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setDefaultValueWithoutApplying(_properties.getIntProperty(kOfxParamPropDefault, 0), 0);
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setDefaultValueWithoutApplying(_properties.getIntProperty(kOfxParamPropDefault, 0), 0);
 }
 
 void
 OfxIntegerInstance::setLabel()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setLabel( getParamLabel(this) );
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setLabel( getParamLabel(this) );
 }
 
 void
 OfxIntegerInstance::setEvaluateOnChange()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
 KnobPtr
@@ -836,8 +896,12 @@ OfxIntegerInstance::setDisplayRange()
     int displayMin = getProperties().getIntProperty(kOfxParamPropDisplayMin);
     int displayMax = getProperties().getIntProperty(kOfxParamPropDisplayMax);
 
-    _knob.lock()->setDisplayMinimum(displayMin);
-    _knob.lock()->setDisplayMaximum(displayMax);
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setDisplayMinimum(displayMin);
+    knob->setDisplayMaximum(displayMax);
 }
 
 void
@@ -847,8 +911,12 @@ OfxIntegerInstance::setRange()
     int mini = getProperties().getIntProperty(kOfxParamPropMin);
     int maxi = getProperties().getIntProperty(kOfxParamPropMax);
 
-    _knob.lock()->setMinimum(mini);
-    _knob.lock()->setMaximum(maxi);
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setMinimum(mini);
+    knob->setMaximum(maxi);
 }
 
 ////////////////////////// OfxDoubleInstance /////////////////////////////////////////////////
@@ -984,21 +1052,33 @@ void
 OfxDoubleInstance::setEnabled()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setAllDimensionsEnabled( getEnabled() );
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setAllDimensionsEnabled( getEnabled() );
 }
 
 void
 OfxDoubleInstance::setHint()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setHintToolTip(getHint());
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setHintToolTip(getHint());
 }
 
 void
 OfxDoubleInstance::setDefault()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setDefaultValueWithoutApplying(_properties.getDoubleProperty(kOfxParamPropDefault, 0), 0);
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setDefaultValueWithoutApplying(_properties.getDoubleProperty(kOfxParamPropDefault, 0), 0);
 }
 
 // callback which should set secret state as appropriate
@@ -1006,7 +1086,11 @@ void
 OfxDoubleInstance::setSecret()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setSecret( getSecret() );
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setSecret( getSecret() );
 }
 
 
@@ -1014,14 +1098,22 @@ void
 OfxDoubleInstance::setInViewportSecret()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setInViewerContextSecret( getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret) );
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setInViewerContextSecret( getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret) );
 }
 
 void
 OfxDoubleInstance::setInViewportLabel()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setInViewerContextLabel(QString::fromUtf8(getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel).c_str()));
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setInViewerContextLabel(QString::fromUtf8(getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel).c_str()));
 
 }
 
@@ -1029,14 +1121,22 @@ void
 OfxDoubleInstance::setLabel()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setLabel( getParamLabel(this) );
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setLabel( getParamLabel(this) );
 }
 
 void
 OfxDoubleInstance::setEvaluateOnChange()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
 void
@@ -1046,8 +1146,12 @@ OfxDoubleInstance::setDisplayRange()
     double displayMin = getProperties().getDoubleProperty(kOfxParamPropDisplayMin);
     double displayMax = getProperties().getDoubleProperty(kOfxParamPropDisplayMax);
 
-    _knob.lock()->setDisplayMinimum(displayMin);
-    _knob.lock()->setDisplayMaximum(displayMax);
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setDisplayMinimum(displayMin);
+    knob->setDisplayMaximum(displayMax);
 }
 
 void
@@ -1057,8 +1161,12 @@ OfxDoubleInstance::setRange()
     double mini = getProperties().getDoubleProperty(kOfxParamPropMin);
     double maxi = getProperties().getDoubleProperty(kOfxParamPropMax);
 
-    _knob.lock()->setMinimum(mini);
-    _knob.lock()->setMaximum(maxi);
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setMinimum(mini);
+    knob->setMaximum(maxi);
 }
 
 KnobPtr
@@ -1182,7 +1290,11 @@ void
 OfxBooleanInstance::setEnabled()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setAllDimensionsEnabled( getEnabled() );
+    boost::shared_ptr<KnobBool> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setAllDimensionsEnabled( getEnabled() );
 }
 
 // callback which should set secret state as appropriate
@@ -1190,7 +1302,11 @@ void
 OfxBooleanInstance::setSecret()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setSecret( getSecret() );
+    boost::shared_ptr<KnobBool> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setSecret( getSecret() );
 }
 
 
@@ -1198,14 +1314,22 @@ void
 OfxBooleanInstance::setInViewportSecret()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setInViewerContextSecret( getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret) );
+    boost::shared_ptr<KnobBool> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setInViewerContextSecret( getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret) );
 }
 
 void
 OfxBooleanInstance::setInViewportLabel()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setInViewerContextLabel(QString::fromUtf8(getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel).c_str()));
+    boost::shared_ptr<KnobBool> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setInViewerContextLabel(QString::fromUtf8(getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel).c_str()));
 
 }
 
@@ -1213,28 +1337,44 @@ void
 OfxBooleanInstance::setHint()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setHintToolTip(getHint());
+    boost::shared_ptr<KnobBool> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setHintToolTip(getHint());
 }
 
 void
 OfxBooleanInstance::setDefault()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setDefaultValueWithoutApplying(_properties.getIntProperty(kOfxParamPropDefault, 0), 0);
+    boost::shared_ptr<KnobBool> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setDefaultValueWithoutApplying(_properties.getIntProperty(kOfxParamPropDefault, 0), 0);
 }
 
 void
 OfxBooleanInstance::setLabel()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setLabel( getParamLabel(this) );
+    boost::shared_ptr<KnobBool> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setLabel( getParamLabel(this) );
 }
 
 void
 OfxBooleanInstance::setEvaluateOnChange()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
+    boost::shared_ptr<KnobBool> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
 KnobPtr
@@ -1397,7 +1537,11 @@ void
 OfxChoiceInstance::setHint()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setHintToolTip(getHint());
+    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setHintToolTip(getHint());
 }
 
 
@@ -1405,7 +1549,11 @@ void
 OfxChoiceInstance::setDefault()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setDefaultValueWithoutApplying(_properties.getIntProperty(kOfxParamPropDefault, 0), 0);
+    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setDefaultValueWithoutApplying(_properties.getIntProperty(kOfxParamPropDefault, 0), 0);
 }
 
 // callback which should set enabled state as appropriate
@@ -1413,7 +1561,11 @@ void
 OfxChoiceInstance::setEnabled()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setAllDimensionsEnabled( getEnabled() );
+    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setAllDimensionsEnabled( getEnabled() );
 }
 
 // callback which should set secret state as appropriate
@@ -1421,7 +1573,11 @@ void
 OfxChoiceInstance::setSecret()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setSecret( getSecret() );
+    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setSecret( getSecret() );
 }
 
 
@@ -1429,14 +1585,22 @@ void
 OfxChoiceInstance::setInViewportSecret()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setInViewerContextSecret( getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret) );
+    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setInViewerContextSecret( getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret) );
 }
 
 void
 OfxChoiceInstance::setInViewportLabel()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setInViewerContextLabel(QString::fromUtf8(getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel).c_str()));
+    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setInViewerContextLabel(QString::fromUtf8(getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel).c_str()));
 
 }
 
@@ -1444,14 +1608,22 @@ void
 OfxChoiceInstance::setLabel()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setLabel( getParamLabel(this) );
+    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setLabel( getParamLabel(this) );
 }
 
 void
 OfxChoiceInstance::setEvaluateOnChange()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
+    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
 void
@@ -1690,7 +1862,11 @@ void
 OfxRGBAInstance::setEnabled()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setAllDimensionsEnabled( getEnabled() );
+    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setAllDimensionsEnabled( getEnabled() );
 }
 
 // callback which should set secret state as appropriate
@@ -1698,7 +1874,11 @@ void
 OfxRGBAInstance::setSecret()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setSecret( getSecret() );
+    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setSecret( getSecret() );
 }
 
 
@@ -1706,14 +1886,22 @@ void
 OfxRGBAInstance::setInViewportSecret()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setInViewerContextSecret( getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret) );
+    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setInViewerContextSecret( getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret) );
 }
 
 void
 OfxRGBAInstance::setInViewportLabel()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setInViewerContextLabel(QString::fromUtf8(getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel).c_str()));
+    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setInViewerContextLabel(QString::fromUtf8(getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel).c_str()));
 
 }
 
@@ -1721,14 +1909,22 @@ void
 OfxRGBAInstance::setLabel()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setLabel( getParamLabel(this) );
+    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setLabel( getParamLabel(this) );
 }
 
 void
 OfxRGBAInstance::setHint()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setHintToolTip(getHint());
+    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setHintToolTip(getHint());
 }
 
 void
@@ -1737,14 +1933,22 @@ OfxRGBAInstance::setDefault()
     DYNAMIC_PROPERTY_CHECK();
     double def[4];
     _properties.getDoublePropertyN(kOfxParamPropDefault, def, 4);
-    _knob.lock()->setDefaultValuesWithoutApplying(def[0], def[1], def[2], def[3]);
+    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setDefaultValuesWithoutApplying(def[0], def[1], def[2], def[3]);
 }
 
 void
 OfxRGBAInstance::setEvaluateOnChange()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
+    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
 void
@@ -1755,7 +1959,11 @@ OfxRGBAInstance::setDisplayRange()
     std::vector<double> displayMaxs(4);
     _properties.getDoublePropertyN(kOfxParamPropDisplayMin, &displayMins[0], displayMins.size());
     _properties.getDoublePropertyN(kOfxParamPropDisplayMax, &displayMaxs[0], displayMaxs.size());
-    _knob.lock()->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
+    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
 }
 
 void
@@ -1766,7 +1974,11 @@ OfxRGBAInstance::setRange()
     std::vector<double> maxs(4);
     _properties.getDoublePropertyN(kOfxParamPropMin, &mins[0], mins.size());
     _properties.getDoublePropertyN(kOfxParamPropMax, &maxs[0], maxs.size());
-    _knob.lock()->setMinimumsAndMaximums(mins, maxs);
+    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setMinimumsAndMaximums(mins, maxs);
 }
 
 KnobPtr
@@ -1955,7 +2167,11 @@ void
 OfxRGBInstance::setHint()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setHintToolTip(getHint());
+    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setHintToolTip(getHint());
 }
 
 void
@@ -1964,7 +2180,11 @@ OfxRGBInstance::setDefault()
     DYNAMIC_PROPERTY_CHECK();
     double def[3];
     _properties.getDoublePropertyN(kOfxParamPropDefault, def, 3);
-    _knob.lock()->setDefaultValuesWithoutApplying(def[0], def[1], def[2]);
+    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setDefaultValuesWithoutApplying(def[0], def[1], def[2]);
 }
 
 // callback which should set enabled state as appropriate
@@ -1972,7 +2192,11 @@ void
 OfxRGBInstance::setEnabled()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setAllDimensionsEnabled( getEnabled() );
+    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setAllDimensionsEnabled( getEnabled() );
 }
 
 // callback which should set secret state as appropriate
@@ -1980,7 +2204,11 @@ void
 OfxRGBInstance::setSecret()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setSecret( getSecret() );
+    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setSecret( getSecret() );
 }
 
 
@@ -1988,14 +2216,22 @@ void
 OfxRGBInstance::setInViewportSecret()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setInViewerContextSecret( getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret) );
+    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setInViewerContextSecret( getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret) );
 }
 
 void
 OfxRGBInstance::setInViewportLabel()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setInViewerContextLabel(QString::fromUtf8(getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel).c_str()));
+    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setInViewerContextLabel(QString::fromUtf8(getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel).c_str()));
 
 }
 
@@ -2003,14 +2239,22 @@ void
 OfxRGBInstance::setLabel()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setLabel( getParamLabel(this) );
+    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setLabel( getParamLabel(this) );
 }
 
 void
 OfxRGBInstance::setEvaluateOnChange()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
+    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
 void
@@ -2021,7 +2265,11 @@ OfxRGBInstance::setDisplayRange()
     std::vector<double> displayMaxs(3);
     _properties.getDoublePropertyN(kOfxParamPropDisplayMin, &displayMins[0], displayMins.size());
     _properties.getDoublePropertyN(kOfxParamPropDisplayMax, &displayMaxs[0], displayMaxs.size());
-    _knob.lock()->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
+    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
 }
 
 void
@@ -2032,7 +2280,11 @@ OfxRGBInstance::setRange()
     std::vector<double> maxs(3);
     _properties.getDoublePropertyN(kOfxParamPropMin, &mins[0], mins.size());
     _properties.getDoublePropertyN(kOfxParamPropMax, &maxs[0], maxs.size());
-    _knob.lock()->setMinimumsAndMaximums(mins, maxs);
+    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setMinimumsAndMaximums(mins, maxs);
 }
 
 KnobPtr
@@ -2286,7 +2538,11 @@ void
 OfxDouble2DInstance::setHint()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setHintToolTip(getHint());
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setHintToolTip(getHint());
 }
 
 void
@@ -2295,7 +2551,11 @@ OfxDouble2DInstance::setDefault()
     DYNAMIC_PROPERTY_CHECK();
     double def[2];
     _properties.getDoublePropertyN(kOfxParamPropDefault, def, 2);
-    _knob.lock()->setDefaultValuesWithoutApplying(def[0], def[1]);
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setDefaultValuesWithoutApplying(def[0], def[1]);
 }
 
 // callback which should set enabled state as appropriate
@@ -2303,7 +2563,11 @@ void
 OfxDouble2DInstance::setEnabled()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setAllDimensionsEnabled( getEnabled() );
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setAllDimensionsEnabled( getEnabled() );
 }
 
 // callback which should set secret state as appropriate
@@ -2311,7 +2575,11 @@ void
 OfxDouble2DInstance::setSecret()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setSecret( getSecret() );
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setSecret( getSecret() );
 }
 
 
@@ -2319,14 +2587,22 @@ void
 OfxDouble2DInstance::setInViewportSecret()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setInViewerContextSecret( getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret) );
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setInViewerContextSecret( getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret) );
 }
 
 void
 OfxDouble2DInstance::setInViewportLabel()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setInViewerContextLabel(QString::fromUtf8(getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel).c_str()));
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setInViewerContextLabel(QString::fromUtf8(getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel).c_str()));
 
 }
 
@@ -2334,14 +2610,22 @@ void
 OfxDouble2DInstance::setLabel()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setLabel( getParamLabel(this) );
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setLabel( getParamLabel(this) );
 }
 
 void
 OfxDouble2DInstance::setEvaluateOnChange()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
 void
@@ -2352,7 +2636,11 @@ OfxDouble2DInstance::setDisplayRange()
     std::vector<double> displayMaxs(2);
     _properties.getDoublePropertyN(kOfxParamPropDisplayMin, &displayMins[0], displayMins.size());
     _properties.getDoublePropertyN(kOfxParamPropDisplayMax, &displayMaxs[0], displayMaxs.size());
-    _knob.lock()->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
 }
 
 void
@@ -2363,7 +2651,11 @@ OfxDouble2DInstance::setRange()
     std::vector<double> maxs(2);
     _properties.getDoublePropertyN(kOfxParamPropMin, &mins[0], mins.size());
     _properties.getDoublePropertyN(kOfxParamPropMax, &maxs[0], maxs.size());
-    _knob.lock()->setMinimumsAndMaximums(mins, maxs);
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setMinimumsAndMaximums(mins, maxs);
 }
 
 KnobPtr
@@ -2544,7 +2836,11 @@ void
 OfxInteger2DInstance::setEnabled()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setAllDimensionsEnabled( getEnabled() );
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setAllDimensionsEnabled( getEnabled() );
 }
 
 // callback which should set secret state as appropriate
@@ -2552,7 +2848,11 @@ void
 OfxInteger2DInstance::setSecret()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setSecret( getSecret() );
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setSecret( getSecret() );
 }
 
 
@@ -2560,14 +2860,22 @@ void
 OfxInteger2DInstance::setInViewportSecret()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setInViewerContextSecret( getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret) );
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setInViewerContextSecret( getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret) );
 }
 
 void
 OfxInteger2DInstance::setInViewportLabel()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setInViewerContextLabel(QString::fromUtf8(getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel).c_str()));
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setInViewerContextLabel(QString::fromUtf8(getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel).c_str()));
 
 }
 
@@ -2575,7 +2883,11 @@ void
 OfxInteger2DInstance::setLabel()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setLabel( getParamLabel(this) );
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setLabel( getParamLabel(this) );
 }
 
 void
@@ -2586,7 +2898,11 @@ OfxInteger2DInstance::setDisplayRange()
     std::vector<int> displayMaxs(2);
     getProperties().getIntPropertyN(kOfxParamPropDisplayMin, &displayMins[0], displayMins.size());
     getProperties().getIntPropertyN(kOfxParamPropDisplayMax, &displayMaxs[0], displayMaxs.size());
-    _knob.lock()->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
 }
 
 void
@@ -2598,14 +2914,22 @@ OfxInteger2DInstance::setRange()
     std::vector<int> maxs(2);
     _properties.getIntPropertyN(kOfxParamPropMin, &mins[0], mins.size());
     _properties.getIntPropertyN(kOfxParamPropMax, &maxs[0], maxs.size());
-    _knob.lock()->setMinimumsAndMaximums(mins, maxs);
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setMinimumsAndMaximums(mins, maxs);
 }
 
 void
 OfxInteger2DInstance::setHint()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setHintToolTip(getHint());
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setHintToolTip(getHint());
 }
 
 void
@@ -2614,14 +2938,22 @@ OfxInteger2DInstance::setDefault()
     DYNAMIC_PROPERTY_CHECK();
     int def[2];
     _properties.getIntPropertyN(kOfxParamPropDefault, def, 2);
-    _knob.lock()->setDefaultValuesWithoutApplying(def[0], def[1]);
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setDefaultValuesWithoutApplying(def[0], def[1]);
 }
 
 void
 OfxInteger2DInstance::setEvaluateOnChange()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
 KnobPtr
@@ -2832,14 +3164,22 @@ void
 OfxDouble3DInstance::setHint()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setHintToolTip(getHint());
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setHintToolTip(getHint());
 }
 
 void
 OfxDouble3DInstance::setDefault()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setDefaultValuesWithoutApplying(_properties.getDoubleProperty(kOfxParamPropDefault, 0), _properties.getDoubleProperty(kOfxParamPropDefault, 1), _properties.getDoubleProperty(kOfxParamPropDefault, 2));
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setDefaultValuesWithoutApplying(_properties.getDoubleProperty(kOfxParamPropDefault, 0), _properties.getDoubleProperty(kOfxParamPropDefault, 1), _properties.getDoubleProperty(kOfxParamPropDefault, 2));
 }
 
 // callback which should set enabled state as appropriate
@@ -2847,7 +3187,11 @@ void
 OfxDouble3DInstance::setEnabled()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setAllDimensionsEnabled( getEnabled() );
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setAllDimensionsEnabled( getEnabled() );
 }
 
 // callback which should set secret state as appropriate
@@ -2855,7 +3199,11 @@ void
 OfxDouble3DInstance::setSecret()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setSecret( getSecret() );
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setSecret( getSecret() );
 }
 
 
@@ -2863,14 +3211,22 @@ void
 OfxDouble3DInstance::setInViewportSecret()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setInViewerContextSecret( getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret) );
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setInViewerContextSecret( getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret) );
 }
 
 void
 OfxDouble3DInstance::setInViewportLabel()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setInViewerContextLabel(QString::fromUtf8(getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel).c_str()));
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setInViewerContextLabel(QString::fromUtf8(getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel).c_str()));
 
 }
 
@@ -2878,7 +3234,11 @@ void
 OfxDouble3DInstance::setLabel()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setLabel( getParamLabel(this) );
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setLabel( getParamLabel(this) );
 }
 
 void
@@ -2889,7 +3249,11 @@ OfxDouble3DInstance::setDisplayRange()
     std::vector<double> displayMaxs(3);
     _properties.getDoublePropertyN(kOfxParamPropDisplayMin, &displayMins[0], displayMins.size());
     _properties.getDoublePropertyN(kOfxParamPropDisplayMax, &displayMaxs[0], displayMaxs.size());
-    _knob.lock()->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
 }
 
 void
@@ -2900,14 +3264,22 @@ OfxDouble3DInstance::setRange()
     std::vector<double> maxs(3);
     _properties.getDoublePropertyN(kOfxParamPropMin, &mins[0], mins.size());
     _properties.getDoublePropertyN(kOfxParamPropMax, &maxs[0], maxs.size());
-    _knob.lock()->setMinimumsAndMaximums(mins, maxs);
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setMinimumsAndMaximums(mins, maxs);
 }
 
 void
 OfxDouble3DInstance::setEvaluateOnChange()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
 KnobPtr
@@ -3068,14 +3440,22 @@ void
 OfxInteger3DInstance::setHint()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setHintToolTip(getHint());
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setHintToolTip(getHint());
 }
 
 void
 OfxInteger3DInstance::setDefault()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setDefaultValuesWithoutApplying(_properties.getIntProperty(kOfxParamPropDefault, 0), _properties.getIntProperty(kOfxParamPropDefault, 1), _properties.getIntProperty(kOfxParamPropDefault, 2));
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setDefaultValuesWithoutApplying(_properties.getIntProperty(kOfxParamPropDefault, 0), _properties.getIntProperty(kOfxParamPropDefault, 1), _properties.getIntProperty(kOfxParamPropDefault, 2));
 }
 
 // callback which should set enabled state as appropriate
@@ -3083,7 +3463,11 @@ void
 OfxInteger3DInstance::setEnabled()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setAllDimensionsEnabled( getEnabled() );
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setAllDimensionsEnabled( getEnabled() );
 }
 
 // callback which should set secret state as appropriate
@@ -3091,7 +3475,11 @@ void
 OfxInteger3DInstance::setSecret()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setSecret( getSecret() );
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setSecret( getSecret() );
 }
 
 
@@ -3099,14 +3487,22 @@ void
 OfxInteger3DInstance::setInViewportSecret()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setInViewerContextSecret( getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret) );
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setInViewerContextSecret( getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret) );
 }
 
 void
 OfxInteger3DInstance::setInViewportLabel()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setInViewerContextLabel(QString::fromUtf8(getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel).c_str()));
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setInViewerContextLabel(QString::fromUtf8(getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel).c_str()));
 
 }
 
@@ -3114,7 +3510,11 @@ void
 OfxInteger3DInstance::setLabel()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setLabel( getParamLabel(this) );
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setLabel( getParamLabel(this) );
 }
 
 void
@@ -3125,7 +3525,11 @@ OfxInteger3DInstance::setDisplayRange()
     std::vector<int> displayMaxs(3);
     getProperties().getIntPropertyN(kOfxParamPropDisplayMin, &displayMins[0], displayMins.size());
     getProperties().getIntPropertyN(kOfxParamPropDisplayMax, &displayMaxs[0], displayMaxs.size());
-    _knob.lock()->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
 }
 
 void
@@ -3136,14 +3540,22 @@ OfxInteger3DInstance::setRange()
     std::vector<int> maxs(3);
     _properties.getIntPropertyN(kOfxParamPropMin, &mins[0], mins.size());
     _properties.getIntPropertyN(kOfxParamPropMax, &maxs[0], maxs.size());
-    _knob.lock()->setMinimumsAndMaximums(mins, maxs);
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setMinimumsAndMaximums(mins, maxs);
 }
 
 void
 OfxInteger3DInstance::setEvaluateOnChange()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
 KnobPtr
@@ -4160,7 +4572,7 @@ OfxParametricInstance::OfxParametricInstance(const boost::shared_ptr<OfxEffectIn
     }
     for (int i = 0; i < parametricDimension; ++i) {
         const std::string & curveName = getProperties().getStringProperty(kOfxParamPropDimensionLabel, i);
-        _knob.lock()->setDimensionName(i, curveName);
+        knob->setDimensionName(i, curveName);
     }
 }
 
@@ -4174,7 +4586,11 @@ OfxParametricInstance::getCustomOverlayInteractEntryPoint(const OFX::Host::Param
 void
 OfxParametricInstance::onCurvesDefaultInitialized()
 {
-    _knob.lock()->setDefaultCurvesFromCurves();
+    boost::shared_ptr<KnobParametric> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setDefaultCurvesFromCurves();
 }
 
 OfxParametricInstance::~OfxParametricInstance()
@@ -4192,7 +4608,11 @@ void
 OfxParametricInstance::setEnabled()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setAllDimensionsEnabled( getEnabled() );
+    boost::shared_ptr<KnobParametric> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setAllDimensionsEnabled( getEnabled() );
 }
 
 // callback which should set secret state as appropriate
@@ -4200,7 +4620,11 @@ void
 OfxParametricInstance::setSecret()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setSecret( getSecret() );
+    boost::shared_ptr<KnobParametric> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setSecret( getSecret() );
 }
 
 
@@ -4208,14 +4632,22 @@ void
 OfxParametricInstance::setInViewportSecret()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setInViewerContextSecret( getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret) );
+    boost::shared_ptr<KnobParametric> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setInViewerContextSecret( getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret) );
 }
 
 void
 OfxParametricInstance::setInViewportLabel()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setInViewerContextLabel(QString::fromUtf8(getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel).c_str()));
+    boost::shared_ptr<KnobParametric> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setInViewerContextLabel(QString::fromUtf8(getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel).c_str()));
 
 }
 
@@ -4223,7 +4655,11 @@ void
 OfxParametricInstance::setHint()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setHintToolTip(getHint());
+    boost::shared_ptr<KnobParametric> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setHintToolTip(getHint());
 }
 
 
@@ -4231,7 +4667,11 @@ void
 OfxParametricInstance::setEvaluateOnChange()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
+    boost::shared_ptr<KnobParametric> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
 /// callback which should update label
@@ -4239,7 +4679,11 @@ void
 OfxParametricInstance::setLabel()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setLabel( getParamLabel(this) );
+    boost::shared_ptr<KnobParametric> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setLabel( getParamLabel(this) );
 }
 
 void
@@ -4258,7 +4702,7 @@ OfxParametricInstance::setDisplayRange()
     std::vector<double> displayMaxs(dims);
     _properties.getDoublePropertyN(kOfxParamPropDisplayMin, &displayMins[0], displayMins.size());
     _properties.getDoublePropertyN(kOfxParamPropDisplayMax, &displayMaxs[0], displayMaxs.size());
-    _knob.lock()->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
+    knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
 }
 
 void
@@ -4277,7 +4721,7 @@ OfxParametricInstance::setRange()
     std::vector<double> maxs(dims);
     _properties.getDoublePropertyN(kOfxParamPropMin, &mins[0], mins.size());
     _properties.getDoublePropertyN(kOfxParamPropMax, &maxs[0], maxs.size());
-    _knob.lock()->setMinimumsAndMaximums(mins, maxs);
+    knob->setMinimumsAndMaximums(mins, maxs);
 }
 
 
@@ -4287,7 +4731,11 @@ OfxParametricInstance::getValue(int curveIndex,
                                 double parametricPosition,
                                 double *returnValue)
 {
-    StatusEnum stat = _knob.lock()->getValue(curveIndex, parametricPosition, returnValue);
+    boost::shared_ptr<KnobParametric> knob = _knob.lock();
+    if (!knob) {
+        return kOfxStatFailed;
+    }
+    StatusEnum stat = knob->getValue(curveIndex, parametricPosition, returnValue);
 
     if (stat == eStatusOK) {
         return kOfxStatOK;
@@ -4301,7 +4749,11 @@ OfxParametricInstance::getNControlPoints(int curveIndex,
                                          double /*time*/,
                                          int *returnValue)
 {
-    StatusEnum stat = _knob.lock()->getNControlPoints(curveIndex, returnValue);
+    boost::shared_ptr<KnobParametric> knob = _knob.lock();
+    if (!knob) {
+        return kOfxStatFailed;
+    }
+    StatusEnum stat = knob->getNControlPoints(curveIndex, returnValue);
 
     if (stat == eStatusOK) {
         return kOfxStatOK;
@@ -4317,7 +4769,11 @@ OfxParametricInstance::getNthControlPoint(int curveIndex,
                                           double *key,
                                           double *value)
 {
-    StatusEnum stat = _knob.lock()->getNthControlPoint(curveIndex, nthCtl, key, value);
+    boost::shared_ptr<KnobParametric> knob = _knob.lock();
+    if (!knob) {
+        return kOfxStatFailed;
+    }
+    StatusEnum stat = knob->getNthControlPoint(curveIndex, nthCtl, key, value);
 
     if (stat == eStatusOK) {
         return kOfxStatOK;
@@ -4335,7 +4791,11 @@ OfxParametricInstance::setNthControlPoint(int curveIndex,
                                           double value,
                                           bool /*addAnimationKey*/)
 {
-    StatusEnum stat = _knob.lock()->setNthControlPoint(eValueChangedReasonPluginEdited, curveIndex, nthCtl, key, value);
+    boost::shared_ptr<KnobParametric> knob = _knob.lock();
+    if (!knob) {
+        return kOfxStatFailed;
+    }
+    StatusEnum stat = knob->setNthControlPoint(eValueChangedReasonPluginEdited, curveIndex, nthCtl, key, value);
 
     if (stat == eStatusOK) {
         return kOfxStatOK;
@@ -4361,8 +4821,12 @@ OfxParametricInstance::addControlPoint(int curveIndex,
         return kOfxStatFailed;
     }
 
+    boost::shared_ptr<KnobParametric> knob = _knob.lock();
+    if (!knob) {
+        return kOfxStatFailed;
+    }
     StatusEnum stat;
-    EffectInstance* effect = dynamic_cast<EffectInstance*>( _knob.lock()->getHolder() );
+    EffectInstance* effect = dynamic_cast<EffectInstance*>( knob->getHolder() );
     KeyframeTypeEnum interpolation = eKeyframeTypeSmooth; // a reasonable default
     // The initial curve for some plugins may be better with a specific interpolation. Unfortunately, the kOfxParametricSuiteV1 doesn't offer different interpolation methods
 #ifdef DEBUG
@@ -4375,7 +4839,7 @@ OfxParametricInstance::addControlPoint(int curveIndex,
             interpolation = eKeyframeTypeCubic;
         }
     }
-    stat = _knob.lock()->addControlPoint(eValueChangedReasonPluginEdited, curveIndex, key, value, interpolation);
+    stat = knob->addControlPoint(eValueChangedReasonPluginEdited, curveIndex, key, value, interpolation);
 
     if (stat == eStatusOK) {
         return kOfxStatOK;
@@ -4388,7 +4852,11 @@ OfxStatus
 OfxParametricInstance::deleteControlPoint(int curveIndex,
                                           int nthCtl)
 {
-    StatusEnum stat = _knob.lock()->deleteControlPoint(eValueChangedReasonPluginEdited, curveIndex, nthCtl);
+    boost::shared_ptr<KnobParametric> knob = _knob.lock();
+    if (!knob) {
+        return kOfxStatFailed;
+    }
+    StatusEnum stat = knob->deleteControlPoint(eValueChangedReasonPluginEdited, curveIndex, nthCtl);
 
     if (stat == eStatusOK) {
         return kOfxStatOK;
@@ -4400,7 +4868,11 @@ OfxParametricInstance::deleteControlPoint(int curveIndex,
 OfxStatus
 OfxParametricInstance::deleteAllControlPoints(int curveIndex)
 {
-    StatusEnum stat = _knob.lock()->deleteAllControlPoints(eValueChangedReasonPluginEdited, curveIndex);
+    boost::shared_ptr<KnobParametric> knob = _knob.lock();
+    if (!knob) {
+        return kOfxStatFailed;
+    }
+    StatusEnum stat = knob->deleteAllControlPoints(eValueChangedReasonPluginEdited, curveIndex);
 
     if (stat == eStatusOK) {
         return kOfxStatOK;
