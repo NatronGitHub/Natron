@@ -103,7 +103,7 @@ KnobGuiButton::loadPixmapInternal(bool checked, bool applyColorOverlay, const QC
     KnobGuiPtr knobUI = getKnobGui();
     KnobButtonPtr knob = _knob.lock();
     if (!knob) {
-        return;
+        return QPixmap();
     }
     EffectInstancePtr isEffect = toEffectInstance( knob->getHolder() );
     KnobTableItemPtr isTableItem = toKnobTableItem(knob->getHolder());
