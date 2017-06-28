@@ -59,7 +59,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-class OfxClipInstancePrivate
+struct OfxClipInstancePrivate
 {
 public:
     OfxClipInstance* _publicInterface;

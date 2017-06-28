@@ -313,7 +313,7 @@ private:
     bool getImagePlaneInternal(OfxTime time, ViewSpec view, const OfxRectD *optionalBounds, const std::string* ofxPlane, const ImageBitDepthEnum* textureDepth, OFX::Host::ImageEffect::Image** image, OFX::Host::ImageEffect::Texture** texture);
 
 private:
-    friend class OfxClipInstancePrivate;
+    friend struct OfxClipInstancePrivate;
     boost::scoped_ptr<OfxClipInstancePrivate> _imp;
 };
 
