@@ -54,10 +54,10 @@ if {${subport} eq ${name}} {
 
     # devel
 
-    version         20170620
-    set commit      8308803167368b873641e5066017536a082f3c68
-    checksums       rmd160 3a30446404d419b7c117c54b9e91851aa452b686 \
-                    sha256 89eb06668c90aaf4a44dcbbb66e2d7998951f749cb54209b62f5aa77ca2d32b7
+    version         20170627
+    set commit      1e34b42e7163b1f210b8a536b721af31fb059787
+    checksums       rmd160 8745c1f3aa64e4c598b54f6fbc0423043cb815bb \
+                    sha256 da59e6e8d2ba0cd7be0f2f493e3882dda9832285a71a67a808a9e65f25322dce
 
     master_sites    https://gitlab.kitware.com/cmake/cmake/repository/archive.tar.bz2?ref=${commit}&
     distname        ${name}-${commit}
