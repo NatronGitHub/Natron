@@ -348,13 +348,11 @@ equalsStringCaseSensitive(const std::string& str1, const std::string& str2)
     return str1 == str2;
 }
 
-#if 0
 static bool
 equalsStringCaseInsensitive(const std::string& str1, const std::string& str2)
 {
     return boost::iequals(str1, str2);
 }
-#endif
 
 typedef bool (*stringFuncPtr)(const std::string&,const std::string&);
 
