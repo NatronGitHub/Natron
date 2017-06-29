@@ -4503,6 +4503,6 @@ RotoPaint::getActivatedRotoPaintItemsByRenderOrder(TimeValue time, ViewIdx view)
 NATRON_NAMESPACE_EXIT
 
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_RotoPaint.cpp"
 
