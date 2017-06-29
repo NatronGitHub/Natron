@@ -33,7 +33,9 @@
 
 #include "Engine/EngineFwd.h"
 
+
 NATRON_NAMESPACE_ENTER
+
 
 // A class that inherits from QThreadStorage, but never sets local data in the main thread.
 // It uses an actual instance of the data.
@@ -41,10 +43,7 @@ NATRON_NAMESPACE_ENTER
 //
 // Of course, as a consequence the main thread always has "local data", which is just a global variable.
 
-<<<<<<< HEAD
-=======
-NATRON_NAMESPACE_ENTER
->>>>>>> origin/RB-2.3
+
 template <class T>
 class ThreadStorage
     : public QThreadStorage<T>
