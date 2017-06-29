@@ -949,6 +949,8 @@ findAutoContrastVminVmaxForComponents(const Image::CPUData& colorImage,
         case eDisplayChannelsRGB:
             return findAutoContrastVminVmax_generic<PIX, maxValue, srcNComps, eDisplayChannelsRGB>(colorImage, renderArgs, roi, ret);
     }
+    assert(false);
+    return eActionStatusFailed;
 }
 
 
@@ -975,6 +977,8 @@ findAutoContrastVminVmaxForDepth(const Image::CPUData& colorImage,
             return eActionStatusFailed;
 
     }
+    assert(false);
+    return eActionStatusFailed;
 }
 
 ActionRetCodeEnum
@@ -995,6 +999,8 @@ findAutoContrastVminVmax(const Image::CPUData& colorImage,
         case eImageBitDepthShort:
             return findAutoContrastVminVmaxForDepth<unsigned short, 65535>(colorImage, renderArgs, channels, roi, ret);
     }
+    assert(false);
+    return eActionStatusFailed;
 }
 
 class FindAutoContrastProcessor : public ImageMultiThreadProcessorBase
@@ -1320,6 +1326,8 @@ applyViewerProcess8bitForComponents(const RenderViewerArgs& args, const RectI & 
             return applyViewerProcess8bit_generic<PIX, maxValue, srcNComps, eDisplayChannelsMatte>(args, roi);
 
     }
+    assert(false);
+    return eActionStatusFailed;
 }
 
 template <typename PIX, int maxValue>
@@ -1355,6 +1363,8 @@ applyViewerProcess8bit(const RenderViewerArgs& args, const RectI & roi)
         case eImageBitDepthNone:
             return eActionStatusFailed;
     }
+    assert(false);
+    return eActionStatusFailed;
 }
 
 
@@ -1446,6 +1456,8 @@ applyViewerProcess32bitForComponents(const RenderViewerArgs& args, const RectI &
         case eDisplayChannelsMatte:
             return applyViewerProcess32bit_Generic<PIX, maxValue, srcNComps, eDisplayChannelsMatte>(args, roi);
     }
+    assert(false);
+    return eActionStatusFailed;
 }
 
 template <typename PIX, int maxValue>
@@ -1481,6 +1493,8 @@ applyViewerProcess32bit(const RenderViewerArgs& args, const RectI & roi)
         case eImageBitDepthNone:
             return eActionStatusFailed;
     }
+    assert(false);
+    return eActionStatusFailed;
 }
 
 class ViewerProcessor : public ImageMultiThreadProcessorBase

@@ -36,6 +36,9 @@
 #include "Serialization/SerializationFwd.h"
 
 
+SERIALIZATION_NAMESPACE_ENTER
+
+
 #define VIEWER_DATA_INTRODUCES_WIPE_COMPOSITING 2
 #define VIEWER_DATA_INTRODUCES_FRAME_RANGE 3
 #define VIEWER_DATA_INTRODUCES_TOOLBARS_VISIBLITY 4
@@ -78,11 +81,6 @@
 #define GUI_LAYOUT_SERIALIZATION_VERSION GUI_LAYOUT_SERIALIZATION_MAJOR_OVERHAUL
 
 
-<<<<<<< HEAD:Serialization/ProjectGuiSerialization.h
-SERIALIZATION_NAMESPACE_ENTER
-=======
-NATRON_NAMESPACE_ENTER
->>>>>>> origin/RB-2.3:Gui/ProjectGuiSerialization.h
 struct ViewerData
 {
     double zoomLeft;

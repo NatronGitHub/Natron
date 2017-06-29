@@ -45,15 +45,14 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/DockablePanel.h"
 #include "Gui/PyGuiApp.h"
 
-<<<<<<< HEAD
 #include "Serialization/WorkspaceSerialization.h"
 
+
 NATRON_NAMESPACE_ENTER
+
+
 NATRON_PYTHON_NAMESPACE_ENTER
-=======
-NATRON_NAMESPACE_ENTER
-NATRON_PYTHON_NAMESPACE_ENTER
->>>>>>> origin/RB-2.3
+
 
 struct DialogParamHolderPrivate
 {

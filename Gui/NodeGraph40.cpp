@@ -415,7 +415,7 @@ NodeGraph::centerOnAllNodes()
     update();
 } // NodeGraph::centerOnAllNodes
 
-<<<<<<< HEAD
+
 void
 NodeGraph::onMustRefreshNodeLinksLaterReceived()
 {
@@ -537,7 +537,5 @@ NodeGraph::refreshNodeLinksNow()
 
 } // refreshNodeLinksNow
 
+
 NATRON_NAMESPACE_EXIT
-=======
-NATRON_NAMESPACE_EXIT
->>>>>>> origin/RB-2.3

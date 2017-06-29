@@ -632,8 +632,6 @@ KnobGui::onDimensionNameChanged(DimIdx dimension)
     }
 }
 
-<<<<<<< HEAD
-
 
 void
 KnobGui::onRefreshDimensionsVisibilityLaterReceived()
@@ -763,7 +761,5 @@ KnobGui::onInternalKnobLinksChanged()
     node->getDagGui()->refreshNodeLinksLater();
 } // onInternalKnobLinksChanged
 
+
 NATRON_NAMESPACE_EXIT
-=======
-NATRON_NAMESPACE_EXIT
->>>>>>> origin/RB-2.3

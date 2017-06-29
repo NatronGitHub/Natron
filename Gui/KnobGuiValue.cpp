@@ -1345,7 +1345,7 @@ KnobGuiInt::getIncrements(std::vector<double>* increments) const
     }
 }
 
-<<<<<<< HEAD
+
 Qt::Alignment
 KnobGuiInt::getSpinboxAlignment() const 
 {
@@ -1513,10 +1513,9 @@ KnobGuiInt::refreshDimensionName(DimIdx dim)
     } 
 }
 
+
 NATRON_NAMESPACE_EXIT
-=======
-NATRON_NAMESPACE_EXIT
->>>>>>> origin/RB-2.3
+
 
 NATRON_NAMESPACE_USING
 #include "moc_KnobGuiValue.cpp"

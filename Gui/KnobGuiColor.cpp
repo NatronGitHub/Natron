@@ -633,21 +633,9 @@ KnobGuiColor::showColorDialog()
     }
 } // showColorDialog
 
-<<<<<<< HEAD
-NATRON_NAMESPACE_EXIT
-=======
-bool
-KnobGuiColor::isAutoFoldDimensionsEnabled() const
-{
-    boost::shared_ptr<KnobColor> knob = _knob.lock();
-    if (!knob) {
-        return false;
-    }
-    return knob->getDimension() == 3;
-}
 
 NATRON_NAMESPACE_EXIT
->>>>>>> origin/RB-2.3
+
 
 NATRON_NAMESPACE_USING
 #include "moc_KnobGuiColor.cpp"

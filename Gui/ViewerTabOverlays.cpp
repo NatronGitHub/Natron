@@ -1367,7 +1367,7 @@ ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
     return ret;
 } // ViewerTab::notifyOverlaysFocusLost
 
-<<<<<<< HEAD:Gui/ViewerTabOverlays.cpp
+
 void
 ViewerTab::updateSelectionFromViewerSelectionRectangle(bool onRelease)
 {
@@ -1422,6 +1422,3 @@ ViewerTab::onViewerSelectionCleared()
 
 
 NATRON_NAMESPACE_EXIT
-=======
-NATRON_NAMESPACE_EXIT
->>>>>>> origin/RB-2.3:Gui/ViewerTab20.cpp

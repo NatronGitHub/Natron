@@ -191,16 +191,14 @@ private:
     const Color::Lut* _uiColorspaceLut, *_internalColorspaceLut;
 };
 
-<<<<<<< HEAD
+
 inline KnobGuiColorPtr
 toKnobGuiColor(const KnobGuiWidgetsPtr& knobGui)
 {
     return boost::dynamic_pointer_cast<KnobGuiColor>(knobGui);
 }
 
+
 NATRON_NAMESPACE_EXIT
-=======
-NATRON_NAMESPACE_EXIT
->>>>>>> origin/RB-2.3
 
 #endif // Gui_KnobGuiColor_h

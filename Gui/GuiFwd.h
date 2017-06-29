@@ -36,6 +36,7 @@ class QAction;
 class QCheckBox;
 class QColor;
 class QCursor;
+class QDialogButtonBox;
 class QDragEnterEvent;
 class QDragLeaveEvent;
 class QDragMoveEvent;

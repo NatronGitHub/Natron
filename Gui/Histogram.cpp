@@ -70,13 +70,10 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ZoomContext.h"
 #include "Gui/ticks.h"
 
-<<<<<<< HEAD
 #include "Serialization/WorkspaceSerialization.h"
 
+
 NATRON_NAMESPACE_ENTER
-=======
-NATRON_NAMESPACE_ENTER
->>>>>>> origin/RB-2.3
 
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
@@ -1484,7 +1481,7 @@ Histogram::hideViewerCursor()
     update();
 }
 
-<<<<<<< HEAD
+
 bool
 Histogram::saveProjection(SERIALIZATION_NAMESPACE::ViewportData* data)
 {
@@ -1504,10 +1501,8 @@ Histogram::loadProjection(const SERIALIZATION_NAMESPACE::ViewportData& data)
     return true;
 }
 
+
 NATRON_NAMESPACE_EXIT
-=======
-NATRON_NAMESPACE_EXIT
->>>>>>> origin/RB-2.3
 
 NATRON_NAMESPACE_USING
 #include "moc_Histogram.cpp"

@@ -80,12 +80,7 @@ CLANG_DIAG_ON(uninitialized)
 #include <ofxNatron.h>
 
 
-<<<<<<< HEAD
 NATRON_NAMESPACE_ENTER
-=======
-NATRON_NAMESPACE_ENTER
-using std::make_pair;
->>>>>>> origin/RB-2.3
 
 
 KnobGuiGroup::KnobGuiGroup(const KnobGuiPtr& knob, ViewIdx view)

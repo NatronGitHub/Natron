@@ -47,15 +47,13 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiFwd.h"
 #include "Gui/KnobGuiContainerI.h"
 
-<<<<<<< HEAD
+
+NATRON_NAMESPACE_ENTER
+
+
 #define NATRON_SETTINGS_VERTICAL_SPACING_PIXELS 3
 #define NATRON_FORM_LAYOUT_LINES_SPACING 0
 
-
-NATRON_NAMESPACE_ENTER
-=======
-NATRON_NAMESPACE_ENTER
->>>>>>> origin/RB-2.3
 
 typedef std::list<std::pair<KnobIWPtr, KnobGuiPtr> > KnobsGuiMapping;
 

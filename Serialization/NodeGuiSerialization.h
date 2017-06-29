@@ -41,11 +41,9 @@
 #define NODE_GUI_INTRODUCES_CHILDREN 6
 #define NODE_GUI_SERIALIZATION_VERSION NODE_GUI_INTRODUCES_CHILDREN
 
-<<<<<<< HEAD:Serialization/NodeGuiSerialization.h
+
 SERIALIZATION_NAMESPACE_ENTER
-=======
-NATRON_NAMESPACE_ENTER
->>>>>>> origin/RB-2.3:Gui/NodeGuiSerialization.h
+
 
 /**
  * @brief Deprecated, just used for backward compatibility
@@ -237,11 +235,9 @@ public:
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
 
-<<<<<<< HEAD:Serialization/NodeGuiSerialization.h
+
 SERIALIZATION_NAMESPACE_EXIT
-=======
-NATRON_NAMESPACE_EXIT
->>>>>>> origin/RB-2.3:Gui/NodeGuiSerialization.h
+
 
 BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::NodeGuiSerialization, NODE_GUI_SERIALIZATION_VERSION)
 

@@ -3553,7 +3553,7 @@ ViewerGL::currentTimeForEvent(QInputEvent* e)
     return now.tv_sec + now.tv_usec / 1000000.0;
 }
 
-<<<<<<< HEAD
+
 void
 ViewerGL::setInfoBarVisible(bool visible)
 {
@@ -3610,10 +3610,9 @@ ViewerGL::setTripleSyncEnabled(bool toggled)
     getViewerTab()->setTripleSyncEnabled(toggled);
 }
 
+
 NATRON_NAMESPACE_EXIT
-=======
-NATRON_NAMESPACE_EXIT
->>>>>>> origin/RB-2.3
+
 
 NATRON_NAMESPACE_USING
 #include "moc_ViewerGL.cpp"

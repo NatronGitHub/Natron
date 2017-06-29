@@ -755,7 +755,7 @@ Gui::dockClicked()
 }
 #endif
 
-<<<<<<< HEAD
+
 template <class IMG>
 void scaleImageToAdjustDPIInternal(double scale, IMG* pix)
 {
@@ -793,10 +793,9 @@ Gui::scalePixmapToAdjustDPI(QPixmap* pix)
     scaleImageToAdjustDPIInternal<QPixmap>(highDPIFactor, pix);
 }
 
+
 NATRON_NAMESPACE_EXIT
-=======
-NATRON_NAMESPACE_EXIT
->>>>>>> origin/RB-2.3
+
 
 NATRON_NAMESPACE_USING
 #include "moc_Gui.cpp"

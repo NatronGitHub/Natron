@@ -200,7 +200,7 @@ PanelWidget::handleUnCaughtKeyPressEvent(QKeyEvent* e)
     }
 }
 
-<<<<<<< HEAD
+
 void
 PanelWidget::onScriptNameChanged()
 {
@@ -216,6 +216,3 @@ PanelWidget::onLabelChanged()
 
 
 NATRON_NAMESPACE_EXIT
-=======
-NATRON_NAMESPACE_EXIT
->>>>>>> origin/RB-2.3

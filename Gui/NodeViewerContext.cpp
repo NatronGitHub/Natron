@@ -735,17 +735,16 @@ NodeViewerContext::notifyGuiClosing()
     _imp->viewerTab = 0;
 }
 
-<<<<<<< HEAD
+
 NodeGuiPtr
 NodeViewerContext::getNodeGui() const
 {
     return _imp->node.lock();
 }
 
+
 NATRON_NAMESPACE_EXIT
+
+
 NATRON_NAMESPACE_USING
-=======
-NATRON_NAMESPACE_EXIT
-NATRON_NAMESPACE_USING
->>>>>>> origin/RB-2.3
 #include "moc_NodeViewerContext.cpp"

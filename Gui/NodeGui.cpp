@@ -3759,7 +3759,7 @@ NodeGui::onInputVisibilityChanged(int /*inputNb*/)
     refreshEdgesVisility();
 }
 
-<<<<<<< HEAD
+
 static void addAnimatingItemKeys(const AnimatingObjectIPtr& obj, bool isUserKey, TimeLineKeysSet* keys)
 {
     std::list<ViewIdx> views = obj->getViewsList();
@@ -3967,10 +3967,9 @@ NodeGui::refreshLinkIndicators(const std::list<std::pair<NodePtr, bool> >& links
     }
 }
 
+
 NATRON_NAMESPACE_EXIT
-=======
-NATRON_NAMESPACE_EXIT
->>>>>>> origin/RB-2.3
+
 
 NATRON_NAMESPACE_USING
 #include "moc_NodeGui.cpp"

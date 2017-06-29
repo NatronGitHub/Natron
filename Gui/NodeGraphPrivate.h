@@ -259,7 +259,7 @@ public:
         ePasteNodesFlagCloneNodes = 0x4
     };
 
-    DECLARE_FLAGS(PasteNodesFlags, PasteNodesFlagEnum);
+    DECLARE_FLAGS(PasteNodesFlags, PasteNodesFlagEnum)
 
     /**
      * @brief Paste the given nodes with flags. This will create new copies of the nodes

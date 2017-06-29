@@ -179,13 +179,10 @@ KnobClickableLabel::focusOutEvent(QFocusEvent* e)
     ClickableLabel::focusOutEvent(e);
 }
 
-<<<<<<< HEAD
-NATRON_NAMESPACE_EXIT
-NATRON_NAMESPACE_USING
-=======
+
 NATRON_NAMESPACE_EXIT
 
+
 NATRON_NAMESPACE_USING
->>>>>>> origin/RB-2.3
 #include "moc_ClickableLabel.cpp"
 

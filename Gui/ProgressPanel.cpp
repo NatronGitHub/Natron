@@ -640,7 +640,7 @@ ProgressPanel::onItemRightClicked(QPoint globalPos, const TableItemPtr& item)
     }
 }
 
-<<<<<<< HEAD
+
 QIcon
 ProgressPanel::getIcon() const
 {
@@ -652,9 +652,6 @@ ProgressPanel::getIcon() const
 
 
 NATRON_NAMESPACE_EXIT
-=======
-NATRON_NAMESPACE_EXIT
->>>>>>> origin/RB-2.3
 
 
 NATRON_NAMESPACE_USING

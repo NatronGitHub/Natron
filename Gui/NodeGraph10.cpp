@@ -52,13 +52,11 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Global/QtCompat.h"
 
-<<<<<<< HEAD
+
 NATRON_NAMESPACE_ENTER
+
+
 static NodeGuiPtr
-=======
-NATRON_NAMESPACE_ENTER
-static NodeGui*
->>>>>>> origin/RB-2.3
 isNodeGuiChild(QGraphicsItem* item)
 {
     NodeGui* n = dynamic_cast<NodeGui*>(item);

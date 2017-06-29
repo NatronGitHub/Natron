@@ -149,7 +149,7 @@ Splitter::event(QEvent* e)
     return QSplitter::event(e);
 }
 
-<<<<<<< HEAD
+
 OrientationEnum
 Splitter::getNatronOrientation() const
 {
@@ -271,7 +271,5 @@ Splitter::restoreChildrenFromSerialization(const SERIALIZATION_NAMESPACE::Widget
     }
 }
 
+
 NATRON_NAMESPACE_EXIT
-=======
-NATRON_NAMESPACE_EXIT
->>>>>>> origin/RB-2.3

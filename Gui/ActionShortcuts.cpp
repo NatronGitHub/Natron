@@ -271,14 +271,9 @@ ToolTipActionShortcut::onShortcutChanged(const std::string& actionID,
     setToolTipFromOriginalToolTip();
 }
 
-<<<<<<< HEAD
-
-
 
 NATRON_NAMESPACE_EXIT
-=======
-NATRON_NAMESPACE_EXIT
->>>>>>> origin/RB-2.3
+
 
 NATRON_NAMESPACE_USING
 #include "moc_ActionShortcuts.cpp"

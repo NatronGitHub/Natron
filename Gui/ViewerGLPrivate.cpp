@@ -772,10 +772,5 @@ ViewerGL::Implementation::refreshSelectionRectangle(const QPointF & pos)
     selectionRectangle.setRect(xmin, ymin, xmax - xmin, ymax - ymin);
 }
 
-<<<<<<< HEAD
-
 
 NATRON_NAMESPACE_EXIT
-=======
-NATRON_NAMESPACE_EXIT
->>>>>>> origin/RB-2.3

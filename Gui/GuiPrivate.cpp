@@ -121,13 +121,10 @@ GCC_DIAG_ON(unused-parameter)
 #include "Gui/ViewerTab.h"
 
 
-<<<<<<< HEAD
 NATRON_NAMESPACE_ENTER
+
+
 GuiPrivate::GuiPrivate(const GuiAppInstancePtr& app,
-=======
-NATRON_NAMESPACE_ENTER
-GuiPrivate::GuiPrivate(const GuiAppInstPtr& app,
->>>>>>> origin/RB-2.3
                        Gui* gui)
     : _gui(gui)
     , _isInDraftModeMutex()

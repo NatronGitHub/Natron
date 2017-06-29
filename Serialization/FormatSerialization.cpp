@@ -28,17 +28,10 @@
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <yaml-cpp/yaml.h>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-<<<<<<< HEAD:Serialization/FormatSerialization.cpp
-=======
-GCC_DIAG_ON(unused-parameter)
-#endif
-#include "Engine/FrameParams.h"
-#include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER
->>>>>>> origin/RB-2.3:Engine/FrameParamsSerialization.h
 
 SERIALIZATION_NAMESPACE_ENTER
+
 
 void
 FormatSerialization::encode(YAML::Emitter& em) const
@@ -56,10 +49,6 @@ FormatSerialization::encode(YAML::Emitter& em) const
 
 }
 
-<<<<<<< HEAD:Serialization/FormatSerialization.cpp
-=======
-NATRON_NAMESPACE_EXIT
->>>>>>> origin/RB-2.3:Engine/FrameParamsSerialization.h
 
 void
 FormatSerialization::decode(const YAML::Node& node)
