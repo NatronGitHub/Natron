@@ -35,7 +35,7 @@
 
 #ifdef __NATRON_OSX__
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class OSGLContext_mac
 {
@@ -62,7 +62,7 @@ private:
     boost::scoped_ptr<Implementation> _imp; // PIMPL: hide implementation details
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // __NATRON_OSX__
 

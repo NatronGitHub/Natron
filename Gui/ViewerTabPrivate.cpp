@@ -45,7 +45,7 @@
 #include "Gui/ViewerTab.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,
@@ -415,4 +415,4 @@ ViewerTabPrivate::hasInactiveNodeViewerContext(const NodePtr& node)
     return n->getNode() != node;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

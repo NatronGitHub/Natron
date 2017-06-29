@@ -42,7 +42,7 @@
 #include "Gui/PanelWidget.h"
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 typedef std::map<NodePtr, NodeRenderStats > RenderStatsMap;
 
@@ -476,6 +476,6 @@ private:
     boost::scoped_ptr<ViewerTabPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_GUI_VIEWERTAB_H

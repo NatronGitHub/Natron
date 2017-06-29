@@ -27,7 +27,7 @@
 #include <cassert>
 #include <stdexcept>
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 Splitter::Splitter(QWidget* parent)
     : QSplitter(parent)
@@ -148,4 +148,4 @@ Splitter::event(QEvent* e)
     return QSplitter::event(e);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

@@ -35,8 +35,8 @@
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
-NATRON_PYTHON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
+NATRON_PYTHON_NAMESPACE_ENTER
 
 class PyViewer
 {
@@ -165,7 +165,7 @@ public:
     void renderBlocking(const std::list<Effect*>& effects, const std::list<int>& firstFrames, const std::list<int>& lastFrames, const std::list<int>& frameSteps);
 };
 
-NATRON_PYTHON_NAMESPACE_EXIT;
-NATRON_NAMESPACE_EXIT;
+NATRON_PYTHON_NAMESPACE_EXIT
+NATRON_NAMESPACE_EXIT
 
 #endif // GUIAPPWRAPPER_H

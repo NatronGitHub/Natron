@@ -37,8 +37,8 @@
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoStrokeItem.h"
 
-NATRON_NAMESPACE_ENTER;
-NATRON_PYTHON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
+NATRON_PYTHON_NAMESPACE_ENTER
 
 ItemBase::ItemBase(const boost::shared_ptr<RotoItem>& item)
     : _item(item)
@@ -630,5 +630,5 @@ Roto::createRectangle(double x,
     return 0;
 }
 
-NATRON_PYTHON_NAMESPACE_EXIT;
-NATRON_NAMESPACE_EXIT;
+NATRON_PYTHON_NAMESPACE_EXIT
+NATRON_NAMESPACE_EXIT

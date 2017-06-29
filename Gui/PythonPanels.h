@@ -45,8 +45,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/PanelWidget.h"
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
-NATRON_PYTHON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
+NATRON_PYTHON_NAMESPACE_ENTER
 
 struct DialogParamHolderPrivate;
 class DialogParamHolder
@@ -215,7 +215,7 @@ public:
     QString getScriptName() const;
 };
 
-NATRON_PYTHON_NAMESPACE_EXIT;
-NATRON_NAMESPACE_EXIT;
+NATRON_PYTHON_NAMESPACE_EXIT
+NATRON_NAMESPACE_EXIT
 
 #endif // PYTHONPANELS_H

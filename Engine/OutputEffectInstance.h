@@ -43,7 +43,7 @@
 class QThread;
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class OutputEffectInstance
     : public EffectInstance
@@ -128,6 +128,6 @@ protected:
     virtual RenderEngine* createRenderEngine();
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Engine_OutputEffectInstance_h

@@ -29,7 +29,7 @@
 #include "Engine/AppInstance.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 AddTrackCommand::AddTrackCommand(const TrackMarkerPtr &marker,
                                  const boost::shared_ptr<TrackerContext>& context)
@@ -149,4 +149,4 @@ RemoveTracksCommand::redo()
     context->getNode()->getApp()->triggerAutoSave();
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

@@ -37,7 +37,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class SplashScreen
     : public QWidget
@@ -94,6 +94,6 @@ private:
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // SPLASHSCREEN_H

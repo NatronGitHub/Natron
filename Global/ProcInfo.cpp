@@ -41,7 +41,7 @@
 #include <QtCore/QStringList>
 #include <QtCore/QDebug>
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
@@ -543,4 +543,4 @@ ProcInfo::checkIfProcessIsRunning(const char* /*processAbsoluteFilePath*/,
 #endif // if 0
 } // ProcInfo::checkIfProcessIsRunning
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

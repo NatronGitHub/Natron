@@ -35,7 +35,7 @@
 
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class SpinBoxValidator
 {
@@ -71,6 +71,6 @@ private:
     boost::scoped_ptr<NumericKnobValidatorPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // GUI_SPINBOXVALIDATOR_H

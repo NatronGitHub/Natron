@@ -72,7 +72,7 @@
 #include "Gui/NodeSettingsPanel.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 void
@@ -960,4 +960,4 @@ Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime time,
     }
 } // Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

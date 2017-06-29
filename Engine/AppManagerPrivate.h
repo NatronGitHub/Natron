@@ -69,7 +69,7 @@ GCC_DIAG_ON(deprecated)
 #include "Engine/EngineFwd.h"
 #include "Engine/TLSHolder.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct AppManagerPrivate
 {
@@ -240,7 +240,7 @@ public:
     void copyUtf8ArgsToMembers(const std::vector<std::string>& utf8Args);
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Engine_AppManagerPrivate_h
 

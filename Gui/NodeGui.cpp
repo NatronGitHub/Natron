@@ -114,7 +114,7 @@ CLANG_DIAG_ON(uninitialized)
 #define NATRON_PLUGIN_ICON_SIZE 20
 #define PLUGIN_ICON_OFFSET 2
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 using std::make_pair;
 
@@ -3993,7 +3993,7 @@ NodeGui::onInputVisibilityChanged(int /*inputNb*/)
     refreshEdgesVisility();
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_NodeGui.cpp"

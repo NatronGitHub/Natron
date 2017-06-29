@@ -41,7 +41,7 @@
 #include "Engine/TextureRect.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /// parameters send from the scheduler thread to updateViewer() (which runs in the main thread)
 class UpdateViewerParams
@@ -162,7 +162,7 @@ public:
 };
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 
 #endif // ifndef Natron_Engine_UpdateViewerParams_h

@@ -57,7 +57,7 @@
 #include <ofxOpenGLRender.h>
 #include <ofxNatron.h>
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct OfxClipInstancePrivate
 {
@@ -1839,5 +1839,5 @@ OfxClipInstance::findSupportedComp(const std::string &s) const
     return none;
 } // OfxClipInstance::findSupportedComp
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

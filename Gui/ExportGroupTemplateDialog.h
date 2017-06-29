@@ -41,7 +41,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct ExportGroupTemplateDialogPrivate;
 class ExportGroupTemplateDialog
@@ -70,6 +70,6 @@ private:
     boost::scoped_ptr<ExportGroupTemplateDialogPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Natron_Gui_ExportGroupTemplateDialog_h

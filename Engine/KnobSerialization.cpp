@@ -49,7 +49,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/TrackMarker.h"
 #include "Engine/TrackerContext.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 ValueSerialization::ValueSerialization()
 : _serialization(0)
@@ -317,11 +317,13 @@ equalsStringCaseSensitive(const std::string& str1, const std::string& str2)
     return str1 == str2;
 }
 
+#if 0
 static bool
 equalsStringCaseInsensitive(const std::string& str1, const std::string& str2)
 {
     return boost::iequals(str1, str2);
 }
+#endif
 
 typedef bool (*stringFuncPtr)(const std::string&,const std::string&);
 
@@ -585,4 +587,4 @@ filterKnobNameCompat(const std::string& pluginID, int pluginVersionMajor, int pl
     return false;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

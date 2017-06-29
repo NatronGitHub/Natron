@@ -31,7 +31,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @brief Public interface for all elements that can own something in the cache
@@ -55,7 +55,7 @@ public:
     virtual std::string getCacheID() const = 0;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 
 #endif // CACHEENTRYHOLDER_H

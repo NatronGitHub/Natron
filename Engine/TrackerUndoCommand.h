@@ -45,7 +45,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/UndoCommand.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class AddTrackCommand
     : public UndoCommand
@@ -95,7 +95,7 @@ private:
     boost::weak_ptr<TrackerContext> _context;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 
 #endif // TRACKERUNDOCOMMAND_H

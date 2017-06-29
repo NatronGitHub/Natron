@@ -41,7 +41,7 @@
 #include "Engine/Transform.h" // Point3D
 #include "Engine/ViewIdx.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 ////////////////////////////////////ControlPoint////////////////////////////////////
@@ -930,5 +930,5 @@ BezierCP::cloneGuiCurvesToInternalCurves()
     _imp->rightY = _imp->guiRightY;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

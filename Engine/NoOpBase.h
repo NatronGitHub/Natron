@@ -35,7 +35,7 @@
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @brief A NoOp is an effect that doesn't do anything. It is useful for scripting (adding custom parameters)
@@ -117,6 +117,6 @@ private:
                             int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Engine_NoOpBase_h

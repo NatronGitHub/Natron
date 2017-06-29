@@ -110,7 +110,7 @@
 
 #define kReaderParamNameOriginalFrameRange "originalFrameRange"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @brief This is the base class for visual effects.
@@ -2257,6 +2257,6 @@ public:
  **/
 typedef EffectInstance* (*EffectBuilder)(NodePtr);
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_EFFECTINSTANCE_H

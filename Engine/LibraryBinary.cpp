@@ -35,7 +35,7 @@
 #include <dlfcn.h>
 #endif
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 LibraryBinary::LibraryBinary(LibraryBinary::LibraryTypeEnum type)
     : _type(type)
@@ -168,5 +168,5 @@ LibraryBinary::~LibraryBinary()
 #endif
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

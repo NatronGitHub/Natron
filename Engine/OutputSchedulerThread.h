@@ -49,7 +49,7 @@
 //#define NATRON_PLAYBACK_USES_THREAD_POOL
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 typedef boost::shared_ptr<RenderStats> RenderStatsPtr;
 
@@ -879,6 +879,6 @@ private:
     virtual OutputSchedulerThread* createScheduler(const boost::shared_ptr<OutputEffectInstance>& effect) OVERRIDE FINAL WARN_UNUSED_RETURN;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Engine_OutputSchedulerThread_h

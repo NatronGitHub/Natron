@@ -29,7 +29,7 @@
 
 #include "Engine/EffectInstance.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct JoinViewsNodePrivate;
 class JoinViewsNode
@@ -135,5 +135,5 @@ private:
     boost::scoped_ptr<JoinViewsNodePrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 #endif // Engine_JoinViewsNode_h

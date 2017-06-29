@@ -60,7 +60,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 using std::make_pair; using std::pair;
 
@@ -6271,7 +6271,7 @@ template class Knob<double>;
 template class Knob<bool>;
 template class Knob<std::string>;
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_Knob.cpp"

@@ -56,7 +56,7 @@
 #include "Gui/ViewerTab.h"
 #include "Gui/ViewerToolButton.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct NodeViewerContextPrivate
 {
@@ -744,6 +744,6 @@ NodeViewerContext::notifyGuiClosing()
     _imp->viewerTab = 0;
 }
 
-NATRON_NAMESPACE_EXIT;
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_EXIT
+NATRON_NAMESPACE_USING
 #include "moc_NodeViewerContext.cpp"

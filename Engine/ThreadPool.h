@@ -36,7 +36,7 @@
 #include "Engine/EngineFwd.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 /**
@@ -134,6 +134,6 @@ private:
 
 #endif // QT_CUSTOM_THREADPOOL
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Natron_Engine_ThreadPool_h

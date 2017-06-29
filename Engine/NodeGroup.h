@@ -49,7 +49,7 @@ CLANG_DIAG_ON(uninitialized)
 #define kNatronGroupInputIsMaskParamName "isMask"
 #define kNatronGroupInputIsOptionalParamName "optional"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 struct NodeCollectionPrivate;
@@ -408,6 +408,6 @@ private:
     boost::scoped_ptr<NodeGroupPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NODEGROUP_H

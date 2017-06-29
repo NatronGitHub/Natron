@@ -48,7 +48,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiDefines.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 LineEdit::LineEdit(QWidget* parent)
     : QLineEdit(parent)
@@ -180,7 +180,7 @@ LineEdit::keyPressEvent(QKeyEvent* e)
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_LineEdit.cpp"

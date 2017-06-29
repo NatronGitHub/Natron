@@ -32,7 +32,7 @@
 #include "Engine/RectI.h"
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /** @class This class describes the rectangle (or portion) of an image that is contained
  * into a texture. x1,y1,x2,y2 are respectivly the image coordinates of the left,bottom,right,top
@@ -79,6 +79,6 @@ operator!=(const TextureRect & first,
     return !(first == second);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_TEXTURERECT_H

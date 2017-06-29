@@ -34,7 +34,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class PluginMemory
 {
@@ -73,6 +73,6 @@ private:
     boost::scoped_ptr<Implementation> _imp; //!< PImpl
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // PLUGINMEMORY_H

@@ -59,7 +59,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/QtCompat.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 void
 NodeGraph::showNodePanel(bool casIsCtrl, bool casIsShift, NodeGui* nearbyNode)
@@ -472,4 +472,4 @@ NodeGraph::selectAllNodes(bool onlyInVisiblePortion)
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

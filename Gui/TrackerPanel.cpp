@@ -75,7 +75,7 @@
 #define COL_ERROR 7
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class TrackerTableItemDelegate
     : public QStyledItemDelegate
@@ -2043,8 +2043,8 @@ TrackerPanel::onTimeChanged(SequenceTime time,
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 
 #include "moc_TrackerPanel.cpp"

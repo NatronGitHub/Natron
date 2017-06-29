@@ -34,7 +34,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/EffectInstance.h"
 #include "Engine/CacheEntry.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct PluginMemory::Implementation
 {
@@ -138,4 +138,4 @@ PluginMemory::unlock()
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

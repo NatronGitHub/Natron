@@ -90,7 +90,7 @@ CLANG_DIAG_ON(uninitialized)
 #define MAX_COLS 6
 #endif
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 class RemoveItemsUndoCommand
@@ -2999,7 +2999,7 @@ DuplicateItemUndoCommand::redo()
     setText( tr("Duplicate item(s) of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_RotoPanel.cpp"

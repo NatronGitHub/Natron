@@ -44,7 +44,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/CurveGui.h" // Curves
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class CurveGui
     : public QObject
@@ -263,6 +263,6 @@ private:
     boost::shared_ptr<RotoContext> _rotoContext;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Gui_CurveGui_h

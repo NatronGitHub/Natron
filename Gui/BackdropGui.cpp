@@ -48,7 +48,7 @@ CLANG_DIAG_ON(uninitialized)
 #define NATRON_BACKDROP_DEFAULT_WIDTH 80
 #define NATRON_BACKDROP_DEFAULT_HEIGHT 80
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct BackdropGuiPrivate
 {
@@ -191,7 +191,7 @@ BackdropGuiPrivate::refreshLabelText(int nameHeight,
     _publicInterface->update();
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_BackdropGui.cpp"

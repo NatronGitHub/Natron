@@ -90,7 +90,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 using std::make_pair;
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 // called by NodeSettingsPanel::NodeSettingsPanel()
 DockablePanel::DockablePanel(Gui* gui,
@@ -1797,7 +1797,7 @@ struct ManageUserParamsDialogPrivate
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
-    NATRON_NAMESPACE_EXIT;
+    NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_DockablePanel.cpp"

@@ -60,7 +60,7 @@
 
 #define NATRON_PYPLUG_EXPORTER_VERSION 10
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct NodeCollectionPrivate
 {
@@ -2855,7 +2855,7 @@ NodeCollection::exportGroupToPython(const QString& pluginID,
     WRITE_INDENT(2); WRITE_STRING("extModule.createInstanceExt(app,group)");
 } // NodeCollection::exportGroupToPython
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_NodeGroup.cpp"

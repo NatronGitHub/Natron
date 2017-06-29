@@ -36,12 +36,15 @@ run-without-python {
     DEFINES += NATRON_RUN_WITHOUT_PYTHON
 }
 
-*g++* | *clang* {
+*g++* | *clang* | *xcode* {
 #See https://bugreports.qt.io/browse/QTBUG-35776 we cannot use
 # QMAKE_CFLAGS_RELEASE_WITH_DEBUGINFO
 # QMAKE_CXXFLAGS_RELEASE_WITH_DEBUGINFO
 # QMAKE_OBJECTIVE_CFLAGS_RELEASE_WITH_DEBUGINFO
 # QMAKE_LFLAGS_RELEASE_WITH_DEBUGINFO
+
+    QMAKE_CFLAGS_WARN_ON += -Wall -Wextra -pedantic -Wmissing-prototypes -Wmissing-declarations -Wno-multichar -Winit-self
+    QMAKE_CXXFLAGS_WARN_ON += -Wall -Wextra -pedantic -Weffc++ -Wno-multichar -Winit-self
 
     CONFIG(relwithdebinfo) {
         CONFIG += release
@@ -127,8 +130,6 @@ unix:LIBS += $$QMAKE_LIBS_DYNLOAD
 
 *g++* {
   QMAKE_CXXFLAGS += -ftemplate-depth-1024
-  QMAKE_CFLAGS_WARN_ON += -Wextra -Wmissing-prototypes -Wmissing-declarations -Wno-multichar
-  QMAKE_CXXFLAGS_WARN_ON += -Wextra -Wno-multichar
   GCCVer = $$system($$QMAKE_CXX --version)
   contains(GCCVer,[0-3]\\.[0-9]+.*) {
   } else {
@@ -371,8 +372,7 @@ unix {
 
 *clang* {
   QMAKE_CXXFLAGS += -ftemplate-depth-1024
-  QMAKE_CFLAGS_WARN_ON += -Wextra
-  QMAKE_CXXFLAGS_WARN_ON += -Wextra -Wno-c++11-extensions
+  QMAKE_CXXFLAGS_WARN_ON += -Wno-c++11-extensions
   c++11 {
     QMAKE_CXXFLAGS += -std=c++11
   }

@@ -44,7 +44,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/NodeGui.h"
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class DotGui
     : public NodeGui
@@ -73,6 +73,6 @@ private:
     QGraphicsEllipseItem* ellipseIndicator;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_GUI_NODEGUI_H

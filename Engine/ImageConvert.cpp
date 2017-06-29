@@ -39,7 +39,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/AppManager.h"
 #include "Engine/Lut.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 ///explicit template instantiations
 
@@ -906,4 +906,4 @@ Image::convertToFormatAlpha0(const RectI & renderWindow,
     convertToFormatCommon(renderWindow, srcColorSpace, dstColorSpace, channelForAlpha, true, copyBitmap, requiresUnpremult, dstImg);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

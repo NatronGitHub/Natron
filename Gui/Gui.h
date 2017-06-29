@@ -56,7 +56,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #define kMainSplitterObjectName "ToolbarSplitter"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct GuiPrivate;
 
@@ -720,6 +720,6 @@ private:
     boost::scoped_ptr<GuiPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Gui_Gui_h

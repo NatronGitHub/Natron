@@ -41,7 +41,7 @@
 
 #include "Engine/AppManager.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 struct CLArgsPrivate
@@ -1261,4 +1261,4 @@ CLArgs::ensureCommandLineArgsUtf8(int argc, char **argv, std::vector<std::string
 #endif
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

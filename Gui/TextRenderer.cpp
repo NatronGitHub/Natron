@@ -42,7 +42,7 @@ CLANG_DIAG_OFF(deprecated)
 #include <QtOpenGL/QGLWidget>
 CLANG_DIAG_ON(deprecated)
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 #define TEXTURE_SIZE 256
 
@@ -346,5 +346,5 @@ TextRenderer::renderText(float x,
     glCheckError();
 } // renderText
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

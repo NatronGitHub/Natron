@@ -47,7 +47,7 @@
 #include "Gui/DopeSheet.h"
 #include "Gui/DopeSheetView.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 typedef std::map<boost::weak_ptr<KnobI>, KnobGui *> KnobsAndGuis;
 
@@ -996,4 +996,4 @@ DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
     _model->refreshSelectionBboxAndRedrawView();
 } // DSPasteKeysCommand::addOrRemoveKeyframe
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

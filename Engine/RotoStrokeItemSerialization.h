@@ -52,7 +52,7 @@ GCC_DIAG_ON(unused-parameter)
 #define ROTO_STROKE_INTRODUCES_MULTIPLE_STROKES 2
 #define ROTO_STROKE_SERIALIZATION_VERSION ROTO_STROKE_INTRODUCES_MULTIPLE_STROKES
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 struct StrokePoint
 {
     double x, y, pressure;
@@ -163,7 +163,7 @@ private:
     std::list<boost::shared_ptr<Curve> > _xCurves, _yCurves, _pressureCurves;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 BOOST_CLASS_VERSION(NATRON_NAMESPACE::RotoStrokeItemSerialization, ROTO_STROKE_SERIALIZATION_VERSION)
 

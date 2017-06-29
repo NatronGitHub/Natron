@@ -95,7 +95,7 @@ GCC_DIAG_ON(unused-parameter)
 
 #define kNatronProjectSettingsPanelSerializationName "Natron_Project_Settings_Panel"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 struct ViewerData
 {
     double zoomLeft;
@@ -792,7 +792,7 @@ public:
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 BOOST_CLASS_VERSION(NATRON_NAMESPACE::GuiLayoutSerialization, GUI_LAYOUT_SERIALIZATION_VERSION);
 BOOST_CLASS_VERSION(NATRON_NAMESPACE::ApplicationWindowSerialization, APPLICATION_WINDOW_SERIALIZATION_VERSION)

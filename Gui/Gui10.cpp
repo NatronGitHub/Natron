@@ -63,7 +63,7 @@
 #endif
 #endif
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 void
 Gui::createDefaultLayout1()
@@ -376,5 +376,5 @@ Gui::setApplicationConsoleActionVisible(bool visible)
 #endif
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

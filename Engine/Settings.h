@@ -40,7 +40,7 @@
 
 #define kQSettingsSoftwareMajorVersionSettingName "SoftwareVersionMajor"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /*The current settings in the preferences menu.*/
 class Settings
@@ -633,6 +633,6 @@ private:
     bool _defaultAppearanceOutdated;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_SETTINGS_H

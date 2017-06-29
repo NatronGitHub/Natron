@@ -38,7 +38,7 @@
 #include "Engine/OfxOverlayInteract.h"
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 // defined below:
 struct HostOverlayPrivate;
@@ -242,6 +242,6 @@ private:
     boost::scoped_ptr<HostOverlayPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Gui_HostOverlay_h

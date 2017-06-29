@@ -53,7 +53,7 @@
 
 #define GAMMA_LUT_NB_VALUES 1023
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 struct AbortableRenderInfo_CompareAge
@@ -425,7 +425,7 @@ public:
     OnGoingRenders currentRenderAges[2];
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 
 #endif // ifndef Natron_Engine_ViewerInstancePrivate_h

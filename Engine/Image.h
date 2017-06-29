@@ -49,7 +49,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/EngineFwd.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 class GenericAccess
@@ -1066,6 +1066,6 @@ template<>
 inline float
 Image::clampIfInt(float v) { return v; }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_IMAGE_H

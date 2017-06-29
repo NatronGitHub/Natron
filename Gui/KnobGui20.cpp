@@ -42,7 +42,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/KnobUndoCommand.h" // SetExpressionCommand...
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 void
 KnobGui::onInternalValueChanged(ViewSpec /*view*/,
@@ -945,4 +945,4 @@ KnobGui::onDimensionNameChanged(int dimension)
     refreshDimensionName(dimension);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

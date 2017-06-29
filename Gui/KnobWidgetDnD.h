@@ -39,7 +39,7 @@
 #define KNOB_DND_MIME_DATA_KEY "KnobLink"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct KnobWidgetDnDPrivate;
 class KnobWidgetDnD : public boost::enable_shared_from_this<KnobWidgetDnD>
@@ -85,6 +85,6 @@ private:
     boost::scoped_ptr<KnobWidgetDnDPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // KNOBWIDGETDND_H

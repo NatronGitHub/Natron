@@ -5,7 +5,7 @@
 
 #include <PyAppInstance.h>
 
-NATRON_NAMESPACE_ENTER; NATRON_PYTHON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER NATRON_PYTHON_NAMESPACE_ENTER
 class AppWrapper : public App
 {
 public:
@@ -14,7 +14,7 @@ public:
     virtual ~AppWrapper();
     static void pysideInitQtMetaTypes();
 };
-NATRON_PYTHON_NAMESPACE_EXIT; NATRON_NAMESPACE_EXIT;
+NATRON_PYTHON_NAMESPACE_EXIT NATRON_NAMESPACE_EXIT
 
 #endif // SBK_APPWRAPPER_H
 

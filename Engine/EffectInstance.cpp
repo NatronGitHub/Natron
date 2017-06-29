@@ -85,7 +85,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 //#define NATRON_ALWAYS_ALLOCATE_FULL_IMAGE_BOUNDS
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 class KnobFile;
@@ -5885,8 +5885,8 @@ EffectInstance::setClipPreferencesRunning(bool running)
     _imp->runningClipPreferences = running;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_EffectInstance.cpp"
 

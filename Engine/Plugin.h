@@ -43,7 +43,7 @@
 #include "Engine/EngineFwd.h"
 #include "Engine/PluginActionShortcut.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class PluginGroupNode
 {
@@ -425,6 +425,6 @@ typedef std::set<IOPluginEvaluation, IOPluginEvaluation_CompareLess> IOPluginSet
 // The best plug-in for a format is the set.rbegin()
 typedef std::map<std::string, IOPluginSetForFormat, FormatExtensionCompareCaseInsensitive> IOPluginsMap;
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // PLUGIN_H

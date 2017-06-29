@@ -45,7 +45,7 @@
 #include "Engine/RectD.h"
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @brief Holds render infos for one frame for one node. Not MT-safe: MT-safety is handled by RenderStats.
@@ -149,7 +149,7 @@ private:
     boost::scoped_ptr<RenderStatsPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 
 #endif // RENDERSTATS_H

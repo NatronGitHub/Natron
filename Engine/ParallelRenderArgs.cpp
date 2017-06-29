@@ -42,7 +42,7 @@
 #include "Engine/RotoDrawableItem.h"
 #include "Engine/ViewIdx.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 EffectInstance::RenderRoIRetCode
 EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
@@ -917,4 +917,4 @@ ParallelRenderArgs::isCurrentFrameRenderNotAbortable() const
     return isRenderResponseToUserInteraction && ( !info || !info->canAbort() );
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

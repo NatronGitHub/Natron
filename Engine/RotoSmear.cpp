@@ -40,7 +40,7 @@
 #include "Engine/RotoContext.h"
 #include "Engine/ViewIdx.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct RotoSmearPrivate
 {
@@ -426,4 +426,4 @@ RotoSmear::render(const RenderActionArgs& args)
     return eStatusOK;
 } // RotoSmear::render
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

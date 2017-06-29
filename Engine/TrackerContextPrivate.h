@@ -322,7 +322,7 @@ GCC_DIAG_ON(maybe-uninitialized)
 #define kCornerPinParamMatrix "transform"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 enum TrackerMotionTypeEnum
@@ -687,6 +687,6 @@ public Q_SLOTS:
     void onTransformSolverWatcherProgress(int progress);
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // TRACKERCONTEXTPRIVATE_H

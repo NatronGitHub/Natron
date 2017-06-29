@@ -53,7 +53,7 @@
 #include "Gui/SpinBox.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 struct AddKnobDialogPrivate
@@ -2148,7 +2148,7 @@ AddKnobDialogPrivate::setVisibleDefaultValues(bool visible,
     }
 } // AddKnobDialogPrivate::setVisibleDefaultValues
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_AddKnobDialog.cpp"

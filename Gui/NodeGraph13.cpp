@@ -37,7 +37,7 @@
 
 #include "Global/QtCompat.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 //using std::cout; using std::endl;
 
 
@@ -109,4 +109,4 @@ NodeGraph::deselect()
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

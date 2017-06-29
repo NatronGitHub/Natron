@@ -52,7 +52,7 @@
 #include <QtCore/QFileInfo>
 #include <QtCore/QRegExp>
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 // —— construction ——————————————————————————
 DocumentWindow::DocumentWindow(QWidget* parent,
@@ -358,6 +358,6 @@ DocumentWindow::executeDdeCommand(const QString& command,
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif //__NATRON_WIN32__

@@ -41,7 +41,7 @@
 
 #define NATRON_CURVE_X_SPACING_EPSILON 1e-6
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @brief A KeyFrame is a lightweight pair <time,value>. These are the values that are used
@@ -400,6 +400,6 @@ private:
     boost::scoped_ptr<CurvePrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_CURVE_H

@@ -34,7 +34,7 @@
 #include "Engine/NoOpBase.h"
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct BackdropPrivate;
 
@@ -92,6 +92,6 @@ private:
     boost::scoped_ptr<BackdropPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // BACKDROP_H

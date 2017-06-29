@@ -33,7 +33,7 @@
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class FrameKey
     : public KeyHelper<U64>
@@ -139,6 +139,6 @@ private:
     bool _draftMode; // Whether draft mode is enabled or not
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // FRAMEKEY_H

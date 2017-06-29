@@ -34,7 +34,7 @@
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class KnobGuiI
     : public OverlaySupport
@@ -92,6 +92,6 @@ protected:
     virtual void setKnobGuiPointer() = 0;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Engine_KnobGui_h

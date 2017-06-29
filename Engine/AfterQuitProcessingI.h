@@ -29,7 +29,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @brief This class is used to be able to perform an action after a call to Project::quitAnyProcessingForAllNodes has been made.
@@ -51,6 +51,6 @@ protected:
     friend class Project;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // AFTERQUITPROCESSINGI_H

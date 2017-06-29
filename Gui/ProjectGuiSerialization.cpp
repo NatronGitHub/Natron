@@ -57,7 +57,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 void
 ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
@@ -313,4 +313,4 @@ PythonPanelSerialization::initialize(NATRON_PYTHON_NAMESPACE::PyPanel* tab,
     userData = tab->save_serialization_thread().toStdString();
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

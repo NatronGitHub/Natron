@@ -54,7 +54,7 @@ CLANG_DIAG_ON(uninitialized)
  */
 //#define NODE_TAB_DIALOG_USE_MATCHED_LENGTH
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 struct CompleterLineEditPrivate
@@ -528,7 +528,7 @@ NodeCreationDialog::finish(bool accepted)
     Q_EMIT dialogFinished(accepted);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_NodeCreationDialog.cpp"

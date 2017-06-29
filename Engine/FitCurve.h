@@ -33,7 +33,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * Utility functions to fit a bezier curve to a set of points
@@ -54,6 +54,6 @@ struct SimpleBezierCP
 void fit_cubic(const std::vector<Point>& points, double error, std::vector<SimpleBezierCP>* generatedBezier);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Natron_Engine_FitCurve_h

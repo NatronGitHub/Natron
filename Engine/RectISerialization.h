@@ -41,7 +41,7 @@ GCC_DIAG_ON(unused-parameter)
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 template<class Archive>
 void
@@ -55,7 +55,7 @@ RectI::serialize(Archive & ar,
     ar & ::boost::serialization::make_nvp("Top", y2);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(NATRON_NAMESPACE::RectI);
 
