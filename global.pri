@@ -43,8 +43,10 @@ run-without-python {
 # QMAKE_OBJECTIVE_CFLAGS_RELEASE_WITH_DEBUGINFO
 # QMAKE_LFLAGS_RELEASE_WITH_DEBUGINFO
 
-    QMAKE_CFLAGS_WARN_ON += -Wall -Wextra -pedantic -Wmissing-prototypes -Wmissing-declarations -Wno-multichar -Winit-self -Wno-long-long
-    QMAKE_CXXFLAGS_WARN_ON += -Wall -Wextra -pedantic -Wno-multichar -Winit-self -Wno-long-long
+    QMAKE_CFLAGS_WARN_ON += -Wall -Wextra -Wmissing-prototypes -Wmissing-declarations -Wno-multichar -Winit-self -Wno-long-long
+    QMAKE_CXXFLAGS_WARN_ON += -Wall -Wextra -Wno-multichar -Winit-self -Wno-long-long
+    #QMAKE_CFLAGS_WARN_ON += -pedantic
+    #QMAKE_CXXFLAGS_WARN_ON += -pedantic
     #QMAKE_CXXFLAGS_WARN_ON += -Weffc++
 
     CONFIG(relwithdebinfo) {
