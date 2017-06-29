@@ -35,7 +35,7 @@
 #include "Engine/NodeGroupSerialization.h"
 #include "Engine/RotoContext.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 NodeSerialization::NodeSerialization(const NodePtr & n,
                                      bool serializeInputs)
@@ -200,4 +200,4 @@ NodeSerialization::NodeSerialization(const NodePtr & n,
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

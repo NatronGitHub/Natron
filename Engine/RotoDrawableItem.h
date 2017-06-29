@@ -50,7 +50,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @class A base class for all items made by the roto context
@@ -252,6 +252,6 @@ private:
     boost::scoped_ptr<RotoDrawableItemPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Engine_RotoDrawableItem_h

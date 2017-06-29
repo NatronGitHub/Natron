@@ -53,7 +53,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/SpinBox.h"
 #include "Gui/GuiDefines.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class PlaceHolderTextEdit
     : public QTextEdit
@@ -431,7 +431,7 @@ ExportGroupTemplateDialog::onOkClicked()
     accept();
 } // ExportGroupTemplateDialog::onOkClicked
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_ExportGroupTemplateDialog.cpp"

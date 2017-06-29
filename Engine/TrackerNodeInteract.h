@@ -188,7 +188,7 @@
 #define kTrackerUIParamTrackRangeDialogCancelButtonLabel "Cancel"
 #define kTrackerUIParamTrackRangeDialogCancelButtonHint "Close this window and do not start tracking"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 enum TrackerMouseStateEnum
@@ -510,6 +510,6 @@ public Q_SLOTS:
     void onKeyFrameImageRenderingFinished();
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // TRACKERNODEINTERACT_H

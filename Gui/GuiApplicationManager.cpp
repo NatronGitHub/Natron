@@ -57,7 +57,7 @@ CLANG_DIAG_ON(uninitialized)
 #define NATRON_PIXELS_FOR_DPI_DEFAULT 72.
 #endif
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 GuiApplicationManager::GuiApplicationManager()
@@ -1153,7 +1153,7 @@ GuiApplicationManager::updateAboutWindowLibrariesVersion()
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_GuiApplicationManager.cpp"

@@ -35,7 +35,7 @@
 #include "Engine/EngineFwd.h"
 #include "Engine/UndoCommand.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class NodeGuiI
 {
@@ -173,6 +173,6 @@ public:
     virtual void showGroupKnobAsDialog(KnobGroup* group) = 0;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NODEGUII_H

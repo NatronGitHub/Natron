@@ -37,7 +37,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/RectI.h"
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /*This class is used to hold the format of a frame (its resolution).
  * Some formats have a name , e.g : 1920*1080 is full HD, etc...
@@ -146,8 +146,8 @@ private:
     std::string _name;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-Q_DECLARE_METATYPE(NATRON_NAMESPACE::Format);
+Q_DECLARE_METATYPE(NATRON_NAMESPACE::Format)
 
 #endif // Engine_Format_h

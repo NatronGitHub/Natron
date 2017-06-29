@@ -364,7 +364,7 @@ CLANG_DIAG_ON(uninitialized)
     "which the shutter opens. The value is an offset in frames to the current frame, e.g: -1  would open the shutter 1 frame before the current frame."
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct RotoFeatherVertex
 {
@@ -2199,6 +2199,6 @@ public:
     static void applyAndDestroyMask(cairo_t* cr, cairo_pattern_t* mesh);
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // ROTOCONTEXTPRIVATE_H

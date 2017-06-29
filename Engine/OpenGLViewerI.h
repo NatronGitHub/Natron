@@ -38,7 +38,7 @@
 #include "Engine/Texture.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 class OpenGLViewerI
@@ -234,6 +234,6 @@ public:
     virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE = 0;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // OPENGLVIEWERI_H

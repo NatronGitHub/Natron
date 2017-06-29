@@ -37,7 +37,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class Markdown
 {
@@ -53,6 +53,6 @@ public:
     static QString fixSettingsHTML(const QString& html);
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // MARKDOWN_H

@@ -68,7 +68,7 @@
 #endif
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 static Point
@@ -1569,4 +1569,4 @@ CoonsRegularization::regularize(const BezierCPs &patch,
     splitAt(patch, time, 0.5, fixedPatch);
 } // CoonsRegularization::regularize
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

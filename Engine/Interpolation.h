@@ -31,7 +31,7 @@
 #include "Engine/EngineFwd.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 namespace Interpolation {
 /**
@@ -199,7 +199,7 @@ int solveCubic(double c0, double c1, double c2, double c3, double s[3], int o[3]
 int solveQuartic(double c0, double c1, double c2, double c3, double c4, double s[4], int o[4]);
 } // namespace Interpolation
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 
 #endif // NATRON_ENGINE_INTERPOLATION_H

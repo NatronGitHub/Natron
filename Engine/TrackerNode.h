@@ -30,7 +30,7 @@
 #include "Engine/NodeGroup.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct TrackerNodePrivate;
 class TrackerNode
@@ -166,6 +166,6 @@ private:
     boost::scoped_ptr<TrackerNodePrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // TRACKERNODE_H

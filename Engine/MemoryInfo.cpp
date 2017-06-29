@@ -76,7 +76,7 @@
 
 #include "Global/GlobalDefines.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 U64
 getSystemTotalRAM()
@@ -420,4 +420,4 @@ getAmountFreePhysicalRAM()
 #endif
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

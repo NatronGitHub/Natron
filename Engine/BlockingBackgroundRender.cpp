@@ -37,7 +37,7 @@ CLANG_DIAG_ON(deprecated-register)
 #include "Engine/OutputEffectInstance.h"
 #include "Engine/Settings.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 BlockingBackgroundRender::BlockingBackgroundRender(OutputEffectInstance* writer)
@@ -78,4 +78,4 @@ BlockingBackgroundRender::notifyFinished()
     _runningCond.wakeOne();
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

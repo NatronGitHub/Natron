@@ -35,7 +35,7 @@
 
 #include "Engine/Node.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 void
 Hash64::computeHash()
@@ -66,4 +66,4 @@ Hash64_appendQString(Hash64* hash,
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

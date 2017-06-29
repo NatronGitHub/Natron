@@ -30,7 +30,7 @@
 
 #include "Engine/RectI.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 const U8*
@@ -111,4 +111,4 @@ FrameEntry::copy(const FrameEntry& other)
     }
 } // FrameEntry::copy
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

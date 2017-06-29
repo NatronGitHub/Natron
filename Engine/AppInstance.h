@@ -46,7 +46,7 @@
 #include "Engine/TimeLineKeyFrames.h"
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct AppInstancePrivate;
 
@@ -494,6 +494,6 @@ public:
     }
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // APPINSTANCE_H

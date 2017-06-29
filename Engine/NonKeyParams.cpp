@@ -27,7 +27,7 @@
 #include <cassert>
 #include <stdexcept>
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 NonKeyParams::NonKeyParams()
     : _storageInfo()
@@ -56,4 +56,4 @@ NonKeyParams::getStorageInfo() const
     return _storageInfo;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

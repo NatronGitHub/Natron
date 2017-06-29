@@ -62,7 +62,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ViewIdx.h"
 #include "Engine/WriteNode.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 struct OfxKeyFrames_compare
@@ -4347,7 +4347,10 @@ OfxCustomInstance::OfxCustomInstance(const boost::shared_ptr<OfxEffectInstance>&
     knob->blockValueChanges();
     knob->setDefaultValue(properties.getStringProperty(kOfxParamPropDefault), 0);
     knob->unblockValueChanges();
+    GCC_DIAG_PEDANTIC_OFF
     _imp->customParamInterpolationV1Entry = (customParamInterpolationV1Entry_t)properties.getPointerProperty(kOfxParamPropCustomInterpCallbackV1);
+    GCC_DIAG_PEDANTIC_ON
+
     if (_imp->customParamInterpolationV1Entry) {
         knob->setCustomInterpolation( _imp->customParamInterpolationV1Entry, (void*)getHandle() );
     }
@@ -4580,7 +4583,9 @@ OfxPluginEntryPoint*
 OfxParametricInstance::getCustomOverlayInteractEntryPoint(const OFX::Host::Param::Instance* param) const
 {
     Q_UNUSED(param);
+    GCC_DIAG_PEDANTIC_OFF
     return (OfxPluginEntryPoint*)getProperties().getPointerProperty(kOfxParamPropParametricInteractBackground);
+    GCC_DIAG_PEDANTIC_ON
 }
 
 void
@@ -4891,7 +4896,7 @@ OfxParametricInstance::copyFrom(const OFX::Host::Param::Instance &instance,
     return OfxKeyFrame::copyFrom(other.getKnob(), getKnob(), offset, range);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_OfxParamInstance.cpp"

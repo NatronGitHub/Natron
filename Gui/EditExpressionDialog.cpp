@@ -89,7 +89,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/TimeLineGui.h"
 #include "Gui/ViewerTab.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 EditExpressionDialog::EditExpressionDialog(Gui* gui,
                                            int dimension,
@@ -173,7 +173,7 @@ EditExpressionDialog::getDeclaredVariables(std::list<std::pair<QString, QString>
     variables.push_back( std::make_pair( QString::fromUtf8("frame"), tr("the current time on the timeline or the time passed to the get function") ) );
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_EditExpressionDialog.cpp"

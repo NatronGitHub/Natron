@@ -46,7 +46,7 @@
 // waste resources.
 #define NATRON_ABORT_TIMEOUT_MS 5000
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 typedef std::set<AbortableThread*> ThreadSet;
 
@@ -279,7 +279,7 @@ AbortableRenderInfo::onAbortTimerTimeout()
     }
 } // AbortableRenderInfo::onAbortTimerTimeout
 
-NATRON_NAMESPACE_EXIT;
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_EXIT
+NATRON_NAMESPACE_USING
 
 #include "moc_AbortableRenderInfo.cpp"

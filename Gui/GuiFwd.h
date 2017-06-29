@@ -94,7 +94,7 @@ class QWidget;
 
 
 // Natron Gui
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 class AboutWindow;
 class ActionWithShortcut;
 class AnimatedCheckBox;
@@ -200,12 +200,12 @@ namespace QtMac {
 bool isHighDPIInternal(const QWidget* w);
 }
 
-NATRON_PYTHON_NAMESPACE_ENTER;
+NATRON_PYTHON_NAMESPACE_ENTER
 class GuiApp;
 class PyModalDialog;
 class PyPanel;
 class PyTabWidget;
-NATRON_PYTHON_NAMESPACE_EXIT;
+NATRON_PYTHON_NAMESPACE_EXIT
 
 typedef boost::shared_ptr<GuiAppInstance> GuiAppInstPtr;
 typedef boost::shared_ptr<NodeViewerContext> NodeViewerContextPtr;
@@ -216,7 +216,7 @@ typedef std::list<NodeGuiPtr> NodesGuiList;
 typedef boost::shared_ptr<ProgressTaskInfo> ProgressTaskInfoPtr;
 typedef boost::shared_ptr<KnobGui> KnobGuiPtr;
 typedef boost::weak_ptr<KnobGui> KnobGuiWPtr;
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 
 #endif // Natron_Gui_GuiFwd_h

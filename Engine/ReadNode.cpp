@@ -72,7 +72,7 @@ CLANG_DIAG_ON(uninitialized)
 #define READ_NODE_DEFAULT_READER PLUGINID_OFX_READOIIO
 #define kPluginSelectorParamEntryDefault "Default"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 //Generic Reader
 #define kParamFilename kOfxImageEffectFileParamName
@@ -1434,7 +1434,7 @@ ReadNode::getFramesNeeded(double time,
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_ReadNode.cpp"

@@ -67,9 +67,9 @@ CLANG_DIAG_ON(uninitialized)
 #define COL_MT_ENABLED COL_RS_ENABLED + 1
 #define COL_GL_ENABLED COL_MT_ENABLED + 1
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
-NATRON_NAMESPACE_ANONYMOUS_ENTER;
+NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 struct PreferenceTab
 {
@@ -132,7 +132,7 @@ struct GuiShortCutGroup
     QTreeWidgetItem* item;
 };
 
-NATRON_NAMESPACE_ANONYMOUS_EXIT;
+NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 static QString
 keybindToString(const Qt::KeyboardModifiers & modifiers,
@@ -1649,7 +1649,7 @@ PreferencesPanel::onRestoreDefaultShortcutsButtonClicked()
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_PreferencesPanel.cpp"

@@ -35,7 +35,7 @@
 #include "Engine/EngineFwd.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 #ifdef __NATRON_OSX__
     #define NATRON_LIBRARY_EXT "dylib"
 #elif defined(__NATRON_LINUX__)
@@ -116,5 +116,5 @@ private:
     std::map<std::string, value_type> _functions; // <function name, pointer>
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 #endif // ifndef NATRON_GLOBAL_LIBRARYBINARY_H

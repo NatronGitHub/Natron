@@ -37,7 +37,7 @@
 #include "Engine/EngineFwd.h"
 #include "Global/GLIncludes.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class FrameParams
     : public NonKeyParams
@@ -111,7 +111,7 @@ private:
     RectI _rod;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // FRAMEPARAMS_H
 

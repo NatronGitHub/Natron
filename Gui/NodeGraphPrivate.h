@@ -62,7 +62,7 @@ CLANG_DIAG_ON(uninitialized)
 #define NATRON_SCENE_MAX 1e6
 #define NATRON_SCENE_MIN 0
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 enum EventStateEnum
 {
@@ -254,6 +254,6 @@ public:
     void toggleSelectedNodesEnabled();
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Gui_NodeGraphPrivate_h

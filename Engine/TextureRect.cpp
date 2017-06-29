@@ -30,7 +30,7 @@
 #include "Engine/RectI.h"
 #include "Engine/RectD.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 TextureRect::TextureRect()
 : RectI()
@@ -60,4 +60,4 @@ TextureRect::reset()
 }
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

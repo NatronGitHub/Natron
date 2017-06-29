@@ -32,7 +32,7 @@
 #include "Engine/RotoLayer.h"
 #include "Engine/TimeLine.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 void
 ProjectSerialization::initialize(const Project* project)
@@ -61,4 +61,4 @@ ProjectSerialization::initialize(const Project* project)
     _creationDate = project->getProjectCreationTime();
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

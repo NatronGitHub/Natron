@@ -55,7 +55,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ViewerGL.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
 //OpenGL is column-major for matrixes
@@ -1062,4 +1062,4 @@ ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
     return ret;
 } // ViewerTab::notifyOverlaysFocusLost
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

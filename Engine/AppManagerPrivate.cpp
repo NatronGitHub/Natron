@@ -79,7 +79,7 @@ GCC_DIAG_ON(unused-parameter)
 BOOST_CLASS_EXPORT(NATRON_NAMESPACE::FrameParams)
 BOOST_CLASS_EXPORT(NATRON_NAMESPACE::ImageParams)
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 AppManagerPrivate::AppManagerPrivate()
     : globalTLS()
     , _appType(AppManager::eAppTypeBackground)
@@ -941,4 +941,4 @@ AppManagerPrivate::handleCommandLineArgsW(int argc, wchar_t** argv)
     copyUtf8ArgsToMembers(utf8Args);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

@@ -27,7 +27,7 @@
 #include "CreateNodeArgs.h"
 #include "Engine/NodeGroup.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 CreateNodeArgs::CreateNodeArgs()
@@ -53,4 +53,4 @@ CreateNodeArgs::~CreateNodeArgs()
 
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

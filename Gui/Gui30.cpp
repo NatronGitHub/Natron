@@ -59,7 +59,7 @@
 #include "Gui/TabWidget.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 void
@@ -696,4 +696,4 @@ Gui::onCurrentUndoStackChanged(QUndoStack* stack)
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

@@ -36,7 +36,7 @@
 
 #define NATRON_FORM_LAYOUT_LINES_SPACING 0
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct TabGroupTab
 {
@@ -191,7 +191,7 @@ TabGroup::onGroupKnobSecretChanged()
     refreshTabSecretNess(groupKnob);
 }
 
-NATRON_NAMESPACE_EXIT;
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_EXIT
+NATRON_NAMESPACE_USING
 
 #include "moc_TabGroup.cpp"

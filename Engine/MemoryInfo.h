@@ -33,7 +33,7 @@
 
 #include "Global/GlobalDefines.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 // Memory utility functions ( info about RAM etc...)
 
@@ -66,6 +66,6 @@ std::size_t getCurrentRSS( );
 
 std::size_t getAmountFreePhysicalRAM();
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // ifndef Engine_MemoryInfo_h

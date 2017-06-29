@@ -31,7 +31,7 @@
 #include "Gui/GuiFwd.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class GroupBoxLabel
     : public Label
@@ -72,6 +72,6 @@ private:
     bool _checked;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // ifndef NATRON_GUI_GROUPBOXLABEL_H

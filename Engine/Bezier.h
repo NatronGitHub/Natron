@@ -49,7 +49,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 
 #define ROTO_BEZIER_EVAL_ITERATIVE
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 /**
@@ -667,7 +667,7 @@ private:
     boost::scoped_ptr<BezierPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 
 #endif // Engine_Bezier_h

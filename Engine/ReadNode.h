@@ -41,7 +41,7 @@
 
 #define kNatronReadNodeOCIOParamInputSpace "ocioInputSpace"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @brief A wrapper around all OpenFX Readers nodes so that to the user they all appear under a single Read node that has a dynamic
@@ -163,6 +163,6 @@ private:
     boost::scoped_ptr<ReadNodePrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // READNODE_H

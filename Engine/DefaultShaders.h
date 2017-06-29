@@ -28,12 +28,12 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 extern const char* fillConstant_FragmentShader;
 extern const char* applyMaskMix_FragmentShader;
 extern const char* copyUnprocessedChannels_FragmentShader;
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // DEFAULTSHADERS_H

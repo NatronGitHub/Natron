@@ -78,7 +78,7 @@ CLANG_DIAG_ON(deprecated)
 
 #define NATRON_TIME_ELASPED_BEFORE_PROGRESS_REPORT 4. //!< do not display the progress report if estimated total time is less than this (in seconds)
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 using std::make_pair;
 using boost::shared_ptr;
@@ -3517,8 +3517,8 @@ ViewerInstance::reportStats(int time,
     Q_EMIT renderStatsAvailable(time, view, wallTime, stats);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_ViewerInstance.cpp"
 #include "moc_ViewerInstancePrivate.cpp"

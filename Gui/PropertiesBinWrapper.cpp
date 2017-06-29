@@ -33,7 +33,7 @@
 #include "Gui/KnobWidgetDnD.h"
 #include "Gui/RightClickableWidget.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 PropertiesBinWrapper::PropertiesBinWrapper(Gui* parent)
     : QWidget(parent)
@@ -94,4 +94,4 @@ PropertiesBinWrapper::getUndoStack() const
     return 0;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

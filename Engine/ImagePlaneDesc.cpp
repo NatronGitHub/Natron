@@ -31,7 +31,7 @@
 #include <cstring>
 #include <sstream>
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 static const char* rgbaComps[4] = {"R", "G", "B", "A"};
 static const char* rgbComps[3] = {"R", "G", "B"};
@@ -524,5 +524,5 @@ ImagePlaneDesc::mapPlaneToOFXComponentsTypeString(const ImagePlaneDesc& plane)
         return natronCustomCompToOfxComp(plane);
     }
 }
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

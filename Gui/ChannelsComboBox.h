@@ -30,7 +30,7 @@
 #include "Gui/ComboBox.h"
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class ChannelsComboBox
     : public ComboBox
@@ -45,6 +45,6 @@ private:
     virtual void paintEvent(QPaintEvent* event) OVERRIDE FINAL;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Gui_ChannelsComboBox_h

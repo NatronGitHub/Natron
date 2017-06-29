@@ -27,7 +27,7 @@
 #include <cassert>
 #include <vector>
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct PerInputData
 {
@@ -364,4 +364,4 @@ NodeMetadata::getOutputFormat() const
     return _imp->outputFormat;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

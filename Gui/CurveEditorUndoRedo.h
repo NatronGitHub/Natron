@@ -47,7 +47,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct SelectedKey
 {
@@ -381,6 +381,6 @@ private:
     Transform::Matrix3x3 _matrix, _invMatrix;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // CURVEEDITORUNDOREDO_H

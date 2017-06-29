@@ -34,7 +34,7 @@
 #include "Engine/ViewIdx.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 ActionsCache::ActionsCacheInstance::ActionsCacheInstance()
     : _hash(0)
@@ -704,6 +704,6 @@ EffectInstance::Implementation::clearInputImagePointers()
     tls->currentRenderArgs.inputImages.clear();
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 

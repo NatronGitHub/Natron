@@ -34,7 +34,7 @@
 #include "Gui/GuiFwd.h"
 #include "Gui/KnobGui.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct KnobGuiTablePrivate;
 class KnobGuiTable
@@ -150,6 +150,6 @@ private:
     boost::weak_ptr<KnobLayers> _knob;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Gui_KnobGuiLayer_h

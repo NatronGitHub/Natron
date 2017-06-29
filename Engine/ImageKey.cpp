@@ -29,7 +29,7 @@
 
 #include "Engine/ViewIdx.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 ImageKey::ImageKey()
     : KeyHelper<U64>()
@@ -96,4 +96,4 @@ ImageKey::operator==(const ImageKey & other) const
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

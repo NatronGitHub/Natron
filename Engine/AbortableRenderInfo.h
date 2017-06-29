@@ -39,7 +39,7 @@
 #include "Engine/EngineFwd.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @brief Holds infos necessary to identify one render request and whether it was aborted or not.
@@ -153,6 +153,6 @@ private:
     boost::scoped_ptr<AbortableRenderInfoPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // ABORTABLERENDERINFO_H

@@ -34,7 +34,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 // If set, multiple frame renders may use the same GPU context instead of locking it for the whole render of a frame.
 #define NATRON_RENDER_SHARED_CONTEXT
@@ -94,6 +94,6 @@ private:
     boost::scoped_ptr<GPUContextPoolPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // GPUCONTEXTPOOL_H

@@ -54,7 +54,7 @@ CLANG_DIAG_ON(deprecated)
 #define kItalicStartTag "<i>"
 #define kItalicEndTag "</i>"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /******************************KnobInt**************************************/
 
@@ -1207,6 +1207,6 @@ private:
     static const std::string _typeNameStr;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_KNOBTYPES_H

@@ -184,7 +184,7 @@
  **/
 #define kCreateNodeArgsPropMultiInstanceParentName "CreateNodeArgsPropMultiInstanceParentName"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct CreateNodeArgsPrivate;
 class CreateNodeArgs
@@ -424,6 +424,6 @@ private:
     std::map<std::string, boost::shared_ptr<PropertyBase> > _properties;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // CREATENODEARGS_H

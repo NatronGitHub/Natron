@@ -42,7 +42,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiFwd.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct ProgressPanelPrivate;
 struct ProgressPanelPrivate;
@@ -147,6 +147,6 @@ private:
     boost::scoped_ptr<ProgressPanelPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // PROGRESSPANEL_H

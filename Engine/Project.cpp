@@ -84,7 +84,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewIdx.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 using std::cout; using std::endl;
 using std::make_pair;
@@ -151,7 +151,7 @@ Project::~Project()
     //removeAutoSaves();
 }
 
-NATRON_NAMESPACE_ANONYMOUS_ENTER;
+NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 class LoadProjectSplashScreen_RAII
 {
@@ -178,7 +178,7 @@ public:
     }
 };
 
-NATRON_NAMESPACE_ANONYMOUS_EXIT;
+NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 bool
 Project::loadProject(const QString & path,
@@ -2747,7 +2747,7 @@ Project::setTimeLine(const boost::shared_ptr<TimeLine>& timeline)
     _imp->timeline = timeline;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_Project.cpp"

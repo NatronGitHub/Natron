@@ -87,7 +87,7 @@
 
 #define NATRON_SCHEDULER_ABORT_AFTER_X_UNSUCCESSFUL_ITERATIONS 5000
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 ///Sort the frames by time and then by view
@@ -4002,7 +4002,7 @@ ViewerCurrentFrameRequestRendererBackup::threadLoopOnce(const ThreadStartArgsPtr
     return eThreadStateActive;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_OutputSchedulerThread.cpp"

@@ -33,7 +33,7 @@
 #endif
 
 using namespace NATRON_NAMESPACE::FitCurve;
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /*
  * This implementation is based on Graphic Gems I
@@ -617,5 +617,5 @@ FitCurve::fit_cubic(const std::vector<Point>& points,
     }
 } // FitCurve::fit_cubic
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

@@ -36,7 +36,7 @@
 #include "Gui/GuiFwd.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct SpinBoxPrivate;
 
@@ -194,6 +194,6 @@ private:
     boost::shared_ptr<KnobWidgetDnD> _dnd;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif /* defined(NATRON_GUI_FEEDBACKSPINBOX_H_) */

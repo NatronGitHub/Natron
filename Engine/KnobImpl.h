@@ -62,7 +62,7 @@ GCC_DIAG_ON(unused-parameter)
 
 #define EXPR_RECURSION_LEVEL() KnobHelper::ExprRecursionLevel_RAII __recursionLevelIncrementer__(this)
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 ///template specializations
 
@@ -3019,6 +3019,6 @@ Knob<T>::copyValuesFromCurve(int dim)
 
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // KNOBIMPL_H

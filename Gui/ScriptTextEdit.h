@@ -42,7 +42,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct PySyntaxHighlighterPrivate;
 
@@ -162,6 +162,6 @@ private:
     virtual void scrollContentsBy(int dx, int dy) OVERRIDE FINAL;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // SCRIPTTEXTEDIT_H

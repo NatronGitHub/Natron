@@ -110,7 +110,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 //An effect may not use more than this amount of threads
 #define NATRON_MULTI_THREAD_SUITE_MAX_NUM_CPU 4
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 // to disambiguate with the global-scope ::OfxHost
 
 // see second answer of http://stackoverflow.com/questions/2342162/stdstring-formatting-like-sprintf
@@ -1702,5 +1702,5 @@ OfxHost::flushOpenGLResources() const
 
 #endif
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

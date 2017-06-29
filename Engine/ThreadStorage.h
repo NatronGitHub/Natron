@@ -39,7 +39,7 @@
 //
 // Of course, as a consequence the main thread always has "local data", which is just a global variable.
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 template <class T>
 class ThreadStorage
     : public QThreadStorage<T>
@@ -89,7 +89,7 @@ private:
     T mainData;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 
 #endif // ifndef Natron_Engine_ThreadStorage_h

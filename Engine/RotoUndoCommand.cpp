@@ -50,7 +50,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/ViewIdx.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 typedef boost::shared_ptr<BezierCP> CpPtr;
 typedef std::pair<CpPtr, CpPtr> SelectedCp;
@@ -1802,4 +1802,4 @@ MakeRectangleUndoCommand::mergeWith(const UndoCommandPtr &other)
     return true;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

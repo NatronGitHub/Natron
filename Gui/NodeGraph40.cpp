@@ -63,7 +63,7 @@ GCC_DIAG_ON(unused-parameter)
 
 #include "Global/QtCompat.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 void
 NodeGraph::togglePreviewsForSelectedNodes()
 {
@@ -473,4 +473,4 @@ NodeGraph::centerOnAllNodes()
     update();
 } // NodeGraph::centerOnAllNodes
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

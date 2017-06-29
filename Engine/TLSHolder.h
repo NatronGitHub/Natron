@@ -46,7 +46,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 ///This must be stored as a shared_ptr
 class TLSHolderBase
@@ -210,6 +210,6 @@ private:
     mutable ThreadDataMap perThreadData;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // TLSHOLDER_H

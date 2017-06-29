@@ -39,7 +39,7 @@
 #include <Share.h>
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 template <class _CharT, class _Traits = std::char_traits<_CharT> >
@@ -337,7 +337,7 @@ basic_ofstream<_CharT, _Traits>::close()
 
 // basic_fstream
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 
 #endif // #if defined(_WIN32) && defined(__GLIBCXX__)

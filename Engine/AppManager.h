@@ -63,7 +63,7 @@ CLANG_DIAG_ON(deprecated)
 
 class QDir;
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 enum AppInstanceStatusEnum
 {
@@ -802,7 +802,7 @@ public:
     ~PythonGILLocker();
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 
 #endif // Engine_AppManager_h

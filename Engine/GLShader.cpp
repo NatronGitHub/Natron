@@ -26,7 +26,7 @@
 
 #include "Global/GLIncludes.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct GLShaderPrivate
 {
@@ -203,4 +203,4 @@ GLShader::setUniform(const char* name,
     return false;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

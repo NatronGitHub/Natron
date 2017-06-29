@@ -92,7 +92,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
 #endif
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 ////////////////////////////////////Stroke//////////////////////////////////
 
@@ -932,5 +932,5 @@ RotoStrokeItem::evaluateStroke(unsigned int mipMapLevel,
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

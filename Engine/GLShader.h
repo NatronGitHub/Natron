@@ -35,7 +35,7 @@
 #include "Engine/EngineFwd.h"
 #include "Global/GlobalDefines.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct GLShaderPrivate;
 class GLShader
@@ -87,6 +87,6 @@ private:
     boost::scoped_ptr<GLShaderPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // GLSHADER_H

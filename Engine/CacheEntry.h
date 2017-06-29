@@ -66,7 +66,7 @@
 #include "Global/GlobalDefines.h"
 #include "Global/StrUtils.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////BUFFER////////////////////////////////////////////////////
@@ -1244,6 +1244,6 @@ protected:
     bool _removeBackingFileBeforeDestruction;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // CACHEENTRY_H

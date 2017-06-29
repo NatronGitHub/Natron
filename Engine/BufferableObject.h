@@ -29,7 +29,7 @@
 
 #include <cstddef>
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @brief Stub class used by internal implementation of OutputSchedulerThread to pass objects through signal/slots
@@ -60,6 +60,6 @@ public:
 
 typedef std::list<boost::shared_ptr<BufferableObject> > BufferableObjectList;
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // OUTPUTSCHEDULERTHREAD_H

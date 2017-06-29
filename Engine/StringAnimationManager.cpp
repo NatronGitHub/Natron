@@ -36,7 +36,7 @@
 
 #include "Engine/Knob.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
@@ -345,4 +345,4 @@ StringAnimationManager::save(std::map<int, std::string>* keyframes) const
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

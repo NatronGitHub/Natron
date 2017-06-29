@@ -38,7 +38,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /******************************KNOB_FACTORY**************************************/
 
@@ -76,6 +76,6 @@ private:
     std::map<std::string, LibraryBinary *> _loadedKnobs;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Engine_KnobFactory_h
