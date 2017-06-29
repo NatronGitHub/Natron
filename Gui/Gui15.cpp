@@ -50,7 +50,7 @@
 #include "Serialization/SerializationIO.h"
 SERIALIZATION_NAMESPACE_USING
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 void
 Gui::importLayoutInternal(const std::string& filename)
@@ -421,4 +421,4 @@ Gui::setVisibleProjectSettingsPanel()
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

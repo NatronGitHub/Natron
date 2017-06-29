@@ -61,7 +61,7 @@
 
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /*This class is the the core of the viewer : what displays images, overlays, etc...
    Everything related to OpenGL will (almost always) be in this class */
@@ -772,6 +772,10 @@ ViewerGL::Implementation::refreshSelectionRectangle(const QPointF & pos)
     selectionRectangle.setRect(xmin, ymin, xmax - xmin, ymax - ymin);
 }
 
+<<<<<<< HEAD
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
+=======
+NATRON_NAMESPACE_EXIT
+>>>>>>> origin/RB-2.3

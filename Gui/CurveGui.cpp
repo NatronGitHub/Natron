@@ -50,7 +50,7 @@
 #include "Gui/CurveWidgetPrivate.h"
 #include "Gui/KnobGui.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 #define NATRON_NO_PREDEFINED_CURVE_COLORS 6
@@ -793,7 +793,7 @@ CurveGui::drawCurve(int curveIndex,
 } // drawCurve
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_CurveGui.cpp"

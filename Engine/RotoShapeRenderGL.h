@@ -39,7 +39,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 enum RampTypeEnum
@@ -179,6 +179,6 @@ public:
 
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // ROTOSHAPERENDERGL_H

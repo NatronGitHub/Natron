@@ -56,10 +56,11 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 #define NATRON_USER_MANAGED_KNOBS_PAGE_LABEL "User"
 #define NATRON_USER_MANAGED_KNOBS_PAGE "userNatron"
+
 
 /**
  * @brief A class that reports changes happening to a knob
@@ -1240,7 +1241,9 @@ public:
         eListenersTypeExpression = 0x1,
         eListenersTypeSharedValue = 0x2
     };
-    DECLARE_FLAGS(ListenersTypeFlags, ListenersTypeEnum);
+    
+    DECLARE_FLAGS(ListenersTypeFlags, ListenersTypeEnum)
+    
     /**
      * @brief Returns a list of all the knobs whose value depends upon this knob.
      **/
@@ -3120,7 +3123,7 @@ public:
 };
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 DECLARE_OPERATORS_FOR_FLAGS(NATRON_NAMESPACE::KnobI::ListenersTypeFlags);
 

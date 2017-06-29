@@ -35,7 +35,7 @@
 #include "Engine/ImageCacheKey.h"
 #include "Engine/ImageTilesState.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct ImageCacheEntryPrivate;
 
@@ -156,6 +156,6 @@ private:
 
     boost::scoped_ptr<ImageCacheEntryPrivate> _imp;
 };
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_IMAGECACHEENTRY_H

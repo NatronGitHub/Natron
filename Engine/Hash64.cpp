@@ -36,7 +36,7 @@
 #include "Engine/Node.h"
 #include "Engine/Curve.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 void
 Hash64::computeHash()
@@ -94,4 +94,4 @@ Hash64::appendCurve(const CurvePtr& curve, Hash64* hash)
 }
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

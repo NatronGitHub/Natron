@@ -38,7 +38,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 #define kViewerInstanceParamOutputLayer "outputLayer"
 #define kViewerInstanceParamOutputLayerLabel "Layer"
@@ -197,12 +197,14 @@ private:
     boost::scoped_ptr<ViewerInstancePrivate> _imp;
 };
 
+
 inline ViewerInstancePtr
 toViewerInstance(const EffectInstancePtr& effect)
 {
     return boost::dynamic_pointer_cast<ViewerInstance>(effect);
 }
 
-NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_VIEWER_INSTANCE_H

@@ -66,7 +66,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Serialization/CurveSerialization.h"
 #include "Serialization/KnobSerialization.h"
 
-NATRON_NAMESPACE_ENTER;
+
+NATRON_NAMESPACE_ENTER
+
 
 struct KnobIntPrivate
 {
@@ -4252,6 +4254,7 @@ KnobLayers::typeNameStatic()
     return _typeNameStr;
 }
 
+
 std::string
 KnobLayers::encodePlanesList(const std::list<ImagePlaneDesc>& planes)
 {
@@ -4328,7 +4331,8 @@ KnobLayers::decodePlanesList()
     return ret;
 } // decodePlanesList
 
-NATRON_NAMESPACE_EXIT;
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_EXIT
+
+NATRON_NAMESPACE_USING
 #include "moc_KnobTypes.cpp"

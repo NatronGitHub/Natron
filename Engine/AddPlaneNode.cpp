@@ -26,7 +26,7 @@
 
 #include "Engine/KnobTypes.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct AddPlaneNodePrivate
 {
@@ -43,7 +43,7 @@ AddPlaneNode::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_CHANNEL);
-    PluginPtr ret = Plugin::create((void*)AddPlaneNode::create, (void*)AddPlaneNode::createRenderClone, PLUGINID_NATRON_ADD_PLANE, "AddPlane", 1, 0, grouping);
+    PluginPtr ret = Plugin::create(AddPlaneNode::create, AddPlaneNode::createRenderClone, PLUGINID_NATRON_ADD_PLANE, "AddPlane", 1, 0, grouping);
 
     QString desc = tr("This node acts as a pass-through for the input image, but allows to add new empty plane(s) to the image");
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
@@ -86,4 +86,4 @@ AddPlaneNode::initializeKnobs()
     param->setSecret(false);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

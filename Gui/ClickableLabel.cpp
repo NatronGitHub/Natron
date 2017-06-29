@@ -38,7 +38,7 @@
 #include "Gui/GuiMacros.h"
 #include "Gui/KnobWidgetDnD.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 ClickableLabel::ClickableLabel(const QString &text,
                                QWidget *parent)
@@ -179,7 +179,13 @@ KnobClickableLabel::focusOutEvent(QFocusEvent* e)
     ClickableLabel::focusOutEvent(e);
 }
 
-NATRON_NAMESPACE_EXIT;
+<<<<<<< HEAD
+NATRON_NAMESPACE_EXIT
 NATRON_NAMESPACE_USING;
+=======
+NATRON_NAMESPACE_EXIT
+
+NATRON_NAMESPACE_USING
+>>>>>>> origin/RB-2.3
 #include "moc_ClickableLabel.cpp"
 

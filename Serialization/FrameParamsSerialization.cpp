@@ -29,7 +29,11 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <yaml-cpp/yaml.h>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
+<<<<<<< HEAD:Serialization/FrameParamsSerialization.cpp
 SERIALIZATION_NAMESPACE_ENTER
+=======
+NATRON_NAMESPACE_ENTER
+>>>>>>> origin/RB-2.3:Engine/TextureRect.cpp
 
 void
 FrameParamsSerialization::encode(YAML::Emitter& em) const
@@ -50,3 +54,7 @@ FrameParamsSerialization::decode(const YAML::Node& node)
 SERIALIZATION_NAMESPACE_EXIT
 
 
+<<<<<<< HEAD:Serialization/FrameParamsSerialization.cpp
+=======
+NATRON_NAMESPACE_EXIT
+>>>>>>> origin/RB-2.3:Engine/TextureRect.cpp

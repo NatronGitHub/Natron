@@ -39,7 +39,7 @@
 #include "Engine/OpenGLViewerI.h"
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 #define kViewerNodeParamPlayerToolBarPage "playerToolBar"
 
@@ -395,6 +395,6 @@ toViewerNode(const EffectInstancePtr& effect)
     return boost::dynamic_pointer_cast<ViewerNode>(effect);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_VIEWERNODE_H

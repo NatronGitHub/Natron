@@ -49,17 +49,18 @@
 #include "Serialization/KnobTableItemSerialization.h"
 
 
+NATRON_NAMESPACE_ENTER
+
+
 #define NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING 10
 
-
-NATRON_NAMESPACE_ENTER;
 
 PluginPtr
 TrackerNode::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_TRANSFORM);
-    PluginPtr ret = Plugin::create((void*)TrackerNode::create,  (void*)TrackerNode::createRenderClone, PLUGINID_NATRON_TRACKER, "Tracker", 1, 0, grouping);
+    PluginPtr ret = Plugin::create(TrackerNode::create, TrackerNode::createRenderClone, PLUGINID_NATRON_TRACKER, "Tracker", 1, 0, grouping);
 
     QString desc = tr(
                       "Track one or more 2D point(s) using LibMV from the Blender open-source software.\n\n"
@@ -2266,7 +2267,7 @@ TrackerNodePrivate::averageSelectedTracks()
 
 
 
-NATRON_NAMESPACE_EXIT;
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_EXIT
+NATRON_NAMESPACE_USING
 
 #include "moc_TrackerNode.cpp"

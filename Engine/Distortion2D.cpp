@@ -28,7 +28,7 @@
 #include <list>
 #include "Engine/EffectInstance.h"
 #include "Engine/Transform.h"
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 DistortionFunction2D::DistortionFunction2D()
 : inputNbToDistort(-1)
@@ -187,4 +187,4 @@ Distortion2DStack::applyDistortionStack(double distortedX, double distortedY, co
     *undistortedY = p.y;
 } // applyDistortionStack
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

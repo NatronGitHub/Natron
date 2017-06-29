@@ -34,7 +34,7 @@
 
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct EditNodeViewerContextDialogPrivate;
 class EditNodeViewerContextDialog : public QDialog
@@ -59,6 +59,6 @@ private:
     boost::scoped_ptr<EditNodeViewerContextDialogPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // EDITNODEVIEWERCONTEXTDIALOG_H

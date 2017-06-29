@@ -45,10 +45,14 @@
 #include "Gui/NodeGui.h"
 
 
+<<<<<<< HEAD
 #include "Serialization/NodeClipBoard.h"
 #include "Serialization/NodeSerialization.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
+=======
+NATRON_NAMESPACE_ENTER
+>>>>>>> origin/RB-2.3
 
 
 void
@@ -187,4 +191,4 @@ NodeGraphPrivate::toggleSelectedNodesEnabled()
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

@@ -29,7 +29,7 @@
 
 #include "Engine/Utils.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 QString
@@ -445,5 +445,5 @@ OUTPUT:
 } // Node::makeDocumentation
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

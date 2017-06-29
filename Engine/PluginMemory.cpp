@@ -34,7 +34,10 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/AppManager.h"
 #include "Engine/Cache.h"
 #include "Engine/RamBuffer.h"
-NATRON_NAMESPACE_ENTER;
+
+
+NATRON_NAMESPACE_ENTER
+
 
 struct PluginMemory::Implementation
 {
@@ -94,4 +97,4 @@ PluginMemory::getData()
     return _imp->data.getData();
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

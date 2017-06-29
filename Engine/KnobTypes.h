@@ -47,7 +47,9 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/EngineFwd.h"
 #include "Engine/ChoiceOption.h"
 
-NATRON_NAMESPACE_ENTER;
+
+NATRON_NAMESPACE_ENTER
+
 
 #define kFontSizeTag "<font size=\""
 #define kFontColorTag "color=\""
@@ -59,6 +61,7 @@ NATRON_NAMESPACE_ENTER;
 #define kItalicEndTag "</i>"
 
 #define kColorKnobDefaultUIColorspaceName "sRGB"
+
 
 inline KnobBoolBasePtr
 toKnobBoolBase(const KnobIPtr& knob)
@@ -1598,12 +1601,14 @@ private:
     static const std::string _typeNameStr;
 };
 
+
 inline KnobTablePtr
 toKnobTable(const KnobIPtr& knob)
 {
     return boost::dynamic_pointer_cast<KnobTable>(knob);
 }
 
-NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_KNOBTYPES_H

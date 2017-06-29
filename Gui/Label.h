@@ -36,7 +36,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/StyledKnobWidgetBase.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class Label
     : public QLabel
@@ -86,6 +86,6 @@ private:
     bool isBold;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_GUI_-LABEL_H

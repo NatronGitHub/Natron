@@ -42,7 +42,7 @@
 // When defined, tiles will be fetched from the cache (and optionnally downscaled) sequentially
 //#define NATRON_IMAGE_SEQUENTIAL_INIT
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 Image::Image()
 : _imp(new ImagePrivate(this))
@@ -108,6 +108,7 @@ Image::InitStorageArgs::InitStorageArgs()
 {
 
 }
+
 
 struct ActionStatusWrapper
 {
@@ -1076,7 +1077,7 @@ class ApplyPixelShaderProcessor : public ImageMultiThreadProcessorBase
 {
     Image::CPUData  _dstImgData;
     const void* _customData;
-    void* _func;
+    void(*_func)();
 public:
 
     ApplyPixelShaderProcessor(const EffectInstancePtr& renderClone)
@@ -1089,7 +1090,7 @@ public:
     {
     }
 
-    void setValues(const Image::CPUData& dstImgData, void* func, const void* customData)
+    void setValues(const Image::CPUData& dstImgData, void(*func)(), const void* customData)
     {
         _func = func;
         _dstImgData = dstImgData;
@@ -1108,7 +1109,7 @@ private:
 ActionRetCodeEnum
 ImagePrivate::applyCPUPixelShaderForDepth(const RectI& roi,
                            const void* customData,
-                           void* func)
+                           void(*func)())
 {
     if (storage != eStorageModeRAM) {
         return eActionStatusFailed;
@@ -1131,7 +1132,7 @@ Image::applyCPUPixelShader_Float(const RectI& roi, const void* customData, Image
     if (getBitDepth() != eImageBitDepthFloat) {
         return eActionStatusFailed;
     }
-    return _imp->applyCPUPixelShaderForDepth(roi, customData, (void*)func);
+    return _imp->applyCPUPixelShaderForDepth(roi, customData, (void(*)())func);
 }
 
 ActionRetCodeEnum
@@ -1140,7 +1141,7 @@ Image::applyCPUPixelShader_Short(const RectI& roi, const void* customData, Image
     if (getBitDepth() != eImageBitDepthShort) {
         return eActionStatusFailed;
     }
-    return _imp->applyCPUPixelShaderForDepth(roi, customData, (void*)func);
+    return _imp->applyCPUPixelShaderForDepth(roi, customData, (void(*)())func);
 }
 
 ActionRetCodeEnum
@@ -1149,9 +1150,8 @@ Image::applyCPUPixelShader_Byte(const RectI& roi, const void* customData, ImageC
     if (getBitDepth() != eImageBitDepthByte) {
         return eActionStatusFailed;
     }
-    return _imp->applyCPUPixelShaderForDepth(roi, customData, (void*)func);
+    return _imp->applyCPUPixelShaderForDepth(roi, customData, (void(*)())func);
 }
 
 
-
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

@@ -38,7 +38,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/TrackMarker.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 TrackerHelper::TrackerHelper(const TrackerParamsProviderPtr &provider)
@@ -414,7 +414,7 @@ TrackerHelper::trackMarkers(const std::list<TrackMarkerPtr >& markers,
 
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_TrackerHelper.cpp"

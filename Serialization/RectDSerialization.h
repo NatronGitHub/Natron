@@ -28,7 +28,7 @@
 #include "Serialization/SerializationBase.h"
 #include "Serialization/SerializationFwd.h"
 
-SERIALIZATION_NAMESPACE_ENTER;
+SERIALIZATION_NAMESPACE_ENTER
 
 class RectDSerialization
 : public SerializationObjectBase

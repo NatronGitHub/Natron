@@ -24,7 +24,7 @@
 
 #include "ImagePrivate.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 template<int srcNComps, int dstNComps, typename PIX, int maxValue, bool masked, bool maskInvert>
 static ActionRetCodeEnum
@@ -335,4 +335,4 @@ ImagePrivate::applyMaskMixGL(const GLImageStoragePtr& originalTexture,
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

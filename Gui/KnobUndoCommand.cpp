@@ -51,9 +51,14 @@ GCC_DIAG_ON(unused-parameter)
 #include "Serialization/CurveSerialization.h"
 #include "Serialization/KnobSerialization.h"
 
-NATRON_NAMESPACE_ENTER;
+<<<<<<< HEAD
+NATRON_NAMESPACE_ENTER
 
 struct PasteKnobClipBoardUndoCommandPrivate
+=======
+NATRON_NAMESPACE_ENTER
+struct PasteUndoCommandPrivate
+>>>>>>> origin/RB-2.3
 {
     // The knob on which we paste
     KnobIWPtr knob;
@@ -1021,4 +1026,4 @@ SetExpressionCommand::redo()
 
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

@@ -35,7 +35,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct BackdropPrivate;
 
@@ -93,12 +93,14 @@ private:
     boost::scoped_ptr<BackdropPrivate> _imp;
 };
 
+
 inline BackdropPtr
 toBackdrop(const EffectInstancePtr& effect)
 {
     return boost::dynamic_pointer_cast<Backdrop>(effect);
 }
 
-NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_EXIT
 
 #endif // Engine_Backdrop_h

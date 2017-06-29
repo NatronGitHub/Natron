@@ -31,7 +31,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class DimSpec
 {
@@ -103,7 +103,7 @@ private:
     static DimIdx all(); // overload with no implementation
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 
 

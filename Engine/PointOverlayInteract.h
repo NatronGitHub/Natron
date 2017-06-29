@@ -27,7 +27,7 @@
 
 #include "Engine/OverlayInteractBase.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 
@@ -86,6 +86,6 @@ private:
     boost::scoped_ptr<PointOverlayInteractPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // POINTOVERLAYINTERACT_H

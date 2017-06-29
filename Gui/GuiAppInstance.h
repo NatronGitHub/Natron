@@ -42,7 +42,7 @@
 
 class QDrag;
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @brief This little struct contains what enables file dialogs to show previews.
@@ -250,12 +250,16 @@ private:
     boost::scoped_ptr<GuiAppInstancePrivate> _imp;
 };
 
+<<<<<<< HEAD
 inline GuiAppInstancePtr
 toGuiAppInstance(const AppInstancePtr& instance)
 {
     return boost::dynamic_pointer_cast<GuiAppInstance>(instance);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
+=======
+NATRON_NAMESPACE_EXIT
+>>>>>>> origin/RB-2.3
 
 #endif // Gui_GuiAppInstance_h

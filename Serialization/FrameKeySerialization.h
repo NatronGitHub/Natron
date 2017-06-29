@@ -31,8 +31,16 @@
 #include "Serialization/SerializationFwd.h"
 
 
+<<<<<<< HEAD:Serialization/FrameKeySerialization.h
+=======
+NATRON_NAMESPACE_ENTER
+>>>>>>> origin/RB-2.3:Engine/DefaultShaders.h
 
 
+<<<<<<< HEAD:Serialization/FrameKeySerialization.h
 SERIALIZATION_NAMESPACE_EXIT;
+=======
+NATRON_NAMESPACE_EXIT
+>>>>>>> origin/RB-2.3:Engine/DefaultShaders.h
 
 #endif // FRAMEENTRYSERIALIZATION_H

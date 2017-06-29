@@ -45,7 +45,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/TabWidgetI.h"
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class DragPixmap
     : public QWidget
@@ -368,6 +368,6 @@ private:
     boost::scoped_ptr<TabWidgetPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif /* defined(NATRON_GUI_TABWIDGET_H_) */

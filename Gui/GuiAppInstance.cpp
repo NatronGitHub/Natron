@@ -73,9 +73,26 @@
 #include "Gui/ScriptEditor.h"
 #include "Gui/ViewerGL.h"
 
+<<<<<<< HEAD
 #include "Serialization/WorkspaceSerialization.h"
+=======
+NATRON_NAMESPACE_ENTER
 
-NATRON_NAMESPACE_ENTER;
+struct RotoPaintData
+{
+    NodePtr rotoPaintNode;
+    boost::shared_ptr<RotoStrokeItem> stroke;
+    bool isPainting;
+    bool turboAlreadyActiveBeforePainting;
+
+    ///The last mouse event tick bounding box, to render the least possible
+    RectD lastStrokeMovementBbox;
+
+    ///The index of the points/stroke we have rendered
+    int lastStrokeIndex, multiStrokeIndex;
+>>>>>>> origin/RB-2.3
+
+NATRON_NAMESPACE_ENTER
 
 struct KnobDnDData
 {
@@ -1290,7 +1307,7 @@ GuiAppInstance::getViewportsProjection(std::map<std::string,SERIALIZATION_NAMESP
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_GuiAppInstance.cpp"

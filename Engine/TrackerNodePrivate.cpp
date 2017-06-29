@@ -47,7 +47,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ViewerNode.h"
 #include "Engine/ViewerInstance.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 
@@ -3636,6 +3636,6 @@ TrackerNodeInteract::onViewportSelectionUpdated(const RectD& rectangle,
 }
 
 
-NATRON_NAMESPACE_EXIT;
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_EXIT
+NATRON_NAMESPACE_USING
 #include "moc_TrackerNodePrivate.cpp"

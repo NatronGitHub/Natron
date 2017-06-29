@@ -61,7 +61,7 @@
 
 #include "Serialization/NodeSerialization.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct NodeCollectionPrivate
 {
@@ -1077,7 +1077,7 @@ NodeGroup::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_OTHER);
-    PluginPtr ret = Plugin::create((void*)NodeGroup::create, (void*)NodeGroup::createRenderClone, PLUGINID_NATRON_GROUP, "Group", 1, 0, grouping);
+    PluginPtr ret = Plugin::create(NodeGroup::create, NodeGroup::createRenderClone, PLUGINID_NATRON_GROUP, "Group", 1, 0, grouping);
 
     QString desc =  tr("Use this to nest multiple nodes into a single node. The original nodes will be replaced by the Group node and its "
                        "content is available in a separate NodeGraph tab. You can add user parameters to the Group node which can drive "
@@ -1846,7 +1846,7 @@ NodeCollection::createNodesFromSerialization(const SERIALIZATION_NAMESPACE::Node
 
 } // createNodesFromSerialization
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_NodeGroup.cpp"

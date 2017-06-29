@@ -81,7 +81,7 @@ CLANG_DIAG_ON(uninitialized)
 #include <ofxNatron.h>
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 ColorPickerLabel::ColorPickerLabel(bool simplified,
@@ -633,7 +633,21 @@ KnobGuiColor::showColorDialog()
     }
 } // showColorDialog
 
-NATRON_NAMESPACE_EXIT;
+<<<<<<< HEAD
+NATRON_NAMESPACE_EXIT
+=======
+bool
+KnobGuiColor::isAutoFoldDimensionsEnabled() const
+{
+    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    if (!knob) {
+        return false;
+    }
+    return knob->getDimension() == 3;
+}
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_EXIT
+>>>>>>> origin/RB-2.3
+
+NATRON_NAMESPACE_USING
 #include "moc_KnobGuiColor.cpp"

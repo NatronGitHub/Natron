@@ -28,7 +28,7 @@
 #include "Serialization/SerializationBase.h"
 #include "Serialization/SerializationFwd.h"
 
-SERIALIZATION_NAMESPACE_ENTER;
+SERIALIZATION_NAMESPACE_ENTER
 
 #define kKeyframeSerializationTypeConstant "K"
 #define kKeyframeSerializationTypeLinear "L"
@@ -92,6 +92,6 @@ public:
 
 };
 
-SERIALIZATION_NAMESPACE_EXIT;
+SERIALIZATION_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_CURVESERIALIZATION_H

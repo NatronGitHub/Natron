@@ -25,7 +25,7 @@
 #include "../Global/Macros.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 namespace StrUtils {
 
@@ -86,6 +86,6 @@ std::string join(const std::vector<std::string> &text, char sep);
 
 } // namespace StrUtils
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // ifndef NATRON_GLOBAL_STRUTILS_H

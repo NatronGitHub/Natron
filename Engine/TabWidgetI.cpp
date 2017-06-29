@@ -24,7 +24,7 @@
 
 #include "TabWidgetI.h"
 #include "Serialization/WorkspaceSerialization.h"
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 void
 TabWidgetI::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase)
@@ -54,4 +54,4 @@ TabWidgetI::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObject
     setCurrentIndex(serialization->currentIndex);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

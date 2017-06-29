@@ -54,7 +54,7 @@
 #include "Engine/TrackMarker.h"
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 #ifdef DEBUG
 //#define ROTO_PAINT_NODE_GRAPH_VISIBLE
@@ -1217,6 +1217,6 @@ public:
 
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // ROTOPAINTINTERACT_H

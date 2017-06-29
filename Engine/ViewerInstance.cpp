@@ -53,7 +53,7 @@
 #endif
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 struct ViewerInstancePrivate
@@ -158,7 +158,7 @@ ViewerInstance::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_IMAGE);
-    PluginPtr ret = Plugin::create((void*)ViewerInstance::create, (void*)ViewerInstance::createRenderClone, PLUGINID_NATRON_VIEWER_INTERNAL, "ViewerProcess", 1, 0, grouping);
+    PluginPtr ret = Plugin::create(ViewerInstance::create, ViewerInstance::createRenderClone, PLUGINID_NATRON_VIEWER_INTERNAL, "ViewerProcess", 1, 0, grouping);
     ret->setProperty<std::string>(kNatronPluginPropIconFilePath,  "Images/viewer_icon.png");
     QString desc =  tr("The Viewer node can display the output of a node graph.");
     ret->setProperty<bool>(kNatronPluginPropIsInternalOnly, true);
@@ -1675,5 +1675,4 @@ ViewerInstance::render(const RenderActionArgs& args)
 } // render
 
 
-NATRON_NAMESPACE_EXIT;
-
+NATRON_NAMESPACE_EXIT

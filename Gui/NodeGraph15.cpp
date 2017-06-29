@@ -57,7 +57,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #define NATRON_AUTO_SCROLL_TIMEOUT_MS 50
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 static bool
 handleConnectionError(const NodeGuiPtr& outputNode,
                       const NodeGuiPtr& inputNode,
@@ -401,4 +401,4 @@ NodeGraph::onAutoScrollTimerTriggered()
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

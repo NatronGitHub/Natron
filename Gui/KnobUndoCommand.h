@@ -57,7 +57,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @brief This is the undo/redo command that any KnobGui implementation should use to push the value onto the internal knob
@@ -442,6 +442,6 @@ private:
     ViewSetSpec _view;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_GUI_KNOBUNDOCOMMAND_H

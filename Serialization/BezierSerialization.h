@@ -32,7 +32,7 @@
 #include "Serialization/SerializationFwd.h"
 
 
-SERIALIZATION_NAMESPACE_ENTER;
+SERIALIZATION_NAMESPACE_ENTER
 
 class BezierSerialization
     : public KnobTableItemSerialization
@@ -77,6 +77,6 @@ public:
 };
 
 
-SERIALIZATION_NAMESPACE_EXIT;
+SERIALIZATION_NAMESPACE_EXIT
 
 #endif // Engine_BezierSerialization_h

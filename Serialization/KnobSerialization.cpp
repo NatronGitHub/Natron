@@ -47,7 +47,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define kKnobSerializationDataTypeKeyTable "Table"
 #define kKnobSerializationDataTypeKeyNone "Value"
 
-SERIALIZATION_NAMESPACE_ENTER;
+SERIALIZATION_NAMESPACE_ENTER
 
 const std::string&
 ValueSerialization::getKnobName() const
@@ -1130,4 +1130,4 @@ GroupKnobSerialization::decode(const YAML::Node& node)
     }
 } // GroupKnobSerialization::decode
 
-SERIALIZATION_NAMESPACE_EXIT;
+SERIALIZATION_NAMESPACE_EXIT

@@ -46,7 +46,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 // If 2 image times differ by lesser than this epsilon they are assumed the same.
 #define NATRON_IMAGE_TIME_EQUALITY_EPS 1e-5
@@ -381,6 +381,6 @@ public:
 };
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_FRAMEVIEWREQUEST_H

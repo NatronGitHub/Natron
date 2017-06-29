@@ -33,7 +33,7 @@
 #include "Engine/Cache.h"
 #include "Engine/ImageStorage.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct StorageDeleterThreadPrivate
 {
@@ -277,4 +277,4 @@ StorageAllocatorThread::run()
 } // run
 #endif
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

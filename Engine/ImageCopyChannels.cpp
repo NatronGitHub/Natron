@@ -45,7 +45,7 @@ GCC_DIAG_OFF(unused-but-set-variable) // only on gcc >= 4.6
 // to get the values from input instead.
 //#define NATRON_COPY_CHANNELS_UNPREMULT
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA>
 static ActionRetCodeEnum
@@ -581,6 +581,7 @@ ImagePrivate::copyUnprocessedChannelsCPU(const void* originalImgPtrs[4],
         case eImageBitDepthNone:
             return eActionStatusFailed;
     }
+    return eActionStatusFailed;
 }
 
 
@@ -668,4 +669,4 @@ ImagePrivate::copyUnprocessedChannelsGL(const GLImageStoragePtr& originalTexture
 }
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

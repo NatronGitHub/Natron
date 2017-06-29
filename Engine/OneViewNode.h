@@ -31,7 +31,9 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+
+NATRON_NAMESPACE_ENTER
+
 
 struct OneViewNodePrivate;
 class OneViewNode
@@ -128,12 +130,14 @@ private:
     boost::scoped_ptr<OneViewNodePrivate> _imp;
 };
 
+
 inline OneViewNodePtr
 toOneViewNode(const EffectInstancePtr& effect)
 {
     return boost::dynamic_pointer_cast<OneViewNode>(effect);
 }
 
-NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_EXIT
 
 #endif // ENGINE_ONEVIEWNODE_H

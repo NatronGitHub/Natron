@@ -45,7 +45,7 @@
  */
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 namespace Color {
 // compile-time endianness checking found on:
@@ -1685,5 +1685,5 @@ hsv_to_rgb(float h,
     }
 } // hsv_to_rgb
 }     // namespace Color {
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

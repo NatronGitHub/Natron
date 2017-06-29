@@ -81,7 +81,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Serialization/RectISerialization.h"
 #include "Serialization/RectDSerialization.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 ProjectGui::ProjectGui(Gui* gui)
     : _gui(gui)
@@ -486,7 +486,7 @@ ProjectGui::setPickersColor(ViewIdx view,
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_ProjectGui.cpp"

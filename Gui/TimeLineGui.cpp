@@ -64,8 +64,13 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ViewerTab.h"
 #include "Gui/QtEnumConvert.h"
 #include "Gui/ticks.h"
+<<<<<<< HEAD
 #include "Gui/ZoomContext.h"
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
+=======
+
+NATRON_NAMESPACE_ENTER
+>>>>>>> origin/RB-2.3
 
 #define TICK_HEIGHT 7
 #define CURSOR_WIDTH 15
@@ -1587,8 +1592,12 @@ TimelineGuiPrivate::focusGain(SequenceTime currentFrame)
     return caught;
 }
 
+<<<<<<< HEAD
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
+=======
+NATRON_NAMESPACE_EXIT
+>>>>>>> origin/RB-2.3
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_TimeLineGui.cpp"

@@ -39,7 +39,7 @@ GCC_DIAG_OFF(maybe-uninitialized)
 GCC_DIAG_ON(unused-function)
 GCC_DIAG_ON(unused-parameter)
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 TrackerDetect::DetectionArgs::DetectionArgs()
 : algo(TrackerDetect::eDetectionAlgorithmLibMVHarris)
@@ -108,4 +108,4 @@ void TrackerDetect::detectFeatures(const ImagePtr& image, const RectI& roi, cons
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

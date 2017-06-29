@@ -57,10 +57,15 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 #define kMainSplitterObjectName "ToolbarSplitter"
 
+<<<<<<< HEAD
+=======
+NATRON_NAMESPACE_ENTER
+
+>>>>>>> origin/RB-2.3
 struct GuiPrivate;
 
 class Gui
@@ -709,6 +714,6 @@ private:
     boost::scoped_ptr<GuiPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Gui_Gui_h

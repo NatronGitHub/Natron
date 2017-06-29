@@ -30,7 +30,7 @@
 #include "Engine/Settings.h"
 #include "Engine/KnobTypes.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 
@@ -1631,4 +1631,4 @@ TransformOverlayInteract::onOverlayFocusLost(TimeValue /*time*/,
 
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

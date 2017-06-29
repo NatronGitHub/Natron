@@ -38,7 +38,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/LibraryBinary.h"
 #include "Engine/Settings.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 void
 Plugin::initializeProperties() const
@@ -70,8 +70,8 @@ Plugin::initializeProperties() const
 }
 
 PluginPtr
-Plugin::create(void* createEffectFunc,
-               void* createCloneFunc,
+Plugin::create(EffectBuilder createEffectFunc,
+               EffectRenderCloneBuilder createCloneFunc,
                const std::string &pluginID,
                const std::string &pluginLabel,
                unsigned int majorVersion,
@@ -86,8 +86,10 @@ Plugin::create(void* createEffectFunc,
         throw std::invalid_argument("Plugin::create: plugin label cannot be empty");
     }
     PluginPtr ret(new Plugin);
-    ret->setProperty<void*>(kNatronPluginPropCreateFunc, createEffectFunc);
-    ret->setProperty<void*>(kNatronPluginPropCreateRenderCloneFunc, createCloneFunc);
+    GCC_DIAG_PEDANTIC_OFF
+    ret->setProperty<void*>(kNatronPluginPropCreateFunc, (void*)createEffectFunc);
+    ret->setProperty<void*>(kNatronPluginPropCreateRenderCloneFunc, (void*)createCloneFunc);
+    GCC_DIAG_PEDANTIC_ON
     ret->setProperty<std::string>(kNatronPluginPropID, pluginID);
     ret->setProperty<std::string>(kNatronPluginPropLabel, pluginLabel);
     ret->setProperty<unsigned int>(kNatronPluginPropVersion, majorVersion);
@@ -478,4 +480,4 @@ FormatExtensionCompareCaseInsensitive::operator() (const std::string& lhs,
     return boost::algorithm::lexicographical_compare( lhs, rhs, boost::algorithm::is_iless() );
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

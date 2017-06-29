@@ -57,7 +57,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #define kPropertiesBinName "properties"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 #define NATRON_CONNECT_INPUT_NB (2 * 10)
 
@@ -292,6 +292,6 @@ public:
     bool checkProjectLockAndWarn(const QString& projectPath, const QString& projectName);
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Gui_GuiPrivate_h

@@ -30,6 +30,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include <ofxNatron.h>
 
+
 NATRON_NAMESPACE_ENTER
 
 
@@ -50,11 +51,13 @@ endsWith(const std::string &str,
             (str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0) );
 }
 
+#if 0
 static bool
 containsString(const std::string& str, const std::string& substring)
 {
     return str.find(substring) != std::string::npos;
 }
+#endif
 
 static bool
 equalsStringCaseSensitive(const std::string& str1, const std::string& str2)

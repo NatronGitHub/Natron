@@ -36,7 +36,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class NodeGuiI
 {
@@ -114,6 +114,6 @@ public:
     virtual bool addComponentsWithDialog(const KnobChoicePtr& knob) = 0;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NODEGUII_H

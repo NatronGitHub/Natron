@@ -92,7 +92,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct BezierShape
 {
@@ -3973,6 +3973,7 @@ Bezier::expandToFeatherDistance(const Point & cp, //< the point
 
 } // expandToFeatherDistance
 
+
 void
 Bezier::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 {
@@ -4104,7 +4105,8 @@ Bezier::getFallOffRampTypeKnob() const
 }
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+
+NATRON_NAMESPACE_USING
 #include "moc_Bezier.cpp"

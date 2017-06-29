@@ -50,7 +50,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/AnimItemBase.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct AnimItemDimViewIndexIDWithCurve
 {
@@ -336,6 +336,6 @@ private:
 
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_GUI_ANIMATION_MODULE_UNDO_REDO_H

@@ -68,7 +68,7 @@ typedef boost::uint8_t U8;
 typedef boost::uint16_t U16;
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 typedef int SequenceTime;
 
@@ -129,7 +129,7 @@ typedef OfxRangeD RangeD;
 
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 Q_DECLARE_METATYPE(NATRON_NAMESPACE::SequenceTime)
 

@@ -44,7 +44,7 @@ GCC_DIAG_ON(unused-parameter)
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
 #endif
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 using boost::math::cbrt;
 using std::sqrt;
@@ -1113,5 +1113,5 @@ Interpolation::autoComputeDerivatives(KeyframeTypeEnum interpPrev,
     assert( !boost::math::isnan(*vcurDerivRight) && !boost::math::isnan(*vcurDerivLeft) );
 } // autoComputeDerivatives
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

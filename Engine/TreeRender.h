@@ -42,7 +42,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @brief Used in the implementation of the TreeRender to determine FrameViewRequest that are available to be rendered
@@ -282,6 +282,6 @@ private:
 };
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_TREERENDER_H

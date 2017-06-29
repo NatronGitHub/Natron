@@ -37,7 +37,7 @@ CLANG_DIAG_ON(deprecated-register)
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
    Usage:
@@ -94,6 +94,6 @@ private:
     boost::scoped_ptr<QTimer> m_timer;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // FILEDOWNLOADER_H

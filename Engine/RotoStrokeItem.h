@@ -50,7 +50,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 // The number of pressure levels is 256 on an old Wacom Graphire 4, and 512 on an entry-level Wacom Bamboo
 // 512 should be OK, see:
@@ -255,12 +255,14 @@ private:
     boost::scoped_ptr<RotoStrokeItemPrivate> _imp;
 };
 
+
 inline RotoStrokeItemPtr
 toRotoStrokeItem(const KnobHolderPtr& item)
 {
     return boost::dynamic_pointer_cast<RotoStrokeItem>(item);
 }
 
-NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_EXIT
 
 #endif // Engine_RotoStrokeItem_h

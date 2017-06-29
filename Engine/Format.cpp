@@ -59,4 +59,4 @@ Format::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase
 }
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

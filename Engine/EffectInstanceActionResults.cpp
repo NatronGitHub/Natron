@@ -34,7 +34,7 @@
 
 namespace bip = boost::interprocess;
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 EffectInstanceActionKeyBase::EffectInstanceActionKeyBase(U64 nodeTimeViewVariantHash,
                                                          const RenderScale& scale,
@@ -484,4 +484,4 @@ GetComponentsResults::fromMemorySegment(bool /*isLockedForWriting*/,
 } // fromMemorySegment
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

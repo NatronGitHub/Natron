@@ -39,8 +39,8 @@ GCC_DIAG_ON(unused-parameter)
 
 #include "Gui/GuiApplicationManager.h"
 
-NATRON_NAMESPACE_ENTER;
-NATRON_PYTHON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
+NATRON_PYTHON_NAMESPACE_ENTER
 
 QPixmap
 PyGuiApplication::getIcon(PixmapEnum val) const
@@ -100,5 +100,5 @@ PyGuiApplication::getGuiInstance(int idx) const
     return new GuiApp(guiApp);
 }
 
-NATRON_PYTHON_NAMESPACE_EXIT;
-NATRON_NAMESPACE_EXIT;
+NATRON_PYTHON_NAMESPACE_EXIT
+NATRON_NAMESPACE_EXIT

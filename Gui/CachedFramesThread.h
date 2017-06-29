@@ -39,7 +39,7 @@
 
 #include "Engine/TimeValue.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class CachedFramesThread : public QThread
 {
@@ -69,6 +69,6 @@ private:
     boost::scoped_ptr<Implementation> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_CACHEDFRAMESTHREADTHREAD_H

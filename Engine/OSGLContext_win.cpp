@@ -54,7 +54,7 @@ __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 #define NATRON_WNDCLASSNAME L"NATRON30"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 bool
 OSGLContext_win::extensionSupported(const char* extension,
@@ -887,6 +887,6 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
     }
 } // OSGLContext_win::getGPUInfos
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // __NATRON_WIN32__

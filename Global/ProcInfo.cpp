@@ -38,7 +38,7 @@
 
 #include "StrUtils.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
@@ -672,4 +672,4 @@ ProcInfo::checkIfProcessIsRunning(const char* processAbsoluteFilePath,
 #endif // ifdef Q_OS_WIN
 } // ProcInfo::checkIfProcessIsRunning
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

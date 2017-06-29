@@ -36,7 +36,7 @@
 #include "Gui/GuiApplicationManager.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 void
 Label::init()
@@ -152,8 +152,12 @@ Label::setIsModified(bool a)
     StyledKnobWidgetBase::setIsModified(a);
 }
 
+<<<<<<< HEAD
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
+=======
+NATRON_NAMESPACE_EXIT
+>>>>>>> origin/RB-2.3
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_Label.cpp"

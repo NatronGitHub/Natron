@@ -31,7 +31,7 @@
 #include "Engine/ViewerNode.h"
 #include "Engine/ViewerRenderFrameRunnable.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 
@@ -158,4 +158,4 @@ ViewerDisplayScheduler::getLastRenderedTime() const
     return TimeValue(effect->getLastRenderedTime());
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

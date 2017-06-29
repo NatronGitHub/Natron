@@ -28,7 +28,7 @@
 #include "Engine/EngineFwd.h"
 #include "Engine/ProcessFrameThread.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class CurrentFrameFunctorArgs;
 
@@ -97,6 +97,6 @@ private:
 };
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_CURRENTFRAMEREQUESTSCHEDULER_H

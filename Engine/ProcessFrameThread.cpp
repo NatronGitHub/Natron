@@ -30,7 +30,7 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QThread>
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
@@ -112,4 +112,4 @@ ProcessFrameThread::threadLoopOnce(const GenericThreadStartArgsPtr& inArgs)
     return eThreadStateActive;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

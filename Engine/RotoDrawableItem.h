@@ -50,7 +50,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 #define kMergeParamOutputChannelsR      "OutputChannelsR"
 #define kMergeParamOutputChannelsG      "OutputChannelsG"
@@ -275,12 +275,14 @@ public:
     virtual std::string getSerializationClassName() const OVERRIDE FINAL;
 };
 
+
 inline CompNodeItemPtr
 toCompNodeItem(const KnobHolderPtr& item)
 {
     return boost::dynamic_pointer_cast<CompNodeItem>(item);
 }
 
-NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_EXIT
 
 #endif // Engine_RotoDrawableItem_h

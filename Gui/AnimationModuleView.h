@@ -45,7 +45,7 @@
 #include "Gui/TextRenderer.h"
 #include "Gui/ZoomContext.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class AnimationModuleViewPrivate;
 class AnimationModuleView
@@ -227,5 +227,5 @@ private:
 };
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 #endif // NATRON_GUI_AnimationModuleView_H

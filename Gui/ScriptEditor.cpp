@@ -56,9 +56,13 @@
 #include "Gui/ActionShortcuts.h"
 
 
+<<<<<<< HEAD
 #define kScriptEditorInputSerializationKey "ScriptEditorInputSerializationKey"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
+=======
+NATRON_NAMESPACE_ENTER
+>>>>>>> origin/RB-2.3
 
 struct ScriptEditorPrivate
 {
@@ -648,6 +652,7 @@ ScriptEditor::focusInEvent(QFocusEvent* e)
     QWidget::focusInEvent(e);
 }
 
+<<<<<<< HEAD
 QIcon
 ScriptEditor::getIcon() const
 {
@@ -657,7 +662,10 @@ ScriptEditor::getIcon() const
     return QIcon(p);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
+=======
+NATRON_NAMESPACE_EXIT
+>>>>>>> origin/RB-2.3
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_ScriptEditor.cpp"

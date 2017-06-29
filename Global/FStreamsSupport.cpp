@@ -25,7 +25,7 @@
 #include "FStreamsSupport.h"
 #include "../Global/StrUtils.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 void
@@ -59,4 +59,4 @@ FStreamsSupport::open (FStreamsSupport::ofstream *stream,
 #endif
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

@@ -38,7 +38,7 @@
 #include "Engine/Node.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class ComputePreviewRequest
     : public GenericThreadStartArgs
@@ -128,5 +128,5 @@ PreviewThread::threadLoopOnce(const GenericThreadStartArgsPtr& inArgs)
     return eThreadStateActive;
 } // PreviewThread::threadLoopOnce
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

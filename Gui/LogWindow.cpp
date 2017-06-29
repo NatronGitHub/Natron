@@ -44,7 +44,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/DialogButtonBox.h"
 #include "Gui/GuiApplicationManager.h" // appPTR
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 LogWindow::LogWindow(QWidget* parent)
     : QWidget(parent, Qt::Dialog | Qt::WindowStaysOnTopHint)
@@ -174,7 +174,7 @@ LogWindowModal::keyPressEvent(QKeyEvent* e)
         QDialog::keyPressEvent(e);
     }
 }
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_LogWindow.cpp"

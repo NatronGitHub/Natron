@@ -442,7 +442,7 @@
 #define kShortcutActionScriptShowOutputHint "Show/Hide output window"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class KeybindListenerI
 {
@@ -521,6 +521,6 @@ public:
 };
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_KEYBINDSHORTCUT_H

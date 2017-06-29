@@ -62,7 +62,7 @@
 
 #define kNatronPersistentWarningFileOutOfDate "NatronPersistentWarningFileOutOfDate"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 KnobGuiFile::KnobGuiFile(const KnobGuiPtr& knob, ViewIdx view)
@@ -1021,7 +1021,7 @@ KnobGuiPath::updateToolTip()
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_KnobGuiFile.cpp"

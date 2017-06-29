@@ -51,7 +51,7 @@
 
 #include "Global/GLIncludes.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 static  const char* fillConstant_FragmentShader =
@@ -1070,4 +1070,4 @@ OSGLContextSaver::~OSGLContextSaver()
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

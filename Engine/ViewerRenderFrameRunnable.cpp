@@ -42,7 +42,7 @@
 #include "Engine/ViewerNode.h"
 #include "Engine/TreeRender.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 ViewerRenderFrameRunnable::ViewerRenderFrameRunnable(const NodePtr& viewer,
                                                      OutputSchedulerThread* scheduler,
@@ -409,4 +409,4 @@ void ViewerRenderFrameRunnable::renderFrame(TimeValue time,
     
 } // renderFrame
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

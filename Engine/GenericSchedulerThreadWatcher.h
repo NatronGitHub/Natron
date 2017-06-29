@@ -39,7 +39,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @brief The purpose of this class is to safely destroy a GenericSchedulerThread and to get notify whenever the GenericSchedulerThread abortion is complete
@@ -210,6 +210,6 @@ private:
 };
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // GENERICSCHEDULERTHREADWATCHER_H

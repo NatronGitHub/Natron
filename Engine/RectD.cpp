@@ -29,8 +29,12 @@
 #include <stdexcept>
 
 #include "Engine/RectI.h"
+
 #include "Serialization/RectDSerialization.h"
-NATRON_NAMESPACE_ENTER;
+
+
+NATRON_NAMESPACE_ENTER
+
 
 void
 RectD::toPixelEnclosing(const RenderScale & scale,
@@ -55,6 +59,7 @@ RectD::toPixelEnclosing(unsigned int mipMapLevel,
     rect->x2 = std::ceil(x2 * scale / par);
     rect->y2 = std::ceil(y2 * scale);
 }
+
 
 void
 RectD::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
@@ -81,4 +86,6 @@ RectD::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase 
     x2 = s->x2;
     y2 = s->y2;
 }
-NATRON_NAMESPACE_EXIT;
+
+
+NATRON_NAMESPACE_EXIT

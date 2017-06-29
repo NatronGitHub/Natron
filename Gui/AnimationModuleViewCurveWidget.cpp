@@ -66,7 +66,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerGL.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 std::pair<double,double>
 AnimationModuleView::getCurvesKeyframeTimesBbox(const std::vector<CurveGuiPtr> & curves)
@@ -936,5 +936,5 @@ AnimationModuleView::getKeyTangentPoints(KeyFrameSet::const_iterator it,
 } // getKeyTangentPoints
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

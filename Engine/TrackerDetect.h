@@ -29,7 +29,7 @@
 #include "Engine/EngineFwd.h"
 
 #include <vector>
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 namespace TrackerDetect
 {
@@ -109,6 +109,6 @@ namespace TrackerDetect
 
 } // namespace TrackerDetect
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // TRACKERDETECT_H

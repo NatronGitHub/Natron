@@ -45,7 +45,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @brief x1 pointer property indicating the function used to create an instance of the plug-in.
@@ -340,8 +340,8 @@ private:
 
 public:
 
-    static PluginPtr create(void* createEffectFunc,
-                            void* createCloneFunc,
+    static PluginPtr create(EffectBuilder createEffectFunc,
+                            EffectRenderCloneBuilder createCloneFunc,
                             const std::string &pluginID,
                             const std::string &pluginLabel,
                             unsigned int majorVersion,
@@ -457,6 +457,6 @@ typedef std::set<IOPluginEvaluation, IOPluginEvaluation_CompareLess> IOPluginSet
 // The best plug-in for a format is the set.rbegin()
 typedef std::map<std::string, IOPluginSetForFormat, FormatExtensionCompareCaseInsensitive> IOPluginsMap;
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // PLUGIN_H

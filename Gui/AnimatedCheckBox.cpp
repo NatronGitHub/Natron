@@ -40,7 +40,7 @@ CLANG_DIAG_ON(deprecated-register)
 #include "Gui/GuiApplicationManager.h"
 #include "Engine/Settings.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 AnimatedCheckBox::AnimatedCheckBox(QWidget *parent)
     : QFrame(parent), readOnly(false), checked(false), _linked(false)
 {
@@ -209,7 +209,7 @@ AnimatedCheckBox::paintEvent(QPaintEvent* e)
     }
 } // AnimatedCheckBox::paintEvent
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_AnimatedCheckBox.cpp"

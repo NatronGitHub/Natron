@@ -58,7 +58,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Serialization/KnobSerialization.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 PluginPtr
@@ -66,7 +66,7 @@ PrecompNode::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_OTHER);
-    PluginPtr ret = Plugin::create((void*)PrecompNode::create, (void*)PrecompNode::createRenderClone, PLUGINID_NATRON_PRECOMP, "Precomp", 1, 0, grouping);
+    PluginPtr ret = Plugin::create(PrecompNode::create, PrecompNode::createRenderClone, PLUGINID_NATRON_PRECOMP, "Precomp", 1, 0, grouping);
     ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafeFrame);
 
     QString desc = tr( "The Precomp node is like a Group node, but references an external Natron project (.ntp) instead.\n"
@@ -719,7 +719,7 @@ PrecompNode::getPrecompApp() const
     return _imp->app.lock();
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_PrecompNode.cpp"

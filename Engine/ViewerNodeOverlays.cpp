@@ -37,7 +37,7 @@
 #define USER_ROI_CLICK_TOLERANCE 8.f
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 ViewerNodeOverlay::ViewerNodeOverlay(ViewerNodePrivate* imp)
 : OverlayInteractBase()
@@ -1063,4 +1063,4 @@ ViewerNodeOverlay::onOverlayFocusLost(TimeValue /*time*/, const RenderScale & /*
 } // onOverlayFocusLost
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

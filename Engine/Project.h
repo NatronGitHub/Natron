@@ -57,7 +57,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct ProjectPrivate;
 
@@ -441,12 +441,14 @@ private:
     boost::scoped_ptr<ProjectPrivate> _imp;
 };
 
+
 inline ProjectPtr
 toProject(const KnobHolderPtr& holder)
 {
     return boost::dynamic_pointer_cast<Project>(holder);
 }
 
-NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_PROJECT_H

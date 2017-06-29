@@ -50,7 +50,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ViewerTab.h"
 #include "Gui/ViewerGL.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 void
 KnobGui::onMustRefreshGuiActionTriggered(ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/)
@@ -632,6 +632,7 @@ KnobGui::onDimensionNameChanged(DimIdx dimension)
     }
 }
 
+<<<<<<< HEAD
 
 
 void
@@ -762,4 +763,7 @@ KnobGui::onInternalKnobLinksChanged()
     node->getDagGui()->refreshNodeLinksLater();
 } // onInternalKnobLinksChanged
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
+=======
+NATRON_NAMESPACE_EXIT
+>>>>>>> origin/RB-2.3

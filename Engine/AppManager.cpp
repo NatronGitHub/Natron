@@ -137,7 +137,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 Q_DECLARE_METATYPE(QAbstractSocket::SocketState)
 #endif
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 AppManager* AppManager::_instance = 0;
 
@@ -4075,7 +4075,7 @@ NATRON_PYTHON_NAMESPACE::getAttrRecursive(const std::string& fullyQualifiedName,
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_AppManager.cpp"

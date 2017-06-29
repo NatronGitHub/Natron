@@ -37,7 +37,7 @@
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/TabWidget.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 PropertiesBinWrapper::PropertiesBinWrapper(const std::string& scriptName, Gui* parent)
     : QWidget(parent)
@@ -113,6 +113,7 @@ PropertiesBinWrapper::getUndoStack() const
     return boost::shared_ptr<QUndoStack>();
 }
 
+<<<<<<< HEAD
 QIcon
 PropertiesBinWrapper::getIcon() const
 {
@@ -123,4 +124,7 @@ PropertiesBinWrapper::getIcon() const
 }
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
+=======
+NATRON_NAMESPACE_EXIT
+>>>>>>> origin/RB-2.3

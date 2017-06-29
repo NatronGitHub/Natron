@@ -30,7 +30,7 @@
 #include "Gui/PanelWidget.h"
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class PropertiesBinWrapper
     : public QWidget, public PanelWidget
@@ -53,6 +53,6 @@ private:
     virtual boost::shared_ptr<QUndoStack> getUndoStack() const OVERRIDE FINAL;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Gui_PropertiesBinWrapper_h

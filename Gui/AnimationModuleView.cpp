@@ -70,7 +70,7 @@
 #define CURVE_EDITOR_MIN_HEIGHT_PX 50
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 
@@ -1282,6 +1282,6 @@ AnimationModuleView::setSelectedDerivative(MoveTangentCommand::SelectedTangentEn
     _imp->selectedDerivative.second = key;
 }
 
-NATRON_NAMESPACE_EXIT;
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_EXIT
+NATRON_NAMESPACE_USING
 #include "moc_AnimationModuleView.cpp"

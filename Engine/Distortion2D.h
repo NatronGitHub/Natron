@@ -36,7 +36,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class DistortionFunction2D
 {
@@ -115,7 +115,7 @@ private:
     boost::scoped_ptr<Distortion2DStackPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 
 #endif // Engine_Distortion2D_h

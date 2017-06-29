@@ -30,7 +30,11 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "Serialization/NodeSerialization.h"
 
+<<<<<<< HEAD:Serialization/NodeClipBoard.cpp
 SERIALIZATION_NAMESPACE_ENTER
+=======
+NATRON_NAMESPACE_ENTER
+>>>>>>> origin/RB-2.3:Engine/RectISerialization.h
 
 void
 NodeClipBoard::encode(YAML::Emitter& em) const
@@ -48,6 +52,7 @@ NodeClipBoard::encode(YAML::Emitter& em) const
     }
 }
 
+<<<<<<< HEAD:Serialization/NodeClipBoard.cpp
 void
 NodeClipBoard::decode(const YAML::Node& node)
 {
@@ -66,6 +71,9 @@ NodeClipBoard::decode(const YAML::Node& node)
 
     }
 }
+=======
+NATRON_NAMESPACE_EXIT
+>>>>>>> origin/RB-2.3:Engine/RectISerialization.h
 
 
 SERIALIZATION_NAMESPACE_EXIT

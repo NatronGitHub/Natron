@@ -49,7 +49,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Label.h"
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class KnobGuiSeparator
     : public KnobGuiWidgets
@@ -94,6 +94,6 @@ private:
     KnobSeparatorWPtr _knob;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Gui_KnobGuiSeparator_h

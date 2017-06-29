@@ -48,7 +48,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @class A base class for all items made by the roto context
@@ -136,12 +136,14 @@ private:
 
 };
 
+
 inline PlanarTrackLayerPtr
 toPlanarTrackLayer(const KnobHolderPtr& item)
 {
     return boost::dynamic_pointer_cast<PlanarTrackLayer>(item);
 }
 
-NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_EXIT
 
 #endif // Engine_RotoLayer_h

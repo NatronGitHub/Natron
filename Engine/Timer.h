@@ -46,7 +46,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 //----------------------------------------------------------------------------
 //
@@ -202,7 +202,10 @@ public:
     ~TimeLapseReporter();
 };
 
+
 struct StackTraceRecorderPrivate;
+
+
 class StackTraceRecorder
 {
 
@@ -252,6 +255,7 @@ private:
     
 };
 
-NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_EXIT
 
 #endif // ifndef NATRON_ENGINE_TIMER_H

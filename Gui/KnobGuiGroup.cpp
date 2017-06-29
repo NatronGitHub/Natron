@@ -80,7 +80,12 @@ CLANG_DIAG_ON(uninitialized)
 #include <ofxNatron.h>
 
 
-NATRON_NAMESPACE_ENTER;
+<<<<<<< HEAD
+NATRON_NAMESPACE_ENTER
+=======
+NATRON_NAMESPACE_ENTER
+using std::make_pair;
+>>>>>>> origin/RB-2.3
 
 
 KnobGuiGroup::KnobGuiGroup(const KnobGuiPtr& knob, ViewIdx view)
@@ -266,7 +271,7 @@ KnobGuiGroup::setEnabled(const std::vector<bool>& perDimEnabled)
 
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_KnobGuiGroup.cpp"

@@ -45,7 +45,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct LinkToKnobDialogPrivate;
 
@@ -74,6 +74,6 @@ private:
     boost::scoped_ptr<LinkToKnobDialogPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Gui_LinkToKnobDialog_h

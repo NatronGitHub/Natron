@@ -54,8 +54,8 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/TrackMarker.h"
 #include "Engine/PyTracker.h"
 
-NATRON_NAMESPACE_ENTER;
-NATRON_PYTHON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
+NATRON_PYTHON_NAMESPACE_ENTER
 
 ItemBase::ItemBase(const KnobTableItemPtr& item)
 : _item(item)
@@ -536,5 +536,5 @@ ItemsTable::isModelParentingEnabled() const
     return model->getType() == KnobItemsTable::eKnobItemsTableTypeTree;
 }
 
-NATRON_PYTHON_NAMESPACE_EXIT;
-NATRON_NAMESPACE_EXIT;
+NATRON_PYTHON_NAMESPACE_EXIT
+NATRON_NAMESPACE_EXIT

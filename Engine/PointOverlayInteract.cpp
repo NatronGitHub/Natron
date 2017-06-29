@@ -33,7 +33,7 @@
 #include "Engine/Settings.h"
 #include "Engine/KnobTypes.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 enum PositionInteractState
@@ -406,4 +406,4 @@ PointOverlayInteract::onOverlayFocusLost(TimeValue /*time*/,
     return false;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

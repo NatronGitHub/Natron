@@ -103,9 +103,13 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/PropertiesBinWrapper.h"
 #include "Gui/Histogram.h"
 
+<<<<<<< HEAD
 #include <SequenceParsing.h>
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
+=======
+NATRON_NAMESPACE_ENTER
+>>>>>>> origin/RB-2.3
 
 
 void
@@ -1252,4 +1256,4 @@ Gui::dropEvent(QDropEvent* e)
     handleOpenFilesFromUrls( urls, mapToGlobal( e->pos() ) );
 } // dropEvent
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

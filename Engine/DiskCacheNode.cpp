@@ -36,6 +36,10 @@
 #include "Engine/TimeLine.h"
 #include "Engine/ViewIdx.h"
 
+
+NATRON_NAMESPACE_ENTER
+
+
 #define kDiskCacheNodeFirstFrame "firstFrame"
 #define kDiskCacheNodeFirstFrameLabel "First Frame"
 #define kDiskCacheNodeFirstFrameHint ""
@@ -48,7 +52,6 @@
 #define kDiskCacheNodeFrameRangeLabel "Frame Range"
 #define kDiskCacheNodeFrameRangeHint ""
 
-NATRON_NAMESPACE_ENTER;
 
 struct DiskCacheNodePrivate
 {
@@ -67,7 +70,7 @@ DiskCacheNode::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_OTHER);
-    PluginPtr ret = Plugin::create((void*)DiskCacheNode::create, (void*)DiskCacheNode::createRenderClone, PLUGINID_NATRON_DISKCACHE, "DiskCache", 1, 0, grouping);
+    PluginPtr ret = Plugin::create(DiskCacheNode::create, DiskCacheNode::createRenderClone, PLUGINID_NATRON_DISKCACHE, "DiskCache", 1, 0, grouping);
 
     QString desc =  tr("This node caches all images of the connected input node onto the disk with full 32bit floating point raw data. "
                        "When an image is found in the cache, %1 will then not request the input branch to render out that image. "
@@ -302,8 +305,8 @@ DiskCacheNode::isHostChannelSelectorSupported(bool* /*defaultR*/,
     return false;
 }
 
-NATRON_NAMESPACE_EXIT;
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_EXIT
+NATRON_NAMESPACE_USING
 
 #include "moc_DiskCacheNode.cpp"
 

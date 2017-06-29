@@ -36,7 +36,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 #define ROTOPAINT_MAX_INPUTS_COUNT 10
 //#define ROTOPAINT_MASK_INPUT_INDEX 10
@@ -425,7 +425,7 @@ public:
         return EffectInstancePtr( new RotoPaint(node, eRotoPaintTypeRotoPaint) );
     }
 
-    static EffectInstancePtr createRenderClone(const EffectInstancePtr& /*mainInstance*/, const FrameViewRequestPtr& /*render*/) WARN_UNUSED_RETURN
+    static EffectInstancePtr createRenderClone(const EffectInstancePtr& /*mainInstance*/, const FrameViewRenderKey& /*key*/) WARN_UNUSED_RETURN
     {
         assert(false);
         throw std::logic_error("A group cannot have a render clone");
@@ -597,6 +597,7 @@ private:
     virtual bool isHostChannelSelectorSupported(bool* defaultR, bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
 };
 
+
 /**
  * @brief Same as RotoPaint except that items in the table are only CompNodeItem
  **/
@@ -637,6 +638,7 @@ toLayeredCompNode(const EffectInstancePtr& effect)
     return boost::dynamic_pointer_cast<LayeredCompNode>(effect);
 }
 
-NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_EXIT
 
 #endif // ROTOPAINT_H

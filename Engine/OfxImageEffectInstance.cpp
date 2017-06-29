@@ -71,7 +71,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 // see second answer of http://stackoverflow.com/questions/2342162/stdstring-formatting-like-sprintf
 static
@@ -1447,4 +1447,4 @@ OfxImageEffectInstance::ofxCursorToNatronCursor(const std::string &ofxCursor,
     return ret;
 } // OfxImageEffectInstance::ofxCursorToNatronCursor
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

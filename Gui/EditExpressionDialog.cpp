@@ -88,8 +88,12 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/TimeLineGui.h"
 #include "Gui/ViewerTab.h"
 
+<<<<<<< HEAD
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
+=======
+NATRON_NAMESPACE_ENTER
+>>>>>>> origin/RB-2.3
 
 EditExpressionDialog::EditExpressionDialog(Gui* gui,
                                            DimSpec dimension,
@@ -153,7 +157,7 @@ EditExpressionDialog::compileExpression(const QString& expr, ExpressionLanguageE
 }
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_EditExpressionDialog.cpp"

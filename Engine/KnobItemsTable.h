@@ -45,7 +45,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @brief String passed to setColumn to indicate that a column corresponds to the label
@@ -843,7 +843,7 @@ private:
     boost::scoped_ptr<KnobItemsTablePrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 Q_DECLARE_METATYPE(NATRON_NAMESPACE::KnobTableItemPtr)
 Q_DECLARE_METATYPE(std::list<NATRON_NAMESPACE::KnobTableItemPtr>)

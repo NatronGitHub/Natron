@@ -48,9 +48,12 @@
 
 #include "Engine/EngineFwd.h"
 
+
 #define NATRON_TLS_DISABLE_COPY
 
-NATRON_NAMESPACE_ENTER;
+
+NATRON_NAMESPACE_ENTER
+
 
 ///This must be stored as a shared_ptr
 class TLSHolderBase
@@ -225,6 +228,6 @@ private:
     mutable ThreadDataMap perThreadData;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_TLSHOLDER_H

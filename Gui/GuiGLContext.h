@@ -38,7 +38,7 @@ CLANG_DIAG_ON(uninitialized)
 
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @brief A wrapper around a QGLContext managed by a QGLWidget so that it can be used in all our internal background rendering functions that usually
@@ -62,6 +62,6 @@ private:
     boost::scoped_ptr<GuiGLContextPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // GUIGLCONTEXT_H

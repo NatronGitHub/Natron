@@ -33,7 +33,7 @@
 #include "Engine/TreeRender.h"
 #include "Engine/WriteNode.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct RenderThreadTaskPrivate
 {
@@ -282,5 +282,5 @@ DefaultRenderFrameRunnable::renderFrame(TimeValue time,
 } // renderFrame
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

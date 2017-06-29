@@ -40,7 +40,7 @@
 
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct PreviewThreadPrivate;
 class PreviewThread
@@ -64,6 +64,6 @@ private:
     boost::scoped_ptr<PreviewThreadPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // PREVIEWTHREAD_H

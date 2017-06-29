@@ -38,7 +38,7 @@
 
 #include "Engine/PluginMemory.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class OfxMemory
     : public OFX::Host::Memory::Instance
@@ -63,6 +63,6 @@ public:
 private:
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // OFXMEMORY_H

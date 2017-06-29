@@ -44,7 +44,7 @@ CLANG_DIAG_ON(uninitialized)
 
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 
@@ -172,7 +172,7 @@ inline AnimationModulePtr toAnimationModule(const AnimationModuleBasePtr& p)
 }
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 
 #endif // NATRON_GUI_ANIMATIONMODULE_H

@@ -53,7 +53,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 // Various useful plugin IDs, @see EffectInstance::getPluginID()
 #define PLUGINID_OFX_MERGE        "net.sf.openfx.MergePlugin"
@@ -235,6 +235,7 @@ NATRON_NAMESPACE_ENTER;
 
 // A persistent message that will always be cleared upon a successful render, this may be useful to report errors in render without taking care of clearing the persistent message manually
 #define kNatronPersistentErrorGenericRenderMessage "NatronPersistentErrorGenericRenderMessage"
+
 
 /**
  * @brief This is the base class for visual effects.
@@ -1991,13 +1992,6 @@ private:
 
 
 
-/**
- * @typedef Any plug-in should have a static function called BuildEffect with the following signature.
- * It is used to build a new instance of an effect. Basically it should just call the constructor.
- **/
-typedef EffectInstancePtr (*EffectBuilder)(const NodePtr&);
-typedef EffectInstancePtr (*EffectRenderCloneBuilder)(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key);
-
 inline EffectInstancePtr
 toEffectInstance(const KnobHolderPtr& effect)
 {
@@ -2005,6 +1999,6 @@ toEffectInstance(const KnobHolderPtr& effect)
 }
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_EFFECTINSTANCE_H

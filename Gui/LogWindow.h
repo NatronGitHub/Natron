@@ -35,7 +35,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class LogWindow
     : public QWidget
@@ -90,6 +90,6 @@ private:
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Gui_LogWindow_h

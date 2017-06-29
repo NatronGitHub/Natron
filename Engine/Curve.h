@@ -44,7 +44,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 #define NATRON_CURVE_X_SPACING_EPSILON 1e-6
 
@@ -617,6 +617,6 @@ private:
     boost::scoped_ptr<CurvePrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Engine_Curve_h

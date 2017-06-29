@@ -37,7 +37,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/StyledKnobWidgetBase.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class AnimatedCheckBox
     : public QFrame
@@ -99,6 +99,6 @@ private:
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_GUI_ANIMATEDCHECKBOX_H

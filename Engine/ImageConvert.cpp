@@ -40,7 +40,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Texture.h"
 #include "Engine/Lut.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 ///explicit template instantiations
 
@@ -1291,4 +1291,4 @@ ImagePrivate::copyPixelsInternal(const ImagePrivate* fromImage,
 } // copyRectangle
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

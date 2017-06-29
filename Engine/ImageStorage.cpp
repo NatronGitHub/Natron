@@ -36,7 +36,7 @@
 #include "Engine/Texture.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 struct ImageStorageBasePrivate
@@ -487,4 +487,4 @@ GLImageStorage::getGLTextureType() const
 
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

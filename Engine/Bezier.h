@@ -47,10 +47,11 @@ CLANG_DIAG_ON(deprecated-declarations)
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+
+NATRON_NAMESPACE_ENTER
+
 
 #define ROTO_BEZIER_EVAL_ITERATIVE
-
 
 
 /**
@@ -636,6 +637,7 @@ private:
     boost::scoped_ptr<BezierPrivate> _imp;
 };
 
+
 inline BezierPtr
 toBezier(const KnobHolderPtr& item)
 {
@@ -643,7 +645,6 @@ toBezier(const KnobHolderPtr& item)
 }
 
 
-NATRON_NAMESPACE_EXIT;
-
+NATRON_NAMESPACE_EXIT
 
 #endif // Engine_Bezier_h

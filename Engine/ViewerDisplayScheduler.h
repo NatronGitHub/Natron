@@ -27,7 +27,7 @@
 
 #include "Engine/OutputSchedulerThread.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 /**
@@ -69,6 +69,6 @@ private:
 
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // VIEWERDISPLAYSCHEDULER_H

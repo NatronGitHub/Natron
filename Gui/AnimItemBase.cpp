@@ -31,7 +31,7 @@
 #include "Engine/StringAnimationManager.h"
 #include "Gui/KnobAnim.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class AnimItemBasePrivate
 {
@@ -277,4 +277,4 @@ KnobsHolderAnimBase::findKnobAnim(const KnobIPtr& knob) const
 }
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

@@ -27,7 +27,7 @@
 #include "ImageTilesState.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 
@@ -461,5 +461,5 @@ ImageTilesState::getMinimalRectsToRenderFromTilesState(const RectI& roi, const T
 } // getMinimalRectsToRenderFromTilesState
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

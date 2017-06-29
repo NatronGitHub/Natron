@@ -68,7 +68,10 @@
 #define NATRON_OPENGL_VERSION_REQUIRED_MAJOR 2
 #define NATRON_OPENGL_VERSION_REQUIRED_MINOR 0
 
-NATRON_NAMESPACE_ENTER;
+
+NATRON_NAMESPACE_ENTER
+
+
 AppManagerPrivate::AppManagerPrivate()
     : globalTLS()
     , _appType(AppManager::eAppTypeBackground)
@@ -639,4 +642,4 @@ AppManagerPrivate::handleCommandLineArgsW(int argc, wchar_t** argv)
     copyUtf8ArgsToMembers(utf8Args);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

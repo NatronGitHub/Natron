@@ -27,7 +27,7 @@
 
 #include "Engine/NoOpBase.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct RemovePlaneNodePrivate;
 class RemovePlaneNode : public NoOpBase
@@ -82,6 +82,6 @@ private:
     boost::scoped_ptr<RemovePlaneNodePrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // REMOVEPLANENODE_H

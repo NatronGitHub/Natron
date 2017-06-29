@@ -31,7 +31,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct TimeLineKey
 {
@@ -75,6 +75,6 @@ insertTimelineKey(const TimeLineKey& key, TimeLineKeysSet* keysSet)
 }
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // TIMELINEKEYS_H

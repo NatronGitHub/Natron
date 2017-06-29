@@ -37,7 +37,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @brief The point of this thread is to delete the content of the list in a separate thread so the thread calling
@@ -107,6 +107,6 @@ private:
 #endif 
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Engine_StorageDeleterThread_h

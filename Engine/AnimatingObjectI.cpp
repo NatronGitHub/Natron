@@ -28,7 +28,7 @@
 
 #include <QMutex>
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct AnimatingObjectIPrivate
 {
@@ -547,4 +547,4 @@ AnimatingObjectI::getKeyFrameIndex(ViewIdx view,
 
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

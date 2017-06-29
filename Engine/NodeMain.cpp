@@ -34,7 +34,7 @@
 #include "Engine/StubNode.h"
 #include "Serialization/NodeSerialization.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 
@@ -158,7 +158,9 @@ Node::load(const CreateNodeArgsPtr& args)
     PluginPtr pluginPtr = _imp->plugin.lock();
 
     // Get the function pointer to create the plug-in instance
+    GCC_DIAG_PEDANTIC_OFF
     EffectBuilder createFunc = (EffectBuilder)pluginPtr->getPropertyUnsafe<void*>(kNatronPluginPropCreateFunc);
+    GCC_DIAG_PEDANTIC_ON
     assert(createFunc);
     if (!createFunc) {
         throw std::invalid_argument("Node::load: No kNatronPluginPropCreateFunc property set on plug-in!");
@@ -1736,4 +1738,4 @@ Node::destroyNode()
 
 } // destroyNode
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

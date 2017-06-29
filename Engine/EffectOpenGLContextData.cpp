@@ -29,7 +29,7 @@
 
 #include "Engine/GLShader.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 struct EffectOpenGLContextDataPrivate
@@ -79,4 +79,4 @@ EffectOpenGLContextData::getHasTakenLock() const
 
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

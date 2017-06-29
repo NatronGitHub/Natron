@@ -42,7 +42,7 @@
 #include "Engine/TimeValue.h"
 #include "Engine/ViewIdx.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct RenderThreadTaskPrivate;
 
@@ -123,6 +123,6 @@ protected:
 
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // RENDERTHREADTASK_H

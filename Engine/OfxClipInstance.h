@@ -56,7 +56,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class OfxImageCommon;
 struct OfxClipInstancePrivate;
@@ -364,6 +364,6 @@ public:
     }
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_OFXCLIPINSTANCE_H

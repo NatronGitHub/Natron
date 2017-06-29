@@ -36,16 +36,17 @@
 #include "Engine/EngineFwd.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
+
 
 #ifdef __NATRON_OSX__
-    #define NATRON_LIBRARY_EXT "dylib"
+#  define NATRON_LIBRARY_EXT "dylib"
 #elif defined(__NATRON_LINUX__)
-    #define NATRON_LIBRARY_EXT "so"
+#  define NATRON_LIBRARY_EXT "so"
 #elif defined(__NATRON_WIN32__)
-    #define NATRON_LIBRARY_EXT "dll"
+#  define NATRON_LIBRARY_EXT "dll"
 #else
-    #error "Operating system not supported by the library loader."
+#  error "Operating system not supported by the library loader."
 #endif
 
 class LibraryBinary
@@ -123,5 +124,5 @@ private:
     std::map<std::string, value_type> _functions; // <function name, pointer>
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 #endif // ifndef NATRON_GLOBAL_LIBRARYBINARY_H

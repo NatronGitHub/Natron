@@ -51,7 +51,7 @@ CLANG_DIAG_ON(uninitialized)
 #include <SequenceParsing.h>
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 static QStringList
 getSplitPath(const QString& path)
@@ -1705,7 +1705,7 @@ FileSystemModel::filesListFromPattern(const std::string& pattern, SequenceParsin
     return SequenceParsing::filesListFromPattern_fast(pattern, filesList, sequence);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_FileSystemModel.cpp"

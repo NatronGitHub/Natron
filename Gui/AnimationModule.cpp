@@ -71,7 +71,7 @@
 #include "Gui/NodeGraphUndoRedo.h"
 #include "Gui/TableItemAnim.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 typedef std::map<KnobIWPtr, KnobGui *> KnobsAndGuis;
 typedef std::pair<QTreeWidgetItem *, NodeAnimPtr > TreeItemAndNodeAnim;
@@ -686,7 +686,7 @@ AnimationModule::getTreeColumnsCount() const
     return _imp->editor->getTreeView()->columnCount();
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_AnimationModule.cpp"

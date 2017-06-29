@@ -45,10 +45,15 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/DockablePanel.h"
 #include "Gui/PyGuiApp.h"
 
+<<<<<<< HEAD
 #include "Serialization/WorkspaceSerialization.h"
 
-NATRON_NAMESPACE_ENTER;
-NATRON_PYTHON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
+NATRON_PYTHON_NAMESPACE_ENTER
+=======
+NATRON_NAMESPACE_ENTER
+NATRON_PYTHON_NAMESPACE_ENTER
+>>>>>>> origin/RB-2.3
 
 struct DialogParamHolderPrivate
 {
@@ -707,9 +712,9 @@ PyTabWidget::getScriptName() const
     return QString::fromUtf8(_tab->getScriptName().c_str());
 }
 
-NATRON_PYTHON_NAMESPACE_EXIT;
-NATRON_NAMESPACE_EXIT;
+NATRON_PYTHON_NAMESPACE_EXIT
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
-NATRON_PYTHON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
+NATRON_PYTHON_NAMESPACE_USING
 #include "moc_PythonPanels.cpp"

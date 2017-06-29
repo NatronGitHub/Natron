@@ -41,7 +41,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/Macros.h"
 #include "Gui/Label.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class ClickableLabel
     : public Label
@@ -117,6 +117,6 @@ private:
     boost::shared_ptr<KnobWidgetDnD> _dnd;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_GUI_CLICKABLELABEL_H

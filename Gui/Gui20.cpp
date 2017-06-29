@@ -77,7 +77,7 @@
 #define NAMED_PLUGIN_GROUP_NO 15
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 static std::string namedGroupsOrdered[NAMED_PLUGIN_GROUP_NO] = {
     PLUGIN_GROUP_IMAGE,
@@ -1430,5 +1430,5 @@ Gui::isAboutToClose() const
     return _imp->_aboutToClose;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

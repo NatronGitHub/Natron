@@ -52,7 +52,7 @@
 #include "Gui/NodeAnim.h"
 #include "Gui/KnobItemsTableGui.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct ItemCurve
 {
@@ -524,6 +524,6 @@ TableItemAnim::getAllDimensionsVisible(ViewIdx /*view*/) const
     return true;
 }
 
-NATRON_NAMESPACE_EXIT;
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_EXIT
+NATRON_NAMESPACE_USING
 #include "moc_TableItemAnim.cpp"

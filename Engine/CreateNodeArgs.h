@@ -34,7 +34,7 @@
 #include "Engine/EngineFwd.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @brief x1 std::string property indicating the ID of the plug-in instance to create
@@ -187,6 +187,7 @@ NATRON_NAMESPACE_ENTER;
  **/
 #define kCreateNodeArgsPropMetaNodeContainer "CreateNodeArgsPropMetaNodeContainer"
 
+
 struct CreateNodeArgsPrivate;
 class CreateNodeArgs : public PropertiesHolder
 {
@@ -231,6 +232,6 @@ private:
     virtual void initializeProperties() const OVERRIDE FINAL;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Engine_CreateNodeArgs_h

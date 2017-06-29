@@ -51,7 +51,7 @@
 #include "Gui/NodeGui.h"
 #include "Gui/NodeSettingsPanel.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct PickKnobDialogPrivate
 {
@@ -412,7 +412,7 @@ PickKnobDialog::getSelectedKnob(bool* makeAlias,
     return _imp->selectedKnob;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_PickKnobDialog.cpp"

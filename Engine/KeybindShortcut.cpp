@@ -24,7 +24,7 @@
 
 #include "KeybindShortcut.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct KeyStringPair
 {
@@ -537,4 +537,4 @@ KeybindShortcut::modifiersFromStringList(const std::list<std::string>& mods)
     return ret;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

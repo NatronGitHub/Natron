@@ -37,7 +37,7 @@
 #include "Gui/NodeAnim.h"
 #include "Gui/TableItemAnim.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct AnimationModuleBasePrivate
 {
@@ -456,4 +456,4 @@ AnimationModuleBase::isAboutToBeDestroyed() const
     return _imp->aboutToBeDestroyed;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

@@ -35,7 +35,11 @@
 #define NODE_BACKDROP_INTRODUCES_SELECTED 2
 #define NODE_BACKDROP_SERIALIZATION_VERSION NODE_BACKDROP_INTRODUCES_SELECTED
 
+<<<<<<< HEAD:Serialization/NodeBackdropSerialization.h
 SERIALIZATION_NAMESPACE_ENTER
+=======
+NATRON_NAMESPACE_ENTER
+>>>>>>> origin/RB-2.3:Gui/NodeBackdropSerialization.h
 
 /**
    This class is completly deprecated do not use it.
@@ -150,9 +154,13 @@ private:
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
 
-SERIALIZATION_NAMESPACE_EXIT;
+<<<<<<< HEAD:Serialization/NodeBackdropSerialization.h
+SERIALIZATION_NAMESPACE_EXIT
 
 BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::NodeBackdropSerialization, NODE_BACKDROP_SERIALIZATION_VERSION)
+=======
+NATRON_NAMESPACE_EXIT
+>>>>>>> origin/RB-2.3:Gui/NodeBackdropSerialization.h
 
 #endif // #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
 

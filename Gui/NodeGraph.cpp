@@ -57,7 +57,7 @@
 
 #include "Global/QtCompat.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 //using std::cout; using std::endl;
 
 
@@ -427,7 +427,7 @@ NodeGraph::getUndoStack() const
     return _imp->_undoStack;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_NodeGraph.cpp"

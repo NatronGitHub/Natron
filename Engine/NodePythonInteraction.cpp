@@ -846,4 +846,4 @@ Node::declareAllPythonAttributes()
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

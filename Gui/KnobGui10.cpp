@@ -56,7 +56,7 @@
 #include "Gui/KnobUndoCommand.h" // SetExpressionCommand...
 #include "Gui/TabGroup.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 void
@@ -1157,4 +1157,4 @@ KnobGui::onProjectViewsChanged()
     knobAnim->refreshViewLabels(projectViewNames);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

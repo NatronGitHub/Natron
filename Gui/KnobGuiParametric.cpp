@@ -84,7 +84,12 @@ CLANG_DIAG_ON(uninitialized)
 #include <ofxNatron.h>
 
 
-NATRON_NAMESPACE_ENTER;
+<<<<<<< HEAD
+NATRON_NAMESPACE_ENTER
+=======
+NATRON_NAMESPACE_ENTER
+using std::make_pair;
+>>>>>>> origin/RB-2.3
 
 class KnobGuiParametricAnimationModel;
 struct KnobGuiParametricPrivate
@@ -437,9 +442,13 @@ KnobGuiParametric::refreshDimensionName(DimIdx dim)
     _imp->curveWidget->update();
 }
 
+<<<<<<< HEAD
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
+=======
+NATRON_NAMESPACE_EXIT
+>>>>>>> origin/RB-2.3
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_KnobGuiParametric.cpp"

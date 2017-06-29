@@ -32,7 +32,7 @@
 #include "Gui/KnobGuiColor.h"
 #include "Gui/SpinBox.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct NumericKnobValidatorPrivate
 {
@@ -133,4 +133,4 @@ NumericKnobValidator::validateInput(const QString& userText,
     return true;
 } // NumericKnobValidator::validateInput
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

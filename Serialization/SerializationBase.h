@@ -27,7 +27,7 @@
 
 #include "Serialization/SerializationFwd.h"
 
-SERIALIZATION_NAMESPACE_ENTER;
+SERIALIZATION_NAMESPACE_ENTER
 
 /**
  * @brief Base class for serialization objects
@@ -86,6 +86,6 @@ public:
 
 };
 
-SERIALIZATION_NAMESPACE_EXIT;
+SERIALIZATION_NAMESPACE_EXIT
 
 #endif // SERIALIZATION_BASE_H

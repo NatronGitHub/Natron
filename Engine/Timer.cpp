@@ -45,7 +45,7 @@
 
 #define NATRON_FPS_REFRESH_RATE_SECONDS 1.5
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 #if defined(__NATRON_WIN32__) && !defined(__NATRON_MINGW__)
 int
@@ -680,7 +680,9 @@ Profiler::dumpLog() const
     return finalStream.str();
 } // dumpLog
 
-NATRON_NAMESPACE_EXIT;
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_EXIT
+
+
+NATRON_NAMESPACE_USING
 #include "moc_Timer.cpp"

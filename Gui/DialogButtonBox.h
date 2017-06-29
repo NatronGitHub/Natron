@@ -35,7 +35,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 // a QDialogButtonBox that properly sets the button fonts (as in the Button class)
 class DialogButtonBox
@@ -57,6 +57,6 @@ public:
 private:
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Gui_DialogButtonBox_h

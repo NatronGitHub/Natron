@@ -50,7 +50,9 @@ CLANG_DIAG_ON(deprecated-declarations)
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+
+NATRON_NAMESPACE_ENTER
+
 
 #define kRotoLayerBaseName "Group"
 #define kPlanarTrackLayerBaseName "PlanarTrackGroup"
@@ -69,7 +71,6 @@ NATRON_NAMESPACE_ENTER;
 #define kRotoPaintBurnBaseName "Burn"
 #define kRotoCompItemBaseName "Layer"
 
-
 #define kParamRotoItemEnabled "enabledButton"
 #define kParamRotoItemEnabledLabel "Enabled"
 #define kParamRotoItemEnabledHint "When unchecked, the parameter will not be rendered.\n" \
@@ -82,6 +83,7 @@ NATRON_NAMESPACE_ENTER;
 #define kParamRotoItemSolo "soloButton"
 #define kParamRotoItemSoloLabel "Solo"
 #define kParamRotoItemSoloHint "Includes the current item in renders, ignoring others without this switch set"
+
 
 struct RotoItemPrivate;
 class RotoItem
@@ -135,6 +137,7 @@ private:
     boost::scoped_ptr<RotoItemPrivate> _imp;
 };
 
+
 inline RotoItemPtr
 toRotoItem(const KnobHolderPtr& holder)
 {
@@ -147,7 +150,9 @@ toRotoItem(const KnobHolderConstPtr& holder)
     return boost::dynamic_pointer_cast<const RotoItem>(holder);
 }
 
-NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_EXIT
+
 
 Q_DECLARE_METATYPE(NATRON_NAMESPACE::RotoItem*);
 

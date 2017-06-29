@@ -35,7 +35,7 @@
 #include "Engine/GenericSchedulerThread.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @brief Base class for arguments passsed to ProcessFrameI
@@ -142,6 +142,6 @@ private:
 
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_PROCESSFRAMETHREAD_H

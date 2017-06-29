@@ -45,7 +45,7 @@
 #include "Gui/ViewerTab.h"
 #include "Gui/ViewerGL.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct CachedFramesThread::Implementation
 {
@@ -244,6 +244,6 @@ CachedFramesThread::run()
     } // infinite loop
 } // run
 
-NATRON_NAMESPACE_EXIT;
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_EXIT
+NATRON_NAMESPACE_USING
 #include "moc_CachedFramesThread.cpp"

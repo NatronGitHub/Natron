@@ -56,7 +56,7 @@
 #define AXIS_MAX 100000.
 #define AXIS_MIN -100000.
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 void
@@ -663,5 +663,5 @@ AnimationModuleViewPrivate::setCurveEditorCursor(const QPoint& eventPos)
 } // setCursor
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

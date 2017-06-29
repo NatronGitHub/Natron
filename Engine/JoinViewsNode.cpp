@@ -31,7 +31,7 @@
 #include "Engine/Node.h"
 #include "Engine/NodeMetadata.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct JoinViewsNodePrivate
 {
@@ -49,7 +49,7 @@ JoinViewsNode::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_MULTIVIEW);
-    PluginPtr ret = Plugin::create((void*)JoinViewsNode::create, (void*)JoinViewsNode::createRenderClone, PLUGINID_NATRON_JOINVIEWS, "JoinViews", 1, 0, grouping);
+    PluginPtr ret = Plugin::create(JoinViewsNode::create, JoinViewsNode::createRenderClone, PLUGINID_NATRON_JOINVIEWS, "JoinViews", 1, 0, grouping);
 
     QString desc =  tr("Take in input separate views to make a multiple view stream output. "
                        "The first view from each input is copied to one of the view of the output.");
@@ -187,4 +187,5 @@ JoinViewsNode::onMetadataChanged(const NodeMetadata& metadata)
     EffectInstance::onMetadataChanged(metadata);
 }
 
-NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_EXIT

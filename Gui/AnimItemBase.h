@@ -46,7 +46,7 @@
 #include "Engine/DimensionIdx.h"
 #include "Engine/ViewIdx.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 /**
@@ -235,6 +235,10 @@ class KnobsHolderAnimBase
 {
 public:
 
+    KnobsHolderAnimBase() {}
+    
+    virtual ~KnobsHolderAnimBase() {}
+
     KnobAnimPtr findKnobAnim(const KnobIPtr& knob) const;
 
     virtual const std::vector<KnobAnimPtr>& getKnobs() const = 0;
@@ -244,7 +248,7 @@ public:
 };
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_GUI_ANIMITEMBASE_H
 

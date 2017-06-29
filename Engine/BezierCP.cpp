@@ -43,7 +43,8 @@
 
 #include "Serialization/BezierCPSerialization.h"
 
-NATRON_NAMESPACE_ENTER;
+
+NATRON_NAMESPACE_ENTER
 
 
 ////////////////////////////////////ControlPoint////////////////////////////////////
@@ -559,5 +560,5 @@ BezierCP::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBa
 
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

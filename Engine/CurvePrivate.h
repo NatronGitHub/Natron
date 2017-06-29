@@ -41,7 +41,9 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+
+NATRON_NAMESPACE_ENTER
+
 
 //#define NATRON_CURVE_USE_CACHE
 
@@ -103,6 +105,6 @@ struct CurvePrivate
     
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Engine_CurvePrivate_h

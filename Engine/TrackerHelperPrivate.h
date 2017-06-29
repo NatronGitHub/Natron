@@ -56,7 +56,7 @@ GCC_DIAG_ON(maybe-uninitialized)
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 enum libmv_MarkerChannelEnum
 {
@@ -137,6 +137,6 @@ public:
 
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Natron_Engine_TrackerHelperPrivate_H

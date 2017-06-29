@@ -29,8 +29,8 @@
 #include "Engine/TrackerHelper.h"
 #include "Engine/TrackerParamsProvider.h"
 
-NATRON_NAMESPACE_ENTER;
-NATRON_PYTHON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
+NATRON_PYTHON_NAMESPACE_ENTER
 
 Track::Track(const TrackMarkerPtr& marker)
 : ItemBase(marker)
@@ -111,5 +111,7 @@ Tracker::createTrack()
 }
 
 
-NATRON_PYTHON_NAMESPACE_EXIT;
-NATRON_NAMESPACE_EXIT;
+NATRON_PYTHON_NAMESPACE_EXIT
+
+
+NATRON_NAMESPACE_EXIT

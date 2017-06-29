@@ -110,7 +110,7 @@
 #define ROTOPAINT_VIEWER_UI_SECTIONS_SPACING_PX 5
 #define NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING 10
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 static void addPluginShortcuts(const PluginPtr& plugin)
 {
@@ -189,7 +189,7 @@ RotoPaint::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_PAINT);
-    PluginPtr ret = Plugin::create((void*)RotoPaint::create, (void*)RotoPaint::createRenderClone, PLUGINID_NATRON_ROTOPAINT, "RotoPaint", 1, 0, grouping);
+    PluginPtr ret = Plugin::create(RotoPaint::create, RotoPaint::createRenderClone, PLUGINID_NATRON_ROTOPAINT, "RotoPaint", 1, 0, grouping);
 
     QString desc = tr("RotoPaint is a vector based free-hand drawing node that helps for tasks such as rotoscoping, matting, etc...");
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
@@ -205,7 +205,7 @@ RotoNode::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_PAINT);
-    PluginPtr ret = Plugin::create((void*)RotoNode::create, (void*)RotoNode::createRenderClone, PLUGINID_NATRON_ROTO, "Roto", 1, 0, grouping);
+    PluginPtr ret = Plugin::create(RotoNode::create, RotoNode::createRenderClone, PLUGINID_NATRON_ROTO, "Roto", 1, 0, grouping);
 
     QString desc = tr("Create masks and shapes.");
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
@@ -221,7 +221,7 @@ LayeredCompNode::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_MERGE);
-    PluginPtr ret = Plugin::create((void*)LayeredCompNode::create, (void*)LayeredCompNode::createRenderClone, PLUGINID_NATRON_LAYEREDCOMP, "LayeredComp", 1, 0, grouping);
+    PluginPtr ret = Plugin::create(LayeredCompNode::create, LayeredCompNode::createRenderClone, PLUGINID_NATRON_LAYEREDCOMP, "LayeredComp", 1, 0, grouping);
 
     QString desc = tr("A node that emulates a layered composition.\n"
                       "Each item in the table is a layer that is blended with previous layers.\n"
@@ -4492,6 +4492,7 @@ RotoPaint::getRotoPaintItemsByRenderOrder() const
     return _imp->knobsTable->getRotoPaintItemsByRenderOrder();
 }
 
+
 std::list< RotoDrawableItemPtr >
 RotoPaint::getActivatedRotoPaintItemsByRenderOrder(TimeValue time, ViewIdx view) const
 {
@@ -4499,7 +4500,9 @@ RotoPaint::getActivatedRotoPaintItemsByRenderOrder(TimeValue time, ViewIdx view)
 }
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
+
+
 NATRON_NAMESPACE_USING;
 #include "moc_RotoPaint.cpp"
 

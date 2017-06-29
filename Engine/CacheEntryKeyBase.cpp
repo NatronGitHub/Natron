@@ -30,7 +30,7 @@
 #include "Engine/Hash64.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct CacheEntryKeyBasePrivate
 {
@@ -135,4 +135,4 @@ CacheEntryKeyBase::fromMemorySegment(const IPCPropertyMap& /*properties*/)
 
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

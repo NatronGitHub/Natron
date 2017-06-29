@@ -51,7 +51,7 @@
 #include "Engine/ViewerInstance.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 RotoPaintPrivate::RotoPaintPrivate(RotoPaint* publicInterface,
@@ -76,4 +76,4 @@ RotoPaintPrivate::RotoPaintPrivate(RotoPaint* publicInterface,
 
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

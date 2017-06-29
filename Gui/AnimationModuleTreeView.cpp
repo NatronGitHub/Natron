@@ -58,7 +58,7 @@
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/TableItemAnim.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 ////////////////////////// AnimationModuleTreeViewSelectionModel //////////////////////////
 
@@ -1266,7 +1266,7 @@ AnimationModuleTreeView::getSelectedCurves() const
     return curves;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_AnimationModuleTreeView.cpp"

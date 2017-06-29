@@ -25,7 +25,7 @@
 #include "IPCCommon.h"
 #include "Engine/Hash64.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 IPCVariant::IPCVariant()
 : scalar(0)
@@ -298,4 +298,4 @@ IPCPropertyMap::clear()
 
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

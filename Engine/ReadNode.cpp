@@ -56,13 +56,16 @@ CLANG_DIAG_ON(uninitialized)
 #include "Serialization/NodeSerialization.h"
 #include "Serialization/KnobSerialization.h"
 
+
+
+NATRON_NAMESPACE_ENTER
+
+
 //The plug-in that is instanciated whenever this node is created and doesn't point to any valid or known extension
 #define READ_NODE_DEFAULT_READER PLUGINID_OFX_READOIIO
 #define kPluginSelectorParamEntryDefault "Default"
 
 #define kNatronPersistentErrorDecoderMissing "NatronPersistentErrorDecoderMissing"
-
-NATRON_NAMESPACE_ENTER;
 
 //Generic Reader
 #define kParamFilename kOfxImageEffectFileParamName
@@ -106,7 +109,7 @@ ReadNode::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_IMAGE);
-    PluginPtr ret = Plugin::create((void*)ReadNode::create, (void*)ReadNode::createRenderClone, PLUGINID_NATRON_READ, "Read", 1, 0, grouping);
+    PluginPtr ret = Plugin::create(ReadNode::create, ReadNode::createRenderClone, PLUGINID_NATRON_READ, "Read", 1, 0, grouping);
 
     QString desc = tr("Node used to read images or videos from disk. The image/video is identified by its filename and "
                       "its extension. Given the extension, the Reader selected from the Preferences to decode that specific format will be used.");
@@ -1081,7 +1084,7 @@ ReadNode::getFrameRange(double *first, double *last)
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_ReadNode.cpp"

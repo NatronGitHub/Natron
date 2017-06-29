@@ -118,7 +118,7 @@ typedef boost::shared_ptr<SequenceFromFiles> SequenceFromFilesPtr;
 
 // Natron Engine
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 class AbortableRenderInfo;
 class AbortableThread;
 class AbstractOfxEffectInstance;
@@ -530,7 +530,18 @@ typedef std::vector<KnobIPtr> KnobsVec;
 typedef std::list< BezierCPPtr > BezierCPs;
 typedef std::map<int, std::list< ImagePtr > > InputImagesMap;
 
-NATRON_PYTHON_NAMESPACE_ENTER;
+
+/**
+ * @typedef Any plug-in should have a static function called BuildEffect with the following signature.
+ * It is used to build a new instance of an effect. Basically it should just call the constructor.
+ **/
+typedef EffectInstancePtr (*EffectBuilder)(const NodePtr&);
+typedef EffectInstancePtr (*EffectRenderCloneBuilder)(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key);
+
+
+NATRON_PYTHON_NAMESPACE_ENTER
+
+
 class App;
 class AppSettings;
 class BezierCurve;
@@ -565,8 +576,9 @@ class Track;
 class Tracker;
 class UserParamHolder;
 
-NATRON_PYTHON_NAMESPACE_EXIT;
 
-NATRON_NAMESPACE_EXIT;
+NATRON_PYTHON_NAMESPACE_EXIT
+
+NATRON_NAMESPACE_EXIT
 
 #endif // Engine_EngineFwd_h

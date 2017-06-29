@@ -30,7 +30,7 @@
 #include "Engine/RotoShapeRenderNode.h"
 #include "Engine/RotoStrokeItem.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 RotoShapeRenderNodePrivate::RotoShapeRenderNodePrivate()
 {
@@ -208,4 +208,4 @@ RotoShapeRenderNodePrivate::renderStroke_generic(RenderStrokeDataPtr userData,
     return hasRenderedDot;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

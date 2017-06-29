@@ -37,10 +37,10 @@ using std::size_t;
 using std::vector;
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
-NATRON_NAMESPACE_ANONYMOUS_ENTER;
+NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 enum VertexPointsSetEnum
 {
@@ -1161,7 +1161,7 @@ static void originalPolygonCopy(PolygonCSGData& data,
 }
 
 
-NATRON_NAMESPACE_ANONYMOUS_EXIT;
+NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
 void
@@ -1232,4 +1232,4 @@ RotoBezierTriangulation::tesselate(const BezierPtr& bezier,
 
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

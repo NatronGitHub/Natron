@@ -59,7 +59,7 @@
 #include "Gui/TabWidget.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 void
@@ -670,4 +670,4 @@ Gui::removeUndoStack(const boost::shared_ptr<QUndoStack>& stack)
 }
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

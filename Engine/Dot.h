@@ -35,7 +35,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class Dot
     : public NoOpBase
@@ -77,12 +77,14 @@ public:
     }
 };
 
+
 inline DotPtr
 toDot(const EffectInstancePtr& effect)
 {
     return boost::dynamic_pointer_cast<Dot>(effect);
 }
 
-NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_EXIT
 
 #endif // Engine_Dot_h

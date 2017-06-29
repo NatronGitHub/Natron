@@ -30,7 +30,7 @@
 #include "Gui/AnimItemBase.h"
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class AnimationModuleSelectionModelPrivate;
 class AnimationModuleSelectionModel
@@ -48,8 +48,8 @@ public:
         SelectionTypeRecurse = 0x8
     };
 
-    DECLARE_FLAGS(SelectionTypeFlags, SelectionType);
-
+    DECLARE_FLAGS(SelectionTypeFlags, SelectionType)
+    
     AnimationModuleSelectionModel(const AnimationModuleSelectionProviderPtr& model);
 
     virtual ~AnimationModuleSelectionModel();
@@ -170,7 +170,7 @@ private:
 
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 DECLARE_OPERATORS_FOR_FLAGS(NATRON_NAMESPACE::AnimationModuleSelectionModel::SelectionTypeFlags)
 

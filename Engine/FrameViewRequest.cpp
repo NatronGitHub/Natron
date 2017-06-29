@@ -61,7 +61,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 //#define TRACE_REQUEST_LIFETIME
 #endif
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 bool
 FrameView_compare_less::operator() (const FrameViewPair & lhs,
@@ -640,4 +640,4 @@ FrameViewRequest::setDistorsionStack(const Distortion2DStackPtr& stack)
 
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

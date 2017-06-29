@@ -30,7 +30,7 @@
 #include "Engine/Transform.h" // Matrix3x3
 #include "Engine/ViewIdx.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 NoOpBase::NoOpBase(const NodePtr& n)
     : EffectInstance(n)
@@ -83,4 +83,5 @@ NoOpBase::isHostChannelSelectorSupported(bool* /*defaultR*/,
     return false;
 }
 
-NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_EXIT

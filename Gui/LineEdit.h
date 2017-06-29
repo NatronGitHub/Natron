@@ -36,7 +36,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/StyledKnobWidgetBase.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class LineEdit
     : public QLineEdit
@@ -114,6 +114,6 @@ private:
     AdditionalDecorationsMap decorationType;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // ifndef NATRON_GUI_LINEEDIT_H

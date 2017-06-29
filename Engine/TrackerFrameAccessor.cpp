@@ -42,7 +42,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/TreeRender.h"
 #include "Engine/Node.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
@@ -544,4 +544,4 @@ TrackerFrameAccessor::NumFrames(int /*clip*/)
     return 0;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

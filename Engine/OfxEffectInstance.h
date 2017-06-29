@@ -46,10 +46,12 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/EngineFwd.h"
 
+
 #define kNatronPersistentErrorOpenFXPlugin "NatronPersistentErrorOpenFXPlugin"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
+
 
 class AbstractOfxEffectInstance
     : public EffectInstance
@@ -309,6 +311,7 @@ private:
     boost::scoped_ptr<OfxEffectInstancePrivate> _imp;
 };
 
+
 inline AbstractOfxEffectInstancePtr
 toAbstractOfxEffectInstance(const EffectInstancePtr& effect)
 {
@@ -321,6 +324,7 @@ toOfxEffectInstance(const EffectInstancePtr& effect)
     return boost::dynamic_pointer_cast<OfxEffectInstance>(effect);
 }
 
-NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_OFXNODE_H

@@ -37,7 +37,7 @@ static const char* removeParamName[4] = {"removePlane1", "removePlane2", "remove
 #define kOperationParamHint "Remove: The plane(s) selected by the parameters are removed\n" \
 "Keep: All but selected plane(s) are removed"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct RemovePlaneNodePrivate
 {
@@ -55,7 +55,7 @@ RemovePlaneNode::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_CHANNEL);
-    PluginPtr ret = Plugin::create((void*)RemovePlaneNode::create, (void*)RemovePlaneNode::createRenderClone, PLUGINID_NATRON_REMOVE_PLANE, "RemovePlane", 1, 0, grouping);
+    PluginPtr ret = Plugin::create(RemovePlaneNode::create, RemovePlaneNode::createRenderClone, PLUGINID_NATRON_REMOVE_PLANE, "RemovePlane", 1, 0, grouping);
 
     QString desc = tr("This node acts as a pass-through for the input image, but allows to remove existing plane(s) from the input");
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
@@ -206,4 +206,4 @@ RemovePlaneNode::getLayersProducedAndNeeded(TimeValue time,
     return eActionStatusOK;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

@@ -40,7 +40,7 @@
 
 #include "Gui/KnobGuiContainerI.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 struct KnobItemsTableGuiPrivate;
@@ -123,6 +123,6 @@ private:
     boost::scoped_ptr<KnobItemsTableGuiPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_GUI_KNOBITEMSTABLEGUI_H

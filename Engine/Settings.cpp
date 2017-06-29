@@ -90,7 +90,7 @@
 
 #define NATRON_CUSTOM_HOST_NAME_ENTRY "Custom..."
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 enum CPUDriverEnum {
     eCPUDriverSoftPipe = 0,
@@ -4049,6 +4049,7 @@ Settings::isDriveLetterToUNCPathConversionEnabled() const
     return !_imp->_enableMappingFromDriveLettersToUNCShareNames->getValue();
 }
 
+
 bool
 Settings::getIsFullRecoverySaveModeEnabled() const
 {
@@ -4062,7 +4063,8 @@ Settings::getFileDialogFavoritePathsKnob() const
 }
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+
+NATRON_NAMESPACE_USING
 #include "moc_Settings.cpp"

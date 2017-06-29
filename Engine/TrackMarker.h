@@ -44,7 +44,9 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+
+NATRON_NAMESPACE_ENTER
+
 
 #define kTrackerParamSearchWndBtmLeft "searchWndBtmLeft"
 #define kTrackerParamSearchWndBtmLeftLabel "Search Window Bottom Left"
@@ -101,6 +103,7 @@ NATRON_NAMESPACE_ENTER;
 #define kTrackerParamEnabledLabel "Enabled"
 #define kTrackerParamEnabledHint "When checked, this track data will be used to generate the resulting Transform/CornerPin out of the tracker. You can animate this parameter to control the lifetime of the track."
 //#define NATRON_TRACK_MARKER_USE_WEIGHT
+
 
 struct TrackMarkerPrivate;
 class TrackMarker
@@ -248,6 +251,7 @@ private:
     virtual void initializeKnobs() OVERRIDE FINAL;
 };
 
+
 inline TrackMarkerPMPtr
 toTrackMarkerPM(const KnobHolderPtr& holder)
 {
@@ -255,7 +259,6 @@ toTrackMarkerPM(const KnobHolderPtr& holder)
 }
 
 
-NATRON_NAMESPACE_EXIT;
-
+NATRON_NAMESPACE_EXIT
 
 #endif // Engine_TrackMarker_h

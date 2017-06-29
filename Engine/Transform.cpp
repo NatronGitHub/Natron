@@ -38,7 +38,7 @@
 
 #include "Engine/RectD.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 namespace Transform {
 Point3D::Point3D()
     : x(0), y(0), z(0)
@@ -835,6 +835,6 @@ transformRegionFromRoD(const RectD &srcRect,
     transformRegionFromPoints(p, dstRect);
 }
 } //namespace Transform
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 

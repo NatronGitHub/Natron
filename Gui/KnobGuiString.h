@@ -55,7 +55,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/StyledKnobWidgetBase.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class AnimatingTextEdit
     : public QTextEdit
@@ -224,6 +224,6 @@ private:
     KnobStringWPtr _knob;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Gui_KnobGuiString_h

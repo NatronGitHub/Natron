@@ -57,7 +57,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 #ifdef DEBUG
 // Enable usage of markers that track using TrackerPM internally
@@ -1064,6 +1064,6 @@ public Q_SLOTS:
     void onKeyFrameImageRenderingFinished();
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_TRACKERNODEPRIVATE_H

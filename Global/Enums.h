@@ -25,10 +25,10 @@ CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMetaType>
 CLANG_DIAG_ON(deprecated)
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 #ifdef SBK_RUN
 // shiboken doesn't generate SbkNatronEngine_StandardButtonEnum_as_number unless it is put in a class or namespace
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 namespace NATRON_NAMESPACE {
 #endif
 
@@ -898,11 +898,11 @@ DECLARE_FLAGS(StandardButtons, StandardButtonEnum);
 
 #ifdef SBK_RUN
 }
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 #endif
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 DECLARE_OPERATORS_FOR_FLAGS(NATRON_NAMESPACE::StandardButtons);
 Q_DECLARE_METATYPE(NATRON_NAMESPACE::StandardButtons)

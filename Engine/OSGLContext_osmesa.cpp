@@ -33,7 +33,7 @@
 
 #include "Engine/OSGLFramebufferConfig.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct OSGLContext_osmesaPrivate
 {
@@ -150,6 +150,6 @@ OSGLContext_osmesa::unSetContext(const OSGLContext_osmesa* context)
     return ret;
 
 }
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif //HAVE_OSMESA

@@ -33,6 +33,25 @@ SERIALIZATION_NAMESPACE_ENTER;
 
 
 
+<<<<<<< HEAD:Serialization/FrameParamsSerialization.h
 SERIALIZATION_NAMESPACE_EXIT;
 
 #endif // Engine_FrameParamsSerialization_h
+=======
+NATRON_NAMESPACE_ENTER
+
+class CurveSelection
+{
+public:
+
+    CurveSelection() {}
+
+    virtual ~CurveSelection() {}
+
+    virtual void getSelectedCurves(std::vector<boost::shared_ptr<CurveGui> >* selection) = 0;
+};
+
+NATRON_NAMESPACE_EXIT
+
+#endif // CURVESELECTION_H
+>>>>>>> origin/RB-2.3:Gui/CurveSelection.h

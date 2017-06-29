@@ -33,7 +33,8 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+
+NATRON_NAMESPACE_ENTER
 
 
 class GenericThreadStartArgs
@@ -336,6 +337,6 @@ private:
     boost::scoped_ptr<GenericSchedulerThreadPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // GENERICSCHEDULERTHREAD_H

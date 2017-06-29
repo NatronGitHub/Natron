@@ -50,13 +50,17 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+<<<<<<< HEAD:Gui/AnimationModuleTreeView.h
 #define NATRON_ANIMATION_TREE_VIEW_NODE_SEPARATOR_PX 4
 
 #define ANIMATION_MODULE_TREE_VIEW_COL_LABEL 0
 #define ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE 1
 #define ANIMATION_MODULE_TREE_VIEW_COL_PLUGIN_ICON 2
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
+=======
+NATRON_NAMESPACE_ENTER
+>>>>>>> origin/RB-2.3:Gui/DopeSheetHierarchyView.h
 
 class AnimationModuleTreeViewPrivate;
 
@@ -248,6 +252,6 @@ public:
     virtual void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Natron_Gui_AnimationModuleTreeView_H

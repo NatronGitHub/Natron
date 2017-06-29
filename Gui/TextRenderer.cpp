@@ -43,9 +43,13 @@ CLANG_DIAG_OFF(deprecated)
 #include "Global/GLObfuscate.h" //!<must be included after QGLWidget
 CLANG_DIAG_ON(deprecated)
 
+<<<<<<< HEAD
 #include "Engine/OSGLFunctions.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
+=======
+NATRON_NAMESPACE_ENTER
+>>>>>>> origin/RB-2.3
 
 #define TEXTURE_SIZE 256
 
@@ -349,5 +353,5 @@ TextRenderer::renderText(float x,
     glCheckError(GL_GPU);
 } // renderText
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

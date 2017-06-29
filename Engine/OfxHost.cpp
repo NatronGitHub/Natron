@@ -114,7 +114,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Serialization/NodeSerialization.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 // to disambiguate with the global-scope ::OfxHost
 
 // see second answer of http://stackoverflow.com/questions/2342162/stdstring-formatting-like-sprintf
@@ -990,7 +990,7 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
 
         bool isDescMarkdown = (bool)p->getDescriptor().getProps().getIntProperty(kNatronOfxPropDescriptionIsMarkdown);
 
-        PluginPtr natronPlugin = Plugin::create((void*)OfxEffectInstance::create, (void*)OfxEffectInstance::createRenderClone, openfxId, pluginLabel, p->getVersionMajor(), p->getVersionMinor(), groups, groupIcons);
+        PluginPtr natronPlugin = Plugin::create(OfxEffectInstance::create, OfxEffectInstance::createRenderClone, openfxId, pluginLabel, p->getVersionMajor(), p->getVersionMinor(), groups, groupIcons);
         natronPlugin->setProperty<std::string>(kNatronPluginPropDescription, description);
         natronPlugin->setProperty<bool>(kNatronPluginPropDescriptionIsMarkdown, isDescMarkdown);
         natronPlugin->setProperty<std::string>(kNatronPluginPropResourcesPath, resourcesPath);
@@ -1487,5 +1487,5 @@ OfxHost::flushOpenGLResources() const
 
 #endif
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

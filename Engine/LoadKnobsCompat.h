@@ -28,7 +28,7 @@
 #include <string>
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /*
  * @brief Maps a knob name that existed in a specific version of Natron to the actual knob name in the current version.
@@ -59,6 +59,6 @@ bool filterKnobChoiceOptionCompat(const std::string& pluginID,
                                   const std::string& paramName,
                                   std::string* optionID);
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_LOADKNOBSCOMPAT_H
