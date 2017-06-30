@@ -34,6 +34,7 @@
 
 NATRON_NAMESPACE_ENTER
 
+
 class ColorParser
 {
 public:

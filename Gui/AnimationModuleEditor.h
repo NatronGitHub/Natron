@@ -49,7 +49,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/AnimItemBase.h"
 #include "Global/GlobalDefines.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class AnimationModuleEditorPrivate;
 
@@ -245,6 +245,6 @@ private:
     boost::scoped_ptr<AnimationModuleEditorPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // AnimationModuleEditor_H

@@ -31,7 +31,9 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+
+NATRON_NAMESPACE_ENTER
+
 
 class StandardPaths
 {
@@ -73,6 +75,6 @@ private:
     StandardPaths();
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // STANDARDPATHS_H

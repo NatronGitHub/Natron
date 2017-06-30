@@ -49,7 +49,7 @@
 
 #define ROTO_CAIRO_RENDER_TRIANGLES_ONLY
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 QString
 RotoShapeRenderCairo::getCairoVersion()
@@ -1958,6 +1958,6 @@ RotoShapeRenderCairo::purgeCaches_cairo(const RotoDrawableItemPtr& rotoItem)
         isStroke->updatePatternCache(dotPatterns);
     }
 }
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif //ROTO_SHAPE_RENDER_ENABLE_CAIRO

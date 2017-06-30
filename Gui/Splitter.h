@@ -39,7 +39,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/SplitterI.h"
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @class A thread-safe wrapper over QSplitter
@@ -105,6 +105,6 @@ private:
     Gui* _gui;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // SPLITTER_H

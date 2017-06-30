@@ -31,7 +31,9 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+
+NATRON_NAMESPACE_ENTER
+
 
 class UndoCommand
 {
@@ -75,6 +77,6 @@ public:
     }
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // UNDOCOMMAND_H

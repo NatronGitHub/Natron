@@ -31,7 +31,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 #define kTrackerUIParamDefaultMarkerPatternWinSize "defPatternWinSize"
 #define kTrackerUIParamDefaultMarkerPatternWinSizeLabel "Default Pattern Size"
@@ -150,12 +150,14 @@ private:
     boost::shared_ptr<TrackerNodePrivate> _imp;
 };
 
+
 inline TrackerNodePtr
 toTrackerNode(const EffectInstancePtr& effect)
 {
     return boost::dynamic_pointer_cast<TrackerNode>(effect);
 }
 
-NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_EXIT
 
 #endif // TRACKERNODE_H

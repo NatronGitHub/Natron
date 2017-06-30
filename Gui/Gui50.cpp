@@ -105,7 +105,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include <SequenceParsing.h>
 
-NATRON_NAMESPACE_ENTER;
+
+NATRON_NAMESPACE_ENTER
 
 
 void
@@ -1252,4 +1253,4 @@ Gui::dropEvent(QDropEvent* e)
     handleOpenFilesFromUrls( urls, mapToGlobal( e->pos() ) );
 } // dropEvent
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

@@ -40,7 +40,7 @@
 #include "Gui/GuiFwd.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct ProgressTaskInfoPrivate;
 class ProgressTaskInfo
@@ -173,6 +173,6 @@ private:
     boost::scoped_ptr<ProgressTaskInfoPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Gui_ProgressTaskInfo_h

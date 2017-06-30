@@ -28,7 +28,7 @@
 #include "Engine/TimeLine.h"
 #include "Engine/KnobTypes.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 
@@ -861,4 +861,4 @@ EffectInstance::Implementation::onMaskSelectorChanged(int inputNb,
 
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

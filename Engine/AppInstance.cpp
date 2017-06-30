@@ -83,7 +83,8 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include <SequenceParsing.h> // for SequenceParsing::removePath
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
+
 
 FlagSetter::FlagSetter(bool initialValue,
                        bool* p)
@@ -1781,6 +1782,7 @@ AppInstance::recheckInvalidLinks()
     }
 }
 
+
 void
 AppInstance::setMainWindowPointer(SerializableWindow* window)
 {
@@ -2073,7 +2075,8 @@ AppInstance::saveApplicationWorkspace(SERIALIZATION_NAMESPACE::WorkspaceSerializ
 
 }
 
-NATRON_NAMESPACE_EXIT;
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_EXIT
+
+NATRON_NAMESPACE_USING
 #include "moc_AppInstance.cpp"

@@ -87,7 +87,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ViewerInstance.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 EffectInstance::EffectInstance(const NodePtr& node)
@@ -135,7 +135,9 @@ EffectInstance::isDraftRenderSupported() const {
 KnobHolderPtr
 EffectInstance::createRenderCopy(const FrameViewRenderKey& key) const
 {
+    GCC_DIAG_PEDANTIC_OFF
     EffectRenderCloneBuilder createFunc = (EffectRenderCloneBuilder)getNode()->getPlugin()->getPropertyUnsafe<void*>(kNatronPluginPropCreateRenderCloneFunc);
+    GCC_DIAG_PEDANTIC_ON
     assert(createFunc);
     if (!createFunc) {
         throw std::invalid_argument("EffectInstance::createRenderCopy: No kNatronPluginPropCreateRenderCloneFunc property set on plug-in!");
@@ -2471,8 +2473,8 @@ EffectInstance::getAfterSelectionChangedCallback() const
     return s ? s->getValue() : std::string();
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_EffectInstance.cpp"
 

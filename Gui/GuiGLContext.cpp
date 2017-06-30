@@ -24,7 +24,7 @@
 
 #include "GuiGLContext.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct GuiGLContextPrivate
 {
@@ -60,4 +60,4 @@ GuiGLContext::unsetGPUContext()
     _imp->widget->doneCurrent();
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

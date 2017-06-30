@@ -54,7 +54,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Global/QtCompat.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 void
 NodeGraph::checkForHints(bool shiftdown,
                          bool controlDown,
@@ -560,5 +560,5 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     QGraphicsView::mouseMoveEvent(e);
 } // mouseMoveEvent
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

@@ -26,7 +26,7 @@
 #include "Engine/TabWidgetI.h"
 #include "Serialization/WorkspaceSerialization.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 void
 SplitterI::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase)
@@ -86,4 +86,4 @@ SplitterI::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectB
     setChildrenSize(serialization->leftChildSize, serialization->rightChildSize);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

@@ -43,7 +43,7 @@
 #define BOUNDING_BOX_HANDLE_SIZE 4
 #define XHAIR_SIZE 20
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 typedef std::set<double> TimeSet;
 typedef std::map<KnobIWPtr, KnobGui *> KnobsAndGuis;
@@ -364,5 +364,5 @@ public:
 
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 #endif // NATRON_GUI_AnimationModuleViewPrivate_H

@@ -30,11 +30,14 @@
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 
+
+NATRON_NAMESPACE_ENTER
+
+
 #define kOneViewViewParam "view"
 #define kOneViewViewParamLabel "View"
 #define kOneViewViewParamHint "View to take from the input"
 
-NATRON_NAMESPACE_ENTER;
 
 struct OneViewNodePrivate
 {
@@ -51,7 +54,7 @@ OneViewNode::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_MULTIVIEW);
-    PluginPtr ret = Plugin::create((void*)OneViewNode::create, (void*)OneViewNode::createRenderClone, PLUGINID_NATRON_ONEVIEW, "OneView", 1, 0, grouping);
+    PluginPtr ret = Plugin::create(OneViewNode::create, OneViewNode::createRenderClone, PLUGINID_NATRON_ONEVIEW, "OneView", 1, 0, grouping);
 
     QString desc =  tr("Takes one view from the input");
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
@@ -195,4 +198,4 @@ OneViewNode::onMetadataChanged(const NodeMetadata& metadata)
 } // onMetadataChanged
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

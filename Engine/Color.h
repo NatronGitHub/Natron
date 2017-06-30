@@ -29,7 +29,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @brief A RGB Color
@@ -120,7 +120,7 @@ public:
 typedef ColorRgb<double> ColorRgbD;
 typedef ColorRgba<double> ColorRgbaD;
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 
 #endif // Engine_Color_h

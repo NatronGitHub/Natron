@@ -35,7 +35,7 @@
 #endif
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 namespace FStreamsSupport {
 #if FSTREAM_USE_STDIO_FILEBUF
@@ -56,6 +56,6 @@ void open(ifstream* stream, const std::string& filename, std::ios_base::openmode
 void open(ofstream* stream, const std::string& filename, std::ios_base::openmode mode = std::ios_base::out);
 } //FStreamsSupport
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // FSTREAMSSUPPORT_H

@@ -82,7 +82,7 @@
 #include "Serialization/SerializationIO.h"
 
 #define kNatronKnobItemsTableGuiMimeType "Natron/NatronKnobItemsTableGuiMimeType"
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct ModelItem {
     // The internal item in Engine
@@ -2434,6 +2434,6 @@ KnobItemsTableGui::onRemoveAnimationButtonClicked()
 
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 NATRON_NAMESPACE_USING
 #include "moc_KnobItemsTableGui.cpp"

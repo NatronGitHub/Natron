@@ -33,7 +33,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 /**
@@ -321,6 +321,6 @@ toGLImageStorage(const ImageStorageBasePtr& entry)
 
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_IMAGESTORAGE_H

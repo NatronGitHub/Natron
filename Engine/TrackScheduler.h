@@ -36,7 +36,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @brief An implementation of the GenericSchedulerThread class to enable multi-threaded tracking.
@@ -103,6 +103,6 @@ private:
 
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // TRACKSCHEDULER_H

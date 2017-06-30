@@ -49,7 +49,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/EngineFwd.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @brief A least-recently used container: it works as a map, execept that there's a evict() function to remove the least recently 
@@ -190,6 +190,6 @@ private:
     key_to_value_type _key_to_value;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 #endif // 0
 #endif // ifndef Engine_LRUHashTable_h

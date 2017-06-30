@@ -36,8 +36,8 @@ CLANG_DIAG_ON(unknown-pragmas)
 
 #include "Engine/OverlayInteractBase.h"
 
-NATRON_NAMESPACE_ENTER;
 
+NATRON_NAMESPACE_ENTER
 
 
 class OfxOverlayInteract
@@ -129,7 +129,6 @@ private:
 };
 
 
-
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_OFXOVERLAYINTERACT_H

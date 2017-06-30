@@ -39,7 +39,7 @@
 #define NODEGRAPH_SIMPLE_TEXT_ITEM_MIN_HEIGHT_PX 6
 #define NODEGRAPH_PIXMAP_ITEM_MIN_HEIGHT_PX 10
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 NodeGraphTextItem::NodeGraphTextItem(NodeGraph* graph,
                                      QGraphicsItem* parent,
@@ -156,4 +156,4 @@ NodeGraphPixmapItem::paint(QPainter *painter,
     QGraphicsPixmapItem::paint(painter, option, widget);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

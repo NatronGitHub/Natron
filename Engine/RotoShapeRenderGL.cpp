@@ -44,7 +44,7 @@
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
 #endif
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 static const char* rotoRamp_FragmentShader =
 "uniform float opacity;\n"
@@ -2207,4 +2207,4 @@ RotoShapeRenderGL::renderSmear_gl(const OSGLContextPtr& glContext,
     return hasRenderedDot;
 } // RotoShapeRenderGL::renderSmear_gl
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

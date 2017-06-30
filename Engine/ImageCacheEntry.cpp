@@ -58,7 +58,7 @@
 #include <QTextStream>
 #endif
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct TileCoord
 {
@@ -2811,4 +2811,4 @@ ImageCacheEntryInternalBase::toMemorySegment(IPCPropertyMap* properties) const
 } // toMemorySegment
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

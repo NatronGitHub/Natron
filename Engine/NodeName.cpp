@@ -24,7 +24,7 @@
 
 #include "NodePrivate.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 static bool findAvailableName(const std::string &baseName, const NodeCollectionPtr& group, const NodePtr& node, std::string* name)
@@ -378,4 +378,4 @@ Node::setScriptName(const std::string& name)
 
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

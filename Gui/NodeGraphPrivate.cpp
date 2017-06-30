@@ -42,7 +42,7 @@
 #include "Serialization/NodeSerialization.h"
 #include "Serialization/NodeClipBoard.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 NodeGraphPrivate::NodeGraphPrivate(NodeGraph* p,
@@ -228,4 +228,4 @@ NodeGraphPrivate::copyNodesInternal(const NodesGuiList& selection, std::list<std
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

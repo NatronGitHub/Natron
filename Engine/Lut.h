@@ -41,7 +41,9 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+
+NATRON_NAMESPACE_ENTER
+
 
 #define NATRON_COLOR_HUE_CIRCLE 1. // if hue should be between 0 and 1
 //#define NATRON_COLOR_HUE_CIRCLE 360. // if hue should be in degrees
@@ -584,6 +586,6 @@ charToUint8xx(unsigned char quantum)
 }
 }     //namespace Color
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif //NATRON_ENGINE_LUT_H

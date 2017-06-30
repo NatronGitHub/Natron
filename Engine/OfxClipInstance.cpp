@@ -60,7 +60,7 @@
 #include <ofxOpenGLRender.h>
 #include <ofxNatron.h>
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct OfxClipInstancePrivate
 {
@@ -964,16 +964,14 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
         rod = rodResults->getRoD();
     }
 
-
-    OfxImageCommon* retCommon = 0;
+    assert((retImage != NULL) != (retTexture != NULL));
     if (retImage) {
         OfxImage* ofxImage = new OfxImage(getEffectHolder(), inputNb, outArgs.image, rod, premult, fielding, inputNodeFrameViewHash, outArgs.roiPixel, outArgs.distortionStack, componentsStr, nComps, par);
         *retImage = ofxImage;
-        retCommon = ofxImage;
-    } else if (retTexture) {
+    }
+    if (retTexture) {
         OfxTexture* ofxTex = new OfxTexture(getEffectHolder(), inputNb, outArgs.image, rod, premult, fielding, inputNodeFrameViewHash, outArgs.roiPixel, outArgs.distortionStack, componentsStr, nComps, par);
         *retTexture = ofxTex;
-        retCommon = ofxTex;
     }
 
 
@@ -1490,7 +1488,9 @@ OfxImageCommon::OfxImageCommon(const EffectInstancePtr& outputClipEffect,
             ofxImageBase->addProperties(propSpec);
 
 
+            GCC_DIAG_PEDANTIC_OFF
             ofxImageBase->setPointerProperty(kOfxPropInverseDistortionFunction, (void*)&ofxaApplyDistortionStack);
+            GCC_DIAG_PEDANTIC_ON
             ofxImageBase->setPointerProperty(kOfxPropInverseDistortionFunctionData, (void*)distortion.get());
         }
 
@@ -1632,5 +1632,5 @@ OfxClipInstance::findSupportedComp(const std::string &s) const
     return none;
 } // OfxClipInstance::findSupportedComp
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

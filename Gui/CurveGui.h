@@ -42,7 +42,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/AnimItemBase.h"
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct CurveGuiPrivate;
 class CurveGui
@@ -123,6 +123,6 @@ private:
 
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Gui_CurveGui_h

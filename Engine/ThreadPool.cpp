@@ -35,7 +35,7 @@
 #include "Engine/Node.h"
 #include "Engine/TreeRender.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 struct AbortableThreadPrivate
@@ -164,5 +164,5 @@ ThreadPool::createThreadPoolThread() const
 
 #endif // ifdef QT_CUSTOM_THREADPOOL
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

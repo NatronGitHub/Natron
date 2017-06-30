@@ -34,7 +34,9 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+
+NATRON_NAMESPACE_ENTER
+
 
 #define WGL_NUMBER_PIXEL_FORMATS_ARB 0x2000
 #define WGL_SUPPORT_OPENGL_ARB 0x2010
@@ -149,6 +151,7 @@ typedef VOID (*PFNWGLBLITCONTEXTFRAMEBUFFERAMD)(HGLRC dstCtx, GLint srcX0, GLint
 #define GPU_MEMORY_INFO_EVICTION_COUNT_NVX            0x904A
 #define GPU_MEMORY_INFO_EVICTED_MEMORY_NVX            0x904B
 
+
 struct OSGLContext_wgl_data
 {
     HINSTANCE instance;
@@ -238,7 +241,7 @@ private:
 };
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // __NATRON_WIN32__
 

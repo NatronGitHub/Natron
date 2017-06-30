@@ -50,7 +50,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ViewerNode.h"
 #include "Engine/ViewerDisplayScheduler.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class RenderCurrentFrameFunctorRunnable;
 
@@ -447,4 +447,4 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const GenericThreadStartArgsP
     return state;
 } // threadLoopOnce
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

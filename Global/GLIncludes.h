@@ -253,7 +253,7 @@ glErrorString(GLenum errorCode)
 
 #ifdef __cplusplus
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 // an RAII helper class to push/pop attribs
 template <typename GL>
@@ -359,7 +359,7 @@ private:
 };
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // __cplusplus
 

@@ -23,7 +23,7 @@
 // ***** END PYTHON BLOCK *****
 #include "StyledKnobWidgetBase.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 StyledKnobWidgetBase::StyledKnobWidgetBase()
 : animation(0)
@@ -92,4 +92,4 @@ StyledKnobWidgetBase::getIsModified() const
     return modified;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

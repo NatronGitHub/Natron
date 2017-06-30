@@ -62,7 +62,9 @@ GCC_DIAG_ON(unused-parameter)
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+
+NATRON_NAMESPACE_ENTER
+
 
 template <typename T>
 const std::string &
@@ -72,6 +74,7 @@ Knob<T>::typeName() const
 
     return knobNoTypeName;
 }
+
 
 template <typename T>
 bool
@@ -1354,6 +1357,6 @@ Knob<T>::areDimensionsEqual(ViewIdx view)
 } // areDimensionsEqual
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // KNOBIMPL_H

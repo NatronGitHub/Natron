@@ -56,9 +56,12 @@
 
 #include "Serialization/ProjectSerialization.h"
 
+
 SERIALIZATION_NAMESPACE_USING
 
-NATRON_NAMESPACE_ENTER;
+
+NATRON_NAMESPACE_ENTER
+
 
 KnobI::KnobI()
 : AnimatingObjectI()
@@ -5641,7 +5644,8 @@ template class AddToUndoRedoStackHelper<double>;
 template class AddToUndoRedoStackHelper<bool>;
 template class AddToUndoRedoStackHelper<std::string>;
 
-NATRON_NAMESPACE_EXIT;
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_EXIT
+
+NATRON_NAMESPACE_USING
 #include "moc_Knob.cpp"

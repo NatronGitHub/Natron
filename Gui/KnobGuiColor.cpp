@@ -81,7 +81,7 @@ CLANG_DIAG_ON(uninitialized)
 #include <ofxNatron.h>
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 ColorPickerLabel::ColorPickerLabel(bool simplified,
@@ -217,10 +217,15 @@ KnobGuiColor::KnobGuiColor(const KnobGuiPtr& knobUI, ViewIdx view)
     , _knob( toKnobColor(knobUI->getKnob()) )
     , _colorLabel(0)
     , _colorDialogButton(0)
-    , _useSimplifiedUI( _knob.lock()->isSimplified() )
+    , _useSimplifiedUI(false)
     , _uiColorspaceLut(0)
     , _internalColorspaceLut(0)
 {
+    KnobColorPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    _useSimplifiedUI = knob && knob->isSimplified();
     if (!_useSimplifiedUI) {
         DimIdx singleDim;
         bool singleDimEnabled = knobUI->isSingleDimensionalEnabled(&singleDim);
@@ -228,8 +233,8 @@ KnobGuiColor::KnobGuiColor(const KnobGuiPtr& knobUI, ViewIdx view)
             _useSimplifiedUI = true;
         }
     }
-    const std::string& uiName = _knob.lock()->getUIColorspaceName();
-    const std::string& internalName = _knob.lock()->getInternalColorspaceName();
+    const std::string& uiName = knob->getUIColorspaceName();
+    const std::string& internalName = knob->getInternalColorspaceName();
     _uiColorspaceLut = Color::LutManager::findLut(uiName);
     _internalColorspaceLut = Color::LutManager::findLut(internalName);
 }
@@ -238,13 +243,20 @@ void
 KnobGuiColor::connectKnobSignalSlots()
 {
     KnobColorPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
     QObject::connect( knob.get(), SIGNAL(pickingEnabled(ViewSetSpec,bool)), this, SLOT(onInternalKnobPickingEnabled(ViewSetSpec,bool)) );
 }
 
 void
 KnobGuiColor::getIncrements(std::vector<double>* increments) const
 {
-    int nDims = _knob.lock()->getNDimensions();
+    KnobColorPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    int nDims = knob->getNDimensions();
 
     increments->resize(nDims);
     for (int i = 0; i < nDims; ++i) {
@@ -255,7 +267,11 @@ KnobGuiColor::getIncrements(std::vector<double>* increments) const
 void
 KnobGuiColor::getDecimals(std::vector<int>* decimals) const
 {
-    int nDims = _knob.lock()->getNDimensions();
+    KnobColorPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    int nDims = knob->getNDimensions();
 
     decimals->resize(nDims);
     for (int i = 0; i < nDims; ++i) {
@@ -268,7 +284,13 @@ KnobGuiColor::addExtraWidgets(QHBoxLayout* containerLayout)
 {
     containerLayout->addSpacing( TO_DPIX(10) );
     KnobColorPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
     KnobGuiPtr knobUI = getKnobGui();
+    if (!knobUI) {
+        return;
+    }
     _colorLabel = new ColorPickerLabel( _useSimplifiedUI, knobUI->getLayoutType(), this, containerLayout->widget() );
     if (!_useSimplifiedUI && knobUI->getLayoutType() != KnobGui::eKnobLayoutTypeTableItemWidget) {
         _colorLabel->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("To pick a color on a viewer, click this and then press control + left click on any viewer.\n"
@@ -324,6 +346,9 @@ KnobGuiColor::updateLabel(double r,
 {
     QColor color;
     KnobColorPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
 
     convertFromInternalToUIColorspace(&r, &g, &b);
     color.setRgbF( Image::clamp<qreal>(r, 0., 1.),
@@ -353,6 +378,9 @@ void
 KnobGuiColor::onColorLabelPickingEnabled(bool enabled)
 {
     KnobColorPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
     KnobGuiPtr knobUI = getKnobGui();
     if ( knob->getHolder()->getApp() ) {
         if (enabled) {
@@ -367,6 +395,9 @@ void
 KnobGuiColor::setPickingEnabledInternal(bool enabled)
 {
     KnobColorPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
     if ( knob->getHolder()->getApp() ) {
         if (enabled) {
             getKnobGui()->getGui()->registerNewColorPicker( knob, getView() );
@@ -414,6 +445,9 @@ void
 KnobGuiColor::onDimensionsMadeVisible(bool visible)
 {
     KnobColorPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
     int nDims = knob->getNDimensions();
 
     QColor colors[4];
@@ -450,6 +484,9 @@ void
 KnobGuiColor::onDialogCurrentColorChanged(const QColor & color)
 {
     KnobColorPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
     int nDims = knob->getNDimensions();
 
     std::vector<double> values(nDims);
@@ -519,6 +556,9 @@ KnobGuiColor::showColorDialog()
 
     dialog.setOption(QColorDialog::DontUseNativeDialog);
     KnobColorPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
     const int nDims = knob->getNDimensions();
     ViewIdx view = getView();
     double curR = knob->getValue(DimIdx(0), view, false /*clampToMinmax*/);
@@ -593,7 +633,9 @@ KnobGuiColor::showColorDialog()
     }
 } // showColorDialog
 
-NATRON_NAMESPACE_EXIT;
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_EXIT
+
+
+NATRON_NAMESPACE_USING
 #include "moc_KnobGuiColor.cpp"

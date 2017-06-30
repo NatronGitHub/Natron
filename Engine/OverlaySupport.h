@@ -38,7 +38,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @class An abstract interface for overlay holders. Any OpenGL widget capable of drawing overlays should
@@ -197,6 +197,6 @@ public:
     virtual int getStringWidthForCurrentFont(const std::string& string) const = 0;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Engine_OverlaySupport_h

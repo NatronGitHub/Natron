@@ -33,7 +33,7 @@
 #include "Engine/NodeGroup.h" // kNatronGroupInputIsOptionalParamName, kNatronGroupInputIsMaskParamName
 #include "Engine/ViewIdx.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 PluginPtr
@@ -41,7 +41,7 @@ GroupInput::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_OTHER);
-    PluginPtr ret = Plugin::create((void*)GroupInput::create, (void*)GroupInput::createRenderClone, PLUGINID_NATRON_INPUT, "Input", 1, 0, grouping);
+    PluginPtr ret = Plugin::create(GroupInput::create, GroupInput::createRenderClone, PLUGINID_NATRON_INPUT, "Input", 1, 0, grouping);
 
     QString desc =  tr("This node can only be used within a Group. It adds an input arrow to the group.");
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
@@ -103,7 +103,7 @@ GroupInput::knobChanged(const KnobIPtr& k,
     return ret;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_GroupInput.cpp"

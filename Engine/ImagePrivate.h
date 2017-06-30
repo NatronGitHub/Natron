@@ -49,7 +49,7 @@
 #include "Engine/EngineFwd.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct ImagePrivate
 {
@@ -280,15 +280,15 @@ struct ImagePrivate
                                                  const void* customData, 
                                                  const EffectInstancePtr& renderClone,
                                                  const Image::CPUData& cpuData,
-                                                 void* func);
+                                                 void(*func)());
 
     ActionRetCodeEnum applyCPUPixelShaderForDepth(const RectI& roi,
                                                  const void* customData,
-                                                 void* func);
+                                                 void(*func)());
     
 
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_IMAGEPRIVATE_H

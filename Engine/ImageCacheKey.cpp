@@ -26,7 +26,7 @@
 
 #include "Engine/Hash64.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 struct ImageCacheKeyShmData
@@ -144,4 +144,4 @@ ImageCacheKey::fromMemorySegment(const IPCPropertyMap& properties)
 }
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

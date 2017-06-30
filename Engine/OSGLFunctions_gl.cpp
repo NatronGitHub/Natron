@@ -5,7 +5,7 @@
 #include "OSGLFunctions.h"
 #include "Global/Macros.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 template <>
 void OSGLFunctions<true>::load_functions() {
@@ -614,5 +614,5 @@ void OSGLFunctions<true>::load_functions() {
 
 template class OSGLFunctions<true>;
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

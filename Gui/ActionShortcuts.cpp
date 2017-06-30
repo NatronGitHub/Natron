@@ -32,7 +32,7 @@
 #include "Gui/QtEnumConvert.h"
 #include "Gui/GuiApplicationManager.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 ActionWithShortcut::ActionWithShortcut(const std::string & group,
                                        const std::string & actionID,
@@ -272,9 +272,8 @@ ToolTipActionShortcut::onShortcutChanged(const std::string& actionID,
 }
 
 
+NATRON_NAMESPACE_EXIT
 
 
-NATRON_NAMESPACE_EXIT;
-
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_ActionShortcuts.cpp"

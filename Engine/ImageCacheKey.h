@@ -27,7 +27,7 @@
 
 #include "Engine/CacheEntryKeyBase.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct ImageCacheKeyPrivate;
 class ImageCacheKey
@@ -69,6 +69,6 @@ ImageCacheKeyPtr toImageCacheKey(const CacheEntryKeyBasePtr& key)
     return boost::dynamic_pointer_cast<ImageCacheKey>(key);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_IMAGECACHEKEY_H

@@ -29,7 +29,7 @@
 #include "Engine/KnobItemsTable.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 AddItemsCommand::AddItemsCommand(const std::list<ItemToAdd>& items)
 : UndoCommand()
@@ -187,4 +187,4 @@ RemoveItemsCommand::redo()
     model->getNode()->getApp()->triggerAutoSave();
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

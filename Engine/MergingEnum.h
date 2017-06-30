@@ -34,7 +34,7 @@
 #include "Engine/ChoiceOption.h"
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 namespace Merge {
@@ -436,6 +436,6 @@ getOperatorStrings(std::vector<ChoiceOption>* operators)
 }
 } // namespace Merge
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // MERGINGENUM_H

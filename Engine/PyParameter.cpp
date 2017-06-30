@@ -62,8 +62,8 @@ GCC_DIAG_ON(unused-parameter)
 #include "Serialization/ProjectSerialization.h"
 
 
-NATRON_NAMESPACE_ENTER;
-NATRON_PYTHON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
+NATRON_PYTHON_NAMESPACE_ENTER
 
 Param::Param(const KnobIPtr& knob)
     : _knob(knob)
@@ -79,6 +79,10 @@ Param::getRenderCloneKnobInternal() const
 {
     // The main instance knob
     KnobIPtr mainInstanceKnob = _knob.lock();
+    if (!mainInstanceKnob) {
+        PythonSetNullError();
+        return KnobIPtr();
+    }
     EffectInstancePtr mainInstanceHolder = toEffectInstance(mainInstanceKnob->getHolder());
     if (!mainInstanceHolder) {
         return mainInstanceKnob;
@@ -4220,6 +4224,6 @@ ParametricParam::setDefaultCurvesFromCurrentCurves()
     knob->setDefaultCurvesFromCurves();
 }
 
-NATRON_PYTHON_NAMESPACE_EXIT;
-NATRON_NAMESPACE_EXIT;
+NATRON_PYTHON_NAMESPACE_EXIT
+NATRON_NAMESPACE_EXIT
 

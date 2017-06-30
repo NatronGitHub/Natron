@@ -30,7 +30,7 @@
 
 #include "Gui/GuiApplicationManager.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 Button::Button(QWidget* parent)
     : QPushButton(parent)
@@ -63,5 +63,5 @@ Button::initInternal()
     //setFont( QFont(appFont,appFontSize) );
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

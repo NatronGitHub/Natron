@@ -41,7 +41,7 @@
 #include "Gui/EditScriptDialog.h"
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class EditExpressionDialog
     : public EditScriptDialog
@@ -77,6 +77,6 @@ private:
     virtual QString compileExpression(const QString& expr, ExpressionLanguageEnum language) OVERRIDE FINAL;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Gui_EditExpressionDialog_h

@@ -94,9 +94,10 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #define NATRON_SCHEDULER_ABORT_AFTER_X_UNSUCCESSFUL_ITERATIONS 5000
 
+
 #define kPythonCallbackPersistentMessageError "PythonCallbackPersistentMessageError"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 struct RenderFrameResultsContainer_Compare
@@ -1560,7 +1561,7 @@ OutputSchedulerThreadPrivate::runCallbackWithVariables(const QString& callback)
 
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_OutputSchedulerThread.cpp"

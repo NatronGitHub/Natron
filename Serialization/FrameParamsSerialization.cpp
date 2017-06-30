@@ -29,7 +29,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <yaml-cpp/yaml.h>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
+
 SERIALIZATION_NAMESPACE_ENTER
+
 
 void
 FrameParamsSerialization::encode(YAML::Emitter& em) const
@@ -47,6 +49,5 @@ FrameParamsSerialization::decode(const YAML::Node& node)
     rod.decode(node[1]);
 }
 
+
 SERIALIZATION_NAMESPACE_EXIT
-
-

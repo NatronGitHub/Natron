@@ -65,7 +65,7 @@
 
 #include "Serialization/WorkspaceSerialization.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 ViewerTab::ViewerTab(const std::string& scriptName,
@@ -404,7 +404,7 @@ ViewerTab::getIcon() const
     return QIcon(p);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_ViewerTab.cpp"

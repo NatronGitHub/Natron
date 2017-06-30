@@ -56,7 +56,7 @@ CLANG_DIAG_ON(uninitialized)
 #define kFrameRangeParamNameFrameRange "frameRange"
 #define kTimeOffsetParamNameTimeOffset "timeOffset"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 // typedefs
 
@@ -80,6 +80,10 @@ const int QT_ROLE_CONTEXT_ITEM_VISIBLE = Qt::UserRole + 6;
 class AnimationModuleSelectionProvider
 {
 public:
+
+    AnimationModuleSelectionProvider() {}
+
+    virtual ~AnimationModuleSelectionProvider() {}
 
     /**
      * @brief Given the treeItem, finds in the model the corresponding item.
@@ -130,7 +134,7 @@ public:
 struct AnimationModuleBasePrivate;
 class AnimationModuleBase : public AnimationModuleSelectionProvider, public boost::enable_shared_from_this<AnimationModuleBase>
 {
-    Q_DECLARE_TR_FUNCTIONS(AnimationModuleBase);
+    Q_DECLARE_TR_FUNCTIONS(AnimationModuleBase)
 
 public:
 
@@ -250,6 +254,6 @@ private:
     boost::scoped_ptr<AnimationModuleBasePrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_GUI_ANIMATIONMODULEBASE_H

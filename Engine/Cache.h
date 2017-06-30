@@ -104,7 +104,7 @@
 // in a process-local cache.
 #define NATRON_CACHE_INTERPROCESS_ROBUST
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 struct CacheReportInfo
@@ -565,7 +565,7 @@ private:
     boost::scoped_ptr<CachePrivate<persistent> > _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 
 #endif /*Engine_Cache_h_ */

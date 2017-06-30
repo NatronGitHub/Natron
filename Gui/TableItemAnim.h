@@ -33,7 +33,7 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Gui/AnimItemBase.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class TableItemAnimPrivate;
 class TableItemAnim : public QObject, public AnimItemBase, public KnobsHolderAnimBase
@@ -134,6 +134,6 @@ inline TableItemAnimPtr toTableItemAnim(const AnimItemBasePtr& p)
     return boost::dynamic_pointer_cast<TableItemAnim>(p);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_GUI_TABLEITEMANIM_H

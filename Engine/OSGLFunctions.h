@@ -19,7 +19,7 @@
 #endif
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 template <bool USEOPENGL>
 class OSGLFunctions
@@ -4597,6 +4597,6 @@ public:
 typedef OSGLFunctions<true> GL_GPU;
 typedef OSGLFunctions<false> GL_CPU;
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // OSGLFUNCTIONS_H

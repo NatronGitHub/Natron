@@ -58,7 +58,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Serialization/KnobSerialization.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 PluginPtr
@@ -66,7 +66,7 @@ PrecompNode::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_OTHER);
-    PluginPtr ret = Plugin::create((void*)PrecompNode::create, (void*)PrecompNode::createRenderClone, PLUGINID_NATRON_PRECOMP, "Precomp", 1, 0, grouping);
+    PluginPtr ret = Plugin::create(PrecompNode::create, PrecompNode::createRenderClone, PLUGINID_NATRON_PRECOMP, "Precomp", 1, 0, grouping);
     ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafeFrame);
 
     QString desc = tr( "The Precomp node is like a Group node, but references an external Natron project (.ntp) instead.\n"
@@ -293,9 +293,9 @@ PrecompNode::initializeKnobs()
         param->setAnimationEnabled(false);
         {
             std::vector<ChoiceOption> choices;
-            choices.push_back(ChoiceOption("Load Previous", "", tr("Loads the previous frame in the sequence.").toStdString() ));
-            choices.push_back(ChoiceOption("Load Next", "", tr("Loads the next frame in the sequence.").toStdString()));
-            choices.push_back(ChoiceOption("Load Nearest", "", tr("Loads the nearest frame in the sequence.").toStdString()));
+            choices.push_back(ChoiceOption("Load previous", "", tr("Loads the previous frame in the sequence.").toStdString() ));
+            choices.push_back(ChoiceOption("Load next", "", tr("Loads the next frame in the sequence.").toStdString()));
+            choices.push_back(ChoiceOption("Load nearest", "", tr("Loads the nearest frame in the sequence.").toStdString()));
             choices.push_back(ChoiceOption("Error", "", tr("Fails to render.").toStdString()));
             choices.push_back(ChoiceOption("Black", "", tr("Black Image.").toStdString()));
 
@@ -719,7 +719,7 @@ PrecompNode::getPrecompApp() const
     return _imp->app.lock();
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_PrecompNode.cpp"

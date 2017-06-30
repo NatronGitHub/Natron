@@ -35,7 +35,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 #define kStubNodeParamSerialization "content"
 #define kStubNodeParamSerializationLabel "Content"
@@ -101,7 +101,7 @@ toStubNode(const EffectInstancePtr& effect)
     return boost::dynamic_pointer_cast<StubNode>(effect);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 
 #endif // STUBNODE_H

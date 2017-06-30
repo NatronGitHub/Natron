@@ -33,7 +33,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct TrackArgsPrivate;
 
@@ -145,6 +145,6 @@ private:
 };
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // TRACKARGS_H

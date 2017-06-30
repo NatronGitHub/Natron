@@ -56,7 +56,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiMacros.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 struct KnobWidgetDnDPrivate
@@ -465,4 +465,4 @@ KnobWidgetDnD::focusOut()
     _imp->userInputSinceFocusIn = false;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

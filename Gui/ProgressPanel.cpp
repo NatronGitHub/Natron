@@ -72,7 +72,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #define NATRON_DISPLAY_PROGRESS_PANEL_AFTER_MS 3000
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 typedef std::map<NodeWPtr, ProgressTaskInfoPtr> TasksMap;
 typedef std::vector<ProgressTaskInfoPtr> TasksOrdered;
@@ -640,6 +640,7 @@ ProgressPanel::onItemRightClicked(QPoint globalPos, const TableItemPtr& item)
     }
 }
 
+
 QIcon
 ProgressPanel::getIcon() const
 {
@@ -650,8 +651,8 @@ ProgressPanel::getIcon() const
 }
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_ProgressPanel.cpp"

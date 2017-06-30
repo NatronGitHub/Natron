@@ -29,7 +29,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <yaml-cpp/yaml.h>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
+
 SERIALIZATION_NAMESPACE_ENTER
+
 
 void
 FormatSerialization::encode(YAML::Emitter& em) const
@@ -74,4 +76,4 @@ FormatSerialization::decode(const YAML::Node& node)
 
 }
 
-SERIALIZATION_NAMESPACE_EXIT;
+SERIALIZATION_NAMESPACE_EXIT

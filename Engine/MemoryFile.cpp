@@ -49,7 +49,7 @@
 
 #define MIN_FILE_SIZE 4096
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct MemoryFilePrivate
 {
@@ -455,5 +455,5 @@ MemoryFile::remove()
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

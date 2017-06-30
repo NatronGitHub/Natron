@@ -90,7 +90,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Serialization/SerializationIO.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
+
 
 using std::cout; using std::endl;
 using std::make_pair;
@@ -157,7 +158,7 @@ Project::~Project()
     //removeAutoSaves();
 }
 
-NATRON_NAMESPACE_ANONYMOUS_ENTER;
+NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 class LoadProjectSplashScreen_RAII
 {
@@ -184,7 +185,7 @@ public:
     }
 };
 
-NATRON_NAMESPACE_ANONYMOUS_EXIT;
+NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 bool
 Project::loadProject(const QString & path,
@@ -756,7 +757,11 @@ Project::initializeKnobs()
                 if ( (f.width() == 1920) && (f.height() == 1080) && (f.getPixelAspectRatio() == 1) ) {
                     param->setDefaultValue(i);
                 }
-                entries.push_back( ChoiceOption(formatStr.toStdString(),"", "") );
+                if ( !f.getName().empty() ) {
+                    entries.push_back( ChoiceOption(f.getName(), formatStr.toStdString(), "") );
+                } else {
+                    entries.push_back( ChoiceOption( formatStr.toStdString() ) );
+                }
                 _imp->builtinFormats.push_back(f);
             }
             param->setAddNewLine(false);
@@ -1192,18 +1197,34 @@ Project::tryAddProjectFormat(const Format & f, bool addAsAdditionalFormat, bool*
     std::vector<ChoiceOption> entries;
     for (std::list<Format>::iterator it = _imp->builtinFormats.begin(); it != _imp->builtinFormats.end(); ++it) {
         QString str = ProjectPrivate::generateStringFromFormat(*it);
-        entries.push_back(ChoiceOption( str.toStdString(), "", "") );
+        if ( !it->getName().empty() ) {
+            entries.push_back( ChoiceOption(it->getName(), str.toStdString(), "") );
+        } else {
+            entries.push_back( ChoiceOption( str.toStdString() ) );
+        }
     }
     if (!addAsAdditionalFormat) {
-        entries.push_back( ChoiceOption(formatStr.toStdString(),"","") );
+        if ( !f.getName().empty() ) {
+            entries.push_back( ChoiceOption(f.getName(), formatStr.toStdString(), "") );
+        } else {
+            entries.push_back( ChoiceOption( formatStr.toStdString() ) );
+        }
         ret = (entries.size() - 1);
     }
     for (std::list<Format>::iterator it = _imp->additionalFormats.begin(); it != _imp->additionalFormats.end(); ++it) {
         QString str = ProjectPrivate::generateStringFromFormat(*it);
-        entries.push_back( ChoiceOption(str.toStdString(),"","") );
+        if ( !it->getName().empty() ) {
+            entries.push_back( ChoiceOption(it->getName(), str.toStdString(), "") );
+        } else {
+            entries.push_back( ChoiceOption( str.toStdString() ) );
+        }
     }
     if (addAsAdditionalFormat) {
-        entries.push_back( ChoiceOption(formatStr.toStdString(),"","") );
+        if ( !f.getName().empty() ) {
+            entries.push_back( ChoiceOption(f.getName(), formatStr.toStdString(), "") );
+        } else {
+            entries.push_back( ChoiceOption( formatStr.toStdString() ) );
+        }
         ret = (entries.size() - 1);
     }
 
@@ -2930,8 +2951,12 @@ Project::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBas
     // We must restore the entries in the combobox before restoring the value
     std::vector<ChoiceOption> entries;
     for (std::list<Format>::const_iterator it = _imp->builtinFormats.begin(); it != _imp->builtinFormats.end(); ++it) {
-        QString formatStr = ProjectPrivate::generateStringFromFormat(*it);
-        entries.push_back( ChoiceOption(formatStr.toStdString(), "", "") );
+        QString str = ProjectPrivate::generateStringFromFormat(*it);
+        if ( !it->getName().empty() ) {
+            entries.push_back( ChoiceOption(it->getName(), str.toStdString(), "") );
+        } else {
+            entries.push_back( ChoiceOption( str.toStdString() ) );
+        }
     }
 
     {
@@ -2947,8 +2972,12 @@ Project::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBas
             _imp->additionalFormats.push_back(f);
         }
         for (std::list<Format>::const_iterator it = _imp->additionalFormats.begin(); it != _imp->additionalFormats.end(); ++it) {
-            QString formatStr = ProjectPrivate::generateStringFromFormat(*it);
-            entries.push_back( ChoiceOption(formatStr.toStdString(), "","") );
+            QString str = ProjectPrivate::generateStringFromFormat(*it);
+            if ( !it->getName().empty() ) {
+                entries.push_back( ChoiceOption(it->getName(), str.toStdString(), "") );
+            } else {
+                entries.push_back( ChoiceOption( str.toStdString() ) );
+            }
         }
     }
 
@@ -2999,7 +3028,8 @@ Project::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBas
 } // Project::fromSerialization
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+
+NATRON_NAMESPACE_USING
 #include "moc_Project.cpp"

@@ -41,7 +41,7 @@
 
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @brief This class manages is a wrapper over OutputThreadScheduler and ViewerCurrentFrameRequestScheduler so that each render request gets processed as soon as possible.
@@ -333,6 +333,6 @@ private:
     virtual OutputSchedulerThreadPtr createScheduler(const NodePtr& effect) OVERRIDE FINAL WARN_UNUSED_RETURN;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_RENDERENGINE_H

@@ -38,7 +38,7 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @brief A simple TimeLine representing the time for image sequences.
@@ -94,6 +94,6 @@ private:
     TimelineChangeReasonEnum _lastSeekReason;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif /* defined(NATRON_ENGINE_TIMELINE_H_) */

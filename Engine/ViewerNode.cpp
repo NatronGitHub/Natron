@@ -27,7 +27,7 @@
 
 #include "Engine/RenderEngine.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 PluginPtr
@@ -35,7 +35,7 @@ ViewerNode::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_IMAGE);
-    PluginPtr ret = Plugin::create((void*)ViewerNode::create,  (void*)ViewerNode::createRenderClone, PLUGINID_NATRON_VIEWER_GROUP, "Viewer", 1, 0, grouping);
+    PluginPtr ret = Plugin::create(ViewerNode::create, ViewerNode::createRenderClone, PLUGINID_NATRON_VIEWER_GROUP, "Viewer", 1, 0, grouping);
 
     ret->setProperty<std::string>(kNatronPluginPropIconFilePath, "Images/viewer_icon.png");
     QString desc = tr("The Viewer node can display the output of a node graph. Shift + double click on the viewer node to customize the viewer display process with a custom node tree");
@@ -1229,6 +1229,6 @@ ViewerNode::onSetDownPlaybackButtonsTimeout()
     }
 }
 
-NATRON_NAMESPACE_EXIT;
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_EXIT
+NATRON_NAMESPACE_USING
 #include "moc_ViewerNode.cpp"

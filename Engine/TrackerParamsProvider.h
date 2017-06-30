@@ -31,7 +31,7 @@
 #include "Engine/ImagePlaneDesc.h"
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @brief A generic interface for all nodes that which to use the TrackScheduler
@@ -160,6 +160,6 @@ public:
 };
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // TRACKERPARAMSPROVIDER_H

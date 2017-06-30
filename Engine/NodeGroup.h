@@ -46,7 +46,9 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+
+NATRON_NAMESPACE_ENTER
+
 
 #define kNatronGroupInputIsMaskParamName "isMask"
 #define kNatronGroupInputIsOptionalParamName "optional"
@@ -479,11 +481,13 @@ private:
     boost::scoped_ptr<NodeGroupPrivate> _imp;
 };
 
+
 inline NodeGroupPtr
 toNodeGroup(const EffectInstancePtr& effect)
 {
     return boost::dynamic_pointer_cast<NodeGroup>(effect);
 }
+
 
 inline NodeGroupPtr
 toNodeGroup(const NodeCollectionPtr& group)
@@ -491,6 +495,7 @@ toNodeGroup(const NodeCollectionPtr& group)
     return boost::dynamic_pointer_cast<NodeGroup>(group);
 }
 
-NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_EXIT
 
 #endif // NODEGROUP_H

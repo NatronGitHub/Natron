@@ -31,7 +31,7 @@
 #include "Engine/TrackMarker.h"
 #include "Serialization/KnobTableItemSerialization.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 RotoLayer::RotoLayer(const KnobItemsTablePtr& model)
@@ -350,4 +350,4 @@ PlanarTrackLayer::clearTransformAnimationAfterTime(TimeValue time)
 
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

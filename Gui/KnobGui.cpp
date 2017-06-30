@@ -49,7 +49,7 @@
 #include "Gui/TabGroup.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 /////////////// KnobGui
@@ -1576,7 +1576,7 @@ KnobGui::createDuplicateOnNode(const EffectInstancePtr& effect,
     return ret;
 } // KnobGui::createDuplicateOnNode
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_KnobGui.cpp"

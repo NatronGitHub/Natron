@@ -27,7 +27,7 @@
 #include "Engine/PointOverlayInteract.h"
 #include "Engine/TransformOverlayInteract.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 bool
@@ -164,4 +164,4 @@ Node::getOverlayColor(double* r,
 
     return true;
 }
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

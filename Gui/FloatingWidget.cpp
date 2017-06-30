@@ -45,7 +45,9 @@
 
 #include "Serialization/WorkspaceSerialization.h"
 
-NATRON_NAMESPACE_ENTER;
+
+NATRON_NAMESPACE_ENTER
+
 
 FloatingWidget::FloatingWidget(Gui* gui,
                                QWidget* parent)
@@ -170,6 +172,7 @@ FloatingWidget::closeEvent(QCloseEvent* e)
     QWidget::closeEvent(e);
 }
 
+
 TabWidgetI*
 FloatingWidget::isMainWidgetTab() const
 {
@@ -240,7 +243,10 @@ FloatingWidget::restoreChildFromSerialization(const SERIALIZATION_NAMESPACE::Win
     move( QPoint( serialization.windowPosition[0], serialization.windowPosition[1] ) );
     resize( std::min( serialization.windowSize[0], screen.width() ), std::min( serialization.windowSize[1], screen.height() ) );
 }
-NATRON_NAMESPACE_EXIT;
 
-NATRON_NAMESPACE_USING;
+
+NATRON_NAMESPACE_EXIT
+
+
+NATRON_NAMESPACE_USING
 #include "moc_FloatingWidget.cpp"

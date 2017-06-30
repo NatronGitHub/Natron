@@ -43,7 +43,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class FileSystemModel;
 struct FileSystemItemPrivate;
@@ -361,6 +361,6 @@ private:
     boost::scoped_ptr<FileSystemModelPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // FILESYSTEMMODEL_H

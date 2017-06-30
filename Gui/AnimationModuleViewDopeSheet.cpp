@@ -78,7 +78,7 @@
 #define CURSOR_WIDTH 15
 #define CURSOR_HEIGHT 8
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
@@ -1537,4 +1537,4 @@ AnimationModuleViewPrivate::dopeSheetDoubleClickEvent(QMouseEvent *e)
     return dopeSheetAddKeyFrame(e->pos());
 } // mouseDoubleClickEvent
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

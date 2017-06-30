@@ -43,7 +43,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  *@class ZoomContext
@@ -359,6 +359,6 @@ private:
     double _screenHeight; /// window height in screen pixels
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // ZOOMCONTEXT_H

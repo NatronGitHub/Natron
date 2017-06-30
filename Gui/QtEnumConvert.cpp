@@ -27,7 +27,7 @@
 #include <QtCore/QDebug>
 #include <stdexcept>
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 
@@ -283,5 +283,5 @@ QtEnumConvert::toQtStandarButtons(StandardButtons buttons)
 } // toQtStandarButtons
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

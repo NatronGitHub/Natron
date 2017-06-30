@@ -41,7 +41,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/NodeGraph.h"
 #include "Gui/ViewerGL.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 void
 RightClickableWidget::mousePressEvent(QMouseEvent* e)
@@ -107,7 +107,7 @@ RightClickableWidget::isParentSettingsPanelRecursive(QWidget* w)
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_RightClickableWidget.cpp"

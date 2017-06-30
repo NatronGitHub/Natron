@@ -36,7 +36,7 @@ Q_PROPERTY(bool multipleSelection READ getIsSelectedMultipleTimes WRITE setIsSel
 Q_PROPERTY(bool selected READ getIsSelected WRITE setIsSelected) \
 Q_PROPERTY(bool modified READ getIsModified WRITE setIsModified)
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class StyledKnobWidgetBase
 {
@@ -85,6 +85,6 @@ protected:
     bool modified;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_GUI_STYLEDKNOBWIDGETBASE_H

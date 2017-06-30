@@ -31,7 +31,9 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+
+NATRON_NAMESPACE_ENTER
+
 
 struct JoinViewsNodePrivate;
 class JoinViewsNode
@@ -112,11 +114,14 @@ private:
     boost::scoped_ptr<JoinViewsNodePrivate> _imp;
 };
 
+
 inline JoinViewsNodePtr
 toJoinViewsNode(const EffectInstancePtr& effect)
 {
     return boost::dynamic_pointer_cast<JoinViewsNode>(effect);
 }
 
-NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_EXIT
+
 #endif // Engine_JoinViewsNode_h

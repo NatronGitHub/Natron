@@ -33,7 +33,7 @@
 #include "Engine/DockablePanelI.h"
 #include "Serialization/WorkspaceSerialization.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 SerializableWindow::SerializableWindow()
     : _lock(new QMutex)
@@ -130,5 +130,5 @@ SerializableWindow::fromSerialization(const SERIALIZATION_NAMESPACE::Serializati
     restoreChildFromSerialization(*serialization);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

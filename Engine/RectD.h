@@ -41,7 +41,9 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+
+NATRON_NAMESPACE_ENTER
+
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 //Shiboken fails if defined at the start of a header
@@ -365,7 +367,7 @@ operator!=(const RectD & b1,
            b1.top() != b2.top();
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 Q_DECLARE_METATYPE(NATRON_NAMESPACE::RectD)
 

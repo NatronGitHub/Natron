@@ -28,7 +28,7 @@
 #include "Engine/Node.h"
 #include "Engine/OverlaySupport.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 // an RAII class to save OpenGL context
 class OGLContextSaver
@@ -889,4 +889,4 @@ OverlayInteractBase::getPixelAspectRatio(double & /*par*/) const
 
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

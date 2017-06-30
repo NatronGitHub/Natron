@@ -57,7 +57,7 @@
 
 
 using std::make_pair;
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 DockablePanelPrivate::DockablePanelPrivate(DockablePanel* publicI,
@@ -135,7 +135,7 @@ OverlayColorButton::mousePressEvent(QMouseEvent* e)
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_DockablePanelPrivate.cpp"

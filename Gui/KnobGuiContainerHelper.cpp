@@ -57,7 +57,7 @@ CLANG_DIAG_ON(uninitialized)
 
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct KnobGuiContainerHelperPrivate
 {
@@ -1295,6 +1295,7 @@ KnobGuiContainerSignalsHandler::onPageLabelChangedInternally()
     }
 }
 
+
 void
 KnobGuiContainerHelper::refreshPageVisibility(const KnobPagePtr& page)
 {
@@ -1374,7 +1375,9 @@ KnobGuiContainerHelper::isPagingEnabled() const
     return _imp->unPagedContainer.get() == 0;
 }
 
-NATRON_NAMESPACE_EXIT;
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_EXIT
+
+
+NATRON_NAMESPACE_USING
 #include "moc_KnobGuiContainerHelper.cpp"

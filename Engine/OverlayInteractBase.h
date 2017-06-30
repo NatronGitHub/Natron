@@ -47,7 +47,7 @@
 #include "Engine/TimeValue.h"
 #include "Engine/ViewIdx.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @brief Base class for any overlay interact. All functions can only be called on the UI main-thread.
@@ -386,6 +386,6 @@ private:
 };
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_OVERLAYINTERACTBASE_H

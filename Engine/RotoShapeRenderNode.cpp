@@ -48,7 +48,7 @@
 //#define ROTO_SHAPE_RENDER_CPU_USES_CAIRO
 #endif
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 enum RotoShapeRenderTypeEnum
 {
@@ -61,7 +61,7 @@ RotoShapeRenderNode::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_PAINT);
-    PluginPtr ret = Plugin::create((void*)RotoShapeRenderNode::create, (void*)RotoShapeRenderNode::createRenderClone, PLUGINID_NATRON_ROTOSHAPE, "RotoShape", 1, 0, grouping);
+    PluginPtr ret = Plugin::create(RotoShapeRenderNode::create, RotoShapeRenderNode::createRenderClone, PLUGINID_NATRON_ROTOSHAPE, "RotoShape", 1, 0, grouping);
     ret->setProperty<bool>(kNatronPluginPropIsInternalOnly, true);
     ret->setProperty<int>(kNatronPluginPropOpenGLSupport, (int)ePluginOpenGLRenderSupportYes);
     ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafeFrame);
@@ -753,6 +753,6 @@ RotoShapeRenderNode::dettachOpenGLContext(const OSGLContextPtr& /*glContext*/, c
     return eActionStatusOK;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 NATRON_NAMESPACE_USING
 #include "moc_RotoShapeRenderNode.cpp"

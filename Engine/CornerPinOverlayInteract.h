@@ -27,7 +27,7 @@
 
 #include "Engine/OverlayInteractBase.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 struct CornerPinOverlayInteractPrivate;
@@ -99,6 +99,6 @@ private:
 
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // CORNERPINOVERLAYINTERACT_H

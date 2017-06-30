@@ -39,7 +39,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 #define kNatronColorPlaneID kFnOfxImagePlaneColour
 #define kNatronColorPlaneLabel "Color"
@@ -58,6 +58,7 @@ NATRON_NAMESPACE_ENTER;
 
 #define kNatronDisparityComponentsLabel "Disparity"
 #define kNatronMotionComponentsLabel "Motion"
+
 
 /**
  * @brief An ImagePlaneDesc represents an image plane and its components type.
@@ -256,6 +257,6 @@ private:
 
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // IMAGECOMPONENTS_H

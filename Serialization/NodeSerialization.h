@@ -33,7 +33,7 @@
 #include "Serialization/SerializationFwd.h"
 
 
-SERIALIZATION_NAMESPACE_ENTER;
+SERIALIZATION_NAMESPACE_ENTER
 
 class ImagePlaneDescSerialization
 : public SerializationObjectBase
@@ -233,6 +233,6 @@ public:
 };
 
 
-SERIALIZATION_NAMESPACE_EXIT;
+SERIALIZATION_NAMESPACE_EXIT
 
 #endif // NODESERIALIZATION_H

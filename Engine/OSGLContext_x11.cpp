@@ -136,7 +136,7 @@ typedef const char* (*PFNGLXQUERYCURRENTRENDERERSTRINGMESA)(int);
  #define GLXBadProfileARB 13
 #endif
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 // X11-specific global data
 //
@@ -1017,6 +1017,6 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
     }
 } // OSGLContext_x11::getGPUInfos
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // __NATRON_LINUX__

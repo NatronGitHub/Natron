@@ -30,7 +30,7 @@
 
 #include <QtCore/QMutex>
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct ScriptObjectPrivate
 {
@@ -100,4 +100,4 @@ ScriptObject::getScriptName() const
     return _imp->name;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

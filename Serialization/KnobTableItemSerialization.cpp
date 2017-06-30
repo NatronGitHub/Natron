@@ -33,7 +33,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Serialization/BezierSerialization.h"
 #include "Serialization/RotoStrokeItemSerialization.h"
 
-SERIALIZATION_NAMESPACE_ENTER;
+SERIALIZATION_NAMESPACE_ENTER
 
 static KnobTableItemSerializationPtr createSerializationObjectForItemTag(const std::string& tag)
 {
@@ -249,4 +249,4 @@ KnobItemsTableSerialization::decode(const YAML::Node& node)
 
 
 
-SERIALIZATION_NAMESPACE_EXIT;
+SERIALIZATION_NAMESPACE_EXIT

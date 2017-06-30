@@ -39,7 +39,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 // GLX-specific global data
@@ -84,7 +84,7 @@ private:
     boost::scoped_ptr<OSGLContext_x11Private> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // __NATRON_LINUX__
 

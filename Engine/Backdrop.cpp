@@ -30,7 +30,7 @@
 #include "Engine/Transform.h"
 #include "Engine/KnobTypes.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct BackdropPrivate
 {
@@ -47,7 +47,7 @@ Backdrop::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_OTHER);
-    PluginPtr ret = Plugin::create((void*)Backdrop::create, (void*)Backdrop::createRenderClone,PLUGINID_NATRON_BACKDROP, "Backdrop", 1, 0, grouping);
+    PluginPtr ret = Plugin::create(Backdrop::create, Backdrop::createRenderClone, PLUGINID_NATRON_BACKDROP, "Backdrop", 1, 0, grouping);
 
     QString desc =  tr("The Backdrop node is useful to group nodes and identify them in the node graph.\n"
                        "You can also move all the nodes inside the backdrop.");
@@ -116,7 +116,7 @@ Backdrop::knobChanged(const KnobIPtr& k,
     return false;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_Backdrop.cpp"

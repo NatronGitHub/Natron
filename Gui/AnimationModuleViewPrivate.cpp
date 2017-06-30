@@ -57,7 +57,7 @@
 
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 AnimationModuleViewPrivate::AnimationModuleViewPrivate(Gui* gui, AnimationModuleView* publicInterface, const AnimationModuleBasePtr& model)
 : _publicInterface(publicInterface)
@@ -1160,4 +1160,4 @@ AnimationModuleViewPrivate::zoomView(const QPointF& evPos, int deltaX, int delta
     }
 } // zoomView
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

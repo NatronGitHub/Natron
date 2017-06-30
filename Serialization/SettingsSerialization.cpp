@@ -28,7 +28,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <yaml-cpp/yaml.h>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
-SERIALIZATION_NAMESPACE_ENTER;
+SERIALIZATION_NAMESPACE_ENTER
 
 void
 SettingsSerialization::encode(YAML::Emitter& em) const
@@ -169,4 +169,4 @@ SettingsSerialization::decode(const YAML::Node& node)
     }
 } // decode
 
-SERIALIZATION_NAMESPACE_EXIT;
+SERIALIZATION_NAMESPACE_EXIT

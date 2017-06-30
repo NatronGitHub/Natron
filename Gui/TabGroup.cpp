@@ -34,7 +34,7 @@
 #include "Engine/KnobTypes.h"
 #include "Gui/KnobGuiContainerHelper.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct TabGroupTab
 {
@@ -189,7 +189,7 @@ TabGroup::onGroupKnobSecretChanged()
     refreshTabSecretNess(groupKnob);
 }
 
-NATRON_NAMESPACE_EXIT;
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_EXIT
+NATRON_NAMESPACE_USING
 
 #include "moc_TabGroup.cpp"

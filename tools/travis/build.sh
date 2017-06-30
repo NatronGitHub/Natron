@@ -48,8 +48,8 @@ CMAKE_PREFIX_PATH=$(echo /usr/local/Cellar/*/* | sed 's/ /;/g')
 
 git submodule update --init --recursive
 
-# get a minimal OCIO config
-(cd Tests; svn export  https://github.com/imageworks/OpenColorIO-Configs/trunk/nuke-default)
+# get a minimal OCIO config (--trust-server-cert is equivalent to --trust-server-cert-failures=unknown-ca)
+(cd Tests; svn export --non-interactive --trust-server-cert https://github.com/imageworks/OpenColorIO-Configs/trunk/nuke-default)
 
 if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     if [ "${COVERITY_SCAN_BRANCH}" == 1 ]; then

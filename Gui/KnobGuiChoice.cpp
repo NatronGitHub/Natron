@@ -88,7 +88,7 @@ CLANG_DIAG_ON(uninitialized)
 #include <ofxNatron.h>
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 using std::make_pair;
 
 
@@ -284,14 +284,12 @@ void
 KnobGuiChoice::createWidget(QHBoxLayout* layout)
 {
     KnobChoicePtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
     KnobGuiPtr knobUI = getKnobGui();
-
-
     _comboBox = new KnobComboBox( knobUI, DimIdx(0), getView(), layout->parentWidget() );
-
-
-
-    _comboBox->setCascading( _knob.lock()->isCascading() );
+    _comboBox->setCascading( knob->isCascading() );
     onEntriesPopulated();
 
     std::string textToFitHorizontally = knob->getTextToFitHorizontally();
@@ -315,6 +313,9 @@ KnobGuiChoice::onCurrentIndexChanged(int i)
     KnobGuiPtr knobUI = getKnobGui();
     knobUI->setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
     KnobChoicePtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
     knobUI->pushUndoCommand( new KnobUndoCommand<int>(knob, knob->getValue(DimIdx(0), getView()), i, DimIdx(0), getView()));
 }
 
@@ -379,13 +380,20 @@ KnobGuiChoice::getCombobox() const
 QString
 KnobGuiChoice::getPixmapPathFromFilePath(const QString &filePath) const
 {
-    return getPixmapPathFromFilePath(_knob.lock()->getHolder(),filePath);
+    KnobChoicePtr knob = _knob.lock();
+    if (!knob) {
+        return QString();
+    }
+    return getPixmapPathFromFilePath(knob->getHolder(),filePath);
 }
 
 void
 KnobGuiChoice::onEntriesPopulated()
 {
     KnobChoicePtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
 
     _comboBox->clear();
     std::vector<ChoiceOption> entries = knob->getEntries();
@@ -471,7 +479,6 @@ KnobGuiChoice::onItemNewSelected()
         return;
     }
     callback(knob);
-  
 }
 
 void
@@ -521,8 +528,11 @@ void
 KnobGuiChoice::reflectAnimationLevel(DimIdx /*dimension*/,
                                      AnimationLevelEnum level)
 {
-
-    bool isEnabled = _knob.lock()->isEnabled();
+    KnobChoicePtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    bool isEnabled = knob->isEnabled();
     _comboBox->setEnabled_natron(level != eAnimationLevelExpression && isEnabled);
 
     if ( level != (AnimationLevelEnum)_comboBox->getAnimation() ) {
@@ -539,8 +549,6 @@ KnobGuiChoice::setWidgetsVisible(bool visible)
 void
 KnobGuiChoice::setEnabled(const std::vector<bool>& perDimEnabled)
 {
-    KnobChoicePtr knob = _knob.lock();
-
     _comboBox->setEnabled_natron(perDimEnabled[0]);
 }
 
@@ -566,12 +574,16 @@ KnobGuiChoice::reflectLinkedState(DimIdx /*dimension*/, bool linked)
 void
 KnobGuiChoice::reflectModificationsState()
 {
-    bool hasModif = _knob.lock()->hasModifications();
+    KnobChoicePtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    bool hasModif = knob->hasModifications();
 
     _comboBox->setIsModified(hasModif);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_KnobGuiChoice.cpp"

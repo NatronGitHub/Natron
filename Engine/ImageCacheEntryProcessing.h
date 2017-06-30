@@ -31,7 +31,7 @@
 #include "Engine/RectI.h"
 #include "Global/GlobalDefines.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class ImageCacheEntryProcessing
 {
@@ -405,6 +405,6 @@ static void downscaleMipMap(ImageBitDepthEnum depth,
 
 }; // ImageCacheEntryProcessing
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // IMAGECACHEENTRYPROCESSING_H

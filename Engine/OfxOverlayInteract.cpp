@@ -39,7 +39,7 @@
 #include "Engine/AppInstance.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 
@@ -518,4 +518,4 @@ OfxOverlayInteract::getPixelAspectRatio(double & par) const
 }
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

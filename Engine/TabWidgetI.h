@@ -34,7 +34,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class TabWidgetI : public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
@@ -74,6 +74,6 @@ public:
 
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // TABWIDGETI_H

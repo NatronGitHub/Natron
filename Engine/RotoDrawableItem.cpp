@@ -74,7 +74,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define kRotoDrawableItemRightClickMenuPlanarTrackParam "planarTrack"
 #define kRotoDrawableItemRightClickMenuPlanarTrackParamLabel "Planar-Track"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 struct RotoDrawableItemPrivate
@@ -1576,7 +1576,7 @@ RotoDrawableItem::refreshRightClickMenu(const KnobChoicePtr& refreshRightClickMe
     
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_RotoDrawableItem.cpp"

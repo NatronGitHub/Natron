@@ -36,7 +36,7 @@
 #define MINAREA256 65536
 #define MINAREA MINAREA128 // minimum rectangle area
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /// if splitCount is zero, this function returns a set of less than area()/MINAREA rects which are no smaller than MINAREA
 std::list<RectI> RectI::splitIntoSmallerRects(int splitsCount) const
@@ -197,4 +197,4 @@ RectI::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase 
     y2 = s->y2;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

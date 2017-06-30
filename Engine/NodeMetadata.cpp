@@ -41,7 +41,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 namespace bip = boost::interprocess;
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 class NodeMetadata::Implementation : public PropertiesHolder
@@ -514,4 +514,4 @@ NodeMetadata::getOutputFormat() const
     return ret;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

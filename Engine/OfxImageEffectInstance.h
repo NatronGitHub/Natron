@@ -51,7 +51,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class OfxImageEffectInstance
     : public OFX::Host::ImageEffect::Instance
@@ -279,6 +279,6 @@ public:
                                                        const char *name) OVERRIDE FINAL;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // ifndef NATRON_ENGINE_OFXIMAGEEFFECTINSTANCE_H

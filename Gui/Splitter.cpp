@@ -32,7 +32,7 @@
 #include <cassert>
 #include <stdexcept>
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 Splitter::Splitter(Qt::Orientation orientation,
@@ -148,6 +148,7 @@ Splitter::event(QEvent* e)
 {
     return QSplitter::event(e);
 }
+
 
 OrientationEnum
 Splitter::getNatronOrientation() const
@@ -270,4 +271,5 @@ Splitter::restoreChildrenFromSerialization(const SERIALIZATION_NAMESPACE::Widget
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_EXIT

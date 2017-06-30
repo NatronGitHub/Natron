@@ -39,7 +39,9 @@ GCC_DIAG_OFF(unused-parameter)
 GCC_DIAG_ON(unused-function)
 GCC_DIAG_ON(unused-parameter)
 #include "Engine/EngineFwd.h"
-NATRON_NAMESPACE_ENTER;
+
+NATRON_NAMESPACE_ENTER
+
 
 class MvFloatImage
 : public libmv::Array3D<float>
@@ -68,6 +70,7 @@ public:
     {
     }
 };
+
 
 struct TrackerFrameAccessorPrivate;
 class TrackerFrameAccessor
@@ -148,5 +151,5 @@ private:
     boost::scoped_ptr<TrackerFrameAccessorPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 #endif // TRACKERFRAMEACCESSOR_H

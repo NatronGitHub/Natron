@@ -28,7 +28,7 @@
 #include "Engine/Lut.h"
 #include "Engine/TreeRender.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
@@ -467,4 +467,4 @@ Node::isPreviewEnabled() const
 
     return b->getValue();
 }
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

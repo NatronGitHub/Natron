@@ -335,6 +335,6 @@ PyObject* initializePython2(const std::vector<char*>& commandLineArgsUtf8)
 
     return mainModule;
 } // initializePython
-NATRON_PYTHON_NAMESPACE_EXIT;
+NATRON_PYTHON_NAMESPACE_EXIT
 
 NATRON_NAMESPACE_EXIT

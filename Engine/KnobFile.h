@@ -41,7 +41,7 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /******************************KnobFile**************************************/
 
@@ -227,6 +227,7 @@ private:
     boost::shared_ptr<KnobPathPrivate> _imp;
 };
 
+
 inline KnobFilePtr
 toKnobFile(const KnobIPtr& knob)
 {
@@ -240,6 +241,7 @@ toKnobPath(const KnobIPtr& knob)
     return boost::dynamic_pointer_cast<KnobPath>(knob);
 }
 
-NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_KNOBFILE_H

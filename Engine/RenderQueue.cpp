@@ -44,7 +44,7 @@
 #include "Engine/RenderEngine.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct RenderQueueItem
 {
@@ -552,7 +552,7 @@ RenderQueuePrivate::startNextQueuedRender(const NodePtr& finishedWriter)
 
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_RenderQueue.cpp"

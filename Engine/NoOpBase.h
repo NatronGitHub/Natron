@@ -36,7 +36,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @brief A NoOp is an effect that doesn't do anything. It is useful for scripting (adding custom parameters)
@@ -98,12 +98,14 @@ private:
                                          ImagePlaneDesc* inputPlane) OVERRIDE FINAL WARN_UNUSED_RETURN;
 };
 
+
 inline NoOpBasePtr
 toNoOpBase(const EffectInstancePtr& effect)
 {
     return boost::dynamic_pointer_cast<NoOpBase>(effect);
 }
 
-NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_EXIT
 
 #endif // Engine_NoOpBase_h

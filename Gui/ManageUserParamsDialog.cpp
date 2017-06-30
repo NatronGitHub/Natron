@@ -57,7 +57,7 @@
 #include "Gui/PickKnobDialog.h"
 #include "Gui/Splitter.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
@@ -1127,6 +1127,7 @@ ManageUserParamsDialog::onKnobsTreeSelectionChanged()
     _imp->downButton->setEnabled(selection.size() == 1);
 }
 
+
 void
 ManageUserParamsDialog::onViewerTreeSelectionChanged()
 {
@@ -1143,7 +1144,8 @@ ManageUserParamsDialog::onViewerTreeSelectionChanged()
 }
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+
+NATRON_NAMESPACE_USING
 #include "moc_ManageUserParamsDialog.cpp"

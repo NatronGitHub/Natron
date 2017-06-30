@@ -31,7 +31,7 @@
 
 #include "Gui/AnimItemBase.h"
 #include "Global/GlobalDefines.h"
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class NodeAnimPrivate;
 class NodeAnim : public QObject,  public boost::enable_shared_from_this<NodeAnim>, public KnobsHolderAnimBase
@@ -116,6 +116,6 @@ inline NodeAnimPtr toNodeAnim(const KnobsHolderAnimBasePtr& p)
 }
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_GUI_NODEANIM_H

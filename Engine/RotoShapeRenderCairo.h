@@ -38,7 +38,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class RotoShapeRenderCairo
 {
@@ -190,7 +190,7 @@ public:
 };
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif //ROTO_SHAPE_RENDER_ENABLE_CAIRO
 

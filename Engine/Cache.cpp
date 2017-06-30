@@ -68,7 +68,9 @@ GCC_DIAG_OFF(unused-parameter)
 
 #include <boost/lexical_cast.hpp> // to convert uuid to string
 #include <boost/uuid/uuid_io.hpp>
+GCC_DIAG_PEDANTIC_OFF
 #include <boost/uuid/uuid_generators.hpp>
+GCC_DIAG_PEDANTIC_ON
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
 
@@ -91,6 +93,9 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/RamBuffer.h"
 #include "Engine/Timer.h"
 #include "Engine/ThreadPool.h"
+
+
+NATRON_NAMESPACE_ENTER
 
 
 // The number of buckets. This must be a power of 16 since the buckets will be identified by a digit of a hash
@@ -131,13 +136,9 @@ GCC_DIAG_ON(unused-parameter)
 //#define CACHE_TRACE_FILE_MAPPING
 //#define CACHE_TRACE_TILES_ALLOCATION
 
-namespace bip = boost::interprocess;
+namespace bip = ::boost::interprocess;
 
 #define kNatronIPCPropertyHash "NatronIPCPropertyHash"
-
-
-NATRON_NAMESPACE_ENTER;
-
 
 
 // Cache integrity when NATRON_CACHE_INTERPROCESS_ROBUST is defined:
@@ -1221,19 +1222,27 @@ struct CacheIPCData
 
 static std::string getCacheDirPath()
 {
-    std::string cachePath = appPTR->getCurrentSettings()->getDiskCachePath();
+    // Use the environment variable if set
+    QString cachePathEnVar = QString::fromUtf8(qgetenv(NATRON_DISK_CACHE_PATH_ENV_VAR));
+    QString cachePath;
+    if (cachePathEnVar.isEmpty()) {
+        // Otherwise fallback on the setting
+        cachePath = QString::fromUtf8(appPTR->getCurrentSettings()->getDiskCachePath().c_str());
+    } else {
+        cachePath = cachePathEnVar;
+    }
     // Check that the user provided path exists otherwise fallback on default.
     bool userDirExists;
-    if (cachePath.empty()) {
+    if (cachePath.isEmpty()) {
         userDirExists = false;
     } else {
-        QString userDirectoryCache = QString::fromUtf8(cachePath.c_str());
-        QDir d(userDirectoryCache);
+        QDir d(cachePath);
         userDirExists = d.exists();
     }
     if (userDirExists) {
-        return cachePath;
+        return cachePath.toStdString();
     } else {
+        // Fallback on default
         return StandardPaths::writableLocation(StandardPaths::eStandardLocationCache).toStdString();
     }
 
@@ -4785,5 +4794,5 @@ Cache<persistent>::flushCacheOnDisk(bool async)
 template class Cache<true>;
 template class Cache<false>;
 
-NATRON_NAMESPACE_EXIT;
 
+NATRON_NAMESPACE_EXIT

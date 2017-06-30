@@ -50,9 +50,9 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/DockablePanel.h"
 #include "Gui/GuiFwd.h"
 
-class QDialogButtonBox;
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
+
 
 class SavePresetsDialog : public QDialog
 {
@@ -153,6 +153,6 @@ public Q_SLOTS:
     void onExportPresetsActionTriggered();
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Gui_NodeSettingsPanel_h

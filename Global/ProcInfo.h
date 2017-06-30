@@ -32,7 +32,7 @@
 
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 namespace ProcInfo {
 
@@ -92,6 +92,6 @@ void ensureCommandLineArgsUtf8(int argc, wchar_t **argv, std::vector<std::string
 
 } // namespace ProcInfo
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_GLOBAL_PROCINFO_H

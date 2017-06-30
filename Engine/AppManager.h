@@ -55,7 +55,9 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+
+NATRON_NAMESPACE_ENTER
+
 
 /*macro to get the unique pointer to the controler*/
 #define appPTR AppManager::instance()
@@ -64,6 +66,7 @@ NATRON_NAMESPACE_ENTER;
 #define TO_DPI(x, y) ( appPTR->adjustSizeToDPI(x, y) )
 #define TO_DPIX(x) ( appPTR->adjustSizeToDPIX(x) )
 #define TO_DPIY(y) ( appPTR->adjustSizeToDPIY(y) )
+
 
 enum AppInstanceStatusEnum
 {
@@ -703,7 +706,7 @@ public:
     ~PythonGILLocker();
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 
 #endif // Engine_AppManager_h

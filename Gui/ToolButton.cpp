@@ -41,7 +41,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/Project.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct ToolButtonPrivate
 {
@@ -245,7 +245,7 @@ ToolButton::sortChildren()
     _imp->_children = sortedChildren;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_ToolButton.cpp"

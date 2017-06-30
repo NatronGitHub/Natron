@@ -34,7 +34,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class KnobGuiI
 {
@@ -44,6 +44,7 @@ public:
     {
     }
 
+    virtual ~KnobGuiI() {}
 
     virtual void copyAnimationToClipboard(DimSpec /* dimension */, ViewSetSpec) const {}
 
@@ -55,6 +56,6 @@ public:
 
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Engine_KnobGui_h

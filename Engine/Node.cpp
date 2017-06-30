@@ -112,7 +112,7 @@
 ///at most every...
 #define NATRON_RENDER_GRAPHS_HINTS_REFRESH_RATE_SECONDS 1
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 Node::Node(const AppInstancePtr& app,
            const NodeCollectionPtr& group,
@@ -1736,9 +1736,7 @@ Node::refreshDefaultPagesOrder()
 }
 
 
+NATRON_NAMESPACE_EXIT
 
-
-NATRON_NAMESPACE_EXIT;
-
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_Node.cpp"

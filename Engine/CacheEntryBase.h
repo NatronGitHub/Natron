@@ -40,7 +40,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 inline int
 getSizeOfForBitDepth(ImageBitDepthEnum bitdepth)
@@ -172,6 +172,6 @@ private:
 };
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Engine_CacheEntryBase_h

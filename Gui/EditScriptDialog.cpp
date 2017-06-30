@@ -92,7 +92,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/TimeLineGui.h"
 #include "Gui/ViewerTab.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 struct EditScriptDialogPrivate
@@ -354,6 +354,7 @@ EditScriptDialog::keyPressEvent(QKeyEvent* e)
     }
 }
 
+
 void
 EditScriptDialog::onLanguageCurrentIndexChanged()
 {
@@ -361,7 +362,9 @@ EditScriptDialog::onLanguageCurrentIndexChanged()
     compileAndSetResult( _imp->expressionEdit->toPlainText() );
 }
 
-NATRON_NAMESPACE_EXIT;
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_EXIT
+
+
+NATRON_NAMESPACE_USING
 #include "moc_EditScriptDialog.cpp"

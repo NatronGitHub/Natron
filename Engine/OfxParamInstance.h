@@ -56,7 +56,7 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /*This file contains the classes that connect the knobs to the OpenFX params.
    Note that all the get(...) and set(...) functions are called BY PLUGIN and you should
@@ -111,7 +111,9 @@ public:
 
     virtual OfxPluginEntryPoint* getCustomOverlayInteractEntryPoint(const OFX::Host::Param::Instance* param) const
     {
+        GCC_DIAG_PEDANTIC_OFF
         return (OfxPluginEntryPoint*)param->getProperties().getPointerProperty(kOfxParamPropInteractV1);
+        GCC_DIAG_PEDANTIC_ON
     }
 
     virtual KnobIPtr getKnob() const = 0;
@@ -986,7 +988,7 @@ public:
     KnobParametricWPtr _knob;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_OFXPARAMINSTANCE_H
 

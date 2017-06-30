@@ -30,7 +30,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "Serialization/NodeSerialization.h"
 
+
 SERIALIZATION_NAMESPACE_ENTER
+
 
 void
 NodeClipBoard::encode(YAML::Emitter& em) const
@@ -47,6 +49,7 @@ NodeClipBoard::encode(YAML::Emitter& em) const
 
     }
 }
+
 
 void
 NodeClipBoard::decode(const YAML::Node& node)

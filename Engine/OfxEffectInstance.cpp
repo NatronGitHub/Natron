@@ -79,11 +79,11 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/ViewerInstance.h"
 #include "Engine/WriteNode.h"
 
-
 #include "Serialization/NodeSerialization.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
+
 
 struct OfxEffectInstanceCommon
 {
@@ -2531,7 +2531,7 @@ OfxEffectInstance::getUserPlanes() const
     return planeStrings;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_OfxEffectInstance.cpp"

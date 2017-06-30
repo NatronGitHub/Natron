@@ -29,7 +29,7 @@
 
 #include "Engine/Cache.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct CacheEntryBasePrivate
 {
@@ -122,4 +122,4 @@ CacheEntryBase::fromMemorySegment(bool /*isLockedForWriting*/,
 }
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

@@ -29,7 +29,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 #define kNatronProjectSettingsPanelSerializationNameOld "Natron_Project_Settings_Panel"
 #define kNatronProjectSettingsPanelSerializationNameNew "ProjectSettings"
@@ -72,6 +72,6 @@ public:
     virtual std::string getHolderFullyQualifiedScriptName() const = 0;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // DOCKABLEPANELI_H

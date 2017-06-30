@@ -36,7 +36,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct DiskCacheNodePrivate;
 
@@ -125,12 +125,14 @@ private:
     boost::scoped_ptr<DiskCacheNodePrivate> _imp;
 };
 
+
 inline DiskCacheNodePtr
 toDiskCacheNode(const EffectInstancePtr& effect)
 {
     return boost::dynamic_pointer_cast<DiskCacheNode>(effect);
 }
 
-NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_EXIT
 
 #endif // DISKCACHENODE_H

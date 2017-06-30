@@ -64,7 +64,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Utils.h"
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 enum KeyFrameInterpolationChoiceMenuEnum
@@ -1336,6 +1336,6 @@ AnimationModuleEditor::notifyGuiClosing()
     _imp->model->setAboutToBeDestroyed(true);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 NATRON_NAMESPACE_USING
 #include "moc_AnimationModuleEditor.cpp"

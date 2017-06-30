@@ -54,7 +54,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewerNode.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 struct TrackSchedulerPrivate
@@ -292,6 +292,6 @@ TrackScheduler::track(const TrackArgsBasePtr& args)
 }
 
 
-NATRON_NAMESPACE_EXIT;
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_EXIT
+NATRON_NAMESPACE_USING
 #include "moc_TrackScheduler.cpp"

@@ -28,7 +28,7 @@
 
 #include "Engine/RenderEngine.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 /**
@@ -305,4 +305,4 @@ ViewerNodePrivate::setDisplayChannels(int index, bool setBoth)
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

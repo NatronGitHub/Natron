@@ -34,8 +34,8 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
-NATRON_PYTHON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
+NATRON_PYTHON_NAMESPACE_ENTER
 
 /**
  * @brief Used to wrap all global functions that are in the Natron namespace so shiboken
@@ -228,8 +228,8 @@ public:
     }
 };
 
-NATRON_PYTHON_NAMESPACE_EXIT;
-NATRON_NAMESPACE_EXIT;
+NATRON_PYTHON_NAMESPACE_EXIT
+NATRON_NAMESPACE_EXIT
 
 #if defined(PYSIDE_H) && defined(PYSIDE_OLD)
 namespace PySide {

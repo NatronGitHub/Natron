@@ -43,7 +43,7 @@
 #include <omp.h>
 #endif
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 
@@ -951,4 +951,4 @@ TrackerHelper::computeCornerPinParamsFromTracksAtTime(TimeValue refTime,
 
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

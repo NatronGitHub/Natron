@@ -38,7 +38,7 @@
 #include "Engine/ViewerNode.h"
 #include "Engine/ViewerInstance.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct HistogramRequest
 {
@@ -572,7 +572,7 @@ HistogramCPUThread::run()
     }
 } // run
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_HistogramCPU.cpp"

@@ -14,14 +14,18 @@
 // Module Includes
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+CLANG_DIAG_OFF(keyword-macro)
 #include <pyside_qtgui_python.h> // produces warnings
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
+CLANG_DIAG_ON(keyword-macro)
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+CLANG_DIAG_OFF(keyword-macro)
 #include <pyside_qtcore_python.h> // produces warnings
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
+CLANG_DIAG_ON(keyword-macro)
 #include <natronengine_python.h>
 
 // Binded library includes

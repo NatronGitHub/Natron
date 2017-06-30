@@ -30,7 +30,7 @@
 #define VIEWER_UI_SECTIONS_SPACING_PX 5
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 /**
@@ -1801,4 +1801,4 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
 } // knobChanged
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

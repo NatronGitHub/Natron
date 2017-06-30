@@ -137,7 +137,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 Q_DECLARE_METATYPE(QAbstractSocket::SocketState)
 #endif
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 AppManager* AppManager::_instance = 0;
 
@@ -842,6 +842,7 @@ AppManager::loadInternal(const CLArgs& cl)
     qApp->setOrganizationName( QString::fromUtf8(NATRON_ORGANIZATION_NAME) );
     qApp->setOrganizationDomain( QString::fromUtf8(NATRON_ORGANIZATION_DOMAIN) );
     qApp->setApplicationName( QString::fromUtf8(NATRON_APPLICATION_NAME) );
+
 
     // Set the locale AGAIN, because Qt resets it in the QCoreApplication constructor
     // see http://doc.qt.io/qt-4.8/qcoreapplication.html#locale-settings
@@ -4084,7 +4085,7 @@ NATRON_PYTHON_NAMESPACE::getAttrRecursive(const std::string& fullyQualifiedName,
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_AppManager.cpp"

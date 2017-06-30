@@ -89,7 +89,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
 #endif
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct RotoStrokeItemPrivate
 {
@@ -245,9 +245,9 @@ RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other
         assert(other.strokes[strokeIndex].xCurve &&
                other.strokes[strokeIndex].yCurve &&
                other.strokes[strokeIndex].pressureCurve);
-        if (!other.strokes[strokeIndex].xCurve ||
-            !other.strokes[strokeIndex].yCurve ||
-            !other.strokes[strokeIndex].pressureCurve) {
+        if (!originalStroke->xCurve ||
+            !originalStroke->yCurve ||
+            !originalStroke->pressureCurve) {
             return false;
         }
 
@@ -810,7 +810,6 @@ RotoStrokeItem::endSubStroke()
 void
 RotoStrokeItem::appendPoint(const RotoPoint& p)
 {
-
     RotoStrokeItemPtr thisShared = toRotoStrokeItem( shared_from_this() );
     assert(thisShared);
     {
@@ -822,6 +821,10 @@ RotoStrokeItem::appendPoint(const RotoPoint& p)
             return;
         }
         RotoStrokeItemPrivate::StrokeCurves* stroke = &_imp->strokes.back();
+        assert(stroke);
+        if (!stroke || !stroke->xCurve || !stroke->yCurve) {
+            throw std::logic_error("");
+        }
 
         assert( stroke->xCurve->getKeyFramesCount() == stroke->yCurve->getKeyFramesCount() &&
                 stroke->xCurve->getKeyFramesCount() == stroke->pressureCurve->getKeyFramesCount() );
@@ -1572,5 +1575,5 @@ RotoStrokeItem::getBrushCloneBlackOutsideKnob() const
     return _imp->cloneBlackOutside.lock();
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

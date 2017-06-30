@@ -46,7 +46,7 @@
 
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @class The base class for all knob widgets. It contains all widgets corresponding to one view for the 
@@ -200,6 +200,6 @@ private:
     boost::scoped_ptr<KnobGuiWidgetsPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_GUI_KNOBGUIWIDGETS_H

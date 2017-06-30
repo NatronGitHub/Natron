@@ -8,6 +8,7 @@ PortGroup           muniversal 1.0
 # dependents when updating libvpx to a new version so they'll be rebuilt.
 name                libvpx
 version             1.6.1
+revision            1
 categories          multimedia
 maintainers         {devans @dbevans} openmaintainer
 platforms           darwin
@@ -70,6 +71,8 @@ configure.args      --enable-vp8 \
                     --enable-postproc \
                     --enable-multithread \
                     --enable-runtime-cpu-detect \
+                    --enable-experimental \
+                    --enable-spatial-svc \
                     --disable-install-docs \
                     --disable-debug-libs \
                     --disable-examples \

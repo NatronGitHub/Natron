@@ -113,7 +113,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 /*This class is the the core of the viewer : what displays images, overlays, etc...
    Everything related to OpenGL will (almost always) be in this class */
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 ViewerGL::ViewerGL(ViewerTab* parent,
@@ -3553,6 +3553,7 @@ ViewerGL::currentTimeForEvent(QInputEvent* e)
     return now.tv_sec + now.tv_usec / 1000000.0;
 }
 
+
 void
 ViewerGL::setInfoBarVisible(bool visible)
 {
@@ -3609,7 +3610,9 @@ ViewerGL::setTripleSyncEnabled(bool toggled)
     getViewerTab()->setTripleSyncEnabled(toggled);
 }
 
-NATRON_NAMESPACE_EXIT;
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_EXIT
+
+
+NATRON_NAMESPACE_USING
 #include "moc_ViewerGL.cpp"

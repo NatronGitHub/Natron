@@ -24,7 +24,7 @@
 
 #include "ImagePrivate.h"
 #include "Engine/Texture.h"
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 template <typename GL>
 static void
@@ -280,4 +280,4 @@ ImagePrivate::fillCPU(void* ptrs[4],
 
 } // fillCPU
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

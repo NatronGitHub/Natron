@@ -32,7 +32,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @brief Interface for the Splitter class
@@ -79,6 +79,6 @@ protected:
     virtual void restoreChildrenFromSerialization(const SERIALIZATION_NAMESPACE::WidgetSplitterSerialization& serialization) = 0;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // SPLITTERI_H

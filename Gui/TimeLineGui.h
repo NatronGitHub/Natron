@@ -49,7 +49,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct TimelineGuiPrivate;
 
@@ -199,6 +199,6 @@ private:
     boost::scoped_ptr<TimelineGuiPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif /* defined(NATRON_GUI_TIMELINE_H_) */

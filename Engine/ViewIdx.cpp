@@ -21,11 +21,11 @@
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
+
 #include "ViewIdx.h"
 
 
-NATRON_NAMESPACE_ENTER;
-
+NATRON_NAMESPACE_ENTER
 
 
 ViewSetSpec::ViewSetSpec(const ViewIdx& view_i)
@@ -35,5 +35,4 @@ ViewSetSpec::ViewSetSpec(const ViewIdx& view_i)
 }
 
 
-
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

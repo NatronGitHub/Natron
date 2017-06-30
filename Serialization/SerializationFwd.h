@@ -35,7 +35,7 @@ template<class T> class weak_ptr;
 template<class T> class shared_ptr;
 }
 
-SERIALIZATION_NAMESPACE_ENTER;
+SERIALIZATION_NAMESPACE_ENTER
 
 class BezierSerialization;
 class CurveSerialization;
@@ -77,7 +77,7 @@ typedef boost::shared_ptr<RotoStrokeItemSerialization> RotoStrokeItemSerializati
 typedef std::list<NodeSerializationPtr> NodeSerializationList;
 typedef std::list<KnobSerializationPtr> KnobSerializationList;
 
-SERIALIZATION_NAMESPACE_EXIT;
+SERIALIZATION_NAMESPACE_EXIT
 
 #ifndef YAML
 #error "YAML should be defined to YAML_NATRON"

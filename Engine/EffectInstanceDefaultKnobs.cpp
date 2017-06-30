@@ -42,7 +42,7 @@
 #include "Engine/WriteNode.h"
 #include <SequenceParsing.h>
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 void
@@ -1820,4 +1820,4 @@ EffectInstance::handleDefaultKnobChanged(const KnobIPtr& what, ValueChangedReaso
 } // handleDefaultKnobChanged
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

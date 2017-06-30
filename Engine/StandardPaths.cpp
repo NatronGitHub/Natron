@@ -63,7 +63,7 @@ CLANG_DIAG_ON(deprecated)
 
 #endif
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 StandardPaths::StandardPaths()
 {
@@ -661,4 +661,4 @@ StandardPaths::writableLocation(StandardLocationEnum type)
 #endif // QT_VERSION >= 0x050000
 } // writableLocation
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

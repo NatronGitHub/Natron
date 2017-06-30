@@ -24,7 +24,7 @@
 
 #include "ImagePrivate.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 template <typename PIX, int nComps>
 ActionRetCodeEnum
@@ -89,7 +89,7 @@ ImagePrivate::applyCPUPixelShader(const RectI& roi,
                                   const void* customData,
                                   const EffectInstancePtr& renderClone,
                                   const Image::CPUData& cpuData,
-                                  void* func)
+                                  void(*func)() )
 {
     switch (cpuData.bitDepth) {
         case eImageBitDepthByte:
@@ -104,4 +104,4 @@ ImagePrivate::applyCPUPixelShader(const RectI& roi,
 }
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

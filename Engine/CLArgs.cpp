@@ -42,7 +42,7 @@
 
 #include "Engine/AppManager.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 struct CLArgsPrivate
@@ -1242,4 +1242,4 @@ CLArgsPrivate::parse()
 } // CLArgsPrivate::parse
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

@@ -98,7 +98,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 // do not all stick altogether in memory
 #define NATRON_MAX_FRAMES_NEEDED_PRE_FETCHING 3
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 /**
@@ -1946,4 +1946,4 @@ EffectInstance::Implementation::launchPluginRenderAndHostFrameThreading(const Fr
     
 } // launchPluginRenderAndHostFrameThreading
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

@@ -63,7 +63,7 @@ CLANG_DIAG_ON(uninitialized)
 #define NATRON_SCENE_MAX 1e6
 #define NATRON_SCENE_MIN 0
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 enum EventStateEnum
 {
@@ -259,7 +259,7 @@ public:
         ePasteNodesFlagCloneNodes = 0x4
     };
 
-    DECLARE_FLAGS(PasteNodesFlags, PasteNodesFlagEnum);
+    DECLARE_FLAGS(PasteNodesFlags, PasteNodesFlagEnum)
 
     /**
      * @brief Paste the given nodes with flags. This will create new copies of the nodes
@@ -302,7 +302,7 @@ public:
     void toggleSelectedNodesEnabled();
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 DECLARE_OPERATORS_FOR_FLAGS(NATRON_NAMESPACE::NodeGraphPrivate::PasteNodesFlags);
 

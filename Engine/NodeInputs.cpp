@@ -30,7 +30,7 @@
 #include "Engine/PrecompNode.h"
 #include "Engine/Settings.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 void
@@ -1377,4 +1377,4 @@ Node::hasSequentialOnlyNodeUpstream(std::string & nodeName) const
 }
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

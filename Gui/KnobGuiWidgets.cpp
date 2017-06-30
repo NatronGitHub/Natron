@@ -28,7 +28,7 @@
 #include "Gui/KnobGui.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct KnobGuiWidgetsPrivate
 {
@@ -110,4 +110,4 @@ KnobGuiWidgets::enableRightClickMenu(const KnobGuiPtr& knob,
 }
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

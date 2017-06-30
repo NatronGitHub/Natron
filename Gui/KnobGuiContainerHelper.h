@@ -47,11 +47,13 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiFwd.h"
 #include "Gui/KnobGuiContainerI.h"
 
+
+NATRON_NAMESPACE_ENTER
+
+
 #define NATRON_SETTINGS_VERTICAL_SPACING_PIXELS 3
 #define NATRON_FORM_LAYOUT_LINES_SPACING 0
 
-
-NATRON_NAMESPACE_ENTER;
 
 typedef std::list<std::pair<KnobIWPtr, KnobGuiPtr> > KnobsGuiMapping;
 
@@ -396,6 +398,6 @@ private:
     boost::scoped_ptr<KnobGuiContainerHelperPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // KNOBGUICONTAINERHELPER_H

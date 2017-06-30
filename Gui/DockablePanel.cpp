@@ -95,7 +95,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 using std::make_pair;
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 // called by NodeSettingsPanel::NodeSettingsPanel()
 DockablePanel::DockablePanel(Gui* gui,
@@ -192,30 +192,36 @@ DockablePanel::DockablePanel(Gui* gui,
             _imp->_iconLabel->setToolTip(pluginLabelVersioned);
             _imp->_headerLayout->addWidget(_imp->_iconLabel);
 
-            PluginPtr plugin = nodeForDocumentation->getPlugin();
-            assert(plugin);
-
-            QString resourcesPath = QString::fromUtf8(plugin->getPropertyUnsafe<std::string>(kNatronPluginPropResourcesPath).c_str());
-
-            QString iconFilePath = resourcesPath;
-            StrUtils::ensureLastPathSeparator(iconFilePath);
-            iconFilePath += QString::fromUtf8(plugin->getPropertyUnsafe<std::string>(kNatronPluginPropIconFilePath).c_str());
-;
-            if (QFile::exists(iconFilePath)) {
-                QPixmap ic(iconFilePath);
-                if (!ic.isNull()) {
-                    int size = TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
-                    if (std::max( ic.width(), ic.height() ) != size) {
-                        ic = ic.scaled(size, size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-                    }
-                    _imp->_iconLabel->setPixmap(ic);
-                } else {
-                    _imp->_iconLabel->hide();
-                }
-            } else {
+            if (!nodeForDocumentation) {
                 _imp->_iconLabel->hide();
-            }
+            } else {
+                PluginPtr plugin = nodeForDocumentation->getPlugin();
+                assert(plugin);
+                if (!plugin) {
+                    _imp->_iconLabel->hide();
+                } else {
+                    QString resourcesPath = QString::fromUtf8(plugin->getPropertyUnsafe<std::string>(kNatronPluginPropResourcesPath).c_str());
 
+                    QString iconFilePath = resourcesPath;
+                    StrUtils::ensureLastPathSeparator(iconFilePath);
+                    iconFilePath += QString::fromUtf8(plugin->getPropertyUnsafe<std::string>(kNatronPluginPropIconFilePath).c_str());
+                    ;
+                    if (!QFile::exists(iconFilePath)) {
+                        _imp->_iconLabel->hide();
+                    } else {
+                        QPixmap ic(iconFilePath);
+                        if (ic.isNull()) {
+                            _imp->_iconLabel->hide();
+                        } else {
+                            int size = TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
+                            if (std::max( ic.width(), ic.height() ) != size) {
+                                ic = ic.scaled(size, size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+                            }
+                            _imp->_iconLabel->setPixmap(ic);
+                        }
+                    }
+                }
+            }
 
             QPixmap pixCenter;
             appPTR->getIcon(NATRON_PIXMAP_VIEWER_CENTER, iconSize, &pixCenter);
@@ -1690,6 +1696,8 @@ DockablePanel::createKnobItemsTable(QWidget* parent)
 }
 
 
-NATRON_NAMESPACE_EXIT;
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_EXIT
+
+
+NATRON_NAMESPACE_USING
 #include "moc_DockablePanel.cpp"

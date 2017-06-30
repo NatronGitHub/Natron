@@ -30,7 +30,7 @@
 #include <QDebug>
 #include <QThread>
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 void
 ImagePrivate::getCPUDataInternal(const RectI& bounds,
@@ -556,4 +556,4 @@ ImagePrivate::checkForNaNs(void* ptrs[4],
     return eActionStatusFailed;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

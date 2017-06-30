@@ -35,7 +35,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class GroupOutput
     : public NoOpBase
@@ -85,12 +85,14 @@ public:
     }
 };
 
+
 inline GroupOutputPtr
 toGroupOutput(const EffectInstancePtr& effect)
 {
     return boost::dynamic_pointer_cast<GroupOutput>(effect);
 }
 
-NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_EXIT
 
 #endif // Engine_GroupOutput_h

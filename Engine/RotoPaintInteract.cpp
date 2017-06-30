@@ -3406,4 +3406,5 @@ RotoPaintInteract::onOverlayFocusLost(TimeValue /*time*/,
     return true;
 } // onOverlayFocusLost
 
+
 NATRON_NAMESPACE_EXIT

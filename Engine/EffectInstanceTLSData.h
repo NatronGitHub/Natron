@@ -41,7 +41,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 // Generic arguments passed to the OpenFX actions which may be sometimes not passed-back
@@ -249,6 +249,6 @@ public:
 };
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_EFFECTINSTANCETLSDATA_H

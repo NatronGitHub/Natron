@@ -60,7 +60,7 @@
 #include "Gui/ViewerTab.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 void
@@ -407,4 +407,4 @@ Gui::wipeLayout()
  
 } // Gui::wipeLayout
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

@@ -35,7 +35,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 // resizable message box,
 // see http://www.qtcentre.org/threads/24888-Resizing-a-QMessageBox#post135851
@@ -57,6 +57,6 @@ private:
     bool event(QEvent *e) OVERRIDE FINAL;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Gui_ResizableMessageBox_h

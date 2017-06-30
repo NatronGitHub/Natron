@@ -53,7 +53,7 @@
 #endif
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 struct ViewerInstancePrivate
@@ -158,7 +158,7 @@ ViewerInstance::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_IMAGE);
-    PluginPtr ret = Plugin::create((void*)ViewerInstance::create, (void*)ViewerInstance::createRenderClone, PLUGINID_NATRON_VIEWER_INTERNAL, "ViewerProcess", 1, 0, grouping);
+    PluginPtr ret = Plugin::create(ViewerInstance::create, ViewerInstance::createRenderClone, PLUGINID_NATRON_VIEWER_INTERNAL, "ViewerProcess", 1, 0, grouping);
     ret->setProperty<std::string>(kNatronPluginPropIconFilePath,  "Images/viewer_icon.png");
     QString desc =  tr("The Viewer node can display the output of a node graph.");
     ret->setProperty<bool>(kNatronPluginPropIsInternalOnly, true);
@@ -949,6 +949,8 @@ findAutoContrastVminVmaxForComponents(const Image::CPUData& colorImage,
         case eDisplayChannelsRGB:
             return findAutoContrastVminVmax_generic<PIX, maxValue, srcNComps, eDisplayChannelsRGB>(colorImage, renderArgs, roi, ret);
     }
+    assert(false);
+    return eActionStatusFailed;
 }
 
 
@@ -975,6 +977,8 @@ findAutoContrastVminVmaxForDepth(const Image::CPUData& colorImage,
             return eActionStatusFailed;
 
     }
+    assert(false);
+    return eActionStatusFailed;
 }
 
 ActionRetCodeEnum
@@ -995,6 +999,8 @@ findAutoContrastVminVmax(const Image::CPUData& colorImage,
         case eImageBitDepthShort:
             return findAutoContrastVminVmaxForDepth<unsigned short, 65535>(colorImage, renderArgs, channels, roi, ret);
     }
+    assert(false);
+    return eActionStatusFailed;
 }
 
 class FindAutoContrastProcessor : public ImageMultiThreadProcessorBase
@@ -1320,6 +1326,8 @@ applyViewerProcess8bitForComponents(const RenderViewerArgs& args, const RectI & 
             return applyViewerProcess8bit_generic<PIX, maxValue, srcNComps, eDisplayChannelsMatte>(args, roi);
 
     }
+    assert(false);
+    return eActionStatusFailed;
 }
 
 template <typename PIX, int maxValue>
@@ -1355,6 +1363,8 @@ applyViewerProcess8bit(const RenderViewerArgs& args, const RectI & roi)
         case eImageBitDepthNone:
             return eActionStatusFailed;
     }
+    assert(false);
+    return eActionStatusFailed;
 }
 
 
@@ -1446,6 +1456,8 @@ applyViewerProcess32bitForComponents(const RenderViewerArgs& args, const RectI &
         case eDisplayChannelsMatte:
             return applyViewerProcess32bit_Generic<PIX, maxValue, srcNComps, eDisplayChannelsMatte>(args, roi);
     }
+    assert(false);
+    return eActionStatusFailed;
 }
 
 template <typename PIX, int maxValue>
@@ -1481,6 +1493,8 @@ applyViewerProcess32bit(const RenderViewerArgs& args, const RectI & roi)
         case eImageBitDepthNone:
             return eActionStatusFailed;
     }
+    assert(false);
+    return eActionStatusFailed;
 }
 
 class ViewerProcessor : public ImageMultiThreadProcessorBase
@@ -1675,5 +1689,4 @@ ViewerInstance::render(const RenderActionArgs& args)
 } // render
 
 
-NATRON_NAMESPACE_EXIT;
-
+NATRON_NAMESPACE_EXIT

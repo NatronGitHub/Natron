@@ -58,13 +58,15 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/RenderEngine.h"
 #include "Engine/Settings.h"
 
+
+NATRON_NAMESPACE_ENTER
+
+
 //The plug-in that is instanciated whenever this node is created and doesn't point to any valid or known extension
 #define WRITE_NODE_DEFAULT_WRITER PLUGINID_OFX_WRITEOIIO
 #define kPluginSelectorParamEntryDefault "Default"
 
 #define kNatronPersistentErrorEncoderMissing "NatronPersistentErrorEncoderMissing"
-
-NATRON_NAMESPACE_ENTER;
 
 //Generic Writer
 #define kParamFilename kOfxImageEffectFileParamName
@@ -173,7 +175,7 @@ WriteNode::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_IMAGE);
-    PluginPtr ret = Plugin::create((void*)WriteNode::create, (void*)WriteNode::createRenderClone, PLUGINID_NATRON_WRITE, "Write", 1, 0, grouping);
+    PluginPtr ret = Plugin::create(WriteNode::create, WriteNode::createRenderClone, PLUGINID_NATRON_WRITE, "Write", 1, 0, grouping);
 
     QString desc = tr("Node used to write images or videos on disk. The image/video is identified by its filename and "
                       "its extension. Given the extension, the Writer selected from the Preferences to encode that specific format will be used.");
@@ -1217,7 +1219,7 @@ WriteNode::onSequenceRenderFinished()
 
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_WriteNode.cpp"

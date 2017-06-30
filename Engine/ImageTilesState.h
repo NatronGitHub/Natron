@@ -44,7 +44,7 @@ GCC_DIAG_ON(unused-parameter)
 #include <boost/scoped_ptr.hpp>
 #endif
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 /**
@@ -234,6 +234,6 @@ public:
 
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_IMAGETILESSTATE_H

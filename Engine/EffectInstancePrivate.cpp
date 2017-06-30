@@ -43,7 +43,7 @@
 
 #define kNatronPersistentWarningCheckForNan "NatronPersistentWarningCheckForNan"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 EffectInstance::Implementation::Implementation(EffectInstance* publicInterface)
@@ -756,6 +756,6 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
 } // renderHandlerPostProcess
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 

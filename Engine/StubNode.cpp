@@ -61,12 +61,13 @@ StubNode::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_OTHER);
-    PluginPtr ret = Plugin::create((void*)StubNode::create, (void*)StubNode::createRenderClone, PLUGINID_NATRON_STUB, "Stub", 1, 0, grouping);
+    PluginPtr ret = Plugin::create(StubNode::create, StubNode::createRenderClone, PLUGINID_NATRON_STUB, "Stub", 1, 0, grouping);
 
     QString desc = tr("This plug-in is used as a temporary replacement for another plug-in when loading a project with a plug-in which cannot be found.");
     ret->setProperty<bool>(kNatronPluginPropIsInternalOnly, true);
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
     ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafeFrame);
+
     return ret;
 }
 

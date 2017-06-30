@@ -31,7 +31,9 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+
+NATRON_NAMESPACE_ENTER
+
 
 #ifndef M_PI
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
@@ -301,6 +303,6 @@ void transformRegionFromRoD(const RectD &srcRect, const Matrix3x3 &transform, Re
 
 // Matrix4x4 matrix4x4FromMatrix3x3(const Matrix3x3& m);
 } // namespace Transform
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // TRANSFORM_H

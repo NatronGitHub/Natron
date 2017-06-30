@@ -34,7 +34,7 @@
 #include "Gui/TabWidget.h"
 #include "Gui/Gui.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 PanelWidget::PanelWidget(const std::string& scriptName,
                          QWidget* thisWidget,
@@ -200,6 +200,7 @@ PanelWidget::handleUnCaughtKeyPressEvent(QKeyEvent* e)
     }
 }
 
+
 void
 PanelWidget::onScriptNameChanged()
 {
@@ -214,4 +215,4 @@ PanelWidget::onLabelChanged()
 }
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

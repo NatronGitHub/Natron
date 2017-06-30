@@ -36,7 +36,9 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+
+NATRON_NAMESPACE_ENTER
+
 
 #define kNatronWriteNodeParamEncodingPluginChoice "encodingPluginChoice"
 
@@ -135,12 +137,14 @@ private:
     boost::scoped_ptr<WriteNodePrivate> _imp;
 };
 
+
 inline WriteNodePtr
 toWriteNode(const EffectInstancePtr& effect)
 {
     return boost::dynamic_pointer_cast<WriteNode>(effect);
 }
 
-NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_EXIT
 
 #endif // Engine_WriteNode_h

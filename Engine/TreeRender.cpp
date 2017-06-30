@@ -58,7 +58,7 @@
 //#define TREE_RENDER_DISABLE_MT
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 typedef std::set<AbortableThread*> ThreadSet;
 
@@ -966,5 +966,5 @@ TreeRenderExecutionData::executeAvailableTasks(int nTasks)
 } // executeAvailableTasks
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

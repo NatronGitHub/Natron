@@ -45,7 +45,7 @@
 #include "Gui/GuiAppInstance.h"
 #include "Gui/NodeGui.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 //using std::cout; using std::endl;
 
 void
@@ -366,5 +366,5 @@ NodeGraph::setNodeToDefaultPosition(const NodeGuiPtr& node, const NodesGuiList& 
 
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

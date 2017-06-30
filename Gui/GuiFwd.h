@@ -36,6 +36,7 @@ class QAction;
 class QCheckBox;
 class QColor;
 class QCursor;
+class QDialogButtonBox;
 class QDragEnterEvent;
 class QDragLeaveEvent;
 class QDragMoveEvent;
@@ -94,7 +95,7 @@ class QWidget;
 
 
 // Natron Gui
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 class AboutWindow;
 class ActionWithShortcut;
 class AnimatedCheckBox;
@@ -198,6 +199,7 @@ namespace QtMac {
 double getHighDPIScaleFactorInternal(const QWidget* w);
 }
 
+
 //typedef boost::shared_ptr<AnimKeyFrame> AnimKeyFramePtr;
 typedef boost::shared_ptr<AnimItemBase> AnimItemBasePtr;
 typedef boost::shared_ptr<AnimationModule> AnimationModulePtr;
@@ -247,7 +249,9 @@ typedef std::list<NodeGuiPtr> NodesGuiList;
 typedef std::list<NodeGuiWPtr> NodesGuiWList;
 //typedef std::list<AnimKeyFramePtr> AnimKeyFramePtrList;
 
-NATRON_PYTHON_NAMESPACE_ENTER;
+
+NATRON_PYTHON_NAMESPACE_ENTER
+
 class DialogParamHolder;
 class GuiApp;
 class PyModalDialog;
@@ -256,10 +260,10 @@ class PyTabWidget;
 
 typedef boost::shared_ptr<DialogParamHolder> DialogParamHolderPtr;
 
-NATRON_PYTHON_NAMESPACE_EXIT;
+NATRON_PYTHON_NAMESPACE_EXIT
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 
 #endif // Natron_Gui_GuiFwd_h

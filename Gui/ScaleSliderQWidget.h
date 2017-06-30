@@ -41,7 +41,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/StyledKnobWidgetBase.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct ScaleSliderQWidgetPrivate;
 
@@ -128,6 +128,6 @@ private:
     boost::scoped_ptr<ScaleSliderQWidgetPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // SCALESLIDERQWIDGET_H

@@ -50,9 +50,12 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Label.h"
 #include "Gui/GuiFwd.h"
 
+
+NATRON_NAMESPACE_ENTER
+
+
 #define kKnobGuiValueSpinBoxDimensionProperty "KnobGuiValueSpinBoxDimensionProperty"
 
-NATRON_NAMESPACE_ENTER;
 
 struct KnobGuiValuePrivate;
 class KnobGuiValue
@@ -268,6 +271,7 @@ private:
     virtual void refreshDimensionName(DimIdx dim) OVERRIDE FINAL;
 };
 
+
 inline KnobGuiDoublePtr
 toKnobGuiDouble(const KnobGuiWidgetsPtr& knobGui)
 {
@@ -280,7 +284,7 @@ toKnobGuiInt(const KnobGuiWidgetsPtr& knobGui)
     return boost::dynamic_pointer_cast<KnobGuiInt>(knobGui);
 }
 
-NATRON_NAMESPACE_EXIT;
 
+NATRON_NAMESPACE_EXIT
 
 #endif // KNOBGUIVALUE_H

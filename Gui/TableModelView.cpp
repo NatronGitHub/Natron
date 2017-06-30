@@ -50,7 +50,7 @@
 #include "Gui/GuiDefines.h"
 #include "Gui/GuiApplicationManager.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 //////////////TableItem
 
@@ -1986,7 +1986,7 @@ TableView::dropEvent(QDropEvent* e)
     Q_EMIT itemDropped();
 } // TableView::dropEvent
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_TableModelView.cpp"

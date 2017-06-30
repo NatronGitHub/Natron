@@ -81,7 +81,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include <ofxNatron.h>
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 using std::make_pair;
 
 
@@ -421,6 +421,9 @@ QFont
 KnobGuiString::makeFontFromState() const
 {
     KnobStringPtr knob = _knob.lock();
+    if (!knob) {
+        return QFont();
+    }
     QFont f;
     f.setFamily(QString::fromUtf8(knob->getFontFamily().c_str()));
     f.setPointSize(knob->getFontSize());
@@ -433,6 +436,9 @@ void
 KnobGuiString::createWidget(QHBoxLayout* layout)
 {
     KnobStringPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
 
     connect(this, SIGNAL(fontPropertyChanged()),this,SLOT(onFontPropertyChanged()));
     KnobGuiPtr knobUI = getKnobGui();
@@ -618,13 +624,16 @@ KnobGuiString::removeSpecificGui()
 std::string
 KnobGuiString::getDescriptionLabel() const
 {
-    KnobStringPtr k = _knob.lock();
-    bool isLabel = k->isLabel();
+    KnobStringPtr knob = _knob.lock();
+    if (!knob) {
+        return "";
+    }
+    bool isLabel = knob->isLabel();
 
     if (isLabel) {
-        return k->getValue();
+        return knob->getValue();
     } else {
-        return k->getLabel();
+        return knob->getLabel();
     }
 }
 
@@ -635,6 +644,9 @@ KnobGuiString::onLineChanged()
         return;
     }
     KnobStringPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
     std::string oldText = knob->getValue(DimIdx(0), getView());
     std::string newText = _lineEdit->text().toStdString();
 
@@ -651,6 +663,9 @@ KnobGuiString::onTextChanged()
     QString txt = _textEdit->toPlainText();
     KnobGuiPtr knobUI = getKnobGui();
     KnobStringPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
     std::string oldText = knob->getValue(DimIdx(0), getView());
     knobUI->pushUndoCommand( new KnobUndoCommand<std::string>( knob, oldText, txt.toStdString(), DimIdx(0), getView() ) );
 }
@@ -669,6 +684,9 @@ void
 KnobGuiString::onCurrentFontChanged(const QFont & font)
 {
     KnobStringPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
     knob->setFontFamily(font.family().toStdString());
     updateGUI();
     Q_EMIT fontPropertyChanged();
@@ -680,6 +698,9 @@ void
 KnobGuiString::onFontSizeChanged(double size)
 {
     KnobStringPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
     knob->setFontSize(size);
     updateGUI();
     Q_EMIT fontPropertyChanged();
@@ -689,6 +710,9 @@ void
 KnobGuiString::boldChanged(bool toggled)
 {
     KnobStringPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
     knob->setBoldActivated(toggled);
     updateGUI();
     Q_EMIT fontPropertyChanged();
@@ -715,6 +739,9 @@ KnobGuiString::colorFontButtonClicked()
     QObject::connect( &dialog, SIGNAL(currentColorChanged(QColor)), this, SLOT(updateFontColorIcon(QColor)) );
 
     KnobStringPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
 
     QColor currentColor;
     {
@@ -741,6 +768,9 @@ void
 KnobGuiString::italicChanged(bool toggled)
 {
     KnobStringPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
     knob->setItalicActivated(toggled);
     updateGUI();
     Q_EMIT fontPropertyChanged();
@@ -752,6 +782,9 @@ void
 KnobGuiString::updateGUI()
 {
     KnobStringPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
     std::string value = knob->getValue(DimIdx(0), getView());
 
     if ( knob->isMultiLine() ) {
@@ -818,6 +851,9 @@ void
 KnobGuiString::setWidgetsVisible(bool visible)
 {
     KnobStringPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
 
     if ( knob->isMultiLine() ) {
         assert(_textEdit);
@@ -837,6 +873,9 @@ void
 KnobGuiString::setEnabled(const std::vector<bool>& perDimEnabled)
 {
     KnobStringPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
 
     if ( knob->isMultiLine() ) {
         assert(_textEdit);
@@ -881,6 +920,9 @@ KnobGuiString::reflectAnimationLevel(DimIdx /*dimension*/,
                                      AnimationLevelEnum level)
 {
     KnobStringPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
     bool isEnabled = knob->isEnabled();
 
     if ( knob->isMultiLine() ) {
@@ -923,10 +965,14 @@ void
 KnobGuiString::updateToolTip()
 {
     KnobGuiPtr knobUI = getKnobGui();
-    if ( knobUI->hasToolTip() ) {
+    if ( knobUI && knobUI->hasToolTip() ) {
 
         if (_textEdit) {
-            bool useRichText = _knob.lock()->usesRichText();
+            KnobStringPtr knob = _knob.lock();
+            if (!knob) {
+                return;
+            }
+            bool useRichText = knob->usesRichText();
             QString tt = knobUI->toolTip(0, getView());
             if (useRichText) {
                 tt += tr("This text area supports html encoding. "
@@ -946,14 +992,18 @@ KnobGuiString::updateToolTip()
 void
 KnobGuiString::reflectModificationsState()
 {
-    bool hasModif = _knob.lock()->hasModifications();
+    KnobStringPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    bool hasModif = knob->hasModifications();
 
     if (_lineEdit) {
         _lineEdit->setIsModified(hasModif);
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_KnobGuiString.cpp"

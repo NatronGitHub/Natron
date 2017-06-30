@@ -22,7 +22,11 @@
 #include <ofxKeySyms.h>
 #include "Global/Enums.h"
 #include "Global/Macros.h"
-NATRON_NAMESPACE_ENTER;
+
+
+NATRON_NAMESPACE_ENTER
+
+
 enum Key
 {
     Key_Unknown =  kOfxKey_Unknown,
@@ -421,9 +425,11 @@ enum KeyboardModifierEnum
 };
 
 DECLARE_FLAGS(KeyboardModifiers, KeyboardModifierEnum);
-NATRON_NAMESPACE_EXIT;
+
+
+NATRON_NAMESPACE_EXIT
+
 
 DECLARE_OPERATORS_FOR_FLAGS(NATRON_NAMESPACE::KeyboardModifiers);
-
 
 #endif // KEYSYMBOLS_H

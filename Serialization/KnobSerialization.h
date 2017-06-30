@@ -71,7 +71,7 @@
 #define kKnobSerializationExpressionLanguagePython "python"
 #define kKnobSerializationExpressionLanguageExprtk "exprtk"
 
-SERIALIZATION_NAMESPACE_ENTER;
+SERIALIZATION_NAMESPACE_ENTER
 
 /**
  User knobs are serialized in a different manner. For them we also need to remember all layouts bits as well
@@ -563,7 +563,7 @@ public:
 };
 
 
-SERIALIZATION_NAMESPACE_EXIT;
+SERIALIZATION_NAMESPACE_EXIT
 
 
 #endif // KNOBSERIALIZATION_H

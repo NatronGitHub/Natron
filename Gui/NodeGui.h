@@ -59,7 +59,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct NodeGuiIndicatorPrivate;
 
@@ -640,6 +640,6 @@ private:
     boost::scoped_ptr<GroupKnobDialogPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Natron_Gui_NodeGui_h

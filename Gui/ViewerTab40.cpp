@@ -63,7 +63,7 @@
 #include "Gui/ViewerGL.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 void
 ViewerTab::manageSlotsForInfoWidget(int textureIndex,
@@ -422,4 +422,4 @@ ViewerTab::onPanelMadeCurrent()
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

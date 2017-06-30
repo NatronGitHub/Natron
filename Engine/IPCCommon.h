@@ -50,7 +50,7 @@ GCC_DIAG_ON(unused-parameter)
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 typedef boost::interprocess::managed_external_buffer ExternalSegmentType;
@@ -478,7 +478,7 @@ public:
 
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 
 #endif // NATRON_ENGINE_IPCCOMMON_H

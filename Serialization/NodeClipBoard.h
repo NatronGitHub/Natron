@@ -30,7 +30,7 @@
 #include "Serialization/SerializationBase.h"
 #include "Serialization/SerializationFwd.h"
 
-SERIALIZATION_NAMESPACE_ENTER;
+SERIALIZATION_NAMESPACE_ENTER
 
 class NodeClipBoard
 : public SerializationObjectBase
@@ -56,6 +56,6 @@ public:
 
 };
 
-SERIALIZATION_NAMESPACE_EXIT;
+SERIALIZATION_NAMESPACE_EXIT
 
 #endif // SERIALIZATION_NODE_CLIPBOARD_H

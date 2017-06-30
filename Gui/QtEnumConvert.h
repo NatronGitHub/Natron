@@ -37,7 +37,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/QtEnumConvert.h"
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 namespace QtEnumConvert
 {
@@ -47,6 +47,6 @@ namespace QtEnumConvert
     QMessageBox::StandardButtons toQtStandarButtons(StandardButtons buttons);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Gui_QtEnumConvert_h

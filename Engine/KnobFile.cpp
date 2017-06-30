@@ -49,7 +49,9 @@
 
 #include "Serialization/KnobSerialization.h"
 
-NATRON_NAMESPACE_ENTER;
+
+NATRON_NAMESPACE_ENTER
+
 
 struct KnobFilePrivate
 {
@@ -364,6 +366,7 @@ KnobPath::appendPath(const std::string& path)
     }
 }
 
+
 int
 KnobPath::getColumnsCount() const
 {
@@ -376,7 +379,8 @@ KnobPath::useEditButton() const
     return _imp->isMultiPath && !_imp->isStringList;
 }
 
-NATRON_NAMESPACE_EXIT;
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_EXIT
+
+NATRON_NAMESPACE_USING
 #include "moc_KnobFile.cpp"

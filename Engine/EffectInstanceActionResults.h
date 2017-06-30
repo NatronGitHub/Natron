@@ -43,7 +43,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 class EffectInstanceActionKeyBase : public CacheEntryKeyBase
@@ -590,6 +590,6 @@ toGetComponentsResults(const CacheEntryBasePtr& entry)
     return boost::dynamic_pointer_cast<GetComponentsResults>(entry);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_EFFECTINSTANCEACTIONRESULTS_H

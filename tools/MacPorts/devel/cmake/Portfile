@@ -54,10 +54,10 @@ if {${subport} eq ${name}} {
 
     # devel
 
-    version         20170601
-    set commit      2088ca0ca03900ced937d248dcd4129b0b821915
-    checksums       rmd160 7badd879da2dcd184d295c3d3bbbdf7da08b21df \
-                    sha256 e6c81b95c9434aef06570bf0d13f2667fc690a6dcfd83d9e6f58b85e8bfce1e8
+    version         20170627
+    set commit      1e34b42e7163b1f210b8a536b721af31fb059787
+    checksums       rmd160 8745c1f3aa64e4c598b54f6fbc0423043cb815bb \
+                    sha256 da59e6e8d2ba0cd7be0f2f493e3882dda9832285a71a67a808a9e65f25322dce
 
     master_sites    https://gitlab.kitware.com/cmake/cmake/repository/archive.tar.bz2?ref=${commit}&
     distname        ${name}-${commit}
@@ -69,7 +69,7 @@ if {${subport} eq ${name}} {
     conflicts       cmake
     long_description ${base_long_description} \
         The ${subport} port is updated roughly every week.
-    
+
     # devel-only patches
     patchfiles-append \
         patch-Modules-FindQt4.cmake.devel.diff \

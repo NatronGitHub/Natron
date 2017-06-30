@@ -121,7 +121,9 @@ GCC_DIAG_ON(unused-parameter)
 #include "Gui/ViewerTab.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
+
+
 GuiPrivate::GuiPrivate(const GuiAppInstancePtr& app,
                        Gui* gui)
     : _gui(gui)
@@ -771,4 +773,4 @@ GuiPrivate::findActionRecursive(int i,
     return 0;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

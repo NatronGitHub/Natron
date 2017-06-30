@@ -42,7 +42,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Serialization/CurveSerialization.h"
 #include "Engine/Smooth1D.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
@@ -2113,4 +2113,4 @@ Curve::smooth(const RangeD* range)
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

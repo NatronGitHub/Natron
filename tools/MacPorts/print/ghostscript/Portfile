@@ -5,7 +5,7 @@ PortGroup           muniversal 1.0
 
 name                ghostscript
 version             9.21
-revision            1
+revision            2
 categories          print
 license             AGPL-3 BSD
 maintainers         nomaintainer
@@ -83,10 +83,10 @@ post-patch {
     reinplace s|__PREFIX__|${prefix}| ${worksrcpath}/base/unix-dll.mak
     reinplace s|ZLIBDIR=src|ZLIBDIR=${prefix}/include| configure.ac
 
-    # Ensure that MacPorts perl is used
+    # Ensure that MacPorts perl is used everywhere
     fs-traverse f ${worksrcpath} {
         if [string match *.pl ${f}] {
-            reinplace s|#!/usr/bin/perl|#!${prefix}/bin/perl| ${f}
+            reinplace s|/usr/bin/perl|${prefix}/bin/perl| ${f}
         }
     }
 }

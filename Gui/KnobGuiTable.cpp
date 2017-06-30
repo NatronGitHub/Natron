@@ -45,7 +45,7 @@
 #include "Gui/NewLayerDialog.h"
 #include "Gui/TableModelView.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
@@ -614,7 +614,11 @@ KnobGuiLayers::addNewUserEntry(QStringList& row)
         row.push_back( QString::fromUtf8( comps.getPlaneLabel().c_str() ) );
 
         std::list<std::vector<std::string> > table;
-        _knob.lock()->getTable(&table);
+        boost::shared_ptr<KnobLayers> knob = _knob.lock();
+        if (!knob) {
+            return false;
+        }
+        knob->getTable(&table);
         for (std::list<std::vector<std::string> >::iterator it = table.begin(); it != table.end(); ++it) {
             if ( (*it)[0] == comps.getPlaneLabel() ) {
                 Dialogs::errorDialog( tr("Layer").toStdString(), tr("A Layer with the same name already exists").toStdString() );
@@ -664,8 +668,12 @@ KnobGuiLayers::editUserEntry(QStringList& row)
         row[0] = ( QString::fromUtf8( comps.getPlaneID().c_str() ) );
 
 
+        boost::shared_ptr<KnobLayers> knob = _knob.lock();
+        if (!knob) {
+            return false;
+        }
         std::list<std::vector<std::string> > table;
-        _knob.lock()->getTable(&table);
+        knob->getTable(&table);
         for (std::list<std::vector<std::string> >::iterator it = table.begin(); it != table.end(); ++it) {
             if ( ( (*it)[0] == comps.getPlaneID() ) && ( (*it)[0] != oldLayerName ) ) {
 
@@ -717,7 +725,7 @@ KnobGuiLayers::tableChanged(int row,
 }
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_KnobGuiTable.cpp"

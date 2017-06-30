@@ -49,7 +49,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Label.h"
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 //================================
 
@@ -191,12 +191,14 @@ private:
     const Color::Lut* _uiColorspaceLut, *_internalColorspaceLut;
 };
 
+
 inline KnobGuiColorPtr
 toKnobGuiColor(const KnobGuiWidgetsPtr& knobGui)
 {
     return boost::dynamic_pointer_cast<KnobGuiColor>(knobGui);
 }
 
-NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_EXIT
 
 #endif // Gui_KnobGuiColor_h

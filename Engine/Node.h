@@ -54,7 +54,9 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+
+NATRON_NAMESPACE_ENTER
+
 
 struct PersistentMessage
 {
@@ -66,9 +68,11 @@ struct PersistentMessage
 
 };
 
+
 // Each message, mapped against an ID to check if a message of this type is present or not
 typedef std::map<std::string, PersistentMessage> PersistentMessageMap;
 typedef std::map<NodePtr, std::list<int> > OutputNodesMap;
+
 
 struct NodePrivate;
 class Node
@@ -1139,6 +1143,6 @@ public:
     }
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_NODE_H

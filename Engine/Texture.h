@@ -32,7 +32,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class Texture
 {
@@ -160,6 +160,6 @@ private:
     bool _useOpenGL;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif /* defined(NATRON_GUI_TEXTURE_H_) */

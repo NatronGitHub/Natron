@@ -96,7 +96,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/TimeLineGui.h"
 #include "Gui/ViewerTab.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 struct KnobGuiPrivate
@@ -225,6 +225,6 @@ struct KnobGuiPrivate
     void removeViewGui(KnobGuiPrivate::PerViewWidgetsMap::iterator it);
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // _Gui_KnobGuiPrivate_h_

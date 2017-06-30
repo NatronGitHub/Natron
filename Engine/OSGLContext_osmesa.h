@@ -37,7 +37,7 @@
 
 #ifdef HAVE_OSMESA
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct OSGLContext_osmesaPrivate;
 class OSGLContext_osmesa
@@ -80,7 +80,7 @@ private:
     boost::scoped_ptr<OSGLContext_osmesaPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // HAVE_OSMESA
 #endif // OSGLCONTEXT_OSMESA_H

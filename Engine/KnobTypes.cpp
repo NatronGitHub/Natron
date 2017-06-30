@@ -38,6 +38,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/replace.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
@@ -65,7 +66,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Serialization/CurveSerialization.h"
 #include "Serialization/KnobSerialization.h"
 
-NATRON_NAMESPACE_ENTER;
+
+NATRON_NAMESPACE_ENTER
+
 
 struct KnobIntPrivate
 {
@@ -1471,6 +1474,9 @@ entryStr(const ChoiceOption& opt, int s)
     return s == 0 ? opt.id : opt.label;
 }
 
+static
+bool BothAreSpaces(char lhs, char rhs) { return (lhs == rhs) && (lhs == ' '); }
+
 // Choice restoration tries several options to restore a choice value:
 // 1- exact string match, same index
 // 2- exact string match, other index
@@ -1522,7 +1528,7 @@ KnobChoice::choiceMatch(const std::string& choice,
             }
         }
 
-        // 5- paren/bracket-insensitive match (for WriteFFmpeg's format and codecs)
+        // 5- paren/bracket-insensitive match (for WriteFFmpeg's format and codecs, parameter names "format" and "codec" in fr.inria.openfx.WriteFFmpeg)
         std::string choiceparen = choice;
         std::replace( choiceparen.begin(), choiceparen.end(), '[', '(');
         std::replace( choiceparen.begin(), choiceparen.end(), ']', ')');
@@ -1535,21 +1541,42 @@ KnobChoice::choiceMatch(const std::string& choice,
                 if (matchedEntry) {
                     *matchedEntry = entries[i];
                 }
-                return i;
             }
         }
 
-        // 6- if the choice ends with " 1" try to match exactly everything before that  (for formats with par=1, where the PAR was removed)
-        if ( boost::algorithm::ends_with(choice, " 1") ) {
-            std::string choicenopar(choice, 0, choice.size()-2);
-            boost::trim(choicenopar);
-            boost::erase_all(choicenopar, " ");
-            for (std::size_t i = 0; i < entries.size(); ++i) {
-                if (entryStr(entries[i], s) == choicenopar) {
-                    if (matchedEntry) {
-                        *matchedEntry = entries[i];
+        // 6- handle old format strings, like "square_256  256 x 256  1":
+        // - remove duplicate spaces
+        // - if the choice ends with " 1" try to match exactly everything before that  (for formats with par=1, where the PAR was removed)
+        // - if the choice contains " x ", try to remove one space before and after the x
+        // Note: the parameter name is "outputFormat" in project serialization
+        {
+            bool choiceformatfound = false;
+            std::string choiceformat = boost::trim_copy(choice); // trim leading and trailing whitespace
+            if (choiceformat != choice) {
+                choiceformatfound = true;
+            }
+            if (choiceformat.find("  ") != std::string::npos) { // remove duplicate spaces
+                std::string::iterator new_end = std::unique(choiceformat.begin(), choiceformat.end(), BothAreSpaces);
+                choiceformat.erase(new_end, choiceformat.end());
+                choiceformatfound = true;
+            }
+            if ( boost::algorithm::ends_with(choiceformat, " 1") ) { // remove " 1" at the end
+                choiceformat.resize(choiceformat.size()-2);
+                choiceformatfound = true;
+            }
+            if (choiceformat.find(" x ") != std::string::npos) { // remove spaces around 'x'
+                boost::replace_first(choiceformat, " x ", "x");
+                choiceformatfound = true;
+            }
+            if (choiceformatfound) {
+                for (std::size_t i = 0; i < entries.size(); ++i) {
+                    if (entryStr(entries[i], s) == choiceformat) {
+                        if (matchedEntry) {
+                            *matchedEntry = entries[i];
+                        }
+                        return i;
+
                     }
-                    return i;
                 }
             }
         }
@@ -4227,6 +4254,7 @@ KnobLayers::typeNameStatic()
     return _typeNameStr;
 }
 
+
 std::string
 KnobLayers::encodePlanesList(const std::list<ImagePlaneDesc>& planes)
 {
@@ -4303,7 +4331,8 @@ KnobLayers::decodePlanesList()
     return ret;
 } // decodePlanesList
 
-NATRON_NAMESPACE_EXIT;
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_EXIT
+
+NATRON_NAMESPACE_USING
 #include "moc_KnobTypes.cpp"

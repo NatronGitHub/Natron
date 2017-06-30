@@ -36,7 +36,9 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+
+NATRON_NAMESPACE_ENTER
+
 
 #define NATRON_READER_INPUT_NAME "Sync"
 
@@ -119,12 +121,14 @@ private:
     boost::scoped_ptr<ReadNodePrivate> _imp;
 };
 
+
 inline ReadNodePtr
 toReadNode(const EffectInstancePtr& effect)
 {
     return boost::dynamic_pointer_cast<ReadNode>(effect);
 }
 
-NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_EXIT
 
 #endif // READNODE_H

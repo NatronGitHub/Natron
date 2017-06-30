@@ -43,7 +43,7 @@
 #include "Engine/ThreadPool.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @brief Add the layers from the inputList to the toList if they do not already exist in the list.
@@ -2264,4 +2264,4 @@ EffectInstance::createInstanceAction_public()
 
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

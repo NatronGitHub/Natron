@@ -30,7 +30,7 @@
 
 #include "Gui/AnimItemBase.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class KnobAnimPrivate;
 class KnobAnim : public QObject, public AnimItemBase
@@ -120,6 +120,6 @@ inline KnobAnimPtr toKnobAnim(const AnimItemBasePtr& p)
     return boost::dynamic_pointer_cast<KnobAnim>(p);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_GUI_KNOBANIM_H

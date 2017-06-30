@@ -33,7 +33,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 struct GPUContextPoolPrivate;
@@ -89,6 +89,6 @@ private:
     boost::scoped_ptr<GPUContextPoolPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // GPUCONTEXTPOOL_H

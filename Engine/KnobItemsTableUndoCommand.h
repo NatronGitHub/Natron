@@ -45,7 +45,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class AddItemsCommand
     : public UndoCommand
@@ -115,7 +115,7 @@ private:
     std::list<ItemToRemove> _items;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 
 #endif // NATRON_ENGINE_KNOBITEMSTABLEUNDOCOMMAND_H

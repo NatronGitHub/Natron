@@ -62,8 +62,8 @@ GCC_DIAG_ON(unused-parameter)
 
 #include "Engine/Hash64.h"
 
-NATRON_NAMESPACE_ENTER;
-NATRON_PYTHON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
+NATRON_PYTHON_NAMESPACE_ENTER
 
 ImageLayer::ImageLayer(const QString& layerName,
                        const QString& componentsPrettyName,
@@ -1664,6 +1664,7 @@ Effect::setPagesOrder(const QStringList& pages)
     n->setPagesOrder(order);
 }
 
+
 void
 Effect::insertParamInViewerUI(Param* param, int index)
 {
@@ -1756,5 +1757,7 @@ Effect::removeOverlay(PyOverlayInteract* interact)
 }
 
 
-NATRON_PYTHON_NAMESPACE_EXIT;
-NATRON_NAMESPACE_EXIT;
+NATRON_PYTHON_NAMESPACE_EXIT
+
+
+NATRON_NAMESPACE_EXIT
