@@ -4304,6 +4304,16 @@ Node::refreshPreviewsAfterProjectLoad()
     Q_EMIT s_refreshPreviewsAfterProjectLoadRequested();
 }
 
+// those parameters should be ignored (they are always secret in Natron)
+#define kOCIOParamInputSpace "ocioInputSpace"
+#define kOCIOParamOutputSpace "ocioOutputSpace"
+
+// those parameters should not have their options in the help file if generating markdown,
+// because the options are dinamlically constructed at run-time from the OCIO config.
+#define kOCIOParamInputSpaceChoice "ocioInputSpaceIndex"
+#define kOCIOParamOutputSpaceChoice "ocioOutputSpaceIndex"
+
+// genHTML: true for live HTML output for the internal web-server, false for markdown output
 QString
 Node::makeDocumentation(bool genHTML) const
 {
@@ -4398,7 +4408,10 @@ Node::makeDocumentation(bool genHTML) const
         QString knobLabel = NATRON_NAMESPACE::convertFromPlainTextToMarkdown( QString::fromUtf8( (*it)->getLabel().c_str() ), genHTML, true);
         QString knobHint = NATRON_NAMESPACE::convertFromPlainTextToMarkdown( QString::fromUtf8( (*it)->getHintToolTip().c_str() ), genHTML, true);
 
-        if ( knobScriptName.startsWith( QString::fromUtf8("NatronOfxParam") ) || knobScriptName == QString::fromUtf8("exportAsPyPlug") ) {
+        if ( knobScriptName.startsWith( QString::fromUtf8("NatronOfxParam") ) ||
+             knobScriptName == QString::fromUtf8("exportAsPyPlug") ||
+             knobScriptName == QString::fromUtf8(kOCIOParamInputSpace) ||
+             knobScriptName == QString::fromUtf8(kOCIOParamOutputSpace) ) {
             continue;
         }
 
@@ -4447,7 +4460,12 @@ Node::makeDocumentation(bool genHTML) const
                 QString valueStr;
 
                 if (!isBtn && !isSep && !isParametric) {
-                    if (isChoice) {
+                    // If this is a ChoiceParam and we are not generating live HTML doc,
+                    // only add the list of entries and their halp if this node should not be
+                    // ignored (eg. OCIO colorspace knobs).
+                    if ( isChoice &&
+                         (genHTML || ( knobScriptName != QString::fromUtf8(kOCIOParamInputSpaceChoice) &&
+                                       knobScriptName != QString::fromUtf8(kOCIOParamOutputSpaceChoice) ) ) ) {
                         int index = isChoice->getDefaultValue(i);
                         std::vector<std::string> entries = isChoice->getEntries_mt_safe();
                         if ( (index >= 0) && ( index < (int)entries.size() ) ) {
