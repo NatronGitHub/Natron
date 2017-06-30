@@ -5,6 +5,12 @@
 # History
 
 
+## Version 2.3.0
+
+- Fix lots of bugs when loading older Natron project files.
+- Internal changes: implement a new OpenFX multiplane suite.
+
+
 ## Version 2.2.9
 
 - Fix a bug where the channel selector would be wrong when loading older projects (e.g. Spaceship).
