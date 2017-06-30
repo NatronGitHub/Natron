@@ -790,6 +790,19 @@ OutputSchedulerThread::beginSequenceRender()
 void
 OutputSchedulerThread::endSequenceRender()
 {
+
+    TimeValue firstFrame, lastFrame, frameStep;
+
+    {
+        QMutexLocker k(&_imp->lastRunArgsMutex);
+        OutputSchedulerThreadStartArgsPtr args = getCurrentRunArgs();
+        firstFrame = args->firstFrame;
+        lastFrame = args->lastFrame;
+        frameStep = args->frameStep;
+        _imp->runArgs.reset();
+    }
+
+
     _imp->timer->playState = ePlayStatePause;
 
     // Remove all active renders for the scheduler
@@ -813,15 +826,7 @@ OutputSchedulerThread::endSequenceRender()
     // Call endSequenceRender action for a sequential writer (WriteFFMPEG)
     SequentialPreferenceEnum pref = node->getEffectInstance()->getSequentialPreference();
     if ( (pref == eSequentialPreferenceOnlySequential) || (pref == eSequentialPreferencePreferSequential) ) {
-        TimeValue firstFrame, lastFrame, frameStep;
 
-        {
-            QMutexLocker k(&_imp->lastRunArgsMutex);
-            OutputSchedulerThreadStartArgsPtr args = getCurrentRunArgs();
-            firstFrame = args->firstFrame;
-            lastFrame = args->lastFrame;
-            frameStep = args->frameStep;
-        }
 
         RenderScale scaleOne(1.);
         ignore_result( node->getEffectInstance()->endSequenceRender_public(firstFrame,
@@ -878,6 +883,8 @@ OutputSchedulerThread::threadLoopOnce(const GenericThreadStartArgsPtr &inArgs)
 
     ThreadStateEnum state = eThreadStateActive;
 
+    TreeRenderQueueProviderPtr thisShared = shared_from_this();
+
     // Call beginSequenceRender callback and launch a frame render at the current frame
     beginSequenceRender();
 
@@ -915,32 +922,34 @@ OutputSchedulerThread::threadLoopOnce(const GenericThreadStartArgsPtr &inArgs)
         // Find results for the given frame
         RenderFrameResultsContainerPtr results;
         if (!renderFinished) {
-            QMutexLocker l(&_imp->launchedFramesMutex);
+            {
+                QMutexLocker l(&_imp->launchedFramesMutex);
 
-            RenderFrameResultsContainerPtr tmp(new RenderFrameResultsContainer(shared_from_this()));
-            tmp->time = expectedTimeToRender;
-            FrameBuffer::iterator found = _imp->launchedFrames.find(tmp);
-            assert(found != _imp->launchedFrames.end());
-            if (found != _imp->launchedFrames.end()) {
-                results = *found;
-            } else {
-                break;
+                RenderFrameResultsContainerPtr tmp(new RenderFrameResultsContainer(thisShared));
+                tmp->time = expectedTimeToRender;
+                FrameBuffer::iterator found = _imp->launchedFrames.find(tmp);
+                if (found != _imp->launchedFrames.end()) {
+                    results = *found;
+                } else {
+                    qDebug() << "Launched render not found";
+                    break;
+                }
             }
-
+            // Wait for the render to finish
+            ActionRetCodeEnum status = results->waitForRendersFinished();
+            if (isFailureRetCode(status)) {
+                notifyRenderFailure(status);
+                renderFinished = true;
+            }
         }
 
-        // Wait for the render to finish
-        ActionRetCodeEnum status = results->waitForRendersFinished();
-        if (isFailureRetCode(status)) {
-            notifyRenderFailure(status);
-            renderFinished = true;
-        }
+
 
         // Remove the results from the launched frames
         {
             QMutexLocker l(&_imp->launchedFramesMutex);
 
-            RenderFrameResultsContainerPtr tmp(new RenderFrameResultsContainer(shared_from_this()));
+            RenderFrameResultsContainerPtr tmp(new RenderFrameResultsContainer(thisShared));
             tmp->time = expectedTimeToRender;
             FrameBuffer::iterator found = _imp->launchedFrames.find(tmp);
             assert(found != _imp->launchedFrames.end());

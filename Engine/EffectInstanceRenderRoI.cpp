@@ -1495,9 +1495,6 @@ EffectInstance::launchRenderInternal(const TreeRenderExecutionDataPtr& /*request
 {
     assert(isRenderClone() && getCurrentRender());
 
-    // Hint the multi-thread suite that we may use it so that it attempts to better distribute threads amongst concurrent effect renders
-    MultiThreadGetNumCPUHint multiThreadSuiteHint;
-
     const double par = getAspectRatio(-1);
     const unsigned int mappedMipMapLevel = requestData->getRenderMappedMipMapLevel();
     const RenderScale mappedCombinedScale = EffectInstance::getCombinedScale(mappedMipMapLevel, requestData->getProxyScale());
@@ -1695,6 +1692,7 @@ EffectInstance::launchRenderInternal(const TreeRenderExecutionDataPtr& /*request
         // mipmapped version automatically
 
         ImagePtr downscaledImage;
+        //fullscalePlane->downscaleMipMap(fullscalePlane->getBounds(), dstMipMapLevel - mappedMipMapLevel);
         bool hasUnrenderedTile, hasPendingTiles;
         ActionRetCodeEnum stat = _imp->lookupCachedImage(dstMipMapLevel, requestData->getProxyScale(), requestData->getPlaneDesc(), perMipMapLevelRoDPixel, downscaledRoI, eCacheAccessModeReadWrite, backendType, &downscaledImage, &hasPendingTiles, &hasUnrenderedTile);
 
@@ -1713,7 +1711,7 @@ EffectInstance::launchRenderInternal(const TreeRenderExecutionDataPtr& /*request
 
         requestData->setRequestedScaleImagePlane(downscaledImage);
     }
-    //QString name = QString::fromUtf8(getScriptName_mt_safe().c_str()) + QDateTime::currentDateTime().toString() + QString::fromUtf8(".png");
+    //QString name = QString::fromUtf8(getScriptName_mt_safe().c_str()) + QString::fromUtf8("_") + QString::number(getCurrentRenderTime()) + QString::fromUtf8("_") +  QDateTime::currentDateTime().toString() + QString::fromUtf8(".png");
     //appPTR->debugImage(requestData->getRequestedScaleImagePlane().get(), requestData->getRequestedScaleImagePlane()->getBounds(), name);
     return isRenderAborted() ? eActionStatusAborted : eActionStatusOK;
 } // launchRenderInternal

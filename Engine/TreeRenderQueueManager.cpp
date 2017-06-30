@@ -102,6 +102,7 @@ struct TreeRenderQueueManager::Implementation
     , executionQueueMutex()
     , executionQueueNotEmptyCond()
     , executionQueue()
+    , nActiveTasks(0)
     , perProviderRendersMutex()
     , perProviderRendersCond()
     , perProviderRenders()
@@ -269,6 +270,22 @@ TreeRenderQueueManager::hasTreeRendersFinished(const TreeRenderQueueProviderCons
         return false;
     }
     return !foundProvider->second->finishedRenders.empty();
+}
+
+void
+TreeRenderQueueManager::getRenderIndex(const TreeRenderPtr& render, int* index, int* numRenders) const
+{
+    *numRenders = 0;
+    *index = -1;
+    for (std::list<TreeRenderExecutionDataPtr>::const_iterator it = _imp->executionQueue.begin(); it != _imp->executionQueue.end(); ++it) {
+        if (!(*it)->isTreeMainExecution()) {
+            continue;
+        }
+        *numRenders += 1;
+        if (render == (*it)->getTreeRender()) {
+            *index = *numRenders - 1;
+        }
+    }
 }
 
 void
@@ -693,7 +710,7 @@ TreeRenderQueueManager::run()
 
     for (;;) {
 
-        const int maxTasksToLaunch = 2;//tp->maxThreadCount();
+        const int maxTasksToLaunch = tp->maxThreadCount();
 
         {
             // Check for exit

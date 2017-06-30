@@ -79,17 +79,10 @@ struct MultiThreadPrivate
     PerThreadMultiThreadDataMap threadsData;
     mutable QReadWriteLock threadsDataMutex;
 
-    // This atomic integers count the number of potential users of the multi-thread suite.
-    // Each EffectInstance for which a render is started adds 1 to this integer. We then use
-    // it in getNumCPU to better distribute threads accross effects.
-    QAtomicInt nPotentialUsers;
-
     MultiThreadPrivate()
     : threadsData()
     , threadsDataMutex()
-    , nPotentialUsers()
     {
-        nPotentialUsers = 0;
     }
 
     void pushThreadIndex(QThread* thread, unsigned int index)
@@ -336,6 +329,11 @@ MultiThread::launchThreadsInternal(MultiThread::ThreadFunctor func, unsigned int
     }
 
     unsigned int maxConcurrentThread = MultiThread::getNCPUsAvailable();
+    assert(maxConcurrentThread > 0);
+
+    if (nThreads == 0) {
+        nThreads = maxConcurrentThread;
+    }
 
 
     // from the documentation:
@@ -382,23 +380,23 @@ MultiThread::launchThreadsInternal(MultiThread::ThreadFunctor func, unsigned int
 
     if (useThreadPool) {
 
-        ret->_imp->threadIndices.resize(nThreads);
-        for (unsigned int i = 0; i < nThreads; ++i) {
-            ret->_imp->threadIndices[i] = i;
-        }
-
         // If the current thread is a thread-pool thread, make it also do an iteration instead
         // of waiting for other threads
         bool isThreadPoolThread = isRunningInThreadPoolThread();
-        if (isThreadPoolThread) {
-            ret->_imp->threadIndices.pop_back();
+
+        unsigned int nMappedElements = isThreadPoolThread ? nThreads - 1 : nThreads;
+        ret->_imp->threadIndices.resize(nMappedElements);
+        for (unsigned int i = 0; i < nMappedElements; ++i) {
+            ret->_imp->threadIndices[i] = i;
         }
 
         // DON'T set the maximum thread count: this is a global application setting, and see the documentation excerpt above
         // QThreadPool::globalInstance()->setMaxThreadCount(nThreads);
 
-        ret->_imp->future.reset(new QFuture<ActionRetCodeEnum>);
-        *ret->_imp->future = QtConcurrent::mapped( ret->_imp->threadIndices, boost::bind(threadFunctionWrapper, imp, func, _1, nThreads, spawnerThread, effect, customArg) );
+        if (nMappedElements > 0) {
+            ret->_imp->future.reset(new QFuture<ActionRetCodeEnum>);
+            *ret->_imp->future = QtConcurrent::mapped( ret->_imp->threadIndices, boost::bind(threadFunctionWrapper, imp, func, _1, nThreads, spawnerThread, effect, customArg) );
+        }
 
         // Do one iteration in this thread
         if (isThreadPoolThread) {
@@ -406,8 +404,10 @@ MultiThread::launchThreadsInternal(MultiThread::ThreadFunctor func, unsigned int
             if (isFailureRetCode(stat)) {
                 // This thread failed, wait for other threads and exit
                 ret->_imp->status = stat;
-                ret->_imp->future->waitForFinished();
-                ret->_imp->future.reset();
+                if (ret->_imp->future) {
+                    ret->_imp->future->waitForFinished();
+                    ret->_imp->future.reset();
+                }
                 return ret;
             }
         }
@@ -489,18 +489,9 @@ MultiThread::getNCPUsAvailable()
     activeThreadsCount = std::max( 0, activeThreadsCount);
 
     // better than QThread::idealThreadCount(), because it can be set by a global preference
-    const int maxThreadsCount = QThreadPool::globalInstance()->maxThreadCount();
-    assert(maxThreadsCount >= 0);
+    const int maxThreadsCount = std::max(1,QThreadPool::globalInstance()->maxThreadCount());
 
     int ret = std::max(1, maxThreadsCount - activeThreadsCount);
-    if (ret > 1) {
-        // Distribute threads accross the number of active users of the multi-thread suite
-        MultiThreadPrivate* imp = appPTR->getMultiThreadHandler()->_imp.get();
-        int nUsers = imp->nPotentialUsers;
-        if (nUsers > 1) {
-            ret /= nUsers;
-        }
-    }
     return ret;
 } // getNCPUsAvailable
 
@@ -527,23 +518,6 @@ MultiThread::isCurrentThreadSpawnedThread()
     ActionRetCodeEnum stat = getCurrentThreadIndex(&index);
     (void)index;
     return stat == eActionStatusOK;
-}
-
-void
-MultiThread::registerPotentialUser()
-{
-    // Get the global multi-thread handler data
-    MultiThreadPrivate* imp = appPTR->getMultiThreadHandler()->_imp.get();
-    imp->nPotentialUsers.fetchAndAddAcquire(1);
-}
-
-
-void
-MultiThread::unregisterPotentialUser()
-{
-    // Get the global multi-thread handler data
-    MultiThreadPrivate* imp = appPTR->getMultiThreadHandler()->_imp.get();
-    imp->nPotentialUsers.fetchAndAddAcquire(-1);
 }
 
 MultiThreadProcessorBase::MultiThreadProcessorBase(const EffectInstancePtr& effect)

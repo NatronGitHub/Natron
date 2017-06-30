@@ -58,6 +58,11 @@ static void copyPixelsForDepth(const RectI& renderWindow,
              dst_pixels += dstYStride) {
 
             memcpy(dst_pixels, src_pixels, renderWindow.width() * sizeof(PIX));
+#ifdef DEBUG
+            for (int x = renderWindow.x1; x < renderWindow.x2; ++x, src_pixels += srcXStride) {
+                assert(*src_pixels == *src_pixels); // NaN check
+            }
+#endif
         }
     } else {
         for (int y = renderWindow.y1; y < renderWindow.y2; ++y) {
@@ -97,23 +102,6 @@ static void copyPixels(const RectI& renderWindow,
             break;
     }
 }
-
-
-#if 0
-/**
- * @brief Returns true if the rectangle "bounds" is aligned to the tile size or not
- **/
-static bool isTileAligned(const RectI& bounds,
-                          int tileSizeX,
-                          int tileSizeY)
-{
-    assert(bounds.x1 % tileSizeX == 0 || bounds.x2 % tileSizeX == 0);
-    assert(bounds.y1 % tileSizeX == 0 || bounds.y2 % tileSizeY == 0);
-    assert(bounds.width() <= tileSizeX);
-    assert(bounds.height() <= tileSizeY);
-    return bounds.x1 % tileSizeX == 0 && bounds.x2 % tileSizeX == 0 && bounds.y1 % tileSizeY == 0 && bounds.y2 % tileSizeY == 0;
-}
-#endif
 
 
 template <typename PIX>
