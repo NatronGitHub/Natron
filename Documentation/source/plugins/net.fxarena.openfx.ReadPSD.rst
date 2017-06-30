@@ -12,20 +12,6 @@ Description
 
 Read Photoshop/GIMP/Cinepaint (RGB/CMYK/GRAY) image formats with ICC color management.
 
-Powered by Little CMS v2 http://www.littlecms.com/ and ImageMagick 6.9.8-3 Q32 x86\_64 2017-05-02 http://www.imagemagick.org
-
-ImageMagick (R) is Copyright 1999-2015 ImageMagick Studio LLC, a non-profit organization dedicated to making software imaging solutions freely available.
-
-ImageMagick is distributed under the Apache 2.0 license.
-
-Little CMS is Copyright 2010-2015 Marti Maria Saguer. All rights reserved.
-
-Little CMS is distributed under the MIT license agreement.
-
-OpenColorIO is Copyright 2003-2010 Sony Pictures Imageworks Inc., et al. All Rights Reserved.
-
-OpenColorIO is distributed under a BSD license.
-
 Inputs
 ------
 

@@ -16,16 +16,6 @@ All formats supported by FFmpeg should be supported, but there may be issues wit
 
 This can be done using the ffmpeg command-line tool, by following the instructions at https://trac.ffmpeg.org/wiki/Encode/VFX
 
-FFmpeg versions (compiled with / running with):
-
-libavformat 57.56.101 / 57.56.101
-
-libavcodec 57.64.101 / 57.64.101
-
-libavutil 55.34.101 / 55.34.101
-
-libswscale 4.2.100 / 4.2.100
-
 Inputs
 ------
 

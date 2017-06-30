@@ -50,16 +50,6 @@ If synchronized audio is available as a separate file, encoded with the right co
 
 This command does not re-encode the video or audio, but simply copies the data from each source file and places it in separate streams in the output.
 
-FFmpeg versions (compiled with / running with):
-
-libavformat 57.71.100 / 57.71.100
-
-libavcodec 57.89.100 / 57.89.100
-
-libavutil 55.58.100 / 55.58.100
-
-libswscale 4.6.100 / 4.6.100
-
 Inputs
 ------
 

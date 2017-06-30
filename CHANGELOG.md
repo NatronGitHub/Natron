@@ -31,6 +31,13 @@ Natron multiple times on the same computer, the different processes will share t
 - Python has callbacks to allow drawing and interacting in the viewer with custom drawings written in PyOpenGL. A PyPlug may use these callbacks to interact with parameters directly from the Viewer, much like the Transform node overlay handle.
 - For convenience, a PyPlug may specify a list of the nodes inside its node graph that should have their viewer overlay displayed when the PyPlug setting panel is opened. For instance, imagine that the PyPlug uses a Transform node internally, it is possible to display the Transform node handle on the viewer when the PyPlug settings panel is opened, even if the Transform node panel itself is closed
 
+
+## Version 2.3.0
+
+- Fix lots of bugs when loading older Natron project files.
+- Internal changes: implement a new OpenFX multiplane suite.
+
+
 ## Version 2.2.9
 
 - Fix a bug where the channel selector would be wrong when loading older projects (e.g. Spaceship).
