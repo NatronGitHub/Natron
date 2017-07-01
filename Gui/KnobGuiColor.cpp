@@ -536,11 +536,18 @@ KnobGuiColor::showColorDialog()
 bool
 KnobGuiColor::isAutoFoldDimensionsEnabled() const
 {
-    boost::shared_ptr<KnobColor> knob = _knob.lock();
-    if (!knob) {
-        return false;
-    }
-    return knob->getDimension() == 3;
+    // [FD] I think all color parameters should be folded automatically:
+    // Grade and ColorCorrect are some of the most used nodes,
+    // and they have "A" channel uncked by default, so we don't care if colors
+    // are folded.
+    // The only case where this could matter are the "Draw" nodes (Rectangle, Constant, etc.),
+    // but these are rarely used compared to "Color" nodes.
+    return true;
+    //boost::shared_ptr<KnobColor> knob = _knob.lock();
+    //if (!knob) {
+    //    return false;
+    //}
+    //return knob->getDimension() == 3;
 }
 
 NATRON_NAMESPACE_EXIT
