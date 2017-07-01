@@ -1692,7 +1692,7 @@ EffectInstance::launchRenderInternal(const TreeRenderExecutionDataPtr& /*request
         // mipmapped version automatically
 
         ImagePtr downscaledImage;
-        //fullscalePlane->downscaleMipMap(fullscalePlane->getBounds(), dstMipMapLevel - mappedMipMapLevel);
+
         bool hasUnrenderedTile, hasPendingTiles;
         ActionRetCodeEnum stat = _imp->lookupCachedImage(dstMipMapLevel, requestData->getProxyScale(), requestData->getPlaneDesc(), perMipMapLevelRoDPixel, downscaledRoI, eCacheAccessModeReadWrite, backendType, &downscaledImage, &hasPendingTiles, &hasUnrenderedTile);
 
@@ -1701,12 +1701,23 @@ EffectInstance::launchRenderInternal(const TreeRenderExecutionDataPtr& /*request
         }
 
         // We just rendered the full scale version, no tiles should be marked unrendered.
-        // However another thread could have marked pending the tiles at dstMipMapLevel in between, thus we just have to wait for it to be read
-        assert(!hasUnrenderedTile);
-
-        if (!downscaledImage->getCacheEntry()->waitForPendingTiles()) {
-            return eActionStatusAborted;
+        // In some cases, the image might no longer be in the Cache if the Cache was cleared. In this case, manually downscale
+        // the image
+        if (hasUnrenderedTile) {
+            downscaledImage->getCacheEntry()->markCacheTilesAsAborted();
+            downscaledImage = fullscalePlane->downscaleMipMap(fullscalePlane->getBounds(), dstMipMapLevel - mappedMipMapLevel);
+        } else {
+            // However another thread could have marked pending the tiles at dstMipMapLevel in between, thus we just have to wait for it to be read
+            if (hasPendingTiles) {
+                if (!downscaledImage->getCacheEntry()->waitForPendingTiles()) {
+                    downscaledImage->getCacheEntry()->markCacheTilesAsAborted();
+                    return eActionStatusAborted;
+                }
+            }
+            downscaledImage->getCacheEntry()->markCacheTilesAsRendered();
         }
+
+
 
 
         requestData->setRequestedScaleImagePlane(downscaledImage);

@@ -677,7 +677,7 @@ TreeRenderQueueManager::Implementation::launchMoreTasks(int nTasksHint)
     }
 
     // If we still have threads idle and the last request is playback, fetch more renders for that provider
-    if (allowConcurrentRenders && firstRenderTree->isPlayback() && nTasksToLaunch > 0) {
+    if (allowConcurrentRenders && firstRenderTree->isPlayback() && !provider->isWaitingForAllTreeRenders() && nTasksToLaunch > 0) {
 
         // If more than maxThreadsCount renders are finished or launched, do not launch more for this provider
         bool providerMaxQueueReached = true;

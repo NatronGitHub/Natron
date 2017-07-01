@@ -99,6 +99,12 @@ TreeRenderQueueProvider::waitForAnyTreeRenderFinished()
     return appPTR->getTasksQueueManager()->waitForAnyTreeRenderFinished(getThisTreeRenderQueueProviderShared());
 }
 
+bool
+TreeRenderQueueProvider::isWaitingForAllTreeRenders() const
+{
+    QMutexLocker k(&_imp->isWaitingForAnyRendersFinishedMutex);
+    return _imp->isWaitingForAnyRendersFinished;
+}
 
 void
 TreeRenderQueueProvider::waitForAllTreeRenders()

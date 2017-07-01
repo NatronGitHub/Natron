@@ -113,6 +113,8 @@ public:
     bool hasTreeRendersLaunched() const;
     TreeRenderPtr waitForAnyTreeRenderFinished();
     void waitForAllTreeRenders();
+
+    bool isWaitingForAllTreeRenders() const;
     ///
 
 protected:
