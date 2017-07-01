@@ -281,21 +281,22 @@ NATRON_VERSION_STRINGIZE__(major, minor)
 #define NATRON_ICON_SET_FADED_COLOURS "3"
 #define NATRON_ICON_SET_NUMBER NATRON_ICON_SET_FADED_COLOURS
 
+// Group ordering is set at every place in the code where GROUP_ORDER appears in the comments
 #define PLUGIN_GROUP_IMAGE "Image"
 #define PLUGIN_GROUP_IMAGE_READERS "Readers"
 #define PLUGIN_GROUP_IMAGE_WRITERS "Writers"
+#define PLUGIN_GROUP_PAINT "Draw"
+#define PLUGIN_GROUP_TIME "Time"
+#define PLUGIN_GROUP_CHANNEL "Channel"
 #define PLUGIN_GROUP_COLOR "Color"
 #define PLUGIN_GROUP_FILTER "Filter"
-#define PLUGIN_GROUP_TRANSFORM "Transform"
-#define PLUGIN_GROUP_TIME "Time"
-#define PLUGIN_GROUP_PAINT "Draw"
 #define PLUGIN_GROUP_KEYER "Keyer"
-#define PLUGIN_GROUP_CHANNEL "Channel"
 #define PLUGIN_GROUP_MERGE "Merge"
-#define PLUGIN_GROUP_MULTIVIEW "Views"
-#define PLUGIN_GROUP_DEEP "Deep"
-#define PLUGIN_GROUP_TOOLSETS "ToolSets"
+#define PLUGIN_GROUP_TRANSFORM "Transform"
 #define PLUGIN_GROUP_3D "3D"
+#define PLUGIN_GROUP_DEEP "Deep"
+#define PLUGIN_GROUP_MULTIVIEW "Views"
+#define PLUGIN_GROUP_TOOLSETS "ToolSets"
 #define PLUGIN_GROUP_OTHER "Other"
 #define PLUGIN_GROUP_DEFAULT "Misc"
 #define PLUGIN_GROUP_OFX "OFX"
@@ -892,7 +893,7 @@ ignore_result(T x)
 #if COMPILER_SUPPORTS(CXX_OVERRIDE_CONTROL)
 // we want to use override & final, and get no warnings even if not compiling in c++11 mode
 CLANG_DIAG_OFF(c++11-extensions)
-GCC_DIAG_OFF(c++11-extensions)
+//GCC_DIAG_OFF(c++11-extensions) // no corresponding GCC warning option?
 #endif
 
 
