@@ -608,6 +608,10 @@ AppManager::~AppManager()
         _imp->mappedProcessWatcher->quitThread();
     }
 
+    if (_imp->tasksQueueManager) {
+        _imp->tasksQueueManager->quitThread();
+    }
+
     bool appsEmpty;
     {
         QMutexLocker k(&_imp->_appInstancesMutex);
@@ -2606,6 +2610,13 @@ AppManager::getApplicationBinaryDirPath() const
     return _imp->binaryPath.substr(0, foundSlash);
 }
 
+
+TreeRenderQueueManagerPtr
+AppManager::getTasksQueueManager() const
+{
+    return _imp->tasksQueueManager;
+}
+
 bool
 AppManager::isAggressiveCachingEnabled() const
 {
@@ -2640,7 +2651,6 @@ AppManager::registerEngineMetaTypes() const
     qRegisterMetaType<Variant>("Variant");
     qRegisterMetaType<Format>("Format");
     qRegisterMetaType<U64>("U64");
-    qRegisterMetaType<BufferedFrameContainerPtr>("BufferedFrameContainerPtr");
     qRegisterMetaType<SequenceTime>("SequenceTime");
     qRegisterMetaType<StandardButtons>("StandardButtons");
     qRegisterMetaType<RectI>("RectI");

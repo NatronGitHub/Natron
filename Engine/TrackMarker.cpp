@@ -629,7 +629,7 @@ TrackMarker::getMarkerImageRoI(TimeValue time) const
 
 std::pair<ImagePtr, RectD>
 TrackMarker::getMarkerImage(TimeValue time,
-                            const RectD& roi) const
+                            const RectD& roi)
 {
 
     assert( !roi.isNull() );
@@ -643,14 +643,13 @@ TrackMarker::getMarkerImage(TimeValue time,
     TreeRender::CtorArgsPtr args(new TreeRender::CtorArgs);
     {
         args->treeRootEffect = input->getEffectInstance();
+        args->provider = args->treeRootEffect;
         args->time = time;
         args->view = ViewIdx(0);
 
-        // Render default plane
-        args->plane = 0;
         args->mipMapLevel = 0;
         args->proxyScale = RenderScale(1.);
-        args->canonicalRoI = &roi;
+        args->canonicalRoI = roi;
         args->draftMode = false;
         args->playback = false;
         args->byPassCache = false;
@@ -659,10 +658,17 @@ TrackMarker::getMarkerImage(TimeValue time,
     TreeRenderPtr render = TreeRender::create(args);
 
     FrameViewRequestPtr outputRequest;
-    ActionRetCodeEnum stat = render->launchRender(&outputRequest);
+
+    ActionRetCodeEnum stat = args->treeRootEffect->launchRender(render);
     if (isFailureRetCode(stat)) {
         return std::make_pair(ImagePtr(), roi);
     }
+    args->treeRootEffect->waitForRenderFinished(render);
+    stat = render->getStatus();
+    if (isFailureRetCode(stat)) {
+        return std::make_pair(ImagePtr(), roi);
+    }
+    outputRequest = render->getOutputRequest();
     ImagePtr sourceImage = outputRequest->getRequestedScaleImagePlane();
 
     // Make sure the Natron image rendered is RGBA full rect and on CPU, we don't support other formats

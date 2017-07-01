@@ -678,12 +678,6 @@ enum RenderDirectionEnum
     
 
 
-enum SchedulingPolicyEnum
-{
-    eSchedulingPolicyFFA = 0, ///frames will be rendered concurrently without ordering (free for all)
-    eSchedulingPolicyOrdered ///frames will be rendered in order
-};
-
 enum DisplayChannelsEnum
 {
     eDisplayChannelsY = 0,

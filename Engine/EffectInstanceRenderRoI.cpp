@@ -106,7 +106,7 @@ NATRON_NAMESPACE_ENTER
  **/
 ActionRetCodeEnum
 EffectInstance::Implementation::handlePassThroughPlanes(const FrameViewRequestPtr& requestData,
-                                                        const RequestPassSharedDataPtr& requestPassSharedData,
+                                                        const TreeRenderExecutionDataPtr& requestPassSharedData,
                                                         const RectD& roiCanonical,
                                                         std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded,
                                                         bool *isPassThrough)
@@ -191,7 +191,7 @@ EffectInstance::Implementation::handleIdentityEffect(double par,
                                                      const RenderScale& combinedScale,
                                                      const RectD& canonicalRoi,
                                                      const FrameViewRequestPtr& requestData,
-                                                     const RequestPassSharedDataPtr& requestPassSharedData,
+                                                     const TreeRenderExecutionDataPtr& requestPassSharedData,
                                                      bool *isIdentity)
 {
 
@@ -247,7 +247,7 @@ EffectInstance::Implementation::handleIdentityEffect(double par,
 } // EffectInstance::Implementation::handleIdentityEffect
 
 ActionRetCodeEnum
-EffectInstance::Implementation::handleConcatenation(const RequestPassSharedDataPtr& requestPassSharedData,
+EffectInstance::Implementation::handleConcatenation(const TreeRenderExecutionDataPtr& requestPassSharedData,
                                                     const FrameViewRequestPtr& requestData,
                                                     const FrameViewRequestPtr& requester,
                                                     int inputNbInRequester,
@@ -844,7 +844,7 @@ EffectInstance::Implementation::launchRenderForSafetyAndBackend(const FrameViewR
 
 
 ActionRetCodeEnum
-EffectInstance::Implementation::handleUpstreamFramesNeeded(const RequestPassSharedDataPtr& requestPassSharedData,
+EffectInstance::Implementation::handleUpstreamFramesNeeded(const TreeRenderExecutionDataPtr& requestPassSharedData,
                                                            const FrameViewRequestPtr& requestPassData,
                                                            const RenderScale& proxyScale,
                                                            unsigned int mipMapLevel,
@@ -1011,7 +1011,7 @@ EffectInstance::requestRender(TimeValue timeInArgs,
                               const RectD & roiCanonical,
                               int inputNbInRequester,
                               const FrameViewRequestPtr& requester,
-                              const RequestPassSharedDataPtr& requestPassSharedData,
+                              const TreeRenderExecutionDataPtr& requestPassSharedData,
                               FrameViewRequestPtr* createdRequest,
                               EffectInstancePtr* createdRenderClone)
 {
@@ -1090,7 +1090,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
                                       int inputNbInRequester,
                                       const FrameViewRequestPtr& requestData,
                                       const FrameViewRequestPtr& requester,
-                                      const RequestPassSharedDataPtr& requestPassSharedData)
+                                      const TreeRenderExecutionDataPtr& requestPassSharedData)
 {
 
 
@@ -1450,7 +1450,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
 
 
 ActionRetCodeEnum
-EffectInstance::launchRender(const RequestPassSharedDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestData)
+EffectInstance::launchNodeRender(const TreeRenderExecutionDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestData)
 {
 
     {
@@ -1475,7 +1475,7 @@ EffectInstance::launchRender(const RequestPassSharedDataPtr& requestPassSharedDa
     // Notify that we are done rendering
     requestData->notifyRenderFinished(stat);
     return stat;
-} // launchRender
+} // launchNodeRender
 
 static void finishProducedPlanesTilesStatesMap(const std::map<ImagePlaneDesc, ImagePtr>& producedPlanes,
                                                bool aborted)
@@ -1491,12 +1491,9 @@ static void finishProducedPlanesTilesStatesMap(const std::map<ImagePlaneDesc, Im
 }
 
 ActionRetCodeEnum
-EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPassSharedData*/, const FrameViewRequestPtr& requestData)
+EffectInstance::launchRenderInternal(const TreeRenderExecutionDataPtr& /*requestPassSharedData*/, const FrameViewRequestPtr& requestData)
 {
     assert(isRenderClone() && getCurrentRender());
-
-    // Hint the multi-thread suite that we may use it so that it attempts to better distribute threads amongst concurrent effect renders
-    MultiThreadGetNumCPUHint multiThreadSuiteHint;
 
     const double par = getAspectRatio(-1);
     const unsigned int mappedMipMapLevel = requestData->getRenderMappedMipMapLevel();
@@ -1656,9 +1653,9 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPa
         // Recurse by calling launchRenderWithArgs(), this will call requestRender() and this function again.
         RectD roi = requestData->getCurrentRoI();
         ImagePlaneDesc plane = requestData->getPlaneDesc();
-        FrameViewRequestPtr outputRequest;
-        ActionRetCodeEnum stat = render->launchRenderWithArgs(shared_from_this(), getCurrentRenderTime(), getCurrentRenderView(), requestData->getProxyScale(), requestData->getMipMapLevel(), &plane, &roi, &outputRequest);
 
+        TreeRenderExecutionDataPtr execData = launchSubRender(shared_from_this(), getCurrentRenderTime(), getCurrentRenderView(), requestData->getProxyScale(), requestData->getMipMapLevel(), &plane, &roi, render);
+        ActionRetCodeEnum stat = render->getStatus();
         return stat;
 
     }
@@ -1695,6 +1692,7 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPa
         // mipmapped version automatically
 
         ImagePtr downscaledImage;
+
         bool hasUnrenderedTile, hasPendingTiles;
         ActionRetCodeEnum stat = _imp->lookupCachedImage(dstMipMapLevel, requestData->getProxyScale(), requestData->getPlaneDesc(), perMipMapLevelRoDPixel, downscaledRoI, eCacheAccessModeReadWrite, backendType, &downscaledImage, &hasPendingTiles, &hasUnrenderedTile);
 
@@ -1703,17 +1701,28 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& /*requestPa
         }
 
         // We just rendered the full scale version, no tiles should be marked unrendered.
-        // However another thread could have marked pending the tiles at dstMipMapLevel in between, thus we just have to wait for it to be read
-        assert(!hasUnrenderedTile);
-
-        if (!downscaledImage->getCacheEntry()->waitForPendingTiles()) {
-            return eActionStatusAborted;
+        // In some cases, the image might no longer be in the Cache if the Cache was cleared. In this case, manually downscale
+        // the image
+        if (hasUnrenderedTile) {
+            downscaledImage->getCacheEntry()->markCacheTilesAsAborted();
+            downscaledImage = fullscalePlane->downscaleMipMap(fullscalePlane->getBounds(), dstMipMapLevel - mappedMipMapLevel);
+        } else {
+            // However another thread could have marked pending the tiles at dstMipMapLevel in between, thus we just have to wait for it to be read
+            if (hasPendingTiles) {
+                if (!downscaledImage->getCacheEntry()->waitForPendingTiles()) {
+                    downscaledImage->getCacheEntry()->markCacheTilesAsAborted();
+                    return eActionStatusAborted;
+                }
+            }
+            downscaledImage->getCacheEntry()->markCacheTilesAsRendered();
         }
+
+
 
 
         requestData->setRequestedScaleImagePlane(downscaledImage);
     }
-    //QString name = QString::fromUtf8(getScriptName_mt_safe().c_str()) + QDateTime::currentDateTime().toString() + QString::fromUtf8(".png");
+    //QString name = QString::fromUtf8(getScriptName_mt_safe().c_str()) + QString::fromUtf8("_") + QString::number(getCurrentRenderTime()) + QString::fromUtf8("_") +  QDateTime::currentDateTime().toString() + QString::fromUtf8(".png");
     //appPTR->debugImage(requestData->getRequestedScaleImagePlane().get(), requestData->getRequestedScaleImagePlane()->getBounds(), name);
     return isRenderAborted() ? eActionStatusAborted : eActionStatusOK;
 } // launchRenderInternal

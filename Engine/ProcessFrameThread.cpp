@@ -90,7 +90,7 @@ ProcessFrameThread::processTask(const ProcessFrameThreadStartArgsPtr& task)
     if (!task || !task->processor || !task->args) {
         return;
     }
-    task->processor->processFrame(*task->args);
+    task->processor->notifyProcessFrame(*task->args);
 }
 
 GenericSchedulerThread::ThreadStateEnum
@@ -108,6 +108,8 @@ ProcessFrameThread::threadLoopOnce(const GenericThreadStartArgsPtr& inArgs)
     } else {
         processTask(args);
     }
+    
+    args->processor->notifyFrameProcessed(*args->args);
 
     return eThreadStateActive;
 }

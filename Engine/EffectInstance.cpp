@@ -77,6 +77,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/RenderEngine.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/ReadNode.h"
+#include "Engine/TreeRenderQueueManager.h"
 #include "Engine/Settings.h"
 #include "Engine/Timer.h"
 #include "Engine/TreeRender.h"
@@ -179,10 +180,10 @@ EffectInstance::createRenderCopy(const FrameViewRenderKey& key) const
     return clone;
 }
 
-RenderEngine*
+RenderEnginePtr
 EffectInstance::createRenderEngine()
 {
-    return new RenderEngine(getNode());
+    return RenderEngine::create(getNode());
 }
 
 
@@ -846,17 +847,22 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
     {
         ActionRetCodeEnum status;
         if (currentRender) {
-            status = currentRender->launchRenderWithArgs(inputEffect, inputTime, inputView, inputProxyScale, inputMipMapLevel, inArgs.plane, &roiCanonical, &outputRequest);
+            TreeRenderExecutionDataPtr subLaunchData = launchSubRender(inputEffect, inputTime, inputView, inputProxyScale, inputMipMapLevel, inArgs.plane, &roiCanonical, currentRender);
+            outputRequest = subLaunchData->getOutputRequest();
+            status = subLaunchData->getStatus();
         } else {
             // We are not during a render, create one.
             TreeRender::CtorArgsPtr rargs(new TreeRender::CtorArgs());
+            rargs->provider = getThisTreeRenderQueueProviderShared();
             rargs->time = inputTime;
             rargs->view = inputView;
             rargs->treeRootEffect = inputEffect;
-            rargs->canonicalRoI = &roiCanonical;
+            rargs->canonicalRoI = roiCanonical;
             rargs->proxyScale = inputProxyScale;
             rargs->mipMapLevel = inputMipMapLevel;
-            rargs->plane = inArgs.plane;
+            if (inArgs.plane) {
+                rargs->plane = *inArgs.plane;
+            }
             rargs->draftMode = isDraftMode;
             rargs->playback = isPlayback;
             rargs->byPassCache = false;
@@ -864,11 +870,16 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
             if (!currentRender) {
                 currentRender = renderObject;
             }
-            status = renderObject->launchRender(&outputRequest);
+            launchRender(renderObject);
+            waitForRenderFinished(renderObject);
+            outputRequest = renderObject->getOutputRequest();
+            status = renderObject->getStatus();
         }
+
         if (isFailureRetCode(status)) {
             return false;
         }
+        assert(outputRequest);
     }
 
 

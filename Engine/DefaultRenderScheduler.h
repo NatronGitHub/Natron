@@ -39,14 +39,19 @@ class DefaultScheduler
     Q_OBJECT
     GCC_DIAG_SUGGEST_OVERRIDE_ON
 
+protected:
+
+    DefaultScheduler(const RenderEnginePtr& engine,
+                     const NodePtr& effect);
 public:
 
-    DefaultScheduler(RenderEngine* engine,
-                     const NodePtr& effect);
+    static OutputSchedulerThreadPtr create(const RenderEnginePtr& engine,
+                                           const NodePtr& effect)
+    {
+        return OutputSchedulerThreadPtr(new DefaultScheduler(engine, effect));
+    }
 
     virtual ~DefaultScheduler();
-
-    virtual SchedulingPolicyEnum getSchedulingPolicy() const OVERRIDE FINAL;
 
     virtual void processFrame(const ProcessFrameArgsBase& args) OVERRIDE FINAL;
 
@@ -57,9 +62,9 @@ private:
     virtual void getFrameRangeToRender(TimeValue& first, TimeValue& last) const OVERRIDE FINAL;
     virtual TimeValue timelineGetTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual RenderThreadTask* createRunnable(TimeValue frame, bool useRenderStarts, const std::vector<ViewIdx>& viewsToRender) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ActionRetCodeEnum createFrameRenderResults(TimeValue time, const std::vector<ViewIdx>& viewsToRender, bool enableRenderStats, RenderFrameResultsContainerPtr* results) OVERRIDE;
 
-    virtual void handleRenderFailure(ActionRetCodeEnum stat, const std::string& errorMessage) OVERRIDE FINAL;
+    virtual void onRenderFailed(ActionRetCodeEnum status) OVERRIDE FINAL;
     virtual void aboutToStartRender() OVERRIDE FINAL;
     virtual void onRenderStopped(bool aborted) OVERRIDE FINAL;
 

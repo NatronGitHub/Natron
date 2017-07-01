@@ -218,7 +218,7 @@ TrackerHelper::trackMarkers(const std::list<TrackMarkerPtr >& markers,
     bool autoKeyingOnEnabledParamEnabled = provider->canDisableMarkersAutomatically();
 
     /// The accessor and its cache is local to a track operation, it is wiped once the whole sequence track is finished.
-    boost::shared_ptr<TrackerFrameAccessor> accessor( new TrackerFrameAccessor(trackerNodeSource, trackerNodeMask, maskImagePlane, maskPlaneIndex, enabledChannels, formatHeight) );
+    TrackerFrameAccessorPtr accessor = TrackerFrameAccessor::create(trackerNodeSource, trackerNodeMask, maskImagePlane, maskPlaneIndex, enabledChannels, formatHeight);
     boost::shared_ptr<mv::AutoTrack> trackContext( new mv::AutoTrack( accessor.get() ) );
     std::vector<TrackMarkerAndOptionsPtr > trackAndOptions;
     mv::TrackRegionOptions mvOptions;

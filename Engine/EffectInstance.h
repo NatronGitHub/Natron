@@ -49,6 +49,7 @@
 #include "Engine/FrameViewRequest.h"
 #include "Engine/EffectInstanceActionResults.h"
 #include "Engine/PluginActionShortcut.h"
+#include "Engine/TreeRenderQueueProvider.h"
 #include "Engine/ViewIdx.h"
 
 #include "Engine/EngineFwd.h"
@@ -242,6 +243,7 @@ NATRON_NAMESPACE_ENTER
  **/
 class EffectInstance
     : public NamedKnobHolder
+    , public TreeRenderQueueProvider
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -303,6 +305,12 @@ protected: // derives from KnobHolder, parent of JoinViewsNode, OneViewNode, Pre
 
 protected:
     EffectInstance(const EffectInstancePtr& other, const FrameViewRenderKey& key);
+
+    virtual TreeRenderQueueProviderConstPtr getThisTreeRenderQueueProviderShared() const OVERRIDE FINAL
+    {
+        EffectInstanceConstPtr ret = shared_from_this();
+        return ret;
+    }
 
 public:
 
@@ -1059,7 +1067,7 @@ public:
      * The default render engine just renders the requested tree and doesn't do
      * extra-stuff.
      **/
-    virtual RenderEngine* createRenderEngine();
+    virtual RenderEnginePtr createRenderEngine();
 
     /**
      * @brief Returns true if the node is capable of generating
@@ -1158,7 +1166,7 @@ public:
                                     const RectD & roiCanonical,
                                     int inputNbInRequester,
                                     const FrameViewRequestPtr& requester,
-                                    const RequestPassSharedDataPtr& requestPassSharedData,
+                                    const TreeRenderExecutionDataPtr& requestPassSharedData,
                                     FrameViewRequestPtr* createdRequest,
                                     EffectInstancePtr* createdRenderClone);
 
@@ -1168,7 +1176,7 @@ private:
                                             int inputNbInRequester,
                                             const FrameViewRequestPtr& requestData,
                                             const FrameViewRequestPtr& requester,
-                                            const RequestPassSharedDataPtr& requestPassSharedData);
+                                            const TreeRenderExecutionDataPtr& requestPassSharedData);
     
 public:
     
@@ -1177,7 +1185,7 @@ public:
      * is rendered. Only a single thread will be able to call launchRender on the same frame view request.
      * This function must be called on the FrameViewRequest object returned by requestRender()
      **/
-    ActionRetCodeEnum launchRender(const RequestPassSharedDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestData);
+    ActionRetCodeEnum launchNodeRender(const TreeRenderExecutionDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestData);
 
     /**
      * @brief Convenience function for getCurrentRender()->isRenderAborted()
@@ -1236,7 +1244,7 @@ protected:
     
 private:
 
-    ActionRetCodeEnum launchRenderInternal(const RequestPassSharedDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestData);
+    ActionRetCodeEnum launchRenderInternal(const TreeRenderExecutionDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestData);
 
 
 public:

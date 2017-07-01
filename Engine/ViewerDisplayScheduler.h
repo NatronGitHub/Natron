@@ -26,30 +26,140 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Engine/OutputSchedulerThread.h"
+#include "Engine/OpenGLViewerI.h"
 
 NATRON_NAMESPACE_ENTER
+
+
+
+struct PerViewerInputRenderData
+{
+    TreeRenderPtr render;
+    ImagePtr viewerProcessImage, colorPickerImage, colorPickerInputImage;
+    ActionRetCodeEnum retCode;
+    ImageCacheKeyPtr viewerProcessImageKey;
+    NodePtr viewerProcessNode;
+    NodePtr colorPickerNode;
+    NodePtr colorPickerInputNode;
+
+    PerViewerInputRenderData()
+    : render()
+    , viewerProcessImage()
+    , colorPickerImage()
+    , colorPickerInputImage()
+    , retCode(eActionStatusFailed)
+    , viewerProcessImageKey()
+    , viewerProcessNode()
+    , colorPickerNode()
+    , colorPickerInputNode()
+    {
+
+    }
+};
+
+
+class ViewerRenderFrameSubResult : public RenderFrameSubResult
+{
+public:
+
+    ViewerRenderFrameSubResult()
+    : RenderFrameSubResult()
+    , textureTransferType(OpenGLViewerI::TextureTransferArgs::eTextureTransferTypeReplace)
+    , copyInputBFromA(false)
+    , perInputsData()
+    {
+
+    }
+
+    virtual ~ViewerRenderFrameSubResult() {}
+
+    virtual ActionRetCodeEnum waitForResultsReady(const TreeRenderQueueProviderPtr& provider) OVERRIDE FINAL;
+
+    virtual ActionRetCodeEnum launchRenders(const TreeRenderQueueProviderPtr& provider) OVERRIDE FINAL;
+
+    virtual void abortRender() OVERRIDE FINAL;
+
+    void onTreeRenderFinished(int index);
+
+public:
+
+    OpenGLViewerI::TextureTransferArgs::TypeEnum textureTransferType;
+    bool copyInputBFromA;
+    PerViewerInputRenderData perInputsData[2];
+};
+
+class ViewerRenderFrameResultsContainer : public RenderFrameResultsContainer
+{
+public:
+
+    ViewerRenderFrameResultsContainer(const TreeRenderQueueProviderPtr& provider)
+    : RenderFrameResultsContainer(provider)
+    , recenterViewer(0)
+    , viewerCenter()
+    {
+
+    }
+
+    virtual ~ViewerRenderFrameResultsContainer() {}
+
+    bool recenterViewer;
+    Point viewerCenter;
+};
+
+typedef boost::shared_ptr<ViewerRenderFrameSubResult> ViewerRenderFrameSubResultPtr;
+typedef boost::shared_ptr<ViewerRenderFrameResultsContainer> ViewerRenderFrameResultsContainerPtr;
 
 
 /**
  * @brief An OutputSchedulerThread implementation that also update the viewer with the rendered image
  **/
-class ViewerInstance;
 class ViewerDisplayScheduler
 : public OutputSchedulerThread
 {
 
+protected:
+
+
+
+    ViewerDisplayScheduler(const RenderEnginePtr& engine,
+                           const NodePtr& viewer);
+
+
 public:
 
-    ViewerDisplayScheduler(RenderEngine* engine,
-                           const NodePtr& viewer);
+    static OutputSchedulerThreadPtr create(const RenderEnginePtr& engine,
+                                           const NodePtr& viewer)
+    {
+        return OutputSchedulerThreadPtr(new ViewerDisplayScheduler(engine, viewer));
+    }
+
 
     virtual ~ViewerDisplayScheduler();
 
-    virtual SchedulingPolicyEnum getSchedulingPolicy() const OVERRIDE FINAL { return eSchedulingPolicyOrdered; }
+    /**
+     * @brief Uploads the given results to the viewer.
+     * @returns True if something was done, false otherwise.
+     **/
+    static bool processFramesResults(const ViewerNodePtr& viewer,const RenderFrameResultsContainerPtr& results);
 
-    virtual void processFrame(const ProcessFrameArgsBase& args) OVERRIDE FINAL;
+    /**
+     * @brief Generic function for the viewer to launch a render. Used by CurrentFrameRequestScheduler and
+     * ViewerDisplayScheduler
+     **/
+    static ActionRetCodeEnum createFrameRenderResultsGeneric(const ViewerNodePtr& viewer,
+                                                       const TreeRenderQueueProviderPtr& provider,
+                                                       TimeValue time,
+                                                       bool isPlayback,
+                                                       const RotoStrokeItemPtr& activeDrawingStroke,
+                                                       const std::vector<ViewIdx>& viewsToRender,
+                                                       bool enableRenderStats,
+                                                       RenderFrameResultsContainerPtr* results) ;
 
 private:
+
+    // Overriden from ProcessFrameI
+    virtual void processFrame(const ProcessFrameArgsBase& args) OVERRIDE FINAL;
+    virtual void onFrameProcessed(const ProcessFrameArgsBase& args) OVERRIDE FINAL;
 
 
     virtual void timelineGoTo(TimeValue time) OVERRIDE FINAL;
@@ -58,10 +168,9 @@ private:
 
     virtual void getFrameRangeToRender(TimeValue& first, TimeValue& last) const OVERRIDE FINAL;
 
+    virtual ActionRetCodeEnum createFrameRenderResults(TimeValue time, const std::vector<ViewIdx>& viewsToRender, bool enableRenderStats, RenderFrameResultsContainerPtr* results) OVERRIDE;
 
-    virtual RenderThreadTask* createRunnable(TimeValue frame, bool useRenderStarts, const std::vector<ViewIdx>& viewsToRender) OVERRIDE FINAL WARN_UNUSED_RETURN;
-
-    virtual void handleRenderFailure(ActionRetCodeEnum stat, const std::string& errorMessage) OVERRIDE FINAL;
+    virtual void onRenderFailed(ActionRetCodeEnum status) OVERRIDE FINAL;
 
     virtual TimeValue getLastRenderedTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onRenderStopped(bool aborted) OVERRIDE FINAL;

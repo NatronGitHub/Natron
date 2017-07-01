@@ -169,11 +169,11 @@ ViewerNode::initializeOverlayInteract()
     registerOverlay(EffectInstance::eOverlayViewportTypeViewer, _imp->ui, std::map<std::string, std::string>());
 }
 
-RenderEngine*
+RenderEnginePtr
 ViewerNode::createRenderEngine()
 {
 
-    return new ViewerRenderEngine(getNode());
+    return ViewerRenderEngine::create(getNode());
 }
 
 

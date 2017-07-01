@@ -47,6 +47,26 @@ GCC_DIAG_ON(unused-parameter)
 NATRON_NAMESPACE_ENTER
 
 
+/**
+ * @brief The index of a tile in the Cache. This is a 64 value encoding 2 32bit values
+ * of the file index containing the tile and the index of the tile in that file.
+ * @see getTileIndex function in the cpp
+ **/
+struct TileInternalIndex
+{
+    U64 index;
+};
+
+/**
+ * @brief The hash of a tile: this is the identifier of a tile in the Cache and what is passed
+ * in the retrieveAndLockTiles function. The hash is produced with the function CacheBase::makeTileCacheIndex
+ **/
+struct TileHash
+{
+    U64 index;
+};
+
+
 enum TileStatusEnum
 {
     // The tile is rendered with the highest quality possible
@@ -74,7 +94,7 @@ struct TileState
     TileStatusEnum status;
 
     // The indices of the buffers in the cache
-    U64 channelsTileStorageIndex[4];
+    TileInternalIndex channelsTileStorageIndex[4];
 
     // If the tile status is eTileStatusPending, this is the uuid of the process that is in charge of computing
     // the tile. This can be used to detect tile abandonnement.
@@ -86,7 +106,9 @@ struct TileState
     , channelsTileStorageIndex()
     , uuid()
     {
-        channelsTileStorageIndex[0] = channelsTileStorageIndex[1] = channelsTileStorageIndex[2] = channelsTileStorageIndex[3] = (U64)-1;
+        TileInternalIndex i;
+        i.index = (U64)-1;
+        channelsTileStorageIndex[0] = channelsTileStorageIndex[1] = channelsTileStorageIndex[2] = channelsTileStorageIndex[3] = i;
     }
 
     TileState(const TileState& other)

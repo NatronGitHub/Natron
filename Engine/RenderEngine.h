@@ -31,6 +31,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/weak_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #endif
 
 #include "Engine/EngineFwd.h"
@@ -49,6 +50,7 @@ NATRON_NAMESPACE_ENTER
 struct RenderEnginePrivate;
 class RenderEngine
 : public QObject
+, public boost::enable_shared_from_this<RenderEngine>
 {
     Q_OBJECT
 
@@ -56,9 +58,17 @@ class RenderEngine
     friend class OutputSchedulerThread;
     friend class ViewerDisplayScheduler;
 
+protected:
+    
+    RenderEngine(const NodePtr& output);
+
+
 public:
 
-    RenderEngine(const NodePtr& output);
+    static RenderEnginePtr create(const NodePtr& output)
+    {
+        return RenderEnginePtr(new RenderEngine(output));
+    }
 
     virtual ~RenderEngine();
 
@@ -286,7 +296,7 @@ protected:
     /**
      * @brief Must create the main-scheduler that will be used for scheduling playback/writing on disk.
      **/
-    virtual OutputSchedulerThread* createScheduler(const NodePtr& effect);
+    virtual OutputSchedulerThreadPtr createScheduler(const NodePtr& effect);
 
 private:
 
@@ -302,11 +312,17 @@ private:
 class ViewerRenderEngine
 : public RenderEngine
 {
-public:
+protected:
 
     ViewerRenderEngine(const NodePtr& output)
     : RenderEngine(output)
     {}
+public:
+
+    static RenderEnginePtr create(const NodePtr& output)
+    {
+        return RenderEnginePtr(new ViewerRenderEngine(output));
+    }
 
     virtual ~ViewerRenderEngine() {}
     
@@ -314,7 +330,7 @@ public:
                              const RenderStatsPtr& stats) OVERRIDE FINAL;
 private:
     
-    virtual OutputSchedulerThread* createScheduler(const NodePtr& effect) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual OutputSchedulerThreadPtr createScheduler(const NodePtr& effect) OVERRIDE FINAL WARN_UNUSED_RETURN;
 };
 
 NATRON_NAMESPACE_EXIT

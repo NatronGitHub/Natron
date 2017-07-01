@@ -56,7 +56,7 @@ NATRON_NAMESPACE_ENTER
 struct RenderEnginePrivate
 {
     QMutex schedulerCreationLock;
-    OutputSchedulerThread* scheduler;
+    OutputSchedulerThreadPtr scheduler;
 
     //If true then a current frame render can start playback, protected by abortedRequestedMutex
     bool canAutoRestartPlayback;
@@ -64,7 +64,7 @@ struct RenderEnginePrivate
     NodeWPtr output;
     mutable QMutex pbModeMutex;
     PlaybackModeEnum pbMode;
-    ViewerCurrentFrameRequestScheduler* currentFrameScheduler;
+    ViewerCurrentFrameRequestSchedulerPtr currentFrameScheduler;
 
     // Only used on the main-thread
     boost::scoped_ptr<RenderEngineWatcher> engineWatcher;
@@ -83,13 +83,13 @@ struct RenderEnginePrivate
 
     RenderEnginePrivate(const NodePtr& output)
     : schedulerCreationLock()
-    , scheduler(0)
+    , scheduler()
     , canAutoRestartPlayback(false)
     , canAutoRestartPlaybackMutex()
     , output(output)
     , pbModeMutex()
     , pbMode(ePlaybackModeLoop)
-    , currentFrameScheduler(0)
+    , currentFrameScheduler()
     , refreshQueue()
     {
     }
@@ -103,16 +103,15 @@ RenderEngine::RenderEngine(const NodePtr& output)
 
 RenderEngine::~RenderEngine()
 {
-    delete _imp->currentFrameScheduler;
-    _imp->currentFrameScheduler = 0;
-    delete _imp->scheduler;
-    _imp->scheduler = 0;
+    // All renders should be finished
+    assert(!_imp->scheduler || !_imp->scheduler->hasTreeRendersLaunched());
+    assert(!_imp->currentFrameScheduler || !_imp->currentFrameScheduler->hasTreeRendersLaunched());
 }
 
-OutputSchedulerThread*
+OutputSchedulerThreadPtr
 RenderEngine::createScheduler(const NodePtr& effect)
 {
-    return new DefaultScheduler(this, effect);
+    return DefaultScheduler::create(shared_from_this(), effect);
 }
 
 NodePtr
@@ -253,7 +252,7 @@ RenderEngine::renderCurrentFrameNowInternal(bool enableRenderStats)
 
     if (!_imp->currentFrameScheduler) {
         NodePtr output = getOutput();
-        _imp->currentFrameScheduler = new ViewerCurrentFrameRequestScheduler(output);
+        _imp->currentFrameScheduler = ViewerCurrentFrameRequestScheduler::create(shared_from_this(), output);
     }
 
     _imp->currentFrameScheduler->renderCurrentFrame(enableRenderStats);
@@ -285,9 +284,7 @@ RenderEngine::quitEngine(bool allowRestarts)
     }
 
     if (_imp->currentFrameScheduler) {
-        _imp->currentFrameScheduler->onAbortRequested(false);
-        _imp->currentFrameScheduler->onQuitRequested(allowRestarts);
-        _imp->currentFrameScheduler->onWaitForThreadToQuit();
+        _imp->currentFrameScheduler->quitThread(allowRestarts);
     }
 }
 
@@ -299,7 +296,7 @@ RenderEngine::waitForEngineToQuit_not_main_thread()
     }
 
     if (_imp->currentFrameScheduler) {
-        _imp->currentFrameScheduler->onWaitForThreadToQuit();
+        _imp->currentFrameScheduler->waitForThreadToQuit_not_main_thread();
     }
 }
 
@@ -321,7 +318,7 @@ RenderEngine::waitForEngineToQuit_enforce_blocking()
     }
 
     if (_imp->currentFrameScheduler) {
-        _imp->currentFrameScheduler->onWaitForThreadToQuit();
+        _imp->currentFrameScheduler->waitForThreadToQuit_enforce_blocking();
     }
 }
 
@@ -331,7 +328,7 @@ RenderEngine::abortRenderingInternal(bool keepOldestRender)
     bool ret = false;
 
     if (_imp->currentFrameScheduler) {
-        _imp->currentFrameScheduler->onAbortRequested(keepOldestRender);
+        ret |= _imp->currentFrameScheduler->abortThreadedTask(keepOldestRender);
     }
 
     if ( _imp->scheduler && _imp->scheduler->isWorking() ) {
@@ -371,7 +368,7 @@ void
 RenderEngine::waitForAbortToComplete_not_main_thread()
 {
     if (_imp->currentFrameScheduler) {
-        _imp->currentFrameScheduler->onWaitForAbortCompleted();
+        _imp->currentFrameScheduler->waitForAbortToComplete_not_main_thread();
     }
     if (_imp->scheduler) {
         _imp->scheduler->waitForAbortToComplete_not_main_thread();
@@ -386,7 +383,7 @@ RenderEngine::waitForAbortToComplete_enforce_blocking()
     }
 
     if (_imp->currentFrameScheduler) {
-        _imp->currentFrameScheduler->onWaitForAbortCompleted();
+        _imp->currentFrameScheduler->waitForAbortToComplete_enforce_blocking();
     }
 }
 
@@ -442,12 +439,12 @@ bool
 RenderEngine::hasActiveRender() const
 {
     if (_imp->scheduler) {
-        if (_imp->scheduler->getNActiveRenderThreads() > 0) {
+        if (_imp->scheduler->hasTreeRendersLaunched()) {
             return true;
         }
     }
     if (_imp->currentFrameScheduler) {
-        if (_imp->currentFrameScheduler->hasThreadsAlive()) {
+        if (_imp->currentFrameScheduler->hasTreeRendersLaunched()) {
             return true;
         }
     }
@@ -547,10 +544,10 @@ RenderEngine::reportStats(TimeValue time,
     }
 } // reportStats
 
-OutputSchedulerThread*
+OutputSchedulerThreadPtr
 ViewerRenderEngine::createScheduler(const NodePtr& effect)
 {
-    return new ViewerDisplayScheduler( this, effect );
+    return ViewerDisplayScheduler::create( shared_from_this(), effect );
 }
 
 void
@@ -558,7 +555,7 @@ ViewerRenderEngine::reportStats(TimeValue time,
                                 const RenderStatsPtr& stats)
 {
     ViewerNodePtr viewer = getOutput()->isEffectViewerNode();
-    double wallTime;
+    double wallTime = 0.;
     std::map<NodePtr, NodeRenderStats > statsMap = stats->getStats(&wallTime);
     viewer->reportStats(time, wallTime, statsMap);
 }

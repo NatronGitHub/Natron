@@ -136,7 +136,7 @@ struct PerLaunchRequestData
 
 };
 
-typedef std::map<RequestPassSharedDataWPtr, PerLaunchRequestData> LaunchRequestDataMap;
+typedef std::map<TreeRenderExecutionDataWPtr, PerLaunchRequestData> LaunchRequestDataMap;
 
 struct FrameViewRequestPrivate
 {
@@ -431,7 +431,7 @@ FrameViewRequest::setCurrentRoI(const RectD& roi)
 }
 
 void
-FrameViewRequest::addDependency(const RequestPassSharedDataPtr& request, const FrameViewRequestPtr& deps)
+FrameViewRequest::addDependency(const TreeRenderExecutionDataPtr& request, const FrameViewRequestPtr& deps)
 {
 
     {
@@ -442,7 +442,7 @@ FrameViewRequest::addDependency(const RequestPassSharedDataPtr& request, const F
 }
 
 int
-FrameViewRequest::markDependencyAsRendered(const RequestPassSharedDataPtr& request, const FrameViewRequestPtr& deps)
+FrameViewRequest::markDependencyAsRendered(const TreeRenderExecutionDataPtr& request, const FrameViewRequestPtr& deps)
 {
 
     QMutexLocker k(&_imp->lock);
@@ -466,7 +466,7 @@ FrameViewRequest::markDependencyAsRendered(const RequestPassSharedDataPtr& reque
 }
 
 void
-FrameViewRequest::clearRenderedDependencies(const RequestPassSharedDataPtr& request)
+FrameViewRequest::clearRenderedDependencies(const TreeRenderExecutionDataPtr& request)
 {
     QMutexLocker k(&_imp->lock);
     PerLaunchRequestData& data = _imp->requestData[request];
@@ -474,7 +474,7 @@ FrameViewRequest::clearRenderedDependencies(const RequestPassSharedDataPtr& requ
 }
 
 int
-FrameViewRequest::getNumDependencies(const RequestPassSharedDataPtr& request) const
+FrameViewRequest::getNumDependencies(const TreeRenderExecutionDataPtr& request) const
 {
     QMutexLocker k(&_imp->lock);
     PerLaunchRequestData& data = _imp->requestData[request];
@@ -482,7 +482,7 @@ FrameViewRequest::getNumDependencies(const RequestPassSharedDataPtr& request) co
 }
 
 void
-FrameViewRequest::addListener(const RequestPassSharedDataPtr& request, const FrameViewRequestPtr& other)
+FrameViewRequest::addListener(const TreeRenderExecutionDataPtr& request, const FrameViewRequestPtr& other)
 {
     assert(other);
     QMutexLocker k(&_imp->lock);
@@ -491,7 +491,7 @@ FrameViewRequest::addListener(const RequestPassSharedDataPtr& request, const Fra
 }
 
 std::list<FrameViewRequestPtr>
-FrameViewRequest::getListeners(const RequestPassSharedDataPtr& request) const
+FrameViewRequest::getListeners(const TreeRenderExecutionDataPtr& request) const
 {
     std::list<FrameViewRequestPtr> ret;
     QMutexLocker k(&_imp->lock);
@@ -506,7 +506,7 @@ FrameViewRequest::getListeners(const RequestPassSharedDataPtr& request) const
 }
 
 std::size_t
-FrameViewRequest::getNumListeners(const RequestPassSharedDataPtr& request) const
+FrameViewRequest::getNumListeners(const TreeRenderExecutionDataPtr& request) const
 {
     QMutexLocker k(&_imp->lock);
     PerLaunchRequestData& data = _imp->requestData[request];

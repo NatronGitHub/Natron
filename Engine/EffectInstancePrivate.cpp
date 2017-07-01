@@ -135,7 +135,7 @@ EffectInstance::getCombinedScale(unsigned int mipMapLevel, const RenderScale& pr
 }
 
 ActionRetCodeEnum
-EffectInstance::Implementation::resolveRenderBackend(const RequestPassSharedDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestPassData, const RectI& roi, CacheAccessModeEnum *cachePolicy, RenderBackendTypeEnum* renderBackend)
+EffectInstance::Implementation::resolveRenderBackend(const TreeRenderExecutionDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestPassData, const RectI& roi, CacheAccessModeEnum *cachePolicy, RenderBackendTypeEnum* renderBackend)
 {
     // Default to CPU
     *renderBackend = eRenderBackendTypeCPU;
@@ -212,7 +212,7 @@ EffectInstance::Implementation::resolveRenderBackend(const RequestPassSharedData
 } // resolveRenderBackend
 
 CacheAccessModeEnum
-EffectInstance::Implementation::shouldRenderUseCache(const RequestPassSharedDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestPassData)
+EffectInstance::Implementation::shouldRenderUseCache(const TreeRenderExecutionDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestPassData)
 {
     bool retSet = false;
     CacheAccessModeEnum ret = eCacheAccessModeNone;

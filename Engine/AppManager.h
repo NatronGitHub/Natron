@@ -489,6 +489,8 @@ public:
     typedef boost::shared_ptr<PythonTLSData> PythonTLSDataPtr;
     
 
+    TreeRenderQueueManagerPtr getTasksQueueManager() const;
+
 
 public Q_SLOTS:
 

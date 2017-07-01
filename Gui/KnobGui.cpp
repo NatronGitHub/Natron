@@ -826,12 +826,13 @@ KnobGui::createInterpolationMenu(QMenu* menu,
         interpolationMenu->menuAction()->setEnabled(false);
     }
 
-    QList<QVariant> actionData;
-    actionData.push_back((int)dimension);
-    actionData.push_back((int)view);
+    QList<QVariant> genericActionData;
+    genericActionData.push_back((int)dimension);
+    genericActionData.push_back((int)view);
 
     {
         QAction* constantInterpAction = new QAction(tr("Constant"), interpolationMenu);
+        QList<QVariant> actionData = genericActionData;
         actionData.push_back((int)eKeyframeTypeConstant);
         constantInterpAction->setData( QVariant(actionData) );
         QObject::connect( constantInterpAction, SIGNAL(triggered()), this, SLOT(onInterpolationActionTriggered()) );
@@ -840,6 +841,7 @@ KnobGui::createInterpolationMenu(QMenu* menu,
 
     {
         QAction* linearInterpAction = new QAction(tr("Linear"), interpolationMenu);
+        QList<QVariant> actionData = genericActionData;
         actionData.push_back((int)eKeyframeTypeLinear);
         linearInterpAction->setData( QVariant(actionData) );
         QObject::connect( linearInterpAction, SIGNAL(triggered()), this, SLOT(onInterpolationActionTriggered()) );
@@ -847,6 +849,7 @@ KnobGui::createInterpolationMenu(QMenu* menu,
     }
     {
         QAction* smoothInterpAction = new QAction(tr("Smooth"), interpolationMenu);
+        QList<QVariant> actionData = genericActionData;
         actionData.push_back((int)eKeyframeTypeSmooth);
         smoothInterpAction->setData( QVariant(actionData) );
         QObject::connect( smoothInterpAction, SIGNAL(triggered()), this, SLOT(onInterpolationActionTriggered()) );
@@ -854,6 +857,7 @@ KnobGui::createInterpolationMenu(QMenu* menu,
     }
     {
         QAction* catmullRomInterpAction = new QAction(tr("Catmull-Rom"), interpolationMenu);
+        QList<QVariant> actionData = genericActionData;
         actionData.push_back((int)eKeyframeTypeCatmullRom);
         catmullRomInterpAction->setData( QVariant(actionData) );
         QObject::connect( catmullRomInterpAction, SIGNAL(triggered()), this, SLOT(onInterpolationActionTriggered()) );
@@ -861,6 +865,7 @@ KnobGui::createInterpolationMenu(QMenu* menu,
     }
     {
         QAction* cubicInterpAction = new QAction(tr("Cubic"), interpolationMenu);
+        QList<QVariant> actionData = genericActionData;
         actionData.push_back((int)eKeyframeTypeCubic);
         cubicInterpAction->setData( QVariant(actionData) );
         QObject::connect( cubicInterpAction, SIGNAL(triggered()), this, SLOT(onInterpolationActionTriggered()) );
@@ -868,6 +873,7 @@ KnobGui::createInterpolationMenu(QMenu* menu,
     }
     {
         QAction* horizInterpAction = new QAction(tr("Horizontal"), interpolationMenu);
+        QList<QVariant> actionData = genericActionData;
         actionData.push_back((int)eKeyframeTypeHorizontal);
         horizInterpAction->setData( QVariant(actionData) );
         QObject::connect( horizInterpAction, SIGNAL(triggered()), this, SLOT(onInterpolationActionTriggered()) );

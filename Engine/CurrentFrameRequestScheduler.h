@@ -25,8 +25,15 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/scoped_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
+#endif
+
 #include "Engine/EngineFwd.h"
+#include "Engine/GenericSchedulerThread.h"
 #include "Engine/ProcessFrameThread.h"
+#include "Engine/TreeRenderQueueProvider.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -43,60 +50,63 @@ class CurrentFrameFunctorArgs;
  * Note that this is not a thread, rendering is spawned in render threads in the main thread pool using RenderCurrentFrameFunctorRunnable (in the cpp)
  **/
 struct ViewerCurrentFrameRequestSchedulerPrivate;
-class ViewerCurrentFrameRequestScheduler : public QObject, public ProcessFrameI
+class ViewerCurrentFrameRequestScheduler
+: public GenericSchedulerThread
+, public ProcessFrameI
+, public TreeRenderQueueProvider
+, public boost::enable_shared_from_this<ViewerCurrentFrameRequestScheduler>
 {
+protected:
+
+    ViewerCurrentFrameRequestScheduler(const RenderEnginePtr& renderEngine, const NodePtr& viewer);
+
+    virtual TreeRenderQueueProviderConstPtr getThisTreeRenderQueueProviderShared() const OVERRIDE FINAL
+    {
+        return shared_from_this();
+    }
+
 public:
 
-    ViewerCurrentFrameRequestScheduler(const NodePtr& viewer);
+    static ViewerCurrentFrameRequestSchedulerPtr create(const RenderEnginePtr& renderEngine, const NodePtr& viewer)
+    {
+        return ViewerCurrentFrameRequestSchedulerPtr(new ViewerCurrentFrameRequestScheduler(renderEngine, viewer));
+    }
 
-    ~ViewerCurrentFrameRequestScheduler();
+    virtual ~ViewerCurrentFrameRequestScheduler();
 
     void renderCurrentFrame(bool enableRenderStats);
 
-    void onWaitForAbortCompleted();
-    void onWaitForThreadToQuit();
-    void onAbortRequested(bool keepOldestRender);
-    void onQuitRequested(bool allowRestarts);
+    virtual void onWaitForAbortCompleted() OVERRIDE FINAL;
+    virtual void onWaitForThreadToQuit() OVERRIDE FINAL;
+    virtual void onAbortRequested(bool keepOldestRender) OVERRIDE FINAL;
+    virtual void onQuitRequested(bool allowRestarts) OVERRIDE FINAL;
 
     bool hasThreadsAlive() const;
 
     virtual void processFrame(const ProcessFrameArgsBase& args) OVERRIDE FINAL;
 
-private:
-
-    void renderCurrentFrameInternal(const boost::shared_ptr<CurrentFrameFunctorArgs>& args, bool useSingleThread);
-
-    boost::scoped_ptr<ViewerCurrentFrameRequestSchedulerPrivate> _imp;
-};
-
-
-/**
- * @brief Single thread used by the ViewerCurrentFrameRequestScheduler to schedule renders that need to be single threaded, such as RotoPaint
- **/
-struct ViewerCurrentFrameRequestRendererBackupPrivate;
-class ViewerCurrentFrameRequestRendererBackup
-: public GenericSchedulerThread
-{
-public:
-
-    ViewerCurrentFrameRequestRendererBackup();
-
-    virtual ~ViewerCurrentFrameRequestRendererBackup();
+    virtual void onFrameProcessed(const ProcessFrameArgsBase& args) OVERRIDE FINAL;
 
 private:
 
     /**
      * @brief How to pick the task to process from the consumer thread
      **/
-    virtual TaskQueueBehaviorEnum tasksQueueBehaviour() const OVERRIDE FINAL;
+    virtual TaskQueueBehaviorEnum tasksQueueBehaviour() const OVERRIDE FINAL
+    {
+        return eTaskQueueBehaviorProcessInOrder;
+    }
 
-    /**
-     * @brief Must be implemented to execute the work of the thread for 1 loop. This function will be called in a infinite loop by the thread
-     **/
-    virtual ThreadStateEnum threadLoopOnce(const GenericThreadStartArgsPtr& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void onTreeRenderFinished(const TreeRenderPtr& render) OVERRIDE FINAL;
+
+    virtual ThreadStateEnum threadLoopOnce(const GenericThreadStartArgsPtr& inArgs) OVERRIDE FINAL;
+
+    boost::scoped_ptr<ViewerCurrentFrameRequestSchedulerPrivate> _imp;
 };
 
 
+
 NATRON_NAMESPACE_EXIT
+
 
 #endif // NATRON_ENGINE_CURRENTFRAMEREQUESTSCHEDULER_H

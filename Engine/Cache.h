@@ -46,7 +46,7 @@
 #endif
 
 #include "Engine/CacheEntryBase.h"
-
+#include "Engine/ImageTilesState.h"
 #include "Engine/EngineFwd.h"
 
 // Each 8 bit tile will have pow(2, tileSizePo2) pixels in each dimension.
@@ -289,6 +289,13 @@ public:
     }
 
     /**
+     * @brief Creates a TileHash that uniquely identifies a tile to the cache.
+     * Since all tiles in the cache share the same cache entry (same image) we want the allocation of the tiles from the cache to
+     * come from different buckets so that we distribute uniformly the tile file storage.
+     **/
+    static TileHash makeTileCacheIndex(int tx, int ty, unsigned int mipMapLevel, int channelIndex, U64 entryHash);
+
+    /**
      * @brief Check if the given file exists on disk
      **/
     static bool fileExists(const std::string& filename);
@@ -369,10 +376,10 @@ public:
      * Note that unLockTiles must always be called before releaseTiles.
      **/
     virtual bool retrieveAndLockTiles(const CacheEntryBasePtr& entry,
-                              const std::vector<U64>* tileIndices,
-                              const std::vector<U64>* tilesToAlloc,
+                              const std::vector<TileInternalIndex>* tileIndices,
+                              const std::vector<TileHash>* tilesToAlloc,
                               std::vector<void*>* existingTilesData,
-                              std::vector<std::pair<U64, void*> >* allocatedTilesData,
+                              std::vector<std::pair<TileInternalIndex, void*> >* allocatedTilesData,
                               void** cacheData) = 0;
 
 #ifdef DEBUG
@@ -380,24 +387,24 @@ public:
      * @brief Debug: Ensures that the index is valid in the storage. Can only be called between retrieveAndLockTiles and 
      * the corresponding call to unLockTiles
      **/
-    virtual bool checkTileIndex(U64 encodedIndex) const = 0;
+    virtual bool checkTileIndex(TileInternalIndex encodedIndex) const = 0;
 #endif
 
     /**
      * @brief Free cache data allocated from a call to retrieveAndLockTiles
      * This function CANNOT be called in the implementation of CacheEntryBase::fromMemorySegment or CacheEntryBase::toMemorySegment otherwise this will
      * deadlock.
-     * Note this function does not free the memory allocated for the tiles, it just cleans up the mutex taken in retrieveAndLockTiles().
-     * The memory will be freed when the cache entry is removed from the cache.
+     * @param invalidate If set to true, all tiles that were allocated in the corresponding call to retrieveAndLockTiles will be freed
+     * and made available again to other threads. If false, the tiles allocated memory is not freed and it will released upon
+     * the cache entry destruction.
      **/
-    virtual void unLockTiles(void* cacheData) = 0;
+    virtual void unLockTiles(void* cacheData, bool invalidate) = 0;
 
     /**
      * @brief Release tiles that were previously allocated by the given entry with retrieveAndLockTiles
-     * @param localIndices Corresponds to the indices that were passed in tileIndices to the function retrieveAndLockTiles
-     * @param cacheIndices Corresponds to the indices that were returned in allocatedTilesData in the function retrieveAndLockTiles
+     * @param indices Corresponds to the indices that were passed in tileIndices to the function retrieveAndLockTiles
      **/
-    virtual void releaseTiles(const CacheEntryBasePtr& entry, const std::vector<U64>& localIndices, const std::vector<U64>& cacheIndices) = 0;
+    virtual void releaseTiles(const CacheEntryBasePtr& entry, const std::vector<std::pair<TileHash,TileInternalIndex> >& tileIndices) = 0;
 
     /**
      * @brief Returns whether a cache entry exists for the given hash.
@@ -531,16 +538,16 @@ public:
     virtual std::size_t getCurrentSize() const OVERRIDE FINAL;
     virtual CacheEntryLockerBasePtr get(const CacheEntryBasePtr& entry) const OVERRIDE FINAL;
     virtual bool retrieveAndLockTiles(const CacheEntryBasePtr& entry,
-                                      const std::vector<U64>* tileIndices,
-                                      const std::vector<U64>* tilesToAlloc,
+                                      const std::vector<TileInternalIndex>* tileIndices,
+                                      const std::vector<TileHash>* tilesToAlloc,
                                       std::vector<void*>* existingTilesData,
-                                      std::vector<std::pair<U64, void*> >* allocatedTilesData,
+                                      std::vector<std::pair<TileInternalIndex, void*> >* allocatedTilesData,
                                       void** cacheData) OVERRIDE FINAL;
 #ifdef DEBUG
-    virtual bool checkTileIndex(U64 encodedIndex) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool checkTileIndex(TileInternalIndex encodedIndex) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 #endif
-    virtual void unLockTiles(void* cacheData) OVERRIDE FINAL;
-    virtual void releaseTiles(const CacheEntryBasePtr& entry, const std::vector<U64>& localIndices, const std::vector<U64>& cacheIndices) OVERRIDE FINAL;
+    virtual void unLockTiles(void* cacheData, bool invalidate) OVERRIDE FINAL;
+    virtual void releaseTiles(const CacheEntryBasePtr& entry, const std::vector<std::pair<TileHash,TileInternalIndex> >& tileIndices) OVERRIDE FINAL;
     virtual bool hasCacheEntryForHash(U64 hash) const OVERRIDE FINAL;
     virtual void evictLRUEntries(std::size_t nBytesToFree) OVERRIDE FINAL;
     virtual void clear() OVERRIDE FINAL;
