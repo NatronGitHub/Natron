@@ -870,7 +870,7 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
             if (!currentRender) {
                 currentRender = renderObject;
             }
-            TreeRenderLauncherI::launchRender(renderObject);
+            launchRender(renderObject);
             waitForRenderFinished(renderObject);
             outputRequest = renderObject->getOutputRequest();
             status = renderObject->getStatus();
