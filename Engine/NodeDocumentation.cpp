@@ -188,7 +188,8 @@ Node::makeDocumentation(bool genHTML) const
                     // ignored (eg. OCIO colorspace knobs).
                     if ( isChoice &&
                          (genHTML || ( knobScriptName != QString::fromUtf8(kOCIOParamInputSpaceChoice) &&
-                                       knobScriptName != QString::fromUtf8(kOCIOParamOutputSpaceChoice) ) ) ) {
+                                       knobScriptName != QString::fromUtf8(kOCIOParamOutputSpaceChoice) &&
+                                       knobScriptName != QString::fromUtf8("view") ) ) ) {
                         // see also KnobChoice::getHintToolTipFull()
                         int index = isChoice->getDefaultValue(DimIdx(i));
                         std::vector<ChoiceOption> entries = isChoice->getEntries();
@@ -208,15 +209,21 @@ Node::makeDocumentation(bool genHTML) const
                                 if (first) {
                                     // empty line before the option descriptions
                                     if (genHTML) {
-                                        knobHint.append( QString::fromUtf8("<br />") + tr("Possible values:") + QString::fromUtf8("<br />") );
+                                        if ( !knobHint.isEmpty() ) {
+                                            knobHint.append( QString::fromUtf8("<br />") );
+                                        }
+                                        knobHint.append( tr("Possible values:") + QString::fromUtf8("<br />") );
                                     } else {
                                         // we do a hack for multiline elements, because the markdown->rst conversion by pandoc doesn't use the line block syntax.
                                         // what we do here is put a supplementary dot at the beginning of each line, which is then converted to a pipe '|' in the
                                         // genStaticDocs.sh script by a simple sed command after converting to RsT
-                                        if (!knobHint.startsWith( QString::fromUtf8(". ") )) {
-                                            knobHint.prepend( QString::fromUtf8(". ") );
+                                        if ( !knobHint.isEmpty() ) {
+                                            if (!knobHint.startsWith( QString::fromUtf8(". ") )) {
+                                                knobHint.prepend( QString::fromUtf8(". ") );
+                                            }
+                                            knobHint.append( QString::fromUtf8("\\\n") );
                                         }
-                                        knobHint.append( QString::fromUtf8("\\\n") + tr("Possible values:") +  QString::fromUtf8("\\\n") );
+                                        knobHint.append( QString::fromUtf8(". ") + tr("Possible values:") +  QString::fromUtf8("\\\n") );
                                     }
                                     first = false;
                                 }
