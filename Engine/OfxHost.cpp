@@ -989,6 +989,7 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
         std::string description = p->getDescriptor().getProps().getStringProperty(kOfxPropPluginDescription);
 
         bool isDescMarkdown = (bool)p->getDescriptor().getProps().getIntProperty(kNatronOfxPropDescriptionIsMarkdown);
+        bool usesMultiThreading = (bool)p->getDescriptor().getProps().getIntProperty(kNatronOfxImageEffectPluginUsesMultipleThread);
 
         PluginPtr natronPlugin = Plugin::create(OfxEffectInstance::create, OfxEffectInstance::createRenderClone, openfxId, pluginLabel, p->getVersionMajor(), p->getVersionMinor(), groups, groupIcons);
         natronPlugin->setProperty<std::string>(kNatronPluginPropDescription, description);
@@ -999,6 +1000,7 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
         natronPlugin->setProperty<bool>(kNatronPluginPropIsDeprecated, isDeprecated);
         natronPlugin->setProperty<int>(kNatronPluginPropOpenGLSupport, (int)glSupport);
         natronPlugin->setProperty<void*>(kNatronPluginPropOpenFXPluginPtr, (void*)p);
+        natronPlugin->setProperty<bool>(kNatronPluginPropUsesMultiThread, usesMultiThreading);
 
         std::list<PluginActionShortcut> shortcuts;
         getPluginShortcuts(p->getDescriptor(), &shortcuts);
@@ -1248,7 +1250,8 @@ OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const
     if (!nCPUs) {
         return kOfxStatFailed;
     }
-    *nCPUs = MultiThread::getNCPUsAvailable();
+    
+    *nCPUs = MultiThread::getNCPUsAvailable(getCurrentEffect_TLS());
     return kOfxStatOK;
 }
 

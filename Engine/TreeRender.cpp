@@ -904,7 +904,7 @@ bool
 TreeRenderExecutionData::hasTasksToExecute() const
 {
     QMutexLocker k(&_imp->dependencyFreeRendersMutex);
-    return !isFailureRetCode(_imp->status) && _imp->allRenderTasksToProcess.size() > 0;
+    return _imp->allRenderTasksToProcess.size() > 0;
 } // hasTasksToExecute
 
 int
@@ -925,7 +925,15 @@ TreeRenderExecutionData::executeAvailableTasks(int nTasks)
     QMutexLocker k(&_imp->dependencyFreeRendersMutex);
 
     // Don't launch any task if the execution is failed
-    if (isFailureRetCode(_imp->status)) {
+    if (isFailureRetCode(_imp->status) || !_imp->dependencyFreeRenders) {
+        if (!_imp->allRenderTasksToProcess.empty()) {
+            _imp->allRenderTasksToProcess.clear();
+            if (_imp->dependencyFreeRenders) {
+                _imp->dependencyFreeRenders->clear();
+            }
+            k.unlock();
+            appPTR->getTasksQueueManager()->notifyTaskInRenderFinished(thisShared, false);
+        }
         return 0;
     }
 
@@ -950,6 +958,7 @@ TreeRenderExecutionData::executeAvailableTasks(int nTasks)
             runnable->setAutoDelete(false);
             _imp->launchedRunnables.insert(runnable);
             threadPool->start(runnable.get());
+
             --nTasksRemaining;
             ++nTasksStarted;
         } else {

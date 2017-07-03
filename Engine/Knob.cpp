@@ -950,7 +950,7 @@ KnobHelper::evaluateValueChangeInternal(DimSpec dimension,
                                         TimeValue time,
                                         ViewSetSpec view,
                                         ValueChangedReasonEnum reason,
-                                        std::set<KnobIPtr>* evaluatedKnobs)
+                                        KnobDimViewKeySet* evaluatedKnobs)
 {
 
     KnobHolderPtr holder = getHolder();
@@ -969,11 +969,16 @@ KnobHelper::evaluateValueChangeInternal(DimSpec dimension,
     KnobIPtr thisShared = shared_from_this();
 
     // This knob was already evaluated
-    if (evaluatedKnobs->find(thisShared) != evaluatedKnobs->end()) {
-        return false;
-    }
+    {
+        DimIdx dimensionIndex = dimension.isAll() ? DimIdx(getNDimensions()) : DimIdx(dimension);
+        ViewIdx viewIndex = view.isAll() ? ViewIdx(getViewsList().size()) : ViewIdx(view);
+        KnobDimViewKey key(thisShared, dimensionIndex, viewIndex);
+        if (evaluatedKnobs->find(key) != evaluatedKnobs->end()) {
+            return false;
+        }
 
-    evaluatedKnobs->insert(thisShared);
+        evaluatedKnobs->insert(key);
+    }
 
     if (reason == eValueChangedReasonTimeChanged) {
         // Only notify gui must be refreshed when reason is time changed
@@ -1019,12 +1024,12 @@ KnobHelper::evaluateValueChange(DimSpec dimension,
                                 ViewSetSpec view,
                                 ValueChangedReasonEnum reason)
 {
-    std::set<KnobIPtr> evaluatedKnobs;
+    KnobDimViewKeySet evaluatedKnobs;
     return evaluateValueChangeInternal(dimension, time, view, reason, &evaluatedKnobs);
 }
 
 void
-KnobHelper::refreshListenersAfterValueChangeInternal(TimeValue time, ViewIdx view, ValueChangedReasonEnum reason, DimIdx dimension, std::set<KnobIPtr>* evaluatedKnobs)
+KnobHelper::refreshListenersAfterValueChangeInternal(TimeValue time, ViewIdx view, ValueChangedReasonEnum reason, DimIdx dimension, KnobDimViewKeySet* evaluatedKnobs)
 {
     KnobDimViewBasePtr data = getDataForDimView(dimension, view);
     if (!data) {
@@ -1059,7 +1064,7 @@ KnobHelper::refreshListenersAfterValueChangeInternal(TimeValue time, ViewIdx vie
 }
 
 void
-KnobHelper::refreshListenersAfterValueChange(TimeValue time, ViewSetSpec view, ValueChangedReasonEnum reason, DimSpec dimension, std::set<KnobIPtr>* evaluatedKnobs)
+KnobHelper::refreshListenersAfterValueChange(TimeValue time, ViewSetSpec view, ValueChangedReasonEnum reason, DimSpec dimension, KnobDimViewKeySet* evaluatedKnobs)
 {
 
     std::list<ViewIdx> views = getViewsList();

@@ -1112,14 +1112,6 @@ NodeGroup::isRenderCloneNeeded() const
     return true;
 }
 
-KnobHolderPtr
-NodeGroup::createRenderCopy(const FrameViewRenderKey& key) const
-{
-    // For a node group, even if the node does not perform any rendering, we still need to make copy of the knobs
-    // so they are local to the render.
-    return EffectInstance::createRenderCopy(key);
-}
-
 bool
 NodeGroup::getIsDeactivatingGroup() const
 {

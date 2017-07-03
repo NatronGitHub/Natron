@@ -118,7 +118,7 @@ public:
      * This value may be less than the actual number of CPUs on a machine, as the host may reserve other CPUs for itself.
      *http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_multiThreadNumCPUs
      **/
-    static unsigned int getNCPUsAvailable();
+    static unsigned int getNCPUsAvailable(const EffectInstancePtr& effect);
 
     /**
      * @brief Function which indicates the index of the current thread.

@@ -135,7 +135,7 @@ public:
 
     std::string currentOCIOConfigPath; //< the currentOCIO config path
 
-    int idealThreadCount; // return value of QThread::idealThreadCount() cached here
+    int hardwareThreadCount,physicalThreadCount; 
 
     ///Python needs wide strings as from Python 3.x onwards everything is unicode based
 #if PY_MAJOR_VERSION >= 3

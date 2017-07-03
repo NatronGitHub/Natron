@@ -164,6 +164,7 @@ ViewerInstance::createPlugin()
     ret->setProperty<bool>(kNatronPluginPropIsInternalOnly, true);
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
     ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
+    ret->setProperty<bool>(kNatronPluginPropUsesMultiThread, true);
     return ret;
 }
 

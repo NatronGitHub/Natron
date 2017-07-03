@@ -58,6 +58,7 @@
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/algorithm/string.hpp>
 #include <boost/version.hpp>
+#include <boost/thread/thread.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include <libs/hoedown/src/version.h>
@@ -375,7 +376,13 @@ oom:
 int
 AppManager::getHardwareIdealThreadCount()
 {
-    return _imp->idealThreadCount;
+    return _imp->hardwareThreadCount;
+}
+
+int
+AppManager::getPhysicalThreadCount()
+{
+    return _imp->physicalThreadCount;
 }
 
 AppManager::AppManager()
@@ -550,7 +557,10 @@ AppManager::loadFromArgs(const CLArgs& cl)
         return false;
     }
 
-    _imp->idealThreadCount = QThread::idealThreadCount();
+
+
+    _imp->hardwareThreadCount = boost::thread::hardware_concurrency();
+    _imp->physicalThreadCount = boost::thread::physical_concurrency();
 
 
     QThreadPool::globalInstance()->setExpiryTimeout(-1); //< make threads never exit on their own
@@ -2016,7 +2026,7 @@ AppManager::loadNodesPresets()
                 }
 
 
-                PluginPtr p = Plugin::create(0, 0, pyPlugID, pyPlugLabel, pyPlugVersionMajor, pyPlugVersionMinor, grouping);
+                PluginPtr p = Plugin::create(NodeGroup::create, NodeGroup::createRenderClone, pyPlugID, pyPlugLabel, pyPlugVersionMajor, pyPlugVersionMinor, grouping);
                 if (!obj._pluginID.empty()) {
                     p->setProperty<std::string>(kNatronPluginPropPyPlugContainerID, obj._pluginID);
                 }
@@ -2225,7 +2235,7 @@ AppManager::loadPythonGroups()
         std::vector<std::string> grouping;
         boost::split(grouping, pluginGrouping, boost::is_any_of("/"));
 
-        PluginPtr p = Plugin::create(0, 0, pluginID, pluginLabel, version, 0, grouping);
+        PluginPtr p = Plugin::create(NodeGroup::create, NodeGroup::createRenderClone, pluginID, pluginLabel, version, 0, grouping);
         p->setProperty<std::string>(kNatronPluginPropPyPlugScriptAbsoluteFilePath, plugin.toStdString());
         p->setProperty<bool>(kNatronPluginPropPyPlugIsToolset, isToolset);
         p->setProperty<std::string>(kNatronPluginPropDescription, pluginDescription);

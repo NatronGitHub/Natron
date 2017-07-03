@@ -546,8 +546,9 @@ TreeRenderQueueManager::Implementation::notifyTaskInRenderFinishedInternal(const
         QMutexLocker k(&executionQueueMutex);
         // The execution must exist in the queue. Remove it now because we don't want the run() function to use it again.
         std::list<TreeRenderExecutionDataPtr>::iterator found = std::find(executionQueue.begin(), executionQueue.end(), render);
-        assert(found != executionQueue.end());
         if (found != executionQueue.end()) {
+            // The execution may no longer be in the exeuction queue if it has a failed status because in that case we did not exit early
+            // in the if condition at the start of the function.
             executionQueue.erase(found);
         }
     }

@@ -3525,20 +3525,20 @@ CachePrivate<true>::reOpenTileStorage()
         dirPath = QString::fromUtf8(ss.str().c_str());
     }
     QDir d(dirPath);
-    QStringList nameFilters;
-    nameFilters.push_back(QString::fromUtf8("TilesStorage*"));
-    QStringList files = d.entryList(nameFilters, QDir::Files | QDir::NoDotAndDotDot, QDir::Name /*sort by name*/);
+    QStringList files = d.entryList(QDir::Files | QDir::NoDotAndDotDot, QDir::Name /*sort by name*/);
     files.sort();
     for (QStringList::iterator it = files.begin(); it != files.end(); ++it) {
-        MemoryFilePtr data(new MemoryFile);
-        std::string filePath = dirPath.toStdString() + "/" + it->toStdString();
-        (data)->open(filePath, MemoryFile::eFileOpenModeOpenOrCreate);
-        if ((data)->size() != NATRON_TILE_STORAGE_FILE_SIZE) {
-            (data)->resize(NATRON_TILE_STORAGE_FILE_SIZE, false);
+        if (it->startsWith(QLatin1String("TilesStorage"))) {
+            MemoryFilePtr data(new MemoryFile);
+            std::string filePath = dirPath.toStdString() + "/" + it->toStdString();
+            (data)->open(filePath, MemoryFile::eFileOpenModeOpenOrCreate);
+            if ((data)->size() != NATRON_TILE_STORAGE_FILE_SIZE) {
+                (data)->resize(NATRON_TILE_STORAGE_FILE_SIZE, false);
+            }
+            tilesStorage.push_back(data);
         }
-        tilesStorage.push_back(data);
     }
-
+    
 }
 
 inline int getBucketIndexForTile(TileHash tileIndex)

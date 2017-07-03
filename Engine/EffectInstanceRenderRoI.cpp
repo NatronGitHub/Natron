@@ -627,7 +627,7 @@ EffectInstance::Implementation::checkRestToRender(bool updateTilesStateFromCache
         // If plug-in wants host frame threading and there is only 1 rect to render, split it
         // in the number of available threads in the thread-pool
 
-        const unsigned int nThreads = MultiThread::getNCPUsAvailable();
+        const unsigned int nThreads = MultiThread::getNCPUsAvailable(_publicInterface->shared_from_this());
         reducedRects = mainRenderRect.splitIntoSmallerRects(nThreads);
     }
     for (std::list<RectI>::const_iterator it = reducedRects.begin(); it != reducedRects.end(); ++it) {

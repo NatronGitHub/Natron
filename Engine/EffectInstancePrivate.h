@@ -167,6 +167,9 @@ struct DynamicProperties
     // The current render safety
     RenderSafetyEnum currentThreadSafety;
 
+    // True if the plug-in renders using multiple CPU threads
+    bool isMultiThreaded;
+
     // Does this effect requires images at a different time than the requested render ?
     bool currentTemporalImagesAccess;
 
@@ -194,6 +197,7 @@ struct DynamicProperties
 
     DynamicProperties()
     : currentThreadSafety(eRenderSafetyInstanceSafe)
+    , isMultiThreaded(false)
     , currentTemporalImagesAccess(false)
     , currentSupportTiles(false)
     , currentSupportMultires(false)

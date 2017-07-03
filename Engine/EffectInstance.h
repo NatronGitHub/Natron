@@ -1234,6 +1234,8 @@ public:
     void setCurrentAlphaFillWith1(bool enabled);
     bool getCurrentAlphaFillWith1() const;
 
+    bool getCurrentUsesMultiThreading() const;
+
     void refreshDynamicProperties();
 
 

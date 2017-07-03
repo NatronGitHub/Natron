@@ -62,6 +62,11 @@ public:
     void quitThread();
 
 
+    /**
+     * @brief Returns the index of the given render and the number of renders currently in the execution queue
+     **/
+    void getRenderIndex(const TreeRenderPtr& render, int* index, int* numRenders) const;
+
 private:
 
 
@@ -101,10 +106,6 @@ private:
      **/
     TreeRenderPtr waitForAnyTreeRenderFinished(const TreeRenderQueueProviderConstPtr& provider);
 
-    /**
-     * @brief Returns the index of the given render and the number of renders currently in the execution queue
-     **/
-    void getRenderIndex(const TreeRenderPtr& render, int* index, int* numRenders) const;
 
 private:
 
@@ -117,6 +118,7 @@ private:
      **/
     void notifyTaskInRenderFinished(const TreeRenderExecutionDataPtr& render, bool isRunningInThreadPoolThread);
 
+    friend class TreeRenderExecutionData;
     friend struct TreeRenderExecutionDataPrivate;
     boost::scoped_ptr<Implementation> _imp;
 };

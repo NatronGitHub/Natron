@@ -2129,6 +2129,18 @@ EffectInstance::getCurrentSequentialRenderSupport() const
 }
 
 bool
+EffectInstance::getCurrentUsesMultiThreading() const
+{
+    if (_imp->renderData) {
+        return _imp->renderData->props.isMultiThreaded;
+    }
+
+    QMutexLocker k(&_imp->common->pluginsPropMutex);
+
+    return _imp->common->props.isMultiThreaded;
+}
+
+bool
 EffectInstance::getCurrentTemporalImageAccess() const
 {
     if (_imp->renderData) {
@@ -2315,6 +2327,7 @@ EffectInstance::refreshDynamicProperties()
         } else {
             _imp->common->props.currentThreadSafety = _imp->common->pluginSafety;
         }
+        _imp->common->props.isMultiThreaded = getNode()->getPlugin()->getPropertyUnsafe<bool>(kNatronPluginPropUsesMultiThread);
     }
 
     setCurrentTemporalImageAccess(temporal);

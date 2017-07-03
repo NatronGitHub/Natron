@@ -55,6 +55,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Node.h"
 #include "Engine/Settings.h"
 #include "Engine/TLSHolder.h"
+#include "Engine/TreeRenderQueueManager.h"
 #include "Engine/EffectInstanceTLSData.h"
 #include "Engine/ThreadPool.h"
 
@@ -327,8 +328,9 @@ MultiThread::launchThreadsInternal(MultiThread::ThreadFunctor func, unsigned int
         ret->_imp->status = eActionStatusFailed;
         return ret;
     }
+    
 
-    unsigned int maxConcurrentThread = MultiThread::getNCPUsAvailable();
+    unsigned int maxConcurrentThread = MultiThread::getNCPUsAvailable(effect);
     assert(maxConcurrentThread > 0);
 
     if (nThreads == 0) {
@@ -475,7 +477,7 @@ MultiThread::launchThreadsNonBlocking(ThreadFunctor func, unsigned int nThreads,
 } // launchThreadsNonBlocking
 
 unsigned int
-MultiThread::getNCPUsAvailable()
+MultiThread::getNCPUsAvailable(const EffectInstancePtr& effect)
 {
     // activeThreadCount may be negative (for example if releaseThread() is called)
     int activeThreadsCount = QThreadPool::globalInstance()->activeThreadCount();
@@ -488,11 +490,48 @@ MultiThread::getNCPUsAvailable()
     // Clamp to 0
     activeThreadsCount = std::max( 0, activeThreadsCount);
 
-    // better than QThread::idealThreadCount(), because it can be set by a global preference
+    // maxThreadCount() is set by the setting the preferences
     const int maxThreadsCount = std::max(1,QThreadPool::globalInstance()->maxThreadCount());
 
     int ret = std::max(1, maxThreadsCount - activeThreadsCount);
-    return ret;
+
+    // If the effect is currently rendering and it is the first render in the TreeRenderQueueManager priority list
+    // allocate it more CPU than other renders.
+    if (!effect || ret <= 1) {
+        return ret;
+    }
+    TreeRenderPtr currentRender = effect->getCurrentRender();
+    if (!currentRender) {
+        return ret;
+    }
+    int renderIndex, nRenders;
+    appPTR->getTasksQueueManager()->getRenderIndex(currentRender, &renderIndex, &nRenders);
+    if (renderIndex == -1 || nRenders == 1) {
+        // If there's a single ongoing render or it is not registered in the manager, return the actual num cpu
+        return ret;
+    }
+    assert(renderIndex < nRenders);
+
+
+    // This is the number of physical cores excluding logical cores (not counting hyperthreading).
+    const int nPhysicalThreadCount = appPTR->getPhysicalThreadCount();
+
+    // If the current available num CPU is below the physical cores, allocate everything to the highest priority render
+    if (ret <= nPhysicalThreadCount) {
+        if (renderIndex == 0) {
+            return ret;
+        } else {
+            return 1;
+        }
+    } else {
+        if (renderIndex == 0) {
+            return nPhysicalThreadCount;
+        } else {
+            ret = std::max(1.,std::floor(((ret - nPhysicalThreadCount) / (double)(nRenders - 1)) + 0.5));
+            return ret;
+        }
+    }
+
 } // getNCPUsAvailable
 
 ActionRetCodeEnum
@@ -545,7 +584,7 @@ MultiThreadProcessorBase::launchThreadsBlocking(unsigned int nCPUs)
 {
     // if 0, use all the CPUs we can
     if (nCPUs == 0) {
-        nCPUs = MultiThread::getNCPUsAvailable();
+        nCPUs = MultiThread::getNCPUsAvailable(_effect);
     }
 
     // if 1 cpu, don't bother with the threading
@@ -563,7 +602,7 @@ MultiThreadProcessorBase::launchThreadsNonBlocking(unsigned int nCPUs)
 {
     // if 0, use all the CPUs we can
     if (nCPUs == 0) {
-        nCPUs = MultiThread::getNCPUsAvailable();
+        nCPUs = MultiThread::getNCPUsAvailable(_effect);
     }
 
     // if 1 cpu, don't bother with the threading
@@ -642,7 +681,7 @@ ImageMultiThreadProcessorBase::process()
                           (_renderWindow.y2 - _renderWindow.y1) ) / 4096;
 
     // make sure the number of CPUs is valid (and use at least 1 CPU)
-    nCPUs = std::max(1u, std::min( nCPUs, MultiThread::getNCPUsAvailable())) ;
+    nCPUs = std::max(1u, std::min( nCPUs, MultiThread::getNCPUsAvailable(_effect))) ;
 
     // call the base multi threading code
     return launchThreadsBlocking(nCPUs);

@@ -1512,7 +1512,7 @@ protected:
                                      TimeValue time,
                                      ViewSetSpec view,
                                      ValueChangedReasonEnum reason,
-                                     std::set<KnobIPtr>* evaluatedKnobs);
+                                     KnobDimViewKeySet* evaluatedKnobs);
 
 public:
 
@@ -1637,9 +1637,9 @@ protected:
     template <typename T>
     T pyObjectToType(PyObject* o, ViewIdx view) const { (void)view; return pyObjectToType<T>(o); }
 
-    void refreshListenersAfterValueChangeInternal(TimeValue time, ViewIdx view, ValueChangedReasonEnum reason, DimIdx dimension, std::set<KnobIPtr>* evaluatedKnobs);
+    void refreshListenersAfterValueChangeInternal(TimeValue time, ViewIdx view, ValueChangedReasonEnum reason, DimIdx dimension, KnobDimViewKeySet* evaluatedKnobs);
 
-    void refreshListenersAfterValueChange(TimeValue time, ViewSetSpec view, ValueChangedReasonEnum reason, DimSpec dimension, std::set<KnobIPtr>* evaluatedKnobs) ;
+    void refreshListenersAfterValueChange(TimeValue time, ViewSetSpec view, ValueChangedReasonEnum reason, DimSpec dimension, KnobDimViewKeySet* evaluatedKnobs) ;
 
 public:
 

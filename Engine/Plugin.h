@@ -204,6 +204,14 @@ NATRON_NAMESPACE_ENTER
 #define kNatronPluginPropRenderSafety "NatronPluginPropRenderSafety"
 
 /**
+ * @brief x1 bool property (optional)  Indicates if a plug-in can make use of multiple CPU threads within a single call
+ * of the render action, for instance by using the multi-thread suite.
+ * The host should only account this as a hint to better organize its multi-threading priority queue.
+ * Default value - 0
+ **/
+#define kNatronPluginPropUsesMultiThread "NatronPluginPropUsesMultiThread"
+
+/**
  * @brief x1 bool property (optional) indicating whether the plug-in prefers an alpha channel created with 0 (false)
  * or with 1 (true)
  * Default value - true
