@@ -874,7 +874,9 @@ struct CacheDataLock_RAII
 
     ~CacheDataLock_RAII()
     {
-        cache->unLockTiles(data, invalidated);
+        if (data) {
+            cache->unLockTiles(data, invalidated);
+        }
     }
 };
 
@@ -1370,15 +1372,23 @@ static void fetchTileIndicesInPyramid(U64 entryHash,
                                       const TileCacheIndex& tile,
                                       int nComps,
                                       std::vector<TileInternalIndex> *tileIndicesToFetch,
-                                      std::vector<TileHash>* tilesAllocNeeded)
+#ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
+                                      std::size_t* tilesAllocNeeded
+#else
+                                      std::vector<TileHash>* tilesAllocNeeded
+#endif
+                                      )
 {
     if (tile.upscaleTiles[0]) {
         // We must downscale the upscaled tiles. Allocate 1 tile for the resulting tile
-        assert(tilesAllocNeeded);
+#ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
+        *tilesAllocNeeded += nComps;
+#else
         for (int c = 0; c < nComps; ++c) {
             TileHash tileBucketHash = CacheBase::makeTileCacheIndex(tile.tx, tile.ty, lookupLevel, c, entryHash);
             tilesAllocNeeded->push_back(tileBucketHash);
         }
+#endif
 
         // For each upscaled tile
         for (int i = 0; i < 4; ++i) {
@@ -1504,7 +1514,11 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
 
 
     // Number of tiles to allocate to downscale
+#ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
+    std::size_t tilesAllocNeeded = 0;
+#else
     std::vector<TileHash> tilesAllocNeeded;
+#endif
     for (std::size_t i = 0; i < tilesToFetch.size(); ++i) {
         // Fetch all tiles that should be copied from the cache. We don't need to allocate any tile in the cache, so pass a NULL pointer for the tilesAllocNeeded
         fetchTileIndicesInPyramid(entryHash, mipMapLevel, localTilesState.tileSizeX, localTilesState.tileSizeY, tilesToFetch[i], nComps, &tileIndicesToFetch, 0);
@@ -1514,7 +1528,13 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
         fetchTileIndicesInPyramid(entryHash, mipMapLevel, localTilesState.tileSizeX, localTilesState.tileSizeY, tilesToDownscale[i], nComps, &tileIndicesToFetch, &tilesAllocNeeded);
     }
 
-    if (tileIndicesToFetch.empty() && tilesAllocNeeded.empty()) {
+    if (tileIndicesToFetch.empty() &&
+#ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
+        tilesAllocNeeded > 0
+#else
+        tilesAllocNeeded.empty()
+#endif
+        ) {
         // Nothing to do
         return eActionStatusOK;
     }
@@ -1531,7 +1551,13 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
     // Allocated buffers for tiles
     std::vector<std::pair<TileInternalIndex, void*> > allocatedTiles;
     void* cacheData;
-    bool gotTiles = tileCache->retrieveAndLockTiles(internalCacheEntry, &tileIndicesToFetch, &tilesAllocNeeded, &fetchedExistingTiles, &allocatedTiles, &cacheData);
+    bool gotTiles = tileCache->retrieveAndLockTiles(internalCacheEntry, &tileIndicesToFetch,
+#ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
+                                                    tilesAllocNeeded,
+#else
+                                                    &tilesAllocNeeded,
+#endif
+                                                    &fetchedExistingTiles, &allocatedTiles, &cacheData);
     boost::scoped_ptr<CacheDataLock_RAII> cacheDataDeleter(new CacheDataLock_RAII(tileCache, cacheData));
     if (!gotTiles) {
         return eActionStatusFailed;
@@ -1855,7 +1881,7 @@ ImageCacheEntry::fetchCachedTilesAndUpdateStatus(TileStateHeader* tileStatus, bo
                 }
             }
 
-            if (markedTilesModified || !_imp->tilesToFetch.empty()) {
+            if (!_imp->tilesToDownscale.empty() || !_imp->tilesToFetch.empty()) {
                 boost::scoped_ptr<boost::unique_lock<boost::shared_mutex> > writeLock;
                 if (!_imp->internalCacheEntry->isPersistent()) {
                     // In non-persistent mode, lock the cache entry since it's shared across threads.
@@ -2081,11 +2107,17 @@ ImageCacheEntry::markCacheTilesInRegionAsNotRendered(const RectI& roi)
     CacheBasePtr cache = _imp->internalCacheEntry->getCache();
     bool hasModifiedTileMap = false;
 
+#ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
+    std::vector<TileInternalIndex> tileIndicesToRelease;
+#else
     std::vector<std::pair<TileHash, TileInternalIndex> > tileIndicesToRelease;
+    U64 entryHash = _imp->internalCacheEntry->getHashKey();
+#endif
 
     RectI mipmap0Roi = roiIntersected.upscalePowerOfTwo(_imp->mipMapLevel);
 
-    U64 entryHash = _imp->internalCacheEntry->getHashKey();
+
+
 
 
     for (std::size_t i = 0; i < _imp->internalCacheEntry->perMipMapTilesState.size(); ++i) {
@@ -2123,8 +2155,12 @@ ImageCacheEntry::markCacheTilesInRegionAsNotRendered(const RectI& roi)
 
                 for (int c = 0; c < 4; ++c) {
                     if (cacheTileState->channelsTileStorageIndex[c].index != (U64)-1) {
+#ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
+                        tileIndicesToRelease.push_back(cacheTileState->channelsTileStorageIndex[c]);
+#else
                         TileHash tileIndex = CacheBase::makeTileCacheIndex(tx, ty, i, c, entryHash);
                         tileIndicesToRelease.push_back(std::make_pair(tileIndex, cacheTileState->channelsTileStorageIndex[c]));
+#endif
                     }
                 }
             }
@@ -2255,17 +2291,28 @@ ImageCacheEntry::markCacheTilesAsRendered()
     // We are going to fetch data from the cache, ensure our local buffers are allocated
     _imp->image.lock()->ensureBuffersAllocated();
 
-    U64 entryHash = _imp->internalCacheEntry->getHashKey();
 
+#ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
+    std::size_t nTilesToAlloc = tilesToCopy.size();
+#else
+    U64 entryHash = _imp->internalCacheEntry->getHashKey();
     std::vector<TileHash> tilesAllocNeeded(tilesToCopy.size());
     for (std::size_t i = 0; i < tilesToCopy.size(); ++i) {
         tilesAllocNeeded[i] = CacheBase::makeTileCacheIndex(tilesToCopy[i]->bounds.x1, tilesToCopy[i]->bounds.y1, _imp->mipMapLevel, tilesToCopy[i]->channel_i, entryHash);
     }
+#endif
+
 
     // Allocate buffers for tiles
     std::vector<std::pair<TileInternalIndex, void*> > allocatedTiles;
     void* cacheData;
-    bool gotTiles = cache->retrieveAndLockTiles(_imp->internalCacheEntry, 0 /*existingTiles*/, &tilesAllocNeeded, NULL, &allocatedTiles, &cacheData);
+    bool gotTiles = cache->retrieveAndLockTiles(_imp->internalCacheEntry, 0 /*existingTiles*/,
+#ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
+                                                nTilesToAlloc,
+#else
+                                                &tilesAllocNeeded,
+#endif
+                                                NULL, &allocatedTiles, &cacheData);
 
 
     boost::scoped_ptr<CacheDataLock_RAII> cacheDataDeleter(new CacheDataLock_RAII(cache, cacheData));

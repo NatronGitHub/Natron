@@ -428,6 +428,9 @@ KnobWidgetDnD::mouseEnter(QEvent* /*e*/)
         return;
     }
     KnobIPtr internalKnob = knob->getKnob();
+    if (!internalKnob) {
+        return;
+    }
     DimSpec targetDim;
     ViewSetSpec targetView;
     internalKnob->convertDimViewArgAccordingToKnobState(_imp->dimension, _imp->view, &targetDim, &targetView);

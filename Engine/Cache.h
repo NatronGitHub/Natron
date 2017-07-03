@@ -67,42 +67,113 @@
 #define NATRON_TILE_SIZE_BYTES (NATRON_TILE_SIZE_X_8_BIT * NATRON_TILE_SIZE_Y_8_BIT)
 
 
-// The name of the directory containing all buckets on disk
+// The name of the directory containing all buckets on disk.
 #define NATRON_CACHE_DIRECTORY_NAME "Cache"
 
 
-// When defined, the cache will never be persistent.
+// The Cache has several static configuration options:
 //
-// Non-persistent cache:
+// The persistent template parameter:
+//
+// Non-persistent cache (persistent=false):
 // ---------------------
+// The Cache only lives in RAM, it is never shared across processes.
 // In this mode, all objects in the cache (classes deriving CacheEntryBase)
 // are shared across threads within the process: When looking-up an entry with
 // Cache::get, the entry might already exist, in which case it can be retrieved by calling
-// CacheEntryLocker::getProcessLocalEntry.
-// It is very important that in this mode derived classes of CacheEntryBase be thread-safe.
+// CacheEntryLocker::getProcessLocalEntry (@see usage in EffectInstanceActions.cpp for example).
+// It is very important that in this mode, that a derived class of CacheEntryBase is thread-safe itself.
+// See for example ImageCacheEntry which implements a thread safe version when the cache is non persistent.
 //
-// Persistent cache:
+// This non persistent Cache is used for the general purpose Cache which stores results of actions (see EffectInstanceActions.cpp).
+// Some actions store pointers provided by the plug-in which are local to the virtual memory of the process and may not be saved on disk.
+// Heavy cache entries which take a long time to compute should be if possible stored in the persistent Cache because it will outlive the
+// Natron process.
+//
+// Persistent cache (persistent=true):
 // -----------------
 //
 // In this mode, all objects in the cache are not actually exposed to the CacheEntryBase:
 // whenever reading an entry from the cache in the Cache::get function, internally a copy
 // is made to the local CacheEntryBase object by using the CacheEntryBase::fromMemorySegment
-// function.
+// function which deserializes the virtual memory from the Cache.
 // Similarly, when inserting the entry in the cache, it is copied using the CacheEntryBase::toMemorySegment
 // In this mode, the CacheEntryBase in itself does not have to be thread-safe: the cache itself handles
 // the thread-safety and ensures that the entry is created only once.
-// It is important to remember that in this mode, the CacheEntryBase you pass to Cache::get is local to your call, nobody
+// Note that in this mode, the CacheEntryBase you pass to Cache::get is local to your call, nobody
 // else knows about this object.
 // Also in order to be persistent, all data structures passed in toMemorySegment/fromMemorySegment must be interprocess compliant
-// (i.e: they must use allocators to the memory segment manager passed in parameter.)
+// (i.e: they must use allocators to the memory segment manager passed in parameter. See implementation examples in ImageCacheEntry.cpp)
+//
+// For now, there can only be a single persistent Cache in Natron, because only a single location can be provided by the user.
+// The persistent Cache is the main Cache used to store images.
 
 // Interprocess robust:
 //  -------------------
-// If defined the cache can handle multiple processes accessing to the same cache concurrently, however
+// The following define can be set to enable cross-process robustness of the Cache.
+// In this mode the cache can handle multiple processes accessing to the same cache concurrently, however
 // the cache may not be placed in a network drive.
-// If not defined, the cache supports only a single process writing/reading from the cache concurrently, other processes will resort
-// in a process-local cache.
+// If not defined, the cache supports only a single process with a persistent Cache,
+// writing/reading from the cache concurrently, other processes will resort to a non persistent Cache instead.
+// This mode enables a more complex thread/process-safety strategy because it must deal with abandonned mutex when a process
+// is killed and cross-process access to the internal storage.
 #define NATRON_CACHE_INTERPROCESS_ROBUST
+
+// Cache storage:
+// -------------
+// The storage in the Cache is split in 2 parts: the "table of contents" which holds for each entry most of the informations.
+// For a persistent cache, data that is saved to the ToC is serialized/deserialized with the help of the CacheEntryBase::toMemorySegment and
+// CacheEntryBase::fromMemorySegment function. The data is encoded as properties which maps a unique name to an array of a pod type (@see IPCPropertyMap).
+// A non persistent Cache does not have to encode/decode such properties, it directly stores a shared pointer to the cache entry within the Cache:
+// This adds the extra complexity to ensure that the CacheEntryBase derivative class is thread-safe in this mode.
+//
+// Image storage:
+// -------------
+// The Cache is mainly designed to efficiently store images within Natron.
+// The requirements are:
+// - Cache as much as possible images within the user-defined memory portion
+// - Be persistent so that the Cache may be re-used between 2 runs of Natron
+// - Be inter-process robust so that if multiple Natron processes run at the same time they can share images
+// Since memory in the Cache is limited, the Cache itself has to be the manager of the memory used by images that are
+// stored within the Cache.
+// The memory in the Cache is actually stored in small memory chunks of NATRON_TILE_SIZE_BYTES bytes. For an image this represents a small tile
+// of a mono-channel image.
+// Since each tile has the same memory amount and the memory is aligned to a power of 2, efficient vector instructions can be used on them.
+// The Cache exposes mainly the functionnality to allocate and free tiles. The assembling of tiles into images is itself managed by the ImageCacheEntry.
+// Tiles in the Cache are pointers to virtual memory on a memory file.
+// Tiles are referenced within the Cache by the TileInternalIndex structure which contains the index of the memory file containing the tile,
+// and the tile index within this file. Both 32-bit indices are encoded in a single 64-bit index, @see getTileIndex function in the cpp.
+// Note that all tile memory files have the same number of bytes.
+//
+// The retrieveAndLockTiles function is used to retrieve pointers to existing tiles (referenced by their TileInternalIndex) or to allocate new tiles.
+// Since pointers to virtual memory are returned, the memory file itself is locked so that no Cache clearing can happen in the meantime.
+// To notify the Cache when done with the memory pointers, the function unLockTiles will destroy any lock. The unLockTiles function
+// can also make the tiles that were allocated in retrieveAndLockTiles be free again.
+//
+// Allocated tiles are always tied to a Cache entry, so that when the Cache entry is evicted from the Cache the memory associated is also released.
+// However, you may explicitly remove memory allocated for a Cache entry using the releaseTiles function.
+//
+// Tiles memory storage:
+// --------------------
+// Internally within the Cache, a list stores the indices of tiles that are "free".
+// Depending on the NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED define,
+// the internal memory management of the tiles can be either stored in a single "free tiles" list
+// or in 256 sub-lists each stored in a different Cache bucket.
+// When NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED is defined, the list is protected by a single mutex, hence all threads
+// are concurrently fighting to get access to this list.
+// When NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED is not defined, each bucket has its own mutex with its own sub-list.
+// In this mode, the tricky part is to uniformly distribute tiles allocation across buckets so that we do not end-up with 1 bucket
+// fully allocated while others are still empty: When a bucket is empty, we have no choice but to create a new memory file of NATRON_TILE_STORAGE_FILE_SIZE
+// bytes to enable the bucket to get more free tiles. The distribution in this mode is crucial: in this mode each tile requested to allocate
+// with the retrieveAndLockTiles function is associated with a TileHash 64-bit hash produced with the makeTileCacheIndex function.
+// The first 2 hexadecimals digits of this hash determine into which bucket the tile must be allocated.
+// This strategy adds some significant overhead to the main centralized strategy, mainly:
+// - Each tile must have a good hash associated so that the distribution function is uniform
+// - When allocating a lot of tiles at once (e.g: 1500, which regularly happens for a HD image), the thread calling retrieveAndLockTiles
+// has to sequentially lock and unlock each bucket mutex that proctects the free tiles list. The thread could not take all 256 bucket mutexes
+// otherwise we would be sure to end-up with a deadlock if multiple threads were to call this function at the same time, plus it would be just
+// about the same as in the NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED mode.
+//#define NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
 
 NATRON_NAMESPACE_ENTER
 
@@ -356,7 +427,8 @@ public:
      * This function tries to obtain tilesToAlloc.size() free tiles from the internal storage. If not available, grow the internal memory mapped file
      * so at least tilesToAlloc.size() free tiles are available.
      * @param tilesToAlloc A vector of size of the number of desired tiles in output. The numbers in the vector are used to offset the bucket of the 
-     * cache on which to retrieve tiles from.
+     * cache on which to retrieve tiles from. If NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED is defined, this is instead the number of tiles 
+     * to allocate.
      * @param allocatedTilesData[out] In output, this contains each tiles allocated as a pair of <tileIndex, pointer>
      * Each tile will have exactly NATRON_TILE_SIZE_BYTES bytes. The index is the index that must be passed back to the unLockTiles
      * and releaseTiles functions.
@@ -376,12 +448,16 @@ public:
      * Note that unLockTiles must always be called before releaseTiles.
      **/
     virtual bool retrieveAndLockTiles(const CacheEntryBasePtr& entry,
-                              const std::vector<TileInternalIndex>* tileIndices,
-                              const std::vector<TileHash>* tilesToAlloc,
-                              std::vector<void*>* existingTilesData,
-                              std::vector<std::pair<TileInternalIndex, void*> >* allocatedTilesData,
-                              void** cacheData) = 0;
-
+                                      const std::vector<TileInternalIndex>* tileIndices,
+#ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
+                                      std::size_t nTilesToAlloc,
+#else
+                                      const std::vector<TileHash>* tilesToAlloc,
+#endif
+                                      std::vector<void*>* existingTilesData,
+                                      std::vector<std::pair<TileInternalIndex, void*> >* allocatedTilesData,
+                                      void** cacheData) = 0;
+    
 #ifdef DEBUG
     /**
      * @brief Debug: Ensures that the index is valid in the storage. Can only be called between retrieveAndLockTiles and 
@@ -404,7 +480,13 @@ public:
      * @brief Release tiles that were previously allocated by the given entry with retrieveAndLockTiles
      * @param indices Corresponds to the indices that were passed in tileIndices to the function retrieveAndLockTiles
      **/
-    virtual void releaseTiles(const CacheEntryBasePtr& entry, const std::vector<std::pair<TileHash,TileInternalIndex> >& tileIndices) = 0;
+    virtual void releaseTiles(const CacheEntryBasePtr& entry,
+#ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
+                              const std::vector<TileInternalIndex>& tileIndices
+#else
+                              const std::vector<std::pair<TileHash,TileInternalIndex> >& tileIndices
+#endif
+    ) = 0;
 
     /**
      * @brief Returns whether a cache entry exists for the given hash.
@@ -539,7 +621,11 @@ public:
     virtual CacheEntryLockerBasePtr get(const CacheEntryBasePtr& entry) const OVERRIDE FINAL;
     virtual bool retrieveAndLockTiles(const CacheEntryBasePtr& entry,
                                       const std::vector<TileInternalIndex>* tileIndices,
+#ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
+                                      std::size_t nTilesToAlloc,
+#else
                                       const std::vector<TileHash>* tilesToAlloc,
+#endif
                                       std::vector<void*>* existingTilesData,
                                       std::vector<std::pair<TileInternalIndex, void*> >* allocatedTilesData,
                                       void** cacheData) OVERRIDE FINAL;
@@ -547,7 +633,13 @@ public:
     virtual bool checkTileIndex(TileInternalIndex encodedIndex) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 #endif
     virtual void unLockTiles(void* cacheData, bool invalidate) OVERRIDE FINAL;
-    virtual void releaseTiles(const CacheEntryBasePtr& entry, const std::vector<std::pair<TileHash,TileInternalIndex> >& tileIndices) OVERRIDE FINAL;
+    virtual void releaseTiles(const CacheEntryBasePtr& entry,
+#ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
+                              const std::vector<TileInternalIndex>& tileIndices
+#else
+                              const std::vector<std::pair<TileHash,TileInternalIndex> >& tileIndices
+#endif
+    ) OVERRIDE FINAL;
     virtual bool hasCacheEntryForHash(U64 hash) const OVERRIDE FINAL;
     virtual void evictLRUEntries(std::size_t nBytesToFree) OVERRIDE FINAL;
     virtual void clear() OVERRIDE FINAL;
