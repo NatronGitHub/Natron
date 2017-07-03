@@ -10,4 +10,3 @@
 [submodule "libs/OpenFX"]
 	path = libs/OpenFX
    	url = https://github.com/devernay/openfx
-	branch = multiplane2
