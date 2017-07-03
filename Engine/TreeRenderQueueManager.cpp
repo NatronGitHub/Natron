@@ -577,13 +577,12 @@ TreeRenderQueueManager::quitThread()
         // Push a fake element if needed
         {
             QMutexLocker k2(&_imp->executionQueueMutex);
-            if (!_imp->executionQueue.empty()) {
-                _imp->executionQueue.push_back(TreeRenderExecutionDataPtr());
-                _imp->executionQueueNotEmptyCond.wakeOne();
-            }
+            _imp->executionQueue.push_back(TreeRenderExecutionDataPtr());
+            _imp->executionQueueNotEmptyCond.wakeOne();
+
         }
 
-        while (!_imp->mustQuit) {
+        while (_imp->mustQuit) {
             _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
         }
     }
