@@ -4319,9 +4319,10 @@ Node::refreshPreviewsAfterProjectLoad()
 #define kOCIODisplayParamView "view"
 #define kOCIODisplayParamViewChoice "viewIndex"
 
-#define kOCIOCDLTransformPluginIdentifier "fr.inria.openfx.OCIOCDLTransform"
-#define kOCIOCDLTransformParamCCCID "cccId"
-#define kOCIOCDLTransformParamCCCIDChoice "cccIdIndex"
+// not yet implemented (see OCIOCDLTransform.cpp)
+//#define kOCIOCDLTransformPluginIdentifier "fr.inria.openfx.OCIOCDLTransform"
+//#define kOCIOCDLTransformParamCCCID "cccId"
+//#define kOCIOCDLTransformParamCCCIDChoice "cccIdIndex"
 
 #define kOCIOFileTransformPluginIdentifier "fr.inria.openfx.OCIOFileTransform"
 #define kOCIOFileTransformParamCCCID "cccId"
@@ -4431,8 +4432,8 @@ Node::makeDocumentation(bool genHTML) const
                ( knobScriptName == QString::fromUtf8(kOCIODisplayParamDisplay) ) ) ||
              ( ( pluginID == QString::fromUtf8(kOCIODisplayPluginIdentifier) ) &&
                ( knobScriptName == QString::fromUtf8(kOCIODisplayParamView) ) ) ||
-             ( ( pluginID == QString::fromUtf8(kOCIOCDLTransformPluginIdentifier) ) &&
-               ( knobScriptName == QString::fromUtf8(kOCIOCDLTransformParamCCCID) ) ) ||
+             //( ( pluginID == QString::fromUtf8(kOCIOCDLTransformPluginIdentifier) ) &&
+             //  ( knobScriptName == QString::fromUtf8(kOCIOCDLTransformParamCCCID) ) ) ||
              ( ( pluginID == QString::fromUtf8(kOCIOFileTransformPluginIdentifier) ) &&
                ( knobScriptName == QString::fromUtf8(kOCIOFileTransformParamCCCID) ) ) ||
              false ) {
@@ -4494,8 +4495,8 @@ Node::makeDocumentation(bool genHTML) const
                                           ( knobScriptName == QString::fromUtf8(kOCIODisplayParamDisplayChoice) ) ) &&
                                        !( ( pluginID == QString::fromUtf8(kOCIODisplayPluginIdentifier) ) &&
                                           ( knobScriptName == QString::fromUtf8(kOCIODisplayParamViewChoice) ) ) &&
-                                       !( ( pluginID == QString::fromUtf8(kOCIOCDLTransformPluginIdentifier) ) &&
-                                          ( knobScriptName == QString::fromUtf8(kOCIOCDLTransformParamCCCIDChoice) ) ) &&
+                                       //!( ( pluginID == QString::fromUtf8(kOCIOCDLTransformPluginIdentifier) ) &&
+                                       //   ( knobScriptName == QString::fromUtf8(kOCIOCDLTransformParamCCCIDChoice) ) ) &&
                                        !( ( pluginID == QString::fromUtf8(kOCIOFileTransformPluginIdentifier) ) &&
                                           ( knobScriptName == QString::fromUtf8(kOCIOFileTransformParamCCCIDChoice) ) ) &&
                                        !( ( pluginID == QString::fromUtf8(PLUGINID_NATRON_PRECOMP) ) &&
