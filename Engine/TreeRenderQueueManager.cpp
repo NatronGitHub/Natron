@@ -277,6 +277,7 @@ TreeRenderQueueManager::getRenderIndex(const TreeRenderPtr& render, int* index, 
 {
     *numRenders = 0;
     *index = -1;
+    QMutexLocker k(&_imp->executionQueueMutex);
     for (std::list<TreeRenderExecutionDataPtr>::const_iterator it = _imp->executionQueue.begin(); it != _imp->executionQueue.end(); ++it) {
         if (!(*it)->isTreeMainExecution()) {
             continue;
@@ -474,10 +475,12 @@ TreeRenderQueueManager::appendTreeRenderExecution(const TreeRenderExecutionDataP
 void
 TreeRenderQueueManager::Implementation::launchAndWaitExtraExecutionTasks(const TreeRenderExecutionDataPtr& mainFinishedExecution, const std::list<TreeRenderExecutionDataPtr>& extraExecutions)
 {
-    for (std::list<TreeRenderExecutionDataPtr>::const_iterator it = extraExecutions.begin(); it != extraExecutions.end(); ++it) {
-        if (!isFailureRetCode((*it)->getStatus())) {
-            _publicInterface->appendTreeRenderExecution(*it);
-            waitForTreeRenderExecutionFinished(*it);
+    if (!isFailureRetCode(mainFinishedExecution->getStatus()) ) {
+        for (std::list<TreeRenderExecutionDataPtr>::const_iterator it = extraExecutions.begin(); it != extraExecutions.end(); ++it) {
+            if (!isFailureRetCode((*it)->getStatus())) {
+                _publicInterface->appendTreeRenderExecution(*it);
+                waitForTreeRenderExecutionFinished(*it);
+            }
         }
     }
 
@@ -515,7 +518,7 @@ TreeRenderQueueManager::Implementation::notifyTaskInRenderFinishedInternal(const
         if (!extraExecutions.empty()) {
             // Launch the executions in a separate thread if we are in the TreeRenderQueueManager thread because it will require the
             // TreeRenderQueueManager thread to schedule the tasks
-            if (!isRunningInThreadPoolThread) {
+            if (!isRunningInThreadPoolThread && !isFailureRetCode(render->getStatus())) {
                 QtConcurrent::run(this, &TreeRenderQueueManager::Implementation::launchAndWaitExtraExecutionTasks, render, extraExecutions);
             } else {
                 launchAndWaitExtraExecutionTasks(render, extraExecutions);

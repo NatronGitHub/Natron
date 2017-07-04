@@ -511,8 +511,14 @@ MultiThread::getNCPUsAvailable(const EffectInstancePtr& effect)
         return ret;
     }
     assert(renderIndex < nRenders);
+#if 0
 
-
+    if (renderIndex == 0) {
+        return ret;
+    } else {
+        return 1;
+    }
+#endif
     // This is the number of physical cores excluding logical cores (not counting hyperthreading).
     const int nPhysicalThreadCount = appPTR->getPhysicalThreadCount();
 
@@ -527,11 +533,11 @@ MultiThread::getNCPUsAvailable(const EffectInstancePtr& effect)
         if (renderIndex == 0) {
             return nPhysicalThreadCount;
         } else {
-            ret = std::max(1.,std::floor(((ret - nPhysicalThreadCount) / (double)(nRenders - 1)) + 0.5));
-            return ret;
+            double perThreadRet = (ret - nPhysicalThreadCount) / (double)(nRenders - 1);
+            perThreadRet = std::max(1.,std::floor(perThreadRet + 0.5));
+            return perThreadRet;
         }
     }
-
 } // getNCPUsAvailable
 
 ActionRetCodeEnum

@@ -628,7 +628,10 @@ EffectInstance::Implementation::checkRestToRender(bool updateTilesStateFromCache
         // in the number of available threads in the thread-pool
 
         const unsigned int nThreads = MultiThread::getNCPUsAvailable(_publicInterface->shared_from_this());
-        reducedRects = mainRenderRect.splitIntoSmallerRects(nThreads);
+        if (nThreads > 1) {
+            reducedRects = mainRenderRect.splitIntoSmallerRects(nThreads);
+        }
+        
     }
     for (std::list<RectI>::const_iterator it = reducedRects.begin(); it != reducedRects.end(); ++it) {
         if (!it->isNull()) {
