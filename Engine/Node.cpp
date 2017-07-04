@@ -4313,6 +4313,20 @@ Node::refreshPreviewsAfterProjectLoad()
 #define kOCIOParamInputSpaceChoice "ocioInputSpaceIndex"
 #define kOCIOParamOutputSpaceChoice "ocioOutputSpaceIndex"
 
+#define kOCIODisplayPluginIdentifier "fr.inria.openfx.OCIODisplay"
+#define kOCIODisplayParamDisplay "display"
+#define kOCIODisplayParamDisplayChoice "displayIndex"
+#define kOCIODisplayParamView "view"
+#define kOCIODisplayParamViewChoice "viewIndex"
+
+#define kOCIOCDLTransformPluginIdentifier "fr.inria.openfx.OCIOCDLTransform"
+#define kOCIOCDLTransformParamCCCID "cccId"
+#define kOCIOCDLTransformParamCCCIDChoice "cccIdIndex"
+
+#define kOCIOFileTransformPluginIdentifier "fr.inria.openfx.OCIOFileTransform"
+#define kOCIOFileTransformParamCCCID "cccId"
+#define kOCIOFileTransformParamCCCIDChoice "cccIdIndex"
+
 // genHTML: true for live HTML output for the internal web-server, false for markdown output
 QString
 Node::makeDocumentation(bool genHTML) const
@@ -4408,10 +4422,20 @@ Node::makeDocumentation(bool genHTML) const
         QString knobLabel = NATRON_NAMESPACE::convertFromPlainTextToMarkdown( QString::fromUtf8( (*it)->getLabel().c_str() ), genHTML, true);
         QString knobHint = NATRON_NAMESPACE::convertFromPlainTextToMarkdown( QString::fromUtf8( (*it)->getHintToolTip().c_str() ), genHTML, true);
 
+        // totally ignore the documentation for these parameters (which are always secret in Natron)
         if ( knobScriptName.startsWith( QString::fromUtf8("NatronOfxParam") ) ||
              knobScriptName == QString::fromUtf8("exportAsPyPlug") ||
              knobScriptName == QString::fromUtf8(kOCIOParamInputSpace) ||
-             knobScriptName == QString::fromUtf8(kOCIOParamOutputSpace) ) {
+             knobScriptName == QString::fromUtf8(kOCIOParamOutputSpace) ||
+             ( ( pluginID == QString::fromUtf8(kOCIODisplayPluginIdentifier) ) &&
+               ( knobScriptName == QString::fromUtf8(kOCIODisplayParamDisplay) ) ) ||
+             ( ( pluginID == QString::fromUtf8(kOCIODisplayPluginIdentifier) ) &&
+               ( knobScriptName == QString::fromUtf8(kOCIODisplayParamView) ) ) ||
+             ( ( pluginID == QString::fromUtf8(kOCIOCDLTransformPluginIdentifier) ) &&
+               ( knobScriptName == QString::fromUtf8(kOCIOCDLTransformParamCCCID) ) ) ||
+             ( ( pluginID == QString::fromUtf8(kOCIOFileTransformPluginIdentifier) ) &&
+               ( knobScriptName == QString::fromUtf8(kOCIOFileTransformParamCCCID) ) ) ||
+             false ) {
             continue;
         }
 
@@ -4465,7 +4489,19 @@ Node::makeDocumentation(bool genHTML) const
                     // ignored (eg. OCIO colorspace knobs).
                     if ( isChoice &&
                          (genHTML || ( knobScriptName != QString::fromUtf8(kOCIOParamInputSpaceChoice) &&
-                                       knobScriptName != QString::fromUtf8(kOCIOParamOutputSpaceChoice) ) ) ) {
+                                       knobScriptName != QString::fromUtf8(kOCIOParamOutputSpaceChoice) &&
+                                       !( ( pluginID == QString::fromUtf8(kOCIODisplayPluginIdentifier) ) &&
+                                          ( knobScriptName == QString::fromUtf8(kOCIODisplayParamDisplayChoice) ) ) &&
+                                       !( ( pluginID == QString::fromUtf8(kOCIODisplayPluginIdentifier) ) &&
+                                          ( knobScriptName == QString::fromUtf8(kOCIODisplayParamViewChoice) ) ) &&
+                                       !( ( pluginID == QString::fromUtf8(kOCIOCDLTransformPluginIdentifier) ) &&
+                                          ( knobScriptName == QString::fromUtf8(kOCIOCDLTransformParamCCCIDChoice) ) ) &&
+                                       !( ( pluginID == QString::fromUtf8(kOCIOFileTransformPluginIdentifier) ) &&
+                                          ( knobScriptName == QString::fromUtf8(kOCIOFileTransformParamCCCIDChoice) ) ) &&
+                                       !( ( pluginID == QString::fromUtf8(PLUGINID_NATRON_PRECOMP) ) &&
+                                          ( knobScriptName == QString::fromUtf8("writeNode") ) ) &&
+                                       !( ( pluginID == QString::fromUtf8(PLUGINID_NATRON_ONEVIEW) ) &&
+                                          ( knobScriptName == QString::fromUtf8("view") ) ) ) ) ) {
                         int index = isChoice->getDefaultValue(i);
                         std::vector<std::string> entries = isChoice->getEntries_mt_safe();
                         if ( (index >= 0) && ( index < (int)entries.size() ) ) {
@@ -4484,7 +4520,8 @@ Node::makeDocumentation(bool genHTML) const
                                             if ( !knobHint.isEmpty() ) {
                                                 knobHint.append( QString::fromUtf8("<br />") );
                                             }
-                                            knobHint.append( tr("Possible values:") + QString::fromUtf8("<br />") );
+                                            // "Possible values:" clutters the documentation.
+                                            //knobHint.append( tr("Possible values:") + QString::fromUtf8("<br />") );
                                         } else {
                                             // we do a hack for multiline elements, because the markdown->rst conversion by pandoc doesn't use the line block syntax.
                                             // what we do here is put a supplementary dot at the beginning of each line, which is then converted to a pipe '|' in the
@@ -4495,7 +4532,8 @@ Node::makeDocumentation(bool genHTML) const
                                                 }
                                                 knobHint.append( QString::fromUtf8("\\\n") );
                                             }
-                                            knobHint.append( QString::fromUtf8(". ") + tr("Possible values:") +  QString::fromUtf8("\\\n") );
+                                            // "Possible values:" clutters the documentation.
+                                            //knobHint.append( QString::fromUtf8(". ") + tr("Possible values:") +  QString::fromUtf8("\\\n") );
                                         }
                                         first = false;
                                     }

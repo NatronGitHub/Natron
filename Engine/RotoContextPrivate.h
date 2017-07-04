@@ -133,10 +133,10 @@ CLANG_DIAG_ON(uninitialized)
 
 #define kRotoBrushSourceColor "sourceType"
 #define kRotoBrushSourceColorLabel "Source"
-#define kRotoBrushSourceColorHint "Source color used for painting the stroke when the Reveal/Clone tools are used:\n" \
-    "- foreground: the painted result at this point in the hierarchy\n" \
-    "- background: the original image unpainted connected to bg\n" \
-    "- backgroundN: the original image unpainted connected to bgN\n"
+#define kRotoBrushSourceColorHint "Source color used for painting the stroke when the Reveal/Clone tools are used."
+#define kRotoBrushSourceColorOptionForegroundHint "The painted result at this point in the hierarchy."
+#define kRotoBrushSourceColorOptionBackgroundHint "The original image unpainted connected to bg."
+#define kRotoBrushSourceColorOptionBackgroundNHint "The original image unpainted connected to bg%1."
 
 #define kRotoBrushSizeParam "brushSize"
 #define kRotoBrushSizeParamLabel "Brush Size"
@@ -1528,14 +1528,18 @@ public:
             sourceType->setDefaultValue(1);
             {
                 std::vector<std::string> choices;
+                std::vector<std::string> choicesHelp;
                 choices.push_back("foreground");
+                choicesHelp.push_back(tr(kRotoBrushSourceColorOptionForegroundHint).toStdString());
                 choices.push_back("background");
+                choicesHelp.push_back(tr(kRotoBrushSourceColorOptionBackgroundHint).toStdString());
                 for (int i = 1; i < 10; ++i) {
                     std::stringstream ss;
                     ss << "background " << i + 1;
                     choices.push_back( ss.str() );
+                    choicesHelp.push_back(tr(kRotoBrushSourceColorOptionBackgroundNHint).arg(i).toStdString());
                 }
-                sourceType->populateChoices(choices);
+                sourceType->populateChoices(choices, choicesHelp);
             }
             sourceType->setDefaultAllDimensionsEnabled(false);
             clonePage->addKnob(sourceType);
