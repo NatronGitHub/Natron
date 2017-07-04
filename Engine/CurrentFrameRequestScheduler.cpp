@@ -77,18 +77,12 @@ public:
 struct RenderAndAge
 {
     RenderFrameResultsContainerPtr results;
-    U64 age;
+
+    // For each input whether the render is finished
+    bool finishedRenders[2];
 };
 
-struct RenderAndAge_CompareAge
-{
-    bool operator() (const RenderAndAge& lhs, const RenderAndAge& rhs) const
-    {
-        return lhs.age < rhs.age;
-    }
-};
-
-typedef std::set<RenderAndAge, RenderAndAge_CompareAge> RenderSetOrderedByAge;
+typedef std::map<U64, RenderAndAge> RendersMap;
 
 struct ViewerCurrentFrameRequestSchedulerPrivate
 {
@@ -99,7 +93,7 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
 
     mutable QMutex currentRendersMutex;
     // A set of active renders and their age.
-    RenderSetOrderedByAge currentRenders;
+    RendersMap currentRenders;
 
     mutable QMutex renderAgeMutex; // protects renderAge displayAge currentRenders
 
@@ -201,7 +195,7 @@ ViewerCurrentFrameRequestScheduler::onAbortRequested(bool keepOldestRender)
         QMutexLocker k(&_imp->renderAgeMutex);
         currentDisplayAge = _imp->displayAge;
     }
-    RenderSetOrderedByAge currentRenders;
+    RendersMap currentRenders;
     {
         QMutexLocker k(&_imp->currentRendersMutex);
         currentRenders = _imp->currentRenders;
@@ -210,12 +204,12 @@ ViewerCurrentFrameRequestScheduler::onAbortRequested(bool keepOldestRender)
         return;
     }
 
-    for (RenderSetOrderedByAge::iterator it = _imp->currentRenders.begin(); it != _imp->currentRenders.end(); ++it) {
-        if (it->age >= currentDisplayAge && !keptOneRenderActive) {
+    for (RendersMap::iterator it = currentRenders.begin(); it != currentRenders.end(); ++it) {
+        if (it->first >= currentDisplayAge && !keptOneRenderActive) {
             keptOneRenderActive = true;
             continue;
         }
-        it->results->abortRenders();
+        it->second.results->abortRenders();
     }
     _imp->processFrameThread.abortThreadedTask();
 } // onAbortRequested
@@ -333,19 +327,32 @@ ViewerCurrentFrameRequestScheduler::onTreeRenderFinished(const TreeRenderPtr& re
     // associated to the results.
     RenderFrameResultsContainerPtr results;
     U64 renderAge = 0;
+
+    bool allRendersFinished = false;
     {
 
         QMutexLocker k(&_imp->currentRendersMutex);
-        for (RenderSetOrderedByAge::const_iterator it = _imp->currentRenders.begin();  it!=_imp->currentRenders.end(); ++it) {
-            for (std::list<RenderFrameSubResultPtr>::const_iterator it2 = it->results->frames.begin(); it2 != it->results->frames.end(); ++it2) {
+        for (RendersMap::iterator it = _imp->currentRenders.begin();  it!=_imp->currentRenders.end(); ++it) {
+            for (std::list<RenderFrameSubResultPtr>::iterator it2 = it->second.results->frames.begin(); it2 != it->second.results->frames.end(); ++it2) {
                 ViewerRenderFrameSubResult* viewerResult = dynamic_cast<ViewerRenderFrameSubResult*>(it2->get());
                 assert(viewerResult);
                 for (int i = 0; i < 2; ++i) {
+
                     if (viewerResult->perInputsData[i].render == render) {
-                        results = it->results;
-                        renderAge = it->age;
+                        results = it->second.results;
+                        renderAge = it->first;
+                        it->second.finishedRenders[i] = true;
+
+                        allRendersFinished = true;
+                        for (int j = 0; j < 2; ++j) {
+                            if (viewerResult->perInputsData[j].render && !it->second.finishedRenders[j]) {
+                                allRendersFinished = false;
+                                break;
+                            }
+                        }
                         break;
                     }
+
                 }
                 if (results) {
                     break;
@@ -359,6 +366,11 @@ ViewerCurrentFrameRequestScheduler::onTreeRenderFinished(const TreeRenderPtr& re
 
     assert(results);
 
+    if (!allRendersFinished) {
+        // There's multiple tree renders per render request (one for A and one for B of the Viewer) so wait for all of them to be done
+        return;
+    }
+
     // Now we wait for all renders for the results to be available. Since we are
     // in a thread-pool thread, we release the thread to the thread pool so it can do more meaningful tasks.
 
@@ -371,10 +383,7 @@ ViewerCurrentFrameRequestScheduler::onTreeRenderFinished(const TreeRenderPtr& re
     {
         // Remove the current render from the abortable renders list
         QMutexLocker k(&_imp->currentRendersMutex);
-        RenderAndAge r;
-        r.age = renderAge;
-        r.results = results;
-        RenderSetOrderedByAge::iterator found = _imp->currentRenders.find(r);
+        RendersMap::iterator found = _imp->currentRenders.find(renderAge);
         assert(found != _imp->currentRenders.end());
         if (found != _imp->currentRenders.end()) {
             _imp->currentRenders.erase(found);
@@ -429,9 +438,9 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const GenericThreadStartArgsP
     {
         QMutexLocker k(&_imp->currentRendersMutex);
         RenderAndAge r;
-        r.age = args->renderAge;
+        r.finishedRenders[0] = r.finishedRenders[1] = false;
         r.results = results;
-        _imp->currentRenders.insert(r);
+        _imp->currentRenders.insert(std::make_pair(args->renderAge,r));
     }
 
     // Launch the render

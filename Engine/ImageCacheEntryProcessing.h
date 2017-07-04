@@ -59,8 +59,9 @@ static void copyPixelsForDepth(const RectI& renderWindow,
 
             memcpy(dst_pixels, src_pixels, renderWindow.width() * sizeof(PIX));
 #ifdef DEBUG
-            for (int x = renderWindow.x1; x < renderWindow.x2; ++x, src_pixels += srcXStride) {
-                assert(*src_pixels == *src_pixels); // NaN check
+            const PIX* p = src_pixels;
+            for (int x = renderWindow.x1; x < renderWindow.x2; ++x, p += srcXStride) {
+                assert(*p == *p); // NaN check
             }
 #endif
         }

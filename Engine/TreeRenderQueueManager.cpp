@@ -133,6 +133,8 @@ struct TreeRenderQueueManager::Implementation
     int launchMoreTasks(int nTasksHint);
 
     void notifyTaskInRenderFinishedInternal(const TreeRenderExecutionDataPtr& render, bool launchExtraRenders, bool isRunningInThreadPoolThread);
+
+    void onTaskRenderFinished(const TreeRenderExecutionDataPtr& render);
 };
 
 
@@ -295,6 +297,9 @@ TreeRenderQueueManager::Implementation::waitForTreeRenderInternal(const TreeRend
                                                                   std::list<TreeRenderPtr>::iterator launchedIt,
                                                                   PerProviderRendersMap::iterator providersMapIt)
 {
+    // Private : does not lock
+    assert(!perProviderRendersMutex.tryLock());
+
     PerProviderRenders& renders = *providersMapIt->second;
 
     renders.launchedRenders.erase(launchedIt);
@@ -484,9 +489,49 @@ TreeRenderQueueManager::Implementation::launchAndWaitExtraExecutionTasks(const T
         }
     }
 
-    notifyTaskInRenderFinishedInternal(mainFinishedExecution, false /*notifyTaskInRenderFinishedInternal*/, false);
-
+    onTaskRenderFinished(mainFinishedExecution);
 } // launchAndWaitExtraExecutionTasks
+
+void
+TreeRenderQueueManager::Implementation::onTaskRenderFinished(const TreeRenderExecutionDataPtr& render)
+{
+    {
+        QMutexLocker k(&perProviderRendersMutex);
+        PerProviderRendersMap::iterator foundProvider = perProviderRenders.find(render->getTreeRender()->getProvider());
+        assert(foundProvider != perProviderRenders.end());
+        if (foundProvider == perProviderRenders.end()) {
+            // No render has been requested for this provider
+            return;
+        }
+
+        // Insert the exeuction in the finishedExecutions list if this is not the main execution, otherwise no need to do so
+        // since we insert the render in the finishedRenders list
+        if (render->isTreeMainExecution()) {
+            foundProvider->second->finishedRenders.insert(render->getTreeRender());
+        } else {
+            foundProvider->second->finishedExecutions.insert(render);
+        }
+        perProviderRendersCond.wakeAll();
+    }
+    {
+        QMutexLocker k(&executionQueueMutex);
+        // The execution must exist in the queue. Remove it now because we don't want the run() function to use it again.
+        std::list<TreeRenderExecutionDataPtr>::iterator found = std::find(executionQueue.begin(), executionQueue.end(), render);
+        if (found != executionQueue.end()) {
+            // The execution may no longer be in the exeuction queue if it has a failed status because in that case we did not exit early
+            // in the if condition at the start of the function.
+            executionQueue.erase(found);
+        }
+    }
+
+
+    if (render->isTreeMainExecution()) {
+        TreeRenderPtr treeRender = render->getTreeRender();
+        TreeRenderQueueProviderPtr provider = boost::const_pointer_cast<TreeRenderQueueProvider>(treeRender->getProvider());
+        provider->notifyTreeRenderFinished(treeRender);
+    }
+
+} // onTaskRenderFinished
 
 void
 TreeRenderQueueManager::Implementation::notifyTaskInRenderFinishedInternal(const TreeRenderExecutionDataPtr& render,
@@ -527,41 +572,8 @@ TreeRenderQueueManager::Implementation::notifyTaskInRenderFinishedInternal(const
         }
     }
 
-    {
-        QMutexLocker k(&perProviderRendersMutex);
-        PerProviderRendersMap::iterator foundProvider = perProviderRenders.find(render->getTreeRender()->getProvider());
-        assert(foundProvider != perProviderRenders.end());
-        if (foundProvider == perProviderRenders.end()) {
-            // No render has been requested for this provider
-            return;
-        }
+    onTaskRenderFinished(render);
 
-        // Insert the exeuction in the finishedExecutions list if this is not the main execution, otherwise no need to do so
-        // since we insert the render in the finishedRenders list
-        if (render->isTreeMainExecution()) {
-            foundProvider->second->finishedRenders.insert(render->getTreeRender());
-        } else {
-            foundProvider->second->finishedExecutions.insert(render);
-        }
-        perProviderRendersCond.wakeAll();
-    }
-    {
-        QMutexLocker k(&executionQueueMutex);
-        // The execution must exist in the queue. Remove it now because we don't want the run() function to use it again.
-        std::list<TreeRenderExecutionDataPtr>::iterator found = std::find(executionQueue.begin(), executionQueue.end(), render);
-        if (found != executionQueue.end()) {
-            // The execution may no longer be in the exeuction queue if it has a failed status because in that case we did not exit early
-            // in the if condition at the start of the function.
-            executionQueue.erase(found);
-        }
-    }
-
-
-    if (render->isTreeMainExecution()) {
-        TreeRenderPtr treeRender = render->getTreeRender();
-        TreeRenderQueueProviderPtr provider = boost::const_pointer_cast<TreeRenderQueueProvider>(treeRender->getProvider());
-        provider->notifyTreeRenderFinished(treeRender);
-    }
 } // notifyTaskInRenderFinishedInternal
 
 void

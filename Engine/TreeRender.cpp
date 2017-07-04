@@ -602,8 +602,8 @@ struct TreeRenderExecutionDataPrivate
         assert(!dependencyFreeRendersMutex.tryLock());
 
         std::set<FrameViewRequestPtr>::const_iterator foundTask = allRenderTasksToProcess.find(request);
-        assert(foundTask != allRenderTasksToProcess.end());
         if (foundTask != allRenderTasksToProcess.end()) {
+            // The task might no logner exist in the list if another thread failed
             allRenderTasksToProcess.erase(foundTask);
         }
     }
@@ -677,7 +677,9 @@ void
 TreeRenderExecutionDataPrivate::removeDependencyLinkFromRequest(const FrameViewRequestPtr& request)
 {
     assert(!dependencyFreeRendersMutex.tryLock());
-
+    if (isFailureRetCode(status)) {
+        return;
+    }
     TreeRenderExecutionDataPtr thisShared = _publicInterface->shared_from_this();
 
     std::list<FrameViewRequestPtr> listeners = request->getListeners(thisShared);
@@ -924,16 +926,7 @@ TreeRenderExecutionData::executeAvailableTasks(int nTasks)
 
     QMutexLocker k(&_imp->dependencyFreeRendersMutex);
 
-    // Don't launch any task if the execution is failed
-    if (isFailureRetCode(_imp->status) || !_imp->dependencyFreeRenders) {
-        if (!_imp->allRenderTasksToProcess.empty()) {
-            _imp->allRenderTasksToProcess.clear();
-            if (_imp->dependencyFreeRenders) {
-                _imp->dependencyFreeRenders->clear();
-            }
-            k.unlock();
-            appPTR->getTasksQueueManager()->notifyTaskInRenderFinished(thisShared, false);
-        }
+    if (!_imp->dependencyFreeRenders) {
         return 0;
     }
 
@@ -953,7 +946,7 @@ TreeRenderExecutionData::executeAvailableTasks(int nTasks)
         runnable->run();
         k.relock();
 #else
-        if (request->getStatus() == FrameViewRequest::eFrameViewRequestStatusNotRendered) {
+        if (request->getStatus() == FrameViewRequest::eFrameViewRequestStatusNotRendered && !isFailureRetCode(_imp->status)) {
             // Only launch the runnable in a separate thread if its actually going to do any rendering.
             runnable->setAutoDelete(false);
             _imp->launchedRunnables.insert(runnable);
