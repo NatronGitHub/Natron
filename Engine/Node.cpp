@@ -4502,6 +4502,7 @@ Node::makeDocumentation(bool genHTML) const
                                           ( knobScriptName == QString::fromUtf8("writeNode") ) ) &&
                                        !( ( pluginID == QString::fromUtf8(PLUGINID_NATRON_ONEVIEW) ) &&
                                           ( knobScriptName == QString::fromUtf8("view") ) ) ) ) ) {
+                        // see also KnobChoice::getHintToolTipFull()
                         int index = isChoice->getDefaultValue(i);
                         std::vector<std::string> entries = isChoice->getEntries_mt_safe();
                         if ( (index >= 0) && ( index < (int)entries.size() ) ) {
