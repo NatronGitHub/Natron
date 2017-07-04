@@ -4470,6 +4470,8 @@ Node::makeDocumentation(bool genHTML) const
              knobScriptName == QString::fromUtf8(kOCIOParamOutputSpace) ||
              ( ( pluginID == QString::fromUtf8(kOCIODisplayPluginIdentifier) ) &&
                ( knobScriptName == QString::fromUtf8(kOCIODisplayParamDisplay) ) ) ||
+             ( ( pluginID == QString::fromUtf8(kOCIODisplayPluginIdentifier) ) &&
+               ( knobScriptName == QString::fromUtf8(kOCIODisplayParamView) ) ) ||
              ( ( pluginID == QString::fromUtf8(kOCIOCDLTransformPluginIdentifier) ) &&
                ( knobScriptName == QString::fromUtf8(kOCIOCDLTransformParamCCCID) ) ) ||
              ( ( pluginID == QString::fromUtf8(kOCIOFileTransformPluginIdentifier) ) &&
@@ -4563,6 +4565,7 @@ Node::makeDocumentation(bool genHTML) const
                                         if ( !knobHint.isEmpty() ) {
                                             knobHint.append( QString::fromUtf8("<br />") );
                                         }
+                                        // "Possible values:" clutters the documentation.
                                         //knobHint.append( tr("Possible values:") + QString::fromUtf8("<br />") );
                                     } else {
                                         // we do a hack for multiline elements, because the markdown->rst conversion by pandoc doesn't use the line block syntax.
@@ -4574,6 +4577,7 @@ Node::makeDocumentation(bool genHTML) const
                                             }
                                             knobHint.append( QString::fromUtf8("\\\n") );
                                         }
+                                        // "Possible values:" clutters the documentation.
                                         //knobHint.append( QString::fromUtf8(". ") + tr("Possible values:") +  QString::fromUtf8("\\\n") );
                                     }
                                     first = false;
