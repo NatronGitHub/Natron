@@ -1528,7 +1528,7 @@ public:
                     ss << "background " << i + 1;
                     choices.push_back( ChoiceOption( ss.str(), "", tr(kRotoBrushSourceColorOptionBackgroundNHint).arg(i).toStdString() ) );
                 }
-                sourceType->populateChoices(choices, choicesHelp);
+                sourceType->populateChoices(choices);
             }
             sourceType->setDefaultAllDimensionsEnabled(false);
             clonePage->addKnob(sourceType);
