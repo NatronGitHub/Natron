@@ -424,10 +424,10 @@ NATRON_NAMESPACE_ENTER
 
 #define kRotoUIParamSourceType "sourceTypeChoice"
 #define kRotoUIParamSourceTypeLabel "Source"
-#define kRotoUIParamSourceTypeHint "Source color used for painting the stroke when the Reveal/Clone tools are used:\n" \
-    "- foreground: the painted result at this point in the hierarchy,\n" \
-    "- background: the original image unpainted connected to bg,\n" \
-    "- backgroundN: the original image unpainted connected to bgN"
+#define kRotoUIParamSourceTypeHint "Source color used for painting the stroke when the Reveal/Clone tools are used."
+#define kRotoUIParamSourceTypeOptionForegroundHint "The painted result at this point in the hierarchy."
+#define kRotoUIParamSourceTypeOptionBackgroundHint "The original image unpainted connected to bg."
+#define kRotoUIParamSourceTypeOptionBackgroundNHint "The original image unpainted connected to bg%1."
 
 #define kRotoUIParamResetCloneOffset "resetCloneOffsetButton"
 #define kRotoUIParamResetCloneOffsetLabel "Reset Transform"

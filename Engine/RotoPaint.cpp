@@ -2228,11 +2228,11 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
     sourceType->setSecret(true);
     {
         std::vector<ChoiceOption> choices;
-        choices.push_back(ChoiceOption("foreground", "", ""));
-        choices.push_back(ChoiceOption("background", "", ""));
+        choices.push_back( ChoiceOption( "foreground", "", tr(kRotoUIParamSourceTypeOptionForegroundHint).toStdString() ) );
+        choices.push_back( ChoiceOption( "background", "", tr(kRotoUIParamSourceTypeOptionBackgroundHint).toStdString() ) );
         for (int i = 1; i < 10; ++i) {
             QString str = QString::fromUtf8("background") + QString::number(i + 1);
-            choices.push_back( ChoiceOption(str.toStdString(), "", ""));
+            choices.push_back( ChoiceOption(str.toStdString(), "", tr(kRotoUIParamSourceTypeOptionBackgroundNHint).arg(i).toStdString() ));
         }
         sourceType->populateChoices(choices);
     }
