@@ -560,7 +560,11 @@ AppManager::loadFromArgs(const CLArgs& cl)
 
 
     _imp->hardwareThreadCount = boost::thread::hardware_concurrency();
+#if BOOST_VERSION >= 105600
     _imp->physicalThreadCount = boost::thread::physical_concurrency();
+#else
+    _imp->physicalThreadCount = _imp->hardwareThreadCount;
+#endif
 
 
     QThreadPool::globalInstance()->setExpiryTimeout(-1); //< make threads never exit on their own
