@@ -1126,11 +1126,17 @@ SettingsPrivate::initializeKnobsGPU()
     {
         std::vector<ChoiceOption> entries;
         assert(entries.size() == (int)Settings::eEnableOpenGLEnabled);
-        entries.push_back(ChoiceOption("Enabled", "",  tr("If a plug-in support GPU rendering, prefer rendering using the GPU if possible.").toStdString()));
+        entries.push_back(ChoiceOption("enabled",
+                                       tr("Enabled").toStdString(),
+                                       tr("If a plug-in support GPU rendering, prefer rendering using the GPU if possible.").toStdString()));
         assert(entries.size() == (int)Settings::eEnableOpenGLDisabled);
-        entries.push_back(ChoiceOption("Disabled", "", tr("Disable GPU rendering for all plug-ins.").toStdString()));
+        entries.push_back(ChoiceOption("disabled",
+                                       tr("Disabled").toStdString(),
+                                       tr("Disable GPU rendering for all plug-ins.").toStdString()));
         assert(entries.size() == (int)Settings::eEnableOpenGLDisabledIfBackground);
-        entries.push_back(ChoiceOption("Disabled If Background", "", tr("Disable GPU rendering when rendering with NatronRenderer but not in GUI mode.").toStdString()));
+        entries.push_back(ChoiceOption("foreground",
+                                       tr("Disabled If Background").toStdString(),
+                                       tr("Disable GPU rendering when rendering with NatronRenderer but not in GUI mode.").toStdString()));
         _enableOpenGL->populateChoices(entries);
     }
     _enableOpenGL->setHintToolTip( tr("Select whether to activate OpenGL rendering or not. If disabled, even though a Project enable GPU rendering, it will not be activated.") );
@@ -1199,9 +1205,15 @@ SettingsPrivate::initializeKnobsDocumentation()
     _documentationSource = _publicInterface->createKnob<KnobChoice>("documentationSource");
     _documentationSource->setLabel( tr("Documentation Source"));
     _documentationSource->setHintToolTip( tr("Documentation source.") );
-    _documentationSource->appendChoice(ChoiceOption("Local", "",""));
-    _documentationSource->appendChoice(ChoiceOption("Online", "",""));
-    _documentationSource->appendChoice(ChoiceOption("None", "",""));
+    _documentationSource->appendChoice(ChoiceOption("local",
+                                                    tr("Local").toStdString(),
+                                                    tr("Use the documentation distributed with the software.").toStdString()));
+    _documentationSource->appendChoice(ChoiceOption("online",
+                                                    tr("Online").toStdString(),
+                                                    tr("Use the online version of the documentation (requires an internet connection).").toStdString()));
+    _documentationSource->appendChoice(ChoiceOption("none",
+                                                    tr("None").toStdString(),
+                                                    tr("Disable documentation").toStdString()));
     _documentationSource->setDefaultValue(0);
     _documentationPage->addKnob(_documentationSource);
 #endif
@@ -1961,13 +1973,17 @@ SettingsPrivate::initializeKnobsViewers()
     _texturesMode = _publicInterface->createKnob<KnobChoice>("texturesBitDepth");
     _texturesMode->setLabel(tr("Viewer textures bit depth"));
     std::vector<ChoiceOption> textureModes;
-    textureModes.push_back(ChoiceOption("Byte", "", tr("Post-processing done by the viewer (such as colorspace conversion) is done "
-                                                        "by the CPU. As a results, the size of cached textures is smaller.").toStdString() ));
+    textureModes.push_back(ChoiceOption("8u",
+                                        tr("8-bit").toStdString(),
+                                        tr("Post-processing done by the viewer (such as colorspace conversion) is done "
+                                           "by the CPU. The size of cached textures is thus smaller.").toStdString() ));
 
     //textureModes.push_back("16bits half-float");
     //helpStringsTextureModes.push_back("Not available yet. Similar to 32bits fp.");
-    textureModes.push_back(ChoiceOption("32bits floating-point", "",tr("Post-processing done by the viewer (such as colorspace conversion) is done "
-                                                                       "by the GPU, using GLSL. As a results, the size of cached textures is larger.").toStdString()));
+    textureModes.push_back(ChoiceOption("32f",
+                                        tr("32-bit floating-point").toStdString(),
+                                        tr("Post-processing done by the viewer (such as colorspace conversion) is done "
+                                           "by the GPU, using GLSL. The size of cached textures is thus larger.").toStdString()));
     _texturesMode->populateChoices(textureModes);
     _texturesMode->setHintToolTip( tr("Bit depth of the viewer textures used for rendering."
                                       " Hover each option with the mouse for a detailed description.") );
