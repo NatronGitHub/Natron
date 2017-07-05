@@ -690,10 +690,14 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
         if (checkNaNs) {
 
             bool foundNan = false;
-            ActionRetCodeEnum stat = it->second->checkForNaNs(rectToRender.rect, &foundNan);
-            if (isFailureRetCode(stat)) {
-                return stat;
+            ActionRetCodeEnum stat = eActionStatusOK;
+            if (it->second->getBitDepth() == eImageBitDepthFloat && it->second->getStorageMode() == eStorageModeRAM) {
+                stat = it->second->checkForNaNs(rectToRender.rect, &foundNan);
+                if (isFailureRetCode(stat)) {
+                    return stat;
+                }
             }
+
             if (!foundNan) {
                 _publicInterface->getNode()->clearPersistentMessage(kNatronPersistentWarningCheckForNan);
             } else {

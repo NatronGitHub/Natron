@@ -677,9 +677,7 @@ void
 TreeRenderExecutionDataPrivate::removeDependencyLinkFromRequest(const FrameViewRequestPtr& request)
 {
     assert(!dependencyFreeRendersMutex.tryLock());
-    if (isFailureRetCode(status)) {
-        return;
-    }
+
     TreeRenderExecutionDataPtr thisShared = _publicInterface->shared_from_this();
 
     std::list<FrameViewRequestPtr> listeners = request->getListeners(thisShared);
@@ -946,7 +944,7 @@ TreeRenderExecutionData::executeAvailableTasks(int nTasks)
         runnable->run();
         k.relock();
 #else
-        if (request->getStatus() == FrameViewRequest::eFrameViewRequestStatusNotRendered && !isFailureRetCode(_imp->status)) {
+        if (request->getStatus(thisShared) == FrameViewRequest::eFrameViewRequestStatusNotRendered && !isFailureRetCode(_imp->status)) {
             // Only launch the runnable in a separate thread if its actually going to do any rendering.
             runnable->setAutoDelete(false);
             _imp->launchedRunnables.insert(runnable);

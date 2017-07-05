@@ -1728,6 +1728,12 @@ AppInstance::newProject()
 }
 
 void
+AppInstance::updateProjectLoadStatus(const QString& str)
+{
+    std::cout << str.toStdString() << std::endl;
+}
+
+void
 AppInstance::addInvalidExpressionKnob(const KnobIPtr& knob)
 {
     QMutexLocker k(&_imp->invalidExprKnobsMutex);

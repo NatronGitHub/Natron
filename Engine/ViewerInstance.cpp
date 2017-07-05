@@ -520,11 +520,10 @@ ViewerInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 {
     EffectInstance::appendToHash(args, hash);
 
-    if (args.hashType == HashableObject::eComputeHashTypeOnlyMetadataSlaves) {
-        // We rely on the viewers bit depth setting knob in the getTimeInvariantMetadata() function
-        // so make sure it is part of the hash.
-        appPTR->getCurrentSettings()->getViewerBitDepthKnob()->appendToHash(args, hash);
-    }
+    // We rely on the viewers bit depth setting knob in the getTimeInvariantMetadata() function
+    // so make sure it is part of the hash.
+    appPTR->getCurrentSettings()->getViewerBitDepthKnob()->appendToHash(args, hash);
+
 }
 
 ActionRetCodeEnum

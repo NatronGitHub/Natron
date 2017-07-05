@@ -1103,7 +1103,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
 
     // If this request was already requested, don't request again except if the RoI is not
     // contained in the request RoI
-    if (requestData->getStatus() != FrameViewRequest::eFrameViewRequestStatusNotRendered) {
+    if (requestData->getStatus(requestPassSharedData) != FrameViewRequest::eFrameViewRequestStatusNotRendered) {
         if (requestData->getCurrentRoI().contains(roiCanonical)) {
             return eActionStatusOK;
 
@@ -1171,7 +1171,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
 
         // There might no plane produced by this node that were requested
         if (isPassThrough) {
-            requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusPassThrough);
+            requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusPassThrough, requestPassSharedData);
             return eActionStatusOK;
         }
     }
@@ -1186,7 +1186,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
             return upstreamRetCode;
         }
         if (isIdentity) {
-            requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusPassThrough);
+            requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusPassThrough, requestPassSharedData);
             return eActionStatusOK;
         }
     }
@@ -1201,7 +1201,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
             return upstreamRetCode;
         }
         if (concatenated) {
-            requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusPassThrough);
+            requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusPassThrough, requestPassSharedData);
             return eActionStatusOK;
 
         }
@@ -1235,7 +1235,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
 
         // Make sure the RoI falls within the image bounds
         if ( !renderMappedRoI.intersect(perMipMapLevelRoDPixel[mappedMipMapLevel], &renderMappedRoI) ) {
-            requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusRendered);
+            requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusRendered, requestPassSharedData);
             return eActionStatusOK;
         }
     }
@@ -1271,7 +1271,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
 
     // Make sure the RoI falls within the image bounds
     if ( !downscaledRoI.intersect(perMipMapLevelRoDPixel[requestData->getMipMapLevel()], &downscaledRoI) ) {
-        requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusRendered);
+        requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusRendered, requestPassSharedData);
         return eActionStatusOK;
     }
 
@@ -1372,7 +1372,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
                 //updateAreaCanonical.debug();
                 if (updateAreaPixel.isNull()) {
                     // Nothing to update, return quickly
-                    requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusRendered);
+                    requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusRendered, requestPassSharedData);
                     requestData->setRequestedScaleImagePlane(accumBuffer);
                     return eActionStatusOK;
                 }
@@ -1435,7 +1435,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
             setAccumBuffer(requestData->getPlaneDesc(), requestedImageScale);
         }
 
-        requestData->initStatus(requestStatus);
+        requestData->initStatus(requestStatus, requestPassSharedData);
     } // requestLocker
     
     // If there's nothing to render, do not even add the inputs as needed dependencies.
@@ -1457,7 +1457,7 @@ EffectInstance::launchNodeRender(const TreeRenderExecutionDataPtr& requestPassSh
 {
 
     {
-        FrameViewRequest::FrameViewRequestStatusEnum requestStatus = requestData->notifyRenderStarted();
+        FrameViewRequest::FrameViewRequestStatusEnum requestStatus = requestData->notifyRenderStarted(requestPassSharedData);
         switch (requestStatus) {
             case FrameViewRequest::eFrameViewRequestStatusRendered:
             case FrameViewRequest::eFrameViewRequestStatusPassThrough:
@@ -1476,7 +1476,7 @@ EffectInstance::launchNodeRender(const TreeRenderExecutionDataPtr& requestPassSh
     ActionRetCodeEnum stat = launchRenderInternal(requestPassSharedData, requestData);
 
     // Notify that we are done rendering
-    requestData->notifyRenderFinished(stat);
+    requestData->notifyRenderFinished(stat, requestPassSharedData);
     return stat;
 } // launchNodeRender
 
@@ -1494,7 +1494,7 @@ static void finishProducedPlanesTilesStatesMap(const std::map<ImagePlaneDesc, Im
 }
 
 ActionRetCodeEnum
-EffectInstance::launchRenderInternal(const TreeRenderExecutionDataPtr& /*requestPassSharedData*/, const FrameViewRequestPtr& requestData)
+EffectInstance::launchRenderInternal(const TreeRenderExecutionDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestData)
 {
     assert(isRenderClone() && getCurrentRender());
 
@@ -1684,7 +1684,7 @@ EffectInstance::launchRenderInternal(const TreeRenderExecutionDataPtr& /*request
         downscaledRoI.roundToTileSize(tileWidth, tileHeight);
         // Make sure the RoI falls within the image bounds
         if ( !downscaledRoI.intersect(perMipMapLevelRoDPixel[requestData->getMipMapLevel()], &downscaledRoI) ) {
-            requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusRendered);
+            requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusRendered, requestPassSharedData);
             return eActionStatusOK;
         }
 

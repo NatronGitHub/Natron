@@ -1372,9 +1372,10 @@ OutputSchedulerThreadPrivate::validateRenderSequenceArgs(RenderSequenceArgs& arg
             if (!qp.contains(exp)) {
                 QString message = treeRoot->tr("You are trying to render the frame range [%1 - %2] but you did not specify any hash ('#') character(s) or printf-like format ('%d') for the padding. This will result in the same image being overwritten multiple times.").arg(args.firstFrame).arg(args.lastFrame);
                 if (!args.blocking) {
+                    message += QLatin1String("\n");
                     message += treeRoot->tr("Would you like to continue?");
                     StandardButtonEnum rep = Dialogs::questionDialog(treeRoot->tr("Image Sequence").toStdString(), message.toStdString(), false, StandardButtons(eStandardButtonOk | eStandardButtonCancel), eStandardButtonOk);
-                    if (rep != eStandardButtonOk) {
+                    if (rep != eStandardButtonOk && rep != eStandardButtonYes) {
                         // Notify progress that we were aborted
                         engine.lock()->s_renderFinished(1);
 
