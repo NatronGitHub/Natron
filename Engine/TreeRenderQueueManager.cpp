@@ -586,6 +586,9 @@ TreeRenderQueueManager::notifyTaskInRenderFinished(const TreeRenderExecutionData
 void
 TreeRenderQueueManager::quitThread()
 {
+    if (!isRunning()) {
+        return;
+    }
     {
         QMutexLocker k(&_imp->mustQuitMutex);
         _imp->mustQuit = true;
