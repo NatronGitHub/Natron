@@ -3890,7 +3890,7 @@ KnobHelper::cloneOneCurve(KnobI* other,
                           int otherDimension)
 {
     assert( dimension >= 0 && dimension < getDimension() &&
-            otherDimension >= 0 && otherDimension < getDimension() );
+            otherDimension >= 0 && otherDimension < other->getDimension() );
     boost::shared_ptr<Curve> thisCurve = getCurve(ViewIdx(0), dimension, true);
     boost::shared_ptr<Curve> otherCurve = other->getCurve(ViewIdx(0), otherDimension, true);
     if (thisCurve && otherCurve) {
@@ -3951,7 +3951,7 @@ KnobHelper::cloneOneCurveAndCheckIfChanged(KnobI* other,
                                            int otherDimension)
 {
     assert( dimension >= 0 && dimension < getDimension() &&
-            otherDimension >= 0 && otherDimension < getDimension() );
+            otherDimension >= 0 && otherDimension < other->getDimension() );
     bool cloningCurveChanged = false;
     boost::shared_ptr<Curve> thisCurve = getCurve(ViewIdx(0), dimension, true);
     boost::shared_ptr<Curve> otherCurve = other->getCurve(ViewIdx(0), otherDimension, true);
@@ -4026,7 +4026,7 @@ KnobHelper::cloneCurvesAndCheckIfChanged(KnobI* other,
             otherDimension = dimension;
         }
         assert( dimension >= 0 && dimension < getDimension() &&
-                otherDimension >= 0 && otherDimension < getDimension() );
+                otherDimension >= 0 && otherDimension < other->getDimension() );
         hasChanged |= cloneOneCurveAndCheckIfChanged(other, updateGui, dimension, otherDimension);
     }
 
