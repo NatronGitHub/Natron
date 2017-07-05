@@ -3795,7 +3795,6 @@ KnobParametric::setLeftAndRightDerivativesAtTime(ViewSetSpec view, DimSpec dimen
 
             signalCurveChanged(dimension, data);
         }
-        
     }
 
     evaluateValueChange(dimension, getCurrentRenderTime(), view, eValueChangedReasonUserEdited);
