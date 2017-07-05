@@ -207,7 +207,7 @@ KnobGuiContainerHelper::getOrCreateDefaultPage()
 
     KnobHolderPtr holder = _imp->holder.lock();
     KnobPagePtr mainPage = holder->createKnob<KnobPage>("settingsPage");
-    mainPage->setLabel(holder->tr("Settings"));
+    mainPage->setLabel(KnobHolder::tr("Settings"));
     if (mainPage) {
         return getOrCreatePage(mainPage);
     }

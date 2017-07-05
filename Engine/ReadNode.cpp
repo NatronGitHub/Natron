@@ -755,7 +755,7 @@ ReadNodePrivate::refreshPluginSelectorKnob()
     std::string filePattern = fileKnob->getValue();
     std::vector<ChoiceOption> entries;
 
-    entries.push_back(ChoiceOption(kPluginSelectorParamEntryDefault, "", _publicInterface->tr("Use the default plug-in chosen from the Preferences to read this file format").toStdString()));
+    entries.push_back(ChoiceOption(kPluginSelectorParamEntryDefault, "", ReadNode::tr("Use the default plug-in chosen from the Preferences to read this file format.").toStdString()));
 
     QString qpattern = QString::fromUtf8( filePattern.c_str() );
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
@@ -769,7 +769,7 @@ ReadNodePrivate::refreshPluginSelectorKnob()
         for (IOPluginSetForFormat::reverse_iterator it = readersForFormat.rbegin(); it != readersForFormat.rend(); ++it) {
             PluginPtr plugin = appPTR->getPluginBinary(QString::fromUtf8( it->pluginID.c_str() ), -1, -1, false);
 
-            QString tooltip = tr("Use %1 version %2.%3 to read this file format").arg(QString::fromUtf8(plugin->getPluginLabel().c_str())).arg( plugin->getPropertyUnsafe<unsigned int>(kNatronPluginPropVersion, 0)).arg(plugin->getPropertyUnsafe<unsigned int>(kNatronPluginPropVersion, 1));
+            QString tooltip = tr("Use %1 version %2.%3 to read this file format.").arg(QString::fromUtf8(plugin->getPluginLabel().c_str())).arg( plugin->getPropertyUnsafe<unsigned int>(kNatronPluginPropVersion, 0)).arg(plugin->getPropertyUnsafe<unsigned int>(kNatronPluginPropVersion, 1));
             entries.push_back( ChoiceOption(plugin->getPluginID(), "", tooltip.toStdString()));
 
         }
