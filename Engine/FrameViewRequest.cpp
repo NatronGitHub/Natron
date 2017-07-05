@@ -128,8 +128,12 @@ struct PerLaunchRequestData
     // This frame/view is in the dependencies list each of the listeners.
     std::set<FrameViewRequestWPtr> listeners;
 
+    // The status of the frame/view
+    FrameViewRequest::FrameViewRequestStatusEnum status;
+
 
     PerLaunchRequestData()
+    : status(FrameViewRequest::eFrameViewRequestStatusNotRendered)
     {
 
     }
@@ -142,9 +146,6 @@ struct FrameViewRequestPrivate
 {
     // Protects all data members;
     mutable QMutex lock;
-
-    // The status of the frame/view
-    FrameViewRequest::FrameViewRequestStatusEnum status;
 
     // Weak reference to the render local arguments for the corresponding effect
     EffectInstanceWPtr renderClone;
@@ -216,7 +217,6 @@ struct FrameViewRequestPrivate
                             const EffectInstancePtr& effect,
                             const TreeRenderPtr& render)
     : lock(QMutex::Recursive)
-    , status(FrameViewRequest::eFrameViewRequestStatusNotRendered)
     , renderClone(effect)
     , parentRender(render)
     , plane(plane)
@@ -375,41 +375,45 @@ FrameViewRequest::setCachePolicy(CacheAccessModeEnum policy)
 }
 
 FrameViewRequest::FrameViewRequestStatusEnum
-FrameViewRequest::getStatus() const
+FrameViewRequest::getStatus(const TreeRenderExecutionDataPtr& requestData) const
 {
     QMutexLocker k(&_imp->lock);
-    return _imp->status;
+    PerLaunchRequestData& data = _imp->requestData[requestData];
+    return data.status;
 }
 
 void
-FrameViewRequest::initStatus(FrameViewRequestStatusEnum status)
+FrameViewRequest::initStatus(FrameViewRequestStatusEnum status, const TreeRenderExecutionDataPtr& requestData)
 {
     QMutexLocker k(&_imp->lock);
-    _imp->status = status;
+    PerLaunchRequestData& data = _imp->requestData[requestData];
+    data.status = status;
 }
 
 FrameViewRequest::FrameViewRequestStatusEnum
-FrameViewRequest::notifyRenderStarted()
+FrameViewRequest::notifyRenderStarted(const TreeRenderExecutionDataPtr& requestData)
 {
     QMutexLocker k(&_imp->lock);
+    PerLaunchRequestData& data = _imp->requestData[requestData];
 
     // Only one single thread should be computing a FrameViewRequest
-    assert(_imp->status != FrameViewRequest::eFrameViewRequestStatusPending);
-    if (_imp->status == FrameViewRequest::eFrameViewRequestStatusNotRendered) {
-        _imp->status = FrameViewRequest::eFrameViewRequestStatusPending;
+    assert(data.status != FrameViewRequest::eFrameViewRequestStatusPending);
+    if (data.status == FrameViewRequest::eFrameViewRequestStatusNotRendered) {
+        data.status = FrameViewRequest::eFrameViewRequestStatusPending;
         return FrameViewRequest::eFrameViewRequestStatusNotRendered;
     }
-    return _imp->status;
+    return data.status;
 }
 
 
 void
-FrameViewRequest::notifyRenderFinished(ActionRetCodeEnum stat)
+FrameViewRequest::notifyRenderFinished(ActionRetCodeEnum stat, const TreeRenderExecutionDataPtr& requestData)
 {
     QMutexLocker k(&_imp->lock);
-    assert(_imp->status == FrameViewRequest::eFrameViewRequestStatusPending);
+    PerLaunchRequestData& data = _imp->requestData[requestData];
+    assert(data.status == FrameViewRequest::eFrameViewRequestStatusPending);
     _imp->retCode = stat;
-    _imp->status = FrameViewRequest::eFrameViewRequestStatusRendered;
+    data.status = FrameViewRequest::eFrameViewRequestStatusRendered;
 }
 
 
@@ -449,7 +453,7 @@ FrameViewRequest::markDependencyAsRendered(const TreeRenderExecutionDataPtr& req
     PerLaunchRequestData& data = _imp->requestData[request];
 
     // If this FrameViewRequest is pass-through, copy results from the pass-through dependency
-    if (_imp->status == eFrameViewRequestStatusPassThrough) {
+    if (data.status == eFrameViewRequestStatusPassThrough) {
         assert(deps && data.dependencies.size() == 1 && *data.dependencies.begin() == deps);
         _imp->requestedScaleImage = deps->getRequestedScaleImagePlane();
         _imp->finalRoi = deps->getCurrentRoI();

@@ -161,26 +161,26 @@ public:
     /**
      * @brief Get the status of the request
      **/
-    FrameViewRequestStatusEnum getStatus() const;
+    FrameViewRequestStatusEnum getStatus(const TreeRenderExecutionDataPtr& requestData) const;
 
     /**
      * @brief Called in requestRender to initialize the status of this object.
      **/
-    void initStatus(FrameViewRequestStatusEnum status);
+    void initStatus(FrameViewRequestStatusEnum status, const TreeRenderExecutionDataPtr& requestData);
 
     /**
      * @brief Called on startup of launchRender() function to 
      * determine what next to do.
      * @see FrameViewRequestStatusEnum for what to do given the status.
      **/
-    FrameViewRequestStatusEnum notifyRenderStarted();
+    FrameViewRequestStatusEnum notifyRenderStarted(const TreeRenderExecutionDataPtr& requestData);
 
     /**
      * @brief Called when launchRender() ends when it was rendering a frame.
      * This is only needed if the status returned by notifyRenderStarted() is 
      * eFrameViewRequestStatusNotRendered.
      **/
-    void notifyRenderFinished(ActionRetCodeEnum stat);
+    void notifyRenderFinished(ActionRetCodeEnum stat, const TreeRenderExecutionDataPtr& requestData);
 
     /**
      * @brief Get the render mapped mipmap level (i.e: 0 if the node
