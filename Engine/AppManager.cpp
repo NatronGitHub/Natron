@@ -483,7 +483,9 @@ AppManager::checkForOlderProjectFile(const AppInstancePtr& app, const QString& f
             QStringList args;
             args << QString::fromUtf8("-i") << filePathIn << QString::fromUtf8("-o") << *filePathOut;
             proc.start(path, args);
-            proc.waitForFinished();
+            if (!proc.waitForFinished(600000)) {
+                throw std::runtime_error(tr("Failed to convert the project: timeout").toStdString());
+            }
             if (proc.exitCode() == 0 && proc.exitStatus() == QProcess::NormalExit) {
                 return true;
             } else {

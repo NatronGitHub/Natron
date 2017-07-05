@@ -314,7 +314,7 @@ public:
 
     virtual void createLoadProjectSplashScreen(const QString& /*projectFile*/) {}
 
-    virtual void updateProjectLoadStatus(const QString& /*str*/) {}
+    virtual void updateProjectLoadStatus(const QString& str);
 
     virtual void closeLoadPRojectSplashScreen() {}
 
