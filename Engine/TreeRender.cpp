@@ -602,8 +602,8 @@ struct TreeRenderExecutionDataPrivate
         assert(!dependencyFreeRendersMutex.tryLock());
 
         std::set<FrameViewRequestPtr>::const_iterator foundTask = allRenderTasksToProcess.find(request);
+        assert(foundTask != allRenderTasksToProcess.end());
         if (foundTask != allRenderTasksToProcess.end()) {
-            // The task might no logner exist in the list if another thread failed
             allRenderTasksToProcess.erase(foundTask);
         }
     }
@@ -708,6 +708,8 @@ TreeRenderExecutionDataPrivate::onTaskFinished(const FrameViewRequestPtr& reques
     // Remove all stashed input frame view requests that we kept around.
     request->clearRenderedDependencies(sharedData);
 
+    bool wasLastTaskRemaining = false;
+
     {
         QMutexLocker k(&dependencyFreeRendersMutex);
 
@@ -721,13 +723,15 @@ TreeRenderExecutionDataPrivate::onTaskFinished(const FrameViewRequestPtr& reques
 
         // For each frame/view that depend on this frame, remove it from the dependencies list.
         removeDependencyLinkFromRequest(request);
+
+        wasLastTaskRemaining = allRenderTasksToProcess.empty();
     }
     
     // If the results for this node were requested by the caller, insert them
     TreeRenderPtr render = treeRender.lock();
     render->setResults(request, status);
     
-    appPTR->getTasksQueueManager()->notifyTaskInRenderFinished(sharedData, isRunningInThreadPoolThread());
+    appPTR->getTasksQueueManager()->notifyTaskInRenderFinished(sharedData, wasLastTaskRemaining, isRunningInThreadPoolThread());
 
 
 } // onTaskFinished
@@ -798,6 +802,7 @@ TreeRenderPrivate::createExecutionDataInternal(bool isMainExecution,
     requestData->_imp->isMainExecutionOfTree = isMainExecution;
     
     if (isFailureRetCode(state)) {
+        requestData->_imp->status = state;
         return requestData;
     }
 

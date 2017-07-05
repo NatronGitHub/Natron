@@ -116,7 +116,7 @@ private:
     /**
      * @brief Executed on a thread-pool thread when a FrameViewRenderRunnable is finished
      **/
-    void notifyTaskInRenderFinished(const TreeRenderExecutionDataPtr& render, bool isRunningInThreadPoolThread);
+    void notifyTaskInRenderFinished(const TreeRenderExecutionDataPtr& render, bool isExecutionFinished, bool isRunningInThreadPoolThread);
 
     friend class TreeRenderExecutionData;
     friend struct TreeRenderExecutionDataPrivate;

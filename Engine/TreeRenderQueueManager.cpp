@@ -132,7 +132,7 @@ struct TreeRenderQueueManager::Implementation
 
     int launchMoreTasks(int nTasksHint);
 
-    void notifyTaskInRenderFinishedInternal(const TreeRenderExecutionDataPtr& render, bool launchExtraRenders, bool isRunningInThreadPoolThread);
+    void notifyTaskInRenderFinishedInternal(const TreeRenderExecutionDataPtr& render, bool isExecutionFinished, bool launchExtraRenders, bool isRunningInThreadPoolThread);
 
     void onTaskRenderFinished(const TreeRenderExecutionDataPtr& render);
 };
@@ -535,6 +535,7 @@ TreeRenderQueueManager::Implementation::onTaskRenderFinished(const TreeRenderExe
 
 void
 TreeRenderQueueManager::Implementation::notifyTaskInRenderFinishedInternal(const TreeRenderExecutionDataPtr& render,
+                                                                           bool isExecutionFinished,
                                                                            bool launchExtraRenders,
                                                                            bool isRunningInThreadPoolThread)
 {
@@ -548,7 +549,7 @@ TreeRenderQueueManager::Implementation::notifyTaskInRenderFinishedInternal(const
         executionQueueNotEmptyCond.wakeOne();
     }
 
-    if (render->hasTasksToExecute()) {
+    if (!isExecutionFinished) {
         // The render execution has still tasks to render, nothing to do
         return;
     }
@@ -577,9 +578,9 @@ TreeRenderQueueManager::Implementation::notifyTaskInRenderFinishedInternal(const
 } // notifyTaskInRenderFinishedInternal
 
 void
-TreeRenderQueueManager::notifyTaskInRenderFinished(const TreeRenderExecutionDataPtr& render, bool isRunningInThreadPoolThread)
+TreeRenderQueueManager::notifyTaskInRenderFinished(const TreeRenderExecutionDataPtr& render, bool isExecutionFinished, bool isRunningInThreadPoolThread)
 {
-    _imp->notifyTaskInRenderFinishedInternal(render, true /*notifyTaskInRenderFinishedInternal*/, isRunningInThreadPoolThread);
+    _imp->notifyTaskInRenderFinishedInternal(render, isExecutionFinished, true /*notifyTaskInRenderFinishedInternal*/, isRunningInThreadPoolThread);
     
 } // notifyTaskInRenderFinished
 
@@ -678,11 +679,6 @@ TreeRenderQueueManager::Implementation::launchMoreTasks(int nTasksHint)
             continue;
         }
 
-        // If we reached the maximum threads count, stop
-        int availableThreads = maxThreadsCount - tp->activeThreadCount();
-        if (availableThreads <= 0) {
-            return nTasksLaunched;
-        }
 
         // Launch tasks
         int nLaunched = (*it)->executeAvailableTasks(nTasksToLaunch);
