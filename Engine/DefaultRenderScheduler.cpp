@@ -70,7 +70,9 @@ public:
 
     virtual void abortRender() OVERRIDE FINAL
     {
-        render->setRenderAborted();
+        if (render) {
+            render->setRenderAborted();
+        }
     }
 
 

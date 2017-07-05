@@ -677,9 +677,7 @@ void
 TreeRenderExecutionDataPrivate::removeDependencyLinkFromRequest(const FrameViewRequestPtr& request)
 {
     assert(!dependencyFreeRendersMutex.tryLock());
-    if (isFailureRetCode(status)) {
-        return;
-    }
+
     TreeRenderExecutionDataPtr thisShared = _publicInterface->shared_from_this();
 
     std::list<FrameViewRequestPtr> listeners = request->getListeners(thisShared);
