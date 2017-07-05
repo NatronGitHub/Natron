@@ -176,7 +176,7 @@ AddFormatDialog::AddFormatDialog(Project *project,
     }
     _fromViewerLineLayout->addWidget(_copyFromViewerCombo);
 
-    _copyFromViewerButton = new Button(tr("Copy from"), _fromViewerLine);
+    _copyFromViewerButton = new Button(tr("Copy From"), _fromViewerLine);
     _copyFromViewerButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(
                                            tr("Fill the new format with the currently"
                                               " displayed region of definition of the viewer"
@@ -189,7 +189,7 @@ AddFormatDialog::AddFormatDialog(Project *project,
     _parametersLineLayout = new QHBoxLayout(_parametersLine);
     _mainLayout->addWidget(_parametersLine);
 
-    _widthLabel = new Label(QString::fromUtf8("w:"), _parametersLine);
+    _widthLabel = new Label(tr("w:"), _parametersLine);
     _parametersLineLayout->addWidget(_widthLabel);
     _widthSpinBox = new SpinBox(this, SpinBox::eSpinBoxTypeInt);
     _widthSpinBox->setMaximum(99999);
@@ -198,7 +198,7 @@ AddFormatDialog::AddFormatDialog(Project *project,
     _parametersLineLayout->addWidget(_widthSpinBox);
 
 
-    _heightLabel = new Label(QString::fromUtf8("h:"), _parametersLine);
+    _heightLabel = new Label(tr("h:"), _parametersLine);
     _parametersLineLayout->addWidget(_heightLabel);
     _heightSpinBox = new SpinBox(this, SpinBox::eSpinBoxTypeInt);
     _heightSpinBox->setMaximum(99999);
@@ -207,7 +207,7 @@ AddFormatDialog::AddFormatDialog(Project *project,
     _parametersLineLayout->addWidget(_heightSpinBox);
 
 
-    _pixelAspectLabel = new Label(tr("pixel aspect:"), _parametersLine);
+    _pixelAspectLabel = new Label(tr("Pixel aspect:"), _parametersLine);
     _parametersLineLayout->addWidget(_pixelAspectLabel);
     _pixelAspectSpinBox = new SpinBox(this, SpinBox::eSpinBoxTypeDouble);
     _pixelAspectSpinBox->setMinimum(0.);

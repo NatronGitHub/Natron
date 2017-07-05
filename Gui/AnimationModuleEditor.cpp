@@ -863,7 +863,7 @@ AnimationModuleEditorPrivate::refreshExpressionResult()
     }
 
     if (expressionIsError) {
-        expressionResultLabel->setText(publicInterface->tr(" = Invalid Expression"));
+        expressionResultLabel->setText(AnimationModuleEditor::tr(" = Invalid Expression"));
     } else {
         QString internalKnobValueStr;
         KnobStringBasePtr isStringKnob = toKnobStringBase(internalKnob);
@@ -874,7 +874,7 @@ AnimationModuleEditorPrivate::refreshExpressionResult()
             internalKnobValueStr = QString::fromUtf8(isStringKnob->getValue(id.dim, id.view).c_str());
         } else if (isBoolKnob) {
             bool val = isBoolKnob->getValue(id.dim, id.view);
-            internalKnobValueStr = val ? publicInterface->tr("True") : publicInterface->tr("False");
+            internalKnobValueStr = val ? AnimationModuleEditor::tr("True") : AnimationModuleEditor::tr("False");
         } else if (isIntKnob) {
             internalKnobValueStr = QString::number(isIntKnob->getValue(id.dim, id.view));
         } else if (isDoubleKnob) {

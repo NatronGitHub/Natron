@@ -170,16 +170,20 @@ EditScriptDialogPrivate::refreshHeaderLabel(ExpressionLanguageEnum language)
     QString labelHtml;
     switch (language) {
         case eExpressionLanguagePython: {
-            labelHtml +=  _publicInterface->tr("%1 script:").arg( QString::fromUtf8("<b>Python</b>") ) + QString::fromUtf8("<br />");
+            labelHtml +=  EditScriptDialog::tr("%1 script:").arg( QString::fromUtf8("<b>Python</b>") ) + QString::fromUtf8("<br />");
         }   break;
         case eExpressionLanguageExprTk: {
-            labelHtml +=  _publicInterface->tr("%1 script:").arg( QString::fromUtf8("<b>ExprTk</b>") ) + QString::fromUtf8("<br />");
+            labelHtml +=  EditScriptDialog::tr("%1 script:").arg( QString::fromUtf8("<b>ExprTk</b>") ) + QString::fromUtf8("<br />");
         }   break;
     }
 
-    labelHtml += QString::fromUtf8("<p>Read the <a href=\"%1\">documentation</a> for more informations on how to write expressions.</p>").arg(QString::fromUtf8("http://natron.readthedocs.io/en/master/guide/compositing-exprs.html"));
+    labelHtml.append( QString::fromUtf8("<p>") +
+                      EditScriptDialog::tr("Read the <a href=\"%1\">documentation</a> for more information on how to write expressions.").arg( QString::fromUtf8("http://natron.readthedocs.io/en/master/guide/compositing-exprs.html") ) +
+                      QString::fromUtf8("</p>") );
     QKeySequence s(Qt::CTRL);
-    labelHtml.append( QString::fromUtf8("<p>") + _publicInterface->tr("Note that parameters can be referenced by drag'n'dropping while holding %1 on their widget").arg( s.toString(QKeySequence::NativeText) ) + QString::fromUtf8("</p>") );
+    labelHtml.append( QString::fromUtf8("<p>") +
+                      EditScriptDialog::tr("Note that parameters can be referenced by dragging and dropping while holding %1 on their widget").arg( s.toString(QKeySequence::NativeText) ) +
+                      QString::fromUtf8("</p>") );
 
 
     expressionLabel->setText(labelHtml);

@@ -2598,6 +2598,9 @@ class KnobHolder
     , public boost::enable_shared_from_this<KnobHolder>
     , public HashableObject
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
     friend class KnobHelper;
     friend class RecursionLevelRAII;

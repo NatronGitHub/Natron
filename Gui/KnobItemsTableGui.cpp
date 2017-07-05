@@ -343,14 +343,14 @@ KnobItemsTableGuiPrivate::createKeyFrameWidgets(QWidget* parent)
 
     keyframesContainerLayout = new QHBoxLayout(keyframesContainerWidget);
     keyframesContainerLayout->setSpacing(2);
-    userKeyframeLabel = new ClickableLabel(_publicInterface->tr("Manual Keyframe(s):"), keyframesContainerWidget);
+    userKeyframeLabel = new ClickableLabel(KnobItemsTableGui::tr("Manual Keyframe(s):"), keyframesContainerWidget);
     userKeyframeLabel->setEnabled(false);
     keyframesContainerLayout->addWidget(userKeyframeLabel);
 
     currentKeyFrameSpinBox = new SpinBox(keyframesContainerWidget, SpinBox::eSpinBoxTypeDouble);
     currentKeyFrameSpinBox->setEnabled(false);
     currentKeyFrameSpinBox->setReadOnly_NoFocusRect(true);
-    currentKeyFrameSpinBox->setToolTip( NATRON_NAMESPACE::convertFromPlainText(_publicInterface->tr("The current manual keyframe for the selected item(s)"), NATRON_NAMESPACE::WhiteSpaceNormal) );
+    currentKeyFrameSpinBox->setToolTip( NATRON_NAMESPACE::convertFromPlainText(KnobItemsTableGui::tr("The current manual keyframe for the selected item(s)"), NATRON_NAMESPACE::WhiteSpaceNormal) );
     keyframesContainerLayout->addWidget(currentKeyFrameSpinBox);
 
     ofTotalKeyFramesLabel = new ClickableLabel(QString::fromUtf8("of"), keyframesContainerWidget);
@@ -360,7 +360,7 @@ KnobItemsTableGuiPrivate::createKeyFrameWidgets(QWidget* parent)
     numKeyFramesSpinBox = new SpinBox(keyframesContainerWidget, SpinBox::eSpinBoxTypeInt);
     numKeyFramesSpinBox->setEnabled(false);
     numKeyFramesSpinBox->setReadOnly_NoFocusRect(true);
-    numKeyFramesSpinBox->setToolTip( NATRON_NAMESPACE::convertFromPlainText(_publicInterface->tr("The manual keyframes count for all the selected items"), NATRON_NAMESPACE::WhiteSpaceNormal) );
+    numKeyFramesSpinBox->setToolTip( NATRON_NAMESPACE::convertFromPlainText(KnobItemsTableGui::tr("The manual keyframes count for all the selected items"), NATRON_NAMESPACE::WhiteSpaceNormal) );
     keyframesContainerLayout->addWidget(numKeyFramesSpinBox);
 
     const QSize medButtonSize( TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE) );
@@ -377,7 +377,7 @@ KnobItemsTableGuiPrivate::createKeyFrameWidgets(QWidget* parent)
     goToPrevKeyframeButton = new Button(QIcon(prevPix), QString(), keyframesContainerWidget);
     goToPrevKeyframeButton->setFixedSize(medButtonSize);
     goToPrevKeyframeButton->setIconSize(medButtonIconSize);
-    goToPrevKeyframeButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(_publicInterface->tr("Go to the previous keyframe."), NATRON_NAMESPACE::WhiteSpaceNormal) );
+    goToPrevKeyframeButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(KnobItemsTableGui::tr("Go to the previous keyframe."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     goToPrevKeyframeButton->setEnabled(false);
     QObject::connect( goToPrevKeyframeButton, SIGNAL(clicked(bool)), _publicInterface, SLOT(onGoToPrevKeyframeButtonClicked()) );
     keyframesContainerLayout->addWidget(goToPrevKeyframeButton);
@@ -385,7 +385,7 @@ KnobItemsTableGuiPrivate::createKeyFrameWidgets(QWidget* parent)
     goToNextKeyframeButton = new Button(QIcon(nextPix), QString(), keyframesContainerWidget);
     goToNextKeyframeButton->setFixedSize(medButtonSize);
     goToNextKeyframeButton->setIconSize(medButtonIconSize);
-    goToNextKeyframeButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(_publicInterface->tr("Go to the next keyframe."), NATRON_NAMESPACE::WhiteSpaceNormal) );
+    goToNextKeyframeButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(KnobItemsTableGui::tr("Go to the next keyframe."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     goToNextKeyframeButton->setEnabled(false);
     QObject::connect( goToNextKeyframeButton, SIGNAL(clicked(bool)), _publicInterface, SLOT(onGoToNextKeyframeButtonClicked()) );
     keyframesContainerLayout->addWidget(goToNextKeyframeButton);
@@ -393,7 +393,7 @@ KnobItemsTableGuiPrivate::createKeyFrameWidgets(QWidget* parent)
     addKeyFrameButton = new Button(QIcon(addPix), QString(), keyframesContainerWidget);
     addKeyFrameButton->setFixedSize(medButtonSize);
     addKeyFrameButton->setIconSize(medButtonIconSize);
-    addKeyFrameButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(_publicInterface->tr("Add a manual keyframe at the current timeline's time"), NATRON_NAMESPACE::WhiteSpaceNormal) );
+    addKeyFrameButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(KnobItemsTableGui::tr("Add a manual keyframe at the current timeline's time"), NATRON_NAMESPACE::WhiteSpaceNormal) );
     addKeyFrameButton->setEnabled(false);
     QObject::connect( addKeyFrameButton, SIGNAL(clicked(bool)), _publicInterface, SLOT(onAddKeyframeButtonClicked()) );
     keyframesContainerLayout->addWidget(addKeyFrameButton);
@@ -401,7 +401,7 @@ KnobItemsTableGuiPrivate::createKeyFrameWidgets(QWidget* parent)
     removeKeyFrameButton = new Button(QIcon(removePix), QString(), keyframesContainerWidget);
     removeKeyFrameButton->setFixedSize(medButtonSize);
     removeKeyFrameButton->setIconSize(medButtonIconSize);
-    removeKeyFrameButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(_publicInterface->tr("Remove keyframe at the current timeline's time"), NATRON_NAMESPACE::WhiteSpaceNormal) );
+    removeKeyFrameButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(KnobItemsTableGui::tr("Remove keyframe at the current timeline's time"), NATRON_NAMESPACE::WhiteSpaceNormal) );
     removeKeyFrameButton->setEnabled(false);
     QObject::connect( removeKeyFrameButton, SIGNAL(clicked(bool)), _publicInterface, SLOT(onRemoveKeyframeButtonClicked()) );
     keyframesContainerLayout->addWidget(removeKeyFrameButton);
@@ -409,7 +409,7 @@ KnobItemsTableGuiPrivate::createKeyFrameWidgets(QWidget* parent)
     clearKeyFramesButton = new Button(QIcon(clearAnimPix), QString(), keyframesContainerWidget);
     clearKeyFramesButton->setFixedSize(medButtonSize);
     clearKeyFramesButton->setIconSize(medButtonIconSize);
-    clearKeyFramesButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(_publicInterface->tr("Remove all animation for the selected item(s)"), NATRON_NAMESPACE::WhiteSpaceNormal) );
+    clearKeyFramesButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(KnobItemsTableGui::tr("Remove all animation for the selected item(s)"), NATRON_NAMESPACE::WhiteSpaceNormal) );
     clearKeyFramesButton->setEnabled(false);
     QObject::connect( clearKeyFramesButton, SIGNAL(clicked(bool)), _publicInterface, SLOT(onRemoveAnimationButtonClicked()) );
     keyframesContainerLayout->addWidget(clearKeyFramesButton);
@@ -1388,7 +1388,7 @@ KnobItemsTableView::dropEvent(QDropEvent* e)
     }
 
     if (obj.tableIdentifier != table->getTableIdentifier()) {
-        Dialogs::errorDialog(tr("Copy").toStdString(), tr("You can only drop items from the same node type").toStdString());
+        Dialogs::errorDialog(KnobItemsTableGui::tr("Copy").toStdString(), KnobItemsTableGui::tr("You can only drop items from the same node type.").toStdString());
         return;
     }
 
