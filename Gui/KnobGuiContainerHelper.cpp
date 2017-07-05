@@ -191,7 +191,7 @@ KnobGuiContainerHelper::getOrCreateDefaultPage()
     // The plug-in didn't specify any page, it should have been caught before in Node::getOrCreateMainPage for nodes
     // Anyway create one.
 
-    boost::shared_ptr<KnobPage> mainPage = AppManager::createKnob<KnobPage>( _imp->holder, _imp->holder->tr("Settings") );
+    boost::shared_ptr<KnobPage> mainPage = AppManager::createKnob<KnobPage>( _imp->holder, KnobHolder::tr("Settings") );
     if (mainPage) {
         return getOrCreatePage(mainPage);
     }

@@ -820,7 +820,7 @@ ReadNodePrivate::refreshPluginSelectorKnob()
     assert(fileKnob);
     std::string filePattern = fileKnob->getValue();
     std::vector<ChoiceOption> entries, help;
-    entries.push_back(ChoiceOption(kPluginSelectorParamEntryDefault, "", _publicInterface->tr("Use the default plug-in chosen from the Preferences to read this file format").toStdString()));
+    entries.push_back(ChoiceOption(kPluginSelectorParamEntryDefault, "", ReadNode::tr("Use the default plug-in chosen from the Preferences to read this file format").toStdString()));
 
     QString qpattern = QString::fromUtf8( filePattern.c_str() );
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
