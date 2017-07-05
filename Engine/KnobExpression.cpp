@@ -561,7 +561,7 @@ KnobHelperPrivate::validatePythonExpression(const string& expression,
     if (!hasRetVariable) {
         std::size_t foundNewLine = expression.find("\n");
         if (foundNewLine != string::npos) {
-            throw std::invalid_argument( publicInterface->tr("unexpected new line character \'\\n\'").toStdString() );
+            throw std::invalid_argument( KnobHelper::tr("Unexpected new line character \'\\n\'.").toStdString() );
         }
         //preprend the line with "ret = ..."
         string toInsert("    ret = ");
@@ -577,7 +577,7 @@ KnobHelperPrivate::validatePythonExpression(const string& expression,
 
     KnobHolderPtr holder = publicInterface->getHolder();
     if (!holder) {
-        throw std::runtime_error( publicInterface->tr("This parameter cannot have an expression").toStdString() );
+        throw std::runtime_error( KnobHelper::tr("This parameter cannot have an expression.").toStdString() );
     }
 
     NodePtr node;
@@ -592,7 +592,7 @@ KnobHelperPrivate::validatePythonExpression(const string& expression,
         }
     }
     if (!node) {
-        throw std::runtime_error( publicInterface->tr("Only parameters of a Node can have an expression").toStdString() );
+        throw std::runtime_error( KnobHelper::tr("Only parameters of a Node can have an expression.").toStdString() );
     }
     string appID = holder->getApp()->getAppIDString();
     string nodeName = node->getFullyQualifiedName();

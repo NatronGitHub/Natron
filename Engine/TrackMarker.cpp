@@ -135,7 +135,7 @@ TrackMarker::~TrackMarker()
 std::string
 TrackMarker::getBaseItemName() const
 {
-    return tr("Track").toStdString();
+    return KnobTableItem::tr("Track").toStdString();
 }
 
 std::string

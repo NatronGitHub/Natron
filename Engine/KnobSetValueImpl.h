@@ -59,7 +59,7 @@ AddToUndoRedoStackHelper<T>::AddToUndoRedoStackHelper(Knob<T>* k)
 
         // If we are under an overlay interact, the plug-in is going to do setValue calls, make sure the user can undo/redo
         if (paramEditLevel == KnobHolder::eMultipleParamsEditOff && _holder->isDoingInteractAction()) {
-            _holder->beginMultipleEdits(k->tr("%1 changed").arg(QString::fromUtf8(k->getName().c_str())).toStdString());
+            _holder->beginMultipleEdits(KnobHelper::tr("%1 changed").arg(QString::fromUtf8(k->getName().c_str())).toStdString());
             _mustEndEdits = true;
             _isUndoRedoStackOpened = true;
         } else if (paramEditLevel != KnobHolder::eMultipleParamsEditOff) {

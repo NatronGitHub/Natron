@@ -69,7 +69,7 @@ BezierCurve::splitView(const QString& viewName)
         return;
     }
     if (!item->getCanAnimateUserKeyframes()) {
-        PyErr_SetString(PyExc_ValueError, tr("splitView: Cannot split view for an item that cannot animate").toStdString().c_str());
+        PyErr_SetString(PyExc_ValueError, ItemBase::tr("splitView: Cannot split view for an item that cannot animate").toStdString().c_str());
         return;
     }
     (void)item->splitView(ViewIdx(thisViewSpec.value()));
@@ -89,7 +89,7 @@ BezierCurve::unSplitView(const QString& viewName)
         return;
     }
     if (!item->getCanAnimateUserKeyframes()) {
-        PyErr_SetString(PyExc_ValueError, tr("splitView: Cannot split view for an item that cannot animate").toStdString().c_str());
+        PyErr_SetString(PyExc_ValueError, ItemBase::tr("splitView: Cannot split view for an item that cannot animate").toStdString().c_str());
         return;
     }
     (void)item->unSplitView(ViewIdx(thisViewSpec.value()));
@@ -402,7 +402,7 @@ BezierCurve::getControlPointPosition(int index,
 
     BezierCPPtr cp = item->getControlPointAtIndex(index, viewSpec);
     if (!cp) {
-        PyErr_SetString(PyExc_ValueError, tr("Invalid control point index").toStdString().c_str());
+        PyErr_SetString(PyExc_ValueError, ItemBase::tr("Invalid control point index").toStdString().c_str());
         return;
     }
     cp->getPositionAtTime(TimeValue(time), x, y);
@@ -434,7 +434,7 @@ BezierCurve::getFeatherPointPosition(int index,
 
     BezierCPPtr cp = item->getFeatherPointAtIndex(index, viewSpec);
     if (!cp) {
-        PyErr_SetString(PyExc_ValueError, tr("Invalid control point index").toStdString().c_str());
+        PyErr_SetString(PyExc_ValueError, ItemBase::tr("Invalid control point index").toStdString().c_str());
         return;
     }
     cp->getPositionAtTime(TimeValue(time), x, y);

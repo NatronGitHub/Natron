@@ -1632,7 +1632,7 @@ restoreInput(const NodePtr& node,
         }
         if (index == -1) {
             appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(node->getScriptName().c_str()), QDateTime::currentDateTime(),
-                                            node->tr("Could not find input named %1")
+                                            Node::tr("Could not find input named %1")
                                             .arg( QString::fromUtf8( inputNodeScriptName.c_str() ) ) );
 
         }

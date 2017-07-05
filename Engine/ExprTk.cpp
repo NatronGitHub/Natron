@@ -131,7 +131,7 @@ typedef std::map<KnobIWPtr, KnobFunctionData> KnobFunctionsMap;
  * Since the expression is not thread safe, we compile 1 expression for each thread to enable
  * concurrent evaluation of the same expression.
  **/
-struct NATRON_NAMESPACE::KnobExprExprTk::ExpressionData
+struct KnobExprExprTk::ExpressionData
 {
     // The exprtk expression object
     shared_ptr<exprtk_expression_t> expressionObject;
@@ -151,7 +151,7 @@ struct NATRON_NAMESPACE::KnobExprExprTk::ExpressionData
 };
 
 KnobExprExprTk::ExpressionDataPtr
-NATRON_NAMESPACE::KnobExprExprTk::createData()
+KnobExprExprTk::createData()
 {
     return KnobExprExprTk::ExpressionDataPtr(new ExpressionData);
 }

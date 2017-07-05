@@ -930,7 +930,7 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const TreeRenderExecu
 
 
         if ( inputRoI.isInfinite() ) {
-            _publicInterface->getNode()->setPersistentMessage( eMessageTypeError, kNatronPersistentErrorInfiniteRoI, _publicInterface->tr("%1 asked for an infinite region of interest upstream.").arg( QString::fromUtf8( _publicInterface->getNode()->getScriptName_mt_safe().c_str() ) ).toStdString() );
+            _publicInterface->getNode()->setPersistentMessage( eMessageTypeError, kNatronPersistentErrorInfiniteRoI, EffectInstance::tr("%1 asked for an infinite region of interest upstream.").arg( QString::fromUtf8( _publicInterface->getNode()->getScriptName_mt_safe().c_str() ) ).toStdString() );
             return eActionStatusFailed;
         } else {
             _publicInterface->getNode()->clearPersistentMessage(kNatronPersistentErrorInfiniteRoI);

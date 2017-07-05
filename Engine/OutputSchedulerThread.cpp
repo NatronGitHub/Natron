@@ -1295,19 +1295,19 @@ OutputSchedulerThreadPrivate::validateRenderSequenceArgs(RenderSequenceArgs& arg
                     if ( mainView < (int)viewNames.size() ) {
                         mainViewName = viewNames[mainView];
                     }
-                    QString message = treeRoot->tr("%1 does not support multi-view, only the view %2 will be rendered.")
+                    QString message = Node::tr("%1 does not support multi-view, only the view %2 will be rendered.")
                     .arg( QString::fromUtf8( treeRoot->getLabel_mt_safe().c_str() ) )
                     .arg( QString::fromUtf8( mainViewName.c_str() ) );
                     if (!args.blocking) {
                         message.append( QChar::fromLatin1('\n') );
-                        message.append( QString::fromUtf8("You can use the %v or %V indicator in the filename to render to separate files.\n"
-                                                          "Would you like to continue?") );
-                        StandardButtonEnum rep = Dialogs::questionDialog(treeRoot->tr("Multi-view support").toStdString(), message.toStdString(), false, StandardButtons(eStandardButtonOk | eStandardButtonCancel), eStandardButtonOk);
+                        message.append( Node::tr("You can use the %v or %V indicator in the filename to render to separate files.\n"
+                                                 "Would you like to continue?") );
+                        StandardButtonEnum rep = Dialogs::questionDialog(Node::tr("Multi-view support").toStdString(), message.toStdString(), false, StandardButtons(eStandardButtonOk | eStandardButtonCancel), eStandardButtonOk);
                         if (rep != eStandardButtonOk) {
                             return;
                         }
                     } else {
-                        Dialogs::warningDialog( treeRoot->tr("Multi-view support").toStdString(), message.toStdString() );
+                        Dialogs::warningDialog( Node::tr("Multi-view support").toStdString(), message.toStdString() );
                     }
                 }
                 // Render the main-view only...
@@ -1328,14 +1328,14 @@ OutputSchedulerThreadPrivate::validateRenderSequenceArgs(RenderSequenceArgs& arg
             if ( mainView < (int)viewNames.size() ) {
                 mainViewName = viewNames[mainView];
             }
-            QString message = treeRoot->tr("%1 does not support multi-view, only the view %2 will be rendered.")
+            QString message = Node::tr("%1 does not support multi-view, only the view %2 will be rendered.")
             .arg( QString::fromUtf8( treeRoot->getLabel_mt_safe().c_str() ) )
             .arg( QString::fromUtf8( mainViewName.c_str() ) );
             if (!args.blocking) {
                 message.append( QChar::fromLatin1('\n') );
-                message.append( QString::fromUtf8("You can use the %v or %V indicator in the filename to render to separate files.\n"
-                                                  "Would you like to continue?") );
-                StandardButtonEnum rep = Dialogs::questionDialog(treeRoot->tr("Multi-view support").toStdString(), message.toStdString(), false, StandardButtons(eStandardButtonOk | eStandardButtonCancel), eStandardButtonOk);
+                message.append( Node::tr("You can use the %v or %V indicator in the filename to render to separate files.\n"
+                                         "Would you like to continue?") );
+                StandardButtonEnum rep = Dialogs::questionDialog(Node::tr("Multi-view support").toStdString(), message.toStdString(), false, StandardButtons(eStandardButtonOk | eStandardButtonCancel), eStandardButtonOk);
                 if (rep != eStandardButtonOk) {
                     // Notify progress that we were aborted
                     engine.lock()->s_renderFinished(1);
@@ -1343,7 +1343,7 @@ OutputSchedulerThreadPrivate::validateRenderSequenceArgs(RenderSequenceArgs& arg
                     return;
                 }
             } else {
-                Dialogs::warningDialog( treeRoot->tr("Multi-view support").toStdString(), message.toStdString() );
+                Dialogs::warningDialog( Node::tr("Multi-view support").toStdString(), message.toStdString() );
             }
         }
     }
@@ -1370,11 +1370,11 @@ OutputSchedulerThreadPrivate::validateRenderSequenceArgs(RenderSequenceArgs& arg
             QRegExp exp(QString::fromUtf8("%[0-9]*d"));
             QString qp(QString::fromUtf8(pattern.c_str()));
             if (!qp.contains(exp)) {
-                QString message = treeRoot->tr("You are trying to render the frame range [%1 - %2] but you did not specify any hash ('#') character(s) or printf-like format ('%d') for the padding. This will result in the same image being overwritten multiple times.").arg(args.firstFrame).arg(args.lastFrame);
+                QString message = Node::tr("You are trying to render the frame range [%1 - %2] but you did not specify any hash ('#') character(s) or printf-like format ('%d') for the padding. This will result in the same image being overwritten multiple times.").arg(args.firstFrame).arg(args.lastFrame);
                 if (!args.blocking) {
                     message += QLatin1String("\n");
-                    message += treeRoot->tr("Would you like to continue?");
-                    StandardButtonEnum rep = Dialogs::questionDialog(treeRoot->tr("Image Sequence").toStdString(), message.toStdString(), false, StandardButtons(eStandardButtonOk | eStandardButtonCancel), eStandardButtonOk);
+                    message += Node::tr("Would you like to continue?");
+                    StandardButtonEnum rep = Dialogs::questionDialog(Node::tr("Image Sequence").toStdString(), message.toStdString(), false, StandardButtons(eStandardButtonOk | eStandardButtonCancel), eStandardButtonOk);
                     if (rep != eStandardButtonOk && rep != eStandardButtonYes) {
                         // Notify progress that we were aborted
                         engine.lock()->s_renderFinished(1);
@@ -1382,7 +1382,7 @@ OutputSchedulerThreadPrivate::validateRenderSequenceArgs(RenderSequenceArgs& arg
                         return;
                     }
                 } else {
-                    Dialogs::warningDialog( treeRoot->tr("Image Sequence").toStdString(), message.toStdString() );
+                    Dialogs::warningDialog( Node::tr("Image Sequence").toStdString(), message.toStdString() );
                 }
                 
             }

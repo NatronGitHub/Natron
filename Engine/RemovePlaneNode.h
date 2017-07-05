@@ -32,6 +32,10 @@ NATRON_NAMESPACE_ENTER
 struct RemovePlaneNodePrivate;
 class RemovePlaneNode : public NoOpBase
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 private:
 
     RemovePlaneNode(const NodePtr& n);

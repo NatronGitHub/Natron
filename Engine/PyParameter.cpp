@@ -992,7 +992,7 @@ AnimatedParam::splitView(const QString& viewName)
         return;
     }
     if (!knob->isAnimationEnabled()) {
-        PyErr_SetString(PyExc_ValueError, tr("splitView: Cannot split view for a parameter that cannot animate").toStdString().c_str());
+        PyErr_SetString(PyExc_ValueError, Param::tr("splitView: Cannot split view for a parameter that cannot animate").toStdString().c_str());
         return;
     }
     knob->splitView(ViewIdx(thisViewSpec.value()));
@@ -1012,7 +1012,7 @@ AnimatedParam::unSplitView(const QString& viewName)
         return;
     }
     if (!knob->isAnimationEnabled()) {
-        PyErr_SetString(PyExc_ValueError, tr("unSplitView: Cannot unsplit view for a parameter that cannot animate").toStdString().c_str());
+        PyErr_SetString(PyExc_ValueError, Param::tr("unSplitView: Cannot unsplit view for a parameter that cannot animate").toStdString().c_str());
         return;
     }
     knob->unSplitView(ViewIdx(thisViewSpec.value()));
@@ -3160,7 +3160,7 @@ ChoiceParam::addOption(const QString& optionID,
         return;
     }
     if (optionID.isEmpty()) {
-        PyErr_SetString(PyExc_ValueError, tr("Cannot add an empty option").toStdString().c_str());
+        PyErr_SetString(PyExc_ValueError, Param::tr("Cannot add an empty option").toStdString().c_str());
         return;
     }
     ChoiceOption c(optionID.toStdString(), optionLabel.toStdString(), optionHelper.toStdString());
@@ -3226,7 +3226,7 @@ ChoiceParam::getOption(int index, QString* optionID, QString* optionLabel, QStri
 
 
     if ( (index < 0) || ( index >= (int)entries.size() ) ) {
-        PyErr_SetString(PyExc_IndexError, tr("Option index out of range").toStdString().c_str());
+        PyErr_SetString(PyExc_IndexError, Param::tr("Option index out of range").toStdString().c_str());
         return false;
     }
     *optionID = QString::fromUtf8(entries[index].id.c_str());
@@ -3783,13 +3783,13 @@ PathParam::setTable(const std::list<std::vector<std::string> >& table)
         return;
     }
     if (!k->isMultiPath()) {
-        PyErr_SetString(PyExc_ValueError, tr("Cannot call setTable on a path parameter which is not multi-path").toStdString().c_str());
+        PyErr_SetString(PyExc_ValueError, Param::tr("Cannot call setTable on a path parameter which is not multi-path").toStdString().c_str());
         return;
     }
     try {
         k->setTable(table);
     } catch (const std::exception& e) {
-        PyErr_SetString(PyExc_ValueError, tr("Error while encoding table: %1").arg(QString::fromUtf8(e.what())).toStdString().c_str());
+        PyErr_SetString(PyExc_ValueError, Param::tr("Error while encoding table: %1").arg(QString::fromUtf8(e.what())).toStdString().c_str());
     }
 }
 
@@ -3803,13 +3803,13 @@ PathParam::getTable(std::list<std::vector<std::string> >* table) const
         return;
     }
     if (!k->isMultiPath()) {
-        PyErr_SetString(PyExc_ValueError, tr("Cannot call getTable on a path parameter which is not multi-path").toStdString().c_str());
+        PyErr_SetString(PyExc_ValueError, Param::tr("Cannot call getTable on a path parameter which is not multi-path").toStdString().c_str());
         return;
     }
     try {
         k->getTable(table);
     } catch (const std::exception& e) {
-        PyErr_SetString(PyExc_ValueError, tr("Error while decoding table: %1").arg(QString::fromUtf8(e.what())).toStdString().c_str());
+        PyErr_SetString(PyExc_ValueError, Param::tr("Error while decoding table: %1").arg(QString::fromUtf8(e.what())).toStdString().c_str());
     }
 }
 

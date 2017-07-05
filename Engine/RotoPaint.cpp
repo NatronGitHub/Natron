@@ -207,7 +207,7 @@ RotoNode::createPlugin()
     grouping.push_back(PLUGIN_GROUP_PAINT);
     PluginPtr ret = Plugin::create(RotoNode::create, RotoNode::createRenderClone, PLUGINID_NATRON_ROTO, "Roto", 1, 0, grouping);
 
-    QString desc = tr("Create masks and shapes.");
+    QString desc = RotoPaint::tr("Create masks and shapes.");
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
     ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
     ret->setProperty<std::string>(kNatronPluginPropIconFilePath, "Images/rotoNodeIcon.png");
@@ -223,7 +223,7 @@ LayeredCompNode::createPlugin()
     grouping.push_back(PLUGIN_GROUP_MERGE);
     PluginPtr ret = Plugin::create(LayeredCompNode::create, LayeredCompNode::createRenderClone, PLUGINID_NATRON_LAYEREDCOMP, "LayeredComp", 1, 0, grouping);
 
-    QString desc = tr("A node that emulates a layered composition.\n"
+    QString desc = RotoPaint::tr("A node that emulates a layered composition.\n"
                       "Each item in the table is a layer that is blended with previous layers.\n"
                       "For each item you may select the node name that should be used as source "
                       "and optionnally the node name that should be used as a mask. These nodes "
@@ -3799,7 +3799,7 @@ RotoPaintPrivate::getOrCreateGlobalTimeBlurNode()
     globalTimeBlurNode = node->getApp()->createNode(args);
     assert(globalTimeBlurNode);
     if (!globalTimeBlurNode) {
-        throw std::runtime_error(publicInterface->tr("Rotopaint requires the plug-in %1 in order to work").arg(QLatin1String(PLUGINID_OFX_TIMEBLUR)).toStdString());
+        throw std::runtime_error(RotoPaint::tr("Rotopaint requires plug-in %1.").arg(QLatin1String(PLUGINID_OFX_TIMEBLUR)).toStdString());
     }
 
     KnobIPtr divisionsKnob = globalTimeBlurNode->getKnobByName(kTimeBlurParamDivisions);

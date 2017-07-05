@@ -70,10 +70,10 @@ NATRON_PYTHON_NAMESPACE_ENTER
  **/
 #define kPyParamDimSpecAll -1
 
-#define PythonSetNullError() (PyErr_SetString(PyExc_RuntimeError, tr("Value is Null").toStdString().c_str()))
-#define PythonSetInvalidDimensionError(index) (PyErr_SetString(PyExc_IndexError, tr("%1: Dimension out of range").arg(QString::number(index)).toStdString().c_str()))
-#define PythonSetNonUserKnobError() (PyErr_SetString(PyExc_ValueError, tr("Cannot do this on a non-user parameter").toStdString().c_str()))
-#define PythonSetInvalidViewName(view) (PyErr_SetString(PyExc_ValueError, tr("%1: Invalid view").arg(view).toStdString().c_str()))
+#define PythonSetNullError() (PyErr_SetString(PyExc_RuntimeError, Param::tr("Value is Null").toStdString().c_str()))
+#define PythonSetInvalidDimensionError(index) (PyErr_SetString(PyExc_IndexError, Param::tr("%1: Dimension out of range").arg(QString::number(index)).toStdString().c_str()))
+#define PythonSetNonUserKnobError() (PyErr_SetString(PyExc_ValueError, Param::tr("Cannot do this on a non-user parameter").toStdString().c_str()))
+#define PythonSetInvalidViewName(view) (PyErr_SetString(PyExc_ValueError, Param::tr("%1: Invalid view").arg(view).toStdString().c_str()))
 
 
 class Param

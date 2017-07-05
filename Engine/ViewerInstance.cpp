@@ -160,7 +160,7 @@ ViewerInstance::createPlugin()
     grouping.push_back(PLUGIN_GROUP_IMAGE);
     PluginPtr ret = Plugin::create(ViewerInstance::create, ViewerInstance::createRenderClone, PLUGINID_NATRON_VIEWER_INTERNAL, "ViewerProcess", 1, 0, grouping);
     ret->setProperty<std::string>(kNatronPluginPropIconFilePath,  "Images/viewer_icon.png");
-    QString desc =  tr("The Viewer node can display the output of a node graph.");
+    QString desc =  EffectInstance::tr("The Viewer node can display the output of a node graph.");
     ret->setProperty<bool>(kNatronPluginPropIsInternalOnly, true);
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
     ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
@@ -295,7 +295,7 @@ ViewerInstance::initializeKnobs()
 {
     EffectInstancePtr thisShared = shared_from_this();
     KnobPagePtr page = createKnob<KnobPage>("controlsPage");
-    page->setLabel(tr("Controls"));
+    page->setLabel(EffectInstance::tr("Controls"));
 
 
     {
@@ -320,13 +320,13 @@ ViewerInstance::initializeKnobs()
         param->setHintToolTip(tr(kViewerInstanceParamDisplayChannelsHint));
         {
 
-            displayChannelEntries.push_back(ChoiceOption("Luminance", "", ""));
-            displayChannelEntries.push_back(ChoiceOption("RGB", "", ""));
-            displayChannelEntries.push_back(ChoiceOption("Red", "", ""));
-            displayChannelEntries.push_back(ChoiceOption("Green", "", ""));
-            displayChannelEntries.push_back(ChoiceOption("Blue", "", ""));
-            displayChannelEntries.push_back(ChoiceOption("Alpha", "", ""));
-            displayChannelEntries.push_back(ChoiceOption("Matte", "", ""));
+            displayChannelEntries.push_back(ChoiceOption("Luminance", EffectInstance::tr("Luminance").toStdString(), ""));
+            displayChannelEntries.push_back(ChoiceOption("RGB", EffectInstance::tr("RGB").toStdString(), ""));
+            displayChannelEntries.push_back(ChoiceOption("Red", EffectInstance::tr("Red").toStdString(), ""));
+            displayChannelEntries.push_back(ChoiceOption("Green", EffectInstance::tr("Green").toStdString(), ""));
+            displayChannelEntries.push_back(ChoiceOption("Blue", EffectInstance::tr("Blue").toStdString(), ""));
+            displayChannelEntries.push_back(ChoiceOption("Alpha", EffectInstance::tr("Alpha").toStdString(), ""));
+            displayChannelEntries.push_back(ChoiceOption("Matte", EffectInstance::tr("Matte").toStdString(), ""));
             param->populateChoices(displayChannelEntries);
         }
         _imp->displayChannels = param;
@@ -1557,7 +1557,7 @@ ViewerInstance::render(const RenderActionArgs& args)
     ImageBitDepthEnum bitdepth = getBitDepth(-1);
 #ifdef DEBUG
     if (dstImage->getBitDepth() != bitdepth) {
-        getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorGenericRenderMessage, tr("Host did not take into account bitdepth").toStdString());
+        getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorGenericRenderMessage, EffectInstance::tr("Host did not take into account requested bit depth.").toStdString());
         return eActionStatusFailed;
     }
 #endif
@@ -1600,14 +1600,14 @@ ViewerInstance::render(const RenderActionArgs& args)
 
 
     if (!colorImage && displayChannels != eDisplayChannelsA) {
-        getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorGenericRenderMessage, tr("Could not fetch source image for selected layer").toStdString());
+        getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorGenericRenderMessage, EffectInstance::tr("Could not fetch source image for selected layer.").toStdString());
         return eActionStatusFailed;
     }
 
     if (displayChannels == eDisplayChannelsA ||
         displayChannels == eDisplayChannelsMatte) {
         if (!alphaImage) {
-            getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorGenericRenderMessage, tr("Could not fetch source image for selected alpha channel").toStdString());
+            getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorGenericRenderMessage, EffectInstance::tr("Could not fetch source image for selected alpha channel.").toStdString());
             return eActionStatusFailed;
         }
     }
@@ -1618,7 +1618,7 @@ ViewerInstance::render(const RenderActionArgs& args)
     }*/
 
     if (colorImage && alphaImage && colorImage->getBitDepth() != alphaImage->getBitDepth()) {
-        getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorGenericRenderMessage, tr("Host did not take into account requested bit-depth").toStdString());
+        getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorGenericRenderMessage, EffectInstance::tr("Host did not take into account requested bit depth.").toStdString());
         return eActionStatusFailed;
     }
 

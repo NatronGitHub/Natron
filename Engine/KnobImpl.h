@@ -1013,7 +1013,7 @@ Knob<T>::canLinkWith(const KnobIPtr & other, DimIdx thisDimension, ViewIdx thisV
     Knob<T>* otherType = dynamic_cast<Knob<T>*>(other.get());
     if (otherType == 0) {
         if (error) {
-            *error = tr("You can only copy/paste between parameters of the same type. To overcome this, use an expression instead.").toStdString();
+            *error = KnobHelper::tr("You can only copy/paste between parameters of the same type. To overcome this, use an expression instead.").toStdString();
         }
         return false;
     }
@@ -1021,7 +1021,7 @@ Knob<T>::canLinkWith(const KnobIPtr & other, DimIdx thisDimension, ViewIdx thisV
     std::string otherExpr = other->getExpression(otherDim, otherView);
     if (!hasExpr.empty() || !otherExpr.empty()) {
         if (error) {
-            *error = tr("An expression is already set on the parameter, please remove it first.").toStdString();
+            *error = KnobHelper::tr("An expression is already set on the parameter, please remove it first.").toStdString();
         }
     }
     return true;

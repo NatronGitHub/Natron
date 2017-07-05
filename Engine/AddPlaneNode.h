@@ -32,6 +32,10 @@ NATRON_NAMESPACE_ENTER
 struct AddPlaneNodePrivate;
 class AddPlaneNode : public NoOpBase
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 private:
 
     AddPlaneNode(const NodePtr& n);

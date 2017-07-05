@@ -163,7 +163,7 @@ RenderQueuePrivate::validateRenderOptions(RenderQueue::RenderWork& w)
 
     if (w.frameStep == 0) {
         Dialogs::errorDialog(w.treeRoot->getLabel_mt_safe(),
-                             _publicInterface->tr("Frame step cannot be 0, it must either be negative or positive.").toStdString(), false );
+                             RenderQueue::tr("Frame step cannot be 0, it must either be negative or positive.").toStdString(), false );
 
         return false;
     }
@@ -186,14 +186,14 @@ RenderQueuePrivate::validateRenderOptions(RenderQueue::RenderWork& w)
 
         if (w.firstFrame > w.lastFrame && w.frameStep > 0) {
             Dialogs::errorDialog(w.treeRoot->getLabel_mt_safe(),
-                                 _publicInterface->tr("First frame index in the sequence is greater than the last frame index but frame step is positive").toStdString(), false );
+                                 RenderQueue::tr("First frame index in the sequence is greater than the last frame index but frame step is positive").toStdString(), false );
 
             return false;
         }
 
         if (w.firstFrame < w.lastFrame && w.frameStep < 0) {
             Dialogs::errorDialog(w.treeRoot->getLabel_mt_safe(),
-                                 _publicInterface->tr("First frame index in the sequence is lesser than the last frame index but frame step is negative").toStdString(), false );
+                                 RenderQueue::tr("First frame index in the sequence is lesser than the last frame index but frame step is negative").toStdString(), false );
 
             return false;
         }
@@ -317,11 +317,11 @@ RenderQueuePrivate::createRenderRequestsFromCommandLineArgsInternal(const std::l
             writerNode = app->getNodeByFullySpecifiedName(writerName);
 
             if (!writerNode) {
-                QString s = _publicInterface->tr("%1 does not belong to the project file. Please enter a valid Write node script-name.").arg(it->name);
+                QString s = RenderQueue::tr("%1 does not belong to the project file. Please enter a valid Write node script-name.").arg(it->name);
                 throw std::invalid_argument( s.toStdString() );
             } else {
                 if ( !writerNode->isOutputNode() ) {
-                    QString s = _publicInterface->tr("%1 is not an output node! It cannot render anything.").arg(it->name);
+                    QString s = RenderQueue::tr("%1 is not an output node! It cannot render anything.").arg(it->name);
                     throw std::invalid_argument( s.toStdString() );
                 }
             }
@@ -345,17 +345,17 @@ RenderQueuePrivate::createRenderRequestsFromCommandLineArgsInternal(const std::l
             args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
             writerNode = app->createWriter( it->filename.toStdString(), args );
             if (!writerNode) {
-                throw std::runtime_error( _publicInterface->tr("Failed to create writer for %1.").arg(it->filename).toStdString() );
+                throw std::runtime_error( RenderQueue::tr("Failed to create writer for %1.").arg(it->filename).toStdString() );
             }
 
             //Connect the writer to the corresponding Output node input
             NodePtr output = app->getProject()->getNodeByFullySpecifiedName( it->name.toStdString() );
             if (!output) {
-                throw std::invalid_argument( _publicInterface->tr("%1 is not the name of a valid Output node of the script").arg(it->name).toStdString() );
+                throw std::invalid_argument( RenderQueue::tr("%1 is not the name of a valid Output node of the script").arg(it->name).toStdString() );
             }
             GroupOutputPtr isGrpOutput = toGroupOutput( output->getEffectInstance() );
             if (!isGrpOutput) {
-                throw std::invalid_argument( _publicInterface->tr("%1 is not the name of a valid Output node of the script").arg(it->name).toStdString() );
+                throw std::invalid_argument( RenderQueue::tr("%1 is not the name of a valid Output node of the script").arg(it->name).toStdString() );
             }
             NodePtr outputInput = output->getRealInput(0);
             if (outputInput) {

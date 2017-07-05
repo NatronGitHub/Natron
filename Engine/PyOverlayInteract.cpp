@@ -340,7 +340,7 @@ PyOverlayInteract::fetchParameter(const std::map<QString, QString>& params,
         return 0;
     }
     if (knob->typeName() != type.toStdString()) {
-        PyErr_SetString(PyExc_RuntimeError, _imp->ui->tr("Invalid parameter type %1").arg(type).toStdString().c_str());
+        PyErr_SetString(PyExc_RuntimeError, OverlayInteractBase::tr("Invalid parameter type %1").arg(type).toStdString().c_str());
         return 0;
     }
     return Effect::createParamWrapperForKnob(knob);
