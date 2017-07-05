@@ -1183,6 +1183,16 @@ genericViewerProcessFunctor(const RenderViewerArgs& args,
     }
 } // genericViewerProcessFunctor
 
+inline
+unsigned int
+toBGRA(unsigned char r,
+       unsigned char g,
+       unsigned char b,
+       unsigned char a)
+{
+    return (a << 24) | (r << 16) | (g << 8) | b;
+}
+
 template <typename PIX, int maxValue, int srcNComps, DisplayChannelsEnum channels>
 ActionRetCodeEnum
 applyViewerProcess8bit_generic(const RenderViewerArgs& args, const RectI & roi)
@@ -1224,8 +1234,9 @@ applyViewerProcess8bit_generic(const RenderViewerArgs& args, const RectI & roi)
 
             int dstPixelStride;
             unsigned char* dst_pixels[4];
-            Image::getChannelPointers<unsigned char>((const unsigned char**)args.dstImage.ptrs, x, y, args.dstImage.bounds, args.dstImage.nComps, (unsigned char**)dst_pixels, &dstPixelStride);
 
+            Image::getChannelPointers<unsigned char>((const unsigned char**)args.dstImage.ptrs, x, y, args.dstImage.bounds, args.dstImage.nComps, (unsigned char**)dst_pixels, &dstPixelStride);
+            unsigned int *dst_pixels_uint = reinterpret_cast<unsigned int*>(dst_pixels[0]);
             while (x != endX) {
 
                 assert(args.colorImage.bounds.isNull() || args.colorImage.bounds.contains(x, y));
@@ -1265,12 +1276,11 @@ applyViewerProcess8bit_generic(const RenderViewerArgs& args, const RectI & roi)
        
                 // The viewer has the particularity to write-out BGRA 8-bit images instead of RGBA since the resulting
                 // image is directly fed to the GL_BGRA OpenGL texture format.
-                for (int c = 0; c < srcNComps; ++c) {
-                    *dst_pixels[c] = uTmpPix[c];
-                }
+                *dst_pixels_uint = toBGRA(uTmpPix[0], uTmpPix[1], uTmpPix[2], uTmpPix[3]);
 
                 if (backward) {
                     --x;
+                    --dst_pixels_uint;
                     for (int i = 0; i < 4; ++i) {
                         if (color_pixels[i]) {
                             color_pixels[i] -= colorPixelStride;
@@ -1278,21 +1288,16 @@ applyViewerProcess8bit_generic(const RenderViewerArgs& args, const RectI & roi)
                         if (alpha_pixels[i]) {
                             alpha_pixels[i] -= alphaPixelStride;
                         }
-                        if (dst_pixels[i]) {
-                            dst_pixels[i] -= dstPixelStride;
-                        }
                     }
                 } else {
                     ++x;
+                    ++dst_pixels_uint;
                     for (int i = 0; i < 4; ++i) {
                         if (color_pixels[i]) {
                             color_pixels[i] += colorPixelStride;
                         }
                         if (alpha_pixels[i]) {
                             alpha_pixels[i] += alphaPixelStride;
-                        }
-                        if (dst_pixels[i]) {
-                            dst_pixels[i] += dstPixelStride;
                         }
                     }
                 }

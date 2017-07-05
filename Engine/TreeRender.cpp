@@ -68,26 +68,7 @@ enum TreeRenderStateEnum
     eTreeRenderStateInitFailed,
 };
 
-
-// Render first the tasks with more dependencies: it has more chance to make more dependency-free new renders
-// to enable better concurrency
-struct FrameViewRequestComparePriority
-{
-    TreeRenderExecutionDataWPtr _launchData;
-
-    FrameViewRequestComparePriority(const TreeRenderExecutionDataPtr& launchData)
-    : _launchData(launchData)
-    {
-
-    }
-
-    bool operator() (const FrameViewRequestPtr& lhs, const FrameViewRequestPtr& rhs) const
-    {
-        return lhs.get() < rhs.get();
-    }
-};
-
-typedef std::set<FrameViewRequestPtr, FrameViewRequestComparePriority> DependencyFreeRenderSet;
+typedef std::set<FrameViewRequestPtr> DependencyFreeRenderSet;
 
 struct TreeRenderPrivate
 {
@@ -837,8 +818,7 @@ TreeRenderPrivate::createExecutionDataInternal(bool isMainExecution,
         }
     }
 
-    requestData->_imp->dependencyFreeRenders.reset(new DependencyFreeRenderSet(FrameViewRequestComparePriority(requestData)));
-
+    requestData->_imp->dependencyFreeRenders.reset(new DependencyFreeRenderSet);
 
     // Execute the request pass on the tree. This is a recursive pass that builds the topological sort of FrameViewRequest to render with their dependencies.
     requestData->_imp->status = treeRoot->requestRender(time, view, proxyScale, mipMapLevel, requestData->_imp->plane, requestData->_imp->canonicalRoI, -1, FrameViewRequestPtr(), requestData, &requestData->_imp->outputRequest, 0 /*createdRenderClone*/);

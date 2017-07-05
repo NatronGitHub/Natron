@@ -1760,7 +1760,7 @@ AppManager::getAllNonOFXPluginsPaths() const
 {
     QStringList templatesSearchPath;
 
-    //add ~/.Natron
+    //add ~/NatronUserData
 
     QString mainPath = QString::fromUtf8(getCurrentSettings()->getSettingsAbsoluteFilePath().c_str());
 
