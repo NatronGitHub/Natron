@@ -727,12 +727,11 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
     std::string writerPluginID = pluginSelectorKnob.lock()->getActiveEntry().id;
 
-    if ( writerPluginID.empty() ) {
-        if ( writerPluginID.empty() || writerPluginID ==  kPluginSelectorParamEntryDefault) {
-            //Use default
-            writerPluginID = appPTR->getWriterPluginIDForFileType(ext);
-        }
+    if ( writerPluginID.empty() || writerPluginID ==  kPluginSelectorParamEntryDefault) {
+        //Use default
+        writerPluginID = appPTR->getWriterPluginIDForFileType(ext);
     }
+
 
 
     // If the plug-in is the same, do not create a new decoder.
