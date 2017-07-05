@@ -2805,6 +2805,85 @@ initializeDefaultValueSerializationStorage(const KnobIPtr& knob,
 } // initializeDefaultValueSerializationStorage
 
 
+static bool serializeHardLinks(const KnobIPtr& knob,
+                               const std::vector<std::string>& viewNames,
+                               const DimIdx dimension,
+                               const ViewIdx view,
+                               ValueSerialization* serialization)
+{
+    KnobIPtr masterKnob;
+    KnobDimViewKey sharedMaster;
+    if (knob->getSharingMaster(dimension, view, &sharedMaster)) {
+        masterKnob = sharedMaster.knob.lock();
+    }
+
+    // Only serialize master link if:
+    // - it exists and
+    // - the knob wants the slave/master link to be persistent and
+    // - the effect is not a clone of another one OR the master knob is an alias of this one
+    if (!masterKnob) {
+        return false;
+    }
+    if (masterKnob->getNDimensions() > 1) {
+        serialization->_slaveMasterLink.masterDimensionName = masterKnob->getDimensionName(sharedMaster.dimension);
+    }
+
+    if (masterKnob == knob) {
+        if (sharedMaster.dimension != dimension || sharedMaster.view != view) {
+            return true;
+        }
+        return false;
+    }
+
+
+    // Search for the master knob holder, it might either be an effect or a table item
+    NamedKnobHolderPtr masterHolder = boost::dynamic_pointer_cast<NamedKnobHolder>( masterKnob->getHolder() );
+    KnobTableItemPtr masterIsTableItem = toKnobTableItem(masterKnob->getHolder());
+    EffectInstancePtr masterIsEffect = toEffectInstance(masterKnob->getHolder());
+    NodeGroupPtr masterIsGroup = toNodeGroup(masterIsEffect);
+    EffectInstancePtr thisHolderIsEffect = toEffectInstance(knob->getHolder());
+    NodeGroupPtr thisHolderIsGroup = toNodeGroup(thisHolderIsEffect);
+
+    if (masterIsTableItem) {
+        // The master knob is held by a table item
+        serialization->_slaveMasterLink.masterTableItemName = masterIsTableItem->getFullyQualifiedName();
+
+        // If the node owning the table item is different than this holder, save the master node name
+        if (masterIsTableItem->getModel()->getNode()->getEffectInstance() != knob->getHolder()) {
+            serialization->_slaveMasterLink.masterNodeName = masterIsTableItem->getModel()->getNode()->getScriptName_mt_safe();
+        }
+    } else if (masterIsEffect) {
+        // coverity[dead_error_line]
+        if (!masterIsEffect->getNode()->isPersistent()) {
+            // the knob is linked to a knob of a non persistent node, do not save it
+            return false;
+        }
+        if (masterIsGroup && !masterIsGroup->isSubGraphEditedByUser() && thisHolderIsEffect->getNode()->getGroup() == masterIsGroup) {
+            // the master effect is a PyPlug, do not save it
+            return false;
+        }
+        if (thisHolderIsGroup && !thisHolderIsGroup->isSubGraphEditedByUser() && masterIsEffect->getNode()->getGroup() == thisHolderIsGroup) {
+            // the master effect is a node within the PyPlug, do not save it
+            return false;
+        }
+
+        // If the master knob is on  the group containing the node
+        // then don't serialize the node name, instead serialize a generic @thisGroup tag so that we can deserialize this into any node
+        if (masterIsGroup && masterIsGroup == masterHolder) {
+            serialization->_slaveMasterLink.masterNodeName = kKnobMasterNodeIsGroup;
+        } else if (masterIsEffect != knob->getHolder()) {
+            serialization->_slaveMasterLink.masterNodeName = masterHolder->getScriptName_mt_safe();
+        }
+
+    }
+    serialization->_slaveMasterLink.masterKnobName = masterKnob->getName();
+    if (sharedMaster.view != ViewIdx(0) &&  sharedMaster.view < (int)viewNames.size()) {
+        serialization->_slaveMasterLink.masterViewName = viewNames[sharedMaster.view];
+    }
+    return true;
+
+} // serializeHardLinks
+
 static void
 initializeValueSerializationStorage(const KnobIPtr& knob,
                                     const std::vector<std::string>& viewNames,
@@ -2830,74 +2909,9 @@ initializeValueSerializationStorage(const KnobIPtr& knob,
 
     // Serialize slave/master link
     if (!gotValue) {
-
-        KnobIPtr masterKnob;
-        KnobDimViewKey sharedMaster;
-        if (knob->getSharingMaster(dimension, view, &sharedMaster)) {
-            masterKnob = sharedMaster.knob.lock();
-        }
-
-        // Only serialize master link if:
-        // - it exists and
-        // - the knob wants the slave/master link to be persistent and
-        // - the effect is not a clone of another one OR the master knob is an alias of this one
-        if (masterKnob) {
-            if (masterKnob->getNDimensions() > 1) {
-                serialization->_slaveMasterLink.masterDimensionName = masterKnob->getDimensionName(sharedMaster.dimension);
-            }
-
+        if (serializeHardLinks(knob, viewNames, dimension, view, serialization)) {
             serialization->_slaveMasterLink.hasLink = true;
             gotValue = true;
-            if (masterKnob != knob) {
-                // Search for the master knob holder, it might either be an effect or a table item
-                NamedKnobHolderPtr masterHolder = boost::dynamic_pointer_cast<NamedKnobHolder>( masterKnob->getHolder() );
-                assert(masterHolder);
-                KnobTableItemPtr masterIsTableItem = toKnobTableItem(masterKnob->getHolder());
-                EffectInstancePtr masterIsEffect = toEffectInstance(masterKnob->getHolder());
-                NodeGroupPtr masterIsGroup = toNodeGroup(masterIsEffect);
-                EffectInstancePtr thisHolderIsEffect = toEffectInstance(knob->getHolder());
-                NodeGroupPtr thisHolderIsGroup = toNodeGroup(thisHolderIsEffect);
-
-                if (masterIsTableItem) {
-                    serialization->_slaveMasterLink.masterTableItemName = masterIsTableItem->getFullyQualifiedName();
-
-                    // If the node owning the table item is different than this holder, save the master node name
-                    if (masterIsTableItem->getModel()->getNode()->getEffectInstance() != knob->getHolder()) {
-                        serialization->_slaveMasterLink.masterNodeName = masterIsTableItem->getModel()->getNode()->getScriptName_mt_safe();
-                    }
-                } else if (masterIsEffect) {
-                    // coverity[dead_error_line]
-                    if (!masterIsEffect->getNode()->isPersistent()) {
-                        // the knob is linked to a knob of a non persistent node, do not save it
-                        serialization->_slaveMasterLink.hasLink = false;
-                    }
-                    if (masterIsGroup && !masterIsGroup->isSubGraphEditedByUser() && thisHolderIsEffect->getNode()->getGroup() == masterIsGroup) {
-                        // the master effect is a PyPlug, do not save it
-                        serialization->_slaveMasterLink.hasLink = false;
-                    }
-                    if (thisHolderIsGroup && !thisHolderIsGroup->isSubGraphEditedByUser() && masterIsEffect->getNode()->getGroup() == thisHolderIsGroup) {
-                        // the master effect is a node within the PyPlug, do not save it
-                        serialization->_slaveMasterLink.hasLink = false;
-                    }
-                    if (masterIsEffect != knob->getHolder() && serialization->_slaveMasterLink.hasLink) {
-                        // If the master knob is on  the group containing the node holding this knob
-                        // then don't serialize the node name
-
-                        if (thisHolderIsEffect) {
-                            if (thisHolderIsGroup && thisHolderIsGroup == masterHolder) {
-                                serialization->_slaveMasterLink.masterNodeName = kKnobMasterNodeIsGroup;
-                            }
-                        }
-                        if (serialization->_slaveMasterLink.masterNodeName.empty()) {
-                            serialization->_slaveMasterLink.masterNodeName = masterHolder->getScriptName_mt_safe();
-                        }
-                    }
-                }
-                serialization->_slaveMasterLink.masterKnobName = masterKnob->getName();
-                if (sharedMaster.view != ViewIdx(0) &&  sharedMaster.view < (int)viewNames.size()) {
-                    serialization->_slaveMasterLink.masterViewName = viewNames[sharedMaster.view];
-                }
-            }
         }
     } // !gotValue
 

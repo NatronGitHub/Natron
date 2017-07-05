@@ -17,7 +17,6 @@ UserPages:
     Label: Controls
     Params:
       - Name: Blur1NatronOfxParamProcessR
-        Bool: {N: Blur1, K: NatronOfxParamProcessR}
         DefaultBool: true
         NDims: 1
         TypeName: Bool
@@ -91,7 +90,6 @@ UserPages:
         TypeName: Bool
         Label: Invert Mask
       - Name: Blur1mix
-        Float: {N: Blur1, K: mix}
         DefaultFloat: 1
         NDims: 1
         TypeName: Double
@@ -100,7 +98,7 @@ UserPages:
         Max: 1
         DisplayMin: 0
         DisplayMax: 1
-PagesOrder: [controlsPage, nodePage]
+PagesOrder: [controlsPage, nodePage, pyPlugPage]
 Children:
   - PluginID: eu.cimg.EdgeDetect
     Name: EdgeDetect1
@@ -142,8 +140,12 @@ Children:
     Inputs: Dot1
     Masks: Merge1
     Params:
+      - Name: NatronOfxParamProcessR
+        Bool: {N: "@thisGroup", K: Blur1NatronOfxParamProcessR}
       - Name: size
-        Float: [{N: EdgeDetect1, K: blurSize}, {N: EdgeDetect1, K: blurSize}]
+        Float: {N: EdgeDetect1, K: blurSize}
+      - Name: mix
+        Float: {N: "@thisGroup", K: Blur1mix}
       - Name: enableMask_Mask
         Bool: true
     Pos: [676, 349]

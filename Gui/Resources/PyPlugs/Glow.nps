@@ -207,7 +207,7 @@ UserPages:
             Props: [AnimatesChanged]
         Props:
           - Opened
-PagesOrder: [controls, nodePage]
+PagesOrder: [controls, nodePage, pyPlugPage]
 Children:
   - PluginID: fr.inria.built-in.Output
     Name: Output
