@@ -867,6 +867,7 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
                          const RectI& roi,
                          const BezierPtr& bezier,
                          const ImagePtr& dstImage,
+                         bool clipToFormat,
                          double opacity,
                          TimeValue time,
                          ViewIdx view,
@@ -876,6 +877,7 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
                          int target)
 {
 
+    (void)clipToFormat;
     // Disable scissors since we are going to do texture ping-pong with different frame buffer texture size
     GL::Disable(GL_SCISSOR_TEST);
   
@@ -1007,7 +1009,7 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
                 // or the Knobs of the Bezier have changed since the RoD computation or the Bezier shape itself
                 // has changed since the RoD computation. In all cases datas should remain the same thoughout the render
                 // since we are operating on a thread-local render clone.
-                assert(roi.contains(v_data[0], v_data[1]));
+                assert(clipToFormat || roi.contains(v_data[0], v_data[1]));
 
                 c_data[0] = 1;
                 c_data[1] = 1;
@@ -1055,7 +1057,7 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
             for (std::vector<Point>::const_iterator it2 = data.internalShapeVertices.begin(); it2 != data.internalShapeVertices.end(); ++it2, v_data += 2) {
                 const Point& p = *it2;
                 // The roi was computed from the bounds, it must include the internal shape points.
-                assert(roi.contains(p.x, p.y));
+                assert(clipToFormat || roi.contains(p.x, p.y));
                 v_data[0] = p.x;
                 v_data[1] = p.y;
             }
@@ -1133,6 +1135,7 @@ RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext,
                                    const RectI& roi,
                                    const BezierPtr& bezier,
                                    const ImagePtr& dstImage,
+                                   bool clipToFormat,
                                    double opacity,
                                    TimeValue time,
                                    ViewIdx view,
@@ -1142,9 +1145,9 @@ RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext,
                                    int target)
 {
     if (glContext->isGPUContext()) {
-        renderBezier_gl_internal<GL_GPU>(glContext, glData, roi, bezier, dstImage, opacity, time, view, shutterRange, nDivisions, scale, target);
+        renderBezier_gl_internal<GL_GPU>(glContext, glData, roi, bezier, dstImage, clipToFormat, opacity, time, view, shutterRange, nDivisions, scale, target);
     } else {
-        renderBezier_gl_internal<GL_CPU>(glContext, glData, roi, bezier, dstImage, opacity, time, view, shutterRange, nDivisions, scale, target);
+        renderBezier_gl_internal<GL_CPU>(glContext, glData, roi, bezier, dstImage, clipToFormat, opacity, time, view, shutterRange, nDivisions, scale, target);
     }
 } // RotoShapeRenderGL::renderBezier_gl
 

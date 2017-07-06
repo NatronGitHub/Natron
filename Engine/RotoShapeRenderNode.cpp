@@ -35,6 +35,7 @@
 #include "Engine/Node.h"
 #include "Engine/Hash64.h"
 #include "Engine/NodeMetadata.h"
+#include "Engine/Project.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/OSGLContext.h"
 #include "Engine/OSGLFunctions.h"
@@ -106,20 +107,13 @@ RotoShapeRenderNode::canCPUImplementationSupportOSMesa() const
 bool
 RotoShapeRenderNode::doesTemporalClipAccess() const
 {
-    RotoPaintPtr rotoPaintNode;
     RotoDrawableItemPtr item = getAttachedRotoItem();
     if (!item) {
         return false;
     }
-    KnobItemsTablePtr model = item->getModel();
-    if (model) {
-        rotoPaintNode = toRotoPaint(model->getNode()->getEffectInstance());
-    }
-    if (!rotoPaintNode) {
-        return false;
-    }
+
     // We do temporal access if motion blur is enabled
-    return rotoPaintNode->getMotionBlurTypeKnob()->getValue() != 0;
+    return item->getMotionBlurModeKnob()->getValue() != 0;
 }
 
 void
@@ -148,7 +142,12 @@ RotoShapeRenderNode::fetchRenderCloneKnobs()
     assert(isRenderClone());
     EffectInstance::fetchRenderCloneKnobs();
     _imp->renderType = toKnobChoice(getKnobByName(kRotoShapeRenderNodeParamType));
-    assert(_imp->renderType.lock());
+    _imp->outputRoDTypeKnob = toKnobChoice(getKnobByName(kRotoOutputRodType));
+    _imp->outputFormatKnob = toKnobChoice(getKnobByName(kRotoFormatParam));
+    _imp->outputFormatSizeKnob = toKnobInt(getKnobByName(kRotoFormatSize));
+    assert(_imp->outputFormatSizeKnob.lock());
+    _imp->outputFormatParKnob = toKnobDouble(getKnobByName(kRotoFormatPar));
+    _imp->clipToFormatKnob = toKnobBool(getKnobByName(kRotoClipToFormatParam));
 }
 
 void
@@ -170,6 +169,51 @@ RotoShapeRenderNode::initializeKnobs()
         param->setIsMetadataSlave(true);
         page->addKnob(param);
         _imp->renderType = param;
+    }
+
+    {
+        KnobChoicePtr param = createKnob<KnobChoice>(kRotoOutputRodType);
+        param->setLabel(tr(kRotoOutputRodTypeLabel));
+        param->setHintToolTip(tr(kRotoOutputRodTypeHint));
+        std::vector<ChoiceOption> options;
+        options.push_back(ChoiceOption(kRotoOutputRodTypeDefaultID, kRotoOutputRodTypeDefaultLabel, tr(kRotoOutputRodTypeDefaultHint).toStdString()));
+        options.push_back(ChoiceOption(kRotoOutputRodTypeFormatID, kRotoOutputRodTypeFormatLabel, tr(kRotoOutputRodTypeFormatHint).toStdString()));
+        options.push_back(ChoiceOption(kRotoOutputRodTypeProjectID, kRotoOutputRodTypeProjectLabel, tr(kRotoOutputRodTypeProjectHint).toStdString()));
+        param->populateChoices(options);
+        param->setAddNewLine(false);
+        param->setIsPersistent(false);
+        page->addKnob(param);
+        _imp->outputRoDTypeKnob = param;
+    }
+    {
+        KnobChoicePtr param = createKnob<KnobChoice>(kRotoFormatParam);
+        param->setLabel(tr(kRotoFormatParamLabel));
+        param->setHintToolTip(tr(kRotoFormatParamHint));
+        page->addKnob(param);
+        param->setIsPersistent(false);
+        _imp->outputFormatKnob = param;
+    }
+    {
+        KnobIntPtr param = createKnob<KnobInt>(kRotoFormatSize, 2);
+        param->setSecret(true);
+        page->addKnob(param);
+        param->setIsPersistent(false);
+        _imp->outputFormatSizeKnob = param;
+    }
+    {
+        KnobDoublePtr param = createKnob<KnobDouble>(kRotoFormatPar);
+        param->setSecret(true);
+        page->addKnob(param);
+        param->setIsPersistent(false);
+        _imp->outputFormatParKnob = param;
+    }
+    {
+        KnobBoolPtr param = createKnob<KnobBool>(kRotoClipToFormatParam);
+        param->setLabel(tr(kRotoClipToFormatParamLabel));
+        param->setHintToolTip(tr(kRotoClipToFormatParamHint));
+        param->setDefaultValue(false);
+        page->addKnob(param);
+        _imp->clipToFormatKnob = param;
     }
 }
 
@@ -216,21 +260,6 @@ RotoShapeRenderNode::appendToHash(const ComputeHashArgs& args, Hash64* hash)
         }
 
 
-    }
-
-
-    RotoPaintPtr rotoPaintNode;
-    KnobItemsTablePtr model = item->getModel();
-    if (model) {
-        rotoPaintNode = toRotoPaint(model->getNode()->getEffectInstance());
-    }
-
-    // we also depend on the motion-blur type knob of the RotoPaint node itself.
-    // If we had a knob that would be linked to it we wouldn't need this, but since
-    // we directly refer to this knob, we must explicitly add it to the hash.
-    if  (rotoPaintNode) {
-        U64 sh = rotoPaintNode->getMotionBlurTypeKnob()->computeHash(args);
-        hash->append(sh);
     }
 
 
@@ -362,6 +391,37 @@ RotoShapeRenderNode::getTimeInvariantMetadata(NodeMetadata& metadata)
         }
     }
     metadata.setIsFrameVarying(frameVarying);
+
+    RotoPaintOutputRoDTypeEnum rodType = (RotoPaintOutputRoDTypeEnum)_imp->outputRoDTypeKnob.lock()->getValue();
+    switch (rodType) {
+        case eRotoPaintOutputRoDTypeDefault:
+            // No format is set
+            break;
+        case eRotoPaintOutputRoDTypeFormat: {
+            KnobIntPtr sizeKnob = _imp->outputFormatSizeKnob.lock();
+            int w = sizeKnob->getValue(DimIdx(0));
+            int h = _imp->outputFormatSizeKnob.lock()->getValue(DimIdx(1));
+            double par = _imp->outputFormatParKnob.lock()->getValue();
+
+            RectI pixelFormat;
+            pixelFormat.x1 = pixelFormat.y1 = 0;
+            pixelFormat.x2 = w;
+            pixelFormat.y2 = h;
+
+            metadata.setPixelAspectRatio(-1, par);
+            metadata.setOutputFormat(pixelFormat);
+
+        }   break;
+
+        case eRotoPaintOutputRoDTypeProject: {
+            Format f;
+            getApp()->getProject()->getProjectDefaultFormat(&f);
+            metadata.setPixelAspectRatio(-1, f.getPixelAspectRatio());
+            metadata.setOutputFormat(f);
+        }   break;
+    }
+
+
     return eActionStatusOK;
 }
 
@@ -396,7 +456,11 @@ RotoShapeRenderNode::getRegionOfDefinition(TimeValue time, const RenderScale& sc
     assert(item);
     assert((isRenderClone() && item->isRenderClone()) ||
            (!isRenderClone() && !item->isRenderClone()));
-    getRoDFromItem(item, time, view, rod);
+
+    RectD shapeRoD;
+    getRoDFromItem(item, time, view, &shapeRoD);
+
+    bool clipToFormat = _imp->clipToFormatKnob.lock()->getValue();
 
     RotoShapeRenderTypeEnum type = (RotoShapeRenderTypeEnum)_imp->renderType.lock()->getValue();
     switch (type) {
@@ -407,11 +471,53 @@ RotoShapeRenderNode::getRegionOfDefinition(TimeValue time, const RenderScale& sc
                 return stat;
             }
             if (!defaultRod.isNull()) {
+                *rod = shapeRoD;
                 rod->merge(defaultRod);
             }
         }   break;
-        default:
-            break;
+        case eRotoShapeRenderTypeSolid: {
+            RotoPaintOutputRoDTypeEnum rodType = (RotoPaintOutputRoDTypeEnum)_imp->outputRoDTypeKnob.lock()->getValue();
+            switch (rodType) {
+                case eRotoPaintOutputRoDTypeDefault: {
+                    *rod = shapeRoD;
+                    // No format is set, use the format from the input
+                    if (clipToFormat) {
+                        EffectInstancePtr inputEffect = getInputRenderEffectAtAnyTimeView(0);
+                        if (inputEffect) {
+                            RectI outputFormat = inputEffect->getOutputFormat();
+                            RectD outputFormatCanonical;
+                            outputFormat.toCanonical_noClipping(scale, inputEffect->getAspectRatio(-1), &outputFormatCanonical);
+                            rod->intersect(outputFormatCanonical, rod);
+                        }
+                    }
+                }   break;
+                case eRotoPaintOutputRoDTypeFormat: {
+                    KnobIntPtr sizeKnob = _imp->outputFormatSizeKnob.lock();
+                    int w = sizeKnob->getValue(DimIdx(0));
+                    int h = _imp->outputFormatSizeKnob.lock()->getValue(DimIdx(1));
+                    double par = _imp->outputFormatParKnob.lock()->getValue();
+
+                    RectI pixelFormat;
+                    pixelFormat.x1 = pixelFormat.y1 = 0;
+                    pixelFormat.x2 = w;
+                    pixelFormat.y2 = h;
+                    RenderScale renderScale(1.);
+                    pixelFormat.toCanonical_noClipping(renderScale, par, rod);
+                    if (!clipToFormat) {
+                        rod->merge(shapeRoD);
+                    }
+                }   break;
+
+                case eRotoPaintOutputRoDTypeProject: {
+                    Format f;
+                    getApp()->getProject()->getProjectDefaultFormat(&f);
+                    f.toCanonical_noClipping(RenderScale(1.), f.getPixelAspectRatio(), rod);
+                    if (!clipToFormat) {
+                        rod->merge(shapeRoD);
+                    }
+                }   break;
+            }
+        }   break;
     }
 
     return eActionStatusOK;
@@ -565,6 +671,8 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
         outputPlane.second->fillBoundsZero();
     }
 
+    bool clipToFormat = _imp->clipToFormatKnob.lock()->getValue();
+
     switch (type) {
         case eRotoShapeRenderTypeSolid: {
 
@@ -604,6 +712,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                     }
                 }
 
+
                 // Figure out the opacity
                 double opacity = rotoItem->getOpacityKnob() ? rotoItem->getOpacityKnob()->getValueAtTime(args.time, DimIdx(0), args.view) : 1.;
 
@@ -622,7 +731,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                     //isBezier->getBoundingBox(args.time, args.view).debug();
                     RotoShapeRenderGL::renderBezier_gl(glContext, glData,
                                                        args.roi,
-                                                       isBezier, outputPlane.second, opacity, args.time, args.view, range, divisions, combinedScale, GL_TEXTURE_2D);
+                                                       isBezier, outputPlane.second, clipToFormat, opacity, args.time, args.view, range, divisions, combinedScale, GL_TEXTURE_2D);
                 }
             } // useOpenGL
         }   break;

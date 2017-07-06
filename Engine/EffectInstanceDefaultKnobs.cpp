@@ -907,9 +907,7 @@ EffectInstance::handleFormatKnob(const KnobIPtr& knob)
     if (knob != choice) {
         return false;
     }
-    if (choice->getIsSecret()) {
-        return true;
-    }
+  
     int curIndex = choice->getValue();
     Format f;
     if ( !getApp()->getProject()->getProjectFormatAtIndex(curIndex, &f) ) {

@@ -129,6 +129,7 @@ public:
     KnobDoubleWPtr extraMatrix;
 
     // Motion blur
+    KnobChoiceWPtr motionBlurTypeKnob;
     KnobIntWPtr motionBlurAmount;
     KnobDoubleWPtr motionBlurShutter;
     KnobChoiceWPtr motionBlurShutterType;
@@ -502,6 +503,21 @@ RotoDrawableItem::createNodes(bool connectNodes)
             }
             _imp->nodes.push_back(_imp->maskNode);
         }
+
+        {
+            bool ok = _imp->maskNode->getKnobByName(kRotoOutputRodType)->linkTo(rotoPaintEffect->getOutputRoDTypeKnob());
+            assert(ok);
+            ok = _imp->maskNode->getKnobByName(kRotoFormatParam)->linkTo(rotoPaintEffect->getOutputFormatKnob());
+            assert(ok);
+            ok = _imp->maskNode->getKnobByName(kRotoFormatSize)->linkTo(rotoPaintEffect->getOutputFormatSizeKnob());
+            assert(ok);
+            ok = _imp->maskNode->getKnobByName(kRotoFormatPar)->linkTo(rotoPaintEffect->getOutputFormatParKnob());
+            assert(ok);
+            ok = _imp->maskNode->getKnobByName(kRotoClipToFormatParam)->linkTo(rotoPaintEffect->getClipToFormatKnob());
+            assert(ok);
+
+            (void)ok;
+        }
     }
 
     // Whenever the hash of the item changes, invalidate the hash of the RotoPaint nodes and all nodes within it.
@@ -582,7 +598,7 @@ RotoDrawableItem::onKnobValueChanged(const KnobIPtr& knob,
             rotoPaintEffect->refreshRotoPaintTree();
         }
         return ret;
-    } else if (reason != eValueChangedReasonTimeChanged && (knob == _imp->compOperator.lock() || knob == _imp->mixKnob.lock() || knob == _imp->mergeAInputChoice.lock() || knob == _imp->mergeMaskInputChoice.lock())) {
+    } else if (reason != eValueChangedReasonTimeChanged && (knob == _imp->compOperator.lock() || knob == _imp->mixKnob.lock() || knob == _imp->mergeAInputChoice.lock() || knob == _imp->mergeMaskInputChoice.lock() || knob == _imp->invertKnob.lock())) {
         if (getIndexInParent() != -1) {
             rotoPaintEffect->refreshRotoPaintTree();
         }
@@ -759,6 +775,7 @@ RotoDrawableItem::refreshNodesConnections(const RotoDrawableItemPtr& previous)
         case eRotoStrokeTypeEraser:
         {
             _imp->effectNode->swapInput(_imp->maskNode, 0);
+            _imp->maskNode->swapInput(upstreamNode, 0);
             mergeInputA = _imp->effectNode;
             mergeInputB = upstreamNode;
         }   break;
@@ -1002,6 +1019,11 @@ RotoDrawableItem::getDefaultOverlayColor(double *r, double *g, double *b)
     *b = 0.027;
 }
 
+KnobChoicePtr
+RotoDrawableItem::getMotionBlurModeKnob() const
+{
+    return _imp->motionBlurTypeKnob.lock();
+}
 
 KnobBoolPtr RotoDrawableItem::getCustomRangeKnob() const
 {
@@ -1246,7 +1268,12 @@ RotoDrawableItem::getMotionBlurSettings(const TimeValue time,
         return;
     }
 
-    RotoMotionBlurModeEnum mbType = (RotoMotionBlurModeEnum)rotoPaintNode->getMotionBlurTypeKnob()->getValue();
+    KnobChoicePtr mbTypeKnob = _imp->motionBlurTypeKnob.lock();
+    if (!mbTypeKnob) {
+        return;
+    }
+
+    RotoMotionBlurModeEnum mbType = (RotoMotionBlurModeEnum)mbTypeKnob->getValue();
     if (mbType != eRotoMotionBlurModePerShape) {
         return;
     }
@@ -1384,6 +1411,7 @@ RotoDrawableItem::fetchRenderCloneKnobs()
     }
 
     if (type == eRotoStrokeTypeSolid) {
+        _imp->motionBlurTypeKnob = getKnobByNameAndType<KnobChoice>(kRotoMotionBlurModeParam);
         _imp->motionBlurAmount = getKnobByNameAndType<KnobInt>(kRotoPerShapeMotionBlurParam);
         _imp->motionBlurShutter = getKnobByNameAndType<KnobDouble>(kRotoPerShapeShutterParam);
         _imp->motionBlurShutterType = getKnobByNameAndType<KnobChoice>(kRotoPerShapeShutterOffsetTypeParam);
@@ -1397,8 +1425,20 @@ RotoDrawableItem::initializeKnobs()
 {
 
     RotoItem::initializeKnobs();
+
+    KnobItemsTablePtr model = getModel();
+    if (!model) {
+        return;
+    }
+    NodePtr node = model->getNode();
+    if (!node) {
+        return;
+    }
+
+    RotoDrawableItemPtr thisShared = boost::dynamic_pointer_cast<RotoDrawableItem>( shared_from_this() );
+    RotoPaintPtr rotoPaintEffect = toRotoPaint(node->getEffectInstance());
+    assert(rotoPaintEffect);
     
-    KnobHolderPtr thisShared = shared_from_this();
     Bezier* isBezier = dynamic_cast<Bezier*>(this);
     RotoStrokeType type = getBrushType();
 
@@ -1447,8 +1487,7 @@ RotoDrawableItem::initializeKnobs()
     }
 
     // Item types that output a mask may not have an invert parameter
-    if (type != eRotoStrokeTypeSolid &&
-        type != eRotoStrokeTypeSmear) {
+    if (type != eRotoStrokeTypeSmear) {
         {
             KnobButtonPtr param = createKnob<KnobButton>(kRotoInvertedParam);
             param->setHintToolTip( tr(kRotoInvertedHint) );
@@ -1532,6 +1571,19 @@ RotoDrawableItem::initializeKnobs()
     }
 
     if (type == eRotoStrokeTypeSolid) {
+
+        {
+            KnobChoicePtr rotoMbKnob = rotoPaintEffect->getMotionBlurTypeKnob();
+            KnobChoicePtr mbTypeKnob = toKnobChoice(rotoMbKnob->createDuplicateOnHolder(thisShared, KnobPagePtr(), KnobGroupPtr(), -1 /*index in parent*/, KnobI::eDuplicateKnobTypeCopy /*dupType*/, kRotoMotionBlurModeParam, kRotoMotionBlurModeParamLabel, kRotoMotionBlurModeParamHint, false /*refreshParamsGui*/, false /*isUserKnob*/));
+            _imp->motionBlurTypeKnob = mbTypeKnob;
+            mbTypeKnob->setIsPersistent(false);
+
+            BlockTreeRefreshRAII blocker(rotoPaintEffect);
+            bool ok = mbTypeKnob->linkTo(rotoMbKnob);
+            assert(ok);
+            (void)ok;
+        }
+
         _imp->motionBlurAmount = createDuplicateOfTableKnob<KnobInt>(kRotoPerShapeMotionBlurParam);
         _imp->motionBlurShutter = createDuplicateOfTableKnob<KnobDouble>(kRotoPerShapeShutterParam);
         _imp->motionBlurShutterType = createDuplicateOfTableKnob<KnobChoice>(kRotoPerShapeShutterOffsetTypeParam);
@@ -1547,11 +1599,14 @@ RotoDrawableItem::initializeKnobs()
         addColumn(kRotoDrawableItemLifeTimeParam, DimIdx(0));
         addColumn(kRotoBrushTimeOffsetParam, DimIdx(0));
         addColumn(kRotoDrawableItemMergeAInputParam, DimIdx(0));
-        addColumn(kRotoInvertedParam, DimIdx(0));
+        if (_imp->invertKnob.lock()) {
+            addColumn(kRotoInvertedParam, DimIdx(0));
+        }
         addColumn(kRotoDrawableItemMergeMaskParam, DimIdx(0));
 
     } else {
         addColumn(kRotoCompOperatorParam, DimIdx(0));
+        addColumn(kRotoInvertedParam, DimIdx(0));
         addColumn(kRotoOverlayColor, DimSpec::all());
         addColumn(kRotoColorParam, DimSpec::all());
     }

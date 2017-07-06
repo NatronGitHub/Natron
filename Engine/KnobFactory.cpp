@@ -117,6 +117,7 @@ KnobFactory::createRenderCloneKnob(const KnobIPtr& mainInstanceKnob, const KnobH
     if (!mainInstanceKnob->getEvaluateOnChange()) {
         KnobHelperPtr mainInstance = toKnobHelper(mainInstanceKnob);
         mainInstance->setActualCloneForHolder(holder);
+        holder->addKnob(mainInstanceKnob);
         return mainInstance;
     }
 

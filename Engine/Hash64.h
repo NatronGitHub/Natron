@@ -124,6 +124,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
         hashValid = false;
     }
 
+
     static void appendQString(const QString & str, Hash64* hash);
 
     static void appendCurve(const CurvePtr& curve, Hash64* hash);

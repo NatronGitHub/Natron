@@ -729,9 +729,15 @@ KnobGui::onInternalKnobLinksChanged()
                     EffectInstancePtr sharedHolderIsEffect = toEffectInstance(sharedHolder);
                     KnobTableItemPtr sharedHolderIsItem = toKnobTableItem(sharedHolder);
                     if (sharedHolderIsItem) {
+                        int colIndex = sharedHolderIsItem->getKnobColumnIndex(sharedK, DimIdx(i));
+                        if (colIndex == -1) {
+                            // If the knob is a knob of a table item and it does not belong to any column of the table
+                            // then do not attempt to display the link
+                            continue;
+                        }
                         sharedHolderIsEffect = sharedHolderIsItem->getModel()->getNode()->getEffectInstance();
                     }
-                    if (!sharedHolderIsEffect) {
+                    if (!sharedHolderIsEffect || !sharedHolderIsEffect->getNode()->isPersistent()) {
                         continue;
                     }
 
