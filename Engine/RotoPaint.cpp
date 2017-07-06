@@ -2848,12 +2848,45 @@ RotoPaint::getOutputComponentsKnob() const
     return _imp->outputComponentsKnob.lock();
 }
 
+KnobChoicePtr
+RotoPaint::getOutputRoDTypeKnob() const
+{
+    return _imp->outputRoDTypeKnob.lock();
+}
+
+KnobChoicePtr
+RotoPaint::getOutputFormatKnob() const
+{
+    return _imp->outputFormatKnob.lock();
+}
+
+KnobIntPtr
+RotoPaint::getOutputFormatSizeKnob() const
+{
+    return _imp->outputFormatSizeKnob.lock();
+}
+
+KnobDoublePtr
+RotoPaint::getOutputFormatParKnob() const
+{
+    return _imp->outputFormatParKnob.lock();
+}
+
+KnobBoolPtr
+RotoPaint::getClipToFormatKnob() const
+{
+    return _imp->clipToFormatKnob.lock();
+}
+
+
 void
 RotoPaint::initializeKnobs()
 {
-    BlockTreeRefreshRAII preventTreeRefresh(_imp.get());
-
     RotoPaintPtr thisShared = toRotoPaint(shared_from_this());
+
+    BlockTreeRefreshRAII preventTreeRefresh(thisShared);
+
+
 
     _imp->knobsTable.reset(new RotoPaintKnobItemsTable(_imp.get(), KnobItemsTable::eKnobItemsTableTypeTree));
     _imp->knobsTable->setUserKeyframesWidgetsEnabled(_imp->nodeType != eRotoPaintTypeComp);
@@ -2959,6 +2992,49 @@ RotoPaint::initializeKnobs()
             param->setDefaultValue(_imp->nodeType == eRotoPaintTypeRoto ? 3 : 0);
             _imp->outputComponentsKnob = param;
         }
+        {
+            KnobChoicePtr param = createKnob<KnobChoice>(kRotoOutputRodType);
+            param->setLabel(tr(kRotoOutputRodTypeLabel));
+            param->setHintToolTip(tr(kRotoOutputRodTypeHint));
+            std::vector<ChoiceOption> options;
+            options.push_back(ChoiceOption(kRotoOutputRodTypeDefaultID, kRotoOutputRodTypeDefaultLabel, tr(kRotoOutputRodTypeDefaultHint).toStdString()));
+            options.push_back(ChoiceOption(kRotoOutputRodTypeFormatID, kRotoOutputRodTypeFormatLabel, tr(kRotoOutputRodTypeFormatHint).toStdString()));
+            options.push_back(ChoiceOption(kRotoOutputRodTypeProjectID, kRotoOutputRodTypeProjectLabel, tr(kRotoOutputRodTypeProjectHint).toStdString()));
+            param->populateChoices(options);
+            param->setDefaultValue(0);
+            param->setAddNewLine(false);
+            generalPage->addKnob(param);
+            _imp->outputRoDTypeKnob = param;
+        }
+        {
+            KnobChoicePtr param = createKnob<KnobChoice>(kRotoFormatParam);
+            param->setLabel(tr(kRotoFormatParamLabel));
+            param->setHintToolTip(tr(kRotoFormatParamHint));
+            generalPage->addKnob(param);
+            param->setAddNewLine(false);
+            param->setSecret(true);
+            _imp->outputFormatKnob = param;
+        }
+        {
+            KnobBoolPtr param = createKnob<KnobBool>(kRotoClipToFormatParam);
+            param->setLabel(tr(kRotoClipToFormatParamLabel));
+            param->setHintToolTip(tr(kRotoClipToFormatParamHint));
+            param->setDefaultValue(false);
+            generalPage->addKnob(param);
+            _imp->clipToFormatKnob = param;
+        }
+        {
+            KnobIntPtr param = createKnob<KnobInt>(kRotoFormatSize, 2);
+            param->setSecret(true);
+            generalPage->addKnob(param);
+            _imp->outputFormatSizeKnob = param;
+        }
+        {
+            KnobDoublePtr param = createKnob<KnobDouble>(kRotoFormatPar);
+            param->setSecret(true);
+            generalPage->addKnob(param);
+            _imp->outputFormatParKnob = param;
+        }
     }
     
     if (_imp->nodeType != eRotoPaintTypeComp) {
@@ -2976,10 +3052,12 @@ RotoPaint::initializeKnobs()
         _imp->knobsTable->setColumnTooltip(2, kParamRotoItemLockedHint);
         _imp->knobsTable->setColumnIcon(3, "roto_merge.png");
         _imp->knobsTable->setColumnTooltip(3, kRotoCompOperatorHint);
-        _imp->knobsTable->setColumnIcon(4, "colorwheel_overlay.png");
-        _imp->knobsTable->setColumnTooltip(4, kRotoOverlayColorHint);
-        _imp->knobsTable->setColumnIcon(5, "colorwheel.png");
-        _imp->knobsTable->setColumnTooltip(5, kRotoColorHint);
+        _imp->knobsTable->setColumnIcon(4, "uninverted.png");
+        _imp->knobsTable->setColumnTooltip(4, kRotoInvertedHint);
+        _imp->knobsTable->setColumnIcon(5, "colorwheel_overlay.png");
+        _imp->knobsTable->setColumnTooltip(5, kRotoOverlayColorHint);
+        _imp->knobsTable->setColumnIcon(6, "colorwheel.png");
+        _imp->knobsTable->setColumnTooltip(6, kRotoColorHint);
         (void)getOrCreateBaseLayer();
     } else {
         _imp->knobsTable->setColumnText(0, tr("Label").toStdString());
@@ -3037,6 +3115,8 @@ RotoPaint::onKnobsLoaded()
     }
 
     _imp->refreshMotionBlurKnobsVisibility();
+
+    _imp->refreshFormatVisibility();
 
     _imp->refreshSourceKnobs();
 
@@ -3235,6 +3315,8 @@ RotoPaint::knobChanged(const KnobIPtr& k,
         pushUndoCommand(new AddItemsCommand(item));
     } else if (k == _imp->ui->showTransformHandle.lock()) {
         _imp->refreshRegisteredOverlays();
+    } else if (k == _imp->outputRoDTypeKnob.lock()) {
+        _imp->refreshFormatVisibility();
     }
 #ifdef ROTOPAINT_ENABLE_PLANARTRACKER
     else if (k == _imp->setReferenceFrameToCurrentFrameKnob.lock()) {
@@ -3464,7 +3546,7 @@ RotoPaintKnobItemsTable::getSelectedPlanarTrack(bool alsoLookForParentIfShapeSel
 void
 RotoPaintKnobItemsTable::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj)
 {
-    BlockTreeRefreshRAII preventTreeRefresh(_imp);
+    BlockTreeRefreshRAII preventTreeRefresh(toRotoPaint(_imp->publicInterface->shared_from_this()));
     KnobItemsTable::fromSerialization(obj);
     _imp->publicInterface->refreshRotoPaintTree();
 }
@@ -3713,6 +3795,12 @@ RotoPaintPrivate::isRotoPaintTreeConcatenatableInternal(const std::list<RotoDraw
 
         // Can only concatenate with over
         if (op != eMergeOver) {
+            return false;
+        }
+
+        KnobButtonPtr knob = (*it)->getInvertedKnob();
+        if (knob && knob->getValue()) {
+            // An inverted shape breaks concatenation
             return false;
         }
 
@@ -4499,6 +4587,24 @@ RotoPaint::getActivatedRotoPaintItemsByRenderOrder(TimeValue time, ViewIdx view)
     return _imp->knobsTable->getActivatedRotoPaintItemsByRenderOrder(time, view);
 }
 
+
+void
+RotoPaintPrivate::refreshFormatVisibility()
+{
+    RotoPaintOutputRoDTypeEnum type = (RotoPaintOutputRoDTypeEnum)outputRoDTypeKnob.lock()->getValue();
+    outputFormatKnob.lock()->setSecret(type != eRotoPaintOutputRoDTypeFormat);
+}
+
+BlockTreeRefreshRAII::BlockTreeRefreshRAII(const RotoPaintPtr& node)
+: node(node)
+{
+    ++node->_imp->treeRefreshBlocked;
+}
+
+BlockTreeRefreshRAII::~BlockTreeRefreshRAII()
+{
+    --node->_imp->treeRefreshBlocked;
+}
 
 NATRON_NAMESPACE_EXIT
 

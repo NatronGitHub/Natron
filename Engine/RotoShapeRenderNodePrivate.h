@@ -46,6 +46,12 @@ public:
 
     KnobChoiceWPtr renderType;
 
+    KnobChoiceWPtr outputRoDTypeKnob;
+    KnobChoiceWPtr outputFormatKnob;
+    KnobIntWPtr outputFormatSizeKnob;
+    KnobDoubleWPtr outputFormatParKnob;
+    KnobBoolWPtr clipToFormatKnob;
+    
     // When drawing a smear with OSMesa we cannot use the output image directly
     // because the first draw done by OSMesa will clear the framebuffer instead
     // of preserving the actual content.

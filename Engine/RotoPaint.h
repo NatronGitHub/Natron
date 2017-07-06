@@ -54,6 +54,42 @@ NATRON_NAMESPACE_ENTER
 #define kRotoOverlayColorLabel "Overlay Color"
 #define kRotoOverlayColorHint "The color of the overlay in the Viewer"
 
+#define kRotoClipToFormatParam "clipToFormat"
+#define kRotoClipToFormatParamLabel "Clip To Format"
+#define kRotoClipToFormatParamHint "When checked, the output image size is clipped to the format, unless no source is connected and the Output Format is set to Default"
+
+
+#define kRotoOutputRodType "outputFormatType"
+#define kRotoOutputRodTypeLabel "Output Format"
+#define kRotoOutputRodTypeHint "Determines the size of the output image. Note that if this is set to anything other than \"Default\", the output format will also be set"
+
+enum RotoPaintOutputRoDTypeEnum
+{
+    eRotoPaintOutputRoDTypeDefault,
+    eRotoPaintOutputRoDTypeFormat,
+    eRotoPaintOutputRoDTypeProject
+};
+
+#define kRotoOutputRodTypeFormatID "format"
+#define kRotoOutputRodTypeFormatLabel "Format"
+#define kRotoOutputRodTypeFormatHint "The output format is defined by the the Format specified with the parameter"
+
+
+#define kRotoOutputRodTypeDefaultID "default"
+#define kRotoOutputRodTypeDefaultLabel "Default"
+#define kRotoOutputRodTypeDefaultHint "The output format is the source image format (if any)"
+
+#define kRotoOutputRodTypeProjectID "project"
+#define kRotoOutputRodTypeProjectLabel "Project"
+#define kRotoOutputRodTypeProjectHint "The output format is the project format"
+
+#define kRotoFormatParam kNatronParamFormatChoice
+#define kRotoFormatParamLabel "Format"
+#define kRotoFormatParamHint "The output format"
+
+#define kRotoFormatSize kNatronParamFormatSize
+#define kRotoFormatPar kNatronParamFormatPar
+
 #define kRotoOpacityParam "opacity"
 #define kRotoOpacityParamLabel "Opacity"
 #define kRotoOpacityHint \
@@ -506,6 +542,16 @@ public:
 
     KnobChoicePtr getOutputComponentsKnob() const;
 
+    KnobChoicePtr getOutputRoDTypeKnob() const;
+
+    KnobChoicePtr getOutputFormatKnob() const;
+
+    KnobIntPtr getOutputFormatSizeKnob() const;
+
+    KnobDoublePtr getOutputFormatParKnob() const;
+
+    KnobBoolPtr getClipToFormatKnob() const;
+
     void refreshSourceKnobs(const RotoDrawableItemPtr& item);
 
     void getMergeChoices(std::vector<ChoiceOption>* aInput, std::vector<ChoiceOption>* maskInput) const;
@@ -569,7 +615,8 @@ private:
 
     virtual void refreshExtraStateAfterTimeChanged(bool isPlayback, TimeValue time)  OVERRIDE FINAL;
 
-    
+
+    friend class BlockTreeRefreshRAII;
     boost::shared_ptr<RotoPaintPrivate> _imp;
 };
 
@@ -637,6 +684,17 @@ toLayeredCompNode(const EffectInstancePtr& effect)
 {
     return boost::dynamic_pointer_cast<LayeredCompNode>(effect);
 }
+
+
+class BlockTreeRefreshRAII
+{
+    RotoPaintPtr node;
+public:
+
+    BlockTreeRefreshRAII(const RotoPaintPtr& node);
+
+    ~BlockTreeRefreshRAII();
+};
 
 
 NATRON_NAMESPACE_EXIT

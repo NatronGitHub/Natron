@@ -5126,7 +5126,9 @@ KnobHolder::initializeKnobsPublic()
         // For a clone, just make a shallow copy of the main instance knobs
         KnobsVec mainInstanceKnobs = _imp->mainInstance->getKnobs_mt_safe();
         for (KnobsVec::const_iterator it = mainInstanceKnobs.begin(); it != mainInstanceKnobs.end(); ++it) {
-            (void)appPTR->getKnobFactory().createRenderCloneKnob((*it), thisShared);
+            KnobIPtr copy = appPTR->getKnobFactory().createRenderCloneKnob((*it), thisShared);
+            assert(copy);
+            (void)copy;
         }
 
         // Force the clone to fetch its parameters

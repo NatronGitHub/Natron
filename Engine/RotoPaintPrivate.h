@@ -655,6 +655,11 @@ public:
     RotoPaint::RotoPaintTypeEnum nodeType;
     KnobBoolWPtr premultKnob;
     KnobChoiceWPtr outputComponentsKnob;
+    KnobBoolWPtr clipToFormatKnob;
+    KnobChoiceWPtr outputRoDTypeKnob;
+    KnobChoiceWPtr outputFormatKnob;
+    KnobIntWPtr outputFormatSizeKnob;
+    KnobDoubleWPtr outputFormatParKnob;
     KnobBoolWPtr enabledKnobs[4];
 
     RotoPaintInteractPtr ui;
@@ -839,6 +844,8 @@ public:
                                 const KnobChoicePtr& skewOrder,
                                 const KnobDoublePtr& extraMatrix);
 
+    void refreshFormatVisibility();
+
     void refreshSourceKnobs();
 
     void createBaseLayer();
@@ -913,22 +920,6 @@ public:
 #endif // #ifdef ROTOPAINT_ENABLE_PLANARTRACKER
 };
 
-class BlockTreeRefreshRAII
-{
-    RotoPaintPrivate* _imp;
-public:
-
-    BlockTreeRefreshRAII(RotoPaintPrivate* imp)
-    : _imp(imp)
-    {
-        ++_imp->treeRefreshBlocked;
-    }
-
-    ~BlockTreeRefreshRAII()
-    {
-        --_imp->treeRefreshBlocked;
-    }
-};
 
 class RotoPaintInteract
 : public boost::enable_shared_from_this<RotoPaintInteract>

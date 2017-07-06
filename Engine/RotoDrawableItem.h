@@ -186,6 +186,8 @@ public:
     KnobDoublePtr getBrushSpacingKnob() const;
     KnobDoublePtr getBrushVisiblePortionKnob() const;
 
+    KnobChoicePtr getMotionBlurModeKnob() const;
+
 
     void getMotionBlurSettings(const TimeValue time,
                                ViewIdx view,

@@ -169,6 +169,7 @@ public:
                                 const RectI& roi,
                                 const BezierPtr& bezier,
                                 const ImagePtr& dstImage,
+                                bool clipToFormat,
                                 double opacity,
                                 TimeValue time,
                                 ViewIdx view,
