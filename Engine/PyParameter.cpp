@@ -3010,16 +3010,18 @@ ChoiceParam::set(const QString& label, const QString& view)
             EffectInstancePtr isEffect = toEffectInstance(knob->getHolder());
             if (isEffect) {
                 PluginPtr plugin = isEffect->getNode()->getPyPlugPlugin();
-                SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo projectInfos;
-                bool gotProjectInfos = isEffect->getApp()->getProject()->getProjectLoadedVersionInfo(&projectInfos);
-                int natronMajor = -1,natronMinor = -1,natronRev =-1;
-                if (gotProjectInfos) {
-                    natronMajor = projectInfos.vMajor;
-                    natronMinor = projectInfos.vMinor;
-                    natronRev = projectInfos.vRev;
-                }
+                if (plugin) {
+                    SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo projectInfos;
+                    bool gotProjectInfos = isEffect->getApp()->getProject()->getProjectLoadedVersionInfo(&projectInfos);
+                    int natronMajor = -1,natronMinor = -1,natronRev =-1;
+                    if (gotProjectInfos) {
+                        natronMajor = projectInfos.vMajor;
+                        natronMinor = projectInfos.vMinor;
+                        natronRev = projectInfos.vRev;
+                    }
 
-                filterKnobChoiceOptionCompat(plugin->getPluginID(), plugin->getMajorVersion(), plugin->getMinorVersion(), natronMajor, natronMinor, natronRev, knob->getName(), &choiceID);
+                    filterKnobChoiceOptionCompat(plugin->getPluginID(), plugin->getMajorVersion(), plugin->getMinorVersion(), natronMajor, natronMinor, natronRev, knob->getName(), &choiceID);
+                }
             }
         }
         // use eValueChangedReasonPluginEdited for compat with Shuffle setChannelsFromRed()

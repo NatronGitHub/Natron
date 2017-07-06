@@ -832,8 +832,9 @@ AppInstance::createNodeFromPyPlug(const PluginPtr& plugin, const CreateNodeArgsP
             return node;
         }
         NodePtr containerNode;
+        CreateNodeArgsPtr groupArgs;
         if (!istoolsetScript) {
-            CreateNodeArgsPtr groupArgs(new CreateNodeArgs(*args));
+            groupArgs.reset(new CreateNodeArgs(*args));
             groupArgs->setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
             groupArgs->setProperty<std::string>(kCreateNodeArgsPropPluginID, originalPluginID);
             groupArgs->setProperty<bool>(kCreateNodeArgsPropNodeGroupDisableCreateInitialNodes, true);
@@ -853,7 +854,7 @@ AppInstance::createNodeFromPyPlug(const PluginPtr& plugin, const CreateNodeArgsP
 
             boost::scoped_ptr<AddCreateNode_RAII> creatingNode_raii;
             if (containerNode) {
-                creatingNode_raii.reset(new AddCreateNode_RAII(_imp.get(), containerNode, args));
+                creatingNode_raii.reset(new AddCreateNode_RAII(_imp.get(), containerNode, groupArgs));
             }
             std::string containerFullySpecifiedName;
             if (containerNode) {

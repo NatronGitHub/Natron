@@ -82,7 +82,7 @@ UserPages:
         TypeName: Choice
         Label: Output Layer
         Entries: [uk.co.thefoundry.OfxImagePlaneColour, uk.co.thefoundry.OfxImagePlaneStereoDisparityRight, uk.co.thefoundry.OfxImagePlaneBackMotionVector, uk.co.thefoundry.OfxImagePlaneForwardMotionVector, uk.co.thefoundry.OfxImagePlaneStereoDisparityLeft]
-PagesOrder: [controls, nodePage]
+PagesOrder: [controls, nodePage, pyPlugPage]
 Children:
   - PluginID: net.sf.openfx.MergePlugin
     Name: Merge1
@@ -99,7 +99,7 @@ Children:
     Name: Solid1
     Params:
       - Name: NatronParamFormatChoice
-        String: PC_Video 640x480
+        String: PC_Video
       - Name: size
         Float: [1920, 1080]
       - Name: color

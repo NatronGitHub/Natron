@@ -32,7 +32,7 @@ UserPages:
         Hint: Determines how much the image will be blurred
         Max: 2147483647
         DisplayMax: 1000
-PagesOrder: [controls, nodePage]
+PagesOrder: [controls, nodePage, pyPlugPage]
 Children:
   - PluginID: fr.inria.built-in.Input
     Name: Source

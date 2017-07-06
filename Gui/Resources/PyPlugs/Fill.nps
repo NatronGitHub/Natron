@@ -44,12 +44,14 @@ UserPages:
         Label: ""
         Entries: [None, uk.co.thefoundry.OfxImagePlaneColour.R, uk.co.thefoundry.OfxImagePlaneColour.G, uk.co.thefoundry.OfxImagePlaneColour.B, uk.co.thefoundry.OfxImagePlaneColour.A]
       - Name: Merge1maskInvert
+        Bool: {N: Merge1, K: maskInvert}
         DefaultBool: false
         NDims: 1
         TypeName: Bool
         Label: Invert Mask
         Props: [NoNewLine]
       - Name: Merge1mix
+        Float: {N: Merge1, K: mix}
         DefaultFloat: 1
         NDims: 1
         TypeName: Double
@@ -58,7 +60,7 @@ UserPages:
         Max: 1
         DisplayMin: 0
         DisplayMax: 1
-PagesOrder: [controls, nodePage]
+PagesOrder: [controls, nodePage, pyPlugPage]
 Children:
   - PluginID: fr.inria.built-in.Dot
     Name: Dot1
@@ -79,10 +81,6 @@ Children:
     Params:
       - Name: operation
         String: {N: "@thisGroup", K: Merge1operation}
-      - Name: maskInvert
-        Bool: {N: "@thisGroup", K: Merge1maskInvert}
-      - Name: mix
-        Float: {N: "@thisGroup", K: Merge1mix}
       - Name: userTextArea
         String: <Natron>(over)</Natron>
       - Name: enableMask_Mask
@@ -94,7 +92,7 @@ Children:
     Name: Solid1
     Params:
       - Name: NatronParamFormatChoice
-        String: PC_Video 640x480
+        String: PC_Video
       - Name: size
         Float: [1920, 1080]
       - Name: color

@@ -177,7 +177,7 @@ TableItemAnim::getCurve(DimIdx dimension, ViewIdx view) const
 }
 
 CurveGuiPtr
-TableItemAnim::getCurveGui(DimIdx /*dimension*/, ViewIdx view) const
+TableItemAnim::getCurveGui(DimIdx /*dimension*/, ViewIdx /*view*/) const
 {
     return CurveGuiPtr();
 #if 0

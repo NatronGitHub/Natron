@@ -100,7 +100,7 @@ UserPages:
         Hint: multiply the rgb output. Helps remove noise from main key
         Max: 1.797693134862316e+308
         DisplayMax: 1
-PagesOrder: [controls, nodePage]
+PagesOrder: [controls, nodePage, pyPlugPage]
 Children:
   - PluginID: net.sf.openfx.GradePlugin
     Name: Grade11

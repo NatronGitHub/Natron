@@ -523,6 +523,9 @@ static void tryReadAndConvertOlderPyPlugFile(const QString& filename, const QStr
     if (!node) {
         throw std::invalid_argument(QString::fromUtf8("%1: Failure to instanciate PyPlug").arg(baseName).toStdString());
     }
+    NodeGroupPtr group = node->isEffectNodeGroup();
+    assert(group);
+    group->setSubGraphEditedByUser(true);
 
     node->exportNodeToPyPlug(outFileName.toStdString());
     

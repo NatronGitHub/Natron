@@ -65,7 +65,7 @@ UserPages:
         NDims: 1
         TypeName: Bool
         Label: Shadow only
-PagesOrder: [controls, nodePage]
+PagesOrder: [controls, nodePage, pyPlugPage]
 Children:
   - PluginID: net.sf.openfx.ShufflePlugin
     Name: Shuffle1
@@ -121,7 +121,7 @@ Children:
     Name: Solid1
     Params:
       - Name: NatronParamFormatChoice
-        String: PC_Video 640x480
+        String: PC_Video
       - Name: size
         Float: [960, 540]
       - Name: color
