@@ -4,9 +4,10 @@ PortSystem      1.0
 
 PortGroup       compiler_blacklist_versions 1.0
 PortGroup       muniversal 1.0
+PortGroup       snowleopard_fixes 1.0
 
 name            gnutls
-version         3.5.13
+version         3.5.14
 set branch      [join [lrange [split ${version} .] 0 1] .]
 categories      devel security
 # yes, some of the libs are GPL only
@@ -25,15 +26,17 @@ long_description \
 master_sites    ftp://ftp.gnutls.org/gcrypt/gnutls/v${branch}/ \
                 http://mirrors.dotsrc.org/gcrypt/gnutls/v${branch}/
 
-checksums       rmd160  8d425288302672ae9617e6e827f7d2721a361b95 \
-                sha256  79f5480ad198dad5bc78e075f4a40c4a315a1b2072666919d2d05a08aec13096
+checksums       rmd160  efeea3c159afa5205ce99b012f06bb239bdee71a \
+                sha256  4aa12dec92f42a0434df794aca3d02f6f2a35b47b48c01252de65f355c051bda
 
 use_xz          yes
 
-depends_build   port:gettext \
+depends_build-append \
+                port:gettext \
                 port:pkgconfig
 
-depends_lib     port:gmp \
+depends_lib-append \
+                port:gmp \
                 port:libidn \
                 port:libtasn1 \
                 port:libunistring \
@@ -41,8 +44,7 @@ depends_lib     port:gmp \
                 port:nettle \
                 port:zlib
 
-patchfiles      patch-lib-system-certs.c.diff \
-                patch-tests-pkcs11-pkcs11-mock.c.diff
+patchfiles      patch-lib-system-certs.c.diff
 
 post-patch {
     # Remove comments which confuse at least Leopard's assembler.
