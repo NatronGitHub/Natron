@@ -411,6 +411,11 @@ unix {
   QMAKE_CFLAGS -= -O2
   QMAKE_CXXFLAGS -= -O2
   QMAKE_CXXFLAGS += -ftemplate-depth-1024
+
+  # all libraries in Natron are static, so visibility can be hidden by default.
+  symbols_hidden_by_default.name = GCC_SYMBOLS_PRIVATE_EXTERN
+  symbols_hidden_by_default.value = YES
+  QMAKE_MAC_XCODE_SETTINGS += symbols_hidden_by_default
 }
 
 *clang* {
