@@ -480,13 +480,7 @@ public:
      * @brief Release tiles that were previously allocated by the given entry with retrieveAndLockTiles
      * @param indices Corresponds to the indices that were passed in tileIndices to the function retrieveAndLockTiles
      **/
-    virtual void releaseTiles(const CacheEntryBasePtr& entry,
-#ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
-                              const std::vector<TileInternalIndex>& tileIndices
-#else
-                              const std::vector<std::pair<TileHash,TileInternalIndex> >& tileIndices
-#endif
-    ) = 0;
+    virtual void releaseTiles(const CacheEntryBasePtr& entry, const std::vector<TileInternalIndex>& tileIndices) = 0;
 
     /**
      * @brief Returns whether a cache entry exists for the given hash.
@@ -512,14 +506,6 @@ public:
      * @brief Removes this entry from the cache (if it exists in the cache)
      **/
     virtual void removeEntry(const CacheEntryBasePtr& entry) = 0;
-
-    /**
-     * @brief Flush the opened memory mapped files on disk to ensure their persistence.
-     * This can be an expensive operation.
-     * @param async If true, the data is not guaranteed to be flushed when returning the function,
-     * otherwise this function does not return before all data is flushed.
-     **/
-    virtual void flushCacheOnDisk(bool async) = 0;
 
     /**
      * @brief Returns cache stats for each plug-in
@@ -633,18 +619,11 @@ public:
     virtual bool checkTileIndex(TileInternalIndex encodedIndex) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 #endif
     virtual void unLockTiles(void* cacheData, bool invalidate) OVERRIDE FINAL;
-    virtual void releaseTiles(const CacheEntryBasePtr& entry,
-#ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
-                              const std::vector<TileInternalIndex>& tileIndices
-#else
-                              const std::vector<std::pair<TileHash,TileInternalIndex> >& tileIndices
-#endif
-    ) OVERRIDE FINAL;
+    virtual void releaseTiles(const CacheEntryBasePtr& entry, const std::vector<TileInternalIndex>& tileIndices) OVERRIDE FINAL;
     virtual bool hasCacheEntryForHash(U64 hash) const OVERRIDE FINAL;
     virtual void evictLRUEntries(std::size_t nBytesToFree) OVERRIDE FINAL;
     virtual void clear() OVERRIDE FINAL;
     virtual void removeEntry(const CacheEntryBasePtr& entry) OVERRIDE FINAL;
-    virtual void flushCacheOnDisk(bool async) OVERRIDE FINAL;
     virtual void getMemoryStats(std::map<std::string, CacheReportInfo>* infos) const OVERRIDE FINAL;
 #ifdef NATRON_CACHE_INTERPROCESS_ROBUST
     virtual void cleanupMappedProcessList() OVERRIDE FINAL;

@@ -122,6 +122,9 @@ NATRON_NAMESPACE_ENTER
 
 #ifdef DEBUG
 // When defined, tiles memory chunk are initialized to NaN by default and also checked against NaN
+// Note that it currently only work for plug-ins that produce float images: the ViewerInstance node usually
+// produce byte results by default (setting in the Preferences) so make sure you select float textures first
+// otherwise it will always assert
 //#define INIT_TILES_TO_NAN
 #endif
 
@@ -586,15 +589,41 @@ struct LRUListNode
 
 
 // Typedef our interprocess types
-typedef bip::allocator<U64, ExternalSegmentType::segment_manager> U64_Allocator_ExternalSegment;
+typedef bip::allocator<TileInternalIndexImpl, ExternalSegmentType::segment_manager> TileInternalIndexImplAllocator;
 
-// The unordered set of free tiles indices in a bucket
-//typedef bip::set<U64, std::less<U64>, U64_Allocator_ExternalSegment> U64_Set;
-typedef bip::list<U64, U64_Allocator_ExternalSegment> U64_List;
+// The list of free tiles indices in a bucket
+typedef bip::list<TileInternalIndexImpl, TileInternalIndexImplAllocator> TileInternalIndexImplList;
 
-typedef boost::interprocess::allocator<U64, ExternalSegmentType::segment_manager> ExternalSegmentTypeULongLongAllocator;
-typedef boost::interprocess::list<U64, ExternalSegmentTypeULongLongAllocator> ExternalSegmentTypeULongLongList;
+typedef boost::interprocess::allocator<TileInternalIndex, ExternalSegmentType::segment_manager> TileInternalIndexAllocator;
+typedef boost::interprocess::list<TileInternalIndex, TileInternalIndexAllocator> TileInternalIndexList;
 
+struct TileInternalIndexCompareLess
+{
+    bool operator() (const TileInternalIndex& lhs, const TileInternalIndex& rhs) const
+    {
+        if (lhs.bucketIndex < rhs.bucketIndex) {
+            return true;
+        } else if (lhs.bucketIndex > rhs.bucketIndex) {
+            return false;
+        }
+
+        if (lhs.index.fileIndex < rhs.index.fileIndex) {
+            return true;
+        } else if (lhs.index.fileIndex > rhs.index.fileIndex) {
+            return false;
+        }
+
+        if (lhs.index.tileIndex < rhs.index.tileIndex) {
+            return true;
+        } else if (lhs.index.tileIndex > rhs.index.tileIndex) {
+            return false;
+        }
+        return false;
+
+    }
+};
+
+typedef boost::interprocess::set<TileInternalIndex, TileInternalIndexCompareLess, TileInternalIndexAllocator> TileInternalIndexSet;
 
 /**
  * @brief Unique identifier for a process mapped to the Cache
@@ -727,8 +756,8 @@ struct MemorySegmentEntryHeaderBase
     // LRU entries across all buckets to find out which is the oldest one.
     TimestampVal timestamp;
 
-    // List of tile indices allocated for this entry
-    ExternalSegmentTypeULongLongList tileIndices;
+    // Set of tile indices allocated for this entry
+    TileInternalIndexSet tileIndices;
 
     MemorySegmentEntryHeaderBase(const external_void_allocator& allocator)
     : size(0)
@@ -860,7 +889,7 @@ struct CacheBucketIPCData
     // Indices of the chunks of memory available in the tileAligned memory-mapped file.
     // Protected by the bucketMutex
     //
-    bip::offset_ptr<U64_List> freeTiles;
+    bip::offset_ptr<TileInternalIndexImplList> freeTiles;
 
     CacheBucketIPCData(ExternalSegmentType* segment, bool allocateFreeTiles)
     : lruListFront(0)
@@ -874,7 +903,7 @@ struct CacheBucketIPCData
         external_void_allocator allocator(segment->get_segment_manager());
         entriesMap = bip::offset_ptr<EntriesMap>(segment->template construct<EntriesMap>(bip::anonymous_instance)(allocator));
         if (allocateFreeTiles) {
-            freeTiles = bip::offset_ptr<U64_List>(segment->template construct<U64_List>(bip::anonymous_instance)(allocator));
+            freeTiles = bip::offset_ptr<TileInternalIndexImplList>(segment->template construct<TileInternalIndexImplList>(bip::anonymous_instance)(allocator));
         }
     }
 
@@ -1404,7 +1433,7 @@ struct CachePrivate
      * @brief Retrieves 1 tile from the tile storage. Allocates new memory mapped file backend if not enough space.
      **/
 #ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
-    U64 getOrCreateTileStorage(
+    TileInternalIndex getOrCreateTileStorage(
 #ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
                                boost::shared_ptr<Sharable_WriteLock>& bucketWriteLock,
                                boost::shared_ptr<Sharable_ReadLock>& tocReadLock,
@@ -1412,7 +1441,7 @@ struct CachePrivate
 #endif
     );
 #else
-    U64 getOrCreateTileStorage(int requestingBucketIndex);
+    TileInternalIndex getOrCreateTileStorage(int requestingBucketIndex);
 #endif
 
 
@@ -1420,7 +1449,7 @@ struct CachePrivate
 #ifndef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
                              int requestingBucketIndex,
 #endif
-                             U64* index);
+                             TileInternalIndex* index);
 
     void createTileStorageInternal(
 #ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
@@ -1431,12 +1460,7 @@ struct CachePrivate
 );
 
     void lookupEntryAndReleaseTiles(U64 entryHash,
-#ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
-                              const std::vector<TileInternalIndex>* tileIndices
-#else
-                              const std::vector<std::pair<TileHash,TileInternalIndex> >* tileIndices
-#endif
-                              );
+                              const std::vector<TileInternalIndex>* tileIndices);
 
     /**
      * @brief The internal function used to deallocate tiles.
@@ -1458,12 +1482,7 @@ struct CachePrivate
                               boost::shared_ptr<Sharable_WriteLock>& cacheEntryBucketToCWriteLock,
                               typename CacheBucket<persistent>::EntryType* cacheEntry,
                               boost::shared_ptr<Sharable_ReadLock>& tilesMemoryFileLock,
-#ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
-                              const std::vector<TileInternalIndex>* tileIndices
-#else
-                              const std::vector<std::pair<TileHash,TileInternalIndex> >* tileIndices
-#endif
-                              );
+                              const std::vector<TileInternalIndex>* tileIndices);
 
     /**
      * @brief Scan for existing tile files. This function throws an exception if the cache is corrupted
@@ -2028,15 +2047,13 @@ CacheBucket<persistent>::readFromSharedMemoryEntryImpl(EntryType* cacheEntry,
 
 } // readFromSharedMemoryEntryImpl
 
-/**
- * @brief Given an encoded tile index, the left most 32 bits represents the tile index in the file
- * The file index is determined by the right most 32 bits
- **/
-inline void getTileIndex(U64 encoded, U32* tileIndex, U32* fileIndex)
+inline char* getTileIndexPointer(char* basePtr, const TileInternalIndex& index)
 {
-    *fileIndex = encoded;
-    *tileIndex = encoded >> 32;
-    assert(*tileIndex >= 0 && *tileIndex < NATRON_NUM_TILES_PER_FILE);
+    char* ptr = basePtr +
+    (index.bucketIndex * NATRON_NUM_TILES_PER_BUCKET_FILE * NATRON_TILE_SIZE_BYTES) +
+    index.index.tileIndex * NATRON_TILE_SIZE_BYTES;
+    assert((ptr >= basePtr) && (ptr < (basePtr + NATRON_NUM_TILES_PER_FILE * NATRON_TILE_SIZE_BYTES)));
+    return ptr;
 }
 
 TileHash
@@ -3263,11 +3280,7 @@ struct CacheTilesLockImpl
     U64 entryHash;
 
     // List of allocated tiles
-#ifndef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
-    std::vector<std::pair<TileHash,TileInternalIndex> > allocatedTiles;
-#else
     std::vector<TileInternalIndex> allocatedTiles;
-#endif
 
     CacheTilesLockImpl()
     : entryHash(0)
@@ -3311,6 +3324,9 @@ CachePrivate<persistent>::createTileStorageInternal(
 
         fileIndex = tilesStorage.size();
         tilesStorage.push_back(data);
+
+        // We don't expect to have more than 2^16 files of 1GiB
+        assert(fileIndex <= 65535);
     }
     
 
@@ -3319,7 +3335,7 @@ CachePrivate<persistent>::createTileStorageInternal(
     assert(NATRON_NUM_TILES_PER_FILE % NATRON_CACHE_BUCKETS_COUNT == 0);
 
 #ifdef CACHE_TRACE_TILES_ALLOCATION
-    std::cout << "=============================================\nFree tiles state:\n\n";
+    std::cout << "=========================\ncreateTileStorageInternal: Free tiles state:\n\n";
 #endif
 
 #ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
@@ -3352,7 +3368,7 @@ CachePrivate<persistent>::createTileStorageInternal(
 
 
 #ifdef CACHE_TRACE_TILES_ALLOCATION
-        std::cout << "[" << bucket_i << "] = " << buckets[bucket_i].ipc->freeTiles.size();
+        std::cout << "[" << bucket_i << "] = " << buckets[bucket_i].ipc->freeTiles->size();
         if (bucket_i < NATRON_CACHE_BUCKETS_COUNT - 1) {
             std::cout << " , ";
         }
@@ -3361,25 +3377,26 @@ CachePrivate<persistent>::createTileStorageInternal(
         // Insert the new available tiles in the freeTiles set.
         // First insert in a temporary set and then assign to the free tiles set to avoid out of memory exceptions
 #ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
-        std::vector<U64> tmpSet(buckets[bucket_i].ipc->freeTiles->size() + NATRON_NUM_TILES_PER_FILE);
+        std::vector<TileInternalIndexImpl> tmpSet(buckets[bucket_i].ipc->freeTiles->size() + NATRON_NUM_TILES_PER_FILE);
 #else
-        std::vector<U64> tmpSet(buckets[bucket_i].ipc->freeTiles->size() + NATRON_NUM_TILES_PER_BUCKET_FILE);
+        std::vector<TileInternalIndexImpl> tmpSet(buckets[bucket_i].ipc->freeTiles->size() + NATRON_NUM_TILES_PER_BUCKET_FILE);
 #endif
         {
             int tmpSetIndex = 0;
-            for (U64_List::const_iterator it = buckets[bucket_i].ipc->freeTiles->begin(); it != buckets[bucket_i].ipc->freeTiles->end(); ++it, ++tmpSetIndex) {
+            for (TileInternalIndexImplList::const_iterator it = buckets[bucket_i].ipc->freeTiles->begin(); it != buckets[bucket_i].ipc->freeTiles->end(); ++it, ++tmpSetIndex) {
                 assert(tmpSetIndex < (int)tmpSet.size());
                 tmpSet[tmpSetIndex] = *it;
             }
 #ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
             for (size_t i = 0; i < NATRON_NUM_TILES_PER_FILE; ++i, ++tmpSetIndex)
 #else
-            std::size_t startIndex = bucket_i * NATRON_NUM_TILES_PER_BUCKET_FILE;
-            for (size_t i = startIndex; i < startIndex + NATRON_NUM_TILES_PER_BUCKET_FILE; ++i, ++tmpSetIndex)
+            for (size_t i = 0; i <  NATRON_NUM_TILES_PER_BUCKET_FILE; ++i, ++tmpSetIndex)
 #endif
             {
-                U64 encodedIndex = 0;
-                encodedIndex = ((i << 32) | fileIndex);
+                TileInternalIndexImpl encodedIndex;
+                encodedIndex.fileIndex = fileIndex;
+                encodedIndex.tileIndex = i;
+
                 assert(tmpSetIndex < (int)tmpSet.size());
                 tmpSet[tmpSetIndex] = encodedIndex;
             }
@@ -3426,7 +3443,7 @@ CachePrivate<persistent>::getFreeTileInternal(
 #ifndef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
                                               int requestingBucketIndex,
 #endif
-                                              U64* index)
+                                              TileInternalIndex* index)
 {
 #ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
     CacheBucket<persistent>& bucket = buckets[0];
@@ -3447,13 +3464,14 @@ CachePrivate<persistent>::getFreeTileInternal(
 #endif
 
     if (!bucket.ipc->freeTiles->empty()) {
-        U64 freeTileEncodedIndex;
+        TileInternalIndex freeTileEncodedIndex;
         {
-            U64_List::iterator freeTileIt = bucket.ipc->freeTiles->begin();
-            freeTileEncodedIndex = *freeTileIt;
+            TileInternalIndexImplList::iterator freeTileIt = bucket.ipc->freeTiles->begin();
+            freeTileEncodedIndex.index = *freeTileIt;
+            freeTileEncodedIndex.bucketIndex = requestingBucketIndex;
             bucket.ipc->freeTiles->erase(freeTileIt);
 #ifdef CACHE_TRACE_TILES_ALLOCATION
-            qDebug() << "Bucket" << requestingBucketIndex << ": removing tile" << freeTileEncodedIndex << " Nb free tiles left:" << bucket.ipc->freeTiles.size();
+            qDebug() << "Bucket" << (int)requestingBucketIndex << "allocating tile index" << (int)freeTileEncodedIndex.index.tileIndex << "from file index" << (int)freeTileEncodedIndex.index.fileIndex << " Nb free tiles left in bucket:" << bucket.ipc->freeTiles->size();
 #endif
         }
         *index = freeTileEncodedIndex;
@@ -3463,7 +3481,7 @@ CachePrivate<persistent>::getFreeTileInternal(
 }
 
 template <bool persistent>
-U64
+TileInternalIndex
 #ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
 CachePrivate<persistent>::getOrCreateTileStorage(boost::shared_ptr<Sharable_WriteLock>& bucketWriteLock,
                                                  boost::shared_ptr<Sharable_ReadLock>& tocReadLock,
@@ -3480,7 +3498,7 @@ CachePrivate<persistent>::getOrCreateTileStorage(int requestingBucketIndex)
     assert(requestingBucketIndex >= 0 && requestingBucketIndex < NATRON_CACHE_BUCKETS_COUNT);
 #endif
 
-    U64 encodedTileIndex;
+    TileInternalIndex encodedTileIndex;
     if (getFreeTileInternal(
 #ifndef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
                             requestingBucketIndex,
@@ -3634,18 +3652,16 @@ Cache<persistent>::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
 
                 TileInternalIndex freeTileEncodedIndex;
 #ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
-                freeTileEncodedIndex.index = _imp->getOrCreateTileStorage(bucketWriteLock, tocReadLock, tocWriteLock);
+                freeTileEncodedIndex = _imp->getOrCreateTileStorage(bucketWriteLock, tocReadLock, tocWriteLock);
 #else
-                freeTileEncodedIndex.index = _imp->getOrCreateTileStorage(bucketIndex);
+                freeTileEncodedIndex = _imp->getOrCreateTileStorage(bucketIndex);
 #endif
 
 
                 // Get the pointer to the data corresponding to the free tile index
-                U32 fileIndex, tileIndex;
-                getTileIndex(freeTileEncodedIndex.index, &tileIndex, &fileIndex);
                 typename CachePrivate<persistent>::StoragePtrType* storage = 0;
-                if (fileIndex < _imp->tilesStorage.size()) {
-                    storage = &_imp->tilesStorage[fileIndex];
+                if (freeTileEncodedIndex.index.fileIndex < _imp->tilesStorage.size()) {
+                    storage = &_imp->tilesStorage[freeTileEncodedIndex.index.fileIndex];
                 }
                 if (!storage) {
                     assert(false);
@@ -3656,8 +3672,7 @@ Cache<persistent>::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
                 char* data = (*storage)->getData();
 
                 // Set the tile index on the entry so we can free it afterwards.
-                char* ptr = data + tileIndex * NATRON_TILE_SIZE_BYTES;
-                assert((ptr >= data) && (ptr < (data + NATRON_NUM_TILES_PER_FILE * NATRON_TILE_SIZE_BYTES)));
+                char* ptr = getTileIndexPointer(data, freeTileEncodedIndex);
 #ifdef INIT_TILES_TO_NAN
                 {
                     float* p = reinterpret_cast<float*>(ptr);
@@ -3668,11 +3683,7 @@ Cache<persistent>::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
                 }
 #endif
                 (*allocatedTilesData)[i] = std::make_pair(freeTileEncodedIndex, ptr);
-#ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
                 tilesLock->allocatedTiles[i] = freeTileEncodedIndex;
-#else
-                tilesLock->allocatedTiles[i] = std::make_pair((*tilesToAlloc)[i], freeTileEncodedIndex);
-#endif
             } // for each tile to allocate
         } // nTilesToAlloc
 
@@ -3724,14 +3735,14 @@ Cache<persistent>::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
             // because the ToC might run out of memory. In this case, we grow it and try again.
 
             // First work on a local set on the heap and then copy it to the ToC
-            std::vector<U64> tmpSet(cacheEntry->tileIndices.size() + nTilesToAlloc);
+            std::vector<TileInternalIndex> tmpSet(cacheEntry->tileIndices.size() + nTilesToAlloc);
             {
                 int i = 0;
-                for (ExternalSegmentTypeULongLongList::const_iterator it = cacheEntry->tileIndices.begin(); it != cacheEntry->tileIndices.end(); ++it, ++i) {
+                for (TileInternalIndexSet::const_iterator it = cacheEntry->tileIndices.begin(); it != cacheEntry->tileIndices.end(); ++it, ++i) {
                     tmpSet[i] = *it;
                 }
                 for (std::size_t c = 0; c < nTilesToAlloc; ++c, ++i) {
-                    tmpSet[i] = (*allocatedTilesData)[c].first.index;
+                    tmpSet[i] = (*allocatedTilesData)[c].first;
                 }
             }
 
@@ -3739,7 +3750,7 @@ Cache<persistent>::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
 
                 try {
                     cacheEntry->tileIndices.clear();
-                    cacheEntry->tileIndices.insert(cacheEntry->tileIndices.end(), tmpSet.begin(), tmpSet.end());
+                    cacheEntry->tileIndices.insert(tmpSet.begin(), tmpSet.end());
                     break;
                 } catch (const bip::bad_alloc&) {
 
@@ -3791,11 +3802,10 @@ Cache<persistent>::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
             existingTilesData->resize(tileIndices->size());
             for (std::size_t i = 0; i < tileIndices->size(); ++i) {
                 
-                U32 fileIndex, tileIndex;
-                getTileIndex((*tileIndices)[i].index, &tileIndex, &fileIndex);
+
                 typename CachePrivate<persistent>::StoragePtrType* storage = 0;
-                if (fileIndex < _imp->tilesStorage.size()) {
-                    storage = &_imp->tilesStorage[fileIndex];
+                if ((*tileIndices)[i].index.fileIndex < _imp->tilesStorage.size()) {
+                    storage = &_imp->tilesStorage[(*tileIndices)[i].index.fileIndex];
                 }
                 if (!storage) {
                     // The cache may have been cleared since
@@ -3804,7 +3814,7 @@ Cache<persistent>::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
 
 
                 char* data = (*storage)->getData();
-                char* tileDataPtr = data + tileIndex * NATRON_TILE_SIZE_BYTES;
+                char* tileDataPtr = getTileIndexPointer(data, (*tileIndices)[i]);
 #ifdef INIT_TILES_TO_NAN
                 {
                     float* p = reinterpret_cast<float*>(tileDataPtr);
@@ -3845,18 +3855,16 @@ template <bool persistent>
 bool
 Cache<persistent>::checkTileIndex(TileInternalIndex encodedIndex) const
 {
-    U32 fileIndex, tileIndex;
-    getTileIndex(encodedIndex.index, &tileIndex, &fileIndex);
 
     // We must be inbetween retrieveAndLockTiles and unLockTiles
     assert(!_imp->ipc->tilesStorageMutex.try_lock());
 
-    if (fileIndex >= _imp->tilesStorage.size()) {
+    if (encodedIndex.index.fileIndex >= _imp->tilesStorage.size()) {
         assert(false);
         return false;
     }
-    char* data = _imp->tilesStorage[fileIndex]->getData();
-    char* tileDataPtr = data + tileIndex * NATRON_TILE_SIZE_BYTES;
+    char* data = _imp->tilesStorage[encodedIndex.index.fileIndex]->getData();
+    char* tileDataPtr = getTileIndexPointer(data, encodedIndex);
     if (tileDataPtr < data || tileDataPtr >= (data + NATRON_NUM_TILES_PER_FILE * NATRON_TILE_SIZE_BYTES)) {
         assert(false);
         return false;
@@ -3895,15 +3903,11 @@ Cache<persistent>::unLockTiles(void* cacheData, bool invalidate)
             // Check that all allocated tiles were initialized to something different than NaN
             else {
                 for (std::size_t i = 0; i < tilesLock->allocatedTiles.size(); ++i) {
-                    U32 fileIndex, tileIndex;
-#ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
-                    getTileIndex(tilesLock->allocatedTiles[i].index, &tileIndex, &fileIndex);
-#else
-                    getTileIndex(tilesLock->allocatedTiles[i].second.index, &tileIndex, &fileIndex);
-#endif
+
+                    const TileInternalIndex& index = tilesLock->allocatedTiles[i];
                     typename CachePrivate<persistent>::StoragePtrType* storage = 0;
-                    if (fileIndex < _imp->tilesStorage.size()) {
-                        storage = &_imp->tilesStorage[fileIndex];
+                    if (index.index.fileIndex < _imp->tilesStorage.size()) {
+                        storage = &_imp->tilesStorage[index.index.fileIndex];
                     }
                     if (!storage) {
                         // The cache may have been cleared since
@@ -3912,7 +3916,7 @@ Cache<persistent>::unLockTiles(void* cacheData, bool invalidate)
 
 
                     char* data = (*storage)->getData();
-                    char* tileDataPtr = data + tileIndex * NATRON_TILE_SIZE_BYTES;
+                    char* tileDataPtr = getTileIndexPointer(data, index);
                     {
                         float* p = reinterpret_cast<float*>(tileDataPtr);
                         const float* pend = p + (NATRON_TILE_SIZE_BYTES / sizeof(float));
@@ -3923,7 +3927,6 @@ Cache<persistent>::unLockTiles(void* cacheData, bool invalidate)
                             }
                         }
                     }
-                    assert((tileDataPtr >= data) && (tileDataPtr < (data + NATRON_NUM_TILES_PER_FILE * NATRON_TILE_SIZE_BYTES)));
 
                 }
             }
@@ -3953,34 +3956,22 @@ CachePrivate<persistent>::releaseTilesInternal(int cacheEntryBucketIndex,
                                                boost::shared_ptr<Sharable_WriteLock>& cacheEntryBucketToCWriteLock,
                                                typename CacheBucket<persistent>::EntryType* cacheEntry,
                                                boost::shared_ptr<Sharable_ReadLock>& tileAlignedFileLock,
-#ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
-                                               const std::vector<TileInternalIndex>* tileIndices
-#else
-                                               const std::vector<std::pair<TileHash,TileInternalIndex> >* tileIndices
-#endif
-)
+                                               const std::vector<TileInternalIndex>* tileIndices)
 {
 
     assert((!tileIndices && cacheEntry) || tileIndices);
     assert(cacheEntryBucketLock);
 
-    // For each tile, pair <bucket index, tile internal index>
-#ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
     std::vector<TileInternalIndex> tilesToDeallocate;
-#else
-    std::vector<std::pair<int,TileInternalIndex> > tilesToDeallocate;
-#endif
+
     if (tileIndices) {
 
         if (cacheEntry) {
             // Remove from the cache entry the given tiles.
             for (std::size_t i = 0; i < tileIndices->size(); ++i) {
 
-#ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
-                ExternalSegmentTypeULongLongList::iterator foundTile = std::find(cacheEntry->tileIndices.begin(), cacheEntry->tileIndices.end(), (*tileIndices)[i].index);
-#else
-                ExternalSegmentTypeULongLongList::iterator foundTile = std::find(cacheEntry->tileIndices.begin(), cacheEntry->tileIndices.end(), (*tileIndices)[i].second.index);
-#endif
+
+                TileInternalIndexSet::iterator foundTile = cacheEntry->tileIndices.find((*tileIndices)[i]);
                 assert(foundTile != cacheEntry->tileIndices.end());
                 if (foundTile != cacheEntry->tileIndices.end()) {
                     cacheEntry->tileIndices.erase(foundTile);
@@ -3990,29 +3981,13 @@ CachePrivate<persistent>::releaseTilesInternal(int cacheEntryBucketIndex,
 
         tilesToDeallocate.resize(tileIndices->size());
         for (std::size_t i = 0; i < tilesToDeallocate.size(); ++i) {
-
-#ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
             tilesToDeallocate[i] = (*tileIndices)[i];
-#else
-            tilesToDeallocate[i].first = getBucketIndexForTile((*tileIndices)[i].first);
-            tilesToDeallocate[i].second = (*tileIndices)[i].second;
-#endif
-
         }
     } else if (cacheEntry) {
         tilesToDeallocate.resize(cacheEntry->tileIndices.size());
-        ExternalSegmentTypeULongLongList::const_iterator it = cacheEntry->tileIndices.begin();
+        TileInternalIndexSet::const_iterator it = cacheEntry->tileIndices.begin();
         for (std::size_t i = 0; i < tilesToDeallocate.size(); ++i, ++it) {
-
-#ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
-            tilesToDeallocate[i].index = *it;
-#else
-            tilesToDeallocate[i].second.index = *it;
-             // Retrieve the bucket index directly from the tile index: we know that each file contains exactly NATRON_NUM_TILES_PER_BUCKET_FILE * NATRON_CACHE_BUCKETS_COUNT
-            U32 fileIndex, tileIndex;
-            getTileIndex(*it, &tileIndex, &fileIndex);
-            tilesToDeallocate[i].first = tileIndex % NATRON_NUM_TILES_PER_BUCKET_FILE;
-#endif
+            tilesToDeallocate[i] = *it;
         }
         cacheEntry->tileIndices.clear();
     }
@@ -4057,18 +4032,17 @@ CachePrivate<persistent>::releaseTilesInternal(int cacheEntryBucketIndex,
         boost::shared_ptr<Sharable_ReadLock> tocReadLock;
         boost::shared_ptr<Sharable_WriteLock> tocWriteLock;
 
-        const TileInternalIndex& internalIndex = tilesToDeallocate[i].second;
-        int bucketIndex = tilesToDeallocate[i].first;
-        CacheBucket<persistent>& tileBucket = buckets[bucketIndex];
+        const TileInternalIndex& internalIndex = tilesToDeallocate[i];
+        CacheBucket<persistent>& tileBucket = buckets[internalIndex.bucketIndex];
 
         // Take the bucket mutex only if it was not taken before
-        if (bucketIndex != cacheEntryBucketIndex) {
+        if (internalIndex.bucketIndex != cacheEntryBucketIndex) {
             // Take the read lock on the toc file mapping
             tileBucket.checkToCMemorySegmentStatus(&tocReadLock, &tocWriteLock);
 
 
             // Lock the bucket in write mode to edit the freeTiles list
-            createLock<Sharable_WriteLock>(this, bucketWriteLock, &ipc->bucketsData[bucketIndex].bucketMutex);
+            createLock<Sharable_WriteLock>(this, bucketWriteLock, &ipc->bucketsData[internalIndex.bucketIndex].bucketMutex);
         } else {
             bucketWriteLock = cacheEntryBucketLock;
             tocReadLock = cacheEntryBucketToCReadLock;
@@ -4077,7 +4051,7 @@ CachePrivate<persistent>::releaseTilesInternal(int cacheEntryBucketIndex,
 #endif
 
 #ifdef CACHE_TRACE_TILES_ALLOCATION
-        qDebug() << "Tile freed" << internalIndex.index << " Nb free tiles left:" << tileBucket.ipc->freeTiles.size();
+        qDebug() << "Bucket" << (int)internalIndex.bucketIndex << "Tile freed" << (int)internalIndex.index.tileIndex  << "in file index" << (int)internalIndex.index.fileIndex << " Nb free tiles left in bucket:" << tileBucket.ipc->freeTiles->size();
 #endif
 
         // Attempt to add the index to the list. The ToC memory file might be full, hence we may have to reallocate it.
@@ -4096,30 +4070,26 @@ CachePrivate<persistent>::releaseTilesInternal(int cacheEntryBucketIndex,
                     // Release the bucket lock: it's only guarantee to be valid is while under the toc lock!
                     bucketWriteLock.reset();
                     tocReadLock.reset();
-                    createLock<Sharable_WriteLock>(this, tocWriteLock, &ipc->bucketsData[bucketIndex].tocData.segmentMutex);
+                    createLock<Sharable_WriteLock>(this, tocWriteLock, &ipc->bucketsData[internalIndex.bucketIndex].tocData.segmentMutex);
                 }
 
                 tileBucket.growToCFile(*tocWriteLock, tocMemNeeded);
 
                 // Take back the bucket mutex
-                createLock<Sharable_WriteLock>(this, bucketWriteLock, &ipc->bucketsData[bucketIndex].bucketMutex);
+                createLock<Sharable_WriteLock>(this, bucketWriteLock, &ipc->bucketsData[internalIndex.bucketIndex].bucketMutex);
             }
         }
-
 
         if (persistent) {
             // Invalidate this portion of the memory mapped file so it doesn't get written on disk
 
-            U32 fileIndex, tileIndex;
-            getTileIndex(internalIndex.index, &tileIndex, &fileIndex);
-
             StoragePtrType storage;
-            if (fileIndex < tilesStorage.size()) {
-                storage = tilesStorage[fileIndex];
+            if (internalIndex.index.fileIndex < tilesStorage.size()) {
+                storage = tilesStorage[internalIndex.index.fileIndex];
             }
             if (storage) {
-                std::size_t dataOffset = tileIndex * NATRON_TILE_SIZE_BYTES;
-                flushMemory(storage, (int)MemoryFile::eFlushTypeInvalidate, storage->getData() + dataOffset, NATRON_TILE_SIZE_BYTES);
+                char* ptr = getTileIndexPointer((char*)storage->getData(), internalIndex);
+                flushMemory(storage, (int)MemoryFile::eFlushTypeInvalidate, ptr, NATRON_TILE_SIZE_BYTES);
             }
 
         }
@@ -4133,13 +4103,7 @@ CachePrivate<persistent>::releaseTilesInternal(int cacheEntryBucketIndex,
 
 template <bool persistent>
 void
-CachePrivate<persistent>::lookupEntryAndReleaseTiles(U64 entryHash,
-#ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
-                                               const std::vector<TileInternalIndex>* tileIndices
-#else
-                                               const std::vector<std::pair<TileHash,TileInternalIndex> >* tileIndices
-#endif
-                                               )
+CachePrivate<persistent>::lookupEntryAndReleaseTiles(U64 entryHash, const std::vector<TileInternalIndex>* tileIndices)
 {
 
     int cacheEntryBucketIndex = Cache<persistent>::getBucketCacheBucketIndex(entryHash);
@@ -4173,13 +4137,7 @@ CachePrivate<persistent>::lookupEntryAndReleaseTiles(U64 entryHash,
 
 template <bool persistent>
 void
-Cache<persistent>::releaseTiles(const CacheEntryBasePtr& entry,
-#ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
-                                const std::vector<TileInternalIndex>& tileIndices
-#else
-                                const std::vector<std::pair<TileHash,TileInternalIndex> >& tileIndices
-#endif
-)
+Cache<persistent>::releaseTiles(const CacheEntryBasePtr& entry, const std::vector<TileInternalIndex>& tileIndices)
 {
     assert(_imp->useTileStorage);
     if (tileIndices.empty()) {
@@ -4993,68 +4951,6 @@ Cache<persistent>::getMemoryStats(std::map<std::string, CacheReportInfo>* infos)
         
     } // for each bucket
 } // getMemoryStats
-
-template <bool persistent>
-void
-Cache<persistent>::flushCacheOnDisk(bool async)
-{
-    (void)async;
-#if 0
-    if (!persistent) {
-        return;
-    }
-
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
-    boost::scoped_ptr<SharedMemoryProcessLocalReadLocker<persistent> > shmReader(new SharedMemoryProcessLocalReadLocker(_imp.get()));
-#endif
-    
-    for (int bucket_i = 0; bucket_i < NATRON_CACHE_BUCKETS_COUNT; ++bucket_i) {
-        CacheBucket<persistent>& bucket = _imp->buckets[bucket_i];
-
-        try {
-            boost::scoped_ptr<Sharable_WriteLock> tocWriteLock;
-            createLock<Sharable_WriteLock>(_imp.get(), tocWriteLock, &_imp->ipc->bucketsData[bucket_i].tocData.segmentMutex);
-
-            // First take a read lock and check if the mapping is valid. Otherwise take a write lock
-            if (!bucket.isToCFileMappingValid()) {
-                // This function will flush for us.
-                bucket.remapToCMemoryFile(*tocWriteLock, 0);
-            } else {
-                bucket.tocFile->flush(async ? MemoryFile::eFlushTypeAsync : MemoryFile::eFlushTypeSync, NULL, 0);
-            }
-
-            {
-
-                boost::scoped_ptr<Sharable_ReadLock> tilesStorageReadLock;
-                createLock<Sharable_WriteLock>(this, tilesStorageReadLock, &_imp->ipc->tilesStorageMutex);
-
-                for (U64_List::const_iterator it = _imp->buckets[bucket_i].ipc->freeTiles.begin(); it != _imp->buckets[bucket_i].ipc->freeTiles.end(); ++it) {
-                    U32 tileIndex, fileIndex;
-                    getTileIndex(*it, &tileIndex, &fileIndex);
-
-                    if (fileIndex >= _imp->tilesStorage.size()) {
-                        continue;
-                    }
-                    CachePrivate::TileAlignedData* storage = &_imp->tilesStorage[fileIndex];
-                    std::size_t dataOffset = tileIndex * NATRON_TILE_SIZE_BYTES;
-                    storage->tileAlignedFile->flush(MemoryFile::eFlushTypeInvalidate, storage->tileAlignedFile->data() + dataOffset, NATRON_TILE_SIZE_BYTES);
-
-                }
-            }
-
-        } catch (...) {
-            // Any exception caught here means the cache is corrupted
-            _imp->recoverFromInconsistentState(
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
-                                                shmReader
-#endif
-                                               );
-
-        }
-
-    } // for each bucket
-#endif
-} // flushCacheOnDisk
 
 template class Cache<true>;
 template class Cache<false>;

@@ -47,6 +47,23 @@ GCC_DIAG_ON(unused-parameter)
 NATRON_NAMESPACE_ENTER
 
 
+struct TileInternalIndexImpl
+{
+
+    // The memory file index onto which the tile is mapped. We don't expect the Cache to create more than 2^16 files
+    // of storage: each file is of size NATRON_TILE_STORAGE_FILE_SIZE.
+    U16 fileIndex;
+
+    // The index of the tile in the file: Since there are 256 buckets and each bucket has 256 tiles per file, the
+    // number of adressable tiles per bucket per file is 256
+#ifndef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
+    U8 tileIndex;
+#else
+    U16 tileIndex;
+#endif
+
+};
+
 /**
  * @brief The index of a tile in the Cache. This is a 64 value encoding 2 32bit values
  * of the file index containing the tile and the index of the tile in that file.
@@ -54,7 +71,13 @@ NATRON_NAMESPACE_ENTER
  **/
 struct TileInternalIndex
 {
-    U64 index;
+#ifndef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
+    // The bucket index in which the tile belongs to. This is a byte since there are 256 buckets.
+    U8 bucketIndex;
+#endif
+
+    TileInternalIndexImpl index;
+
 };
 
 /**
@@ -106,9 +129,11 @@ struct TileState
     , channelsTileStorageIndex()
     , uuid()
     {
+#if 0
         TileInternalIndex i;
         i.index = (U64)-1;
         channelsTileStorageIndex[0] = channelsTileStorageIndex[1] = channelsTileStorageIndex[2] = channelsTileStorageIndex[3] = i;
+#endif
     }
 
     TileState(const TileState& other)

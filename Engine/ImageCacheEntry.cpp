@@ -79,6 +79,21 @@ struct TileCoordCompare
     }
 };
 
+struct TileInternalIndexU64Converter
+{
+    TileInternalIndexU64Converter()
+    : raw(0)
+    {
+        assert(sizeof(TileInternalIndex) <= sizeof(U64));
+    };
+
+    union
+    {
+        U64 raw;
+        TileInternalIndex index;
+    };
+};
+
 typedef std::set<TileCoord, TileCoordCompare> TilesSet;
 
 struct TileCacheIndex
@@ -99,9 +114,11 @@ struct TileCacheIndex
     , ty(-1)
     , upscaleTiles()
     {
+#if 0
         TileInternalIndex i;
         i.index = (U64)-1;
         perChannelTileIndices[0] = perChannelTileIndices[1] = perChannelTileIndices[2] = perChannelTileIndices[3] = i;
+#endif
     }
 };
 
@@ -725,8 +742,8 @@ public:
 
             const TileData& task = *_tasks[i];
             
-            assert(task.tileCache_i.index != (U64)-1);
-            
+            //assert(task.tileCache_i.index != (U64)-1);
+
             // Intersect the tile bounds
             RectI tileBoundsRounded = task.bounds;
             tileBoundsRounded.roundToTileSize(_imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY);
@@ -741,6 +758,10 @@ public:
                 assert(localPix);
 
                 PIX* tilePix = ImageCacheEntryProcessing::getPix((PIX*)task.ptr, renderWindow.x1, renderWindow.y1, tileBoundsRounded);
+                /*{
+                    QString message = QString::fromUtf8("COPYING bucket %1 tileIndex %2 from file index %3").arg((int)task.tileCache_i.bucketIndex).arg((int)task.tileCache_i.index.tileIndex).arg((int)task.tileCache_i.index.fileIndex);
+                    qDebug() << message;
+                }*/
                 assert(tilePix);
                 ImageCacheEntryProcessing::copyPixelsForDepth<PIX>(renderWindow, localPix, _pixelStride, _imp->roi.width() * _pixelStride, tilePix, 1, _imp->localTilesState.tileSizeX);
                 
@@ -970,7 +991,7 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(
             assert(cacheTileState);
             for (int k = 0; k < nComps; ++k) {
                 tile->perChannelTileIndices[k] = cacheTileState->channelsTileStorageIndex[k];
-                assert(tile->perChannelTileIndices[k].index != (U64)-1);
+                //assert(tile->perChannelTileIndices[k].index != (U64)-1);
             }
 
             // If the tile has become rendered at the requested mipmap level, mark it in the tiles to
@@ -1400,7 +1421,7 @@ static void fetchTileIndicesInPyramid(U64 entryHash,
         }
     } else {
         for (int c = 0; c < nComps; ++c) {
-            assert(tile.perChannelTileIndices[c].index != (U64)-1);
+            //assert(tile.perChannelTileIndices[c].index != (U64)-1);
             tileIndicesToFetch->push_back(tile.perChannelTileIndices[c]);
         }
     }
@@ -1481,14 +1502,14 @@ ImageCacheEntryPrivate::buildTaskPyramidRecursive(unsigned int lookupLevel,
         
     } else { // !tile.upscaleTiles[0]
         for (int c = 0; c < nComps; ++c) {
-            assert(tile.perChannelTileIndices[c].index != (U64)-1);
+            //assert(tile.perChannelTileIndices[c].index != (U64)-1);
 
 
             outputTasks[c].reset(new TileData);
             assert(*existingTiles_i >= 0 && *existingTiles_i < (int)fetchedExistingTiles.size());
             outputTasks[c]->ptr = fetchedExistingTiles[*existingTiles_i];
             ++(*existingTiles_i);
-            assert(tile.perChannelTileIndices[c].index != (U64)-1);
+            //assert(tile.perChannelTileIndices[c].index != (U64)-1);
             outputTasks[c]->tileCache_i = tile.perChannelTileIndices[c];
             outputTasks[c]->bounds = tileBounds;
             outputTasks[c]->channel_i = c;
@@ -1637,10 +1658,10 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
 
 
             TileState* cacheTileState = cacheStateMap.getTileAt(tx, ty);
-            assert(perLevelTilesToDownscale[i][j]->tileCache_i.index != (U64)-1);
+            //assert(perLevelTilesToDownscale[i][j]->tileCache_i.index != (U64)-1);
             cacheTileState->channelsTileStorageIndex[perLevelTilesToDownscale[i][j]->channel_i] = perLevelTilesToDownscale[i][j]->tileCache_i;
 
-#ifdef DEBUG
+#if 0
             // Check that upon the last channels, all tile indices are correct
             if (perLevelTilesToDownscale[i][j]->channel_i == nComps -1) {
                 for (int c = 0; c < nComps; ++c) {
@@ -1676,7 +1697,7 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
             // Update the state locally if we are on the appropriate mip map level
             if (i == mipMapLevel) {
                 TileState* localTileState = localTilesState.getTileAt(tx, ty);
-                assert(perLevelTilesToDownscale[i][j]->tileCache_i.index != (U64)-1);
+                //assert(perLevelTilesToDownscale[i][j]->tileCache_i.index != (U64)-1);
                 localTileState->channelsTileStorageIndex[perLevelTilesToDownscale[i][j]->channel_i] = perLevelTilesToDownscale[i][j]->tileCache_i;
 
                 assert(localTileState->status == eTileStatusNotRendered);
@@ -2107,12 +2128,8 @@ ImageCacheEntry::markCacheTilesInRegionAsNotRendered(const RectI& roi)
     CacheBasePtr cache = _imp->internalCacheEntry->getCache();
     bool hasModifiedTileMap = false;
 
-#ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
     std::vector<TileInternalIndex> tileIndicesToRelease;
-#else
-    std::vector<std::pair<TileHash, TileInternalIndex> > tileIndicesToRelease;
-    U64 entryHash = _imp->internalCacheEntry->getHashKey();
-#endif
+
 
     RectI mipmap0Roi = roiIntersected.upscalePowerOfTwo(_imp->mipMapLevel);
 
@@ -2150,18 +2167,11 @@ ImageCacheEntry::markCacheTilesInRegionAsNotRendered(const RectI& roi)
 #ifdef TRACE_TILES_ONLY_PRINT_FIRST_TILE
                 if (tx == 0 && ty == 0)
 #endif
-                qDebug() << QThread::currentThread() << _imp->effect.lock().get() << _imp->effect.lock()->getScriptName_mt_safe().c_str() << _imp->internalCacheEntry->getHashKey() << "marking " << tx << ty << "unrendered at level" << i;
+                    qDebug() << QThread::currentThread() << _imp->effect.lock().get() << _imp->effect.lock()->getScriptName_mt_safe().c_str() << _imp->internalCacheEntry->getHashKey() << "marking " << tx << ty << "unrendered at level" << i;
 #endif
 
-                for (int c = 0; c < 4; ++c) {
-                    if (cacheTileState->channelsTileStorageIndex[c].index != (U64)-1) {
-#ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
-                        tileIndicesToRelease.push_back(cacheTileState->channelsTileStorageIndex[c]);
-#else
-                        TileHash tileIndex = CacheBase::makeTileCacheIndex(tx, ty, i, c, entryHash);
-                        tileIndicesToRelease.push_back(std::make_pair(tileIndex, cacheTileState->channelsTileStorageIndex[c]));
-#endif
-                    }
+                for (int c = 0; c < _imp->nComps; ++c) {
+                    tileIndicesToRelease.push_back(cacheTileState->channelsTileStorageIndex[c]);
                 }
             }
         }
@@ -2336,7 +2346,7 @@ ImageCacheEntry::markCacheTilesAsRendered()
         int tx = (int)std::floor((double)tilesToCopy[i]->bounds.x1 / _imp->localTilesState.tileSizeX) * _imp->localTilesState.tileSizeX;
         int ty = (int)std::floor((double)tilesToCopy[i]->bounds.y1 / _imp->localTilesState.tileSizeY) * _imp->localTilesState.tileSizeY;
         TileState* cacheTileState = cacheStateMap.getTileAt(tx, ty);
-        assert(allocatedTiles[i].first.index != (U64)-1);
+        //assert(allocatedTiles[i].first.index != (U64)-1);
         cacheTileState->channelsTileStorageIndex[tilesToCopy[i]->channel_i] = allocatedTiles[i].first;
 
         TileState* localTileState = _imp->localTilesState.getTileAt(tx, ty);
@@ -2516,10 +2526,6 @@ static CacheEntryBase::FromMemorySegmentRetCodeEnum fromMemorySegmentInternal(in
             return CacheEntryBase::eFromMemorySegmentRetCodeFailed;
         }
 
-        if (!indicesProp || indicesProp->getType() != eIPCVariantTypeULongLong) {
-            return CacheEntryBase::eFromMemorySegmentRetCodeFailed;
-        }
-
         if (!uuidProp || uuidProp->getType() != eIPCVariantTypeULongLong || uuidProp->getNumDimensions() != statusProp->getNumDimensions() * 2) {
             return CacheEntryBase::eFromMemorySegmentRetCodeFailed;
         }
@@ -2566,7 +2572,9 @@ static CacheEntryBase::FromMemorySegmentRetCodeEnum fromMemorySegmentInternal(in
 
 
             for (int c = 0; c < 4; ++c) {
-                IPCProperty::getULongLongValue(indicesProp->getData(), i * 4 + c, &state.channelsTileStorageIndex[c].index);
+                TileInternalIndexU64Converter converter;
+                IPCProperty::getULongLongValue(indicesProp->getData(), i * 4 + c, &converter.raw);
+                state.channelsTileStorageIndex[c] = converter.index;
             }
 
             assert(tx < localState.boundsRoundedToTileSize.x2);
@@ -2686,7 +2694,9 @@ static void toMemorySegmentInternal(bool copyPendingStatusToCache,
                 IPCProperty::setULongLongValue(i * 2 + 1, encodedUUID[1], uuidProp->getData());
 
                 for (int c = 0; c < 4; ++c) {
-                    IPCProperty::setULongLongValue(i * 4 + c, mipmapState.tiles[i].channelsTileStorageIndex[c].index, indicesProp->getData());
+                    TileInternalIndexU64Converter converter;
+                    converter.index = mipmapState.tiles[i].channelsTileStorageIndex[c];
+                    IPCProperty::setULongLongValue(i * 4 + c, converter.raw, indicesProp->getData());
                 }
 
             }
@@ -2762,9 +2772,11 @@ static void toMemorySegmentInternal(bool copyPendingStatusToCache,
 
                     IPCProperty::setIntValue(i, (int)mipmapState.tiles[i].status, statusProp->getData());
                     for (int c = 0; c < 4; ++c) {
-                        IPCProperty::setULongLongValue(i * 4 + c, mipmapState.tiles[i].channelsTileStorageIndex[c].index, indicesProp->getData());
+                        TileInternalIndexU64Converter converter;
+                        converter.index = mipmapState.tiles[i].channelsTileStorageIndex[c];
+                        IPCProperty::setULongLongValue(i * 4 + c, converter.raw, indicesProp->getData());
                     }
-#ifdef DEBUG
+#if 0
                     if (mipmapState.tiles[i].status == eTileStatusRenderedHighestQuality || mipmapState.tiles[i].status == eTileStatusRenderedLowQuality) {
                         bool hasValidTile = false;
                         for (int c = 0; c < 4; ++c) {

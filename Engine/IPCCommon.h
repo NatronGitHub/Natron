@@ -246,6 +246,7 @@ enum IPCVariantTypeEnum
     eIPCVariantTypeBool,
     eIPCVariantTypeInt,
     eIPCVariantTypeDouble,
+    eIPCVariantTypeULong,
     eIPCVariantTypeULongLong,
     eIPCVariantTypeString
 };
@@ -326,6 +327,10 @@ public:
 
     static void getIntValue(const IPCVariantVector& vec, int index, int* value);
     static void setIntValue(int index, const int& value, IPCVariantVector* vec);
+
+    static void getULongValue(const IPCVariantVector& vec, int index, U32* value);
+    static void setULongValue(int index, const U32& value, IPCVariantVector* vec);
+
 
     static void getULongLongValue(const IPCVariantVector& vec, int index, U64* value);
     static void setULongLongValue(int index, const U64& value, IPCVariantVector* vec);

@@ -103,6 +103,16 @@ IPCProperty::getTypeInfos(TypeFunctions<int>* functions, IPCVariantTypeEnum* typ
 
 template <>
 void
+IPCProperty::getTypeInfos(TypeFunctions<U32>* functions, IPCVariantTypeEnum* type)
+{
+    *type = eIPCVariantTypeULong;
+    functions->getter = &IPCProperty::getULongValue;
+    functions->setter = &IPCProperty::setULongValue;
+}
+
+
+template <>
+void
 IPCProperty::getTypeInfos(TypeFunctions<U64>* functions, IPCVariantTypeEnum* type)
 {
     *type = eIPCVariantTypeULongLong;
@@ -177,6 +187,20 @@ IPCProperty::setIntValue(int index, const int& value, IPCVariantVector* vec)
 {
     assert(index >= 0 && index < (int)vec->size());
     (*vec)[index].scalar = Hash64::toU64<int>(value);
+}
+
+void
+IPCProperty::getULongValue(const IPCVariantVector& vec, int index, U32* value)
+{
+    assert(index >= 0 && index < (int)vec.size());
+    *value = vec[index].scalar;
+}
+
+void
+IPCProperty::setULongValue(int index, const U32& value, IPCVariantVector* vec)
+{
+    assert(index >= 0 && index < (int)vec->size());
+    (*vec)[index].scalar = value;
 }
 
 void

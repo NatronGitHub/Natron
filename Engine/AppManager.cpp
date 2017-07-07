@@ -650,9 +650,6 @@ AppManager::~AppManager()
 
     _imp->_backgroundIPC.reset();
 
-    // Ensure the cache is synced on disk when exiting.
-    _imp->tileCache->flushCacheOnDisk(false /*async*/);
-
     _imp->storageDeleteThread->quitThread();
 
 
