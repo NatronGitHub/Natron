@@ -391,8 +391,6 @@ NodeGraph::createNodeGui(const NodePtr & node, const CreateNodeArgs& args)
     // This will create the node GUI across all Natron
     node_ui->initialize(this, node, args);
 
-    setNodeToDefaultPosition(node_ui, selectedNodes, args);
-
     SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
     bool addUndoRedo = args.getPropertyUnsafe<bool>(kCreateNodeArgsPropAddUndoRedoCommand);
     if (addUndoRedo) {
@@ -410,6 +408,33 @@ NodeGraph::createNodeGui(const NodePtr & node, const CreateNodeArgs& args)
     _imp->_evtState = eEventStateNone;
 
 } // NodeGraph::createNodeGUI
+
+void
+NodeGraph::onNodeAboutToBeCreated(const NodePtr& /*node*/, const CreateNodeArgsPtr& /*args*/)
+{
+    // Save the current node selection
+    _imp->_selectionBeforeNodeCreated = _imp->_selection;
+}
+
+void
+NodeGraph::onNodeCreated(const NodePtr& node, const CreateNodeArgsPtr& args)
+{
+
+    NodeGuiPtr node_ui = boost::dynamic_pointer_cast<NodeGui>(node->getNodeGui());
+    assert(node_ui);
+
+    NodesGuiList selectedNodes;
+    for (NodesGuiWList::const_iterator it = _imp->_selectionBeforeNodeCreated.begin(); it != _imp->_selectionBeforeNodeCreated.end(); ++it) {
+        NodeGuiPtr n = it->lock();
+        if (n) {
+            selectedNodes.push_back(n);
+        }
+    }
+    _imp->_selectionBeforeNodeCreated.clear();
+
+    setNodeToDefaultPosition(node_ui, selectedNodes, *args);
+
+}
 
 QIcon
 NodeGraph::getIcon() const

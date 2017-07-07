@@ -241,6 +241,10 @@ public:
 
 private:
 
+    virtual void onNodeAboutToBeCreated(const NodePtr& node, const CreateNodeArgsPtr& args) OVERRIDE FINAL;
+
+    virtual void onNodeCreated(const NodePtr& node, const CreateNodeArgsPtr& args) OVERRIDE FINAL;
+
     virtual void onTabWidgetRegistered(TabWidgetI* tabWidget) OVERRIDE FINAL;
 
     virtual void onTabWidgetUnregistered(TabWidgetI* tabWidget) OVERRIDE FINAL;

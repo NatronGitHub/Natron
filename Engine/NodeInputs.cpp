@@ -1232,7 +1232,7 @@ Node::onInputChanged(int inputNb)
     }
 
 
-    if (!getApp()->isDuringPythonPyPlugCreation()) {
+    if (!getApp()->isCreatingNode()) {
         _imp->effect->onInputChanged_public(inputNb);
     }
     _imp->inputsModified.insert(inputNb);
@@ -1376,5 +1376,254 @@ Node::hasSequentialOnlyNodeUpstream(std::string & nodeName) const
     }
 }
 
+void
+Node::moveBelowPositionRecursively(const RectD & r)
+{
+
+    RectD boundingRect = getNodeBoundingRect();
+    if (!r.intersects(boundingRect)) {
+        return;
+    }
+    movePosition(0, r.height() + boundingRect.height() / 2.);
+
+    boundingRect = getNodeBoundingRect();
+
+    OutputNodesMap outputs;
+    getOutputs(outputs);
+    for (OutputNodesMap::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        it->first->moveBelowPositionRecursively(boundingRect);
+    }
+
+}
+
+void
+Node::moveAbovePositionRecursively(const RectD & r)
+{
+    RectD boundingRect = getNodeBoundingRect();
+    if (!r.intersects(boundingRect)) {
+        return;
+    }
+
+    movePosition(0, -r.height() - boundingRect.height() / 2.);
+
+    boundingRect = getNodeBoundingRect();
+
+    const std::vector<NodeWPtr>& inputs = getInputs();
+    for (std::size_t i = 0; i < inputs.size(); ++i) {
+        NodePtr input = inputs[i].lock();
+        if (!input) {
+            continue;
+        }
+        input->moveAbovePositionRecursively(boundingRect);
+    }
+}
+
+
+bool
+Node::autoConnect(const NodePtr& selected)
+{
+    if (!canOthersConnectToThisNode()) {
+        return false;
+    }
+
+    if (!selected) {
+        return false;
+    }
+
+    // 2 possible values:
+    // 1 = pop the node above the selected node and move the inputs of the selected node a little
+    // 2 = pop the node below the selected node and move the outputs of the selected node a little
+    enum AutoConnectBehaviorEnum {
+        eAutoConnectBehaviorAbove,
+        eAutoConnectBehaviorBelow
+    };
+
+    AutoConnectBehaviorEnum behavior;
+
+    //        1) selected is output
+    //          a) created is output --> fail
+    //          b) created is input --> connect input
+    //          c) created is regular --> connect input
+    //        2) selected is input
+    //          a) created is output --> connect output
+    //          b) created is input --> fail
+    //          c) created is regular --> connect output
+    //        3) selected is regular
+    //          a) created is output--> connect output
+    //          b) created is input --> connect input
+    //          c) created is regular --> connect output
+
+    ///1)
+    if ( selected->isOutputNode() ) {
+        ///case 1-a) just do default we don't know what else to do
+        if (isOutputNode()) {
+            return false;
+        } else {
+            ///for either cases 1-b) or 1-c) we just connect the created node as input of the selected node.
+            behavior = eAutoConnectBehaviorAbove;
+        }
+    }
+    ///2) and 3) are similar except for case b)
+    else {
+        ///case 2 or 3- a): connect the created node as output of the selected node.
+        if (isOutputNode()) {
+            behavior = eAutoConnectBehaviorBelow;
+        }
+        ///case b)
+        else if (isInputNode()) {
+            if ( selected->getEffectInstance()->isReader() ) {
+                ///case 2-b) just do default we don't know what else to do
+                return false;
+            } else {
+                ///case 3-b): connect the created node as input of the selected node
+                behavior = eAutoConnectBehaviorAbove;
+            }
+        }
+        ///case c) connect created as output of the selected node
+        else {
+            behavior = eAutoConnectBehaviorBelow;
+        }
+    }
+
+
+    // If behaviour is 1 , just check that we can effectively connect the node to avoid moving them for nothing
+    // otherwise fail
+    if (behavior == eAutoConnectBehaviorAbove) {
+        const std::vector<NodeWPtr > & inputs = selected->getInputs();
+        bool oneInputEmpty = false;
+        for (std::size_t i = 0; i < inputs.size(); ++i) {
+            if ( !inputs[i].lock() ) {
+                oneInputEmpty = true;
+                break;
+            }
+        }
+        if (!oneInputEmpty) {
+            return false;
+        }
+    }
+
+    Point selectedNodeSize, selectedNodePos;
+    selected->getSize(&selectedNodeSize.x, &selectedNodeSize.y);
+    selected->getPosition(&selectedNodePos.x, &selectedNodePos.y);
+    Point createdNodeSize, createdNodePos;
+    getSize(&createdNodeSize.x, &createdNodeSize.y);
+    getPosition(&createdNodePos.x, &createdNodePos.y);
+
+    Point selectedNodeMiddlePos;
+    selectedNodeMiddlePos.x = selectedNodePos.x + selectedNodeSize.x / 2.;
+    selectedNodeMiddlePos.y = selectedNodePos.y + selectedNodeSize.y / 2.;
+
+    RectD selectedNodeRect( selectedNodePos.x, selectedNodePos.y, selectedNodePos.x + selectedNodeSize.x, selectedNodePos.y + selectedNodeSize.y);
+
+    Point position;
+    if (behavior == eAutoConnectBehaviorAbove) {
+        ///pop it above the selected node
+
+        ///If this is the first connected input, insert it in a "linear" way so the tree remains vertical
+        int nbConnectedInput = 0;
+        const std::vector<NodeWPtr > & inputs = selected->getInputs();
+        for (std::size_t i = 0; i < inputs.size(); ++i) {
+            if ( inputs[i].lock() ) {
+                ++nbConnectedInput;
+            }
+        }
+
+        // Connect it to the first input
+
+
+        if (nbConnectedInput == 0) {
+
+            position.x = selectedNodeMiddlePos.x - createdNodeSize.x / 2.;
+            position.y = selectedNodeMiddlePos.y - selectedNodeSize.y / 2. - createdNodeSize.x / 2. - createdNodeSize.y;
+
+            RectD createdNodeRect( position.x, position.y, position.x + createdNodeSize.x, position.y + createdNodeSize.y);
+
+            // Now that we have the position of the node, move the inputs of the selected node to make some space for this node
+            for (std::size_t i = 0; i < inputs.size(); ++i) {
+                NodePtr input = inputs[i].lock();
+                if (input) {
+                    input->moveAbovePositionRecursively(createdNodeRect);
+                }
+            }
+
+            int selectedInput = selected->getPreferredInputForConnection();
+            if (selectedInput != -1) {
+                selected->swapInput(shared_from_this(), selectedInput);
+            }
+        } else {
+
+            Point selectedCenter;
+            selectedCenter.x = (selectedNodeRect.x1 + selectedNodeRect.x2) / 2.;
+            selectedCenter.y = (selectedNodeRect.y1 + selectedNodeRect.y2) / 2.;
+
+            position.x = selectedCenter.x + nbConnectedInput * 150 - createdNodeSize.x / 2.;
+            position.y = selectedCenter.y - selectedNodeSize.y / 2. - createdNodeSize.x / 2. - createdNodeSize.y;
+
+
+            int index = selected->getPreferredInputForConnection();
+            if (index != -1) {
+                selected->swapInput(shared_from_this(), index);
+            }
+            //} // if (isSelectedViewer) {*/
+        } // if (nbConnectedInput == 0) {
+    } else if (behavior == eAutoConnectBehaviorBelow) {
+
+        // Pop it below the selected node
+
+        OutputNodesMap outputs;
+        selected->getOutputs(outputs);
+        if ( !isOutputNode() || outputs.empty() ) {
+
+            ///actually move the created node where the selected node is
+            position.x = selectedNodeMiddlePos.x - createdNodeSize.x / 2.;
+            position.y = selectedNodeMiddlePos.y + selectedNodeSize.y / 2. + selectedNodeSize.y / 2.;
+
+            RectD createdNodeRect( position.x, position.y, position.x + createdNodeSize.x, position.y + createdNodeSize.y);
+
+            ///and move the selected node below recusively
+            for (OutputNodesMap::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+                it->first->moveBelowPositionRecursively(createdNodeRect);
+            }
+
+            ///Connect the created node to the selected node
+            ///finally we connect the created node to the selected node
+            int createdInput = getPreferredInputForConnection();
+            if (createdInput != -1) {
+                ignore_result( connectInput(selected, createdInput) );
+            }
+
+            if ( !isOutputNode() ) {
+                ///we find all the nodes that were previously connected to the selected node,
+                ///and connect them to the created node instead.
+                OutputNodesMap outputsConnectedToSelectedNode;
+                selected->getOutputs(outputsConnectedToSelectedNode);
+
+                for (OutputNodesMap::iterator it = outputsConnectedToSelectedNode.begin(); it != outputsConnectedToSelectedNode.end(); ++it) {
+                    const NodePtr &output = it->first;
+                    for (std::list<int>::iterator it2 = it->second.begin(); it2 !=it->second.end(); ++it2) {
+                        output->swapInput(shared_from_this(), *it2);
+                    }
+                }
+
+
+            }
+        } else {
+            ///the created node is an output node and the selected node already has several outputs, create it aside
+            position.x = selectedNodeMiddlePos.x + (int)outputs.size() * 150 - createdNodeSize.x / 2.;
+            position.y = selectedNodeMiddlePos.y + selectedNodeSize.y / 2. + selectedNodeSize.y / 2.;
+
+            //Don't pop a dot, it will most likely annoy the user, just fallback on behavior 0
+            
+            int index = getPreferredInputForConnection();
+            if (index != -1) {
+                swapInput(selected, index);
+            }
+        }
+    }
+    
+    setPosition(position.x, position.y);
+    return true;
+
+} // autoConnect
 
 NATRON_NAMESPACE_EXIT

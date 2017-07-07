@@ -1424,11 +1424,33 @@ Node::getPosition(double *x,
 }
 
 void
+Node::movePosition(double dx, double dy)
+{
+    double x,y;
+    getPosition(&x,&y);
+    setPosition(x + dx, y + dy);
+}
+
+void
 Node::onNodeUIPositionChanged(double x, double y)
 {
     QMutexLocker k(&_imp->nodeUIDataMutex);
     _imp->nodePositionCoords[0] = x;
     _imp->nodePositionCoords[1] = y;
+}
+
+RectD
+Node::getNodeBoundingRect() const
+{
+    double x,y,w,h;
+    getPosition(&x,&y);
+    getSize(&w,&h);
+    RectD ret;
+    ret.x1 = x;
+    ret.y1 = y;
+    ret.x2 = x + w;
+    ret.y2 = y + h;
+    return ret;
 }
 
 void

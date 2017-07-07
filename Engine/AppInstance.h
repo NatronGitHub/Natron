@@ -85,6 +85,12 @@ public:
     ~FlagIncrementer();
 };
 
+class CreateNodeStackItem;
+typedef boost::shared_ptr<CreateNodeStackItem> CreateNodeStackItemPtr;
+typedef boost::weak_ptr<CreateNodeStackItem> CreateNodeStackItemWPtr;
+typedef std::list<CreateNodeStackItemPtr> CreateNodeStackItemPtrList;
+
+
 
 class AppInstance
     : public QObject
@@ -324,6 +330,8 @@ public:
 
     bool isDuringPythonPyPlugCreation() const;
 
+    bool isDuringPyPlugCreation() const;
+
     virtual bool isDraftRenderEnabled() const { return false; }
 
     virtual void setDraftRenderEnabled(bool /*b*/) {}
@@ -436,6 +444,10 @@ protected:
 
     void setMainWindowPointer(SerializableWindow* window);
 
+    virtual void onNodeAboutToBeCreated(const NodePtr& node, const CreateNodeArgsPtr& args);
+
+    virtual void onNodeCreated(const NodePtr& node, const CreateNodeArgsPtr& args);
+
 private:
 
 
@@ -447,9 +459,24 @@ private:
 
     NodePtr createNodeFromPyPlug(const PluginPtr& plugin, const CreateNodeArgsPtr& args);
 
+    friend class AddCreateNode_RAII;
     boost::scoped_ptr<AppInstancePrivate> _imp;
 };
 
+class AddCreateNode_RAII
+{
+    AppInstancePrivate* _imp;
+    CreateNodeStackItemPtr _item;
+
+public:
+
+
+    AddCreateNode_RAII(const AppInstancePtr& app,
+                       const NodePtr& node,
+                       const CreateNodeArgsPtr& args);
+
+    ~AddCreateNode_RAII();
+};
 
 NATRON_NAMESPACE_EXIT
 

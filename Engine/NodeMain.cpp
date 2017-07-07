@@ -95,6 +95,11 @@ Node::load(const CreateNodeArgsPtr& args)
     // Cannot load twice
     assert(!_imp->effect);
 
+    NodePtr thisShared = shared_from_this();
+
+    // Flag that we are creating a node
+    boost::scoped_ptr<AddCreateNode_RAII> creatingNode_raii(new AddCreateNode_RAII(getApp(), thisShared, args));
+
     // Should this node be persistent
     _imp->isPersistent = !args->getPropertyUnsafe<bool>(kCreateNodeArgsPropVolatile);
 
@@ -106,8 +111,6 @@ Node::load(const CreateNodeArgsPtr& args)
     if (!group) {
         throw std::logic_error("Node::load no container group!");
     }
-
-    NodePtr thisShared = shared_from_this();
 
     // Add the node to the group before initializing anything else
     group->addNode(thisShared);

@@ -146,10 +146,6 @@ FlagIncrementer::~FlagIncrementer()
 
 
 
-class CreateNodeStackItem;
-typedef boost::shared_ptr<CreateNodeStackItem> CreateNodeStackItemPtr;
-typedef boost::weak_ptr<CreateNodeStackItem> CreateNodeStackItemWPtr;
-typedef std::list<CreateNodeStackItemPtr> CreateNodeStackItemPtrList;
 
 class CreateNodeStackItem
 {
@@ -183,6 +179,16 @@ public:
         return false;
     }
 
+    bool isPyPlug() const
+    {
+        std::string pyPlugID = args->getPropertyUnsafe<std::string>(kCreateNodeArgsPropPyPlugID);
+        if (pyPlugID.empty()) {
+            return false;
+        }
+        return true;
+    }
+
+
     bool isPythonPyPlug() const
     {
         std::string pyPlugID = args->getPropertyUnsafe<std::string>(kCreateNodeArgsPropPyPlugID);
@@ -208,6 +214,18 @@ public:
         CreateNodeStackItemPtr p = parent.lock();
         if (p) {
             return p->isPythonPyPlug();
+        }
+        return false;
+    }
+
+    bool isDuringPyPlugCreationRecursive() const
+    {
+        if (isPyPlug()) {
+            return true;
+        }
+        CreateNodeStackItemPtr p = parent.lock();
+        if (p) {
+            return p->isPyPlug();
         }
         return false;
     }
@@ -307,6 +325,15 @@ AppInstance::isDuringPythonPyPlugCreation() const
         return false;
     }
     return _imp->createNodeStack.recursionStack.back()->isPythonPyPlugRecursive();
+}
+
+bool
+AppInstance::isDuringPyPlugCreation() const
+{
+    if (_imp->createNodeStack.recursionStack.empty()) {
+        return false;
+    }
+    return _imp->createNodeStack.recursionStack.back()->isDuringPyPlugCreationRecursive();
 }
 
 void
@@ -713,65 +740,59 @@ AppInstance::loadPythonScript(const QFileInfo& file)
     return loadPythonScriptAndReportToScriptEditor(content);
 }
 
-class AddCreateNode_RAII
+
+
+AddCreateNode_RAII::AddCreateNode_RAII(const AppInstancePtr& app,
+                                       const NodePtr& node,
+                                       const CreateNodeArgsPtr& args)
+: _imp(app->_imp.get())
+, _item()
 {
-    AppInstancePrivate* _imp;
-    CreateNodeStackItemPtr _item;
+    _item.reset(new CreateNodeStackItem);
+    _item->args = args;
+    _item->node = node;
 
-public:
-
-
-    AddCreateNode_RAII(AppInstancePrivate* imp,
-                       const NodePtr& node,
-                       const CreateNodeArgsPtr& args)
-        : _imp(imp)
-        , _item()
-    {
-        _item.reset(new CreateNodeStackItem);
-        _item->args = args;
-        _item->node = node;
-
-        if (!_imp->createNodeStack.recursionStack.empty()) {
-            // There is a parent node being created
-            const CreateNodeStackItemPtr& parent = _imp->createNodeStack.recursionStack.back();
-            parent->children.push_back(_item);
-            _item->parent  = parent;
-        }
-
-        if (!_imp->createNodeStack.root) {
-            _imp->createNodeStack.root = _item;
-        }
-
-
-        // Check recursively if we should create the node UI or not
-        bool argsNoNodeGui = args->getPropertyUnsafe<bool>(kCreateNodeArgsPropNoNodeGUI);
-        CreateNodeStackItemPtr parent = _item->parent.lock();
-        if (!argsNoNodeGui && parent) {
-            argsNoNodeGui |= parent->isGuiDisabledRecursive();
-            if (argsNoNodeGui) {
-                args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
-            }
-        }
-
-        _imp->createNodeStack.recursionStack.push_back(_item);
-
+    if (!_imp->createNodeStack.recursionStack.empty()) {
+        // There is a parent node being created
+        const CreateNodeStackItemPtr& parent = _imp->createNodeStack.recursionStack.back();
+        parent->children.push_back(_item);
+        _item->parent  = parent;
     }
 
-    virtual ~AddCreateNode_RAII()
-    {
-        CreateNodeStackItemPtrList::iterator found = std::find(_imp->createNodeStack.recursionStack.begin(), _imp->createNodeStack.recursionStack.end(), _item);
-
-        if ( found != _imp->createNodeStack.recursionStack.end() ) {
-            _imp->createNodeStack.recursionStack.erase(found);
-        }
-
-
-        if (_item == _imp->createNodeStack.root) {
-            _imp->createNodeStack.root.reset();
-        }
-        
+    if (!_imp->createNodeStack.root) {
+        _imp->createNodeStack.root = _item;
     }
-};
+
+
+    // Check recursively if we should create the node UI or not
+    bool argsNoNodeGui = args->getPropertyUnsafe<bool>(kCreateNodeArgsPropNoNodeGUI);
+    CreateNodeStackItemPtr parent = _item->parent.lock();
+    if (!argsNoNodeGui && parent) {
+        argsNoNodeGui |= parent->isGuiDisabledRecursive();
+        if (argsNoNodeGui) {
+            args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+        }
+    }
+
+    _imp->createNodeStack.recursionStack.push_back(_item);
+
+}
+
+AddCreateNode_RAII::~AddCreateNode_RAII()
+{
+    CreateNodeStackItemPtrList::iterator found = std::find(_imp->createNodeStack.recursionStack.begin(), _imp->createNodeStack.recursionStack.end(), _item);
+
+    if ( found != _imp->createNodeStack.recursionStack.end() ) {
+        _imp->createNodeStack.recursionStack.erase(found);
+    }
+
+
+    if (_item == _imp->createNodeStack.root) {
+        _imp->createNodeStack.root.reset();
+    }
+
+}
+
 
 NodePtr
 AppInstance::createNodeFromPyPlug(const PluginPtr& plugin, const CreateNodeArgsPtr& args)
@@ -854,7 +875,7 @@ AppInstance::createNodeFromPyPlug(const PluginPtr& plugin, const CreateNodeArgsP
 
             boost::scoped_ptr<AddCreateNode_RAII> creatingNode_raii;
             if (containerNode) {
-                creatingNode_raii.reset(new AddCreateNode_RAII(_imp.get(), containerNode, groupArgs));
+                creatingNode_raii.reset(new AddCreateNode_RAII(shared_from_this(), containerNode, groupArgs));
             }
             std::string containerFullySpecifiedName;
             if (containerNode) {
@@ -994,6 +1015,18 @@ AppInstance::openFileDialogIfNeeded(const CreateNodeArgsPtr& args)
     }
 }
 
+void
+AppInstance::onNodeAboutToBeCreated(const NodePtr& /*node*/, const CreateNodeArgsPtr& /*args*/)
+{
+
+}
+
+void
+AppInstance::onNodeCreated(const NodePtr& /*node*/, const CreateNodeArgsPtr& /*args*/)
+{
+    
+}
+
 NodePtr
 AppInstance::createNodeInternal(const CreateNodeArgsPtr& args)
 {
@@ -1110,16 +1143,14 @@ AppInstance::createNodeInternal(const CreateNodeArgsPtr& args)
     }
     assert(argsGroup);
 
-    node = Node::create(shared_from_this(), argsGroup, plugin);
+    AppInstancePtr thisShared = shared_from_this();
 
-
-    // Flag that we are creating a node
-    AddCreateNode_RAII creatingNode_raii(_imp.get(), node, args);
+    node = Node::create(thisShared, argsGroup, plugin);
 
     {
 
         // If this is a stereo plug-in, check that the project has been set for multi-view
-        if (!isSilentCreation) {
+        if (!isSilentCreation && !isBackground()) {
             std::vector<std::string> grouping = plugin->getPropertyNUnsafe<std::string>(kNatronPluginPropGrouping);
             if (!grouping.empty() && grouping[0] == PLUGIN_GROUP_MULTIVIEW) {
                 int nbViews = getProject()->getProjectViewsCount();
@@ -1139,7 +1170,9 @@ AppInstance::createNodeInternal(const CreateNodeArgsPtr& args)
     assert(node);
     // Call load: this will setup the node from the plug-in and its knobs. It also read from the serialization object if any
     try {
+        onNodeAboutToBeCreated(node, args);
         node->load(args);
+        onNodeCreated(node, args);
     } catch (const std::exception & e) {
         if (argsGroup) {
             argsGroup->removeNode(node.get());

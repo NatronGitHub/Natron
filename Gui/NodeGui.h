@@ -272,21 +272,8 @@ public:
     boost::shared_ptr<QUndoStack> getUndoStack() const;
 
     void discardGraphPointer();
-    /**
-     * @brief Given the rectangle r, move the node down so it doesn't belong
-     * to this rectangle and call the same function with the new bounding box of this node
-     * recursively on its outputs.
-     **/
-    void moveBelowPositionRecursively(const QRectF & r);
 
-    /**
-     * @brief Given the rectangle r, move the node up so it doesn't belong
-     * to this rectangle and call the same function with the new bounding box of this node
-     * recursively on its inputs.
-     **/
-    void moveAbovePositionRecursively(const QRectF & r);
-
-    ///same as setScale() but also scales the arrows
+///same as setScale() but also scales the arrows
     void setScale_natron(double scale);
 
     void removeHighlightOnAllEdges();

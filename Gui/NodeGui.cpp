@@ -2207,45 +2207,6 @@ NodeGui::refreshRenderingIndicator()
     }
 }
 
-void
-NodeGui::moveBelowPositionRecursively(const QRectF & r)
-{
-    QRectF sceneRect = mapToScene( boundingRect() ).boundingRect();
-
-    if ( r.intersects(sceneRect) ) {
-        changePosition(0, r.height() + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
-        OutputNodesMap outputs;
-        getNode()->getOutputs(outputs);
-        for (OutputNodesMap::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-            const NodePtr& output = it->first;
-
-            NodeGuiIPtr outputGuiI = output->getNodeGui();
-            if (!outputGuiI) {
-                continue;
-            }
-            NodeGui* gui = dynamic_cast<NodeGui*>( outputGuiI.get() );
-            assert(gui);
-            sceneRect = mapToScene( boundingRect() ).boundingRect();
-            gui->moveBelowPositionRecursively(sceneRect);
-        }
-    }
-}
-
-void
-NodeGui::moveAbovePositionRecursively(const QRectF & r)
-{
-    QRectF sceneRect = mapToScene( boundingRect() ).boundingRect();
-
-    if ( r.intersects(sceneRect) ) {
-        changePosition(0, -r.height() - NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
-        for (U32 i = 0; i < _inputEdges.size(); ++i) {
-            if ( _inputEdges[i]->hasSource() ) {
-                sceneRect = mapToScene( boundingRect() ).boundingRect();
-                _inputEdges[i]->getSource()->moveAbovePositionRecursively(sceneRect);
-            }
-        }
-    }
-}
 
 void
 NodeGui::centerGraphOnIt()

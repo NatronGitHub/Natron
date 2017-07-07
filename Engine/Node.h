@@ -550,6 +550,32 @@ public:
      **/
     bool swapInput(const NodePtr& input, int inputNumber);
 
+
+    /**
+     * @brief Tries to automatically connect the given node n according to the
+     * current selection. If there are no selected nodes or multiple selected nodes
+     * this method should not be called.
+     * @returns True if auto-connecting worked, false otherwise
+     **/
+    bool autoConnect(const NodePtr& selected);
+
+    /**
+     * @brief Given the rectangle r, move the node down so it doesn't belong
+     * to this rectangle and call the same function with the new bounding box of this node
+     * recursively on its outputs.
+     **/
+    void moveBelowPositionRecursively(const RectD & r);
+
+    /**
+     * @brief Given the rectangle r, move the node up so it doesn't belong
+     * to this rectangle and call the same function with the new bounding box of this node
+     * recursively on its inputs.
+     **/
+    void moveAbovePositionRecursively(const RectD & r);
+    
+
+
+
     void setNodeGuiPointer(const NodeGuiIPtr& gui);
 
     NodeGuiIPtr getNodeGui() const;
@@ -576,11 +602,14 @@ public:
      **/
     void setPosition(double x, double y);
     void getPosition(double *x, double *y) const;
+    void movePosition(double dx, double dy);
     void onNodeUIPositionChanged(double x, double y);
 
     void setSize(double w, double h);
     void getSize(double* w, double* h) const;
     void onNodeUISizeChanged(double x, double y);
+
+    RectD getNodeBoundingRect() const;
 
     /**
      * @brief Get the colour of the node as it appears on the nodegraph.

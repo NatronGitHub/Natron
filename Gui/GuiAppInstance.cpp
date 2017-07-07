@@ -1292,6 +1292,24 @@ GuiAppInstance::getViewportsProjection(std::map<std::string,SERIALIZATION_NAMESP
     }
 }
 
+void
+GuiAppInstance::onNodeAboutToBeCreated(const NodePtr& node, const CreateNodeArgsPtr& args)
+{
+    NodeGraph* nodegraph = dynamic_cast<NodeGraph*>(node->getGroup()->getNodeGraph());
+    if (nodegraph) {
+        nodegraph->onNodeAboutToBeCreated(node, args);
+    }
+}
+
+void
+GuiAppInstance::onNodeCreated(const NodePtr& node, const CreateNodeArgsPtr& args)
+{
+    NodeGraph* nodegraph = dynamic_cast<NodeGraph*>(node->getGroup()->getNodeGraph());
+    if (nodegraph) {
+        nodegraph->onNodeCreated(node, args);
+    }
+}
+
 NATRON_NAMESPACE_EXIT
 
 NATRON_NAMESPACE_USING

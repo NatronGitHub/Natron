@@ -82,6 +82,10 @@ public:
 
     virtual void createNodeGui(const NodePtr& node, const CreateNodeArgs& args) OVERRIDE FINAL;
 
+    void onNodeAboutToBeCreated(const NodePtr& node, const CreateNodeArgsPtr& args) ;
+
+    void onNodeCreated(const NodePtr& node, const CreateNodeArgsPtr& args);
+
     void selectNode(const NodeGuiPtr & n, bool addToSelection);
 
     void deselectNode(const NodeGuiPtr& n);
@@ -146,14 +150,6 @@ public:
     void setLastSelectedViewer(ViewerTab* tab);
 
     ViewerTab* getLastSelectedViewer() const;
-
-    /**
-     * @brief Tries to automatically connect the given node n according to the 
-     * current selection. If there are no selected nodes or multiple selected nodes
-     * this method should not be called. 
-     * @returns True if auto-connecting worked, false otherwise
-     **/
-    bool doAutoConnectHeuristic(const NodeGuiPtr &n, const NodeGuiPtr& selected);
 
     void moveNodeToCenterOfVisiblePortion(const NodeGuiPtr &n);
 

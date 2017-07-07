@@ -187,6 +187,7 @@ public:
     Edge* _hintOutputEdge;
     NodeGuiWPtr _backdropResized; //< the backdrop being resized
     NodesGuiWList _selection;
+    NodesGuiWList _selectionBeforeNodeCreated;
 
     //To avoid calling unsetCursor too much
     bool cursorSet;

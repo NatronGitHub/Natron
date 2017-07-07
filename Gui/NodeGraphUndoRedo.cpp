@@ -1787,17 +1787,15 @@ InlineGroupCommand::redo()
         const double ySpaceNeeded = it->movedNodesBbox.y2 - it->movedNodesBbox.y1 + TO_DPIX(100);
 
         //  Move recursively the outputs of the group nodes so that it does not overlap the inlining of the group
-        const QRectF rectToClear(it->movedNodesBbox.x1, it->movedNodesBbox.y1, it->movedNodesBbox.x2 - it->movedNodesBbox.x1, ySpaceNeeded - ySpaceAvailable);
+        const RectD rectToClear(it->movedNodesBbox.x1, it->movedNodesBbox.y1, it->movedNodesBbox.x2, it->movedNodesBbox.y1 + ySpaceNeeded - ySpaceAvailable);
 
         for (std::list<InlinedGroup::GroupNodeOutput>::const_iterator it2 = it->groupOutputs.begin(); it2 != it->groupOutputs.end(); ++it2) {
             NodePtr groupOutput = it2->output.lock();
             if (!groupOutput) {
                 continue;
             }
-            NodeGuiPtr groupOutputGui = toNodeGui(groupOutput->getNodeGui());
-            if (groupOutputGui) {
-                groupOutputGui->moveBelowPositionRecursively(rectToClear);
-            }
+            groupOutput->moveBelowPositionRecursively(rectToClear);
+
 
         }
 
