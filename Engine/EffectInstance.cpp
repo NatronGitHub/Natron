@@ -4719,6 +4719,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         mustCallOnFileNameParameterChanged = true;
     }
 
+
     bool ret = false;
 
     // assert(!(view.isAll() || view.isCurrent())); // not yet implemented
@@ -4726,7 +4727,9 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
     bool wasFormatKnobCaught = node->handleFormatKnob(k);
     KnobHelper* kh = dynamic_cast<KnobHelper*>(k);
     assert(kh);
-    if (kh && kh->isDeclaredByPlugin() && !wasFormatKnobCaught) {
+    
+    // While creating a PyPlug, never handle changes, fixes https://github.com/MrKepzie/Natron/issues/1637
+    if (kh && kh->isDeclaredByPlugin() && !wasFormatKnobCaught && !getApp()->isCreatingPythonGroup()) {
         ////We set the thread storage render args so that if the instance changed action
         ////tries to call getImage it can render with good parameters.
         boost::shared_ptr<ParallelRenderArgsSetter> setter;
