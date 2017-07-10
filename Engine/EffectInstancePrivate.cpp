@@ -573,6 +573,11 @@ EffectInstance::Implementation::renderHandlerPlugin(const RectToRender & rectToR
         }
         ActionRetCodeEnum stat = _publicInterface->render_public(actionArgs);
 
+        // Ensure that the plug-in return status is eActionStatusAborted if the render is aborted and not failed.
+        if (isFailureRetCode(stat) && stat != eActionStatusAborted) {
+            stat = _publicInterface->isRenderAborted() ? eActionStatusAborted : stat;
+        }
+
         if (args.backendType == eRenderBackendTypeOpenGL ||
             args.backendType == eRenderBackendTypeOSMesa) {
             if (args.glContext && args.glContext->isGPUContext()) {

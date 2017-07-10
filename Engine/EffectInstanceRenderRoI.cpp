@@ -1636,7 +1636,7 @@ EffectInstance::launchRenderInternal(const TreeRenderExecutionDataPtr& requestPa
         if (requestData->getCachePolicy() != eCacheAccessModeNone) {
             finishProducedPlanesTilesStatesMap(cachedImagePlanes, true /*aborted*/);
         }
-        return isFailureRetCode(renderRetCode) ? renderRetCode : eActionStatusAborted;
+        return renderRetCode;
     }
 
     // If using GPU and out of memory retry on CPU if possible
