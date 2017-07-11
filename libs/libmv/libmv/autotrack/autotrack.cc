@@ -90,27 +90,67 @@ void MarkerToArrays(const Marker& marker, double* x, double* y) {
   y[4] = marker.center.y() - origin(1);
 }
 
-FrameAccessor::Key GetImageForMarker(const Marker& marker,
-                                     FrameAccessor* frame_accessor,
-                                     FrameAccessor::GetImageTypeEnum sourceType,
-                                     FloatImage** image) {
-  // TODO(sergey): Currently we pass float region to the accessor,
-  // but we don't want the accessor to decide the rounding, so we
-  // do rounding here.
-  // Ideally we would need to pass IntRegion to the frame accessor.
-  Region region = marker.search_region.Rounded();
-  libmv::scoped_ptr<FrameAccessor::Transform> transform = NULL;
-  if (marker.disabled_channels != 0 && sourceType == FrameAccessor::eGetImageTypeSource) {
-    transform.reset(new DisableChannelsTransform(marker.disabled_channels));
-  }
-  return frame_accessor->GetImage(marker.clip,
-                                  marker.frame,
-                                  sourceType,
-                                  FrameAccessor::MONO,
-                                  0,  // No downscale for now.
-                                  &region,
-                                  transform.get(),
-                                  image);
+struct GetImageForMarkerArgs
+{
+    const Marker* marker;
+    FrameAccessor::GetImageTypeEnum sourceType;
+    FloatImage* image;
+    FrameAccessor::Key key;
+
+    GetImageForMarkerArgs()
+    : marker(0)
+    , sourceType(FrameAccessor::eGetImageTypeSource)
+    , image(0)
+    , key(0)
+    {
+
+    }
+};
+
+void GetImageForMarker(std::list<GetImageForMarkerArgs>& args, FrameAccessor* frame_accessor) {
+
+    if (args.empty()) {
+        return;
+    }
+    std::list<FrameAccessor::GetImageArgs> accessorArgs;
+    std::vector<Region> regions(args.size());
+
+    libmv::scoped_ptr<FrameAccessor::Transform> transform = NULL;
+
+    std::size_t i = 0;
+    for (std::list<GetImageForMarkerArgs>::const_iterator it = args.begin(); it != args.end(); ++it, ++i) {
+        // TODO(sergey): Currently we pass float region to the accessor,
+        // but we don't want the accessor to decide the rounding, so we
+        // do rounding here.
+        // Ideally we would need to pass IntRegion to the frame accessor.
+        regions[i] = it->marker->search_region.Rounded();
+
+        bool needsTransform = false;
+        if (!transform.get() && it->marker->disabled_channels != 0 && it->sourceType == FrameAccessor::eGetImageTypeSource) {
+            needsTransform = true;
+            transform.reset(new DisableChannelsTransform(it->marker->disabled_channels));
+        }
+
+        FrameAccessor::GetImageArgs access;
+        access.clip = it->marker->clip;
+        access.frame = it->marker->frame;
+        access.sourceType = it->sourceType;
+        access.input_mode = FrameAccessor::MONO;
+        access.downscale = 0; // No downscale for now.
+        access.region = &regions[i];
+        access.transform = needsTransform ? transform.get() : 0;
+        access.destination = 0;
+        access.destinationKey = 0;
+        accessorArgs.push_back(access);
+    }
+    frame_accessor->GetImage(accessorArgs);
+
+    assert(args.size() == accessorArgs.size());
+    std::list<GetImageForMarkerArgs>::iterator ito = args.begin();
+    for (std::list<FrameAccessor::GetImageArgs>::iterator it = accessorArgs.begin(); it != accessorArgs.end(); ++it, ++ito) {
+        ito->image = it->destination;
+        ito->key = it->destinationKey;
+    }
 }
 
 }  // namespace
@@ -148,35 +188,60 @@ bool AutoTrack::TrackMarker(Marker* tracked_marker,
 
   // TODO(keir): Technically this could take a smaller slice from the source
   // image instead of taking one the size of the search window.
-  FloatImage* reference_image;
-  FrameAccessor::Key reference_key = GetImageForMarker(reference_marker,
-                                                       frame_accessor_,
-                                                       FrameAccessor::eGetImageTypeSource,
-                                                       &reference_image);
+  std::list<GetImageForMarkerArgs> getImageArgs;
+  {
+      GetImageForMarkerArgs args;
+      args.marker = &reference_marker;
+      args.sourceType = FrameAccessor::eGetImageTypeSource;
+      getImageArgs.push_back(args);
+  }
+  {
+      GetImageForMarkerArgs args;
+      args.marker = tracked_marker;
+      args.sourceType = FrameAccessor::eGetImageTypeSource;
+      getImageArgs.push_back(args);
+  }
+  {
+      // If non-null, this is used as the pattern mask. It should match the size of
+      // image1, even though only values inside the image1 quad are examined. The
+      // values must be in the range 0.0 to 0.1.
+      GetImageForMarkerArgs args;
+      args.marker = &reference_marker;
+      args.sourceType = FrameAccessor::eGetImageTypeMask;
+      getImageArgs.push_back(args);
+  }
+
+  GetImageForMarker(getImageArgs, frame_accessor_);
+
+
+
+  FloatImage* reference_image = 0, *tracked_image = 0, *image1_mask = 0;
+  FrameAccessor::Key reference_key, tracked_key, mask_key;
+  assert(getImageArgs.size() == 3);
+  {
+      std::list<GetImageForMarkerArgs>::iterator it = getImageArgs.begin();
+      reference_image = it->image;
+      reference_key = it->key;
+      ++it;
+
+      tracked_image = it->image;
+      tracked_key = it->key;
+      ++it;
+
+      image1_mask = it->image;
+      mask_key = it->key;
+  }
+
   if (!reference_key) {
     LG << "Couldn't get frame for reference marker: " << reference_marker;
     return false;
   }
 
-  FloatImage* tracked_image;
-  FrameAccessor::Key tracked_key = GetImageForMarker(*tracked_marker,
-                                                     frame_accessor_,
-                                                     FrameAccessor::eGetImageTypeSource,
-                                                     &tracked_image);
   if (!tracked_key) {
     frame_accessor_->ReleaseImage(reference_key);
     LG << "Couldn't get frame for tracked marker: " << tracked_marker;
     return false;
   }
-
-  // If non-null, this is used as the pattern mask. It should match the size of
-  // image1, even though only values inside the image1 quad are examined. The
-  // values must be in the range 0.0 to 0.1.
-  FloatImage *image1_mask = 0;
-  FrameAccessor::Key mask_key = GetImageForMarker(reference_marker,
-                                                    frame_accessor_,
-                                                    FrameAccessor::eGetImageTypeMask,
-                                                    &image1_mask);
 
 
   // Store original position befoer tracking, so we can claculate offset later.

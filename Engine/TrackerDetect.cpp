@@ -93,7 +93,10 @@ void TrackerDetect::detectFeatures(const ImagePtr& image, const RectI& roi, cons
     bool enabledChannels[3] = {true,true,true};
 
     MvFloatImage libmvImage;
-    TrackerFrameAccessor::natronImageToLibMvFloatImage(enabledChannels, *image, roi, false /*dstFromAlpha*/, libmvImage);
+    ActionRetCodeEnum stat = TrackerFrameAccessor::natronImageToLibMvFloatImage(enabledChannels, *image, roi, false /*dstFromAlpha*/, libmvImage);
+    if (isFailureRetCode(stat)) {
+        return;
+    }
 
     libmv::DetectOptions options;
     natronDetectionArgsToLibMvOptions(args, &options);

@@ -38,6 +38,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/TimeLine.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/FrameViewRequest.h"
+#include "Engine/MultiThread.h"
 #include "Engine/Image.h"
 #include "Engine/TreeRender.h"
 #include "Engine/Node.h"
@@ -104,149 +105,220 @@ struct FrameAccessorCacheEntry
 
 typedef std::multimap<FrameAccessorCacheKey, FrameAccessorCacheEntry, CacheKey_compare_less > FrameAccessorCache;
 
-template <bool doR, bool doG, bool doB, int srcNComps, typename PIX, int maxValue>
-void
-natronImageToLibMvFloatImageForDepth(const Image& sourceImage,
-                                     const RectI& roi,
-                                     MvFloatImage& mvImg,
-                                     bool takeDstFromAlpha)
+class ConvertToLibMVImageProcessorBase : public ImageMultiThreadProcessorBase
+{
+protected:
+
+    Image::CPUData _source;
+    MvFloatImage* _destination;
+    RectI _destinationBounds;
+    bool _enabledChannels[3];
+    bool _takeDstFromAlpha;
+
+public:
+
+    ConvertToLibMVImageProcessorBase(const EffectInstancePtr& renderClone)
+    : ImageMultiThreadProcessorBase(renderClone)
+    {
+
+    }
+
+    virtual ~ConvertToLibMVImageProcessorBase()
+    {
+    }
+
+    void setValues(const Image::CPUData& source,
+                   MvFloatImage* destination,
+                   const RectI& destinationBounds,
+                   bool enabledChannels[3],
+                   bool takeDstFromAlpha)
+    {
+        _source = source;
+        _destination = destination;
+        _destinationBounds = destinationBounds;
+        for (int i = 0; i < 3; ++i) {
+            _enabledChannels[i] = enabledChannels[i];
+        }
+        _takeDstFromAlpha = takeDstFromAlpha;
+    }
+};
+
+template <int srcNComps, typename PIX, int maxValue>
+class ConvertToLibMVImageProcessor : public ConvertToLibMVImageProcessorBase
 {
 
-    Image::CPUData source;
-    sourceImage.getCPUData(&source);
-    assert(sourceImage.getStorageMode() == eStorageModeRAM);
+public:
 
-    // LibMV images have their origin in the top left hand corner
-    float* dst_pixels = mvImg.Data();
-    assert(dst_pixels);
+    ConvertToLibMVImageProcessor(const EffectInstancePtr& renderClone)
+    : ConvertToLibMVImageProcessorBase(renderClone)
+    {
+
+    }
+
+    virtual ~ConvertToLibMVImageProcessor()
+    {
+    }
 
 
-    // It's important to rescale the result appropriately so that e.g. if only
-    // blue is selected, it's not zeroed out.
-    const float scale = (doR ? 0.2126f : 0.0f) + (doG ? 0.7152f : 0.0f) + (doB ? 0.0722f : 0.0f);
 
-    for ( int y = roi.y1; y < roi.y2; ++y) {
-        
-        for (int x = roi.x1; x < roi.x2; ++x) {
+private:
 
-            int srcPixelsStride;
-            const PIX* src_pixels[4];
-            Image::getChannelPointers<PIX, srcNComps>((const PIX**)source.ptrs, x, y, source.bounds, (PIX**)src_pixels, &srcPixelsStride);
-
-            if (!src_pixels[0]) {
-                *dst_pixels = 0;
-            } else {
-                if (srcNComps == 1) {
-                    *dst_pixels = Image::convertPixelDepth<PIX, float>(*src_pixels[0]);
-                } else if (srcNComps == 4 && takeDstFromAlpha) {
-                    *dst_pixels = Image::convertPixelDepth<PIX, float>(*src_pixels[3]);
+    virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow) OVERRIDE FINAL
+    {
+        if (_enabledChannels[0]) {
+            if (_enabledChannels[1]) {
+                if (_enabledChannels[2]) {
+                    return processInternal<true, true, true>(renderWindow);
                 } else {
-                    float tmpPix[3] = {0.f, 0.f, 0.f};
-                    for (int c = 0; c < srcNComps; ++c) {
-                        tmpPix[c] = doR ? Image::convertPixelDepth<PIX, float>(*src_pixels[c]) : 0.f;
-                    }
-                    /// Apply luminance conversion while we copy the image
-                    /// This code is taken from DisableChannelsTransform::run in libmv/autotrack/autotrack.cc
-                    *dst_pixels = (0.2126f * tmpPix[0] + 0.7152f * tmpPix[1] + 0.0722f * tmpPix[2]) / scale;
+                    return processInternal<true, true, false>(renderWindow);
+                }
+            } else {
+                if (_enabledChannels[2]) {
+                    return processInternal<true, false, true>(renderWindow);
+                } else {
+                    return processInternal<true, false, false>(renderWindow);
                 }
             }
+        } else {
+            if (_enabledChannels[1]) {
+                if (_enabledChannels[2]) {
+                    return processInternal<false, true, true>(renderWindow);
+                } else {
+                    return processInternal<false, true, false>(renderWindow);
+                }
+            } else {
+                if (_enabledChannels[2]) {
+                    return processInternal<false, false, true>(renderWindow);
+                } else {
+                    return processInternal<false, false, false>(renderWindow);
+                }
+            }
+        }
+
+    }
+
+    template <bool doR, bool doG, bool doB>
+    ActionRetCodeEnum processInternal(const RectI& roi)
+    {
+
+        // LibMV images have their origin in the top left hand corner
+
+        float* dst_pixels = (float*)Image::pixelAtStatic(roi.x1, roi.y1, _destinationBounds, 1, sizeof(float), (unsigned char*)_destination->Data());
+        assert(dst_pixels);
+
+
+        // It's important to rescale the result appropriately so that e.g. if only
+        // blue is selected, it's not zeroed out.
+        const float scale = (doR ? 0.2126f : 0.0f) + (doG ? 0.7152f : 0.0f) + (doB ? 0.0722f : 0.0f);
+
+        for ( int y = roi.y1; y < roi.y2; ++y) {
+
+            for (int x = roi.x1; x < roi.x2; ++x) {
+
+                int srcPixelsStride;
+                const PIX* src_pixels[4];
+                Image::getChannelPointers<PIX, srcNComps>((const PIX**)_source.ptrs, x, y, _source.bounds, (PIX**)src_pixels, &srcPixelsStride);
+
+                if (!src_pixels[0]) {
+                    *dst_pixels = 0;
+                } else {
+                    if (srcNComps == 1) {
+                        *dst_pixels = Image::convertPixelDepth<PIX, float>(*src_pixels[0]);
+                    } else if (srcNComps == 4 && _takeDstFromAlpha) {
+                        *dst_pixels = Image::convertPixelDepth<PIX, float>(*src_pixels[3]);
+                    } else {
+                        float tmpPix[3] = {0.f, 0.f, 0.f};
+                        for (int c = 0; c < srcNComps; ++c) {
+                            tmpPix[c] = doR ? Image::convertPixelDepth<PIX, float>(*src_pixels[c]) : 0.f;
+                        }
+                        /// Apply luminance conversion while we copy the image
+                        /// This code is taken from DisableChannelsTransform::run in libmv/autotrack/autotrack.cc
+                        *dst_pixels = (0.2126f * tmpPix[0] + 0.7152f * tmpPix[1] + 0.0722f * tmpPix[2]) / scale;
+                    }
+                }
+
+                ++dst_pixels;
+                
+            } // for each pixels
             
+        } // for each scanline
+        return eActionStatusOK;
+    }
+};
 
-            ++dst_pixels;
+ActionRetCodeEnum
+natronImageToLibMvFloatImageForDepth(bool enabledChannels[3],
+                                     const Image& sourceImage,
+                                     const RectI& roi,
+                                     MvFloatImage& mvImg,
+                                     bool takeDstFromAlpha,
+                                     const boost::shared_ptr<ConvertToLibMVImageProcessorBase>& proc)
+{
+    Image::CPUData data;
+    sourceImage.getCPUData(&data);
 
-        } // for each pixels
+    proc->setValues(data, &mvImg, roi, enabledChannels, takeDstFromAlpha);
+    proc->setRenderWindow(roi);
 
-    } // for each scanline
+    return proc->launchThreadsBlocking();
+
 } // natronImageToLibMvFloatImageForDepth
 
-template <bool doR, bool doG, bool doB, int srcNComps>
-void
-natronImageToLibMvFloatImageForNComps(const Image& source,
-                                        const RectI& roi,
-                                        MvFloatImage& mvImg,
-                                      bool takeDstFromAlpha)
+template <int srcNComps>
+ActionRetCodeEnum
+natronImageToLibMvFloatImageForNComps(bool enabledChannels[3],
+                                      const Image& source,
+                                      const RectI& roi,
+                                      bool takeDstFromAlpha,
+                                      MvFloatImage& mvImg)
 {
+    EffectInstancePtr renderClone;
+    boost::shared_ptr<ConvertToLibMVImageProcessorBase> proc;
     switch (source.getBitDepth()) {
         case eImageBitDepthByte:
-            natronImageToLibMvFloatImageForDepth<doR, doG, doB, srcNComps, unsigned char, 255>(source, roi, mvImg, takeDstFromAlpha);
+            proc.reset(new ConvertToLibMVImageProcessor<srcNComps, unsigned char, 255>(renderClone));
             break;
         case eImageBitDepthShort:
-            natronImageToLibMvFloatImageForDepth<doR, doG, doB, srcNComps, unsigned short, 65535>(source, roi, mvImg, takeDstFromAlpha);
+            proc.reset(new ConvertToLibMVImageProcessor<srcNComps, unsigned short, 65535>(renderClone));
             break;
         case eImageBitDepthFloat:
-            natronImageToLibMvFloatImageForDepth<doR, doG, doB, srcNComps, float, 1>(source, roi, mvImg, takeDstFromAlpha);
-            break;
-
-        default:
-            assert(false);
-            break;
-    }
-}
-
-template <bool doR, bool doG, bool doB>
-void
-natronImageToLibMvFloatImageForChannels(const Image& source,
-                                        const RectI& roi,
-                                        MvFloatImage& mvImg,bool takeDstFromAlpha)
-{
-    switch (source.getComponentsCount()) {
-        case 1:
-            natronImageToLibMvFloatImageForNComps<doR, doG, doB, 1>(source,roi,mvImg, takeDstFromAlpha);
-            break;
-        case 2:
-            natronImageToLibMvFloatImageForNComps<doR, doG, doB, 2>(source,roi,mvImg, takeDstFromAlpha);
-            break;
-        case 3:
-            natronImageToLibMvFloatImageForNComps<doR, doG, doB, 3>(source,roi,mvImg, takeDstFromAlpha);
-            break;
-        case 4:
-            natronImageToLibMvFloatImageForNComps<doR, doG, doB, 4>(source,roi,mvImg, takeDstFromAlpha);
+            proc.reset(new ConvertToLibMVImageProcessor<srcNComps, float, 1>(renderClone));
             break;
         default:
-            break;
+            return eActionStatusFailed;
     }
+
+    return natronImageToLibMvFloatImageForDepth(enabledChannels, source, roi, mvImg, takeDstFromAlpha, proc);
+
 }
+
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
-void
+ActionRetCodeEnum
 TrackerFrameAccessor::natronImageToLibMvFloatImage(bool enabledChannels[3],
                                                    const Image& source,
                                                    const RectI& roi,
                                                    bool takeDstFromAlpha,
                                                    MvFloatImage& mvImg)
 {
-    if (enabledChannels[0]) {
-        if (enabledChannels[1]) {
-            if (enabledChannels[2]) {
-                natronImageToLibMvFloatImageForChannels<true, true, true>(source, roi, mvImg, takeDstFromAlpha);
-            } else {
-                natronImageToLibMvFloatImageForChannels<true, true, false>(source, roi, mvImg, takeDstFromAlpha);
-            }
-        } else {
-            if (enabledChannels[2]) {
-                natronImageToLibMvFloatImageForChannels<true, false, true>(source, roi, mvImg, takeDstFromAlpha);
-            } else {
-                natronImageToLibMvFloatImageForChannels<true, false, false>(source, roi, mvImg, takeDstFromAlpha);
-            }
-        }
-    } else {
-        if (enabledChannels[1]) {
-            if (enabledChannels[2]) {
-                natronImageToLibMvFloatImageForChannels<false, true, true>(source, roi, mvImg, takeDstFromAlpha);
-            } else {
-                natronImageToLibMvFloatImageForChannels<false, true, false>(source, roi, mvImg, takeDstFromAlpha);
-            }
-        } else {
-            if (enabledChannels[2]) {
-                natronImageToLibMvFloatImageForChannels<false, false, true>(source, roi, mvImg, takeDstFromAlpha);
-            } else {
-                natronImageToLibMvFloatImageForChannels<false, false, false>(source, roi, mvImg, takeDstFromAlpha);
-            }
-        }
+    assert(source.getStorageMode() == eStorageModeRAM);
+    switch (source.getComponentsCount()) {
+        case 1:
+            return natronImageToLibMvFloatImageForNComps<1>(enabledChannels, source, roi, takeDstFromAlpha, mvImg);
+        case 2:
+            return natronImageToLibMvFloatImageForNComps<2>(enabledChannels, source, roi, takeDstFromAlpha, mvImg);
+        case 3:
+            return natronImageToLibMvFloatImageForNComps<3>(enabledChannels, source, roi, takeDstFromAlpha, mvImg);
+        case 4:
+            return natronImageToLibMvFloatImageForNComps<4>(enabledChannels, source, roi, takeDstFromAlpha, mvImg);
+        default:
+            return eActionStatusFailed;
     }
 }
+
+
 
 
 struct TrackerFrameAccessorPrivate
@@ -323,191 +395,219 @@ TrackerFrameAccessor::convertLibMVRegionToRectI(const mv::Region& region,
     //roi->y2 = invertYCoordinate(region.min(1), formatHeight);
 }
 
-mv::FrameAccessor::Key
-TrackerFrameAccessor::GetImageInternal(GetImageTypeEnum sourceType,
-                                        int frame,
-                                        int downscale,               // Downscale by 2^downscale.
-                                        const mv::Region* region,        // Get full image if NULL.
-                                        mv::FloatImage** destination)
+struct ArgsWithRender
+{
+    mv::FrameAccessor::GetImageArgs* args;
+    RectI roi;
+    FrameAccessorCacheKey key;
+    TreeRenderPtr render;
+};
+
+void
+TrackerFrameAccessor::GetImageInternal(std::list<mv::FrameAccessor::GetImageArgs>& imageRequests)
 {
 
-    FrameAccessorCacheKey key;
-    key.frame = frame;
-    key.mipMapLevel = downscale;
-    key.mode = mv::FrameAccessor::MONO;
-    key.type = sourceType;
+    std::vector<ArgsWithRender> allRenders(imageRequests.size());
 
-    /*
-     Check if a frame exists in the cache with matching key and bounds enclosing the given region
-     */
-    RectI roi;
-    if (region) {
-        convertLibMVRegionToRectI(*region, _imp->formatHeight, &roi);
+    {
+        std::size_t i = 0;
+        for (std::list<mv::FrameAccessor::GetImageArgs>::iterator it = imageRequests.begin(); it != imageRequests.end(); ++it, ++i) {
+            mv::FrameAccessor::GetImageArgs& args = *it;
 
-        QMutexLocker k(&_imp->cacheMutex);
-        std::pair<FrameAccessorCache::iterator, FrameAccessorCache::iterator> range = _imp->cache.equal_range(key);
-        for (FrameAccessorCache::iterator it = range.first; it != range.second; ++it) {
-            if ( (roi.x1 >= it->second.bounds.x1) && (roi.x2 <= it->second.bounds.x2) &&
-                ( roi.y1 >= it->second.bounds.y1) && ( roi.y2 <= it->second.bounds.y2) ) {
+            allRenders[i].args = &args;
+
+
+            args.destination = 0;
+            args.destinationKey = 0;
+
+            // Since libmv only uses MONO images for now we have only optimized for this case, remove and handle properly
+            // other case(s) when they get integrated into libmv.
+            assert(args.input_mode == mv::FrameAccessor::MONO);
+
+
+            allRenders[i].key.frame = args.frame;
+            allRenders[i].key.mipMapLevel = args.downscale;
+            allRenders[i].key.mode = mv::FrameAccessor::MONO;
+            allRenders[i].key.type = args.sourceType;
+
+            /*
+             Check if a frame exists in the cache with matching key and bounds enclosing the given region
+             */
+
+            if (args.region) {
+                convertLibMVRegionToRectI(*args.region, _imp->formatHeight, &allRenders[i].roi);
+
+                QMutexLocker k(&_imp->cacheMutex);
+                std::pair<FrameAccessorCache::iterator, FrameAccessorCache::iterator> range = _imp->cache.equal_range(allRenders[i].key);
+                for (FrameAccessorCache::iterator it = range.first; it != range.second; ++it) {
+                    if ( (allRenders[i].roi.x1 >= it->second.bounds.x1) && (allRenders[i].roi.x2 <= it->second.bounds.x2) &&
+                        ( allRenders[i].roi.y1 >= it->second.bounds.y1) && ( allRenders[i].roi.y2 <= it->second.bounds.y2) ) {
 #ifdef TRACE_LIB_MV
-                qDebug() << QThread::currentThread() << "FrameAccessor::GetImage():" << "Found cached image at frame" << frame << "with RoI x1="
-                << region->min(0) << "y1=" << region->max(1) << "x2=" << region->max(0) << "y2=" << region->min(1);
+                        qDebug() << QThread::currentThread() << "FrameAccessor::GetImage():" << "Found cached image at frame" << frame << "with RoI x1="
+                        << region->min(0) << "y1=" << region->max(1) << "x2=" << region->max(0) << "y2=" << region->min(1);
 #endif
-                // LibMV is kinda dumb on this we must necessarily copy the data either via CopyFrom or the
-                // assignment constructor:
-                // EDIT: fixed libmv
-                *destination = it->second.image.get();
-                //destination->CopyFrom<float>(*it->second.image);
-                ++it->second.referenceCount;
+                        // LibMV is kinda dumb on this we must necessarily copy the data either via CopyFrom or the
+                        // assignment constructor:
+                        // EDIT: fixed libmv
+                        args.destination = it->second.image.get();
+                        //destination->CopyFrom<float>(*it->second.image);
+                        ++it->second.referenceCount;
 
-                return (mv::FrameAccessor::Key)it->second.image.get();
+                        args.destinationKey = (mv::FrameAccessor::Key)it->second.image.get();
+                        break;
+                    }
+                }
             }
+
+            NodePtr sourceNode;
+            switch (args.sourceType) {
+                case eGetImageTypeSource:
+                    sourceNode = _imp->sourceImageProvider;
+                    break;
+                case eGetImageTypeMask:
+                    sourceNode = _imp->maskImageProvider;
+                    break;
+            }
+
+            if (!sourceNode) {
+                continue;
+            }
+
+            // Not in accessor cache, call renderRoI
+            RenderScale scale;
+            scale.y = scale.x = Image::getScaleFromMipMapLevel( (unsigned int)args.downscale );
+
+
+            // Convert roi to canonical coordinates
+            RectD roiCanonical;
+            allRenders[i].roi.toCanonical_noClipping(0, 1., &roiCanonical);
+
+
+            TreeRender::CtorArgsPtr renderArgs(new TreeRender::CtorArgs);
+            {
+                renderArgs->treeRootEffect = sourceNode->getEffectInstance();
+                renderArgs->provider = renderArgs->treeRootEffect;
+                renderArgs->time = TimeValue(args.frame);
+                if (args.sourceType == eGetImageTypeMask) {
+                    renderArgs->plane = _imp->maskImagePlane;
+                }
+                renderArgs->mipMapLevel = args.downscale;            
+                renderArgs->canonicalRoI = roiCanonical;
+            }
+            
+            TreeRenderPtr render = TreeRender::create(renderArgs);
+            
+            ActionRetCodeEnum stat = renderArgs->treeRootEffect->launchRender(render);
+            if (!isFailureRetCode(stat)) {
+                allRenders[i].render = render;
+            }
+        } // for each request
+    } // i
+
+    // Wait for all renders
+    for (std::size_t i = 0; i < allRenders.size(); ++i) {
+
+        ArgsWithRender& args = allRenders[i];
+        if (!args.render) {
+            // no render: nothing to do
+            continue;
         }
-    }
 
-    NodePtr sourceNode;
-    switch (sourceType) {
-        case eGetImageTypeSource:
-            sourceNode = _imp->sourceImageProvider;
-            break;
-        case eGetImageTypeMask:
-            sourceNode = _imp->maskImageProvider;
-            break;
-    }
+        const RectI& roi = args.roi;
 
-    if (!sourceNode) {
-        return (mv::FrameAccessor::Key)0;
-    }
+        args.render->getOriginalTreeRoot()->waitForRenderFinished(args.render);
+        ActionRetCodeEnum stat = args.render->getStatus();
+        if (isFailureRetCode(stat)) {
+            continue;
+        } else {
 
-    // Not in accessor cache, call renderRoI
-    RenderScale scale;
-    scale.y = scale.x = Image::getScaleFromMipMapLevel( (unsigned int)downscale );
-
-
-    // Convert roi to canonical coordinates
-    RectD roiCanonical;
-    roi.toCanonical_noClipping(0, 1., &roiCanonical);
-
-
-    TreeRender::CtorArgsPtr args(new TreeRender::CtorArgs);
-    {
-        args->treeRootEffect = sourceNode->getEffectInstance();
-        args->provider = args->treeRootEffect;
-        args->time = TimeValue(frame);
-        args->view = ViewIdx(0);
-
-        if (sourceType == eGetImageTypeMask) {
-            args->plane = _imp->maskImagePlane;
+#ifdef TRACE_LIB_MV
+            qDebug() << QThread::currentThread() << "FrameAccessor::GetImage():" << "Failed to call renderRoI on input at frame" << args.args->frame << "with RoI x1="
+            << roi.x1 << "y1=" << roi.y1 << "x2=" << roi.x2 << "y2=" << roi.y2;
+#endif
         }
-        args->mipMapLevel = downscale;
-        args->proxyScale = RenderScale(1.);
 
-        args->canonicalRoI = roiCanonical;
-        args->draftMode = false;
-        args->playback = false;
-        args->byPassCache = false;
-    }
+        FrameViewRequestPtr outputRequest = args.render->getOutputRequest();
 
-    TreeRenderPtr render = TreeRender::create(args);
-
-    ActionRetCodeEnum stat = args->treeRootEffect->launchRender(render);
-    if (!isFailureRetCode(stat)) {
-        args->treeRootEffect->waitForRenderFinished(render);
-        stat = render->getStatus();
-    }
-
-    if (isFailureRetCode(stat)) {
-
+        ImagePtr sourceImage = outputRequest->getRequestedScaleImagePlane();
+        const RectI& sourceBounds = sourceImage->getBounds();
+        RectI intersectedRoI;
+        if ( !roi.intersect(sourceBounds, &intersectedRoI) ) {
 #ifdef TRACE_LIB_MV
-        qDebug() << QThread::currentThread() << "FrameAccessor::GetImage():" << "Failed to call renderRoI on input at frame" << frame << "with RoI x1="
-        << roi.x1 << "y1=" << roi.y1 << "x2=" << roi.x2 << "y2=" << roi.y2;
-#endif
-        return (mv::FrameAccessor::Key)0;
-    }
-    FrameViewRequestPtr outputRequest = render->getOutputRequest();
-
-    ImagePtr sourceImage = outputRequest->getRequestedScaleImagePlane();
-    const RectI& sourceBounds = sourceImage->getBounds();
-    RectI intersectedRoI;
-    if ( !roi.intersect(sourceBounds, &intersectedRoI) ) {
-#ifdef TRACE_LIB_MV
-        qDebug() << QThread::currentThread() << "FrameAccessor::GetImage():" << "RoI does not intersect the source image bounds (RoI x1="
-        << roi.x1 << "y1=" << roi.y1 << "x2=" << roi.x2 << "y2=" << roi.y2 << ")";
+            qDebug() << QThread::currentThread() << "FrameAccessor::GetImage():" << "RoI does not intersect the source image bounds (RoI x1="
+            << roi.x1 << "y1=" << roi.y1 << "x2=" << roi.x2 << "y2=" << roi.y2 << ")";
 #endif
 
-        return (mv::FrameAccessor::Key)0;
-    }
-
-#ifdef TRACE_LIB_MV
-    qDebug() << QThread::currentThread() << "FrameAccessor::GetImage():" << "renderRoi (frame" << frame << ") OK  (BOUNDS= x1="
-    << sourceBounds.x1 << "y1=" << sourceBounds.y1 << "x2=" << sourceBounds.x2 << "y2=" << sourceBounds.y2 << ") (ROI = " << roi.x1 << "y1=" << roi.y1 << "x2=" << roi.x2 << "y2=" << roi.y2 << ")";
-#endif
-
-    // Make sure the Natron image rendered is RGBA full rect and on CPU, we don't support other formats to convert to libmv
-    if (sourceImage->getStorageMode() != eStorageModeRAM) {
-        Image::InitStorageArgs initArgs;
-        initArgs.bounds = intersectedRoI;
-        initArgs.plane = sourceImage->getLayer();
-        initArgs.bufferFormat = eImageBufferLayoutRGBAPackedFullRect;
-        initArgs.storage = eStorageModeRAM;
-        initArgs.bitdepth = sourceImage->getBitDepth();
-        ImagePtr tmpImage = Image::create(initArgs);
-        if (!tmpImage) {
-            return (mv::FrameAccessor::Key)0;
+            continue;
         }
-        Image::CopyPixelsArgs cpyArgs;
-        cpyArgs.roi = intersectedRoI;
-        tmpImage->copyPixels(*sourceImage, cpyArgs);
-        sourceImage = tmpImage;
 
-    }
-
-    FrameAccessorCacheEntry entry;
-    entry.image.reset( new MvFloatImage( roi.height(), roi.width() ) );
-    entry.bounds = roi;
-    entry.referenceCount = 1;
-    natronImageToLibMvFloatImage(_imp->enabledChannels,
-                                 *sourceImage,
-                                 roi,
-                                 sourceType == eGetImageTypeMask/*takeDstFromAlpha*/,
-                                 *entry.image);
-    // we ignore the transform parameter and do it in natronImageToLibMvFloatImage instead
-
-    *destination = entry.image.get();
-    //destination->CopyFrom<float>(*entry.image);
-
-    //insert into the cache
-    {
-        QMutexLocker k(&_imp->cacheMutex);
-        _imp->cache.insert( std::make_pair(key, entry) );
-    }
 #ifdef TRACE_LIB_MV
-    qDebug() << QThread::currentThread() << "FrameAccessor::GetImage():" << "Rendered frame" << frame << "with RoI x1="
-    << intersectedRoI.x1 << "y1=" << intersectedRoI.y1 << "x2=" << intersectedRoI.x2 << "y2=" << intersectedRoI.y2;
+        qDebug() << QThread::currentThread() << "FrameAccessor::GetImage():" << "renderRoi (frame" << frame << ") OK  (BOUNDS= x1="
+        << sourceBounds.x1 << "y1=" << sourceBounds.y1 << "x2=" << sourceBounds.x2 << "y2=" << sourceBounds.y2 << ") (ROI = " << roi.x1 << "y1=" << roi.y1 << "x2=" << roi.x2 << "y2=" << roi.y2 << ")";
 #endif
-    
-    return (mv::FrameAccessor::Key)entry.image.get();
-}
+
+        // Make sure the Natron image rendered is RGBA full rect and on CPU, we don't support other formats to convert to libmv
+        if (sourceImage->getStorageMode() != eStorageModeRAM) {
+            Image::InitStorageArgs initArgs;
+            initArgs.bounds = intersectedRoI;
+            initArgs.plane = sourceImage->getLayer();
+            initArgs.bufferFormat = eImageBufferLayoutRGBAPackedFullRect;
+            initArgs.storage = eStorageModeRAM;
+            initArgs.bitdepth = sourceImage->getBitDepth();
+            ImagePtr tmpImage = Image::create(initArgs);
+            if (!tmpImage) {
+                continue;
+            }
+            Image::CopyPixelsArgs cpyArgs;
+            cpyArgs.roi = intersectedRoI;
+            tmpImage->copyPixels(*sourceImage, cpyArgs);
+            sourceImage = tmpImage;
+            
+        }
+
+
+
+        FrameAccessorCacheEntry entry;
+        entry.image.reset( new MvFloatImage( roi.height(), roi.width() ) );
+        entry.bounds = roi;
+        entry.referenceCount = 1;
+
+        stat = natronImageToLibMvFloatImage(_imp->enabledChannels,
+                                     *sourceImage,
+                                     roi,
+                                     args.args->sourceType == eGetImageTypeMask/*takeDstFromAlpha*/,
+                                     *entry.image);
+
+        if (isFailureRetCode(stat)) {
+            continue;
+        }
+        // we ignore the transform parameter and do it in natronImageToLibMvFloatImage instead
+
+        args.args->destination = entry.image.get();
+        args.args->destinationKey = (mv::FrameAccessor::Key)entry.image.get();
+        //destination->CopyFrom<float>(*entry.image);
+
+        //insert into the cache
+        {
+            QMutexLocker k(&_imp->cacheMutex);
+            _imp->cache.insert( std::make_pair(args.key, entry) );
+        }
+#ifdef TRACE_LIB_MV
+        qDebug() << QThread::currentThread() << "FrameAccessor::GetImage():" << "Rendered frame" << frame << "with RoI x1="
+        << intersectedRoI.x1 << "y1=" << intersectedRoI.y1 << "x2=" << intersectedRoI.x2 << "y2=" << intersectedRoI.y2;
+#endif
+
+    } // for each render
+
+} // GetImageInternal
 
 /*
  * @brief This is called by LibMV to retrieve an image either for reference or as search frame.
  */
-mv::FrameAccessor::Key
-TrackerFrameAccessor::GetImage(int /*clip*/,
-                               int frame,
-                               GetImageTypeEnum sourceType,
-                               mv::FrameAccessor::InputMode input_mode,
-                               int downscale,            // Downscale by 2^downscale.
-                               const mv::Region* region,     // Get full image if NULL.
-                               const mv::FrameAccessor::Transform* /*transform*/, // May be NULL.
-                               mv::FloatImage** destination)
+void
+TrackerFrameAccessor::GetImage(std::list<mv::FrameAccessor::GetImageArgs>& imageRequests)
 {
-    // Since libmv only uses MONO images for now we have only optimized for this case, remove and handle properly
-    // other case(s) when they get integrated into libmv.
-    assert(input_mode == mv::FrameAccessor::MONO);
-    (void)input_mode;
-    return GetImageInternal(sourceType, frame, downscale, region, destination);
-
+    GetImageInternal(imageRequests);
 } // TrackerFrameAccessor::GetImage
 
 void

@@ -24,6 +24,7 @@
 #define LIBMV_AUTOTRACK_FRAME_ACCESSOR_H_
 
 #include <stdint.h>
+#include <list>
 
 #include "libmv/image/image.h"
 
@@ -64,6 +65,19 @@ struct FrameAccessor {
 
   typedef void* Key;
 
+  struct GetImageArgs
+  {
+      int clip;
+      int frame;
+      GetImageTypeEnum sourceType;
+      InputMode input_mode;
+      int downscale;               // Downscale by 2^downscale.
+      const Region* region;        // Get full image if NULL.
+      const Transform* transform;  // May be NULL.
+      FloatImage* destination;
+      Key destinationKey;
+  };
+
   // Get a possibly-filtered version of a frame of a video. Downscale will
   // cause the input image to get downscaled by 2^downscale for pyramid access.
   // Region is always in original-image coordinates, and describes the
@@ -71,14 +85,7 @@ struct FrameAccessor {
   // to the image before it is returned.
   //
   // When done with an image, you must call ReleaseImage with the returned key.
-  virtual Key GetImage(int clip,
-                       int frame,
-                       GetImageTypeEnum sourceType,
-                       InputMode input_mode,
-                       int downscale,               // Downscale by 2^downscale.
-                       const Region* region,        // Get full image if NULL.
-                       const Transform* transform,  // May be NULL.
-                       FloatImage** destination) = 0;
+  virtual void GetImage(std::list<GetImageArgs>& imageRequests) = 0;
 
   // Releases an image from the frame accessor. Non-caching implementations may
   // free the image immediately; others may hold onto the image.

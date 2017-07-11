@@ -39,6 +39,7 @@ GCC_DIAG_OFF(unused-parameter)
 GCC_DIAG_ON(unused-function)
 GCC_DIAG_ON(unused-parameter)
 #include "Engine/EngineFwd.h"
+#include "Global/GlobalDefines.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -107,11 +108,7 @@ public:
 
 
    
-    mv::FrameAccessor::Key GetImageInternal(GetImageTypeEnum sourceType,
-                                            int frame,
-                                            int downscale,               // Downscale by 2^downscale.
-                                            const mv::Region* region,        // Get full image if NULL.
-                                            mv::FloatImage** destination);
+    void GetImageInternal(std::list<mv::FrameAccessor::GetImageArgs>& imageRequests);
 
 
     // Get a possibly-filtered version of a frame of a video. Downscale will
@@ -121,14 +118,7 @@ public:
     // to the image before it is returned.
     //
     // When done with an image, you must call ReleaseImage with the returned key.
-    virtual mv::FrameAccessor::Key GetImage(int clip,
-                                            int frame,
-                                            GetImageTypeEnum sourceType,
-                                            mv::FrameAccessor::InputMode input_mode,
-                                            int downscale,               // Downscale by 2^downscale.
-                                            const mv::Region* region,        // Get full image if NULL.
-                                            const mv::FrameAccessor::Transform* transform,  // May be NULL.
-                                            mv::FloatImage** destination) OVERRIDE FINAL;
+    virtual void GetImage(std::list<mv::FrameAccessor::GetImageArgs>& imageRequests) OVERRIDE FINAL;
 
     // Releases an image from the frame accessor. Non-caching implementations may
     // free the image immediately; others may hold onto the image.
@@ -139,12 +129,12 @@ public:
     static double invertYCoordinate(double yIn, double formatHeight);
     static void convertLibMVRegionToRectI(const mv::Region& region, int formatHeight, RectI* roi);
 
-    static void natronImageToLibMvFloatImage(bool enabledChannels[3],
-                                 const Image& source,
-                                 const RectI& roi,
-                                 bool takeDstFromAlpha,
-                                 MvFloatImage& mvImg);
-
+    static ActionRetCodeEnum natronImageToLibMvFloatImage(bool enabledChannels[3],
+                                                          const Image& source,
+                                                          const RectI& roi,
+                                                          bool takeDstFromAlpha,
+                                                          MvFloatImage& mvImg);
+    
 
 private:
 
