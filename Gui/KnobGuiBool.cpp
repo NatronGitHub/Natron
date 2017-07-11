@@ -359,10 +359,7 @@ KnobGuiBool::updateToolTip()
         if (!knob) {
             return;
         }
-        for (int i = 0; i < knob->getNDimensions(); ++i) {
-#pragma message WARN("STRANGE: why do that ndimensions times? - check other KnobGuis too")
-            knobgui->toolTip(_checkBox, getView());
-        }
+        knobgui->toolTip(_checkBox, getView());
     }
 }
 
