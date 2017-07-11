@@ -210,7 +210,6 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
 
         return;
     }
-
     /*********************************************************
      ********************************************************
 
@@ -322,6 +321,7 @@ MemoryFile::resize(size_t new_size, bool preserve)
     }
 
 #elif defined(__NATRON_WIN32__)
+
     ::UnmapViewOfFile(_imp->data);
     ::CloseHandle(_imp->file_mapping_handle);
     _imp->file_mapping_handle = ::CreateFileMapping(
@@ -340,16 +340,23 @@ void
 MemoryFilePrivate::closeMapping()
 {
 #if defined(__NATRON_UNIX__)
-
-    ::munmap(data, size);
-    ::close(file_handle);
+    if (data) {
+        ::munmap(data, size);
+    }
+    if (file_handle != -1) {
+        ::close(file_handle);
+    }
     file_handle = -1;
 #elif defined(__NATRON_WIN32__)
-    if (::UnmapViewOfFile(data) == 0) {
-        throw std::runtime_error("Failed to unmap the mapped file");
+    if (data) {
+        ::UnmapViewOfFile(data);
     }
-    ::CloseHandle(file_mapping_handle);
-    ::CloseHandle(file_handle);
+    if (file_mapping_handle != INVALID_HANDLE_VALUE) {
+        ::CloseHandle(file_mapping_handle);
+    }
+    if (file_handle != INVALID_HANDLE_VALUE) {
+        ::CloseHandle(file_handle);
+    }
     file_handle = INVALID_HANDLE_VALUE;
     file_mapping_handle = INVALID_HANDLE_VALUE;
 #endif
