@@ -112,14 +112,15 @@ ViewerTabPrivate::getOverlayTransform(TimeValue time,
         if (disto && disto->inputNbToDistort != -1) {
             input = currentNode->getInputMainInstance(disto->inputNbToDistort);
         }
-        if (!input) {
-            return false;
-        }
+
     }
 
 
     if (stat == eActionStatusOK) {
         assert(input);
+        if (!input) {
+            return false;
+        }
         double par = input->getAspectRatio(-1);
 
         if (disto->transformMatrix) {
