@@ -3326,7 +3326,7 @@ Node::makeInfoForInput(int inputNumber) const
         }
         for (std::list<ImagePlaneDesc>::iterator it = availableLayers.begin(); it != availableLayers.end(); ++it) {
 
-            ss << " "  << it->getPlaneID();
+            ss << " "  << it->getPlaneLabel();
             if ( next != availableLayers.end() ) {
                 ss << ", ";
                 ++next;
