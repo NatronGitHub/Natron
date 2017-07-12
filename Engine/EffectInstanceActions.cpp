@@ -2065,12 +2065,22 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
     metadata.setOutputFrameRate(frameRate);
     metadata.setOutputFielding(eImageFieldingOrderNone);
 
-    // An effect is frame varying if one of its inputs is varying or it has animation
-    metadata.setIsFrameVarying(hasOneInputFrameVarying);
+    // From commit https://github.com/MrKepzie/Natron/commit/1747275505e297c0c03f5b472c921f29540402f2
+    // an effect is not considered frame varying or continuous if one of its knobs is animated:
+    // Since all knobs encode their values at the current render time/view in the hash, we don't need to
+    // modify this flag: if the animation of the knobs happen to be the same at some point in the curve (e.g:
+    // there's a constant portion) then the results for that frame will be cached! If we were to set this flag
+    // it would force caching of a new image for each frame, which may not be desirable.
 
-    // An effect is continuous if at least one of its inputs is continuous or if one of its knobs
-    // is animated
-    metadata.setIsContinuous(hasOneInputContinuous);
+    // Note that the function EffectInstance::canRenderContinuously() also checks if the effect has an animation
+
+    //const bool hasAnimation = getHasAnimation();
+
+    // An effect is frame varying if one of its inputs is varying
+    metadata.setIsFrameVarying(hasOneInputFrameVarying /* || hasAnimation*/);
+
+    // An effect is continuous if at least one of its inputs is continuous
+    metadata.setIsContinuous(hasOneInputContinuous /* || hasAnimation*/);
 
     // now find the best depth that the plugin supports
     deepestBitDepth = getClosestSupportedBitDepth(deepestBitDepth);

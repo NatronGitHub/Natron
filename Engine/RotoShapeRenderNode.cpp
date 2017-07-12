@@ -371,26 +371,10 @@ RotoShapeRenderNode::getTimeInvariantMetadata(NodeMetadata& metadata)
 
     metadata.setColorPlaneNComps(-1, nComps);
     metadata.setColorPlaneNComps(0, nComps);
+
+    // The roto can be sampled at any non integer time
     metadata.setIsContinuous(true);
 
-    // If the item is not animated and its lifetime is set to "All", we can mark this node as non frame varying
-    // This will help the cache a lot!
-    RotoDrawableItemPtr item = getAttachedRotoItem();
-    bool frameVarying = true;
-    if (item) {
-        bool hasAnimation = item->getHasAnimation();
-        if (hasAnimation) {
-            std::vector<RangeD> ranges = item->getActivatedRanges(ViewIdx(0));
-            if (ranges.size() == 1) {
-                const RangeD& range = ranges.front();
-                if (range.min == INT_MIN && range.max == INT_MAX) {
-                    // No animation and lifetime is set to "all"
-                    frameVarying = false;
-                }
-            }
-        }
-    }
-    metadata.setIsFrameVarying(frameVarying);
 
     RotoPaintOutputRoDTypeEnum rodType = (RotoPaintOutputRoDTypeEnum)_imp->outputRoDTypeKnob.lock()->getValue();
     switch (rodType) {

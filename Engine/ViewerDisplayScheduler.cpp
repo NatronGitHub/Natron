@@ -454,14 +454,18 @@ ViewerRenderFrameSubResult::onTreeRenderFinished(int inputIndex)
             FrameViewRequestPtr req = inputData.render->getExtraRequestedResultsForNode(inputData.colorPickerNode);
             if (req) {
                 inputData.colorPickerImage = req->getRequestedScaleImagePlane();
-                inputData.colorPickerImage = convertImageForViewerDisplay(inputData.colorPickerImage->getBounds(), false, false /*the picker can accept non 4-channel image*/, inputData.colorPickerImage);
+                if (inputData.colorPickerImage) {
+                    inputData.colorPickerImage = convertImageForViewerDisplay(inputData.colorPickerImage->getBounds(), false, false /*the picker can accept non 4-channel image*/, inputData.colorPickerImage);
+                }
             }
         }
         if (inputData.colorPickerInputNode) {
             FrameViewRequestPtr req = inputData.render->getExtraRequestedResultsForNode(inputData.colorPickerInputNode);
             if (req) {
                 inputData.colorPickerInputImage = req->getRequestedScaleImagePlane();
-                inputData.colorPickerInputImage = convertImageForViewerDisplay(inputData.colorPickerInputImage->getBounds(), false, false /*the picker can accept non 4-channel image*/, inputData.colorPickerInputImage);
+                if (inputData.colorPickerInputImage) {
+                    inputData.colorPickerInputImage = convertImageForViewerDisplay(inputData.colorPickerInputImage->getBounds(), false, false /*the picker can accept non 4-channel image*/, inputData.colorPickerInputImage);
+                }
             }
         }
     }

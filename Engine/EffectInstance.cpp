@@ -1651,6 +1651,9 @@ EffectInstance::getPremult()
 bool
 EffectInstance::canRenderContinuously()
 {
+    if (getHasAnimation()) {
+        return true;
+    }
     GetTimeInvariantMetadataResultsPtr results;
     ActionRetCodeEnum stat = getTimeInvariantMetadata_public(&results);
     if (isFailureRetCode(stat)) {

@@ -3468,6 +3468,7 @@ CachePrivate<persistent>::getFreeTileInternal(
         {
             TileInternalIndexImplList::iterator freeTileIt = bucket.ipc->freeTiles->begin();
             freeTileEncodedIndex.index = *freeTileIt;
+            assert(freeTileEncodedIndex.index.fileIndex < (int)tilesStorage.size());
             freeTileEncodedIndex.bucketIndex = requestingBucketIndex;
             bucket.ipc->freeTiles->erase(freeTileIt);
 #ifdef CACHE_TRACE_TILES_ALLOCATION

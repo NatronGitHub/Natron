@@ -900,6 +900,10 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
         return false;
     }
 
+    if (!outArgs.image->getBounds().intersects(outArgs.roiPixel)) {
+        return false;
+    }
+
     // If the effect is not multi-planar (most of effects) then the returned image might have a different
     // layer name than the color layer but should always have the same number of components than the components
     // set in getClipPreferences.

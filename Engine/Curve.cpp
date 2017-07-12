@@ -715,12 +715,16 @@ Curve::getPreviousKeyframeTime(TimeValue time,
     KeyFrame tmp;
     tmp.setTime(time);
     KeyFrameSet::const_iterator lowerBound = _imp->keyFrames.lower_bound(tmp);
-    if (lowerBound == _imp->keyFrames.end() || lowerBound == _imp->keyFrames.begin()) {
+    if (lowerBound == _imp->keyFrames.begin()) {
         return false;
+    } else if (lowerBound == _imp->keyFrames.end()) {
+        *k = *_imp->keyFrames.rbegin();
+        return true;
+    } else {
+        --lowerBound;
+        *k = *lowerBound;
+        return true;
     }
-    --lowerBound;
-    *k = *lowerBound;
-    return true;
 }
 
 bool
