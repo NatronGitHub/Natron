@@ -577,8 +577,11 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
     KnobsVec knobs = getEffectInstance()->getKnobs_mt_safe();
     std::list<KnobIPtr > userPages;
     for (std::size_t i  = 0; i < knobs.size(); ++i) {
-        KnobGroupPtr isGroup = toKnobGroup(knobs[i]);
-        KnobPagePtr isPage = toKnobPage(knobs[i]);
+
+        const KnobIPtr& knob = knobs[i];
+
+        KnobGroupPtr isGroup = toKnobGroup(knob);
+        KnobPagePtr isPage = toKnobPage(knob);
 
         // For pages, check if it is a user knob, if so serialialize user knobs recursively
         if (isPage) {
@@ -589,13 +592,13 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
 
             // Save pages order if it has changed or if we are encoding a PyPlug
             if (!isPage->getIsSecret() && (pageOrderChanged || serialization->_encodeFlags & SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsPyPlug)) {
-                serialization->_pagesIndexes.push_back( knobs[i]->getName() );
+                serialization->_pagesIndexes.push_back( knob->getName() );
             }
 
             // Save user pages if they were added by the user with respect to the initial plug-in state, or if we are encoding as a PyPlug
             if ((serialization->_encodeFlags & SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsPreset) == 0) {
-                if ( knobs[i]->isUserKnob() && (!knobs[i]->isDeclaredByPlugin() || serialization->_encodeFlags & SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsPyPlug)) {
-                    userPages.push_back(knobs[i]);
+                if ( knobs[i]->isUserKnob() && (!knob->isDeclaredByPlugin() || serialization->_encodeFlags & SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsPyPlug)) {
+                    userPages.push_back(knob);
                 }
             }
             continue;
@@ -604,15 +607,15 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
         // A knob might be non persistent but still have an expression, in which case we need to serialize it.
         bool hasExpr = false;
         {
-            std::list<ViewIdx> views = knobs[i]->getViewsList();
-            for (int d = 0; d < knobs[i]->getNDimensions(); ++d) {
+            std::list<ViewIdx> views = knob->getViewsList();
+            for (int d = 0; d < knob->getNDimensions(); ++d) {
                 for (std::list<ViewIdx>::const_iterator itV = views.begin(); itV != views.end(); ++itV) {
-                    if (!knobs[i]->getExpression(DimIdx(d), *itV).empty()) {
+                    if (!knob->getExpression(DimIdx(d), *itV).empty()) {
                         hasExpr = true;
                         break;
                     }
                     KnobDimViewKey linkData;
-                    if (knobs[i]->getSharingMaster(DimIdx(d), *itV, &linkData)) {
+                    if (knob->getSharingMaster(DimIdx(d), *itV, &linkData)) {
                         hasExpr = true;
                         break;
                     }
@@ -622,12 +625,12 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
                 }
             }
         }
-        if (!knobs[i]->getIsPersistent() && !hasExpr) {
+        if (!knob->getIsPersistent() && !hasExpr) {
             // Don't serialize non persistant knobs
             continue;
         }
        
-        if (knobs[i]->isUserKnob()) {
+        if (knob->isUserKnob()) {
             // Don't serialize user knobs, its taken care of by user pages
             continue;
         }
@@ -637,19 +640,19 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
             continue;
         }
 
-        if (!isFullSaveMode && !knobs[i]->hasModifications() && !knobs[i]->hasDefaultValueChanged() && !hasExpr) {
+        if (!isFullSaveMode && !knob->hasModifications() && !knob->hasDefaultValueChanged() && !hasExpr) {
             // This knob was not modified by the user, don't serialize it
             continue;
         }
 
         // If the knob is in the PyPlug page, only serialize if the PyPlug page is visible or if we are exporting as a
         // Pyplug
-        if (pyPlugPage && pyPlugPage->getIsSecret() && knobs[i]->getTopLevelPage() == pyPlugPage && (serialization->_encodeFlags & SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsPyPlug) == 0) {
+        if (pyPlugPage && pyPlugPage->getIsSecret() && knob->getTopLevelPage() == pyPlugPage && (serialization->_encodeFlags & SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsPyPlug) == 0) {
             continue;
         }
 
         SERIALIZATION_NAMESPACE::KnobSerializationPtr newKnobSer( new SERIALIZATION_NAMESPACE::KnobSerialization );
-        knobs[i]->toSerialization(newKnobSer.get());
+        knob->toSerialization(newKnobSer.get());
         if (newKnobSer->_mustSerialize) {
             serialization->_knobsValues.push_back(newKnobSer);
         }

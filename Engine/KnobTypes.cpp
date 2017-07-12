@@ -1341,6 +1341,7 @@ KnobChoice::setActiveEntry(const ChoiceOption& entry, ViewSetSpec view)
         }
 
     }
+    computeHasModifications();
 }
 
 ChoiceOption
