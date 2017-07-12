@@ -335,12 +335,13 @@ endsWith(const std::string &str,
     return ( ( str.size() >= suffix.size() ) &&
             (str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0) );
 }
-
+#if 0
 static bool
 containsString(const std::string& str, const std::string& substring)
 {
     return str.find(substring) != std::string::npos;
 }
+#endif
 
 static bool
 equalsStringCaseSensitive(const std::string& str1, const std::string& str2)
@@ -637,6 +638,9 @@ public:
             addKnobFilter(f, "outputChannels", equalsStringCaseSensitive);
             addKnobFilter(f, "channels", endsWith);
             setNatronVersionMax(f, 2, 2, 99);
+            addOptionFilter(f, "RGBA", equalsStringCaseInsensitive);
+            addOptionFilter(f, "RGB", equalsStringCaseInsensitive);
+            addOptionFilter(f, "Alpha", equalsStringCaseInsensitive);
             addOptionFilter(f, "Color.RGBA", equalsStringCaseInsensitive);
             addOptionFilter(f, "Color.RGB", equalsStringCaseInsensitive);
             addOptionFilter(f, "Color.Alpha", equalsStringCaseInsensitive);
