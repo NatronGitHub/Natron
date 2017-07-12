@@ -528,7 +528,6 @@ AnimationModuleViewPrivate::drawDopeSheetAnimItemRow(QTreeWidgetItem* treeItem, 
 void
 AnimationModuleViewPrivate::drawDopeSheetNodeRowSeparation(const NodeAnimPtr item) const
 {
-    GLProtectAttrib<GL_GPU> a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT | GL_LINE_BIT);
     QRectF nameItemRect = treeView->visualItemRect( item->getTreeItem() );
     QRectF rowRect = nameItemRectToRowRect(nameItemRect);
 

@@ -280,6 +280,9 @@ AnimationModuleView::paintGL()
             GL_GPU::LineWidth(1.5);
             GL_GPU::Color3d(0, 0, 0);
             GL_GPU::Begin(GL_LINES);
+            assert(treeItemBottomZoomCord == treeItemBottomZoomCord);
+            assert(topRight.x() == topRight.x());
+            assert(bottomLeft.x() == bottomLeft.x());
             GL_GPU::Vertex2d(bottomLeft.x(), treeItemBottomZoomCord);
             GL_GPU::Vertex2d(topRight.x(), treeItemBottomZoomCord);
             GL_GPU::End();

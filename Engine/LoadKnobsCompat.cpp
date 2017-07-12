@@ -354,6 +354,9 @@ public:
             addKnobFilter(f, "outputChannels", equalsStringCaseSensitive);
             addKnobFilter(f, "channels", endsWith);
             setNatronVersionMax(f, 2, 2, 99);
+            addOptionFilter(f, "RGBA", equalsStringCaseInsensitive);
+            addOptionFilter(f, "RGB", equalsStringCaseInsensitive);
+            addOptionFilter(f, "Alpha", equalsStringCaseInsensitive);
             addOptionFilter(f, "Color.RGBA", equalsStringCaseInsensitive);
             addOptionFilter(f, "Color.RGB", equalsStringCaseInsensitive);
             addOptionFilter(f, "Color.Alpha", equalsStringCaseInsensitive);
