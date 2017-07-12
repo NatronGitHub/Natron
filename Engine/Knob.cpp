@@ -2892,38 +2892,9 @@ initializeValueSerializationStorage(const KnobIPtr& knob,
                                     const DefaultValueSerialization& defValue,
                                     ValueSerialization* serialization)
 {
-    serialization->_expression = knob->getExpression(dimension, view);
-    serialization->_expresionHasReturnVariable = knob->isExpressionUsingRetVariable(view, dimension);
-    ExpressionLanguageEnum lang = knob->getExpressionLanguage(view, dimension);
-    switch (lang) {
-        case eExpressionLanguageExprTk:
-            serialization->_expressionLanguage = kKnobSerializationExpressionLanguageExprtk;
-            break;
-        case eExpressionLanguagePython:
-            serialization->_expressionLanguage = kKnobSerializationExpressionLanguagePython;
-            break;
-    }
+
 
     bool gotValue = !serialization->_expression.empty();
-
-
-    // Serialize slave/master link
-    if (!gotValue) {
-        if (serializeHardLinks(knob, viewNames, dimension, view, serialization)) {
-            serialization->_slaveMasterLink.hasLink = true;
-            gotValue = true;
-        }
-    } // !gotValue
-
-
-    // Serialize curve
-    CurvePtr curve = knob->getAnimationCurve(view, dimension);
-    if (curve && !gotValue) {
-        curve->toSerialization(&serialization->_animationCurve);
-        if (!serialization->_animationCurve.keys.empty()) {
-            gotValue = true;
-        }
-    }
 
     // Serialize value and default value
     KnobBoolBasePtr isBoolBase = toKnobBoolBase(knob);
@@ -2945,6 +2916,43 @@ initializeValueSerializationStorage(const KnobIPtr& knob,
     KnobTablePtr isTable = toKnobTable(knob);
 
     serialization->_serializeValue = false;
+
+    if (isParametric) {
+        return;
+    }
+    // Serialize slave/master link
+    if (!gotValue) {
+        if (serializeHardLinks(knob, viewNames, dimension, view, serialization)) {
+            serialization->_slaveMasterLink.hasLink = true;
+            gotValue = true;
+        }
+    } // !gotValue
+
+
+    serialization->_expression = knob->getExpression(dimension, view);
+    serialization->_expresionHasReturnVariable = knob->isExpressionUsingRetVariable(view, dimension);
+    ExpressionLanguageEnum lang = knob->getExpressionLanguage(view, dimension);
+    switch (lang) {
+        case eExpressionLanguageExprTk:
+            serialization->_expressionLanguage = kKnobSerializationExpressionLanguageExprtk;
+            break;
+        case eExpressionLanguagePython:
+            serialization->_expressionLanguage = kKnobSerializationExpressionLanguagePython;
+            break;
+    }
+
+    // Serialize curve
+    CurvePtr curve = knob->getAnimationCurve(view, dimension);
+    if (curve && !gotValue) {
+        curve->toSerialization(&serialization->_animationCurve);
+        if (!serialization->_animationCurve.keys.empty()) {
+            gotValue = true;
+        }
+    }
+
+
+
+
 
     if (!gotValue) {
 
@@ -3466,6 +3474,9 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
 
 
 
+        // Clear any existing animation
+        removeAnimation(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonRestoreDefault);
+
         // Restore extra datas
         KnobFile* isInFile = dynamic_cast<KnobFile*>(this);
         KnobString* isString = dynamic_cast<KnobString*>(this);
@@ -3620,8 +3631,6 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
             projectViews = getHolder()->getApp()->getProject()->getProjectViewNames();
         }
 
-        // Clear any existing animation
-        removeAnimation(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonRestoreDefault);
 
         for (std::size_t i = 0; i < serialization->_defaultValues.size(); ++i) {
             if (serialization->_defaultValues[i].serializeDefaultValue) {

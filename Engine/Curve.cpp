@@ -1960,7 +1960,7 @@ Curve::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase&
             if (t == eKeyframeTypeBroken) {
                 k.setLeftDerivative(it->leftDerivative);
             } else {
-                k.setLeftDerivative(-it->rightDerivative);
+                k.setLeftDerivative(it->rightDerivative);
             }
         }
         std::pair<KeyFrameSet::iterator, bool> ret = addKeyFrameNoUpdate(k);
