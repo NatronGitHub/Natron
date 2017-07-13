@@ -540,7 +540,7 @@ RotoShapeRenderNode::isIdentity(TimeValue time,
         return eActionStatusFailed;
     }
     Bezier* isBezier = dynamic_cast<Bezier*>(rotoItem.get());
-    if (!rotoItem || !rotoItem->isActivated(time, view) || (isBezier && (!isBezier->isCurveFinished(view) || isBezier->getControlPointsCount(view) <= 1))) {
+    if (!rotoItem || !rotoItem->isActivated(time, view) || (isBezier && ((!isBezier->isCurveFinished(view) && !isBezier->isOpenBezier()) || isBezier->getControlPointsCount(view) <= 1))) {
         *inputTime = time;
         *inputNb = 0;
 
@@ -607,7 +607,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     }
 
     // Check that the item is really activated... it should have been caught in isIdentity otherwise.
-    assert(rotoItem->isActivated(args.time, args.view) && (!isBezier || (isBezier->isCurveFinished(args.view) && ( isBezier->getControlPointsCount(args.view) > 1 ))));
+    assert(rotoItem->isActivated(args.time, args.view) && (!isBezier || ((isBezier->isCurveFinished(args.view) || isBezier->isOpenBezier()) && ( isBezier->getControlPointsCount(args.view) > 1 ))));
 
     const OSGLContextPtr& glContext = args.glContext;
 

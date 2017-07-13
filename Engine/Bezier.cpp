@@ -3027,7 +3027,7 @@ Bezier::deCasteljau(bool isOpenBezier,
         ++next;
         for (; it != evaluatedPoints.end(); ++it, ++next, ++segmentIndex) {
             if (next == evaluatedPoints.end()) {
-                if (!finished && !isOpenBezier) {
+                if (!finished || isOpenBezier) {
                     break;
                 }
                 next = evaluatedPoints.begin();
