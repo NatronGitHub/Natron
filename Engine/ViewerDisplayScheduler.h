@@ -75,7 +75,7 @@ public:
 
     virtual ActionRetCodeEnum waitForResultsReady(const TreeRenderQueueProviderPtr& provider) OVERRIDE FINAL;
 
-    virtual ActionRetCodeEnum launchRenders(const TreeRenderQueueProviderPtr& provider) OVERRIDE FINAL;
+    virtual void launchRenders(const TreeRenderQueueProviderPtr& provider) OVERRIDE FINAL;
 
     virtual void abortRender() OVERRIDE FINAL;
 

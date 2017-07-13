@@ -357,9 +357,16 @@ RotoDrawableItem::createNodes(bool connectNodes)
     if (type == eRotoStrokeTypeEraser || type == eRotoStrokeTypeSolid) {
         // For a constant, link the Output components knob of the constant node to the output components
         // of the Roto node.
-        KnobChoicePtr outputComponentsnKnob = rotoPaintEffect->getOutputComponentsKnob();
-        KnobIPtr knob = _imp->effectNode->getKnobByName(kConstantParamOutputComponents);
-        knob->linkTo(outputComponentsnKnob);
+        {
+            KnobChoicePtr outputComponentsnKnob = rotoPaintEffect->getOutputComponentsKnob();
+            KnobIPtr knob = _imp->effectNode->getKnobByName(kConstantParamOutputComponents);
+            knob->linkTo(outputComponentsnKnob);
+        }
+
+        // For the Constant node: we don't want it to request any image in input
+        KnobChoicePtr layerChoice = _imp->effectNode->getEffectInstance()->getLayerChoiceKnob(0);
+        // Request None plane
+        layerChoice->setValue(0);
     }
 
     if ( (type == eRotoStrokeTypeClone) || (type == eRotoStrokeTypeReveal) || (type == eRotoStrokeTypeComp) ) {

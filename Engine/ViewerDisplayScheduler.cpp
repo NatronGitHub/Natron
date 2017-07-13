@@ -132,8 +132,7 @@ ViewerRenderFrameSubResult::waitForResultsReady(const TreeRenderQueueProviderPtr
 {
     for (int i = 0; i < 2; ++i) {
         if (perInputsData[i].render) {
-            provider->waitForRenderFinished(perInputsData[i].render);
-            ActionRetCodeEnum stat = perInputsData[i].render->getStatus();
+            ActionRetCodeEnum stat = provider->waitForRenderFinished(perInputsData[i].render);
             if (isFailureRetCode(stat)) {
                 return stat;
             }
@@ -143,19 +142,14 @@ ViewerRenderFrameSubResult::waitForResultsReady(const TreeRenderQueueProviderPtr
     return eActionStatusOK;
 }
 
-ActionRetCodeEnum
+void
 ViewerRenderFrameSubResult::launchRenders(const TreeRenderQueueProviderPtr& provider)
 {
     for (int i = 0; i < 2; ++i) {
         if (perInputsData[i].render) {
-            ActionRetCodeEnum stat = provider->launchRender(perInputsData[i].render);
-            if (isFailureRetCode(stat)) {
-                return stat;
-            }
-
+            provider->launchRender(perInputsData[i].render);
         }
     }
-    return eActionStatusOK;
 }
 
 void

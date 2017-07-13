@@ -491,12 +491,8 @@ HistogramCPUThread::run()
             TreeRenderPtr render = TreeRender::create(args);
             FrameViewRequestPtr outputRequest;
 
-            ActionRetCodeEnum stat = args->treeRootEffect->launchRender(render);
-            if (isFailureRetCode(stat)) {
-                continue;
-            }
-            args->treeRootEffect->waitForRenderFinished(render);
-            stat = render->getStatus();
+            args->treeRootEffect->launchRender(render);
+            ActionRetCodeEnum stat = args->treeRootEffect->waitForRenderFinished(render);
             if (isFailureRetCode(stat)) {
                 continue;
             }

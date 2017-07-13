@@ -444,20 +444,9 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const GenericThreadStartArgsP
     }
 
     // Launch the render
-    stat = results->launchRenders();
-
+    results->launchRenders();
 
     GenericSchedulerThread::ThreadStateEnum state = resolveState();
-    if (isFailureRetCode(stat)) {
-        if (stat != eActionStatusAborted) {
-            // Clear viewer to black if not aborted
-            ViewerNodePtr viewerNode =  _imp->viewer.lock()->isEffectViewerNode();
-            viewerNode->disconnectViewer();
-        }
-        return state;
-    }
-
-
     return state;
 } // threadLoopOnce
 

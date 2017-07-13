@@ -113,7 +113,8 @@ RotoShapeRenderNode::doesTemporalClipAccess() const
     }
 
     // We do temporal access if motion blur is enabled
-    return item->getMotionBlurModeKnob()->getValue() != 0;
+    KnobChoicePtr mbKnob = item->getMotionBlurModeKnob();
+    return mbKnob ? mbKnob->getValue() != 0 : false;
 }
 
 void
@@ -240,7 +241,12 @@ RotoShapeRenderNode::appendToHash(const ComputeHashArgs& args, Hash64* hash)
         // Append the hash of the shape for each motion blur sample
         RangeD range;
         int divisions;
-        item->getMotionBlurSettings(args.time, args.view, &range, &divisions);
+        if (isDuringPaintStrokeCreation()) {
+            divisions = 1;
+            range.min = range.max = args.time;
+        } else {
+            item->getMotionBlurSettings(args.time, args.view, &range, &divisions);
+        }
         double interval = divisions >= 1 ? (range.max - range.min) / divisions : 1.;
 
         for (int i = 0; i < divisions; ++i) {
@@ -409,12 +415,18 @@ RotoShapeRenderNode::getTimeInvariantMetadata(NodeMetadata& metadata)
     return eActionStatusOK;
 }
 
-static void getRoDFromItem(const RotoDrawableItemPtr& item, TimeValue time, ViewIdx view, RectD* rod)
+static void getRoDFromItem(const RotoDrawableItemPtr& item, TimeValue time, ViewIdx view, bool isPainting, RectD* rod)
 {
     // Account for motion-blur
     RangeD range;
     int divisions;
-    item->getMotionBlurSettings(time, view, &range, &divisions);
+    if (!isPainting) {
+        item->getMotionBlurSettings(time, view, &range, &divisions);
+    } else {
+        range.min = range.max = time;
+        divisions = 1;
+    }
+
     double interval = divisions >= 1 ? (range.max - range.min) / divisions : 1.;
 
     bool rodSet = false;
@@ -440,9 +452,9 @@ RotoShapeRenderNode::getRegionOfDefinition(TimeValue time, const RenderScale& sc
     assert(item);
     assert((isRenderClone() && item->isRenderClone()) ||
            (!isRenderClone() && !item->isRenderClone()));
-
+    const bool isPainting = isDuringPaintStrokeCreation();
     RectD shapeRoD;
-    getRoDFromItem(item, time, view, &shapeRoD);
+    getRoDFromItem(item, time, view, isPainting, &shapeRoD);
 
     bool clipToFormat = _imp->clipToFormatKnob.lock()->getValue();
 
@@ -535,8 +547,9 @@ RotoShapeRenderNode::isIdentity(TimeValue time,
         return eActionStatusOK;
     }
 
+    bool isPainting = isDuringPaintStrokeCreation();
     RectD maskRod;
-    getRoDFromItem(rotoItem, time, view, &maskRod);
+    getRoDFromItem(rotoItem, time, view, isPainting, &maskRod);
 
     RectI maskPixelRod;
     maskRod.toPixelEnclosing(scale, getAspectRatio(-1), &maskPixelRod);

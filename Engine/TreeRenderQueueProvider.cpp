@@ -57,7 +57,7 @@ TreeRenderQueueProvider::~TreeRenderQueueProvider()
 
 }
 
-ActionRetCodeEnum TreeRenderQueueProvider::launchRender(const TreeRenderPtr& render)
+void TreeRenderQueueProvider::launchRender(const TreeRenderPtr& render)
 {
     return appPTR->getTasksQueueManager()->launchRender(render);
 }
@@ -75,10 +75,10 @@ TreeRenderQueueProvider::launchSubRender(const EffectInstancePtr& treeRoot,
    return appPTR->getTasksQueueManager()->launchSubRender(treeRoot, time, view, proxyScale, mipMapLevel, planeParam, canonicalRoIParam, render);
 }
 
-void
+ActionRetCodeEnum
 TreeRenderQueueProvider::waitForRenderFinished(const TreeRenderPtr& render)
 {
-    appPTR->getTasksQueueManager()->waitForRenderFinished(render);
+    return appPTR->getTasksQueueManager()->waitForRenderFinished(render);
 }
 
 bool

@@ -57,7 +57,7 @@ public:
      * @brief Launch a new render to be processed and returns immediately. To retrieve results for that render you
      * must call waitForRenderFinished()
      **/
-    virtual ActionRetCodeEnum launchRender(const TreeRenderPtr& render) = 0;
+    virtual void launchRender(const TreeRenderPtr& render) = 0;
 
     /**
      * @brief Launch a sub-render execution for the given tree render. This assumes that launchRender() was called
@@ -78,7 +78,7 @@ public:
     /**
      * @brief Waits for a specific render to be finished.
      **/
-    virtual void waitForRenderFinished(const TreeRenderPtr& render) = 0;
+    virtual ActionRetCodeEnum waitForRenderFinished(const TreeRenderPtr& render) = 0;
 
 };
 
@@ -99,7 +99,7 @@ public:
     /// Overiden from TreeRenderLauncherI
 
     // Every method is fowarded to the TreeRenderQueueManager
-    virtual ActionRetCodeEnum launchRender(const TreeRenderPtr& render) OVERRIDE FINAL;
+    virtual void launchRender(const TreeRenderPtr& render) OVERRIDE FINAL;
     virtual TreeRenderExecutionDataPtr launchSubRender(const EffectInstancePtr& treeRoot,
                                  TimeValue time,
                                  ViewIdx view,
@@ -108,7 +108,7 @@ public:
                                  const ImagePlaneDesc* planeParam,
                                  const RectD* canonicalRoIParam,
                                  const TreeRenderPtr& render) OVERRIDE FINAL;
-    virtual void waitForRenderFinished(const TreeRenderPtr& render) OVERRIDE FINAL;
+    virtual ActionRetCodeEnum waitForRenderFinished(const TreeRenderPtr& render) OVERRIDE FINAL WARN_UNUSED_RETURN;
     bool hasTreeRendersFinished() const;
     bool hasTreeRendersLaunched() const;
     TreeRenderPtr waitForAnyTreeRenderFinished();

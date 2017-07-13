@@ -1384,7 +1384,7 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
     GL::ActiveTexture(GL_TEXTURE0);
 
     GLImageStoragePtr dstTexture;
-    if (GL::isGPU()) {
+    if (GL::isGPU() || !dstImageIsFinalTexture) {
         dstTexture = dstImage->getGLImageStorage();
     }
 

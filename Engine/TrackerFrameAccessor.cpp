@@ -497,10 +497,9 @@ TrackerFrameAccessor::GetImageInternal(std::list<mv::FrameAccessor::GetImageArgs
             
             TreeRenderPtr render = TreeRender::create(renderArgs);
             
-            ActionRetCodeEnum stat = renderArgs->treeRootEffect->launchRender(render);
-            if (!isFailureRetCode(stat)) {
-                allRenders[i].render = render;
-            }
+            renderArgs->treeRootEffect->launchRender(render);
+            allRenders[i].render = render;
+
         } // for each request
     } // i
 
@@ -515,8 +514,8 @@ TrackerFrameAccessor::GetImageInternal(std::list<mv::FrameAccessor::GetImageArgs
 
         const RectI& roi = args.roi;
 
-        args.render->getOriginalTreeRoot()->waitForRenderFinished(args.render);
-        ActionRetCodeEnum stat = args.render->getStatus();
+        ActionRetCodeEnum stat = args.render->getOriginalTreeRoot()->waitForRenderFinished(args.render);
+        
         if (isFailureRetCode(stat)) {
             continue;
         } else {

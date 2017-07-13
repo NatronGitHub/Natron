@@ -871,9 +871,8 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
                 currentRender = renderObject;
             }
             launchRender(renderObject);
-            waitForRenderFinished(renderObject);
+            status = waitForRenderFinished(renderObject);
             outputRequest = renderObject->getOutputRequest();
-            status = renderObject->getStatus();
         }
 
         if (isFailureRetCode(status)) {

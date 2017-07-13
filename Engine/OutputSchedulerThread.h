@@ -126,7 +126,7 @@ public:
     /**
      * @brief Launch all TreeRender(s) composing the sub-results
      **/
-    virtual ActionRetCodeEnum launchRenders(const TreeRenderQueueProviderPtr& provider) = 0;
+    virtual void launchRenders(const TreeRenderQueueProviderPtr& provider) = 0;
 
     // Which view is rendered by this sub-result ?
     ViewIdx view;
@@ -169,17 +169,13 @@ public:
         return eActionStatusOK;
     }
 
-    ActionRetCodeEnum launchRenders() WARN_UNUSED_RETURN
+    void launchRenders()
     {
         TreeRenderQueueProviderPtr p = provider.lock();
         assert(p);
         for (std::list<RenderFrameSubResultPtr>::const_iterator it = frames.begin(); it != frames.end(); ++it) {
-            ActionRetCodeEnum stat = (*it)->launchRenders(p);
-            if (isFailureRetCode(stat)) {
-                return stat;
-            }
+            (*it)->launchRenders(p);
         }
-        return eActionStatusOK;
     }
 
     void abortRenders()

@@ -659,12 +659,8 @@ TrackMarker::getMarkerImage(TimeValue time,
 
     FrameViewRequestPtr outputRequest;
 
-    ActionRetCodeEnum stat = args->treeRootEffect->launchRender(render);
-    if (isFailureRetCode(stat)) {
-        return std::make_pair(ImagePtr(), roi);
-    }
-    args->treeRootEffect->waitForRenderFinished(render);
-    stat = render->getStatus();
+    args->treeRootEffect->launchRender(render);
+    ActionRetCodeEnum stat = args->treeRootEffect->waitForRenderFinished(render);
     if (isFailureRetCode(stat)) {
         return std::make_pair(ImagePtr(), roi);
     }

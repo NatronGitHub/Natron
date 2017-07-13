@@ -74,7 +74,7 @@ private:
     friend class TreeRenderQueueProvider;
 
     /// Overriden from TreeRenderLauncherI
-    virtual ActionRetCodeEnum launchRender(const TreeRenderPtr& render) OVERRIDE FINAL;
+    virtual void launchRender(const TreeRenderPtr& render) OVERRIDE FINAL;
     virtual TreeRenderExecutionDataPtr launchSubRender(const EffectInstancePtr& treeRoot,
                                                        TimeValue time,
                                                        ViewIdx view,
@@ -83,7 +83,7 @@ private:
                                                        const ImagePlaneDesc* planeParam,
                                                        const RectD* canonicalRoIParam,
                                                        const TreeRenderPtr& render) OVERRIDE FINAL;
-    virtual void waitForRenderFinished(const TreeRenderPtr& render) OVERRIDE FINAL;
+    virtual ActionRetCodeEnum waitForRenderFinished(const TreeRenderPtr& render) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     ///
 
@@ -111,7 +111,6 @@ private:
 
     virtual void run() OVERRIDE FINAL;
 
-    void appendTreeRenderExecution(const TreeRenderExecutionDataPtr& render);
 
     /**
      * @brief Executed on a thread-pool thread when a FrameViewRenderRunnable is finished

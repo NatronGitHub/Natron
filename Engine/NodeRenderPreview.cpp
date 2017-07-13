@@ -302,11 +302,8 @@ Node::makePreviewImage(TimeValue time,
     TreeRenderPtr render = TreeRender::create(args);
     {
         FrameViewRequestPtr outputRequest;
-        ActionRetCodeEnum stat = getEffectInstance()->launchRender(render);
-        if (isFailureRetCode(stat)) {
-            return false;
-        }
-        getEffectInstance()->waitForRenderFinished(render);
+        getEffectInstance()->launchRender(render);
+        ActionRetCodeEnum stat = getEffectInstance()->waitForRenderFinished(render);
         stat = render->getStatus();
         if (isFailureRetCode(stat)) {
             return false;

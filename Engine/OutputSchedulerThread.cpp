@@ -461,12 +461,7 @@ OutputSchedulerThread::startFrameRender(TimeValue startingFrame)
     }
 
     // Launch the render
-    stat = future->launchRenders();
-
-    if (isFailureRetCode(stat)) {
-        notifyRenderFailure(stat);
-        return;
-    }
+    future->launchRenders();
 
     {
         QMutexLocker k(&_imp->launchedFramesMutex);

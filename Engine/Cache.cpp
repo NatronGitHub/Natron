@@ -4673,32 +4673,33 @@ Cache<persistent>::clear()
 #endif
     try {
 
+
+        boost::scoped_ptr<Sharable_WriteLock> tileWriteLock;
+        createLock<Sharable_WriteLock>(_imp.get(), tileWriteLock, &_imp->ipc->tilesStorageMutex);
         for (int bucket_i = 0; bucket_i < NATRON_CACHE_BUCKETS_COUNT; ++bucket_i) {
             _imp->clearCacheBucket(bucket_i);
         } // for each bucket
 
-        
 
-        {
 
-            boost::scoped_ptr<Sharable_WriteLock> tileWriteLock;
-            createLock<Sharable_WriteLock>(_imp.get(), tileWriteLock, &_imp->ipc->tilesStorageMutex);
-            for (std::size_t i = 0; i < _imp->tilesStorage.size(); ++i) {
-                clearStorage(_imp->tilesStorage[i]);
-            }
-            _imp->tilesStorage.clear();
-            // Ensure we initialize the cache with at least one tile storage file
-#ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
 
-            boost::shared_ptr<Sharable_WriteLock> bucketWriteLock;
-            boost::shared_ptr<Sharable_ReadLock> tocReadLock;
-            boost::shared_ptr<Sharable_WriteLock> tocWriteLock;
-            _imp->createTileStorageInternal(bucketWriteLock, tocReadLock, tocWriteLock);
-#endif
+
+        for (std::size_t i = 0; i < _imp->tilesStorage.size(); ++i) {
+            clearStorage(_imp->tilesStorage[i]);
         }
+        _imp->tilesStorage.clear();
+        // Ensure we initialize the cache with at least one tile storage file
+#ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOaR_CENTRALIZED
+
+        boost::shared_ptr<Sharable_WriteLock> bucketWriteLock;
+        boost::shared_ptr<Sharable_ReadLock> tocReadLock;
+        boost::shared_ptr<Sharable_WriteLock> tocWriteLock;
+        _imp->createTileStorageInternal(bucketWriteLock, tocReadLock, tocWriteLock);
+#endif
+
 
     } catch (...) {
-
+        
     }
     
     

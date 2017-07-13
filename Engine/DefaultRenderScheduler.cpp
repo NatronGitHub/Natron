@@ -53,9 +53,7 @@ public:
 
     virtual ActionRetCodeEnum waitForResultsReady(const TreeRenderQueueProviderPtr& provider) OVERRIDE FINAL
     {
-        provider->waitForRenderFinished(render);
-
-        ActionRetCodeEnum stat = render->getStatus();
+        ActionRetCodeEnum stat = provider->waitForRenderFinished(render);
 
         // We no longer need the render object since the processFrame() function does nothing.
         render.reset();
@@ -63,9 +61,9 @@ public:
         return stat;
     }
 
-    virtual ActionRetCodeEnum launchRenders(const TreeRenderQueueProviderPtr& provider) OVERRIDE FINAL WARN_UNUSED_RETURN
+    virtual void launchRenders(const TreeRenderQueueProviderPtr& provider) OVERRIDE FINAL
     {
-        return provider->launchRender(render);
+        provider->launchRender(render);
     }
 
     virtual void abortRender() OVERRIDE FINAL
