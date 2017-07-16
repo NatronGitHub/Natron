@@ -285,8 +285,6 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats)
         return;
     }
 
-    // We are about to trigger a new render, cancel all other renders except the oldest so user gets some feedback.
-    onAbortRequested(true /*keepOldestRender*/);
 
     boost::shared_ptr<CurrentFrameRequestStartArgs> args(new CurrentFrameRequestStartArgs);
 
@@ -308,6 +306,12 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats)
 
     // While painting, use a single render thread and always the same thread.
     args->curStroke = treeRoot->getApp()->getActiveRotoDrawingStroke();
+
+
+    // We are about to trigger a new render, cancel all other renders except the oldest so user gets some feedback.
+    if (!args->curStroke) {
+        onAbortRequested(true /*keepOldestRender*/);
+    }
 
     // Launch the render in the ViewerCurrentFrameRequestScheduler thread
     startTask(args);

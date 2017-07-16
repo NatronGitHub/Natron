@@ -1726,6 +1726,7 @@ EffectInstance::launchRenderInternal(const TreeRenderExecutionDataPtr& requestPa
         requestData->setRequestedScaleImagePlane(downscaledImage);
     }
     //QString name = QString::fromUtf8(getScriptName_mt_safe().c_str()) + QString::fromUtf8("_") + QString::number(getCurrentRenderTime()) + QString::fromUtf8("_") +  QDateTime::currentDateTime().toString() + QString::fromUtf8(".png");
+    //QString name = QString::number((U64)getCurrentRender().get()) +  QString::fromUtf8("_") + QString::fromUtf8(getScriptName_mt_safe().c_str()) + QString::fromUtf8(".jpg") ;
     //appPTR->debugImage(requestData->getRequestedScaleImagePlane().get(), requestData->getRequestedScaleImagePlane()->getBounds(), name);
     return isRenderAborted() ? eActionStatusAborted : eActionStatusOK;
 } // launchRenderInternal

@@ -85,6 +85,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/AppManager.h"
 #include "Engine/StorageDeleterThread.h"
 #include "Global/FStreamsSupport.h"
+#include "Engine/EffectInstanceActionResults.h"
 #include "Engine/MemoryFile.h"
 #include "Engine/MemoryInfo.h"
 #include "Engine/Hash64.h"
@@ -2238,7 +2239,9 @@ CacheEntryLockerPrivate<persistent>::lookupAndSetStatusInternal(bool removeIfOOM
 
     if (found->second->status == MemorySegmentEntryHeaderBase::eEntryStatusPending) {
 
-        if (cache->_imp->isUUIDCurrentlyActive(found->second->computeProcessUUID)) {
+        // A persistent Cache is always active since the Cache dies with the process.
+        const bool uuidActive = !persistent || cache->_imp->isUUIDCurrentlyActive(found->second->computeProcessUUID);
+        if (uuidActive) {
 
             bool recursionDetected = !processLocalEntry->allowMultipleFetchForThread() && (found->second->computeThreadMagic == reinterpret_cast<U64>(QThread::currentThread()));
             if (recursionDetected) {
@@ -2260,7 +2263,7 @@ CacheEntryLockerPrivate<persistent>::lookupAndSetStatusInternal(bool removeIfOOM
             return eLookUpRetCodeNotFound;
         }
 #ifdef CACHE_TRACE_ENTRY_ACCESS
-        qDebug() << QThread::currentThread() << "(locker=" << this << ")"<< hash << ": entry pending timeout, thread" << QThread::currentThread() << "is taking over the entry";
+        qDebug() << QThread::currentThread() << "(locker=" << this << ")"<< hash << ": entry pending timeout, uuid active ?" << uuidActive << "thread" << QThread::currentThread() << "is taking over the entry";
 #endif
     }
 
