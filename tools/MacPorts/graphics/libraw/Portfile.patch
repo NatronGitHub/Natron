@@ -1,34 +1,45 @@
---- Portfile.orig	2017-01-26 09:42:13.000000000 +0100
-+++ Portfile	2017-03-03 14:52:48.000000000 +0100
-@@ -3,8 +3,8 @@
+--- Portfile.orig	2017-07-17 20:07:57.000000000 +0200
++++ Portfile	2017-07-17 21:09:15.000000000 +0200
+@@ -3,40 +3,48 @@
  PortSystem 1.0
  
  name             libraw
 -version          0.17.2
 -revision         2
-+version          0.18.1
++version          0.18.2
 +#revision         2
  homepage         http://www.libraw.org/
  description      library for RAW images manipulation
  long_description      a library for reading RAW files obtained from digital photo cameras (CRW/CR2, NEF, RAF, DNG, and others)
-@@ -22,19 +22,19 @@
+ categories       graphics
+ platforms        darwin
+-license          LGPL-2.1 CDDL GPL-2+ GPL-3+
++license          LGPL-2.1 CDDL
+ maintainers      pvanek openmaintainer
  
+ master_sites     http://www.libraw.org/data/
+ distname         LibRaw-${version}
+ 
+-distfiles-append \
+-    LibRaw-demosaic-pack-GPL2-${version}${extract.suffix} \
+-    LibRaw-demosaic-pack-GPL3-${version}${extract.suffix}
+-
  checksums \
      LibRaw-${version}${extract.suffix} \
 -    rmd160  92f6cbbcdc64e33b154f680a8dfdfe1ab8d7302f \
 -    sha256  92b0c42c7666eca9307e5e1f97d6fefc196cf0b7ee089e22880259a76fafd15c \
-+    rmd160  77ddd7c1cb953f59dd3855dd0ebc023fdaac785a \
-+    sha256  48228f733013a7a0cba08d1821438b983e698feeda7cbc3976ce46ceab07b899 \
++    rmd160  798e9f6703f86ccba71e9ec247f155f05badb454 \
++    sha256  ce366bb38c1144130737eb16e919038937b4dc1ab165179a225d5e847af2abc6 \
      LibRaw-demosaic-pack-GPL2-${version}${extract.suffix} \
 -    rmd160  e6d3120134c723e44539863162918ed41d684128 \
 -    sha256  a2e5e9cc04fa8f3e94070110dce8a06aa3b0b2f573ed99c5fc3e327d15f014b7 \
-+    rmd160  c1ef89562b3eec7d5799e093ffc49718ff9cbed2 \
-+    sha256  51d42ef0992517969d1c9f876159ade1047b3772effcf7779b465ae7b98300b6 \
++    rmd160  ed8b324114e14e265554b65c0c7756ce7f8fce11 \
++    sha256  f467689182728240c6358c1b890e9fe4ee08667c74433f6bd6a4710e3ae2aab6 \
      LibRaw-demosaic-pack-GPL3-${version}${extract.suffix} \
 -    rmd160  b6e3d1cf8edc3c46b003cd52272a617bd1e5acef \
 -    sha256  b00cd0f54851bd3c8a66be4cacbf049e4508f1bac8ff85cb4528d8979739ed36
-+    rmd160  33f40c3ed9979ede8cd5d364e321ae879909f93a \
-+    sha256  9e7020cf8a512f2c9b8699685e4657a474cc03a0314ba56a108ceda26013c841
++    rmd160  be80101006a4bac6976ef8bce2c36b6ddba1555e \
++    sha256  01080bc2448de87339f086229319c9e1cca97ac0621416feb537b96f0dba4a57
  
  depends_build    port:pkgconfig
  
@@ -37,4 +48,18 @@
 +                 path:lib/libjpeg.dylib:jpeg   \
                   port:lcms2
  
++variant gpl2 description {Enable GPL code, license will be GPL-2+} {
++    distfiles-append LibRaw-demosaic-pack-GPL2-${version}${extract.suffix}
++
++    license                 GPL-2+
++}
++
++variant gpl3 requires gpl2 description {Enable GPL code, license will be GPL-3+} {
++    distfiles-append LibRaw-demosaic-pack-GPL3-${version}${extract.suffix}
++
++    license                 GPL-3+
++}
++
  post-destroot {
+     set htmlDir ${destroot}${prefix}/share/doc/${name}/html
+     xinstall -d -m 0755 ${htmlDir}
