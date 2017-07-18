@@ -202,6 +202,10 @@ public:
     // Get a tile
     TileState* getTileAt(int tx, int ty);
     const TileState* getTileAt(int tx, int ty) const;
+
+#ifdef DEBUG
+    void printStateMap();
+#endif
 };
 
 

@@ -555,10 +555,15 @@ Image::ensureBounds(const RectI& roi,
         if (!tmpImage) {
             return eActionStatusFailed;
         }
+/*
+        float fillValue = isGlEntry ? 0 : std::numeric_limits<float>::quiet_NaN();
+        ActionRetCodeEnum stat = tmpImage->fill(initArgs.bounds, fillValue, fillValue, fillValue, fillValue);
+*/
         ActionRetCodeEnum stat = tmpImage->fillBoundsZero();
         if (isFailureRetCode(stat)) {
             return stat;
         }
+
     }
     Image::CopyPixelsArgs cpyArgs;
     cpyArgs.roi = oldBounds;

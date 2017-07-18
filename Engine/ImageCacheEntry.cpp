@@ -39,6 +39,7 @@
 #include "Engine/Cache.h"
 #include "Engine/CacheEntryBase.h"
 #include "Engine/Hash64.h"
+#include "Engine/Node.h"
 #include "Engine/ImageCacheKey.h"
 #include "Engine/ImageStorage.h"
 #include "Engine/ImagePrivate.h"
@@ -570,19 +571,24 @@ static void growTilesState(const RectI& newPixelRoD, TileStateHeader* stateToGro
     if (newPixelRoD == stateToGrow->state->bounds) {
         return;
     }
+
     TileStateHeader tmpHeader;
     tmpHeader.init(stateToGrow->tileSizeX, stateToGrow->tileSizeY, newPixelRoD);
 
     // If any tile is marked rendered locally, update the copied state
     for (int ty = tmpHeader.state->boundsRoundedToTileSize.y1; ty < tmpHeader.state->boundsRoundedToTileSize.y2; ty += tmpHeader.tileSizeY) {
         for (int tx = tmpHeader.state->boundsRoundedToTileSize.x1; tx < tmpHeader.state->boundsRoundedToTileSize.x2; tx += tmpHeader.tileSizeX) {
+
             const TileState* state = stateToGrow->getTileAt(tx, ty);
             if (!state) {
                 continue;
             }
             TileState* thisState = tmpHeader.getTileAt(tx, ty);
             assert(thisState);
-            *thisState = *state;
+            // Copy the tile state, unless the bounds of the tile changed
+            if (state->bounds == thisState->bounds) {
+                *thisState = *state;
+            }
         }
     }
     *stateToGrow->state = *tmpHeader.state;
@@ -2102,6 +2108,7 @@ ImageCacheEntry::markCacheTilesInRegionAsNotRendered(const RectI& roi)
     if (roi.isNull()) {
         return;
     }
+ 
     RectI roiIntersected;
     roi.intersect(_imp->localTilesState.state->bounds, &roiIntersected);
 
@@ -2134,19 +2141,16 @@ ImageCacheEntry::markCacheTilesInRegionAsNotRendered(const RectI& roi)
     RectI mipmap0Roi = roiIntersected.upscalePowerOfTwo(_imp->mipMapLevel);
 
 
-
-
-
     for (std::size_t i = 0; i < _imp->internalCacheEntry->perMipMapTilesState.size(); ++i) {
         
         RectI levelRoi = mipmap0Roi.downscalePowerOfTwo(i);
+
         RectI levelRoIRounded = levelRoi;
         levelRoIRounded.roundToTileSize(_imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY);
         TileStateHeader cacheStateMap = TileStateHeader(_imp->localTilesState.tileSizeX, _imp->localTilesState.tileSizeY, &_imp->internalCacheEntry->perMipMapTilesState[i]);
         if (cacheStateMap.state->tiles.empty()) {
             continue;
         }
-
 
         for (int ty = levelRoIRounded.y1; ty < levelRoIRounded.y2; ty += _imp->localTilesState.tileSizeY) {
             for (int tx = levelRoIRounded.x1; tx < levelRoIRounded.x2; tx += _imp->localTilesState.tileSizeX) {
@@ -2176,6 +2180,7 @@ ImageCacheEntry::markCacheTilesInRegionAsNotRendered(const RectI& roi)
             }
         }
     }
+
 
     if (!tileIndicesToRelease.empty()) {
         _imp->internalCacheEntry->getCache()->releaseTiles(_imp->internalCacheEntry, tileIndicesToRelease);

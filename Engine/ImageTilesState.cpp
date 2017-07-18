@@ -25,7 +25,9 @@
 
 
 #include "ImageTilesState.h"
-
+#include <QDebug>
+#include <QThread>
+#include <iostream>
 
 NATRON_NAMESPACE_ENTER
 
@@ -95,6 +97,9 @@ TileState*
 TileStateHeader::getTileAt(int tx, int ty)
 {
     assert(tx % tileSizeX == 0 && ty % tileSizeY == 0);
+    if (ty < state->boundsRoundedToTileSize.y1 || ty > state->boundsRoundedToTileSize.y2 - tileSizeY || tx < state->boundsRoundedToTileSize.x1 || tx > state->boundsRoundedToTileSize.x2 - tileSizeX) {
+        return NULL;
+    }
     int index = (((ty - state->boundsRoundedToTileSize.y1) / tileSizeY) * (state->boundsRoundedToTileSize.width() / tileSizeX)) + (tx - state->boundsRoundedToTileSize.x1) / tileSizeX;
     if (index >= 0 && index < (int)state->tiles.size()) {
         return &state->tiles[index];
@@ -108,12 +113,47 @@ TileStateHeader::getTileAt(int tx, int ty) const
 {
     assert(tx % tileSizeX == 0 && ty % tileSizeY == 0);
     int index = (((ty - state->boundsRoundedToTileSize.y1) / tileSizeY) * (state->boundsRoundedToTileSize.width() / tileSizeX)) + (tx - state->boundsRoundedToTileSize.x1) / tileSizeX;
+    if (ty < state->boundsRoundedToTileSize.y1 || ty > state->boundsRoundedToTileSize.y2 - tileSizeY || tx < state->boundsRoundedToTileSize.x1 || tx > state->boundsRoundedToTileSize.x2 - tileSizeX) {
+        return NULL;
+    }
     if (index >= 0 && index < (int)state->tiles.size()) {
         return &state->tiles[index];
     } else {
         return NULL;
     }
 }
+
+#ifdef DEBUG
+void
+TileStateHeader::printStateMap()
+{
+    std::cout << QThread::currentThread()->objectName().toStdString() << "=================DUMP=================" << std::endl;
+    std::cout << "Bounds:" << state->bounds.x1 << " " << state->bounds.y1 << " " << state->bounds.x2 << " " << state->bounds.y2 << std::endl;
+    std::cout << "BoundsRounded:" << state->boundsRoundedToTileSize.x1 << " "<< state->boundsRoundedToTileSize.y1 << " "<< state->boundsRoundedToTileSize.x2 << " " << state->boundsRoundedToTileSize.y2 << std::endl;
+    for (int ty = state->boundsRoundedToTileSize.y1; ty < state->boundsRoundedToTileSize.y2; ty += tileSizeY) {
+        for (int tx = state->boundsRoundedToTileSize.x1; tx < state->boundsRoundedToTileSize.x2; tx += tileSizeX) {
+            TileState* tile = getTileAt(tx, ty);
+            assert(tile);
+            switch (tile->status) {
+                case eTileStatusNotRendered:
+                    std::cout << "0";
+                    break;
+                case eTileStatusPending:
+                    std::cout << "P";
+                    break;
+                case eTileStatusRenderedLowQuality:
+                case eTileStatusRenderedHighestQuality:
+                    std::cout << "1";
+                    break;
+            }
+            std::cout << ' ';
+        }
+        if (ty < state->boundsRoundedToTileSize.y2 - 1) {
+            std::cout << std::endl;
+        }
+    }
+}
+#endif
 
 void
 ImageTilesState::getABCDRectangles(const RectI& srcBounds, const RectI& biggerBounds, RectI& aRect, RectI& bRect, RectI& cRect, RectI& dRect)
@@ -260,9 +300,9 @@ ImageTilesState::getMinimalBboxToRenderFromTilesState(const RectI& roi, const Ti
         }
     }
 
-    // Intersect the result to the original roi (because the tiles are rounded to tile size)
+    // Intersect the result to the bounds (because the tiles are rounded to tile size)
     RectI ret;
-    roiRoundedToTileSize.intersect(roi, &ret);
+    roiRoundedToTileSize.intersect(stateMap.state->bounds, &ret);
     return ret;
 
 
@@ -333,9 +373,9 @@ ImageTilesState::getMinimalRectsToRenderFromTilesState(const RectI& roi, const T
         }
     }
     if ( !bboxA.isNull() ) { // empty boxes should not be pushed
-        // Ensure the bbox lies in the RoI since we rounded to tile size earlier
+        // Ensure the bbox lies in the bounds since we rounded to tile size earlier
         RectI bboxAIntersected;
-        bboxA.intersect(roi, &bboxAIntersected);
+        bboxA.intersect(stateMap.state->bounds, &bboxAIntersected);
         rectsToRender->push_back(bboxAIntersected);
     }
 
@@ -363,9 +403,9 @@ ImageTilesState::getMinimalRectsToRenderFromTilesState(const RectI& roi, const T
     }
 
     if ( !bboxB.isNull() ) { // empty boxes should not be pushed
-        // Ensure the bbox lies in the RoI since we rounded to tile size earlier
+        // Ensure the bbox lies in the bounds since we rounded to tile size earlier
         RectI bboxBIntersected;
-        bboxB.intersect(roi, &bboxBIntersected);
+        bboxB.intersect(stateMap.state->bounds, &bboxBIntersected);
         rectsToRender->push_back(bboxBIntersected);
     }
 
@@ -393,9 +433,9 @@ ImageTilesState::getMinimalRectsToRenderFromTilesState(const RectI& roi, const T
         }
     }
     if ( !bboxC.isNull() ) { // empty boxes should not be pushed
-        // Ensure the bbox lies in the RoI since we rounded to tile size earlier
+        // Ensure the bbox lies in the bounds since we rounded to tile size earlier
         RectI bboxCIntersected;
-        bboxC.intersect(roi, &bboxCIntersected);
+        bboxC.intersect(stateMap.state->bounds, &bboxCIntersected);
         rectsToRender->push_back(bboxCIntersected);
     }
 
@@ -422,9 +462,9 @@ ImageTilesState::getMinimalRectsToRenderFromTilesState(const RectI& roi, const T
         }
     }
     if ( !bboxD.isNull() ) { // empty boxes should not be pushed
-        // Ensure the bbox lies in the RoI since we rounded to tile size earlier
+        // Ensure the bbox lies in the bounds since we rounded to tile size earlier
         RectI bboxDIntersected;
-        bboxD.intersect(roi, &bboxDIntersected);
+        bboxD.intersect(stateMap.state->bounds, &bboxDIntersected);
         rectsToRender->push_back(bboxDIntersected);
     }
 
@@ -452,9 +492,9 @@ ImageTilesState::getMinimalRectsToRenderFromTilesState(const RectI& roi, const T
     bboxX = getMinimalBboxToRenderFromTilesState(bboxX, stateMap);
 
     if ( !bboxX.isNull() ) { // empty boxes should not be pushed
-        // Ensure the bbox lies in the RoI since we rounded to tile size earlier
+        // Ensure the bbox lies in the bounds since we rounded to tile size earlier
         RectI bboxXIntersected;
-        bboxX.intersect(roi, &bboxXIntersected);
+        bboxX.intersect(stateMap.state->bounds, &bboxXIntersected);
         rectsToRender->push_back(bboxXIntersected);
     }
     
