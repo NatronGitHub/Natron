@@ -117,7 +117,6 @@ ViewerTabPrivate::getOverlayTransform(TimeValue time,
 
 
     if (stat == eActionStatusOK) {
-        assert(input);
         if (!input) {
             return false;
         }
