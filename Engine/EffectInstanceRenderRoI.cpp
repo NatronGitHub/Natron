@@ -1103,12 +1103,12 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
 
     // If this request was already requested, don't request again except if the RoI is not
     // contained in the request RoI
-    if (requestData->getStatus(requestPassSharedData) != FrameViewRequest::eFrameViewRequestStatusNotRendered) {
-        if (requestData->getCurrentRoI().contains(roiCanonical)) {
+    if (requestData->getCurrentRoI().contains(roiCanonical)) {
+        if (requestData->getStatus(requestPassSharedData) != FrameViewRequest::eFrameViewRequestStatusNotRendered || requestData->getMainExecutionStatus() !=  FrameViewRequest::eFrameViewRequestStatusNotRendered) {
             return eActionStatusOK;
-
         }
     }
+
 
     // Some nodes do not support render-scale and can only render at scale 1.
     // If the render requested a mipmap level different than 0, we must render at mipmap level 0 then downscale to the requested
@@ -1367,7 +1367,6 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
 
                 // Notify the TreeRender of the update area so that in turn the OpenGL viewer can update only the required portion
                 // of the texture
-                getCurrentRender()->setActiveStrokeUpdateArea(updateAreaPixel);
                 //qDebug() << getScriptName_mt_safe().c_str() << "update area";
                 //updateAreaCanonical.debug();
                 if (updateAreaPixel.isNull()) {

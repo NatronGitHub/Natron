@@ -1196,6 +1196,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const TextureTransferArgs& args)
                 if (args.type == TextureTransferArgs::eTextureTransferTypeReplace || tex->getBounds().isNull()) {
                     tex->ensureTextureHasSize(imageData.bounds, 0);
                 } else {
+                    assert(args.type == TextureTransferArgs::eTextureTransferTypeModify);
                     // If we just want to update a portion of the texture, check if we are inside the bounds of the texture, otherwise create a new one.
                     if (!tex->getBounds().contains(imageData.bounds)) {
                         RectI unionedBounds = tex->getBounds();

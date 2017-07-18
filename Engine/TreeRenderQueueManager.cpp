@@ -234,7 +234,7 @@ TreeRenderQueueManager::launchSubRender(const EffectInstancePtr& treeRoot,
 
     TreeRenderExecutionDataPtr execData = render->createSubExecutionData(treeRoot, time, view, proxyScale, mipMapLevel, planeParam, canonicalRoIParam);
     if (isFailureRetCode(execData->getStatus())) {
-        render->setResults(FrameViewRequestPtr(), execData->getStatus());
+        render->setResults(FrameViewRequestPtr(), execData);
     } else {
         _imp->appendTreeRenderExecution(execData);
     }
@@ -803,7 +803,7 @@ TreeRenderQueueManager::Implementation::launchTreeRender(const TreeRenderPtr& re
 {
     TreeRenderExecutionDataPtr execData = render->createMainExecutionData();
     if (isFailureRetCode(execData->getStatus())) {
-        render->setResults(FrameViewRequestPtr(), execData->getStatus());
+        render->setResults(FrameViewRequestPtr(), execData);
         onTaskRenderFinished(execData);
     } else {
         appendTreeRenderExecution(execData);

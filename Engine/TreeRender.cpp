@@ -229,11 +229,15 @@ TreeRender::getRotoPaintActiveStrokeUpdateArea(RectI* updateArea) const
 }
 
 void
-TreeRender::setActiveStrokeUpdateArea(const RectI& area)
+TreeRender::setOrUnionActiveStrokeUpdateArea(const RectI& area)
 {
     QMutexLocker k(&_imp->extraRequestedResultsMutex);
-    _imp->activeStrokeUpdateArea = area;
-    _imp->activeStrokeUpdateAreaSet = true;
+    if (!_imp->activeStrokeUpdateAreaSet) {
+        _imp->activeStrokeUpdateArea = area;
+        _imp->activeStrokeUpdateAreaSet = true;
+    } else {
+        _imp->activeStrokeUpdateArea.merge(area);
+    }
 }
 
 OSGLContextPtr
@@ -447,11 +451,15 @@ TreeRenderPrivate::init(const TreeRender::CtorArgsPtr& inArgs)
 } // init
 
 void
-TreeRender::setResults(const FrameViewRequestPtr& request, ActionRetCodeEnum status)
+TreeRender::setResults(const FrameViewRequestPtr& request, const TreeRenderExecutionDataPtr& execData)
 {
-    if (isFailureRetCode(status)) {
-        QMutexLocker k(&_imp->stateMutex);
-        _imp->state = status;
+    // Only update the status of the tree for the main execution
+    if (execData->isTreeMainExecution()) {
+        ActionRetCodeEnum status = execData->getStatus();
+        if (isFailureRetCode(status)) {
+            QMutexLocker k(&_imp->stateMutex);
+            _imp->state = status;
+        }
     }
     if (request) {
         QMutexLocker k(&_imp->extraRequestedResultsMutex);
@@ -710,7 +718,7 @@ TreeRenderExecutionDataPrivate::onTaskFinished(const FrameViewRequestPtr& reques
     
     // If the results for this node were requested by the caller, insert them
     TreeRenderPtr render = treeRender.lock();
-    render->setResults(request, status);
+    render->setResults(request, sharedData);
     
     appPTR->getTasksQueueManager()->notifyTaskInRenderFinished(sharedData, wasLastTaskRemaining, isRunningInThreadPoolThread());
 

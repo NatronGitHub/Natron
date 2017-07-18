@@ -382,6 +382,19 @@ FrameViewRequest::getStatus(const TreeRenderExecutionDataPtr& requestData) const
     return data.status;
 }
 
+FrameViewRequest::FrameViewRequestStatusEnum
+FrameViewRequest::getMainExecutionStatus() const
+{
+    QMutexLocker k(&_imp->lock);
+    for (LaunchRequestDataMap::const_iterator it = _imp->requestData.begin(); it != _imp->requestData.end(); ++it) {
+        TreeRenderExecutionDataPtr exec = it->first.lock();
+        if (exec && exec->isTreeMainExecution()) {
+            return it->second.status;
+        }
+    }
+    return FrameViewRequest::eFrameViewRequestStatusNotRendered;
+}
+
 void
 FrameViewRequest::initStatus(FrameViewRequestStatusEnum status, const TreeRenderExecutionDataPtr& requestData)
 {
@@ -456,6 +469,7 @@ FrameViewRequest::markDependencyAsRendered(const TreeRenderExecutionDataPtr& req
     if (data.status == eFrameViewRequestStatusPassThrough) {
         assert(deps && data.dependencies.size() == 1 && *data.dependencies.begin() == deps);
         _imp->requestedScaleImage = deps->getRequestedScaleImagePlane();
+        _imp->fullScaleImage = _imp->requestedScaleImage;
         _imp->finalRoi = deps->getCurrentRoI();
     }
 

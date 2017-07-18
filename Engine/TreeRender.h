@@ -347,7 +347,7 @@ public:
      * This is in pixel coordinates at the mipmap level given to render
      **/
     bool getRotoPaintActiveStrokeUpdateArea(RectI* area) const;
-    void setActiveStrokeUpdateArea(const RectI& area);
+    void setOrUnionActiveStrokeUpdateArea(const RectI& area);
 
     /**
      * @brief Returns the object used to gather stats for this rende
@@ -399,7 +399,7 @@ private:
      **/
     std::list<TreeRenderExecutionDataPtr> getExtraRequestedResultsExecutionData();
 
-    void setResults(const FrameViewRequestPtr& request, ActionRetCodeEnum status);
+    void setResults(const FrameViewRequestPtr& request, const TreeRenderExecutionDataPtr& execData);
 
 
     void cleanupRenderClones();

@@ -164,6 +164,11 @@ public:
     FrameViewRequestStatusEnum getStatus(const TreeRenderExecutionDataPtr& requestData) const;
 
     /**
+     * @brief Get the status of the request on the main execution
+     **/
+    FrameViewRequestStatusEnum getMainExecutionStatus() const;
+
+    /**
      * @brief Called in requestRender to initialize the status of this object.
      **/
     void initStatus(FrameViewRequestStatusEnum status, const TreeRenderExecutionDataPtr& requestData);
