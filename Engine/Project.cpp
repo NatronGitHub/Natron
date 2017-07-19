@@ -2584,8 +2584,10 @@ Project::unionFrameRangeWith(TimeValue first,
     curFirst = !mustSet ? std::min((double)first, (double)curFirst) : first;
     curLast = !mustSet ? std::max((double)last, (double)curLast) : last;
     ScopedChanges_RAII changes(this);
-    _imp->frameRange->setValue(curFirst);
-    _imp->frameRange->setValue(curLast, ViewIdx(0), DimIdx(1));
+    std::vector<int> dims(2);
+    dims[0] = curFirst;
+    dims[1] = curLast;
+    _imp->frameRange->setValueAcrossDimensions(dims);
 
 }
 
@@ -2599,8 +2601,10 @@ Project::recomputeFrameRangeFromReaders()
         return;
     }
     ScopedChanges_RAII changes(this);
-    _imp->frameRange->setValue(first, ViewSetSpec::all(), DimIdx(0));
-    _imp->frameRange->setValue(last, ViewSetSpec::all(), DimIdx(1));
+    std::vector<int> dims(2);
+    dims[0] = first;
+    dims[1] = last;
+    _imp->frameRange->setValueAcrossDimensions(dims);
     
 }
 

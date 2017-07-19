@@ -590,6 +590,7 @@ EffectInstance::Implementation::checkRestToRender(bool updateTilesStateFromCache
                         r.identityInputNumber = identityInputNb;
                         r.identityTime = identityInputTime;
                         r.identityView = inputIdentityView;
+                        r.identityPlane = identityPlane;
                         identityRects.push_back(r);
                     }
                 } // if outside of inputs intersection
@@ -1104,10 +1105,14 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
     // If this request was already requested, don't request again except if the RoI is not
     // contained in the request RoI
     if (requestData->getCurrentRoI().contains(roiCanonical)) {
-        if (requestData->getStatus(requestPassSharedData) != FrameViewRequest::eFrameViewRequestStatusNotRendered || requestData->getMainExecutionStatus() !=  FrameViewRequest::eFrameViewRequestStatusNotRendered) {
+        FrameViewRequest::FrameViewRequestStatusEnum mainExecStatus = requestData->getMainExecutionStatus();
+        if (mainExecStatus !=  FrameViewRequest::eFrameViewRequestStatusNotRendered) {
+            requestData->initStatus(mainExecStatus, requestPassSharedData);
+            return eActionStatusOK;
+        } else if (requestData->getStatus(requestPassSharedData) != FrameViewRequest::eFrameViewRequestStatusNotRendered) {
             return eActionStatusOK;
         }
-    }
+    } 
 
 
     // Some nodes do not support render-scale and can only render at scale 1.
@@ -1246,7 +1251,27 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
     RectD roundedCanonicalRoI;
     renderMappedRoI.toCanonical(mappedCombinedScale, par, perMipMapLevelRoDCanonical[mappedMipMapLevel], &roundedCanonicalRoI);
 
+
+    // Check that the image rendered in output is always rounded to the tile size intersected to the RoD
+    assert(renderMappedRoI.x1 % tileWidth == 0 || renderMappedRoI.x1 == perMipMapLevelRoDPixel[mappedMipMapLevel].x1);
+    assert(renderMappedRoI.y1 % tileHeight == 0 || renderMappedRoI.y1 == perMipMapLevelRoDPixel[mappedMipMapLevel].y1);
+    assert(renderMappedRoI.x2 % tileWidth == 0 || renderMappedRoI.x2 == perMipMapLevelRoDPixel[mappedMipMapLevel].x2);
+    assert(renderMappedRoI.y2 % tileHeight == 0 || renderMappedRoI.y2 == perMipMapLevelRoDPixel[mappedMipMapLevel].y2);
+
+
+    // Check again that we actually did not already render this region now that we intersected with the rod
+    if (requestData->getCurrentRoI().contains(roiCanonical)) {
+        FrameViewRequest::FrameViewRequestStatusEnum mainExecStatus = requestData->getMainExecutionStatus();
+        if (mainExecStatus !=  FrameViewRequest::eFrameViewRequestStatusNotRendered) {
+            requestData->initStatus(mainExecStatus, requestPassSharedData);
+            return eActionStatusOK;
+        } else if (requestData->getStatus(requestPassSharedData) != FrameViewRequest::eFrameViewRequestStatusNotRendered) {
+            return eActionStatusOK;
+        }
+    }
+
     // Merge the roi requested onto the existing RoI requested for this frame/view
+
     {
         RectD curRoI = requestData->getCurrentRoI();
         if (curRoI.isNull()) {
@@ -1429,8 +1454,10 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
         requestData->setFullscaleImagePlane(fullScaleImage);
 
 
-        // Set the accumulation buffer if it was not already set
-        if (isAccumulating && !accumBuffer) {
+        // Set the accumulation buffer if:
+        // - The effect accumulates and it does not yet have a buffer
+        // - The effect is no longer accumulating but has a buffer, in which case we update the accumulation buffer.
+        if ((isAccumulating && !accumBuffer) || (!isAccumulating && accumBuffer)) {
             setAccumBuffer(requestData->getPlaneDesc(), requestedImageScale);
         }
 
@@ -1530,6 +1557,7 @@ EffectInstance::launchRenderInternal(const TreeRenderExecutionDataPtr& requestPa
 
         perMipMapLevelRoDCanonical[m].toPixelEnclosing(levelCombinedScale, par, &perMipMapLevelRoDPixel[m]);
     }
+
 
 #ifdef DEBUG
     // Check that the image rendered in output is always rounded to the tile size intersected to the RoD
@@ -1880,17 +1908,18 @@ EffectInstance::Implementation::launchPluginRenderAndHostFrameThreading(const Fr
         }
 
         // Use the plane specified with the getLayersProducedAndNeeded action
-        const std::map<int, std::list<ImagePlaneDesc> >& neededInputPlanes = requestData->getComponentsResults()->getNeededInputPlanes();
-        std::map<int, std::list<ImagePlaneDesc> >::const_iterator foundInputPlane = neededInputPlanes.find(it->identityInputNumber);
+        //const std::map<int, std::list<ImagePlaneDesc> >& neededInputPlanes = requestData->getComponentsResults()->getNeededInputPlanes();
+        //std::map<int, std::list<ImagePlaneDesc> >::const_iterator foundInputPlane = neededInputPlanes.find(it->identityInputNumber);
 
         for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it2 = cachedPlanes.begin(); it2 != cachedPlanes.end(); ++it2) {
             IdentityPlaneKey p;
             p.identityInputNb = it->identityInputNumber;
-            if (foundInputPlane != neededInputPlanes.end() && foundInputPlane->second.size() > 0) {
+            /*if (foundInputPlane != neededInputPlanes.end() && foundInputPlane->second.size() > 0) {
                 p.identityPlane = foundInputPlane->second.front();
             } else {
                 p.identityPlane = it2->first;
-            }
+            }*/
+            p.identityPlane = it->identityPlane;
             p.identityTime = it->identityTime;
             p.identityView = it->identityView;
             IdentityPlanesMap::const_iterator foundFetchedPlane = functorArgs->identityPlanes.find(p);

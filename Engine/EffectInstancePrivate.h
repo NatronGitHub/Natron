@@ -62,12 +62,14 @@ struct RectToRender
     int identityInputNumber;
     TimeValue identityTime;
     ViewIdx identityView;
+    ImagePlaneDesc identityPlane;
 
     RectToRender()
     : rect()
     , identityInputNumber(-1)
     , identityTime(0)
     , identityView(0)
+    , identityPlane()
     {
 
     }

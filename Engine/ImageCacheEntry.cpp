@@ -1899,15 +1899,6 @@ ImageCacheEntry::fetchCachedTilesAndUpdateStatus(TileStateHeader* tileStatus, bo
                 cacheAccess->insertInCache();
             }
 
-
-            bool markedTilesModified = false;
-            for (std::size_t i = 0; i < markedTilesSize.size(); ++i) {
-                if (i < _imp->markedTiles.size() && _imp->markedTiles[i].size() != markedTilesSize[i]) {
-                    markedTilesModified = true;
-                    break;
-                }
-            }
-
             if (!_imp->tilesToDownscale.empty() || !_imp->tilesToFetch.empty()) {
                 boost::scoped_ptr<boost::unique_lock<boost::shared_mutex> > writeLock;
                 if (!_imp->internalCacheEntry->isPersistent()) {
@@ -2165,6 +2156,9 @@ ImageCacheEntry::markCacheTilesInRegionAsNotRendered(const RectI& roi)
 
                 TileState* cacheTileState = cacheStateMap.getTileAt(tx, ty);
                 assert(cacheTileState);
+                if (cacheTileState->status == eTileStatusNotRendered) {
+                    continue;
+                }
                 cacheTileState->status = eTileStatusNotRendered;
                 hasModifiedTileMap = true;
 #ifdef TRACE_TILES_STATUS
@@ -2182,7 +2176,7 @@ ImageCacheEntry::markCacheTilesInRegionAsNotRendered(const RectI& roi)
     }
 
 
-    if (!tileIndicesToRelease.empty()) {
+    if (!tileIndicesToRelease.empty() && _imp->cachePolicy != eCacheAccessModeNone) {
         _imp->internalCacheEntry->getCache()->releaseTiles(_imp->internalCacheEntry, tileIndicesToRelease);
     }
 

@@ -86,6 +86,8 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/StorageDeleterThread.h"
 #include "Global/FStreamsSupport.h"
 #include "Engine/EffectInstanceActionResults.h"
+#include "Engine/ImageCacheKey.h"
+#include "Engine/ImageCacheEntry.h"
 #include "Engine/MemoryFile.h"
 #include "Engine/MemoryInfo.h"
 #include "Engine/Hash64.h"
@@ -131,6 +133,8 @@ NATRON_NAMESPACE_ENTER
 
 // Define to get verbose information about cache entries access
 //#define CACHE_TRACE_ENTRY_ACCESS
+//#define CACHE_TRACE_IMAGE_ENTRIES_LIFETIME
+//#define CACHE_TRACE_SIZE
 
 // Define to trace lock timeouts
 //#define CACHE_TRACE_TIMEOUTS
@@ -735,6 +739,9 @@ struct MemorySegmentEntryHeaderBase
         eEntryStatusPending
     };
 
+    // A unique identifier for the entry type so we don't attempt to deserialize invalid types
+    int uniqueID;
+
     // The status of the entry
     EntryStatusEnum status;
 
@@ -762,6 +769,7 @@ struct MemorySegmentEntryHeaderBase
 
     MemorySegmentEntryHeaderBase(const external_void_allocator& allocator)
     : size(0)
+    , uniqueID(0)
     , status(eEntryStatusNull)
     , computeThreadMagic(0)
     , computeProcessUUID()
@@ -2000,6 +2008,10 @@ CacheBucket<persistent>::readFromSharedMemoryEntryImpl(EntryType* cacheEntry,
 
     assert(cacheEntry->status == EntryType::eEntryStatusReady);
 
+    // If the cache entry has a wrong type ID, don't even bother to attempt deserialization
+    if (cacheEntry->uniqueID != processLocalEntry->getKey()->getUniqueID()) {
+        return eShmEntryReadRetCodeDeserializationFailed;
+    }
 
     if (persistent) {
         ShmEntryReadRetCodeEnum ret = deserializeEntry(cacheEntry, processLocalEntry, hash, hasWriteRights);
@@ -2091,13 +2103,30 @@ CacheBucket<persistent>::deallocateCacheEntryImpl(typename EntriesMap::iterator 
 
     assert(cacheEntryIt != storage->end());
 
-    ipc->size -= cacheEntryIt->second->size;
+    // deallocate the entry
+#ifdef CACHE_TRACE_ENTRY_ACCESS
+    qDebug() << QThread::currentThread() << cacheEntryIt->first << ": destroy entry";
+#endif
+#ifdef CACHE_TRACE_IMAGE_ENTRIES_LIFETIME
+    if (cacheEntryIt->second->uniqueID == kCacheKeyUniqueIDCacheImage) {
+        qDebug() << QThread::currentThread() << cacheEntryIt->first << ": destroy image, size = " << cacheEntryIt->second->size  << "nTiles alloc:" << cacheEntryIt->second->tileIndices.size() << "Bucket size:" << ipc->size;
+    }
+#endif
+
 
     // Clear allocated tiles for this entry
     if (!cacheEntryIt->second->tileIndices.empty()) {
 
         boost::shared_ptr<Sharable_ReadLock> tileAlignedFileLock;
         c->_imp->releaseTilesInternal(bucketIndex, cacheEntryBucketLock, cacheEntryBucketToCReadLock, cacheEntryBucketToCWriteLock, cacheEntryIt->second.get(), tileAlignedFileLock, 0);
+    }
+
+    // Decrement bucket size after releaseTilesInternal() which already decrements the size taken by tiles
+    if (cacheEntryIt->second->size > 0) {
+        ipc->size -= cacheEntryIt->second->size;
+#ifdef CACHE_TRACE_SIZE
+        qDebug()  << "Bucket -= "<< cacheEntryIt->second->size;
+#endif
     }
 
 
@@ -2127,10 +2156,7 @@ CacheBucket<persistent>::deallocateCacheEntryImpl(typename EntriesMap::iterator 
         qDebug() << "[BUG]: Failure to free entry" << cacheEntryIt->first;
     }
 
-    // deallocate the entry
-#ifdef CACHE_TRACE_ENTRY_ACCESS
-    qDebug() << QThread::currentThread() << cacheEntryIt->first << ": destroy entry";
-#endif
+
     storage->erase(cacheEntryIt);
 } // deallocateCacheEntryImpl
 
@@ -2444,6 +2470,9 @@ CacheEntryLockerPrivate<persistent>::lookupAndCreate(boost::shared_ptr<Sharable_
     // Other fields of the entry will be set once it is done computed in insertInCache()
     cacheEntry->status = MemorySegmentEntryHeaderBase::eEntryStatusPending;
 
+
+    cacheEntry->uniqueID = processLocalEntry->getKey()->getUniqueID();
+
     // Set the pointer to the current thread so we can detect immediate recursion and not wait forever
     // in waitForPendingEntry().
     // Note that this value has no meaning outside this process and is set back to 0 in insertInCache()
@@ -2451,6 +2480,13 @@ CacheEntryLockerPrivate<persistent>::lookupAndCreate(boost::shared_ptr<Sharable_
 
     cacheEntry->computeProcessUUID = cache->_imp->sessionUUID;
     computeProcessUUID = cache->_imp->sessionUUID;
+
+#ifdef CACHE_TRACE_IMAGE_ENTRIES_LIFETIME
+    ImageCacheKeyPtr isImage = boost::dynamic_pointer_cast<ImageCacheKey>(processLocalEntry->getKey());
+    if (isImage) {
+        qDebug() << QThread::currentThread() << hash << ": create image";
+    }
+#endif
 
     return CacheEntryLockerPrivate::eLookupAndCreateRetCodeCreated;
 } // lookupAndCreate
@@ -2674,7 +2710,12 @@ CacheEntryLockerPrivate<persistent>::insertInternal()
     
     
     // Record the memory taken by the entry in the bucket
-    bucket->ipc->size += cacheEntryIt->second->size;
+    if (cacheEntryIt->second->size > 0) {
+        bucket->ipc->size += cacheEntryIt->second->size;
+#ifdef CACHE_TRACE_SIZE
+        qDebug() << "Bucket += " << cacheEntryIt->second->size;
+#endif
+    }
 
     // Insert the hash in the LRU linked list
     // Lock the LRU list mutex
@@ -2716,7 +2757,12 @@ CacheEntryLockerPrivate<persistent>::insertInternal()
 #ifdef CACHE_TRACE_ENTRY_ACCESS
     qDebug() << QThread::currentThread() << "(locker=" << this << ")"<< hash << ": entry inserted in cache";
 #endif
-
+#ifdef CACHE_TRACE_IMAGE_ENTRIES_LIFETIME
+    ImageCacheKeyPtr isImage = boost::dynamic_pointer_cast<ImageCacheKey>(processLocalEntry->getKey());
+    if (isImage) {
+        qDebug() << QThread::currentThread() << cacheEntryIt->first << ": insert image";
+    }
+#endif
     return CacheEntryLockerPrivate::eInsertRetCodeCreated;
 
 } // insertInternal
@@ -3599,11 +3645,16 @@ Cache<persistent>::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
     std::size_t nTilesToAlloc = tilesToAlloc ? tilesToAlloc->size() : 0;
 #endif
 
+
     // Get the bucket corresponding to the hash
     // Each tile gets a different hash since all tiles of an image share the same base hash
     // The tile hash is determined by the hash passed in tilesToAlloc.
     // This hash is produced with tile x + tile y + mipmaplevel
     U64 entryHash = entry->getHashKey();
+
+#ifdef CACHE_TRACE_IMAGE_ENTRIES_LIFETIME
+    qDebug() << QThread::currentThread() << entryHash << ": retrieveAndLockTiles";
+#endif
 
     // Since this function returns pointers to the underlying memory mapped file, we need to hold the tilesStorageMutex
     // in read mode whilst the user is using it, we let him free the cacheData using the unLockTiles() function once he is done
@@ -3730,8 +3781,14 @@ Cache<persistent>::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
                 }
                 cacheEntry = found->second.get();
 
+                cacheEntry->size += nTilesToAlloc * NATRON_TILE_SIZE_BYTES;
+
                 // Increment the size of the entry in the cache
                 bucket.ipc->size += nTilesToAlloc * NATRON_TILE_SIZE_BYTES;
+#ifdef CACHE_TRACE_SIZE
+                qDebug() << entryHash << "Entry += " << nTilesToAlloc * NATRON_TILE_SIZE_BYTES;
+                qDebug() << "Bucket += " << nTilesToAlloc * NATRON_TILE_SIZE_BYTES;
+#endif
             }
 
             // Actually add the allocated tile indices in the cache entry so that we can free them when the cache entry gets destroyed.
@@ -3970,25 +4027,41 @@ CachePrivate<persistent>::releaseTilesInternal(int cacheEntryBucketIndex,
 
     if (tileIndices) {
 
-        if (cacheEntry) {
+        if (!cacheEntry) {
+
+            tilesToDeallocate.resize(tileIndices->size());
+            for (std::size_t i = 0; i < tilesToDeallocate.size(); ++i) {
+                tilesToDeallocate[i] = (*tileIndices)[i];
+            }
+        } else {
             // Remove from the cache entry the given tiles.
+            std::size_t nTilesRemoved = 0;
             for (std::size_t i = 0; i < tileIndices->size(); ++i) {
 
 
                 TileInternalIndexSet::iterator foundTile = cacheEntry->tileIndices.find((*tileIndices)[i]);
-                assert(foundTile != cacheEntry->tileIndices.end());
                 if (foundTile != cacheEntry->tileIndices.end()) {
+                    ++nTilesRemoved;
                     cacheEntry->tileIndices.erase(foundTile);
+                    tilesToDeallocate.push_back((*tileIndices)[i]);
                 }
             }
+
+
+            assert(cacheEntry->size >= nTilesRemoved * NATRON_TILE_SIZE_BYTES);
+#ifdef CACHE_TRACE_SIZE
+            qDebug() << cacheEntry->lruNode.hash << "Entry -= "<< nTilesRemoved * NATRON_TILE_SIZE_BYTES;
+#endif
+            cacheEntry->size -= nTilesRemoved * NATRON_TILE_SIZE_BYTES;
         } // cacheEntry
 
-        tilesToDeallocate.resize(tileIndices->size());
-        for (std::size_t i = 0; i < tilesToDeallocate.size(); ++i) {
-            tilesToDeallocate[i] = (*tileIndices)[i];
-        }
     } else if (cacheEntry) {
         tilesToDeallocate.resize(cacheEntry->tileIndices.size());
+        assert(cacheEntry->size >= cacheEntry->tileIndices.size() * NATRON_TILE_SIZE_BYTES);
+#ifdef CACHE_TRACE_SIZE
+        qDebug() << cacheEntry->lruNode.hash << "Entry -= "<< cacheEntry->tileIndices.size() * NATRON_TILE_SIZE_BYTES;
+#endif
+        cacheEntry->size -= cacheEntry->tileIndices.size() * NATRON_TILE_SIZE_BYTES;
         TileInternalIndexSet::const_iterator it = cacheEntry->tileIndices.begin();
         for (std::size_t i = 0; i < tilesToDeallocate.size(); ++i, ++it) {
             tilesToDeallocate[i] = *it;
@@ -4100,6 +4173,10 @@ CachePrivate<persistent>::releaseTilesInternal(int cacheEntryBucketIndex,
     } // foreach tile to dealloc
 
     // Remove from the bucket size the tiles that we deallocated
+#ifdef CACHE_TRACE_SIZE
+    qDebug() << "Bucket -= "<< tilesToDeallocate.size() * NATRON_TILE_SIZE_BYTES;
+#endif
+    assert(buckets[cacheEntryBucketIndex].ipc->size >= tilesToDeallocate.size() * NATRON_TILE_SIZE_BYTES);
     buckets[cacheEntryBucketIndex].ipc->size -= tilesToDeallocate.size() * NATRON_TILE_SIZE_BYTES;
 
 
@@ -4150,6 +4227,10 @@ Cache<persistent>::releaseTiles(const CacheEntryBasePtr& entry, const std::vecto
 
     // Get the bucket corresponding to the hash
     U64 entryHash = entry->getHashKey();
+
+#ifdef CACHE_TRACE_IMAGE_ENTRIES_LIFETIME
+    qDebug() << QThread::currentThread() << entryHash << ": releaseTiles";
+#endif
 
     // Protects the shared memory segment so that mutexes stay valid
 #ifdef NATRON_CACHE_INTERPROCESS_ROBUST
@@ -4883,8 +4964,8 @@ Cache<persistent>::evictLRUEntries(std::size_t nBytesToFree)
 
             // We evicted one, decrease the size
             std::size_t entrySize = cacheEntryIt->second->size;
+            assert(curSize >= entrySize);
             curSize -= entrySize;
-            curSize -= cacheEntryIt->second->tileIndices.size() * NATRON_TILE_SIZE_BYTES;
 
             bucket.deallocateCacheEntryImpl(cacheEntryIt, bucketLock, tocReadLock, tocWriteLock, storage);
         } catch (...) {
