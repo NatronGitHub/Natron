@@ -907,11 +907,14 @@ AppManager::loadInternal(const CLArgs& cl)
     }
     _imp->_settings->populateOpenGLRenderers(_imp->openGLRenderers);
 
-    if (!cl.isLoadedUsingDefaultSettings()) {
+    if (cl.isLoadedUsingDefaultSettings()) {
         ///Call restore after initializing knobs
         _imp->_settings->setSaveSettings(false);
+    } else {
         _imp->_settings->loadSettingsFromFile(Settings::eLoadSettingsTypeKnobs);
     }
+    
+    _imp->_settings->loadOCIOConfiguration();
 
     if (cl.isCacheClearRequestedOnLaunch()) {
         // Clear the cache before attempting to load any data.

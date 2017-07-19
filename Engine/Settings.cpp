@@ -2513,6 +2513,15 @@ SettingsPrivate::loadSettingsFromFileInternal(const SERIALIZATION_NAMESPACE::Set
 
 
 void
+Settings::loadOCIOConfiguration()
+{
+    // Load OCIO config even if there's no serialization
+    if (!_imp->_ocioRestored) {
+        _imp->tryLoadOpenColorIOConfig();
+    }
+}
+
+void
 Settings::loadSettingsFromFile(int loadType)
 {
     _imp->_restoringSettings = true;
@@ -2541,10 +2550,7 @@ Settings::loadSettingsFromFile(int loadType)
 
 
     if (loadType & Settings::eLoadSettingsTypeKnobs) {
-        // Load OCIO config even if there's no serialization
-        if (!_imp->_ocioRestored) {
-            _imp->tryLoadOpenColorIOConfig();
-        }
+
 
         // Restore number of threads
         _imp->restoreNumThreads();

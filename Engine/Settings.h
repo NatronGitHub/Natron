@@ -159,6 +159,8 @@ public:
      **/
     void loadSettingsFromFile(int loadType);
 
+    void loadOCIOConfiguration();
+
     /**
      * @brief Dump all settings to the settings file.
      **/
