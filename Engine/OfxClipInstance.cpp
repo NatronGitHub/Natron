@@ -927,11 +927,10 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
 
 #ifdef DEBUG
     // This will dump the image as seen from the plug-in
-    /*QString filename;
-       QTextStream ts(&filename);
-       QDateTime now = QDateTime::currentDateTime();
-       ts << "img_" << time << "_"  << now.toMSecsSinceEpoch() << ".png";
-       appPTR->debugImage(image.get(), renderWindow, filename);*/
+   /* if (effect->getNode()->getPluginID() == PLUGINID_OFX_ROTOMERGE) {
+        QString name = QString::number((U64)effect->getCurrentRender().get()) +  QString::fromUtf8("_") + QString::fromUtf8(effect->getInputRenderEffectAtAnyTimeView(inputNb)->getScriptName_mt_safe().c_str()) + QString::fromUtf8("_") + QString::fromUtf8(plane.getPlaneLabel().c_str()) + QString::fromUtf8(".png") ;
+        appPTR->debugImage(outArgs.image, outArgs.image->getBounds(), name);
+    }*/
 #endif
 
     EffectInstancePtr inputEffect = getAssociatedNode();
@@ -1447,7 +1446,12 @@ OfxImageCommon::OfxImageCommon(const EffectInstancePtr& outputClipEffect,
 
                     // The matrix is in canonical coordinates but the old kFnOfxPropMatrix2D propert expects pixel coordinates
                     const bool fielded = fielding == eImageFieldingOrderLower || fielding == eImageFieldingOrderUpper;
-                    *mat = mat->toPixel(scale.x, scale.y, par, fielded);
+
+                    // We have the inverse transform, but the plug-in expects the forward transform (since it is using the deprecated getTransform action)
+                    Transform::Matrix3x3 invTrans;
+                    if (mat->inverse(&invTrans) ) {
+                        *mat = invTrans.toPixel(scale.x, scale.y, par, fielded);
+                    }
                 } else {
                     OFX::Host::Property::PropSpec propSpec[] = {
                         // If the clip descriptor has kOfxImageEffectPropCanDistort set to 1,

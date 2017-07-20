@@ -104,7 +104,7 @@ public:
     void pushDistortionStack(const Distortion2DStack& stack);
 
     const std::list<DistortionFunction2DPtr>& getStack() const;
-
+    
     /**
      * @brief Applies a distortion stack onto a 2D position in canonical coordinates.
      **/

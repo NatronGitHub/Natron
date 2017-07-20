@@ -102,7 +102,7 @@ ViewerTabPrivate::getOverlayTransform(TimeValue time,
 
     {
         GetDistortionResultsPtr results;
-        stat = currentNode->getDistortion_public(time, s, /*draftRender=*/true, view, &results);
+        stat = currentNode->getInverseDistortion_public(time, s, /*draftRender=*/true, view, &results);
         if (isFailureRetCode(stat)) {
             return false;
         }
@@ -120,17 +120,16 @@ ViewerTabPrivate::getOverlayTransform(TimeValue time,
         if (!input) {
             return false;
         }
-        double par = input->getAspectRatio(-1);
 
         if (disto->transformMatrix) {
             Transform::Matrix3x3 mat(*disto->transformMatrix);
 
-            // The mat is in pixel coordinates if the plug-in is only "canTransform", convert it to canonical
-            if (currentNode->getCanTransform()) {
-                mat = Transform::matMul(Transform::matPixelToCanonical(par, 1, 1, false), mat);
-                mat = Transform::matMul( mat, Transform::matCanonicalToPixel(par, 1, 1, false) );
+            // The matrix must be inversed because this is the inversed transform
+            Transform::Matrix3x3 invTransform;
+            if (!transform->inverse(&invTransform)) {
+                return false;
             }
-            *transform = Transform::matMul(*transform, mat);
+            *transform = Transform::matMul(invTransform, mat);
         }
 
         return getOverlayTransform(time, view, target, input, transform);

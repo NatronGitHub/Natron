@@ -370,7 +370,7 @@ public:
 
     /*Useful function that saves on disk the image in png format.
        The name of the image will be the hash key of the image.*/
-    static void debugImage( const Image* image, const RectI& roi, const QString & filename = QString() );
+    static void debugImage( const ImagePtr& image, const RectI& roi, const QString & filename = QString() );
 
     void addVisibleDockablePanel(DockablePanel* panel);
     void removeVisibleDockablePanel(DockablePanel* panel);

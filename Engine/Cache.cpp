@@ -110,7 +110,7 @@ NATRON_NAMESPACE_ENTER
 #define NATRON_CACHE_BUCKET_TOC_FILE_GROW_N_BYTES 524288 // = 512 * 1024
 
 // If we change the MemorySegmentEntryHeader struct, we must increment this version so we do not attempt to read an invalid structure.
-#define NATRON_MEMORY_SEGMENT_ENTRY_HEADER_VERSION 2
+#define NATRON_MEMORY_SEGMENT_ENTRY_HEADER_VERSION 3
 
 // After this amount of milliseconds, if a thread is not able to access a mutex, the cache is assumed to be inconsistent
 #ifdef NATRON_CACHE_INTERPROCESS_ROBUST
@@ -596,8 +596,27 @@ struct LRUListNode
 // Typedef our interprocess types
 typedef bip::allocator<TileInternalIndexImpl, ExternalSegmentType::segment_manager> TileInternalIndexImplAllocator;
 
+struct TileInternalIndexImplCompareLess
+{
+    bool operator()(const TileInternalIndexImpl& lhs, const TileInternalIndexImpl& rhs) const
+    {
+        if (lhs.fileIndex < rhs.fileIndex) {
+            return true;
+        } else if (lhs.fileIndex > rhs.fileIndex) {
+            return false;
+        }
+
+        if (lhs.tileIndex < rhs.tileIndex) {
+            return true;
+        } else if (lhs.tileIndex > rhs.tileIndex) {
+            return false;
+        }
+        return false;
+    }
+};
+
 // The list of free tiles indices in a bucket
-typedef bip::list<TileInternalIndexImpl, TileInternalIndexImplAllocator> TileInternalIndexImplList;
+typedef bip::set<TileInternalIndexImpl, TileInternalIndexImplCompareLess, TileInternalIndexImplAllocator> TileInternalIndexImplList;
 
 typedef boost::interprocess::allocator<TileInternalIndex, ExternalSegmentType::segment_manager> TileInternalIndexAllocator;
 typedef boost::interprocess::list<TileInternalIndex, TileInternalIndexAllocator> TileInternalIndexList;
@@ -3456,7 +3475,7 @@ CachePrivate<persistent>::createTileStorageInternal(
             for (int nAttempts = 0; nAttempts < 2; ++nAttempts) {
                 try {
                     buckets[bucket_i].ipc->freeTiles->clear();
-                    buckets[bucket_i].ipc->freeTiles->insert(buckets[bucket_i].ipc->freeTiles->end(), tmpSet.begin(), tmpSet.end());
+                    buckets[bucket_i].ipc->freeTiles->insert(/*buckets[bucket_i].ipc->freeTiles->end(), */ tmpSet.begin(), tmpSet.end());
                     break;
                 } catch (const bip::bad_alloc&) {
 
@@ -4089,6 +4108,10 @@ CachePrivate<persistent>::releaseTilesInternal(int cacheEntryBucketIndex,
     }
 
     // Remove the given tiles, or the cache entry tiles if NULL
+
+    // Some tiles may already be deallocated, we only count tiles that were
+    // successfully deallocated
+    std::size_t nSuccessfulDeallocation = 0;
     for (std::size_t i = 0; i < tilesToDeallocate.size(); ++i) {
 
 
@@ -4135,7 +4158,8 @@ CachePrivate<persistent>::releaseTilesInternal(int cacheEntryBucketIndex,
 
         for (int nAttempts = 0; nAttempts < 2; ++nAttempts) {
             try {
-                tileBucket.ipc->freeTiles->push_back(internalIndex.index);
+                tileBucket.ipc->freeTiles->insert(internalIndex.index);
+                ++nSuccessfulDeallocation;
                 break;
             } catch (const bip::bad_alloc&) {
 
@@ -4176,8 +4200,8 @@ CachePrivate<persistent>::releaseTilesInternal(int cacheEntryBucketIndex,
 #ifdef CACHE_TRACE_SIZE
     qDebug() << "Bucket -= "<< tilesToDeallocate.size() * NATRON_TILE_SIZE_BYTES;
 #endif
-    assert(buckets[cacheEntryBucketIndex].ipc->size >= tilesToDeallocate.size() * NATRON_TILE_SIZE_BYTES);
-    buckets[cacheEntryBucketIndex].ipc->size -= tilesToDeallocate.size() * NATRON_TILE_SIZE_BYTES;
+    assert(buckets[cacheEntryBucketIndex].ipc->size >= nSuccessfulDeallocation * NATRON_TILE_SIZE_BYTES);
+    buckets[cacheEntryBucketIndex].ipc->size -= nSuccessfulDeallocation * NATRON_TILE_SIZE_BYTES;
 
 
 } // releaseTilesInternal

@@ -649,7 +649,7 @@ public:
      * calling render. If possible, Natron will concatenate distortion effects and only the effect at
      * the bottom will do the final rendering.
      **/
-    ActionRetCodeEnum getDistortion_public(TimeValue time,
+    ActionRetCodeEnum getInverseDistortion_public(TimeValue time,
                                            const RenderScale & renderScale,
                                            bool draftRender,
                                            ViewIdx view,
@@ -1147,8 +1147,17 @@ public:
         return eSequentialPreferenceNotSequential;
     }
 
+    enum AcceptedRequestConcatenationEnum
+    {
+        eAcceptedRequestConcatenationNone = 0x0,
+        eAcceptedRequestConcatenationDeprecatedTransformMatrix = 0x1,
+        eAcceptedRequestConcatenationDistortionFunc = 0x2,
+        eAcceptedRequestConcatenationPixelShader = 0x4
+    };
 
-    
+    DECLARE_FLAGS(AcceptedRequestConcatenationFlags, AcceptedRequestConcatenationEnum)
+
+
     /**
      * @brief Visits this node as a pre-pass to the actual render.
      * This function does the following operations:
@@ -1165,7 +1174,8 @@ public:
                                     const ImagePlaneDesc& plane,
                                     const RectD & roiCanonical,
                                     int inputNbInRequester,
-                                    const FrameViewRequestPtr& requester,
+                                    AcceptedRequestConcatenationFlags concatenationFlags,
+                                    const FrameViewRequestPtr& requesterFrameViewRequest,
                                     const TreeRenderExecutionDataPtr& requestPassSharedData,
                                     FrameViewRequestPtr* createdRequest,
                                     EffectInstancePtr* createdRenderClone);
@@ -1173,9 +1183,8 @@ public:
 private:
 
     ActionRetCodeEnum requestRenderInternal(const RectD & roiCanonical,
-                                            int inputNbInRequester,
+                                            AcceptedRequestConcatenationFlags concatenationFlags,
                                             const FrameViewRequestPtr& requestData,
-                                            const FrameViewRequestPtr& requester,
                                             const TreeRenderExecutionDataPtr& requestPassSharedData);
     
 public:
@@ -1822,6 +1831,8 @@ public:
 
     KnobChoicePtr getLayerChoiceKnob(int inputNb) const;
 
+    KnobChoicePtr getMaskChannelKnob(int inputNb) const;
+
     double getHostMixingValue(TimeValue time, ViewIdx view) const;
 
     std::string getKnobChangedCallback() const;
@@ -2002,6 +2013,7 @@ private:
 
 
 
+
 inline EffectInstancePtr
 toEffectInstance(const KnobHolderPtr& effect)
 {
@@ -2010,5 +2022,8 @@ toEffectInstance(const KnobHolderPtr& effect)
 
 
 NATRON_NAMESPACE_EXIT
+
+DECLARE_OPERATORS_FOR_FLAGS(NATRON_NAMESPACE::EffectInstance::AcceptedRequestConcatenationFlags);
+
 
 #endif // NATRON_ENGINE_EFFECTINSTANCE_H

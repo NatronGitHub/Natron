@@ -525,6 +525,14 @@ RotoDrawableItem::createNodes(bool connectNodes)
 
             (void)ok;
         }
+
+        // The mask uses the roto mask plane
+        if (type != eRotoStrokeTypeSolid && type != eRotoStrokeTypeEraser) {
+            KnobChoicePtr maskChannelKnob = _imp->mergeNode->getEffectInstance()->getMaskChannelKnob(2);
+            assert(maskChannelKnob);
+            maskChannelKnob->setActiveEntry(ChoiceOption("RotoMask.A"));
+
+        }
     }
 
     // Whenever the hash of the item changes, invalidate the hash of the RotoPaint nodes and all nodes within it.

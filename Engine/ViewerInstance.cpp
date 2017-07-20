@@ -1645,6 +1645,9 @@ ViewerInstance::render(const RenderActionArgs& args)
 
     dstImage->getCPUData(&renderViewerArgs.dstImage);
 
+    assert(colorImage->getBounds().contains(args.roi));
+    assert(dstImage->getBounds().contains(args.roi));
+
     renderViewerArgs.gamma = _imp->gammaKnob.lock()->getValue();
 
     RamBuffer<float> gammaLut;

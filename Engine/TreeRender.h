@@ -392,7 +392,8 @@ private:
                                                       const RenderScale& proxyScale,
                                                       unsigned int mipMapLevel,
                                                       const ImagePlaneDesc* planeParam,
-                                                      const RectD* canonicalRoIParam);
+                                                      const RectD* canonicalRoIParam,
+                                                      int concatenationFlags);
 
     /**
      * @brief Calls createSubExecutionData for each extra requested node result

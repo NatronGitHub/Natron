@@ -847,7 +847,10 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
     {
         ActionRetCodeEnum status;
         if (currentRender) {
-            TreeRenderExecutionDataPtr subLaunchData = launchSubRender(inputEffect, inputTime, inputView, inputProxyScale, inputMipMapLevel, inArgs.plane, &roiCanonical, currentRender);
+
+            AcceptedRequestConcatenationFlags concatFlags = _imp->getConcatenationFlagsForInput(inArgs.inputNb);
+
+            TreeRenderExecutionDataPtr subLaunchData = launchSubRender(inputEffect, inputTime, inputView, inputProxyScale, inputMipMapLevel, inArgs.plane, &roiCanonical, currentRender, concatFlags);
             outputRequest = subLaunchData->getOutputRequest();
             status = subLaunchData->getStatus();
         } else {
@@ -885,15 +888,14 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
     // Copy in output the distortion stack
     outArgs->distortionStack = outputRequest->getDistorsionStack();
 
+
     // Get the RoI in pixel coordinates of the effect we rendered
 
     RectI roiPixels;
     RectI roiExpandPixels;
     roiExpand.toPixelEnclosing(inputCombinedScale, inputPar, &roiExpandPixels);
     roiCanonical.toPixelEnclosing(inputCombinedScale, inputPar, &roiPixels);
-    assert(roiExpandPixels.contains(roiPixels));
-
-
+    assert(roiExpandPixels.contains(roiPixels) || outArgs->distortionStack);
 
     // Map the output image to the plug-in preferred format
     ImageBufferLayoutEnum thisEffectSupportedImageLayout = getPreferredBufferLayout();
@@ -906,6 +908,38 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
     if (!outArgs->image || !outArgs->image->isBufferAllocated()) {
         return false;
     }
+
+
+    // In output of getImagePlane we also return the region that was rendered on the input image, so that
+    // further code limits its processing to this region, and not actually the full image size.
+    // This is useful for example if converting the image to another format (OpenFX, etc...) and to ensure
+    // the plug-in is not accessing the input image at location it did not inform previously
+    // with getRegionsOfInterest action.
+
+    // Note that If we have a distortion upstream, we cannot return the roi that was requested here,
+    // we would have to transform it by the *forward* distortion first.
+    // However since we only have the backward distortion, our only way to recover it is to get the roi
+    // that was rendered from the request object itself.
+    if (outArgs->distortionStack && outArgs->image) {
+        roiPixels = outArgs->image->getBounds();
+        // Intersect it with the rod of the input
+
+        RectD inputRod;
+        {
+            GetRegionOfDefinitionResultsPtr rodResults;
+            ActionRetCodeEnum stat = inputEffect->getRegionOfDefinition_public(inputTime, inputCombinedScale, inputView, &rodResults);
+            if (isFailureRetCode(stat)) {
+                return false;
+            }
+            inputRod = rodResults->getRoD();
+        }
+        RectI inputRodPixels;
+        inputRod.toPixelEnclosing(inputCombinedScale, inputPar, &inputRodPixels);
+        roiPixels.intersect(inputRodPixels, &roiPixels);
+        roiExpandPixels = roiPixels;
+    }
+    
+
 
     bool mustConvertImage = false;
     StorageModeEnum storage = outArgs->image->getStorageMode();
@@ -933,10 +967,6 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
         mustConvertImage = true;
     }
 
-    if (roiExpand != roiCanonical) {
-        mustConvertImage = true;
-    }
-
     ImagePlaneDesc preferredLayer = outArgs->image->getLayer();
 
     // If this node does not support multi-plane or the image is the color plane,
@@ -957,6 +987,7 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
 
 
     if (roiExpandPixels != roiPixels) {
+        mustConvertImage = true;
         outArgs->roiPixel = roiExpandPixels;
     } else {
         outArgs->roiPixel = roiPixels;

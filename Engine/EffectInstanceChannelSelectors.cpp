@@ -234,6 +234,16 @@ EffectInstance::getLayerChoiceKnob(int inputNb) const
     return found->second.layer.lock();
 }
 
+KnobChoicePtr
+EffectInstance::getMaskChannelKnob(int inputNb) const
+{
+    std::map<int, MaskSelector >::const_iterator it = _imp->defKnobs->maskSelectors.find(inputNb);
+    if ( it == _imp->defKnobs->maskSelectors.end() ) {
+        return KnobChoicePtr();
+    }
+    return it->second.channel.lock();
+}
+
 void
 EffectInstance::refreshLayersSelectorsVisibility()
 {
@@ -854,7 +864,7 @@ EffectInstance::Implementation::onMaskSelectorChanged(int inputNb,
         enabled->setEnabled(false);
     } else {
         enabled->setEnabled(true);
-        if ( _publicInterface->getInputMainInstance(inputNb) ) {
+        if ( _publicInterface->getNode()->getRealInput(inputNb) ) {
             enabled->setValue(true);
         }
     }

@@ -736,13 +736,13 @@ EffectInstance::getInverseDistortion(TimeValue /*time*/,
 }
 
 ActionRetCodeEnum
-EffectInstance::getDistortion_public(TimeValue inArgsTime,
-                                     const RenderScale & renderScale,
-                                     bool draftRender,
-                                     ViewIdx view,
-                                     GetDistortionResultsPtr* results) {
+EffectInstance::getInverseDistortion_public(TimeValue inArgsTime,
+                                            const RenderScale & renderScale,
+                                            bool draftRender,
+                                            ViewIdx view,
+                                            GetDistortionResultsPtr* results) {
     assert(results);
-
+    
     TimeValue time = inArgsTime;
     {
         int roundedTime = std::floor(time + 0.5);
@@ -837,16 +837,6 @@ EffectInstance::getDistortion_public(TimeValue inArgsTime,
         // Either the matrix or the distortion functor should be set
         assert(disto->transformMatrix || disto->func);
 
-        // In the deprecated getTransform action, the returned transform is in pixel coordinates, whereas in the getDistortion
-        // action, we return a matrix in canonical coordinates.
-        if (isDeprecatedTransformSupportEnabled) {
-            assert(disto->transformMatrix);
-            double par = getAspectRatio(-1);
-
-            Transform::Matrix3x3 canonicalToPixel = Transform::matCanonicalToPixel(par, mappedScale.x, mappedScale.y, false);
-            Transform::Matrix3x3 pixelToCanonical = Transform::matPixelToCanonical(par, mappedScale.x, mappedScale.y, false);
-            *disto->transformMatrix = Transform::matMul(Transform::matMul(pixelToCanonical, *disto->transformMatrix), canonicalToPixel);
-        }
         (*results)->setResults(disto);
 
         cacheAccess->insertInCache();

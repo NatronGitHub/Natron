@@ -108,6 +108,7 @@ ActionRetCodeEnum
 EffectInstance::Implementation::handlePassThroughPlanes(const FrameViewRequestPtr& requestData,
                                                         const TreeRenderExecutionDataPtr& requestPassSharedData,
                                                         const RectD& roiCanonical,
+                                                        AcceptedRequestConcatenationFlags concatenationFlags,
                                                         std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded,
                                                         bool *isPassThrough)
 {
@@ -174,7 +175,7 @@ EffectInstance::Implementation::handlePassThroughPlanes(const FrameViewRequestPt
                     *isPassThrough = true;
 
                     FrameViewRequestPtr createdRequest;
-                    return ptInput->requestRender(passThroughTime, passThroughView, requestData->getProxyScale(), requestData->getMipMapLevel(), plane, roiCanonical, passThroughInputNb, requestData, requestPassSharedData, &createdRequest, 0);
+                    return ptInput->requestRender(passThroughTime, passThroughView, requestData->getProxyScale(), requestData->getMipMapLevel(), plane, roiCanonical, passThroughInputNb, concatenationFlags,requestData, requestPassSharedData, &createdRequest, 0);
                 }
             }
         }
@@ -192,6 +193,7 @@ EffectInstance::Implementation::handleIdentityEffect(double par,
                                                      const RectD& canonicalRoi,
                                                      const FrameViewRequestPtr& requestData,
                                                      const TreeRenderExecutionDataPtr& requestPassSharedData,
+                                                     AcceptedRequestConcatenationFlags concatenationFlags,
                                                      bool *isIdentity)
 {
 
@@ -231,7 +233,7 @@ EffectInstance::Implementation::handleIdentityEffect(double par,
         }
 
         FrameViewRequestPtr createdRequest;
-        return _publicInterface->requestRender(inputTimeIdentity, inputIdentityView, requestData->getProxyScale(), requestData->getMipMapLevel(), identityPlane, canonicalRoi, -1, requestData, requestPassSharedData, &createdRequest, 0);
+        return _publicInterface->requestRender(inputTimeIdentity, inputIdentityView, requestData->getProxyScale(), requestData->getMipMapLevel(), identityPlane, canonicalRoi, -1, concatenationFlags, requestData, requestPassSharedData, &createdRequest, 0);
 
     } else {
         assert(inputNbIdentity != -1);
@@ -241,16 +243,28 @@ EffectInstance::Implementation::handleIdentityEffect(double par,
         }
 
         FrameViewRequestPtr createdRequest;
-        return identityInput->requestRender(inputTimeIdentity, inputIdentityView, requestData->getProxyScale(), requestData->getMipMapLevel(), identityPlane, canonicalRoi, inputNbIdentity, requestData, requestPassSharedData, &createdRequest, 0);
+        return identityInput->requestRender(inputTimeIdentity, inputIdentityView, requestData->getProxyScale(), requestData->getMipMapLevel(), identityPlane, canonicalRoi, inputNbIdentity, concatenationFlags,requestData, requestPassSharedData, &createdRequest, 0);
 
     }
 } // EffectInstance::Implementation::handleIdentityEffect
 
+EffectInstance::AcceptedRequestConcatenationFlags
+EffectInstance::Implementation::getConcatenationFlagsForInput(int inputNb) const
+{
+    AcceptedRequestConcatenationFlags ret = eAcceptedRequestConcatenationNone;
+    if (_publicInterface->getInputCanReceiveTransform(inputNb)) {
+        ret |= eAcceptedRequestConcatenationDeprecatedTransformMatrix;
+    }
+    if (_publicInterface->getInputCanReceiveDistortion(inputNb)) {
+        ret |= eAcceptedRequestConcatenationDistortionFunc;
+    }
+    return ret;
+}
+
 ActionRetCodeEnum
 EffectInstance::Implementation::handleConcatenation(const TreeRenderExecutionDataPtr& requestPassSharedData,
                                                     const FrameViewRequestPtr& requestData,
-                                                    const FrameViewRequestPtr& requester,
-                                                    int inputNbInRequester,
+                                                    AcceptedRequestConcatenationFlags downstreamConcatFlags,
                                                     const RenderScale& renderScale,
                                                     const RectD& canonicalRoi,
                                                     bool draftRender,
@@ -270,16 +284,9 @@ EffectInstance::Implementation::handleConcatenation(const TreeRenderExecutionDat
         return eActionStatusOK;
     }
 
-    EffectInstancePtr requesterEffect;
-    if (requester) {
-        requesterEffect = requester->getEffect();
-    }
-    bool requesterCanReceiveDeprecatedTransform3x3 = false;
-    bool requesterCanReceiveDistortionFunc = false;
-    if (requesterEffect) {
-        requesterCanReceiveDeprecatedTransform3x3 = requesterEffect->getInputCanReceiveTransform(inputNbInRequester);
-        requesterCanReceiveDistortionFunc= requesterEffect->getInputCanReceiveDistortion(inputNbInRequester);
-    }
+    const bool requesterCanReceiveDeprecatedTransform3x3 = downstreamConcatFlags & eAcceptedRequestConcatenationDeprecatedTransformMatrix;
+    const bool requesterCanReceiveDistortionFunc = downstreamConcatFlags & eAcceptedRequestConcatenationDistortionFunc;
+
     // If the caller can apply a distortion, then check if this effect has a distortion
     // otherwise, don't bother
     if (!requesterCanReceiveDeprecatedTransform3x3 && !requesterCanReceiveDistortionFunc) {
@@ -287,22 +294,26 @@ EffectInstance::Implementation::handleConcatenation(const TreeRenderExecutionDat
     }
     assert((requesterCanReceiveDeprecatedTransform3x3 && !requesterCanReceiveDistortionFunc) || (!requesterCanReceiveDeprecatedTransform3x3 && requesterCanReceiveDistortionFunc));
 
+    TimeValue curTime = _publicInterface->getCurrentRenderTime();
+    ViewIdx curView = _publicInterface->getCurrentRenderView();
+
+
     // Call the getDistortion action
     DistortionFunction2DPtr disto;
     {
         GetDistortionResultsPtr results = requestData->getDistortionResults();
         if (!results) {
-            ActionRetCodeEnum stat = _publicInterface->getDistortion_public(_publicInterface->getCurrentRenderTime(), renderScale, draftRender, _publicInterface->getCurrentRenderView(), &results);
+            ActionRetCodeEnum stat = _publicInterface->getInverseDistortion_public(curTime, renderScale, draftRender, curView, &results);
             if (isFailureRetCode(stat)) {
                 return stat;
             }
-            if (results) {
-                disto = results->getResults();
-                requestData->setDistortionResults(results);
-            }
+        }
+        if (results) {
+            disto = results->getResults();
+            requestData->setDistortionResults(results);
         }
     }
-    
+
     // No distortion or invalid input
     if (!disto || disto->inputNbToDistort == -1) {
         return eActionStatusOK;
@@ -321,8 +332,36 @@ EffectInstance::Implementation::handleConcatenation(const TreeRenderExecutionDat
         return eActionStatusInputDisconnected;
     }
 
+
+    // Compute the regions of interest in input for this RoI.
+    RoIMap inputsRoi;
+    {
+        ActionRetCodeEnum stat = _publicInterface->getRegionsOfInterest_public(curTime, renderScale, canonicalRoi, curView, &inputsRoi);
+        if (isFailureRetCode(stat)) {
+            return stat;
+        }
+    }
+
+    RectD inputRoI;
+    {
+        RoIMap::iterator foundRoI = inputsRoi.find(disto->inputNbToDistort);
+        if (foundRoI == inputsRoi.end()) {
+            // RoI not specified... use the same RoI as passed in argument
+            inputRoI = canonicalRoi;
+        } else {
+            inputRoI = foundRoI->second;
+        }
+    }
+
+    if (inputRoI.isNull()) {
+        return eActionStatusOK;
+    }
+
+
+    AcceptedRequestConcatenationFlags thisNodeConcatFlags = getConcatenationFlagsForInput(disto->inputNbToDistort);
+
     FrameViewRequestPtr inputRequest;
-    distoInput->requestRender(_publicInterface->getCurrentRenderTime(), _publicInterface->getCurrentRenderView(), requestData->getProxyScale(), requestData->getMipMapLevel(), requestData->getPlaneDesc(), canonicalRoi, disto->inputNbToDistort, requestData, requestPassSharedData, &inputRequest, 0);
+    distoInput->requestRender(curTime, curView, requestData->getProxyScale(), requestData->getMipMapLevel(), requestData->getPlaneDesc(), inputRoI, disto->inputNbToDistort, thisNodeConcatFlags, requestData, requestPassSharedData, &inputRequest, 0);
 
     // Create a distorsion stack that will be applied by the effect downstream
     Distortion2DStackPtr distoStack(new Distortion2DStack);
@@ -929,6 +968,8 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const TreeRenderExecu
             continue;
         }
 
+        AcceptedRequestConcatenationFlags concatenationFlags = getConcatenationFlagsForInput(inputNb);
+
 
         if ( inputRoI.isInfinite() ) {
             _publicInterface->getNode()->setPersistentMessage( eMessageTypeError, kNatronPersistentErrorInfiniteRoI, EffectInstance::tr("%1 asked for an infinite region of interest upstream.").arg( QString::fromUtf8( _publicInterface->getNode()->getScriptName_mt_safe().c_str() ) ).toStdString() );
@@ -978,7 +1019,7 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const TreeRenderExecu
 
                         for (std::list<ImagePlaneDesc>::const_iterator planeIt = inputPlanesNeeded->begin(); planeIt != inputPlanesNeeded->end(); ++planeIt) {
                             FrameViewRequestPtr createdRequest;
-                            ActionRetCodeEnum stat = inputEffect->requestRender(inputTime, viewIt->first, proxyScale, mipMapLevel, *planeIt, inputRoI, inputNb, requestPassData, requestPassSharedData, &createdRequest, 0);
+                            ActionRetCodeEnum stat = inputEffect->requestRender(inputTime, viewIt->first, proxyScale, mipMapLevel, *planeIt, inputRoI, inputNb, concatenationFlags, requestPassData, requestPassSharedData, &createdRequest, 0);
                             if (isFailureRetCode(stat)) {
                                 if (isOptional) {
                                     continue;
@@ -1014,7 +1055,8 @@ EffectInstance::requestRender(TimeValue timeInArgs,
                               const ImagePlaneDesc& plane,
                               const RectD & roiCanonical,
                               int inputNbInRequester,
-                              const FrameViewRequestPtr& requester,
+                              AcceptedRequestConcatenationFlags concatenationFlags,
+                              const FrameViewRequestPtr& requesterFrameViewRequest,
                               const TreeRenderExecutionDataPtr& requestPassSharedData,
                               FrameViewRequestPtr* createdRequest,
                               EffectInstancePtr* createdRenderClone)
@@ -1032,7 +1074,7 @@ EffectInstance::requestRender(TimeValue timeInArgs,
         if (roundedTime != time && !canRenderContinuously()) {
             // We do not cache it because for non continuous effects we only cache stuff at
             // valid frame times
-            return requestRender(TimeValue(roundedTime), view, proxyScale, mipMapLevel, plane, roiCanonical, inputNbInRequester, requester, requestPassSharedData, createdRequest, 0);
+            return requestRender(TimeValue(roundedTime), view, proxyScale, mipMapLevel, plane, roiCanonical, inputNbInRequester, concatenationFlags, requesterFrameViewRequest, requestPassSharedData, createdRequest, 0);
         }
     }
 
@@ -1052,9 +1094,9 @@ EffectInstance::requestRender(TimeValue timeInArgs,
     }
 
     // Set this clone as the input effect of the requester effect at the given time/view
-    if (inputNbInRequester >= 0 && requester && requester->getEffect() != renderClone) {
+    if (inputNbInRequester >= 0 && requesterFrameViewRequest->getEffect() && requesterFrameViewRequest->getEffect() != renderClone) {
         FrameViewPair p = {time, view};
-        requester->getEffect()->_imp->renderData->renderInputs[inputNbInRequester].insert(std::make_pair(p, renderClone));
+        requesterFrameViewRequest->getEffect()->_imp->renderData->renderInputs[inputNbInRequester].insert(std::make_pair(p, renderClone));
     }
 
 
@@ -1072,16 +1114,16 @@ EffectInstance::requestRender(TimeValue timeInArgs,
         createdRequest->reset(new FrameViewRequest(plane, mipMapLevel, proxyScale, renderClone, requestPassSharedData->getTreeRender()));
         renderClone->_imp->renderData->requests.insert(std::make_pair(requestKey, *createdRequest));
     }
-    if (requester) {
+    if (requesterFrameViewRequest) {
         // Add the requester request as a listener of this request. This has to be done before the call to requestRenderInternal()
         // Since the function shouldCacheOutput() called inside depends on the number of listeners returned by getNumListeners()
-        (*createdRequest)->addListener(requestPassSharedData, requester);
+        (*createdRequest)->addListener(requestPassSharedData, requesterFrameViewRequest);
     }
-    ActionRetCodeEnum stat = renderClone->requestRenderInternal(roiCanonical, inputNbInRequester, *createdRequest, requester, requestPassSharedData);
+    ActionRetCodeEnum stat = renderClone->requestRenderInternal(roiCanonical, concatenationFlags, *createdRequest, requestPassSharedData);
     if (!isFailureRetCode(stat)) {
         // Add this frame/view as depdency of the requester
-        if (requester) {
-            requester->addDependency(requestPassSharedData, *createdRequest);
+        if (requesterFrameViewRequest) {
+            requesterFrameViewRequest->addDependency(requestPassSharedData, *createdRequest);
         }
 
         requestPassSharedData->addTaskToRender(*createdRequest);
@@ -1091,28 +1133,14 @@ EffectInstance::requestRender(TimeValue timeInArgs,
 
 ActionRetCodeEnum
 EffectInstance::requestRenderInternal(const RectD & roiCanonical,
-                                      int inputNbInRequester,
+                                      AcceptedRequestConcatenationFlags concatenationFlags,
                                       const FrameViewRequestPtr& requestData,
-                                      const FrameViewRequestPtr& requester,
                                       const TreeRenderExecutionDataPtr& requestPassSharedData)
 {
 
 
     TreeRenderPtr render = getCurrentRender();
     assert(render);
-    
-
-    // If this request was already requested, don't request again except if the RoI is not
-    // contained in the request RoI
-    if (requestData->getCurrentRoI().contains(roiCanonical)) {
-        FrameViewRequest::FrameViewRequestStatusEnum mainExecStatus = requestData->getMainExecutionStatus();
-        if (mainExecStatus !=  FrameViewRequest::eFrameViewRequestStatusNotRendered) {
-            requestData->initStatus(mainExecStatus, requestPassSharedData);
-            return eActionStatusOK;
-        } else if (requestData->getStatus(requestPassSharedData) != FrameViewRequest::eFrameViewRequestStatusNotRendered) {
-            return eActionStatusOK;
-        }
-    } 
 
 
     // Some nodes do not support render-scale and can only render at scale 1.
@@ -1169,7 +1197,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
     std::map<int, std::list<ImagePlaneDesc> > inputLayersNeeded;
     {
         bool isPassThrough;
-        ActionRetCodeEnum upstreamRetCode = _imp->handlePassThroughPlanes(requestData, requestPassSharedData, roiCanonical, &inputLayersNeeded, &isPassThrough);
+        ActionRetCodeEnum upstreamRetCode = _imp->handlePassThroughPlanes(requestData, requestPassSharedData, roiCanonical, concatenationFlags, &inputLayersNeeded, &isPassThrough);
         if (isFailureRetCode(upstreamRetCode)) {
             return upstreamRetCode;
         }
@@ -1186,7 +1214,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
     ////////////////////////////// Handle identity effects /////////////////////////////////////////////////////////////////
     {
         bool isIdentity;
-        ActionRetCodeEnum upstreamRetCode = _imp->handleIdentityEffect(par, perMipMapLevelRoDCanonical[mappedMipMapLevel], mappedCombinedScale, roiCanonical, requestData, requestPassSharedData, &isIdentity);
+        ActionRetCodeEnum upstreamRetCode = _imp->handleIdentityEffect(par, perMipMapLevelRoDCanonical[mappedMipMapLevel], mappedCombinedScale, roiCanonical, requestData, requestPassSharedData, concatenationFlags, &isIdentity);
         if (isFailureRetCode(upstreamRetCode)) {
             return upstreamRetCode;
         }
@@ -1201,7 +1229,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
     {
 
         bool concatenated;
-        ActionRetCodeEnum upstreamRetCode = _imp->handleConcatenation(requestPassSharedData, requestData, requester, inputNbInRequester, mappedCombinedScale, roiCanonical, render->isDraftRender(), &concatenated);
+        ActionRetCodeEnum upstreamRetCode = _imp->handleConcatenation(requestPassSharedData, requestData, concatenationFlags, mappedCombinedScale, roiCanonical, render->isDraftRender(), &concatenated);
         if (isFailureRetCode(upstreamRetCode)) {
             return upstreamRetCode;
         }
@@ -1684,7 +1712,7 @@ EffectInstance::launchRenderInternal(const TreeRenderExecutionDataPtr& requestPa
         RectD roi = requestData->getCurrentRoI();
         ImagePlaneDesc plane = requestData->getPlaneDesc();
 
-        TreeRenderExecutionDataPtr execData = launchSubRender(shared_from_this(), getCurrentRenderTime(), getCurrentRenderView(), requestData->getProxyScale(), requestData->getMipMapLevel(), &plane, &roi, render);
+        TreeRenderExecutionDataPtr execData = launchSubRender(shared_from_this(), getCurrentRenderTime(), getCurrentRenderView(), requestData->getProxyScale(), requestData->getMipMapLevel(), &plane, &roi, render, eAcceptedRequestConcatenationNone);
         ActionRetCodeEnum stat = render->getStatus();
         return stat;
 
@@ -1753,10 +1781,12 @@ EffectInstance::launchRenderInternal(const TreeRenderExecutionDataPtr& requestPa
         requestData->setRequestedScaleImagePlane(downscaledImage);
     }
     //QString name = QString::fromUtf8(getScriptName_mt_safe().c_str()) + QString::fromUtf8("_") + QString::number(getCurrentRenderTime()) + QString::fromUtf8("_") +  QDateTime::currentDateTime().toString() + QString::fromUtf8(".png");
-    /*if (isDuringPaintStrokeCreation()) {
+    //if (isDuringPaintStrokeCreation()) {
+    /*if (getNode()->getPluginID() == PLUGINID_OFX_ROTOMERGE) {
         QString name = QString::number((U64)getCurrentRender().get()) +  QString::fromUtf8("_") + QString::fromUtf8(getScriptName_mt_safe().c_str()) + QString::fromUtf8(".png") ;
-        appPTR->debugImage(requestData->getRequestedScaleImagePlane().get(), requestData->getRequestedScaleImagePlane()->getBounds(), name);
+        appPTR->debugImage(requestData->getRequestedScaleImagePlane(), requestData->getRequestedScaleImagePlane()->getBounds(), name);
     }*/
+    //}
     return isRenderAborted() ? eActionStatusAborted : eActionStatusOK;
 } // launchRenderInternal
 

@@ -256,7 +256,7 @@ public:
 
     virtual void showErrorLog();
 
-    virtual void debugImage(const Image* /*image*/,
+    virtual void debugImage(const ImagePtr& /*image*/,
                             const RectI& /*roi*/,
                             const QString & /*filename = QString()*/) const
     {

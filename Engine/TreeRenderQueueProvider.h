@@ -72,7 +72,8 @@ public:
                                                        unsigned int mipMapLevel,
                                                        const ImagePlaneDesc* planeParam,
                                                        const RectD* canonicalRoIParam,
-                                                       const TreeRenderPtr& render) = 0;
+                                                       const TreeRenderPtr& render,
+                                                       int concatenationFlags) = 0;
     
     
     /**
@@ -101,13 +102,14 @@ public:
     // Every method is fowarded to the TreeRenderQueueManager
     virtual void launchRender(const TreeRenderPtr& render) OVERRIDE FINAL;
     virtual TreeRenderExecutionDataPtr launchSubRender(const EffectInstancePtr& treeRoot,
-                                 TimeValue time,
-                                 ViewIdx view,
-                                 const RenderScale& proxyScale,
-                                 unsigned int mipMapLevel,
-                                 const ImagePlaneDesc* planeParam,
-                                 const RectD* canonicalRoIParam,
-                                 const TreeRenderPtr& render) OVERRIDE FINAL;
+                                                       TimeValue time,
+                                                       ViewIdx view,
+                                                       const RenderScale& proxyScale,
+                                                       unsigned int mipMapLevel,
+                                                       const ImagePlaneDesc* planeParam,
+                                                       const RectD* canonicalRoIParam,
+                                                       const TreeRenderPtr& render,
+                                                       int concatenationFlags) OVERRIDE FINAL;
     virtual ActionRetCodeEnum waitForRenderFinished(const TreeRenderPtr& render) OVERRIDE FINAL WARN_UNUSED_RETURN;
     bool hasTreeRendersFinished() const;
     bool hasTreeRendersLaunched() const;

@@ -318,7 +318,7 @@ GuiApplicationManager::setUndoRedoStackLimit(int limit)
 }
 
 void
-GuiApplicationManager::debugImage(const Image* image,
+GuiApplicationManager::debugImage(const ImagePtr& image,
                                   const RectI& roi,
                                   const QString & filename) const
 {

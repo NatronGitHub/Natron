@@ -46,12 +46,6 @@
 #include "Engine/TreeRenderQueueManager.h"
 #include "Engine/TLSHolder.h"
 
-// After this amount of time, if any thread identified in this render is still remaining
-// that means they are stuck probably doing a long processing that cannot be aborted or in a separate thread
-// that we did not spawn. Anyway, report to the user that we cannot control this thread anymore and that it may
-// waste resources.
-#define NATRON_ABORT_TIMEOUT_MS 5000
-
 //#define TRACE_RENDER_DEPENDENCIES
 
 // Define to disable multi-threading of branch evaluation in the compositing tree
@@ -160,7 +154,8 @@ struct TreeRenderPrivate
                                                            const RenderScale& proxyScale,
                                                            unsigned int mipMapLevel,
                                                            const ImagePlaneDesc* planeParam,
-                                                           const RectD* canonicalRoIParam);
+                                                           const RectD* canonicalRoIParam,
+                                                           EffectInstance::AcceptedRequestConcatenationFlags concatenationFlags);
 
 
 };
@@ -677,7 +672,7 @@ TreeRenderExecutionDataPrivate::removeDependencyLinkFromRequest(const FrameViewR
         if (numDepsLeft == 0) {
             if (dependencyFreeRenders->find(*it) == dependencyFreeRenders->end()) {
 #ifdef TRACE_RENDER_DEPENDENCIES
-                qDebug() << sharedData.get() << "Adding" << (*it)->getEffect()->getScriptName_mt_safe().c_str() << (*it)->getPlaneDesc().getPlaneLabel().c_str()  << "(" << it->get() << ") to the dependency-free list";
+                qDebug() << thisShared.get() << "Adding" << (*it)->getEffect()->getScriptName_mt_safe().c_str() << (*it)->getPlaneDesc().getPlaneLabel().c_str()  << "(" << it->get() << ") to the dependency-free list";
 #endif
                 assert(allRenderTasksToProcess.find(*it) != allRenderTasksToProcess.end());
                 dependencyFreeRenders->insert(*it);
@@ -782,7 +777,8 @@ TreeRenderPrivate::createExecutionDataInternal(bool isMainExecution,
                                                const RenderScale& proxyScale,
                                                unsigned int mipMapLevel,
                                                const ImagePlaneDesc* planeParam,
-                                               const RectD* canonicalRoIParam)
+                                               const RectD* canonicalRoIParam,
+                                               EffectInstance::AcceptedRequestConcatenationFlags concatenationFlags)
 {
     TreeRenderExecutionDataPtr requestData(new TreeRenderExecutionData());
 
@@ -828,8 +824,9 @@ TreeRenderPrivate::createExecutionDataInternal(bool isMainExecution,
 
     requestData->_imp->dependencyFreeRenders.reset(new DependencyFreeRenderSet);
 
+
     // Execute the request pass on the tree. This is a recursive pass that builds the topological sort of FrameViewRequest to render with their dependencies.
-    requestData->_imp->status = treeRoot->requestRender(time, view, proxyScale, mipMapLevel, requestData->_imp->plane, requestData->_imp->canonicalRoI, -1, FrameViewRequestPtr(), requestData, &requestData->_imp->outputRequest, 0 /*createdRenderClone*/);
+    requestData->_imp->status = treeRoot->requestRender(time, view, proxyScale, mipMapLevel, requestData->_imp->plane, requestData->_imp->canonicalRoI, -1, concatenationFlags, FrameViewRequestPtr(), requestData, &requestData->_imp->outputRequest, 0 /*createdRenderClone*/);
 
     if (isFailureRetCode(requestData->_imp->status)) {
         return requestData;
@@ -847,32 +844,37 @@ TreeRenderPrivate::createExecutionDataInternal(bool isMainExecution,
 
 TreeRenderExecutionDataPtr
 TreeRender::createSubExecutionData(const EffectInstancePtr& treeRoot,
-                                TimeValue time,
-                                ViewIdx view,
-                                const RenderScale& proxyScale,
-                                unsigned int mipMapLevel,
-                                const ImagePlaneDesc* planeParam,
-                                const RectD* canonicalRoIParam)
+                                   TimeValue time,
+                                   ViewIdx view,
+                                   const RenderScale& proxyScale,
+                                   unsigned int mipMapLevel,
+                                   const ImagePlaneDesc* planeParam,
+                                   const RectD* canonicalRoIParam,
+                                   int concatenationFlags)
 {
 
 
-    return _imp->createExecutionDataInternal(/*removeRenderClonesWhenFinished*/ false, treeRoot, time, view, proxyScale, mipMapLevel, planeParam, canonicalRoIParam);
+    return _imp->createExecutionDataInternal(/*removeRenderClonesWhenFinished*/ false, treeRoot, time, view, proxyScale, mipMapLevel, planeParam, canonicalRoIParam, (EffectInstance::AcceptedRequestConcatenationFlags)concatenationFlags);
 }
 
 TreeRenderExecutionDataPtr
 TreeRender::createMainExecutionData()
 {
-    return _imp->createExecutionDataInternal(true /*removeRenderClonesWhenFinished*/, _imp->ctorArgs->treeRootEffect, _imp->ctorArgs->time, _imp->ctorArgs->view, _imp->ctorArgs->proxyScale, _imp->ctorArgs->mipMapLevel, _imp->ctorArgs->plane.getNumComponents() == 0 ? 0 : &_imp->ctorArgs->plane, _imp->ctorArgs->canonicalRoI.isNull() ? 0 : &_imp->ctorArgs->canonicalRoI);
+    EffectInstance::AcceptedRequestConcatenationFlags concatenationFlags = EffectInstance::eAcceptedRequestConcatenationNone;
+
+    return _imp->createExecutionDataInternal(true /*removeRenderClonesWhenFinished*/, _imp->ctorArgs->treeRootEffect, _imp->ctorArgs->time, _imp->ctorArgs->view, _imp->ctorArgs->proxyScale, _imp->ctorArgs->mipMapLevel, _imp->ctorArgs->plane.getNumComponents() == 0 ? 0 : &_imp->ctorArgs->plane, _imp->ctorArgs->canonicalRoI.isNull() ? 0 : &_imp->ctorArgs->canonicalRoI, concatenationFlags);
 }
 
 std::list<TreeRenderExecutionDataPtr>
 TreeRender::getExtraRequestedResultsExecutionData()
 {
+    EffectInstance::AcceptedRequestConcatenationFlags concatenationFlags = EffectInstance::eAcceptedRequestConcatenationNone;
+
     std::list<TreeRenderExecutionDataPtr> ret;
     // Now if the image to render was cached, we may not have retrieved the requested color picker images, in which case we have to render them
     for (std::map<NodePtr, FrameViewRequestPtr>::iterator it = _imp->extraRequestedResults.begin(); it != _imp->extraRequestedResults.end(); ++it) {
         if (!it->second) {
-            TreeRenderExecutionDataPtr execData =  createSubExecutionData(it->first->getEffectInstance(), _imp->ctorArgs->time, _imp->ctorArgs->view, _imp->ctorArgs->proxyScale, _imp->ctorArgs->mipMapLevel, _imp->ctorArgs->plane.getNumComponents() == 0 ? 0 : &_imp->ctorArgs->plane, _imp->ctorArgs->canonicalRoI.isNull() ? 0 : &_imp->ctorArgs->canonicalRoI);
+            TreeRenderExecutionDataPtr execData =  createSubExecutionData(it->first->getEffectInstance(), _imp->ctorArgs->time, _imp->ctorArgs->view, _imp->ctorArgs->proxyScale, _imp->ctorArgs->mipMapLevel, _imp->ctorArgs->plane.getNumComponents() == 0 ? 0 : &_imp->ctorArgs->plane, _imp->ctorArgs->canonicalRoI.isNull() ? 0 : &_imp->ctorArgs->canonicalRoI, concatenationFlags);
             ret.push_back(execData);
         }
     }
@@ -929,7 +931,7 @@ TreeRenderExecutionData::executeAvailableTasks(int nTasks)
         FrameViewRequestPtr request = *_imp->dependencyFreeRenders->begin();
         _imp->dependencyFreeRenders->erase(_imp->dependencyFreeRenders->begin());
 #ifdef TRACE_RENDER_DEPENDENCIES
-        qDebug() << "Queuing " << request->getEffect()->getScriptName_mt_safe().c_str() << " in task pool";
+        qDebug() << this <<  "Queuing " << request->getEffect()->getScriptName_mt_safe().c_str() << " in task pool";
 #endif
         FrameViewRenderRunnablePtr runnable = FrameViewRenderRunnable::create(thisShared, request);
 #ifdef TREE_RENDER_DISABLE_MT

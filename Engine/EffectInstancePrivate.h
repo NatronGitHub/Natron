@@ -467,6 +467,7 @@ public:
     ActionRetCodeEnum handlePassThroughPlanes(const FrameViewRequestPtr& requestData,
                                               const TreeRenderExecutionDataPtr& requestPassSharedData,
                                               const RectD& roiCanonical,
+                                              AcceptedRequestConcatenationFlags concatenationFlags,
                                               std::map<int, std::list<ImagePlaneDesc> >* neededComp,
                                               bool *isPassThrough);
 
@@ -479,6 +480,7 @@ public:
                                            const RectD& canonicalRoi,
                                            const FrameViewRequestPtr& requestData,
                                            const TreeRenderExecutionDataPtr& requestPassSharedData,
+                                           AcceptedRequestConcatenationFlags concatenationFlags,
                                            bool *isIdentity);
 
     /**
@@ -486,12 +488,17 @@ public:
      **/
     ActionRetCodeEnum handleConcatenation(const TreeRenderExecutionDataPtr& requestPassSharedData,
                                           const FrameViewRequestPtr& requestData,
-                                          const FrameViewRequestPtr& requester,
-                                          int inputNbInRequester,
+                                          AcceptedRequestConcatenationFlags concatenationFlags,
                                           const RenderScale& renderScale,
                                           const RectD& canonicalRoi,
                                           bool draftRender,
                                           bool *concatenated);
+
+
+    /**
+     * @brief Returns accepted concatenations with the given input nb
+     **/
+    AcceptedRequestConcatenationFlags getConcatenationFlagsForInput(int inputNb) const;
 
 
    

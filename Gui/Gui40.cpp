@@ -514,19 +514,16 @@ void debugImageInternal(const RectI& renderWindow,
         for (int x = renderWindow.x1; x < renderWindow.x2; ++x, ++dstPixels) {
             float tmpPix[4] = {0, 0, 0, 1};
             switch (imageData.nComps) {
-                case 1:
+                case 1: {
                     tmpPix[0] = tmpPix[1] = tmpPix[2] = Image::convertPixelDepth<PIX, float>(*src_pixels[0]);
-                    tmpPix[3] = 1;
-                    break;
+                    src_pixels[0] += pixelStride;
+
+                }   break;
                 case 2:
                 case 3:
                 case 4: {
                     for (int i = 0; i < imageData.nComps; ++i) {
                         tmpPix[i] = Image::convertPixelDepth<PIX, float>(*src_pixels[i]);
-                        if (i < 3) {
-                            error[i] = (error[i] & 0xff) + lut->toColorSpaceUint8xxFromLinearFloatFast(tmpPix[i]);
-                            assert(error[i] < 0x10000);
-                        }
                         src_pixels[i] += pixelStride;
                     }
                 }   break;
@@ -536,10 +533,16 @@ void debugImageInternal(const RectI& renderWindow,
 
                     return;
             }
+
+            for (int i = 0; i < 3; ++i) {
+                error[i] = (error[i] & 0xff) + lut->toColorSpaceUint8xxFromLinearFloatFast(tmpPix[i]);
+                assert(error[i] < 0x10000);
+            }
+            unsigned char alpha = Image::convertPixelDepth<float, unsigned char>(tmpPix[3]);
             *dstPixels = qRgba( U8(error[0] >> 8),
                                U8(error[1] >> 8),
                                U8(error[2] >> 8),
-                               U8(tmpPix[3] * 255) );
+                               U8(alpha) );
 
 
         }
@@ -548,7 +551,7 @@ void debugImageInternal(const RectI& renderWindow,
 } // debugImageInternal
 
 void
-Gui::debugImage(const Image* image,
+Gui::debugImage(const ImagePtr& image,
                 const RectI& roi,
                 const QString & filename )
 {
@@ -565,18 +568,39 @@ Gui::debugImage(const Image* image,
         }
     }
 
+    ImagePtr imageToWrite = image;
 
     if (image->getStorageMode() != eStorageModeRAM) {
-        qDebug() << "Only CPU images supported";
-        return;
+        Image::InitStorageArgs initArgs;
+        {
+
+            initArgs.bounds = image->getBounds();
+            initArgs.plane = image->getLayer();
+            initArgs.bitdepth = image->getBitDepth();
+            initArgs.bufferFormat = eImageBufferLayoutRGBAPackedFullRect;
+            initArgs.storage = eStorageModeRAM;
+        }
+        ImagePtr tmpImage = Image::create(initArgs);
+        if (!tmpImage) {
+            qDebug() << "debugImage: failed to create temporary image";
+            return;
+        }
+        Image::CopyPixelsArgs cpyArgs;
+        cpyArgs.roi = initArgs.bounds;
+        ActionRetCodeEnum stat = tmpImage->copyPixels(*image, cpyArgs);
+        if (isFailureRetCode(stat)) {
+            qDebug() << "debugImage: failed to copy pixels on temporary image";
+            return;
+        }
+        imageToWrite = tmpImage;
     }
 
     Image::CPUData imageData;
-    image->getCPUData(&imageData);
+    imageToWrite->getCPUData(&imageData);
  
 
     QImage output(renderWindow.width(), renderWindow.height(), QImage::Format_ARGB32);
-    switch (image->getBitDepth()) {
+    switch (imageToWrite->getBitDepth()) {
         case eImageBitDepthByte:
             debugImageInternal<unsigned char>(roi, imageData, output);
             break;

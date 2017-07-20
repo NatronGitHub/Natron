@@ -82,7 +82,8 @@ private:
                                                        unsigned int mipMapLevel,
                                                        const ImagePlaneDesc* planeParam,
                                                        const RectD* canonicalRoIParam,
-                                                       const TreeRenderPtr& render) OVERRIDE FINAL;
+                                                       const TreeRenderPtr& render,
+                                                       int concatenationFlags) OVERRIDE FINAL;
     virtual ActionRetCodeEnum waitForRenderFinished(const TreeRenderPtr& render) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     ///

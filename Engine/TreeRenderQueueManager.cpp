@@ -217,7 +217,8 @@ TreeRenderQueueManager::launchSubRender(const EffectInstancePtr& treeRoot,
                                         unsigned int mipMapLevel,
                                         const ImagePlaneDesc* planeParam,
                                         const RectD* canonicalRoIParam,
-                                        const TreeRenderPtr& render)
+                                        const TreeRenderPtr& render,
+                                        int concatenationFlags)
 {
     assert(render && render->getProvider());
 
@@ -232,7 +233,7 @@ TreeRenderQueueManager::launchSubRender(const EffectInstancePtr& treeRoot,
 #endif
 
 
-    TreeRenderExecutionDataPtr execData = render->createSubExecutionData(treeRoot, time, view, proxyScale, mipMapLevel, planeParam, canonicalRoIParam);
+    TreeRenderExecutionDataPtr execData = render->createSubExecutionData(treeRoot, time, view, proxyScale, mipMapLevel, planeParam, canonicalRoIParam, concatenationFlags);
     if (isFailureRetCode(execData->getStatus())) {
         render->setResults(FrameViewRequestPtr(), execData);
     } else {

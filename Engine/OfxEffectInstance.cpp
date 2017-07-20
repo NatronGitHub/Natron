@@ -2267,38 +2267,43 @@ OfxEffectInstance::getInverseDistortion(TimeValue time,
     std::string clipName;
     double tmpTransform[9];
     OfxStatus stat;
-    bool isTransformPixel = false;
-    {
 
-        EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-        if (tls->hasActionInStack(kOfxImageEffectActionGetInverseDistortion)) {
-            return eActionStatusFailed;
-        }
-        EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxImageEffectActionGetInverseDistortion, time, view, renderScale
+    bool isDeprecatedTransformSupportEnabled = getCurrentCanTransform();
+    bool distortSupported = getCurrentCanDistort();
+
+
+
+    EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
+    if (tls->hasActionInStack(kOfxImageEffectActionGetInverseDistortion)) {
+        return eActionStatusFailed;
+    }
+    EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxImageEffectActionGetInverseDistortion, time, view, renderScale
 #ifdef DEBUG
-                                                  , /*canSetValue*/ false
-                                                  , /*canBeCalledRecursively*/ true
+                                              , /*canSetValue*/ false
+                                              , /*canBeCalledRecursively*/ true
 #endif
 
-                                                  );
-        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
-        
-        try {
-            stat = effectInstance()->getInverseDistortionAction( (OfxTime)time, field, renderScale, draftRender, view, clipName, tmpTransform, &distortion->func, &distortion->customData, &distortion->customDataSizeHintInBytes, &distortion->customDataFreeFunc );
-            if (stat == kOfxStatReplyDefault) {
-                stat = effectInstance()->getTransformAction( (OfxTime)time, field, renderScale, draftRender, view, clipName, tmpTransform);
-                isTransformPixel = true;
-            }
-        } catch (...) {
-            return eActionStatusFailed;
-        }
+                                              );
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
-        if (stat == kOfxStatReplyDefault) {
-            return eActionStatusReplyDefault;
-        } else if (stat == kOfxStatFailed) {
-            return eActionStatusFailed;
+    try {
+        if (distortSupported) {
+            stat = effectInstance()->getInverseDistortionAction( (OfxTime)time, field, renderScale, draftRender, view, clipName, tmpTransform, &distortion->func, &distortion->customData, &distortion->customDataSizeHintInBytes, &distortion->customDataFreeFunc );
+        } else if (isDeprecatedTransformSupportEnabled) {
+            stat = effectInstance()->getTransformAction( (OfxTime)time, field, renderScale, draftRender, view, clipName, tmpTransform);
+        } else {
+            stat = kOfxStatReplyDefault;
         }
+    } catch (...) {
+        return eActionStatusFailed;
     }
+
+    if (stat == kOfxStatReplyDefault) {
+        return eActionStatusReplyDefault;
+    } else if (stat == kOfxStatFailed) {
+        return eActionStatusFailed;
+    }
+
 
 
     assert(stat == kOfxStatOK);
@@ -2312,22 +2317,29 @@ OfxEffectInstance::getInverseDistortion(TimeValue time,
     }
     distortion->inputNbToDistort = natronClip->getInputNb();
     if (!distortion->func) {
-        if (isTransformPixel) {
+        if (!isDeprecatedTransformSupportEnabled) {
 
+            distortion->transformMatrix.reset( new Transform::Matrix3x3(tmpTransform[0], tmpTransform[1], tmpTransform[2],
+                                                                        tmpTransform[3], tmpTransform[4], tmpTransform[5],
+                                                                        tmpTransform[6], tmpTransform[7], tmpTransform[8]) );
+        } else {
             Transform::Matrix3x3 tmp(tmpTransform[0], tmpTransform[1], tmpTransform[2],
                                      tmpTransform[3], tmpTransform[4], tmpTransform[5],
                                      tmpTransform[6], tmpTransform[7], tmpTransform[8]);
+
+            // Inverse: the old getTransform action returns the transformation matrix, but we expect the inverse.
+            Transform::Matrix3x3 invTmp;
+            if (!tmp.inverse(&invTmp)) {
+                return eActionStatusReplyDefault;
+            }
+
             distortion->transformMatrix.reset(new Transform::Matrix3x3);
 
             // transform from pixel to canonical
             // see also getInverseDistortion() in ofxsImageEffect.cpp
             double par = clip->getAspectRatio();
             const bool fielded = false; // TODO: support interlaced data
-            *distortion->transformMatrix = tmp.toCanonical(renderScale.x, renderScale.y, par, fielded);
-        } else {
-            distortion->transformMatrix.reset( new Transform::Matrix3x3(tmpTransform[0], tmpTransform[1], tmpTransform[2],
-                                                                        tmpTransform[3], tmpTransform[4], tmpTransform[5],
-                                                                        tmpTransform[6], tmpTransform[7], tmpTransform[8]) );
+            *distortion->transformMatrix = invTmp.toCanonical(renderScale.x, renderScale.y, par, fielded);
         }
     }
 

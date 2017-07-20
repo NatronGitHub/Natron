@@ -81,6 +81,8 @@ Distortion2DStack::pushTransformMatrix(const Transform::Matrix3x3& transfo)
     if (_imp->stack.empty()) {
         DistortionFunction2DPtr disto(new DistortionFunction2D);
         disto->transformMatrix.reset(new Transform::Matrix3x3(transfo));
+        _imp->stack.push_back(disto);
+
     } else {
         // If the last pushed distortion is a matrix and this distortion is also a matrix, concatenate
         DistortionFunction2DPtr lastDistort = _imp->stack.back();
@@ -117,7 +119,10 @@ Distortion2DStack::applyDistortionStack(double distortedX, double distortedY, co
 
     // The jacobian is in the form : dFx/dx, dFx/dy, dFy/dx, dFy/dy
     // We always compute the jacobian if requested
-    *gotJacobianOut = wantsJacobian;
+    assert(!wantsJacobian || (gotJacobianOut && jacobian));
+    if (gotJacobianOut) {
+        *gotJacobianOut = wantsJacobian;
+    }
 
     Transform::Point3D p(distortedX, distortedY, 1.);
 
