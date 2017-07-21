@@ -1605,7 +1605,7 @@
 
 
                     PyObject* subList = PyList_GET_ITEM(%PYARG_1,i);
-                    if (!subList) {
+                    if (!subList || !PyList_Check(subList)) {
                         PyErr_SetString(PyExc_TypeError, "table must be a list of list objects.");
                         return 0;
                     }
@@ -1614,7 +1614,7 @@
 
                     for (int j = 0; j &lt; subSize; ++j) {
                         PyObject* pyString = PyList_GET_ITEM(subList,j);
-                        if ( PyUnicode_Check(pyString) ) {
+                        if ( PyString_Check(pyString) || PyUnicode_Check(pyString) ) {
 
                             PyObject* utf8pyobj = PyUnicode_AsUTF8String(pyString); // newRef
                             if (utf8pyobj) {
