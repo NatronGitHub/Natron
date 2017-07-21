@@ -151,7 +151,7 @@ EffectInstance::Implementation::resolveRenderBackend(const TreeRenderExecutionDa
 
 
     
-    if (canDoOpenGLRendering) {
+    if (canDoOpenGLRendering && glGpuContext) {
 
         // Enable GPU render if the plug-in cannot render another way or if all conditions are met
         if (openGLSupport == ePluginOpenGLRenderSupportNeeded && !_publicInterface->getNode()->getPlugin()->isOpenGLEnabled()) {
@@ -200,7 +200,7 @@ EffectInstance::Implementation::resolveRenderBackend(const TreeRenderExecutionDa
 
         // If implementation of the render is OpenGL but it can support OSMesa, fallback on OSMesa
         bool supportsOSMesa = _publicInterface->canCPUImplementationSupportOSMesa();
-        if (supportsOSMesa) {
+        if (supportsOSMesa && glCpuContext) {
             if ( (roi.width() < (glCpuContext)->getMaxOpenGLWidth()) &&
                 ( roi.height() < (glCpuContext)->getMaxOpenGLHeight()) ) {
                 *renderBackend = eRenderBackendTypeOSMesa;

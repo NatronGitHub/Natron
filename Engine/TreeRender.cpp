@@ -360,6 +360,11 @@ TreeRenderPrivate::fetchOpenGLContext(const TreeRender::CtorArgsPtr& inArgs)
 {
 
     // Ensure this thread gets an OpenGL context for the render of the frame
+    // If we don't have requirements, don't fetch a context
+    if (!appPTR->hasOpenGLForRequirements(eOpenGLRequirementsTypeRendering)) {
+        return;
+    }
+
     OSGLContextPtr glContext, cpuContext;
     if (inArgs->activeRotoDrawableItem) {
 
