@@ -4,6 +4,10 @@
 
 # History
 
+## Version 2.3.1
+
+- Python: Fix the setTable() function of the PathParam class
+- Windows: Fix a bug where most image formats would not read and write correctly
 
 ## Version 2.3.0
 
