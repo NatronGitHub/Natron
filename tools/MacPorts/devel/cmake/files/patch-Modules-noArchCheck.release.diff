@@ -1,6 +1,6 @@
 --- Modules/BasicConfigVersion-AnyNewerVersion.cmake.in.orig
 +++ Modules/BasicConfigVersion-AnyNewerVersion.cmake.in
-@@ -17,15 +17,3 @@ else()
+@@ -17,15 +17,3 @@
      set(PACKAGE_VERSION_EXACT TRUE)
    endif()
  endif()
@@ -18,7 +18,7 @@
 -endif()
 --- Modules/BasicConfigVersion-ExactVersion.cmake.in.orig
 +++ Modules/BasicConfigVersion-ExactVersion.cmake.in
-@@ -32,16 +32,3 @@ endif()
+@@ -32,16 +32,3 @@
  if(PACKAGE_FIND_VERSION STREQUAL PACKAGE_VERSION)
    set(PACKAGE_VERSION_EXACT TRUE)
  endif()
@@ -37,7 +37,7 @@
 -endif()
 --- Modules/BasicConfigVersion-SameMajorVersion.cmake.in.orig
 +++ Modules/BasicConfigVersion-SameMajorVersion.cmake.in
-@@ -31,16 +31,3 @@ else()
+@@ -31,16 +31,3 @@
        set(PACKAGE_VERSION_EXACT TRUE)
    endif()
  endif()

@@ -174,7 +174,7 @@ post-destroot {
     }
 
     foreach dylib {libgcc_ext.10.4.dylib libgcc_ext.10.5.dylib libgcc_s.1.dylib libgfortran.3.dylib libquadmath.0.dylib libstdc++.6.dylib libobjc-gnu.4.dylib libgomp.1.dylib libitm.1.dylib libssp.0.dylib libasan.0.dylib libatomic.1.dylib} {
-        # Different OS versions (eg: Leopard) or architectures (eg: PPC) don't produce all the dylibs
+        # Different OS versions (e.g. Leopard) or architectures (e.g. PPC) don't produce all the dylibs
         # https://trac.macports.org/ticket/40098
         # https://trac.macports.org/ticket/40100
         if {[file exists ${destroot}${prefix}/lib/${name}/${dylib}]} {
