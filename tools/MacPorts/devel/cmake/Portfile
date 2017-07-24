@@ -23,15 +23,15 @@ dist_subdir         cmake
 
 subport cmake-devel {}
 
-set branch          3.8
+set branch          3.9
 
 if {${subport} eq ${name}} {
 
     # release
 
-    version         ${branch}.2
-    checksums       rmd160 369ed02b2a69a47d0792b7ee964907afedbd669d \
-                    sha256 da3072794eb4c09f2d782fcee043847b99bb4cf8d4573978d9b2024214d6e92d
+    version         ${branch}.0
+    checksums       rmd160 5ac047b24806642d999fd1a460935274a3238f95 \
+                    sha256 167701525183dbb722b9ffe69fb525aa2b81798cf12f5ce1c020c93394dfae0f
 
     master_sites    http://www.cmake.org/files/v${branch}/
     conflicts       cmake-devel
@@ -44,7 +44,8 @@ if {${subport} eq ${name}} {
         patch-Modules-FindQt4.cmake.release.diff \
         patch-Modules-FindFreetype.cmake.release.diff \
         patch-Modules-noArchCheck.release.diff \
-        patch-CMakeFindFrameworks.cmake.release.diff
+        patch-CMakeFindFrameworks.cmake.release.diff \
+        patch-Source_CMakeVersionCompute.cmake.release.diff
 
     livecheck.type  regex
     livecheck.regex ${name}-(\[0-9.\]+)${extract.suffix}
@@ -54,10 +55,10 @@ if {${subport} eq ${name}} {
 
     # devel
 
-    version         20170711
-    set commit      107a92ea9a784d283b8d6d35a8c9bd93db8cd06d
-    checksums       rmd160 fa6ddd4c5f9d1a6734147ee43788911e95068099 \
-                    sha256 1e3fa5eae5a6a2721ac799196d12e405a52827f76cc01f169e9f1f7e0a1e6653
+    version         20170718
+    set commit      b5a28eb9e7b997bf15c9b6fbaf7b61e053873c34
+    checksums       rmd160 4ae4c494c1e34ef4af9bfb2620d8a3bca698450b \
+                    sha256 f3e0f667a284cdc1d484fda8472a2ab9b0863300fe3f8812c3f1303471e716ee
 
     master_sites    https://gitlab.kitware.com/cmake/cmake/repository/archive.tar.bz2?ref=${commit}&
     distname        ${name}-${commit}
@@ -96,10 +97,6 @@ depends_lib-append  port:curl \
 # system libuv is the default as of 20160830 (g320f5)
 depends_lib-append  path:lib/pkgconfig/libuv.pc:libuv
 
-# CMake 3.2 changed dependency requirements to include jsoncpp.
-# jsoncpp 1.0+ requires CMake for building. catch 22. So, have CMake
-# use its internal jsoncpp until a better solution comes about.
-
 configure.env-append \
                     CMAKE_PREFIX_PATH=${prefix} \
                     CMAKE_INCLUDE_PATH=${prefix}/include/ncurses \
@@ -124,6 +121,10 @@ platform darwin {
     }
 }
 
+# CMake 3.2 changed dependency requirements to include jsoncpp.
+# jsoncpp 1.0+ requires CMake for building. catch 22. So, have CMake
+# use its internal jsoncpp until a better solution comes about.
+
 configure.args-append --docdir=share/doc/cmake \
                     --parallel=${build.jobs} \
                     --init=${worksrcpath}/macports.cmake \
@@ -140,9 +141,16 @@ array set merger_host {i386 {} x86_64 {} ppc {} ppc64 {}}
 # Tiger has issues with system libraries;
 # just use the ones internal to cmake instead.
 platform darwin 8 {
-    configure.args-delete --system-libs \
-                          --no-system-jsoncpp
-    depends_lib-delete    path:lib/pkgconfig/libuv.pc:libuv
+    configure.args-delete --system-libs
+    configure.args-append --no-system-libs
+    depends_lib-delete \
+        path:lib/pkgconfig/libuv.pc:libuv \
+        port:curl \
+        port:expat \
+        port:zlib \
+        port:bzip2 \
+        port:libarchive \
+        port:ncurses
 }
 
 # Leopard's Rosetta has some difficulties configuring the ppc slice

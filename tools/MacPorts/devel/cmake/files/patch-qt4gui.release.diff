@@ -102,7 +102,7 @@
    set(SRCS ${SRCS} CMakeSetup.icns)
    set(MACOSX_BUNDLE_ICON_FILE CMakeSetup.icns)
    set_source_files_properties(CMakeSetup.icns PROPERTIES
-@@ -157,10 +78,10 @@
+@@ -157,7 +78,7 @@
  
  set(CMAKE_INCLUDE_CURRENT_DIR ON)
  
@@ -110,12 +110,17 @@
 +add_executable(cmake-gui WIN32 ${SRCS} ${MANIFEST_FILE})
  target_link_libraries(cmake-gui CMakeLib ${QT_QTMAIN_LIBRARY} ${CMake_QT_LIBRARIES})
  
+ # cmake-gui has not been updated for `include-what-you-use`.
+@@ -179,7 +100,7 @@
+ ...
+ ")
+ 
 -if(APPLE)
 +if(APPLEBUNDLE)
    file(STRINGS "${CMake_SOURCE_DIR}/Copyright.txt" copyright_line
      LIMIT_COUNT 1 REGEX "^Copyright 2000-20[0-9][0-9] Kitware")
  
-@@ -206,18 +127,18 @@
+@@ -225,18 +146,18 @@
      ${COMPONENT})
  endif()
  
@@ -139,7 +144,7 @@
    install(CODE "
 --- CMakeLists.txt.orig
 +++ CMakeLists.txt
-@@ -680,12 +680,6 @@
+@@ -703,12 +703,6 @@
        set(CMAKE_BUNDLE_VERSION
          "${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}.${CMake_VERSION_PATCH}")
        set(CMAKE_BUNDLE_LOCATION "${CMAKE_INSTALL_PREFIX}")
