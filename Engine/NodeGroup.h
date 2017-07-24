@@ -302,10 +302,8 @@ public:
 
         // This list as the size of the number of inputs of the node: if an input is disconnected,
         // the input node is NULL
-        typedef std::vector<TopologicalSortNodeWPtr> InternalInputsVec;
-        typedef std::vector<TopologicalSortNodePtr> ExternalInputsVec;
-        InternalInputsVec inputs;
-        ExternalInputsVec externalInputs;
+        typedef std::vector<TopologicalSortNodePtr> InputsVec;
+        InputsVec inputs;
 
         TopologicalSortNode()
         : node()
@@ -313,7 +311,6 @@ public:
         , outputs()
         , externalOutputs()
         , inputs()
-        , externalInputs()
         {
 
         }

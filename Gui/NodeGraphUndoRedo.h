@@ -442,8 +442,6 @@ private:
         {
             NodeWPtr output;
             int inputIndex;
-            std::vector<NodeWPtr> outputNodeInputs;
-            double position[2];
         };
         std::list<GroupNodeOutput> groupOutputs;
 

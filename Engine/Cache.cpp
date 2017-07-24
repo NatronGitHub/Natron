@@ -1003,6 +1003,7 @@ struct CacheBucket
                                   boost::shared_ptr<Sharable_WriteLock>& cacheEntryBucketLock,
                                   boost::shared_ptr<Sharable_ReadLock>& cacheEntryBucketToCReadLock,
                                   boost::shared_ptr<Sharable_WriteLock>& cacheEntryBucketToCWriteLock,
+                                  boost::shared_ptr<Sharable_ReadLock>& tileReadLock,
                                   EntriesMap* storage);
 
     /**
@@ -1111,6 +1112,7 @@ struct CacheEntryLockerPrivate
     };
 
     LookUpRetCodeEnum lookupAndSetStatusInternal(bool removeIfOOM,
+                                                 boost::shared_ptr<Sharable_ReadLock>& tilesReadLock,
                                                  boost::shared_ptr<Sharable_WriteLock>& bucketWriteLock,
                                                  boost::shared_ptr<Sharable_ReadLock> &tocReadLock,
                                                  boost::shared_ptr<Sharable_WriteLock> &tocWriteLock,
@@ -1123,7 +1125,8 @@ struct CacheEntryLockerPrivate
         eLookupAndCreateRetCodeOutOfToCMemory
     };
 
-    LookupAndCreateRetCodeEnum lookupAndCreate(boost::shared_ptr<Sharable_ReadLock> &tocReadLock,
+    LookupAndCreateRetCodeEnum lookupAndCreate(boost::shared_ptr<Sharable_ReadLock> &tilesReadLock,
+                                               boost::shared_ptr<Sharable_ReadLock> &tocReadLock,
                                                boost::shared_ptr<Sharable_WriteLock> &tocWriteLock,
                                                std::size_t* timeSpentWaiting, std::size_t timeout);
 
@@ -1461,15 +1464,17 @@ struct CachePrivate
      * @brief Retrieves 1 tile from the tile storage. Allocates new memory mapped file backend if not enough space.
      **/
 #ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
-    TileInternalIndex getOrCreateTileStorage(
+    TileInternalIndex getOrCreateTileStorage(boost::shared_ptr<Sharable_ReadLock>& tilesReadLock,
+                                             boost::shared_ptr<Sharable_WriteLock>& tilesWriteLock
 #ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
-                               boost::shared_ptr<Sharable_WriteLock>& bucketWriteLock,
+                               ,boost::shared_ptr<Sharable_WriteLock>& bucketWriteLock,
                                boost::shared_ptr<Sharable_ReadLock>& tocReadLock,
                                boost::shared_ptr<Sharable_WriteLock>& tocWriteLock
 #endif
     );
 #else
-    TileInternalIndex getOrCreateTileStorage(int requestingBucketIndex);
+    TileInternalIndex getOrCreateTileStorage(boost::shared_ptr<Sharable_ReadLock>& tilesReadLock,
+                                             boost::shared_ptr<Sharable_WriteLock>& tilesWriteLock, int requestingBucketIndex);
 #endif
 
 
@@ -1498,7 +1503,9 @@ struct CachePrivate
      * taken on the cache entry bucket
      * @param cacheEntry: If non-null, the given tiles will be removed from the cache entry
      * tiles list.
-     * @param tilesMemoryFileLock If non-null,this is a previously mutex taken on the memory files list
+     * @param tilesWriteLock If non-null,this is a previously mutex taken on the memory files list
+     * otherwise, it will be created
+     * @param tilesReadLock If non-null,this is a previously mutex taken on the memory files list
      * otherwise, it will be created
      * @param tilesIndices If non-null, this is the list of tiles to deallocate from the cacheEntry.
      * Other tiles already allocated on the cache entry are left allocated.
@@ -1509,7 +1516,8 @@ struct CachePrivate
                               boost::shared_ptr<Sharable_ReadLock>& cacheEntryBucketToCReadLock,
                               boost::shared_ptr<Sharable_WriteLock>& cacheEntryBucketToCWriteLock,
                               typename CacheBucket<persistent>::EntryType* cacheEntry,
-                              boost::shared_ptr<Sharable_ReadLock>& tilesMemoryFileLock,
+                              boost::shared_ptr<Sharable_WriteLock>& tilesWriteLock,
+                              boost::shared_ptr<Sharable_ReadLock>& tilesReadLock,
                               const std::vector<TileInternalIndex>* tileIndices);
 
     /**
@@ -2109,6 +2117,7 @@ CacheBucket<persistent>::deallocateCacheEntryImpl(typename EntriesMap::iterator 
                                                   boost::shared_ptr<Sharable_WriteLock>& cacheEntryBucketLock,
                                                   boost::shared_ptr<Sharable_ReadLock>& cacheEntryBucketToCReadLock,
                                                   boost::shared_ptr<Sharable_WriteLock>& cacheEntryBucketToCWriteLock,
+                                                  boost::shared_ptr<Sharable_ReadLock>& tileReadLock,
                                                   EntriesMap* storage)
 {
 
@@ -2135,9 +2144,8 @@ CacheBucket<persistent>::deallocateCacheEntryImpl(typename EntriesMap::iterator 
 
     // Clear allocated tiles for this entry
     if (!cacheEntryIt->second->tileIndices.empty()) {
-
-        boost::shared_ptr<Sharable_ReadLock> tileAlignedFileLock;
-        c->_imp->releaseTilesInternal(bucketIndex, cacheEntryBucketLock, cacheEntryBucketToCReadLock, cacheEntryBucketToCWriteLock, cacheEntryIt->second.get(), tileAlignedFileLock, 0);
+        boost::shared_ptr<Sharable_WriteLock> tileWriteLock;
+        c->_imp->releaseTilesInternal(bucketIndex, cacheEntryBucketLock, cacheEntryBucketToCReadLock, cacheEntryBucketToCWriteLock, cacheEntryIt->second.get(), tileWriteLock, tileReadLock, 0);
     }
 
     // Decrement bucket size after releaseTilesInternal() which already decrements the size taken by tiles
@@ -2242,6 +2250,7 @@ CacheEntryLockerPrivate<false>::copyProcessLocalEntryToEntry(EntryType* entry)
 template <bool persistent>
 typename CacheEntryLockerPrivate<persistent>::LookUpRetCodeEnum
 CacheEntryLockerPrivate<persistent>::lookupAndSetStatusInternal(bool removeIfOOM,
+                                                                boost::shared_ptr<Sharable_ReadLock>& tilesReadLock,
                                                                 boost::shared_ptr<Sharable_WriteLock>& bucketWriteLock,
                                                                 boost::shared_ptr<Sharable_ReadLock> &tocReadLock,
                                                                 boost::shared_ptr<Sharable_WriteLock> &tocWriteLock,
@@ -2331,7 +2340,7 @@ CacheEntryLockerPrivate<persistent>::lookupAndSetStatusInternal(bool removeIfOOM
                 // However we cannot do so under the read lock, we must take the write lock.
                 // So do it in the 2nd lookup attempt.
                 if (bucketWriteLock) {
-                    bucket->deallocateCacheEntryImpl(found, bucketWriteLock, tocReadLock, tocWriteLock, storage);
+                    bucket->deallocateCacheEntryImpl(found, bucketWriteLock, tocReadLock, tocWriteLock, tilesReadLock, storage);
                 }
                 return eLookUpRetCodeNotFound;
             case CacheBucket<persistent>::eShmEntryReadRetCodeNeedWriteLock:
@@ -2340,7 +2349,7 @@ CacheEntryLockerPrivate<persistent>::lookupAndSetStatusInternal(bool removeIfOOM
                 return eLookUpRetCodeNotFound;
             case CacheBucket<persistent>::eShmEntryReadRetCodeOutOfMemory:
                 if (removeIfOOM && bucketWriteLock) {
-                    bucket->deallocateCacheEntryImpl(found, bucketWriteLock, tocReadLock, tocWriteLock, storage);
+                    bucket->deallocateCacheEntryImpl(found, bucketWriteLock, tocReadLock, tocWriteLock, tilesReadLock, storage);
                     return eLookUpRetCodeNotFound;
                 }
                 return eLookUpRetCodeOutOfMemory;
@@ -2380,7 +2389,8 @@ CacheEntryLockerPrivate<persistent>::lookupAndSetStatusInternal(bool removeIfOOM
 
 template <bool persistent>
 typename CacheEntryLockerPrivate<persistent>::LookupAndCreateRetCodeEnum
-CacheEntryLockerPrivate<persistent>::lookupAndCreate(boost::shared_ptr<Sharable_ReadLock> &tocReadLock,
+CacheEntryLockerPrivate<persistent>::lookupAndCreate(boost::shared_ptr<Sharable_ReadLock> &tilesReadLock,
+                                                     boost::shared_ptr<Sharable_ReadLock> &tocReadLock,
                                                      boost::shared_ptr<Sharable_WriteLock> &tocWriteLock,
                                                      std::size_t* timeSpentWaiting,
                                                      std::size_t timeout)
@@ -2398,6 +2408,7 @@ CacheEntryLockerPrivate<persistent>::lookupAndCreate(boost::shared_ptr<Sharable_
 
             boost::shared_ptr<Sharable_ReadLock> readlock;
             LookUpRetCodeEnum stat = lookupAndSetStatusInternal(nAttempts == maxAttempts - 1/*removeIfOOM*/,
+                                                                tilesReadLock,
                                                                 writeLock,
                                                                 tocReadLock,
                                                                 tocWriteLock,
@@ -2549,6 +2560,11 @@ CacheEntryLockerPrivate<persistent>::lookupAndSetStatus(std::size_t* timeSpentWa
 
     try {
 
+        // Take the lock the tiles mapping so that we do not create a deadlock with retrieveAndLockTiles:
+        // locks must be taken in the same order
+        boost::shared_ptr<Sharable_ReadLock> tilesReadLock;
+        createLock<Sharable_ReadLock>(cache->_imp.get(), tilesReadLock, &cache->_imp->ipc->tilesStorageMutex);
+
         // Take the read lock on the toc file mapping
         boost::shared_ptr<Sharable_ReadLock> tocReadLock;
         boost::shared_ptr<Sharable_WriteLock> tocWriteLock;
@@ -2569,6 +2585,7 @@ CacheEntryLockerPrivate<persistent>::lookupAndSetStatus(std::size_t* timeSpentWa
             // In any case, it should do so under the write lock below.
             boost::shared_ptr<Sharable_WriteLock> bucketWriteLock;
             LookUpRetCodeEnum stat = lookupAndSetStatusInternal(false /*removeIfOOM*/,
+                                                                tilesReadLock,
                                                                 bucketWriteLock,
                                                                 tocReadLock,
                                                                 tocWriteLock,
@@ -2594,7 +2611,7 @@ CacheEntryLockerPrivate<persistent>::lookupAndSetStatus(std::size_t* timeSpentWa
 
         int attempt_i = 0;
         while (attempt_i < 2) {
-            LookupAndCreateRetCodeEnum stat = lookupAndCreate(tocReadLock, tocWriteLock, timeSpentWaiting, timeout);
+            LookupAndCreateRetCodeEnum stat = lookupAndCreate(tilesReadLock, tocReadLock, tocWriteLock, timeSpentWaiting, timeout);
             bool ok = false;
             switch (stat) {
                 case eLookupAndCreateRetCodeCreated:
@@ -2940,6 +2957,11 @@ CacheEntryLocker<persistent>::~CacheEntryLocker()
         boost::scoped_ptr<SharedMemoryProcessLocalReadLocker<persistent> > shmAccess(new SharedMemoryProcessLocalReadLocker<persistent>(_imp->cache->_imp.get()));
 #endif
         try {
+
+            boost::shared_ptr<Sharable_ReadLock> tilesReadLock;
+            createLock<Sharable_ReadLock>(_imp->cache->_imp.get(), tilesReadLock, &_imp->cache->_imp->ipc->tilesStorageMutex);
+
+
             // Take the read lock on the toc file mapping
             boost::shared_ptr<Sharable_ReadLock> tocReadLock;
             boost::shared_ptr<Sharable_WriteLock> tocWriteLock;
@@ -2960,7 +2982,7 @@ CacheEntryLocker<persistent>::~CacheEntryLocker()
                 return;
             }
 
-            _imp->bucket->deallocateCacheEntryImpl(cacheEntryIt, writeLock, tocReadLock, tocWriteLock, storage);
+            _imp->bucket->deallocateCacheEntryImpl(cacheEntryIt, writeLock, tocReadLock, tocWriteLock, tilesReadLock, storage);
 
         } catch (...) {
             // Any exception caught here means the cache is corrupted
@@ -3343,6 +3365,7 @@ struct CacheTilesLockImpl
 
     // Mutex that protects access to the tiles memory mapped file
     boost::shared_ptr<Sharable_ReadLock> tileReadLock;
+    boost::shared_ptr<Sharable_WriteLock> tileWriteLock;
 
     // The cache entry hash
     U64 entryHash;
@@ -3441,6 +3464,10 @@ CachePrivate<persistent>::createTileStorageInternal(
             std::cout << " , ";
         }
 #endif
+
+        //if (buckets[bucket_i].ipc->freeTiles->size() > 10) {
+         //   qDebug() << "Creating tile storage but bucket" << bucket_i << "has" << buckets[bucket_i].ipc->freeTiles->size() << "free tiles";
+        //}
 
         // Insert the new available tiles in the freeTiles set.
         // First insert in a temporary set and then assign to the free tiles set to avoid out of memory exceptions
@@ -3556,7 +3583,8 @@ CachePrivate<persistent>::getOrCreateTileStorage(boost::shared_ptr<Sharable_Writ
                                                  boost::shared_ptr<Sharable_ReadLock>& tocReadLock,
                                                  boost::shared_ptr<Sharable_WriteLock>& tocWriteLock)
 #else
-CachePrivate<persistent>::getOrCreateTileStorage(int requestingBucketIndex)
+CachePrivate<persistent>::getOrCreateTileStorage(boost::shared_ptr<Sharable_ReadLock>& tilesReadLock,
+                                                 boost::shared_ptr<Sharable_WriteLock>& tilesWriteLock, int requestingBucketIndex)
 #endif
 {
     // The tile storage mutex must be taken!
@@ -3576,6 +3604,22 @@ CachePrivate<persistent>::getOrCreateTileStorage(int requestingBucketIndex)
         return encodedTileIndex;
     }
 
+    // If we have a read lock on the tiles storage, take a write lock now:
+    // we don't want multiple threads to create tiles storage at the same time
+    if (!tilesWriteLock) {
+        tilesReadLock.reset();
+        createLock<Sharable_WriteLock>(this, tilesWriteLock, &ipc->tilesStorageMutex);
+
+        // Now that we obtained the write lock, another thread might have created tile storage, so attempt
+        // one more time to get a free tile
+        if (getFreeTileInternal(
+#ifndef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
+                                requestingBucketIndex,
+#endif
+                                &encodedTileIndex)) {
+            return encodedTileIndex;
+        }
+    }
 
     createTileStorageInternal(
 #ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
@@ -3726,9 +3770,9 @@ Cache<persistent>::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
 
                 TileInternalIndex freeTileEncodedIndex;
 #ifdef NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED
-                freeTileEncodedIndex = _imp->getOrCreateTileStorage(bucketWriteLock, tocReadLock, tocWriteLock);
+                freeTileEncodedIndex = _imp->getOrCreateTileStorage(tilesLock->tileReadLock, tilesLock->tileWriteLock, bucketWriteLock, tocReadLock, tocWriteLock);
 #else
-                freeTileEncodedIndex = _imp->getOrCreateTileStorage(bucketIndex);
+                freeTileEncodedIndex = _imp->getOrCreateTileStorage(tilesLock->tileReadLock, tilesLock->tileWriteLock, bucketIndex);
 #endif
 
 
@@ -3794,7 +3838,7 @@ Cache<persistent>::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
                     // The entry does no longer exist in the cache... A possible explanation is that the cache was wiped just prior to
                     // this function call.
                     // If somehow the cache entry is no longer in the cache, we must make free again all tile indices
-                    _imp->releaseTilesInternal(cacheEntryBucketIndex, bucketWriteLock, tocReadLock, tocWriteLock, 0, tilesLock->tileReadLock, &tilesLock->allocatedTiles);
+                    _imp->releaseTilesInternal(cacheEntryBucketIndex, bucketWriteLock, tocReadLock, tocWriteLock, 0, tilesLock->tileWriteLock, tilesLock->tileReadLock, &tilesLock->allocatedTiles);
 
                     return false;
                 }
@@ -3863,7 +3907,7 @@ Cache<persistent>::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
                         // this function call.
                         // If somehow the cache entry is no longer in the cache, we must make free again all tile indices
 
-                        _imp->releaseTilesInternal(cacheEntryBucketIndex, bucketWriteLock, tocReadLock, tocWriteLock, 0, tilesLock->tileReadLock, &tilesLock->allocatedTiles);
+                        _imp->releaseTilesInternal(cacheEntryBucketIndex, bucketWriteLock, tocReadLock, tocWriteLock, 0, tilesLock->tileWriteLock, tilesLock->tileReadLock, &tilesLock->allocatedTiles);
 
 
                         return false;
@@ -3914,6 +3958,7 @@ Cache<persistent>::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
     } catch (...) {
 
         tilesLock->tileReadLock.reset();
+        tilesLock->tileWriteLock.reset();
 
         // Any exception caught here means the cache is corrupted
         _imp->recoverFromInconsistentState(
@@ -3970,7 +4015,7 @@ Cache<persistent>::unLockTiles(void* cacheData, bool invalidate)
             }
 #endif
 
-            if (!tilesLock->tileReadLock) {
+            if (!tilesLock->tileReadLock && !tilesLock->tileWriteLock) {
                 // Take the tilesStorageMutex in read mode to indicate that we are operating on it
                 // Take read lock on the tile data
                 createLock<Sharable_ReadLock>(_imp.get(), tilesLock->tileReadLock, &_imp->ipc->tilesStorageMutex);
@@ -4014,6 +4059,7 @@ Cache<persistent>::unLockTiles(void* cacheData, bool invalidate)
         } catch (...) {
 
             tilesLock->tileReadLock.reset();
+            tilesLock->tileWriteLock.reset();
 
             // Any exception caught here means the cache is corrupted
             _imp->recoverFromInconsistentState(
@@ -4035,7 +4081,8 @@ CachePrivate<persistent>::releaseTilesInternal(int cacheEntryBucketIndex,
                                                boost::shared_ptr<Sharable_ReadLock>& cacheEntryBucketToCReadLock,
                                                boost::shared_ptr<Sharable_WriteLock>& cacheEntryBucketToCWriteLock,
                                                typename CacheBucket<persistent>::EntryType* cacheEntry,
-                                               boost::shared_ptr<Sharable_ReadLock>& tileAlignedFileLock,
+                                               boost::shared_ptr<Sharable_WriteLock>& tilesWriteLock,
+                                               boost::shared_ptr<Sharable_ReadLock>& tilesReadLock,
                                                const std::vector<TileInternalIndex>* tileIndices)
 {
 
@@ -4103,8 +4150,8 @@ CachePrivate<persistent>::releaseTilesInternal(int cacheEntryBucketIndex,
     }
 #endif
 
-    if (!tileAlignedFileLock) {
-        createLock<Sharable_ReadLock>(this, tileAlignedFileLock, &ipc->tilesStorageMutex);
+    if (!tilesWriteLock && !tilesReadLock) {
+        createLock<Sharable_ReadLock>(this, tilesReadLock, &ipc->tilesStorageMutex);
     }
 
     // Remove the given tiles, or the cache entry tiles if NULL
@@ -4236,8 +4283,9 @@ CachePrivate<persistent>::lookupEntryAndReleaseTiles(U64 entryHash, const std::v
     }
 
 
-    boost::shared_ptr<Sharable_ReadLock> tilesMemoryFileLock;
-    releaseTilesInternal(cacheEntryBucketIndex, entryBucketWriteLock, entryTocReadLock, entryTocWriteLock, cacheEntry, tilesMemoryFileLock, tileIndices);
+    boost::shared_ptr<Sharable_ReadLock> tilesReadLock;
+    boost::shared_ptr<Sharable_WriteLock> tilesWriteLock;
+    releaseTilesInternal(cacheEntryBucketIndex, entryBucketWriteLock, entryTocReadLock, entryTocWriteLock, cacheEntry, tilesWriteLock, tilesReadLock, tileIndices);
 } // lookupEntryAndReleaseTiles
 
 template <bool persistent>
@@ -4688,6 +4736,9 @@ Cache<persistent>::removeEntry(const CacheEntryBasePtr& entry)
     // Take the bucket lock in write mode
     try {
 
+        boost::shared_ptr<Sharable_ReadLock> tilesReadLock;
+        createLock<Sharable_ReadLock>(_imp.get(), tilesReadLock, &_imp->ipc->tilesStorageMutex);
+
         // Take the read lock on the toc file mapping
         boost::shared_ptr<Sharable_ReadLock> tocReadLock;
         boost::shared_ptr<Sharable_WriteLock> tocWriteLock;
@@ -4705,7 +4756,7 @@ Cache<persistent>::removeEntry(const CacheEntryBasePtr& entry)
             typename CacheBucket<persistent>::EntriesMap::iterator cacheEntryIt;
             typename CacheBucket<persistent>::EntriesMap* storage;
             if (bucket.tryCacheLookupImpl(hash, &cacheEntryIt, &storage)) {
-                bucket.deallocateCacheEntryImpl(cacheEntryIt, writeLock, tocReadLock, tocWriteLock, storage);
+                bucket.deallocateCacheEntryImpl(cacheEntryIt, writeLock, tocReadLock, tocWriteLock, tilesReadLock, storage);
             }
         }
     } catch (...) {
@@ -4960,6 +5011,10 @@ Cache<persistent>::evictLRUEntries(std::size_t nBytesToFree)
             break;
         }
 
+        boost::shared_ptr<Sharable_ReadLock> tilesReadLock;
+        createLock<Sharable_ReadLock>(_imp.get(), tilesReadLock, &_imp->ipc->tilesStorageMutex);
+
+
 
         int bucket_i = getBucketCacheBucketIndex(oldestEntryHash);
         CacheBucket<persistent> & bucket = _imp->buckets[bucket_i];
@@ -4991,7 +5046,7 @@ Cache<persistent>::evictLRUEntries(std::size_t nBytesToFree)
             assert(curSize >= entrySize);
             curSize -= entrySize;
 
-            bucket.deallocateCacheEntryImpl(cacheEntryIt, bucketLock, tocReadLock, tocWriteLock, storage);
+            bucket.deallocateCacheEntryImpl(cacheEntryIt, bucketLock, tocReadLock, tocWriteLock, tilesReadLock, storage);
         } catch (...) {
             // Any exception caught here means the cache is corrupted
             _imp->recoverFromInconsistentState(

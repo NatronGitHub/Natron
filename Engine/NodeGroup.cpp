@@ -1856,13 +1856,13 @@ bool
 NodeCollection::TopologicalSortNode::isTreeInput() const
 {
     assert(isPartOfGivenNodes);
-    for (InternalInputsVec::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
-        TopologicalSortNodePtr input = it->lock();
-        if (!input) {
+    for (InputsVec::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
+        if (!*it) {
             continue;
         }
-        assert(input->isPartOfGivenNodes);
-        return false;
+        if ((*it)->isPartOfGivenNodes) {
+            return false;
+        }
     }
     return true;
 }
@@ -1922,7 +1922,7 @@ createTopologicalSortNodeRecursive(bool enterGroups,
         int nInputs = node->getMaxInputCount();
 
         ret->inputs.resize(nInputs);
-        ret->externalInputs.resize(nInputs);
+
         for (int i = 0; i < nInputs; ++i) {
             NodePtr input;
             if (enterGroups) {
@@ -1935,11 +1935,7 @@ createTopologicalSortNodeRecursive(bool enterGroups,
                 inputNode = createTopologicalSortNodeRecursive(enterGroups, input, ret, i, allNodesList, treeInputNodes, createdNodes);
             }
             if (inputNode) {
-                if (inputNode->isPartOfGivenNodes) {
-                    ret->inputs[i] = inputNode;
-                } else {
-                    ret->externalInputs[i] = inputNode;
-                }
+                ret->inputs[i] = inputNode;
             }
         }
         if (ret->isTreeInput()) {
