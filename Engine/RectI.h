@@ -42,7 +42,7 @@
 #include "Engine/EngineFwd.h"
 
 
-NATRON_NAMESPACE_ENTER
+NATRON_NAMESPACE_ENTER;
 
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -482,7 +482,7 @@ operator!=(const RectI & b1,
     return !(b1 == b2);
 }
 
-NATRON_NAMESPACE_EXIT
+NATRON_NAMESPACE_EXIT;
 
 Q_DECLARE_METATYPE(NATRON_NAMESPACE::RectI)
 

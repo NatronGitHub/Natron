@@ -34,10 +34,9 @@
 #include "Engine/EngineFwd.h"
 
 
-NATRON_NAMESPACE_ENTER
+NATRON_NAMESPACE_ENTER;
 
-NATRON_PYTHON_NAMESPACE_ENTER
-
+NATRON_PYTHON_NAMESPACE_ENTER;
 
 class ExprUtils
 {
@@ -125,8 +124,8 @@ public:
     static double pnoise(const Double3DTuple& p, const Double3DTuple& period);
 };
 
-NATRON_PYTHON_NAMESPACE_EXIT
-NATRON_NAMESPACE_EXIT
+NATRON_PYTHON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT;
 
 
 #endif // PYNOISE_H

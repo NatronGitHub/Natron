@@ -1197,7 +1197,7 @@ Node::endInputEdition(bool triggerRender)
         --_imp->inputModifiedRecursion;
     }
 
-    if (!_imp->inputModifiedRecursion) {
+    if (!_imp->inputModifiedRecursion && !getApp()->getProject()->isLoadingProject() && !getApp()->isCreatingNode()) {
         bool hasChanged = !_imp->inputsModified.empty();
         _imp->inputsModified.clear();
 

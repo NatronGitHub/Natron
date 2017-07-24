@@ -274,7 +274,109 @@ public:
                                                     const std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>& createdNodes,
                                                     const NodesList& allNodesInGroup,
                                                     bool allowSearchInAllNodes);
-    
+
+
+    struct TopologicalSortNode;
+    typedef boost::shared_ptr<TopologicalSortNode> TopologicalSortNodePtr;
+    typedef boost::weak_ptr<TopologicalSortNode> TopologicalSortNodeWPtr;
+    struct TopologicalSortNode
+    {
+        // A strong ref to the node
+        NodePtr node;
+
+        // True if this node is part of the nodes list given to extractTopologicallySortedTreesFromNodes
+        // otherwise false.
+        // We still add this node to the topological sort, even if not part of the nodes list so that
+        // we can remember the outside context of the tree:
+        // This is needed for example for the Group/UnGroup undo/redo command when we want to re-insert the nodes in
+        // an existing tree.
+        // If False, the outputs and inputs list are not filled so no further recursion is required.
+        bool isPartOfGivenNodes;
+
+        // List of output nodes within the same tree
+        typedef std::map<TopologicalSortNodeWPtr, std::list<int> > InternalOutputsMap;
+
+        typedef std::map<TopologicalSortNodePtr, std::list<int> > ExternalOutputsMap;
+        InternalOutputsMap outputs;
+        ExternalOutputsMap externalOutputs;
+
+        // This list as the size of the number of inputs of the node: if an input is disconnected,
+        // the input node is NULL
+        typedef std::vector<TopologicalSortNodeWPtr> InternalInputsVec;
+        typedef std::vector<TopologicalSortNodePtr> ExternalInputsVec;
+        InternalInputsVec inputs;
+        ExternalInputsVec externalInputs;
+
+        TopologicalSortNode()
+        : node()
+        , isPartOfGivenNodes(false)
+        , outputs()
+        , externalOutputs()
+        , inputs()
+        , externalInputs()
+        {
+
+        }
+
+        /**
+         * @brief Returns true if this node is a tree input, i.e:
+         * if the node does not have any input, or all inputs are outside of the nodes list that
+         * was given to extractTopologicallySortedTreesFromNodes
+         **/
+        bool isTreeInput() const;
+
+        /**
+         * @brief Returns true if this node is a tree output, i.e:
+         * if the node does not have any output, or all outputs are outside of the nodes list that
+         * was given to extractTopologicallySortedTreesFromNodes
+         **/
+        bool isTreeOutput() const;
+
+    };
+
+    typedef std::list<TopologicalSortNodePtr> TopologicallySortedNodesList;
+
+    /**
+     * @brief Extracts from the given output nodes list, a list of topologically sorted nodes tree.
+     * For each tree stemming from an output node, the tree's input nodes and outputs also keep their link to nodes outside of the tree:
+     * Imagine that the user copy a sub portion of at tree in the NodeGraph, we can still build a tree from this selection,
+     * but we also remember the connections of the sub-tree to the actual tree it lives in.
+     *
+     * @param enterGroups If true, the topological sort will also cycle through recursively on any sub-node-graph
+     * @param outputNodesList List of nodes which are considered output (root) of a tree.
+     * @param allNodesList If non-null, any input or output of a node that is in not in this list is considered "out of the tree" and
+     * will not be added to the topological sort
+     * @param sortedNodes A list of nodes containing the topological ordering of the given nodes (from inputs to outputs)
+     * This parameter is optional and may be set to NULL
+     * @param outputNodes A list of the different outputs (tree roots) that were part of the nodes list. This parameter is optional
+     * and may be set to NULL
+     **/
+    static void extractTopologicallySortedTreesForOutputs(bool enterGroups,
+                                                          const NodesList& outputNodesList,
+                                                          const NodesList* allNodesList,
+                                                          NodeCollection::TopologicallySortedNodesList* sortedNodes,
+                                                          std::list<NodeCollection::TopologicalSortNodePtr>* outputNodes);
+
+
+    /**
+     * @brief Same as extractTopologicallySortedTreesForOutputs but the outputNodesList is extracted from the nodes list directly:
+     * any node within the list that doesn't have any output in the nodes list is marked as an output node.
+     **/
+    static void extractTopologicallySortedTreesFromNodes(bool enterGroups,
+                                                         const NodesList& nodes,
+                                                         TopologicallySortedNodesList* sortedNodes,
+                                                         std::list<TopologicalSortNodePtr>* outputNodes);
+
+    /**
+     * @brief Same as extractTopologicallySortedTreesForOutputs, but the output nodes list is built from the output
+     * nodes of this node graph.
+     **/
+    void extractTopologicallySortedTrees(bool enterGroups,
+                                        TopologicallySortedNodesList* sortedNodes,
+                                        std::list<TopologicalSortNodePtr>* outputNodes) const;
+
+
+
 public:
 
 

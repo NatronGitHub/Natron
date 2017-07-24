@@ -1468,6 +1468,7 @@ EffectInstance::setCurrentCursor(CursorEnum defaultCursor)
     return true;
 }
 
+
 bool
 EffectInstance::setCurrentCursor(const QString& customCursorFilePath)
 {

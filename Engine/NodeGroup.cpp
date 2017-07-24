@@ -1745,9 +1745,10 @@ NodeCollection::createNodesFromSerialization(const SERIALIZATION_NAMESPACE::Node
     NodeCollectionPtr thisShared = getThisShared();
 
     // When loading a Project, use the Group name to update the loading status to the user
+    NodeGroupPtr isNodeGroup = toNodeGroup(thisShared);
+
     QString groupStatusLabel;
     {
-        NodeGroupPtr isNodeGroup = toNodeGroup(thisShared);
         if (isNodeGroup) {
             groupStatusLabel = QString::fromUtf8( isNodeGroup->getNode()->getLabel().c_str() );
         } else {
@@ -1834,9 +1835,258 @@ NodeCollection::createNodesFromSerialization(const SERIALIZATION_NAMESPACE::Node
 
     // We may now restore all links
     restoreLinksRecursive(thisShared, serializedNodes, &localCreatedNodes);
+
+    // Ensure metadatas are passed through the graph
+    // Refresh in one pass in a topological order (since metadatas from outputs depend on metadatas from inputs)
+    // Do it only when we finished restoring the main node graph (and thus all subgraphs) or if loading a PyPlug
+    if (!thisShared->getApplication()->getProject()->isLoadingProject() || !isNodeGroup) {
+
+        TopologicallySortedNodesList sortedNodes;
+        extractTopologicallySortedTrees(true /*recurseOnSubGroups*/, &sortedNodes, 0);
+        for (TopologicallySortedNodesList::const_iterator it = sortedNodes.begin(); it != sortedNodes.end(); ++it) {
+            (*it)->node->getEffectInstance()->onMetadataChanged_nonRecursive_public();
+        }
+    }
     return !hasError;
 
 } // createNodesFromSerialization
+
+
+bool
+NodeCollection::TopologicalSortNode::isTreeInput() const
+{
+    assert(isPartOfGivenNodes);
+    for (InternalInputsVec::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
+        TopologicalSortNodePtr input = it->lock();
+        if (!input) {
+            continue;
+        }
+        assert(input->isPartOfGivenNodes);
+        return false;
+    }
+    return true;
+}
+
+bool
+NodeCollection::TopologicalSortNode::isTreeOutput() const
+{
+    assert(isPartOfGivenNodes);
+    for (InternalOutputsMap::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        TopologicalSortNodePtr output = it->first.lock();
+        if (!output) {
+            continue;
+        }
+        assert(output->isPartOfGivenNodes);
+        return false;
+    }
+    return true;
+}
+
+static NodeCollection::TopologicalSortNodePtr
+createTopologicalSortNodeRecursive(bool enterGroups,
+                                   const NodePtr& node,
+                                   const NodeCollection::TopologicalSortNodePtr& callerNode,
+                                   int callerInputNb,
+                                   const NodesList* allNodesList,
+                                   std::list<NodeCollection::TopologicalSortNodePtr>* treeInputNodes,
+                                   std::map<NodePtr, NodeCollection::TopologicalSortNodePtr>* createdNodes)
+{
+
+    // We already visited this node, just add in the output list
+    {
+        std::map<NodePtr, NodeCollection::TopologicalSortNodePtr>::iterator foundCreated = createdNodes->find(node);
+        if (foundCreated != createdNodes->end()) {
+            if (callerNode) {
+                foundCreated->second->outputs[callerNode].push_back(callerInputNb);
+            }
+            return foundCreated->second;
+        }
+    }
+
+
+    // Check if this node is part of the all nodes list.
+    const bool isPartOfAllNodes = allNodesList ? std::find(allNodesList->begin(), allNodesList->end(), node) != allNodesList->end() : true;
+
+    NodeCollection::TopologicalSortNodePtr ret(new NodeCollection::TopologicalSortNode);
+    createdNodes->insert(std::make_pair(node, ret));
+    ret->node = node;
+    ret->isPartOfGivenNodes = isPartOfAllNodes;
+
+    // Add the output
+    if (callerNode) {
+        ret->outputs[callerNode].push_back(callerInputNb);
+    }
+
+    // Recurse on inputs, unless the node is not part of the allNodes list
+    if (isPartOfAllNodes) {
+        int nInputs = node->getMaxInputCount();
+
+        ret->inputs.resize(nInputs);
+        ret->externalInputs.resize(nInputs);
+        for (int i = 0; i < nInputs; ++i) {
+            NodePtr input;
+            if (enterGroups) {
+                input = node->getInput(i);
+            } else {
+                input = node->getRealInput(i);
+            }
+            NodeCollection::TopologicalSortNodePtr inputNode;
+            if (input) {
+                inputNode = createTopologicalSortNodeRecursive(enterGroups, input, ret, i, allNodesList, treeInputNodes, createdNodes);
+            }
+            if (inputNode) {
+                if (inputNode->isPartOfGivenNodes) {
+                    ret->inputs[i] = inputNode;
+                } else {
+                    ret->externalInputs[i] = inputNode;
+                }
+            }
+        }
+        if (ret->isTreeInput()) {
+            treeInputNodes->push_back(ret);
+        }
+
+    }
+
+    return ret;
+    
+} // createTopologicalSortNodeRecursive
+
+static void addToTopologicalSortRecursive(const std::list<NodeCollection::TopologicalSortNodePtr>& graphLevelNodes,
+                                          std::set<NodeCollection::TopologicalSortNodePtr>* markedNodes,
+                                          std::list<NodeCollection::TopologicalSortNodePtr>* finalList)
+{
+    std::list<NodeCollection::TopologicalSortNodePtr> nextLevelNodes;
+    for (std::list<NodeCollection::TopologicalSortNodePtr>::const_iterator it = graphLevelNodes.begin(); it != graphLevelNodes.end(); ++it) {
+
+        std::pair<std::set<NodeCollection::TopologicalSortNodePtr>::iterator, bool> insertOk = markedNodes->insert(*it);
+        if (!insertOk.second) {
+            continue;
+        }
+
+        assert((*it)->isPartOfGivenNodes);
+
+        finalList->push_back(*it);
+        for (NodeCollection::TopologicalSortNode::InternalOutputsMap::const_iterator it2 = (*it)->outputs.begin(); it2 != (*it)->outputs.end(); ++it2) {
+            NodeCollection::TopologicalSortNodePtr node = it2->first.lock();
+            if (node) {
+                assert(node->isPartOfGivenNodes);
+                nextLevelNodes.push_back(node);
+            }
+        }
+    }
+    if (!nextLevelNodes.empty()) {
+        addToTopologicalSortRecursive(nextLevelNodes, markedNodes, finalList);
+    }
+} // addToTopologicalSortRecursive
+
+
+void
+NodeCollection::extractTopologicallySortedTreesForOutputs(bool enterGroups, const NodesList& outputNodesList, const NodesList* allNodesList, NodeCollection::TopologicallySortedNodesList* sortedNodes, std::list<NodeCollection::TopologicalSortNodePtr>* outputNodes)
+{
+    if (!sortedNodes && !outputNodes) {
+        assert(false);
+        // Nothing to do...
+        return;
+    }
+
+    // Temp map to ensure we create nodes only once when visited
+    std::map<NodePtr, NodeCollection::TopologicalSortNodePtr> createdNodes;
+
+    // While building the tree recursively, we mark inputs for the second phase when building the topological sort list.
+    std::list<NodeCollection::TopologicalSortNodePtr> treeInputs;
+
+    for (NodesList::const_iterator it = outputNodesList.begin(); it != outputNodesList.end(); ++it) {
+        NodeCollection::TopologicalSortNodePtr outputTreeNode = createTopologicalSortNodeRecursive(enterGroups, *it, NodeCollection::TopologicalSortNodePtr(), -1, allNodesList, &treeInputs, &createdNodes);
+
+        if (outputNodes) {
+            outputNodes->push_back(outputTreeNode);
+        }
+
+
+        // Store the list of output nodes pointing to this node that are not in the nodes list.
+        // This is needed for example for the Group/UnGroup undo/redo command when we want to re-insert the nodes in
+        // an existing tree.
+        OutputNodesMap outputs;
+        (*it)->getOutputs(outputs);
+        for (OutputNodesMap::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
+            NodeCollection::TopologicalSortNodePtr externalOutputNode(new NodeCollection::TopologicalSortNode);
+            externalOutputNode->node = it2->first;
+            externalOutputNode->isPartOfGivenNodes = false;
+            outputTreeNode->externalOutputs[externalOutputNode] = it2->second;
+        }
+        
+    }
+
+
+    if (sortedNodes) {
+        // Now cycle through the graph from inputs to outputs recursively and build the topological ordering
+        std::set<NodeCollection::TopologicalSortNodePtr> tmpMarkedNodes;
+        addToTopologicalSortRecursive(treeInputs, &tmpMarkedNodes, sortedNodes);
+    }
+} // extractTopologicallySortedTreesForOutputs
+
+/**
+ * @brief Returns true if the given node has at least one of its output node in the given list of nodes
+ **/
+static bool
+hasNodeOutputsInList(const NodesList& nodes,
+                     const NodePtr& node)
+{
+    OutputNodesMap outputs;
+    node->getOutputs(outputs);
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        if (*it != node) {
+            OutputNodesMap::const_iterator foundOutput = outputs.find(*it);
+
+            if (foundOutput != outputs.end()) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+} // hasNodeOutputsInList
+
+
+void
+NodeCollection::extractTopologicallySortedTreesFromNodes(bool enterGroups, const NodesList& nodes, TopologicallySortedNodesList* sortedNodes, std::list<TopologicalSortNodePtr>* outputNodes)
+{
+    NodesList outputs;
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        if (hasNodeOutputsInList(nodes, *it)) {
+            continue;
+        }
+        outputs.push_back(*it);
+    }
+
+    assert(!outputs.empty());
+    if (!outputs.empty()) {
+        extractTopologicallySortedTreesForOutputs(enterGroups, outputs, &nodes, sortedNodes, outputNodes);
+    }
+} // extractTopologicallySortedTreesFromNodes
+
+
+void
+NodeCollection::extractTopologicallySortedTrees(bool enterGroups,
+                                                TopologicallySortedNodesList* sortedNodes,
+                                                std::list<TopologicalSortNodePtr>* outputNodes) const
+{
+
+    NodesList outputNodesList;
+    // Cycle through all nodes in the group and find outputs
+
+    NodesList nodes = getNodes();
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        OutputNodesMap outputs;
+        (*it)->getOutputs(outputs);
+        if (outputs.empty()) {
+            outputNodesList.push_back(*it);
+        }
+    }
+    extractTopologicallySortedTreesForOutputs(enterGroups, outputNodesList, &nodes, sortedNodes, outputNodes);
+
+} // extractTopologicallySortedTrees
 
 NATRON_NAMESPACE_EXIT
 

@@ -42,7 +42,7 @@
 #include "Engine/EngineFwd.h"
 
 
-NATRON_NAMESPACE_ENTER
+NATRON_NAMESPACE_ENTER;
 
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -50,7 +50,9 @@ NATRON_NAMESPACE_ENTER
 GCC_DIAG_OFF(strict-overflow)
 #endif
 
+
 class RectD : public SERIALIZATION_NAMESPACE::SerializableObjectBase
+
 {
 public:
 
@@ -367,7 +369,7 @@ operator!=(const RectD & b1,
            b1.top() != b2.top();
 }
 
-NATRON_NAMESPACE_EXIT
+NATRON_NAMESPACE_EXIT;
 
 Q_DECLARE_METATYPE(NATRON_NAMESPACE::RectD)
 

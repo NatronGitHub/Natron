@@ -333,27 +333,6 @@ private:
 
 public:
 
-    struct TreeOutput
-    {
-        NodePtr node;
-        std::list<std::pair<int, NodeWPtr > > outputs;
-    };
-
-    struct TreeInput
-    {
-        NodePtr node;
-        std::vector<NodePtr > inputs;
-    };
-
-    struct NodesTree
-    {
-        TreeOutput output;
-        std::list<TreeInput> inputs;
-        NodesList inbetweenNodes;
-    };
-
-    static void extractTreesFromNodes(const NodesList& nodes, std::list<Project::NodesTree>& trees);
-
     void closeProject_blocking(bool aboutToQuit);
 
     /**

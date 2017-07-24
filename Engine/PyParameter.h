@@ -52,8 +52,8 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER
-NATRON_PYTHON_NAMESPACE_ENTER
+NATRON_NAMESPACE_ENTER;
+NATRON_PYTHON_NAMESPACE_ENTER;
 
 /**
  * @brief Specify that an action (a setter) must be applied on all split views in the parameter
@@ -1320,7 +1320,7 @@ public:
     void setDefaultCurvesFromCurrentCurves();
 };
 
-NATRON_PYTHON_NAMESPACE_EXIT
-NATRON_NAMESPACE_EXIT
+NATRON_PYTHON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_ParameterWrapper_h

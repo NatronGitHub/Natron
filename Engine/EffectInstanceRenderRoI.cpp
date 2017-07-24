@@ -1093,26 +1093,37 @@ EffectInstance::requestRender(TimeValue timeInArgs,
         *createdRenderClone = renderClone;
     }
 
-    // Set this clone as the input effect of the requester effect at the given time/view
-    if (inputNbInRequester >= 0 && requesterFrameViewRequest->getEffect() && requesterFrameViewRequest->getEffect() != renderClone) {
-        FrameViewPair p = {time, view};
-        requesterFrameViewRequest->getEffect()->_imp->renderData->renderInputs[inputNbInRequester].insert(std::make_pair(p, renderClone));
-    }
+    {
 
 
-    // Find a frame view request matching the mipmapLevel/proxyScale/plane
-    FrameViewKey requestKey = {mipMapLevel, proxyScale, plane};
-    FrameViewRequestMap::iterator foundMatchingRequest = renderClone->_imp->renderData->requests.find(requestKey);
-    if (foundMatchingRequest != renderClone->_imp->renderData->requests.end()) {
-        *createdRequest = foundMatchingRequest->second.lock();
-        if (!*createdRequest) {
-            renderClone->_imp->renderData->requests.erase(foundMatchingRequest);
+        // Set this clone as the input effect of the requester effect at the given time/view
+        EffectInstancePtr requesterEffect;
+        if (requesterFrameViewRequest) {
+            requesterEffect = requesterFrameViewRequest->getEffect();
+        }
+        if (inputNbInRequester >= 0 && requesterEffect && requesterEffect != renderClone) {
+            FrameViewPair p = {time, view};
+            QMutexLocker k(&requesterEffect->_imp->renderData->lock);
+            requesterEffect->_imp->renderData->renderInputs[inputNbInRequester].insert(std::make_pair(p, renderClone));
         }
     }
-    if (!*createdRequest) {
-        // Create a request if it did not already exist
-        createdRequest->reset(new FrameViewRequest(plane, mipMapLevel, proxyScale, renderClone, requestPassSharedData->getTreeRender()));
-        renderClone->_imp->renderData->requests.insert(std::make_pair(requestKey, *createdRequest));
+
+    {
+        QMutexLocker k(&renderClone->_imp->renderData->lock);
+        // Find a frame view request matching the mipmapLevel/proxyScale/plane
+        FrameViewKey requestKey = {mipMapLevel, proxyScale, plane};
+        FrameViewRequestMap::iterator foundMatchingRequest = renderClone->_imp->renderData->requests.find(requestKey);
+        if (foundMatchingRequest != renderClone->_imp->renderData->requests.end()) {
+            *createdRequest = foundMatchingRequest->second.lock();
+            if (!*createdRequest) {
+                renderClone->_imp->renderData->requests.erase(foundMatchingRequest);
+            }
+        }
+        if (!*createdRequest) {
+            // Create a request if it did not already exist
+            createdRequest->reset(new FrameViewRequest(plane, mipMapLevel, proxyScale, renderClone, requestPassSharedData->getTreeRender()));
+            renderClone->_imp->renderData->requests.insert(std::make_pair(requestKey, *createdRequest));
+        }
     }
     if (requesterFrameViewRequest) {
         // Add the requester request as a listener of this request. This has to be done before the call to requestRenderInternal()

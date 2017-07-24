@@ -768,10 +768,10 @@
        </modify-function>
        
    </object-type>
-   
-   <value-type name="ImageLayer" copyable="true" hash-function="ImageLayer::getHash">
-   </value-type>
 
+    <value-type name="ImageLayer" copyable="true" hash-function="ImageLayer::getHash">
+    </value-type>
+    
     <object-type name="Group" copyable="false">
         <inject-documentation format="target">
             This is an abstract class, it is derived by 2 different classes:
@@ -1614,8 +1614,15 @@
 
                     for (int j = 0; j &lt; subSize; ++j) {
                         PyObject* pyString = PyList_GET_ITEM(subList,j);
-                        if ( PyString_Check(pyString) || PyUnicode_Check(pyString) ) {
 
+                        if ( PyString_Check(pyString) ) {
+                            char* buf = PyString_AsString(pyString);
+                            if (buf) {
+                                std::string ret;
+                                ret.append(buf);
+                                rowVec[j] = ret;
+                                }
+                        } else if (PyUnicode_Check(pyString) ) {
                             PyObject* utf8pyobj = PyUnicode_AsUTF8String(pyString); // newRef
                             if (utf8pyobj) {
                                 char* cstr = PyBytes_AS_STRING(utf8pyobj); // Borrowed pointer
@@ -1626,6 +1633,7 @@
                             }
                         }
                     }
+                    table.push_back(rowVec);
                 }
 
                 %CPPSELF.%FUNCTION_NAME(table);

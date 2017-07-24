@@ -44,6 +44,7 @@
 
 #include "Engine/EngineFwd.h"
 #include "Engine/RectD.h"
+#include "Engine/NodeGroup.h"
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER
@@ -344,25 +345,6 @@ private:
     QString _oldName, _newName;
 };
 
-struct ExtractedOutput
-{
-    boost::weak_ptr<NodeGui> node;
-    std::list<std::pair<int, NodeWPtr > > outputs;
-};
-
-struct ExtractedInput
-{
-    boost::weak_ptr<NodeGui> node;
-    std::vector<NodeWPtr > inputs;
-};
-
-struct ExtractedTree
-{
-    ExtractedOutput output;
-    std::list<ExtractedInput> inputs;
-    std::list<boost::weak_ptr<NodeGui> > inbetweenNodes;
-};
-
 
 class ExtractNodeUndoRedoCommand
     : public QUndoCommand
@@ -382,7 +364,7 @@ private:
 
 
     NodeGraph* _graph;
-    std::list<ExtractedTree> _trees;
+    NodeCollection::TopologicallySortedNodesList _sortedNodes;
 };
 
 class GroupFromSelectionCommand
@@ -409,6 +391,7 @@ private:
     LinksMap _savedLinks;
 
     NodeCollectionWPtr _oldGroup;
+    NodeCollection::TopologicallySortedNodesList _sortedNodes;
     NodeWPtr _newGroup;
 };
 

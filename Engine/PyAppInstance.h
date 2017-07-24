@@ -41,8 +41,8 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER
-NATRON_PYTHON_NAMESPACE_ENTER
+NATRON_NAMESPACE_ENTER;
+NATRON_PYTHON_NAMESPACE_ENTER;
 
 /**
  * @brief Simple wrap for the AppInstance class that is the API we want to expose to the Python
@@ -353,7 +353,7 @@ protected:
     NodeCollectionPtr getCollectionFromGroup(Group* group) const;
 };
 
-NATRON_PYTHON_NAMESPACE_EXIT
-NATRON_NAMESPACE_EXIT
+NATRON_PYTHON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_AppInstanceWrapper_h

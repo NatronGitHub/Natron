@@ -856,31 +856,6 @@ hasNodeOutputsInList(const std::list<NodeGuiPtr >& nodes,
     return false;
 }
 
-static bool
-hasNodeInputsInList(const std::list<NodeGuiPtr >& nodes,
-                    const NodeGuiPtr& node)
-{
-    const std::vector<NodeWPtr >& inputs = node->getNode()->getInputs();
-    bool foundInput = false;
-
-    for (std::list<NodeGuiPtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if (*it != node) {
-            NodePtr n = (*it)->getNode();
-
-            for (std::size_t i = 0; i < inputs.size(); ++i) {
-                if (inputs[i].lock() == n) {
-                    foundInput = true;
-                    break;
-                }
-            }
-            if (foundInput) {
-                break;
-            }
-        }
-    }
-
-    return foundInput;
-}
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
@@ -1063,88 +1038,21 @@ RenameNodeUndoRedoCommand::redo()
     node->setName(_newName);
 }
 
-static void
-addTreeInputs(const std::list<NodeGuiPtr >& nodes,
-              const NodeGuiPtr& node,
-              ExtractedTree& tree,
-              std::list<NodeGuiPtr >& markedNodes)
-{
-    if ( std::find(markedNodes.begin(), markedNodes.end(), node) != markedNodes.end() ) {
-        return;
-    }
-
-    if ( std::find(nodes.begin(), nodes.end(), node) == nodes.end() ) {
-        return;
-    }
-
-    if ( !hasNodeInputsInList(nodes, node) ) {
-        ExtractedInput input;
-        input.node = node;
-        input.inputs = node->getNode()->getInputs();
-        tree.inputs.push_back(input);
-        markedNodes.push_back(node);
-    } else {
-        tree.inbetweenNodes.push_back(node);
-        markedNodes.push_back(node);
-        const std::vector<Edge*>& inputs = node->getInputsArrows();
-        for (std::vector<Edge*>::const_iterator it2 = inputs.begin(); it2 != inputs.end(); ++it2) {
-            NodeGuiPtr input = (*it2)->getSource();
-            if (input) {
-                addTreeInputs(nodes, input, tree, markedNodes);
-            }
-        }
-    }
-}
-
-static void
-extractTreesFromNodes(const std::list<NodeGuiPtr >& nodes,
-                      std::list<ExtractedTree>& trees)
-{
-    std::list<NodeGuiPtr > markedNodes;
-
-    for (std::list<NodeGuiPtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        bool isOutput = !hasNodeOutputsInList(nodes, *it);
-        if (isOutput) {
-            ExtractedTree tree;
-            tree.output.node = *it;
-            NodePtr n = (*it)->getNode();
-            OutputNodesMap outputs;
-            n->getOutputs(outputs);
-            for (OutputNodesMap::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
-                for (std::list<int>::const_iterator it3 = it2->second.begin(); it3 != it2->second.end(); ++it3) {
-                    tree.output.outputs.push_back( std::make_pair(*it3, it2->first) );
-                }
-            }
-
-            const std::vector<Edge*>& inputs = (*it)->getInputsArrows();
-            for (U32 i = 0; i < inputs.size(); ++i) {
-                NodeGuiPtr input = inputs[i]->getSource();
-                if (input) {
-                    addTreeInputs(nodes, input, tree, markedNodes);
-                }
-            }
-
-            if ( tree.inputs.empty() ) {
-                ExtractedInput input;
-                input.node = *it;
-                input.inputs = n->getInputs();
-                tree.inputs.push_back(input);
-            }
-
-            trees.push_back(tree);
-        }
-    }
-}
 
 ///////////////
 
 ExtractNodeUndoRedoCommand::ExtractNodeUndoRedoCommand(NodeGraph* graph,
-                                                       const std::list<NodeGuiPtr >& nodes)
+                                                       const NodesGuiList& nodes)
     : QUndoCommand()
     , _graph(graph)
-    , _trees()
+    , _sortedNodes()
 {
-    extractTreesFromNodes(nodes, _trees);
+    NodesList internalNodes;
+    for (NodesGuiList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        internalNodes.push_back((*it)->getNode());
+    }
+
+    NodeCollection::extractTopologicallySortedTreesFromNodes(false /*enterGroups*/, internalNodes, &_sortedNodes, 0);
 }
 
 ExtractNodeUndoRedoCommand::~ExtractNodeUndoRedoCommand()
@@ -1155,44 +1063,26 @@ void
 ExtractNodeUndoRedoCommand::undo()
 {
 
-    for (std::list<ExtractedTree>::iterator it = _trees.begin(); it != _trees.end(); ++it) {
-        NodeGuiPtr output = it->output.node.lock();
-        ///Connect and move output
-        for (std::list<std::pair<int, NodeWPtr > >::iterator it2 = it->output.outputs.begin(); it2 != it->output.outputs.end(); ++it2) {
-            NodePtr node = it2->second.lock();
-            if (!node) {
-                continue;
-            }
-            node->disconnectInput(it2->first);
-            node->connectInput(output->getNode(), it2->first);
-        }
+    for (NodeCollection::TopologicallySortedNodesList::iterator it = _sortedNodes.begin(); it != _sortedNodes.end(); ++it) {
 
-        QPointF curPos = output->pos();
-        output->refreshPosition(curPos.x() - 200, curPos.y(), true);
+        NodePtr node = (*it)->node;
 
-        ///Connect and move inputs
-        for (std::list<ExtractedInput>::iterator it2 = it->inputs.begin(); it2 != it->inputs.end(); ++it2) {
-            NodeGuiPtr input = it2->node.lock();
-            for (U32 i  =  0; i < it2->inputs.size(); ++i) {
-                if ( it2->inputs[i].lock() ) {
-                    input->getNode()->connectInput(it2->inputs[i].lock(), i);
-                }
-            }
-
-            if (input != output) {
-                QPointF curPos = input->pos();
-                input->refreshPosition(curPos.x() - 200, curPos.y(), true);
+            // Restore input links
+        int inputNb = 0;
+        for (NodeCollection::TopologicalSortNode::ExternalInputsVec::iterator it2 = (*it)->externalInputs.begin(); it2 != (*it)->externalInputs.end(); ++it2, ++inputNb) {
+            if (*it2) {
+                node->swapInput((*it2)->node, inputNb);
             }
         }
 
-        ///Move all other nodes
-
-        for (std::list<boost::weak_ptr<NodeGui> >::iterator it2 = it->inbetweenNodes.begin(); it2 != it->inbetweenNodes.end(); ++it2) {
-            NodeGuiPtr node = it2->lock();
-            QPointF curPos = node->pos();
-            node->refreshPosition(curPos.x() - 200, curPos.y(), true);
+        // Restore output links and inverse the offset on the position that we applied
+        for (NodeCollection::TopologicalSortNode::ExternalOutputsMap::iterator it2 = (*it)->externalOutputs.begin(); it2 != (*it)->externalOutputs.end(); ++it2) {
+            for (std::list<int>::const_iterator it3 = it2->second.begin(); it3 != it2->second.end(); ++it3) {
+                it2->first->node->swapInput(node, *it3);
+            }
         }
 
+        node->movePosition(-200, 0);
     }
 
     _graph->getGui()->getApp()->renderAllViewers();
@@ -1204,72 +1094,75 @@ void
 ExtractNodeUndoRedoCommand::redo()
 {
 
-    for (std::list<ExtractedTree>::iterator it = _trees.begin(); it != _trees.end(); ++it) {
-        NodeGuiPtr output = it->output.node.lock();
+    std::list<NodeCollection::TopologicalSortNodePtr> outputNodes;
+    std::list<NodeCollection::TopologicalSortNodePtr> inputNodes;
+    for (NodeCollection::TopologicallySortedNodesList::iterator it = _sortedNodes.begin(); it != _sortedNodes.end(); ++it) {
 
+        NodePtr node = (*it)->node;
 
-        bool outputsAlreadyDisconnected = false;
+        // Does this node has external links ?
+        {
+            int nExternalLinks = 0;
+            for (NodeCollection::TopologicalSortNode::ExternalInputsVec::iterator it2 = (*it)->externalInputs.begin(); it2 != (*it)->externalInputs.end(); ++it2) {
+                if (*it2) {
+                    ++nExternalLinks;
+                }
+            }
+            if (nExternalLinks == 1) {
+                inputNodes.push_back(*it);
+            }
+        }
+        if (!(*it)->externalOutputs.empty()) {
+            outputNodes.push_back(*it);
+        }
 
-        ///Reconnect outputs to the input of the input of the ExtractedInputs if inputs.size() == 1
-        if ( (it->output.outputs.size() == 1) && (it->inputs.size() == 1) ) {
-            const ExtractedInput& selectedInput = it->inputs.front();
-            const std::vector<NodeWPtr > &inputs = selectedInput.inputs;
-            NodeGuiPtr selectedInputNode = selectedInput.node.lock();
-            NodePtr inputToConnectTo;
-            for (U32 i = 0; i < inputs.size(); ++i) {
-                if ( inputs[i].lock() && !selectedInputNode->getNode()->getEffectInstance()->isInputOptional(i) ) {
-                    inputToConnectTo = inputs[i].lock();
+        // Offset the node position to indicate to the user that it was extracted.
+        node->movePosition(200, 0);
+    }
+
+    // If we extracted a tree with exactly 1 output and 1 input, we can reconnect the output of the tree
+    // to the input of the tree.
+    if (outputNodes.size() == 1 && inputNodes.size() == 1) {
+        const NodeCollection::TopologicalSortNodePtr& treeInput = inputNodes.front();
+
+        // Find in the tree input, which inputNb is the external input
+        NodePtr externalLinkNode;
+        {
+            int i = 0;
+            for (NodeCollection::TopologicalSortNode::ExternalInputsVec::iterator it2 = treeInput->externalInputs.begin(); it2 != treeInput->externalInputs.end(); ++it2, ++i) {
+                if (*it2) {
+                    externalLinkNode = (*it2)->node;
                     break;
                 }
             }
+        }
 
-            if (inputToConnectTo) {
-                for (std::list<std::pair<int, NodeWPtr > >::iterator it2 = it->output.outputs.begin(); it2 != it->output.outputs.end(); ++it2) {
-                    NodePtr node = it2->second.lock();
-                    if (!node) {
-                        continue;
-                    }
-                    node->disconnectInput(it2->first);
-                    node->connectInput(inputToConnectTo, it2->first);
-                }
-                outputsAlreadyDisconnected = true;
+
+        const NodeCollection::TopologicalSortNodePtr& treeOutput = outputNodes.front();
+
+        for (NodeCollection::TopologicalSortNode::ExternalOutputsMap::iterator it = treeOutput->externalOutputs.begin(); it != treeOutput->externalOutputs.end(); ++it) {
+            for (std::list<int>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+                it->first->node->swapInput(externalLinkNode, *it2);
             }
         }
 
-        ///Disconnect and move output
-        if (!outputsAlreadyDisconnected) {
-            for (std::list<std::pair<int, NodeWPtr > >::iterator it2 = it->output.outputs.begin(); it2 != it->output.outputs.end(); ++it2) {
-                NodePtr node = it2->second.lock();
-                if (node) {
-                    node->disconnectInput(it2->first);
-                }
+    } else {
+        // Disconnect inputs & outputs of the tree
+
+        for (std::list<NodeCollection::TopologicalSortNodePtr>::const_iterator it = inputNodes.begin(); it != inputNodes.end(); ++it) {
+            int inputNb = 0;
+            for (NodeCollection::TopologicalSortNode::ExternalInputsVec::iterator it2 = (*it)->externalInputs.begin(); it2 != (*it)->externalInputs.end(); ++it2, ++inputNb) {
+                (*it)->node->disconnectInput(inputNb);
             }
         }
 
-        QPointF curPos = output->pos();
-        output->refreshPosition(curPos.x() + 200, curPos.y(), true);
+        for (std::list<NodeCollection::TopologicalSortNodePtr>::const_iterator it = outputNodes.begin(); it != outputNodes.end(); ++it) {
 
-
-        ///Disconnect and move inputs
-        for (std::list<ExtractedInput>::iterator it2 = it->inputs.begin(); it2 != it->inputs.end(); ++it2) {
-            NodeGuiPtr node = it2->node.lock();
-            for (U32 i  =  0; i < it2->inputs.size(); ++i) {
-                if ( it2->inputs[i].lock() ) {
-                    node->getNode()->disconnectInput(i);
+            for (NodeCollection::TopologicalSortNode::ExternalOutputsMap::iterator it2 = (*it)->externalOutputs.begin(); it2 != (*it)->externalOutputs.end(); ++it2) {
+                for (std::list<int>::const_iterator it3 = it2->second.begin(); it3 != it2->second.end(); ++it3) {
+                    it2->first->node->disconnectInput(*it3);
                 }
             }
-            if (node != output) {
-                QPointF curPos = node->pos();
-                node->refreshPosition(curPos.x() + 200, curPos.y(), true);
-            }
-        }
-
-        ///Move all other nodes
-
-        for (std::list<boost::weak_ptr<NodeGui> >::iterator it2 = it->inbetweenNodes.begin(); it2 != it->inbetweenNodes.end(); ++it2) {
-            NodeGuiPtr node = it2->lock();
-            QPointF curPos = node->pos();
-            node->refreshPosition(curPos.x() + 200, curPos.y(), true);
         }
     }
 
@@ -1308,20 +1201,6 @@ GroupFromSelectionCommand::undo()
 {
     std::list<NodeGuiPtr> nodesToSelect;
 
-    // Restore all links to the selection
-    for (LinksMap::iterator it = _savedLinks.begin(); it != _savedLinks.end(); ++it) {
-        NodePtr node = it->first.lock();
-        if (!node) {
-            continue;
-        }
-        
-        const std::vector<NodeWPtr>& oldInputs = it->second;
-        for (std::size_t i = 0; i < oldInputs.size(); ++i) {
-            node->swapInput(oldInputs[i].lock(), i);
-        }
-
-    }
-
     NodeCollectionPtr oldGroup = _oldGroup.lock();
     NodeGraph* oldGraph = dynamic_cast<NodeGraph*>(oldGroup->getNodeGraph());
 
@@ -1336,6 +1215,24 @@ GroupFromSelectionCommand::undo()
             }
         }
     }
+
+    // Restore links to the selection
+    for (NodeCollection::TopologicallySortedNodesList::const_iterator it = _sortedNodes.begin(); it != _sortedNodes.end(); ++it) {
+        for (std::size_t i = 0; i < (*it)->externalInputs.size(); ++i) {
+            NodePtr inputNode;
+            if ((*it)->externalInputs[i]) {
+                inputNode = (*it)->externalInputs[i]->node;
+            }
+            (*it)->node->swapInput(inputNode, i);
+        }
+        for (NodeCollection::TopologicalSortNode::ExternalOutputsMap::const_iterator it2 = (*it)->externalOutputs.begin(); it2 != (*it)->externalOutputs.end(); ++it2) {
+            for (std::list<int>::const_iterator it3 = it2->second.begin(); it3 != it2->second.end(); ++it3) {
+                it2->first->node->swapInput((*it)->node, *it3);
+            }
+        }
+
+    }
+
     oldGraph->setSelection(nodesToSelect);
 
     // Destroy the created group
@@ -1354,6 +1251,8 @@ GroupFromSelectionCommand::redo()
 {
     // The group position will be at the centroid of all selected nodes
     QPointF groupPosition;
+    RectD originalNodesBbox;
+    bool originalNodesBboxSet = false;
 
     NodesList originalNodes;
     for (NodesWList::const_iterator it = _originalNodes.begin(); it != _originalNodes.end(); ++it) {
@@ -1363,19 +1262,27 @@ GroupFromSelectionCommand::redo()
         }
         originalNodes.push_back(n);
 
-        double x,y;
+        double x,y,w,h;
         n->getPosition(&x, &y);
-        groupPosition.rx() += x;
-        groupPosition.ry() += y;
-    }
+        n->getSize(&w, &h);
 
-    {
-        unsigned sz = originalNodes.size();
-        if (sz) {
-            groupPosition.rx() /= sz;
-            groupPosition.ry() /= sz;
+        if (!originalNodesBboxSet) {
+            originalNodesBbox.x1 = x;
+            originalNodesBbox.x2 = x + w;
+            originalNodesBbox.y1 = y;
+            originalNodesBbox.y2 = y + h;
+            originalNodesBboxSet = true;
+        } else {
+            originalNodesBbox.x1 = std::min(originalNodesBbox.x1, x);
+            originalNodesBbox.x2 = std::max(originalNodesBbox.x2,x + w);
+            originalNodesBbox.y1 = std::min(originalNodesBbox.x1, x);
+            originalNodesBbox.y2 = std::max(originalNodesBbox.y2,y + h);
         }
     }
+
+    Point bboxCenter;
+    bboxCenter.x = (originalNodesBbox.x1 + originalNodesBbox.x2) / 2.;
+    bboxCenter.y = (originalNodesBbox.y1 + originalNodesBbox.y2) / 2.;
     
     // Create the actual Group node within this Group
     NodeCollectionPtr oldContainer = _oldGroup.lock();
@@ -1425,94 +1332,60 @@ GroupFromSelectionCommand::redo()
     // and undoing this operation would restore the state.
 
     // First, extract all different trees within the selected node so we can identify outputs and inputs
-    std::list<Project::NodesTree> trees;
-    Project::extractTreesFromNodes(originalNodes, trees);
+
+    std::list<NodeCollection::TopologicalSortNodePtr> outputNodesList;
+    NodeCollection::extractTopologicallySortedTreesFromNodes(false /*enterGroups*/, originalNodes, &_sortedNodes, &outputNodesList);
+
     int inputNb = 0;
 
 
-    // The output node position in the Group is the average of all trees output
-    QPointF outputNodePosition = QPointF(0,0);
-
-    for (std::list<Project::NodesTree>::iterator it = trees.begin(); it != trees.end(); ++it) {
+    for (NodeCollection::TopologicallySortedNodesList::const_iterator it = _sortedNodes.begin(); it != _sortedNodes.end(); ++it) {
 
         // For each input node of each tree branch within the group, add a Input node in input of that branch
         // to actually create the input on the Group node
-        for (std::list<Project::TreeInput>::iterator it2 = it->inputs.begin(); it2 != it->inputs.end(); ++it2) {
-
-            // For each connected input of the original node, create a corresponding Input node with the appropriate name
-            const std::vector<NodeWPtr >& originalNodeInputs = it2->node->getInputs();
-            _savedLinks[it2->node] = originalNodeInputs;
-            for (std::size_t i = 0; i < originalNodeInputs.size(); ++i) {
-                NodePtr originalInput = originalNodeInputs[i].lock();
-                if (!originalInput) {
-                    continue;
-                }
-                //Create an input node corresponding to this input
-                CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_INPUT, containerGroup));
-                args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
-                args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-                args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-
-
-                NodePtr input = containerNode->getApp()->createNode(args);
-                assert(input);
-
-                // Name the Input node with the label of the node and the input label
-                std::string inputLabel = it2->node->getLabel() + '_' + it2->node->getInputLabel(i);
-                input->setLabel(inputLabel);
-
-                // Position the input node correctly
-                double offsetX, offsetY;
+        int i = 0;
+        for (NodeCollection::TopologicalSortNode::ExternalInputsVec::const_iterator it2 = (*it)->externalInputs.begin() ; it2 != (*it)->externalInputs.end(); ++it2, ++i) {
+            if (!*it2) {
+                continue;
+            }
+            NodePtr originalInput = (*it2)->node;
+            if (!originalInput) {
+                continue;
+            }
+            //Create an input node corresponding to this input
+            CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_INPUT, containerGroup));
+            args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+            args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+            args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
 
 
+            NodePtr input = containerNode->getApp()->createNode(args);
+            assert(input);
 
-                double outputX, outputY;
-                it->output.node->getPosition(&outputX, &outputY);
-                if (originalInput) {
-                    double inputX, inputY;
-                    originalInput->getPosition(&inputX, &inputY);
-                    offsetX = inputX - outputX;
-                    offsetY = inputY - outputY;
-                } else {
-                    offsetX = outputX;
-                    offsetY = outputY - 100;
-                }
-                double thisInputX, thisInputY;
-                it2->node->getPosition(&thisInputX, &thisInputY);
+            // Name the Input node with the label of the node and the input label
+            std::string inputLabel =  (*it)->node->getLabel() + '_' + (*it)->node->getInputLabel(i);
+            input->setLabel(inputLabel);
 
-                thisInputX += offsetX;
-                thisInputY += offsetY;
-
-                input->setPosition(thisInputX, thisInputY);
-
-                it2->node->swapInput(input, i);
-                if (originalInput) {
-
-                    containerGroup->getNode()->connectInput(originalInput, inputNb);
-                }
-                ++inputNb;
-                
-            } // for all node's inputs
+            // Position the input node correctly
+            double offsetX, offsetY;
 
 
-            double thisNodeX, thisNodeY;
-            it->output.node->getPosition(&thisNodeX, &thisNodeY);
-            double thisNodeW, thisNodeH;
-            it->output.node->getSize(&thisNodeW, &thisNodeH);
-            thisNodeY += thisNodeH * 2;
-            outputNodePosition.rx() += thisNodeX;
-            outputNodePosition.ry() += thisNodeY;
 
-        } // for all inputs in the tree
+            double outputX, outputY;
+            (*it)->node->getPosition(&outputX, &outputY);
+            double inputX, inputY;
+            originalInput->getPosition(&inputX, &inputY);
+            offsetX = inputX - outputX;
+            offsetY = inputY - outputY;
 
-        // Connect all outputs of the original node to the new Group
-        OutputNodesMap originalOutputs;
-        it->output.node->getOutputs(originalOutputs);
-        for (OutputNodesMap::const_iterator it2 = originalOutputs.begin(); it2 != originalOutputs.end(); ++it2) {
-            _savedLinks[it2->first] = it2->first->getInputs();
-
-        }
-    } // for all trees
+            input->movePosition(offsetX, offsetY);
+            (*it)->node->swapInput(input, i);
+            if (originalInput) {
+                containerGroup->getNode()->connectInput(originalInput, inputNb);
+            }
+            ++inputNb;
+        } // for each external input
+    }
 
     //Create only a single output
 
@@ -1524,17 +1397,13 @@ GroupFromSelectionCommand::redo()
         NodePtr output = containerNode->getApp()->createNode(args);
 
         assert(output);
-
-        if (trees.size() > 0) {
-            outputNodePosition.rx() /= trees.size();
-            outputNodePosition.ry() /= trees.size();
-            output->setPosition(outputNodePosition.x(), outputNodePosition.y());
+        if (originalNodesBboxSet) {
+            output->setPosition(bboxCenter.x, bboxCenter.y + 200);
         }
 
         // If only a single tree, connect the output node to the bottom of the tree
-        if (trees.size() == 1) {
-
-            output->swapInput(trees.front().output.node, 0);
+        if (outputNodesList.size() == 1) {
+            output->swapInput(outputNodesList.front()->node, 0);
         }
     }
 
