@@ -483,7 +483,6 @@ KnobItemsTable::insertItem(int index, const KnobTableItemPtr& item, const KnobTa
             QMutexLocker k(&_imp->common->topLevelItemsLock);
             if (index < 0 || index >= (int)_imp->common->topLevelItems.size()) {
                 _imp->common->topLevelItems.push_back(item);
-                insertIndex = _imp->common->topLevelItems.size() - 1;
             } else {
                 std::vector<KnobTableItemPtr>::iterator it = _imp->common->topLevelItems.begin();
                 std::advance(it, index);
