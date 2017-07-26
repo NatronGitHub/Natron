@@ -530,7 +530,7 @@ Knob<T>::setMultipleValueAtTime(const std::list<TimeValuePair<T> >& keys, ViewSe
         newKeys->clear();
     }
     bool hasChanged = false;
-    for (typename std::list<TimeValuePair<T> >::const_iterator it = keys.begin(); it!= keys.end(); ++it, ++next) {
+    for (typename std::list<TimeValuePair<T> >::const_iterator it = keys.begin(); it!= keys.end(); ++it) {
         if (next == keys.end() && keys.size() > 1) {
             // Make sure the last setValue call triggers a knobChanged call
             unblockValueChanges();
