@@ -60,6 +60,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/TimeLine.h"
+#include "Engine/StringAnimationManager.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
 
@@ -658,7 +659,7 @@ KnobButton::trigger()
 ChoiceKnobDimView::ChoiceKnobDimView()
 : ValueKnobDimView<int>()
 , menuOptions()
-, activeEntry()
+, activeEntryStringAnimation()
 , separators()
 , shortcuts()
 , menuIcons()
@@ -669,6 +670,21 @@ ChoiceKnobDimView::ChoiceKnobDimView()
 , menuColors()
 {
 
+}
+
+ValueChangedReturnCodeEnum
+ChoiceKnobDimView::setValueAtTime(TimeValue time, const int& value, KeyFrame* newKey)
+{
+    ValueChangedReturnCodeEnum changed = ValueKnobDimView<int>::setValueAtTime(time, value, newKey);
+
+    ChoiceOption activeEntry;
+    if (value >= 0 && value < (int)menuOptions.size()) {
+        activeEntry = menuOptions[value];
+    }
+
+    double interpolatedIndex;
+    activeEntryStringAnimation->insertKeyFrame(time, activeEntry.id, &interpolatedIndex);
+    return changed;
 }
 
 bool

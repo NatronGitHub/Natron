@@ -43,6 +43,33 @@ CurvePtr KnobHelper::getAnimationCurve(ViewIdx view,
 
 
 void
+KnobDimViewBase::deleteValuesAtTime(const std::list<double>& times)
+{
+
+
+
+
+    // Update internal curve
+    try {
+        for (std::list<double>::const_iterator it = times.begin(); it != times.end(); ++it) {
+            // This may throw exceptions if keyframes do not exist
+            animationCurve->removeKeyFrameWithTime(TimeValue(*it));
+        }
+    } catch (const std::exception & /*e*/) {
+    }
+
+    StringAnimationManagerPtr stringAnim = getStringAnimation();
+    if (stringAnim) {
+        for (std::list<double>::const_iterator it = times.begin(); it != times.end(); ++it) {
+            // This may throw exceptions if keyframes do not exist
+            stringAnim->removeKeyFrame(TimeValue(*it));
+        }
+    }
+
+    notifyCurveChanged();
+} // deleteValuesAtTime
+
+void
 KnobHelper::deleteValuesAtTimeInternal(const std::list<double>& times, ViewIdx view, DimIdx dimension)
 {
     if (!isAnimated(dimension, view)) {
@@ -53,29 +80,21 @@ KnobHelper::deleteValuesAtTimeInternal(const std::list<double>& times, ViewIdx v
     if (!data) {
         return;
     }
-    CurvePtr curve = data->animationCurve;
-    if (!curve) {
-        throw std::runtime_error("KnobHelper::deleteValuesAtTimeInternal: curve is null");
+
+    if (!data->animationCurve) {
+        return;
     }
 
-    int nKeys = curve->getKeyFramesCount();
+    int nKeys = data->animationCurve->getKeyFramesCount();
+
 
     // We are about to remove the last keyframe, ensure that the internal value of the knob is the one of the animation
     if (nKeys - times.size() == 0) {
         copyValuesFromCurve(dimension, view);
     }
 
-    // Update internal curve
-    try {
-        for (std::list<double>::const_iterator it = times.begin(); it != times.end(); ++it) {
-            // This may throw exceptions if keyframes do not exist
-            curve->removeKeyFrameWithTime(TimeValue(*it));
-        }
-    } catch (const std::exception & /*e*/) {
-    }
+    data->deleteValuesAtTime(times);
 
-
-    data->notifyCurveChanged();
 }
 
 void
@@ -114,9 +133,6 @@ KnobHelper::deleteValuesAtTime(const std::list<double>& times,
         }
     }
 
-    // virtual portion
-    onKeyframesRemoved(times, view, dimension);
-
 
     // Evaluate the change
     evaluateValueChange(dimension, TimeValue(*times.begin()), view, reason);
@@ -124,6 +140,21 @@ KnobHelper::deleteValuesAtTime(const std::list<double>& times,
 
 
 } // deleteValuesAtTime
+
+void
+KnobDimViewBase::deleteAnimationConditional(TimeValue time, bool before)
+{
+    if (!animationCurve) {
+        return;
+    }
+    if (before) {
+        animationCurve->removeKeyFramesBeforeTime(time, 0);
+    } else {
+        animationCurve->removeKeyFramesAfterTime(time, 0);
+    }
+
+    notifyCurveChanged();
+} // deleteAnimationConditional
 
 void
 KnobHelper::deleteAnimationConditionalInternal(TimeValue time, ViewIdx view, DimIdx dimension, bool before)
@@ -135,19 +166,7 @@ KnobHelper::deleteAnimationConditionalInternal(TimeValue time, ViewIdx view, Dim
     if (!data) {
         return;
     }
-    CurvePtr curve = data->animationCurve;
-    if (!curve) {
-        throw std::runtime_error("KnobHelper::deleteAnimationConditionalInternal: curve is null");
-    }
-    if (before) {
-        curve->removeKeyFramesBeforeTime(time, 0);
-    } else {
-        curve->removeKeyFramesAfterTime(time, 0);
-    }
-
-
-
-    data->notifyCurveChanged();
+    data->deleteAnimationConditional(time, before);
 
 } // deleteAnimationConditionalInternal
 
@@ -202,28 +221,21 @@ KnobHelper::deleteAnimationAfterTime(TimeValue time,
 }
 
 bool
-KnobHelper::warpValuesAtTimeInternal(const std::list<double>& times, ViewIdx view,  DimIdx dimension, const Curve::KeyFrameWarp& warp, std::vector<KeyFrame>* outKeys)
+KnobDimViewBase::warpValuesAtTime(const std::list<double>& times, const Curve::KeyFrameWarp& warp, std::vector<KeyFrame>* outKeys)
 {
-    if (!isAnimated(dimension, view)) {
+    if (!animationCurve) {
         return false;
-    }
-    KnobDimViewBasePtr data = getDataForDimView(dimension, view);
-    if (!data) {
-        return false;
-    }
-    CurvePtr curve = data->animationCurve;
-    if (!curve) {
-        throw std::runtime_error("KnobHelper::warpValuesAtTimeInternal: curve is null");
     }
 
     // Make sure string animation follows up the warp
     std::vector<std::string> oldStringValues;
-    AnimatingKnobStringHelper* isString = dynamic_cast<AnimatingKnobStringHelper*>(this);
-    if (isString) {
+    StringAnimationManagerPtr stringAnim = getStringAnimation();
+
+    if (stringAnim) {
         oldStringValues.resize(times.size());
         int i = 0;
         for (std::list<double>::const_iterator it = times.begin(); it!=times.end(); ++it, ++i) {
-            isString->stringFromInterpolatedValue(*it, view, &oldStringValues[i]);
+            stringAnim->stringFromInterpolatedIndex(*it, &oldStringValues[i]);
         }
     }
 
@@ -234,7 +246,7 @@ KnobHelper::warpValuesAtTimeInternal(const std::list<double>& times, ViewIdx vie
 
     // This may fail if we cannot find a keyframe at the given time
     std::vector<KeyFrame> newKeys;
-    if ( !curve->transformKeyframesValueAndTime(times, warp, &newKeys, 0, 0) ) {
+    if ( !animationCurve->transformKeyframesValueAndTime(times, warp, &newKeys, 0, 0) ) {
         return false;
     }
     if (outKeys) {
@@ -243,17 +255,31 @@ KnobHelper::warpValuesAtTimeInternal(const std::list<double>& times, ViewIdx vie
 
 
     // update string animation
-    if (isString) {
-        onKeyframesRemoved(times, ViewSetSpec(view), dimension);
+    if (stringAnim) {
         assert(newKeys.size() == oldStringValues.size());
         for (std::size_t i = 0; i < newKeys.size(); ++i) {
             double ret;
-            isString->stringToKeyFrameValue(newKeys[i].getTime(), ViewIdx(view.value()), oldStringValues[i], &ret);
+            stringAnim->insertKeyFrame(newKeys[i].getTime(),  oldStringValues[i], &ret);
         }
     }
 
-    data->notifyCurveChanged();
+    notifyCurveChanged();
+
     return true;
+} // warpValuesAtTime
+
+bool
+KnobHelper::warpValuesAtTimeInternal(const std::list<double>& times, ViewIdx view,  DimIdx dimension, const Curve::KeyFrameWarp& warp, std::vector<KeyFrame>* outKeys)
+{
+    if (!isAnimated(dimension, view)) {
+        return false;
+    }
+    KnobDimViewBasePtr data = getDataForDimView(dimension, view);
+    if (!data) {
+        return false;
+    }
+
+    return data->warpValuesAtTime(times, warp, outKeys);
 } // warpValuesAtTimeInternal
 
 bool
@@ -293,6 +319,61 @@ KnobHelper::warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  
 
 
 bool
+KnobDimViewBase::copy(const CopyInArgs& inArgs, CopyOutArgs* outArgs)
+{
+    bool hasChanged = false;
+
+    {
+        QMutexLocker k(&valueMutex);
+        boost::scoped_ptr<QMutexLocker> k2;
+        if (inArgs.other) {
+            k2.reset(new QMutexLocker(&inArgs.other->valueMutex));
+        }
+
+        // Do not copy the shared knobs
+
+        KeyFrameSet oldKeys;
+        if (animationCurve) {
+            oldKeys = animationCurve->getKeyFrames_mt_safe();
+        }
+
+        const Curve* otherCurve = inArgs.other ? inArgs.other->animationCurve.get() : inArgs.otherCurve;
+        const StringAnimationManager* otherStringAnimation = inArgs.other ? inArgs.other->getStringAnimation().get() : inArgs.otherCurveAnimation;
+        if (otherCurve) {
+            if (!animationCurve) {
+                animationCurve.reset(new Curve(otherCurve->getType()));
+            }
+            hasChanged |= animationCurve->cloneAndCheckIfChanged(*otherCurve, inArgs.keysToCopyOffset, inArgs.keysToCopyRange);
+        }
+
+
+        // Clone string animation if necesssary
+        if (otherStringAnimation) {
+            StringAnimationManagerPtr thisStringAnimation = getStringAnimation();
+            if (thisStringAnimation) {
+                thisStringAnimation->clone(*otherStringAnimation, inArgs.keysToCopyOffset, inArgs.keysToCopyRange);
+            }
+        }
+
+
+        if (hasChanged && outArgs) {
+            // Compute the keyframes diff
+            KeyFrameSet keys;
+            if (animationCurve) {
+                keys = animationCurve->getKeyFrames_mt_safe();
+            }
+            Curve::computeKeyFramesDiff(oldKeys, keys, outArgs->keysAdded, outArgs->keysRemoved);
+        }
+    }
+    if (hasChanged) {
+        // Notify all shared knobs the curve changed
+        notifyCurveChanged();
+    }
+    return hasChanged;
+} // copy
+
+
+bool
 KnobHelper::cloneCurve(ViewIdx view,
                        DimIdx dimension,
                        const Curve& curve,
@@ -308,36 +389,41 @@ KnobHelper::cloneCurve(ViewIdx view,
     if (!data) {
         return false;
     }
-    CurvePtr thisCurve = data->animationCurve;
-    if (!thisCurve) {
-        return false;
-    }
 
-    KeyFrameSet oldKeys = thisCurve->getKeyFrames_mt_safe();
 
-    // Check for changes, slower but may avoid computing diff of keyframes
-    bool hasChanged = thisCurve->cloneAndCheckIfChanged(curve, offset, range);
+    KnobDimViewBase::CopyInArgs copyArgs(curve);
+    copyArgs.otherCurveAnimation = stringAnimation;
+    copyArgs.keysToCopyRange = range;
+    copyArgs.keysToCopyOffset = offset;
 
-    // Clone string animation if necesssary
-    if (stringAnimation) {
-        StringAnimationManagerPtr thisStringAnimation = getStringAnimation(view);
-        if (thisStringAnimation) {
-            thisStringAnimation->clone(*stringAnimation, offset, range);
-        }
-    }
+    bool hasChanged = data->copy(copyArgs, 0);
 
     if (hasChanged) {
         evaluateValueChange(dimension, getHolder()->getTimelineCurrentTime(), view,  eValueChangedReasonUserEdited);
     }
-
-
-    if (hasChanged) {
-        data->notifyCurveChanged();
-
-    }
     return hasChanged;
 } // cloneCurve
 
+
+void
+KnobDimViewBase::setInterpolationAtTimes(const std::list<double>& times, KeyframeTypeEnum interpolation, std::vector<KeyFrame>* newKeys)
+{
+
+    if (!animationCurve) {
+        return;
+    }
+
+    for (std::list<double>::const_iterator it = times.begin(); it != times.end(); ++it) {
+        KeyFrame k;
+        if (animationCurve->setKeyFrameInterpolation(interpolation, TimeValue(*it), &k)) {
+            if (newKeys) {
+                newKeys->push_back(k);
+            }
+        }
+    }
+
+    notifyCurveChanged();
+} // setInterpolationAtTimes
 
 void
 KnobHelper::setInterpolationAtTimesInternal(ViewIdx view, DimIdx dimension, const std::list<double>& times, KeyframeTypeEnum interpolation, std::vector<KeyFrame>* newKeys)
@@ -348,23 +434,9 @@ KnobHelper::setInterpolationAtTimesInternal(ViewIdx view, DimIdx dimension, cons
     if (times.empty()) {
         return;
     }
-    CurvePtr curve = getAnimationCurve(view, dimension);
-    if (!curve) {
-        throw std::runtime_error("KnobHelper::setInterpolationAtTimesInternal: curve is null");
-    }
-
-    for (std::list<double>::const_iterator it = times.begin(); it != times.end(); ++it) {
-        KeyFrame k;
-        if (curve->setKeyFrameInterpolation(interpolation, TimeValue(*it), &k)) {
-            if (newKeys) {
-                newKeys->push_back(k);
-            }
-        }
-    }
     KnobDimViewBasePtr data = getDataForDimView(dimension, view);
     assert(data);
-    data->notifyCurveChanged();
-
+    data->setInterpolationAtTimes(times, interpolation, newKeys);
 }
 
 void
@@ -406,6 +478,26 @@ KnobHelper::setInterpolationAtTimes(ViewSetSpec view, DimSpec dimension, const s
 } // setInterpolationAtTimes
 
 bool
+KnobDimViewBase::setLeftAndRightDerivativesAtTime(TimeValue time, double left, double right)
+{
+
+    if (!animationCurve) {
+        return false;
+    }
+
+    int keyIndex = animationCurve->keyFrameIndex(time);
+    if (keyIndex == -1) {
+        return false;
+    }
+
+    animationCurve->setKeyFrameInterpolation(eKeyframeTypeFree, keyIndex);
+    animationCurve->setKeyFrameDerivatives(left, right, keyIndex);
+
+    notifyCurveChanged();
+    return true;
+} // setLeftAndRightDerivativesAtTime
+
+bool
 KnobHelper::setLeftAndRightDerivativesAtTimeInternal(ViewIdx view, DimIdx dimension, TimeValue time, double left, double right)
 {
 
@@ -416,21 +508,8 @@ KnobHelper::setLeftAndRightDerivativesAtTimeInternal(ViewIdx view, DimIdx dimens
     if (!data) {
         return false;
     }
-    CurvePtr curve = data->animationCurve;
-    if (!curve) {
-        throw std::runtime_error("KnobHelper::setLeftAndRightDerivativesAtTimeInternal: curve is null");
-    }
+    return data->setLeftAndRightDerivativesAtTime(time, left, right);
 
-    int keyIndex = curve->keyFrameIndex(time);
-    if (keyIndex == -1) {
-        return false;
-    }
-
-    curve->setKeyFrameInterpolation(eKeyframeTypeFree, keyIndex);
-    curve->setKeyFrameDerivatives(left, right, keyIndex);
-
-    data->notifyCurveChanged();
-    return true;
 } // setLeftAndRightDerivativesAtTimeInternal
 
 bool
@@ -472,7 +551,31 @@ KnobHelper::setLeftAndRightDerivativesAtTime(ViewSetSpec view,
     evaluateValueChange(dimension, time, view, eValueChangedReasonUserEdited);
 
     return ok;
-} // KnobHelper::moveDerivativesAtTime
+} // KnobHelper::setLeftAndRightDerivativesAtTime
+
+bool
+KnobDimViewBase::setDerivativeAtTime(TimeValue time, double derivative, bool isLeft)
+{
+    if (!animationCurve) {
+        return false;
+    }
+
+    int keyIndex = animationCurve->keyFrameIndex(time);
+    if (keyIndex == -1) {
+        return false;
+    }
+
+    animationCurve->setKeyFrameInterpolation(eKeyframeTypeBroken, keyIndex);
+    if (isLeft) {
+        animationCurve->setKeyFrameLeftDerivative(derivative, keyIndex);
+    } else {
+        animationCurve->setKeyFrameRightDerivative(derivative, keyIndex);
+    }
+
+    notifyCurveChanged();
+
+    return true;
+}
 
 bool
 KnobHelper::setDerivativeAtTimeInternal(ViewIdx view, DimIdx dimension, TimeValue time, double derivative, bool isLeft)
@@ -484,26 +587,8 @@ KnobHelper::setDerivativeAtTimeInternal(ViewIdx view, DimIdx dimension, TimeValu
     if (!data) {
         return false;
     }
-    CurvePtr curve = data->animationCurve;
-    if (!curve) {
-        throw std::runtime_error("KnobHelper::setDerivativeAtTimeInternal: curve is null");
-    }
 
-    int keyIndex = curve->keyFrameIndex(time);
-    if (keyIndex == -1) {
-        return false;
-    }
-
-    curve->setKeyFrameInterpolation(eKeyframeTypeBroken, keyIndex);
-    if (isLeft) {
-        curve->setKeyFrameLeftDerivative(derivative, keyIndex);
-    } else {
-        curve->setKeyFrameRightDerivative(derivative, keyIndex);
-    }
-
-    data->notifyCurveChanged();
-
-    return true;
+    return data->setDerivativeAtTime(time, derivative, isLeft);
 }
 
 bool
@@ -545,6 +630,41 @@ KnobHelper::setDerivativeAtTime(ViewSetSpec view,
     return true;
 } // KnobHelper::moveDerivativeAtTime
 
+
+void
+KnobDimViewBase::removeAnimation()
+{
+    if (!animationCurve) {
+        return;
+    }
+
+    KeyFrameSet keys = animationCurve->getKeyFrames_mt_safe();
+    if (keys.empty()) {
+        return;
+    }
+
+    // Notify the user of the keyframes that were removed
+    std::list<double> timesRemoved;
+
+    for (KeyFrameSet::const_iterator it = keys.begin(); it!=keys.end(); ++it) {
+        timesRemoved.push_back(it->getTime());
+    }
+    animationCurve->clearKeyFrames();
+
+    StringAnimationManagerPtr stringAnim = getStringAnimation();
+    if (stringAnim) {
+        stringAnim->clearKeyFrames();
+    }
+
+    if (timesRemoved.empty()) {
+        // Nothing changed
+        return;
+    }
+
+    notifyCurveChanged();
+
+} // removeAnimation
+
 void
 KnobHelper::removeAnimationInternal(ViewIdx view, DimIdx dimension)
 {
@@ -556,40 +676,13 @@ KnobHelper::removeAnimationInternal(ViewIdx view, DimIdx dimension)
     if (!data) {
         return;
     }
-    CurvePtr curve = data->animationCurve;
-    if (!curve) {
-        throw std::runtime_error("KnobHelper::removeAnimationInternal: curve is null");
-    }
 
-
-    KeyFrameSet keys = curve->getKeyFrames_mt_safe();
-    if (keys.empty()) {
-        return;
-    }
     
     // Ensure the underlying values are the values of the current curve at the current time
     copyValuesFromCurve(dimension, view);
 
-    // Notify the user of the keyframes that were removed
-    std::list<double> timesRemoved;
+    data->removeAnimation();
 
-    for (KeyFrameSet::const_iterator it = keys.begin(); it!=keys.end(); ++it) {
-        timesRemoved.push_back(it->getTime());
-    }
-    curve->clearKeyFrames();
-
-
-    if (timesRemoved.empty()) {
-        // Nothing changed
-        return;
-    }
-
-
-    // Virtual portion
-    onKeyframesRemoved(timesRemoved, view, dimension);
-
-
-    data->notifyCurveChanged();
 } // removeAnimationInternal
 
 void

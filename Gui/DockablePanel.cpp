@@ -1497,7 +1497,7 @@ DockablePanel::setKeyOnAllParameters()
                 } else if (isString) {
                     std::string v = isString->getValueAtTime(time, DimIdx(i), *it2);
                     double dv;
-                    isString->stringToKeyFrameValue(time, *it2, v, &dv);
+                    isString->insertKeyframe(time, *it2, v, &dv);
                     kf.string = v;
                     kf.key.setValue(dv);
                 }

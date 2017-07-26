@@ -491,7 +491,7 @@ public:
 
     // For choice parameters the value is held by a string because if the option disappears from the menu
     // we still need to remember the user choice
-    ChoiceOption activeEntry;
+    StringAnimationManagerPtr activeEntryStringAnimation;
 
     //  Each item in the list will add a separator after the index specified by the integer.
     std::vector<int> separators;
@@ -530,6 +530,13 @@ public:
     {
         
     }
+
+    virtual StringAnimationManagerPtr getStringAnimation() const OVERRIDE FINAL
+    {
+        return activeEntryStringAnimation;
+    }
+
+    virtual ValueChangedReturnCodeEnum setValueAtTime(TimeValue time, const int& value, KeyFrame* newKey) OVERRIDE FINAL;
 
     virtual bool setValueAndCheckIfChanged(const int& value) OVERRIDE;
 

@@ -375,23 +375,60 @@ Knob<T>::setValueAcrossDimensions(const std::vector<T>& values,
 } // setValueAcrossDimensions
 
 
+template <typename T>
+ValueChangedReturnCodeEnum
+ValueKnobDimView<T>::setValueAtTime(TimeValue time, const T& value, KeyFrame* newKey)
+{
+    if (!animationCurve) {
+        return eValueChangedReturnCodeNothingChanged;
+    }
+    // check for NaN or infinity
+    if ( (value != value) || boost::math::isinf(value) ) {
+        *newKey = KeyFrame( (double)time, 0. );
+    } else {
+        *newKey = KeyFrame( (double)time, value );
+    }
+
+
+    ValueChangedReturnCodeEnum addKeyRet = animationCurve->setOrAddKeyframe(*newKey);
+    notifyCurveChanged();
+
+    return addKeyRet;
+
+}
+
+template <>
+ValueChangedReturnCodeEnum
+ValueKnobDimView<std::string>::setValueAtTime(TimeValue time, const std::string& value, KeyFrame* newKey)
+{
+    double keyFrameValue = 0.;
+    StringAnimationManagerPtr animationManager = getStringAnimation();
+    assert(animationManager);
+
+    ValueChangedReturnCodeEnum addKeyRet = animationManager->insertKeyFrame(time, value, &keyFrameValue);
+    *newKey = KeyFrame( (double)time, keyFrameValue );
+
+    notifyCurveChanged();
+
+    return addKeyRet;
+}
+
 template<typename T>
 void
 Knob<T>::setValueOnCurveInternal(TimeValue time, const T& v, DimIdx dimension, ViewIdx view, KeyFrame* newKey, ValueChangedReturnCodeEnum* ret)
 {
+
+
+
+    ValueKnobDimView<T>* data = dynamic_cast<ValueKnobDimView<T>*>(getDataForDimView(dimension, view).get());
+    assert(data);
+
     KeyFrame key;
-    makeKeyFrame(time, v, view, &key);
+    ValueChangedReturnCodeEnum addKeyRet = data->setValueAtTime(time, v, &key);
     if (newKey) {
         *newKey = key;
     }
 
-    KnobDimViewBasePtr data = getDataForDimView(dimension, view);
-    assert(data);
-
-    // Get the curve for the given view/dimension
-    CurvePtr curve = data->animationCurve;
-    assert(curve);
-    ValueChangedReturnCodeEnum addKeyRet = curve->setOrAddKeyframe(key);
     if (addKeyRet == eValueChangedReturnCodeKeyframeAdded) {
         *ret = addKeyRet;
     } else if (addKeyRet == eValueChangedReturnCodeKeyframeModified) {
@@ -399,10 +436,6 @@ Knob<T>::setValueOnCurveInternal(TimeValue time, const T& v, DimIdx dimension, V
             *ret = eValueChangedReturnCodeKeyframeModified;
         }
     }
-
-    // At least redraw the curve if we did not add/remove keyframes
-
-    data->notifyCurveChanged();
 
 }
 

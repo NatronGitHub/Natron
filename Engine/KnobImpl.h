@@ -625,53 +625,6 @@ Knob<T>::clearExpressionsResults(DimSpec dimension, ViewSetSpec view)
 
 }
 
-template <typename T>
-void
-Knob<T>::makeKeyFrame(TimeValue time,
-                      const T& v,
-                      ViewIdx /*view*/,
-                      KeyFrame* key)
-{
-    AnimatingObjectI::KeyframeDataTypeEnum type = getKeyFrameDataType();
-    double keyFrameValue;
-    switch (type) {
-        case AnimatingObjectI::eKeyframeDataTypeBool:
-            keyFrameValue = (bool)v;
-            break;
-        case AnimatingObjectI::eKeyframeDataTypeInt:
-            keyFrameValue = std::floor(v + 0.5);
-            break;
-        default:
-            keyFrameValue = (double)v;
-            break;
-    }
-
-    // check for NaN or infinity
-    if ( (keyFrameValue != keyFrameValue) || boost::math::isinf(keyFrameValue) ) {
-        *key = KeyFrame( (double)time, getMaximum() );
-    } else {
-        *key = KeyFrame( (double)time, keyFrameValue );
-    }
-}
-
-template <>
-void
-KnobStringBase::makeKeyFrame(TimeValue time,
-                             const std::string& v,
-                             ViewIdx view,
-                             KeyFrame* key)
-{
-    double keyFrameValue = 0.;
-    AnimatingKnobStringHelper* isStringAnimatedKnob = dynamic_cast<AnimatingKnobStringHelper*>(this);
-    assert(isStringAnimatedKnob);
-    if (isStringAnimatedKnob) {
-        isStringAnimatedKnob->stringToKeyFrameValue(time, view, v, &keyFrameValue);
-    }
-
-    *key = KeyFrame( (double)time, keyFrameValue );
-}
-
-
 
 template<typename T>
 T

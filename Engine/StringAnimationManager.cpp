@@ -207,7 +207,7 @@ StringAnimationManager::customInterpolation(TimeValue time,
     return true;
 } // customInterpolation
 
-void
+ValueChangedReturnCodeEnum
 StringAnimationManager::insertKeyFrame(TimeValue time,
                                        const std::string & v,
                                        double* index)
@@ -216,14 +216,23 @@ StringAnimationManager::insertKeyFrame(TimeValue time,
 
     k.time = time;
     k.value = v;
+
+    ValueChangedReturnCodeEnum retCode = eValueChangedReturnCodeNothingChanged;
+
     QMutexLocker l(&_imp->keyframesMutex);
     std::pair<Keyframes::iterator, bool> ret = _imp->keyframes.insert(k);
-    if (!ret.second) {
+    if (ret.second) {
+        retCode = eValueChangedReturnCodeKeyframeAdded;
+    } else {
+        if (ret.first->value != v) {
+            retCode = eValueChangedReturnCodeKeyframeModified;
+        }
         _imp->keyframes.erase(ret.first);
         ret = _imp->keyframes.insert(k);
         assert(ret.second);
     }
     *index = std::distance(_imp->keyframes.begin(), ret.first);
+    return retCode;
 }
 
 void

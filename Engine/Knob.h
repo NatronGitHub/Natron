@@ -1323,17 +1323,40 @@ public:
 
     struct CopyInArgs
     {
-        // Pointer to the other dim/view value to copy
+        // Pointer to the other dim/view value to copy.
+        // If NULL, otherCurve must be set
         const KnobDimViewBase* other;
+
+        // Can be provided if there's no KnboDimViewBase object to copy from
+        // but just a curve object. Generally this should be left to NULL and the curve
+        // from the "other" KnboDimViewBase is used, and properly protected by a mutex.
+        const Curve* otherCurve;
+
+        // Can be provided if there's no KnboDimViewBase object to copy from
+        // but just a string animation object. Generally this should be left to NULL and the string animation
+        // from the "other" KnboDimViewBase is used, and properly protected by a mutex.
+        const StringAnimationManager* otherCurveAnimation;
         
         // A range of keyframes to copy
         const RangeD* keysToCopyRange;
         
         // A offset to copy keyframes
         double keysToCopyOffset;
+
+        CopyInArgs(const Curve& otherCurve)
+        : other(0)
+        , otherCurve(&otherCurve)
+        , otherCurveAnimation(0)
+        , keysToCopyRange(0)
+        , keysToCopyOffset(0)
+        {
+
+        }
         
         CopyInArgs(const KnobDimViewBase& other)
         : other(&other)
+        , otherCurve(0)
+        , otherCurveAnimation(0)
         , keysToCopyRange(0)
         , keysToCopyOffset(0)
         {
@@ -1360,6 +1383,11 @@ public:
         }
         
     };
+
+    virtual StringAnimationManagerPtr getStringAnimation() const
+    {
+        return StringAnimationManagerPtr();
+    }
     
     /**
      * @brief Copy the other dimension/view value with the given args.
@@ -1368,11 +1396,48 @@ public:
     virtual bool copy(const CopyInArgs& inArgs, CopyOutArgs* outArgs);
 
     /**
+     * @brief Delete the following keyframes (given by their timeline's time) from the animation curve
+     **/
+    virtual void deleteValuesAtTime(const std::list<double>& times);
+
+    /**
+     * @brief Remove all keyframes before or after the given timeline's time, excluding any keyframe at the 
+     * given time.
+     **/
+    virtual void deleteAnimationConditional(TimeValue time, bool before);
+
+    /**
+     * @brief Remove all animation on the curve
+     **/
+    virtual void removeAnimation();
+
+    /**
+     * @brief Warps the following keyframes time and returns optionally their modified version
+     **/
+    virtual bool warpValuesAtTime(const std::list<double>& times, const Curve::KeyFrameWarp& warp, std::vector<KeyFrame>* outKeys);
+
+    /**
+     * @brief Set the interpolator at the given keyframes time and returns optionally their modified version
+     **/
+    virtual void setInterpolationAtTimes(const std::list<double>& times, KeyframeTypeEnum interpolation, std::vector<KeyFrame>* newKeys);
+
+    /**
+     * @brief Set the left and right derivative at the given keyframe time
+     **/
+    virtual bool setLeftAndRightDerivativesAtTime(TimeValue time, double left, double right);
+
+    /**
+     * @brief Set the left or right derivative independently at the given keyframe time
+     **/
+    virtual bool setDerivativeAtTime(TimeValue time, double derivative, bool isLeft);
+
+protected:
+
+    /**
      * @brief Emits the curveAnimationChanged signal on all knobs referencing this value.
      **/
     void notifyCurveChanged();
 
-    void notifyValueChanged(const KnobIPtr& caller);
 };
 
 
@@ -1390,6 +1455,8 @@ public:
     {
         
     }
+
+    virtual ValueChangedReturnCodeEnum setValueAtTime(TimeValue time, const T& value, KeyFrame* newKey);
 
     virtual bool setValueAndCheckIfChanged(const T& value);
 
@@ -1846,21 +1913,7 @@ private:
 
     bool cloneExpressionInternal(const KnobIPtr& other, ViewIdx view, ViewIdx otherView, DimIdx dimension, DimIdx otherDimension);
 
-public:
-
-
-
-    /**
-     * @brief Called when a curve animation is changed.
-     * Derived knobs can use it to refresh any data structure related to keyframes it may have.
-     **/
-    virtual void onKeyframesRemoved(const std::list<double>& /*keysRemoved*/,
-                                    ViewSetSpec /*view*/,
-                                    DimSpec /*dimension*/)
-    {
-    }
-
-
+protected:
 
 
     boost::shared_ptr<KnobSignalSlotHandler> _signalSlotHandler;
@@ -2317,11 +2370,6 @@ private:
 
     T clampToMinMax(const T& value, DimIdx dimension) const;
 
-
-    void makeKeyFrame(TimeValue time, const T& v, ViewIdx view, KeyFrame* key);
-
-    void queueSetValue(const T& v, ViewSetSpec view, DimSpec dimension);
-
 private:
 
     bool evaluateExpression(TimeValue time, ViewIdx view, DimIdx dimension, T* ret, std::string* error);
@@ -2524,7 +2572,11 @@ public:
         
     }
 
-    virtual bool copy(const CopyInArgs& inArgs, CopyOutArgs* outArgs) OVERRIDE;
+    virtual StringAnimationManagerPtr getStringAnimation() const OVERRIDE FINAL
+    {
+        return stringAnimation;
+    }
+
 };
 
 typedef boost::shared_ptr<StringKnobDimView> StringKnobDimViewPtr;
@@ -2550,7 +2602,7 @@ public:
     virtual ~AnimatingKnobStringHelper();
 
 
-    void stringToKeyFrameValue(TimeValue time, ViewIdx view, const std::string & v, double* returnValue);
+    void insertKeyframe(TimeValue time, ViewIdx view, const std::string & v, double* returnValue);
 
     //for integration of openfx custom params
     typedef OfxStatus (*customParamInterpolationV1Entry_t)(const void*            handleRaw,
@@ -2575,10 +2627,6 @@ protected:
 
     virtual KnobDimViewBasePtr createDimViewData() const OVERRIDE;
 
-
-    virtual void onKeyframesRemoved(const std::list<double>& keysRemoved,
-                                    ViewSetSpec view,
-                                    DimSpec dimension) OVERRIDE FINAL;
 private:
     
 

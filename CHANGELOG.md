@@ -4,10 +4,7 @@
 
 # History
 
-## Version 2.3.1
 
-- Python: Fix the setTable() function of the PathParam class
-- Windows: Fix a bug where most image formats would not read and write correctly
 
 ## Version 3.0
 
@@ -35,6 +32,11 @@ Natron multiple times on the same computer, the different processes will share t
 - Python has callbacks to allow drawing and interacting in the viewer with custom drawings written in PyOpenGL. A PyPlug may use these callbacks to interact with parameters directly from the Viewer, much like the Transform node overlay handle.
 - For convenience, a PyPlug may specify a list of the nodes inside its node graph that should have their viewer overlay displayed when the PyPlug setting panel is opened. For instance, imagine that the PyPlug uses a Transform node internally, it is possible to display the Transform node handle on the viewer when the PyPlug settings panel is opened, even if the Transform node panel itself is closed
 
+
+## Version 2.3.1
+
+- Python: Fix the setTable() function of the PathParam class
+- Windows: Fix a bug where most image formats would not read and write correctly
 
 ## Version 2.3.0
 

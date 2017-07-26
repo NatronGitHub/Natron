@@ -64,7 +64,7 @@ public:
 
     bool customInterpolation(TimeValue time, std::string* ret) const;
 
-    void insertKeyFrame(TimeValue time, const std::string & v, double* index);
+    ValueChangedReturnCodeEnum insertKeyFrame(TimeValue time, const std::string & v, double* index);
 
     void removeKeyFrame(TimeValue time);
 

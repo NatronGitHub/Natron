@@ -664,47 +664,6 @@ KnobDimViewBase::notifyCurveChanged()
     }
 }
 
-bool
-KnobDimViewBase::copy(const CopyInArgs& inArgs, CopyOutArgs* outArgs)
-{
-    bool hasChanged = false;
-
-    {
-        QMutexLocker k(&valueMutex);
-        QMutexLocker k2(&inArgs.other->valueMutex);
-
-        // Do not copy the shared knobs
-
-
-        KeyFrameSet oldKeys;
-        if (animationCurve) {
-            oldKeys = animationCurve->getKeyFrames_mt_safe();
-        }
-
-        if (inArgs.other->animationCurve) {
-            if (!animationCurve) {
-                animationCurve.reset(new Curve(inArgs.other->animationCurve->getType()));
-            }
-            hasChanged |= animationCurve->cloneAndCheckIfChanged(*inArgs.other->animationCurve, inArgs.keysToCopyOffset, inArgs.keysToCopyRange);
-        }
-        if (hasChanged && outArgs) {
-            // Compute the keyframes diff
-            KeyFrameSet keys;
-            if (animationCurve) {
-                keys = animationCurve->getKeyFrames_mt_safe();
-            }
-            Curve::computeKeyFramesDiff(oldKeys, keys, outArgs->keysAdded, outArgs->keysRemoved);
-        }
-    }
-    if (hasChanged) {
-        // Notify all shared knobs the curve changed
-        notifyCurveChanged();
-    }
-    return hasChanged;
-} // copy
-
-
-
 
 
 KnobDimViewBasePtr
@@ -993,9 +952,20 @@ KnobHelper::evaluateValueChangeInternal(DimSpec dimension,
     {
         ScopedChanges_RAII changes(holder.get());
 
+        // If the knob is animated, we must refresh the static value: this is needed for KnobChoice
+        // where the active entry string is not actually a curve.
+        if (hasAnimation()) {
+            refreshStaticValue(time);
+        } else {
+            // Notify gui must be refreshed
+            if (!isValueChangesBlocked()) {
+                _signalSlotHandler->s_mustRefreshKnobGui(view, dimension, reason);
+            }
+        }
+
         // Refresh modifications state
         computeHasModifications();
-
+        
         // Invalidate the hash cache
         invalidateHashCache();
 
@@ -1005,10 +975,6 @@ KnobHelper::evaluateValueChangeInternal(DimSpec dimension,
         // Call knobChanged action
         didSomething = holder->onKnobValueChangedInternal(thisShared, time, view, reason);
 
-        // Notify gui must be refreshed
-        if (!isValueChangesBlocked()) {
-            _signalSlotHandler->s_mustRefreshKnobGui(view, dimension, reason);
-        }
 
         // Refresh dependencies
         refreshListenersAfterValueChange(time, view, reason, dimension, evaluatedKnobs);
@@ -5469,27 +5435,6 @@ KnobHolder::isFullAnimationToHashEnabled() const
 
 /***************************STRING ANIMATION******************************************/
 
-bool
-StringKnobDimView::copy(const CopyInArgs& inArgs, CopyOutArgs* outArgs)
-{
-    bool hasChanged = ValueKnobDimView<std::string>::copy(inArgs, outArgs);
-
-    const StringKnobDimView* otherType = dynamic_cast<const StringKnobDimView*>(inArgs.other);
-    assert(otherType);
-
-    QMutexLocker k(&valueMutex);
-    QMutexLocker k2(&inArgs.other->valueMutex);
-
-    if (otherType->stringAnimation) {
-        if (!stringAnimation) {
-            stringAnimation.reset(new StringAnimationManager());
-        }
-        hasChanged |= stringAnimation->clone(*otherType->stringAnimation, inArgs.keysToCopyOffset, inArgs.keysToCopyRange);
-    }
-    return hasChanged;
-}
-
-
 
 AnimatingKnobStringHelper::AnimatingKnobStringHelper(const KnobHolderPtr& holder,
                                                      const std::string &name,
@@ -5529,7 +5474,7 @@ AnimatingKnobStringHelper::getStringAnimation(ViewIdx view) const
 
 
 void
-AnimatingKnobStringHelper::stringToKeyFrameValue(TimeValue time,
+AnimatingKnobStringHelper::insertKeyframe(TimeValue time,
                                                  ViewIdx view,
                                                  const std::string & v,
                                                  double* returnValue)
@@ -5555,36 +5500,6 @@ AnimatingKnobStringHelper::stringFromInterpolatedValue(double interpolated,
     data->stringAnimation->stringFromInterpolatedIndex(interpolated, returnValue);
 }
 
-void
-AnimatingKnobStringHelper::onKeyframesRemoved( const std::list<double>& keysRemoved,
-                                          ViewSetSpec view,
-                                          DimSpec dimension)
-{
-    std::list<ViewIdx> views = getViewsList();
-    int nDims = getNDimensions();
-    ViewIdx view_i;
-    if (!view.isAll()) {
-        view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
-    }
-    for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
-        if (!view.isAll()) {
-            if (view_i != *it) {
-                continue;
-            }
-        }
-        for (int i = 0; i < nDims; ++i) {
-            if (!dimension.isAll() && dimension != i) {
-                continue;
-            }
-            StringKnobDimViewPtr data = toStringKnobDImView(getDataForDimView(DimIdx(i), *it));
-            if (!data) {
-                continue;
-            }
-            data->stringAnimation->removeKeyframes(keysRemoved);
-        }
-    }
-
-}
 
 std::string
 AnimatingKnobStringHelper::getStringAtTime(TimeValue time,

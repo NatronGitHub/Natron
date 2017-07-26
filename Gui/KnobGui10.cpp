@@ -483,7 +483,7 @@ KnobGui::onSetKeyActionTriggered()
             } else if (isString) {
                 std::string v = isString->getValue(DimIdx(i), *it);
                 double dv;
-                isString->stringToKeyFrameValue(time, ViewIdx(0), v, &dv);
+                isString->insertKeyframe(time, ViewIdx(0), v, &dv);
                 kf.string = v;
                 kf.key.setValue(dv);
             }
