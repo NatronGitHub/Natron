@@ -178,7 +178,7 @@ TrackerNodePrivate::exportTrackDataFromExportOptions()
                     if (!linked) {
                         isDbl->copyKnob(translate.lock() );
                     } else {
-                        (void)isDbl->linkTo(translate.lock());
+                        ignore_result(isDbl->linkTo(translate.lock()));
                     }
                 }
             }
@@ -190,7 +190,7 @@ TrackerNodePrivate::exportTrackDataFromExportOptions()
                     if (!linked) {
                         isDbl->copyKnob(scale.lock() );
                     } else {
-                        (void)isDbl->linkTo(scale.lock());
+                        ignore_result(isDbl->linkTo(scale.lock()));
                     }
                 }
             }
@@ -202,7 +202,7 @@ TrackerNodePrivate::exportTrackDataFromExportOptions()
                     if (!linked) {
                         isDbl->copyKnob(rotate.lock());
                     } else {
-                        (void)isDbl->linkTo(rotate.lock());
+                        ignore_result(isDbl->linkTo(rotate.lock()));
                     }
                 }
             }
@@ -224,7 +224,7 @@ TrackerNodePrivate::exportTrackDataFromExportOptions()
             if (!linked) {
                 isBool->copyKnob(invertTransform.lock());
             } else {
-                (void)isBool->linkTo(invertTransform.lock());
+                ignore_result(isBool->linkTo(invertTransform.lock()));
             }
         }
     }

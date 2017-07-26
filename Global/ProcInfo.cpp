@@ -631,7 +631,7 @@ ProcInfo::checkIfProcessIsRunning(const char* processAbsoluteFilePath,
     char pname[512] = {0, };
     char state;
     //See http://man7.org/linux/man-pages/man5/proc.5.html
-    if ( ( fscanf(fp, "%ld (%[^)]) %c", &pid, pname, &state) ) != 3 ) {
+    if ( ( fscanf(fp, "%lld (%[^)]) %c", &pid, pname, &state) ) != 3 ) {
 #ifdef DEBUG
         std::cerr << "ProcInfo::checkIfProcessIsRunning(): fscanf call on " << procFile << " failed";
 #endif

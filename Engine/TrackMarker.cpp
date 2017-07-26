@@ -900,19 +900,19 @@ TrackMarkerPM::initializeKnobs()
     patternBtmLeftKnob = patternBtmLeft;
 
     // Slave the search window and pattern of the node to the parameters of the marker
-    (void)patternBtmLeft->linkTo(getPatternBtmLeftKnob());
+    ignore_result(patternBtmLeft->linkTo(getPatternBtmLeftKnob()));
 
     KnobDoublePtr patternTopRight = getNodeKnob<KnobDouble>(node, kTrackerPMParamTrackingPatternBoxTopRight);
     patternTopRightKnob = patternTopRight;
-    (void)patternTopRight->linkTo(getPatternTopRightKnob());
+    ignore_result(patternTopRight->linkTo(getPatternTopRightKnob()));
 
     KnobDoublePtr searchWindowBtmLeft = getNodeKnob<KnobDouble>(node, kTrackerPMParamTrackingSearchBoxBtmLeft);
     searchWindowBtmLeftKnob = searchWindowBtmLeft;
-    (void)searchWindowBtmLeft->linkTo(getSearchWindowBottomLeftKnob());
+    ignore_result(searchWindowBtmLeft->linkTo(getSearchWindowBottomLeftKnob()));
 
     KnobDoublePtr searchWindowTopRight = getNodeKnob<KnobDouble>(node, kTrackerPMParamTrackingSearchBoxTopRight);
     searchWindowTopRightKnob = searchWindowTopRight;
-    (void)searchWindowTopRight->linkTo(getSearchWindowTopRightKnob());
+    ignore_result(searchWindowTopRight->linkTo(getSearchWindowTopRightKnob()));
 
 } // TrackMarkerPM::initializeKnobs
 

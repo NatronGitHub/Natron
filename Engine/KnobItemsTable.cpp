@@ -479,7 +479,6 @@ KnobItemsTable::insertItem(int index, const KnobTableItemPtr& item, const KnobTa
     if (parent) {
         parent->insertChild(index, item);
     } else {
-        int insertIndex;
         {
             QMutexLocker k(&_imp->common->topLevelItemsLock);
             if (index < 0 || index >= (int)_imp->common->topLevelItems.size()) {
@@ -489,7 +488,6 @@ KnobItemsTable::insertItem(int index, const KnobTableItemPtr& item, const KnobTa
                 std::vector<KnobTableItemPtr>::iterator it = _imp->common->topLevelItems.begin();
                 std::advance(it, index);
                 _imp->common->topLevelItems.insert(it, item);
-                insertIndex = index;
             }
         }
     }
@@ -969,18 +967,15 @@ KnobTableItem::insertChild(int index, const KnobTableItemPtr& item)
 
     assert(_imp->common->model.lock()->getType() == KnobItemsTable::eKnobItemsTableTypeTree);
 
-    int insertedIndex;
 
     {
         QMutexLocker k(&_imp->common->lock);
         if (index < 0 || index >= (int)_imp->common->children.size()) {
             _imp->common->children.push_back(item);
-            insertedIndex = _imp->common->children.size() - 1;
         } else {
             std::vector<KnobTableItemPtr>::iterator it = _imp->common->children.begin();
             std::advance(it, index);
             _imp->common->children.insert(it, item);
-            insertedIndex = index;
         }
     }
 

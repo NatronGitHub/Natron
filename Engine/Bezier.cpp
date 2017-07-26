@@ -1746,7 +1746,6 @@ Bezier::movePointByIndexInternalForView(int index, TimeValue time, ViewIdx view,
     bool rippleEdit = isRippleEditEnabled();
     bool autoKeying = isAutoKeyingEnabled();
     bool fLinkEnabled = ( onlyFeather ? true : isFeatherLinkEnabled() );
-    bool keySet = false;
     Transform::Matrix3x3 trans, invTrans;
     getTransformAtTime(time, view, &trans);
 
@@ -1827,9 +1826,6 @@ Bezier::movePointByIndexInternalForView(int index, TimeValue time, ViewIdx view,
             cp->setPositionAtTime(time, p.x, p.y );
             cp->setLeftBezierPointAtTime(time, left.x, left.y);
             cp->setRightBezierPointAtTime(time, right.x, right.y);
-            if (!isOnKeyframe) {
-                keySet = true;
-            }
         }
 
         if (moveFeather && useFeather) {
@@ -2306,7 +2302,6 @@ Bezier::setPointAtIndexInternalForView(bool setLeft, bool setRight, bool setPoin
 {
     bool autoKeying = isAutoKeyingEnabled();
     bool rippleEdit = isRippleEditEnabled();
-    bool keySet = false;
 
 
     {
@@ -2350,9 +2345,6 @@ Bezier::setPointAtIndexInternalForView(bool setLeft, bool setRight, bool setPoin
                 if (featherAndCp) {
                     (*cp)->setRightBezierPointAtTime(time, rx, ry);
                 }
-            }
-            if (!isOnKeyframe) {
-                keySet = true;
             }
         }
 
@@ -2456,7 +2448,6 @@ void
 Bezier::transformPointInternal(const BezierCPPtr & point, TimeValue time, ViewIdx view, Transform::Matrix3x3* matrix)
 {
     bool autoKeying = isAutoKeyingEnabled();
-    bool keySet = false;
 
     {
         QMutexLocker l(&_imp->itemMutex);
@@ -2487,9 +2478,6 @@ Bezier::transformPointInternal(const BezierCPPtr & point, TimeValue time, ViewId
             point->setPositionAtTime(time, cp.x, cp.y);
             point->setLeftBezierPointAtTime(time, leftCp.x, leftCp.y);
             point->setRightBezierPointAtTime(time, rightCp.x, rightCp.y);
-            if (!isonKeyframe) {
-                keySet = true;
-            }
         }
     }
 

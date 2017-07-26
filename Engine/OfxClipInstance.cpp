@@ -1137,15 +1137,12 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
     }
 
 
-    OfxImageCommon* retCommon = 0;
     if (retImage) {
         OfxImage* ofxImage = new OfxImage(effect, -1, image, rod, premult, fielding, nodeFrameViewHash, currentRenderWindow, Distortion2DStackPtr(), componentsStr, nComps, par);
         *retImage = ofxImage;
-        retCommon = ofxImage;
     } else if (retTexture) {
         OfxTexture* ofxTex = new OfxTexture(effect, -1, image, rod, premult, fielding, nodeFrameViewHash, currentRenderWindow, Distortion2DStackPtr(), componentsStr, nComps, par);
         *retTexture = ofxTex;
-        retCommon = ofxTex;
     }
 
     return true;

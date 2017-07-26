@@ -2059,14 +2059,11 @@ ViewerGL::wheelEvent(QWheelEvent* e)
     const double zoomFactor_min = 0.01;
     const double zoomFactor_max = 1024.;
     double zoomFactor;
-    unsigned int oldMipMapLevel, newMipMapLevel;
     double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() );
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
         QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
         zoomFactor = _imp->zoomCtx.factor();
-
-        oldMipMapLevel = std::log( zoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) ) ) / M_LN2;
 
         zoomFactor *= scaleFactor;
 
@@ -2078,7 +2075,6 @@ ViewerGL::wheelEvent(QWheelEvent* e)
             scaleFactor = zoomFactor / _imp->zoomCtx.factor();
         }
 
-        newMipMapLevel = std::log( zoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) ) ) / M_LN2;
         _imp->zoomCtx.zoom(zoomCenter.x(), zoomCenter.y(), scaleFactor);
         _imp->zoomOrPannedSinceLastFit = true;
     }
@@ -2128,13 +2124,9 @@ ViewerGL::zoomViewport(double newZoomFactor)
     } else if (newZoomFactor > 1024.) {
         newZoomFactor = 1024.;
     }
-    unsigned int oldMipMapLevel, newMipMapLevel;
-    newMipMapLevel = std::log( newZoomFactor >= 1 ? 1 :
-                               std::pow( 2, -std::ceil(std::log(newZoomFactor) / M_LN2) ) ) / M_LN2;
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
-        oldMipMapLevel = std::log( _imp->zoomCtx.factor() >= 1 ? 1 :
-                                   std::pow( 2, -std::ceil(std::log( _imp->zoomCtx.factor() ) / M_LN2) ) ) / M_LN2;
+
         double scale = newZoomFactor / _imp->zoomCtx.factor();
         double centerX = ( _imp->zoomCtx.left() + _imp->zoomCtx.right() ) / 2.;
         double centerY = ( _imp->zoomCtx.top() + _imp->zoomCtx.bottom() ) / 2.;
@@ -2166,12 +2158,9 @@ ViewerGL::fitImageToFormat()
 
     double old_zoomFactor;
     double zoomFactor;
-    unsigned int oldMipMapLevel, newMipMapLevel;
     {
         QMutexLocker(&_imp->zoomCtxMutex);
         old_zoomFactor = _imp->zoomCtx.factor();
-        oldMipMapLevel = std::log( old_zoomFactor >= 1 ? 1 :
-                                   std::pow( 2, -std::ceil(std::log(old_zoomFactor) / M_LN2) ) ) / M_LN2;
 
         // set the PAR first
         //_imp->zoomCtx.setZoom(0., 0., 1., 1.);
@@ -2180,8 +2169,6 @@ ViewerGL::fitImageToFormat()
         zoomFactor = _imp->zoomCtx.factor();
         _imp->zoomOrPannedSinceLastFit = false;
     }
-    newMipMapLevel = std::log( zoomFactor >= 1 ? 1 :
-                               std::pow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) ) ) / M_LN2;
 
     _imp->oldClick = QPoint(); // reset mouse posn
 

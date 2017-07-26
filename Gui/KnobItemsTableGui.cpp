@@ -856,10 +856,10 @@ KnobItemsTableView::drawBranches(QPainter *painter, const QRect &rect, const QMo
         itemOpt.rect = primitive;
 
         TableItemPtr parentItem = item->getParentItem();
-        bool moreSiblings = false;
+        /*bool moreSiblings = false;
         if (parentItem) {
             moreSiblings = parentItem->getChildren().size() > 1 && item->getRowInParent() < (int)parentItem->getChildren().size() - 1;
-        }
+        }*/
 
         if (nIteration == 0) {
             itemOpt.state |= (expanded ? QStyle::State_Open : QStyle::State_None);

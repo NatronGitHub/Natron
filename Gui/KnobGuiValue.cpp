@@ -438,7 +438,6 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
 
     KnobGui::KnobLayoutTypeEnum layoutType = knobUI->getLayoutType();
 
-    bool sliderVisible = false;
     if (!isSliderDisabled() && !isRectangleParam && layoutType != KnobGui::eKnobLayoutTypeTableItemWidget) {
         double dispmin = displayMins[0];
         double dispmax = displayMaxs[0];
@@ -500,8 +499,6 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
         } else {
             containerLayout->addWidget(_imp->slider);
         }
-
-        sliderVisible = shouldSliderBeVisible(dispminGui, dispmaxGui);
 
         // onDisplayMinMaxChanged takes original (maybe normalized) values
         onDisplayMinMaxChanged(DimSpec::all());
@@ -809,7 +806,6 @@ KnobGuiValue::updateGUI()
     const int knobDim = (int)_imp->spinBoxes.size();
 
     std::vector<double> values(knobDim);
-    double refValue = 0.;
     std::vector<std::string> expressions(knobDim);
     std::string refExpresion;
     TimeValue time(0);
@@ -837,7 +833,6 @@ KnobGuiValue::updateGUI()
     }
 
 
-    refValue = values[0];
     refExpresion = expressions[0];
 
 
