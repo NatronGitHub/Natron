@@ -695,7 +695,7 @@ TrackerNodePrivate::computeCornerParamsFromTracksEnd(double refTime,
             if (dataAtTime.rms >= maxFittingError) {
                 mustShowFittingWarn = true;
             }
-            tmpFittingErrorCurve.addKeyFrame(kf);
+            tmpFittingErrorCurve.setOrAddKeyframe(kf);
         }
 
 
@@ -705,8 +705,8 @@ TrackerNodePrivate::computeCornerParamsFromTracksEnd(double refTime,
                 toPoint = TrackerHelper::applyHomography(refFrom.pts[c], dataAtTime.h);
                 KeyFrame kx(dataAtTime.time, toPoint.x);
                 KeyFrame ky(dataAtTime.time, toPoint.y);
-                tmpToPointsCurveX[c].addKeyFrame(kx);
-                tmpToPointsCurveY[c].addKeyFrame(ky);
+                tmpToPointsCurveX[c].setOrAddKeyframe(kx);
+                tmpToPointsCurveY[c].setOrAddKeyframe(ky);
                 //toPoints[c]->setValuesAtTime(dataAtTime[i].time, toPoint.x, toPoint.y, ViewSpec::all(), eValueChangedReasonUserEdited);
             }
         } else {
@@ -717,8 +717,8 @@ TrackerNodePrivate::computeCornerParamsFromTracksEnd(double refTime,
             for (int c = 0; c < 4; ++c) {
                 KeyFrame kx(dataAtTime.time, avgTos.pts[c].x);
                 KeyFrame ky(dataAtTime.time, avgTos.pts[c].y);
-                tmpToPointsCurveX[c].addKeyFrame(kx);
-                tmpToPointsCurveY[c].addKeyFrame(ky);
+                tmpToPointsCurveX[c].setOrAddKeyframe(kx);
+                tmpToPointsCurveY[c].setOrAddKeyframe(ky);
             }
 
 
@@ -766,10 +766,10 @@ TrackerNodePrivate::computeCornerParamsFromTracksEnd(double refTime,
     }
 
     fittingWarningKnob->setSecret(!mustShowFittingWarn);
-    fittingErrorKnob->cloneCurve(ViewIdx(0), DimIdx(0), tmpFittingErrorCurve, 0 /*offset*/, 0 /*range*/, 0 /*stringAnim*/);
+    fittingErrorKnob->cloneCurve(ViewIdx(0), DimIdx(0), tmpFittingErrorCurve, 0 /*offset*/, 0 /*range*/);
     for (int c = 0; c < 4; ++c) {
-        toPointsKnob[c]->cloneCurve(ViewIdx(0), DimIdx(0), tmpToPointsCurveX[c], 0 /*offset*/, 0 /*range*/, 0 /*stringAnim*/);
-        toPointsKnob[c]->cloneCurve(ViewIdx(0), DimIdx(1), tmpToPointsCurveY[c], 0 /*offset*/, 0 /*range*/, 0 /*stringAnim*/);
+        toPointsKnob[c]->cloneCurve(ViewIdx(0), DimIdx(0), tmpToPointsCurveX[c], 0 /*offset*/, 0 /*range*/);
+        toPointsKnob[c]->cloneCurve(ViewIdx(0), DimIdx(1), tmpToPointsCurveY[c], 0 /*offset*/, 0 /*range*/);
     }
     for (std::list<KnobIPtr>::iterator it = animatedKnobsChanged.begin(); it != animatedKnobsChanged.end(); ++it) {
         (*it)->unblockValueChanges();
@@ -902,20 +902,20 @@ TrackerNodePrivate::computeTransformParamsFromTracksEnd(double refTime,
             if (dataAtTime.rms >= maxFittingError) {
                 mustShowFittingWarn = true;
             }
-            tmpFittingErrorCurve.addKeyFrame(kf);
+            tmpFittingErrorCurve.setOrAddKeyframe(kf);
         }
         if (smoothTJitter > 1) {
             TranslateData avgT;
             averageDataFunctor<QList<TransformData>::const_iterator, void, TranslateData>(validResults.begin(), validResults.end(), itResults, halfTJitter, 0, &avgT, 0);
             KeyFrame kx(dataAtTime.time, avgT.p.x);
             KeyFrame ky(dataAtTime.time, avgT.p.y);
-            tmpTXCurve.addKeyFrame(kx);
-            tmpTYCurve.addKeyFrame(ky);
+            tmpTXCurve.setOrAddKeyframe(kx);
+            tmpTYCurve.setOrAddKeyframe(ky);
         } else {
             KeyFrame kx(dataAtTime.time, dataAtTime.translation.x);
             KeyFrame ky(dataAtTime.time, dataAtTime.translation.y);
-            tmpTXCurve.addKeyFrame(kx);
-            tmpTYCurve.addKeyFrame(ky);
+            tmpTXCurve.setOrAddKeyframe(kx);
+            tmpTYCurve.setOrAddKeyframe(ky);
 
         }
         if (dataAtTime.hasRotationAndScale) {
@@ -924,32 +924,32 @@ TrackerNodePrivate::computeTransformParamsFromTracksEnd(double refTime,
                 averageDataFunctor<QList<TransformData>::const_iterator, void, RotateData>(validResults.begin(), validResults.end(), itResults, halfRJitter, 0, &avgR, 0);
 
                 KeyFrame k(dataAtTime.time, avgR.r);
-                tmpRotateCurve.addKeyFrame(k);
+                tmpRotateCurve.setOrAddKeyframe(k);
 
             } else {
                 KeyFrame k(dataAtTime.time, dataAtTime.rotation);
-                tmpRotateCurve.addKeyFrame(k);
+                tmpRotateCurve.setOrAddKeyframe(k);
             }
             if (smoothSJitter > 1) {
                 ScaleData avgR;
                 averageDataFunctor<QList<TransformData>::const_iterator, void, ScaleData>(validResults.begin(), validResults.end(), itResults, halfSJitter, 0, &avgR, 0);
                 KeyFrame k(dataAtTime.time, avgR.s);
-                tmpScaleCurve.addKeyFrame(k);
+                tmpScaleCurve.setOrAddKeyframe(k);
 
             } else {
                 KeyFrame k(dataAtTime.time, dataAtTime.scale);
-                tmpScaleCurve.addKeyFrame(k);
+                tmpScaleCurve.setOrAddKeyframe(k);
             }
         }
     } // for all samples
 
     fittingWarningKnob->setSecret(!mustShowFittingWarn);
-    fittingErrorKnob->cloneCurve(ViewIdx(0), DimIdx(0), tmpFittingErrorCurve, 0 /*offset*/, 0 /*range*/, 0 /*stringAnim*/);
-    translationKnob->cloneCurve(ViewIdx(0), DimIdx(0), tmpTXCurve, 0 /*offset*/, 0 /*range*/, 0 /*stringAnim*/);
-    translationKnob->cloneCurve(ViewIdx(0), DimIdx(1), tmpTYCurve, 0 /*offset*/, 0 /*range*/, 0 /*stringAnim*/);
-    rotationKnob->cloneCurve(ViewIdx(0), DimIdx(0), tmpRotateCurve, 0 /*offset*/, 0 /*range*/, 0 /*stringAnim*/);
-    scaleKnob->cloneCurve(ViewIdx(0), DimIdx(0), tmpScaleCurve, 0 /*offset*/, 0 /*range*/, 0 /*stringAnim*/);
-    scaleKnob->cloneCurve(ViewIdx(0), DimIdx(1), tmpScaleCurve, 0 /*offset*/, 0 /*range*/, 0 /*stringAnim*/);
+    fittingErrorKnob->cloneCurve(ViewIdx(0), DimIdx(0), tmpFittingErrorCurve, 0 /*offset*/, 0 /*range*/);
+    translationKnob->cloneCurve(ViewIdx(0), DimIdx(0), tmpTXCurve, 0 /*offset*/, 0 /*range*/);
+    translationKnob->cloneCurve(ViewIdx(0), DimIdx(1), tmpTYCurve, 0 /*offset*/, 0 /*range*/);
+    rotationKnob->cloneCurve(ViewIdx(0), DimIdx(0), tmpRotateCurve, 0 /*offset*/, 0 /*range*/);
+    scaleKnob->cloneCurve(ViewIdx(0), DimIdx(0), tmpScaleCurve, 0 /*offset*/, 0 /*range*/);
+    scaleKnob->cloneCurve(ViewIdx(0), DimIdx(1), tmpScaleCurve, 0 /*offset*/, 0 /*range*/);
 
     for (std::list<KnobIPtr>::iterator it = animatedKnobsChanged.begin(); it != animatedKnobsChanged.end(); ++it) {
         (*it)->unblockValueChanges();

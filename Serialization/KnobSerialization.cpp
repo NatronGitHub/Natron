@@ -189,7 +189,15 @@ KnobSerialization::encode(YAML::Emitter& em) const
                         }
                         // Also serialize the curve in case the expression fails to restore correctly
                         if (!val._animationCurve.keys.empty()) {
-                            em << YAML::Key << "Curve" << YAML::Value;
+                            switch (val._animationCurve.curveType) {
+                                case eCurveSerializationTypeString:
+                                    em << YAML::Key << "StringAnimation" << YAML::Value;
+                                    break;
+                                case eCurveSerializationTypeDouble:
+                                    em << YAML::Key << "Curve" << YAML::Value;
+                                    break;
+                            }
+
                             val._animationCurve.encode(em);
                         }
 
@@ -215,14 +223,28 @@ KnobSerialization::encode(YAML::Emitter& em) const
 
                         // Also serialize the curve in case the expression fails to restore correctly
                         if (!val._animationCurve.keys.empty()) {
-                            em << YAML::Key << "Curve" << YAML::Value;
+                            switch (val._animationCurve.curveType) {
+                                case eCurveSerializationTypeString:
+                                    em << YAML::Key << "StringAnimation" << YAML::Value;
+                                    break;
+                                case eCurveSerializationTypeDouble:
+                                    em << YAML::Key << "Curve" << YAML::Value;
+                                    break;
+                            }
                             val._animationCurve.encode(em);
                         }
 
                         em << YAML::EndMap;
                     } else if (!val._animationCurve.keys.empty()) {
                         em << YAML::Flow << YAML::BeginMap;
-                        em << YAML::Key << "Curve" << YAML::Value;
+                        switch (val._animationCurve.curveType) {
+                            case eCurveSerializationTypeString:
+                                em << YAML::Key << "StringAnimation" << YAML::Value;
+                                break;
+                            case eCurveSerializationTypeDouble:
+                                em << YAML::Key << "Curve" << YAML::Value;
+                                break;
+                        }
                         val._animationCurve.encode(em);
                         em << YAML::EndMap;
                     } else {
@@ -367,39 +389,6 @@ KnobSerialization::encode(YAML::Emitter& em) const
 
             }
         } else if (textData) {
-            if (!textData->keyframes.empty()) {
-
-                bool hasDeclaredTextAnim = false;
-                for (std::map<std::string,std::map<double, std::string> >::const_iterator it = textData->keyframes.begin(); it != textData->keyframes.end(); ++it) {
-                    if (it->second.empty()) {
-                        continue;
-                    }
-                    if (!hasDeclaredTextAnim) {
-                        hasDeclaredTextAnim = true;
-
-                        em << YAML::Key << "TextAnim" << YAML::Value;
-
-                        if (textData->keyframes.size() > 1) {
-                            // Multi-view: start a map
-                            em << YAML::BeginMap;
-                        }
-                    }
-                    if (textData->keyframes.size() > 1) {
-                        em << YAML::Key << it->first << YAML::Value;
-                    }
-                    em << YAML::Flow;
-                    em << YAML::BeginSeq;
-                    for (std::map<double, std::string>::const_iterator it2 = it->second.begin(); it2!=it->second.end(); ++it2) {
-                        em << it2->first << it2->second;
-                    }
-                    em << YAML::EndSeq;
-                }
-                if (hasDeclaredTextAnim && textData->keyframes.size() > 1) {
-                    em << YAML::EndMap;
-                }
-
-
-            }
             if (std::abs(textData->fontColor[0] - 0.) > 0.01 || std::abs(textData->fontColor[1] - 0.) > 0.01 || std::abs(textData->fontColor[2] - 0.) > 0.01) {
                 em << YAML::Key << "FontColor" << YAML::Value << YAML::Flow << YAML::BeginSeq << textData->fontColor[0] << textData->fontColor[1] << textData->fontColor[2] << YAML::EndSeq;
             }
@@ -659,7 +648,11 @@ KnobSerialization::decodeValueNode(const std::string& viewName, const YAML::Node
             // Always look for an animation curve
             if (dimNode["Curve"]) {
                 // Curve
+                dimVec[i]._animationCurve.curveType = eCurveSerializationTypeDouble;
                 dimVec[i]._animationCurve.decode(dimNode["Curve"]);
+            } else if (dimNode["StringAnimation"]) {
+                dimVec[i]._animationCurve.curveType = eCurveSerializationTypeString;
+                dimVec[i]._animationCurve.decode(dimNode["StringAnimation"]);
             }
 
             // Look for a link or expression
@@ -723,7 +716,7 @@ KnobSerialization::checkForValueNode(const YAML::Node& node, const std::string& 
     if (!valueNode.IsMap()) {
         decodeValueNode("Main", valueNode);
     } else {
-        if (valueNode["Curve"] || valueNode["pyMultiExpr"] || valueNode["pyExpr"] || valueNode["exprtk"] || valueNode["N"] || valueNode["T"] ||
+        if (valueNode["Curve"] || valueNode["StringAnimation"] || valueNode["pyMultiExpr"] || valueNode["pyExpr"] || valueNode["exprtk"] || valueNode["N"] || valueNode["T"] ||
             valueNode["K"] || valueNode["D"] || valueNode["V"]) {
             decodeValueNode("Main", valueNode);
         } else {
@@ -823,49 +816,7 @@ KnobSerialization::decode(const YAML::Node& node)
         }
 
     }
-    if (node["TextAnim"]) {
-        YAML::Node curveNode = node["TextAnim"];
-        TextExtraData *data = getOrCreateExtraData<TextExtraData>(_extraData);
-        if (curveNode.IsMap()) {
-            // Multi-view
-            for (YAML::const_iterator it = curveNode.begin(); it!=curveNode.end(); ++it) {
-                std::string viewName = it->first.as<std::string>();
-                YAML::Node keysForViewNode = it->second;
-
-                std::map<double, std::string>& keysForView = data->keyframes[viewName];
-                // If type = 0 we expect a int, otherwise a string
-                int type = 0;
-                std::pair<double, std::string> p;
-                for (std::size_t i = 0; i < keysForViewNode.size(); ++i) {
-                    if (type == 0) {
-                        p.first = keysForViewNode[i].as<double>();
-                        type = 1;
-                    } else if (type == 1) {
-                        type = 0;
-                        p.second = keysForViewNode[i].as<std::string>();
-                        keysForView.insert(p);
-                    }
-                }
-            }
-        } else {
-            // If type = 0 we expect a int, otherwise a string
-            std::map<double, std::string>& keysForView = data->keyframes["Main"];
-            int type = 0;
-            std::pair<double, std::string> p;
-            for (std::size_t i = 0; i < curveNode.size(); ++i) {
-                if (type == 0) {
-                    p.first = curveNode[i].as<double>();
-                    type = 1;
-                } else if (type == 1) {
-                    type = 0;
-                    p.second = curveNode[i].as<std::string>();
-                    keysForView.insert(p);
-                }
-            }
-        }
-
-    }
-
+ 
     if (node["FontColor"]) {
         YAML::Node n = node["FontColor"];
         if (n.size() != 3) {

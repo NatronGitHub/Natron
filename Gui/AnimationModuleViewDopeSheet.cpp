@@ -44,7 +44,6 @@
 #include "Engine/OSGLFunctions.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
-#include "Engine/StringAnimationManager.h"
 #include "Engine/ViewIdx.h"
 
 #include "Global/Enums.h"
@@ -174,7 +173,7 @@ AnimationModuleViewPrivate::setDopeSheetCursor(const QPoint& eventPos)
                 itemBase = isTableItem;
             }
             if (itemBase) {
-                KeyFrameWithStringSet keysUnderMouse = isNearByKeyframe(itemBase, dimension, view, eventPos);
+                KeyFrameSet keysUnderMouse = isNearByKeyframe(itemBase, dimension, view, eventPos);
 
                 if ( !keysUnderMouse.empty() ) {
                     _publicInterface->setCursor(Qt::CrossCursor);
@@ -230,17 +229,17 @@ AnimationModuleViewPrivate::isNearByClipRectBottom(const QPointF& zoomCoordPos,
              (widgetPos.y() >= rectx1y1.y() - TO_DPIX(DISTANCE_ACCEPTANCE_FROM_READER_BOTTOM)) );
 }
 
-KeyFrameWithStringSet AnimationModuleViewPrivate::isNearByKeyframe(const AnimItemBasePtr &item,
+KeyFrameSet AnimationModuleViewPrivate::isNearByKeyframe(const AnimItemBasePtr &item,
                                                                             DimSpec dimension, ViewSetSpec view,
                                                                             const QPointF &widgetCoords) const
 {
-    KeyFrameWithStringSet ret;
-    KeyFrameWithStringSet keys;
+    KeyFrameSet ret;
+    KeyFrameSet keys;
     item->getKeyframes(dimension, view, AnimItemBase::eGetKeyframesTypeMerged, &keys);
 
-    for (KeyFrameWithStringSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+    for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
 
-        double keyframeXWidget = dopeSheetZoomContext.toWidgetCoordinates(it->key.getTime(), 0).x();
+        double keyframeXWidget = dopeSheetZoomContext.toWidgetCoordinates(it->getTime(), 0).x();
 
         if (std::abs( widgetCoords.x() - keyframeXWidget ) < TO_DPIX(DISTANCE_ACCEPTANCE_FROM_KEYFRAME)) {
             ret.insert(*it);
@@ -683,7 +682,7 @@ AnimationModuleViewPrivate::drawDopeSheetKeyframes(QTreeWidgetItem* treeItem, co
     double singleSelectedTime;
     bool hasSingleKfTimeSelected = selectModel->hasSingleKeyFrameTimeSelected(&singleSelectedTime);
 
-    KeyFrameWithStringSet dimViewKeys;
+    KeyFrameSet dimViewKeys;
     item->getKeyframes(dimension, view, AnimItemBase::eGetKeyframesTypeMerged, &dimViewKeys);
 
     QRectF nameItemRect = treeView->visualItemRect(treeItem);
@@ -711,9 +710,9 @@ AnimationModuleViewPrivate::drawDopeSheetKeyframes(QTreeWidgetItem* treeItem, co
     }
 
 
-    for (KeyFrameWithStringSet::const_iterator it = dimViewKeys.begin(); it != dimViewKeys.end(); ++it) {
+    for (KeyFrameSet::const_iterator it = dimViewKeys.begin(); it != dimViewKeys.end(); ++it) {
 
-        const TimeValue keyTime = it->key.getTime();
+        const TimeValue keyTime = it->getTime();
         RectD zoomKfRect = getKeyFrameBoundingRectCanonical(dopeSheetZoomContext, keyTime, rowCenterYCanonical);
 
         bool isKeyFrameSelected = selectModel->isKeyframeSelected(item, dimension, view, TimeValue(keyTime));
@@ -737,7 +736,7 @@ AnimationModuleViewPrivate::drawDopeSheetKeyframes(QTreeWidgetItem* treeItem, co
         if (drawMaster) {
             texType = drawSelected ? AnimationModuleViewPrivate::kfTextureMasterSelected : AnimationModuleViewPrivate::kfTextureMaster;
         } else {
-            texType = AnimationModuleViewPrivate::kfTextureFromKeyframeType( it->key.getInterpolation(), drawSelected);
+            texType = AnimationModuleViewPrivate::kfTextureFromKeyframeType( it->getInterpolation(), drawSelected);
         }
 
         if (texType != AnimationModuleViewPrivate::kfTextureNone) {
@@ -839,9 +838,9 @@ AnimationModuleViewPrivate::refreshDopeSheetSelectedKeysBRect()
         }
         double visualRectCenterYCanonical = dopeSheetZoomContext.toZoomCoordinates(0, treeView->visualItemRect(treeItem).center().y()).y();
 
-        for (KeyFrameWithStringSet::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+        for (KeyFrameSet::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             ++nKeysInSelection;
-            double x = it2->key.getTime();
+            double x = it2->getTime();
 
             RectD zoomKfRect = getKeyFrameBoundingRectCanonical(dopeSheetZoomContext, x, visualRectCenterYCanonical);
 
@@ -990,23 +989,17 @@ AnimationModuleViewPrivate::checkAnimItemInRectInternal(const RectD& canonicalRe
         return;
     }
 
-    StringAnimationManagerPtr stringAnim = knob->getInternalAnimItem()->getStringAnimation(view);
 
     AnimItemDimViewIndexID id(knob, view, dimension);
 
     double visualRectCenterYCanonical = dopeSheetZoomContext.toZoomCoordinates(0, treeView->visualItemRect(item).center().y()).y();
-    KeyFrameWithStringSet outKeys;
+    KeyFrameSet outKeys;
     for ( KeyFrameSet::const_iterator it2 = set.begin(); it2 != set.end(); ++it2) {
         double x = it2->getTime();
         RectD zoomKfRect = getKeyFrameBoundingRectCanonical(dopeSheetZoomContext, x, visualRectCenterYCanonical);
 
         if ( canonicalRect.intersects(zoomKfRect) ) {
-            KeyFrameWithString k;
-            k.key = *it2;
-            if (stringAnim) {
-                stringAnim->stringFromInterpolatedIndex(it2->getValue(), &k.string);
-            }
-            outKeys.insert(k);
+            outKeys.insert(*it2);
         }
     }
     if (!outKeys.empty()) {
@@ -1376,7 +1369,7 @@ AnimationModuleViewPrivate::dopeSheetMousePressEvent(QMouseEvent *e)
                     animItem = isKnob;
                 }
                 if (animItem) {
-                    KeyFrameWithStringSet keysUnderMouse = isNearByKeyframe(animItem, dimension, view, e->pos());
+                    KeyFrameSet keysUnderMouse = isNearByKeyframe(animItem, dimension, view, e->pos());
 
                     if (!keysUnderMouse.empty()) {
                         sFlags |= AnimationModuleSelectionModel::SelectionTypeRecurse;
@@ -1466,7 +1459,7 @@ AnimationModuleViewPrivate::dopeSheetAddKeyFrame(const QPoint& p)
         // Cannot add keys on a string knob from the dopesheet
         return true;
     }
-    KeyFrameWithStringSet underMouse = isNearByKeyframe(isAnim, dim, view, p);
+    KeyFrameSet underMouse = isNearByKeyframe(isAnim, dim, view, p);
     if (!underMouse.empty()) {
         // Already  a key
         return false;
@@ -1483,10 +1476,10 @@ AnimationModuleViewPrivate::dopeSheetAddKeyFrame(const QPoint& p)
             for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
                 for (int i = 0; i < nDims; ++i) {
                     AnimItemDimViewIndexID itemKey(isAnim, *it, DimIdx(i));
-                    KeyFrameWithStringSet& keys = keysToAdd[itemKey];
-                    KeyFrameWithString k;
+                    KeyFrameSet& keys = keysToAdd[itemKey];
+                    KeyFrame k;
                     double yCurve = isAnim->evaluateCurve(false /*useExpr*/, keyframeTime, DimIdx(i), *it);
-                    k.key = KeyFrame(keyframeTime, yCurve);
+                    k = KeyFrame(keyframeTime, yCurve);
                     keys.insert(k);
                 }
             }
@@ -1494,10 +1487,10 @@ AnimationModuleViewPrivate::dopeSheetAddKeyFrame(const QPoint& p)
             int nDims = isAnim->getNDimensions();
             for (int i = 0; i < nDims; ++i) {
                 AnimItemDimViewIndexID itemKey(isAnim, ViewIdx(view), DimIdx(i));
-                KeyFrameWithStringSet& keys = keysToAdd[itemKey];
-                KeyFrameWithString k;
+                KeyFrameSet& keys = keysToAdd[itemKey];
+                KeyFrame k;
                 double yCurve = isAnim->evaluateCurve(false /*useExpr*/, keyframeTime, DimIdx(i), ViewIdx(view));
-                k.key = KeyFrame(keyframeTime, yCurve);
+                k = KeyFrame(keyframeTime, yCurve);
                 keys.insert(k);
             }
         }
@@ -1506,19 +1499,19 @@ AnimationModuleViewPrivate::dopeSheetAddKeyFrame(const QPoint& p)
             std::list<ViewIdx> views = isAnim->getViewsList();
             for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
                 AnimItemDimViewIndexID itemKey(isAnim, *it, DimIdx(dim));
-                KeyFrameWithStringSet& keys = keysToAdd[itemKey];
-                KeyFrameWithString k;
+                KeyFrameSet& keys = keysToAdd[itemKey];
+                KeyFrame k;
                 double yCurve = isAnim->evaluateCurve(false /*useExpr*/, keyframeTime, DimIdx(dim), *it);
-                k.key = KeyFrame(keyframeTime, yCurve);
+                k = KeyFrame(keyframeTime, yCurve);
                 keys.insert(k);
 
             }
         } else {
             AnimItemDimViewIndexID itemKey(isAnim, ViewIdx(view), DimIdx(dim));
-            KeyFrameWithStringSet& keys = keysToAdd[itemKey];
-            KeyFrameWithString k;
+            KeyFrameSet& keys = keysToAdd[itemKey];
+            KeyFrame k;
             double yCurve = isAnim->evaluateCurve(false /*useExpr*/, keyframeTime, DimIdx(dim), ViewIdx(view));
-            k.key = KeyFrame(keyframeTime, yCurve);
+            k = KeyFrame(keyframeTime, yCurve);
             keys.insert(k);
         }
 

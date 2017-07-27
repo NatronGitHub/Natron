@@ -526,16 +526,7 @@ KnobHelper::populate()
     KnobBoolBasePtr isBoolBase = toKnobBoolBase(thisKnob);
 
 
-    Curve::CurveTypeEnum curveType = Curve::eCurveTypeDouble;
-    if (isChoice) {
-        curveType = Curve::eCurveTypeIntConstantInterp;
-    } else if (isIntBase) {
-        curveType = Curve::eCurveTypeInt;
-    } else if (isBoolBase) {
-        curveType = Curve::eCurveTypeBool;
-    } else if (isStringBase) {
-        curveType = Curve::eCurveTypeString;
-    }
+    CurveTypeEnum curveType = getKeyFrameDataType();
 
     for (int i = 0; i < _imp->common->dimension; ++i) {
         KnobDimViewBasePtr data = createDimViewData();
@@ -2917,9 +2908,6 @@ initializeValueSerializationStorage(const KnobIPtr& knob,
     }
 
 
-
-
-
     if (!gotValue) {
 
         if (isInt) {
@@ -2943,7 +2931,7 @@ initializeValueSerializationStorage(const KnobIPtr& knob,
             serialization->_serializeValue = (serialization->_value.isString != defValue.value.isString);
 
         } else if (isChoice) {
-            serialization->_value.isString = isChoice->getActiveEntry(view).id;
+            serialization->_value.isString = isChoice->getCurrentEntry(view).id;
             serialization->_serializeValue = (serialization->_value.isString != defValue.value.isString);
         }
     }
@@ -3328,7 +3316,6 @@ KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
         KnobString* isString = dynamic_cast<KnobString*>(this);
         if (isString) {
             TextExtraData* extraData = new TextExtraData;
-            isString->saveAnimation(&extraData->keyframes);
             serialization->_extraData.reset(extraData);
             extraData->fontFamily = isString->getFontFamily();
             extraData->fontSize = isString->getFontSize();
@@ -3401,7 +3388,7 @@ KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
                 {
                     const TextExtraData* data = dynamic_cast<const TextExtraData*>(serialization->_extraData.get());
                     if (data) {
-                        if (!data->keyframes.empty() || data->fontFamily != NATRON_FONT || data->fontSize != KnobString::getDefaultFontPointSize() || data->fontColor[0] != 0 || data->fontColor[1] != 0 || data->fontColor[2] != 0) {
+                        if (data->fontFamily != NATRON_FONT || data->fontSize != KnobString::getDefaultFontPointSize() || data->fontColor[0] != 0 || data->fontColor[1] != 0 || data->fontColor[2] != 0) {
                             mustSerialize = true;
                         }
                     }
@@ -3449,7 +3436,6 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
         if (isString) {
             const TextExtraData* data = dynamic_cast<const TextExtraData*>(serialization->_extraData.get());
             if (data) {
-                isString->loadAnimation(data->keyframes);
                 isString->setFontColor(data->fontColor[0], data->fontColor[1], data->fontColor[2]);
                 isString->setFontFamily(data->fontFamily);
                 isString->setFontSize(std::max(data->fontSize,1));
@@ -5431,157 +5417,6 @@ KnobHolder::isFullAnimationToHashEnabled() const
 {
     return false;
 }
-
-
-/***************************STRING ANIMATION******************************************/
-
-
-AnimatingKnobStringHelper::AnimatingKnobStringHelper(const KnobHolderPtr& holder,
-                                                     const std::string &name,
-                                                     int dimension)
-: KnobStringBase(holder, name, dimension)
-{
-
-}
-
-AnimatingKnobStringHelper::AnimatingKnobStringHelper(const KnobHolderPtr& holder, const KnobIPtr& mainInstance)
-: KnobStringBase(holder, mainInstance)
-{
-
-}
-
-AnimatingKnobStringHelper::~AnimatingKnobStringHelper()
-{
-}
-
-KnobDimViewBasePtr
-AnimatingKnobStringHelper::createDimViewData() const
-{
-    StringKnobDimViewPtr ret(new StringKnobDimView);
-    ret->stringAnimation.reset(new StringAnimationManager());
-    return ret;
-}
-
-StringAnimationManagerPtr
-AnimatingKnobStringHelper::getStringAnimation(ViewIdx view) const
-{
-    StringKnobDimViewPtr data = toStringKnobDImView(getDataForDimView(DimIdx(0), view));
-    if (!data) {
-        return StringAnimationManagerPtr();
-    }
-    return data->stringAnimation;
-}
-
-
-void
-AnimatingKnobStringHelper::insertKeyframe(TimeValue time,
-                                                 ViewIdx view,
-                                                 const std::string & v,
-                                                 double* returnValue)
-{
-    StringKnobDimViewPtr data = toStringKnobDImView(getDataForDimView(DimIdx(0), view));
-    if (!data) {
-        return;
-    }
-    data->stringAnimation->insertKeyFrame(time, v, returnValue);
-}
-
-void
-AnimatingKnobStringHelper::stringFromInterpolatedValue(double interpolated,
-                                                       ViewIdx view,
-                                                       std::string* returnValue) const
-{
-    Q_UNUSED(view);
-    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
-    StringKnobDimViewPtr data = toStringKnobDImView(getDataForDimView(DimIdx(0), view_i));
-    if (!data) {
-        return;
-    }
-    data->stringAnimation->stringFromInterpolatedIndex(interpolated, returnValue);
-}
-
-
-std::string
-AnimatingKnobStringHelper::getStringAtTime(TimeValue time,
-                                           ViewIdx view)
-{
-    std::string ret;
-    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
-    StringKnobDimViewPtr data = toStringKnobDImView(getDataForDimView(DimIdx(0), view_i));
-    if (!data) {
-        return ret;
-    }
-
-    bool succeeded = false;
-    if ( data->stringAnimation->hasCustomInterp() ) {
-        try {
-            succeeded = data->stringAnimation->customInterpolation(time, &ret);
-        } catch (...) {
-        }
-
-    }
-    if (!succeeded) {
-        ret = getValue(DimIdx(0), view_i);
-    }
-
-    return ret;
-}
-
-void
-AnimatingKnobStringHelper::setCustomInterpolation(customParamInterpolationV1Entry_t func,
-                                                  void* ofxParamHandle)
-{
-    StringKnobDimViewPtr data = toStringKnobDImView(getDataForDimView(DimIdx(0), ViewIdx(0)));
-    if (!data) {
-        return;
-    }
-    data->stringAnimation->setCustomInterpolation(func, ofxParamHandle, getName());
-}
-
-void
-AnimatingKnobStringHelper::loadAnimation(const std::map<std::string,std::map<double, std::string> > & keyframes)
-{
-    std::vector<std::string> projectViews;
-    if (getHolder() && getHolder()->getApp()) {
-        projectViews = getHolder()->getApp()->getProject()->getProjectViewNames();
-    }
-    for (std::map<std::string,std::map<double, std::string> >::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
-        ViewIdx view_i(0);
-        Project::getViewIndex(projectViews, it->first, &view_i);
-        StringKnobDimViewPtr data = toStringKnobDImView(getDataForDimView(DimIdx(0), view_i));
-        if (!data) {
-            continue;
-        }
-        data->stringAnimation->load(it->second);
-    }
-}
-
-void
-AnimatingKnobStringHelper::saveAnimation(std::map<std::string,std::map<double, std::string> >* keyframes) const
-{
-    std::list<ViewIdx> views = getViewsList();
-    std::vector<std::string> projectViews;
-    if (getHolder() && getHolder()->getApp()) {
-        projectViews = getHolder()->getApp()->getProject()->getProjectViewNames();
-    }
-    for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
-        StringKnobDimViewPtr data = toStringKnobDImView(getDataForDimView(DimIdx(0), *it));
-        if (!data) {
-            continue;
-        }
-
-        std::string viewName;
-        if (*it >= 0 && *it < (int)projectViews.size()) {
-            viewName = projectViews[*it];
-        } else {
-            viewName = "Main";
-        }
-        std::map<double, std::string> &keyframesForView = (*keyframes)[viewName];
-        data->stringAnimation->save(&keyframesForView);
-    }
-}
-
-
 
 
 /***************************KNOB EXPLICIT TEMPLATE INSTANTIATION******************************************/

@@ -854,35 +854,30 @@ RotoStrokeItem::appendPoint(const RotoPoint& p)
         qDebug("t[%d]=%g", nk, t);
 
 
-        bool addKeyFrameOk; // did we add a new keyframe (normally yes, but just in case)
+        ValueChangedReturnCodeEnum addKeyFrameOk; // did we add a new keyframe (normally yes, but just in case)
         int ki; // index of the new keyframe (normally nk, but just in case)
         {
             KeyFrame k;
             k.setTime(TimeValue(t));
             k.setValue(p.pos().x);
-            addKeyFrameOk = stroke->xCurve->addKeyFrame(k);
-            ki = ( addKeyFrameOk ? nk : (nk - 1) );
+            addKeyFrameOk = stroke->xCurve->setOrAddKeyframe(k);
+            ki = ( addKeyFrameOk == eValueChangedReturnCodeKeyframeAdded ? nk : (nk - 1) );
         }
         {
             KeyFrame k;
             k.setTime(TimeValue(t));
             k.setValue(p.pos().y);
-            bool aok = stroke->yCurve->addKeyFrame(k);
-            assert(aok == addKeyFrameOk);
-            if (aok != addKeyFrameOk) {
-                throw std::logic_error("RotoStrokeItem::appendPoint");
-            }
+            ValueChangedReturnCodeEnum addedKey = stroke->yCurve->setOrAddKeyframe(k);
+            assert(addedKey == eValueChangedReturnCodeKeyframeAdded);
+
         }
 
         {
             KeyFrame k;
             k.setTime(TimeValue(t));
             k.setValue( p.pressure() );
-            bool aok = stroke->pressureCurve->addKeyFrame(k);
-            assert(aok == addKeyFrameOk);
-            if (aok != addKeyFrameOk) {
-                throw std::logic_error("RotoStrokeItem::appendPoint");
-            }
+            ValueChangedReturnCodeEnum addedKey = stroke->pressureCurve->setOrAddKeyframe(k);
+            assert(addedKey == eValueChangedReturnCodeKeyframeAdded);
         }
         // While editing a stroke, use linear tangents because we don't have much informations.
         // When the stroke ends, we set all points interpolation to catmull-rom
@@ -912,35 +907,31 @@ RotoStrokeItem::setStrokes(const std::list<std::list<RotoPoint> >& strokes)
         for (std::list<RotoPoint>::const_iterator it2 = it->begin(); it2 != it->end(); ++it2) {
 
             int nk = s.xCurve->getKeyFramesCount();
-            bool addKeyFrameOk; // did we add a new keyframe (normally yes, but just in case)
+            ValueChangedReturnCodeEnum addKeyFrameOk; // did we add a new keyframe (normally yes, but just in case)
             int ki; // index of the new keyframe (normally nk, but just in case)
             {
                 KeyFrame k;
                 k.setTime(it2->timestamp());
                 k.setValue(it2->pos().x);
-                addKeyFrameOk = s.xCurve->addKeyFrame(k);
-                ki = ( addKeyFrameOk ? nk : (nk - 1) );
+                addKeyFrameOk = s.xCurve->setOrAddKeyframe(k);
+                ki = ( addKeyFrameOk == eValueChangedReturnCodeKeyframeAdded ? nk : (nk - 1) );
             }
             {
                 KeyFrame k;
                 k.setTime(it2->timestamp());
                 k.setValue(it2->pos().y);
-                bool aok = s.yCurve->addKeyFrame(k);
-                assert(aok == addKeyFrameOk);
-                if (aok != addKeyFrameOk) {
-                    throw std::logic_error("RotoStrokeItem::setStrokes");
-                }
+                ValueChangedReturnCodeEnum aok = s.yCurve->setOrAddKeyframe(k);
+                assert(aok == eValueChangedReturnCodeKeyframeAdded);
+
             }
 
             {
                 KeyFrame k;
                 k.setTime(it2->timestamp());
                 k.setValue( it2->pressure());
-                bool aok = s.pressureCurve->addKeyFrame(k);
-                assert(aok == addKeyFrameOk);
-                if (aok != addKeyFrameOk) {
-                    throw std::logic_error("RotoStrokeItem::setStrokes");
-                }
+                ValueChangedReturnCodeEnum aok = s.pressureCurve->setOrAddKeyframe(k);
+                assert(aok == eValueChangedReturnCodeKeyframeAdded);
+           
             }
             // Use CatmullRom interpolation, which means that the tangent may be modified by the next point on the curve.
             // In a previous version, the previous keyframe was set to Free so its tangents don't get overwritten, but this caused oscillations.

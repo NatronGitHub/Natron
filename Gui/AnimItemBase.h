@@ -99,29 +99,14 @@ struct AnimItemDimViewIndexID_CompareLess
 };
 
 
-struct KeyFrameWithString
-{
-    KeyFrame key;
-    std::string string;
-};
-
-struct KeyFrameWithString_CompareLess
-{
-    bool operator()(const KeyFrameWithString& lhs, const KeyFrameWithString& rhs) const
-    {
-        return lhs.key.getTime() < rhs.key.getTime();
-    }
-};
-
 struct AnimItemDimViewKeyFrame
 {
     AnimItemDimViewIndexID id;
-    KeyFrameWithString key;
+    KeyFrame key;
 };
 
-typedef std::set<KeyFrameWithString, KeyFrameWithString_CompareLess> KeyFrameWithStringSet;
 
-typedef std::map<AnimItemDimViewIndexID, KeyFrameWithStringSet, AnimItemDimViewIndexID_CompareLess> AnimItemDimViewKeyFramesMap;
+typedef std::map<AnimItemDimViewIndexID, KeyFrameSet, AnimItemDimViewIndexID_CompareLess> AnimItemDimViewKeyFramesMap;
 
 class AnimItemBasePrivate;
 class AnimItemBase : public boost::enable_shared_from_this<AnimItemBase>
@@ -207,7 +192,7 @@ public:
      * respectively. In case all is passed to either dimension or view, the value of the
      * keyframes is irrelevant.
      **/
-    void getKeyframes(DimSpec dimension, ViewSetSpec view, GetKeyframesTypeEnum type, KeyFrameWithStringSet *result) const;
+    void getKeyframes(DimSpec dimension, ViewSetSpec view, GetKeyframesTypeEnum type, KeyFrameSet *result) const;
 
     /**
      * @brief Same as getKeyframes above, except that each dimension/view pair has its own keyframe set 

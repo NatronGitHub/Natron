@@ -47,7 +47,6 @@
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/KnobTypes.h"
-#include "Engine/StringAnimationManager.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
 
@@ -65,23 +64,25 @@ static void convertVariantTimeValuePairToTypedList(const std::list<VariantTimeVa
 }
 
 template <typename T>
-static void convertVariantKeyStringSetToTypedList(const KeyFrameWithStringSet& inList,
+static void convertVariantKeyStringSetToTypedList(const KeyFrameSet& inList,
                                                   double offset,
                                                   std::list<TimeValuePair<T> >* outList)
 {
-    for (KeyFrameWithStringSet::const_iterator it = inList.begin(); it!=inList.end(); ++it) {
-        TimeValuePair<T> p(TimeValue(it->key.getTime() + offset), it->key.getValue());
+    for (KeyFrameSet::const_iterator it = inList.begin(); it!=inList.end(); ++it) {
+        TimeValuePair<T> p(TimeValue(it->getTime() + offset), it->getValue());
         outList->push_back(p);
     }
 }
 
 template <>
-void convertVariantKeyStringSetToTypedList(const KeyFrameWithStringSet& inList,
+void convertVariantKeyStringSetToTypedList(const KeyFrameSet& inList,
                                            double offset,
                                            std::list<TimeValuePair<std::string> >* outList)
 {
-    for (KeyFrameWithStringSet::const_iterator it = inList.begin(); it!=inList.end(); ++it) {
-        TimeValuePair<std::string> p(TimeValue(it->key.getTime() + offset), it->string);
+    for (KeyFrameSet::const_iterator it = inList.begin(); it!=inList.end(); ++it) {
+        std::string stringValue;
+        it->getPropertySafe(kKeyFramePropString, 0, &stringValue);
+        TimeValuePair<std::string> p(TimeValue(it->getTime() + offset), stringValue);
         outList->push_back(p);
     }
 }
@@ -105,11 +106,11 @@ removeKeyFrames(const AnimItemDimViewKeyFramesMap& keys, const AnimItemBasePtr d
             continue;
         }
 
-        const KeyFrameWithStringSet& keyStringSet = it->second;
+        const KeyFrameSet& keyStringSet = it->second;
 
         std::list<double> keyTimes;
-        for (KeyFrameWithStringSet ::const_iterator it2 = keyStringSet.begin(); it2 != keyStringSet.end(); ++it2) {
-            keyTimes.push_back(it2->key.getTime());
+        for (KeyFrameSet ::const_iterator it2 = keyStringSet.begin(); it2 != keyStringSet.end(); ++it2) {
+            keyTimes.push_back(it2->getTime());
         }
         obj->deleteValuesAtTime(keyTimes, it->first.view, it->first.dim, eValueChangedReasonUserEdited);
 
@@ -127,7 +128,7 @@ addKeyFrames(const AnimItemDimViewKeyFramesMap& keys,
     for (AnimItemDimViewKeyFramesMap::const_iterator it = keys.begin(); it != keys.end(); ++it) {
 
 
-        const KeyFrameWithStringSet& keyStringSet = it->second;
+        const KeyFrameSet& keyStringSet = it->second;
 
         DimSpec dim;
         ViewSetSpec view;
@@ -150,30 +151,30 @@ addKeyFrames(const AnimItemDimViewKeyFramesMap& keys,
             obj->removeAnimation(view, dim, eValueChangedReasonUserEdited);
         }
 
-        AnimatingObjectI::KeyframeDataTypeEnum dataType = obj->getKeyFrameDataType();
+        CurveTypeEnum dataType = obj->getKeyFrameDataType();
         switch (dataType) {
-            case AnimatingObjectI::eKeyframeDataTypeNone:
-            case AnimatingObjectI::eKeyframeDataTypeDouble:
+            case eCurveTypeDouble:
             {
                 std::list<DoubleTimeValuePair> keysList;
                 convertVariantKeyStringSetToTypedList<double>(keyStringSet, offset, &keysList);
                 obj->setMultipleDoubleValueAtTime(keysList, view, dim);
             }   break;
-            case AnimatingObjectI::eKeyframeDataTypeBool:
+            case eCurveTypeBool:
             {
                 std::list<BoolTimeValuePair> keysList;
                 convertVariantKeyStringSetToTypedList<bool>(keyStringSet, offset, &keysList);
                 obj->setMultipleBoolValueAtTime(keysList, view, dim);
 
             }   break;
-            case AnimatingObjectI::eKeyframeDataTypeString:
+            case eCurveTypeString:
             {
                 std::list<StringTimeValuePair> keysList;
                 convertVariantKeyStringSetToTypedList<std::string>(keyStringSet, offset, &keysList);
                 obj->setMultipleStringValueAtTime(keysList, view, dim);
 
             }   break;
-            case AnimatingObjectI::eKeyframeDataTypeInt:
+            case eCurveTypeInt:
+            case eCurveTypeChoice:
             {
                 std::list<IntTimeValuePair> keysList;
                 convertVariantKeyStringSetToTypedList<int>(keyStringSet, offset, &keysList);
@@ -254,7 +255,7 @@ static void keysWithOldCurveSetClone(const ItemDimViewCurveSet& oldCurves)
         }
 
         // Clone the old curve state
-        obj->cloneCurve(it->key.view, it->key.dim, *it->oldCurveState, 0 /*offset*/, 0 /*range*/, 0 /*stringAnimation*/);
+        obj->cloneCurve(it->key.view, it->key.dim, *it->oldCurveState, 0 /*offset*/, 0 /*range*/);
     }
 }
 
@@ -353,7 +354,7 @@ PasteKeysCommand::PasteKeysCommand(const AnimItemDimViewKeyFramesMap & keys,
             if (it->second.empty()) {
                 continue;
             }
-            double minTimeForCurve = it->second.begin()->key.getTime();
+            double minTimeForCurve = it->second.begin()->getTime();
             minSelectedKeyTime = std::min(minSelectedKeyTime, minTimeForCurve);
         }
         if (minSelectedKeyTime != std::numeric_limits<double>::infinity()) {
@@ -510,10 +511,10 @@ WarpKeysCommand::animMapToInternalMap(const AnimItemDimViewKeyFramesMap& keys, K
         CurvePtr curve = it->first.item->getCurve(it->first.dim, it->first.view);
         assert(curve);
         KeyFrameWithStringIndexSet& newSet = (*internalMap)[it->first];
-        for (KeyFrameWithStringSet::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+        for (KeyFrameSet::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             KeyFrameWithStringIndex k;
             k.k = *it2;
-            k.index = curve->keyFrameIndex(it2->key.getTime());
+            k.index = curve->keyFrameIndex(it2->getTime());
             assert(k.index != -1);
             newSet.insert(k);
         }
@@ -524,7 +525,7 @@ void
 WarpKeysCommand::internalMapToKeysMap(const KeyFramesWithStringIndicesMap& internalMap, AnimItemDimViewKeyFramesMap* keys)
 {
     for (KeyFramesWithStringIndicesMap::const_iterator it = internalMap.begin(); it!=internalMap.end(); ++it) {
-        KeyFrameWithStringSet& newSet = (*keys)[it->first];
+        KeyFrameSet& newSet = (*keys)[it->first];
         for (KeyFrameWithStringIndexSet::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             newSet.insert(it2->k);
         }
@@ -582,12 +583,12 @@ WarpKeysCommand::testWarpOnKeys(const AnimItemDimViewKeyFramesMap& inKeys, const
         tmpCurve.clone(*originalCurve);
         
         
-        const KeyFrameWithStringSet& keyStringSet = it->second;
+        const KeyFrameSet& keyStringSet = it->second;
         
         // Make-up keyframe times to warp for this item/view/dim
         std::list<double> keyTimes;
-        for (KeyFrameWithStringSet ::const_iterator it2 = keyStringSet.begin(); it2 != keyStringSet.end(); ++it2) {
-            keyTimes.push_back(it2->key.getTime());
+        for (KeyFrameSet ::const_iterator it2 = keyStringSet.begin(); it2 != keyStringSet.end(); ++it2) {
+            keyTimes.push_back(it2->getTime());
         }
 
         
@@ -639,7 +640,7 @@ WarpKeysCommand::warpKeys()
         // Make-up keyframe times to warp for this item/view/dim
         std::list<double> keyTimes;
         for (KeyFrameWithStringIndexSet ::const_iterator it2 = keyStringSet.begin(); it2 != keyStringSet.end(); ++it2) {
-            keyTimes.push_back(it2->k.key.getTime());
+            keyTimes.push_back(it2->k.getTime());
         }
 
         // Warp keys...
@@ -655,10 +656,9 @@ WarpKeysCommand::warpKeys()
 
                 // Copy the new key, its time and Y value may have changed
                 KeyFrameWithStringIndex k;
-                k.k.key = newKeyframe[i];
+                k.k = newKeyframe[i];
 
                 // Copy index and string - they did not change
-                k.k.string = keysIt->k.string;
                 k.index = keysIt->index;
 
                 newKeyStringSet.insert(k);
@@ -816,8 +816,8 @@ SetKeysInterpolationCommand::redo()
         }
 
         std::list<double> keyTimes;
-        for (KeyFrameWithStringSet ::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            keyTimes.push_back(it2->key.getTime());
+        for (KeyFrameSet::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            keyTimes.push_back(it2->getTime());
         }
 
         obj->setInterpolationAtTimes(it->first.view, it->first.dim, keyTimes, _newInterpolation);
@@ -852,7 +852,7 @@ MoveTangentCommand::MoveTangentCommand(const AnimationModuleBasePtr& model,
     assert(curve);
 
     KeyFrameSet keys = curve->getKeyFrames_mt_safe();
-    KeyFrameSet::const_iterator cur = keys.find(keyframe.key.key);
+    KeyFrameSet::const_iterator cur = keys.find(keyframe.key);
 
     assert( cur != keys.end() );
 
@@ -871,7 +871,7 @@ MoveTangentCommand::MoveTangentCommand(const AnimationModuleBasePtr& model,
     // handle first and last keyframe correctly:
     // - if their interpolation was eKeyframeTypeCatmullRom or eKeyframeTypeCubic, then it becomes eKeyframeTypeFree
     // - in all other cases it becomes eKeyframeTypeBroken
-    KeyframeTypeEnum interp = keyframe.key.key.getInterpolation();
+    KeyframeTypeEnum interp = keyframe.key.getInterpolation();
     bool keyframeIsFirstOrLast = ( prev == keys.end() || next == keys.end() );
     bool interpIsNotBroken = (interp != eKeyframeTypeBroken);
     bool interpIsCatmullRomOrCubicOrFree = (interp == eKeyframeTypeCatmullRom ||
@@ -893,16 +893,16 @@ MoveTangentCommand::MoveTangentCommand(const AnimationModuleBasePtr& model,
     double derivative = dy / dx;
 
     if (_setBoth) {
-        _newKey.key.key.setInterpolation(eKeyframeTypeFree);
-        _newKey.key.key.setLeftDerivative(derivative);
-        _newKey.key.key.setRightDerivative(derivative);
+        _newKey.key.setInterpolation(eKeyframeTypeFree);
+        _newKey.key.setLeftDerivative(derivative);
+        _newKey.key.setRightDerivative(derivative);
     } else {
         if (deriv == eSelectedTangentLeft) {
-            _newKey.key.key.setLeftDerivative(derivative);
+            _newKey.key.setLeftDerivative(derivative);
         } else {
-            _newKey.key.key.setRightDerivative(derivative);
+            _newKey.key.setRightDerivative(derivative);
         }
-        _newKey.key.key.setInterpolation(eKeyframeTypeBroken);
+        _newKey.key.setInterpolation(eKeyframeTypeBroken);
     }
 
     setText( tr("Move KeyFrame Slope") );
@@ -922,22 +922,22 @@ MoveTangentCommand::MoveTangentCommand(const AnimationModuleBasePtr& model,
 , _setBoth(true)
 , _isFirstRedo(true)
 {
-    KeyframeTypeEnum newInterp = _newKey.key.key.getInterpolation() == eKeyframeTypeBroken ? eKeyframeTypeBroken : eKeyframeTypeFree;
-    _newKey.key.key.setInterpolation(newInterp);
-    _oldKey.key.key.setInterpolation(newInterp);
+    KeyframeTypeEnum newInterp = _newKey.key.getInterpolation() == eKeyframeTypeBroken ? eKeyframeTypeBroken : eKeyframeTypeFree;
+    _newKey.key.setInterpolation(newInterp);
+    _oldKey.key.setInterpolation(newInterp);
     _setBoth = newInterp == eKeyframeTypeFree;
 
     switch (deriv) {
         case eSelectedTangentLeft:
-            _newKey.key.key.setLeftDerivative(derivative);
+            _newKey.key.setLeftDerivative(derivative);
             if (newInterp != eKeyframeTypeBroken) {
-                _newKey.key.key.setRightDerivative(derivative);
+                _newKey.key.setRightDerivative(derivative);
             }
             break;
         case eSelectedTangentRight:
-            _newKey.key.key.setRightDerivative(derivative);
+            _newKey.key.setRightDerivative(derivative);
             if (newInterp != eKeyframeTypeBroken) {
-               _newKey.key.key.setLeftDerivative(derivative);
+               _newKey.key.setLeftDerivative(derivative);
             }
         default:
             break;
@@ -954,16 +954,16 @@ MoveTangentCommand::setNewDerivatives(bool undo)
         return;
     }
 
-    double left = undo ? _oldKey.key.key.getLeftDerivative() : _newKey.key.key.getLeftDerivative();
-    double right = undo ? _oldKey.key.key.getRightDerivative() : _newKey.key.key.getRightDerivative();
-    KeyframeTypeEnum interp = undo ? _oldKey.key.key.getInterpolation() : _newKey.key.key.getInterpolation();
+    double left = undo ? _oldKey.key.getLeftDerivative() : _newKey.key.getLeftDerivative();
+    double right = undo ? _oldKey.key.getRightDerivative() : _newKey.key.getRightDerivative();
+    KeyframeTypeEnum interp = undo ? _oldKey.key.getInterpolation() : _newKey.key.getInterpolation();
     if (_setBoth) {
-        obj->setLeftAndRightDerivativesAtTime(_oldKey.id.view, _oldKey.id.dim, _oldKey.key.key.getTime(), left, right);
+        obj->setLeftAndRightDerivativesAtTime(_oldKey.id.view, _oldKey.id.dim, _oldKey.key.getTime(), left, right);
     } else {
         bool isLeft = _deriv == eSelectedTangentLeft;
-        obj->setDerivativeAtTime(_oldKey.id.view, _oldKey.id.dim, _oldKey.key.key.getTime(),  isLeft ? left : right, isLeft);
+        obj->setDerivativeAtTime(_oldKey.id.view, _oldKey.id.dim, _oldKey.key.getTime(),  isLeft ? left : right, isLeft);
     }
-    obj->setInterpolationAtTime(_oldKey.id.view, _oldKey.id.dim, _oldKey.key.key.getTime(),  interp);
+    obj->setInterpolationAtTime(_oldKey.id.view, _oldKey.id.dim, _oldKey.key.getTime(),  interp);
 
 }
 
@@ -1008,13 +1008,13 @@ MoveTangentCommand::mergeWith(const QUndoCommand * command)
         return false;
     }
 
-    if (cmd->_newKey.id.item != _newKey.id.item || cmd->_newKey.id.dim != _newKey.id.dim || cmd->_newKey.id.view != _newKey.id.view || cmd->_newKey.key.key.getTime() != _newKey.key.key.getTime()) {
+    if (cmd->_newKey.id.item != _newKey.id.item || cmd->_newKey.id.dim != _newKey.id.dim || cmd->_newKey.id.view != _newKey.id.view || cmd->_newKey.key.getTime() != _newKey.key.getTime()) {
         return false;
     }
 
-    _newKey.key.key.setInterpolation(cmd->_newKey.key.key.getInterpolation());
-    _newKey.key.key.setLeftDerivative(cmd->_newKey.key.key.getLeftDerivative());
-    _newKey.key.key.setRightDerivative(cmd->_newKey.key.key.getRightDerivative());
+    _newKey.key.setInterpolation(cmd->_newKey.key.getInterpolation());
+    _newKey.key.setLeftDerivative(cmd->_newKey.key.getLeftDerivative());
+    _newKey.key.setRightDerivative(cmd->_newKey.key.getRightDerivative());
 
     return true;
 

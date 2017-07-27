@@ -78,7 +78,8 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 /************************************KEYFRAME************************************/
 
 KeyFrame::KeyFrame()
-    : _time(0.)
+    : PropertiesHolder()
+    , _time(0.)
     , _value(0.)
     , _leftDerivative(0.)
     , _rightDerivative(0.)
@@ -91,7 +92,8 @@ KeyFrame::KeyFrame(double time,
                    double leftDerivative,
                    double rightDerivative,
                    KeyframeTypeEnum interpolation)
-    : _time(time)
+    : PropertiesHolder()
+    , _time(time)
     , _value(initialValue)
     , _leftDerivative(leftDerivative)
     , _rightDerivative(rightDerivative)
@@ -104,7 +106,8 @@ KeyFrame::KeyFrame(double time,
 }
 
 KeyFrame::KeyFrame(const KeyFrame & other)
-    : _time(other._time)
+    : PropertiesHolder(other)
+    , _time(other._time)
     , _value(other._value)
     , _leftDerivative(other._leftDerivative)
     , _rightDerivative(other._rightDerivative)
@@ -119,6 +122,7 @@ KeyFrame::KeyFrame(const KeyFrame & other)
 void
 KeyFrame::operator=(const KeyFrame & o)
 {
+    cloneProperties(o);
     _time = o._time;
     _value = o._value;
     _leftDerivative = o._leftDerivative;
@@ -221,10 +225,21 @@ Curve::~Curve()
     clearKeyFrames();
 }
 
-Curve::CurveTypeEnum
+CurveTypeEnum
 Curve::getType() const
 {
     return _imp->type;
+}
+
+void
+Curve::setInterpolator(const KeyFrameInterpolatorPtr& interpolator)
+{
+    assert(interpolator);
+    if (!interpolator) {
+        return;
+    }
+    QMutexLocker l(&_imp->_lock);
+    _imp->interpolator = interpolator;
 }
 
 void
@@ -260,7 +275,13 @@ Curve::areKeyFramesTimeClampedToIntegers() const
 {
     QMutexLocker l(&_imp->_lock);
 
-    return _imp->type != eCurveTypeParametric;
+    return _imp->clampKeyFramesTimeToIntegers;
+}
+
+void
+Curve::setKeyFramesTimeClampedToIntegers(bool enabled)
+{
+    _imp->clampKeyFramesTimeToIntegers = enabled;
 }
 
 void
@@ -411,83 +432,70 @@ Curve::getMaximumTimeCovered() const
     return ( *_imp->keyFrames.rbegin() ).getTime();
 }
 
-bool
-Curve::addKeyFrame(KeyFrame key)
-{
-    QMutexLocker l(&_imp->_lock);
 
-    // the default interpolation for bool, string, choice, int is constant
-    if ( (_imp->type == Curve::eCurveTypeBool) || (_imp->type == Curve::eCurveTypeString) ||
-         (_imp->type == Curve::eCurveTypeInt) ||
-         (_imp->type == Curve::eCurveTypeIntConstantInterp) ) {
-        key.setInterpolation(eKeyframeTypeConstant);
-    }
-
-
-    std::pair<KeyFrameSet::iterator, bool> it = addKeyFrameNoUpdate(key);
-
-    it.first = evaluateCurveChanged(eCurveChangedReasonKeyframeChanged, it.first);
-    l.unlock();
-
-    return it.second;
-}
 
 ValueChangedReturnCodeEnum
-Curve::setOrAddKeyframe(KeyFrame key)
+Curve::setOrAddKeyframe(const KeyFrame& key, int *keyframeIndex)
 {
-    if ( (_imp->type == Curve::eCurveTypeBool) || (_imp->type == Curve::eCurveTypeString) ||
-        ( _imp->type == Curve::eCurveTypeIntConstantInterp) ) {
-        key.setInterpolation(eKeyframeTypeConstant);
-    }
+
 
     QMutexLocker l(&_imp->_lock);
-    std::pair<KeyFrameSet::iterator, bool> it = addKeyFrameNoUpdate(key);
-    ValueChangedReturnCodeEnum ret = eValueChangedReturnCodeNothingChanged;
-    if (!it.second) {
-        if (it.first->getValue() != key.getValue() || it.first->getTime() == key.getTime()) {
-            ret = eValueChangedReturnCodeKeyframeModified;
-        }
-        _imp->keyFrames.erase(it.first);
-        it = addKeyFrameNoUpdate(key);
+
+    std::pair<KeyFrameSet::iterator, ValueChangedReturnCodeEnum> it;
+
+    if ( (_imp->type == eCurveTypeBool) || (_imp->type == eCurveTypeString) || ( _imp->type == eCurveTypeChoice) ) {
+        KeyFrame copy = key;
+        copy.setInterpolation(eKeyframeTypeConstant);
+        it = setOrUpdateKeyframeInternal(copy);
     } else {
-        ret = eValueChangedReturnCodeKeyframeAdded;
+        it = setOrUpdateKeyframeInternal(key);
     }
-    assert(it.second);
+
+    assert(it.first != _imp->keyFrames.end());
+
     it.first = evaluateCurveChanged(eCurveChangedReasonKeyframeChanged, it.first);
 
-    return ret;
+    if (keyframeIndex) {
+        *keyframeIndex = std::distance(_imp->keyFrames.begin(), it.first);
+    }
+
+    return it.second;
     
 }
 
-std::pair<KeyFrameSet::iterator, bool> Curve::addKeyFrameNoUpdate(const KeyFrame & cp)
+std::pair<KeyFrameSet::iterator, ValueChangedReturnCodeEnum> Curve::setOrUpdateKeyframeInternal(const KeyFrame & cp)
 {
     // PRIVATE - should not lock
-    if (_imp->type != eCurveTypeParametric) { //< if keyframes are clamped to integers
+    if (_imp->clampKeyFramesTimeToIntegers) {
         std::pair<KeyFrameSet::iterator, bool> newKey = _imp->keyFrames.insert(cp);
         // keyframe at this time exists, erase and insert again
-        bool addedKey = true;
-        if (!newKey.second) {
-            _imp->keyFrames.erase(newKey.first);
-            newKey = _imp->keyFrames.insert(cp);
-            assert(newKey.second);
-            addedKey = false;
+        if (newKey.second) {
+            return std::make_pair(newKey.first, eValueChangedReturnCodeKeyframeAdded);
+        } else {
+            if (*newKey.first == cp) {
+                return std::make_pair(newKey.first, eValueChangedReturnCodeNothingChanged);
+            } else {
+                _imp->keyFrames.erase(newKey.first);
+                newKey = _imp->keyFrames.insert(cp);
+                assert(newKey.second);
+                return std::make_pair(newKey.first, eValueChangedReturnCodeKeyframeModified);
+            }
         }
-
-        return std::make_pair(newKey.first, addedKey);
     } else {
-        bool addedKey = true;
         double paramEps = NATRON_CURVE_X_SPACING_EPSILON;
+        ValueChangedReturnCodeEnum retCode = eValueChangedReturnCodeKeyframeAdded;
         for (KeyFrameSet::iterator it = _imp->keyFrames.begin(); it != _imp->keyFrames.end(); ++it) {
             if (std::abs( it->getTime() - cp.getTime() ) < paramEps) {
+                if (*it == cp) {
+                    return std::make_pair(it, eValueChangedReturnCodeNothingChanged);
+                }
                 _imp->keyFrames.erase(it);
-                addedKey = false;
+                retCode = eValueChangedReturnCodeKeyframeModified;
                 break;
             }
         }
         std::pair<KeyFrameSet::iterator, bool> newKey = _imp->keyFrames.insert(cp);
-        newKey.second = addedKey;
-
-        return newKey;
+        return std::make_pair(newKey.first, retCode);
     }
 }
 
@@ -787,192 +795,65 @@ Curve::getKeyFrameWithTime(TimeValue time,
     return true;
 }
 
-/// compute interpolation parameters from keyframes and an iterator
-/// to the next keyframe (the first with time > t)
-static void
-interParams(const KeyFrameSet &keyFrames,
-            bool isPeriodic,
-            double xMin,
-            double xMax,
-            TimeValue *t,
-            KeyFrameSet::const_iterator itup,
-            TimeValue *tcur,
-            double *vcur,
-            double *vcurDerivRight,
-            KeyframeTypeEnum *interp,
-            TimeValue *tnext,
-            double *vnext,
-            double *vnextDerivLeft,
-            KeyframeTypeEnum *interpNext)
-{
 
-    assert(keyFrames.size() >= 1);
-    assert( itup == keyFrames.end() || *t < itup->getTime() );
-    double period = xMax - xMin;
-    if (isPeriodic) {
-        // if the curve is periodic, bring back t in the curve keyframes range
-        double minKeyFrameX = keyFrames.begin()->getTime() + xMin;
-        assert(xMin < xMax);
-        if (*t < minKeyFrameX || *t > minKeyFrameX + period) {
-            // This will bring t either in minTime <= t <= maxTime or t in the range minTime - (maxTime - minTime) < t < minTime
-            *t = TimeValue(std::fmod(*t - minKeyFrameX, period ) + minKeyFrameX);
-            if (*t < minKeyFrameX) {
-                *t = TimeValue(*t + period);
-            }
-            assert(*t >= minKeyFrameX && *t <= minKeyFrameX + period);
-        }
-        itup = keyFrames.upper_bound(KeyFrame(*t, 0.));
-    }
-    if ( itup == keyFrames.begin() ) {
-        // We are in the case where all keys have a greater time
-        // If periodic, we are in between xMin and the first keyframe
-        if (isPeriodic) {
-            *tnext = itup->getTime();
-            *vnext = itup->getValue();
-            *vnextDerivLeft = itup->getLeftDerivative();
-            *interpNext = itup->getInterpolation();
-            KeyFrameSet::const_reverse_iterator last =  keyFrames.rbegin();
-            *tcur = TimeValue(last->getTime() - period);
-            *vcur = last->getValue();
-            *vcurDerivRight = last->getRightDerivative();
-            *interp = last->getInterpolation();
-        } else {
-            *tnext = itup->getTime();
-            *vnext = itup->getValue();
-            *vnextDerivLeft = itup->getLeftDerivative();
-            *interpNext = itup->getInterpolation();
-            *tcur = TimeValue(*tnext - 1.);
-            *vcur = *vnext;
-            *vcurDerivRight = 0.;
-            *interp = eKeyframeTypeNone;
-        }
 
-    } else if ( itup == keyFrames.end() ) {
-
-        // We are in the case where no key has a greater time
-        // If periodic, we are in-between the last keyframe and xMax
-        if (isPeriodic) {
-            KeyFrameSet::const_iterator next = keyFrames.begin();
-            KeyFrameSet::const_reverse_iterator prev = keyFrames.rbegin();
-            *tcur = prev->getTime();
-            *vcur = prev->getValue();
-            *vcurDerivRight = prev->getRightDerivative();
-            *interp = prev->getInterpolation();
-            *tnext = TimeValue(next->getTime() + period);
-            *vnext = next->getValue();
-            *vnextDerivLeft = next->getLeftDerivative();
-            *interpNext = next->getInterpolation();
-        } else {
-
-            KeyFrameSet::const_reverse_iterator itlast = keyFrames.rbegin();
-            *tcur = itlast->getTime();
-            *vcur = itlast->getValue();
-            *vcurDerivRight = itlast->getRightDerivative();
-            *interp = itlast->getInterpolation();
-            *tnext = TimeValue(*tcur + 1.);
-            *vnext = *vcur;
-            *vnextDerivLeft = 0.;
-            *interpNext = eKeyframeTypeNone;
-        }
-        
-    } else {
-        // between two keyframes
-        // get the last keyframe with time <= t
-        KeyFrameSet::const_iterator itcur = itup;
-        --itcur;
-        assert(itcur->getTime() <= *t);
-        *tcur = itcur->getTime();
-        *vcur = itcur->getValue();
-        *vcurDerivRight = itcur->getRightDerivative();
-        *interp = itcur->getInterpolation();
-        *tnext = itup->getTime();
-        *vnext = itup->getValue();
-        *vnextDerivLeft = itup->getLeftDerivative();
-        *interpNext = itup->getInterpolation();
-    }
-}
-
-double
+KeyFrame
 Curve::getValueAt(TimeValue t,
                   bool doClamp) const
 {
     QMutexLocker l(&_imp->_lock);
+
+    KeyFrame value(t, 0.);
 
     if ( _imp->keyFrames.empty() ) {
         //throw std::runtime_error("Curve has no control points!");
 
         // A curve with no control points is considered to be 0
         // this is to avoid returning StatFailed when KnobParametric::getValue() is called on a parametric curve without control point.
-        return 0.;
+        return value;
 
         // There is no special case for a curve with one (1) keyframe: the result is a linear curve before and after the keyframe.
     //} else if (_imp->keyFrames.size() == 1) {
     //    return _imp->keyFrames.begin()->getValue();
     }
 
-    double v;
-#ifdef NATRON_CURVE_USE_CACHE
-    std::map<double, double>::const_iterator foundCached = _imp->resultCache.find(t);
-    if ( foundCached != _imp->resultCache.end() ) {
-        v = foundCached->second;
-    } else
-#endif
-    {
-        // even when there is only one keyframe, there may be tangents!
-        //if (_imp->keyFrames.size() == 1) {
-        //    //if there's only 1 keyframe, don't bother interpolating
-        //    return (*_imp->keyFrames.begin()).getValue();
-        //}
-        TimeValue tcur, tnext;
-        double vcurDerivRight, vnextDerivLeft, vcur, vnext;
-        KeyframeTypeEnum interp, interpNext;
-        KeyFrame k(t, 0.);
-        // find the first keyframe with time greater than t
-        KeyFrameSet::const_iterator itup;
-        itup = _imp->keyFrames.upper_bound(k);
-        interParams(_imp->keyFrames,
-                    _imp->isPeriodic,
-                    _imp->xMin,
-                    _imp->xMax,
-                    &t,
-                    itup,
-                    &tcur,
-                    &vcur,
-                    &vcurDerivRight,
-                    &interp,
-                    &tnext,
-                    &vnext,
-                    &vnextDerivLeft,
-                    &interpNext);
 
-        v = Interpolation::interpolate(tcur, vcur,
-                                       vcurDerivRight,
-                                       vnextDerivLeft,
-                                       tnext, vnext,
-                                       t,
-                                       interp,
-                                       interpNext);
-#ifdef NATRON_CURVE_USE_CACHE
-        _imp->resultCache[t] = v;
-#endif
-    }
+    // even when there is only one keyframe, there may be tangents!
+    //if (_imp->keyFrames.size() == 1) {
+    //    //if there's only 1 keyframe, don't bother interpolating
+    //    return (*_imp->keyFrames.begin()).getValue();
+    //}
 
+    // find the first keyframe with time greater than t
+    KeyFrameSet::const_iterator itup = _imp->keyFrames.upper_bound(value);
+    value = _imp->interpolator->interpolate(t, itup, _imp->keyFrames, _imp->isPeriodic, TimeValue(_imp->xMin), TimeValue(_imp->xMax));
+
+    double v = value.getValue();
+
+
+    bool mustUpdateKeyFrame = false;
     if ( doClamp ) {
         v = clampValueToCurveYRange(v);
+        mustUpdateKeyFrame = true;
     }
 
     switch (_imp->type) {
-    case Curve::eCurveTypeString:
-    case Curve::eCurveTypeInt:
-
-        return std::floor(v + 0.5);
-    case Curve::eCurveTypeBool:
-
-        return v >= 0.5 ? 1. : 0.;
-    default:
-
-        return v;
+        case eCurveTypeString:
+        case eCurveTypeInt:
+            v = std::floor(v + 0.5);
+            mustUpdateKeyFrame = true;
+            break;
+        case eCurveTypeBool:
+            v = v >= 0.5 ? 1. : 0.;
+            mustUpdateKeyFrame = true;
+            break;
+        default:
+            break;
     }
+    if (mustUpdateKeyFrame) {
+        value.setValue(v);
+    }
+    return value;
 } // getValueAt
 
 double
@@ -983,54 +864,50 @@ Curve::getDerivativeAt(TimeValue t) const
     if ( _imp->keyFrames.empty() ) {
         throw std::runtime_error("Curve has no control points!");
     }
-    assert(_imp->type == Curve::eCurveTypeDouble); // only real-valued curves can be derived
+    assert(_imp->type == eCurveTypeDouble); // only real-valued curves can be derived
 
     // even when there is only one keyframe, there may be tangents!
     //if (_imp->keyFrames.size() == 1) {
     //    //if there's only 1 keyframe, don't bother interpolating
     //    return (*_imp->keyFrames.begin()).getValue();
     //}
-    TimeValue tcur, tnext;
-    double vcurDerivRight, vnextDerivLeft, vcur, vnext;
-    KeyframeTypeEnum interp, interpNext;
+
+
     KeyFrame k(t, 0.);
     // find the first keyframe with time greater than t
-    KeyFrameSet::const_iterator itup;
-    itup = _imp->keyFrames.upper_bound(k);
-    interParams(_imp->keyFrames,
-                _imp->isPeriodic,
-                _imp->xMin,
-                _imp->xMax,
-                &t,
-                itup,
-                &tcur,
-                &vcur,
-                &vcurDerivRight,
-                &interp,
-                &tnext,
-                &vnext,
-                &vnextDerivLeft,
-                &interpNext);
+    KeyFrameSet::const_iterator itup = _imp->keyFrames.upper_bound(k);
+
+    KeyFrame keyCur, keyNext;
+
+    KeyFrameInterpolator::interParams(_imp->keyFrames,
+                                      _imp->isPeriodic,
+                                      _imp->xMin,
+                                      _imp->xMax,
+                                      &t,
+                                      itup,
+                                      &keyCur, &keyNext);
+    
+
 
     double d;
 
     if ( _imp->yMin != -std::numeric_limits<double>::infinity() || _imp->yMax != std::numeric_limits<double>::infinity()) {
-        d = Interpolation::derive_clamp(tcur, vcur,
-                                        vcurDerivRight,
-                                        vnextDerivLeft,
-                                        tnext, vnext,
+        d = Interpolation::derive_clamp(keyCur.getTime(), keyCur.getValue(),
+                                        keyCur.getRightDerivative(),
+                                        keyNext.getLeftDerivative(),
+                                        keyNext.getTime(), keyNext.getValue(),
                                         t,
                                         _imp->yMin, _imp->yMax,
-                                        interp,
-                                        interpNext);
+                                        keyCur.getInterpolation(),
+                                        keyNext.getInterpolation());
     } else {
-        d = Interpolation::derive(tcur, vcur,
-                                  vcurDerivRight,
-                                  vnextDerivLeft,
-                                  tnext, vnext,
+        d = Interpolation::derive(keyCur.getTime(), keyCur.getValue(),
+                                  keyCur.getRightDerivative(),
+                                  keyNext.getLeftDerivative(),
+                                  keyNext.getTime(), keyNext.getValue(),
                                   t,
-                                  interp,
-                                  interpNext);
+                                  keyCur.getInterpolation(),
+                                  keyNext.getInterpolation());
     }
 
     return d;
@@ -1052,96 +929,88 @@ Curve::getIntegrateFromTo(TimeValue t1,
     if ( _imp->keyFrames.empty() ) {
         throw std::runtime_error("Curve has no control points!");
     }
-    assert(_imp->type == Curve::eCurveTypeDouble); // only real-valued curves can be derived
+    assert(_imp->type == eCurveTypeDouble); // only real-valued curves can be derived
 
     // even when there is only one keyframe, there may be tangents!
     //if (_imp->keyFrames.size() == 1) {
     //    //if there's only 1 keyframe, don't bother interpolating
     //    return (*_imp->keyFrames.begin()).getValue();
     //}
-    TimeValue tcur, tnext;
-    double vcurDerivRight, vnextDerivLeft, vcur, vnext;
-    KeyframeTypeEnum interp, interpNext;
+
     KeyFrame k(t1, 0.);
     // find the first keyframe with time strictly greater than t1
-    KeyFrameSet::const_iterator itup;
-    itup = _imp->keyFrames.upper_bound(k);
-    interParams(_imp->keyFrames,
-                _imp->isPeriodic,
-                _imp->xMin,
-                _imp->xMax,
-                &t1,
-                itup,
-                &tcur,
-                &vcur,
-                &vcurDerivRight,
-                &interp,
-                &tnext,
-                &vnext,
-                &vnextDerivLeft,
-                &interpNext);
 
+    KeyFrameSet::const_iterator itup = _imp->keyFrames.upper_bound(k);
+
+    KeyFrame keyCur, keyNext;
+
+    KeyFrameInterpolator::interParams(_imp->keyFrames,
+                                      _imp->isPeriodic,
+                                      _imp->xMin,
+                                      _imp->xMax,
+                                      &t1,
+                                      itup,
+                                      &keyCur, &keyNext);
+
+
+    
     double sum = 0.;
 
     // while there are still keyframes after the current time, add to the total sum and advance
     while (itup != _imp->keyFrames.end() && itup->getTime() < t2) {
         // add integral from t1 to itup->getTime() to sum
         if ( _imp->yMin != -std::numeric_limits<double>::infinity() || _imp->yMax != std::numeric_limits<double>::infinity()) {
-            sum += Interpolation::integrate_clamp(tcur, vcur,
-                                                  vcurDerivRight,
-                                                  vnextDerivLeft,
-                                                  tnext, vnext,
+
+            sum += Interpolation::integrate_clamp(keyCur.getTime(), keyCur.getValue(),
+                                                  keyCur.getRightDerivative(),
+                                                  keyNext.getLeftDerivative(),
+                                                  keyNext.getTime(), keyNext.getValue(),
                                                   TimeValue(t1), itup->getTime(),
                                                   _imp->yMin, _imp->yMax,
-                                                  interp,
-                                                  interpNext);
+                                                  keyCur.getInterpolation(),
+                                                  keyNext.getInterpolation());
         } else {
-            sum += Interpolation::integrate(tcur, vcur,
-                                            vcurDerivRight,
-                                            vnextDerivLeft,
-                                            tnext, vnext,
+            sum += Interpolation::integrate(keyCur.getTime(), keyCur.getValue(),
+                                            keyCur.getRightDerivative(),
+                                            keyNext.getLeftDerivative(),
+                                            keyNext.getTime(), keyNext.getValue(),
                                             TimeValue(t1), itup->getTime(),
-                                            interp,
-                                            interpNext);
+                                            keyCur.getInterpolation(),
+                                            keyNext.getInterpolation());
         }
         // advance
         t1 = itup->getTime();
         ++itup;
-        interParams(_imp->keyFrames,
-                    _imp->isPeriodic,
-                    _imp->xMin,
-                    _imp->xMax,
-                    &t1,
-                    itup,
-                    &tcur,
-                    &vcur,
-                    &vcurDerivRight,
-                    &interp,
-                    &tnext,
-                    &vnext,
-                    &vnextDerivLeft,
-                    &interpNext);
-    }
 
+        KeyFrameInterpolator::interParams(_imp->keyFrames,
+                                          _imp->isPeriodic,
+                                          _imp->xMin,
+                                          _imp->xMax,
+                                          &t1,
+                                          itup,
+                                          &keyCur, &keyNext);
+
+    }
+    
     assert( itup == _imp->keyFrames.end() || t2 <= itup->getTime() );
     // add integral from t1 to t2 to sum
     if ( _imp->yMin != -std::numeric_limits<double>::infinity() || _imp->yMax != std::numeric_limits<double>::infinity()) {
-        sum += Interpolation::integrate_clamp(tcur, vcur,
-                                              vcurDerivRight,
-                                              vnextDerivLeft,
-                                              tnext, vnext,
-                                              TimeValue(t1), TimeValue(t2),
+        sum += Interpolation::integrate_clamp(keyCur.getTime(), keyCur.getValue(),
+                                              keyCur.getRightDerivative(),
+                                              keyNext.getLeftDerivative(),
+                                              keyNext.getTime(), keyNext.getValue(),
+                                              TimeValue(t1), itup->getTime(),
                                               _imp->yMin, _imp->yMax,
-                                              interp,
-                                              interpNext);
+                                              keyCur.getInterpolation(),
+                                              keyNext.getInterpolation());
     } else {
-        sum += Interpolation::integrate(tcur, vcur,
-                                        vcurDerivRight,
-                                        vnextDerivLeft,
-                                        tnext, vnext,
-                                        TimeValue(t1), TimeValue(t2),
-                                        interp,
-                                        interpNext);
+        sum += Interpolation::integrate(keyCur.getTime(), keyCur.getValue(),
+                                        keyCur.getRightDerivative(),
+                                        keyNext.getLeftDerivative(),
+                                        keyNext.getTime(), keyNext.getValue(),
+                                        TimeValue(t1), itup->getTime(),
+                                        keyCur.getInterpolation(),
+                                        keyNext.getInterpolation());
     }
 
     return opposite ? -sum : sum;
@@ -1229,7 +1098,7 @@ Curve::setKeyFrameValueAndTimeNoUpdate(double value,
     newKey.setValue(value);
     _imp->keyFrames.erase(k);
 
-    return addKeyFrameNoUpdate(newKey).first;
+    return setOrUpdateKeyframeInternal(newKey).first;
 }
 
 KeyFrame
@@ -1433,7 +1302,7 @@ Curve::transformKeyframesValueAndTime(const std::list<double>& times,
          it != finalSet.end();
          ++it) {
         
-        std::pair<KeyFrameSet::iterator, bool> ret = addKeyFrameNoUpdate(*it);
+        std::pair<KeyFrameSet::iterator, bool> ret = setOrUpdateKeyframeInternal(*it);
         
         // huh, we are just moving one set to another, there cannot be a failure!
         assert(ret.second);
@@ -1458,7 +1327,7 @@ Curve::setKeyFrameLeftDerivativeInternal(double value, int index, int* newIndex)
         if ( value != it->getLeftDerivative() ) {
             KeyFrame newKey(*it);
             newKey.setLeftDerivative(value);
-            it = addKeyFrameNoUpdate(newKey).first;
+            it = setOrUpdateKeyframeInternal(newKey).first;
             it = evaluateCurveChanged(eCurveChangedReasonDerivativesChanged, it);
         }
         if (newIndex) {
@@ -1489,7 +1358,7 @@ Curve::setKeyFrameRightDerivativeInternal(double value, int index, int* newIndex
         if ( value != it->getRightDerivative() ) {
             KeyFrame newKey(*it);
             newKey.setRightDerivative(value);
-            it = addKeyFrameNoUpdate(newKey).first;
+            it = setOrUpdateKeyframeInternal(newKey).first;
             it = evaluateCurveChanged(eCurveChangedReasonDerivativesChanged, it);
         }
         if (newIndex) {
@@ -1522,7 +1391,7 @@ Curve::setKeyFrameDerivativesInternal(double left, double right, int index, int*
             KeyFrame newKey(*it);
             newKey.setLeftDerivative(left);
             newKey.setRightDerivative(right);
-            it = addKeyFrameNoUpdate(newKey).first;
+            it = setOrUpdateKeyframeInternal(newKey).first;
             it = evaluateCurveChanged(eCurveChangedReasonDerivativesChanged, it);
         }
         if (newIndex) {
@@ -1553,8 +1422,8 @@ Curve::setKeyFrameInterpolationInternal(KeyframeTypeEnum interp, int index, int*
         assert( it != _imp->keyFrames.end() );
 
         ///if the curve is a string_curve or bool_curve the interpolation is bound to be constant.
-        if ( ( (_imp->type == Curve::eCurveTypeString) || (_imp->type == Curve::eCurveTypeBool) ||
-              ( _imp->type == Curve::eCurveTypeIntConstantInterp) ) && ( interp != eKeyframeTypeConstant) ) {
+        if ( ( (_imp->type == eCurveTypeString) || (_imp->type == eCurveTypeBool) ||
+              ( _imp->type == eCurveTypeChoice) ) && ( interp != eKeyframeTypeConstant) ) {
             return *it;
         }
 
@@ -1600,8 +1469,8 @@ Curve::setCurveInterpolation(KeyframeTypeEnum interp)
     {
         QMutexLocker l(&_imp->_lock);
         ///if the curve is a string_curve or bool_curve the interpolation is bound to be constant.
-        if ( ( (_imp->type == Curve::eCurveTypeString) || (_imp->type == Curve::eCurveTypeBool) ||
-               ( _imp->type == Curve::eCurveTypeIntConstantInterp) ) && ( interp != eKeyframeTypeConstant) ) {
+        if ( ( (_imp->type == eCurveTypeString) || (_imp->type == eCurveTypeBool) ||
+               ( _imp->type == eCurveTypeChoice) ) && ( interp != eKeyframeTypeConstant) ) {
             return;
         }
         for (int i = 0; i < (int)_imp->keyFrames.size(); ++i) {
@@ -1622,7 +1491,7 @@ Curve::setKeyframeInterpolation_internal(KeyFrameSet::iterator it,
     assert( it != _imp->keyFrames.end() );
     KeyFrame newKey(*it);
     newKey.setInterpolation(interp);
-    it = addKeyFrameNoUpdate(newKey).first;
+    it = setOrUpdateKeyframeInternal(newKey).first;
     it = evaluateCurveChanged(eCurveChangedReasonKeyframeChanged, it);
 
     return it;
@@ -1884,7 +1753,7 @@ Curve::areKeyFramesValuesClampedToIntegers() const
 {
     QMutexLocker l(&_imp->_lock);
 
-    return _imp->type == Curve::eCurveTypeInt || _imp->type == Curve::eCurveTypeIntConstantInterp;
+    return _imp->type == eCurveTypeInt || _imp->type == eCurveTypeChoice || _imp->type == eCurveTypeString;
 }
 
 bool
@@ -1892,7 +1761,7 @@ Curve::areKeyFramesValuesClampedToBooleans() const
 {
     QMutexLocker l(&_imp->_lock);
 
-    return _imp->type == Curve::eCurveTypeBool;
+    return _imp->type == eCurveTypeBool;
 }
 
 
@@ -1918,9 +1787,7 @@ Curve::setYRange(double yMin,
 void
 Curve::onCurveChanged()
 {
-#ifdef NATRON_CURVE_USE_CACHE
-    _imp->resultCache.clear();
-#endif
+
 }
 
 void
@@ -1935,35 +1802,52 @@ Curve::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase&
     for (std::list<SERIALIZATION_NAMESPACE::KeyFrameSerialization>::const_iterator it = s->keys.begin(); it != s->keys.end(); ++it) {
         KeyFrame k;
         k.setTime(TimeValue(it->time));
-        k.setValue(it->value);
-        KeyframeTypeEnum t = eKeyframeTypeSmooth;
-        if (it->interpolation == kKeyframeSerializationTypeBroken) {
-            t = eKeyframeTypeBroken;
-        } else if (it->interpolation == kKeyframeSerializationTypeCatmullRom) {
-            t = eKeyframeTypeCatmullRom;
-        } else if (it->interpolation == kKeyframeSerializationTypeConstant) {
-            t = eKeyframeTypeConstant;
-        } else if (it->interpolation == kKeyframeSerializationTypeCubic) {
-            t = eKeyframeTypeCubic;
-        } else if (it->interpolation == kKeyframeSerializationTypeFree) {
-            t = eKeyframeTypeFree;
-        } else if (it->interpolation == kKeyframeSerializationTypeHorizontal) {
-            t = eKeyframeTypeHorizontal;
-        } else if (it->interpolation == kKeyframeSerializationTypeLinear) {
-            t = eKeyframeTypeLinear;
-        } else if (it->interpolation == kKeyframeSerializationTypeSmooth) {
-            t = eKeyframeTypeSmooth;
+
+        switch (s->curveType) {
+            case SERIALIZATION_NAMESPACE::eCurveSerializationTypeString: {
+                if (_imp->type == eCurveTypeChoice) {
+                    k.setProperty(kKeyframePropChoiceOptionID, it->stringValue);
+                } else if (_imp->type == eCurveTypeString) {
+                    k.setProperty(kKeyFramePropString, it->stringValue);
+                } else {
+                    throw std::invalid_argument("Wrong curve type");
+                }
+            }   break;
+            case SERIALIZATION_NAMESPACE::eCurveSerializationTypeDouble: {
+                k.setValue(it->value);
+                KeyframeTypeEnum t = eKeyframeTypeSmooth;
+                if (it->interpolation == kKeyframeSerializationTypeBroken) {
+                    t = eKeyframeTypeBroken;
+                } else if (it->interpolation == kKeyframeSerializationTypeCatmullRom) {
+                    t = eKeyframeTypeCatmullRom;
+                } else if (it->interpolation == kKeyframeSerializationTypeConstant) {
+                    t = eKeyframeTypeConstant;
+                } else if (it->interpolation == kKeyframeSerializationTypeCubic) {
+                    t = eKeyframeTypeCubic;
+                } else if (it->interpolation == kKeyframeSerializationTypeFree) {
+                    t = eKeyframeTypeFree;
+                } else if (it->interpolation == kKeyframeSerializationTypeHorizontal) {
+                    t = eKeyframeTypeHorizontal;
+                } else if (it->interpolation == kKeyframeSerializationTypeLinear) {
+                    t = eKeyframeTypeLinear;
+                } else if (it->interpolation == kKeyframeSerializationTypeSmooth) {
+                    t = eKeyframeTypeSmooth;
+                }
+                k.setInterpolation(t);
+                if (t == eKeyframeTypeBroken || t == eKeyframeTypeFree) {
+                    k.setRightDerivative(it->rightDerivative);
+                    if (t == eKeyframeTypeBroken) {
+                        k.setLeftDerivative(it->leftDerivative);
+                    } else {
+                        k.setLeftDerivative(it->rightDerivative);
+                    }
+                }
+
+            }   break;
         }
-        k.setInterpolation(t);
-        if (t == eKeyframeTypeBroken || t == eKeyframeTypeFree) {
-            k.setRightDerivative(it->rightDerivative);
-            if (t == eKeyframeTypeBroken) {
-                k.setLeftDerivative(it->leftDerivative);
-            } else {
-                k.setLeftDerivative(it->rightDerivative);
-            }
-        }
-        std::pair<KeyFrameSet::iterator, bool> ret = addKeyFrameNoUpdate(k);
+
+
+        std::pair<KeyFrameSet::iterator, bool> ret = setOrUpdateKeyframeInternal(k);
         if (ret.second) {
             (void)evaluateCurveChanged(eCurveChangedReasonKeyframeChanged, ret.first);
         }
@@ -1977,6 +1861,16 @@ Curve::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
     SERIALIZATION_NAMESPACE::CurveSerialization* s = dynamic_cast<SERIALIZATION_NAMESPACE::CurveSerialization*>(obj);
     if (!s) {
         return;
+    }
+    switch (_imp->type) {
+        case eCurveTypeString:
+        case eCurveTypeChoice:
+            s->curveType = SERIALIZATION_NAMESPACE::eCurveSerializationTypeString;
+            break;
+
+        default:
+            s->curveType = SERIALIZATION_NAMESPACE::eCurveSerializationTypeDouble;
+            break;
     }
     KeyFrameSet keys = getKeyFrames_mt_safe();
     for (KeyFrameSet::iterator it = keys.begin(); it!=keys.end(); ++it) {
@@ -2048,7 +1942,7 @@ Curve::setKeyframesInternal(const KeyFrameSet& keys, bool refreshDerivatives)
 
         // Now recompute auto tangents
         for (KeyFrameSet::iterator it = keys.begin(); it != keys.end(); ++it) {
-            std::pair<KeyFrameSet::iterator, bool> ret = addKeyFrameNoUpdate(*it);
+            std::pair<KeyFrameSet::iterator, bool> ret = setOrUpdateKeyframeInternal(*it);
             ret.first = evaluateCurveChanged(Curve::eCurveChangedReasonKeyframeChanged, ret.first);
         }
 

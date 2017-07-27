@@ -118,8 +118,8 @@ ViewerNodePrivate::refreshInputChoices(bool resetChoiceIfNotFound)
         entries.push_back(ChoiceOption(optionID, inputNode->getLabel(), ""));
     }
 
-    ChoiceOption currentAChoice = aInputKnob->getActiveEntry();
-    ChoiceOption currentBChoice = bInputKnob->getActiveEntry();
+    ChoiceOption currentAChoice = aInputKnob->getCurrentEntry();
+    ChoiceOption currentBChoice = bInputKnob->getCurrentEntry();
 
     aInputKnob->populateChoices(entries);
     bInputKnob->populateChoices(entries);
@@ -134,7 +134,7 @@ ViewerNodePrivate::refreshInputChoices(bool resetChoiceIfNotFound)
     }
 
     if (uiContext) {
-        if ( (operation == eViewerCompositingOperatorNone) || !bInputKnob->isEnabled()  || bInputKnob->getActiveEntry().id.empty() ) {
+        if ( (operation == eViewerCompositingOperatorNone) || !bInputKnob->isEnabled()  || bInputKnob->getCurrentEntry().id.empty() ) {
             uiContext->setInfoBarVisible(1, false);
         } else if (operation != eViewerCompositingOperatorNone) {
             uiContext->setInfoBarVisible(1, true);
@@ -279,8 +279,8 @@ ViewerNodePrivate::swapViewerProcessInputs()
     try {
         KnobChoicePtr aChoice = aInputNodeChoiceKnob.lock();
         KnobChoicePtr bChoice = bInputNodeChoiceKnob.lock();
-        ChoiceOption aCurChoice = aChoice->getActiveEntry();
-        ChoiceOption bCurChoice = bChoice->getActiveEntry();
+        ChoiceOption aCurChoice = aChoice->getCurrentEntry();
+        ChoiceOption bCurChoice = bChoice->getCurrentEntry();
         aChoice->blockValueChanges();
         aChoice->setValueFromID(bCurChoice.id);
         aChoice->unblockValueChanges();

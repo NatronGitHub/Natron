@@ -47,7 +47,7 @@ NATRON_NAMESPACE_ENTER
 
 struct KnobFilePrivate;
 class KnobFile
-    : public QObject, public AnimatingKnobStringHelper
+    : public QObject, public KnobStringBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT

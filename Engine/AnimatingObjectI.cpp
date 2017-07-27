@@ -159,7 +159,7 @@ AnimatingObjectI::unSplitAllViews()
 ValueChangedReturnCodeEnum
 AnimatingObjectI::setIntValueAtTime(TimeValue /*time*/, int /*value*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* /*newKey*/)
 {
-    if (getKeyFrameDataType() != eKeyframeDataTypeInt) {
+    if (getKeyFrameDataType() != eCurveTypeInt) {
         throw std::invalid_argument("Invalid call to setIntValueAtTime on an object that does not support integer");
     }
     return eValueChangedReturnCodeNothingChanged;
@@ -168,7 +168,7 @@ AnimatingObjectI::setIntValueAtTime(TimeValue /*time*/, int /*value*/, ViewSetSp
 ValueChangedReturnCodeEnum
 AnimatingObjectI::setDoubleValueAtTime(TimeValue /*time*/, double /*value*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* /*newKey*/)
 {
-    if (getKeyFrameDataType() != eKeyframeDataTypeDouble) {
+    if (getKeyFrameDataType() != eCurveTypeDouble) {
         throw std::invalid_argument("Invalid call to setDoubleValueAtTime on an object that does not support double");
     }
     return eValueChangedReturnCodeNothingChanged;
@@ -177,7 +177,7 @@ AnimatingObjectI::setDoubleValueAtTime(TimeValue /*time*/, double /*value*/, Vie
 ValueChangedReturnCodeEnum
 AnimatingObjectI::setBoolValueAtTime(TimeValue /*time*/, bool /*value*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* /*newKey*/)
 {
-    if (getKeyFrameDataType() != eKeyframeDataTypeBool) {
+    if (getKeyFrameDataType() != eCurveTypeBool) {
         throw std::invalid_argument("Invalid call to setBoolValueAtTime on an object that does not support bool");
     }
     return eValueChangedReturnCodeNothingChanged;
@@ -186,7 +186,7 @@ AnimatingObjectI::setBoolValueAtTime(TimeValue /*time*/, bool /*value*/, ViewSet
 ValueChangedReturnCodeEnum
 AnimatingObjectI::setStringValueAtTime(TimeValue /*time*/, const std::string& /*value*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* /*newKey*/)
 {
-    if (getKeyFrameDataType() != eKeyframeDataTypeString) {
+    if (getKeyFrameDataType() != eCurveTypeString) {
         throw std::invalid_argument("Invalid call to setStringValueAtTime on an object that does not support string");
     }
     return eValueChangedReturnCodeNothingChanged;
@@ -195,7 +195,7 @@ AnimatingObjectI::setStringValueAtTime(TimeValue /*time*/, const std::string& /*
 void
 AnimatingObjectI::setMultipleIntValueAtTime(const std::list<IntTimeValuePair>& /*keys*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, std::vector<KeyFrame>* /*newKey*/)
 {
-    if (getKeyFrameDataType() != eKeyframeDataTypeInt) {
+    if (getKeyFrameDataType() != eCurveTypeInt) {
         throw std::invalid_argument("Invalid call to setMultipleIntValueAtTime on an object that does not support integer");
     }
 }
@@ -203,7 +203,7 @@ AnimatingObjectI::setMultipleIntValueAtTime(const std::list<IntTimeValuePair>& /
 void
 AnimatingObjectI::setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair>& /*keys*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, std::vector<KeyFrame>* /*newKey*/)
 {
-    if (getKeyFrameDataType() != eKeyframeDataTypeDouble) {
+    if (getKeyFrameDataType() != eCurveTypeDouble) {
         throw std::invalid_argument("Invalid call to setMultipleDoubleValueAtTime on an object that does not support double");
     }
 }
@@ -212,7 +212,7 @@ AnimatingObjectI::setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePa
 void
 AnimatingObjectI::setMultipleBoolValueAtTime(const std::list<BoolTimeValuePair>& /*keys*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, std::vector<KeyFrame>* /*newKey*/)
 {
-    if (getKeyFrameDataType() != eKeyframeDataTypeBool) {
+    if (getKeyFrameDataType() != eCurveTypeBool) {
         throw std::invalid_argument("Invalid call to setMultipleBoolValueAtTime on an object that does not support boolean");
     }
 }
@@ -220,7 +220,7 @@ AnimatingObjectI::setMultipleBoolValueAtTime(const std::list<BoolTimeValuePair>&
 void
 AnimatingObjectI::setMultipleStringValueAtTime(const std::list<StringTimeValuePair>& /*keys*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, std::vector<KeyFrame>* /*newKey*/)
 {
-    if (getKeyFrameDataType() != eKeyframeDataTypeString) {
+    if (getKeyFrameDataType() != eCurveTypeString) {
         throw std::invalid_argument("Invalid call to setMultipleStringValueAtTime on an object that does not support string");
     }
 }
@@ -228,7 +228,7 @@ AnimatingObjectI::setMultipleStringValueAtTime(const std::list<StringTimeValuePa
 void
 AnimatingObjectI::setIntValueAtTimeAcrossDimensions(TimeValue /*time*/, const std::vector<int>& /*values*/, DimIdx /*dimensionStartIndex*/, ViewSetSpec /*view*/, ValueChangedReasonEnum /*reason*/, std::vector<ValueChangedReturnCodeEnum>* /*retCodes*/)
 {
-    if (getKeyFrameDataType() != eKeyframeDataTypeInt) {
+    if (getKeyFrameDataType() != eCurveTypeInt) {
         throw std::invalid_argument("Invalid call to setIntValueAtTimeAcrossDimensions on an object that does not support integer");
     }
 }
@@ -236,7 +236,7 @@ AnimatingObjectI::setIntValueAtTimeAcrossDimensions(TimeValue /*time*/, const st
 void
 AnimatingObjectI::setDoubleValueAtTimeAcrossDimensions(TimeValue /*time*/, const std::vector<double>& /*values*/, DimIdx /*dimensionStartIndex*/, ViewSetSpec /*view*/, ValueChangedReasonEnum /*reason*/, std::vector<ValueChangedReturnCodeEnum>* /*retCodes*/)
 {
-    if (getKeyFrameDataType() != eKeyframeDataTypeDouble) {
+    if (getKeyFrameDataType() != eCurveTypeDouble) {
         throw std::invalid_argument("Invalid call to setDoubleValueAtTimeAcrossDimensions on an object that does not support double");
     }
 
@@ -245,7 +245,7 @@ AnimatingObjectI::setDoubleValueAtTimeAcrossDimensions(TimeValue /*time*/, const
 void
 AnimatingObjectI::setBoolValueAtTimeAcrossDimensions(TimeValue /*time*/, const std::vector<bool>& /*values*/, DimIdx /*dimensionStartIndex*/, ViewSetSpec /*view*/, ValueChangedReasonEnum /*reason*/, std::vector<ValueChangedReturnCodeEnum>* /*retCodes*/)
 {
-    if (getKeyFrameDataType() != eKeyframeDataTypeBool) {
+    if (getKeyFrameDataType() != eCurveTypeBool) {
         throw std::invalid_argument("Invalid call to setBoolValueAtTimeAcrossDimensions on an object that does not support boolean");
     }
 }
@@ -253,7 +253,7 @@ AnimatingObjectI::setBoolValueAtTimeAcrossDimensions(TimeValue /*time*/, const s
 void
 AnimatingObjectI::setStringValueAtTimeAcrossDimensions(TimeValue /*time*/, const std::vector<std::string>& /*values*/, DimIdx /*dimensionStartIndex*/, ViewSetSpec /*view*/, ValueChangedReasonEnum /*reason*/, std::vector<ValueChangedReturnCodeEnum>* /*retCodes*/)
 {
-    if (getKeyFrameDataType() != eKeyframeDataTypeString) {
+    if (getKeyFrameDataType() != eCurveTypeString) {
         throw std::invalid_argument("Invalid call to setStringValueAtTimeAcrossDimensions on an object that does not support string");
     }
 }
@@ -261,7 +261,7 @@ AnimatingObjectI::setStringValueAtTimeAcrossDimensions(TimeValue /*time*/, const
 void
 AnimatingObjectI::setMultipleIntValueAtTimeAcrossDimensions(const PerCurveIntValuesList& /*keysPerDimension*/,  ValueChangedReasonEnum /*reason*/)
 {
-    if (getKeyFrameDataType() != eKeyframeDataTypeInt) {
+    if (getKeyFrameDataType() != eCurveTypeInt) {
         throw std::invalid_argument("Invalid call to setMultipleIntValueAtTimeAcrossDimensions on an object that does not support integer");
     }
 }
@@ -269,7 +269,7 @@ AnimatingObjectI::setMultipleIntValueAtTimeAcrossDimensions(const PerCurveIntVal
 void
 AnimatingObjectI::setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDoubleValuesList& /*keysPerDimension*/,  ValueChangedReasonEnum /*reason*/)
 {
-    if (getKeyFrameDataType() != eKeyframeDataTypeDouble) {
+    if (getKeyFrameDataType() != eCurveTypeDouble) {
         throw std::invalid_argument("Invalid call to setMultipleDoubleValueAtTimeAcrossDimensions on an object that does not support double");
     }
 }
@@ -278,7 +278,7 @@ AnimatingObjectI::setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDou
 void
 AnimatingObjectI::setMultipleBoolValueAtTimeAcrossDimensions(const PerCurveBoolValuesList& /*keysPerDimension*/,  ValueChangedReasonEnum /*reason*/)
 {
-    if (getKeyFrameDataType() != eKeyframeDataTypeBool) {
+    if (getKeyFrameDataType() != eCurveTypeBool) {
         throw std::invalid_argument("Invalid call to setMultipleBoolValueAtTimeAcrossDimensions on an object that does not support boolean");
     }
 }
@@ -287,7 +287,7 @@ AnimatingObjectI::setMultipleBoolValueAtTimeAcrossDimensions(const PerCurveBoolV
 void
 AnimatingObjectI::setMultipleStringValueAtTimeAcrossDimensions(const PerCurveStringValuesList& /*keysPerDimension*/,  ValueChangedReasonEnum /*reason*/)
 {
-    if (getKeyFrameDataType() != eKeyframeDataTypeString) {
+    if (getKeyFrameDataType() != eCurveTypeString) {
         throw std::invalid_argument("Invalid call to setMultipleStringValueAtTimeAcrossDimensions on an object that does not support string");
     }
 }

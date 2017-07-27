@@ -183,7 +183,7 @@ EffectInstance::Implementation::getSelectedLayerInternal(const std::list<ImagePl
     if (!layerKnob) {
         return ImagePlaneDesc();
     }
-    ChoiceOption layerID = layerKnob->getActiveEntry();
+    ChoiceOption layerID = layerKnob->getCurrentEntry();
 
     for (std::list<ImagePlaneDesc>::const_iterator it2 = availableLayers.begin(); it2 != availableLayers.end(); ++it2) {
 
@@ -205,7 +205,7 @@ EffectInstance::getMaskChannel(int inputNb, const std::list<ImagePlaneDesc>& ava
     if ( it == _imp->defKnobs->maskSelectors.end() ) {
         return -1;
     }
-    ChoiceOption maskChannelID =  it->second.channel.lock()->getActiveEntry();
+    ChoiceOption maskChannelID =  it->second.channel.lock()->getCurrentEntry();
 
     for (std::list<ImagePlaneDesc>::const_iterator it2 = availableLayers.begin(); it2 != availableLayers.end(); ++it2) {
 

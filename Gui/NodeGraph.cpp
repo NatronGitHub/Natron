@@ -421,7 +421,9 @@ NodeGraph::onNodeCreated(const NodePtr& node, const CreateNodeArgsPtr& args)
 {
 
     NodeGuiPtr node_ui = boost::dynamic_pointer_cast<NodeGui>(node->getNodeGui());
-    assert(node_ui);
+    if (!node_ui) {
+        return;
+    }
 
     NodesGuiList selectedNodes;
     for (NodesGuiWList::const_iterator it = _imp->_selectionBeforeNodeCreated.begin(); it != _imp->_selectionBeforeNodeCreated.end(); ++it) {

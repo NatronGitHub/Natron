@@ -696,7 +696,7 @@ ViewerNode::invalidateUiContext()
 NodePtr
 ViewerNode::getCurrentAInput() const
 {
-    ChoiceOption curLabel = _imp->aInputNodeChoiceKnob.lock()->getActiveEntry();
+    ChoiceOption curLabel = _imp->aInputNodeChoiceKnob.lock()->getCurrentEntry();
     if (curLabel.id == "-") {
         return NodePtr();
     }
@@ -707,7 +707,7 @@ ViewerNode::getCurrentAInput() const
 NodePtr
 ViewerNode::getCurrentBInput() const
 {
-    ChoiceOption curLabel = _imp->bInputNodeChoiceKnob.lock()->getActiveEntry();
+    ChoiceOption curLabel = _imp->bInputNodeChoiceKnob.lock()->getCurrentEntry();
     if (curLabel.id == "-") {
         return NodePtr();
     }
@@ -728,7 +728,7 @@ ViewerNode::refreshInputFromChoiceMenu(int internalInputIdx)
     KnobChoicePtr knob = internalInputIdx == 0 ? _imp->aInputNodeChoiceKnob.lock() : _imp->bInputNodeChoiceKnob.lock();
 
     // Read from the choice menu the current selected node
-    ChoiceOption curLabel = internalInputIdx == 0 ? _imp->aInputNodeChoiceKnob.lock()->getActiveEntry() : _imp->bInputNodeChoiceKnob.lock()->getActiveEntry();
+    ChoiceOption curLabel = internalInputIdx == 0 ? _imp->aInputNodeChoiceKnob.lock()->getCurrentEntry() : _imp->bInputNodeChoiceKnob.lock()->getCurrentEntry();
 
     // Find recursively the node that we should connect to the "Input" node
     NodePtr nodeToConnect = _imp->getInputRecursive(internalInputIdx);

@@ -38,6 +38,8 @@
 #include "Engine/Knob.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
+#include "Engine/KeyFrameInterpolator.h"
+
 
 #include "Engine/EngineFwd.h"
 
@@ -45,31 +47,27 @@
 NATRON_NAMESPACE_ENTER
 
 
-//#define NATRON_CURVE_USE_CACHE
 
 
 struct CurvePrivate
 {
     KeyFrameSet keyFrames;
 
-#ifdef NATRON_CURVE_USE_CACHE
-    std::map<double, double> resultCache; //< a cache for interpolations
-#endif
 
-    Curve::CurveTypeEnum type;
+    KeyFrameInterpolatorPtr interpolator;
+    CurveTypeEnum type;
     double xMin, xMax;
     double yMin, yMax;
     double displayMin, displayMax;
     mutable QMutex _lock; //< the plug-ins can call getValueAt at any moment and we must make sure the user is not playing around
     bool isPeriodic;
     bool canMoveY;
+    bool clampKeyFramesTimeToIntegers;
 
     CurvePrivate()
     : keyFrames()
-#ifdef NATRON_CURVE_USE_CACHE
-    , resultCache()
-#endif
-    , type(Curve::eCurveTypeDouble)
+    , interpolator(new KeyFrameInterpolator)
+    , type(eCurveTypeDouble)
     , xMin(-std::numeric_limits<double>::infinity())
     , xMax(std::numeric_limits<double>::infinity())
     , yMin(-std::numeric_limits<double>::infinity())
@@ -79,6 +77,7 @@ struct CurvePrivate
     , _lock(QMutex::Recursive)
     , isPeriodic(false)
     , canMoveY(true)
+    , clampKeyFramesTimeToIntegers(true)
     {
     }
 
@@ -90,6 +89,7 @@ struct CurvePrivate
 
     void operator=(const CurvePrivate & other)
     {
+        interpolator = other.interpolator->createCopy();
         keyFrames = other.keyFrames;
         type = other.type;
         xMin = other.xMin;

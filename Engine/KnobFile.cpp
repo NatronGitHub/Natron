@@ -35,7 +35,6 @@
 
 #include "Engine/EffectInstance.h"
 #include "Engine/Transform.h"
-#include "Engine/StringAnimationManager.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/Project.h"
@@ -70,13 +69,13 @@ struct KnobFilePrivate
 KnobFile::KnobFile(const KnobHolderPtr& holder,
                    const std::string &name,
                    int dimension)
-: AnimatingKnobStringHelper(holder, name, dimension)
+: KnobStringBase(holder, name, dimension)
 , _imp(new KnobFilePrivate())
 {
 }
 
 KnobFile::KnobFile(const KnobHolderPtr& holder,const KnobIPtr& mainInstance)
-: AnimatingKnobStringHelper(holder, mainInstance)
+: KnobStringBase(holder, mainInstance)
 , _imp(toKnobFile(mainInstance)->_imp)
 {
 

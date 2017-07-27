@@ -33,6 +33,7 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 #endif
 
 #include "Engine/EngineFwd.h"
@@ -107,8 +108,8 @@ protected:
     {
         const boost::shared_ptr<PropertyBase>* propPtr = 0;
 
-        std::map<std::string, boost::shared_ptr<PropertyBase> >::const_iterator found = _properties.find(name);
-        if (found == _properties.end()) {
+        std::map<std::string, boost::shared_ptr<PropertyBase> >::const_iterator found = _properties->find(name);
+        if (found == _properties->end()) {
             if (throwOnFailure) {
                 throw std::invalid_argument("CreateNodeArgs::getProp(): Invalid property " + name);
             }
@@ -136,13 +137,13 @@ protected:
     boost::shared_ptr<Property<T> > createPropertyInternal(const std::string& name) const
     {
 
-        std::map<std::string, boost::shared_ptr<PropertyBase> >::const_iterator found = _properties.find(name);
+        std::map<std::string, boost::shared_ptr<PropertyBase> >::const_iterator found = _properties->find(name);
         boost::shared_ptr<Property<T> > propTemplate;
-        if (found != _properties.end()) {
+        if (found != _properties->end()) {
             propTemplate = boost::dynamic_pointer_cast<Property<T> >(found->second);
         } else {
             propTemplate.reset(new Property<T>);
-            _properties.insert(std::make_pair(name, propTemplate));
+            _properties->insert(std::make_pair(name, propTemplate));
         }
         assert(propTemplate);
         return propTemplate;
@@ -165,6 +166,7 @@ protected:
     template <typename T>
     boost::shared_ptr<Property<T> > createProperty(const std::string& name, const T& defaultValue) const
     {
+        ensurePropertiesMap();
         boost::shared_ptr<Property<T> > p = createPropertyInternal<T>(name);
         p->value.push_back(defaultValue);
 
@@ -177,6 +179,7 @@ protected:
     template <typename T>
     boost::shared_ptr<Property<T> > createProperty(const std::string& name, const T& defaultValue1, const T& defaultValue2) const
     {
+        ensurePropertiesMap();
         boost::shared_ptr<Property<T> > p = createPropertyInternal<T>(name);
         p->value.push_back(defaultValue1);
         p->value.push_back(defaultValue2);
@@ -190,6 +193,7 @@ protected:
     template <typename T>
     boost::shared_ptr<Property<T> > createProperty(const std::string& name, const std::vector<T>& defaultValue) const
     {
+        ensurePropertiesMap();
         boost::shared_ptr<Property<T> > p = createPropertyInternal<T>(name);
         p->value = defaultValue;
         
@@ -257,8 +261,8 @@ public:
     {
         ensurePropertiesCreated();
 
-        std::map<std::string, boost::shared_ptr<PropertyBase> >::const_iterator found = _properties.find(name);
-        if (found == _properties.end()) {
+        std::map<std::string, boost::shared_ptr<PropertyBase> >::const_iterator found = _properties->find(name);
+        if (found == _properties->end()) {
             if (throwIfFailed) {
                 throw std::invalid_argument("Invalid property " + name);
             } else {
@@ -275,8 +279,8 @@ public:
     bool hasProperty(const std::string& name) const
     {
         ensurePropertiesCreated();
-        std::map<std::string, boost::shared_ptr<PropertyBase> >::const_iterator found = _properties.find(name);
-        return found != _properties.end();
+        std::map<std::string, boost::shared_ptr<PropertyBase> >::const_iterator found = _properties->find(name);
+        return found != _properties->end();
     }
 
     /**
@@ -349,6 +353,9 @@ public:
         boost::shared_ptr<Property<T> > propTemplate = getProp<T>(name);
         return propTemplate->value;
     }
+
+    void cloneProperties(const PropertiesHolder& other);
+
 protected:
 
     /**
@@ -357,7 +364,15 @@ protected:
      **/
     virtual void initializeProperties() const = 0;
 
-    mutable std::map<std::string, boost::shared_ptr<PropertyBase> > _properties;
+
+    void ensurePropertiesMap() const
+    {
+        if (!_properties) {
+            _properties.reset(new std::map<std::string, boost::shared_ptr<PropertyBase> >());
+        }
+    }
+
+    mutable boost::scoped_ptr<std::map<std::string, boost::shared_ptr<PropertyBase> > > _properties;
     mutable bool _propertiesInitialized;
 
 

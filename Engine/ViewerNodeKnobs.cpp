@@ -1379,7 +1379,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         _imp->uiContext->setInfoBarVisible(1, op != eViewerCompositingOperatorNone);
         _imp->bInputNodeChoiceKnob.lock()->setEnabled(op != eViewerCompositingOperatorNone);
     } else if (k == _imp->zoomChoiceKnob.lock()) {
-        ChoiceOption zoomChoice = _imp->zoomChoiceKnob.lock()->getActiveEntry();
+        ChoiceOption zoomChoice = _imp->zoomChoiceKnob.lock()->getCurrentEntry();
         if (zoomChoice.id == "Fit") {
             _imp->uiContext->fitImageToFormat();
         } else if (zoomChoice.id == "+") {

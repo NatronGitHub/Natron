@@ -37,31 +37,45 @@ CurveSerialization::encode(YAML::Emitter& em) const
     em << YAML::Flow;
     em << YAML::BeginSeq;
 
-    std::string prevInterpolation; // No valid interpolation set yet
-    for (std::list<KeyFrameSerialization>::const_iterator it = keys.begin(); it!=keys.end(); ++it) {
 
-        if (prevInterpolation.empty() ||
-            prevInterpolation != it->interpolation) {
-            // serialize interpolation
-            em << it->interpolation;
-        }
-        prevInterpolation = it->interpolation;
+    // Note that the curve type is not serialized, it has to be somehow figured out externally
+    switch (curveType) {
+        case eCurveSerializationTypeString: {
+            for (std::list<KeyFrameSerialization>::const_iterator it = keys.begin(); it!=keys.end(); ++it) {
+                em << it->time;
+                em << it->stringValue;
+            }
+        }   break;
+
+        case eCurveSerializationTypeDouble: {
+            std::string prevInterpolation; // No valid interpolation set yet
+            for (std::list<KeyFrameSerialization>::const_iterator it = keys.begin(); it!=keys.end(); ++it) {
+
+                if (prevInterpolation.empty() ||
+                    prevInterpolation != it->interpolation) {
+                    // serialize interpolation
+                    em << it->interpolation;
+                }
+                prevInterpolation = it->interpolation;
 
 
-        em << it->time;
-        em << it->value;
+                em << it->time;
+                em << it->value;
 
-        if (it->interpolation == kKeyframeSerializationTypeFree || it->interpolation == kKeyframeSerializationTypeBroken) {
-            // When user set tangents manually, we need the right tangents.
-            em << it->rightDerivative;
-        }
+                if (it->interpolation == kKeyframeSerializationTypeFree || it->interpolation == kKeyframeSerializationTypeBroken) {
+                    // When user set tangents manually, we need the right tangents.
+                    em << it->rightDerivative;
+                }
 
-        if (it->interpolation == kKeyframeSerializationTypeBroken) {
-            // In broken mode, both tangents can be different so serialize both
-            em << it->leftDerivative;
-        }
-
+                if (it->interpolation == kKeyframeSerializationTypeBroken) {
+                    // In broken mode, both tangents can be different so serialize both
+                    em << it->leftDerivative;
+                }
+                
+            }
+        }   break;
     }
+
     em << YAML::EndSeq;
 }
 
@@ -84,80 +98,101 @@ CurveSerialization::decode(const YAML::Node& node)
     if (node.size() == 0) {
         return;
     }
-    CurveDecodeStateEnum state = eCurveDecodeStateMayExpectInterpolation;
-    std::string interpolation;
-    KeyFrameSerialization keyframe;
-    bool pushKeyFrame = false;
-    for (std::size_t i = 0; i < node.size(); ++i) {
 
-        YAML::Node keyNode = node[i];
+    switch (curveType) {
+        case eCurveSerializationTypeString: {
+            if ((node.size() % 2) != 0) {
+                return;
+            }
+            for (std::size_t i = 0; i < node.size(); i+=2) {
+                KeyFrameSerialization keyframe;
 
-        switch (state) {
-            case eCurveDecodeStateMayExpectInterpolation:
-                if (pushKeyFrame) {
-                    keys.push_back(keyframe);
+                keyframe.time = node[i].as<double>();
+                keyframe.stringValue = node[i+1].as<std::string>();
+                keys.push_back(keyframe);
+            }
+        }   break;
 
-                    // Reset keyframe
-                    keyframe.interpolation.clear();
-                    keyframe.time = keyframe.value = keyframe.leftDerivative = keyframe.rightDerivative = 0.;
+        case eCurveSerializationTypeDouble: {
+            CurveDecodeStateEnum state = eCurveDecodeStateMayExpectInterpolation;
+            std::string interpolation;
+            KeyFrameSerialization keyframe;
+            bool pushKeyFrame = false;
+            for (std::size_t i = 0; i < node.size(); ++i) {
 
+                YAML::Node keyNode = node[i];
+
+                switch (state) {
+                    case eCurveDecodeStateMayExpectInterpolation:
+                        if (pushKeyFrame) {
+                            keys.push_back(keyframe);
+
+                            // Reset keyframe
+                            keyframe.interpolation.clear();
+                            keyframe.time = keyframe.value = keyframe.leftDerivative = keyframe.rightDerivative = 0.;
+
+                        }
+                        try {
+                            // First try to get a time. Conversion of a string to double always fails but string to double does not
+                            keyframe.time = keyNode.as<double>();
+
+                            // OK we read a valid time, assume the interpolation is the same as the previous
+
+                            // No interpolation, use the interpolation set previously.
+                            // If interpolation is not set, set interpolation to linear
+                            if (interpolation.empty()) {
+                                interpolation = kKeyframeSerializationTypeLinear;
+                            }
+                            keyframe.interpolation = interpolation;
+                            state = eCurveDecodeStateExpectValue;
+                        } catch (const YAML::BadConversion& /*e*/) {
+                            // OK we read an interpolation and set the curve interpolation so far if needed
+                            keyframe.interpolation = keyNode.as<std::string>();
+                            // No interpolation, use the interpolation set previously.
+                            // If interpolation is not set, set interpolation to linear
+                            if (interpolation.empty()) {
+                                interpolation = keyframe.interpolation;
+                            }
+                            state = eCurveDecodeStateExpectTime;
+                        }
+
+                        break;
+                    case eCurveDecodeStateExpectTime:
+                        keyframe.time = keyNode.as<double>();
+                        state  = eCurveDecodeStateExpectValue;
+                        break;
+                    case eCurveDecodeStateExpectValue:
+                        keyframe.value = keyNode.as<double>();
+                        // Depending on interpolation we may expect derivatives
+                        if (keyframe.interpolation == kKeyframeSerializationTypeFree || keyframe.interpolation == kKeyframeSerializationTypeBroken) {
+                            state = eCurveDecodeStateMayExpectRightDerivative;
+                        } else {
+                            state = eCurveDecodeStateMayExpectInterpolation;
+                        }
+                        break;
+                    case eCurveDecodeStateMayExpectRightDerivative:
+                        keyframe.rightDerivative = keyNode.as<double>();
+                        if (keyframe.interpolation == kKeyframeSerializationTypeBroken) {
+                            state = eCurveDecodeStateMayExpectLeftDerivative;
+                        } else {
+                            state = eCurveDecodeStateMayExpectInterpolation;
+                        }
+                        break;
+                    case eCurveDecodeStateMayExpectLeftDerivative:
+                        keyframe.leftDerivative = keyNode.as<double>();
+                        state = eCurveDecodeStateMayExpectInterpolation;
+                        break;
                 }
-                try {
-                    // First try to get a time. Conversion of a string to double always fails but string to double does not
-                    keyframe.time = keyNode.as<double>();
+                pushKeyFrame = true;
+            }
+            if (pushKeyFrame) {
+                keys.push_back(keyframe);
+            }
 
-                    // OK we read a valid time, assume the interpolation is the same as the previous
+        }   break;
 
-                    // No interpolation, use the interpolation set previously.
-                    // If interpolation is not set, set interpolation to linear
-                    if (interpolation.empty()) {
-                        interpolation = kKeyframeSerializationTypeLinear;
-                    }
-                    keyframe.interpolation = interpolation;
-                    state = eCurveDecodeStateExpectValue;
-                } catch (const YAML::BadConversion& /*e*/) {
-                    // OK we read an interpolation and set the curve interpolation so far if needed
-                    keyframe.interpolation = keyNode.as<std::string>();
-                    // No interpolation, use the interpolation set previously.
-                    // If interpolation is not set, set interpolation to linear
-                    if (interpolation.empty()) {
-                        interpolation = keyframe.interpolation;
-                    }
-                    state = eCurveDecodeStateExpectTime;
-                }
+    };
 
-                break;
-            case eCurveDecodeStateExpectTime:
-                keyframe.time = keyNode.as<double>();
-                state  = eCurveDecodeStateExpectValue;
-                break;
-            case eCurveDecodeStateExpectValue:
-                keyframe.value = keyNode.as<double>();
-                // Depending on interpolation we may expect derivatives
-                if (keyframe.interpolation == kKeyframeSerializationTypeFree || keyframe.interpolation == kKeyframeSerializationTypeBroken) {
-                    state = eCurveDecodeStateMayExpectRightDerivative;
-                } else {
-                    state = eCurveDecodeStateMayExpectInterpolation;
-                }
-                break;
-            case eCurveDecodeStateMayExpectRightDerivative:
-                keyframe.rightDerivative = keyNode.as<double>();
-                if (keyframe.interpolation == kKeyframeSerializationTypeBroken) {
-                    state = eCurveDecodeStateMayExpectLeftDerivative;
-                } else {
-                    state = eCurveDecodeStateMayExpectInterpolation;
-                }
-                break;
-            case eCurveDecodeStateMayExpectLeftDerivative:
-                keyframe.leftDerivative = keyNode.as<double>();
-                state = eCurveDecodeStateMayExpectInterpolation;
-                break;
-        }
-        pushKeyFrame = true;
-    }
-    if (pushKeyFrame) {
-        keys.push_back(keyframe);
-    }
 }
 
 

@@ -181,7 +181,7 @@ RemovePlaneNode::getLayersProducedAndNeeded(TimeValue time,
 
     std::list<ImagePlaneDesc> selectedPlanes, planesToKeep;
     for (int i = 0; i < 4; ++i) {
-        std::string planeID = _imp->removePlaneKnob[i].lock()->getActiveEntry().id;
+        std::string planeID = _imp->removePlaneKnob[i].lock()->getCurrentEntry().id;
         if (planeID == "None") {
             continue;
         }

@@ -103,8 +103,8 @@ BezierCP::getPositionAtTime(TimeValue time,
         }
     } else {
         if (xCurve->isAnimated()) {
-            *x = xCurve->getValueAt(time);
-            *y = yCurve->getValueAt(time);
+            *x = xCurve->getValueAt(time).getValue();
+            *y = yCurve->getValueAt(time).getValue();
         } else {
             *x = _imp->x;
             *y = _imp->y;
@@ -125,12 +125,12 @@ BezierCP::setPositionAtTime(TimeValue time,
     {
         KeyFrame k(time, x);
         k.setInterpolation(eKeyframeTypeLinear);
-        _imp->curveX->addKeyFrame(k);
+        _imp->curveX->setOrAddKeyframe(k);
     }
     {
         KeyFrame k(time, y);
         k.setInterpolation(eKeyframeTypeLinear); 
-        _imp->curveY->addKeyFrame(k);
+        _imp->curveY->setOrAddKeyframe(k);
     }
 }
 
@@ -183,8 +183,8 @@ BezierCP::getLeftBezierPointAtTime(TimeValue time,
         }
     } else {
         if (xCurve && xCurve->isAnimated()) {
-            *x = xCurve->getValueAt(time);
-            *y = yCurve->getValueAt(time);
+            *x = xCurve->getValueAt(time).getValue();
+            *y = yCurve->getValueAt(time).getValue();
         } else {
             *x = _imp->leftX;
             *y = _imp->leftY;
@@ -219,8 +219,8 @@ BezierCP::getRightBezierPointAtTime(TimeValue time,
         }
     } else {
         if (xCurve->isAnimated()) {
-            *x = xCurve->getValueAt(time);
-            *y = yCurve->getValueAt(time);
+            *x = xCurve->getValueAt(time).getValue();
+            *y = yCurve->getValueAt(time).getValue();
         } else {
             *x = _imp->rightX;
             *y = _imp->rightY;
@@ -242,13 +242,13 @@ BezierCP::setLeftBezierPointAtTime(TimeValue time,
     {
         KeyFrame k(time, x);
         k.setInterpolation(eKeyframeTypeLinear);
-        _imp->curveLeftBezierX->addKeyFrame(k);
+        _imp->curveLeftBezierX->setOrAddKeyframe(k);
 
     }
     {
         KeyFrame k(time, y);
         k.setInterpolation(eKeyframeTypeLinear);
-        _imp->curveLeftBezierY->addKeyFrame(k);
+        _imp->curveLeftBezierY->setOrAddKeyframe(k);
 
     }
 }
@@ -262,12 +262,12 @@ BezierCP::setRightBezierPointAtTime(TimeValue time,
     {
         KeyFrame k(time, x);
         k.setInterpolation(eKeyframeTypeLinear);
-        _imp->curveRightBezierX->addKeyFrame(k);
+        _imp->curveRightBezierX->setOrAddKeyframe(k);
     }
     {
         KeyFrame k(time, y);
         k.setInterpolation(eKeyframeTypeLinear);
-        _imp->curveRightBezierY->addKeyFrame(k);
+        _imp->curveRightBezierY->setOrAddKeyframe(k);
     }
 }
 
@@ -278,12 +278,12 @@ BezierCP::removeKeyframe(TimeValue time)
     QMutexLocker l(&_imp->lock);
     ///if the keyframe count reaches 0 update the "static" values which may be fetched
     if (_imp->curveX->getKeyFramesCount() == 1) {
-        _imp->x = _imp->curveX->getValueAt(time);
-        _imp->y = _imp->curveY->getValueAt(time);
-        _imp->leftX = _imp->curveLeftBezierX->getValueAt(time);
-        _imp->leftY = _imp->curveLeftBezierY->getValueAt(time);
-        _imp->rightX = _imp->curveRightBezierX->getValueAt(time);
-        _imp->rightY = _imp->curveRightBezierY->getValueAt(time);
+        _imp->x = _imp->curveX->getValueAt(time).getValue();
+        _imp->y = _imp->curveY->getValueAt(time).getValue();
+        _imp->leftX = _imp->curveLeftBezierX->getValueAt(time).getValue();
+        _imp->leftY = _imp->curveLeftBezierY->getValueAt(time).getValue();
+        _imp->rightX = _imp->curveRightBezierX->getValueAt(time).getValue();
+        _imp->rightY = _imp->curveRightBezierY->getValueAt(time).getValue();
     }
 
     try {

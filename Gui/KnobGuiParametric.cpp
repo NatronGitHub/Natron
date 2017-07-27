@@ -398,7 +398,7 @@ KnobGuiParametric::onItemsSelectionChanged()
             if ( it2->treeItem == *it ) {
                 curves.push_back(it2->curve);
                 AnimItemDimViewIndexID id(_imp->animRoot, it2->curve->getView(), it2->curve->getDimension());
-                selectedKeys.insert(std::make_pair(id, KeyFrameWithStringSet()));
+                selectedKeys.insert(std::make_pair(id, KeyFrameSet()));
                 break;
             }
         }

@@ -156,24 +156,7 @@ class AnimatingObjectI
 {
 public:
 
-    enum KeyframeDataTypeEnum
-    {
-        // Keyframe is just a time - no value
-        eKeyframeDataTypeNone,
-
-        // Keyframe value is an int
-        eKeyframeDataTypeInt,
-
-        // Keyframe value is a double
-        eKeyframeDataTypeDouble,
-
-        // Keyframe value is a bool
-        eKeyframeDataTypeBool,
-
-        // Keyframe value is a string
-        eKeyframeDataTypeString
-    };
-
+    
     AnimatingObjectI();
 
     AnimatingObjectI(const boost::shared_ptr<AnimatingObjectI>& other, const FrameViewRenderKey& key);
@@ -183,20 +166,12 @@ public:
     /**
      * @brief Returns the internal value that is represented by keyframes themselves.
      **/
-    virtual KeyframeDataTypeEnum getKeyFrameDataType() const = 0;
+    virtual CurveTypeEnum getKeyFrameDataType() const = 0;
 
     /**
      * @brief Returns the number of dimensions in the object that can animate
      **/
     virtual int getNDimensions() const { return 1; }
-
-    /**
-     * @brief For an object that supports animating strings, this should return a pointer to it
-     **/
-    virtual StringAnimationManagerPtr getStringAnimation(ViewIdx view) const {
-        Q_UNUSED(view);
-        return StringAnimationManagerPtr();
-    }
 
 
     /**
@@ -497,7 +472,7 @@ public:
      * @param stringAnimation If non NULL, the implementation should also clone any string animation with the given parameters
      * @return True if something has changed, false otherwise
      **/
-    virtual bool cloneCurve(ViewIdx view, DimIdx dimension, const Curve& curve, double offset, const RangeD* range, const StringAnimationManager* stringAnimation) = 0;
+    virtual bool cloneCurve(ViewIdx view, DimIdx dimension, const Curve& curve, double offset, const RangeD* range) = 0;
 
     /**
      * @brief Removes a keyframe at the given time if it matches any on the curve for the given view and dimension.

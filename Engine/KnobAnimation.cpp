@@ -58,13 +58,6 @@ KnobDimViewBase::deleteValuesAtTime(const std::list<double>& times)
     } catch (const std::exception & /*e*/) {
     }
 
-    StringAnimationManagerPtr stringAnim = getStringAnimation();
-    if (stringAnim) {
-        for (std::list<double>::const_iterator it = times.begin(); it != times.end(); ++it) {
-            // This may throw exceptions if keyframes do not exist
-            stringAnim->removeKeyFrame(TimeValue(*it));
-        }
-    }
 
     notifyCurveChanged();
 } // deleteValuesAtTime
@@ -227,18 +220,6 @@ KnobDimViewBase::warpValuesAtTime(const std::list<double>& times, const Curve::K
         return false;
     }
 
-    // Make sure string animation follows up the warp
-    std::vector<std::string> oldStringValues;
-    StringAnimationManagerPtr stringAnim = getStringAnimation();
-
-    if (stringAnim) {
-        oldStringValues.resize(times.size());
-        int i = 0;
-        for (std::list<double>::const_iterator it = times.begin(); it!=times.end(); ++it, ++i) {
-            stringAnim->stringFromInterpolatedIndex(*it, &oldStringValues[i]);
-        }
-    }
-
 
     if (outKeys) {
         outKeys->clear();
@@ -253,15 +234,6 @@ KnobDimViewBase::warpValuesAtTime(const std::list<double>& times, const Curve::K
         *outKeys = newKeys;
     }
 
-
-    // update string animation
-    if (stringAnim) {
-        assert(newKeys.size() == oldStringValues.size());
-        for (std::size_t i = 0; i < newKeys.size(); ++i) {
-            double ret;
-            stringAnim->insertKeyFrame(newKeys[i].getTime(),  oldStringValues[i], &ret);
-        }
-    }
 
     notifyCurveChanged();
 
@@ -338,21 +310,11 @@ KnobDimViewBase::copy(const CopyInArgs& inArgs, CopyOutArgs* outArgs)
         }
 
         const Curve* otherCurve = inArgs.other ? inArgs.other->animationCurve.get() : inArgs.otherCurve;
-        const StringAnimationManager* otherStringAnimation = inArgs.other ? inArgs.other->getStringAnimation().get() : inArgs.otherCurveAnimation;
         if (otherCurve) {
             if (!animationCurve) {
                 animationCurve.reset(new Curve(otherCurve->getType()));
             }
             hasChanged |= animationCurve->cloneAndCheckIfChanged(*otherCurve, inArgs.keysToCopyOffset, inArgs.keysToCopyRange);
-        }
-
-
-        // Clone string animation if necesssary
-        if (otherStringAnimation) {
-            StringAnimationManagerPtr thisStringAnimation = getStringAnimation();
-            if (thisStringAnimation) {
-                thisStringAnimation->clone(*otherStringAnimation, inArgs.keysToCopyOffset, inArgs.keysToCopyRange);
-            }
         }
 
 
@@ -378,8 +340,7 @@ KnobHelper::cloneCurve(ViewIdx view,
                        DimIdx dimension,
                        const Curve& curve,
                        double offset,
-                       const RangeD* range,
-                       const StringAnimationManager* stringAnimation)
+                       const RangeD* range)
 {
     if (dimension < 0 || dimension >= _imp->common->dimension) {
         throw std::invalid_argument("KnobHelper::cloneCurve: Dimension out of range");
@@ -392,7 +353,6 @@ KnobHelper::cloneCurve(ViewIdx view,
 
 
     KnobDimViewBase::CopyInArgs copyArgs(curve);
-    copyArgs.otherCurveAnimation = stringAnimation;
     copyArgs.keysToCopyRange = range;
     copyArgs.keysToCopyOffset = offset;
 
@@ -651,10 +611,6 @@ KnobDimViewBase::removeAnimation()
     }
     animationCurve->clearKeyFrames();
 
-    StringAnimationManagerPtr stringAnim = getStringAnimation();
-    if (stringAnim) {
-        stringAnim->clearKeyFrames();
-    }
 
     if (timesRemoved.empty()) {
         // Nothing changed

@@ -222,14 +222,14 @@ private:
 
     struct KeyFrameWithStringIndex
     {
-        KeyFrameWithString k;
+        KeyFrame k;
         int index;
     };
     struct KeyFrameWithStringIndex_CompareLess
     {
         bool operator()(const KeyFrameWithStringIndex& lhs, const KeyFrameWithStringIndex& rhs) const
         {
-            return lhs.k.key.getTime() < rhs.k.key.getTime();
+            return lhs.k.getTime() < rhs.k.getTime();
         }
     };
 

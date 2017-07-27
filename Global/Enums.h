@@ -888,6 +888,17 @@ enum TableChangeReasonEnum
 };
 
 
+enum CurveTypeEnum
+{
+    eCurveTypeDouble = 0, //< the values held by the keyframes can be any real
+    eCurveTypeInt, //< the values held by the keyframes can only be integers
+    eCurveTypeChoice, //< same as eCurveTypeString, interpolation is restricted to constant and keyframes have a choice id property
+    eCurveTypeBool, //< the values held by the keyframes can be either 0 or 1 with constant interpolation
+    eCurveTypeString //< the keyframes hold a string property and interpolation is restricted to constant
+        // and times
+};
+
+
 DECLARE_FLAGS(StandardButtons, StandardButtonEnum);
 
 #ifdef SBK_RUN

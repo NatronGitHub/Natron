@@ -62,7 +62,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/LibraryBinary.h"
 #include "Engine/Node.h"
 #include "Engine/Project.h"
-#include "Engine/StringAnimationManager.h"
 #include "Engine/Settings.h"
 #include "Engine/TLSHolder.h"
 #include "Engine/TimeLine.h"

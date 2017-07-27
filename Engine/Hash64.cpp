@@ -87,9 +87,16 @@ Hash64::appendCurve(const CurvePtr& curve, Hash64* hash)
     int c = curSize;
     for (KeyFrameSet::const_iterator it = keys.begin(); it!=keys.end(); ++it, c += 4) {
         hash->node_values[c] = toU64((double)it->getTime());
-        hash->node_values[c + 1] = toU64(it->getValue());
-        hash->node_values[c + 2] = toU64(it->getLeftDerivative());
-        hash->node_values[c + 3] = toU64(it->getRightDerivative());
+        if (it->hasProperty(kKeyFramePropString)) {
+            std::string value;
+            it->getPropertySafe(kKeyFramePropString, 0, &value);
+            appendQString(QString::fromUtf8(value.c_str()), hash);
+        } else {
+            hash->node_values[c + 1] = toU64(it->getValue());
+            hash->node_values[c + 2] = toU64(it->getLeftDerivative());
+            hash->node_values[c + 3] = toU64(it->getRightDerivative());
+        }
+
     }
 }
 

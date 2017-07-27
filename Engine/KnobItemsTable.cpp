@@ -2151,10 +2151,10 @@ KnobItemsTable::createMasterKnobDuplicateOnItem(const KnobTableItemPtr& item, co
 }
 
 //////// Animation implementation
-AnimatingObjectI::KeyframeDataTypeEnum
+CurveTypeEnum
 KnobTableItem::getKeyFrameDataType() const
 {
-    return eKeyframeDataTypeNone;
+    return eCurveTypeChoice;
 }
 
 
@@ -2349,7 +2349,7 @@ KnobTableItem::deleteAnimationConditional(TimeValue time, ViewSetSpec view, bool
 } // deleteAnimationConditional
 
 bool
-KnobTableItem::cloneCurve(ViewIdx view, DimIdx /*dimension*/, const Curve& curve, double offset, const RangeD* range, const StringAnimationManager* /*stringAnimation*/)
+KnobTableItem::cloneCurve(ViewIdx view, DimIdx /*dimension*/, const Curve& curve, double offset, const RangeD* range)
 {
     std::list<double> keysAdded, keysRemoved;
     bool hasChanged;

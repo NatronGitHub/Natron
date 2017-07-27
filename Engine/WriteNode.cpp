@@ -725,7 +725,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
     SetCreatingWriterRAIIFlag creatingNode__(this);
     QString qpattern = QString::fromUtf8( filename.c_str() );
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
-    std::string writerPluginID = pluginSelectorKnob.lock()->getActiveEntry().id;
+    std::string writerPluginID = pluginSelectorKnob.lock()->getCurrentEntry().id;
 
     if ( writerPluginID.empty() || writerPluginID ==  kPluginSelectorParamEntryDefault) {
         //Use default
@@ -1111,7 +1111,7 @@ WriteNode::knobChanged(const KnobIPtr& k,
 
     } else if ( k == _imp->pluginSelectorKnob.lock() ) {
 
-        ChoiceOption entry = _imp->pluginSelectorKnob.lock()->getActiveEntry();
+        ChoiceOption entry = _imp->pluginSelectorKnob.lock()->getCurrentEntry();
 
         if (entry.id == "Default") {
             entry.id.clear();

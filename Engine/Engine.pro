@@ -152,6 +152,7 @@ SOURCES += \
     Interpolation.cpp \
     JoinViewsNode.cpp \
     KeybindShortcut.cpp \
+    KeyFrameInterpolator.cpp \
     Knob.cpp \
     KnobAnimation.cpp \
     KnobExpression.cpp \
@@ -246,7 +247,6 @@ SOURCES += \
     Smooth1D.cpp \
     StandardPaths.cpp \
     StorageDeleterThread.cpp \
-    StringAnimationManager.cpp \
     StubNode.cpp \
     TabWidgetI.cpp \
     Texture.cpp \
@@ -404,6 +404,7 @@ HEADERS += \
     ImageStorage.h \
     ImageTilesState.h \
     JoinViewsNode.h \
+    KeyFrameInterpolator.h \
     KeybindShortcut.h \
     Knob.h \
     KnobPrivate.h \
@@ -508,7 +509,6 @@ HEADERS += \
     SplitterI.h \
     StandardPaths.h \
     StorageDeleterThread.h \
-    StringAnimationManager.h \
     StubNode.h \
     TabWidgetI.h \
     Texture.h \

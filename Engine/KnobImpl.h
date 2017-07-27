@@ -58,7 +58,6 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/KnobTypes.h"
 #include "Engine/Hash64.h"
 #include "Engine/ViewIdx.h"
-#include "Engine/StringAnimationManager.h"
 
 #include "Engine/EngineFwd.h"
 
@@ -416,12 +415,13 @@ KnobHelper::pyObjectToType(PyObject* o)
 
 template <>
 std::string
-KnobHelper::pyObjectToType(PyObject* o, ViewIdx view) const
+KnobHelper::pyObjectToType(PyObject* o, DimIdx /*dim*/, ViewIdx /*view*/) const
 {
     if (PyUnicode_Check(o) || PyString_Check(o)) {
         return pyObjectToType<std::string>(o);
     }
-
+    return std::string();
+#if 0
     int index = 0;
     if ( PyFloat_Check(o) ) {
         index = std::floor( (double)PyFloat_AsDouble(o) + 0.5 );
@@ -431,7 +431,7 @@ KnobHelper::pyObjectToType(PyObject* o, ViewIdx view) const
         index = 1;
     }
 
-    const AnimatingKnobStringHelper* isStringAnimated = dynamic_cast<const AnimatingKnobStringHelper* >(this);
+    getAnimationCurve(view, dim);
     if (!isStringAnimated) {
         return std::string();
     }
@@ -439,6 +439,7 @@ KnobHelper::pyObjectToType(PyObject* o, ViewIdx view) const
     isStringAnimated->stringFromInterpolatedValue(index, view, &ret);
 
     return ret;
+#endif
 }
 
 
@@ -524,7 +525,7 @@ Knob<T>::evaluateExpression(TimeValue time,
             if (!exprOk) {
                 return false;
             }
-            *value =  pyObjectToType<T>(ret, view);
+            *value =  pyObjectToType<T>(ret, dimension, view);
             Py_DECREF(ret); //< new ref
             return true;
         }
@@ -1088,22 +1089,6 @@ void handleAnimatedHashing(Knob<T>* knob, ViewIdx view, DimIdx dimension, Hash64
 
 }
 
-template <>
-void handleAnimatedHashing(Knob<std::string>* knob, ViewIdx view, DimIdx /*dimension*/, Hash64* hash)
-{
-    AnimatingKnobStringHelper* isAnimated = dynamic_cast<AnimatingKnobStringHelper*>(knob);
-    assert(isAnimated);
-    if (isAnimated) {
-        StringAnimationManagerPtr mng = isAnimated->getStringAnimation(view);
-        std::map<double, std::string> keys;
-        mng->save(&keys);
-        for (std::map<double, std::string>::iterator it = keys.begin(); it!=keys.end(); ++it) {
-            Hash64::appendQString(QString::fromUtf8(it->second.c_str()), hash);
-        }
-
-    }
-
-}
 
 template <typename T>
 void appendValueToHash(const T& v, Hash64* hash)
@@ -1198,31 +1183,31 @@ Knob<T>::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 } // appendToHash
 
 template <>
-AnimatingObjectI::KeyframeDataTypeEnum
+CurveTypeEnum
 Knob<int>::getKeyFrameDataType() const
 {
-    return AnimatingObjectI::eKeyframeDataTypeInt;
+    return eCurveTypeInt;
 }
 
 template <>
-AnimatingObjectI::KeyframeDataTypeEnum
+CurveTypeEnum
 Knob<bool>::getKeyFrameDataType() const
 {
-    return AnimatingObjectI::eKeyframeDataTypeBool;
+    return eCurveTypeBool;
 }
 
 template <>
-AnimatingObjectI::KeyframeDataTypeEnum
+CurveTypeEnum
 Knob<double>::getKeyFrameDataType() const
 {
-    return AnimatingObjectI::eKeyframeDataTypeDouble;
+    return eCurveTypeDouble;
 }
 
 template <>
-AnimatingObjectI::KeyframeDataTypeEnum
+CurveTypeEnum
 Knob<std::string>::getKeyFrameDataType() const
 {
-    return AnimatingObjectI::eKeyframeDataTypeString;
+    return eCurveTypeString;
 }
 
 

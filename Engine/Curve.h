@@ -39,6 +39,7 @@
 #include "Global/GlobalDefines.h"
 #include "Engine/DimensionIdx.h"
 #include "Serialization/SerializationBase.h"
+#include "Engine/PropertiesHolder.h"
 #include "Engine/Transform.h"
 #include "Engine/TimeValue.h"
 
@@ -48,13 +49,20 @@ NATRON_NAMESPACE_ENTER
 
 #define NATRON_CURVE_X_SPACING_EPSILON 1e-6
 
+
+/**
+ * @brief optional x1 string A property on the keyframe that holds an optional string
+ * Defalt value - empty
+ **/
+#define kKeyFramePropString "KeyFramePropString"
+
 /**
  * @brief A KeyFrame is a lightweight pair <time,value>. These are the values that are used
  * to interpolate a Curve. The _leftDerivative and _rightDerivative can be
  * used by the interpolation method of the curve.
  **/
 
-class KeyFrame
+class KeyFrame : public PropertiesHolder
 {
 public:
 
@@ -68,7 +76,7 @@ public:
 
     KeyFrame(const KeyFrame & other);
 
-    ~KeyFrame();
+    virtual ~KeyFrame();
 
     void operator=(const KeyFrame & o);
 
@@ -108,6 +116,8 @@ public:
 
 private:
 
+    virtual void initializeProperties() const OVERRIDE FINAL {}
+
     TimeValue _time;
     double _value;
     double _leftDerivative;
@@ -132,7 +142,6 @@ struct KeyFrame_compare_time
 
 typedef std::set<KeyFrame, KeyFrame_compare_time> KeyFrameSet;
 
-
 struct CurvePrivate;
 
 class Curve : public SERIALIZATION_NAMESPACE::SerializableObjectBase
@@ -155,17 +164,6 @@ public:
         double max;
     };
 
-    enum CurveTypeEnum
-    {
-        eCurveTypeDouble = 0, //< the values held by the keyframes can be any real
-        eCurveTypeParametric, // < same as double but the curve may have a X range
-        eCurveTypeInt, //< the values held by the keyframes can only be integers
-        eCurveTypeIntConstantInterp, //< same as eCurveTypeInt but interpolation is restricted to eKeyframeTypeConstant
-        eCurveTypeBool, //< the values held by the keyframes can be either 0 or 1
-        eCurveTypeString //< the values held by the keyframes can only be integers and keyframes are ordered by increasing values
-        // and times
-    };
-
     /**
      * @brief An empty curve, held by no one. This constructor is used by the serialization.
      * An empty curve has a value of zero everywhere (@see getValueAt()).
@@ -175,6 +173,13 @@ public:
     Curve(const Curve & other);
 
     CurveTypeEnum getType() const;
+
+
+    /**
+     * @brief Replaces the default interpolator with a custom keyframe interpolator. 
+     * The curve takes ownership of the interpolator.
+     **/
+    void setInterpolator(const KeyFrameInterpolatorPtr& interpolator);
 
     /**
      * @brief Set the curve to be periodic, i.e: the first keyframe is considered to be equal to the last keyframe.
@@ -233,6 +238,8 @@ public:
     /**whether the curve will clamp possible keyframe X values to integers or not.**/
     bool areKeyFramesTimeClampedToIntegers() const WARN_UNUSED_RETURN;
 
+    void setKeyFramesTimeClampedToIntegers(bool enabled);
+
     bool areKeyFramesValuesClampedToIntegers() const WARN_UNUSED_RETURN;
 
     bool areKeyFramesValuesClampedToBooleans() const WARN_UNUSED_RETURN;
@@ -241,12 +248,17 @@ public:
 
     std::pair<double, double> getXRange() const WARN_UNUSED_RETURN;
 
-    ///returns true if a keyframe was successfully added, false if it just replaced an already
-    ///existing key at this time.
-    bool addKeyFrame(KeyFrame key);
-
-    // Returns true if a keyframe was added, false if it modified an existing one
-    ValueChangedReturnCodeEnum setOrAddKeyframe(KeyFrame key);
+    /**
+     * @brief Add the given keyframe to the curve if no keyframe already exists at the keyframe time.
+     * If a keyframe already exists, it is modified to reflect the content of the given key.
+     * @param keyframeIndex Optionally the index of the keyframe in output
+     * @returns An enum indicating if a keyframe was modified or added or nothing changed, it can only be
+     *   eValueChangedReturnCodeKeyframeModified or eValueChangedReturnCodeKeyframeAdded or
+     * eValueChangedReturnCodeNothingChanged.
+     * 
+     * The return value can never be eValueChangedReturnCodeNoKeyframeAdded
+     **/
+    ValueChangedReturnCodeEnum setOrAddKeyframe(const KeyFrame& key, int* keyframeIndex = NULL);
 
     void removeKeyFrameWithTime(TimeValue time);
 
@@ -283,11 +295,14 @@ public:
 
     double getMaximumTimeCovered() const WARN_UNUSED_RETURN;
 
-    /*
-     * The interpolated curve value.
-     * An empty curve has a value of zero everywhere/
-     */
-    double getValueAt(TimeValue t, bool clamp = true) const WARN_UNUSED_RETURN;
+    /**
+     * @brief The interpolated curve value.
+     * An empty curve has a value of zero everywhere
+     * @returns A KeyFrame object containing the interpolated value.
+     * If a custom interpolator is provided, other keyframe properties may be interpolated such as
+     * kKeyFramePropString.
+     **/
+    KeyFrame getValueAt(TimeValue t, bool clamp = true) const WARN_UNUSED_RETURN;
 
     double getDerivativeAt(TimeValue t) const WARN_UNUSED_RETURN;
 
@@ -592,7 +607,7 @@ private:
 
     ///returns an iterator to the new keyframe in the keyframe set and
     ///a boolean indicating whether it removed a keyframe already existing at this time or not
-    std::pair<KeyFrameSet::iterator, bool> addKeyFrameNoUpdate(const KeyFrame & cp) WARN_UNUSED_RETURN;
+    std::pair<KeyFrameSet::iterator, ValueChangedReturnCodeEnum> setOrUpdateKeyframeInternal(const KeyFrame & cp) WARN_UNUSED_RETURN;
 
 
     /**

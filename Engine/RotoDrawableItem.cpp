@@ -745,7 +745,7 @@ RotoDrawableItem::refreshNodesConnections(const RotoDrawableItemPtr& previous)
             if (mergeAInputChoice_i == 0) {
                 mergeInputAUpstreamNode = upstreamNode;
             } else {
-                ChoiceOption inputAName = mergeAKnob->getActiveEntry();
+                ChoiceOption inputAName = mergeAKnob->getCurrentEntry();
                 int inputNb = QString::fromUtf8(inputAName.id.c_str()).toInt();
                 mergeInputAUpstreamNode = rotoPaintNode->getInternalInputNode(inputNb);
             }
@@ -833,7 +833,7 @@ RotoDrawableItem::refreshNodesConnections(const RotoDrawableItemPtr& previous)
                     // For reveal & clone, the user can select a RotoPaint node's input.
                     // Find an input of the RotoPaint node with the given input label
 
-                    ChoiceOption inputAName = mergeAKnob->getActiveEntry();
+                    ChoiceOption inputAName = mergeAKnob->getCurrentEntry();
                     int inputNb = QString::fromUtf8(inputAName.id.c_str()).toInt();
                     mergeAUpstreamInput = rotoPaintNode->getInternalInputNode(inputNb);
 
@@ -888,7 +888,7 @@ RotoDrawableItem::refreshNodesConnections(const RotoDrawableItemPtr& previous)
         NodePtr maskInputNode;
         if (maskInput_i > 0) {
 
-            ChoiceOption maskInputName = knob->getActiveEntry();
+            ChoiceOption maskInputName = knob->getCurrentEntry();
             int inputNb = QString::fromUtf8(maskInputName.id.c_str()).toInt();
             maskInputNode = rotoPaintNode->getInternalInputNode(inputNb);
         }

@@ -521,7 +521,7 @@ KnobGuiChoice::updateGUI()
         return;
     }
 
-    ChoiceOption activeEntry = knob->getActiveEntry();
+    ChoiceOption activeEntry = knob->getCurrentEntry();
 
     QString activeEntryLabel;
     if (!activeEntry.label.empty()) {

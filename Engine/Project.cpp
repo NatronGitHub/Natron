@@ -1134,7 +1134,7 @@ Project::getProjectDefaultFormat(Format *f) const
 {
     assert(f);
     QMutexLocker l(&_imp->formatMutex);
-    ChoiceOption formatSpec = _imp->formatKnob->getActiveEntry();
+    ChoiceOption formatSpec = _imp->formatKnob->getCurrentEntry();
     // use the label here, because the id does not contain the format specifications.
     // see ProjectPrivate::generateStringFromFormat()
 #pragma message WARN("TODO: can't we store the format somewhere instead of parsing the label???")

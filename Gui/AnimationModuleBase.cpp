@@ -127,34 +127,30 @@ AnimationModuleBase::moveSelectedKeysAndNodes(double dt, double dv)
 
 
         KeyFrame prevKey, nextKey;
-        for (KeyFrameWithStringSet::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+        for (KeyFrameSet::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
 
             // Adjust maxRight so that it can move up to the next keyframe
-            if ( curve->getNextKeyframeTime( it2->key.getTime(), &nextKey ) ) {
+            if ( curve->getNextKeyframeTime( it2->getTime(), &nextKey ) ) {
 
 
                 // If this keyframe has a next keyframe, check if it is selected
-                KeyFrameWithString k;
-                k.key = nextKey;
-                KeyFrameWithStringSet::const_iterator foundKey = it->second.find(k);
+                KeyFrameSet::const_iterator foundKey = it->second.find(nextKey);
                 if (foundKey == it->second.end()) {
                     // The next keyframe is not selected
-                    double diff = nextKey.getTime() - it2->key.getTime() - epsilon;
+                    double diff = nextKey.getTime() - it2->getTime() - epsilon;
                     maxRight = std::max( 0., std::min(diff, maxRight) );
                 }
 
             }
 
             // Adjust maxLeft so that it can move up to the previous keyframe
-            if ( curve->getPreviousKeyframeTime( it2->key.getTime(), &prevKey ) ) {
+            if ( curve->getPreviousKeyframeTime( it2->getTime(), &prevKey ) ) {
 
                 // If this keyframe has a next keyframe, check if it is selected
-                KeyFrameWithString k;
-                k.key = prevKey;
-                KeyFrameWithStringSet::const_iterator foundKey = it->second.find(k);
+                KeyFrameSet::const_iterator foundKey = it->second.find(prevKey);
                 if (foundKey == it->second.end()) {
                     // The next keyframe is not selected
-                    double diff = prevKey.getTime() - it2->key.getTime() + epsilon;
+                    double diff = prevKey.getTime() - it2->getTime() + epsilon;
                     maxLeft = std::min( 0., std::max(diff, maxLeft) );
                 }
             }

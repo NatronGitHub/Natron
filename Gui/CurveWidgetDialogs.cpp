@@ -399,8 +399,8 @@ struct EditKeyFrameDialogPrivate
                               const AnimItemDimViewKeyFrame& key)
         : curveWidget(curveWidget)
         , key(key)
-        , originalX( key.key.key.getTime() )
-        , originalY( key.key.key.getValue() )
+        , originalX( key.key.getTime() )
+        , originalY( key.key.getValue() )
         , mainLayout(0)
         , boxContainer(0)
         , boxLayout(0)
@@ -412,9 +412,9 @@ struct EditKeyFrameDialogPrivate
         , mode(mode)
     {
         if (mode == EditKeyFrameDialog::eEditModeLeftDerivative) {
-            originalX = key.key.key.getLeftDerivative();
+            originalX = key.key.getLeftDerivative();
         } else if (mode == EditKeyFrameDialog::eEditModeRightDerivative) {
-            originalX = key.key.key.getRightDerivative();
+            originalX = key.key.getRightDerivative();
         }
     }
 };
@@ -511,13 +511,11 @@ EditKeyFrameDialog::moveKeyTo(double newX, double newY)
     }
 
     AnimItemDimViewKeyFramesMap keysToMove;
-    KeyFrameWithStringSet& keys = keysToMove[_imp->key.id];
-    KeyFrameWithString k;
-    k = _imp->key.key;
-    keys.insert(k);
+    KeyFrameSet& keys = keysToMove[_imp->key.id];
+    keys.insert(_imp->key.key);
 
-    double curY = k.key.getValue();
-    double curX = k.key.getTime();
+    double curY = _imp->key.key.getValue();
+    double curX = _imp->key.key.getTime();
 
     if (_imp->mode == eEditModeKeyframePosition) {
         // Check that another keyframe doesn't have this time
@@ -579,7 +577,7 @@ void
 EditKeyFrameDialog::onXSpinBoxValueChanged(double d)
 {
     if (_imp->mode == eEditModeKeyframePosition) {
-        moveKeyTo( d, _imp->key.key.key.getValue() );
+        moveKeyTo( d, _imp->key.key.getValue() );
     } else {
         moveDerivativeTo(d);
     }
@@ -588,7 +586,7 @@ EditKeyFrameDialog::onXSpinBoxValueChanged(double d)
 void
 EditKeyFrameDialog::onYSpinBoxValueChanged(double d)
 {
-    moveKeyTo(_imp->key.key.key.getTime(), d);
+    moveKeyTo(_imp->key.key.getTime(), d);
 }
 
 void

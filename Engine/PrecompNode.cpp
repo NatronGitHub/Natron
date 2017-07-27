@@ -473,7 +473,7 @@ PrecompNodePrivate::populateWriteNodesChoice(bool setWriteNodeChoice)
 NodePtr
 PrecompNodePrivate::getWriteNodeFromPreComp() const
 {
-    ChoiceOption userChoiceNodeName =  writeNodesKnob.lock()->getActiveEntry();
+    ChoiceOption userChoiceNodeName =  writeNodesKnob.lock()->getCurrentEntry();
 
     if (userChoiceNodeName.id == "None") {
         return NodePtr();

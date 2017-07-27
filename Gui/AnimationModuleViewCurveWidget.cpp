@@ -384,7 +384,7 @@ AnimationModuleViewPrivate::curveEditorMousePressEvent(QMouseEvent* e)
     if (nearbyKeyframe.id.item) {
 
         AnimItemDimViewKeyFramesMap keysToAdd;
-        KeyFrameWithStringSet& keys = keysToAdd[nearbyKeyframe.id];
+        KeyFrameSet& keys = keysToAdd[nearbyKeyframe.id];
         keys.insert(nearbyKeyframe.key);
         model->getSelectionModel()->makeSelection(keysToAdd, std::vector<TableItemAnimPtr>(), std::vector<NodeAnimPtr>(), (AnimationModuleSelectionModel::SelectionTypeAdd |
                                                                                                                            AnimationModuleSelectionModel::SelectionTypeClear) );
@@ -399,7 +399,7 @@ AnimationModuleViewPrivate::curveEditorMousePressEvent(QMouseEvent* e)
     std::pair<MoveTangentCommand::SelectedTangentEnum, AnimItemDimViewKeyFrame > selectedTan = isNearbyTangent( e->pos() );
 
     //select the derivative only if it is not a constant keyframe
-    if ( selectedTan.second.id.item && (selectedTan.second.key.key.getInterpolation() != eKeyframeTypeConstant) ) {
+    if ( selectedTan.second.id.item && (selectedTan.second.key.getInterpolation() != eKeyframeTypeConstant) ) {
         state = eEventStateDraggingTangent;
         selectedDerivative = selectedTan;
         return true;
@@ -438,9 +438,9 @@ AnimationModuleViewPrivate::refreshCurveEditorSelectedKeysBRect()
     RectD keyFramesBbox;
     bool bboxSet = false;
     for (AnimItemDimViewKeyFramesMap::const_iterator it = selectedKeys.begin(); it != selectedKeys.end(); ++it) {
-        for (KeyFrameWithStringSet::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            double x = it2->key.getTime();
-            double y = it2->key.getValue();
+        for (KeyFrameSet::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            double x = it2->getTime();
+            double y = it2->getValue();
             if (bboxSet) {
                 if ( x < keyFramesBbox.left() ) {
                     keyFramesBbox.set_left(x);
@@ -772,13 +772,12 @@ AnimationModuleView::onImportCurveFromAsciiActionTriggered()
         for (std::map<CurveGuiPtr, std::vector<double> >::const_iterator it = curvesValues.begin(); it != curvesValues.end(); ++it) {
 
             AnimItemDimViewIndexID id(it->first->getItem(), it->first->getView(), it->first->getDimension());
-            KeyFrameWithStringSet& keys = finalValues[id];
+            KeyFrameSet& keys = finalValues[id];
 
             const std::vector<double> & values = it->second;
             double xIndex = xstart;
             for (U32 i = 0; i < values.size(); ++i) {
-                KeyFrameWithString k;
-                k.key = KeyFrame(xIndex, values[i], 0., 0., eKeyframeTypeLinear);
+                KeyFrame k(xIndex, values[i], 0., 0., eKeyframeTypeLinear);
                 keys.insert(k);
                 xIndex += incr;
             }
@@ -824,11 +823,10 @@ AnimationModuleViewPrivate::addKey(const CurveGuiPtr& curve, double xCurve, doub
 
     AnimItemDimViewIndexID itemKey(curve->getItem(), curve->getView(), curve->getDimension());
     AnimItemDimViewKeyFramesMap keysToAdd;
-    KeyFrameWithStringSet& keys = keysToAdd[itemKey];
+    KeyFrameSet& keys = keysToAdd[itemKey];
 
     AnimationModuleBasePtr model = _model.lock();
-    KeyFrameWithString k;
-    k.key = KeyFrame(xCurve, yCurve, 0, 0);
+    KeyFrame k(xCurve, yCurve, 0, 0);
     keys.insert(k);
     model->pushUndoCommand( new AddKeysCommand(keysToAdd, model, false /*clearAndAdd*/) );
 

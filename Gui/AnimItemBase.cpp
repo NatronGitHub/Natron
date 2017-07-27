@@ -28,7 +28,6 @@
 
 #include "Engine/AnimatingObjectI.h"
 #include "Engine/Curve.h"
-#include "Engine/StringAnimationManager.h"
 #include "Gui/KnobAnim.h"
 
 NATRON_NAMESPACE_ENTER
@@ -47,7 +46,7 @@ public:
 
     }
 
-    void addKeyFramesForDimView(DimIdx dimension, ViewIdx view, KeyFrameWithStringSet *result) const;
+    void addKeyFramesForDimView(DimIdx dimension, ViewIdx view, KeyFrameSet *result) const;
     
     
 };
@@ -72,27 +71,18 @@ AnimItemBase::getModel() const
 }
 
 void
-AnimItemBasePrivate::addKeyFramesForDimView(DimIdx dimension, ViewIdx view, KeyFrameWithStringSet *result) const
+AnimItemBasePrivate::addKeyFramesForDimView(DimIdx dimension, ViewIdx view, KeyFrameSet *result) const
 {
     CurvePtr curve = publicInterface->getCurve(dimension, view);
     if (!curve) {
         return;
     }
-    KeyFrameSet keys = curve->getKeyFrames_mt_safe();
-    AnimatingObjectIPtr animObject = publicInterface->getInternalAnimItem();
-    StringAnimationManagerPtr stringAnim = animObject->getStringAnimation(view);
-    for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-        KeyFrameWithString k;
-        if (stringAnim) {
-            stringAnim->stringFromInterpolatedIndex(it->getValue(), &k.string);
-        }
-        k.key = *it;
-        result->insert(k);
-    }
+    *result = curve->getKeyFrames_mt_safe();
+
 }
 
 void
-AnimItemBase::getKeyframes(DimSpec dimension, ViewSetSpec viewSpec, GetKeyframesTypeEnum type, KeyFrameWithStringSet *result) const
+AnimItemBase::getKeyframes(DimSpec dimension, ViewSetSpec viewSpec, GetKeyframesTypeEnum type, KeyFrameSet *result) const
 {
 
     assert(viewSpec.isAll() || viewSpec.isViewIdx());
@@ -155,11 +145,11 @@ AnimItemBase::getKeyframes(DimSpec dimension, ViewSetSpec viewSpec, GetKeyframes
         // Get keyframes from first curve and then check if present in other curves
         const DimensionViewPair& firstDimView = curvesToProcess.front();
 
-        KeyFrameWithStringSet tmpResult;
+        KeyFrameSet tmpResult;
         _imp->addKeyFramesForDimView(firstDimView.dimension, firstDimView.view, &tmpResult);
 
         KeyFrame k;
-        for (KeyFrameWithStringSet::const_iterator it2 = tmpResult.begin(); it2 != tmpResult.end(); ++it2) {
+        for (KeyFrameSet::const_iterator it2 = tmpResult.begin(); it2 != tmpResult.end(); ++it2) {
 
             bool hasKeyFrameForAllCurves = true;
 
@@ -171,7 +161,7 @@ AnimItemBase::getKeyframes(DimSpec dimension, ViewSetSpec viewSpec, GetKeyframes
                     return;
                 }
 
-                if (!curve->getKeyFrameWithTime(it2->key.getTime(), &k)) {
+                if (!curve->getKeyFrameWithTime(it2->getTime(), &k)) {
                     hasKeyFrameForAllCurves = false;
                     break;
                 }
@@ -209,7 +199,7 @@ AnimItemBase::getKeyframes(DimSpec dimension, ViewSetSpec viewSpec, AnimItemDimV
                     id.item = thisShared;
                     id.dim = DimIdx(i);
                     id.view = *it;
-                    KeyFrameWithStringSet& keys = (*result)[id];
+                    KeyFrameSet& keys = (*result)[id];
                     _imp->addKeyFramesForDimView(DimIdx(i), *it, &keys);
                 }
             } else {
@@ -224,7 +214,7 @@ AnimItemBase::getKeyframes(DimSpec dimension, ViewSetSpec viewSpec, AnimItemDimV
                 id.item = thisShared;
                 id.dim = DimIdx(i);
                 id.view = ViewIdx(viewSpec.value());
-                KeyFrameWithStringSet& keys = (*result)[id];
+                KeyFrameSet& keys = (*result)[id];
                 _imp->addKeyFramesForDimView(DimIdx(i), ViewIdx(viewSpec.value()), &keys);
             }
         }
@@ -235,7 +225,7 @@ AnimItemBase::getKeyframes(DimSpec dimension, ViewSetSpec viewSpec, AnimItemDimV
                 id.item = thisShared;
                 id.dim = DimIdx(dimension.value());
                 id.view = *it;
-                KeyFrameWithStringSet& keys = (*result)[id];
+                KeyFrameSet& keys = (*result)[id];
                 _imp->addKeyFramesForDimView(DimIdx(dimension.value()), *it, &keys);
             }
 
@@ -245,7 +235,7 @@ AnimItemBase::getKeyframes(DimSpec dimension, ViewSetSpec viewSpec, AnimItemDimV
             id.item = thisShared;
             id.dim = DimIdx(dimension.value());
             id.view = ViewIdx(viewSpec.value());
-            KeyFrameWithStringSet& keys = (*result)[id];
+            KeyFrameSet& keys = (*result)[id];
 
             _imp->addKeyFramesForDimView(DimIdx(dimension.value()), ViewIdx(viewSpec.value()), &keys);
         }
@@ -260,7 +250,7 @@ AnimItemBase::evaluateCurve(bool /*useExpressionIfAny*/, double x, DimIdx dimens
     if (!curve) {
         throw std::runtime_error("Curve is null");
     }
-    return curve->getValueAt(TimeValue(x), false /*doClamp*/);
+    return curve->getValueAt(TimeValue(x), false /*doClamp*/).getValue();
    
 }
 

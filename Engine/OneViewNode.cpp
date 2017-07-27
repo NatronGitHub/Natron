@@ -176,7 +176,7 @@ OneViewNode::onMetadataChanged(const NodeMetadata& metadata)
     const std::vector<std::string>& views = getApp()->getProject()->getProjectViewNames();
     KnobChoicePtr viewKnob = _imp->viewKnob.lock();
 
-    ChoiceOption currentView = viewKnob->getActiveEntry();
+    ChoiceOption currentView = viewKnob->getCurrentEntry();
 
     std::vector<ChoiceOption> options(views.size());
     for (std::size_t i = 0; i < views.size(); ++i) {

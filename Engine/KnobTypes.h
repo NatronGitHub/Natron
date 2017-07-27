@@ -62,6 +62,8 @@ NATRON_NAMESPACE_ENTER
 
 #define kColorKnobDefaultUIColorspaceName "sRGB"
 
+#define kKeyframePropChoiceOptionID "KeyframePropChoiceOptionID"
+#define kKeyframePropChoiceOptionLabel "KeyframePropChoiceOptionLabel"
 
 inline KnobBoolBasePtr
 toKnobBoolBase(const KnobIPtr& knob)
@@ -489,9 +491,9 @@ public:
     // For a choice parameter we need to know the strings
     std::vector<ChoiceOption> menuOptions;
 
-    // For choice parameters the value is held by a string because if the option disappears from the menu
-    // we still need to remember the user choice
-    StringAnimationManagerPtr activeEntryStringAnimation;
+    // Used in combination with the index stored in "value" in the ValueKnobDimView class, so that we also
+    // have the string of the selected option.
+    ChoiceOption staticValueOption;
 
     //  Each item in the list will add a separator after the index specified by the integer.
     std::vector<int> separators;
@@ -531,10 +533,6 @@ public:
         
     }
 
-    virtual StringAnimationManagerPtr getStringAnimation() const OVERRIDE FINAL
-    {
-        return activeEntryStringAnimation;
-    }
 
     virtual ValueChangedReturnCodeEnum setValueAtTime(TimeValue time, const int& value, KeyFrame* newKey) OVERRIDE FINAL;
 
@@ -663,7 +661,8 @@ public:
     /**
      * @brief Get the active entry text
      **/
-    ChoiceOption getActiveEntry(ViewIdx view = ViewIdx(0));
+    ChoiceOption getCurrentEntry(ViewIdx view = ViewIdx(0));
+    ChoiceOption getCurrentEntryAtTime(TimeValue time, ViewIdx view = ViewIdx(0));
 
     /**
      * @brief Set the active entry text. If the view does not exist in the knob an invalid
@@ -737,6 +736,10 @@ private:
 
     virtual bool hasModificationsVirtual(const KnobDimViewBasePtr& data, DimIdx dimension) const OVERRIDE FINAL;
 
+    virtual CurveTypeEnum getKeyFrameDataType() const OVERRIDE FINAL
+    {
+        return eCurveTypeChoice;
+    }
 
     void findAndSetOldChoice();
 
@@ -922,7 +925,7 @@ toKnobColor(const KnobIPtr& knob)
 
 struct KnobStringPrivate;
 class KnobString
-    : public AnimatingKnobStringHelper
+    : public KnobStringBase
 {
 private: // derives from KnobI
     // TODO: enable_shared_from_this
@@ -1383,7 +1386,7 @@ public:
 
     //////////// Overriden from AnimatingObjectI
     virtual CurvePtr getAnimationCurve(ViewIdx idx, DimIdx dimension) const OVERRIDE FINAL;
-    virtual bool cloneCurve(ViewIdx view, DimIdx dimension, const Curve& curve, double offset, const RangeD* range, const StringAnimationManager* stringAnimation) OVERRIDE;
+    virtual bool cloneCurve(ViewIdx view, DimIdx dimension, const Curve& curve, double offset, const RangeD* range) OVERRIDE;
     virtual void deleteValuesAtTime(const std::list<double>& times, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason) OVERRIDE;
     virtual bool warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  DimSpec dimension, const Curve::KeyFrameWarp& warp, std::vector<KeyFrame>* keyframes = 0) OVERRIDE ;
     virtual void removeAnimation(ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason) OVERRIDE ;

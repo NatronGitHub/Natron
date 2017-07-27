@@ -175,7 +175,7 @@ public:
     QTreeWidgetItem* rightClickedItem;
 
     // If there's a single selected keyframe, get it,otherwise return false;
-    bool getKeyframe(AnimItemDimViewIndexID* curve, KeyFrameWithString* key) const;
+    bool getKeyframe(AnimItemDimViewIndexID* curve, KeyFrame* key) const;
 
     void refreshExpressionResult();
 
@@ -978,7 +978,7 @@ AnimationModuleEditor::getIcon() const
 }
 
 bool
-AnimationModuleEditorPrivate::getKeyframe(AnimItemDimViewIndexID* curve, KeyFrameWithString* key) const
+AnimationModuleEditorPrivate::getKeyframe(AnimItemDimViewIndexID* curve, KeyFrame* key) const
 {
     const AnimItemDimViewKeyFramesMap& selectedCurves = model->getSelectionModel()->getCurrentKeyFramesSelection();
     if (selectedCurves.size() > 1 || selectedCurves.empty()) {
@@ -986,7 +986,7 @@ AnimationModuleEditorPrivate::getKeyframe(AnimItemDimViewIndexID* curve, KeyFram
     }
 
     AnimItemDimViewKeyFramesMap::const_iterator it = selectedCurves.begin();
-    const KeyFrameWithStringSet& keys = it->second;
+    const KeyFrameSet& keys = it->second;
     if (keys.size() == 0 || keys.size() > 1) {
         return false;
     }
@@ -1004,13 +1004,13 @@ AnimationModuleEditor::getCurrentlySelectedKeyFrame() const
 void
 AnimationModuleEditor::refreshKeyFrameWidgetsEnabledNess()
 {
-    AnimatingObjectI::KeyframeDataTypeEnum dataType = AnimatingObjectI::eKeyframeDataTypeNone;
+    CurveTypeEnum dataType = eCurveTypeString;
     bool showKeyframeWidgets = _imp->selectedKeyFrame.id.item;
     if (_imp->selectedKeyFrame.id.item) {
         dataType = _imp->selectedKeyFrame.id.item->getInternalAnimItem()->getKeyFrameDataType();
     }
-    bool canHaveTangents = dataType == AnimatingObjectI::eKeyframeDataTypeInt || dataType == AnimatingObjectI::eKeyframeDataTypeDouble;
-    if (dataType == AnimatingObjectI::eKeyframeDataTypeBool) {
+    bool canHaveTangents = dataType == eCurveTypeInt || dataType == eCurveTypeDouble;
+    if (dataType == eCurveTypeBool) {
         _imp->keyframeValueSpinBox->setMinimum(0);
         _imp->keyframeValueSpinBox->setMaximum(1);
     } else {
@@ -1025,9 +1025,9 @@ AnimationModuleEditor::refreshKeyFrameWidgetsEnabledNess()
     _imp->keyframeTimeSpinBox->setEnabled(showKeyframeWidgets);
     _imp->keyframeValueLabel->setEnabled(showKeyframeWidgets);
     _imp->keyframeValueLineEdit->setEnabled(showKeyframeWidgets);
-    _imp->keyframeValueLineEdit->setVisible(dataType == AnimatingObjectI::eKeyframeDataTypeString);
+    _imp->keyframeValueLineEdit->setVisible(dataType == eCurveTypeString || dataType == eCurveTypeChoice);
     _imp->keyframeValueSpinBox->setEnabled(showKeyframeWidgets);
-    _imp->keyframeValueSpinBox->setVisible(dataType != AnimatingObjectI::eKeyframeDataTypeString);
+    _imp->keyframeValueSpinBox->setVisible(dataType != eCurveTypeString && dataType != eCurveTypeChoice);
     _imp->keyframeRightSlopeLabel->setEnabled(showKeyframeWidgets && canHaveTangents);
     _imp->keyframeRightSlopeSpinBox->setEnabled(showKeyframeWidgets && canHaveTangents);
     _imp->keyframeInterpolationChoice->setEnabled(showKeyframeWidgets && canHaveTangents);
@@ -1042,7 +1042,7 @@ AnimationModuleEditor::refreshKeyframeWidgetsFromSelection()
     bool selectedKeyChanged = false;
     {
         AnimItemDimViewIndexID selectedKeyID;
-        KeyFrameWithString selectedKey;
+        KeyFrame selectedKey;
         showKeyframeWidgets = _imp->getKeyframe(&selectedKeyID, &selectedKey);
         if (selectedKeyID.item != _imp->selectedKeyFrame.id.item ||
             selectedKeyID.view != _imp->selectedKeyFrame.id.view ||
@@ -1053,7 +1053,7 @@ AnimationModuleEditor::refreshKeyframeWidgetsFromSelection()
         _imp->selectedKeyFrame.key = selectedKey;
     }
 
-    AnimatingObjectI::KeyframeDataTypeEnum dataType = AnimatingObjectI::eKeyframeDataTypeNone;
+    CurveTypeEnum dataType = eCurveTypeString;
     if (showKeyframeWidgets) {
         dataType = _imp->selectedKeyFrame.id.item->getInternalAnimItem()->getKeyFrameDataType();
     }
@@ -1063,16 +1063,27 @@ AnimationModuleEditor::refreshKeyframeWidgetsFromSelection()
         refreshKeyFrameWidgetsEnabledNess();
     }
     if (showKeyframeWidgets) {
-        _imp->keyframeLeftSlopeSpinBox->setValue(_imp->selectedKeyFrame.key.key.getLeftDerivative());
-        _imp->keyframeRightSlopeSpinBox->setValue(_imp->selectedKeyFrame.key.key.getRightDerivative());
-        _imp->keyframeValueSpinBox->setType(dataType == AnimatingObjectI::eKeyframeDataTypeDouble ? SpinBox::eSpinBoxTypeDouble : SpinBox::eSpinBoxTypeInt);
-        KeyframeTypeEnum interp = _imp->selectedKeyFrame.key.key.getInterpolation();
+        _imp->keyframeLeftSlopeSpinBox->setValue(_imp->selectedKeyFrame.key.getLeftDerivative());
+        _imp->keyframeRightSlopeSpinBox->setValue(_imp->selectedKeyFrame.key.getRightDerivative());
+        _imp->keyframeValueSpinBox->setType(dataType == eCurveTypeDouble ? SpinBox::eSpinBoxTypeDouble : SpinBox::eSpinBoxTypeInt);
+        KeyframeTypeEnum interp = _imp->selectedKeyFrame.key.getInterpolation();
         KeyFrameInterpolationChoiceMenuEnum menuVal = fromKeyFrameType(interp);
         _imp->keyframeInterpolationChoice->setCurrentIndex_no_emit((int)menuVal);
 
-        _imp->keyframeTimeSpinBox->setValue(_imp->selectedKeyFrame.key.key.getTime());
-        _imp->keyframeValueSpinBox->setValue(_imp->selectedKeyFrame.key.key.getValue());
-        _imp->keyframeValueLineEdit->setText(QString::fromUtf8(_imp->selectedKeyFrame.key.string.c_str()));
+        _imp->keyframeTimeSpinBox->setValue(_imp->selectedKeyFrame.key.getTime());
+        if (dataType == eCurveTypeString) {
+            std::string stringValue;
+            _imp->selectedKeyFrame.key.getPropertySafe(kKeyFramePropString, 0, &stringValue);
+            _imp->keyframeValueLineEdit->setText(QString::fromUtf8(stringValue.c_str()));
+        } else if (dataType == eCurveTypeChoice) {
+            std::string stringValue;
+            _imp->selectedKeyFrame.key.getPropertySafe(kKeyframePropChoiceOptionID, 0, &stringValue);
+            _imp->keyframeValueLineEdit->setText(QString::fromUtf8(stringValue.c_str()));
+
+        } else {
+            _imp->keyframeValueSpinBox->setValue(_imp->selectedKeyFrame.key.getValue());
+        }
+
     }
 } // refreshKeyframeWidgetsFromSelection
 
@@ -1082,7 +1093,7 @@ AnimationModuleEditor::onKeyfameInterpolationChoiceMenuChanged(int index)
     KeyframeTypeEnum type = toKeyFrameType((KeyFrameInterpolationChoiceMenuEnum)index);
 
     AnimItemDimViewIndexID id;
-    KeyFrameWithString keyData;
+    KeyFrame keyData;
     if (!_imp->getKeyframe(&id, &keyData)) {
         return;
     }
@@ -1129,13 +1140,13 @@ void
 AnimationModuleEditor::onKeyframeTimeSpinBoxValueChanged(double value)
 {
     AnimItemDimViewIndexID id;
-    KeyFrameWithString keyData;
+    KeyFrame keyData;
     if (!_imp->getKeyframe(&id, &keyData)) {
         return;
     }
     AnimItemDimViewKeyFramesMap selectedKeys;
     selectedKeys[id].insert(keyData);
-    double dt = value - keyData.key.getTime();
+    double dt = value - keyData.getTime();
     _imp->model->pushUndoCommand(new WarpKeysCommand(selectedKeys, _imp->model, std::vector<NodeAnimPtr >(), std::vector<TableItemAnimPtr >(), dt, 0));
 }
 
@@ -1144,7 +1155,7 @@ void
 AnimationModuleEditor::onKeyframeValueLineEditEditFinished()
 {
     AnimItemDimViewIndexID id;
-    KeyFrameWithString keyData;
+    KeyFrame keyData;
     if (!_imp->getKeyframe(&id, &keyData)) {
         return;
     }
@@ -1155,7 +1166,7 @@ AnimationModuleEditor::onKeyframeValueLineEditEditFinished()
 
     std::string str = _imp->keyframeValueLineEdit->text().toStdString();
     isKnobString->getHolder()->beginMultipleEdits(tr("Set KeyFrame on %1").arg(QString::fromUtf8(isKnobString->getLabel().c_str())).toStdString());
-    isKnobString->setValueAtTime(keyData.key.getTime(), str, id.view);
+    isKnobString->setValueAtTime(keyData.getTime(), str, id.view);
     isKnobString->getHolder()->endMultipleEdits();
 }
 
@@ -1163,13 +1174,13 @@ void
 AnimationModuleEditor::onKeyframeValueSpinBoxValueChanged(double value)
 {
     AnimItemDimViewIndexID id;
-    KeyFrameWithString keyData;
+    KeyFrame keyData;
     if (!_imp->getKeyframe(&id, &keyData)) {
         return;
     }
     AnimItemDimViewKeyFramesMap selectedKeys;
     selectedKeys[id].insert(keyData);
-    double dv = value - keyData.key.getValue();
+    double dv = value - keyData.getValue();
     _imp->model->pushUndoCommand(new WarpKeysCommand(selectedKeys, _imp->model, std::vector<NodeAnimPtr >(), std::vector<TableItemAnimPtr >(), 0, dv));
 }
 

@@ -1478,29 +1478,15 @@ DockablePanel::setKeyOnAllParameters()
         KnobIPtr internalKnob = (*it)->getInternalKnob();
         KnobIntBasePtr isInt = toKnobIntBase(internalKnob);
         KnobBoolBasePtr isBool = toKnobBoolBase(internalKnob);
-        AnimatingKnobStringHelperPtr isString = boost::dynamic_pointer_cast<AnimatingKnobStringHelper>(internalKnob);
+        KnobStringBasePtr isString = boost::dynamic_pointer_cast<KnobStringBase>(internalKnob);
         KnobDoubleBasePtr isDouble = toKnobDoubleBase(internalKnob);
 
         std::list<ViewIdx> views = (*it)->getViewsList();
         for (std::list<ViewIdx>::const_iterator it2 = views.begin(); it2 != views.end(); ++it2) {
             for (int i = 0; i < nDims; ++i) {
 
-                KeyFrameWithString kf;
-                kf.key.setTime(time);
-
-                if (isInt) {
-                    kf.key.setValue( isInt->getValueAtTime(time, DimIdx(i), *it2));
-                } else if (isBool) {
-                    kf.key.setValue( isBool->getValueAtTime(time, DimIdx(i), *it2));
-                } else if (isDouble) {
-                    kf.key.setValue( isDouble->getValueAtTime(time, DimIdx(i), *it2));
-                } else if (isString) {
-                    std::string v = isString->getValueAtTime(time, DimIdx(i), *it2);
-                    double dv;
-                    isString->insertKeyframe(time, *it2, v, &dv);
-                    kf.string = v;
-                    kf.key.setValue(dv);
-                }
+                CurvePtr curve = internalKnob->getAnimationCurve(*it2, DimIdx(i));
+                KeyFrame kf = curve->getValueAt(time);
 
                 AnimItemDimViewIndexID id(*it, *it2, DimIdx(i));
                 keys[id].insert(kf);
@@ -1542,7 +1528,7 @@ DockablePanel::removeAnimationOnAllParameters()
     for (std::vector<KnobAnimPtr>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         int nDims = (*it)->getNDimensions();
         KnobIPtr internalKnob = (*it)->getInternalKnob();
-        AnimatingKnobStringHelperPtr isString = boost::dynamic_pointer_cast<AnimatingKnobStringHelper>(internalKnob);
+        KnobStringBasePtr isString = boost::dynamic_pointer_cast<KnobStringBase>(internalKnob);
 
         std::list<ViewIdx> views = (*it)->getViewsList();
         for (std::list<ViewIdx>::const_iterator it2 = views.begin(); it2 != views.end(); ++it2) {
@@ -1553,16 +1539,9 @@ DockablePanel::removeAnimationOnAllParameters()
                 }
                 KeyFrameSet internalSet = curve->getKeyFrames();
                 AnimItemDimViewIndexID id(*it, *it2, DimIdx(i));
-                KeyFrameWithStringSet& keysToRemove = keys[id];
+                KeyFrameSet& keysToRemove = keys[id];
                 for (KeyFrameSet::const_iterator it3 = internalSet.begin(); it3 != internalSet.end(); ++it3) {
-                    KeyFrameWithString kf;
-                    kf.key = *it3;
-                    if (isString) {
-                        kf.string = isString->getValueAtTime(it3->getTime(), DimIdx(i), *it2);
-
-                    }
-
-                    keysToRemove.insert(kf);
+                    keysToRemove.insert(*it3);
                 }
 
             }

@@ -37,7 +37,6 @@
 #include "Engine/Project.h"
 #include "Engine/Node.h"
 #include "Engine/Settings.h"
-#include "Engine/StringAnimationManager.h"
 #include "Engine/TimeLine.h"
 #include "Engine/OSGLFunctions.h"
 

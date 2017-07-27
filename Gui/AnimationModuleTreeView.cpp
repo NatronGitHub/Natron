@@ -1104,7 +1104,7 @@ AnimationModuleTreeView::onSelectionModelKeyframeSelectionChanged(bool recurse)
     for (AnimItemDimViewKeyFramesMap::const_iterator it = selectedKeys.begin(); it != selectedKeys.end(); ++it) {
         bool selectItem = true;
 
-        KeyFrameWithStringSet allKeys;
+        KeyFrameSet allKeys;
         it->first.item->getKeyframes(it->first.dim, it->first.view, AnimItemBase::eGetKeyframesTypeMerged, &allKeys);
 
         if (allKeys.size() != it->second.size()) {

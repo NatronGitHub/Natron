@@ -60,7 +60,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/TimeLine.h"
-#include "Engine/StringAnimationManager.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
 
@@ -659,7 +658,6 @@ KnobButton::trigger()
 ChoiceKnobDimView::ChoiceKnobDimView()
 : ValueKnobDimView<int>()
 , menuOptions()
-, activeEntryStringAnimation()
 , separators()
 , shortcuts()
 , menuIcons()
@@ -675,16 +673,28 @@ ChoiceKnobDimView::ChoiceKnobDimView()
 ValueChangedReturnCodeEnum
 ChoiceKnobDimView::setValueAtTime(TimeValue time, const int& value, KeyFrame* newKey)
 {
-    ValueChangedReturnCodeEnum changed = ValueKnobDimView<int>::setValueAtTime(time, value, newKey);
+    if (!animationCurve) {
+        return eValueChangedReturnCodeNothingChanged;
+    }
+    // check for infinity
+    if (boost::math::isinf(value)) {
+        *newKey = KeyFrame( (double)time, 0. );
+    } else {
+        *newKey = KeyFrame( (double)time, value );
+    }
 
     ChoiceOption activeEntry;
     if (value >= 0 && value < (int)menuOptions.size()) {
         activeEntry = menuOptions[value];
     }
 
-    double interpolatedIndex;
-    activeEntryStringAnimation->insertKeyFrame(time, activeEntry.id, &interpolatedIndex);
-    return changed;
+    newKey->setProperty(kKeyframePropChoiceOptionID, activeEntry.id);
+    newKey->setProperty(kKeyframePropChoiceOptionLabel, activeEntry.label);
+
+    ValueChangedReturnCodeEnum addKeyRet = animationCurve->setOrAddKeyframe(*newKey);
+    notifyCurveChanged();
+
+    return addKeyRet;
 }
 
 bool
@@ -700,8 +710,8 @@ ChoiceKnobDimView::setValueAndCheckIfChanged(const int& v)
         // No current value, assume they are different
         return true;
     }
-    if (activeEntry.id != newChoice.id) {
-        activeEntry = newChoice;
+    if (staticValueOption.id != newChoice.id) {
+        staticValueOption = newChoice;
         return true;
     }
     return changed;
@@ -728,8 +738,8 @@ ChoiceKnobDimView::copy(const CopyInArgs& inArgs, CopyOutArgs* outArgs)
     showMissingEntryWarning = otherType->showMissingEntryWarning;
     menuColors = otherType->menuColors;
 
-    if (activeEntry.id != otherType->activeEntry.id) {
-        activeEntry = otherType->activeEntry;
+    if (staticValueOption.id != otherType->staticValueOption.id) {
+        staticValueOption = otherType->staticValueOption;
         hasChanged = true;
     }
 
@@ -955,7 +965,7 @@ KnobChoice::hasModificationsVirtual(const KnobDimViewBasePtr& data, DimIdx dimen
     assert(choiceData);
     QMutexLocker k(&data->valueMutex);
 
-    if (choiceData->activeEntry.id != defaultVal) {
+    if (choiceData->staticValueOption.id != defaultVal) {
         return true;
     }
 
@@ -987,9 +997,9 @@ KnobChoice::findAndSetOldChoice()
             QMutexLocker k(&data->valueMutex);
 
             for (std::size_t i = 0; i < data->menuOptions.size(); ++i) {
-                if ( !data->activeEntry.id.empty() && data->menuOptions[i].id == data->activeEntry.id ) {
+                if ( !data->staticValueOption.id.empty() && data->menuOptions[i].id == data->staticValueOption.id ) {
                     // Refresh label and hint, even if ID is the same
-                    data->activeEntry = data->menuOptions[i];
+                    data->staticValueOption = data->menuOptions[i];
                     found = i;
                 }
                 if (!defChoiceID.empty() && data->menuOptions[i].id == defChoiceID) {
@@ -1281,7 +1291,7 @@ KnobChoice::isActiveEntryPresentInEntries(ViewIdx view) const
         }
         QMutexLocker k(&data->valueMutex);
         for (std::size_t i = 0; i < data->menuOptions.size(); ++i) {
-            if (data->menuOptions[i].id == data->activeEntry.id) {
+            if (data->menuOptions[i].id == data->staticValueOption.id) {
                 return true;
             }
         }
@@ -1340,11 +1350,22 @@ KnobChoice::setActiveEntry(const ChoiceOption& entry, ViewSetSpec view)
         if (!data) {
             continue;
         }
+
         KnobDimViewKeySet sharedKnobs;
+        int matchedIndex;
         {
+
             QMutexLocker k(&data->valueMutex);
+            ChoiceOption matchedEntry;
+            matchedIndex = choiceMatch(entry.id, data->menuOptions, &matchedEntry);
+            if (matchedIndex == -1) {
+                matchedEntry = entry;
+            }
             sharedKnobs = data->sharedKnobs;
-            data->activeEntry = entry;
+            data->staticValueOption = matchedEntry;
+        }
+        if (matchedIndex != -1) {
+            setValue(matchedIndex);
         }
         for (KnobDimViewKeySet::const_iterator it = sharedKnobs.begin(); it!=sharedKnobs.end(); ++it) {
             KnobChoicePtr sharedKnob = toKnobChoice(it->knob.lock());
@@ -1361,7 +1382,13 @@ KnobChoice::setActiveEntry(const ChoiceOption& entry, ViewSetSpec view)
 }
 
 ChoiceOption
-KnobChoice::getActiveEntry(ViewIdx view)
+KnobChoice::getCurrentEntry(ViewIdx view)
+{
+    return getCurrentEntryAtTime(getCurrentRenderTime(), view);
+}
+
+ChoiceOption
+KnobChoice::getCurrentEntryAtTime(TimeValue time, ViewIdx view)
 {
     ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
     {
@@ -1369,20 +1396,33 @@ KnobChoice::getActiveEntry(ViewIdx view)
         if (!data) {
             return ChoiceOption();
         }
+        ChoiceOption ret;
+
         {
             QMutexLocker k(&data->valueMutex);
-            if (!data->activeEntry.id.empty()) {
-                return data->activeEntry;
+
+            if (data->animationCurve && data->animationCurve->isAnimated()) {
+                KeyFrame key = data->animationCurve->getValueAt(time);
+                bool gotIt = key.getPropertySafe(kKeyframePropChoiceOptionID, 0, &ret.id);
+                assert(gotIt);
+                gotIt = key.getPropertySafe(kKeyframePropChoiceOptionLabel, 0, &ret.id);
+                assert(gotIt);
+            } else {
+                ret = data->staticValueOption;
             }
         }
 
+        if (!ret.id.empty()) {
+            return ret;
+        }
+
         // Active entry was not set yet, give something based on the index and set the active entry
-        int activeIndex = getValue(DimIdx(0), view_i);
+        int activeIndex = getValueAtTime(time, DimIdx(0), view_i);
         {
             QMutexLocker k(&data->valueMutex);
             if ( activeIndex >= 0 && activeIndex < (int)data->menuOptions.size() ) {
-                data->activeEntry = data->menuOptions[activeIndex];
-                return data->activeEntry;
+                data->staticValueOption = data->menuOptions[activeIndex];
+                return data->staticValueOption;
             }
 
         }
@@ -1472,7 +1512,7 @@ KnobChoice::setValueFromID(const std::string & value, ViewSetSpec view, ValueCha
         int index = -1;
         {
             QMutexLocker k(&data->valueMutex);
-            index = choiceMatch(value, data->menuOptions, &data->activeEntry);
+            index = choiceMatch(value, data->menuOptions, &data->staticValueOption);
         }
         if (index != -1) {
             return setValue(index, view, DimIdx(0), reason);
@@ -1713,7 +1753,7 @@ KnobChoice::setDefaultValueFromID(const std::string & value)
         ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), ViewIdx(0)));
         assert(data);
         QMutexLocker k(&data->valueMutex);
-        data->activeEntry.id = value;
+        data->staticValueOption.id = value;
         index = KnobChoice::choiceMatch(value, data->menuOptions, 0);
     }
     if (index != -1) {
@@ -1892,7 +1932,7 @@ struct KnobStringPrivate
 KnobString::KnobString(const KnobHolderPtr& holder,
                        const std::string &name,
                        int dimension)
-: AnimatingKnobStringHelper(holder, name, dimension)
+: KnobStringBase(holder, name, dimension)
 , _imp(new KnobStringPrivate())
 {
     _imp->fontSize = getDefaultFontPointSize();
@@ -1900,7 +1940,7 @@ KnobString::KnobString(const KnobHolderPtr& holder,
 }
 
 KnobString::KnobString(const KnobHolderPtr& holder, const KnobIPtr& mainInstance)
-: AnimatingKnobStringHelper(holder, mainInstance)
+: KnobStringBase(holder, mainInstance)
 , _imp(toKnobString(mainInstance)->_imp)
 {
 
@@ -2836,7 +2876,8 @@ KnobDimViewBasePtr
 KnobParametric::createDimViewData() const
 {
     ParametricKnobDimViewPtr ret(new ParametricKnobDimView);
-    ret->parametricCurve.reset(new Curve(Curve::eCurveTypeParametric));
+    ret->parametricCurve.reset(new Curve(eCurveTypeDouble));
+    ret->parametricCurve->setKeyFramesTimeClampedToIntegers(false);
     return ret;
 }
 
@@ -2848,7 +2889,8 @@ KnobParametric::populate()
         RGBAColourD color;
         color.r = color.g = color.b = color.a = 1.;
         _imp->common->curvesColor[i] = color;
-        _imp->common->defaultCurves[i].reset(new Curve(Curve::eCurveTypeParametric));
+        _imp->common->defaultCurves[i].reset(new Curve(eCurveTypeDouble));
+        _imp->common->defaultCurves[i]->setKeyFramesTimeClampedToIntegers(false);
     }
 }
 
@@ -3054,7 +3096,7 @@ KnobParametric::addControlPoint(ValueChangedReasonEnum reason,
     ParametricKnobDimViewPtr data;
     CurvePtr curve = getParametricCurveInternal(dimension, ViewIdx(0), &data);
     assert(curve);
-    curve->addKeyFrame(k);
+    curve->setOrAddKeyframe(k);
     evaluateValueChange(DimIdx(0), getCurrentRenderTime(), ViewSetSpec::all(), reason);
     signalCurveChanged(dimension, data);
     return eActionStatusOK;
@@ -3083,7 +3125,7 @@ KnobParametric::addControlPoint(ValueChangedReasonEnum reason,
     ParametricKnobDimViewPtr data;
     CurvePtr curve = getParametricCurveInternal(dimension, ViewIdx(0), &data);
     assert(curve);
-    curve->addKeyFrame(k);
+    curve->setOrAddKeyframe(k);
     signalCurveChanged(dimension, data);
     evaluateValueChange(DimIdx(0), getCurrentRenderTime(), ViewSetSpec::all(), reason);
 
@@ -3104,7 +3146,7 @@ KnobParametric::evaluateCurve(DimIdx dimension,
     if (!curve) {
         return eActionStatusFailed;
     }
-    *returnValue = curve->getValueAt(TimeValue(parametricPosition));
+    *returnValue = curve->getValueAt(TimeValue(parametricPosition)).getValue();
     return eActionStatusOK;
 }
 
@@ -3527,7 +3569,7 @@ KnobParametric::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 }
 
 bool
-KnobParametric::cloneCurve(ViewIdx view, DimIdx dimension, const Curve& curve, double offset, const RangeD* range, const StringAnimationManager* /*stringAnimation*/)
+KnobParametric::cloneCurve(ViewIdx view, DimIdx dimension, const Curve& curve, double offset, const RangeD* range)
 {
     if (dimension < 0 || dimension >= (int)_imp->common->defaultCurves.size()) {
         throw std::invalid_argument("KnobParametric: dimension out of range");

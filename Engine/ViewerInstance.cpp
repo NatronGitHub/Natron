@@ -746,7 +746,7 @@ ViewerInstancePrivate::refreshLayerAndAlphaChannelComboBox()
 ImagePlaneDesc
 ViewerInstancePrivate::getSelectedLayer(const std::list<ImagePlaneDesc>& availableLayers) const
 {
-    ChoiceOption activeIndexID = layerChoiceKnob.lock()->getActiveEntry(ViewIdx(0));
+    ChoiceOption activeIndexID = layerChoiceKnob.lock()->getCurrentEntry(ViewIdx(0));
     for (std::list<ImagePlaneDesc>::const_iterator it = availableLayers.begin(); it != availableLayers.end(); ++it) {
         ChoiceOption opt = it->getPlaneOption();
         if (opt.id == activeIndexID.id) {
@@ -760,7 +760,7 @@ ViewerInstancePrivate::getSelectedLayer(const std::list<ImagePlaneDesc>& availab
 ImagePlaneDesc
 ViewerInstancePrivate::getSelectedAlphaChannel(const std::list<ImagePlaneDesc>& availableLayers, int *channelIndex) const
 {
-    ChoiceOption activeIndexID = alphaChannelChoiceKnob.lock()->getActiveEntry(ViewIdx(0));
+    ChoiceOption activeIndexID = alphaChannelChoiceKnob.lock()->getCurrentEntry(ViewIdx(0));
     for (std::list<ImagePlaneDesc>::const_iterator it = availableLayers.begin(); it != availableLayers.end(); ++it) {
         std::size_t nChans = (std::size_t)it->getNumComponents();
         for (std::size_t c = 0; c < nChans; ++c) {

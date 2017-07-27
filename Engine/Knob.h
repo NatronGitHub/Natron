@@ -1332,11 +1332,6 @@ public:
         // from the "other" KnboDimViewBase is used, and properly protected by a mutex.
         const Curve* otherCurve;
 
-        // Can be provided if there's no KnboDimViewBase object to copy from
-        // but just a string animation object. Generally this should be left to NULL and the string animation
-        // from the "other" KnboDimViewBase is used, and properly protected by a mutex.
-        const StringAnimationManager* otherCurveAnimation;
-        
         // A range of keyframes to copy
         const RangeD* keysToCopyRange;
         
@@ -1346,7 +1341,6 @@ public:
         CopyInArgs(const Curve& otherCurve)
         : other(0)
         , otherCurve(&otherCurve)
-        , otherCurveAnimation(0)
         , keysToCopyRange(0)
         , keysToCopyOffset(0)
         {
@@ -1356,7 +1350,6 @@ public:
         CopyInArgs(const KnobDimViewBase& other)
         : other(&other)
         , otherCurve(0)
-        , otherCurveAnimation(0)
         , keysToCopyRange(0)
         , keysToCopyOffset(0)
         {
@@ -1384,11 +1377,6 @@ public:
         
     };
 
-    virtual StringAnimationManagerPtr getStringAnimation() const
-    {
-        return StringAnimationManagerPtr();
-    }
-    
     /**
      * @brief Copy the other dimension/view value with the given args.
      * @returns Returns true if something changed, false otherwise.
@@ -1430,6 +1418,7 @@ public:
      * @brief Set the left or right derivative independently at the given keyframe time
      **/
     virtual bool setDerivativeAtTime(TimeValue time, double derivative, bool isLeft);
+
 
 protected:
 
@@ -1603,7 +1592,7 @@ protected:
 public:
 
     //////////// Overriden from AnimatingObjectI
-    virtual bool cloneCurve(ViewIdx view, DimIdx dimension, const Curve& curve, double offset, const RangeD* range, const StringAnimationManager* stringAnimation) OVERRIDE;
+    virtual bool cloneCurve(ViewIdx view, DimIdx dimension, const Curve& curve, double offset, const RangeD* range) OVERRIDE;
     virtual void deleteValuesAtTime(const std::list<double>& times, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason) OVERRIDE;
     virtual bool warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  DimSpec dimension, const Curve::KeyFrameWarp& warp, std::vector<KeyFrame>* keyframes = 0) OVERRIDE ;
     virtual void removeAnimation(ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason) OVERRIDE ;
@@ -1702,7 +1691,7 @@ protected:
 
     // the following is specialized only for T=std::string
     template <typename T>
-    T pyObjectToType(PyObject* o, ViewIdx view) const { (void)view; return pyObjectToType<T>(o); }
+    T pyObjectToType(PyObject* o, DimIdx dim, ViewIdx view) const { (void)view; (void)dim;  return pyObjectToType<T>(o); }
 
     void refreshListenersAfterValueChangeInternal(TimeValue time, ViewIdx view, ValueChangedReasonEnum reason, DimIdx dimension, KnobDimViewKeySet* evaluatedKnobs);
 
@@ -2052,7 +2041,7 @@ public:
     virtual T getValueForHash(DimIdx dim, ViewIdx view);
 
     //////////// Overriden from AnimatingObjectI
-    virtual KeyframeDataTypeEnum getKeyFrameDataType() const OVERRIDE FINAL;
+    virtual CurveTypeEnum getKeyFrameDataType() const OVERRIDE;
 
     virtual ValueChangedReturnCodeEnum setIntValueAtTime(TimeValue time, int value, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0) OVERRIDE ;
     virtual void setMultipleIntValueAtTime(const std::list<IntTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0) OVERRIDE ;
@@ -2322,7 +2311,6 @@ public:
     T getDisplayMinimum(DimIdx dimension = DimIdx(0)) const;
     T getDisplayMaximum(DimIdx dimension = DimIdx(0)) const;
 
-    bool getValueFromCurve(TimeValue time, ViewIdx view, DimIdx dimension, bool clamp, T* ret);
 
     virtual bool hasDefaultValueChanged(DimIdx dimension) const OVERRIDE ;
 
@@ -2345,6 +2333,7 @@ public:
     virtual void refreshStaticValue(TimeValue time) OVERRIDE FINAL;
 
 protected:
+    
 
 
     virtual void refreshCurveMinMaxInternal(ViewIdx view, DimIdx dimension) OVERRIDE FINAL;
@@ -2355,6 +2344,9 @@ protected:
 
 private:
 
+    bool getValueFromCurve(TimeValue time, ViewIdx view, DimIdx dimension, bool clamp, T* ret);
+
+    
     T getValueInternal(TimeValue currentTime,
                        DimIdx dimension,
                        ViewIdx view,
@@ -2549,88 +2541,6 @@ typedef boost::shared_ptr<KnobBoolBase> KnobBoolBasePtr;
 typedef boost::shared_ptr<KnobDoubleBase> KnobDoubleBasePtr;
 typedef boost::shared_ptr<KnobIntBase> KnobIntBasePtr;
 typedef boost::shared_ptr<KnobStringBase> KnobStringBasePtr;
-
-
-
-class StringKnobDimView : public ValueKnobDimView<std::string>
-{
-
-public:
-    // For a string parameter, we need to also have strings for keyframes and not just
-    // the keyframe value
-    StringAnimationManagerPtr stringAnimation;
-
-    StringKnobDimView()
-    : ValueKnobDimView<std::string>()
-    , stringAnimation()
-    {
-
-    }
-
-    virtual ~StringKnobDimView()
-    {
-        
-    }
-
-    virtual StringAnimationManagerPtr getStringAnimation() const OVERRIDE FINAL
-    {
-        return stringAnimation;
-    }
-
-};
-
-typedef boost::shared_ptr<StringKnobDimView> StringKnobDimViewPtr;
-
-inline StringKnobDimViewPtr
-toStringKnobDImView(const KnobDimViewBasePtr& data)
-{
-    return boost::dynamic_pointer_cast<StringKnobDimView>(data);
-}
-
-
-class AnimatingKnobStringHelper
-    : public KnobStringBase
-{
-public:
-
-    AnimatingKnobStringHelper(const KnobHolderPtr& holder,
-                              const std::string &name,
-                              int nDims);
-
-    AnimatingKnobStringHelper(const KnobHolderPtr& holder, const KnobIPtr& mainInstance);
-
-    virtual ~AnimatingKnobStringHelper();
-
-
-    void insertKeyframe(TimeValue time, ViewIdx view, const std::string & v, double* returnValue);
-
-    //for integration of openfx custom params
-    typedef OfxStatus (*customParamInterpolationV1Entry_t)(const void*            handleRaw,
-                                                           OfxPropertySetHandle inArgsRaw,
-                                                           OfxPropertySetHandle outArgsRaw);
-
-
-    virtual StringAnimationManagerPtr getStringAnimation(ViewIdx view) const OVERRIDE FINAL;
-    
-    void loadAnimation(const std::map<std::string,std::map<double, std::string> > & keyframes);
-
-    void saveAnimation(std::map<std::string,std::map<double, std::string> >* keyframes) const;
-
-    void setCustomInterpolation(customParamInterpolationV1Entry_t func, void* ofxParamHandle);
-
-    void stringFromInterpolatedValue(double interpolated, ViewIdx view, std::string* returnValue) const;
-
-    std::string getStringAtTime(TimeValue time, ViewIdx view);
-
-
-protected:
-
-    virtual KnobDimViewBasePtr createDimViewData() const OVERRIDE;
-
-private:
-    
-
-};
 
 
 /**

@@ -3250,7 +3250,7 @@ ChoiceParam::getActiveOption(QString* optionID, QString* optionLabel, QString* o
         PythonSetInvalidViewName(view);
         return;
     }
-    ChoiceOption opt = knob->getActiveEntry(thisViewSpec);
+    ChoiceOption opt = knob->getCurrentEntry(thisViewSpec);
     *optionID = QString::fromUtf8(opt.id.c_str());
     *optionLabel = QString::fromUtf8(opt.label.c_str());
     *optionHelp = QString::fromUtf8(opt.tooltip.c_str());

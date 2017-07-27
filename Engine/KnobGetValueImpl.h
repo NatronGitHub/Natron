@@ -326,7 +326,7 @@ Knob<T>::getValueFromCurve(TimeValue time,
 
     if ( curve && (curve->getKeyFramesCount() > 0) ) {
         //getValueAt already clamps to the range for us
-        *ret = (T)curve->getValueAt(time, clamp);
+        *ret = curve->getValueAt(time, clamp).getValue();
 
         return true;
     }
@@ -339,29 +339,19 @@ bool
 KnobStringBase::getValueFromCurve(TimeValue time,
                                   ViewIdx view,
                                   DimIdx dimension,
-                                  bool /*clamp*/,
+                                  bool clamp,
                                   std::string* ret)
 {
-    AnimatingKnobStringHelper* isStringAnimated = dynamic_cast<AnimatingKnobStringHelper* >(this);
-
-    if (isStringAnimated) {
-        *ret = isStringAnimated->getStringAtTime(time, view);
-        ///ret is not empty if the animated string knob has a custom interpolation
-        if ( !ret->empty() ) {
-            return true;
-        }
-    }
     assert( ret->empty() );
     ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     CurvePtr curve = getAnimationCurve(view_i, dimension);
     if ( curve && (curve->getKeyFramesCount() > 0) ) {
-        assert(isStringAnimated);
-        if (isStringAnimated) {
-            isStringAnimated->stringFromInterpolatedValue(curve->getValueAt(time), view_i, ret);
-        }
 
+        KeyFrame key = curve->getValueAt(time, clamp);
+        key.getPropertySafe(kKeyFramePropString, 0, ret);
         return true;
     }
+
 
     return false;
 } // getValueFromCurve
@@ -378,7 +368,8 @@ KnobStringBase::getRawCurveValueAt(TimeValue time,
 
     if ( curve && (curve->getKeyFramesCount() > 0) ) {
         //getValueAt already clamps to the range for us
-        return curve->getValueAt(time, false); //< no clamping to range!
+        int index = curve->keyFrameIndex(time);
+        return double(index);
     }
 
     return 0;
@@ -390,24 +381,23 @@ Knob<T>::getRawCurveValueAt(TimeValue time,
                             ViewIdx view,
                             DimIdx dimension)
 {
+
+    T value;
+    if (getValueFromCurve(time, view, dimension, false /*clamp*/,&value)) {
+        return (double)value;
+    }
     CurvePtr curve  = getAnimationCurve(view, dimension);
 
-    if ( curve && (curve->getKeyFramesCount() > 0) ) {
-        //getValueAt already clamps to the range for us
-        return curve->getValueAt(time, false); //< no clamping to range!
-    }
-    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
-
-    ValueKnobDimView<T>* dataForDimView = dynamic_cast<ValueKnobDimView<T>*>(getDataForDimView(dimension, view_i).get());
+    ValueKnobDimView<T>* dataForDimView = dynamic_cast<ValueKnobDimView<T>*>(getDataForDimView(dimension, view).get());
     if (!dataForDimView) {
-        return T();
+        return value;
     }
-    T ret;
+
     {
         QMutexLocker k(&dataForDimView->valueMutex);
-        ret = dataForDimView->value;
+        value = dataForDimView->value;
     }
-    return clampToMinMax(ret, dimension);
+    return clampToMinMax(value, dimension);
 } // getRawCurveValueAt
 
 template <typename T>

@@ -1219,11 +1219,17 @@ SERIALIZATION_NAMESPACE::KnobSerialization::serialize(Archive & ar,
 
         //isParametric->loadParametricCurves(extraData->parametricCurves);
     } else if (isString || isFile) {
-        TextExtraData* extraData = dynamic_cast<TextExtraData*>(_extraData.get());
 
         std::map<double, std::string> keys;
         ar & ::boost::serialization::make_nvp("StringsAnimation", keys);
-        extraData->keyframes["Main"] = keys;
+
+        values[0]._animationCurve.curveType = eCurveSerializationTypeString;
+        for (std::map<double, std::string>::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+            KeyFrameSerialization k;
+            k.time = it->first;
+            k.stringValue = it->second;
+            values[0]._animationCurve.keys.push_back(k);
+        }
         ///Don't load animation for input image files: they no longer hold keyframes
         // in the Reader context, the script name must be kOfxImageEffectFileParamName, @see kOfxImageEffectContextReader
         /*if ( !isFile || ( isFile && (isFile->getName() != kOfxImageEffectFileParamName) ) ) {

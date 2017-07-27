@@ -238,12 +238,8 @@ PasteKnobClipBoardUndoCommand::copyFrom(const SERIALIZATION_NAMESPACE::KnobSeria
                         fromCurve->fromSerialization(foundFromView->second[_imp->fromDimension]._animationCurve);
                     }
 
-                    StringAnimationManagerPtr fromAnimString;
-                    if (fromKnob) {
-                        fromAnimString = fromKnob->getStringAnimation(fromView);
-                    }
 
-                    internalKnob->cloneCurve(*it, DimIdx(i), *fromCurve, 0 /*offset*/, 0 /*range*/, fromAnimString.get());
+                    internalKnob->cloneCurve(*it, DimIdx(i), *fromCurve, 0 /*offset*/, 0 /*range*/);
 
                     break;
                 }

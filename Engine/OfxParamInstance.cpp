@@ -44,6 +44,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Global/GlobalDefines.h"
 #include "Engine/AppManager.h"
 #include "Engine/Knob.h"
+#include "Engine/KeyFrameInterpolator.h"
 #include "Engine/KnobFactory.h"
 #include "Engine/KnobFile.h"
 #include "Engine/KnobTypes.h"
@@ -4783,7 +4784,11 @@ OfxCustomInstance::OfxCustomInstance(const OfxEffectInstancePtr& node,
     GCC_DIAG_PEDANTIC_ON
 
     if (_imp->customParamInterpolationV1Entry) {
-        knob->setCustomInterpolation( _imp->customParamInterpolationV1Entry, (void*)getHandle() );
+        knob->setAnimationEnabled(true);
+        CurvePtr interpolator = knob->getAnimationCurve(ViewIdx(0), DimIdx(0));
+
+        boost::shared_ptr<OfxCustomStringKeyFrameInterpolator> interp(new OfxCustomStringKeyFrameInterpolator(_imp->customParamInterpolationV1Entry, (void*)getHandle(), getName()));
+        interpolator->setInterpolator(interp);
     }
 }
 

@@ -286,7 +286,7 @@ void
 NodeMetadata::Implementation::toMemorySegment(IPCPropertyMap* properties) const
 {
 
-    for (std::map<std::string, boost::shared_ptr<PropertiesHolder::PropertyBase> >::const_iterator it = _properties.begin(); it != _properties.end(); ++it) {
+    for (std::map<std::string, boost::shared_ptr<PropertiesHolder::PropertyBase> >::const_iterator it = _properties->begin(); it != _properties->end(); ++it) {
 
 
         PropertiesHolder::Property<int>* isInt = dynamic_cast<PropertiesHolder::Property<int>*>(it->second.get());

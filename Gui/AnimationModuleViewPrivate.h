@@ -264,7 +264,7 @@ public:
     bool isNearByCurrentFrameIndicatorBottom(const QPointF &zoomCoords) const;
 
 
-    KeyFrameWithStringSet isNearByKeyframe(const AnimItemBasePtr &item, DimSpec dimension, ViewSetSpec view, const QPointF &widgetCoords) const;
+    KeyFrameSet isNearByKeyframe(const AnimItemBasePtr &item, DimSpec dimension, ViewSetSpec view, const QPointF &widgetCoords) const;
 
     void drawDopeSheetGroupOverlay(const NodeAnimPtr &NodeAnim, const NodeAnimPtr &group) const;
 

@@ -468,9 +468,9 @@ public:
     {
     };
 
-    bool operator()(const KeyFrameWithString & f)
+    bool operator()(const KeyFrame & f)
     {
-        return f.key.getTime() == _t;
+        return f.getTime() == _t;
     }
 
 private:
@@ -580,7 +580,7 @@ CurveGui::drawCurve(int curveIndex,
     const AnimItemDimViewKeyFramesMap& selectedKeys = selectionModel->getCurrentKeyFramesSelection();
 
 
-    const KeyFrameWithStringSet* foundThisCurveSelectedKeys = 0;
+    const KeyFrameSet* foundThisCurveSelectedKeys = 0;
     {
         AnimItemDimViewIndexID k;
         k.item = item;
@@ -678,7 +678,7 @@ CurveGui::drawCurve(int curveIndex,
         GL_GPU::Enable(GL_POINT_SMOOTH);
 
 
-        KeyFrameWithStringSet::const_iterator foundSelectedKey;
+        KeyFrameSet::const_iterator foundSelectedKey;
         if (foundThisCurveSelectedKeys) {
             foundSelectedKey = foundThisCurveSelectedKeys->end();
         }
@@ -694,7 +694,7 @@ CurveGui::drawCurve(int curveIndex,
 
             bool drawKeySelected = false;
             if (foundThisCurveSelectedKeys) {
-                KeyFrameWithStringSet::const_iterator start = foundSelectedKey == foundThisCurveSelectedKeys->end() ? foundThisCurveSelectedKeys->begin() : foundSelectedKey;
+                KeyFrameSet::const_iterator start = foundSelectedKey == foundThisCurveSelectedKeys->end() ? foundThisCurveSelectedKeys->begin() : foundSelectedKey;
                 foundSelectedKey = std::find_if(start, foundThisCurveSelectedKeys->end(), KeyFrameWithStringTimePredicate(key.getTime()));
                 drawKeySelected = foundSelectedKey != foundThisCurveSelectedKeys->end();
                 if (!drawKeySelected) {

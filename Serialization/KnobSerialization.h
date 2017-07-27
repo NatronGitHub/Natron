@@ -229,7 +229,6 @@ public:
     , italicActivated(false)
     , boldActivated(false)
     , fontColor()
-    , keyframes()
     {
         fontColor[0] = fontColor[1] = fontColor[2] = 0.;
     }
@@ -245,11 +244,6 @@ public:
     bool italicActivated;
     bool boldActivated;
     double fontColor[3];
-
-
-    // Animation keyframes
-    // map<view name, map<frame, string> >
-    std::map<std::string,std::map<double, std::string> > keyframes;
 
 };
 

@@ -214,8 +214,8 @@ KnobAnimPrivate::createItemForView(const std::vector<std::string>& projectViewNa
         viewItems[view] = viewItem;
     }
     // For KnobChoice and all string-based knobs, do not create a curve, the dope sheet is more intuitive for the user
-    AnimatingObjectI::KeyframeDataTypeEnum keyframeType = internalKnob->getKeyFrameDataType();
-    bool createdCurve = keyframeType != AnimatingObjectI::eKeyframeDataTypeString && !dynamic_cast<KnobChoice*>(internalKnob.get());
+    CurveTypeEnum keyframeType = internalKnob->getKeyFrameDataType();
+    bool createdCurve = keyframeType != eCurveTypeString && keyframeType != eCurveTypeChoice;
 
     bool dimensionsExpanded = internalKnob->getAllDimensionsVisible(view);
     // Now create an item per dimension if the knob is multi-dimensional
@@ -612,7 +612,7 @@ KnobAnim::evaluateCurve(bool useExpressionIfAny, double x, DimIdx dimension, Vie
             return 0;
         }
     } else {
-        return curve->getValueAt(TimeValue(x), false /*doClamp*/);
+        return curve->getValueAt(TimeValue(x), false /*doClamp*/).getValue();
     }
 
 }

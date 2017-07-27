@@ -576,7 +576,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
     QString qpattern = QString::fromUtf8( filename.c_str() );
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
     std::string readerPluginID;
-    readerPluginID = pluginSelectorKnob.lock()->getActiveEntry().id;
+    readerPluginID = pluginSelectorKnob.lock()->getCurrentEntry().id;
 
 
     if ( readerPluginID.empty() || readerPluginID ==  kPluginSelectorParamEntryDefault) {
@@ -1000,7 +1000,7 @@ ReadNode::knobChanged(const KnobIPtr& k,
         }
 
     } else if ( k == _imp->pluginSelectorKnob.lock() ) {
-        ChoiceOption entry = _imp->pluginSelectorKnob.lock()->getActiveEntry();
+        ChoiceOption entry = _imp->pluginSelectorKnob.lock()->getCurrentEntry();
 
 
         if (entry.id == "Default") {

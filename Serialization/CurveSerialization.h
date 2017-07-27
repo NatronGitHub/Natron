@@ -74,13 +74,24 @@ struct KeyFrameSerialization
     // This is only needed in eKeyframeTypeBroken mode when user can have set different right/left tangents
     double leftDerivative;
 
+
+    // If the associated curve is of type string, this is serialized instead of the actual value and derivatives.
+    std::string stringValue;
+
 };
 
+enum CurveSerializationTypeEnum
+{
+    eCurveSerializationTypeString,
+    eCurveSerializationTypeDouble,
+};
 
 class CurveSerialization
 : public SerializationObjectBase
 {
 public:
+
+    CurveSerializationTypeEnum curveType;
 
     // We don't need a set complicated data structure here because we trust that the Curve itself
     // gave us a list of keyframes with a correct ordering

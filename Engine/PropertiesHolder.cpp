@@ -35,11 +35,22 @@ PropertiesHolder::PropertiesHolder()
 
 PropertiesHolder::PropertiesHolder(const PropertiesHolder& other)
 : _properties()
-, _propertiesInitialized(other._propertiesInitialized)
+, _propertiesInitialized(false)
 {
-    for (std::map<std::string, boost::shared_ptr<PropertyBase> >::const_iterator it = other._properties.begin(); it!=other._properties.end(); ++it) {
-        boost::shared_ptr<PropertyBase> duplicate = it->second->createDuplicate();
-        _properties.insert(std::make_pair(it->first, duplicate));
+    cloneProperties(other);
+}
+
+void
+PropertiesHolder::cloneProperties(const PropertiesHolder& other)
+{
+    if (other._properties) {
+        other._propertiesInitialized = true;
+        _properties.reset(new std::map<std::string, boost::shared_ptr<PropertyBase> >());
+
+        for (std::map<std::string, boost::shared_ptr<PropertyBase> >::const_iterator it = other._properties->begin(); it!=other._properties->end(); ++it) {
+            boost::shared_ptr<PropertyBase> duplicate = it->second->createDuplicate();
+            _properties->insert(std::make_pair(it->first, duplicate));
+        }
     }
 }
 

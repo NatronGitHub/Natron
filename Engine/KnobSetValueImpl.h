@@ -401,12 +401,9 @@ template <>
 ValueChangedReturnCodeEnum
 ValueKnobDimView<std::string>::setValueAtTime(TimeValue time, const std::string& value, KeyFrame* newKey)
 {
-    double keyFrameValue = 0.;
-    StringAnimationManagerPtr animationManager = getStringAnimation();
-    assert(animationManager);
-
-    ValueChangedReturnCodeEnum addKeyRet = animationManager->insertKeyFrame(time, value, &keyFrameValue);
-    *newKey = KeyFrame( (double)time, keyFrameValue );
+    *newKey = KeyFrame( (double)time, 0. );
+    newKey->setProperty(kKeyFramePropString, value);
+    ValueChangedReturnCodeEnum addKeyRet = animationCurve->setOrAddKeyframe(*newKey);
 
     notifyCurveChanged();
 

@@ -38,7 +38,6 @@
 #include "Engine/Project.h"
 #include "Engine/KnobItemsTable.h"
 #include "Engine/Node.h"
-#include "Engine/StringAnimationManager.h"
 #include "Engine/EffectInstance.h"
 
 #include "Gui/ActionShortcuts.h"
@@ -338,7 +337,7 @@ KnobGui::onRemoveAnimationActionTriggered()
                 continue;
             }
             AnimItemDimViewIndexID id(knobAnim, *it, DimIdx(i));
-            KeyFrameWithStringSet& keys = keysToRemove[id];
+            KeyFrameSet& keys = keysToRemove[id];
             knobAnim->getKeyframes(DimIdx(i), *it, AnimItemBase::eGetKeyframesTypeMerged, &keys);
 
         }
@@ -387,7 +386,7 @@ KnobGui::onInterpolationActionTriggered()
     for (int i = 0; i < nDims; ++i) {
         if (dimension.isAll() ||  dimension == i) {
             AnimItemDimViewIndexID id(knobAnim, view,  DimIdx(i));
-            KeyFrameWithStringSet& keys = keysToSet[id];
+            KeyFrameSet& keys = keysToSet[id];
             knobAnim->getKeyframes(DimIdx(i), view, AnimItemBase::eGetKeyframesTypeMerged, &keys);
         }
     }
@@ -449,8 +448,9 @@ KnobGui::onSetKeyActionTriggered()
     }
 
     KnobIntBasePtr isInt = toKnobIntBase(internalKnob);
+    KnobChoicePtr isChoice = toKnobChoice(internalKnob);
     KnobBoolBasePtr isBool = toKnobBoolBase(internalKnob);
-    AnimatingKnobStringHelperPtr isString = boost::dynamic_pointer_cast<AnimatingKnobStringHelper>(internalKnob);
+    KnobStringBasePtr isString = boost::dynamic_pointer_cast<KnobStringBase>(internalKnob);
     KnobDoubleBasePtr isDouble = toKnobDoubleBase(internalKnob);
 
 
@@ -470,22 +470,24 @@ KnobGui::onSetKeyActionTriggered()
                 continue;
             }
             AnimItemDimViewIndexID id(knobAnim, *it, DimIdx(i));
-            KeyFrameWithStringSet& keys = keysToAdd[id];
+            KeyFrameSet& keys = keysToAdd[id];
 
-            KeyFrameWithString kf;
-            kf.key.setTime(time);
-            if (isInt) {
-                kf.key.setValue( isInt->getValue(DimIdx(i), *it) );
+            KeyFrame kf;
+            kf.setTime(time);
+            if (isChoice) {
+                ChoiceOption v = isChoice->getCurrentEntryAtTime(time, *it);
+                kf.setProperty(kKeyframePropChoiceOptionID, v.id);
+                kf.setProperty(kKeyframePropChoiceOptionLabel, v.label);
+                kf.setValue(isChoice->getValueAtTime(time, DimIdx(i), *it));
+            } else if (isInt) {
+                kf.setValue( isInt->getValue(DimIdx(i), *it) );
             } else if (isBool) {
-                kf.key.setValue( isBool->getValue(DimIdx(i), *it) );
+                kf.setValue( isBool->getValue(DimIdx(i), *it) );
             } else if (isDouble) {
-                kf.key.setValue( isDouble->getValue(DimIdx(i), *it) );
+                kf.setValue( isDouble->getValue(DimIdx(i), *it) );
             } else if (isString) {
                 std::string v = isString->getValue(DimIdx(i), *it);
-                double dv;
-                isString->insertKeyframe(time, ViewIdx(0), v, &dv);
-                kf.string = v;
-                kf.key.setValue(dv);
+                kf.setProperty(kKeyFramePropString, v);
             }
             keys.insert(kf);
         }
@@ -520,7 +522,6 @@ KnobGui::onRemoveKeyActionTriggered()
         return;
     }
 
-    AnimatingKnobStringHelperPtr isString = boost::dynamic_pointer_cast<AnimatingKnobStringHelper>(internalKnob);
 
 
     TimeValue time = internalKnob->getHolder()->getTimelineCurrentTime();
@@ -544,17 +545,10 @@ KnobGui::onRemoveKeyActionTriggered()
                 continue;
             }
 
-            KeyFrameWithString kf;
-            if (curve->getKeyFrameWithTime(time, &kf.key)) {
-                if (isString) {
-                    StringAnimationManagerPtr sAnim = isString->getStringAnimation(*it);
-                    if (sAnim) {
-                        sAnim->stringFromInterpolatedIndex(time, &kf.string);
-                    }
-                }
-
+            KeyFrame kf;
+            if (curve->getKeyFrameWithTime(time, &kf)) {
                 AnimItemDimViewIndexID id(knobAnim, *it, DimIdx(i));
-                KeyFrameWithStringSet& keys = keysToRemove[id];
+                KeyFrameSet& keys = keysToRemove[id];
                 keys.insert(kf);
             }
 
