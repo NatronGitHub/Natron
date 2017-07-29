@@ -271,6 +271,39 @@ private:
 };
 
 
+class SetKnobKeyFramesCommand
+: public QUndoCommand
+{
+
+    Q_DECLARE_TR_FUNCTIONS(SetKnobKeyFrameProperty)
+
+public:
+
+    SetKnobKeyFramesCommand(const KnobIPtr& knob,
+                            DimSpec dimension,
+                            ViewSetSpec view,
+                            const KeyFrameSet& keys,
+                            SetKeyFrameFlags flags);
+
+    virtual ~SetKnobKeyFramesCommand();
+
+    virtual void undo() OVERRIDE FINAL;
+    virtual void redo() OVERRIDE FINAL;
+    virtual int id() const OVERRIDE FINAL;
+    virtual bool mergeWith(const QUndoCommand *command) OVERRIDE FINAL;
+private:
+
+    KnobIWPtr _knob;
+    DimSpec _dimension;
+    ViewSetSpec _view;
+    SetKeyFrameFlags _flags;
+
+    KeyFrameSet _newKeys;
+
+    PerDimViewKeyFramesMap _oldKeys;
+
+};
+
 /**
  * @brief This class is used by the internal knob when it wants to group multiple edits into a single undo/redo action.
  * It is not used by the GUI
@@ -286,10 +319,9 @@ public:
     struct ValueToSet
     {
         // Since knobs with different types may be grouped here, we need to use variants
-        Variant newValue;
-        PerDimViewVariantMap oldValues;
+        KeyFrame newValue;
+        PerDimViewKeyFramesMap oldValues;
         DimSpec dimension;
-        TimeValue time;
         ViewSetSpec view;
         bool setKeyFrame;
         ValueChangedReturnCodeEnum setValueRetCode;
@@ -321,7 +353,6 @@ public:
      * @param setKeyFrame If true, the command will use setValueAtTime instead of setValue in the redo() command.
      * @param value The value set in the corresponding setValue call
      * @param dimension The dimension argument passed to setValue
-     * @param time If setKeyframe is true, this is the time argument passed to setValueAtTime
      * @param view The view argument passed to setValue
      **/
     MultipleKnobEditsUndoCommand(const KnobIPtr& knob,
@@ -330,10 +361,9 @@ public:
                                  ValueChangedReturnCodeEnum setValueRetCode,
                                  bool createNew,
                                  bool setKeyFrame,
-                                 const PerDimViewVariantMap& oldValue,
-                                 const Variant & newValue,
+                                 const PerDimViewKeyFramesMap& oldValue,
+                                 const KeyFrame & newValue,
                                  DimSpec dimension,
-                                 TimeValue time,
                                  ViewSetSpec view);
 
     virtual ~MultipleKnobEditsUndoCommand();

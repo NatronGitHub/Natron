@@ -54,6 +54,125 @@ GCC_DIAG_ON(unused-parameter)
 
 NATRON_NAMESPACE_ENTER
 
+
+SetKnobKeyFramesCommand::SetKnobKeyFramesCommand(const KnobIPtr& knob,
+                                                 DimSpec dimension,
+                                                 ViewSetSpec view,
+                                                 const KeyFrameSet& keys,
+                                                 SetKeyFrameFlags flags)
+: QUndoCommand()
+, _knob(knob)
+, _dimension(dimension)
+, _view(view)
+, _flags(flags)
+, _newKeys(keys)
+, _oldKeys()
+{
+    std::list<ViewIdx> views = knob->getViewsList();
+    int nDims = knob->getNDimensions();
+    for (std::list<ViewIdx>::const_iterator it2 = views.begin(); it2 != views.end(); ++it2) {
+        if (!view.isAll() && *it2 != view) {
+            continue;
+        }
+        for (int i = 0; i < nDims; ++i) {
+            if (!dimension.isAll() && i != dimension) {
+                continue;
+            }
+
+            DimensionViewPair dimview = {DimIdx(i), *it2};
+            std::list<KeyFrame>& oldKeysList = _oldKeys[dimview];
+            CurvePtr curve = knob->getAnimationCurve(*it2, DimIdx(i));
+            for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+
+                KeyFrame k;
+                if (curve->getKeyFrameWithTime(it->getTime(), &k)) {
+                    oldKeysList.push_back(k);
+                }
+
+            }
+
+        }
+    }
+
+}
+
+SetKnobKeyFramesCommand::~SetKnobKeyFramesCommand()
+{
+
+}
+
+void
+SetKnobKeyFramesCommand::undo()
+{
+    KnobIPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+
+    // Remove all new keyframes added, and re-apply old keyframes
+    std::list<double> toDelete;
+    for (KeyFrameSet::const_iterator it = _newKeys.begin(); it != _newKeys.end(); ++it) {
+        toDelete.push_back(it->getTime());
+    }
+    if (!toDelete.empty()) {
+        knob->deleteValuesAtTime(toDelete, _view, _dimension, eValueChangedReasonUserEdited);
+    }
+
+    for (PerDimViewKeyFramesMap::const_iterator it = _oldKeys.begin(); it!=_oldKeys.end(); ++it) {
+        AnimatingObjectI::SetKeyFrameArgs args;
+        args.dimension = it->first.dimension;
+        args.view = it->first.view;
+        args.flags = _flags;
+        knob->setMultipleKeyFrames(args, it->second);
+    }
+
+
+} // undo
+
+void
+SetKnobKeyFramesCommand::redo()
+{
+    KnobIPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    AnimatingObjectI::SetKeyFrameArgs args;
+    args.dimension = _dimension;
+    args.view = _view;
+    args.flags = _flags;
+
+    std::list<KeyFrame> keysToSet;
+    for (KeyFrameSet::const_iterator it = _newKeys.begin(); it != _newKeys.end(); ++it) {
+        keysToSet.push_back(*it);
+    }
+    knob->setMultipleKeyFrames(args, keysToSet);
+
+} // redo
+
+int
+SetKnobKeyFramesCommand::id() const
+{
+    return kKnobSetKeyFramesCommandCompressionID;
+}
+
+bool
+SetKnobKeyFramesCommand::mergeWith(const QUndoCommand *command)
+{
+    const SetKnobKeyFramesCommand* other = dynamic_cast<const SetKnobKeyFramesCommand*>(command);
+    if (!other) {
+        return false;
+    }
+    if (_knob.lock() != other->_knob.lock()) {
+        return false;
+    }
+
+    for (KeyFrameSet::const_iterator it = other->_newKeys.begin(); it != other->_newKeys.end(); ++it) {
+        _newKeys.insert(*it);
+    }
+    return true;
+    
+}
+
 struct PasteKnobClipBoardUndoCommandPrivate
 {
     // The knob on which we paste
@@ -452,10 +571,9 @@ MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(const KnobIPtr& knob,
                                                            ValueChangedReturnCodeEnum setValueRetCode,
                                                            bool createNew,
                                                            bool setKeyFrame,
-                                                           const PerDimViewVariantMap& oldValue,
-                                                           const Variant & newValue,
+                                                           const PerDimViewKeyFramesMap& oldValue,
+                                                           const KeyFrame & newValue,
                                                            DimSpec dimension,
-                                                           TimeValue time,
                                                            ViewSetSpec view)
     : QUndoCommand()
     , knobs()
@@ -472,12 +590,6 @@ MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(const KnobIPtr& knob,
     v.dimension = dimension;
     assert(dimension != -1);
 
-    if (!setKeyFrame) {
-        // Ensure the time is correct in case auto-keying is on and we add a keyframe
-        v.time = knob->getHolder()->getTimelineCurrentTime();
-    } else {
-        v.time = time;
-    }
     v.setKeyFrame = setKeyFrame;
     v.view = view;
     v.setValueRetCode = setValueRetCode;
@@ -504,47 +616,36 @@ MultipleKnobEditsUndoCommand::~MultipleKnobEditsUndoCommand()
 {
 }
 
-static ValueChangedReturnCodeEnum setOldValueForDimView(const KnobIntBasePtr& isInt,
-                                                        const KnobBoolBasePtr& isBool,
-                                                        const KnobDoubleBasePtr& isDouble,
-                                                        const KnobStringBasePtr& isString,
+static ValueChangedReturnCodeEnum setOldValueForDimView(const KnobIPtr& knob,
                                                         ValueChangedReasonEnum reason,
                                                         bool setKeyFrame,
-                                                        TimeValue time,
                                                         bool hasChanged,
                                                         ValueChangedReturnCodeEnum retCode,
                                                         DimIdx dim,
                                                         ViewIdx view_i,
-                                                        const PerDimViewVariantMap& oldValues)
+                                                        const PerDimViewKeyFramesMap& oldValues)
 {
     ValueChangedReturnCodeEnum ret = eValueChangedReturnCodeNothingChanged;
     DimensionViewPair key = {dim, view_i};
-    PerDimViewVariantMap::const_iterator foundDimView = oldValues.find(key);
+    PerDimViewKeyFramesMap::const_iterator foundDimView = oldValues.find(key);
     if (foundDimView == oldValues.end()) {
         return ret;
     }
 
-    const Variant& v = foundDimView->second;
-    if (setKeyFrame && retCode != eValueChangedReturnCodeKeyframeAdded) {
-        if (isInt) {
-            ret = isInt->setValueAtTime(time, v.toInt(), view_i, dim, reason, 0, hasChanged);
-        } else if (isBool) {
-            ret = isBool->setValueAtTime(time, v.toBool(), view_i, dim, reason, 0, hasChanged);
-        } else if (isDouble) {
-            ret = isDouble->setValueAtTime(time, v.toDouble(), view_i, dim, reason, 0, hasChanged);
-        } else if (isString) {
-            ret = isString->setValueAtTime(time, v.toString().toStdString(), view_i, dim, reason, 0, hasChanged);
-        }
+
+    const std::list<KeyFrame>& keys = foundDimView->second;
+
+    AnimatingObjectI::SetKeyFrameArgs args;
+    args.dimension = dim;
+    args.view = view_i;
+    args.flags = eSetKeyFrameFlagSetValue | eSetKeyFrameFlagReplaceProperties;
+    args.callKnobChangedHandlerEvenIfNothingChanged = hasChanged;
+    args.reason = reason;
+    assert(keys.size() == 1);
+    if (setKeyFrame &&  retCode != eValueChangedReturnCodeKeyframeAdded) {
+        ret = knob->setKeyFrame(args, keys.front());
     } else {
-        if (isInt) {
-            ret = isInt->setValue(v.toInt(), view_i, dim, reason, 0, hasChanged);
-        } else if (isBool) {
-            ret = isBool->setValue(v.toBool(), view_i, dim, reason, 0, hasChanged);
-        } else if (isDouble) {
-            ret = isDouble->setValue(v.toDouble(), view_i, dim, reason, 0, hasChanged);
-        } else if (isString) {
-            ret = isString->setValue(v.toString().toStdString(), view_i, dim, reason, 0, hasChanged);
-        }
+        ret = knob->setValueFromKeyFrame(args, keys.front());
     }
     return ret;
 }
@@ -570,11 +671,6 @@ MultipleKnobEditsUndoCommand::undo()
         assert(knob->getHolder() == holder);
 
 
-        KnobIntBasePtr isInt = toKnobIntBase(knob);
-        KnobBoolBasePtr isBool = toKnobBoolBase(knob);
-        KnobDoubleBasePtr isDouble = toKnobDoubleBase(knob);
-        KnobStringBasePtr isString = toKnobStringBase(knob);
-
         bool hasChanged = false;
 
         std::list<ValueToSet>::iterator next = it->second.begin();
@@ -595,7 +691,7 @@ MultipleKnobEditsUndoCommand::undo()
 
             // If we added a keyframe (due to auto-keying or not) remove it
             if (it2->setValueRetCode == eValueChangedReturnCodeKeyframeAdded) {
-                knob->deleteValueAtTime(it2->time, it2->view, it2->dimension, eValueChangedReasonUserEdited);
+                knob->deleteValueAtTime(it2->newValue.getTime(), it2->view, it2->dimension, eValueChangedReasonUserEdited);
             }
             // Only set back the first value that was set in the command
             if (dimensionsUndone.find(it2->dimension) != dimensionsUndone.end()) {
@@ -608,22 +704,22 @@ MultipleKnobEditsUndoCommand::undo()
                 for (int i = 0; i < nDims; ++i) {
                     if (it2->view.isAll()) {
                         for (std::list<ViewIdx>::const_iterator it3 = allViews.begin(); it3!=allViews.end(); ++it3) {
-                            hasChanged |= setOldValueForDimView(isInt, isBool, isDouble, isString, it2->reason, it2->setKeyFrame, it2->time, hasChanged,  it2->setValueRetCode, DimIdx(i), *it3, it2->oldValues) != eValueChangedReturnCodeNothingChanged;
+                            hasChanged |= setOldValueForDimView(knob, it2->reason, it2->setKeyFrame, hasChanged,  it2->setValueRetCode, DimIdx(i), *it3, it2->oldValues) != eValueChangedReturnCodeNothingChanged;
                         }
                     } else {
                         ViewIdx view_i = knob->checkIfViewExistsOrFallbackMainView(ViewIdx(it2->view));
-                        hasChanged |= setOldValueForDimView(isInt, isBool, isDouble, isString, it2->reason, it2->setKeyFrame, it2->time, hasChanged,  it2->setValueRetCode, DimIdx(i), view_i, it2->oldValues) != eValueChangedReturnCodeNothingChanged;
+                        hasChanged |= setOldValueForDimView(knob, it2->reason, it2->setKeyFrame, hasChanged,  it2->setValueRetCode, DimIdx(i), view_i, it2->oldValues) != eValueChangedReturnCodeNothingChanged;
                     }
                 }
 
             } else {
                 if (it2->view.isAll()) {
                     for (std::list<ViewIdx>::const_iterator it3 = allViews.begin(); it3!=allViews.end(); ++it3) {
-                        hasChanged |= setOldValueForDimView(isInt, isBool, isDouble, isString, it2->reason, it2->setKeyFrame, it2->time, hasChanged,  it2->setValueRetCode, DimIdx(it2->dimension), *it3, it2->oldValues) != eValueChangedReturnCodeNothingChanged;
+                        hasChanged |= setOldValueForDimView(knob, it2->reason, it2->setKeyFrame, hasChanged,  it2->setValueRetCode, DimIdx(it2->dimension), *it3, it2->oldValues) != eValueChangedReturnCodeNothingChanged;
                     }
                 } else {
                     ViewIdx view_i = knob->checkIfViewExistsOrFallbackMainView(ViewIdx(it2->view));
-                    hasChanged |= setOldValueForDimView(isInt, isBool, isDouble, isString, it2->reason, it2->setKeyFrame, it2->time, hasChanged,  it2->setValueRetCode, DimIdx(it2->dimension), view_i, it2->oldValues) != eValueChangedReturnCodeNothingChanged;
+                    hasChanged |= setOldValueForDimView(knob, it2->reason, it2->setKeyFrame,  hasChanged,  it2->setValueRetCode, DimIdx(it2->dimension), view_i, it2->oldValues) != eValueChangedReturnCodeNothingChanged;
                 }
             }
 
@@ -664,12 +760,6 @@ MultipleKnobEditsUndoCommand::redo()
 
         // All knobs must belong to the same node!
         assert(knob->getHolder() == holder);
-
-        KnobIntBasePtr isInt = toKnobIntBase(knob);
-        KnobBoolBasePtr isBool = toKnobBoolBase(knob);
-        KnobDoubleBasePtr isDouble = toKnobDoubleBase(knob);
-        KnobStringBasePtr isString = toKnobStringBase(knob);
-
         bool hasChanged = false;
 
         std::list<ValueToSet>::iterator next = it->second.begin();
@@ -684,30 +774,15 @@ MultipleKnobEditsUndoCommand::redo()
                 // Re-enable knobChanged for the last change on this knob
                 knob->unblockValueChanges();
             }
+            AnimatingObjectI::SetKeyFrameArgs args;
+            args.dimension = it2->dimension;
+            args.view = it2->view;
+            args.reason = it2->reason;
+            args.callKnobChangedHandlerEvenIfNothingChanged = hasChanged;
             if (it2->setKeyFrame) {
-                if (isInt) {
-                    it2->setValueRetCode = isInt->setValueAtTime(it2->time, it2->newValue.toInt(), it2->view, it2->dimension, it2->reason, 0, hasChanged);
-                } else if (isBool) {
-                    it2->setValueRetCode = isBool->setValueAtTime(it2->time, it2->newValue.toBool(), it2->view, it2->dimension, it2->reason, 0, hasChanged);
-                } else if (isDouble) {
-                    it2->setValueRetCode = isDouble->setValueAtTime(it2->time, it2->newValue.toDouble(), it2->view, it2->dimension, it2->reason, 0, hasChanged);
-                } else if (isString) {
-                    it2->setValueRetCode = isString->setValueAtTime(it2->time, it2->newValue.toString().toStdString(), it2->view, it2->dimension, it2->reason, 0, hasChanged);
-                } else {
-                    assert(false);
-                }
+                it2->setValueRetCode = knob->setKeyFrame(args, it2->newValue);
             } else {
-                if (isInt) {
-                    it2->setValueRetCode = isInt->setValue(it2->newValue.toInt(), it2->view, it2->dimension, it2->reason, 0, hasChanged);
-                } else if (isBool) {
-                    it2->setValueRetCode = isBool->setValue(it2->newValue.toBool(), it2->view, it2->dimension, it2->reason, 0, hasChanged);
-                } else if (isDouble) {
-                    it2->setValueRetCode = isDouble->setValue(it2->newValue.toDouble(), it2->view, it2->dimension, it2->reason, 0, hasChanged);
-                } else if (isString) {
-                    it2->setValueRetCode = isString->setValue(it2->newValue.toString().toStdString(), it2->view, it2->dimension, it2->reason, 0, hasChanged);
-                } else {
-                    assert(false);
-                }
+                it2->setValueRetCode = knob->setValueFromKeyFrame(args, it2->newValue);
             }
             hasChanged |= it2->setValueRetCode != eValueChangedReturnCodeNothingChanged;
 
