@@ -246,7 +246,7 @@ void
 Curve::unregisterListener(const CurveChangesListenerPtr& listener)
 {
     QMutexLocker l(&_imp->_lock);
-    for (std::list<CurveChangesListenerWPtr>::const_iterator it = _imp->listeners.begin(); it != _imp->listeners.end(); ++it) {
+    for (std::list<CurveChangesListenerWPtr>::iterator it = _imp->listeners.begin(); it != _imp->listeners.end(); ++it) {
         CurveChangesListenerPtr l = it->lock();
         if (l == listener) {
             _imp->listeners.erase(it);
