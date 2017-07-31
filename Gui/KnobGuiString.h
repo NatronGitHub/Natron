@@ -39,6 +39,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QObject>
 #include <QStyledItemDelegate>
 #include <QTextEdit>
+#include <QColor>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -101,6 +102,7 @@ private:
 private:
     bool _hasChanged;
     bool _appearLinked;
+    QColor _lastBgColor, _lastFgColor;
     boost::shared_ptr<KnobWidgetDnD> _dnd;
 };
 

@@ -152,18 +152,28 @@ AnimatingTextEdit::refreshStylesheet()
         appPTR->getCurrentSettings()->getTextColor(&fgColor[0], &fgColor[1], &fgColor[2]);
     }
 
-    QString bgColorStyleSheetStr;
+    QColor bgCol;
     if (bgColorSet) {
-        QColor bgCol;
         bgCol.setRgbF(Image::clamp(bgColor[0], 0., 1.), Image::clamp(bgColor[1], 0., 1.), Image::clamp(bgColor[2], 0., 1.));
-        bgColorStyleSheetStr = QString::fromUtf8("background-color: rgb(%1, %2, %3);").arg(bgCol.red()).arg(bgCol.green()).arg(bgCol.blue())
-        ;
-
     }
 
 
     QColor fgCol;
     fgCol.setRgbF(Image::clamp(fgColor[0], 0., 1.), Image::clamp(fgColor[1], 0., 1.), Image::clamp(fgColor[2], 0., 1.));
+
+    if (bgCol == _lastBgColor && fgCol == _lastFgColor) {
+        return;
+    }
+
+    _lastBgColor = bgCol;
+    _lastFgColor = fgCol;
+
+    QString bgColorStyleSheetStr;
+    if (bgColorSet) {
+        bgColorStyleSheetStr = QString::fromUtf8("background-color: rgb(%1, %2, %3);").arg(bgCol.red()).arg(bgCol.green()).arg(bgCol.blue())
+        ;
+    }
+
 
     setStyleSheet(QString::fromUtf8("QTextEdit {\n"
                                     "color: rgb(%1, %2, %3);\n"

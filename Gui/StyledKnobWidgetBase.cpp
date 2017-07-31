@@ -44,9 +44,7 @@ void
 StyledKnobWidgetBase::setAnimation(int anim)
 {
     animation = anim;
-    if (animation != anim) {
-        refreshStylesheet();
-    }
+    refreshStylesheet();
 }
 
 int
@@ -59,9 +57,7 @@ void
 StyledKnobWidgetBase::setIsSelectedMultipleTimes(bool b)
 {
     multipleSelection = b;
-    if (b != multipleSelection) {
-        refreshStylesheet();
-    }
+    refreshStylesheet();
 }
 
 bool
@@ -74,9 +70,7 @@ void
 StyledKnobWidgetBase::setIsSelected(bool b)
 {
     selected = b;
-    if (selected != b) {
-        refreshStylesheet();
-    }
+    refreshStylesheet();
 }
 
 bool
@@ -89,9 +83,7 @@ void
 StyledKnobWidgetBase::setIsModified(bool b)
 {
     modified = b;
-    if (modified != b) {
-        refreshStylesheet();
-    }
+    refreshStylesheet();
 }
 
 bool

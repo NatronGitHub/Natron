@@ -2758,6 +2758,8 @@ initializeDefaultValueSerializationStorage(const KnobIPtr& knob,
         knobSer->_dataType = eSerializationValueVariantTypeString;
         defValue->value.isString = isChoice->getDefaultEntryID();
         defValue->serializeDefaultValue = isChoice->hasDefaultValueChanged(dimension);
+    } else {
+        knobSer->_dataType = eSerializationValueVariantTypeNone;
     }
 } // initializeDefaultValueSerializationStorage
 

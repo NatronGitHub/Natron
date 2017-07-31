@@ -78,8 +78,9 @@ CurveSerialization::encode(YAML::Emitter& em) const
 
                         em << YAML::EndMap;
                     }
+                    em << YAML::EndMap;
                 }
-                em << YAML::EndMap;
+
             }
         }   break;
         case eCurveSerializationTypeString: {
