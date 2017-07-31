@@ -30,19 +30,20 @@
 
 NATRON_NAMESPACE_ENTER
 
-struct AnimatingObjectIPrivate
+struct SplittableViewsI::Implementation
 {
     mutable QMutex viewsMutex;
     std::list<ViewIdx> views;
 
-    AnimatingObjectIPrivate()
+    
+    Implementation()
     : viewsMutex()
     , views()
     {
         views.push_back(ViewIdx(0));
     }
 
-    AnimatingObjectIPrivate(const AnimatingObjectIPrivate& other)
+    Implementation(const Implementation& other)
     : viewsMutex()
     , views()
     {
@@ -65,32 +66,35 @@ struct AnimatingObjectIPrivate
     }
 };
 
-AnimatingObjectI::AnimatingObjectI()
-: _imp(new AnimatingObjectIPrivate())
+SplittableViewsI::SplittableViewsI()
+: _imp(new Implementation)
 {
 
 }
 
-AnimatingObjectI::AnimatingObjectI(const boost::shared_ptr<AnimatingObjectI>& other, const FrameViewRenderKey& /*key*/)
-: _imp(new AnimatingObjectIPrivate(*other->_imp))
+
+SplittableViewsI::SplittableViewsI(const boost::shared_ptr<SplittableViewsI>& other, const FrameViewRenderKey& /*key*/)
+: _imp(new Implementation(*other->_imp))
 {
 
 }
 
-AnimatingObjectI::~AnimatingObjectI()
+
+
+SplittableViewsI::~SplittableViewsI()
 {
     
 }
 
 std::list<ViewIdx>
-AnimatingObjectI::getViewsList() const
+SplittableViewsI::getViewsList() const
 {
     QMutexLocker k(&_imp->viewsMutex);
     return _imp->views;
 }
 
 ViewIdx
-AnimatingObjectI::checkIfViewExistsOrFallbackMainView(ViewIdx view) const
+SplittableViewsI::checkIfViewExistsOrFallbackMainView(ViewIdx view) const
 {
 
     // Find the view. If it is not in the split views, fallback on the main view.
@@ -100,7 +104,7 @@ AnimatingObjectI::checkIfViewExistsOrFallbackMainView(ViewIdx view) const
 } // checkIfViewExistsOrFallbackMainView
 
 bool
-AnimatingObjectI::splitView(ViewIdx view)
+SplittableViewsI::splitView(ViewIdx view)
 {
     if (!canSplitViews()) {
         return false;
@@ -118,7 +122,7 @@ AnimatingObjectI::splitView(ViewIdx view)
 }
 
 bool
-AnimatingObjectI::unSplitView(ViewIdx view)
+SplittableViewsI::unSplitView(ViewIdx view)
 {
     // Cannot split the main view
     if (view == 0) {
@@ -144,7 +148,7 @@ AnimatingObjectI::unSplitView(ViewIdx view)
 }
 
 void
-AnimatingObjectI::unSplitAllViews()
+SplittableViewsI::unSplitAllViews()
 {
     std::list<ViewIdx> views = getViewsList();
     for (std::list<ViewIdx>::iterator it = views.begin(); it != views.end(); ++it) {
@@ -155,141 +159,43 @@ AnimatingObjectI::unSplitAllViews()
     }
 }
 
+AnimatingObjectI::~AnimatingObjectI() {}
 
-ValueChangedReturnCodeEnum
-AnimatingObjectI::setIntValueAtTime(TimeValue /*time*/, int /*value*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* /*newKey*/)
+AnimatingObjectI::SetKeyFrameArgs::SetKeyFrameArgs()
+: view(ViewSetSpec::all())
+, dimension(0)
+, flags(eSetKeyFrameFlagSetValue | eSetKeyFrameFlagMergeProperties)
+, reason(eValueChangedReasonUserEdited)
+, callKnobChangedHandlerEvenIfNothingChanged(false)
 {
-    if (getKeyFrameDataType() != eCurveTypeInt) {
-        throw std::invalid_argument("Invalid call to setIntValueAtTime on an object that does not support integer");
-    }
-    return eValueChangedReturnCodeNothingChanged;
+
 }
 
-ValueChangedReturnCodeEnum
-AnimatingObjectI::setDoubleValueAtTime(TimeValue /*time*/, double /*value*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* /*newKey*/)
+void
+AnimatingObjectI::SetKeyFrameArgs::operator=(const SetKeyFrameArgs &o)
 {
-    if (getKeyFrameDataType() != eCurveTypeDouble) {
-        throw std::invalid_argument("Invalid call to setDoubleValueAtTime on an object that does not support double");
-    }
-    return eValueChangedReturnCodeNothingChanged;
-}
-
-ValueChangedReturnCodeEnum
-AnimatingObjectI::setBoolValueAtTime(TimeValue /*time*/, bool /*value*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* /*newKey*/)
-{
-    if (getKeyFrameDataType() != eCurveTypeBool) {
-        throw std::invalid_argument("Invalid call to setBoolValueAtTime on an object that does not support bool");
-    }
-    return eValueChangedReturnCodeNothingChanged;
+    view = o.view;
+    dimension = o.dimension;
+    flags = o.flags;
+    reason = o.reason;
+    callKnobChangedHandlerEvenIfNothingChanged = o.callKnobChangedHandlerEvenIfNothingChanged;
 }
 
 ValueChangedReturnCodeEnum
-AnimatingObjectI::setStringValueAtTime(TimeValue /*time*/, const std::string& /*value*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* /*newKey*/)
+AnimatingObjectI::setKeyFrame(const SetKeyFrameArgs& /*args*/, const KeyFrame& /*value*/)
 {
-    if (getKeyFrameDataType() != eCurveTypeString) {
-        throw std::invalid_argument("Invalid call to setStringValueAtTime on an object that does not support string");
-    }
     return eValueChangedReturnCodeNothingChanged;
 }
 
+
 void
-AnimatingObjectI::setMultipleIntValueAtTime(const std::list<IntTimeValuePair>& /*keys*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, std::vector<KeyFrame>* /*newKey*/)
+AnimatingObjectI::setMultipleKeyFrames(const SetKeyFrameArgs& /*args*/, const std::list<KeyFrame>& /*keys*/)
 {
-    if (getKeyFrameDataType() != eCurveTypeInt) {
-        throw std::invalid_argument("Invalid call to setMultipleIntValueAtTime on an object that does not support integer");
-    }
 }
 
 void
-AnimatingObjectI::setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair>& /*keys*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, std::vector<KeyFrame>* /*newKey*/)
+AnimatingObjectI::setKeyFramesAcrossDimensions(const SetKeyFrameArgs& /*args*/,const std::vector<KeyFrame>& /*values*/, DimIdx /*dimensionStartIndex*/,std::vector<ValueChangedReturnCodeEnum>* /*retCodes*/)
 {
-    if (getKeyFrameDataType() != eCurveTypeDouble) {
-        throw std::invalid_argument("Invalid call to setMultipleDoubleValueAtTime on an object that does not support double");
-    }
-}
-
-
-void
-AnimatingObjectI::setMultipleBoolValueAtTime(const std::list<BoolTimeValuePair>& /*keys*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, std::vector<KeyFrame>* /*newKey*/)
-{
-    if (getKeyFrameDataType() != eCurveTypeBool) {
-        throw std::invalid_argument("Invalid call to setMultipleBoolValueAtTime on an object that does not support boolean");
-    }
-}
-
-void
-AnimatingObjectI::setMultipleStringValueAtTime(const std::list<StringTimeValuePair>& /*keys*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, std::vector<KeyFrame>* /*newKey*/)
-{
-    if (getKeyFrameDataType() != eCurveTypeString) {
-        throw std::invalid_argument("Invalid call to setMultipleStringValueAtTime on an object that does not support string");
-    }
-}
-
-void
-AnimatingObjectI::setIntValueAtTimeAcrossDimensions(TimeValue /*time*/, const std::vector<int>& /*values*/, DimIdx /*dimensionStartIndex*/, ViewSetSpec /*view*/, ValueChangedReasonEnum /*reason*/, std::vector<ValueChangedReturnCodeEnum>* /*retCodes*/)
-{
-    if (getKeyFrameDataType() != eCurveTypeInt) {
-        throw std::invalid_argument("Invalid call to setIntValueAtTimeAcrossDimensions on an object that does not support integer");
-    }
-}
-
-void
-AnimatingObjectI::setDoubleValueAtTimeAcrossDimensions(TimeValue /*time*/, const std::vector<double>& /*values*/, DimIdx /*dimensionStartIndex*/, ViewSetSpec /*view*/, ValueChangedReasonEnum /*reason*/, std::vector<ValueChangedReturnCodeEnum>* /*retCodes*/)
-{
-    if (getKeyFrameDataType() != eCurveTypeDouble) {
-        throw std::invalid_argument("Invalid call to setDoubleValueAtTimeAcrossDimensions on an object that does not support double");
-    }
-
-}
-
-void
-AnimatingObjectI::setBoolValueAtTimeAcrossDimensions(TimeValue /*time*/, const std::vector<bool>& /*values*/, DimIdx /*dimensionStartIndex*/, ViewSetSpec /*view*/, ValueChangedReasonEnum /*reason*/, std::vector<ValueChangedReturnCodeEnum>* /*retCodes*/)
-{
-    if (getKeyFrameDataType() != eCurveTypeBool) {
-        throw std::invalid_argument("Invalid call to setBoolValueAtTimeAcrossDimensions on an object that does not support boolean");
-    }
-}
-
-void
-AnimatingObjectI::setStringValueAtTimeAcrossDimensions(TimeValue /*time*/, const std::vector<std::string>& /*values*/, DimIdx /*dimensionStartIndex*/, ViewSetSpec /*view*/, ValueChangedReasonEnum /*reason*/, std::vector<ValueChangedReturnCodeEnum>* /*retCodes*/)
-{
-    if (getKeyFrameDataType() != eCurveTypeString) {
-        throw std::invalid_argument("Invalid call to setStringValueAtTimeAcrossDimensions on an object that does not support string");
-    }
-}
-
-void
-AnimatingObjectI::setMultipleIntValueAtTimeAcrossDimensions(const PerCurveIntValuesList& /*keysPerDimension*/,  ValueChangedReasonEnum /*reason*/)
-{
-    if (getKeyFrameDataType() != eCurveTypeInt) {
-        throw std::invalid_argument("Invalid call to setMultipleIntValueAtTimeAcrossDimensions on an object that does not support integer");
-    }
-}
-
-void
-AnimatingObjectI::setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDoubleValuesList& /*keysPerDimension*/,  ValueChangedReasonEnum /*reason*/)
-{
-    if (getKeyFrameDataType() != eCurveTypeDouble) {
-        throw std::invalid_argument("Invalid call to setMultipleDoubleValueAtTimeAcrossDimensions on an object that does not support double");
-    }
-}
-
-
-void
-AnimatingObjectI::setMultipleBoolValueAtTimeAcrossDimensions(const PerCurveBoolValuesList& /*keysPerDimension*/,  ValueChangedReasonEnum /*reason*/)
-{
-    if (getKeyFrameDataType() != eCurveTypeBool) {
-        throw std::invalid_argument("Invalid call to setMultipleBoolValueAtTimeAcrossDimensions on an object that does not support boolean");
-    }
-}
-
-
-void
-AnimatingObjectI::setMultipleStringValueAtTimeAcrossDimensions(const PerCurveStringValuesList& /*keysPerDimension*/,  ValueChangedReasonEnum /*reason*/)
-{
-    if (getKeyFrameDataType() != eCurveTypeString) {
-        throw std::invalid_argument("Invalid call to setMultipleStringValueAtTimeAcrossDimensions on an object that does not support string");
-    }
 }
 
 

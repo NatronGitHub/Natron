@@ -169,8 +169,6 @@ AnimationModuleViewPrivate::setDopeSheetCursor(const QPoint& eventPos)
             AnimItemBasePtr itemBase;
             if (isKnob) {
                 itemBase = isKnob;
-            } else if (isTableItem) {
-                itemBase = isTableItem;
             }
             if (itemBase) {
                 KeyFrameSet keysUnderMouse = isNearByKeyframe(itemBase, dimension, view, eventPos);
@@ -391,9 +389,8 @@ AnimationModuleViewPrivate::drawDopeSheetTreeItemRecursive(QTreeWidgetItem* item
         case eAnimatedItemTypeTimeOffset: {
             isNodeAnim = ((NodeAnim*)ptr)->shared_from_this();
         }   break;
-        case eAnimatedItemTypeTableItemAnimation:
         case eAnimatedItemTypeTableItemRoot: {
-            isTableItemAnim = toTableItemAnim(((AnimItemBase*)ptr)->shared_from_this());
+            isTableItemAnim = ((TableItemAnim*)ptr)->shared_from_this();
         }   break;
         case eAnimatedItemTypeKnobDim:
         case eAnimatedItemTypeKnobRoot:
@@ -499,12 +496,10 @@ AnimationModuleViewPrivate::drawDopeSheetNodeRow(QTreeWidgetItem* /*treeItem*/, 
 }
 
 void
-AnimationModuleViewPrivate::drawDopeSheetTableItemRow(QTreeWidgetItem* treeItem, const TableItemAnimPtr& item, AnimatedItemTypeEnum type, DimSpec dimension, ViewSetSpec view) const
+AnimationModuleViewPrivate::drawDopeSheetTableItemRow(QTreeWidgetItem* /*treeItem*/, const TableItemAnimPtr& /*item*/, AnimatedItemTypeEnum type, DimSpec /*dimension*/, ViewSetSpec /*view*/) const
 {
     if (type == eAnimatedItemTypeTableItemRoot) {
 #pragma message WARN("Todo when enabling lifetime table items")
-    } else {
-        drawDopeSheetAnimItemRow(treeItem, item, dimension, view);
     }
 }
 
@@ -979,12 +974,12 @@ AnimationModuleViewPrivate::computeRangesBelow(const NodeAnimPtr& node)
 void
 AnimationModuleViewPrivate::checkAnimItemInRectInternal(const RectD& canonicalRect, QTreeWidgetItem* item, const AnimItemBasePtr& knob, ViewIdx view, DimIdx dimension, AnimItemDimViewKeyFramesMap *result, std::vector<NodeAnimPtr >* /*selectedNodes*/, std::vector<TableItemAnimPtr >* /*selectedItems*/)
 {
-    CurveGuiPtr guiCurve = knob->getCurveGui(dimension, view);
-    if (!guiCurve) {
+    CurvePtr curve = knob->getCurve(dimension, view);
+    if (!curve) {
         return;
     }
 
-    KeyFrameSet set = guiCurve->getKeyFrames();
+    KeyFrameSet set = curve->getKeyFrames_mt_safe();
     if ( set.empty() ) {
         return;
     }
@@ -1034,11 +1029,9 @@ AnimationModuleViewPrivate::checkAnimItemInRect(const RectD& rect, QTreeWidgetIt
 
 
 void
-AnimationModuleViewPrivate::checkTableItemAnimInRect(const RectD& rect,QTreeWidgetItem* item,  const TableItemAnimPtr& knob, AnimatedItemTypeEnum type, ViewSetSpec view, DimSpec dimension, AnimItemDimViewKeyFramesMap *result, std::vector<NodeAnimPtr >* selectedNodes, std::vector<TableItemAnimPtr >* selectedItems)
+AnimationModuleViewPrivate::checkTableItemAnimInRect(const RectD& /*rect*/,QTreeWidgetItem* /*item*/,  const TableItemAnimPtr& /*tableItem*/, AnimatedItemTypeEnum type, ViewSetSpec /*view*/, DimSpec /*dimension*/, AnimItemDimViewKeyFramesMap */*result*/, std::vector<NodeAnimPtr >* /*selectedNodes*/, std::vector<TableItemAnimPtr >* /*selectedItems*/)
 {
-    if (type == eAnimatedItemTypeTableItemAnimation) {
-        checkAnimItemInRect(rect, item, knob, view, dimension, result, selectedNodes, selectedItems);
-    } else if (type == eAnimatedItemTypeTableItemRoot) {
+    if (type == eAnimatedItemTypeTableItemRoot) {
 #pragma message WARN("Todo when enabling lifetime for table items")
     }
 
@@ -1099,9 +1092,8 @@ AnimationModuleViewPrivate::createSelectionFromRectRecursive(const RectD &rect, 
         case eAnimatedItemTypeTimeOffset: {
             isNodeAnim = ((NodeAnim*)ptr)->shared_from_this();
         }   break;
-        case eAnimatedItemTypeTableItemAnimation:
         case eAnimatedItemTypeTableItemRoot: {
-            isTableItemAnim = toTableItemAnim(((AnimItemBase*)ptr)->shared_from_this());
+            isTableItemAnim = ((TableItemAnim*)ptr)->shared_from_this();
         }   break;
         case eAnimatedItemTypeKnobDim:
         case eAnimatedItemTypeKnobRoot:
@@ -1363,9 +1355,7 @@ AnimationModuleViewPrivate::dopeSheetMousePressEvent(QMouseEvent *e)
             DimSpec dimension;
             if (animModule->findItem(treeItem, &itemType, &isKnob, &isTableItem, &isNode, &view, &dimension)) {
                 AnimItemBasePtr animItem;
-                if (isTableItem) {
-                    animItem = isTableItem;
-                } else if (isKnob) {
+                if (isKnob) {
                     animItem = isKnob;
                 }
                 if (animItem) {
@@ -1444,9 +1434,8 @@ AnimationModuleViewPrivate::dopeSheetAddKeyFrame(const QPoint& p)
     AnimItemBasePtr isAnim;
     if (isKnob) {
         isAnim = isKnob;
-    } else if (isTableItem) {
-        isAnim = isTableItem;
-    }
+    } 
+
     if (!isAnim) {
         return false;
     }

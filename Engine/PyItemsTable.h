@@ -38,8 +38,8 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER
-NATRON_PYTHON_NAMESPACE_ENTER
+NATRON_NAMESPACE_ENTER;
+NATRON_PYTHON_NAMESPACE_ENTER;
 
 class ItemBase
 {
@@ -71,11 +71,6 @@ public:
 
     Param* getParam(const QString& name) const;
 
-    void getUserKeyframes(std::list<double>* keys, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
-
-    void setUserKeyframe(double frame, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
-
-    void deleteUserKeyframe(double frame, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     KnobTableItemPtr getInternalItem() const
     {
@@ -120,13 +115,15 @@ public:
 
     QString getAttributeName() const;
 
+    QString getTableName() const;
+
     bool isModelParentingEnabled() const;
 
     static ItemBase* createPyItemWrapper(const KnobTableItemPtr& item);
 
 };
 
-NATRON_PYTHON_NAMESPACE_EXIT
-NATRON_NAMESPACE_EXIT
+NATRON_PYTHON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT;
 
 #endif // ENGINE_PYITEMSTABLE_H

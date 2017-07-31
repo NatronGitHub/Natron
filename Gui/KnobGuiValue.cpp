@@ -242,13 +242,6 @@ KnobGuiValue::~KnobGuiValue()
 }
 
 void
-KnobGuiValue::removeSpecificGui()
-{
-    _imp->container->deleteLater();
-    _imp->spinBoxes.clear();
-}
-
-void
 KnobGuiValue::createWidget(QHBoxLayout* layout)
 {
 

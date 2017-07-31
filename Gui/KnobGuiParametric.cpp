@@ -175,12 +175,6 @@ KnobGuiParametric::~KnobGuiParametric()
 {
 }
 
-void
-KnobGuiParametric::removeSpecificGui()
-{
-    _imp->curveWidget->deleteLater();
-    _imp->treeColumn->deleteLater();
-}
 
 void
 KnobGuiParametric::createWidget(QHBoxLayout* layout)

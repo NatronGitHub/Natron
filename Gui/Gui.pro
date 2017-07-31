@@ -147,6 +147,7 @@ SOURCES += \
     KnobGuiChoice.cpp \
     KnobGuiSeparator.cpp \
     KnobGuiColor.cpp \
+    KnobGuiKeyFrameMarkers.cpp \
     KnobGuiString.cpp \
     KnobGuiGroup.cpp \
     KnobGuiTable.cpp \
@@ -293,6 +294,7 @@ HEADERS += \
     KnobGuiButton.h \
     KnobGuiBool.h \
     KnobGuiChoice.h \
+    KnobGuiKeyFrameMarkers.h \
     KnobGuiSeparator.h \
     KnobGuiColor.h \
     KnobGuiString.h \

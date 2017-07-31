@@ -120,11 +120,6 @@ KnobGuiSeparator::isLabelBold() const
     return true;
 }
 
-void
-KnobGuiSeparator::removeSpecificGui()
-{
-    _line->deleteLater();
-}
 
 void
 KnobGuiSeparator::setWidgetsVisible(bool visible)

@@ -196,13 +196,7 @@ AnimationModuleSelectionModel::addTableItemKeyframes(const TableItemAnimPtr& ite
             selectedTableItems->push_back(item);
         }
     }
-
-    if (withKeyFrames) {
-        addAnimatedItemKeyframes(item, dim, viewSpec, result);
-    } else {
-        addAnimatedItemsWithoutKeyframes(item, dim, viewSpec, result);
-    }
-
+    
     const std::vector<KnobAnimPtr>& knobs = item->getKnobs();
     for (std::vector<KnobAnimPtr>::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
         if (withKeyFrames) {

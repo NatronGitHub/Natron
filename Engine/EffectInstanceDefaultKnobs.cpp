@@ -479,7 +479,9 @@ EffectInstance::createNodePage(const KnobPagePtr& settingsPage)
             _imp->defKnobs->nodeRemovalCallback = param;
         }
     }
-    if (getItemsTable()) {
+
+    std::list<KnobItemsTablePtr> tables = getAllItemsTables();
+    if (!tables.empty()) {
         KnobStringPtr param = createKnob<KnobString>("afterItemsSelectionChanged");
         param->setDeclaredByPlugin(false);
         param->setLabel( tr("After Items Selection Changed"));
@@ -493,6 +495,7 @@ EffectInstance::createNodePage(const KnobPagePtr& settingsPage)
                                   "by the user directly and results from an internal A.P.I call.\n"
                                   "The signature of the callback is: callback(thisNode, app, deselected, selected, reason) where:\n"
                                   "- thisNode: the node holding the items table\n"
+                                  "- thisTable: the table holding the items"
                                   "- app: points to the current application instance\n"
                                   "- deselected: a sequence of items that were removed from the selection\n"
                                   "- selected: a sequence of items that were added to the selection\n"
@@ -1508,10 +1511,12 @@ EffectInstance::initializeKnobs(bool loadingSerialization, bool hasGUI)
     
     getNode()->declarePythonKnobs();
     
-    KnobItemsTablePtr table = getItemsTable();
-    if (table) {
-        table->declareItemsToPython();
+    std::list<KnobItemsTablePtr> tables = getAllItemsTables();
+
+    for (std::list<KnobItemsTablePtr>::const_iterator it = tables.begin(); it!=tables.end(); ++it) {
+        (*it)->declareItemsToPython();
     }
+
     
 } // initializeKnobs
 

@@ -268,26 +268,26 @@ void
 NodeAnim::initializeTableItems()
 {
     NodeGuiPtr nodeGui = _imp->nodeGui.lock();
-    KnobItemsTableGuiPtr table = nodeGui->getKnobItemsTable();
-    if (!table) {
-        return;
+    std::list<KnobItemsTableGuiPtr> tables = nodeGui->getAllKnobItemsTables();
+    for (std::list<KnobItemsTableGuiPtr>::const_iterator it = tables.begin(); it != tables.end(); ++it) {
+        KnobItemsTablePtr internalTable = (*it)->getInternalTable();
+        if (!internalTable) {
+            return;
+        }
+
+        connect(internalTable.get(), SIGNAL(itemRemoved(KnobTableItemPtr,TableChangeReasonEnum)), this, SLOT(onTableItemRemoved(KnobTableItemPtr,TableChangeReasonEnum)));
+        connect(internalTable.get(), SIGNAL(itemInserted(int,KnobTableItemPtr,TableChangeReasonEnum)), this, SLOT(onTableItemInserted(int,KnobTableItemPtr,TableChangeReasonEnum)));
+
+        NodeAnimPtr thisShared = shared_from_this();
+
+        std::vector<KnobTableItemPtr> allItems = internalTable->getTopLevelItems();
+        for (std::size_t i = 0; i < allItems.size(); ++i) {
+            TableItemAnimPtr anim(TableItemAnim::create(getModel(), *it, thisShared, allItems[i], _imp->nameItem));
+            _imp->topLevelTableItems.push_back(anim);
+        }
+
     }
 
-    KnobItemsTablePtr internalTable = table->getInternalTable();
-    if (!internalTable) {
-        return;
-    }
-
-    connect(internalTable.get(), SIGNAL(itemRemoved(KnobTableItemPtr,TableChangeReasonEnum)), this, SLOT(onTableItemRemoved(KnobTableItemPtr,TableChangeReasonEnum)));
-    connect(internalTable.get(), SIGNAL(itemInserted(int,KnobTableItemPtr,TableChangeReasonEnum)), this, SLOT(onTableItemInserted(int,KnobTableItemPtr,TableChangeReasonEnum)));
-
-    NodeAnimPtr thisShared = shared_from_this();
-
-    std::vector<KnobTableItemPtr> allItems = internalTable->getTopLevelItems();
-    for (std::size_t i = 0; i < allItems.size(); ++i) {
-        TableItemAnimPtr anim(TableItemAnim::create(getModel(), table, thisShared, allItems[i], _imp->nameItem));
-        _imp->topLevelTableItems.push_back(anim);
-    }
 
 } // initializeTableItems
 
@@ -350,7 +350,8 @@ NodeAnimPrivate::insertItem(int index, const KnobTableItemPtr& item, TableChange
         }
         parentAnim = _publicInterface->findTableItem(parentItem);
     }
-    KnobItemsTableGuiPtr table = _publicInterface->getNodeGui()->getKnobItemsTable();
+    KnobItemsTableGuiPtr table = _publicInterface->getNodeGui()->getKnobItemsTable(item->getModel()->getTableIdentifier());
+    assert(table);
     if (parentItem) {
         TableItemAnimPtr anim(TableItemAnim::create(_publicInterface->getModel(), table, _publicInterface->shared_from_this(), item, parentAnim->getRootItem()));
         parentAnim->insertChild(index, anim);

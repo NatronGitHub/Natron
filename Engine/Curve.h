@@ -82,16 +82,29 @@ public:
 
     bool operator==(const KeyFrame & o) const
     {
-        return o._time == _time &&
-               o._value == _value &&
-               o._interpolation == _interpolation &&
-               o._leftDerivative == _leftDerivative &&
-               o._rightDerivative == _rightDerivative;
+
+        if (o._time != _time ||
+            o._value != _value ||
+            o._interpolation != _interpolation ||
+            o._leftDerivative != _leftDerivative ||
+            o._rightDerivative != _rightDerivative) {
+            return false;
+        }
+
+        if (PropertiesHolder::operator!=(o)) {
+            return false;
+        }
+        return true;
     }
 
     bool operator!=(const KeyFrame & o) const
     {
         return !(*this == o);
+    }
+
+    bool operator<(const KeyFrame& o) const
+    {
+        return _time < o._time;
     }
 
     double getValue() const;
@@ -142,8 +155,43 @@ struct KeyFrame_compare_time
 
 typedef std::set<KeyFrame, KeyFrame_compare_time> KeyFrameSet;
 
-struct CurvePrivate;
 
+/**
+ * @brief A small listener class interface to inherit from to listen to a curve changes.
+ * This is used for example for a Bezier so that the internal control point keyframes are in sync
+ * with the keyframes of the bezier.
+ **/
+class CurveChangesListener
+{
+public:
+
+    CurveChangesListener()
+    {
+
+    }
+
+    virtual ~CurveChangesListener()
+    {
+
+    }
+
+    /**
+     * @brief Implement to receive a notification whenever a keyframe is removed on the given curve.
+     **/
+    virtual void onKeyFrameRemoved(const Curve* curve, const KeyFrame& key) = 0;
+
+    /**
+     * @brief Implement to receive a notification whenever a keyframe is added on the given curve.
+     **/
+    virtual void onKeyFrameAdded(const Curve* curve, const KeyFrame& key) = 0;
+
+    /**
+     * @brief Implement to receive a notification whenever a keyframe is moved in time on the given curve.
+     **/
+    virtual void onKeyFrameMoved(const Curve* curve, const KeyFrame& from, const KeyFrame& to) = 0;
+};
+
+struct CurvePrivate;
 class Curve : public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
     enum CurveChangedReasonEnum
@@ -174,6 +222,11 @@ public:
 
     CurveTypeEnum getType() const;
 
+    /**
+     * @brief Register/unregister a listener. The curve will hold a weak ref to the listener.
+     **/
+    void registerListener(const CurveChangesListenerPtr& listener);
+    void unregisterListener(const CurveChangesListenerPtr& listener);
 
     /**
      * @brief Replaces the default interpolator with a custom keyframe interpolator. 
@@ -233,7 +286,6 @@ public:
      * modify the Y component of the curve.
      **/
     bool isYComponentMovable() const WARN_UNUSED_RETURN;
-    void setYComponentMovable(bool canEdit);
 
     /**whether the curve will clamp possible keyframe X values to integers or not.**/
     bool areKeyFramesTimeClampedToIntegers() const WARN_UNUSED_RETURN;
@@ -243,6 +295,14 @@ public:
     bool areKeyFramesValuesClampedToIntegers() const WARN_UNUSED_RETURN;
 
     bool areKeyFramesValuesClampedToBooleans() const WARN_UNUSED_RETURN;
+
+    // Returns true if the curve type is not string, choice or properties
+    bool canBeVisibleInCurveEditor() const;
+
+    static bool canBeVisibleInCurveEditor(CurveTypeEnum type);
+
+    // Returns true if the curve type is not string, choice, bool or properties
+    bool isInterpolationConstantOnly() const;
 
     void setXRange(double a, double b);
 
@@ -258,7 +318,7 @@ public:
      * 
      * The return value can never be eValueChangedReturnCodeNoKeyframeAdded
      **/
-    ValueChangedReturnCodeEnum setOrAddKeyframe(const KeyFrame& key, int* keyframeIndex = NULL);
+    ValueChangedReturnCodeEnum setOrAddKeyframe(const KeyFrame& key, SetKeyFrameFlags flags = eSetKeyFrameFlagSetValue, int* keyframeIndex = NULL);
 
     void removeKeyFrameWithTime(TimeValue time);
 
@@ -375,20 +435,28 @@ public:
 
         virtual KeyFrame applyForwardWarp(const KeyFrame& key) const OVERRIDE FINAL
         {
+            KeyFrame ret = key;
             if (_inverted) {
-                return KeyFrame(key.getTime() - _dt, key.getValue() - _dv, key.getLeftDerivative(), key.getRightDerivative(), key.getInterpolation());
+                ret.setTime(TimeValue(key.getTime() - _dt));
+                ret.setValue(key.getValue() - _dv);
             } else {
-                return KeyFrame(key.getTime() + _dt, key.getValue() + _dv, key.getLeftDerivative(), key.getRightDerivative(), key.getInterpolation());
+                ret.setTime(TimeValue(key.getTime() +_dt));
+                ret.setValue(key.getValue() + _dv);
             }
+            return ret;
         }
 
         virtual KeyFrame applyBackwardWarp(const KeyFrame& key) const OVERRIDE FINAL
         {
+            KeyFrame ret = key;
             if (_inverted) {
-                return KeyFrame(key.getTime() + _dt, key.getValue() + _dv, key.getLeftDerivative(), key.getRightDerivative(), key.getInterpolation());
+                ret.setTime(TimeValue(key.getTime() +_dt));
+                ret.setValue(key.getValue() + _dv);
             } else {
-                return KeyFrame(key.getTime() - _dt, key.getValue() - _dv, key.getLeftDerivative(), key.getRightDerivative(), key.getInterpolation());
+                ret.setTime(TimeValue(key.getTime() - _dt));
+                ret.setValue(key.getValue() - _dv);
             }
+            return ret;
         }
 
         virtual bool isIdentity() const OVERRIDE FINAL
@@ -475,7 +543,10 @@ public:
             p.y = key.getValue();
             p.z = 1;
             p = Transform::matApply(mat, p);
-            return KeyFrame(p.x, p.y, key.getLeftDerivative(), key.getRightDerivative(), key.getInterpolation());
+            KeyFrame ret = key;
+            ret.setTime(TimeValue(p.x));
+            ret.setValue(p.y);
+            return ret;
 
         }
 
@@ -499,8 +570,8 @@ public:
     
     static void computeKeyFramesDiff(const KeyFrameSet& keysA,
                                      const KeyFrameSet& keysB,
-                                     std::list<double>* keysAdded,
-                                     std::list<double>* keysRemoved);
+                                     KeyFrameSet* keysAdded,
+                                     KeyFrameSet* keysRemoved);
 
 private:
 
@@ -607,7 +678,7 @@ private:
 
     ///returns an iterator to the new keyframe in the keyframe set and
     ///a boolean indicating whether it removed a keyframe already existing at this time or not
-    std::pair<KeyFrameSet::iterator, ValueChangedReturnCodeEnum> setOrUpdateKeyframeInternal(const KeyFrame & cp) WARN_UNUSED_RETURN;
+    std::pair<KeyFrameSet::iterator, ValueChangedReturnCodeEnum> setOrUpdateKeyframeInternal(const KeyFrame & cp, SetKeyFrameFlags flags = eSetKeyFrameFlagSetValue) WARN_UNUSED_RETURN;
 
 
     /**
@@ -621,7 +692,12 @@ private:
     KeyFrameSet::iterator setKeyFrameValueAndTimeNoUpdate(double value, TimeValue time, KeyFrameSet::iterator k) WARN_UNUSED_RETURN;
 
 
-    KeyFrameSet::iterator setKeyframeInterpolation_internal(KeyFrameSet::iterator it, KeyframeTypeEnum type);
+    std::pair<KeyFrameSet::iterator, ValueChangedReturnCodeEnum> setKeyframeInterpolation_internal(KeyFrameSet::iterator it, KeyframeTypeEnum type);
+
+    std::list<CurveChangesListenerPtr> getListeners() const;
+
+    void notifyKeyFramesChanged(const std::list<CurveChangesListenerPtr>& listeners, const KeyFrameSet& oldKeyframes,const KeyFrameSet& newKeyframes);
+    void notifyKeyFramesAdded(const std::list<CurveChangesListenerPtr>& listeners, const KeyFrame& k);
 
     /**
      * @brief Called when the curve has changed to invalidate any cache relying on the curve values.

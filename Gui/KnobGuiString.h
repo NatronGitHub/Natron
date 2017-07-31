@@ -154,7 +154,6 @@ public:
 
     virtual void reflectLinkedState(DimIdx dimension, bool linked) OVERRIDE;
 
-    virtual void removeSpecificGui() OVERRIDE FINAL;
     virtual std::string getDescriptionLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 public Q_SLOTS:

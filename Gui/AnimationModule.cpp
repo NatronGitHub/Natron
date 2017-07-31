@@ -151,7 +151,7 @@ bool
 AnimationModule::getNodeCanAnimate(const NodePtr &node)
 {
     // A node with an items table such as Tracker or RotoPaint always animates
-    if (node->getEffectInstance()->getItemsTable()) {
+    if (!node->getEffectInstance()->getAllItemsTables().empty()) {
         return true;
     }
 
@@ -412,9 +412,8 @@ AnimationModule::findItem(QTreeWidgetItem* treeItem, AnimatedItemTypeEnum *type,
         case eAnimatedItemTypeKnobView:
             *isKnob = toKnobAnim(((AnimItemBase*)ptr)->shared_from_this());
             break;
-        case eAnimatedItemTypeTableItemAnimation:
         case eAnimatedItemTypeTableItemRoot:
-            *isTableItem = toTableItemAnim(((AnimItemBase*)ptr)->shared_from_this());
+            *isTableItem = ((TableItemAnim*)ptr)->shared_from_this();
             break;
     }
     *view = ViewSetSpec(treeItem->data(0, QT_ROLE_CONTEXT_VIEW).toInt());

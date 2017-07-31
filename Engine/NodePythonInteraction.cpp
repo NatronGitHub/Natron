@@ -486,13 +486,16 @@ NodePrivate::runChangedParamCallback(const std::string& cb, const KnobIPtr& k, b
 } // runChangedParamCallback
 
 void
-NodePrivate::runAfterItemsSelectionChangedCallback(const std::string& cb, const std::list<KnobTableItemPtr>& deselected, const std::list<KnobTableItemPtr>& selected, TableChangeReasonEnum reason)
+NodePrivate::runAfterItemsSelectionChangedCallback(const std::string& cb, const KnobItemsTablePtr& table, const std::list<KnobTableItemPtr>& deselected, const std::list<KnobTableItemPtr>& selected, TableChangeReasonEnum reason)
 {
     std::vector<std::string> args;
     std::string error;
 
     std::string callbackFunction;
     if (!figureOutCallbackName(cb, &callbackFunction)) {
+        return;
+    }
+    if (!table) {
         return;
     }
 
@@ -512,14 +515,14 @@ NodePrivate::runAfterItemsSelectionChangedCallback(const std::string& cb, const 
 
     std::string signatureError;
     signatureError.append( tr("The after items selection changed callback supports the following signature(s):").toStdString() );
-    signatureError.append("\n- callback(thisNode,app, deselected, selected, reason)");
-    if (args.size() != 5) {
+    signatureError.append("\n- callback(thisNode, thisTable, app, deselected, selected, reason)");
+    if (args.size() != 6) {
         _publicInterface->getApp()->appendToScriptEditor( tr("Failed to run afterItemsSelectionChanged callback: %1").arg( QString::fromUtf8( signatureError.c_str() ) ).toStdString() );
 
         return;
     }
 
-    if ( ( (args[0] != "thisNode") || (args[1] != "app") || (args[2] != "deselected") || (args[3] != "selected") || (args[4] != "reason") ) ) {
+    if ( ( (args[0] != "thisNode") || (args[1] != "thisTable") || (args[2] != "app") || (args[3] != "deselected") || (args[4] != "selected") || (args[5] != "reason") ) ) {
         _publicInterface->getApp()->appendToScriptEditor( tr("Failed to run afterItemsSelectionChanged callback: %1").arg( QString::fromUtf8( signatureError.c_str() ) ).toStdString() );
 
         return;
@@ -529,6 +532,8 @@ NodePrivate::runAfterItemsSelectionChangedCallback(const std::string& cb, const 
 
     std::string thisNodeVar = appID + ".";
     thisNodeVar.append( _publicInterface->getFullyQualifiedName() );
+
+    std::string tableVar = thisNodeVar + "." + table->getPythonPrefix();
 
     // Check thisNode exists
     bool alreadyDefined = false;
@@ -541,16 +546,17 @@ NodePrivate::runAfterItemsSelectionChangedCallback(const std::string& cb, const 
     ss << "deselectedItemsSequenceArg = []\n";
     ss << "selectedItemsSequenceArg = []\n";
     for (std::list<KnobTableItemPtr>::const_iterator it = deselected.begin(); it != deselected.end(); ++it) {
-        ss << "itemDeselected = " << thisNodeVar << ".getItemsTable().getItemByFullyQualifiedScriptName(\"" << (*it)->getFullyQualifiedName() << "\")\n";
+        ss << "itemDeselected = " << tableVar << ".getItemByFullyQualifiedScriptName(\"" << (*it)->getFullyQualifiedName() << "\")\n";
         ss << "if itemDeselected is not None:\n";
         ss << "    deselectedItemsSequenceArg.append(itemDeselected)\n";
     }
     for (std::list<KnobTableItemPtr>::const_iterator it = selected.begin(); it != selected.end(); ++it) {
-        ss << "itemSelected = " << thisNodeVar << ".getItemsTable().getItemByFullyQualifiedScriptName(\"" << (*it)->getFullyQualifiedName() << "\")\n";
+        ss << "itemSelected = " << tableVar << ".getItemByFullyQualifiedScriptName(\"" << (*it)->getFullyQualifiedName() << "\")\n";
         ss << "if itemSelected is not None:\n";
         ss << "    selectedItemsSequenceArg.append(itemSelected)\n";
     }
-    ss << callbackFunction << "(" << thisNodeVar << "," << appID << ", deselectedItemsSequenceArg, selectedItemsSequenceArg, NatronEngine.Natron.TableChangeReasonEnum.";
+
+    ss << callbackFunction << "(" << thisNodeVar << ", " << tableVar << ", " << appID << ", deselectedItemsSequenceArg, selectedItemsSequenceArg, NatronEngine.Natron.TableChangeReasonEnum.";
     switch (reason) {
         case eTableChangeReasonInternal:
             ss << "eTableChangeReasonInternal";
@@ -581,13 +587,13 @@ NodePrivate::runAfterItemsSelectionChangedCallback(const std::string& cb, const 
 
 
 void
-Node::runAfterTableItemsSelectionChangedCallback(const std::list<KnobTableItemPtr>& deselected, const std::list<KnobTableItemPtr>& selected, TableChangeReasonEnum reason)
+Node::runAfterTableItemsSelectionChangedCallback(const KnobItemsTablePtr& table, const std::list<KnobTableItemPtr>& deselected, const std::list<KnobTableItemPtr>& selected, TableChangeReasonEnum reason)
 {
     std::string s = _imp->effect->getAfterSelectionChangedCallback();
     if (s.empty()) {
         return;
     }
-    _imp->runAfterItemsSelectionChangedCallback(s, deselected, selected, reason);
+    _imp->runAfterItemsSelectionChangedCallback(s, table, deselected, selected, reason);
 }
 
 
@@ -818,15 +824,14 @@ Node::removeParameterFromPython(const std::string& parameterName)
 void
 Node::declareTablePythonFields()
 {
-    KnobItemsTablePtr table = _imp->effect->getItemsTable();
-    if (!table) {
-        return;
-    }
+    std::list<KnobItemsTablePtr> tables = _imp->effect->getAllItemsTables();
+
     if (getScriptName_mt_safe().empty()) {
         return;
     }
-
-    table->declareItemsToPython();
+    for (std::list<KnobItemsTablePtr>::const_iterator it = tables.begin(); it!=tables.end(); ++it) {
+        (*it)->declareItemsToPython();
+    }
 }
 
 

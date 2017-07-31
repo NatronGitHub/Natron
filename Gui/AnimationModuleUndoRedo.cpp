@@ -63,31 +63,16 @@ static void convertVariantTimeValuePairToTypedList(const std::list<VariantTimeVa
     }
 }
 
-template <typename T>
-static void convertVariantKeyStringSetToTypedList(const KeyFrameSet& inList,
+static void convertKeySetToList(const KeyFrameSet& inList,
                                                   double offset,
-                                                  std::list<TimeValuePair<T> >* outList)
+                                                  std::list<KeyFrame>* outList)
 {
     for (KeyFrameSet::const_iterator it = inList.begin(); it!=inList.end(); ++it) {
-        TimeValuePair<T> p(TimeValue(it->getTime() + offset), it->getValue());
-        outList->push_back(p);
+        KeyFrame k = *it;
+        k.setTime(TimeValue(it->getTime() + offset));
+        outList->push_back(k);
     }
 }
-
-template <>
-void convertVariantKeyStringSetToTypedList(const KeyFrameSet& inList,
-                                           double offset,
-                                           std::list<TimeValuePair<std::string> >* outList)
-{
-    for (KeyFrameSet::const_iterator it = inList.begin(); it!=inList.end(); ++it) {
-        std::string stringValue;
-        it->getPropertySafe(kKeyFramePropString, 0, &stringValue);
-        TimeValuePair<std::string> p(TimeValue(it->getTime() + offset), stringValue);
-        outList->push_back(p);
-    }
-}
-
-
 
 
 static void
@@ -151,40 +136,13 @@ addKeyFrames(const AnimItemDimViewKeyFramesMap& keys,
             obj->removeAnimation(view, dim, eValueChangedReasonUserEdited);
         }
 
-        CurveTypeEnum dataType = obj->getKeyFrameDataType();
-        switch (dataType) {
-            case eCurveTypeDouble:
-            {
-                std::list<DoubleTimeValuePair> keysList;
-                convertVariantKeyStringSetToTypedList<double>(keyStringSet, offset, &keysList);
-                obj->setMultipleDoubleValueAtTime(keysList, view, dim);
-            }   break;
-            case eCurveTypeBool:
-            {
-                std::list<BoolTimeValuePair> keysList;
-                convertVariantKeyStringSetToTypedList<bool>(keyStringSet, offset, &keysList);
-                obj->setMultipleBoolValueAtTime(keysList, view, dim);
+        AnimatingObjectI::SetKeyFrameArgs args;
+        args.view = view;
+        args.dimension = dim;
 
-            }   break;
-            case eCurveTypeString:
-            {
-                std::list<StringTimeValuePair> keysList;
-                convertVariantKeyStringSetToTypedList<std::string>(keyStringSet, offset, &keysList);
-                obj->setMultipleStringValueAtTime(keysList, view, dim);
-
-            }   break;
-            case eCurveTypeInt:
-            case eCurveTypeChoice:
-            {
-                std::list<IntTimeValuePair> keysList;
-                convertVariantKeyStringSetToTypedList<int>(keyStringSet, offset, &keysList);
-                obj->setMultipleIntValueAtTime(keysList, view, dim);
-
-
-            }   break;
-        } // end switch
-
-
+        std::list<KeyFrame> keysList;
+        convertKeySetToList(keyStringSet, offset, &keysList);
+        obj->setMultipleKeyFrames(args, keysList);
     }
 } // addKeyFrames
 

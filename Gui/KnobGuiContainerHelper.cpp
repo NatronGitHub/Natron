@@ -78,7 +78,7 @@ struct KnobGuiContainerHelperPrivate
     bool clearedStackDuringPush;
     boost::scoped_ptr<KnobGuiContainerSignalsHandler> signals;
 
-    KnobItemsTableGuiPtr knobsTable;
+    std::map<std::string, KnobItemsTableGuiPtr> tables;
 
 
     KnobGuiContainerHelperPrivate(KnobGuiContainerHelper* p,
@@ -95,7 +95,7 @@ struct KnobGuiContainerHelperPrivate
     , cmdBeingPushed(0)
     , clearedStackDuringPush(false)
     , signals( new KnobGuiContainerSignalsHandler(p) )
-    , knobsTable()
+    , tables()
     {
         if (stack) {
             undoStack = stack;
@@ -343,10 +343,24 @@ KnobGuiContainerHelper::getKnobsMapping() const
     return _imp->knobsMap;
 }
 
-KnobItemsTableGuiPtr
-KnobGuiContainerHelper::getKnobItemsTable() const
+std::list<KnobItemsTableGuiPtr>
+KnobGuiContainerHelper::getAllKnobItemsTables() const
 {
-    return _imp->knobsTable;
+    std::list<KnobItemsTableGuiPtr> ret;
+    for (std::map<std::string, KnobItemsTableGuiPtr>::const_iterator it = _imp->tables.begin(); it != _imp->tables.end(); ++it) {
+        ret.push_back(it->second);
+    }
+    return ret;
+}
+
+KnobItemsTableGuiPtr
+KnobGuiContainerHelper::getKnobItemsTable(const std::string& tableName) const
+{
+    std::map<std::string, KnobItemsTableGuiPtr>::const_iterator it = _imp->tables.find(tableName);
+    if (it != _imp->tables.end()) {
+        return it->second;
+    }
+    return KnobItemsTableGuiPtr();
 }
 
 void
@@ -361,13 +375,21 @@ KnobGuiContainerHelper::initializeKnobs()
     if (!_imp->dialogKnob.lock()) {
         // Add the table if not done before
         KnobHolderPtr holder = _imp->holder.lock();
-        KnobItemsTablePtr table = holder->getItemsTable();
-        if (table && !_imp->knobsTable) {
-            std::string knobTableName = holder->getItemsTablePreviousKnobScriptName();
-            KnobHolder::KnobItemsTablePositionEnum knobTablePosition = holder->getItemsTablePosition();
+        std::list<KnobItemsTablePtr> tables = holder->getAllItemsTables();
+        for (std::list<KnobItemsTablePtr>::const_iterator it = tables.begin(); it != tables.end(); ++it) {
+            const KnobItemsTablePtr& table = *it;
+
+            std::string tableName = table->getTableIdentifier();
+            std::map<std::string, KnobItemsTableGuiPtr>::iterator foundGuiTable = _imp->tables.find(tableName);
+            if (foundGuiTable != _imp->tables.end()) {
+                continue;
+            }
+
+            std::string previousKnobTableName = holder->getItemsTablePreviousKnobScriptName(tableName);
+            KnobHolder::KnobItemsTablePositionEnum knobTablePosition = holder->getItemsTablePosition(tableName);
             switch (knobTablePosition) {
                 case KnobHolder::eKnobItemsTablePositionAfterKnob: {
-                    KnobIPtr foundKnob = holder->getKnobByName(knobTableName);
+                    KnobIPtr foundKnob = holder->getKnobByName(previousKnobTableName);
                     KnobPagePtr page = toKnobPage(foundKnob);
                     KnobPageGuiPtr guiPage;
                     if (!page) {
@@ -382,25 +404,27 @@ KnobGuiContainerHelper::initializeKnobs()
                         }
                     }
                     if (guiPage) {
-                        _imp->knobsTable = createKnobItemsTable(guiPage->tab);
-                        _imp->knobsTable->addWidgetsToLayout(guiPage->gridLayout);
+                        KnobItemsTableGuiPtr guiTable = createKnobItemsTable(table, guiPage->tab);
+                        guiTable->addWidgetsToLayout(guiPage->gridLayout);
+                        _imp->tables.insert(std::make_pair(tableName, guiTable));
                     }
 
                 }   break;
                 case KnobHolder::eKnobItemsTablePositionBottomOfAllPages: {
                     QWidget* container = getMainContainer();
                     QLayout* mainLayout = getMainContainerLayout();
-                    _imp->knobsTable = createKnobItemsTable(container);
-                    _imp->knobsTable->addWidgetsToLayout(mainLayout);
+                    KnobItemsTableGuiPtr guiTable = createKnobItemsTable(table, container);
+                    guiTable->addWidgetsToLayout(mainLayout);
+                    _imp->tables.insert(std::make_pair(tableName, guiTable));
                 }   break;
             }
 
             KnobsVec tableControlKnobs = table->getTableControlKnobs();
             initializeKnobVectorInternal(tableControlKnobs, 0);
         }
+
     }
-    
-}
+} // initializeKnobs
 
 void
 KnobGuiContainerHelper::initializeKnobVectorInternal(const KnobsVec& siblingsVec,
@@ -454,17 +478,24 @@ KnobGuiContainerHelper::initializeKnobVector(const KnobsVec& knobs)
     }
 
     // Remove from the regularKnobs left the knobs that want to be with the knobsTable (if any)
-    KnobItemsTablePtr table = _imp->holder.lock()->getItemsTable();
-    if (table) {
-        KnobsVec tmp;
-        for (KnobsVec::const_iterator it = regularKnobs.begin(); it != regularKnobs.end(); ++it) {
-            if (table->isTableControlKnob(*it)) {
-                continue;
+    std::list<KnobItemsTablePtr> tables = _imp->holder.lock()->getAllItemsTables();
+
+    KnobsVec tmp;
+    for (KnobsVec::const_iterator it = regularKnobs.begin(); it != regularKnobs.end(); ++it) {
+        bool isTableControl = false;
+        for (std::list<KnobItemsTablePtr>::const_iterator it2 = tables.begin(); it2 != tables.end(); ++it2) {
+            if ((*it2)->isTableControlKnob(*it)) {
+                isTableControl = true;
+                break;
             }
+
+        }
+        if (!isTableControl) {
             tmp.push_back(*it);
         }
-        regularKnobs = tmp;
     }
+    regularKnobs = tmp;
+
 
     // For knobs that did not belong to a page,  create them
     initializeKnobVectorInternal(regularKnobs, 0);
@@ -683,8 +714,15 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr &knob)
 
     // A knob that is a table control (e.g: "Add Item" "Remove item") does not literally belong to a page and is
     // dependent of the location of the table
-    KnobItemsTablePtr knobsTable = _imp->holder.lock()->getItemsTable();
-    const bool isKnobTableControl = !knobsTable ? false : knobsTable->isTableControlKnob(knob);
+    std::list<KnobItemsTablePtr> tables = _imp->holder.lock()->getAllItemsTables();
+    KnobItemsTableGuiPtr isKnobTableControl;
+    for (std::list<KnobItemsTablePtr>::const_iterator it = tables.begin(); it != tables.end(); ++it) {
+        if ((*it)->isTableControlKnob(knob)) {
+            isKnobTableControl = getKnobItemsTable((*it)->getTableIdentifier());
+            break;
+        }
+
+    }
 
     KnobIPtr parentKnob = knob->getParentKnob();
 
@@ -759,8 +797,7 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr &knob)
     } else {
         // For a table control, retrieve the layout on the knobs table itself.
         // It can be either a grid or box layout
-        assert(_imp->knobsTable);
-        knobTablesLayout = _imp->knobsTable->getContainerLayout();
+        knobTablesLayout = isKnobTableControl->getContainerLayout();
         gridLayout = dynamic_cast<QGridLayout*>(knobTablesLayout);
         boxLayout = dynamic_cast<QBoxLayout*>(knobTablesLayout);
     }
@@ -898,19 +935,27 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr &knob)
 
     // If the node wants a KnobItemsTable after this knob, create it
     KnobHolderPtr holder = _imp->holder.lock();
-    KnobItemsTablePtr table = holder->getItemsTable();
-    KnobHolder::KnobItemsTablePositionEnum knobTablePosition = holder->getItemsTablePosition();
-    if (table && !_imp->knobsTable && knobTablePosition == KnobHolder::eKnobItemsTablePositionAfterKnob) {
-        std::string knobTableName = holder->getItemsTablePreviousKnobScriptName();
-        if (knobTableName == knob->getName()) {
-            _imp->knobsTable = createKnobItemsTable(page->tab);
-            _imp->knobsTable->addWidgetsToLayout(gridLayout);
 
+    for (std::list<KnobItemsTablePtr>::const_iterator it = tables.begin(); it != tables.end(); ++it) {
+        const KnobItemsTablePtr& table = *it;
+        std::string tableName = table->getTableIdentifier();
+        std::map<std::string, KnobItemsTableGuiPtr>::iterator foundGuiTable = _imp->tables.find(tableName);
+        if (foundGuiTable != _imp->tables.end()) {
+            continue;
+        }
+
+        std::string previousKnobTableName = holder->getItemsTablePreviousKnobScriptName(tableName);
+        KnobHolder::KnobItemsTablePositionEnum knobTablePosition = holder->getItemsTablePosition(tableName);
+
+        if (previousKnobTableName == knob->getName() && knobTablePosition == KnobHolder::eKnobItemsTablePositionAfterKnob) {
+            KnobItemsTableGuiPtr guiTable = createKnobItemsTable(table, page->tab);
+            guiTable->addWidgetsToLayout(gridLayout);
+            _imp->tables.insert(std::make_pair(tableName, guiTable));
             KnobsVec tableControlKnobs = table->getTableControlKnobs();
             initializeKnobVectorInternal(tableControlKnobs, 0);
         }
-    }
 
+    }
 
     // If the knob is a group, create all the children now recursively
     if (isGroup) {

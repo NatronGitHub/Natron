@@ -209,9 +209,6 @@ Curve::Curve(CurveTypeEnum type)
     , _imp(new CurvePrivate())
 {
     _imp->type = type;
-    if (type == eCurveTypeString) {
-        _imp->canMoveY = false;
-    }
 }
 
 
@@ -229,6 +226,32 @@ CurveTypeEnum
 Curve::getType() const
 {
     return _imp->type;
+}
+
+void
+Curve::registerListener(const CurveChangesListenerPtr& listener)
+{
+    QMutexLocker l(&_imp->_lock);
+    for (std::list<CurveChangesListenerWPtr>::const_iterator it = _imp->listeners.begin(); it != _imp->listeners.end(); ++it) {
+        CurveChangesListenerPtr l = it->lock();
+        if (l == listener) {
+            return;
+        }
+    }
+    _imp->listeners.push_back(listener);
+
+}
+
+void
+Curve::unregisterListener(const CurveChangesListenerPtr& listener)
+{
+    QMutexLocker l(&_imp->_lock);
+    for (std::list<CurveChangesListenerWPtr>::const_iterator it = _imp->listeners.begin(); it != _imp->listeners.end(); ++it) {
+        CurveChangesListenerPtr l = it->lock();
+        if (l == listener) {
+            _imp->listeners.erase(it);
+        }
+    }
 }
 
 void
@@ -284,77 +307,184 @@ Curve::setKeyFramesTimeClampedToIntegers(bool enabled)
     _imp->clampKeyFramesTimeToIntegers = enabled;
 }
 
+std::list<CurveChangesListenerPtr>
+Curve::getListeners() const
+{
+    std::list<CurveChangesListenerPtr> ret;
+    for (std::list<CurveChangesListenerWPtr>::const_iterator it = _imp->listeners.begin(); it != _imp->listeners.end(); ++it) {
+        CurveChangesListenerPtr listener = it->lock();
+        if (!listener) {
+            continue;
+        }
+        ret.push_back(listener);
+    }
+    return ret;
+}
+
+void
+Curve::notifyKeyFramesChanged(const std::list<CurveChangesListenerPtr>& listeners, const KeyFrameSet& oldKeyframes,const KeyFrameSet& newKeyframes)
+{
+    assert(!listeners.empty());
+
+    KeyFrameSet keysAdded,keysRemoved;
+    computeKeyFramesDiff(oldKeyframes, newKeyframes, &keysAdded, &keysRemoved);
+
+    for (std::list<CurveChangesListenerPtr>::const_iterator it = listeners.begin(); it != listeners.end(); ++it) {
+        const CurveChangesListenerPtr& listener = *it;
+
+        for (KeyFrameSet::const_iterator it2 = keysAdded.begin(); it2 != keysAdded.end(); ++it2) {
+            listener->onKeyFrameAdded(this, *it2);
+        }
+        for (KeyFrameSet::const_iterator it2 = keysRemoved.begin(); it2 != keysRemoved.end(); ++it2) {
+            listener->onKeyFrameRemoved(this, *it2);
+        }
+    }
+
+}
+
+void
+Curve::notifyKeyFramesAdded(const std::list<CurveChangesListenerPtr>& listeners, const KeyFrame& k)
+{
+
+    for (std::list<CurveChangesListenerPtr>::const_iterator it = listeners.begin(); it != listeners.end(); ++it) {
+        const CurveChangesListenerPtr& listener = *it;
+        listener->onKeyFrameAdded(this, k);
+    }
+}
+
 void
 Curve::clone(const Curve & other)
 {
     KeyFrameSet otherKeys = other.getKeyFrames_mt_safe();
-    QMutexLocker l(&_imp->_lock);
 
-    _imp->keyFrames.clear();
-    std::transform( otherKeys.begin(), otherKeys.end(), std::inserter( _imp->keyFrames, _imp->keyFrames.begin() ), KeyFrameCloner() );
-    onCurveChanged();
+    std::list<CurveChangesListenerPtr> listeners;
+    boost::scoped_ptr<KeyFrameSet> oldKeys;
+    boost::scoped_ptr<KeyFrameSet> newKeys;
+
+    {
+        QMutexLocker l(&_imp->_lock);
+
+        listeners = getListeners();
+        if (!listeners.empty()) {
+            oldKeys.reset(new KeyFrameSet);
+            *oldKeys = _imp->keyFrames;
+        }
+
+
+        _imp->keyFrames.clear();
+        std::transform( otherKeys.begin(), otherKeys.end(), std::inserter( _imp->keyFrames, _imp->keyFrames.begin() ), KeyFrameCloner() );
+        if (!listeners.empty()) {
+            newKeys.reset(new KeyFrameSet);
+            *newKeys = _imp->keyFrames;
+        }
+        onCurveChanged();
+    }
+    if (!listeners.empty()) {
+        notifyKeyFramesChanged(listeners, *oldKeys, *newKeys);
+    }
 }
 
 void
 Curve::cloneIndexRange(const Curve& other, int firstKeyIdx, int nKeys)
 {
     KeyFrameSet otherKeys = other.getKeyFrames_mt_safe();
-    QMutexLocker l(&_imp->_lock);
-    _imp->keyFrames.clear();
-    if (firstKeyIdx >= (int)otherKeys.size()) {
-        return;
-    }
-    KeyFrameSet::iterator start = otherKeys.begin();
-    std::advance(start, firstKeyIdx);
+    std::list<CurveChangesListenerPtr> listeners;
+    boost::scoped_ptr<KeyFrameSet> oldKeys, newKeys;
+    {
+        QMutexLocker l(&_imp->_lock);
 
-    KeyFrameSet::iterator end;
-    if (nKeys == -1 || (firstKeyIdx + nKeys >= (int)otherKeys.size())) {
-        end = otherKeys.end();
-    } else {
-        end = start;
-        std::advance(end, nKeys);
-    }
-    std::transform( start, end, std::inserter( _imp->keyFrames, _imp->keyFrames.begin() ), KeyFrameCloner() );
-    onCurveChanged();
 
-}
+        listeners = getListeners();
+        if (!listeners.empty()) {
+            oldKeys.reset(new KeyFrameSet);
+            *oldKeys = _imp->keyFrames;
+        }
+
+        _imp->keyFrames.clear();
+        if (firstKeyIdx >= (int)otherKeys.size()) {
+            if (!listeners.empty()) {
+                l.unlock();
+                notifyKeyFramesChanged(listeners, *oldKeys, KeyFrameSet());
+            }
+            return;
+        }
+        KeyFrameSet::iterator start = otherKeys.begin();
+        std::advance(start, firstKeyIdx);
+
+        KeyFrameSet::iterator end;
+        if (nKeys == -1 || (firstKeyIdx + nKeys >= (int)otherKeys.size())) {
+            end = otherKeys.end();
+        } else {
+            end = start;
+            std::advance(end, nKeys);
+        }
+        std::transform( start, end, std::inserter( _imp->keyFrames, _imp->keyFrames.begin() ), KeyFrameCloner() );
+        if (!listeners.empty()) {
+            newKeys.reset(new KeyFrameSet);
+            *newKeys = _imp->keyFrames;
+        }
+        onCurveChanged();
+    }
+
+    if (!listeners.empty()) {
+        notifyKeyFramesChanged(listeners, *oldKeys, *newKeys);
+    }
+} // cloneIndexRange
 
 bool
 Curve::cloneAndCheckIfChanged(const Curve& other, double offset, const RangeD* range)
 {
     KeyFrameSet otherKeys = other.getKeyFrames_mt_safe();
-    QMutexLocker l(&_imp->_lock);
+    std::list<CurveChangesListenerPtr> listeners;
+    boost::scoped_ptr<KeyFrameSet> oldKeys;
+
     bool hasChanged = false;
 
-    if ( otherKeys.size() != _imp->keyFrames.size() ) {
-        hasChanged = true;
-    }
-    if (offset != 0) {
-        hasChanged = true;
-    }
+    {
+        QMutexLocker l(&_imp->_lock);
 
-    KeyFrameSet tmpSet = _imp->keyFrames;
-    KeyFrameSet::iterator oit = tmpSet.begin();
-    _imp->keyFrames.clear();
-    for (KeyFrameSet::iterator it = otherKeys.begin(); it != otherKeys.end(); ++it) {
-        TimeValue time = it->getTime();
-        if ( range && ( (time < range->min) || (time > range->max) ) ) {
-            // We ignore a keyframe, then consider the curve has changed
-            hasChanged = true;
-            continue;
+        listeners = getListeners();
+        if (!listeners.empty()) {
+            oldKeys.reset(new KeyFrameSet);
+            *oldKeys = _imp->keyFrames;
         }
-        KeyFrame k(*it);
+
+
+
+        if ( otherKeys.size() != _imp->keyFrames.size() ) {
+            hasChanged = true;
+        }
         if (offset != 0) {
-            k.setTime(TimeValue(time + offset));
-        }
-        if (!hasChanged && oit != tmpSet.end() && *oit != *it) {
             hasChanged = true;
         }
-        _imp->keyFrames.insert(k);
 
-        if (oit != tmpSet.end()) {
-            ++oit;
+        KeyFrameSet tmpSet = _imp->keyFrames;
+        KeyFrameSet::iterator oit = tmpSet.begin();
+
+        _imp->keyFrames.clear();
+        for (KeyFrameSet::iterator it = otherKeys.begin(); it != otherKeys.end(); ++it) {
+            TimeValue time = it->getTime();
+            if ( range && ( (time < range->min) || (time > range->max) ) ) {
+                // We ignore a keyframe, then consider the curve has changed
+                hasChanged = true;
+                continue;
+            }
+            KeyFrame k(*it);
+            if (offset != 0) {
+                k.setTime(TimeValue(time + offset));
+            }
+            if (!hasChanged && oit != tmpSet.end() && *oit != *it) {
+                hasChanged = true;
+            }
+            _imp->keyFrames.insert(k);
+            
+            if (oit != tmpSet.end()) {
+                ++oit;
+            }
         }
+    }
+    if (!listeners.empty()) {
+        notifyKeyFramesChanged(listeners, *oldKeys, otherKeys);
     }
     return hasChanged;
 }
@@ -368,35 +498,56 @@ Curve::clone(const Curve & other,
     // The range=[0,0] case is obviously a bug in the spec of paramCopy() from the parameter suite:
     // it prevents copying the value of frame 0.
     bool copyRange = range != NULL /*&& (range->min != 0 || range->max != 0)*/;
-    QMutexLocker l(&_imp->_lock);
 
-    _imp->keyFrames.clear();
-    for (KeyFrameSet::iterator it = otherKeys.begin(); it != otherKeys.end(); ++it) {
-        TimeValue time = it->getTime();
-        if ( copyRange && ( (time < range->min) || (time > range->max) ) ) {
-            continue;
+    std::list<CurveChangesListenerPtr> listeners;
+    boost::scoped_ptr<KeyFrameSet> oldKeys, newKeys;
+
+    {
+        QMutexLocker l(&_imp->_lock);
+
+        listeners = getListeners();
+        if (!listeners.empty()) {
+            oldKeys.reset(new KeyFrameSet);
+            *oldKeys = _imp->keyFrames;
         }
-        KeyFrame k(*it);
-        if (offset != 0) {
-            k.setTime(TimeValue(time + offset));
+        _imp->keyFrames.clear();
+        for (KeyFrameSet::iterator it = otherKeys.begin(); it != otherKeys.end(); ++it) {
+            TimeValue time = it->getTime();
+            if ( copyRange && ( (time < range->min) || (time > range->max) ) ) {
+                continue;
+            }
+            KeyFrame k(*it);
+            if (offset != 0) {
+                k.setTime(TimeValue(time + offset));
+            }
+            _imp->keyFrames.insert(k);
         }
-        _imp->keyFrames.insert(k);
+
+        if (!listeners.empty()) {
+            newKeys.reset(new KeyFrameSet);
+            *newKeys = _imp->keyFrames;
+        }
+
+
+        onCurveChanged();
     }
-    onCurveChanged();
-}
+    if (!listeners.empty()) {
+        notifyKeyFramesChanged(listeners, *oldKeys, *newKeys);
+    }
+} // clone
 
 void
 Curve::computeKeyFramesDiff(const KeyFrameSet& keysA,
                             const KeyFrameSet& keysB,
-                            std::list<double>* keysAdded,
-                            std::list<double>* keysRemoved)
+                            KeyFrameSet* keysAdded,
+                            KeyFrameSet* keysRemoved)
 {
     KeyFrameSet keysACopy = keysA;
     if (keysAdded) {
         for (KeyFrameSet::iterator it = keysB.begin(); it != keysB.end(); ++it) {
             KeyFrameSet::iterator foundInOldKeys = Curve::findWithTime(keysACopy, keysACopy.end(), it->getTime());
             if (foundInOldKeys == keysA.end()) {
-                keysAdded->push_back(it->getTime());
+                keysAdded->insert(*it);
             } else {
                 keysACopy.erase(foundInOldKeys);
             }
@@ -406,7 +557,7 @@ Curve::computeKeyFramesDiff(const KeyFrameSet& keysA,
         for (KeyFrameSet::iterator it = keysACopy.begin(); it != keysACopy.end(); ++it) {
             KeyFrameSet::iterator foundInNextKeys = Curve::findWithTime(keysB, keysB.end(), it->getTime());
             if (foundInNextKeys == keysB.end()) {
-                keysRemoved->push_back(it->getTime());
+                keysRemoved->insert(*it);
             }
         }
     }
@@ -435,20 +586,26 @@ Curve::getMaximumTimeCovered() const
 
 
 ValueChangedReturnCodeEnum
-Curve::setOrAddKeyframe(const KeyFrame& key, int *keyframeIndex)
+Curve::setOrAddKeyframe(const KeyFrame& key, SetKeyFrameFlags flags, int *keyframeIndex)
 {
 
+    // check for NaN or infinity
+    if ( (key.getValue() != key.getValue()) || boost::math::isinf(key.getValue()) ) {
+        KeyFrame tmp = key;
+        tmp.setValue(key.getValue());
+        return setOrAddKeyframe(tmp, flags, keyframeIndex);
+    }
 
     QMutexLocker l(&_imp->_lock);
 
     std::pair<KeyFrameSet::iterator, ValueChangedReturnCodeEnum> it;
 
-    if ( (_imp->type == eCurveTypeBool) || (_imp->type == eCurveTypeString) || ( _imp->type == eCurveTypeChoice) ) {
+    if (isInterpolationConstantOnly()) {
         KeyFrame copy = key;
         copy.setInterpolation(eKeyframeTypeConstant);
-        it = setOrUpdateKeyframeInternal(copy);
+        it = setOrUpdateKeyframeInternal(copy, flags);
     } else {
-        it = setOrUpdateKeyframeInternal(key);
+        it = setOrUpdateKeyframeInternal(key, flags);
     }
 
     assert(it.first != _imp->keyFrames.end());
@@ -463,7 +620,24 @@ Curve::setOrAddKeyframe(const KeyFrame& key, int *keyframeIndex)
     
 }
 
-std::pair<KeyFrameSet::iterator, ValueChangedReturnCodeEnum> Curve::setOrUpdateKeyframeInternal(const KeyFrame & cp)
+bool applyKeyFrameConflictsFlags(KeyFrame& tmp, const KeyFrame & cp, SetKeyFrameFlags flags)
+{
+    bool changed = false;
+    if (flags & eSetKeyFrameFlagSetValue) {
+        changed = cp.getValue() != tmp.getValue();
+        tmp.setValue(cp.getValue());
+    }
+    if ((flags & eSetKeyFrameFlagReplaceProperties) || (flags & eSetKeyFrameFlagMergeProperties)) {
+        if (flags & eSetKeyFrameFlagReplaceProperties) {
+            changed |= tmp.cloneProperties(cp);
+        } else if (flags & eSetKeyFrameFlagMergeProperties) {
+            changed |= tmp.mergeProperties(cp);
+        }
+    }
+    return changed;
+}
+
+std::pair<KeyFrameSet::iterator, ValueChangedReturnCodeEnum> Curve::setOrUpdateKeyframeInternal(const KeyFrame & cp, SetKeyFrameFlags flags)
 {
     // PRIVATE - should not lock
     if (_imp->clampKeyFramesTimeToIntegers) {
@@ -472,32 +646,40 @@ std::pair<KeyFrameSet::iterator, ValueChangedReturnCodeEnum> Curve::setOrUpdateK
         if (newKey.second) {
             return std::make_pair(newKey.first, eValueChangedReturnCodeKeyframeAdded);
         } else {
-            if (*newKey.first == cp) {
+
+            KeyFrame tmp = *newKey.first;
+            bool changed = applyKeyFrameConflictsFlags(tmp, cp, flags);
+            if (!changed) {
                 return std::make_pair(newKey.first, eValueChangedReturnCodeNothingChanged);
-            } else {
-                _imp->keyFrames.erase(newKey.first);
-                newKey = _imp->keyFrames.insert(cp);
-                assert(newKey.second);
-                return std::make_pair(newKey.first, eValueChangedReturnCodeKeyframeModified);
             }
+            _imp->keyFrames.erase(newKey.first);
+            newKey = _imp->keyFrames.insert(tmp);
+            assert(newKey.second);
+            return std::make_pair(newKey.first,  eValueChangedReturnCodeKeyframeModified);
+
         }
     } else {
         double paramEps = NATRON_CURVE_X_SPACING_EPSILON;
         ValueChangedReturnCodeEnum retCode = eValueChangedReturnCodeKeyframeAdded;
+        KeyFrame tmp = cp;
         for (KeyFrameSet::iterator it = _imp->keyFrames.begin(); it != _imp->keyFrames.end(); ++it) {
             if (std::abs( it->getTime() - cp.getTime() ) < paramEps) {
-                if (*it == cp) {
+
+                tmp = *it;
+                bool changed = applyKeyFrameConflictsFlags(tmp, cp, flags);
+                if (!changed) {
                     return std::make_pair(it, eValueChangedReturnCodeNothingChanged);
                 }
+
                 _imp->keyFrames.erase(it);
                 retCode = eValueChangedReturnCodeKeyframeModified;
                 break;
             }
         }
-        std::pair<KeyFrameSet::iterator, bool> newKey = _imp->keyFrames.insert(cp);
+        std::pair<KeyFrameSet::iterator, bool> newKey = _imp->keyFrames.insert(tmp);
         return std::make_pair(newKey.first, retCode);
     }
-}
+} // setOrUpdateKeyframeInternal
 
 void
 Curve::removeKeyFrame(KeyFrameSet::const_iterator it)
@@ -564,6 +746,7 @@ Curve::removeKeyFrame(KeyFrameSet::const_iterator it)
                            nextKey.getInterpolation() != eKeyframeTypeNone);
     }
 
+    KeyFrame removedKey = *it;
     _imp->keyFrames.erase(it);
 
     if (mustRefreshPrev) {
@@ -572,6 +755,15 @@ Curve::removeKeyFrame(KeyFrameSet::const_iterator it)
     if (mustRefreshNext) {
         refreshDerivatives( eCurveChangedReasonDerivativesChanged, find( nextKey.getTime(), _imp->keyFrames.end() ) );
     }
+
+    for (std::list<CurveChangesListenerWPtr>::const_iterator it = _imp->listeners.begin(); it != _imp->listeners.end(); ++it) {
+        CurveChangesListenerPtr listener = it->lock();
+        if (!listener) {
+            continue;
+        }
+        listener->onKeyFrameRemoved(this, removedKey);
+    }
+
     onCurveChanged();
 }
 
@@ -604,22 +796,38 @@ Curve::removeKeyFramesBeforeTime(TimeValue time,
                                  std::list<double>* keyframeRemoved)
 {
     KeyFrameSet newSet;
-    QMutexLocker l(&_imp->_lock);
 
-    for (KeyFrameSet::iterator it = _imp->keyFrames.begin(); it != _imp->keyFrames.end(); ++it) {
-        if (it->getTime() < time) {
-            if (keyframeRemoved) {
-                keyframeRemoved->push_back( it->getTime() );
-            }
-            continue;
+    std::list<CurveChangesListenerPtr> listeners;
+    boost::scoped_ptr<KeyFrameSet> oldKeys, newKeys;
+
+    {
+        QMutexLocker l(&_imp->_lock);
+
+        listeners = getListeners();
+        if (!listeners.empty()) {
+            oldKeys.reset(new KeyFrameSet);
+            *oldKeys = _imp->keyFrames;
         }
-        newSet.insert(*it);
+
+        for (KeyFrameSet::iterator it = _imp->keyFrames.begin(); it != _imp->keyFrames.end(); ++it) {
+            if (it->getTime() < time) {
+                if (keyframeRemoved) {
+                    keyframeRemoved->push_back( it->getTime() );
+                }
+                continue;
+            }
+            newSet.insert(*it);
+        }
+
+        _imp->keyFrames = newSet;
+        if ( !_imp->keyFrames.empty() ) {
+            refreshDerivatives( Curve::eCurveChangedReasonKeyframeChanged, _imp->keyFrames.begin() );
+        }
+        onCurveChanged();
     }
-    _imp->keyFrames = newSet;
-    if ( !_imp->keyFrames.empty() ) {
-        refreshDerivatives( Curve::eCurveChangedReasonKeyframeChanged, _imp->keyFrames.begin() );
+    if (!listeners.empty()) {
+        notifyKeyFramesChanged(listeners, *oldKeys, newSet);
     }
-    onCurveChanged();
 }
 
 void
@@ -627,24 +835,41 @@ Curve::removeKeyFramesAfterTime(TimeValue time,
                                 std::list<double>* keyframeRemoved)
 {
     KeyFrameSet newSet;
-    QMutexLocker l(&_imp->_lock);
 
-    for (KeyFrameSet::iterator it = _imp->keyFrames.begin(); it != _imp->keyFrames.end(); ++it) {
-        if (it->getTime() > time) {
-            if (keyframeRemoved) {
-                keyframeRemoved->push_back( it->getTime() );
-            }
-            continue;
+    std::list<CurveChangesListenerPtr> listeners;
+    boost::scoped_ptr<KeyFrameSet> oldKeys, newKeys;
+
+    {
+        QMutexLocker l(&_imp->_lock);
+
+        listeners = getListeners();
+        if (!listeners.empty()) {
+            oldKeys.reset(new KeyFrameSet);
+            *oldKeys = _imp->keyFrames;
         }
-        newSet.insert(*it);
+
+        for (KeyFrameSet::iterator it = _imp->keyFrames.begin(); it != _imp->keyFrames.end(); ++it) {
+            if (it->getTime() > time) {
+                if (keyframeRemoved) {
+                    keyframeRemoved->push_back( it->getTime() );
+                }
+                continue;
+            }
+            newSet.insert(*it);
+        }
+
+        _imp->keyFrames = newSet;
+        if ( !_imp->keyFrames.empty() ) {
+            KeyFrameSet::iterator last = _imp->keyFrames.end();
+            --last;
+            refreshDerivatives(Curve::eCurveChangedReasonKeyframeChanged, last);
+        }
+        onCurveChanged();
     }
-    _imp->keyFrames = newSet;
-    if ( !_imp->keyFrames.empty() ) {
-        KeyFrameSet::iterator last = _imp->keyFrames.end();
-        --last;
-        refreshDerivatives(Curve::eCurveChangedReasonKeyframeChanged, last);
+    if (!listeners.empty()) {
+        notifyKeyFramesChanged(listeners, *oldKeys, newSet);
     }
-    onCurveChanged();
+    
 }
 
 bool
@@ -1161,155 +1386,175 @@ Curve::transformKeyframesValueAndTime(const std::list<double>& times,
         return true;
     }
 
+    const bool xClampedToIntegers = areKeyFramesTimeClampedToIntegers();
 
-    QMutexLocker l(&_imp->_lock);
-
-    // First compute all transformed keyframes
-    std::list<double>::const_iterator next = times.begin();
-    ++next;
-    
-    // We remove progressively for each keyframe warped the corresponding original keyframe
-    // to get in this set only the keyframes that were not modified by this function call
-    // We use a list here because the erase() function in C++98 does not return an iterator
-    // and we need it to be efficient
-    std::list<KeyFrame> originalKeyFramesMinusTransformedKeyFrames;
-    for (KeyFrameSet::const_iterator it = _imp->keyFrames.begin();
-         it != _imp->keyFrames.end();
-         ++it) {
-        originalKeyFramesMinusTransformedKeyFrames.push_back(*it);
-    }
-    
-    // The set containing warped keyframes
-    KeyFrameSet warpedKeyFrames;
-    
-    // To speed up findWithTime search, taking advantage of the fact that input times are ordered
+    // The map containing <warped keyframes, original keyframe>
+    std::map<KeyFrame, KeyFrame> warpedKeyFrames;
+    std::list<CurveChangesListenerPtr> listeners;
     {
-        std::list<KeyFrame>::iterator findHint = originalKeyFramesMinusTransformedKeyFrames.end();
-        for (std::list<double>::const_iterator it = times.begin();
-             it!=times.end();
-             ++it) {
-            // Ensure the user passed increasing sorted keyframes
-            assert(next == times.end() || *next > *it);
-            if (next != times.end() && *next <= *it) {
-                throw std::invalid_argument("Curve::transformKeyframesValueAndTime: input keyframe times to transform were not sorted by increasing order by the caller");
-            }
+        QMutexLocker l(&_imp->_lock);
 
-            // Find in the original keyframes
-            std::list<KeyFrame>::iterator found = originalKeyFramesMinusTransformedKeyFrames.end();
-            {
-                // Since input keyframe times are sorted, we don't have to find before the time that was found
-                // at the previous iteration
-                std::list<KeyFrame>::iterator findStart = ( ( findHint == originalKeyFramesMinusTransformedKeyFrames.end() ) ?
-                                                           originalKeyFramesMinusTransformedKeyFrames.begin() :
-                                                           findHint );
-                found = std::find_if(findStart, originalKeyFramesMinusTransformedKeyFrames.end(), KeyFrameTimePredicate(*it));
-            }
+        listeners = getListeners();
 
-            if (found == originalKeyFramesMinusTransformedKeyFrames.end()) {
-                // It can fail here because the time provided by the user does not exist in the original keyframes
-                // or if the same keyframe time was passed multiple times in the input times list.
-                return false;
-            }
+        // First compute all transformed keyframes
+        std::list<double>::const_iterator next = times.begin();
+        ++next;
 
-            // Apply warp
-            KeyFrame warpedKey = warp.applyForwardWarp(*found);
-
-            {
-                std::pair<KeyFrameSet::iterator,bool> insertOk = warpedKeyFrames.insert(warpedKey);
-                if (!insertOk.second) {
-                    // 2 input keyframes were warped to the same point
-                    return false;
-                }
-            }
-
-            // Remove from the set to get a diff of keyframes untouched by the warp operation
-            findHint = originalKeyFramesMinusTransformedKeyFrames.erase(found);
-            
-            if (next != times.end()) {
-                ++next;
-            }
-        } // for all times
-    }
-    
-    KeyFrameSet finalSet;
-    
-    // Insert in the final set the original keyframes we did not transform
-    for (std::list<KeyFrame>::const_iterator it = originalKeyFramesMinusTransformedKeyFrames.begin();
-         it != originalKeyFramesMinusTransformedKeyFrames.end();
-         ++it) {
-        finalSet.insert(*it);
-    }
-    
-    if (newKeys) {
-        newKeys->resize(warpedKeyFrames.size());
-    }
-    
-    // Now make up the final keyframe set by merging originalKeyFramesMinusTransformedKeyFrames and warpedKeyFrames
-    {
-        int i = 0;
-        for (KeyFrameSet::const_iterator it = warpedKeyFrames.begin();
-             it != warpedKeyFrames.end();
-             ++it, ++i) {
-            std::pair<KeyFrameSet::iterator,bool> insertOk = finalSet.insert(*it);
-            // A warped keyframe overlap an original keyframe left in the set, fail operation
-            if (!insertOk.second) {
-                return false;
-            }
-            // If user want output keys, provide them
-            if (newKeys) {
-                (*newKeys)[i] = (*it);
-            }
-        }
-    }
-    
-    
-    // Make sure we did not overlap any keyframe.
-    assert(finalSet.size() == _imp->keyFrames.size());
-    
-    // Compute keyframes added if needed
-    if (keysAddedOut) {
-        // Keyframes added are those in the final set that are not in the original set
-        KeyFrameSet::const_iterator findHint = _imp->keyFrames.end();
-        for (KeyFrameSet::const_iterator it = finalSet.begin();
-             it != finalSet.end();
-             ++it) {
-            // Find in the original keyframes
-            findHint = findWithTime(_imp->keyFrames, findHint, it->getTime());
-            if (findHint == _imp->keyFrames.end()) {
-                keysAddedOut->push_back(it->getTime());
-            }
-        }
-    } // keysAddedOut
-    
-    // Compute keyframes removed if needed
-    if (keysRemovedOut) {
-        // Keyframes removed are those in the original set that are not in the final set
-        KeyFrameSet::const_iterator findHint = finalSet.end();
+        // We remove progressively for each keyframe warped the corresponding original keyframe
+        // to get in this set only the keyframes that were not modified by this function call
+        // We use a list here because the erase() function in C++98 does not return an iterator
+        // and we need it to be efficient
+        std::list<KeyFrame> originalKeyFramesMinusTransformedKeyFrames;
         for (KeyFrameSet::const_iterator it = _imp->keyFrames.begin();
              it != _imp->keyFrames.end();
              ++it) {
-            // Find in the original keyframes
-            findHint = findWithTime(finalSet, findHint, it->getTime());
-            if (findHint == finalSet.end()) {
-                keysRemovedOut->push_back(it->getTime());
+            originalKeyFramesMinusTransformedKeyFrames.push_back(*it);
+        }
+
+
+        // To speed up findWithTime search, taking advantage of the fact that input times are ordered
+        {
+            std::list<KeyFrame>::iterator findHint = originalKeyFramesMinusTransformedKeyFrames.end();
+            for (std::list<double>::const_iterator it = times.begin();
+                 it!=times.end();
+                 ++it) {
+                // Ensure the user passed increasing sorted keyframes
+                assert(next == times.end() || *next > *it);
+                if (next != times.end() && *next <= *it) {
+                    throw std::invalid_argument("Curve::transformKeyframesValueAndTime: input keyframe times to transform were not sorted by increasing order by the caller");
+                }
+
+                // Find in the original keyframes
+                std::list<KeyFrame>::iterator found = originalKeyFramesMinusTransformedKeyFrames.end();
+                {
+                    // Since input keyframe times are sorted, we don't have to find before the time that was found
+                    // at the previous iteration
+                    std::list<KeyFrame>::iterator findStart = ( ( findHint == originalKeyFramesMinusTransformedKeyFrames.end() ) ?
+                                                               originalKeyFramesMinusTransformedKeyFrames.begin() :
+                                                               findHint );
+                    found = std::find_if(findStart, originalKeyFramesMinusTransformedKeyFrames.end(), KeyFrameTimePredicate(*it));
+                }
+
+                if (found == originalKeyFramesMinusTransformedKeyFrames.end()) {
+                    // It can fail here because the time provided by the user does not exist in the original keyframes
+                    // or if the same keyframe time was passed multiple times in the input times list.
+                    return false;
+                }
+
+                // Apply warp
+                KeyFrame warpedKey = warp.applyForwardWarp(*found);
+                if (xClampedToIntegers) {
+                    warpedKey.setTime(TimeValue(std::floor(warpedKey.getTime() + 0.5)));
+                }
+
+                {
+                    std::pair<std::map<KeyFrame, KeyFrame>::iterator,bool> insertOk = warpedKeyFrames.insert(std::make_pair(warpedKey, *found));
+                    if (!insertOk.second) {
+                        // 2 input keyframes were warped to the same point
+                        return false;
+                    }
+                }
+
+                // Remove from the set to get a diff of keyframes untouched by the warp operation
+                findHint = originalKeyFramesMinusTransformedKeyFrames.erase(found);
+
+                if (next != times.end()) {
+                    ++next;
+                }
+            } // for all times
+        }
+
+        KeyFrameSet finalSet;
+
+        // Insert in the final set the original keyframes we did not transform
+        for (std::list<KeyFrame>::const_iterator it = originalKeyFramesMinusTransformedKeyFrames.begin();
+             it != originalKeyFramesMinusTransformedKeyFrames.end();
+             ++it) {
+            finalSet.insert(*it);
+        }
+
+        if (newKeys) {
+            newKeys->resize(warpedKeyFrames.size());
+        }
+
+        // Now make up the final keyframe set by merging originalKeyFramesMinusTransformedKeyFrames and warpedKeyFrames
+        {
+            int i = 0;
+            for (std::map<KeyFrame, KeyFrame>::const_iterator it = warpedKeyFrames.begin();
+                 it != warpedKeyFrames.end();
+                 ++it, ++i) {
+                std::pair<KeyFrameSet::iterator,bool> insertOk = finalSet.insert(it->first);
+                // A warped keyframe overlap an original keyframe left in the set, fail operation
+                if (!insertOk.second) {
+                    return false;
+                }
+                // If user want output keys, provide them
+                if (newKeys) {
+                    (*newKeys)[i] = (it->first);
+                }
             }
         }
-    } // keysRemovedOut
-    
-    // Now move finalSet to the member keyframes
-    _imp->keyFrames.clear();
-    for (KeyFrameSet::const_iterator it = finalSet.begin();
-         it != finalSet.end();
-         ++it) {
-        
-        std::pair<KeyFrameSet::iterator, bool> ret = setOrUpdateKeyframeInternal(*it);
-        
-        // huh, we are just moving one set to another, there cannot be a failure!
-        assert(ret.second);
-        
-        // refresh derivative
-        ret.first = evaluateCurveChanged(eCurveChangedReasonKeyframeChanged, ret.first);
-        
+
+
+        // Make sure we did not overlap any keyframe.
+        assert(finalSet.size() == _imp->keyFrames.size());
+
+        // Compute keyframes added if needed
+        if (keysAddedOut) {
+            // Keyframes added are those in the final set that are not in the original set
+            KeyFrameSet::const_iterator findHint = _imp->keyFrames.end();
+            for (KeyFrameSet::const_iterator it = finalSet.begin();
+                 it != finalSet.end();
+                 ++it) {
+                // Find in the original keyframes
+                findHint = findWithTime(_imp->keyFrames, findHint, it->getTime());
+                if (findHint == _imp->keyFrames.end()) {
+                    keysAddedOut->push_back(it->getTime());
+                }
+            }
+        } // keysAddedOut
+
+        // Compute keyframes removed if needed
+        if (keysRemovedOut) {
+            // Keyframes removed are those in the original set that are not in the final set
+            KeyFrameSet::const_iterator findHint = finalSet.end();
+            for (KeyFrameSet::const_iterator it = _imp->keyFrames.begin();
+                 it != _imp->keyFrames.end();
+                 ++it) {
+                // Find in the original keyframes
+                findHint = findWithTime(finalSet, findHint, it->getTime());
+                if (findHint == finalSet.end()) {
+                    keysRemovedOut->push_back(it->getTime());
+                }
+            }
+        } // keysRemovedOut
+
+
+        // Now move finalSet to the member keyframes
+        _imp->keyFrames.clear();
+        for (KeyFrameSet::const_iterator it = finalSet.begin();
+             it != finalSet.end();
+             ++it) {
+            
+            std::pair<KeyFrameSet::iterator, ValueChangedReturnCodeEnum> ret = setOrUpdateKeyframeInternal(*it);
+            
+            // huh, we are just moving one set to another, there cannot be a failure!
+            assert(ret.second != eValueChangedReturnCodeNothingChanged);
+            
+            // refresh derivative
+            ret.first = evaluateCurveChanged(eCurveChangedReasonKeyframeChanged, ret.first);
+            
+        }
+    } // QMutexLocker
+
+    if (!listeners.empty()) {
+        for (std::map<KeyFrame, KeyFrame>::const_iterator it = warpedKeyFrames.begin();
+             it != warpedKeyFrames.end();
+             ++it) {
+            for (std::list<CurveChangesListenerPtr>::const_iterator it2 = listeners.begin(); it2 != listeners.end(); ++it2) {
+                (*it2)->onKeyFrameMoved(this, it->second, it->first);
+            }
+        }
     }
     return true;
 } // transformKeyframesValueAndTime
@@ -1325,9 +1570,10 @@ Curve::setKeyFrameLeftDerivativeInternal(double value, int index, int* newIndex)
         assert( it != _imp->keyFrames.end() );
 
         if ( value != it->getLeftDerivative() ) {
-            KeyFrame newKey(*it);
+            KeyFrame newKey = *it;
             newKey.setLeftDerivative(value);
-            it = setOrUpdateKeyframeInternal(newKey).first;
+            std::pair<KeyFrameSet::iterator, ValueChangedReturnCodeEnum> ok = setOrUpdateKeyframeInternal(newKey);
+            it = ok.first;
             it = evaluateCurveChanged(eCurveChangedReasonDerivativesChanged, it);
         }
         if (newIndex) {
@@ -1335,6 +1581,8 @@ Curve::setKeyFrameLeftDerivativeInternal(double value, int index, int* newIndex)
         }
         ret = *it;
     }
+
+
     return ret;
 }
 
@@ -1358,7 +1606,8 @@ Curve::setKeyFrameRightDerivativeInternal(double value, int index, int* newIndex
         if ( value != it->getRightDerivative() ) {
             KeyFrame newKey(*it);
             newKey.setRightDerivative(value);
-            it = setOrUpdateKeyframeInternal(newKey).first;
+            std::pair<KeyFrameSet::iterator, ValueChangedReturnCodeEnum> ok = setOrUpdateKeyframeInternal(newKey);
+            it = ok.first;
             it = evaluateCurveChanged(eCurveChangedReasonDerivativesChanged, it);
         }
         if (newIndex) {
@@ -1366,6 +1615,7 @@ Curve::setKeyFrameRightDerivativeInternal(double value, int index, int* newIndex
         }
         ret = *it;
     }
+
     return ret;
 
 }
@@ -1391,7 +1641,8 @@ Curve::setKeyFrameDerivativesInternal(double left, double right, int index, int*
             KeyFrame newKey(*it);
             newKey.setLeftDerivative(left);
             newKey.setRightDerivative(right);
-            it = setOrUpdateKeyframeInternal(newKey).first;
+            std::pair<KeyFrameSet::iterator, ValueChangedReturnCodeEnum> ok = setOrUpdateKeyframeInternal(newKey);
+            it = ok.first;
             it = evaluateCurveChanged(eCurveChangedReasonDerivativesChanged, it);
         }
         if (newIndex) {
@@ -1399,6 +1650,8 @@ Curve::setKeyFrameDerivativesInternal(double left, double right, int index, int*
         }
         ret = *it;
     }
+
+
     return ret;
 }
 
@@ -1422,23 +1675,41 @@ Curve::setKeyFrameInterpolationInternal(KeyframeTypeEnum interp, int index, int*
         assert( it != _imp->keyFrames.end() );
 
         ///if the curve is a string_curve or bool_curve the interpolation is bound to be constant.
-        if ( ( (_imp->type == eCurveTypeString) || (_imp->type == eCurveTypeBool) ||
-              ( _imp->type == eCurveTypeChoice) ) && ( interp != eKeyframeTypeConstant) ) {
+        if (isInterpolationConstantOnly() && ( interp != eKeyframeTypeConstant) ) {
             return *it;
         }
 
 
         if ( interp != it->getInterpolation() ) {
-            it = setKeyframeInterpolation_internal(it, interp);
+            std::pair<KeyFrameSet::iterator, ValueChangedReturnCodeEnum> ok = setKeyframeInterpolation_internal(it, interp);
+            it = ok.first;
         }
         if (newIndex) {
             *newIndex = std::distance(_imp->keyFrames.begin(), it);
         }
         ret = *it;
     }
-    
+
     return ret;
 
+}
+
+bool
+Curve::canBeVisibleInCurveEditor(CurveTypeEnum type)
+{
+    return (type != eCurveTypeString) && (type != eCurveTypeChoice) && (type != eCurveTypeProperties);
+}
+
+bool
+Curve::canBeVisibleInCurveEditor() const
+{
+    return canBeVisibleInCurveEditor(_imp->type);
+}
+
+bool
+Curve::isInterpolationConstantOnly() const
+{
+    return (_imp->type == eCurveTypeString) || (_imp->type == eCurveTypeBool) || (_imp->type == eCurveTypeChoice) || (_imp->type == eCurveTypeProperties);
 }
 
 KeyFrame
@@ -1466,24 +1737,26 @@ Curve::setKeyFrameInterpolation(KeyframeTypeEnum interp, TimeValue time, KeyFram
 void
 Curve::setCurveInterpolation(KeyframeTypeEnum interp)
 {
+
     {
         QMutexLocker l(&_imp->_lock);
         ///if the curve is a string_curve or bool_curve the interpolation is bound to be constant.
-        if ( ( (_imp->type == eCurveTypeString) || (_imp->type == eCurveTypeBool) ||
-               ( _imp->type == eCurveTypeChoice) ) && ( interp != eKeyframeTypeConstant) ) {
+        if (isInterpolationConstantOnly() && ( interp != eKeyframeTypeConstant) ) {
             return;
         }
         for (int i = 0; i < (int)_imp->keyFrames.size(); ++i) {
             KeyFrameSet::iterator it = _imp->keyFrames.begin();
             std::advance(it, i);
             if ( interp != it->getInterpolation() ) {
-                it = setKeyframeInterpolation_internal(it, interp);
+                std::pair<KeyFrameSet::iterator, ValueChangedReturnCodeEnum> ok = setKeyframeInterpolation_internal(it, interp);
+                it = ok.first;
             }
         }
     }
+
 }
 
-KeyFrameSet::iterator
+std::pair<KeyFrameSet::iterator, ValueChangedReturnCodeEnum>
 Curve::setKeyframeInterpolation_internal(KeyFrameSet::iterator it,
                                          KeyframeTypeEnum interp)
 {
@@ -1491,10 +1764,10 @@ Curve::setKeyframeInterpolation_internal(KeyFrameSet::iterator it,
     assert( it != _imp->keyFrames.end() );
     KeyFrame newKey(*it);
     newKey.setInterpolation(interp);
-    it = setOrUpdateKeyframeInternal(newKey).first;
-    it = evaluateCurveChanged(eCurveChangedReasonKeyframeChanged, it);
+    std::pair<KeyFrameSet::iterator, ValueChangedReturnCodeEnum> ret = setOrUpdateKeyframeInternal(newKey);
+    ret.first = evaluateCurveChanged(eCurveChangedReasonKeyframeChanged, ret.first);
 
-    return it;
+    return ret;
 }
 
 KeyFrameSet::iterator
@@ -1736,24 +2009,16 @@ Curve::end() const
 bool
 Curve::isYComponentMovable() const
 {
-    QMutexLocker l(&_imp->_lock);
-
-    return _imp->canMoveY;
+    return canBeVisibleInCurveEditor();
 }
 
-void
-Curve::setYComponentMovable(bool canEdit)
-{
-    QMutexLocker l(&_imp->_lock);
-    _imp->canMoveY = canEdit;
-}
 
 bool
 Curve::areKeyFramesValuesClampedToIntegers() const
 {
     QMutexLocker l(&_imp->_lock);
 
-    return _imp->type == eCurveTypeInt || _imp->type == eCurveTypeChoice || _imp->type == eCurveTypeString;
+    return _imp->type == eCurveTypeInt || isInterpolationConstantOnly();
 }
 
 bool
@@ -1797,62 +2062,101 @@ Curve::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase&
     if (!s) {
         return;
     }
-    QMutexLocker l(&_imp->_lock);
-    _imp->keyFrames.clear();
-    for (std::list<SERIALIZATION_NAMESPACE::KeyFrameSerialization>::const_iterator it = s->keys.begin(); it != s->keys.end(); ++it) {
-        KeyFrame k;
-        k.setTime(TimeValue(it->time));
 
-        switch (s->curveType) {
-            case SERIALIZATION_NAMESPACE::eCurveSerializationTypeString: {
-                if (_imp->type == eCurveTypeChoice) {
-                    k.setProperty(kKeyframePropChoiceOptionID, it->stringValue);
-                } else if (_imp->type == eCurveTypeString) {
-                    k.setProperty(kKeyFramePropString, it->stringValue);
-                } else {
-                    throw std::invalid_argument("Wrong curve type");
-                }
-            }   break;
-            case SERIALIZATION_NAMESPACE::eCurveSerializationTypeDouble: {
-                k.setValue(it->value);
-                KeyframeTypeEnum t = eKeyframeTypeSmooth;
-                if (it->interpolation == kKeyframeSerializationTypeBroken) {
-                    t = eKeyframeTypeBroken;
-                } else if (it->interpolation == kKeyframeSerializationTypeCatmullRom) {
-                    t = eKeyframeTypeCatmullRom;
-                } else if (it->interpolation == kKeyframeSerializationTypeConstant) {
-                    t = eKeyframeTypeConstant;
-                } else if (it->interpolation == kKeyframeSerializationTypeCubic) {
-                    t = eKeyframeTypeCubic;
-                } else if (it->interpolation == kKeyframeSerializationTypeFree) {
-                    t = eKeyframeTypeFree;
-                } else if (it->interpolation == kKeyframeSerializationTypeHorizontal) {
-                    t = eKeyframeTypeHorizontal;
-                } else if (it->interpolation == kKeyframeSerializationTypeLinear) {
-                    t = eKeyframeTypeLinear;
-                } else if (it->interpolation == kKeyframeSerializationTypeSmooth) {
-                    t = eKeyframeTypeSmooth;
-                }
-                k.setInterpolation(t);
-                if (t == eKeyframeTypeBroken || t == eKeyframeTypeFree) {
-                    k.setRightDerivative(it->rightDerivative);
-                    if (t == eKeyframeTypeBroken) {
-                        k.setLeftDerivative(it->leftDerivative);
-                    } else {
-                        k.setLeftDerivative(it->rightDerivative);
+
+    {
+        QMutexLocker l(&_imp->_lock);
+
+
+        _imp->keyFrames.clear();
+        for (std::list<SERIALIZATION_NAMESPACE::KeyFrameSerialization>::const_iterator it = s->keys.begin(); it != s->keys.end(); ++it) {
+            KeyFrame k;
+            k.setTime(TimeValue(it->time));
+
+            switch (s->curveType) {
+                case SERIALIZATION_NAMESPACE::eCurveSerializationTypeString: {
+                    if (it->properties.size() == 1) {
+                        const SERIALIZATION_NAMESPACE::KeyFrameProperty& prop = it->properties.front();
+                        if (prop.values.size() == 1 && prop.type == kKeyFramePropertyVariantTypeString) {
+                            k.setProperty(kKeyFramePropString, prop.values[0].stringValue,0, false /*failIfnotExist*/);
+                        }
                     }
-                }
+                }   break;
+                case SERIALIZATION_NAMESPACE::eCurveSerializationTypePropertiesOnly: {
+                    for (std::list<SERIALIZATION_NAMESPACE::KeyFrameProperty>::const_iterator it2 = it->properties.begin(); it2 != it->properties.end(); ++it2) {
+                        if (it2->type == kKeyFramePropertyVariantTypeString) {
+                            std::vector<std::string> values(it2->values.size());
+                            for (std::size_t i = 0; i < it2->values.size(); ++i) {
+                                values[i] = it2->values[i].stringValue;
+                            }
+                            k.setProperty(it2->name, values);
 
-            }   break;
+                        } else if (it2->type == kKeyFramePropertyVariantTypeDouble) {
+                            std::vector<double> values(it2->values.size());
+                            for (std::size_t i = 0; i < it2->values.size(); ++i) {
+                                values[i] = it2->values[i].scalarValue;
+                            }
+                            k.setProperty(it2->name, values);
+                        } else if (it2->type == kKeyFramePropertyVariantTypeInt) {
+                            std::vector<int> values(it2->values.size());
+                            for (std::size_t i = 0; i < it2->values.size(); ++i) {
+                                values[i] = it2->values[i].scalarValue;
+                            }
+                            k.setProperty(it2->name, values);
+                        } else if (it2->type == kKeyFramePropertyVariantTypeBool) {
+                            std::vector<bool> values(it2->values.size());
+                            for (std::size_t i = 0; i < it2->values.size(); ++i) {
+                                values[i] = it2->values[i].scalarValue;
+                            }
+                            k.setProperty(it2->name, values);
+                        }
+                    }
+                }   break;
+                case SERIALIZATION_NAMESPACE::eCurveSerializationTypeScalar: {
+                    k.setValue(it->value);
+                    KeyframeTypeEnum t = eKeyframeTypeSmooth;
+                    if (it->interpolation == kKeyframeSerializationTypeBroken) {
+                        t = eKeyframeTypeBroken;
+                    } else if (it->interpolation == kKeyframeSerializationTypeCatmullRom) {
+                        t = eKeyframeTypeCatmullRom;
+                    } else if (it->interpolation == kKeyframeSerializationTypeConstant) {
+                        t = eKeyframeTypeConstant;
+                    } else if (it->interpolation == kKeyframeSerializationTypeCubic) {
+                        t = eKeyframeTypeCubic;
+                    } else if (it->interpolation == kKeyframeSerializationTypeFree) {
+                        t = eKeyframeTypeFree;
+                    } else if (it->interpolation == kKeyframeSerializationTypeHorizontal) {
+                        t = eKeyframeTypeHorizontal;
+                    } else if (it->interpolation == kKeyframeSerializationTypeLinear) {
+                        t = eKeyframeTypeLinear;
+                    } else if (it->interpolation == kKeyframeSerializationTypeSmooth) {
+                        t = eKeyframeTypeSmooth;
+                    }
+                    k.setInterpolation(t);
+                    if (t == eKeyframeTypeBroken || t == eKeyframeTypeFree) {
+                        k.setRightDerivative(it->rightDerivative);
+                        if (t == eKeyframeTypeBroken) {
+                            k.setLeftDerivative(it->leftDerivative);
+                        } else {
+                            k.setLeftDerivative(it->rightDerivative);
+                        }
+                    }
+                    
+                }   break;
+            }
+            
+            
+            std::pair<KeyFrameSet::iterator, ValueChangedReturnCodeEnum> ret = setOrUpdateKeyframeInternal(k);
+            if (ret.second != eValueChangedReturnCodeNothingChanged) {
+                (void)evaluateCurveChanged(eCurveChangedReasonKeyframeChanged, ret.first);
+            }
         }
 
 
-        std::pair<KeyFrameSet::iterator, bool> ret = setOrUpdateKeyframeInternal(k);
-        if (ret.second) {
-            (void)evaluateCurveChanged(eCurveChangedReasonKeyframeChanged, ret.first);
-        }
+        onCurveChanged();
     }
-    onCurveChanged();
+
+
 }
 
 void
@@ -1867,48 +2171,109 @@ Curve::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
         case eCurveTypeChoice:
             s->curveType = SERIALIZATION_NAMESPACE::eCurveSerializationTypeString;
             break;
+        case eCurveTypeProperties:
+            s->curveType = SERIALIZATION_NAMESPACE::eCurveSerializationTypePropertiesOnly;
+            break;
 
         default:
-            s->curveType = SERIALIZATION_NAMESPACE::eCurveSerializationTypeDouble;
+            s->curveType = SERIALIZATION_NAMESPACE::eCurveSerializationTypeScalar;
             break;
     }
     KeyFrameSet keys = getKeyFrames_mt_safe();
     for (KeyFrameSet::iterator it = keys.begin(); it!=keys.end(); ++it) {
-        QMutexLocker l(&_imp->_lock);
+
         SERIALIZATION_NAMESPACE::KeyFrameSerialization k;
         k.time = it->getTime();
-        k.value = it->getValue();
-        KeyframeTypeEnum t = it->getInterpolation();
-        switch (t) {
-            case eKeyframeTypeSmooth:
-                k.interpolation = kKeyframeSerializationTypeSmooth;
-                break;
-            case eKeyframeTypeLinear:
-                k.interpolation = kKeyframeSerializationTypeLinear;
-                break;
-            case eKeyframeTypeBroken:
-                k.interpolation = kKeyframeSerializationTypeBroken;
-                break;
-            case eKeyframeTypeFree:
-                k.interpolation = kKeyframeSerializationTypeFree;
-                break;
-            case eKeyframeTypeCatmullRom:
-                k.interpolation = kKeyframeSerializationTypeCatmullRom;
-                break;
-            case eKeyframeTypeCubic:
-                k.interpolation = kKeyframeSerializationTypeCubic;
-                break;
-            case eKeyframeTypeHorizontal:
-                k.interpolation = kKeyframeSerializationTypeHorizontal;
-                break;
-            case eKeyframeTypeConstant:
-                k.interpolation = kKeyframeSerializationTypeConstant;
-                break;
-            default:
-                break;
+
+        switch (s->curveType) {
+            case SERIALIZATION_NAMESPACE::eCurveSerializationTypeString: {
+                SERIALIZATION_NAMESPACE::KeyFrameProperty prop;
+                SERIALIZATION_NAMESPACE::KeyFramePropertyVariant v;
+                it->getPropertySafe(kKeyFramePropString, 0, &v.stringValue);
+                prop.type = kKeyFramePropertyVariantTypeString;
+                prop.values.push_back(v);
+                k.properties.push_back(prop);
+            }   break;
+            case SERIALIZATION_NAMESPACE::eCurveSerializationTypePropertiesOnly: {
+                if (it->hasProperties()) {
+                    const std::map<std::string, boost::shared_ptr<PropertiesHolder::PropertyBase> >& properties = it->getProperties();
+                    for (std::map<std::string, boost::shared_ptr<PropertiesHolder::PropertyBase> >::const_iterator it = properties.begin(); it != properties.end(); ++it) {
+                        SERIALIZATION_NAMESPACE::KeyFrameProperty prop;
+                        prop.name = it->first;
+                        PropertiesHolder::Property<std::string>* isStringProp = dynamic_cast<PropertiesHolder::Property<std::string>*>(it->second.get());
+                        PropertiesHolder::Property<double>* isDoubleProp = dynamic_cast<PropertiesHolder::Property<double>*>(it->second.get());
+                        PropertiesHolder::Property<int>* isIntProp = dynamic_cast<PropertiesHolder::Property<int>*>(it->second.get());
+                        PropertiesHolder::Property<bool>* isBoolProp = dynamic_cast<PropertiesHolder::Property<bool>*>(it->second.get());
+                        if (isStringProp) {
+                            prop.type = kKeyFramePropertyVariantTypeString;
+                            prop.values.resize(isStringProp->value.size());
+                            for (std::size_t i = 0; i < prop.values.size(); ++i) {
+                                prop.values[i].stringValue = isStringProp->value[i];
+                            }
+                        } else if (isDoubleProp) {
+                            prop.type = kKeyFramePropertyVariantTypeDouble;
+                            prop.values.resize(isDoubleProp->value.size());
+                            for (std::size_t i = 0; i < prop.values.size(); ++i) {
+                                prop.values[i].scalarValue = isDoubleProp->value[i];
+                            }
+                        } else if (isIntProp) {
+                            prop.type = kKeyFramePropertyVariantTypeInt;
+                            prop.values.resize(isIntProp->value.size());
+                            for (std::size_t i = 0; i < prop.values.size(); ++i) {
+                                prop.values[i].scalarValue = isIntProp->value[i];
+                            }
+                        } else if (isBoolProp) {
+                            prop.type = kKeyFramePropertyVariantTypeBool;
+                            prop.values.resize(isBoolProp->value.size());
+                            for (std::size_t i = 0; i < prop.values.size(); ++i) {
+                                prop.values[i].scalarValue = isBoolProp->value[i];
+                            }
+                        } else {
+                            continue;
+                        }
+                        k.properties.push_back(prop);
+                    }
+                }
+            }   break;
+            case SERIALIZATION_NAMESPACE::eCurveSerializationTypeScalar: {
+                k.value = it->getValue();
+                KeyframeTypeEnum t = it->getInterpolation();
+                switch (t) {
+                    case eKeyframeTypeSmooth:
+                        k.interpolation = kKeyframeSerializationTypeSmooth;
+                        break;
+                    case eKeyframeTypeLinear:
+                        k.interpolation = kKeyframeSerializationTypeLinear;
+                        break;
+                    case eKeyframeTypeBroken:
+                        k.interpolation = kKeyframeSerializationTypeBroken;
+                        break;
+                    case eKeyframeTypeFree:
+                        k.interpolation = kKeyframeSerializationTypeFree;
+                        break;
+                    case eKeyframeTypeCatmullRom:
+                        k.interpolation = kKeyframeSerializationTypeCatmullRom;
+                        break;
+                    case eKeyframeTypeCubic:
+                        k.interpolation = kKeyframeSerializationTypeCubic;
+                        break;
+                    case eKeyframeTypeHorizontal:
+                        k.interpolation = kKeyframeSerializationTypeHorizontal;
+                        break;
+                    case eKeyframeTypeConstant:
+                        k.interpolation = kKeyframeSerializationTypeConstant;
+                        break;
+                    default:
+                        break;
+                }
+                k.leftDerivative = it->getLeftDerivative();
+                k.rightDerivative = it->getRightDerivative();
+                
+
+            }   break;
+
         }
-        k.leftDerivative = it->getLeftDerivative();
-        k.rightDerivative = it->getRightDerivative();
+
         s->keys.push_back(k);
     }
 }
@@ -1935,6 +2300,7 @@ Curve::operator==(const Curve & other) const
 void
 Curve::setKeyframesInternal(const KeyFrameSet& keys, bool refreshDerivatives)
 {
+
     if (!refreshDerivatives) {
         _imp->keyFrames = keys;
     } else {
@@ -1942,12 +2308,13 @@ Curve::setKeyframesInternal(const KeyFrameSet& keys, bool refreshDerivatives)
 
         // Now recompute auto tangents
         for (KeyFrameSet::iterator it = keys.begin(); it != keys.end(); ++it) {
-            std::pair<KeyFrameSet::iterator, bool> ret = setOrUpdateKeyframeInternal(*it);
+            std::pair<KeyFrameSet::iterator, ValueChangedReturnCodeEnum> ret = setOrUpdateKeyframeInternal(*it);
             ret.first = evaluateCurveChanged(Curve::eCurveChangedReasonKeyframeChanged, ret.first);
         }
 
 
     }
+
     onCurveChanged();
 
 }
@@ -1955,8 +2322,22 @@ Curve::setKeyframesInternal(const KeyFrameSet& keys, bool refreshDerivatives)
 void
 Curve::setKeyframes(const KeyFrameSet& keys, bool refreshDerivatives)
 {
-    QMutexLocker k(&_imp->_lock);
-    setKeyframesInternal(keys, refreshDerivatives);
+    boost::scoped_ptr<KeyFrameSet> oldKeys;
+    std::list<CurveChangesListenerPtr> listeners;
+    {
+        QMutexLocker k(&_imp->_lock);
+
+        listeners = getListeners();
+        if (!listeners.empty()) {
+            oldKeys.reset(new KeyFrameSet);
+            *oldKeys = _imp->keyFrames;
+        }
+
+        setKeyframesInternal(keys, refreshDerivatives);
+    }
+    if (!listeners.empty()) {
+        notifyKeyFramesChanged(listeners, *oldKeys, keys);
+    }
 }
 
 void

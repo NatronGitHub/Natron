@@ -2683,7 +2683,7 @@ AppManager::registerEngineMetaTypes() const
     qRegisterMetaType<ValueChangedReturnCodeEnum>("ValueChangedReturnCodeEnum");
     qRegisterMetaType<ValueChangedReasonEnum>("ValueChangedReasonEnum");
     qRegisterMetaType<DimensionViewPair>("DimensionViewPair");
-    qRegisterMetaType<PerDimViewVariantMap>("PerDimViewVariantMap");
+    qRegisterMetaType<PerDimViewKeyFramesMap>("PerDimViewKeyFramesMap");
 #if QT_VERSION < 0x050000
     qRegisterMetaType<QAbstractSocket::SocketState>("SocketState");
 #endif

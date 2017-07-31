@@ -956,6 +956,15 @@ TrackerNode::initializeTrackingPageKnobs(const KnobPagePtr& trackingPage)
         trackingPage->addKnob(param);
     }
 
+    {
+        KnobKeyFrameMarkersPtr param = createKnob<KnobKeyFrameMarkers>(kTrackerParamManualKeyframes);
+        param->setLabel(tr(kTrackerParamManualKeyframesLabel));
+        param->setHintToolTip(tr(kTrackerParamManualKeyframesHint));
+        trackingPage->addKnob(param);
+        _imp->trackKeyframesKnob = param;
+        _imp->knobsTable->addPerItemKnobMaster(param);
+    }
+
     // Add a separator before the table
     {
         KnobSeparatorPtr param = createKnob<KnobSeparator>("trackTableSep");
@@ -1423,7 +1432,7 @@ TrackerNode::initializeKnobs()
     initializeViewerUIKnobs(trackingPage);
 
     // Add the table at the bottom of the tracking page
-    setItemsTable(_imp->knobsTable, KnobHolder::eKnobItemsTablePositionAfterKnob, trackingPage->getName());
+    addItemsTable(_imp->knobsTable, KnobHolder::eKnobItemsTablePositionAfterKnob, trackingPage->getName());
 
 
     QObject::connect( getNode().get(), SIGNAL(s_refreshPreviewsAfterProjectLoadRequested()), _imp->ui.get(), SLOT(rebuildMarkerTextures()) );

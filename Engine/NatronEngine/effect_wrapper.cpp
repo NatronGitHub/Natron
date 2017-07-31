@@ -330,7 +330,13 @@ static PyObject* Sbk_EffectFunc_destroy(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // destroy()
+            // Begin code injection
+
             cppSelf->destroy();
+
+            // End of code injection
+
+
         }
     }
 
@@ -432,6 +438,46 @@ static PyObject* Sbk_EffectFunc_endParametersUndoCommand(PyObject* self)
         return 0;
     }
     Py_RETURN_NONE;
+}
+
+static PyObject* Sbk_EffectFunc_getAllItemsTable(PyObject* self)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getAllItemsTable()const
+            // Begin code injection
+
+            std::list<ItemsTable*> tables = cppSelf->getAllItemsTable();
+            PyObject* ret = PyList_New((int) tables.size());
+            int idx = 0;
+            for (std::list<ItemsTable*>::iterator it = tables.begin(); it!=tables.end(); ++it,++idx) {
+            PyObject* item = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_ITEMSTABLE_IDX], *it);
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(item);
+            PyList_SET_ITEM(ret, idx, item);
+            }
+            return ret;
+
+            // End of code injection
+
+
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
 }
 
 static PyObject* Sbk_EffectFunc_getAvailableLayers(PyObject* self, PyObject* pyArg)
@@ -738,7 +784,7 @@ static PyObject* Sbk_EffectFunc_getInputLabel(PyObject* self, PyObject* pyArg)
         return 0;
 }
 
-static PyObject* Sbk_EffectFunc_getItemsTable(PyObject* self)
+static PyObject* Sbk_EffectFunc_getItemsTable(PyObject* self, PyObject* pyArg)
 {
     ::Effect* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -746,13 +792,27 @@ static PyObject* Sbk_EffectFunc_getItemsTable(PyObject* self)
         return 0;
     cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: getItemsTable(QString)const
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
+        overloadId = 0; // getItemsTable(QString)const
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_EffectFunc_getItemsTable_TypeError;
 
     // Call function/method
     {
+        ::QString cppArg0 = ::QString();
+        pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // getItemsTable()const
-            ItemsTable * cppResult = const_cast<const ::Effect*>(cppSelf)->getItemsTable();
+            // getItemsTable(QString)const
+            ItemsTable * cppResult = const_cast<const ::Effect*>(cppSelf)->getItemsTable(cppArg0);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_ITEMSTABLE_IDX], cppResult);
 
             // Ownership transferences.
@@ -765,6 +825,11 @@ static PyObject* Sbk_EffectFunc_getItemsTable(PyObject* self)
         return 0;
     }
     return pyResult;
+
+    Sbk_EffectFunc_getItemsTable_TypeError:
+        const char* overloads[] = {"unicode", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Effect.getItemsTable", overloads);
+        return 0;
 }
 
 static PyObject* Sbk_EffectFunc_getLabel(PyObject* self)
@@ -1858,6 +1923,7 @@ static PyMethodDef Sbk_Effect_methods[] = {
     {"disconnectInput", (PyCFunction)Sbk_EffectFunc_disconnectInput, METH_O},
     {"endChanges", (PyCFunction)Sbk_EffectFunc_endChanges, METH_NOARGS},
     {"endParametersUndoCommand", (PyCFunction)Sbk_EffectFunc_endParametersUndoCommand, METH_NOARGS},
+    {"getAllItemsTable", (PyCFunction)Sbk_EffectFunc_getAllItemsTable, METH_NOARGS},
     {"getAvailableLayers", (PyCFunction)Sbk_EffectFunc_getAvailableLayers, METH_O},
     {"getBitDepth", (PyCFunction)Sbk_EffectFunc_getBitDepth, METH_NOARGS},
     {"getColor", (PyCFunction)Sbk_EffectFunc_getColor, METH_NOARGS},
@@ -1866,7 +1932,7 @@ static PyMethodDef Sbk_Effect_methods[] = {
     {"getFrameRate", (PyCFunction)Sbk_EffectFunc_getFrameRate, METH_NOARGS},
     {"getInput", (PyCFunction)Sbk_EffectFunc_getInput, METH_O},
     {"getInputLabel", (PyCFunction)Sbk_EffectFunc_getInputLabel, METH_O},
-    {"getItemsTable", (PyCFunction)Sbk_EffectFunc_getItemsTable, METH_NOARGS},
+    {"getItemsTable", (PyCFunction)Sbk_EffectFunc_getItemsTable, METH_O},
     {"getLabel", (PyCFunction)Sbk_EffectFunc_getLabel, METH_NOARGS},
     {"getMaxInputCount", (PyCFunction)Sbk_EffectFunc_getMaxInputCount, METH_NOARGS},
     {"getParam", (PyCFunction)Sbk_EffectFunc_getParam, METH_O},

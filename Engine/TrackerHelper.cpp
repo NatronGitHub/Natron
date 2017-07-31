@@ -271,23 +271,23 @@ TrackerHelper::trackMarkers(const std::list<TrackMarkerPtr >& markers,
             }
         }
 
-        std::set<double> userKeys;
-        t->natronMarker->getMasterKeyFrameTimes(ViewIdx(0), &userKeys);
+        KeyFrameSet userKeys = t->natronMarker->getKeyFrames();
+
 
         if ( userKeys.empty() ) {
             // Set a user keyframe on tracking start if the marker does not have any user keys
-            t->natronMarker->setKeyFrame(start, ViewSetSpec(0), 0);
+            t->natronMarker->setKeyFrame(start);
         }
 
         PreviouslyTrackedFrameSet keyframesOrdered;
 
         // Make sure to create a marker at the start time
-        userKeys.insert(start);
+        userKeys.insert(KeyFrame(start,0.));
 
 
         // Add a libmv marker for all keyframes
-        for (std::set<double>::iterator it2 = userKeys.begin(); it2 != userKeys.end(); ++it2) {
-            keyframesOrdered.insert( PreviouslyComputedTrackFrame(TimeValue(*it2), true) );
+        for (KeyFrameSet::iterator it2 = userKeys.begin(); it2 != userKeys.end(); ++it2) {
+            keyframesOrdered.insert( PreviouslyComputedTrackFrame(it2->getTime(), true) );
         }
 
 
@@ -296,7 +296,7 @@ TrackerHelper::trackMarkers(const std::list<TrackMarkerPtr >& markers,
         t->natronMarker->getCenterKeyframes(&centerKeys);
 
         for (std::set<double>::iterator it2 = centerKeys.begin(); it2 != centerKeys.end(); ++it2) {
-            if ( userKeys.find(*it2) != userKeys.end() ) {
+            if ( userKeys.find(KeyFrame(TimeValue(*it2), 0)) != userKeys.end() ) {
                 continue;
             }
 

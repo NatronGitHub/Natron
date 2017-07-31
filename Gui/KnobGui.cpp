@@ -92,7 +92,7 @@ KnobGui::initialize()
         QObject::connect( handler, SIGNAL(secretChanged()), this, SLOT(setSecret()) );
         QObject::connect( handler, SIGNAL(enabledChanged()), this, SLOT(setEnabledSlot()) );
         QObject::connect( handler, SIGNAL(selectedMultipleTimes(bool)), this, SLOT(onKnobMultipleSelectionChanged(bool)) );
-        QObject::connect( handler, SIGNAL(appendParamEditChange(ValueChangedReasonEnum,ValueChangedReturnCodeEnum,PerDimViewVariantMap,Variant,ViewSetSpec,DimSpec,TimeValue,bool)), this, SLOT(onAppendParamEditChanged(ValueChangedReasonEnum,ValueChangedReturnCodeEnum,PerDimViewVariantMap,Variant,ViewSetSpec,DimSpec,TimeValue,bool)) );
+        QObject::connect( handler, SIGNAL(appendParamEditChange(ValueChangedReasonEnum,ValueChangedReturnCodeEnum,PerDimViewKeyFramesMap,KeyFrame,ViewSetSpec,DimSpec,bool)), this, SLOT(onAppendParamEditChanged(ValueChangedReasonEnum,ValueChangedReturnCodeEnum,PerDimViewKeyFramesMap,KeyFrame,ViewSetSpec,DimSpec,bool)) );
         QObject::connect( handler, SIGNAL(frozenChanged(bool)), this, SLOT(onFrozenChanged(bool)) );
         QObject::connect( handler, SIGNAL(helpChanged()), this, SLOT(onHelpChanged()) );
         QObject::connect( handler, SIGNAL(expressionChanged(DimIdx,ViewIdx)), this, SLOT(onExprChanged(DimIdx,ViewIdx)) );
@@ -247,10 +247,16 @@ KnobGuiPrivate::refreshIsOnNewLineFlag()
         if (layoutType == KnobGui::eKnobLayoutTypeViewerUI && k->getHolder()->getInViewerContextKnobIndex(k) != -1) {
             siblings = k->getHolder()->getViewerUIKnobs();
         } else {
-            KnobItemsTablePtr table = k->getHolder()->getItemsTable();
-            if (table && table->isTableControlKnob(k)) {
-                siblings = table->getTableControlKnobs();
-            } else {
+            bool foundTableControl = false;
+            std::list<KnobItemsTablePtr> tables = k->getHolder()->getAllItemsTables();
+            for (std::list<KnobItemsTablePtr>::const_iterator it = tables.begin(); it != tables.end(); ++it) {
+                if ((*it)->isTableControlKnob(k)) {
+                    siblings = (*it)->getTableControlKnobs();
+                    foundTableControl = true;
+                    break;
+                }
+            }
+            if (!foundTableControl) {
                 KnobIPtr parentKnob = k->getParentKnob();
                 KnobGroupPtr isParentGroup = toKnobGroup(parentKnob);
                 if (isParentGroup) {
@@ -265,6 +271,7 @@ KnobGuiPrivate::refreshIsOnNewLineFlag()
                     }
                 }
             }
+           
         }
         if (!siblings.empty()) {
             // Find the previous knob on the line in the layout
@@ -920,6 +927,7 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimensionIn, ViewSetSpec viewI
 
     menu->clear();
 
+    CurveTypeEnum curveType = knob->getKeyFrameDataType();
 
     bool dimensionHasKeyframeAtTime = false;
     bool hasAllKeyframesAtTime = true;
@@ -1103,18 +1111,21 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimensionIn, ViewSetSpec viewI
             showInCurveEditorAction->setEnabled(false);
         }
 
-        if ( (knob->getNDimensions() > 1) && !hasExpression ) {
-            Menu* interpMenu = createInterpolationMenu(menu, DimSpec::all(), view, isEnabled);
-            Q_UNUSED(interpMenu);
-        }
-        if (dimensionHasAnimation && !hasExpression) {
-            if ( !isAllViewsAction && (!dimension.isAll() || (knob->getNDimensions() == 1)) ) {
-                Menu* interpMenu = createInterpolationMenu(menu, !dimension.isAll() ? dimension : DimSpec(0), view, isEnabled);
+        // Only allow interpolation change for double/int
+        if (curveType == eCurveTypeInt || curveType == eCurveTypeDouble) {
+            if ( (knob->getNDimensions() > 1) && !hasExpression ) {
+                Menu* interpMenu = createInterpolationMenu(menu, DimSpec::all(), view, isEnabled);
                 Q_UNUSED(interpMenu);
+            }
+            if (dimensionHasAnimation && !hasExpression) {
+                if ( !isAllViewsAction && (!dimension.isAll() || (knob->getNDimensions() == 1)) ) {
+                    Menu* interpMenu = createInterpolationMenu(menu, !dimension.isAll() ? dimension : DimSpec(0), view, isEnabled);
+                    Q_UNUSED(interpMenu);
+                }
             }
         }
     }
-
+    
 
     {
         Menu* copyMenu = new Menu(menu);

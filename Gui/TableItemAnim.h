@@ -36,7 +36,7 @@ CLANG_DIAG_ON(deprecated)
 NATRON_NAMESPACE_ENTER
 
 class TableItemAnimPrivate;
-class TableItemAnim : public QObject, public AnimItemBase, public KnobsHolderAnimBase
+class TableItemAnim : public QObject, public KnobsHolderAnimBase, public boost::enable_shared_from_this<TableItemAnim>
 {
 
     GCC_DIAG_SUGGEST_OVERRIDE_OFF
@@ -65,7 +65,7 @@ public:
 
     virtual ~TableItemAnim();
 
-    virtual AnimatingObjectIPtr getInternalAnimItem() const OVERRIDE FINAL;
+    AnimationModuleBasePtr getModel() const;
 
     KnobTableItemPtr getInternalItem() const;
 
@@ -78,14 +78,8 @@ public:
     bool isRangeDrawingEnabled() const;
 
     //// Overriden from AnimItemBase
-    virtual QString getViewDimensionLabel(DimIdx dimension, ViewIdx view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual QTreeWidgetItem * getRootItem() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual QTreeWidgetItem * getTreeItem(DimSpec dimension, ViewSetSpec view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual CurvePtr getCurve(DimIdx dimension, ViewIdx view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual CurveGuiPtr getCurveGui(DimIdx dimension, ViewIdx view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual std::list<ViewIdx> getViewsList() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual int getNDimensions() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool getAllDimensionsVisible(ViewIdx view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    QTreeWidgetItem * getRootItem() const WARN_UNUSED_RETURN;
+    std::list<ViewIdx> getViewsList() const WARN_UNUSED_RETURN;
     ////
 
     void refreshVisibilityConditional(bool refreshHolder);
@@ -105,8 +99,6 @@ public Q_SLOTS:
     void onProjectViewsChanged();
 
 private:
-
-    void createViewItems();
 
     void insertChild(int index, const TableItemAnimPtr& child);
 

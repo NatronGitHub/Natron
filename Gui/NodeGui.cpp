@@ -2905,10 +2905,6 @@ NodeGui::refreshKnobsAfterTimeChange(bool onlyTimeEvaluationKnobs,
     NodePtr node = getNode();
 
     if ( ( _settingsPanel && !_settingsPanel->isClosed() ) ) {
-        KnobItemsTableGuiPtr knobsTable = _settingsPanel->getKnobItemsTable();
-        if (knobsTable) {
-            knobsTable->refreshAfterTimeChanged();
-        }
         if (onlyTimeEvaluationKnobs) {
             node->getEffectInstance()->refreshAfterTimeChangeOnlyKnobsWithTimeEvaluation(time);
         } else {
@@ -2938,13 +2934,22 @@ NodeGui::onSettingsPanelClosedChanged(bool closed)
     }
 }
 
+std::list<KnobItemsTableGuiPtr>
+NodeGui::getAllKnobItemsTables() const
+{
+    if (!_settingsPanel) {
+        return std::list<KnobItemsTableGuiPtr>();
+    }
+    return _settingsPanel->getAllKnobItemsTables();
+}
+
 KnobItemsTableGuiPtr
-NodeGui::getKnobItemsTable() const
+NodeGui::getKnobItemsTable(const std::string& tableName) const
 {
     if (!_settingsPanel) {
         return KnobItemsTableGuiPtr();
     }
-    return _settingsPanel->getKnobItemsTable();
+    return _settingsPanel->getKnobItemsTable(tableName);
 }
 
 void
@@ -3767,9 +3772,6 @@ static void addKnobTableItemKeysRecursive(const KnobTableItemPtr& item, TimeLine
         return;
     }
     
-    // Add the master keyframes
-    addAnimatingItemKeys(item, true /*isUserKey*/, keys);
-
 
     // Add knobs keyframes
     const KnobsVec& knobs = item->getKnobs();
@@ -3794,9 +3796,9 @@ NodeGui::getAllVisibleKnobsKeyframes(TimeLineKeysSet* keys) const
     const KnobsVec& knobs = effect->getKnobs();
     addKnobsKeys(knobs, keys);
 
-    KnobItemsTablePtr table = effect->getItemsTable();
-    if (table) {
-        std::vector<KnobTableItemPtr> items = table->getTopLevelItems();
+    std::list<KnobItemsTablePtr> tables = effect->getAllItemsTables();
+    for (std::list<KnobItemsTablePtr>::const_iterator it = tables.begin() ;it!=tables.end() ;++it) {
+        std::vector<KnobTableItemPtr> items = (*it)->getTopLevelItems();
         for (std::size_t i = 0; i < items.size(); ++i) {
             addKnobTableItemKeysRecursive(items[i], keys);
         }

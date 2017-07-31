@@ -148,18 +148,91 @@ struct DimensionViewPairCompare
 };
 typedef std::set<DimensionViewPair, DimensionViewPairCompare> DimensionViewPairSet;
 
-typedef std::map<DimensionViewPair, Variant, DimensionViewPairCompare> PerDimViewVariantMap;
+typedef std::map<DimensionViewPair, std::list<KeyFrame>, DimensionViewPairCompare> PerDimViewKeyFramesMap;
 
 
-struct AnimatingObjectIPrivate;
-class AnimatingObjectI
+class SplittableViewsI
+{
+    struct Implementation;
+
+public:
+
+    SplittableViewsI();
+
+    SplittableViewsI(const boost::shared_ptr<SplittableViewsI>& other, const FrameViewRenderKey& key);
+
+    virtual ~SplittableViewsI();
+    
+    /**
+     * @brief Returns true if this object can support multi-view animation. When supported, the object may have a different
+     * animation for each view.
+     **/
+    virtual bool canSplitViews() const = 0;
+
+    /**
+     * @brief Get list of views that are split off in the animating object.
+     * The ViewIdx(0) is always present and represents the first view in the
+     * list of the project views.
+     * User can split views by calling splitView in which case they can be attributed
+     * a new animation different from the main view. To remove the custom animation for a view
+     * call unSplitView which will make the view listen to the main view again
+     **/
+    std::list<ViewIdx> getViewsList() const WARN_UNUSED_RETURN;
+
+    /**
+     * @brief Split the given view in the storage off the main view so that the user can give it
+     * a different animation.
+     * @return True if the view was successfully split, false otherwise.
+     * This must be overloaded by sub-classes to split new data structures when called.
+     * The base class version should always be called first and if the return value is false it should
+     * exit immediately.
+     **/
+    virtual bool splitView(ViewIdx view);
+
+    /**
+     * @brief Unsplit a view that was previously split with splitView. After this call the animation
+     * for the view will be the one of the main view.
+     * @return true if the view was unsplit, false otherwise.
+     **/
+    virtual bool unSplitView(ViewIdx view);
+
+    /**
+     * @brief Convenience function, same as calling unSplitView for all views returned by
+     * getViewsList except the ViewIdx(0)
+     **/
+    void unSplitAllViews();
+
+
+    /**
+     * @brief Helper function to use in any getter/setter function when the user gives a ViewIdx
+     * to figure out which view to address if the view does not exists.
+     **/
+    ViewIdx checkIfViewExistsOrFallbackMainView(ViewIdx view) const WARN_UNUSED_RETURN;
+
+
+
+private:
+
+    boost::scoped_ptr<Implementation> _imp;
+
+};
+
+class AnimatingObjectI : public SplittableViewsI
 {
 public:
 
     
-    AnimatingObjectI();
+    AnimatingObjectI()
+    : SplittableViewsI()
+    {
 
-    AnimatingObjectI(const boost::shared_ptr<AnimatingObjectI>& other, const FrameViewRenderKey& key);
+    }
+
+    AnimatingObjectI(const boost::shared_ptr<AnimatingObjectI>& other, const FrameViewRenderKey& key)
+    : SplittableViewsI(other ,key)
+    {
+
+    }
 
     virtual ~AnimatingObjectI();
 
@@ -178,41 +251,8 @@ public:
      * @brief Returns true if this object can support multi-view animation. When supported, the object may have a different
      * animation for each view.
      **/
-    virtual bool canSplitViews() const = 0;
+    virtual bool canSplitViews() const OVERRIDE = 0;
 
-    /**
-     * @brief Get list of views that are split off in the animating object.
-     * The ViewIdx(0) is always present and represents the first view in the 
-     * list of the project views.
-     * User can split views by calling splitView in which case they can be attributed
-     * a new animation different from the main view. To remove the custom animation for a view
-     * call unSplitView which will make the view listen to the main view again
-     **/
-    std::list<ViewIdx> getViewsList() const WARN_UNUSED_RETURN;
-
-    /**
-     * @brief Split the given view in the storage off the main view so that the user can give it
-     * a different animation.
-     * @return True if the view was successfully split, false otherwise.
-     * This must be overloaded by sub-classes to split new data structures when called. 
-     * The base class version should always be called first and if the return value is false it should
-     * exit immediately.
-     **/
-    virtual bool splitView(ViewIdx view);
-
-    /**
-     * @brief Unsplit a view that was previously split with splitView. After this call the animation
-     * for the view will be the one of the main view.
-     * @return true if the view was unsplit, false otherwise.
-     **/
-    virtual bool unSplitView(ViewIdx view);
-    
-
-    /**
-     * @brief Convenience function, same as calling unSplitView for all views returned by
-     * getViewsList except the ViewIdx(0)
-     **/
-    void unSplitAllViews();
 
     /**
      * @brief Must return the current view in the object context. If the calling thread
@@ -221,181 +261,55 @@ public:
      **/
     virtual ViewIdx getCurrentRenderView() const = 0;
 
+
+    class SetKeyFrameArgs
+    {
+    public:
+
+        SetKeyFrameArgs();
+
+        void operator=(const SetKeyFrameArgs &o);
+
+        // The view(s) on which to set the keyframe.
+        // If set to all, all views on the knob will be modified.
+        // If set to current and views are split-off only the "current" view
+        // (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
+        // If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
+        // at the given index will receive the change, otherwise no change occurs.
+        ViewSetSpec view;
+
+        // The dimension(s) on which to set the keyframe
+        DimSpec dimension;
+
+        // Should we set a property or a value on the keyframe
+        SetKeyFrameFlags flags;
+
+        // The value change reason
+        ValueChangedReasonEnum reason;
+
+        // True if we want implementation to call knobChanged handler even if nothing was performed by the call
+        bool callKnobChangedHandlerEvenIfNothingChanged;
+    };
+
     /**
-     * @brief Helper function to use in any getter/setter function when the user gives a ViewIdx
-     * to figure out which view to address if the view does not exists.
-     **/
-    ViewIdx checkIfViewExistsOrFallbackMainView(ViewIdx view) const WARN_UNUSED_RETURN;
-
-
-    ////////////////////////// Integer based animating objects
-
-    /**
-     * @brief Set a keyframe on the curve at the given view and dimension. This is only relevant on curves of type int.
-     * @param view If set to all, all views on the knob will be modified.
-     * If set to current and views are split-off only the "current" view
-     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
-     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
-     * at the given index will receive the change, otherwise no change occurs.
+     * @brief Set a keyframe on the curve at the given view and dimension.
      * @return A status that reports the kind of modification operated on the object
      **/
-    virtual ValueChangedReturnCodeEnum setIntValueAtTime(TimeValue time, int value, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0);
+    virtual ValueChangedReturnCodeEnum setKeyFrame(const SetKeyFrameArgs& args, const KeyFrame& key);
 
     /**
-     * @brief Set multiple keyframes on the curve at the given view and dimension. This is only relevant on curves of type int.
-     * @param view If set to all, all views on the knob will be modified.
-     * If set to current and views are split-off only the "current" view
-     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
-     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
-     * at the given index will receive the change, otherwise no change occurs.
-     * @param newKey[out] If non null, this will be set to the new keyframe in return
+     * @brief Set multiple keyframes on the curve at the given view and dimension.
+     * @param newKey[out] If non null, this will be set to the new keyframes in return
      **/
-    virtual void setMultipleIntValueAtTime(const std::list<IntTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0);
+    virtual void setMultipleKeyFrames(const SetKeyFrameArgs& args, const std::list<KeyFrame>& keys);
 
     /**
-     * @brief Set a keyframe across multiple dimensions at once. This is only relevant on curves of type int.
+     * @brief Set a keyframe across multiple dimensions at once.
      * @param dimensionStartIndex The dimension to start from. The caller should ensure that dimensionStartIndex + values.size() <= getNDimensions()
-     * @param view If set to all, all views on the knob will be modified.
-     * If set to current and views are split-off only the "current" view
-     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
-     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
-     * at the given index will receive the change, otherwise no change occurs.
      * @param retCodes[out] If non null, each return code for each dimension will be stored there. It will be of the same size as the values parameter.
      **/
-    virtual void setIntValueAtTimeAcrossDimensions(TimeValue time, const std::vector<int>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::all(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0);
+    virtual void setKeyFramesAcrossDimensions(const SetKeyFrameArgs& args, const std::vector<KeyFrame>& values, DimIdx dimensionStartIndex = DimIdx(0), std::vector<ValueChangedReturnCodeEnum>* retCodes = 0);
 
-    /**
-     * @brief Set multiple keyframes across multiple curves. This is only relevant on curves of type int.
-     * Note: as multiple keyframes are set across multiple dimensions this makes it hard to return all status codes so if the caller
-     * really needs the status code then another function giving that result should be considered.
-     **/
-    virtual void setMultipleIntValueAtTimeAcrossDimensions(const PerCurveIntValuesList& keysPerDimension,  ValueChangedReasonEnum reason = eValueChangedReasonUserEdited);
-
-    ////////////////////////// Double based animating objects
-
-    /**
-     * @brief Set a keyframe on the curve at the given view and dimension. This is only relevant on curves of type double.
-     * @return A status that reports the kind of modification operated on the object
-     **/
-    virtual ValueChangedReturnCodeEnum setDoubleValueAtTime(TimeValue time, double value, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0);
-
-    /**
-     * @brief Set multiple keyframes on the curve at the given view and dimension. This is only relevant on curves of type double.
-     * @param view If set to all, all views on the knob will be modified.
-     * If set to current and views are split-off only the "current" view
-     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
-     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
-     * at the given index will receive the change, otherwise no change occurs.
-     * @param newKey[out] If non null, this will be set to the new keyframe in return
-     **/
-    virtual void setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0);
-
-    /**
-     * @brief Set a keyframe across multiple dimensions at once. This is only relevant on curves of type double.
-     * @param dimensionStartIndex The dimension to start from. The caller should ensure that dimensionStartIndex + values.size() <= getNDimensions()
-     * @param view If set to all, all views on the knob will be modified.
-     * If set to current and views are split-off only the "current" view
-     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
-     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
-     * at the given index will receive the change, otherwise no change occurs.
-     * @param retCodes[out] If non null, each return code for each dimension will be stored there. It will be of the same size as the values parameter.
-     **/
-    virtual void setDoubleValueAtTimeAcrossDimensions(TimeValue time, const std::vector<double>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::all(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0);
-
-    /**
-     * @brief Set multiple keyframes across multiple curves. This is only relevant on curves of type double.
-     * Note: as multiple keyframes are set across multiple dimensions this makes it hard to return all status codes so if the caller
-     * really needs the status code then another function giving that result should be considered.
-     **/
-    virtual void setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDoubleValuesList& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonUserEdited);
-
-    ////////////////////////// Bool based animating objects
-
-
-    /**
-     * @brief Set a keyframe on the curve at the given view and dimension. This is only relevant on curves of type bool.
-     * @param view If set to all, all views on the knob will be modified.
-     * If set to current and views are split-off only the "current" view
-     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
-     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
-     * at the given index will receive the change, otherwise no change occurs.
-     * @return A status that reports the kind of modification operated on the object
-     **/
-    virtual ValueChangedReturnCodeEnum setBoolValueAtTime(TimeValue time, bool value, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0);
-
-    /**
-     * @brief Set multiple keyframes on the curve at the given view and dimension. This is only relevant on curves of type bool.
-     * @param view If set to all, all views on the knob will be modified.
-     * If set to current and views are split-off only the "current" view
-     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
-     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
-     * at the given index will receive the change, otherwise no change occurs.
-     * @param newKey[out] If non null, this will be set to the new keyframe in return
-     **/
-    virtual void setMultipleBoolValueAtTime(const std::list<BoolTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0);
-
-    /**
-     * @brief Set a keyframe across multiple dimensions at once. This is only relevant on curves of type bool.
-     * @param dimensionStartIndex The dimension to start from. The caller should ensure that dimensionStartIndex + values.size() <= getNDimensions()
-     * @param view If set to all, all views on the knob will be modified.
-     * If set to current and views are split-off only the "current" view
-     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
-     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
-     * at the given index will receive the change, otherwise no change occurs.
-     * @param retCodes[out] If non null, each return code for each dimension will be stored there. It will be of the same size as the values parameter.
-     **/
-    virtual void setBoolValueAtTimeAcrossDimensions(TimeValue time, const std::vector<bool>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::all(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0);
-
-    /**
-     * @brief Set multiple keyframes across multiple curves. This is only relevant on curves of type bool.
-     * Note: as multiple keyframes are set across multiple dimensions this makes it hard to return all status codes so if the caller
-     * really needs the status code then another function giving that result should be considered.
-     **/
-    virtual void setMultipleBoolValueAtTimeAcrossDimensions(const PerCurveBoolValuesList& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonUserEdited);
-
-
-    ////////////////////////// String based animating objects
-
-    /**
-     * @brief Set a keyframe on the curve at the given view and dimension. This is only relevant on curves of type string.
-     * @param view If set to all, all views on the knob will be modified.
-     * If set to current and views are split-off only the "current" view
-     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
-     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
-     * at the given index will receive the change, otherwise no change occurs.
-     * @return A status that reports the kind of modification operated on the object
-     **/
-    virtual ValueChangedReturnCodeEnum setStringValueAtTime(TimeValue time, const std::string& value, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0);
-
-    /**
-     * @brief Set multiple keyframes on the curve at the given view and dimension. This is only relevant on curves of type string.
-     * @param view If set to all, all views on the knob will be modified.
-     * If set to current and views are split-off only the "current" view
-     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
-     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
-     * at the given index will receive the change, otherwise no change occurs.
-     * @param newKey[out] If non null, this will be set to the new keyframe in return
-     **/
-    virtual void setMultipleStringValueAtTime(const std::list<StringTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0);
-
-    /**
-     * @brief Set a keyframe across multiple dimensions at once. This is only relevant on curves of type string.
-     * @param dimensionStartIndex The dimension to start from. The caller should ensure that dimensionStartIndex + values.size() <= getNDimensions()
-     * @param view If set to all, all views on the knob will be modified.
-     * If set to current and views are split-off only the "current" view
-     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
-     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
-     * at the given index will receive the change, otherwise no change occurs.
-     * @param retCodes[out] If non null, each return code for each dimension will be stored there. It will be of the same size as the values parameter.
-     **/
-    virtual void setStringValueAtTimeAcrossDimensions(TimeValue time, const std::vector<std::string>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::all(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0);
-
-    /**
-     * @brief Set multiple keyframes across multiple curves. This is only relevant on curves of type string.
-     * Note: as multiple keyframes are set across multiple dimensions this makes it hard to return all status codes so if the caller
-     * really needs the status code then another function giving that result should be considered.
-     **/
-    virtual void setMultipleStringValueAtTimeAcrossDimensions(const PerCurveStringValuesList& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonUserEdited);
 
     ///////////////////////// Curve access
 
@@ -674,9 +588,8 @@ public:
      **/
     virtual bool setDerivativeAtTime(ViewSetSpec view, DimSpec dimension, TimeValue time, double derivative, bool isLeft) = 0;
 
-private:
 
-    boost::scoped_ptr<AnimatingObjectIPrivate> _imp;
+
 };
 
 NATRON_NAMESPACE_EXIT

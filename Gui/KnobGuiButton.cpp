@@ -249,12 +249,6 @@ KnobGuiButton::disableButtonBorder()
 }
 
 void
-KnobGuiButton::removeSpecificGui()
-{
-    _button->deleteLater();
-}
-
-void
 KnobGuiButton::emitValueChanged(bool clicked)
 {
     KnobButtonPtr knob = _knob.lock();

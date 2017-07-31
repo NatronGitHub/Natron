@@ -71,11 +71,6 @@ public:
     static void enableRightClickMenu(const KnobGuiPtr& knob, QWidget* widget, DimSpec dimension, ViewSetSpec view);
 
     /**
-     * @brief Override this to delete all user interface created for this knob
-     **/
-    virtual void removeSpecificGui() = 0;
-
-    /**
      * @brief Must fill the horizontal layout with all the widgets composing the knob.
      **/
     virtual void createWidget(QHBoxLayout* layout) = 0;

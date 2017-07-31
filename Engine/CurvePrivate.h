@@ -55,18 +55,19 @@ struct CurvePrivate
 
 
     KeyFrameInterpolatorPtr interpolator;
+    std::list<CurveChangesListenerWPtr> listeners;
     CurveTypeEnum type;
     double xMin, xMax;
     double yMin, yMax;
     double displayMin, displayMax;
     mutable QMutex _lock; //< the plug-ins can call getValueAt at any moment and we must make sure the user is not playing around
     bool isPeriodic;
-    bool canMoveY;
     bool clampKeyFramesTimeToIntegers;
 
     CurvePrivate()
     : keyFrames()
     , interpolator(new KeyFrameInterpolator)
+    , listeners()
     , type(eCurveTypeDouble)
     , xMin(-std::numeric_limits<double>::infinity())
     , xMax(std::numeric_limits<double>::infinity())
@@ -76,7 +77,6 @@ struct CurvePrivate
     , displayMax(std::numeric_limits<double>::infinity())
     , _lock(QMutex::Recursive)
     , isPeriodic(false)
-    , canMoveY(true)
     , clampKeyFramesTimeToIntegers(true)
     {
     }
@@ -90,6 +90,7 @@ struct CurvePrivate
     void operator=(const CurvePrivate & other)
     {
         interpolator = other.interpolator->createCopy();
+        listeners = other.listeners;
         keyFrames = other.keyFrames;
         type = other.type;
         xMin = other.xMin;
@@ -99,8 +100,9 @@ struct CurvePrivate
         displayMin = other.displayMin;
         displayMax = other.displayMax;
         isPeriodic = other.isPeriodic;
-        canMoveY = other.canMoveY;
+        clampKeyFramesTimeToIntegers = other.clampKeyFramesTimeToIntegers;
     }
+
 
     
 };

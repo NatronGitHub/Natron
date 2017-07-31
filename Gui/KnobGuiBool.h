@@ -116,8 +116,6 @@ public:
 
     virtual ~KnobGuiBool() OVERRIDE;
 
-    virtual void removeSpecificGui() OVERRIDE FINAL;
-
     virtual void reflectLinkedState(DimIdx dimension, bool linked) OVERRIDE;
 
 

@@ -62,6 +62,15 @@ public:
         virtual ~PropertyBase()
         {
         }
+
+        virtual void operator=(const PropertyBase& other)= 0;
+
+        virtual bool operator==(const PropertyBase& other) const = 0;
+
+        bool operator!=(const PropertyBase& other) const
+        {
+            return !(*this == other);
+        }
     };
 
     /**
@@ -91,6 +100,33 @@ public:
             return ret;
         }
 
+        void operator=(const PropertyBase& other) OVERRIDE FINAL
+        {
+            const Property<T> * othertype = dynamic_cast<const Property<T>* >(&other);
+            if (!othertype) {
+                return;
+            }
+            value = othertype->value;
+        }
+
+        virtual bool operator==(const PropertyBase& other) const OVERRIDE FINAL
+        {
+            const Property<T> * othertype = dynamic_cast<const Property<T>* >(&other);
+            if (!othertype) {
+                return false;
+            }
+            if (value.size() != othertype->value.size()) {
+                return false;
+            }
+            for (std::size_t i = 0; i < value.size(); ++i) {
+                if (value[i] != othertype->value[i]) {
+                    return false;
+                }
+            }
+            return true;
+
+        }
+
         virtual ~Property()
         {
         }
@@ -107,6 +143,12 @@ protected:
     boost::shared_ptr<Property<T> > getProp(const std::string& name, bool throwOnFailure = true) const
     {
         const boost::shared_ptr<PropertyBase>* propPtr = 0;
+        if (!_properties) {
+            if (throwOnFailure) {
+                throw std::invalid_argument("CreateNodeArgs::getProp(): Invalid property " + name);
+            }
+            return boost::shared_ptr<Property<T> >();
+        }
 
         std::map<std::string, boost::shared_ptr<PropertyBase> >::const_iterator found = _properties->find(name);
         if (found == _properties->end()) {
@@ -137,6 +179,8 @@ protected:
     boost::shared_ptr<Property<T> > createPropertyInternal(const std::string& name) const
     {
 
+        ensurePropertiesMap();
+
         std::map<std::string, boost::shared_ptr<PropertyBase> >::const_iterator found = _properties->find(name);
         boost::shared_ptr<Property<T> > propTemplate;
         if (found != _properties->end()) {
@@ -166,7 +210,6 @@ protected:
     template <typename T>
     boost::shared_ptr<Property<T> > createProperty(const std::string& name, const T& defaultValue) const
     {
-        ensurePropertiesMap();
         boost::shared_ptr<Property<T> > p = createPropertyInternal<T>(name);
         p->value.push_back(defaultValue);
 
@@ -179,7 +222,6 @@ protected:
     template <typename T>
     boost::shared_ptr<Property<T> > createProperty(const std::string& name, const T& defaultValue1, const T& defaultValue2) const
     {
-        ensurePropertiesMap();
         boost::shared_ptr<Property<T> > p = createPropertyInternal<T>(name);
         p->value.push_back(defaultValue1);
         p->value.push_back(defaultValue2);
@@ -193,7 +235,6 @@ protected:
     template <typename T>
     boost::shared_ptr<Property<T> > createProperty(const std::string& name, const std::vector<T>& defaultValue) const
     {
-        ensurePropertiesMap();
         boost::shared_ptr<Property<T> > p = createPropertyInternal<T>(name);
         p->value = defaultValue;
         
@@ -225,6 +266,7 @@ public:
     void setProperty(const std::string& name, const T& value, int index = 0, bool failIfNotExisting = true)
     {
         ensurePropertiesCreated();
+        ensurePropertiesMap();
 
         boost::shared_ptr<Property<T> > propTemplate;
         propTemplate = getProp<T>(name, failIfNotExisting);
@@ -244,6 +286,7 @@ public:
     void setPropertyN(const std::string& name, const std::vector<T>& values, bool failIfNotExisting = true)
     {
         ensurePropertiesCreated();
+        ensurePropertiesMap();
 
         boost::shared_ptr<Property<T> > propTemplate;
         propTemplate = getProp<T>(name, failIfNotExisting);
@@ -260,6 +303,13 @@ public:
     int getPropertyDimension(const std::string& name, bool throwIfFailed = true) const
     {
         ensurePropertiesCreated();
+        if (!_properties) {
+            if (throwIfFailed) {
+                throw std::invalid_argument("Invalid property " + name);
+            } else {
+                return 0;
+            }
+        }
 
         std::map<std::string, boost::shared_ptr<PropertyBase> >::const_iterator found = _properties->find(name);
         if (found == _properties->end()) {
@@ -279,6 +329,9 @@ public:
     bool hasProperty(const std::string& name) const
     {
         ensurePropertiesCreated();
+        if (!_properties) {
+            return false;
+        }
         std::map<std::string, boost::shared_ptr<PropertyBase> >::const_iterator found = _properties->find(name);
         return found != _properties->end();
     }
@@ -292,6 +345,9 @@ public:
     bool getPropertySafe(const std::string& name, int index, T* value) const
     {
         ensurePropertiesCreated();
+        if (!_properties) {
+            return false;
+        }
 
         boost::shared_ptr<Property<T> > propTemplate = getProp<T>(name, false);
         if (!propTemplate) {
@@ -314,11 +370,14 @@ public:
     T getPropertyUnsafe(const std::string& name, int index = 0) const
     {
         ensurePropertiesCreated();
+        if (!_properties) {
+            throw std::invalid_argument("PropertiesHolder::getPropertyUnsafe(): no such property: " + name);
+        }
 
         boost::shared_ptr<Property<T> > propTemplate = getProp<T>(name);
 
         if (index < 0 || index >= (int)propTemplate->value.size()) {
-            throw std::invalid_argument("PropertiesHolder::getPropertyNoCheck(): index out of range for " + name);
+            throw std::invalid_argument("PropertiesHolder::getPropertyUnsafe(): index out of range for " + name);
         }
 
         return propTemplate->value[index];
@@ -333,6 +392,9 @@ public:
     bool getPropertyNSafe(const std::string& name, std::vector<T>* values) const
     {
         ensurePropertiesCreated();
+        if (!_properties) {
+            return false;
+        }
 
         boost::shared_ptr<Property<T> > propTemplate = getProp<T>(name, false);
         if (!propTemplate) {
@@ -354,7 +416,30 @@ public:
         return propTemplate->value;
     }
 
-    void cloneProperties(const PropertiesHolder& other);
+    // Returns true if something changed
+    bool cloneProperties(const PropertiesHolder& other);
+
+    bool hasProperties() const
+    {
+        return _properties && !_properties->empty();
+    }
+
+    const std::map<std::string, boost::shared_ptr<PropertyBase> >& getProperties() const
+    {
+        assert(_properties);
+        return *_properties;
+    }
+
+
+    // Returns true if something changed
+    bool mergeProperties(const PropertiesHolder& other);
+
+
+    bool operator==(const PropertiesHolder& other) const;
+    bool operator!=(const PropertiesHolder& other) const
+    {
+        return !(*this == other);
+    }
 
 protected:
 

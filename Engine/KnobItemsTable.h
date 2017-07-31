@@ -61,8 +61,8 @@ NATRON_NAMESPACE_ENTER
 struct KnobTableItemPrivate;
 class KnobTableItem
 : public NamedKnobHolder
+, public SplittableViewsI
 , public SERIALIZATION_NAMESPACE::SerializableObjectBase
-, public AnimatingObjectI
 {
     GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -274,81 +274,6 @@ public:
      **/
     virtual std::string getSerializationClassName() const = 0;
 
-
-
-    //////////// Overriden from AnimatingObjectI
-    virtual bool canSplitViews() const OVERRIDE
-    {
-        return false;
-    }
-    virtual bool splitView(ViewIdx view) OVERRIDE WARN_UNUSED_RETURN;
-    virtual bool unSplitView(ViewIdx view) OVERRIDE WARN_UNUSED_RETURN;
-    virtual ViewIdx getCurrentRenderView() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual CurveTypeEnum getKeyFrameDataType() const OVERRIDE FINAL;
-    virtual CurvePtr getAnimationCurve(ViewIdx idx, DimIdx dimension) const OVERRIDE FINAL;
-    virtual bool cloneCurve(ViewIdx view, DimIdx dimension, const Curve& curve, double offset, const RangeD* range) OVERRIDE;
-    virtual void deleteValuesAtTime(const std::list<double>& times, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason) OVERRIDE;
-    virtual bool warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  DimSpec dimension, const Curve::KeyFrameWarp& warp, std::vector<KeyFrame>* keyframes = 0) OVERRIDE ;
-    virtual void removeAnimation(ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason) OVERRIDE ;
-    virtual void deleteAnimationBeforeTime(TimeValue time, ViewSetSpec view, DimSpec dimension) OVERRIDE ;
-    virtual void deleteAnimationAfterTime(TimeValue time, ViewSetSpec view, DimSpec dimension) OVERRIDE ;
-    virtual void setInterpolationAtTimes(ViewSetSpec view, DimSpec dimension, const std::list<double>& times, KeyframeTypeEnum interpolation, std::vector<KeyFrame>* newKeys = 0) OVERRIDE ;
-    virtual bool setLeftAndRightDerivativesAtTime(ViewSetSpec view, DimSpec dimension, TimeValue time, double left, double right)  OVERRIDE WARN_UNUSED_RETURN;
-    virtual bool setDerivativeAtTime(ViewSetSpec view, DimSpec dimension, TimeValue time, double derivative, bool isLeft) OVERRIDE WARN_UNUSED_RETURN;
-    
-    virtual ValueChangedReturnCodeEnum setDoubleValueAtTime(TimeValue time, double value, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0) OVERRIDE ;
-    virtual void setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0) OVERRIDE ;
-    virtual void setDoubleValueAtTimeAcrossDimensions(TimeValue time, const std::vector<double>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::all(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE ;
-    virtual void setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDoubleValuesList& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonUserEdited) OVERRIDE ;
-    //////////// End from AnimatingObjectI
-    
-    
-    ValueChangedReturnCodeEnum setKeyFrame(TimeValue time,
-                                           ViewSetSpec view,
-                                           KeyFrame* newKey);
-
-    /**
-     * @brief Reimplement to activate user keyframing
-     **/
-    virtual bool getCanAnimateUserKeyframes() const { return false; }
-
-    /**
-     * @brief Returns the next user keyframe time after time, or double infinity otherwise
-     **/
-    double getNextMasterKeyframeTime(TimeValue time, ViewIdx view) const;
-
-    /**
-     * @brief Returns the previous user keyframe time before time, or minus double infinity otherwise
-     **/
-    double getPreviousMasterKeyframeTime(TimeValue time, ViewIdx view) const;
-
-    /**
-     * @brief Returns the number of user keyframes on the item
-     **/
-    int getMasterKeyframesCount(ViewIdx view) const;
-
-    /**
-     * @brief Returns the keyframe corresponding to the given index
-     * @return True if found, false otherwise
-     **/
-    bool getMasterKeyframe(int index, ViewIdx view, KeyFrame* k) const;
-
-    /**
-     * @brief If there is a master keyframe at the given time and view returns true
-     * otherwise returns false
-     **/
-    bool getHasMasterKeyframe(TimeValue time, ViewIdx view) const;
-
-    /**
-     * @brief Convenience function that calls getCurve()->getKeyFrames
-     **/
-    void getMasterKeyFrameTimes(ViewIdx view, std::set<double>* times) const;
-
-    /**
-     * @brief Convenience function that checks if a keyframe exists at the given time/view
-     **/
-    bool hasMasterKeyframeAtTime(TimeValue time, ViewIdx view) const;
-
     /**
      * @brief Returns what should be the default base-name for the item, e.g "Bezier" or "Brush" etc...
      * The model will then derive from this name to assign a unique script-name to the item.
@@ -356,6 +281,15 @@ public:
     virtual std::string getBaseItemName() const = 0;
 
     KnobChoicePtr refreshRightClickMenu();
+
+    virtual bool canSplitViews() const OVERRIDE
+    {
+        return false;
+    }
+
+    virtual bool splitView(ViewIdx view) OVERRIDE;
+    virtual bool unSplitView(ViewIdx view) OVERRIDE;
+
 
 protected:
 
@@ -375,32 +309,6 @@ private:
 
     KnobIPtr createDuplicateOfTableKnobInternal(const std::string& scriptName);
 
-
-    template <typename T>
-    void convertTimeValuePairListToTimeList(const std::list<TimeValuePair<T> >& inList,
-                                       std::list<double>* outList)
-    {
-        for (typename std::list<TimeValuePair<T> >::const_iterator it = inList.begin(); it!=inList.end(); ++it) {
-            outList->push_back(it->time);
-        }
-    }
-
-    void deleteValuesAtTimeInternal(const std::list<double>& times, ViewIdx view, const CurvePtr& curve);
-    bool warpValuesAtTimeInternal(const std::list<double>& times, ViewIdx view, const CurvePtr& curve, const Curve::KeyFrameWarp& warp, std::vector<KeyFrame>* keyframes = 0);
-    void removeAnimationInternal(ViewIdx view, const CurvePtr& curve);
-
-protected:
-
-
-    ValueChangedReturnCodeEnum setKeyFrameInternal(TimeValue time,
-                                                   ViewSetSpec view,
-                                                   KeyFrame* newKey);
-
-    void deleteAnimationConditional(TimeValue time, ViewSetSpec view, bool before);
-
-    void setMultipleKeyFrames(const std::list<double>& keys, ViewSetSpec view,  std::vector<KeyFrame>* newKeys = 0);
-
-    void setKeyFrameRecursively(TimeValue time, ViewSetSpec view);
 
 protected:
 
@@ -430,22 +338,6 @@ protected:
      **/
     void onItemInsertedInModel_recursive();
 
-    /**
-     * @brief Callback called when a new keyframe is set on the animation curve of the user keyframes at the given time/view
-     **/
-    virtual void onKeyFrameSet(TimeValue time, ViewSetSpec view)
-    {
-        Q_UNUSED(time);
-        Q_UNUSED(view);
-    }
-
-    /**
-     * @brief Callback called when a new keyframe is removed on the animation curve of the user keyframes at the given time/view
-     **/
-    virtual void onKeyFrameRemoved(TimeValue time, ViewSetSpec view) {
-        Q_UNUSED(time);
-        Q_UNUSED(view);
-    }
 
     /**
      * @brief Reimplemented from KnobHolder.
@@ -748,36 +640,6 @@ public:
      * @brief Add the item to Python
      **/
     void declareItemAsPythonField(const KnobTableItemPtr& item);
-
-    /**
-     * @brief Set a master keyframe on the selected items
-     **/
-    void setMasterKeyframeOnSelectedItems(TimeValue time, ViewSetSpec view);
-
-    /**
-     * @brief Remove a master keyframe on the selected items
-     **/
-    void removeMasterKeyframeOnSelectedItems(TimeValue time, ViewSetSpec view);
-
-    /**
-     * @brief Clear user keyframes animation on selection
-     **/
-    void removeAnimationOnSelectedItems(ViewSetSpec view);
-
-    /**
-     * @brief Seeks the nearest previous master keyframe amongst selected items
-     **/
-    void goToPreviousMasterKeyframe(ViewIdx view);
-
-    /**
-     * @brief Seeks the nearest next master keyframe amongst selected items
-     **/
-    void goToNextMasterKeyframe(ViewIdx view);
-
-    /**
-     * @brief Returns true if at least one item is animated
-     **/
-    bool hasAnimation() const;
 
     /**
      * @brief Refresh all animated knob gui

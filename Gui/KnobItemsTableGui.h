@@ -80,17 +80,6 @@ public:
 
 public Q_SLOTS:
 
-    void refreshAfterTimeChanged();
-
-    void onGoToPrevKeyframeButtonClicked();
-
-    void onGoToNextKeyframeButtonClicked();
-
-    void onAddKeyframeButtonClicked();
-
-    void onRemoveKeyframeButtonClicked();
-
-    void onRemoveAnimationButtonClicked();
 
     void onDeleteItemsActionTriggered();
     void onCopyItemsActionTriggered();

@@ -128,7 +128,6 @@ typedef OfxRangeD RangeD;
 #define kNodeUndoChangeCommandCompressionID 24
 
 
-
 NATRON_NAMESPACE_EXIT
 
 Q_DECLARE_METATYPE(NATRON_NAMESPACE::SequenceTime)

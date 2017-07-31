@@ -84,12 +84,6 @@ KnobGuiFile::~KnobGuiFile()
 {
 }
 
-void
-KnobGuiFile::removeSpecificGui()
-{
-    _lineEdit->deleteLater();
-    _openFileButton->deleteLater();
-}
 
 void
 KnobGuiFile::createWidget(QHBoxLayout* layout)
@@ -562,14 +556,6 @@ KnobGuiPath::~KnobGuiPath()
 {
 }
 
-void
-KnobGuiPath::removeSpecificGui()
-{
-    if (_mainContainer) {
-        _mainContainer->deleteLater();
-    }
-    KnobGuiTable::removeSpecificGui();
-}
 
 void
 KnobGuiPath::reflectLinkedState(DimIdx /*dimension*/, bool linked)

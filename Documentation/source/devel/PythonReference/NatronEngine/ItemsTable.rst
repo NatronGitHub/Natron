@@ -26,6 +26,7 @@ Functions
 *    def :meth:`insertItem<NatronEngine.ItemsTable.insertItem>`(index,item,parent)
 *    def :meth:`removeItem<NatronEngine.ItemsTable.removeItem>`(item)
 *    def :meth:`getAttributeName<NatronEngine.ItemsTable.getAttributeName>`()
+*    def :meth:`getTableName<NatronEngine.ItemsTable.getTableName>`()
 *    def :meth:`isModelParentingEnabled<NatronEngine.ItemsTable.isModelParentingEnabled>`()
 
 .. _itemsTable.details:
@@ -130,6 +131,15 @@ Member functions description
 	Returns the name of the Python attribute :ref:`automatically declared<autoVar>` by Natron
 	under which table items are automatically defined. For example, for the RotoPaint node,
 	 items are declared under the **roto** attribute.
+	 
+.. method:: NatronEngine.ItemsTable.getTableName ()
+
+	:rtype: :class:`str<PySide.QtCore.QString>`
+	
+	Returns the name of the table: this is used to identify uniquely the kind of objects 
+	a table may handle. Since a node may have multiple tables, each table must have a different
+	name.
+
 
 .. method:: NatronEngine.ItemsTable.isModelParentingEnabled()
 

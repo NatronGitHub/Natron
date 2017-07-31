@@ -360,6 +360,13 @@ AnimationModuleBase::setSelectedKeysInterpolation(KeyframeTypeEnum keyType)
     if (selectedKeyframes.empty()) {
         return;
     }
+    for (AnimItemDimViewKeyFramesMap::const_iterator it = selectedKeyframes.begin(); it != selectedKeyframes.end(); ++it) {
+        CurveTypeEnum curveType = it->first.item->getInternalAnimItem()->getKeyFrameDataType();
+        if (curveType != eCurveTypeDouble && curveType != eCurveTypeInt)  {
+            Dialogs::errorDialog(tr("Interpolation").toStdString(), tr("You cannot change the interpolation type for this type of animation curve").toStdString());
+            return;
+        }
+    }
     pushUndoCommand(new SetKeysInterpolationCommand(selectedKeyframes, shared_from_this(), keyType, 0));
 
 }

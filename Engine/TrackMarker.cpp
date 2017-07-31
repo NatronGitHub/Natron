@@ -97,6 +97,9 @@ struct TrackMarkerPrivate
     mutable QMutex trackMutex;
     KnobBoolWPtr enabled;
 
+    KnobKeyFrameMarkersWPtr shapeKeys;
+
+
     // Only used by the TrackScheduler thread
     int trackingStartedCount;
 
@@ -117,6 +120,7 @@ struct TrackMarkerPrivate
         , motionModel()
         , trackMutex()
         , enabled()
+        , shapeKeys()
         , trackingStartedCount(0)
     {
     }
@@ -218,6 +222,13 @@ TrackMarker::initializeKnobs()
     offsetKnob->setLabel(tr(kTrackerParamOffsetLabel));
     offsetKnob->setHintToolTip( tr(kTrackerParamOffsetHint) );
     _imp->offset = offsetKnob;
+
+    {
+        KnobKeyFrameMarkersPtr param = createKnob<KnobKeyFrameMarkers>(kTrackerParamManualKeyframes);
+        param->setLabel(tr(kTrackerParamManualKeyframesLabel));
+        param->setHintToolTip(tr(kTrackerParamManualKeyframesHint));
+        _imp->shapeKeys = param;
+    }
 
 #ifdef NATRON_TRACK_MARKER_USE_WEIGHT
     KnobDoublePtr weightKnob = createKnob<KnobDouble>(kTrackerParamTrackWeight, 1);
@@ -379,15 +390,15 @@ TrackMarker::getReferenceFrame(TimeValue time,
 {
     QMutexLocker k(&_imp->trackMutex);
 
-    std::set<double> userKeyframes;
-    getMasterKeyFrameTimes(ViewIdx(0), &userKeyframes);
+    KeyFrameSet userKeyframes = _imp->shapeKeys.lock()->getAnimationCurve(ViewIdx(0), DimIdx(0))->getKeyFrames_mt_safe();
 
-    std::set<double>::iterator upper = userKeyframes.upper_bound(time);
+    KeyFrame tmp(time,0);
+    KeyFrameSet::iterator upper = userKeyframes.upper_bound(tmp);
 
     if ( upper == userKeyframes.end() ) {
         //all keys are lower than time, pick the last one
         if ( !userKeyframes.empty() ) {
-            return *userKeyframes.rbegin();
+            return userKeyframes.rbegin()->getTime();
         }
 
         // no keyframe - use the previous/next as reference
@@ -395,14 +406,14 @@ TrackMarker::getReferenceFrame(TimeValue time,
     } else {
         if ( upper == userKeyframes.begin() ) {
             ///all keys are greater than time
-            return *upper;
+            return upper->getTime();
         }
 
-        int upperKeyFrame = *upper;
+        TimeValue upperKeyFrame = upper->getTime();
         ///If we find "time" as a keyframe, then use it
         --upper;
 
-        int lowerKeyFrame = *upper;
+        TimeValue lowerKeyFrame = upper->getTime();
 
         if (lowerKeyFrame == time) {
             return time;
@@ -450,14 +461,44 @@ TrackMarker::resetCenter()
     }
 }
 
+KeyFrameSet
+TrackMarker::getKeyFrames() const
+{
+    return _imp->shapeKeys.lock()->getAnimationCurve(ViewIdx(0), DimIdx(0))->getKeyFrames_mt_safe();
+}
 
+void
+TrackMarker::removeKeyFrame(TimeValue time)
+{
+    _imp->shapeKeys.lock()->deleteValueAtTime(time, ViewSetSpec(0), DimSpec(0), eValueChangedReasonUserEdited);
+}
+
+void
+TrackMarker::removeAnimation()
+{
+    _imp->shapeKeys.lock()->removeAnimation(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonUserEdited);
+}
+
+void
+TrackMarker::setKeyFrame(TimeValue time)
+{
+    KeyFrame k(time, 0);
+    AnimatingObjectI::SetKeyFrameArgs args;
+    args.dimension = DimSpec(0);
+    args.view = ViewSetSpec(0);
+    _imp->shapeKeys.lock()->setKeyFrame(args, k);
+}
+
+bool
+TrackMarker::hasKeyFrameAtTime(TimeValue time) const
+{
+    int found = _imp->shapeKeys.lock()->getKeyFrameIndex(ViewIdx(0), DimIdx(0), time);
+    return found != -1;
+}
 
 void
 TrackMarker::clearAnimation()
 {
-    std::set<double> userKeyframes;
-
-    getMasterKeyFrameTimes(ViewIdx(0), &userKeyframes);
 
     KnobIPtr offsetKnob = getOffsetKnob();
     assert(offsetKnob);
@@ -472,12 +513,19 @@ TrackMarker::clearAnimation()
     errorKnob->removeAnimation(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonUserEdited);
 }
 
+static std::set<double> keyframesToDoubleSet(const KeyFrameSet& keys)
+{
+    std::set<double> ret;
+    for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+        ret.insert(it->getTime());
+    }
+    return ret;
+}
+
 void
 TrackMarker::clearAnimationBeforeTime(TimeValue time)
 {
-    std::set<double> userKeyframes;
-
-    getMasterKeyFrameTimes(ViewIdx(0), &userKeyframes);
+    std::set<double> userKeyframes = keyframesToDoubleSet(getKeyFrames());
 
     KnobIPtr offsetKnob = getOffsetKnob();
     assert(offsetKnob);
@@ -495,9 +543,7 @@ TrackMarker::clearAnimationBeforeTime(TimeValue time)
 void
 TrackMarker::clearAnimationAfterTime(TimeValue time)
 {
-    std::set<double> userKeyframes;
-
-    getMasterKeyFrameTimes(ViewIdx(0), &userKeyframes);
+    std::set<double> userKeyframes = keyframesToDoubleSet(getKeyFrames());
 
     KnobIPtr offsetKnob = getOffsetKnob();
     assert(offsetKnob);
@@ -542,7 +588,7 @@ TrackMarker::resetTrack()
         }
     }
 
-    removeAnimation(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonUserEdited);
+    _imp->shapeKeys.lock()->removeAnimation(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonUserEdited);
 }
 
 

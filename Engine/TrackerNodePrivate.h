@@ -46,6 +46,7 @@
 #include "Engine/RectI.h"
 #include "Engine/KnobItemsTable.h"
 #include "Engine/OverlayInteractBase.h"
+#include "Engine/TrackerNode.h"
 #include "Engine/Texture.h"
 #include "Engine/TrackerHelper.h"
 #include "Engine/TrackerParamsProvider.h"
@@ -630,6 +631,7 @@ public:
     KnobBoolWPtr activateTrack;
     KnobBoolWPtr autoKeyEnabled;
     KnobChoiceWPtr motionModel;
+    KnobKeyFrameMarkersWPtr trackKeyframesKnob;
     KnobSeparatorWPtr exportDataSep;
     KnobBoolWPtr exportLink;
     KnobButtonWPtr exportButton;
@@ -807,7 +809,7 @@ public:
 
     virtual std::string getTableIdentifier() const OVERRIDE FINAL
     {
-        return "TrackerNode_Table";
+        return kTrackerParamTracksTableName;
     }
 
     virtual std::string getTablePythonPrefix() const OVERRIDE FINAL

@@ -152,6 +152,32 @@ static PyObject* Sbk_ItemsTableFunc_getSelectedItems(PyObject* self)
     return pyResult;
 }
 
+static PyObject* Sbk_ItemsTableFunc_getTableName(PyObject* self)
+{
+    ::ItemsTable* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::ItemsTable*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMSTABLE_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getTableName()const
+            QString cppResult = const_cast<const ::ItemsTable*>(cppSelf)->getTableName();
+            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 static PyObject* Sbk_ItemsTableFunc_getTopLevelItems(PyObject* self)
 {
     ::ItemsTable* cppSelf = 0;
@@ -328,6 +354,7 @@ static PyMethodDef Sbk_ItemsTable_methods[] = {
     {"getAttributeName", (PyCFunction)Sbk_ItemsTableFunc_getAttributeName, METH_NOARGS},
     {"getItemByFullyQualifiedScriptName", (PyCFunction)Sbk_ItemsTableFunc_getItemByFullyQualifiedScriptName, METH_O},
     {"getSelectedItems", (PyCFunction)Sbk_ItemsTableFunc_getSelectedItems, METH_NOARGS},
+    {"getTableName", (PyCFunction)Sbk_ItemsTableFunc_getTableName, METH_NOARGS},
     {"getTopLevelItems", (PyCFunction)Sbk_ItemsTableFunc_getTopLevelItems, METH_NOARGS},
     {"insertItem", (PyCFunction)Sbk_ItemsTableFunc_insertItem, METH_VARARGS},
     {"isModelParentingEnabled", (PyCFunction)Sbk_ItemsTableFunc_isModelParentingEnabled, METH_NOARGS},

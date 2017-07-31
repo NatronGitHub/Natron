@@ -39,81 +39,6 @@ ItemBaseWrapper::~ItemBaseWrapper()
 // Target ---------------------------------------------------------
 
 extern "C" {
-static PyObject* Sbk_ItemBaseFunc_deleteUserKeyframe(PyObject* self, PyObject* args, PyObject* kwds)
-{
-    ::ItemBase* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::ItemBase*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMBASE_IDX], (SbkObject*)self));
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0 };
-    SBK_UNUSED(pythonToCpp)
-    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
-    int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0};
-
-    // invalid argument lengths
-    if (numArgs + numNamedArgs > 2) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.ItemBase.deleteUserKeyframe(): too many arguments");
-        return 0;
-    } else if (numArgs < 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.ItemBase.deleteUserKeyframe(): not enough arguments");
-        return 0;
-    }
-
-    if (!PyArg_ParseTuple(args, "|OO:deleteUserKeyframe", &(pyArgs[0]), &(pyArgs[1])))
-        return 0;
-
-
-    // Overloaded function decisor
-    // 0: deleteUserKeyframe(double,QString)
-    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))) {
-        if (numArgs == 1) {
-            overloadId = 0; // deleteUserKeyframe(double,QString)
-        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
-            overloadId = 0; // deleteUserKeyframe(double,QString)
-        }
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_ItemBaseFunc_deleteUserKeyframe_TypeError;
-
-    // Call function/method
-    {
-        if (kwds) {
-            PyObject* value = PyDict_GetItemString(kwds, "view");
-            if (value && pyArgs[1]) {
-                PyErr_SetString(PyExc_TypeError, "NatronEngine.ItemBase.deleteUserKeyframe(): got multiple values for keyword argument 'view'.");
-                return 0;
-            } else if (value) {
-                pyArgs[1] = value;
-                if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1]))))
-                    goto Sbk_ItemBaseFunc_deleteUserKeyframe_TypeError;
-            }
-        }
-        double cppArg0;
-        pythonToCpp[0](pyArgs[0], &cppArg0);
-        ::QString cppArg1 = QLatin1String(kPyParamViewSetSpecAll);
-        if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
-
-        if (!PyErr_Occurred()) {
-            // deleteUserKeyframe(double,QString)
-            cppSelf->deleteUserKeyframe(cppArg0, cppArg1);
-        }
-    }
-
-    if (PyErr_Occurred()) {
-        return 0;
-    }
-    Py_RETURN_NONE;
-
-    Sbk_ItemBaseFunc_deleteUserKeyframe_TypeError:
-        const char* overloads[] = {"float, unicode = QLatin1String(kPyParamViewSetSpecAll)", 0};
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ItemBase.deleteUserKeyframe", overloads);
-        return 0;
-}
-
 static PyObject* Sbk_ItemBaseFunc_getChildren(PyObject* self)
 {
     ::ItemBase* cppSelf = 0;
@@ -375,91 +300,6 @@ static PyObject* Sbk_ItemBaseFunc_getScriptName(PyObject* self)
     return pyResult;
 }
 
-static PyObject* Sbk_ItemBaseFunc_getUserKeyframes(PyObject* self, PyObject* args, PyObject* kwds)
-{
-    ::ItemBase* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::ItemBase*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMBASE_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0 };
-    SBK_UNUSED(pythonToCpp)
-    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
-    int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0};
-
-    // invalid argument lengths
-    if (numArgs + numNamedArgs > 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.ItemBase.getUserKeyframes(): too many arguments");
-        return 0;
-    }
-
-    if (!PyArg_ParseTuple(args, "|O:getUserKeyframes", &(pyArgs[0])))
-        return 0;
-
-
-    // Overloaded function decisor
-    // 0: getUserKeyframes(std::list<double>*,QString)const
-    if (numArgs == 0) {
-        overloadId = 0; // getUserKeyframes(std::list<double>*,QString)const
-    } else if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))) {
-        overloadId = 0; // getUserKeyframes(std::list<double>*,QString)const
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_ItemBaseFunc_getUserKeyframes_TypeError;
-
-    // Call function/method
-    {
-        if (kwds) {
-            PyObject* value = PyDict_GetItemString(kwds, "view");
-            if (value && pyArgs[0]) {
-                PyErr_SetString(PyExc_TypeError, "NatronEngine.ItemBase.getUserKeyframes(): got multiple values for keyword argument 'view'.");
-                return 0;
-            } else if (value) {
-                pyArgs[0] = value;
-                if (!(pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0]))))
-                    goto Sbk_ItemBaseFunc_getUserKeyframes_TypeError;
-            }
-        }
-        ::QString cppArg0 = QLatin1String(kPyParamViewIdxMain);
-        if (pythonToCpp[0]) pythonToCpp[0](pyArgs[0], &cppArg0);
-
-        if (!PyErr_Occurred()) {
-            // getUserKeyframes(std::list<double>*,QString)const
-            // Begin code injection
-
-            std::list<double> keys;
-            cppSelf->getUserKeyframes(&keys,cppArg0);
-            PyObject* ret = PyList_New((int) keys.size());
-            int idx = 0;
-            for (std::list<double>::iterator it = keys.begin(); it!=keys.end(); ++it,++idx) {
-            PyList_SET_ITEM(ret, idx, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &*it));
-            }
-            return ret;
-
-            // End of code injection
-
-
-            pyResult = Py_None;
-            Py_INCREF(Py_None);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-
-    Sbk_ItemBaseFunc_getUserKeyframes_TypeError:
-        const char* overloads[] = {"list, unicode = QLatin1String(kPyParamViewIdxMain)", 0};
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ItemBase.getUserKeyframes", overloads);
-        return 0;
-}
-
 static PyObject* Sbk_ItemBaseFunc_setIconFilePath(PyObject* self, PyObject* pyArg)
 {
     ::ItemBase* cppSelf = 0;
@@ -544,83 +384,7 @@ static PyObject* Sbk_ItemBaseFunc_setLabel(PyObject* self, PyObject* pyArg)
         return 0;
 }
 
-static PyObject* Sbk_ItemBaseFunc_setUserKeyframe(PyObject* self, PyObject* args, PyObject* kwds)
-{
-    ::ItemBase* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::ItemBase*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMBASE_IDX], (SbkObject*)self));
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0 };
-    SBK_UNUSED(pythonToCpp)
-    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
-    int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0};
-
-    // invalid argument lengths
-    if (numArgs + numNamedArgs > 2) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.ItemBase.setUserKeyframe(): too many arguments");
-        return 0;
-    } else if (numArgs < 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.ItemBase.setUserKeyframe(): not enough arguments");
-        return 0;
-    }
-
-    if (!PyArg_ParseTuple(args, "|OO:setUserKeyframe", &(pyArgs[0]), &(pyArgs[1])))
-        return 0;
-
-
-    // Overloaded function decisor
-    // 0: setUserKeyframe(double,QString)
-    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))) {
-        if (numArgs == 1) {
-            overloadId = 0; // setUserKeyframe(double,QString)
-        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
-            overloadId = 0; // setUserKeyframe(double,QString)
-        }
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_ItemBaseFunc_setUserKeyframe_TypeError;
-
-    // Call function/method
-    {
-        if (kwds) {
-            PyObject* value = PyDict_GetItemString(kwds, "view");
-            if (value && pyArgs[1]) {
-                PyErr_SetString(PyExc_TypeError, "NatronEngine.ItemBase.setUserKeyframe(): got multiple values for keyword argument 'view'.");
-                return 0;
-            } else if (value) {
-                pyArgs[1] = value;
-                if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1]))))
-                    goto Sbk_ItemBaseFunc_setUserKeyframe_TypeError;
-            }
-        }
-        double cppArg0;
-        pythonToCpp[0](pyArgs[0], &cppArg0);
-        ::QString cppArg1 = QLatin1String(kPyParamViewSetSpecAll);
-        if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
-
-        if (!PyErr_Occurred()) {
-            // setUserKeyframe(double,QString)
-            cppSelf->setUserKeyframe(cppArg0, cppArg1);
-        }
-    }
-
-    if (PyErr_Occurred()) {
-        return 0;
-    }
-    Py_RETURN_NONE;
-
-    Sbk_ItemBaseFunc_setUserKeyframe_TypeError:
-        const char* overloads[] = {"float, unicode = QLatin1String(kPyParamViewSetSpecAll)", 0};
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ItemBase.setUserKeyframe", overloads);
-        return 0;
-}
-
 static PyMethodDef Sbk_ItemBase_methods[] = {
-    {"deleteUserKeyframe", (PyCFunction)Sbk_ItemBaseFunc_deleteUserKeyframe, METH_VARARGS|METH_KEYWORDS},
     {"getChildren", (PyCFunction)Sbk_ItemBaseFunc_getChildren, METH_NOARGS},
     {"getIconFilePath", (PyCFunction)Sbk_ItemBaseFunc_getIconFilePath, METH_NOARGS},
     {"getIndexInParent", (PyCFunction)Sbk_ItemBaseFunc_getIndexInParent, METH_NOARGS},
@@ -629,10 +393,8 @@ static PyMethodDef Sbk_ItemBase_methods[] = {
     {"getParams", (PyCFunction)Sbk_ItemBaseFunc_getParams, METH_NOARGS},
     {"getParent", (PyCFunction)Sbk_ItemBaseFunc_getParent, METH_NOARGS},
     {"getScriptName", (PyCFunction)Sbk_ItemBaseFunc_getScriptName, METH_NOARGS},
-    {"getUserKeyframes", (PyCFunction)Sbk_ItemBaseFunc_getUserKeyframes, METH_VARARGS|METH_KEYWORDS},
     {"setIconFilePath", (PyCFunction)Sbk_ItemBaseFunc_setIconFilePath, METH_O},
     {"setLabel", (PyCFunction)Sbk_ItemBaseFunc_setLabel, METH_O},
-    {"setUserKeyframe", (PyCFunction)Sbk_ItemBaseFunc_setUserKeyframe, METH_VARARGS|METH_KEYWORDS},
 
     {0} // Sentinel
 };

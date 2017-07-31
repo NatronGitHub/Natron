@@ -45,6 +45,8 @@ NATRON_NAMESPACE_ENTER
 #define kTrackerUIParamDefaultMotionModelLabel "Default Motion Model"
 #define kTrackerUIParamDefaultMotionModelHint "The motion model that new tracks have by default"
 
+#define kTrackerParamTracksTableName "tracksTable"
+
 class TrackerNodePrivate;
 class TrackerNode
     : public NodeGroup

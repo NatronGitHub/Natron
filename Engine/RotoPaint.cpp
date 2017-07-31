@@ -2913,7 +2913,7 @@ RotoPaint::initializeKnobs()
         initKnobsTableControls();
     }
 
-    setItemsTable(_imp->knobsTable, KnobHolder::eKnobItemsTablePositionBottomOfAllPages, std::string());
+    addItemsTable(_imp->knobsTable, KnobHolder::eKnobItemsTablePositionBottomOfAllPages, std::string());
 
 
 
@@ -3034,6 +3034,14 @@ RotoPaint::initializeKnobs()
             param->setSecret(true);
             generalPage->addKnob(param);
             _imp->outputFormatParKnob = param;
+        }
+        {
+            KnobKeyFrameMarkersPtr param = createKnob<KnobKeyFrameMarkers>(kRotoShapeUserKeyframesParam);
+            param->setLabel(tr(kRotoShapeUserKeyframesParamLabel));
+            param->setHintToolTip(tr(kRotoShapeUserKeyframesParamHint));
+            generalPage->addKnob(param);
+            _imp->shapeKeysKnob = param;
+            _imp->knobsTable->addPerItemKnobMaster(param);
         }
     }
     
@@ -3179,7 +3187,7 @@ RotoPaint::knobChanged(const KnobIPtr& k,
             if (!isBezier) {
                 continue;
             }
-            isBezier->setKeyFrame(time, view, 0);
+            isBezier->setKeyFrame(time, view);
             isBezier->invalidateCacheHashAndEvaluate(true, false);
         }
 
@@ -3190,7 +3198,7 @@ RotoPaint::knobChanged(const KnobIPtr& k,
             if (!isBezier) {
                 continue;
             }
-            isBezier->deleteValueAtTime(time, view, DimSpec(0), eValueChangedReasonUserEdited);
+            isBezier->removeKeyFrame(time, view);
         }
     } else if ( k == _imp->ui->removeItemsMenuAction.lock() ) {
         ///if control points are selected, delete them, otherwise delete the selected beziers
@@ -4353,7 +4361,7 @@ RotoPaint::makeBezier(double x,
     _imp->knobsTable->endEditSelection(eTableChangeReasonInternal);
 
     if ( curve->isAutoKeyingEnabled() ) {
-        curve->setKeyFrame(time, ViewIdx(0), 0);
+        curve->setKeyFrame(time, ViewIdx(0));
     }
     curve->addControlPoint(x, y, time, ViewIdx(0));
 

@@ -1022,7 +1022,7 @@ private:
         KnobIPtr currentKnob;
         DimIdx currentDimension = _dimension;
         assert(currentGroup);
-        bool hasEnteredTablePrefix = false;
+        KnobItemsTablePtr currentTable;
 
         // If "exists" is suffixed, we never fail but instead return 0 or 1
         _testingEnabled = !splits.empty() && splits.back() == "exists";
@@ -1036,7 +1036,7 @@ private:
 
             {
                 NodeCollectionPtr curGroupOut;
-                if ( !hasEnteredTablePrefix  && checkForGroup(token, &curGroupOut) ) {
+                if ( !currentTable  && checkForGroup(token, &curGroupOut) ) {
                     // If we caught a group, check if it is a node too
                     currentGroup = curGroupOut;
                     currentNode = toNodeGroup(currentGroup);
@@ -1059,7 +1059,7 @@ private:
 
             {
                 EffectInstancePtr curNodeOut;
-                if ( !hasEnteredTablePrefix && checkForNode(token, currentGroup, currentNode, &curNodeOut) ) {
+                if ( !currentTable && checkForNode(token, currentGroup, currentNode, &curNodeOut) ) {
 
                     // Ensure we get a render clone
                     if (_isRenderClone) {
@@ -1086,30 +1086,35 @@ private:
             }
 
             // Check for the table prefix
-            if (!hasEnteredTablePrefix && currentHolder) {
-                KnobItemsTablePtr table = currentHolder->getItemsTable();
-                if (table) {
-                    if (token == table->getPythonPrefix()) {
-                        hasEnteredTablePrefix = true;
-
-                        if (isLastToken) {
-                            if (_testingEnabled) {
-                                // If testing is enabled, set the result to be valid
-                                _resultType = eResultTypeKnobValue;
-                            } else {
-                                _error = _symbol + ": a variable can only be bound to a value";
-                            }
-
-                            return;
-                        }
-                        continue;
+            if (!currentTable && currentHolder) {
+                std::list<KnobItemsTablePtr> tables = currentHolder->getAllItemsTables();
+                KnobItemsTablePtr foundTable;
+                for (std::list<KnobItemsTablePtr>::const_iterator it = tables.begin() ;it != tables.end(); ++it) {
+                    if ((*it)->getPythonPrefix() == token) {
+                        foundTable = *it;
+                        break;
                     }
+                }
+                if (foundTable) {
+                    currentTable = foundTable;
+
+                    if (isLastToken) {
+                        if (_testingEnabled) {
+                            // If testing is enabled, set the result to be valid
+                            _resultType = eResultTypeKnobValue;
+                        } else {
+                            _error = _symbol + ": a variable can only be bound to a value";
+                        }
+
+                        return;
+                    }
+                    continue;
                 }
             }
 
             {
                 KnobTableItemPtr curTableItemOut;
-                if ( hasEnteredTablePrefix && checkForTableItem(token, currentHolder, &curTableItemOut) ) {
+                if ( currentTable && checkForTableItem(token, currentHolder, currentTable, &curTableItemOut) ) {
 
                     // Ensure we get a render clone
                     if (_isRenderClone) {
@@ -1384,6 +1389,7 @@ private:
 
     bool checkForTableItem(const string& str,
                            const KnobHolderPtr& callerHolder,
+                           const KnobItemsTablePtr& currentTable,
                            KnobTableItemPtr* retIsTableItem) const
     {
         retIsTableItem->reset();
@@ -1396,13 +1402,12 @@ private:
             KnobTableItemPtr callerIsTableItem = toKnobTableItem(callerHolder);
             assert(callerIsEffect || callerIsTableItem);
             if (callerIsEffect) {
-                KnobItemsTablePtr table = callerIsEffect->getItemsTable();
-                if (table) {
-                    *retIsTableItem = table->getTopLevelItemByScriptName(str);
-                    if (*retIsTableItem) {
-                        return true;
-                    }
+
+                *retIsTableItem = currentTable->getTopLevelItemByScriptName(str);
+                if (*retIsTableItem) {
+                    return true;
                 }
+
             } else if (callerIsTableItem) {
                 *retIsTableItem = callerIsTableItem->getChildItemByScriptName(str);
                 if (*retIsTableItem) {

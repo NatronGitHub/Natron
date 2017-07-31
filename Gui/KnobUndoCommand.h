@@ -271,39 +271,6 @@ private:
 };
 
 
-class SetKnobKeyFramesCommand
-: public QUndoCommand
-{
-
-    Q_DECLARE_TR_FUNCTIONS(SetKnobKeyFrameProperty)
-
-public:
-
-    SetKnobKeyFramesCommand(const KnobIPtr& knob,
-                            DimSpec dimension,
-                            ViewSetSpec view,
-                            const KeyFrameSet& keys,
-                            SetKeyFrameFlags flags);
-
-    virtual ~SetKnobKeyFramesCommand();
-
-    virtual void undo() OVERRIDE FINAL;
-    virtual void redo() OVERRIDE FINAL;
-    virtual int id() const OVERRIDE FINAL;
-    virtual bool mergeWith(const QUndoCommand *command) OVERRIDE FINAL;
-private:
-
-    KnobIWPtr _knob;
-    DimSpec _dimension;
-    ViewSetSpec _view;
-    SetKeyFrameFlags _flags;
-
-    KeyFrameSet _newKeys;
-
-    PerDimViewKeyFramesMap _oldKeys;
-
-};
-
 /**
  * @brief This class is used by the internal knob when it wants to group multiple edits into a single undo/redo action.
  * It is not used by the GUI

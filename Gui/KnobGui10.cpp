@@ -300,16 +300,8 @@ KnobGui::onShowInCurveEditorActionTriggered()
 }
 
 void
-KnobGui::onRemoveAnimationActionTriggered()
+KnobGui::removeAnimation(DimSpec dimension, ViewSetSpec view)
 {
-    QAction* act = qobject_cast<QAction*>( sender() );
-    if (!act) {
-        return;
-    }
-    ViewSetSpec view;
-    DimSpec dimension;
-    getDimViewFromActionData(act, &view, &dimension);
-
     AnimationModulePtr model = getGui()->getAnimationModuleEditor()->getModel();
     if (!model) {
         return;
@@ -345,6 +337,20 @@ KnobGui::onRemoveAnimationActionTriggered()
 
 
     pushUndoCommand( new RemoveKeysCommand(keysToRemove, model) );
+}
+
+void
+KnobGui::onRemoveAnimationActionTriggered()
+{
+    QAction* act = qobject_cast<QAction*>( sender() );
+    if (!act) {
+        return;
+    }
+    ViewSetSpec view;
+    DimSpec dimension;
+    getDimViewFromActionData(act, &view, &dimension);
+
+    removeAnimation(dimension, view);
    
 }
 
@@ -355,10 +361,13 @@ KnobGui::onInterpolationActionTriggered()
     if (!action) {
         return;
     }
+    
     QList<QVariant> actionData = action->data().toList();
     if (actionData.size() != 3) {
         return;
     }
+
+
     QList<QVariant>::iterator it = actionData.begin();
     DimSpec dimension = DimSpec(it->toInt());
     ++it;
@@ -374,6 +383,12 @@ KnobGui::onInterpolationActionTriggered()
     if (!internalKnob) {
         return;
     }
+
+    CurveTypeEnum curveType = internalKnob->getKeyFrameDataType();
+    if (curveType != eCurveTypeDouble && curveType != eCurveTypeInt)  {
+        return;
+    }
+
     KnobAnimPtr knobAnim = findKnobAnim();
     if (!knobAnim) {
         return;
@@ -476,8 +491,8 @@ KnobGui::onSetKeyActionTriggered()
             kf.setTime(time);
             if (isChoice) {
                 ChoiceOption v = isChoice->getCurrentEntryAtTime(time, *it);
-                kf.setProperty(kKeyframePropChoiceOptionID, v.id);
-                kf.setProperty(kKeyframePropChoiceOptionLabel, v.label);
+                kf.setProperty(kKeyFramePropString, v.id, 0, false /*failIfnotExist*/);
+                kf.setProperty(kKeyframePropChoiceOptionLabel, v.label, 0, false /*failIfnotExist*/);
                 kf.setValue(isChoice->getValueAtTime(time, DimIdx(i), *it));
             } else if (isInt) {
                 kf.setValue( isInt->getValue(DimIdx(i), *it) );
@@ -487,7 +502,7 @@ KnobGui::onSetKeyActionTriggered()
                 kf.setValue( isDouble->getValue(DimIdx(i), *it) );
             } else if (isString) {
                 std::string v = isString->getValue(DimIdx(i), *it);
-                kf.setProperty(kKeyFramePropString, v);
+                kf.setProperty(kKeyFramePropString, v, 0, false /*failIfnotExist*/);
             }
             keys.insert(kf);
         }
@@ -499,16 +514,8 @@ KnobGui::onSetKeyActionTriggered()
 }
 
 void
-KnobGui::onRemoveKeyActionTriggered()
+KnobGui::removeKeyAtCurrentTime(DimSpec dimension, ViewSetSpec view)
 {
-    QAction* act = qobject_cast<QAction*>( sender() );
-    if (!act) {
-        return;
-    }
-    ViewSetSpec view;
-    DimSpec dimension;
-    getDimViewFromActionData(act, &view, &dimension);
-
     AnimationModulePtr model = getGui()->getAnimationModuleEditor()->getModel();
     if (!model) {
         return;
@@ -558,6 +565,20 @@ KnobGui::onRemoveKeyActionTriggered()
     if (!keysToRemove.empty()) {
         pushUndoCommand( new RemoveKeysCommand(keysToRemove, model));
     }
+
+} // removeKeyAtCurrentTime
+
+void
+KnobGui::onRemoveKeyActionTriggered()
+{
+    QAction* act = qobject_cast<QAction*>( sender() );
+    if (!act) {
+        return;
+    }
+    ViewSetSpec view;
+    DimSpec dimension;
+    getDimViewFromActionData(act, &view, &dimension);
+    removeKeyAtCurrentTime(dimension, view);
 }
 
 QString

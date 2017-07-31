@@ -113,7 +113,7 @@ public:
 
     void runInputChangedCallback(int index, const std::string& script);
 
-    void runAfterItemsSelectionChangedCallback(const std::string& script, const std::list<KnobTableItemPtr>& deselected, const std::list<KnobTableItemPtr>& selected, TableChangeReasonEnum reason);
+    void runAfterItemsSelectionChangedCallback(const std::string& script, const KnobItemsTablePtr& table, const std::list<KnobTableItemPtr>& deselected, const std::list<KnobTableItemPtr>& selected, TableChangeReasonEnum reason);
 
     void refreshDefaultPagesOrder();
 

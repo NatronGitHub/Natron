@@ -195,11 +195,14 @@ NodeSerialization::encode(YAML::Emitter& em) const
         em << YAML::EndSeq;
     }
 
-    if (_tableModel) {
-        em << YAML::Key << "TableItems" << YAML::Value;
-        _tableModel->encode(em);
+    if (!_tables.empty()) {
+        em << YAML::Key << "Tables" << YAML::Value;
+        em << YAML::BeginSeq;
+        for (std::list<KnobItemsTableSerializationPtr>::const_iterator it = _tables.begin(); it != _tables.end(); ++it) {
+            (*it)->encode(em);
+        }
+        em << YAML::EndSeq;
     }
-
 
     if (!_presetInstanceLabel.empty()) {
         em << YAML::Key << "Preset" << YAML::Value << _presetInstanceLabel;
@@ -347,9 +350,13 @@ NodeSerialization::decode(const YAML::Node& node)
             _children.push_back(s);
         }
     }
-    if (node["TableItems"]) {
-        _tableModel.reset(new KnobItemsTableSerialization);
-        _tableModel->decode(node["TableItems"]);
+    if (node["Tables"]) {
+        YAML::Node tablesNode = node["Tables"];
+        for (std::size_t i = 0; i < tablesNode.size(); ++i) {
+            KnobItemsTableSerializationPtr table(new KnobItemsTableSerialization);
+            table->decode(tablesNode[i]);
+            _tables.push_back(table);
+        }
     }
     
     if (node["Preset"]) {

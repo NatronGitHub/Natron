@@ -611,7 +611,7 @@ public:
 
     virtual std::string getTableIdentifier() const OVERRIDE FINAL
     {
-        return "RotoPaint_Table";
+        return kRotoPaintItemsTableName;
     }
 
     virtual std::string getTablePythonPrefix() const OVERRIDE FINAL
@@ -660,6 +660,7 @@ public:
     KnobChoiceWPtr outputFormatKnob;
     KnobIntWPtr outputFormatSizeKnob;
     KnobDoubleWPtr outputFormatParKnob;
+    KnobKeyFrameMarkersWPtr shapeKeysKnob;
     KnobBoolWPtr enabledKnobs[4];
 
     RotoPaintInteractPtr ui;

@@ -293,8 +293,9 @@ public:
         return _parentMultiInstance.lock();
     }
 
-    KnobItemsTableGuiPtr getKnobItemsTable() const;
+    std::list<KnobItemsTableGuiPtr> getAllKnobItemsTables() const;
 
+    KnobItemsTableGuiPtr getKnobItemsTable(const std::string& tableName) const;
 
     void setMergeHintActive(bool active);
 

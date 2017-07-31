@@ -71,7 +71,6 @@ public:
 
     virtual ~KnobGuiButton() OVERRIDE;
 
-    virtual void removeSpecificGui() OVERRIDE FINAL;
     virtual std::string getDescriptionLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool mustCreateLabelWidget() const OVERRIDE FINAL
     {

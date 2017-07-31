@@ -50,8 +50,6 @@ public:
 
     virtual ~KnobGuiTable() OVERRIDE;
 
-    virtual void removeSpecificGui() OVERRIDE;
-
     int rowCount() const;
 
 public Q_SLOTS:

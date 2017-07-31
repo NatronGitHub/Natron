@@ -222,6 +222,10 @@ public:
 
     void reflectKnobSelectionState(bool selected);
 
+    void removeAnimation(DimSpec dimension, ViewSetSpec view);
+
+    void removeKeyAtCurrentTime(DimSpec dimension, ViewSetSpec view);
+
 public Q_SLOTS:
 
     void onProjectViewsChanged();
@@ -286,11 +290,10 @@ public Q_SLOTS:
 
     void onAppendParamEditChanged(ValueChangedReasonEnum reason,
                                   ValueChangedReturnCodeEnum setValueRetCode,
-                                  const PerDimViewVariantMap& oldValue,
-                                  Variant newValue,
+                                  const PerDimViewKeyFramesMap& oldValue,
+                                  const KeyFrame& newValue,
                                   ViewSetSpec view,
                                   DimSpec dim,
-                                  TimeValue time,
                                   bool setKeyFrame);
 
     void onFrozenChanged(bool frozen);

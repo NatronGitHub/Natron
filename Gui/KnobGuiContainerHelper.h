@@ -184,9 +184,14 @@ public:
     const KnobsGuiMapping& getKnobsMapping() const;
 
     /**
-     * @brief If this container has a knob items table, this is a pointer to its gui
+     * @brief Returns a list of tables held by this container
      **/
-    KnobItemsTableGuiPtr getKnobItemsTable() const;
+    std::list<KnobItemsTableGuiPtr> getAllKnobItemsTables() const;
+
+    /**
+     * @brief Returns a table by its name
+     **/
+    KnobItemsTableGuiPtr getKnobItemsTable(const std::string& tableName) const;
 
     /**
      * @brief Returns the undo/redo stack used for commands applied on knobs
@@ -374,7 +379,7 @@ protected:
     /**
      * @brief If the knobs container can display a knob items table GUI, implement it to create it
      **/
-    virtual KnobItemsTableGuiPtr createKnobItemsTable(QWidget* /*parent*/) { return KnobItemsTableGuiPtr(); };
+    virtual KnobItemsTableGuiPtr createKnobItemsTable(const KnobItemsTablePtr& /*table*/, QWidget* /*parent*/) { return KnobItemsTableGuiPtr(); };
 
 private:
 

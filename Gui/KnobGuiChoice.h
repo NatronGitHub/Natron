@@ -110,8 +110,6 @@ public:
 
     virtual ~KnobGuiChoice() OVERRIDE;
 
-    virtual void removeSpecificGui() OVERRIDE FINAL;
-
     static QString getPixmapPathFromFilePath(const KnobHolderPtr& holder, const QString& filePath);
 
     ComboBox* getCombobox() const;

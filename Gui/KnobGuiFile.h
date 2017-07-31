@@ -64,8 +64,6 @@ public:
 
     virtual ~KnobGuiFile() OVERRIDE;
 
-    virtual void removeSpecificGui() OVERRIDE FINAL;
-
     bool checkFileModificationAndWarn(SequenceTime time, bool errorAndAbortRender);
 
     virtual void reflectLinkedState(DimIdx dimension, bool linked) OVERRIDE;
@@ -145,8 +143,6 @@ public:
     virtual ~KnobGuiPath() OVERRIDE;
 
     virtual void reflectLinkedState(DimIdx dimension, bool linked) OVERRIDE;
-
-    virtual void removeSpecificGui() OVERRIDE FINAL;
 
 public Q_SLOTS:
 

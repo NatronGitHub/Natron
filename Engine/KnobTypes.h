@@ -62,7 +62,6 @@ NATRON_NAMESPACE_ENTER
 
 #define kColorKnobDefaultUIColorspaceName "sRGB"
 
-#define kKeyframePropChoiceOptionID "KeyframePropChoiceOptionID"
 #define kKeyframePropChoiceOptionLabel "KeyframePropChoiceOptionLabel"
 
 inline KnobBoolBasePtr
@@ -534,7 +533,7 @@ public:
     }
 
 
-    virtual ValueChangedReturnCodeEnum setValueAtTime(TimeValue time, const int& value, KeyFrame* newKey) OVERRIDE FINAL;
+    virtual KeyFrame makeKeyFrame(TimeValue time, const int& value) OVERRIDE FINAL;
 
     virtual bool setValueAndCheckIfChanged(const int& value) OVERRIDE;
 
@@ -668,7 +667,7 @@ public:
      * @brief Set the active entry text. If the view does not exist in the knob an invalid
      * argument exception is thrown
      **/
-    void setActiveEntry(const ChoiceOption& entry, ViewSetSpec view = ViewSetSpec::all());
+    void setActiveEntry(const ChoiceOption& entry, ViewSetSpec view = ViewSetSpec::all(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited);
 
     int getNumEntries(ViewIdx view = ViewIdx(0)) const;
 
@@ -731,6 +730,7 @@ Q_SIGNALS:
     void entryAppended();
 
 private:
+
 
     virtual void onDefaultValueChanged(DimSpec dimension) OVERRIDE FINAL;
 
@@ -821,6 +821,74 @@ toKnobSeparator(const KnobIPtr& knob)
 {
     return boost::dynamic_pointer_cast<KnobSeparator>(knob);
 }
+
+
+
+/******************************KnobKeyFrameMarkers**************************************/
+
+/**
+ * @brief A Knob that does not hold any real value but can have keyframes that are represented as markers on the timeline
+ **/
+class KnobKeyFrameMarkers
+: public KnobStringBase
+{
+private: // derives from KnobI
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+
+    KnobKeyFrameMarkers(const KnobHolderPtr& holder,
+                  const std::string &name,
+                  int dimension);
+
+    KnobKeyFrameMarkers(const KnobHolderPtr& holder, const KnobIPtr& mainInstance);
+public:
+    static KnobHelperPtr create(const KnobHolderPtr& holder,
+                                const std::string &name,
+                                int dimension)
+    {
+        return KnobHelperPtr(new KnobKeyFrameMarkers(holder, name, dimension));
+    }
+
+    static KnobHelperPtr createRenderClone(const KnobHolderPtr& holder,
+                                           const KnobIPtr& mainKnob)
+    {
+        return KnobKeyFrameMarkersPtr(new KnobKeyFrameMarkers(holder, mainKnob));
+    }
+
+    virtual bool canSplitViews() const OVERRIDE FINAL
+    {
+        return true;
+    }
+
+    static const std::string & typeNameStatic();
+    virtual bool supportsInViewerContext() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return true;
+    }
+
+    virtual bool isAnimatedByDefault() const OVERRIDE FINAL
+    {
+        return true;
+    }
+
+    virtual CurveTypeEnum getKeyFrameDataType() const OVERRIDE;
+
+private:
+
+
+    virtual bool canAnimate() const OVERRIDE FINAL;
+    virtual const std::string & typeName() const OVERRIDE FINAL;
+
+private:
+    static const std::string _typeNameStr;
+};
+
+inline KnobKeyFrameMarkersPtr
+toKnobKeyFrameMarkers(const KnobIPtr& knob)
+{
+    return boost::dynamic_pointer_cast<KnobKeyFrameMarkers>(knob);
+}
+
 
 /******************************RGBA_KNOB**************************************/
 
@@ -1396,10 +1464,6 @@ public:
     virtual bool setLeftAndRightDerivativesAtTime(ViewSetSpec view, DimSpec dimension, TimeValue time, double left, double right)  OVERRIDE WARN_UNUSED_RETURN;
     virtual bool setDerivativeAtTime(ViewSetSpec view, DimSpec dimension, TimeValue time, double derivative, bool isLeft) OVERRIDE WARN_UNUSED_RETURN;
 
-    virtual ValueChangedReturnCodeEnum setDoubleValueAtTime(TimeValue time, double value, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0) OVERRIDE ;
-    virtual void setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0) OVERRIDE ;
-    virtual void setDoubleValueAtTimeAcrossDimensions(TimeValue time, const std::vector<double>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::all(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE ;
-    virtual void setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDoubleValuesList& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonUserEdited) OVERRIDE ;
     //////////// End from AnimatingObjectI
 
 Q_SIGNALS:

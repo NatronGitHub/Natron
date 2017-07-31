@@ -670,32 +670,24 @@ ChoiceKnobDimView::ChoiceKnobDimView()
 
 }
 
-ValueChangedReturnCodeEnum
-ChoiceKnobDimView::setValueAtTime(TimeValue time, const int& value, KeyFrame* newKey)
+KeyFrame
+ChoiceKnobDimView::makeKeyFrame(TimeValue time, const int& value)
 {
-    if (!animationCurve) {
-        return eValueChangedReturnCodeNothingChanged;
-    }
-    // check for infinity
-    if (boost::math::isinf(value)) {
-        *newKey = KeyFrame( (double)time, 0. );
-    } else {
-        *newKey = KeyFrame( (double)time, value );
-    }
+    KeyFrame k(time, value);
 
     ChoiceOption activeEntry;
-    if (value >= 0 && value < (int)menuOptions.size()) {
-        activeEntry = menuOptions[value];
+    {
+        QMutexLocker k(&valueMutex);
+        if (value >= 0 && value < (int)menuOptions.size()) {
+            activeEntry = menuOptions[value];
+        }
     }
+    k.setProperty(kKeyFramePropString, activeEntry.id, 0, false /*failIfnotExist*/);
+    k.setProperty(kKeyframePropChoiceOptionLabel, activeEntry.label, 0, false /*failIfnotExist*/);
+    return k;
 
-    newKey->setProperty(kKeyframePropChoiceOptionID, activeEntry.id);
-    newKey->setProperty(kKeyframePropChoiceOptionLabel, activeEntry.label);
-
-    ValueChangedReturnCodeEnum addKeyRet = animationCurve->setOrAddKeyframe(*newKey);
-    notifyCurveChanged();
-
-    return addKeyRet;
 }
+
 
 bool
 ChoiceKnobDimView::setValueAndCheckIfChanged(const int& v)
@@ -1334,7 +1326,7 @@ KnobChoice::getNumEntries(ViewIdx view) const
 
 
 void
-KnobChoice::setActiveEntry(const ChoiceOption& entry, ViewSetSpec view)
+KnobChoice::setActiveEntry(const ChoiceOption& entry, ViewSetSpec view, ValueChangedReasonEnum reason)
 {
 
     std::list<ViewIdx> views = getViewsList();
@@ -1365,7 +1357,7 @@ KnobChoice::setActiveEntry(const ChoiceOption& entry, ViewSetSpec view)
             data->staticValueOption = matchedEntry;
         }
         if (matchedIndex != -1) {
-            setValue(matchedIndex);
+            setValue(matchedIndex, *it, DimIdx(0), reason);
         }
         for (KnobDimViewKeySet::const_iterator it = sharedKnobs.begin(); it!=sharedKnobs.end(); ++it) {
             KnobChoicePtr sharedKnob = toKnobChoice(it->knob.lock());
@@ -1403,7 +1395,7 @@ KnobChoice::getCurrentEntryAtTime(TimeValue time, ViewIdx view)
 
             if (data->animationCurve && data->animationCurve->isAnimated()) {
                 KeyFrame key = data->animationCurve->getValueAt(time);
-                bool gotIt = key.getPropertySafe(kKeyframePropChoiceOptionID, 0, &ret.id);
+                bool gotIt = key.getPropertySafe(kKeyFramePropString, 0, &ret.id);
                 assert(gotIt);
                 gotIt = key.getPropertySafe(kKeyframePropChoiceOptionLabel, 0, &ret.id);
                 assert(gotIt);
@@ -1801,6 +1793,48 @@ const std::string &
 KnobSeparator::typeName() const
 {
     return typeNameStatic();
+}
+
+/******************************KnobKeyFrameMarkers**************************************/
+
+
+KnobKeyFrameMarkers::KnobKeyFrameMarkers(const KnobHolderPtr& holder,
+                             const std::string &name,
+                             int dimension)
+: KnobStringBase(holder, name, dimension)
+{
+}
+
+KnobKeyFrameMarkers::KnobKeyFrameMarkers(const KnobHolderPtr& holder, const KnobIPtr& mainInstance)
+: KnobStringBase(holder, mainInstance)
+{
+
+}
+
+bool
+KnobKeyFrameMarkers::canAnimate() const
+{
+    return true;
+}
+
+const std::string KnobKeyFrameMarkers::_typeNameStr(kKnobKeyFrameMarkersName);
+const std::string &
+KnobKeyFrameMarkers::typeNameStatic()
+{
+    return _typeNameStr;
+}
+
+const std::string &
+KnobKeyFrameMarkers::typeName() const
+{
+    return typeNameStatic();
+}
+
+CurveTypeEnum
+KnobKeyFrameMarkers::getKeyFrameDataType() const
+{
+    // The animated curve only has properties, no real value.
+    return eCurveTypeProperties;
 }
 
 /******************************KnobColor**************************************/
@@ -3923,130 +3957,6 @@ KnobParametric::setKeyFrameInternal(TimeValue time, double value, DimIdx dimensi
     }
     signalCurveChanged(dimension, data);
     return ret;
-}
-
-ValueChangedReturnCodeEnum
-KnobParametric::setDoubleValueAtTime(TimeValue time, double value, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason, KeyFrame* newKey)
-{
-    ValueChangedReturnCodeEnum ret = eValueChangedReturnCodeNothingChanged;
-    std::list<ViewIdx> views = getViewsList();
-    int nDims = getNDimensions();
-    ViewIdx view_i;
-    if (!view.isAll()) {
-        view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
-    }
-    for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
-        if (!view.isAll()) {
-            if (view_i != *it) {
-                continue;
-            }
-        }
-        for (int i = 0; i < nDims; ++i) {
-            if (!dimension.isAll() && dimension != i) {
-                continue;
-            }
-
-            ret = setKeyFrameInternal(time, value, DimIdx(i), *it, newKey);
-            
-        }
-    }
-
-    if (ret != eValueChangedReturnCodeNothingChanged) {
-        evaluateValueChange(dimension, getCurrentRenderTime(), view, reason);
-    }
-    return ret;
-}
-
-void
-KnobParametric::setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair>& keys, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason, std::vector<KeyFrame>* newKey)
-{
-    if (keys.empty()) {
-        return;
-    }
-    if (newKey) {
-        newKey->clear();
-    }
-
-    std::list<ViewIdx> views = getViewsList();
-    int nDims = getNDimensions();
-    ViewIdx view_i;
-    if (!view.isAll()) {
-        view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
-    }
-    for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
-        if (!view.isAll()) {
-            if (view_i != *it) {
-                continue;
-            }
-        }
-        for (int i = 0; i < nDims; ++i) {
-            if (!dimension.isAll() && dimension != i) {
-                continue;
-            }
-            KeyFrame key;
-            for (std::list<DoubleTimeValuePair>::const_iterator it2 = keys.begin(); it2!=keys.end(); ++it2) {
-                setKeyFrameInternal(it2->time, it2->value, DimIdx(i), *it, newKey ? &key : 0);
-                if (newKey) {
-                    newKey->push_back(key);
-                }
-            }
-
-        }
-    }
-
-    evaluateValueChange(dimension, getCurrentRenderTime(), view, reason);
-}
-
-void
-KnobParametric::setDoubleValueAtTimeAcrossDimensions(TimeValue time, const std::vector<double>& values, DimIdx dimensionStartIndex, ViewSetSpec view, ValueChangedReasonEnum reason, std::vector<ValueChangedReturnCodeEnum>* retCodes)
-{
-    if (values.empty()) {
-        return;
-    }
-    
-    if (dimensionStartIndex < 0 || dimensionStartIndex + values.size() > _imp->common->defaultCurves.size()) {
-        throw std::invalid_argument("KnobParametric: dimension out of range");
-    }
-    std::list<ViewIdx> views = getViewsList();
-    ViewIdx view_i;
-    if (!view.isAll()) {
-        view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
-    }
-    for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
-        if (!view.isAll()) {
-            if (view_i != *it) {
-                continue;
-            }
-        }
-        for (std::size_t i = 0; i < values.size(); ++i) {
-            ValueChangedReturnCodeEnum ret = setKeyFrameInternal(time, values[i], DimIdx(dimensionStartIndex + i), *it, 0);
-            if (retCodes) {
-                retCodes->push_back(ret);
-            }
-        }
-    }
-
-    evaluateValueChange(DimSpec::all(), getCurrentRenderTime(), view, reason);
-
-}
-
-void
-KnobParametric::setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDoubleValuesList& keysPerDimension, ValueChangedReasonEnum reason)
-{
-    if (keysPerDimension.empty()) {
-        return;
-    }
-    for (std::size_t i = 0; i < keysPerDimension.size(); ++i) {
-        if (keysPerDimension[i].second.empty()) {
-            continue;
-        }
-        for (std::list<DoubleTimeValuePair>::const_iterator it2 = keysPerDimension[i].second.begin(); it2!=keysPerDimension[i].second.end(); ++it2) {
-            setKeyFrameInternal(it2->time, it2->value, keysPerDimension[i].first.dimension, keysPerDimension[i].first.view, 0);
-        }
-
-    }
-
-    evaluateValueChange(DimSpec::all(), getCurrentRenderTime(), ViewSetSpec(0), reason);
 }
 
 bool

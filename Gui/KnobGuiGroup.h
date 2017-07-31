@@ -69,8 +69,6 @@ public:
 
     virtual ~KnobGuiGroup() OVERRIDE;
 
-    virtual void removeSpecificGui() OVERRIDE FINAL;
-
     void addKnob(const KnobGuiPtr& child);
 
     const std::list<KnobGuiWPtr>& getChildren() const { return _children; }

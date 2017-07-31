@@ -746,7 +746,6 @@ AnimationModuleTreeView::drawRow(QPainter *painter,
         case eAnimatedItemTypeReader:
         case eAnimatedItemTypeRetime:
         case eAnimatedItemTypeTimeOffset:
-        case eAnimatedItemTypeTableItemAnimation:
             drawPluginIconToo = true;
             break;
 
@@ -1008,7 +1007,6 @@ AnimationModuleTreeView::onNodeAboutToBeRemoved(const NodeAnimPtr& node)
             case eAnimatedItemTypeTimeOffset:
                 toMove.push_back(child);
                 break;
-            case eAnimatedItemTypeTableItemAnimation:
             case eAnimatedItemTypeKnobDim:
             case eAnimatedItemTypeKnobRoot:
             case eAnimatedItemTypeKnobView:
@@ -1241,9 +1239,7 @@ AnimationModuleTreeView::getSelectedCurves() const
         AnimItemBasePtr isAnimItem;
         if (isKnob) {
             isAnimItem = isKnob;
-        } else if (isTableItem) {
-            isAnimItem = isTableItem;
-        }
+        } 
         if (!isAnimItem) {
             continue;
         }

@@ -50,6 +50,7 @@
 #include "Gui/KnobGuiBool.h"
 #include "Gui/KnobGuiParametric.h"
 #include "Gui/DockablePanel.h"
+#include "Gui/KnobGuiKeyFrameMarkers.h"
 
 NATRON_NAMESPACE_ENTER
 using std::make_pair;
@@ -105,6 +106,7 @@ KnobGuiFactory::loadBultinKnobs()
     _loadedKnobs.insert( knobGuiFactoryEntry<KnobParametric, KnobGuiParametric>() );
     _loadedKnobs.insert( knobGuiFactoryEntry<KnobPath, KnobGuiPath>() );
     _loadedKnobs.insert( knobGuiFactoryEntry<KnobLayers, KnobGuiLayers>() );
+    _loadedKnobs.insert( knobGuiFactoryEntry<KnobKeyFrameMarkers, KnobGuiKeyFrameMarkers>() );
 }
 
 KnobGuiWidgets *

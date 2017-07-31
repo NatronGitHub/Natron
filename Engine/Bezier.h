@@ -44,8 +44,8 @@ CLANG_DIAG_ON(deprecated-declarations)
 
 #include "Engine/RotoDrawableItem.h"
 #include "Engine/ViewIdx.h"
+#include "Engine/Curve.h"
 
-#include "Engine/EngineFwd.h"
 
 
 NATRON_NAMESPACE_ENTER
@@ -76,6 +76,7 @@ struct ParametricPoint
 struct BezierPrivate;
 class Bezier
     : public RotoDrawableItem
+    , public CurveChangesListener
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -107,8 +108,6 @@ public:
     virtual RotoStrokeType getBrushType() const OVERRIDE FINAL;
 
     virtual void copyItem(const KnobTableItem& other) OVERRIDE FINAL;
-
-    virtual bool getCanAnimateUserKeyframes() const OVERRIDE FINAL { return true; }
     
     static double bezierEval(double p0,
                       double p1,
@@ -591,6 +590,9 @@ public:
         return true;
     }
 
+    virtual bool splitView(ViewIdx view) OVERRIDE;
+    virtual bool unSplitView(ViewIdx view) OVERRIDE;
+
     void evaluateCurveModified();
 
 public:
@@ -619,16 +621,25 @@ public:
     virtual void appendToHash(const ComputeHashArgs& args, Hash64* hash) OVERRIDE FINAL;
 
 
+    /// Overriden from CurveChangesListener
+    virtual void onKeyFrameRemoved(const Curve* curve, const KeyFrame& key) OVERRIDE;
+    virtual void onKeyFrameAdded(const Curve* curve, const KeyFrame& key) OVERRIDE;
+    virtual void onKeyFrameMoved(const Curve* curve, const KeyFrame& from, const KeyFrame& to) OVERRIDE;
+
+
+    void setKeyFrame(TimeValue time, ViewSetSpec view);
+
+    void removeKeyFrame(TimeValue time, ViewSetSpec view);
+
+    bool hasKeyFrameAtTime(TimeValue time, ViewIdx view) const;
+
+    KeyFrameSet getKeyFrames(ViewIdx view) const;
+
 private:
 
 
-    virtual void onKeyFrameSet(TimeValue time, ViewSetSpec view) OVERRIDE FINAL;
+    bool findViewFromShapeKeysCurve(const Curve* curve, ViewIdx* view) const;
 
-    virtual void onKeyFrameRemoved(TimeValue time, ViewSetSpec view) OVERRIDE FINAL;
-
-    void onKeyFrameSetForView(TimeValue time, ViewIdx view);
-
-    void onKeyFrameRemovedForView(TimeValue time, ViewIdx view);
 
     virtual void initializeKnobs() OVERRIDE;
 

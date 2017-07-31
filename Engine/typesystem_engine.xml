@@ -1065,9 +1065,9 @@
                 return ret;
             </inject-code>
         </modify-function>
-        <modify-function signature="destroy(bool)">
+        <modify-function signature="destroy()">
             <inject-code class="target" position="beginning">
-                %CPPSELF.%FUNCTION_NAME(%1);
+                %CPPSELF.%FUNCTION_NAME();
             </inject-code>
         </modify-function>
         <modify-function signature="setLabel(QString)">
@@ -1168,10 +1168,24 @@
                 %CPPSELF.%FUNCTION_NAME(%1);
             </inject-code>
         </modify-function>
-        <modify-function signature="getItemsTable()const">
+        <modify-function signature="getItemsTable(QString)const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
+        </modify-function>
+        <modify-function signature="getAllItemsTable()const">
+            <inject-code class="target" position="beginning">
+                std::list&lt;ItemsTable*&gt; tables = %CPPSELF.%FUNCTION_NAME(%ARGUMENT_NAMES);
+                PyObject* ret = PyList_New((int) tables.size());
+                int idx = 0;
+                for (std::list&lt;ItemsTable*&gt;::iterator it = tables.begin(); it!=tables.end(); ++it,++idx) {
+                PyObject* item = %CONVERTTOPYTHON[ItemsTable*](*it);
+                // Ownership transferences.
+                Shiboken::Object::getOwnership(item);
+                PyList_SET_ITEM(ret, idx, item);
+                }
+                return ret;
+            </inject-code>
         </modify-function>
     </object-type>
 
@@ -1731,24 +1745,6 @@
                 // Ownership transferences.
                 Shiboken::Object::getOwnership(item);
                 PyList_SET_ITEM(ret, idx, item);
-                }
-                return ret;
-            </inject-code>
-        </modify-function>
-        <modify-function signature="getUserKeyframes(std::list&lt;double&gt;*,QString)const">
-            <modify-argument index="1">
-                <remove-argument/>
-            </modify-argument>
-            <modify-argument index="return">
-                <replace-type modified-type="PyList"/>
-            </modify-argument>
-            <inject-code class="target" position="beginning">
-                std::list&lt;double&gt; keys;
-                %CPPSELF.%FUNCTION_NAME(&amp;keys,%2);
-                PyObject* ret = PyList_New((int) keys.size());
-                int idx = 0;
-                for (std::list&lt;double&gt;::iterator it = keys.begin(); it!=keys.end(); ++it,++idx) {
-                PyList_SET_ITEM(ret, idx, %CONVERTTOPYTHON[double](*it));
                 }
                 return ret;
             </inject-code>

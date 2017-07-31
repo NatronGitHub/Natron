@@ -1378,7 +1378,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         ViewerCompositingOperatorEnum op = (ViewerCompositingOperatorEnum)_imp->blendingModeChoiceKnob.lock()->getValue();
         _imp->uiContext->setInfoBarVisible(1, op != eViewerCompositingOperatorNone);
         _imp->bInputNodeChoiceKnob.lock()->setEnabled(op != eViewerCompositingOperatorNone);
-    } else if (k == _imp->zoomChoiceKnob.lock()) {
+    } else if (k == _imp->zoomChoiceKnob.lock() && reason != eValueChangedReasonPluginEdited) {
         ChoiceOption zoomChoice = _imp->zoomChoiceKnob.lock()->getCurrentEntry();
         if (zoomChoice.id == "Fit") {
             _imp->uiContext->fitImageToFormat();

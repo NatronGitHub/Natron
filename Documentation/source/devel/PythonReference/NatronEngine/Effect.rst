@@ -45,7 +45,8 @@ Functions
 *    def :meth:`getPremult<NatronEngine.Effect.getPremult>` ()
 *    def :meth:`getPixelAspectRatio<NatronEngine.Effect.getPixelAspectRatio>` ()
 *	 def :meth:`getRegionOfDefinition<NatronEngine.Effect.getRegionOfDefinition>` (time,view)
-*    def :meth:`getItemsTable<NatronEngine.Effect.getItemsTable>` ()
+*    def :meth:`getItemsTable<NatronEngine.Effect.getItemsTable>` (tableName)
+*    def :meth:`getAllItemsTable<NatronEngine.Effect.getAllItemsTable>` ()
 *    def :meth:`getScriptName<NatronEngine.Effect.getScriptName>` ()
 *    def :meth:`getSize<NatronEngine.Effect.getSize>` ()
 *    def :meth:`getUserPageParam<NatronEngine.Effect.getUserPageParam>` ()
@@ -412,14 +413,20 @@ for the "Output".
 This can be useful for example to set the position of a point parameter to the center
 of the region of definition.
 
-.. method:: NatronEngine.Effect.getItemsTable()
+.. method:: NatronEngine.Effect.getItemsTable(tableName)
 
-
+    :param tableName: :class:`str<PySide.QtCore.QString>`
     :rtype: :class:`ItemsTable<NatronEngine.ItemsTable>`
 
-Returns the items table if this node has any. An :ref:`ItemsTable<ItemsTable>` is used
-for example in the Tracker node to display the tracks or in the RotoPaint node to display
+Returns the items table matching the given *tableName*.
+An :ref:`ItemsTable<ItemsTable>` is used for example in the Tracker node to display the tracks or in the RotoPaint node to display
 the shapes and strokes in the properties panel.
+
+.. method:: NatronEngine.Effect.getItemsTable()
+
+    :rtype: :class:`PyList`
+
+Returns a list of all :ref:`ItemsTable<ItemsTable>`held by the node.
 
 
 .. method:: NatronEngine.Effect.getScriptName()

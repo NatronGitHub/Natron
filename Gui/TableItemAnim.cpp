@@ -71,7 +71,6 @@ public:
     , table()
     , parentNode()
     , nameItem(0)
-    , animationItems()
     , knobs()
     , children()
     {
@@ -83,7 +82,6 @@ public:
     KnobItemsTableGuiWPtr table;
     NodeAnimWPtr parentNode;
     QTreeWidgetItem* nameItem;
-    PerViewItemMap animationItems;
     std::vector<KnobAnimPtr> knobs;
     std::vector<TableItemAnimPtr> children;
 
@@ -95,8 +93,7 @@ TableItemAnim::TableItemAnim(const AnimationModuleBasePtr& model,
                              const KnobItemsTableGuiPtr& table,
                              const NodeAnimPtr &parentNode,
                              const KnobTableItemPtr& item)
-: AnimItemBase(model)
-, _imp(new TableItemAnimPrivate(model))
+:  _imp(new TableItemAnimPrivate(model))
 {
     _imp->table = table;
     _imp->parentNode = parentNode;
@@ -153,55 +150,6 @@ TableItemAnim::getRootItem() const
     return _imp->nameItem;
 }
 
-QTreeWidgetItem *
-TableItemAnim::getTreeItem(DimSpec /*dimension*/, ViewSetSpec view) const
-{
-    if (view.isAll()) {
-        return 0;
-    }
-    PerViewItemMap::const_iterator foundView = _imp->animationItems.find(ViewIdx(view));
-    if (foundView == _imp->animationItems.end()) {
-        return 0;
-    }
-    return foundView->second.item;
-}
-
-CurvePtr
-TableItemAnim::getCurve(DimIdx dimension, ViewIdx view) const
-{
-    KnobTableItemPtr item = getInternalItem();
-    if (!item) {
-        return CurvePtr();
-    }
-    return item->getAnimationCurve(view, dimension);
-}
-
-CurveGuiPtr
-TableItemAnim::getCurveGui(DimIdx /*dimension*/, ViewIdx /*view*/) const
-{
-    return CurveGuiPtr();
-#if 0
-    PerViewItemMap::const_iterator foundView = _imp->animationItems.find(view);
-    if (foundView == _imp->animationItems.end()) {
-        return CurveGuiPtr();
-    }
-    return foundView->second.curve;
-#endif
-}
-
-QString
-TableItemAnim::getViewDimensionLabel(DimIdx dimension, ViewIdx view) const
-{
-    QString ret = _imp->nameItem->text(0);
-
-    QTreeWidgetItem* item = getTreeItem(dimension, view);
-    if (item) {
-        ret += QLatin1Char(' ');
-        ret += item->text(0);
-    }
-    return ret;
-}
-
 std::list<ViewIdx>
 TableItemAnim::getViewsList() const
 {
@@ -212,12 +160,12 @@ TableItemAnim::getViewsList() const
     return item->getViewsList();
 }
 
-int
-TableItemAnim::getNDimensions() const
-{
-    return 1;
-}
 
+AnimationModuleBasePtr
+TableItemAnim::getModel() const
+{
+    return _imp->model.lock();
+}
 
 KnobTableItemPtr
 TableItemAnim::getInternalItem() const
@@ -225,11 +173,6 @@ TableItemAnim::getInternalItem() const
     return _imp->tableItem.lock();
 }
 
-AnimatingObjectIPtr
-TableItemAnim::getInternalAnimItem() const
-{
-    return _imp->tableItem.lock();
-}
 
 NodeAnimPtr
 TableItemAnim::getNode() const
@@ -321,7 +264,7 @@ TableItemAnim::initialize(QTreeWidgetItem* parentItem)
     KnobTableItemPtr item = getInternalItem();
     QString itemLabel = QString::fromUtf8( item->getLabel().c_str() );
 
-    AnimItemBasePtr thisShared = shared_from_this();
+    TableItemAnimPtr thisShared = shared_from_this();
     AnimationModuleBasePtr model = getModel();
 
     _imp->nameItem = new QTreeWidgetItem;
@@ -341,11 +284,6 @@ TableItemAnim::initialize(QTreeWidgetItem* parentItem)
     assert(parentItem);
     parentItem->addChild(_imp->nameItem);
 
-
-    if (item->getCanAnimateUserKeyframes()) {
-        createViewItems();
-    }
-
     KnobItemsTableGuiPtr table = _imp->table.lock();
     NodeAnimPtr parentNode = _imp->parentNode.lock();
     std::vector<KnobTableItemPtr> children = item->getChildren();
@@ -357,50 +295,7 @@ TableItemAnim::initialize(QTreeWidgetItem* parentItem)
     initializeKnobsAnim();
 }
 
-void
-TableItemAnim::createViewItems()
-{
-    KnobTableItemPtr item = getInternalItem();
-    AnimationModuleBasePtr model = getModel();
 
-    //AnimationModuleView* curveWidget = model->getView();
-    AnimItemBasePtr thisShared = shared_from_this();
-
-    std::list<ViewIdx> views = item->getViewsList();
-    const std::vector<std::string>& projectViews = item->getApp()->getProject()->getProjectViewNames();
-    for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-        QString viewName;
-        if (*it >= 0 && *it < (int)projectViews.size()) {
-            viewName = QString::fromUtf8(projectViews[*it].c_str());
-        }
-        QTreeWidgetItem* animationItem = new QTreeWidgetItem;
-        QString itemLabel;
-        if (views.size() > 1) {
-            itemLabel += viewName + QString::fromUtf8(" ");
-        }
-        itemLabel += tr("Animation");
-        animationItem->setData(0, QT_ROLE_CONTEXT_ITEM_POINTER, qVariantFromValue((void*)thisShared.get()));
-        animationItem->setText(0, itemLabel);
-        animationItem->setData(0, QT_ROLE_CONTEXT_TYPE, eAnimatedItemTypeTableItemAnimation);
-        animationItem->setExpanded(true);
-        int nCols = getModel()->getTreeColumnsCount();
-        if (nCols > ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE) {
-            animationItem->setData(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, QT_ROLE_CONTEXT_ITEM_VISIBLE, QVariant(true));
-            animationItem->setIcon(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, model->getItemVisibilityIcon(true));
-        }
-
-
-
-        ItemCurve& ic = _imp->animationItems[*it];
-        ic.item = animationItem;
-        /*if (curveWidget) {
-            ic.curve.reset(new CurveGui(curveWidget, thisShared, DimIdx(0), *it));
-        }*/
-
-        _imp->nameItem->addChild(animationItem);
-    }
-
-}
 
 void
 TableItemAnim::initializeKnobsAnim()
@@ -459,21 +354,7 @@ TableItemAnim::refreshVisibilityConditional(bool refreshHolder)
             showItem = true;
         }
     }
-    if (!showItem) {
-        for (PerViewItemMap::const_iterator it = _imp->animationItems.begin(); it!=_imp->animationItems.end(); ++it) {
 
-            CurvePtr c = getInternalAnimItem()->getAnimationCurve(it->first, DimIdx(0));
-            if (!c) {
-                continue;
-            }
-            if (c->isAnimated() || !onlyShowIfAnimated) {
-                it->second.item->setHidden(false);
-                showItem = true;
-            } else {
-                it->second.item->setHidden(true);
-            }
-        }
-    }
     _imp->nameItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, showItem);
     _imp->nameItem->setHidden(!showItem);
 }
@@ -487,42 +368,18 @@ TableItemAnim::refreshVisibility()
 void
 TableItemAnim::onProjectViewsChanged()
 {
-    const std::vector<std::string>& projectViewNames = getInternalItem()->getApp()->getProject()->getProjectViewNames();
-    for (PerViewItemMap::const_iterator it = _imp->animationItems.begin(); it != _imp->animationItems.end(); ++it) {
-        QString viewName;
-        if (it->first >= 0 && it->first < (int)projectViewNames.size()) {
-            viewName = QString::fromUtf8(projectViewNames[it->first].c_str());
-        } else {
-            viewName = it->second.item->text(0);
-            QString notFoundSuffix = QString::fromUtf8("(*)");
-            if (!viewName.endsWith(notFoundSuffix)) {
-                viewName += QLatin1Char(' ');
-                viewName += notFoundSuffix;
-            }
-        }
-        it->second.item->setText(0, viewName);
-    }
+
 }
 
 void
 TableItemAnim::onInternalItemAvailableViewsChanged()
 {
-    for (PerViewItemMap::const_iterator it = _imp->animationItems.begin(); it != _imp->animationItems.end(); ++it) {
-        delete it->second.item;
-    }
-    _imp->animationItems.clear();
-    createViewItems();
 
     refreshVisibility();
 
     getModel()->refreshSelectionBboxAndUpdateView();
 }
 
-bool
-TableItemAnim::getAllDimensionsVisible(ViewIdx /*view*/) const
-{
-    return true;
-}
 
 NATRON_NAMESPACE_EXIT
 NATRON_NAMESPACE_USING

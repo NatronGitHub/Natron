@@ -146,17 +146,6 @@ struct KnobItemsTableGuiPrivate
     // The main layout containing table + other buttons
     QLayout* containerLayout;
 
-    Label* userKeyframeLabel;
-    SpinBox* currentKeyFrameSpinBox;
-    Label* ofTotalKeyFramesLabel;
-    SpinBox* numKeyFramesSpinBox;
-    Button* goToPrevKeyframeButton;
-    Button* goToNextKeyframeButton;
-    Button* addKeyFrameButton;
-    Button* removeKeyFrameButton;
-    Button* clearKeyFramesButton;
-    QWidget* keyframesContainerWidget;
-    QHBoxLayout* keyframesContainerLayout;
 
     KnobItemsTableGuiPrivate(KnobItemsTableGui* publicInterface, DockablePanel* panel, const KnobItemsTablePtr& table)
     : _publicInterface(publicInterface)
@@ -168,17 +157,6 @@ struct KnobItemsTableGuiPrivate
     , items()
     , selectingModelRecursion(0)
     , containerLayout(0)
-    , userKeyframeLabel(0)
-    , currentKeyFrameSpinBox(0)
-    , ofTotalKeyFramesLabel(0)
-    , numKeyFramesSpinBox(0)
-    , goToPrevKeyframeButton(0)
-    , goToNextKeyframeButton(0)
-    , addKeyFrameButton(0)
-    , removeKeyFrameButton(0)
-    , clearKeyFramesButton(0)
-    , keyframesContainerWidget(0)
-    , keyframesContainerLayout(0)
     {
     }
 
@@ -224,9 +202,6 @@ struct KnobItemsTableGuiPrivate
 
     void refreshKnobItemSelection(const KnobTableItemPtr& item, bool selected);
 
-    void createKeyFrameWidgets(QWidget* parent);
-
-    void refreshUserKeyFramesWidgets();
 };
 
 bool
@@ -336,87 +311,6 @@ KnobItemsTableGuiPrivate::createCustomWidgetRecursively(const KnobTableItemPtr& 
     }
 }
 
-void
-KnobItemsTableGuiPrivate::createKeyFrameWidgets(QWidget* parent)
-{
-    keyframesContainerWidget = new QWidget(parent);
-
-    keyframesContainerLayout = new QHBoxLayout(keyframesContainerWidget);
-    keyframesContainerLayout->setSpacing(2);
-    userKeyframeLabel = new ClickableLabel(KnobItemsTableGui::tr("Manual Keyframe(s):"), keyframesContainerWidget);
-    userKeyframeLabel->setEnabled(false);
-    keyframesContainerLayout->addWidget(userKeyframeLabel);
-
-    currentKeyFrameSpinBox = new SpinBox(keyframesContainerWidget, SpinBox::eSpinBoxTypeDouble);
-    currentKeyFrameSpinBox->setEnabled(false);
-    currentKeyFrameSpinBox->setReadOnly_NoFocusRect(true);
-    currentKeyFrameSpinBox->setToolTip( NATRON_NAMESPACE::convertFromPlainText(KnobItemsTableGui::tr("The current manual keyframe for the selected item(s)"), NATRON_NAMESPACE::WhiteSpaceNormal) );
-    keyframesContainerLayout->addWidget(currentKeyFrameSpinBox);
-
-    ofTotalKeyFramesLabel = new ClickableLabel(QString::fromUtf8("of"), keyframesContainerWidget);
-    ofTotalKeyFramesLabel->setEnabled(false);
-    keyframesContainerLayout->addWidget(ofTotalKeyFramesLabel);
-
-    numKeyFramesSpinBox = new SpinBox(keyframesContainerWidget, SpinBox::eSpinBoxTypeInt);
-    numKeyFramesSpinBox->setEnabled(false);
-    numKeyFramesSpinBox->setReadOnly_NoFocusRect(true);
-    numKeyFramesSpinBox->setToolTip( NATRON_NAMESPACE::convertFromPlainText(KnobItemsTableGui::tr("The manual keyframes count for all the selected items"), NATRON_NAMESPACE::WhiteSpaceNormal) );
-    keyframesContainerLayout->addWidget(numKeyFramesSpinBox);
-
-    const QSize medButtonSize( TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE) );
-    const QSize medButtonIconSize( TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE) );
-
-    int medIconSize = TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE);
-    QPixmap prevPix, nextPix, addPix, removePix, clearAnimPix;
-    appPTR->getIcon(NATRON_PIXMAP_PLAYER_PREVIOUS_KEY, medIconSize, &prevPix);
-    appPTR->getIcon(NATRON_PIXMAP_PLAYER_NEXT_KEY, medIconSize, &nextPix);
-    appPTR->getIcon(NATRON_PIXMAP_ADD_KEYFRAME, medIconSize, &addPix);
-    appPTR->getIcon(NATRON_PIXMAP_REMOVE_KEYFRAME, medIconSize, &removePix);
-    appPTR->getIcon(NATRON_PIXMAP_CLEAR_ALL_ANIMATION, medIconSize, &clearAnimPix);
-
-    goToPrevKeyframeButton = new Button(QIcon(prevPix), QString(), keyframesContainerWidget);
-    goToPrevKeyframeButton->setFixedSize(medButtonSize);
-    goToPrevKeyframeButton->setIconSize(medButtonIconSize);
-    goToPrevKeyframeButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(KnobItemsTableGui::tr("Go to the previous keyframe."), NATRON_NAMESPACE::WhiteSpaceNormal) );
-    goToPrevKeyframeButton->setEnabled(false);
-    QObject::connect( goToPrevKeyframeButton, SIGNAL(clicked(bool)), _publicInterface, SLOT(onGoToPrevKeyframeButtonClicked()) );
-    keyframesContainerLayout->addWidget(goToPrevKeyframeButton);
-
-    goToNextKeyframeButton = new Button(QIcon(nextPix), QString(), keyframesContainerWidget);
-    goToNextKeyframeButton->setFixedSize(medButtonSize);
-    goToNextKeyframeButton->setIconSize(medButtonIconSize);
-    goToNextKeyframeButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(KnobItemsTableGui::tr("Go to the next keyframe."), NATRON_NAMESPACE::WhiteSpaceNormal) );
-    goToNextKeyframeButton->setEnabled(false);
-    QObject::connect( goToNextKeyframeButton, SIGNAL(clicked(bool)), _publicInterface, SLOT(onGoToNextKeyframeButtonClicked()) );
-    keyframesContainerLayout->addWidget(goToNextKeyframeButton);
-
-    addKeyFrameButton = new Button(QIcon(addPix), QString(), keyframesContainerWidget);
-    addKeyFrameButton->setFixedSize(medButtonSize);
-    addKeyFrameButton->setIconSize(medButtonIconSize);
-    addKeyFrameButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(KnobItemsTableGui::tr("Add a manual keyframe at the current timeline's time"), NATRON_NAMESPACE::WhiteSpaceNormal) );
-    addKeyFrameButton->setEnabled(false);
-    QObject::connect( addKeyFrameButton, SIGNAL(clicked(bool)), _publicInterface, SLOT(onAddKeyframeButtonClicked()) );
-    keyframesContainerLayout->addWidget(addKeyFrameButton);
-
-    removeKeyFrameButton = new Button(QIcon(removePix), QString(), keyframesContainerWidget);
-    removeKeyFrameButton->setFixedSize(medButtonSize);
-    removeKeyFrameButton->setIconSize(medButtonIconSize);
-    removeKeyFrameButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(KnobItemsTableGui::tr("Remove keyframe at the current timeline's time"), NATRON_NAMESPACE::WhiteSpaceNormal) );
-    removeKeyFrameButton->setEnabled(false);
-    QObject::connect( removeKeyFrameButton, SIGNAL(clicked(bool)), _publicInterface, SLOT(onRemoveKeyframeButtonClicked()) );
-    keyframesContainerLayout->addWidget(removeKeyFrameButton);
-
-    clearKeyFramesButton = new Button(QIcon(clearAnimPix), QString(), keyframesContainerWidget);
-    clearKeyFramesButton->setFixedSize(medButtonSize);
-    clearKeyFramesButton->setIconSize(medButtonIconSize);
-    clearKeyFramesButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(KnobItemsTableGui::tr("Remove all animation for the selected item(s)"), NATRON_NAMESPACE::WhiteSpaceNormal) );
-    clearKeyFramesButton->setEnabled(false);
-    QObject::connect( clearKeyFramesButton, SIGNAL(clicked(bool)), _publicInterface, SLOT(onRemoveAnimationButtonClicked()) );
-    keyframesContainerLayout->addWidget(clearKeyFramesButton);
-    
-    
-    keyframesContainerLayout->addStretch();
-} // createKeyFrameWidgets
 
 /**
  * @brief Helper class to properly relfect animation level on a knob in the background of the cell
@@ -656,11 +550,6 @@ KnobItemsTableGui::KnobItemsTableGui(const KnobItemsTablePtr& table, DockablePan
 
     setContainerWidget(panel);
 
-
-    if (_imp->internalModel.lock()->isUserKeyframesWidgetsEnabled()) {
-        _imp->createKeyFrameWidgets(parent);
-    }
-
     _imp->tableView = new KnobItemsTableView(_imp.get(), panel->getGui(), parent);
 
     connect(_imp->tableView, SIGNAL(itemRightClicked(QPoint,TableItemPtr)), this, SLOT(onViewItemRightClicked(QPoint,TableItemPtr)));
@@ -784,17 +673,8 @@ KnobItemsTableGui::addWidgetsToLayout(QLayout* layout)
     QBoxLayout* isBoxLayout = dynamic_cast<QBoxLayout*>(layout);
     if (isGridLayout) {
         int rc = isGridLayout->rowCount();
-        if (_imp->keyframesContainerWidget) {
-            isGridLayout->addWidget(_imp->userKeyframeLabel, rc, 0, 1, 1, Qt::AlignRight);
-            isGridLayout->addWidget(_imp->keyframesContainerWidget, rc, 1, 1, 1);
-        }
         isGridLayout->addWidget(_imp->tableView, rc + 1, 0, 1, 2);
     } else if (isBoxLayout) {
-        QWidget* rowContainer = new QWidget(layout->widget());
-        QHBoxLayout* rowContainerLayout = new QHBoxLayout(rowContainer);
-        rowContainerLayout->addWidget(_imp->userKeyframeLabel);
-        rowContainerLayout->addWidget(_imp->keyframesContainerWidget);
-        isBoxLayout->addWidget(rowContainer);
         isBoxLayout->addWidget(_imp->tableView);
     } else {
         assert(false);
@@ -1400,20 +1280,20 @@ KnobItemsTableView::dropEvent(QDropEvent* e)
     {
         NodePtr originalNode = _imp->_publicInterface->getGui()->getApp()->getProject()->getNodeByFullySpecifiedName(obj.nodeScriptName);
         if (originalNode) {
-            NodeGuiPtr originalNodeUI = boost::dynamic_pointer_cast<NodeGui>(originalNode->getNodeGui());
-            assert(originalNodeUI);
-            NodeSettingsPanel* originalPanel = originalNodeUI->getSettingPanel();
-            assert(originalPanel);
-            if (originalPanel) {
-                originalTableUI = originalPanel->getKnobItemsTable();
-                if (originalTableUI) {
-                    originalTable = originalTableUI->getInternalTable();
 
+            originalTable = originalNode->getEffectInstance()->getItemsTable(obj.tableIdentifier);
+            if (originalTable) {
+                NodeGuiPtr originalNodeUI = boost::dynamic_pointer_cast<NodeGui>(originalNode->getNodeGui());
+                assert(originalNodeUI);
+                NodeSettingsPanel* originalPanel = originalNodeUI->getSettingPanel();
+                assert(originalPanel);
+                if (originalPanel) {
+                    originalTableUI = originalPanel->getKnobItemsTable(obj.tableIdentifier);
                 }
             }
         }
     }
-
+    
     KnobTableItemPtr targetInternalItem;
     {
         TableItemPtr targetItem = itemAt(e->pos());
@@ -1931,7 +1811,6 @@ KnobItemsTableGui::onModelSelectionChanged(const QItemSelection& selected,const 
 
     _imp->refreshKnobsSelectionState(selectedItems, deselectedItems);
 
-    _imp->refreshUserKeyFramesWidgets();
 
     // Select the items in the model internally
     KnobItemsTablePtr model = _imp->internalModel.lock();
@@ -1969,7 +1848,6 @@ KnobItemsTableGui::onModelSelectionChanged(const std::list<KnobTableItemPtr>& ad
     }
     --_imp->selectingModelRecursion;
 
-    _imp->refreshUserKeyFramesWidgets();
     getNodeGui()->getDagGui()->getGui()->refreshTimelineGuiKeyframesLater();
     
 }
@@ -1978,7 +1856,6 @@ KnobItemsTableGui::onModelSelectionChanged(const std::list<KnobTableItemPtr>& ad
 void
 KnobItemsTableGui::onItemAnimationCurveChanged(std::list<double> /*added*/, std::list<double> /*removed*/, ViewIdx /*view*/)
 {
-    _imp->refreshUserKeyFramesWidgets();
     getNodeGui()->getDagGui()->getGui()->refreshTimelineGuiKeyframesLater();
 }
 
@@ -2262,177 +2139,6 @@ KnobItemsTableGuiPrivate::refreshKnobsSelectionState(const std::list<KnobTableIt
     }
 }
 
-void
-KnobItemsTableGuiPrivate::refreshUserKeyFramesWidgets()
-{
-    if (!keyframesContainerWidget) {
-        return;
-    }
-    std::list<KnobTableItemPtr> selectedItems = internalModel.lock()->getSelectedItems();
-
-    std::set<double> keys;
-    for (std::list<KnobTableItemPtr>::const_iterator it = selectedItems.begin(); it != selectedItems.end(); ++it) {
-        (*it)->getMasterKeyFrameTimes(ViewIdx(0), &keys);
-    }
-
-    numKeyFramesSpinBox->setValue( (double)keys.size() );
-
-    double currentTime = _publicInterface->getGui()->getApp()->getProject()->currentFrame();
-
-    if ( keys.empty() ) {
-        currentKeyFrameSpinBox->setValue(0.);
-        currentKeyFrameSpinBox->setAnimation(0);
-    } else {
-        ///get the first time that is equal or greater to the current time
-        std::set<double>::iterator lowerBound = keys.lower_bound(currentTime);
-        int dist = 0;
-        if ( lowerBound != keys.end() ) {
-            dist = std::distance(keys.begin(), lowerBound);
-        }
-
-        if ( lowerBound == keys.end() ) {
-            ///we're after the last keyframe
-            currentKeyFrameSpinBox->setValue( (double)keys.size() );
-            currentKeyFrameSpinBox->setAnimation(1);
-        } else if (*lowerBound == currentTime) {
-            currentKeyFrameSpinBox->setValue(dist + 1);
-            currentKeyFrameSpinBox->setAnimation(2);
-        } else {
-            ///we're in-between 2 keyframes, interpolate
-            if ( lowerBound == keys.begin() ) {
-                currentKeyFrameSpinBox->setValue(1.);
-            } else {
-                std::set<double>::iterator prev = lowerBound;
-                if ( prev != keys.begin() ) {
-                    --prev;
-                }
-                currentKeyFrameSpinBox->setValue( (double)(currentTime - *prev) / (double)(*lowerBound - *prev) + dist );
-            }
-
-            currentKeyFrameSpinBox->setAnimation(1);
-        }
-    }
-
-    const bool enabled = selectedItems.size() > 0;
-
-    userKeyframeLabel->setEnabled(enabled);
-    currentKeyFrameSpinBox->setEnabled(enabled);
-    ofTotalKeyFramesLabel->setEnabled(enabled);
-    numKeyFramesSpinBox->setEnabled(enabled);
-    goToPrevKeyframeButton->setEnabled(enabled);
-    goToNextKeyframeButton->setEnabled(enabled);
-    addKeyFrameButton->setEnabled(enabled);
-    removeKeyFrameButton->setEnabled(enabled);
-    clearKeyFramesButton->setEnabled(enabled);
-
-} // refreshUserKeyFramesWidgets
-
-void
-KnobItemsTableGui::refreshAfterTimeChanged()
-{
-    _imp->refreshUserKeyFramesWidgets();
-}
-
-void
-KnobItemsTableGui::onGoToPrevKeyframeButtonClicked()
-{
-    std::list<KnobTableItemPtr> selectedItems = _imp->internalModel.lock()->getSelectedItems();
-    std::set<double> keys;
-    for (std::list<KnobTableItemPtr>::const_iterator it = selectedItems.begin(); it != selectedItems.end(); ++it) {
-        (*it)->getMasterKeyFrameTimes(ViewIdx(0), &keys);
-    }
-
-    if (keys.empty()) {
-        return;
-    }
-
-    TimeLinePtr timeline = getGui()->getApp()->getProject()->getTimeLine();
-    double currentTime = timeline->currentFrame();
-
-    double prevKeyTime = 0;
-    std::set<double>::iterator lb = keys.lower_bound(currentTime);
-    if (lb == keys.end()) {
-        // Check if the last keyframe is prior to the current time
-        std::set<double>::reverse_iterator last = keys.rbegin();
-        if (*last >= currentTime) {
-            return;
-        } else {
-            prevKeyTime = *last;
-        }
-    } else if (lb == keys.begin()) {
-        // No keyframe before
-        return;
-    } else {
-        --lb;
-        prevKeyTime = *lb;
-    }
-
-    timeline->seekFrame(prevKeyTime, false, EffectInstancePtr(), eTimelineChangeReasonOtherSeek);
-
-
-}
-
-void
-KnobItemsTableGui::onGoToNextKeyframeButtonClicked()
-{
-    std::list<KnobTableItemPtr> selectedItems = _imp->internalModel.lock()->getSelectedItems();
-    std::set<double> keys;
-    for (std::list<KnobTableItemPtr>::const_iterator it = selectedItems.begin(); it != selectedItems.end(); ++it) {
-        (*it)->getMasterKeyFrameTimes(ViewIdx(0), &keys);
-    }
-
-    if (keys.empty()) {
-        return;
-    }
-
-    TimeLinePtr timeline = getGui()->getApp()->getProject()->getTimeLine();
-    double currentTime = timeline->currentFrame();
-
-    double nextKeyTime = 0;
-    std::set<double>::iterator ub = keys.upper_bound(currentTime);
-    if (ub == keys.end()) {
-        return;
-    } else {
-        nextKeyTime = *ub;
-    }
-
-    timeline->seekFrame(nextKeyTime, false, EffectInstancePtr(), eTimelineChangeReasonOtherSeek);
-}
-
-void
-KnobItemsTableGui::onAddKeyframeButtonClicked()
-{
-    TimeLinePtr timeline = getGui()->getApp()->getProject()->getTimeLine();
-    double currentTime = timeline->currentFrame();
-
-    std::list<KnobTableItemPtr> selectedItems = _imp->internalModel.lock()->getSelectedItems();
-    for (std::list<KnobTableItemPtr>::const_iterator it = selectedItems.begin(); it != selectedItems.end(); ++it) {
-        (*it)->setKeyFrame(TimeValue(currentTime), ViewIdx(0), 0);
-    }
-
-}
-
-void
-KnobItemsTableGui::onRemoveKeyframeButtonClicked()
-{
-    TimeLinePtr timeline = getGui()->getApp()->getProject()->getTimeLine();
-    double currentTime = timeline->currentFrame();
-
-    std::list<KnobTableItemPtr> selectedItems = _imp->internalModel.lock()->getSelectedItems();
-    for (std::list<KnobTableItemPtr>::const_iterator it = selectedItems.begin(); it != selectedItems.end(); ++it) {
-        (*it)->deleteValueAtTime(TimeValue(currentTime), ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonUserEdited);
-    }
-}
-
-void
-KnobItemsTableGui::onRemoveAnimationButtonClicked()
-{
-    std::list<KnobTableItemPtr> selectedItems = _imp->internalModel.lock()->getSelectedItems();
-    for (std::list<KnobTableItemPtr>::const_iterator it = selectedItems.begin(); it != selectedItems.end(); ++it) {
-        (*it)->removeAnimation(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonUserEdited);
-    }
-
-}
 
 NATRON_NAMESPACE_EXIT
 NATRON_NAMESPACE_USING

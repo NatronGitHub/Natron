@@ -145,7 +145,7 @@ public:
 private:
 
     virtual void onPagingTurnedOff() OVERRIDE FINAL;
-    virtual KnobItemsTableGuiPtr createKnobItemsTable(QWidget* parent) OVERRIDE FINAL;
+    virtual KnobItemsTableGuiPtr createKnobItemsTable(const KnobItemsTablePtr& table, QWidget* parent) OVERRIDE FINAL;
     virtual void refreshUndoRedoButtonsEnabledNess(bool canUndo, bool canRedo) OVERRIDE FINAL;
     virtual QWidget* createKnobHorizontalFieldContainer(QWidget* parent) const OVERRIDE FINAL;
     virtual QWidget* getPagesContainer() const OVERRIDE FINAL;

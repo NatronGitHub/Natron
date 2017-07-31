@@ -1463,7 +1463,7 @@ Effect::createItemsTableWrapper(const KnobItemsTablePtr& table)
 } // createItemsTableWrapper
 
 ItemsTable*
-Effect::getItemsTable() const
+Effect::getItemsTable(const QString& identifier) const
 {
     NodePtr n = getInternalNode();
 
@@ -1471,13 +1471,32 @@ Effect::getItemsTable() const
         PythonSetNullError();
         return 0;
     }
-    KnobItemsTablePtr table = n->getEffectInstance()->getItemsTable();
+    KnobItemsTablePtr table = n->getEffectInstance()->getItemsTable(identifier.toStdString());
     if (!table) {
         return 0;
     }
     return Effect::createItemsTableWrapper(table);
 }
 
+std::list<ItemsTable*>
+Effect::getAllItemsTable() const
+{
+    NodePtr n = getInternalNode();
+    std::list<ItemsTable*> ret;
+    if (!n) {
+        PythonSetNullError();
+        return ret;
+    }
+    std::list<KnobItemsTablePtr> tables = n->getEffectInstance()->getAllItemsTables();
+    if (tables.empty()) {
+        return ret;
+    }
+    for (std::list<KnobItemsTablePtr>::const_iterator it = tables.begin(); it != tables.end(); ++it) {
+        ItemsTable* table = Effect::createItemsTableWrapper(*it);
+        ret.push_back(table);
+    }
+    return ret;
+}
 
 
 RectD

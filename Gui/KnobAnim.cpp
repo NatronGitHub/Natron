@@ -215,7 +215,7 @@ KnobAnimPrivate::createItemForView(const std::vector<std::string>& projectViewNa
     }
     // For KnobChoice and all string-based knobs, do not create a curve, the dope sheet is more intuitive for the user
     CurveTypeEnum keyframeType = internalKnob->getKeyFrameDataType();
-    bool createdCurve = keyframeType != eCurveTypeString && keyframeType != eCurveTypeChoice;
+    const bool createCurve = Curve::canBeVisibleInCurveEditor(keyframeType);
 
     bool dimensionsExpanded = internalKnob->getAllDimensionsVisible(view);
     // Now create an item per dimension if the knob is multi-dimensional
@@ -233,7 +233,7 @@ KnobAnimPrivate::createItemForView(const std::vector<std::string>& projectViewNa
             p.dimension = DimIdx(i);
             DimViewItem& item = dimViewItems[p];
             item.treeItem = dimItem;
-            if (createdCurve && curveWidget) {
+            if (createCurve && curveWidget) {
                 item.curve.reset(new CurveGui(curveWidget, thisShared, p.dimension, p.view));
             }
 
@@ -246,7 +246,7 @@ KnobAnimPrivate::createItemForView(const std::vector<std::string>& projectViewNa
         p.dimension = DimIdx(0);
         DimViewItem& item = dimViewItems[p];
         item.treeItem = viewItem ? viewItem : rootItem;
-        if (createdCurve && curveWidget) {
+        if (createCurve && curveWidget) {
             item.curve.reset(new CurveGui(curveWidget, thisShared, p.dimension, p.view));
         }
     }
@@ -358,6 +358,7 @@ KnobAnim::refreshVisibilityConditional(bool refreshHolder)
 {
     KnobsHolderAnimBasePtr holder = getHolder();
     if (holder && refreshHolder) {
+        // The holder will take care of refreshing this knob visibility
         holder->refreshVisibility();
         return;
     }
@@ -382,16 +383,19 @@ KnobAnim::refreshVisibilityConditional(bool refreshHolder)
     assert(knob->getHolder());
     EffectInstancePtr holderIsEffect = toEffectInstance(knob->getHolder());
     if (holderIsEffect) {
-        KnobItemsTablePtr table = holderIsEffect->getItemsTable();
-        if (table) {
-            if (table->isPerItemKnobMaster(knob)) {
+        std::list<KnobItemsTablePtr> tables = holderIsEffect->getAllItemsTables();
+        for (std::list<KnobItemsTablePtr>::const_iterator it = tables.begin(); it != tables.end(); ++it) {
+            if ((*it)->isPerItemKnobMaster(knob)) {
                 isTableItemMasterKnob = true;
+                break;
             }
         }
     }
 
-    bool mustHide = isTableItemMasterKnob || knob->getIsSecret() || !knob->isEnabled();
+    const bool mustHide = isTableItemMasterKnob || knob->getIsSecret() || !knob->isEnabled();
     {
+
+        // For each dim/view curve, show/hide it 
         for (PerDimViewItemMap::const_iterator it = _imp->dimViewItems.begin(); it!=_imp->dimViewItems.end(); ++it) {
             CurvePtr curve = knob->getAnimationCurve(it->first.view, it->first.dimension);
             if (!curve) {

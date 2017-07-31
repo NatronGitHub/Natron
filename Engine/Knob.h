@@ -108,14 +108,13 @@ public:
 
     void s_appendParamEditChange(ValueChangedReasonEnum reason,
                                  ValueChangedReturnCodeEnum setValueRetCode,
-                                 PerDimViewVariantMap oldValue,
-                                 Variant newValue,
+                                 const PerDimViewKeyFramesMap& oldValue,
+                                 const KeyFrame& newValue,
                                  ViewSetSpec view,
                                  DimSpec dim,
-                                 TimeValue time,
                                  bool setKeyFrame)
     {
-        Q_EMIT appendParamEditChange(reason, setValueRetCode, oldValue, newValue, view,  dim, time, setKeyFrame);
+        Q_EMIT appendParamEditChange(reason, setValueRetCode, oldValue, newValue, view,  dim, setKeyFrame);
     }
 
     void s_selectedMultipleTimes(bool b)
@@ -215,7 +214,7 @@ Q_SIGNALS:
 
     // Same as setValueWithUndoStack except that the value change will be compressed
     // in a multiple edit undo/redo action
-    void appendParamEditChange(ValueChangedReasonEnum reason, ValueChangedReturnCodeEnum setValueRetCode, PerDimViewVariantMap oldValue, Variant newValue, ViewSetSpec view, DimSpec dim, TimeValue time, bool setKeyFrame);
+    void appendParamEditChange(ValueChangedReasonEnum reason, ValueChangedReturnCodeEnum setValueRetCode, PerDimViewKeyFramesMap oldValue, KeyFrame newValue, ViewSetSpec view, DimSpec dim, bool setKeyFrame);
 
     void selectedMultipleTimes(bool);
 
@@ -435,179 +434,6 @@ public:
      **/
     virtual std::string getDimensionName(DimIdx dimension) const = 0;
     virtual void setDimensionName(DimIdx dim, const std::string & name) = 0;
-
-    /**
-     * @brief Set the value of the knob in the given dimension with the given reason.
-     * @param dimension If set to all, all dimensions will receive the modification otherwise just the dimension given by the index
-     * @param view If set to all, all views on the knob will receive the given value.
-     * If set to current and views are split-off only the "current" view
-     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
-     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
-     * at the given index will receive the change, otherwise no change occurs.
-     * @param newKey If this knob has auto-keying enabled and its animation level is currently interpolated, then it may
-     * attempt to set a keyframe automatically. If this parameter is non NULL the new keyframe (or modified keyframe) will
-     * contain it.
-     * @param forceHandlerEvenIfNoChange If true, even if the value of the knob did not change, the knobValueChanged handler of the
-     * knob holder will be called and an evaluation will be triggered.
-     * @return Returns the kind of changed that the knob has had
-     **/
-    virtual ValueChangedReturnCodeEnum setIntValue(int value,
-                                                   ViewSetSpec view = ViewSetSpec::all(),
-                                                   DimSpec dimension = DimSpec(0),
-                                                   ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
-                                                   KeyFrame* newKey = 0,
-                                                   bool forceHandlerEvenIfNoChange = false) = 0;
-
-    /**
-     * @brief Set multiple dimensions at once
-     * This efficiently set values on all dimensions instead of
-     * calling setValue for each dimension.
-     * @param values The values to set, the vector must correspond to a contiguous set of dimensions
-     * that are contained in the dimension count of the knob
-     * @param dimensionStartIndex If the values do not represent all the dimension of the knob, this is the
-     * dimension to start from
-     * @param view If set to all, all views on the knob will receive the given values
-     * If set to current and views are split-off only the "current" view
-     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
-     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
-     * at the given index will receive the change, otherwise no change occurs.
-     * @param reason The change reason
-     **/
-    virtual void setIntValueAcrossDimensions(const std::vector<int>& values,
-                                             DimIdx dimensionStartIndex = DimIdx(0),
-                                             ViewSetSpec view = ViewSetSpec::all(),
-                                             ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
-                                             std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) = 0;
-
-    /**
-     * @brief Set the value of the knob in the given dimension with the given reason.
-     * @param dimension If set to all, all dimensions will receive the modification otherwise just the dimension given by the index
-     * @param view If set to all, all views on the knob will receive the given value.
-     * If set to current and views are split-off only the "current" view
-     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
-     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
-     * at the given index will receive the change, otherwise no change occurs.
-     * @param newKey If this knob has auto-keying enabled and its animation level is currently interpolated, then it may
-     * attempt to set a keyframe automatically. If this parameter is non NULL the new keyframe (or modified keyframe) will
-     * contain it.
-     * @param forceHandlerEvenIfNoChange If true, even if the value of the knob did not change, the knobValueChanged handler of the
-     * knob holder will be called and an evaluation will be triggered.
-     * @return Returns the kind of changed that the knob has had
-     **/
-    virtual ValueChangedReturnCodeEnum setDoubleValue(double value,
-                                                      ViewSetSpec view = ViewSetSpec::all(),
-                                                      DimSpec dimension = DimSpec(0),
-                                                      ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
-                                                      KeyFrame* newKey = 0,
-                                                      bool forceHandlerEvenIfNoChange = false) = 0;
-
-    /**
-     * @brief Set multiple dimensions at once
-     * This efficiently set values on all dimensions instead of
-     * calling setValue for each dimension.
-     * @param values The values to set, the vector must correspond to a contiguous set of dimensions
-     * that are contained in the dimension count of the knob
-     * @param dimensionStartIndex If the values do not represent all the dimension of the knob, this is the
-     * dimension to start from
-     * @param view If set to all, all views on the knob will receive the given values
-     * If set to current and views are split-off only the "current" view
-     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
-     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
-     * at the given index will receive the change, otherwise no change occurs.
-     * @param reason The change reason
-     **/
-    virtual void setDoubleValueAcrossDimensions(const std::vector<double>& values,
-                                                DimIdx dimensionStartIndex = DimIdx(0),
-                                                ViewSetSpec view = ViewSetSpec::all(),
-                                                ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
-                                                std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) = 0;
-
-    /**
-     * @brief Set the value of the knob in the given dimension with the given reason.
-     * @param dimension If set to all, all dimensions will receive the modification otherwise just the dimension given by the index
-     * @param view If set to all, all views on the knob will receive the given value.
-     * If set to current and views are split-off only the "current" view
-     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
-     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
-     * at the given index will receive the change, otherwise no change occurs.
-     * @param newKey If this knob has auto-keying enabled and its animation level is currently interpolated, then it may
-     * attempt to set a keyframe automatically. If this parameter is non NULL the new keyframe (or modified keyframe) will
-     * contain it.
-     * @param forceHandlerEvenIfNoChange If true, even if the value of the knob did not change, the knobValueChanged handler of the
-     * knob holder will be called and an evaluation will be triggered.
-     * @return Returns the kind of changed that the knob has had
-     **/
-    virtual ValueChangedReturnCodeEnum setBoolValue(bool value,
-                                                    ViewSetSpec view = ViewSetSpec::all(),
-                                                    DimSpec dimension = DimSpec(0),
-                                                    ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
-                                                    KeyFrame* newKey = 0,
-                                                    bool forceHandlerEvenIfNoChange = false) = 0;
-
-    /**
-     * @brief Set multiple dimensions at once
-     * This efficiently set values on all dimensions instead of
-     * calling setValue for each dimension.
-     * @param values The values to set, the vector must correspond to a contiguous set of dimensions
-     * that are contained in the dimension count of the knob
-     * @param dimensionStartIndex If the values do not represent all the dimension of the knob, this is the
-     * dimension to start from
-     * @param view If set to all, all views on the knob will receive the given values
-     * If set to current and views are split-off only the "current" view
-     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
-     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
-     * at the given index will receive the change, otherwise no change occurs.
-     * @param reason The change reason
-     **/
-    virtual void setBoolValueAcrossDimensions(const std::vector<bool>& values,
-                                              DimIdx dimensionStartIndex = DimIdx(0),
-                                              ViewSetSpec view = ViewSetSpec::all(),
-                                              ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
-                                              std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) = 0;
-
-    /**
-     * @brief Set the value of the knob in the given dimension with the given reason.
-     * @param dimension If set to all, all dimensions will receive the modification otherwise just the dimension given by the index
-     * @param view If set to all, all views on the knob will receive the given value.
-     * If set to current and views are split-off only the "current" view
-     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
-     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
-     * at the given index will receive the change, otherwise no change occurs.
-     * @param newKey If this knob has auto-keying enabled and its animation level is currently interpolated, then it may
-     * attempt to set a keyframe automatically. If this parameter is non NULL the new keyframe (or modified keyframe) will
-     * contain it.
-     * @param forceHandlerEvenIfNoChange If true, even if the value of the knob did not change, the knobValueChanged handler of the
-     * knob holder will be called and an evaluation will be triggered.
-     * @return Returns the kind of changed that the knob has had
-     **/
-    virtual ValueChangedReturnCodeEnum setStringValue(const std::string& value,
-                                                      ViewSetSpec view = ViewSetSpec::all(),
-                                                      DimSpec dimension = DimSpec(0),
-                                                      ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
-                                                      KeyFrame* newKey = 0,
-                                                      bool forceHandlerEvenIfNoChange = false) = 0;
-
-
-    /**
-     * @brief Set multiple dimensions at once
-     * This efficiently set values on all dimensions instead of
-     * calling setValue for each dimension.
-     * @param values The values to set, the vector must correspond to a contiguous set of dimensions
-     * that are contained in the dimension count of the knob
-     * @param dimensionStartIndex If the values do not represent all the dimension of the knob, this is the
-     * dimension to start from
-     * @param view If set to all, all views on the knob will receive the given values
-     * If set to current and views are split-off only the "current" view
-     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
-     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
-     * at the given index will receive the change, otherwise no change occurs.
-     * @param reason The change reason
-     **/
-    virtual void setStringValueAcrossDimensions(const std::vector<std::string>& values,
-                                                DimIdx dimensionStartIndex = DimIdx(0),
-                                                ViewSetSpec view = ViewSetSpec::all(),
-                                                ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
-                                                std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) = 0;
     
     /**
      * @brief When in-between a begin/endChanges bracket, evaluate (render) action will not be called
@@ -1282,6 +1108,9 @@ public:
     virtual bool canLinkWith(const KnobIPtr & other, DimIdx thisDimension, ViewIdx thisView, DimIdx otherDim, ViewIdx otherView, std::string* error) const = 0;
     KnobPagePtr getTopLevelPage() const;
 
+    virtual ValueChangedReturnCodeEnum setValueFromKeyFrame(const SetKeyFrameArgs& args, const KeyFrame & k) = 0;
+
+
 };
 
 
@@ -1362,11 +1191,11 @@ public:
         
         // If the copy operation should report keyframes removed, this is a pointer
         // to the keyframes removed list
-        std::list<double>* keysRemoved;
+        KeyFrameSet* keysRemoved;
         
         // If the copy operation should report keyframes added, this is a pointer
         // to the keyframes added list
-        std::list<double>* keysAdded;
+        KeyFrameSet* keysAdded;
         
         CopyOutArgs()
         : keysRemoved(0)
@@ -1376,6 +1205,11 @@ public:
         }
         
     };
+
+    /**
+     * @brief Set a keyframe, or modify it
+     **/
+    virtual ValueChangedReturnCodeEnum setKeyFrame(const KeyFrame& key, SetKeyFrameFlags flags);
 
     /**
      * @brief Copy the other dimension/view value with the given args.
@@ -1445,7 +1279,9 @@ public:
         
     }
 
-    virtual ValueChangedReturnCodeEnum setValueAtTime(TimeValue time, const T& value, KeyFrame* newKey);
+    virtual KeyFrame makeKeyFrame(TimeValue time, const T& value);
+
+    virtual T getValueFromKeyFrame(const KeyFrame& k);
 
     virtual bool setValueAndCheckIfChanged(const T& value);
 
@@ -1500,12 +1336,10 @@ public:
 private:
     void setAllDimensionsVisibleInternal(ViewIdx view, bool visible);
 
-protected:
-
-    KnobDimViewBasePtr getDataForDimView(DimIdx dimension, ViewIdx view) const;
-
 
 public:
+
+    KnobDimViewBasePtr getDataForDimView(DimIdx dimension, ViewIdx view) const;
 
     virtual KnobIPtr getCloneForHolderInternal(const KnobHolderPtr& holder) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
@@ -1651,6 +1485,7 @@ private:
 
     KnobIPtr findMasterKnob(const std::string& masterKnobName,
                             const std::string& masterNodeName,
+                            const std::string& masterTableName,
                             const std::string& masterItemName,
                             const std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>& allCreatedNodesInGroup);
 
@@ -2043,71 +1878,23 @@ public:
     //////////// Overriden from AnimatingObjectI
     virtual CurveTypeEnum getKeyFrameDataType() const OVERRIDE;
 
-    virtual ValueChangedReturnCodeEnum setIntValueAtTime(TimeValue time, int value, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0) OVERRIDE ;
-    virtual void setMultipleIntValueAtTime(const std::list<IntTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0) OVERRIDE ;
-    virtual void setIntValueAtTimeAcrossDimensions(TimeValue time, const std::vector<int>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::all(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE ;
-    virtual void setMultipleIntValueAtTimeAcrossDimensions(const PerCurveIntValuesList& keysPerDimension,  ValueChangedReasonEnum reason = eValueChangedReasonUserEdited) OVERRIDE ;
+    virtual ValueChangedReturnCodeEnum setKeyFrame(const SetKeyFrameArgs& args, const KeyFrame& key) OVERRIDE;
+    virtual void setMultipleKeyFrames(const SetKeyFrameArgs& args, const std::list<KeyFrame>& keys) OVERRIDE;
+    virtual void setKeyFramesAcrossDimensions(const SetKeyFrameArgs& args, const std::vector<KeyFrame>& values, DimIdx dimensionStartIndex = DimIdx(0), std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE;
 
-    virtual ValueChangedReturnCodeEnum setDoubleValueAtTime(TimeValue time, double value, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0) OVERRIDE ;
-    virtual void setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0) OVERRIDE ;
-    virtual void setDoubleValueAtTimeAcrossDimensions(TimeValue time, const std::vector<double>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::all(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE ;
-    virtual void setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDoubleValuesList& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonUserEdited) OVERRIDE ;
-
-    virtual ValueChangedReturnCodeEnum setBoolValueAtTime(TimeValue time, bool value, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0) OVERRIDE ;
-    virtual void setMultipleBoolValueAtTime(const std::list<BoolTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0) OVERRIDE ;
-    virtual void setBoolValueAtTimeAcrossDimensions(TimeValue time, const std::vector<bool>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::all(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE;
-    virtual void setMultipleBoolValueAtTimeAcrossDimensions(const PerCurveBoolValuesList& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonUserEdited) OVERRIDE;
-
-    virtual ValueChangedReturnCodeEnum setStringValueAtTime(TimeValue time, const std::string& value, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0) OVERRIDE ;
-    virtual void setMultipleStringValueAtTime(const std::list<StringTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0) OVERRIDE ;
-    virtual void setStringValueAtTimeAcrossDimensions(TimeValue time, const std::vector<std::string>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::all(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE;
-    virtual void setMultipleStringValueAtTimeAcrossDimensions(const PerCurveStringValuesList& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonUserEdited) OVERRIDE;
     //////////// end overriden from AnimatingObjectI
 
-    /**
-     * @brief Set the value of the knob at a specific time (keyframe) in the given dimension with the given reason.
-     * @param view If set to all, all views on the knob will receive the given value.
-     * If set to current and views are split-off only the "current" view
-     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
-     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
-     * at the given index will receive the change, otherwise no change occurs.
-     * @param newKey If this knob has auto-keying enabled and its animation level is currently interpolated, then it may
-     * attempt to set a keyframe automatically. If this parameter is non NULL the new keyframe (or modified keyframe) will
-     * contain it.
-     * @param forceHandlerEvenIfNoChange If true, even if the value of the knob did not change, the knobValueChanged handler of the
-     * knob holder will be called and an evaluation will be triggered.
-     * @return Returns the kind of changed that the knob has had
-     **/
+
+    // Convenience function, calls setKeyFrame
     ValueChangedReturnCodeEnum setValueAtTime(TimeValue time,
                                               const T & v,
                                               ViewSetSpec view = ViewSetSpec::all(),
                                               DimSpec dimension = DimSpec(0),
                                               ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
-                                              KeyFrame* newKey = 0,
                                               bool forceHandlerEvenIfNoChange = false);
 
-    /**
-     * @brief Wraps multiple calls to  setValueAtTime on the curve at the given view and dimension.
-     * This is efficient to set many keyframes on the given curve.
-     * @param newKey[out] If non null, this will be set to the new keyframe in return
-     **/
-    void setMultipleValueAtTime(const std::list<TimeValuePair<T> >& keys, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0);
 
-
-    /**
-     * @brief Set a keyframe on multiple dimensions at once. This efficiently set values on all dimensions instead of 
-     * calling setValueAtTime for each dimension.
-     * @param values The values to set, the vector must correspond to a contiguous set of dimensions
-     * that are contained in the dimension count of the knob
-     * @param dimensionStartIndex If the values do not represent all the dimension of the knob, this is the
-     * dimension to start from
-     * @param view If set to all, all views on the knob will receive the given values
-     * If set to current and views are split-off only the "current" view
-     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
-     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
-     * at the given index will receive the change, otherwise no change occurs.
-     * @param reason The change reason
-     **/
+    // Convenience function, calls setKeyFramesAcrossDimensions
     void setValueAtTimeAcrossDimensions(TimeValue time,
                                         const std::vector<T>& values,
                                         DimIdx dimensionStartIndex = DimIdx(0),
@@ -2115,63 +1902,6 @@ public:
                                         ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
                                         std::vector<ValueChangedReturnCodeEnum>* retCodes = 0);
 
-    /**
-     * @brief Wraps multiple calls to  setValueAtTimeAcrossDimensions on the curve at the given view and dimension
-     **/
-    void setMultipleValueAtTimeAcrossDimensions(const std::vector<std::pair<DimensionViewPair, std::list<TimeValuePair<T> > > >& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonUserEdited);
-
-
-    virtual ValueChangedReturnCodeEnum setIntValue(int value,
-                                                   ViewSetSpec view = ViewSetSpec::all(),
-                                                   DimSpec dimension = DimSpec(0),
-                                                   ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
-                                                   KeyFrame* newKey = 0,
-                                                   bool forceHandlerEvenIfNoChange = false) OVERRIDE FINAL;
-
-    virtual void setIntValueAcrossDimensions(const std::vector<int>& values,
-                                             DimIdx dimensionStartIndex,
-                                             ViewSetSpec view,
-                                             ValueChangedReasonEnum reason,
-                                             std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE FINAL;
-
-    virtual ValueChangedReturnCodeEnum setDoubleValue(double value,
-                                                      ViewSetSpec view = ViewSetSpec::all(),
-                                                      DimSpec dimension = DimSpec(0),
-                                                      ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
-                                                      KeyFrame* newKey = 0,
-                                                      bool forceHandlerEvenIfNoChange = false) OVERRIDE FINAL;
-
-    virtual void setDoubleValueAcrossDimensions(const std::vector<double>& values,
-                                                DimIdx dimensionStartIndex,
-                                                ViewSetSpec view,
-                                                ValueChangedReasonEnum reason,
-                                                std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE FINAL;
-
-    virtual ValueChangedReturnCodeEnum setBoolValue(bool value,
-                                                    ViewSetSpec view = ViewSetSpec::all(),
-                                                    DimSpec dimension = DimSpec(0),
-                                                    ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
-                                                    KeyFrame* newKey = 0,
-                                                    bool forceHandlerEvenIfNoChange = false) OVERRIDE FINAL;
-
-    virtual void setBoolValueAcrossDimensions(const std::vector<bool>& values,
-                                              DimIdx dimensionStartIndex,
-                                              ViewSetSpec view,
-                                              ValueChangedReasonEnum reason,
-                                              std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE FINAL;
-
-    virtual ValueChangedReturnCodeEnum setStringValue(const std::string& value,
-                                                      ViewSetSpec view = ViewSetSpec::all(),
-                                                      DimSpec dimension = DimSpec(0),
-                                                      ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
-                                                      KeyFrame* newKey = 0,
-                                                      bool forceHandlerEvenIfNoChange = false) OVERRIDE FINAL;
-
-    virtual void setStringValueAcrossDimensions(const std::vector<std::string>& values,
-                                                DimIdx dimensionStartIndex,
-                                                ViewSetSpec view,
-                                                ValueChangedReasonEnum reason,
-                                                std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE FINAL;
 
 
     /**
@@ -2192,9 +1922,10 @@ public:
                                         ViewSetSpec view = ViewSetSpec::all(),
                                         DimSpec dimension = DimSpec(0),
                                         ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
-                                        KeyFrame* newKey = 0,
                                         bool forceHandlerEvenIfNoChange = false);
 
+
+    virtual ValueChangedReturnCodeEnum setValueFromKeyFrame(const SetKeyFrameArgs& args, const KeyFrame & k) OVERRIDE;
 
 
     /**
@@ -2333,7 +2064,6 @@ public:
     virtual void refreshStaticValue(TimeValue time) OVERRIDE FINAL;
 
 protected:
-    
 
 
     virtual void refreshCurveMinMaxInternal(ViewIdx view, DimIdx dimension) OVERRIDE FINAL;
@@ -2351,8 +2081,6 @@ private:
                        DimIdx dimension,
                        ViewIdx view,
                        bool clamp);
-
-    void setValueOnCurveInternal(TimeValue time, const T& v, DimIdx dimension, ViewIdx view, KeyFrame* newKey, ValueChangedReturnCodeEnum* ret);
 
     void addSetValueToUndoRedoStackIfNeeded(const T& oldValue, const T& value, ValueChangedReasonEnum reason, ValueChangedReturnCodeEnum setValueRetCode, ViewSetSpec view, DimSpec dimension, TimeValue time, bool setKeyFrame);
 
@@ -2468,6 +2196,7 @@ private:
     // The Data pointer is shared accross the "main" instance and the render clones.
     boost::shared_ptr<Data> _data;
 
+
 };
 
 
@@ -2502,10 +2231,9 @@ class AddToUndoRedoStackHelper
     bool _isUndoRedoStackOpened;
 
     struct ValueToPush {
-        PerDimViewVariantMap oldValues;
+        PerDimViewKeyFramesMap oldValues;
         ViewSetSpec view;
         DimSpec dimension;
-        TimeValue time;
         bool setKeyframe;
         ValueChangedReasonEnum reason;
     };
@@ -2529,7 +2257,7 @@ public:
     /**
      * @brief Must be called after prepareOldValueToUndoRedoStack to finalize the value in the undo/redo stack.
      **/
-    void addSetValueToUndoRedoStackIfNeeded(const T& value, ValueChangedReturnCodeEnum setValueRetCode);
+    void addSetValueToUndoRedoStackIfNeeded(const KeyFrame& value, ValueChangedReturnCodeEnum setValueRetCode);
 };
 
 typedef Knob<bool> KnobBoolBase;
@@ -2831,10 +2559,11 @@ public:
      * The KnobHolder takes ownership of the table.
      * @param paramScriptNameBefore The script-name of the knob right before where the table should be inserted in the layout or the script-name of a page.
      **/
-    void setItemsTable(const KnobItemsTablePtr& table, KnobItemsTablePositionEnum positioning, const std::string& paramScriptNameBefore);
-    KnobItemsTablePtr getItemsTable() const;
-    KnobItemsTablePositionEnum getItemsTablePosition() const;
-    std::string getItemsTablePreviousKnobScriptName() const;
+    void addItemsTable(const KnobItemsTablePtr& table, KnobItemsTablePositionEnum positioning, const std::string& paramScriptNameBefore);
+    KnobItemsTablePtr getItemsTable(const std::string& tableIdentifier) const;
+    std::list<KnobItemsTablePtr> getAllItemsTables() const;
+    KnobItemsTablePositionEnum getItemsTablePosition(const std::string& tableIdentifier) const;
+    std::string getItemsTablePreviousKnobScriptName(const std::string& tableIdentifier) const;
 
     virtual TimeValue getCurrentRenderTime() const;
     virtual ViewIdx getCurrentRenderView() const;

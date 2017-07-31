@@ -87,6 +87,7 @@ GCC_DIAG_OFF(unused-parameter)
 #include "Engine/EffectInstance.h"
 #include "Engine/Format.h"
 #include "Engine/RectI.h"
+#include "Engine/TrackerNode.h"
 #include "Engine/ViewIdx.h"
 #include <SequenceParsing.h>
 
@@ -877,6 +878,7 @@ SERIALIZATION_NAMESPACE::MasterSerialization::serialize(Archive & ar,
     ar & ::boost::serialization::make_nvp("MasterKnobName", masterKnobName);
 
     if (version >= MASTER_SERIALIZATION_INTRODUCE_MASTER_TRACK_NAME) {
+        masterTableName = kTrackerParamTracksTableName;
         ar & ::boost::serialization::make_nvp("MasterTrackName", masterTableItemName);
     }
 }
@@ -1227,7 +1229,14 @@ SERIALIZATION_NAMESPACE::KnobSerialization::serialize(Archive & ar,
         for (std::map<double, std::string>::const_iterator it = keys.begin(); it != keys.end(); ++it) {
             KeyFrameSerialization k;
             k.time = it->first;
-            k.stringValue = it->second;
+
+            KeyFrameProperty property;
+            KeyFramePropertyVariant v;
+            v.stringValue = it->second;
+            property.values.push_back(v);
+            property.name = kKeyFramePropString;
+            property.type = kKeyFramePropertyVariantTypeString;
+            k.properties.push_back(property);
             values[0]._animationCurve.keys.push_back(k);
         }
         ///Don't load animation for input image files: they no longer hold keyframes
@@ -1543,9 +1552,10 @@ SERIALIZATION_NAMESPACE::NodeSerialization::serialize(Archive & ar,
         ar & ::boost::serialization::make_nvp("HasRotoContext", hasRotoContext);
         if (hasRotoContext) {
             Compat::RotoContextSerialization rotoContext;
-            _tableModel.reset(new KnobItemsTableSerialization);
+            KnobItemsTableSerializationPtr tableModel(new KnobItemsTableSerialization);
             ar & ::boost::serialization::make_nvp("RotoContext", rotoContext);
-            rotoContext.convertRotoContext(_tableModel.get());
+            rotoContext.convertRotoContext(tableModel.get());
+            _tables.push_back(tableModel);
         }
 
         if (version >= NODE_SERIALIZATION_INTRODUCES_TRACKER_CONTEXT) {
@@ -1554,9 +1564,10 @@ SERIALIZATION_NAMESPACE::NodeSerialization::serialize(Archive & ar,
             if (hasTrackerContext) {
 
                 Compat::TrackerContextSerialization trackerContext;
-                _tableModel.reset(new KnobItemsTableSerialization);
+                KnobItemsTableSerializationPtr tableModel(new KnobItemsTableSerialization);
                 ar & boost::serialization::make_nvp("TrackerContext", trackerContext);
-                trackerContext.convertTrackerContext(_tableModel.get());
+                trackerContext.convertTrackerContext(tableModel.get());
+                _tables.push_back(tableModel);
             }
         }
     }

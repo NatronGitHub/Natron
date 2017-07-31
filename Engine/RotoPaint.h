@@ -432,6 +432,12 @@ enum RotoMotionBlurModeEnum
 #define kRotoOutputComponentsParamHint "Components type of the image for the solid brush and for shapes. "\
 "By default, the Roto node outputs Alpha only whereas the RotoPaint node outputs RGBA"
 
+#define kRotoShapeUserKeyframesParam "shapeKeys"
+#define kRotoShapeUserKeyframesParamLabel "Shape Keys"
+#define kRotoShapeUserKeyframesParamHint "Navigate throughout the keyframes of the selected shape"
+
+#define kRotoPaintItemsTableName "rotoPaintItems"
+
 class RotoPaintPrivate;
 class RotoPaint
     : public NodeGroup

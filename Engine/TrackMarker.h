@@ -72,6 +72,11 @@ NATRON_NAMESPACE_ENTER
 #define kTrackerParamPatternBtmLeftLabel "Pattern Bottom Left"
 #define kTrackerParamPatternBtmLeftHint "The bottom left point of the quad defining the pattern to track"
 
+#define kTrackerParamManualKeyframes "manualKeyframes"
+#define kTrackerParamManualKeyframesLabel "Manual Keyframe(s)"
+#define kTrackerParamManualKeyframesHint "Navigate throughout the keyframes created manually on the track"
+
+
 #define kTrackerParamCenter "centerPoint"
 #define kTrackerParamCenterLabel "Center"
 #define kTrackerParamCenterHint "The point to track"
@@ -139,10 +144,6 @@ public:
         return false;
     }
 
-    virtual bool getCanAnimateUserKeyframes() const OVERRIDE FINAL {
-        return true;
-    }
-
 
     KnobDoublePtr getSearchWindowBottomLeftKnob() const;
     KnobDoublePtr getSearchWindowTopRightKnob() const;
@@ -196,6 +197,16 @@ public:
     virtual std::string getBaseItemName() const OVERRIDE;
 
     virtual std::string getSerializationClassName() const OVERRIDE FINAL;
+
+    KeyFrameSet getKeyFrames() const;
+
+    void setKeyFrame(TimeValue time);
+
+    void removeKeyFrame(TimeValue time);
+
+    void removeAnimation();
+
+    bool hasKeyFrameAtTime(TimeValue time) const;
 
 protected:
 

@@ -73,7 +73,6 @@ public:
     }
 
     KnobGuiParametric(const KnobGuiPtr& knob, ViewIdx view);
-    virtual void removeSpecificGui() OVERRIDE FINAL;
     virtual bool mustCreateLabelWidget() const OVERRIDE
     {
         return false;

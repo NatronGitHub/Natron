@@ -371,9 +371,14 @@ public:
     ////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @brief Get the items table for this node if it has any.
+     * @brief Get the table from its identifier
      **/
-    ItemsTable* getItemsTable() const;
+    ItemsTable* getItemsTable(const QString& identifier) const;
+
+    /**
+     * @brief Get the tables for this node if it has any.
+     **/
+    std::list<ItemsTable*> getAllItemsTable() const;
 
 
     RectD getRegionOfDefinition(double time, int /* Python API: do not use ViewIdx */ view) const;

@@ -1664,12 +1664,9 @@ DockablePanel::getHolderFullyQualifiedScriptName() const
 }
 
 KnobItemsTableGuiPtr
-DockablePanel::createKnobItemsTable(QWidget* parent)
+DockablePanel::createKnobItemsTable(const KnobItemsTablePtr& table, QWidget* parent)
 {
-    KnobItemsTablePtr table = getHolder()->getItemsTable();
-    if (!table) {
-        return KnobItemsTableGuiPtr();
-    }
+   
     KnobItemsTableGuiPtr ret(new KnobItemsTableGui(table, this, parent));
     return ret;
 }

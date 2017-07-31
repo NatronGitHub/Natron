@@ -196,7 +196,7 @@ TrackerHelperPrivate::natronTrackerToLibMVTracker(bool isReferenceMarker,
     mvMarker->frame = trackedTime;
     const int referenceTime = marker.getReferenceFrame(TimeValue(trackedTime), frameStep);
     mvMarker->reference_frame = referenceTime;
-    if ( marker.getHasMasterKeyframe(TimeValue(trackedTime), ViewIdx(0)) ) {
+    if ( marker.hasKeyFrameAtTime(TimeValue(trackedTime)) ) {
         mvMarker->source = mv::Marker::MANUAL;
     } else {
         mvMarker->source = mv::Marker::TRACKED;
@@ -416,7 +416,7 @@ TrackerHelperPrivate::trackStepLibMV(int trackIndex,
 
     if (track->mvMarker.source == mv::Marker::MANUAL) {
         // This is a user keyframe or the first frame, we do not track it
-        assert( trackTime == args.getStart() || track->natronMarker->getHasMasterKeyframe(TimeValue(track->mvMarker.frame), ViewIdx(0)) );
+        assert( trackTime == args.getStart() || track->natronMarker->hasKeyFrameAtTime(TimeValue(track->mvMarker.frame)) );
 #ifdef TRACE_LIB_MV
         qDebug() << QThread::currentThread() << "TrackStep:" << trackTime << "is a keyframe";
 #endif

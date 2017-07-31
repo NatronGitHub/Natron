@@ -51,6 +51,7 @@
 #define kKnobButtonTypeName "Button"
 #define kKnobChoiceTypeName "Choice"
 #define kKnobSeparatorTypeName "Separator"
+#define kKnobKeyFrameMarkersName "KeysMarker"
 #define kKnobGroupTypeName "Group"
 #define kKnobPageTypeName "Page"
 #define kKnobParametricTypeName "Parametric"
@@ -118,6 +119,9 @@ struct MasterSerialization
     // to reference app.Blur1.size from app.Group1.Blur2.size you would use
     // "@thisGroup.@thisGroup.Blur1" for the masterNodeName
     std::string masterNodeName;
+
+    // If the master knob is part of a table item, this is the identifier of the table
+    std::string masterTableName;
 
     // if the master knob is part of a table item this is the table item fully qualified script-name
     std::string masterTableItemName;

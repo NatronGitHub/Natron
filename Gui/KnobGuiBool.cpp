@@ -229,12 +229,6 @@ KnobGuiBool::~KnobGuiBool()
 {
 }
 
-void
-KnobGuiBool::removeSpecificGui()
-{
-    _checkBox->hide();
-    _checkBox->deleteLater();
-}
 
 void
 KnobGuiBool::updateGUI()

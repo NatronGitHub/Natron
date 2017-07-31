@@ -101,6 +101,24 @@ static SerializationValueVariantTypeEnum dataTypeFromString(const std::string& t
     throw std::invalid_argument("Unknown value type " + type);
 }
 
+static void encodeCurve(YAML::Emitter& em, const CurveSerialization& curve)
+{
+    switch (curve.curveType) {
+        case eCurveSerializationTypeString:
+            em << YAML::Key << "StringAnimation" << YAML::Value;
+            break;
+        case eCurveSerializationTypeScalar:
+            em << YAML::Key << "Curve" << YAML::Value;
+            break;
+        case eCurveSerializationTypePropertiesOnly:
+            em << YAML::Key << "CustomAnimation" << YAML::Value;
+            break;
+    }
+
+    curve.encode(em);
+
+}
+
 void
 KnobSerialization::encode(YAML::Emitter& em) const
 {
@@ -171,8 +189,12 @@ KnobSerialization::encode(YAML::Emitter& em) const
                             em << YAML::Key << "N";
                             em << YAML::Value << val._slaveMasterLink.masterNodeName;
                         }
-                        if (!val._slaveMasterLink.masterTableItemName.empty()) {
+                        if (!val._slaveMasterLink.masterTableName.empty()) {
                             em << YAML::Key << "T";
+                            em << YAML::Value << val._slaveMasterLink.masterTableName;
+                        }
+                        if (!val._slaveMasterLink.masterTableItemName.empty()) {
+                            em << YAML::Key << "I";
                             em << YAML::Value << val._slaveMasterLink.masterTableItemName;
                         }
                         if (!val._slaveMasterLink.masterKnobName.empty()) {
@@ -189,16 +211,7 @@ KnobSerialization::encode(YAML::Emitter& em) const
                         }
                         // Also serialize the curve in case the expression fails to restore correctly
                         if (!val._animationCurve.keys.empty()) {
-                            switch (val._animationCurve.curveType) {
-                                case eCurveSerializationTypeString:
-                                    em << YAML::Key << "StringAnimation" << YAML::Value;
-                                    break;
-                                case eCurveSerializationTypeDouble:
-                                    em << YAML::Key << "Curve" << YAML::Value;
-                                    break;
-                            }
-
-                            val._animationCurve.encode(em);
+                            encodeCurve(em, val._animationCurve);
                         }
 
                         em << YAML::EndMap;
@@ -223,29 +236,13 @@ KnobSerialization::encode(YAML::Emitter& em) const
 
                         // Also serialize the curve in case the expression fails to restore correctly
                         if (!val._animationCurve.keys.empty()) {
-                            switch (val._animationCurve.curveType) {
-                                case eCurveSerializationTypeString:
-                                    em << YAML::Key << "StringAnimation" << YAML::Value;
-                                    break;
-                                case eCurveSerializationTypeDouble:
-                                    em << YAML::Key << "Curve" << YAML::Value;
-                                    break;
-                            }
-                            val._animationCurve.encode(em);
+                            encodeCurve(em, val._animationCurve);
                         }
 
                         em << YAML::EndMap;
                     } else if (!val._animationCurve.keys.empty()) {
                         em << YAML::Flow << YAML::BeginMap;
-                        switch (val._animationCurve.curveType) {
-                            case eCurveSerializationTypeString:
-                                em << YAML::Key << "StringAnimation" << YAML::Value;
-                                break;
-                            case eCurveSerializationTypeDouble:
-                                em << YAML::Key << "Curve" << YAML::Value;
-                                break;
-                        }
-                        val._animationCurve.encode(em);
+                        encodeCurve(em, val._animationCurve);
                         em << YAML::EndMap;
                     } else {
                         // No animation or link, directly write the value without a map
@@ -648,11 +645,14 @@ KnobSerialization::decodeValueNode(const std::string& viewName, const YAML::Node
             // Always look for an animation curve
             if (dimNode["Curve"]) {
                 // Curve
-                dimVec[i]._animationCurve.curveType = eCurveSerializationTypeDouble;
+                dimVec[i]._animationCurve.curveType = eCurveSerializationTypeScalar;
                 dimVec[i]._animationCurve.decode(dimNode["Curve"]);
             } else if (dimNode["StringAnimation"]) {
                 dimVec[i]._animationCurve.curveType = eCurveSerializationTypeString;
                 dimVec[i]._animationCurve.decode(dimNode["StringAnimation"]);
+            } else if (dimNode["CustomAnimation"]) {
+                dimVec[i]._animationCurve.curveType = eCurveSerializationTypePropertiesOnly;
+                dimVec[i]._animationCurve.decode(dimNode["CustomAnimation"]);
             }
 
             // Look for a link or expression
@@ -674,7 +674,11 @@ KnobSerialization::decodeValueNode(const std::string& viewName, const YAML::Node
                     gotLink = true;
                 }
                 if (dimNode["T"]) {
-                    dimVec[i]._slaveMasterLink.masterTableItemName = dimNode["T"].as<std::string>();
+                    dimVec[i]._slaveMasterLink.masterTableName = dimNode["T"].as<std::string>();
+                    gotLink = true;
+                }
+                if (dimNode["I"]) {
+                    dimVec[i]._slaveMasterLink.masterTableItemName = dimNode["I"].as<std::string>();
                     gotLink = true;
                 }
                 if (dimNode["K"]) {
@@ -716,7 +720,7 @@ KnobSerialization::checkForValueNode(const YAML::Node& node, const std::string& 
     if (!valueNode.IsMap()) {
         decodeValueNode("Main", valueNode);
     } else {
-        if (valueNode["Curve"] || valueNode["StringAnimation"] || valueNode["pyMultiExpr"] || valueNode["pyExpr"] || valueNode["exprtk"] || valueNode["N"] || valueNode["T"] ||
+        if (valueNode["Curve"] || valueNode["StringAnimation"] || valueNode["CustomAnimation"] || valueNode["pyMultiExpr"] || valueNode["pyExpr"] || valueNode["exprtk"] || valueNode["N"] || valueNode["T"] ||
             valueNode["K"] || valueNode["D"] || valueNode["V"]) {
             decodeValueNode("Main", valueNode);
         } else {

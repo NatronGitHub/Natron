@@ -143,15 +143,13 @@ AnimatingTextEdit::refreshStylesheet()
     }
 
     double fgColor[3];
-    bool fgColorSet = false;
+
     if (!isEnabled() || isReadOnly() || (AnimationLevelEnum)animation == eAnimationLevelExpression) {
         fgColor[0] = fgColor[1] = fgColor[2] = 0.;
-        fgColorSet = true;
-    }
-
-    if (_appearLinked) {
+    } else if (_appearLinked) {
         appPTR->getCurrentSettings()->getExprColor(&fgColor[0], &fgColor[1], &fgColor[2]);
-        fgColorSet = true;
+    } else {
+        appPTR->getCurrentSettings()->getTextColor(&fgColor[0], &fgColor[1], &fgColor[2]);
     }
 
     QString bgColorStyleSheetStr;
@@ -164,16 +162,15 @@ AnimatingTextEdit::refreshStylesheet()
     }
 
 
-    if (fgColorSet) {
-        QColor fgCol;
-        fgCol.setRgbF(Image::clamp(fgColor[0], 0., 1.), Image::clamp(fgColor[1], 0., 1.), Image::clamp(fgColor[2], 0., 1.));
+    QColor fgCol;
+    fgCol.setRgbF(Image::clamp(fgColor[0], 0., 1.), Image::clamp(fgColor[1], 0., 1.), Image::clamp(fgColor[2], 0., 1.));
 
-        setStyleSheet(QString::fromUtf8("QTextEdit {\n"
-                                        "color: rgb(%1, %2, %3);\n"
-                                        "%4\n"
-                                        "}\n").arg(fgCol.red()).arg(fgCol.green()).arg(fgCol.blue()).arg(bgColorStyleSheetStr));
+    setStyleSheet(QString::fromUtf8("QTextEdit {\n"
+                                    "color: rgb(%1, %2, %3);\n"
+                                    "%4\n"
+                                    "}\n").arg(fgCol.red()).arg(fgCol.green()).arg(fgCol.blue()).arg(bgColorStyleSheetStr));
 
-    }
+
 
 
     style()->unpolish(this);
@@ -610,16 +607,6 @@ KnobGuiString::parseFont(const QString & s, QFont* f, QColor* color)
     return true;
 }
 
-void
-KnobGuiString::removeSpecificGui()
-{
-    if (_lineEdit) {
-        _lineEdit->deleteLater();
-    }
-    if (_container) {
-        _container->deleteLater();
-    }
-}
 
 std::string
 KnobGuiString::getDescriptionLabel() const

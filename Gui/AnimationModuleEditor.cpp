@@ -1027,7 +1027,7 @@ AnimationModuleEditor::refreshKeyFrameWidgetsEnabledNess()
     _imp->keyframeValueLineEdit->setEnabled(showKeyframeWidgets);
     _imp->keyframeValueLineEdit->setVisible(dataType == eCurveTypeString || dataType == eCurveTypeChoice);
     _imp->keyframeValueSpinBox->setEnabled(showKeyframeWidgets);
-    _imp->keyframeValueSpinBox->setVisible(dataType != eCurveTypeString && dataType != eCurveTypeChoice);
+    _imp->keyframeValueSpinBox->setVisible(dataType == eCurveTypeInt || dataType == eCurveTypeDouble || dataType == eCurveTypeBool);
     _imp->keyframeRightSlopeLabel->setEnabled(showKeyframeWidgets && canHaveTangents);
     _imp->keyframeRightSlopeSpinBox->setEnabled(showKeyframeWidgets && canHaveTangents);
     _imp->keyframeInterpolationChoice->setEnabled(showKeyframeWidgets && canHaveTangents);
@@ -1071,15 +1071,10 @@ AnimationModuleEditor::refreshKeyframeWidgetsFromSelection()
         _imp->keyframeInterpolationChoice->setCurrentIndex_no_emit((int)menuVal);
 
         _imp->keyframeTimeSpinBox->setValue(_imp->selectedKeyFrame.key.getTime());
-        if (dataType == eCurveTypeString) {
+        if (dataType == eCurveTypeString || dataType == eCurveTypeChoice) {
             std::string stringValue;
             _imp->selectedKeyFrame.key.getPropertySafe(kKeyFramePropString, 0, &stringValue);
             _imp->keyframeValueLineEdit->setText(QString::fromUtf8(stringValue.c_str()));
-        } else if (dataType == eCurveTypeChoice) {
-            std::string stringValue;
-            _imp->selectedKeyFrame.key.getPropertySafe(kKeyframePropChoiceOptionID, 0, &stringValue);
-            _imp->keyframeValueLineEdit->setText(QString::fromUtf8(stringValue.c_str()));
-
         } else {
             _imp->keyframeValueSpinBox->setValue(_imp->selectedKeyFrame.key.getValue());
         }
@@ -1097,6 +1092,13 @@ AnimationModuleEditor::onKeyfameInterpolationChoiceMenuChanged(int index)
     if (!_imp->getKeyframe(&id, &keyData)) {
         return;
     }
+
+    CurveTypeEnum curveType = id.item->getInternalAnimItem()->getKeyFrameDataType();
+    if (curveType != eCurveTypeDouble && curveType != eCurveTypeInt)  {
+        Dialogs::errorDialog(tr("Interpolation").toStdString(), tr("You cannot change the interpolation type for this type of animation curve").toStdString());
+        return;
+    }
+
 
     AnimItemDimViewKeyFramesMap selectedKeys;
     selectedKeys[id].insert(keyData);

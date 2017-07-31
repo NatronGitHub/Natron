@@ -96,13 +96,6 @@ KnobGuiGroup::~KnobGuiGroup()
 {
 }
 
-
-void
-KnobGuiGroup::removeSpecificGui()
-{
-    _button->deleteLater();
-}
-
 void
 KnobGuiGroup::addKnob(const KnobGuiPtr& child)
 {

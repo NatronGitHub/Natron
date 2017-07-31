@@ -930,7 +930,7 @@ AnimationModuleViewPrivate::moveSelectedKeyFrames(const QPointF & oldCanonicalPo
     deltaSinceDragStart.ry() = newCanonicalPos.y() - dragStartPointOpenGL.y();
 
     for (AnimItemDimViewKeyFramesMap::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-        CurveGuiPtr curve = it->first.item->getCurveGui(it->first.dim, it->first.view);
+        CurvePtr curve = it->first.item->getCurve(it->first.dim, it->first.view);
         if (!curve) {
             continue;
         }

@@ -273,73 +273,6 @@ ItemBase::getParam(const QString& name) const
     }
 }
 
-void
-ItemBase::getUserKeyframes(std::list<double>* keys, const QString& view) const
-{
-    KnobTableItemPtr item = getInternalItem();
-    if (!item || !keys) {
-        PythonSetNullError();
-        return;
-    }
-
-    ViewIdx viewSpec;
-    if (!getViewIdxFromViewName(view, &viewSpec)) {
-        PythonSetInvalidViewName(view);
-        return;
-    }
-    std::set<double> times;
-    item->getMasterKeyFrameTimes(viewSpec, &times);
-    for (std::set<double>::const_iterator it = times.begin(); it != times.end(); ++it) {
-        keys->push_back(*it);
-    }
-}
-
-void
-ItemBase::setUserKeyframe(double frame, const QString& view)
-{
-    KnobTableItemPtr item = getInternalItem();
-    if (!item) {
-        PythonSetNullError();
-        return;
-    }
-
-    if (!item->getCanAnimateUserKeyframes()) {
-        PyErr_SetString(PyExc_ValueError, tr("Cannot set user keyframe on an item that cannot animate").toStdString().c_str());
-        return;
-    }
-
-    ViewSetSpec viewSpec;
-    if (!getViewSetSpecFromViewName(view, &viewSpec)) {
-        PythonSetInvalidViewName(view);
-        return;
-    }
-    item->setKeyFrame(TimeValue(frame), viewSpec, 0);
-}
-
-void
-ItemBase::deleteUserKeyframe(double frame, const QString& view)
-{
-    KnobTableItemPtr item = getInternalItem();
-    if (!item) {
-        PythonSetNullError();
-        return;
-    }
-
-    if (!item->getCanAnimateUserKeyframes()) {
-        PyErr_SetString(PyExc_ValueError, tr("Cannot remove user keyframe on an item that cannot animate").toStdString().c_str());
-        return;
-    }
-
-    ViewSetSpec viewSpec;
-    if (!getViewSetSpecFromViewName(view, &viewSpec)) {
-        PythonSetInvalidViewName(view);
-        return;
-    }
-    item->deleteValueAtTime(TimeValue(frame), viewSpec, DimSpec::all(), eValueChangedReasonUserEdited);
-
-}
-
-
 ItemsTable::ItemsTable(const KnobItemsTablePtr& table)
 : _table(table)
 {
@@ -512,6 +445,17 @@ ItemsTable::removeItem(const ItemBase* item)
         return;
     }
     model->removeItem(iptr, eTableChangeReasonInternal);
+}
+
+QString
+ItemsTable::getTableName() const
+{
+    KnobItemsTablePtr model = getInternalModel();
+    if (!model) {
+        PythonSetNullError();
+        return QString();
+    }
+    return QString::fromUtf8(model->getTableIdentifier().c_str());
 }
 
 QString

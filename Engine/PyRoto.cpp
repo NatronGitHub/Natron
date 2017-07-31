@@ -68,7 +68,7 @@ BezierCurve::splitView(const QString& viewName)
         PythonSetInvalidViewName(viewName);
         return;
     }
-    if (!item->getCanAnimateUserKeyframes()) {
+    if (!item->canSplitViews()) {
         PyErr_SetString(PyExc_ValueError, ItemBase::tr("splitView: Cannot split view for an item that cannot animate").toStdString().c_str());
         return;
     }
@@ -88,7 +88,7 @@ BezierCurve::unSplitView(const QString& viewName)
         PythonSetInvalidViewName(viewName);
         return;
     }
-    if (!item->getCanAnimateUserKeyframes()) {
+    if (!item->canSplitViews()) {
         PyErr_SetString(PyExc_ValueError, ItemBase::tr("splitView: Cannot split view for an item that cannot animate").toStdString().c_str());
         return;
     }
@@ -189,9 +189,10 @@ BezierCurve::addControlPoint(double x,
         return;
     }
 
+    KeyFrameSet keys = item->getKeyFrames(ViewIdx(0));
     KeyFrame k;
-    if (!item->getMasterKeyframe(0, ViewIdx(0), &k)) {
-        k.setTime(TimeValue(item->getApp()->getTimeLine()->currentFrame()));
+    if (!keys.empty()) {
+        k = *keys.begin();
     }
     item->addControlPoint(x, y, k.getTime(), viewSpec);
 }

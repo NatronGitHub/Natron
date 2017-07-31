@@ -765,8 +765,7 @@ enum AnimatedItemTypeEnum
     eAnimatedItemTypeKnobView,
     eAnimatedItemTypeKnobDim,
 
-    eAnimatedItemTypeTableItemRoot,
-    eAnimatedItemTypeTableItemAnimation
+    eAnimatedItemTypeTableItemRoot
 };
 
 enum CreateNodeReason
@@ -893,12 +892,31 @@ enum CurveTypeEnum
     eCurveTypeDouble = 0, //< the values held by the keyframes can be any real
     eCurveTypeInt, //< the values held by the keyframes can only be integers
     eCurveTypeChoice, //< same as eCurveTypeString, interpolation is restricted to constant and keyframes have a choice id property
+    eCurveTypeProperties, //< generialization of eCurveTypeString: interpolation is constant and keyframes may have types properties
     eCurveTypeBool, //< the values held by the keyframes can be either 0 or 1 with constant interpolation
     eCurveTypeString //< the keyframes hold a string property and interpolation is restricted to constant
         // and times
 };
 
+enum SetKeyFrameFlagEnum
+{
+    // The value set to the keyframe is set on the interpolated value.
+    // For string values, this is actually set to a property since it's not a PoD scalar value
+    eSetKeyFrameFlagSetValue = 0x1,
 
+    // If there's any existing keyframe, the properties of the existing keyframe will be replaced
+    // by this keyframe, but not its value. This is incompatible with eKeyFrameSetModeMergeProperties
+    eSetKeyFrameFlagReplaceProperties = 0x2,
+
+    // If there's any existing keyframe, the properties of the existing keyframe will be merged with
+    // the properties of this keyframe. Any existing property will be replaced the property of the new keyframe.
+    // This is incompatible with eKeyFrameSetModeMergeProperties.
+    eSetKeyFrameFlagMergeProperties = 0x4,
+        
+};
+
+
+DECLARE_FLAGS(SetKeyFrameFlags, SetKeyFrameFlagEnum);
 DECLARE_FLAGS(StandardButtons, StandardButtonEnum);
 
 #ifdef SBK_RUN
@@ -909,6 +927,7 @@ NATRON_NAMESPACE_ENTER
 
 NATRON_NAMESPACE_EXIT
 
+DECLARE_OPERATORS_FOR_FLAGS(NATRON_NAMESPACE::SetKeyFrameFlags);
 DECLARE_OPERATORS_FOR_FLAGS(NATRON_NAMESPACE::StandardButtons);
 Q_DECLARE_METATYPE(NATRON_NAMESPACE::StandardButtons)
 

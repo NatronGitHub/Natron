@@ -71,8 +71,6 @@ public:
     KnobGuiValue(const KnobGuiPtr& knob, ViewIdx view);
 
     virtual ~KnobGuiValue() OVERRIDE;
-
-    virtual void removeSpecificGui() OVERRIDE FINAL;
     
     bool getDimForSpinBox(const SpinBox* spinbox, DimIdx* dimension) const;
 

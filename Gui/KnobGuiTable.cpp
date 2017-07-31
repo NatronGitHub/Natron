@@ -92,13 +92,6 @@ KnobGuiTable::~KnobGuiTable()
 {
 }
 
-void
-KnobGuiTable::removeSpecificGui()
-{
-    if (_imp->mainContainer) {
-        _imp->mainContainer->deleteLater();
-    }
-}
 
 int
 KnobGuiTable::rowCount() const

@@ -598,7 +598,7 @@ void
 ViewerNode::setZoomComboBoxText(const std::string& text)
 {
     ChoiceOption opt(text, "", "");
-    _imp->zoomChoiceKnob.lock()->setActiveEntry(opt, ViewSetSpec(0));
+    _imp->zoomChoiceKnob.lock()->setActiveEntry(opt, ViewSetSpec(0), eValueChangedReasonPluginEdited);
 }
 
 bool

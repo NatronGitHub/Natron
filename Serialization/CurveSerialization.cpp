@@ -40,14 +40,58 @@ CurveSerialization::encode(YAML::Emitter& em) const
 
     // Note that the curve type is not serialized, it has to be somehow figured out externally
     switch (curveType) {
+        case eCurveSerializationTypePropertiesOnly: {
+            for (std::list<KeyFrameSerialization>::const_iterator it = keys.begin(); it!=keys.end(); ++it) {
+                em << it->time;
+                if (!it->properties.empty()) {
+                    em << YAML::BeginMap;
+                    for (std::list<KeyFrameProperty>::const_iterator it2 = it->properties.begin(); it2 != it->properties.end(); ++it2) {
+
+                        if (it2->values.size() == 0) {
+                            continue;
+                        }
+                        em << YAML::Key << it2->type << YAML::Value;
+                        em << YAML::BeginMap;
+
+                        em << YAML::Key << "Name" << YAML::Value << it2->name;
+
+
+                        em << YAML::Key << "Value" << YAML::Value;
+                        if (it2->values.size() > 1) {
+                            em << YAML::Flow << YAML::BeginSeq;
+                        }
+                        for (std::size_t i = 0; i < it2->values.size(); ++i) {
+                            if (it2->type == kKeyFramePropertyVariantTypeString) {
+                                em << it2->values[i].stringValue;
+                            } else if (it2->type == kKeyFramePropertyVariantTypeDouble) {
+                                em << it2->values[i].scalarValue;
+                            } else if (it2->type == kKeyFramePropertyVariantTypeInt) {
+                                em << (int)it2->values[i].scalarValue;
+                            } else if (it2->type == kKeyFramePropertyVariantTypeBool) {
+                                em << (bool)it2->values[i].scalarValue;
+                            }
+                        }
+                        if (it2->values.size() > 1) {
+                            em << YAML::EndSeq;
+                        }
+
+
+                        em << YAML::EndMap;
+                    }
+                }
+                em << YAML::EndMap;
+            }
+        }   break;
         case eCurveSerializationTypeString: {
             for (std::list<KeyFrameSerialization>::const_iterator it = keys.begin(); it!=keys.end(); ++it) {
                 em << it->time;
-                em << it->stringValue;
+                assert(it->properties.size() == 1 && it->properties.front().type == kKeyFramePropertyVariantTypeString);
+                assert(it->properties.front().values.size() == 1);
+                em << it->properties.front().values[0].stringValue;
             }
         }   break;
 
-        case eCurveSerializationTypeDouble: {
+        case eCurveSerializationTypeScalar: {
             std::string prevInterpolation; // No valid interpolation set yet
             for (std::list<KeyFrameSerialization>::const_iterator it = keys.begin(); it!=keys.end(); ++it) {
 
@@ -100,6 +144,58 @@ CurveSerialization::decode(const YAML::Node& node)
     }
 
     switch (curveType) {
+        case eCurveSerializationTypePropertiesOnly: {
+            for (std::size_t i = 0; i < node.size(); ++i) {
+                KeyFrameSerialization keyframe;
+                keyframe.time = node[i].as<double>();
+                if (i+1 < node.size() && node[i+1].IsMap()) {
+                    ++i;
+                    // We have properties
+                    YAML::Node propertiesNode = node[i];
+                    for (YAML::Node::const_iterator it = propertiesNode.begin(); it != propertiesNode.end(); ++it) {
+                        KeyFrameProperty prop;
+                        prop.type = it->first.as<std::string>();
+
+                        YAML::Node propNode = it->second;
+                        if (!propNode.IsMap()) {
+                            throw YAML::InvalidNode();
+                        }
+                        prop.name = propNode["Name"].as<std::string>();
+                        YAML::Node valuesNode = propNode["Value"];
+                        if (valuesNode.IsSequence()) {
+                            for (std::size_t j = 0; j < valuesNode.size(); ++j) {
+                                KeyFramePropertyVariant v;
+                                if (prop.type == kKeyFramePropertyVariantTypeString) {
+                                    v.stringValue = valuesNode[j].as<std::string>();
+                                } else if (prop.type == kKeyFramePropertyVariantTypeInt) {
+                                    v.scalarValue = valuesNode[j].as<int>();
+                                } else if (prop.type == kKeyFramePropertyVariantTypeBool) {
+                                    v.scalarValue = valuesNode[j].as<bool>();
+                                } else if (prop.type == kKeyFramePropertyVariantTypeDouble) {
+                                    v.scalarValue = valuesNode[j].as<double>();
+                                }
+                                prop.values.push_back(v);
+
+
+                            }
+                        } else {
+                            KeyFramePropertyVariant v;
+                            if (prop.type == kKeyFramePropertyVariantTypeString) {
+                                v.stringValue = valuesNode.as<std::string>();
+                            } else if (prop.type == kKeyFramePropertyVariantTypeInt) {
+                                v.scalarValue = valuesNode.as<int>();
+                            } else if (prop.type == kKeyFramePropertyVariantTypeBool) {
+                                v.scalarValue = valuesNode.as<bool>();
+                            } else if (prop.type == kKeyFramePropertyVariantTypeDouble) {
+                                v.scalarValue = valuesNode.as<double>();
+                            }
+                            prop.values.push_back(v);
+                        }
+                    }
+                }
+                keys.push_back(keyframe);
+            }
+        }   break;
         case eCurveSerializationTypeString: {
             if ((node.size() % 2) != 0) {
                 return;
@@ -108,12 +204,18 @@ CurveSerialization::decode(const YAML::Node& node)
                 KeyFrameSerialization keyframe;
 
                 keyframe.time = node[i].as<double>();
-                keyframe.stringValue = node[i+1].as<std::string>();
+
+                KeyFrameProperty prop;
+                prop.type = kKeyFramePropertyVariantTypeString;
+                KeyFramePropertyVariant v;
+                v.stringValue = node[i+1].as<std::string>();
+                prop.values.push_back(v);
+                keyframe.properties.push_back(prop);
                 keys.push_back(keyframe);
             }
         }   break;
 
-        case eCurveSerializationTypeDouble: {
+        case eCurveSerializationTypeScalar: {
             CurveDecodeStateEnum state = eCurveDecodeStateMayExpectInterpolation;
             std::string interpolation;
             KeyFrameSerialization keyframe;

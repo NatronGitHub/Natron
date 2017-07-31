@@ -943,16 +943,11 @@ KnobHelper::evaluateValueChangeInternal(DimSpec dimension,
     {
         ScopedChanges_RAII changes(holder.get());
 
-        // If the knob is animated, we must refresh the static value: this is needed for KnobChoice
-        // where the active entry string is not actually a curve.
-        if (hasAnimation()) {
-            refreshStaticValue(time);
-        } else {
-            // Notify gui must be refreshed
-            if (!isValueChangesBlocked()) {
-                _signalSlotHandler->s_mustRefreshKnobGui(view, dimension, reason);
-            }
+        // Notify gui must be refreshed
+        if (!isValueChangesBlocked()) {
+            _signalSlotHandler->s_mustRefreshKnobGui(view, dimension, reason);
         }
+
 
         // Refresh modifications state
         computeHasModifications();
@@ -2520,6 +2515,7 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
     KnobPage* isPage = dynamic_cast<KnobPage*>(this);
     KnobButton* isBtn = dynamic_cast<KnobButton*>(this);
     KnobParametric* isParametric = dynamic_cast<KnobParametric*>(this);
+    KnobKeyFrameMarkers* isKeyFrameMarker = dynamic_cast<KnobKeyFrameMarkers*>(this);
 
 
     //Ensure the group user page is created
@@ -2623,6 +2619,10 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
         output = newKnob;
         newKnob->setRangeAcrossDimensions( isParametric->getMinimums(), isParametric->getMaximums() );
         newKnob->setDisplayRangeAcrossDimensions( isParametric->getDisplayMinimums(), isParametric->getDisplayMaximums() );
+    } else if (isKeyFrameMarker) {
+        KnobKeyFrameMarkersPtr param = otherHolder->createKnob<KnobKeyFrameMarkers>(newScriptName, isKeyFrameMarker->getNDimensions());
+        param->setLabel(newLabel);
+        output = param;
     }
     if (!output) {
         return KnobIPtr();
@@ -2803,6 +2803,7 @@ static bool serializeHardLinks(const KnobIPtr& knob,
 
     if (masterIsTableItem) {
         // The master knob is held by a table item
+        serialization->_slaveMasterLink.masterTableName = masterIsTableItem->getModel()->getTableIdentifier();
         serialization->_slaveMasterLink.masterTableItemName = masterIsTableItem->getFullyQualifiedName();
 
         // If the node owning the table item is different than this holder, save the master node name
@@ -3744,6 +3745,7 @@ static NodePtr findMasterNode(const NodeCollectionPtr& group,
 KnobIPtr
 KnobHelper::findMasterKnob(const std::string& masterKnobName,
                            const std::string& masterNodeName,
+                           const std::string& masterTableName,
                            const std::string& masterItemName,
                            const std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>& allCreatedNodesInGroup)
 {
@@ -3773,8 +3775,8 @@ KnobHelper::findMasterKnob(const std::string& masterKnobName,
         return KnobIPtr();
     }
 
-    if ( !masterItemName.empty() ) {
-        KnobItemsTablePtr table = masterNode->getEffectInstance()->getItemsTable();
+    if (!masterTableName.empty() && !masterItemName.empty()) {
+        KnobItemsTablePtr table = masterNode->getEffectInstance()->getItemsTable(masterTableName);
         if (table) {
             KnobTableItemPtr item = table->getItemByFullyQualifiedScriptName(masterItemName);
             if (item) {
@@ -3782,7 +3784,7 @@ KnobHelper::findMasterKnob(const std::string& masterKnobName,
             }
         }
     } else {
-        ///now that we have the master node, find the corresponding knob
+        // Find the corresponding knob
         const std::vector< KnobIPtr > & otherKnobs = masterNode->getKnobs();
         for (std::size_t j = 0; j < otherKnobs.size(); ++j) {
             if ( (otherKnobs[j]->getName() == masterKnobName) ) {
@@ -3863,7 +3865,7 @@ KnobHelper::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::Kn
                         continue;
                     }
 
-                    std::string masterKnobName, masterNodeName, masterTableItemName;
+                    std::string masterKnobName, masterNodeName, masterTableName, masterTableItemName;
                     if (it->second[d]._slaveMasterLink.masterNodeName.empty()) {
                         // Node name empty, assume this is the same node
                         masterNodeName = thisKnobNode->getScriptName_mt_safe();
@@ -3881,9 +3883,11 @@ KnobHelper::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::Kn
                         masterKnobName = it->second[d]._slaveMasterLink.masterKnobName;
                     }
 
+                    masterTableName = it->second[d]._slaveMasterLink.masterTableName;
                     masterTableItemName = it->second[d]._slaveMasterLink.masterTableItemName;
                     KnobIPtr master = findMasterKnob(masterKnobName,
                                                      masterNodeName,
+                                                     masterTableName,
                                                      masterTableItemName, allCreatedNodesInGroup);
                     if (master) {
                         // Find dimension in master by name
@@ -3959,6 +3963,26 @@ KnobHelper::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::Kn
 
 typedef std::map<FrameViewRenderKey, KnobHolderWPtr, FrameViewRenderKey_compare_less> RenderCloneMap;
 
+struct KnobItemsTableData
+{
+    // Strong ref to the table
+    KnobItemsTablePtr table;
+
+    // Name of the parameter before the table in the UI, only relevant
+    // if tablePosition is eKnobItemsTablePositionAfterKnob
+    std::string previousParamPosition;
+
+    // Where should the table be displayed
+    KnobHolder::KnobItemsTablePositionEnum tablePosition;
+
+    KnobItemsTableData()
+    : table()
+    , previousParamPosition()
+    , tablePosition(KnobHolder::eKnobItemsTablePositionBottomOfAllPages)
+    {
+    }
+};
+
 struct KnobHolderCommonData
 {
     AppInstanceWPtr app;
@@ -4003,14 +4027,11 @@ struct KnobHolderCommonData
     bool hasAnimation;
     DockablePanelI* settingsPanel;
 
-    // A knobs table owned by the holder
-    KnobItemsTablePtr knobsTable;
+    // Map of tables owned by the holder identified with their
+    // unique table identifier
+    std::map<std::string, KnobItemsTableData> knobsTables;
 
     std::list<KnobIWPtr> overlaySlaves;
-
-    // The script-name of the knob right before where the table should be inserted in the gui
-    std::string knobsTableParamBefore;
-    KnobHolder::KnobItemsTablePositionEnum knobsTablePosition;
 
     mutable QMutex renderClonesMutex;
     RenderCloneMap renderClones;
@@ -4028,10 +4049,8 @@ struct KnobHolderCommonData
     , hasAnimationMutex()
     , hasAnimation(false)
     , settingsPanel(0)
-    , knobsTable()
+    , knobsTables()
     , overlaySlaves()
-    , knobsTableParamBefore()
-    , knobsTablePosition(KnobHolder::eKnobItemsTablePositionBottomOfAllPages)
     , renderClonesMutex()
     , renderClones()
     {
@@ -4120,13 +4139,14 @@ KnobHolder::~KnobHolder()
             }
         }
     } else {
-        if (_imp->common->knobsTable) {
-            std::vector<KnobTableItemPtr> allItems = _imp->common->knobsTable->getAllItems();
-            for (std::vector<KnobTableItemPtr>::const_iterator it = allItems.begin(); it != allItems.end(); ++it) {
-                if ((*it)->isRenderCloneNeeded()) {
-                    (*it)->removeRenderClone(_imp->currentRender.render.lock());
+        for (std::map<std::string, KnobItemsTableData>::iterator it = _imp->common->knobsTables.begin(); it != _imp->common->knobsTables.end(); ++it) {
+            std::vector<KnobTableItemPtr> allItems = it->second.table->getAllItems();
+            for (std::vector<KnobTableItemPtr>::const_iterator it2 = allItems.begin(); it2 != allItems.end(); ++it2) {
+                if ((*it2)->isRenderCloneNeeded()) {
+                    (*it2)->removeRenderClone(_imp->currentRender.render.lock());
                 }
             }
+
         }
     }
 }
@@ -4151,29 +4171,60 @@ KnobHolder::isRenderClone() const
 
 
 void
-KnobHolder::setItemsTable(const KnobItemsTablePtr& table, KnobItemsTablePositionEnum position, const std::string& paramScriptNameBefore)
+KnobHolder::addItemsTable(const KnobItemsTablePtr& table, KnobItemsTablePositionEnum position, const std::string& paramScriptNameBefore)
 {
-    _imp->common->knobsTableParamBefore = paramScriptNameBefore;
-    _imp->common->knobsTable = table;
-    _imp->common->knobsTablePosition = position;
+    // Ensure the table doesn't exist already
+    std::map<std::string, KnobItemsTableData>::const_iterator found = _imp->common->knobsTables.find(table->getTableIdentifier());
+    if (found != _imp->common->knobsTables.end()) {
+        return;
+    }
+
+    KnobItemsTableData data;
+    data.table = table;
+    data.tablePosition = position;
+    data.previousParamPosition = paramScriptNameBefore;
+    _imp->common->knobsTables.insert(std::make_pair(table->getTableIdentifier(),data));
 }
 
 KnobItemsTablePtr
-KnobHolder::getItemsTable() const
+KnobHolder::getItemsTable(const std::string& tableIdentifier) const
 {
-    return _imp->common->knobsTable;
+    std::map<std::string, KnobItemsTableData>::const_iterator found = _imp->common->knobsTables.find(tableIdentifier);
+    if (found != _imp->common->knobsTables.end()) {
+        return found->second.table;
+    }
+    return KnobItemsTablePtr();
+
+}
+
+std::list<KnobItemsTablePtr>
+KnobHolder::getAllItemsTables() const
+{
+    std::list<KnobItemsTablePtr> ret;
+    for (std::map<std::string, KnobItemsTableData>::const_iterator it = _imp->common->knobsTables.begin(); it != _imp->common->knobsTables.end(); ++it) {
+        ret.push_back(it->second.table);
+    }
+    return ret;
 }
 
 KnobHolder::KnobItemsTablePositionEnum
-KnobHolder::getItemsTablePosition() const
+KnobHolder::getItemsTablePosition(const std::string& tableIdentifier) const
 {
-    return _imp->common->knobsTablePosition;
+    std::map<std::string, KnobItemsTableData>::const_iterator found = _imp->common->knobsTables.find(tableIdentifier);
+    if (found != _imp->common->knobsTables.end()) {
+        return found->second.tablePosition;
+    }
+    return eKnobItemsTablePositionBottomOfAllPages;
 }
 
 std::string
-KnobHolder::getItemsTablePreviousKnobScriptName() const
+KnobHolder::getItemsTablePreviousKnobScriptName(const std::string& tableIdentifier) const
 {
-    return _imp->common->knobsTableParamBefore;
+    std::map<std::string, KnobItemsTableData>::const_iterator found = _imp->common->knobsTables.find(tableIdentifier);
+    if (found != _imp->common->knobsTables.end()) {
+        return found->second.previousParamPosition;
+    }
+    return std::string();
 }
 
 void
@@ -5192,11 +5243,11 @@ void
 KnobHolder::fetchRenderCloneKnobs()
 {
     assert(_imp->mainInstance);
-    if (_imp->common->knobsTable) {
-        std::vector<KnobTableItemPtr> allItems = _imp->common->knobsTable->getAllItems();
-        for (std::vector<KnobTableItemPtr>::const_iterator it = allItems.begin(); it != allItems.end(); ++it) {
-            if ((*it)->isRenderCloneNeeded()) {
-                (*it)->createRenderClone(_imp->currentRender);
+    for (std::map<std::string, KnobItemsTableData>::const_iterator it = _imp->common->knobsTables.begin(); it != _imp->common->knobsTables.end(); ++it) {
+        std::vector<KnobTableItemPtr> allItems = it->second.table->getAllItems();
+        for (std::vector<KnobTableItemPtr>::const_iterator it2 = allItems.begin(); it2 != allItems.end(); ++it2) {
+            if ((*it2)->isRenderCloneNeeded()) {
+                (*it2)->createRenderClone(_imp->currentRender);
             }
         }
     }
@@ -5214,9 +5265,10 @@ KnobHolder::refreshAfterTimeChange(bool isPlayback,
     for (std::size_t i = 0; i < _imp->knobs.size(); ++i) {
         _imp->knobs[i]->onTimeChanged(isPlayback, time);
     }
-    if (_imp->common->knobsTable) {
-        _imp->common->knobsTable->refreshAfterTimeChange(isPlayback, time);
+    for (std::map<std::string, KnobItemsTableData>::const_iterator it = _imp->common->knobsTables.begin(); it != _imp->common->knobsTables.end(); ++it) {
+        it->second.table->refreshAfterTimeChange(isPlayback, time);
     }
+
     refreshExtraStateAfterTimeChanged(isPlayback, time);
 }
 

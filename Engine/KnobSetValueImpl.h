@@ -100,49 +100,35 @@ AddToUndoRedoStackHelper<T>::prepareOldValueToUndoRedoStack(ViewSetSpec view, Di
     ValueToPush data;
     data.view = view;
     data.dimension = dimension;
-    data.time = time;
     data.reason = reason;
     data.setKeyframe = setKeyFrame;
 
+    ValueKnobDimView<T>* valueData = dynamic_cast<ValueKnobDimView<T>*>(_knob->getDataForDimView(DimIdx(0), ViewIdx(0)).get());
+    assert(valueData);
+
     int nDims = _knob->getNDimensions();
     std::list<ViewIdx> allViews = _knob->getViewsList();
-    if (dimension.isAll()) {
-        for (int i = 0; i < nDims; ++i) {
-            if (view.isAll()) {
-                for (std::list<ViewIdx>::const_iterator it = allViews.begin(); it!=allViews.end(); ++it) {
-                    DimensionViewPair k = {DimIdx(i), *it};
-                    Variant& p = data.oldValues[k];
-                    p.setValue(_knob->getValueAtTime(time, DimIdx(i), *it));
-                }
-            } else {
-                ViewIdx view_i = _knob->checkIfViewExistsOrFallbackMainView(ViewIdx(view));
-                DimensionViewPair k = {DimIdx(i), view_i};
-                Variant& p = data.oldValues[k];
-                p.setValue(_knob->getValueAtTime(time, DimIdx(i), view_i));
-            }
+    for (std::list<ViewIdx>::const_iterator it = allViews.begin(); it!=allViews.end(); ++it) {
+        if (!view.isAll() && *it != view) {
+            continue;
         }
-
-    } else {
-        if (view.isAll()) {
-            for (std::list<ViewIdx>::const_iterator it = allViews.begin(); it!=allViews.end(); ++it) {
-                DimensionViewPair k = {DimIdx(dimension), *it};
-                Variant& p = data.oldValues[k];
-                p.setValue(_knob->getValueAtTime(time, DimIdx(dimension), *it));
+        for (int i = 0; i < nDims; ++i) {
+            if (!dimension.isAll() && i != dimension) {
+                continue;
             }
-        } else {
-            ViewIdx view_i = _knob->checkIfViewExistsOrFallbackMainView(ViewIdx(view));
-            DimensionViewPair k = {DimIdx(dimension), view_i};
-            Variant& p = data.oldValues[k];
-            p.setValue(_knob->getValueAtTime(time, DimIdx(dimension), view_i));
+            DimensionViewPair k = {DimIdx(i), *it};
+            T oldValue = _knob->getValueAtTime(time, DimIdx(i), *it);
+            data.oldValues[k].push_back(valueData->makeKeyFrame(time, oldValue));
         }
     }
+
 
     _valuesToPushQueue.push_back(data);
 } // prepareOldValueToUndoRedoStack
 
 template <typename T>
 void
-AddToUndoRedoStackHelper<T>::addSetValueToUndoRedoStackIfNeeded(const T& value, ValueChangedReturnCodeEnum setValueRetCode)
+AddToUndoRedoStackHelper<T>::addSetValueToUndoRedoStackIfNeeded(const KeyFrame& value, ValueChangedReturnCodeEnum setValueRetCode)
 {
 
     // Should be checked first before calling this function.
@@ -162,11 +148,7 @@ AddToUndoRedoStackHelper<T>::addSetValueToUndoRedoStackIfNeeded(const T& value, 
 
     const ValueToPush& data = _valuesToPushQueue.back();
 
-    // Add the set value using the undo/redo stack
-    Variant newVariant;
-    newVariant.setValue(value);
-
-    _knob->getSignalSlotHandler()->s_appendParamEditChange(data.reason, setValueRetCode, data.oldValues, newVariant, data.view, data.dimension, data.time, data.setKeyframe);
+    _knob->getSignalSlotHandler()->s_appendParamEditChange(data.reason, setValueRetCode, data.oldValues, value, data.view, data.dimension, data.setKeyframe);
 
 }
 
@@ -182,6 +164,16 @@ ValueKnobDimView<T>::setValueAndCheckIfChanged(const T& v)
     return false;
 }
 
+template<typename T>
+ValueChangedReturnCodeEnum
+Knob<T>::setValueFromKeyFrame(const SetKeyFrameArgs& args, const KeyFrame & k)
+{
+
+    ValueKnobDimView<T>* data = dynamic_cast<ValueKnobDimView<T>*>(getDataForDimView(DimIdx(0), ViewIdx(0)).get());
+    T value = data->getValueFromKeyFrame(k);
+    return setValue(value, args.view, args.dimension, args.reason, args.callKnobChangedHandlerEvenIfNothingChanged);
+}
+
 
 template <typename T>
 ValueChangedReturnCodeEnum
@@ -189,7 +181,6 @@ Knob<T>::setValue(const T & v,
                   ViewSetSpec view,
                   DimSpec dimension,
                   ValueChangedReasonEnum reason,
-                  KeyFrame* newKey,
                   bool forceHandlerEvenIfNoChange)
 {
 
@@ -214,7 +205,7 @@ Knob<T>::setValue(const T & v,
 
     // Check if we can add automatically a new keyframe
     if (isAutoKeyingEnabled(dimension, time, view, reason)) {
-        return setValueAtTime(time, v, view, dimension, reason, newKey);
+        return setValueAtTime(time, v, view, dimension, reason);
     }
 
     // Check if we need to use the undo/redo stack
@@ -278,7 +269,9 @@ Knob<T>::setValue(const T & v,
 
 
     if (undoRedoStackHelperRAII.canAddValueToUndoStack()) {
-        undoRedoStackHelperRAII.addSetValueToUndoRedoStackIfNeeded(v, ret);
+        ValueKnobDimView<T>* data = dynamic_cast<ValueKnobDimView<T>*>(getDataForDimView(DimIdx(0), ViewIdx(0)).get());
+        KeyFrame k = data->makeKeyFrame(time, v);
+        undoRedoStackHelperRAII.addSetValueToUndoRedoStackIfNeeded(k, ret);
     }
 
     // Evaluate the change
@@ -336,7 +329,6 @@ Knob<T>::setValueAcrossDimensions(const std::vector<T>& values,
     // Group value changes under the same undo/redo command if possible
     AddToUndoRedoStackHelper<T> undoRedoStackHelperRAII(this);
 
-    KeyFrame newKey;
     ValueChangedReturnCodeEnum ret;
     bool hasChanged = false;
     if (values.size() > 1) {
@@ -361,7 +353,7 @@ Knob<T>::setValueAcrossDimensions(const std::vector<T>& values,
             unblockValueChanges();
             setAdjustFoldExpandStateAutomatically(true);
         }
-        ret = setValue(values[i], view, DimSpec(dimensionStartOffset + i), reason, &newKey, hasChanged);
+        ret = setValue(values[i], view, DimSpec(dimensionStartOffset + i), reason, hasChanged);
         if (retCodes) {
             (*retCodes)[i] = ret;
         }
@@ -374,66 +366,39 @@ Knob<T>::setValueAcrossDimensions(const std::vector<T>& values,
 
 } // setValueAcrossDimensions
 
+template <>
+KeyFrame
+ValueKnobDimView<std::string>::makeKeyFrame(TimeValue time, const std::string& value)
+{
+    KeyFrame k(time, 0.);
+    k.setProperty(kKeyFramePropString, value, 0, false /*failIfnotExist*/);
+    return k;
+}
 
 template <typename T>
-ValueChangedReturnCodeEnum
-ValueKnobDimView<T>::setValueAtTime(TimeValue time, const T& value, KeyFrame* newKey)
+KeyFrame
+ValueKnobDimView<T>::makeKeyFrame(TimeValue time, const T& value)
 {
-    if (!animationCurve) {
-        return eValueChangedReturnCodeNothingChanged;
-    }
-    // check for NaN or infinity
-    if ( (value != value) || boost::math::isinf(value) ) {
-        *newKey = KeyFrame( (double)time, 0. );
-    } else {
-        *newKey = KeyFrame( (double)time, value );
-    }
-
-
-    ValueChangedReturnCodeEnum addKeyRet = animationCurve->setOrAddKeyframe(*newKey);
-    notifyCurveChanged();
-
-    return addKeyRet;
-
+    KeyFrame k(time, value);
+    return k;
 }
 
 template <>
-ValueChangedReturnCodeEnum
-ValueKnobDimView<std::string>::setValueAtTime(TimeValue time, const std::string& value, KeyFrame* newKey)
+std::string
+ValueKnobDimView<std::string>::getValueFromKeyFrame(const KeyFrame& k)
 {
-    *newKey = KeyFrame( (double)time, 0. );
-    newKey->setProperty(kKeyFramePropString, value);
-    ValueChangedReturnCodeEnum addKeyRet = animationCurve->setOrAddKeyframe(*newKey);
-
-    notifyCurveChanged();
-
-    return addKeyRet;
+    std::string str;
+    k.getPropertySafe(kKeyFramePropString, 0, &str);
+    return str;
 }
 
-template<typename T>
-void
-Knob<T>::setValueOnCurveInternal(TimeValue time, const T& v, DimIdx dimension, ViewIdx view, KeyFrame* newKey, ValueChangedReturnCodeEnum* ret)
+
+
+template <typename T>
+T
+ValueKnobDimView<T>::getValueFromKeyFrame(const KeyFrame& k)
 {
-
-
-
-    ValueKnobDimView<T>* data = dynamic_cast<ValueKnobDimView<T>*>(getDataForDimView(dimension, view).get());
-    assert(data);
-
-    KeyFrame key;
-    ValueChangedReturnCodeEnum addKeyRet = data->setValueAtTime(time, v, &key);
-    if (newKey) {
-        *newKey = key;
-    }
-
-    if (addKeyRet == eValueChangedReturnCodeKeyframeAdded) {
-        *ret = addKeyRet;
-    } else if (addKeyRet == eValueChangedReturnCodeKeyframeModified) {
-        if (*ret == eValueChangedReturnCodeNothingChanged) {
-            *ret = eValueChangedReturnCodeKeyframeModified;
-        }
-    }
-
+    return k.getValue();
 }
 
 
@@ -444,13 +409,31 @@ Knob<T>::setValueAtTime(TimeValue time,
                         ViewSetSpec view,
                         DimSpec dimension,
                         ValueChangedReasonEnum reason,
-                        KeyFrame* newKey,
                         bool forceHandlerEvenIfNoChange)
 {
 
+    SetKeyFrameArgs args;
+    args.view = view;
+    args.dimension = dimension;
+    args.reason = reason;
+    args.callKnobChangedHandlerEvenIfNothingChanged = forceHandlerEvenIfNoChange;
+
+    ValueKnobDimView<T>* data = dynamic_cast<ValueKnobDimView<T>*>(getDataForDimView(DimIdx(0), ViewIdx(0)).get());
+    assert(data);
+    KeyFrame k = data->makeKeyFrame(time, v);
+    return setKeyFrame(args, k);
+
+} // setValueAtTime
+
+
+
+template<typename T>
+ValueChangedReturnCodeEnum
+Knob<T>::setKeyFrame(const SetKeyFrameArgs& args, const KeyFrame & key)
+{
     // If no animated, do not even set a keyframe
     if ( !canAnimate() || !isAnimationEnabled() ) {
-        setValue(v, view, dimension, reason, newKey);
+        return setValueFromKeyFrame(args, key);
     }
 
     KnobHolderPtr holder = getHolder();
@@ -458,7 +441,7 @@ Knob<T>::setValueAtTime(TimeValue time,
 #ifdef DEBUG
     // Check that setValue is possible in this context (only in debug mode)
     // Some actions (e.g: render) do not allow setting values in OpenFX spec.
-    if ( holder && (reason == eValueChangedReasonPluginEdited) ) {
+    if ( holder && (args.reason == eValueChangedReasonPluginEdited) ) {
         EffectInstancePtr isEffect = toEffectInstance(holder);
         if (isEffect) {
             isEffect->checkCanSetValueAndWarn();
@@ -468,29 +451,29 @@ Knob<T>::setValueAtTime(TimeValue time,
 
     AddToUndoRedoStackHelper<T> undoRedoStackHelperRAII(this);
     if (undoRedoStackHelperRAII.canAddValueToUndoStack()) {
-        undoRedoStackHelperRAII.prepareOldValueToUndoRedoStack(view, dimension, time, reason, true /*setKeyframe*/);
+        undoRedoStackHelperRAII.prepareOldValueToUndoRedoStack(args.view, args.dimension, key.getTime(), args.reason, true /*setKeyframe*/);
     }
 
 
-    ValueChangedReturnCodeEnum ret = !forceHandlerEvenIfNoChange ? eValueChangedReturnCodeNothingChanged : eValueChangedReturnCodeKeyframeModified;
+    ValueChangedReturnCodeEnum ret = !args.callKnobChangedHandlerEvenIfNothingChanged ? eValueChangedReturnCodeNothingChanged : eValueChangedReturnCodeKeyframeModified;
 
     {
         std::list<ViewIdx> views = getViewsList();
         int nDims = getNDimensions();
         ViewIdx view_i;
-        if (!view.isAll()) {
-            view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
+        if (!args.view.isAll()) {
+            view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(args.view));
         }
         for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
-            if (!view.isAll()) {
+            if (!args.view.isAll()) {
                 if (view_i != *it) {
                     continue;
                 }
             }
 
-            DimSpec thisDimension = dimension;
+            DimSpec thisDimension = args.dimension;
             // If the item has its dimensions folded and the user modifies dimension 0, also modify other dimensions
-            if (reason == eValueChangedReasonUserEdited && thisDimension == 0 && !getAllDimensionsVisible(*it)) {
+            if (args.reason == eValueChangedReasonUserEdited && thisDimension == 0 && !getAllDimensionsVisible(*it)) {
                 thisDimension = DimSpec::all();
             }
 
@@ -499,7 +482,16 @@ Knob<T>::setValueAtTime(TimeValue time,
                     continue;
                 }
 
-                setValueOnCurveInternal(time, v, DimIdx(i), *it, newKey, &ret);
+                KnobDimViewBasePtr data = getDataForDimView(DimIdx(i), *it);
+                assert(data);
+                ValueChangedReturnCodeEnum addKeyRet = data->setKeyFrame(key, args.flags);
+                if (addKeyRet == eValueChangedReturnCodeKeyframeAdded) {
+                    ret = addKeyRet;
+                } else if (addKeyRet == eValueChangedReturnCodeKeyframeModified) {
+                    if (ret == eValueChangedReturnCodeNothingChanged) {
+                        ret = eValueChangedReturnCodeKeyframeModified;
+                    }
+                }
 
                 // If dimensions are folded but a setValue call is made on one of them, auto-compute fold/expand
                 if (((thisDimension.isAll() && i == nDims - 1) || (!thisDimension.isAll() && i == thisDimension)) && nDims > 1) {
@@ -507,7 +499,7 @@ Knob<T>::setValueAtTime(TimeValue time,
                 }
             }
         }
-        
+
     }
 
 
@@ -520,19 +512,19 @@ Knob<T>::setValueAtTime(TimeValue time,
     if (ret != eValueChangedReturnCodeNothingChanged) {
 
         if (undoRedoStackHelperRAII.canAddValueToUndoStack()) {
-            undoRedoStackHelperRAII.addSetValueToUndoRedoStackIfNeeded(v, ret);
+            undoRedoStackHelperRAII.addSetValueToUndoRedoStackIfNeeded(key, ret);
         }
-
-        evaluateValueChange(dimension, time, view, reason);
+        
+        evaluateValueChange(args.dimension, key.getTime(), args.view, args.reason);
     }
-
+    
     return ret;
-} // setValueAtTime
+} // setKeyFrame
 
 
 template <typename T>
 void
-Knob<T>::setMultipleValueAtTime(const std::list<TimeValuePair<T> >& keys, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason, std::vector<KeyFrame>* newKeys)
+Knob<T>::setMultipleKeyFrames(const SetKeyFrameArgs& args, const std::list<KeyFrame>& keys)
 {
     if (keys.empty()) {
         return;
@@ -552,15 +544,13 @@ Knob<T>::setMultipleValueAtTime(const std::list<TimeValuePair<T> >& keys, ViewSe
     // Group changes under the same undo/redo action if possible
     AddToUndoRedoStackHelper<T> undoRedoStackHelperRAII(this);
     
-    typename std::list<TimeValuePair<T> >::const_iterator next = keys.begin();
+    typename std::list<KeyFrame>::const_iterator next = keys.begin();
     ++next;
     KeyFrame k;
     ValueChangedReturnCodeEnum ret;
-    if (newKeys) {
-        newKeys->clear();
-    }
+
     bool hasChanged = false;
-    for (typename std::list<TimeValuePair<T> >::const_iterator it = keys.begin(); it!= keys.end(); ++it) {
+    for (std::list<KeyFrame>::const_iterator it = keys.begin(); it!= keys.end(); ++it) {
         if (next == keys.end() && keys.size() > 1) {
             // Make sure the last setValue call triggers a knobChanged call
             unblockValueChanges();
@@ -568,11 +558,11 @@ Knob<T>::setMultipleValueAtTime(const std::list<TimeValuePair<T> >& keys, ViewSe
             setAdjustFoldExpandStateAutomatically(true);
             
         }
-        ret = setValueAtTime(it->time, it->value, view, dimension, reason, newKeys ? &k : 0, hasChanged);
+        SetKeyFrameArgs subArgs = args;
+        subArgs.callKnobChangedHandlerEvenIfNothingChanged = hasChanged;
+        ret = setKeyFrame(subArgs, *it);
         hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
-        if (newKeys) {
-            newKeys->push_back(k);
-        }
+
         if (next != keys.end()) {
             ++next;
         }
@@ -582,16 +572,11 @@ Knob<T>::setMultipleValueAtTime(const std::list<TimeValuePair<T> >& keys, ViewSe
         endChanges();
     }
 
-} // setMultipleValueAtTime
+} // setMultipleKeyFrames
 
 template <typename T>
 void
-Knob<T>::setValueAtTimeAcrossDimensions(TimeValue time,
-                                        const std::vector<T>& values,
-                                        DimIdx dimensionStartOffset,
-                                        ViewSetSpec view,
-                                        ValueChangedReasonEnum reason,
-                                        std::vector<ValueChangedReturnCodeEnum>* retCodes)
+Knob<T>::setKeyFramesAcrossDimensions(const SetKeyFrameArgs& args, const std::vector<KeyFrame>& values, DimIdx dimensionStartOffset, std::vector<ValueChangedReturnCodeEnum>* retCodes)
 {
     if (values.empty()) {
         return;
@@ -628,7 +613,11 @@ Knob<T>::setValueAtTimeAcrossDimensions(TimeValue time,
             unblockValueChanges();
             setAdjustFoldExpandStateAutomatically(true);
         }
-        ret = setValueAtTime(time, values[i], view, DimSpec(dimensionStartOffset + i), reason, &newKey, hasChanged);
+
+        SetKeyFrameArgs subArgs = args;
+        subArgs.dimension = DimSpec(dimensionStartOffset + i);
+        subArgs.callKnobChangedHandlerEvenIfNothingChanged = hasChanged;
+        ret = setKeyFrame(subArgs, values[i]);
         if (retCodes) {
             (*retCodes)[i] = ret;
         }
@@ -637,59 +626,29 @@ Knob<T>::setValueAtTimeAcrossDimensions(TimeValue time,
     if (values.size() > 1) {
         endChanges();
     }
-    
 
-} // setValueAtTimeAcrossDimensions
+} // setKeyFramesAcrossDimensions
 
 template <typename T>
 void
-Knob<T>::setMultipleValueAtTimeAcrossDimensions(const std::vector<std::pair<DimensionViewPair, std::list<TimeValuePair<T> > > >& keysPerDimension, ValueChangedReasonEnum reason)
+Knob<T>::setValueAtTimeAcrossDimensions(TimeValue time,
+                                        const std::vector<T>& values,
+                                        DimIdx dimensionStartOffset,
+                                        ViewSetSpec view,
+                                        ValueChangedReasonEnum reason,
+                                        std::vector<ValueChangedReturnCodeEnum>* retCodes)
 {
-    if (keysPerDimension.empty()) {
-        return;
+    ValueKnobDimView<T>* data = dynamic_cast<ValueKnobDimView<T>*>(getDataForDimView(DimIdx(0), ViewIdx(0)).get());
+    assert(data);
+    SetKeyFrameArgs args;
+    std::vector<KeyFrame> keys(values.size());
+    for (std::size_t i = 0; i < values.size(); ++i) {
+        keys[i] = data->makeKeyFrame(time, values[i]);
     }
-
-    // Group changes under the same undo/redo action if possible
-    AddToUndoRedoStackHelper<T> undoRedoStackHelperRAII(this);
-
-    bool hasChanged = false;
-    ValueChangedReturnCodeEnum ret;
-
-    beginChanges();
-    blockValueChanges();
-    // Since we are about to set multiple values, disable auto-expand/fold until we set the last value
-    setAdjustFoldExpandStateAutomatically(false);
-
-    for (std::size_t i = 0; i < keysPerDimension.size(); ++i) {
-
-        if (keysPerDimension[i].second.empty()) {
-            continue;
-        }
-
-
-        DimIdx dimension = keysPerDimension[i].first.dimension;
-        ViewIdx view = keysPerDimension[i].first.view;
-
-
-        typename std::list<TimeValuePair<T> >::const_iterator next = keysPerDimension[i].second.begin();
-        ++next;
-        for (typename std::list<TimeValuePair<T> >::const_iterator it = keysPerDimension[i].second.begin(); it!=keysPerDimension[i].second.end(); ++it) {
-            if (i == keysPerDimension.size() - 1 && next == keysPerDimension[i].second.end()) {
-                unblockValueChanges();
-                setAdjustFoldExpandStateAutomatically(true);
-            }
-            ret = setValueAtTime(it->time, it->value, view, dimension, reason, 0 /*outKey*/, hasChanged);
-            hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
-
-            if (next != keysPerDimension[i].second.end()) {
-                ++next;
-            }
-        }
-    }
-
-    endChanges();
-
-} // setMultipleValueAtTimeAcrossDimensions
+    args.view = view;
+    args.reason = reason;
+    setKeyFramesAcrossDimensions(args, keys, dimensionStartOffset, retCodes);
+} // setValueAtTimeAcrossDimensions
 
 
 
@@ -801,433 +760,7 @@ KnobDoubleBase::resetToDefaultValue(DimSpec dimension, ViewSetSpec view)
 }
 
 
-///////////// Explicit template instanciation for INT type
-template <>
-ValueChangedReturnCodeEnum
-Knob<int>::setIntValue(int value,
-                 ViewSetSpec view,
-                 DimSpec dimension,
-                 ValueChangedReasonEnum reason,
-                 KeyFrame* newKey,
-                 bool forceHandlerEvenIfNoChange)
-{
-    return setValue(value, view, dimension, reason, newKey, forceHandlerEvenIfNoChange);
-}
 
-template <typename T>
-ValueChangedReturnCodeEnum
-Knob<T>::setIntValue(int /*value*/,
-                     ViewSetSpec /*view*/,
-                     DimSpec /*dimension*/,
-                     ValueChangedReasonEnum /*reason*/,
-                     KeyFrame* /*newKey*/,
-                     bool /*forceHandlerEvenIfNoChange*/)
-{
-    throw std::invalid_argument("Attempt to call a function for a wrong Knob A.P.I type");
-}
-
-template <>
-void
-Knob<int>::setIntValueAcrossDimensions(const std::vector<int>& values,
-                                       DimIdx dimensionStartIndex,
-                                       ViewSetSpec view,
-                                       ValueChangedReasonEnum reason,
-                                       std::vector<ValueChangedReturnCodeEnum>* retCodes)
-{
-    setValueAcrossDimensions(values, dimensionStartIndex, view, reason, retCodes);
-}
-
-template <typename T>
-void
-Knob<T>::setIntValueAcrossDimensions(const std::vector<int>& /*values*/,
-                                       DimIdx /*dimensionStartIndex*/,
-                                       ViewSetSpec /*view*/,
-                                       ValueChangedReasonEnum /*reason*/,
-                                       std::vector<ValueChangedReturnCodeEnum>* /*retCodes*/)
-{
-    throw std::invalid_argument("Attempt to call a function for a wrong Knob A.P.I type");
-}
-
-template <>
-ValueChangedReturnCodeEnum
-Knob<int>::setIntValueAtTime(TimeValue time, int value, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason, KeyFrame* newKey)
-{
-    return setValueAtTime(time, value, view, dimension, reason, newKey, false);
-}
-
-template <typename T>
-ValueChangedReturnCodeEnum
-Knob<T>::setIntValueAtTime(TimeValue /*time*/, int /*value*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* /*newKey*/)
-{
-    throw std::invalid_argument("Attempt to call a function for a wrong Knob A.P.I type");
-}
-
-template <>
-void
-Knob<int>::setMultipleIntValueAtTime(const std::list<IntTimeValuePair>& keys, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason, std::vector<KeyFrame>* newKeys)
-{
-    setMultipleValueAtTime(keys, view, dimension, reason, newKeys);
-}
-
-template <typename T>
-void
-Knob<T>::setMultipleIntValueAtTime(const std::list<IntTimeValuePair>& /*keys*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, std::vector<KeyFrame>* /*newKey*/)
-{
-    throw std::invalid_argument("Attempt to call a function for a wrong Knob A.P.I type");
-}
-
-template <>
-void
-Knob<int>::setIntValueAtTimeAcrossDimensions(TimeValue time, const std::vector<int>& values, DimIdx dimensionStartIndex, ViewSetSpec view, ValueChangedReasonEnum reason, std::vector<ValueChangedReturnCodeEnum>* retCodes)
-{
-    setValueAtTimeAcrossDimensions(time, values, dimensionStartIndex, view, reason, retCodes);
-}
-
-template <typename T>
-void
-Knob<T>::setIntValueAtTimeAcrossDimensions(TimeValue /*time*/, const std::vector<int>& /*values*/, DimIdx /*dimensionStartIndex*/, ViewSetSpec /*view*/, ValueChangedReasonEnum /*reason*/, std::vector<ValueChangedReturnCodeEnum>* /*retCodes*/)
-{
-    throw std::invalid_argument("Attempt to call a function for a wrong Knob A.P.I type");
-}
-
-template <>
-void
-Knob<int>::setMultipleIntValueAtTimeAcrossDimensions(const PerCurveIntValuesList& keysPerDimension,  ValueChangedReasonEnum reason)
-{
-    setMultipleValueAtTimeAcrossDimensions(keysPerDimension, reason);
-}
-
-template <typename T>
-void
-Knob<T>::setMultipleIntValueAtTimeAcrossDimensions(const PerCurveIntValuesList& /*keysPerDimension*/,  ValueChangedReasonEnum /*reason*/)
-{
-    throw std::invalid_argument("Attempt to call a function for a wrong Knob A.P.I type");
-}
-
-
-///////////// End explicit template instanciation for INT type
-
-///////////// Explicit template instanciation for DOUBLE type
-template <>
-ValueChangedReturnCodeEnum
-Knob<double>::setDoubleValue(double value,
-                             ViewSetSpec view,
-                             DimSpec dimension,
-                             ValueChangedReasonEnum reason,
-                             KeyFrame* newKey,
-                             bool forceHandlerEvenIfNoChange)
-{
-    return setValue(value, view, dimension, reason, newKey, forceHandlerEvenIfNoChange);
-}
-
-template <typename T>
-ValueChangedReturnCodeEnum
-Knob<T>::setDoubleValue(double /*value*/,
-                        ViewSetSpec /*view*/,
-                        DimSpec /*dimension*/,
-                        ValueChangedReasonEnum /*reason*/,
-                        KeyFrame* /*newKey*/,
-                        bool /*forceHandlerEvenIfNoChange*/)
-{
-    throw std::invalid_argument("Attempt to call a function for a wrong Knob A.P.I type");
-}
-
-template <>
-void
-Knob<double>::setDoubleValueAcrossDimensions(const std::vector<double>& values,
-                                             DimIdx dimensionStartIndex,
-                                             ViewSetSpec view,
-                                             ValueChangedReasonEnum reason,
-                                             std::vector<ValueChangedReturnCodeEnum>* retCodes)
-{
-    setValueAcrossDimensions(values, dimensionStartIndex, view, reason, retCodes);
-}
-
-template <typename T>
-void
-Knob<T>::setDoubleValueAcrossDimensions(const std::vector<double>& /*values*/,
-                                        DimIdx /*dimensionStartIndex*/,
-                                        ViewSetSpec /*view*/,
-                                        ValueChangedReasonEnum /*reason*/,
-                                        std::vector<ValueChangedReturnCodeEnum>* /*retCodes*/)
-{
-    throw std::invalid_argument("Attempt to call a function for a wrong Knob A.P.I type");
-}
-
-template <>
-ValueChangedReturnCodeEnum
-Knob<double>::setDoubleValueAtTime(TimeValue time, double value, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason, KeyFrame* newKey)
-{
-    return setValueAtTime(time, value, view, dimension, reason, newKey, false);
-}
-
-template <typename T>
-ValueChangedReturnCodeEnum
-Knob<T>::setDoubleValueAtTime(TimeValue /*time*/, double /*value*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* /*newKey*/)
-{
-    throw std::invalid_argument("Attempt to call a function for a wrong Knob A.P.I type");
-}
-
-template <>
-void
-Knob<double>::setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair>& keys, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason, std::vector<KeyFrame>* newKeys)
-{
-    setMultipleValueAtTime(keys, view, dimension, reason, newKeys);
-}
-
-template <typename T>
-void
-Knob<T>::setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair>& /*keys*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, std::vector<KeyFrame>* /*newKey*/)
-{
-    throw std::invalid_argument("Attempt to call a function for a wrong Knob A.P.I type");
-}
-
-template <>
-void
-Knob<double>::setDoubleValueAtTimeAcrossDimensions(TimeValue time, const std::vector<double>& values, DimIdx dimensionStartIndex, ViewSetSpec view, ValueChangedReasonEnum reason, std::vector<ValueChangedReturnCodeEnum>* retCodes)
-{
-    setValueAtTimeAcrossDimensions(time, values, dimensionStartIndex, view, reason, retCodes);
-}
-
-template <typename T>
-void
-Knob<T>::setDoubleValueAtTimeAcrossDimensions(TimeValue /*time*/, const std::vector<double>& /*values*/, DimIdx /*dimensionStartIndex*/, ViewSetSpec /*view*/, ValueChangedReasonEnum /*reason*/, std::vector<ValueChangedReturnCodeEnum>* /*retCodes*/)
-{
-    throw std::invalid_argument("Attempt to call a function for a wrong Knob A.P.I type");
-}
-
-template <>
-void
-Knob<double>::setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDoubleValuesList& keysPerDimension, ValueChangedReasonEnum reason)
-{
-    setMultipleValueAtTimeAcrossDimensions(keysPerDimension, reason);
-}
-
-template <typename T>
-void
-Knob<T>::setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDoubleValuesList& /*keysPerDimension*/, ValueChangedReasonEnum /*reason*/)
-{
-    throw std::invalid_argument("Attempt to call a function for a wrong Knob A.P.I type");
-}
-
-
-///////////// End explicit template instanciation for DOUBLE type
-
-///////////// Explicit template instanciation for BOOL type
-
-template <>
-ValueChangedReturnCodeEnum
-Knob<bool>::setBoolValue(bool value,
-                         ViewSetSpec view,
-                         DimSpec dimension,
-                         ValueChangedReasonEnum reason,
-                         KeyFrame* newKey,
-                         bool forceHandlerEvenIfNoChange)
-{
-    return setValue(value, view, dimension, reason, newKey, forceHandlerEvenIfNoChange);
-}
-
-template <typename T>
-ValueChangedReturnCodeEnum
-Knob<T>::setBoolValue(bool /*value*/,
-                      ViewSetSpec /*view*/,
-                      DimSpec /*dimension*/,
-                      ValueChangedReasonEnum /*reason*/,
-                      KeyFrame* /*newKey*/,
-                      bool /*forceHandlerEvenIfNoChange*/)
-{
-    throw std::invalid_argument("Attempt to call a function for a wrong Knob A.P.I type");
-}
-
-template <>
-void
-Knob<bool>::setBoolValueAcrossDimensions(const std::vector<bool>& values,
-                                         DimIdx dimensionStartIndex,
-                                         ViewSetSpec view,
-                                         ValueChangedReasonEnum reason,
-                                         std::vector<ValueChangedReturnCodeEnum>* retCodes)
-{
-    setValueAcrossDimensions(values, dimensionStartIndex, view, reason, retCodes);
-}
-
-template <typename T>
-void
-Knob<T>::setBoolValueAcrossDimensions(const std::vector<bool>& /*values*/,
-                                      DimIdx /*dimensionStartIndex*/,
-                                      ViewSetSpec /*view*/,
-                                      ValueChangedReasonEnum /*reason*/,
-                                      std::vector<ValueChangedReturnCodeEnum>* /*retCodes*/)
-{
-    throw std::invalid_argument("Attempt to call a function for a wrong Knob A.P.I type");
-}
-
-
-template <>
-ValueChangedReturnCodeEnum
-Knob<bool>::setBoolValueAtTime(TimeValue time, bool value, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason, KeyFrame* newKey)
-{
-    return setValueAtTime(time, value, view, dimension, reason, newKey, false);
-}
-
-template <typename T>
-ValueChangedReturnCodeEnum
-Knob<T>::setBoolValueAtTime(TimeValue /*time*/, bool /*value*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* /*newKey*/)
-{
-    throw std::invalid_argument("Attempt to call a function for a wrong Knob A.P.I type");
-}
-
-template <>
-void
-Knob<bool>::setMultipleBoolValueAtTime(const std::list<BoolTimeValuePair>& keys, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason, std::vector<KeyFrame>* newKeys)
-{
-    setMultipleValueAtTime(keys, view, dimension, reason, newKeys);
-}
-
-template <typename T>
-void
-Knob<T>::setMultipleBoolValueAtTime(const std::list<BoolTimeValuePair>& /*keys*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, std::vector<KeyFrame>* /*newKey*/)
-{
-    throw std::invalid_argument("Attempt to call a function for a wrong Knob A.P.I type");
-}
-
-template <>
-void
-Knob<bool>::setBoolValueAtTimeAcrossDimensions(TimeValue time, const std::vector<bool>& values, DimIdx dimensionStartIndex, ViewSetSpec view, ValueChangedReasonEnum reason, std::vector<ValueChangedReturnCodeEnum>* retCodes)
-{
-    setValueAtTimeAcrossDimensions(time, values, dimensionStartIndex, view, reason, retCodes);
-}
-
-template <typename T>
-void
-Knob<T>::setBoolValueAtTimeAcrossDimensions(TimeValue /*time*/, const std::vector<bool>& /*values*/, DimIdx /*dimensionStartIndex*/, ViewSetSpec /*view*/, ValueChangedReasonEnum /*reason*/, std::vector<ValueChangedReturnCodeEnum>* /*retCodes*/)
-{
-    throw std::invalid_argument("Attempt to call a function for a wrong Knob A.P.I type");
-}
-
-template <>
-void
-Knob<bool>::setMultipleBoolValueAtTimeAcrossDimensions(const PerCurveBoolValuesList& keysPerDimension, ValueChangedReasonEnum reason)
-{
-    setMultipleValueAtTimeAcrossDimensions(keysPerDimension, reason);
-}
-
-template <typename T>
-void
-Knob<T>::setMultipleBoolValueAtTimeAcrossDimensions(const PerCurveBoolValuesList& /*keysPerDimension*/, ValueChangedReasonEnum /*reason*/)
-{
-    throw std::invalid_argument("Attempt to call a function for a wrong Knob A.P.I type");
-}
-
-
-///////////// End explicit template instanciation for BOOL type
-
-///////////// Explicit template instanciation for STRING type
-
-template <>
-ValueChangedReturnCodeEnum
-Knob<std::string>::setStringValue(const std::string& value,
-                             ViewSetSpec view,
-                             DimSpec dimension,
-                             ValueChangedReasonEnum reason,
-                             KeyFrame* newKey,
-                             bool forceHandlerEvenIfNoChange)
-{
-    return setValue(value, view, dimension, reason, newKey, forceHandlerEvenIfNoChange);
-}
-
-template <typename T>
-ValueChangedReturnCodeEnum
-Knob<T>::setStringValue(const std::string& /*value*/,
-                        ViewSetSpec /*view*/,
-                        DimSpec /*dimension*/,
-                        ValueChangedReasonEnum /*reason*/,
-                        KeyFrame* /*newKey*/,
-                        bool /*forceHandlerEvenIfNoChange*/)
-{
-    throw std::invalid_argument("Attempt to call a function for a wrong Knob A.P.I type");
-}
-
-template <>
-void
-Knob<std::string>::setStringValueAcrossDimensions(const std::vector<std::string>& values,
-                                             DimIdx dimensionStartIndex,
-                                             ViewSetSpec view,
-                                             ValueChangedReasonEnum reason,
-                                             std::vector<ValueChangedReturnCodeEnum>* retCodes)
-{
-    setValueAcrossDimensions(values, dimensionStartIndex, view, reason, retCodes);
-}
-
-template <typename T>
-void
-Knob<T>::setStringValueAcrossDimensions(const std::vector<std::string>& /*values*/,
-                                        DimIdx /*dimensionStartIndex*/,
-                                        ViewSetSpec /*view*/,
-                                        ValueChangedReasonEnum /*reason*/,
-                                        std::vector<ValueChangedReturnCodeEnum>* /*retCodes*/)
-{
-    throw std::invalid_argument("Attempt to call a function for a wrong Knob A.P.I type");
-}
-
-
-template <>
-ValueChangedReturnCodeEnum
-Knob<std::string>::setStringValueAtTime(TimeValue time, const std::string& value, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason, KeyFrame* newKey)
-{
-    return setValueAtTime(time, value, view, dimension, reason, newKey, false);
-}
-
-template <typename T>
-ValueChangedReturnCodeEnum
-Knob<T>::setStringValueAtTime(TimeValue /*time*/, const std::string& /*value*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* /*newKey*/)
-{
-    throw std::invalid_argument("Attempt to call a function for a wrong Knob A.P.I type");
-}
-
-template <>
-void
-Knob<std::string>::setMultipleStringValueAtTime(const std::list<StringTimeValuePair>& keys, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason, std::vector<KeyFrame>* newKeys)
-{
-    setMultipleValueAtTime(keys, view, dimension, reason, newKeys);
-}
-
-template <typename T>
-void
-Knob<T>::setMultipleStringValueAtTime(const std::list<StringTimeValuePair>& /*keys*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, std::vector<KeyFrame>* /*newKey*/)
-{
-    throw std::invalid_argument("Attempt to call a function for a wrong Knob A.P.I type");
-}
-
-template <>
-void
-Knob<std::string>::setStringValueAtTimeAcrossDimensions(TimeValue time, const std::vector<std::string>& values, DimIdx dimensionStartIndex, ViewSetSpec view, ValueChangedReasonEnum reason, std::vector<ValueChangedReturnCodeEnum>* retCodes)
-{
-    setValueAtTimeAcrossDimensions(time, values, dimensionStartIndex, view, reason, retCodes);
-}
-
-template <typename T>
-void
-Knob<T>::setStringValueAtTimeAcrossDimensions(TimeValue /*time*/, const std::vector<std::string>& /*values*/, DimIdx /*dimensionStartIndex*/, ViewSetSpec /*view*/, ValueChangedReasonEnum /*reason*/, std::vector<ValueChangedReturnCodeEnum>* /*retCodes*/)
-{
-    throw std::invalid_argument("Attempt to call a function for a wrong Knob A.P.I type");
-}
-
-template <>
-void
-Knob<std::string>::setMultipleStringValueAtTimeAcrossDimensions(const PerCurveStringValuesList& keysPerDimension, ValueChangedReasonEnum reason)
-{
-    setMultipleValueAtTimeAcrossDimensions(keysPerDimension, reason);
-}
-
-template <typename T>
-void
-Knob<T>::setMultipleStringValueAtTimeAcrossDimensions(const PerCurveStringValuesList& /*keysPerDimension*/, ValueChangedReasonEnum /*reason*/)
-{
-    throw std::invalid_argument("Attempt to call a function for a wrong Knob A.P.I type");
-}
-
-
-///////////// End explicit template instanciation for STRING type
 
 NATRON_NAMESPACE_EXIT
 

@@ -203,7 +203,7 @@ KnobItemsTableSerialization::encode(YAML::Emitter& em) const
         em << YAML::Key << "Node" << YAML::Value << nodeScriptName;
     }
     if (!tableIdentifier.empty()) {
-        em << YAML::Key << "ID" << YAML::Value << tableIdentifier;
+        em << YAML::Key << "TableName" << YAML::Value << tableIdentifier;
     }
     if (!items.empty()) {
         em << YAML::Key << "Items" << YAML::Value << YAML::BeginSeq;
@@ -228,8 +228,8 @@ KnobItemsTableSerialization::decode(const YAML::Node& node)
         nodeScriptName = node["Node"].as<std::string>();
     }
 
-    if (node["ID"]) {
-        tableIdentifier = node["ID"].as<std::string>();
+    if (node["TableName"]) {
+        tableIdentifier = node["TableName"].as<std::string>();
     }
     
     if (node["Items"]) {

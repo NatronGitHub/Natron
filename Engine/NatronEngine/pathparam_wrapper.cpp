@@ -190,6 +190,7 @@ static PyObject* Sbk_PathParamFunc_setTable(PyObject* self, PyObject* pyArg)
 
                 for (int j = 0; j < subSize; ++j) {
                     PyObject* pyString = PyList_GET_ITEM(subList,j);
+
                     if ( PyString_Check(pyString) ) {
                         char* buf = PyString_AsString(pyString);
                         if (buf) {

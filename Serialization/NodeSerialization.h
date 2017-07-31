@@ -122,7 +122,6 @@ public:
     , _pluginMinorVersion(-1)
     , _masterNodecriptName()
     , _inputs()
-    , _tableModel()
     , _userPages()
     , _pagesIndexes()
     , _children()
@@ -200,7 +199,7 @@ public:
     std::list<OutputNodeConnection> _outputs;
 
     // If this node has an item model (Roto, tracker...), this points to its serialization
-    KnobItemsTableSerializationPtr _tableModel;
+    std::list<KnobItemsTableSerializationPtr> _tables;
 
     // The serialization of the pages created by the user
     std::list<boost::shared_ptr<GroupKnobSerialization> > _userPages;

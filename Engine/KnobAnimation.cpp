@@ -28,6 +28,19 @@
 
 NATRON_NAMESPACE_ENTER
 
+ValueChangedReturnCodeEnum
+KnobDimViewBase::setKeyFrame(const KeyFrame& key, SetKeyFrameFlags flags)
+{
+    if (!animationCurve) {
+        return eValueChangedReturnCodeNothingChanged;
+    }
+
+    ValueChangedReturnCodeEnum addKeyRet = animationCurve->setOrAddKeyframe(key, flags);
+    notifyCurveChanged();
+
+    return addKeyRet;
+    
+}
 
 CurvePtr KnobHelper::getAnimationCurve(ViewIdx view,
                               DimIdx dimension) const

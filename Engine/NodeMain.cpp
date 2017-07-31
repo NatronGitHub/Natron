@@ -706,10 +706,15 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
     }
 
 
-    KnobItemsTablePtr table = _imp->effect->getItemsTable();
-    if (table && table->getNumTopLevelItems() > 0) {
-        serialization->_tableModel.reset(new SERIALIZATION_NAMESPACE::KnobItemsTableSerialization);
-        table->toSerialization(serialization->_tableModel.get());
+    std::list<KnobItemsTablePtr> tables = _imp->effect->getAllItemsTables();
+    if (!tables.empty()) {
+        for (std::list<KnobItemsTablePtr>::const_iterator it = tables.begin(); it != tables.end(); ++it) {
+            if ((*it)->getNumTopLevelItems() > 0) {
+                SERIALIZATION_NAMESPACE::KnobItemsTableSerializationPtr tableSer(new SERIALIZATION_NAMESPACE::KnobItemsTableSerialization);
+                (*it)->toSerialization(tableSer.get());
+                serialization->_tables.push_back(tableSer);
+            }
+        }
     }
 
     // For groups, serialize its children if the graph was edited
@@ -952,12 +957,15 @@ Node::loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializatio
     }
 
     // now restore the roto context if the node has a roto context
-    KnobItemsTablePtr table = _imp->effect->getItemsTable();
-    if (serialization._tableModel && table) {
-        table->fromSerialization(*serialization._tableModel);
+    std::list<KnobItemsTablePtr> tables = _imp->effect->getAllItemsTables();
+    for (std::list<SERIALIZATION_NAMESPACE::KnobItemsTableSerializationPtr>::const_iterator it = serialization._tables.begin(); it != serialization._tables.end(); ++it) {
+        KnobItemsTablePtr table = _imp->effect->getItemsTable((*it)->tableIdentifier);
+        if (!table) {
+            continue;
+        }
+        table->fromSerialization(**it);
         table->declareItemsToPython();
     }
-
     {
         for (std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::GroupKnobSerialization> >::const_iterator it = serialization._userPages.begin(); it != serialization._userPages.end(); ++it) {
             restoreUserKnob(KnobGroupPtr(), KnobPagePtr(), **it, 0, isPyPlugSerialization);

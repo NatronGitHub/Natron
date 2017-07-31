@@ -25,6 +25,9 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include <vector>
+#include <map>
+
 #include "Serialization/SerializationBase.h"
 #include "Serialization/SerializationFwd.h"
 
@@ -38,6 +41,26 @@ SERIALIZATION_NAMESPACE_ENTER
 #define kKeyframeSerializationTypeHorizontal "H"
 #define kKeyframeSerializationTypeFree "F"
 #define kKeyframeSerializationTypeBroken "X"
+
+#define kKeyFramePropertyVariantTypeBool "Bool"
+#define kKeyFramePropertyVariantTypeInt "Int"
+#define kKeyFramePropertyVariantTypeDouble "Double"
+#define kKeyFramePropertyVariantTypeString "String"
+
+
+
+struct KeyFramePropertyVariant
+{
+    double scalarValue;
+    std::string stringValue;
+};
+
+struct KeyFrameProperty
+{
+    std::string type;
+    std::string name;
+    std::vector<KeyFramePropertyVariant> values;
+};
 
 /**
  * @brief Basically just the same as a Keyframe but without all member functions and extracted to remove any dependency to Natron.
@@ -74,16 +97,26 @@ struct KeyFrameSerialization
     // This is only needed in eKeyframeTypeBroken mode when user can have set different right/left tangents
     double leftDerivative;
 
+    // List of properties associated to the keyframe. Properties do not have any interpolation, they are
+    // assumed to have a constant interpolation.
+    std::list<KeyFrameProperty> properties;
 
-    // If the associated curve is of type string, this is serialized instead of the actual value and derivatives.
-    std::string stringValue;
 
 };
 
 enum CurveSerializationTypeEnum
 {
+    // The curve contains for each keyframe a scalar value
+    eCurveSerializationTypeScalar,
+
+    // The curve contains for each keyframe a single property. It can only be of constant interpolation type.
     eCurveSerializationTypeString,
-    eCurveSerializationTypeDouble,
+
+    // The curve contains for each keyframe a list of properties of different types.
+    // This is a generic version of eCurveSerializationTypeString where a keyframe may hold more data.
+    // Note that if a keyframe doesn't have any property, it will still save the time marker.
+    // It can only be of constant interpolation type.
+    eCurveSerializationTypePropertiesOnly,
 };
 
 class CurveSerialization

@@ -40,18 +40,64 @@ PropertiesHolder::PropertiesHolder(const PropertiesHolder& other)
     cloneProperties(other);
 }
 
-void
+bool
 PropertiesHolder::cloneProperties(const PropertiesHolder& other)
 {
-    if (other._properties) {
-        other._propertiesInitialized = true;
+    return mergeProperties(other);
+}
+
+bool
+PropertiesHolder::mergeProperties(const PropertiesHolder& other)
+{
+    bool hasChanged = false;
+    if (!other._properties) {
+        return hasChanged;
+    }
+
+    if (!_properties) {
+        hasChanged = true;
+        _propertiesInitialized = true;
         _properties.reset(new std::map<std::string, boost::shared_ptr<PropertyBase> >());
 
-        for (std::map<std::string, boost::shared_ptr<PropertyBase> >::const_iterator it = other._properties->begin(); it!=other._properties->end(); ++it) {
-            boost::shared_ptr<PropertyBase> duplicate = it->second->createDuplicate();
-            _properties->insert(std::make_pair(it->first, duplicate));
+    }
+    for (std::map<std::string, boost::shared_ptr<PropertyBase> >::const_iterator it = other._properties->begin(); it!=other._properties->end(); ++it) {
+
+        std::map<std::string, boost::shared_ptr<PropertyBase> >::const_iterator found = _properties->find(it->first);
+        if (found == _properties->end()) {
+            hasChanged = true;
+            _properties->insert(std::make_pair(it->first,it->second->createDuplicate()));
+        } else {
+            if (*it->second != *found->second) {
+                hasChanged = true;
+                *found->second = *it->second;
+            }
+
         }
     }
+
+    return hasChanged;
+}
+
+bool
+PropertiesHolder::operator==(const PropertiesHolder& other) const
+{
+    if (!_properties && !other._properties) {
+        return true;
+    }
+    if (!_properties || !other._properties) {
+        return false;
+    }
+    if (_properties->size() != other._properties->size()) {
+        return false;
+    }
+    std::map<std::string, boost::shared_ptr<PropertyBase> >::const_iterator it1 = _properties->begin();
+    for (std::map<std::string, boost::shared_ptr<PropertyBase> >::const_iterator it = other._properties->begin(); it!=other._properties->end(); ++it, ++it1) {
+        if (*it1->second != *it->second) {
+            return false;
+        }
+
+    }
+    return true;
 }
 
 PropertiesHolder::~PropertiesHolder()

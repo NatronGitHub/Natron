@@ -274,11 +274,6 @@ KnobGuiChoice::~KnobGuiChoice()
 {
 }
 
-void
-KnobGuiChoice::removeSpecificGui()
-{
-    _comboBox->deleteLater();
-}
 
 void
 KnobGuiChoice::createWidget(QHBoxLayout* layout)

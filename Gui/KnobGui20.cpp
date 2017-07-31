@@ -420,11 +420,10 @@ KnobGui::onKnobMultipleSelectionChanged(bool d)
 void
 KnobGui::onAppendParamEditChanged(ValueChangedReasonEnum reason,
                                   ValueChangedReturnCodeEnum setValueRetCode,
-                                  const PerDimViewVariantMap& oldValue,
-                                  Variant newValue,
+                                  const PerDimViewKeyFramesMap& oldValue,
+                                  const KeyFrame& newValue,
                                   ViewSetSpec view,
                                   DimSpec dim,
-                                  TimeValue time,
                                   bool setKeyFrame)
 {
     KnobIPtr knob = getKnob();
@@ -437,7 +436,7 @@ KnobGui::onAppendParamEditChanged(ValueChangedReasonEnum reason,
     }
     bool createNewCommand = holder->getMultipleEditsLevel() == KnobHolder::eMultipleParamsEditOnCreateNewCommand;
     QString commandName = QString::fromUtf8(holder->getCurrentMultipleEditsCommandName().c_str());
-    pushUndoCommand( new MultipleKnobEditsUndoCommand(knob, commandName, reason, setValueRetCode, createNewCommand, setKeyFrame, oldValue, newValue, dim, time, view) );
+    pushUndoCommand( new MultipleKnobEditsUndoCommand(knob, commandName, reason, setValueRetCode, createNewCommand, setKeyFrame, oldValue, newValue, dim, view) );
 }
 
 
