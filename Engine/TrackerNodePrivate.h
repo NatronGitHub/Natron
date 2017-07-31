@@ -1057,9 +1057,9 @@ public Q_SLOTS:
 
 
     void onModelSelectionChanged(const std::list<KnobTableItemPtr>& addedToSelection, const std::list<KnobTableItemPtr>& removedFromSelection, TableChangeReasonEnum reason);
-    void onKeyframeSetOnTrack(const TrackMarkerPtr &marker, int key);
-    void onKeyframeRemovedOnTrack(const TrackMarkerPtr &marker, int key);
-    void onAllKeyframesRemovedOnTrack(const TrackMarkerPtr& marker);
+    void onKeyframeSetOnTrack(TimeValue key);
+    void onKeyframeRemovedOnTrack(TimeValue key);
+    void onKeyframeMovedOnTrack(TimeValue from, TimeValue to);
 
     void rebuildMarkerTextures();
     void onTrackImageRenderingFinished();

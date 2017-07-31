@@ -113,7 +113,11 @@ NATRON_NAMESPACE_ENTER
 struct TrackMarkerPrivate;
 class TrackMarker
 : public KnobTableItem
+, public CurveChangesListener
 {
+    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+    GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 
 protected: // derives from KnobHolder
@@ -208,6 +212,16 @@ public:
 
     bool hasKeyFrameAtTime(TimeValue time) const;
 
+    /// Overriden from CurveChangesListener
+    virtual void onKeyFrameRemoved(const Curve* curve, const KeyFrame& key) OVERRIDE;
+    virtual void onKeyFrameAdded(const Curve* curve, const KeyFrame& key) OVERRIDE;
+    virtual void onKeyFrameMoved(const Curve* curve, const KeyFrame& from, const KeyFrame& to) OVERRIDE;
+
+Q_SIGNALS:
+
+    void keyframeRemoved(TimeValue time);
+    void keyframeAdded(TimeValue time);
+    void keyframeMoved(TimeValue from, TimeValue to);
 protected:
 
     virtual void initializeKnobs() OVERRIDE;

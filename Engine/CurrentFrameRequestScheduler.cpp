@@ -368,7 +368,9 @@ ViewerCurrentFrameRequestScheduler::onTreeRenderFinished(const TreeRenderPtr& re
         }
     }
 
-    assert(results);
+    if (!results) {
+        return;
+    }
 
     if (!allRendersFinished) {
         // There's multiple tree renders per render request (one for A and one for B of the Viewer) so wait for all of them to be done

@@ -899,7 +899,9 @@ bool
 ValueKnobDimView<T>::copy(const CopyInArgs& inArgs, CopyOutArgs* outArgs)
 {
     bool hasChanged = KnobDimViewBase::copy(inArgs, outArgs);
-
+    if (!inArgs.other) {
+        return hasChanged;
+    }
     QMutexLocker k(&valueMutex);
     QMutexLocker k2(&inArgs.other->valueMutex);
 

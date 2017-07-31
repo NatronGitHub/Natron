@@ -596,27 +596,34 @@ Curve::setOrAddKeyframe(const KeyFrame& key, SetKeyFrameFlags flags, int *keyfra
         return setOrAddKeyframe(tmp, flags, keyframeIndex);
     }
 
-    QMutexLocker l(&_imp->_lock);
+    ValueChangedReturnCodeEnum retCode = eValueChangedReturnCodeNothingChanged;
+    std::list<CurveChangesListenerPtr> listeners;
+    {
+        QMutexLocker l(&_imp->_lock);
+        listeners = getListeners();
+        std::pair<KeyFrameSet::iterator, ValueChangedReturnCodeEnum> it;
 
-    std::pair<KeyFrameSet::iterator, ValueChangedReturnCodeEnum> it;
+        if (isInterpolationConstantOnly()) {
+            KeyFrame copy = key;
+            copy.setInterpolation(eKeyframeTypeConstant);
+            it = setOrUpdateKeyframeInternal(copy, flags);
+        } else {
+            it = setOrUpdateKeyframeInternal(key, flags);
+        }
+        retCode = it.second;
 
-    if (isInterpolationConstantOnly()) {
-        KeyFrame copy = key;
-        copy.setInterpolation(eKeyframeTypeConstant);
-        it = setOrUpdateKeyframeInternal(copy, flags);
-    } else {
-        it = setOrUpdateKeyframeInternal(key, flags);
+        assert(it.first != _imp->keyFrames.end());
+
+        it.first = evaluateCurveChanged(eCurveChangedReasonKeyframeChanged, it.first);
+
+        if (keyframeIndex) {
+            *keyframeIndex = std::distance(_imp->keyFrames.begin(), it.first);
+        }
     }
-
-    assert(it.first != _imp->keyFrames.end());
-
-    it.first = evaluateCurveChanged(eCurveChangedReasonKeyframeChanged, it.first);
-
-    if (keyframeIndex) {
-        *keyframeIndex = std::distance(_imp->keyFrames.begin(), it.first);
+    if (retCode == eValueChangedReturnCodeKeyframeAdded) {
+        notifyKeyFramesAdded(listeners, key);
     }
-
-    return it.second;
+    return retCode;
     
 }
 

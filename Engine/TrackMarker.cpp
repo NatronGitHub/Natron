@@ -227,6 +227,7 @@ TrackMarker::initializeKnobs()
         KnobKeyFrameMarkersPtr param = createKnob<KnobKeyFrameMarkers>(kTrackerParamManualKeyframes);
         param->setLabel(tr(kTrackerParamManualKeyframesLabel));
         param->setHintToolTip(tr(kTrackerParamManualKeyframesHint));
+        param->getAnimationCurve(ViewIdx(0), DimIdx(0))->registerListener(shared_from_this());
         _imp->shapeKeys = param;
     }
 
@@ -522,6 +523,7 @@ static std::set<double> keyframesToDoubleSet(const KeyFrameSet& keys)
     return ret;
 }
 
+
 void
 TrackMarker::clearAnimationBeforeTime(TimeValue time)
 {
@@ -647,6 +649,23 @@ TrackMarker::notifyTrackingEnded()
     }
 }
 
+void
+TrackMarker::onKeyFrameRemoved(const Curve* /*curve*/, const KeyFrame& key)
+{
+    Q_EMIT keyframeRemoved(key.getTime());
+}
+
+void
+TrackMarker::onKeyFrameAdded(const Curve* /*curve*/, const KeyFrame& key)
+{
+    Q_EMIT keyframeAdded(key.getTime());
+}
+
+void
+TrackMarker::onKeyFrameMoved(const Curve* /*curve*/, const KeyFrame& from, const KeyFrame& to)
+{
+    Q_EMIT keyframeMoved(from.getTime(), to.getTime());
+}
 
 RectD
 TrackMarker::getMarkerImageRoI(TimeValue time) const

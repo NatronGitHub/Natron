@@ -1405,6 +1405,8 @@ TrackerNode::initializeKnobs()
     _imp->knobsTable.reset(new TrackerKnobItemsTable(_imp.get(), KnobItemsTable::eKnobItemsTableTypeTable));
     QObject::connect(_imp->knobsTable.get(), SIGNAL(selectionChanged(std::list<KnobTableItemPtr>,std::list<KnobTableItemPtr>,TableChangeReasonEnum)),
                      _imp->ui.get(), SLOT(onModelSelectionChanged(std::list<KnobTableItemPtr>,std::list<KnobTableItemPtr>,TableChangeReasonEnum)));
+
+
     _imp->knobsTable->setIconsPath(NATRON_IMAGES_PATH);
     _imp->knobsTable->setColumnText(0, tr("Label").toStdString());
     _imp->knobsTable->setColumnText(1, tr(kTrackerParamEnabledLabel).toStdString());
@@ -1720,6 +1722,9 @@ TrackerKnobItemsTable::createItemFromSerialization(const SERIALIZATION_NAMESPACE
     TrackMarkerPtr marker;
     {
         marker = TrackMarker::create(shared_from_this());
+        QObject::connect( marker.get(), SIGNAL(keyframeRemoved(TimeValue)), _imp->ui.get(), SLOT(onKeyframeRemovedOnTrack(TimeValue)) );
+        QObject::connect( marker.get(), SIGNAL(keyframeAdded(TimeValue)), _imp->ui.get(), SLOT(onKeyframeSetOnTrack(TimeValue)) );
+        QObject::connect( marker.get(), SIGNAL(keyframeMoved(TimeValue,TimeValue)), _imp->ui.get(), SLOT(onKeyframeMovedOnTrack(TimeValue, TimeValue)) );
     }
     marker->initializeKnobsPublic();
     marker->fromSerialization(*serialization);
@@ -2120,6 +2125,10 @@ TrackerNodePrivate::createMarker()
     knobsTable->addItem(track, KnobTableItemPtr(), eTableChangeReasonInternal);
 
     track->resetCenter();
+
+    QObject::connect( track.get(), SIGNAL(keyframeRemoved(TimeValue)), ui.get(), SLOT(onKeyframeRemovedOnTrack(TimeValue)) );
+    QObject::connect( track.get(), SIGNAL(keyframeAdded(TimeValue)), ui.get(), SLOT(onKeyframeSetOnTrack(TimeValue)) );
+    QObject::connect( track.get(), SIGNAL(keyframeMoved(TimeValue,TimeValue)), ui.get(), SLOT(onKeyframeMovedOnTrack(TimeValue, TimeValue)) );
 
     return track;
 }

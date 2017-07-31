@@ -1858,19 +1858,25 @@ TrackerNodeInteract::transformPattern(TimeValue time,
 } // TrackerNodeInteract::transformPattern
 
 void
-TrackerNodeInteract::onKeyframeSetOnTrack(const TrackMarkerPtr& marker,
-                                          int key)
+TrackerNodeInteract::onKeyframeSetOnTrack(TimeValue time)
 {
-    makeMarkerKeyTexture(TimeValue(key), marker);
+    TrackMarker* marker = (TrackMarker*)sender();
+    if (!marker) {
+        return;
+    }
+    makeMarkerKeyTexture(time, marker->shared_from_this());
 }
 
 void
-TrackerNodeInteract::onKeyframeRemovedOnTrack(const TrackMarkerPtr& marker,
-                                              int key)
+TrackerNodeInteract::onKeyframeRemovedOnTrack(TimeValue time)
 {
+    TrackMarker* marker = (TrackMarker*)sender();
+    if (!marker) {
+        return;
+    }
     for (TrackerNodeInteract::TrackKeysMap::iterator it = trackTextures.begin(); it != trackTextures.end(); ++it) {
-        if (it->first.lock() == marker) {
-            std::map<TimeValue, boost::shared_ptr<Texture> >::iterator found = it->second.find(TimeValue(key));
+        if (it->first.lock().get() == marker) {
+            std::map<TimeValue, boost::shared_ptr<Texture> >::iterator found = it->second.find(time);
             if ( found != it->second.end() ) {
                 it->second.erase(found);
             }
@@ -1881,11 +1887,19 @@ TrackerNodeInteract::onKeyframeRemovedOnTrack(const TrackMarkerPtr& marker,
 }
 
 void
-TrackerNodeInteract::onAllKeyframesRemovedOnTrack(const TrackMarkerPtr& marker)
+TrackerNodeInteract::onKeyframeMovedOnTrack(TimeValue from, TimeValue to)
 {
+    TrackMarker* marker = (TrackMarker*)sender();
+    if (!marker) {
+        return;
+    }
     for (TrackerNodeInteract::TrackKeysMap::iterator it = trackTextures.begin(); it != trackTextures.end(); ++it) {
-        if (it->first.lock() == marker) {
-            it->second.clear();
+        if (it->first.lock().get() == marker) {
+            std::map<TimeValue, boost::shared_ptr<Texture> >::iterator found = it->second.find(from);
+            if (found != it->second.end()) {
+                it->second[to] = found->second;
+                it->second.erase(found);
+            }
             break;
         }
     }
