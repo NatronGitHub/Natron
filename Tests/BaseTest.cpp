@@ -262,22 +262,21 @@ TEST_F(BaseTest, SetValues)
     NodePtr generator = createNode(_generatorPluginID);
 
     assert(generator);
-    KnobIPtr knob = generator->getKnobByName("noiseZSlope");
-    KnobDoublePtr radius = boost::dynamic_pointer_cast<KnobDouble>(knob);
-    EXPECT_TRUE(radius != 0);
-    if (!radius) {
+    KnobDoublePtr knob = toKnobDouble(generator->getKnobByName("noiseZ"));
+    EXPECT_TRUE(knob);
+    if (!knob) {
         return;
     }
-    radius->setValue(0.5);
-    EXPECT_TRUE(radius->getValue() == 0.5);
+    knob->setValue(0.5);
+    EXPECT_TRUE(knob->getValue() == 0.5);
 
     //Check that linear interpolation is working as intended
     KeyFrame kf;
-    radius->setInterpolationAtTime(ViewSetSpec::all(),  DimIdx(0),  TimeValue(0), eKeyframeTypeLinear, &kf);
-    radius->setValueAtTime(TimeValue(0), 0., ViewSetSpec::all(), DimIdx(0));
-    radius->setValueAtTime(TimeValue(100), 1., ViewSetSpec::all(), DimIdx(0));
+    knob->setInterpolationAtTime(ViewSetSpec::all(),  DimIdx(0),  TimeValue(0), eKeyframeTypeLinear, &kf);
+    knob->setValueAtTime(TimeValue(0), 0., ViewSetSpec::all(), DimIdx(0));
+    knob->setValueAtTime(TimeValue(100), 1., ViewSetSpec::all(), DimIdx(0));
     for (int i = 0; i <= 100; ++i) {
-        double v = radius->getValueAtTime(TimeValue(i));
+        double v = knob->getValueAtTime(TimeValue(i));
         EXPECT_TRUE(std::abs(v - i / 100.) < 1e-6);
     }
 }

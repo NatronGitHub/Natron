@@ -1224,7 +1224,7 @@ Curve::getIntegrateFromTo(TimeValue t1,
                                               keyCur.getRightDerivative(),
                                               keyNext.getLeftDerivative(),
                                               keyNext.getTime(), keyNext.getValue(),
-                                              TimeValue(t1), itup->getTime(),
+                                              t1, t2,
                                               _imp->yMin, _imp->yMax,
                                               keyCur.getInterpolation(),
                                               keyNext.getInterpolation());
@@ -1233,7 +1233,7 @@ Curve::getIntegrateFromTo(TimeValue t1,
                                         keyCur.getRightDerivative(),
                                         keyNext.getLeftDerivative(),
                                         keyNext.getTime(), keyNext.getValue(),
-                                        TimeValue(t1), itup->getTime(),
+                                        t1, t2,
                                         keyCur.getInterpolation(),
                                         keyNext.getInterpolation());
     }

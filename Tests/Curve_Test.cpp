@@ -70,20 +70,20 @@ TEST(Curve, Basic)
 
     // one keyframe
     EXPECT_TRUE( c.setOrAddKeyframe( KeyFrame(0., 5.) ) == eValueChangedReturnCodeKeyframeAdded);
-    EXPECT_EQ( 5., c.getValueAt(TimeValue(0.)) );
-    EXPECT_EQ( 5., c.getValueAt(TimeValue(10.)) );
-    EXPECT_EQ( 5., c.getValueAt(TimeValue(-10.)) );
+    EXPECT_EQ( 5., c.getValueAt(TimeValue(0.)).getValue() );
+    EXPECT_EQ( 5., c.getValueAt(TimeValue(10.)).getValue() );
+    EXPECT_EQ( 5., c.getValueAt(TimeValue(-10.)).getValue() );
     EXPECT_TRUE( c.isAnimated() );
 
     // two keyframes
-    EXPECT_FALSE( c.setOrAddKeyframe( KeyFrame(0., 10.) ) == eValueChangedReturnCodeKeyframeModified ); // keyframe already exists, replacing it
-    EXPECT_FALSE( c.setOrAddKeyframe( KeyFrame(0., 10.) ) == eValueChangedReturnCodeNothingChanged ); // keyframe already exists, replacing it
+    EXPECT_TRUE( c.setOrAddKeyframe( KeyFrame(0., 10.) ) == eValueChangedReturnCodeKeyframeModified ); // keyframe already exists, replacing it
+    EXPECT_TRUE( c.setOrAddKeyframe( KeyFrame(0., 10.) ) == eValueChangedReturnCodeNothingChanged ); // keyframe already exists, replacing it
     EXPECT_TRUE( c.setOrAddKeyframe( KeyFrame(1., 20.) ) == eValueChangedReturnCodeKeyframeAdded);
-    EXPECT_EQ( 10., c.getValueAt(TimeValue(0.)) );
-    EXPECT_EQ( 20., c.getValueAt(TimeValue(1.)) );
-    EXPECT_EQ( 10., c.getValueAt(TimeValue(-10.)) ); // before first keyframe
-    EXPECT_EQ( 20., c.getValueAt(TimeValue(10.)) ); // after last keyframe
-    EXPECT_EQ( 15., c.getValueAt(TimeValue(0.5)) ); // middle
+    EXPECT_EQ( 10., c.getValueAt(TimeValue(0.)).getValue() );
+    EXPECT_EQ( 20., c.getValueAt(TimeValue(1.)).getValue() );
+    EXPECT_EQ( 10., c.getValueAt(TimeValue(-10.)).getValue() ); // before first keyframe
+    EXPECT_EQ( 20., c.getValueAt(TimeValue(10.)).getValue() ); // after last keyframe
+    EXPECT_EQ( 15., c.getValueAt(TimeValue(0.5)).getValue() ); // middle
     // derivative
     EXPECT_EQ( 10., c.getDerivativeAt(TimeValue(0.)) );
     EXPECT_EQ( 10., c.getDerivativeAt(TimeValue(0.5)) ); // middle
@@ -105,11 +105,11 @@ TEST(Curve, Basic)
     // two keyframes, constant interpolation
     EXPECT_TRUE( c.setOrAddKeyframe( KeyFrame(0., 10., 0., 0., eKeyframeTypeConstant) ) == eValueChangedReturnCodeKeyframeAdded );
     EXPECT_TRUE( c.setOrAddKeyframe( KeyFrame(1., 20., 0., 0., eKeyframeTypeConstant) )  == eValueChangedReturnCodeKeyframeAdded);
-    EXPECT_EQ( 10., c.getValueAt(TimeValue(0.)) );
-    EXPECT_EQ( 20., c.getValueAt(TimeValue(1.)) );
-    EXPECT_EQ( 10., c.getValueAt(TimeValue(-10.)) ); // before first keyframe
-    EXPECT_EQ( 20., c.getValueAt(TimeValue(10.)) ); // after last keyframe
-    EXPECT_EQ( 10., c.getValueAt(TimeValue(0.5)) ); // middle
+    EXPECT_EQ( 10., c.getValueAt(TimeValue(0.)).getValue() );
+    EXPECT_EQ( 20., c.getValueAt(TimeValue(1.)).getValue() );
+    EXPECT_EQ( 10., c.getValueAt(TimeValue(-10.)).getValue() ); // before first keyframe
+    EXPECT_EQ( 20., c.getValueAt(TimeValue(10.)).getValue() ); // after last keyframe
+    EXPECT_EQ( 10., c.getValueAt(TimeValue(0.5)).getValue() ); // middle
     // derivative
     EXPECT_EQ( 0., c.getDerivativeAt(TimeValue(0.)) );
     EXPECT_EQ( 0., c.getDerivativeAt(TimeValue(0.5)) ); // middle
