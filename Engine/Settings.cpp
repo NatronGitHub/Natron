@@ -203,7 +203,7 @@ Settings::initializeKnobsGeneral()
     _knownHostNames.clear();
     std::vector<ChoiceOption> visibleHostEntries;
     assert(visibleHostEntries.size() == (int)eKnownHostNameNatron);
-    visibleHostEntries.push_back(ChoiceOption(NATRON_APPLICATION_NAME, NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME, ""));
+    visibleHostEntries.push_back(ChoiceOption(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME, NATRON_APPLICATION_NAME, ""));
     assert(visibleHostEntries.size() == (int)eKnownHostNameNuke);
     visibleHostEntries.push_back(ChoiceOption("uk.co.thefoundry.nuke", "Nuke", ""));
     assert(visibleHostEntries.size() == (int)eKnownHostNameFusion);
