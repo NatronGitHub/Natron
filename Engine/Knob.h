@@ -2075,8 +2075,6 @@ protected:
 
 private:
 
-    bool getKeyFrameFromCurve(TimeValue time, ViewIdx view, DimIdx dimension, bool clamp, KeyFrame* ret);
-
     
     T getValueInternal(TimeValue currentTime,
                        DimIdx dimension,
