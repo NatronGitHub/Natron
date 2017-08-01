@@ -2442,7 +2442,7 @@ TrackerNodeInteract::drawOverlay(TimeValue time,
             } // if (!isSelected) {
         } // for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
 
-        if (showMarkerTexture && selectedFound) {
+        if (showMarkerTexture && selectedFound && !_imp->publicInterface->getApp()->isDraftRenderEnabled()) {
             drawSelectedMarkerTexture(std::make_pair(pixelScaleX, pixelScaleY), time, selectedCenter, selectedOffset, selectedPtnTopLeft, selectedPtnTopRight, selectedPtnBtmRight, selectedPtnBtmLeft, selectedSearchBtmLeft, selectedSearchTopRight);
         }
         // context->drawInternalNodesOverlay( time, renderScale, view, overlay);

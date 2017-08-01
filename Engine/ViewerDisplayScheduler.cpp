@@ -439,7 +439,9 @@ ViewerRenderFrameSubResult::onTreeRenderFinished(int inputIndex)
 
     // If we are in accumulation, force a copy of the image because another render thread might modify it in a future render whilst it may
     // still be read from the main-thread when updating the ViewerGL texture.
-    const bool forceOutputImageCopy = inputData.viewerProcessImage == inputData.viewerProcessNode->getEffectInstance()->getAccumBuffer(inputData.viewerProcessImage->getLayer());
+    // If texture transfer is eTextureTransferTypeOverlay, we want to upload the texture to exactly what was requested
+    const bool forceOutputImageCopy = (inputData.viewerProcessImage == inputData.viewerProcessNode->getEffectInstance()->getAccumBuffer(inputData.viewerProcessImage->getLayer()) ||
+                                       (textureTransferType == OpenGLViewerI::TextureTransferArgs::eTextureTransferTypeOverlay && inputData.viewerProcessImage->getBounds() != imageConvertRoI));
     inputData.viewerProcessImage = convertImageForViewerDisplay(imageConvertRoI, forceOutputImageCopy, true /*the texture must have 4 channels*/, inputData.viewerProcessImage);
 
     // Extra color-picker images as-well.
@@ -475,9 +477,12 @@ ViewerDisplayScheduler::processFramesResults(const ViewerNodePtr& viewer,const R
         return false;
     }
 
+    ViewerRenderFrameResultsContainerPtr viewerResults = boost::dynamic_pointer_cast<ViewerRenderFrameResultsContainer>(results);
+    assert(viewerResults);
+
     bool didSomething = false;
 
-    for (std::list<RenderFrameSubResultPtr>::const_iterator it = results->frames.begin(); it != results->frames.end(); ++it) {
+    for (std::list<RenderFrameSubResultPtr>::const_iterator it = viewerResults->frames.begin(); it != viewerResults->frames.end(); ++it) {
         ViewerRenderFrameSubResult* viewerObject = dynamic_cast<ViewerRenderFrameSubResult*>(it->get());
         assert(viewerObject);
 
@@ -485,7 +490,8 @@ ViewerDisplayScheduler::processFramesResults(const ViewerNodePtr& viewer,const R
         args.time = results->time;
         args.view = (*it)->view;
         args.type = viewerObject->textureTransferType;
-        args.recenterViewer = false;
+        args.recenterViewer = viewerResults->recenterViewer;
+        args.viewerCenter = viewerResults->viewerCenter;
 
 
         for (int i = 0; i < 2; ++i) {
