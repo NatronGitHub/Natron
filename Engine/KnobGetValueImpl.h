@@ -312,93 +312,57 @@ Knob<T>::getValue(DimIdx dimension,
 } // getValue
 
 
+template <>
+std::string
+ValueKnobDimView<std::string>::getValueFromKeyFrame(const KeyFrame& k)
+{
+    std::string str;
+    k.getPropertySafe(kKeyFramePropString, 0, &str);
+    return str;
+}
+
+
+
 template <typename T>
-bool
-Knob<T>::getValueFromCurve(TimeValue time,
-                           ViewIdx view,
-                           DimIdx dimension,
-                           bool clamp,
-                           T* ret)
+T
+ValueKnobDimView<T>::getValueFromKeyFrame(const KeyFrame& k)
 {
-
-    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
-    CurvePtr curve = getAnimationCurve(view_i, dimension);
-
-    if ( curve && (curve->getKeyFramesCount() > 0) ) {
-        //getValueAt already clamps to the range for us
-        *ret = curve->getValueAt(time, clamp).getValue();
-
-        return true;
-    }
-
-    return false;
-} // getValueFromCurve
-
-template <>
-bool
-KnobStringBase::getValueFromCurve(TimeValue time,
-                                  ViewIdx view,
-                                  DimIdx dimension,
-                                  bool clamp,
-                                  std::string* ret)
-{
-    assert( ret->empty() );
-    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
-    CurvePtr curve = getAnimationCurve(view_i, dimension);
-    if ( curve && (curve->getKeyFramesCount() > 0) ) {
-
-        KeyFrame key = curve->getValueAt(time, clamp);
-        key.getPropertySafe(kKeyFramePropString, 0, ret);
-        return true;
-    }
-
-
-    return false;
-} // getValueFromCurve
-
-
-template <>
-double
-KnobStringBase::getRawCurveValueAt(TimeValue time,
-                                   ViewIdx view,
-                                   DimIdx dimension)
-{
-    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
-    CurvePtr curve  = getAnimationCurve(view_i, dimension);
-
-    if ( curve && (curve->getKeyFramesCount() > 0) ) {
-        //getValueAt already clamps to the range for us
-        int index = curve->keyFrameIndex(time);
-        return double(index);
-    }
-
-    return 0;
+    return k.getValue();
 }
 
 template <typename T>
-double
-Knob<T>::getRawCurveValueAt(TimeValue time,
-                            ViewIdx view,
-                            DimIdx dimension)
+T
+Knob<T>::getValueFromKeyFrame(const KeyFrame& key, DimIdx dimension, ViewIdx view) const
+{
+    ValueKnobDimView<T>* data = dynamic_cast<ValueKnobDimView<T>*>(getDataForDimView(dimension, view).get());
+    assert(data);
+    return data->getValueFromKeyFrame(key);
+}
+
+
+template <typename T>
+bool
+Knob<T>::getCurveKeyFrame(TimeValue time,
+                          DimIdx dimension,
+                          ViewIdx view,
+                          bool clampToMinMax,
+                          KeyFrame* ret)
 {
 
-    T value;
-    if (getValueFromCurve(time, view, dimension, false /*clamp*/,&value)) {
-        return (double)value;
-    }
-    CurvePtr curve  = getAnimationCurve(view, dimension);
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
+    CurvePtr curve = getAnimationCurve(view_i, dimension);
 
-    ValueKnobDimView<T>* dataForDimView = dynamic_cast<ValueKnobDimView<T>*>(getDataForDimView(dimension, view).get());
-    if (!dataForDimView) {
-        return value;
+    if ( curve && (curve->getKeyFramesCount() > 0) ) {
+        //getValueAt already clamps to the range for us
+        *ret = curve->getValueAt(time, clampToMinMax);
+
+        return true;
     }
 
-    {
-        QMutexLocker k(&dataForDimView->valueMutex);
-        value = dataForDimView->value;
-    }
-    return clampToMinMax(value, dimension);
-} // getRawCurveValueAt
+    return false;
+} // getValueFromCurve
+
+
 
 template <typename T>
 double
@@ -416,8 +380,15 @@ Knob<T>::getValueAtWithExpression(TimeValue time,
         }
     }
 
-    return getRawCurveValueAt(time, view, dimension);
+    KeyFrame key;
+    bool gotKey = getCurveKeyFrame(time, dimension, view, true, &key);
+    if (gotKey) {
+        return key.getValue();
+    } else {
+        return 0.;
+    }
 } // getValueAtWithExpression
+
 
 template<typename T>
 T
@@ -466,8 +437,9 @@ Knob<T>::getValueAtTime(TimeValue time,
 
 
 
-    T ret;
-    if ( getValueFromCurve(time, view_i, dimension, clamp, &ret) ) {
+    KeyFrame keyframe;
+    if ( getCurveKeyFrame(time, dimension, view_i, clamp, &keyframe) ) {
+        T ret = getValueFromKeyFrame(keyframe, dimension, view_i);
         if (_valuesCache) {
             DimTimeView key;
             key.time = time;

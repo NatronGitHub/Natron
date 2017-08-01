@@ -924,7 +924,13 @@ Param::curve(double time,
         PythonSetInvalidViewName(viewName);
         return 0.;
     }
-    return thisKnob->getRawCurveValueAt(TimeValue(time), thisViewSpec, DimIdx(dimension));
+    KeyFrame key;
+    bool gotKey = thisKnob->getCurveKeyFrame(TimeValue(time), DimIdx(dimension), thisViewSpec, true /*clamp*/, &key);
+    if (gotKey) {
+        return key.getValue();
+    } else {
+        return 0.;
+    }
 }
 
 bool

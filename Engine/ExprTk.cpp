@@ -829,7 +829,13 @@ struct curve_func
             }
         }
 
-        return knob->getRawCurveValueAt(frame, view, dimension);
+        KeyFrame key;
+        bool gotKey = knob->getCurveKeyFrame(frame, dimension, view, true /*clamp*/, &key);
+        if (gotKey) {
+            return key.getValue();
+        } else {
+            return 0.;
+        }
     }
 };
 

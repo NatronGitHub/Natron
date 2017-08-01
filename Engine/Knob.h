@@ -489,11 +489,6 @@ public:
     virtual int randomInt(TimeValue time, unsigned int seed) const = 0;
     virtual int randomInt(int min = INT_MIN, int max = INT_MAX) const = 0;
 
-    /**
-     * @brief Evaluates the curve at the given dimension and at the given time. This returns the value of the curve directly.
-     * If the knob is holding a string, it will return the index.
-     **/
-    virtual double getRawCurveValueAt(TimeValue time, ViewIdx view, DimIdx dimension)  = 0;
 
     /**
      * @brief Same as getRawCurveValueAt, but first check if an expression is present. The expression should return a PoD.
@@ -617,6 +612,12 @@ public:
      * @brief Refresh for each dimension/view the internal static value
      **/
     virtual void refreshStaticValue(TimeValue time) = 0;
+
+    /**
+     * @brief Returns the keyframe object at the given time. This by-passes any expression, but not hard-links
+     **/
+    virtual bool getCurveKeyFrame(TimeValue time, DimIdx dimension, ViewIdx view, bool clampToMinMax, KeyFrame* key) = 0;
+
 
     /**
      * @brief Compute the derivative at time as a double
@@ -1851,14 +1852,7 @@ public:
      **/
     virtual T getValueAtTime(TimeValue time, DimIdx dimension = DimIdx(0), ViewIdx view = ViewIdx(0), bool clampToMinMax = true)  WARN_UNUSED_RETURN;
 
-    /**
-     * @brief Same as getValueAtTime excepts that it ignores expression, hard-links (slave/master) and doesn't clamp to min/max.
-     * This is useful to display the internal curve on the Curve Editor
-     * @param view The view of the corresponding curve. If view is current, then the current view
-     * in the thread-local storage (if while rendering) will be used, otherwise the view must correspond
-     * to a valid view index.
-     **/
-    virtual double getRawCurveValueAt(TimeValue time, ViewIdx view,  DimIdx dimension)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool getCurveKeyFrame(TimeValue time, DimIdx dimension, ViewIdx view, bool clampToMinMax, KeyFrame* key) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /**
      * @brief Same as getValueAtTime excepts that the expression is evaluated to return a double value, mainly to display the curve corresponding to an expression
@@ -1867,6 +1861,13 @@ public:
      * to a valid view index.
      **/
     virtual double getValueAtWithExpression(TimeValue time, ViewIdx view, DimIdx dimension)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    /**
+     * @brief Creates a keyframe object and setup its properties given the value.
+     **/
+    KeyFrame makeKeyFrame(TimeValue time, const T& value, DimIdx dimension, ViewIdx view) const;
+
+    T getValueFromKeyFrame(const KeyFrame& key, DimIdx dimension, ViewIdx view) const;
 
 public:
 
@@ -2074,7 +2075,7 @@ protected:
 
 private:
 
-    bool getValueFromCurve(TimeValue time, ViewIdx view, DimIdx dimension, bool clamp, T* ret);
+    bool getKeyFrameFromCurve(TimeValue time, ViewIdx view, DimIdx dimension, bool clamp, KeyFrame* ret);
 
     
     T getValueInternal(TimeValue currentTime,

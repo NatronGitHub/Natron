@@ -383,23 +383,15 @@ ValueKnobDimView<T>::makeKeyFrame(TimeValue time, const T& value)
     return k;
 }
 
-template <>
-std::string
-ValueKnobDimView<std::string>::getValueFromKeyFrame(const KeyFrame& k)
-{
-    std::string str;
-    k.getPropertySafe(kKeyFramePropString, 0, &str);
-    return str;
-}
-
-
-
 template <typename T>
-T
-ValueKnobDimView<T>::getValueFromKeyFrame(const KeyFrame& k)
+KeyFrame
+Knob<T>::makeKeyFrame(TimeValue time, const T& value, DimIdx dimension, ViewIdx view) const
 {
-    return k.getValue();
+    ValueKnobDimView<T>* data = dynamic_cast<ValueKnobDimView<T>*>(getDataForDimView(dimension, view).get());
+    assert(data);
+    return data->makeKeyFrame(time, value);
 }
+
 
 
 template<typename T>
@@ -418,9 +410,7 @@ Knob<T>::setValueAtTime(TimeValue time,
     args.reason = reason;
     args.callKnobChangedHandlerEvenIfNothingChanged = forceHandlerEvenIfNoChange;
 
-    ValueKnobDimView<T>* data = dynamic_cast<ValueKnobDimView<T>*>(getDataForDimView(DimIdx(0), ViewIdx(0)).get());
-    assert(data);
-    KeyFrame k = data->makeKeyFrame(time, v);
+    KeyFrame k = makeKeyFrame(time, v, DimIdx(0), ViewIdx(0));
     return setKeyFrame(args, k);
 
 } // setValueAtTime
