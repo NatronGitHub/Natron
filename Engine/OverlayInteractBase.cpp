@@ -115,7 +115,7 @@ public:
 OverlayInteractBase::OverlayInteractBase()
 : _imp(new OverlayInteractBasePrivate())
 {
-
+    assert(QThread::currentThread() == qApp->thread());
 }
 
 OverlayInteractBase::OverlayInteractBase(const KnobIPtr& knob)
@@ -123,6 +123,8 @@ OverlayInteractBase::OverlayInteractBase(const KnobIPtr& knob)
 {
     _imp->knob = knob;
     _imp->effect = toEffectInstance(knob->getHolder());
+    assert(QThread::currentThread() == qApp->thread());
+    connect(this, SIGNAL(mustRedrawOnMainThread()), this, SLOT(doRedrawOnMainThread()));
 }
 
 OverlayInteractBase::~OverlayInteractBase()
@@ -351,7 +353,10 @@ OverlayInteractBase::getOverlayColor(double &r, double &g, double &b) const
 void
 OverlayInteractBase::redraw()
 {
-    assert(QThread::currentThread() == qApp->thread());
+    if (QThread::currentThread() != qApp->thread()) {
+        Q_EMIT mustRedrawOnMainThread();
+        return;
+    }
 
     KnobIPtr isKnobInteract = _imp->knob.lock();
     if (isKnobInteract) {
@@ -370,6 +375,12 @@ OverlayInteractBase::redraw()
     }
 }
 
+void
+OverlayInteractBase::doRedrawOnMainThread()
+{
+    assert(QThread::currentThread() == qApp->thread());
+    redraw();
+}
 
 void
 OverlayInteractBase::drawOverlay_public(OverlaySupport* viewport,
@@ -890,3 +901,5 @@ OverlayInteractBase::getPixelAspectRatio(double & /*par*/) const
 }
 
 NATRON_NAMESPACE_EXIT
+NATRON_NAMESPACE_USING
+#include "moc_OverlayInteractBase.cpp"

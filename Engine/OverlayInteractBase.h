@@ -53,9 +53,11 @@ NATRON_NAMESPACE_ENTER
  * @brief Base class for any overlay interact. All functions can only be called on the UI main-thread.
  **/
 struct OverlayInteractBasePrivate;
-class OverlayInteractBase
+class OverlayInteractBase : public QObject
 {
-    Q_DECLARE_TR_FUNCTIONS(OverlayInteractBase)
+    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+    GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
@@ -378,6 +380,14 @@ protected:
                                     ViewIdx view) WARN_UNUSED_RETURN;
 
     //// End actions
+
+Q_SIGNALS:
+
+    void mustRedrawOnMainThread();
+
+private Q_SLOTS:
+
+    void doRedrawOnMainThread();
 
 private:
 
