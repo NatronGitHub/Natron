@@ -621,7 +621,9 @@ Curve::setOrAddKeyframe(const KeyFrame& key, SetKeyFrameFlags flags, int *keyfra
         }
     }
     if (retCode == eValueChangedReturnCodeKeyframeAdded) {
-        notifyKeyFramesAdded(listeners, key);
+        notifyKeyFramesSet(listeners, key, true);
+    } else if (retCode == eValueChangedReturnCodeKeyframeModified) {
+        notifyKeyFramesSet(listeners, key, false);
     }
     return retCode;
     
