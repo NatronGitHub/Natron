@@ -323,7 +323,7 @@ DockablePanel::DockablePanel(Gui* gui,
             QObject::connect( _imp->_colorButton, SIGNAL(clicked()), this, SLOT(onColorButtonClicked()) );
 
 
-            if ( node && node->getEffectInstance()->hasOverlayInteract() ) {
+            if ( node && node->getEffectInstance()->hasOverlayInteract(eOverlayViewportTypeViewer) ) {
                 QPixmap pixOverlay;
                 appPTR->getIcon(NATRON_PIXMAP_OVERLAY, iconSize, &pixOverlay);
                 _imp->_overlayButton = new OverlayColorButton(this, QIcon(pixOverlay), _imp->_headerWidget);
@@ -609,7 +609,7 @@ DockablePanel::onPageIndexChanged(int index)
             EffectInstancePtr isEffect = toEffectInstance(_imp->_holder.lock());
             if (isEffect) {
                 NodePtr node = isEffect->getNode();
-                if (node && node->getEffectInstance()->hasOverlayInteract() ) {
+                if (node && node->getEffectInstance()->hasOverlayInteract(eOverlayViewportTypeViewer) ) {
                     isEffect->getApp()->redrawAllViewers();
                 }
             }

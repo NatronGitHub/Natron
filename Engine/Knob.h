@@ -2355,9 +2355,9 @@ public:
     /**
      * @brief Flag that the overlays should be redrawn when this knob changes.
      **/
-    void addOverlaySlaveParam(const KnobIPtr& knob);
+    void addOverlaySlaveParam(const KnobIPtr& knob, OverlaySlaveParamFlags type = eOverlaySlaveViewport);
 
-    bool isOverlaySlaveParam(const KnobIConstPtr& knob) const;
+    bool isOverlaySlaveParam(const KnobIConstPtr& knob, OverlaySlaveParamFlags type = eOverlaySlaveViewport) const;
 
     //To re-arrange user knobs only, does nothing if knob->isUserKnob() returns false
     bool moveKnobOneStepUp(const KnobIPtr& knob);

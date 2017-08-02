@@ -830,6 +830,12 @@ GuiAppInstance::redrawAllViewers()
 }
 
 void
+GuiAppInstance::redrawAllTimelines()
+{
+    _imp->_gui->redrawAllTimelines();
+}
+
+void
 GuiAppInstance::toggleAutoHideGraphInputs()
 {
     _imp->_gui->toggleAutoHideGraphInputs();

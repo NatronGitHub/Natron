@@ -4033,7 +4033,7 @@ struct KnobHolderCommonData
     // unique table identifier
     std::map<std::string, KnobItemsTableData> knobsTables;
 
-    std::list<KnobIWPtr> overlaySlaves;
+    std::list<std::pair<KnobIWPtr,OverlaySlaveParamFlags> > overlaySlaves;
 
     mutable QMutex renderClonesMutex;
     RenderCloneMap renderClones;
@@ -4443,21 +4443,25 @@ KnobHolder::deleteKnob(const KnobIPtr& knob,
 }
 
 void
-KnobHolder::addOverlaySlaveParam(const KnobIPtr& knob)
+KnobHolder::addOverlaySlaveParam(const KnobIPtr& knob, OverlaySlaveParamFlags type)
 {
-    _imp->common->overlaySlaves.push_back(knob);
+    _imp->common->overlaySlaves.push_back(std::make_pair(knob, type));
 }
 
 bool
-KnobHolder::isOverlaySlaveParam(const KnobIConstPtr& knob) const
+KnobHolder::isOverlaySlaveParam(const KnobIConstPtr& knob, OverlaySlaveParamFlags type) const
 {
-    for (std::list<KnobIWPtr >::const_iterator it = _imp->common->overlaySlaves.begin(); it != _imp->common->overlaySlaves.end(); ++it) {
-        KnobIPtr k = it->lock();
-        if (!k) {
-            continue;
-        }
-        if (k == knob) {
-            return true;
+    for (std::list<std::pair<KnobIWPtr,OverlaySlaveParamFlags> >::const_iterator it = _imp->common->overlaySlaves.begin(); it != _imp->common->overlaySlaves.end(); ++it) {
+        if (((type & eOverlaySlaveViewport) && (it->second & eOverlaySlaveViewport)) ||
+            ((type & eOverlaySlaveTimeline) && (it->second & eOverlaySlaveTimeline))) {
+
+            KnobIPtr k = it->first.lock();
+            if (!k) {
+                continue;
+            }
+            if (k == knob) {
+                return true;
+            }
         }
     }
 
@@ -5383,9 +5387,12 @@ KnobHolder::onKnobValueChanged_public(const KnobIPtr& k,
             if (interact) {
                 interact->redraw();
             } else {
-                if (isOverlaySlaveParam(k)) {
+                if (isOverlaySlaveParam(k, eOverlaySlaveViewport)) {
                     getApp()->redrawAllViewers();
+                } else if (isOverlaySlaveParam(k, eOverlaySlaveTimeline)) {
+                    getApp()->redrawAllTimelines();
                 }
+
             }
         }
     }

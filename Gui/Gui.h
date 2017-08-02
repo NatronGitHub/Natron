@@ -406,6 +406,8 @@ public:
 
     void redrawAllViewers();
 
+    void redrawAllTimelines();
+
     void renderAllViewers();
 
     void abortAllViewers(bool autoRestartPlayback);

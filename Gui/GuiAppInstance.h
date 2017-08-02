@@ -204,6 +204,8 @@ public Q_SLOTS:
 
     virtual void redrawAllViewers() OVERRIDE FINAL;
 
+    virtual void redrawAllTimelines() OVERRIDE FINAL;
+
     void projectFormatChanged(const Format& f);
 
     virtual bool isDraftRenderEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;

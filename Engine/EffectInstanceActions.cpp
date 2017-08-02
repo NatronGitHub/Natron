@@ -1677,9 +1677,9 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
     }
 
     if ( kh && ( reason != eValueChangedReasonTimeChanged) ) {
-        ///Run the following only in the main-thread
-        if ( node->shouldDrawOverlay(time, ViewIdx(0))) {
 
+        // If we have an overlay, redraw the interact
+        if (node->shouldDrawOverlay(time, ViewIdx(0), eOverlayViewportTypeViewer)) {
             // Some plugins (e.g. by digital film tools) forget to set kOfxInteractPropSlaveToParam.
             // Most hosts trigger a redraw if the plugin has an active overlay.
             OverlayInteractBasePtr knobInteract = kh->getCustomInteract();
@@ -1688,6 +1688,11 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
             } else {
                 getApp()->redrawAllViewers();
             }
+        }
+
+        // If the param is also slave of a timeline interact, redraw timelines
+        if (isOverlaySlaveParam(kh, eOverlaySlaveTimeline)) {
+            getApp()->redrawAllTimelines();
         }
 
     }

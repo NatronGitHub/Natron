@@ -915,9 +915,26 @@ enum SetKeyFrameFlagEnum
         
 };
 
+enum OverlayViewportTypeEnum
+{
+    // An overlay that is drawn in the viewer
+    eOverlayViewportTypeViewer,
+
+    // An overlay that is drawn in the timeline (not the animation module)
+    eOverlayViewportTypeTimeline
+};
+
+enum OverlaySlaveParamFlag
+{
+    eOverlaySlaveViewport = 0x1,
+    eOverlaySlaveTimeline = 0x2
+};
+
 
 DECLARE_FLAGS(SetKeyFrameFlags, SetKeyFrameFlagEnum);
 DECLARE_FLAGS(StandardButtons, StandardButtonEnum);
+DECLARE_FLAGS(OverlaySlaveParamFlags, OverlaySlaveParamFlag);
+
 
 #ifdef SBK_RUN
 }
@@ -929,6 +946,8 @@ NATRON_NAMESPACE_EXIT
 
 DECLARE_OPERATORS_FOR_FLAGS(NATRON_NAMESPACE::SetKeyFrameFlags);
 DECLARE_OPERATORS_FOR_FLAGS(NATRON_NAMESPACE::StandardButtons);
+DECLARE_OPERATORS_FOR_FLAGS(NATRON_NAMESPACE::OverlaySlaveParamFlags);
+
 Q_DECLARE_METATYPE(NATRON_NAMESPACE::StandardButtons)
 
 

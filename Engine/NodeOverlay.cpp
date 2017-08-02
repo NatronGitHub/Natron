@@ -48,10 +48,10 @@ Node::isDoingInteractAction() const
 
 
 bool
-Node::shouldDrawOverlay(TimeValue time, ViewIdx view) const
+Node::shouldDrawOverlay(TimeValue time, ViewIdx view, OverlayViewportTypeEnum type) const
 {
 
-    if (!_imp->effect->hasOverlayInteract()) {
+    if (!_imp->effect->hasOverlayInteract(type)) {
         return false;
     }
     

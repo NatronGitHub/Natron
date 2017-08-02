@@ -2643,7 +2643,7 @@ OfxDouble2DInstance::OfxDouble2DInstance(const OfxEffectInstancePtr& node,
         boost::shared_ptr<PointOverlayInteract> interact(new PointOverlayInteract());
         std::map<std::string,std::string> knobs;
         knobs["position"] = dblKnob->getName();
-        node->registerOverlay(EffectInstance::eOverlayViewportTypeViewer, interact, knobs);
+        node->registerOverlay(eOverlayViewportTypeViewer, interact, knobs);
     }
 
     // Position knobs should not have their dimensions folded by default (e.g: The Translate parameter of a Transform node is not

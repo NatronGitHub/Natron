@@ -940,7 +940,7 @@ public:
 
     bool isDoingInteractAction() const;
 
-    bool shouldDrawOverlay(TimeValue time, ViewIdx view) const;
+    bool shouldDrawOverlay(TimeValue time, ViewIdx view, OverlayViewportTypeEnum type) const;
 
     bool isSubGraphEditedByUser() const;
 

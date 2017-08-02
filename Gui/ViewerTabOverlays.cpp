@@ -102,7 +102,7 @@ ViewerTab::getNodesEntitledForOverlays(TimeValue time, ViewIdx view, NodesList &
         NodeGuiPtr node = panel->getNodeGui();
         NodePtr internalNode = node->getNode();
         if (node && internalNode) {
-            if ( internalNode->shouldDrawOverlay(time, view) ) {
+            if ( internalNode->shouldDrawOverlay(time, view, eOverlayViewportTypeViewer) ) {
                 ViewerNodePtr isViewer = internalNode->isEffectViewerNode();
                 if (!isViewer) {
                     // Do not add viewers, add them afterwards
@@ -205,7 +205,7 @@ ViewerTab::drawOverlays(TimeValue time,
             EffectInstancePtr effect = (*it)->getEffectInstance();
             assert(effect);
             std::list<OverlayInteractBasePtr> overlays;
-            effect->getOverlays(EffectInstance::eOverlayViewportTypeViewer, &overlays);
+            effect->getOverlays(eOverlayViewportTypeViewer, &overlays);
             for (std::list<OverlayInteractBasePtr>::const_iterator it = overlays.begin(); it != overlays.end(); ++it) {
                 (*it)->drawOverlay_public(_imp->viewer, time, renderScale, view);
             }
@@ -293,7 +293,7 @@ ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
         EffectInstancePtr effect = node->getEffectInstance();
         assert(effect);
         std::list<OverlayInteractBasePtr> overlays;
-        effect->getOverlays(EffectInstance::eOverlayViewportTypeViewer, &overlays);
+        effect->getOverlays(eOverlayViewportTypeViewer, &overlays);
         for (std::list<OverlayInteractBasePtr>::const_iterator it = overlays.begin(); it != overlays.end(); ++it) {
             bool didSmthing = (*it)->onOverlayPenDown_public(_imp->viewer, time, renderScale, view, viewportPos, transformPos, pressure, timestamp, pen);
             if (didSmthing) {
@@ -454,7 +454,7 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
             assert(effect);
 
             std::list<OverlayInteractBasePtr> overlays;
-            effect->getOverlays(EffectInstance::eOverlayViewportTypeViewer, &overlays);
+            effect->getOverlays(eOverlayViewportTypeViewer, &overlays);
             for (std::list<OverlayInteractBasePtr>::const_iterator it2 = overlays.begin(); it2 != overlays.end(); ++it2) {
                 bool didSmthing = (*it2)->onOverlayPenDoubleClicked_public(_imp->viewer, time, renderScale, view, viewportPos, transformPos);
                 if (didSmthing) {
@@ -555,7 +555,7 @@ ViewerTab::notifyOverlaysPenMotion_internal(const NodePtr& node,
         assert(effect);
 
         std::list<OverlayInteractBasePtr> overlays;
-        effect->getOverlays(EffectInstance::eOverlayViewportTypeViewer, &overlays);
+        effect->getOverlays(eOverlayViewportTypeViewer, &overlays);
         for (std::list<OverlayInteractBasePtr>::const_iterator it2 = overlays.begin(); it2 != overlays.end(); ++it2) {
             bool didSmthing = (*it2)->onOverlayPenMotion_public(_imp->viewer, time, renderScale, view, viewportPos, transformPos, pressure, timestamp);
             if (didSmthing) {
@@ -750,7 +750,7 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
             EffectInstancePtr effect = (*it)->getEffectInstance();
             assert(effect);
             std::list<OverlayInteractBasePtr> overlays;
-            effect->getOverlays(EffectInstance::eOverlayViewportTypeViewer, &overlays);
+            effect->getOverlays(eOverlayViewportTypeViewer, &overlays);
             for (std::list<OverlayInteractBasePtr>::const_iterator it2 = overlays.begin(); it2 != overlays.end(); ++it2) {
                 didSomething |= (*it2)->onOverlayPenUp_public(_imp->viewer, time, renderScale, view, viewportPos, transformPos, pressure, timestamp);
 
@@ -939,7 +939,7 @@ ViewerTab::notifyOverlaysKeyDown_internal(const NodePtr& node,
             return true;
         } else {
             std::list<OverlayInteractBasePtr> overlays;
-            effect->getOverlays(EffectInstance::eOverlayViewportTypeViewer, &overlays);
+            effect->getOverlays(eOverlayViewportTypeViewer, &overlays);
             for (std::list<OverlayInteractBasePtr>::const_iterator it2 = overlays.begin(); it2 != overlays.end(); ++it2) {
                 didSmthing = (*it2)->onOverlayKeyDown_public(_imp->viewer, time, renderScale, view, k, km);
                 if (didSmthing) {
@@ -1102,7 +1102,7 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
         bool isInActiveViewerUI = _imp->hasInactiveNodeViewerContext(*it);
         if (!isInActiveViewerUI) {
             std::list<OverlayInteractBasePtr> overlays;
-            effect->getOverlays(EffectInstance::eOverlayViewportTypeViewer, &overlays);
+            effect->getOverlays(eOverlayViewportTypeViewer, &overlays);
             for (std::list<OverlayInteractBasePtr>::const_iterator it2 = overlays.begin(); it2 != overlays.end(); ++it2) {
                 didSomething |= (*it2)->onOverlayKeyUp_public(_imp->viewer, time, renderScale, view,
                                                               QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), QtEnumConvert::fromQtModifiers( e->modifiers() ) );
@@ -1169,7 +1169,7 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const NodePtr& node,
 
         if (!didSmthing) {
             std::list<OverlayInteractBasePtr> overlays;
-            effect->getOverlays(EffectInstance::eOverlayViewportTypeViewer, &overlays);
+            effect->getOverlays(eOverlayViewportTypeViewer, &overlays);
             for (std::list<OverlayInteractBasePtr>::const_iterator it2 = overlays.begin(); it2 != overlays.end(); ++it2) {
                 didSmthing = (*it2)->onOverlayKeyRepeat_public(_imp->viewer, time, renderScale, view, k, km);
                 if (didSmthing) {
@@ -1289,7 +1289,7 @@ ViewerTab::notifyOverlaysFocusGained(const RenderScale & renderScale)
         bool isInActiveViewerUI = _imp->hasInactiveNodeViewerContext(*it);
         if (!isInActiveViewerUI) {
             std::list<OverlayInteractBasePtr> overlays;
-            effect->getOverlays(EffectInstance::eOverlayViewportTypeViewer, &overlays);
+            effect->getOverlays(eOverlayViewportTypeViewer, &overlays);
             for (std::list<OverlayInteractBasePtr>::const_iterator it2 = overlays.begin(); it2 != overlays.end(); ++it2) {
                 ret |= (*it2)->onOverlayFocusGained_public(_imp->viewer, time, renderScale, view);
 
@@ -1355,7 +1355,7 @@ ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
             assert(effect);
 
             std::list<OverlayInteractBasePtr> overlays;
-            effect->getOverlays(EffectInstance::eOverlayViewportTypeViewer, &overlays);
+            effect->getOverlays(eOverlayViewportTypeViewer, &overlays);
             for (std::list<OverlayInteractBasePtr>::const_iterator it2 = overlays.begin(); it2 != overlays.end(); ++it2) {
                 ret |= (*it2)->onOverlayFocusLost_public(_imp->viewer, time, renderScale, view);
 
@@ -1388,7 +1388,7 @@ ViewerTab::updateSelectionFromViewerSelectionRectangle(bool onRelease)
             assert(effect);
 
             std::list<OverlayInteractBasePtr> overlays;
-            effect->getOverlays(EffectInstance::eOverlayViewportTypeViewer, &overlays);
+            effect->getOverlays(eOverlayViewportTypeViewer, &overlays);
             for (std::list<OverlayInteractBasePtr>::const_iterator it2 = overlays.begin(); it2 != overlays.end(); ++it2) {
                 (*it2)->onViewportSelectionUpdated(rect, onRelease);
             }
@@ -1412,7 +1412,7 @@ ViewerTab::onViewerSelectionCleared()
             assert(effect);
 
             std::list<OverlayInteractBasePtr> overlays;
-            effect->getOverlays(EffectInstance::eOverlayViewportTypeViewer, &overlays);
+            effect->getOverlays(eOverlayViewportTypeViewer, &overlays);
             for (std::list<OverlayInteractBasePtr>::const_iterator it2 = overlays.begin(); it2 != overlays.end(); ++it2) {
                 (*it2)->onViewportSelectionCleared();
             }

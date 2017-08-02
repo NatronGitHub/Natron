@@ -417,6 +417,8 @@ public Q_SLOTS:
 
     virtual void redrawAllViewers() {}
 
+    virtual void redrawAllTimelines() {}
+
     void triggerAutoSave();
 
     void clearOpenFXPluginsCaches();

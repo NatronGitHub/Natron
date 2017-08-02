@@ -1619,14 +1619,7 @@ public:
 
     virtual bool isDoingInteractAction() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    enum OverlayViewportTypeEnum
-    {
-        // An overlay that is drawn in the viewer
-        eOverlayViewportTypeViewer,
 
-        // An overlay that is drawn in the timeline (not the animation module)
-        eOverlayViewportTypeTimeline
-    };
 
     /**
      * @brief Register a new overlay that will be drawn on the viewer when this node settings panel is opened.
@@ -1656,7 +1649,7 @@ public:
     /**
      * @brief Convenience function that returns true if at least one overlay was registered
      **/
-    bool hasOverlayInteract() const;
+    bool hasOverlayInteract(OverlayViewportTypeEnum type) const;
 
     /**
      * @brief Reimplement to control how the host adds the RGBA checkboxes.

@@ -1378,7 +1378,7 @@ TimelineGuiPrivate::drawOverlays(SequenceTime time)
         EffectInstancePtr effect = (*it)->getEffectInstance();
         assert(effect);
         std::list<OverlayInteractBasePtr> overlays;
-        effect->getOverlays(EffectInstance::eOverlayViewportTypeTimeline, &overlays);
+        effect->getOverlays(eOverlayViewportTypeTimeline, &overlays);
         for (std::list<OverlayInteractBasePtr>::const_iterator it = overlays.begin(); it != overlays.end(); ++it) {
             (*it)->drawOverlay_public(parent, TimeValue(time), RenderScale(1.), ViewIdx(0));
         }
@@ -1397,7 +1397,7 @@ TimelineGuiPrivate::penDown(SequenceTime time, PenType pen, const QPointF & view
         EffectInstancePtr effect = (*it)->getEffectInstance();
         assert(effect);
         std::list<OverlayInteractBasePtr> overlays;
-        effect->getOverlays(EffectInstance::eOverlayViewportTypeTimeline, &overlays);
+        effect->getOverlays(eOverlayViewportTypeTimeline, &overlays);
         for (std::list<OverlayInteractBasePtr>::const_iterator it = overlays.begin(); it != overlays.end(); ++it) {
             bool caught = (*it)->onOverlayPenDown_public(parent, TimeValue(time), RenderScale(1.), ViewIdx(0), viewportPos, pos, 1., TimeValue(0), pen);
             if (caught) {
@@ -1420,7 +1420,7 @@ TimelineGuiPrivate::penMotion(SequenceTime time, const QPointF & viewportPos, co
         EffectInstancePtr effect = (*it)->getEffectInstance();
         assert(effect);
         std::list<OverlayInteractBasePtr> overlays;
-        effect->getOverlays(EffectInstance::eOverlayViewportTypeTimeline, &overlays);
+        effect->getOverlays(eOverlayViewportTypeTimeline, &overlays);
         for (std::list<OverlayInteractBasePtr>::const_iterator it = overlays.begin(); it != overlays.end(); ++it) {
             bool caught = (*it)->onOverlayPenMotion_public(parent, TimeValue(time), RenderScale(1.), ViewIdx(0), viewportPos, pos, 1., TimeValue(0));
             if (caught) {
@@ -1443,7 +1443,7 @@ TimelineGuiPrivate::penUp(SequenceTime time, const QPointF & viewportPos, const 
         EffectInstancePtr effect = (*it)->getEffectInstance();
         assert(effect);
         std::list<OverlayInteractBasePtr> overlays;
-        effect->getOverlays(EffectInstance::eOverlayViewportTypeTimeline, &overlays);
+        effect->getOverlays(eOverlayViewportTypeTimeline, &overlays);
         for (std::list<OverlayInteractBasePtr>::const_iterator it = overlays.begin(); it != overlays.end(); ++it) {
             bool caught = (*it)->onOverlayPenUp_public(parent, TimeValue(time), RenderScale(1.), ViewIdx(0), viewportPos, pos, 1., TimeValue(0));
             if (caught) {
@@ -1474,7 +1474,7 @@ TimelineGuiPrivate::keyDown(SequenceTime currentFrame, Key k, KeyboardModifiers 
         EffectInstancePtr effect = (*it)->getEffectInstance();
         assert(effect);
         std::list<OverlayInteractBasePtr> overlays;
-        effect->getOverlays(EffectInstance::eOverlayViewportTypeTimeline, &overlays);
+        effect->getOverlays(eOverlayViewportTypeTimeline, &overlays);
         for (std::list<OverlayInteractBasePtr>::const_iterator it = overlays.begin(); it != overlays.end(); ++it) {
             caught |= (*it)->onOverlayKeyDown_public(parent, TimeValue(currentFrame), RenderScale(1.), ViewIdx(0), k, km);
             if (!isModifier && caught) {
@@ -1505,7 +1505,7 @@ TimelineGuiPrivate::keyUp(SequenceTime currentFrame, Key k, KeyboardModifiers km
         EffectInstancePtr effect = (*it)->getEffectInstance();
         assert(effect);
         std::list<OverlayInteractBasePtr> overlays;
-        effect->getOverlays(EffectInstance::eOverlayViewportTypeTimeline, &overlays);
+        effect->getOverlays(eOverlayViewportTypeTimeline, &overlays);
         for (std::list<OverlayInteractBasePtr>::const_iterator it = overlays.begin(); it != overlays.end(); ++it) {
             caught |= (*it)->onOverlayKeyUp_public(parent, TimeValue(currentFrame), RenderScale(1.), ViewIdx(0), k, km);
             if (!isModifier && caught) {
@@ -1534,7 +1534,7 @@ TimelineGuiPrivate::keyRepeat(SequenceTime currentFrame, Key k, KeyboardModifier
         EffectInstancePtr effect = (*it)->getEffectInstance();
         assert(effect);
         std::list<OverlayInteractBasePtr> overlays;
-        effect->getOverlays(EffectInstance::eOverlayViewportTypeTimeline, &overlays);
+        effect->getOverlays(eOverlayViewportTypeTimeline, &overlays);
         for (std::list<OverlayInteractBasePtr>::const_iterator it = overlays.begin(); it != overlays.end(); ++it) {
             caught |= (*it)->onOverlayKeyRepeat_public(parent, TimeValue(currentFrame), RenderScale(1.), ViewIdx(0), k, km);
             if (!isModifier && caught) {
@@ -1558,7 +1558,7 @@ TimelineGuiPrivate::focusLost(SequenceTime currentFrame)
         EffectInstancePtr effect = (*it)->getEffectInstance();
         assert(effect);
         std::list<OverlayInteractBasePtr> overlays;
-        effect->getOverlays(EffectInstance::eOverlayViewportTypeTimeline, &overlays);
+        effect->getOverlays(eOverlayViewportTypeTimeline, &overlays);
         for (std::list<OverlayInteractBasePtr>::const_iterator it = overlays.begin(); it != overlays.end(); ++it) {
             caught |= (*it)->onOverlayFocusLost_public(parent, TimeValue(currentFrame), RenderScale(1.), ViewIdx(0));
 
@@ -1581,7 +1581,7 @@ TimelineGuiPrivate::focusGain(SequenceTime currentFrame)
         EffectInstancePtr effect = (*it)->getEffectInstance();
         assert(effect);
         std::list<OverlayInteractBasePtr> overlays;
-        effect->getOverlays(EffectInstance::eOverlayViewportTypeTimeline, &overlays);
+        effect->getOverlays(eOverlayViewportTypeTimeline, &overlays);
         for (std::list<OverlayInteractBasePtr>::const_iterator it = overlays.begin(); it != overlays.end(); ++it) {
             caught |= (*it)->onOverlayFocusGained_public(parent, TimeValue(currentFrame), RenderScale(1.), ViewIdx(0));
 

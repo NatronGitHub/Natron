@@ -1751,7 +1751,7 @@ Effect::registerOverlay(PyOverlayInteract* interact, const std::map<QString, QSt
         knobsMap.insert(std::make_pair(it->first.toStdString(), it->second.toStdString()));
     }
     try {
-        n->getEffectInstance()->registerOverlay(EffectInstance::eOverlayViewportTypeViewer, interact->getInternalInteract(), knobsMap);
+        n->getEffectInstance()->registerOverlay(eOverlayViewportTypeViewer, interact->getInternalInteract(), knobsMap);
     } catch (const std::exception& e) {
         PyErr_SetString(PyExc_RuntimeError, e.what());
         return false;
@@ -1772,7 +1772,7 @@ Effect::removeOverlay(PyOverlayInteract* interact)
         PythonSetNullError();
         return;
     }
-    return n->getEffectInstance()->removeOverlay(EffectInstance::eOverlayViewportTypeViewer, interact->getInternalInteract());
+    return n->getEffectInstance()->removeOverlay(eOverlayViewportTypeViewer, interact->getInternalInteract());
 }
 
 

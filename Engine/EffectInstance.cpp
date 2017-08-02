@@ -1389,10 +1389,16 @@ EffectInstance::getOverlays(OverlayViewportTypeEnum type, std::list<OverlayInter
 }
 
 bool
-EffectInstance::hasOverlayInteract() const
+EffectInstance::hasOverlayInteract(OverlayViewportTypeEnum type) const
 {
     assert(QThread::currentThread() == qApp->thread());
-    return _imp->common->interacts.size() > 0;
+    switch (type) {
+        case eOverlayViewportTypeViewer:
+            return _imp->common->interacts.size() > 0;
+        case eOverlayViewportTypeTimeline:
+            return _imp->common->timelineInteracts.size() > 0;
+    }
+    return false;
 }
 
 void

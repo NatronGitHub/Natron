@@ -3257,28 +3257,28 @@ RotoPaintPrivate::refreshRegisteredOverlays()
     if (!transformInteract && !cloneTransformInteract) {
         return;
     }
-    publicInterface->removeOverlay(EffectInstance::eOverlayViewportTypeViewer, ui);
-    publicInterface->removeOverlay(EffectInstance::eOverlayViewportTypeViewer, transformInteract);
-    publicInterface->removeOverlay(EffectInstance::eOverlayViewportTypeViewer, cloneTransformInteract);
+    publicInterface->removeOverlay(eOverlayViewportTypeViewer, ui);
+    publicInterface->removeOverlay(eOverlayViewportTypeViewer, transformInteract);
+    publicInterface->removeOverlay(eOverlayViewportTypeViewer, cloneTransformInteract);
 
 
 
     bool useHostOverlay = publicInterface->shouldDrawHostOverlay();
     if (!useHostOverlay) {
-        publicInterface->registerOverlay(EffectInstance::eOverlayViewportTypeViewer, ui, std::map<std::string, std::string>());
+        publicInterface->registerOverlay(eOverlayViewportTypeViewer, ui, std::map<std::string, std::string>());
         return;
     }
 
     // Ctrl down : prefer plugin overlay over the native transform interacts
     bool preferPluginOverlay = !ui->ctrlDown;
     if (preferPluginOverlay) {
-        publicInterface->registerOverlay(EffectInstance::eOverlayViewportTypeViewer, ui, std::map<std::string, std::string>());
-        publicInterface->registerOverlay(EffectInstance::eOverlayViewportTypeViewer, transformInteract, std::map<std::string, std::string>());
-        publicInterface->registerOverlay(EffectInstance::eOverlayViewportTypeViewer, cloneTransformInteract, std::map<std::string, std::string>());
+        publicInterface->registerOverlay(eOverlayViewportTypeViewer, ui, std::map<std::string, std::string>());
+        publicInterface->registerOverlay(eOverlayViewportTypeViewer, transformInteract, std::map<std::string, std::string>());
+        publicInterface->registerOverlay(eOverlayViewportTypeViewer, cloneTransformInteract, std::map<std::string, std::string>());
     } else {
-        publicInterface->registerOverlay(EffectInstance::eOverlayViewportTypeViewer, transformInteract, std::map<std::string, std::string>());
-        publicInterface->registerOverlay(EffectInstance::eOverlayViewportTypeViewer, cloneTransformInteract, std::map<std::string, std::string>());
-        publicInterface->registerOverlay(EffectInstance::eOverlayViewportTypeViewer, ui, std::map<std::string, std::string>());
+        publicInterface->registerOverlay(eOverlayViewportTypeViewer, transformInteract, std::map<std::string, std::string>());
+        publicInterface->registerOverlay(eOverlayViewportTypeViewer, cloneTransformInteract, std::map<std::string, std::string>());
+        publicInterface->registerOverlay(eOverlayViewportTypeViewer, ui, std::map<std::string, std::string>());
     }
 }
 

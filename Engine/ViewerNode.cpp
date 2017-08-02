@@ -166,7 +166,7 @@ ViewerNode::initializeOverlayInteract()
     getNode()->setDraftEnabledForOverlayActions(false);
 
     _imp->ui.reset(new ViewerNodeOverlay(_imp.get()));
-    registerOverlay(EffectInstance::eOverlayViewportTypeViewer, _imp->ui, std::map<std::string, std::string>());
+    registerOverlay(eOverlayViewportTypeViewer, _imp->ui, std::map<std::string, std::string>());
 }
 
 RenderEnginePtr

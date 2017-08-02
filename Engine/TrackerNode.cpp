@@ -141,7 +141,7 @@ TrackerNode::~TrackerNode()
 void
 TrackerNode::initializeOverlayInteract()
 {
-    registerOverlay(EffectInstance::eOverlayViewportTypeViewer, _imp->ui, std::map<std::string, std::string>());
+    registerOverlay(eOverlayViewportTypeViewer, _imp->ui, std::map<std::string, std::string>());
 }
 
 void
@@ -1349,7 +1349,7 @@ TrackerNode::initializeTransformPageKnobs(const KnobPagePtr& transformPage)
     transformKnobs["invert"] = kTransformParamInvert;
 
     boost::shared_ptr<TransformOverlayInteract> transformInteract(new TransformOverlayInteract());
-    registerOverlay(EffectInstance::eOverlayViewportTypeViewer, transformInteract, transformKnobs);
+    registerOverlay(eOverlayViewportTypeViewer, transformInteract, transformKnobs);
     
 
     std::map<std::string, std::string> cpKnobs;
@@ -1369,7 +1369,7 @@ TrackerNode::initializeTransformPageKnobs(const KnobPagePtr& transformPage)
     cpKnobs["invert"] = kCornerPinInvertParamName;
 
     boost::shared_ptr<CornerPinOverlayInteract> cornerPinInteract(new CornerPinOverlayInteract());
-    registerOverlay(EffectInstance::eOverlayViewportTypeViewer, cornerPinInteract, cpKnobs);
+    registerOverlay(eOverlayViewportTypeViewer, cornerPinInteract, cpKnobs);
 
     {
         KnobSeparatorPtr param = createKnob<KnobSeparator>(kTrackerParamExportDataSeparator);

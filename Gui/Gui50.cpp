@@ -798,6 +798,22 @@ Gui::redrawAllViewers()
 }
 
 void
+Gui::redrawAllTimelines()
+{
+    std::list<ViewerTab*> viewers;
+    {
+        QMutexLocker k(&_imp->_viewerTabsMutex);
+        viewers = _imp->_viewerTabs;
+    }
+
+    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
+        if ( (*it)->isVisible() ) {
+            (*it)->redrawTimeline();
+        }
+    }
+}
+
+void
 Gui::renderAllViewers()
 {
     assert( QThread::currentThread() == qApp->thread() );
