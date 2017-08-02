@@ -238,8 +238,6 @@ public Q_SLOTS:
 
     void onInternalKnobDimensionsVisibilityChanged(ViewSetSpec view);
 
-    void onCurveAnimationChangedInternally(ViewSetSpec view,
-                                           DimSpec dimension);
 
     /**
      * @brief Called when the internal value held by the knob is changed. It calls updateGUI().

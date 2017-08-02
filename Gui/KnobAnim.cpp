@@ -39,6 +39,7 @@
 #include "Gui/AnimationModuleEditor.h"
 #include "Gui/AnimationModuleView.h"
 #include "Gui/CurveGui.h"
+#include "Gui/Gui.h"
 #include "Gui/KnobGui.h"
 
 
@@ -151,6 +152,8 @@ KnobAnim::KnobAnim(const AnimationModuleBasePtr& model,
     QObject::connect( knob->getSignalSlotHandler().get(), SIGNAL(availableViewsChanged()), this, SLOT(onKnobAvailableViewsChanged()));
     QObject::connect( knob->getSignalSlotHandler().get(), SIGNAL(dimensionsVisibilityChanged(ViewSetSpec)), this, SLOT(onInternalKnobDimensionsVisibilityChanged(ViewSetSpec)));
     QObject::connect( this, SIGNAL(s_refreshDimensionsVisibilityLater()), this, SLOT(onDoRefreshDimensionsVisibilitylaterTriggered()), Qt::QueuedConnection);
+    QObject::connect( knob->getSignalSlotHandler().get(), SIGNAL(curveAnimationChanged(ViewSetSpec,DimSpec)), this, SLOT(onCurveAnimationChangedInternally(ViewSetSpec,DimSpec)));
+
 }
 
 KnobAnim::~KnobAnim()
@@ -625,6 +628,29 @@ bool
 KnobAnim::getAllDimensionsVisible(ViewIdx view) const
 {
     return _imp->knob.lock()->getAllDimensionsVisible(view);
+}
+
+
+void
+KnobAnim::onCurveAnimationChangedInternally(ViewSetSpec /*view*/,
+                                           DimSpec /*dimension*/)
+{
+
+    AnimationModulePtr model = toAnimationModule(getModel());
+    if (!model) {
+        return;
+    }
+    KnobIPtr internalKnob = _imp->knob.lock();
+    if (!internalKnob) {
+        return;
+    }
+    if (internalKnob->isKeyFrameTrackingEnabled()) {
+        model->getEditor()->getGui()->refreshTimelineGuiKeyframesLater();
+    }
+
+    // Refresh the knob anim visibility in a queued connection
+    emit_s_refreshKnobVisibilityLater();
+
 }
 
 NATRON_NAMESPACE_EXIT

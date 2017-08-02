@@ -88,7 +88,6 @@ KnobGui::initialize()
     if (helper) {
         KnobSignalSlotHandler* handler = helper->getSignalSlotHandler().get();
         QObject::connect( handler, SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)), this, SLOT(onMustRefreshGuiActionTriggered(ViewSetSpec,DimSpec,ValueChangedReasonEnum)) );
-        QObject::connect( handler, SIGNAL(curveAnimationChanged(ViewSetSpec,DimSpec)), this, SLOT(onCurveAnimationChangedInternally(ViewSetSpec,DimSpec)));
         QObject::connect( handler, SIGNAL(secretChanged()), this, SLOT(setSecret()) );
         QObject::connect( handler, SIGNAL(enabledChanged()), this, SLOT(setEnabledSlot()) );
         QObject::connect( handler, SIGNAL(selectedMultipleTimes(bool)), this, SLOT(onKnobMultipleSelectionChanged(bool)) );

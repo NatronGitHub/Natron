@@ -101,29 +101,6 @@ KnobGui::refreshGuiNow()
 }
 
 void
-KnobGui::onCurveAnimationChangedInternally(ViewSetSpec /*view*/,
-                                           DimSpec /*dimension*/)
-{
-    if (!getGui()) {
-        return;
-    }
-    KnobIPtr internalKnob = getKnob();
-    if (!internalKnob) {
-        return;
-    }
-    if (internalKnob->isKeyFrameTrackingEnabled()) {
-        getGui()->refreshTimelineGuiKeyframesLater();
-    }
-
-    // Refresh the knob anim visibility in a queued connection
-    KnobAnimPtr knobAnim = findKnobAnim();
-    if (knobAnim) {
-        knobAnim->emit_s_refreshKnobVisibilityLater();
-    }
-}
-
-
-void
 KnobGui::copyAnimationToClipboard(DimSpec dimension, ViewSetSpec view) const
 {
     copyToClipBoard(eKnobClipBoardTypeCopyAnim, dimension, view);
@@ -529,7 +506,7 @@ KnobGui::onExprChanged(DimIdx dimension, ViewIdx view)
 
 
     // Refresh the animation curve
-    onCurveAnimationChangedInternally(view, dimension);
+    knob->getSignalSlotHandler()->s_curveAnimationChanged(view, dimension);
 
     // Refresh node links
     onInternalKnobLinksChanged();

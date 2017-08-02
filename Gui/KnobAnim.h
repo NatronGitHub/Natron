@@ -99,6 +99,9 @@ public Q_SLOTS:
 
     void onDoRefreshDimensionsVisibilitylaterTriggered();
 
+    void onCurveAnimationChangedInternally(ViewSetSpec view,
+                                           DimSpec dimension);
+
 Q_SIGNALS:
 
     void s_refreshKnobVisibilityLater();
