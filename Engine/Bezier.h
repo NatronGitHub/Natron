@@ -623,7 +623,7 @@ public:
 
     /// Overriden from CurveChangesListener
     virtual void onKeyFrameRemoved(const Curve* curve, const KeyFrame& key) OVERRIDE;
-    virtual void onKeyFrameAdded(const Curve* curve, const KeyFrame& key) OVERRIDE;
+    virtual void onKeyFrameSet(const Curve* curve, const KeyFrame& key, bool added) OVERRIDE;
     virtual void onKeyFrameMoved(const Curve* curve, const KeyFrame& from, const KeyFrame& to) OVERRIDE;
 
 

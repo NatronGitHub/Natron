@@ -656,7 +656,7 @@ TrackMarker::onKeyFrameRemoved(const Curve* /*curve*/, const KeyFrame& key)
 }
 
 void
-TrackMarker::onKeyFrameAdded(const Curve* /*curve*/, const KeyFrame& key)
+TrackMarker::onKeyFrameSet(const Curve* /*curve*/, const KeyFrame& key, bool /*added*/)
 {
     Q_EMIT keyframeAdded(key.getTime());
 }

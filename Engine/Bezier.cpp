@@ -2986,8 +2986,11 @@ Bezier::onKeyFrameRemoved(const Curve* curve, const KeyFrame& key)
 } // onKeyFrameRemoved
 
 void
-Bezier::onKeyFrameAdded(const Curve* curve, const KeyFrame& key)
+Bezier::onKeyFrameSet(const Curve* curve, const KeyFrame& key, bool added)
 {
+    if (!added) {
+        return;
+    }
 
     // Find out which view this curve is
 

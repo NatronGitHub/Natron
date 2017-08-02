@@ -333,7 +333,7 @@ Curve::notifyKeyFramesChanged(const std::list<CurveChangesListenerPtr>& listener
         const CurveChangesListenerPtr& listener = *it;
 
         for (KeyFrameSet::const_iterator it2 = keysAdded.begin(); it2 != keysAdded.end(); ++it2) {
-            listener->onKeyFrameAdded(this, *it2);
+            listener->onKeyFrameSet(this, *it2, true);
         }
         for (KeyFrameSet::const_iterator it2 = keysRemoved.begin(); it2 != keysRemoved.end(); ++it2) {
             listener->onKeyFrameRemoved(this, *it2);
@@ -343,12 +343,12 @@ Curve::notifyKeyFramesChanged(const std::list<CurveChangesListenerPtr>& listener
 }
 
 void
-Curve::notifyKeyFramesAdded(const std::list<CurveChangesListenerPtr>& listeners, const KeyFrame& k)
+Curve::notifyKeyFramesSet(const std::list<CurveChangesListenerPtr>& listeners, const KeyFrame& k, bool added)
 {
 
     for (std::list<CurveChangesListenerPtr>::const_iterator it = listeners.begin(); it != listeners.end(); ++it) {
         const CurveChangesListenerPtr& listener = *it;
-        listener->onKeyFrameAdded(this, k);
+        listener->onKeyFrameSet(this, k, added);
     }
 }
 

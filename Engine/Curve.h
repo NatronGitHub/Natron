@@ -182,8 +182,10 @@ public:
 
     /**
      * @brief Implement to receive a notification whenever a keyframe is added on the given curve.
+     * @param added True if the keyframe was added for the first time, false if the keyframe already existed and was
+     * just modified.
      **/
-    virtual void onKeyFrameAdded(const Curve* curve, const KeyFrame& key) = 0;
+    virtual void onKeyFrameSet(const Curve* curve, const KeyFrame& key, bool added) = 0;
 
     /**
      * @brief Implement to receive a notification whenever a keyframe is moved in time on the given curve.
@@ -697,7 +699,7 @@ private:
     std::list<CurveChangesListenerPtr> getListeners() const;
 
     void notifyKeyFramesChanged(const std::list<CurveChangesListenerPtr>& listeners, const KeyFrameSet& oldKeyframes,const KeyFrameSet& newKeyframes);
-    void notifyKeyFramesAdded(const std::list<CurveChangesListenerPtr>& listeners, const KeyFrame& k);
+    void notifyKeyFramesSet(const std::list<CurveChangesListenerPtr>& listeners, const KeyFrame& k, bool added);
 
     /**
      * @brief Called when the curve has changed to invalidate any cache relying on the curve values.
