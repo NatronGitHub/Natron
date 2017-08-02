@@ -309,11 +309,6 @@ KnobDimViewBase::copy(const CopyInArgs& inArgs, CopyOutArgs* outArgs)
     bool hasChanged = false;
 
     {
-        QMutexLocker k(&valueMutex);
-        boost::scoped_ptr<QMutexLocker> k2;
-        if (inArgs.other) {
-            k2.reset(new QMutexLocker(&inArgs.other->valueMutex));
-        }
 
         // Do not copy the shared knobs
 
