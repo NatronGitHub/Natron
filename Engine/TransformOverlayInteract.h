@@ -36,7 +36,6 @@ NATRON_NAMESPACE_ENTER
 struct TransformOverlayInteractPrivate;
 class TransformOverlayInteract : public OverlayInteractBase
 {
-    Q_DECLARE_TR_FUNCTIONS(TransformOverlayInteract)
 public:
 
 

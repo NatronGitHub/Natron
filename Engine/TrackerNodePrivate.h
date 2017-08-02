@@ -833,8 +833,7 @@ public:
 
 
 class TrackerNodeInteract
-    : public QObject
-    , public OverlayInteractBase
+    : public OverlayInteractBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
