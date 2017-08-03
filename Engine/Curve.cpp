@@ -633,8 +633,14 @@ bool applyKeyFrameConflictsFlags(KeyFrame& tmp, const KeyFrame & cp, SetKeyFrame
 {
     bool changed = false;
     if (flags & eSetKeyFrameFlagSetValue) {
-        changed = cp.getValue() != tmp.getValue();
+        changed |= cp.getValue() != tmp.getValue();
         tmp.setValue(cp.getValue());
+        changed |= cp.getInterpolation() != tmp.getInterpolation();
+        tmp.setInterpolation(cp.getInterpolation());
+        changed |= cp.getLeftDerivative() != tmp.getLeftDerivative();
+        tmp.setLeftDerivative(cp.getLeftDerivative());
+        changed |= cp.getRightDerivative() != tmp.getRightDerivative();
+        tmp.setRightDerivative(cp.getRightDerivative());
     }
     if ((flags & eSetKeyFrameFlagReplaceProperties) || (flags & eSetKeyFrameFlagMergeProperties)) {
         if (flags & eSetKeyFrameFlagReplaceProperties) {
