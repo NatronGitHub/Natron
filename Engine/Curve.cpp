@@ -2159,9 +2159,9 @@ Curve::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase&
                     
                 }   break;
             }
-            
-            
+
             std::pair<KeyFrameSet::iterator, ValueChangedReturnCodeEnum> ret = setOrUpdateKeyframeInternal(k);
+            (void)ret;
 #if 0
             if (ret.second != eValueChangedReturnCodeNothingChanged) {
                 (void)evaluateCurveChanged(eCurveChangedReasonKeyframeChanged, ret.first);

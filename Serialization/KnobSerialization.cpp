@@ -805,6 +805,7 @@ KnobSerialization::decode(const YAML::Node& node)
                 std::list<CurveSerialization>& curvesList = data->parametricCurves[viewName];
                 for (std::size_t i = 0; i < curvesViewNode.size(); ++i) {
                     CurveSerialization s;
+                    s.curveType = eCurveSerializationTypeScalar;
                     s.decode(curvesViewNode[i]);
                     curvesList.push_back(s);
                 }
@@ -814,6 +815,7 @@ KnobSerialization::decode(const YAML::Node& node)
             std::list<CurveSerialization>& curvesList = data->parametricCurves["Main"];
             for (std::size_t i = 0; i < curveNode.size(); ++i) {
                 CurveSerialization s;
+                s.curveType = eCurveSerializationTypeScalar;
                 s.decode(curveNode[i]);
                 curvesList.push_back(s);
             }
