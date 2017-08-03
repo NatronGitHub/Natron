@@ -1193,7 +1193,7 @@ GuiAppInstance::checkAllReadersModificationDate(bool errorAndWarn)
     NodesList allNodes;
     TimeValue time = getProject()->getTimelineCurrentTime();
 
-    getProject()->getNodes_recursive(allNodes, true);
+    getProject()->getNodes_recursive(allNodes);
     bool changed =  false;
     for (NodesList::iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
         if ( !(*it)->getEffectInstance()->isReader() ) {

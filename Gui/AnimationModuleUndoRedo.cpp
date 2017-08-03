@@ -408,7 +408,7 @@ moveGroupNode(const NodePtr& node,
 
     assert(group);
     NodesList nodes;
-    group->getNodes_recursive(nodes, true);
+    group->getNodes_recursive(nodes);
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         NodeGuiPtr nodeGui = boost::dynamic_pointer_cast<NodeGui>( (*it)->getNodeGui() );

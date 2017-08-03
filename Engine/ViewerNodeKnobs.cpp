@@ -1440,7 +1440,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
 
         getApp()->setMasterSyncViewer(getNode());
         NodesList allNodes;
-        getApp()->getProject()->getNodes_recursive(allNodes, true);
+        getApp()->getProject()->getNodes_recursive(allNodes);
         double left, bottom, factor, par;
         _imp->uiContext->getProjection(&left, &bottom, &factor, &par);
         for (NodesList::iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
@@ -1458,7 +1458,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         bool infoBarVisible = _imp->enableInfoBarButtonKnob.lock()->getValue();
         if (reason == eValueChangedReasonUserEdited) {
             NodesList allNodes;
-            getApp()->getProject()->getNodes_recursive(allNodes, true);
+            getApp()->getProject()->getNodes_recursive(allNodes);
             ViewerNodePtr thisInstance = shared_from_this();
             for (NodesList::iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
                 ViewerNodePtr instance = toViewerNode((*it)->getEffectInstance());

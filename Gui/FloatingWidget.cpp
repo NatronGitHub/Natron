@@ -219,7 +219,7 @@ FloatingWidget::restoreChildFromSerialization(const SERIALIZATION_NAMESPACE::Win
         } else {
             // Find a node with the dockable panel name
             NodesList nodes;
-            _gui->getApp()->getProject()->getNodes_recursive(nodes, true);
+            _gui->getApp()->getProject()->getNodes_recursive(nodes);
             for (NodesList::const_iterator it2 = nodes.begin(); it2 != nodes.end(); ++it2) {
                 if ( (*it2)->getFullyQualifiedName() == serialization.isChildSettingsPanel ) {
                     NodeGuiPtr nodeUI = boost::dynamic_pointer_cast<NodeGui>((*it2)->getNodeGui());

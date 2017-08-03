@@ -1620,7 +1620,7 @@ Project::onKnobValueChanged(const KnobIPtr& knob,
         Format frmt;
         bool found = _imp->findFormat(index, &frmt);
         NodesList nodes;
-        getNodes_recursive(nodes, true);
+        getNodes_recursive(nodes);
 
         // Refresh nodes with a format parameter
         std::vector<ChoiceOption> entries = _imp->formatKnob->getEntries();
@@ -1663,7 +1663,7 @@ Project::invalidateHashCacheInternal(std::set<HashableObject*>* invalidatedObjec
     // Also invalidate the hash of all nodes
 
     NodesList nodes;
-    getNodes_recursive(nodes, true);
+    getNodes_recursive(nodes);
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         (*it)->getEffectInstance()->invalidateHashCacheInternal(invalidatedObjects);
@@ -1683,7 +1683,7 @@ Project::refreshOpenGLRenderingFlagOnNodes()
         activated = index == 0 || (index == 2 && !getApp()->isBackground());
     }
     NodesList allNodes;
-    getNodes_recursive(allNodes, false);
+    getNodes_recursive(allNodes);
     for (NodesList::iterator it = allNodes.begin(); it!=allNodes.end(); ++it) {
         (*it)->getEffectInstance()->onOpenGLEnabledKnobChangedOnProject(activated);
     }
@@ -1909,7 +1909,7 @@ Project::reset(bool aboutToQuit, bool blocking)
     } else {
         {
             NodesList nodesToWatch;
-            getNodes_recursive(nodesToWatch, false);
+            getNodes_recursive(nodesToWatch);
             for (NodesList::const_iterator it = nodesToWatch.begin(); it != nodesToWatch.end(); ++it) {
                 (*it)->quitAnyProcessing_blocking(false);
             }
@@ -1927,7 +1927,7 @@ Project::closeProject_blocking(bool aboutToQuit)
         _imp->projectClosing = true;
     }
     NodesList nodesToWatch;
-    getNodes_recursive(nodesToWatch, false);
+    getNodes_recursive(nodesToWatch);
     for (NodesList::iterator it = nodesToWatch.begin(); it != nodesToWatch.end(); ++it) {
         (*it)->quitAnyProcessing_blocking(false);
     }
@@ -2000,7 +2000,7 @@ Project::quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver,
 {
     NodesList nodesToWatch;
 
-    getNodes_recursive(nodesToWatch, false);
+    getNodes_recursive(nodesToWatch);
     if ( nodesToWatch.empty() ) {
         return false;
     }
@@ -2108,7 +2108,7 @@ Project::setOrAddProjectFormat(const Format & frmt,
     if (mustRefreshNodeFormats) {
         // Refresh nodes with a format parameter
         NodesList nodes;
-        getNodes_recursive(nodes, true);
+        getNodes_recursive(nodes);
         int index = _imp->formatKnob->getValue();
         std::vector<ChoiceOption> entries = _imp->formatKnob->getEntries();
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -2650,7 +2650,7 @@ Project::onProjectFormatPopulated()
     int index = _imp->formatKnob->getValue();
     NodesList nodes;
 
-    getNodes_recursive(nodes, true);
+    getNodes_recursive(nodes);
     std::vector<ChoiceOption> entries = _imp->formatKnob->getEntries();
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {

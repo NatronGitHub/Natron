@@ -135,17 +135,14 @@ NodeCollection::getNodes() const
 }
 
 void
-NodeCollection::getNodes_recursive(NodesList& nodes,
-                                   bool onlyActive) const
+NodeCollection::getNodes_recursive(NodesList& nodes) const
 {
     std::list<NodeGroupPtr> groupToRecurse;
 
     {
         QMutexLocker k(&_imp->nodesMutex);
         for (NodesList::const_iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-            if (onlyActive) {
-                continue;
-            }
+
             nodes.push_back(*it);
             NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
             if (isGrp) {
@@ -155,7 +152,7 @@ NodeCollection::getNodes_recursive(NodesList& nodes,
     }
 
     for (std::list<NodeGroupPtr>::const_iterator it = groupToRecurse.begin(); it != groupToRecurse.end(); ++it) {
-        (*it)->getNodes_recursive(nodes, onlyActive);
+        (*it)->getNodes_recursive(nodes);
     }
 }
 

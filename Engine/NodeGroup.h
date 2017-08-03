@@ -86,7 +86,7 @@ public:
     /**
      * @brief Same as getNodes() except that this function recurse in sub-groups.
      **/
-    void getNodes_recursive(NodesList& nodes, bool onlyActive) const;
+    void getNodes_recursive(NodesList& nodes) const;
 
     /**
      * @brief Adds a node to the collection. MT-safe.

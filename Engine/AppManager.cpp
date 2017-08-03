@@ -713,7 +713,7 @@ AppManager::quitNow(const AppInstancePtr& instance)
 {
     NodesList nodesToWatch;
 
-    instance->getProject()->getNodes_recursive(nodesToWatch, false);
+    instance->getProject()->getNodes_recursive(nodesToWatch);
     if ( !nodesToWatch.empty() ) {
         for (NodesList::iterator it = nodesToWatch.begin(); it != nodesToWatch.end(); ++it) {
             (*it)->quitAnyProcessing_blocking(false);

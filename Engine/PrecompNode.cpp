@@ -451,7 +451,7 @@ PrecompNodePrivate::populateWriteNodesChoice(bool setWriteNodeChoice)
     choices.push_back(ChoiceOption("None","",""));
 
     NodesList nodes;
-    app.lock()->getProject()->getNodes_recursive(nodes, true);
+    app.lock()->getProject()->getNodes_recursive(nodes);
 
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
