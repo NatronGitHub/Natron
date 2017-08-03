@@ -103,7 +103,11 @@ Distortion2DStack::pushDistortionStack(const Distortion2DStack& stack)
 {
     const std::list<DistortionFunction2DPtr>& distos = stack.getStack();
     for (std::list<DistortionFunction2DPtr>::const_iterator it = distos.begin(); it != distos.end(); ++it) {
-        pushDistortionFunction(*it);
+        if ((*it)->transformMatrix) {
+            pushTransformMatrix(*(*it)->transformMatrix);
+        } else {
+            pushDistortionFunction(*it);
+        }
     }
 }
 

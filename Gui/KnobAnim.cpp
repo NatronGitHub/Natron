@@ -359,6 +359,9 @@ KnobAnim::getViewsList() const
 void
 KnobAnim::refreshVisibilityConditional(bool refreshHolder)
 {
+    if (!_imp->rootItem) {
+        return;
+    }
     KnobsHolderAnimBasePtr holder = getHolder();
     if (holder && refreshHolder) {
         // The holder will take care of refreshing this knob visibility
@@ -430,10 +433,6 @@ KnobAnim::refreshVisibilityConditional(bool refreshHolder)
         // Now refresh root visibility
         {
             // If The item has no children, it is thus a curve and was already refreshed in the loop above.
-            assert(_imp->rootItem);
-            if (!_imp->rootItem) {
-                return;
-            }
             int nChildren = _imp->rootItem->childCount();
             if (nChildren > 0) {
 
