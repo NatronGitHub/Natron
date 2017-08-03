@@ -940,7 +940,15 @@ OfxEffectInstance::onInputChanged(int inputNo)
     ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
     _imp->common->effect->beginInstanceChangedAction(kOfxChangeUserEdited);
-    _imp->common->effect->clipInstanceChangedAction(clip->getName(), kOfxChangeUserEdited, time, s);
+    std::string reason;
+    if (getApp()->getProject()->isLoadingProject() || getApp()->isCreatingNode()) {
+        // Still notify the plug-in that its connection changes, but it shouldn't do anything like setting the unpremult knob
+        // etc...
+        reason = kOfxChangePluginEdited;
+    } else {
+        reason = kOfxChangeUserEdited;
+    }
+    _imp->common->effect->clipInstanceChangedAction(clip->getName(), reason, time, s);
     _imp->common->effect->endInstanceChangedAction(kOfxChangeUserEdited);
 
 }

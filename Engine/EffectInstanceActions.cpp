@@ -1768,6 +1768,12 @@ EffectInstance::onMetadataChanged_recursive(std::set<NodePtr>* markedNodes)
     // Can only be called on the main thread
     assert(QThread::currentThread() == qApp->thread());
 
+    if (getApp()->isCreatingNode() || getApp()->getProject()->isLoadingProject()) {
+        // Never do a recursive downstream pass to refresh metadata when creating a node or loading a project.
+        // Let the NodeCollection::createNodesFromSerialization function do it once for each nodes.
+        return;
+    }
+
     // Check if we already recursed on this node
     NodePtr node = getNode();
     if (markedNodes->find(node) != markedNodes->end()) {

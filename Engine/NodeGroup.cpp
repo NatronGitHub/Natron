@@ -57,6 +57,7 @@
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewIdx.h"
+#include "Engine/ViewerNode.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Serialization/NodeSerialization.h"
@@ -2042,6 +2043,29 @@ hasNodeOutputsInList(const NodesList& nodes,
 } // hasNodeOutputsInList
 
 
+static void addOutputNodesFromNode(const NodePtr& outputNode, NodesList& outputs)
+{
+    NodeGroupPtr isGroup = toNodeGroup(outputNode->getEffectInstance());
+    ViewerNodePtr isViewer = toViewerNode(outputNode->getEffectInstance());
+    if (isViewer) {
+        for (int i = 0; i < 2; ++i) {
+            EffectInstancePtr viewerProcess = isViewer->getViewerProcessNode(i);
+            if (viewerProcess) {
+                outputs.push_back(viewerProcess->getNode());
+            }
+        }
+
+    } else if (isGroup) {
+        NodePtr groupOutput = isGroup->getOutputNode();
+        if (groupOutput) {
+            outputs.push_back(groupOutput);
+        }
+    } else {
+        outputs.push_back(outputNode);
+    }
+
+}
+
 void
 NodeCollection::extractTopologicallySortedTreesFromNodes(bool enterGroups, const NodesList& nodes, TopologicallySortedNodesList* sortedNodes, std::list<TopologicalSortNodePtr>* outputNodes)
 {
@@ -2050,7 +2074,7 @@ NodeCollection::extractTopologicallySortedTreesFromNodes(bool enterGroups, const
         if (hasNodeOutputsInList(nodes, *it)) {
             continue;
         }
-        outputs.push_back(*it);
+        addOutputNodesFromNode(*it, outputs);
     }
 
     assert(!outputs.empty());
@@ -2074,10 +2098,10 @@ NodeCollection::extractTopologicallySortedTrees(bool enterGroups,
         OutputNodesMap outputs;
         (*it)->getOutputs(outputs);
         if (outputs.empty()) {
-            outputNodesList.push_back(*it);
+            addOutputNodesFromNode(*it, outputNodesList);
         }
     }
-    extractTopologicallySortedTreesForOutputs(enterGroups, outputNodesList, &nodes, sortedNodes, outputNodes);
+    extractTopologicallySortedTreesForOutputs(enterGroups, outputNodesList, !enterGroups ? &nodes : 0, sortedNodes, outputNodes);
 
 } // extractTopologicallySortedTrees
 

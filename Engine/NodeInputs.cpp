@@ -1232,9 +1232,9 @@ Node::onInputChanged(int inputNb)
     }
 
 
-    if (!getApp()->isCreatingNode()) {
+    //if (!getApp()->isCreatingNode()) {
         _imp->effect->onInputChanged_public(inputNb);
-    }
+    //}
     _imp->inputsModified.insert(inputNb);
 
 
