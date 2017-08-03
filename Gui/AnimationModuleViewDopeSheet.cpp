@@ -532,6 +532,7 @@ AnimationModuleViewPrivate::drawDopeSheetNodeRowSeparation(const NodeAnimPtr ite
     GL_GPU::Vertex2f( rowRect.left(), rowRect.top() );
     GL_GPU::Vertex2f( rowRect.right(), rowRect.top() );
     GL_GPU::End();
+    GL_GPU::LineWidth(1.);
 }
 
 void
@@ -584,7 +585,6 @@ AnimationModuleViewPrivate::drawDopeSheetRange(const NodeAnimPtr &item) const
 
             clipRectCenterY = (clipRectZoomCoords.y1 + clipRectZoomCoords.y2) / 2.;
 
-            GLProtectAttrib<GL_GPU> aa(GL_CURRENT_BIT | GL_LINE_BIT);
             GL_GPU::LineWidth(2);
 
             GL_GPU::Color4f(fillColor.redF(), fillColor.greenF(), fillColor.blueF(), 1.f);
@@ -605,6 +605,7 @@ AnimationModuleViewPrivate::drawDopeSheetRange(const NodeAnimPtr &item) const
             GL_GPU::Vertex2d(lineEnd, clipRectZoomCoords.y2);
 
             GL_GPU::End();
+            GL_GPU::LineWidth(1);
         }
 
         QColor fadedColor;

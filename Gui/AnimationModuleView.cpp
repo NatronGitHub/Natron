@@ -285,6 +285,7 @@ AnimationModuleView::paintGL()
             GL_GPU::Vertex2d(bottomLeft.x(), treeItemBottomZoomCord);
             GL_GPU::Vertex2d(topRight.x(), treeItemBottomZoomCord);
             GL_GPU::End();
+            GL_GPU::LineWidth(1.);
             glCheckError(GL_GPU);
         }
     }
