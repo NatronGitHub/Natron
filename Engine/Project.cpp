@@ -735,6 +735,10 @@ Project::initializeKnobs()
                                           " The [%2] path will also be set automatically for better sharing of projects with reader nodes.").arg( QString::fromUtf8(NATRON_PROJECT_ENV_VAR_NAME) ).arg( QString::fromUtf8(NATRON_OCIO_ENV_VAR_NAME) ) );
         param->setSecret(false);
         param->setMultiPath(true);
+
+        // The parameter is not part of the hash: all file knobs in the project have their value stored in the hash with all project variables
+        // expanded
+        param->setEvaluateOnChange(false);
         page->addKnob(param);
         _imp->envVars = param;
     }
@@ -890,6 +894,7 @@ Project::initializeKnobs()
         param->setLabel(tr("Default Planes"));
         param->setHintToolTip( tr("The list of the planes available by default on a Node's plane selector") );
         param->setAnimationEnabled(false);
+        param->setEvaluateOnChange(false);
 
         std::list<ImagePlaneDesc> defaultComponents;
         {
@@ -961,6 +966,7 @@ Project::initializeKnobs()
         param->setLabel(tr("Project Name"));
         param->setIsPersistent(false);
         param->setEnabled(false);
+        param->setEvaluateOnChange(false);
         param->setAnimationEnabled(false);
         param->setDefaultValue(NATRON_PROJECT_UNTITLED);
         infoPage->addKnob(param);
@@ -971,6 +977,7 @@ Project::initializeKnobs()
         param->setLabel(tr("Project path"));
         param->setIsPersistent(false);
         param->setAnimationEnabled(false);
+        param->setEvaluateOnChange(false);
         param->setEnabled(false);
         infoPage->addKnob(param);
         _imp->projectPath = param;
@@ -1040,6 +1047,7 @@ Project::initializeKnobs()
         param->setHintToolTip( tr("This area is a good place to write some informations about the project such as its authors, license "
                                      "and anything worth mentionning about it.") );
         param->setAsMultiLine();
+        param->setEvaluateOnChange(false);
         param->setAnimationEnabled(false);
         infoPage->addKnob(param);
     }
@@ -1057,6 +1065,7 @@ Project::initializeKnobs()
         param->setAnimationEnabled(false);
         std::string onProjectLoad = appPTR->getCurrentSettings()->getDefaultOnProjectLoadedCB();
         param->setDefaultValue(onProjectLoad);
+        param->setEvaluateOnChange(false);
         pythonPage->addKnob(param);
         _imp->onProjectLoadCB = param;
     }
@@ -1074,6 +1083,7 @@ Project::initializeKnobs()
         param->setAnimationEnabled(false);
         std::string onProjectSave = appPTR->getCurrentSettings()->getDefaultOnProjectSaveCB();
         param->setDefaultValue(onProjectSave);
+        param->setEvaluateOnChange(false);
         pythonPage->addKnob(param);
         _imp->onProjectSaveCB = param;
     }
@@ -1088,6 +1098,7 @@ Project::initializeKnobs()
         param->setAnimationEnabled(false);
         std::string onProjectClose = appPTR->getCurrentSettings()->getDefaultOnProjectCloseCB();
         param->setValue(onProjectClose);
+        param->setEvaluateOnChange(false);
         pythonPage->addKnob(param);
         _imp->onProjectCloseCB = param;
     }
@@ -1105,6 +1116,7 @@ Project::initializeKnobs()
         param->setAnimationEnabled(false);
         std::string onNodeCreated = appPTR->getCurrentSettings()->getDefaultOnNodeCreatedCB();
         param->setDefaultValue(onNodeCreated);
+        param->setEvaluateOnChange(false);
         pythonPage->addKnob(param);
         _imp->onNodeCreated = param;
     }
@@ -1119,6 +1131,7 @@ Project::initializeKnobs()
         param->setAnimationEnabled(false);
         std::string onNodeDelete = appPTR->getCurrentSettings()->getDefaultOnNodeDeleteCB();
         param->setDefaultValue(onNodeDelete);
+        param->setEvaluateOnChange(false);
         pythonPage->addKnob(param);
         _imp->onNodeDeleted = param;
     }

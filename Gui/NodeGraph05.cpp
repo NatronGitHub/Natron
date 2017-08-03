@@ -93,7 +93,7 @@ NodeGraph::setNodeToDefaultPosition(const NodeGuiPtr& node, const NodesGuiList& 
                     selectedNode.reset();
                 }
             }
-            if (node->getNode()->autoConnect(selectedNode->getNode())) {
+            if (selectedNode && node->getNode()->autoConnect(selectedNode->getNode())) {
                 hasPositionnedNode = true;
             }
         }
