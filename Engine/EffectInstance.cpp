@@ -1700,7 +1700,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
                 *image = *it;
                 break;
             } else {
-                if ( (imgMMlevel >= mipMapLevel) || !convertible ||
+                if ( (*it)->getStorageMode() != eStorageModeRAM || (imgMMlevel >= mipMapLevel) || !convertible ||
                      ( getSizeOfForBitDepth(imgDepth) < getSizeOfForBitDepth(bitdepth) ) ) {
                     ///Either smaller resolution or not enough components or bit-depth is not as deep, don't use the image
                     continue;
