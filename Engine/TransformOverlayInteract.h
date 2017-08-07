@@ -36,6 +36,9 @@ NATRON_NAMESPACE_ENTER
 struct TransformOverlayInteractPrivate;
 class TransformOverlayInteract : public OverlayInteractBase
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
 
