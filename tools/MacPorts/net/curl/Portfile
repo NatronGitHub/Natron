@@ -211,7 +211,7 @@ if {${name} eq ${subport}} {
 }
 
 subport curl-ca-bundle {
-    revision                    0
+    revision                    1
     categories                  net
     license                     {MPL-2 LGPL-2.1+}
     supported_archs             noarch
@@ -229,8 +229,8 @@ subport curl-ca-bundle {
     set certdata_file           certdata.txt
     # The output of the Tcl command "clock seconds" (you can run it in tclsh) when
     # the certdata.txt file in the port was last updated.
-    set certdata_updated        1491974200
-    set certdata_version        53be95383c09
+    set certdata_updated        1500995000
+    set certdata_version        be884de5820a
     set certdata_distfile       certdata-${certdata_version}${extract.suffix}
     set certdata_path           security/nss/lib/ckfw/builtins/${certdata_file}
 
@@ -244,8 +244,8 @@ subport curl-ca-bundle {
     distfiles-append            ${certdata_distfile}:certdata
 
     checksums-append            ${certdata_distfile} \
-                                rmd160  edd4628c626930bf182ccd023d99116679b2d6a8 \
-                                sha256  7fc7748de4376c581731de3c02c7fd01c94a9f0e6f4afe4c7110d76b9ae32a5b
+                                rmd160  f923926b7c5537cd04e27f1be4c1538f099eb4bf \
+                                sha256  94f67c4c88e8655d720d7c5f9332391899fe0a96ca1d2d1370f476e718ffb760
 
     extract.only                ${certdata_distfile}
 

@@ -9,7 +9,7 @@ PortGroup                   conflicts_build 1.0
 # PHP Warning:  Version warning: Imagick was compiled against Image Magick version XXXX but version YYYY is loaded. Imagick will run but may behave surprisingly in Unknown on line 0
 
 name                        ImageMagick
-version                     6.9.8-10
+version                     6.9.9-5
 set reasonable_version      [lindex [split ${version} -] 0]
 homepage                    http://www.imagemagick.org/
 categories                  graphics devel
@@ -41,8 +41,8 @@ master_sites                http://www.imagemagick.org/download/ \
                             ftp://ftp.sunet.se/pub/multimedia/graphics/ImageMagick \
                             ftp://sunsite.icm.edu.pl/packages/ImageMagick
 
-checksums                   rmd160  2c1e238b34f8c6365173c7cb6d812fab9d365b81 \
-                            sha256  8fc268f6e1bc514b41620e0f3f6c5dd33bfc5169db679e9a5c0455c6edd11810
+checksums                   rmd160  0ac3aedaf77a16e745ef6defd30adc7ce48465be \
+                            sha256  aa6444ece8d29b87fb4f25e997cd0b4fb48774206cea9490c6028babdee7d056
 
 depends_lib                 port:bzip2 \
                             port:djvulibre \
