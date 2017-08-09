@@ -1916,8 +1916,6 @@ public:
 
     void setNodeDisabled(bool disabled);
 
-    void restoreSublabel();
-
     void computeFrameRangeForReader(const KnobIPtr& fileKnob, bool setFrameRange);
 
     void findPluginFormatKnobs();

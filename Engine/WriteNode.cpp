@@ -245,7 +245,7 @@ public:
 
     void createDefaultWriteNode();
 
-    bool checkEncoderCreated(TimeValue time, ViewIdx view);
+    //bool checkEncoderCreated(TimeValue time, ViewIdx view);
 
     void setReadNodeOriginalFrameRange();
 };
@@ -500,6 +500,7 @@ WriteNodePrivate::createDefaultWriteNode()
     separatorKnob.lock()->setSecret(true);
 }
 
+#if 0
 bool
 WriteNodePrivate::checkEncoderCreated(TimeValue time,
                                       ViewIdx view)
@@ -525,6 +526,7 @@ WriteNodePrivate::checkEncoderCreated(TimeValue time,
 
     return true;
 }
+#endif
 
 static std::string
 getFileNameFromSerialization(const SERIALIZATION_NAMESPACE::KnobSerializationList& serializations)

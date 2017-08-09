@@ -237,16 +237,7 @@ Node::load(const CreateNodeArgsPtr& args)
     // Create overlays
     _imp->effect->initializeOverlayInteract();
 
-    // For readers, set their original frame range when creating them
-#if 0
-    if ( !serialization && ( _imp->effect->isReader() || _imp->effect->isWriter() ) ) {
-        KnobIPtr filenameKnob = getKnobByName(kOfxImageEffectFileParamName);
-        if (filenameKnob) {
-            _imp->effect->onFileNameParameterChanged(filenameKnob);
-        }
-    }
-#endif
-
+    // Refresh metadata once so that parameters get a consistent default value
     _imp->effect->onMetadataChanged_nonRecursive_public();
 
     // Refresh dynamic props such as tiles support, OpenGL support, multi-thread etc...
@@ -254,9 +245,6 @@ Node::load(const CreateNodeArgsPtr& args)
 
     // Ensure the OpenGL support knob has a consistant state according to the project
     _imp->effect->onOpenGLEnabledKnobChangedOnProject(getApp()->getProject()->isOpenGLRenderActivated());
-
-    // Get the sub-label knob
-    _imp->effect->restoreSublabel();
 
     // If this plug-in create views (ReadOIIO only) then refresh them
     refreshCreatedViews(!serialization);
