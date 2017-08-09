@@ -760,7 +760,7 @@ EffectInstance::getInverseDistortion_public(TimeValue inArgsTime,
 
 
     // If the effect is identity, do not call the getDistortion action, instead just return an identity matrix
-    bool isIdentity;
+    int identityInputNb = -1;
     {
         // If the effect is identity on the format, that means its bound to be identity anywhere and does not depend on the render window.
         RectI identityWindow;
@@ -770,14 +770,18 @@ EffectInstance::getInverseDistortion_public(TimeValue inArgsTime,
         identityWindow.y2 = INT_MAX;
         RenderScale scale(1.);
         IsIdentityResultsPtr identityResults;
-        isIdentity = isIdentity_public(true, time, scale, identityWindow, view, ImagePlaneDesc::getRGBAComponents() /*insignificant*/, &identityResults);
+        ActionRetCodeEnum stat = isIdentity_public(true, time, scale, identityWindow, view, 0, &identityResults);
+        if (isFailureRetCode(stat)) {
+            return stat;
+        }
+        identityResults->getIdentityData(&identityInputNb, 0, 0, 0);
     }
 
-    if (!distortSupported && !isDeprecatedTransformSupportEnabled && !isIdentity) {
+    if (!distortSupported && !isDeprecatedTransformSupportEnabled && identityInputNb < 0) {
         return eActionStatusReplyDefault;
     }
 
-    if (isIdentity) {
+    if (identityInputNb >= 0) {
         DistortionFunction2DPtr disto(new DistortionFunction2D);
         disto->transformMatrix.reset(new Transform::Matrix3x3);
         disto->transformMatrix->setIdentity();
@@ -868,7 +872,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
                                   const RenderScale & scale,
                                   const RectI & renderWindow,
                                   ViewIdx view,
-                                  const ImagePlaneDesc& plane,
+                                  const ImagePlaneDesc* plane,
                                   IsIdentityResultsPtr* results)
 {
     
@@ -881,7 +885,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
             // We do not cache it because for non continuous effects we only cache stuff at
             // valid frame times
             *results = IsIdentityResults::create(IsIdentityKeyPtr());
-            (*results)->setIdentityData(-2, TimeValue(roundedTime), view, plane);
+            (*results)->setIdentityData(-2, TimeValue(roundedTime), view, plane ? *plane : ImagePlaneDesc::getNoneComponents());
             return eActionStatusOK;
         }
     }
@@ -903,7 +907,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
 
     IsIdentityKeyPtr cacheKey;
     {
-        cacheKey.reset(new IsIdentityKey(hash, time, plane, getNode()->getPluginID()));
+        cacheKey.reset(new IsIdentityKey(hash, time, plane ? *plane : ImagePlaneDesc::getNoneComponents(), getNode()->getPluginID()));
     }
 
 
@@ -930,19 +934,23 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
         assert(cacheStatus == CacheEntryLockerBase::eCacheEntryStatusMustCompute);
     }
 
+    // Figure out the identity plane if needed.
+    bool handleIdentityPlane = false;
+    int identityInputNb = -1;
+    TimeValue identityTime = time;
+    ViewIdx identityView = view;
+    ImagePlaneDesc identityPlane = plane ? *plane : ImagePlaneDesc::getNoneComponents();
 
-    bool caught = false;
-
-    // Node is disabled or doesn't have any channel to process, be identity on the main input
     if ((isNodeDisabledForFrame(time, view) || !hasAtLeastOneChannelToProcess() )) {
-        (*results)->setIdentityData(getNode()->getPreferredInput(), time, view, plane);
-        caught = true;
-    }
-
-    // Call the isIdentity plug-in action
-    if (!caught) {
-
+        // Node is disabled or doesn't have any channel to process, be identity on the main input
+        identityInputNb = getNode()->getPreferredInput();
+        handleIdentityPlane = true;
+    } else {
+        // Call the isIdentity plug-in action
         RectI mappedRenderWindow = renderWindow;
+
+        // The plug-in isn't multiplanar, handle the plane ourselves
+        handleIdentityPlane = !isMultiPlanar();
 
         if (mappedScale.x != scale.x || mappedScale.y != scale.y) {
             // map the render window to the appropriate scale
@@ -952,11 +960,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
             canonicalRenderWindow.toPixelEnclosing(mappedScale, par, &mappedRenderWindow);
         }
 
-        TimeValue identityTime = time;
-        ViewIdx identityView = view;
-        int identityInputNb = -1;
-        ImagePlaneDesc identityPlane = plane;
-        ActionRetCodeEnum stat = isIdentity(time, mappedScale, mappedRenderWindow, view, plane, &identityTime, &identityView, &identityInputNb, &identityPlane);
+        ActionRetCodeEnum stat = isIdentity(time, mappedScale, mappedRenderWindow, view, identityPlane, &identityTime, &identityView, &identityInputNb, &identityPlane);
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -971,14 +975,25 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
             }
         }
 
-        (*results)->setIdentityData(identityInputNb, identityTime, identityView, identityPlane);
-        
-        caught = true;
+    }
 
+    if (handleIdentityPlane && identityInputNb >= 0 && plane) {
+        // Use the get layers needed action to figure out the identity plane by default
+        GetComponentsResultsPtr results;
+        ActionRetCodeEnum stat = getLayersProducedAndNeeded_public(time, view, &results);
+        if (isFailureRetCode(stat)) {
+            return stat;
+        }
+        const std::map<int, std::list<ImagePlaneDesc> >& neededInputsMap = results->getNeededInputPlanes();
+        std::map<int, std::list<ImagePlaneDesc> >::const_iterator foundInput = neededInputsMap.find(identityInputNb);
+        if (foundInput != neededInputsMap.end() && !foundInput->second.empty()) {
+            identityPlane = foundInput->second.front();
+        }
     }
-    if (!caught) {
-        (*results)->setIdentityData(-1, time, view, plane);
-    }
+
+
+    (*results)->setIdentityData(identityInputNb, identityTime, identityView, identityPlane);
+
 
     if (cacheAccess) {
         cacheAccess->insertInCache();
@@ -1056,7 +1071,7 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
         identityWindow.y2 = INT_MAX;
         RenderScale scale(1.);
         IsIdentityResultsPtr identityResults;
-        ActionRetCodeEnum stat = isIdentity_public(true, time, mappedScale, identityWindow, view, ImagePlaneDesc::getRGBAComponents() /*insignificant*/, &identityResults);
+        ActionRetCodeEnum stat = isIdentity_public(true, time, mappedScale, identityWindow, view, 0, &identityResults);
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -1065,8 +1080,7 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
         int inputIdentityNb;
         TimeValue identityTime;
         ViewIdx identityView;
-        ImagePlaneDesc identityPlane;
-        identityResults->getIdentityData(&inputIdentityNb, &identityTime, &identityView, &identityPlane);
+        identityResults->getIdentityData(&inputIdentityNb, &identityTime, &identityView, 0);
 
         if (inputIdentityNb >= 0) {
             // This effect is identity
@@ -1448,12 +1462,11 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
         identityWindow.x2 = INT_MAX;
         identityWindow.y2 = INT_MAX;
         RenderScale scale(1.);
-        ImagePlaneDesc identityPlane;
-        ActionRetCodeEnum stat = isIdentity_public(isHashCached, time, scale, identityWindow, view, ImagePlaneDesc::getRGBAComponents() /*insignificant*/, &identityResults);
+        ActionRetCodeEnum stat = isIdentity_public(isHashCached, time, scale, identityWindow, view, 0, &identityResults);
         if (isFailureRetCode(stat)) {
             return stat;
         }
-        identityResults->getIdentityData(&inputIdentityNb, &inputIdentityTime, &inputIdentityView, &identityPlane);
+        identityResults->getIdentityData(&inputIdentityNb, &inputIdentityTime, &inputIdentityView, 0);
     }
 
     if (inputIdentityNb != -1) {

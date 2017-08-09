@@ -209,7 +209,7 @@ EffectInstance::Implementation::handleIdentityEffect(double par,
 
         IsIdentityResultsPtr results;
         {
-            ActionRetCodeEnum stat = _publicInterface->isIdentity_public(true, _publicInterface->getCurrentRenderTime(), combinedScale, pixelRod, _publicInterface->getCurrentRenderView(), requestData->getPlaneDesc(),  &results);
+            ActionRetCodeEnum stat = _publicInterface->isIdentity_public(true, _publicInterface->getCurrentRenderTime(), combinedScale, pixelRod, _publicInterface->getCurrentRenderView(), &requestData->getPlaneDesc(),  &results);
             if (isFailureRetCode(stat)) {
                 return stat;
             }
@@ -610,7 +610,7 @@ EffectInstance::Implementation::checkRestToRender(bool updateTilesStateFromCache
                     ImagePlaneDesc identityPlane;
                     {
                         IsIdentityResultsPtr results;
-                        ActionRetCodeEnum stat = _publicInterface->isIdentity_public(false, time, renderMappedScale, it->bounds, view, requestData->getPlaneDesc(), &results);
+                        ActionRetCodeEnum stat = _publicInterface->isIdentity_public(false, time, renderMappedScale, it->bounds, view, &requestData->getPlaneDesc(), &results);
                         if (isFailureRetCode(stat)) {
                             continue;
                         } else {

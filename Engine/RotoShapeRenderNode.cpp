@@ -330,12 +330,9 @@ RotoShapeRenderNode::getLayersProducedAndNeeded(TimeValue time,
         identityWindow.x2 = INT_MAX;
         identityWindow.y2 = INT_MAX;
 
-        ActionRetCodeEnum stat = isIdentity_public(true, time, RenderScale(1.), identityWindow, view, inputPlane, &identityResults);
+        ActionRetCodeEnum stat = isIdentity_public(true, time, RenderScale(1.), identityWindow, view, 0, &identityResults);
         if (!isFailureRetCode(stat)) {
-            TimeValue identityTime;
-            ViewIdx identityView;
-            ImagePlaneDesc identityPlane;
-            identityResults->getIdentityData(&identityInputNb, &identityTime, &identityView, &identityPlane);
+            identityResults->getIdentityData(&identityInputNb, 0, 0, 0);
         }
 
         if (identityInputNb == -1) {

@@ -676,6 +676,8 @@ public:
      * @param scale The scale of the renderWindow
      * @param renderWindow The portion of the image over which the effect should be identity
      * @param view The view that should be passed to render()
+     * @param plane If non NULL, this is the plane on which the plug-in is identity, otherwise
+     * it is assumed to be identity for any plane
      * @param inputTime[out] the input time to which this plugin is identity of
      * @param inputNb[out] the input number of the effect that is identity of.
      * The special value of -2 indicates that the plugin is identity of itself at another time
@@ -686,7 +688,7 @@ public:
                                         const RenderScale & scale,
                                         const RectI & renderWindow,
                                         ViewIdx view,
-                                        const ImagePlaneDesc& plane,
+                                        const ImagePlaneDesc* plane,
                                         IsIdentityResultsPtr* results) WARN_UNUSED_RETURN;
 protected:
 

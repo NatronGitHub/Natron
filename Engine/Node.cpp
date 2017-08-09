@@ -1339,15 +1339,13 @@ Node::onRefreshIdentityStateRequestReceived()
         for (int i = 0; i < nViews; ++i) {
 
             IsIdentityResultsPtr isIdentityResults;
-            ActionRetCodeEnum stat = _imp->effect->isIdentity_public(true, time, scale, identityWindow, ViewIdx(i), ImagePlaneDesc::getRGBAComponents()/*irrelevant*/, &isIdentityResults);
+            ActionRetCodeEnum stat = _imp->effect->isIdentity_public(true, time, scale, identityWindow, ViewIdx(i), 0, &isIdentityResults);
             if (isFailureRetCode(stat)) {
                 continue;
             }
             int identityInputNb;
-            TimeValue identityTime;
             ViewIdx identityView;
-            ImagePlaneDesc identityPlane;
-            isIdentityResults->getIdentityData(&identityInputNb, &identityTime, &identityView, &identityPlane);
+            isIdentityResults->getIdentityData(&identityInputNb, 0, &identityView, 0);
 
             if ( identityInputNb == -1 || identityView.value() != i ) {
                 inputNb = -1;
