@@ -1210,10 +1210,10 @@ EffectInstance::setNodeDisabled(bool disabled)
 }
 
 void
-EffectInstance::restoreSublabel()
+EffectInstance::Implementation::fetchSubLabelKnob()
 {
 
-    KnobIPtr sublabelKnob = getKnobByName(kNatronOfxParamStringSublabelName);
+    KnobIPtr sublabelKnob = _publicInterface->getKnobByName(kNatronOfxParamStringSublabelName);
     if (!sublabelKnob) {
         return;
     }
@@ -1222,15 +1222,13 @@ EffectInstance::restoreSublabel()
     sublabelKnob->setIsPersistent(false);
 
     KnobStringPtr sublabelKnobIsString = toKnobString(sublabelKnob);
-    _imp->defKnobs->ofxSubLabelKnob = sublabelKnobIsString;
+    defKnobs->ofxSubLabelKnob = sublabelKnobIsString;
 
-    NodePtr ioContainer = getNode()->getIOContainer();
+    NodePtr ioContainer = _publicInterface->getNode()->getIOContainer();
     if (ioContainer) {
         ioContainer->getEffectInstance()->_imp->defKnobs->ofxSubLabelKnob = sublabelKnobIsString;
         Q_EMIT ioContainer->s_nodeExtraLabelChanged();
     }
-    
-    
 }
 
 KnobChoicePtr
@@ -1467,6 +1465,7 @@ EffectInstance::initializeDefaultKnobs(bool loadingSerialization, bool hasGUI)
         }
     }
 
+    _imp->fetchSubLabelKnob();
 
 
     if (isWriter()

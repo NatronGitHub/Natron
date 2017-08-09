@@ -271,7 +271,7 @@ public:
 
     void createDefaultReadNode();
 
-    bool checkDecoderCreated(TimeValue time, ViewIdx view);
+    //bool checkDecoderCreated(TimeValue time, ViewIdx view);
 
     static QString getFFProbeBinaryPath()
     {
@@ -503,7 +503,7 @@ ReadNodePrivate::createDefaultReadNode()
     args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
 
     // This will avoid throwing errors when creating the reader
-    args->addParamDefaultValue<bool>("ParamExistingInstance", true);
+    args->addParamDefaultValue<bool>(kParamExistingInstance, true);
 
 
     NodePtr node  = _publicInterface->getApp()->createNode(args);
@@ -521,6 +521,7 @@ ReadNodePrivate::createDefaultReadNode()
     separatorKnob.lock()->setSecret(true);
 }
 
+#if 0
 bool
 ReadNodePrivate::checkDecoderCreated(TimeValue time,
                                      ViewIdx view)
@@ -546,6 +547,7 @@ ReadNodePrivate::checkDecoderCreated(TimeValue time,
 
     return true;
 }
+#endif
 
 static std::string
 getFileNameFromSerialization(const SERIALIZATION_NAMESPACE::KnobSerializationList& serializations)
@@ -700,13 +702,6 @@ ReadNodePrivate::createReadNode(bool throwErrors,
 
     //We need to explcitly refresh the Python knobs since we attached the embedded node knobs into this node.
     _publicInterface->getNode()->declarePythonKnobs();
-
-#if 0
-    if (defaultFallback) {
-        //Destroy it to keep the default parameters
-        destroyReadNode();
-    }
-#endif
 
 
     // Clone the old values of the generic knobs if we created the same decoder than before

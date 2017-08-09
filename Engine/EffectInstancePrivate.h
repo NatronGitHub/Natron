@@ -426,6 +426,9 @@ public:
     Implementation(EffectInstance* publicInterface, const Implementation& other);
 
     ~Implementation();
+    
+    void fetchSubLabelKnob();
+
 
     /**
      * @brief Same as getFrameViewRequest excepts that if it does not exist it will create it.

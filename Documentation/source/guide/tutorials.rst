@@ -12,4 +12,5 @@ Tutorials
    tutorials-ffmpeg
    tutorials-hugin
    tutorials-svgworkflow
+   tutorial-AlternativeMatteExtraction
 
