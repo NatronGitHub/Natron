@@ -33,10 +33,16 @@ Natron multiple times on the same computer, the different processes will share t
 - For convenience, a PyPlug may specify a list of the nodes inside its node graph that should have their viewer overlay displayed when the PyPlug setting panel is opened. For instance, imagine that the PyPlug uses a Transform node internally, it is possible to display the Transform node handle on the viewer when the PyPlug settings panel is opened, even if the Transform node panel itself is closed
 
 
+## Version 2.3.2
+
+- Merge: fix bug #1648, where the alpha from the B input would be used for all consecutive merge operations, rather than updated at each operation.
+
+
 ## Version 2.3.1
 
 - Python: Fix the setTable() function of the PathParam class
 - Windows: Fix a bug where most image formats would not read and write correctly
+
 
 ## Version 2.3.0
 
