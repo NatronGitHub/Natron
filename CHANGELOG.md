@@ -4,10 +4,17 @@
 
 # History
 
+
+## Version 2.3.2
+
+- Merge: fix bug #1648, where the alpha from the B input would be used for all consecutive merge operations, rather than updated at each operation.
+
+
 ## Version 2.3.1
 
 - Python: Fix the setTable() function of the PathParam class
 - Windows: Fix a bug where most image formats would not read and write correctly
+
 
 ## Version 2.3.0
 
