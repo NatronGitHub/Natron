@@ -9,7 +9,7 @@ name                gcc48
 # Whenever this port is bumped for version/revision, please revbump dragonegg-*-gcc-4.8
 epoch               2
 version             4.8.5
-revision            1
+revision            2
 platforms           darwin
 categories          lang
 maintainers         nomaintainer
@@ -98,6 +98,12 @@ configure.args      --enable-languages=c,c++,objc,obj-c++,lto,fortran,java \
                     --with-ld=${prefix}/bin/ld \
                     --with-ar=${prefix}/bin/ar \
                     --with-bugurl=https://trac.macports.org/newticket
+
+# see https://lists.macports.org/pipermail/macports-dev/2017-August/036209.html
+# --disable-tls does not limit functionality
+# it only determines how std::call_once works
+configure.args-append \
+                    --disable-tls
 
 configure.env-append \
                     AR_FOR_TARGET=${prefix}/bin/ar \
