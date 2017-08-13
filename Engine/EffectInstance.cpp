@@ -623,7 +623,7 @@ EffectInstance::onInputLabelChanged(int inputNb, const std::string& label)
 
     std::map<int, ChannelSelector>::iterator foundChannel = _imp->defKnobs->channelsSelectors.find(inputNb);
     if (foundChannel != _imp->defKnobs->channelsSelectors.end()) {
-        foundChannel->second.layer.lock()->setLabel(label + std::string(" Layer"));
+        foundChannel->second.layer.lock()->setLabel(label/* + std::string(" Layer")*/); // note: why add " Layer"?
     }
 }
 
@@ -1907,7 +1907,7 @@ EffectInstance::makeInfoForInput(int inputNumber)
         }
         for (std::list<ImagePlaneDesc>::iterator it = availableLayers.begin(); it != availableLayers.end(); ++it) {
 
-            ss << " "  << it->getPlaneLabel();
+            ss << " "  << it->getPlaneLabel() << '.' << it->getChannelsLabel();
             if ( next != availableLayers.end() ) {
                 ss << ", ";
                 ++next;
