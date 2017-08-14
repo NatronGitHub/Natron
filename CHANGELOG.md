@@ -5,6 +5,13 @@
 # History
 
 
+## Version 2.3.3
+
+- Shadertoy: rework many presets so that they work better with natron: Blur/Bilateral, Blur/Bloom, Blur/Circular Blur, Blur/Fast Blur, Blur/Gaussian Blur, , Blur/Monte-Carlo Blur, Blur/Poisson Disc, Blur/Radial Blur, Effect/Image Cel Shade. Many blur effects can also be modulated per-pixel using the "Modulate" input
+- Shadertoy: new presets: Blur/Mipmap Blur, Effect/Sharpen
+- Shadertoy: add iChannelOffset extension.
+
+
 ## Version 2.3.2
 
 - Merge: fix bug #1648, where the alpha from the B input would be used for all consecutive merge operations, rather than updated at each operation.
