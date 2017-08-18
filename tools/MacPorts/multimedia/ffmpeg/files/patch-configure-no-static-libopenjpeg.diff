@@ -1,12 +1,15 @@
---- configure.orig	2017-06-06 19:04:02.000000000 -0700
-+++ configure	2017-06-15 05:11:17.000000000 -0700
-@@ -5805,8 +5805,8 @@
+--- configure.orig	2017-08-18 03:27:51.000000000 -0500
++++ configure	2017-08-18 03:27:51.000000000 -0500
+@@ -5806,10 +5806,10 @@
                                   require opencv opencv2/core/core_c.h cvCreateImageHeader -lopencv_core -lopencv_imgproc; } ||
                                 require_pkg_config opencv opencv/cxcore.h cvCreateImageHeader; }
  enabled libopenh264       && require_pkg_config openh264 wels/codec_api.h WelsGetCodecVersion
--enabled libopenjpeg       && { { check_lib openjpeg-2.1/openjpeg.h opj_version -lopenjp2 -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
--                               check_lib openjpeg-2.1/openjpeg.h opj_version -lopenjp2 ||
-+enabled libopenjpeg       && { check_lib openjpeg-2.1/openjpeg.h opj_version -lopenjp2 ||
+-enabled libopenjpeg       && { { check_lib openjpeg-2.2/openjpeg.h opj_version -lopenjp2 -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
+-                               check_lib openjpeg-2.2/openjpeg.h opj_version -lopenjp2 ||
+-                               { check_lib openjpeg-2.1/openjpeg.h opj_version -lopenjp2 -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
++enabled libopenjpeg       && { check_lib openjpeg-2.2/openjpeg.h opj_version -lopenjp2 ||
++                               { check_lib openjpeg-2.2/openjpeg.h opj_version -lopenjp2 -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
+                                check_lib openjpeg-2.1/openjpeg.h opj_version -lopenjp2 ||
 +                               { check_lib openjpeg-2.1/openjpeg.h opj_version -lopenjp2 -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
                                 { check_lib openjpeg-2.0/openjpeg.h opj_version -lopenjp2 -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
                                 { check_lib openjpeg-1.5/openjpeg.h opj_version -lopenjpeg -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||

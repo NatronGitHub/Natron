@@ -10,6 +10,7 @@ name                ffmpeg
 conflicts           ffmpeg-devel
 epoch               1
 version             3.3.3
+revision            1
 license             LGPL-2.1+
 categories          multimedia
 maintainers         {devans @dbevans} {jeremyhu @jeremyhu} openmaintainer
@@ -92,6 +93,7 @@ depends_lib         port:lame \
                     port:zlib
 
 patchfiles          patch-libavcodec-audiotoolboxenc.c.diff \
+                    patch-openjpeg-2.2.diff \
                     patch-configure-no-static-libopenjpeg.diff
 
 #
