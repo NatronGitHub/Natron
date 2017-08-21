@@ -224,7 +224,7 @@ of C++ compilers:
 +----------+---------------------------------------------------------+
 | true     | True state or any value other than zero (typically 1).  |
 +----------+---------------------------------------------------------+
-| false    | False state, value of zero.                             |
+| false    | False state, value of exactly zero.                     |
 +----------+---------------------------------------------------------+
 | and      | Logical AND, True only if x and y are both true.        |
 |          | (eg: x and y)                                           |
@@ -275,7 +275,7 @@ of C++ compilers:
 | clamp    | Clamp x in range between r0 and r1, where r0 < r1.      |
 |          | (eg: clamp(r0,x,r1))                                    |
 +----------+---------------------------------------------------------+
-| equal    | Equality test between x and y using normalized epsilon  |
+| equal    | Equality test between x and y using normalised epsilon  |
 +----------+---------------------------------------------------------+
 | erf      | Error function of x.  (eg: erf(x))                      |
 +----------+---------------------------------------------------------+
@@ -321,7 +321,7 @@ of C++ compilers:
 +----------+---------------------------------------------------------+
 | ncdf     | Normal cumulative distribution function.  (eg: ncdf(x)) |
 +----------+---------------------------------------------------------+
-| nequal   | Not-equal test between x and y using normalized epsilon |
+| nequal   | Not-equal test between x and y using normalised epsilon |
 +----------+---------------------------------------------------------+
 | pow      | x to the power of y.  (eg: pow(x,y) == x ^ y)           |
 +----------+---------------------------------------------------------+
@@ -651,7 +651,7 @@ expressions. The types are as follows:
 
 (1) Scalar Type
 The scalar type  is a singular  numeric value. The  underlying type is
-that used  to specialize  the ExprTk  components (float,  double, long
+that used  to specialise  the ExprTk  components (float,  double, long
 double, MPFR et al).
 
 
@@ -673,7 +673,7 @@ however can not interact with scalar or vector types.
      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 [SECTION 10 - COMPONENTS]
-There are three primary components, that are specialized upon a  given
+There are three primary components, that are specialised upon a  given
 numeric type, which make up the core of ExprTk. The components are  as
 follows:
 
@@ -791,13 +791,26 @@ methods:
    4. bool add_vector   (const std::string& name,    vector_type&)
 
 
-The 'vector' type must consist of a contiguous array of scalars  which
-can be one of the following:
+Note: The 'vector' type must  be comprised from a contiguous  array of
+scalars with a size that is  larger than zero. The vector type  itself
+can be any one of the following:
 
    1. std::vector<scalar_t>
    2. scalar_t(&v)[N]
    3. scalar_t* and array size
    4. exprtk::vector_view<scalar_t>
+
+
+When  registering  a variable,  vector,  string or  function  with  an
+instance of a symbol_table, the call to 'add_...' may fail and  return
+a false result due to one or more of the following reasons:
+
+  1. Variable name contains invalid characters or is ill-formed
+  2. Variable name conflicts with a reserved word (eg: 'while')
+  3. Variable name conflicts with a previously registered variable
+  4. A vector of size (length) zero is being registered
+  5. A free function exceeding fifteen parameters is being registered
+  6. The symbol_table instance is in an invalid state
 
 
 (2) Expression
@@ -920,8 +933,8 @@ including  which  control  block each  expression references and their
 associated reference counts.
 
 
-  exprtk::expression e0; // constructed expression, eg: x + 1
-  exprtk::expression e1; // constructed expression, eg: 2z + y
+   exprtk::expression e0; // constructed expression, eg: x + 1
+   exprtk::expression e1; // constructed expression, eg: 2z + y
 
   +-----[ e0 cntrl block]----+     +-----[ e1 cntrl block]-----+
   | 1. Expression Node 'x+1' |     | 1. Expression Node '2z+y' |
@@ -934,7 +947,7 @@ associated reference counts.
     +--------------------+           +--------------------+
 
 
-  e0 = e1; // e0 and e1 are now 2z+y
+   e0 = e1; // e0 and e1 are now 2z+y
 
                +-----[ e1 cntrl block]-----+
                | 1. Expression Node '2z+y' |
@@ -1226,7 +1239,7 @@ In the following example, the  return value of the expression  will be
 within the loop body on its last iteration:
 
    var x := 1;
-   x + for (var i := i; i < 10; i += 1)
+   x + for (var i := x; i < 10; i += 1)
        {
          i / 2;
          i + 1;
@@ -1303,7 +1316,7 @@ lets review the following expression:
 
    var x := 2;      // Statement 1
    var y := x + 2;  // Statement 2
-   x + y            // Statement 3
+   x + y;           // Statement 3
    y := x + 3y;     // Statement 4
    x - y;           // Statement 5
 
@@ -1332,7 +1345,7 @@ ExprTk support two forms  of conditional branching or  otherwise known
 as  if-statements.  The  first  form,  is  a  simple  function   based
 conditional  statement, that  takes exactly  three input  expressions:
 condition, consequent  and alternative.  The following  is an  example
-expression that utilizes the function based if-statement.
+expression that utilises the function based if-statement.
 
    x := if (y < z, y + 1, 2* z)
 
@@ -1451,7 +1464,7 @@ Special functions dramatically decrease  the total evaluation time  of
 expressions which would otherwise  have been written using  the common
 form by reducing the total number  of nodes in the evaluation tree  of
 an  expression  and  by  also  leveraging  the  compiler's  ability to
-correctly optimize such expressions for a given architecture.
+correctly optimise such expressions for a given architecture.
 
           3-Parameter                       4-Parameter
  +-------------+-------------+    +--------------+------------------+
@@ -1581,25 +1594,28 @@ examples of string variable definitions:
    (a) Initialise to a string
        var x := 'abc';
 
-   (b) Initialise to a string expression
+   (b) Initialise to an empty string
+       var x := '';
+
+   (c) Initialise to a string expression
        var x := 'abc' + '123';
 
-   (c) Initialise to a string range
+   (d) Initialise to a string range
        var x := 'abc123'[2:4];
 
-   (d) Initialise to another string variable
+   (e) Initialise to another string variable
        var x := 'abc';
        var y := x;
 
-   (e) Initialise to another string variable range
+   (f) Initialise to another string variable range
        var x := 'abc123';
        var y := x[2:4];
 
-   (f) Initialise to a string expression
+   (g) Initialise to a string expression
        var x := 'abc';
        var y := x + '123';
 
-   (g) Initialise to a string expression range
+   (h) Initialise to a string expression range
        var x := 'abc';
        var y := (x + '123')[1:3];
 
@@ -1775,7 +1791,7 @@ needs  to  be  'updated' to  either another  vector or  sub-range, the
 vector_view instance  can be  efficiently rebased,  and the expression
 evaluated as normal.
 
-   exprtk::vector_view<T> view = exprtk::make_vector_view(v, v.size());
+   exprtk::vector_view<T> view = exprtk::make_vector_view(v,v.size());
 
    symbol_table_t symbol_table;
    symbol_table.add_vector("v",view);
@@ -1794,7 +1810,7 @@ evaluated as normal.
 
 [SECTION 15 - USER DEFINED FUNCTIONS]
 ExprTk provides a means  whereby custom functions can  be defined  and
-utilized within  expressions.  The   concept  requires  the  user   to
+utilised within  expressions.  The   concept  requires  the  user   to
 provide a reference  to the function  coupled with an  associated name
 that  will be invoked within  expressions. Functions may take numerous
 inputs but will always return a single value of the underlying numeric
@@ -1840,7 +1856,7 @@ function called 'foo':
 (2) ivararg_function
 This interface supports a variable number of scalar arguments as input
 into the function. The function operator interface uses a  std::vector
-specialized upon type T to facilitate parameter passing. The following
+specialised upon type T to facilitate parameter passing. The following
 example defines a vararg function called 'boo':
 
    template <typename T>
@@ -1863,7 +1879,7 @@ example defines a vararg function called 'boo':
 (3) igeneric_function
 This interface supports  a variable number  of arguments and  types as
 input  into  the  function. The  function  operator  interface uses  a
-std::vector  specialized  upon  the  type_store  type  to   facilitate
+std::vector  specialised  upon  the  type_store  type  to   facilitate
 parameter passing.
 
     Scalar <-- function(i_0, i_1, i_2....., i_N)
@@ -2489,7 +2505,7 @@ associated with a given expression instance.
 
 However as an expression can have more than one symbol table  instance
 associated  with  itself,  when  building  more  complex  systems that
-utilize many expressions  where each can  in turn utilize  one or more
+utilise many expressions  where each can  in turn utilise  one or more
 variables  from  a  large set  of  potential  variables, functions  or
 constants, it becomes evident  that grouping variables into  layers of
 symbol_tables will simplify and streamline the overall process.
@@ -2722,7 +2738,7 @@ expressions:
 In  this  scenario   one  can  use   the  'dependent_entity_collector'
 component as described in [Section  16] to further determine which  of
 the registered variables were  actually used in the  given expression.
-As  an example  once the  set of  utilized  variables  are known,  any
+As  an example  once the  set of  utilised  variables  are known,  any
 further 'attention'  can be  restricted to  only those  variables when
 evaluating the expression. This can be quite useful when dealing  with
 expressions that can draw from a set of hundreds or even thousands  of
@@ -3436,7 +3452,7 @@ two result variables are defined to hold the values named result0  and
 result1 respectively. The first is of scalar type (double), the second
 is of  string type.  Once the  expression has  been evaluated, the two
 variables will have been updated  with the new result values,  and can
-then be further utilized from within the calling program.
+then be further utilised from within the calling program.
 
      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -4047,7 +4063,7 @@ expressions. As an example, lets take the following expression:
    1 / sqrt(2x) * e^(3y)
 
 
-Let's say we would like to determine which sub-part of the  expression
+Lets say we would like to determine which sub-part  of the  expression
 takes the  most time  to evaluate  and perhaps  attempt to  rework the
 expression based on the results. In order to do this we will create  a
 text file  called 'test.txt'  and then  proceed to  make some educated
@@ -4133,7 +4149,7 @@ into account when using ExprTk:
 
  (09) The  life-time of  objects registered  with or  created from  a
       specific symbol-table must span  at least the life-time  of the
-      compiled expressions which utilize objects, such as  variables,
+      compiled expressions which utilise objects, such as  variables,
       of that  symbol-table, otherwise  the result  will be undefined
       behavior.
 
@@ -4419,42 +4435,43 @@ the ExprTk header. The defines are as follows:
    (08) exprtk_disable_superscalar_unroll
    (09) exprtk_disable_rtl_io_file
    (10) exprtk_disable_rtl_vecops
+   (11) exprtk_disable_caseinsensitivity
 
 
-(1) exprtk_enable_debugging
+(01) exprtk_enable_debugging
 This define will enable printing of debug information to stdout during
 the compilation process.
 
-(2) exprtk_disable_comments
+(02) exprtk_disable_comments
 This define will disable the ability for expressions to have comments.
 Expressions that have comments when parsed with a build that has  this
 option, will result in a compilation failure.
 
-(3) exprtk_disable_break_continue
+(03) exprtk_disable_break_continue
 This  define  will  disable  the  loop-wise  'break'  and   'continue'
 capabilities. Any expression that contains those keywords will  result
 in a compilation failure.
 
-(4) exprtk_disable_sc_andor
+(04) exprtk_disable_sc_andor
 This define  will disable  the short-circuit  '&' (and)  and '|'  (or)
 operators
 
-(5) exprtk_disable_return_statement
+(05) exprtk_disable_return_statement
 This define will disable use of return statements within expressions.
 
-(6) exprtk_disable_enhanced_features
+(06) exprtk_disable_enhanced_features
 This  define  will  disable all  enhanced  features  such as  strength
 reduction and special  function optimisations and  expression specific
 type instantiations.  This feature  will reduce  compilation times and
 binary sizes but will  also result in massive  performance degradation
 of expression evaluations.
 
-(7) exprtk_disable_string_capabilities
+(07) exprtk_disable_string_capabilities
 This  define  will  disable all  string  processing  capabilities. Any
 expression that contains a string or string related syntax will result
 in a compilation failure.
 
-(8) exprtk_disable_superscalar_unroll
+(08) exprtk_disable_superscalar_unroll
 This define will set  the loop unroll batch  size to 4 operations  per
 loop  instead of  the default  8 operations.  This define  is used  in
 operations that  involve vectors  and aggregations  over vectors. When
@@ -4462,7 +4479,7 @@ targeting  non-superscalar  architectures, it  may  be recommended  to
 build using this particular option if efficiency of evaluations is  of
 concern.
 
-(9) exprtk_disable_rtl_io_file
+(09) exprtk_disable_rtl_io_file
 This  define will  disable  the  file I/O  RTL package  features. When
 present, any  attempts to register  the file I/O package with  a given
 symbol table will fail causing a compilation error.
@@ -4472,6 +4489,11 @@ This define will  disable the extended  vector operations RTL  package
 features. When present, any attempts to register the vector operations
 package with  a given  symbol table  will fail  causing a  compilation
 error.
+
+(11) exprtk_disable_caseinsensitivity
+This define  will disable  case-insensitivity when  matching variables
+and  functions. Furthermore  all reserved  and keywords  will only  be
+acknowledged when in all lower-case.
 
      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
