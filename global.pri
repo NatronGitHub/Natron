@@ -139,6 +139,11 @@ unix:LIBS += $$QMAKE_LIBS_DYNLOAD
     contains(GCCVer,4\\.7.*) {
       QMAKE_CXXFLAGS += -Wno-c++11-extensions
     }
+    contains(GCCVer,[6-9]\\.[0-9]+.*) {
+      # GCC 6 and later are C++14 by default, but Qt 4 is C++98
+      # see https://github.com/MrKepzie/Natron/issues/1659
+      lessThan(QT_MAJOR_VERSION, 5): QMAKE_CXXFLAGS += -std=gnu++98 -fpermissive
+    }
   }
   c++11 {
     # check for at least version 4.7
