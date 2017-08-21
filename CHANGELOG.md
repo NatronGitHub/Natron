@@ -7,8 +7,8 @@
 
 ## Version 2.3.3
 
-- Shadertoy: rework many presets so that they work better with natron: Blur/Bilateral, Blur/Bloom, Blur/Circular Blur, Blur/Fast Blur, Blur/Gaussian Blur, , Blur/Monte-Carlo Blur, Blur/Poisson Disc, Blur/Radial Blur, Effect/Image Cel Shade. Many blur effects can also be modulated per-pixel using the "Modulate" input
-- Shadertoy: new presets: Blur/Mipmap Blur, Effect/Sharpen
+- Shadertoy: rework many presets so that they work better with Natron, especially the effects in the Blur, Effect, and Source categories. Many blur effects can also be modulated per-pixel using the "Modulate" input to get Z-dependent blur.
+- Shadertoy: new presets: Blur/Mipmap Blur, Effect/Anaglyphic, Effect/Bloom Paint, Effect/Sawnbringer 4bit, Effect/Sharpen, Effect/CRT, Effect/Fisheye, Effect/Image Cel Shade, Effect/Kaleidoscope, Effect/Noisy Mirror, Effect/Quad Mirror, Effect/Q*Bert-ify, Effect/Stripes, Effect/Vignette, Source/Cloud, Source/Cloudy Sky, Source/Disks, Source/Fireball, Source/Flash, Source/Seascape, Source/Star Nest, Source/Voronoi
 - Shadertoy: add iChannelOffset extension.
 
 
