@@ -5,7 +5,6 @@
 # History
 
 
-
 ## Version 3.0
 
 - Natron now uses a YAML-based format for most files (projects, pyplugs, presets), which makes it easier to read and write by humans or other programs. This reduces file size roughly 10 times.
@@ -31,6 +30,13 @@ Natron multiple times on the same computer, the different processes will share t
 - Clone nodes are now merely just a copy of another node with all parameters sharing values. One may unlink some parameters, in which case a clone is no longer considered as a clone.
 - Python has callbacks to allow drawing and interacting in the viewer with custom drawings written in PyOpenGL. A PyPlug may use these callbacks to interact with parameters directly from the Viewer, much like the Transform node overlay handle.
 - For convenience, a PyPlug may specify a list of the nodes inside its node graph that should have their viewer overlay displayed when the PyPlug setting panel is opened. For instance, imagine that the PyPlug uses a Transform node internally, it is possible to display the Transform node handle on the viewer when the PyPlug settings panel is opened, even if the Transform node panel itself is closed
+
+
+## Version 2.3.3
+
+- Shadertoy: rework many presets so that they work better with Natron, especially the effects in the Blur, Effect, and Source categories. Many blur effects can also be modulated per-pixel using the "Modulate" input to get Z-dependent blur.
+- Shadertoy: new presets: Blur/Mipmap Blur, Effect/Anaglyphic, Effect/Bloom Paint, Effect/Sawnbringer 4bit, Effect/Sharpen, Effect/CRT, Effect/Fisheye, Effect/Image Cel Shade, Effect/Kaleidoscope, Effect/Noisy Mirror, Effect/Quad Mirror, Effect/Q*Bert-ify, Effect/Stripes, Effect/Vignette, Source/Cloud, Source/Cloudy Sky, Source/Disks, Source/Fireball, Source/Flash, Source/Seascape, Source/Star Nest, Source/Voronoi
+- Shadertoy: add iChannelOffset extension.
 
 
 ## Version 2.3.2
