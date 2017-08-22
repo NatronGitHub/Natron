@@ -433,7 +433,7 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
                             } // if (!useColorspaces || (!srcLut && !dstLut)) {
                             dstPixels[k] =  pix;
 #                 ifdef DEBUG
-                            assert(dstPixels[k] == dstPixels[k]); // check for NaN
+                            assert(srcPixels[k] != srcPixels[k] || dstPixels[k] == dstPixels[k]); // check for NaN
 #                 endif
                         } // for (int k = 0; k < k < 3 && k < dstNComps; ++k) {
 
