@@ -2,7 +2,15 @@
 cd `dirname $0`
 ports=/opt/local/var/macports/sources/rsync.macports.org/release/tarballs/ports
 for p in `find . -name Portfile`; do
-  if [ $ports/$p -nt $p ]; then
+  obsolete=no
+  if [ -f ${p}.orig ]; then
+    if ! diff -q $ports/$p ${p}.orig &>/dev/null; then
+      obsolete=yes
+    fi
+  elif [ $ports/$p -nt $p ]; then
+    obsolete=yes
+  fi
+  if [ "$obsolete" = "yes" ]; then
 #      ls -l $p $ports/$p |sed -e "s@$ports/@@"
       if cmp $p $ports/$p > /dev/null; then
 	  touch $p

@@ -1,6 +1,6 @@
 --- src/CMakeLists.txt.orig
 +++ src/CMakeLists.txt
-@@ -110,9 +110,10 @@
+@@ -124,9 +124,10 @@
      elseif (APPLE)
          # Add -fno-common to work around a bug in Apple's GCC
          target_compile_options(glfw PRIVATE "-fno-common")

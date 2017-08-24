@@ -55,10 +55,10 @@ if {${subport} eq ${name}} {
 
     # devel
 
-    version         20170814
-    set commit      4ca8c08f36d86ad9f04a1e3c68695691f5ea3499
-    checksums       rmd160 524fbb9c40d2d114bed1d6030f3bb556402270ee \
-                    sha256 6b461f04eba29168fe908a04457ad52062f424e425e55c5a501f63522637862e
+    version         20170823
+    set commit      fa664d9863c559f977c20f7b681ee141a1481e16
+    checksums       rmd160 509d90fdeeed659615fb3ac55738f19488bcc823 \
+                    sha256 226f3844d2ef90d513953d8722a43fc88fa57f11e8c6ffe01ff76a5636226315
 
     master_sites    https://gitlab.kitware.com/cmake/cmake/repository/archive.tar.bz2?ref=${commit}&
     distname        ${name}-${commit}
@@ -78,6 +78,10 @@ if {${subport} eq ${name}} {
         patch-Modules-noArchCheck.devel.diff \
         patch-CMakeFindFrameworks.cmake.devel.diff \
         patch-Source_CMakeVersionCompute.cmake.devel.diff
+
+    # require C++11 as of 2017-08-21
+    # https://gitlab.kitware.com/cmake/cmake/commit/c1f3eb9f2d628b2911aa17f65012fab0befc4b87
+    PortGroup cxx11 1.1
 
     livecheck.type  regex
     livecheck.regex /cmake/cmake/commit/(\[0-9a-g\]+)

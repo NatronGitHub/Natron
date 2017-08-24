@@ -225,6 +225,8 @@ subport curl-ca-bundle {
                                 (CA certs) which curl (when linked with OpenSSL) uses to \
                                 verify the authenticity of secure web and FTP servers.
 
+    depends_extract-append      bin:bzip2:bzip2
+
     depends_build               path:bin/perl:perl5
 
     set certdata_file           certdata.txt
