@@ -32,6 +32,7 @@
 
 #include <QtConcurrentRun>
 
+#include "Engine/AppManager.h"
 #include "Engine/FrameViewRequest.h"
 #include "Engine/TreeRender.h"
 #include "Engine/ThreadPool.h"
@@ -65,6 +66,29 @@ struct PerProviderRenders
 typedef boost::shared_ptr<PerProviderRenders> PerProviderRendersPtr;
 
 typedef std::map<TreeRenderQueueProviderConstWPtr, PerProviderRendersPtr> PerProviderRendersMap;
+
+class LaunchRenderRunnable : public QRunnable
+{
+    TreeRenderPtr render;
+    TreeRenderQueueManager::Implementation* imp;
+
+public:
+
+    LaunchRenderRunnable(const TreeRenderPtr& render, TreeRenderQueueManager::Implementation* imp)
+    : render(render)
+    , imp(imp)
+    {
+
+    }
+
+    virtual ~LaunchRenderRunnable() {
+
+    }
+
+private:
+
+    virtual void run() OVERRIDE FINAL;
+};
 
 struct TreeRenderQueueManager::Implementation
 {
@@ -243,50 +267,57 @@ TreeRenderQueueManager::launchSubRender(const EffectInstancePtr& treeRoot,
     // The sub task is launched from a thread pool thread, so temporarily uncount it as an active task.
     // If we do not do so, if all maxThreadsCount are busy in this function, all threads would deadlock in the wait
     // call below.
-    {
-        QMutexLocker k(&_imp->executionQueueMutex);
-        --_imp->nActiveTasks;
-        _imp->executionQueueNotEmptyCond.wakeOne();
-    }
+    releaseTask();
 
     _imp->waitForTreeRenderExecutionFinished(execData);
 
-    {
-        QMutexLocker k(&_imp->executionQueueMutex);
-        ++_imp->nActiveTasks;
-    }
+    reserveTask();
 
 
     return execData;
 } // launchSubRender
 
-
-// A helper RAII style class to release the thread from the thread-pool and reserve it back upon destruction
-// if the current thread is a thread-pool thread.
-class ReleaseTPThread_RAII
+void
+TreeRenderQueueManager::releaseTask()
 {
-    bool releasedThread;
+    if (isRunningInThreadPoolThread()) {
+        QThreadPool::globalInstance()->releaseThread();
 
-public:
-
-    ReleaseTPThread_RAII()
-    : releasedThread(false)
-    {
-        // We may potentially wait for a long time so release the thread if we are in a thread pool thread.
-        if (isRunningInThreadPoolThread()) {
-            QThreadPool::globalInstance()->releaseThread();
-            releasedThread = true;
-        }
-
-    }
-
-    ~ReleaseTPThread_RAII()
-    {
-        if (releasedThread) {
-            QThreadPool::globalInstance()->reserveThread();
+        {
+            QMutexLocker k(&_imp->executionQueueMutex);
+            --_imp->nActiveTasks;
+            _imp->executionQueueNotEmptyCond.wakeOne();
         }
     }
-};
+}
+
+
+void
+TreeRenderQueueManager::reserveTask()
+{
+    if (isRunningInThreadPoolThread()) {
+        QThreadPool::globalInstance()->reserveThread();
+
+        {
+            QMutexLocker k(&_imp->executionQueueMutex);
+            ++_imp->nActiveTasks;
+        }
+    }
+}
+
+
+ReleaseTPThread_RAII::ReleaseTPThread_RAII()
+: manager(appPTR->getTasksQueueManager())
+{
+    manager->releaseTask();
+
+}
+
+ReleaseTPThread_RAII::~ReleaseTPThread_RAII()
+{
+    manager->reserveTask();
+}
+
 
 bool
 TreeRenderQueueManager::hasTreeRendersLaunched(const TreeRenderQueueProviderConstPtr& provider) const
@@ -669,16 +700,18 @@ TreeRenderQueueManager::Implementation::launchMoreTasks(int nTasksHint)
     bool allowConcurrentRenders = true;
 
     // Copy the execution queue so we do not hold the mutex
-    std::list<TreeRenderExecutionDataPtr> queue;
+    std::list<TreeRenderExecutionDataWPtr> queue;
     {
         QMutexLocker k(&executionQueueMutex);
-        queue = executionQueue;
+        for (std::list<TreeRenderExecutionDataPtr>::iterator it = executionQueue.begin(); it != executionQueue.end(); ++it) {
+            queue.push_back(*it);
+        }
     }
 
     // Execute available tasks on the first requested render
     TreeRenderExecutionDataPtr firstRenderExecution;
     if (!queue.empty()) {
-        firstRenderExecution = queue.front();
+        firstRenderExecution = queue.front().lock();
     }
     TreeRenderPtr firstRenderTree;
     if (firstRenderExecution) {
@@ -716,21 +749,22 @@ TreeRenderQueueManager::Implementation::launchMoreTasks(int nTasksHint)
 
     // If we've got remaining threads, cycle through other execution trees in the queue to launch other tasks
     // until we reach the max threads count
-    std::list<TreeRenderExecutionDataPtr>::iterator it = queue.begin();
+    std::list<TreeRenderExecutionDataWPtr>::iterator it = queue.begin();
     ++it; // skip the first execution
     for (; it != queue.end(); ++it) {
-        if (!(*it)) {
+        TreeRenderExecutionDataPtr renderExecution = it->lock();
+        if (!renderExecution) {
             // Might happen when quitThread() is called
             continue;
         }
-        if (!allowConcurrentRenders && (*it)->getTreeRender() != firstRenderTree) {
+        if (!allowConcurrentRenders && renderExecution->getTreeRender() != firstRenderTree) {
             // This tree render may not allow concurrent executions.
             continue;
         }
 
 
         // Launch tasks
-        int nLaunched = (*it)->executeAvailableTasks(nTasksToLaunch);
+        int nLaunched = renderExecution->executeAvailableTasks(nTasksToLaunch);
         nTasksLaunched += nLaunched;
         nTasksToLaunch -= nLaunched;
 
@@ -800,16 +834,21 @@ TreeRenderQueueManager::Implementation::launchMoreTasks(int nTasksHint)
 } // launchMoreTasks
 
 void
-TreeRenderQueueManager::Implementation::launchTreeRender(const TreeRenderPtr& render)
+LaunchRenderRunnable::run()
 {
     TreeRenderExecutionDataPtr execData = render->createMainExecutionData();
     if (isFailureRetCode(execData->getStatus())) {
         render->setResults(FrameViewRequestPtr(), execData);
-        onTaskRenderFinished(execData);
+        imp->onTaskRenderFinished(execData);
     } else {
-        appendTreeRenderExecution(execData);
+        imp->appendTreeRenderExecution(execData);
     }
+}
 
+void
+TreeRenderQueueManager::Implementation::launchTreeRender(const TreeRenderPtr& render)
+{
+    QThreadPool::globalInstance()->start(new LaunchRenderRunnable(render, this));
 } // launchTreeRender
 
 
@@ -903,8 +942,8 @@ TreeRenderQueueManager::run()
             QMutexLocker k2(&_imp->nonStartedRendersQueueMutex);
             nonStartedRendersQueueSize = _imp->nonStartedRendersQueue.size();
         }
-        while ((_imp->executionQueue.empty() && nonStartedRendersQueueSize == 0) ||
-               (((int)_imp->executionQueue.size() == currentNExecutions) && nTasksLaunched > 0 &&  _imp->nActiveTasks != 0 && _imp->nActiveTasks == currentNActiveTasks)) {
+        while ((_imp->executionQueue.empty() && nonStartedRendersQueueSize == 0)/* ||
+               (((int)_imp->executionQueue.size() == currentNExecutions) && nTasksLaunched > 0 &&  _imp->nActiveTasks != 0 && _imp->nActiveTasks == currentNActiveTasks)*/) {
             _imp->executionQueueNotEmptyCond.wait(&_imp->executionQueueMutex);
 
             QMutexLocker k2(&_imp->nonStartedRendersQueueMutex);

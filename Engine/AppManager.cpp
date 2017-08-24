@@ -1665,6 +1665,7 @@ AppManager::loadBuiltinNodePlugins(IOPluginsMap* /*readersMap*/,
     registerPlugin(WriteNode::createPlugin());
     registerPlugin(ViewerNode::createPlugin());
     registerPlugin(ViewerInstance::createPlugin());
+    registerPlugin(LayeredCompNode::createPlugin());
 
 
 }
@@ -2054,6 +2055,8 @@ AppManager::loadNodesPresets()
                 p->setProperty<std::string>(kNatronPluginPropPyPlugExtScriptFile, pyPlugExtCallbacks);
                 p->setProperty<unsigned int>(kNatronPluginPropVersion, (unsigned int)pyPlugVersionMajor, 0);
                 p->setProperty<unsigned int>(kNatronPluginPropVersion, (unsigned int)pyPlugVersionMinor, 1);
+                p->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat, 0);
+                p->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>("1111"));
                 registerPlugin(p);
                 
                 
@@ -2247,6 +2250,9 @@ AppManager::loadPythonGroups()
         p->setProperty<std::string>(kNatronPluginPropIconFilePath, iconFilePath);
         p->setProperty<bool>(kNatronPluginPropPyPlugIsPythonScript, true);
         p->setProperty<std::string>(kNatronPluginPropResourcesPath, modulePath.toStdString());
+
+        p->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat, 0);
+        p->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>("1111"));
         //p->setProperty<bool>(kNatronPluginPropDescriptionIsMarkdown, false);
         //p->setProperty<int>(kNatronPluginPropShortcut, obj.presetSymbol, 0);
         //p->setProperty<int>(kNatronPluginPropShortcut, obj.presetModifiers, 1);
@@ -2260,9 +2266,13 @@ AppManager::registerPlugin(const PluginPtr& plugin)
 {
 
     std::string pluginID = plugin->getPluginID();
-    if ( ReadNode::isBundledReader( pluginID ) ||
-         WriteNode::isBundledWriter( pluginID ) ) {
+    const bool isReader = ReadNode::isBundledReader( pluginID );
+    const bool isWriter = WriteNode::isBundledWriter( pluginID );
+    if (isReader || isWriter) {
         plugin->setProperty<bool>(kNatronPluginPropIsInternalOnly, true);
+    }
+    if (isReader) {
+        plugin->getEffectDescriptor()->setProperty<bool>(kEffectPropSupportsRenderScale, false);
     }
 
     PluginsMap::iterator found = _imp->_plugins.find(pluginID);

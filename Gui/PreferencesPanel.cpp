@@ -43,6 +43,7 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Engine/EffectDescription.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KeybindShortcut.h"
 #include "Engine/Settings.h"
@@ -545,7 +546,7 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
                 checkbox->setChecked(plugin->isOpenGLEnabled());
                 QObject::connect( checkbox, SIGNAL(clicked(bool)), this, SLOT(onGLEnabledCheckBoxChecked(bool)) );
                 _imp->pluginsView->setItemWidget(node.item, COL_GL_ENABLED, checkbox);
-                if ((PluginOpenGLRenderSupport)plugin->getPropertyUnsafe<int>(kNatronPluginPropOpenGLSupport) == ePluginOpenGLRenderSupportNone) {
+                if (plugin->getEffectDescriptor()->getPropertyUnsafe<PluginOpenGLRenderSupport>(kEffectPropSupportsOpenGLRendering) == ePluginOpenGLRenderSupportNone) {
                     checkbox->setChecked(false);
                     checkbox->setReadOnly(true);
                 }

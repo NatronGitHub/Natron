@@ -193,9 +193,17 @@ RotoPaint::createPlugin()
 
     QString desc = tr("RotoPaint is a vector based free-hand drawing node that helps for tasks such as rotoscoping, matting, etc...");
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
-    ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
+    EffectDescriptionPtr effectDesc = ret->getEffectDescriptor();
+    effectDesc->setProperty<RenderSafetyEnum>(kEffectPropRenderThreadSafety, eRenderSafetyFullySafe);
+    effectDesc->setProperty<bool>(kEffectPropSupportsTiles, true);
+    ret->setProperty<bool>(kNatronPluginPropHostChannelSelector, false);
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropHostChannelSelectorValue, std::bitset<4>("1111"));
     ret->setProperty<std::string>(kNatronPluginPropIconFilePath, "Images/GroupingIcons/Set2/paint_grouping_2.png");
     ret->setProperty<int>(kNatronPluginPropShortcut, (int)Key_P);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat, 0);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthByte, 1);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthShort, 2);
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>("1111"));
     addPluginShortcuts(ret);
     return ret;
 }
@@ -209,9 +217,17 @@ RotoNode::createPlugin()
 
     QString desc = RotoPaint::tr("Create masks and shapes.");
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
-    ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
+    EffectDescriptionPtr effectDesc = ret->getEffectDescriptor();
+    effectDesc->setProperty<RenderSafetyEnum>(kEffectPropRenderThreadSafety, eRenderSafetyFullySafe);
+    effectDesc->setProperty<bool>(kEffectPropSupportsTiles, true);
+    ret->setProperty<bool>(kNatronPluginPropHostChannelSelector, false);
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropHostChannelSelectorValue, std::bitset<4>("0001"));
     ret->setProperty<std::string>(kNatronPluginPropIconFilePath, "Images/rotoNodeIcon.png");
     ret->setProperty<int>(kNatronPluginPropShortcut, (int)Key_O);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat, 0);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthByte, 1);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthShort, 2);
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>("1111"));
     addPluginShortcuts(ret);
     return ret;
 }
@@ -229,8 +245,16 @@ LayeredCompNode::createPlugin()
                       "and optionnally the node name that should be used as a mask. These nodes "
                       "must be connected to the Source inputs and Mask inputs of the LayeredComp node itself.");
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
-    ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
+    EffectDescriptionPtr effectDesc = ret->getEffectDescriptor();
+    effectDesc->setProperty<RenderSafetyEnum>(kEffectPropRenderThreadSafety, eRenderSafetyFullySafe);
+    effectDesc->setProperty<bool>(kEffectPropSupportsTiles, true);
+    ret->setProperty<bool>(kNatronPluginPropHostChannelSelector, false);
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropHostChannelSelectorValue, std::bitset<4>("1111"));
     ret->setProperty<std::string>(kNatronPluginPropIconFilePath, std::string("Images/") + std::string(PLUGIN_GROUP_MERGE_ICON_PATH));
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat, 0);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthByte, 1);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthShort, 2);
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>("1111"));
     return ret;
 }
 
@@ -279,52 +303,6 @@ RotoPaint::getRotoPaintNodeType() const
     return _imp->nodeType;
 }
 
-bool
-RotoPaint::isHostMaskingEnabled() const
-{
-    return _imp->nodeType != eRotoPaintTypeComp;
-}
-
-bool
-RotoPaint::isHostMixingEnabled() const
-{
-    return _imp->nodeType != eRotoPaintTypeComp;
-}
-
-bool
-RotoPaint::getCreateChannelSelectorKnob() const
-{
-    return false;
-}
-
-bool
-RotoPaint::isHostChannelSelectorSupported(bool* defaultR,
-                                          bool* defaultG,
-                                          bool* defaultB,
-                                          bool* defaultA) const
-{
-    //Use our own selectors, we don't want Natron to copy back channels
-    *defaultR = true;
-    *defaultG = true;
-    *defaultB = true;
-    *defaultA = true;
-
-    return false;
-}
-
-bool
-RotoNode::isHostChannelSelectorSupported(bool* defaultR,
-                                         bool* defaultG,
-                                         bool* defaultB,
-                                         bool* defaultA) const
-{
-    *defaultR = false;
-    *defaultG = false;
-    *defaultB = false;
-    *defaultA = true;
-
-    return false;
-}
 
 NodePtr
 RotoPaint::getPremultNode() const
@@ -2943,16 +2921,17 @@ RotoPaint::initializeKnobs()
 
     std::string channelNames[4] = {"doRed", "doGreen", "doBlue", "doAlpha"};
     std::string channelLabels[4] = {"R", "G", "B", "A"};
-    bool defaultValues[4];
-    bool channelSelectorSupported = isHostChannelSelectorSupported(&defaultValues[0], &defaultValues[1], &defaultValues[2], &defaultValues[3]);
-    Q_UNUSED(channelSelectorSupported);
+
+   // bool wantsChannelSelector = getNode()->getPlugin()->getPropertyUnsafe<bool>(kNatronPluginPropHostChannelSelector);
+    std::bitset<4> pluginDefaultPref = getNode()->getPlugin()->getPropertyUnsafe<std::bitset<4> >(kNatronPluginPropHostChannelSelectorValue);
+
 
     for (int i = 0; i < 4; ++i) {
         KnobBoolPtr enabled =  createKnob<KnobBool>(channelNames[i]);
         enabled->setLabel(channelLabels[i]);
         enabled->setAnimationEnabled(false);
         enabled->setAddNewLine(i == 3);
-        enabled->setDefaultValue(defaultValues[i]);
+        enabled->setDefaultValue(pluginDefaultPref[pluginDefaultPref.size() - 1 - i]);
         enabled->setHintToolTip( tr("Enable drawing onto this channel") );
         if (_imp->nodeType == eRotoPaintTypeComp) {
             // For comp node, insert checkboxes on top
@@ -3698,7 +3677,7 @@ RotoPaint::onBreakMultiStrokeTriggered()
 }
 
 void
-RotoPaint::onEnableOpenGLKnobValueChanged(bool /*activated*/)
+RotoPaint::onPropertiesChanged(const EffectDescription& /*description*/)
 {
     _imp->ui->onBreakMultiStrokeTriggered();
 }
@@ -3930,7 +3909,7 @@ RotoPaintPrivate::getOrCreateGlobalMergeNode(int blendingOperator, int *availabl
             const std::vector<NodeWPtr > &inputs = (*it)->getInputs();
 
             // Merge node goes like this: B, A, Mask, A2, A3, A4 ...
-            assert( inputs.size() >= 3 && (*it)->getEffectInstance()->isInputMask(2) );
+            assert( inputs.size() >= 3 && (*it)->isInputMask(2) );
             if ( !inputs[1].lock() ) {
                 *availableInputIndex = 1;
                 if (blendingOperator != -1) {
@@ -4005,9 +3984,11 @@ RotoPaintPrivate::getOrCreateGlobalMergeNode(int blendingOperator, int *availabl
         mergeRGBA[2] = toKnobBool(mergeNode->getKnobByName(kMergeParamOutputChannelsB));
         mergeRGBA[3] = toKnobBool(mergeNode->getKnobByName(kMergeParamOutputChannelsA));
         for (int i = 0; i < 4; ++i) {
-            bool ok = mergeRGBA[i]->linkTo(rotoPaintRGBA[i]);
-            assert(ok);
-            (void)ok;
+            if (rotoPaintRGBA[i] && mergeRGBA[i]) {
+                bool ok = mergeRGBA[i]->linkTo(rotoPaintRGBA[i]);
+                assert(ok);
+                (void)ok;
+            }
         }
 
         // Link mix
@@ -4087,7 +4068,7 @@ RotoPaint::refreshRotoPaintTree()
         // to the global merge nodes.
         for (NodesList::iterator it = mergeNodes.begin(); it != mergeNodes.end(); ++it) {
             (*it)->beginInputEdition();
-            int maxInputs = (*it)->getMaxInputCount();
+            int maxInputs = (*it)->getNInputs();
             for (int i = 0; i < maxInputs; ++i) {
                 (*it)->disconnectInput(i);
             }

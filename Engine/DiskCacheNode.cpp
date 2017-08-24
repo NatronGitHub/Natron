@@ -31,6 +31,7 @@
 #include "Engine/Image.h"
 #include "Engine/AppInstance.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/InputDescription.h"
 #include "Engine/Project.h"
 #include "Engine/RenderQueue.h"
 #include "Engine/TimeLine.h"
@@ -82,8 +83,21 @@ DiskCacheNode::createPlugin()
                        "a specific frame range at scale 100% much like a writer node would do.\n"
                        "WARNING: The DiskCache node must be part of the tree when you want to read cached data from it.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) );
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
-    ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
+    EffectDescriptionPtr effectDesc = ret->getEffectDescriptor();
+    effectDesc->setProperty<RenderSafetyEnum>(kEffectPropRenderThreadSafety, eRenderSafetyFullySafe);
+    effectDesc->setProperty<bool>(kEffectPropSupportsTiles, false);
+    effectDesc->setProperty<bool>(kEffectPropSupportsMultiResolution, true);
     ret->setProperty<std::string>(kNatronPluginPropIconFilePath,  "Images/diskcache_icon.png");
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat);
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>("1111"));
+
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat, 0);
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>("1111"));
+    {
+        InputDescriptionPtr input = InputDescription::create("Source", "", "", false, false, std::bitset<4>("1111"));
+        ret->addInputDescription(input);
+    }
+
     return ret;
 }
 
@@ -105,19 +119,6 @@ DiskCacheNode::~DiskCacheNode()
 {
 }
 
-void
-DiskCacheNode::addAcceptedComponents(int /*inputNb*/,
-                                     std::bitset<4>* supported)
-{
-    (*supported)[0] = (*supported)[1] = (*supported)[2] = (*supported)[3] = 1;
-
-}
-
-void
-DiskCacheNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
-{
-    depths->push_back(eImageBitDepthFloat);
-}
 
 bool
 DiskCacheNode::shouldCacheOutput(bool /*isFrameVaryingOrAnimated*/,
@@ -294,16 +295,6 @@ DiskCacheNode::render(const RenderActionArgs& args)
     return eActionStatusOK;
 
 } // render
-
-
-bool
-DiskCacheNode::isHostChannelSelectorSupported(bool* /*defaultR*/,
-                                              bool* /*defaultG*/,
-                                              bool* /*defaultB*/,
-                                              bool* /*defaultA*/) const
-{
-    return false;
-}
 
 NATRON_NAMESPACE_EXIT
 NATRON_NAMESPACE_USING

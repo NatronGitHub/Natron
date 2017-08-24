@@ -231,7 +231,8 @@ public:
     static const std::string& natronsPremultToOfxPremult(ImagePremultiplicationEnum premult);
     static ImageFieldingOrderEnum ofxFieldingToNatronFielding(const std::string& fielding);
     static const std::string& natronsFieldingToOfxFielding(ImageFieldingOrderEnum fielding);
-
+    static ImageFieldExtractionEnum ofxFieldExtractionToNatronFieldExtraction(const std::string& field);
+    static const std::string& natronFieldExtractionToOfxFieldExtraction(ImageFieldExtractionEnum field);
 
     //These are per-clip thread-local data
     struct ClipTLSData

@@ -68,38 +68,6 @@ public:
 
     virtual ~DiskCacheNode();
 
-
-    virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return 1;
-    }
-
-
-    virtual std::string getInputLabel (int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return "Source";
-    }
-
-    virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return false;
-    }
-
-    virtual void addAcceptedComponents(int inputNb, std::bitset<4>* comps) OVERRIDE FINAL;
-
-    virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
-
-
-    virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return false;
-    }
-
-    virtual bool supportsMultiResolution() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return true;
-    }
-
     virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;
@@ -107,9 +75,7 @@ public:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
     virtual ActionRetCodeEnum getFrameRange(double *first, double *last) OVERRIDE FINAL;
-    virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
 
-    virtual bool isHostChannelSelectorSupported(bool* defaultR, bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
 
 private:
 

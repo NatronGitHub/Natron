@@ -71,9 +71,6 @@ public:
         return EffectInstancePtr( new StubNode(mainInstance, key) );
     }
 
-    virtual int getMaxInputCount() const OVERRIDE WARN_UNUSED_RETURN;
-
-    virtual std::string getInputLabel(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     void refreshInputsFromSerialization();
     

@@ -344,7 +344,7 @@ Effect::getMaxInputCount() const
         return 0;
     }
 
-    return n->getMaxInputCount();
+    return n->getNInputs();
 }
 
 bool
@@ -428,7 +428,7 @@ Effect::getInput(const QString& inputLabel) const
         PythonSetNullError();
         return 0;
     }
-    int maxInputs = effect->getMaxInputCount();
+    int maxInputs = effect->getNInputs();
     for (int i = 0; i < maxInputs; ++i) {
         if (QString::fromUtf8(effect->getNode()->getInputLabel(i).c_str()) == inputLabel) {
 

@@ -383,7 +383,7 @@ ConnectCommand::doConnect(const NodeGuiPtr &oldSrc,
 
     if (isViewer) {
         ///if the node is an inspector  disconnect any current connection between the inspector and the _newSrc
-        for (int i = 0; i < internalDst->getMaxInputCount(); ++i) {
+        for (int i = 0; i < internalDst->getNInputs(); ++i) {
             if ( (i != inputNb) && (internalDst->getInput(i) == internalNewSrc) ) {
                 internalDst->disconnectInput(i);
             }
@@ -721,7 +721,7 @@ Tree::buildTreeInternal(const NodesGuiList& selectedNodes,
         }
 
         if (source) {
-            bool isMask = internalNode->getEffectInstance()->isInputMask(i);
+            bool isMask = internalNode->isInputMask(i);
             if (!firstNonMaskInput && !isMask) {
                 firstNonMaskInput = source;
                 for (std::list<TreeNode>::iterator it2 = nodes.begin(); it2 != nodes.end(); ++it2) {

@@ -127,24 +127,6 @@ public:
 
     static const Color::Lut* lutFromColorspace(ViewerColorSpaceEnum cs) WARN_UNUSED_RETURN;
 
-    virtual bool isMultiPlanar() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
-    virtual bool supportsTiles() const OVERRIDE FINAL;
-
-    virtual EffectInstance::PassThroughEnum isPassThroughForNonRenderedPlanes() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
-    virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
-    virtual bool isInputOptional(int /*n*/) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
-    virtual std::string getInputLabel(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
-    virtual void addAcceptedComponents(int inputNb, std::bitset<4>* comps) OVERRIDE FINAL;
-
-    virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
-
-    virtual bool supportsMultipleClipDepths() const OVERRIDE FINAL;
-
     NodePtr getInputRecursive(int inputIndex) const;
 
     void getChannelOptions(TimeValue time, ImagePlaneDesc* rgbLayer, ImagePlaneDesc* alphaLayer, int* alphaChannelIndex, ImagePlaneDesc* displayChannels) const;
@@ -189,6 +171,11 @@ private:
     virtual ActionRetCodeEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
 
     virtual void appendToHash(const ComputeHashArgs& args, Hash64* hash) OVERRIDE;
+
+    virtual bool knobChanged(const KnobIPtr& knob,
+                             ValueChangedReasonEnum reason,
+                             ViewSetSpec view,
+                             TimeValue time) OVERRIDE FINAL;
 
 
 

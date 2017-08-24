@@ -148,14 +148,7 @@ public:
     virtual bool isVideoWriter() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isGeneratorAndFilter() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual PluginOpenGLRenderSupport getOpenGLSupport() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onScriptNameChanged(const std::string& fullyQualifiedName) OVERRIDE FINAL;
-    virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual std::string getInputLabel (int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual std::string getInputHint(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isInputOptional(int inputNb) const OVERRIDE WARN_UNUSED_RETURN;
-    virtual bool isInputMask(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isAllProducedPlanesAtOncePreferred() const OVERRIDE FINAL;
     virtual ActionRetCodeEnum getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
 
     /// calculate the default rod for this effect instance
@@ -188,28 +181,7 @@ public:
                                          int* inputNb,
                                          ImagePlaneDesc* identityPlane) OVERRIDE;
     virtual void purgeCaches() OVERRIDE;
-    
-    /**
-     * @brief Does this effect supports tiling ?
-     * http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsTiles
-     * If a clip or plugin does not support tiled images, then the host should supply
-     * full RoD images to the effect whenever it fetches one.
-     **/
-    virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isDraftRenderSupported() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool doesTemporalClipAccess() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    /**
-     * @brief Does this effect supports multiresolution ?
-     * http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsMultiResolution
-     * Multiple resolution images mean...
-     * input and output images can be of any size
-     * input and output images can be offset from the origin
-     **/
-    virtual bool supportsMultiResolution() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool supportsMultipleClipPARs() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool supportsMultipleClipDepths() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isHostChannelSelectorSupported(bool* defaultR, bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onInputChanged(int inputNo) OVERRIDE FINAL;
     virtual ActionRetCodeEnum beginSequenceRender(double first,
                                            double last,
@@ -233,17 +205,9 @@ public:
                                          ViewIdx view,
                                          RenderBackendTypeEnum backendType,
                                          const EffectOpenGLContextDataPtr& glContextData) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void addAcceptedComponents(int inputNb, std::bitset<4>* comps) OVERRIDE FINAL;
-    virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
-    virtual SequentialPreferenceEnum getSequentialPreference() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual ActionRetCodeEnum getTimeInvariantMetadata(NodeMetadata& metadata) OVERRIDE FINAL;
     virtual void onMetadataChanged(const NodeMetadata& metadata) OVERRIDE FINAL;
     virtual ActionRetCodeEnum getLayersProducedAndNeeded(TimeValue time, ViewIdx view, std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded, std::list<ImagePlaneDesc>* layersProduced, TimeValue* passThroughTime, ViewIdx* passThroughView, int* passThroughInputNb) OVERRIDE;
-
-    virtual bool isMultiPlanar() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual EffectInstance::PassThroughEnum isPassThroughForNonRenderedPlanes() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isViewAware() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual EffectInstance::ViewInvarianceLevel isViewInvariant() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool supportsConcurrentOpenGLRenders() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual ActionRetCodeEnum attachOpenGLContext(TimeValue time, ViewIdx view, const RenderScale& scale, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual ActionRetCodeEnum dettachOpenGLContext(const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data) OVERRIDE FINAL;
@@ -263,19 +227,13 @@ public:
 
 public:
 
-    virtual bool getCanDistort() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual bool getInputCanReceiveTransform(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool getInputCanReceiveDistortion(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual ActionRetCodeEnum getInverseDistortion(TimeValue time,
                                             const RenderScale & renderScale,
                                             bool draftRender,
                                             ViewIdx view,
                                             DistortionFunction2D* distortion) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isHostMaskingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isHostMixingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void onEnableOpenGLKnobValueChanged(bool activated) OVERRIDE FINAL;
+    virtual void onPropertiesChanged(const EffectDescription& description) OVERRIDE FINAL;
 
     /********OVERRIDEN FROM EFFECT INSTANCE: END*************/
     OfxClipInstance* getClipCorrespondingToInput(int inputNo) const;

@@ -26,6 +26,7 @@
 #include "RemovePlaneNode.h"
 
 #include "Engine/KnobTypes.h"
+#include "Engine/InputDescription.h"
 
 
 static const char* removeParamName[4] = {"removePlane1", "removePlane2", "removePlane3", "removePlane4"};
@@ -59,7 +60,19 @@ RemovePlaneNode::createPlugin()
 
     QString desc = tr("This node acts as a pass-through for the input image, but allows to remove existing plane(s) from the input");
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
-    ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
+    EffectDescriptionPtr effectDesc = ret->getEffectDescriptor();
+    effectDesc->setProperty<RenderSafetyEnum>(kEffectPropRenderThreadSafety, eRenderSafetyFullySafe);
+    effectDesc->setProperty<bool>(kEffectPropSupportsTiles, true);
+    ret->setProperty<bool>(kNatronPluginPropMultiPlanar, true);
+    ret->setProperty<PlanePassThroughEnum>(kNatronPluginPropPlanesPassThrough, ePassThroughBlockNonRenderedPlanes);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat, 0);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthByte, 1);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthShort, 2);
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>("1111"));
+    {
+        InputDescriptionPtr input = InputDescription::create("Source", "", "", false, false, std::bitset<4>("1111"));
+        ret->addInputDescription(input);
+    }
     return ret;
 }
 
@@ -90,17 +103,6 @@ RemovePlaneNode::fetchRenderCloneKnobs()
     }
 }
 
-std::string
-RemovePlaneNode::getInputLabel(int /*inputNb*/) const
-{
-    return tr("Source").toStdString();
-}
-
-EffectInstance::PassThroughEnum
-RemovePlaneNode::isPassThroughForNonRenderedPlanes() const
-{
-    return ePassThroughBlockNonRenderedPlanes;
-}
 
 void
 RemovePlaneNode::initializeKnobs()

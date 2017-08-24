@@ -36,6 +36,8 @@
 #include "Engine/OSGLFunctions.h"
 #include "Engine/PluginMemory.h"
 #include "Engine/Timer.h"
+#include "Engine/Plugin.h"
+#include "Engine/Project.h"
 #include "Engine/TreeRender.h"
 #include "Engine/RenderStats.h"
 #include "Engine/RotoStrokeItem.h"
@@ -54,6 +56,7 @@ EffectInstance::Implementation::Implementation(EffectInstance* publicInterface)
 , renderKnobs()
 , pluginMemoryChunks()
 {
+
 }
 
 EffectInstance::Implementation::Implementation(EffectInstance* publicInterface, const Implementation& other)
@@ -64,10 +67,7 @@ EffectInstance::Implementation::Implementation(EffectInstance* publicInterface, 
 , renderKnobs()
 , pluginMemoryChunks()
 {
-    {
-        QMutexLocker k(&common->pluginsPropMutex);
-        renderData->props = common->props;
-    }
+    
 }
 
 EffectInstance::Implementation::~Implementation()
@@ -146,7 +146,7 @@ EffectInstance::Implementation::resolveRenderBackend(const TreeRenderExecutionDa
 
     bool canDoOpenGLRendering;
 
-    PluginOpenGLRenderSupport openGLSupport = _publicInterface->getCurrentOpenGLRenderSupport();
+    PluginOpenGLRenderSupport openGLSupport = _publicInterface->getOpenGLRenderSupport();
     canDoOpenGLRendering = (openGLSupport == ePluginOpenGLRenderSupportNeeded || openGLSupport == ePluginOpenGLRenderSupportYes);
 
 
@@ -154,7 +154,7 @@ EffectInstance::Implementation::resolveRenderBackend(const TreeRenderExecutionDa
     if (canDoOpenGLRendering && glGpuContext) {
 
         // Enable GPU render if the plug-in cannot render another way or if all conditions are met
-        if (openGLSupport == ePluginOpenGLRenderSupportNeeded && !_publicInterface->getNode()->getPlugin()->isOpenGLEnabled()) {
+        if (openGLSupport == ePluginOpenGLRenderSupportNeeded && (!_publicInterface->getApp()->getProject()->isOpenGLRenderActivated() || !_publicInterface->getNode()->getPlugin()->isOpenGLEnabled())) {
 
             QString message = tr("OpenGL render is required for  %1 but was disabled in the Preferences for this plug-in, please enable it and restart %2").arg(QString::fromUtf8(_publicInterface->getNode()->getLabel().c_str())).arg(QString::fromUtf8(NATRON_APPLICATION_NAME));
             _publicInterface->getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorGenericRenderMessage, message.toStdString());
@@ -647,11 +647,11 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
     const std::map<int, std::list<ImagePlaneDesc> > &inputPlanesNeeded = args.requestData->getComponentsResults()->getNeededInputPlanes();
     std::bitset<4> processChannels = args.requestData->getComponentsResults()->getProcessChannels();
 
-    bool hostMasking = _publicInterface->isHostMaskingEnabled();
+    bool hostMasking = _publicInterface->isHostMaskEnabled();
     if ( hostMasking ) {
 
         int maskInputNb = -1;
-        int inputsCount = _publicInterface->getMaxInputCount();
+        int inputsCount = _publicInterface->getNInputs();
         for (int i = 0; i < inputsCount; ++i) {
             if (_publicInterface->isMaskEnabled(i)) {
                 maskInputNb = i;
@@ -679,7 +679,7 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
 
 
     int mainInputNb = _publicInterface->getNode()->getPreferredInput();
-    if ( (mainInputNb != -1) && _publicInterface->isInputMask(mainInputNb) ) {
+    if ( (mainInputNb != -1) && _publicInterface->getNode()->isInputMask(mainInputNb) ) {
         mainInputNb = -1;
     }
 
@@ -687,7 +687,7 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
     //bool unPremultIfNeeded = planes.outputPremult == eImagePremultiplicationPremultiplied;
     bool useMaskMix = hostMasking;
     double mix = 1.;
-    if (_publicInterface->isHostMixingEnabled()) {
+    if (_publicInterface->isHostMixEnabled()) {
         mix = _publicInterface->getHostMixingValue(_publicInterface->getCurrentRenderTime(), _publicInterface->getCurrentRenderView());
         useMaskMix = true;
     }

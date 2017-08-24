@@ -559,6 +559,18 @@ enum ImageFieldingOrderEnum
     eImageFieldingOrderUpper, // rows 1, 3 ...
 };
 
+enum ImageFieldExtractionEnum
+{
+    // fetch a full frame interlaced image
+    eImageFieldExtractionBoth,
+
+    // fetch a single field, making a half height image
+    eImageFieldExtractionSingle,
+
+    // fetch a single field, but doubling each line and so making a full height image
+    eImageFieldExtractionDouble
+};
+
 enum ViewerCompositingOperatorEnum
 {
     eViewerCompositingOperatorNone,
@@ -742,6 +754,37 @@ enum PluginOpenGLRenderSupport
     ePluginOpenGLRenderSupportYes, // Can do both CPU or GPU
     ePluginOpenGLRenderSupportNeeded // Can do only GPU
 };
+
+/**
+* @brief Controls how planes are handled by this node if it cannot produce them
+**/
+enum PlanePassThroughEnum
+{
+    // If a plane does not exist on this node, returns a black image
+    ePassThroughBlockNonRenderedPlanes,
+
+    // If a plane does not exist on this node, ask it on the pass-through input returned by getLayersProducedAndNeeded_public
+    ePassThroughPassThroughNonRenderedPlanes,
+
+    // We render any plane, this is the same as if isMultiPlanar() == false
+    ePassThroughRenderAllRequestedPlanes
+};
+
+/**
+* @brief Controls how views are rendered by this effect
+**/
+enum ViewInvarianceLevel
+{
+    // All views produce a different result and will have a separate cache entry
+    eViewInvarianceAllViewsVariant,
+
+    // Unused
+    eViewInvarianceOnlyPassThroughPlanesVariant,
+
+    // All views are assumed to produce the same result hence they all share the same cache entry
+    eViewInvarianceAllViewsInvariant,
+};
+
 
 enum OpenGLRequirementsTypeEnum
 {

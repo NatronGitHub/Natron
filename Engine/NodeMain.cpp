@@ -31,6 +31,7 @@
 #include "Engine/LoadKnobsCompat.h"
 #include "Engine/Settings.h"
 #include "Engine/RenderEngine.h"
+#include "Engine/InputDescription.h"
 #include "Engine/StubNode.h"
 #include "Serialization/NodeSerialization.h"
 
@@ -160,6 +161,7 @@ Node::load(const CreateNodeArgsPtr& args)
 
     PluginPtr pluginPtr = _imp->plugin.lock();
 
+
     // Get the function pointer to create the plug-in instance
     GCC_DIAG_PEDANTIC_OFF
     EffectBuilder createFunc = (EffectBuilder)pluginPtr->getPropertyUnsafe<void*>(kNatronPluginPropCreateFunc);
@@ -196,8 +198,17 @@ Node::load(const CreateNodeArgsPtr& args)
     // Make sure knobs initialization does not attempt to call knobChanged or trigger a render.
     _imp->effect->beginChanges();
 
-    // For OpenFX this calls describe & describeInContext if neede dand then creates parameters and clips
+    // For OpenFX this calls describe & describeInContext if needed and then creates parameters and clips
     _imp->effect->describePlugin();
+
+    { // If the plug-in does not have any supported components or bitdepths, do not create any instance.
+        std::bitset<4> outputComps = pluginPtr->getPropertyUnsafe<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents);
+        int nSupportedDepth = pluginPtr->getPropertyDimension(kNatronPluginPropOutputSupportedBitDepths);
+        if (nSupportedDepth == 0 || (!outputComps[0] && !outputComps[1] && !outputComps[2] && !outputComps[3])) {
+            throw std::invalid_argument(tr("Could not create instance of plug-in %1 because it does not support any components or bitdepth in output").arg(QString::fromUtf8(pluginPtr->getPluginID().c_str())).toStdString());
+        }
+    }
+
 
     // For an ouptut node, create its render engine
     if (_imp->effect->isOutput()) {
@@ -207,11 +218,59 @@ Node::load(const CreateNodeArgsPtr& args)
     // Set the node name
     initNodeScriptName(serialization.get(), QString::fromUtf8(argFixedName.c_str()));
 
-    // Set plug-in accepted bitdepths and set default metadata
-    _imp->effect->refreshAcceptedBitDepths();
+    // Initialize inputs from the plug-in descriptor
+    {
+        QMutexLocker k(&_imp->inputsMutex);
+        std::vector<InputDescriptionPtr> inputs = pluginPtr->getInputsDescription();
 
-    // Load inputs
-    initializeInputs();
+        if (pluginPtr->getPropertyUnsafe<bool>(kNatronPluginPropHostMask)) {
+            // If plug-in wants host masking, check if we need to add a mask input
+            bool hasMask = false;
+            for (std::size_t i = 0; i < inputs.size(); ++i) {
+                if (inputs[i]->getPropertyUnsafe<bool>(kInputDescPropIsMask)) {
+                    hasMask = true;
+                    break;
+                }
+            }
+            if (!hasMask) {
+                // Check if an input is named "Mask"
+                for (std::size_t i = 0; i < inputs.size(); ++i) {
+                    if (inputs[i]->getPropertyUnsafe<std::string>(kInputDescPropLabel) == "Mask") {
+                        hasMask = true;
+                        break;
+                    }
+                }
+            }
+            if (!hasMask) {
+                // No mask: add one
+                InputDescriptionPtr maskInput = InputDescription::create("Mask", "Mask", "", true, true, std::bitset<4>("1000"));
+                maskInput->setProperty(kInputDescPropSupportsTiles, true);
+                inputs.push_back(maskInput);
+            }
+        }
+
+        _imp->inputs.resize(inputs.size());
+        _imp->inputIsRenderingCounter.resize(inputs.size());
+        _imp->inputDescriptions.resize(inputs.size());
+        for (std::size_t i = 0; i < inputs.size(); ++i) {
+            InputDescriptionPtr copy(new InputDescription(*inputs[i]));
+            
+            // Default initialize label and script-name properties
+            _imp->inputDescriptions[i] = copy;
+
+            std::string inputScriptName = copy->getPropertyUnsafe<std::string>(kInputDescPropScriptName);
+            if (inputScriptName.empty()) {
+                inputScriptName.append( 1, (char)(i + 65) );
+                copy->setProperty(kInputDescPropScriptName, inputScriptName);
+            }
+            std::string inputLabel = copy->getPropertyUnsafe<std::string>(kInputDescPropLabel);
+            if (inputLabel.empty()) {
+                inputLabel = copy->getPropertyUnsafe<std::string>(kInputDescPropScriptName);
+                copy->setProperty(kInputDescPropLabel, inputLabel);
+            }
+
+        }
+    }
 
     // Create knobs
     _imp->effect->initializeKnobs(serialization.get() != 0, !argsNoNodeGui);
@@ -242,9 +301,6 @@ Node::load(const CreateNodeArgsPtr& args)
 
     // Refresh dynamic props such as tiles support, OpenGL support, multi-thread etc...
     _imp->effect->refreshDynamicProperties();
-
-    // Ensure the OpenGL support knob has a consistant state according to the project
-    _imp->effect->onOpenGLEnabledKnobChangedOnProject(getApp()->getProject()->isOpenGLRenderActivated());
 
     // If this plug-in create views (ReadOIIO only) then refresh them
     refreshCreatedViews(!serialization);
@@ -1739,5 +1795,169 @@ Node::destroyNode()
 
 
 } // destroyNode
+
+
+bool
+Node::isSupportedComponent(int inputNb, const ImagePlaneDesc& comp) const
+{
+    assert(comp.getNumComponents() <= 4);
+    std::bitset<4> supported = getSupportedComponents(inputNb);
+    return supported[comp.getNumComponents()];
+}
+
+std::list<ImageBitDepthEnum>
+Node::getSupportedBitDepths() const
+{
+    // For a Read or Write node, actually return the bits from the embedded plug-in
+    ReadNodePtr isRead = toReadNode(_imp->effect);
+    WriteNodePtr isWrite = toWriteNode(_imp->effect);
+    NodePtr embeddedNode;
+    if (isRead) {
+        embeddedNode = isRead->getEmbeddedReader();
+    } else if (isWrite) {
+        embeddedNode = isWrite->getEmbeddedWriter();
+    }
+
+    if (embeddedNode) {
+        return embeddedNode->getSupportedBitDepths();
+    }
+
+    PluginPtr plugin = getPlugin();
+    int nSupported = plugin->getPropertyDimension(kNatronPluginPropOutputSupportedBitDepths);
+    std::list<ImageBitDepthEnum> ret;
+
+    for (int i = 0; i < nSupported; ++i) {
+        ImageBitDepthEnum thisDepth = plugin->getPropertyUnsafe<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, i);
+        ret.push_back(thisDepth);
+    }
+    return ret;
+}
+
+int
+Node::findClosestSupportedNumberOfComponents(int inputNb,
+                                                       int nComps) const
+{
+    if (nComps < 0 || nComps > 4) {
+        // Natron assumes that a layer must have between 1 and 4 channels.
+        return 0;
+    }
+    std::bitset<4> supported = getSupportedComponents(inputNb);
+
+    // Find a greater or equal number of components
+    int foundSupportedNComps = -1;
+    for (int i = nComps - 1; i < 4; ++i) {
+        if (supported[i]) {
+            foundSupportedNComps = i + 1;
+            break;
+        }
+    }
+
+
+    if (foundSupportedNComps == -1) {
+        // Find a small number of components
+        for (int i = nComps - 2; i >= 0; --i) {
+            if (supported[i]) {
+                foundSupportedNComps = i + 1;
+                break;
+            }
+        }
+    }
+
+    if (foundSupportedNComps == -1) {
+        return 0;
+    }
+    return foundSupportedNComps;
+
+} // findClosestSupportedNumberOfComponents
+
+
+
+
+ImageBitDepthEnum
+Node::getClosestSupportedBitDepth(ImageBitDepthEnum depth)
+{
+
+
+    bool foundShort = false;
+    bool foundByte = false;
+    bool foundFloat = false;
+
+    std::list<ImageBitDepthEnum> bitdepths = getSupportedBitDepths();
+
+    for (std::list<ImageBitDepthEnum>::const_iterator it = bitdepths.begin(); it != bitdepths.end(); ++it) {
+        ImageBitDepthEnum thisDepth = *it;
+        if (thisDepth == depth) {
+            return depth;
+        } else if (thisDepth == eImageBitDepthFloat) {
+            foundFloat = true;
+        } else if (thisDepth == eImageBitDepthShort) {
+            foundShort = true;
+        } else if (thisDepth == eImageBitDepthByte) {
+            foundByte = true;
+        }
+    }
+    if (foundFloat) {
+        return eImageBitDepthFloat;
+    } else if (foundShort) {
+        return eImageBitDepthShort;
+    } else if (foundByte) {
+        return eImageBitDepthByte;
+    } else {
+        ///The plug-in doesn't support any bitdepth, the program shouldn't even have reached here.
+        assert(false);
+
+        return eImageBitDepthNone;
+    }
+}
+
+ImageBitDepthEnum
+Node::getBestSupportedBitDepth() const
+{
+    bool foundShort = false;
+    bool foundByte = false;
+
+    std::list<ImageBitDepthEnum> bitdepths = getSupportedBitDepths();
+
+    for (std::list<ImageBitDepthEnum>::const_iterator it = bitdepths.begin(); it != bitdepths.end(); ++it) {
+        ImageBitDepthEnum thisDepth = *it;
+        switch (thisDepth) {
+            case eImageBitDepthByte:
+            foundByte = true;
+            break;
+
+            case eImageBitDepthShort:
+            foundShort = true;
+            break;
+            case eImageBitDepthHalf:
+            break;
+
+            case eImageBitDepthFloat:
+
+            return eImageBitDepthFloat;
+
+            case eImageBitDepthNone:
+            break;
+        }
+    }
+
+    if (foundShort) {
+        return eImageBitDepthShort;
+    } else if (foundByte) {
+        return eImageBitDepthByte;
+    } else {
+        ///The plug-in doesn't support any bitdepth, the program shouldn't even have reached here.
+        assert(false);
+
+        return eImageBitDepthNone;
+    }
+}
+
+bool
+Node::isSupportedBitDepth(ImageBitDepthEnum depth) const
+{
+    std::list<ImageBitDepthEnum> bitdepths = getSupportedBitDepths();
+    return std::find(bitdepths.begin(), bitdepths.end(), depth) != bitdepths.end();
+}
+
 
 NATRON_NAMESPACE_EXIT

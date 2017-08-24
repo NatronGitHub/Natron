@@ -190,33 +190,116 @@ NATRON_NAMESPACE_ENTER
  **/
 #define kNatronPluginPropIsInternalOnly "NatronPluginPropIsInternalOnly"
 
-/**
- * @brief x1 int property (optional) indicating that the plug-in supports OpenGL rendering or requires it or
- * does not support it. This is of type  PluginOpenGLRenderSupport.
- * Default value - 0
- **/
-#define kNatronPluginPropOpenGLSupport "NatronPluginPropOpenGLSupport"
 
 /**
- * @brief x1 int property (optional) indicating the plug-in render thread safety. Of type RenderSafetyEnum
- * Default value - 0
+ * @brief x1 std::bitset<4> property indicating the supported number of components in output.
+ * This is a bitset: each bit tells whether the plug-in supports N comps
+ * (e.g: if the 4th bit is set to 1 it means theinput supports RGBA)
+ * Default value - 0000, the plug-in will not be loaded
+ * Must be specified
  **/
-#define kNatronPluginPropRenderSafety "NatronPluginPropRenderSafety"
+#define kNatronPluginPropOutputSupportedComponents "NatronPluginPropOutputSupportedComponents"
 
 /**
- * @brief x1 bool property (optional)  Indicates if a plug-in can make use of multiple CPU threads within a single call
- * of the render action, for instance by using the multi-thread suite.
- * The host should only account this as a hint to better organize its multi-threading priority queue.
- * Default value - 0
+ * @brief xN ImageBitDepthEnum property indicating the supported bitdepths in output.
+ * This is a bitset: each bit tells whether the plug-in supports N comps
+ * (e.g: if the 4th bit is set to 1 it means theinput supports RGBA)
+ * Default value - Empty, the plug-in will not be loaded
+ * Must be specified
  **/
-#define kNatronPluginPropUsesMultiThread "NatronPluginPropUsesMultiThread"
+#define kNatronPluginPropOutputSupportedBitDepths "NatronPluginPropOutputSupportedBitDepths"
 
 /**
- * @brief x1 bool property (optional) indicating whether the plug-in prefers an alpha channel created with 0 (false)
- * or with 1 (true)
- * Default value - true
+ * @brief x1 bool property (optional) indicating whether the plug-in behaves differently depending on the number of views in the project
+ * Default value - false
  **/
-#define kNatronPluginPropAlphaFillWith1 "NatronPluginPropAlphaFillWith1"
+#define kNatronPluginPropViewAware "NatronPluginPropViewAware"
+
+/**
+ * @brief x1 ViewInvarianceLevel property (optional) indicating for a plug-in that has the property kNatronPluginPropViewAware set to 
+ * true whether images vary depending on the view.
+ * Default value - eViewInvarianceAllViewsVariant
+ **/
+#define kNatronPluginPropViewInvariant "NatronPluginPropViewInvariant"
+
+/**
+ * @brief x1 bool property (optional) indicating whether the plug-in knows about the multi-plane system and implements getLayersProducedAndNeeded
+ * Default value - false
+ **/
+#define kNatronPluginPropMultiPlanar "NatronPluginPropMultiPlanar"
+
+/**
+ * @brief x1 bool property (optional) indicating whether the plug-in produces a different render while in draft mode
+ * Default value - false
+ **/
+#define kNatronPluginPropSupportsDraftRender "NatronPluginPropSupportsDraftRender"
+
+/**
+ * @brief x1 bool property (optional) indicating whether the plug-in wants RGBA checkboxes added by the host or not.
+ * Default value - false
+ **/
+#define kNatronPluginPropHostChannelSelector "NatronPluginPropHostChannelSelector"
+
+/**
+ * @brief x1 std::bitset<4> property (optional) indicating whether the plug-in wants each RGBA checkbox turned on or off by default.
+ * The kNatronPluginPropHostChannelSelector property must be set to true
+ * Default value - 0000
+ **/
+#define kNatronPluginPropHostChannelSelectorValue "NatronPluginPropHostChannelSelectorValue"
+
+
+/**
+ * @brief x1 bool property (optional) indicating whether the plug-in wants the host to add a mix parameter that dissolves between
+ * the full effect at 1 to the input unmodified image at 0.
+ * Default value - false
+ **/
+#define kNatronPluginPropHostMix "NatronPluginPropHostMix"
+
+/**
+ * @brief x1 bool property (optional) indicating whether the plug-in wants the host to add mask automatically the rendered
+ * image.
+ * Default value - false
+ **/
+#define kNatronPluginPropHostMask "NatronPluginPropHostMask"
+
+/**
+ * @brief x1 bool property (optional) indicating whether the plug-in wants the host to add a plane selector for the output and input(s)
+ * of the effect. This is only relevant if the plug-in has its property kNatronPluginPropMultiPlanar set to false.
+ * Default value - false
+ **/
+#define kNatronPluginPropHostPlaneSelector "NatronPluginPropHostPlaneSelector"
+
+/**
+* @brief x1 bool property (optional) indicating whether the plug-in can handle multiple inputs with different pixel aspect ratios
+* Default value - false
+**/
+#define kNatronPluginPropSupportsMultiInputsPAR "NatronPluginPropSupportsMultiInputsPAR"
+
+/**
+ * @brief x1 bool property (optional) indicating whether the plug-in can handle multiple inputs with different image bit depths
+ * Default value - false
+ **/
+#define kNatronPluginPropSupportsMultiInputsBitDepths "NatronPluginPropSupportsMultiInputsBitDepths"
+
+/**
+ * @brief x1 bool property (optional) indicating whether the plug-in can handle multiple inputs with different frame rate
+ * Default value - false
+ **/
+#define kNatronPluginPropSupportsMultiInputsFPS "NatronPluginPropSupportsMultiInputsFPS"
+
+/**
+ * @brief x1 bool property (optional) indicating for a plug-in that has the property kNatronPluginPropMultiPlanar set to true whether
+ * the plug-ins prefers all image planes rendered at once in a single render action call.
+ * Default value - false
+ **/
+#define kNatronPluginPropRenderAllPlanesAtOnce "NatronPluginPropRenderAllPlanesAtOnce"
+
+/**
+ * @brief x1 PlanePassThroughEnum property (optional) indicating for a plug-in that has the property kNatronPluginPropMultiPlanar set to true whether
+ * the planes should be asked on the input if not rendered by the plug-in or blocked.
+ * Default value - ePassThroughPassThroughNonRenderedPlanes
+ **/
+#define kNatronPluginPropPlanesPassThrough "NatronPluginPropPlanesPassThrough"
 
 /**
  * @brief A node of a tree data structure representing the grouping hierarchy of plug-ins. This is mainly for the GUI so it can create its toolbuttons and menus
@@ -340,6 +423,11 @@ class Plugin : public PropertiesHolder
     // pass images of scale 1 to the plug-in.
     bool _renderScaleEnabled;
 
+    std::vector<InputDescriptionPtr> _inputsDescription;
+
+    // Default properties of the effect, each effect instance have a local copy of them and may modify them
+    EffectDescriptionPtr _effectDescription;
+
 private:
     
     virtual void initializeProperties() const OVERRIDE FINAL;
@@ -410,6 +498,12 @@ public:
 
     QStringList getGroupingAsQStringList() const;
     std::string getGroupingString() const;
+
+    const std::vector<InputDescriptionPtr>& getInputsDescription();
+
+    void addInputDescription(const InputDescriptionPtr& desc);
+
+    EffectDescriptionPtr getEffectDescriptor() const;
 
 };
 

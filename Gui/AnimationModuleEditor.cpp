@@ -837,6 +837,9 @@ AnimationModuleEditor::onSelectionModelSelectionChanged(bool /*recurse*/)
 void
 AnimationModuleEditorPrivate::refreshExpressionResult()
 {
+    if (publicInterface->getGui()->isGUIFrozen()) {
+        return;
+    }
     if (!expressionResultLabel->isVisible()) {
         return;
     }

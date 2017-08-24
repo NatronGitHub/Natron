@@ -180,9 +180,16 @@ WriteNode::createPlugin()
     QString desc = tr("Node used to write images or videos on disk. The image/video is identified by its filename and "
                       "its extension. Given the extension, the Writer selected from the Preferences to encode that specific format will be used.");
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
-    ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
+    EffectDescriptionPtr effectDesc = ret->getEffectDescriptor();
+    effectDesc->setProperty<RenderSafetyEnum>(kEffectPropRenderThreadSafety, eRenderSafetyFullySafe);
+    effectDesc->setProperty<bool>(kEffectPropSupportsTiles, true);
+    effectDesc->setProperty<bool>(kEffectPropSupportsRenderScale, false);
     ret->setProperty<int>(kNatronPluginPropShortcut, (int)Key_W);
     ret->setProperty<std::string>(kNatronPluginPropIconFilePath, "Images/writeImage.png");
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat, 0);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthShort, 0);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthByte, 0);
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>("1111"));
     return ret;
 }
 
@@ -847,11 +854,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
 
 
     NodePtr thisNode = _publicInterface->getNode();
-    //Refresh accepted bitdepths on the node
-    _publicInterface->refreshAcceptedBitDepths();
 
-    //Refresh accepted components
-    thisNode->initializeInputs();
 
     //This will refresh the GUI with this Reader specific parameters
     _publicInterface->recreateKnobs(true);
@@ -935,21 +938,6 @@ bool
 WriteNode::isOutput() const
 {
     return true;
-}
-
-bool
-WriteNode::getCreateChannelSelectorKnob() const
-{
-    return false;
-}
-
-bool
-WriteNode::isHostChannelSelectorSupported(bool* /*defaultR*/,
-                                          bool* /*defaultG*/,
-                                          bool* /*defaultB*/,
-                                          bool* /*defaultA*/) const
-{
-    return false;
 }
 
 void
@@ -1162,20 +1150,6 @@ WriteNode::knobChanged(const KnobIPtr& k,
 
     return ret;
 } // WriteNode::knobChanged
-
-bool
-WriteNode::isViewAware() const
-{
-    NodePtr writer = _imp->embeddedPlugin.lock();
-
-    if (writer) {
-        EffectInstancePtr effect = writer->getEffectInstance();
-        if (effect) {
-            return effect->isViewAware();
-        }
-    }
-    return false;
-}
 
 ActionRetCodeEnum
 WriteNode::getFrameRange(double *first,

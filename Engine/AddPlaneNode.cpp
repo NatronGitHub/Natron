@@ -26,6 +26,7 @@
 
 #include "Engine/KnobTypes.h"
 
+
 NATRON_NAMESPACE_ENTER
 
 struct AddPlaneNodePrivate
@@ -44,10 +45,19 @@ AddPlaneNode::createPlugin()
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_CHANNEL);
     PluginPtr ret = Plugin::create(AddPlaneNode::create, AddPlaneNode::createRenderClone, PLUGINID_NATRON_ADD_PLANE, "AddPlane", 1, 0, grouping);
-
     QString desc = tr("This node acts as a pass-through for the input image, but allows to add new empty plane(s) to the image");
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
-    ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
+    EffectDescriptionPtr effectDesc = ret->getEffectDescriptor();
+    effectDesc->setProperty<RenderSafetyEnum>(kEffectPropRenderThreadSafety, eRenderSafetyFullySafe);
+    effectDesc->setProperty<bool>(kEffectPropSupportsTiles, true);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat, 0);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthShort, 1);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthByte, 2);
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>("1111"));
+    {
+        InputDescriptionPtr input = InputDescription::create("Source", "", "", false, false, std::bitset<4>("1111"));
+        ret->addInputDescription(input);
+    }
     return ret;
 }
 
@@ -67,12 +77,6 @@ AddPlaneNode::AddPlaneNode(const EffectInstancePtr& mainInstance, const FrameVie
 AddPlaneNode::~AddPlaneNode()
 {
 
-}
-
-std::string
-AddPlaneNode::getInputLabel(int /*inputNb*/) const
-{
-    return tr("Source").toStdString();
 }
 
 void

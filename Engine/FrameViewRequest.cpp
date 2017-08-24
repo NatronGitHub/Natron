@@ -247,7 +247,7 @@ struct FrameViewRequestPrivate
             byPassCache = true;
         }
 
-        if (effect->getCurrentOpenGLRenderSupport() == ePluginOpenGLRenderSupportNeeded) {
+        if (effect->getOpenGLRenderSupport() == ePluginOpenGLRenderSupportNeeded) {
             // The plug-in can only use GPU, so make the device fallback be GPU
             fallbackRenderDevice = eRenderBackendTypeOpenGL;
         }

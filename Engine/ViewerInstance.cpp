@@ -36,6 +36,7 @@
 #include "Engine/Lut.h"
 #include "Engine/NodeMetadata.h"
 #include "Engine/Node.h"
+#include "Engine/InputDescription.h"
 #include "Engine/Hash64.h"
 #include "Engine/OpenGLViewerI.h"
 #include "Engine/KnobTypes.h"
@@ -163,8 +164,19 @@ ViewerInstance::createPlugin()
     QString desc =  EffectInstance::tr("The Viewer node can display the output of a node graph.");
     ret->setProperty<bool>(kNatronPluginPropIsInternalOnly, true);
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
-    ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
-    ret->setProperty<bool>(kNatronPluginPropUsesMultiThread, true);
+    EffectDescriptionPtr effectDesc = ret->getEffectDescriptor();
+    effectDesc->setProperty<RenderSafetyEnum>(kEffectPropRenderThreadSafety, eRenderSafetyFullySafe);
+    effectDesc->setProperty<bool>(kEffectPropSupportsTiles, true);
+    ret->setProperty<bool>(kNatronPluginPropMultiPlanar, true);
+    ret->setProperty<bool>(kNatronPluginPropSupportsMultiInputsBitDepths, true);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat, 0);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthByte, 1);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthShort, 2);
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>("1111"));
+    {
+        InputDescriptionPtr input = InputDescription::create("Source", "Source", "", false, false, std::bitset<4>("1111"));
+        ret->addInputDescription(input);
+    }
     return ret;
 }
 
@@ -196,49 +208,6 @@ ViewerInstance::getViewerNodeGroup() const
     ViewerNodePtr ret = toViewerNode(isGroup);
     assert(ret);
     return ret;
-}
-
-
-
-std::string
-ViewerInstance::getInputLabel(int /*inputNb*/) const
-{
-    return "Source";
-}
-
-int
-ViewerInstance::getMaxInputCount() const
-{
-    return 1;
-}
-
-bool
-ViewerInstance::isInputOptional(int /*n*/) const
-{
-    return false;
-}
-
-void
-ViewerInstance::addAcceptedComponents(int /*inputNb*/,
-                                      std::bitset<4>* supported)
-{
-    (*supported)[0] = (*supported)[1] = (*supported)[2] = (*supported)[3] = 1;
-}
-
-
-
-void
-ViewerInstance::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
-{
-    depths->push_back(eImageBitDepthFloat);
-    depths->push_back(eImageBitDepthShort);
-    depths->push_back(eImageBitDepthByte);
-}
-
-bool
-ViewerInstance::supportsMultipleClipDepths() const
-{
-    return true;
 }
 
 void
@@ -452,19 +421,6 @@ ViewerInstancePrivate::lookupGammaLut(float value, const float* gammaLookupBuffe
     }
 }
 
-
-bool
-ViewerInstance::isMultiPlanar() const
-{
-    // We are multi-planar: we need to process multiple planes (The one selected in alpha + the output layer)
-    return true;
-}
-
-EffectInstance::PassThroughEnum
-ViewerInstance::isPassThroughForNonRenderedPlanes() const
-{
-    return ePassThroughPassThroughNonRenderedPlanes;
-}
 
 ActionRetCodeEnum
 ViewerInstance::isIdentity(TimeValue time,
@@ -800,12 +756,21 @@ ViewerInstancePrivate::setDisplayChannelsFromLayer(const std::list<ImagePlaneDes
 } // setDisplayChannelsFromLayer
 
 bool
-ViewerInstance::supportsTiles() const
+ViewerInstance::knobChanged(const KnobIPtr& knob,
+                 ValueChangedReasonEnum /*reason*/,
+                 ViewSetSpec /*view*/,
+                 TimeValue /*time*/)
 {
-    // When computing auto-contrast we need the full image.
-    bool autoContrastEnabled = _imp->autoContrastKnob.lock()->getValue();
-    return !autoContrastEnabled;
+    bool handled = true;
+    if (knob == _imp->autoContrastKnob.lock()) {
+       bool autoContrastEnabled = _imp->autoContrastKnob.lock()->getValue();
+       setSupportsTiles(!autoContrastEnabled);
+    } else {
+        handled = false;
+    }
+    return handled;
 }
+
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 

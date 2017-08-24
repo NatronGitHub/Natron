@@ -54,6 +54,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/AppManager.h"
 #include "Engine/KnobFile.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/EffectDescription.h"
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/Distortion2D.h"
 #include "Engine/EffectInstanceTLSData.h"
@@ -93,31 +94,7 @@ struct OfxEffectInstanceCommon
 
     boost::shared_ptr<OfxOverlayInteract> overlayInteract; // ptr to the overlay interact if any
 
-    struct ClipsInfo
-    {
-        ClipsInfo()
-        : optional(false)
-        , mask(false)
-        , clip(NULL)
-        , label()
-        , hint()
-        , visible(true)
-        , canReceiveDistortion(false)
-        , canReceiveDeprecatedTransform3x3(false)
-        {
-        }
-
-        bool optional;
-        bool mask;
-        OfxClipInstance* clip;
-        std::string label;
-        std::string hint;
-        bool visible;
-        bool canReceiveDistortion;
-        bool canReceiveDeprecatedTransform3x3;
-    };
-
-    std::vector<ClipsInfo> clipsInfos;
+    std::vector<OfxClipInstance*> inputClips;
     OfxClipInstance* outputClip;
 
     boost::shared_ptr<TLSHolder<EffectInstanceTLSData> > tlsData;
@@ -128,7 +105,6 @@ struct OfxEffectInstanceCommon
     ContextEnum context;
 
     int nbSourceClips;
-    SequentialPreferenceEnum sequentialPref;
     mutable QMutex supportsConcurrentGLRendersMutex;
     bool supportsConcurrentGLRenders;
     bool isOutput; //if the OfxNode can output a file somehow
@@ -140,16 +116,11 @@ struct OfxEffectInstanceCommon
      case
      */
     bool overlaysCanHandleRenderScale;
-    bool supportsMultipleClipPARs;
-    bool supportsMultipleClipDepths;
-    bool supportsRenderQuality;
-    bool multiplanar;
-    bool preferRenderAllPlaneAtOnce;
 
     OfxEffectInstanceCommon()
     : effect()
     , overlayInteract()
-    , clipsInfos()
+    , inputClips()
     , outputClip(0)
     , tlsData(new TLSHolder<EffectInstanceTLSData>())
     , cursorKnob()
@@ -157,17 +128,11 @@ struct OfxEffectInstanceCommon
     , undoRedoStateKnob()
     , context(eContextNone)
     , nbSourceClips(0)
-    , sequentialPref(eSequentialPreferenceNotSequential)
     , supportsConcurrentGLRendersMutex()
     , supportsConcurrentGLRenders(false)
     , isOutput(false)
     , initialized(false)
     , overlaysCanHandleRenderScale(true)
-    , supportsMultipleClipPARs(false)
-    , supportsMultipleClipDepths(false)
-    , supportsRenderQuality(false)
-    , multiplanar(false)
-    , preferRenderAllPlaneAtOnce(false)
     {
 
     }
@@ -234,7 +199,9 @@ OfxEffectInstance::describePlugin()
     // Check if we already called describe then describeInContext.
     OFX::Host::ImageEffect::Descriptor* desc = natronPlugin->getOfxDesc(&_imp->common->context);
 
+    bool isFirstTimeLoadingPlugin = false;
     if (!desc) {
+        isFirstTimeLoadingPlugin = true;
         // Call the actions
         try {
             //  Should this method be in AppManager?
@@ -256,7 +223,65 @@ OfxEffectInstance::describePlugin()
         _imp->common->isOutput = true;
     }
 
+    // After describeInContext for the context, populate the plug-in with clips (inputs) infos
+    if (isFirstTimeLoadingPlugin) {
+        const std::vector<OFX::Host::ImageEffect::ClipDescriptor*> & clips = desc->getClipsByOrder();
+        for (std::vector<OFX::Host::ImageEffect::ClipDescriptor*>::const_iterator it = clips.begin(); it != clips.end(); ++it) {
 
+            OFX::Host::ImageEffect::ClipDescriptor* clip = *it;
+
+            std::bitset<4> supportedCompsSet;
+            {
+                const std::vector<std::string> & supportedComps = clip->getSupportedComponents();
+                for (U32 i = 0; i < supportedComps.size(); ++i) {
+                    try {
+                        ImagePlaneDesc plane, pairedPlane;
+                        ImagePlaneDesc::mapOFXComponentsTypeStringToPlanes(supportedComps[i], &plane, &pairedPlane);
+                        if (plane.getNumComponents() > 0) {
+                            supportedCompsSet[plane.getNumComponents() - 1] = 1;
+                        }
+                    } catch (const std::runtime_error &e) {
+                        // ignore unsupported components
+                    }
+                }
+            }
+
+            if (clip->isOutput()) {
+                natronPlugin->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, supportedCompsSet);
+
+            } else {
+
+
+                InputDescriptionPtr inputDesc(new InputDescription);
+
+
+                inputDesc->setProperty<std::string>(kInputDescPropScriptName, clip->getName());
+                inputDesc->setProperty<std::string>(kInputDescPropLabel, clip->getLabel());
+                inputDesc->setProperty<std::string>(kInputDescPropHint, clip->getHint());
+
+
+
+                inputDesc->setProperty<std::bitset<4> >(kInputDescPropSupportedComponents, supportedCompsSet);
+
+                ImageFieldExtractionEnum field = OfxClipInstance::ofxFieldExtractionToNatronFieldExtraction(clip->getFieldExtraction());
+                inputDesc->setProperty<ImageFieldExtractionEnum>(kInputDescPropFieldingSupport, field);
+
+                inputDesc->setProperty<bool>(kInputDescPropCanReceiveTransform3x3, clip->canTransform());
+                inputDesc->setProperty<bool>(kInputDescPropCanReceiveDistortion, clip->canDistort());
+
+                assert(!clip->canDistort() || !clip->canTransform());
+
+                inputDesc->setProperty<bool>(kInputDescPropIsVisible, !clip->isSecret());
+                inputDesc->setProperty<bool>(kInputDescPropIsOptional, clip->isOptional());
+                inputDesc->setProperty<bool>(kInputDescPropIsMask, clip->isMask());
+                inputDesc->setProperty<bool>(kInputDescPropSupportsTiles, clip->supportsTiles());
+                inputDesc->setProperty<bool>(kInputDescPropSupportsTemporal, clip->temporalAccess());
+                
+                natronPlugin->addInputDescription(inputDesc);
+            } // isOutput
+            
+        } // for each clip
+    } // isFirstTimeLoadingPlugin
 
     _imp->common->effect.reset( new OfxImageEffectInstance(ofxPlugin, *desc, mapContextToString(_imp->common->context), false) );
     assert(_imp->common->effect);
@@ -267,36 +292,8 @@ OfxEffectInstance::describePlugin()
     OfxEffectInstance::MappedInputV clips = inputClipsCopyWithoutOutput();
     _imp->common->nbSourceClips = (int)clips.size();
 
-    _imp->common->clipsInfos.resize( clips.size() );
-    for (unsigned i = 0; i < clips.size(); ++i) {
-        OfxEffectInstanceCommon::ClipsInfo info;
-        info.optional = clips[i]->isOptional();
-        info.mask = clips[i]->isMask();
-        info.clip = NULL;
-        // label, hint, visible are set below
-        _imp->common->clipsInfos[i] = info;
-    }
+    _imp->common->inputClips.resize( clips.size() );
 
-    _imp->common->supportsMultipleClipPARs = _imp->common->effect->supportsMultipleClipPARs();
-    _imp->common->supportsMultipleClipDepths = _imp->common->effect->supportsMultipleClipDepths();
-    _imp->common->supportsRenderQuality = _imp->common->effect->supportsRenderQuality();
-    _imp->common->multiplanar = _imp->common->effect->isMultiPlanar();
-    _imp->common->preferRenderAllPlaneAtOnce = (_imp->common->effect->getProps().getIntProperty(kOfxImageEffectPropRenderAllPlanes) != 0);
-    int sequential = _imp->common->effect->getPlugin()->getDescriptor().getProps().getIntProperty(kOfxImageEffectInstancePropSequentialRender);
-    switch (sequential) {
-        case 0:
-            _imp->common->sequentialPref = eSequentialPreferenceNotSequential;
-            break;
-        case 1:
-            _imp->common->sequentialPref = eSequentialPreferenceOnlySequential;
-            break;
-        case 2:
-            _imp->common->sequentialPref = eSequentialPreferencePreferSequential;
-            break;
-        default:
-            _imp->common->sequentialPref =  eSequentialPreferenceNotSequential;
-            break;
-    }
 
     ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
@@ -307,16 +304,8 @@ OfxEffectInstance::describePlugin()
     }
 
     for (unsigned i = 0; i < clips.size(); ++i) {
-        _imp->common->clipsInfos[i].clip = dynamic_cast<OfxClipInstance*>( _imp->common->effect->getClip( clips[i]->getName() ) );
-        _imp->common->clipsInfos[i].label = _imp->common->clipsInfos[i].clip->getLabel();
-        _imp->common->clipsInfos[i].hint = _imp->common->clipsInfos[i].clip->getHint();
-        _imp->common->clipsInfos[i].visible = !_imp->common->clipsInfos[i].clip->isSecret();
-        _imp->common->clipsInfos[i].canReceiveDistortion = clips[i]->canDistort();
-        _imp->common->clipsInfos[i].canReceiveDeprecatedTransform3x3 = clips[i]->canTransform();
-
-        // An effect that supports the distortion suite should not supports also the old transformation suite: this is obsolete.
-        assert(!_imp->common->clipsInfos[i].canReceiveDistortion || !_imp->common->clipsInfos[i].canReceiveDeprecatedTransform3x3);
-        assert(_imp->common->clipsInfos[i].clip);
+        _imp->common->inputClips[i] = dynamic_cast<OfxClipInstance*>( _imp->common->effect->getClip( clips[i]->getName() ) );
+        assert(_imp->common->inputClips[i]);
     }
 
     _imp->common->outputClip = dynamic_cast<OfxClipInstance*>( _imp->common->effect->getClip(kOfxImageEffectOutputClipName) );
@@ -817,49 +806,19 @@ AbstractOfxEffectInstance::makePluginLabel(const std::string & shortLabel,
 void
 OfxEffectInstance::onClipLabelChanged(int inputNb, const std::string& label)
 {
-    assert(inputNb >= 0 && inputNb < (int)_imp->common->clipsInfos.size());
-    _imp->common->clipsInfos[inputNb].label = label;
     getNode()->setInputLabel(inputNb, label);
 }
 
 void
 OfxEffectInstance::onClipHintChanged(int inputNb, const std::string& hint)
 {
-    assert(inputNb >= 0 && inputNb < (int)_imp->common->clipsInfos.size());
-    _imp->common->clipsInfos[inputNb].hint = hint;
     getNode()->setInputHint(inputNb, hint);
 }
 
 void
 OfxEffectInstance::onClipSecretChanged(int inputNb, bool isSecret)
 {
-    assert(inputNb >= 0 && inputNb < (int)_imp->common->clipsInfos.size());
-    _imp->common->clipsInfos[inputNb].visible = !isSecret;
     getNode()->setInputVisible(inputNb, !isSecret);
-}
-
-std::string
-OfxEffectInstance::getInputLabel(int inputNb) const
-{
-    assert(_imp->common->context != eContextNone);
-    assert( inputNb >= 0 &&  inputNb < (int)_imp->common->clipsInfos.size() );
-    if (_imp->common->context != eContextReader) {
-        return _imp->common->clipsInfos[inputNb].clip->getShortLabel();
-    } else {
-        return NATRON_READER_INPUT_NAME;
-    }
-}
-
-std::string
-OfxEffectInstance::getInputHint(int inputNb) const
-{
-    assert(_imp->common->context != eContextNone);
-    assert( inputNb >= 0 &&  inputNb < (int)_imp->common->clipsInfos.size() );
-    if (_imp->common->context != eContextReader) {
-        return _imp->common->clipsInfos[inputNb].clip->getHint();
-    } else {
-        return NATRON_READER_INPUT_NAME;
-    }
 }
 
 OfxEffectInstance::MappedInputV
@@ -883,38 +842,10 @@ OfxClipInstance*
 OfxEffectInstance::getClipCorrespondingToInput(int inputNo) const
 {
     assert(_imp->common->context != eContextNone);
-    assert( inputNo < (int)_imp->common->clipsInfos.size() );
+    assert( inputNo < (int)_imp->common->inputClips.size() );
 
-    return _imp->common->clipsInfos[inputNo].clip;
+    return _imp->common->inputClips[inputNo];
 }
-
-int
-OfxEffectInstance::getMaxInputCount() const
-{
-    assert(_imp->common->context != eContextNone);
-
-    //const std::string & context = effectInstance()->getContext();
-    return _imp->common->nbSourceClips;
-}
-
-bool
-OfxEffectInstance::isInputOptional(int inputNb) const
-{
-    assert(_imp->common->context != eContextNone);
-    assert( inputNb >= 0 && inputNb < (int)_imp->common->clipsInfos.size() );
-
-    return _imp->common->clipsInfos[inputNb].optional;
-}
-
-bool
-OfxEffectInstance::isInputMask(int inputNb) const
-{
-    assert(_imp->common->context != eContextNone);
-    assert( inputNb >= 0 && inputNb < (int)_imp->common->clipsInfos.size() );
-
-    return _imp->common->clipsInfos[inputNb].mask;
-}
-
 
 void
 OfxEffectInstance::onInputChanged(int inputNo)
@@ -1121,7 +1052,7 @@ OfxEffectInstance::getRegionOfDefinition(TimeValue time,
     // If the rod is 1 pixel, determine if it was because one clip was unconnected or this is really a
     // 1 pixel large image
     if ( (ofxRod.x2 == 1.) && (ofxRod.y2 == 1.) && (ofxRod.x1 == 0.) && (ofxRod.y1 == 0.) ) {
-        int maxInputs = getMaxInputCount();
+        int maxInputs = getNInputs();
         for (int i = 0; i < maxInputs; ++i) {
             OfxClipInstance* clip = getClipCorrespondingToInput(i);
             if ( clip && !clip->getConnected() && !clip->getIsOptional() && !clip->getIsMask() ) {
@@ -1691,40 +1622,6 @@ OfxEffectInstance::createPluginMemory()
     return ret;
 }
 
-bool
-OfxEffectInstance::supportsMultipleClipPARs() const
-{
-    return _imp->common->supportsMultipleClipPARs;
-}
-
-bool
-OfxEffectInstance::supportsMultipleClipDepths() const
-{
-    return _imp->common->supportsMultipleClipDepths;
-}
-
-bool
-OfxEffectInstance::isDraftRenderSupported() const
-{
-    return effectInstance()->supportsRenderQuality();
-}
-
-PluginOpenGLRenderSupport
-OfxEffectInstance::getOpenGLSupport() const
-{
-    const std::string& str = effectInstance()->getProps().getStringProperty(kOfxImageEffectPropOpenGLRenderSupported);
-
-    if (str == "false") {
-        return ePluginOpenGLRenderSupportNone;
-    } else if (str == "true") {
-        return ePluginOpenGLRenderSupportYes;
-    } else {
-        assert(str == "needed");
-
-        return ePluginOpenGLRenderSupportNeeded;
-    }
-}
-
 
 const std::string &
 OfxEffectInstance::getShortLabel() const
@@ -1970,48 +1867,18 @@ OfxEffectInstance::purgeCaches()
     Q_UNUSED(stat);
 }
 
-bool
-OfxEffectInstance::supportsTiles() const
-{
-    // first, check the descriptor, then the instance
-    if (!effectInstance()) {
-        return false;
-    }
-    // This is a dynamic property since OFX 1.4, so get the prop from the instance, not the descriptor.
-    // The descriptor may have it set to false for backward compatibility with hosts that do not support
-    // this dynamic property.
-    if ( !effectInstance()->supportsTiles() ) {
-        return false;
-    }
-
-    OFX::Host::ImageEffect::ClipInstance* outputClip =  effectInstance()->getClip(kOfxImageEffectOutputClipName);
-
-    return outputClip->supportsTiles();
-}
 
 void
-OfxEffectInstance::onEnableOpenGLKnobValueChanged(bool activated)
+OfxEffectInstance::onPropertiesChanged(const EffectDescription& description)
 {
     PluginPtr p = getNode()->getPlugin();
-    PluginOpenGLRenderSupport support = (PluginOpenGLRenderSupport)p->getPropertyUnsafe<int>(kNatronPluginPropOpenGLSupport);
-    if (support == ePluginOpenGLRenderSupportYes) {
+    PluginOpenGLRenderSupport support = description.getPropertyUnsafe<PluginOpenGLRenderSupport>(kEffectPropSupportsOpenGLRendering);
+    if (support == ePluginOpenGLRenderSupportYes || support == ePluginOpenGLRenderSupportNeeded) {
         // The property may only change if the plug-in has the property set to yes on the descriptor
-        if (activated) {
-            effectInstance()->getProps().setStringProperty(kOfxImageEffectPropOpenGLRenderSupported, "true");
-        } else {
-            effectInstance()->getProps().setStringProperty(kOfxImageEffectPropOpenGLRenderSupported, "false");
-        }
+        effectInstance()->getProps().setStringProperty(kOfxImageEffectPropOpenGLRenderSupported, "true");
+    } else {
+        effectInstance()->getProps().setStringProperty(kOfxImageEffectPropOpenGLRenderSupported, "false");
     }
-}
-
-bool
-OfxEffectInstance::supportsMultiResolution() const
-{
-    // check the the instance
-    if (!effectInstance()) {
-        return false;
-    }
-    return effectInstance()->supportsMultiResolution();
 }
 
 void
@@ -2041,48 +1908,6 @@ OfxEffectInstance::onSyncPrivateDataRequested()
 {
     ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
     effectInstance()->syncPrivateDataAction();
-}
-
-void
-OfxEffectInstance::addAcceptedComponents(int inputNb,
-                                         std::bitset<4>* supported)
-{
-    OfxClipInstance* clip = 0;
-    if (inputNb >= 0) {
-        clip = getClipCorrespondingToInput(inputNb);
-    } else {
-        assert(inputNb == -1);
-        clip = dynamic_cast<OfxClipInstance*>( effectInstance()->getClip(kOfxImageEffectOutputClipName) );
-    }
-    assert(clip);
-    const std::vector<std::string> & supportedComps = clip->getSupportedComponents();
-    for (U32 i = 0; i < supportedComps.size(); ++i) {
-        try {
-            ImagePlaneDesc plane, pairedPlane;
-            ImagePlaneDesc::mapOFXComponentsTypeStringToPlanes(supportedComps[i], &plane, &pairedPlane);
-            if (plane.getNumComponents() > 0) {
-                (*supported)[plane.getNumComponents() - 1] = 1;
-            }
-        } catch (const std::runtime_error &e) {
-            // ignore unsupported components
-        }
-    }
-}
-
-void
-OfxEffectInstance::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
-{
-    const OFX::Host::Property::Set & prop = effectInstance()->getPlugin()->getDescriptor().getParamSetProps();
-    int dim = prop.getDimension(kOfxImageEffectPropSupportedPixelDepths);
-
-    for (int i = 0; i < dim; ++i) {
-        const std::string & depth = prop.getStringProperty(kOfxImageEffectPropSupportedPixelDepths, i);
-        // ignore unsupported bitdepth
-        ImageBitDepthEnum bitDepth = OfxClipInstance::ofxDepthToNatronDepth(depth, false);
-        if (bitDepth != eImageBitDepthNone) {
-            depths->push_back(bitDepth);
-        }
-    }
 }
 
 ActionRetCodeEnum
@@ -2124,7 +1949,7 @@ OfxEffectInstance::getLayersProducedAndNeeded(TimeValue time,
             *passThroughInputNb = clip->getInputNb();
         }
     }
-    PassThroughEnum passThrough = isPassThroughForNonRenderedPlanes();
+    PlanePassThroughEnum passThrough = getPlanePassThrough();
     if ( (passThrough == ePassThroughPassThroughNonRenderedPlanes) || (passThrough == ePassThroughRenderAllRequestedPlanes) ) {
         // If the plug-in is pass-through but did not indicate a clip, ensure we specify the main input at least
         *passThroughInputNb = getNode()->getPreferredInput();
@@ -2164,106 +1989,6 @@ OfxEffectInstance::getLayersProducedAndNeeded(TimeValue time,
     return eActionStatusOK;
 } // getComponentsNeededAndProduced
 
-bool
-OfxEffectInstance::isMultiPlanar() const
-{
-    return _imp->common->multiplanar;
-}
-
-bool
-OfxEffectInstance::isAllProducedPlanesAtOncePreferred() const
-{
-    return _imp->common->preferRenderAllPlaneAtOnce;
-}
-
-EffectInstance::PassThroughEnum
-OfxEffectInstance::isPassThroughForNonRenderedPlanes() const
-{
-    OFX::Host::ImageEffect::Base::OfxPassThroughLevelEnum pt = effectInstance()->getPassThroughForNonRenderedPlanes();
-
-    switch (pt) {
-    case OFX::Host::ImageEffect::Base::ePassThroughLevelEnumBlockAllNonRenderedPlanes:
-
-        return EffectInstance::ePassThroughBlockNonRenderedPlanes;
-    case OFX::Host::ImageEffect::Base::ePassThroughLevelEnumPassThroughAllNonRenderedPlanes:
-
-        return EffectInstance::ePassThroughPassThroughNonRenderedPlanes;
-    case OFX::Host::ImageEffect::Base::ePassThroughLevelEnumRenderAllRequestedPlanes:
-
-        return EffectInstance::ePassThroughRenderAllRequestedPlanes;
-    }
-
-    return EffectInstance::ePassThroughBlockNonRenderedPlanes;
-}
-
-bool
-OfxEffectInstance::isViewAware() const
-{
-    return effectInstance() ? effectInstance()->isViewAware() : false;
-}
-
-EffectInstance::ViewInvarianceLevel
-OfxEffectInstance::isViewInvariant() const
-{
-    int inv = effectInstance() ? effectInstance()->getViewInvariance() : 0;
-
-    if (inv == 0) {
-        return eViewInvarianceAllViewsVariant;
-    } else if (inv == 1) {
-        return eViewInvarianceOnlyPassThroughPlanesVariant;
-    } else {
-        assert(inv == 2);
-
-        return eViewInvarianceAllViewsInvariant;
-    }
-}
-
-SequentialPreferenceEnum
-OfxEffectInstance::getSequentialPreference() const
-{
-    return _imp->common->sequentialPref;
-}
-
-bool
-OfxEffectInstance::getCanTransform() const
-{
-    if (!effectInstance()) {
-        return false;
-    }
-    return effectInstance()->canTransform();
-}
-
-bool
-OfxEffectInstance::getCanDistort() const
-{   //use OFX_EXTENSIONS_NATRON
-    if (!effectInstance()) {
-        return false;
-    }
-    return effectInstance()->canDistort();
-}
-
-bool
-OfxEffectInstance::getInputCanReceiveTransform(int inputNb) const
-{
-    if (inputNb < 0 || inputNb >= (int)_imp->common->clipsInfos.size()) {
-        assert(false);
-        return false;
-    }
-    return _imp->common->clipsInfos[inputNb].canReceiveDeprecatedTransform3x3;
-
-}
-
-bool
-OfxEffectInstance::getInputCanReceiveDistortion(int inputNb) const
-{
-    if (inputNb < 0 || inputNb >= (int)_imp->common->clipsInfos.size()) {
-        assert(false);
-        return false;
-    }
-    return _imp->common->clipsInfos[inputNb].canReceiveDistortion;
-}
-
-
 ActionRetCodeEnum
 OfxEffectInstance::getInverseDistortion(TimeValue time,
                                  const RenderScale & renderScale, //< the plug-in accepted scale
@@ -2276,8 +2001,8 @@ OfxEffectInstance::getInverseDistortion(TimeValue time,
     double tmpTransform[9];
     OfxStatus stat;
 
-    bool isDeprecatedTransformSupportEnabled = getCurrentCanTransform();
-    bool distortSupported = getCurrentCanDistort();
+    bool isDeprecatedTransformSupportEnabled = getCanTransform3x3();
+    bool distortSupported = getCanDistort();
 
 
 
@@ -2354,56 +2079,12 @@ OfxEffectInstance::getInverseDistortion(TimeValue time,
     return eActionStatusOK;
 }
 
-bool
-OfxEffectInstance::doesTemporalClipAccess() const
-{
-    return _imp->common->effect->temporalAccess();
-}
-
-bool
-OfxEffectInstance::isHostChannelSelectorSupported(bool* defaultR,
-                                                  bool* defaultG,
-                                                  bool* defaultB,
-                                                  bool* defaultA) const
-{
-    std::string defaultChannels = effectInstance()->getProps().getStringProperty(kNatronOfxImageEffectPropChannelSelector);
-
-    if (defaultChannels == kOfxImageComponentNone) {
-        return false;
-    }
-    if (defaultChannels == kOfxImageComponentRGBA) {
-        *defaultR = *defaultG = *defaultB = *defaultA = true;
-    } else if (defaultChannels == kOfxImageComponentRGB) {
-        *defaultR = *defaultG = *defaultB = true;
-        *defaultA = false;
-    } else if (defaultChannels == kOfxImageComponentAlpha) {
-        *defaultR = *defaultG = *defaultB = false;
-        *defaultA = true;
-    } else {
-        qDebug() << getScriptName_mt_safe().c_str() << "Invalid value given to property" << kNatronOfxImageEffectPropChannelSelector << "defaulting to RGBA checked";
-        *defaultR = *defaultG = *defaultB = *defaultA = true;
-    }
-
-    return true;
-}
-
-bool
-OfxEffectInstance::isHostMaskingEnabled() const
-{
-    return effectInstance()->isHostMaskingEnabled();
-}
-
-bool
-OfxEffectInstance::isHostMixingEnabled() const
-{
-    return effectInstance()->isHostMixingEnabled();
-}
 
 int
 OfxEffectInstance::getClipInputNumber(const OfxClipInstance* clip) const
 {
-    for (std::size_t i = 0; i < _imp->common->clipsInfos.size(); ++i) {
-        if (_imp->common->clipsInfos[i].clip == clip) {
+    for (std::size_t i = 0; i < _imp->common->inputClips.size(); ++i) {
+        if (_imp->common->inputClips[i] == clip) {
             return (int)i;
         }
     }

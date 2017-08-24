@@ -198,6 +198,7 @@ RotoDrawableItem::setNodesThreadSafetyForRotopainting()
     assert( toRotoStrokeItem( boost::dynamic_pointer_cast<RotoDrawableItem>( shared_from_this() ) ) );
 
     for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
+        (*it)->getEffectInstance()->setPropertiesLocked(true);
         (*it)->getEffectInstance()->setRenderThreadSafety(eRenderSafetyInstanceSafe);
     }
 
@@ -445,7 +446,9 @@ RotoDrawableItem::createNodes(bool connectNodes)
         mergeRGBA[2] = toKnobBool(_imp->mergeNode->getKnobByName(kMergeParamOutputChannelsB));
         mergeRGBA[3] = toKnobBool(_imp->mergeNode->getKnobByName(kMergeParamOutputChannelsA));
         for (int i = 0; i < 4; ++i) {
-            ignore_result(mergeRGBA[i]->linkTo(rotoPaintRGBA[i]));
+            if (rotoPaintRGBA[i] && mergeRGBA[i]) {
+                ignore_result(mergeRGBA[i]->linkTo(rotoPaintRGBA[i]));
+            }
         }
 
 
@@ -570,7 +573,7 @@ void
 RotoDrawableItem::disconnectNodes()
 {
     for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        int maxInputs = (*it)->getMaxInputCount();
+        int maxInputs = (*it)->getNInputs();
         (*it)->beginInputEdition();
         for (int i = 0; i < maxInputs; ++i) {
             (*it)->disconnectInput(i);
@@ -903,7 +906,7 @@ void
 RotoDrawableItem::resetNodesThreadSafety()
 {
     for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        (*it)->getEffectInstance()->revertToPluginThreadSafety();
+        (*it)->getEffectInstance()->setPropertiesLocked(false);
     }
 
     KnobItemsTablePtr model = getModel();
@@ -918,7 +921,7 @@ RotoDrawableItem::resetNodesThreadSafety()
     if (!rotoPaintNode) {
         return;
     }
-    node->getEffectInstance()->revertToPluginThreadSafety();
+    node->getEffectInstance()->setPropertiesLocked(false);
 }
 
 

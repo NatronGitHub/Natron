@@ -79,36 +79,8 @@ public:
         return new RotoShapeRenderNode(n);
     }
 
-    virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return 1;
-    }
-
-
-    virtual std::string getInputLabel (int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return std::string("Source");
-    }
-
-    virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return true;
-    }
-
-    virtual void addAcceptedComponents(int inputNb, std::bitset<4>* comps) OVERRIDE FINAL;
-    virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
-
-
-    // We cannot support tiles with our algorithm
-    virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
-    virtual bool supportsMultiResolution() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
-    virtual bool isMultiPlanar() const OVERRIDE FINAL;
 
     virtual bool canCPUImplementationSupportOSMesa() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
-    virtual bool doesTemporalClipAccess() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual void appendToHash(const ComputeHashArgs& args, Hash64* hash)  OVERRIDE FINAL;
 

@@ -226,6 +226,8 @@ private:
      **/
     void unsetCurrentContext();
 
+    bool hasCreatedContext() const;
+
 
     friend class OSGLContextAttacher;
     boost::scoped_ptr<OSGLContextPrivate> _imp;
@@ -240,11 +242,12 @@ class OSGLContextAttacher : public boost::enable_shared_from_this<OSGLContextAtt
 {
     OSGLContextPtr _c;
 
-    bool _attached;
+    int _attached;
     int _width;
     int _height;
     int _rowWidth;
     void* _buffer;
+    bool _dettachOnDtor;
 
     /**
      * @brief Locks the given context to this thread.
@@ -282,6 +285,11 @@ public:
      * @brief Attaches the context to the current thread. Does nothing if already attached. 
      **/
     void attach();
+
+    /**
+     * @brief Set whether to call dettach in dtor. By default its true
+     **/
+    void setDettachOnDtor(bool enabled);
 
     /**
      * @brief Returns true if the context is attached

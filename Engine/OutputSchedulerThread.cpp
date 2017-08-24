@@ -749,7 +749,7 @@ OutputSchedulerThread::beginSequenceRender()
             node = embeddedWriter;
         }
     }
-    SequentialPreferenceEnum pref = node->getEffectInstance()->getSequentialPreference();
+    SequentialPreferenceEnum pref = node->getEffectInstance()->getSequentialRenderSupport();
     if ( (pref == eSequentialPreferenceOnlySequential) || (pref == eSequentialPreferencePreferSequential) ) {
         RenderScale scaleOne(1.);
         ActionRetCodeEnum stat = node->getEffectInstance()->beginSequenceRender_public(firstFrame,
@@ -820,7 +820,7 @@ OutputSchedulerThread::endSequenceRender()
 
 
     // Call endSequenceRender action for a sequential writer (WriteFFMPEG)
-    SequentialPreferenceEnum pref = node->getEffectInstance()->getSequentialPreference();
+    SequentialPreferenceEnum pref = node->getEffectInstance()->getSequentialRenderSupport();
     if ( (pref == eSequentialPreferenceOnlySequential) || (pref == eSequentialPreferencePreferSequential) ) {
 
 
@@ -1235,8 +1235,11 @@ OutputSchedulerThreadPrivate::validateRenderSequenceArgs(RenderSequenceArgs& arg
         }
     }
 
+    EffectInstancePtr effect = treeRoot->getEffectInstance();
+    WriteNodePtr isWriter = toWriteNode(effect);
     // The effect is sequential (e.g: WriteFFMPEG), and thus cannot render multiple views, we have to choose one
-    SequentialPreferenceEnum sequentiallity = treeRoot->getEffectInstance()->getSequentialPreference();
+    SequentialPreferenceEnum sequentiallity = isWriter ? isWriter->getEmbeddedWriter()->getEffectInstance()->getSequentialRenderSupport() : effect->getSequentialRenderSupport();
+
     bool canOnlyHandleOneView = sequentiallity == eSequentialPreferenceOnlySequential || sequentiallity == eSequentialPreferencePreferSequential;
 
     const ViewIdx mainView(0);
@@ -1252,7 +1255,9 @@ OutputSchedulerThreadPrivate::validateRenderSequenceArgs(RenderSequenceArgs& arg
     KnobFilePtr outputFileName = toKnobFile(outputFileNameKnob);
     std::string pattern = outputFileName ? outputFileName->getRawFileName() : std::string();
 
-    if ( treeRoot->getEffectInstance()->isViewAware() ) {
+    bool viewAware = isWriter ? isWriter->getEmbeddedWriter()->getEffectInstance()->isViewAware() : effect->isViewAware();
+
+    if (viewAware) {
 
         //If the Writer is view aware, check if it wants to render all views at once or not
         std::size_t foundViewPattern = pattern.find_first_of("%v");

@@ -79,6 +79,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ReadNode.h"
 #include "Engine/TreeRenderQueueManager.h"
 #include "Engine/Settings.h"
+#include "Engine/Plugin.h"
 #include "Engine/Timer.h"
 #include "Engine/TreeRender.h"
 #include "Engine/Transform.h"
@@ -95,6 +96,15 @@ EffectInstance::EffectInstance(const NodePtr& node)
     , _imp( new Implementation(this) )
 {
     _imp->common->node = node;
+
+    // For the main instance, the descriptionPtr points to the common descriptor
+    _imp->descriptionPtr = _imp->common->descriptor;
+
+    if (node) {
+        // Copy the default plug-in properties
+        EffectDescriptionPtr pluginDesc = node->getPlugin()->getEffectDescriptor();
+        _imp->descriptionPtr->cloneProperties(*pluginDesc);
+    }
 }
 
 EffectInstance::EffectInstance(const EffectInstancePtr& other, const FrameViewRenderKey& key)
@@ -104,6 +114,12 @@ EffectInstance::EffectInstance(const EffectInstancePtr& other, const FrameViewRe
     _imp->renderData->node = other->getNode();
     _imp->common->node = _imp->renderData->node;
     assert(_imp->renderData->node);
+
+    {
+        QMutexLocker k(&_imp->common->pluginsPropMutex);
+        _imp->descriptionPtr.reset(new EffectDescription);
+        _imp->descriptionPtr->cloneProperties(*_imp->common->descriptor);
+    }
 }
 
 EffectInstance::~EffectInstance()
@@ -127,10 +143,6 @@ EffectInstance::getNode() const
     return NodePtr();
 }
 
-bool
-EffectInstance::isDraftRenderSupported() const {
-    return false;
-}
 
 KnobHolderPtr
 EffectInstance::createRenderCopy(const FrameViewRenderKey& key) const
@@ -159,7 +171,7 @@ EffectInstance::createRenderCopy(const FrameViewRenderKey& key) const
     
 
     // Make a copy of the main instance input locally so the state of the graph does not change throughout the render
-    int nInputs = getMaxInputCount();
+    int nInputs = getNInputs();
 
 
     clone->_imp->renderData->mainInstanceInputs.resize(nInputs);
@@ -208,7 +220,7 @@ EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
     // Append input hash for each frames needed.
     if (args.hashType != HashableObject::eComputeHashTypeTimeViewVariant) {
         // We don't need to be frame varying for the hash, just append the hash of the inputs at the current time
-        int nInputs = getMaxInputCount();
+        int nInputs = getNInputs();
         for (int i = 0; i < nInputs; ++i) {
             EffectInstancePtr input = getInputRenderEffectAtAnyTimeView(i);
             if (!input) {
@@ -224,7 +236,7 @@ EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
         if (isFrameVarying()) {
             hash->append((double)roundImageTimeToEpsilon(args.time));
         }
-        if (isViewInvariant() == eViewInvarianceAllViewsVariant) {
+        if (getViewVariance() == eViewInvarianceAllViewsVariant) {
             hash->append((int)args.view);
         }
 
@@ -340,14 +352,14 @@ EffectInstance::refreshMetadaWarnings(const NodeMetadata &metadata)
 {
     assert(QThread::currentThread() == qApp->thread());
 
-    int nInputs = getMaxInputCount();
+    int nInputs = getNInputs();
 
     QString bitDepthWarning = tr("This nodes converts higher bit depths images from its inputs to a lower bitdepth image. As "
                                  "a result of this process, the quality of the images is degraded. The following conversions are done:\n");
     bool setBitDepthWarning = false;
-    const bool multipleClipDepths = supportsMultipleClipDepths();
-    const bool multipleClipPARs = supportsMultipleClipPARs();
-    const bool multipleClipFPSs = supportsMultipleClipFPSs();
+    const bool multipleClipDepths = isMultipleInputsWithDifferentBitDepthsSupported();
+    const bool multipleClipPARs = isMultipleInputsWithDifferentPARSupported();
+    const bool multipleClipFPSs = isMultipleInputsWithDifferentFPSSupported();
     std::vector<EffectInstancePtr> inputs(nInputs);
     for (int i = 0; i < nInputs; ++i) {
         inputs[i] = getInputMainInstance(i);
@@ -461,31 +473,20 @@ EffectInstance::shouldCacheOutput(bool isFrameVaryingOrAnimated,
 
     OutputNodesMap outputs;
     node->getOutputs(outputs);
-    std::size_t nOutputNodes = outputs.size();
-
-    if (nOutputNodes == 0) {
-        // outputs == 0, never cache, unless explicitly set or rotopaint internal node
-        RotoDrawableItemPtr attachedStroke = getAttachedRotoItem();
-
-        return isForceCachingEnabled() || appPTR->isAggressiveCachingEnabled() ||
-        ( attachedStroke && attachedStroke->getModel()->getNode()->isSettingsPanelVisible() );
-
-    } else if (nOutputNodes > 1) {
-        return true;
+    for (OutputNodesMap::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        if (it->first->isSettingsPanelVisible()) {
+            // An output node has its settings panel opened, meaning the user is likely to be heavily editing
+            // that node, hence requesting this node's image a lot. Cache it.
+            return true;
+        }
     }
-
-    NodePtr output = outputs.begin()->first;
 
     if (!isFrameVaryingOrAnimated) {
         // This image never changes, cache it once.
         return true;
     }
-    if ( output->isSettingsPanelVisible() ) {
-        // Output node has panel opened, meaning the user is likely to be heavily editing
-        // that output node, hence requesting this node a lot. Cache it.
-        return true;
-    }
-    if ( getCurrentTemporalImageAccess() ) {
+
+    if ( isTemporalImageAccessEnabled() ) {
         // Very heavy to compute since many frames are fetched upstream. Cache it.
         return true;
     }
@@ -602,16 +603,15 @@ EffectInstance::getInputRenderEffectAtAnyTimeView(int n) const
     }
 }
 
-
-std::string
-EffectInstance::getInputLabel(int inputNb) const
+int
+EffectInstance::getNInputs() const
 {
-    std::string out;
-
-    out.append( 1, (char)(inputNb + 65) );
-
-    return out;
+    if (!isRenderClone()) {
+        return getNode()->getNInputs();
+    }
+    return (int)_imp->renderData->mainInstanceInputs.size();
 }
+
 
 void
 EffectInstance::onInputLabelChanged(int inputNb, const std::string& label)
@@ -626,13 +626,6 @@ EffectInstance::onInputLabelChanged(int inputNb, const std::string& label)
         foundChannel->second.layer.lock()->setLabel(label + std::string(" Layer"));
     }
 }
-
-std::string
-EffectInstance::getInputHint(int /*inputNb*/) const
-{
-    return std::string();
-}
-
 
 
 bool
@@ -687,7 +680,7 @@ EffectInstance::resolveRoIForGetImage(const GetImageInArgs& inArgs,
         return false;
     }
 
-    bool supportsMultiRes = getCurrentSupportMultiRes();
+    bool supportsMultiRes = supportsMultiResolution();
     if (!supportsMultiRes) {
         bool roiSet = false;
         for (RoIMap::const_iterator it = inputRoisMap.begin(); it != inputRoisMap.end(); ++it) {
@@ -768,7 +761,7 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
         return false;
     }
 
-    const bool inputIsMask = isInputMask(inArgs.inputNb);
+    const bool inputIsMask = getNode()->isInputMask(inArgs.inputNb);
     if (inputIsMask && !isMaskEnabled(inArgs.inputNb)) {
         return false;
     }
@@ -802,6 +795,7 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
         // Disconnected input
         return false;
     }
+
 
     // Get the requested RoI for the input, if we can recover it, otherwise TreeRender will render the RoD.
     // roiCanonical is the RoI returned by the getRegionsOfInterest action
@@ -942,24 +936,22 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
 
 
     bool mustConvertImage = false;
+
     StorageModeEnum storage = outArgs->image->getStorageMode();
-    StorageModeEnum preferredStorage;
+    StorageModeEnum preferredStorage = storage;
     if (inArgs.renderBackend) {
         switch (*inArgs.renderBackend) {
             case eRenderBackendTypeOpenGL: {
                 preferredStorage = eStorageModeGLTex;
-                if (storage != eStorageModeGLTex) {
-                    mustConvertImage = true;
-                }
             }   break;
             case eRenderBackendTypeCPU:
             case eRenderBackendTypeOSMesa:
                 preferredStorage = eStorageModeRAM;
-                if (storage == eStorageModeGLTex) {
-                    mustConvertImage = true;
-                }
                 break;
         }
+    }
+    if (storage != preferredStorage) {
+        mustConvertImage = true;
     }
 
     ImageBufferLayoutEnum imageLayout = outArgs->image->getBufferFormat();
@@ -1057,7 +1049,7 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
                     }
                 } else {
                     // When converty XY or RGB to something else, use alpha 0 or 1 to fill depending on the plug-in property.
-                    if (getCurrentAlphaFillWith1()) {
+                    if (getAlphaFillWith1()) {
                         copyArgs.alphaHandling = Image::eAlphaChannelHandlingCreateFill1;
                     } else {
                         copyArgs.alphaHandling = Image::eAlphaChannelHandlingCreateFill0;
@@ -1120,36 +1112,6 @@ EffectInstanceTLSDataPtr
 EffectInstance::getOrCreateTLSObject() const
 {
     return EffectInstanceTLSDataPtr();
-}
-
-bool
-EffectInstance::isAllProducedPlanesAtOncePreferred() const
-{
-    return false;
-}
-
-bool
-EffectInstance::isMultiPlanar() const
-{
-    return false;
-}
-
-EffectInstance::PassThroughEnum
-EffectInstance::isPassThroughForNonRenderedPlanes() const
-{
-    return ePassThroughPassThroughNonRenderedPlanes;
-}
-
-bool
-EffectInstance::isViewAware() const
-{
-    return false;
-}
-
-EffectInstance::ViewInvarianceLevel
-EffectInstance::isViewInvariant() const
-{
-    return eViewInvarianceAllViewsVariant;
 }
 
 EffectInstance::NotifyRenderingStarted_RAII::NotifyRenderingStarted_RAII(Node* node)
@@ -1250,7 +1212,7 @@ EffectInstance::message(MessageTypeEnum type,
 int
 EffectInstance::getInputNumber(const EffectInstancePtr& inputEffect) const
 {
-    for (int i = 0; i < getMaxInputCount(); ++i) {
+    for (int i = 0; i < getNInputs(); ++i) {
         if (getInputMainInstance(i) == inputEffect) {
             return i;
         }
@@ -1433,14 +1395,6 @@ EffectInstance::isDoingInteractAction() const
 }
 
 bool
-EffectInstance::getCreateChannelSelectorKnob() const
-{
-    return ( !isMultiPlanar() && !isReader() && !isWriter() &&
-             !boost::starts_with(getNode()->getPluginID(), "uk.co.thefoundry.furnace") );
-}
-
-
-bool
 EffectInstance::onKnobValueChanged(const KnobIPtr& /*k*/,
                                    ValueChangedReasonEnum /*reason*/,
                                    TimeValue /*time*/,
@@ -1583,7 +1537,7 @@ static bool hasActiveStrokeItemNodeDrawingUpstream(const EffectInstancePtr& effe
         }
     }
 
-    int nInputs = effect->getMaxInputCount();
+    int nInputs = effect->getNInputs();
     for (int i = 0; i < nInputs; ++i) {
         EffectInstancePtr inputEffect = effect->getInputRenderEffectAtAnyTimeView(i);
         if (!inputEffect) {
@@ -1869,7 +1823,7 @@ EffectInstance::checkForPremultWarningAndCheckboxes()
 std::string
 EffectInstance::makeInfoForInput(int inputNumber)
 {
-    if ( (inputNumber < -1) || ( inputNumber >= getMaxInputCount() ) ) {
+    if ( (inputNumber < -1) || ( inputNumber >= getNInputs() ) ) {
         return "";
     }
     EffectInstancePtr input;
@@ -1889,7 +1843,7 @@ EffectInstance::makeInfoForInput(int inputNumber)
     { // input name
         QString inputName;
         if (inputNumber != -1) {
-            inputName = QString::fromUtf8( getInputLabel(inputNumber).c_str() );
+            inputName = QString::fromUtf8( getNode()->getInputLabel(inputNumber).c_str() );
         } else {
             inputName = tr("Output");
         }
@@ -1996,7 +1950,7 @@ void
 EffectInstance::refreshInfos()
 {
     std::stringstream ssinfo;
-    int maxinputs = getMaxInputCount();
+    int maxinputs = getNInputs();
     for (int i = 0; i < maxinputs; ++i) {
         std::string inputInfo = makeInfoForInput(i);
         if ( !inputInfo.empty() ) {
@@ -2006,24 +1960,24 @@ EffectInstance::refreshInfos()
     std::string outputInfo = makeInfoForInput(-1);
     ssinfo << outputInfo << "<br />";
     ssinfo << "<b>" << tr("Supports tiles:").toStdString() << "</b> <font color=#c8c8c8>";
-    ssinfo << ( getCurrentSupportTiles() ? tr("Yes") : tr("No") ).toStdString() << "</font><br />";
+    ssinfo << ( supportsTiles() ? tr("Yes") : tr("No") ).toStdString() << "</font><br />";
     {
         ssinfo << "<b>" << tr("Supports multiresolution:").toStdString() << "</b> <font color=#c8c8c8>";
-        ssinfo << ( getCurrentSupportMultiRes() ? tr("Yes") : tr("No") ).toStdString() << "</font><br />";
+        ssinfo << ( supportsMultiResolution() ? tr("Yes") : tr("No") ).toStdString() << "</font><br />";
         ssinfo << "<b>" << tr("Supports renderscale:").toStdString() << "</b> <font color=#c8c8c8>";
-        if (!getCurrentSupportRenderScale()) {
+        if (!supportsRenderScale()) {
             ssinfo << tr("No").toStdString();
         } else {
             ssinfo << tr("Yes").toStdString();
         }
         ssinfo << "</font><br />";
         ssinfo << "<b>" << tr("Supports multiple clip PARs:").toStdString() << "</b> <font color=#c8c8c8>";
-        ssinfo << ( supportsMultipleClipPARs() ? tr("Yes") : tr("No") ).toStdString() << "</font><br />";
+        ssinfo << ( isMultipleInputsWithDifferentPARSupported() ? tr("Yes") : tr("No") ).toStdString() << "</font><br />";
         ssinfo << "<b>" << tr("Supports multiple clip depths:").toStdString() << "</b> <font color=#c8c8c8>";
-        ssinfo << ( supportsMultipleClipDepths() ? tr("Yes") : tr("No") ).toStdString() << "</font><br />";
+        ssinfo << ( isMultipleInputsWithDifferentBitDepthsSupported() ? tr("Yes") : tr("No") ).toStdString() << "</font><br />";
     }
     ssinfo << "<b>" << tr("Render thread safety:").toStdString() << "</b> <font color=#c8c8c8>";
-    switch ( getCurrentRenderThreadSafety() ) {
+    switch ( getRenderThreadSafety() ) {
         case eRenderSafetyUnsafe:
             ssinfo << tr("Unsafe").toStdString();
             break;
@@ -2042,7 +1996,7 @@ EffectInstance::refreshInfos()
     }
     ssinfo << "</font><br />";
     ssinfo << "<b>" << tr("OpenGL Rendering Support:").toStdString() << "</b>: <font color=#c8c8c8>";
-    PluginOpenGLRenderSupport glSupport = getCurrentOpenGLRenderSupport();
+    PluginOpenGLRenderSupport glSupport = getOpenGLRenderSupport();
     switch (glSupport) {
         case ePluginOpenGLRenderSupportNone:
             ssinfo << tr("No").toStdString();
@@ -2061,329 +2015,382 @@ EffectInstance::refreshInfos()
 } // refreshInfos
 
 
+bool
+EffectInstance::isViewAware() const
+{
+    return getNode()->getPlugin()->getPropertyUnsafe<bool>(kNatronPluginPropViewAware);
+}
+
+
+ViewInvarianceLevel
+EffectInstance::getViewVariance() const
+{
+    return getNode()->getPlugin()->getPropertyUnsafe<ViewInvarianceLevel>(kNatronPluginPropViewInvariant);
+}
+
+bool
+EffectInstance::isMultiPlanar() const
+{
+    return getNode()->getPlugin()->getPropertyUnsafe<bool>(kNatronPluginPropMultiPlanar);
+}
+
+PlanePassThroughEnum
+EffectInstance::getPlanePassThrough() const
+{
+    return getNode()->getPlugin()->getPropertyUnsafe<PlanePassThroughEnum>(kNatronPluginPropPlanesPassThrough);
+}
+
+bool
+EffectInstance::isRenderAllPlanesAtOncePreferred() const
+{
+    return getNode()->getPlugin()->getPropertyUnsafe<bool>(kNatronPluginPropRenderAllPlanesAtOnce);
+}
+
+bool
+EffectInstance::isDraftRenderSupported() const
+{
+    return getNode()->getPlugin()->getPropertyUnsafe<bool>(kNatronPluginPropSupportsDraftRender);
+}
+
+bool
+EffectInstance::isHostChannelSelectorEnabled() const
+{
+    return getNode()->getPlugin()->getPropertyUnsafe<bool>(kNatronPluginPropHostChannelSelector);
+}
+
+std::bitset<4>
+EffectInstance::getHostChannelSelectorDefaultValue() const
+{
+    return getNode()->getPlugin()->getPropertyUnsafe<std::bitset<4> >(kNatronPluginPropHostChannelSelectorValue);
+}
+
+bool
+EffectInstance::isHostMixEnabled() const
+{
+    return getNode()->getPlugin()->getPropertyUnsafe<bool>(kNatronPluginPropHostMix);
+}
+
+bool
+EffectInstance::isHostMaskEnabled() const
+{
+    return getNode()->getPlugin()->getPropertyUnsafe<bool>(kNatronPluginPropHostMask);
+}
+
+bool
+EffectInstance::isHostPlaneSelectorEnabled() const
+{
+    PluginPtr plugin = getNode()->getPlugin();
+    if (plugin->getPropertyUnsafe<bool>(kNatronPluginPropMultiPlanar)) {
+        // A multi-planar plug-in handles planes on its own
+        return false;
+    }
+    
+    return plugin->getPropertyUnsafe<bool>(kNatronPluginPropHostPlaneSelector);
+}
+
+bool
+EffectInstance::isMultipleInputsWithDifferentPARSupported() const
+{
+    return getNode()->getPlugin()->getPropertyUnsafe<bool>(kNatronPluginPropSupportsMultiInputsPAR);
+}
+
+bool
+EffectInstance::isMultipleInputsWithDifferentFPSSupported() const
+{
+    return getNode()->getPlugin()->getPropertyUnsafe<bool>(kNatronPluginPropSupportsMultiInputsFPS);
+}
+
+bool
+EffectInstance::isMultipleInputsWithDifferentBitDepthsSupported() const
+{
+    return getNode()->getPlugin()->getPropertyUnsafe<bool>(kNatronPluginPropSupportsMultiInputsBitDepths);
+}
+
+void
+EffectInstance::setPropertiesLocked(bool locked)
+{
+    {
+        QMutexLocker k(&_imp->common->pluginsPropMutex);
+        if (_imp->common->descriptorLocked == locked) {
+            return;
+        }
+        _imp->common->descriptorLocked = locked;
+    }
+    if (!locked) {
+        refreshDynamicProperties();
+    }
+}
+
 void
 EffectInstance::setRenderThreadSafety(RenderSafetyEnum safety)
 {
-    {
-        QMutexLocker k(&_imp->common->pluginsPropMutex);
 
-        _imp->common->pluginSafety = safety;
-        _imp->common->pluginSafetyLocked = true;
+    QMutexLocker k(&_imp->common->pluginsPropMutex);
+    _imp->descriptionPtr->setProperty(kEffectPropRenderThreadSafety, safety);
+    if (!getMainInstance()) {
+        onPropertiesChanged(*_imp->descriptionPtr);
     }
-    refreshDynamicProperties();
 }
 
 RenderSafetyEnum
-EffectInstance::getCurrentRenderThreadSafety() const
+EffectInstance::getRenderThreadSafety() const
 {
-    if (_imp->renderData) {
-        return _imp->renderData->props.currentThreadSafety;
-    }
-    if ( !getNode()->isMultiThreadingSupportEnabledForPlugin() ) {
-        return eRenderSafetyUnsafe;
-    }
-    QMutexLocker k(&_imp->common->pluginsPropMutex);
-
-    return _imp->common->props.currentThreadSafety;
+    // Don't need to lock, since the render instance has a local copy of the properties
+    return _imp->descriptionPtr->getPropertyUnsafe<RenderSafetyEnum>(kEffectPropRenderThreadSafety);
 }
 
 void
-EffectInstance::revertToPluginThreadSafety()
-{
-    {
-        QMutexLocker k(&_imp->common->pluginsPropMutex);
-        if (!_imp->common->pluginSafetyLocked) {
-            return;
-        }
-        _imp->common->pluginSafetyLocked = false;
-    }
-    refreshDynamicProperties();
-}
-
-
-RenderSafetyEnum
-EffectInstance::getPluginRenderThreadSafety() const
-{
-    return (RenderSafetyEnum)getNode()->getPlugin()->getPropertyUnsafe<int>(kNatronPluginPropRenderSafety);
-}
-
-void
-EffectInstance::setCurrentOpenGLRenderSupport(PluginOpenGLRenderSupport support)
+EffectInstance::setOpenGLRenderSupport(PluginOpenGLRenderSupport support)
 {
     QMutexLocker k(&_imp->common->pluginsPropMutex);
-
-    _imp->common->props.currentSupportOpenGLRender = support;
+    _imp->descriptionPtr->setProperty(kEffectPropSupportsOpenGLRendering, support);
+    if (!getMainInstance()) {
+        onPropertiesChanged(*_imp->descriptionPtr);
+    }
 }
 
 PluginOpenGLRenderSupport
-EffectInstance::getCurrentOpenGLRenderSupport()
+EffectInstance::getOpenGLRenderSupport() const
 {
-
-    PluginPtr plugin = getNode()->getPlugin();
-    if (plugin) {
-        PluginOpenGLRenderSupport pluginProp = (PluginOpenGLRenderSupport)plugin->getPropertyUnsafe<int>(kNatronPluginPropOpenGLSupport);
-        if (pluginProp != ePluginOpenGLRenderSupportYes) {
-            return pluginProp;
-        }
-    }
-
-    if (!getApp()->getProject()->isGPURenderingEnabledInProject()) {
-        return ePluginOpenGLRenderSupportNone;
-    }
-
-    // Ok still turned on, check the value of the opengl support knob in the Node page
-    KnobChoicePtr openglSupportKnob = getOrCreateOpenGLEnabledKnob();
-    if (openglSupportKnob) {
-        int index = openglSupportKnob->getValue();
-        if (index == 1) {
-            return ePluginOpenGLRenderSupportNone;
-        } else if (index == 2 && getApp()->isBackground()) {
-            return ePluginOpenGLRenderSupportNone;
-        }
-    }
-
-    // Descriptor returned that it supported OpenGL, let's see if it turned off/on in the instance the OpenGL rendering
-    QMutexLocker k(&_imp->common->pluginsPropMutex);
-
-    return _imp->common->props.currentSupportOpenGLRender;
+    // Don't need to lock, since the render instance has a local copy of the properties
+    return _imp->descriptionPtr->getPropertyUnsafe<PluginOpenGLRenderSupport>(kEffectPropSupportsOpenGLRendering);
 }
 
 void
-EffectInstance::setCurrentSequentialRenderSupport(SequentialPreferenceEnum support)
+EffectInstance::setSequentialRenderSupport(SequentialPreferenceEnum support)
 {
     QMutexLocker k(&_imp->common->pluginsPropMutex);
-
-    _imp->common->props.currentSupportSequentialRender = support;
+    _imp->descriptionPtr->setProperty(kEffectPropSupportsSequentialRender, support);
+    if (!getMainInstance()) {
+        onPropertiesChanged(*_imp->descriptionPtr);
+    }
 }
 
 SequentialPreferenceEnum
-EffectInstance::getCurrentSequentialRenderSupport() const
+EffectInstance::getSequentialRenderSupport() const
 {
-    if (_imp->renderData) {
-        return _imp->renderData->props.currentSupportSequentialRender;
-    }
-
-    QMutexLocker k(&_imp->common->pluginsPropMutex);
-
-    return _imp->common->props.currentSupportSequentialRender;
+    // Don't need to lock, since the render instance has a local copy of the properties
+    return _imp->descriptionPtr->getPropertyUnsafe<SequentialPreferenceEnum>(kEffectPropSupportsSequentialRender);
 }
 
 bool
-EffectInstance::getCurrentUsesMultiThreading() const
+EffectInstance::isTemporalImageAccessEnabled() const
 {
-    if (_imp->renderData) {
-        return _imp->renderData->props.isMultiThreaded;
-    }
-
-    QMutexLocker k(&_imp->common->pluginsPropMutex);
-
-    return _imp->common->props.isMultiThreaded;
-}
-
-bool
-EffectInstance::getCurrentTemporalImageAccess() const
-{
-    if (_imp->renderData) {
-        return _imp->renderData->props.currentTemporalImagesAccess;
-    }
-    QMutexLocker k(&_imp->common->pluginsPropMutex);
-
-    return _imp->common->props.currentTemporalImagesAccess;
+    // Don't need to lock, since the render instance has a local copy of the properties
+    return _imp->descriptionPtr->getPropertyUnsafe<bool>(kEffectPropTemporalImageAccess);
 }
 
 void
-EffectInstance::setCurrentTemporalImageAccess(bool enabled)
+EffectInstance::setTemporalImageAccessEnabled(bool enabled)
 {
     QMutexLocker k(&_imp->common->pluginsPropMutex);
-    _imp->common->props.currentTemporalImagesAccess = enabled;
+    _imp->descriptionPtr->setProperty(kEffectPropTemporalImageAccess, enabled);
+    if (!getMainInstance()) {
+        onPropertiesChanged(*_imp->descriptionPtr);
+    }
 
 }
 
 void
-EffectInstance::setCurrentSupportTiles(bool support)
+EffectInstance::setSupportsTiles(bool support)
 {
     QMutexLocker k(&_imp->common->pluginsPropMutex);
-
-    _imp->common->props.currentSupportTiles = support;
+    _imp->descriptionPtr->setProperty(kEffectPropSupportsTiles, support);
+    if (!getMainInstance()) {
+        onPropertiesChanged(*_imp->descriptionPtr);
+    }
 }
 
 bool
-EffectInstance::getCurrentSupportTiles() const
+EffectInstance::supportsTiles() const
 {
-    if (_imp->renderData) {
-        return _imp->renderData->props.currentSupportTiles;
-    }
-    QMutexLocker k(&_imp->common->pluginsPropMutex);
+    // Don't need to lock, since the render instance has a local copy of the properties
+    return _imp->descriptionPtr->getPropertyUnsafe<bool>(kEffectPropSupportsTiles);
+}
 
-    return _imp->common->props.currentSupportTiles;
+ImageBufferLayoutEnum
+EffectInstance::getPreferredBufferLayout() const
+{
+    // Don't need to lock, since the render instance has a local copy of the properties
+    return _imp->descriptionPtr->getPropertyUnsafe<ImageBufferLayoutEnum>(kEffectPropImageBufferLayout);
 }
 
 void
-EffectInstance::setCurrentAlphaFillWith1(bool enabled)
+EffectInstance::setPreferredBufferLayout(ImageBufferLayoutEnum layout)
 {
     QMutexLocker k(&_imp->common->pluginsPropMutex);
-
-    _imp->common->props.currentAlphaFillWith1 = enabled;
-}
-
-bool
-EffectInstance::getCurrentAlphaFillWith1() const
-{
-    if (_imp->renderData) {
-        return _imp->renderData->props.currentAlphaFillWith1;
+    _imp->descriptionPtr->setProperty(kEffectPropImageBufferLayout, layout);
+    if (!getMainInstance()) {
+        onPropertiesChanged(*_imp->descriptionPtr);
     }
-    QMutexLocker k(&_imp->common->pluginsPropMutex);
-
-    return _imp->common->props.currentAlphaFillWith1;
 }
 
 void
-EffectInstance::setCurrentSupportMultiRes(bool support)
+EffectInstance::setAlphaFillWith1(bool enabled)
 {
     QMutexLocker k(&_imp->common->pluginsPropMutex);
-
-    _imp->common->props.currentSupportMultires = support;
+    _imp->descriptionPtr->setProperty(kEffectPropSupportsAlphaFillWith1, enabled);
+    if (!getMainInstance()) {
+        onPropertiesChanged(*_imp->descriptionPtr);
+    }
 }
 
 bool
-EffectInstance::getCurrentSupportMultiRes() const
+EffectInstance::getAlphaFillWith1() const
 {
-    if (_imp->renderData) {
-        return _imp->renderData->props.currentSupportMultires;
-    }
-    QMutexLocker k(&_imp->common->pluginsPropMutex);
-
-    return _imp->common->props.currentSupportMultires;
+    // Don't need to lock, since the render instance has a local copy of the properties
+    return _imp->descriptionPtr->getPropertyUnsafe<bool>(kEffectPropSupportsAlphaFillWith1);
 }
 
 void
-EffectInstance::setCurrentSupportRenderScale(bool support)
+EffectInstance::setSupportsMultiResolution(bool support)
 {
     QMutexLocker k(&_imp->common->pluginsPropMutex);
-
-    _imp->common->props.currentSupportsRenderScale = support;
+    _imp->descriptionPtr->setProperty(kEffectPropSupportsMultiResolution, support);
+    if (!getMainInstance()) {
+        onPropertiesChanged(*_imp->descriptionPtr);
+    }
 }
 
 bool
-EffectInstance::getCurrentSupportRenderScale() const
+EffectInstance::supportsMultiResolution() const
 {
-    if (_imp->renderData) {
-        return _imp->renderData->props.currentSupportsRenderScale;
-    }
-    QMutexLocker k(&_imp->common->pluginsPropMutex);
-
-    return _imp->common->props.currentSupportsRenderScale;
+    // Don't need to lock, since the render instance has a local copy of the properties
+    return _imp->descriptionPtr->getPropertyUnsafe<bool>(kEffectPropSupportsMultiResolution);
 }
 
 void
-EffectInstance::setCurrentCanDistort(bool support)
+EffectInstance::setSupportsRenderScale(bool support)
 {
     QMutexLocker k(&_imp->common->pluginsPropMutex);
-
-    _imp->common->props.currentCanDistort = support;
+    _imp->descriptionPtr->setProperty(kEffectPropSupportsRenderScale, support);
+    if (!getMainInstance()) {
+        onPropertiesChanged(*_imp->descriptionPtr);
+    }
 }
 
 bool
-EffectInstance::getCurrentCanDistort() const
+EffectInstance::supportsRenderScale() const
 {
-    if (_imp->renderData) {
-        return _imp->renderData->props.currentCanDistort;
-    }
-    QMutexLocker k(&_imp->common->pluginsPropMutex);
-
-    return _imp->common->props.currentCanDistort;
+    // Don't need to lock, since the render instance has a local copy of the properties
+    return _imp->descriptionPtr->getPropertyUnsafe<bool>(kEffectPropSupportsRenderScale);
 }
 
 void
-EffectInstance::setCurrentCanTransform(bool support)
+EffectInstance::setCanDistort(bool support)
 {
-
     QMutexLocker k(&_imp->common->pluginsPropMutex);
-
-    _imp->common->props.currentDeprecatedTransformSupport = support;
+    _imp->descriptionPtr->setProperty(kEffectPropSupportsCanReturnDistortion, support);
+    if (!getMainInstance()) {
+        onPropertiesChanged(*_imp->descriptionPtr);
+    }
 }
 
 bool
-EffectInstance::getCurrentCanTransform() const
+EffectInstance::getCanDistort() const
 {
-    if (_imp->renderData) {
-        return _imp->renderData->props.currentDeprecatedTransformSupport;
-    }
-    QMutexLocker k(&_imp->common->pluginsPropMutex);
-    
-    return _imp->common->props.currentDeprecatedTransformSupport;
+    // Don't need to lock, since the render instance has a local copy of the properties
+    return _imp->descriptionPtr->getPropertyUnsafe<bool>(kEffectPropSupportsCanReturnDistortion);
 }
 
-PluginOpenGLRenderSupport
-EffectInstance::getOpenGLSupport() const
+void
+EffectInstance::setCanTransform3x3(bool support)
 {
-    return (PluginOpenGLRenderSupport)getNode()->getPlugin()->getPropertyUnsafe<int>(kNatronPluginPropOpenGLSupport);
+     QMutexLocker k(&_imp->common->pluginsPropMutex);
+    _imp->descriptionPtr->setProperty(kEffectPropSupportsCanReturn3x3Transform, support);
+    if (!getMainInstance()) {
+        onPropertiesChanged(*_imp->descriptionPtr);
+    }
 }
+
+bool
+EffectInstance::getCanTransform3x3() const
+{
+    // Don't need to lock, since the render instance has a local copy of the properties
+    return _imp->descriptionPtr->getPropertyUnsafe<bool>(kEffectPropSupportsCanReturn3x3Transform);
+}
+
+void
+EffectInstance::onPropertiesChanged(const EffectDescription& /*description*/)
+{
+
+}
+
+void
+EffectInstance::updatePropertiesInternal(const EffectDescription& description)
+{
+    if (getMainInstance()) {
+        // Only update for the main instance!
+        return;
+    }
+
+    PluginPtr plugin = getNode()->getPlugin();
+
+    PluginOpenGLRenderSupport effectGLSupport = ePluginOpenGLRenderSupportNone;
+
+        if (_imp->common->descriptorLocked) {
+            return;
+        }
+        _imp->descriptionPtr->cloneProperties(description);
+        effectGLSupport = _imp->descriptionPtr->getPropertyUnsafe<PluginOpenGLRenderSupport>(kEffectPropSupportsOpenGLRendering);
+        PluginOpenGLRenderSupport pluginGLSupport = plugin->getEffectDescriptor()->getPropertyUnsafe<PluginOpenGLRenderSupport>(kEffectPropSupportsOpenGLRendering);
+        if (pluginGLSupport == ePluginOpenGLRenderSupportNeeded) {
+            // OpenGL is needed or not supported, force the value
+            effectGLSupport = pluginGLSupport;
+        } else {
+            if ((!getApp()->getProject()->isOpenGLRenderActivated() || !plugin->isOpenGLEnabled()) && pluginGLSupport == ePluginOpenGLRenderSupportYes) {
+                pluginGLSupport = ePluginOpenGLRenderSupportNone;
+            }
+        }
+        _imp->descriptionPtr->setProperty(kEffectPropSupportsOpenGLRendering, effectGLSupport);
+
+        bool renderScaleSupported = _imp->descriptionPtr->getPropertyUnsafe<bool>(kEffectPropSupportsRenderScale);
+        // Ensure render scale can be supported
+        if ((((isReader() || isWriter()) && getNode()->getIOContainer()) || !plugin->isRenderScaleEnabled()) && renderScaleSupported) {
+            _imp->descriptionPtr->setProperty(kEffectPropSupportsRenderScale, false);
+        }
+
+        RenderSafetyEnum renderSafety = _imp->descriptionPtr->getPropertyUnsafe<RenderSafetyEnum>(kEffectPropRenderThreadSafety);
+        if (!plugin->isMultiThreadingEnabled() && renderSafety != eRenderSafetyUnsafe) {
+            _imp->descriptionPtr->setProperty(kEffectPropRenderThreadSafety, eRenderSafetyUnsafe);
+        }
+
+
+    // Ensure the OpenGL knob is in sync with the property
+    KnobChoicePtr openGLEnabledKnob = _imp->defKnobs->openglRenderingEnabledKnob.lock();
+    if (openGLEnabledKnob) {
+        // Do not call knobChanged callback otherwise it will call refreshDynamicProperties() which will recursively call this function
+        openGLEnabledKnob->blockValueChanges();
+        if (effectGLSupport == ePluginOpenGLRenderSupportNone) {
+            openGLEnabledKnob->setValue(1);
+        } else {
+            openGLEnabledKnob->setValue(0);
+        }
+        openGLEnabledKnob->unblockValueChanges();
+    }
+
+} // updatePropertiesInternal
 
 void
 EffectInstance::refreshDynamicProperties()
 {
-    PluginOpenGLRenderSupport pluginGLSupport = ePluginOpenGLRenderSupportNone;
-    PluginPtr plugin = getNode()->getPlugin();
-    if (plugin) {
-        pluginGLSupport = (PluginOpenGLRenderSupport)plugin->getPropertyUnsafe<int>(kNatronPluginPropOpenGLSupport);
-        if (plugin->isOpenGLEnabled() && pluginGLSupport == ePluginOpenGLRenderSupportYes) {
-            // Ok the plug-in supports OpenGL, figure out now if can be turned on/off by the instance
-            pluginGLSupport = getOpenGLSupport();
-        }
-    }
 
-    bool pluginAlphaFillWith1 = plugin->getPropertyUnsafe<bool>(kNatronPluginPropAlphaFillWith1);
+    QMutexLocker k(&_imp->common->pluginsPropMutex);
+    updatePropertiesInternal(*_imp->descriptionPtr);
 
-
-    setCurrentOpenGLRenderSupport(pluginGLSupport);
-    bool tilesSupported = supportsTiles();
-    bool renderScaleSupported = supportsRenderScale();
-    if ((isReader() || isWriter()) && getNode()->getIOContainer()) {
-        // If this is an encoder or decoder, we do not support render-scale.
-        renderScaleSupported = false;
-    }
-
-    bool temporal = doesTemporalClipAccess();
-    bool multiResSupported = supportsMultiResolution();
-    bool canDistort = getCanDistort();
-    bool currentDeprecatedTransformSupport = getCanTransform();
-
-    bool safetyLocked;
-    {
-        QMutexLocker k(&_imp->common->pluginsPropMutex);
-        safetyLocked = _imp->common->pluginSafetyLocked;
-    }
-
-    {
-        QMutexLocker k(&_imp->common->pluginsPropMutex);
-        if (!safetyLocked) {
-            _imp->common->pluginSafety = getPluginRenderThreadSafety();
-        }
-
-        if (!tilesSupported && _imp->common->pluginSafety == eRenderSafetyFullySafeFrame) {
-            // an effect which does not support tiles cannot support host frame threading
-            _imp->common->props.currentThreadSafety = eRenderSafetyFullySafe;
-        } else {
-            _imp->common->props.currentThreadSafety = _imp->common->pluginSafety;
-        }
-        _imp->common->props.isMultiThreaded = getNode()->getPlugin()->getPropertyUnsafe<bool>(kNatronPluginPropUsesMultiThread);
-    }
-
-    setCurrentTemporalImageAccess(temporal);
-    setCurrentSupportMultiRes(multiResSupported);
-    setCurrentSupportTiles(tilesSupported);
-    setCurrentSupportRenderScale(renderScaleSupported);
-    setCurrentSequentialRenderSupport( getSequentialPreference() );
-    setCurrentCanDistort(canDistort);
-    setCurrentCanTransform(currentDeprecatedTransformSupport);
-    setCurrentAlphaFillWith1(pluginAlphaFillWith1);
 } // refreshDynamicProperties
+
+void
+EffectInstance::updateProperties(const EffectDescription& description)
+{
+    QMutexLocker k(&_imp->common->pluginsPropMutex);
+    updatePropertiesInternal(description);
+}
 
 bool
 EffectInstance::isFullAnimationToHashEnabled() const
 {
-    return getCurrentTemporalImageAccess();
+    return isTemporalImageAccessEnabled();
 }
 
 void

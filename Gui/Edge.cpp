@@ -350,8 +350,8 @@ Edge::refreshState(bool hovered)
 
     if (effect) {
         ///Refresh properties
-        _imp->isMask = effect->isInputMask(_imp->inputNb);
-        _imp->optional = _imp->isMask || effect->isInputOptional(_imp->inputNb);
+        _imp->isMask = effect->getNode()->isInputMask(_imp->inputNb);
+        _imp->optional = _imp->isMask || effect->getNode()->isInputOptional(_imp->inputNb);
         if (_imp->isMask) {
             _imp->paintWithDash = true;
         }

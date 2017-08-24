@@ -69,15 +69,7 @@ public:
 
     static PluginPtr createPlugin();
 
-    virtual std::string getInputLabel(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return "Source";
-    }
-
-    virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return 1;
-    }
+  
 
     virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {

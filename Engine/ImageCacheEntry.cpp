@@ -47,6 +47,7 @@
 #include "Engine/ImageTilesState.h"
 #include "Engine/MultiThread.h"
 #include "Engine/ThreadPool.h"
+#include "Engine/TreeRenderQueueManager.h"
 #include "Engine/Timer.h"
 
 // Define to log tiles status in the console
@@ -2412,11 +2413,7 @@ ImageCacheEntry::waitForPendingTiles()
     // If this thread is a threadpool thread, it may wait for a while that results gets available.
     // Release the thread to the thread pool so that it may use this thread for other runnables
     // and reserve it back when done waiting.
-    bool hasReleasedThread = false;
-    if (isRunningInThreadPoolThread()) {
-        QThreadPool::globalInstance()->releaseThread();
-        hasReleasedThread = true;
-    }
+    RELEASE_THREAD_RAII();
 
     std::size_t timeSpentWaitingForPendingEntryMS = 0;
     std::size_t timeToWaitMS = 40;
@@ -2455,9 +2452,7 @@ ImageCacheEntry::waitForPendingTiles()
     _imp->writeDebugStatus("waitForPendingTiles", false);
 #endif
 
-    if (hasReleasedThread) {
-        QThreadPool::globalInstance()->reserveThread();
-    }
+
     return !hasPendingResults && !hasUnrenderedTile;
 
 } // waitForPendingTiles

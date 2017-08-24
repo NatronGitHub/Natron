@@ -58,14 +58,6 @@ public:
 
     virtual ~RemovePlaneNode();
 
-    virtual bool isMultiPlanar() const OVERRIDE FINAL
-    {
-        return true;
-    }
-
-    virtual EffectInstance::PassThroughEnum isPassThroughForNonRenderedPlanes() const OVERRIDE FINAL;
-
-    virtual std::string getInputLabel(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
 private:
 

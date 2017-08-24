@@ -52,35 +52,6 @@ protected: // derives from EffectInstance, parent of Backdrop, Dot, groupInput, 
     NoOpBase(const NodePtr& n);
 
     NoOpBase(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key);
-public:
-    //static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
-    //{
-    //    return EffectInstancePtr( new NoOpBase(node) );
-    //}
-
-    virtual int getMaxInputCount() const OVERRIDE WARN_UNUSED_RETURN
-    {
-        return 1;
-    }
-
-    virtual bool getCanDistort() const OVERRIDE FINAL WARN_UNUSED_RETURN { return true; }
-
-    virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE
-    {
-        return false;
-    }
-
-    virtual void addAcceptedComponents(int inputNb, std::bitset<4>* comps) OVERRIDE FINAL;
-    virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
-
-    virtual bool isOutput() const OVERRIDE WARN_UNUSED_RETURN
-    {
-        return false;
-    }
-
-    virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
-
-    virtual bool isHostChannelSelectorSupported(bool* defaultR, bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE FINAL;
 
 private:
 

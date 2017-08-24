@@ -22,42 +22,37 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "NoOpBase.h"
 
-#include <cassert>
-#include <stdexcept>
 
-#include "Engine/Transform.h" // Matrix3x3
-#include "Engine/ViewIdx.h"
+#include "EffectDescription.h"
 
 NATRON_NAMESPACE_ENTER
 
-NoOpBase::NoOpBase(const NodePtr& n)
-    : EffectInstance(n)
-{
-}
-
-NoOpBase::NoOpBase(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key)
-: EffectInstance(mainInstance, key)
+EffectDescription::EffectDescription()
+: PropertiesHolder()
 {
 
 }
 
-
-ActionRetCodeEnum
-NoOpBase::isIdentity(TimeValue /*time*/,
-                     const RenderScale & /*scale*/,
-                     const RectI & /*roi*/,
-                     ViewIdx /*view*/,
-                     const ImagePlaneDesc& /*plane*/,
-                     TimeValue* /*inputTime*/,
-                     ViewIdx* /*inputView*/,
-                     int* inputNb,
-                     ImagePlaneDesc* /*identityPlane*/)
+EffectDescription::~EffectDescription()
 {
-    *inputNb = 0;
 
-    return eActionStatusOK;
+}
+
+void
+EffectDescription::initializeProperties() const
+{
+    createProperty<RenderSafetyEnum>(kEffectPropRenderThreadSafety, eRenderSafetyInstanceSafe);
+    createProperty<bool>(kEffectPropSupportsTiles, false);
+    createProperty<bool>(kEffectPropTemporalImageAccess, false);
+    createProperty<bool>(kEffectPropSupportsMultiResolution, false);
+    createProperty<bool>(kEffectPropSupportsRenderScale, true);
+    createProperty<PluginOpenGLRenderSupport>(kEffectPropSupportsOpenGLRendering, ePluginOpenGLRenderSupportNone);
+    createProperty<SequentialPreferenceEnum>(kEffectPropSupportsSequentialRender, eSequentialPreferenceNotSequential);
+    createProperty<ImageBufferLayoutEnum>(kEffectPropImageBufferLayout, eImageBufferLayoutRGBAPackedFullRect);
+    createProperty<bool>(kEffectPropSupportsCanReturnDistortion, false);
+    createProperty<bool>(kEffectPropSupportsCanReturn3x3Transform, false);
+    createProperty<bool>(kEffectPropSupportsAlphaFillWith1, true);
 }
 
 NATRON_NAMESPACE_EXIT

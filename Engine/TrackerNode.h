@@ -83,24 +83,6 @@ public:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
 
-    virtual bool isHostMaskingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
-
-    virtual bool isHostMixingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN  { return false; }
-
-
-    virtual bool isHostChannelSelectorSupported(bool* /*defaultR*/,
-                                                bool* /*defaultG*/,
-                                                bool* /*defaultB*/,
-                                                bool* /*defaultA*/) const OVERRIDE WARN_UNUSED_RETURN
-    {
-        return false;
-    }
-
-    virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return false;
-    }
-
     virtual bool isSubGraphUserVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return false;

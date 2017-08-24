@@ -58,7 +58,6 @@ public:
 
     virtual ~AddPlaneNode();
 
-    virtual std::string getInputLabel(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 private:
 

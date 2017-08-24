@@ -32,6 +32,7 @@
 
 #include "Engine/AppManager.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/InputDescription.h"
 #include "Engine/Node.h"
 
 #include "Serialization/NodeSerialization.h"
@@ -66,8 +67,17 @@ StubNode::createPlugin()
     QString desc = tr("This plug-in is used as a temporary replacement for another plug-in when loading a project with a plug-in which cannot be found.");
     ret->setProperty<bool>(kNatronPluginPropIsInternalOnly, true);
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
-    ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafeFrame);
-
+    EffectDescriptionPtr effectDesc = ret->getEffectDescriptor();
+    effectDesc->setProperty<RenderSafetyEnum>(kEffectPropRenderThreadSafety, eRenderSafetyFullySafe);
+    effectDesc->setProperty<bool>(kEffectPropSupportsTiles, true);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat, 0);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthShort, 0);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthByte, 0);
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>("1111"));
+    {
+        InputDescriptionPtr input = InputDescription::create("Source", "Source", "", true, false, std::bitset<4>("1111"));
+        ret->addInputDescription(input);
+    }
     return ret;
 }
 
@@ -88,32 +98,6 @@ StubNode::StubNode(const EffectInstancePtr& mainInstance, const FrameViewRenderK
 StubNode::~StubNode()
 {
 
-}
-
-
-std::string
-StubNode::getInputLabel(int inputNb) const
-{
-    if (!_imp->serialObj) {
-        return std::string();
-    }
-    int i = 0;
-    for (std::map<std::string, std::string>::const_iterator it = _imp->serialObj->_inputs.begin(); it != _imp->serialObj->_inputs.end(); ++it, ++i) {
-        if (i == inputNb) {
-            return it->first;
-        }
-    }
-    return std::string();
-}
-
-int
-StubNode::getMaxInputCount() const
-{
-    if (!_imp->serialObj) {
-        return 0;
-    } else {
-        return (int)_imp->serialObj->_inputs.size();
-    }
 }
 
 
@@ -147,7 +131,21 @@ StubNode::refreshInputsFromSerialization()
     }
     
     // Re-initialize inputs
-    getNode()->initializeInputs();
+    {
+        getNode()->beginInputEdition();
+
+        std::vector<InputDescriptionPtr> inputs;
+        int i = 0;
+        for (std::map<std::string, std::string>::const_iterator it = _imp->serialObj->_inputs.begin(); it != _imp->serialObj->_inputs.end(); ++it, ++i) {
+            InputDescriptionPtr desc(new InputDescription);
+            getNode()->getInputDescription(i, desc.get());
+            desc->setProperty<std::string>(kInputDescPropLabel, it->first);
+            inputs.push_back(desc);
+            getNode()->changeInputDescription(i, desc);
+        }
+        getNode()->endInputEdition(true);
+
+    }
     getNode()->setLabel(_imp->serialObj->_nodeLabel);
     if (_imp->serialObj->_nodeLabel != _imp->serialObj->_nodeScriptName) {
         getNode()->setScriptName(_imp->serialObj->_nodeScriptName);

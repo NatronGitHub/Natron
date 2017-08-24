@@ -347,12 +347,15 @@ GLImageStorage::~GLImageStorage()
     if (_imp->texture) {
         OSGLContextPtr context = _imp->glContext.lock();
         assert(context);
-        OSGLContextAttacherPtr attacher;
-        if (context) {
-            attacher = OSGLContextAttacher::create(context);
-            attacher->attach();
+        OSGLContextSaver contextSaver;
+        {
+            OSGLContextAttacherPtr attacher;
+            if (context) {
+                attacher = OSGLContextAttacher::create(context);
+                attacher->attach();
+            }
+            _imp->texture.reset();
         }
-        _imp->texture.reset();
     }
 }
 

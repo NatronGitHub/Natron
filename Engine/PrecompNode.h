@@ -65,18 +65,9 @@ public:
         return false;
     }
 
-    virtual bool isHostChannelSelectorSupported(bool* /*defaultR*/,
-                                                bool* /*defaultG*/,
-                                                bool* /*defaultB*/,
-                                                bool* /*defaultA*/) const OVERRIDE FINAL
-    {
-        return false;
-    }
-
     NodePtr getOutputNode() const;
 
     AppInstancePtr getPrecompApp() const;
-    virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
 
     virtual bool isSubGraphUserVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {

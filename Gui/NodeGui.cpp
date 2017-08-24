@@ -224,7 +224,7 @@ NodeGui::initialize(NodeGraph* dag,
 
     QObject::connect( internalNode.get(), SIGNAL(labelChanged(QString,QString)), this, SLOT(onInternalNameChanged(QString,QString)) );
     QObject::connect( internalNode.get(), SIGNAL(refreshEdgesGUI()), this, SLOT(refreshEdges()) );
-    QObject::connect( internalNode.get(), SIGNAL(inputsInitialized()), this, SLOT(initializeInputs()) );
+    QObject::connect( internalNode.get(), SIGNAL(inputsDescriptionChanged()), this, SLOT(initializeInputs()) );
     QObject::connect( internalNode.get(), SIGNAL(previewImageChanged()), this, SLOT(updatePreviewImage()) );
     QObject::connect( internalNode.get(), SIGNAL(previewRefreshRequested()), this, SLOT(forceComputePreview()) );
     QObject::connect( internalNode.get(), SIGNAL(inputChanged(int)), this, SLOT(connectEdge(int)) );
@@ -1338,7 +1338,7 @@ NodeGui::initializeInputsForInspector()
     std::vector<bool> masksInputs(_inputEdges.size());
     int nMasksInputs = 0;
     for (std::size_t i = 0; i < _inputEdges.size(); ++i) {
-        masksInputs[i] = node->getEffectInstance()->isInputMask(i);
+        masksInputs[i] = node->isInputMask(i);
         if (masksInputs[i]) {
             ++nMasksInputs;
         }
@@ -1446,7 +1446,7 @@ NodeGui::initializeInputs()
                 edge->setSource(gui);
             }
         }
-        if ( !node->getEffectInstance()->isInputMask(i) ) {
+        if ( !node->isInputMask(i) ) {
             if (!input) {
                 ++emptyInputsCount;
             }
@@ -1469,7 +1469,7 @@ NodeGui::initializeInputs()
         for (U32 i = 0; i < _inputEdges.size(); ++i) {
             double edgeAngle;
             bool incrAngle = true;
-            if ( node->getEffectInstance()->isInputMask(i) ) {
+            if ( node->isInputMask(i) ) {
                 if (maskIndex == 0) {
                     edgeAngle = 0;
                     incrAngle = false;
@@ -1666,7 +1666,7 @@ NodeGui::firstAvailableEdge()
     for (U32 i = 0; i < _inputEdges.size(); ++i) {
         Edge* a = _inputEdges[i];
         if ( !a->hasSource() ) {
-            if ( getNode()->getEffectInstance()->isInputOptional(i) ) {
+            if ( getNode()->isInputOptional(i) ) {
                 continue;
             }
         }
@@ -2821,7 +2821,7 @@ NodeGui::onSwitchInputActionTriggered()
 {
     NodePtr node = getNode();
 
-    if (node->getMaxInputCount() >= 2) {
+    if (node->getNInputs() >= 2) {
         node->switchInput0And1();
         _graph->getGui()->getApp()->renderAllViewers();
         update();
@@ -3184,7 +3184,7 @@ NodeGui::onIdentityStateChanged(int inputNb)
         }
     } else {
         for (std::size_t i = 0; i < _inputEdges.size(); ++i) {
-            _inputEdges[i]->setDashed( node->getEffectInstance()->isInputMask(i) );
+            _inputEdges[i]->setDashed( node->isInputMask(i) );
         }
     }
     getDagGui()->update();

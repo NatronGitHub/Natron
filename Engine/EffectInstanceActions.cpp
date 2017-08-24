@@ -204,7 +204,7 @@ EffectInstance::getLayersProducedAndNeeded_default(TimeValue time,
     }
 
     // For each input get their needed components
-    int maxInput = getMaxInputCount();
+    int maxInput = getNInputs();
     for (int i = 0; i < maxInput; ++i) {
 
   
@@ -309,7 +309,7 @@ EffectInstance::getComponentsNeededInternal(TimeValue time,
 
     // If the plug-in does not block upstream planes, recurse up-stream on the pass-through input to get available components.
     std::list<ImagePlaneDesc> upstreamAvailableLayers;
-    PassThroughEnum passThrough = isPassThroughForNonRenderedPlanes();
+    PlanePassThroughEnum passThrough = getPlanePassThrough();
     if ( (passThrough == ePassThroughPassThroughNonRenderedPlanes) || (passThrough == ePassThroughRenderAllRequestedPlanes) ) {
 
         if ((*passThroughInputNb != -1)) {
@@ -328,9 +328,9 @@ EffectInstance::getComponentsNeededInternal(TimeValue time,
 
     // For masks, if the plug-in defaults to the color plane, use the user selected plane instead
     {
-        int maxInputs = getMaxInputCount();
+        int maxInputs = getNInputs();
         for (int i = 0; i < maxInputs; ++i) {
-            if (!isInputMask(i)) {
+            if (!getNode()->isInputMask(i)) {
                 continue;
             }
             std::list<ImagePlaneDesc>& maskPlanesNeeded = (*inputLayersNeeded)[i];
@@ -540,7 +540,7 @@ EffectInstance::attachOpenGLContext_public(TimeValue time, ViewIdx view, const R
         return eActionStatusOK;
     }
 
-    const bool renderScaleSupported = getCurrentSupportRenderScale();
+    const bool renderScaleSupported = supportsRenderScale();
     const RenderScale mappedScale = renderScaleSupported ? scale : RenderScale(1.);
 
 
@@ -552,7 +552,9 @@ EffectInstance::attachOpenGLContext_public(TimeValue time, ViewIdx view, const R
         }
         _imp->common->attachedContexts.insert( std::make_pair(glContext, *data) );
     } else {
-        _imp->common->attachedContextsMutex.unlock();
+        if (!concurrentGLRender) {
+            _imp->common->attachedContextsMutex.unlock();
+        }
     }
 
     // Take the lock until dettach is called for plug-ins that do not support concurrent GL renders
@@ -751,12 +753,12 @@ EffectInstance::getInverseDistortion_public(TimeValue inArgsTime,
         }
     }
 
-    const bool renderScaleSupported = getCurrentSupportRenderScale();
+    const bool renderScaleSupported = supportsRenderScale();
     const RenderScale mappedScale = renderScaleSupported ? renderScale : RenderScale(1.);
 
 
-    bool isDeprecatedTransformSupportEnabled = getCurrentCanTransform();
-    bool distortSupported = getCurrentCanDistort();
+    bool isDeprecatedTransformSupportEnabled = getCanTransform3x3();
+    bool distortSupported = getCanDistort();
 
 
     // If the effect is identity, do not call the getDistortion action, instead just return an identity matrix
@@ -890,7 +892,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
         }
     }
 
-    const bool renderScaleSupported = getCurrentSupportRenderScale();
+    const bool renderScaleSupported = supportsRenderScale();
     const RenderScale mappedScale = renderScaleSupported ? scale : RenderScale(1.);
 
 
@@ -968,7 +970,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
         // -2 means identity on itself.
         // A sequential effect cannot be identity on itself
         if (identityInputNb == -2) {
-            SequentialPreferenceEnum sequential = getCurrentSequentialRenderSupport();
+            SequentialPreferenceEnum sequential = getSequentialRenderSupport();
             assert(identityTime != time);
             if (sequential == eSequentialPreferenceOnlySequential) {
                 identityInputNb = -1;
@@ -1016,7 +1018,7 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
         }
     }
 
-    const bool renderScaleSupported = getCurrentSupportRenderScale();
+    const bool renderScaleSupported = supportsRenderScale();
     const RenderScale mappedScale = renderScaleSupported ? scale : RenderScale(1.);
 
 
@@ -1100,9 +1102,9 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
             // Not identity
 
             // Check if all mandatory inputs are connected, otherwise return an error
-            int nInputs = getMaxInputCount();
+            int nInputs = getNInputs();
             for (int i = 0; i < nInputs; ++i) {
-                if (isInputOptional(i)) {
+                if (getNode()->isInputOptional(i)) {
                     continue;
                 }
                 if (!getInputMainInstance(i)) {
@@ -1164,9 +1166,9 @@ EffectInstance::getRegionOfDefinition(TimeValue time,
     RenderScale renderMappedScale = scale;
 
     // By default, union the region of definition of all non mask inputs.
-    int nInputs = getMaxInputCount();
+    int nInputs = getNInputs();
     for (int i = 0; i < nInputs; ++i) {
-        if ( isInputMask(i) ) {
+        if ( getNode()->isInputMask(i) ) {
             continue;
         }
         EffectInstancePtr input = getInputRenderEffect(i, time, view);
@@ -1293,7 +1295,7 @@ EffectInstance::getRegionsOfInterest_public(TimeValue inArgsTime,
         }
     }
 
-    const bool renderScaleSupported = getCurrentSupportRenderScale();
+    const bool renderScaleSupported = supportsRenderScale();
     const RenderScale mappedScale = renderScaleSupported ? scale : RenderScale(1.);
 
     assert(renderWindow.x2 >= renderWindow.x1 && renderWindow.y2 >= renderWindow.y1);
@@ -1311,9 +1313,9 @@ EffectInstance::getRegionsOfInterest(TimeValue time,
                                      ViewIdx view,
                                      RoIMap* ret)
 {
-    bool tilesSupported = getCurrentSupportTiles();
+    bool tilesSupported = supportsTiles();
 
-    int nInputs = getMaxInputCount();
+    int nInputs = getNInputs();
     for (int i = 0; i < nInputs; ++i) {
         EffectInstancePtr input = getInputRenderEffect(i, time, view);
         if (!input) {
@@ -1352,7 +1354,7 @@ EffectInstance::getFramesNeeded(TimeValue time,
     FrameRangesMap defViewRange;
     defViewRange.insert( std::make_pair(view, ranges) );
 
-    int nInputs = getMaxInputCount();
+    int nInputs = getNInputs();
     for (int i = 0; i < nInputs; ++i) {
 
         EffectInstancePtr input = getInputRenderEffect(i, time, view);
@@ -1430,9 +1432,9 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
     {
 
         // Check if all mandatory inputs are connected, otherwise return an error
-        int nInputs = getMaxInputCount();
+        int nInputs = getNInputs();
         for (int i = 0; i < nInputs; ++i) {
-            if (isInputOptional(i)) {
+            if (getNode()->isInputOptional(i)) {
                 continue;
             }
             if (!getInputMainInstance(i)) {
@@ -1515,7 +1517,7 @@ EffectInstance::getFrameRange(double *first,
     // default is infinite if there are no non optional input clips
     *first = INT_MIN;
     *last = INT_MAX;
-    int nInputs = getMaxInputCount();
+    int nInputs = getNInputs();
 
     // Default to the union of all the frame ranges of the non optional input clips.
 
@@ -1797,8 +1799,11 @@ EffectInstance::onMetadataChanged_recursive(std::set<NodePtr>* markedNodes)
     // mark this node
     markedNodes->insert(node);
 
-    if (!onMetadataChanged_nonRecursive()) {
-        return;
+    if (!dynamic_cast<NodeGroup*>(this)) {
+        // For a group, we don't really have any metadata going on, its not really part of the graph
+        if (!onMetadataChanged_nonRecursive()) {
+            return;
+        }
     }
 
     // Recurse downstream
@@ -1955,7 +1960,7 @@ EffectInstance::getUnmappedNumberOfCompsForColorPlane(int inputNb, const std::ve
             //None comps
             return rawComps;
         } else {
-            rawComps = findClosestSupportedNumberOfComponents(inputNb, rawComps);
+            rawComps = getNode()->findClosestSupportedNumberOfComponents(inputNb, rawComps);
         }
     }
     if (!rawComps) {
@@ -1969,8 +1974,8 @@ ActionRetCodeEnum
 EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
 {
 
-    const bool multiBitDepth = supportsMultipleClipDepths();
-    int nInputs = getMaxInputCount();
+    const bool multiBitDepth = isMultipleInputsWithDifferentBitDepthsSupported();
+    int nInputs = getNInputs();
 
     // OK find the deepest chromatic component on our input clips and the one with the
     // most components
@@ -2003,7 +2008,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
             if (!isFailureRetCode(stat)) {
                 inputMetadata[i] = results->getMetadataResults();
 
-                if ( !firstNonOptionalConnectedInputComps && !isInputOptional(i) ) {
+                if ( !firstNonOptionalConnectedInputComps && !getNode()->isInputOptional(i) ) {
                     firstNonOptionalConnectedInputComps = inputMetadata[i]->getColorPlaneNComps(-1);
                 }
             }
@@ -2097,9 +2102,9 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
     metadata.setIsContinuous(hasOneInputContinuous /* || hasAnimation*/);
 
     // now find the best depth that the plugin supports
-    deepestBitDepth = getClosestSupportedBitDepth(deepestBitDepth);
+    deepestBitDepth = getNode()->getClosestSupportedBitDepth(deepestBitDepth);
 
-    bool multipleClipsPAR = supportsMultipleClipPARs();
+    bool multipleClipsPAR = isMultipleInputsWithDifferentPARSupported();
 
 
     Format projectFormat;
@@ -2134,7 +2139,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
         }
         metadata.setPixelAspectRatio(i, par);
 
-        bool isOptional = i >= 0 && isInputOptional(i);
+        bool isOptional = i >= 0 && getNode()->isInputOptional(i);
         if (i >= 0) {
             if (isOptional) {
                 if (!firstOptionalInputFormatSet && inputMetadata[i]) {
@@ -2153,7 +2158,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
             // "Optional input clips can always have their component types remapped"
             // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#id482755
             ImageBitDepthEnum depth = deepestBitDepth;
-            int remappedComps = findClosestSupportedNumberOfComponents(i, mostComponents);
+            int remappedComps = getNode()->findClosestSupportedNumberOfComponents(i, mostComponents);
             metadata.setColorPlaneNComps(i, remappedComps);
             if ( (i == -1) && !premultSet &&
                 ( ( remappedComps == 4 ) || ( remappedComps == 1 ) ) ) {
@@ -2174,7 +2179,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
             }
 
 
-            ImageBitDepthEnum depth = multiBitDepth ? getClosestSupportedBitDepth(rawDepth) : deepestBitDepth;
+            ImageBitDepthEnum depth = multiBitDepth ? getNode()->getClosestSupportedBitDepth(rawDepth) : deepestBitDepth;
             metadata.setBitDepth(i, depth);
 
             metadata.setColorPlaneNComps(i, rawComps);
@@ -2209,10 +2214,10 @@ void
 EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
 {
 
-    const bool supportsMultipleClipDepths = _publicInterface->supportsMultipleClipDepths();
-    const bool supportsMultipleClipPARs = _publicInterface->supportsMultipleClipPARs();
+    const bool supportsMultipleClipDepths = _publicInterface->isMultipleInputsWithDifferentBitDepthsSupported();
+    const bool supportsMultipleClipPARs = _publicInterface->isMultipleInputsWithDifferentPARSupported();
 
-    int nInputs = _publicInterface->getMaxInputCount();
+    int nInputs = _publicInterface->getNInputs();
 
     double outputPAR = md.getPixelAspectRatio(-1);
 
@@ -2228,7 +2233,7 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
             }
         }
         ImageBitDepthEnum depth = md.getBitDepth(i);
-        md.setBitDepth( i, _publicInterface->getClosestSupportedBitDepth(depth));
+        md.setBitDepth( i, _publicInterface->getNode()->getClosestSupportedBitDepth(depth));
 
         int nComps = md.getColorPlaneNComps(i);
         bool isAlpha = false;
@@ -2241,7 +2246,7 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
             }
         }
 
-        nComps = _publicInterface->findClosestSupportedNumberOfComponents(i, nComps);
+        nComps = _publicInterface->getNode()->findClosestSupportedNumberOfComponents(i, nComps);
 
 
         md.setColorPlaneNComps(i, nComps);

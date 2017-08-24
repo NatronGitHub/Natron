@@ -114,9 +114,16 @@ ReadNode::createPlugin()
     QString desc = tr("Node used to read images or videos from disk. The image/video is identified by its filename and "
                       "its extension. Given the extension, the Reader selected from the Preferences to decode that specific format will be used.");
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
-    ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
+    EffectDescriptionPtr effectDesc = ret->getEffectDescriptor();
+    effectDesc->setProperty<RenderSafetyEnum>(kEffectPropRenderThreadSafety, eRenderSafetyFullySafe);
+    effectDesc->setProperty<bool>(kEffectPropSupportsTiles, true);
+    effectDesc->setProperty<bool>(kEffectPropSupportsRenderScale, false);
     ret->setProperty<int>(kNatronPluginPropShortcut, (int)Key_R);
     ret->setProperty<std::string>(kNatronPluginPropIconFilePath,  "Images/readImage.png");
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat, 0);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthByte, 1);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthShort, 2);
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>("1111"));
     return ret;
 }
 
@@ -813,20 +820,6 @@ ReadNode::isGenerator() const
     return true;
 }
 
-bool
-ReadNode::getCreateChannelSelectorKnob() const
-{
-    return false;
-}
-
-bool
-ReadNode::isHostChannelSelectorSupported(bool* /*defaultR*/,
-                                         bool* /*defaultG*/,
-                                         bool* /*defaultB*/,
-                                         bool* /*defaultA*/) const
-{
-    return false;
-}
 
 void
 ReadNode::initializeKnobs()

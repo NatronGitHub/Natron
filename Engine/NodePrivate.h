@@ -140,9 +140,6 @@ public:
     // If true, the node is serialized
     bool isPersistent;
 
-    // was initializeinputs() called so far?
-    bool inputsInitialized;
-
     // Protects outputs
     mutable QMutex outputsMutex;
 
@@ -155,6 +152,10 @@ public:
 
     // vector of weak references to input nodes
     InputsV inputs;
+
+    // Data for each input, initialized from the plug-in descriptor. It may be modified afterwards hence
+    // this is a copy from the plug-in
+    std::vector<InputDescriptionPtr> inputDescriptions;
 
     // Pointer to the effect hosted by this node.
     // This is the main effect and cannot be used to render, instead
@@ -174,18 +175,6 @@ public:
 
     // Node label as visible in the GUI. Can be set to any-thing.
     std::string label;
-
-    // Protects inputLabels, inputHints
-    mutable QMutex inputsLabelsMutex;
-
-    // Label of each input arrow
-    std::vector<std::string> inputLabels;
-
-    // Hint for each input arrow (displayed in the documentation)
-    std::vector<std::string> inputHints;
-
-    // Whether an input should be made visible at all in the GUI or not.
-    std::vector<bool> inputsVisibility;
     
     // The plugin which stores the function to instantiate the effect
     PluginWPtr plugin;
@@ -252,6 +241,9 @@ public:
     // Used to bracket calls to onInputChanged to ensure stuff that needs to be recomputed
     // when inputs are changed is computed once.
     int inputModifiedRecursion;
+
+    // Used to bracket inputs description modification and emit inputsDescriptionChanged only once
+    int hasModifiedInputsDescription;
 
     // Input indices that changed whilst in the beginInput/endInputChanged bracket
     std::set<int> inputsModified;

@@ -47,6 +47,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/RenderEngine.h"
 #include "Engine/TimeLine.h"
 #include "Engine/TreeRender.h"
+#include "Engine/TreeRenderQueueManager.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/ViewerDisplayScheduler.h"
 
@@ -380,11 +381,7 @@ ViewerCurrentFrameRequestScheduler::onTreeRenderFinished(const TreeRenderPtr& re
     // Now we wait for all renders for the results to be available. Since we are
     // in a thread-pool thread, we release the thread to the thread pool so it can do more meaningful tasks.
 
-    bool releasedThread = false;
-    if (isRunningInThreadPoolThread()) {
-        releasedThread = true;
-        QThreadPool::globalInstance()->releaseThread();
-    }
+    RELEASE_THREAD_RAII();
 
     {
         // Remove the current render from the abortable renders list
@@ -419,10 +416,6 @@ ViewerCurrentFrameRequestScheduler::onTreeRenderFinished(const TreeRenderPtr& re
         processStartArgs->executeOnMainThread = true;
         processStartArgs->processor = this;
         _imp->processFrameThread.startTask(processStartArgs);
-    }
-
-    if (releasedThread) {
-        QThreadPool::globalInstance()->reserveThread();
     }
 } // onTreeRenderFinished
 

@@ -75,15 +75,7 @@ public:
         return EffectInstancePtr( new GroupInput(node) );
     }
 
-    virtual std::string getInputLabel(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return "";
-    }
-
-    virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return 0;
-    }
+   
 
     virtual bool isGenerator() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {

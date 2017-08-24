@@ -62,57 +62,6 @@ public:
 
     virtual ~OneViewNode();
 
-    virtual int getMaxInputCount() const OVERRIDE WARN_UNUSED_RETURN
-    {
-        return 1;
-    }
-    virtual std::string getInputLabel (int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isInputMask(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return false;
-    }
-
-    virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return false;
-    }
-
-    virtual void addAcceptedComponents(int inputNb, std::bitset<4>* comps) OVERRIDE FINAL;
-
-    virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
-
-
-    virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return true;
-    }
-
-    virtual bool supportsMultiResolution() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return true;
-    }
-
-    virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
-
-    virtual bool isHostChannelSelectorSupported(bool* /*defaultR*/,
-                                                bool* /*defaultG*/,
-                                                bool* /*defaultB*/,
-                                                bool* /*defaultA*/) const OVERRIDE WARN_UNUSED_RETURN
-    {
-        return false;
-    }
-
-    virtual bool isViewAware() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return true;
-    }
-
-    virtual ViewInvarianceLevel isViewInvariant() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return eViewInvarianceAllViewsVariant;
-    }
-
-
 private:
 
     virtual void fetchRenderCloneKnobs() OVERRIDE;

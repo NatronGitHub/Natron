@@ -26,6 +26,7 @@
 
 #include <cassert>
 #include <stdexcept>
+#include "Engine/InputDescription.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -38,10 +39,21 @@ Dot::createPlugin()
 
     QString desc = tr("Doesn't do anything to the input image, this is used in the node graph to make bends in the links.");
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
-    ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
+    EffectDescriptionPtr effectDesc = ret->getEffectDescriptor();
+    effectDesc->setProperty<RenderSafetyEnum>(kEffectPropRenderThreadSafety, eRenderSafetyFullySafe);
+    effectDesc->setProperty<bool>(kEffectPropSupportsTiles, true);
     ret->setProperty<int>(kNatronPluginPropShortcut, (int)Key_period);
     ret->setProperty<int>(kNatronPluginPropShortcut, (int)eKeyboardModifierShift, 1);
     ret->setProperty<std::string>(kNatronPluginPropIconFilePath,  "Images/dot_icon.png");
+
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat, 0);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthByte, 1);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthShort, 2);
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>("1111"));
+    {
+        InputDescriptionPtr input = InputDescription::create("", "", "", false, false, std::bitset<4>("1111"));
+        ret->addInputDescription(input);
+    }
     return ret;
 }
 

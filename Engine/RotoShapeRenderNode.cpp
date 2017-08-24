@@ -32,6 +32,7 @@
 #include "Engine/Bezier.h"
 #include "Engine/Color.h"
 #include "Engine/Image.h"
+#include "Engine/InputDescription.h"
 #include "Engine/Node.h"
 #include "Engine/Hash64.h"
 #include "Engine/NodeMetadata.h"
@@ -64,8 +65,21 @@ RotoShapeRenderNode::createPlugin()
     grouping.push_back(PLUGIN_GROUP_PAINT);
     PluginPtr ret = Plugin::create(RotoShapeRenderNode::create, RotoShapeRenderNode::createRenderClone, PLUGINID_NATRON_ROTOSHAPE, "RotoShape", 1, 0, grouping);
     ret->setProperty<bool>(kNatronPluginPropIsInternalOnly, true);
-    ret->setProperty<int>(kNatronPluginPropOpenGLSupport, (int)ePluginOpenGLRenderSupportYes);
-    ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafeFrame);
+    EffectDescriptionPtr effectDesc = ret->getEffectDescriptor();
+    effectDesc->setProperty<RenderSafetyEnum>(kEffectPropRenderThreadSafety, eRenderSafetyFullySafe);
+    effectDesc->setProperty<PluginOpenGLRenderSupport>(kEffectPropSupportsOpenGLRendering, ePluginOpenGLRenderSupportYes);
+    effectDesc->setProperty<bool>(kEffectPropSupportsTiles, false);
+    effectDesc->setProperty<bool>(kEffectPropSupportsMultiResolution, true);
+    effectDesc->setProperty<bool>(kEffectPropTemporalImageAccess, true);
+    ret->setProperty<bool>(kNatronPluginPropMultiPlanar, true);
+
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat, 0);
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>("1111"));
+    {
+        InputDescriptionPtr input = InputDescription::create("Source", "Source", "", true, false, std::bitset<4>("1111"));
+        ret->addInputDescription(input);
+    }
+
     return ret;
 }
 
@@ -104,31 +118,6 @@ RotoShapeRenderNode::canCPUImplementationSupportOSMesa() const
 #endif
 }
 
-bool
-RotoShapeRenderNode::doesTemporalClipAccess() const
-{
-    RotoDrawableItemPtr item = getAttachedRotoItem();
-    if (!item) {
-        return false;
-    }
-
-    // We do temporal access if motion blur is enabled
-    KnobChoicePtr mbKnob = item->getMotionBlurModeKnob();
-    return mbKnob ? mbKnob->getValue() != 0 : false;
-}
-
-void
-RotoShapeRenderNode::addAcceptedComponents(int /*inputNb*/,
-                                 std::bitset<4>* supported)
-{
-    (*supported)[0] = (*supported)[1] = (*supported)[2] = (*supported)[3] = 1;
-}
-
-void
-RotoShapeRenderNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
-{
-    depths->push_back(eImageBitDepthFloat);
-}
 
 void
 RotoShapeRenderNode::fetchRenderCloneKnobs()
@@ -280,25 +269,6 @@ RotoShapeRenderNode::getFramesNeeded(TimeValue /*time*/, ViewIdx /*view*/,  Fram
     return eActionStatusOK;
 } // getFramesNeeded
 
-bool
-RotoShapeRenderNode::supportsTiles() const
-{
-    RotoShapeRenderTypeEnum type = (RotoShapeRenderTypeEnum)_imp->renderType.lock()->getValue();
-    return type == eRotoShapeRenderTypeSmear;
-    //return false;
-}
-
-bool
-RotoShapeRenderNode::supportsMultiResolution() const
-{
-    return true;
-}
-
-bool
-RotoShapeRenderNode::isMultiPlanar() const
-{
-    return true;
-}
 
 ActionRetCodeEnum
 RotoShapeRenderNode::getLayersProducedAndNeeded(TimeValue time,

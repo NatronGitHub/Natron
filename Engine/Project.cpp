@@ -1698,7 +1698,7 @@ Project::refreshOpenGLRenderingFlagOnNodes()
     NodesList allNodes;
     getNodes_recursive(allNodes);
     for (NodesList::iterator it = allNodes.begin(); it!=allNodes.end(); ++it) {
-        (*it)->getEffectInstance()->onOpenGLEnabledKnobChangedOnProject(activated);
+        (*it)->getEffectInstance()->refreshDynamicProperties();
     }
 }
 

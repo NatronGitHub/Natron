@@ -44,6 +44,7 @@
 #include "Engine/GroupOutput.h"
 #include "Engine/Image.h"
 #include "Engine/KnobFile.h"
+#include "Engine/InputDescription.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGraphI.h"
@@ -543,7 +544,7 @@ NodeCollection::connectNodes(int inputNumber,
         if (!ok) {
             return false;
         }
-        if ( input && (input->getMaxInputCount() > 0) ) {
+        if ( input && (input->getNInputs() > 0) ) {
             ok = connectNodes(input->getPreferredInputForConnection(), existingInput, input);
             if (!ok) {
                 return false;
@@ -608,7 +609,7 @@ NodeCollection::disconnectNodes(const NodePtr& input,
         return false;
     }
 
-    int inputsCount = input->getMaxInputCount();
+    int inputsCount = input->getNInputs();
     if (inputsCount == 1) {
         inputToReconnectTo = input->getInput(0);
     }
@@ -649,7 +650,7 @@ NodeCollection::autoConnectNodes(const NodePtr& selected,
     bool connectAsInput = false;
 
     ///cannot connect 2 input nodes together: case 2-b)
-    if ( (selected->getMaxInputCount() == 0) && (created->getMaxInputCount() == 0) ) {
+    if ( (selected->getNInputs() == 0) && (created->getNInputs() == 0) ) {
         return false;
     }
     ///cannot connect 2 output nodes together: case 1-a)
@@ -672,8 +673,8 @@ NodeCollection::autoConnectNodes(const NodePtr& selected,
             connectAsInput = false;
         }
         ///case b)
-        else if (created->getMaxInputCount() == 0) {
-            assert(selected->getMaxInputCount() != 0);
+        else if (created->getNInputs() == 0) {
+            assert(selected->getNInputs() != 0);
             ///case 3-b): connect the created node as input of the selected node
             connectAsInput = true;
         }
@@ -1037,21 +1038,32 @@ NodeCollection::refreshTimeInvariantMetadataOnAllNodes_recursive()
 
 struct NodeGroupPrivate
 {
+    NodeGroup* _publicInterface;
     mutable QMutex nodesLock; // protects inputs & outputs
     std::vector<NodeWPtr > inputs;
     NodesWList outputs;
     bool isDeactivatingGroup;
     bool isActivatingGroup;
-    NodeGroupPrivate()
-        : nodesLock(QMutex::Recursive)
-        , inputs()
-        , outputs()
-        , isDeactivatingGroup(false)
-        , isActivatingGroup(false)
+
+    NodeGroupPrivate(NodeGroup* publicInterface)
+    : _publicInterface(publicInterface)
+    , nodesLock(QMutex::Recursive)
+    , inputs()
+    , outputs()
+    , isDeactivatingGroup(false)
+    , isActivatingGroup(false)
 
     {
     }
+
+    void refreshInputs();
 };
+
+void
+NodeGroup::refreshInputs()
+{
+    _imp->refreshInputs();
+}
 
 void
 NodeGroup::onNodeRemoved(const Node* node)
@@ -1082,9 +1094,14 @@ NodeGroup::createPlugin()
                        "parameters of nodes nested within the Group. To specify the outputs and inputs of the Group node, "
                        "you may add multiple Input node within the group and exactly 1 Output node.");
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
-    ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
+    EffectDescriptionPtr effectDesc = ret->getEffectDescriptor();
+    effectDesc->setProperty<RenderSafetyEnum>(kEffectPropRenderThreadSafety, eRenderSafetyFullySafe);
+    effectDesc->setProperty<bool>(kEffectPropSupportsTiles, true);
     ret->setProperty<std::string>(kNatronPluginPropIconFilePath, "Images/group_icon.png");
-
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat, 0);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthShort, 1);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthByte, 2);
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>("1111"));
     return ret;
 }
 
@@ -1092,14 +1109,14 @@ NodeGroup::createPlugin()
 NodeGroup::NodeGroup(const NodePtr &node)
     : EffectInstance(node)
     , NodeCollection( node ? node->getApp() : AppInstancePtr() )
-    , _imp( new NodeGroupPrivate() )
+    , _imp( new NodeGroupPrivate(this) )
 {
 }
 
 NodeGroup::NodeGroup(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key)
 : EffectInstance(mainInstance, key)
 , NodeCollection(mainInstance->getApp())
-, _imp(new NodeGroupPrivate())
+, _imp(new NodeGroupPrivate(this))
 {
     
 }
@@ -1144,52 +1161,67 @@ NodeGroup::~NodeGroup()
 {
 }
 
-
 void
-NodeGroup::addAcceptedComponents(int /*inputNb*/,                                 std::bitset<4>* supported)
+NodeGroupPrivate::refreshInputs()
 {
-    (*supported)[0] = (*supported)[1] = (*supported)[2] = (*supported)[3] = 1;
-}
-
-void
-NodeGroup::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
-{
-    depths->push_back(eImageBitDepthByte);
-    depths->push_back(eImageBitDepthShort);
-    depths->push_back(eImageBitDepthFloat);
-}
-
-int
-NodeGroup::getMaxInputCount() const
-{
-    return (int)_imp->inputs.size();
-}
-
-std::string
-NodeGroup::getInputLabel(int inputNb) const
-{
-    NodePtr input;
+    std::vector<InputDescriptionPtr> descriptors;
     {
-        QMutexLocker k(&_imp->nodesLock);
-        if ( ( inputNb >= (int)_imp->inputs.size() ) || (inputNb < 0) ) {
-            return std::string();
-        }
+        QMutexLocker k(&nodesLock);
+        descriptors.resize(inputs.size());
+        for (std::size_t i = 0; i < inputs.size(); ++i) {
+            NodePtr input = inputs[i].lock();
 
-        ///If the input name starts with "input" remove it, otherwise keep the full name
+            descriptors[i].reset(new InputDescription);
+            InputDescriptionPtr& desc = descriptors[i];
 
-        input = _imp->inputs[inputNb].lock();
-        if (!input) {
-            return std::string();
+            QString inputName;
+            if (input) {
+                inputName = QString::fromUtf8( input->getLabel_mt_safe().c_str() );
+
+                if ( inputName.startsWith(QString::fromUtf8("input"), Qt::CaseInsensitive) ) {
+                    inputName.remove(0, 5);
+                }
+            }
+
+
+            desc->setProperty<std::string>(kInputDescPropScriptName, inputName.toStdString());
+            desc->setProperty<std::string>(kInputDescPropLabel, inputName.toStdString());
+
+            GroupInputPtr isGroupInput;
+            if (input) {
+                isGroupInput = input->isEffectGroupInput();
+            }
+            bool isOptional = false;
+            bool isMask = false;
+            if (isGroupInput) {
+                {
+                    KnobBoolPtr knob = toKnobBool(isGroupInput->getKnobByName(kNatronGroupInputIsOptionalParamName));
+                    if (knob) {
+                        isOptional = knob->getValue();
+                    }
+                }
+                {
+                    KnobBoolPtr knob = toKnobBool(isGroupInput->getKnobByName(kNatronGroupInputIsMaskParamName));
+                    if (knob) {
+                        isMask = knob->getValue();
+                    }
+                }
+            }
+
+            desc->setProperty<bool>(kInputDescPropIsOptional, isOptional);
+            desc->setProperty<bool>(kInputDescPropIsMask, isMask);
+            desc->setProperty<std::bitset<4> >(kInputDescPropSupportedComponents, std::bitset<4>("1111"));
         }
     }
-    QString inputName = QString::fromUtf8( input->getLabel_mt_safe().c_str() );
-
-    if ( inputName.startsWith(QString::fromUtf8("input"), Qt::CaseInsensitive) ) {
-        inputName.remove(0, 5);
+    NodePtr node = _publicInterface->getNode();
+    node->beginInputEdition();
+    node->removeAllInputs();
+    for (std::size_t i = 0; i < descriptors.size(); ++i) {
+        node->addInput(descriptors[i]);
     }
+    node->endInputEdition(true);
 
-    return inputName.toStdString();
-}
+} // refreshInputs
 
 TimeValue
 NodeGroup::getCurrentRenderTime() const
@@ -1223,83 +1255,6 @@ NodeGroup::getCurrentRenderView() const
     return EffectInstance::getCurrentRenderView();
 }
 
-bool
-NodeGroup::isInputOptional(int inputNb) const
-{
-    NodePtr n;
-
-    {
-        QMutexLocker k(&_imp->nodesLock);
-
-        if ( ( inputNb >= (int)_imp->inputs.size() ) || (inputNb < 0) ) {
-            return false;
-        }
-
-
-        n = _imp->inputs[inputNb].lock();
-        if (!n) {
-            return false;
-        }
-    }
-    GroupInputPtr input = n->isEffectGroupInput();
-
-    if (!input) {
-        return false;
-    }
-    KnobIPtr knob = input->getKnobByName(kNatronGroupInputIsOptionalParamName);
-    assert(knob);
-    if (!knob) {
-        return false;
-    }
-    KnobBoolPtr isBool = toKnobBool(knob);
-    assert(isBool);
-
-    return isBool ? isBool->getValue() : false;
-}
-
-bool
-NodeGroup::isHostChannelSelectorSupported(bool* /*defaultR*/,
-                                          bool* /*defaultG*/,
-                                          bool* /*defaultB*/,
-                                          bool* /*defaultA*/) const
-{
-    return false;
-}
-
-bool
-NodeGroup::isInputMask(int inputNb) const
-{
-    NodePtr n;
-
-    {
-        QMutexLocker k(&_imp->nodesLock);
-
-        if ( ( inputNb >= (int)_imp->inputs.size() ) || (inputNb < 0) ) {
-            return false;
-        }
-
-
-        n = _imp->inputs[inputNb].lock();
-        if (!n) {
-            return false;
-        }
-    }
-    GroupInputPtr input = n->isEffectGroupInput();
-
-    if (!input) {
-        return false;
-    }
-    KnobIPtr knob = input->getKnobByName(kNatronGroupInputIsMaskParamName);
-    assert(knob);
-    if (!knob) {
-        return false;
-    }
-    KnobBoolPtr isBool = toKnobBool(knob);
-    assert(isBool);
-
-    return isBool ? isBool->getValue() : false;
-}
-
 
 void
 NodeGroup::notifyNodeDeactivated(const NodePtr& node)
@@ -1309,6 +1264,7 @@ NodeGroup::notifyNodeDeactivated(const NodePtr& node)
     }
     NodePtr thisNode = getNode();
 
+    bool mustRefreshInputs = false;
     {
         QMutexLocker k(&_imp->nodesLock);
         GroupInputPtr isInput = node->isEffectGroupInput();
@@ -1322,8 +1278,7 @@ NodeGroup::notifyNodeDeactivated(const NodePtr& node)
                     thisNode->disconnectInput(i);
 
                     _imp->inputs.erase(it);
-                    thisNode->initializeInputs();
-
+                    mustRefreshInputs = true;
                     break;
                 }
             }
@@ -1338,7 +1293,10 @@ NodeGroup::notifyNodeDeactivated(const NodePtr& node)
                 }
             }
         }
+    }
 
+    if (mustRefreshInputs) {
+        _imp->refreshInputs();
     }
 
     ///Notify outputs of the group nodes that their inputs may have changed
@@ -1361,17 +1319,21 @@ NodeGroup::notifyNodeActivated(const NodePtr& node)
 
     NodePtr thisNode = getNode();
 
+    bool mustRefreshInputs = false;
     {
         QMutexLocker k(&_imp->nodesLock);
         GroupInputPtr isInput = node->isEffectGroupInput();
         if (isInput) {
             _imp->inputs.push_back(node);
-            thisNode->initializeInputs();
+            mustRefreshInputs = true;
         }
         GroupOutputPtr isOutput = toGroupOutput( node->getEffectInstance() );
         if (isOutput) {
             _imp->outputs.push_back(node);
         }
+    }
+    if (mustRefreshInputs) {
+        _imp->refreshInputs();
     }
     // Notify outputs of the group nodes that their inputs may have changed
     OutputNodesMap outputs;
@@ -1386,13 +1348,13 @@ NodeGroup::notifyNodeActivated(const NodePtr& node)
 void
 NodeGroup::notifyInputOptionalStateChanged(const NodePtr& /*node*/)
 {
-    getNode()->initializeInputs();
+    _imp->refreshInputs();
 }
 
 void
 NodeGroup::notifyInputMaskStateChanged(const NodePtr& /*node*/)
 {
-    getNode()->initializeInputs();
+    _imp->refreshInputs();
 }
 
 void
@@ -1401,7 +1363,7 @@ NodeGroup::notifyNodeLabelChanged(const NodePtr& node)
     GroupInputPtr isInput = node->isEffectGroupInput();
 
     if (isInput) {
-        getNode()->initializeInputs();
+        _imp->refreshInputs();
     }
 }
 
@@ -1639,10 +1601,10 @@ restoreInput(const NodePtr& node,
         // So iterate through masks to find it
         if (isMaskInput) {
             // Find the mask corresponding to the index
-            int nInputs = node->getMaxInputCount();
+            int nInputs = node->getNInputs();
             int maskIndex = 0;
             for (int i = 0; i < nInputs; ++i) {
-                if (node->getEffectInstance()->isInputMask(i)) {
+                if (node->isInputMask(i)) {
                     if (maskIndex == index) {
                         index = i;
                         break;
@@ -1917,7 +1879,7 @@ createTopologicalSortNodeRecursive(bool enterGroups,
 
     // Recurse on inputs, unless the node is not part of the allNodes list
     if (isPartOfAllNodes) {
-        int nInputs = node->getMaxInputCount();
+        int nInputs = node->getNInputs();
 
         ret->inputs.resize(nInputs);
 

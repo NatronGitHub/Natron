@@ -154,7 +154,7 @@ EffectInstance::getSelectedLayer(int inputNb,
     }
 
     if (processChannels) {
-        if (_imp->defKnobs->hostChannelSelectorEnabled &&  _imp->defKnobs->enabledChan[0].lock() ) {
+        if (isHostChannelSelectorEnabled() &&  _imp->defKnobs->enabledChan[0].lock() ) {
             (*processChannels)[0] = _imp->defKnobs->enabledChan[0].lock()->getValue();
             (*processChannels)[1] = _imp->defKnobs->enabledChan[1].lock()->getValue();
             (*processChannels)[2] = _imp->defKnobs->enabledChan[2].lock()->getValue();
@@ -399,15 +399,9 @@ EffectInstance::refreshEnabledKnobsLabel(const ImagePlaneDesc& mainInputComps, c
 
 
 bool
-EffectInstance::isPluginUsingHostChannelSelectors() const
-{
-    return _imp->defKnobs->hostChannelSelectorEnabled;
-}
-
-bool
 EffectInstance::getProcessChannel(int channelIndex) const
 {
-    if (!isPluginUsingHostChannelSelectors()) {
+    if (!isHostChannelSelectorEnabled()) {
         return true;
     }
     assert(channelIndex >= 0 && channelIndex < 4);
@@ -448,193 +442,6 @@ EffectInstance::hasAtLeastOneChannelToProcess() const
     }
     
     return true;
-}
-
-void
-EffectInstance::refreshAcceptedComponents(int nInputs)
-{
-    QMutexLocker k(&_imp->common->supportedComponentsMutex);
-    _imp->common->supportedInputComponents.resize(nInputs);
-    for (int i = 0; i < nInputs; ++i) {
-        _imp->common->supportedInputComponents[i].reset();
-        if ( isInputMask(i) ) {
-            //Force alpha for masks
-            _imp->common->supportedInputComponents[i][0] = 1;
-        } else {
-            addAcceptedComponents(i, &_imp->common->supportedInputComponents[i]);
-        }
-    }
-    _imp->common->supportedOutputComponents.reset();
-    addAcceptedComponents(-1, &_imp->common->supportedOutputComponents);
-
-}
-
-bool
-EffectInstance::isSupportedComponent(int inputNb,
-                           const ImagePlaneDesc& comp) const
-{
-
-    std::bitset<4> supported;
-    {
-        QMutexLocker l(&_imp->common->supportedComponentsMutex);
-
-        if (inputNb >= 0) {
-            assert( inputNb < (int)_imp->common->supportedInputComponents.size() );
-            supported = _imp->common->supportedInputComponents[inputNb];
-        } else {
-            assert(inputNb == -1);
-            supported = _imp->common->supportedOutputComponents;
-        }
-    }
-    assert(comp.getNumComponents() <= 4);
-    return supported[comp.getNumComponents()];
-}
-
-std::bitset<4>
-EffectInstance::getSupportedComponents(int inputNb) const
-{
-    std::bitset<4> supported;
-    {
-        QMutexLocker l(&_imp->common->supportedComponentsMutex);
-
-        if (inputNb >= 0) {
-            assert( inputNb < (int)_imp->common->supportedInputComponents.size() );
-            supported = _imp->common->supportedInputComponents[inputNb];
-        } else {
-            assert(inputNb == -1);
-            supported = _imp->common->supportedOutputComponents;
-        }
-    }
-    return supported;
-}
-
-int
-EffectInstance::findClosestSupportedNumberOfComponents(int inputNb,
-                                             int nComps) const
-{
-    if (nComps < 0 || nComps > 4) {
-        // Natron assumes that a layer must have between 1 and 4 channels.
-        return 0;
-    }
-    std::bitset<4> supported = getSupportedComponents(inputNb);
-
-    // Find a greater or equal number of components
-    int foundSupportedNComps = -1;
-    for (int i = nComps - 1; i < 4; ++i) {
-        if (supported[i]) {
-            foundSupportedNComps = i + 1;
-            break;
-        }
-    }
-
-
-    if (foundSupportedNComps == -1) {
-        // Find a small number of components
-        for (int i = nComps - 2; i >= 0; --i) {
-            if (supported[i]) {
-                foundSupportedNComps = i + 1;
-                break;
-            }
-        }
-    }
-
-    if (foundSupportedNComps == -1) {
-        return 0;
-    }
-    return foundSupportedNComps;
-
-} // findClosestSupportedNumberOfComponents
-
-
-void
-EffectInstance::refreshAcceptedBitDepths()
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    _imp->common->supportedDepths.clear();
-    addSupportedBitDepth(&_imp->common->supportedDepths);
-    if ( _imp->common->supportedDepths.empty() ) {
-        //From the spec:
-        //The default for a plugin is to have none set, the plugin must define at least one in its describe action.
-        throw std::runtime_error(tr("This plug-in does not support any of 8-bit, 16-bit or 32-bit floating point image processing").toStdString());
-    }
-
-}
-
-
-ImageBitDepthEnum
-EffectInstance::getClosestSupportedBitDepth(ImageBitDepthEnum depth)
-{
-    bool foundShort = false;
-    bool foundByte = false;
-    bool foundFloat = false;
-    for (std::list<ImageBitDepthEnum>::const_iterator it = _imp->common->supportedDepths.begin(); it != _imp->common->supportedDepths.end(); ++it) {
-        if (*it == depth) {
-            return depth;
-        } else if (*it == eImageBitDepthFloat) {
-            foundFloat = true;
-        } else if (*it == eImageBitDepthShort) {
-            foundShort = true;
-        } else if (*it == eImageBitDepthByte) {
-            foundByte = true;
-        }
-    }
-    if (foundFloat) {
-        return eImageBitDepthFloat;
-    } else if (foundShort) {
-        return eImageBitDepthShort;
-    } else if (foundByte) {
-        return eImageBitDepthByte;
-    } else {
-        ///The plug-in doesn't support any bitdepth, the program shouldn't even have reached here.
-        assert(false);
-
-        return eImageBitDepthNone;
-    }
-}
-
-ImageBitDepthEnum
-EffectInstance::getBestSupportedBitDepth() const
-{
-    bool foundShort = false;
-    bool foundByte = false;
-
-    for (std::list<ImageBitDepthEnum>::const_iterator it = _imp->common->supportedDepths.begin(); it != _imp->common->supportedDepths.end(); ++it) {
-        switch (*it) {
-            case eImageBitDepthByte:
-                foundByte = true;
-                break;
-
-            case eImageBitDepthShort:
-                foundShort = true;
-                break;
-            case eImageBitDepthHalf:
-                break;
-
-            case eImageBitDepthFloat:
-
-                return eImageBitDepthFloat;
-
-            case eImageBitDepthNone:
-                break;
-        }
-    }
-
-    if (foundShort) {
-        return eImageBitDepthShort;
-    } else if (foundByte) {
-        return eImageBitDepthByte;
-    } else {
-        ///The plug-in doesn't support any bitdepth, the program shouldn't even have reached here.
-        assert(false);
-
-        return eImageBitDepthNone;
-    }
-}
-
-bool
-EffectInstance::isSupportedBitDepth(ImageBitDepthEnum depth) const
-{
-    return std::find(_imp->common->supportedDepths.begin(), _imp->common->supportedDepths.end(), depth) != _imp->common->supportedDepths.end();
 }
 
 
@@ -704,11 +511,12 @@ EffectInstance::findOrCreateChannelEnabled()
         }
     }
 
-    bool pluginDefaultPref[4];
-    _imp->defKnobs->hostChannelSelectorEnabled = isHostChannelSelectorSupported(&pluginDefaultPref[0], &pluginDefaultPref[1], &pluginDefaultPref[2], &pluginDefaultPref[3]);
+    std::bitset<4> pluginDefaultPref;
+    bool hostChannelSelectorEnabled = getNode()->getPlugin()->getPropertyUnsafe<bool>(kNatronPluginPropHostChannelSelector);
+    pluginDefaultPref = getNode()->getPlugin()->getPropertyUnsafe<std::bitset<4> >(kNatronPluginPropHostChannelSelectorValue);
 
 
-    if (_imp->defKnobs->hostChannelSelectorEnabled) {
+    if (hostChannelSelectorEnabled) {
         if (foundAll) {
             std::cerr << getScriptName_mt_safe() << ": WARNING: property " << kNatronOfxImageEffectPropChannelSelector << " is different of " << kOfxImageComponentNone << " but uses its own checkboxes" << std::endl;
         } else {
@@ -723,7 +531,7 @@ EffectInstance::findOrCreateChannelEnabled()
                 foundEnabled[i]->setLabel(channelLabels[i]);
                 foundEnabled[i]->setAnimationEnabled(false);
                 foundEnabled[i]->setAddNewLine(i == 3);
-                foundEnabled[i]->setDefaultValue(pluginDefaultPref[i]);
+                foundEnabled[i]->setDefaultValue(pluginDefaultPref[pluginDefaultPref.size() - 1 - i]);
                 foundEnabled[i]->setHintToolTip(channelHints[i]);
                 mainPage->insertKnob(i, foundEnabled[i]);
                 _imp->defKnobs->enabledChan[i] = foundEnabled[i];

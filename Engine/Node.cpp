@@ -994,7 +994,7 @@ Node::clearAllPersistentMessageRecursive(std::list<NodePtr>& markedNodes)
     clearAllPersistentMessageInternal();
 
 
-    int nInputs = getMaxInputCount();
+    int nInputs = getNInputs();
     ///No need to lock, inputs is only written to by the main-thread
     for (int i = 0; i < nInputs; ++i) {
         NodePtr input = getInput(i);

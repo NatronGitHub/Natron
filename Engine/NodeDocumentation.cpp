@@ -85,11 +85,11 @@ Node::makeDocumentation(bool genHTML) const
         pluginDescriptionIsMarkdown = plugin->getPropertyUnsafe<bool>(kNatronPluginPropDescriptionIsMarkdown);
 
 
-        for (int i = 0; i < _imp->effect->getMaxInputCount(); ++i) {
+        for (int i = 0; i < _imp->effect->getNInputs(); ++i) {
             QStringList input;
-            input << convertFromPlainTextToMarkdown( QString::fromStdString( _imp->effect->getInputLabel(i) ), genHTML, true );
-            input << convertFromPlainTextToMarkdown( QString::fromStdString( _imp->effect->getInputHint(i) ), genHTML, true );
-            input << ( _imp->effect->isInputOptional(i) ? tr("Yes") : tr("No") );
+            input << convertFromPlainTextToMarkdown( QString::fromStdString( getInputLabel(i) ), genHTML, true );
+            input << convertFromPlainTextToMarkdown( QString::fromStdString( getInputHint(i) ), genHTML, true );
+            input << ( isInputOptional(i) ? tr("Yes") : tr("No") );
             inputs.push_back(input);
 
             // Don't show more than doc for 4 inputs otherwise it will just clutter the page

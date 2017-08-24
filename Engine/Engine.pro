@@ -112,6 +112,7 @@ SOURCES += \
     DiskCacheNode.cpp \
     Distortion2D.cpp \
     Dot.cpp \
+    EffectDescription.cpp \
     EffectInstance.cpp \
     EffectInstanceChannelSelectors.cpp \
     EffectInstanceDefaultKnobs.cpp \
@@ -149,6 +150,7 @@ SOURCES += \
     ImageStorage.cpp \
     ImageTilesState.cpp \
     IPCCommon.cpp \
+    InputDescription.cpp \
     Interpolation.cpp \
     JoinViewsNode.cpp \
     KeybindShortcut.cpp \
@@ -371,6 +373,7 @@ HEADERS += \
     DockablePanelI.h \
     Dot.h \
     DiskCacheNode.h \
+    EffectDescription.h \
     EffectInstance.h \
     EffectInstanceTLSData.h \
     EffectInstancePrivate.h \
@@ -399,6 +402,7 @@ HEADERS += \
     ImageCacheKey.h \
     ImagePrivate.h \
     ImagePlaneDesc.h \
+    InputDescription.h \
     Interpolation.h \
     IPCCommon.h \
     ImageStorage.h \
@@ -635,7 +639,6 @@ HEADERS += \
     NatronEngine/pyoverlayparamdesc_wrapper.h \
     NatronEngine/pypointoverlayinteract_wrapper.h \
     NatronEngine/pytransformoverlayinteract_wrapper.h
-
 
 
 

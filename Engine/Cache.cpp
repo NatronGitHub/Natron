@@ -96,6 +96,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/RamBuffer.h"
 #include "Engine/Timer.h"
 #include "Engine/ThreadPool.h"
+#include "Engine/TreeRenderQueueManager.h"
 
 
 NATRON_NAMESPACE_ENTER
@@ -2883,11 +2884,7 @@ CacheEntryLocker<persistent>::waitForPendingEntry(std::size_t timeout)
     // If this thread is a threadpool thread, it may wait for a while that results gets available.
     // Release the thread to the thread pool so that it may use this thread for other runnables
     // and reserve it back when done waiting.
-    bool hasReleasedThread = false;
-    if (isRunningInThreadPoolThread()) {
-        QThreadPool::globalInstance()->releaseThread();
-        hasReleasedThread = true;
-    }
+    RELEASE_THREAD_RAII();
 
     //
     // To correctly prevent other thread/processes to not try to compute the same cache entry some form of locking is
@@ -2930,10 +2927,6 @@ CacheEntryLocker<persistent>::waitForPendingEntry(std::size_t timeout)
     } while(_imp->status == eCacheEntryStatusComputationPending);
 
     // Concurrency resumes!
-
-    if (hasReleasedThread) {
-        QThreadPool::globalInstance()->reserveThread();
-    }
     return _imp->status;
 } // waitForPendingEntry
 

@@ -181,7 +181,7 @@ OfxClipInstance::getUnmappedBitDepth() const
         ImageBitDepthEnum deepestBitDepth = eImageBitDepthNone;
         int firstNonOptionalConnectedInputComps = 0;
 
-        int nInputs = effect->getMaxInputCount();
+        int nInputs = effect->getNInputs();
         std::vector<NodeMetadataPtr> inputMetadata(nInputs);
         for (int i = 0; i < nInputs; ++i) {
             const EffectInstancePtr& input = effect->getInputRenderEffectAtAnyTimeView(i);
@@ -191,7 +191,7 @@ OfxClipInstance::getUnmappedBitDepth() const
                 if (!isFailureRetCode(stat)) {
                     inputMetadata[i] = results->getMetadataResults();
 
-                    if ( !firstNonOptionalConnectedInputComps && !effect->isInputOptional(i) ) {
+                    if ( !firstNonOptionalConnectedInputComps && !effect->getNode()->isInputOptional(i) ) {
                         firstNonOptionalConnectedInputComps = inputMetadata[i]->getColorPlaneNComps(-1);
                     }
                 }
@@ -208,13 +208,13 @@ OfxClipInstance::getUnmappedBitDepth() const
             }
         }
 
-        deepestBitDepth = effect->getClosestSupportedBitDepth(deepestBitDepth);
+        deepestBitDepth = effect->getNode()->getClosestSupportedBitDepth(deepestBitDepth);
         return natronsDepthToOfxDepth(deepestBitDepth);
 
     } else {
         EffectInstancePtr effect = getAssociatedNode();
         if (!effect) {
-            return natronsDepthToOfxDepth( getEffectHolder()->getClosestSupportedBitDepth(eImageBitDepthFloat) );
+            return natronsDepthToOfxDepth( getEffectHolder()->getNode()->getClosestSupportedBitDepth(eImageBitDepthFloat) );
         } else {
             return natronsDepthToOfxDepth(effect->getBitDepth(-1));
         }
@@ -235,7 +235,7 @@ OfxClipInstance::getUnmappedComponents() const
         int mostComponents = 0;
         int firstNonOptionalConnectedInputComps = 0;
 
-        int nInputs = effect->getMaxInputCount();
+        int nInputs = effect->getNInputs();
         std::vector<NodeMetadataPtr> inputMetadata(nInputs);
         for (int i = 0; i < nInputs; ++i) {
             const EffectInstancePtr& input = effect->getInputRenderEffectAtAnyTimeView(i);
@@ -245,7 +245,7 @@ OfxClipInstance::getUnmappedComponents() const
                 if (!isFailureRetCode(stat)) {
                     inputMetadata[i] = results->getMetadataResults();
 
-                    if ( !firstNonOptionalConnectedInputComps && !effect->isInputOptional(i) ) {
+                    if ( !firstNonOptionalConnectedInputComps && !effect->getNode()->isInputOptional(i) ) {
                         firstNonOptionalConnectedInputComps = inputMetadata[i]->getColorPlaneNComps(-1);
                     }
                 }
@@ -264,7 +264,7 @@ OfxClipInstance::getUnmappedComponents() const
         if (mostComponents == 0) {
             ret = ImagePlaneDesc::mapPlaneToOFXComponentsTypeString(ImagePlaneDesc::getRGBAComponents());
         } else {
-            ret = ImagePlaneDesc::mapPlaneToOFXComponentsTypeString(ImagePlaneDesc::mapNCompsToColorPlane(effect->findClosestSupportedNumberOfComponents(-1, mostComponents)));
+            ret = ImagePlaneDesc::mapPlaneToOFXComponentsTypeString(ImagePlaneDesc::mapNCompsToColorPlane(effect->getNode()->findClosestSupportedNumberOfComponents(-1, mostComponents)));
         }
     } else {
         EffectInstancePtr effect = getAssociatedNode();
@@ -395,7 +395,7 @@ OfxClipInstance::getComponents() const
         // Default to RGBA
         int nComps = metadataPlane.getNumComponents();
         if (nComps == 0) {
-            nComps = effect->findClosestSupportedNumberOfComponents(inputNb, nComps);
+            nComps = effect->getNode()->findClosestSupportedNumberOfComponents(inputNb, nComps);
             metadataPlane = ImagePlaneDesc::mapNCompsToColorPlane(nComps);
         }
 
@@ -772,12 +772,6 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
 {
     assert( !isOutput() );
     assert( (retImage && !retTexture) || (!retImage && retTexture) );
-
-    if (time != time) {
-        // time is NaN
-        return false;
-    }
-
 
     EffectInstancePtr effect = getEffectHolder();
     if (!effect) {
@@ -1272,6 +1266,44 @@ OfxClipInstance::natronsFieldingToOfxFielding(ImageFieldingOrderEnum fielding)
     return noFielding;
 }
 
+ImageFieldExtractionEnum
+OfxClipInstance::ofxFieldExtractionToNatronFieldExtraction(const std::string& field)
+{
+
+    if (field == kOfxImageFieldBoth) {
+        return eImageFieldExtractionBoth;
+    } else if (field == kOfxImageFieldSingle) {
+        return eImageFieldExtractionSingle;
+    } else if (field == kOfxImageFieldDoubled) {
+        return eImageFieldExtractionDouble;
+    } else {
+        assert(false);
+        throw std::invalid_argument("Unknown field extraction " + field);
+    }
+}
+
+const std::string&
+OfxClipInstance::natronFieldExtractionToOfxFieldExtraction(ImageFieldExtractionEnum field)
+{
+    static const std::string bothFielding(kOfxImageFieldBoth);
+    static const std::string singleFielding(kOfxImageFieldSingle);
+    static const std::string doubledFielding(kOfxImageFieldDoubled);
+
+    switch (field) {
+        case eImageFieldExtractionBoth:
+
+        return bothFielding;
+        case eImageFieldExtractionSingle:
+
+        return singleFielding;
+        case eImageFieldExtractionDouble:
+
+        return doubledFielding;
+    }
+    
+    return doubledFielding;
+}
+
 struct OfxImageCommonPrivate
 {
     OFX::Host::ImageEffect::ImageBase* ofxImageBase;
@@ -1411,8 +1443,8 @@ OfxImageCommon::OfxImageCommon(const EffectInstancePtr& outputClipEffect,
     // Attach the transform matrix if any
     if (distortion) {
 
-        bool supportsDeprecatedTransforms = outputClipEffect->getInputCanReceiveTransform(inputNb);
-        bool supportsDistortion = outputClipEffect->getInputCanReceiveDistortion(inputNb);
+        bool supportsDeprecatedTransforms = outputClipEffect->getNode()->canInputReceiveTransform3x3(inputNb);
+        bool supportsDistortion = outputClipEffect->getNode()->canInputReceiveDistortion(inputNb);
 
         assert((supportsDeprecatedTransforms && !supportsDistortion) || (!supportsDeprecatedTransforms && supportsDistortion));
 

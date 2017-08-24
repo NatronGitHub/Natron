@@ -609,11 +609,6 @@ public:
     virtual void onTimeChanged(bool isPlayback, TimeValue time) = 0;
 
     /**
-     * @brief Refresh for each dimension/view the internal static value
-     **/
-    virtual void refreshStaticValue(TimeValue time) = 0;
-
-    /**
      * @brief Returns the keyframe object at the given time. This by-passes any expression, but not hard-links
      **/
     virtual bool getCurveKeyFrame(TimeValue time, DimIdx dimension, ViewIdx view, bool clampToMinMax, KeyFrame* key) = 0;
@@ -2061,8 +2056,6 @@ public:
     }
 
     virtual void clearExpressionsResults(DimSpec dimension, ViewSetSpec view) OVERRIDE FINAL;
-
-    virtual void refreshStaticValue(TimeValue time) OVERRIDE FINAL;
 
 protected:
 

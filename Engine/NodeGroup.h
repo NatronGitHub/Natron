@@ -472,41 +472,19 @@ public:
         return false;
     }
 
-    virtual bool supportsMultipleClipDepths() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return true;
-    }
-
-    virtual bool supportsMultipleClipFPSs() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return true;
-    }
-
-    virtual bool supportsMultipleClipPARs() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return true;
-    }
-
-
-    virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isInputOptional(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isInputMask(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual std::string getInputLabel(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
     virtual TimeValue getCurrentRenderTime() const OVERRIDE WARN_UNUSED_RETURN;
     virtual ViewIdx getCurrentRenderView() const OVERRIDE WARN_UNUSED_RETURN;
-    virtual void addAcceptedComponents(int inputNb, std::bitset<4>* comps) OVERRIDE FINAL;
 
-    virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
     virtual void notifyNodeDeactivated(const NodePtr& node) OVERRIDE FINAL;
     virtual void notifyNodeActivated(const NodePtr& node) OVERRIDE FINAL;
     virtual void notifyInputOptionalStateChanged(const NodePtr& node) OVERRIDE FINAL;
     virtual void notifyInputMaskStateChanged(const NodePtr& node) OVERRIDE FINAL;
     virtual void notifyNodeLabelChanged(const NodePtr& node) OVERRIDE FINAL;
-    virtual bool getCreateChannelSelectorKnob() const OVERRIDE WARN_UNUSED_RETURN { return false; }
-
-    virtual bool isHostChannelSelectorSupported(bool* defaultR, bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
     virtual void purgeCaches() OVERRIDE FINAL;
     virtual void clearLastRenderedImage() OVERRIDE ;
+
+    void refreshInputs();
 
     NodePtr getOutputNode() const;
 

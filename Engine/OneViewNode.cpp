@@ -26,6 +26,7 @@
 
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
+#include "Engine/InputDescription.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/Project.h"
@@ -58,8 +59,22 @@ OneViewNode::createPlugin()
 
     QString desc =  tr("Takes one view from the input");
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
-    ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
+    EffectDescriptionPtr effectDesc = ret->getEffectDescriptor();
+    effectDesc->setProperty<RenderSafetyEnum>(kEffectPropRenderThreadSafety, eRenderSafetyFullySafe);
+    effectDesc->setProperty<bool>(kEffectPropSupportsTiles, true);
+
     ret->setProperty<std::string>(kNatronPluginPropIconFilePath, NATRON_IMAGES_PATH "oneViewNode.png");
+    ret->setProperty<bool>(kNatronPluginPropViewAware, true);
+    ret->setProperty<ViewInvarianceLevel>(kNatronPluginPropViewInvariant, eViewInvarianceAllViewsVariant);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat, 0);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthByte, 1);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthShort, 2);
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>("1111"));
+    {
+        InputDescriptionPtr input = InputDescription::create("Source", "Source", "", false, false, std::bitset<4>("1111"));
+        ret->addInputDescription(input);
+    }
+
     return ret;
 }
 
@@ -81,27 +96,6 @@ OneViewNode::~OneViewNode()
 {
 }
 
-
-std::string
-OneViewNode::getInputLabel (int /*inputNb*/) const
-{
-    return "Source";
-}
-
-void
-OneViewNode::addAcceptedComponents(int /*inputNb*/,
-                                   std::bitset<4>* supported)
-{
-    (*supported)[0] = (*supported)[1] = (*supported)[2] = (*supported)[3] = 1;
-}
-
-void
-OneViewNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
-{
-    depths->push_back(eImageBitDepthByte);
-    depths->push_back(eImageBitDepthShort);
-    depths->push_back(eImageBitDepthFloat);
-}
 
 void
 OneViewNode::initializeKnobs()

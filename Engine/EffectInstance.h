@@ -46,6 +46,8 @@
 #include "Engine/RectD.h"
 #include "Engine/RectI.h"
 #include "Engine/RenderStats.h"
+#include "Engine/InputDescription.h"
+#include "Engine/EffectDescription.h"
 #include "Engine/FrameViewRequest.h"
 #include "Engine/EffectInstanceActionResults.h"
 #include "Engine/PluginActionShortcut.h"
@@ -1080,74 +1082,11 @@ public:
         return false;
     }
 
-    /**
-     * @brief How many input can we have at most. (i.e: how many input arrows)
-     * This function should be MT-safe and should never change the value returned.
-     **/
-    virtual int getMaxInputCount() const WARN_UNUSED_RETURN = 0;
-
-    /**
-     * @brief Is inputNb optional ? In which case the render can be made without it.
-     **/
-    virtual bool isInputOptional(int inputNb) const WARN_UNUSED_RETURN = 0;
-
-    /**
-     * @brief Is inputNb a mask ? In which case the effect will have an additionnal mask parameter.
-     **/
-    virtual bool isInputMask(int /*inputNb*/) const WARN_UNUSED_RETURN
-    {
-        return false;
-    };
-
-
     virtual bool getMakeSettingsPanel() const { return true; }
 
-
-    virtual bool getCreateChannelSelectorKnob() const;
-
-    void refreshAcceptedComponents(int nInputs);
-
-    void refreshAcceptedBitDepths();
-
-protected:
-
-    /**
-     * @brief Routine called after the creation of an effect. This function must
-     * fill for the given input what number of image components is supported by the plug-in.
-     * Each bit of the bitset indicate whether image of N components are supported.
-     *
-     * This function is also called to specify what image components this effect can output.
-     * In that case inputNb equals -1.
-     **/
-    virtual void addAcceptedComponents(int inputNb, std::bitset<4> * comps) = 0;
-    virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const = 0;
-
-public:
-
-    /**
-     * @brief Can be derived to give a more meaningful label to the input 'inputNb'
-     **/
-    virtual std::string getInputLabel(int inputNb) const WARN_UNUSED_RETURN;
+    int getNInputs() const; 
 
     void onInputLabelChanged(int inputNb, const std::string& label);
-
-    /**
-     * @brief Return a string indicating the purpose of the given input. It is used for the user documentation.
-     **/
-    virtual std::string getInputHint(int inputNb) const WARN_UNUSED_RETURN;
-
-
-    /**
-     * @bried Returns the effect render order preferences:
-     * eSequentialPreferenceNotSequential: The effect does not need to be run in a sequential order
-     * eSequentialPreferenceOnlySequential: The effect can only be run in a sequential order (i.e like the background render would do)
-     * eSequentialPreferencePreferSequential: This indicates that the effect would work better by rendering sequential. This is merely
-     * a hint to Natron but for now we just consider it as eSequentialPreferenceNotSequential.
-     **/
-    virtual SequentialPreferenceEnum getSequentialPreference() const
-    {
-        return eSequentialPreferenceNotSequential;
-    }
 
     enum AcceptedRequestConcatenationEnum
     {
@@ -1211,50 +1150,189 @@ public:
         return true;
     }
 
+    //// Static properties
+
+    /**
+     * @brief Returns whether the effect has a behavior depending on the views in the project
+     **/
+    bool isViewAware() const;
+
+    /**
+    * @brief Returns whether the image produced in output depends of the view being rendered
+    **/
+    ViewInvarianceLevel getViewVariance() const;
+
+    /**
+    * @brief Returns whether the effect implements getLayersNeededAndProduced and knows about planes
+    **/
+    bool isMultiPlanar() const;
+
+    /**
+     * @brief Returns what to do if a plane is not produced by this effect: should we return a black image, or ask it upstream
+     * or render it anyway assuming this is the color plane
+     **/
+    PlanePassThroughEnum getPlanePassThrough() const;
+
+    /**
+    * @brief For a multi-planar effect, returns whether the effect wants all the planes produced in output in a single render action pass
+    **/
+    bool isRenderAllPlanesAtOncePreferred() const;
+
+    /**
+    * @brief Returns whether the effect produces a different output image depending on the draft property
+    **/
+    bool isDraftRenderSupported() const;
+
+    /**
+    * @brief Returns whether the effect wants the host to add RGBA checkboxes
+    **/
+    bool isHostChannelSelectorEnabled() const;
+
+    /**
+    * @brief If host channel selector is enabled, returns the host channel selector default value for the RGBA checkboxes
+    **/
+    std::bitset<4> getHostChannelSelectorDefaultValue() const;
+
+    /**
+    * @brief Returns whether the effect wants the host to add a mix parameter which dissolves between full effect at 1 and its input at 0
+    **/
+    bool isHostMixEnabled() const;
+
+    /**
+    * @brief Returns whether the effect wants the host to add a mask input that will mask the output image
+    **/
+    bool isHostMaskEnabled() const;
+
+    /**
+     * @brief Returns whether the effect wants the host to add a plane selector in output and for its inputs. 
+     * This is only relevant if isMultiPlanar() returns false.
+     **/
+    bool isHostPlaneSelectorEnabled() const;
+
+   /**
+    * @brief Returns whether the effect can handle multiple inputs with a different pixel aspect ratio
+    **/
+    bool isMultipleInputsWithDifferentPARSupported() const;
+
+    /**
+    * @brief Returns whether the effect can handle multiple inputs with a different frame rate
+    **/
+    bool isMultipleInputsWithDifferentFPSSupported() const;
+
+    /**
+    * @brief Returns whether the effect can handle multiple inputs with a different bit-depth
+    **/
+    bool isMultipleInputsWithDifferentBitDepthsSupported() const;
 
     //// Dynamic properties
+
+    /**
+     * @brief Returns the effect multi-thread safety while rendering
+     **/
+    RenderSafetyEnum getRenderThreadSafety() const;
     void setRenderThreadSafety(RenderSafetyEnum safety);
-    RenderSafetyEnum getCurrentRenderThreadSafety() const;
-    virtual RenderSafetyEnum getPluginRenderThreadSafety() const;
-    void revertToPluginThreadSafety();
 
-    void setCurrentOpenGLRenderSupport(PluginOpenGLRenderSupport support);
-    PluginOpenGLRenderSupport getCurrentOpenGLRenderSupport();
+    /**
+     * @brief Returns if the effect can perform OpenGL rendering or if it needs it or if it cannot use it.
+     **/
+    PluginOpenGLRenderSupport getOpenGLRenderSupport() const;
+    void setOpenGLRenderSupport(PluginOpenGLRenderSupport support);
 
-    void setCurrentSequentialRenderSupport(SequentialPreferenceEnum support);
-    SequentialPreferenceEnum getCurrentSequentialRenderSupport() const;
+    /**
+     * @brief Returns if the effect can or must do sequential renders
+     **/
+    SequentialPreferenceEnum getSequentialRenderSupport() const;
+    void setSequentialRenderSupport(SequentialPreferenceEnum support);
 
-    void setCurrentCanDistort(bool support);
-    bool getCurrentCanDistort() const;
+    /**
+     * @brief Returns whether the effect wants to fill alpha channel with 1 when getImagePlane converts a RGB to RGBA image.
+     **/
+    void setAlphaFillWith1(bool enabled);
+    bool getAlphaFillWith1() const;
 
-    void setCurrentCanTransform(bool support);
-    bool getCurrentCanTransform() const;
+    /**
+     * @brief Returns the expected layout of images that are received with getImagePlane
+     **/
+    ImageBufferLayoutEnum getPreferredBufferLayout() const;
+    void setPreferredBufferLayout(ImageBufferLayoutEnum layout);
 
-    void setCurrentSupportTiles(bool support);
-    bool getCurrentSupportTiles() const;
+    /**
+    * @brief Does this effect supports tiling ?
+    * http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsTiles
+    * If a clip or plugin does not support tiled images, then the host should supply
+    * full RoD images to the effect whenever it fetches one.
+    **/
+    bool supportsTiles() const;
+    void setSupportsTiles(bool supports);
 
-    bool getCurrentTemporalImageAccess() const;
-    void setCurrentTemporalImageAccess(bool enabled);
 
-    void setCurrentSupportMultiRes(bool support);
-    bool getCurrentSupportMultiRes() const;
+    /**
+     * @brief When true the plug-in may have actions called with an abitrary render scale.
+     * Spatial parameters must then take the render scale into account.
+     **/
+    bool supportsRenderScale() const;
+    void setSupportsRenderScale(bool supports);
 
-    void setCurrentSupportRenderScale(bool support);
-    bool getCurrentSupportRenderScale() const;
+    /**
+     * @brief Does this effect supports multiresolution ?
+     * http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsMultiResolution
+     * Multiple resolution images mean...
+     * input and output images can be of any size
+     * input and output images can be offset from the origin
+     **/
+    bool supportsMultiResolution() const;
+    void setSupportsMultiResolution(bool supports);
 
-    void setCurrentAlphaFillWith1(bool enabled);
-    bool getCurrentAlphaFillWith1() const;
+   /**
+    * @brief If this function returns true, this flags that images may be retrieved at different timeline times for a single render
+    **/
+    bool isTemporalImageAccessEnabled() const;
+    void setTemporalImageAccessEnabled(bool enabled);
 
-    bool getCurrentUsesMultiThreading() const;
 
+    /**
+     * @brief If this function returns true, the plug-in implements the getDistortion() action to let a chance to the host to concatenate
+     * distortion effects.
+     **/
+    bool getCanDistort() const;
+    void setCanDistort(bool enabled);
+
+    /**
+    * @brief If this function returns true, the plug-in implements the getTransform() action to let a chance to the host to concatenate
+    * 3x3 transformation effects. This is deprecated, plug-in should prefer implementing getDistortion()
+    **/
+    bool getCanTransform3x3() const;
+    void setCanTransform3x3(bool enabled);
+
+    /**
+     * @brief Set the properties of the effect locked. While locked the refreshDynamicProperties() function will not refresh them.
+     * This is used by the RotoPaint node when drawing so that we can lock the render thread safety of nodes to instance safe.
+     **/
+    void setPropertiesLocked(bool locked);
+
+    /**
+     * @brief Update all properties from another description
+     **/
+    void updateProperties(const EffectDescription& description);
     void refreshDynamicProperties();
 
 
+private:
+
+    void updatePropertiesInternal(const EffectDescription& description);
+
 protected:
 
+    /**
+     * @brief Callback called whenever a property is changed, to keep in sync derived imlpementations.
+     * For instance, OpenFX has its own set of properties.
+     **/
+    virtual void onPropertiesChanged(const EffectDescription& description);
+
+    // Overriden from KnobHolder when creating a render clone
     virtual KnobHolderPtr createRenderCopy(const FrameViewRenderKey& key) const OVERRIDE;
 
-    
+
 private:
 
     ActionRetCodeEnum launchRenderInternal(const TreeRenderExecutionDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestData);
@@ -1341,101 +1419,7 @@ public:
 
     ImageBitDepthEnum getBitDepth(int inputNb);
 
-
-    /**
-     * @brief Return true if this effect can return a distortion 2D. In this case
-     * you have to implement getDistortion.
-     **/
-    virtual bool getCanDistort() const
-    {
-        return false;
-    }
-
-    /**
-     * @brief Return true if this effect can return a transform as a matrix 3x3. In this case
-     * you have to implement getDistortion function.
-     * Note that this is deprecated, you should use getCanDistort instead.
-     **/
-    virtual bool getCanTransform() const
-    {
-        return false;
-    }
-
-
-    /**
-     * @brief Deprecated: Returns whether the given input can have 3x3 tranformation matrices attached when calling getImagePlane
-     * getInputCanReceiveDistortion() should be preferred
-     **/
-    virtual bool getInputCanReceiveTransform(int /*inputNb*/) const
-    {
-        return false;
-    }
-
-    /**
-     * @brief Return true if the given input should also attempt to return a distortion function
-     * along with the image when possible
-     **/
-    virtual bool getInputCanReceiveDistortion(int /*inputNb*/) const
-    {
-        return false;
-    }
-
-    /**
-     * @brief Returns whether the effect is "plane" aware (e.g: can it handle other planes besides the color plane).
-     * If returning true, the effect is expected to implement getLayersProducedAndNeeded
-     **/
-    virtual bool isMultiPlanar() const;
-
-    /**
-     * @brief Controls how planes are handled by this node if it cannot produce them
-     **/
-    enum PassThroughEnum
-    {
-        // If a plane does not exist on this node, returns a black image
-        ePassThroughBlockNonRenderedPlanes,
-
-        // If a plane does not exist on this node, ask it on the pass-through input returned by getLayersProducedAndNeeded_public
-        ePassThroughPassThroughNonRenderedPlanes,
-
-        // We render any plane, this is the same as if isMultiPlanar() == false
-        ePassThroughRenderAllRequestedPlanes
-    };
-
-    virtual EffectInstance::PassThroughEnum isPassThroughForNonRenderedPlanes() const;
-
-    /**
-     * @brief Returns true if the effect prefers to render all planes produced returned by getLayersProducedAndNeeded_public at once
-     * e.g: an optical flow node may prefer it if it can render backward and forward motion planes at once.
-     **/
-    virtual bool isAllProducedPlanesAtOncePreferred() const;
-
-    /**
-     * @brief Returns whether the effect is multi-view or not
-     **/
-    virtual bool isViewAware() const;
-
-    /**
-     * @brief Controls how views are rendered by this effect
-     **/
-    enum ViewInvarianceLevel
-    {
-        // All views produce a different result and will have a separate cache entry
-        eViewInvarianceAllViewsVariant,
-
-        // Unused
-        eViewInvarianceOnlyPassThroughPlanesVariant,
-
-        // All views are assumed to produce the same result hence they all share the same cache entry
-        eViewInvarianceAllViewsInvariant,
-    };
-
-    virtual ViewInvarianceLevel isViewInvariant() const;
-
-
 public:
-
-
-    virtual PluginOpenGLRenderSupport getOpenGLSupport() const WARN_UNUSED_RETURN;
 
 
 
@@ -1481,93 +1465,14 @@ public:
 
 
     /**
-     * @brief Must return the preferred layout of images that are received with getImage
-     **/
-    virtual ImageBufferLayoutEnum getPreferredBufferLayout() const
-    {
-        return eImageBufferLayoutRGBAPackedFullRect;
-    }
-
-    /**
-     * @brief Does this effect supports tiling ?
-     * http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsTiles
-     * If a clip or plugin does not support tiled images, then the host should supply
-     * full RoD images to the effect whenever it fetches one.
-     **/
-    virtual bool supportsTiles() const
-    {
-        return true;
-    }
-
-    /**
-     * @brief When true the plug-in may have actions called with an abitrary render scale.
-     * Spatial parameters must then take the render scale into account.
-     **/
-    virtual bool supportsRenderScale() const {
-        return true;
-    }
-
-    /**
-     * @brief Does this effect supports multiresolution ?
-     * http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsMultiResolution
-     * Multiple resolution images mean...
-     * input and output images can be of any size
-     * input and output images can be offset from the origin
-     **/
-    virtual bool supportsMultiResolution() const
-    {
-        return true;
-    }
-
-
-    /**
-     * @brief Does this effect can support multiple clips PAR ?
-     * http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsMultipleClipPARs
-     * If a plugin does not accept clips of differing PARs, then the host must resample all images fed to that effect to agree with the output's PAR.
-     * If a plugin does accept clips of differing PARs, it will need to specify the output clip's PAR in the kOfxImageEffectActionGetClipPreferences action.
-     **/
-    virtual bool supportsMultipleClipPARs() const
-    {
-        return false;
-    }
-
-    virtual bool supportsMultipleClipDepths() const
-    {
-        return false;
-    }
-
-    virtual bool supportsMultipleClipFPSs() const
-    {
-        return false;
-    }
-
-    /**
-     * @brief If this function returns true, this flags that images may be retrieved at different timeline times for a single render
-     **/
-    virtual bool doesTemporalClipAccess() const
-    {
-        return false;
-    }
-
-    /**
      * @brief If this function returns true, all knobs of thie KnobHolder will have their curve appended to their hash
      * regardless of their hashing strategy.
      **/
     virtual bool isFullAnimationToHashEnabled() const OVERRIDE FINAL;
 
-    /**
-     * @brief Hint the cache whether this effect can make draft mode renders or not
-     **/
-    virtual bool isDraftRenderSupported() const;
-
     virtual bool canCPUImplementationSupportOSMesa() const
     {
         return false;
-    }
-
-    virtual void onEnableOpenGLKnobValueChanged(bool /*activated*/)
-    {
-
     }
 
     /**
@@ -1653,42 +1558,6 @@ public:
      **/
     bool hasOverlayInteract(OverlayViewportTypeEnum type) const;
 
-    /**
-     * @brief Reimplement to control how the host adds the RGBA checkboxes.
-     * @returns True if you want the host to add the RGBA checkboxes, false otherwise.
-     **/
-    virtual bool isHostChannelSelectorSupported(bool* defaultR,
-                                                bool* defaultG,
-                                                bool* defaultB,
-                                                bool* defaultA) const
-    {
-        *defaultR = true;
-        *defaultG = true;
-        *defaultB = true;
-        *defaultA = true;
-
-        return true;
-    }
-
-    /**
-     * @brief Reimplement to activate host masking
-     * Note that in this case this is expected that getMaxInputCount returns the number of inputs *with* the mask.
-     * The function getInputLabel should also return the appropriate label for the mask.
-     * The function isInputMask should also return true for this mask index.
-     * The mask will be the last input, i.e its index will be getMaxInputCount() - 1.
-     **/
-    virtual bool isHostMaskingEnabled() const
-    {
-        return false;
-    }
-
-    /**
-     * @brief Reimplement to activate host mixing
-     **/
-    virtual bool isHostMixingEnabled() const
-    {
-        return false;
-    }
 
     virtual void onKnobsAboutToBeLoaded(const SERIALIZATION_NAMESPACE::NodeSerialization& /*serialization*/) {}
 
@@ -1842,9 +1711,6 @@ public:
 
     std::string getNodeExtraLabel() const;
 
-
-    bool isPluginUsingHostChannelSelectors() const;
-
     bool hasAtLeastOneChannelToProcess() const;
     
     /**
@@ -1870,24 +1736,6 @@ public:
                           bool* isAll,
                           ImagePlaneDesc *layer) const;
 
-    /**
-     * @brief Returns true if the given input supports the given components. If inputNb equals -1
-     * then this function will check whether the effect can produce the given components.
-     **/
-    bool isSupportedComponent(int inputNb, const ImagePlaneDesc& comp) const;
-
-    /**
-     * @brief Returns the most appropriate number of components that can be supported by the inputNb.
-     * If inputNb equals -1 then this function will check the output components.
-     **/
-    int findClosestSupportedNumberOfComponents(int inputNb, int nComps) const;
-
-    std::bitset<4> getSupportedComponents(int inputNb) const;
-
-    ImageBitDepthEnum getBestSupportedBitDepth() const;
-    bool isSupportedBitDepth(ImageBitDepthEnum depth) const;
-    ImageBitDepthEnum getClosestSupportedBitDepth(ImageBitDepthEnum depth);
-    
 
     
     void refreshFormatParamChoice(const std::vector<ChoiceOption>& entries, int defValue, bool loadingProject);
@@ -1895,8 +1743,6 @@ public:
     int getFrameStepKnobValue() const;
 
     bool handleFormatKnob(const KnobIPtr& knob);
-
-    void onOpenGLEnabledKnobChangedOnProject(bool activated);
 
     void initializeKnobs(bool loadingSerialization, bool hasGUI);
 

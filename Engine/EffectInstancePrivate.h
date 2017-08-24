@@ -41,6 +41,7 @@
 
 #include "Engine/Image.h"
 #include "Engine/ImageStorage.h"
+#include "Engine/EffectDescription.h"
 #include "Engine/TLSHolder.h"
 #include "Engine/NodeMetadata.h"
 #include "Engine/OSGLContext.h"
@@ -145,11 +146,8 @@ struct DefaultKnobs
     std::map<int, MaskSelector> maskSelectors;
     KnobLayersWPtr createPlanesKnob;
 
-    // True if the effect has isHostChannelSelectorSupported() returning true
-    bool hostChannelSelectorEnabled;
 
     DefaultKnobs()
-    : hostChannelSelectorEnabled(false)
     {
 
     }
@@ -164,55 +162,7 @@ struct RenderDefaultKnobs
 
 };
 
-struct DynamicProperties
-{
-    // The current render safety
-    RenderSafetyEnum currentThreadSafety;
 
-    // True if the plug-in renders using multiple CPU threads
-    bool isMultiThreaded;
-
-    // Does this effect requires images at a different time than the requested render ?
-    bool currentTemporalImagesAccess;
-
-    // Does this node currently support tiled rendering
-    bool currentSupportTiles;
-
-    // Does this node currently support multi resolution images
-    bool currentSupportMultires;
-
-    // Does this node currently support render scale
-    bool currentSupportsRenderScale;
-
-    // Does this node currently supports OpenGL render
-    PluginOpenGLRenderSupport currentSupportOpenGLRender;
-
-    // Does this node currently renders sequentially or not
-    SequentialPreferenceEnum currentSupportSequentialRender;
-
-    // Does this node can return a distortion function ?
-    bool currentCanDistort;
-    bool currentDeprecatedTransformSupport;
-
-    // When creating an alpha channel, should we fill with 1 or 0
-    bool currentAlphaFillWith1;
-
-    DynamicProperties()
-    : currentThreadSafety(eRenderSafetyInstanceSafe)
-    , isMultiThreaded(false)
-    , currentTemporalImagesAccess(false)
-    , currentSupportTiles(false)
-    , currentSupportMultires(false)
-    , currentSupportsRenderScale(false)
-    , currentSupportOpenGLRender(ePluginOpenGLRenderSupportNone)
-    , currentSupportSequentialRender(eSequentialPreferenceNotSequential)
-    , currentCanDistort(false)
-    , currentDeprecatedTransformSupport(false)
-    , currentAlphaFillWith1(true)
-    {
-
-    }
-};
 
 // Data shared accross all clones
 struct EffectInstanceCommonData
@@ -228,29 +178,11 @@ struct EffectInstanceCommonData
     // Protects all plug-in properties
     mutable QMutex pluginsPropMutex;
 
-    // pluginSafety is the render thread safety declared by the plug-in.
-    // The currentThreadSafety is either pointing to the same value as pluginSafety
-    // or a lower value. This is used for example by Natron when painting with
-    // a brush to ensure only 1 render thread is running.
-    RenderSafetyEnum pluginSafety;
+    // When true descriptor cannot be changed by the plug-in
+    bool descriptorLocked;
 
-    // When true pluginSafety cannot be changed by the plug-in
-    bool pluginSafetyLocked;
-
-    DynamicProperties props;
-
-    // Protects supportedInputComponents & supportedOutputComponents
-    mutable QMutex supportedComponentsMutex;
-
-    // The accepted number of components in input and in output of the plug-in
-    // These two are also protected by inputsMutex
-    // This is a bitset: each bit tells whether the plug-in supports N comps
-    std::vector< std::bitset<4> > supportedInputComponents;
-    std::bitset<4> supportedOutputComponents;
-
-    // List of supported bitdepth by the plug-in
-    std::list <ImageBitDepthEnum> supportedDepths;
-
+    // Properties of the main instance
+    EffectDescriptionPtr descriptor;
 
     // If this node is part of a RotoPaint item implementation
     // this is a pointer to the roto item itself
@@ -278,13 +210,8 @@ struct EffectInstanceCommonData
     : attachedContextsMutex(QMutex::Recursive)
     , attachedContexts()
     , pluginsPropMutex()
-    , pluginSafety(eRenderSafetyInstanceSafe)
-    , pluginSafetyLocked(false)
-    , props()
-    , supportedComponentsMutex()
-    , supportedInputComponents()
-    , supportedOutputComponents()
-    , supportedDepths()
+    , descriptorLocked(false)
+    , descriptor(new EffectDescription)
     , paintStroke()
     , accumBufferMutex()
     , accumBuffer()
@@ -370,9 +297,6 @@ struct RenderCloneData
     // The time invariant metadas for the render
     GetTimeInvariantMetadataResultsPtr metadataResults;
 
-    // Properties, local to this render
-    DynamicProperties props;
-
     // A shared pointer to the node, to ensure it does not get deleted while rendering
     NodePtr node;
 
@@ -384,7 +308,6 @@ struct RenderCloneData
     , requests()
     , frameRangeResults()
     , metadataResults()
-    , props()
     , node()
     {
 
@@ -408,6 +331,10 @@ public:
     // Data specific to a render clone. Each render clone is tied to a single render but these datas may be
     // accessed by multiple threads in the render.
     boost::scoped_ptr<RenderCloneData> renderData;
+
+    // Pointer to the effect description. For the effect main instance, this points to the description in the common structure.
+    // For a render clone ,this is a copy of the main instance data.
+    EffectDescriptionPtr descriptionPtr;
 
     // Default implementation knobs. They are shared with the main instance implementation.
     boost::shared_ptr<DefaultKnobs> defKnobs;

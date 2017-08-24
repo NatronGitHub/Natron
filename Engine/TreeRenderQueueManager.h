@@ -31,6 +31,7 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
 #endif
 
 #include "Engine/TreeRenderQueueProvider.h"
@@ -107,6 +108,17 @@ private:
      **/
     TreeRenderPtr waitForAnyTreeRenderFinished(const TreeRenderQueueProviderConstPtr& provider);
 
+    /**
+     * @brief Releases one task from the manager, allowing to launch one more task.
+     * This is useful when you know the thread of a task is going to idle for a while
+     **/
+    void releaseTask();
+
+    /**
+     * @brief Reserves one task from the manager.
+     * This should be used after a call to releaseTask.
+     **/
+    void reserveTask();
 
 private:
 
@@ -120,8 +132,24 @@ private:
 
     friend class TreeRenderExecutionData;
     friend struct TreeRenderExecutionDataPrivate;
+    friend class ReleaseTPThread_RAII;
+    friend class LaunchRenderRunnable;
     boost::scoped_ptr<Implementation> _imp;
 };
+
+// A helper RAII style class to release the thread from the thread-pool and reserve it back upon destruction
+// if the current thread is a thread-pool thread.
+class ReleaseTPThread_RAII
+{
+    TreeRenderQueueManagerPtr manager;
+public:
+
+    ReleaseTPThread_RAII();
+
+    ~ReleaseTPThread_RAII();
+};
 NATRON_NAMESPACE_EXIT;
+
+#define RELEASE_THREAD_RAII() ReleaseTPThread_RAII _thread_releaser
 
 #endif // NATRON_ENGINE_TREERENDERQUEUEMANAGER_H

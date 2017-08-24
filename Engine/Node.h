@@ -46,6 +46,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/AppManager.h"
 #include "Global/KeySymbols.h"
 #include "Engine/ChoiceOption.h"
+#include "Engine/InputDescription.h"
 #include "Engine/DimensionIdx.h"
 #include "Engine/ImagePlaneDesc.h"
 #include "Serialization/SerializationBase.h"
@@ -361,10 +362,6 @@ public:
 
     OneViewNodePtr isEffectOneViewNode() const;
 
-    /**
-     * @brief Forwarded to the live effect instance
-     **/
-    int getMaxInputCount() const;
 
     /**
      * @brief Hint indicating to the UI that this node has numerous optional inputs and should not display them all.
@@ -425,6 +422,12 @@ public:
      **/
     bool duringInputChangedAction() const;
 
+
+    /**
+     * @brief Returns the number of inputs
+     **/
+    int getNInputs() const;
+
     /**
      *@brief Returns the inputs of the node as the Gui just set them.
      * The vector might be different from what getInputs_other_thread() could return.
@@ -433,19 +436,33 @@ public:
     const std::vector<NodeWPtr > & getInputs() const WARN_UNUSED_RETURN;
     std::vector<NodeWPtr > getInputs_copy() const WARN_UNUSED_RETURN;
 
-
-    const std::vector<std::string> & getInputLabels() const;
     std::string getInputLabel(int inputNb) const;
 
-    std::string getInputHint(int inputNb) const;
-
     void setInputLabel(int inputNb, const std::string& label);
+
+    std::string getInputHint(int inputNb) const;
 
     void setInputHint(int inputNb, const std::string& hint);
 
     bool isInputVisible(int inputNb) const;
 
     void setInputVisible(int inputNb, bool visible);
+
+    ImageFieldExtractionEnum getInputFieldExtraction(int inputNb) const;
+
+    std::bitset<4> getSupportedComponents(int inputNb) const;
+
+    bool isInputMask(int inputNb) const;
+
+    bool isInputOptional(int inputNb) const;
+
+    bool isTilesSupportedByInput(int inputNb) const;
+
+    bool isTemporalAccessSupportedByInput(int inputNb) const;
+
+    bool canInputReceiveDistortion(int inputNb) const;
+
+    bool canInputReceiveTransform3x3(int inputNb) const;
 
     int getInputNumberFromLabel(const std::string& inputLabel) const;
 
@@ -458,6 +475,38 @@ public:
     bool hasMandatoryInputDisconnected() const;
 
     bool hasAllInputsConnected() const;
+
+    void addInput(const InputDescriptionPtr& description);
+
+    void insertInput(int index, const InputDescriptionPtr& description);
+
+    void changeInputDescription(int inputNb, const InputDescriptionPtr& description);
+
+    bool getInputDescription(int inputNb, InputDescription* desc) const;
+
+    void removeInput(int inputNb);
+
+    void removeAllInputs();
+
+
+    /**
+     * @brief Returns true if the given input supports the given components. If inputNb equals -1
+     * then this function will check whether the effect can produce the given components.
+     **/
+    bool isSupportedComponent(int inputNb, const ImagePlaneDesc& comp) const;
+
+    /**
+     * @brief Returns the most appropriate number of components that can be supported by the inputNb.
+     * If inputNb equals -1 then this function will check the output components.
+     **/
+    int findClosestSupportedNumberOfComponents(int inputNb, int nComps) const;
+
+    std::list<ImageBitDepthEnum> getSupportedBitDepths() const;
+
+    ImageBitDepthEnum getBestSupportedBitDepth() const;
+    bool isSupportedBitDepth(ImageBitDepthEnum depth) const;
+    ImageBitDepthEnum getClosestSupportedBitDepth(ImageBitDepthEnum depth);
+
 
     /**
      * @brief This is used by the auto-connection algorithm.
@@ -838,12 +887,6 @@ public:
      **/
     bool canOthersConnectToThisNode() const;
 
-
-
-    /*Initialises inputs*/
-    void initializeInputs();
-
-
     bool hasPersistentMessage(const std::string& key) const;
 
     bool hasAnyPersistentMessage() const;
@@ -1085,7 +1128,7 @@ Q_SIGNALS:
 
     void persistentMessageChanged();
 
-    void inputsInitialized();
+    void inputsDescriptionChanged();
 
     void inputLabelChanged(int, QString);
 

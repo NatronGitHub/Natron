@@ -57,6 +57,7 @@ CLANG_DIAG_ON(uninitialized)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
 #include <boost/bind.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif // OFX_SUPPORTS_MULTITHREAD
 CLANG_DIAG_ON(deprecated)
@@ -95,7 +96,10 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/AppManager.h"
 #include "Engine/CreateNodeArgs.h"
 #include "Global/FStreamsSupport.h"
+#include "Engine/OfxClipInstance.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/EffectDescription.h"
+#include "Engine/InputDescription.h"
 #include "Engine/LibraryBinary.h"
 #include "Engine/MultiThread.h"
 #include "Engine/MemoryInfo.h" // printAsRAM
@@ -666,23 +670,6 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
                                   .arg( QString::fromUtf8( context.c_str() ) ).toStdString() );
     }
 
-    //Create the mask clip if needed
-    if ( desc->isHostMaskingEnabled() ) {
-        const std::map<std::string, OFX::Host::ImageEffect::ClipDescriptor*>& clips = desc->getClips();
-        std::map<std::string, OFX::Host::ImageEffect::ClipDescriptor*>::const_iterator found = clips.find("Mask");
-        if ( found == clips.end() ) {
-            OFX::Host::ImageEffect::ClipDescriptor* clip = desc->defineClip("Mask");
-            OFX::Host::Property::Set& props = clip->getProps();
-            props.setIntProperty(kOfxImageClipPropIsMask, 1);
-            props.setStringProperty(kOfxImageEffectPropSupportedComponents, kOfxImageComponentAlpha, 0);
-            if (context == kOfxImageEffectContextGeneral) {
-                props.setIntProperty(kOfxImageClipPropOptional, 1);
-            }
-            props.setIntProperty(kOfxImageEffectPropSupportsTiles, desc->getProps().getIntProperty(kOfxImageEffectPropSupportsTiles) != 0);
-            props.setIntProperty(kOfxImageEffectPropTemporalClipAccess, 0);
-        }
-    }
-
 
     *ctx = OfxEffectInstance::mapToContextEnum(context);
     _imp->loadingPluginID.clear();
@@ -989,18 +976,118 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
         std::string description = p->getDescriptor().getProps().getStringProperty(kOfxPropPluginDescription);
 
         bool isDescMarkdown = (bool)p->getDescriptor().getProps().getIntProperty(kNatronOfxPropDescriptionIsMarkdown);
-        bool usesMultiThreading = (bool)p->getDescriptor().getProps().getIntProperty(kNatronOfxImageEffectPluginUsesMultipleThread);
 
         PluginPtr natronPlugin = Plugin::create(OfxEffectInstance::create, OfxEffectInstance::createRenderClone, openfxId, pluginLabel, p->getVersionMajor(), p->getVersionMinor(), groups, groupIcons);
         natronPlugin->setProperty<std::string>(kNatronPluginPropDescription, description);
         natronPlugin->setProperty<bool>(kNatronPluginPropDescriptionIsMarkdown, isDescMarkdown);
         natronPlugin->setProperty<std::string>(kNatronPluginPropResourcesPath, resourcesPath);
         natronPlugin->setProperty<std::string>(kNatronPluginPropIconFilePath, iconFileName);
-        natronPlugin->setProperty<int>(kNatronPluginPropRenderSafety, renderSafety);
         natronPlugin->setProperty<bool>(kNatronPluginPropIsDeprecated, isDeprecated);
-        natronPlugin->setProperty<int>(kNatronPluginPropOpenGLSupport, (int)glSupport);
         natronPlugin->setProperty<void*>(kNatronPluginPropOpenFXPluginPtr, (void*)p);
-        natronPlugin->setProperty<bool>(kNatronPluginPropUsesMultiThread, usesMultiThreading);
+
+
+        {
+            int dim = p->getDescriptor().getProps().getDimension(kOfxImageEffectPropSupportedPixelDepths);
+
+            for (int i = 0; i < dim; ++i) {
+                const std::string & depth = p->getDescriptor().getProps().getStringProperty(kOfxImageEffectPropSupportedPixelDepths, i);
+                // ignore unsupported bitdepth
+                ImageBitDepthEnum bitDepth = OfxClipInstance::ofxDepthToNatronDepth(depth, false);
+                if (bitDepth != eImageBitDepthNone) {
+                    natronPlugin->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, bitDepth, i);
+                }
+            }
+        }
+
+
+        bool multiPlanar = (bool)p->getDescriptor().getProps().getIntProperty(kFnOfxImageEffectPropMultiPlanar);
+        bool hostPlaneSelector = false;
+
+        // furnace plug-ins are multiplanar V1
+        if (!multiPlanar && !boost::starts_with(openfxId, "uk.co.thefoundry.furnace")) {
+            hostPlaneSelector = true;
+        }
+
+        PlanePassThroughEnum planePassThru = ePassThroughPassThroughNonRenderedPlanes;
+        int passThruProp = (bool)p->getDescriptor().getProps().getIntProperty(kFnOfxImageEffectPropPassThroughComponents);
+        if (passThruProp == 0) {
+            planePassThru = ePassThroughBlockNonRenderedPlanes;
+        } else if (passThruProp == 2) {
+            planePassThru = ePassThroughRenderAllRequestedPlanes;
+        }
+        natronPlugin->setProperty(kNatronPluginPropMultiPlanar, multiPlanar);
+        natronPlugin->setProperty(kNatronPluginPropHostPlaneSelector, hostPlaneSelector);
+        natronPlugin->setProperty(kNatronPluginPropRenderAllPlanesAtOnce, (bool)p->getDescriptor().getProps().getIntProperty(kOfxImageEffectPropRenderAllPlanes));
+        natronPlugin->setProperty(kNatronPluginPropPlanesPassThrough, planePassThru);
+
+
+        natronPlugin->setProperty(kNatronPluginPropViewAware, (bool)p->getDescriptor().getProps().getIntProperty(kFnOfxImageEffectPropViewAware));
+
+        int viewVarianceProp = p->getDescriptor().getProps().getIntProperty(kFnOfxImageEffectPropViewInvariance);
+        ViewInvarianceLevel viewInvariance = eViewInvarianceAllViewsVariant;
+        if (viewVarianceProp == 1) {
+            viewInvariance = eViewInvarianceOnlyPassThroughPlanesVariant;
+        } else if (viewVarianceProp == 2) {
+            viewInvariance = eViewInvarianceAllViewsInvariant;
+        }
+        natronPlugin->setProperty(kNatronPluginPropViewInvariant, viewInvariance);
+        natronPlugin->setProperty(kNatronPluginPropSupportsDraftRender, (bool)p->getDescriptor().getProps().getIntProperty(kOfxImageEffectPropRenderQualityDraft));
+        natronPlugin->setProperty(kNatronPluginPropSupportsMultiInputsPAR, (bool)p->getDescriptor().getProps().getIntProperty(kOfxImageEffectPropSupportsMultipleClipPARs));
+        natronPlugin->setProperty(kNatronPluginPropSupportsMultiInputsFPS, false);
+        natronPlugin->setProperty(kNatronPluginPropSupportsMultiInputsBitDepths, (bool)p->getDescriptor().getProps().getIntProperty(kOfxImageEffectPropSupportsMultipleClipDepths));
+
+
+        std::string defaultChannelsProp = p->getDescriptor().getProps().getStringProperty(kNatronOfxImageEffectPropChannelSelector);
+
+        bool wantsHostChannelsSelector = true;
+        std::bitset<4> defaultChannels;
+        if (defaultChannelsProp == kOfxImageComponentNone) {
+            wantsHostChannelsSelector = false;
+        } else {
+
+            if (defaultChannelsProp == kOfxImageComponentRGBA) {
+                defaultChannels = std::bitset<4>("1111");
+            } else if (defaultChannelsProp == kOfxImageComponentRGB) {
+                defaultChannels = std::bitset<4>("1110");
+            } else if (defaultChannelsProp == kOfxImageComponentAlpha) {
+                std::bitset<4>("0001");
+            } else {
+                qDebug() << openfxId.c_str() << "Invalid value given to property" << kNatronOfxImageEffectPropChannelSelector << "defaulting to RGBA checked";
+                defaultChannels = std::bitset<4>("1111");
+            }
+        }
+
+        natronPlugin->setProperty(kNatronPluginPropHostChannelSelector, wantsHostChannelsSelector);
+        natronPlugin->setProperty(kNatronPluginPropHostChannelSelectorValue, defaultChannels);
+        natronPlugin->setProperty(kNatronPluginPropHostMix, (bool)p->getDescriptor().getProps().getIntProperty(kNatronOfxImageEffectPropHostMixing));
+        natronPlugin->setProperty(kNatronPluginPropHostMask, (bool)p->getDescriptor().getProps().getIntProperty(kNatronOfxImageEffectPropHostMasking));
+
+        SequentialPreferenceEnum sequential = eSequentialPreferenceNotSequential;
+        int seqProp = p->getDescriptor().getProps().getIntProperty(kOfxImageEffectInstancePropSequentialRender);
+        if (seqProp == 1) {
+            sequential = eSequentialPreferenceOnlySequential;
+        } else if (seqProp == 2) {
+            sequential = eSequentialPreferencePreferSequential;
+        }
+
+
+        // RotoMerge needs to set alpha to 0 by default when converting RGB-->RGBA otherwise the Roto is not visible
+        // when there's an existing alpha
+        bool alphaFill1 = openfxId == PLUGINID_OFX_ROTOMERGE;
+
+        EffectDescriptionPtr effectDesc = natronPlugin->getEffectDescriptor();
+        effectDesc->setProperty(kEffectPropRenderThreadSafety, renderSafety);
+        effectDesc->setProperty(kEffectPropSupportsOpenGLRendering, glSupport);
+        effectDesc->setProperty(kEffectPropSupportsSequentialRender, sequential);
+        effectDesc->setProperty(kEffectPropSupportsRenderScale, true);
+        effectDesc->setProperty(kEffectPropImageBufferLayout, eImageBufferLayoutRGBAPackedFullRect);
+        effectDesc->setProperty(kEffectPropSupportsCanReturnDistortion, (bool)p->getDescriptor().getProps().getIntProperty(kOfxImageEffectPropCanDistort));
+        effectDesc->setProperty(kEffectPropSupportsCanReturn3x3Transform, (bool)p->getDescriptor().getProps().getIntProperty(kFnOfxImageEffectCanTransform));
+        effectDesc->setProperty(kEffectPropSupportsTiles, (bool)p->getDescriptor().getProps().getIntProperty(kOfxImageEffectPropSupportsTiles));
+        effectDesc->setProperty(kEffectPropSupportsMultiResolution, (bool)p->getDescriptor().getProps().getIntProperty(kOfxImageEffectPropSupportsMultiResolution));
+        effectDesc->setProperty(kEffectPropTemporalImageAccess, (bool)p->getDescriptor().getProps().getIntProperty(kOfxImageEffectPropTemporalClipAccess));
+        effectDesc->setProperty(kEffectPropSupportsAlphaFillWith1, alphaFill1);
+
 
         std::list<PluginActionShortcut> shortcuts;
         getPluginShortcuts(p->getDescriptor(), &shortcuts);
@@ -1025,10 +1112,6 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
         if (openfxId == PLUGINID_OFX_ROTOMERGE) {
             // RotoMerge is to be used only be the RotoPaint tree
             natronPlugin->setProperty<bool>(kNatronPluginPropIsInternalOnly, true);
-
-            // RotoMerge needs to set alpha to 0 by default when converting RGB-->RGBA otherwise the Roto is not visible
-            // when there's an existing alpha
-            natronPlugin->setProperty<bool>(kNatronPluginPropAlphaFillWith1, false);
         }
 
         natronPlugin->setProperty<int>(kNatronPluginPropShortcut, (int)symbol, 0);

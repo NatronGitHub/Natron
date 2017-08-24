@@ -27,65 +27,11 @@
 #include <QDebug>
 
 #include "Engine/GroupOutput.h"
+#include "Engine/InputDescription.h"
 #include "Engine/PrecompNode.h"
 #include "Engine/Settings.h"
 
 NATRON_NAMESPACE_ENTER
-
-
-void
-Node::initializeInputs()
-{
-    ////Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-    const int inputCount = getMaxInputCount();
-    InputsV oldInputs;
-    {
-        QMutexLocker k(&_imp->inputsLabelsMutex);
-        _imp->inputLabels.resize(inputCount);
-        _imp->inputHints.resize(inputCount);
-        for (int i = 0; i < inputCount; ++i) {
-            _imp->inputLabels[i] = _imp->effect->getInputLabel(i);
-            _imp->inputHints[i] = _imp->effect->getInputHint(i);
-        }
-    }
-    {
-        QMutexLocker l(&_imp->lastRenderStartedMutex);
-        _imp->inputIsRenderingCounter.resize(inputCount);
-    }
-    {
-        QMutexLocker l(&_imp->inputsMutex);
-        oldInputs = _imp->inputs;
-
-        std::vector<bool> oldInputsVisibility = _imp->inputsVisibility;
-        _imp->inputIsRenderingCounter.resize(inputCount);
-        _imp->inputs.resize(inputCount);
-        _imp->inputsVisibility.resize(inputCount);
-        ///if we added inputs, just set to NULL the new inputs, and add their label to the labels map
-        for (int i = 0; i < inputCount; ++i) {
-            if ( i < (int)oldInputs.size() ) {
-                _imp->inputs[i] = oldInputs[i];
-            } else {
-                _imp->inputs[i].reset();
-            }
-            if (i < (int) oldInputsVisibility.size()) {
-                _imp->inputsVisibility[i] = oldInputsVisibility[i];
-            } else {
-                _imp->inputsVisibility[i] = true;
-            }
-        }
-
-
-        ///Set the components the plug-in accepts
-        _imp->effect->refreshAcceptedComponents(inputCount);
-    }
-    _imp->inputsInitialized = true;
-
-    Q_EMIT inputsInitialized();
-} // Node::initializeInputs
-
-
-
 
 
 /**
@@ -212,11 +158,6 @@ NodePtr
 Node::getInputInternal(bool useGroupRedirections,
                        int index) const
 {
-    if (!_imp->inputsInitialized) {
-        qDebug() << "Node::getInput(): inputs not initialized";
-    }
-
-
     QMutexLocker l(&_imp->inputsMutex);
     if ( ( index >= (int)_imp->inputs.size() ) || (index < 0) ) {
         return NodePtr();
@@ -255,7 +196,6 @@ Node::getInputs() const
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
-    assert(_imp->inputsInitialized);
     return _imp->inputs;
 }
 
@@ -263,8 +203,6 @@ Node::getInputs() const
 std::vector<NodeWPtr >
 Node::getInputs_copy() const
 {
-    assert(_imp->inputsInitialized);
-
     QMutexLocker l(&_imp->inputsMutex);
 
     return _imp->inputs;
@@ -273,38 +211,35 @@ Node::getInputs_copy() const
 std::string
 Node::getInputLabel(int inputNb) const
 {
-    assert(_imp->inputsInitialized);
-
-    QMutexLocker l(&_imp->inputsLabelsMutex);
-    if ( (inputNb < 0) || ( inputNb >= (int)_imp->inputLabels.size() ) ) {
+    QMutexLocker l(&_imp->inputsMutex);
+    if ( (inputNb < 0) || ( inputNb >= (int)_imp->inputDescriptions.size() ) ) {
         throw std::invalid_argument("Index out of range");
     }
 
-    return _imp->inputLabels[inputNb];
+    return _imp->inputDescriptions[inputNb]->getPropertyUnsafe<std::string>(kInputDescPropLabel);
 }
 
 std::string
 Node::getInputHint(int inputNb) const
 {
-    assert(_imp->inputsInitialized);
 
-    QMutexLocker l(&_imp->inputsLabelsMutex);
-    if ( (inputNb < 0) || ( inputNb >= (int)_imp->inputHints.size() ) ) {
+    QMutexLocker l(&_imp->inputsMutex);
+    if ( (inputNb < 0) || ( inputNb >= (int)_imp->inputDescriptions.size() ) ) {
         throw std::invalid_argument("Index out of range");
     }
 
-    return _imp->inputHints[inputNb];
+    return _imp->inputDescriptions[inputNb]->getPropertyUnsafe<std::string>(kInputDescPropHint);
 }
 
 void
 Node::setInputLabel(int inputNb, const std::string& label)
 {
     {
-        QMutexLocker l(&_imp->inputsLabelsMutex);
-        if ( (inputNb < 0) || ( inputNb >= (int)_imp->inputLabels.size() ) ) {
+        QMutexLocker l(&_imp->inputsMutex);
+        if ( (inputNb < 0) || ( inputNb >= (int)_imp->inputDescriptions.size() ) ) {
             throw std::invalid_argument("Index out of range");
         }
-        _imp->inputLabels[inputNb] = label;
+        _imp->inputDescriptions[inputNb]->setProperty(kInputDescPropLabel, label);
     }
     _imp->effect->onInputLabelChanged(inputNb, label);
 
@@ -315,38 +250,162 @@ void
 Node::setInputHint(int inputNb, const std::string& hint)
 {
     {
-        QMutexLocker l(&_imp->inputsLabelsMutex);
-        if ( (inputNb < 0) || ( inputNb >= (int)_imp->inputHints.size() ) ) {
+        QMutexLocker l(&_imp->inputsMutex);
+        if ( (inputNb < 0) || ( inputNb >= (int)_imp->inputDescriptions.size() ) ) {
             throw std::invalid_argument("Index out of range");
         }
-        _imp->inputHints[inputNb] = hint;
+        _imp->inputDescriptions[inputNb]->setProperty(kInputDescPropHint, hint);
     }
 }
 
 bool
 Node::isInputVisible(int inputNb) const
 {
-    QMutexLocker k(&_imp->inputsMutex);
-    if (inputNb >= 0 && inputNb < (int)_imp->inputsVisibility.size()) {
-        return _imp->inputsVisibility[inputNb];
-    } else {
-        throw std::invalid_argument("Index out of range");
+    QMutexLocker l(&_imp->inputsMutex);
+    if ( (inputNb < 0) || ( inputNb >= (int)_imp->inputDescriptions.size() ) ) {
+        return false;
     }
-    return false;
+
+    return _imp->inputDescriptions[inputNb]->getPropertyUnsafe<bool>(kInputDescPropIsVisible);
 }
 
 void
 Node::setInputVisible(int inputNb, bool visible)
 {
     {
-        QMutexLocker k(&_imp->inputsMutex);
-        if (inputNb >= 0 && inputNb < (int)_imp->inputsVisibility.size()) {
-            _imp->inputsVisibility[inputNb] = visible;
-        } else {
+        QMutexLocker l(&_imp->inputsMutex);
+        if ( (inputNb < 0) || ( inputNb >= (int)_imp->inputDescriptions.size() ) ) {
             throw std::invalid_argument("Index out of range");
         }
+        _imp->inputDescriptions[inputNb]->setProperty(kInputDescPropIsVisible, visible);
     }
     Q_EMIT inputVisibilityChanged(inputNb);
+}
+
+ImageFieldExtractionEnum
+Node::getInputFieldExtraction(int inputNb) const
+{
+    QMutexLocker l(&_imp->inputsMutex);
+    if ( (inputNb < 0) || ( inputNb >= (int)_imp->inputDescriptions.size() ) ) {
+        return eImageFieldExtractionDouble;
+    }
+
+    return _imp->inputDescriptions[inputNb]->getPropertyUnsafe<ImageFieldExtractionEnum>(kInputDescPropFieldingSupport);
+}
+
+std::bitset<4>
+Node::getSupportedComponents(int inputNb) const
+{
+
+    // For a Read or Write node, actually return the bits from the embedded plug-in
+    ReadNodePtr isRead = toReadNode(_imp->effect);
+    WriteNodePtr isWrite = toWriteNode(_imp->effect);
+    NodePtr embeddedNode;
+    if (isRead) {
+        embeddedNode = isRead->getEmbeddedReader();
+    } else if (isWrite) {
+        embeddedNode = isWrite->getEmbeddedWriter();
+    }
+
+    if (embeddedNode) {
+        return embeddedNode->getSupportedComponents(inputNb);
+    }
+
+    if (inputNb == -1) {
+        PluginPtr plugin = getPlugin();
+        return plugin->getPropertyUnsafe<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents);
+    } else {
+        QMutexLocker l(&_imp->inputsMutex);
+        if ( (inputNb < 0) || ( inputNb >= (int)_imp->inputDescriptions.size() ) ) {
+            return std::bitset<4>();
+        }
+        
+        return _imp->inputDescriptions[inputNb]->getPropertyUnsafe<std::bitset<4> >(kInputDescPropSupportedComponents);
+    }
+}
+
+bool
+Node::isInputMask(int inputNb) const
+{
+    QMutexLocker l(&_imp->inputsMutex);
+    if ( (inputNb < 0) || ( inputNb >= (int)_imp->inputDescriptions.size() ) ) {
+        return false;
+    }
+
+    return _imp->inputDescriptions[inputNb]->getPropertyUnsafe<bool>(kInputDescPropIsMask);
+}
+
+bool
+Node::isInputOptional(int inputNb) const
+{
+    QMutexLocker l(&_imp->inputsMutex);
+    if ( (inputNb < 0) || ( inputNb >= (int)_imp->inputDescriptions.size() ) ) {
+        return false;
+    }
+
+    return _imp->inputDescriptions[inputNb]->getPropertyUnsafe<bool>(kInputDescPropIsOptional);
+}
+
+bool
+Node::isTilesSupportedByInput(int inputNb) const
+{
+    QMutexLocker l(&_imp->inputsMutex);
+    if ( (inputNb < 0) || ( inputNb >= (int)_imp->inputDescriptions.size() ) ) {
+        return true;
+    }
+
+    return _imp->inputDescriptions[inputNb]->getPropertyUnsafe<bool>(kInputDescPropSupportsTiles);
+}
+
+bool
+Node::isTemporalAccessSupportedByInput(int inputNb) const
+{
+    QMutexLocker l(&_imp->inputsMutex);
+    if ( (inputNb < 0) || ( inputNb >= (int)_imp->inputDescriptions.size() ) ) {
+        return false;
+    }
+
+    return _imp->inputDescriptions[inputNb]->getPropertyUnsafe<bool>(kInputDescPropSupportsTemporal);
+}
+
+bool
+Node::canInputReceiveDistortion(int inputNb) const
+{
+    QMutexLocker l(&_imp->inputsMutex);
+    if ( (inputNb < 0) || ( inputNb >= (int)_imp->inputDescriptions.size() ) ) {
+        return false;
+    }
+
+    return _imp->inputDescriptions[inputNb]->getPropertyUnsafe<bool>(kInputDescPropCanReceiveDistortion);
+}
+
+bool
+Node::canInputReceiveTransform3x3(int inputNb) const
+{
+    QMutexLocker l(&_imp->inputsMutex);
+    if ( (inputNb < 0) || ( inputNb >= (int)_imp->inputDescriptions.size() ) ) {
+        return false;
+    }
+
+    return _imp->inputDescriptions[inputNb]->getPropertyUnsafe<bool>(kInputDescPropCanReceiveTransform3x3);
+}
+
+bool
+Node::getInputDescription(int inputNb, InputDescription* desc) const
+{
+    QMutexLocker l(&_imp->inputsMutex);
+    if ( (inputNb < 0) || ( inputNb >= (int)_imp->inputDescriptions.size() ) ) {
+        return false;
+    }
+    desc->cloneProperties(*_imp->inputDescriptions[inputNb]);
+    return true;
+}
+
+int
+Node::getNInputs() const
+{
+    QMutexLocker l(&_imp->inputsMutex);
+    return _imp->inputs.size();
 }
 
 
@@ -356,10 +415,9 @@ Node::getInputNumberFromLabel(const std::string& inputLabel) const
     if (inputLabel.empty()) {
         return -1;
     }
-    assert(_imp->inputsInitialized);
-    QMutexLocker l(&_imp->inputsLabelsMutex);
-    for (U32 i = 0; i < _imp->inputLabels.size(); ++i) {
-        if (_imp->inputLabels[i] == inputLabel) {
+    QMutexLocker l(&_imp->inputsMutex);
+    for (U32 i = 0; i < _imp->inputDescriptions.size(); ++i) {
+        if (_imp->inputDescriptions[i]->getPropertyUnsafe<std::string>(kInputDescPropLabel) == inputLabel) {
             return i;
         }
     }
@@ -367,19 +425,106 @@ Node::getInputNumberFromLabel(const std::string& inputLabel) const
     return -1;
 }
 
+void
+Node::addInput(const InputDescriptionPtr& description)
+{
+    insertInput(-1, description);
+}
+
+void
+Node::insertInput(int index, const InputDescriptionPtr& description)
+{
+    beginInputEdition();
+    {
+        QMutexLocker k(&_imp->inputsMutex);
+        _imp->inputIsRenderingCounter.resize(_imp->inputIsRenderingCounter.size() + 1);
+        if (index >= (int)_imp->inputs.size() || index == -1) {
+            _imp->inputs.push_back(NodePtr());
+            _imp->inputDescriptions.push_back(description);
+        } else {
+            {
+                InputsV::iterator it = _imp->inputs.begin();
+                std::advance(it, index);
+                _imp->inputs.insert(it, NodePtr());
+            }
+            {
+                std::vector<InputDescriptionPtr>::iterator it = _imp->inputDescriptions.begin();
+                std::advance(it, index);
+                _imp->inputDescriptions.insert(it, description);
+            }
+        }
+    }
+    ++_imp->hasModifiedInputsDescription;
+    endInputEdition(true);
+
+
+}
+
+void
+Node::changeInputDescription(int inputNb, const InputDescriptionPtr& description)
+{
+    beginInputEdition();
+    {
+        QMutexLocker k(&_imp->inputsMutex);
+        if (inputNb < 0 || inputNb >= (int)_imp->inputs.size()) {
+            return;
+        }
+        _imp->inputDescriptions[inputNb] = description;
+    }
+    _imp->inputsModified.insert(inputNb);
+    ++_imp->hasModifiedInputsDescription;
+    endInputEdition(true);
+
+}
+
+void
+Node::removeInput(int inputNb)
+{
+    beginInputEdition();
+    {
+        QMutexLocker k(&_imp->inputsMutex);
+        if (inputNb < 0 || inputNb >= (int)_imp->inputs.size()) {
+            return;
+        }
+        _imp->inputIsRenderingCounter.resize(_imp->inputIsRenderingCounter.size() - 1);
+        {
+            InputsV::iterator it = _imp->inputs.begin();
+            std::advance(it, inputNb);
+            _imp->inputs.erase(it);
+        }
+        {
+            std::vector<InputDescriptionPtr>::iterator it = _imp->inputDescriptions.begin();
+            std::advance(it, inputNb);
+            _imp->inputDescriptions.erase(it);
+        }
+    }
+    ++_imp->hasModifiedInputsDescription;
+    endInputEdition(true);
+}
+
+void
+Node::removeAllInputs()
+{
+    beginInputEdition();
+    {
+        QMutexLocker k(&_imp->inputsMutex);
+        _imp->inputs.clear();
+        _imp->inputDescriptions.clear();
+        _imp->inputIsRenderingCounter.clear();
+    }
+    ++_imp->hasModifiedInputsDescription;
+    endInputEdition(true);
+}
+
 bool
 Node::isInputConnected(int inputNb) const
 {
-    assert(_imp->inputsInitialized);
-
     return getInput(inputNb) != NULL;
 }
 
 bool
 Node::hasInputConnected() const
 {
-    assert(_imp->inputsInitialized);
-
     QMutexLocker l(&_imp->inputsMutex);
     for (U32 i = 0; i < _imp->inputs.size(); ++i) {
         if ( _imp->inputs[i].lock() ) {
@@ -396,8 +541,9 @@ Node::hasMandatoryInputDisconnected() const
 {
     QMutexLocker l(&_imp->inputsMutex);
 
+    assert(_imp->inputs.size() == _imp->inputDescriptions.size());
     for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-        if ( !_imp->inputs[i].lock() && !_imp->effect->isInputOptional(i) ) {
+        if ( !_imp->inputs[i].lock() && !_imp->inputDescriptions[i]->getPropertyUnsafe<bool>(kInputDescPropIsOptional) ) {
             return true;
         }
     }
@@ -493,67 +639,6 @@ Node::isNodeUpstream(const NodeConstPtr& input) const
     return isNodeUpstreamInternal(input, markedNodes);
 }
 
-#if 0
-static Node::CanConnectInputReturnValue
-checkCanConnectNoMultiRes(const Node* output,
-                          const NodePtr& input)
-{
-    //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsMultiResolution
-    //Check that the input has the same RoD that another input and that its rod is set to 0,0
-    RenderScale scale(1.);
-    RectD rod;
-    {
-        GetRegionOfDefinitionResultsPtr actionResults;
-        ActionRetCodeEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(TimeValue(output->getApp()->getTimeLine()->currentFrame()),
-                                                                                          scale,
-                                                                                          ViewIdx(0),
-                                                                                          &actionResults);
-        if (isFailureRetCode(stat)) {
-            return Node::eCanConnectInput_givenNodeNotConnectable;
-        }
-        rod = actionResults->getRoD();
-    }
-    if (rod.isNull()) {
-        return Node::eCanConnectInput_givenNodeNotConnectable;
-    }
-
-    if ( (rod.x1 != 0) || (rod.y1 != 0) ) {
-        return Node::eCanConnectInput_multiResNotSupported;
-    }
-
-    // Commented-out: Some Furnace plug-ins from The Foundry (e.g F_Steadiness) are not supporting multi-resolution but actually produce an output
-    // with a RoD different from the input
-
-    /*RectD outputRod;
-     stat = output->getEffectInstance()->getRegionOfDefinition_public(output->getCacheID(), output->getApp()->getTimeLine()->currentFrame(), scale, ViewIdx(0), &outputRod);
-     Q_UNUSED(stat);
-
-     if ( !outputRod.isNull() && (rod != outputRod) ) {
-     return Node::eCanConnectInput_multiResNotSupported;
-     }*/
-
-    for (int i = 0; i < output->getMaxInputCount(); ++i) {
-        NodePtr inputNode = output->getInput(i);
-        if (inputNode) {
-
-            GetRegionOfDefinitionResultsPtr actionResults;
-            ActionRetCodeEnum stat = inputNode->getEffectInstance()->getRegionOfDefinition_public(TimeValue(output->getApp()->getTimeLine()->currentFrame()),
-                                                                                                  scale,
-                                                                                                  ViewIdx(0),
-                                                                                                  &actionResults);
-            if ( isFailureRetCode(stat)) {
-                return Node::eCanConnectInput_givenNodeNotConnectable;
-            }
-            RectD inputRod = actionResults->getRoD();
-            if (inputRod != rod) {
-                return Node::eCanConnectInput_multiResNotSupported;
-            }
-        }
-    }
-
-    return Node::eCanConnectInput_ok;
-}
-#endif // 0
 
 
 Node::CanConnectInputReturnValue
@@ -587,14 +672,6 @@ Node::canConnectInput(const NodePtr& input,
         return eCanConnectInput_graphCycles;
     }
 
-#if 0
-    if ( !_imp->effect->supportsMultiResolution() ) {
-        CanConnectInputReturnValue ret = checkCanConnectNoMultiRes(this, input);
-        if (ret != eCanConnectInput_ok) {
-            return ret;
-        }
-    }
-#endif
     {
         ///Check for invalid pixel aspect ratio if the node doesn't support multiple clip PARs
 
@@ -605,7 +682,7 @@ Node::canConnectInput(const NodePtr& input,
         for (InputsV::const_iterator it = _imp->inputs.begin(); it != _imp->inputs.end(); ++it) {
             NodePtr node = it->lock();
             if (node) {
-                if ( !_imp->effect->supportsMultipleClipPARs() ) {
+                if ( !_imp->effect->isMultipleInputsWithDifferentPARSupported() ) {
                     if (node->getEffectInstance()->getAspectRatio(-1) != inputPAR) {
                         return eCanConnectInput_differentPars;
                     }
@@ -631,7 +708,7 @@ Node::canOthersConnectToThisNode() const
         return false;
     } else if ( isEffectGroupOutput() ) {
         return false;
-    } else if ( _imp->effect->isWriter() && (_imp->effect->getSequentialPreference() == eSequentialPreferenceOnlySequential) ) {
+    } else if ( _imp->effect->isWriter() && (_imp->effect->getSequentialRenderSupport() == eSequentialPreferenceOnlySequential) ) {
         return false;
     }
     ///In debug mode only allow connections to Writer nodes
@@ -647,8 +724,6 @@ bool
 Node::connectInput(const NodePtr & input, int inputNumber)
 {
 
-    assert(_imp->inputsInitialized);
-
     if (!input) {
         return false;
     }
@@ -661,8 +736,6 @@ Node::connectInput(const NodePtr & input, int inputNumber)
 bool
 Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool failIfExisting)
 {
-    assert(_imp->inputsInitialized);
-
     // Check for cycles: they are forbidden in the graph
     if ( input && !checkIfConnectingInputIsOk( input ) ) {
         return false;
@@ -782,15 +855,14 @@ Node::connectOutputsToMainInput()
 void
 Node::switchInput0And1()
 {
-    assert(_imp->inputsInitialized);
-    int maxInputs = getMaxInputCount();
+    int maxInputs = getNInputs();
     if (maxInputs < 2) {
         return;
     }
     ///get the first input number to switch
     int inputAIndex = -1;
     for (int i = 0; i < maxInputs; ++i) {
-        if ( !_imp->effect->isInputMask(i) ) {
+        if ( !isInputMask(i) ) {
             inputAIndex = i;
             break;
         }
@@ -808,7 +880,7 @@ Node::switchInput0And1()
         if (j == inputAIndex) {
             continue;
         }
-        if ( !_imp->effect->isInputMask(j) ) {
+        if ( !isInputMask(j) ) {
             inputBIndex = j;
             break;
         } else {
@@ -863,7 +935,6 @@ void
 Node::onInputLabelChanged(const QString& /*oldName*/, const QString & newName)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    assert(_imp->inputsInitialized);
     Node* inp = dynamic_cast<Node*>( sender() );
     assert(inp);
     if (!inp) {
@@ -905,7 +976,6 @@ Node::connectOutput(const NodePtr& output, int outputInputIndex)
 bool
 Node::disconnectInput(int inputNumber)
 {
-    assert(_imp->inputsInitialized);
     return replaceInputInternal(NodePtr(), inputNumber, false);
 } // Node::disconnectInput
 
@@ -951,17 +1021,6 @@ Node::disconnectOutput(const NodePtr& output, int outputInputIndex)
     return ret;
 }
 
-const std::vector<std::string> &
-Node::getInputLabels() const
-{
-    assert(_imp->inputsInitialized);
-    ///MT-safe as it never changes.
-    ////Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    return _imp->inputLabels;
-}
-
 
 void
 Node::getOutputs(OutputNodesMap& outputs) const
@@ -983,32 +1042,28 @@ Node::getInputNames(std::map<std::string, std::string> & inputNames,
     // This is called by the serialization thread.
     // We use the inputs because we want to serialize exactly how the tree was to the user
 
-    std::vector<std::string> inputLabels;
-    InputsV inputsVec;
-    {
-        QMutexLocker l(&_imp->inputsLabelsMutex);
-        inputLabels = _imp->inputLabels;
-    }
     {
         QMutexLocker l(&_imp->inputsMutex);
-        inputsVec = _imp->inputs;
-    }
-    assert( inputsVec.size() == inputLabels.size() );
+        assert(_imp->inputs.size() == _imp->inputDescriptions.size());
+        for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
+            NodePtr input = _imp->inputs[i].lock();
+            std::map<std::string, std::string>* container = 0;
 
-    for (std::size_t i = 0; i < inputsVec.size(); ++i) {
-        NodePtr input = inputsVec[i].lock();
+            if (_imp->inputDescriptions[i]->getPropertyUnsafe<bool>(kInputDescPropIsMask)) {
+                container = &maskNames;
+            } else {
+                container = &inputNames;
+            }
 
-        std::map<std::string, std::string>* container = 0;
-        if (_imp->effect->isInputMask(i)) {
-            container = &maskNames;
-        } else {
-            container = &inputNames;
+            std::string inputLabel = _imp->inputDescriptions[i]->getPropertyUnsafe<std::string>(kInputDescPropLabel);
+            if (input) {
+                (*container)[inputLabel] = input->getScriptName_mt_safe();
+            } else {
+                (*container)[inputLabel] = std::string();
+            }
+
         }
-        if (input) {
-            (*container)[inputLabels[i]] = input->getScriptName_mt_safe();
-        } else {
-            (*container)[inputLabels[i]] = std::string();
-        }
+        
     }
 }
 
@@ -1024,7 +1079,7 @@ Node::getPreferredInputInternal(bool connected) const
             return prefInput;
         }
     }
-    int nInputs = getMaxInputCount();
+    int nInputs = getNInputs();
 
     if (nInputs == 0) {
         return -1;
@@ -1094,13 +1149,13 @@ Node::getPreferredInputInternal(bool connected) const
 
     for (int i = 0; i < nInputs; ++i) {
         if ( (connected && inputs[i]) || (!connected && !inputs[i]) ) {
-            if ( !_imp->effect->isInputOptional(i) ) {
+            if ( !isInputOptional(i) ) {
                 if (firstNonOptionalEmptyInput == -1) {
                     firstNonOptionalEmptyInput = i;
                     break;
                 }
             } else {
-                if ( _imp->effect->isInputMask(i) ) {
+                if ( isInputMask(i) ) {
                     optionalEmptyMasks.push_back(i);
                 } else {
                     optionalEmptyInputs.push_back(i);
@@ -1197,23 +1252,31 @@ Node::endInputEdition(bool triggerRender)
         --_imp->inputModifiedRecursion;
     }
 
-    if (!_imp->inputModifiedRecursion && !getApp()->getProject()->isLoadingProject() && !getApp()->isCreatingNode()) {
-        bool hasChanged = !_imp->inputsModified.empty();
-        _imp->inputsModified.clear();
+    if (!_imp->inputModifiedRecursion) {
 
-        if (hasChanged) {
-
-            // Force a refresh of the meta-datas
-
-            _imp->effect->onMetadataChanged_recursive_public();
-
-            _imp->effect->refreshDynamicProperties();
+        if (_imp->hasModifiedInputsDescription > 0) {
+            _imp->hasModifiedInputsDescription = 0;
+            Q_EMIT inputsDescriptionChanged();
         }
 
-        triggerRender = triggerRender && hasChanged;
+        if (!getApp()->getProject()->isLoadingProject() && !getApp()->isCreatingNode()) {
+            bool hasChanged = !_imp->inputsModified.empty();
+            _imp->inputsModified.clear();
 
-        if (triggerRender) {
-            getApp()->renderAllViewers();
+            if (hasChanged) {
+
+                // Force a refresh of the meta-datas
+
+                _imp->effect->onMetadataChanged_recursive_public();
+
+                _imp->effect->refreshDynamicProperties();
+            }
+
+            triggerRender = triggerRender && hasChanged;
+            
+            if (triggerRender) {
+                getApp()->renderAllViewers();
+            }
         }
     }
 }
@@ -1320,7 +1383,7 @@ Node::isEntitledForInspectorInputsStyle() const
     // We need a boolean here because the baseInputName may be empty in the case input names only contain numbers
     bool baseInputNameSet = false;
 
-    int maxInputs = getMaxInputCount();
+    int maxInputs = getNInputs();
     for (int i = 0; i < maxInputs; ++i) {
         if (!baseInputNameSet) {
             baseInputName = removeTrailingDigits(getInputLabel(i));
@@ -1337,18 +1400,6 @@ Node::isEntitledForInspectorInputsStyle() const
     return maxInputs > 4 && nInputsWithSameBasename >= 4;
 }
 
-
-
-int
-Node::getMaxInputCount() const
-{
-    ///MT-safe, never changes
-    if (!_imp->effect) {
-        return 0;
-    }
-    return _imp->effect->getMaxInputCount();
-}
-
 bool
 Node::hasSequentialOnlyNodeUpstream(std::string & nodeName) const
 {
@@ -1356,7 +1407,7 @@ Node::hasSequentialOnlyNodeUpstream(std::string & nodeName) const
         return false;
     }
     ///Just take into account sequentiallity for writers
-    if ( (_imp->effect->getSequentialPreference() == eSequentialPreferenceOnlySequential) && _imp->effect->isWriter() ) {
+    if ( (_imp->effect->getSequentialRenderSupport() == eSequentialPreferenceOnlySequential) && _imp->effect->isWriter() ) {
         nodeName = getScriptName_mt_safe();
 
         return true;

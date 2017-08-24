@@ -72,11 +72,11 @@ Image::~Image()
         if (_imp->channels[i]) {
 
             // The buffer may be shared with another image, in which case we do not destroy it now.
-            bool channelBufferIsShared =
+            bool channelBufferIsNotShared =
             (!_imp->cacheEntry && _imp->channels[i].use_count() == 1) ||
             (_imp->cacheEntry && _imp->channels[i].use_count() == 2);
 
-            if (!channelBufferIsShared) {
+            if (channelBufferIsNotShared) {
                 toDeleteInDeleterThread.push_back(_imp->channels[i]);
             }
         }
@@ -173,17 +173,21 @@ ImagePrivate::init(const Image::InitStorageArgs& args)
 
 
     // If allocating OpenGL textures, ensure the context is current
-    OSGLContextAttacherPtr contextLocker;
-    if (args.storage == eStorageModeGLTex) {
-        contextLocker = OSGLContextAttacher::create(args.glContext);
-        contextLocker->attach();
-    }
+    boost::scoped_ptr<OSGLContextSaver> contextSaver;
+    {
+        OSGLContextAttacherPtr contextLocker;
+        if (args.storage == eStorageModeGLTex) {
+            contextSaver.reset(new OSGLContextSaver);
+            contextLocker = OSGLContextAttacher::create(args.glContext);
+            contextLocker->attach();
+        }
 
-    if (args.externalBuffer) {
-        return initFromExternalBuffer(args);
-    } else {
-        return initAndFetchFromCache(args);
-    }
+        if (args.externalBuffer) {
+            return initFromExternalBuffer(args);
+        } else {
+            return initAndFetchFromCache(args);
+        }
+    } // contextLocker
 } // init
 
 

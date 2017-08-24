@@ -196,7 +196,7 @@ EffectInstance::createChannelSelector(int inputNb,
         page->addKnob(param);
 
         // If the effect wants by default to render all planes set default value
-        if ( isOutput && (isPassThroughForNonRenderedPlanes() == EffectInstance::ePassThroughRenderAllRequestedPlanes) ) {
+        if ( isOutput && (getPlanePassThrough() == ePassThroughRenderAllRequestedPlanes) ) {
             param->setDefaultValue(true);
             //Hide all other input selectors if choice is All in output
             for (std::map<int, ChannelSelector>::iterator it = _imp->defKnobs->channelsSelectors.begin(); it != _imp->defKnobs->channelsSelectors.end(); ++it) {
@@ -390,12 +390,12 @@ EffectInstance::createNodePage(const KnobPagePtr& settingsPage)
 
     PluginPtr plugin = getNode()->getPlugin();
     if (plugin && plugin->isOpenGLEnabled()) {
-        glSupport = (PluginOpenGLRenderSupport)plugin->getPropertyUnsafe<int>(kNatronPluginPropOpenGLSupport);
+        glSupport = plugin->getEffectDescriptor()->getPropertyUnsafe<PluginOpenGLRenderSupport>(kEffectPropSupportsOpenGLRendering);
     }
 
     // For Groups, always create a GPU support knob, even if the node itself does not handle gpu support: this allows nodes of the
     // sub-graph to hook on the value of the Group node.
-    if (isGroup || glSupport != ePluginOpenGLRenderSupportNone) {
+    if (isGroup || glSupport == ePluginOpenGLRenderSupportYes) {
         getOrCreateOpenGLEnabledKnob();
     }
 
@@ -1263,28 +1263,6 @@ EffectInstance::getOrCreateOpenGLEnabledKnob()
 }
 
 void
-EffectInstance::onOpenGLEnabledKnobChangedOnProject(bool activated)
-{
-    bool enabled = activated;
-    KnobChoicePtr k = _imp->defKnobs->openglRenderingEnabledKnob.lock();
-    if (enabled) {
-        if (k) {
-            k->setEnabled(true);
-            int thisKnobIndex = k->getValue();
-            if (thisKnobIndex == 1 || (thisKnobIndex == 2 && getApp()->isBackground())) {
-                enabled = false;
-            }
-        }
-    } else {
-        if (k) {
-            k->setEnabled(true);
-        }
-    }
-    onEnableOpenGLKnobValueChanged(enabled);
-    
-}
-
-void
 EffectInstance::initializeDefaultKnobs(bool loadingSerialization, bool hasGUI)
 {
     //Readers and Writers don't have default knobs since these knobs are on the ReadNode/WriteNode itself
@@ -1320,14 +1298,14 @@ EffectInstance::initializeDefaultKnobs(bool loadingSerialization, bool hasGUI)
 
     // Scan all inputs to find masks and get inputs labels
     // Pair hasMaskChannelSelector, isMask
-    int inputsCount = getMaxInputCount();
+    int inputsCount = getNInputs();
     std::vector<std::pair<bool, bool> > hasMaskChannelSelector(inputsCount);
     std::vector<std::string> inputLabels(inputsCount);
     for (int i = 0; i < inputsCount; ++i) {
-        inputLabels[i] = getInputLabel(i);
+        inputLabels[i] = getNode()->getInputLabel(i);
 
-        std::bitset<4> inputSupportedComps = getSupportedComponents(i);
-        bool isMask = isInputMask(i);
+        std::bitset<4> inputSupportedComps = getNode()->getSupportedComponents(i);
+        bool isMask = getNode()->isInputMask(i);
         bool supportsOnlyAlpha = inputSupportedComps[0] && !inputSupportedComps[1] && !inputSupportedComps[2] && !inputSupportedComps[3];
 
         hasMaskChannelSelector[i].first = false;
@@ -1344,8 +1322,8 @@ EffectInstance::initializeDefaultKnobs(bool loadingSerialization, bool hasGUI)
 
     // Create the Output Layer choice if needed plus input layers selectors
     KnobIPtr lastKnobBeforeAdvancedOption;
-    bool requiresLayerShuffle = getCreateChannelSelectorKnob();
-    if (requiresLayerShuffle) {
+    bool wantsPlaneSelector = isHostPlaneSelectorEnabled();
+    if (wantsPlaneSelector) {
         if (!mainPage) {
             mainPage = getOrCreateMainPage();
         }
@@ -1386,7 +1364,7 @@ EffectInstance::initializeDefaultKnobs(bool loadingSerialization, bool hasGUI)
 
 
     //Create the host mix if needed
-    if ( isHostMixingEnabled() ) {
+    if ( isHostMixEnabled() ) {
         if (!mainPage) {
             mainPage = getOrCreateMainPage();
         }
@@ -1719,19 +1697,6 @@ EffectInstance::handleDefaultKnobChanged(const KnobIPtr& what, ValueChangedReaso
     } else if ( what == _imp->defKnobs->refreshInfoButton.lock() ||
                (what == _imp->defKnobs->infoPage.lock() && reason == eValueChangedReasonUserEdited) ) {
         refreshInfos();
-    } else if ( what == _imp->defKnobs->openglRenderingEnabledKnob.lock() ) {
-        bool enabled = true;
-        int thisKnobIndex = _imp->defKnobs->openglRenderingEnabledKnob.lock()->getValue();
-        if (thisKnobIndex == 1 || (thisKnobIndex == 2 && getApp()->isBackground())) {
-            enabled = false;
-        }
-        if (enabled) {
-            // Check value on project now
-            if (!getApp()->getProject()->isOpenGLRenderActivated()) {
-                enabled = false;
-            }
-        }
-        onEnableOpenGLKnobValueChanged(enabled);
     } else if (what == _imp->defKnobs->processAllLayersKnob.lock()) {
 
         std::map<int, ChannelSelector>::iterator foundOutput = _imp->defKnobs->channelsSelectors.find(-1);
@@ -1811,7 +1776,7 @@ EffectInstance::handleDefaultKnobChanged(const KnobIPtr& what, ValueChangedReaso
                 assert(isGrp);
                 if (isGrp) {
                     ///Refresh input arrows of the node to reflect the state
-                    isGrp->getNode()->initializeInputs();
+                    isGrp->refreshInputs();
                     ret = true;
                 }
             }

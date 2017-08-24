@@ -101,7 +101,7 @@ ViewerNodePrivate::refreshInputChoices(bool resetChoiceIfNotFound)
     std::vector<ChoiceOption> entries;
     entries.push_back(ChoiceOption("-", "", ""));
 
-    int nInputs = _publicInterface->getMaxInputCount();
+    int nInputs = _publicInterface->getNInputs();
     for (int i = 0; i < nInputs; ++i) {
         NodePtr inputNode = _publicInterface->getNode()->getRealInput(i);
         if (!inputNode) {
@@ -149,7 +149,7 @@ ViewerNodePrivate::refreshInputChoiceMenu(int internalIndex, int groupInputIndex
 {
     KnobChoicePtr inputChoiceKnob = internalIndex == 0 ? aInputNodeChoiceKnob.lock() : bInputNodeChoiceKnob.lock();
 
-    assert(groupInputIndex >= 0 && groupInputIndex < _publicInterface->getMaxInputCount());
+    assert(groupInputIndex >= 0 && groupInputIndex < _publicInterface->getNInputs());
 
     std::string groupInputID;
     {

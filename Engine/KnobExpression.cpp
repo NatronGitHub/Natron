@@ -728,7 +728,7 @@ KnobHelper::checkInvalidLinks()
 
 
     // For a getValue call which will refresh error if needed
-    refreshStaticValue(getCurrentRenderTime());
+     _signalSlotHandler->s_mustRefreshKnobGui(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonTimeChanged);
     
     vector<ExprToReApply> exprToReapply;
     {

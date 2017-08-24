@@ -1007,9 +1007,7 @@ KnobHelper::refreshListenersAfterValueChangeInternal(TimeValue time, ViewIdx vie
         KnobHelperPtr sharedKnob = toKnobHelper(it->knob.lock());
         if (sharedKnob && sharedKnob.get() != this) {
             sharedKnob->autoAdjustFoldExpandDimensions(view);
-            if (sharedKnob->evaluateValueChangeInternal(it->dimension, time, it->view, reason, evaluatedKnobs)) {
-                sharedKnob->refreshStaticValue(time);
-            }
+            sharedKnob->evaluateValueChangeInternal(it->dimension, time, it->view, reason, evaluatedKnobs);
         }
     }
 
@@ -1047,7 +1045,7 @@ KnobHelper::onTimeChanged(bool isPlayback,  TimeValue time)
     }
 
     if (hasAnimation()) {
-        refreshStaticValue(time);
+         _signalSlotHandler->s_mustRefreshKnobGui(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonTimeChanged);
     }
     if (evaluateValueChangeOnTimeChange() && !isPlayback) {
         KnobHolderPtr holder = getHolder();
@@ -2197,14 +2195,6 @@ KnobHelper::cloneExpressions(const KnobIPtr& other, ViewSetSpec view, ViewSetSpe
 bool
 KnobHelper::invalidateHashCacheInternal(std::set<HashableObject*>* invalidatedObjects)
 {
-    /*bool hasExpr = hasAnyExpression();
-
-    // If the knob has an expression, we were invalidated most likely because a dependency got changed, hence clear the expression cache
-    // and force a refresh of the static value on the gui
-    if (hasExpr) {
-        clearExpressionsResults(DimSpec::all(), ViewSetSpec::all());
-        refreshStaticValue(getCurrentRenderTime());
-    }*/
     return HashableObject::invalidateHashCacheInternal(invalidatedObjects);
 }
 

@@ -36,6 +36,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "Engine/AppManager.h"
 #include "Engine/LibraryBinary.h"
+#include "Engine/InputDescription.h"
+#include "Engine/EffectDescription.h"
 #include "Engine/Settings.h"
 
 NATRON_NAMESPACE_ENTER
@@ -63,11 +65,22 @@ Plugin::initializeProperties() const
     createProperty<void*>(kNatronPluginPropOpenFXPluginPtr, 0);
     createProperty<bool>(kNatronPluginPropIsDeprecated, false);
     createProperty<bool>(kNatronPluginPropIsInternalOnly, false);
-    createProperty<int>(kNatronPluginPropOpenGLSupport, (int)ePluginOpenGLRenderSupportNone);
-    createProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyUnsafe);
-    createProperty<bool>(kNatronPluginPropUsesMultiThread, false);
-    createProperty<bool>(kNatronPluginPropAlphaFillWith1, true);
-
+    createProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>());
+    createPropertyInternal<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths);
+    createProperty<bool>(kNatronPluginPropViewAware, false);
+    createProperty<ViewInvarianceLevel>(kNatronPluginPropViewInvariant, eViewInvarianceAllViewsVariant);
+    createProperty<PlanePassThroughEnum>(kNatronPluginPropPlanesPassThrough, ePassThroughPassThroughNonRenderedPlanes);
+    createProperty<bool>(kNatronPluginPropMultiPlanar, false);
+    createProperty<bool>(kNatronPluginPropSupportsDraftRender, false);
+    createProperty<bool>(kNatronPluginPropHostChannelSelector, false);
+    createProperty<std::bitset<4> >(kNatronPluginPropHostChannelSelectorValue, std::bitset<4>());
+    createProperty<bool>(kNatronPluginPropHostMix, false);
+    createProperty<bool>(kNatronPluginPropHostMask, false);
+    createProperty<bool>(kNatronPluginPropHostPlaneSelector, false);
+    createProperty<bool>(kNatronPluginPropSupportsMultiInputsPAR, false);
+    createProperty<bool>(kNatronPluginPropSupportsMultiInputsBitDepths, false);
+    createProperty<bool>(kNatronPluginPropSupportsMultiInputsFPS, false);
+    createProperty<bool>(kNatronPluginPropRenderAllPlanesAtOnce, false);
 }
 
 PluginPtr
@@ -156,6 +169,7 @@ Plugin::Plugin()
 , _openGLEnabled(true)
 , _multiThreadEnabled(true)
 , _renderScaleEnabled(true)
+, _effectDescription(new EffectDescription)
 {
 
 
@@ -428,6 +442,19 @@ Plugin::getIsHighestMajorVersion() const
     return _isHighestVersion;
 }
 
+const
+std::vector<InputDescriptionPtr>&
+Plugin::getInputsDescription()
+{
+    return _inputsDescription;
+}
+
+void
+Plugin::addInputDescription(const InputDescriptionPtr& desc)
+{
+    _inputsDescription.push_back(desc);
+}
+
 void
 Plugin::addActionShortcut(const PluginActionShortcut& shortcut)
 {
@@ -472,6 +499,12 @@ PluginGroupNode::tryRemoveChild(const PluginGroupNodePtr& plugin)
             return;
         }
     }
+}
+
+EffectDescriptionPtr
+Plugin::getEffectDescriptor() const
+{
+    return _effectDescription;
 }
 
 bool

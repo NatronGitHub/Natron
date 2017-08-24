@@ -83,6 +83,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/RotoPaint.h"
 #include "Engine/Settings.h"
+#include "Engine/TreeRenderQueueManager.h"
 #include "Engine/Timer.h"
 #include "Engine/Transform.h"
 #include "Engine/TreeRender.h"
@@ -252,10 +253,10 @@ EffectInstance::AcceptedRequestConcatenationFlags
 EffectInstance::Implementation::getConcatenationFlagsForInput(int inputNb) const
 {
     AcceptedRequestConcatenationFlags ret = eAcceptedRequestConcatenationNone;
-    if (_publicInterface->getInputCanReceiveTransform(inputNb)) {
+    if (_publicInterface->getNode()->canInputReceiveTransform3x3(inputNb)) {
         ret |= eAcceptedRequestConcatenationDeprecatedTransformMatrix;
     }
-    if (_publicInterface->getInputCanReceiveDistortion(inputNb)) {
+    if (_publicInterface->getNode()->canInputReceiveDistortion(inputNb)) {
         ret |= eAcceptedRequestConcatenationDistortionFunc;
     }
     return ret;
@@ -277,8 +278,8 @@ EffectInstance::Implementation::handleConcatenation(const TreeRenderExecutionDat
         return eActionStatusOK;
     }
 
-    bool canDistort = _publicInterface->getCurrentCanDistort();
-    bool canTransform = _publicInterface->getCurrentCanTransform();
+    bool canDistort = _publicInterface->getCanDistort();
+    bool canTransform = _publicInterface->getCanTransform3x3();
 
     if (!canDistort && !canTransform) {
         return eActionStatusOK;
@@ -437,7 +438,7 @@ EffectInstance::Implementation::canSplitRenderWindowWithIdentityRectangles(const
     RectD inputsIntersection;
     bool inputsIntersectionSet = false;
     bool hasDifferentRods = false;
-    int maxInput = _publicInterface->getMaxInputCount();
+    int maxInput = _publicInterface->getNInputs();
     bool hasMask = false;
 
     TimeValue time = _publicInterface->getCurrentRenderTime();
@@ -455,7 +456,7 @@ EffectInstance::Implementation::canSplitRenderWindowWithIdentityRectangles(const
             continue;
         }
 
-        hasMask |= _publicInterface->isInputMask(i);
+        hasMask |= _publicInterface->getNode()->isInputMask(i);
 
 
         if (attachedStroke) {
@@ -566,7 +567,7 @@ EffectInstance::Implementation::checkRestToRender(bool updateTilesStateFromCache
     }
 
     // If the effect does not support tiles, render everything again
-    if (!_publicInterface->getCurrentSupportTiles()) {
+    if (!_publicInterface->supportsTiles()) {
         // If not using the cache, render the full RoI
         // The RoI has already been set to the pixelRoD in this case
         RectToRender r;
@@ -661,7 +662,7 @@ EffectInstance::Implementation::checkRestToRender(bool updateTilesStateFromCache
     }
 
     // For each reduced rect to render, add it to the final list
-    if (reducedRects.size() == 1 && _publicInterface->getCurrentRenderThreadSafety() == eRenderSafetyFullySafeFrame) {
+    if (reducedRects.size() == 1 && _publicInterface->getRenderThreadSafety() == eRenderSafetyFullySafeFrame) {
         RectI mainRenderRect = reducedRects.front();
 
         // If plug-in wants host frame threading and there is only 1 rect to render, split it
@@ -791,7 +792,7 @@ EffectInstance::Implementation::launchRenderForSafetyAndBackend(const FrameViewR
     // There should always be at least 1 plane to render (The color plane)
     assert(!renderRects.empty());
 
-    RenderSafetyEnum safety = _publicInterface->getCurrentRenderThreadSafety();
+    RenderSafetyEnum safety = _publicInterface->getRenderThreadSafety();
     // eRenderSafetyInstanceSafe means that there is at most one render per instance
     // NOTE: the per-instance lock should be shared between
     // all clones of the same instance, because an InstanceSafe plugin may assume it is the sole owner of the output image,
@@ -805,30 +806,22 @@ EffectInstance::Implementation::launchRenderForSafetyAndBackend(const FrameViewR
     // Since we may are going to sit and wait on this lock, to allow this thread to be re-used by another task of the thread pool we
     // temporarily release the thread to the threadpool and reserve it again once
     // we waited.
-    bool hasReleasedThread = false;
+    boost::scoped_ptr<ReleaseTPThread_RAII> releaser;
     if (safety == eRenderSafetyInstanceSafe) {
-        if (isRunningInThreadPoolThread()) {
-            QThreadPool::globalInstance()->releaseThread();
-            hasReleasedThread = true;
-        }
+        releaser.reset(new ReleaseTPThread_RAII);
         locker.reset( new QMutexLocker( &renderData->instanceSafeRenderMutex ) );
 
     } else if (safety == eRenderSafetyUnsafe) {
         PluginPtr p = _publicInterface->getNode()->getPlugin();
         assert(p);
-        if (isRunningInThreadPoolThread()) {
-            QThreadPool::globalInstance()->releaseThread();
-            hasReleasedThread = true;
-        }
+        releaser.reset(new ReleaseTPThread_RAII);
         locker.reset( new QMutexLocker( p->getPluginLock().get() ) );
 
     } else {
         // no need to lock
         Q_UNUSED(locker);
     }
-    if (hasReleasedThread) {
-        QThreadPool::globalInstance()->reserveThread();
-    }
+    releaser.reset();
     
     TreeRenderPtr render = _publicInterface->getCurrentRender();
 
@@ -866,14 +859,13 @@ EffectInstance::Implementation::launchRenderForSafetyAndBackend(const FrameViewR
 
         if (backendType == eRenderBackendTypeOpenGL ||
             backendType == eRenderBackendTypeOSMesa) {
-
             // If the plug-in doesn't support concurrent OpenGL renders, release the lock that was taken in the call to attachOpenGLContext_public() above.
-            // For safe plug-ins, we call dettachOpenGLContext_public when the effect is destroyed in Node::deactivate() with the function EffectInstance::dettachAllOpenGLContexts().
+            // For safe plug-ins, we call dettachOpenGLContext_public when the effect is destroyed in Node::destroy() with the function EffectInstance::dettachAllOpenGLContexts().
             // If we were the last render to use this context, clear the data now
 
             if ( glContextData->getHasTakenLock() ||
                 !_publicInterface->supportsConcurrentOpenGLRenders() ||
-                glContextData.use_count() == 1) {
+                glContextData.use_count() == 2) {
 
                 _publicInterface->dettachOpenGLContext_public(glContext, glContextData);
             }
@@ -937,7 +929,7 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const TreeRenderExecu
             continue;
         }
 
-        const bool isOptional = _publicInterface->isInputOptional(inputNb);
+        const bool isOptional = _publicInterface->getNode()->isInputOptional(inputNb);
 
         ///There cannot be frames needed without components needed.
         const std::list<ImagePlaneDesc>* inputPlanesNeeded = 0;
@@ -1159,11 +1151,12 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
     // mipmap level.
     // If the render requested a proxy scale different than 1, we fail because we cannot render at scale 1 then resize at an arbitrary scale.
 
-    const bool renderFullScaleThenDownScale = !getCurrentSupportRenderScale() && requestData->getMipMapLevel() > 0;
+    const bool renderScaleSupport = supportsRenderScale();
+    const bool renderFullScaleThenDownScale = !renderScaleSupport && requestData->getMipMapLevel() > 0;
 
     const RenderScale& proxyScale = requestData->getProxyScale();
 
-    if (!getCurrentSupportRenderScale() && (proxyScale.x != 1. || proxyScale.y != 1.)) {
+    if (!renderScaleSupport && (proxyScale.x != 1. || proxyScale.y != 1.)) {
         getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorProxyUnsupported, tr("This node does not support proxy scale. It can only render at full resolution").toStdString());
         return eActionStatusFailed;
     } else {
@@ -1270,7 +1263,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
     CacheBase::getTileSizePx(outputBitDepth, &tileWidth, &tileHeight);
 
 
-    if (!getCurrentSupportTiles()) {
+    if (!supportsTiles()) {
         // If tiles are not supported the RoI is the full image bounds
         renderMappedRoI = perMipMapLevelRoDPixel[mappedMipMapLevel];
     } else {
@@ -1627,7 +1620,7 @@ EffectInstance::launchRenderInternal(const TreeRenderExecutionDataPtr& requestPa
 
     RenderBackendTypeEnum backendType = requestData->getRenderDevice();
 
-    const bool renderAllProducedPlanes = isAllProducedPlanesAtOncePreferred();
+    const bool renderAllProducedPlanes = isRenderAllPlanesAtOncePreferred();
 
     for (std::list<ImagePlaneDesc>::const_iterator it = producedPlanes.begin(); it != producedPlanes.end(); ++it) {
         ImagePtr imagePlane;
@@ -1884,7 +1877,7 @@ EffectInstance::Implementation::launchPluginRenderAndHostFrameThreading(const Fr
     
     // We only need to call begin if we've not already called it.
     bool callBeginSequenceRender = false;
-    if ( !_publicInterface->isWriter() || (_publicInterface->getCurrentSequentialRenderSupport() == eSequentialPreferenceNotSequential) ) {
+    if ( !_publicInterface->isWriter() || (_publicInterface->getSequentialRenderSupport() == eSequentialPreferenceNotSequential) ) {
         callBeginSequenceRender = true;
     }
 
@@ -1915,7 +1908,7 @@ EffectInstance::Implementation::launchPluginRenderAndHostFrameThreading(const Fr
 #ifdef NATRON_HOSTFRAMETHREADING_SEQUENTIAL
     const bool attemptHostFrameThreading = false;
 #else
-    const bool attemptHostFrameThreading = _publicInterface->getCurrentRenderThreadSafety() == eRenderSafetyFullySafeFrame &&
+    const bool attemptHostFrameThreading = _publicInterface->getRenderThreadSafety() == eRenderSafetyFullySafeFrame &&
                                            renderRects.size() > 1 &&
                                            backendType == eRenderBackendTypeCPU;
 #endif

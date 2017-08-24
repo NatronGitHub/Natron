@@ -488,15 +488,9 @@ public:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
     virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
-    virtual bool isHostMaskingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual bool isHostMixingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
-    virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
-    virtual bool isHostChannelSelectorSupported(bool* defaultR, bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
     virtual void onKnobsLoaded() OVERRIDE FINAL;
-    virtual void onEnableOpenGLKnobValueChanged(bool activated) OVERRIDE FINAL;
+    virtual void onPropertiesChanged(const EffectDescription& description) OVERRIDE FINAL;
 
     virtual void setupInitialSubGraphState() OVERRIDE FINAL;
 
@@ -645,9 +639,6 @@ public:
 
     static PluginPtr createPlugin();
 
-private:
-
-    virtual bool isHostChannelSelectorSupported(bool* defaultR, bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
 };
 
 

@@ -139,13 +139,13 @@ ViewerTabPrivate::getOverlayTransform(TimeValue time,
         // Test all inputs recursively, going from last to first, preferring non optional inputs.
         std::list<EffectInstancePtr> nonOptionalInputs;
         std::list<EffectInstancePtr> optionalInputs;
-        int maxInp = currentNode->getMaxInputCount();
+        int maxInp = currentNode->getNInputs();
 
         // We cycle in reverse by default. It should be a setting of the application.
         // In this case it will return input B instead of input A of a merge for example.
         for (int i = maxInp - 1; i >= 0; --i) {
             EffectInstancePtr inp = currentNode->getInputMainInstance(i);
-            bool optional = currentNode->isInputOptional(i);
+            bool optional = currentNode->getNode()->isInputOptional(i);
             if (inp) {
                 if (optional) {
                     optionalInputs.push_back(inp);
@@ -246,13 +246,13 @@ ViewerTabPrivate::getTimeTransform(TimeValue time,
     ///Test all inputs recursively, going from last to first, preferring non optional inputs.
     std::list<int> nonOptionalInputs;
     std::list<int> optionalInputs;
-    int maxInp = currentNode->getMaxInputCount();
+    int maxInp = currentNode->getNInputs();
 
     ///We cycle in reverse by default. It should be a setting of the application.
     ///In this case it will return input B instead of input A of a merge for example.
     for (int i = maxInp - 1; i >= 0; --i) {
         EffectInstancePtr inp = currentNode->getInputMainInstance(i);
-        bool optional = currentNode->isInputOptional(i);
+        bool optional = currentNode->getNode()->isInputOptional(i);
         if (inp) {
             if (optional) {
                 optionalInputs.push_back(i);

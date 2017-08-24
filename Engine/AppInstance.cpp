@@ -1105,9 +1105,8 @@ AppInstance::createNodeInternal(const CreateNodeArgsPtr& args)
         return node;
     }
 
-
     std::string foundPluginID = plugin->getPluginID();
-
+    
     {
         bool useDialogForWriters = appPTR->getCurrentSettings()->isFileDialogEnabledForNewWriters();
 

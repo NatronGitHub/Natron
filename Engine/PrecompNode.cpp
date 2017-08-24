@@ -67,7 +67,10 @@ PrecompNode::createPlugin()
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_OTHER);
     PluginPtr ret = Plugin::create(PrecompNode::create, PrecompNode::createRenderClone, PLUGINID_NATRON_PRECOMP, "Precomp", 1, 0, grouping);
-    ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafeFrame);
+    EffectDescriptionPtr effectDesc = ret->getEffectDescriptor();
+    effectDesc->setProperty<RenderSafetyEnum>(kEffectPropRenderThreadSafety, eRenderSafetyFullySafe);
+    effectDesc->setProperty<bool>(kEffectPropSupportsTiles, true);
+
 
     QString desc = tr( "The Precomp node is like a Group node, but references an external Natron project (.ntp) instead.\n"
                       "This allows you to save a subset of the node tree as a separate project. A Precomp node can be useful in at least two ways:\n"
@@ -77,6 +80,11 @@ PrecompNode::createPlugin()
                       "It enables a collaborative project: while one user works on the main project, others can work on other parts referenced by the Precomp node.");
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
     ret->setProperty<std::string>(kNatronPluginPropIconFilePath, NATRON_IMAGES_PATH "precompNodeIcon.png");
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat, 0);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthByte, 1);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthShort, 2);
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>("1111"));
+  
     return ret;
 }
 

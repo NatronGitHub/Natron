@@ -35,13 +35,9 @@
 NATRON_NAMESPACE_ENTER
 
 
-struct JoinViewsNodePrivate;
 class JoinViewsNode
     : public EffectInstance
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 private: // derives from EffectInstance
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
@@ -64,40 +60,7 @@ public:
 
     virtual ~JoinViewsNode();
 
-
-    virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
-
-    virtual std::string getInputLabel (int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return true;
-    }
-
-    virtual void addAcceptedComponents(int inputNb, std::bitset<4>* comps) OVERRIDE FINAL;
-
-    virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
-
-
-    virtual bool isViewAware() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return true;
-    }
-
-    virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return true;
-    }
-
-    virtual bool supportsMultiResolution() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return true;
-    }
-
-    virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
-
     virtual void initializeKnobs() OVERRIDE FINAL;
-    virtual bool isHostChannelSelectorSupported(bool* defaultR, bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
 
 
 private:
@@ -113,7 +76,6 @@ private:
                                          ViewIdx* inputView,
                                          int* inputNb,
                                          ImagePlaneDesc* inputPlane) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    boost::scoped_ptr<JoinViewsNodePrivate> _imp;
 };
 
 
