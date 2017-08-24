@@ -2145,20 +2145,34 @@ Project::unlock() const
 }
 
 
+inline ViewerColorSpaceEnum colorspaceParamIndexToEnum(int index)
+{
+    switch (index) {
+        case 0:
+            return eViewerColorSpaceLinear;
+        case 1:
+            return eViewerColorSpaceSRGB;
+        case 2:
+            return eViewerColorSpaceRec709;
+        default:
+            return eViewerColorSpaceLinear;
+    }
+}
+
 ViewerColorSpaceEnum
 Project::getDefaultColorSpaceForBitDepth(ImageBitDepthEnum bitdepth) const
 {
     switch (bitdepth) {
     case eImageBitDepthByte:
 
-        return (ViewerColorSpaceEnum)_imp->colorSpace8u->getValue();
+        return colorspaceParamIndexToEnum(_imp->colorSpace8u->getValue());
     case eImageBitDepthShort:
 
-        return (ViewerColorSpaceEnum)_imp->colorSpace16u->getValue();
+        return colorspaceParamIndexToEnum(_imp->colorSpace16u->getValue());
     case eImageBitDepthHalf: // same colorspace as float
     case eImageBitDepthFloat:
 
-        return (ViewerColorSpaceEnum)_imp->colorSpace32f->getValue();
+        return colorspaceParamIndexToEnum(_imp->colorSpace32f->getValue());
     case eImageBitDepthNone:
         assert(false);
         break;

@@ -3,10 +3,10 @@
 PortSystem                      1.0
 
 name                            curl
-version                         7.54.1
+version                         7.55.1
 categories                      net www
 platforms                       darwin freebsd
-maintainers                     ryandesign
+maintainers                     {ryandesign @ryandesign}
 license                         Curl
 
 description                     Tool for transferring files with URL syntax
@@ -21,14 +21,13 @@ master_sites                    ${homepage}/download/:curl \
                                 http://curl.mirror.anstey.ca/:curl \
                                 http://curl.askapache.com/download/:curl
 
-use_bzip2                       yes
-
+use_xz                          yes
 set curl_distfile               ${distfiles}
 distfiles                       ${curl_distfile}:curl
 
 checksums                       ${curl_distfile} \
-                                rmd160  6f8eb154e020157811b72a27688840ca10321320 \
-                                sha256  fdfc4df2d001ee0c44ec071186e770046249263c491fcae48df0e1a3ca8f25a0
+                                rmd160  d60d416611adf59b212534a3cd652a0ea29599d1 \
+                                sha256  3eafca6e84ecb4af5f35795dee84e643d5428287e88c041122bb8dac18676bb7
 
 if {${name} eq ${subport}} {
     PortGroup                   muniversal 1.0
@@ -38,6 +37,8 @@ if {${name} eq ${subport}} {
     depends_build               port:pkgconfig
 
     depends_lib                 port:zlib
+
+    patchfiles                  patch-include-curl-system.h.diff
 
     configure.args              --disable-silent-rules \
                                 --enable-ipv6 \
@@ -207,7 +208,7 @@ if {${name} eq ${subport}} {
 }
 
 subport curl-ca-bundle {
-    revision                    1
+    revision                    0
     categories                  net
     license                     {MPL-2 LGPL-2.1+}
     supported_archs             noarch
@@ -220,6 +221,8 @@ subport curl-ca-bundle {
                                 (CA certs) which curl (when linked with OpenSSL) uses to \
                                 verify the authenticity of secure web and FTP servers.
 
+    depends_extract-append      bin:bzip2:bzip2
+
     depends_build               path:bin/perl:perl5
 
     set certdata_file           certdata.txt
@@ -227,12 +230,14 @@ subport curl-ca-bundle {
     # the certdata.txt file in the port was last updated.
     set certdata_updated        1500995000
     set certdata_version        be884de5820a
-    set certdata_distfile       certdata-${certdata_version}${extract.suffix}
+    set certdata_extract_cmd    bzip2
+    set certdata_extract_suffix .tar.bz2
+    set certdata_distfile       certdata-${certdata_version}${certdata_extract_suffix}
     set certdata_path           security/nss/lib/ckfw/builtins/${certdata_file}
 
     # Only try to fetch from the master site shortly after the port is updated, to guard against stealth updates.
     if {[clock seconds] - ${certdata_updated} < 604800} {
-        master_sites-append     https://hg.mozilla.org/mozilla-central/archive/${certdata_version}${extract.suffix}/${certdata_path}?dummy=:certdata
+        master_sites-append     https://hg.mozilla.org/mozilla-central/archive/${certdata_version}${certdata_extract_suffix}/${certdata_path}?dummy=:certdata
     } else {
         master_sites-append     macports_distfiles::certdata
     }
@@ -243,10 +248,13 @@ subport curl-ca-bundle {
                                 rmd160  f923926b7c5537cd04e27f1be4c1538f099eb4bf \
                                 sha256  94f67c4c88e8655d720d7c5f9332391899fe0a96ca1d2d1370f476e718ffb760
 
-    extract.only                ${certdata_distfile}
+    extract.only                ${curl_distfile}
+    set curl_mk_ca_bundle_files "${worksrcdir}/Makefile ${worksrcdir}/lib/mk-ca-bundle.pl"
+    extract.post_args-append    {*}${curl_mk_ca_bundle_files}
 
     post-extract {
-        system -W ${workpath} "${extract.cmd} ${extract.pre_args} '${distpath}/${curl_distfile}' ${extract.post_args} ${worksrcdir}/Makefile ${worksrcdir}/lib/mk-ca-bundle.pl"
+        extract.post_args-delete    {*}${curl_mk_ca_bundle_files}
+        system -W ${workpath} "${certdata_extract_cmd} ${extract.pre_args} '${distpath}/${certdata_distfile}' ${extract.post_args}"
         move ${workpath}/mozilla-central-${certdata_version}/${certdata_path} ${worksrcpath}/${certdata_file}
     }
 

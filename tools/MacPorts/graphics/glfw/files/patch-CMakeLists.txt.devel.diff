@@ -1,6 +1,6 @@
 --- CMakeLists.txt.orig
 +++ CMakeLists.txt
-@@ -355,7 +355,11 @@
+@@ -345,7 +345,11 @@
  #--------------------------------------------------------------------
  include(CMakePackageConfigHelpers)
  
@@ -13,7 +13,7 @@
  
  configure_package_config_file(src/glfw3Config.cmake.in
                                src/glfw3Config.cmake
-@@ -385,6 +389,9 @@
+@@ -375,6 +379,9 @@
  
  if (DOXYGEN_FOUND AND GLFW_BUILD_DOCS)
      add_subdirectory(docs)
@@ -23,7 +23,7 @@
  endif()
  
  #--------------------------------------------------------------------
-@@ -405,6 +412,11 @@
+@@ -395,6 +402,11 @@
      install(FILES "${GLFW_BINARY_DIR}/src/glfw3.pc"
              DESTINATION "lib${LIB_SUFFIX}/pkgconfig")
  

@@ -5,7 +5,6 @@
 # History
 
 
-
 ## Version 3.0
 
 - Natron now uses a YAML-based format for most files (projects, pyplugs, presets), which makes it easier to read and write by humans or other programs. This reduces file size roughly 10 times.
@@ -33,10 +32,24 @@ Natron multiple times on the same computer, the different processes will share t
 - For convenience, a PyPlug may specify a list of the nodes inside its node graph that should have their viewer overlay displayed when the PyPlug setting panel is opened. For instance, imagine that the PyPlug uses a Transform node internally, it is possible to display the Transform node handle on the viewer when the PyPlug settings panel is opened, even if the Transform node panel itself is closed
 
 
+## Version 2.3.3
+
+- WriteFFmpeg: support 10-bit DNxHR 444 and DNxHR HQX (requires FFmpeg 3.3, only available in macOS binaries for now)
+- Shadertoy: rework many presets so that they work better with Natron, especially the effects in the Blur, Effect, and Source categories. Most blur effects can also be modulated per-pixel using the "Modulate" input to get Z-dependent blur.
+- Shadertoy: new presets: Blur/Bokeh Disc, Blur/Mipmap Blur, Effect/Anaglyphic, Effect/Bloom Paint, Effect/Sawnbringer 4bit, Effect/Sharpen, Effect/CRT, Effect/Fisheye, Effect/Image Cel Shade, Effect/Kaleidoscope, Effect/Noisy Mirror, Effect/Quad Mirror, Effect/Q*Bert-ify, Effect/Stripes, Effect/Vignette, Source/Cloud, Source/Cloudy Sky, Source/Disks, Source/Fireball, Source/Flash, Source/Seascape, Source/Star Nest, Source/Voronoi
+- Shadertoy: add iChannelOffset extension.
+
+
+## Version 2.3.2
+
+- Merge: fix bug #1648, where the alpha from the B input would be used for all consecutive merge operations, rather than updated at each operation.
+
+
 ## Version 2.3.1
 
 - Python: Fix the setTable() function of the PathParam class
 - Windows: Fix a bug where most image formats would not read and write correctly
+
 
 ## Version 2.3.0
 

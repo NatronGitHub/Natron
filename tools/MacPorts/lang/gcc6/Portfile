@@ -8,10 +8,7 @@ name                gcc6
 subport             libgcc {}
 
 epoch               2
-version             6.3.0
-if {${name} eq ${subport}} {
-    revision        2
-}
+version             6.4.0
 platforms           darwin
 categories          lang
 maintainers         nomaintainer
@@ -29,10 +26,10 @@ master_sites        ftp://ftp.funet.fi/pub/mirrors/sources.redhat.com/pub/gcc/re
                     gnu:gcc/gcc-${version}
 
 distname            gcc-${version}
-use_bzip2           yes
+use_xz              yes
 
-checksums           rmd160  38d297e66ff27786f52ccc2b3a006cd1b056b0f7 \
-                    sha256  f06ae7f3f790fbf0f018f6d40e844451e6bc3b7bc96e128e63b09825c1f8b29f
+checksums           rmd160  63c16a8f5df0c2c2db3355ff1e984ad6b3653ab3 \
+                    sha256  850bf21eafdfe5cd5f6827148184c08c4a0852a37ccf36ce69855334d2c914d4
 
 depends_lib         port:cctools \
                     port:gmp \
@@ -53,9 +50,6 @@ platform darwin {
 
     # see https://gcc.gnu.org/ml/gcc-patches/2012-05/msg00672.html
     patchfiles-append         patch-float128.diff
-
-    # gcc started compiling darwin-driver.c as C++, so make it valid
-    patchfiles-append patch-darwin-driver.c.as.cxx
 }
 
 configure.dir       ${workpath}/build
@@ -85,6 +79,12 @@ configure.args      --enable-languages=c,c++,objc,obj-c++,lto,fortran \
                     --with-ld=${prefix}/bin/ld \
                     --with-ar=${prefix}/bin/ar \
                     --with-bugurl=https://trac.macports.org/newticket
+
+# see https://lists.macports.org/pipermail/macports-dev/2017-August/036209.html
+# --disable-tls does not limit functionality
+# it only determines how std::call_once works
+configure.args-append \
+                    --disable-tls
 
 configure.env-append \
                     AR_FOR_TARGET=${prefix}/bin/ar \
@@ -156,8 +156,9 @@ if {${subport} eq "libgcc"} {
 
     depends_lib-delete path:lib/libgcc/libgcc_s.1.dylib:libgcc
 
-    configure.args-delete --libdir=${prefix}/lib/${name}
-    configure.args-append --libdir=${prefix}/lib/libgcc
+    configure.args-replace \
+                          --libdir=${prefix}/lib/${name} \
+                          --libdir=${prefix}/lib/libgcc
 
     # TODO: Possibly disable bootstrap with appropriate configure flags.
     #       the problem is that libstdc++'s configure script tests for tls support

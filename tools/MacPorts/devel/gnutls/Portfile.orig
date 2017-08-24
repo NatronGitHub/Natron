@@ -7,7 +7,7 @@ PortGroup       muniversal 1.0
 PortGroup       snowleopard_fixes 1.0
 
 name            gnutls
-version         3.5.14
+version         3.5.15
 set branch      [join [lrange [split ${version} .] 0 1] .]
 categories      devel security
 # yes, some of the libs are GPL only
@@ -26,8 +26,8 @@ long_description \
 master_sites    ftp://ftp.gnutls.org/gcrypt/gnutls/v${branch}/ \
                 http://mirrors.dotsrc.org/gcrypt/gnutls/v${branch}/
 
-checksums       rmd160  efeea3c159afa5205ce99b012f06bb239bdee71a \
-                sha256  4aa12dec92f42a0434df794aca3d02f6f2a35b47b48c01252de65f355c051bda
+checksums       rmd160  29c45e4710b27d2f0c6e8d02692fb400b333b7ea \
+                sha256  046081108b8b1fe455a13a4c5a4eaa0368e185b678f1670fe09a11a2d7ecfad5
 
 use_xz          yes
 
