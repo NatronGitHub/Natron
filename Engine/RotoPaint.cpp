@@ -197,13 +197,13 @@ RotoPaint::createPlugin()
     effectDesc->setProperty<RenderSafetyEnum>(kEffectPropRenderThreadSafety, eRenderSafetyFullySafe);
     effectDesc->setProperty<bool>(kEffectPropSupportsTiles, true);
     ret->setProperty<bool>(kNatronPluginPropHostChannelSelector, false);
-    ret->setProperty<std::bitset<4> >(kNatronPluginPropHostChannelSelectorValue, std::bitset<4>("1111"));
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropHostChannelSelectorValue, std::bitset<4>(std::string("1111")));
     ret->setProperty<std::string>(kNatronPluginPropIconFilePath, "Images/GroupingIcons/Set2/paint_grouping_2.png");
     ret->setProperty<int>(kNatronPluginPropShortcut, (int)Key_P);
     ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat, 0);
     ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthByte, 1);
     ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthShort, 2);
-    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>("1111"));
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>(std::string("1111")));
     addPluginShortcuts(ret);
     return ret;
 }
@@ -221,13 +221,13 @@ RotoNode::createPlugin()
     effectDesc->setProperty<RenderSafetyEnum>(kEffectPropRenderThreadSafety, eRenderSafetyFullySafe);
     effectDesc->setProperty<bool>(kEffectPropSupportsTiles, true);
     ret->setProperty<bool>(kNatronPluginPropHostChannelSelector, false);
-    ret->setProperty<std::bitset<4> >(kNatronPluginPropHostChannelSelectorValue, std::bitset<4>("0001"));
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropHostChannelSelectorValue, std::bitset<4>(std::string("0001")));
     ret->setProperty<std::string>(kNatronPluginPropIconFilePath, "Images/rotoNodeIcon.png");
     ret->setProperty<int>(kNatronPluginPropShortcut, (int)Key_O);
     ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat, 0);
     ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthByte, 1);
     ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthShort, 2);
-    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>("1111"));
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>(std::string("1111")));
     addPluginShortcuts(ret);
     return ret;
 }
@@ -249,12 +249,12 @@ LayeredCompNode::createPlugin()
     effectDesc->setProperty<RenderSafetyEnum>(kEffectPropRenderThreadSafety, eRenderSafetyFullySafe);
     effectDesc->setProperty<bool>(kEffectPropSupportsTiles, true);
     ret->setProperty<bool>(kNatronPluginPropHostChannelSelector, false);
-    ret->setProperty<std::bitset<4> >(kNatronPluginPropHostChannelSelectorValue, std::bitset<4>("1111"));
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropHostChannelSelectorValue, std::bitset<4>(std::string("1111")));
     ret->setProperty<std::string>(kNatronPluginPropIconFilePath, std::string("Images/") + std::string(PLUGIN_GROUP_MERGE_ICON_PATH));
     ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat, 0);
     ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthByte, 1);
     ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthShort, 2);
-    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>("1111"));
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>(std::string("1111")));
     return ret;
 }
 

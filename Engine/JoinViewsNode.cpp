@@ -53,7 +53,7 @@ JoinViewsNode::createPlugin()
     ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat, 0);
     ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthByte, 1);
     ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthShort, 2);
-    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>("1111"));
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>(std::string("1111")));
     return ret;
 }
 
@@ -114,7 +114,7 @@ JoinViewsNode::onMetadataChanged(const NodeMetadata& metadata)
     node->removeAllInputs();
     for (std::size_t i = 0; i < nInputs; ++i) {
         const std::string& inputName = views[nInputs - 1 - i];
-        InputDescriptionPtr desc = InputDescription::create(inputName, inputName, "", false, false, std::bitset<4>("1111"));
+        InputDescriptionPtr desc = InputDescription::create(inputName, inputName, "", false, false, std::bitset<4>(std::string("1111")));
         node->addInput(desc);
     }
 

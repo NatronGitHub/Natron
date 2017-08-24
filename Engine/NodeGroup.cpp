@@ -1101,7 +1101,7 @@ NodeGroup::createPlugin()
     ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat, 0);
     ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthShort, 1);
     ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthByte, 2);
-    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>("1111"));
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>(std::string("1111")));
     return ret;
 }
 
@@ -1210,7 +1210,7 @@ NodeGroupPrivate::refreshInputs()
 
             desc->setProperty<bool>(kInputDescPropIsOptional, isOptional);
             desc->setProperty<bool>(kInputDescPropIsMask, isMask);
-            desc->setProperty<std::bitset<4> >(kInputDescPropSupportedComponents, std::bitset<4>("1111"));
+            desc->setProperty<std::bitset<4> >(kInputDescPropSupportedComponents, std::bitset<4>(std::string("1111")));
         }
     }
     NodePtr node = _publicInterface->getNode();

@@ -243,7 +243,7 @@ Node::load(const CreateNodeArgsPtr& args)
             }
             if (!hasMask) {
                 // No mask: add one
-                InputDescriptionPtr maskInput = InputDescription::create("Mask", "Mask", "", true, true, std::bitset<4>("1000"));
+                InputDescriptionPtr maskInput = InputDescription::create("Mask", "Mask", "", true, true, std::bitset<4>(std::string("1000")));
                 maskInput->setProperty(kInputDescPropSupportsTiles, true);
                 inputs.push_back(maskInput);
             }

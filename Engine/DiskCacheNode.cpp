@@ -89,12 +89,12 @@ DiskCacheNode::createPlugin()
     effectDesc->setProperty<bool>(kEffectPropSupportsMultiResolution, true);
     ret->setProperty<std::string>(kNatronPluginPropIconFilePath,  "Images/diskcache_icon.png");
     ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat);
-    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>("1111"));
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>(std::string("1111")));
 
     ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat, 0);
-    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>("1111"));
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>(std::string("1111")));
     {
-        InputDescriptionPtr input = InputDescription::create("Source", "", "", false, false, std::bitset<4>("1111"));
+        InputDescriptionPtr input = InputDescription::create("Source", "", "", false, false, std::bitset<4>(std::string("1111")));
         ret->addInputDescription(input);
     }
 

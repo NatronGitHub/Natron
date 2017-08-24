@@ -1046,14 +1046,14 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
         } else {
 
             if (defaultChannelsProp == kOfxImageComponentRGBA) {
-                defaultChannels = std::bitset<4>("1111");
+                defaultChannels = std::bitset<4>(std::string("1111"));
             } else if (defaultChannelsProp == kOfxImageComponentRGB) {
-                defaultChannels = std::bitset<4>("1110");
+                defaultChannels = std::bitset<4>(std::string("1110"));
             } else if (defaultChannelsProp == kOfxImageComponentAlpha) {
-                std::bitset<4>("0001");
+                defaultChannels = std::bitset<4>(std::string("0001"));
             } else {
                 qDebug() << openfxId.c_str() << "Invalid value given to property" << kNatronOfxImageEffectPropChannelSelector << "defaulting to RGBA checked";
-                defaultChannels = std::bitset<4>("1111");
+                defaultChannels = std::bitset<4>(std::string("1111"));
             }
         }
 
