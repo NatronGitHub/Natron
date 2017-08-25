@@ -886,7 +886,12 @@ WriteNodePrivate::refreshPluginSelectorKnob()
 
         // Reverse it so that we sort them by decreasing score order
         for (IOPluginSetForFormat::reverse_iterator it = writersForFormat.rbegin(); it != writersForFormat.rend(); ++it) {
-            PluginPtr plugin = appPTR->getPluginBinary(QString::fromUtf8( it->pluginID.c_str() ), -1, -1, false);
+            PluginPtr plugin;
+            try {
+                plugin = appPTR->getPluginBinary(QString::fromUtf8( it->pluginID.c_str() ), -1, -1, false);
+            } catch (...) {
+                
+            }
 
             QString tooltip = tr("Use %1 version %2.%3 to write this file format").arg(QString::fromUtf8(plugin->getPluginLabel().c_str())).arg( plugin->getPropertyUnsafe<unsigned int>(kNatronPluginPropVersion, 0)).arg(plugin->getPropertyUnsafe<unsigned int>(kNatronPluginPropVersion, 1));
             entries.push_back( ChoiceOption(plugin->getPluginID(), "", tooltip.toStdString()));

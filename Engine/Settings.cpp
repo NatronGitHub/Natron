@@ -2488,7 +2488,12 @@ SettingsPrivate::loadSettingsFromFileInternal(const SERIALIZATION_NAMESPACE::Set
     if (loadType & Settings::eLoadSettingsTypePlugins) {
         for (SERIALIZATION_NAMESPACE::SettingsSerialization::PluginDataMap::const_iterator it = pluginsData.begin(); it != pluginsData.end(); ++it) {
 
-            PluginPtr plugin = appPTR->getPluginBinary(QString::fromUtf8(it->first.identifier.c_str()), it->first.majorVersion, it->first.minorVersion);
+            PluginPtr plugin;
+            try {
+                plugin = appPTR->getPluginBinary(QString::fromUtf8(it->first.identifier.c_str()), it->first.majorVersion, it->first.minorVersion);
+            } catch (...) {
+                continue;
+            }
             if (!plugin) {
                 continue;
             }

@@ -887,6 +887,9 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
         }
 
         std::string openfxId = p->getIdentifier();
+
+        std::cout << "(Debug) Creating OpenFX plug-in: " << openfxId.c_str() << std::endl;
+
         const std::string & grouping = p->getDescriptor().getPluginGrouping();
         const std::string & bundlePath = p->getBinary()->getBundlePath();
         std::string pluginLabel = OfxEffectInstance::makePluginLabel( p->getDescriptor().getShortLabel(),
@@ -1073,7 +1076,7 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
 
         // RotoMerge needs to set alpha to 0 by default when converting RGB-->RGBA otherwise the Roto is not visible
         // when there's an existing alpha
-        bool alphaFill1 = openfxId == PLUGINID_OFX_ROTOMERGE;
+        bool alphaFill1 = openfxId != PLUGINID_OFX_ROTOMERGE;
 
         EffectDescriptionPtr effectDesc = natronPlugin->getEffectDescriptor();
         effectDesc->setProperty(kEffectPropRenderThreadSafety, renderSafety);
