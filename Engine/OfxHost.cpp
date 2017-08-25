@@ -895,10 +895,15 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
         std::string pluginLabel = OfxEffectInstance::makePluginLabel( p->getDescriptor().getShortLabel(),
                                                                       p->getDescriptor().getLabel(),
                                                                       p->getDescriptor().getLongLabel() );
+        std::cout << "Plugin label:" << pluginLabel << std::endl;
         std::vector<std::string> groups = OfxEffectInstance::makePluginGrouping(p->getIdentifier(),
                                                                    p->getVersionMajor(), p->getVersionMinor(),
                                                                    pluginLabel, grouping);
 
+        std::cout << "Plugin Grouping" << std::endl;
+        for (std::size_t i = 0; i < groups.size(); ++i) {
+            std::cout << groups[i] << std::endl;
+        }
         assert( p->getBinary() );
         std::string resourcesPath = bundlePath+ "/Contents/Resources/";
         std::string iconFileName;
