@@ -2609,7 +2609,7 @@ public:
     void addKnob(const KnobIPtr& k);
 
     void insertKnob(int idx, const KnobIPtr& k);
-    void removeKnobFromList(const KnobIConstPtr& knob);
+    bool removeKnobFromList(const KnobIConstPtr& knob);
 
 
     void initializeKnobsPublic();

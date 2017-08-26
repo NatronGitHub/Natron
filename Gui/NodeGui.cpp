@@ -69,12 +69,14 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/PyParameter.h"
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
+#include "Engine/ReadNode.h"
 #include "Engine/RotoPaint.h"
 #include "Engine/RotoDrawableItem.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/RenderEngine.h"
 #include "Engine/Settings.h"
 #include "Engine/Utils.h" // convertFromPlainText
+#include "Engine/WriteNode.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewerNode.h"
 
@@ -235,6 +237,7 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( internalNode.get(), SIGNAL(streamWarningsChanged()), this, SLOT(onStreamWarningsChanged()) );
     QObject::connect( internalNode.get(), SIGNAL(nodeExtraLabelChanged()), this, SLOT(refreshNodeText()) );
     QObject::connect( internalNode.get(), SIGNAL(nodePresetsChanged()), this, SLOT(onNodePresetsChanged()) );
+    QObject::connect( internalNode.get(), SIGNAL(mustRefreshPluginInfo()), this, SLOT(refreshPluginInfo()) );
     QObject::connect( internalNode.get(), SIGNAL(outputLayerChanged()), this, SLOT(onOutputLayerChanged()) );
     QObject::connect( internalNode.get(), SIGNAL(enabledChannelCheckboxChanged()), this, SLOT(onOutputLayerChanged()) );
     QObject::connect( internalNode.get(), SIGNAL(hideInputsKnobChanged(bool)), this, SLOT(onHideInputsKnobValueChanged(bool)) );
@@ -3806,6 +3809,45 @@ NodeGui::getAllVisibleKnobsKeyframes(TimeLineKeysSet* keys) const
 }
 
 void
+NodeGui::refreshPluginInfo()
+{
+    NodePtr internalNode = getNode();
+    if (!internalNode) {
+        return;
+    }
+
+
+    NodePtr node = internalNode;
+    ReadNode* isReadNode = dynamic_cast<ReadNode*>( internalNode->getEffectInstance().get() );
+
+    if (isReadNode) {
+        NodePtr subnode = isReadNode->getEmbeddedReader();
+        if (subnode) {
+            node = subnode;
+        }
+    }
+    WriteNode* isWriteNode = dynamic_cast<WriteNode*>( internalNode->getEffectInstance().get() );
+    if (isWriteNode) {
+        NodePtr subnode = isWriteNode->getEmbeddedWriter();
+        if (subnode) {
+            node = subnode;
+        }
+    }
+
+    PluginPtr plugin = node->getPlugin();
+    if (!plugin) {
+        return;
+    }
+    if ( getSettingPanel() ) {
+        getSettingPanel()->setPluginIDAndVersion(plugin->getPluginLabel(),
+                                                 plugin->getPluginID(),
+                                                 plugin->getPropertyUnsafe<std::string>(kNatronPluginPropDescription),
+                                                 plugin->getMajorVersion(),
+                                                 plugin->getMinorVersion());
+    }
+}
+
+void
 NodeGui::onNodePresetsChanged()
 {
 
@@ -3818,13 +3860,7 @@ NodeGui::onNodePresetsChanged()
         return;
     }
     setColorFromGrouping();
-    if ( getSettingPanel() ) {
-        getSettingPanel()->setPluginIDAndVersion(plugin->getPluginLabel(),
-                                                 plugin->getPluginID(),
-                                                 plugin->getPropertyUnsafe<std::string>(kNatronPluginPropDescription),
-                                                 plugin->getMajorVersion(),
-                                                 plugin->getMinorVersion());
-    }
+    refreshPluginInfo();
 
     QPixmap pixmap;
     if (appPTR->getCurrentSettings()->isPluginIconActivatedOnNodeGraph()) {

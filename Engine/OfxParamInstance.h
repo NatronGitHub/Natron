@@ -167,7 +167,7 @@ public:
          * interacting with the Reader or the container is actually the same.
          **/
         EffectInstancePtr thisEffect = _effect.lock();
-        if ( ret->getHolder() != thisEffect ) {
+        if ( ret->getHolder() != thisEffect && !thisEffect->getKnobByName(scriptName) ) {
             thisEffect->addKnob(ret);
             ret->setActualCloneForHolder(thisEffect);
         }

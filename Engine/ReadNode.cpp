@@ -421,6 +421,11 @@ ReadNodePrivate::destroyReadNode()
     if (!embeddedPlugin) {
         return;
     }
+
+    // Disconnect the node so it doesn't get used by something else on another thread
+    // between the knobs destruction and the node destruction
+    outputNode->swapInput(NodePtr(), 0);
+    embeddedPlugin->swapInput(NodePtr(), 0);
     {
         KnobsVec knobs = _publicInterface->getKnobs();
 
@@ -432,7 +437,9 @@ ReadNodePrivate::destroyReadNode()
 
                 // The internal node still holds a shared ptr to the knob.
                 // Since we want to keep some knobs around, ensure they do not get deleted in the desctructor of the embedded node
-                embeddedPlugin->getEffectInstance()->removeKnobFromList(*it);
+                if (!embeddedPlugin->getEffectInstance()->removeKnobFromList(*it)) {
+                    continue;
+                }
 
 
                 if ( !(*it)->isDeclaredByPlugin() ) {
@@ -486,14 +493,13 @@ ReadNodePrivate::destroyReadNode()
         } catch (...) {
             assert(false);
         }
+
+        QMutexLocker k(&embeddedPluginMutex);
+        embeddedPlugin->destroyNode();
+        embeddedPlugin.reset();
     }
     //This will remove the GUI of non generic parameters
     _publicInterface->recreateKnobs(true);
-#pragma message WARN("TODO: if Gui, refresh pluginID, version, help tooltip in DockablePanel to reflect embedded node change")
-
-    QMutexLocker k(&embeddedPluginMutex);
-    embeddedPlugin->destroyNode();
-    embeddedPlugin.reset();
 
 } // ReadNodePrivate::destroyReadNode
 
@@ -719,7 +725,8 @@ ReadNodePrivate::createReadNode(bool throwErrors,
 
     //This will refresh the GUI with this Reader specific parameters
     _publicInterface->recreateKnobs(true);
-#pragma message WARN("TODO: if Gui, refresh pluginID, version, help tooltip in DockablePanel to reflect embedded node change")
+
+    _publicInterface->getNode()->s_mustRefreshPluginInfo();
 
     KnobIPtr knob = node ? node->getKnobByName(kOfxImageEffectFileParamName) : _publicInterface->getKnobByName(kOfxImageEffectFileParamName);
     if (knob) {

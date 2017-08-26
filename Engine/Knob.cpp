@@ -4319,6 +4319,7 @@ KnobHolder::addKnob(const KnobIPtr& k)
             _imp->knobsOrdered[k->getName()] = k;
         }
         _imp->knobs.push_back(k);
+        assert(_imp->knobsOrdered.size() == _imp->knobs.size());
     }
 
 }
@@ -4346,25 +4347,31 @@ KnobHolder::insertKnob(int index,
         std::advance(it, index);
         _imp->knobs.insert(it, k);
     }
+    assert(_imp->knobsOrdered.size() == _imp->knobs.size());
 }
 
-void
+bool
 KnobHolder::removeKnobFromList(const KnobIConstPtr& knob)
 {
     QMutexLocker kk(&_imp->knobsMutex);
-
+    bool foundInVec = false;
     for (KnobsVec::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
         if (*it == knob) {
             _imp->knobs.erase(it);
+            foundInVec = true;
             break;
         }
     }
+
+    bool foundInMap = false;
     std::map<std::string, KnobIWPtr>::iterator found = _imp->knobsOrdered.find(knob->getName());
-    if (found != _imp->knobsOrdered.end()) {
+    if (found != _imp->knobsOrdered.end() && found->second.lock() == knob) {
+        foundInMap = true;
         _imp->knobsOrdered.erase(found);
     }
-
-
+    assert(_imp->knobsOrdered.size() == _imp->knobs.size());
+    assert((foundInVec && foundInMap) || (!foundInVec && !foundInMap));
+    return foundInVec || foundInMap;
 }
 
 void
@@ -4413,15 +4420,12 @@ KnobHolder::deleteKnob(const KnobIPtr& knob,
 {
     assert( QThread::currentThread() == qApp->thread() );
 
-    {
-        QMutexLocker k(&_imp->knobsMutex);
-        std::map<std::string, KnobIWPtr>::iterator found = _imp->knobsOrdered.find(knob->getName());
-        if (found == _imp->knobsOrdered.end()) {
-            return;
-        }
+
+    if (!removeKnobFromList(knob)) {
+        return;
     }
 
-    removeKnobFromList(knob);
+    knob->deleteKnob();
 
 
     if (alsoDeleteGui && _imp->common->settingsPanel) {

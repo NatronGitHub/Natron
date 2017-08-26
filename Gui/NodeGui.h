@@ -381,6 +381,8 @@ protected:
 
 public Q_SLOTS:
 
+    void refreshPluginInfo();
+
     void onNodePresetsChanged();
 
     void onInputLabelChanged(int inputNb,const QString& label);

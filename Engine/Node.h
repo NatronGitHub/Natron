@@ -1107,6 +1107,7 @@ public Q_SLOTS:
 
     void s_outputLayerChanged() { Q_EMIT outputLayerChanged(); }
 
+    void s_mustRefreshPluginInfo() { Q_EMIT mustRefreshPluginInfo(); }
     
 Q_SIGNALS:
 
@@ -1177,6 +1178,8 @@ Q_SIGNALS:
     void nodeExtraLabelChanged();
 
     void nodePresetsChanged();
+
+    void mustRefreshPluginInfo();
 
     void enabledChannelCheckboxChanged();
 
