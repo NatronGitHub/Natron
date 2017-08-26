@@ -2319,44 +2319,53 @@ EffectInstance::onPropertiesChanged(const EffectDescription& /*description*/)
 void
 EffectInstance::updatePropertiesInternal(const EffectDescription& description)
 {
+    // Private - must be locked
+    assert(!_imp->common->pluginsPropMutex.tryLock());
+
     if (getMainInstance()) {
         // Only update for the main instance!
         return;
     }
 
+    // The descriptor is locked, do not update properties
+    if (_imp->common->descriptorLocked) {
+        return;
+    }
+
+    // Clone the properties
+    _imp->descriptionPtr->cloneProperties(description);
+
     PluginPtr plugin = getNode()->getPlugin();
 
-    PluginOpenGLRenderSupport effectGLSupport = ePluginOpenGLRenderSupportNone;
 
-        if (_imp->common->descriptorLocked) {
-            return;
+    // Fix OpenGL support property to take into account plug--in pref and project etc...
+    PluginOpenGLRenderSupport effectGLSupport = _imp->descriptionPtr->getPropertyUnsafe<PluginOpenGLRenderSupport>(kEffectPropSupportsOpenGLRendering);
+    PluginOpenGLRenderSupport pluginGLSupport = plugin->getEffectDescriptor()->getPropertyUnsafe<PluginOpenGLRenderSupport>(kEffectPropSupportsOpenGLRendering);
+    if (pluginGLSupport == ePluginOpenGLRenderSupportNeeded) {
+        // OpenGL is needed or not supported, force the value
+        effectGLSupport = pluginGLSupport;
+    } else {
+        if ((!getApp()->getProject()->isOpenGLRenderActivated() || !plugin->isOpenGLEnabled()) && pluginGLSupport == ePluginOpenGLRenderSupportYes) {
+            pluginGLSupport = ePluginOpenGLRenderSupportNone;
         }
-        _imp->descriptionPtr->cloneProperties(description);
-        effectGLSupport = _imp->descriptionPtr->getPropertyUnsafe<PluginOpenGLRenderSupport>(kEffectPropSupportsOpenGLRendering);
-        PluginOpenGLRenderSupport pluginGLSupport = plugin->getEffectDescriptor()->getPropertyUnsafe<PluginOpenGLRenderSupport>(kEffectPropSupportsOpenGLRendering);
-        if (pluginGLSupport == ePluginOpenGLRenderSupportNeeded) {
-            // OpenGL is needed or not supported, force the value
-            effectGLSupport = pluginGLSupport;
-        } else {
-            if ((!getApp()->getProject()->isOpenGLRenderActivated() || !plugin->isOpenGLEnabled()) && pluginGLSupport == ePluginOpenGLRenderSupportYes) {
-                pluginGLSupport = ePluginOpenGLRenderSupportNone;
-            }
-        }
-        _imp->descriptionPtr->setProperty(kEffectPropSupportsOpenGLRendering, effectGLSupport);
+    }
+    _imp->descriptionPtr->setProperty(kEffectPropSupportsOpenGLRendering, effectGLSupport);
 
-        bool renderScaleSupported = _imp->descriptionPtr->getPropertyUnsafe<bool>(kEffectPropSupportsRenderScale);
-        // Ensure render scale can be supported
-        if ((((isReader() || isWriter()) && getNode()->getIOContainer()) || !plugin->isRenderScaleEnabled()) && renderScaleSupported) {
-            _imp->descriptionPtr->setProperty(kEffectPropSupportsRenderScale, false);
-        }
+    // Make sure render scale is disabled for readers and writers
+    bool renderScaleSupported = _imp->descriptionPtr->getPropertyUnsafe<bool>(kEffectPropSupportsRenderScale);
+    // Ensure render scale can be supported
+    if ((((isReader() || isWriter()) && getNode()->getIOContainer()) || !plugin->isRenderScaleEnabled()) && renderScaleSupported) {
+        _imp->descriptionPtr->setProperty(kEffectPropSupportsRenderScale, false);
+    }
 
-        RenderSafetyEnum renderSafety = _imp->descriptionPtr->getPropertyUnsafe<RenderSafetyEnum>(kEffectPropRenderThreadSafety);
-        if (!plugin->isMultiThreadingEnabled() && renderSafety != eRenderSafetyUnsafe) {
-            _imp->descriptionPtr->setProperty(kEffectPropRenderThreadSafety, eRenderSafetyUnsafe);
-        }
+    // Make sure thread safety is OK with user preference on the plug-in
+    RenderSafetyEnum renderSafety = _imp->descriptionPtr->getPropertyUnsafe<RenderSafetyEnum>(kEffectPropRenderThreadSafety);
+    if (!plugin->isMultiThreadingEnabled() && renderSafety != eRenderSafetyUnsafe) {
+        _imp->descriptionPtr->setProperty(kEffectPropRenderThreadSafety, eRenderSafetyUnsafe);
+    }
 
 
-    // Ensure the OpenGL knob is in sync with the property
+    // Refresh the OpenGL knob in sync with the property
     KnobChoicePtr openGLEnabledKnob = _imp->defKnobs->openglRenderingEnabledKnob.lock();
     if (openGLEnabledKnob) {
         // Do not call knobChanged callback otherwise it will call refreshDynamicProperties() which will recursively call this function
@@ -2385,6 +2394,9 @@ EffectInstance::updateProperties(const EffectDescription& description)
 {
     QMutexLocker k(&_imp->common->pluginsPropMutex);
     updatePropertiesInternal(description);
+    if (!getMainInstance()) {
+        onPropertiesChanged(*_imp->descriptionPtr);
+    }
 }
 
 bool

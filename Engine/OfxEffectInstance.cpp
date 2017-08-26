@@ -882,6 +882,9 @@ OfxEffectInstance::onInputChanged(int inputNo)
     _imp->common->effect->clipInstanceChangedAction(clip->getName(), reason, time, s);
     _imp->common->effect->endInstanceChangedAction(kOfxChangeUserEdited);
 
+    refreshDynamicProperties();
+
+
 }
 
 /** @brief map a std::string to a context */
@@ -1789,6 +1792,10 @@ OfxEffectInstance::knobChanged(const KnobIPtr& k,
     }
     Q_UNUSED(stat);
 
+
+    // Refresh the dynamic properties that can be changed during the instanceChanged action
+    refreshDynamicProperties();
+
     return true;
 } // knobChanged
 
@@ -1871,15 +1878,134 @@ OfxEffectInstance::purgeCaches()
 void
 OfxEffectInstance::onPropertiesChanged(const EffectDescription& description)
 {
+    OFX::Host::Property::Set& ofxProps = effectInstance()->getProps();
+
     PluginPtr p = getNode()->getPlugin();
     PluginOpenGLRenderSupport support = description.getPropertyUnsafe<PluginOpenGLRenderSupport>(kEffectPropSupportsOpenGLRendering);
+    std::string glSupportStr;
     if (support == ePluginOpenGLRenderSupportYes || support == ePluginOpenGLRenderSupportNeeded) {
         // The property may only change if the plug-in has the property set to yes on the descriptor
-        effectInstance()->getProps().setStringProperty(kOfxImageEffectPropOpenGLRenderSupported, "true");
+        glSupportStr = "true";
     } else {
-        effectInstance()->getProps().setStringProperty(kOfxImageEffectPropOpenGLRenderSupported, "false");
+        glSupportStr = "false";
     }
-}
+
+    RenderSafetyEnum safety = description.getPropertyUnsafe<RenderSafetyEnum>(kEffectPropRenderThreadSafety);
+    std::string safetyStr;
+    bool hostFrameThreading = false;
+    switch (safety) {
+        case eRenderSafetyUnsafe:
+            safetyStr = kOfxImageEffectRenderUnsafe;
+            break;
+        case eRenderSafetyInstanceSafe:
+            safetyStr = kOfxImageEffectRenderInstanceSafe;
+            break;
+
+        case eRenderSafetyFullySafe:
+            safetyStr = kOfxImageEffectRenderFullySafe;
+            break;
+
+        case eRenderSafetyFullySafeFrame:
+            safetyStr = kOfxImageEffectRenderFullySafe;
+            hostFrameThreading = true;
+            break;
+    }
+    
+
+    SequentialPreferenceEnum sequential = description.getPropertyUnsafe<SequentialPreferenceEnum>(kEffectPropSupportsSequentialRender);
+    int sequentialProp = 0;
+    switch (sequential) {
+        case eSequentialPreferenceNotSequential:
+            sequentialProp = 0;
+            break;
+        case eSequentialPreferenceOnlySequential:
+            sequentialProp = 1;
+            break;
+        case eSequentialPreferencePreferSequential:
+            sequentialProp = 2;
+            break;
+    }
+
+    bool tilesSupport = description.getPropertyUnsafe<bool>(kEffectPropSupportsTiles);
+    bool temporalSupport = description.getPropertyUnsafe<bool>(kEffectPropTemporalImageAccess);
+    bool multiResSupport = description.getPropertyUnsafe<bool>(kEffectPropSupportsMultiResolution);
+    bool distortionSupport = description.getPropertyUnsafe<bool>(kEffectPropSupportsCanReturnDistortion);
+    bool transformSupport = description.getPropertyUnsafe<bool>(kEffectPropSupportsCanReturn3x3Transform);
+
+    ofxProps.setStringProperty(kOfxImageEffectPropOpenGLRenderSupported, glSupportStr);
+    ofxProps.setStringProperty(kOfxImageEffectPluginRenderThreadSafety, safetyStr);
+    ofxProps.setIntProperty(kOfxImageEffectPluginPropHostFrameThreading, (int)hostFrameThreading);
+    ofxProps.setIntProperty(kOfxImageEffectInstancePropSequentialRender, sequentialProp);
+    ofxProps.setIntProperty(kOfxImageEffectPropSupportsTiles, (int)tilesSupport);
+    ofxProps.setIntProperty(kOfxImageEffectPropSupportsMultiResolution, (int)multiResSupport);
+    ofxProps.setIntProperty(kOfxImageEffectPropTemporalClipAccess, (int)temporalSupport);
+    ofxProps.setIntProperty(kOfxImageEffectPropCanDistort, (int)distortionSupport);
+    ofxProps.setIntProperty(kFnOfxImageEffectCanTransform, (int)transformSupport);
+} // onPropertiesChanged
+
+void
+OfxEffectInstance::refreshDynamicProperties()
+{
+
+    const OFX::Host::Property::Set& ofxProps = effectInstance()->getProps();
+
+    PluginOpenGLRenderSupport glSupport = ePluginOpenGLRenderSupportNone;
+    {
+        const std::string& str = ofxProps.getStringProperty(kOfxImageEffectPropOpenGLRenderSupported);
+        if (str == "false") {
+            glSupport = ePluginOpenGLRenderSupportNone;
+        } else if (str == "needed") {
+            glSupport = ePluginOpenGLRenderSupportNeeded;
+        } else if (str == "true") {
+            glSupport = ePluginOpenGLRenderSupportYes;
+        }
+    }
+
+    RenderSafetyEnum renderSafety;
+    {
+        const std::string& safety = ofxProps.getStringProperty(kOfxImageEffectPluginRenderThreadSafety);
+        if (safety == kOfxImageEffectRenderUnsafe) {
+            renderSafety =  eRenderSafetyUnsafe;
+        } else if (safety == kOfxImageEffectRenderInstanceSafe) {
+            renderSafety = eRenderSafetyInstanceSafe;
+        } else if (safety == kOfxImageEffectRenderFullySafe) {
+            if ( ofxProps.getIntProperty(kOfxImageEffectPluginPropHostFrameThreading) ) {
+                renderSafety = eRenderSafetyFullySafeFrame;
+            } else {
+                renderSafety = eRenderSafetyFullySafe;
+            }
+        } else {
+            qDebug() << "Unknown thread safety level: " << safety.c_str();
+            renderSafety = eRenderSafetyUnsafe;
+        }
+    }
+
+    SequentialPreferenceEnum sequential = eSequentialPreferenceNotSequential;
+    int seqProp = ofxProps.getIntProperty(kOfxImageEffectInstancePropSequentialRender);
+    if (seqProp == 1) {
+        sequential = eSequentialPreferenceOnlySequential;
+    } else if (seqProp == 2) {
+        sequential = eSequentialPreferencePreferSequential;
+    }
+
+    bool tilesSupport = (bool)ofxProps.getIntProperty(kOfxImageEffectPropSupportsTiles);
+    bool temporalSupport = (bool)ofxProps.getIntProperty(kOfxImageEffectPropTemporalClipAccess);
+    bool multiResSupport = (bool)ofxProps.getIntProperty(kOfxImageEffectPropSupportsMultiResolution);
+    bool distortionSupport = (bool)ofxProps.getIntProperty(kOfxImageEffectPropCanDistort);
+    bool transformSupport = (bool)ofxProps.getIntProperty(kFnOfxImageEffectCanTransform);
+
+    EffectDescription desc;
+    desc.setProperty(kEffectPropSupportsOpenGLRendering, glSupport);
+    desc.setProperty(kEffectPropRenderThreadSafety, renderSafety);
+    desc.setProperty(kEffectPropSupportsSequentialRender, sequential);
+    desc.setProperty(kEffectPropSupportsTiles, tilesSupport);
+    desc.setProperty(kEffectPropTemporalImageAccess, temporalSupport);
+    desc.setProperty(kEffectPropSupportsMultiResolution, multiResSupport);
+    desc.setProperty(kEffectPropSupportsCanReturnDistortion, distortionSupport);
+    desc.setProperty(kEffectPropSupportsCanReturn3x3Transform, transformSupport);
+
+    updateProperties(desc);
+} // refreshDynamicProperties
 
 void
 OfxEffectInstance::beginEditKnobs()

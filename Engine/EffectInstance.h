@@ -1314,7 +1314,7 @@ public:
      * @brief Update all properties from another description
      **/
     void updateProperties(const EffectDescription& description);
-    void refreshDynamicProperties();
+    virtual void refreshDynamicProperties();
 
 
 private:

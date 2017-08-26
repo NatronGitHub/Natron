@@ -629,16 +629,16 @@ KnobDimViewBase::removeAnimation()
 
 } // removeAnimation
 
-void
+bool
 KnobHelper::removeAnimationInternal(ViewIdx view, DimIdx dimension)
 {
     if (!isAnimated(dimension, view)) {
-        return;
+        return false;
     }
 
     KnobDimViewBasePtr data = getDataForDimView(dimension, view);
     if (!data) {
-        return;
+        return false;
     }
 
     
@@ -646,6 +646,7 @@ KnobHelper::removeAnimationInternal(ViewIdx view, DimIdx dimension)
     copyValuesFromCurve(dimension, view);
 
     data->removeAnimation();
+    return true;
 
 } // removeAnimationInternal
 
@@ -657,7 +658,7 @@ KnobHelper::removeAnimation(ViewSetSpec view, DimSpec dimension, ValueChangedRea
         return;
     }
 
-
+    bool removedAnimation = false;
     std::list<ViewIdx> views = getViewsList();
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
         if (!view.isAll() && *it != ViewIdx(view)) {
@@ -675,12 +676,13 @@ KnobHelper::removeAnimation(ViewSetSpec view, DimSpec dimension, ValueChangedRea
                 continue;
             }
 
-            removeAnimationInternal(*it, DimIdx(i));
+            removedAnimation |= removeAnimationInternal(*it, DimIdx(i));
         }
     }
     
-    
-    evaluateValueChange(dimension, getCurrentRenderTime(), view, reason);
+    if (removedAnimation) {
+        evaluateValueChange(dimension, getCurrentRenderTime(), view, reason);
+    }
 } // removeAnimation
 
 NATRON_NAMESPACE_EXIT

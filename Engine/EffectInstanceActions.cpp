@@ -1727,8 +1727,6 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
         getNode()->runChangedParamCallback(k, userEdited);
     }
 
-    ///Refresh the dynamic properties that can be changed during the instanceChanged action
-    refreshDynamicProperties();
 
     return ret;
 } // onKnobValueChanged_public

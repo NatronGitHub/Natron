@@ -977,7 +977,7 @@ AppInstance::createWriter(const std::string& filename,
 }
 
 bool
-AppInstance::openFileDialogIfNeeded(const CreateNodeArgsPtr& args)
+AppInstance::openFileDialogIfNeeded(const CreateNodeArgsPtr& args, bool openFile)
 {
 
     // True if the caller set a value for the kOfxImageEffectFileParamName parameter
@@ -1001,7 +1001,12 @@ AppInstance::openFileDialogIfNeeded(const CreateNodeArgsPtr& args)
     bool mustOpenDialog = !isSilent && !serialization && isPersistent && !hasDefaultFilename && hasGui && !isBackground();
 
     if (mustOpenDialog) {
-        std::string pattern = openImageFileDialog();
+        std::string pattern;
+        if (openFile) {
+            pattern = openImageFileDialog();
+        } else {
+            pattern = saveImageFileDialog();
+        }
         if (!pattern.empty()) {
             args->addParamDefaultValue(kOfxImageEffectFileParamName, pattern);
             return true;
@@ -1111,8 +1116,10 @@ AppInstance::createNodeInternal(const CreateNodeArgsPtr& args)
         bool useDialogForWriters = appPTR->getCurrentSettings()->isFileDialogEnabledForNewWriters();
 
         // For Read/Write, open file dialog if needed
-        if (foundPluginID == PLUGINID_NATRON_READ || (useDialogForWriters && foundPluginID == PLUGINID_NATRON_WRITE)) {
-            if (!openFileDialogIfNeeded(args)) {
+        bool isReader = foundPluginID == PLUGINID_NATRON_READ;
+        bool isWriter = foundPluginID == PLUGINID_NATRON_WRITE;
+        if (isReader || (useDialogForWriters && isWriter)) {
+            if (!openFileDialogIfNeeded(args, isReader)) {
                 return node;
             }
         }

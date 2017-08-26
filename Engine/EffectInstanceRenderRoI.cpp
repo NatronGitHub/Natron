@@ -1251,11 +1251,11 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
 
     // This is the region to render in pixel coordinates at the scale of renderMappedScale
     RectI renderMappedRoI;
-    roiCanonical.toPixelEnclosing(mappedCombinedScale, par, &renderMappedRoI);
 
-    // The RoI cannot be null here, either we are in !renderFullScaleThenDownscale and we already checked at the begining
-    // of the function that the RoI was Null, either the RoD was checked for NULL.
-    assert(!renderMappedRoI.isNull());
+    // Get the pixel RoD/RoI at the mipmap level requested
+    RectI downscaledRoI;
+
+    RenderScale downscaledCombinedScale = EffectInstance::getCombinedScale(requestData->getMipMapLevel(), requestData->getProxyScale());
 
     // Round the roi to the tile size if the render is cached
     ImageBitDepthEnum outputBitDepth = getBitDepth(-1);
@@ -1266,17 +1266,39 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
     if (!supportsTiles()) {
         // If tiles are not supported the RoI is the full image bounds
         renderMappedRoI = perMipMapLevelRoDPixel[mappedMipMapLevel];
+        downscaledRoI = perMipMapLevelRoDPixel[requestData->getMipMapLevel()];
     } else {
 
-        renderMappedRoI.roundToTileSize(tileWidth, tileHeight);
+
+        roiCanonical.toPixelEnclosing(downscaledCombinedScale, par, &downscaledRoI);
+
+        // Round the downscaled roi to the tile size
+        downscaledRoI.roundToTileSize(tileWidth, tileHeight);
 
         // Make sure the RoI falls within the image bounds
-        if ( !renderMappedRoI.intersect(perMipMapLevelRoDPixel[mappedMipMapLevel], &renderMappedRoI) ) {
+        if ( !downscaledRoI.intersect(perMipMapLevelRoDPixel[requestData->getMipMapLevel()], &downscaledRoI) ) {
             requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusRendered, requestPassSharedData);
             return eActionStatusOK;
         }
-    }
 
+
+        if (renderScaleSupport) {
+            renderMappedRoI = downscaledRoI;
+        } else {
+            renderMappedRoI = downscaledRoI.upscalePowerOfTwo(requestData->getMipMapLevel());
+            renderMappedRoI.roundToTileSize(tileWidth, tileHeight);
+
+            // Make sure the RoI falls within the image bounds
+            if ( !renderMappedRoI.intersect(perMipMapLevelRoDPixel[mappedMipMapLevel], &renderMappedRoI) ) {
+                requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusRendered, requestPassSharedData);
+                return eActionStatusOK;
+            }
+
+        }
+    } // supportsTiles
+
+    // The RoI cannot be null here, we checked it before
+    assert(!downscaledRoI.isNull());
     assert(!renderMappedRoI.isNull());
 
     // The requested portion to render in canonical coordinates
@@ -1317,19 +1339,6 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
     // Check for abortion before checking cache
     if (isRenderAborted()) {
         return eActionStatusAborted;
-    }
-
-    // Get the pixel RoD/RoI at the mipmap level requested
-    RenderScale downscaledCombinedScale = EffectInstance::getCombinedScale(requestData->getMipMapLevel(), requestData->getProxyScale());
-    RectI downscaledRoI;
-    roundedCanonicalRoI.toPixelEnclosing(downscaledCombinedScale, par, &downscaledRoI);
-
-    downscaledRoI.roundToTileSize(tileWidth, tileHeight);
-
-    // Make sure the RoI falls within the image bounds
-    if ( !downscaledRoI.intersect(perMipMapLevelRoDPixel[requestData->getMipMapLevel()], &downscaledRoI) ) {
-        requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusRendered, requestPassSharedData);
-        return eActionStatusOK;
     }
 
 
@@ -1746,8 +1755,6 @@ EffectInstance::launchRenderInternal(const TreeRenderExecutionDataPtr& requestPa
             requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusRendered, requestPassSharedData);
             return eActionStatusOK;
         }
-
-
 
         // Since the node does not support render scale, we cached the image, thus we can just fetch the image
         // at a our originally requested mipmap level, this will downscale the fullscale image and cache the

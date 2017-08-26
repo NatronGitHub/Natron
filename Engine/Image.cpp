@@ -73,12 +73,11 @@ Image::~Image()
 
             // The buffer may be shared with another image, in which case we do not destroy it now.
             bool channelBufferIsNotShared =
-            (!_imp->cacheEntry && _imp->channels[i].use_count() == 1) ||
-            (_imp->cacheEntry && _imp->channels[i].use_count() == 2);
+            ((_imp->channels[i].use_count() == 1) || (_imp->cacheEntry && _imp->channels[i].use_count() == 2));
 
             if (channelBufferIsNotShared) {
                 toDeleteInDeleterThread.push_back(_imp->channels[i]);
-            }
+            } 
         }
     }
    

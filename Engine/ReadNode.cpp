@@ -1066,6 +1066,15 @@ ReadNode::knobChanged(const KnobIPtr& k,
     return ret;
 } // ReadNode::knobChanged
 
+void
+ReadNode::refreshDynamicProperties()
+{
+    NodePtr p = getEmbeddedReader();
+    if (p) {
+        p->getEffectInstance()->refreshDynamicProperties();
+    }
+}
+
 ActionRetCodeEnum
 ReadNode::getFrameRange(double *first, double *last)
 {

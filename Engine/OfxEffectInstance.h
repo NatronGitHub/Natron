@@ -234,6 +234,7 @@ public:
                                             ViewIdx view,
                                             DistortionFunction2D* distortion) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onPropertiesChanged(const EffectDescription& description) OVERRIDE FINAL;
+    virtual void refreshDynamicProperties() OVERRIDE FINAL;
 
     /********OVERRIDEN FROM EFFECT INSTANCE: END*************/
     OfxClipInstance* getClipCorrespondingToInput(int inputNo) const;

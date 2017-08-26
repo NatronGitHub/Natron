@@ -944,10 +944,7 @@ KnobHelper::evaluateValueChangeInternal(DimSpec dimension,
         ScopedChanges_RAII changes(holder.get());
 
         // Notify gui must be refreshed
-        if (!isValueChangesBlocked()) {
-            _signalSlotHandler->s_mustRefreshKnobGui(view, dimension, reason);
-        }
-
+        _signalSlotHandler->s_mustRefreshKnobGui(view, dimension, reason);
 
         // Refresh modifications state
         computeHasModifications();

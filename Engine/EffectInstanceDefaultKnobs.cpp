@@ -1725,6 +1725,27 @@ EffectInstance::handleDefaultKnobChanged(const KnobIPtr& what, ValueChangedReaso
         _imp->defKnobs->pyPlugExportDialog.lock()->setValue(false);
     } else if (what == _imp->defKnobs->keepInAnimationModuleKnob.lock()) {
         getNode()->s_keepInAnimationModuleKnobChanged();
+    } else if (what == _imp->defKnobs->openglRenderingEnabledKnob.lock()) {
+
+        PluginOpenGLRenderSupport effectGLSupport;
+        PluginOpenGLRenderSupport pluginGLSupport = getNode()->getPlugin()->getEffectDescriptor()->getPropertyUnsafe<PluginOpenGLRenderSupport>(kEffectPropSupportsOpenGLRendering);
+        if (pluginGLSupport != ePluginOpenGLRenderSupportYes) {
+            effectGLSupport = pluginGLSupport;
+        } else {
+            int knobValue = _imp->defKnobs->openglRenderingEnabledKnob.lock()->getValue();
+            if (knobValue == 0 || (knobValue == 2 && !appPTR->isBackground())) {
+                effectGLSupport = ePluginOpenGLRenderSupportYes;
+            } else {
+                effectGLSupport = ePluginOpenGLRenderSupportNone;
+            }
+
+            if (effectGLSupport == ePluginOpenGLRenderSupportYes) {
+                if ((!getApp()->getProject()->isOpenGLRenderActivated() || !getNode()->getPlugin()->isOpenGLEnabled())) {
+                    effectGLSupport = ePluginOpenGLRenderSupportNone;
+                }
+            }
+        }
+        setOpenGLRenderSupport(effectGLSupport);
     } else {
         ret = false;
     }

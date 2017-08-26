@@ -112,6 +112,8 @@ public:
 
     virtual void setupInitialSubGraphState() OVERRIDE FINAL;
 
+    virtual void refreshDynamicProperties() OVERRIDE FINAL;
+
     void renderSequenceStarted();
     void renderSequenceEnd();
 

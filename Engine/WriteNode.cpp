@@ -1199,6 +1199,16 @@ WriteNode::onSequenceRenderFinished()
 
 }
 
+void
+WriteNode::refreshDynamicProperties()
+{
+    NodePtr p = getEmbeddedWriter();
+    if (p) {
+        p->getEffectInstance()->refreshDynamicProperties();
+    }
+}
+
+
 NATRON_NAMESPACE_EXIT
 
 NATRON_NAMESPACE_USING

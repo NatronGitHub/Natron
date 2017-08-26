@@ -1436,7 +1436,7 @@ public:
 
 private:
 
-    void removeAnimationInternal(ViewIdx view, DimIdx dimension);
+    bool removeAnimationInternal(ViewIdx view, DimIdx dimension);
     void deleteValuesAtTimeInternal(const std::list<double>& times, ViewIdx view, DimIdx dimension);
     void deleteAnimationConditional(TimeValue time, ViewSetSpec view, DimSpec dimension, bool before);
     void deleteAnimationConditionalInternal(TimeValue time, ViewIdx view, DimIdx dimension, bool before);

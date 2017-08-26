@@ -105,6 +105,7 @@ public:
 
     virtual void setupInitialSubGraphState() OVERRIDE FINAL;
 
+    virtual void refreshDynamicProperties() OVERRIDE FINAL;
 private:
 
 

@@ -454,7 +454,7 @@ private:
 
 
 
-    bool openFileDialogIfNeeded(const CreateNodeArgsPtr& args);
+    bool openFileDialogIfNeeded(const CreateNodeArgsPtr& args, bool openFile);
 
     NodePtr createNodeInternal(const CreateNodeArgsPtr& args);
 
