@@ -912,7 +912,7 @@ ReadNode::onEffectCreated(const CreateNodeArgs& args)
         // get loaded afterwards and the plug-in ID could not reflect the underlying plugin
         KnobChoicePtr pluginIDKnob = _imp->pluginSelectorKnob.lock();
         if (pluginIDKnob) {
-            pluginIDKnob->setActiveEntry(ChoiceOption(p->getPluginID()));
+            pluginIDKnob->setActiveEntry(ChoiceOption(p->getPluginID()), ViewIdx(0), eValueChangedReasonPluginEdited);
         }
         return;
     }
@@ -992,7 +992,7 @@ ReadNode::knobChanged(const KnobIPtr& k,
             getNode()->setPersistentMessage( eMessageTypeError, kNatronPersistentErrorDecoderMissing, e.what() );
         }
 
-    } else if ( k == _imp->pluginSelectorKnob.lock() ) {
+    } else if ( k == _imp->pluginSelectorKnob.lock() && reason != eValueChangedReasonPluginEdited ) {
         ChoiceOption entry = _imp->pluginSelectorKnob.lock()->getCurrentEntry();
 
 

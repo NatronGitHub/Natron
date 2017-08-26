@@ -256,9 +256,13 @@ EffectInstance::refreshLayersSelectorsVisibility()
 
     // Disable all input selectors as it doesn't make sense to edit them whilst output is All
 
-    ImagePlaneDesc mainInputComps, outputComps;
+    ImagePlaneDesc mainInputComps, outputComps, tmpPlane;
+
 
     int mainInputIndex = getNode()->getPreferredInput();
+
+    getMetadataComponents(mainInputIndex, &mainInputComps, &tmpPlane);
+    getMetadataComponents(-1, &outputComps, &tmpPlane);
 
     for (std::map<int, ChannelSelector>::iterator it = _imp->defKnobs->channelsSelectors.begin(); it != _imp->defKnobs->channelsSelectors.end(); ++it) {
 
@@ -276,14 +280,8 @@ EffectInstance::refreshLayersSelectorsVisibility()
             KnobChoicePtr layerKnob = it->second.layer.lock();
             layerKnob->setSecret(mustBeSecret);
 
-            if (mainInputIndex != -1 && mainInputIndex == it->first) {
-                // This is the main-input
-                mainInputComps = _imp->getSelectedLayerInternal(availableComponents, it->second);
-            }
-
         } else {
             it->second.layer.lock()->setSecret(outputIsAll);
-            outputComps = _imp->getSelectedLayerInternal(availableComponents, it->second);
         }
     }
 
