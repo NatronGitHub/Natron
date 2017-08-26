@@ -489,15 +489,15 @@ HistogramCPUThread::run()
             args->byPassCache = false;
             
             TreeRenderPtr render = TreeRender::create(args);
-            FrameViewRequestPtr outputRequest;
+
 
             args->treeRootEffect->launchRender(render);
             ActionRetCodeEnum stat = args->treeRootEffect->waitForRenderFinished(render);
             if (isFailureRetCode(stat)) {
                 continue;
             }
-
-            image = outputRequest->getRequestedScaleImagePlane();
+        
+            image = render->getOutputRequest()->getRequestedScaleImagePlane();
 
             // We only support full rect float RAM images
             if (image->getStorageMode() != eStorageModeRAM|| image->getBitDepth() != eImageBitDepthFloat) {
