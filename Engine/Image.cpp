@@ -77,8 +77,10 @@ Image::~Image()
 
             if (channelBufferIsNotShared) {
                 toDeleteInDeleterThread.push_back(_imp->channels[i]);
-            } 
+            }
+            assert(_imp->channels[i].use_count() > 1);
         }
+
     }
    
     if (!toDeleteInDeleterThread.empty()) {
@@ -260,7 +262,7 @@ Image::copyPixels(const Image& other, const CopyPixelsArgs& args)
     }
 #endif
 
-
+#if 0
     // Optimize: try to just copy the memory buffer pointers instead of copying the memory itself
     if (!args.forceCopyEvenIfBuffersHaveSameLayout && roi == _imp->originalBounds && roi == other._imp->originalBounds) {
         bool copyNeeded = isCopyPixelsNeeded(_imp.get(), other._imp.get());
@@ -275,7 +277,7 @@ Image::copyPixels(const Image& other, const CopyPixelsArgs& args)
         }
 
     } 
-
+#endif
     ImagePtr tmpImage;
     {
         ActionRetCodeEnum stat = ImagePrivate::checkIfCopyToTempImageIsNeeded(other, *this, roi, &tmpImage);

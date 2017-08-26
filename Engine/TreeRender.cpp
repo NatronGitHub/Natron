@@ -465,7 +465,7 @@ TreeRender::setResults(const FrameViewRequestPtr& request, const TreeRenderExecu
         QMutexLocker k(&_imp->extraRequestedResultsMutex);
 
         EffectInstancePtr effect = request->getEffect();
-        if (effect->getNode() == _imp->ctorArgs->treeRootEffect->getNode()) {
+        if (effect && effect->getNode() == _imp->ctorArgs->treeRootEffect->getNode()) {
             _imp->outputRequest = request;
         } else {
             std::map<NodePtr, FrameViewRequestPtr>::iterator foundRequested = _imp->extraRequestedResults.find(effect->getNode());

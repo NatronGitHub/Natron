@@ -182,9 +182,9 @@ StorageDeleterThread::run()
             }
             if (front) {
                 // if we are the last owner using this buffer, remove it
-                if (front.use_count() == 1) {
+                //if (front.use_count() == 1) {
                     front->deallocateMemory();
-                }
+                //}
             } else if (evictRequest > 0) {
                 appPTR->getGeneralPurposeCache()->evictLRUEntries(0);
                 appPTR->getTileCache()->evictLRUEntries(0);

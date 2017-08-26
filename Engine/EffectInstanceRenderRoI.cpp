@@ -1542,6 +1542,17 @@ EffectInstance::launchNodeRender(const TreeRenderExecutionDataPtr& requestPassSh
     }
     ActionRetCodeEnum stat = launchRenderInternal(requestPassSharedData, requestData);
 
+#ifdef DEBUG
+    if (stat == eActionStatusOK) {
+        ImageCacheEntryPtr cacheEntry = requestData->getRequestedScaleImagePlane()->getCacheEntry();
+        if (cacheEntry) {
+            bool hasUnrenderedTile, hasPendingResults;
+            cacheEntry->getStatus(0, &hasUnrenderedTile, &hasPendingResults);
+            assert(!hasPendingResults);
+        }
+    }
+#endif
+
     // Notify that we are done rendering
     requestData->notifyRenderFinished(stat, requestPassSharedData);
     return stat;

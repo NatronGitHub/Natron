@@ -157,7 +157,11 @@ IPCProperty::setStringValue(int index, const std::string& value, IPCVariantVecto
     assert(index >= 0 && index < (int)vec->size());
     ExternalSegmentType::segment_manager* manager = vec->get_allocator().get_segment_manager();
     CharAllocator_ExternalSegment charAlloc(manager);
-    (*vec)[index].string = manager->construct<String_ExternalSegment>(boost::interprocess::anonymous_instance)(charAlloc);
+    if ((*vec)[index].string) {
+        (*vec)[index].string->clear();
+    } else {
+        (*vec)[index].string = manager->construct<String_ExternalSegment>(boost::interprocess::anonymous_instance)(charAlloc);
+    }
     (*vec)[index].string->append(value.c_str());
 }
 
