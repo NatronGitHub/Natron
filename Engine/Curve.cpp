@@ -546,7 +546,7 @@ Curve::computeKeyFramesDiff(const KeyFrameSet& keysA,
     if (keysAdded) {
         for (KeyFrameSet::iterator it = keysB.begin(); it != keysB.end(); ++it) {
             KeyFrameSet::iterator foundInOldKeys = Curve::findWithTime(keysACopy, keysACopy.end(), it->getTime());
-            if (foundInOldKeys == keysA.end()) {
+            if (foundInOldKeys == keysACopy.end()) {
                 keysAdded->insert(*it);
             } else {
                 keysACopy.erase(foundInOldKeys);

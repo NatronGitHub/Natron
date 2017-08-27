@@ -273,21 +273,9 @@ ViewerTab::refreshViewerRenderingState()
     if (!internalNode) {
         return;
     }
-
-    for (int i = 0; i < 2; ++i) {
-        ViewerInstancePtr viewerNode = internalNode->getViewerProcessNode(0);
-        if (!viewerNode) {
-            continue;
-        }
-        RenderEnginePtr engine = viewerNode->getNode()->getRenderEngine();
-        bool hasActiveRender = engine ? engine->hasActiveRender() : 0;
-        if (hasActiveRender) {
-            internalNode->setRefreshButtonDown(true);
-            return;
-        }
-    }
-
-    internalNode->setRefreshButtonDown(false);
+    RenderEnginePtr engine = internalNode->getNode()->getRenderEngine();
+    bool hasActiveRender = engine ? engine->hasActiveRender() : 0;
+    internalNode->setRefreshButtonDown(hasActiveRender);
 }
 
 void

@@ -1403,7 +1403,7 @@ NodeGroup::getRealInputForInput(const NodePtr& input) const
                 if (!node) {
                     return NodePtr();
                 }
-                return node->getInput(i);
+                return node->getRealInput(i);
             }
         }
     }

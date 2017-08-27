@@ -506,6 +506,8 @@ public:
 
     virtual bool getDefaultInput(bool connected, int* inputIndex) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+    virtual void loadSubGraph(const SERIALIZATION_NAMESPACE::NodeSerialization* projectSerialization,
+                              const SERIALIZATION_NAMESPACE::NodeSerialization* pyPlugSerialization) OVERRIDE FINAL;
 
     void refreshRotoPaintTree();
 

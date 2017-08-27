@@ -3533,9 +3533,9 @@ RotoPaintKnobItemsTable::getSelectedPlanarTrack(bool alsoLookForParentIfShapeSel
 void
 RotoPaintKnobItemsTable::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj)
 {
+    // The tree will be refreshed in loadSubGraph
     BlockTreeRefreshRAII preventTreeRefresh(toRotoPaint(_imp->publicInterface->shared_from_this()));
     KnobItemsTable::fromSerialization(obj);
-    _imp->publicInterface->refreshRotoPaintTree();
 }
 
 
@@ -4035,6 +4035,14 @@ RotoPaintPrivate::connectRotoPaintBottomTreeToItems(bool /*canConcatenate*/,
         }
     }
 
+}
+
+void
+RotoPaint::loadSubGraph(const SERIALIZATION_NAMESPACE::NodeSerialization* projectSerialization,
+                  const SERIALIZATION_NAMESPACE::NodeSerialization* pyPlugSerialization)
+{
+    NodeGroup::loadSubGraph(projectSerialization, pyPlugSerialization);
+    refreshRotoPaintTree();
 }
 
 void

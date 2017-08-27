@@ -22,6 +22,9 @@
 #include "Serialization/BezierSerialization.h"
 #include "Serialization/RotoStrokeItemSerialization.h"
 
+#include "Engine/RotoPaint.h"
+#include "Engine/TrackerNode.h"
+
 SERIALIZATION_NAMESPACE_ENTER
 
 //namespace Compat {
@@ -118,6 +121,7 @@ Compat::RotoContextSerialization::convertRotoContext(SERIALIZATION_NAMESPACE::Kn
     SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr layer(new SERIALIZATION_NAMESPACE::KnobTableItemSerialization);
     _baseLayer.convertRotoLayerSerialization(layer.get());
     outSerialization->items.push_back(layer);
+    outSerialization->tableIdentifier = kRotoPaintItemsTableName;
     
 } // convertRotoContext
 
@@ -129,6 +133,7 @@ Compat::TrackerContextSerialization::convertTrackerContext(SERIALIZATION_NAMESPA
         it->convertTrackSerialization(s.get());
         outSerialization->items.push_back(s);
     }
+    outSerialization->tableIdentifier = kTrackerParamTracksTableName;
 } // convertTrackerContext
 
 //} // namespace Compat
