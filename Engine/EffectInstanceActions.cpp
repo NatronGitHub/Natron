@@ -290,6 +290,8 @@ EffectInstance::getComponentsNeededInternal(TimeValue time,
     ActionRetCodeEnum stat = getLayersProducedAndNeeded(time, view, inputLayersNeeded, layersProduced, passThroughTime, passThroughView, passThroughInputNb);
     if (isFailureRetCode(stat)) {
         return stat;
+    } else if (stat == eActionStatusReplyDefault) {
+        return getLayersProducedAndNeeded_default(time, view, inputLayersNeeded, layersProduced, passThroughPlanes, passThroughTime, passThroughView, passThroughInputNb, processAllRequested, processChannels);
     }
 
     // Ensure the plug-in made the metadata plane available at least

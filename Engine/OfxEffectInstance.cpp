@@ -46,6 +46,11 @@ CLANG_DIAG_OFF(tautological-undefined-compare) // appeared in clang 3.5
 CLANG_DIAG_ON(tautological-undefined-compare)
 CLANG_DIAG_ON(unknown-pragmas)
 
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <boost/algorithm/string/predicate.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+
+
 #include <tuttle/ofxReadWrite.h>
 #include <ofxNatron.h>
 #include <nuke/fnOfxExtensions.h>
@@ -225,6 +230,143 @@ OfxEffectInstance::describePlugin()
 
     // After describeInContext for the context, populate the plug-in with clips (inputs) infos
     if (isFirstTimeLoadingPlugin) {
+
+
+        RenderSafetyEnum renderSafety;
+        {
+            std::string safety = desc->getRenderThreadSafety();
+            if (safety == kOfxImageEffectRenderUnsafe) {
+                renderSafety =  eRenderSafetyUnsafe;
+            } else if (safety == kOfxImageEffectRenderInstanceSafe) {
+                renderSafety = eRenderSafetyInstanceSafe;
+            } else if (safety == kOfxImageEffectRenderFullySafe) {
+                if ( desc->getHostFrameThreading() ) {
+                    renderSafety = eRenderSafetyFullySafeFrame;
+                } else {
+                    renderSafety = eRenderSafetyFullySafe;
+                }
+            } else {
+                qDebug() << "Unknown thread safety level: " << safety.c_str();
+                renderSafety = eRenderSafetyUnsafe;
+            }
+        }
+
+        PluginOpenGLRenderSupport glSupport = ePluginOpenGLRenderSupportNone;
+        {
+            const std::string& str = desc->getProps().getStringProperty(kOfxImageEffectPropOpenGLRenderSupported);
+            if (str == "false") {
+                glSupport = ePluginOpenGLRenderSupportNone;
+            } else if (str == "needed") {
+                glSupport = ePluginOpenGLRenderSupportNeeded;
+            } else if (str == "true") {
+                glSupport = ePluginOpenGLRenderSupportYes;
+            }
+        }
+
+
+        {
+            int dim = desc->getProps().getDimension(kOfxImageEffectPropSupportedPixelDepths);
+
+            for (int i = 0; i < dim; ++i) {
+                const std::string & depth = desc->getProps().getStringProperty(kOfxImageEffectPropSupportedPixelDepths, i);
+                // ignore unsupported bitdepth
+                ImageBitDepthEnum bitDepth = OfxClipInstance::ofxDepthToNatronDepth(depth, false);
+                if (bitDepth != eImageBitDepthNone) {
+                    natronPlugin->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, bitDepth, i);
+                }
+            }
+        }
+
+
+        bool multiPlanar = (bool)desc->getProps().getIntProperty(kFnOfxImageEffectPropMultiPlanar);
+        bool hostPlaneSelector = false;
+
+        // furnace plug-ins are multiplanar V1
+        if (!multiPlanar && !boost::starts_with(natronPlugin->getPluginID(), "uk.co.thefoundry.furnace")) {
+            hostPlaneSelector = true;
+        }
+
+        PlanePassThroughEnum planePassThru = ePassThroughPassThroughNonRenderedPlanes;
+        int passThruProp = (bool)desc->getProps().getIntProperty(kFnOfxImageEffectPropPassThroughComponents);
+        if (passThruProp == 0) {
+            planePassThru = ePassThroughBlockNonRenderedPlanes;
+        } else if (passThruProp == 2) {
+            planePassThru = ePassThroughRenderAllRequestedPlanes;
+        }
+        natronPlugin->setProperty(kNatronPluginPropMultiPlanar, multiPlanar);
+        natronPlugin->setProperty(kNatronPluginPropHostPlaneSelector, hostPlaneSelector);
+        natronPlugin->setProperty(kNatronPluginPropRenderAllPlanesAtOnce, (bool)desc->getProps().getIntProperty(kOfxImageEffectPropRenderAllPlanes));
+        natronPlugin->setProperty(kNatronPluginPropPlanesPassThrough, planePassThru);
+
+
+        natronPlugin->setProperty(kNatronPluginPropViewAware, (bool)desc->getProps().getIntProperty(kFnOfxImageEffectPropViewAware));
+
+        int viewVarianceProp = desc->getProps().getIntProperty(kFnOfxImageEffectPropViewInvariance);
+        ViewInvarianceLevel viewInvariance = eViewInvarianceAllViewsVariant;
+        if (viewVarianceProp == 1) {
+            viewInvariance = eViewInvarianceOnlyPassThroughPlanesVariant;
+        } else if (viewVarianceProp == 2) {
+            viewInvariance = eViewInvarianceAllViewsInvariant;
+        }
+        natronPlugin->setProperty(kNatronPluginPropViewInvariant, viewInvariance);
+        natronPlugin->setProperty(kNatronPluginPropSupportsDraftRender, (bool)desc->getProps().getIntProperty(kOfxImageEffectPropRenderQualityDraft));
+        natronPlugin->setProperty(kNatronPluginPropSupportsMultiInputsPAR, (bool)desc->getProps().getIntProperty(kOfxImageEffectPropSupportsMultipleClipPARs));
+        natronPlugin->setProperty(kNatronPluginPropSupportsMultiInputsFPS, false);
+        natronPlugin->setProperty(kNatronPluginPropSupportsMultiInputsBitDepths, (bool)desc->getProps().getIntProperty(kOfxImageEffectPropSupportsMultipleClipDepths));
+
+
+        std::string defaultChannelsProp = desc->getProps().getStringProperty(kNatronOfxImageEffectPropChannelSelector);
+
+        bool wantsHostChannelsSelector = true;
+        std::bitset<4> defaultChannels;
+        if (defaultChannelsProp == kOfxImageComponentNone) {
+            wantsHostChannelsSelector = false;
+        } else {
+
+            if (defaultChannelsProp == kOfxImageComponentRGBA) {
+                defaultChannels = std::bitset<4>(std::string("1111"));
+            } else if (defaultChannelsProp == kOfxImageComponentRGB) {
+                defaultChannels = std::bitset<4>(std::string("1110"));
+            } else if (defaultChannelsProp == kOfxImageComponentAlpha) {
+                defaultChannels = std::bitset<4>(std::string("0001"));
+            } else {
+                qDebug() << natronPlugin->getPluginID().c_str() << "Invalid value given to property" << kNatronOfxImageEffectPropChannelSelector << "defaulting to RGBA checked";
+                defaultChannels = std::bitset<4>(std::string("1111"));
+            }
+        }
+
+        natronPlugin->setProperty(kNatronPluginPropHostChannelSelector, wantsHostChannelsSelector);
+        natronPlugin->setProperty(kNatronPluginPropHostChannelSelectorValue, defaultChannels);
+        natronPlugin->setProperty(kNatronPluginPropHostMix, (bool)desc->getProps().getIntProperty(kNatronOfxImageEffectPropHostMixing));
+        natronPlugin->setProperty(kNatronPluginPropHostMask, (bool)desc->getProps().getIntProperty(kNatronOfxImageEffectPropHostMasking));
+
+        SequentialPreferenceEnum sequential = eSequentialPreferenceNotSequential;
+        int seqProp = desc->getProps().getIntProperty(kOfxImageEffectInstancePropSequentialRender);
+        if (seqProp == 1) {
+            sequential = eSequentialPreferenceOnlySequential;
+        } else if (seqProp == 2) {
+            sequential = eSequentialPreferencePreferSequential;
+        }
+
+
+        // RotoMerge needs to set alpha to 0 by default when converting RGB-->RGBA otherwise the Roto is not visible
+        // when there's an existing alpha
+        bool alphaFill1 = (natronPlugin->getPluginID() != PLUGINID_OFX_ROTOMERGE);
+
+        EffectDescriptionPtr effectDesc = natronPlugin->getEffectDescriptor();
+        effectDesc->setProperty(kEffectPropRenderThreadSafety, renderSafety);
+        effectDesc->setProperty(kEffectPropSupportsOpenGLRendering, glSupport);
+        effectDesc->setProperty(kEffectPropSupportsSequentialRender, sequential);
+        effectDesc->setProperty(kEffectPropSupportsRenderScale, true);
+        effectDesc->setProperty(kEffectPropImageBufferLayout, eImageBufferLayoutRGBAPackedFullRect);
+        effectDesc->setProperty(kEffectPropSupportsCanReturnDistortion, (bool)desc->getProps().getIntProperty(kOfxImageEffectPropCanDistort));
+        effectDesc->setProperty(kEffectPropSupportsCanReturn3x3Transform, (bool)desc->getProps().getIntProperty(kFnOfxImageEffectCanTransform));
+        effectDesc->setProperty(kEffectPropSupportsTiles, (bool)desc->getProps().getIntProperty(kOfxImageEffectPropSupportsTiles));
+        effectDesc->setProperty(kEffectPropSupportsMultiResolution, (bool)desc->getProps().getIntProperty(kOfxImageEffectPropSupportsMultiResolution));
+        effectDesc->setProperty(kEffectPropTemporalImageAccess, (bool)desc->getProps().getIntProperty(kOfxImageEffectPropTemporalClipAccess));
+        effectDesc->setProperty(kEffectPropSupportsAlphaFillWith1, alphaFill1);
+
+
         const std::vector<OFX::Host::ImageEffect::ClipDescriptor*> & clips = desc->getClipsByOrder();
         for (std::vector<OFX::Host::ImageEffect::ClipDescriptor*>::const_iterator it = clips.begin(); it != clips.end(); ++it) {
 
@@ -2063,10 +2205,12 @@ OfxEffectInstance::getLayersProducedAndNeeded(TimeValue time,
     OFX::Host::ImageEffect::ComponentsMap compMap;
     OFX::Host::ImageEffect::ClipInstance* ptClip = 0;
     OfxTime ptTime;
-    int ptView_i;
+    int ptView_i = 0;
     OfxStatus stat = effectInstance()->getClipComponentsAction( time, view, compMap, ptClip, ptTime, ptView_i );
     if (stat == kOfxStatFailed) {
         return eActionStatusFailed;
+    } else if (stat == kOfxStatReplyDefault) {
+        return eActionStatusReplyDefault;
     }
     *passThroughInputNb = -1;
     if (ptClip) {

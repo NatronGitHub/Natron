@@ -49,8 +49,8 @@
 NATRON_NAMESPACE_ENTER
 
 // If 2 image times differ by lesser than this epsilon they are assumed the same.
-#define NATRON_IMAGE_TIME_EQUALITY_EPS 1e-5
-#define NATRON_IMAGE_TIME_EQUALITY_DECIMALS 5
+#define NATRON_IMAGE_TIME_EQUALITY_EPS 1e-6
+#define NATRON_IMAGE_TIME_EQUALITY_DECIMALS 6
 
 inline TimeValue roundImageTimeToEpsilon(TimeValue time)
 {
