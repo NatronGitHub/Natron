@@ -923,7 +923,9 @@ AppInstance::createNodeFromPyPlug(const PluginPtr& plugin, const CreateNodeArgsP
             // but they are not actually user knobs since its a PyPlug
             const KnobsVec& knobs = containerNode->getKnobs();
             for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-                (*it)->setAsUserKnob(false);
+                if ((*it)->getKnobDeclarationType() == KnobI::eKnobDeclarationTypeUser) {
+                    (*it)->setKnobDeclarationType(KnobI::eKnobDeclarationTypePlugin);
+                }
             }
 
 

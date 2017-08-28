@@ -527,8 +527,8 @@ static void tryReadAndConvertOlderPyPlugFile(const QString& filename, const QStr
     // Convert all knobs in the group to user knobs
     const KnobsVec& knobs = node->getKnobs();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        if ((*it)->isDeclaredByPlugin()) {
-            (*it)->setAsUserKnob(true);
+        if ((*it)->getKnobDeclarationType() == KnobI::eKnobDeclarationTypePlugin) {
+            (*it)->setKnobDeclarationType(KnobI::eKnobDeclarationTypeUser);
         }
     }
 

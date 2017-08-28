@@ -525,7 +525,7 @@ EffectInstance::findOrCreateChannelEnabled()
             //Create the selectors
             for (int i = 0; i < 4; ++i) {
                 foundEnabled[i] =  createKnob<KnobBool>(channelNames[i]);
-                foundEnabled[i]->setDeclaredByPlugin(false);
+                foundEnabled[i]->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
                 foundEnabled[i]->setLabel(channelLabels[i]);
                 foundEnabled[i]->setAnimationEnabled(false);
                 foundEnabled[i]->setAddNewLine(i == 3);
@@ -617,7 +617,7 @@ EffectInstance::getOrCreateUserPlanesKnob(const KnobPagePtr& page)
     param = createKnob<KnobLayers>(kNodeParamUserLayers);
     param->setLabel(tr(kNodeParamUserLayersLabel));
     param->setHintToolTip(tr(kNodeParamUserLayersHint));
-    param->setDeclaredByPlugin(false);
+    param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
     param->setAnimationEnabled(false);
     param->setIsMetadataSlave(true);
     param->setSecret(true);

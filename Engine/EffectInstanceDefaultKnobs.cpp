@@ -80,7 +80,7 @@ EffectInstance::createMaskSelectors(const std::vector<std::pair<bool, bool> >& h
                           "Turning this off will act as though the input was disconnected.");
             }
             param->setHintToolTip(hint);
-            param->setDeclaredByPlugin(false);
+            param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
             param->setDefaultValue(false);
             param->setAddNewLine(false);
             param->setAnimationEnabled(false);
@@ -106,7 +106,7 @@ EffectInstance::createMaskSelectors(const std::vector<std::pair<bool, bool> >& h
             KnobChoicePtr param = createKnob<KnobChoice>(name);
             // By default if connected it should be filled with None, Color.R, Color.G, Color.B, Color.A (@see refreshChannelSelectors)
             param->setLabel(QString());
-            param->setDeclaredByPlugin(false);
+            param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
             param->setDefaultValue(4);
             param->setAnimationEnabled(false);
             param->setIsMetadataSlave(true);
@@ -151,7 +151,7 @@ EffectInstance::createChannelSelector(int inputNb,
 
     {
         KnobChoicePtr param = createKnob<KnobChoice>(name);
-        param->setDeclaredByPlugin(false);
+        param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
         QString label,  hint;
         if (isOutput) {
             label =  tr("Output Plane");
@@ -189,7 +189,7 @@ EffectInstance::createChannelSelector(int inputNb,
     if (isOutput) {
         KnobBoolPtr param = createKnob<KnobBool>(kNodeParamProcessAllLayers);
         param->setLabel(tr(kNodeParamProcessAllLayersLabel));
-        param->setDeclaredByPlugin(false);
+        param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
         param->setHintToolTip(tr(kNodeParamProcessAllLayersHint));
         param->setAnimationEnabled(false);
         param->setIsMetadataSlave(true);
@@ -285,7 +285,7 @@ EffectInstance::createNodePage(const KnobPagePtr& settingsPage)
     {
         KnobBoolPtr param = createKnob<KnobBool>("hideInputs");
         param->setLabel(tr("Hide inputs"));
-        param->setDeclaredByPlugin(false);
+        param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
         param->setDefaultValue(false);
         param->setAnimationEnabled(false);
         param->setAddNewLine(false);
@@ -302,7 +302,7 @@ EffectInstance::createNodePage(const KnobPagePtr& settingsPage)
     {
         KnobBoolPtr param = createKnob<KnobBool>("forceCaching");
         param->setLabel(tr("Force caching"));
-        param->setDeclaredByPlugin(false);
+        param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
         param->setDefaultValue(false);
         param->setAnimationEnabled(false);
         param->setAddNewLine(false);
@@ -317,7 +317,7 @@ EffectInstance::createNodePage(const KnobPagePtr& settingsPage)
     {
         KnobBoolPtr param = createKnob<KnobBool>(kEnablePreviewKnobName);
         param->setLabel(tr("Preview"));
-        param->setDeclaredByPlugin(false);
+        param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
         param->setDefaultValue( makePreviewByDefault() );
         param->setAnimationEnabled(false);
         param->setAddNewLine(false);
@@ -333,7 +333,7 @@ EffectInstance::createNodePage(const KnobPagePtr& settingsPage)
     {
         KnobBoolPtr param = createKnob<KnobBool>(kDisableNodeKnobName);
         param->setLabel(tr("Disable"));
-        param->setDeclaredByPlugin(false);
+        param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
         param->setAnimationEnabled(false);
         param->setIsMetadataSlave(true);
         param->setAddNewLine(false);
@@ -347,7 +347,7 @@ EffectInstance::createNodePage(const KnobPagePtr& settingsPage)
     {
         KnobButtonPtr param = createKnob<KnobButton>(kNatronNodeKnobKeepInAnimationModuleButton);
         param->setLabel(tr(kNatronNodeKnobKeepInAnimationModuleButtonLabel));
-        param->setDeclaredByPlugin(false);
+        param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
         param->setHintToolTip(tr(kNatronNodeKnobKeepInAnimationModuleButtonHint));
         param->setCheckable(true);
         param->setIconLabel(NATRON_IMAGES_PATH "DS_CE_Icon.png", true);
@@ -361,7 +361,7 @@ EffectInstance::createNodePage(const KnobPagePtr& settingsPage)
     {
         KnobIntPtr param = createKnob<KnobInt>(kLifeTimeNodeKnobName, 2);
         param->setLabel(tr("Lifetime Range"));
-        param->setDeclaredByPlugin(false);
+        param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
         param->setAnimationEnabled(false);
         param->setIsMetadataSlave(true);
         param->setAddNewLine(false);
@@ -373,7 +373,7 @@ EffectInstance::createNodePage(const KnobPagePtr& settingsPage)
     {
         KnobBoolPtr param = createKnob<KnobBool>(kEnableLifeTimeNodeKnobName);
         param->setLabel(tr("Enable Lifetime"));
-        param->setDeclaredByPlugin(false);
+        param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
         param->setAnimationEnabled(false);
         param->setDefaultValue(false);
         param->setIsMetadataSlave(true);
@@ -402,7 +402,7 @@ EffectInstance::createNodePage(const KnobPagePtr& settingsPage)
 
     {
         KnobStringPtr param = createKnob<KnobString>("onParamChanged");
-        param->setDeclaredByPlugin(false);
+        param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
         param->setLabel(tr("After param changed callback"));
         param->setHintToolTip( tr("Set here the name of a function defined in Python which will be called for each  "
                                   "parameter change. Either define this function in the Script Editor "
@@ -421,7 +421,7 @@ EffectInstance::createNodePage(const KnobPagePtr& settingsPage)
     }
     {
         KnobStringPtr param = createKnob<KnobString>("onInputChanged");
-        param->setDeclaredByPlugin(false);
+        param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
         param->setLabel(tr("After input changed callback"));
         param->setHintToolTip( tr("Set here the name of a function defined in Python which will be called after "
                                   "each connection is changed for the inputs of the node. "
@@ -442,7 +442,7 @@ EffectInstance::createNodePage(const KnobPagePtr& settingsPage)
     if (isGroup) {
         {
             KnobStringPtr param = createKnob<KnobString>("afterNodeCreated");
-            param->setDeclaredByPlugin(false);
+            param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
             param->setLabel(tr("After Node Created"));
 
             param->setHintToolTip( tr("Add here the name of a Python-defined function that will be called each time a node "
@@ -464,7 +464,7 @@ EffectInstance::createNodePage(const KnobPagePtr& settingsPage)
         {
             KnobStringPtr param = createKnob<KnobString>("beforeNodeRemoval");
             param->setLabel(tr("Before Node Removal"));
-            param->setDeclaredByPlugin(false);
+            param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
             param->setHintToolTip( tr("Add here the name of a Python-defined function that will be called each time a node "
                                       "is about to be deleted. This will be called in addition to the Before Node Removal "
                                       " callback of the project for the group node and all nodes within it (not recursively).\n"
@@ -483,7 +483,7 @@ EffectInstance::createNodePage(const KnobPagePtr& settingsPage)
     std::list<KnobItemsTablePtr> tables = getAllItemsTables();
     if (!tables.empty()) {
         KnobStringPtr param = createKnob<KnobString>("afterItemsSelectionChanged");
-        param->setDeclaredByPlugin(false);
+        param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
         param->setLabel( tr("After Items Selection Changed"));
         param->setHintToolTip( tr("Add here the name of a Python-defined function that will be called each time the "
                                   "selection in the table changes. "
@@ -511,7 +511,7 @@ EffectInstance::createNodePage(const KnobPagePtr& settingsPage)
         {
             KnobStringPtr param =  createKnob<KnobString>("beforeFrameRender");
             param->setLabel(tr("Before frame render"));
-            param->setDeclaredByPlugin(false);
+            param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
             param->setAnimationEnabled(false);
             param->setHintToolTip( tr("Add here the name of a Python defined function that will be called before rendering "
                                       "any frame.\n "
@@ -527,7 +527,7 @@ EffectInstance::createNodePage(const KnobPagePtr& settingsPage)
 
         {
             KnobStringPtr param =  createKnob<KnobString>("beforeRender");
-            param->setDeclaredByPlugin(false);
+            param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
             param->setLabel(tr("Before render"));
             param->setAnimationEnabled(false);
             param->setHintToolTip( tr("Add here the name of a Python defined function that will be called once when "
@@ -543,7 +543,7 @@ EffectInstance::createNodePage(const KnobPagePtr& settingsPage)
         {
             KnobStringPtr param =  createKnob<KnobString>("afterFrameRender");
             param->setLabel(tr("After frame render"));
-            param->setDeclaredByPlugin(false);
+            param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
             param->setAnimationEnabled(false);
             param->setHintToolTip( tr("Add here the name of a Python defined function that will be called after rendering "
                                       "any frame.\n "
@@ -558,7 +558,7 @@ EffectInstance::createNodePage(const KnobPagePtr& settingsPage)
 
         {
             KnobStringPtr param =  createKnob<KnobString>("afterRender");
-            param->setDeclaredByPlugin(false);
+            param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
             param->setLabel(tr("After render"));
             param->setAnimationEnabled(false);
             param->setHintToolTip( tr("Add here the name of a Python defined function that will be called once when the rendering "
@@ -579,13 +579,13 @@ EffectInstance::createInfoPage()
 {
     KnobPagePtr page = createKnob<KnobPage>(kInfoPageParamName);
     page->setLabel(tr(kInfoPageParamLabel));
-    page->setDeclaredByPlugin(false);
+    page->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
     _imp->defKnobs->infoPage = page;
 
     {
         KnobStringPtr param = createKnob<KnobString>("nodeInfos");
         param->setLabel(QString());
-        param->setDeclaredByPlugin(false);
+        param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
         param->setAnimationEnabled(false);
         param->setIsPersistent(false);
         param->setAsMultiLine();
@@ -599,7 +599,7 @@ EffectInstance::createInfoPage()
     {
         KnobButtonPtr param = createKnob<KnobButton>("refreshButton");
         param->setLabel(tr("Refresh Info"));
-        param->setDeclaredByPlugin(false);
+        param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
         param->setEvaluateOnChange(false);
         page->addKnob(param);
         _imp->defKnobs->refreshInfoButton = param;
@@ -612,13 +612,13 @@ EffectInstance::createPyPlugPage()
     PluginPtr pyPlug = getNode()->getPyPlugPlugin();
     KnobPagePtr page = createKnob<KnobPage>(kPyPlugPageParamName);
     page->setLabel(tr(kPyPlugPageParamLabel));
-    page->setDeclaredByPlugin(false);
+    page->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
     page->setSecret(true);
     _imp->defKnobs->pyPlugPage = page;
 
     {
         KnobStringPtr param = createKnob<KnobString>(kNatronNodeKnobPyPlugPluginID);
-        param->setDeclaredByPlugin(false);
+        param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
         param->setLabel(tr(kNatronNodeKnobPyPlugPluginIDLabel));
         if (pyPlug) {
             param->setValue(pyPlug->getPluginID());
@@ -631,7 +631,7 @@ EffectInstance::createPyPlugPage()
     {
         KnobStringPtr param = createKnob<KnobString>(kNatronNodeKnobPyPlugPluginLabel);
         param->setLabel(tr(kNatronNodeKnobPyPlugPluginLabelLabel));
-        param->setDeclaredByPlugin(false);
+        param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
         if (pyPlug) {
             param->setValue(pyPlug->getPluginLabel());
         }
@@ -643,7 +643,7 @@ EffectInstance::createPyPlugPage()
     {
         KnobStringPtr param = createKnob<KnobString>(kNatronNodeKnobPyPlugPluginGrouping);
         param->setLabel(tr(kNatronNodeKnobPyPlugPluginGroupingLabel));
-        param->setDeclaredByPlugin(false);
+        param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
         if (pyPlug) {
             param->setValue(pyPlug->getGroupingString());
         } else {
@@ -657,7 +657,7 @@ EffectInstance::createPyPlugPage()
     {
         KnobStringPtr param = createKnob<KnobString>(kNatronNodeKnobPyPlugPluginDescription);
         param->setLabel(tr(kNatronNodeKnobPyPlugPluginDescriptionLabel));
-        param->setDeclaredByPlugin(false);
+        param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
         param->setEvaluateOnChange(false);
         param->setAsMultiLine();
         if (pyPlug) {
@@ -671,7 +671,7 @@ EffectInstance::createPyPlugPage()
     {
         KnobBoolPtr param = createKnob<KnobBool>(kNatronNodeKnobPyPlugPluginDescriptionIsMarkdown);
         param->setLabel(tr(kNatronNodeKnobPyPlugPluginDescriptionIsMarkdownLabel));
-        param->setDeclaredByPlugin(false);
+        param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
         param->setEvaluateOnChange(false);
         if (pyPlug) {
             param->setValue(pyPlug->getPropertyUnsafe<bool>(kNatronPluginPropDescriptionIsMarkdown));
@@ -683,7 +683,7 @@ EffectInstance::createPyPlugPage()
     {
         KnobIntPtr param = createKnob<KnobInt>(kNatronNodeKnobPyPlugPluginVersion, 2);
         param->setLabel(tr(kNatronNodeKnobPyPlugPluginVersionLabel));
-        param->setDeclaredByPlugin(false);
+        param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
         param->setEvaluateOnChange(false);
         param->setDimensionName(DimIdx(0), "Major");
         param->setDimensionName(DimIdx(1), "Minor");
@@ -698,7 +698,7 @@ EffectInstance::createPyPlugPage()
     {
         KnobIntPtr param = createKnob<KnobInt>(kNatronNodeKnobPyPlugPluginShortcut, 2);
         param->setLabel(tr(kNatronNodeKnobPyPlugPluginShortcutLabel));
-        param->setDeclaredByPlugin(false);
+        param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
         param->setEvaluateOnChange(false);
         param->setAsShortcutKnob(true);
         if (pyPlug) {
@@ -712,7 +712,7 @@ EffectInstance::createPyPlugPage()
     {
         KnobFilePtr param = createKnob<KnobFile>(kNatronNodeKnobPyPlugPluginCallbacksPythonScript);
         param->setLabel(tr(kNatronNodeKnobPyPlugPluginCallbacksPythonScriptLabel));
-        param->setDeclaredByPlugin(false);
+        param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
         param->setEvaluateOnChange(false);
         if (pyPlug) {
             param->setValue(pyPlug->getPropertyUnsafe<std::string>(kNatronPluginPropPyPlugExtScriptFile));
@@ -724,7 +724,7 @@ EffectInstance::createPyPlugPage()
     {
         KnobFilePtr param = createKnob<KnobFile>(kNatronNodeKnobPyPlugPluginIconFile);
         param->setLabel(tr(kNatronNodeKnobPyPlugPluginIconFileLabel));
-        param->setDeclaredByPlugin(false);
+        param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
         param->setEvaluateOnChange(false);
         if (pyPlug) {
             param->setValue(pyPlug->getPropertyUnsafe<std::string>(kNatronPluginPropIconFilePath));
@@ -737,7 +737,7 @@ EffectInstance::createPyPlugPage()
     {
         KnobFilePtr param = createKnob<KnobFile>(kNatronNodeKnobExportDialogFilePath);
         param->setLabel(tr(kNatronNodeKnobExportDialogFilePathLabel));
-        param->setDeclaredByPlugin(false);
+        param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
         param->setDialogType(KnobFile::eKnobFileDialogTypeSaveFile);
         {
             std::vector<std::string> filters;
@@ -754,7 +754,7 @@ EffectInstance::createPyPlugPage()
     {
         KnobButtonPtr param = createKnob<KnobButton>(kNatronNodeKnobExportPyPlugButton);
         param->setLabel(tr(kNatronNodeKnobExportPyPlugButtonLabel));
-        param->setDeclaredByPlugin(false);
+        param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
         param->setEvaluateOnChange(false);
         param->setHintToolTip( tr("Click to export this group to a PyPlug file (.%1)").arg(QLatin1String(NATRON_PRESETS_FILE_EXT)));
         page->addKnob(param);
@@ -770,7 +770,7 @@ EffectInstance::getOrCreateHostMixKnob(const KnobPagePtr& mainPage)
     if (!param) {
         param = createKnob<KnobDouble>(kHostMixingKnobName);
         param->setLabel(tr(kHostMixingKnobLabel));
-        param->setDeclaredByPlugin(false);
+        param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
         param->setHintToolTip( tr(kHostMixingKnobHint) );
         param->setRange(0., 1.);
         param->setDefaultValue(1.);
@@ -801,7 +801,7 @@ EffectInstance::getOrCreateMainPage()
     }
     if (!mainPage) {
         mainPage = createKnob<KnobPage>("settingsPage");
-        mainPage->setDeclaredByPlugin(false);
+        mainPage->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
         mainPage->setLabel(tr("Settings"));
     }
 
@@ -816,6 +816,7 @@ EffectInstance::createLabelKnob(const KnobPagePtr& settingsPage,
     param->setLabel(label);
     param->setAnimationEnabled(false);
     param->setEvaluateOnChange(false);
+    param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
     param->setAsMultiLine();
     param->setUsesRichText(true);
     param->setHintToolTip( tr("This label gets appended to the node name on the node graph.") );
@@ -1188,7 +1189,7 @@ EffectInstance::getOrCreateOpenGLEnabledKnob()
     }
     openglRenderingKnob = getOrCreateKnob<KnobChoice>("enableGPURendering");
     openglRenderingKnob->setLabel(tr("GPU Rendering"));
-    openglRenderingKnob->setDeclaredByPlugin(false);
+    openglRenderingKnob->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
     assert(openglRenderingKnob);
     openglRenderingKnob->setAnimationEnabled(false);
     {
@@ -1203,7 +1204,7 @@ EffectInstance::getOrCreateOpenGLEnabledKnob()
 
     KnobPagePtr settingsPageKnob = getOrCreateKnob<KnobPage>(kNodePageParamName);
     settingsPageKnob->setLabel(tr(kNodePageParamLabel));
-    settingsPageKnob->setDeclaredByPlugin(false);
+    settingsPageKnob->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
     settingsPageKnob->addKnob(openglRenderingKnob);
     _imp->defKnobs->openglRenderingEnabledKnob = openglRenderingKnob;
 
@@ -1220,7 +1221,7 @@ EffectInstance::initializeDefaultKnobs(bool loadingSerialization, bool hasGUI)
     //Add the "Node" page
     KnobPagePtr settingsPage = getOrCreateKnob<KnobPage>(kNodePageParamName);
     settingsPage->setLabel(tr(kNodePageParamLabel));
-    settingsPage->setDeclaredByPlugin(false);
+    settingsPage->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
 
 
     //Create the "Label" knob
@@ -1377,7 +1378,7 @@ EffectInstance::initializeDefaultKnobs(bool loadingSerialization, bool hasGUI)
                 KnobButtonPtr param = createKnob<KnobButton>(kNatronNodeKnobConvertToGroupButton);
                 param->setLabel(tr(kNatronNodeKnobConvertToGroupButtonLabel));
                 param->setEvaluateOnChange(false);
-                param->setDeclaredByPlugin(false);
+                param->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
                 param->setHintToolTip( tr("Converts this node to a Group: the internal node-graph and the user parameters will become editable") );
                 settingsPage->addKnob(param);
 
@@ -1398,7 +1399,7 @@ EffectInstance::initializeDefaultKnobs(bool loadingSerialization, bool hasGUI)
         }
 
         KnobButtonPtr renderButton = createKnob<KnobButton>("startRender");
-        renderButton->setDeclaredByPlugin(false);
+        renderButton->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
         renderButton->setLabel(tr("Render"));
         renderButton->setHintToolTip( tr("Starts rendering the specified frame range.") );
         renderButton->setAsRenderButton();

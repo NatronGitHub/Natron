@@ -45,7 +45,7 @@ createDuplicateKnob( const std::string& knobName,
                     const KnobGroupPtr& group = KnobGroupPtr() )
 {
     KnobIPtr internalNodeKnob = internalNode->getKnobByName(knobName);
-    KnobIPtr duplicateKnob = internalNodeKnob->createDuplicateOnHolder(effect, page, group, -1, KnobI::eDuplicateKnobTypeAlias, internalNodeKnob->getName(), internalNodeKnob->getLabel(), internalNodeKnob->getHintToolTip(), false, false);
+    KnobIPtr duplicateKnob = internalNodeKnob->createDuplicateOnHolder(effect, page, group, -1, KnobI::eDuplicateKnobTypeAlias, internalNodeKnob->getName(), internalNodeKnob->getLabel(), internalNodeKnob->getHintToolTip(), false /*refreshParamsGui*/, KnobI::eKnobDeclarationTypePlugin);
     return boost::dynamic_pointer_cast<KNOBTYPE>(duplicateKnob);
 }
 

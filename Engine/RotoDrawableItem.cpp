@@ -1592,7 +1592,7 @@ RotoDrawableItem::initializeKnobs()
 
         {
             KnobChoicePtr rotoMbKnob = rotoPaintEffect->getMotionBlurTypeKnob();
-            KnobChoicePtr mbTypeKnob = toKnobChoice(rotoMbKnob->createDuplicateOnHolder(thisShared, KnobPagePtr(), KnobGroupPtr(), -1 /*index in parent*/, KnobI::eDuplicateKnobTypeCopy /*dupType*/, kRotoMotionBlurModeParam, kRotoMotionBlurModeParamLabel, kRotoMotionBlurModeParamHint, false /*refreshParamsGui*/, false /*isUserKnob*/));
+            KnobChoicePtr mbTypeKnob = toKnobChoice(rotoMbKnob->createDuplicateOnHolder(thisShared, KnobPagePtr(), KnobGroupPtr(), -1 /*index in parent*/, KnobI::eDuplicateKnobTypeCopy /*dupType*/, kRotoMotionBlurModeParam, kRotoMotionBlurModeParamLabel, kRotoMotionBlurModeParamHint, false /*refreshParamsGui*/, KnobI::eKnobDeclarationTypePlugin));
             _imp->motionBlurTypeKnob = mbTypeKnob;
             mbTypeKnob->setIsPersistent(false);
 

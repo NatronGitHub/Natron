@@ -199,7 +199,7 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel,
     QObject::connect( _imp->destPageCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(onPageComboIndexChanged(int)) );
     const KnobsVec& knobs = node->getKnobs();
     for (std::size_t i = 0; i < knobs.size(); ++i) {
-        if ( knobs[i]->isUserKnob() ) {
+        if ( knobs[i]->getKnobDeclarationType() == KnobI::eKnobDeclarationTypeUser ) {
             KnobPagePtr isPage = toKnobPage(knobs[i]);
             if (isPage) {
                 _imp->pages.push_back(isPage);

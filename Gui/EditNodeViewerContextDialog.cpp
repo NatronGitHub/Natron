@@ -110,7 +110,7 @@ EditNodeViewerContextDialog::EditNodeViewerContextDialog(const KnobIPtr& knob, Q
 
     _imp->vLayout->addWidget(_imp->mainContainer);
 
-    if (knob->isUserKnob()) {
+    if (knob->getKnobDeclarationType() == KnobI::eKnobDeclarationTypeUser) {
         QWidget* rowContainer = new QWidget(this);
         QHBoxLayout* rowLayout = new QHBoxLayout(rowContainer);
         rowLayout->setContentsMargins(0, 0, 0, 0);
@@ -132,7 +132,7 @@ EditNodeViewerContextDialog::EditNodeViewerContextDialog(const KnobIPtr& knob, Q
 
     KnobButtonPtr isButtonKnob = toKnobButton(knob);
 
-    if (knob->isUserKnob()) {
+    if (knob->getKnobDeclarationType() == KnobI::eKnobDeclarationTypeUser) {
         QWidget* rowContainer = new QWidget(this);
         QHBoxLayout* rowLayout = new QHBoxLayout(rowContainer);
         rowLayout->setContentsMargins(0, 0, 0, 0);
@@ -162,7 +162,7 @@ EditNodeViewerContextDialog::EditNodeViewerContextDialog(const KnobIPtr& knob, Q
         _imp->mainLayout->addRow(_imp->checkedIconLabel, rowContainer);
     }
 
-    if (isButtonKnob && knob->isUserKnob()) {
+    if (isButtonKnob && knob->getKnobDeclarationType() == KnobI::eKnobDeclarationTypeUser) {
         QWidget* rowContainer = new QWidget(this);
         QHBoxLayout* rowLayout = new QHBoxLayout(rowContainer);
         rowLayout->setContentsMargins(0, 0, 0, 0);

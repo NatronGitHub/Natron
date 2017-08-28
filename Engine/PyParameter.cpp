@@ -241,7 +241,7 @@ Param::setLabel(const QString& label)
         PythonSetNullError();
         return;
     }
-    if ( !knob->isUserKnob() ) {
+    if (knob->getKnobDeclarationType() != KnobI::eKnobDeclarationTypeUser) {
         PythonSetNonUserKnobError();
         return;
     }
@@ -279,7 +279,7 @@ Param::setHelp(const QString& help)
         PythonSetNullError();
         return;
     }
-    if ( !knob->isUserKnob() ) {
+    if (knob->getKnobDeclarationType() != KnobI::eKnobDeclarationTypeUser) {
         PythonSetNonUserKnobError();
         return;
     }
@@ -351,7 +351,7 @@ Param::setPersistent(bool persistent)
         PythonSetNullError();
         return;
     }
-    if ( !knob->isUserKnob() ) {
+    if (knob->getKnobDeclarationType() != KnobI::eKnobDeclarationTypeUser) {
         PythonSetNonUserKnobError();
         return;
     }
@@ -399,7 +399,7 @@ Param::setEvaluateOnChange(bool eval)
         PythonSetNullError();
         return;
     }
-    if ( !knob->isUserKnob() ) {
+    if (knob->getKnobDeclarationType() != KnobI::eKnobDeclarationTypeUser) {
         PythonSetNonUserKnobError();
         return;
     }
@@ -436,7 +436,7 @@ Param::setAnimationEnabled(bool e)
         PythonSetNullError();
         return;
     }
-    if ( !knob->isUserKnob() ) {
+    if (knob->getKnobDeclarationType() != KnobI::eKnobDeclarationTypeUser) {
         PythonSetNonUserKnobError();
         return;
     }
@@ -462,7 +462,7 @@ Param::setAddNewLine(bool a)
         PythonSetNullError();
         return;
     }
-    if ( !knob->isUserKnob() ) {
+    if (knob->getKnobDeclarationType() != KnobI::eKnobDeclarationTypeUser) {
         PythonSetNonUserKnobError();
         return;
     }
@@ -592,7 +592,7 @@ Param::setViewerUIIconFilePath(const QString& icon, bool checked)
         PythonSetNullError();
         return;
     }
-    if ( !knob->isUserKnob() ) {
+    if (knob->getKnobDeclarationType() != KnobI::eKnobDeclarationTypeUser) {
         PythonSetNonUserKnobError();
         return;
     }
@@ -619,7 +619,7 @@ Param::setViewerUILabel(const QString& label)
         PythonSetNullError();
         return;
     }
-    if ( !knob->isUserKnob() ) {
+    if (knob->getKnobDeclarationType() != KnobI::eKnobDeclarationTypeUser) {
         PythonSetNonUserKnobError();
         return;
     }
@@ -1806,7 +1806,7 @@ IntParam::setMinimum(int minimum,
         PythonSetNullError();
         return;
     }
-    if ( !knob->isUserKnob() ) {
+    if (knob->getKnobDeclarationType() != KnobI::eKnobDeclarationTypeUser) {
         PythonSetNonUserKnobError();
         return;
     }
@@ -1842,7 +1842,7 @@ IntParam::setMaximum(int maximum,
         PythonSetNullError();
         return;
     }
-    if ( !knob->isUserKnob() ) {
+    if (knob->getKnobDeclarationType() != KnobI::eKnobDeclarationTypeUser) {
         PythonSetNonUserKnobError();
         return;
     }
@@ -1878,7 +1878,7 @@ IntParam::setDisplayMinimum(int minimum,
         PythonSetNullError();
         return;
     }
-    if ( !knob->isUserKnob() ) {
+    if (knob->getKnobDeclarationType() != KnobI::eKnobDeclarationTypeUser) {
         PythonSetNonUserKnobError();
         return;
     }
@@ -1915,7 +1915,7 @@ IntParam::setDisplayMaximum(int maximum,
         PythonSetNullError();
         return;
     }
-    if ( !knob->isUserKnob() ) {
+    if (knob->getKnobDeclarationType() != KnobI::eKnobDeclarationTypeUser) {
         PythonSetNonUserKnobError();
         return;
     }
@@ -2355,7 +2355,7 @@ DoubleParam::setMinimum(double minimum,
         PythonSetNullError();
         return;
     }
-    if ( !knob->isUserKnob() ) {
+    if (knob->getKnobDeclarationType() != KnobI::eKnobDeclarationTypeUser) {
         PythonSetNonUserKnobError();
         return;
     }
@@ -2391,7 +2391,7 @@ DoubleParam::setMaximum(double maximum,
         PythonSetNullError();
         return;
     }
-    if ( !knob->isUserKnob() ) {
+    if (knob->getKnobDeclarationType() != KnobI::eKnobDeclarationTypeUser) {
         PythonSetNonUserKnobError();
         return;
     }
@@ -2427,7 +2427,7 @@ DoubleParam::setDisplayMinimum(double minimum,
         PythonSetNullError();
         return;
     }
-    if ( !knob->isUserKnob() ) {
+    if (knob->getKnobDeclarationType() != KnobI::eKnobDeclarationTypeUser) {
         PythonSetNonUserKnobError();
         return;
     }
@@ -2464,7 +2464,7 @@ DoubleParam::setDisplayMaximum(double maximum,
         PythonSetNullError();
         return;
     }
-    if ( !knob->isUserKnob() ) {
+    if (knob->getKnobDeclarationType() != KnobI::eKnobDeclarationTypeUser) {
         PythonSetNonUserKnobError();
         return;
     }
@@ -2763,7 +2763,7 @@ ColorParam::setMinimum(double minimum,
         PythonSetNullError();
         return;
     }
-    if ( !knob->isUserKnob() ) {
+    if (knob->getKnobDeclarationType() != KnobI::eKnobDeclarationTypeUser) {
         PythonSetNonUserKnobError();
         return;
     }
@@ -2800,7 +2800,7 @@ ColorParam::setMaximum(double maximum,
         PythonSetNullError();
         return;
     }
-    if ( !knob->isUserKnob() ) {
+    if (knob->getKnobDeclarationType() != KnobI::eKnobDeclarationTypeUser) {
         PythonSetNonUserKnobError();
         return;
     }
@@ -2837,7 +2837,7 @@ ColorParam::setDisplayMinimum(double minimum,
         PythonSetNullError();
         return;
     }
-    if ( !knob->isUserKnob() ) {
+    if (knob->getKnobDeclarationType() != KnobI::eKnobDeclarationTypeUser) {
         PythonSetNonUserKnobError();
         return;
     }
@@ -2875,7 +2875,7 @@ ColorParam::setDisplayMaximum(double maximum,
         PythonSetNullError();
         return;
     }
-    if ( !knob->isUserKnob() ) {
+    if (knob->getKnobDeclarationType() != KnobI::eKnobDeclarationTypeUser) {
         PythonSetNonUserKnobError();
         return;
     }
@@ -3163,7 +3163,7 @@ ChoiceParam::addOption(const QString& optionID,
         PythonSetNullError();
         return;
     }
-    if ( !knob->isUserKnob() ) {
+    if (knob->getKnobDeclarationType() != KnobI::eKnobDeclarationTypeUser) {
         PythonSetNonUserKnobError();
         return;
     }
@@ -3198,7 +3198,7 @@ ChoiceParam::setOptions(const std::list<QString>& optionIDs,
         PythonSetNullError();
         return;
     }
-    if ( !knob->isUserKnob() ) {
+    if (knob->getKnobDeclarationType() != KnobI::eKnobDeclarationTypeUser) {
         PythonSetNonUserKnobError();
         return;
     }
@@ -3630,7 +3630,7 @@ StringParam::setType(StringParam::TypeEnum type)
         PythonSetNullError();
         return;
     }
-    if ( !knob->isUserKnob() ) {
+    if (knob->getKnobDeclarationType() != KnobI::eKnobDeclarationTypeUser) {
         PythonSetNonUserKnobError();
         return;
     }
@@ -3675,7 +3675,7 @@ FileParam::setSequenceEnabled(bool enabled)
         PythonSetNullError();
         return;
     }
-    if ( !k->isUserKnob() ) {
+    if (k->getKnobDeclarationType() != KnobI::eKnobDeclarationTypeUser) {
         PythonSetNonUserKnobError();
         return;
     }
@@ -3702,7 +3702,7 @@ FileParam::setDialogType(bool fileExisting, bool useSequences, const std::vector
         PythonSetNullError();
         return;
     }
-    if ( !k->isUserKnob() ) {
+    if (k->getKnobDeclarationType() != KnobI::eKnobDeclarationTypeUser) {
         PythonSetNonUserKnobError();
         return;
     }
@@ -3762,7 +3762,7 @@ PathParam::setAsMultiPathTable()
         PythonSetNullError();
         return;
     }
-    if ( !k->isUserKnob() ) {
+    if (k->getKnobDeclarationType() != KnobI::eKnobDeclarationTypeUser) {
         PythonSetNonUserKnobError();
         return;
     }
@@ -3918,7 +3918,7 @@ GroupParam::addParam(const Param* param)
         PythonSetNullError();
         return;
     }
-    if (!k->isUserKnob()) {
+    if (k->getKnobDeclarationType() != KnobI::eKnobDeclarationTypeUser) {
         PythonSetNonUserKnobError();
         return;
     }
@@ -3933,7 +3933,7 @@ GroupParam::setAsTab()
         PythonSetNullError();
         return;
     }
-    if (!k->isUserKnob()) {
+    if (k->getKnobDeclarationType() != KnobI::eKnobDeclarationTypeUser) {
         PythonSetNonUserKnobError();
         return;
     }
@@ -3991,7 +3991,7 @@ PageParam::addParam(const Param* param)
         PythonSetNullError();
         return;
     }
-    if (!k->isUserKnob()) {
+    if (k->getKnobDeclarationType() != KnobI::eKnobDeclarationTypeUser) {
         PythonSetNonUserKnobError();
         return;
     }

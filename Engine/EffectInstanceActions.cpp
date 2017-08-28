@@ -1675,7 +1675,7 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
     bool wasFormatKnobCaught = handleFormatKnob(k);
     KnobHelperPtr kh = boost::dynamic_pointer_cast<KnobHelper>(k);
     assert(kh);
-    if (kh && kh->isDeclaredByPlugin() && !wasFormatKnobCaught) {
+    if (kh && kh->getKnobDeclarationType() == KnobI::eKnobDeclarationTypePlugin && !wasFormatKnobCaught) {
         {
 
 

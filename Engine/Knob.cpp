@@ -421,27 +421,15 @@ KnobHelper::debugHook()
 #endif
 
 void
-KnobHelper::setDeclaredByPlugin(bool b)
+KnobHelper::setKnobDeclarationType(KnobI::KnobDeclarationTypeEnum b)
 {
-    _imp->common->declaredByPlugin = b;
+    _imp->common->declarationType = b;
 }
 
-bool
-KnobHelper::isDeclaredByPlugin() const
+KnobI::KnobDeclarationTypeEnum
+KnobHelper::getKnobDeclarationType() const
 {
-    return _imp->common->declaredByPlugin;
-}
-
-void
-KnobHelper::setAsUserKnob(bool b)
-{
-    _imp->common->userKnob = b;
-}
-
-bool
-KnobHelper::isUserKnob() const
-{
-    return _imp->common->userKnob;
+    return _imp->common->declarationType;
 }
 
 void
@@ -2015,14 +2003,36 @@ KnobHelper::getSharingMaster(DimIdx dimension, ViewIdx view, KnobDimViewKey* lin
         return false;
     }
     assert(!data->sharedKnobs.empty());
-    const KnobDimViewKey& owner = *data->sharedKnobs.begin();
-
-    // If this knob owns originally the value, do not return that it is sharing
-    if (owner.knob.lock().get() == this) {
+    if (data->sharedKnobs.size() == 1) {
         return false;
     }
 
-    *linkData = owner;
+
+    // Find the sharing master between the shared knobs.
+    // Our heuristic is to return the knob which has a holder being a NodeGroup
+    bool foundNodeGroup = false;
+    for (KnobDimViewKeySet::const_iterator it = data->sharedKnobs.begin(); it != data->sharedKnobs.end(); ++it) {
+        KnobIPtr knob = it->knob.lock();
+        if (!knob) {
+            continue;
+        }
+        KnobHolderPtr thisHolder = knob->getHolder();
+        EffectInstancePtr thisHolderIsEffect = toEffectInstance(thisHolder);
+        NodeGroupPtr thisHolderIsGroup = toNodeGroup(thisHolderIsEffect);
+        if (thisHolderIsGroup) {
+            *linkData = *it;
+            foundNodeGroup = true;
+            break;
+        }
+    }
+
+    if (!foundNodeGroup) {
+        // Resort to any of the shared knobs
+        const KnobDimViewKey& owner = *data->sharedKnobs.begin();
+        *linkData = owner;
+
+    }
+
     return true;
 }
 
@@ -2461,7 +2471,7 @@ KnobHolder::getUserPages(std::list<KnobPagePtr>& userPages) const {
     const KnobsVec& knobs = getKnobs();
 
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        if ( (*it)->isUserKnob() ) {
+        if ( (*it)->getKnobDeclarationType() == KnobI::eKnobDeclarationTypeUser) {
             KnobPagePtr isPage = toKnobPage(*it);
             if (isPage) {
                 userPages.push_back(isPage);
@@ -2480,7 +2490,7 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
                                     const std::string& newLabel,
                                     const std::string& newToolTip,
                                     bool refreshParams,
-                                    bool isUserKnob)
+                                    KnobI::KnobDeclarationTypeEnum declarationType)
 {
     ///find-out to which node that master knob belongs to
     KnobHolderPtr holder = getHolder();
@@ -2525,10 +2535,10 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
 
     KnobIPtr output;
     if (isBool) {
-        KnobBoolPtr newKnob = otherHolder->createBoolKnob(newScriptName, newLabel, isUserKnob);
+        KnobBoolPtr newKnob = otherHolder->createBoolKnob(newScriptName, newLabel, declarationType);
         output = newKnob;
     } else if (isInt) {
-        KnobIntPtr newKnob = otherHolder->createIntKnob(newScriptName, newLabel, getNDimensions(), isUserKnob);
+        KnobIntPtr newKnob = otherHolder->createIntKnob(newScriptName, newLabel, getNDimensions(), declarationType);
         newKnob->setRangeAcrossDimensions( isInt->getMinimums(), isInt->getMaximums() );
         newKnob->setDisplayRangeAcrossDimensions( isInt->getDisplayMinimums(), isInt->getDisplayMaximums() );
         if ( isInt->isSliderDisabled() ) {
@@ -2536,7 +2546,7 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
         }
         output = newKnob;
     } else if (isDbl) {
-        KnobDoublePtr newKnob = otherHolder->createDoubleKnob(newScriptName, newLabel, getNDimensions(), isUserKnob);
+        KnobDoublePtr newKnob = otherHolder->createDoubleKnob(newScriptName, newLabel, getNDimensions(), declarationType);
         newKnob->setSpatial( isDbl->getIsSpatial() );
         if ( isDbl->isRectangle() ) {
             newKnob->setAsRectangle();
@@ -2551,18 +2561,18 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
         newKnob->setDisplayRangeAcrossDimensions( isDbl->getDisplayMinimums(), isDbl->getDisplayMaximums() );
         output = newKnob;
     } else if (isChoice) {
-        KnobChoicePtr newKnob = otherHolder->createChoiceKnob(newScriptName, newLabel, isUserKnob);
+        KnobChoicePtr newKnob = otherHolder->createChoiceKnob(newScriptName, newLabel, declarationType);
         if (duplicateType != eDuplicateKnobTypeAlias) {
             newKnob->populateChoices( isChoice->getEntries());
         }
         output = newKnob;
     } else if (isColor) {
-        KnobColorPtr newKnob = otherHolder->createColorKnob(newScriptName, newLabel, getNDimensions(), isUserKnob);
+        KnobColorPtr newKnob = otherHolder->createColorKnob(newScriptName, newLabel, getNDimensions(), declarationType);
         newKnob->setRangeAcrossDimensions( isColor->getMinimums(), isColor->getMaximums() );
         newKnob->setDisplayRangeAcrossDimensions( isColor->getDisplayMinimums(), isColor->getDisplayMaximums() );
         output = newKnob;
     } else if (isString) {
-        KnobStringPtr newKnob = otherHolder->createStringKnob(newScriptName, newLabel, isUserKnob);
+        KnobStringPtr newKnob = otherHolder->createStringKnob(newScriptName, newLabel, declarationType);
         if ( isString->isLabel() ) {
             newKnob->setAsLabel();
         }
@@ -2577,32 +2587,32 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
         }
         output = newKnob;
     } else if (isFile) {
-        KnobFilePtr newKnob = otherHolder->createFileKnob(newScriptName, newLabel, isUserKnob);
+        KnobFilePtr newKnob = otherHolder->createFileKnob(newScriptName, newLabel, declarationType);
         newKnob->setDialogType(isFile->getDialogType());
         newKnob->setDialogFilters(isFile->getDialogFilters());
         output = newKnob;
     } else if (isPath) {
-        KnobPathPtr newKnob = otherHolder->createPathKnob(newScriptName, newLabel, isUserKnob);
+        KnobPathPtr newKnob = otherHolder->createPathKnob(newScriptName, newLabel, declarationType);
         if ( isPath->isMultiPath() ) {
             newKnob->setMultiPath(true);
         }
         output = newKnob;
     } else if (isGrp) {
-        KnobGroupPtr newKnob = otherHolder->createGroupKnob(newScriptName, newLabel, isUserKnob);
+        KnobGroupPtr newKnob = otherHolder->createGroupKnob(newScriptName, newLabel, declarationType);
         if ( isGrp->isTab() ) {
             newKnob->setAsTab();
         }
         output = newKnob;
     } else if (isPage) {
-        KnobPagePtr newKnob = otherHolder->createPageKnob(newScriptName, newLabel, isUserKnob);
+        KnobPagePtr newKnob = otherHolder->createPageKnob(newScriptName, newLabel, declarationType);
         output = newKnob;
     } else if (isBtn) {
-        KnobButtonPtr newKnob = otherHolder->createButtonKnob(newScriptName, newLabel, isUserKnob);
+        KnobButtonPtr newKnob = otherHolder->createButtonKnob(newScriptName, newLabel, declarationType);
         KnobButton* thisKnobButton = dynamic_cast<KnobButton*>(this);
         newKnob->setCheckable(thisKnobButton->getIsCheckable());
         output = newKnob;
     } else if (isParametric) {
-        KnobParametricPtr newKnob = otherHolder->createParametricKnob(newScriptName, newLabel, isParametric->getNDimensions(), isUserKnob);
+        KnobParametricPtr newKnob = otherHolder->createParametricKnob(newScriptName, newLabel, isParametric->getNDimensions(), declarationType);
         output = newKnob;
         newKnob->setRangeAcrossDimensions( isParametric->getMinimums(), isParametric->getMaximums() );
         newKnob->setDisplayRangeAcrossDimensions( isParametric->getDisplayMinimums(), isParametric->getDisplayMaximums() );
@@ -2644,7 +2654,7 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
             destPage->insertKnob(indexInParent, output);
         }
     }
-    if (isUserKnob && otherIsEffect) {
+    if (declarationType == KnobI::eKnobDeclarationTypeUser && otherIsEffect) {
         otherIsEffect->getNode()->declarePythonKnobs();
     }
     switch (duplicateType) {
@@ -2757,6 +2767,7 @@ static bool serializeHardLinks(const KnobIPtr& knob,
                                const ViewIdx view,
                                ValueSerialization* serialization)
 {
+    
     KnobIPtr masterKnob;
     KnobDimViewKey sharedMaster;
     if (knob->getSharingMaster(dimension, view, &sharedMaster)) {
@@ -3171,7 +3182,7 @@ KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
         serialization->_dimension = getNDimensions();
         serialization->_scriptName = getName();
 
-        serialization->_isUserKnob = serialization->_forceUserKnob || (isUserKnob() && !isDeclaredByPlugin());
+        serialization->_isUserKnob = serialization->_forceUserKnob || getKnobDeclarationType() == eKnobDeclarationTypeUser;
 
         bool isFullRecoverySave = appPTR->getCurrentSettings()->getIsFullRecoverySaveModeEnabled();
 
@@ -3634,7 +3645,7 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
             }
             setInViewerContextLayoutType(layoutType);
             setInViewerContextSecret(serialization->_inViewerContextSecret);
-            if (isUserKnob()) {
+            if (getKnobDeclarationType() == eKnobDeclarationTypeUser) {
                 setInViewerContextLabel(QString::fromUtf8(serialization->_inViewerContextLabel.c_str()));
                 setInViewerContextIconFilePath(serialization->_inViewerContextIconFilePath[0], false);
                 setInViewerContextIconFilePath(serialization->_inViewerContextIconFilePath[1], true);
@@ -4498,7 +4509,7 @@ KnobHolder::moveViewerUIOneStepDown(const KnobIPtr& knob)
 bool
 KnobHolder::moveKnobOneStepUp(const KnobIPtr& knob)
 {
-    if ( !knob->isUserKnob() && !toKnobPage(knob) ) {
+    if ( knob->getKnobDeclarationType() != KnobI::eKnobDeclarationTypeUser && !toKnobPage(knob) ) {
         return false;
     }
     KnobIPtr parent = knob->getParentKnob();
@@ -4536,7 +4547,7 @@ KnobHolder::moveKnobOneStepUp(const KnobIPtr& knob)
                     }
                     break;
                 } else {
-                    if ( _imp->knobs[i]->isUserKnob() && (_imp->knobs[i]->getParentKnob() == parent) ) {
+                    if ( _imp->knobs[i]->getKnobDeclarationType() == KnobI::eKnobDeclarationTypeUser && (_imp->knobs[i]->getParentKnob() == parent) ) {
                         prevInPage = i;
                     }
                 }
@@ -4570,7 +4581,7 @@ KnobHolder::moveKnobOneStepUp(const KnobIPtr& knob)
 bool
 KnobHolder::moveKnobOneStepDown(const KnobIPtr& knob)
 {
-    if ( !knob->isUserKnob() && !toKnobPage(knob) ) {
+    if ( knob->getKnobDeclarationType() != KnobI::eKnobDeclarationTypeUser && !toKnobPage(knob) ) {
         return false;
     }
     KnobIPtr parent = knob->getParentKnob();
@@ -4611,7 +4622,7 @@ KnobHolder::moveKnobOneStepDown(const KnobIPtr& knob)
         //The knob (or page) could be moved inside the group/page, just move it down
         if (parent) {
             for (int i = foundIndex + 1; i < (int)_imp->knobs.size(); ++i) {
-                if ( _imp->knobs[i]->isUserKnob() && (_imp->knobs[i]->getParentKnob() == parent) ) {
+                if ( _imp->knobs[i]->getKnobDeclarationType() == KnobI::eKnobDeclarationTypeUser && (_imp->knobs[i]->getParentKnob() == parent) ) {
                     KnobIPtr tmp = _imp->knobs[foundIndex];
                     _imp->knobs[foundIndex] = _imp->knobs[i];
                     _imp->knobs[i] = tmp;
@@ -4645,7 +4656,7 @@ KnobHolder::getUserPageKnob() const
     {
         QMutexLocker k(&_imp->knobsMutex);
         for (KnobsVec::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-            if (!(*it)->isUserKnob()) {
+            if ((*it)->getKnobDeclarationType() != KnobI::eKnobDeclarationTypeUser) {
                 continue;
             }
             KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(*it);
@@ -4668,27 +4679,21 @@ KnobHolder::getOrCreateUserPageKnob()
     }
     ret = createKnob<KnobPage>(NATRON_USER_MANAGED_KNOBS_PAGE, 1);
     ret->setLabel(tr(NATRON_USER_MANAGED_KNOBS_PAGE_LABEL));
-    ret->setDeclaredByPlugin(false);
-    onUserKnobCreated(ret, true);
+    onUserKnobCreated(ret, KnobI::eKnobDeclarationTypeUser);
     return ret;
 }
 
 void
-KnobHolder::onUserKnobCreated(const KnobIPtr& knob, bool isUserKnob)
+KnobHolder::onUserKnobCreated(const KnobIPtr& knob, KnobI::KnobDeclarationTypeEnum isUserKnob)
 {
 
-    knob->setAsUserKnob(isUserKnob);
+    knob->setKnobDeclarationType(isUserKnob);
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    bool declaredByPlugin = false;
     if (isEffect) {
-        if (isEffect->getNode()->isPyPlug() && getApp()->isCreatingNode()) {
-            declaredByPlugin = true;
-        }
         if (isUserKnob) {
             isEffect->getNode()->declarePythonKnobs();
         }
     }
-    knob->setDeclaredByPlugin(declaredByPlugin);
 
 }
 
@@ -4696,7 +4701,7 @@ KnobIntPtr
 KnobHolder::createIntKnob(const std::string& name,
                           const std::string& label,
                           int dimension,
-                          bool userKnob)
+                          KnobI::KnobDeclarationTypeEnum userKnob)
 {
     KnobIPtr existingKnob = getKnobByName(name);
 
@@ -4713,7 +4718,7 @@ KnobDoublePtr
 KnobHolder::createDoubleKnob(const std::string& name,
                              const std::string& label,
                              int dimension,
-                             bool userKnob)
+                             KnobI::KnobDeclarationTypeEnum userKnob)
 {
     KnobIPtr existingKnob = getKnobByName(name);
 
@@ -4730,7 +4735,7 @@ KnobColorPtr
 KnobHolder::createColorKnob(const std::string& name,
                             const std::string& label,
                             int dimension,
-                            bool userKnob)
+                            KnobI::KnobDeclarationTypeEnum userKnob)
 {
     KnobIPtr existingKnob = getKnobByName(name);
 
@@ -4747,7 +4752,7 @@ KnobHolder::createColorKnob(const std::string& name,
 KnobBoolPtr
 KnobHolder::createBoolKnob(const std::string& name,
                            const std::string& label,
-                           bool userKnob)
+                           KnobI::KnobDeclarationTypeEnum userKnob)
 {
     KnobIPtr existingKnob = getKnobByName(name);
 
@@ -4764,7 +4769,7 @@ KnobHolder::createBoolKnob(const std::string& name,
 KnobChoicePtr
 KnobHolder::createChoiceKnob(const std::string& name,
                              const std::string& label,
-                             bool userKnob)
+                             KnobI::KnobDeclarationTypeEnum userKnob)
 {
     KnobIPtr existingKnob = getKnobByName(name);
 
@@ -4781,7 +4786,7 @@ KnobHolder::createChoiceKnob(const std::string& name,
 KnobButtonPtr
 KnobHolder::createButtonKnob(const std::string& name,
                              const std::string& label,
-                             bool userKnob)
+                             KnobI::KnobDeclarationTypeEnum userKnob)
 {
     KnobIPtr existingKnob = getKnobByName(name);
 
@@ -4798,7 +4803,7 @@ KnobHolder::createButtonKnob(const std::string& name,
 KnobSeparatorPtr
 KnobHolder::createSeparatorKnob(const std::string& name,
                                 const std::string& label,
-                                bool userKnob)
+                                KnobI::KnobDeclarationTypeEnum userKnob)
 {
     KnobIPtr existingKnob = getKnobByName(name);
 
@@ -4816,7 +4821,7 @@ KnobHolder::createSeparatorKnob(const std::string& name,
 KnobStringPtr
 KnobHolder::createStringKnob(const std::string& name,
                              const std::string& label,
-                             bool userKnob)
+                             KnobI::KnobDeclarationTypeEnum userKnob)
 {
     KnobIPtr existingKnob = getKnobByName(name);
 
@@ -4832,7 +4837,7 @@ KnobHolder::createStringKnob(const std::string& name,
 KnobFilePtr
 KnobHolder::createFileKnob(const std::string& name,
                            const std::string& label,
-                           bool userKnob)
+                           KnobI::KnobDeclarationTypeEnum userKnob)
 {
     KnobIPtr existingKnob = getKnobByName(name);
 
@@ -4851,7 +4856,7 @@ KnobHolder::createFileKnob(const std::string& name,
 KnobPathPtr
 KnobHolder::createPathKnob(const std::string& name,
                            const std::string& label,
-                           bool userKnob)
+                           KnobI::KnobDeclarationTypeEnum userKnob)
 {
     KnobIPtr existingKnob = getKnobByName(name);
 
@@ -4867,7 +4872,7 @@ KnobHolder::createPathKnob(const std::string& name,
 KnobGroupPtr
 KnobHolder::createGroupKnob(const std::string& name,
                             const std::string& label,
-                            bool userKnob)
+                            KnobI::KnobDeclarationTypeEnum userKnob)
 {
     KnobIPtr existingKnob = getKnobByName(name);
 
@@ -4884,7 +4889,7 @@ KnobHolder::createGroupKnob(const std::string& name,
 KnobPagePtr
 KnobHolder::createPageKnob(const std::string& name,
                            const std::string& label,
-                           bool userKnob)
+                           KnobI::KnobDeclarationTypeEnum userKnob)
 {
     KnobIPtr existingKnob = getKnobByName(name);
 
@@ -4901,7 +4906,7 @@ KnobParametricPtr
 KnobHolder::createParametricKnob(const std::string& name,
                                  const std::string& label,
                                  int nbCurves,
-                                 bool userKnob)
+                                 KnobI::KnobDeclarationTypeEnum userKnob)
 {
     KnobIPtr existingKnob = getKnobByName(name);
 

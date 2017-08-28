@@ -242,7 +242,7 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,
             _imp->knobsItems.push_back(pageItem);
 
 
-            if ( (*it)->isUserKnob() ) {
+            if ( (*it)->getKnobDeclarationType() == KnobI::eKnobDeclarationTypeUser ) {
                 KnobsVec children = page->getChildren();
                 _imp->initializeKnobs(children, pageItem.item, markedKnobs);
             }
@@ -559,7 +559,7 @@ ManageUserParamsDialogPrivate::createItemForKnob(const KnobIPtr& knob,
             if (!isPage) {
                 continue;
             }
-            if (!isPage->isUserKnob()) {
+            if (isPage->getKnobDeclarationType() == KnobI::eKnobDeclarationTypeUser) {
                 continue;
             }
 
@@ -1109,7 +1109,7 @@ ManageUserParamsDialog::onKnobsTreeSelectionChanged()
                 KnobPagePtr isPage = toKnobPage( it->knob );
                 KnobGroupPtr isGroup = toKnobGroup( it->knob );
                 if (isPage) {
-                    if ( !isPage->isUserKnob() ) {
+                    if ( isPage->getKnobDeclarationType() == KnobI::eKnobDeclarationTypeUser ) {
                         canDelete = false;
                         canEdit = false;
                     }

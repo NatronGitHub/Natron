@@ -305,11 +305,8 @@ struct CommonData
     // further on
     PerDimensionSavedDataVec perDimViewSavedData;
 
-    // Was the knob declared by a plug-in or added by Natron?
-    bool declaredByPlugin;
-
-    // True if it was created by the user and should be put into the "User" page
-    bool userKnob;
+    // Was the knob declared by a plug-in or added by Natron or by the user
+    KnobI::KnobDeclarationTypeEnum declarationType;
 
     // Pointer to a custom interact that should replace the UI of the knob
     OverlayInteractBasePtr customInteract;
@@ -411,8 +408,7 @@ struct CommonData
     , perDimViewDataMutex()
     , perDimViewData()
     , perDimViewSavedData()
-    , declaredByPlugin(true)
-    , userKnob(false)
+    , declarationType(KnobI::eKnobDeclarationTypePlugin)
     , customInteract()
     , expressionMutex()
     , expressions()

@@ -406,7 +406,7 @@ WriteNodePrivate::destroyWriteNode()
                 // Since we want to keep some knobs around, ensure they do not get deleted in the desctructor of the embedded node
                 embeddedNode->getEffectInstance()->removeKnobFromList(*it);
 
-                if ( !(*it)->isDeclaredByPlugin() ) {
+                if ( (*it)->getKnobDeclarationType() != KnobI::eKnobDeclarationTypePlugin ) {
                     continue;
                 }
 

@@ -1703,7 +1703,7 @@ Node::setPagesOrder(const std::list<std::string>& pages)
                 break;
             }
         }
-        if (!found && isPage->isUserKnob()) {
+        if (!found && isPage->getKnobDeclarationType() == KnobI::eKnobDeclarationTypeUser) {
             isPage->setSecret(true);
         }
     }

@@ -192,7 +192,7 @@ KnobGuiContainerHelper::getOrCreateDefaultPage()
     for (U32 i = 0; i < knobs.size(); ++i) {
         KnobPagePtr p = toKnobPage( knobs[i]);
         if (p) {
-            if (p->isDeclaredByPlugin()) {
+            if (p->getKnobDeclarationType() == KnobI::eKnobDeclarationTypePlugin) {
                 return getOrCreatePage(p);
             } else {
                 pagesNotDeclaredByPlugin.push_back(p);

@@ -442,7 +442,7 @@ ReadNodePrivate::destroyReadNode()
                 }
 
 
-                if ( !(*it)->isDeclaredByPlugin() ) {
+                if ( (*it)->getKnobDeclarationType() != KnobI::eKnobDeclarationTypePlugin ) {
                     continue;
                 }
 

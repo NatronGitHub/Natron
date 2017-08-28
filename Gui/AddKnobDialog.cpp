@@ -417,7 +417,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     , _imp( new AddKnobDialogPrivate(panel) )
 {
     _imp->knob = knob;
-    assert( !knob || knob->isUserKnob() );
+    assert( !knob || knob->getKnobDeclarationType() == KnobI::eKnobDeclarationTypeUser );
 
     {
         EffectInstancePtr effect = toEffectInstance( panel->getHolder() );
@@ -897,7 +897,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         if (!knob) {
             continue;
         }
-        if ( knob->isUserKnob() ) {
+        if ( knob->getKnobDeclarationType() == KnobI::eKnobDeclarationTypeUser) {
             KnobGroupPtr isGrp = toKnobGroup(knob);
             if (isGrp) {
                 _imp->userGroups.push_back(isGrp);
@@ -929,7 +929,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     QObject::connect( _imp->parentPage, SIGNAL(currentIndexChanged(int)), this, SLOT(onPageCurrentIndexChanged(int)) );
     const KnobsVec& internalKnobs = _imp->panel->getHolder()->getKnobs();
     for (KnobsVec::const_iterator it = internalKnobs.begin(); it != internalKnobs.end(); ++it) {
-        if ( (*it)->isUserKnob() ) {
+        if ( (*it)->getKnobDeclarationType() == KnobI::eKnobDeclarationTypeUser ) {
             KnobPagePtr isPage = toKnobPage(*it);
             if (isPage) {
                 _imp->userPages.push_back(isPage);
@@ -1511,10 +1511,9 @@ AddKnobDialogPrivate::createKnobFromSelection(AddKnobDialog::ParamDataTypeEnum t
     default:
         break;
     } // switch
-    knob->setDeclaredByPlugin(false);
     knob->setLabel(label);
     assert(knob);
-    knob->setAsUserKnob(true);
+    knob->setKnobDeclarationType(KnobI::eKnobDeclarationTypeUser);
     if ( knob->canAnimate() ) {
         knob->setAnimationEnabled( animatesCheckbox->isChecked() );
     }

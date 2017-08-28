@@ -121,7 +121,6 @@ UserPages:
         Hint: When checked, use a constant color (specified by the Constant parameter) instead of the background for the LightWrap effect.
         Props: [AnimatesChanged]
       - Name: constantcolor
-        Float: [{N: Constant1, K: color, D: r}, {N: Constant1, K: color, D: g}, {N: Constant1, K: color, D: b}, {N: Constant1, K: color, D: a}]
         DefaultFloat: [1, 1, 1, 1]
         NDims: 4
         TypeName: Color
@@ -399,7 +398,7 @@ Children:
       - Name: size
         Float: [960, 540]
       - Name: color
-        Float: 1
+        Float: [{N: "@thisGroup", K: constantcolor, D: r}, {N: "@thisGroup", K: constantcolor, D: g}, {N: "@thisGroup", K: constantcolor, D: b}, {N: "@thisGroup", K: constantcolor, D: a}]
       - Name: NatronOfxParamProcessA
         Bool: false
     Pos: [968, 185]

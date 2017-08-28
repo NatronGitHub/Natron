@@ -456,8 +456,6 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
             if (!found) {
                 page = _imp->effect->createKnob<KnobPage>(groupSerialization->_name);
                 page->setLabel(groupSerialization->_label);
-                page->setDeclaredByPlugin(false);
-                page->setAsUserKnob(!isPyPlugSerialization);
             } else {
                 page = toKnobPage(found);
             }
@@ -465,15 +463,17 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
                 return;
             }
 
+            page->setKnobDeclarationType(isPyPlugSerialization ? KnobI::eKnobDeclarationTypePlugin : KnobI::eKnobDeclarationTypeUser);
+
+
             for (std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase> >::const_iterator it = groupSerialization->_children.begin(); it != groupSerialization->_children.end(); ++it) {
-                restoreUserKnob(KnobGroupPtr(), page, **it, recursionLevel + 1,isPyPlugSerialization);
+                restoreUserKnob(KnobGroupPtr(), page, **it, isPyPlugSerialization, recursionLevel + 1);
             }
 
         } else if (isGroup) { //!ispage
             KnobGroupPtr grp;
             if (!found) {
                 grp = _imp->effect->createKnob<KnobGroup>(groupSerialization->_name);
-                grp->setDeclaredByPlugin(false);
                 grp->setLabel(groupSerialization->_label);
             } else {
                 grp = toKnobGroup(found);
@@ -482,7 +482,7 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
             if (!grp) {
                 return;
             }
-            grp->setAsUserKnob(!isPyPlugSerialization);
+            grp->setKnobDeclarationType(isPyPlugSerialization ? KnobI::eKnobDeclarationTypePlugin : KnobI::eKnobDeclarationTypeUser);
             grp->setName(groupSerialization->_name);
             if (groupSerialization->_isSetAsTab) {
                 grp->setAsTab();
@@ -561,14 +561,10 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
         if (!knob) {
             return;
         }
-        knob->setDeclaredByPlugin(false);
         knob->setLabel(serialization->_label);
         knob->fromSerialization(*serialization);
+        knob->setKnobDeclarationType(isPyPlugSerialization ? KnobI::eKnobDeclarationTypePlugin : KnobI::eKnobDeclarationTypeUser);
 
-        if (isPyPlugSerialization) {
-            // If this is a pyplug serialization, make sure the knob is no longer marked as a user knob
-            knob->setAsUserKnob(false);
-        }
 
         if (group) {
             group->addKnob(knob);
@@ -642,7 +638,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
 
             // Save user pages if they were added by the user with respect to the initial plug-in state, or if we are encoding as a PyPlug
             if ((serialization->_encodeFlags & SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsPreset) == 0) {
-                if ( knobs[i]->isUserKnob() && (!knob->isDeclaredByPlugin() || serialization->_encodeFlags & SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsPyPlug)) {
+                if ( knobs[i]->getKnobDeclarationType() == KnobI::eKnobDeclarationTypeUser /*&& (!knob->isDeclaredByPlugin() || serialization->_encodeFlags & SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsPyPlug)*/) {
                     userPages.push_back(knob);
                 }
             }
@@ -675,7 +671,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
             continue;
         }
        
-        if (knob->isUserKnob()) {
+        if (knob->getKnobDeclarationType() == KnobI::eKnobDeclarationTypeUser) {
             // Don't serialize user knobs, its taken care of by user pages
             continue;
         }
@@ -835,7 +831,7 @@ Node::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& 
     }
 
     // Load all knobs as well as user knobs and roto/tracking data
-    loadKnobsFromSerialization(*serialization, false);
+    loadKnobsFromSerialization(*serialization, false /*isPyPlugSerialization*/);
 
     // Remember the UI
     {
@@ -979,16 +975,6 @@ Node::loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializatio
             KnobIPtr knob = getKnobByName(knobName);
             if (!knob) {
                 continue;
-            }
-
-
-            bool isUserKnob = knob->isUserKnob();
-            knob->fromSerialization(**it);
-
-            if (!isUserKnob) {
-                // We need to do this little hack in case we are loading an old serialization of Natron 2
-                // which marked knobs of a pyplug as user knobs
-                knob->setAsUserKnob(false);
             }
 
         }

@@ -957,7 +957,6 @@ NodeCollection::setSubGraphEditedByUser(bool edited)
         _imp->wasGroupEditedByUser = edited;
     }
 
-    // When set edited make sure all knobs have the appropriate "declared by plug-in" flag
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>(this);
     if (isGrp) {
 
@@ -970,13 +969,6 @@ NodeCollection::setSubGraphEditedByUser(bool edited)
             KnobIPtr convertToGroupKnob = isGrp->getNode()->getKnobByName(kNatronNodeKnobConvertToGroupButton);
             if (convertToGroupKnob) {
                 convertToGroupKnob->setSecret(edited || !isSubGraphEditable());
-            }
-        }
-
-        const KnobsVec& knobs = isGrp->getKnobs();
-        for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
-            if ((*it)->isUserKnob()) {
-                (*it)->setDeclaredByPlugin(!edited);
             }
         }
 

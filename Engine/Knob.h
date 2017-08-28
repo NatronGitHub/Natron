@@ -385,17 +385,28 @@ public:
      **/
     virtual void convertDimViewArgAccordingToKnobState(DimSpec dimIn, ViewSetSpec viewIn, DimSpec* dimOut, ViewSetSpec* viewOut) const = 0;
 
+    enum KnobDeclarationTypeEnum
+    {
+        // The knob was described by the plug-in. No extended properties such as min/max/default values etc... will
+        // be serialized.
+        // This is the default.
+        eKnobDeclarationTypePlugin,
+
+        // The knob is described by the host, it is the same than eKnobDeclarationTypePlugin except that:
+        // - It will not show up in the documentation
+        // - The knobChanged action will not be called on the plug-in for this parameter since it is unknown by the plug-in.
+        eKnobDeclarationTypeHost,
+
+        // The knob was created by the user. The serialization will include extended properties such as min/max/default values etc...
+        // This is used for example by user parameters when describing a PyPlug.
+        eKnobDeclarationTypeUser
+    };
+
     /**
      * @brief Returns the knob was created by a plugin or added automatically by Natron (e.g like mask knobs)
      **/
-    virtual bool isDeclaredByPlugin() const = 0;
-    virtual void setDeclaredByPlugin(bool b) = 0;
-
-    /**
-     * @brief A user knob is a knob created by the user by the gui
-     **/
-    virtual void setAsUserKnob(bool b) = 0;
-    virtual bool isUserKnob() const = 0;
+    virtual KnobDeclarationTypeEnum getKnobDeclarationType() const = 0;
+    virtual void setKnobDeclarationType(KnobDeclarationTypeEnum b) = 0;
 
 
     /**
@@ -1054,7 +1065,7 @@ public:
                                             const std::string& newLabel,
                                             const std::string& newToolTip,
                                             bool refreshParams,
-                                            bool isUserKnob) = 0;
+                                            KnobI::KnobDeclarationTypeEnum isUserKnob) = 0;
 
 
     enum ListenersTypeEnum
@@ -1353,10 +1364,9 @@ public:
     /**
      * @brief Returns the knob was created by a plugin or added automatically by Natron (e.g like mask knobs)
      **/
-    virtual bool isDeclaredByPlugin() const OVERRIDE FINAL;
-    virtual void setDeclaredByPlugin(bool b) OVERRIDE FINAL;
-    virtual void setAsUserKnob(bool b) OVERRIDE FINAL;
-    virtual bool isUserKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual KnobDeclarationTypeEnum getKnobDeclarationType() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setKnobDeclarationType(KnobDeclarationTypeEnum b) OVERRIDE FINAL;
+
     /**
      * @brief Set a shared ptr to the signal slot handler, that will live as long as the knob lives.
      * It is set by the factory, do not call it yourself.
@@ -1615,7 +1625,7 @@ public:
                                             const std::string& newLabel,
                                             const std::string& newToolTip,
                                             bool refreshParams,
-                                            bool isUserKnob) OVERRIDE FINAL WARN_UNUSED_RETURN;
+                                            KnobI::KnobDeclarationTypeEnum isUserKnob) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool copyKnob(const KnobIPtr& other, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec::all(), ViewSetSpec otherView = ViewSetSpec::all(), DimSpec otherDimension = DimSpec::all(), const RangeD* range = 0, double offset = 0) OVERRIDE FINAL;
 
 private:
@@ -2352,7 +2362,7 @@ public:
 
     bool isOverlaySlaveParam(const KnobIConstPtr& knob, OverlaySlaveParamFlags type = eOverlaySlaveViewport) const;
 
-    //To re-arrange user knobs only, does nothing if knob->isUserKnob() returns false
+    //To re-arrange user knobs only, does nothing if this is not a user knob
     bool moveKnobOneStepUp(const KnobIPtr& knob);
     bool moveKnobOneStepDown(const KnobIPtr& knob);
 
@@ -2500,21 +2510,21 @@ public:
      * to create knobs on the fly. Their gui will be properly created. In order to notify the GUI that new parameters were
      * created, you must call refreshKnobs() that will re-scan for new parameters
      **/
-    KnobIntPtr createIntKnob(const std::string& name, const std::string& label, int nDims, bool userKnob = true);
-    KnobDoublePtr createDoubleKnob(const std::string& name, const std::string& label, int nDims, bool userKnob = true);
-    KnobColorPtr createColorKnob(const std::string& name, const std::string& label, int nDims, bool userKnob = true);
-    KnobBoolPtr createBoolKnob(const std::string& name, const std::string& label, bool userKnob = true);
-    KnobChoicePtr createChoiceKnob(const std::string& name, const std::string& label, bool userKnob = true);
-    KnobButtonPtr createButtonKnob(const std::string& name, const std::string& label, bool userKnob = true);
-    KnobSeparatorPtr createSeparatorKnob(const std::string& name, const std::string& label, bool userKnob = true);
+    KnobIntPtr createIntKnob(const std::string& name, const std::string& label, int nDims, KnobI::KnobDeclarationTypeEnum userKnob);
+    KnobDoublePtr createDoubleKnob(const std::string& name, const std::string& label, int nDims, KnobI::KnobDeclarationTypeEnum userKnob);
+    KnobColorPtr createColorKnob(const std::string& name, const std::string& label, int nDims, KnobI::KnobDeclarationTypeEnum userKnob);
+    KnobBoolPtr createBoolKnob(const std::string& name, const std::string& label, KnobI::KnobDeclarationTypeEnum userKnob);
+    KnobChoicePtr createChoiceKnob(const std::string& name, const std::string& label, KnobI::KnobDeclarationTypeEnum userKnob);
+    KnobButtonPtr createButtonKnob(const std::string& name, const std::string& label, KnobI::KnobDeclarationTypeEnum userKnob);
+    KnobSeparatorPtr createSeparatorKnob(const std::string& name, const std::string& label, KnobI::KnobDeclarationTypeEnum userKnob);
 
     //Type corresponds to the Type enum defined in StringParamBase in Parameter.h
-    KnobStringPtr createStringKnob(const std::string& name, const std::string& label, bool userKnob = true);
-    KnobFilePtr createFileKnob(const std::string& name, const std::string& label, bool userKnob = true);
-    KnobPathPtr createPathKnob(const std::string& name, const std::string& label, bool userKnob = true);
-    KnobPagePtr createPageKnob(const std::string& name, const std::string& label, bool userKnob = true);
-    KnobGroupPtr createGroupKnob(const std::string& name, const std::string& label, bool userKnob = true);
-    KnobParametricPtr createParametricKnob(const std::string& name, const std::string& label, int nbCurves, bool userKnob = true);
+    KnobStringPtr createStringKnob(const std::string& name, const std::string& label, KnobI::KnobDeclarationTypeEnum userKnob);
+    KnobFilePtr createFileKnob(const std::string& name, const std::string& label, KnobI::KnobDeclarationTypeEnum userKnob);
+    KnobPathPtr createPathKnob(const std::string& name, const std::string& label, KnobI::KnobDeclarationTypeEnum userKnob);
+    KnobPagePtr createPageKnob(const std::string& name, const std::string& label, KnobI::KnobDeclarationTypeEnum userKnob);
+    KnobGroupPtr createGroupKnob(const std::string& name, const std::string& label, KnobI::KnobDeclarationTypeEnum userKnob);
+    KnobParametricPtr createParametricKnob(const std::string& name, const std::string& label, int nbCurves, KnobI::KnobDeclarationTypeEnum userKnob);
 
     virtual bool isDoingInteractAction() const { return false; }
 
@@ -2565,7 +2575,7 @@ public:
 
 protected:
 
-    void onUserKnobCreated(const KnobIPtr& knob, bool isUserKnob);
+    void onUserKnobCreated(const KnobIPtr& knob, KnobI::KnobDeclarationTypeEnum isUserKnob);
 
 public:
 

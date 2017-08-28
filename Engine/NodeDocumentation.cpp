@@ -137,7 +137,7 @@ Node::makeDocumentation(bool genHTML) const
             continue;
         }
 
-        if ( !(*it)->isDeclaredByPlugin() && !( isPyPlug() && (*it)->isUserKnob() ) ) {
+        if ((*it)->getKnobDeclarationType() != KnobI::eKnobDeclarationTypePlugin) {
             continue;
         }
 

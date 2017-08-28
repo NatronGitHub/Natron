@@ -919,7 +919,7 @@ UserParamHolder::createIntParam(const QString& name,
         PythonSetNullError();
         return NULL;
     }
-    KnobIntPtr knob = holder->createIntKnob(name.toStdString(), label.toStdString(), 1);
+    KnobIntPtr knob = holder->createIntKnob(name.toStdString(), label.toStdString(), 1, KnobI::eKnobDeclarationTypeUser);
 
     if (knob) {
         KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
@@ -944,7 +944,7 @@ UserParamHolder::createInt2DParam(const QString& name,
         PythonSetNullError();
         return NULL;
     }
-    KnobIntPtr knob = holder->createIntKnob(name.toStdString(), label.toStdString(), 2);
+    KnobIntPtr knob = holder->createIntKnob(name.toStdString(), label.toStdString(), 2, KnobI::eKnobDeclarationTypeUser);
 
     if (knob) {
         KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
@@ -969,7 +969,7 @@ UserParamHolder::createInt3DParam(const QString& name,
         PythonSetNullError();
         return NULL;
     }
-    KnobIntPtr knob = holder->createIntKnob(name.toStdString(), label.toStdString(), 3);
+    KnobIntPtr knob = holder->createIntKnob(name.toStdString(), label.toStdString(), 3, KnobI::eKnobDeclarationTypeUser);
 
     if (knob) {
         KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
@@ -994,7 +994,7 @@ UserParamHolder::createDoubleParam(const QString& name,
         PythonSetNullError();
         return NULL;
     }
-    KnobDoublePtr knob = holder->createDoubleKnob(name.toStdString(), label.toStdString(), 1);
+    KnobDoublePtr knob = holder->createDoubleKnob(name.toStdString(), label.toStdString(), 1, KnobI::eKnobDeclarationTypeUser);
 
     if (knob) {
         KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
@@ -1019,7 +1019,7 @@ UserParamHolder::createDouble2DParam(const QString& name,
         PythonSetNullError();
         return NULL;
     }
-    KnobDoublePtr knob = holder->createDoubleKnob(name.toStdString(), label.toStdString(), 2);
+    KnobDoublePtr knob = holder->createDoubleKnob(name.toStdString(), label.toStdString(), 2, KnobI::eKnobDeclarationTypeUser);
 
     if (knob) {
         KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
@@ -1044,7 +1044,7 @@ UserParamHolder::createDouble3DParam(const QString& name,
         PythonSetNullError();
         return NULL;
     }
-    KnobDoublePtr knob = holder->createDoubleKnob(name.toStdString(), label.toStdString(), 3);
+    KnobDoublePtr knob = holder->createDoubleKnob(name.toStdString(), label.toStdString(), 3, KnobI::eKnobDeclarationTypeUser);
 
     if (knob) {
         KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
@@ -1069,7 +1069,7 @@ UserParamHolder::createBooleanParam(const QString& name,
         PythonSetNullError();
         return NULL;
     }
-    KnobBoolPtr knob = holder->createBoolKnob( name.toStdString(), label.toStdString() );
+    KnobBoolPtr knob = holder->createBoolKnob( name.toStdString(), label.toStdString(), KnobI::eKnobDeclarationTypeUser );
 
     if (knob) {
         KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
@@ -1094,7 +1094,7 @@ UserParamHolder::createChoiceParam(const QString& name,
         PythonSetNullError();
         return NULL;
     }
-    KnobChoicePtr knob = holder->createChoiceKnob( name.toStdString(), label.toStdString() );
+    KnobChoicePtr knob = holder->createChoiceKnob( name.toStdString(), label.toStdString() , KnobI::eKnobDeclarationTypeUser);
 
     if (knob) {
         KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
@@ -1120,7 +1120,7 @@ UserParamHolder::createColorParam(const QString& name,
         PythonSetNullError();
         return NULL;
     }
-    KnobColorPtr knob = holder->createColorKnob(name.toStdString(), label.toStdString(), useAlpha ? 4 : 3);
+    KnobColorPtr knob = holder->createColorKnob(name.toStdString(), label.toStdString(), useAlpha ? 4 : 3, KnobI::eKnobDeclarationTypeUser);
 
     if (knob) {
         KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
@@ -1144,7 +1144,7 @@ UserParamHolder::createStringParam(const QString& name,
         PythonSetNullError();
         return NULL;
     }
-    KnobStringPtr knob = holder->createStringKnob( name.toStdString(), label.toStdString() );
+    KnobStringPtr knob = holder->createStringKnob( name.toStdString(), label.toStdString(), KnobI::eKnobDeclarationTypeUser );
 
     if (knob) {
         KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
@@ -1168,7 +1168,7 @@ UserParamHolder::createFileParam(const QString& name,
         PythonSetNullError();
         return NULL;
     }
-    KnobFilePtr knob = holder->createFileKnob( name.toStdString(), label.toStdString() );
+    KnobFilePtr knob = holder->createFileKnob( name.toStdString(), label.toStdString(), KnobI::eKnobDeclarationTypeUser );
 
     if (knob) {
         KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
@@ -1193,7 +1193,7 @@ UserParamHolder::createOutputFileParam(const QString& name,
         PythonSetNullError();
         return NULL;
     }
-    KnobFilePtr knob = holder->createFileKnob( name.toStdString(), label.toStdString() );
+    KnobFilePtr knob = holder->createFileKnob( name.toStdString(), label.toStdString() , KnobI::eKnobDeclarationTypeUser);
 
     if (knob) {
         KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
@@ -1218,7 +1218,7 @@ UserParamHolder::createPathParam(const QString& name,
         PythonSetNullError();
         return NULL;
     }
-    KnobPathPtr knob = holder->createPathKnob( name.toStdString(), label.toStdString() );
+    KnobPathPtr knob = holder->createPathKnob( name.toStdString(), label.toStdString(), KnobI::eKnobDeclarationTypeUser );
 
     if (knob) {
         KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
@@ -1243,7 +1243,7 @@ UserParamHolder::createButtonParam(const QString& name,
         PythonSetNullError();
         return NULL;
     }
-    KnobButtonPtr knob = holder->createButtonKnob( name.toStdString(), label.toStdString() );
+    KnobButtonPtr knob = holder->createButtonKnob( name.toStdString(), label.toStdString(), KnobI::eKnobDeclarationTypeUser );
 
     if (knob) {
         KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
@@ -1267,7 +1267,7 @@ UserParamHolder::createSeparatorParam(const QString& name,
         PythonSetNullError();
         return NULL;
     }
-    KnobSeparatorPtr knob = holder->createSeparatorKnob( name.toStdString(), label.toStdString() );
+    KnobSeparatorPtr knob = holder->createSeparatorKnob( name.toStdString(), label.toStdString(), KnobI::eKnobDeclarationTypeUser );
 
     if (knob) {
         KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
@@ -1291,7 +1291,7 @@ UserParamHolder::createGroupParam(const QString& name,
         PythonSetNullError();
         return NULL;
     }
-    KnobGroupPtr knob = holder->createGroupKnob( name.toStdString(), label.toStdString() );
+    KnobGroupPtr knob = holder->createGroupKnob( name.toStdString(), label.toStdString(), KnobI::eKnobDeclarationTypeUser );
 
     if (knob) {
         KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
@@ -1315,7 +1315,7 @@ UserParamHolder::createPageParam(const QString& name,
         PythonSetNullError();
         return NULL;
     }
-    KnobPagePtr knob = holder->createPageKnob( name.toStdString(), label.toStdString() );
+    KnobPagePtr knob = holder->createPageKnob( name.toStdString(), label.toStdString(), KnobI::eKnobDeclarationTypeUser );
     if (knob) {
         PageParam* ret = dynamic_cast<PageParam*>(Effect::createParamWrapperForKnob(knob));
         assert(ret);
@@ -1335,7 +1335,7 @@ UserParamHolder::createParametricParam(const QString& name,
         PythonSetNullError();
         return NULL;
     }
-    KnobParametricPtr knob = holder->createParametricKnob(name.toStdString(), label.toStdString(), nbCurves);
+    KnobParametricPtr knob = holder->createParametricKnob(name.toStdString(), label.toStdString(), nbCurves, KnobI::eKnobDeclarationTypeUser);
 
     if (knob) {
         KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
@@ -1361,7 +1361,7 @@ UserParamHolder::removeParam(Param* param)
         PythonSetNullError();
         return false;
     }
-    if ( !param->getInternalKnob()->isUserKnob() ) {
+    if ( param->getInternalKnob()->getKnobDeclarationType() != KnobI::eKnobDeclarationTypeUser ) {
         PythonSetNonUserKnobError();
         return false;
     }

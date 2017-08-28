@@ -2543,7 +2543,7 @@ KnobGroup::typeName() const
 void
 KnobGroup::addKnob(const KnobIPtr& k)
 {
-    if ( !isUserKnob() && k->isUserKnob() ) {
+    if ( getKnobDeclarationType() != k->getKnobDeclarationType() ) {
         return;
     }
 
@@ -2611,7 +2611,7 @@ void
 KnobGroup::insertKnob(int index,
                       const KnobIPtr& k)
 {
-    if ( !isUserKnob() && k->isUserKnob() ) {
+    if ( getKnobDeclarationType() != k->getKnobDeclarationType() ) {
         return;
     }
 
@@ -2733,7 +2733,7 @@ KnobPage::getChildren() const
 void
 KnobPage::addKnob(const KnobIPtr &k)
 {
-    if ( !isUserKnob() && k->isUserKnob() ) {
+    if ( getKnobDeclarationType() != k->getKnobDeclarationType() ) {
         return;
     }
     for (std::size_t i = 0; i < _imp->children.size(); ++i) {
@@ -2753,7 +2753,7 @@ void
 KnobPage::insertKnob(int index,
                      const KnobIPtr& k)
 {
-    if ( !isUserKnob() && k->isUserKnob() ) {
+    if ( getKnobDeclarationType() != k->getKnobDeclarationType() ) {
         return;
     }
 

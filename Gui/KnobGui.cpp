@@ -1565,8 +1565,8 @@ KnobGui::createDuplicateOnNode(const EffectInstancePtr& effect,
                                             newKnobName,
                                             knob->getLabel(),
                                             knob->getHintToolTip(),
-                                            true,
-                                            true);
+                                            true /*refreshParamsGui*/,
+                                            KnobI::eKnobDeclarationTypeUser);
     } catch (const std::exception& e) {
         Dialogs::errorDialog( tr("Error while creating parameter").toStdString(), e.what() );
 
