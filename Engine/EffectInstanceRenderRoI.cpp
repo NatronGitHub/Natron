@@ -667,8 +667,8 @@ EffectInstance::Implementation::checkRestToRender(bool updateTilesStateFromCache
 
         // If plug-in wants host frame threading and there is only 1 rect to render, split it
         // in the number of available threads in the thread-pool
-
-        const unsigned int nThreads = MultiThread::getNCPUsAvailable(_publicInterface->shared_from_this());
+        // Always return the max num CPUs, let multiThread handle the actual threading
+        const unsigned int nThreads = appPTR->getHardwareIdealThreadCount();//MultiThread::getNCPUsAvailable(_publicInterface->shared_from_this());
         if (nThreads > 1) {
             reducedRects = mainRenderRect.splitIntoSmallerRects(nThreads);
         }

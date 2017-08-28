@@ -37,6 +37,7 @@
 
 #include "Engine/EngineFwd.h"
 
+
 NATRON_NAMESPACE_ENTER
 
 struct MultiThreadFuturePrivate;
@@ -108,6 +109,10 @@ public:
     static MultiThreadFuturePtr launchThreadsNonBlocking(ThreadFunctor func, unsigned int nThreads, void *customArg, const EffectInstancePtr& effect);
 
 private:
+
+    static void launchThreadsInThreadPool(ThreadFunctor func, void *customArg, unsigned int startTaskIndex, unsigned int nTasks, const EffectInstancePtr& effect, const MultiThreadFuturePtr& ret);
+
+    static MultiThreadFuturePtr launchThreadsInternal_v2(ThreadFunctor func, unsigned int bestNThreads, void *customArg, const EffectInstancePtr& effect);
 
     static MultiThreadFuturePtr launchThreadsInternal(ThreadFunctor func, unsigned int nThreads, void *customArg, const EffectInstancePtr& effect);
 

@@ -59,9 +59,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/EffectInstanceTLSData.h"
 #include "Engine/ThreadPool.h"
 
-// An effect may not use more than this amount of threads
-#define NATRON_MULTI_THREAD_SUITE_MAX_NUM_CPU 4
-
+#define NATRON_USE_MULTITHREAD_V2
 
 NATRON_NAMESPACE_ENTER
 
@@ -299,6 +297,8 @@ ActionRetCodeEnum
 MultiThreadFuture::waitForFinished()
 {
     if (_imp->future) {
+        ReleaseTPThread_RAII releaser;
+
         _imp->future->waitForFinished();
 
         if (isFailureRetCode(_imp->status)) {
@@ -319,35 +319,134 @@ MultiThreadFuture::~MultiThreadFuture()
 
 }
 
+// A high priority render is the one that in the front of the render queue of the manager
+static bool isHighPriorityRender(const EffectInstancePtr& effect)
+{
+    TreeRenderPtr currentRender = effect->getCurrentRender();
+    if (!currentRender) {
+        return true;
+    }
+    int renderIndex, nRenders;
+    appPTR->getTasksQueueManager()->getRenderIndex(currentRender, &renderIndex, &nRenders);
+    if (renderIndex == -1 || nRenders == 1) {
+        return true;
+    }
+    assert(renderIndex < nRenders);
+    return renderIndex == 0;
+}
+
+void
+MultiThread::launchThreadsInThreadPool(ThreadFunctor func, void *customArg, unsigned int startTaskIndex, unsigned int nTasks, const EffectInstancePtr& effect, const MultiThreadFuturePtr& ret)
+{
+    QThread* spawnerThread = QThread::currentThread();
+
+    // Get the global multi-thread handler data
+    MultiThreadPrivate* imp = appPTR->getMultiThreadHandler()->_imp.get();
+
+    // If the current thread is a thread-pool thread, make it also do an iteration instead
+    // of waiting for other threads
+    bool isThreadPoolThread = isRunningInThreadPoolThread();
+
+    unsigned int mappedNTasks = (isThreadPoolThread) ? nTasks - 1 : nTasks;
+
+    if (mappedNTasks > 0 && startTaskIndex < mappedNTasks) {
+        unsigned int nTasksRemaining = mappedNTasks - startTaskIndex;
+        ret->_imp->threadIndices.resize(nTasksRemaining);
+        {
+            unsigned int index = 0;
+            for (unsigned int i = startTaskIndex; i < mappedNTasks; ++i, ++index) {
+                ret->_imp->threadIndices[index] = i;
+            }
+        }
+
+        // DON'T set the maximum thread count: this is a global application setting
+        ret->_imp->future.reset(new QFuture<ActionRetCodeEnum>);
+        *ret->_imp->future = QtConcurrent::mapped( ret->_imp->threadIndices, boost::bind(threadFunctionWrapper, imp, func, _1, nTasks, spawnerThread, effect, customArg) );
+
+    }
+    
+    // Do one iteration in this thread
+    if (isThreadPoolThread) {
+        ActionRetCodeEnum stat = threadFunctionWrapper(imp, func, nTasks - 1, nTasks, spawnerThread, effect, customArg);
+        if (isFailureRetCode(stat)) {
+            // This thread failed, wait for other threads and exit
+            ret->_imp->status = stat;
+            if (ret->_imp->future) {
+                ret->_imp->future->waitForFinished();
+                ret->_imp->future.reset();
+            }
+        }
+    }
+} // launchThreadsInThreadPool
 
 MultiThreadFuturePtr
-MultiThread::launchThreadsInternal(MultiThread::ThreadFunctor func, unsigned int nThreads, void *customArg, const EffectInstancePtr& effect)
+MultiThread::launchThreadsInternal_v2(ThreadFunctor func, unsigned int bestNThreads, void *customArg, const EffectInstancePtr& effect)
 {
     MultiThreadFuturePtr ret(new MultiThreadFuture);
     if (!func) {
         ret->_imp->status = eActionStatusFailed;
         return ret;
     }
-    
 
-    unsigned int maxConcurrentThread = MultiThread::getNCPUsAvailable(effect);
-    assert(maxConcurrentThread > 0);
+    QThread* spawnerThread = QThread::currentThread();
 
-    if (nThreads == 0) {
-        nThreads = maxConcurrentThread;
+
+    const unsigned int maxThreads = (unsigned int)appPTR->getHardwareIdealThreadCount();
+    bestNThreads = std::max(1u, std::min(maxThreads, bestNThreads));
+
+    // Get the global multi-thread handler data
+    MultiThreadPrivate* imp = appPTR->getMultiThreadHandler()->_imp.get();
+
+
+    unsigned int nTasksProcessed = 0;
+    while (nTasksProcessed < bestNThreads) {
+        unsigned int nAvailCPUs = getNCPUsAvailable(effect);
+        if (nAvailCPUs > 1 && isHighPriorityRender(effect)) {
+            launchThreadsInThreadPool(func, customArg, nTasksProcessed, bestNThreads, effect, ret);
+            break;
+        } else {
+            ActionRetCodeEnum stat = threadFunctionWrapper(imp, func, nTasksProcessed, bestNThreads, spawnerThread, effect, customArg);
+            if (isFailureRetCode(stat)) {
+                // This thread failed, wait for other threads and exit
+                ret->_imp->status = stat;
+                return ret;
+            }
+            ++nTasksProcessed;
+        }
     }
+
+    return ret;
+} // launchThreadsInternal_v2
+
+
+MultiThreadFuturePtr
+MultiThread::launchThreadsInternal(MultiThread::ThreadFunctor func, unsigned int nDesiredThreadsArg, void *customArg, const EffectInstancePtr& effect)
+{
+    MultiThreadFuturePtr ret(new MultiThreadFuture);
+    if (!func) {
+        ret->_imp->status = eActionStatusFailed;
+        return ret;
+    }
+
+    const unsigned int nThreadsAvailable = MultiThread::getNCPUsAvailable(effect);
+    assert(nThreadsAvailable > 0);
+
+    if (nDesiredThreadsArg == 0) {
+        nDesiredThreadsArg = nThreadsAvailable;
+    }
+
 
 
     // from the documentation:
     // "nThreads can be more than the value returned by multiThreadNumCPUs, however
     // the threads will be limitted to the number of CPUs returned by multiThreadNumCPUs."
 
-    if ( (nThreads == 1) || (maxConcurrentThread <= 1) ) {
+    if (/* (nDesiredThreads == 1) || */(nThreadsAvailable <= 1) ) {
         // If user wants multiple calls but we only have 1 thread, call the function sequentially
         // multiple times.
         try {
-            for (unsigned int i = 0; i < nThreads; ++i) {
-                ActionRetCodeEnum stat = func(i, nThreads, customArg);
+            for (unsigned int i = 0; i < nDesiredThreadsArg; ++i) {
+                ActionRetCodeEnum stat = func(i, nDesiredThreadsArg, customArg);
                 if (isFailureRetCode(stat)) {
                     ret->_imp->status = stat;
                     return ret;
@@ -364,7 +463,7 @@ MultiThread::launchThreadsInternal(MultiThread::ThreadFunctor func, unsigned int
 
     QThread* spawnerThread = QThread::currentThread();
 
-    // We have 2 back-ends for multi-threading: either a thread pool or threads creating on the fly.
+    // We have 2 back-ends for multi-threading: either a thread pool or threads created on the fly.
     // The first method is to be preferred but can be proven to not work properly with some plug-ins that
     // require thread local storage such as The Foundry Furnace plug-ins.
     bool useThreadPool = true;
@@ -386,7 +485,7 @@ MultiThread::launchThreadsInternal(MultiThread::ThreadFunctor func, unsigned int
         // of waiting for other threads
         bool isThreadPoolThread = isRunningInThreadPoolThread();
 
-        unsigned int nMappedElements = isThreadPoolThread ? nThreads - 1 : nThreads;
+        unsigned int nMappedElements = isThreadPoolThread ? nDesiredThreadsArg - 1 : nDesiredThreadsArg;
         ret->_imp->threadIndices.resize(nMappedElements);
         for (unsigned int i = 0; i < nMappedElements; ++i) {
             ret->_imp->threadIndices[i] = i;
@@ -397,12 +496,12 @@ MultiThread::launchThreadsInternal(MultiThread::ThreadFunctor func, unsigned int
 
         if (nMappedElements > 0) {
             ret->_imp->future.reset(new QFuture<ActionRetCodeEnum>);
-            *ret->_imp->future = QtConcurrent::mapped( ret->_imp->threadIndices, boost::bind(threadFunctionWrapper, imp, func, _1, nThreads, spawnerThread, effect, customArg) );
+            *ret->_imp->future = QtConcurrent::mapped( ret->_imp->threadIndices, boost::bind(threadFunctionWrapper, imp, func, _1, nDesiredThreadsArg, spawnerThread, effect, customArg) );
         }
 
         // Do one iteration in this thread
         if (isThreadPoolThread) {
-            ActionRetCodeEnum stat = threadFunctionWrapper(imp, func, nThreads - 1, nThreads, spawnerThread, effect, customArg);
+            ActionRetCodeEnum stat = threadFunctionWrapper(imp, func, nDesiredThreadsArg - 1, nDesiredThreadsArg, spawnerThread, effect, customArg);
             if (isFailureRetCode(stat)) {
                 // This thread failed, wait for other threads and exit
                 ret->_imp->status = stat;
@@ -417,21 +516,21 @@ MultiThread::launchThreadsInternal(MultiThread::ThreadFunctor func, unsigned int
 
     } else { // !useThreadPool
 
-        QVector<ActionRetCodeEnum> status(nThreads); // vector for the return status of each thread
+        QVector<ActionRetCodeEnum> status(nDesiredThreadsArg); // vector for the return status of each thread
         status.fill(eActionStatusFailed); // by default, a thread fails
         {
             // at most maxConcurrentThread should be running at the same time
-            QVector<NonThreadPoolThread*> threads(nThreads);
-            for (unsigned int i = 0; i < nThreads; ++i) {
-                threads[i] = new NonThreadPoolThread(imp, func, i, nThreads, customArg, spawnerThread, effect, &status[i]);
+            QVector<NonThreadPoolThread*> threads(nDesiredThreadsArg);
+            for (unsigned int i = 0; i < nDesiredThreadsArg; ++i) {
+                threads[i] = new NonThreadPoolThread(imp, func, i, nDesiredThreadsArg, customArg, spawnerThread, effect, &status[i]);
             }
             unsigned int i = 0; // index of next thread to launch
             unsigned int running = 0; // number of running threads
             unsigned int j = 0; // index of first running thread. all threads before this one are finished running
-            while (j < nThreads) {
+            while (j < nDesiredThreadsArg) {
                 // have no more than maxConcurrentThread threads launched at the same time
                 int threadsStarted = 0;
-                while (i < nThreads && running < maxConcurrentThread) {
+                while (i < nDesiredThreadsArg && running < nDesiredThreadsArg) {
                     threads[i]->start();
                     ++i;
                     ++running;
@@ -466,19 +565,30 @@ MultiThread::launchThreadsInternal(MultiThread::ThreadFunctor func, unsigned int
 ActionRetCodeEnum
 MultiThread::launchThreadsBlocking(ThreadFunctor func, unsigned int nThreads, void *customArg, const EffectInstancePtr& effect)
 {
+#ifdef NATRON_USE_MULTITHREAD_V2
+    MultiThreadFuturePtr ret = launchThreadsInternal_v2(func, nThreads, customArg, effect);
+    return ret->waitForFinished();
+#else
     MultiThreadFuturePtr ret = launchThreadsInternal(func, nThreads, customArg, effect);
     return ret->waitForFinished();
-} // launchThreads
+#endif
+}
 
 MultiThreadFuturePtr
 MultiThread::launchThreadsNonBlocking(ThreadFunctor func, unsigned int nThreads, void *customArg, const EffectInstancePtr& effect)
 {
+#ifdef NATRON_USE_MULTITHREAD_V2
+    return launchThreadsInternal_v2(func, nThreads, customArg, effect);
+#else
     return launchThreadsInternal(func, nThreads, customArg, effect);
-} // launchThreadsNonBlocking
+#endif
+}
+
 
 unsigned int
-MultiThread::getNCPUsAvailable(const EffectInstancePtr& effect)
+MultiThread::getNCPUsAvailable(const EffectInstancePtr& /*effect*/)
 {
+
     // activeThreadCount may be negative (for example if releaseThread() is called)
     int activeThreadsCount = QThreadPool::globalInstance()->activeThreadCount();
 
@@ -494,7 +604,8 @@ MultiThread::getNCPUsAvailable(const EffectInstancePtr& effect)
     const int maxThreadsCount = std::max(1,QThreadPool::globalInstance()->maxThreadCount());
 
     int ret = std::max(1, maxThreadsCount - activeThreadsCount);
-
+    return ret;
+#if 0
     // If the effect is currently rendering and it is the first render in the TreeRenderQueueManager priority list
     // allocate it more CPU than other renders.
     if (!effect || ret <= 1) {
@@ -511,14 +622,7 @@ MultiThread::getNCPUsAvailable(const EffectInstancePtr& effect)
         return ret;
     }
     assert(renderIndex < nRenders);
-#if 0
 
-    if (renderIndex == 0) {
-        return ret;
-    } else {
-        return 1;
-    }
-#endif
     // This is the number of physical cores excluding logical cores (not counting hyperthreading).
     const int nPhysicalThreadCount = appPTR->getPhysicalThreadCount();
 
@@ -538,6 +642,7 @@ MultiThread::getNCPUsAvailable(const EffectInstancePtr& effect)
             return perThreadRet;
         }
     }
+#endif
 } // getNCPUsAvailable
 
 ActionRetCodeEnum
@@ -588,6 +693,15 @@ MultiThreadProcessorBase::staticMultiThreadFunction(unsigned int threadIndex,
 ActionRetCodeEnum
 MultiThreadProcessorBase::launchThreadsBlocking(unsigned int nCPUs)
 {
+
+#ifdef NATRON_USE_MULTITHREAD_V2
+    if (nCPUs == 0) {
+        nCPUs = appPTR->getHardwareIdealThreadCount();
+    }
+    ActionRetCodeEnum stat = MultiThread::launchThreadsBlocking(staticMultiThreadFunction, nCPUs, (void*)this /*customArgs*/, _effect);
+    return stat;
+
+#else
     // if 0, use all the CPUs we can
     if (nCPUs == 0) {
         nCPUs = MultiThread::getNCPUsAvailable(_effect);
@@ -601,11 +715,20 @@ MultiThreadProcessorBase::launchThreadsBlocking(unsigned int nCPUs)
         ActionRetCodeEnum stat = MultiThread::launchThreadsBlocking(staticMultiThreadFunction, nCPUs, (void*)this /*customArgs*/, _effect);
         return stat;
     }
+#endif
 }
 
 MultiThreadFuturePtr
 MultiThreadProcessorBase::launchThreadsNonBlocking(unsigned int nCPUs)
 {
+#ifdef NATRON_USE_MULTITHREAD_V2
+    if (nCPUs == 0) {
+        nCPUs = appPTR->getHardwareIdealThreadCount();
+    }
+    MultiThreadFuturePtr ret = MultiThread::launchThreadsNonBlocking(staticMultiThreadFunction, nCPUs, (void*)this /*customArgs*/, _effect);
+    return ret;
+
+#else
     // if 0, use all the CPUs we can
     if (nCPUs == 0) {
         nCPUs = MultiThread::getNCPUsAvailable(_effect);
@@ -621,6 +744,7 @@ MultiThreadProcessorBase::launchThreadsNonBlocking(unsigned int nCPUs)
         MultiThreadFuturePtr ret = MultiThread::launchThreadsNonBlocking(staticMultiThreadFunction, nCPUs, (void*)this /*customArgs*/, _effect);
         return ret;
     }
+#endif
 }
 
 ImageMultiThreadProcessorBase::ImageMultiThreadProcessorBase(const EffectInstancePtr& effect)
@@ -686,8 +810,10 @@ ImageMultiThreadProcessorBase::process()
     unsigned int nCPUs = ( std::min(_renderWindow.x2 - _renderWindow.x1, 4096) *
                           (_renderWindow.y2 - _renderWindow.y1) ) / 4096;
 
+#ifndef NATRON_USE_MULTITHREAD_V2
     // make sure the number of CPUs is valid (and use at least 1 CPU)
     nCPUs = std::max(1u, std::min( nCPUs, MultiThread::getNCPUsAvailable(_effect))) ;
+#endif
 
     // call the base multi threading code
     return launchThreadsBlocking(nCPUs);

@@ -1200,8 +1200,9 @@ OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const
     if (!nCPUs) {
         return kOfxStatFailed;
     }
-    
-    *nCPUs = MultiThread::getNCPUsAvailable(getCurrentEffect_TLS());
+
+    // Always return the max num CPUs, let multiThread handle the actual threading
+    *nCPUs = appPTR->getHardwareIdealThreadCount();//MultiThread::getNCPUsAvailable(getCurrentEffect_TLS());
     return kOfxStatOK;
 }
 
