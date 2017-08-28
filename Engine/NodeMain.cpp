@@ -497,7 +497,7 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
 
             grp->setValue(groupSerialization->_isOpened);
             for (std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase> >::const_iterator it = groupSerialization->_children.begin(); it != groupSerialization->_children.end(); ++it) {
-                restoreUserKnob(grp, page, **it, recursionLevel + 1,isPyPlugSerialization);
+                restoreUserKnob(grp, page, **it, isPyPlugSerialization, recursionLevel + 1);
             }
         } // ispage
 
