@@ -529,8 +529,16 @@ NodeGui::createGui()
     
     QString iconFilePath = QString::fromUtf8(plugin->getPropertyUnsafe<std::string>(kNatronPluginPropResourcesPath).c_str());
     StrUtils::ensureLastPathSeparator(iconFilePath);
-    iconFilePath +=  QString::fromUtf8(plugin->getPropertyUnsafe<std::string>(kNatronPluginPropIconFilePath).c_str());
-
+    QString iconBaseFilePath =  QString::fromUtf8(plugin->getPropertyUnsafe<std::string>(kNatronPluginPropIconFilePath).c_str());
+    if (!iconBaseFilePath.isEmpty()) {
+        iconFilePath += iconBaseFilePath;
+    } else {
+        // No icon ? If this is a pyplug, use the default icon for Groups
+        std::string pyPlugFile = plugin->getPropertyUnsafe<std::string>(kNatronPluginPropPyPlugScriptAbsoluteFilePath);
+        if (!pyPlugFile.empty()) {
+            iconFilePath = QString::fromUtf8(PLUGIN_DEFAULT_RESOURCES_PATH "Images/group_icon.png");
+        }
+    }
 
     BackdropGuiPtr isBd = toBackdropGui( shared_from_this() );
     if (!isBd) {

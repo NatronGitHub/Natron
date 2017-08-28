@@ -2063,7 +2063,7 @@ AppManager::loadNodesPresets()
             }
         }
     }
-}
+} // loadNodesPresets
 
 void
 AppManager::loadPythonGroups()
