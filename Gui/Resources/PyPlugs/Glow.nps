@@ -11,6 +11,8 @@ Params:
     String: "A glow effect based on the bloom filter node. The mask input limits the area where the glowing elements are. It does not cut off the shine produced by the glow. \n\nFor more interesting looks there are some additional features like stretch, rotation and postgrade.\nWritten by PostPollux"
   - Name: pyPlugPluginVersion
     Int: [1, 0]
+  - Name: pyPlugPluginIcon
+    String: Glow.png
 UserPages:
   - TypeName: Page
     Name: controls
@@ -72,7 +74,6 @@ UserPages:
             Label: Size
             Hint: This will change the size of the glow.
             Min: 0
-            Max: 2147483647
             DisplayMin: 0
             DisplayMax: 10
           - Name: BloombloomRatio
@@ -81,7 +82,6 @@ UserPages:
             TypeName: Double
             Label: Ratio
             Min: 1
-            Max: 1.797693134862316e+308
             DisplayMin: 1
             DisplayMax: 4
           - Name: iterations
@@ -118,7 +118,7 @@ UserPages:
             TypeName: Double
             Label: Rotate
             Hint: This will rotate your streched glow. If "Stretch" is 0 it won't have any effect.
-            Max: 2147483647
+            DisplayMin: -360
             DisplayMax: 360
           - Name: separator1
             NDims: 1

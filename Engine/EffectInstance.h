@@ -161,9 +161,6 @@ NATRON_NAMESPACE_ENTER
 #define kReadOIIOAvailableViewsKnobName "availableViews"
 #define kWriteOIIOParamViewsSelector "viewsSelector"
 
-#define kNatronNodeKnobExportPyPlugGroup "exportPyPlugDialog"
-#define kNatronNodeKnobExportPyPlugGroupLabel "Export"
-
 #define kNatronNodeKnobExportPyPlugButton "exportPyPlug"
 #define kNatronNodeKnobExportPyPlugButtonLabel "Export"
 
@@ -216,11 +213,6 @@ NATRON_NAMESPACE_ENTER
 #define kNatronNodeKnobExportDialogFilePathLabel "File"
 #define kNatronNodeKnobExportDialogFilePathHint "The file where to write"
 
-#define kNatronNodeKnobExportDialogOkButton "exportDialogOkButton"
-#define kNatronNodeKnobExportDialogOkButtonLabel "Ok"
-
-#define kNatronNodeKnobExportDialogCancelButton "exportDialogCancelButton"
-#define kNatronNodeKnobExportDialogCancelButtonLabel "Cancel"
 
 #define kNatronNodeKnobKeepInAnimationModuleButton "keepInAnimationModuleButton"
 #define kNatronNodeKnobKeepInAnimationModuleButtonLabel "Keep In Animation Module"
@@ -1792,8 +1784,6 @@ private:
     void createInfoPage();
 
     void createPyPlugPage();
-
-    void createPyPlugExportGroup();
 
     void findOrCreateChannelEnabled();
 

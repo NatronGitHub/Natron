@@ -624,6 +624,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
 
         const KnobIPtr& knob = knobs[i];
 
+
         KnobGroupPtr isGroup = toKnobGroup(knob);
         KnobPagePtr isPage = toKnobPage(knob);
 

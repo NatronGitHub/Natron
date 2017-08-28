@@ -17,6 +17,7 @@ UserPages:
     Label: Controls
     Params:
       - Name: Blur1NatronOfxParamProcessR
+        Bool: {N: Blur1, K: NatronOfxParamProcessR}
         DefaultBool: true
         NDims: 1
         TypeName: Bool
@@ -50,17 +51,14 @@ UserPages:
         Hint: Use the edges from the Matte input instead of the alpha channel of the source image.
         Props: [AnimatesChanged]
       - Name: size
-        Float: {N: EdgeDetect1, K: blurSize}
         DefaultFloat: 3
         NDims: 1
         TypeName: Double
         Label: Size
         Min: 0
-        Max: 1.797693134862316e+308
         DisplayMin: 0
         DisplayMax: 100
       - Name: filter
-        String: {N: EdgeDetect1, K: filter}
         DefaultString: Gaussian
         NDims: 1
         TypeName: Choice
@@ -69,7 +67,6 @@ UserPages:
         Hints: [Gradient is estimated by centered finite differences., Compute gradient using the Sobel 3x3 filter., Compute gradient using a 3x3 rotation-invariant filter., "Quasi-Gaussian filter (0-order recursive Deriche filter, faster) - IIR (infinite support / impulsional response).", "Gaussian filter (Van Vliet recursive Gaussian filter, more isotropic, slower) - IIR (infinite support / impulsional response).", Box filter - FIR (finite support / impulsional response)., Triangle/tent filter - FIR (finite support / impulsional response)., Quadratic filter - FIR (finite support / impulsional response).]
         Props: [NoNewLine]
       - Name: cropToFormat
-        Bool: {N: Blur1, K: cropToFormat}
         DefaultBool: true
         NDims: 1
         TypeName: Bool
@@ -81,7 +78,6 @@ UserPages:
         Label: Edge Mult
         Hint: Sharpness of the borders of the blur area.
         Min: 0
-        Max: 2147483647
         DisplayMin: 0.1
         DisplayMax: 10
       - Name: Merge1maskInvert
@@ -113,10 +109,12 @@ Children:
         Bool: false
       - Name: NatronOfxParamProcessA
         Bool: true
+      - Name: filter
+        String: {N: "@thisGroup", K: filter}
       - Name: multiChannel
         String: Separate
       - Name: blurSize
-        Float: 3
+        Float: {N: "@thisGroup", K: size}
     Pos: [908, 181]
   - PluginID: net.sf.openfx.GammaPlugin
     Name: Gamma1
@@ -140,10 +138,10 @@ Children:
     Inputs: Dot1
     Masks: Merge1
     Params:
-      - Name: NatronOfxParamProcessR
-        Bool: {N: "@thisGroup", K: Blur1NatronOfxParamProcessR}
       - Name: size
-        Float: {N: EdgeDetect1, K: blurSize}
+        Float: {N: "@thisGroup", K: size}
+      - Name: cropToFormat
+        Bool: {N: "@thisGroup", K: cropToFormat}
       - Name: mix
         Float: {N: "@thisGroup", K: Blur1mix}
       - Name: enableMask_Mask
@@ -190,6 +188,8 @@ Children:
         Bool: {N: "@thisGroup", K: Merge1maskInvert}
       - Name: userTextArea
         String: <Natron>(copy)</Natron>
+      - Name: enableMask_Mask
+        Bool: true
     Pos: [895, 341]
   - PluginID: net.sf.openfx.switchPlugin
     Name: Switch1

@@ -11,6 +11,8 @@ Params:
     String: Remap Z-Depth pass according to a close limit value and a far limit
   - Name: pyPlugPluginVersion
     Int: [1, 0]
+  - Name: pyPlugPluginIcon
+    String: ZRemap.png
 UserPages:
   - TypeName: Page
     Name: controls
@@ -32,6 +34,7 @@ UserPages:
         DisplayMin: 0
         DisplayMax: 100
       - Name: farLimit
+        Float: [{N: Grade1, K: whitePoint, D: r}, {N: Grade1, K: whitePoint, D: g}, {N: Grade1, K: whitePoint, D: b}, {N: Grade1, K: whitePoint, D: a}]
         DefaultFloat: [100, 100, 100, 100]
         NDims: 4
         TypeName: Color
@@ -51,6 +54,7 @@ UserPages:
         DisplayMin: 0.2
         DisplayMax: 5
       - Name: invertGradient
+        Bool: {N: Invert1, K: disableNode}
         DefaultBool: false
         NDims: 1
         TypeName: Bool
@@ -62,12 +66,12 @@ UserPages:
         Label: Source Layer
         Entries: [None, uk.co.thefoundry.OfxImagePlaneColour]
       - Name: channels
-        String: uk.co.thefoundry.OfxImagePlaneStereoDisparityLeft
-        DefaultString: uk.co.thefoundry.OfxImagePlaneStereoDisparityRight
+        String: {N: Invert1, K: channels}
+        DefaultString: uk.co.thefoundry.OfxImagePlaneStereoDisparityLeft
         NDims: 1
         TypeName: Choice
         Label: Output Layer
-        Entries: [uk.co.thefoundry.OfxImagePlaneColour, uk.co.thefoundry.OfxImagePlaneStereoDisparityRight, uk.co.thefoundry.OfxImagePlaneBackMotionVector, uk.co.thefoundry.OfxImagePlaneForwardMotionVector, uk.co.thefoundry.OfxImagePlaneStereoDisparityLeft]
+        Entries: [uk.co.thefoundry.OfxImagePlaneColour, uk.co.thefoundry.OfxImagePlaneStereoDisparityLeft, uk.co.thefoundry.OfxImagePlaneStereoDisparityRight, uk.co.thefoundry.OfxImagePlaneBackMotionVector, uk.co.thefoundry.OfxImagePlaneForwardMotionVector]
 PagesOrder: [controls, nodePage, pyPlugPage]
 Children:
   - PluginID: net.sf.openfx.GradePlugin
@@ -78,7 +82,7 @@ Children:
       - Name: blackPoint
         Float: [{N: "@thisGroup", K: closeLimit, D: r}, {N: "@thisGroup", K: closeLimit, D: g}, {N: "@thisGroup", K: closeLimit, D: b}, {N: "@thisGroup", K: closeLimit, D: a}]
       - Name: whitePoint
-        Float: [{N: "@thisGroup", K: farLimit, D: r}, {N: "@thisGroup", K: farLimit, D: g}, {N: "@thisGroup", K: farLimit, D: b}, {N: "@thisGroup", K: farLimit, D: a}]
+        Float: 100
       - Name: gamma
         Float: [{N: "@thisGroup", K: gamma, D: r}, {N: "@thisGroup", K: gamma, D: g}, {N: "@thisGroup", K: gamma, D: b}, {N: "@thisGroup", K: gamma, D: a}]
       - Name: premultChanged
@@ -96,9 +100,7 @@ Children:
       - Name: premultChanged
         Bool: true
       - Name: channels
-        String: {N: "@thisGroup", K: channels}
-      - Name: disableNode
-        Bool: {N: "@thisGroup", K: invertGradient}
+        String: uk.co.thefoundry.OfxImagePlaneStereoDisparityLeft
     Pos: [726, 230]
   - PluginID: fr.inria.built-in.Output
     Name: Output

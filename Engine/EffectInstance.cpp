@@ -2319,6 +2319,10 @@ EffectInstance::onPropertiesChanged(const EffectDescription& /*description*/)
 void
 EffectInstance::updatePropertiesInternal(const EffectDescription& description)
 {
+    // A group doesn't have any meaningful properties
+    if (dynamic_cast<NodeGroup*>(this)) {
+        return;
+    }
     // Private - must be locked
     assert(!_imp->common->pluginsPropMutex.tryLock());
 

@@ -11,6 +11,8 @@ Params:
     String: "LightWrap helps composite objects onto a bright background by simulating reflections from the background light on the foreground, around its edges. Input A is the foreground image and its matte, and input B the the background to use for the wrapping effect.\n\nThe output of LightWrap should then be composited over the background to give the final composite."
   - Name: pyPlugPluginVersion
     Int: [1, 0]
+  - Name: pyPlugPluginIcon
+    String: LightWrap.png
 UserPages:
   - TypeName: Page
     Name: controlsPage
@@ -125,7 +127,7 @@ UserPages:
         TypeName: Color
         Label: Constant
         Hint: Color to use in the LightWrap effect when Use constant highlight is enabled.
-        Max: 2147483647
+        DisplayMin: 0
         DisplayMax: 1
   - TypeName: Page
     Name: colorCorrectPage

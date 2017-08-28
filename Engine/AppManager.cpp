@@ -3927,17 +3927,13 @@ getGroupInfosInternal(const std::string& pythonModule,
         modulePath = QString::fromUtf8(modulePYCAbsoluteFilePath.c_str());
 #else
         Py_XDECREF(pythonScriptFilePathObj);
-
-        QString q_modulePYCAbsoluteFilePath = QString::fromUtf8(modulePYCAbsoluteFilePath.c_str());
-        QtCompat::removeFileExtension(q_modulePYCAbsoluteFilePath);
-        int foundLastSlash = q_modulePYCAbsoluteFilePath.lastIndexOf( QChar::fromLatin1('/') );
-        if (foundLastSlash != -1) {
-            modulePath = q_modulePYCAbsoluteFilePath.mid(0, foundLastSlash);
-        }
+        modulePath = QString::fromUtf8(modulePYCAbsoluteFilePath.c_str());
 #endif
     }
 
     *pythonScriptDirPath = modulePath.toStdString();
+
+    StrUtils::ensureLastPathSeparator(modulePath);
 
     *pluginLabel = NATRON_PYTHON_NAMESPACE::PyStringToStdString(labelObj);
     Py_XDECREF(labelObj);
@@ -3950,9 +3946,6 @@ getGroupInfosInternal(const std::string& pythonModule,
 
     if (iconObj) {
         *iconFilePath = NATRON_PYTHON_NAMESPACE::PyStringToStdString(iconObj);
-        QFileInfo iconInfo(modulePath + QString::fromUtf8( iconFilePath->c_str() ) );
-        *iconFilePath =  iconInfo.canonicalFilePath().toStdString();
-
         deleteScript.append("del templateIcon\n");
         Py_XDECREF(iconObj);
     }

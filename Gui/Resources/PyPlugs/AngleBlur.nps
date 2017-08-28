@@ -22,7 +22,7 @@ UserPages:
         TypeName: Double
         Label: Angle
         Hint: Determines the direction into which the image is blurred. This is an angle in degrees.
-        Max: 2147483647
+        DisplayMin: -360
         DisplayMax: 360
       - Name: angleBlur_distance
         DefaultFloat: 0
@@ -30,7 +30,7 @@ UserPages:
         TypeName: Double
         Label: Distance
         Hint: Determines how much the image will be blurred
-        Max: 2147483647
+        DisplayMin: 0
         DisplayMax: 1000
 PagesOrder: [controls, nodePage, pyPlugPage]
 Children:

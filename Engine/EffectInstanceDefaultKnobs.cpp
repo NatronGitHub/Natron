@@ -607,75 +607,6 @@ EffectInstance::createInfoPage()
 }
 
 void
-EffectInstance::createPyPlugExportGroup()
-{
-    // Create the knobs in either page since they are hidden anyway
-    KnobPagePtr mainPage;
-    const KnobsVec& knobs = getKnobs();
-    for (std::size_t i = 0; i < knobs.size(); ++i) {
-        KnobPagePtr p = toKnobPage(knobs[i]);
-        if (p) {
-            mainPage = p;
-            break;
-        }
-    }
-    assert(mainPage);
-    KnobGroupPtr group;
-    {
-        KnobGroupPtr param = createKnob<KnobGroup>(kNatronNodeKnobExportPyPlugGroup);
-        group = param;
-        param->setDeclaredByPlugin(false);
-        param->setLabel(tr(kNatronNodeKnobExportPyPlugGroupLabel));
-        param->setEvaluateOnChange(false);
-        param->setDefaultValue(false);
-        param->setIsPersistent(false);
-        param->setAsDialog(true);
-        if (mainPage) {
-            mainPage->addKnob(param);
-        }
-        _imp->defKnobs->pyPlugExportDialog = param;
-    }
-
-    {
-        KnobFilePtr param = createKnob<KnobFile>(kNatronNodeKnobExportDialogFilePath);
-        param->setLabel(tr(kNatronNodeKnobExportDialogFilePathLabel));
-        param->setDeclaredByPlugin(false);
-        param->setDialogType(KnobFile::eKnobFileDialogTypeSaveFile);
-        {
-            std::vector<std::string> filters;
-            filters.push_back(NATRON_PRESETS_FILE_EXT);
-            param->setDialogFilters(filters);
-        }
-        param->setEvaluateOnChange(false);
-        param->setIsPersistent(false);
-        param->setHintToolTip(tr(kNatronNodeKnobExportDialogFilePathHint));
-        group->addKnob(param);
-        _imp->defKnobs->pyPlugExportDialogFile = param;
-    }
-    {
-        KnobButtonPtr param = createKnob<KnobButton>(kNatronNodeKnobExportDialogOkButton);
-        param->setLabel(tr(kNatronNodeKnobExportDialogOkButtonLabel));
-        param->setDeclaredByPlugin(false);
-        param->setAddNewLine(false);
-        param->setEvaluateOnChange(false);
-        param->setSpacingBetweenItems(3);
-        param->setIsPersistent(false);
-        group->addKnob(param);
-        _imp->defKnobs->pyPlugExportDialogOkButton = param;
-    }
-    {
-        KnobButtonPtr param = createKnob<KnobButton>(kNatronNodeKnobExportDialogCancelButton);
-        param->setLabel(tr(kNatronNodeKnobExportDialogCancelButtonLabel));
-        param->setDeclaredByPlugin(false);
-        param->setEvaluateOnChange(false);
-        param->setSpacingBetweenItems(3);
-        param->setIsPersistent(false);
-        group->addKnob(param);
-        _imp->defKnobs->pyPlugExportDialogCancelButton = param;
-    }
-}
-
-void
 EffectInstance::createPyPlugPage()
 {
     PluginPtr pyPlug = getNode()->getPyPlugPlugin();
@@ -801,6 +732,23 @@ EffectInstance::createPyPlugPage()
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginIconFileHint));
         page->addKnob(param);
         _imp->defKnobs->pyPlugIconKnob = param;
+    }
+
+    {
+        KnobFilePtr param = createKnob<KnobFile>(kNatronNodeKnobExportDialogFilePath);
+        param->setLabel(tr(kNatronNodeKnobExportDialogFilePathLabel));
+        param->setDeclaredByPlugin(false);
+        param->setDialogType(KnobFile::eKnobFileDialogTypeSaveFile);
+        {
+            std::vector<std::string> filters;
+            filters.push_back(NATRON_PRESETS_FILE_EXT);
+            param->setDialogFilters(filters);
+        }
+        param->setEvaluateOnChange(false);
+        param->setIsPersistent(false);
+        param->setHintToolTip(tr(kNatronNodeKnobExportDialogFilePathHint));
+        page->addKnob(param);
+        _imp->defKnobs->pyPlugExportDialogFile = param;
     }
 
     {
@@ -1425,11 +1373,6 @@ EffectInstance::initializeDefaultKnobs(bool loadingSerialization, bool hasGUI)
     } else if (isGrpNode) {
         if (isGrpNode->isSubGraphPersistent()) {
             createPyPlugPage();
-
-            if (hasGUI) {
-                createPyPlugExportGroup();
-            }
-
             {
                 KnobButtonPtr param = createKnob<KnobButton>(kNatronNodeKnobConvertToGroupButton);
                 param->setLabel(tr(kNatronNodeKnobConvertToGroupButtonLabel));
@@ -1703,26 +1646,17 @@ EffectInstance::handleDefaultKnobChanged(const KnobIPtr& what, ValueChangedReaso
         if (foundOutput != _imp->defKnobs->channelsSelectors.end()) {
             _imp->onLayerChanged(true);
         }
-    } else if (what == _imp->defKnobs->pyPlugExportButtonKnob.lock() && reason != eValueChangedReasonRestoreDefault) {
-        // Trigger a knob changed action on the group
-        KnobGroupPtr k = _imp->defKnobs->pyPlugExportDialog.lock();
-        if (k) {
-            k->setValue(!k->getValue());
-        }
     } else if (what == _imp->defKnobs->pyPlugConvertToGroupButtonKnob.lock() && reason != eValueChangedReasonRestoreDefault) {
         NodeGroup* isGroup = dynamic_cast<NodeGroup*>(this);
         if (isGroup) {
             isGroup->setSubGraphEditedByUser(true);
         }
-    } else if (what == _imp->defKnobs->pyPlugExportDialogOkButton.lock() && reason == eValueChangedReasonUserEdited) {
+    } else if (what == _imp->defKnobs->pyPlugExportButtonKnob.lock() && reason == eValueChangedReasonUserEdited) {
         try {
             getNode()->exportNodeToPyPlug(_imp->defKnobs->pyPlugExportDialogFile.lock()->getValue());
         } catch (const std::exception& e) {
             Dialogs::errorDialog(tr("Export").toStdString(), e.what());
         }
-        _imp->defKnobs->pyPlugExportDialog.lock()->setValue(false);
-    } else if (what == _imp->defKnobs->pyPlugExportDialogCancelButton.lock()) {
-        _imp->defKnobs->pyPlugExportDialog.lock()->setValue(false);
     } else if (what == _imp->defKnobs->keepInAnimationModuleKnob.lock()) {
         getNode()->s_keepInAnimationModuleKnobChanged();
     } else if (what == _imp->defKnobs->openglRenderingEnabledKnob.lock()) {

@@ -11,6 +11,8 @@ Params:
     String: Creates a drop shadow on the source image using its alpha channel.
   - Name: pyPlugPluginVersion
     Int: [1, 0]
+  - Name: pyPlugPluginIcon
+    String: DropShadow.png
 UserPages:
   - TypeName: Page
     Name: controls
@@ -21,14 +23,14 @@ UserPages:
         NDims: 1
         TypeName: Double
         Label: Angle
-        Max: 2147483647
+        DisplayMin: -360
         DisplayMax: 360
       - Name: shadowDist
         DefaultFloat: 20
         NDims: 1
         TypeName: Double
         Label: Distance
-        Max: 2147483647
+        DisplayMin: 0
         DisplayMax: 2000
       - Name: shadowBlur
         DefaultFloat: [0, 0]
@@ -49,13 +51,15 @@ UserPages:
         DisplayMin: 0
         DisplayMax: 1
       - Name: shadowColor
+        Float: [{N: Solid1, K: color, D: r}, {N: Solid1, K: color, D: g}, {N: Solid1, K: color, D: b}]
         DefaultFloat: [0, 0, 0]
         NDims: 3
         TypeName: Color
         Label: Color
-        Max: 2147483647
+        DisplayMin: 0
         DisplayMax: 1
       - Name: shadowCFS
+        Bool: {N: Shuffle1, K: disableNode}
         DefaultBool: false
         NDims: 1
         TypeName: Bool
@@ -78,8 +82,6 @@ Children:
         String: B.uk.co.thefoundry.OfxImagePlaneColour.G
       - Name: outputB
         String: B.uk.co.thefoundry.OfxImagePlaneColour.B
-      - Name: disableNode
-        Bool: {N: "@thisGroup", K: shadowCFS}
     Pos: [759, 87]
   - PluginID: net.sf.openfx.TransformPlugin
     Name: Transform2
@@ -124,8 +126,6 @@ Children:
         String: PC_Video
       - Name: size
         Float: [960, 540]
-      - Name: color
-        Float: [{N: "@thisGroup", K: shadowColor, D: r}, {N: "@thisGroup", K: shadowColor, D: g}, {N: "@thisGroup", K: shadowColor, D: b}]
     Pos: [584, 87]
   - PluginID: fr.inria.built-in.Input
     Name: InputSource

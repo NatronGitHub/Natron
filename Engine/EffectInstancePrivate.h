@@ -111,12 +111,9 @@ struct DefaultKnobs
     KnobBoolWPtr pyPlugDescIsMarkdownKnob;
     KnobIntWPtr pyPlugVersionKnob;
     KnobIntWPtr pyPlugShortcutKnob;
+    KnobFileWPtr pyPlugExportDialogFile;
     KnobButtonWPtr pyPlugExportButtonKnob;
     KnobButtonWPtr pyPlugConvertToGroupButtonKnob;
-
-    KnobGroupWPtr pyPlugExportDialog;
-    KnobFileWPtr pyPlugExportDialogFile;
-    KnobButtonWPtr pyPlugExportDialogOkButton, pyPlugExportDialogCancelButton;
 
     KnobStringWPtr nodeLabelKnob, ofxSubLabelKnob;
     KnobBoolWPtr previewEnabledKnob;

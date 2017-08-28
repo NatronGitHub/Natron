@@ -26,7 +26,7 @@ UserPages:
         NDims: 3
         TypeName: Color
         Label: Center Value
-        Max: 2147483647
+        DisplayMin: 0
         DisplayMax: 200
       - Name: tightness
         DefaultFloat: [1, 1, 1, 1]
@@ -76,12 +76,11 @@ UserPages:
         Label: Source Layer
         Entries: [None, uk.co.thefoundry.OfxImagePlaneColour]
       - Name: channels
-        String: uk.co.thefoundry.OfxImagePlaneStereoDisparityLeft
-        DefaultString: uk.co.thefoundry.OfxImagePlaneStereoDisparityRight
+        DefaultString: uk.co.thefoundry.OfxImagePlaneStereoDisparityLeft
         NDims: 1
         TypeName: Choice
         Label: Output Layer
-        Entries: [uk.co.thefoundry.OfxImagePlaneColour, uk.co.thefoundry.OfxImagePlaneStereoDisparityRight, uk.co.thefoundry.OfxImagePlaneBackMotionVector, uk.co.thefoundry.OfxImagePlaneForwardMotionVector, uk.co.thefoundry.OfxImagePlaneStereoDisparityLeft]
+        Entries: [uk.co.thefoundry.OfxImagePlaneColour, uk.co.thefoundry.OfxImagePlaneStereoDisparityLeft, uk.co.thefoundry.OfxImagePlaneStereoDisparityRight, uk.co.thefoundry.OfxImagePlaneBackMotionVector, uk.co.thefoundry.OfxImagePlaneForwardMotionVector]
 PagesOrder: [controls, nodePage, pyPlugPage]
 Children:
   - PluginID: net.sf.openfx.MergePlugin

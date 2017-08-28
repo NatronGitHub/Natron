@@ -523,6 +523,15 @@ static void tryReadAndConvertOlderPyPlugFile(const QString& filename, const QStr
     if (!node) {
         throw std::invalid_argument(QString::fromUtf8("%1: Failure to instanciate PyPlug").arg(baseName).toStdString());
     }
+
+    // Convert all knobs in the group to user knobs
+    const KnobsVec& knobs = node->getKnobs();
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        if ((*it)->isDeclaredByPlugin()) {
+            (*it)->setAsUserKnob(true);
+        }
+    }
+
     NodeGroupPtr group = node->isEffectNodeGroup();
     assert(group);
     group->setSubGraphEditedByUser(true);

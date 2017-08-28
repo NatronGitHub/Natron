@@ -479,13 +479,13 @@ KnobSerialization::encode(YAML::Emitter& em) const
             if (vdata->min != INT_MIN && vdata->min != -DBL_MAX) {
                 em << YAML::Key << "Min" << YAML::Value << vdata->min;
             }
-            if (vdata->min != INT_MAX && vdata->min != DBL_MAX) {
+            if (vdata->max != INT_MAX && vdata->max != DBL_MAX) {
                 em << YAML::Key << "Max" << YAML::Value << vdata->max;
             }
-            if (vdata->min != INT_MIN && vdata->min != -DBL_MAX) {
+            if (vdata->dmin != INT_MIN && vdata->dmin != -DBL_MAX) {
                 em << YAML::Key << "DisplayMin" << YAML::Value << vdata->dmin;
             }
-            if (vdata->min != INT_MAX && vdata->min != DBL_MAX) {
+            if (vdata->dmax != INT_MAX && vdata->dmax != DBL_MAX) {
                 em << YAML::Key << "DisplayMax" << YAML::Value << vdata->dmax;
             }
         } else if (tdata) {

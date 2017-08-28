@@ -11,6 +11,8 @@ Params:
     String: "This node provides the PIK per-pixel keyer a pseudo clean-plate to be used as color reference.\nThe idea is to remove the foreground image and only leave the shades and hues of the original blue/greenscreen.\nAttach the output of this node to the 'C' input of a PIK node. Attach the input of this node and the 'PFg' input of PIK to the original screen, or preferably the denoised screen.\nPick which color your screen type is in both nodes and then while viewing the alpha output from PIK lower the darks.b (if a bluescreen - adjust darks.g if a greenscreen) in this node until you see a change in the garbage area of the matte. Once you see a change then you have gone too far -back off a step. If you are still left with discolored edges you can use the other colors in the lights and darks to eliminate them. Remember the idea is to be left with the original shades of the screen and the foreground blacked out. While swapping between viewing the matte from the PIK and the rgb output of PIKColor adjust the other colors until you see a change in the garbage area of the matte. Simple rule of thumb - if you have a light red discolored area increase the lights.r - if you have a dark green discolored area increase darks.g. If your screen does not have a very saturated hue you may still be left with areas of discoloration after the above process. The 'erode' slider can help with this - while viewing the rgb output adjust the erode until those areas disappear.\nThe 'Patch Black' slider allows you to fill in the black areas with screen color. This is not always necessary but if you see blue squares in your composite increase this value and it'll fix it.\nThe optional 'InM' input can be used to provide an inside mask (a.k.a. core matte or holdout matte), which is excluded from the clean plate. If an inside mask is fed into the Keyer (PIK or another Keyer), the same inside mask should be fed inside PIKColor.\nThe above is the only real workflow for this node - working from the top parameter to the bottom parameter- going back to tweak darks/lights with 'erode' and 'patch black' activated is not really going to work."
   - Name: pyPlugPluginVersion
     Int: [1, 0]
+  - Name: pyPlugPluginIcon
+    String: PIKColor.png
 UserPages:
   - TypeName: Page
     Name: controls
@@ -29,7 +31,6 @@ UserPages:
         Label: Size
         Hint: Size of color expansion.
         Min: 0
-        Max: 1.797693134862316e+308
         DisplayMin: 0
         DisplayMax: 100
       - Name: off
@@ -38,7 +39,7 @@ UserPages:
         TypeName: Color
         Label: Darks
         Hint: "adjust the color values to get the best separation between black and the screen type color.\nYou want to be left with only shades of the screen color and black. \nIf a green screen is selected start by bringing down darks->green\nIf a blue screen is selected start by bringing down darks->blue"
-        Max: 1.797693134862316e+308
+        DisplayMin: -1
         DisplayMax: 1
       - Name: mult
         DefaultFloat: [1, 1, 1]
@@ -47,7 +48,6 @@ UserPages:
         Label: Lights
         Hint: "adjust the color values to get the best separation between black and the screen type color.\nYou want to be left with only shades of the screen color and black. \nIf a green screen is selected start by bringing down darks->green\nIf a blue screen is selected start by bringing down darks->blue"
         Min: 0
-        Max: 1.797693134862316e+308
         DisplayMin: 0
         DisplayMax: 2
       - Name: sep1
@@ -62,7 +62,6 @@ UserPages:
         Label: Erode
         Hint: increase this value if you still see traces of the foreground edge color in the output
         Min: 0
-        Max: 1.797693134862316e+308
         DisplayMin: 0
         DisplayMax: 5
       - Name: sep2
@@ -77,7 +76,6 @@ UserPages:
         Label: Patch Black
         Hint: "Increase this to optionally remove the black from the output.\nThis should only be used once the the above darks/lights have been set."
         Min: 0
-        Max: 1.797693134862316e+308
         DisplayMin: 0
         DisplayMax: 5
         Props: [NoNewLine]
@@ -98,7 +96,7 @@ UserPages:
         TypeName: Double
         Label: Level
         Hint: multiply the rgb output. Helps remove noise from main key
-        Max: 1.797693134862316e+308
+        DisplayMin: 0
         DisplayMax: 1
 PagesOrder: [controls, nodePage, pyPlugPage]
 Children:
@@ -324,6 +322,8 @@ Children:
         Float: 1
       - Name: luma
         Float: 1
+      - Name: enableMask_InM
+        Bool: true
     Pos: [26, -35]
   - PluginID: net.sf.cimg.CImgBlur
     Name: Blur2
