@@ -371,7 +371,7 @@ KnobAnim::refreshVisibilityConditional(bool refreshHolder)
 
 
     KnobIPtr knob = getInternalKnob();
-    if (!knob) {
+    if (!knob || !knob->getHolder()) {
         return;
     }
 

@@ -617,7 +617,7 @@ struct TileInternalIndexImplCompareLess
 };
 
 // The list of free tiles indices in a bucket
-typedef bip::set<TileInternalIndexImpl, TileInternalIndexImplCompareLess, TileInternalIndexImplAllocator> TileInternalIndexImplList;
+typedef bip::list<TileInternalIndexImpl, TileInternalIndexImplAllocator> TileInternalIndexImplList;
 
 typedef boost::interprocess::allocator<TileInternalIndex, ExternalSegmentType::segment_manager> TileInternalIndexAllocator;
 typedef boost::interprocess::list<TileInternalIndex, TileInternalIndexAllocator> TileInternalIndexList;
@@ -1635,6 +1635,14 @@ void createLock(const CachePrivate<persistent>* /*imp*/,  boost::scoped_ptr<LOCK
 {
     lock.reset(new LOCK(*mutex));
 }
+
+
+template <typename LOCK, bool persistent>
+void createLock(const CachePrivate<persistent>* /*imp*/,  boost::shared_ptr<LOCK>& lock, typename LOCK::mutex_type* mutex)
+{
+    lock.reset(new LOCK(*mutex));
+}
+
 #endif // #ifdef NATRON_CACHE_INTERPROCESS_ROBUST
 
 template <bool persistent>
@@ -3028,6 +3036,7 @@ bool
 CachePrivate<persistent>::isUUIDCurrentlyActive(const boost::uuids::uuid& tag) const
 {
 #ifndef NATRON_CACHE_INTERPROCESS_ROBUST
+    (void)tag;
     return true;
 #else
 
@@ -3184,7 +3193,9 @@ Cache<persistent>::initialize(const boost::shared_ptr<Cache<persistent> >& thisS
 
 
     // Create the main memory segment containing the CacheIPCData
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
+    _imp->ipc.reset(new CacheIPCData);
+#else
     {
         std::size_t desiredSize = _imp->getSharedMemorySize();
         std::string sharedMemoryName = _imp->getSharedMemoryName();
@@ -3495,7 +3506,7 @@ CachePrivate<persistent>::createTileStorageInternal(
             for (int nAttempts = 0; nAttempts < 2; ++nAttempts) {
                 try {
                     buckets[bucket_i].ipc->freeTiles->clear();
-                    buckets[bucket_i].ipc->freeTiles->insert(/*buckets[bucket_i].ipc->freeTiles->end(), */ tmpSet.begin(), tmpSet.end());
+                    buckets[bucket_i].ipc->freeTiles->insert(buckets[bucket_i].ipc->freeTiles->end(), tmpSet.begin(), tmpSet.end());
                     break;
                 } catch (const bip::bad_alloc&) {
 
@@ -4198,7 +4209,7 @@ CachePrivate<persistent>::releaseTilesInternal(int cacheEntryBucketIndex,
 
         for (int nAttempts = 0; nAttempts < 2; ++nAttempts) {
             try {
-                tileBucket.ipc->freeTiles->insert(internalIndex.index);
+                tileBucket.ipc->freeTiles->push_back(internalIndex.index);
                 ++nSuccessfulDeallocation;
                 break;
             } catch (const bip::bad_alloc&) {

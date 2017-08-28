@@ -936,6 +936,25 @@ ImageCacheEntryPrivate::lookupTileStateInPyramid(
                                              hasExclusiveLock, perMipMapTilesState, originalMipMapLevel, coord, originalMipMapLevel, isDraftModeEnabled, nComps, localTilesToFetch, localTilesToDownscale, localTilesState, localMarkedTiles, hasPendingTile, &tile, &status);
 }
 
+static void removeTileFromMarkedTiles(std::vector<TileStateHeader>& perMipMapTilesState, std::vector<TilesSet>& markedTiles, unsigned int mipMapLevel, const TileCacheIndex& tile)
+{
+    for (int i = 0; i < 4; ++i) {
+        if (tile.upscaleTiles[i]) {
+            removeTileFromMarkedTiles(perMipMapTilesState, markedTiles, mipMapLevel - 1, *tile.upscaleTiles[i]);
+        }
+    }
+    TileCoord coord = {tile.tx, tile.ty};
+    TilesSet::iterator found = markedTiles[mipMapLevel].find(coord);
+    if (found != markedTiles[mipMapLevel].end()) {
+        markedTiles[mipMapLevel].erase(found);
+
+        TileState* cacheTileState = perMipMapTilesState[mipMapLevel].getTileAt(coord.tx, coord.ty);
+        assert(cacheTileState);
+        assert(cacheTileState->status == eTileStatusPending);
+        cacheTileState->status = eTileStatusNotRendered;
+    }
+}
+
 ImageCacheEntryPrivate::LookupTileStateRetCodeEnum
 ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(
 #ifdef TRACE_TILES_STATUS
@@ -1143,6 +1162,13 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(
             switch (downscaledTileStatus) {
                 case eTileStatusPending:
                     // One or more of the upscaled tile(s) in the pyramid is pending, but all others are rendered. Wait for them to be computed
+
+                    // Remove from pending state the higher scale tiles that could have been marked pending in the recursive call to lookupTileStateInPyramidRecursive
+                    for (int i = 0; i < 4; ++i) {
+                        if (tile->upscaleTiles[i]) {
+                            removeTileFromMarkedTiles(perMipMapTilesState, localMarkedTiles, lookupLevel - 1, *tile->upscaleTiles[i]);
+                        }
+                    }
                     if (localTileState) {
                         localTileState->status = eTileStatusPending;
                         *hasPendingTile = true;
@@ -1196,6 +1222,7 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(
 #endif
 
                     // Mark this tile so it is found quickly in markCacheTilesAsAborted()
+                    assert(coord.tx == tile->tx && coord.ty == tile->ty);
                     localMarkedTiles[lookupLevel].insert(coord);
 #ifdef TRACE_TILES_STATUS
 #ifdef TRACE_TILES_ONLY_PRINT_FIRST_TILE
@@ -1211,6 +1238,14 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(
                     // We must render the tile. If we are on the originally requested
                     // mipmap level, mark the tile pending. Otherwise if this is a higher scale tile and it is not rendered,
                     // there's no point to mark it: we can render directly the downscale tile.
+
+                    // Remove from pending state the higher scale tiles that could have been marked pending in the recursive call to lookupTileStateInPyramidRecursive
+                    for (int i = 0; i < 4; ++i) {
+                        if (tile->upscaleTiles[i]) {
+                            removeTileFromMarkedTiles(perMipMapTilesState, localMarkedTiles, lookupLevel - 1, *tile->upscaleTiles[i]);
+                        }
+                    }
+
                     if (lookupLevel == originalMipMapLevel) {
 
                         // We are going to modify the state, we need exclusive rights
@@ -1710,7 +1745,13 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
                 assert(localTileState->status == eTileStatusNotRendered);
                 localTileState->status = cacheTileState->status;
             }
+
         } // for each tile
+
+
+        // All tiles that were marked pending should now be marked rendered, unless we are at the requested mipmap level
+        assert(i == mipMapLevel || markedTiles[i].empty());
+
 
     } // for each mip map level
 

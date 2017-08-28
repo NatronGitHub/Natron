@@ -286,7 +286,7 @@ TreeRenderQueueManager::releaseTask()
         {
             QMutexLocker k(&_imp->executionQueueMutex);
             --_imp->nActiveTasks;
-            //_imp->executionQueueNotEmptyCond.wakeOne();
+            _imp->executionQueueNotEmptyCond.wakeOne();
         }
     }
 }
@@ -301,6 +301,7 @@ TreeRenderQueueManager::reserveTask()
         {
             QMutexLocker k(&_imp->executionQueueMutex);
             ++_imp->nActiveTasks;
+            _imp->executionQueueNotEmptyCond.wakeOne();
         }
     }
 }
@@ -602,6 +603,7 @@ TreeRenderQueueManager::Implementation::onTaskRenderFinished(const TreeRenderExe
             // in the if condition at the start of the function.
             executionQueue.erase(found);
         }
+        executionQueueNotEmptyCond.wakeOne();
     }
 
 
@@ -626,7 +628,7 @@ TreeRenderQueueManager::Implementation::notifyTaskInRenderFinishedInternal(const
         // in other words if the task was not launched in a thread-pool thread
         // but instead in this thread, the TreeRenderQueueManager did not get a chance yet to increase _imp->nActiveTasks
         --nActiveTasks;
-        //executionQueueNotEmptyCond.wakeOne();
+        executionQueueNotEmptyCond.wakeOne();
     }
 
     if (!isExecutionFinished) {
@@ -797,15 +799,6 @@ TreeRenderQueueManager::Implementation::launchMoreTasks(int nTasksHint)
             }
         }
         for (std::list<TreeRenderPtr>::const_iterator it = rendersToLaunch.begin(); it != rendersToLaunch.end(); ++it) {
-            // Remove from the non-started set on the provider
-            {
-                QMutexLocker k2(&perProviderRendersMutex);
-                PerProviderRendersPtr& providerRenders = perProviderRenders[(*it)->getProvider()];
-                std::set<TreeRenderPtr>::iterator foundNonStarted = providerRenders->nonStartedRenders.find((*it));
-                assert(foundNonStarted != providerRenders->nonStartedRenders.end());
-                providerRenders->nonStartedRenders.erase(foundNonStarted);
-                providerRenders->queuedRenders.insert(*it);
-            }
             launchTreeRender(*it);
         }
     }
@@ -841,7 +834,7 @@ LaunchRenderRunnable::run()
     {
         QMutexLocker k(&imp->executionQueueMutex);
         ++imp->nActiveTasks;
-        //imp->executionQueueNotEmptyCond.wakeOne();
+        imp->executionQueueNotEmptyCond.wakeOne();
     }
     TreeRenderExecutionDataPtr execData = render->createMainExecutionData();
     {
@@ -859,6 +852,16 @@ LaunchRenderRunnable::run()
 void
 TreeRenderQueueManager::Implementation::launchTreeRender(const TreeRenderPtr& render)
 {
+    // Remove from the non-started set on the provider and move the render to the queued list
+    {
+        QMutexLocker k2(&perProviderRendersMutex);
+        PerProviderRendersPtr& providerRenders = perProviderRenders[render->getProvider()];
+        std::set<TreeRenderPtr>::iterator foundNonStarted = providerRenders->nonStartedRenders.find(render);
+        assert(foundNonStarted != providerRenders->nonStartedRenders.end());
+        providerRenders->nonStartedRenders.erase(foundNonStarted);
+        providerRenders->queuedRenders.insert(render);
+    }
+
     QThreadPool::globalInstance()->start(new LaunchRenderRunnable(render, this));
 } // launchTreeRender
 
@@ -899,21 +902,12 @@ TreeRenderQueueManager::run()
             TreeRenderPtr renderToStart;
             {
                 QMutexLocker k(&_imp->nonStartedRendersQueueMutex);
-                    if (!_imp->nonStartedRendersQueue.empty()) {
+                if (!_imp->nonStartedRendersQueue.empty()) {
                     renderToStart = _imp->nonStartedRendersQueue.front();
                     _imp->nonStartedRendersQueue.pop_front();
                 }
             }
             if (renderToStart) {
-                // Remove from the non-started set on the provider
-                {
-                    QMutexLocker k2(&_imp->perProviderRendersMutex);
-                    PerProviderRendersPtr& providerRenders = _imp->perProviderRenders[renderToStart->getProvider()];
-                    std::set<TreeRenderPtr>::iterator foundNonStarted = providerRenders->nonStartedRenders.find(renderToStart);
-                    assert(foundNonStarted != providerRenders->nonStartedRenders.end());
-                    providerRenders->nonStartedRenders.erase(foundNonStarted);
-                    providerRenders->queuedRenders.insert(renderToStart);
-                }
                 _imp->launchTreeRender(renderToStart);
                 {
                     QMutexLocker k(&_imp->executionQueueMutex);
@@ -954,10 +948,8 @@ TreeRenderQueueManager::run()
             QMutexLocker k2(&_imp->nonStartedRendersQueueMutex);
             nonStartedRendersQueueSize = _imp->nonStartedRendersQueue.size();
         }
-        while ((_imp->executionQueue.empty() && nonStartedRendersQueueSize == 0)/* ||
-               (((int)_imp->executionQueue.size() == currentNExecutions) && nTasksLaunched > 0 &&  _imp->nActiveTasks != 0 && _imp->nActiveTasks == currentNActiveTasks)*/) {
+        while (nonStartedRendersQueueSize == 0 && (_imp->executionQueue.empty() || ((int)_imp->executionQueue.size() == currentNExecutions &&  _imp->nActiveTasks != 0 && _imp->nActiveTasks == currentNActiveTasks))) {
             _imp->executionQueueNotEmptyCond.wait(&_imp->executionQueueMutex);
-
             QMutexLocker k2(&_imp->nonStartedRendersQueueMutex);
             nonStartedRendersQueueSize = _imp->nonStartedRendersQueue.size();
         }

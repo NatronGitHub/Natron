@@ -117,7 +117,7 @@
 // writing/reading from the cache concurrently, other processes will resort to a non persistent Cache instead.
 // This mode enables a more complex thread/process-safety strategy because it must deal with abandonned mutex when a process
 // is killed and cross-process access to the internal storage.
-#define NATRON_CACHE_INTERPROCESS_ROBUST
+//#define NATRON_CACHE_INTERPROCESS_ROBUST
 
 // Cache storage:
 // -------------
