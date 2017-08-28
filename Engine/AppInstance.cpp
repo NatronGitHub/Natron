@@ -919,6 +919,12 @@ AppInstance::createNodeFromPyPlug(const PluginPtr& plugin, const CreateNodeArgsP
                 return NodePtr();
             }
 
+            // Mark all knobs as non-user knobs. Since they were created with the Python API the isUserKnob flag is set to true
+            // but they are not actually user knobs since its a PyPlug
+            const KnobsVec& knobs = containerNode->getKnobs();
+            for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+                (*it)->setAsUserKnob(false);
+            }
 
 
             // If there's a serialization, restore the serialization of the group node because the Python script probably overriden any state

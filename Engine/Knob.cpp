@@ -3446,8 +3446,8 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
 
 
         // Restore user knobs bits
-        if (serialization->_isUserKnob) {
-            setAsUserKnob(true);
+        if (serialization->_isUserKnob && isUserKnob()) {
+            //setAsUserKnob(true);
             if (serialization->_isSecret) {
                 setSecret(true);
             }
