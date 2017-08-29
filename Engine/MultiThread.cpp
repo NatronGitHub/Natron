@@ -322,6 +322,9 @@ MultiThreadFuture::~MultiThreadFuture()
 // A high priority render is the one that in the front of the render queue of the manager
 static bool isHighPriorityRender(const EffectInstancePtr& effect)
 {
+    if (!effect) {
+        return true;
+    }
     TreeRenderPtr currentRender = effect->getCurrentRender();
     if (!currentRender) {
         return true;
