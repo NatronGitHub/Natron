@@ -27,6 +27,7 @@
 
 #include <map>
 #include <vector>
+#include <limits>
 #include <list>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -256,11 +257,11 @@ class ValueExtraData
 {
 public:
     ValueExtraData()
-        : TypeExtraData()
-        , min(0.)
-        , max(0.)
-        , dmin(0.)
-        , dmax(0.)
+    : TypeExtraData()
+    , min(-std::numeric_limits<double>::infinity())
+    , max(std::numeric_limits<double>::infinity())
+    , dmin(-std::numeric_limits<double>::infinity())
+    , dmax(std::numeric_limits<double>::infinity())
     {
     }
 

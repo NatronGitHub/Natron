@@ -3409,7 +3409,6 @@ KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
     } // groupSerialization
 } // KnobHelper::toSerialization
 
-
 void
 KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
 {
@@ -3490,10 +3489,26 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
                 if (data) {
                     std::vector<int> minimums, maximums, dminimums, dmaximums;
                     for (int i = 0; i < nDims; ++i) {
-                        minimums.push_back(data->min);
-                        maximums.push_back(data->max);
-                        dminimums.push_back(data->dmin);
-                        dmaximums.push_back(data->dmax);
+                        if (data->min == INT_MIN || data->min == -std::numeric_limits<double>::infinity()) {
+                            minimums.push_back(INT_MIN);
+                        } else {
+                            minimums.push_back(data->min);
+                        }
+                        if (data->dmin == INT_MIN || data->dmin == -std::numeric_limits<double>::infinity()) {
+                            dminimums.push_back(INT_MIN);
+                        } else {
+                            dminimums.push_back(data->dmin);
+                        }
+                        if (data->max == INT_MAX || data->max == std::numeric_limits<double>::infinity()) {
+                            maximums.push_back(INT_MAX);
+                        } else {
+                            maximums.push_back(data->max);
+                        }
+                        if (data->dmax == INT_MAX || data->dmax == std::numeric_limits<double>::infinity()) {
+                            dmaximums.push_back(INT_MAX);
+                        } else {
+                            dmaximums.push_back(data->dmax);
+                        }
                     }
                     isInt->setRangeAcrossDimensions(minimums, maximums);
                     isInt->setDisplayRangeAcrossDimensions(dminimums, dmaximums);
@@ -3504,10 +3519,26 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
                 if (data) {
                     std::vector<double> minimums, maximums, dminimums, dmaximums;
                     for (int i = 0; i < nDims; ++i) {
-                        minimums.push_back(data->min);
-                        maximums.push_back(data->max);
-                        dminimums.push_back(data->dmin);
-                        dmaximums.push_back(data->dmax);
+                        if (data->min == INT_MIN || data->min == -std::numeric_limits<double>::infinity()) {
+                            minimums.push_back(-std::numeric_limits<double>::infinity());
+                        } else {
+                            minimums.push_back(data->min);
+                        }
+                        if (data->dmin == INT_MIN || data->dmin == -std::numeric_limits<double>::infinity()) {
+                            dminimums.push_back(-std::numeric_limits<double>::infinity());
+                        } else {
+                            dminimums.push_back(data->dmin);
+                        }
+                        if (data->max == INT_MAX || data->max == std::numeric_limits<double>::infinity()) {
+                            maximums.push_back(std::numeric_limits<double>::infinity());
+                        } else {
+                            maximums.push_back(data->max);
+                        }
+                        if (data->dmax == INT_MAX || data->dmax == std::numeric_limits<double>::infinity()) {
+                            dmaximums.push_back(std::numeric_limits<double>::infinity());
+                        } else {
+                            dmaximums.push_back(data->dmax);
+                        }
                     }
                     isDouble->setRangeAcrossDimensions(minimums, maximums);
                     isDouble->setDisplayRangeAcrossDimensions(dminimums, dmaximums);
@@ -3530,10 +3561,26 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
                 if (data) {
                     std::vector<double> minimums, maximums, dminimums, dmaximums;
                     for (int i = 0; i < nDims; ++i) {
-                        minimums.push_back(data->min);
-                        maximums.push_back(data->max);
-                        dminimums.push_back(data->dmin);
-                        dmaximums.push_back(data->dmax);
+                        if (data->min == INT_MIN || data->min == -std::numeric_limits<double>::infinity()) {
+                            minimums.push_back(-std::numeric_limits<double>::infinity());
+                        } else {
+                            minimums.push_back(data->min);
+                        }
+                        if (data->dmin == INT_MIN || data->dmin == -std::numeric_limits<double>::infinity()) {
+                            dminimums.push_back(-std::numeric_limits<double>::infinity());
+                        } else {
+                            dminimums.push_back(data->dmin);
+                        }
+                        if (data->max == INT_MAX || data->max == std::numeric_limits<double>::infinity()) {
+                            maximums.push_back(std::numeric_limits<double>::infinity());
+                        } else {
+                            maximums.push_back(data->max);
+                        }
+                        if (data->dmax == INT_MAX || data->dmax == std::numeric_limits<double>::infinity()) {
+                            dmaximums.push_back(std::numeric_limits<double>::infinity());
+                        } else {
+                            dmaximums.push_back(data->dmax);
+                        }
                     }
                     isColor->setRangeAcrossDimensions(minimums, maximums);
                     isColor->setDisplayRangeAcrossDimensions(dminimums, dmaximums);
