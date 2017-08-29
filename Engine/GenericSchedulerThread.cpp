@@ -170,7 +170,7 @@ GenericSchedulerThread::quitThread(bool allowRestarts, bool abortTask)
 
 
     // Clear any task enqueued and push a fake request
-    if (abortTask) {
+    {
         QMutexLocker k(&_imp->enqueuedTasksMutex);
         _imp->tasksEmptyCond.wakeOne();
     }
@@ -544,14 +544,6 @@ GenericSchedulerThread::run()
             state = _imp->resolveState();
 
             if (state == eThreadStateStopped) {
-                // The thread is now stopped
-#ifdef TRACE_GENERIC_SCHEDULER_THREAD
-                qDebug() << getThreadName().c_str() << ": Quitting thread";
-#endif
-
-                QMutexLocker k(&_imp->mustQuitMutex);
-                _imp->mustQuit = false;
-                _imp->mustQuitCond.wakeAll();
                 return;
             }
 
