@@ -786,6 +786,10 @@ void
 OutputSchedulerThread::endSequenceRender()
 {
 
+    // Wait that all processFrames calls are finished
+    _imp->processFrameThread.quitThread(true);
+    _imp->processFrameThread.waitForThreadToQuit_enforce_blocking();
+
     TimeValue firstFrame, lastFrame, frameStep;
 
     {
