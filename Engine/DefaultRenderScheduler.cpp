@@ -27,11 +27,14 @@
 
 #include <iostream>
 
+#include <QTextStream>
+
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
 #include "Engine/RenderEngine.h"
+#include "Engine/Timer.h"
 #include "Engine/TreeRender.h"
 #include "Engine/WriteNode.h"
 
@@ -77,12 +80,43 @@ public:
     TreeRenderPtr render;
 };
 
+struct DefaultScheduler::Implementation
+{
+
+
+    boost::scoped_ptr<TimeLapse> renderTimer; // Timer used to report stats when rendering
+
+    ///When the render threads are not using the appendToBuffer API, the scheduler has no way to know the rendering is finished
+    ///but to count the number of frames rendered via notifyFrameRended which is called by the render thread.
+    mutable QMutex nFramesRenderedMutex;
+    U64 nFramesRendered;
+
+    mutable QMutex currentTimeMutex;
+    TimeValue currentTime;
+
+
+    mutable QMutex bufferedOutputMutex;
+    int lastBufferedOutputSize;
+
+    Implementation()
+    : renderTimer()
+    , nFramesRenderedMutex()
+    , nFramesRendered(0)
+    , currentTimeMutex()
+    , currentTime(0)
+    , bufferedOutputMutex()
+    , lastBufferedOutputSize(0)
+    {
+
+    }
+};
+
 DefaultScheduler::DefaultScheduler(const RenderEnginePtr& engine,
                                    const NodePtr& effect)
 : OutputSchedulerThread(engine, effect)
-, _currentTimeMutex()
-, _currentTime(0)
+, _imp(new Implementation)
 {
+    setProcessFrameEnabled(true, eProcessFrameBySchedulerThread);
     engine->setPlaybackMode(ePlaybackModeOnce);
 }
 
@@ -155,6 +189,33 @@ DefaultScheduler::createFrameRenderResults(TimeValue time, const std::vector<Vie
     return eActionStatusOK;
 } // createFrameRenderResults
 
+class DefaultSchedulerProcessFrameArgs : public ProcessFrameArgsBase
+{
+public:
+
+    OutputSchedulerThreadStartArgsPtr runArgs;
+
+    DefaultSchedulerProcessFrameArgs()
+    : ProcessFrameArgsBase()
+    , runArgs()
+    {
+
+    }
+
+    virtual ~DefaultSchedulerProcessFrameArgs()
+    {
+        
+    }
+};
+
+ProcessFrameArgsBasePtr
+DefaultScheduler::createProcessFrameArgs(const OutputSchedulerThreadStartArgsPtr& runArgs, const RenderFrameResultsContainerPtr& results)
+{
+    boost::shared_ptr<DefaultSchedulerProcessFrameArgs> processArgs(new DefaultSchedulerProcessFrameArgs);
+    processArgs->results = results;
+    processArgs->runArgs = runArgs;
+    return processArgs;
+} // createProcessFrameArgs
 
 void
 DefaultScheduler::processFrame(const ProcessFrameArgsBase& /*args*/)
@@ -165,17 +226,105 @@ DefaultScheduler::processFrame(const ProcessFrameArgsBase& /*args*/)
 
 
 void
+DefaultScheduler::onFrameProcessed(const ProcessFrameArgsBase& inArgs)
+{
+
+    const DefaultSchedulerProcessFrameArgs* args = dynamic_cast<const DefaultSchedulerProcessFrameArgs*>(&inArgs);
+
+    const RenderFrameResultsContainerPtr& results = args->results;
+
+    RenderEnginePtr engine = getEngine();
+
+    // Report render stats if desired
+    NodePtr effect = getOutputNode();
+    for (std::list<RenderFrameSubResultPtr>::const_iterator it = results->frames.begin(); it != results->frames.end(); ++it) {
+        if ((*it)->stats && (*it)->stats->isInDepthProfilingEnabled()) {
+            engine->reportStats(results->time , (*it)->stats);
+        }
+
+    }
+
+    U64 nbTotalFrames;
+    U64 nbFramesRendered;
+
+    bool renderFinished;
+    {
+        QMutexLocker l(&_imp->nFramesRenderedMutex);
+        ++_imp->nFramesRendered;
+        nbTotalFrames = std::ceil( (double)(args->runArgs->lastFrame - args->runArgs->firstFrame + 1) / args->runArgs->frameStep );
+        nbFramesRendered = _imp->nFramesRendered;
+        renderFinished = _imp->nFramesRendered == nbTotalFrames;
+    }
+
+    if (renderFinished) {
+        setRenderFinished(renderFinished);
+    }
+
+    double percentage = (double)nbFramesRendered / nbTotalFrames;
+
+
+
+    // If running in background, notify to the pipe that we rendered a frame
+    if (appPTR->isBackground()) {
+        assert(_imp->renderTimer);
+        double timeSpentSinceStartSec = _imp->renderTimer->getTimeSinceCreation();
+        double estimatedFps = (double)nbFramesRendered / timeSpentSinceStartSec;
+        double timeRemaining = timeSpentSinceStartSec * (1. - percentage);
+
+        QString longMessage;
+        QTextStream ts(&longMessage);
+        QString frameStr = QString::number(results->time);
+        QString fpsStr = QString::number(estimatedFps, 'f', 1);
+        QString percentageStr = QString::number(percentage * 100, 'f', 1);
+        QString timeRemainingStr = Timer::printAsTime(timeRemaining, true);
+
+        ts << effect->getScriptName_mt_safe().c_str() << tr(" ==> Frame: ");
+        ts << frameStr << tr(", Progress: ") << percentageStr << "%, " << fpsStr << tr(" Fps, Time Remaining: ") << timeRemainingStr;
+
+        QString shortMessage = QString::fromUtf8(kFrameRenderedStringShort) + frameStr + QString::fromUtf8(kProgressChangedStringShort) + QString::number(percentage);
+        {
+            QMutexLocker l(&_imp->bufferedOutputMutex);
+            std::string toPrint = longMessage.toStdString();
+            if ( (_imp->lastBufferedOutputSize != 0) && ( _imp->lastBufferedOutputSize > longMessage.size() ) ) {
+                int nSpacesToAppend = _imp->lastBufferedOutputSize - longMessage.size();
+                toPrint.append(nSpacesToAppend, ' ');
+            }
+            //std::cout << '\r';
+            std::cout << toPrint;
+            std::cout << std::endl;
+
+            /*std::cout.flush();
+             if (renderingIsFinished) {
+             std::cout << std::endl;
+             }*/
+            _imp->lastBufferedOutputSize = longMessage.size();
+        }
+
+        appPTR->writeToOutputPipe(longMessage, shortMessage, false);
+    }
+
+    // Fire the frameRendered signal on the RenderEngine
+    engine->s_frameRendered(results->time, percentage);
+
+    // Call Python after frame rendered callback
+    runAfterFrameRenderedCallback(results->time);
+    
+} // onFrameProcessed
+
+
+
+void
 DefaultScheduler::timelineGoTo(TimeValue time)
 {
-    QMutexLocker k(&_currentTimeMutex);
-    _currentTime =  time;
+    QMutexLocker k(&_imp->currentTimeMutex);
+    _imp->currentTime =  time;
 }
 
 TimeValue
 DefaultScheduler::timelineGetTime() const
 {
-    QMutexLocker k(&_currentTimeMutex);
-    return _currentTime;
+    QMutexLocker k(&_imp->currentTimeMutex);
+    return _imp->currentTime;
 }
 
 void
@@ -208,12 +357,22 @@ DefaultScheduler::onRenderFailed(ActionRetCodeEnum status)
 void
 DefaultScheduler::aboutToStartRender()
 {
+
+    {
+        QMutexLocker k(&_imp->nFramesRenderedMutex);
+        _imp->nFramesRendered = 0;
+    }
+
+
+    // Start measuring
+    _imp->renderTimer.reset(new TimeLapse);
+
     OutputSchedulerThreadStartArgsPtr args = getCurrentRunArgs();
     NodePtr outputNode = getOutputNode();
 
     {
-        QMutexLocker k(&_currentTimeMutex);
-        _currentTime  = args->startingFrame;
+        QMutexLocker k(&_imp->currentTimeMutex);
+        _imp->currentTime  = args->startingFrame;
     }
     bool isBackGround = appPTR->isBackground();
 
@@ -234,6 +393,9 @@ DefaultScheduler::aboutToStartRender()
 void
 DefaultScheduler::onRenderStopped(bool /*aborted*/)
 {
+    _imp->renderTimer.reset();
+
+
     NodePtr outputNode = getOutputNode();
 
     {

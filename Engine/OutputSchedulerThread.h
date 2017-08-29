@@ -96,7 +96,6 @@ public:
     }
 };
 
-typedef boost::shared_ptr<OutputSchedulerThreadStartArgs> OutputSchedulerThreadStartArgsPtr;
 
 /**
  * @brief A result of one execution of a tree in createFrameRenderResults()
@@ -319,7 +318,13 @@ protected:
 
     // Overriden from ProcessFrameI
     virtual void processFrame(const ProcessFrameArgsBase& args) OVERRIDE = 0;
-    virtual void onFrameProcessed(const ProcessFrameArgsBase& args) OVERRIDE;
+    virtual void onFrameProcessed(const ProcessFrameArgsBase& args) OVERRIDE = 0;
+
+    void setRenderFinished(bool finished);
+
+    void runAfterFrameRenderedCallback(TimeValue frame);
+
+    virtual ProcessFrameArgsBasePtr createProcessFrameArgs(const OutputSchedulerThreadStartArgsPtr& runArgs, const RenderFrameResultsContainerPtr& results) = 0;
     
 
     /**

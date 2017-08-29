@@ -718,7 +718,10 @@ TreeRenderExecutionDataPrivate::onTaskFinished(const FrameViewRequestPtr& reques
     
     // If the results for this node were requested by the caller, insert them
     TreeRenderPtr render = treeRender.lock();
-    render->setResults(request, sharedData);
+    assert(render);
+    if (render) {
+        render->setResults(request, sharedData);
+    }
     
     appPTR->getTasksQueueManager()->notifyTaskInRenderFinished(sharedData, wasLastTaskRemaining, isRunningInThreadPoolThread());
 

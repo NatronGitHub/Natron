@@ -219,6 +219,8 @@ public:
     // If this is different, we do not load serialized knobs
     std::string lastPluginIDCreated;
 
+    bool readFileKnobSet;
+
 
     WriteNodePrivate(WriteNode* publicInterface)
         : _publicInterface(publicInterface)
@@ -235,12 +237,13 @@ public:
         , writeNodeKnobs()
         , creatingWriteNode(0)
         , lastPluginIDCreated()
+        , readFileKnobSet(false)
     {
     }
 
     void placeWriteNodeKnobsInPage();
 
-    void createReadNodeAndConnectGraph(const std::string& filename);
+    void refreshNodeGraph();
 
     void createWriteNode(bool throwErrors, const std::string& filename, const SERIALIZATION_NAMESPACE::NodeSerialization* serialization);
 
@@ -460,17 +463,18 @@ WriteNodePrivate::destroyWriteNode()
         } catch (...) {
             assert(false);
         }
+
+
+        if (embeddedNode) {
+            embeddedNode->destroyNode();
+        }
+        embeddedPlugin.reset();
     }
     
     
     //This will remove the GUI of non generic parameters
     _publicInterface->recreateKnobs(true);
-#pragma message WARN("TODO: if Gui, refresh pluginID, version, help tooltip in DockablePanel to reflect embedded node change")
 
-    if (embeddedNode) {
-        embeddedNode->destroyNode();
-    }
-    embeddedPlugin.reset();
 
     NodePtr readBack = readBackNode.lock();
     if (readBack) {
@@ -507,33 +511,6 @@ WriteNodePrivate::createDefaultWriteNode()
     separatorKnob.lock()->setSecret(true);
 }
 
-#if 0
-bool
-WriteNodePrivate::checkEncoderCreated(TimeValue time,
-                                      ViewIdx view)
-{
-    KnobFilePtr fileKnob = outputFileKnob.lock();
-
-    assert(fileKnob);
-    std::string pattern = fileKnob->getValueAtTime( TimeValue(std::floor(time + 0.5)), DimIdx(0), ViewIdx( view.value() ) );
-    if ( pattern.empty() ) {
-        _publicInterface->getNode()->setPersistentMessage( eMessageTypeError, kNatronPersistentErrorEncoderMissing, tr("Filename is empty.").toStdString() );
-
-        return false;
-    }
-    if ( !embeddedPlugin.lock() ) {
-        QString s = tr("Encoder was not created for %1. Check that the file exists and its format is supported.")
-                    .arg( QString::fromUtf8( pattern.c_str() ) );
-        _publicInterface->getNode()->setPersistentMessage( eMessageTypeError, kNatronPersistentErrorEncoderMissing, s.toStdString() );
-
-        return false;
-    }
-
-    _publicInterface->getNode()->clearPersistentMessage(kNatronPersistentErrorEncoderMissing);
-
-    return true;
-}
-#endif
 
 static std::string
 getFileNameFromSerialization(const SERIALIZATION_NAMESPACE::KnobSerializationList& serializations)
@@ -602,16 +579,37 @@ WriteNodePrivate::setReadNodeOriginalFrameRange()
 }
 
 void
-WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
+WriteNodePrivate::refreshNodeGraph()
 {
-    QString qpattern = QString::fromUtf8( filename.c_str() );
-    std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
-    NodeGroupPtr isGrp = toNodeGroup( _publicInterface->EffectInstance::shared_from_this() );
-    std::string readerPluginID = appPTR->getReaderPluginIDForFileType(ext);
-    NodePtr writeNode = embeddedPlugin.lock();
 
-    readBackNode.reset();
-    if ( !readerPluginID.empty() ) {
+
+    NodePtr input = inputNode.lock(), output = outputNode.lock(), writeNode = embeddedPlugin.lock();
+
+    std::string readerPluginID;
+
+    KnobFilePtr fileKnob = outputFileKnob.lock();
+    std::string filename;
+    if (fileKnob) {
+        filename = fileKnob->getRawFileName();
+    }
+
+    {
+        QString qpattern = QString::fromUtf8( filename.c_str() );
+        std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
+        readerPluginID = appPTR->getReaderPluginIDForFileType(ext);
+    }
+
+    bool readFromFile = readBackKnob.lock()->getValue();
+
+
+    // Create the reader node if needed
+    NodePtr readNode = readBackNode.lock();
+    ReadNodePtr readNodeEffect;
+    if (readNode) {
+        readNodeEffect = readNode->isEffectReadNode();
+    }
+    if ( readFromFile && !readerPluginID.empty() && (!readNodeEffect || readNodeEffect->getNode()->getPluginID() != readerPluginID) ) {
+        NodeGroupPtr isGrp = toNodeGroup( _publicInterface->EffectInstance::shared_from_this() );
         CreateNodeArgsPtr args(CreateNodeArgs::create(readerPluginID, isGrp ));
         args->setProperty(kCreateNodeArgsPropNoNodeGUI, true);
         args->setProperty(kCreateNodeArgsPropVolatile, true);
@@ -644,25 +642,11 @@ WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
         }
 
 
-        readBackNode = _publicInterface->getApp()->createNode(args);
-    }
+        readNode = _publicInterface->getApp()->createNode(args);
+        readBackNode = readNode;
 
-    NodePtr input = inputNode.lock(), output = outputNode.lock();
-    assert(input && output);
-    bool connectOutputToInput = true;
-    if (writeNode) {
-        writeNode->swapInput(input, 0);
-        NodePtr readNode = readBackNode.lock();
-        if (readNode) {
-
-            bool readFile = readBackKnob.lock()->getValue();
-            if (readFile) {
-                output->swapInput(readNode, 0);
-                connectOutputToInput = false;
-            }
-            readNode->swapInput(input, 0);
+        if (readNode && writeNode) {
             // sync the output colorspace of the reader from input colorspace of the writer
-
             KnobIPtr outputWriteColorSpace = writeNode->getKnobByName(kOCIOParamOutputSpace);
             KnobIPtr inputReadColorSpace = readNode->getKnobByName(kNatronReadNodeOCIOParamInputSpace);
             if (inputReadColorSpace && outputWriteColorSpace) {
@@ -670,11 +654,23 @@ WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
             }
         }
     }
-    if (connectOutputToInput) {
+
+    if (!input || !output) {
+        return;
+    }
+    if (writeNode) {
+        writeNode->swapInput(input, 0);
+    }
+
+    if (readFromFile && readNode) {
+        output->swapInput(readNode, 0);
+        readNode->swapInput(input, 0);
+    } else {
         output->swapInput(input, 0);
     }
 
-} // WriteNodePrivate::createReadNodeAndConnectGraph
+
+} // refreshNodeGraph
 
 void
 WriteNode::setupInitialSubGraphState()
@@ -828,21 +824,6 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
 
     // Make the write node be a pass-through while we do not render
     NodePtr writeNode = embeddedPlugin.lock();
-    
-    bool readFromFile = readBackKnob.lock()->getValue();
-    if (readFromFile) {
-        createReadNodeAndConnectGraph(filename);
-    } else {
-        NodePtr input = inputNode.lock(), output = outputNode.lock();
-        if (output) {
-            if (writeNode) {
-                output->swapInput(writeNode, 0);
-                writeNode->swapInput(input, 0);
-            } else {
-                output->swapInput(input, 0);
-            }
-        }
-    }
 
     _publicInterface->findPluginFormatKnobs();
 
@@ -858,12 +839,16 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
 
     //This will refresh the GUI with this Reader specific parameters
     _publicInterface->recreateKnobs(true);
-#pragma message WARN("TODO: if Gui, refresh pluginID, version, help tooltip in DockablePanel to reflect embedded node change")
+
+    thisNode->s_mustRefreshPluginInfo();
 
     KnobIPtr knob = writeNode ? writeNode->getKnobByName(kOfxImageEffectFileParamName) : _publicInterface->getKnobByName(kOfxImageEffectFileParamName);
     if (knob) {
         outputFileKnob = toKnobFile(knob);
     }
+
+    refreshNodeGraph();
+
 } // WriteNodePrivate::createWriteNode
 
 void
@@ -910,7 +895,7 @@ WriteNodePrivate::refreshPluginSelectorKnob()
     } else {
         pluginChoice->setSecret(false);
     }
-}
+} // refreshPluginSelectorKnob
 
 bool
 WriteNode::isWriter() const
@@ -1021,6 +1006,11 @@ WriteNode::onEffectCreated(const CreateNodeArgs& args)
         assert( _imp->renderButtonKnob.lock() );
     }
 
+    bool readFile = _imp->readBackKnob.lock()->getValue();
+    if (readFile) {
+        _imp->renderButtonKnob.lock()->setEnabled(false);
+    }
+
 
     //If we already loaded the Writer, do not do anything
     if ( _imp->embeddedPlugin.lock() ) {
@@ -1048,7 +1038,7 @@ WriteNode::onEffectCreated(const CreateNodeArgs& args)
 
     _imp->createWriteNode( throwErrors, pattern, 0 );
     _imp->refreshPluginSelectorKnob();
-}
+} // onEffectCreated
 
 void
 WriteNode::onKnobsAboutToBeLoaded(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization)
@@ -1122,22 +1112,12 @@ WriteNode::knobChanged(const KnobIPtr& k,
         } catch (const std::exception& e) {
             getNode()->setPersistentMessage( eMessageTypeError, kNatronPersistentErrorEncoderMissing, e.what() );
         }
-    } else if ( k == _imp->readBackKnob.lock() ) {
+    } else if ( k == _imp->readBackKnob.lock() && reason == eValueChangedReasonUserEdited) {
         bool readFile = _imp->readBackKnob.lock()->getValue();
         KnobButtonPtr button = _imp->renderButtonKnob.lock();
         button->setEnabled(!readFile);
-        if (readFile) {
-            KnobFilePtr fileKnob = _imp->outputFileKnob.lock();
-            assert(fileKnob);
-            std::string filename = fileKnob->getValue();
-            _imp->createReadNodeAndConnectGraph(filename);
-        } else {
-            NodePtr input = _imp->inputNode.lock(), output = _imp->outputNode.lock();
-            if (input && writer && output) {
-                writer->swapInput(input, 0);
-                output->swapInput(input, 0);
-            }
-        }
+        _imp->refreshNodeGraph();
+
     } else if ( (k->getName() == kParamFirstFrame) ||
                 ( k->getName() == kParamLastFrame) ||
                 ( k->getName() == kParamFrameRange) ) {
@@ -1176,6 +1156,10 @@ WriteNode::getFrameRange(double *first,
 void
 WriteNode::onSequenceRenderStarted()
 {
+    KnobBoolPtr readBackKnob = _imp->readBackKnob.lock();
+    _imp->readFileKnobSet = readBackKnob->getValue();
+    readBackKnob->setEnabled(false);
+    readBackKnob->setValue(false, ViewSetSpec(0), DimSpec(0), eValueChangedReasonPluginEdited);
     NodePtr readNode = _imp->readBackNode.lock();
     NodePtr outputNode = _imp->outputNode.lock();
     if (outputNode->getInput(0) == readNode) {
@@ -1188,15 +1172,11 @@ void
 WriteNode::onSequenceRenderFinished()
 {
 
-    bool readFile = _imp->readBackKnob.lock()->getValue();
+    KnobBoolPtr readBackKnob = _imp->readBackKnob.lock();
+    readBackKnob->setValue(_imp->readFileKnobSet);
+    readBackKnob->setEnabled(true);
 
-    NodePtr readNode = _imp->readBackNode.lock();
-    NodePtr outputNode = _imp->outputNode.lock();
-    if (readFile && readNode) {
-        outputNode->swapInput(readNode, 0);
-    }
-
-
+    _imp->refreshNodeGraph();
 }
 
 void

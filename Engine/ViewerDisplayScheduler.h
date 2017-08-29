@@ -157,6 +157,8 @@ public:
 
 private:
 
+    virtual ProcessFrameArgsBasePtr createProcessFrameArgs(const OutputSchedulerThreadStartArgsPtr& runArgs, const RenderFrameResultsContainerPtr& results) OVERRIDE FINAL;
+
     // Overriden from ProcessFrameI
     virtual void processFrame(const ProcessFrameArgsBase& args) OVERRIDE FINAL;
     virtual void onFrameProcessed(const ProcessFrameArgsBase& args) OVERRIDE FINAL;

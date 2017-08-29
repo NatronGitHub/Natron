@@ -143,13 +143,12 @@ struct OutputSchedulerThreadPrivate
     OutputSchedulerThread::ProcessFrameModeEnum processFrameMode;
 
     boost::scoped_ptr<Timer> timer; // Timer regulating the engine execution. It is controlled by the GUI and MT-safe.
-    boost::scoped_ptr<TimeLapse> renderTimer; // Timer used to report stats when rendering
 
-    ///When the render threads are not using the appendToBuffer API, the scheduler has no way to know the rendering is finished
-    ///but to count the number of frames rendered via notifyFrameRended which is called by the render thread.
+    // Protects renderFinished
     mutable QMutex renderFinishedMutex;
-    U64 nFramesRendered;
-    bool renderFinished; //< set to true when nFramesRendered = runArgs->lastFrame - runArgs->firstFrame + 1
+
+    // Set to true if the render should stop
+    bool renderFinished;
 
     // Pointer to the args used in threadLoopOnce(), only usable from the scheduler thread
     boost::weak_ptr<OutputSchedulerThreadStartArgs> runArgs;
@@ -174,10 +173,6 @@ struct OutputSchedulerThreadPrivate
 
     NodeWPtr outputEffect; //< The effect used as output device
 
-
-
-    QMutex bufferedOutputMutex;
-    int lastBufferedOutputSize;
 
     struct RenderSequenceArgs
     {
@@ -206,9 +201,7 @@ struct OutputSchedulerThreadPrivate
         , processFrameEnabled(false)
         , processFrameMode(OutputSchedulerThread::eProcessFrameByMainThread)
         , timer(new Timer)
-        , renderTimer()
         , renderFinishedMutex()
-        , nFramesRendered(0)
         , renderFinished(false)
         , runArgs()
         , lastRunArgsMutex()
@@ -219,8 +212,6 @@ struct OutputSchedulerThreadPrivate
         , expectedFrameToRender(0)
         , schedulerRenderDirection(eRenderDirectionForward)
         , outputEffect(effect)
-        , bufferedOutputMutex()
-        , lastBufferedOutputSize(0)
         , sequentialRenderQueueMutex()
         , sequentialRenderQueue()
         , processFrameThread()
@@ -460,8 +451,6 @@ OutputSchedulerThread::startFrameRender(TimeValue startingFrame)
         return;
     }
 
-    // Launch the render
-    future->launchRenders();
 
     {
         QMutexLocker k(&_imp->launchedFramesMutex);
@@ -469,7 +458,19 @@ OutputSchedulerThread::startFrameRender(TimeValue startingFrame)
     }
 
 
+    // Launch the render
+    future->launchRenders();
+
+
 } // startFrameRender
+
+void
+OutputSchedulerThread::setRenderFinished(bool finished)
+{
+    QMutexLocker l(&_imp->renderFinishedMutex);
+    _imp->renderFinished = finished;
+
+}
 
 void OutputSchedulerThreadPrivate::runBeforeFrameRenderCallback(TimeValue frame)
 {
@@ -522,6 +523,12 @@ void OutputSchedulerThreadPrivate::runBeforeFrameRenderCallback(TimeValue frame)
         outputNode->setPersistentMessage(eMessageTypeWarning, kPythonCallbackPersistentMessageError, e.what());
     }
 } // runBeforeFrameRenderCallback
+
+void
+OutputSchedulerThread::runAfterFrameRenderedCallback(TimeValue frame)
+{
+    _imp->runAfterFrameRenderedCallback(frame);
+}
 
 void
 OutputSchedulerThreadPrivate::runAfterFrameRenderedCallback(TimeValue frame)
@@ -704,16 +711,8 @@ OutputSchedulerThread::beginSequenceRender()
         _imp->timer->playState = ePlayStateRunning;
     }
 
+    setRenderFinished(false);
 
-    {
-        QMutexLocker k(&_imp->renderFinishedMutex);
-        _imp->nFramesRendered = 0;
-        _imp->renderFinished = false;
-    }
-
-
-    // Start measuring
-    _imp->renderTimer.reset(new TimeLapse);
 
     // We will push frame to renders starting at startingFrame.
     // They will be in the range determined by firstFrame-lastFrame
@@ -857,7 +856,6 @@ OutputSchedulerThread::endSequenceRender()
         _imp->launchedFrames.clear();
     }
 
-    _imp->renderTimer.reset();
 
     // Remove the render request and launch any pending playback request
     {
@@ -917,6 +915,7 @@ OutputSchedulerThread::threadLoopOnce(const GenericThreadStartArgsPtr &inArgs)
 
         // Find results for the given frame
         RenderFrameResultsContainerPtr results;
+        bool mustProcessFrame = false;
         if (!renderFinished) {
             {
                 QMutexLocker l(&_imp->launchedFramesMutex);
@@ -936,6 +935,8 @@ OutputSchedulerThread::threadLoopOnce(const GenericThreadStartArgsPtr &inArgs)
             if (isFailureRetCode(status)) {
                 notifyRenderFailure(status);
                 renderFinished = true;
+            } else {
+                mustProcessFrame = true;
             }
         }
 
@@ -1016,24 +1017,25 @@ OutputSchedulerThread::threadLoopOnce(const GenericThreadStartArgsPtr &inArgs)
 
 
             startFrameRenderFromLastStartedFrame();
+        }
 
-            // Process the frame (for viewer playback this will upload the image to the OpenGL texture).
-            // This is done by a separate thread so that this thread can launch other jobs.
-            {
+        // Process the frame (for viewer playback this will upload the image to the OpenGL texture).
+        // This is done by a separate thread so that this thread can launch other jobs.
+        if (mustProcessFrame) {
 
-                ProcessFrameThreadStartArgsPtr processArgs(new ProcessFrameThreadStartArgs);
-                processArgs->processor = this;
-                processArgs->args.reset(new ProcessFrameArgsBase);
-                processArgs->args->results = results;
-                processArgs->executeOnMainThread = (_imp->processFrameMode == eProcessFrameByMainThread);
-                if (_imp->processFrameEnabled) {
-                    _imp->processFrameThread.startTask(processArgs);
-                } else {
-                    // Call onFrameProcessed directly
-                    onFrameProcessed(*processArgs->args);
-                }
+            ProcessFrameThreadStartArgsPtr processArgs(new ProcessFrameThreadStartArgs);
+            processArgs->processor = this;
+            processArgs->args = createProcessFrameArgs(args, results);
+            processArgs->executeOnMainThread = (_imp->processFrameMode == eProcessFrameByMainThread);
+            if (_imp->processFrameEnabled) {
+                _imp->processFrameThread.startTask(processArgs);
+            } else {
+                // Call onFrameProcessed directly
+                onFrameProcessed(*processArgs->args);
             }
+        }
 
+        if (!renderFinished) {
             if (_imp->timer->playState == ePlayStateRunning) {
                 _imp->timer->waitUntilNextFrameIsDue(); // timer synchronizing with the requested fps
             }
@@ -1043,11 +1045,7 @@ OutputSchedulerThread::threadLoopOnce(const GenericThreadStartArgsPtr &inArgs)
                 // Do not wait in the buf wait condition and go directly into the stopEngine()
                 renderFinished = true;
             }
-            
-        }
 
-
-        if (!renderFinished) {
             // The timeline might have changed if another thread moved the playhead
             TimeValue timelineCurrentTime = timelineGetTime();
             if (timelineCurrentTime != expectedTimeToRender) {
@@ -1055,24 +1053,15 @@ OutputSchedulerThread::threadLoopOnce(const GenericThreadStartArgsPtr &inArgs)
             } else {
                 timelineGoTo(nextFrameToRender);
             }
-        }
-        
-        // Check if we were not aborted/failed
-        if (!renderFinished) {
-            state = resolveState();
-            if ( (state == eThreadStateAborted) || (state == eThreadStateStopped) ) {
-                // Do not wait in the buf wait condition and go directly into the stopEngine()
-                renderFinished = true;
-            }
-        }
 
-        if (renderFinished) {
+        } else {
             if ( !_imp->engine.lock()->isPlaybackAutoRestartEnabled() ) {
                 //Move the timeline to the last rendered frame to keep it in sync with what is displayed
                 timelineGoTo( getLastRenderedTime() );
             }
             break;
         }
+
     } // for (;;)
 
     // Call the endSequenceRender callback and wait for any launched render
@@ -1113,90 +1102,6 @@ OutputSchedulerThread::onQuitRequested(bool allowRestarts)
     _imp->processFrameThread.quitThread(allowRestarts);
 
 }
-
-void
-OutputSchedulerThread::onFrameProcessed(const ProcessFrameArgsBase& args)
-{
-
-
-    const RenderFrameResultsContainerPtr& results = args.results;
-
-    RenderEnginePtr engine = _imp->engine.lock();
-
-    // Report render stats if desired
-    NodePtr effect = _imp->outputEffect.lock();
-    for (std::list<RenderFrameSubResultPtr>::const_iterator it = results->frames.begin(); it != results->frames.end(); ++it) {
-        if ((*it)->stats && (*it)->stats->isInDepthProfilingEnabled()) {
-            engine->reportStats(results->time , (*it)->stats);
-        }
-
-    }
-
-    OutputSchedulerThreadStartArgsPtr runArgs = getCurrentRunArgs();
-
-    U64 nbTotalFrames;
-    U64 nbFramesRendered;
-
-    {
-        QMutexLocker l(&_imp->renderFinishedMutex);
-        ++_imp->nFramesRendered;
-        nbTotalFrames = std::ceil( (double)(runArgs->lastFrame - runArgs->firstFrame + 1) / runArgs->frameStep );
-        nbFramesRendered = _imp->nFramesRendered;
-        if (_imp->nFramesRendered == nbTotalFrames) {
-            _imp->renderFinished = true;
-        }
-
-    }
-    double percentage = (double)nbFramesRendered / nbTotalFrames;
-
-
-
-    // If running in background, notify to the pipe that we rendered a frame
-    if (appPTR->isBackground()) {
-        assert(_imp->renderTimer);
-        double timeSpentSinceStartSec = _imp->renderTimer->getTimeSinceCreation();
-        double estimatedFps = (double)nbFramesRendered / timeSpentSinceStartSec;
-        double timeRemaining = timeSpentSinceStartSec * (1. - percentage);
-
-        QString longMessage;
-        QTextStream ts(&longMessage);
-        QString frameStr = QString::number(results->time);
-        QString fpsStr = QString::number(estimatedFps, 'f', 1);
-        QString percentageStr = QString::number(percentage * 100, 'f', 1);
-        QString timeRemainingStr = Timer::printAsTime(timeRemaining, true);
-
-        ts << effect->getScriptName_mt_safe().c_str() << tr(" ==> Frame: ");
-        ts << frameStr << tr(", Progress: ") << percentageStr << "%, " << fpsStr << tr(" Fps, Time Remaining: ") << timeRemainingStr;
-
-        QString shortMessage = QString::fromUtf8(kFrameRenderedStringShort) + frameStr + QString::fromUtf8(kProgressChangedStringShort) + QString::number(percentage);
-        {
-            QMutexLocker l(&_imp->bufferedOutputMutex);
-            std::string toPrint = longMessage.toStdString();
-            if ( (_imp->lastBufferedOutputSize != 0) && ( _imp->lastBufferedOutputSize > longMessage.size() ) ) {
-                int nSpacesToAppend = _imp->lastBufferedOutputSize - longMessage.size();
-                toPrint.append(nSpacesToAppend, ' ');
-            }
-            //std::cout << '\r';
-            std::cout << toPrint;
-            std::cout << std::endl;
-
-            /*std::cout.flush();
-             if (renderingIsFinished) {
-             std::cout << std::endl;
-             }*/
-            _imp->lastBufferedOutputSize = longMessage.size();
-        }
-
-        appPTR->writeToOutputPipe(longMessage, shortMessage, false);
-    }
-
-    // Fire the frameRendered signal on the RenderEngine
-    engine->s_frameRendered(results->time, percentage);
-
-    // Call Python after frame rendered callback
-    _imp->runAfterFrameRenderedCallback(results->time);
-
-} // onFrameProcessed
 
 
 void

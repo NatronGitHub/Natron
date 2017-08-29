@@ -534,33 +534,6 @@ ReadNodePrivate::createDefaultReadNode()
     separatorKnob.lock()->setSecret(true);
 }
 
-#if 0
-bool
-ReadNodePrivate::checkDecoderCreated(TimeValue time,
-                                     ViewIdx view)
-{
-    KnobFilePtr fileKnob = inputFileKnob.lock();
-    if (!fileKnob) {
-        return false;
-    }
-    std::string pattern = fileKnob->getValueAtTime(TimeValue(std::floor(time + 0.5)), DimIdx(0), view);
-    if ( pattern.empty() ) {
-        _publicInterface->getNode()->setPersistentMessage( eMessageTypeError, kNatronPersistentErrorDecoderMissing, tr("Filename empty").toStdString() );
-
-        return false;
-    }
-
-    if (!_publicInterface->getEmbeddedReader()) {
-        QString s = tr("Decoder was not created for %1, check that the file exists and its format is supported.").arg( QString::fromUtf8( pattern.c_str() ) );
-        _publicInterface->getNode()->setPersistentMessage( eMessageTypeError, kNatronPersistentErrorDecoderMissing, s.toStdString() );
-
-        return false;
-    }
-    _publicInterface->getNode()->clearPersistentMessage(kNatronPersistentErrorDecoderMissing);
-
-    return true;
-}
-#endif
 
 static std::string
 getFileNameFromSerialization(const SERIALIZATION_NAMESPACE::KnobSerializationList& serializations)

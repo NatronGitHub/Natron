@@ -39,6 +39,7 @@ class DefaultScheduler
     Q_OBJECT
     GCC_DIAG_SUGGEST_OVERRIDE_ON
 
+
 protected:
 
     DefaultScheduler(const RenderEnginePtr& engine,
@@ -55,8 +56,11 @@ public:
 
     virtual void processFrame(const ProcessFrameArgsBase& args) OVERRIDE FINAL;
 
+    virtual void onFrameProcessed(const ProcessFrameArgsBase& args) OVERRIDE FINAL;
 
 private:
+
+    virtual ProcessFrameArgsBasePtr createProcessFrameArgs(const OutputSchedulerThreadStartArgsPtr& runArgs, const RenderFrameResultsContainerPtr& results) OVERRIDE FINAL;
 
     virtual void timelineGoTo(TimeValue time) OVERRIDE FINAL;
     virtual void getFrameRangeToRender(TimeValue& first, TimeValue& last) const OVERRIDE FINAL;
@@ -70,8 +74,9 @@ private:
 
 private:
 
-    mutable QMutex _currentTimeMutex;
-    TimeValue _currentTime;
+    struct Implementation;
+    boost::scoped_ptr<Implementation> _imp;
+
 };
 
 

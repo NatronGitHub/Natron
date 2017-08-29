@@ -519,6 +519,14 @@ ViewerDisplayScheduler::processFramesResults(const ViewerNodePtr& viewer,const R
     return didSomething;
 } // processFramesResults
 
+ProcessFrameArgsBasePtr
+ViewerDisplayScheduler::createProcessFrameArgs(const OutputSchedulerThreadStartArgsPtr& /*runArgs*/, const RenderFrameResultsContainerPtr& results)
+{
+    ProcessFrameArgsBasePtr ret(new ProcessFrameArgsBase);
+    ret->results = results;
+    return ret;
+}
+
 void
 ViewerDisplayScheduler::processFrame(const ProcessFrameArgsBase& args)
 {
