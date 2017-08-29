@@ -170,7 +170,7 @@ public:
      * Note: this function is not blocking and the thread may still be running when returning this function,
      * @returns false if the thread was not running, true otherwise.
      **/
-    bool quitThread(bool allowRestarts);
+    bool quitThread(bool allowRestarts, bool abortTask = true);
 
     /**
      * @brief True if quitThread() was called and the thread did not finish yet

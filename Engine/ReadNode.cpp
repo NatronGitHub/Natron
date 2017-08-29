@@ -734,7 +734,7 @@ ReadNodePrivate::refreshPluginSelectorKnob()
     KnobFilePtr fileKnob = inputFileKnob.lock();
 
     assert(fileKnob);
-    std::string filePattern = fileKnob->getValue();
+    std::string filePattern = fileKnob->getRawFileName();
     std::vector<ChoiceOption> entries;
 
     entries.push_back(ChoiceOption(kPluginSelectorParamEntryDefault, "", ReadNode::tr("Use the default plug-in chosen from the Preferences to read this file format.").toStdString()));
@@ -964,7 +964,7 @@ ReadNode::knobChanged(const KnobIPtr& k,
 
         KnobFilePtr fileKnob = _imp->inputFileKnob.lock();
         assert(fileKnob);
-        std::string filename = fileKnob->getValue();
+        std::string filename = fileKnob->getRawFileName();
         try {
             _imp->createReadNode( false, filename, 0 );
             getNode()->clearPersistentMessage(kNatronPersistentErrorDecoderMissing);
@@ -983,7 +983,7 @@ ReadNode::knobChanged(const KnobIPtr& k,
 
         KnobFilePtr fileKnob = _imp->inputFileKnob.lock();
         assert(fileKnob);
-        std::string filename = fileKnob->getValue();
+        std::string filename = fileKnob->getRawFileName();
 
         try {
             _imp->createReadNode( false, filename, 0 );

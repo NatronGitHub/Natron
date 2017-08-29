@@ -857,7 +857,7 @@ WriteNodePrivate::refreshPluginSelectorKnob()
     KnobFilePtr fileKnob = outputFileKnob.lock();
 
     assert(fileKnob);
-    std::string filePattern = fileKnob->getValue();
+    std::string filePattern = fileKnob->getRawFileName();
     std::vector<ChoiceOption> entries;
     entries.push_back(ChoiceOption(WRITE_NODE_DEFAULT_WRITER, kPluginSelectorParamEntryDefault, tr("Use the default plug-in chosen from the Preferences to write this file format").toStdString()));
 
@@ -1085,7 +1085,7 @@ WriteNode::knobChanged(const KnobIPtr& k,
 
         KnobFilePtr fileKnob = _imp->outputFileKnob.lock();
         assert(fileKnob);
-        std::string filename = fileKnob->getValue();
+        std::string filename = fileKnob->getRawFileName();
 
         try {
             _imp->createWriteNode( false, filename, 0 );
@@ -1104,7 +1104,7 @@ WriteNode::knobChanged(const KnobIPtr& k,
 
         KnobFilePtr fileKnob = _imp->outputFileKnob.lock();
         assert(fileKnob);
-        std::string filename = fileKnob->getValue();
+        std::string filename = fileKnob->getRawFileName();
 
         try {
             _imp->createWriteNode( false, filename, 0 );
