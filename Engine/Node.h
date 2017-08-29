@@ -173,7 +173,7 @@ private:
     void restoreUserKnob(const KnobGroupPtr& group,
                          const KnobPagePtr& page,
                          const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase,
-                         bool isPyPlugSerialization,
+                         bool setUserKnobsAsPluginKnobs,
                          unsigned int recursionLevel);
 
 public:
@@ -193,7 +193,7 @@ public:
                                const SERIALIZATION_NAMESPACE::NodeSerialization* projectSerialization,
                                const SERIALIZATION_NAMESPACE::NodeSerialization* pyPlugSerialization);
 
-    void loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization, bool isPyPlugSerialization);
+    void loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization, bool setUserKnobsAsPluginKnobs);
 
     void getNodeSerializationFromPresetFile(const std::string& presetFile, SERIALIZATION_NAMESPACE::NodeSerialization* serialization);
 
@@ -202,7 +202,7 @@ public:
 private:
 
 
-    void loadPresetsInternal(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization, bool setKnobsDefault, bool isPyPlugSerialization);
+    void loadPresetsInternal(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization, bool setKnobsDefault, bool setUserKnobsAsPluginKnobs);
 
 public:
 
