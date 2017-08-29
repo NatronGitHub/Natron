@@ -196,12 +196,6 @@ GenericSchedulerThreadPrivate::waitForThreadsToQuit_internal(bool allowBlockingF
         return false;
     }
 
-    {
-        QMutexLocker k(&threadStateMutex);
-        if (threadState == GenericSchedulerThread::eThreadStateStopped) {
-            return false;
-        }
-    }
 
     // This function may NOT be called on the main-thread, because we may deadlock if executeOnMainThread is called OR block the UI.
     if ( !allowBlockingForMainThread && ( QThread::currentThread() == qApp->thread() ) ) {
@@ -498,14 +492,6 @@ GenericSchedulerThread::run()
         Q_EMIT stateChanged( (int)state );
 
         if (state == eThreadStateStopped) {
-            // The thread is now stopped
-#ifdef TRACE_GENERIC_SCHEDULER_THREAD
-            qDebug() << getThreadName().c_str() << ": Quitting thread";
-#endif
-
-            QMutexLocker k(&_imp->mustQuitMutex);
-            _imp->mustQuit = false;
-            _imp->mustQuitCond.wakeAll();
             return;
         }
         
