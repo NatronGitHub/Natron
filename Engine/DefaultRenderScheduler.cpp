@@ -256,10 +256,6 @@ DefaultScheduler::onFrameProcessed(const ProcessFrameArgsBase& inArgs)
         renderFinished = _imp->nFramesRendered == nbTotalFrames;
     }
 
-    if (renderFinished) {
-        setRenderFinished(renderFinished);
-    }
-
     double percentage = (double)nbFramesRendered / nbTotalFrames;
 
 
@@ -308,6 +304,12 @@ DefaultScheduler::onFrameProcessed(const ProcessFrameArgsBase& inArgs)
 
     // Call Python after frame rendered callback
     runAfterFrameRenderedCallback(results->time);
+
+    if (renderFinished) {
+        setRenderFinished(renderFinished);
+    }
+
+
     
 } // onFrameProcessed
 
