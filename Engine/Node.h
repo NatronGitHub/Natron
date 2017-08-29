@@ -452,6 +452,8 @@ public:
 
     std::bitset<4> getSupportedComponents(int inputNb) const;
 
+    bool isInputHostDescribed(int inputNb) const;
+
     bool isInputMask(int inputNb) const;
 
     bool isInputOptional(int inputNb) const;

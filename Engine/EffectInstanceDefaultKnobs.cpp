@@ -921,9 +921,17 @@ double
 EffectInstance::getHostMixingValue(TimeValue time,
                          ViewIdx view) const
 {
-    KnobDoublePtr mix = _imp->defKnobs->mixWithSource.lock();
+    KnobDoublePtr knob;
+    if (!getMainInstance()) {
+        knob = _imp->defKnobs->mixWithSource.lock();
+    } else {
+        knob = _imp->renderKnobs.mixWithSource.lock();
+    }
+    if (!knob) {
+        return 1.;
+    }
 
-    return mix ? mix->getValueAtTime(time, DimIdx(0), view) : 1.;
+    return knob->getValueAtTime(time, DimIdx(0), view);
 }
 
 bool
@@ -1450,7 +1458,7 @@ EffectInstance::fetchRenderCloneKnobs()
 
     // For default knobs, since most of them are not used when rendering use the main instance ones instead.
     _imp->defKnobs = mainInstance->_imp->defKnobs;
-
+    _imp->renderKnobs.mixWithSource = toKnobDouble(getKnobByName(kHostMixingKnobName));
     _imp->renderKnobs.disableNodeKnob = toKnobBool(getKnobByName(kDisableNodeKnobName));
     _imp->renderKnobs.lifeTimeKnob = toKnobInt(getKnobByName(kLifeTimeNodeKnobName));
     _imp->renderKnobs.enableLifeTimeKnob = toKnobBool(getKnobByName(kEnableLifeTimeNodeKnobName));

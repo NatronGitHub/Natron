@@ -72,6 +72,8 @@ InputDescription::initializeProperties() const
     createProperty<bool>(kInputDescPropIsMask, false);
     createProperty<bool>(kInputDescPropSupportsTiles, true);
     createProperty<bool>(kInputDescPropSupportsTemporal, false);
+    createProperty<bool>(kInputDescPropIsHostInput, false);
+
 }
 
 NATRON_NAMESPACE_EXIT

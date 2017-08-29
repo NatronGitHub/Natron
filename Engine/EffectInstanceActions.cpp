@@ -98,6 +98,71 @@ EffectInstance::getLayersProducedAndNeeded(TimeValue time,
 } // getComponentsNeededAndProduced
 
 ActionRetCodeEnum
+EffectInstance::getDefaultLayersNeededInInput(int i,
+                                                TimeValue time,
+                                                ViewIdx view,
+                                                std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded)
+{
+
+    std::list<ImagePlaneDesc> upstreamAvailableLayers;
+    ActionRetCodeEnum stat = getAvailableLayers(time, view, i, &upstreamAvailableLayers);
+    (void)stat;
+
+
+
+    std::list<ImagePlaneDesc> &componentsSet = (*inputLayersNeeded)[i];
+
+    // Get the selected layer from the source channels menu
+    std::bitset<4> inputProcChannels;
+    ImagePlaneDesc layer;
+    bool isAll;
+    bool ok = getSelectedLayer(i, upstreamAvailableLayers, &inputProcChannels, &isAll, &layer);
+
+    // When color plane or all choice then request the default metadata components
+    if (isAll || layer.isColorPlane()) {
+        ok = false;
+    }
+
+    // For a mask get its selected channel
+    ImagePlaneDesc maskComp;
+    int channelMask = getMaskChannel(i, upstreamAvailableLayers, &maskComp);
+
+
+    std::vector<ImagePlaneDesc> clipPrefsAllComps;
+    {
+        ImagePlaneDesc metadataPlane, metadataPairedPlane;
+        getMetadataComponents(i, &metadataPlane, &metadataPairedPlane);
+
+        // Some plug-ins, such as The Foundry Furnace set the meta-data to disparity/motion vector, requiring
+        // both planes to be computed at once (Forward/Backard for motion vector) (Left/Right for Disparity)
+        if (metadataPlane.getNumComponents() > 0) {
+            clipPrefsAllComps.push_back(metadataPlane);
+        }
+        if (metadataPairedPlane.getNumComponents() > 0) {
+            clipPrefsAllComps.push_back(metadataPairedPlane);
+        }
+        if (clipPrefsAllComps.empty()) {
+            // If metada are not set yet, at least append RGBA
+            clipPrefsAllComps.push_back(ImagePlaneDesc::getRGBAComponents());
+        }
+    }
+
+    if ( (channelMask != -1) && (maskComp.getNumComponents() > 0) ) {
+
+        // If this is a mask, ask for the selected mask layer
+        componentsSet.push_back(maskComp);
+
+    } else if (ok && layer.getNumComponents() > 0) {
+        componentsSet.push_back(layer);
+    } else {
+        //Use regular clip preferences
+        componentsSet.insert( componentsSet.end(), clipPrefsAllComps.begin(), clipPrefsAllComps.end() );
+    }
+    return eActionStatusOK;
+} // getDefaultLayersNeededInInput
+
+
+ActionRetCodeEnum
 EffectInstance::getLayersProducedAndNeeded_default(TimeValue time,
                                                    ViewIdx view,
                                                    std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded,
@@ -206,63 +271,10 @@ EffectInstance::getLayersProducedAndNeeded_default(TimeValue time,
     // For each input get their needed components
     int maxInput = getNInputs();
     for (int i = 0; i < maxInput; ++i) {
-
-  
-        std::list<ImagePlaneDesc> upstreamAvailableLayers;
-        ActionRetCodeEnum stat = getAvailableLayers(time, view, i, &upstreamAvailableLayers);
-        (void)stat;
-
-
-
-        std::list<ImagePlaneDesc> &componentsSet = (*inputLayersNeeded)[i];
-
-        // Get the selected layer from the source channels menu
-        std::bitset<4> inputProcChannels;
-        ImagePlaneDesc layer;
-        bool isAll;
-        bool ok = getSelectedLayer(i, upstreamAvailableLayers, &inputProcChannels, &isAll, &layer);
-
-        // When color plane or all choice then request the default metadata components
-        if (isAll || layer.isColorPlane()) {
-            ok = false;
+        ActionRetCodeEnum stat = getDefaultLayersNeededInInput(i, time, view, inputLayersNeeded);
+        if (isFailureRetCode(stat)) {
+            return stat;
         }
-
-        // For a mask get its selected channel
-        ImagePlaneDesc maskComp;
-        int channelMask = getMaskChannel(i, upstreamAvailableLayers, &maskComp);
-
-
-        std::vector<ImagePlaneDesc> clipPrefsAllComps;
-        {
-            ImagePlaneDesc metadataPlane, metadataPairedPlane;
-            getMetadataComponents(i, &metadataPlane, &metadataPairedPlane);
-
-            // Some plug-ins, such as The Foundry Furnace set the meta-data to disparity/motion vector, requiring
-            // both planes to be computed at once (Forward/Backard for motion vector) (Left/Right for Disparity)
-            if (metadataPlane.getNumComponents() > 0) {
-                clipPrefsAllComps.push_back(metadataPlane);
-            }
-            if (metadataPairedPlane.getNumComponents() > 0) {
-                clipPrefsAllComps.push_back(metadataPairedPlane);
-            }
-            if (clipPrefsAllComps.empty()) {
-                // If metada are not set yet, at least append RGBA
-                clipPrefsAllComps.push_back(ImagePlaneDesc::getRGBAComponents());
-            }
-        }
-
-        if ( (channelMask != -1) && (maskComp.getNumComponents() > 0) ) {
-
-            // If this is a mask, ask for the selected mask layer
-            componentsSet.push_back(maskComp);
-
-        } else if (ok && layer.getNumComponents() > 0) {
-            componentsSet.push_back(layer);
-        } else {
-            //Use regular clip preferences
-            componentsSet.insert( componentsSet.end(), clipPrefsAllComps.begin(), clipPrefsAllComps.end() );
-        }
-
     } // for each input
     return eActionStatusOK;
 } // getLayersProducedAndNeeded_default
@@ -292,6 +304,14 @@ EffectInstance::getComponentsNeededInternal(TimeValue time,
         return stat;
     } else if (stat == eActionStatusReplyDefault) {
         return getLayersProducedAndNeeded_default(time, view, inputLayersNeeded, layersProduced, passThroughPlanes, passThroughTime, passThroughView, passThroughInputNb, processAllRequested, processChannels);
+    } else {
+        int maxInputs = getNInputs();
+        for (int i = 0; i < maxInputs; ++i) {
+            if (getNode()->isInputHostDescribed(i)) {
+                ActionRetCodeEnum stat = getDefaultLayersNeededInInput(i, time, view, inputLayersNeeded);
+                (void)stat;
+            }
+        }
     }
 
     // Ensure the plug-in made the metadata plane available at least
@@ -430,9 +450,6 @@ EffectInstance::getAvailableLayers(TimeValue time, ViewIdx view, int inputNb,  s
         }
 
     }
-
-
-
     return eActionStatusOK;
 } // getAvailableLayers
 
@@ -945,7 +962,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
     ViewIdx identityView = view;
     ImagePlaneDesc identityPlane = plane ? *plane : ImagePlaneDesc::getNoneComponents();
 
-    if ((isNodeDisabledForFrame(time, view) || !hasAtLeastOneChannelToProcess() )) {
+    if ((isNodeDisabledForFrame(time, view) || !hasAtLeastOneChannelToProcess() ) || (isHostMixEnabled() && getHostMixingValue(time, view) == 0.)) {
         // Node is disabled or doesn't have any channel to process, be identity on the main input
         identityInputNb = getNode()->getPreferredInput();
         handleIdentityPlane = true;
@@ -1281,6 +1298,33 @@ EffectInstance::ifInfiniteApplyHeuristic(TimeValue time,
     
 } // ifInfiniteApplyHeuristic
 
+ActionRetCodeEnum
+EffectInstance::getDefaultRegionOfInterestForInput(const EffectInstancePtr& input,
+                                                   int inputNb,
+                                                   TimeValue time,
+                                                   const RenderScale & scale,
+                                                   const RectD & renderWindow,
+                                                   ViewIdx view,
+                                                   RectD* roi)
+{
+
+
+    if (supportsTiles() && getNode()->isTilesSupportedByInput(inputNb)) {
+        *roi = renderWindow;
+    } else {
+        // Tiles not supported: get the RoD as RoI
+        GetRegionOfDefinitionResultsPtr inputResults;
+
+        ActionRetCodeEnum stat = input->getRegionOfDefinition_public(time, scale, view, &inputResults);
+        if (isFailureRetCode(stat)) {
+            return stat;
+        }
+        *roi = inputResults->getRoD();
+    }
+
+    return eActionStatusOK;
+}
+
 
 ActionRetCodeEnum
 EffectInstance::getRegionsOfInterest_public(TimeValue inArgsTime,
@@ -1302,8 +1346,22 @@ EffectInstance::getRegionsOfInterest_public(TimeValue inArgsTime,
 
     assert(renderWindow.x2 >= renderWindow.x1 && renderWindow.y2 >= renderWindow.y1);
 
+    int nInputs = getNInputs();
+    for (int i = 0; i < nInputs; ++i) {
+        if (!getNode()->isInputHostDescribed(i)) {
+            continue;
+        }
+        EffectInstancePtr input = getInputMainInstance(i);
+        if (input) {
+            RectD roi;
+            ActionRetCodeEnum stat = getDefaultRegionOfInterestForInput(input, i, time, scale, renderWindow, view, &roi);
+            if (isFailureRetCode(stat)) {
+                return stat;
+            }
+            ret->insert(std::make_pair(i, roi));
+        }
+    }
 
- 
     return getRegionsOfInterest(time, mappedScale, renderWindow, view, ret);
 
 } // getRegionsOfInterest_public
@@ -1315,28 +1373,18 @@ EffectInstance::getRegionsOfInterest(TimeValue time,
                                      ViewIdx view,
                                      RoIMap* ret)
 {
-    bool tilesSupported = supportsTiles();
-
     int nInputs = getNInputs();
     for (int i = 0; i < nInputs; ++i) {
         EffectInstancePtr input = getInputRenderEffect(i, time, view);
         if (!input) {
             continue;
         }
-        if (tilesSupported) {
-            ret->insert( std::make_pair(i, renderWindow) );
-        } else {
-            // Tiles not supported: get the RoD as RoI
-            GetRegionOfDefinitionResultsPtr inputResults;
-
-            ActionRetCodeEnum stat = input->getRegionOfDefinition_public(time, scale, view, &inputResults);
-            if (isFailureRetCode(stat)) {
-                return stat;
-            }
-            const RectD& inputRoD = inputResults->getRoD();
-
-            ret->insert( std::make_pair(i, inputRoD) );
+        RectD roi;
+        ActionRetCodeEnum stat = getDefaultRegionOfInterestForInput(input, i, time, scale, renderWindow, view, &roi);
+        if (isFailureRetCode(stat)) {
+            return stat;
         }
+        ret->insert(std::make_pair(i, roi));
 
     }
     return eActionStatusReplyDefault;
@@ -1441,6 +1489,18 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
             }
             if (!getInputMainInstance(i)) {
                 return eActionStatusInputDisconnected;
+            }
+        }
+
+        for (int i = 0; i < nInputs; ++i) {
+            if (getNode()->isInputHostDescribed(i) && getInputMainInstance(i)) {
+                // Add host handled inputs frame needed
+                RangeD defaultRange = {time, time};
+                std::vector<RangeD> ranges(1);
+                ranges[0] = defaultRange;
+                FrameRangesMap defViewRange;
+                defViewRange.insert( std::make_pair(view, ranges) );
+                framesNeeded.insert(std::make_pair(i, defViewRange));
             }
         }
 
@@ -1844,6 +1904,12 @@ EffectInstance::onInputChanged_public(int inputNo)
             _imp->onMaskSelectorChanged(it->first, it->second);
         }
     }
+
+    // Don't call the input changed action if the input is unknown by the plug-in
+    if (getNode()->isInputHostDescribed(inputNo)) {
+        return;
+    }
+
     onInputChanged(inputNo);
 } // onInputChanged_public
 

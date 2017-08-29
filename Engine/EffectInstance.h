@@ -530,6 +530,14 @@ private:
                                                   int* passThroughInputNb,
                                                   bool* processAll,
                                                   std::bitset<4>* processChannels);
+
+private:
+
+
+    ActionRetCodeEnum getDefaultLayersNeededInInput(int inputNb,
+                                                    TimeValue time,
+                                                    ViewIdx view,
+                                                    std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded);
     
     
 
@@ -757,6 +765,16 @@ protected:
                                       ViewIdx view,
                                       RoIMap* ret);
 
+private:
+
+    ActionRetCodeEnum getDefaultRegionOfInterestForInput(const EffectInstancePtr& input,
+                                                         int inputNb,
+                                                         TimeValue time,
+                                                         const RenderScale & scale,
+                                                         const RectD & renderWindow,
+                                                         ViewIdx view,
+                                                         RectD* roi);
+    
 public:
 
     /**

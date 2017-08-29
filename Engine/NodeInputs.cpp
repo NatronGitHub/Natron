@@ -325,6 +325,17 @@ Node::getSupportedComponents(int inputNb) const
 }
 
 bool
+Node::isInputHostDescribed(int inputNb) const
+{
+    QMutexLocker l(&_imp->inputsMutex);
+    if ( (inputNb < 0) || ( inputNb >= (int)_imp->inputDescriptions.size() ) ) {
+        return false;
+    }
+
+    return _imp->inputDescriptions[inputNb]->getPropertyUnsafe<bool>(kInputDescPropIsHostInput);
+}
+
+bool
 Node::isInputMask(int inputNb) const
 {
     QMutexLocker l(&_imp->inputsMutex);

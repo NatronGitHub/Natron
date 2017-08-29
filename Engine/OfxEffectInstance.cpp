@@ -109,7 +109,6 @@ struct OfxEffectInstanceCommon
     KnobBoolWPtr undoRedoStateKnob;
     ContextEnum context;
 
-    int nbSourceClips;
     mutable QMutex supportsConcurrentGLRendersMutex;
     bool supportsConcurrentGLRenders;
     bool isOutput; //if the OfxNode can output a file somehow
@@ -132,7 +131,6 @@ struct OfxEffectInstanceCommon
     , undoRedoTextKnob()
     , undoRedoStateKnob()
     , context(eContextNone)
-    , nbSourceClips(0)
     , supportsConcurrentGLRendersMutex()
     , supportsConcurrentGLRenders(false)
     , isOutput(false)
@@ -432,8 +430,6 @@ OfxEffectInstance::describePlugin()
     _imp->common->effect->setOfxEffectInstance(thisShared);
 
     OfxEffectInstance::MappedInputV clips = inputClipsCopyWithoutOutput();
-    _imp->common->nbSourceClips = (int)clips.size();
-
     _imp->common->inputClips.resize( clips.size() );
 
 
@@ -1744,19 +1740,24 @@ OfxEffectInstance::render(const RenderActionArgs& args)
         getNode()->clearPersistentMessage(kNatronPersistentErrorOpenFXPlugin);
         return eActionStatusOK;
     } else {
-        if ( !getNode()->hasPersistentMessage(kNatronPersistentErrorOpenFXPlugin) ) {
-            QString err;
-            if (stat == kOfxStatErrImageFormat) {
-                err = tr("Bad image format was supplied by %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) );
-            } else if (stat == kOfxStatErrMemory) {
-                err = tr("Out of memory!");
-            } else {
-                err = tr("Unknown failure reason.");
+        if (isRenderAborted()) {
+            return eActionStatusAborted;
+        }  else {
+            if ( !getNode()->hasPersistentMessage(kNatronPersistentErrorOpenFXPlugin) ) {
+                QString err;
+                if (stat == kOfxStatErrImageFormat) {
+                    err = tr("Bad image format was supplied by %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) );
+                } else if (stat == kOfxStatErrMemory) {
+                    err = tr("Out of memory!");
+                } else {
+                    err = tr("Unknown failure reason.");
+                }
+                getNode()->setPersistentMessage( eMessageTypeError, kNatronPersistentErrorOpenFXPlugin, err.toStdString() );
+                
             }
-            getNode()->setPersistentMessage( eMessageTypeError, kNatronPersistentErrorOpenFXPlugin, err.toStdString() );
+            return eActionStatusFailed;
 
         }
-        return eActionStatusFailed;
     }
 } // render
 

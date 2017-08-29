@@ -52,52 +52,60 @@ applyMaskMixForMaskInvert(const void* originalImgPtrs[4],
         }
         for (int x = roi.x1; x < roi.x2; ++x) {
 
-            PIX* srcPixelPtrs[4];
-            int srcPixelStride;
-            Image::getChannelPointers<PIX, srcNComps>((const PIX**)originalImgPtrs, roi.x1, roi.y1, originalImgBounds, (PIX**)srcPixelPtrs, &srcPixelStride);
+            PIX* srcPixelPtrs[4] = {0, 0, 0 , 0};
+            int srcPixelStride = 0;
+            if (originalImgPtrs[0]) {
+                Image::getChannelPointers<PIX, srcNComps>((const PIX**)originalImgPtrs, x, y, originalImgBounds, (PIX**)srcPixelPtrs, &srcPixelStride);
+            }
 
             float maskScale = 1.f;
             if (!masked) {
                 // just mix
                 float alpha = mix;
                 for (int c = 0; c < dstNComps; ++c) {
-                    if (srcPixelPtrs[c]) {
-                        float dstF = Image::convertPixelDepth<PIX, float>(*dstPixelPtrs[c]);
-                        float srcF = Image::convertPixelDepth<PIX, float>(*srcPixelPtrs[c]);
-                        float v = dstF * alpha + (1.f - alpha) * srcF;
-                        *dstPixelPtrs[c] = Image::convertPixelDepth<float, PIX>(v);
-
-                        dstPixelPtrs[c] += dstPixelStride;
+                    float dstF = Image::convertPixelDepth<PIX, float>(*dstPixelPtrs[c]);
+                    float srcF;
+                    if (*srcPixelPtrs[c]) {
+                        srcF = Image::convertPixelDepth<PIX, float>(*srcPixelPtrs[c]);
                         srcPixelPtrs[c] += srcPixelStride;
+                    } else {
+                        srcF = 0.;
                     }
+                    float v = dstF * alpha + (1.f - alpha) * srcF;
+                    *dstPixelPtrs[c] = Image::convertPixelDepth<float, PIX>(v);
+
+                    dstPixelPtrs[c] += dstPixelStride;
                 }
             } else {
 
                 PIX* maskPixelPtrs[4];
                 int maskPixelStride;
-                Image::getChannelPointers<PIX, 1>((const PIX**)maskImgPtrs, roi.x1, roi.y1, maskImgBounds, (PIX**)maskPixelPtrs, &maskPixelStride);
+                Image::getChannelPointers<PIX, 1>((const PIX**)maskImgPtrs, x, y, maskImgBounds, (PIX**)maskPixelPtrs, &maskPixelStride);
 
                 // figure the scale factor from that pixel
-                if (maskPixelPtrs[0] == 0) {
+                if (!maskPixelPtrs[0]) {
                     maskScale = maskInvert ? 1.f : 0.f;
                 } else {
                     maskScale = *maskPixelPtrs[0] / float(maxValue);
                     if (maskInvert) {
                         maskScale = 1.f - maskScale;
                     }
+                    maskPixelPtrs[0] += maskPixelStride;
+
                 }
                 float alpha = mix * maskScale;
                 for (int c = 0; c < dstNComps; ++c) {
-                    if (srcPixelPtrs[c]) {
-                        float dstF = Image::convertPixelDepth<PIX, float>(*dstPixelPtrs[c]);
-                        float srcF = Image::convertPixelDepth<PIX, float>(*srcPixelPtrs[c]);
-                        float v = dstF * alpha + (1.f - alpha) * srcF;
-                        *dstPixelPtrs[c] = Image::convertPixelDepth<float, PIX>(v);
-
-                        dstPixelPtrs[c] += dstPixelStride;
+                    float dstF = Image::convertPixelDepth<PIX, float>(*dstPixelPtrs[c]);
+                    float srcF;
+                    if (*srcPixelPtrs[c]) {
+                        srcF = Image::convertPixelDepth<PIX, float>(*srcPixelPtrs[c]);
                         srcPixelPtrs[c] += srcPixelStride;
-                        maskPixelPtrs[c] += maskPixelStride;
+                    } else {
+                        srcF = 0.;
                     }
+                    float v = dstF * alpha + (1.f - alpha) * srcF;
+                    *dstPixelPtrs[c] = Image::convertPixelDepth<float, PIX>(v);
+                    dstPixelPtrs[c] += dstPixelStride;
                 }
             }
         }
@@ -230,7 +238,7 @@ ImagePrivate::applyMaskMixCPU(const void* originalImgPtrs[4],
         case 4:
             return applyMaskMixForSrcComponents<4>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, dstImgNComps, mix, invertMask, bounds, roi, renderClone);
         default:
-            return eActionStatusFailed;
+            return applyMaskMixForSrcComponents<0>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, dstImgNComps, mix, invertMask, bounds, roi, renderClone);
     }
 
 }

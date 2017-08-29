@@ -103,6 +103,12 @@
 #define kInputDescPropIsMask "InputDescPropIsMask"
 
 /**
+ * @brief x1 bool property indicating whether the input is described by the host and unknown by the plug-in
+ * Default value - false
+ **/
+#define kInputDescPropIsHostInput "InputDescPropIsHostInput"
+
+/**
  * @brief x1 bool property indicating whether the input may receive tiled images;
  * This is only relevant for plug-ins which supports tiles, otherwise this is disregarded and
  * untiled images are received.

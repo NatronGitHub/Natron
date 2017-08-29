@@ -653,7 +653,7 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
         int maskInputNb = -1;
         int inputsCount = _publicInterface->getNInputs();
         for (int i = 0; i < inputsCount; ++i) {
-            if (_publicInterface->isMaskEnabled(i)) {
+            if (_publicInterface->getNode()->isInputMask(i) && _publicInterface->isMaskEnabled(i)) {
                 maskInputNb = i;
             }
         }
@@ -727,9 +727,8 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
         } // checkNaNs
 
         ImagePtr mainInputImage;
-
         bool copyUnProcessed = it->second->canCallCopyUnProcessedChannels(processChannels);
-        if (copyUnProcessed && mainInputNb != -1) {
+        if ((copyUnProcessed || useMaskMix) && mainInputNb != -1) {
             // Get the main input image to copy channels from it if a RGBA checkbox is unchecked
 
             std::map<int, std::list<ImagePlaneDesc> >::const_iterator foundNeededLayers = inputPlanesNeeded.find(mainInputNb);
@@ -748,14 +747,15 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
                     }
                 }
             }
-            if (mainInputImage) {
-                ActionRetCodeEnum stat = it->second->copyUnProcessedChannels(rectToRender.rect, processChannels, mainInputImage);
-                if (isFailureRetCode(stat)) {
-                    return stat;
-                }
+        }
+
+        if (copyUnProcessed && mainInputImage) {
+            ActionRetCodeEnum stat = it->second->copyUnProcessedChannels(rectToRender.rect, processChannels, mainInputImage);
+            if (isFailureRetCode(stat)) {
+                return stat;
             }
         }
-        
+
 
         if (useMaskMix) {
             ActionRetCodeEnum stat = it->second->applyMaskMix(rectToRender.rect, maskImage, mainInputImage, maskImage.get() /*masked*/, false /*maskInvert*/, mix);

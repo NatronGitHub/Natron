@@ -155,6 +155,7 @@ struct RenderDefaultKnobs
 {
     KnobBoolWPtr disableNodeKnob;
     KnobIntWPtr lifeTimeKnob;
+    KnobDoubleWPtr mixWithSource;
     KnobBoolWPtr enableLifeTimeKnob;
 
 };
