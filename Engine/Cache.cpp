@@ -111,7 +111,7 @@ NATRON_NAMESPACE_ENTER
 #define NATRON_CACHE_BUCKET_TOC_FILE_GROW_N_BYTES 524288 // = 512 * 1024
 
 // If we change the MemorySegmentEntryHeader struct, we must increment this version so we do not attempt to read an invalid structure.
-#define NATRON_MEMORY_SEGMENT_ENTRY_HEADER_VERSION 3
+#define NATRON_MEMORY_SEGMENT_ENTRY_HEADER_VERSION 4
 
 // After this amount of milliseconds, if a thread is not able to access a mutex, the cache is assumed to be inconsistent
 #ifdef NATRON_CACHE_INTERPROCESS_ROBUST
@@ -648,7 +648,13 @@ struct TileInternalIndexCompareLess
     }
 };
 
-typedef boost::interprocess::set<TileInternalIndex, TileInternalIndexCompareLess, TileInternalIndexAllocator> TileInternalIndexSet;
+inline bool operator==(const TileInternalIndex& lhs, const TileInternalIndex& rhs)
+{
+    return lhs.bucketIndex == rhs.bucketIndex && lhs.index.fileIndex == rhs.index.fileIndex && lhs.index.tileIndex == rhs.index.tileIndex;
+}
+
+//typedef boost::interprocess::set<TileInternalIndex, TileInternalIndexCompareLess, TileInternalIndexAllocator> TileInternalIndexSet;
+typedef boost::interprocess::list<TileInternalIndex, TileInternalIndexAllocator> TileInternalIndexList;
 
 /**
  * @brief Unique identifier for a process mapped to the Cache
@@ -785,7 +791,7 @@ struct MemorySegmentEntryHeaderBase
     TimestampVal timestamp;
 
     // Set of tile indices allocated for this entry
-    TileInternalIndexSet tileIndices;
+    TileInternalIndexList tileIndices;
 
     MemorySegmentEntryHeaderBase(const external_void_allocator& allocator)
     : size(0)
@@ -3862,66 +3868,54 @@ Cache<persistent>::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
             // Since we are adding data, this may throw an exception
             // because the ToC might run out of memory. In this case, we grow it and try again.
 
-            // First work on a local set on the heap and then copy it to the ToC
-            std::vector<TileInternalIndex> tmpSet(cacheEntry->tileIndices.size() + nTilesToAlloc);
-            {
-                int i = 0;
-                for (TileInternalIndexSet::const_iterator it = cacheEntry->tileIndices.begin(); it != cacheEntry->tileIndices.end(); ++it, ++i) {
-                    tmpSet[i] = *it;
-                }
-                for (std::size_t c = 0; c < nTilesToAlloc; ++c, ++i) {
-                    tmpSet[i] = (*allocatedTilesData)[c].first;
+            for (std::size_t c = 0; c < nTilesToAlloc; ++c) {
+                for (int nAttempts = 0; nAttempts < 2; ++nAttempts) {
+
+                    try {
+                        cacheEntry->tileIndices.push_back((*allocatedTilesData)[c].first);
+                        break;
+                    } catch (const bip::bad_alloc&) {
+
+                        // We may not have enough memory to store all indices, so grow the ToC mapping
+                        std::size_t tocMemNeeded = allocatedTilesData->size() * sizeof(U64) * 2;
+
+                        // Release the bucket mutex because it will become invalid while we grow the ToC file
+                        bucketWriteLock.reset();
+
+                        // Ensure we have the ToC write mutex
+                        if (!tocWriteLock) {
+                            tocReadLock.reset();
+                            createLock<Sharable_WriteLock>(_imp.get(), tocWriteLock, &_imp->ipc->bucketsData[cacheEntryBucketIndex].tocData.segmentMutex);
+                        }
+
+                        // Grow the file
+                        bucket.growToCFile(*tocWriteLock, tocMemNeeded);
+
+                        // Take back the mutex
+                        // Lock the bucket in write mode, we are going to write to the tiles list of the entry
+                        createLock<Sharable_WriteLock>(_imp.get(), bucketWriteLock, &_imp->ipc->bucketsData[cacheEntryBucketIndex].bucketMutex);
+
+                        // Look-up the cache entry again: it became invalid when we called growToCFile
+                        typename CacheBucket<persistent>::EntriesMap* storage;
+                        typename CacheBucket<persistent>::EntriesMap::iterator found;
+                        bool gotEntry = bucket.tryCacheLookupImpl(entryHash, &found, &storage);
+                        if (!gotEntry) {
+
+                            // The entry does no longer exist in the cache... A possible explanation is that the cache was wiped just prior to
+                            // this function call.
+                            // If somehow the cache entry is no longer in the cache, we must make free again all tile indices
+
+                            _imp->releaseTilesInternal(cacheEntryBucketIndex, bucketWriteLock, tocReadLock, tocWriteLock, 0, tilesLock->tileWriteLock, tilesLock->tileReadLock, &tilesLock->allocatedTiles);
+                            
+                            
+                            return false;
+                        }
+                        cacheEntry = found->second.get();
+                        
+                    }
                 }
             }
-
-            for (int nAttempts = 0; nAttempts < 2; ++nAttempts) {
-
-                try {
-                    cacheEntry->tileIndices.clear();
-                    cacheEntry->tileIndices.insert(tmpSet.begin(), tmpSet.end());
-                    break;
-                } catch (const bip::bad_alloc&) {
-
-                    // We may not have enough memory to store all indices, so grow the ToC mapping
-                    std::size_t tocMemNeeded = tmpSet.size() * sizeof(U64) * 2;
-
-                    // Release the bucket mutex because it will become invalid while we grow the ToC file
-                    bucketWriteLock.reset();
-
-                    // Ensure we have the ToC write mutex
-                    if (!tocWriteLock) {
-                        tocReadLock.reset();
-                        createLock<Sharable_WriteLock>(_imp.get(), tocWriteLock, &_imp->ipc->bucketsData[cacheEntryBucketIndex].tocData.segmentMutex);
-                    }
-
-                    // Grow the file
-                    bucket.growToCFile(*tocWriteLock, tocMemNeeded);
-
-                    // Take back the mutex
-                    // Lock the bucket in write mode, we are going to write to the tiles list of the entry
-                    createLock<Sharable_WriteLock>(_imp.get(), bucketWriteLock, &_imp->ipc->bucketsData[cacheEntryBucketIndex].bucketMutex);
-
-                    // Look-up the cache entry again: it became invalid when we called growToCFile
-                    typename CacheBucket<persistent>::EntriesMap* storage;
-                    typename CacheBucket<persistent>::EntriesMap::iterator found;
-                    bool gotEntry = bucket.tryCacheLookupImpl(entryHash, &found, &storage);
-                    if (!gotEntry) {
-
-                        // The entry does no longer exist in the cache... A possible explanation is that the cache was wiped just prior to
-                        // this function call.
-                        // If somehow the cache entry is no longer in the cache, we must make free again all tile indices
-
-                        _imp->releaseTilesInternal(cacheEntryBucketIndex, bucketWriteLock, tocReadLock, tocWriteLock, 0, tilesLock->tileWriteLock, tilesLock->tileReadLock, &tilesLock->allocatedTiles);
-
-
-                        return false;
-                    }
-                    cacheEntry = found->second.get();
-
-                }
-            }
-
-
+            
         } // numTilesToAlloc > 0
 
 
@@ -4106,18 +4100,26 @@ CachePrivate<persistent>::releaseTilesInternal(int cacheEntryBucketIndex,
         } else {
             // Remove from the cache entry the given tiles.
             std::size_t nTilesRemoved = 0;
-            for (std::size_t i = 0; i < tileIndices->size(); ++i) {
+
+            // Sort tiles for faster erase
+            std::vector<TileInternalIndex> tileIndicesSorted = *tileIndices;
+            std::sort(tileIndicesSorted.begin(), tileIndicesSorted.end(), TileInternalIndexCompareLess());
+            cacheEntry->tileIndices.sort(TileInternalIndexCompareLess());
 
 
-                TileInternalIndexSet::iterator foundTile = cacheEntry->tileIndices.find((*tileIndices)[i]);
-                if (foundTile != cacheEntry->tileIndices.end()) {
-                    ++nTilesRemoved;
-                    cacheEntry->tileIndices.erase(foundTile);
-                    tilesToDeallocate.push_back((*tileIndices)[i]);
+            TileInternalIndexList::iterator startIterator = cacheEntry->tileIndices.begin();
+            for (std::size_t i = 0; i < tileIndicesSorted.size(); ++i) {
+
+                for (TileInternalIndexList::iterator it = startIterator; it != cacheEntry->tileIndices.end(); ++it) {
+                    if (*it == tileIndicesSorted[i]) {
+                        ++nTilesRemoved;
+                        startIterator = cacheEntry->tileIndices.erase(it);
+                        tilesToDeallocate.push_back(tileIndicesSorted[i]);
+                    }
                 }
             }
-
-
+            
+            
             assert(cacheEntry->size >= nTilesRemoved * NATRON_TILE_SIZE_BYTES);
 #ifdef CACHE_TRACE_SIZE
             qDebug() << cacheEntry->lruNode.hash << "Entry -= "<< nTilesRemoved * NATRON_TILE_SIZE_BYTES;
@@ -4132,7 +4134,7 @@ CachePrivate<persistent>::releaseTilesInternal(int cacheEntryBucketIndex,
         qDebug() << cacheEntry->lruNode.hash << "Entry -= "<< cacheEntry->tileIndices.size() * NATRON_TILE_SIZE_BYTES;
 #endif
         cacheEntry->size -= cacheEntry->tileIndices.size() * NATRON_TILE_SIZE_BYTES;
-        TileInternalIndexSet::const_iterator it = cacheEntry->tileIndices.begin();
+        TileInternalIndexList::const_iterator it = cacheEntry->tileIndices.begin();
         for (std::size_t i = 0; i < tilesToDeallocate.size(); ++i, ++it) {
             tilesToDeallocate[i] = *it;
         }
