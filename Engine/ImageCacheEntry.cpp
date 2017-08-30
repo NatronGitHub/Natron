@@ -640,7 +640,7 @@ ImageCacheEntry::ensureRoI(const RectI& roi,
 
     bool mustUpdateCache = _imp->cachePolicy != eCacheAccessModeNone && _imp->internalCacheEntry->isPersistent();
     if (mustUpdateCache) {
-        _imp->markCacheEntriesAsAbortedInternal();
+        mustUpdateCache = _imp->markCacheEntriesAsAbortedInternal();
     }
 
     // For a cached non persistent entry, we must take the entry lock because the internalCacheEntry may be shared by multiple instances

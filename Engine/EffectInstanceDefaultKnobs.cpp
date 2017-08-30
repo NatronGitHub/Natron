@@ -1220,7 +1220,7 @@ EffectInstance::getOrCreateOpenGLEnabledKnob()
 }
 
 void
-EffectInstance::initializeDefaultKnobs(bool loadingSerialization, bool hasGUI)
+EffectInstance::initializeDefaultKnobs(bool loadingSerialization, bool /*hasGUI*/)
 {
     //Readers and Writers don't have default knobs since these knobs are on the ReadNode/WriteNode itself
     NodePtr ioContainer = getNode()->getIOContainer();

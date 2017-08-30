@@ -205,6 +205,7 @@ Image::CopyPixelsArgs::CopyPixelsArgs()
 
 }
 
+#if 0
 static bool isCopyPixelsNeeded(ImagePrivate* thisImage, ImagePrivate* otherImage)
 {
     if ((thisImage->storage == eStorageModeGLTex || otherImage->storage == eStorageModeGLTex)) {
@@ -227,6 +228,7 @@ static bool isCopyPixelsNeeded(ImagePrivate* thisImage, ImagePrivate* otherImage
 
     return false;
 }
+#endif
 
 ActionRetCodeEnum
 Image::copyPixels(const Image& other, const CopyPixelsArgs& args)

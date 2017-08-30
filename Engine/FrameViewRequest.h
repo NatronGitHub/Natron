@@ -161,31 +161,11 @@ public:
     /**
      * @brief Get the status of the request
      **/
-    FrameViewRequestStatusEnum getStatus(const TreeRenderExecutionDataPtr& requestData) const;
+    FrameViewRequestStatusEnum getStatus() const;
 
-    /**
-     * @brief Get the status of the request on the main execution
-     **/
-    FrameViewRequestStatusEnum getMainExecutionStatus() const;
 
-    /**
-     * @brief Called in requestRender to initialize the status of this object.
-     **/
-    void initStatus(FrameViewRequestStatusEnum status, const TreeRenderExecutionDataPtr& requestData);
 
-    /**
-     * @brief Called on startup of launchRender() function to 
-     * determine what next to do.
-     * @see FrameViewRequestStatusEnum for what to do given the status.
-     **/
-    FrameViewRequestStatusEnum notifyRenderStarted(const TreeRenderExecutionDataPtr& requestData);
-
-    /**
-     * @brief Called when launchRender() ends when it was rendering a frame.
-     * This is only needed if the status returned by notifyRenderStarted() is 
-     * eFrameViewRequestStatusNotRendered.
-     **/
-    void notifyRenderFinished(ActionRetCodeEnum stat, const TreeRenderExecutionDataPtr& requestData);
+public:
 
     /**
      * @brief Get the render mapped mipmap level (i.e: 0 if the node
@@ -221,17 +201,7 @@ public:
     ImagePtr getFullscaleImagePlane() const;
     void setFullscaleImagePlane(const ImagePtr& image);
 
-private:
 
-    /**
-     * @brief Take the internal mutex
-     **/
-    void lockRequest();
-
-    /**
-     * @brief Releases the internal mutex
-     **/
-    void unlockRequest();
 public:
 
     /**
@@ -371,18 +341,38 @@ private:
 class FrameViewRequestLocker
 {
     FrameViewRequestPtr request;
+    bool locked;
 public:
 
-    FrameViewRequestLocker(const FrameViewRequestPtr& request)
-    : request(request)
-    {
-        request->lockRequest();
-    }
+    FrameViewRequestLocker(const FrameViewRequestPtr& request, bool doLock = true);
 
-    ~FrameViewRequestLocker()
-    {
-        request->unlockRequest();
-    }
+    ~FrameViewRequestLocker();
+
+    bool tryLockRequest();
+
+    void lockRequest();
+
+    void unlockRequest();
+
+    /**
+     * @brief Called in requestRender to initialize the status of this object.
+     **/
+    void initStatus(FrameViewRequest::FrameViewRequestStatusEnum status);
+
+    /**
+     * @brief Called on startup of launchRender() function to
+     * determine what next to do.
+     * @see FrameViewRequestStatusEnum for what to do given the status.
+     **/
+    FrameViewRequest::FrameViewRequestStatusEnum notifyRenderStarted();
+
+    /**
+     * @brief Called when launchRender() ends when it was rendering a frame.
+     * This is only needed if the status returned by notifyRenderStarted() is
+     * eFrameViewRequestStatusNotRendered.
+     **/
+    void notifyRenderFinished(ActionRetCodeEnum stat);
+
 };
 
 

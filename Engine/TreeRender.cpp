@@ -48,10 +48,6 @@
 
 //#define TRACE_RENDER_DEPENDENCIES
 
-// Define to disable multi-threading of branch evaluation in the compositing tree
-//#define TREE_RENDER_DISABLE_MT
-
-
 NATRON_NAMESPACE_ENTER
 
 typedef std::set<AbortableThread*> ThreadSet;
@@ -545,9 +541,6 @@ struct TreeRenderExecutionDataPrivate
     // A set of renders that we can launch right now
     boost::scoped_ptr<DependencyFreeRenderSet> dependencyFreeRenders;
 
-    // All renders left to do
-    std::set<FrameViewRequestPtr> allRenderTasksToProcess;
-
     // The status global to the tasks, protected by dependencyFreeRendersMutex
     ActionRetCodeEnum status;
 
@@ -573,7 +566,6 @@ struct TreeRenderExecutionDataPrivate
     , isMainExecutionOfTree(false)
     , dependencyFreeRendersMutex()
     , dependencyFreeRenders()
-    , allRenderTasksToProcess()
     , status(eActionStatusOK)
     , treeRender()
     , canonicalRoI()
@@ -585,17 +577,6 @@ struct TreeRenderExecutionDataPrivate
     }
 
     void onTaskFinished(const FrameViewRequestPtr& request, ActionRetCodeEnum stat);
-
-    void removeTaskFromGlobalTaskList(const FrameViewRequestPtr& request)
-    {
-        assert(!dependencyFreeRendersMutex.tryLock());
-
-        std::set<FrameViewRequestPtr>::const_iterator foundTask = allRenderTasksToProcess.find(request);
-        assert(foundTask != allRenderTasksToProcess.end());
-        if (foundTask != allRenderTasksToProcess.end()) {
-            allRenderTasksToProcess.erase(foundTask);
-        }
-    }
 
     void removeDependencyLinkFromRequest(const FrameViewRequestPtr& request);
 
@@ -640,16 +621,8 @@ TreeRenderExecutionData::getOutputRequest() const
 void
 TreeRenderExecutionData::addTaskToRender(const FrameViewRequestPtr& render)
 {
-     QMutexLocker k(&_imp->dependencyFreeRendersMutex);
-    {
-        std::pair<DependencyFreeRenderSet::iterator, bool> ret = _imp->allRenderTasksToProcess.insert(render);
-        (void)ret;
-#ifdef TRACE_RENDER_DEPENDENCIES
-        if (ret.second) {
-            qDebug() << this << "Adding" << render->getEffect()->getScriptName_mt_safe().c_str() << render->getPlaneDesc().getPlaneLabel().c_str() << "(" << render.get() << ") to the global list";
-        }
-#endif
-    }
+    QMutexLocker k(&_imp->dependencyFreeRendersMutex);
+
     if (render->getNumDependencies(shared_from_this()) == 0) {
         std::pair<DependencyFreeRenderSet::iterator, bool> ret = _imp->dependencyFreeRenders->insert(render);
         (void)ret;
@@ -679,7 +652,6 @@ TreeRenderExecutionDataPrivate::removeDependencyLinkFromRequest(const FrameViewR
 #ifdef TRACE_RENDER_DEPENDENCIES
                 qDebug() << thisShared.get() << "Adding" << (*it)->getEffect()->getScriptName_mt_safe().c_str() << (*it)->getPlaneDesc().getPlaneLabel().c_str()  << "(" << it->get() << ") to the dependency-free list";
 #endif
-                assert(allRenderTasksToProcess.find(*it) != allRenderTasksToProcess.end());
                 dependencyFreeRenders->insert(*it);
             }
         }
@@ -697,7 +669,8 @@ TreeRenderExecutionDataPrivate::onTaskFinished(const FrameViewRequestPtr& reques
     // Remove all stashed input frame view requests that we kept around.
     request->clearRenderedDependencies(sharedData);
 
-    bool wasLastTaskRemaining = false;
+    TreeRenderPtr render = treeRender.lock();
+
 
     {
         QMutexLocker k(&dependencyFreeRendersMutex);
@@ -706,23 +679,18 @@ TreeRenderExecutionDataPrivate::onTaskFinished(const FrameViewRequestPtr& reques
             status = requestStatus;
         }
 
-
-        // Remove this render from all tasks left
-        removeTaskFromGlobalTaskList(request);
-
         // For each frame/view that depend on this frame, remove it from the dependencies list.
         removeDependencyLinkFromRequest(request);
 
-        wasLastTaskRemaining = allRenderTasksToProcess.empty();
     }
     
     // If the results for this node were requested by the caller, insert them
-    TreeRenderPtr render = treeRender.lock();
     assert(render);
     if (render) {
         render->setResults(request, sharedData);
     }
-    
+
+    bool wasLastTaskRemaining = (request == sharedData->getOutputRequest());
     appPTR->getTasksQueueManager()->notifyTaskInRenderFinished(sharedData, wasLastTaskRemaining, isRunningInThreadPoolThread());
 
 
@@ -903,12 +871,6 @@ TreeRender::getStatus() const
     return _imp->state;
 }
 
-bool
-TreeRenderExecutionData::hasTasksToExecute() const
-{
-    QMutexLocker k(&_imp->dependencyFreeRendersMutex);
-    return _imp->allRenderTasksToProcess.size() > 0;
-} // hasTasksToExecute
 
 int
 TreeRenderExecutionData::executeAvailableTasks(int nTasks)
@@ -916,10 +878,7 @@ TreeRenderExecutionData::executeAvailableTasks(int nTasks)
 
     assert(nTasks != 0);
 
-#ifndef TREE_RENDER_DISABLE_MT
     QThreadPool* threadPool = QThreadPool::globalInstance();
-    //bool isThreadPoolThread = isRunningInThreadPoolThread();
-#endif
 
     int nTasksRemaining = nTasks;
 
@@ -942,12 +901,8 @@ TreeRenderExecutionData::executeAvailableTasks(int nTasks)
         qDebug() << this <<  "Queuing " << request->getEffect()->getScriptName_mt_safe().c_str() << " in task pool";
 #endif
         FrameViewRenderRunnablePtr runnable = FrameViewRenderRunnable::create(thisShared, request);
-#ifdef TREE_RENDER_DISABLE_MT
-        k.unlock();
-        runnable->run();
-        k.relock();
-#else
-        if (request->getStatus(thisShared) == FrameViewRequest::eFrameViewRequestStatusNotRendered && !isFailureRetCode(_imp->status)) {
+
+        if ((request->getStatus() == FrameViewRequest::eFrameViewRequestStatusNotRendered || request->getStatus() == FrameViewRequest::eFrameViewRequestStatusPending) && !isFailureRetCode(_imp->status)) {
             // Only launch the runnable in a separate thread if its actually going to do any rendering.
             runnable->setAutoDelete(false);
             _imp->launchedRunnables.insert(runnable);
@@ -960,7 +915,6 @@ TreeRenderExecutionData::executeAvailableTasks(int nTasks)
             runnable->run();
             k.relock();
         }
-#endif
 
     }
 

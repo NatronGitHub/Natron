@@ -1196,6 +1196,10 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
         perMipMapLevelRoDCanonical[m].toPixelEnclosing(levelCombinedScale, par, &perMipMapLevelRoDPixel[m]);
     }
 
+    // Lock the request so that multiple threads get a coherent status
+    boost::scoped_ptr<FrameViewRequestLocker> requestLocker(new FrameViewRequestLocker(requestData));
+
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Handle pass-through planes /////////////////////////////////////////////////////////////
     std::map<int, std::list<ImagePlaneDesc> > inputLayersNeeded;
@@ -1208,7 +1212,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
 
         // There might no plane produced by this node that were requested
         if (isPassThrough) {
-            requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusPassThrough, requestPassSharedData);
+            requestLocker->initStatus(FrameViewRequest::eFrameViewRequestStatusPassThrough);
             return eActionStatusOK;
         }
     }
@@ -1223,7 +1227,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
             return upstreamRetCode;
         }
         if (isIdentity) {
-            requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusPassThrough, requestPassSharedData);
+            requestLocker->initStatus(FrameViewRequest::eFrameViewRequestStatusPassThrough);
             return eActionStatusOK;
         }
     }
@@ -1238,7 +1242,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
             return upstreamRetCode;
         }
         if (concatenated) {
-            requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusPassThrough, requestPassSharedData);
+            requestLocker->initStatus(FrameViewRequest::eFrameViewRequestStatusPassThrough);
             return eActionStatusOK;
 
         }
@@ -1277,7 +1281,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
 
         // Make sure the RoI falls within the image bounds
         if ( !downscaledRoI.intersect(perMipMapLevelRoDPixel[requestData->getMipMapLevel()], &downscaledRoI) ) {
-            requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusRendered, requestPassSharedData);
+            requestLocker->initStatus(FrameViewRequest::eFrameViewRequestStatusRendered);
             return eActionStatusOK;
         }
 
@@ -1290,7 +1294,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
 
             // Make sure the RoI falls within the image bounds
             if ( !renderMappedRoI.intersect(perMipMapLevelRoDPixel[mappedMipMapLevel], &renderMappedRoI) ) {
-                requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusRendered, requestPassSharedData);
+                requestLocker->initStatus(FrameViewRequest::eFrameViewRequestStatusRendered);
                 return eActionStatusOK;
             }
 
@@ -1312,22 +1316,18 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
     assert(renderMappedRoI.x2 % tileWidth == 0 || renderMappedRoI.x2 == perMipMapLevelRoDPixel[mappedMipMapLevel].x2);
     assert(renderMappedRoI.y2 % tileHeight == 0 || renderMappedRoI.y2 == perMipMapLevelRoDPixel[mappedMipMapLevel].y2);
 
-
-    // Check again that we actually did not already render this region now that we intersected with the rod
-    if (requestData->getCurrentRoI().contains(roiCanonical)) {
-        FrameViewRequest::FrameViewRequestStatusEnum mainExecStatus = requestData->getMainExecutionStatus();
-        if (mainExecStatus !=  FrameViewRequest::eFrameViewRequestStatusNotRendered) {
-            requestData->initStatus(mainExecStatus, requestPassSharedData);
-            return eActionStatusOK;
-        } else if (requestData->getStatus(requestPassSharedData) != FrameViewRequest::eFrameViewRequestStatusNotRendered) {
-            return eActionStatusOK;
-        }
-    }
-
     // Merge the roi requested onto the existing RoI requested for this frame/view
 
     {
         RectD curRoI = requestData->getCurrentRoI();
+
+        FrameViewRequest::FrameViewRequestStatusEnum status = requestData->getStatus();
+
+        if (status == FrameViewRequest::eFrameViewRequestStatusRendered && curRoI.contains(roiCanonical)) {
+            // The request is already rendered and contains the requested roi, return
+            return eActionStatusOK;
+        }
+
         if (curRoI.isNull()) {
             curRoI = roundedCanonicalRoI;
         } else {
@@ -1335,6 +1335,9 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
         }
         requestData->setCurrentRoI(curRoI);
     }
+
+
+
 
     // Check for abortion before checking cache
     if (isRenderAborted()) {
@@ -1391,120 +1394,120 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
     // Generally if the image is valid, this means we are within a call to getImagePlane()
 
     FrameViewRequest::FrameViewRequestStatusEnum requestStatus = FrameViewRequest::eFrameViewRequestStatusNotRendered;
-    // Lock the request at this point because we are going to create the output image
-    {
-        FrameViewRequestLocker requestLocker(requestData);
 
-        ImagePtr requestedImageScale = requestData->getRequestedScaleImagePlane();
-        ImagePtr fullScaleImage = requestData->getFullscaleImagePlane();
 
-        // The image must have a cache entry object, even if the policy is eCacheAccessModeNone
-        // so we can sync concurrent threads to render the same image.
-        assert(!requestedImageScale || requestedImageScale->getCacheEntry());
-        assert(!fullScaleImage || fullScaleImage->getCacheEntry());
+    ImagePtr requestedImageScale = requestData->getRequestedScaleImagePlane();
+    ImagePtr fullScaleImage = requestData->getFullscaleImagePlane();
 
-        // If the image does not match the render device, wipe it and make a new one
-        if (requestedImageScale) {
-            if (requestedImageScale->getStorageMode() != EffectInstance::Implementation::storageModeFromBackendType(backendType)) {
-                requestedImageScale.reset();
-                fullScaleImage.reset();
+    // The image must have a cache entry object, even if the policy is eCacheAccessModeNone
+    // so we can sync concurrent threads to render the same image.
+    assert(!requestedImageScale || requestedImageScale->getCacheEntry());
+    assert(!fullScaleImage || fullScaleImage->getCacheEntry());
+
+    // If the image does not match the render device, wipe it and make a new one
+    if (requestedImageScale) {
+        if (requestedImageScale->getStorageMode() != EffectInstance::Implementation::storageModeFromBackendType(backendType)) {
+            requestedImageScale.reset();
+            fullScaleImage.reset();
+        }
+    }
+
+
+    // When accumulating, re-use the same buffer of previous steps and resize it if needed.
+    // Note that in this mode only a single plane can be rendered at once and the plug-in render safety must
+    // allow only a single thread to run
+    ImagePtr accumBuffer = getAccumBuffer(requestData->getPlaneDesc());
+    if ((isAccumulating && accumBuffer && accumBuffer->getMipMapLevel() != mappedMipMapLevel)) {
+        accumBuffer.reset();
+    }
+
+    if (isAccumulating && accumBuffer) {
+
+        accumBuffer->updateRenderCloneAndImage(shared_from_this());
+        // When drawing with a paint brush, we may only render the bounding box of the un-rendered points.
+        RectD updateAreaCanonical;
+        if (getAccumulationUpdateRoI(&updateAreaCanonical)) {
+
+            RectI updateAreaPixel;
+            updateAreaCanonical.toPixelEnclosing(mappedCombinedScale, par, &updateAreaPixel);
+            updateAreaPixel.intersect(renderMappedRoI, &updateAreaPixel);
+
+            // Notify the TreeRender of the update area so that in turn the OpenGL viewer can update only the required portion
+            // of the texture
+            //qDebug() << getScriptName_mt_safe().c_str() << "update area";
+            //updateAreaCanonical.debug();
+            if (updateAreaPixel.isNull()) {
+                // Nothing to update, return quickly
+                requestLocker->initStatus(FrameViewRequest::eFrameViewRequestStatusRendered);
+                requestData->setRequestedScaleImagePlane(accumBuffer);
+                return eActionStatusOK;
+            }
+            // If this is the first time we compute this frame view request, erase in the tiles state map the portion that was drawn
+            // by the user,
+            if (!requestedImageScale) {
+                // Get the accum buffer on the node. Note that this is not concurrent renders safe.
+                requestedImageScale = accumBuffer;
+                requestedImageScale->getCacheEntry()->markCacheTilesInRegionAsNotRendered(updateAreaPixel);
+
             }
         }
 
-
-        // When accumulating, re-use the same buffer of previous steps and resize it if needed.
-        // Note that in this mode only a single plane can be rendered at once and the plug-in render safety must
-        // allow only a single thread to run
-        ImagePtr accumBuffer = getAccumBuffer(requestData->getPlaneDesc());
-        if ((isAccumulating && accumBuffer && accumBuffer->getMipMapLevel() != mappedMipMapLevel)) {
-            accumBuffer.reset();
-        }
-
-        if (isAccumulating && accumBuffer) {
-
-            accumBuffer->updateRenderCloneAndImage(shared_from_this());
-            // When drawing with a paint brush, we may only render the bounding box of the un-rendered points.
-            RectD updateAreaCanonical;
-            if (getAccumulationUpdateRoI(&updateAreaCanonical)) {
-                
-                RectI updateAreaPixel;
-                updateAreaCanonical.toPixelEnclosing(mappedCombinedScale, par, &updateAreaPixel);
-                updateAreaPixel.intersect(renderMappedRoI, &updateAreaPixel);
-
-                // Notify the TreeRender of the update area so that in turn the OpenGL viewer can update only the required portion
-                // of the texture
-                //qDebug() << getScriptName_mt_safe().c_str() << "update area";
-                //updateAreaCanonical.debug();
-                if (updateAreaPixel.isNull()) {
-                    // Nothing to update, return quickly
-                    requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusRendered, requestPassSharedData);
-                    requestData->setRequestedScaleImagePlane(accumBuffer);
-                    return eActionStatusOK;
-                }
-                // If this is the first time we compute this frame view request, erase in the tiles state map the portion that was drawn
-                // by the user,
-                if (!requestedImageScale) {
-                    // Get the accum buffer on the node. Note that this is not concurrent renders safe.
-                    requestedImageScale = accumBuffer;
-                    requestedImageScale->getCacheEntry()->markCacheTilesInRegionAsNotRendered(updateAreaPixel);
-
-                }
-            }
-
-        } // isAccumulating
+    } // isAccumulating
 
 
-        // Evaluate the tiles state map on the image to check what's left to render and fetch tiles from cache
-        // Note that no memory allocation is done here, only existing tiles are fetched from the cache.
+    // Evaluate the tiles state map on the image to check what's left to render and fetch tiles from cache
+    // Note that no memory allocation is done here, only existing tiles are fetched from the cache.
 
-        // If this effect doesn't support render scale, look in the cache first if there's an image
-        // at our desired mipmap level
-        bool hasUnRenderedTile = true;
-        bool hasPendingTiles = false;
-        ActionRetCodeEnum stat = _imp->lookupCachedImage(requestData->getMipMapLevel(), requestData->getProxyScale(), requestData->getPlaneDesc(), perMipMapLevelRoDPixel, downscaledRoI, cachePolicy, backendType, &requestedImageScale, &hasPendingTiles, &hasUnRenderedTile);
+    // If this effect doesn't support render scale, look in the cache first if there's an image
+    // at our desired mipmap level
+    bool hasUnRenderedTile = true;
+    bool hasPendingTiles = false;
+    ActionRetCodeEnum stat = _imp->lookupCachedImage(requestData->getMipMapLevel(), requestData->getProxyScale(), requestData->getPlaneDesc(), perMipMapLevelRoDPixel, downscaledRoI, cachePolicy, backendType, &requestedImageScale, &hasPendingTiles, &hasUnRenderedTile);
+    if (isFailureRetCode(stat)) {
+        return stat;
+    }
+
+    if (!hasPendingTiles && !hasUnRenderedTile) {
+        requestStatus = FrameViewRequest::eFrameViewRequestStatusRendered;
+    } else if (mappedMipMapLevel != requestData->getMipMapLevel()) {
+
+        // The previous lookupCachedImage() call marked the tiles as pending, but we are not going to compute now
+        // so unmark them, instead do it once we rendered the full scale image
+        requestedImageScale->getCacheEntry()->markCacheTilesAsAborted();
+        requestedImageScale.reset();
+
+        stat = _imp->lookupCachedImage(mappedMipMapLevel, requestData->getProxyScale(), requestData->getPlaneDesc(), perMipMapLevelRoDPixel, renderMappedRoI, cachePolicy, backendType, &fullScaleImage, &hasPendingTiles, &hasUnRenderedTile);
         if (isFailureRetCode(stat)) {
             return stat;
         }
 
-        if (!hasPendingTiles && !hasUnRenderedTile) {
-            requestStatus = FrameViewRequest::eFrameViewRequestStatusRendered;
-        } else if (mappedMipMapLevel != requestData->getMipMapLevel()) {
-
-            // The previous lookupCachedImage() call marked the tiles as pending, but we are not going to compute now
-            // so unmark them, instead do it once we rendered the full scale image
-            requestedImageScale->getCacheEntry()->markCacheTilesAsAborted();
-            requestedImageScale.reset();
-
-            stat = _imp->lookupCachedImage(mappedMipMapLevel, requestData->getProxyScale(), requestData->getPlaneDesc(), perMipMapLevelRoDPixel, renderMappedRoI, cachePolicy, backendType, &fullScaleImage, &hasPendingTiles, &hasUnRenderedTile);
-            if (isFailureRetCode(stat)) {
-                return stat;
-            }
-
-            // Do not set the renderStatus to FrameViewRequest::eFrameViewRequestStatusRendered because
-            // we still need to downscale the image
-        }
+        // Do not set the renderStatus to FrameViewRequest::eFrameViewRequestStatusRendered because
+        // we still need to downscale the image
+    }
 
 
-        // If the node supports render scale, make the fullScaleImage point to the requestedImageScale so that we don't
-        // ruin the render code of if/else
-        if (!fullScaleImage) {
-            fullScaleImage = requestedImageScale;
-        }
-        assert(fullScaleImage);
-        requestData->setRequestedScaleImagePlane(requestedImageScale);
-        requestData->setFullscaleImagePlane(fullScaleImage);
+    // If the node supports render scale, make the fullScaleImage point to the requestedImageScale so that we don't
+    // ruin the render code of if/else
+    if (!fullScaleImage) {
+        fullScaleImage = requestedImageScale;
+    }
+    assert(fullScaleImage);
+    requestData->setRequestedScaleImagePlane(requestedImageScale);
+    requestData->setFullscaleImagePlane(fullScaleImage);
 
 
-        // Set the accumulation buffer if:
-        // - The effect accumulates and it does not yet have a buffer
-        // - The effect is no longer accumulating but has a buffer, in which case we update the accumulation buffer.
-        if ((isAccumulating && !accumBuffer) || (!isAccumulating && accumBuffer)) {
-            setAccumBuffer(requestData->getPlaneDesc(), requestedImageScale);
-        }
+    // Set the accumulation buffer if:
+    // - The effect accumulates and it does not yet have a buffer
+    // - The effect is no longer accumulating but has a buffer, in which case we update the accumulation buffer.
+    if ((isAccumulating && !accumBuffer) || (!isAccumulating && accumBuffer)) {
+        setAccumBuffer(requestData->getPlaneDesc(), requestedImageScale);
+    }
 
-        requestData->initStatus(requestStatus, requestPassSharedData);
-    } // requestLocker
-    
+    requestLocker->initStatus(requestStatus);
+
+    // Unlock the request before recursing in the tree
+    requestLocker.reset();
+
     // If there's nothing to render, do not even add the inputs as needed dependencies.
     if (requestStatus == FrameViewRequest::eFrameViewRequestStatusNotRendered) {
 
@@ -1523,8 +1526,9 @@ ActionRetCodeEnum
 EffectInstance::launchNodeRender(const TreeRenderExecutionDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestData)
 {
 
+    FrameViewRequestLocker requestLocker(requestData);
     {
-        FrameViewRequest::FrameViewRequestStatusEnum requestStatus = requestData->notifyRenderStarted(requestPassSharedData);
+        FrameViewRequest::FrameViewRequestStatusEnum requestStatus = requestLocker.notifyRenderStarted();
         switch (requestStatus) {
             case FrameViewRequest::eFrameViewRequestStatusRendered:
             case FrameViewRequest::eFrameViewRequestStatusPassThrough:
@@ -1554,7 +1558,7 @@ EffectInstance::launchNodeRender(const TreeRenderExecutionDataPtr& requestPassSh
 #endif
 
     // Notify that we are done rendering
-    requestData->notifyRenderFinished(stat, requestPassSharedData);
+    requestLocker.notifyRenderFinished(stat);
     return stat;
 } // launchNodeRender
 
@@ -1763,7 +1767,6 @@ EffectInstance::launchRenderInternal(const TreeRenderExecutionDataPtr& requestPa
         downscaledRoI.roundToTileSize(tileWidth, tileHeight);
         // Make sure the RoI falls within the image bounds
         if ( !downscaledRoI.intersect(perMipMapLevelRoDPixel[requestData->getMipMapLevel()], &downscaledRoI) ) {
-            requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusRendered, requestPassSharedData);
             return eActionStatusOK;
         }
 

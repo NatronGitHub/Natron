@@ -91,12 +91,6 @@ public:
     int executeAvailableTasks(int nTasks);
 
     /**
-     * @brief Returns whether there's anything to be done in executeAvailableTasks(). If false, the tree render
-     * execution is assumed to be finished.
-     **/
-    bool hasTasksToExecute() const;
-
-    /**
      *
      **/
     void waitForExecutionFinished();
