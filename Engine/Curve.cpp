@@ -2170,11 +2170,13 @@ Curve::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase&
         }
 
         // Now recompute auto tangents
-        for (KeyFrameSet::iterator it = _imp->keyFrames.begin(); it != _imp->keyFrames.end(); ++it) {
-            std::pair<KeyFrameSet::iterator, ValueChangedReturnCodeEnum> ret = setOrUpdateKeyframeInternal(*it);
-            ret.first = evaluateCurveChanged(Curve::eCurveChangedReasonKeyframeChanged, ret.first);
-        }
+        for (std::size_t i = 0; i < _imp->keyFrames.size(); ++i) {
+            KeyFrameSet::iterator it = _imp->keyFrames.begin();
+            std::advance(it, i);
+            (void)evaluateCurveChanged(Curve::eCurveChangedReasonKeyframeChanged, it);
 
+        }
+   
         onCurveChanged();
     }
 
