@@ -2093,7 +2093,7 @@ Curve::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase&
                     if (it->properties.size() == 1) {
                         const SERIALIZATION_NAMESPACE::KeyFrameProperty& prop = it->properties.front();
                         if (prop.values.size() == 1 && prop.type == kKeyFramePropertyVariantTypeString) {
-                            k.setProperty(kKeyFramePropString, prop.values[0].stringValue,0, false /*failIfnotExist*/);
+                            k.setProperty<std::string>(kKeyFramePropString, prop.values[0].stringValue,0, false /*failIfnotExist*/);
                         }
                     }
                 }   break;
@@ -2104,26 +2104,26 @@ Curve::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase&
                             for (std::size_t i = 0; i < it2->values.size(); ++i) {
                                 values[i] = it2->values[i].stringValue;
                             }
-                            k.setProperty(it2->name, values, false /*failIfnotExist*/);
+                            k.setPropertyN(it2->name, values, false /*failIfnotExist*/);
 
                         } else if (it2->type == kKeyFramePropertyVariantTypeDouble) {
                             std::vector<double> values(it2->values.size());
                             for (std::size_t i = 0; i < it2->values.size(); ++i) {
                                 values[i] = it2->values[i].scalarValue;
                             }
-                            k.setProperty(it2->name, values, false /*failIfnotExist*/);
+                            k.setPropertyN(it2->name, values, false /*failIfnotExist*/);
                         } else if (it2->type == kKeyFramePropertyVariantTypeInt) {
                             std::vector<int> values(it2->values.size());
                             for (std::size_t i = 0; i < it2->values.size(); ++i) {
                                 values[i] = it2->values[i].scalarValue;
                             }
-                            k.setProperty(it2->name, values);
+                            k.setPropertyN(it2->name, values);
                         } else if (it2->type == kKeyFramePropertyVariantTypeBool) {
                             std::vector<bool> values(it2->values.size());
                             for (std::size_t i = 0; i < it2->values.size(); ++i) {
                                 values[i] = it2->values[i].scalarValue;
                             }
-                            k.setProperty(it2->name, values, false /*failIfnotExist*/);
+                            k.setPropertyN(it2->name, values, false /*failIfnotExist*/);
                         }
                     }
                 }   break;
