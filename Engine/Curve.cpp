@@ -2104,14 +2104,14 @@ Curve::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase&
                             for (std::size_t i = 0; i < it2->values.size(); ++i) {
                                 values[i] = it2->values[i].stringValue;
                             }
-                            k.setProperty(it2->name, values);
+                            k.setProperty(it2->name, values, false /*failIfnotExist*/);
 
                         } else if (it2->type == kKeyFramePropertyVariantTypeDouble) {
                             std::vector<double> values(it2->values.size());
                             for (std::size_t i = 0; i < it2->values.size(); ++i) {
                                 values[i] = it2->values[i].scalarValue;
                             }
-                            k.setProperty(it2->name, values);
+                            k.setProperty(it2->name, values, false /*failIfnotExist*/);
                         } else if (it2->type == kKeyFramePropertyVariantTypeInt) {
                             std::vector<int> values(it2->values.size());
                             for (std::size_t i = 0; i < it2->values.size(); ++i) {
@@ -2123,7 +2123,7 @@ Curve::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase&
                             for (std::size_t i = 0; i < it2->values.size(); ++i) {
                                 values[i] = it2->values[i].scalarValue;
                             }
-                            k.setProperty(it2->name, values);
+                            k.setProperty(it2->name, values, false /*failIfnotExist*/);
                         }
                     }
                 }   break;
