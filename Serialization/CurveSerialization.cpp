@@ -192,6 +192,7 @@ CurveSerialization::decode(const YAML::Node& node)
                             }
                             prop.values.push_back(v);
                         }
+                        keyframe.properties.push_back(prop);
                     }
                 }
                 keys.push_back(keyframe);
