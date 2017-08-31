@@ -2410,8 +2410,8 @@ CacheEntryLockerPrivate<persistent>::lookupAndCreate(boost::shared_ptr<Sharable_
                                                      std::size_t* timeSpentWaiting,
                                                      std::size_t timeout)
 {
-    boost::shared_ptr<Sharable_WriteLock> writeLock;
-    createLock<Sharable_WriteLock>(cache->_imp.get(), writeLock, &cache->_imp->ipc->bucketsData[bucket->bucketIndex].bucketMutex);
+    boost::shared_ptr<Sharable_WriteLock> bucketWriteLock;
+    createLock<Sharable_WriteLock>(cache->_imp.get(), bucketWriteLock, &cache->_imp->ipc->bucketsData[bucket->bucketIndex].bucketMutex);
 
 
     // This function only fails if the entry must be computed anyway.
@@ -2424,7 +2424,7 @@ CacheEntryLockerPrivate<persistent>::lookupAndCreate(boost::shared_ptr<Sharable_
             boost::shared_ptr<Sharable_ReadLock> readlock;
             LookUpRetCodeEnum stat = lookupAndSetStatusInternal(nAttempts == maxAttempts - 1/*removeIfOOM*/,
                                                                 tilesReadLock,
-                                                                writeLock,
+                                                                bucketWriteLock,
                                                                 tocReadLock,
                                                                 tocWriteLock,
                                                                 timeSpentWaiting, timeout);
@@ -2438,6 +2438,9 @@ CacheEntryLockerPrivate<persistent>::lookupAndCreate(boost::shared_ptr<Sharable_
                     // If out of memory, grow the toc and try again
                     if (!tocWriteLock) {
                         tocReadLock.reset();
+
+                        // Release the bucket lock
+                        bucketWriteLock.reset();
                         createLock<Sharable_WriteLock>(cache->_imp.get(), tocWriteLock, &cache->_imp->ipc->bucketsData[bucket->bucketIndex].tocData.segmentMutex);
                     }
 #ifdef DEBUG
@@ -2448,6 +2451,10 @@ CacheEntryLockerPrivate<persistent>::lookupAndCreate(boost::shared_ptr<Sharable_
                     } else {
                         bucket->growToCFile(*tocWriteLock, NATRON_CACHE_BUCKET_TOC_FILE_GROW_N_BYTES);
                     }
+
+                    // Take back the bucket lock
+                    createLock<Sharable_WriteLock>(cache->_imp.get(), bucketWriteLock, &cache->_imp->ipc->bucketsData[bucket->bucketIndex].bucketMutex);
+
                     break;
             }
             if (mustBreak) {
