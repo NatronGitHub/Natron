@@ -1,13 +1,12 @@
---- Portfile.orig	2017-07-17 20:07:57.000000000 +0200
-+++ Portfile	2017-07-17 21:09:15.000000000 +0200
-@@ -3,40 +3,48 @@
+--- Portfile.orig	2017-08-31 13:36:27.000000000 +0200
++++ Portfile	2017-08-31 13:40:24.000000000 +0200
+@@ -3,40 +3,47 @@
  PortSystem 1.0
  
  name             libraw
 -version          0.17.2
 -revision         2
 +version          0.18.2
-+#revision         2
  homepage         http://www.libraw.org/
  description      library for RAW images manipulation
  long_description      a library for reading RAW files obtained from digital photo cameras (CRW/CR2, NEF, RAF, DNG, and others)
@@ -15,7 +14,7 @@
  platforms        darwin
 -license          LGPL-2.1 CDDL GPL-2+ GPL-3+
 +license          LGPL-2.1 CDDL
- maintainers      pvanek openmaintainer
+ maintainers      nomaintainer
  
  master_sites     http://www.libraw.org/data/
  distname         LibRaw-${version}

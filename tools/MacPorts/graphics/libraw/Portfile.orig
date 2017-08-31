@@ -11,7 +11,7 @@ long_description      a library for reading RAW files obtained from digital phot
 categories       graphics
 platforms        darwin
 license          LGPL-2.1 CDDL GPL-2+ GPL-3+
-maintainers      pvanek openmaintainer
+maintainers      nomaintainer
 
 master_sites     http://www.libraw.org/data/
 distname         LibRaw-${version}
