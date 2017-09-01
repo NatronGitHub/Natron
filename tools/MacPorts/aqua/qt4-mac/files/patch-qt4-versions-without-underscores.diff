@@ -1,0 +1,12 @@
+--- src/gui/kernel/qt_cocoa_helpers_mac.mm.orig	2017-08-01 09:43:40.000000000 -0400
++++ src/gui/kernel/qt_cocoa_helpers_mac.mm	2017-08-01 09:47:33.000000000 -0400
+@@ -73,6 +73,9 @@
+ **
+ ****************************************************************************/
+ 
++// Workaround for macOS 10.13 and later
++#define __ASSERT_MACROS_DEFINE_VERSIONS_WITHOUT_UNDERSCORES 1
++
+ #include <private/qcore_mac_p.h>
+ #include <qaction.h>
+ #include <qwidget.h>
