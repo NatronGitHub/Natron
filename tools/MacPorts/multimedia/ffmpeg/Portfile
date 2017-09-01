@@ -1,5 +1,4 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 152215 2016-09-01 09:24:36Z devans@macports.org $
 
 PortSystem          1.0
 PortGroup           xcodeversion 1.0
@@ -10,10 +9,11 @@ PortGroup           active_variants 1.1
 name                ffmpeg
 conflicts           ffmpeg-devel
 epoch               1
-version             3.1.3
+version             3.3.3
+revision            1
 license             LGPL-2.1+
 categories          multimedia
-maintainers         devans jeremyhu openmaintainer
+maintainers         {devans @dbevans} {jeremyhu @jeremyhu} openmaintainer
 
 description         FFmpeg is a complete solution to play, record, convert and \
                     stream audio and video.
@@ -52,8 +52,15 @@ master_sites        http://www.ffmpeg.org/releases/
 
 use_xz              yes
 
-checksums           rmd160  28fba69947e8315a10ed02ae4228cdaab8a72c49 \
-                    sha256  f8575c071e2a64437aeb70c8c030b385cddbe0b5cde20c9b18a6def840128822
+checksums           rmd160  8aff6c235b3e384c6592c59a321c7676a045266a \
+                    sha256  d2a9002cdc6b533b59728827186c044ad02ba64841f1b7cd6c21779875453a1e
+
+# root directory of extracted tarball is owned by root and has permissions 700
+# set to 755 to facilitate maintenance
+
+post-extract {
+    file attributes ${worksrcpath} -permissions 0755
+}
 
 depends_build       port:pkgconfig \
                     port:gmake \
@@ -80,13 +87,14 @@ depends_lib         port:lame \
                     port:freetype \
                     port:fribidi \
                     path:lib/libspeex.dylib:speex \
-                    port:libsdl \
                     port:soxr \
                     port:bzip2 \
                     port:xz \
                     port:zlib
 
-patchfiles          patch-libavcodec-audiotoolboxenc.c.diff
+patchfiles          patch-libavcodec-audiotoolboxenc.c.diff \
+                    patch-openjpeg-2.2.diff \
+                    patch-configure-no-static-libopenjpeg.diff
 
 #
 # enable auto configure of asm optimizations
@@ -133,16 +141,17 @@ configure.args      --enable-swscale \
                     --disable-libxcb \
                     --disable-libxcb-shm \
                     --disable-libxcb-xfixes \
+                    --disable-xlib \
                     --disable-indev=jack \
                     --disable-outdev=xv \
                     --disable-vda \
-                    --disable-xlib \
                     --disable-audiotoolbox \
                     --disable-videotoolbox \
+                    --disable-sdl2 \
                     --mandir=${prefix}/share/man \
                     --enable-shared --enable-pthreads \
-                    --cc=${configure.cc} \
-                    --cxx=${configure.cxx}
+                    --cxx=${configure.cxx} \
+                    --cc=${configure.cc}
 
 
 platform darwin {
@@ -153,6 +162,13 @@ platform darwin {
         configure.args-delete --enable-libbluray
         configure.args-append --disable-libbluray
         configure.args-append --disable-asm
+    }
+
+    # as of 1.6.0 libvpx only supports darwin 10 or later
+    if {${os.major} < 10} {
+        depends_build-delete port:libvpx
+        configure.args-delete --enable-libvpx
+        configure.args-append --disable-libvpx
     }
 
     # filters coreimage and coreimagesrc don't build on 10.6
@@ -172,9 +188,11 @@ platform darwin {
     }
 
     # AudiotoolBox support requires CoreMedia Framework available on 10.7+
+    # libsdl2 requires minimum Xcode 10.7 SDK to build successfully
     if {${os.major} > 10} {
-        configure.args-delete --disable-audiotoolbox
-        configure.args-append --enable-audiotoolbox
+        configure.args-replace --disable-audiotoolbox --enable-audiotoolbox
+        configure.args-replace --disable-sdl2 --enable-sdl2
+        depends_lib-append     port:libsdl2
     }
 
     # VideotoolBox, a new hardware acceleration framework, is supported on 10.8+ and "here to stay".
@@ -286,7 +304,7 @@ variant x11 {
     configure.args-append   --enable-xlib
 }
 
-variant natron conflicts x11 description {Minimal FFmpeg for Natron, without bluray, subtitles, network, display support.} {
+variant natron requires highbitdepth conflicts x11 description {Minimal FFmpeg for Natron, without bluray, subtitles, network, display support.} {
 
     depends_lib-delete \
                     port:libiconv \
@@ -296,7 +314,7 @@ variant natron conflicts x11 description {Minimal FFmpeg for Natron, without blu
                     port:fontconfig \
                     port:freetype \
                     port:fribidi \
-                    port:libsdl
+                    port:libsdl2
 
     configure.args-delete \
                     --enable-libass \
@@ -323,12 +341,10 @@ variant natron conflicts x11 description {Minimal FFmpeg for Natron, without blu
 
 }
 
-default_variants +x11
-
 if {[variant_isset x11]} {
-    require_active_variants libsdl x11
+    require_active_variants libsdl2 x11
 } else {
-    require_active_variants libsdl "" x11
+    require_active_variants libsdl2 "" x11
 }
 
 variant libdc1394 description {Enable IIDC-1394 frame grabbing using libdc1394 (experimental)} {
@@ -349,16 +365,12 @@ variant librtmp description {Use librtmp (from rtmpdump) as rtmp[t][es]:// proto
 }
 
 # x265 currently does not support OS X < 10.6 (#48336, #48338)
-# x265 cmake issues cause universal build to fail (#48331)
-# make libx265 support optional via +libx265 variant
-# only define variant for non-universal builds on 10.6 or greater
+# only enable libx265 support on 10.6 or greater
 
 platform darwin {
-    if {${os.major} > 8 && [variant_isset gpl2] && ![variant_isset universal]} {
-        variant libx265 description {Build with support for encoding HEVC video using libx265} {
-            configure.args-append   --enable-libx265
-            depends_lib-append      port:x265
-        }
+    if {${os.major} > 9 && [variant_isset gpl2]} {
+        configure.args-append   --enable-libx265
+        depends_lib-append      port:x265
     }
 }
 
@@ -370,12 +382,22 @@ if {[variant_isset high10]} {
     require_active_variants x264 "" high10
 }
 
+variant highbitdepth description {Build using libvpx with 10/12-bit output} {}
+
+if {[variant_isset highbitdepth]} {
+    require_active_variants libvpx highbitdepth
+} else {
+    require_active_variants libvpx "" highbitdepth
+}
+
 variant gpl2 description {Enable GPL code, license will be GPL-2+} {
     configure.args-append   --enable-gpl \
                             --enable-postproc \
+                            --enable-libx265 \
                             --enable-libx264 \
                             --enable-libxvid
     depends_lib-append      port:XviD \
+                            port:x265 \
                             port:x264
 
     license                 GPL-2+
@@ -404,10 +426,8 @@ variant gpl3 requires gpl2 description {Enable GPL code, license will be GPL-3+}
 
 variant nonfree description {enable nonfree code, libraries and binaries will not be redistributable} {
     configure.args-append   --enable-nonfree \
-                            --enable-libfdk-aac \
-                            --enable-libfaac
-    depends_lib-append      port:libfdk-aac \
-                            port:faac
+                            --enable-libfdk-aac
+    depends_lib-append      port:libfdk-aac
     license                 Restrictive
 }
 
@@ -416,7 +436,6 @@ notes "
 *******
 ******* This build of ${name} includes nonfree code as follows:
 *******
-*******     libfaac
 *******     libfdk-aac
 *******
 ******* The following libraries and binaries may not be redistributed:

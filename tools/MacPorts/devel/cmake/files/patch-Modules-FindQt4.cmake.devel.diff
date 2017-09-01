@@ -1,6 +1,6 @@
 --- Modules/FindQt4.cmake.orig
 +++ Modules/FindQt4.cmake
-@@ -743,9 +743,7 @@
+@@ -735,9 +735,7 @@
        find_path(QT_IMPORTS_DIR NAMES Qt
          HINTS ${qt_cross_paths} ${qt_imports_dir}
          DOC "The location of the Qt imports"

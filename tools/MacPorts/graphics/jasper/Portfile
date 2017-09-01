@@ -1,14 +1,14 @@
-# $Id: Portfile 136995 2015-06-02 06:41:52Z jmr@macports.org $
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
 PortSystem      1.0
+PortGroup       cmake 1.0
 
 name            jasper
-version         1.900.1
-revision        10
+version         2.0.12
 categories      graphics
 platforms       darwin
 license         JasPer-2
-maintainers     jmr openmaintainer
+maintainers     {jmr @jmroot} openmaintainer
 description     Library for manipulating JPEG-2000 images
 
 long_description \
@@ -18,38 +18,33 @@ long_description \
 
 homepage        http://www.ece.uvic.ca/~mdadams/jasper/
 master_sites    ${homepage}software/
-use_zip         yes
 
-checksums       md5     a342b2b4495b3e1394e161eb5d85d754 \
-                sha1    9c5735f773922e580bf98c7c7dfda9bbed4c5191 \
-                rmd160  fb2c188abf5b8c297078ac1f913101734f72db5c
+checksums       rmd160 a062262b337865e0f7e27d6a77e38b16e6735b30 \
+                sha256 5b24faf5ed38670d6286e45ab7516b26458d05e7929b435afe569176765f4dda
 
 depends_lib     path:lib/libjpeg.dylib:jpeg
 
-patchfiles      patch-src_libjasper_base_jas_cm.c.diff \
-                patch-src_libjasper_jpc_jpc_dec.c.diff
+patchfiles      patch-jiv.c.diff
 
-configure.args  --enable-shared \
-                --enable-static \
-                --disable-opengl \
-                --mandir=${prefix}/share/man \
-                --infodir=${prefix}/share/info
+cmake.out_of_source yes
+
+configure.args-append   -DJAS_ENABLE_AUTOMATIC_DEPENDENCIES=false \
+                        -DGLUT_glut_LIBRARY=/System/Library/Frameworks/GLUT.framework \
+                        -DJAS_ENABLE_DOC=false
 
 test.run        yes
-test.target     check
 
-post-destroot {
-    set docdir ${prefix}/share/doc/${name}
-    xinstall -m 755 -d ${destroot}${docdir}
-    xinstall -m 644 {*}[glob ${worksrcpath}/doc/*] ${destroot}${docdir}
-}
+variant docs description {build documentation} {
+    depends_build-append                \
+        port:doxygen                    \
+        port:texlive-latex              \
+        port:texlive-latex-extra        \
+        port:texlive-fonts-recommended  \
+        port:texlive-latex-recommended
 
-variant jiv description {build a basic viewer as well} {
-    depends_lib-append          port:mesa
-
-    configure.args-delete       --disable-opengl
-    configure.args-append       --enable-opengl
+    configure.args-delete   -DJAS_ENABLE_DOC=false
+    configure.args-append   -DJAS_ENABLE_DOC=true
 }
 
 livecheck.type   regex
-livecheck.regex  "JasPer version (.*) source distribution \\\(current version\\\)."
+livecheck.regex  {JasPer ([.\d]+)}

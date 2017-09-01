@@ -2,6 +2,6 @@ bin/gcc-mp-6
 bin/cpp-mp-6
 bin/c++-mp-6
 bin/g++-mp-6
-bin/gcj-mp-6
+-
 bin/gcov-mp-6
 bin/gfortran-mp-6

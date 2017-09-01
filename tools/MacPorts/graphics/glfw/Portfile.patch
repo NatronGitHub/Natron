@@ -1,21 +1,8 @@
---- Portfile.orig	2016-08-31 17:33:07.000000000 +0200
-+++ Portfile	2016-08-31 17:33:15.000000000 +0200
-@@ -67,7 +67,11 @@
-     -DBUILD_SHARED_LIBS=on \
-     -DGLFW_BUILD_EXAMPLES=off \
-     -DGLFW_BUILD_TESTS=off \
--    -DGLFW_CMAKE_CONFIG_PATH=share
-+    -DGLFW_CMAKE_CONFIG_PATH=share \
-+    -DGLFW_USE_CHDIR=on \
-+    -DGLFW_USE_MENUBAR=on \
-+    -DGLFW_USE_RETINA=on
-+
- 
- # remove top-level library path, such that internal libraries are used
- # instead of any already-installed ones.
-@@ -87,6 +91,23 @@
- 
- # error out if trying to build on OSX 10.6 or earlier; not supported
+--- Portfile.orig	2016-11-10 17:54:07.000000000 +0100
++++ Portfile	2016-11-10 17:54:12.000000000 +0100
+@@ -82,6 +82,24 @@
+     }
+ }
  
 +variant nochdir description {disable chdir} {
 +    configure.args-delete -DGLFW_USE_CHDIR=on
@@ -34,6 +21,20 @@
 +
 +variant natron conflicts noretina requires nochdir nomenubar description {Natron version} {}
 +
- platform darwin {
-     if {${os.major} < 11} {
-         set os_note "${name} ${version} is designed for OS X 10.7 Lion and newer."
++
+ # use the real home page, not github's
+ 
+ homepage            http://www.glfw.org/
+@@ -96,7 +114,11 @@
+     -DBUILD_SHARED_LIBS=on \
+     -DGLFW_BUILD_EXAMPLES=off \
+     -DGLFW_BUILD_TESTS=off \
+-    -DGLFW_CMAKE_CONFIG_PATH=share
++    -DGLFW_CMAKE_CONFIG_PATH=share \
++    -DGLFW_USE_CHDIR=on \
++    -DGLFW_USE_MENUBAR=on \
++    -DGLFW_USE_RETINA=on
++
+ 
+ # remove top-level library path, such that internal libraries are used
+ # instead of any already-installed ones.

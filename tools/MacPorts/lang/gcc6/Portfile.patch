@@ -1,6 +1,6 @@
---- Portfile.orig	2016-06-24 11:15:12.000000000 +0200
-+++ Portfile	2016-06-24 11:18:50.000000000 +0200
-@@ -71,12 +71,17 @@
+--- Portfile.orig	2017-03-08 11:26:51.000000000 +0100
++++ Portfile	2017-03-08 11:30:56.000000000 +0100
+@@ -76,6 +76,7 @@
                      --disable-multilib \
                      --enable-lto \
                      --enable-libstdcxx-time \
@@ -8,13 +8,3 @@
                      --with-build-config=bootstrap-debug \
                      --with-as=${prefix}/bin/as \
                      --with-ld=${prefix}/bin/ld \
-                     --with-ar=${prefix}/bin/ar \
-                     --with-bugurl=https://trac.macports.org/newticket
- 
-+if {${configure.sdkroot} ne ""} { 
-+    configure.args-append     --with-sysroot=${configure.sdkroot} 
-+} 
-+
- configure.env-append \
-                     AR_FOR_TARGET=${prefix}/bin/ar \
-                     AS_FOR_TARGET=${prefix}/bin/as \

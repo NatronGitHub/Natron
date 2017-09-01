@@ -1,5 +1,5 @@
---- Portfile.orig	2016-09-27 18:52:34.000000000 +0200
-+++ Portfile	2016-09-28 14:44:24.000000000 +0200
+--- Portfile.orig	2017-05-06 17:53:02.000000000 +0200
++++ Portfile	2017-06-02 13:26:34.000000000 +0200
 @@ -66,6 +66,8 @@
                              port:expat \
                              port:libxml2
@@ -23,18 +23,20 @@
                              --with-openjp2 \
                              --with-png \
                              --with-tiff \
-@@ -114,6 +118,72 @@
+@@ -114,6 +118,74 @@
                              --without-x \
                              --with-gs-font-dir=${prefix}/share/fonts/urw-fonts
  
-+variant natron conflicts x11 requires pango rsvg q32 hdri universal description {Natron version} {
-+    # configure with GCC 4.9 for proper OpenMP support
-+    configure.compiler macports-gcc-4.9
-+    # use the driverdriver (built using https://github.com/devernay/macportsGCCfixup) to be able to build universal binaries
-+    #configure.args-append   -DCMAKE_C_COMPILER=${configure.cc}-dd -DCMAKE_CXX_COMPILER=${configure.cxx}-dd
-+    configure.args-append   CC=${configure.cc}-dd CXX=${configure.cxx}-dd
++variant natron conflicts x11 requires pango rsvg q32 hdri description {Natron version} {
++    if {${configure.cxx_stdlib} eq "libstdc++"} {
++        # configure with GCC 4.9 for proper OpenMP support
++        configure.compiler macports-gcc-4.9
++    } else {
++        # libc++-based build
++        # configure with clang-4.0 for proper OpenMP support
++        configure.compiler macports-clang-4.0
++    }
 +    configure.args-append --enable-openmp
-+
 +    patchfiles-append pango-align-hack.diff
 +    depends_lib-delete      port:ghostscript
 +    configure.args-replace  --with-dps --without-dps
@@ -67,12 +69,12 @@
 +    configure.args-replace  --with-bzlib --without-bzlib
 +    configure.args-replace  --enable-shared --disable-shared
 +    configure.args-replace  --with-modules --without-modules
-+    pre-extract {
-+        if {${version} != "6.9.5-10"} {
-+            ui_msg "Natron variant requires ImageMagick version 6.9.5-9 (this is ${version}), please modify the Portfile."
-+            return -code error "incompatible ImageMagick version"
-+        }
-+    }
++    #pre-extract {
++    #    if {${version} != "6.9.7-5"} {
++    #        ui_msg "Natron variant requires ImageMagick version 6.9.7-5 (this is ${version}), please modify the Portfile."
++    #        return -code error "incompatible ImageMagick version"
++    #    }
++    #}
 +}
 +
 +# OpenMP support seems to be broken in gcc 4.2.1 and llvm-gcc-4.2 (OpenMP can only be used in the main thread):
@@ -96,10 +98,19 @@
  test.run                    yes
  test.target                 check
  test.env                    DYLD_LIBRARY_PATH=${worksrcpath}/magick/.libs
-@@ -121,6 +191,14 @@
+@@ -121,6 +193,23 @@
  # ImageMagick uses .la files at runtime to find its coder modules.
  destroot.delete_la_files    no
  
++post-destroot {
++    if {${configure.cxx_stdlib} eq "libc++"} {
++        # The pkg-config files contain -lgomp instead of -L/opt/local/lib/libomp -omp
++        foreach f [glob -directory ${destroot}${prefix}/lib/pkgconfig Magick*pc Wand*pc ImageMagick*pc] {
++            reinplace -locale C {/Libs.private: /s:-lgomp:-L${prefix}/lib/libomp -lomp:g} ${f}
++        }
++    }
++}
++
 +variant q32 description {Use Q32 quantum depth} {
 +    configure.args-append   --with-quantum-depth=32
 +}
@@ -111,7 +122,7 @@
  variant graphviz description {Support Graphviz} {
      depends_lib-append      path:bin/dot:graphviz
      configure.args-replace  --without-gvc --with-gvc
-@@ -155,6 +233,11 @@
+@@ -155,6 +244,11 @@
  
  default_variants            +x11
  

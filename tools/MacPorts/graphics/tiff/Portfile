@@ -1,16 +1,14 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 145689 2016-02-12 23:42:11Z cal@macports.org $
 
 PortSystem          1.0
 PortGroup           xcodeversion 1.0
 PortGroup           muniversal 1.0
 
 name                tiff
-version             4.0.6
-revision            1
+version             4.0.8
 categories          graphics
 platforms           darwin
-maintainers         ryandesign openmaintainer
+maintainers         {ryandesign @ryandesign} openmaintainer
 license             BSD
 
 description         Library and tools for dealing with Tag Image File Format
@@ -28,14 +26,12 @@ long_description    \
     There is also considerable support for some of the more     \
     esoteric portions of the 6.0 TIFF spec.
 
-homepage            http://www.remotesensing.org/libtiff
+homepage            http://simplesystems.org/libtiff/
 master_sites        http://download.osgeo.org/libtiff/ \
-                    ftp://ftp.remotesensing.org/pub/libtiff/ \
-                    http://dl.maptools.org/dl/libtiff/ \
                     freebsd
 
-checksums           rmd160  3d5d6951a36baf32ab0e0958d3b4a9413b7f2e07 \
-                    sha256  4d57a50907b510e3049a4bba0d7888930fdfc16ce49f1bf693e5b6247370d68c
+checksums           rmd160  0d8bc26c98035810c73b8f876f76dc48efba7da8 \
+                    sha256  59d7a5a8ccd92059913f246877db95a2918e6c04fb9d43fd74e5c3390dac2910
 
 depends_lib         path:lib/libjpeg.dylib:jpeg \
                     port:xz \
@@ -52,10 +48,7 @@ autoreconf.args     -fvi
 #     prevent configure script from assuming that if we don't want X11, then we don't want OpenGL either
 # prevent configure script from finding X11 OpenGL (e.g. mesa & freeglut)
 patchfiles          patch-configure.ac.diff \
-                    patch-acinclude.m4.diff \
-                    f94a29a822f5528d2334592760fbb7938f15eb55.patch \
-                    aaab5c3c9d2a2c6984f23ccbc79702610439bc65.patch \
-                    b18012dae552f85dcc5c57d3bf4e997a15b1cc1c.patch
+                    patch-acinclude.m4.diff
 
 
 configure.args      --disable-jbig \

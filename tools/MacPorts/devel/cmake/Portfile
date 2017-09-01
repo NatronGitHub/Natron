@@ -1,8 +1,8 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 153280 2016-09-28 12:22:36Z michaelld@macports.org $
 
 PortSystem          1.0
 universal_variant no
+PortGroup           compiler_blacklist_versions 1.0
 
 name                cmake
 
@@ -23,15 +23,15 @@ dist_subdir         cmake
 
 subport cmake-devel {}
 
-set branch          3.6
+set branch          3.9
 
 if {${subport} eq ${name}} {
 
     # release
 
-    version         ${branch}.2
-    checksums       rmd160 2b9a04eec4964302ddb0e3b48060407cbdab8455 \
-                    sha256 189ae32a6ac398bb2f523ae77f70d463a6549926cde1544cd9cc7c6609f8b346
+    version         ${branch}.1
+    checksums       rmd160 5938821da9cc282af60ad9c7fde2bd55a7626866 \
+                    sha256 d768ee83d217f91bb597b3ca2ac663da7a8603c97e1f1a5184bc01e0ad2b12bb
 
     master_sites    http://www.cmake.org/files/v${branch}/
     conflicts       cmake-devel
@@ -44,7 +44,8 @@ if {${subport} eq ${name}} {
         patch-Modules-FindQt4.cmake.release.diff \
         patch-Modules-FindFreetype.cmake.release.diff \
         patch-Modules-noArchCheck.release.diff \
-        patch-CMakeFindFrameworks.cmake.release.diff
+        patch-CMakeFindFrameworks.cmake.release.diff \
+        patch-Source_CMakeVersionCompute.cmake.release.diff
 
     livecheck.type  regex
     livecheck.regex ${name}-(\[0-9.\]+)${extract.suffix}
@@ -54,17 +55,19 @@ if {${subport} eq ${name}} {
 
     # devel
 
-    version         20160926
-    set dist_branch 3.6
-    set dist_date   20160926
-    set dist_hash   gcdaf3
-    checksums       rmd160 f16413d27c94a568d20e4a75140d37545c9b98f2 \
-                    sha256 d922c15c634e7827a7c563e64cd958ab96f53b310f132b36f3fb755a9999dd26
+    version         20170828
+    set commit      5eb6d200f4087f066eec4b9da805d33f95ede2bf
+    checksums       rmd160 600ed18d0b8b7742f09ac5b7a745c7c324dc09d2 \
+                    sha256 222a30df2288881e65fa59c5062c25c07a17d9e8dd287e033a91875addb5ab4c
 
-    master_sites    http://www.cmake.org/files/dev/
-    distname        ${name}-${dist_branch}.${dist_date}-${dist_hash}
+    master_sites    https://gitlab.kitware.com/cmake/cmake/repository/archive.tar.bz2?ref=${commit}&
+    distname        ${name}-${commit}
+
+    post-extract {
+        move ${workpath}/${name}-${commit}-${commit} ${workpath}/${name}-${commit}
+    }
+
     conflicts       cmake
-
     long_description ${base_long_description} \
         The ${subport} port is updated roughly every week.
 
@@ -76,15 +79,14 @@ if {${subport} eq ${name}} {
         patch-CMakeFindFrameworks.cmake.devel.diff \
         patch-Source_CMakeVersionCompute.cmake.devel.diff
 
-    # allow use of libuv or libuv-devel;
-    # system libuv is the default as of 20160830 (g320f5)
-    depends_lib-append \
-        path:lib/pkgconfig/libuv.pc:libuv
+    # require C++11 as of 2017-08-21
+    # https://gitlab.kitware.com/cmake/cmake/commit/c1f3eb9f2d628b2911aa17f65012fab0befc4b87
+    PortGroup cxx11 1.1
 
     livecheck.type  regex
-    livecheck.regex (${name}-\[0-9a-g.-\]+)${extract.suffix}
-    livecheck.version ${distname}
-    livecheck.url   http://www.cmake.org/files/dev/
+    livecheck.regex /cmake/cmake/commit/(\[0-9a-g\]+)
+    livecheck.version ${commit}
+    livecheck.url   https://gitlab.kitware.com/cmake/cmake/tree/master
 
 }
 
@@ -95,16 +97,22 @@ depends_lib-append  port:curl \
                     port:libarchive \
                     port:ncurses
 
-# CMake 3.2 changed dependency requirements to include jsoncpp.
-# jsoncpp 1.0+ requires CMake for building. catch 22. So, have CMake
-# use its internal jsoncpp until a better solution comes about.
-
-patchfiles-append   patch-Modules-Platform-Darwin.cmake.diff
+# allow use of libuv or libuv-devel;
+# system libuv is the default as of 20160830 (g320f5)
+depends_lib-append  path:lib/pkgconfig/libuv.pc:libuv
 
 configure.env-append \
                     CMAKE_PREFIX_PATH=${prefix} \
                     CMAKE_INCLUDE_PATH=${prefix}/include/ncurses \
                     CMAKE_LIBRARY_PATH=${prefix}/lib
+
+# when using libc++, require Clang 3.4 or newer; Clang 3.3 produces
+# bad stream reading code. See also MP ticket #44129:
+# < https://trac.macports.org/ticket/44129 >
+
+if {${configure.cxx_stdlib} eq "libc++"} {
+    compiler.blacklist-append *gcc* {clang < 500} macports-clang-3.3
+}
 
 platform darwin {
     configure.env-append \
@@ -117,17 +125,37 @@ platform darwin {
     }
 }
 
+# CMake 3.2 changed dependency requirements to include jsoncpp.
+# jsoncpp 1.0+ requires CMake for building. catch 22. So, have CMake
+# use its internal jsoncpp until a better solution comes about.
+
 configure.args-append --docdir=share/doc/cmake \
                     --parallel=${build.jobs} \
                     --init=${worksrcpath}/macports.cmake \
                     --system-libs \
-                    --no-system-jsoncpp
+                    --no-system-jsoncpp \
+                    --no-system-librhash
 
 configure.universal_args
 configure.post_args
 
 # CMake's configure script doesn't recognize `--host`.
 array set merger_host {i386 {} x86_64 {} ppc {} ppc64 {}}
+
+# Tiger has issues with system libraries;
+# just use the ones internal to cmake instead.
+platform darwin 8 {
+    configure.args-delete --system-libs
+    configure.args-append --no-system-libs
+    depends_lib-delete \
+        path:lib/pkgconfig/libuv.pc:libuv \
+        port:curl \
+        port:expat \
+        port:zlib \
+        port:bzip2 \
+        port:libarchive \
+        port:ncurses
+}
 
 # Leopard's Rosetta has some difficulties configuring the ppc slice
 platform darwin 9 {
@@ -168,8 +196,12 @@ post-patch {
 
     if {[variant_isset python27]} {
         set PYTHON_VERSION_WITH_DOT "2.7"
-    } else {
+    } elseif {[variant_isset python34]} {
         set PYTHON_VERSION_WITH_DOT "3.4"
+    } elseif {[variant_isset python35]} {
+        set PYTHON_VERSION_WITH_DOT "3.5"
+    } else {
+        set PYTHON_VERSION_WITH_DOT "3.6"
     }
     reinplace "s|__PYTHON_VERSION_WITH_DOT__|${PYTHON_VERSION_WITH_DOT}|g" ${worksrcpath}/macports.cmake
 }
@@ -178,18 +210,10 @@ post-destroot {
     xinstall -d -m 0755 ${destroot}${prefix}/share/emacs/site-lisp
     xinstall -m 0644 ${worksrcpath}/Auxiliary/cmake-mode.el \
         ${destroot}${prefix}/share/emacs/site-lisp
-    if {${subport} eq ${name}} {
-        foreach type {syntax indent} {
-            xinstall -d -m 0755 ${destroot}${prefix}/share/vim/vimfiles/${type}
-            xinstall -m 0644 -W ${worksrcpath}/Auxiliary cmake-${type}.vim \
-                ${destroot}${prefix}/share/vim/vimfiles/${type}
-        }
-    } else {
-        foreach type {syntax indent} {
-            xinstall -d -m 0755 ${destroot}${prefix}/share/vim/vimfiles/${type}
-            xinstall -m 0644 -W ${worksrcpath}/Auxiliary/vim/${type} cmake.vim \
-                ${destroot}${prefix}/share/vim/vimfiles/${type}
-        }
+    foreach type {syntax indent} {
+        xinstall -d -m 0755 ${destroot}${prefix}/share/vim/vimfiles/${type}
+        xinstall -m 0644 -W ${worksrcpath}/Auxiliary/vim/${type} cmake.vim \
+            ${destroot}${prefix}/share/vim/vimfiles/${type}
     }
     if ([variant_isset gui]) {
         set app CMake
@@ -208,7 +232,7 @@ variant gui description {Build Qt-based cmake-gui} {
 
     # when building the GUI with Qt, CMake uses C++11. So, make sure
     # the compiler used is c++11 compliant.
-    
+
     if {${configure.cxx_stdlib} eq "libstdc++"} {
 
         # *clang* when using libstdc++ do not seem to support C++11;
@@ -277,25 +301,47 @@ variant docs description {Build documentation: HTML and manpages} {
         --sphinx-html
 }
 
-variant python27 conflicts python34 requires docs description {Build documentation using Sphinx from Python 2.7} {
+variant python27 conflicts python34 python35 python36 requires docs \
+    description {Build documentation using Sphinx from Python 2.7} {
     depends_build-append port:py27-sphinx
     configure.args-append \
         --sphinx-build=${prefix}/bin/sphinx-build-2.7
 }
 
-variant python34 conflicts python27 requires docs description {Build documentation using Sphinx from Python 3.4} {
+variant python34 conflicts python27 python35 python36 requires docs \
+    description {Build documentation using Sphinx from Python 3.4} {
     depends_build-append port:py34-sphinx
     configure.args-append \
         --sphinx-build=${prefix}/bin/sphinx-build-3.4
 }
 
+variant python35 conflicts python27 python34 python36 requires docs \
+    description {Build documentation using Sphinx from Python 3.5} {
+    depends_build-append port:py35-sphinx
+    configure.args-append \
+        --sphinx-build=${prefix}/bin/sphinx-build-3.5
+}
+
+variant python36 conflicts python27 python34 python35 requires docs \
+    description {Build documentation using Sphinx from Python 3.6} {
+    depends_build-append port:py36-sphinx
+    configure.args-append \
+        --sphinx-build=${prefix}/bin/sphinx-build-3.6
+}
+
 if {[variant_isset docs]} {
-    if {![variant_isset python27] && ![variant_isset python34]} {
+    if {![variant_isset python27] &&
+        ![variant_isset python34] &&
+        ![variant_isset python35] &&
+        ![variant_isset python36]} {
         default_variants +python27
     }
 
-    if {![variant_isset python27] && ![variant_isset python34]} {
-        ui_error "\n\nYou must select either the +python27 or +python34 variant when using variant +docs.\n"
+    if {![variant_isset python27] &&
+        ![variant_isset python34] &&
+        ![variant_isset python35] &&
+        ![variant_isset python36]} {
+        ui_error "\n\nYou must select either the +python27, +python34, +python35, or +python36 variant when using variant +docs.\n"
         return -code error "Invalid variant selection"
     }
 }

@@ -1,16 +1,18 @@
 # -*- Mode: Tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:et:sw=4:ts=4:sts=4
-# $Id: Portfile 152415 2016-09-08 11:05:30Z mps@macports.org $
 
 PortSystem      1.0
+
+PortGroup       compiler_blacklist_versions 1.0
 PortGroup       muniversal 1.0
+PortGroup       snowleopard_fixes 1.0
 
 name            gnutls
-version         3.4.15
+version         3.5.15
 set branch      [join [lrange [split ${version} .] 0 1] .]
 categories      devel security
 # yes, some of the libs are GPL only
 license         LGPL-2.1+ GPL-3+
-maintainers     mps openmaintainer
+maintainers     {mps @Schamschula} openmaintainer
 description     GNU Transport Layer Security Library
 homepage        http://www.gnutls.org/
 platforms       darwin
@@ -22,26 +24,27 @@ long_description \
     and is available under the GNU Lesser General Public License (LGPL).
 
 master_sites    ftp://ftp.gnutls.org/gcrypt/gnutls/v${branch}/ \
-                http://archive.hmug.org/src/gnutls/ \
                 http://mirrors.dotsrc.org/gcrypt/gnutls/v${branch}/
 
-checksums       rmd160  b49b33a3af479ac00044676f84050391806fc8f2 \
-                sha256  eb2a013905f5f2a0cbf7bcc1d20c85a50065063ee87bd33b496c4e19815e3498
+checksums       rmd160  29c45e4710b27d2f0c6e8d02692fb400b333b7ea \
+                sha256  046081108b8b1fe455a13a4c5a4eaa0368e185b678f1670fe09a11a2d7ecfad5
 
 use_xz          yes
 
-depends_build   port:gettext \
+depends_build-append \
+                port:gettext \
                 port:pkgconfig
 
-depends_lib     port:gmp \
+depends_lib-append \
+                port:gmp \
                 port:libidn \
                 port:libtasn1 \
+                port:libunistring \
                 port:p11-kit \
                 port:nettle \
-                path:share/curl/curl-ca-bundle.crt:curl-ca-bundle \
                 port:zlib
 
-patchfiles      patch-tests-pkcs11-pkcs11-mock.c.diff
+patchfiles      patch-lib-system-certs.c.diff
 
 post-patch {
     # Remove comments which confuse at least Leopard's assembler.
@@ -59,7 +62,7 @@ configure.args  --disable-guile \
                 --enable-openssl-compatibility \
                 --with-p11-kit \
                 --with-system-priority-file="${prefix}/etc/gnutls/default-priorities" \
-                --with-default-trust-store-file="${prefix}/share/curl/curl-ca-bundle.crt" \
+                --with-default-trust-store-pkcs11=pkcs11: \
                 ac_cv_prog_AWK=/usr/bin/awk
 
 variant dane description {Build libdane using unbound libraries} {
@@ -109,6 +112,12 @@ post-destroot {
 
 platform darwin 8 {
     depends_build-append   port:texinfo
+}
+
+if { ${build_arch} eq "i386" || ${build_arch} eq "x86_64" } {
+    compiler.blacklist-append *gcc-4.0
+    compiler.blacklist-append *gcc-4.2
+    compiler.blacklist-append {clang < 400}
 }
 
 livecheck.type  regex

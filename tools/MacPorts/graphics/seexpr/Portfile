@@ -22,12 +22,12 @@ master_sites        https://github.com/wdas/SeExpr/archive/
 distname            rel-${version}
 
 checksums           sha1  80890cedd684a93b012b0964dc3b59910aaf5a10
-worksrcdir          ${name}-rel-${version}
+worksrcdir          SeExpr-rel-${version}
 
 depends_lib         port:libpng
 depends_build       port:doxygen
 
-patchfiles          seexpr-darwin.diff
+patchfiles          seexpr-darwin.diff seexpr-flags.diff
 patch.cmd           "git apply -v"
 patch.pre_args      -p1
 

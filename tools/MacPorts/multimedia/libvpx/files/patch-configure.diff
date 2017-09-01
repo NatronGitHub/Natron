@@ -1,0 +1,18 @@
+--- configure.orig	2016-07-20 18:15:41.000000000 -0700
++++ configure	2016-11-28 09:21:36.000000000 -0800
+@@ -116,6 +116,7 @@
+ all_platforms="${all_platforms} mips64-linux-gcc"
+ all_platforms="${all_platforms} sparc-solaris-gcc"
+ all_platforms="${all_platforms} x86-android-gcc"
++all_platforms="${all_platforms} x86-darwin-gcc"
+ all_platforms="${all_platforms} x86-darwin8-gcc"
+ all_platforms="${all_platforms} x86-darwin8-icc"
+ all_platforms="${all_platforms} x86-darwin9-gcc"
+@@ -140,6 +141,7 @@
+ all_platforms="${all_platforms} x86-win32-vs12"
+ all_platforms="${all_platforms} x86-win32-vs14"
+ all_platforms="${all_platforms} x86_64-android-gcc"
++all_platforms="${all_platforms} x86_64-darwin-gcc"
+ all_platforms="${all_platforms} x86_64-darwin9-gcc"
+ all_platforms="${all_platforms} x86_64-darwin10-gcc"
+ all_platforms="${all_platforms} x86_64-darwin11-gcc"

@@ -1,13 +1,12 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 152697 2016-09-14 21:09:45Z ryandesign@macports.org $
 
 PortSystem                      1.0
 
 name                            curl
-version                         7.50.3
+version                         7.55.1
 categories                      net www
 platforms                       darwin freebsd
-maintainers                     ryandesign
+maintainers                     {ryandesign @ryandesign}
 license                         Curl
 
 description                     Tool for transferring files with URL syntax
@@ -19,17 +18,16 @@ long_description                curl is a client to get documents/files from ser
 
 homepage                        https://curl.haxx.se
 master_sites                    ${homepage}/download/:curl \
-                                ftp://ftp.sunet.se/pub/www/utilities/curl/:curl \
-                                http://www.execve.net/curl/:curl
+                                http://curl.mirror.anstey.ca/:curl \
+                                http://curl.askapache.com/download/:curl
 
-use_bzip2                       yes
-
+use_xz                          yes
 set curl_distfile               ${distfiles}
 distfiles                       ${curl_distfile}:curl
 
 checksums                       ${curl_distfile} \
-                                rmd160  15db3008862eff79fa7ed472f26054a615a93177 \
-                                sha256  7b7347d976661d02c84a1f4d6daf40dee377efdc45b9e2c77dedb8acf140d8ec
+                                rmd160  d60d416611adf59b212534a3cd652a0ea29599d1 \
+                                sha256  3eafca6e84ecb4af5f35795dee84e643d5428287e88c041122bb8dac18676bb7
 
 if {${name} eq ${subport}} {
     PortGroup                   muniversal 1.0
@@ -40,10 +38,11 @@ if {${name} eq ${subport}} {
 
     depends_lib                 port:zlib
 
-    patchfiles                  patch-curl.h.diff
+    patchfiles                  patch-include-curl-system.h.diff
 
     configure.args              --disable-silent-rules \
                                 --enable-ipv6 \
+                                --without-cyassl \
                                 --without-gnutls \
                                 --without-gssapi \
                                 --without-libidn \
@@ -55,11 +54,14 @@ if {${name} eq ${subport}} {
                                 --without-polarssl \
                                 --without-spnego \
                                 --without-ssl \
+                                --without-darwinssl \
                                 --disable-ares \
                                 --disable-ldap \
                                 --disable-ldaps \
                                 --with-zlib=${prefix} \
                                 ac_cv_prog_AWK=/usr/bin/awk
+
+    configure.cflags-append     -mmacosx-version-min=${macosx_deployment_target}
 
     configure.env               PKG_CONFIG_PATH=${prefix}
 
@@ -97,7 +99,7 @@ if {${name} eq ${subport}} {
             RELEASE-NOTES \
             ${destroot}${docdir}
         xinstall -m 0644 -W ${worksrcpath}/docs \
-            BINDINGS \
+            BINDINGS.md \
             BUGS \
             CODE_OF_CONDUCT.md \
             CODE_STYLE.md \
@@ -124,10 +126,6 @@ if {${name} eq ${subport}} {
             ${destroot}${docdir}
         xinstall -m 0644 ${worksrcpath}/docs/libcurl/libcurl.m4 \
             ${destroot}${prefix}/share/aclocal/
-        xinstall -m 0644 {*}[glob ${worksrcpath}/docs/*.html] ${destroot}${docdir}/html
-        xinstall -m 0644 {*}[glob ${worksrcpath}/docs/libcurl/*.html] ${destroot}${docdir}/html/libcurl
-        xinstall -m 0644 {*}[glob ${worksrcpath}/docs/*.pdf] ${destroot}${docdir}/pdf
-        xinstall -m 0644 {*}[glob ${worksrcpath}/docs/libcurl/*.pdf] ${destroot}${docdir}/pdf/libcurl
     }
 
     variant ares description {Support resolving names asynchronously} {
@@ -135,9 +133,18 @@ if {${name} eq ${subport}} {
         configure.args-replace  --disable-ares --enable-ares
     }
 
-    variant gnutls conflicts ssl description {Allow secure connections using GNU TLS} {
+    variant darwinssl conflicts ssl gnutls wolfssl description {Allow secure connections using Apple OS native TLS} {
+        configure.args-replace  --without-darwinssl --with-darwinssl
+    }
+
+    variant gnutls conflicts ssl wolfssl darwinssl description {Allow secure connections using GNU TLS} {
         depends_lib-append      port:gnutls
         configure.args-replace  --without-gnutls --with-gnutls
+    }
+
+    variant wolfssl conflicts ssl gnutls darwinssl description {Allow secure connections using wolfSSL, formerly CyaSSL} {
+        depends_lib-append      port:wolfssl
+        configure.args-replace  --without-cyassl --with-cyassl
     }
 
     variant gss description {Support the Generic Security Service API} {
@@ -182,14 +189,14 @@ if {${name} eq ${subport}} {
         configure.args-replace  --without-spnego --with-spnego=${prefix}
     }
 
-    variant ssl conflicts gnutls description {Allow secure connections using OpenSSL} {
+    variant ssl conflicts gnutls wolfssl darwinssl description {Allow secure connections using OpenSSL} {
         depends_lib-append      path:lib/libssl.dylib:openssl \
                                 path:share/curl/curl-ca-bundle.crt:curl-ca-bundle
         configure.args-replace  --without-ssl --with-ssl=${prefix}
         configure.args-append   --with-ca-bundle=${prefix}/share/curl/curl-ca-bundle.crt
     }
 
-    if {![variant_isset gnutls]} {
+    if {![variant_isset gnutls] && ![variant_isset darwinssl] && ![variant_isset wolfssl]} {
         default_variants +ssl
     }
 
@@ -214,19 +221,23 @@ subport curl-ca-bundle {
                                 (CA certs) which curl (when linked with OpenSSL) uses to \
                                 verify the authenticity of secure web and FTP servers.
 
+    depends_extract-append      bin:bzip2:bzip2
+
     depends_build               path:bin/perl:perl5
 
     set certdata_file           certdata.txt
     # The output of the Tcl command "clock seconds" (you can run it in tclsh) when
     # the certdata.txt file in the port was last updated.
-    set certdata_updated        1473264969
-    set certdata_version        4044c6fd7e48
-    set certdata_distfile       certdata-${certdata_version}${extract.suffix}
+    set certdata_updated        1500995000
+    set certdata_version        be884de5820a
+    set certdata_extract_cmd    bzip2
+    set certdata_extract_suffix .tar.bz2
+    set certdata_distfile       certdata-${certdata_version}${certdata_extract_suffix}
     set certdata_path           security/nss/lib/ckfw/builtins/${certdata_file}
 
     # Only try to fetch from the master site shortly after the port is updated, to guard against stealth updates.
-    if {[clock seconds] - ${certdata_updated} < 90000} {
-        master_sites-append     http://hg.mozilla.org/mozilla-central/archive/${certdata_version}${extract.suffix}/${certdata_path}?dummy=:certdata
+    if {[clock seconds] - ${certdata_updated} < 604800} {
+        master_sites-append     https://hg.mozilla.org/mozilla-central/archive/${certdata_version}${certdata_extract_suffix}/${certdata_path}?dummy=:certdata
     } else {
         master_sites-append     macports_distfiles::certdata
     }
@@ -234,13 +245,16 @@ subport curl-ca-bundle {
     distfiles-append            ${certdata_distfile}:certdata
 
     checksums-append            ${certdata_distfile} \
-                                rmd160  a2c4b5c9985f6335354a4810667908d14886135f \
-                                sha256  e26ebd547cc73815ebb14550036fee7426ec68060d1ae2c26bbcc9bb68492509
+                                rmd160  f923926b7c5537cd04e27f1be4c1538f099eb4bf \
+                                sha256  94f67c4c88e8655d720d7c5f9332391899fe0a96ca1d2d1370f476e718ffb760
 
-    extract.only                ${certdata_distfile}
+    extract.only                ${curl_distfile}
+    set curl_mk_ca_bundle_files "${worksrcdir}/Makefile ${worksrcdir}/lib/mk-ca-bundle.pl"
+    extract.post_args-append    {*}${curl_mk_ca_bundle_files}
 
     post-extract {
-        system -W ${workpath} "${extract.cmd} ${extract.pre_args} '${distpath}/${curl_distfile}' ${extract.post_args} ${worksrcdir}/Makefile ${worksrcdir}/lib/mk-ca-bundle.pl"
+        extract.post_args-delete    {*}${curl_mk_ca_bundle_files}
+        system -W ${workpath} "${certdata_extract_cmd} ${extract.pre_args} '${distpath}/${certdata_distfile}' ${extract.post_args}"
         move ${workpath}/mozilla-central-${certdata_version}/${certdata_path} ${worksrcpath}/${certdata_file}
     }
 

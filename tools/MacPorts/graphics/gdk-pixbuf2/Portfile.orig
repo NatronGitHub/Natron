@@ -1,5 +1,4 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 153230 2016-09-27 16:12:54Z devans@macports.org $
 
 PortSystem          1.0
 PortGroup           gobject_introspection 1.0
@@ -7,11 +6,11 @@ PortGroup           gobject_introspection 1.0
 name                gdk-pixbuf2
 set my_name         gdk-pixbuf
 epoch               2
-version             2.36.0
+version             2.36.9
 license             LGPL
 set branch          [join [lrange [split ${version} .] 0 1] .]
 categories          graphics
-maintainers         devans openmaintainer
+maintainers         {devans @dbevans} openmaintainer
 homepage            http://www.gtk.org/
 platforms           darwin
 distname            ${my_name}-${version}
@@ -23,8 +22,8 @@ long_description    ${description}
 
 master_sites        gnome:sources/${my_name}/${branch}/
 
-checksums           rmd160  0a6079ba5a018ff62aaeb0af699a1355c7500f5c \
-                    sha256  85ab52ce9f2c26327141b3dcf21cca3da6a3f8de84b95fa1e727d8871a23245c
+checksums           rmd160  7e37b04812a729f0faf52017c619a94b59a48661 \
+                    sha256  8013b271ff1a691514b5bbc9b99f6ed456422d4da4a721a9db0b783abe8e740a
 
 depends_build       port:pkgconfig
 
