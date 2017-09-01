@@ -293,13 +293,13 @@ patchfiles-append patch-better-invalid-fonttable-handling.diff
 
 patchfiles-append patch-fix_pointer_comparison_to_0.diff
 
-# (27) Backport of Qt5 patch to fix an issue with null bytes in QSetting strings (QTBUG-56124).
+# (30) Backport of Qt5 patch to fix an issue with null bytes in QSetting strings (QTBUG-56124).
 patchfiles-append patch-qsettings-null.diff
 
-# (28) Patch to fix build on macOS High Sierra
+# (31) Patch to fix build on macOS High Sierra
 patchfiles-append patch-qt4-versions-without-underscores.diff
 
-# (29) Mac OS X 10.4 Tiger patches
+# (32) Mac OS X 10.4 Tiger patches
 platform darwin {
     if {${MINOR} == 4} {
         patchfiles-append patch-src_corelib_io_qfilesystemengine_unix.cpp-tiger.diff
