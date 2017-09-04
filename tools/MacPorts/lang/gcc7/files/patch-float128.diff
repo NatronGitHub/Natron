@@ -1,0 +1,12 @@
+--- libstdc++-v3/config.h.in.orig	2016-12-12 10:44:08.000000000 -0700
++++ libstdc++-v3/config.h.in	2017-01-14 02:19:10.000000000 -0700
+@@ -913,7 +913,9 @@
+ #undef _GLIBCXX_USE_FCHMODAT
+ 
+ /* Define if __float128 is supported on this host. */
++#ifndef __clang__
+ #undef _GLIBCXX_USE_FLOAT128
++#endif
+ 
+ /* Defined if gettimeofday is available. */
+ #undef _GLIBCXX_USE_GETTIMEOFDAY
