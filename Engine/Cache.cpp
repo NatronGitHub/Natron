@@ -5068,6 +5068,7 @@ Cache<persistent>::evictLRUEntries(std::size_t nBytesToFree)
             bucketLock.reset();
             tocReadLock.reset();
             tocWriteLock.reset();
+            tilesReadLock.reset();
             _imp->recoverFromInconsistentState(
 #ifdef NATRON_CACHE_INTERPROCESS_ROBUST
                                                shmReader
