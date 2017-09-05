@@ -1576,7 +1576,7 @@ static void finishProducedPlanesTilesStatesMap(const std::map<ImagePlaneDesc, Im
 }
 
 ActionRetCodeEnum
-EffectInstance::launchRenderInternal(const TreeRenderExecutionDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestData)
+EffectInstance::launchRenderInternal(const TreeRenderExecutionDataPtr& /*requestPassSharedData*/, const FrameViewRequestPtr& requestData)
 {
     assert(isRenderClone() && getCurrentRender());
 

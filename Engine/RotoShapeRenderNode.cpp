@@ -67,7 +67,11 @@ RotoShapeRenderNode::createPlugin()
     ret->setProperty<bool>(kNatronPluginPropIsInternalOnly, true);
     EffectDescriptionPtr effectDesc = ret->getEffectDescriptor();
     effectDesc->setProperty<RenderSafetyEnum>(kEffectPropRenderThreadSafety, eRenderSafetyFullySafe);
+#ifdef ROTO_SHAPE_RENDER_CPU_USES_CAIRO
     effectDesc->setProperty<PluginOpenGLRenderSupport>(kEffectPropSupportsOpenGLRendering, ePluginOpenGLRenderSupportYes);
+#else
+    effectDesc->setProperty<PluginOpenGLRenderSupport>(kEffectPropSupportsOpenGLRendering, ePluginOpenGLRenderSupportNeeded);
+#endif
     effectDesc->setProperty<bool>(kEffectPropSupportsTiles, false);
     effectDesc->setProperty<bool>(kEffectPropSupportsMultiResolution, true);
     effectDesc->setProperty<bool>(kEffectPropTemporalImageAccess, true);
