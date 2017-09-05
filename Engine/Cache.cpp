@@ -3848,6 +3848,10 @@ Cache<persistent>::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
                 // Lock the bucket in write mode, we are going to write to the tiles list of the entry
                 createLock<Sharable_WriteLock>(_imp.get(), bucketWriteLock, &_imp->ipc->bucketsData[cacheEntryBucketIndex].bucketMutex);
 
+                // Increment the size of the entry in the cache.
+                // Do it before releaseTilesInternal() is called because the function decrements the size of the tiles released.
+                bucket.ipc->size += nTilesToAlloc * NATRON_TILE_SIZE_BYTES;
+
                 // Look-up the cache entry
                 bool gotEntry = bucket.tryCacheLookupImpl(entryHash, &found, &storage);
                 if (!gotEntry) {
@@ -3863,8 +3867,7 @@ Cache<persistent>::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
 
                 cacheEntry->size += nTilesToAlloc * NATRON_TILE_SIZE_BYTES;
 
-                // Increment the size of the entry in the cache
-                bucket.ipc->size += nTilesToAlloc * NATRON_TILE_SIZE_BYTES;
+
 #ifdef CACHE_TRACE_SIZE
                 qDebug() << entryHash << "Entry += " << nTilesToAlloc * NATRON_TILE_SIZE_BYTES;
                 qDebug() << "Bucket += " << nTilesToAlloc * NATRON_TILE_SIZE_BYTES;
