@@ -5065,6 +5065,9 @@ Cache<persistent>::evictLRUEntries(std::size_t nBytesToFree)
             bucket.deallocateCacheEntryImpl(cacheEntryIt, bucketLock, tocReadLock, tocWriteLock, tilesReadLock, storage);
         } catch (...) {
             // Any exception caught here means the cache is corrupted
+            bucketLock.reset();
+            tocReadLock.reset();
+            tocWriteLock.reset();
             _imp->recoverFromInconsistentState(
 #ifdef NATRON_CACHE_INTERPROCESS_ROBUST
                                                shmReader
