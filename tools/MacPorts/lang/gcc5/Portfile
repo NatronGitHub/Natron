@@ -39,6 +39,8 @@ depends_lib         port:cctools \
                     port:libiconv \
                     port:libmpc \
                     port:mpfr
+depends_run         port:gcc_select \
+                    port:libgcc6
 
 depends_skip_archcheck-append gcc_select ld64 cctools
 license_noconflict  gmp mpfr ppl libmpc
@@ -139,8 +141,6 @@ build.target        bootstrap-lean
 use_parallel_build  yes
 
 destroot.target     install install-info-host
-
-depends_run-append         port:gcc_select
 
 post-destroot {
     file delete ${destroot}${prefix}/share/info/dir

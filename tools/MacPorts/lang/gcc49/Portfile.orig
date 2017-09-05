@@ -40,7 +40,8 @@ depends_lib         port:cctools \
                     port:libiconv \
                     port:libmpc \
                     port:mpfr
-depends_run         port:gcc_select
+depends_run         port:gcc_select \
+                    port:libgcc6
 
 depends_skip_archcheck-append gcc_select ld64 cctools
 license_noconflict  gmp mpfr ppl libmpc
@@ -103,6 +104,16 @@ configure.env-append \
                     STRIP_FOR_TARGET=${prefix}/bin/strip \
                     OTOOL=${prefix}/bin/otool \
                     OTOOL64=${prefix}/bin/otool
+
+if {${os.platform} eq "darwin" && ${os.major} > 16} {
+    depends_lib
+    depends_run
+    archive_sites
+    pre-fetch {
+        ui_error "${name} is not supported on macOS High Sierra and newer"
+        return -code error {unsupported platform}
+    }
+}
 
 pre-configure {
     configure.args-append --with-pkgversion="MacPorts ${name} ${version}_${revision}${portvariants}"
