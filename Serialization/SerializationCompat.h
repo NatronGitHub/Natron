@@ -137,7 +137,6 @@ GCC_DIAG_OFF(unused-parameter)
 #define KNOB_SERIALIZATION_INTRODUCES_ALIAS 11
 #define KNOB_SERIALIZATION_REMOVE_SLAVED_TRACKS 12
 #define KNOB_SERIALIZATION_REMOVE_DEFAULT_VALUES 13
-#define KNOB_SERIALIZATION_INTRODUCE_VIEWER_UI 14
 #define KNOB_SERIALIZATION_INTRODUCE_USER_KNOB_ICON_FILE_PATH 15
 #define KNOB_SERIALIZATION_CHANGE_CURVE_SERIALIZATION 16
 #define KNOB_SERIALIZATION_CHANGE_PLANES_SERIALIZATION 17
@@ -1346,8 +1345,7 @@ SERIALIZATION_NAMESPACE::KnobSerialization::serialize(Archive & ar,
             }
 
             if ( isDouble &&
-                (((version >= KNOB_SERIALIZATION_INTRODUCES_NATIVE_OVERLAYS) && (_dimension == 2)) ||
-                 (version >= KNOB_SERIALIZATION_INTRODUCE_VIEWER_UI)) ) {
+                ((version >= KNOB_SERIALIZATION_INTRODUCES_NATIVE_OVERLAYS) && (_dimension == 2)) ) {
                     ValueExtraData* extraData = dynamic_cast<ValueExtraData*>(_extraData.get());
                     assert(extraData);
                     bool useHostOverlayHandle;
@@ -1379,21 +1377,6 @@ SERIALIZATION_NAMESPACE::KnobSerialization::serialize(Archive & ar,
             }
         }
     }
-
-    if (version >= KNOB_SERIALIZATION_INTRODUCE_VIEWER_UI) {
-        ar & ::boost::serialization::make_nvp("HasViewerUI", _hasViewerInterface);
-        if (_hasViewerInterface) {
-            ar & ::boost::serialization::make_nvp("ViewerUISpacing", _inViewerContextItemSpacing);
-            ar & ::boost::serialization::make_nvp("ViewerUILayout", _inViewerContextItemLayout);
-            ar & ::boost::serialization::make_nvp("ViewerUISecret", _inViewerContextSecret);
-            if (_isUserKnob) {
-                ar & ::boost::serialization::make_nvp("ViewerUILabel", _inViewerContextLabel);
-                ar & ::boost::serialization::make_nvp("ViewerUIIconUnchecked", _inViewerContextIconFilePath[0]);
-                ar & ::boost::serialization::make_nvp("ViewerUIIconChecked", _inViewerContextIconFilePath[1]);
-            }
-        }
-    }
-
 
 }
 
