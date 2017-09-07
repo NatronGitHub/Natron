@@ -516,6 +516,7 @@ AppManager::loadFromArgs(const CLArgs& cl)
     _imp->renderingContextPool.reset( new GPUContextPool() );
     initializeOpenGLFunctionsOnce(true);
 
+
     //  QCoreApplication will hold a reference to that appManagerArgc integer until it dies.
     //  Thus ensure that the QCoreApplication is destroyed when returning this function.
     initializeQApp(_imp->nArgs, &_imp->commandLineArgsUtf8.front());
@@ -896,17 +897,6 @@ AppManager::loadInternal(const CLArgs& cl)
     _imp->_settings = Settings::create();
     _imp->_settings->initializeKnobsPublic();
 
-    bool hasGLForRendering = hasOpenGLForRequirements(eOpenGLRequirementsTypeRendering, 0);
-    if (_imp->hasInitializedOpenGLFunctions && hasGLForRendering) {
-        OSGLContext::getGPUInfos(_imp->openGLRenderers);
-        for (std::list<OpenGLRendererInfo>::iterator it = _imp->openGLRenderers.begin(); it != _imp->openGLRenderers.end(); ++it) {
-            qDebug() << "Found OpenGL Renderer:" << it->rendererName.c_str() << ", Vendor:" << it->vendorName.c_str()
-                     << ", OpenGL Version:" << it->glVersionString.c_str() << ", Max. Texture Size" << it->maxTextureSize <<
-                ",Max GPU Memory:" << printAsRAM(it->maxMemBytes);;
-        }
-    }
-    _imp->_settings->populateOpenGLRenderers(_imp->openGLRenderers);
-
     if (cl.isLoadedUsingDefaultSettings()) {
         ///Call restore after initializing knobs
         _imp->_settings->setSaveSettings(false);
@@ -914,7 +904,6 @@ AppManager::loadInternal(const CLArgs& cl)
         _imp->_settings->loadSettingsFromFile(Settings::eLoadSettingsTypeKnobs);
     }
     
-    _imp->_settings->loadOCIOConfiguration();
 
     if (cl.isCacheClearRequestedOnLaunch()) {
         // Clear the cache before attempting to load any data.
@@ -1027,88 +1016,85 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
 {
     QMutexLocker k(&_imp->openGLFunctionsMutex);
 
-    if (!_imp->hasInitializedOpenGLFunctions) {
-        OSGLContextPtr glContext;
-        bool checkRenderingReq = true;
-        boost::shared_ptr<OSGLContextAttacher> attacher;
-        if (createOpenGLContext) {
-            try {
-                _imp->initGLAPISpecific();
+    if (_imp->hasInitializedOpenGLFunctions) {
+        return false;
+    }
+    OSGLContextPtr glContext;
+    bool checkRenderingReq = true;
+    boost::shared_ptr<OSGLContextAttacher> attacher;
+    if (createOpenGLContext) {
+        try {
+            _imp->initGLAPISpecific();
 
-                glContext = _imp->renderingContextPool->getOrCreateOpenGLContext(false, false /*checkIfGLLoaded*/);
-                if (glContext) {
-                    attacher = OSGLContextAttacher::create(glContext);
-                    attacher->attach();
-                    // Make the context current and check its version
-                } else {
-                    AppManagerPrivate::OpenGLRequirementsData& vdata = _imp->glRequirements[eOpenGLRequirementsTypeViewer];
-                    AppManagerPrivate::OpenGLRequirementsData& rdata = _imp->glRequirements[eOpenGLRequirementsTypeRendering];
-                    rdata.error = tr("Error creating OpenGL context.");
-                    vdata.error = rdata.error;
-                    rdata.hasRequirements = false;
-                    vdata.hasRequirements = false;
-                    AppManagerPrivate::addOpenGLRequirementsString(rdata.error, eOpenGLRequirementsTypeRendering);
-                    AppManagerPrivate::addOpenGLRequirementsString(vdata.error, eOpenGLRequirementsTypeViewer);
-                }
+            glContext = _imp->renderingContextPool->getOrCreateOpenGLContext(false, false /*checkIfGLLoaded*/);
+            assert(glContext);
+            // Make the context current and check its version
+            attacher = OSGLContextAttacher::create(glContext);
+            attacher->attach();
 
-
-            } catch (const std::exception& e) {
-                std::cerr << "Error while loading OpenGL: " << e.what() << std::endl;
-                std::cerr << "OpenGL rendering is disabled. " << std::endl;
-                AppManagerPrivate::OpenGLRequirementsData& vdata = _imp->glRequirements[eOpenGLRequirementsTypeViewer];
-                AppManagerPrivate::OpenGLRequirementsData& rdata = _imp->glRequirements[eOpenGLRequirementsTypeRendering];
-                rdata.hasRequirements = false;
-                vdata.hasRequirements = false;
-                vdata.error = tr("Error while creating OpenGL context: %1").arg(QString::fromUtf8(e.what()));
-                rdata.error = tr("Error while creating OpenGL context: %1").arg(QString::fromUtf8(e.what()));
-                AppManagerPrivate::addOpenGLRequirementsString(rdata.error, eOpenGLRequirementsTypeRendering);
-                AppManagerPrivate::addOpenGLRequirementsString(vdata.error, eOpenGLRequirementsTypeViewer);
-                checkRenderingReq = false;
-            }
-            if (!glContext) {
-                return false;
-            }
+        } catch (const std::exception& e) {
+            std::string errorMessage = e.what();
+            std::cerr << "Error while loading OpenGL: " << errorMessage << std::endl;
+            std::cerr << "OpenGL rendering is disabled. " << std::endl;
+            AppManagerPrivate::OpenGLRequirementsData& vdata = _imp->glRequirements[eOpenGLRequirementsTypeViewer];
+            AppManagerPrivate::OpenGLRequirementsData& rdata = _imp->glRequirements[eOpenGLRequirementsTypeRendering];
+            rdata.hasRequirements = false;
+            vdata.hasRequirements = false;
+            vdata.error = tr("Error while creating OpenGL context: %1").arg(QString::fromUtf8(errorMessage.c_str()));
+            rdata.error = tr("Error while creating OpenGL context: %1").arg(QString::fromUtf8(errorMessage.c_str()));
+            AppManagerPrivate::addOpenGLRequirementsString(rdata.error, eOpenGLRequirementsTypeRendering, false);
+            AppManagerPrivate::addOpenGLRequirementsString(vdata.error, eOpenGLRequirementsTypeViewer, false);
+            checkRenderingReq = false;
         }
-
-        // The following requires a valid OpenGL context to be created
-        _imp->initGl(checkRenderingReq);
-
-        // Load our OpenGL functions both in OSMesa and GL (from glad)
-        GL_GPU::load();
-        GL_CPU::load();
-
-
-        if (createOpenGLContext) {
-            if (hasOpenGLForRequirements(eOpenGLRequirementsTypeRendering)) {
-                try {
-                    OSGLContext::checkOpenGLVersion(true);
-                } catch (const std::exception& e) {
-                    AppManagerPrivate::OpenGLRequirementsData& data = _imp->glRequirements[eOpenGLRequirementsTypeRendering];
-                    data.hasRequirements = false;
-                    if ( !data.error.isEmpty() ) {
-                        data.error = QString::fromUtf8( e.what() );
-                    }
-                }
-            }
-            
-
-            // Deattach the context
-            if (attacher) {
-                attacher.reset();
-            }
-
-            // Clear created contexts because this context was created with the "default" OpenGL renderer and it might be different from the one
-            // selected by the user in the settings (which are not created yet).
-            _imp->renderingContextPool->clear();
-        } else {
-            updateAboutWindowLibrariesVersion();
+        if (!glContext) {
+            return false;
         }
-
-        return true;
     }
 
-    return false;
-}
+    // The following requires a valid OpenGL context to be created
+    _imp->initGl(checkRenderingReq);
+
+    // Load our OpenGL functions both in OSMesa and GL (from glad)
+    GL_GPU::load();
+    GL_CPU::load();
+
+
+    if (createOpenGLContext) {
+        if (hasOpenGLForRequirements(eOpenGLRequirementsTypeRendering)) {
+            try {
+                OSGLContext::checkOpenGLVersion(true);
+            } catch (const std::exception& e) {
+                AppManagerPrivate::OpenGLRequirementsData& data = _imp->glRequirements[eOpenGLRequirementsTypeRendering];
+                data.hasRequirements = false;
+                if ( !data.error.isEmpty() ) {
+                    data.error = QString::fromUtf8( e.what() );
+                }
+            }
+        }
+
+
+        // Deattach the context
+        if (attacher) {
+            attacher.reset();
+        }
+
+        // Clear created contexts because this context was created with the "default" OpenGL renderer and it might be different from the one
+        // selected by the user in the settings (which are not created yet).
+        _imp->renderingContextPool->clear();
+    } else {
+        updateAboutWindowLibrariesVersion();
+    }
+    if (_imp->hasInitializedOpenGLFunctions && hasOpenGLForRequirements(eOpenGLRequirementsTypeRendering, 0)) {
+        OSGLContext::getGPUInfos(_imp->openGLRenderers);
+        for (std::list<OpenGLRendererInfo>::iterator it = _imp->openGLRenderers.begin(); it != _imp->openGLRenderers.end(); ++it) {
+            qDebug() << "Found OpenGL Renderer:" << it->rendererName.c_str() << ", Vendor:" << it->vendorName.c_str()
+            << ", OpenGL Version:" << it->glVersionString.c_str() << ", Max. Texture Size" << it->maxTextureSize <<
+            ",Max GPU Memory:" << printAsRAM(it->maxMemBytes);;
+        }
+    }
+
+    return true;
+} // initializeOpenGLFunctionsOnce
 
 int
 AppManager::getOpenGLVersionMajor() const

@@ -355,11 +355,14 @@ public:
 
     void loadSettingsFromFileInternal(const SERIALIZATION_NAMESPACE::SettingsSerialization& serialization, int loadType);
 
-    void restoreOpenGLRenderer();
+    void setOpenGLRenderersInfo();
 
     void restoreNumThreads();
 
     void refreshCacheSize();
+
+    void populateOpenGLRenderers(const std::list<OpenGLRendererInfo>& renderers);
+
 
 };
 
@@ -757,6 +760,9 @@ Settings::initializeKnobs()
     _imp->initializeKnobsScriptEditorColors();
 
     populateShortcuts();
+
+    const std::list<OpenGLRendererInfo>& renderers = appPTR->getOpenGLRenderers();
+    _imp->populateOpenGLRenderers(renderers);
 }
 
 void
@@ -990,17 +996,17 @@ SettingsPrivate::initializeKnobsRendering()
 }
 
 void
-Settings::populateOpenGLRenderers(const std::list<OpenGLRendererInfo>& renderers)
+SettingsPrivate::populateOpenGLRenderers(const std::list<OpenGLRendererInfo>& renderers)
 {
     if ( renderers.empty() ) {
-        _imp->_availableOpenGLRenderers->setSecret(true);
-        _imp->_nOpenGLContexts->setSecret(true);
-        _imp->_enableOpenGL->setSecret(true);
+        _availableOpenGLRenderers->setSecret(true);
+        _nOpenGLContexts->setSecret(true);
+        _enableOpenGL->setSecret(true);
         return;
     }
 
-    _imp->_nOpenGLContexts->setSecret(false);
-    _imp->_enableOpenGL->setSecret(false);
+    _nOpenGLContexts->setSecret(false);
+    _enableOpenGL->setSecret(false);
 
     std::vector<ChoiceOption> entries( renderers.size() );
     int i = 0;
@@ -1008,8 +1014,8 @@ Settings::populateOpenGLRenderers(const std::list<OpenGLRendererInfo>& renderers
         std::string option = it->vendorName + ' ' + it->rendererName + ' ' + it->glVersionString;
         entries[i].id = option;
     }
-    _imp->_availableOpenGLRenderers->populateChoices(entries);
-    _imp->_availableOpenGLRenderers->setSecret(renderers.size() == 1);
+    _availableOpenGLRenderers->populateChoices(entries);
+    _availableOpenGLRenderers->setSecret(renderers.size() == 1);
 
 
 #ifdef HAVE_OSMESA
@@ -1017,13 +1023,13 @@ Settings::populateOpenGLRenderers(const std::list<OpenGLRendererInfo>& renderers
     std::vector<ChoiceOption> mesaDrivers;
     mesaDrivers.push_back(ChoiceOption("softpipe", "",""));
     mesaDrivers.push_back(ChoiceOption("llvmpipe", "",""));
-    _imp->_osmesaRenderers->populateChoices(mesaDrivers);
-    _imp->_osmesaRenderers->setSecret(false);
+    _osmesaRenderers->populateChoices(mesaDrivers);
+    _osmesaRenderers->setSecret(false);
 #else
-    _imp->_osmesaRenderers->setSecret(false);
+    _osmesaRenderers->setSecret(false);
 #endif
 #else
-    _imp->_osmesaRenderers->setSecret(true);
+    _osmesaRenderers->setSecret(true);
 #endif
 }
 
@@ -2517,14 +2523,6 @@ SettingsPrivate::loadSettingsFromFileInternal(const SERIALIZATION_NAMESPACE::Set
 } // loadSettingsFromFileInternal
 
 
-void
-Settings::loadOCIOConfiguration()
-{
-    // Load OCIO config even if there's no serialization
-    if (!_imp->_ocioRestored) {
-        _imp->tryLoadOpenColorIOConfig();
-    }
-}
 
 void
 Settings::loadSettingsFromFile(int loadType)
@@ -2579,6 +2577,11 @@ Settings::loadSettingsFromFile(int loadType)
                 _imp->_texturesMode->setSecret(true);
             }
         }
+
+        // Load OCIO config even if there's no serialization
+        if (!_imp->_ocioRestored) {
+            _imp->tryLoadOpenColorIOConfig();
+        }
     }
 
     _imp->_restoringSettings = false;
@@ -2587,7 +2590,7 @@ Settings::loadSettingsFromFile(int loadType)
 } // loadSettingsFromFile
 
 void
-SettingsPrivate::restoreOpenGLRenderer()
+SettingsPrivate::setOpenGLRenderersInfo()
 {
     std::vector<ChoiceOption> availableRenderers = _availableOpenGLRenderers->getEntries();
     QString missingGLError;
@@ -2630,7 +2633,7 @@ SettingsPrivate::restoreOpenGLRenderer()
         }
     }
 
-} // restoreOpenGLRenderer
+} // setOpenGLRenderersInfo
 
 std::string
 SettingsPrivate::ensureUserDataDirectory()

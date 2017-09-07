@@ -144,23 +144,11 @@ EffectInstance::Implementation::resolveRenderBackend(const TreeRenderExecutionDa
     OSGLContextPtr glGpuContext = render->getGPUOpenGLContext();
     OSGLContextPtr glCpuContext = render->getCPUOpenGLContext();
 
-    bool canDoOpenGLRendering;
 
     PluginOpenGLRenderSupport openGLSupport = _publicInterface->getOpenGLRenderSupport();
-    canDoOpenGLRendering = (openGLSupport == ePluginOpenGLRenderSupportNeeded || openGLSupport == ePluginOpenGLRenderSupportYes);
+    const bool supportsOSMesa = _publicInterface->canCPUImplementationSupportOSMesa();
 
-
-    
-    if (canDoOpenGLRendering && glGpuContext) {
-
-        // Enable GPU render if the plug-in cannot render another way or if all conditions are met
-        if (openGLSupport == ePluginOpenGLRenderSupportNeeded && (!_publicInterface->getApp()->getProject()->isOpenGLRenderActivated() || !_publicInterface->getNode()->getPlugin()->isOpenGLEnabled())) {
-
-            QString message = tr("OpenGL render is required for  %1 but was disabled in the Preferences for this plug-in, please enable it and restart %2").arg(QString::fromUtf8(_publicInterface->getNode()->getLabel().c_str())).arg(QString::fromUtf8(NATRON_APPLICATION_NAME));
-            _publicInterface->getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorGenericRenderMessage, message.toStdString());
-            return eActionStatusFailed;
-        }
-
+    if ((openGLSupport == ePluginOpenGLRenderSupportNeeded || openGLSupport == ePluginOpenGLRenderSupportYes) && glGpuContext) {
 
         *renderBackend = eRenderBackendTypeOpenGL;
 
@@ -199,13 +187,18 @@ EffectInstance::Implementation::resolveRenderBackend(const TreeRenderExecutionDa
     if (*renderBackend != eRenderBackendTypeOpenGL) {
 
         // If implementation of the render is OpenGL but it can support OSMesa, fallback on OSMesa
-        bool supportsOSMesa = _publicInterface->canCPUImplementationSupportOSMesa();
         if (supportsOSMesa && glCpuContext) {
             if ( (roi.width() < (glCpuContext)->getMaxOpenGLWidth()) &&
                 ( roi.height() < (glCpuContext)->getMaxOpenGLHeight()) ) {
                 *renderBackend = eRenderBackendTypeOSMesa;
             }
         }
+    }
+
+    if (openGLSupport == ePluginOpenGLRenderSupportNeeded && *renderBackend != eRenderBackendTypeOpenGL && *renderBackend != eRenderBackendTypeOSMesa) {
+        QString message = tr("OpenGL render is required for %1 but could not be launched. This may be because it was disabled in the Preferences or because your hadware does not meet the requirements.").arg(QString::fromUtf8(_publicInterface->getNode()->getLabel_mt_safe().c_str())).arg(QString::fromUtf8(NATRON_APPLICATION_NAME));
+        _publicInterface->getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorGenericRenderMessage, message.toStdString());
+        return eActionStatusFailed;
     }
 
     return eActionStatusOK;

@@ -1397,8 +1397,7 @@ KnobChoice::getCurrentEntryAtTime(TimeValue time, ViewIdx view)
                 KeyFrame key = data->animationCurve->getValueAt(time);
                 bool gotIt = key.getPropertySafe(kKeyFramePropString, 0, &ret.id);
                 assert(gotIt);
-                gotIt = key.getPropertySafe(kKeyframePropChoiceOptionLabel, 0, &ret.id);
-                assert(gotIt);
+                gotIt = key.getPropertySafe(kKeyframePropChoiceOptionLabel, 0, &ret.label);
             } else {
                 ret = data->staticValueOption;
             }

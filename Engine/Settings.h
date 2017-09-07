@@ -159,7 +159,6 @@ public:
      **/
     void loadSettingsFromFile(int loadType);
 
-    void loadOCIOConfiguration();
 
     /**
      * @brief Dump all settings to the settings file.
@@ -367,8 +366,6 @@ public:
     bool isAutoScrollEnabled() const;
 
     GLRendererID getActiveOpenGLRendererID() const;
-
-    void populateOpenGLRenderers(const std::list<OpenGLRendererInfo>& renderers);
 
     bool isOpenGLRenderingEnabled() const;
 

@@ -141,7 +141,7 @@ OSGLContextPtr
 GPUContextPool::getOrCreateOpenGLContext(bool retrieveLastContext, bool checkIfGLLoaded)
 {
     if (checkIfGLLoaded && (!appPTR->isOpenGLLoaded() || !appPTR->getCurrentSettings()->isOpenGLRenderingEnabled())) {
-        return OSGLContextPtr();
+        throw std::runtime_error("OpenGL rendering is disabled");
     }
     QMutexLocker k(&_imp->contextPoolMutex);
 

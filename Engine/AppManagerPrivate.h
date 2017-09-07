@@ -215,7 +215,7 @@ public:
 
     void loadBuiltinFormats();
 
-    static void addOpenGLRequirementsString(QString& str, OpenGLRequirementsTypeEnum type);
+    static void addOpenGLRequirementsString(QString& str, OpenGLRequirementsTypeEnum type, bool displayRenderers);
 
 
     /**

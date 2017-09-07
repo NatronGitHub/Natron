@@ -424,7 +424,7 @@ AppManagerPrivate::initGLAPISpecific()
 }
 
 void
-AppManagerPrivate::addOpenGLRequirementsString(QString& str, OpenGLRequirementsTypeEnum type)
+AppManagerPrivate::addOpenGLRequirementsString(QString& str, OpenGLRequirementsTypeEnum type, bool displayRenderers)
 {
     switch (type) {
         case eOpenGLRequirementsTypeViewer: {
@@ -448,22 +448,24 @@ AppManagerPrivate::addOpenGLRequirementsString(QString& str, OpenGLRequirementsT
             break;
         }
     }
-    std::list<OpenGLRendererInfo> openGLRenderers;
-    OSGLContext::getGPUInfos(openGLRenderers);
-    if ( !openGLRenderers.empty() ) {
-        str += QLatin1Char('\n');
-        str += tr("Available OpenGL renderers:");
-        str += QLatin1Char('\n');
-        for (std::list<OpenGLRendererInfo>::iterator it = openGLRenderers.begin(); it != openGLRenderers.end(); ++it) {
-            str += (tr("Vendor:") + QString::fromUtf8(" ") + QString::fromUtf8( it->vendorName.c_str() ) +
-                    QLatin1Char('\n') +
-                    tr("Renderer:") + QString::fromUtf8(" ") + QString::fromUtf8( it->rendererName.c_str() ) +
-                    QLatin1Char('\n') +
-                    tr("OpenGL Version:") + QString::fromUtf8(" ") + QString::fromUtf8( it->glVersionString.c_str() ) +
-                    QLatin1Char('\n') +
-                    tr("GLSL Version:") + QString::fromUtf8(" ") + QString::fromUtf8( it->glslVersionString.c_str() ) );
+    if (displayRenderers) {
+        std::list<OpenGLRendererInfo> openGLRenderers;
+        OSGLContext::getGPUInfos(openGLRenderers);
+        if ( !openGLRenderers.empty() ) {
             str += QLatin1Char('\n');
+            str += tr("Available OpenGL renderers:");
             str += QLatin1Char('\n');
+            for (std::list<OpenGLRendererInfo>::iterator it = openGLRenderers.begin(); it != openGLRenderers.end(); ++it) {
+                str += (tr("Vendor:") + QString::fromUtf8(" ") + QString::fromUtf8( it->vendorName.c_str() ) +
+                        QLatin1Char('\n') +
+                        tr("Renderer:") + QString::fromUtf8(" ") + QString::fromUtf8( it->rendererName.c_str() ) +
+                        QLatin1Char('\n') +
+                        tr("OpenGL Version:") + QString::fromUtf8(" ") + QString::fromUtf8( it->glVersionString.c_str() ) +
+                        QLatin1Char('\n') +
+                        tr("GLSL Version:") + QString::fromUtf8(" ") + QString::fromUtf8( it->glslVersionString.c_str() ) );
+                str += QLatin1Char('\n');
+                str += QLatin1Char('\n');
+            }
         }
     }
 }
@@ -536,7 +538,7 @@ AppManagerPrivate::initGl(bool checkRenderingReq)
         !GLAD_GL_ARB_vertex_buffer_object) {
 
         viewerReq.error = tr("Failed to load OpenGL.");
-        addOpenGLRequirementsString(viewerReq.error, eOpenGLRequirementsTypeViewer);
+        addOpenGLRequirementsString(viewerReq.error, eOpenGLRequirementsTypeViewer, true);
         viewerReq.hasRequirements = false;
         renderingReq.hasRequirements = false;
 #ifdef DEBUG
@@ -553,7 +555,7 @@ AppManagerPrivate::initGl(bool checkRenderingReq)
         {
             renderingReq.error += QLatin1String("<p>");
             renderingReq.error += tr("Failed to load OpenGL.");
-            addOpenGLRequirementsString(renderingReq.error, eOpenGLRequirementsTypeRendering);
+            addOpenGLRequirementsString(renderingReq.error, eOpenGLRequirementsTypeRendering, true);
 
 
             renderingReq.hasRequirements = false;
