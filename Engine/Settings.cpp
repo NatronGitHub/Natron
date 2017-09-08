@@ -1027,9 +1027,11 @@ SettingsPrivate::populateOpenGLRenderers(const std::list<OpenGLRendererInfo>& re
     _osmesaRenderers->populateChoices(mesaDrivers);
     _osmesaRenderers->setSecret(false);
 #else
+    std::cout << "OSMesa not compiled with Gallium" << std::endl;
     _osmesaRenderers->setSecret(false);
 #endif
 #else
+    std::cout << "OSMesa disabled" << std::endl;
     _osmesaRenderers->setSecret(true);
 #endif
 }
