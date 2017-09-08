@@ -228,8 +228,8 @@ EffectInstance::Implementation::handleIdentityEffect(double par,
     if (inputNbIdentity == -2) {
 
         // Be safe: we may hit an infinite recursion without this check
-        assert(inputTimeIdentity != _publicInterface->getCurrentRenderTime());
-        if ( inputTimeIdentity == _publicInterface->getCurrentRenderTime()) {
+        assert(inputTimeIdentity != _publicInterface->getCurrentRenderTime() || inputIdentityView != _publicInterface->getCurrentRenderView() || identityPlane != requestData->getPlaneDesc());
+        if ( inputTimeIdentity == _publicInterface->getCurrentRenderTime()  && inputIdentityView == _publicInterface->getCurrentRenderView() && identityPlane == requestData->getPlaneDesc()) {
             return eActionStatusFailed;
         }
 

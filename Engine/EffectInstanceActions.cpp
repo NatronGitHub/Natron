@@ -960,8 +960,8 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
     int identityInputNb = -1;
     TimeValue identityTime = time;
     ViewIdx identityView = view;
-    ImagePlaneDesc identityPlane = plane ? *plane : ImagePlaneDesc::getNoneComponents();
-
+    ImagePlaneDesc inputPlane = plane ? *plane : ImagePlaneDesc::getNoneComponents();
+    ImagePlaneDesc identityPlane;
     if ((isNodeDisabledForFrame(time, view) || !hasAtLeastOneChannelToProcess() ) || (isHostMixEnabled() && getHostMixingValue(time, view) == 0.)) {
         // Node is disabled or doesn't have any channel to process, be identity on the main input
         identityInputNb = getNode()->getPreferredInput();
@@ -981,7 +981,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
             canonicalRenderWindow.toPixelEnclosing(mappedScale, par, &mappedRenderWindow);
         }
 
-        ActionRetCodeEnum stat = isIdentity(time, mappedScale, mappedRenderWindow, view, identityPlane, &identityTime, &identityView, &identityInputNb, &identityPlane);
+        ActionRetCodeEnum stat = isIdentity(time, mappedScale, mappedRenderWindow, view, inputPlane, &identityTime, &identityView, &identityInputNb, &identityPlane);
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -990,8 +990,8 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
         // A sequential effect cannot be identity on itself
         if (identityInputNb == -2) {
             SequentialPreferenceEnum sequential = getSequentialRenderSupport();
-            assert(identityTime != time);
-            if (sequential == eSequentialPreferenceOnlySequential) {
+            assert(identityTime != time || view != identityView || inputPlane != identityPlane);
+            if (sequential == eSequentialPreferenceOnlySequential || (identityTime == time && view == identityView && inputPlane == identityPlane)) {
                 identityInputNb = -1;
             }
         }
