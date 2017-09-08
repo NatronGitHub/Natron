@@ -384,6 +384,7 @@ TreeRenderPrivate::fetchOpenGLContext(const TreeRender::CtorArgsPtr& inArgs)
         try {
             glContext = appPTR->getGPUContextPool()->getOrCreateOpenGLContext(false/*retrieveLastContext*/);
             cpuContext = appPTR->getGPUContextPool()->getOrCreateCPUOpenGLContext(false/*retrieveLastContext*/);
+            std::cout << "OSMesa OpenGL Context: " << cpuContext.get() << std::endl;
         } catch (const std::exception& /*e*/) {
 
         }

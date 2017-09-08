@@ -196,7 +196,7 @@ EffectInstance::Implementation::resolveRenderBackend(const TreeRenderExecutionDa
     }
 
     if (openGLSupport == ePluginOpenGLRenderSupportNeeded && *renderBackend != eRenderBackendTypeOpenGL && *renderBackend != eRenderBackendTypeOSMesa) {
-        QString message = tr("OpenGL render is required for %1 but could not be launched. This may be because it was disabled in the Preferences or because your hadware does not meet the requirements.").arg(QString::fromUtf8(_publicInterface->getNode()->getLabel_mt_safe().c_str())).arg(QString::fromUtf8(NATRON_APPLICATION_NAME));
+        QString message = tr("OpenGL render is required for %1 but could not be launched. This may be because it was disabled in the Preferences or because your hadware does not meet the requirements.").arg(QString::fromUtf8(_publicInterface->getNode()->getLabel_mt_safe().c_str()));
         _publicInterface->getNode()->setPersistentMessage(eMessageTypeError, kNatronPersistentErrorGenericRenderMessage, message.toStdString());
         return eActionStatusFailed;
     }

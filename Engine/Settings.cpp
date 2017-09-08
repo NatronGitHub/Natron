@@ -1020,6 +1020,7 @@ SettingsPrivate::populateOpenGLRenderers(const std::list<OpenGLRendererInfo>& re
 
 #ifdef HAVE_OSMESA
 #ifdef OSMESA_GALLIUM_DRIVER
+    std::cout << "OSMesa drivers available: softpipe, llvmpipe" << std::endl;
     std::vector<ChoiceOption> mesaDrivers;
     mesaDrivers.push_back(ChoiceOption("softpipe", "",""));
     mesaDrivers.push_back(ChoiceOption("llvmpipe", "",""));

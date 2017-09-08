@@ -384,6 +384,8 @@ OSGLContext::OSGLContext(const FramebufferConfig& pixelFormatAttrs,
 #ifdef HAVE_OSMESA
         _imp->_osmesaContext.reset( new OSGLContext_osmesa(pixelFormatAttrs, major, minor, coreProfile, rendererID, shareContext ? shareContext->_imp->_osmesaContext.get() : 0) );
         _imp->_osmesaStubBuffer.resize(4);
+#else
+        throw std::invalid_argument("Cannot create OSMesa context when not compiled with HAVE_OSMESA");
 #endif
     }
 }
