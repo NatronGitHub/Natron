@@ -101,6 +101,8 @@ GCC_DIAG_ON(unused-parameter)
 
 NATRON_NAMESPACE_ENTER
 
+//#define NATRON_CACHE_INTERPROCESS_ROBUST
+
 
 // The number of buckets. This must be a power of 16 since the buckets will be identified by a digit of a hash
 // which is an hexadecimal number.
@@ -114,9 +116,7 @@ NATRON_NAMESPACE_ENTER
 #define NATRON_MEMORY_SEGMENT_ENTRY_HEADER_VERSION 4
 
 // After this amount of milliseconds, if a thread is not able to access a mutex, the cache is assumed to be inconsistent
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
 #define NATRON_CACHE_INTERPROCESS_MUTEX_TIMEOUT_MS 10000
-#endif
 
 // Each tile storage file is 1GB, which corresponds to exactly 256 tiles of NATRON_TILE_SIZE_BYTES bytes for each 256 buckets.
 #define NATRON_NUM_TILES_PER_BUCKET_FILE 256
@@ -265,7 +265,6 @@ namespace bip = ::boost::interprocess;
 typedef RamBuffer<char> ProcessLocalBuffer;
 typedef boost::shared_ptr<ProcessLocalBuffer> ProcessLocalBufferPtr;
 
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
 
 /**
  * @brief Implementation of the timed_lock which timesout after timeoutMilliseconds milliseconds.
@@ -400,20 +399,19 @@ public:
     }
 };
 
-typedef scoped_timed_sharable_lock<bip::interprocess_upgradable_mutex> Upgradable_ReadLock;
-typedef scoped_timed_sharable_lock<bip::interprocess_sharable_mutex> Sharable_ReadLock;
+
 
 /**
  * @brief Base class for all locks that can be upgraded (read lock)
  **/
-class UpgradableLock : public scoped_timed_lock_impl<bip::interprocess_upgradable_mutex, &bip::interprocess_upgradable_mutex::lock_upgradable, &bip::interprocess_upgradable_mutex::try_lock_upgradable, &bip::interprocess_upgradable_mutex::unlock_upgradable>
+class scoped_upgradable_timed_lock : public scoped_timed_lock_impl<bip::interprocess_upgradable_mutex, &bip::interprocess_upgradable_mutex::lock_upgradable, &bip::interprocess_upgradable_mutex::try_lock_upgradable, &bip::interprocess_upgradable_mutex::unlock_upgradable>
 {
 
-    BOOST_MOVABLE_BUT_NOT_COPYABLE(UpgradableLock)
+    BOOST_MOVABLE_BUT_NOT_COPYABLE(scoped_upgradable_timed_lock)
 
 
 public:
-    UpgradableLock(bip::interprocess_upgradable_mutex& m, double frequency)
+    scoped_upgradable_timed_lock(bip::interprocess_upgradable_mutex& m, double frequency)
     : scoped_timed_lock_impl<bip::interprocess_upgradable_mutex, &bip::interprocess_upgradable_mutex::lock_upgradable, &bip::interprocess_upgradable_mutex::try_lock_upgradable, &bip::interprocess_upgradable_mutex::unlock_upgradable>(m, frequency)
     {
 
@@ -442,24 +440,12 @@ public:
     }
 };
 
-typedef bip::interprocess_sharable_mutex SharedMutex;
-typedef bip::interprocess_upgradable_mutex UpgradableMutex;
-typedef bip::interprocess_mutex ExclusiveMutex;
-typedef bip::interprocess_recursive_mutex RecursiveExclusiveMutex;
 
-typedef scoped_timed_lock<UpgradableMutex> Upgradable_WriteLock;
-typedef scoped_timed_lock<SharedMutex> Sharable_WriteLock;
-typedef scoped_timed_lock<ExclusiveMutex> ExclusiveLock;
-
-typedef bip::interprocess_condition_any ConditionVariable;
-
-#define scoped_lock_type scoped_timed_lock
-
-
+#if 0
 /**
  * @brief A kind of scoped_timed_lock that is constructed from an upgradable lock
  **/
-class scoped_upgraded_lock : public scoped_timed_lock<bip::interprocess_upgradable_mutex>
+class scoped_upgraded_timed_lock : public scoped_timed_lock<bip::interprocess_upgradable_mutex>
 {
 public:
 
@@ -479,10 +465,10 @@ public:
     //!   the expression: "boost::move(lock);" This constructor may block if
     //!   other threads hold a sharable_lock on this mutex (sharable_lock's can
     //!   share ownership with an upgradable_lock).
-    explicit scoped_upgraded_lock(BOOST_RV_REF(UpgradableLock) upgr)
+    explicit scoped_upgraded_timed_lock(BOOST_RV_REF(scoped_upgradable_timed_lock) upgr)
     : scoped_timed_lock<bip::interprocess_upgradable_mutex>()
     {
-        UpgradableLock &u_lock = upgr;
+        scoped_upgradable_timed_lock &u_lock = upgr;
         if (u_lock.owns()) {
             u_lock.mutex()->unlock_upgradable_and_lock();
             m_locked = true;
@@ -490,10 +476,34 @@ public:
         mp_mutex = u_lock.release();
     }
 };
+#endif
+
+typedef scoped_timed_sharable_lock<bip::interprocess_sharable_mutex> TimedSharable_ReadLock;
+typedef scoped_timed_lock<bip::interprocess_sharable_mutex> TimedSharable_WriteLock;
 
 template <bool persistent>
 class SharedMemoryProcessLocalReadLocker;
 
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+
+typedef bip::interprocess_sharable_mutex SharedMutex;
+typedef bip::interprocess_upgradable_mutex UpgradableMutex;
+typedef bip::interprocess_mutex ExclusiveMutex;
+typedef bip::interprocess_recursive_mutex RecursiveExclusiveMutex;
+
+
+typedef scoped_timed_sharable_lock<bip::interprocess_upgradable_mutex> Upgradable_ReadLock;
+typedef scoped_timed_sharable_lock<bip::interprocess_sharable_mutex> Sharable_ReadLock;
+typedef scoped_upgradable_timed_lock UpgradableLock;
+
+//typedef scoped_upgraded_timed_lock scoped_upgraded_lock;
+typedef scoped_timed_lock<UpgradableMutex> Upgradable_WriteLock;
+typedef scoped_timed_lock<SharedMutex> Sharable_WriteLock;
+typedef scoped_timed_lock<ExclusiveMutex> ExclusiveLock;
+
+typedef bip::interprocess_condition_any ConditionVariable;
+
+#define scoped_lock_type scoped_timed_lock
 
 #else // !NATRON_CACHE_INTERPROCESS_ROBUST
 
@@ -506,7 +516,7 @@ typedef boost::shared_lock<SharedMutex> Sharable_ReadLock;
 typedef boost::shared_lock<UpgradableMutex> Upgradable_ReadLock;
 typedef boost::upgrade_lock<UpgradableMutex> UpgradableLock;
 
-typedef boost::unique_lock<UpgradableMutex> scoped_upgraded_lock;
+//typedef boost::unique_lock<UpgradableMutex> scoped_upgraded_lock;
 typedef boost::unique_lock<UpgradableMutex> Upgradable_WriteLock;
 typedef boost::unique_lock<SharedMutex> Sharable_WriteLock;
 typedef boost::unique_lock<ExclusiveMutex> ExclusiveLock;
@@ -1260,32 +1270,33 @@ struct CacheIPCData
     // and taken in write mode when a file is removed/added
     SharedMutex tilesStorageMutex;
 
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
-    // Set of UUID of processes currently using the cache
-    MappedProcessSet mappedProcesses;
 
-    // Protects mappedProcesses
-    SharedMutex mappedProcessesMutex;
-#endif
-
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
-    CacheIPCData(const shm_void_allocator& alloc)
-    : bucketsData()
-    , tilesStorageMutex()
-    , mappedProcesses(alloc)
-    , mappedProcessesMutex()
-    {
-
-    }
-#else
     CacheIPCData()
     : bucketsData()
     , tilesStorageMutex()
     {
 
     }
-#endif
 
+};
+
+/**
+ * @brief Contains data related to all processes connected to the Cache
+ **/
+struct MappedProcessData
+{
+    // Set of UUID of processes currently using the cache
+    MappedProcessSet mappedProcesses;
+
+    // Protects mappedProcesses
+    bip::interprocess_sharable_mutex mappedProcessesMutex;
+
+    MappedProcessData(const shm_void_allocator& alloc)
+    : mappedProcesses(alloc)
+    , mappedProcessesMutex()
+    {
+
+    }
 };
 
 
@@ -1364,6 +1375,9 @@ struct CachePrivate
     boost::scoped_ptr<CacheIPCData> ipc;
 #endif
 
+    // Info about connected processes. This lives in shared memory.
+    MappedProcessData* processesData;
+
     // Path of the directory that should contain the cache directory itself.
     // This is controled by a Natron setting. By default it points to a standard system dependent
     // location.
@@ -1376,8 +1390,8 @@ struct CachePrivate
     // The global file lock to monitor process access to the cache.
     // Only valid if the cache is persistent.
     boost::scoped_ptr<bip::file_lock> globalFileLock;
+    boost::scoped_ptr<FStreamsSupport::ofstream> fileLockFile;
 
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
     // Pointer to the memory segment used to store bucket independent data accross processes.
     // This is ensured to be always valid and lives in process memory.
     // The global memory segment is of a fixed size and only contains one instance of CacheIPCData.
@@ -1400,7 +1414,6 @@ struct CachePrivate
     // Protected by nThreadsTimedOutFailedMutex
     boost::condition_variable_any nThreadsTimedOutFailedCond;
 
-#endif // NATRON_CACHE_INTERPROCESS_ROBUST
 
     bool useTileStorage;
 
@@ -1415,17 +1428,17 @@ struct CachePrivate
 #else
     , ipc()
 #endif
+    , processesData(0)
     , directoryContainingCachePath()
     , timerFrequency(getPerformanceFrequency())
     , globalFileLock()
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+    , fileLockFile()
     , globalMemorySegment()
     , nSHMInvalidSem()
     , nSHMValidSem()
     , nThreadsTimedOutFailedMutex()
     , nThreadsTimedOutFailed(0)
     , nThreadsTimedOutFailedCond()
-#endif
     , useTileStorage(enableTileStorage)
     {
         boost::uuids::random_generator gen;
@@ -1445,14 +1458,12 @@ struct CachePrivate
 
     static std::size_t getSharedMemorySize();
 
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
     /**
      * @brief Unmaps the global shared memory segment holding all bucket interprocess mutex
      * and re-create it. This function ensures that all process connected to the shared memory
      * are correctly remapped when exiting this function.
      **/
     void ensureSharedMemoryIntegrity();
-#endif
 
 
     // This function may throw a AbandonnedLockException
@@ -1461,11 +1472,7 @@ struct CachePrivate
     /**
      * @brief Ensure the cache returns to a correct state. Currently it wipes the cache.
      **/
-    void recoverFromInconsistentState(
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
-                                      boost::scoped_ptr<SharedMemoryProcessLocalReadLocker<persistent> >& shmReader
-#endif
-                                      );
+    void recoverFromInconsistentState(boost::scoped_ptr<SharedMemoryProcessLocalReadLocker<persistent> >& shmReader);
 
     /**
      * @brief Retrieves 1 tile from the tile storage. Allocates new memory mapped file backend if not enough space.
@@ -1568,7 +1575,6 @@ public:
     }
 };
 
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
 
 /**
  * @brief Small RAII style class that should be used before using anything that is in the cache global shared memory
@@ -1603,15 +1609,12 @@ public:
 };
 
 
-#endif
-
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
 /**
  * @brief Creates a locker object around the given process shared mutex.
  * If after some time the mutex cannot be taken it is declared abandonned and throws a AbandonnedLockException
  **/
 template <typename LOCKPTR, bool persistent>
-void createLock_impl(const CachePrivate<persistent>* imp,  LOCKPTR& lock, typename LOCKPTR::element_type::mutex_type* mutex)
+void create_timed_lock_impl(const CachePrivate<persistent>* imp,  LOCKPTR& lock, typename LOCKPTR::element_type::mutex_type* mutex)
 {
     lock.reset(new typename LOCKPTR::element_type(*mutex, imp->timerFrequency));
     if (!lock->timed_lock()) {
@@ -1622,17 +1625,22 @@ void createLock_impl(const CachePrivate<persistent>* imp,  LOCKPTR& lock, typena
     }
 }
 
+
 template <typename LOCK, bool persistent>
-void createLock(const CachePrivate<persistent>* imp,  boost::scoped_ptr<LOCK>& lock, typename LOCK::mutex_type* mutex)
+void createTimedLock(const CachePrivate<persistent>* imp,  boost::scoped_ptr<LOCK>& lock, typename LOCK::mutex_type* mutex)
 {
-    createLock_impl<boost::scoped_ptr<LOCK> >(imp, lock, mutex);
+    create_timed_lock_impl<boost::scoped_ptr<LOCK> >(imp, lock, mutex);
 }
 
 template <typename LOCK, bool persistent>
-void createLock(const CachePrivate<persistent>* imp,  boost::shared_ptr<LOCK>& lock, typename LOCK::mutex_type* mutex)
+void createTimedLock(const CachePrivate<persistent>* imp,  boost::shared_ptr<LOCK>& lock, typename LOCK::mutex_type* mutex)
 {
-    createLock_impl<boost::shared_ptr<LOCK> >(imp, lock, mutex);
+    create_timed_lock_impl<boost::shared_ptr<LOCK> >(imp, lock, mutex);
 }
+
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+
+#define createLock createTimedLock
 
 #else
 
@@ -1688,14 +1696,12 @@ CacheEntryLocker<persistent>::create(const boost::shared_ptr<Cache<persistent> >
     return ret;
 }
 
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
 template <bool persistent>
 boost::uuids::uuid
 CacheEntryLocker<persistent>::getComputeProcessUUID() const
 {
     return _imp->computeProcessUUID;
 }
-#endif
 
 template <bool persistent>
 bool
@@ -2576,9 +2582,7 @@ CacheEntryLockerPrivate<persistent>::lookupAndSetStatus(std::size_t* timeSpentWa
         bucket = &cache->_imp->buckets[CacheBase::getBucketCacheBucketIndex(hash)];
     }
 
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
     boost::scoped_ptr<SharedMemoryProcessLocalReadLocker<persistent> > shmAccess(new SharedMemoryProcessLocalReadLocker<persistent>(cache->_imp.get()));
-#endif
 
     try {
 
@@ -2667,11 +2671,7 @@ CacheEntryLockerPrivate<persistent>::lookupAndSetStatus(std::size_t* timeSpentWa
         // Concurrency resumes here!
     } catch (...) {
         // Any exception caught here means the cache is corrupted
-        cache->_imp->recoverFromInconsistentState(
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
-                                                  shmAccess
-#endif
-                                                  );
+        cache->_imp->recoverFromInconsistentState(shmAccess);
     }
 
 
@@ -2833,9 +2833,7 @@ CacheEntryLocker<persistent>::insertInCache()
     // of the object was eCacheEntryStatusMustCompute
     assert(_imp->status == eCacheEntryStatusMustCompute);
 
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
     boost::scoped_ptr<SharedMemoryProcessLocalReadLocker<persistent> > shmAccess(new SharedMemoryProcessLocalReadLocker<persistent>(_imp->cache->_imp.get()));
-#endif
 
     try {
         // Take the read lock on the toc file mapping
@@ -2883,11 +2881,7 @@ CacheEntryLocker<persistent>::insertInCache()
         appPTR->checkCachesMemory();
     } catch (...) {
         // Any exception caught here means the cache is corrupted
-        _imp->cache->_imp->recoverFromInconsistentState(
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
-                                                   shmAccess
-#endif
-                                                  );
+        _imp->cache->_imp->recoverFromInconsistentState(shmAccess);
     }
     
 
@@ -2967,9 +2961,7 @@ CacheEntryLocker<persistent>::~CacheEntryLocker()
     // Release the entry from the cache if we should be computing it
     if (_imp->status == eCacheEntryStatusMustCompute) {
 
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
         boost::scoped_ptr<SharedMemoryProcessLocalReadLocker<persistent> > shmAccess(new SharedMemoryProcessLocalReadLocker<persistent>(_imp->cache->_imp.get()));
-#endif
         try {
 
             boost::shared_ptr<Sharable_ReadLock> tilesReadLock;
@@ -3000,11 +2992,7 @@ CacheEntryLocker<persistent>::~CacheEntryLocker()
 
         } catch (...) {
             // Any exception caught here means the cache is corrupted
-            _imp->cache->_imp->recoverFromInconsistentState(
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
-                                                            shmAccess
-#endif
-                                                            );
+            _imp->cache->_imp->recoverFromInconsistentState(shmAccess);
         }
     }
 } // ~CacheEntryLocker
@@ -3039,7 +3027,7 @@ CachePrivate<persistent>::getSharedMemorySize()
 {
     // Allocate space rounded to page size for the global data.
     std::size_t pageSize = bip::mapped_region::get_page_size();
-    std::size_t desiredSize = sizeof(CacheIPCData) * 2 + 500 * 1024 * 1024;
+    std::size_t desiredSize = (sizeof(CacheIPCData) + sizeof(MappedProcessData)) * 2 + 500 * 1024;
     desiredSize = std::ceil(desiredSize / (double)pageSize) * pageSize;
     return desiredSize;
 }
@@ -3048,26 +3036,19 @@ template <bool persistent>
 bool
 CachePrivate<persistent>::isUUIDCurrentlyActive(const boost::uuids::uuid& tag) const
 {
-#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-    (void)tag;
-    return true;
-#else
-
-    boost::scoped_ptr<Sharable_ReadLock> mappedProcessesLock;
-    createLock<Sharable_ReadLock>(this, mappedProcessesLock, &ipc->mappedProcessesMutex);
+    boost::scoped_ptr<TimedSharable_ReadLock> mappedProcessesLock;
+    createTimedLock<TimedSharable_ReadLock>(this, mappedProcessesLock, &processesData->mappedProcessesMutex);
 
     shm_void_allocator allocator(globalMemorySegment->get_segment_manager());
     MappedProcessInfo info(allocator);
     info.uuid = tag;
-    MappedProcessSet::const_iterator found = ipc->mappedProcesses.find(info);
-    if (found != ipc->mappedProcesses.end()) {
+    MappedProcessSet::const_iterator found = processesData->mappedProcesses.find(info);
+    if (found != processesData->mappedProcesses.end()) {
         return true;
     }
     return false;
-#endif
 }
 
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
 template <bool persistent>
 void
 Cache<persistent>::cleanupMappedProcessList()
@@ -3075,13 +3056,12 @@ Cache<persistent>::cleanupMappedProcessList()
 
     boost::scoped_ptr<SharedMemoryProcessLocalReadLocker<persistent> > shmReader(new SharedMemoryProcessLocalReadLocker<persistent>(_imp.get()));
 
-
     // Register this process uuid to the shared memory set of active processes
-    boost::scoped_ptr<Sharable_WriteLock> mappedProcessesLock;
-    createLock<Sharable_WriteLock>(_imp.get(), mappedProcessesLock, &_imp->ipc->mappedProcessesMutex);
+    boost::scoped_ptr<TimedSharable_WriteLock> mappedProcessesLock;
+    createTimedLock<TimedSharable_WriteLock>(_imp.get(), mappedProcessesLock, &_imp->processesData->mappedProcessesMutex);
 
     MappedProcessSet activeProcesses(_imp->globalMemorySegment->get_segment_manager());
-    for (MappedProcessSet::iterator it = _imp->ipc->mappedProcesses.begin(); it != _imp->ipc->mappedProcesses.end(); ++it) {
+    for (MappedProcessSet::iterator it = _imp->processesData->mappedProcesses.begin(); it != _imp->processesData->mappedProcesses.end(); ++it) {
 
         std::string processFile(it->binaryFilePath.c_str());
         bool active = ProcInfo::checkIfProcessIsRunning(processFile.c_str(), it->processID);
@@ -3089,7 +3069,7 @@ Cache<persistent>::cleanupMappedProcessList()
             activeProcesses.insert(*it);
         }
     }
-    _imp->ipc->mappedProcesses = activeProcesses;
+    _imp->processesData->mappedProcesses = activeProcesses;
 }
 
 template <bool persistent>
@@ -3106,7 +3086,6 @@ Cache<persistent>::isUUIDCurrentlyActive(const boost::uuids::uuid& tag) const
     boost::scoped_ptr<SharedMemoryProcessLocalReadLocker<persistent> > shmReader(new SharedMemoryProcessLocalReadLocker<persistent>(_imp.get()));
     return _imp->isUUIDCurrentlyActive(tag);
 }
-#endif
 
 template <bool persistent>
 void
@@ -3125,20 +3104,20 @@ Cache<persistent>::initialize(const boost::shared_ptr<Cache<persistent> >& thisS
             ss << _imp->directoryContainingCachePath << "/" << NATRON_CACHE_DIRECTORY_NAME << "/";
             cacheDir = ss.str();
         }
-        std::string fileLockFile = cacheDir + "Lock";
+        std::string fileLockFilename = cacheDir + "Lock";
 
         // Ensure the file lock file exists in read/write mode
         {
-            FStreamsSupport::ofstream ofile;
-            FStreamsSupport::open(&ofile, fileLockFile);
-            if (!ofile || fileLockFile.empty()) {
+            _imp->fileLockFile.reset(new FStreamsSupport::ofstream);
+            FStreamsSupport::open(_imp->fileLockFile.get(), fileLockFilename);
+            if (!(*_imp->fileLockFile) || fileLockFilename.empty()) {
                 assert(false);
-                std::string message = "Failed to open file: " + fileLockFile;
+                std::string message = "Failed to open file: " + fileLockFilename;
                 throw std::runtime_error(message);
             }
 
             try {
-                _imp->globalFileLock.reset(new bip::file_lock(fileLockFile.c_str()));
+                _imp->globalFileLock.reset(new bip::file_lock(fileLockFilename.c_str()));
             } catch (...) {
                 assert(false);
                 throw std::runtime_error("Failed to initialize shared memory file lock, exiting.");
@@ -3167,7 +3146,7 @@ Cache<persistent>::initialize(const boost::shared_ptr<Cache<persistent> >& thisS
             _imp->globalFileLock.reset();
             throw BusyCacheException();
         }
-#else
+#endif
         // Create 2 semaphores used to ensure the integrity of the shared memory segment holding interprocess mutexes.
         std::string semValidStr, semInvalidStr;
         {
@@ -3199,16 +3178,13 @@ Cache<persistent>::initialize(const boost::shared_ptr<Cache<persistent> >& thisS
             assert(false);
             throw std::runtime_error("Failed to initialize named semaphores, exiting.");
         }
-#endif // NATRON_CACHE_INTERPROCESS_ROBUST
 
     } // persistent
 
 
 
     // Create the main memory segment containing the CacheIPCData
-#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
-    _imp->ipc.reset(new CacheIPCData);
-#else
+
     {
         std::size_t desiredSize = _imp->getSharedMemorySize();
         std::string sharedMemoryName = _imp->getSharedMemoryName();
@@ -3218,14 +3194,19 @@ Cache<persistent>::initialize(const boost::shared_ptr<Cache<persistent> >& thisS
             }
             _imp->globalMemorySegment.reset(new bip::managed_shared_memory(bip::open_or_create, sharedMemoryName.c_str(), desiredSize));
             shm_void_allocator allocator(_imp->globalMemorySegment->get_segment_manager());
-            _imp->ipc = _imp->globalMemorySegment->template find_or_construct<CacheIPCData>("CacheData")(allocator);
+#ifndef NATRON_CACHE_INTERPROCESS_ROBUST
+            _imp->ipc.reset(new CacheIPCData);
+#else
+            _imp->ipc = _imp->globalMemorySegment->template find_or_construct<CacheIPCData>("CacheData")();
+#endif
+            _imp->processesData = _imp->globalMemorySegment->template find_or_construct<MappedProcessData>("ProcessesData")(allocator);
         } catch (...) {
             assert(false);
             bip::shared_memory_object::remove(sharedMemoryName.c_str());
             throw std::runtime_error("Failed to initialize managed shared memory, exiting.");
         }
     }
-#endif
+
 
     if (persistent && gotFileLock) {
         try {
@@ -3244,15 +3225,14 @@ Cache<persistent>::initialize(const boost::shared_ptr<Cache<persistent> >& thisS
 
     }
 
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
     if (persistent) {
         
         // Clean-up active processes list
         cleanupMappedProcessList();
 
         // Register this process uuid to the shared memory set of active processes
-        boost::scoped_ptr<Sharable_WriteLock> mappedProcessesLock;
-        createLock<Sharable_WriteLock>(_imp.get(), mappedProcessesLock, &_imp->ipc->mappedProcessesMutex);
+        boost::scoped_ptr<TimedSharable_WriteLock> mappedProcessesLock;
+        createTimedLock<TimedSharable_WriteLock>(_imp.get(), mappedProcessesLock, &_imp->processesData->mappedProcessesMutex);
 
         shm_void_allocator allocator(_imp->globalMemorySegment->get_segment_manager());
         MappedProcessInfo info(allocator);
@@ -3260,7 +3240,7 @@ Cache<persistent>::initialize(const boost::shared_ptr<Cache<persistent> >& thisS
         info.binaryFilePath.append(appPTR->getApplicationBinaryFilePath().c_str());
         info.processID = ProcInfo::getCurrentProcessPID();
 
-        std::pair<MappedProcessSet::iterator, bool> insertOk = _imp->ipc->mappedProcesses.insert(info);
+        std::pair<MappedProcessSet::iterator, bool> insertOk = _imp->processesData->mappedProcesses.insert(info);
         if (!insertOk.second) {
             std::cerr << "[WARNING]: Another " << NATRON_APPLICATION_NAME << " process is already registered with the uuid " << _imp->sessionUUID << std::endl;
             throw BusyCacheException();
@@ -3271,15 +3251,12 @@ Cache<persistent>::initialize(const boost::shared_ptr<Cache<persistent> >& thisS
 #endif
 
     }
-#endif
 
     // Open each bucket individual memory segment.
     // They are not created in shared memory but in a memory mapped file instead
     // to be persistent when the OS shutdown.
     // Each segment controls the table of content of the bucket.
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
     boost::scoped_ptr<SharedMemoryProcessLocalReadLocker<persistent> > shmReader(new SharedMemoryProcessLocalReadLocker<persistent>(_imp.get()));
-#endif
 
 
     for (int i = 0; i < NATRON_CACHE_BUCKETS_COUNT; ++i) {
@@ -3316,11 +3293,7 @@ Cache<persistent>::initialize(const boost::shared_ptr<Cache<persistent> >& thisS
             }
         } catch (...) {
             // Any exception caught here means the cache is corrupted
-            _imp->recoverFromInconsistentState(
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
-                                               shmReader
-#endif
-                                               );
+            _imp->recoverFromInconsistentState(shmReader);
 
         }
     } // for each bucket
@@ -3376,9 +3349,7 @@ template <bool persistent>
 struct CacheTilesLockImpl
 {
     // Protects the shared memory segment so that mutexes stay valid
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
     boost::scoped_ptr<SharedMemoryProcessLocalReadLocker<persistent> > shmAccess;
-#endif
 
     // Mutex that protects access to the tiles memory mapped file
     boost::shared_ptr<Sharable_ReadLock> tileReadLock;
@@ -3746,11 +3717,9 @@ Cache<persistent>::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
     // Catch corrupted cache or abandonned mutex exceptions
     try {
 
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
         // Public function, the SHM must be locked, until the user is finished using tile pointers
         // returned by this function.
         tilesLock->shmAccess.reset(new SharedMemoryProcessLocalReadLocker<persistent>(_imp.get()));
-#endif
 
         // Take the tilesStorageMutex in read mode to indicate that we are operating on it: we don't want
         // the memory file holding the tiles to be cleared at the same time.
@@ -3969,11 +3938,7 @@ Cache<persistent>::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
         tilesLock->tileWriteLock.reset();
 
         // Any exception caught here means the cache is corrupted
-        _imp->recoverFromInconsistentState(
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
-                                            tilesLock->shmAccess
-#endif
-                                           );
+        _imp->recoverFromInconsistentState(tilesLock->shmAccess);
         delete tilesLock;
         *cacheData = 0;
         return false;
@@ -4015,13 +3980,11 @@ Cache<persistent>::unLockTiles(void* cacheData, bool invalidate)
 
         try {
 
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
             if (!tilesLock->shmAccess) {
                 // Public function, the SHM must be locked, until the user is finished using tile pointers
                 // returned by this function.
                 tilesLock->shmAccess.reset(new SharedMemoryProcessLocalReadLocker<persistent>(_imp.get()));
             }
-#endif
 
             if (!tilesLock->tileReadLock && !tilesLock->tileWriteLock) {
                 // Take the tilesStorageMutex in read mode to indicate that we are operating on it
@@ -4070,11 +4033,7 @@ Cache<persistent>::unLockTiles(void* cacheData, bool invalidate)
             tilesLock->tileWriteLock.reset();
 
             // Any exception caught here means the cache is corrupted
-            _imp->recoverFromInconsistentState(
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
-                                               tilesLock->shmAccess
-#endif
-                                               );
+            _imp->recoverFromInconsistentState(tilesLock->shmAccess);
         }
 
 
@@ -4321,9 +4280,7 @@ Cache<persistent>::releaseTiles(const CacheEntryBasePtr& entry, const std::vecto
 #endif
 
     // Protects the shared memory segment so that mutexes stay valid
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
     boost::scoped_ptr<SharedMemoryProcessLocalReadLocker<persistent> > shmAccess;
-#endif
 
 
     try {
@@ -4335,17 +4292,12 @@ Cache<persistent>::releaseTiles(const CacheEntryBasePtr& entry, const std::vecto
 
 
         // Any exception caught here means the cache is corrupted
-        _imp->recoverFromInconsistentState(
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
-                                           shmAccess
-#endif
-                                           );
+        _imp->recoverFromInconsistentState(shmAccess);
     }
 
 
 } // releaseTiles
 
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
 template <bool persistent>
 void
 CachePrivate<persistent>::ensureSharedMemoryIntegrity()
@@ -4411,7 +4363,10 @@ CachePrivate<persistent>::ensureSharedMemoryIntegrity()
             try {
                 globalMemorySegment.reset(new bip::managed_shared_memory(bip::open_or_create, sharedMemoryName.c_str(), sharedMemorySize));
                 shm_void_allocator allocator(globalMemorySegment->get_segment_manager());
-                ipc = globalMemorySegment->find_or_construct<CacheIPCData>("CacheData")(allocator);
+#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
+                ipc = globalMemorySegment->find_or_construct<CacheIPCData>("CacheData")();
+#endif
+                processesData = globalMemorySegment->find_or_construct<MappedProcessData>("ProcessesData")(allocator);
             } catch (...) {
                 assert(false);
                 bip::shared_memory_object::remove(sharedMemoryName.c_str());
@@ -4420,14 +4375,14 @@ CachePrivate<persistent>::ensureSharedMemoryIntegrity()
 
             // Re-register the process in the mappedProcess set, since we cleaned-up the globalMemorySegment
             {
-                boost::scoped_ptr<Sharable_WriteLock> mappedProcessesLock;
-                createLock<Sharable_WriteLock>(this, mappedProcessesLock, &ipc->mappedProcessesMutex);
+                boost::scoped_ptr<TimedSharable_WriteLock> mappedProcessesLock;
+                createTimedLock<TimedSharable_WriteLock>(this, mappedProcessesLock, &processesData->mappedProcessesMutex);
                 shm_void_allocator allocator(globalMemorySegment->get_segment_manager());
                 MappedProcessInfo info(allocator);
                 info.uuid = sessionUUID;
                 info.binaryFilePath.append(appPTR->getApplicationBinaryFilePath().c_str());
                 info.processID = ProcInfo::getCurrentProcessPID();
-                std::pair<MappedProcessSet::iterator, bool> insertOk = ipc->mappedProcesses.insert(info);
+                std::pair<MappedProcessSet::iterator, bool> insertOk = processesData->mappedProcesses.insert(info);
                 assert(insertOk.second);
                 (void)insertOk;
             }
@@ -4468,8 +4423,9 @@ CachePrivate<persistent>::ensureSharedMemoryIntegrity()
         }
     }
 
+    // Take back the global file lock
+    globalFileLock->lock_sharable();
 } // ensureSharedMemoryIntegrity
-#endif // #ifdef NATRON_CACHE_INTERPROCESS_ROBUST
 
 int
 CacheBase::getBucketCacheBucketIndex(U64 hash)
@@ -4530,9 +4486,7 @@ template <bool persistent>
 std::size_t
 Cache<persistent>::getCurrentSize() const
 {
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
     boost::scoped_ptr<SharedMemoryProcessLocalReadLocker<persistent> > shmReader(new SharedMemoryProcessLocalReadLocker<persistent>(_imp.get()));
-#endif
 
     std::size_t ret = 0;
     for (int i = 0; i < NATRON_CACHE_BUCKETS_COUNT; ++i) {
@@ -4556,11 +4510,7 @@ Cache<persistent>::getCurrentSize() const
             
         } catch (...) {
             // Any exception caught here means the cache is corrupted
-            _imp->recoverFromInconsistentState(
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
-                                               shmReader
-#endif
-                                               );
+            _imp->recoverFromInconsistentState(shmReader);
             return 0;
         }
     }
@@ -4700,9 +4650,7 @@ Cache<persistent>::hasCacheEntryForHash(U64 hash) const
     int bucketIndex = Cache::getBucketCacheBucketIndex(hash);
     CacheBucket<persistent>& bucket = _imp->buckets[bucketIndex];
 
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
     boost::scoped_ptr<SharedMemoryProcessLocalReadLocker<persistent> > shmReader(new SharedMemoryProcessLocalReadLocker<persistent>(_imp.get()));
-#endif
 
     try {
 
@@ -4722,11 +4670,7 @@ Cache<persistent>::hasCacheEntryForHash(U64 hash) const
         return bucket.tryCacheLookupImpl(hash, &cacheEntryIt, &storage);
     } catch (...) {
         // Any exception caught here means the cache is corrupted
-        _imp->recoverFromInconsistentState(
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
-                                            shmReader
-#endif
-                                                        );
+        _imp->recoverFromInconsistentState(shmReader);
         return false;
     }
 } // hasCacheEntryForHash
@@ -4745,9 +4689,7 @@ Cache<persistent>::removeEntry(const CacheEntryBasePtr& entry)
 
     CacheBucket<persistent>& bucket = _imp->buckets[bucketIndex];
 
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
     boost::scoped_ptr<SharedMemoryProcessLocalReadLocker<persistent> > shmReader(new SharedMemoryProcessLocalReadLocker<persistent>(_imp.get()));
-#endif
 
     // Take the bucket lock in write mode
     try {
@@ -4777,11 +4719,7 @@ Cache<persistent>::removeEntry(const CacheEntryBasePtr& entry)
         }
     } catch (...) {
         // Any exception caught here means the cache is corrupted
-        _imp->recoverFromInconsistentState(
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
-                                            shmReader
-#endif
-                                           );
+        _imp->recoverFromInconsistentState(shmReader);
     }
 
 
@@ -4789,25 +4727,17 @@ Cache<persistent>::removeEntry(const CacheEntryBasePtr& entry)
 
 template <bool persistent>
 void
-CachePrivate<persistent>::recoverFromInconsistentState(
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
-                                           boost::scoped_ptr<SharedMemoryProcessLocalReadLocker<persistent> >& shmAccess
-#endif
-)
+CachePrivate<persistent>::recoverFromInconsistentState(boost::scoped_ptr<SharedMemoryProcessLocalReadLocker<persistent> >& shmAccess)
 {
 
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
     // Release the read lock on the SHM
     shmAccess.reset();
-#endif
 
     // Clear the cache: it could be corrupted
     _publicInterface->clear();
 
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
     // Flag that we are reading it
     shmAccess.reset(new SharedMemoryProcessLocalReadLocker<persistent>(this));
-#endif
 } // recoverFromInconsistentState
 
 template <bool persistent>
@@ -4838,14 +4768,13 @@ void
 Cache<persistent>::clear()
 {
 
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
     try {
         _imp->ensureSharedMemoryIntegrity();
     } catch (const std::exception& e) {
         std::cerr << "Exception while calling ensureSharedMemoryIntegrity(): " << e.what() << std::endl;
     }
     boost::scoped_ptr<SharedMemoryProcessLocalReadLocker<persistent> > shmReader(new SharedMemoryProcessLocalReadLocker<persistent>(_imp.get()));
-#endif
+
     try {
 
 
@@ -4885,7 +4814,6 @@ template <bool persistent>
 void
 Cache<persistent>::clearDiskCache()
 {
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
     // Remove semaphores and shared memory
     try {
         std::string semValidStr, semInvalidStr;
@@ -4907,7 +4835,6 @@ Cache<persistent>::clearDiskCache()
     } catch (...) {
 
     }
-#endif
 
     // Remove cache dir recursively but preserve the directory itself
 
@@ -4950,9 +4877,7 @@ Cache<persistent>::evictLRUEntries(std::size_t nBytesToFree)
 
     while (curSize > maxSize) {
 
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
         boost::scoped_ptr<SharedMemoryProcessLocalReadLocker<persistent> > shmReader(new SharedMemoryProcessLocalReadLocker<persistent>(_imp.get()));
-#endif
 
         // Cycle through each bucket, and establish which LRU entry of the buckets is the entry that
         // has the oldest timestamp
@@ -5012,11 +4937,7 @@ Cache<persistent>::evictLRUEntries(std::size_t nBytesToFree)
 
             } catch (...) {
                 // Any exception caught here means the cache is corrupted
-                _imp->recoverFromInconsistentState(
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
-                                                   shmReader
-#endif
-                                                   );
+                _imp->recoverFromInconsistentState(shmReader);
                 return;
             }
 
@@ -5069,11 +4990,7 @@ Cache<persistent>::evictLRUEntries(std::size_t nBytesToFree)
             tocReadLock.reset();
             tocWriteLock.reset();
             tilesReadLock.reset();
-            _imp->recoverFromInconsistentState(
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
-                                               shmReader
-#endif
-                                               );
+            _imp->recoverFromInconsistentState(shmReader);
             return;
         }
     } // while(curSize < maxSize)
@@ -5084,9 +5001,7 @@ template <bool persistent>
 void
 Cache<persistent>::getMemoryStats(std::map<std::string, CacheReportInfo>* infos) const
 {
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
     boost::scoped_ptr<SharedMemoryProcessLocalReadLocker<persistent> > shmReader(new SharedMemoryProcessLocalReadLocker<persistent>(_imp.get()));
-#endif
 
     for (int bucket_i = 0; bucket_i < NATRON_CACHE_BUCKETS_COUNT; ++bucket_i) {
         CacheBucket<persistent>& bucket = _imp->buckets[bucket_i];
@@ -5124,11 +5039,7 @@ Cache<persistent>::getMemoryStats(std::map<std::string, CacheReportInfo>* infos)
             }
         } catch(...) {
             // Any exception caught here means the cache is corrupted
-            _imp->recoverFromInconsistentState(
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
-                                                shmReader
-#endif
-                                               );
+            _imp->recoverFromInconsistentState(shmReader);
             return;
 
         }

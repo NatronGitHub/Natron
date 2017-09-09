@@ -919,10 +919,8 @@ AppManager::loadInternal(const CLArgs& cl)
         // If the cache is busy because another process is using it and we are not compiled
         // with NATRON_CACHE_INTERPROCESS_ROBUST, just create a process local cache instead.
         _imp->tileCache = Cache<true>::create(true /*enableTileStorage*/);
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
         _imp->mappedProcessWatcher.reset(new MappedProcessWatcherThread);
         _imp->mappedProcessWatcher->startWatching();
-#endif
     } catch (const BusyCacheException&) {
         _imp->tileCache = Cache<false>::create(true /*enableTileStorage*/);
     }

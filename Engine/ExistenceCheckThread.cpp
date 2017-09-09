@@ -120,9 +120,7 @@ MappedProcessWatcherThread::run()
         //Sleep until we need to check again
         msleep(NATRON_BREAKPAD_CHECK_FOR_CRASH_REPORTER_EXISTENCE_MS);
 
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
         _imp->cache->cleanupMappedProcessList();
-#endif
     }
 }
 

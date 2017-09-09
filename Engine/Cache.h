@@ -117,7 +117,6 @@
 // writing/reading from the cache concurrently, other processes will resort to a non persistent Cache instead.
 // This mode enables a more complex thread/process-safety strategy because it must deal with abandonned mutex when a process
 // is killed and cross-process access to the internal storage.
-//#define NATRON_CACHE_INTERPROCESS_ROBUST
 
 // Cache storage:
 // -------------
@@ -267,13 +266,11 @@ public:
      **/
     virtual CacheEntryBasePtr getProcessLocalEntry() const = 0;
 
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
     /**
      * @brief Returns the process that is in charge of computing the entry UUID.
      * This can be used to determine if the entry was abandonned.
      **/
     virtual boost::uuids::uuid getComputeProcessUUID() const = 0;
-#endif
 
     static void sleep_milliseconds(std::size_t amountMS);
 
@@ -326,9 +323,7 @@ public:
      **/
     virtual CacheEntryStatusEnum waitForPendingEntry(std::size_t timeout = 0) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
     virtual boost::uuids::uuid getComputeProcessUUID() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-#endif
 
     /**
      * @brief Get the entry that was originally passed to the ctor.
@@ -512,7 +507,6 @@ public:
      **/
     virtual void getMemoryStats(std::map<std::string, CacheReportInfo>* infos) const = 0;
 
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
     /**
      * @brief Scans the set of currently registered processes to check if they are still alive.
      * If a process is no longer active, it is removed from the mapped process list, potentially
@@ -530,7 +524,6 @@ public:
      * @brief Returns true if the given uuid is still registered in the mapped process set.
      **/
     virtual bool isUUIDCurrentlyActive(const boost::uuids::uuid& tag) const = 0;
-#endif
 
 
 };
@@ -625,11 +618,9 @@ public:
     virtual void clear() OVERRIDE FINAL;
     virtual void removeEntry(const CacheEntryBasePtr& entry) OVERRIDE FINAL;
     virtual void getMemoryStats(std::map<std::string, CacheReportInfo>* infos) const OVERRIDE FINAL;
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
     virtual void cleanupMappedProcessList() OVERRIDE FINAL;
     virtual boost::uuids::uuid getCurrentProcessUUID() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isUUIDCurrentlyActive(const boost::uuids::uuid& tag) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-#endif
     
 private:
 

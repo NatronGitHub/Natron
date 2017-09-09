@@ -1001,7 +1001,6 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(
         *status = eTileStatusNotRendered;
     }
 
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
     if (*status == eTileStatusPending) {
         // If a tile is pending, check if the compute process is still active, otherwise mark it not rendered
         CacheBasePtr cache = appPTR->getTileCache();
@@ -1009,7 +1008,6 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(
             *status = eTileStatusNotRendered;
         }
     }
-#endif
 
     switch (*status) {
         case eTileStatusRenderedHighestQuality:
@@ -1196,17 +1194,13 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(
                     }
 
                     // Mark the tile with the UUID of the cache so we know by which process this tile is computed.
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
                     boost::uuids::uuid sessionUUID = appPTR->getTileCache()->getCurrentProcessUUID();
-#endif
 
                     if (localTileState) {
                         // Mark it not rendered locally, this will be switched to rendered once the downscale operation is performed
                         localTileState->status = eTileStatusNotRendered;
 
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
                         localTileState->uuid = sessionUUID;
-#endif
 
                         // Only append in the localTilesToDownscale list at the originally requested mipmap level:
                         // the fetchTileIndicesInPyramid() function will recursively fetch tiles at higher scale
@@ -1217,9 +1211,7 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(
 
 
                     cacheTileState->status = eTileStatusPending;
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
                     cacheTileState->uuid = sessionUUID;
-#endif
 
                     // Mark this tile so it is found quickly in markCacheTilesAsAborted()
                     assert(coord.tx == tile->tx && coord.ty == tile->ty);
@@ -1260,11 +1252,9 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(
                         // Mark it pending in the cache
                         cacheTileState->status = eTileStatusPending;
 
-#ifdef NATRON_CACHE_INTERPROCESS_ROBUST
                         boost::uuids::uuid sessionUUID = appPTR->getTileCache()->getCurrentProcessUUID();
                         cacheTileState->uuid = sessionUUID;
                         localTileState->uuid = sessionUUID;
-#endif
 
                         // Mark this tile so it is found quickly in markCacheTilesAsAborted()
 #ifdef TRACE_TILES_STATUS
