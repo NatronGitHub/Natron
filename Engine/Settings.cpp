@@ -1002,21 +1002,20 @@ SettingsPrivate::populateOpenGLRenderers(const std::list<OpenGLRendererInfo>& re
         _availableOpenGLRenderers->setSecret(true);
         _nOpenGLContexts->setSecret(true);
         _enableOpenGL->setSecret(true);
-        return;
+    } else {
+
+        _nOpenGLContexts->setSecret(false);
+        _enableOpenGL->setSecret(false);
+
+        std::vector<ChoiceOption> entries( renderers.size() );
+        int i = 0;
+        for (std::list<OpenGLRendererInfo>::const_iterator it = renderers.begin(); it != renderers.end(); ++it, ++i) {
+            std::string option = it->vendorName + ' ' + it->rendererName + ' ' + it->glVersionString;
+            entries[i].id = option;
+        }
+        _availableOpenGLRenderers->populateChoices(entries);
+        _availableOpenGLRenderers->setSecret(renderers.size() == 1);
     }
-
-    _nOpenGLContexts->setSecret(false);
-    _enableOpenGL->setSecret(false);
-
-    std::vector<ChoiceOption> entries( renderers.size() );
-    int i = 0;
-    for (std::list<OpenGLRendererInfo>::const_iterator it = renderers.begin(); it != renderers.end(); ++it, ++i) {
-        std::string option = it->vendorName + ' ' + it->rendererName + ' ' + it->glVersionString;
-        entries[i].id = option;
-    }
-    _availableOpenGLRenderers->populateChoices(entries);
-    _availableOpenGLRenderers->setSecret(renderers.size() == 1);
-
 
 #ifdef HAVE_OSMESA
 #ifdef OSMESA_GALLIUM_DRIVER

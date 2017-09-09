@@ -357,9 +357,7 @@ TreeRenderPrivate::fetchOpenGLContext(const TreeRender::CtorArgsPtr& inArgs)
 
     // Ensure this thread gets an OpenGL context for the render of the frame
     // If we don't have requirements, don't fetch a context
-    if (!appPTR->hasOpenGLForRequirements(eOpenGLRequirementsTypeRendering)) {
-        return;
-    }
+    const bool hasGPUOpenGLRequirements = appPTR->hasOpenGLForRequirements(eOpenGLRequirementsTypeRendering);
 
     OSGLContextPtr glContext, cpuContext;
     if (inArgs->activeRotoDrawableItem) {
@@ -372,7 +370,9 @@ TreeRenderPrivate::fetchOpenGLContext(const TreeRender::CtorArgsPtr& inArgs)
             isStroke->getDrawingGLContext(&glContext, &cpuContext);
             if (!glContext && !cpuContext) {
                 try {
-                    glContext = appPTR->getGPUContextPool()->getOrCreateOpenGLContext(true/*retrieveLastContext*/);
+                    if (hasGPUOpenGLRequirements) {
+                        glContext = appPTR->getGPUContextPool()->getOrCreateOpenGLContext(true/*retrieveLastContext*/);
+                    }
                     cpuContext = appPTR->getGPUContextPool()->getOrCreateCPUOpenGLContext(true/*retrieveLastContext*/);
                     isStroke->setDrawingGLContext(glContext, cpuContext);
                 } catch (const std::exception& /*e*/) {
@@ -382,7 +382,9 @@ TreeRenderPrivate::fetchOpenGLContext(const TreeRender::CtorArgsPtr& inArgs)
         }
     } else {
         try {
-            glContext = appPTR->getGPUContextPool()->getOrCreateOpenGLContext(false/*retrieveLastContext*/);
+            if (hasGPUOpenGLRequirements) {
+                glContext = appPTR->getGPUContextPool()->getOrCreateOpenGLContext(false/*retrieveLastContext*/);
+            }
             cpuContext = appPTR->getGPUContextPool()->getOrCreateCPUOpenGLContext(false/*retrieveLastContext*/);
         } catch (const std::exception& /*e*/) {
 
