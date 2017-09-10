@@ -390,7 +390,6 @@ TreeRenderPrivate::fetchOpenGLContext(const TreeRender::CtorArgsPtr& inArgs)
 
         }
     }
-    std::cout << "OSMesa OpenGL Context: " << cpuContext.get() << std::endl;
 
     openGLContext = glContext;
     cpuOpenGLContext = cpuContext;

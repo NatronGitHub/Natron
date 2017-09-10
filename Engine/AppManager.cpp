@@ -490,7 +490,7 @@ AppManager::checkForOlderProjectFile(const AppInstancePtr& app, const QString& f
                 return true;
             } else {
                 QString error = QString::fromUtf8(proc.readAllStandardError().data());
-                throw std::runtime_error(error.toStdString());
+                throw std::runtime_error(tr("Failed to convert the project:\n%1").arg(error).toStdString());
             }
         }
     }
