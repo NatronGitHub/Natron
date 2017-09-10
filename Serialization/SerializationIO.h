@@ -52,7 +52,7 @@ template <typename T>
 void write(std::ostream& stream, const T& obj, const std::string& header)
 {
     if (!header.empty()) {
-        stream << header.c_str() << "\n";
+        stream << header.c_str() << std::endl;
     }
     YAML::Emitter em;
     obj.encode(em);
@@ -96,6 +96,10 @@ void read(const std::string& header, std::istream& stream, T* obj)
         std::string firstLine;
         std::getline(stream, firstLine);
         if (!header.empty()) {
+            // On Windows line ending is \r\n, so the getline will finish with a \r if the file was written on Windows
+            if (firstLine.size() > 0 && firstLine.back() == '\r') {
+                firstLine.resize(firstLine.size() - 1);
+            }
             if (firstLine != header) {
                 throw InvalidSerializationFileException();
             }
