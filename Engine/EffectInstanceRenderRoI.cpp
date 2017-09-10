@@ -372,18 +372,8 @@ EffectInstance::Implementation::handleConcatenation(const TreeRenderExecutionDat
     if (upstreamDistoStack) {
         distoStack->pushDistortionStack(*upstreamDistoStack);
     }
+    distoStack->pushDistortionFunction(disto);
 
-    if (disto->transformMatrix) {
-        // the matrix is in canonical coords
-        
-        //double par = _publicInterface->getAspectRatio(-1);
-        //const bool fielded = false; //args.fieldToRender == eFieldLower || args.fieldToRender == eFieldUpper;
-        //Transform::Matrix3x3 transform = disto->transformMatrix->toPixel(renderScale.x, renderScale.y, par, fielded);
-
-        distoStack->pushTransformMatrix(*disto->transformMatrix);
-    } else {
-        distoStack->pushDistortionFunction(disto);
-    }
 
 
     // Set the stack on the frame view request

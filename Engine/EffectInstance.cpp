@@ -918,10 +918,20 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
         roiPixels = outArgs->image->getBounds();
         // Intersect it with the rod of the input
 
+        EffectInstancePtr inputImageEffect;
+
+        // The image is coming from the effect on the bottom of the distortion stack, so use this RoD
+        const std::list<DistortionFunction2DPtr>& distoStack = outArgs->distortionStack->getStack();
+        assert(!distoStack.empty());
+        const DistortionFunction2D& distoFunc = *distoStack.front();
+        assert(distoFunc.effect);
+        inputImageEffect = distoFunc.effect->getInputRenderEffect(distoFunc.inputNbToDistort, inputTime, inputView);
+        assert(inputImageEffect);
+
         RectD inputRod;
-        {
+        if (inputImageEffect) {
             GetRegionOfDefinitionResultsPtr rodResults;
-            ActionRetCodeEnum stat = inputEffect->getRegionOfDefinition_public(inputTime, inputCombinedScale, inputView, &rodResults);
+            ActionRetCodeEnum stat = inputImageEffect->getRegionOfDefinition_public(inputTime, inputCombinedScale, inputView, &rodResults);
             if (isFailureRetCode(stat)) {
                 return false;
             }

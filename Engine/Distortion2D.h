@@ -71,9 +71,8 @@ public:
     // A pointer to a function to free the customData
     OfxInverseDistortionDataFreeFunctionV1 customDataFreeFunc;
 
-    // Hold a weak ref to the effect, if it is no longer valid when destroying this object
-    // then we do not attempt to call the free function
-    EffectInstanceWPtr effect;
+    // Hold a ref to the effect to call the free function
+    EffectInstancePtr effect;
 };
 
 /**
@@ -92,12 +91,7 @@ public:
      * @brief Appends a new distortion function to apply.
      **/
     void pushDistortionFunction(const DistortionFunction2DPtr& distortion);
-    
-    /**
-     * @brief Appends a new transform to apply, in pixel coordinates
-     **/
-    void pushTransformMatrix(const Transform::Matrix3x3& transfo);
-
+ 
     /**
      * @brief Appends a stack of distortion functions to apply.
      **/
