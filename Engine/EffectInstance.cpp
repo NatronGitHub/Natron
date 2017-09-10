@@ -926,20 +926,20 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
         const DistortionFunction2D& distoFunc = *distoStack.front();
         assert(distoFunc.effect);
         inputImageEffect = distoFunc.effect->getInputRenderEffect(distoFunc.inputNbToDistort, inputTime, inputView);
-        assert(inputImageEffect);
 
-        RectD inputRod;
+
         if (inputImageEffect) {
             GetRegionOfDefinitionResultsPtr rodResults;
             ActionRetCodeEnum stat = inputImageEffect->getRegionOfDefinition_public(inputTime, inputCombinedScale, inputView, &rodResults);
             if (isFailureRetCode(stat)) {
                 return false;
             }
-            inputRod = rodResults->getRoD();
+            RectD inputRod = rodResults->getRoD();
+            RectI inputRodPixels;
+            inputRod.toPixelEnclosing(inputCombinedScale, inputPar, &inputRodPixels);
+            roiPixels.intersect(inputRodPixels, &roiPixels);
         }
-        RectI inputRodPixels;
-        inputRod.toPixelEnclosing(inputCombinedScale, inputPar, &inputRodPixels);
-        roiPixels.intersect(inputRodPixels, &roiPixels);
+
         roiExpandPixels = roiPixels;
     }
     
