@@ -97,7 +97,7 @@ void read(const std::string& header, std::istream& stream, T* obj)
         std::getline(stream, firstLine);
         if (!header.empty()) {
             // On Windows line ending is \r\n, so the getline will finish with a \r if the file was written on Windows
-            if (firstLine.size() > 0 && firstLine.back() == '\r') {
+            if (firstLine.size() > 0 && firstLine[firstLine.size() - 1] == '\r') {
                 firstLine.resize(firstLine.size() - 1);
             }
             if (firstLine != header) {

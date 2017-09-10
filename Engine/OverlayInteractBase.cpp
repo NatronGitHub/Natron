@@ -360,7 +360,6 @@ OverlayInteractBase::redraw()
 
     KnobIPtr isKnobInteract = _imp->knob.lock();
     if (isKnobInteract) {
-        assert(_imp->currentViewport);
         if (!_imp->currentViewport) {
             return;
         }
