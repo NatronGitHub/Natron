@@ -2910,6 +2910,10 @@ KnobParametric::createDimViewData() const
 {
     ParametricKnobDimViewPtr ret(new ParametricKnobDimView);
     ret->parametricCurve.reset(new Curve(eCurveTypeDouble));
+
+    // Using the same API for parametric curve control points management makes it easy with the API of Knob
+    // however we prevent animation of parametric curves for now (which is unsupported anyway).
+    ret->animationCurve = ret->parametricCurve;
     ret->parametricCurve->setKeyFramesTimeClampedToIntegers(false);
     return ret;
 }

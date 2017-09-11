@@ -1649,7 +1649,6 @@ AppManager::loadBuiltinNodePlugins(IOPluginsMap* /*readersMap*/,
     registerPlugin(WriteNode::createPlugin());
     registerPlugin(ViewerNode::createPlugin());
     registerPlugin(ViewerInstance::createPlugin());
-    registerPlugin(LayeredCompNode::createPlugin());
 
 
 }

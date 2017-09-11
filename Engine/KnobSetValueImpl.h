@@ -400,7 +400,9 @@ ValueChangedReturnCodeEnum
 Knob<T>::setKeyFrame(const SetKeyFrameArgs& args, const KeyFrame & key)
 {
     // If no animated, do not even set a keyframe
-    if ( !canAnimate() || !isAnimationEnabled() ) {
+    // Currently parametric knobs only have the same API than traditional keyframes to manage their control points
+    KnobParametric* parametricKnob = dynamic_cast<KnobParametric*>(this);
+    if (( !canAnimate() || !isAnimationEnabled()) && !parametricKnob) {
         return setValueFromKeyFrame(args, key);
     }
 

@@ -106,7 +106,7 @@ static void
 addKeyFrames(const AnimItemDimViewKeyFramesMap& keys,
              bool clearExisting,
              double offset,
-             const AnimItemBasePtr targetItem,
+             const AnimItemBasePtr& targetItem,
              const DimSpec& targetItemDimension,
              const ViewSetSpec& targetItemView)
 {

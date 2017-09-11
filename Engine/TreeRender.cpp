@@ -464,6 +464,7 @@ TreeRender::setResults(const FrameViewRequestPtr& request, const TreeRenderExecu
 
         EffectInstancePtr effect = request->getEffect();
         if (!effect) {
+            assert(false);
             return;
         }
         if (effect && effect->getNode() == _imp->ctorArgs->treeRootEffect->getNode()) {
