@@ -27,11 +27,13 @@
 
 #include "Global/Macros.h"
 
-#include "Engine/TrackerContext.h"
+#include "TrackerContext.h"
 
 #include <list>
 
-#include "Global/Macros.h"
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/utility.hpp>
+#endif
 
 GCC_DIAG_OFF(unused-function)
 GCC_DIAG_OFF(unused-parameter)

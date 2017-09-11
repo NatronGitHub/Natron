@@ -22,6 +22,7 @@
 #include <sstream> // stringstream
 #include <iostream>
 #include <cstring> // for std::memcpy, std::memset, std::strcmp
+#include <cmath>
 
 #include <QtCore/QtGlobal> // Q_OS_WIN, Q_OS_UNIX
 

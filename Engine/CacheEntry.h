@@ -42,16 +42,17 @@
 #include <windows.h>
 #endif
 
-#include <QtCore/QFile>
-#include <QtCore/QMutex>
-#include <QtCore/QReadWriteLock>
-#include <QtCore/QDir>
-#include <QtCore/QDebug>
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/utility.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #endif
+
+#include <QtCore/QFile>
+#include <QtCore/QMutex>
+#include <QtCore/QReadWriteLock>
+#include <QtCore/QDir>
+#include <QtCore/QDebug>
 
 #ifdef DEBUG
 #include <SequenceParsing.h> // for removePath
