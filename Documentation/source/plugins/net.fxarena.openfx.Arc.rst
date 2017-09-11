@@ -45,7 +45,23 @@ Controls
 +------------------------------+-----------+---------------+---------------------------------------------------------------------------------------------------------+
 | Matte / ``matte``            | Boolean   | Off           | Merge Alpha before applying effect                                                                      |
 +------------------------------+-----------+---------------+---------------------------------------------------------------------------------------------------------+
-| Virtual Pixel / ``pixel``    | Choice    | Transparent   | Virtual Pixel Method                                                                                    |
+| Virtual Pixel / ``pixel``    | Choice    | Transparent   | | Virtual Pixel Method                                                                                  |
+|                              |           |               | | **Undefined**                                                                                         |
+|                              |           |               | | **Background**                                                                                        |
+|                              |           |               | | **Black**                                                                                             |
+|                              |           |               | | **CheckerTile**                                                                                       |
+|                              |           |               | | **Dither**                                                                                            |
+|                              |           |               | | **Edge**                                                                                              |
+|                              |           |               | | **Gray**                                                                                              |
+|                              |           |               | | **HorizontalTile**                                                                                    |
+|                              |           |               | | **HorizontalTileEdge**                                                                                |
+|                              |           |               | | **Mirror**                                                                                            |
+|                              |           |               | | **Random**                                                                                            |
+|                              |           |               | | **Tile**                                                                                              |
+|                              |           |               | | **Transparent**                                                                                       |
+|                              |           |               | | **VerticalTile**                                                                                      |
+|                              |           |               | | **VerticalTileEdge**                                                                                  |
+|                              |           |               | | **White**                                                                                             |
 +------------------------------+-----------+---------------+---------------------------------------------------------------------------------------------------------+
 | OpenMP / ``openmp``          | Boolean   | Off           | Enable/Disable OpenMP support. This will enable the plugin to use as many threads as allowed by host.   |
 +------------------------------+-----------+---------------+---------------------------------------------------------------------------------------------------------+
