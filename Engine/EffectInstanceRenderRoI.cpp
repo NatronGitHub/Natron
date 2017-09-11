@@ -370,7 +370,11 @@ EffectInstance::Implementation::handleConcatenation(const TreeRenderExecutionDat
     // Append the list of upstream distorsions (if any)
     Distortion2DStackPtr upstreamDistoStack = inputRequest->getDistorsionStack();
     if (upstreamDistoStack) {
+        assert(upstreamDistoStack->getInputImageEffect());
+        distoStack->setInputImageEffect(upstreamDistoStack->getInputImageEffect());
         distoStack->pushDistortionStack(*upstreamDistoStack);
+    } else {
+        distoStack->setInputImageEffect(distoInput);
     }
     distoStack->pushDistortionFunction(disto);
 

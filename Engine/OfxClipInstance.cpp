@@ -930,14 +930,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
 
     EffectInstancePtr inputEffect;
     if (outArgs.distortionStack) {
-        // The image is coming from the effect on the bottom of the distortion stack, so use this RoD
-        const std::list<DistortionFunction2DPtr>& distoStack = outArgs.distortionStack->getStack();
-        if (!distoStack.empty()) {
-            const DistortionFunction2D& distoFunc = *distoStack.front();
-            assert(distoFunc.effect);
-            inputEffect = distoFunc.effect->getInputRenderEffect(distoFunc.inputNbToDistort, inputTime, inputView);
-
-        }
+        inputEffect = outArgs.distortionStack->getInputImageEffect();
     }
     if (!inputEffect) {
         inputEffect = getAssociatedNode();

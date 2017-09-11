@@ -804,7 +804,6 @@ EffectInstance::getInverseDistortion_public(TimeValue inArgsTime,
 
     if (identityInputNb >= 0) {
         DistortionFunction2DPtr disto(new DistortionFunction2D);
-        disto->effect = shared_from_this();
         disto->transformMatrix.reset(new Transform::Matrix3x3);
         disto->transformMatrix->setIdentity();
 
@@ -854,7 +853,6 @@ EffectInstance::getInverseDistortion_public(TimeValue inArgsTime,
         }
 
         DistortionFunction2DPtr disto(new DistortionFunction2D);
-        disto->effect = shared_from_this();
         // Call the action
         ActionRetCodeEnum stat = getInverseDistortion(time, mappedScale, draftRender, view, disto.get());
         if (isFailureRetCode(stat)) {

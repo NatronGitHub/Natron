@@ -182,7 +182,7 @@ AddMultipleNodesCommand::redo()
         SERIALIZATION_NAMESPACE::NodeSerializationList serializationList;
 
         for (std::list<NodeToAdd>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-            assert(it->serialization && !it->node.lock());
+            assert(it->serialization);
             serializationList.push_back(it->serialization);
         }
         _graph->getGroup()->createNodesFromSerialization(serializationList, NodeCollection::eCreateNodesFromSerializationFlagsConnectToExternalNodes, &createdNodes);
@@ -240,7 +240,7 @@ RemoveMultipleNodesCommand::undo()
 
     SERIALIZATION_NAMESPACE::NodeSerializationList serializationList;
     for (std::list<NodeToRemove>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        assert(it->serialization && !it->node.lock());
+        assert(it->serialization);
         serializationList.push_back(it->serialization);
     }
 

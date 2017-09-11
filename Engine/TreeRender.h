@@ -404,7 +404,6 @@ private:
     friend class TreeRenderQueueManager;
     friend class LaunchRenderRunnable;
     friend struct TreeRenderExecutionDataPrivate;
-    friend class CleanupRenderClones_RAII;
     boost::scoped_ptr<TreeRenderPrivate> _imp;
 };
 

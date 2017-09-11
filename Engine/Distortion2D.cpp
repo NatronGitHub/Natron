@@ -37,14 +37,13 @@ DistortionFunction2D::DistortionFunction2D()
 , customData(0)
 , customDataSizeHintInBytes(0)
 , customDataFreeFunc(0)
-, effect()
 {
 
 }
 
 DistortionFunction2D::~DistortionFunction2D()
 {
-    if (effect) {
+    if (customDataFreeFunc) {
         customDataFreeFunc(customData);
     }
 }
@@ -52,6 +51,8 @@ DistortionFunction2D::~DistortionFunction2D()
 
 struct Distortion2DStackPrivate
 {
+    // The effect from which we must retrieve the image
+    EffectInstancePtr inputImageEffect;
     std::list<DistortionFunction2DPtr> stack;
 };
 
@@ -64,6 +65,18 @@ Distortion2DStack::Distortion2DStack()
 
 Distortion2DStack::~Distortion2DStack()
 {
+}
+
+EffectInstancePtr
+Distortion2DStack::getInputImageEffect() const
+{
+    return _imp->inputImageEffect;
+}
+
+void
+Distortion2DStack::setInputImageEffect(const EffectInstancePtr& effect)
+{
+    _imp->inputImageEffect = effect;
 }
 
 void

@@ -71,8 +71,6 @@ public:
     // A pointer to a function to free the customData
     OfxInverseDistortionDataFreeFunctionV1 customDataFreeFunc;
 
-    // Hold a ref to the effect to call the free function
-    EffectInstancePtr effect;
 };
 
 /**
@@ -98,7 +96,13 @@ public:
     void pushDistortionStack(const Distortion2DStack& stack);
 
     const std::list<DistortionFunction2DPtr>& getStack() const;
-    
+
+    /**
+     * @brief Get/Set the effect producing the image on which to apply the distortion stack.
+     **/
+    EffectInstancePtr getInputImageEffect() const;
+    void setInputImageEffect(const EffectInstancePtr& effect);
+
     /**
      * @brief Applies a distortion stack onto a 2D position in canonical coordinates.
      **/

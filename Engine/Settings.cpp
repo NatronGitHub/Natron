@@ -2785,8 +2785,7 @@ Settings::getGeneralPurposeCacheSize() const
 {
     std::size_t kb = 1024;
     std::size_t mb = kb * kb;
-    std::size_t diskCacheSize = getTileCacheSize();
-    std::size_t maxGeneralPurposeCache = (std::size_t)std::max(128. * mb, (double)diskCacheSize * 0.1);;
+    std::size_t maxGeneralPurposeCache = 128 * mb;
     return maxGeneralPurposeCache;
 }
 
