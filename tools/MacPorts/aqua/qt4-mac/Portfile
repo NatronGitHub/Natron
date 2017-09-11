@@ -308,6 +308,7 @@ platform darwin {
         patchfiles-append patch-src_gui_dialogs_qfontdialog_mac.mm-tiger.diff
         patchfiles-append patch-src_gui_text_qfontdatabase_mac.cpp-tiger.diff
         patchfiles-append patch-src_gui_painting_qpaintengine_mac.cpp-tiger.diff
+        patchfiles-append patch-webkit-tiger.diff
     }
 }
 
