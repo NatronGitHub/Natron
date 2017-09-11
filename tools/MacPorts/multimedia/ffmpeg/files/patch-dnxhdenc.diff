@@ -1,0 +1,17 @@
+--- libavcodec/dnxhdenc.c	2017-07-29 19:49:30.000000000 +0200
++++ libavcodec/dnxhdenc.c	2017-09-11 19:41:13.000000000 +0200
+@@ -751,10 +751,10 @@
+         ptr_y = &ctx->edge_buf_y[0];
+         ptr_u = &ctx->edge_buf_uv[0][0];
+         ptr_v = &ctx->edge_buf_uv[1][0];
+-    } else if (ctx->bit_depth == 10 && vdsp->emulated_edge_mc && ((mb_x << 3) + 8 > ctx->m.avctx->width ||
+-                                                                  (mb_y << 3) + 8 > ctx->m.avctx->height)) {
+-        int y_w = ctx->m.avctx->width  - (mb_x << 3);
+-        int y_h = ctx->m.avctx->height - (mb_y << 3);
++    } else if (ctx->bit_depth == 10 && vdsp->emulated_edge_mc && ((mb_x << 4) + 16 > ctx->m.avctx->width ||
++                                                                  (mb_y << 4) + 16 > ctx->m.avctx->height)) {
++        int y_w = ctx->m.avctx->width  - (mb_x << 4);
++        int y_h = ctx->m.avctx->height - (mb_y << 4);
+         int uv_w = ctx->is_444 ? y_w : (y_w + 1) / 2;
+         int uv_h = y_h;
+         linesize = 16;

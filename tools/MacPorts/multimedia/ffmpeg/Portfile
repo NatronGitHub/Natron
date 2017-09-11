@@ -94,6 +94,7 @@ depends_lib         port:lame \
 
 patchfiles          patch-libavcodec-audiotoolboxenc.c.diff \
                     patch-openjpeg-2.2.diff \
+                    patch-dnxhdenc.diff \
                     patch-configure-no-static-libopenjpeg.diff
 
 #
