@@ -47,9 +47,14 @@ Controls
 +-----------------------------------------+----------+----------------------+-------------------------------------------------------------------------------+
 | Parameter / script name                 | Type     | Default              | Function                                                                      |
 +=========================================+==========+======================+===============================================================================+
-| Field Order / ``fieldOrder``            | Choice   | HD=upper,SD=lower    | Interlaced field order                                                        |
+| Field Order / ``fieldOrder``            | Choice   | HD=upper,SD=lower    | | Interlaced field order                                                      |
+|                                         |          |                      | | **Lower field first**                                                       |
+|                                         |          |                      | | **Upper field first**                                                       |
+|                                         |          |                      | | **HD=upper,SD=lower**                                                       |
 +-----------------------------------------+----------+----------------------+-------------------------------------------------------------------------------+
-| Parity / ``parity``                     | Choice   | Lower                | Interpolate which field                                                       |
+| Parity / ``parity``                     | Choice   | Lower                | | Interpolate which field                                                     |
+|                                         |          |                      | | **Lower**                                                                   |
+|                                         |          |                      | | **Upper**                                                                   |
 +-----------------------------------------+----------+----------------------+-------------------------------------------------------------------------------+
 | Yadif Processing Mode / ``yadifMode``   | Choice   | Temporal & spatial   | | Mode of checking fields                                                     |
 |                                         |          |                      | | **Temporal & spatial**: temporal and spatial interlacing check (default).   |

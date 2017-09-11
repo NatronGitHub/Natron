@@ -43,9 +43,15 @@ Controls
 +-----------------------------------------+-----------+-------------------------------+-------------------------------------------------------------------------------------------------------+
 | Invert Gradient / ``invertGradient``    | Boolean   | Off                           |                                                                                                       |
 +-----------------------------------------+-----------+-------------------------------+-------------------------------------------------------------------------------------------------------+
-| Source Layer / ``Source_channels``      | Choice    | Color.RGBA                    |                                                                                                       |
+| Source Layer / ``Source_channels``      | Choice    |                               | |                                                                                                     |
+|                                         |           |                               | | **None**                                                                                            |
 +-----------------------------------------+-----------+-------------------------------+-------------------------------------------------------------------------------------------------------+
-| Output Layer / ``channels``             | Choice    | Color.RGBA                    |                                                                                                       |
+| Output Layer / ``channels``             | Choice    | DisparityLeft.Disparity       | |                                                                                                     |
+|                                         |           |                               | | **Color.RGBA (uk.co.thefoundry.OfxImagePlaneColour)**                                               |
+|                                         |           |                               | | **DisparityLeft.Disparity (uk.co.thefoundry.OfxImagePlaneStereoDisparityLeft)**                     |
+|                                         |           |                               | | **DisparityRight.Disparity (uk.co.thefoundry.OfxImagePlaneStereoDisparityRight)**                   |
+|                                         |           |                               | | **Backward.Motion (uk.co.thefoundry.OfxImagePlaneBackMotionVector)**                                |
+|                                         |           |                               | | **Forward.Motion (uk.co.thefoundry.OfxImagePlaneForwardMotionVector)**                              |
 +-----------------------------------------+-----------+-------------------------------+-------------------------------------------------------------------------------------------------------+
 
 .. |pluginIcon| image:: fr.inria.ZRemap.png

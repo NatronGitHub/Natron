@@ -5,7 +5,7 @@ PortGroup select 1.0
 PortGroup compiler_blacklist_versions 1.0
 
 name                gcc6
-subport             libgcc6 {}
+subport             libgcc6 { revision 1 }
 
 epoch               2
 version             6.4.0
@@ -169,10 +169,9 @@ if {${subport} eq "libgcc6"} {
     post-destroot {
         file mkdir ${destroot}${prefix}/lib/libgcc.merged
 
-        # Note that we really don't want to include libgcc_ext.10.[45].dylib here, but install_name_tool
-        # doesn't know how to change the id of stubs, and it's easier than recreating them for each
-        # gcc port.
-        set dylibs {libgfortran.3.dylib}
+        # We need to list libquadmath.0.dylib here even though it isn't installed in order to make sure we cleanup libgfortran.3.dylib's linkage when +universal
+        # See https://trac.macports.org/ticket/54768
+        set dylibs {libgfortran.3.dylib libquadmath.0.dylib}
 
         foreach dylib ${dylibs} {
             # Different OS versions (e.g. Leopard) or architectures (e.g. PPC) don't produce all the dylibs
@@ -210,6 +209,9 @@ if {${subport} eq "libgcc6"} {
         file delete -force ${destroot}${prefix}/libexec
 
         move ${destroot}${prefix}/lib/libgcc.merged ${destroot}${prefix}/lib/libgcc
+
+        # This is provided by the libgcc port
+        file delete -force ${destroot}${prefix}/lib/libgcc/libquadmath.0.dylib
     }
 } else {
 depends_run-append         port:gcc_select \

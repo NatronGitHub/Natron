@@ -27,6 +27,7 @@
 #include <vector>
 #include <cstdlib>
 #include <cstdio>
+#include <cmath>
 
 #ifdef __NATRON_UNIX__
 #include <unistd.h>
