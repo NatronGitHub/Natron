@@ -41,7 +41,36 @@ Controls
 +-------------------------------+-----------+-----------------+---------------------------------------------------------------------------------------------------------+
 | Grayscale / ``gray``          | Boolean   | Off             | Convert to grayscale before effect                                                                      |
 +-------------------------------+-----------+-----------------+---------------------------------------------------------------------------------------------------------+
-| Kernel / ``kernel``           | Choice    | DiamondKernel   | Convolution Kernel                                                                                      |
+| Kernel / ``kernel``           | Choice    | DiamondKernel   | | Convolution Kernel                                                                                    |
+|                               |           |                 | | **BinomialKernel**                                                                                    |
+|                               |           |                 | | **LaplacianKernel**                                                                                   |
+|                               |           |                 | | **SobelKernel**                                                                                       |
+|                               |           |                 | | **FreiChenKernel**                                                                                    |
+|                               |           |                 | | **RobertsKernel**                                                                                     |
+|                               |           |                 | | **PrewittKernel**                                                                                     |
+|                               |           |                 | | **CompassKernel**                                                                                     |
+|                               |           |                 | | **KirschKernel**                                                                                      |
+|                               |           |                 | | **DiamondKernel**                                                                                     |
+|                               |           |                 | | **SquareKernel**                                                                                      |
+|                               |           |                 | | **RectangleKernel**                                                                                   |
+|                               |           |                 | | **OctagonKernel**                                                                                     |
+|                               |           |                 | | **DiskKernel**                                                                                        |
+|                               |           |                 | | **PlusKernel**                                                                                        |
+|                               |           |                 | | **CrossKernel**                                                                                       |
+|                               |           |                 | | **RingKernel**                                                                                        |
+|                               |           |                 | | **EdgesKernel**                                                                                       |
+|                               |           |                 | | **CornersKernel**                                                                                     |
+|                               |           |                 | | **DiagonalsKernel**                                                                                   |
+|                               |           |                 | | **LineEndsKernel**                                                                                    |
+|                               |           |                 | | **LineJunctionsKernel**                                                                               |
+|                               |           |                 | | **RidgesKernel**                                                                                      |
+|                               |           |                 | | **ConvexHullKernel**                                                                                  |
+|                               |           |                 | | **ThinSEKernel**                                                                                      |
+|                               |           |                 | | **SkeletonKernel**                                                                                    |
+|                               |           |                 | | **ChebyshevKernel**                                                                                   |
+|                               |           |                 | | **ManhattanKernel**                                                                                   |
+|                               |           |                 | | **OctagonalKernel**                                                                                   |
+|                               |           |                 | | **EuclideanKernel**                                                                                   |
 +-------------------------------+-----------+-----------------+---------------------------------------------------------------------------------------------------------+
 | OpenMP / ``openmp``           | Boolean   | Off             | Enable/Disable OpenMP support. This will enable the plugin to use as many threads as allowed by host.   |
 +-------------------------------+-----------+-----------------+---------------------------------------------------------------------------------------------------------+
