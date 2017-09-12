@@ -295,9 +295,10 @@ EffectInstance::getComponentsNeededInternal(TimeValue time,
     if ( !isMultiPlanar() ) {
         return getLayersProducedAndNeeded_default(time, view, inputLayersNeeded, layersProduced, passThroughPlanes, passThroughTime, passThroughView, passThroughInputNb, processAllRequested, processChannels);
     }
-
-
+    
+    
     // call the getClipComponents action
+    
 
     ActionRetCodeEnum stat = getLayersProducedAndNeeded(time, view, inputLayersNeeded, layersProduced, passThroughTime, passThroughView, passThroughInputNb);
     if (isFailureRetCode(stat)) {
@@ -1008,7 +1009,18 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
         const std::map<int, std::list<ImagePlaneDesc> >& neededInputsMap = results->getNeededInputPlanes();
         std::map<int, std::list<ImagePlaneDesc> >::const_iterator foundInput = neededInputsMap.find(identityInputNb);
         if (foundInput != neededInputsMap.end() && !foundInput->second.empty()) {
-            identityPlane = foundInput->second.front();
+
+
+            // If the effect is identity, we most likely want to pass-through to the color plane and not something else.
+            // For example, a Premult node set with alpha premult channel set to come from plane RotoMask.Alpha and RGB to come from the Color plane
+            // will request 2 planes in input.
+            const std::list<ImagePlaneDesc>& identityPlanes = foundInput->second;
+            std::list<ImagePlaneDesc>::const_iterator foundEquivalent = ImagePlaneDesc::findEquivalentLayer(inputPlane, identityPlanes.begin(), identityPlanes.end());
+            if (foundEquivalent != identityPlanes.end()) {
+                identityPlane = *foundEquivalent;
+            } else {
+                identityPlane = identityPlanes.front();
+            }
         }
     }
 
