@@ -4634,7 +4634,11 @@ RotoPaint::getActivatedRotoPaintItemsByRenderOrder(TimeValue time, ViewIdx view)
 void
 RotoPaintPrivate::refreshFormatVisibility()
 {
-    RotoPaintOutputRoDTypeEnum type = (RotoPaintOutputRoDTypeEnum)outputRoDTypeKnob.lock()->getValue();
+    KnobChoicePtr knob = outputRoDTypeKnob.lock();
+    if (!knob) {
+        return;
+    }
+    RotoPaintOutputRoDTypeEnum type = (RotoPaintOutputRoDTypeEnum)knob->getValue();
     outputFormatKnob.lock()->setSecret(type != eRotoPaintOutputRoDTypeFormat);
 }
 
