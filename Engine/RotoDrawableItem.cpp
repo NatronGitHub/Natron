@@ -97,6 +97,7 @@ public:
      * Each effect is followed by a merge (except for the ones that use a merge) with the user given operator
      * onto the previous tree upstream of the effectNode.
      */
+    NodePtr constantNode;
     NodePtr effectNode, maskNode;
     NodePtr mergeNode;
     NodePtr timeOffsetNode, frameHoldNode;
@@ -652,6 +653,12 @@ RotoDrawableItem::getEffectNode() const
 }
 
 NodePtr
+RotoDrawableItem::getBackgroundNode() const
+{
+    return _imp->constantNode;
+}
+
+NodePtr
 RotoDrawableItem::getMergeNode() const
 {
     return _imp->mergeNode;
@@ -698,8 +705,11 @@ RotoDrawableItem::refreshNodesPositions(double x, double y)
         } else {
             _imp->timeOffsetNode->setPosition(x, y - yOffset);
         }
+        yOffset += 100;
     }
-
+    if (_imp->constantNode) {
+        _imp->constantNode->setPosition(x, y - yOffset);
+    }
 }
 
 void
@@ -719,11 +729,32 @@ RotoDrawableItem::refreshNodesConnections(const RotoDrawableItemPtr& previous)
         return;
     }
 
-    NodePtr rotoPaintInput0 = rotoPaintNode->getInternalInputNode(0);
+    // For a Roto or RotoPaint node, the background is provided by the user.
+    // For a LayeredComp node, the bg is a constant.
+    NodePtr bgNode;
+    if (rotoPaintNode->getRotoPaintNodeType() != RotoPaint::eRotoPaintTypeComp) {
+        bgNode = rotoPaintNode->getInternalInputNode(0);
+    } else {
+
+        if (!_imp->constantNode) {
+            CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_OFX_TIMEOFFSET, rotoPaintNode ));
+            args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+#ifndef ROTO_PAINT_NODE_GRAPH_VISIBLE
+            args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+#endif
+            args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "background");
+
+            _imp->constantNode = getApp()->createNode(args);
+            assert(_imp->constantNode);
+        }
+        bgNode = _imp->constantNode;
+    }
+
+
 
     // upstreamNode is the node that should be connected as the B input of the merge node of this item.
     // If there is a previous item, this is the previous item's merge node, otherwise this is the RotoPaint node input 0
-    NodePtr upstreamNode = previous ? previous->getMergeNode() : rotoPaintInput0;
+    NodePtr upstreamNode = previous ? previous->getMergeNode() : bgNode;
 
     RotoStrokeType type = getBrushType();
 

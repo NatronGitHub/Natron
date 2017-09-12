@@ -1399,12 +1399,9 @@ void
 NodeGui::initializeInputsLayeredComp()
 {
     assert(_inputEdges.size() == LAYERED_COMP_MAX_INPUTS_COUNT);
-    // Place Bg
-    _inputEdges[0]->setAngle(M_PI_2);
-    _inputEdges[0]->initLine();
 
     // Place all masks on the right side and sources on the left side
-    for (int i = 1; i < LAYERED_COMP_FIRST_MASK_INPUT_INDEX; ++i) {
+    for (int i = 0; i < LAYERED_COMP_FIRST_MASK_INPUT_INDEX; ++i) {
         _inputEdges[i]->setAngle(M_PI);
         _inputEdges[i]->initLine();
     }
@@ -1577,7 +1574,7 @@ NodeGui::refreshEdgesVisibilityInternal(bool hovered)
     if (node->getPluginID() == PLUGINID_NATRON_LAYEREDCOMP) {
         // only show 1 mask on the right and 1 source on the left
         bool sourceDisplayed = false;
-        for (int i = 1; i < LAYERED_COMP_FIRST_MASK_INPUT_INDEX; ++i) {
+        for (int i = 0; i < LAYERED_COMP_FIRST_MASK_INPUT_INDEX; ++i) {
             if ( !edgesVisibility[i] ) {
                 continue;
             }
@@ -1785,9 +1782,11 @@ NodeGui::connectEdge(int edgeNumber)
 
     NodePtr node = getNode();
     assert(node);
-    if (node->isEntitledForInspectorInputsStyle()) {
+    if (node->getPluginID() == PLUGINID_NATRON_LAYEREDCOMP) {
+        initializeInputsLayeredComp();
+    } else if (node->isEntitledForInspectorInputsStyle()) {
         initializeInputsForInspector();
-    }
+    } 
 
     refreshEdgesVisility();
 

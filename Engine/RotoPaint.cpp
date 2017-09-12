@@ -1823,12 +1823,10 @@ RotoPaint::setupInitialSubGraphState()
             bool isMask = false;
             {
                 std::stringstream ss;
-                if (i == 0) {
-                    ss << "Bg";
-                } else if (i < LAYERED_COMP_FIRST_MASK_INPUT_INDEX) {
+                if (i < LAYERED_COMP_FIRST_MASK_INPUT_INDEX) {
                     ss << "Source";
-                    if (i > 1) {
-                        ss << i;
+                    if (i > 0) {
+                        ss << i + 1;
                     }
                 } else {
                     isMask = true;
@@ -3412,10 +3410,45 @@ RotoPaint::onInputChanged(int inputNb)
 
     _imp->refreshSourceKnobs();
 
+    // Create a new comp layer automatically
+    NodePtr inputNode = getNode()->getInput(inputNb);
+    if (getRotoPaintNodeType() == eRotoPaintTypeComp && inputNb < LAYERED_COMP_FIRST_MASK_INPUT_INDEX && inputNode) {
+        std::string choiceId;
+        {
+            std::stringstream ss;
+            ss << inputNb;
+            choiceId = ss.str();
+        }
+
+
+        std::list<RotoDrawableItemPtr> items = _imp->knobsTable->getRotoPaintItemsByRenderOrder();
+        // Check if an item already references this source
+        bool foundItemWithSource = false;
+        for (std::list<RotoDrawableItemPtr>::const_iterator it = items.begin(); it != items.end(); ++it) {
+            CompNodeItemPtr item = toCompNodeItem(*it);
+            assert(item);
+            KnobChoicePtr sourceKnob = item->getMergeInputAChoiceKnob();
+            if (sourceKnob->getCurrentEntry().id == choiceId) {
+                foundItemWithSource = true;
+            }
+        }
+
+        if (!foundItemWithSource) {
+            CompNodeItemPtr item(new CompNodeItem(_imp->knobsTable));
+            _imp->knobsTable->insertItem(0, item, RotoLayerPtr(), eTableChangeReasonInternal);
+            pushUndoCommand(new AddItemsCommand(item));
+
+            // Set the source knob to the input nb
+            KnobChoicePtr sourceKnob = item->getMergeInputAChoiceKnob();
+
+            sourceKnob->setValueFromID(choiceId);
+        }
+    }
+    
     refreshRotoPaintTree();
     
     NodeGroup::onInputChanged(inputNb);
-}
+} // onInputChanged
 
 
 static void
@@ -4096,10 +4129,18 @@ RotoPaint::refreshRotoPaintTree()
     // If concatenation enabled, connect the B input of the global Merge to the RotoPaint
     // background input node.
     if (canConcatenate) {
-        NodePtr rotopaintNodeInput = rotoPaintEffect->getInternalInputNode(0);
-        if (rotopaintNodeInput) {
-            globalMerge->swapInput(rotopaintNodeInput, 0);
+        NodePtr rotoNodeBg;
+        if (getRotoPaintNodeType() != eRotoPaintTypeComp) {
+            rotoNodeBg = rotoPaintEffect->getInternalInputNode(0);
+        } else {
+            // the background for a comp node is the constant node of the first item.
+            if (!items.empty()) {
+                rotoNodeBg = items.front()->getBackgroundNode();
+            }
         }
+
+        globalMerge->swapInput(rotoNodeBg, 0);
+
     }
 
     // Refresh each item separately
@@ -4231,8 +4272,13 @@ RotoPaint::refreshRotoPaintTree()
             // Connect the bottom of the tree to the last item merge node.
             _imp->connectRotoPaintBottomTreeToItems(canConcatenate, rotoPaintEffect, premultNode, timeBlurNode, treeOutputNode, items.back()->getMergeNode());
         } else {
-            // Connect output to Input, the RotoPaint is pass-through
-            treeOutputNode->swapInput(rotoPaintEffect->getInternalInputNode(0), 0);
+            // Connect output to Input, the RotoPaint is pass-through. For a LayeredComp node,
+            // there's no background node, so render nothing.
+            NodePtr bgNode;
+            if (getRotoPaintNodeType() != eRotoPaintTypeComp) {
+                bgNode = rotoPaintEffect->getInternalInputNode(0);
+            }
+            treeOutputNode->swapInput(bgNode, 0);
         }
     }
 
@@ -4484,7 +4530,7 @@ RotoPaint::getMergeChoices(std::vector<ChoiceOption>* inputAChoices, std::vector
     } else {
         inputAChoices->push_back(noneChoice);
     }
-    for (int i = 1; i < LAYERED_COMP_MAX_INPUTS_COUNT; ++i) {
+    for (int i = 0; i < LAYERED_COMP_MAX_INPUTS_COUNT; ++i) {
         NodePtr input = getNode()->getRealInput(i);
         if (!input) {
             continue;

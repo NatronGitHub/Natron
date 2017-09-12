@@ -207,6 +207,7 @@ public:
     NodePtr getTimeOffsetNode() const;
     NodePtr getMaskNode() const;
     NodePtr getFrameHoldNode() const;
+    NodePtr getBackgroundNode() const;
 
     void resetTransformCenter();
 
