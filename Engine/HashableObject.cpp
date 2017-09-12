@@ -185,26 +185,31 @@ HashableObject::computeHash(const ComputeHashArgs& args)
     {
         // Find a hash in the cache.
         QMutexLocker k(&_imp->hashCacheMutex);
-        U64 hashValue;
         if (_imp->hashCacheEnabled) {
             FindHashArgs findArgs;
             findArgs.time = args.time;
             findArgs.view = args.view;
             findArgs.hashType = args.hashType;
+            U64 hashValue;
             if (_imp->findCachedHashInternal(findArgs, &hashValue)) {
                 return hashValue;
             }
         }
-
-
+    }
+    {
         // Compute it
         Hash64 hash;
 
         // Identity the hash by the hash type in case for some coincendence 2 hash types are equal
         hash.append(args.hashType);
+
+        // Unlock the mutex while calling derived implementation
         computeHash_noCache(args, &hash);
         hash.computeHash();
-        hashValue = hash.value();
+        U64 hashValue = hash.value();
+
+
+        QMutexLocker k(&_imp->hashCacheMutex);
 
         switch (args.hashType) {
             case eComputeHashTypeTimeViewInvariant:

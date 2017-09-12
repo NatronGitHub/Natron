@@ -1448,13 +1448,14 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
     // Since the frames needed results are part of the computation of the hash itself, only cache it internally if we got a hash.
     // Otherwise this is cached in the hash computation itself.
     U64 hash = 0;
+    bool isHashCached;
     // Get a hash to cache the results
     {
         HashableObject::FindHashArgs findArgs;
         findArgs.hashType = HashableObject::eComputeHashTypeTimeViewVariant;
         findArgs.time = time;
         findArgs.view = view;
-        findCachedHash(findArgs, &hash);
+        isHashCached = findCachedHash(findArgs, &hash);
     }
     NodePtr thisNode = getNode();
 
@@ -1468,7 +1469,6 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
     // Only use the cache if we got a hash.
     // We cannot compute the hash here because the hash itself requires the result of this function.
     // The results of this function is cached externally instead
-    bool isHashCached = hash != 0;
     if (isHashCached) {
 
 
