@@ -5,7 +5,7 @@ PortGroup select 1.0
 PortGroup compiler_blacklist_versions 1.0
 
 name                gcc6
-subport             libgcc {}
+subport             libgcc6 { revision 1 }
 
 epoch               2
 version             6.4.0
@@ -139,9 +139,7 @@ use_parallel_build  yes
 
 destroot.target     install install-info-host
 
-if {${subport} eq "libgcc"} {
-    conflicts       libgcc-devel
-
+if {${subport} eq "libgcc6"} {
     # http://trac.macports.org/ticket/35770
     # http://trac.macports.org/ticket/38814
     # While there can be multiple versions of these runtimes in a single
@@ -154,11 +152,11 @@ if {${subport} eq "libgcc"} {
     # version should continue to provide a subport for that and older gcc
     # versions.
 
-    depends_lib-delete path:lib/libgcc/libgcc_s.1.dylib:libgcc
+    configure.args-delete --libdir=${prefix}/lib/${name}
+    configure.args-append --libdir=${prefix}/lib/libgcc
 
-    configure.args-replace \
-                          --libdir=${prefix}/lib/${name} \
-                          --libdir=${prefix}/lib/libgcc
+    configure.args-delete --enable-languages=c,c++,objc,obj-c++,lto,fortran
+    configure.args-append --enable-languages=fortran
 
     # TODO: Possibly disable bootstrap with appropriate configure flags.
     #       the problem is that libstdc++'s configure script tests for tls support
@@ -172,10 +170,9 @@ if {${subport} eq "libgcc"} {
     post-destroot {
         file mkdir ${destroot}${prefix}/lib/libgcc.merged
 
-        # Note that we really don't want to include libgcc_ext.10.[45].dylib here, but install_name_tool
-        # doesn't know how to change the id of stubs, and it's easier than recreating them for each
-        # gcc port.
-        set dylibs {libgcc_ext.10.4.dylib libgcc_ext.10.5.dylib libgcc_s.1.dylib libgfortran.3.dylib libquadmath.0.dylib libstdc++.6.dylib libobjc-gnu.4.dylib libgomp.1.dylib libitm.1.dylib libssp.0.dylib libasan.0.dylib libatomic.1.dylib}
+        # We need to list libquadmath.0.dylib here even though it isn't installed in order to make sure we cleanup libgfortran.3.dylib's linkage when +universal
+        # See https://trac.macports.org/ticket/54768
+        set dylibs {libgfortran.3.dylib libquadmath.0.dylib}
 
         foreach dylib ${dylibs} {
             # Different OS versions (e.g. Leopard) or architectures (e.g. PPC) don't produce all the dylibs
@@ -214,11 +211,12 @@ if {${subport} eq "libgcc"} {
 
         move ${destroot}${prefix}/lib/libgcc.merged ${destroot}${prefix}/lib/libgcc
 
-        # For binary compatibility with binaries that linked against the old libstdcxx port
-        ln -s libgcc/libstdc++.6.dylib ${destroot}${prefix}/lib/libstdc++.6.dylib
+        # This is provided by the libgcc port
+        file delete -force ${destroot}${prefix}/lib/libgcc/libquadmath.0.dylib
     }
 } else {
-depends_run-append         port:gcc_select
+depends_run-append         port:gcc_select \
+                           port:libgcc6
 
 post-destroot {
     file delete ${destroot}${prefix}/share/info/dir

@@ -3,9 +3,7 @@
 PortSystem 1.0
 
 name             libraw
-version          0.17.2
-revision         2
-homepage         http://www.libraw.org/
+version          0.18.3
 description      library for RAW images manipulation
 long_description      a library for reading RAW files obtained from digital photo cameras (CRW/CR2, NEF, RAF, DNG, and others)
 categories       graphics
@@ -13,7 +11,8 @@ platforms        darwin
 license          LGPL-2.1 CDDL GPL-2+ GPL-3+
 maintainers      nomaintainer
 
-master_sites     http://www.libraw.org/data/
+homepage         https://www.libraw.org
+master_sites     ${homepage}/data/
 distname         LibRaw-${version}
 
 distfiles-append \
@@ -22,14 +21,14 @@ distfiles-append \
 
 checksums \
     LibRaw-${version}${extract.suffix} \
-    rmd160  92f6cbbcdc64e33b154f680a8dfdfe1ab8d7302f \
-    sha256  92b0c42c7666eca9307e5e1f97d6fefc196cf0b7ee089e22880259a76fafd15c \
+    rmd160  eb524257a00532acbb46a42e29d37cbb0ad8ce0f \
+    sha256  446599eb985bd8074ab63709f50fc7e4fcc9eb41fba9aa6fb8e8bf5fcbdf66a5 \
     LibRaw-demosaic-pack-GPL2-${version}${extract.suffix} \
-    rmd160  e6d3120134c723e44539863162918ed41d684128 \
-    sha256  a2e5e9cc04fa8f3e94070110dce8a06aa3b0b2f573ed99c5fc3e327d15f014b7 \
+    rmd160  a98bcd970ea28e4420912392e7a11e1536e18a2f \
+    sha256  112d7234df29335397a41b4d38d226fecbfad03aa592b6a80a5510a9da38a024 \
     LibRaw-demosaic-pack-GPL3-${version}${extract.suffix} \
-    rmd160  b6e3d1cf8edc3c46b003cd52272a617bd1e5acef \
-    sha256  b00cd0f54851bd3c8a66be4cacbf049e4508f1bac8ff85cb4528d8979739ed36
+    rmd160  d002606744404b3bdbe68ac82a1ab9356c44d882 \
+    sha256  60676537f19dca11babe4dd2930f9f6fd163de3a15ac660896a07123c0acb638
 
 depends_build    port:pkgconfig
 
@@ -44,5 +43,5 @@ post-destroot {
 }
 
 livecheck.type  regex
-livecheck.url   http://www.libraw.org/download/
+livecheck.url   ${homepage}/download/
 livecheck.regex "LibRaw-(\\d+(?:\\.\\d+)*)${extract.suffix}"
