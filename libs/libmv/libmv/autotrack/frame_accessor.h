@@ -92,11 +92,6 @@ struct FrameAccessor {
   virtual void ReleaseImage(Key) = 0;
 
 
-  // Release a specified mask.
-  //
-  // Non-caching implementation may free used memory immediately.
-  virtual void ReleaseMask(Key key) = 0;
-
   virtual bool GetClipDimensions(int clip, int* width, int* height) = 0;
   virtual int NumClips() = 0;
   virtual int NumFrames(int clip) = 0;

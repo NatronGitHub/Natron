@@ -125,10 +125,6 @@ public:
     virtual void ReleaseImage(Key) OVERRIDE FINAL;
 
 
-    // Release a specified mask.
-    //
-    // Non-caching implementation may free used memory immediately.
-    virtual void ReleaseMask(mv::FrameAccessor::Key key) OVERRIDE FINAL;
 
     virtual bool GetClipDimensions(int clip, int* width, int* height) OVERRIDE FINAL;
     virtual int NumClips() OVERRIDE FINAL;
