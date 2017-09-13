@@ -267,7 +267,7 @@ HEADERS += \
 	internal/ceres/triplet_sparse_matrix.h \
 	internal/ceres/trust_region_minimizer.h \
 	internal/ceres/trust_region_preprocessor.h \
-        internal/ceres/trust_region_step_evaluator.h \
-        internal/ceres/trust_region_strategy.h \
+	internal/ceres/trust_region_step_evaluator.h \
+	internal/ceres/trust_region_strategy.h \
 	internal/ceres/visibility_based_preconditioner.h \
 	internal/ceres/wall_time.h \  
