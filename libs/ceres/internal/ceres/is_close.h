@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2016 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,59 +26,26 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //
-// Author: keir@google.com (Keir Mierle)
+// Authors: keir@google.com (Keir Mierle), dgossow@google.com (David Gossow)
+//
+// Utility routine for comparing two values.
 
-#ifndef CERES_PUBLIC_INTERNAL_PORT_H_
-#define CERES_PUBLIC_INTERNAL_PORT_H_
-
-// This file needs to compile as c code.
-#ifdef __cplusplus
-
-#include "ceres/internal/config.h"
-
-#if defined(CERES_TR1_MEMORY_HEADER)
-#include <tr1/memory>
-#else
-#include <memory>
-#endif
-
-#if defined(CERES_BOOST_SHARED_PTR)
-#include <boost/shared_ptr.hpp>
-#elif defined(CERES_TR1_SHARED_PTR)
-#include <tr1/memory>
-#endif
+#ifndef CERES_INTERNAL_IS_CLOSE_H_
+#define CERES_INTERNAL_IS_CLOSE_H_
 
 namespace ceres {
-
-#if defined(CERES_TR1_SHARED_PTR)
-using std::tr1::shared_ptr;
-#elif defined(CERES_BOOST_SHARED_PTR)
-using boost::shared_ptr;
-#else
-using std::shared_ptr;
-#endif
-
+namespace internal {
+// Returns true if x and y have a relative (unsigned) difference less than
+// relative_precision and false otherwise. Stores the relative and absolute
+// difference in relative/absolute_error if non-NULL. If one of the two values
+// is exactly zero, the absolute difference will be compared, and relative_error
+// will be set to the absolute difference.
+bool IsClose(double x,
+             double y,
+             double relative_precision,
+             double *relative_error,
+             double *absolute_error);
+}  // namespace internal
 }  // namespace ceres
 
-#endif  // __cplusplus
-
-// A macro to signal which functions and classes are exported when
-// building a DLL with MSVC.
-//
-// Note that the ordering here is important, CERES_BUILDING_SHARED_LIBRARY
-// is only defined locally when Ceres is compiled, it is never exported to
-// users.  However, in order that we do not have to configure config.h
-// separately for building vs installing, if we are using MSVC and building
-// a shared library, then both CERES_BUILDING_SHARED_LIBRARY and
-// CERES_USING_SHARED_LIBRARY will be defined when Ceres is compiled.
-// Hence it is important that the check for CERES_BUILDING_SHARED_LIBRARY
-// happens first.
-#if defined(_MSC_VER) && defined(CERES_BUILDING_SHARED_LIBRARY)
-# define CERES_EXPORT __declspec(dllexport)
-#elif defined(_MSC_VER) && defined(CERES_USING_SHARED_LIBRARY)
-# define CERES_EXPORT __declspec(dllimport)
-#else
-# define CERES_EXPORT
-#endif
-
-#endif  // CERES_PUBLIC_INTERNAL_PORT_H_
+#endif  // CERES_INTERNAL_IS_CLOSE_H_

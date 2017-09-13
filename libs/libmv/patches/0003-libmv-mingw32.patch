@@ -1,0 +1,14 @@
+diff -ur libmv/numeric/numeric.h libmv/numeric/numeric.h
+--- libmv/numeric/numeric.h	2017-02-24 14:38:10.000000000 +0100
++++ libmv/numeric/numeric.h	2017-09-13 12:48:44.000000000 +0200
+@@ -34,8 +34,8 @@
+ #include <Eigen/SVD>
+ 
+ #if !defined(__MINGW64__)
+-#  if defined(_WIN32) || defined(__APPLE__) || \
+-      defined(__FreeBSD__) || defined(__NetBSD__)
++#  if (defined(_WIN32) || defined(__APPLE__) || \
++      defined(__FreeBSD__) || defined(__NetBSD__))  && !defined(__MINGW32__)
+ inline void sincos(double x, double *sinx, double *cosx) {
+   *sinx = sin(x);
+   *cosx = cos(x);

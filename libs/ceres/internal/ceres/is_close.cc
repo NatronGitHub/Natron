@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2016 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,59 +26,34 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //
-// Author: keir@google.com (Keir Mierle)
+// Authors: keir@google.com (Keir Mierle), dgossow@google.com (David Gossow)
 
-#ifndef CERES_PUBLIC_INTERNAL_PORT_H_
-#define CERES_PUBLIC_INTERNAL_PORT_H_
+#include "ceres/is_close.h"
 
-// This file needs to compile as c code.
-#ifdef __cplusplus
-
-#include "ceres/internal/config.h"
-
-#if defined(CERES_TR1_MEMORY_HEADER)
-#include <tr1/memory>
-#else
-#include <memory>
-#endif
-
-#if defined(CERES_BOOST_SHARED_PTR)
-#include <boost/shared_ptr.hpp>
-#elif defined(CERES_TR1_SHARED_PTR)
-#include <tr1/memory>
-#endif
+#include <algorithm>
+#include <cmath>
 
 namespace ceres {
-
-#if defined(CERES_TR1_SHARED_PTR)
-using std::tr1::shared_ptr;
-#elif defined(CERES_BOOST_SHARED_PTR)
-using boost::shared_ptr;
-#else
-using std::shared_ptr;
-#endif
-
+namespace internal {
+bool IsClose(double x, double y, double relative_precision,
+             double *relative_error,
+             double *absolute_error) {
+  double local_absolute_error;
+  double local_relative_error;
+  if (!absolute_error) {
+    absolute_error = &local_absolute_error;
+  }
+  if (!relative_error) {
+    relative_error = &local_relative_error;
+  }
+  *absolute_error = std::fabs(x - y);
+  *relative_error = *absolute_error / std::max(std::fabs(x), std::fabs(y));
+  if (x == 0 || y == 0) {
+    // If x or y is exactly zero, then relative difference doesn't have any
+    // meaning. Take the absolute difference instead.
+    *relative_error = *absolute_error;
+  }
+  return *relative_error < std::fabs(relative_precision);
+}
+}  // namespace internal
 }  // namespace ceres
-
-#endif  // __cplusplus
-
-// A macro to signal which functions and classes are exported when
-// building a DLL with MSVC.
-//
-// Note that the ordering here is important, CERES_BUILDING_SHARED_LIBRARY
-// is only defined locally when Ceres is compiled, it is never exported to
-// users.  However, in order that we do not have to configure config.h
-// separately for building vs installing, if we are using MSVC and building
-// a shared library, then both CERES_BUILDING_SHARED_LIBRARY and
-// CERES_USING_SHARED_LIBRARY will be defined when Ceres is compiled.
-// Hence it is important that the check for CERES_BUILDING_SHARED_LIBRARY
-// happens first.
-#if defined(_MSC_VER) && defined(CERES_BUILDING_SHARED_LIBRARY)
-# define CERES_EXPORT __declspec(dllexport)
-#elif defined(_MSC_VER) && defined(CERES_USING_SHARED_LIBRARY)
-# define CERES_EXPORT __declspec(dllimport)
-#else
-# define CERES_EXPORT
-#endif
-
-#endif  // CERES_PUBLIC_INTERNAL_PORT_H_
