@@ -1,0 +1,51 @@
+***************
+*** 92,98 ****
+  
+  FrameAccessor::Key GetImageForMarker(const Marker& marker,
+                                       FrameAccessor* frame_accessor,
+-                                      FloatImage** image) {
+    // TODO(sergey): Currently we pass float region to the accessor,
+    // but we don't want the accessor to decide the rounding, so we
+    // do rounding here.
+--- 92,98 ----
+  
+  FrameAccessor::Key GetImageForMarker(const Marker& marker,
+                                       FrameAccessor* frame_accessor,
++                                      FloatImage* image) {
+    // TODO(sergey): Currently we pass float region to the accessor,
+    // but we don't want the accessor to decide the rounding, so we
+    // do rounding here.
+***************
+*** 140,146 ****
+  
+    // TODO(keir): Technically this could take a smaller slice from the source
+    // image instead of taking one the size of the search window.
+-   FloatImage* reference_image;
+    FrameAccessor::Key reference_key = GetImageForMarker(reference_marker,
+                                                         frame_accessor_,
+                                                         &reference_image);
+--- 140,146 ----
+  
+    // TODO(keir): Technically this could take a smaller slice from the source
+    // image instead of taking one the size of the search window.
++   FloatImage reference_image;
+    FrameAccessor::Key reference_key = GetImageForMarker(reference_marker,
+                                                         frame_accessor_,
+                                                         &reference_image);
+***************
+*** 149,155 ****
+      return false;
+    }
+  
+-   FloatImage* tracked_image;
+    FrameAccessor::Key tracked_key = GetImageForMarker(*tracked_marker,
+                                                       frame_accessor_,
+                                                       &tracked_image);
+--- 149,155 ----
+      return false;
+    }
+  
++   FloatImage tracked_image;
+    FrameAccessor::Key tracked_key = GetImageForMarker(*tracked_marker,
+                                                       frame_accessor_,
+                                                       &tracked_image);

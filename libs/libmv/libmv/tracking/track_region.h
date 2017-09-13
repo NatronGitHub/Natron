@@ -111,7 +111,6 @@ struct TrackRegionOptions {
   // image1, even though only values inside the image1 quad are examined. The
   // values must be in the range 0.0 to 0.1.
   FloatImage *image1_mask;
-
 };
 
 struct TrackRegionResult {
