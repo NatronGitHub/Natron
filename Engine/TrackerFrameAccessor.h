@@ -124,19 +124,6 @@ public:
     // free the image immediately; others may hold onto the image.
     virtual void ReleaseImage(Key) OVERRIDE FINAL;
 
-    // Get mask image for the given track.
-    //
-    // Implementation of this method should sample mask associated with the track
-    // within given region to the given destination.
-    //
-    // Result is supposed to be a single channel image.
-    //
-    // If region is NULL, it it assumed to be full-frame.
-    virtual mv::FrameAccessor::Key GetMaskForTrack(int clip,
-                                                   int frame,
-                                                   int track,
-                                                   const mv::Region* region,
-                                                   mv::FloatImage* destination) OVERRIDE FINAL;
 
     // Release a specified mask.
     //

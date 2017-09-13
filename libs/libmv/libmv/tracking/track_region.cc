@@ -143,7 +143,8 @@ TrackRegionOptions::TrackRegionOptions()
       sigma(0.9),
       num_extra_points(0),
       regularization_coefficient(0.0),
-      minimum_corner_shift_tolerance_pixels(0.005) {
+      minimum_corner_shift_tolerance_pixels(0.005),
+      image1_mask(NULL) {
 }
 
 namespace {
@@ -277,7 +278,6 @@ class PixelDifferenceCostFunctor {
   PixelDifferenceCostFunctor(const TrackRegionOptions &options,
                              const FloatImage &image_and_gradient1,
                              const FloatImage &image_and_gradient2,
-                             const FloatImage *image1_mask,
                              const Mat3 &canonical_to_image1,
                              int num_samples_x,
                              int num_samples_y,
@@ -285,7 +285,6 @@ class PixelDifferenceCostFunctor {
       : options_(options),
         image_and_gradient1_(image_and_gradient1),
         image_and_gradient2_(image_and_gradient2),
-        image1_mask_(image1_mask),
         canonical_to_image1_(canonical_to_image1),
         num_samples_x_(num_samples_x),
         num_samples_y_(num_samples_y),
@@ -318,8 +317,8 @@ class PixelDifferenceCostFunctor {
 
         // Sample sample the mask.
         double mask_value = 1.0;
-        if (image1_mask_ != NULL) {
-          SampleLinear(*image1_mask_,
+        if (options_.image1_mask != NULL) {
+          SampleLinear(*options_.image1_mask,
                        image_position(1),  // SampleLinear is r, c.
                        image_position(0),
                        &pattern_mask_(r, c, 0));
@@ -335,7 +334,7 @@ class PixelDifferenceCostFunctor {
 
   template<typename T>
   bool operator()(const T *warp_parameters, T *residuals) const {
-    if (image1_mask_ != NULL) {
+    if (options_.image1_mask != NULL) {
       VLOG(2) << "Using a mask.";
     }
     for (int i = 0; i < Warp::NUM_PARAMETERS; ++i) {
@@ -369,7 +368,7 @@ class PixelDifferenceCostFunctor {
         // components by the scalar as well. Therefore, if the mask is exactly
         // zero, then so too will the final residual and derivatives.
         double mask_value = 1.0;
-        if (image1_mask_ != NULL) {
+        if (options_.image1_mask != NULL) {
           mask_value = pattern_mask_(r, c);
           if (mask_value == 0.0) {
             residuals[r * num_samples_x_ + c] = T(0.0);
@@ -435,7 +434,7 @@ class PixelDifferenceCostFunctor {
         T error = src_sample - dst_sample;
 
         // Weight the error by the mask, if one is present.
-        if (image1_mask_ != NULL) {
+        if (options_.image1_mask != NULL) {
           error *= T(mask_value);
         }
         residuals[r * num_samples_x_ + c] = error;
@@ -467,7 +466,7 @@ class PixelDifferenceCostFunctor {
         // Sample the mask early; if it's zero, this pixel has no effect. This
         // allows early bailout from the expensive sampling that happens below.
         double mask_value = 1.0;
-        if (image1_mask_ != NULL) {
+        if (options_.image1_mask != NULL) {
           mask_value = pattern_mask_(r, c);
           if (mask_value == 0.0) {
             continue;
@@ -492,7 +491,7 @@ class PixelDifferenceCostFunctor {
                                             image2_position[1]);
 
         // Weight the sample by the mask, if one is present.
-        if (image1_mask_ != NULL) {
+        if (options_.image1_mask != NULL) {
           dst_sample *= T(mask_value);
         }
 #ifdef CERES_USE_OPENMP
@@ -537,7 +536,7 @@ class PixelDifferenceCostFunctor {
                              pattern_positions_(r, c, 1));
 
         double mask_value = 1.0;
-        if (image1_mask_ != NULL) {
+        if (options_.image1_mask != NULL) {
           mask_value = pattern_mask_(r, c);
           if (mask_value == 0.0) {
             continue;
@@ -558,7 +557,7 @@ class PixelDifferenceCostFunctor {
                                 image2_position[0]);
 
         // Weight the signals by the mask, if one is present.
-        if (image1_mask_ != NULL) {
+        if (options_.image1_mask != NULL) {
           x *= mask_value;
           y *= mask_value;
           num_samples += mask_value;
@@ -595,7 +594,6 @@ class PixelDifferenceCostFunctor {
   const TrackRegionOptions &options_;
   const FloatImage &image_and_gradient1_;
   const FloatImage &image_and_gradient2_;
-  const FloatImage *image1_mask_;
   const Mat3 &canonical_to_image1_;
   int num_samples_x_;
   int num_samples_y_;
@@ -1345,7 +1343,6 @@ void CopyQuad(double *src_x, double *src_y,
 template<typename Warp>
 void TemplatedTrackRegion(const FloatImage &image1,
                           const FloatImage &image2,
-                          const FloatImage *image1_mask,
                           const double *x1, const double *y1,
                           const TrackRegionOptions &options,
                           double *x2, double *y2,
@@ -1368,7 +1365,7 @@ void TemplatedTrackRegion(const FloatImage &image1,
     double y2_first_try[5];
     CopyQuad(x2, y2, x2_first_try, y2_first_try, options.num_extra_points);
 
-    TemplatedTrackRegion<Warp>(image1, image2, image1_mask,
+    TemplatedTrackRegion<Warp>(image1, image2,
                                x1, y1, modified_options,
                                x2_first_try, y2_first_try, result);
 
@@ -1425,7 +1422,7 @@ void TemplatedTrackRegion(const FloatImage &image1,
     LG << "Running brute initialization...";
     bool found_any_alignment = BruteTranslationOnlyInitialize<Warp>(
         image_and_gradient1,
-        image1_mask,
+        options.image1_mask,
         image2,
         options.num_extra_points,
         options.use_normalized_intensities,
@@ -1465,7 +1462,6 @@ void TemplatedTrackRegion(const FloatImage &image1,
       new PixelDifferenceCostFunctor<Warp>(options,
                                            image_and_gradient1,
                                            image_and_gradient2,
-                                           image1_mask,
                                            canonical_homography,
                                            num_samples_x,
                                            num_samples_y,
@@ -1572,7 +1568,6 @@ void TemplatedTrackRegion(const FloatImage &image1,
 
 void TrackRegion(const FloatImage &image1,
                  const FloatImage &image2,
-                 const FloatImage *image1_mask,
                  const double *x1, const double *y1,
                  const TrackRegionOptions &options,
                  double *x2, double *y2,
@@ -1580,7 +1575,7 @@ void TrackRegion(const FloatImage &image1,
   // Enum is necessary due to templated nature of autodiff.
 #define HANDLE_MODE(mode_enum, mode_type) \
   if (options.mode == TrackRegionOptions::mode_enum) { \
-    TemplatedTrackRegion<mode_type>(image1, image2, image1_mask, \
+    TemplatedTrackRegion<mode_type>(image1, image2, \
                                     x1, y1, \
                                     options, \
                                     x2, y2, \

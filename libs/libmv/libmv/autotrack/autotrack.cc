@@ -153,17 +153,6 @@ void GetImageForMarker(std::list<GetImageForMarkerArgs>& args, FrameAccessor* fr
     }
 }
 
-FrameAccessor::Key GetMaskForMarker(const Marker& marker,
-                                    FrameAccessor* frame_accessor,
-                                    FloatImage* mask) {
-  Region region = marker.search_region.Rounded();
-  return frame_accessor->GetMaskForTrack(marker.clip,
-                                         marker.frame,
-                                         marker.track,
-                                         &region,
-                                         mask);
-}
-
 }  // namespace
 
 bool AutoTrack::TrackMarker(Marker* tracked_marker,
@@ -226,8 +215,8 @@ bool AutoTrack::TrackMarker(Marker* tracked_marker,
 
 
 
-  FloatImage* reference_image = 0, *tracked_image = 0, *image1_mask = 0;
-  FrameAccessor::Key reference_key, tracked_key, mask_key;
+  FloatImage* reference_image = 0, *tracked_image = 0, *reference_mask = 0;
+  FrameAccessor::Key reference_key, tracked_key, reference_mask_key;
   assert(getImageArgs.size() == 3);
   {
       std::list<GetImageForMarkerArgs>::iterator it = getImageArgs.begin();
@@ -239,8 +228,8 @@ bool AutoTrack::TrackMarker(Marker* tracked_marker,
       tracked_key = it->key;
       ++it;
 
-      image1_mask = it->image;
-      mask_key = it->key;
+      reference_mask = it->image;
+      reference_mask_key = it->key;
   }
 
   if (!reference_key) {
@@ -248,15 +237,7 @@ bool AutoTrack::TrackMarker(Marker* tracked_marker,
     return false;
   }
 
-  FloatImage reference_mask;
-  FrameAccessor::Key reference_mask_key = GetMaskForMarker(reference_marker,
-                                                           frame_accessor_,
-                                                           &reference_mask);
 
-  FloatImage* tracked_image;
-  FrameAccessor::Key tracked_key = GetImageForMarker(*tracked_marker,
-                                                     frame_accessor_,
-                                                     &tracked_image);
   if (!tracked_key) {
     frame_accessor_->ReleaseImage(reference_key);
     LG << "Couldn't get frame for tracked marker: " << tracked_marker;
@@ -274,13 +255,12 @@ bool AutoTrack::TrackMarker(Marker* tracked_marker,
   }
   if (reference_mask_key != NULL) {
     LG << "Using mask for reference marker: " << reference_marker;
-    local_track_region_options.image1_mask = &reference_mask;
+    local_track_region_options.image1_mask = reference_mask;
   }
   local_track_region_options.num_extra_points = 1;  // For center point.
   local_track_region_options.attempt_refine_before_brute = predicted_position;
   TrackRegion(*reference_image,
               *tracked_image,
-              image1_mask,
               x1, y1,
               local_track_region_options,
               x2, y2,
@@ -304,10 +284,9 @@ bool AutoTrack::TrackMarker(Marker* tracked_marker,
   // Release the images and masks from the accessor cache.
   frame_accessor_->ReleaseImage(reference_key);
   frame_accessor_->ReleaseImage(tracked_key);
-  frame_accessor_->ReleaseMask(reference_mask_key);
 
-  if (image1_mask) {
-      frame_accessor_->ReleaseImage(mask_key);
+  if (reference_mask) {
+      frame_accessor_->ReleaseImage(reference_mask_key);
   }
 
   // Update the kalman filter with the new measurement
