@@ -655,7 +655,14 @@ TrackerFrameAccessor::GetMaskForTrack(int clip,
     Q_UNUSED(destination);
 
     // no mask yet
-    
+
+    // This feature was lost in libmv/blander when the autotrack API changed, and was
+    // re-introduced by this commit:
+    // https://developer.blender.org/rBb0015686e2e48a384a0b2a03a75f6daaad7271c0
+    //
+
+#pragma message WARN("TODO: implement TrackerFrameAccessor::GetMaskForTrack")
+
     return NULL;
 }
 
