@@ -78,6 +78,25 @@ static constexpr size_t kMaxAlignBytes =
 }  // namespace port_constants
 #endif
 
+// We allocate some Eigen objects on the stack and other places they
+// might not be aligned to 16-byte boundaries.  If we have C++11, we
+// can specify their alignment anyway, and thus can safely enable
+// vectorization on those matrices; in C++99, we are out of luck.  Figure out
+// what case we're in and write macros that do the right thing.
+#ifdef CERES_USE_CXX11
+namespace port_constants {
+static constexpr size_t kMaxAlignBytes =
+    // Work around a GCC 4.8 bug
+    // (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=56019) where
+    // std::max_align_t is misplaced.
+#if defined (__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ == 8
+    alignof(::max_align_t);
+#else
+    alignof(std::max_align_t);
+#endif
+}  // namespace port_constants
+#endif
+
 }  // namespace ceres
 
 #endif  // __cplusplus

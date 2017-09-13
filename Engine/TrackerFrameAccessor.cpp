@@ -611,6 +611,7 @@ TrackerFrameAccessor::GetImage(std::list<mv::FrameAccessor::GetImageArgs>& image
     GetImageInternal(imageRequests);
 } // TrackerFrameAccessor::GetImage
 
+
 void
 TrackerFrameAccessor::ReleaseImage(Key key)
 {
@@ -627,6 +628,46 @@ TrackerFrameAccessor::ReleaseImage(Key key)
             }
         }
     }
+}
+
+/*
+ * @brief This is called by LibMV to retrieve an the mask, which is always defined in the reference frame.
+ */
+// Get mask image for the given track.
+//
+// Implementation of this method should sample mask associated with the track
+// within given region to the given destination.
+//
+// Result is supposed to be a single channel image.
+//
+// If region is NULL, it it assumed to be full-frame.
+mv::FrameAccessor::Key
+TrackerFrameAccessor::GetMaskForTrack(int clip,
+                                      int frame,
+                                      int track,
+                                      const mv::Region* region,
+                                      mv::FloatImage* destination)
+{
+    Q_UNUSED(clip);
+    Q_UNUSED(frame);
+    Q_UNUSED(track);
+    Q_UNUSED(region);
+    Q_UNUSED(destination);
+
+    // no mask yet
+    
+    return NULL;
+}
+
+// Release a specified mask.
+//
+// Non-caching implementation may free used memory immediately.
+void
+TrackerFrameAccessor::ReleaseMask(mv::FrameAccessor::Key key)
+{
+    Q_UNUSED(key);
+
+    // no mask yet
 }
 
 // Not used in LibMV

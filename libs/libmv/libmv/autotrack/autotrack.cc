@@ -153,6 +153,17 @@ void GetImageForMarker(std::list<GetImageForMarkerArgs>& args, FrameAccessor* fr
     }
 }
 
+FrameAccessor::Key GetMaskForMarker(const Marker& marker,
+                                    FrameAccessor* frame_accessor,
+                                    FloatImage* mask) {
+  Region region = marker.search_region.Rounded();
+  return frame_accessor->GetMaskForTrack(marker.clip,
+                                         marker.frame,
+                                         marker.track,
+                                         &region,
+                                         mask);
+}
+
 }  // namespace
 
 bool AutoTrack::TrackMarker(Marker* tracked_marker,
@@ -237,6 +248,15 @@ bool AutoTrack::TrackMarker(Marker* tracked_marker,
     return false;
   }
 
+  FloatImage reference_mask;
+  FrameAccessor::Key reference_mask_key = GetMaskForMarker(reference_marker,
+                                                           frame_accessor_,
+                                                           &reference_mask);
+
+  FloatImage* tracked_image;
+  FrameAccessor::Key tracked_key = GetImageForMarker(*tracked_marker,
+                                                     frame_accessor_,
+                                                     &tracked_image);
   if (!tracked_key) {
     frame_accessor_->ReleaseImage(reference_key);
     LG << "Couldn't get frame for tracked marker: " << tracked_marker;
@@ -251,6 +271,10 @@ bool AutoTrack::TrackMarker(Marker* tracked_marker,
   TrackRegionOptions local_track_region_options;
   if (track_options) {
     local_track_region_options = *track_options;
+  }
+  if (reference_mask_key != NULL) {
+    LG << "Using mask for reference marker: " << reference_marker;
+    local_track_region_options.image1_mask = &reference_mask;
   }
   local_track_region_options.num_extra_points = 1;  // For center point.
   local_track_region_options.attempt_refine_before_brute = predicted_position;
@@ -277,9 +301,10 @@ bool AutoTrack::TrackMarker(Marker* tracked_marker,
   tracked_marker->reference_clip  = reference_marker.clip;
   tracked_marker->reference_frame = reference_marker.frame;
 
-  // Release the images from the accessor cache.
+  // Release the images and masks from the accessor cache.
   frame_accessor_->ReleaseImage(reference_key);
   frame_accessor_->ReleaseImage(tracked_key);
+  frame_accessor_->ReleaseMask(reference_mask_key);
 
   if (image1_mask) {
       frame_accessor_->ReleaseImage(mask_key);

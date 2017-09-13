@@ -123,6 +123,26 @@ public:
     // Releases an image from the frame accessor. Non-caching implementations may
     // free the image immediately; others may hold onto the image.
     virtual void ReleaseImage(Key) OVERRIDE FINAL;
+
+    // Get mask image for the given track.
+    //
+    // Implementation of this method should sample mask associated with the track
+    // within given region to the given destination.
+    //
+    // Result is supposed to be a single channel image.
+    //
+    // If region is NULL, it it assumed to be full-frame.
+    virtual mv::FrameAccessor::Key GetMaskForTrack(int clip,
+                                                   int frame,
+                                                   int track,
+                                                   const mv::Region* region,
+                                                   mv::FloatImage* destination) OVERRIDE FINAL;
+
+    // Release a specified mask.
+    //
+    // Non-caching implementation may free used memory immediately.
+    virtual void ReleaseMask(mv::FrameAccessor::Key key) OVERRIDE FINAL;
+
     virtual bool GetClipDimensions(int clip, int* width, int* height) OVERRIDE FINAL;
     virtual int NumClips() OVERRIDE FINAL;
     virtual int NumFrames(int clip) OVERRIDE FINAL;

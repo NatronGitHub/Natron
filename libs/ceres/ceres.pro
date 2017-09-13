@@ -58,6 +58,7 @@ SOURCES += \
 	internal/ceres/implicit_schur_complement.cc \
 	internal/ceres/is_close.cc \
 	internal/ceres/iterative_schur_complement_solver.cc \
+	internal/ceres/is_close.cc \
 	internal/ceres/lapack.cc \
 	internal/ceres/levenberg_marquardt_strategy.cc \
 	internal/ceres/line_search.cc \
@@ -221,6 +222,7 @@ HEADERS += \
 	internal/ceres/graph.h \
 	internal/ceres/implicit_schur_complement.h \
 	internal/ceres/integral_types.h \
+	internal/ceres/is_close.h \
 	internal/ceres/iterative_schur_complement_solver.h \
 	internal/ceres/lapack.h \
 	internal/ceres/levenberg_marquardt_strategy.h \
@@ -265,6 +267,7 @@ HEADERS += \
 	internal/ceres/triplet_sparse_matrix.h \
 	internal/ceres/trust_region_minimizer.h \
 	internal/ceres/trust_region_preprocessor.h \
-	internal/ceres/trust_region_strategy.h \
+        internal/ceres/trust_region_step_evaluator.h \
+        internal/ceres/trust_region_strategy.h \
 	internal/ceres/visibility_based_preconditioner.h \
 	internal/ceres/wall_time.h \  
