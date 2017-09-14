@@ -68,8 +68,8 @@ if {${subport} eq ${name}} {
     if { ${configure.compiler} eq "macports-clang-3.9" } {
         configure.optflags "-O2"
     }
-    # clang-4.0 was not yet tested, use -O2 just to be on the safe side
-    if { ${configure.compiler} eq "macports-clang-4.0" } {
+    # clang-4.0 and later are not yet tested, use -O2 just to be on the safe side
+    if { ${configure.compiler} eq "macports-clang-4.0" || ${configure.compiler} eq "macports-clang-5.0" || ${configure.compiler} eq "macports-clang-6.0" } {
         configure.optflags "-O2"
     }
 }

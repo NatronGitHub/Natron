@@ -1,6 +1,6 @@
---- Portfile.orig	2017-05-06 17:53:02.000000000 +0200
-+++ Portfile	2017-06-02 13:26:34.000000000 +0200
-@@ -66,6 +66,8 @@
+--- Portfile.orig	2017-09-10 23:50:18.000000000 +0200
++++ Portfile	2017-09-14 19:20:48.000000000 +0200
+@@ -67,6 +67,8 @@
                              port:expat \
                              port:libxml2
  
@@ -9,7 +9,7 @@
  # Magick-config etc. use pkg-config
  depends_lib-append          port:pkgconfig
  
-@@ -92,11 +94,13 @@
+@@ -93,11 +95,13 @@
                              --with-dps \
                              --with-bzlib \
                              --with-djvu \
@@ -23,7 +23,7 @@
                              --with-openjp2 \
                              --with-png \
                              --with-tiff \
-@@ -114,6 +118,74 @@
+@@ -115,6 +119,78 @@
                              --without-x \
                              --with-gs-font-dir=${prefix}/share/fonts/urw-fonts
  
@@ -34,7 +34,11 @@
 +    } else {
 +        # libc++-based build
 +        # configure with clang-4.0 for proper OpenMP support
-+        configure.compiler macports-clang-4.0
++        if {${os.major} < 11} {
++           configure.compiler macports-clang-4.0
++        } else {
++           configure.compiler macports-clang-5.0
++        }
 +    }
 +    configure.args-append --enable-openmp
 +    patchfiles-append pango-align-hack.diff
@@ -98,7 +102,7 @@
  test.run                    yes
  test.target                 check
  test.env                    DYLD_LIBRARY_PATH=${worksrcpath}/magick/.libs
-@@ -121,6 +193,23 @@
+@@ -122,6 +198,23 @@
  # ImageMagick uses .la files at runtime to find its coder modules.
  destroot.delete_la_files    no
  
@@ -122,7 +126,7 @@
  variant graphviz description {Support Graphviz} {
      depends_lib-append      path:bin/dot:graphviz
      configure.args-replace  --without-gvc --with-gvc
-@@ -155,6 +244,11 @@
+@@ -156,6 +249,11 @@
  
  default_variants            +x11
  
