@@ -56,7 +56,7 @@ Now, if you want to use turbojpeg instead of jpeg:
     
 And finally install the required packages:
 
-    yes | sudo port -v install qt4-mac boost cairo expat gsed py27-pyside py27-sphinx
+    sudo port -v -N install qt4-mac boost cairo expat gsed py27-pyside py27-sphinx
     sudo ln -s python2.7-config /opt/local/bin/python2-config
 
 Create the file /opt/local/lib/pkgconfig/glu.pc containing GLU
@@ -82,11 +82,11 @@ EOF
 
 If you intend to build the [openfx-io](https://github.com/MrKepzie/openfx-io) plugins too, you will need these additional packages:
 
-    yes | sudo port -v install x264 +high10 libvpx +highbitdepth libraw +gpl2 openexr ffmpeg +gpl2 +high10 +highbitdepth opencolorio openimageio +natron seexpr
+    sudo port -v -N install x264 +high10 libvpx +highbitdepth libraw +gpl2 openexr ffmpeg +gpl2 +high10 +highbitdepth opencolorio openimageio +natron seexpr
 
 and for [openfx-arena](https://github.com/olear/openfx-arena) (note that it installs a version of ImageMagick without support for many image I/O libraries):
 
-    yes | sudo port -v install librsvg ImageMagick +natron poppler librevenge libcdr-0.1 libzip
+    sudo port -v -N install librsvg ImageMagick +natron poppler librevenge libcdr-0.1 libzip
 
 ### Homebrew
 

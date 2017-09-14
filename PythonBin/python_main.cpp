@@ -59,9 +59,6 @@ extern "C" {
         wideArgs[i] = wcsdup(utf16.c_str());
     }
     int ret = Py_Main(commandLineArgsUtf8.size(), &wideArgs[0]);
-    for (std::size_t i = 0; i < utf8Args.size(); ++i) {
-        free(utf8Args[i]);
-    }
     return ret;
 #else
     std::vector<char*> utf8Args(argc);
@@ -69,9 +66,6 @@ extern "C" {
         utf8Args[i] = strdup(commandLineArgsUtf8[i].c_str());
     }
     int ret = Py_Main(commandLineArgsUtf8.size(), &utf8Args[0]);
-    for (std::size_t i = 0; i < utf8Args.size(); ++i) {
-        free(utf8Args[i]);
-    }
     return ret;
 #endif
 } //main
