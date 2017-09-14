@@ -1541,6 +1541,12 @@ KnobChoice::choiceMatch(const std::string& choice,
                         const std::vector<ChoiceOption>& entries,
                         ChoiceOption* matchedEntry)
 {
+    if (entries.size() == 0) {
+        // no match
+
+        return -1;
+    }
+    
     // try to match entry id first, then label
     for (int s = 0; s < 2; ++s) {
         // 2- try exact match, other index
@@ -1558,8 +1564,21 @@ KnobChoice::choiceMatch(const std::string& choice,
         std::string choicemain = choice.substr(0, choicetab); // gives the entire string if no tabs were found
         for (std::size_t i = 0; i < entries.size(); ++i) {
             const ChoiceOption& entry(entries[i]);
+
+            // There is no real reason for an id to contain a tab, but let us search for it anyway
             std::size_t entrytab = entry.id.find('\t'); // returns string::npos if no tab was found
             std::string entrymain = entry.id.substr(0, entrytab); // gives the entire string if no tabs were found
+
+            if (entrymain == choicemain) {
+                if (matchedEntry) {
+                    *matchedEntry = entries[i];
+                }
+                return i;
+            }
+
+            // The label may contain a tab
+            std::size_t entrytab = entry.label.find('\t'); // returns string::npos if no tab was found
+            std::string entrymain = entry.label.substr(0, entrytab); // gives the entire string if no tabs were found
 
             if (entrymain == choicemain) {
                 if (matchedEntry) {
