@@ -41,8 +41,6 @@
 #include "libmv/multiview/homography.h"
 #include "libmv/numeric/numeric.h"
 
-
-
 // Expand the Jet functionality of Ceres to allow mixed numeric/autodiff.
 //
 // TODO(keir): Push this (or something similar) into upstream Ceres.

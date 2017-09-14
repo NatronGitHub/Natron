@@ -115,7 +115,7 @@ void Convolve(const Array3Df &in,
   int src_line_stride = in.Stride(0);
   int src_stride = in.Stride(1);
   int dst_stride = out.Stride(1);
-    int dst_line_stride = out.Stride(0);
+  int dst_line_stride = out.Stride(0);
   const float* src = in.Data();
   float* dst = out.Data() + plane;
 

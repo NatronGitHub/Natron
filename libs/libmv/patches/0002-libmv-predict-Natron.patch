@@ -1,6 +1,5 @@
-diff -ur a/libs/libmv/libmv/autotrack/autotrack.cc b/libs/libmv/libmv/autotrack/autotrack.cc
---- a/libs/libmv/libmv/autotrack/autotrack.cc	2016-03-21 18:40:15.000000000 +0100
-+++ b/libs/libmv/libmv/autotrack/autotrack.cc	2016-05-20 11:55:42.000000000 +0200
+--- libmv/autotrack/autotrack.cc	2016-03-21 18:40:15.000000000 +0100
++++ libmv/autotrack/autotrack.cc	2016-05-20 11:55:42.000000000 +0200
 @@ -115,12 +115,18 @@
  
  bool AutoTrack::TrackMarker(Marker* tracked_marker,
@@ -44,9 +43,8 @@ diff -ur a/libs/libmv/libmv/autotrack/autotrack.cc b/libs/libmv/libmv/autotrack/
    tracks_.SetMarkers(markers);
  }
  
-diff -ur a/libs/libmv/libmv/autotrack/autotrack.h b/libs/libmv/libmv/autotrack/autotrack.h
---- a/libs/libmv/libmv/autotrack/autotrack.h	2016-03-21 18:40:15.000000000 +0100
-+++ b/libs/libmv/libmv/autotrack/autotrack.h	2016-05-20 11:55:42.000000000 +0200
+--- libmv/autotrack/autotrack.h	2016-03-21 18:40:15.000000000 +0100
++++ libmv/autotrack/autotrack.h	2016-05-20 11:55:42.000000000 +0200
 @@ -25,6 +25,7 @@
  
  #include "libmv/autotrack/tracks.h"
@@ -69,9 +67,8 @@ diff -ur a/libs/libmv/libmv/autotrack/autotrack.h b/libs/libmv/libmv/autotrack/a
    bool GetMarker(int clip, int frame, int track, Marker* marker) const;
  
    // TODO(keir): Implement frame matching! This could be very cool for loop
-diff -ur a/libs/libmv/libmv/autotrack/predict_tracks.cc b/libs/libmv/libmv/autotrack/predict_tracks.cc
---- a/libs/libmv/libmv/autotrack/predict_tracks.cc	2016-03-21 18:40:15.000000000 +0100
-+++ b/libs/libmv/libmv/autotrack/predict_tracks.cc	2016-06-21 09:13:03.000000000 +0200
+--- libmv/autotrack/predict_tracks.cc	2016-03-21 18:40:15.000000000 +0100
++++ libmv/autotrack/predict_tracks.cc	2016-06-21 09:13:03.000000000 +0200
 @@ -20,12 +20,13 @@
  //
  // Author: mierle@gmail.com (Keir Mierle)
@@ -165,9 +162,8 @@ diff -ur a/libs/libmv/libmv/autotrack/predict_tracks.cc b/libs/libmv/libmv/autot
 +} // Update
 +
  }  // namespace mv
-diff -ur a/libs/libmv/libmv/autotrack/predict_tracks.h b/libs/libmv/libmv/autotrack/predict_tracks.h
---- a/libs/libmv/libmv/autotrack/predict_tracks.h	2016-03-21 18:40:15.000000000 +0100
-+++ b/libs/libmv/libmv/autotrack/predict_tracks.h	2016-06-21 09:13:40.000000000 +0200
+--- libmv/autotrack/predict_tracks.h	2016-03-21 18:40:15.000000000 +0100
++++ libmv/autotrack/predict_tracks.h	2016-06-21 09:13:40.000000000 +0200
 @@ -23,11 +23,39 @@
  #ifndef LIBMV_AUTOTRACK_PREDICT_TRACKS_H_
  #define LIBMV_AUTOTRACK_PREDICT_TRACKS_H_
@@ -208,9 +204,8 @@ diff -ur a/libs/libmv/libmv/autotrack/predict_tracks.h b/libs/libmv/libmv/autotr
  // Predict the position of the given marker, and update it accordingly. The
  // existing position will be overwritten.
  bool PredictMarkerPosition(const Tracks& tracks, Marker* marker);
-diff -ur a/libs/libmv/libmv/autotrack/tracks.cc b/libs/libmv/libmv/autotrack/tracks.cc
---- a/libs/libmv/libmv/autotrack/tracks.cc	2016-03-21 18:40:15.000000000 +0100
-+++ b/libs/libmv/libmv/autotrack/tracks.cc	2016-06-21 09:17:03.000000000 +0200
+--- libmv/autotrack/tracks.cc	2016-03-21 18:40:15.000000000 +0100
++++ libmv/autotrack/tracks.cc	2016-06-21 09:17:03.000000000 +0200
 @@ -25,6 +25,7 @@
  #include <algorithm>
  #include <vector>
@@ -517,9 +512,8 @@ diff -ur a/libs/libmv/libmv/autotrack/tracks.cc b/libs/libmv/libmv/autotrack/tra
  }
  
  int Tracks::NumMarkers() const {
-diff -ur a/libs/libmv/libmv/autotrack/tracks.h b/libs/libmv/libmv/autotrack/tracks.h
---- a/libs/libmv/libmv/autotrack/tracks.h	2016-03-21 18:40:15.000000000 +0100
-+++ b/libs/libmv/libmv/autotrack/tracks.h	2016-06-21 09:17:36.000000000 +0200
+--- libmv/autotrack/tracks.h	2016-03-21 18:40:15.000000000 +0100
++++ libmv/autotrack/tracks.h	2016-06-21 09:17:36.000000000 +0200
 @@ -23,6 +23,8 @@
  #ifndef LIBMV_AUTOTRACK_TRACKS_H_
  #define LIBMV_AUTOTRACK_TRACKS_H_
@@ -583,9 +577,8 @@ diff -ur a/libs/libmv/libmv/autotrack/tracks.h b/libs/libmv/libmv/autotrack/trac
  
    // TODO(keir): Consider adding access-map data structures to avoid all the
    // linear lookup penalties for the accessors.
-diff -ur a/libs/libmv/libmv/logging/logging.h b/libs/libmv/libmv/logging/logging.h
---- a/libs/libmv/libmv/logging/logging.h	2016-03-21 18:40:15.000000000 +0100
-+++ b/libs/libmv/libmv/logging/logging.h	2016-05-20 11:55:42.000000000 +0200
+--- libmv/logging/logging.h	2016-03-21 18:40:15.000000000 +0100
++++ libmv/logging/logging.h	2016-05-20 11:55:42.000000000 +0200
 @@ -23,9 +23,20 @@
  
  #include <glog/logging.h>
@@ -611,9 +604,8 @@ diff -ur a/libs/libmv/libmv/logging/logging.h b/libs/libmv/libmv/logging/logging
 +#define V2 LIBMV_LOG(INFO)
  
  #endif  // LIBMV_LOGGING_LOGGING_H
-diff -ur a/libs/libmv/libmv/tracking/track_region.cc b/libs/libmv/libmv/tracking/track_region.cc
---- a/libs/libmv/libmv/tracking/track_region.cc	2016-03-21 18:40:15.000000000 +0100
-+++ b/libs/libmv/libmv/tracking/track_region.cc	2016-06-21 09:18:16.000000000 +0200
+--- libmv/tracking/track_region.cc	2016-03-21 18:40:15.000000000 +0100
++++ libmv/tracking/track_region.cc	2016-06-21 09:18:16.000000000 +0200
 @@ -136,6 +136,7 @@
        max_iterations(20),
        use_esm(true),
