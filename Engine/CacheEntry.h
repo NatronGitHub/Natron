@@ -1169,8 +1169,9 @@ private:
     {
         CacheEntryStorageInfo& info = _params->getStorageInfo();
 
-        if (info.mode == eStorageModeDisk) {
-            if (_cache->isTileCache()) {
+        // _cache should be non-NULL for eStorageModeDisk
+        if (info.mode == eStorageModeDisk && _cache) {
+            if (_cache && _cache->isTileCache()) {
                 _data.allocateTileCache(this);
             } else {
                 std::string fileName;
