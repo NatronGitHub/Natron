@@ -1566,10 +1566,10 @@ KnobChoice::choiceMatch(const std::string& choice,
             const ChoiceOption& entry(entries[i]);
 
             // There is no real reason for an id to contain a tab, but let us search for it anyway
-            std::size_t entrytab = entry.id.find('\t'); // returns string::npos if no tab was found
-            std::string entrymain = entry.id.substr(0, entrytab); // gives the entire string if no tabs were found
+            std::size_t entryidtab = entry.id.find('\t'); // returns string::npos if no tab was found
+            std::string entryidmain = entry.id.substr(0, entryidtab); // gives the entire string if no tabs were found
 
-            if (entrymain == choicemain) {
+            if (entryidmain == choicemain) {
                 if (matchedEntry) {
                     *matchedEntry = entries[i];
                 }
