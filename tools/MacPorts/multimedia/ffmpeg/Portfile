@@ -323,6 +323,7 @@ variant natron requires highbitdepth conflicts x11 description {Minimal FFmpeg f
                     --enable-fontconfig \
                     --enable-libfreetype \
                     --enable-libfribidi \
+                    --enable-sdl2 \
                     --cc=${configure.cc} \
                     --cxx=${configure.cxx}
 
@@ -333,7 +334,7 @@ variant natron requires highbitdepth conflicts x11 description {Minimal FFmpeg f
                     --disable-fontconfig \
                     --disable-libfreetype \
                     --disable-libfribidi \
-                    --disable-sdl \
+                    --disable-sdl2 \
                     --disable-securetransport \
                     --disable-iconv \
                     --cc=${configure.cc} \
