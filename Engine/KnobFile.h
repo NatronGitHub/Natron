@@ -45,6 +45,37 @@ NATRON_NAMESPACE_ENTER
 
 /******************************KnobFile**************************************/
 
+/**
+ * @brief An implementation of ValueKnobDimView that handles user project variables
+ **/
+class FileKnobDimView : public ValueKnobDimView<std::string>
+{
+    bool _expansionEnabled;
+public:
+
+    FileKnobDimView()
+    : ValueKnobDimView<std::string>()
+    , _expansionEnabled(true)
+    {
+
+    }
+
+    virtual ~FileKnobDimView()
+    {
+
+    }
+
+    void setVariablesExpansionEnabled(bool enabled)
+    {
+        _expansionEnabled = enabled;
+    }
+
+    virtual ValueChangedReturnCodeEnum setKeyFrame(const KeyFrame& key, SetKeyFrameFlags flags) OVERRIDE FINAL;
+    virtual bool setValueAndCheckIfChanged(const std::string& value) OVERRIDE FINAL;
+
+};
+
+
 struct KnobFilePrivate;
 class KnobFile
     : public QObject, public KnobStringBase
@@ -114,16 +145,27 @@ public:
     void reloadFile();
 
 
+    std::string getFileNameWithoutVariablesExpension(DimIdx dimension = DimIdx(0), ViewIdx view = ViewIdx(0)) WARN_UNUSED_RETURN;
     std::string getRawFileName(DimIdx dimension = DimIdx(0), ViewIdx view = ViewIdx(0)) WARN_UNUSED_RETURN;
 
     virtual std::string getValue(DimIdx dimension = DimIdx(0), ViewIdx view = ViewIdx(0), bool clampToMinMax = true) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getValueAtTime(TimeValue time, DimIdx dimension = DimIdx(0), ViewIdx view = ViewIdx(0), bool clampToMinMax = true) OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    virtual std::string getDefaultValue(DimIdx dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual std::string getInitialDefaultValue(DimIdx dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setDefaultValue(const std::string & v, DimSpec dimension = DimSpec(0)) OVERRIDE FINAL;
+    virtual void setDefaultValues(const std::vector<std::string>& values, DimIdx dimensionStartOffset) OVERRIDE FINAL;
+    virtual void setDefaultValueWithoutApplying(const std::string& v, DimSpec dimension = DimSpec(0)) OVERRIDE FINAL;
+    virtual void setDefaultValuesWithoutApplying(const std::vector<std::string>& values, DimIdx dimensionStartOffset = DimIdx(0)) OVERRIDE FINAL;
 
 Q_SIGNALS:
 
     void openFile();
 
 private:
+
+
+    virtual KnobDimViewBasePtr createDimViewData() const OVERRIDE FINAL;
 
     virtual std::string getValueForHash(DimIdx dim, ViewIdx view) OVERRIDE;
 
@@ -216,8 +258,22 @@ public:
     virtual bool isCellEnabled(int row, int col, const QStringList& values) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isCellBracketDecorated(int row, int col) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool useEditButton() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    std::string getFileNameWithoutVariablesExpension(DimIdx dimension = DimIdx(0), ViewIdx view = ViewIdx(0)) WARN_UNUSED_RETURN;
+    virtual std::string getValue(DimIdx dimension = DimIdx(0), ViewIdx view = ViewIdx(0), bool clampToMinMax = true) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual std::string getValueAtTime(TimeValue time, DimIdx dimension = DimIdx(0), ViewIdx view = ViewIdx(0), bool clampToMinMax = true) OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    virtual std::string getDefaultValue(DimIdx dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual std::string getInitialDefaultValue(DimIdx dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setDefaultValue(const std::string & v, DimSpec dimension = DimSpec(0)) OVERRIDE FINAL;
+    virtual void setDefaultValues(const std::vector<std::string>& values, DimIdx dimensionStartOffset) OVERRIDE FINAL;
+    virtual void setDefaultValueWithoutApplying(const std::string& v, DimSpec dimension = DimSpec(0)) OVERRIDE FINAL;
+    virtual void setDefaultValuesWithoutApplying(const std::vector<std::string>& values, DimIdx dimensionStartOffset = DimIdx(0)) OVERRIDE FINAL;
 private:
 
+    virtual KnobDimViewBasePtr createDimViewData() const OVERRIDE FINAL;
+
+    
     static std::string generateUniquePathID(const std::list<std::vector<std::string> >& paths);
     virtual const std::string & typeName() const OVERRIDE FINAL;
 

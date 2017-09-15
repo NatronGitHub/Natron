@@ -117,10 +117,105 @@ KnobFile::typeName() const
 }
 
 
+static void
+projectEnvVar_getProxy(const KnobHolderPtr& holder, std::string& str)
+{
+    if (!holder) {
+        return;
+    }
+    AppInstancePtr app = holder->getApp();
+    if (!app) {
+        return;
+    }
+    ProjectPtr proj = app->getProject();
+    if (!proj) {
+        return;
+    }
+    proj->canonicalizePath(str);
+}
+
+static void
+projectEnvVar_setProxy(const KnobHolderPtr& holder, std::string& str)
+{
+    if (!holder) {
+        return;
+    }
+    AppInstancePtr app = holder->getApp();
+    if (!app) {
+        return;
+    }
+    ProjectPtr proj = app->getProject();
+    if (!proj) {
+        return;
+    }
+    proj->simplifyPath(str);
+}
+
+bool
+FileKnobDimView::setValueAndCheckIfChanged(const std::string& value)
+{
+    std::string str = value;
+    KnobIPtr knob;
+    {
+        QMutexLocker k(&valueMutex);
+        knob = sharedKnobs.begin()->knob.lock();
+    }
+
+    KnobHolderPtr holder;
+    if (knob) {
+        holder = knob->getHolder();
+    }
+    if (holder && _expansionEnabled) {
+        projectEnvVar_setProxy(holder,str);
+    }
+    return ValueKnobDimView<std::string>::setValueAndCheckIfChanged(str);
+    
+} // setValueAndCheckIfChanged
+
+ValueChangedReturnCodeEnum
+FileKnobDimView::setKeyFrame(const KeyFrame& key, SetKeyFrameFlags flags)
+{
+    KnobIPtr knob;
+    {
+        QMutexLocker k(&valueMutex);
+        knob = sharedKnobs.begin()->knob.lock();
+    }
+
+    KnobHolderPtr holder;
+    if (knob) {
+        holder = knob->getHolder();
+    }
+    KeyFrame k = key;
+    if (holder && _expansionEnabled) {
+        std::string str;
+        k.getPropertySafe<std::string>(kKeyFramePropString, 0, &str);
+        projectEnvVar_setProxy(holder, str);
+        k.setProperty(kKeyFramePropString, str, 0, false /*failIfnotExist*/);
+    }
+
+    return ValueKnobDimView<std::string>::setKeyFrame(k, flags);
+
+} // setKeyFrame
+
+KnobDimViewBasePtr
+KnobFile::createDimViewData() const
+{
+    boost::shared_ptr<FileKnobDimView> ret(new FileKnobDimView);
+    return ret;
+}
+
+std::string
+KnobFile::getFileNameWithoutVariablesExpension(DimIdx dimension, ViewIdx view)
+{
+    return Knob<std::string>::getValue(dimension, view);
+}
+
 std::string
 KnobFile::getRawFileName(DimIdx dimension, ViewIdx view)
 {
-    return Knob<std::string>::getValue(dimension, view);
+    std::string ret = Knob<std::string>::getValue(dimension, view);
+    projectEnvVar_getProxy(getHolder(), ret);
+    return ret;
 }
 
 std::string
@@ -133,6 +228,59 @@ std::string
 KnobFile::getValue(DimIdx dimension, ViewIdx view, bool clampToMinMax)
 {
     return getValueAtTime(getCurrentRenderTime(), dimension, view, clampToMinMax);
+}
+
+std::string
+KnobFile::getDefaultValue(DimIdx dimension) const
+{
+    std::string ret = KnobStringBase::getDefaultValue(dimension);
+    projectEnvVar_getProxy(getHolder(), ret);
+    return ret;
+}
+
+std::string
+KnobFile::getInitialDefaultValue(DimIdx dimension) const
+{
+    std::string ret = KnobStringBase::getInitialDefaultValue(dimension);
+    projectEnvVar_getProxy(getHolder(), ret);
+    return ret;
+}
+
+void
+KnobFile::setDefaultValue(const std::string & v, DimSpec dimension)
+{
+    std::string ret = v;
+    projectEnvVar_setProxy(getHolder(), ret);
+    KnobStringBase::setDefaultValue(ret, dimension);
+}
+
+void
+KnobFile::setDefaultValues(const std::vector<std::string>& values, DimIdx dimensionStartOffset)
+{
+    std::vector<std::string> ret = values;
+    for (std::size_t i = 0; i < ret.size(); ++i) {
+        projectEnvVar_setProxy(getHolder(), ret[i]);
+    }
+    KnobStringBase::setDefaultValues(ret, dimensionStartOffset);
+
+}
+
+void
+KnobFile::setDefaultValueWithoutApplying(const std::string& v, DimSpec dimension)
+{
+    std::string ret = v;
+    projectEnvVar_setProxy(getHolder(), ret);
+    KnobStringBase::setDefaultValueWithoutApplying(ret, dimension);
+}
+
+void
+KnobFile::setDefaultValuesWithoutApplying(const std::vector<std::string>& values, DimIdx dimensionStartOffset)
+{
+    std::vector<std::string> ret = values;
+    for (std::size_t i = 0; i < ret.size(); ++i) {
+        projectEnvVar_setProxy(getHolder(), ret[i]);
+    }
+    KnobStringBase::setDefaultValuesWithoutApplying(ret, dimensionStartOffset);
 }
 
 void
@@ -173,9 +321,12 @@ KnobFile::getValueAtTime(TimeValue time, DimIdx dimension, ViewIdx view, bool /*
             views = getHolder()->getApp()->getProject()->getProjectViewNames();
         }
         std::string pattern = Knob<std::string>::getValue(dimension, view);
+        projectEnvVar_getProxy(getHolder(), pattern);
         return SequenceParsing::generateFileNameFromPattern(pattern, views, time, view_i);
     }
-    return Knob<std::string>::getValue(dimension, view);
+    std::string ret = Knob<std::string>::getValue(dimension, view);
+    projectEnvVar_getProxy(getHolder(), ret);
+    return ret;
 }
 
 /***********************************KnobPath*****************************************/
@@ -378,6 +529,107 @@ KnobPath::useEditButton() const
     return _imp->isMultiPath && !_imp->isStringList;
 }
 
+std::string
+KnobPath::getFileNameWithoutVariablesExpension(DimIdx dimension, ViewIdx view)
+{
+    return KnobTable::getValue(dimension, view);
+}
+
+std::string
+KnobPath::getValueAtTime(TimeValue time, DimIdx dimension, ViewIdx view, bool /*clampToMinMax*/)
+{
+    std::string ret = KnobTable::getValueAtTime(time, dimension, view);
+    if (isMultiPath()) {
+        return ret;
+    }
+    projectEnvVar_getProxy(getHolder(), ret);
+    return ret;
+}
+
+std::string
+KnobPath::getValue(DimIdx dimension, ViewIdx view, bool clampToMinMax)
+{
+    std::string ret = KnobTable::getValue(dimension, view, clampToMinMax);
+    if (isMultiPath()) {
+        return ret;
+    }
+    projectEnvVar_getProxy(getHolder(), ret);
+    return ret;
+}
+
+std::string
+KnobPath::getDefaultValue(DimIdx dimension) const
+{
+    std::string ret = KnobTable::getDefaultValue(dimension);
+    if (isMultiPath()) {
+        return ret;
+    }
+    projectEnvVar_getProxy(getHolder(), ret);
+    return ret;
+}
+
+std::string
+KnobPath::getInitialDefaultValue(DimIdx dimension) const
+{
+    std::string ret = KnobTable::getInitialDefaultValue(dimension);
+    if (isMultiPath()) {
+        return ret;
+    }
+    projectEnvVar_getProxy(getHolder(), ret);
+    return ret;
+}
+
+void
+KnobPath::setDefaultValue(const std::string & v, DimSpec dimension)
+{
+    std::string ret = v;
+    if (!isMultiPath()) {
+        projectEnvVar_setProxy(getHolder(), ret);
+    }
+    KnobTable::setDefaultValue(ret, dimension);
+}
+
+void
+KnobPath::setDefaultValues(const std::vector<std::string>& values, DimIdx dimensionStartOffset)
+{
+    std::vector<std::string> ret = values;
+    if (!isMultiPath()) {
+        for (std::size_t i = 0; i < ret.size(); ++i) {
+            projectEnvVar_setProxy(getHolder(), ret[i]);
+        }
+    }
+    KnobTable::setDefaultValues(ret, dimensionStartOffset);
+
+}
+
+void
+KnobPath::setDefaultValueWithoutApplying(const std::string& v, DimSpec dimension)
+{
+    std::string ret = v;
+    if (!isMultiPath()) {
+        projectEnvVar_setProxy(getHolder(), ret);
+    }
+    KnobTable::setDefaultValueWithoutApplying(ret, dimension);
+}
+
+void
+KnobPath::setDefaultValuesWithoutApplying(const std::vector<std::string>& values, DimIdx dimensionStartOffset)
+{
+    std::vector<std::string> ret = values;
+    if (!isMultiPath()) {
+        for (std::size_t i = 0; i < ret.size(); ++i) {
+            projectEnvVar_setProxy(getHolder(), ret[i]);
+        }
+    }
+    KnobTable::setDefaultValuesWithoutApplying(ret, dimensionStartOffset);
+}
+
+KnobDimViewBasePtr
+KnobPath::createDimViewData() const
+{
+    boost::shared_ptr<FileKnobDimView> ret(new FileKnobDimView);
+    return ret;
+}
 
 NATRON_NAMESPACE_EXIT
 

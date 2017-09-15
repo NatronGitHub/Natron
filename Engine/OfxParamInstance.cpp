@@ -4146,14 +4146,12 @@ OfxStringInstance::OfxStringInstance(const OfxEffectInstancePtr& node,
     std::string defaultVal = properties.getStringProperty(kOfxParamPropDefault);
     if ( !defaultVal.empty() ) {
         if (fileKnob) {
-            projectEnvVar_setProxy(defaultVal);
             KnobFilePtr k = _imp->fileKnob.lock();
             k->setDefaultValue(defaultVal, DimIdx(0));
         } else if (stringKnob) {
             KnobStringPtr k = _imp->stringKnob.lock();
             k->setDefaultValue(defaultVal, DimIdx(0));
         } else if (pathKnob) {
-            projectEnvVar_setProxy(defaultVal);
             KnobPathPtr k = _imp->pathKnob.lock();
             k->setDefaultValue(defaultVal, DimIdx(0));
         }
@@ -4164,33 +4162,6 @@ OfxStringInstance::~OfxStringInstance()
 {
 }
 
-void
-OfxStringInstance::projectEnvVar_getProxy(std::string& str) const
-{
-    KnobIPtr knob = getKnob();
-    if (!knob) {
-        return;
-    }
-    KnobHolderPtr holder = knob->getHolder();
-    if (!holder) {
-        return;
-    }
-    AppInstancePtr app = holder->getApp();
-    if (!app) {
-        return;
-    }
-    ProjectPtr proj = app->getProject();
-    if (!proj) {
-        return;
-    }
-    proj->canonicalizePath(str);
-}
-
-void
-OfxStringInstance::projectEnvVar_setProxy(std::string& str) const
-{
-    getKnob()->getHolder()->getApp()->getProject()->simplifyPath(str);
-}
 
 OfxStatus
 OfxStringInstance::get(std::string &str)
@@ -4215,16 +4186,13 @@ OfxStringInstance::get(std::string &str)
     assert(fileKnob || strknob || pathKnob);
     if (fileKnob) {
         str = fileKnob->getValue();
-        projectEnvVar_getProxy(str);
     } else if (strknob) {
         str = strknob->getValue();
     } else if (pathKnob) {
         str = pathKnob->getValue();
-        projectEnvVar_getProxy(str);
     } else {
         return kOfxStatErrBadHandle;
     }
-
 
     return kOfxStatOK;
 }
@@ -4253,12 +4221,10 @@ OfxStringInstance::get(OfxTime time,
     assert(fileKnob || strknob || pathKnob);
     if (fileKnob) {
         str = fileKnob->getValueAtTime(TimeValue(time), DimIdx(0), fileKnob->getCurrentRenderView());
-        projectEnvVar_getProxy(str);
     } else if (strknob) {
         str = strknob->getValueAtTime(TimeValue(time), DimIdx(0), strknob->getCurrentRenderView());
     } else if (pathKnob) {
         str = pathKnob->getValueAtTime(TimeValue(time), DimIdx(0), pathKnob->getCurrentRenderView());
-        projectEnvVar_getProxy(str);
     } else {
         return kOfxStatErrBadHandle;
     }
@@ -4288,13 +4254,11 @@ OfxStringInstance::set(const char* str)
     assert(fileKnob || strknob || pathKnob);
     if (fileKnob) {
         std::string s(str);
-        projectEnvVar_setProxy(s);
         fileKnob->setValue(s, fileKnob->getCurrentRenderView(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
     } else if (strknob) {
         strknob->setValue(str, strknob->getCurrentRenderView(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
     } else if (pathKnob) {
         std::string s(str);
-        projectEnvVar_setProxy(s);
         pathKnob->setValue(s, pathKnob->getCurrentRenderView(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
     } else {
         return kOfxStatErrBadHandle;
@@ -4328,13 +4292,11 @@ OfxStringInstance::set(OfxTime time,
     assert(fileKnob || strknob || pathKnob);
     if (fileKnob) {
         std::string s(str);
-        projectEnvVar_setProxy(s);
         fileKnob->setValueAtTime(TimeValue(time), s, fileKnob->getCurrentRenderView(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
     } else if (strknob) {
         strknob->setValueAtTime(TimeValue(time), str, strknob->getCurrentRenderView(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
     } else if (pathKnob) {
         std::string s(str);
-        projectEnvVar_setProxy(s);
         pathKnob->setValueAtTime(TimeValue(time), s, pathKnob->getCurrentRenderView(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
     } else {
         return kOfxStatErrBadHandle;
