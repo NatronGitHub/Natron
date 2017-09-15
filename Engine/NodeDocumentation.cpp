@@ -212,19 +212,23 @@ Node::makeDocumentation(bool genHTML) const
                     // only add the list of entries and their halp if this node should not be
                     // ignored (eg. OCIO colorspace knobs).
                     if ( isChoice &&
-                         (genHTML || ( knobScriptName != QString::fromUtf8(kOCIOParamInputSpaceChoice) &&
-                                       knobScriptName != QString::fromUtf8(kOCIOParamOutputSpaceChoice) &&
-                                       !( ( pluginID == QString::fromUtf8(kOCIODisplayPluginIdentifier) ) &&
-                                          ( knobScriptName == QString::fromUtf8(kOCIODisplayParamDisplayChoice) ) ) &&
-                                       !( ( pluginID == QString::fromUtf8(kOCIODisplayPluginIdentifier) ) &&
-                                          ( knobScriptName == QString::fromUtf8(kOCIODisplayParamViewChoice) ) ) &&
-                                       //!( ( pluginID == QString::fromUtf8(kOCIOCDLTransformPluginIdentifier) ) &&
-                                       //   ( knobScriptName == QString::fromUtf8(kOCIOCDLTransformParamCCCIDChoice) ) ) &&
-                                       !( ( pluginID == QString::fromUtf8(kOCIOFileTransformPluginIdentifier) ) &&
-                                          ( knobScriptName == QString::fromUtf8(kOCIOFileTransformParamCCCIDChoice) ) ) &&
-                                       !( ( pluginID == QString::fromUtf8(PLUGINID_NATRON_PRECOMP) ) &&
-                                          ( knobScriptName == QString::fromUtf8("writeNode") ) ) &&
-                                       !( ( pluginID == QString::fromUtf8(PLUGINID_NATRON_ONEVIEW) ) &&
+                         (genHTML || !( knobScriptName == QString::fromUtf8(kOCIOParamInputSpaceChoice) ||
+                                        knobScriptName == QString::fromUtf8(kOCIOParamOutputSpaceChoice) ||
+                                        ( ( pluginID == QString::fromUtf8(kOCIODisplayPluginIdentifier) ) &&
+                                          ( knobScriptName == QString::fromUtf8(kOCIODisplayParamDisplayChoice) ) ) ||
+                                        ( ( pluginID == QString::fromUtf8(kOCIODisplayPluginIdentifier) ) &&
+                                          ( knobScriptName == QString::fromUtf8(kOCIODisplayParamViewChoice) ) ) ||
+                                        //( ( pluginID == QString::fromUtf8(kOCIOCDLTransformPluginIdentifier) ) &&
+                                        //   ( knobScriptName == QString::fromUtf8(kOCIOCDLTransformParamCCCIDChoice) ) ) ||
+                                        ( ( pluginID == QString::fromUtf8(kOCIOFileTransformPluginIdentifier) ) &&
+                                          ( knobScriptName == QString::fromUtf8(kOCIOFileTransformParamCCCIDChoice) ) ) ||
+                                        ( ( pluginID == QString::fromUtf8("net.fxarena.openfx.Text") ) &&
+                                          ( knobScriptName == QString::fromUtf8("name") ) ) || // font family from Text plugin
+                                        ( ( pluginID == QString::fromUtf8("net.fxarena.openfx.Polaroid") ) &&
+                                          ( knobScriptName == QString::fromUtf8("font") ) ) || // font family from Polaroid plugin
+                                        ( ( pluginID == QString::fromUtf8(PLUGINID_NATRON_PRECOMP) ) &&
+                                          ( knobScriptName == QString::fromUtf8("writeNode") ) ) ||
+                                        ( ( pluginID == QString::fromUtf8(PLUGINID_NATRON_ONEVIEW) ) &&
                                           ( knobScriptName == QString::fromUtf8("view") ) ) ) ) ) {
                         // see also KnobChoice::getHintToolTipFull()
                         int index = isChoice->getDefaultValue(DimIdx(i));
