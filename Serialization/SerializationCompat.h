@@ -763,6 +763,11 @@ void NATRON_NAMESPACE::KeyFrame::serialize(Archive & ar,
     _time = TimeValue(time);
     ar & ::boost::serialization::make_nvp("Value", _value);
     ar & ::boost::serialization::make_nvp("InterpolationMethod", _interpolation);
+    // Natron 2 wrongly sets keyframe tangents when refreshing them over multiple keyframes at once.
+    // As a result of this, the tangents saved with the interpolation type may not be correct.
+    // Since Natron 3 only saves interpolation type if this is a known interpolation mode, the project could
+    // not be loaded correctly.
+    _interpolation = eKeyframeTypeFree;
     ar & ::boost::serialization::make_nvp("LeftDerivative", _leftDerivative);
     ar & ::boost::serialization::make_nvp("RightDerivative", _rightDerivative);
 }
