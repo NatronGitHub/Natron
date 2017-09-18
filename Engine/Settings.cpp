@@ -309,7 +309,6 @@ public:
     // to avoid reloading it many times
     int _nRedrawStyleSheetRequests;
     bool _restoringSettings;
-    bool _ocioRestored;
     bool _defaultAppearanceOutdated;
     bool saveSettings;
 
@@ -321,7 +320,6 @@ public:
     , _knobsRequiringOFXCacheClear()
     , _nRedrawStyleSheetRequests(0)
     , _restoringSettings(false)
-    , _ocioRestored(false)
     , _defaultAppearanceOutdated(false)
     , saveSettings(true)
     {
@@ -2524,7 +2522,7 @@ SettingsPrivate::loadSettingsFromFileInternal(const SERIALIZATION_NAMESPACE::Set
 
 
 void
-Settings::loadSettingsFromFile(int loadType)
+Settings::loadSettingsFromFile(LoadSettingsType loadType)
 {
     _imp->_restoringSettings = true;
 
@@ -2577,10 +2575,13 @@ Settings::loadSettingsFromFile(int loadType)
             }
         }
 
+    }
+
+    if ((loadType & Settings::eLoadSettingsTypeKnobs) || loadType == Settings::eLoadSettingsNone) {
+
         // Load OCIO config even if there's no serialization
-        if (!_imp->_ocioRestored) {
-            _imp->tryLoadOpenColorIOConfig();
-        }
+        _imp->tryLoadOpenColorIOConfig();
+
     }
 
     _imp->_restoringSettings = false;
@@ -2715,7 +2716,6 @@ SettingsPrivate::tryLoadOpenColorIOConfig()
             return false;
         }
     }
-    _ocioRestored = true;
 #ifdef DEBUG
     qDebug() << "setting OCIO=" << configFile;
 #endif
