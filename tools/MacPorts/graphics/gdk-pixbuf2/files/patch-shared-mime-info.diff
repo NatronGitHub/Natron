@@ -1,0 +1,17 @@
+Upstream: https://bugzilla.gnome.org/show_bug.cgi?id=786167
+
+Revert upstream patch to restore shared-mime-info. Note that the missing
+os_win32=no also inadvertently broke other configure checks.
+
+--- configure.ac
++++ configure.ac
+@@ -116,9 +116,6 @@ case "$host" in
+       ;;
+     esac
+     ;;
+-  *-*-darwin*)
+-    gio_can_sniff=no
+-    ;;
+   *)
+     os_win32=no
+     ;;
