@@ -1,6 +1,17 @@
---- Portfile.orig	2017-09-11 21:25:30.000000000 +0200
-+++ Portfile	2017-09-11 21:25:59.000000000 +0200
-@@ -33,7 +33,7 @@
+--- Portfile.orig	2017-09-13 16:56:09.000000000 +0200
++++ Portfile	2017-09-13 16:59:41.000000000 +0200
+@@ -15,10 +15,6 @@
+ master_sites     ${homepage}/data/
+ distname         LibRaw-${version}
+ 
+-distfiles-append \
+-    LibRaw-demosaic-pack-GPL2-${version}${extract.suffix} \
+-    LibRaw-demosaic-pack-GPL3-${version}${extract.suffix}
+-
+ checksums \
+     LibRaw-${version}${extract.suffix} \
+     rmd160  e13794a6d379f8dd26cdb63c6d9098296059a681 \
+@@ -33,7 +29,7 @@
  depends_build    port:pkgconfig
  
  depends_lib      port:jasper \
@@ -9,3 +20,24 @@
                   port:lcms2
  
  post-destroot {
+@@ -42,6 +38,20 @@
+     xinstall -m 644 {*}[glob -directory ${worksrcpath}/doc/ *.html] ${htmlDir}
+ }
+ 
++variant gpl2 description {Enable GPL demosaic pack, license will be GPL-2+} {
++    distfiles-append \
++        LibRaw-demosaic-pack-GPL2-${version}${extract.suffix} \
++
++    license                 GPL-2+
++}
++
++variant gpl3 requires gpl2 description {Enable GPL demosaic pack, license will be GPL-3+} {
++    distfiles-append \
++        LibRaw-demosaic-pack-GPL3-${version}${extract.suffix}
++
++    license                 GPL-3+
++}
++
+ livecheck.type  regex
+ livecheck.url   ${homepage}/download/
+ livecheck.regex "LibRaw-(\\d+(?:\\.\\d+)*)${extract.suffix}"
