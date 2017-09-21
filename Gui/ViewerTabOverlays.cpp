@@ -994,26 +994,22 @@ ViewerTab::notifyOverlaysKeyDown(const RenderScale & renderScale,
     NodesList nodes;
     getNodesEntitledForOverlays(time, view, nodes);
 
-    if (isModifier) {
-        // Modifiers may not necessarily return true for plug-ins but may require a redraw
-        app->redrawAllViewers();
-    }
 
     NodePtr lastOverlay = _imp->lastOverlayNode.lock();
     if (lastOverlay) {
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             if (*it == lastOverlay) {
                 if ( notifyOverlaysKeyDown_internal(*it, renderScale, natronKey, natronMod, qKey, qMods) ) {
+                    didSomething = true;
                     if (isModifier) {
                         nodes.erase(it);
                         break;
                     }
-
-                    return true;
                 } else {
                     nodes.erase(it);
-                    break;
                 }
+                break;
+
             }
         }
     }
@@ -1027,8 +1023,15 @@ ViewerTab::notifyOverlaysKeyDown(const RenderScale & renderScale,
                 continue;
             }
 
-            return true;
+            didSomething = true;
+            break;
         }
+    }
+
+
+    if (isModifier) {
+        // Modifiers may not necessarily return true for plug-ins but may require a redraw
+        app->redrawAllViewers();
     }
 
 
@@ -1066,12 +1069,6 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
      */
     bool isModifier = e->key() == Qt::Key_Control || e->key() == Qt::Key_Shift || e->key() == Qt::Key_Alt ||
     e->key() == Qt::Key_Meta;
-
-    if (isModifier) {
-        //Modifiers may not necessarily return true for plug-ins but may require a redraw
-        app->redrawAllViewers();
-    }
-
 
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
 
@@ -1111,6 +1108,11 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
         }
     }
 
+
+    if (isModifier) {
+        //Modifiers may not necessarily return true for plug-ins but may require a redraw
+        app->redrawAllViewers();
+    }
 
 
     return didSomething;
