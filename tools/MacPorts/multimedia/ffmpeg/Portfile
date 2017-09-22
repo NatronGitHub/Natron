@@ -314,7 +314,6 @@ variant natron requires highbitdepth conflicts x11 description {Minimal FFmpeg f
                     port:fontconfig \
                     port:freetype \
                     port:fribidi \
-                    port:libsdl2
 
     configure.args-delete \
                     --enable-libass \
