@@ -51,6 +51,10 @@ platform darwin {
 
     # see https://gcc.gnu.org/ml/gcc-patches/2012-05/msg00672.html
     patchfiles-append         patch-float128.diff
+    
+    # enable build on 10.4 and 10.5 PPC
+    # https://trac.macports.org/ticket/54215
+    patchfiles-append         patch-darwin-ppc-2017-01-msg02971.diff
 }
 
 configure.dir       ${workpath}/build

@@ -7,6 +7,7 @@ name                gdk-pixbuf2
 set my_name         gdk-pixbuf
 epoch               2
 version             2.36.10
+revision            1
 license             LGPL
 set branch          [join [lrange [split ${version} .] 0 1] .]
 categories          graphics
@@ -34,7 +35,8 @@ depends_lib         path:lib/pkgconfig/glib-2.0.pc:glib2 \
                     path:lib/libjpeg.dylib:jpeg \
                     port:tiff
 
-patchfiles          patch-tests-pixbuf-readonly-to-mutable.c.diff
+patchfiles          patch-tests-pixbuf-readonly-to-mutable.c.diff \
+                    patch-shared-mime-info.diff
 
 gobject_introspection yes
 

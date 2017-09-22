@@ -1960,12 +1960,12 @@ public:
     /**
      * @brief Get the current default values
      **/
-    T getDefaultValue(DimIdx dimension) const WARN_UNUSED_RETURN;
+    virtual T getDefaultValue(DimIdx dimension) const WARN_UNUSED_RETURN;
 
     /**
      * @brief If the default value was changed more than once with setDefaultValue, this is the initial value that was passed to setDefaultValue
      **/
-    T getInitialDefaultValue(DimIdx dimension) const WARN_UNUSED_RETURN;
+    virtual T getInitialDefaultValue(DimIdx dimension) const WARN_UNUSED_RETURN;
 
     /**
      * @brief Returns true if setDefaultValue was never called yet
@@ -1981,14 +1981,14 @@ public:
      * @brief Set a default value for a specific dimension
      * Note that it will also restore the knob to its defaults
      **/
-    void setDefaultValue(const T & v, DimSpec dimension = DimSpec(0));
-    void setDefaultValues(const std::vector<T>& values, DimIdx dimensionStartOffset);
+    virtual void setDefaultValue(const T & v, DimSpec dimension = DimSpec(0));
+    virtual void setDefaultValues(const std::vector<T>& values, DimIdx dimensionStartOffset);
 
     /**
      * @brief Same as setDefaultValue except that it does not restore the knob to its defaults
      **/
-    void setDefaultValueWithoutApplying(const T& v, DimSpec dimension = DimSpec(0));
-    void setDefaultValuesWithoutApplying(const std::vector<T>& values, DimIdx dimensionStartOffset = DimIdx(0));
+    virtual void setDefaultValueWithoutApplying(const T& v, DimSpec dimension = DimSpec(0));
+    virtual void setDefaultValuesWithoutApplying(const std::vector<T>& values, DimIdx dimensionStartOffset = DimIdx(0));
 
 protected:
 

@@ -1,6 +1,6 @@
---- Portfile.orig	2017-08-24 18:54:11.000000000 +0200
-+++ Portfile	2017-09-11 21:09:59.000000000 +0200
-@@ -94,6 +94,7 @@
+--- Portfile.orig	2017-09-14 14:34:47.000000000 +0200
++++ Portfile	2017-09-15 10:48:31.000000000 +0200
+@@ -93,6 +93,7 @@
  
  patchfiles          patch-libavcodec-audiotoolboxenc.c.diff \
                      patch-openjpeg-2.2.diff \
@@ -8,7 +8,7 @@
                      patch-configure-no-static-libopenjpeg.diff
  
  #
-@@ -108,6 +109,11 @@
+@@ -107,6 +108,11 @@
      compiler.blacklist-append {clang < 422.1.7}
  }
  
@@ -20,7 +20,7 @@
  # The old ffmpeg port was GPL-2+ as base and had a no_gpl variant, so this keeps us consistent
  # Also, -gpl2 causes other ports to fail to build due to the missing libpostproc (#35473)
  default_variants-append +gpl2
-@@ -136,6 +142,7 @@
+@@ -135,6 +141,7 @@
                      --disable-libxcb \
                      --disable-libxcb-shm \
                      --disable-libxcb-xfixes \
@@ -28,7 +28,7 @@
                      --disable-indev=jack \
                      --disable-outdev=xv \
                      --disable-vda \
-@@ -144,6 +151,7 @@
+@@ -143,6 +150,7 @@
                      --disable-sdl2 \
                      --mandir=${prefix}/share/man \
                      --enable-shared --enable-pthreads \
@@ -36,7 +36,7 @@
                      --cc=${configure.cc}
  
  
-@@ -217,6 +225,17 @@
+@@ -216,6 +224,17 @@
  # configure isn't autoconf and they do use a dep cache
  #
  
@@ -54,7 +54,7 @@
  post-destroot {
      file mkdir ${destroot}${prefix}/share/doc/ffmpeg
      file copy ${worksrcpath}/doc/APIchanges ${destroot}${prefix}/share/doc/ffmpeg
-@@ -241,6 +260,15 @@
+@@ -240,6 +259,15 @@
  configure.universal_args-delete --disable-dependency-tracking
  
  if {[variant_isset universal]} {
@@ -70,7 +70,7 @@
      foreach arch ${configure.universal_archs} {
          set merger_host($arch) ""
          lappend merger_configure_args($arch) --arch=${arch}
-@@ -266,11 +294,52 @@
+@@ -265,11 +293,53 @@
  #
      depends_lib-append      port:xorg-libxcb \
                              port:xorg-libXext \
@@ -104,6 +104,7 @@
 +                    --enable-fontconfig \
 +                    --enable-libfreetype \
 +                    --enable-libfribidi \
++                    --enable-sdl2 \
 +                    --cc=${configure.cc} \
 +                    --cxx=${configure.cxx}
 +
@@ -114,7 +115,7 @@
 +                    --disable-fontconfig \
 +                    --disable-libfreetype \
 +                    --disable-libfribidi \
-+                    --disable-sdl \
++                    --disable-sdl2 \
 +                    --disable-securetransport \
 +                    --disable-iconv \
 +                    --cc=${configure.cc} \
@@ -123,7 +124,7 @@
  }
  
  if {[variant_isset x11]} {
-@@ -314,12 +383,22 @@
+@@ -313,12 +383,22 @@
      require_active_variants x264 "" high10
  }
  
@@ -146,7 +147,7 @@
                              port:x264
  
      license                 GPL-2+
-@@ -335,6 +414,12 @@
+@@ -334,6 +414,12 @@
                              port:samba3
  
      license                 GPL-3+

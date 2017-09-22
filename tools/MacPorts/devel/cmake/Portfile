@@ -29,9 +29,9 @@ if {${subport} eq ${name}} {
 
     # release
 
-    version         ${branch}.2
-    checksums       rmd160 133cfee5d133675b94851a4583d9e8186eb9654d \
-                    sha256 954a5801a456ee48e76f01107c9a4961677dd0f3e115275bbd18410dc22ba3c1
+    version         ${branch}.3
+    checksums       rmd160 c1396d63aa32d43891dac04133fb477997c39c35 \
+                    sha256 8eaf75e1e932159aae98ab5e7491499545554be62a08cbcbc7c75c84b999f28a
 
     master_sites    http://www.cmake.org/files/v${branch}/
     conflicts       cmake-devel
@@ -55,10 +55,10 @@ if {${subport} eq ${name}} {
 
     # devel
 
-    version         20170911
-    set commit      f06ddacafc68369150f3a6fa806e8e4af421dc7b
-    checksums       rmd160 b9ea869fb8a90b9dfe6faeae84048c313c91345b \
-                    sha256 c85df0083aaafd7e8a703fbed505fef5c5032e2a42cd7cab3153739507745288
+    version         20170920
+    set commit      95df03a1d44d48b5407dd0ddc9e618ce2f17762b
+    checksums       rmd160 fb70f8068645a2b0efc0f7df5a44415bd9a8220e \
+                    sha256 f7b3e28e42f0632230e5a96c5135af1e032ebdcb7cf516f582e0284994f96cc0
 
     master_sites    https://gitlab.kitware.com/cmake/cmake/repository/archive.tar.bz2?ref=${commit}&
     distname        ${name}-${commit}
@@ -89,6 +89,10 @@ if {${subport} eq ${name}} {
     livecheck.url   https://gitlab.kitware.com/cmake/cmake/tree/master
 
 }
+
+# temporary patch for allow for building using Xcode 9
+# see also: https://trac.macports.org/ticket/54875
+patchfiles-append patch-Source-kwsys-kwsysPlatformTestsCXX.cxx.diff
 
 depends_lib-append  port:curl \
                     port:expat \

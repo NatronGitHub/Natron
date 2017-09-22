@@ -841,16 +841,6 @@ public:
 
 private:
 
-    /**
-     * @brief Expand any project path contained in str
-     **/
-    void projectEnvVar_getProxy(std::string& str) const;
-
-    /**
-     * @brief Find any project path contained in str and replace it by the associated name
-     **/
-    void projectEnvVar_setProxy(std::string& str) const;
-
     boost::scoped_ptr<OfxStringInstancePrivate> _imp;
 };
 

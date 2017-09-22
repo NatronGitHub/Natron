@@ -182,7 +182,7 @@ KnobGuiFile::open_file()
     if (!knob) {
         return;
     }
-    std::string oldPattern = knob->getValue(DimIdx(0), getView());
+    std::string oldPattern = knob->getFileNameWithoutVariablesExpension(DimIdx(0), getView());
     std::string currentPattern = oldPattern;
     std::string path = SequenceParsing::removePath(currentPattern);
     QString pathWhereToOpen;
@@ -239,7 +239,7 @@ KnobGuiFile::updateGUI()
         return;
     }
 
-    QString filePath = QString::fromUtf8( knob->getRawFileName().c_str() );
+    QString filePath = QString::fromUtf8( knob->getFileNameWithoutVariablesExpension().c_str() );
     if (_lineEdit->text() == filePath) {
         return;
     }
@@ -363,7 +363,7 @@ KnobGuiFile::onTextEdited()
     if (!knob) {
         return;
     }
-    std::string oldValue = knob->getValue(DimIdx(0), getView());
+    std::string oldValue = knob->getFileNameWithoutVariablesExpension(DimIdx(0), getView());
 
     if (str == oldValue) {
         return;
@@ -461,9 +461,12 @@ KnobGuiFile::onMakeAbsoluteTriggered()
         std::string oldValue = knob->getValue(DimIdx(0), getView());
         std::string newValue = oldValue;
         knob->getHolder()->getApp()->getProject()->canonicalizePath(newValue);
-
+        boost::shared_ptr<FileKnobDimView> data =  boost::dynamic_pointer_cast<FileKnobDimView>(knob->getDataForDimView(DimIdx(0), ViewIdx(0)));
+        assert(data);
+        data->setVariablesExpansionEnabled(false);
         KnobGuiPtr knobUI = getKnobGui();
         knobUI->pushUndoCommand( new KnobUndoCommand<std::string>( knob, oldValue, newValue, DimIdx(0), getView() ) );
+        data->setVariablesExpansionEnabled(true);
     }
 }
 
@@ -618,7 +621,7 @@ KnobGuiPath::onOpenFileButtonClicked()
         return;
     }
 
-    std::string oldPath = knob->getValue(DimIdx(0), getView());
+    std::string oldPath = knob->getFileNameWithoutVariablesExpension(DimIdx(0), getView());
     QString pathWhereToOpen;
     if ( oldPath.empty() ) {
         pathWhereToOpen = _lastOpened;
@@ -639,7 +642,7 @@ KnobGuiPath::onOpenFileButtonClicked()
         if (!knob) {
             return;
         }
-        std::string oldValue = knob->getValue(DimIdx(0), getView());
+        std::string oldValue = knob->getFileNameWithoutVariablesExpension(DimIdx(0), getView());
 
         knobUI->pushUndoCommand( new KnobUndoCommand<std::string>( knob, oldValue, dirPath, DimIdx(0), getView() ) );
     }
@@ -655,7 +658,7 @@ KnobGuiPath::addNewUserEntry(QStringList& row)
 
     std::vector<std::string> filters;
 
-    std::string oldPath = knob->getValue(DimIdx(0), getView());
+    std::string oldPath = knob->getFileNameWithoutVariablesExpension(DimIdx(0), getView());
     QString pathWhereToOpen;
     if ( oldPath.empty() ) {
         pathWhereToOpen = _lastOpened;
@@ -800,7 +803,7 @@ KnobGuiPath::onTextEdited()
     if (!knob) {
         return;
     }
-    std::string oldValue = knob->getValue(DimIdx(0), getView());
+    std::string oldValue = knob->getFileNameWithoutVariablesExpension(DimIdx(0), getView());
 
     KnobGuiPtr knobUI = getKnobGui();
     knobUI->pushUndoCommand( new KnobUndoCommand<std::string>( knob, oldValue, dirPath, DimIdx(0), getView() ) );
@@ -823,7 +826,7 @@ KnobGuiPath::updateGUI()
     }
 
     if ( !knob->isMultiPath() ) {
-        QString value =  QString::fromUtf8( knob->getValue(DimIdx(0), getView()).c_str() );
+        QString value =  QString::fromUtf8( knob->getFileNameWithoutVariablesExpension(DimIdx(0), getView()).c_str() );
         if (_lineEdit->text() == value) {
             return;
         }
@@ -927,7 +930,7 @@ KnobGuiPath::onMakeAbsoluteTriggered()
     }
 
     if ( knob->getHolder() && knob->getHolder()->getApp() ) {
-        std::string oldValue = knob->getValue(DimIdx(0), getView());
+        std::string oldValue = knob->getFileNameWithoutVariablesExpension(DimIdx(0), getView());
         std::string newValue = oldValue;
         knob->getHolder()->getApp()->getProject()->canonicalizePath(newValue);
         KnobGuiPtr knobUI = getKnobGui();
@@ -944,7 +947,7 @@ KnobGuiPath::onMakeRelativeTriggered()
     }
 
     if ( knob->getHolder() && knob->getHolder()->getApp() ) {
-        std::string oldValue = knob->getValue(DimIdx(0), getView());
+        std::string oldValue = knob->getFileNameWithoutVariablesExpension(DimIdx(0), getView());
         std::string newValue = oldValue;
         knob->getHolder()->getApp()->getProject()->makeRelativeToProject(newValue);
         KnobGuiPtr knobUI = getKnobGui();
@@ -961,7 +964,7 @@ KnobGuiPath::onSimplifyTriggered()
     }
 
     if ( knob->getHolder() && knob->getHolder()->getApp() ) {
-        std::string oldValue = knob->getValue(DimIdx(0), getView());
+        std::string oldValue = knob->getFileNameWithoutVariablesExpension(DimIdx(0), getView());
         std::string newValue = oldValue;
         knob->getHolder()->getApp()->getProject()->simplifyPath(newValue);
         KnobGuiPtr knobUI = getKnobGui();

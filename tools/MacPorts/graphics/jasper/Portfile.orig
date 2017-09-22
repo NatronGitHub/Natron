@@ -4,7 +4,7 @@ PortSystem      1.0
 PortGroup       cmake 1.0
 
 name            jasper
-version         2.0.12
+version         2.0.14
 categories      graphics
 platforms       darwin
 license         JasPer-2
@@ -19,8 +19,8 @@ long_description \
 homepage        http://www.ece.uvic.ca/~mdadams/jasper/
 master_sites    ${homepage}software/
 
-checksums       rmd160 a062262b337865e0f7e27d6a77e38b16e6735b30 \
-                sha256 5b24faf5ed38670d6286e45ab7516b26458d05e7929b435afe569176765f4dda
+checksums       rmd160 0b2b51b22b7421773255955de6bad27f9b434712 \
+                sha256 2a1f61e55afe8b4ce8115e1508c5d7cb314d56dfcc2dd323f90c072f88ccf57b
 
 depends_lib     port:jpeg
 

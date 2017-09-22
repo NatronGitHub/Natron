@@ -146,6 +146,7 @@ public:
 
     enum LoadSettingsType
     {
+        eLoadSettingsNone = 0x0,
         eLoadSettingsTypeKnobs = 0x1,
         eLoadSettingsTypePlugins = 0x2,
         eLoadSettingsTypeShortcuts = 0x4
@@ -157,7 +158,7 @@ public:
      * @param loadType An or of the LoadSettingsType enum indicating what to load from
      * file.
      **/
-    void loadSettingsFromFile(int loadType);
+    void loadSettingsFromFile(LoadSettingsType loadType);
 
 
     /**

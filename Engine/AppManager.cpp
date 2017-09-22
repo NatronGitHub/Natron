@@ -897,12 +897,15 @@ AppManager::loadInternal(const CLArgs& cl)
     _imp->_settings = Settings::create();
     _imp->_settings->initializeKnobsPublic();
 
+    Settings::LoadSettingsType settingsLoadType;
     if (cl.isLoadedUsingDefaultSettings()) {
+        settingsLoadType = Settings::eLoadSettingsNone;
         ///Call restore after initializing knobs
         _imp->_settings->setSaveSettings(false);
     } else {
-        _imp->_settings->loadSettingsFromFile(Settings::eLoadSettingsTypeKnobs);
+        settingsLoadType = Settings::eLoadSettingsTypeKnobs;
     }
+    _imp->_settings->loadSettingsFromFile(settingsLoadType);
     
 
     if (cl.isCacheClearRequestedOnLaunch()) {
