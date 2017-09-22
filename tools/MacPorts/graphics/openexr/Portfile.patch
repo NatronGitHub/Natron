@@ -1,5 +1,5 @@
---- Portfile.orig	2017-05-06 17:53:02.000000000 +0200
-+++ Portfile	2017-06-02 13:28:53.000000000 +0200
+--- Portfile.orig	2017-08-07 17:15:37.000000000 +0200
++++ Portfile	2017-09-14 19:15:44.000000000 +0200
 @@ -28,7 +28,7 @@
  }
  
@@ -22,8 +22,8 @@
 +    if { ${configure.compiler} eq "macports-clang-3.9" } {
 +        configure.optflags "-O2"
 +    }
-+    # clang-4.0 was not yet tested, use -O2 just to be on the safe side
-+    if { ${configure.compiler} eq "macports-clang-4.0" } {
++    # clang-4.0 and later are not yet tested, use -O2 just to be on the safe side
++    if { ${configure.compiler} eq "macports-clang-4.0" || ${configure.compiler} eq "macports-clang-5.0" || ${configure.compiler} eq "macports-clang-6.0" } {
 +        configure.optflags "-O2"
      }
  }
