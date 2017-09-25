@@ -1056,7 +1056,7 @@ EffectInstance::requestRender(TimeValue timeInArgs,
         int roundedTime = std::floor(time + 0.5);
 
 
-        // A continuous effect is identity on itself on nearest integer time
+        // A non-continuous effect is identity on itself on nearest integer time
         if (roundedTime != time && !canRenderContinuously()) {
             // We do not cache it because for non continuous effects we only cache stuff at
             // valid frame times

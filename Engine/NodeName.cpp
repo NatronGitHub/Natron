@@ -96,7 +96,7 @@ const std::string &
 Node::getScriptName() const
 {
     ////Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
+    //assert( QThread::currentThread() == qApp->thread() );
     QMutexLocker l(&_imp->nameMutex);
 
     return _imp->scriptName;

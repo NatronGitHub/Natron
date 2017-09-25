@@ -48,6 +48,76 @@
 
 NATRON_NAMESPACE_ENTER
 
+/*
+ We do not need to round the time: every bit in time (which is a double) is significant.
+
+ There is no bug in the cache due to rounding of double values.
+
+ To check this:
+ - Add the following line at the top of the Transform3x3Plugin::render() function:
+     printf("RENDER transform %g %lx\n", args.time, *((unsigned long*)&args.time));
+ - In the loop at the end of TimeBlurPlugin::getFramesNeeded() add the following:
+     std::printf("TimeBlur: frames for t=%g range(%g,%g) %lx\n", args.time, r.min, r.max, *((unsigned long*)&t));
+ - Open the TestTimeBlur/timeblur.ntp project.
+ - Go to frame 1. Clear the cache. The following should be printed out in the console.
+   TimeBlur::getFramesNeeded() is called twice, which MAY be a bug.
+ TimeBlur: frames for t=1 range(1.2,1.2) 3ff3333333333333
+ TimeBlur: frames for t=1 range(1.4,1.4) 3ff6666666666666
+ TimeBlur: frames for t=1 range(1.6,1.6) 3ff999999999999a
+ TimeBlur: frames for t=1 range(1.8,1.8) 3ffccccccccccccd
+ TimeBlur: frames for t=1 range(2,2) 4000000000000000
+ TimeBlur: frames for t=1 range(2.2,2.2) 400199999999999a
+ TimeBlur: frames for t=1 range(2.4,2.4) 4003333333333334
+ TimeBlur: frames for t=1 range(2.6,2.6) 4004cccccccccccd
+ TimeBlur: frames for t=1 range(2.8,2.8) 4006666666666666
+ TimeBlur: frames for t=1 range(1.2,1.2) 3ff3333333333333
+ TimeBlur: frames for t=1 range(1.4,1.4) 3ff6666666666666
+ TimeBlur: frames for t=1 range(1.6,1.6) 3ff999999999999a
+ TimeBlur: frames for t=1 range(1.8,1.8) 3ffccccccccccccd
+ TimeBlur: frames for t=1 range(2,2) 4000000000000000
+ TimeBlur: frames for t=1 range(2.2,2.2) 400199999999999a
+ TimeBlur: frames for t=1 range(2.4,2.4) 4003333333333334
+ TimeBlur: frames for t=1 range(2.6,2.6) 4004cccccccccccd
+ TimeBlur: frames for t=1 range(2.8,2.8) 4006666666666666
+ RENDER transform 1.2 3ff3333333333333
+ RENDER transform 1.4 3ff6666666666666
+ RENDER transform 1.6 3ff999999999999a
+ RENDER transform 1.8 3ffccccccccccccd
+ RENDER transform 2 4000000000000000
+ RENDER transform 2.2 400199999999999a
+ RENDER transform 2.4 4003333333333334
+ RENDER transform 2.6 4004cccccccccccd
+ RENDER transform 2.8 4006666666666666
+- Go to frame 2. The following should be printed out in the console:
+ TimeBlur: frames for t=2 range(2.2,2.2) 400199999999999a
+ TimeBlur: frames for t=2 range(2.4,2.4) 4003333333333333
+ TimeBlur: frames for t=2 range(2.6,2.6) 4004cccccccccccd
+ TimeBlur: frames for t=2 range(2.8,2.8) 4006666666666666
+ TimeBlur: frames for t=2 range(3,3) 4008000000000000
+ TimeBlur: frames for t=2 range(3.2,3.2) 400999999999999a
+ TimeBlur: frames for t=2 range(3.4,3.4) 400b333333333334
+ TimeBlur: frames for t=2 range(3.6,3.6) 400ccccccccccccd
+ TimeBlur: frames for t=2 range(3.8,3.8) 400e666666666666
+ TimeBlur: frames for t=2 range(2.2,2.2) 400199999999999a
+ TimeBlur: frames for t=2 range(2.4,2.4) 4003333333333333
+ TimeBlur: frames for t=2 range(2.6,2.6) 4004cccccccccccd
+ TimeBlur: frames for t=2 range(2.8,2.8) 4006666666666666
+ TimeBlur: frames for t=2 range(3,3) 4008000000000000
+ TimeBlur: frames for t=2 range(3.2,3.2) 400999999999999a
+ TimeBlur: frames for t=2 range(3.4,3.4) 400b333333333334
+ TimeBlur: frames for t=2 range(3.6,3.6) 400ccccccccccccd
+ TimeBlur: frames for t=2 range(3.8,3.8) 400e666666666666
+ RENDER transform 2.4 4003333333333333
+ RENDER transform 3 4008000000000000
+
+ -> Everything is fine! The t=2.4 of the second frame is not exactly the same as the t=2.4 for the first frame (check the hex code).
+ */
+#if 1
+inline TimeValue roundImageTimeToEpsilon(TimeValue time)
+{
+    return time;
+}
+#else
 // If 2 image times differ by lesser than this epsilon they are assumed the same.
 #define NATRON_IMAGE_TIME_EQUALITY_EPS 1e-6
 #define NATRON_IMAGE_TIME_EQUALITY_DECIMALS 6
@@ -57,7 +127,7 @@ inline TimeValue roundImageTimeToEpsilon(TimeValue time)
     int exp = std::pow(10, NATRON_IMAGE_TIME_EQUALITY_DECIMALS);
     return TimeValue(std::floor(time * exp + 0.5) / exp);
 }
-
+#endif
 
 typedef std::map<int, RectD> RoIMap; // RoIs are in canonical coordinates
 
