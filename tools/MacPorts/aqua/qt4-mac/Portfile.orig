@@ -337,7 +337,7 @@ if {${SDK} eq ""} {
 post-patch {
     # set ARCHES in configure (per the third patchfile above), for
     # building QMake.  join any 2 or more arch entries with the GCC
-    # arch flag (join does not effect a single entry).  first "-arch"
+    # arch flag (join does not affect a single entry).  first "-arch"
     # is already in place in the 'configure' script (since there has
     # to be at least 1 arch).
 

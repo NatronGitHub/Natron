@@ -3,7 +3,7 @@
 PortSystem 1.0
 
 name             libraw
-version          0.18.4
+version          0.18.5
 description      library for RAW images manipulation
 long_description    a library for reading RAW files obtained from digital photo \
                     cameras (CRW/CR2, NEF, RAF, DNG, and others)
@@ -18,19 +18,19 @@ distname         LibRaw-${version}
 
 checksums \
     LibRaw-${version}${extract.suffix} \
-    rmd160  e13794a6d379f8dd26cdb63c6d9098296059a681 \
-    sha256  eaf4931b46e65861e88bbe704ccf370381e94d63e9a898b889ded4e0cb3b0c97 \
+    rmd160  4b1b4d97f459792388b8422bc2fd0b2c5d79017b \
+    sha256  fa2a7d14d9dfaf6b368f958a76d79266b3f58c2bc367bebab56e11baa94da178 \
     LibRaw-demosaic-pack-GPL2-${version}${extract.suffix} \
-    rmd160  84bac13e74e3860bb3ac52db62c5a92917858cd2 \
-    sha256  8961b0a90d4b1a5d00a13d9ed2f23e8f2c651b4a68c0470e01ba7668cc98145f \
+    rmd160  2a464c3ac6322e99d231248c70a10b31036f54a7 \
+    sha256  2ae7923868c3e927eee72cf2e4d91384560b7cfe76a386ecf319c069d343c674 \
     LibRaw-demosaic-pack-GPL3-${version}${extract.suffix} \
-    rmd160  afc6e9fd114efb7cdd0bacd3321edf37ec54b9b0 \
-    sha256  9aa8ad60581b9c6a0ed81d96f897804cac832c7eeb087a38ca61fcd54838966c
+    rmd160  66d1cd0962d01c74daf340a62d848d05eefe2a1d \
+    sha256  b0ec998c4884cedd86a0627481a18144f0024a35c7a6fa5ae836182c16975c2b
 
 depends_build    port:pkgconfig
 
 depends_lib      port:jasper \
-                 path:lib/libjpeg.dylib:jpeg   \
+                 path:lib/libjpeg.dylib:jpeg \
                  port:lcms2
 
 post-destroot {
