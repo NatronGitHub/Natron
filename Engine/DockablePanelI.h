@@ -70,6 +70,13 @@ public:
      * For the project settings panel, return kNatronProjectSettingsPanelSerializationName
      **/
     virtual std::string getHolderFullyQualifiedScriptName() const = 0;
+
+    /**
+     * @brief Push a new undo command to the undo/redo stack associated to this node.
+     * The stack takes ownership of the shared pointer, so you should not hold a strong reference to the passed pointer.
+     * If no undo/redo stack is present, the command will just be redone once then destroyed.
+     **/
+    virtual void pushUndoCommand(const UndoCommandPtr& command) = 0;
 };
 
 NATRON_NAMESPACE_EXIT

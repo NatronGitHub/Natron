@@ -264,6 +264,17 @@ public:
      **/
     virtual void pushUndoCommand(QUndoCommand* cmd) OVERRIDE FINAL;
 
+
+    /**
+     * @brief Push a new undo command to the undo/redo stack associated to this node.
+     * The stack takes ownership of the shared pointer, so you should not hold a strong reference to the passed pointer.
+     * If no undo/redo stack is present, the command will just be redone once then destroyed.
+     **/
+    virtual void pushUndoCommand(const UndoCommandPtr& command) OVERRIDE FINAL;
+
+    // Takes ownership, command is deleted when returning call
+    void pushUndoCommand(UndoCommand* command);
+
     /**
      * @brief Returns a pointe to the KnobGui representing the given internal knob.
      **/

@@ -38,10 +38,12 @@
 
 #include "Engine/KnobTypes.h"
 #include "Engine/Project.h"
+#include "Engine/KnobUndoCommand.h"
 #include "Engine/Utils.h" // convertFromPlainText
 
 #include "Gui/Button.h"
-#include "Gui/KnobUndoCommand.h"
+#include "Gui/Gui.h"
+#include "Gui/KnobGui.h"
 #include "Gui/NewLayerDialog.h"
 #include "Gui/TableModelView.h"
 

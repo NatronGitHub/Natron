@@ -146,6 +146,10 @@ public:
      * @brief Push an undo redo to the stack
      **/
     virtual void pushUndoCommand(QUndoCommand *cmd) = 0;
+    void pushUndoCommand(const UndoCommandPtr& command);
+
+    // Takes ownership, command is deleted when returning call
+    void pushUndoCommand(UndoCommand* command);
 
     /**
      * @brief Get the timeline if it has one

@@ -48,7 +48,6 @@
 #include "Engine/DimensionIdx.h"
 #include "Engine/HashableObject.h"
 #include "Engine/KnobFactory.h"
-#include "Engine/KnobGuiI.h"
 #include "Engine/Variant.h"
 #include "Engine/ViewIdx.h"
 
@@ -106,16 +105,6 @@ public:
         Q_EMIT curveAnimationChanged(view,  dimension);
     }
 
-    void s_appendParamEditChange(ValueChangedReasonEnum reason,
-                                 ValueChangedReturnCodeEnum setValueRetCode,
-                                 const PerDimViewKeyFramesMap& oldValue,
-                                 const KeyFrame& newValue,
-                                 ViewSetSpec view,
-                                 DimSpec dim,
-                                 bool setKeyFrame)
-    {
-        Q_EMIT appendParamEditChange(reason, setValueRetCode, oldValue, newValue, view,  dim, setKeyFrame);
-    }
 
     void s_selectedMultipleTimes(bool b)
     {
@@ -211,10 +200,6 @@ Q_SIGNALS:
     // Emitted when the animation of a curve has changed. The added list contains keyframes that were added and removed list
     // keys that were removed
     void curveAnimationChanged(ViewSetSpec view, DimSpec dimension);
-
-    // Same as setValueWithUndoStack except that the value change will be compressed
-    // in a multiple edit undo/redo action
-    void appendParamEditChange(ValueChangedReasonEnum reason, ValueChangedReturnCodeEnum setValueRetCode, PerDimViewKeyFramesMap oldValue, KeyFrame newValue, ViewSetSpec view, DimSpec dim, bool setKeyFrame);
 
     void selectedMultipleTimes(bool);
 
@@ -2449,6 +2434,18 @@ public:
      * if a significant knob was modified, a render is triggered.
      **/
     void endMultipleEdits();
+
+
+    /**
+     * @brief Push a new undo command to the undo/redo stack associated to this node.
+     * The stack takes ownership of the shared pointer, so you should not hold a strong reference to the passed pointer.
+     * If no undo/redo stack is present, the command will just be redone once then destroyed.
+     **/
+    void pushUndoCommand(const UndoCommandPtr& command);
+
+    // Same as the version above, do NOT derefence command after this call as it will be destroyed already, usually this call is
+    // made as such: pushUndoCommand(new MyCommand(...))
+    void pushUndoCommand(UndoCommand* command);
 
 
     virtual bool isProject() const

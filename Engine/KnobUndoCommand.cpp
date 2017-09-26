@@ -27,16 +27,6 @@
 #include <stdexcept>
 #include <sstream> // stringstream
 #include <QDebug>
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-GCC_DIAG_OFF(unused-parameter)
-// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
-#include <boost/archive/xml_iarchive.hpp>
-#include <boost/archive/xml_oarchive.hpp>
-#include <boost/serialization/map.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-GCC_DIAG_ON(unused-parameter)
-#endif
 
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
@@ -46,7 +36,6 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/AppInstance.h"
 #include "Engine/ViewIdx.h"
 
-#include "Gui/GuiApplicationManager.h"
 
 #include "Serialization/CurveSerialization.h"
 #include "Serialization/KnobSerialization.h"
@@ -97,7 +86,7 @@ PasteKnobClipBoardUndoCommand::PasteKnobClipBoardUndoCommand(const KnobIPtr& kno
                                                              ViewSetSpec fromView,
                                                              ViewSetSpec targetViewIn,
                                                              const KnobIPtr& fromKnob)
-: QUndoCommand(0)
+: UndoCommand()
 , _imp( new PasteKnobClipBoardUndoCommandPrivate() )
 {
     assert(knob && fromKnob);
@@ -137,7 +126,7 @@ PasteKnobClipBoardUndoCommand::PasteKnobClipBoardUndoCommand(const KnobIPtr& kno
         text = tr("Set curve(frame)*%1 on %2").arg( QString::fromUtf8( fromKnob->getLabel().c_str() ) ).arg( QString::fromUtf8( knob->getLabel().c_str() ) );
         break;
     }
-    setText(text);
+    setText(text.toStdString());
 }
 
 PasteKnobClipBoardUndoCommand::~PasteKnobClipBoardUndoCommand()
@@ -458,7 +447,7 @@ MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(const KnobIPtr& knob,
                                                            const KeyFrame & newValue,
                                                            DimSpec dimension,
                                                            ViewSetSpec view)
-    : QUndoCommand()
+    : UndoCommand()
     , knobs()
     , createNew(createNew)
     , firstRedoCalled(false)
@@ -488,10 +477,10 @@ MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(const KnobIPtr& knob,
 
     // Set the command name in the Edit menu
     if (!commandName.isEmpty()) {
-        setText(QString::fromUtf8("%1: ").arg(holderName) + commandName);
+        setText(QString(QString::fromUtf8("%1: ").arg(holderName) + commandName).toStdString());
     } else {
         // If no command name passed, make up a generic command name
-        setText( tr("%1: Multiple Parameters Edits").arg(holderName) );
+        setText( tr("%1: Multiple Parameters Edits").arg(holderName).toStdString() );
     }
 }
 
@@ -679,21 +668,15 @@ MultipleKnobEditsUndoCommand::redo()
 
 } // redo
 
-int
-MultipleKnobEditsUndoCommand::id() const
-{
-    return kMultipleKnobsUndoChangeCommandCompressionID;
-}
-
 bool
-MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
+MultipleKnobEditsUndoCommand::mergeWith(const UndoCommandPtr &command)
 {
     /*
      * The command in parameter just had its redo() function call and we attempt to merge it with a previous
      * command that has been redone already
      */
 
-    const MultipleKnobEditsUndoCommand *knobCommand = dynamic_cast<const MultipleKnobEditsUndoCommand *>(command);
+    const MultipleKnobEditsUndoCommand *knobCommand = dynamic_cast<const MultipleKnobEditsUndoCommand *>(command.get());
 
     if (!knobCommand) {
         return false;
@@ -757,14 +740,13 @@ MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
 
 RestoreDefaultsCommand::RestoreDefaultsCommand(const std::list<KnobIPtr > & knobs,
                                                DimSpec targetDim,
-                                               ViewSetSpec targetView,
-                                               QUndoCommand *parent)
-: QUndoCommand(parent)
+                                               ViewSetSpec targetView)
+: UndoCommand()
 , _targetDim(targetDim)
 , _targetView(targetView)
 , _knobs()
 {
-    setText( tr("Restore Default Value(s)") );
+    setText( tr("Restore Default Value(s)").toStdString() );
 
 
     for (std::list<KnobIPtr >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
@@ -872,9 +854,8 @@ SetExpressionCommand::SetExpressionCommand(const KnobIPtr & knob,
                                            bool hasRetVar,
                                            DimSpec dimension,
                                            ViewSetSpec view,
-                                           const std::string& expr,
-                                           QUndoCommand *parent)
-: QUndoCommand(parent)
+                                           const std::string& expr)
+: UndoCommand()
 , _knob(knob)
 , _oldExprs()
 , _newExpr(expr)
@@ -906,7 +887,7 @@ SetExpressionCommand::SetExpressionCommand(const KnobIPtr & knob,
         }
     }
 
-    setText( tr("Set Expression") );
+    setText( tr("Set Expression").toStdString() );
 
 
 }

@@ -50,7 +50,6 @@
 #include "Engine/LoadKnobsCompat.h"
 #include "Engine/Hash64.h"
 #include "Engine/KnobFile.h"
-#include "Engine/KnobGuiI.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/TreeRender.h"
 
@@ -4154,6 +4153,8 @@ struct KnobHolder::KnobHolderPrivate
             mainInstance = other;
         }
     }
+
+    void pushUndoCommandInternal(const UndoCommandPtr& command);
 };
 
 KnobHolder::KnobHolder(const AppInstancePtr& appInstance)
@@ -5520,6 +5521,32 @@ KnobHolder::isFullAnimationToHashEnabled() const
 {
     return false;
 }
+
+void
+KnobHolder::KnobHolderPrivate::pushUndoCommandInternal(const UndoCommandPtr& command)
+{
+
+    if (common->settingsPanel) {
+        common->settingsPanel->pushUndoCommand(command);
+    } else {
+        command->redo();
+    }
+
+}
+
+void
+KnobHolder::pushUndoCommand(UndoCommand* command)
+{
+    UndoCommandPtr ptr(command);
+    pushUndoCommand(ptr);
+}
+
+void
+KnobHolder::pushUndoCommand(const UndoCommandPtr& command)
+{
+    _imp->pushUndoCommandInternal(command);
+}
+
 
 
 /***************************KNOB EXPLICIT TEMPLATE INSTANTIATION******************************************/

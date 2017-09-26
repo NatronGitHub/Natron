@@ -30,9 +30,10 @@
 #include <QUndoStack>
 #include <QApplication>
 #include <QKeyEvent>
-
+#include "Engine/UndoCommand.h"
 #include "Gui/TabWidget.h"
 #include "Gui/Gui.h"
+#include "Gui/UndoCommand_qt.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -118,6 +119,19 @@ PanelWidget::pushUndoCommand(QUndoCommand* command)
         //You are trying to push a command to a widget that do not own a stack!
         assert(false);
     }
+}
+
+void
+PanelWidget::pushUndoCommand(const UndoCommandPtr& command)
+{
+    pushUndoCommand(new UndoCommand_qt(command));
+}
+
+void
+PanelWidget::pushUndoCommand(UndoCommand* command)
+{
+    UndoCommandPtr p(command);
+    pushUndoCommand(p);
 }
 
 bool

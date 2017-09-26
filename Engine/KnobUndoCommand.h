@@ -35,11 +35,6 @@
 #include <map>
 #include <vector>
 
-CLANG_DIAG_OFF(deprecated)
-CLANG_DIAG_OFF(uninitialized)
-#include <QUndoCommand>
-CLANG_DIAG_ON(deprecated)
-CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
@@ -49,13 +44,9 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Curve.h"
 #include "Engine/Knob.h"
 #include "Engine/EffectInstance.h"
+#include "Engine/UndoCommand.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/TimeValue.h"
-
-#include "Gui/KnobGui.h"
-#include "Gui/Gui.h"
-#include "Gui/GuiAppInstance.h"
-#include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -64,7 +55,7 @@ NATRON_NAMESPACE_ENTER
  **/
 template<typename T>
 class KnobUndoCommand
-    : public QUndoCommand
+    : public UndoCommand
 {
     Q_DECLARE_TR_FUNCTIONS(KnobUndoCommand)
 
@@ -79,9 +70,8 @@ public:
                     DimIdx dimension,
                     ViewSetSpec view,
                     ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
-                    const QString& commandName = QString(),
-                    QUndoCommand *parent = 0)
-    : QUndoCommand(parent)
+                    const QString& commandName = QString())
+    : UndoCommand()
     , _dimension(dimension)
     , _view(view)
     , _reason(reason)
@@ -97,9 +87,9 @@ public:
         _newValue.push_back(newValue);
 
         if (!commandName.isEmpty()) {
-            setText(commandName);
+            setText(commandName.toStdString());
         } else {
-            setText( tr("Set %1").arg( QString::fromUtf8( knob->getLabel().c_str() ) ) );
+            setText( tr("Set %1").arg( QString::fromUtf8( knob->getLabel().c_str() ) ).toStdString() );
         }
     }
 
@@ -111,9 +101,8 @@ public:
                     const std::vector<T> &newValue,
                     ViewSetSpec view,
                     ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
-                    const QString& commandName = QString(),
-                    QUndoCommand *parent = 0)
-    : QUndoCommand(parent)
+                    const QString& commandName = QString())
+    : UndoCommand()
     , _dimension(-1)
     , _view(view)
     , _reason(reason)
@@ -129,9 +118,9 @@ public:
 
 
         if (!commandName.isEmpty()) {
-            setText(commandName);
+            setText(commandName.toStdString());
         } else {
-            setText( tr("Set %1").arg( QString::fromUtf8( knob->getLabel().c_str() ) ) );
+            setText( tr("Set %1").arg( QString::fromUtf8( knob->getLabel().c_str() ) ).toStdString() );
         }
 
     }
@@ -141,6 +130,7 @@ public:
     }
 
 private:
+    
     virtual void undo() OVERRIDE FINAL
     {
 
@@ -208,14 +198,9 @@ private:
 
     } // redo
 
-    virtual int id() const OVERRIDE FINAL
+    virtual bool mergeWith(const UndoCommandPtr& command) OVERRIDE FINAL
     {
-        return kKnobUndoChangeCommandCompressionID;
-    }
-
-    virtual bool mergeWith(const QUndoCommand *command) OVERRIDE FINAL
-    {
-        const KnobUndoCommand *knobCommand = dynamic_cast<const KnobUndoCommand *>(command);
+        const KnobUndoCommand *knobCommand = dynamic_cast<const KnobUndoCommand *>(command.get());
 
         if (!knobCommand) {
             return false;
@@ -276,7 +261,7 @@ private:
  * It is not used by the GUI
  **/
 class MultipleKnobEditsUndoCommand
-    : public QUndoCommand
+    : public UndoCommand
 {
     Q_DECLARE_TR_FUNCTIONS(MultipleKnobEditsUndoCommand)
 
@@ -337,13 +322,12 @@ public:
 
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
-    virtual int id() const OVERRIDE FINAL;
-    virtual bool mergeWith(const QUndoCommand *command) OVERRIDE FINAL;
+    virtual bool mergeWith(const UndoCommandPtr& command) OVERRIDE FINAL;
 };
 
 struct PasteKnobClipBoardUndoCommandPrivate;
 class PasteKnobClipBoardUndoCommand
-    : public QUndoCommand
+    : public UndoCommand
 {
     Q_DECLARE_TR_FUNCTIONS(PasteKnobClipBoardUndoCommand)
 
@@ -380,7 +364,7 @@ public:
 
 
 class RestoreDefaultsCommand
-    : public QUndoCommand
+    : public UndoCommand
 {
     Q_DECLARE_TR_FUNCTIONS(RestoreDefaultsCommand)
 
@@ -388,8 +372,7 @@ public:
 
     RestoreDefaultsCommand(const std::list<KnobIPtr > & knobs,
                            DimSpec targetDim,
-                           ViewSetSpec targetView,
-                           QUndoCommand *parent = 0);
+                           ViewSetSpec targetView);
     virtual void undo();
     virtual void redo();
 
@@ -402,7 +385,7 @@ private:
 };
 
 class SetExpressionCommand
-    : public QUndoCommand
+    : public UndoCommand
 {
     Q_DECLARE_TR_FUNCTIONS(SetExpressionCommand)
 
@@ -413,8 +396,7 @@ public:
                          bool hasRetVar,
                          DimSpec dimension,
                          ViewSetSpec view,
-                         const std::string& expr,
-                         QUndoCommand *parent = 0);
+                         const std::string& expr);
     virtual void undo();
     virtual void redo();
 

@@ -153,7 +153,6 @@ SOURCES += \
     KnobGuiTable.cpp \
     KnobGuiParametric.cpp \
     KnobGuiValue.cpp \
-    KnobUndoCommand.cpp \
     KnobWidgetDnD.cpp \
     Label.cpp \
     LineEdit.cpp \
@@ -216,6 +215,7 @@ SOURCES += \
     ticks.cpp \
     ToolButton.cpp \
     TimeLineGui.cpp \
+    UndoCommand_qt.cpp \
     VerticalColorBar.cpp \
     ViewerGL.cpp \
     ViewerGLPrivate.cpp \
@@ -303,7 +303,6 @@ HEADERS += \
     KnobGuiParametric.h \
     KnobGuiValue.h \
     KnobGuiWidgets.h \
-    KnobUndoCommand.h \
     KnobWidgetDnD.h \
     Label.h \
     LineEdit.h \
@@ -357,6 +356,7 @@ HEADERS += \
     ticks.h \
     TimeLineGui.h \
     ToolButton.h \
+    UndoCommand_qt.h \
     VerticalColorBar.h \
     ViewerGL.h \
     ViewerGLPrivate.h \

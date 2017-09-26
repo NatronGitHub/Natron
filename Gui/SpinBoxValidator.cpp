@@ -26,8 +26,9 @@
 
 #include <stdexcept>
 
+#include "Engine/KnobUndoCommand.h"
 #include "Engine/KnobTypes.h"
-#include "Gui/KnobUndoCommand.h"
+
 #include "Gui/KnobGuiValue.h"
 #include "Gui/KnobGuiColor.h"
 #include "Gui/SpinBox.h"

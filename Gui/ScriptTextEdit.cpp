@@ -41,6 +41,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Image.h"
 #include "Engine/Settings.h"
 #include "Engine/Project.h"
+#include "Engine/KnobUndoCommand.h"
 #include "Engine/EffectInstance.h"
 
 #include "Gui/Gui.h"
@@ -48,7 +49,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/KnobWidgetDnD.h" // KNOB_DND_MIME_DATA_KEY
-#include "Gui/KnobUndoCommand.h" // PasteKnobClipBoardUndoCommand::makeLinkExpression
 
 
 NATRON_NAMESPACE_ENTER

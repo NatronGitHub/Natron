@@ -35,6 +35,7 @@
 #include "Engine/Utils.h" // convertFromPlainText
 #include "Engine/ViewIdx.h"
 #include "Engine/Plugin.h"
+#include "Engine/KnobUndoCommand.h"
 #include "Engine/Project.h"
 #include "Engine/KnobItemsTable.h"
 #include "Engine/Node.h"
@@ -52,7 +53,6 @@
 #include "Gui/TableItemAnim.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/KnobGuiPrivate.h"
-#include "Gui/KnobUndoCommand.h" // SetExpressionCommand...
 #include "Gui/TabGroup.h"
 
 NATRON_NAMESPACE_ENTER

@@ -38,12 +38,14 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/Project.h"
+#include "Engine/UndoCommand.h"
 
 #include "Gui/KnobGuiPrivate.h"
 #include "Gui/GuiDefines.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/KnobGuiFactory.h"
 #include "Gui/NodeSettingsPanel.h"
+#include "Gui/UndoCommand_qt.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/ClickableLabel.h"
 #include "Gui/TabGroup.h"
@@ -91,7 +93,6 @@ KnobGui::initialize()
         QObject::connect( handler, SIGNAL(secretChanged()), this, SLOT(setSecret()) );
         QObject::connect( handler, SIGNAL(enabledChanged()), this, SLOT(setEnabledSlot()) );
         QObject::connect( handler, SIGNAL(selectedMultipleTimes(bool)), this, SLOT(onKnobMultipleSelectionChanged(bool)) );
-        QObject::connect( handler, SIGNAL(appendParamEditChange(ValueChangedReasonEnum,ValueChangedReturnCodeEnum,PerDimViewKeyFramesMap,KeyFrame,ViewSetSpec,DimSpec,bool)), this, SLOT(onAppendParamEditChanged(ValueChangedReasonEnum,ValueChangedReturnCodeEnum,PerDimViewKeyFramesMap,KeyFrame,ViewSetSpec,DimSpec,bool)) );
         QObject::connect( handler, SIGNAL(frozenChanged(bool)), this, SLOT(onFrozenChanged(bool)) );
         QObject::connect( handler, SIGNAL(helpChanged()), this, SLOT(onHelpChanged()) );
         QObject::connect( handler, SIGNAL(expressionChanged(DimIdx,ViewIdx)), this, SLOT(onExprChanged(DimIdx,ViewIdx)) );
@@ -202,6 +203,22 @@ KnobGui::pushUndoCommand(QUndoCommand* cmd)
         delete cmd;
     }
 }
+
+
+void
+KnobGui::pushUndoCommand(const UndoCommandPtr& command)
+{
+    pushUndoCommand(new UndoCommand_qt(command));
+}
+
+void
+KnobGui::pushUndoCommand(UndoCommand* command)
+{
+    UndoCommandPtr p(command);
+    pushUndoCommand(p);
+}
+
+
 
 TabGroup*
 KnobGui::getTabWidget() const

@@ -322,7 +322,6 @@ public:
 
     void copyPreviewImageBuffer(const std::vector<unsigned int>& data, int width, int height);
 
-    virtual void pushUndoCommand(const UndoCommandPtr& command) OVERRIDE FINAL;
 
     /**
      * @brief Set the cursor to be one of the default cursor.

@@ -146,6 +146,10 @@ public:
     void createGUI(QWidget* parentWidget);
 
 
+    void pushUndoCommand(const UndoCommandPtr& command);
+
+    // Takes ownership, command is deleted when returning call
+    void pushUndoCommand(UndoCommand* command);
     void pushUndoCommand(QUndoCommand* cmd);
     const QUndoCommand* getLastUndoCommand() const;
 
@@ -285,14 +289,6 @@ public Q_SLOTS:
     void resetDefault(DimSpec dimension, ViewSetSpec view);
 
     void onKnobMultipleSelectionChanged(bool d);
-
-    void onAppendParamEditChanged(ValueChangedReasonEnum reason,
-                                  ValueChangedReturnCodeEnum setValueRetCode,
-                                  const PerDimViewKeyFramesMap& oldValue,
-                                  const KeyFrame& newValue,
-                                  ViewSetSpec view,
-                                  DimSpec dim,
-                                  bool setKeyFrame);
 
     void onFrozenChanged(bool frozen);
     

@@ -51,6 +51,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/NodeGui.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiDefines.h"
+#include "Gui/UndoCommand_qt.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/TabGroup.h"
 #include "Gui/TableModelView.h"
@@ -1240,6 +1241,26 @@ KnobGuiContainerHelper::getLastUndoCommand() const
 {
     return _imp->undoStack->command(_imp->undoStack->index() - 1);
 }
+
+
+
+void
+KnobGuiContainerHelper::pushUndoCommand(const UndoCommandPtr& command)
+{
+    if (!_imp->undoStack) {
+        command->redo();
+    } else {
+        pushUndoCommand( new UndoCommand_qt(command) );
+    }
+}
+
+void
+KnobGuiContainerHelper::pushUndoCommand(UndoCommand* command)
+{
+    UndoCommandPtr p(command);
+    pushUndoCommand(p);
+}
+
 
 void
 KnobGuiContainerHelper::pushUndoCommand(QUndoCommand* cmd)

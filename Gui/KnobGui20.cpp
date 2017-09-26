@@ -34,6 +34,7 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Engine/KnobUndoCommand.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/KnobItemsTable.h"
 
@@ -46,7 +47,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/NodeGraph.h"
 #include "Gui/KnobGuiContainerHelper.h"
 #include "Gui/GuiApplicationManager.h"
-#include "Gui/KnobUndoCommand.h" // SetExpressionCommand...
 #include "Gui/ViewerTab.h"
 #include "Gui/ViewerGL.h"
 
@@ -393,28 +393,6 @@ KnobGui::onKnobMultipleSelectionChanged(bool d)
     }
 }
 
-
-void
-KnobGui::onAppendParamEditChanged(ValueChangedReasonEnum reason,
-                                  ValueChangedReturnCodeEnum setValueRetCode,
-                                  const PerDimViewKeyFramesMap& oldValue,
-                                  const KeyFrame& newValue,
-                                  ViewSetSpec view,
-                                  DimSpec dim,
-                                  bool setKeyFrame)
-{
-    KnobIPtr knob = getKnob();
-    if (!knob) {
-        return;
-    }
-    KnobHolderPtr holder = knob->getHolder();
-    if (!holder) {
-        return;
-    }
-    bool createNewCommand = holder->getMultipleEditsLevel() == KnobHolder::eMultipleParamsEditOnCreateNewCommand;
-    QString commandName = QString::fromUtf8(holder->getCurrentMultipleEditsCommandName().c_str());
-    pushUndoCommand( new MultipleKnobEditsUndoCommand(knob, commandName, reason, setValueRetCode, createNewCommand, setKeyFrame, oldValue, newValue, dim, view) );
-}
 
 
 void

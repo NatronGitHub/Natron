@@ -45,6 +45,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Image.h" // Image::clamp
 #include "Engine/KnobTypes.h" // KnobButton
 #include "Engine/GroupOutput.h"
+#include "Engine/KnobUndoCommand.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/NodeGuiI.h"
@@ -70,12 +71,12 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/NodeAnim.h"
 #include "Gui/KnobAnim.h"
 #include "Gui/GuiDefines.h"
+#include "Gui/GuiAppInstance.h"
 #include "Gui/GuiMacros.h" // triggerButtonIsRight...
 #include "Gui/KnobItemsTableGui.h"
 #include "Gui/KnobGui.h"
 #include "Gui/KnobGuiColor.h"
 #include "Gui/KnobGuiGroup.h"
-#include "Gui/KnobUndoCommand.h" // RestoreDefaultsCommand
 #include "Gui/Label.h"
 #include "Gui/LineEdit.h"
 #include "Gui/ManageUserParamsDialog.h"

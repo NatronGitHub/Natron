@@ -75,17 +75,6 @@ Node::shouldDrawOverlay(TimeValue time, ViewIdx view, OverlayViewportTypeEnum ty
     return true;
 }
 
-void
-Node::pushUndoCommand(const UndoCommandPtr& command)
-{
-    NodeGuiIPtr nodeGui = getNodeGui();
-
-    if (nodeGui) {
-        nodeGui->pushUndoCommand(command);
-    } else {
-        command->redo();
-    }
-}
 
 void
 Node::setCurrentCursor(CursorEnum defaultCursor)

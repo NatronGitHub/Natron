@@ -44,12 +44,12 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Knob.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/Node.h"
+#include "Engine/KnobUndoCommand.h"
 #include "Engine/Image.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 
 #include "Gui/KnobGui.h"
-#include "Gui/KnobUndoCommand.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h"

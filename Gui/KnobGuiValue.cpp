@@ -54,6 +54,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Lut.h"
 #include "Engine/Node.h"
 #include "Engine/Project.h"
+#include "Engine/KnobUndoCommand.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Utils.h" // convertFromPlainText
@@ -70,8 +71,9 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiDefines.h"
 #include "Gui/GuiMacros.h"
-#include "Gui/KnobUndoCommand.h"
 #include "Gui/Label.h"
+#include "Gui/GuiAppInstance.h"
+#include "Gui/KnobGui.h"
 #include "Gui/NewLayerDialog.h"
 #include "Gui/ProjectGui.h"
 #include "Gui/ScaleSliderQWidget.h"

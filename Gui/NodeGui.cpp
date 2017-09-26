@@ -3206,62 +3206,6 @@ NodeGui::onHideInputsKnobValueChanged(bool /*hidden*/)
     refreshEdgesVisility();
 }
 
-class NodeUndoRedoCommand
-    : public QUndoCommand
-{
-    boost::shared_ptr<UndoCommand> _command;
-
-public:
-
-    NodeUndoRedoCommand(const UndoCommandPtr& command)
-        : QUndoCommand()
-        , _command(command)
-    {
-        setText( QString::fromUtf8( command->getText().c_str() ) );
-    }
-
-    virtual ~NodeUndoRedoCommand()
-    {
-    }
-
-    virtual void redo() OVERRIDE FINAL
-    {
-        _command->redo();
-    }
-
-    virtual void undo() OVERRIDE FINAL
-    {
-        _command->undo();
-    }
-
-    virtual int id() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return kNodeUndoChangeCommandCompressionID;
-    }
-
-    virtual bool mergeWith(const QUndoCommand* other) OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        const NodeUndoRedoCommand* o = dynamic_cast<const NodeUndoRedoCommand*>(other);
-
-        if (!o) {
-            return false;
-        }
-
-        return _command->mergeWith(o->_command);
-    }
-};
-
-void
-NodeGui::pushUndoCommand(const UndoCommandPtr& command)
-{
-    NodeSettingsPanel* panel = getSettingPanel();
-
-    if (!panel) {
-        command->redo();
-    } else {
-        panel->pushUndoCommand( new NodeUndoRedoCommand(command) );
-    }
-}
 
 void
 NodeGui::setCurrentCursor(CursorEnum defaultCursor)

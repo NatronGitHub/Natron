@@ -1404,20 +1404,6 @@ EffectInstance::onKnobValueChanged(const KnobIPtr& /*k*/,
     return false;
 }
 
-void
-EffectInstance::pushUndoCommand(UndoCommand* command)
-{
-    UndoCommandPtr ptr(command);
-
-    getNode()->pushUndoCommand(ptr);
-}
-
-void
-EffectInstance::pushUndoCommand(const UndoCommandPtr& command)
-{
-    getNode()->pushUndoCommand(command);
-}
-
 bool
 EffectInstance::setCurrentCursor(CursorEnum defaultCursor)
 {

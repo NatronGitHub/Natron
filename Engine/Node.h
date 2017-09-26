@@ -959,13 +959,6 @@ public:
 
     bool canHandleRenderScaleForOverlays() const;
 
-    /**
-     * @brief Push a new undo command to the undo/redo stack associated to this node.
-     * The stack takes ownership of the shared pointer, so you should not hold a strong reference to the passed pointer.
-     * If no undo/redo stack is present, the command will just be redone once then destroyed.
-     **/
-    void pushUndoCommand(const UndoCommandPtr& command);
-
 
     /**
      * @brief Set the cursor to be one of the default cursor.

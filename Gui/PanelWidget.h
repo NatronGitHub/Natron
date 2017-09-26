@@ -89,6 +89,11 @@ public:
 
     virtual void pushUndoCommand(QUndoCommand* command);
 
+    void pushUndoCommand(const UndoCommandPtr& command);
+
+    // Takes ownership, command is deleted when returning call
+    void pushUndoCommand(UndoCommand* command);
+
     /*
      * @brief Called whenever this panel is made the current tab in the parent tab widget
      */

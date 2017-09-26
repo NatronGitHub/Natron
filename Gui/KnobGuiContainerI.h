@@ -29,6 +29,7 @@
 
 #include "Gui/GuiFwd.h"
 
+
 NATRON_NAMESPACE_ENTER
 
 class KnobGuiContainerI

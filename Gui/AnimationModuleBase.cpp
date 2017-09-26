@@ -27,12 +27,14 @@
 
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
+#include "Engine/KnobUndoCommand.h"
 
 #include "Gui/AnimationModuleSelectionModel.h"
 #include "Gui/AnimationModuleUndoRedo.h"
 #include "Gui/KnobAnim.h"
-#include "Gui/KnobUndoCommand.h"
 #include "Gui/GuiDefines.h"
+#include "Gui/Gui.h"
+#include "Gui/UndoCommand_qt.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/NodeAnim.h"
 #include "Gui/TableItemAnim.h"
@@ -63,6 +65,19 @@ AnimationModuleBase::AnimationModuleBase(Gui* gui)
 AnimationModuleBase::~AnimationModuleBase()
 {
 
+}
+
+void
+AnimationModuleBase::pushUndoCommand(const UndoCommandPtr& command)
+{
+    pushUndoCommand(new UndoCommand_qt(command));
+}
+
+void
+AnimationModuleBase::pushUndoCommand(UndoCommand* command)
+{
+    UndoCommandPtr p(command);
+    pushUndoCommand(p);
 }
 
 void

@@ -36,6 +36,7 @@
 #include "Engine/KnobItemsTable.h"
 #include "Engine/Node.h"
 #include "Engine/EffectInstance.h"
+#include "Engine/KnobUndoCommand.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -148,7 +149,10 @@ AddToUndoRedoStackHelper<T>::addSetValueToUndoRedoStackIfNeeded(const KeyFrame& 
 
     const ValueToPush& data = _valuesToPushQueue.back();
 
-    _knob->getSignalSlotHandler()->s_appendParamEditChange(data.reason, setValueRetCode, data.oldValues, value, data.view, data.dimension, data.setKeyframe);
+    bool createNewCommand = _holder->getMultipleEditsLevel() == KnobHolder::eMultipleParamsEditOnCreateNewCommand;
+    QString commandName = QString::fromUtf8(_holder->getCurrentMultipleEditsCommandName().c_str());
+    _holder->pushUndoCommand( new MultipleKnobEditsUndoCommand(_knob->shared_from_this(), commandName, data.reason, setValueRetCode, createNewCommand, data.setKeyframe, data.oldValues, value, data.dimension, data.view) );
+
 
 }
 

@@ -42,7 +42,6 @@
 #include "Gui/AnimationModuleTreeView.h"
 #include "Gui/AnimationModuleView.h"
 #include "Gui/AnimationModuleUndoRedo.h"
-#include "Gui/KnobUndoCommand.h"
 #include "Gui/Button.h"
 #include "Gui/CurveGui.h"
 #include "Gui/ComboBox.h"
@@ -54,7 +53,6 @@
 #include "Gui/GuiDefines.h"
 #include "Gui/Label.h"
 #include "Gui/KnobAnim.h"
-#include "Gui/KnobUndoCommand.h"
 #include "Gui/LineEdit.h"
 #include "Gui/NodeGui.h"
 #include "Gui/Splitter.h"
@@ -63,6 +61,7 @@
 
 #include "Engine/KnobTypes.h"
 #include "Engine/TimeLine.h"
+#include "Engine/KnobUndoCommand.h"
 #include "Engine/Utils.h"
 NATRON_NAMESPACE_ENTER
 

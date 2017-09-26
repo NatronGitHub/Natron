@@ -163,6 +163,7 @@ SOURCES += \
     KnobTypes.cpp \
     KnobItemsTable.cpp \
     KnobItemsTableUndoCommand.cpp \
+    KnobUndoCommand.cpp \
     LibraryBinary.cpp \
     LoadKnobsCompat.cpp \
     Log.cpp \
@@ -421,6 +422,7 @@ HEADERS += \
     KnobTypes.h \
     KnobItemsTable.h \
     KnobItemsTableUndoCommand.h \
+    KnobUndoCommand.h \
     LibraryBinary.h \
     LoadKnobsCompat.h \
     Log.h \

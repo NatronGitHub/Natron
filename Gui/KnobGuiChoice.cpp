@@ -54,6 +54,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Image.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/KnobUndoCommand.h"
 #include "Engine/Lut.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
@@ -76,7 +77,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/KnobGui.h"
-#include "Gui/KnobUndoCommand.h"
 #include "Gui/KnobWidgetDnD.h"
 #include "Gui/Label.h"
 #include "Gui/NewLayerDialog.h"
