@@ -68,7 +68,7 @@ bool
 FrameView_compare_less::operator() (const FrameViewPair & lhs,
                                     const FrameViewPair & rhs) const
 {
-    if (std::abs(lhs.time - rhs.time) < NATRON_IMAGE_TIME_EQUALITY_EPS) {
+    if (lhs.time == rhs.time) {
         if (lhs.view == -1 || rhs.view == -1 || lhs.view == rhs.view) {
             return false;
         }
