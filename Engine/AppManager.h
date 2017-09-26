@@ -527,8 +527,7 @@ Q_SIGNALS:
 protected:
 
     virtual bool initGui(const CLArgs& cl);
-    virtual void loadBuiltinNodePlugins(IOPluginsMap* readersMap,
-                                        IOPluginsMap* writersMap);
+    virtual void loadBuiltinNodePlugins();
     virtual AppInstancePtr makeNewInstance(int appID) const;
     virtual void registerGuiMetaTypes() const
     {

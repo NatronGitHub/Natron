@@ -786,8 +786,7 @@ QDebug operator<<(QDebug dbg, const std::list<std::string> &l)
 
 
 void
-OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
-                        IOPluginsMap* writersMap)
+OfxHost::loadOFXPlugins()
 {
     qDebug() << "Load OFX Plugins...";
     SettingsPtr settings = appPTR->getCurrentSettings();
@@ -939,9 +938,6 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
             groupIcons.push_back(groupIconPath);
         }
 
-        const std::set<std::string> & contexts = p->getContexts();
-        std::set<std::string>::const_iterator foundReader = contexts.find(kOfxImageEffectContextReader);
-        std::set<std::string>::const_iterator foundWriter = contexts.find(kOfxImageEffectContextWriter);
         const bool isDeprecated = p->getDescriptor().isDeprecated();
         std::string description = p->getDescriptor().getProps().getStringProperty(kOfxPropPluginDescription);
 
@@ -993,22 +989,11 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
             std::transform(formats[k].begin(), formats[k].end(), formats[k].begin(), ::tolower);
         }
 
+        natronPlugin->setPropertyN<std::string>(kNatronPluginPropSupportedExtensions, formats);
+
         double evaluation = p->getDescriptor().getProps().getDoubleProperty(kTuttleOfxImageEffectPropEvaluation);
 
-
-        if (!isDeprecated && ( foundReader != contexts.end() ) && (formatsCount > 0) && readersMap) {
-            ///we're safe to assume that this plugin is a reader
-            for (std::size_t k = 0; k < formats.size(); ++k) {
-                IOPluginSetForFormat& evalForFormat = (*readersMap)[formats[k]];
-                evalForFormat.insert( IOPluginEvaluation(openfxId, evaluation) );
-            }
-        } else if (!isDeprecated && ( foundWriter != contexts.end() ) && (formatsCount > 0) && writersMap) {
-            ///we're safe to assume that this plugin is a writer.
-            for (std::size_t k = 0; k < formats.size(); ++k) {
-                IOPluginSetForFormat& evalForFormat = (*writersMap)[formats[k]];
-                evalForFormat.insert( IOPluginEvaluation(openfxId, evaluation) );
-            }
-        }
+        natronPlugin->setProperty<double>(kNatronPluginPropIOEvaluation, evaluation);
 
         appPTR->registerPlugin(natronPlugin);
     }

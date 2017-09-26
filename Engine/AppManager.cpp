@@ -1449,10 +1449,10 @@ AppManager::loadAllPlugins()
     assert( _imp->_formats.empty() );
 
     // Load plug-ins bundled into Natron
-    loadBuiltinNodePlugins(&_imp->readerPlugins, &_imp->writerPlugins);
+    loadBuiltinNodePlugins();
 
     // Load OpenFX plug-ins
-    _imp->ofxHost->loadOFXPlugins( &_imp->readerPlugins, &_imp->writerPlugins);
+    _imp->ofxHost->loadOFXPlugins();
 
     // Load PyPlugs and init.py & initGui.py scripts
     // Should be done after settings are declared
@@ -1629,8 +1629,7 @@ AppManager::onPluginLoaded(const PluginPtr& plugin)
 } // onPluginLoaded
 
 void
-AppManager::loadBuiltinNodePlugins(IOPluginsMap* /*readersMap*/,
-                                   IOPluginsMap* /*writersMap*/)
+AppManager::loadBuiltinNodePlugins()
 {
     registerPlugin(AddPlaneNode::createPlugin());
     registerPlugin(Backdrop::createPlugin());
@@ -1652,8 +1651,6 @@ AppManager::loadBuiltinNodePlugins(IOPluginsMap* /*readersMap*/,
     registerPlugin(WriteNode::createPlugin());
     registerPlugin(ViewerNode::createPlugin());
     registerPlugin(ViewerInstance::createPlugin());
-
-
 }
 
 bool
@@ -2256,10 +2253,30 @@ AppManager::registerPlugin(const PluginPtr& plugin)
     const bool isWriter = WriteNode::isBundledWriter( pluginID );
     if (isReader || isWriter) {
         plugin->setProperty<bool>(kNatronPluginPropIsInternalOnly, true);
+
+        const std::vector<std::string>& supportedExtensions = plugin->getPropertyNUnsafe<std::string>(kNatronPluginPropSupportedExtensions);
+        const bool isDeprecated = plugin->getPropertyUnsafe<bool>(kNatronPluginPropIsDeprecated);
+
+        if (!isDeprecated && !supportedExtensions.empty()) {
+            const double ioEvaluation = plugin->getPropertyUnsafe<double>(kNatronPluginPropIOEvaluation);
+
+            IOPluginsMap* ioMap = 0;
+            if (isReader) {
+                ioMap = &_imp->readerPlugins;
+            } else {
+                ioMap = &_imp->writerPlugins;
+            }
+            for (std::size_t k = 0; k < supportedExtensions.size(); ++k) {
+                IOPluginSetForFormat& evalForFormat = (*ioMap)[supportedExtensions[k]];
+                evalForFormat.insert( IOPluginEvaluation(plugin->getPluginID(), ioEvaluation) );
+            }
+        }
     }
     if (isReader) {
         plugin->getEffectDescriptor()->setProperty<bool>(kEffectPropSupportsRenderScale, false);
     }
+
+
 
     PluginsMap::iterator found = _imp->_plugins.find(pluginID);
     if ( found != _imp->_plugins.end() ) {

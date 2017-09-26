@@ -190,6 +190,23 @@ NATRON_NAMESPACE_ENTER
  **/
 #define kNatronPluginPropIsInternalOnly "NatronPluginPropIsInternalOnly"
 
+/**
+ * @brief xN string property (optional) indicating for a reader or writer plug-in the file formats that it supported in input or output
+ * Default value - Empty
+ **/
+#define kNatronPluginPropSupportedExtensions "NatronPluginPropSupportedExtensions"
+
+/**
+ * @brief x1 double property (optional) indicating whether a plug-in is for internal use or not.
+ * This is used to choose the default plug-ins that should be used to read/write a specific file format.
+ * Default Value - -1 for a plugin
+ * Valid Values - The value should be between 0 and 100.
+ *   0 - means bad implementation
+ *   50 - means good implementation without specific optimization
+ *   100 - means good implementation with specific optimizations
+ *   -1 - means the plugin is not evaluated
+ **/
+#define kNatronPluginPropIOEvaluation "NatronPluginPropIOEvaluation"
 
 /**
  * @brief x1 std::bitset<4> property indicating the supported number of components in output.

@@ -117,14 +117,6 @@ GuiApplicationManager::setLoadingStatus(const QString & str)
     }
 }
 
-void
-GuiApplicationManager::loadBuiltinNodePlugins(IOPluginsMap* readersMap,
-                                              IOPluginsMap* writersMap)
-{
-    // Nothing special, load base class implementation
-    AppManager::loadBuiltinNodePlugins(readersMap, writersMap);
-}
-
 AppInstancePtr
 GuiApplicationManager::makeNewInstance(int appID) const
 {

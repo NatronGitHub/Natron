@@ -169,8 +169,6 @@ private:
     virtual void initBuiltinPythonModules() OVERRIDE FINAL;
 
     void onPluginLoaded(const PluginPtr& plugin) OVERRIDE;
-    virtual void loadBuiltinNodePlugins(IOPluginsMap* readersMap,
-                                        IOPluginsMap* writersMap) OVERRIDE;
     virtual bool initGui(const CLArgs& args) OVERRIDE FINAL;
     virtual AppInstancePtr makeNewInstance(int appID) const OVERRIDE FINAL;
     virtual void registerGuiMetaTypes() const OVERRIDE FINAL;

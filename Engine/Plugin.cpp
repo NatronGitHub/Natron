@@ -81,6 +81,8 @@ Plugin::initializeProperties() const
     createProperty<bool>(kNatronPluginPropSupportsMultiInputsBitDepths, false);
     createProperty<bool>(kNatronPluginPropSupportsMultiInputsFPS, false);
     createProperty<bool>(kNatronPluginPropRenderAllPlanesAtOnce, false);
+    createProperty<std::string>(kNatronPluginPropSupportedExtensions, std::vector<std::string>());
+    createProperty<double>(kNatronPluginPropIOEvaluation, -1.);
 }
 
 PluginPtr
