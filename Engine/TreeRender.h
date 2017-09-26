@@ -84,11 +84,11 @@ public:
 
     /**
      * @brief Starts tasks that are available for rendering and queue them in the thread pool
-     * @param nTasks The number maximum of tasks to start. If -1,  this will queue all available
-     * tasks. This cannot be 0.
-     * @returns The number of tasks that were effectively started.
+     * @param launchAllTasksPossible A boolean indicating how many tasks to start. If -1 is passed, all available tasks
+     * should be started.
+     * @returns The number of parallel tasks that were queued.
      **/
-    int executeAvailableTasks(int nTasks);
+    int executeAvailableTasks(int nTasksToLaunch);
 
     /**
      *

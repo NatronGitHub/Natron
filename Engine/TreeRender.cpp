@@ -879,14 +879,14 @@ TreeRender::getStatus() const
 
 
 int
-TreeRenderExecutionData::executeAvailableTasks(int nTasks)
+TreeRenderExecutionData::executeAvailableTasks(int nTasksToLaunch)
 {
 
-    assert(nTasks != 0);
+    assert(nTasksToLaunch != 0);
 
     QThreadPool* threadPool = QThreadPool::globalInstance();
 
-    int nTasksRemaining = nTasks;
+    int nTasksRemaining = nTasksToLaunch;
 
     TreeRenderExecutionDataPtr thisShared = shared_from_this();
 
