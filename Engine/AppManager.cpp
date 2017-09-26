@@ -1628,30 +1628,41 @@ AppManager::onPluginLoaded(const PluginPtr& plugin)
     }
 } // onPluginLoaded
 
+#define ADD_PLUGIN_SAFE(CLASS) \
+{ \
+    try { \
+        registerPlugin(CLASS::createPlugin()); \
+    } catch (const std::exception& e) { \
+        std::cerr << tr("Plug-in loader: %2").arg(QString::fromUtf8(e.what())).toStdString() << std::endl; \
+    }   \
+}
+
 void
 AppManager::loadBuiltinNodePlugins()
 {
-    registerPlugin(AddPlaneNode::createPlugin());
-    registerPlugin(Backdrop::createPlugin());
-    registerPlugin(GroupOutput::createPlugin());
-    registerPlugin(GroupInput::createPlugin());
-    registerPlugin(NodeGroup::createPlugin());
-    registerPlugin(Dot::createPlugin());
-    registerPlugin(DiskCacheNode::createPlugin());
-    registerPlugin(RotoPaint::createPlugin());
-    registerPlugin(RotoNode::createPlugin());
-    registerPlugin(RotoShapeRenderNode::createPlugin());
-    registerPlugin(PrecompNode::createPlugin());
-    registerPlugin(TrackerNode::createPlugin());
-    registerPlugin(JoinViewsNode::createPlugin());
-    registerPlugin(OneViewNode::createPlugin());
-    registerPlugin(ReadNode::createPlugin());
-    registerPlugin(RemovePlaneNode::createPlugin());
-    registerPlugin(StubNode::createPlugin());
-    registerPlugin(WriteNode::createPlugin());
-    registerPlugin(ViewerNode::createPlugin());
-    registerPlugin(ViewerInstance::createPlugin());
+    ADD_PLUGIN_SAFE(AddPlaneNode);
+    ADD_PLUGIN_SAFE(Backdrop);
+    ADD_PLUGIN_SAFE(GroupOutput);
+    ADD_PLUGIN_SAFE(GroupInput);
+    ADD_PLUGIN_SAFE(NodeGroup);
+    ADD_PLUGIN_SAFE(Dot);
+    ADD_PLUGIN_SAFE(DiskCacheNode);
+    ADD_PLUGIN_SAFE(RotoPaint);
+    ADD_PLUGIN_SAFE(RotoNode);
+    ADD_PLUGIN_SAFE(RotoShapeRenderNode);
+    ADD_PLUGIN_SAFE(PrecompNode);
+    ADD_PLUGIN_SAFE(TrackerNode);
+    ADD_PLUGIN_SAFE(JoinViewsNode);
+    ADD_PLUGIN_SAFE(OneViewNode);
+    ADD_PLUGIN_SAFE(ReadNode);
+    ADD_PLUGIN_SAFE(RemovePlaneNode);
+    ADD_PLUGIN_SAFE(StubNode);
+    ADD_PLUGIN_SAFE(WriteNode);
+    ADD_PLUGIN_SAFE(ViewerNode);
+    ADD_PLUGIN_SAFE(ViewerInstance);
 }
+
+#undef ADD_PLUGIN_SAFE
 
 bool
 AppManager::findAndRunScriptFile(const QString& path,
