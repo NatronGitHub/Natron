@@ -59,11 +59,13 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Lut.h"
 #include "Engine/Node.h"
 #include "Engine/Project.h"
+#include "Engine/LoadKnobsCompat.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
 
 #include "Serialization/CurveSerialization.h"
+#include "Serialization/ProjectSerialization.h"
 #include "Serialization/KnobSerialization.h"
 
 
@@ -702,12 +704,52 @@ ChoiceKnobDimView::setValueAndCheckIfChanged(const int& v)
         // No current value, assume they are different
         return true;
     }
-    if (staticValueOption.id != newChoice.id) {
-        staticValueOption = newChoice;
+
+    // setValue should only be called for non multi-choice knobs.
+    if (staticValueOption.size() != 1) {
+        staticValueOption.resize(1);
+    }
+    ChoiceOption& value = staticValueOption.front();
+    if (value.id != newChoice.id) {
+        value = newChoice;
         return true;
     }
     return changed;
 }
+
+struct ChoiceOptionCompare
+{
+    bool operator() (const ChoiceOption& lhs, const ChoiceOption& rhs) const
+    {
+        return lhs.id < rhs.id;
+    }
+};
+
+template <typename T, typename Compare>
+static bool isChoiceSelectionEqual(const std::vector<T>& lhs, const std::vector<T>& rhs)
+{
+    if (lhs.size() != rhs.size()) {
+        return false;
+    }
+    // Special case when they are a regular non multi-choice
+    if (lhs.size() == 1 && rhs.size() == 1) {
+        return lhs.front() == rhs.front();
+    }
+
+    typedef std::set<T, Compare> ChoiceSet;
+    ChoiceSet sortedRhs;
+    for (std::size_t i = 0; i < rhs.size(); ++i) {
+        sortedRhs.insert(rhs[i]);
+    }
+    for (std::size_t i = 0; i < lhs.size(); ++i) {
+        typename ChoiceSet::iterator foundInRhs = sortedRhs.find(lhs[i]);
+        if (foundInRhs == sortedRhs.end()) {
+            return false;
+        }
+    }
+    return true;
+}
+
 
 bool
 ChoiceKnobDimView::copy(const CopyInArgs& inArgs, CopyOutArgs* outArgs)
@@ -730,11 +772,11 @@ ChoiceKnobDimView::copy(const CopyInArgs& inArgs, CopyOutArgs* outArgs)
     showMissingEntryWarning = otherType->showMissingEntryWarning;
     menuColors = otherType->menuColors;
 
-    if (staticValueOption.id != otherType->staticValueOption.id) {
-        staticValueOption = otherType->staticValueOption;
+    if (!isChoiceSelectionEqual<ChoiceOption, ChoiceOptionCompare>(staticValueOption, otherType->staticValueOption)) {
         hasChanged = true;
-    }
+        staticValueOption = otherType->staticValueOption;
 
+    }
     return hasChanged;
 }
 
@@ -742,12 +784,24 @@ struct KnobChoicePrivate {
 
     // The default value as a string
     mutable QMutex defaultEntryMutex;
-    std::string initialDefaultEntryID, defaultEntryID;
+
+    // Did we set initialDefaultEntryID yet ?
+    bool initialDefaultEntrySet;
+
+    // The initial default value set
+    std::vector<std::string> initialDefaultEntryID;
+
+    // The current default value, that may have been changed
+    std::vector<std::string> defaultEntryID;
+
+    bool multiChoiceEnabled;
 
     KnobChoicePrivate()
     : defaultEntryMutex()
+    , initialDefaultEntrySet(false)
     , initialDefaultEntryID()
     , defaultEntryID()
+    , multiChoiceEnabled(false)
     {
 
     }
@@ -770,6 +824,18 @@ KnobChoice::KnobChoice(const KnobHolderPtr& holder, const KnobIPtr& mainInstance
 
 KnobChoice::~KnobChoice()
 {
+}
+
+void
+KnobChoice::setMultiChoiceEnabled(bool enabled)
+{
+    _imp->multiChoiceEnabled = enabled;
+}
+
+bool
+KnobChoice::isMultiChoiceEnabled() const
+{
+    return _imp->multiChoiceEnabled;
 }
 
 void
@@ -946,10 +1012,13 @@ KnobChoice::hasModificationsVirtual(const KnobDimViewBasePtr& data, DimIdx dimen
         return true;
     }
 
-    std::string defaultVal;
+    std::vector<ChoiceOption> defaultVal;
     {
         QMutexLocker k(&_imp->defaultEntryMutex);
-        defaultVal = _imp->defaultEntryID;
+        defaultVal.resize(_imp->defaultEntryID.size());
+        for (std::size_t i = 0; i < _imp->defaultEntryID.size(); ++i) {
+            defaultVal[i].id = _imp->defaultEntryID[i];
+        }
     }
 
 
@@ -957,7 +1026,8 @@ KnobChoice::hasModificationsVirtual(const KnobDimViewBasePtr& data, DimIdx dimen
     assert(choiceData);
     QMutexLocker k(&data->valueMutex);
 
-    if (choiceData->staticValueOption.id != defaultVal) {
+
+    if (!isChoiceSelectionEqual<ChoiceOption, ChoiceOptionCompare>(choiceData->staticValueOption, defaultVal)) {
         return true;
     }
 
@@ -967,7 +1037,7 @@ KnobChoice::hasModificationsVirtual(const KnobDimViewBasePtr& data, DimIdx dimen
 
 
 void
-KnobChoice::findAndSetOldChoice()
+KnobChoice::restoreChoiceAfterMenuChanged()
 {
     std::list<ViewIdx> views = getViewsList();
     if (views.empty()) {
@@ -987,20 +1057,22 @@ KnobChoice::findAndSetOldChoice()
         int foundDefValue = -1;
         {
             QMutexLocker k(&data->valueMutex);
-
-            for (std::size_t i = 0; i < data->menuOptions.size(); ++i) {
-                if ( !data->staticValueOption.id.empty() && data->menuOptions[i].id == data->staticValueOption.id ) {
-                    // Refresh label and hint, even if ID is the same
-                    data->staticValueOption = data->menuOptions[i];
-                    found = i;
-                }
-                if (!defChoiceID.empty() && data->menuOptions[i].id == defChoiceID) {
-                    foundDefValue = i;
-                }
-                if (foundDefValue != -1 && found != -1) {
-                    break;
+            for (std::size_t opt = 0; opt < data->staticValueOption.size(); ++opt) {
+                for (std::size_t i = 0; i < data->menuOptions.size(); ++i) {
+                    if ( !data->staticValueOption[opt].id.empty() && data->menuOptions[i].id == data->staticValueOption[opt].id ) {
+                        // Refresh label and hint, even if ID is the same
+                        data->staticValueOption[opt] = data->menuOptions[i];
+                        found = i;
+                    }
+                    if (!defChoiceID.empty() && data->menuOptions[i].id == defChoiceID) {
+                        foundDefValue = i;
+                    }
+                    if (foundDefValue != -1 && found != -1) {
+                        break;
+                    }
                 }
             }
+
 
         }
 
@@ -1032,7 +1104,7 @@ KnobChoice::findAndSetOldChoice()
         }
     } // for all views
 
-}
+} // restoreChoiceAfterMenuChanged
 
 bool
 KnobChoice::populateChoices(const std::vector<ChoiceOption> &entries)
@@ -1047,16 +1119,16 @@ KnobChoice::populateChoices(const std::vector<ChoiceOption> &entries)
 
         {
             // Check if the default value string is empty, if so initialize it
-            if (isDefaultValueSet(DimIdx(0))) {
+            if (!isMultiChoiceEnabled() && isDefaultValueSet(DimIdx(0))) {
                 QMutexLocker k2(&_imp->defaultEntryMutex);
-                if (_imp->initialDefaultEntryID.empty()) {
+                if (!_imp->initialDefaultEntrySet) {
                     mustSetDefaultEntry = true;
                 }
             }
         }
 
-        int defValueIndex = getDefaultValue(DimIdx(0));
         if (mustSetDefaultEntry) {
+            int defValueIndex = getDefaultValue(DimIdx(0));
             // The default entry ID was not set yet, set it from the index.
             if (defValueIndex >= 0 && defValueIndex < (int)entries.size()) {
                 defaultEntryID = entries[defValueIndex].id;
@@ -1083,13 +1155,15 @@ KnobChoice::populateChoices(const std::vector<ChoiceOption> &entries)
 
     if (mustSetDefaultEntry) {
          QMutexLocker k2(&_imp->defaultEntryMutex);
-        _imp->initialDefaultEntryID = defaultEntryID;
-        _imp->defaultEntryID = defaultEntryID;
+        _imp->initialDefaultEntrySet = true;
+        _imp->initialDefaultEntryID.clear();
+        _imp->initialDefaultEntryID.push_back(defaultEntryID);
+        _imp->defaultEntryID = _imp->initialDefaultEntryID;
     }
 
 
     //  Try to restore the last choice.
-    findAndSetOldChoice();
+    restoreChoiceAfterMenuChanged();
 
     for (KnobDimViewKeySet::const_iterator it = sharedKnobs.begin(); it!=sharedKnobs.end(); ++it) {
         KnobChoicePtr sharedKnob = toKnobChoice(it->knob.lock());
@@ -1203,7 +1277,7 @@ KnobChoice::resetChoices(ViewSetSpec view)
     }
 
     // Refresh active entry state
-    findAndSetOldChoice();
+    restoreChoiceAfterMenuChanged();
 
 
 }
@@ -1254,7 +1328,7 @@ KnobChoice::appendChoice(const ChoiceOption& option,
     }
 
     // Refresh active entry state
-    findAndSetOldChoice();
+    restoreChoiceAfterMenuChanged();
 }
 
 std::vector<ChoiceOption>
@@ -1282,11 +1356,14 @@ KnobChoice::isActiveEntryPresentInEntries(ViewIdx view) const
             return false;
         }
         QMutexLocker k(&data->valueMutex);
-        for (std::size_t i = 0; i < data->menuOptions.size(); ++i) {
-            if (data->menuOptions[i].id == data->staticValueOption.id) {
-                return true;
+        for (std::size_t opt = 0; opt < data->staticValueOption.size(); ++opt) {
+            for (std::size_t i = 0; i < data->menuOptions.size(); ++i) {
+                if (data->menuOptions[i].id == data->staticValueOption[opt].id) {
+                    return true;
+                }
             }
         }
+
 
     }
     return false;
@@ -1323,12 +1400,49 @@ KnobChoice::getNumEntries(ViewIdx view) const
     }
 }
 
+std::vector<ChoiceOption>
+KnobChoice::getCurrentEntries_multi(ViewIdx view) const
+{
+    return getCurrentEntriesAtTime_multi(getCurrentRenderTime(), view);
+}
 
+std::vector<ChoiceOption>
+KnobChoice::getCurrentEntriesAtTime_multi(TimeValue time, ViewIdx view) const
+{
+    std::vector<ChoiceOption> ret;
+
+    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
+
+    ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), view_i));
+    if (!data) {
+        return ret;
+    }
+
+    {
+        QMutexLocker k(&data->valueMutex);
+
+        if (data->animationCurve && data->animationCurve->isAnimated()) {
+            KeyFrame key = data->animationCurve->getValueAt(time);
+            std::vector<std::string> ids, labels;
+            bool gotIt = key.getPropertyNSafe(kKeyFramePropString, &ids);
+            assert(gotIt);
+            gotIt = key.getPropertyNSafe(kKeyframePropChoiceOptionLabel, &labels);
+            ret.resize(ids.size());
+            for (std::size_t i = 0; i < ret.size(); ++i) {
+                ret[i].id = ids[i];
+                ret[i].label = labels[i];
+            }
+        } else {
+            ret = data->staticValueOption;
+        }
+    }
+
+    return ret;
+}
 
 void
-KnobChoice::setActiveEntry(const ChoiceOption& entry, ViewSetSpec view, ValueChangedReasonEnum reason)
+KnobChoice::setActiveEntries_multi(const std::vector<ChoiceOption>& entries, ViewSetSpec view, ValueChangedReasonEnum reason)
 {
-
     std::list<ViewIdx> views = getViewsList();
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -1349,14 +1463,19 @@ KnobChoice::setActiveEntry(const ChoiceOption& entry, ViewSetSpec view, ValueCha
 
             QMutexLocker k(&data->valueMutex);
             ChoiceOption matchedEntry;
-            matchedIndex = choiceMatch(entry.id, data->menuOptions, &matchedEntry);
-            if (matchedIndex == -1) {
-                matchedEntry = entry;
-            }
             sharedKnobs = data->sharedKnobs;
-            data->staticValueOption = matchedEntry;
-        }
-        if (matchedIndex != -1) {
+            data->staticValueOption.clear();
+            for (std::size_t i = 0; i < entries.size(); ++i) {
+                matchedIndex = choiceMatch(entries[i].id, data->menuOptions, &matchedEntry);
+                if (matchedIndex == -1) {
+                    matchedEntry = entries[i];
+                }
+                data->staticValueOption.push_back(matchedEntry);
+            }
+            }
+
+
+        if (!isMultiChoiceEnabled() && matchedIndex != -1) {
             setValue(matchedIndex, *it, DimIdx(0), reason);
         }
         for (KnobDimViewKeySet::const_iterator it = sharedKnobs.begin(); it!=sharedKnobs.end(); ++it) {
@@ -1368,9 +1487,19 @@ KnobChoice::setActiveEntry(const ChoiceOption& entry, ViewSetSpec view, ValueCha
 
             Q_EMIT sharedKnob->populated();
         }
-
+        
     }
     computeHasModifications();
+} // setActiveEntries_multi
+
+
+void
+KnobChoice::setActiveEntry(const ChoiceOption& entry, ViewSetSpec view, ValueChangedReasonEnum reason)
+{
+    assert(!_imp->multiChoiceEnabled);
+    std::vector<ChoiceOption> vec(1);
+    vec[0] = entry;
+    setActiveEntries_multi(vec, view, reason);
 }
 
 ChoiceOption
@@ -1382,41 +1511,32 @@ KnobChoice::getCurrentEntry(ViewIdx view)
 ChoiceOption
 KnobChoice::getCurrentEntryAtTime(TimeValue time, ViewIdx view)
 {
+    assert(!_imp->multiChoiceEnabled);
+
+    std::vector<ChoiceOption> choices = getCurrentEntriesAtTime_multi(time, view);
+    if (!choices.empty() && !choices.front().id.empty()) {
+        return choices.front();
+    }
     ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
+    ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), view_i));
+    if (!data) {
+        return ChoiceOption();
+    }
     {
-        ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), view_i));
-        if (!data) {
-            return ChoiceOption();
-        }
-        ChoiceOption ret;
-
-        {
-            QMutexLocker k(&data->valueMutex);
-
-            if (data->animationCurve && data->animationCurve->isAnimated()) {
-                KeyFrame key = data->animationCurve->getValueAt(time);
-                bool gotIt = key.getPropertySafe(kKeyFramePropString, 0, &ret.id);
-                assert(gotIt);
-                gotIt = key.getPropertySafe(kKeyframePropChoiceOptionLabel, 0, &ret.label);
-            } else {
-                ret = data->staticValueOption;
-            }
-        }
-
-        if (!ret.id.empty()) {
-            return ret;
-        }
-
         // Active entry was not set yet, give something based on the index and set the active entry
         int activeIndex = getValueAtTime(time, DimIdx(0), view_i);
         {
             QMutexLocker k(&data->valueMutex);
             if ( activeIndex >= 0 && activeIndex < (int)data->menuOptions.size() ) {
-                data->staticValueOption = data->menuOptions[activeIndex];
-                return data->staticValueOption;
+                if (data->staticValueOption.size() != 1) {
+                    data->staticValueOption.resize(1);
+                }
+                data->staticValueOption.front() = data->menuOptions[activeIndex];
+                return data->staticValueOption.front();
             }
 
         }
+
     }
 
     return ChoiceOption();
@@ -1486,6 +1606,8 @@ KnobChoice::getHintToolTipFull() const
 ValueChangedReturnCodeEnum
 KnobChoice::setValueFromID(const std::string & value, ViewSetSpec view, ValueChangedReasonEnum reason)
 {
+    assert(!_imp->multiChoiceEnabled);
+
     std::list<ViewIdx> views = getViewsList();
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -1503,7 +1625,10 @@ KnobChoice::setValueFromID(const std::string & value, ViewSetSpec view, ValueCha
         int index = -1;
         {
             QMutexLocker k(&data->valueMutex);
-            index = choiceMatch(value, data->menuOptions, &data->staticValueOption);
+            if (data->staticValueOption.size() != 1) {
+                data->staticValueOption.resize(1);
+            }
+            index = choiceMatch(value, data->menuOptions, &data->staticValueOption.front());
         }
         if (index != -1) {
             return setValue(index, view, DimIdx(0), reason);
@@ -1667,34 +1792,52 @@ KnobChoice::setCurrentDefaultValueAsInitialValue()
     KnobIntBase::setCurrentDefaultValueAsInitialValue();
 }
 
-std::string
-KnobChoice::getDefaultEntryID() const
+std::vector<std::string>
+KnobChoice::getDefaultEntriesID_multi() const
 {
     {
         QMutexLocker l(&_imp->defaultEntryMutex);
-        if (!_imp->defaultEntryID.empty()) {
-
+        if (_imp->initialDefaultEntrySet && !_imp->defaultEntryID.empty()) {
             return _imp->defaultEntryID;
         }
     }
-    int defIndex = getDefaultValue(DimIdx(0));
-    {
-        ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), ViewIdx(0)));
-        if (!data) {
-            return std::string();
+    if (!isMultiChoiceEnabled()) {
+        int defIndex = getDefaultValue(DimIdx(0));
+        {
+            ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), ViewIdx(0)));
+            if (!data) {
+                return std::vector<std::string>();
+            }
+            QMutexLocker k(&data->valueMutex);
+            if (defIndex < 0 || (int)data->menuOptions.size() <= defIndex ) {
+                return std::vector<std::string>();
+            }
+            std::vector<std::string> ret;
+            ret.push_back(data->menuOptions[defIndex].id);
+            return ret;
         }
-        QMutexLocker k(&data->valueMutex);
-        if (defIndex < 0 || (int)data->menuOptions.size() <= defIndex ) {
-            return std::string();
-        }
-
-        return data->menuOptions[defIndex].id;
     }
+}
+
+std::string
+KnobChoice::getDefaultEntryID() const
+{
+    assert(!_imp->multiChoiceEnabled);
+    std::vector<std::string> vec = getDefaultEntriesID_multi();
+    if (!vec.empty()) {
+        return vec.front();
+    } else {
+        return std::string();
+    }
+
 }
 
 void
 KnobChoice::onDefaultValueChanged(DimSpec /*dimension*/)
 {
+    // setDefaultValue should not be called with multi-choice
+    assert(!_imp->multiChoiceEnabled);
+
     int defIndex = getDefaultValue(DimIdx(0));
 
     ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), ViewIdx(0)));
@@ -1711,10 +1854,13 @@ KnobChoice::onDefaultValueChanged(DimSpec /*dimension*/)
     }
 
     QMutexLocker k2(&_imp->defaultEntryMutex);
-    if (_imp->initialDefaultEntryID.empty()) {
-        _imp->initialDefaultEntryID = optionID;
+    if (!_imp->initialDefaultEntrySet) {
+        _imp->initialDefaultEntrySet = true;
+        _imp->initialDefaultEntryID.clear();
+        _imp->initialDefaultEntryID.push_back(optionID);
     }
-    _imp->defaultEntryID = optionID;
+    _imp->defaultEntryID.clear();
+    _imp->defaultEntryID.push_back(optionID);
 
 }
 
@@ -1722,7 +1868,41 @@ bool
 KnobChoice::hasDefaultValueChanged(DimIdx /*dimension*/) const
 {
     QMutexLocker l(&_imp->defaultEntryMutex);
-    return _imp->defaultEntryID != _imp->initialDefaultEntryID;
+    return !isChoiceSelectionEqual<std::string, std::less<std::string> >(_imp->defaultEntryID, _imp->initialDefaultEntryID);
+}
+
+void
+KnobChoice::setDefaultValuesFromID_multi(const std::vector<std::string> & value)
+{
+    assert(_imp->multiChoiceEnabled);
+
+    {
+        QMutexLocker k(&_imp->defaultEntryMutex);
+        if (!_imp->initialDefaultEntrySet) {
+            _imp->initialDefaultEntrySet = true;
+            _imp->initialDefaultEntryID = value;
+        }
+        _imp->defaultEntryID = value;
+    }
+    // Make sure the defaultValueSet flag is set to true in base class
+    KnobIntBase::setCurrentDefaultValueAsInitialValue();
+}
+
+void
+KnobChoice::setDefaultValuesFromIDWithoutApplying_multi(const std::vector<std::string> & value)
+{
+    assert(_imp->multiChoiceEnabled);
+
+    {
+        QMutexLocker k(&_imp->defaultEntryMutex);
+        if (!_imp->initialDefaultEntrySet) {
+            _imp->initialDefaultEntrySet = true;
+            _imp->initialDefaultEntryID = value;
+        }
+        _imp->defaultEntryID = value;
+    }
+    // Make sure the defaultValueSet flag is set to true in base class
+    KnobIntBase::setCurrentDefaultValueAsInitialValue();
 }
 
 void
@@ -1730,20 +1910,33 @@ KnobChoice::setDefaultValueFromIDWithoutApplying(const std::string & value)
 {
     {
         QMutexLocker k(&_imp->defaultEntryMutex);
-        if (_imp->initialDefaultEntryID.empty()) {
-            _imp->initialDefaultEntryID = value;
+        if (!_imp->initialDefaultEntrySet) {
+            _imp->initialDefaultEntrySet = true;
+            _imp->initialDefaultEntryID.clear();
+            _imp->initialDefaultEntryID.push_back(value);
         }
-        _imp->defaultEntryID = value;
+        _imp->defaultEntryID.clear();
+        _imp->defaultEntryID.push_back(value);
     }
-    int index = -1;
-    {
-        ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), ViewIdx(0)));
-        assert(data);
-        QMutexLocker k(&data->valueMutex);
-        index = choiceMatch(value, data->menuOptions, 0);
-    }
-    if (index != -1) {
-        return setDefaultValueWithoutApplying(index, DimSpec(0));
+    if (isMultiChoiceEnabled()) {
+        // For a multi-choice, we cannot maintain an integer index
+        // Make sure the defaultValueSet flag is set to true in base class
+        KnobIntBase::setCurrentDefaultValueAsInitialValue();
+    } else {
+        int index = -1;
+        {
+            ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), ViewIdx(0)));
+            assert(data);
+            QMutexLocker k(&data->valueMutex);
+            if (data->staticValueOption.size() != 1) {
+                data->staticValueOption.resize(1);
+            }
+            data->staticValueOption.front().id = value;
+            index = KnobChoice::choiceMatch(value, data->menuOptions, 0);
+        }
+        if (index != -1) {
+            return setDefaultValueWithoutApplying(index, DimSpec(0));
+        }
     }
 }
 
@@ -1752,22 +1945,33 @@ KnobChoice::setDefaultValueFromID(const std::string & value)
 {
     {
         QMutexLocker k(&_imp->defaultEntryMutex);
-        if (_imp->initialDefaultEntryID.empty()) {
-            _imp->initialDefaultEntryID = value;
+        if (!_imp->initialDefaultEntrySet) {
+            _imp->initialDefaultEntrySet = true;
+            _imp->initialDefaultEntryID.clear();
+            _imp->initialDefaultEntryID.push_back(value);
         }
-        _imp->defaultEntryID = value;
+        _imp->defaultEntryID.clear();
+        _imp->defaultEntryID.push_back(value);
     }
-
-    int index = -1;
-    {
-        ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), ViewIdx(0)));
-        assert(data);
-        QMutexLocker k(&data->valueMutex);
-        data->staticValueOption.id = value;
-        index = KnobChoice::choiceMatch(value, data->menuOptions, 0);
-    }
-    if (index != -1) {
-        return setDefaultValue(index, DimSpec(0));
+    if (isMultiChoiceEnabled()) {
+        // For a multi-choice, we cannot maintain an integer index
+        // Make sure the defaultValueSet flag is set to true in base class
+        KnobIntBase::setCurrentDefaultValueAsInitialValue();
+    } else {
+        int index = -1;
+        {
+            ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), ViewIdx(0)));
+            assert(data);
+            QMutexLocker k(&data->valueMutex);
+            if (data->staticValueOption.size() != 1) {
+                data->staticValueOption.resize(1);
+            }
+            data->staticValueOption.front().id = value;
+            index = KnobChoice::choiceMatch(value, data->menuOptions, 0);
+        }
+        if (index != -1) {
+            return setDefaultValue(index, DimSpec(0));
+        }
     }
 }
 
@@ -1778,7 +1982,68 @@ KnobChoice::createDimViewData() const
     return ret;
 }
 
+void
+KnobChoice::restoreChoiceValue(std::string* choiceID, ChoiceOption* entry, int* index)
+{
+    // first, try to get the id the easy way ( see choiceMatch() )
+    *index = KnobChoice::choiceMatch(*choiceID, getEntries(), entry);
+    if (*index == -1) {
+        // no luck, try the filters
+        EffectInstancePtr isEffect = toEffectInstance(getHolder());
+        if (isEffect) {
+            PluginPtr plugin = isEffect->getNode()->getPlugin();
 
+            SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo projectInfos;
+            bool gotProjectInfos = isEffect->getApp()->getProject()->getProjectLoadedVersionInfo(&projectInfos);
+            int natronMajor = -1,natronMinor = -1,natronRev =-1;
+            if (gotProjectInfos) {
+                natronMajor = projectInfos.vMajor;
+                natronMinor = projectInfos.vMinor;
+                natronRev = projectInfos.vRev;
+            }
+            std::string entryName;
+            filterKnobChoiceOptionCompat(plugin->getPluginID(), plugin->getMajorVersion(), plugin->getMinorVersion(), natronMajor, natronMinor, natronRev, getName(), choiceID);
+        }
+
+        *index = choiceMatch(*choiceID, getEntries(), entry);
+    }
+
+}
+
+void
+KnobChoice::restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSerialization& obj,
+                                   DimIdx targetDimension,
+                                   ViewIdx view)
+{
+    if (isMultiChoiceEnabled()) {
+        std::vector<std::string> options;
+        std::vector<ChoiceOption> values;
+        for (std::list<std::vector<std::string> >::const_iterator it = obj._value.isTable.begin(); it != obj._value.isTable.end(); ++it) {
+            if (it->size() != 1) {
+                continue;
+            }
+            std::string choiceID = (*it)[0];
+            int foundValue = -1;
+            ChoiceOption matchedEntry;
+            restoreChoiceValue(&choiceID, &matchedEntry, &foundValue);
+            values.push_back(matchedEntry);
+        }
+        setActiveEntries_multi(values, view);
+    } else {
+        std::string choiceID = obj._value.isString;
+        int foundValue = -1;
+        ChoiceOption matchedEntry;
+        restoreChoiceValue(&choiceID, &matchedEntry, &foundValue);
+        if (foundValue == -1) {
+            // Just remember the active entry if not found
+            ChoiceOption activeEntry(choiceID, "", "");
+            setActiveEntry(activeEntry, view);
+        } else {
+            setActiveEntry(matchedEntry, view);
+            setValue(foundValue, view, targetDimension, eValueChangedReasonUserEdited, 0);
+        }
+    }
+} // restoreValueFromSerialization
 /******************************KnobSeparator**************************************/
 
 KnobSeparator::KnobSeparator(const KnobHolderPtr& holder,

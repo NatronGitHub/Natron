@@ -1703,7 +1703,7 @@ public:
 
     virtual void restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSerialization& obj,
                                                DimIdx targetDimension,
-                                               ViewIdx view) OVERRIDE FINAL;
+                                               ViewIdx view) OVERRIDE;
 
     virtual void restoreDefaultValueFromSerialization(const SERIALIZATION_NAMESPACE::DefaultValueSerialization& defObj, bool applyDefaultValue, DimIdx targetDimension) OVERRIDE FINAL;
 

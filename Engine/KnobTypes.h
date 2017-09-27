@@ -491,8 +491,8 @@ public:
     std::vector<ChoiceOption> menuOptions;
 
     // Used in combination with the index stored in "value" in the ValueKnobDimView class, so that we also
-    // have the string of the selected option.
-    ChoiceOption staticValueOption;
+    // have the string of the selected option(s) (there may be multiple in case multi-choice is enabled).
+    std::vector<ChoiceOption> staticValueOption;
 
     //  Each item in the list will add a separator after the index specified by the integer.
     std::vector<int> separators;
@@ -669,6 +669,18 @@ public:
      **/
     void setActiveEntry(const ChoiceOption& entry, ViewSetSpec view = ViewSetSpec::all(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited);
 
+
+    /**
+     * @brief For a multi-choice parameter, return the selected options
+     **/
+    std::vector<ChoiceOption> getCurrentEntries_multi(ViewIdx view = ViewIdx(0)) const;
+    std::vector<ChoiceOption> getCurrentEntriesAtTime_multi(TimeValue time,ViewIdx view = ViewIdx(0)) const;
+
+    /**
+    * @brief For a multi-choice parameter, set the selected options
+    **/
+    void setActiveEntries_multi(const std::vector<ChoiceOption>& entries, ViewSetSpec view = ViewSetSpec::all(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited);
+
     int getNumEntries(ViewIdx view = ViewIdx(0)) const;
 
     /// Can this type be animated?
@@ -703,6 +715,10 @@ public:
     void setDefaultValueFromID(const std::string & value);
     void setDefaultValueFromIDWithoutApplying(const std::string & value);
 
+    /// set the KnobChoice default value from the label. Only usable for a multi-choice.
+    void setDefaultValuesFromID_multi(const std::vector<std::string> & value);
+    void setDefaultValuesFromIDWithoutApplying_multi(const std::vector<std::string> & value);
+
     void setMissingEntryWarningEnabled(bool enabled);
     bool isMissingEntryWarningEnabled() const;
 
@@ -722,6 +738,16 @@ public:
     virtual void setCurrentDefaultValueAsInitialValue() OVERRIDE FINAL;
 
     std::string getDefaultEntryID() const;
+    std::vector<std::string> getDefaultEntriesID_multi() const;
+
+    /**
+     * @brief Enables multi-choice selection. Disabled by default.
+     * When multi-choice is enabled, the underlying integer value held by the choice parameter has no real meaning.
+     * The setValue/getValue A.P.I is thus forbidden in this mode. Instead, use the getCurrentEntries_multi and
+     * setActiveEntries_multi functions.
+     **/
+    void setMultiChoiceEnabled(bool enabled);
+    bool isMultiChoiceEnabled() const;
 
 Q_SIGNALS:
 
@@ -731,6 +757,11 @@ Q_SIGNALS:
 
 private:
 
+    virtual void restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSerialization& obj,
+                                               DimIdx targetDimension,
+                                               ViewIdx view) OVERRIDE;
+
+    void restoreChoiceValue(std::string* choiceID, ChoiceOption* entry, int* index);
 
     virtual void onDefaultValueChanged(DimSpec dimension) OVERRIDE FINAL;
 
@@ -741,7 +772,7 @@ private:
         return eCurveTypeChoice;
     }
 
-    void findAndSetOldChoice();
+    void restoreChoiceAfterMenuChanged();
 
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
@@ -761,6 +792,7 @@ toKnobChoice(const KnobIPtr& knob)
 {
     return boost::dynamic_pointer_cast<KnobChoice>(knob);
 }
+
 
 /******************************KnobSeparator**************************************/
 

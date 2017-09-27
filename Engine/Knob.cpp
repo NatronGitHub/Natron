@@ -2751,9 +2751,24 @@ initializeDefaultValueSerializationStorage(const KnobIPtr& knob,
         defValue->value.isString = isStringBase->getDefaultValue(dimension);
         defValue->serializeDefaultValue = isStringBase->hasDefaultValueChanged(dimension);
     } else if (isChoice) {
-        knobSer->_dataType = eSerializationValueVariantTypeString;
-        defValue->value.isString = isChoice->getDefaultEntryID();
+        if (isChoice->isMultiChoiceEnabled()) {
+            // This is a string list
+            knobSer->_dataType = eSerializationValueVariantTypeTable;
+            std::vector<std::string> defaultIds = isChoice->getDefaultEntriesID_multi();
+
+            // Make a list of vectors, because the table format expect for each row a vector of columns.
+            // Since this is a string list, there's a single column.
+            for (std::size_t i = 0; i < defaultIds.size(); ++i) {
+                std::vector<std::string> vec1(1);
+                vec1[0] = defaultIds[i];
+                defValue->value.isTable.push_back(vec1);
+            }
+        } else {
+            knobSer->_dataType = eSerializationValueVariantTypeString;
+            defValue->value.isString = isChoice->getDefaultEntryID();
+        }
         defValue->serializeDefaultValue = isChoice->hasDefaultValueChanged(dimension);
+
     } else {
         knobSer->_dataType = eSerializationValueVariantTypeNone;
     }
@@ -2931,8 +2946,21 @@ initializeValueSerializationStorage(const KnobIPtr& knob,
             serialization->_serializeValue = (serialization->_value.isString != defValue.value.isString);
 
         } else if (isChoice) {
-            serialization->_value.isString = isChoice->getCurrentEntry(view).id;
-            serialization->_serializeValue = (serialization->_value.isString != defValue.value.isString);
+            if (isChoice->isMultiChoiceEnabled()) {
+                // Make a list of vectors, because the table format expect for each row a vector of columns.
+                // Since this is a string list, there's a single column.
+                std::vector<ChoiceOption> options = isChoice->getCurrentEntries_multi(view);
+                for (std::size_t i = 0; i < options.size(); ++i) {
+                    std::vector<std::string> vec1(1);
+                    vec1[0] = options[i].id;
+                    serialization->_value.isTable.push_back(vec1);
+                }
+                serialization->_serializeValue = isChoice->hasModifications(dimension);
+
+            } else {
+                serialization->_value.isString = isChoice->getCurrentEntry(view).id;
+                serialization->_serializeValue = (serialization->_value.isString != defValue.value.isString);
+            }
         }
     }
     // Check if we need to serialize this dimension
@@ -3016,12 +3044,30 @@ KnobHelper::restoreDefaultValueFromSerialization(const SERIALIZATION_NAMESPACE::
         }
         
     } else if (isChoice) {
-        int foundDefault = KnobChoice::choiceMatch(defObj.value.isString, isChoice->getEntries(), 0);
-        if (foundDefault != -1) {
+        if (isChoice->isMultiChoiceEnabled()) {
+            std::vector<std::string> options;
+
+            for (std::list<std::vector<std::string> >::const_iterator it = defObj.value.isTable.begin(); it != defObj.value.isTable.end(); ++it) {
+                if (it->size() != 1) {
+                    continue;
+                }
+                const std::string& choiceID = (*it)[0];
+                options.push_back(choiceID);
+            }
             if (!applyDefaultValue) {
-                isChoice->setDefaultValueWithoutApplying(foundDefault, DimIdx(0));
+                isChoice->setDefaultValuesFromIDWithoutApplying_multi(options);
             } else {
-                isChoice->setDefaultValue(foundDefault);
+                isChoice->setDefaultValuesFromID_multi(options);
+            }
+
+        } else {
+            int foundDefault = KnobChoice::choiceMatch(defObj.value.isString, isChoice->getEntries(), 0);
+            if (foundDefault != -1) {
+                if (!applyDefaultValue) {
+                    isChoice->setDefaultValueWithoutApplying(foundDefault, DimIdx(0));
+                } else {
+                    isChoice->setDefaultValue(foundDefault);
+                }
             }
         }
     }
@@ -3043,7 +3089,6 @@ KnobHelper::restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSe
     KnobDoubleBasePtr isDoubleBase = toKnobDoubleBase(thisShared);
     KnobDoublePtr isDouble = toKnobDouble(thisShared);
     KnobColorPtr isColor = toKnobColor(thisShared);
-    KnobChoicePtr isChoice = toKnobChoice(thisShared);
     KnobStringBasePtr isStringBase = toKnobStringBase(thisShared);
     KnobPagePtr isPage = toKnobPage(thisShared);
     KnobGroupPtr isGrp = toKnobGroup(thisShared);
@@ -3072,42 +3117,8 @@ KnobHelper::restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSe
         }
     } else if (isStringBase) {
         isStringBase->setValue(obj._value.isString, view, targetDimension, eValueChangedReasonUserEdited, 0);
-    } else if (isChoice) {
-
-        std::string choiceID = obj._value.isString;
-        // first, try to get the id the easy way ( see choiceMatch() )
-        ChoiceOption matchedEntry;
-        int foundValue = KnobChoice::choiceMatch(choiceID, isChoice->getEntries(), &matchedEntry);
-        if (foundValue == -1) {
-            // no luck, try the filters
-            EffectInstancePtr isEffect = toEffectInstance(getHolder());
-            if (isEffect) {
-                PluginPtr plugin = isEffect->getNode()->getPlugin();
-
-                SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo projectInfos;
-                bool gotProjectInfos = isEffect->getApp()->getProject()->getProjectLoadedVersionInfo(&projectInfos);
-                int natronMajor = -1,natronMinor = -1,natronRev =-1;
-                if (gotProjectInfos) {
-                    natronMajor = projectInfos.vMajor;
-                    natronMinor = projectInfos.vMinor;
-                    natronRev = projectInfos.vRev;
-                }
-
-                filterKnobChoiceOptionCompat(plugin->getPluginID(), plugin->getMajorVersion(), plugin->getMinorVersion(), natronMajor, natronMinor, natronRev, getName(), &choiceID);
-            }
-
-            foundValue = KnobChoice::choiceMatch(choiceID, isChoice->getEntries(), &matchedEntry);
-        }
-        if (foundValue == -1) {
-            // Just remember the active entry if not found
-            ChoiceOption activeEntry(choiceID, "", "");
-            isChoice->setActiveEntry(activeEntry, view);
-        } else {
-            isChoice->setActiveEntry(matchedEntry, view);
-            isChoice->setValue(foundValue, view, targetDimension, eValueChangedReasonUserEdited, 0);
-        }
-
     }
+
 } // restoreValueFromSerialization
 
 void
