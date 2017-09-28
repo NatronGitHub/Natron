@@ -360,7 +360,7 @@ PickKnobDialog::onNodeComboEditingFinished()
     }
 
     _imp->onSelectedKnobChanged();
-    _imp->knobSelectionCombo->setCurrentIndex_no_emit(0);
+    _imp->knobSelectionCombo->setCurrentIndex(0, false);
 }
 
 void

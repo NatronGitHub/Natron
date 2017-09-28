@@ -1817,6 +1817,7 @@ KnobChoice::getDefaultEntriesID_multi() const
             return ret;
         }
     }
+    return std::vector<std::string>();
 }
 
 std::string

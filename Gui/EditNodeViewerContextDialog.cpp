@@ -203,7 +203,7 @@ EditNodeViewerContextDialog::EditNodeViewerContextDialog(const KnobIPtr& knob, Q
         _imp->layoutTypeChoice->addItem(tr("New Line"), QIcon(), QKeySequence(), tr("A new line will be added after this parameter"));
 
         ViewerContextLayoutTypeEnum type = knob->getInViewerContextLayoutType();
-        _imp->layoutTypeChoice->setCurrentIndex_no_emit((int)type);
+        _imp->layoutTypeChoice->setCurrentIndex((int)type, false);
 
         QObject::connect(_imp->layoutTypeChoice, SIGNAL(currentIndexChanged(int)), this, SLOT(onLayoutTypeChoiceChanged(int)));
         rowLayout->addWidget(_imp->layoutTypeChoice);

@@ -392,7 +392,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
         std::string varName = '[' + it->first + ']';
         _relativeChoice->addItem( QString::fromUtf8( varName.c_str() ) );
         if ( allowRelativePaths && !currentDirectory.compare(0, varName.size(), varName) ) {
-            _relativeChoice->setCurrentIndex_no_emit(i);
+            _relativeChoice->setCurrentIndex(i, false);
         }
     }
     if (!allowRelativePaths) {
@@ -981,7 +981,7 @@ SequenceFileDialog::onSelectionChanged()
             QString extension = item->fileExtension();
             for (int i = 0; i < _fileExtensionCombo->count(); ++i) {
                 if (_fileExtensionCombo->itemText(i) == extension) {
-                    _fileExtensionCombo->setCurrentIndex_no_emit(i);
+                    _fileExtensionCombo->setCurrentIndex(i, false);
                     break;
                 }
             }
@@ -2866,7 +2866,7 @@ SequenceFileDialog::onSelectionLineEditing(const QString & text)
     QString extension = QtCompat::removeFileExtension(textCpy);
     for (int i = 0; i < _fileExtensionCombo->count(); ++i) {
         if (_fileExtensionCombo->itemText(i) == extension) {
-            _fileExtensionCombo->setCurrentIndex_no_emit(i);
+            _fileExtensionCombo->setCurrentIndex(i, false);
             break;
         }
     }

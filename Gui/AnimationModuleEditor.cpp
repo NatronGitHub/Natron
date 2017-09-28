@@ -812,10 +812,10 @@ AnimationModuleEditor::onSelectionModelSelectionChanged(bool /*recurse*/)
     if (expressionFieldsEnabled) {
         switch (language) {
             case eExpressionLanguagePython:
-                _imp->expressionLanguageChoice->setCurrentIndex_no_emit(1);
+                _imp->expressionLanguageChoice->setCurrentIndex(1, false);
                 break;
             case eExpressionLanguageExprTk:
-                _imp->expressionLanguageChoice->setCurrentIndex_no_emit(0);
+                _imp->expressionLanguageChoice->setCurrentIndex(0, false);
                 break;
 
         }
@@ -1070,7 +1070,7 @@ AnimationModuleEditor::refreshKeyframeWidgetsFromSelection()
         _imp->keyframeValueSpinBox->setType(dataType == eCurveTypeDouble ? SpinBox::eSpinBoxTypeDouble : SpinBox::eSpinBoxTypeInt);
         KeyframeTypeEnum interp = _imp->selectedKeyFrame.key.getInterpolation();
         KeyFrameInterpolationChoiceMenuEnum menuVal = fromKeyFrameType(interp);
-        _imp->keyframeInterpolationChoice->setCurrentIndex_no_emit((int)menuVal);
+        _imp->keyframeInterpolationChoice->setCurrentIndex((int)menuVal, false);
 
         _imp->keyframeTimeSpinBox->setValue(_imp->selectedKeyFrame.key.getTime());
         if (dataType == eCurveTypeString || dataType == eCurveTypeChoice) {

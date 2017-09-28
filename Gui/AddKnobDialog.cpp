@@ -958,7 +958,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
                 }
             }
             if (found) {
-                _imp->parentPage->setCurrentIndex_no_emit(index);
+                _imp->parentPage->setCurrentIndex(index, false);
                 pageIndexLoaded = index;
             }
         }
@@ -968,7 +968,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
             int index = 0;
             for (std::list<KnobPagePtr >::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it, ++index) {
                 if ( (*it)->getName() == selectedPageName ) {
-                    _imp->parentPage->setCurrentIndex_no_emit(index);
+                    _imp->parentPage->setCurrentIndex(index, false);
                     pageIndexLoaded = index;
                     break;
                 }

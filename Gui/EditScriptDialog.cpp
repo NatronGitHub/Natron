@@ -240,7 +240,7 @@ EditScriptDialog::create(ExpressionLanguageEnum language,
     _imp->expressionType->addItem(tr("ExprTk"));
     _imp->expressionType->addItem(tr("Python"));
     connect(_imp->expressionType, SIGNAL(currentIndexChanged(int)), this, SLOT(onLanguageCurrentIndexChanged()));
-    _imp->expressionType->setCurrentIndex_no_emit(language == eExpressionLanguagePython ? 1 : 0);
+    _imp->expressionType->setCurrentIndex(language == eExpressionLanguagePython ? 1 : 0, false);
     _imp->expressionType->setToolTip(langTooltip);
     _imp->midButtonsLayout->addWidget(_imp->expressionType);
 

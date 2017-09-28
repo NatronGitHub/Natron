@@ -534,10 +534,10 @@ KnobGuiChoice::updateGUI()
         }
     }
     if ( _comboBox->isCascading() || activeEntry.id.empty() ) {
-        _comboBox->setCurrentIndex_no_emit( knob->getValue() );
+        _comboBox->setCurrentIndex( knob->getValue(), false );
     } else {
         ensureUnknownChocieIsNotInternalPlaneID(activeEntryLabel);
-        _comboBox->setCurrentText_no_emit( activeEntryLabel );
+        _comboBox->setCurrentIndexFromLabel( activeEntryLabel, false /*emitSignal*/ );
     }
 }
 
