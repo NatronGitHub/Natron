@@ -647,6 +647,7 @@ Effect::createParamWrapperForKnob(const KnobIPtr& knob)
 
             return new Int3DParam(isInt);
         default:
+            return new IntParam(isInt);
             break;
         }
     } else if (isDouble) {
@@ -661,6 +662,7 @@ Effect::createParamWrapperForKnob(const KnobIPtr& knob)
 
             return new Double3DParam(isDouble);
         default:
+            return new DoubleParam(isDouble);
             break;
         }
     } else if (isBool) {
