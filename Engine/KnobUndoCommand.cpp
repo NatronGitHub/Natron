@@ -43,6 +43,64 @@
 
 NATRON_NAMESPACE_ENTER
 
+SetMultiChoiceKnobValueUndoCommand::SetMultiChoiceKnobValueUndoCommand(const KnobChoicePtr& knob,
+                                                                       const std::vector<ChoiceOption> &oldSelection,
+                                                                       const std::vector<ChoiceOption> &newSelection,
+                                                                       ViewSetSpec view,
+                                                                       ValueChangedReasonEnum reason)
+: _knob(knob)
+, _view(view)
+, _reason(reason)
+, _oldIndices(oldSelection)
+, _newIndices(newSelection)
+{
+    setText(tr("Set Value of %1").arg( QString::fromUtf8( knob->getLabel().c_str() ) ).toStdString());
+}
+
+SetMultiChoiceKnobValueUndoCommand::~SetMultiChoiceKnobValueUndoCommand()
+{
+
+}
+
+void
+SetMultiChoiceKnobValueUndoCommand::undo()
+{
+    KnobChoicePtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setActiveEntries_multi(_oldIndices, _view, _reason);
+}
+
+void
+SetMultiChoiceKnobValueUndoCommand::redo()
+{
+    KnobChoicePtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setActiveEntries_multi(_newIndices, _view, _reason);
+}
+
+bool
+SetMultiChoiceKnobValueUndoCommand::mergeWith(const UndoCommandPtr& command)
+{
+    const SetMultiChoiceKnobValueUndoCommand *knobCommand = dynamic_cast<const SetMultiChoiceKnobValueUndoCommand *>(command.get());
+
+    if (!knobCommand) {
+        return false;
+    }
+
+    KnobChoicePtr knob = knobCommand->_knob.lock();
+    if ((_knob.lock() != knob) || (_view != knobCommand->_view)) {
+        return false;
+    }
+
+
+    _newIndices = knobCommand->_newIndices;
+
+    return true;
+}
 
 
 struct PasteKnobClipBoardUndoCommandPrivate

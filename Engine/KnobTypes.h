@@ -673,8 +673,8 @@ public:
     /**
      * @brief For a multi-choice parameter, return the selected options
      **/
-    std::vector<ChoiceOption> getCurrentEntries_multi(ViewIdx view = ViewIdx(0)) const;
-    std::vector<ChoiceOption> getCurrentEntriesAtTime_multi(TimeValue time,ViewIdx view = ViewIdx(0)) const;
+    std::vector<ChoiceOption> getCurrentEntries_multi(ViewIdx view = ViewIdx(0));
+    std::vector<ChoiceOption> getCurrentEntriesAtTime_multi(TimeValue time,ViewIdx view = ViewIdx(0));
 
     /**
     * @brief For a multi-choice parameter, set the selected options

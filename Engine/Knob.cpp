@@ -4071,6 +4071,7 @@ struct KnobHolderCommonData
     int nbSignificantChangesDuringEvaluationBlock;
     int nbChangesDuringEvaluationBlock;
     int nbChangesRequiringMetadataRefresh;
+    int duringEvaluation;
     ValueChangedReasonEnum firstKnobChangeReason;
     QMutex knobsFrozenMutex;
     bool knobsFrozen;
@@ -4099,6 +4100,7 @@ struct KnobHolderCommonData
     , nbSignificantChangesDuringEvaluationBlock(0)
     , nbChangesDuringEvaluationBlock(0)
     , nbChangesRequiringMetadataRefresh(0)
+    , duringEvaluation(0)
     , firstKnobChangeReason(eValueChangedReasonPluginEdited)
     , knobsFrozenMutex()
     , knobsFrozen(false)
@@ -5039,8 +5041,11 @@ KnobHolder::endChanges(bool discardRendering)
         if (discardRendering) {
             hasHadSignificantChange = false;
         }
-
-        evaluate(hasHadSignificantChange, mustRefreshMetadata);
+        ++_imp->common->duringEvaluation;
+        if (_imp->common->duringEvaluation == 1) {
+            evaluate(hasHadSignificantChange, mustRefreshMetadata);
+        }
+        --_imp->common->duringEvaluation;
 
     }
 

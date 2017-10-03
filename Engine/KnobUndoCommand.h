@@ -255,6 +255,39 @@ private:
     TimeValue _timelineTime;
 };
 
+// Equivalent of KnobUndoCommand but for a multi-choice knob. this is needed because it doesn't use the setvalue/getvalue API
+class SetMultiChoiceKnobValueUndoCommand : public UndoCommand
+{
+
+    Q_DECLARE_TR_FUNCTIONS(SetMultiChoiceKnobValueUndoCommand)
+
+public:
+
+    SetMultiChoiceKnobValueUndoCommand(const KnobChoicePtr& knob,
+                                       const std::vector<ChoiceOption> &oldSelection,
+                                       const std::vector<ChoiceOption> &newSelection,
+                                       ViewSetSpec view,
+                                       ValueChangedReasonEnum reason = eValueChangedReasonUserEdited);
+
+    virtual ~SetMultiChoiceKnobValueUndoCommand();
+
+    virtual void undo() OVERRIDE FINAL;
+    virtual void redo() OVERRIDE FINAL;
+    virtual bool mergeWith(const UndoCommandPtr& command) OVERRIDE FINAL;
+
+private:
+
+    KnobChoiceWPtr _knob;
+
+    ViewSetSpec _view;
+
+    ValueChangedReasonEnum _reason;
+
+    std::vector<ChoiceOption> _oldIndices, _newIndices;
+
+    // The timeline time at which initially we called redo() the first time
+    TimeValue _timelineTime;
+};
 
 /**
  * @brief This class is used by the internal knob when it wants to group multiple edits into a single undo/redo action.

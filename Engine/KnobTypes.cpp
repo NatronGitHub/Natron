@@ -1046,7 +1046,7 @@ KnobChoice::restoreChoiceAfterMenuChanged()
 
 
     // Also ensure the default index is correct wrt the new chocies
-    std::string defChoiceID = getDefaultEntryID();
+    std::vector<std::string> defChoiceID = getDefaultEntriesID_multi();
 
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
 
@@ -1063,44 +1063,51 @@ KnobChoice::restoreChoiceAfterMenuChanged()
                         // Refresh label and hint, even if ID is the same
                         data->staticValueOption[opt] = data->menuOptions[i];
                         found = i;
-                    }
-                    if (!defChoiceID.empty() && data->menuOptions[i].id == defChoiceID) {
-                        foundDefValue = i;
-                    }
-                    if (foundDefValue != -1 && found != -1) {
                         break;
                     }
                 }
+
             }
-
-
-        }
-
-        if (foundDefValue != -1) {
-            int defIndex = getDefaultValue(DimIdx(0));
-            int curIndex = getValue();
-            if (foundDefValue != defIndex) {
-                setDefaultValueWithoutApplying(foundDefValue);
-                // If this is the first time we call populateChoices
-                // the default index might not be the correct one, ensure it is valid.
-                if (curIndex == defIndex) {
-                    // Find the index of the default entry and update the default index
-                    // unless we found the entry (found != -1)
-                    if (found == -1) {
-                        setValue(foundDefValue);
-                        return;
+            if (!isMultiChoiceEnabled()) {
+                for (std::size_t opt = 0; opt < defChoiceID.size(); ++opt) {
+                    for (std::size_t i = 0; i < data->menuOptions.size(); ++i) {
+                        if (!defChoiceID.empty() && data->menuOptions[i].id == defChoiceID[opt]) {
+                            foundDefValue = i;
+                            break;
+                        }
                     }
                 }
             }
+
         }
 
+        if (!isMultiChoiceEnabled()) {
+            if (foundDefValue != -1) {
+                int defIndex = getDefaultValue(DimIdx(0));
+                if (foundDefValue != defIndex) {
+                    setDefaultValueWithoutApplying(foundDefValue);
+                    int curIndex = getValue();
 
-        if (found != -1) {
-            // Make sure we don't call knobChanged if we found the value
-            blockValueChanges();
-            ScopedChanges_RAII changes(this);
-            setValue(found, ViewSetSpec(*it));
-            unblockValueChanges();
+                    // If this is the first time we call populateChoices
+                    // the default index might not be the correct one, ensure it is valid.
+                    if (curIndex == defIndex) {
+                        // Find the index of the default entry and update the default index
+                        // unless we found the entry (found != -1)
+                        if (found == -1) {
+                            setValue(foundDefValue);
+                            return;
+                        }
+                    }
+                }
+            }
+
+            if (found != -1) {
+                // Make sure we don't call knobChanged if we found the value
+                blockValueChanges();
+                ScopedChanges_RAII changes(this);
+                setValue(found, ViewSetSpec(*it));
+                unblockValueChanges();
+            }
         }
     } // for all views
 
@@ -1357,16 +1364,21 @@ KnobChoice::isActiveEntryPresentInEntries(ViewIdx view) const
         }
         QMutexLocker k(&data->valueMutex);
         for (std::size_t opt = 0; opt < data->staticValueOption.size(); ++opt) {
+            bool found = false;
             for (std::size_t i = 0; i < data->menuOptions.size(); ++i) {
                 if (data->menuOptions[i].id == data->staticValueOption[opt].id) {
-                    return true;
+                    found = true;
+                    break;
                 }
+            }
+            if (!found) {
+                return false;
             }
         }
 
 
     }
-    return false;
+    return true;
 }
 
 ChoiceOption
@@ -1401,13 +1413,13 @@ KnobChoice::getNumEntries(ViewIdx view) const
 }
 
 std::vector<ChoiceOption>
-KnobChoice::getCurrentEntries_multi(ViewIdx view) const
+KnobChoice::getCurrentEntries_multi(ViewIdx view)
 {
     return getCurrentEntriesAtTime_multi(getCurrentRenderTime(), view);
 }
 
 std::vector<ChoiceOption>
-KnobChoice::getCurrentEntriesAtTime_multi(TimeValue time, ViewIdx view) const
+KnobChoice::getCurrentEntriesAtTime_multi(TimeValue time, ViewIdx view)
 {
     std::vector<ChoiceOption> ret;
 
@@ -1436,9 +1448,26 @@ KnobChoice::getCurrentEntriesAtTime_multi(TimeValue time, ViewIdx view) const
             ret = data->staticValueOption;
         }
     }
+    if (ret.empty() && !isMultiChoiceEnabled()) {
+        // Active entry was not set yet, give something based on the index and set the active entry
+        int activeIndex = getValueAtTime(time, DimIdx(0), view_i);
+        {
+            QMutexLocker k(&data->valueMutex);
+            if ( activeIndex >= 0 && activeIndex < (int)data->menuOptions.size() ) {
+                if (data->staticValueOption.size() != 1) {
+                    data->staticValueOption.resize(1);
+                }
+                data->staticValueOption.front() = data->menuOptions[activeIndex];
+                ret.push_back(data->staticValueOption.front());
+            }
+
+        }
+
+
+    }
 
     return ret;
-}
+} // getCurrentEntriesAtTime_multi
 
 void
 KnobChoice::setActiveEntries_multi(const std::vector<ChoiceOption>& entries, ViewSetSpec view, ValueChangedReasonEnum reason)
@@ -1514,31 +1543,9 @@ KnobChoice::getCurrentEntryAtTime(TimeValue time, ViewIdx view)
     assert(!_imp->multiChoiceEnabled);
 
     std::vector<ChoiceOption> choices = getCurrentEntriesAtTime_multi(time, view);
-    if (!choices.empty() && !choices.front().id.empty()) {
+    if (!choices.empty()) {
         return choices.front();
     }
-    ViewIdx view_i = checkIfViewExistsOrFallbackMainView(ViewIdx(view));
-    ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), view_i));
-    if (!data) {
-        return ChoiceOption();
-    }
-    {
-        // Active entry was not set yet, give something based on the index and set the active entry
-        int activeIndex = getValueAtTime(time, DimIdx(0), view_i);
-        {
-            QMutexLocker k(&data->valueMutex);
-            if ( activeIndex >= 0 && activeIndex < (int)data->menuOptions.size() ) {
-                if (data->staticValueOption.size() != 1) {
-                    data->staticValueOption.resize(1);
-                }
-                data->staticValueOption.front() = data->menuOptions[activeIndex];
-                return data->staticValueOption.front();
-            }
-
-        }
-
-    }
-
     return ChoiceOption();
 }
 

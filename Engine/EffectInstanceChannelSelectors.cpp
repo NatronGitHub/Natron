@@ -30,7 +30,22 @@
 
 NATRON_NAMESPACE_ENTER
 
-
+struct ChoiceOptionCompareLess
+{
+    bool operator() (const ChoiceOption& lhs, const ChoiceOption& rhs) const
+    {
+        bool lIsColor = lhs.id == kNatronColorPlaneID;
+        bool rIsColor = rhs.id == kNatronColorPlaneID;
+        if (lIsColor && rIsColor) {
+            return false;
+        } else if (lIsColor) {
+            return true;
+        } else if (rIsColor) {
+            return false;
+        }
+        return lhs.id < rhs.id;
+    }
+};
 
 bool
 EffectInstance::refreshChannelSelectors()
@@ -47,10 +62,6 @@ EffectInstance::refreshChannelSelectors()
 
         // The Output Layer menu has a All choice, input layers menus have a None choice.
         std::vector<ChoiceOption> choices;
-        if (inputNb >= 0) {
-            choices.push_back(ChoiceOption("None", "", ""));
-        }
-
 
         std::list<ImagePlaneDesc> availableComponents;
         {
@@ -62,6 +73,14 @@ EffectInstance::refreshChannelSelectors()
             ChoiceOption layerOption = it2->getPlaneOption();
             choices.push_back(layerOption);
         }
+
+
+        std::sort(choices.begin(), choices.end(), ChoiceOptionCompareLess());
+
+        if (inputNb >= 0) {
+            choices.insert(choices.begin(), ChoiceOption("None", "", ""));
+        }
+
 
         {
             KnobChoicePtr layerKnob = it->second.layer.lock();
