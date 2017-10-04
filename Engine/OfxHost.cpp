@@ -740,7 +740,7 @@ OfxHost::createOfxEffect(NodePtr node,
 static QString
 getOldCacheFilePath()
 {
-    QString cachePath = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache) + QLatin1Char('/');
+    QString cachePath = appPTR->getDiskCacheLocation() + QLatin1Char('/');
     QString oldOfxCache = cachePath + QString::fromUtf8("OFXCache.xml");
 
     return oldOfxCache;
@@ -749,7 +749,7 @@ getOldCacheFilePath()
 static QString
 getOFXCacheDirPath()
 {
-    QString cachePath = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache) + QLatin1Char('/');
+    QString cachePath = appPTR->getDiskCacheLocation() + QLatin1Char('/');
     QString ofxCachePath = cachePath + QString::fromUtf8("OFXLoadCache");
 
     return ofxCachePath;
@@ -923,11 +923,13 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
     qDebug() << "Load OFX Plugins: scan plugins... done!";
     _imp->loadingPluginID.clear(); // finished loading plugins
 
-    // write the cache NOW (it won't change anyway)
-    qDebug() << "Load OFX Plugins: writing cache file" << ofxCacheFilePath;
-    /// flush out the current cache
-    writeOFXCache();
-    qDebug() << "Load OFX Plugins: writing cache file... done!";
+    if ( pluginCache->dirty() ) {
+        // write the cache NOW (it won't change anyway)
+        qDebug() << "Load OFX Plugins: writing cache file" << ofxCacheFilePath;
+        /// flush out the current cache
+        writeOFXCache();
+        qDebug() << "Load OFX Plugins: writing cache file... done!";
+    }
 
     /*Filling node name list and plugin grouping*/
     typedef std::map<OFX::Host::ImageEffect::MajorPlugin, OFX::Host::ImageEffect::ImageEffectPlugin *> PMap;
