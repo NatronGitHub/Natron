@@ -220,11 +220,17 @@ openmp {
   INCLUDEPATH += /opt/local/include/libomp
   LIBS += -L/opt/local/lib/libomp -liomp5
   cc_setting.name = CC
-  cc_setting.value = /opt/local/bin/clang-mp-4.0
+  cc_setting.value = /opt/local/bin/clang-mp-5.0
   cxx_setting.name = CXX
-  cxx_setting.value = /opt/local/bin/clang++-mp-4.0
+  cxx_setting.value = /opt/local/bin/clang++-mp-5.0
   QMAKE_MAC_XCODE_SETTINGS += cc_setting cxx_setting
   QMAKE_FLAGS = "-B /usr/bin"
+
+  # clang (as of 5.0) does not yet support index-while-building functionality
+  # present in Xcode 9, and Xcode 9's clang does not yet support OpenMP
+  compiler_index_store_enable_setting.name = COMPILER_INDEX_STORE_ENABLE
+  compiler_index_store_enable_setting.value = NO
+  QMAKE_MAC_XCODE_SETTINGS += compiler_index_store_enable_setting
 }
 EOF
 ```
@@ -248,6 +254,12 @@ openmp {
   cxx_setting.value = /usr/local/opt/llvm/bin/clang++
   QMAKE_MAC_XCODE_SETTINGS += cc_setting cxx_setting
   QMAKE_FLAGS = "-B /usr/bin"
+
+  # clang (as of 5.0) does not yet support index-while-building functionality
+  # present in Xcode 9, and Xcode 9's clang does not yet support OpenMP
+  compiler_index_store_enable_setting.name = COMPILER_INDEX_STORE_ENABLE
+  compiler_index_store_enable_setting.value = NO
+  QMAKE_MAC_XCODE_SETTINGS += compiler_index_store_enable_setting
 }
 EOF
 ```
