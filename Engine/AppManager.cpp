@@ -2669,6 +2669,36 @@ SettingsPtr AppManager::getCurrentSettings() const
     return _imp->_settings;
 }
 
+
+std::string
+AppManager::getCacheDirPath() const
+{
+    // Use the environment variable if set
+    QString cachePathEnVar = QString::fromUtf8(qgetenv(NATRON_DISK_CACHE_PATH_ENV_VAR));
+    QString cachePath;
+    if (cachePathEnVar.isEmpty()) {
+        // Otherwise fallback on the setting
+        cachePath = QString::fromUtf8(appPTR->getCurrentSettings()->getDiskCachePath().c_str());
+    } else {
+        cachePath = cachePathEnVar;
+    }
+    // Check that the user provided path exists otherwise fallback on default.
+    bool userDirExists;
+    if (cachePath.isEmpty()) {
+        userDirExists = false;
+    } else {
+        QDir d(cachePath);
+        userDirExists = d.exists();
+    }
+    if (userDirExists) {
+        return cachePath.toStdString();
+    } else {
+        // Fallback on default
+        return StandardPaths::writableLocation(StandardPaths::eStandardLocationCache).toStdString();
+    }
+}
+
+
 void
 AppManager::setLoadingStatus(const QString & str)
 {

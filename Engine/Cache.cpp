@@ -1300,35 +1300,6 @@ struct MappedProcessData
 };
 
 
-static std::string getCacheDirPath()
-{
-    // Use the environment variable if set
-    QString cachePathEnVar = QString::fromUtf8(qgetenv(NATRON_DISK_CACHE_PATH_ENV_VAR));
-    QString cachePath;
-    if (cachePathEnVar.isEmpty()) {
-        // Otherwise fallback on the setting
-        cachePath = QString::fromUtf8(appPTR->getCurrentSettings()->getDiskCachePath().c_str());
-    } else {
-        cachePath = cachePathEnVar;
-    }
-    // Check that the user provided path exists otherwise fallback on default.
-    bool userDirExists;
-    if (cachePath.isEmpty()) {
-        userDirExists = false;
-    } else {
-        QDir d(cachePath);
-        userDirExists = d.exists();
-    }
-    if (userDirExists) {
-        return cachePath.toStdString();
-    } else {
-        // Fallback on default
-        return StandardPaths::writableLocation(StandardPaths::eStandardLocationCache).toStdString();
-    }
-
-}
-
-
 template <bool persistent>
 struct CachePrivate
 {
@@ -3094,7 +3065,7 @@ Cache<persistent>::initialize(const boost::shared_ptr<Cache<persistent> >& thisS
     if (persistent) {
         // Open or create the file lock
 
-        _imp->directoryContainingCachePath = getCacheDirPath();
+        _imp->directoryContainingCachePath = appPTR->getCacheDirPath();
 
         _imp->ensureCacheDirectoryExists();
 
@@ -4838,7 +4809,7 @@ Cache<persistent>::clearDiskCache()
 
     // Remove cache dir recursively but preserve the directory itself
 
-    QDir dir(QString::fromUtf8(getCacheDirPath().c_str()));
+    QDir dir(QString::fromUtf8(appPTR->getCacheDirPath().c_str()));
 
     if ( dir.exists() ) {
         Q_FOREACH( QFileInfo info, dir.entryInfoList(QDir::NoDotAndDotDot | QDir::System | QDir::Hidden  | QDir::AllDirs | QDir::Files, QDir::DirsFirst) ) {

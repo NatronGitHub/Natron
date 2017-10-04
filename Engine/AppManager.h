@@ -198,7 +198,7 @@ public:
     SettingsPtr getCurrentSettings() const WARN_UNUSED_RETURN;
     const KnobFactory & getKnobFactory() const WARN_UNUSED_RETURN;
 
-
+    std::string getCacheDirPath() const WARN_UNUSED_RETURN;
 
     /**
      * @brief If the current process is a background process, then it will right the output pipe the
