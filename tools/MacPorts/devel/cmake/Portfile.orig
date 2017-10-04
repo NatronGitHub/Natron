@@ -9,7 +9,7 @@ name                cmake
 categories          devel
 license             BSD
 installs_libs       no
-maintainers         michaelld
+maintainers         {michaelld @michaelld}
 description         Cross-platform make
 set base_long_description \
     "An extensible, open-source system that manages the build \
@@ -47,6 +47,10 @@ if {${subport} eq ${name}} {
         patch-CMakeFindFrameworks.cmake.release.diff \
         patch-Source_CMakeVersionCompute.cmake.release.diff
 
+    # temporary patch for allow for building using Xcode 9
+    # see also: https://trac.macports.org/ticket/54875
+    patchfiles-append patch-Source-kwsys-kwsysPlatformTestsCXX.cxx.diff
+
     livecheck.type  regex
     livecheck.regex ${name}-(\[0-9.\]+)${extract.suffix}
     livecheck.url   [lindex $master_sites 0]
@@ -55,10 +59,10 @@ if {${subport} eq ${name}} {
 
     # devel
 
-    version         20170920
-    set commit      95df03a1d44d48b5407dd0ddc9e618ce2f17762b
-    checksums       rmd160 fb70f8068645a2b0efc0f7df5a44415bd9a8220e \
-                    sha256 f7b3e28e42f0632230e5a96c5135af1e032ebdcb7cf516f582e0284994f96cc0
+    version         20170928
+    set commit      50e4a45b9f7028d4476cf370caf5fa73ffedd95b
+    checksums       rmd160 0527981c220e4161d4dfaae9a6ca9be3b5705c95 \
+                    sha256 51b35cdced1b7fb99077fe9e191c94ba3f41672de3717982d321dd0962273e0b
 
     master_sites    https://gitlab.kitware.com/cmake/cmake/repository/archive.tar.bz2?ref=${commit}&
     distname        ${name}-${commit}
@@ -89,10 +93,6 @@ if {${subport} eq ${name}} {
     livecheck.url   https://gitlab.kitware.com/cmake/cmake/tree/master
 
 }
-
-# temporary patch for allow for building using Xcode 9
-# see also: https://trac.macports.org/ticket/54875
-patchfiles-append patch-Source-kwsys-kwsysPlatformTestsCXX.cxx.diff
 
 depends_lib-append  port:curl \
                     port:expat \

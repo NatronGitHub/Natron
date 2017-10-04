@@ -6,7 +6,7 @@ name                cppunit
 version             1.13.2
 categories          devel
 platforms           darwin
-maintainers         nomaintainer
+maintainers         {michaelld @michaelld} openmaintainer
 license             LGPL-2.1
 description         unit testing framework for C++
 long_description    CppUnit is the C++ port of the famous JUnit framework for \
