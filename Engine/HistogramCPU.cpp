@@ -249,6 +249,13 @@ computeHisto_internal(const HistogramRequest & request,
     const float* src_pixels[4];
     Image::getChannelPointers<float>((const float**)imageData.ptrs, roi.x1, roi.y1, imageData.bounds, imageData.nComps, (float**)src_pixels, &pixelStride);
 
+    // check that all pointers are OK
+    for (int c = 0; c < srcNComps; ++c) {
+        if (!src_pixels[c]) {
+            return;
+        }
+    }
+
     for (int y = roi.y1; y < roi.y2; ++y) {
 
         for (int x = roi.x1; x < roi.x2; ++x) {
