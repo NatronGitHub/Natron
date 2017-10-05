@@ -35,6 +35,7 @@
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_OFF(unused-parameter)
 #include <boost/algorithm/string/predicate.hpp> // iequals
+#include <boost/utility.hpp> // next
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
 
@@ -763,11 +764,6 @@ void NATRON_NAMESPACE::KeyFrame::serialize(Archive & ar,
     _time = TimeValue(time);
     ar & ::boost::serialization::make_nvp("Value", _value);
     ar & ::boost::serialization::make_nvp("InterpolationMethod", _interpolation);
-    // Natron 2 wrongly sets keyframe tangents when refreshing them over multiple keyframes at once.
-    // As a result of this, the tangents saved with the interpolation type may not be correct.
-    // Since Natron 3 only saves interpolation type if this is a known interpolation mode, the project could
-    // not be loaded correctly.
-    _interpolation = eKeyframeTypeFree;
     ar & ::boost::serialization::make_nvp("LeftDerivative", _leftDerivative);
     ar & ::boost::serialization::make_nvp("RightDerivative", _rightDerivative);
 }
@@ -777,6 +773,40 @@ void NATRON_NAMESPACE::Curve::serialize(Archive & ar, const unsigned int /*versi
 {
     QMutexLocker k(&_imp->_lock);
     ar & ::boost::serialization::make_nvp("KeyFrameSet", _imp->keyFrames);
+    KeyFrameSet newKeys;
+    // We are deleting elements while iterating, be careful!
+    // See https://stackoverflow.com/questions/2874441/deleting-elements-from-stl-set-while-iterating
+    for (KeyFrameSet::iterator it = _imp->keyFrames.begin(); it != _imp->keyFrames.end();) {
+        // Natron 2 wrongly sets keyframe tangents when refreshing them over multiple keyframes at once.
+        // As a result of this, the tangents saved with the interpolation type may not be correct.
+        // Since Natron 3 only saves interpolation type if this is a known interpolation mode, the project could
+        // not be loaded correctly.
+        KeyframeTypeEnum interpolation = it->getInterpolation();
+        if ( interpolation == eKeyframeTypeSmooth ) {
+            if ( it == _imp->keyFrames.begin() ||
+                (it != _imp->keyFrames.end() && next(it) == _imp->keyFrames.end() ) ) {
+                // KeyFrameSet sorts by time.
+                // If it is the first or last frame and interpolation is smooth, convert to broken
+                interpolation = eKeyframeTypeBroken;
+            } else {
+                interpolation = eKeyframeTypeFree;
+            }
+            KeyFrame tmp = *it;
+            tmp.setInterpolation(interpolation);
+            newKeys.insert(tmp);
+            _imp->keyFrames.erase(it++);
+        } else if (interpolation == eKeyframeTypeCatmullRom ||
+                   interpolation == eKeyframeTypeCubic) {
+            KeyFrame tmp = *it;
+            interpolation = eKeyframeTypeFree;
+            tmp.setInterpolation(interpolation);
+            newKeys.insert(tmp);
+            _imp->keyFrames.erase(it++);
+        } else {
+            ++it;
+        }
+    }
+    _imp->keyFrames.insert( newKeys.begin(), newKeys.end() );
 }
 
 
