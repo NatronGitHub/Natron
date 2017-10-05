@@ -359,12 +359,14 @@ NatronCFString::toStdString(CFStringRef str)
         return std::string();
     }
 
-    char *buffer = (char*)malloc(sizeof(char*) * (length));
+    char *buffer = (char*)std::malloc(sizeof(char) * (length));
 
     //CFStringGetCharacters( str, CFRangeMake(0, length), reinterpret_cast<UniChar *>( const_cast<char *>( string.c_str() ) ) );
     int ok = CFStringGetCString(str, buffer, length, kCFStringEncodingUTF8);
     assert(ok);
     std::string ret(buffer, length - 1);
+    std::free(buffer);
+
     return ret;
 } // toStdString
 
