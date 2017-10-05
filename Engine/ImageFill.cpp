@@ -116,11 +116,26 @@ fillCPUBlackForDepth(void* ptrs[4],
             return eActionStatusAborted;
         }
 
-        PIX* dstPixelPtrs[4];
+        PIX* dstPixelPtrs[4] = { NULL, NULL, NULL, NULL};
         int dstPixelStride;
         Image::getChannelPointers<PIX>((const PIX**)ptrs, roi.x1, y, bounds, nComps, dstPixelPtrs, &dstPixelStride);
 
-        if ((dstPixelPtrs[1] - dstPixelPtrs[0]) == 1) {
+        // check if all required components are present and contiguous
+        bool contiguous = true;
+        if (dstPixelStride != nComps) {
+            contiguous = false;
+        }
+        for (int c = 0; c < nComps; ++c) {
+            if (!dstPixelPtrs[c]) {
+                contiguous = false;
+            }
+        }
+        for (int c = 1; c < nComps; ++c) {
+            if (dstPixelPtrs[c] - dstPixelPtrs[c-1] != 1) {
+                contiguous = false;
+            }
+        }
+        if (contiguous) {
             // If all channels belong to the same buffer, use memset
             std::size_t rowSize = roi.width() * dstPixelStride * dataSizeOf;
             memset(dstPixelPtrs[0], 0, rowSize);
@@ -189,7 +204,7 @@ fillForDepthForComponents(void* ptrs[4],
 
 
     // now we're safe: the image contains the area in roi
-    PIX* dstPixelPtrs[4];
+    PIX* dstPixelPtrs[4] = {NULL, NULL, NULL, NULL};
     int dstPixelStride;
     Image::getChannelPointers<PIX>((const PIX**)ptrs, roi.x1, roi.y1, bounds, nComps, (PIX**)dstPixelPtrs, &dstPixelStride);
 

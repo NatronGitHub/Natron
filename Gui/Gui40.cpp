@@ -502,7 +502,7 @@ void debugImageInternal(const RectI& renderWindow,
     int dstY = 0;
     for ( int y = renderWindow.y2 - 1; y >= renderWindow.y1; --y , ++dstY) {
 
-        const PIX* src_pixels[4];
+        const PIX* src_pixels[4] = {NULL, NULL, NULL, NULL};
         int pixelStride;
         Image::getChannelPointers<PIX>((const PIX**)imageData.ptrs, renderWindow.x1, y, imageData.bounds, imageData.nComps, (PIX**)src_pixels, &pixelStride);
 

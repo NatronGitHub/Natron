@@ -57,11 +57,11 @@ copyUnProcessedChannels_templated(const void* originalImgPtrs[4],
                                   const EffectInstancePtr& renderClone)
 {
 
-    PIX* dstPixelPtrs[4];
+    PIX* dstPixelPtrs[4] = {NULL, NULL, NULL, NULL};
     int dstPixelStride;
     Image::getChannelPointers<PIX, dstNComps>((const PIX**)dstImgPtrs, roi.x1, roi.y1, dstBounds, (PIX**)dstPixelPtrs, &dstPixelStride);
 
-    PIX* srcPixelPtrs[4];
+    PIX* srcPixelPtrs[4] = {NULL, NULL, NULL, NULL};
     int srcPixelStride;
     Image::getChannelPointers<PIX, srcNComps>((const PIX**)originalImgPtrs, roi.x1, roi.y1, originalImgBounds, (PIX**)srcPixelPtrs, &srcPixelStride);
 
@@ -271,11 +271,11 @@ copyUnProcessedChannels_nonTemplated(const void* originalImgPtrs[4],
     const bool doB = !processChannels[2] && (dstNComps >= 3);
     const bool doA = !processChannels[3] && (dstNComps == 1 || dstNComps == 4);
 
-    PIX* dstPixelPtrs[4];
+    PIX* dstPixelPtrs[4] = {NULL, NULL, NULL, NULL};
     int dstPixelStride;
     Image::getChannelPointers<PIX, dstNComps>((const PIX**)dstImgPtrs, roi.x1, roi.y1, dstBounds, (PIX**)dstPixelPtrs, &dstPixelStride);
 
-    PIX* srcPixelPtrs[4];
+    PIX* srcPixelPtrs[4] = {NULL, NULL, NULL, NULL};
     int srcPixelStride;
     Image::getChannelPointers<PIX, srcNComps>((const PIX**)originalImgPtrs, roi.x1, roi.y1, originalImgBounds, (PIX**)srcPixelPtrs, &srcPixelStride);
 

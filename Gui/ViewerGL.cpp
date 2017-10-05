@@ -3168,7 +3168,7 @@ getColorAtSinglePixel(const Image::CPUData& image,
     }
 
     int pixelStride;
-    const PIX* pix[4];
+    const PIX* pix[4] = {NULL, NULL, NULL, NULL};
     Image::getChannelPointers<PIX>((const PIX**)image.ptrs, x, y, image.bounds, image.nComps, (PIX**)pix, &pixelStride);
 
     if (image.nComps >= 4) {
@@ -3335,7 +3335,7 @@ getColorAtRectForSrcNComps(const Image::CPUData& image,
     U64 area = roi.area();
 
     int pixelStride;
-    const PIX* pix[4];
+    const PIX* pix[4] = {NULL, NULL, NULL, NULL};
     Image::getChannelPointers<PIX, srcNComps>((const PIX**)image.ptrs, roi.x1, roi.y1, image.bounds, (PIX**)pix, &pixelStride);
 
 

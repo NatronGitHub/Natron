@@ -419,7 +419,7 @@ static void setupGLForRender(const ImagePtr& image,
         Image::CPUData data;
         image->getCPUData(&data);
 
-        float* buffers[4];
+        float* buffers[4] = {NULL, NULL, NULL, NULL};
         int pixelStride;
         Image::getChannelPointers<float>((const float**)data.ptrs, roi.x1, roi.y1, data.bounds, data.nComps, buffers, &pixelStride);
         assert(buffers[0]);

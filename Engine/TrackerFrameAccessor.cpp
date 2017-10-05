@@ -218,7 +218,7 @@ private:
             for (int x = roi.x1; x < roi.x2; ++x) {
 
                 int srcPixelsStride;
-                const PIX* src_pixels[4];
+                const PIX* src_pixels[4] = {NULL, NULL, NULL, NULL};
                 Image::getChannelPointers<PIX, srcNComps>((const PIX**)_source.ptrs, x, y, _source.bounds, (PIX**)src_pixels, &srcPixelsStride);
 
                 if (!src_pixels[0]) {

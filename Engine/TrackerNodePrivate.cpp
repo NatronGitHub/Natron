@@ -1203,7 +1203,7 @@ fullRectFloatCPUImageToPBOForNComps(const Image::CPUData& srcImage,
             const int end_x = backward ? roi.x1 - 1 : roi.x2;
             assert( backward == 1 || ( x >= 0 && x < roi.x2 ) );
 
-            const float* srcPixels[4];
+            const float* srcPixels[4] = {NULL, NULL, NULL, NULL};
             int srcPixelStride;
             Image::getChannelPointers<float, srcNComps>((const float**)srcImage.ptrs, x, y, srcImage.bounds, (float**)srcPixels, &srcPixelStride);
 

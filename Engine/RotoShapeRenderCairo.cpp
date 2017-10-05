@@ -93,7 +93,7 @@ convertCairoImageToNatronImageForAccum_noColor(cairo_surface_t* cairoImg,
 
     assert(dstImageData.bounds.contains(srcBounds));
 
-    float *dst_pixels[4];
+    float *dst_pixels[4] = {NULL, NULL, NULL, NULL};
     int dstPixelStride;
     Image::getChannelPointers<float, dstNComps>((const float**)dstImageData.ptrs, srcBounds.x1, srcBounds.y1, dstImageData.bounds, (float**)dst_pixels, &dstPixelStride);
 
@@ -252,7 +252,7 @@ convertNatronImageToCairoImageForComponents(unsigned char* cairoImg,
 
     dstPix += ( (roi.y1 - dstBounds.y1) * stride + (roi.x1 - dstBounds.x1) );
 
-    PIX *src_pixels[4];
+    PIX *src_pixels[4] = {NULL, NULL, NULL, NULL};
     int srcPixelStride;
     Image::getChannelPointers<PIX, dstNComps>((const PIX**)image.ptrs, roi.x1, roi.y1, image.bounds, (PIX**)src_pixels, &srcPixelStride);
 
@@ -962,7 +962,7 @@ renderSmearDot(const unsigned char* maskData,
          mask_pixels += maskStride) {
 
 
-        float *dst_pixels[4];
+        float *dst_pixels[4] = {NULL, NULL, NULL, NULL};
         int dstPixelStride;
         Image::getChannelPointers<float>((const float**)dstImageData.ptrs, nextDotBounds.x1, y, dstImageData.bounds, dstImageData.nComps, (float**)dst_pixels, &dstPixelStride);
 
@@ -970,7 +970,7 @@ renderSmearDot(const unsigned char* maskData,
         for (int x = nextDotBounds.x1; x < nextDotBounds.x2;
              ++x, ++xPrev) {
 
-            float *tmp_pixels[4];
+            float *tmp_pixels[4] = {NULL, NULL, NULL, NULL};
             int tmpPixelStride;
             Image::getChannelPointers<float>((const float**)tmpImageData.ptrs, xPrev, yPrev, tmpImageData.bounds, tmpImageData.nComps, (float**)tmp_pixels, &tmpPixelStride);
 

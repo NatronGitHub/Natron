@@ -802,7 +802,7 @@ findAutoContrastVminVmax_generic(const Image::CPUData& colorImage,
         }
 
         int pixelStride;
-        const PIX* src_pixels[4];
+        const PIX* src_pixels[4] = {NULL, NULL, NULL, NULL};
         Image::getChannelPointers<PIX, srcNComps>((const PIX**)colorImage.ptrs, roi.x1, y, colorImage.bounds, (PIX**)src_pixels, &pixelStride);
 
         for (int x = roi.x1; x < roi.x2; ++x) {
@@ -1178,11 +1178,11 @@ applyViewerProcess8bit_generic(const RenderViewerArgs& args, const RectI & roi)
 
 
             int colorPixelStride;
-            const PIX* color_pixels[4];
+            const PIX* color_pixels[4] = {NULL, NULL, NULL, NULL};
             Image::getChannelPointers<PIX, srcNComps>((const PIX**)args.colorImage.ptrs, x, y, args.colorImage.bounds, (PIX**)color_pixels, &colorPixelStride);
 
             int alphaPixelStride;
-            const PIX* alpha_pixels[4];
+            const PIX* alpha_pixels[4] = {NULL, NULL, NULL, NULL};
             if (channels == eDisplayChannelsMatte || channels == eDisplayChannelsA) {
             Image::getChannelPointers<PIX>((const PIX**)args.alphaImage.ptrs, x, y, args.alphaImage.bounds, args.alphaImage.nComps, (PIX**)alpha_pixels, &alphaPixelStride);
             } else {
@@ -1191,7 +1191,7 @@ applyViewerProcess8bit_generic(const RenderViewerArgs& args, const RectI & roi)
             }
 
             int dstPixelStride;
-            unsigned char* dst_pixels[4];
+            unsigned char* dst_pixels[4] = {NULL, NULL, NULL, NULL};
 
             Image::getChannelPointers<unsigned char>((const unsigned char**)args.dstImage.ptrs, x, y, args.dstImage.bounds, args.dstImage.nComps, (unsigned char**)dst_pixels, &dstPixelStride);
             unsigned int *dst_pixels_uint = reinterpret_cast<unsigned int*>(dst_pixels[0]);
@@ -1347,11 +1347,11 @@ applyViewerProcess32bit_Generic(const RenderViewerArgs& args, const RectI & roi)
 
 
         int colorPixelStride;
-        const PIX* color_pixels[4];
+        const PIX* color_pixels[4] = {NULL, NULL, NULL, NULL};
         Image::getChannelPointers<PIX, srcNComps>((const PIX**)args.colorImage.ptrs, roi.x1, y, args.colorImage.bounds, (PIX**)color_pixels, &colorPixelStride);
 
         int alphaPixelStride;
-        const PIX* alpha_pixels[4];
+        const PIX* alpha_pixels[4] = {NULL, NULL, NULL, NULL};
         if (channels == eDisplayChannelsMatte || channels == eDisplayChannelsA) {
             Image::getChannelPointers<PIX>((const PIX**)args.alphaImage.ptrs, roi.x1, y, args.alphaImage.bounds, args.alphaImage.nComps, (PIX**)alpha_pixels, &alphaPixelStride);
         } else {
@@ -1360,7 +1360,7 @@ applyViewerProcess32bit_Generic(const RenderViewerArgs& args, const RectI & roi)
         }
 
         int dstPixelStride;
-        float* dst_pixels[4];
+        float* dst_pixels[4] = {NULL, NULL, NULL, NULL};
         Image::getChannelPointers<float>((const float**)args.dstImage.ptrs, roi.x1, y, args.dstImage.bounds, args.dstImage.nComps, (float**)dst_pixels, &dstPixelStride);
         assert(dst_pixels[0]);
 

@@ -34,7 +34,7 @@ applyCPUPixelShaderInternal(const RectI& roi,
                             const Image::CPUData& cpuData,
                             void (*func)(const void*, int, PIX*[4]))
 {
-    PIX* dstPixelPtrs[4];
+    PIX* dstPixelPtrs[4] = {NULL, NULL, NULL, NULL};
     int dstPixelStride;
     Image::getChannelPointers<PIX, nComps>((const PIX**)cpuData.ptrs, roi.x1, roi.y1, cpuData.bounds, (PIX**)dstPixelPtrs, &dstPixelStride);
 

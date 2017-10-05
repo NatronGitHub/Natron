@@ -39,7 +39,7 @@ applyMaskMixForMaskInvert(const void* originalImgPtrs[4],
                           const EffectInstancePtr& renderClone)
 {
 
-    PIX* dstPixelPtrs[4];
+    PIX* dstPixelPtrs[4] = {NULL, NULL, NULL, NULL};
     int dstPixelStride;
     Image::getChannelPointers<PIX, dstNComps>((const PIX**)dstImgPtrs, roi.x1, roi.y1, bounds, (PIX**)dstPixelPtrs, &dstPixelStride);
 
@@ -52,7 +52,7 @@ applyMaskMixForMaskInvert(const void* originalImgPtrs[4],
         }
         for (int x = roi.x1; x < roi.x2; ++x) {
 
-            PIX* srcPixelPtrs[4] = {0, 0, 0 , 0};
+            PIX* srcPixelPtrs[4] = {NULL, NULL, NULL, NULL};
             int srcPixelStride = 0;
             if (originalImgPtrs[0]) {
                 Image::getChannelPointers<PIX, srcNComps>((const PIX**)originalImgPtrs, x, y, originalImgBounds, (PIX**)srcPixelPtrs, &srcPixelStride);
@@ -78,7 +78,7 @@ applyMaskMixForMaskInvert(const void* originalImgPtrs[4],
                 }
             } else {
 
-                PIX* maskPixelPtrs[4];
+                PIX* maskPixelPtrs[4] = {NULL, NULL, NULL, NULL};
                 int maskPixelStride;
                 Image::getChannelPointers<PIX, 1>((const PIX**)maskImgPtrs, x, y, maskImgBounds, (PIX**)maskPixelPtrs, &maskPixelStride);
 

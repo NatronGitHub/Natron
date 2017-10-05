@@ -246,7 +246,7 @@ computeHisto_internal(const HistogramRequest & request,
     double binSize = (request.vmax - request.vmin) / histo->size();
 
     int pixelStride;
-    const float* src_pixels[4];
+    const float* src_pixels[4] = {NULL, NULL, NULL, NULL};
     Image::getChannelPointers<float>((const float**)imageData.ptrs, roi.x1, roi.y1, imageData.bounds, imageData.nComps, (float**)src_pixels, &pixelStride);
 
     // check that all pointers are OK

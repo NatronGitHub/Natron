@@ -99,7 +99,7 @@ renderPreviewTemplated(const void* srcPtrs[4],
                 const double srcX_f = x / scaleFactor + srcBounds.x1;
                 const int srcX_i = std::floor(srcX_f + 0.5);     // round to nearest
 
-                const PIX* srcPixelPtrs[4];
+                const PIX* srcPixelPtrs[4] = {NULL, NULL, NULL, NULL};
                 int pixelStride;
                 Image::getChannelPointers<PIX, srcNComps>((const PIX**)srcPtrs, srcX_i, srcY_i, srcBounds, (PIX**)srcPixelPtrs, &pixelStride);
 

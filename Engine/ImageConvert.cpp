@@ -167,11 +167,11 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
         if (srcMaxValue == dstMaxValue && !srcLut && !dstLut) {
             // Use memcpy when possible
 
-            const SRCPIX* srcPixelPtrs[4];
+            const SRCPIX* srcPixelPtrs[4] = {NULL, NULL, NULL, NULL};
             int srcPixelStride;
             Image::getChannelPointers<SRCPIX>((const SRCPIX**)srcBufPtrs, renderWindow.x1, y, srcBounds, nComp, (SRCPIX**)srcPixelPtrs, &srcPixelStride);
 
-            DSTPIX* dstPixelPtrs[4];
+            DSTPIX* dstPixelPtrs[4] = {NULL, NULL, NULL, NULL};
             int dstPixelStride;
             Image::getChannelPointers<DSTPIX>((const DSTPIX**)dstBufPtrs, renderWindow.x1, y, dstBounds, nComp, (DSTPIX**)dstPixelPtrs, &dstPixelStride);
 
@@ -214,11 +214,11 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
             // coverity[dont_call]
             int start = rand() % renderWindow.width() + renderWindow.x1;
 
-            const SRCPIX* srcPixelPtrs[4];
+            const SRCPIX* srcPixelPtrs[4] = {NULL, NULL, NULL, NULL};
             int srcPixelStride;
             Image::getChannelPointers<SRCPIX>((const SRCPIX**)srcBufPtrs, start, y, srcBounds, nComp, (SRCPIX**)srcPixelPtrs, &srcPixelStride);
 
-            DSTPIX* dstPixelPtrs[4];
+            DSTPIX* dstPixelPtrs[4] = {NULL, NULL, NULL, NULL};
             int dstPixelStride;
             Image::getChannelPointers<DSTPIX>((const DSTPIX**)dstBufPtrs, start, y, dstBounds, nComp, (DSTPIX**)dstPixelPtrs, &dstPixelStride);
 
@@ -355,11 +355,11 @@ convertToFormatInternal(const RectI & renderWindow,
 
         int start = rand() % renderWindow.width() + renderWindow.x1;
 
-        const SRCPIX* srcPixelPtrs[4];
+        const SRCPIX* srcPixelPtrs[4] = {NULL, NULL, NULL, NULL};
         int srcPixelStride;
         Image::getChannelPointers<SRCPIX, srcNComps>((const SRCPIX**)srcBufPtrs, start, y, srcBounds, (SRCPIX**)srcPixelPtrs, &srcPixelStride);
 
-        DSTPIX* dstPixelPtrs[4];
+        DSTPIX* dstPixelPtrs[4] = {NULL, NULL, NULL, NULL};
         int dstPixelStride;
         Image::getChannelPointers<DSTPIX, dstNComps>((const DSTPIX**)dstBufPtrs, start, y, dstBounds, (DSTPIX**)dstPixelPtrs, &dstPixelStride);
 
@@ -541,11 +541,11 @@ convertToMonoImage(const RectI & renderWindow,
             return eActionStatusAborted;
         }
 
-        const SRCPIX* srcPixelPtrs[4];
+        const SRCPIX* srcPixelPtrs[4] = {NULL, NULL, NULL, NULL};
         int srcPixelStride;
         Image::getChannelPointers<SRCPIX, srcNComps>((const SRCPIX**)srcBufPtrs, renderWindow.x1, y, srcBounds, (SRCPIX**)srcPixelPtrs, &srcPixelStride);
 
-        DSTPIX* dstPixelPtrs[4];
+        DSTPIX* dstPixelPtrs[4] = {NULL, NULL, NULL, NULL};
         int dstPixelStride;
         Image::getChannelPointers<DSTPIX, 1>((const DSTPIX**)dstBufPtrs, renderWindow.x1, y, dstBounds, (DSTPIX**)dstPixelPtrs, &dstPixelStride);
 
@@ -598,11 +598,11 @@ convertFromMonoImage(const RectI & renderWindow,
             return eActionStatusAborted;
         }
 
-        const SRCPIX* srcPixelPtrs[4];
+        const SRCPIX* srcPixelPtrs[4] = {NULL, NULL, NULL, NULL};
         int srcPixelStride;
         Image::getChannelPointers<SRCPIX, 1>((const SRCPIX**)srcBufPtrs, renderWindow.x1, y, srcBounds, (SRCPIX**)srcPixelPtrs, &srcPixelStride);
 
-        DSTPIX* dstPixelPtrs[4];
+        DSTPIX* dstPixelPtrs[4] = {NULL, NULL, NULL, NULL};
         int dstPixelStride;
         Image::getChannelPointers<DSTPIX, dstNComps>((const DSTPIX**)dstBufPtrs, renderWindow.x1, y, dstBounds, (DSTPIX**)dstPixelPtrs, &dstPixelStride);
 
