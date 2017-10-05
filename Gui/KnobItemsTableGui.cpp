@@ -1203,7 +1203,7 @@ DragItemsUndoCommand::moveItem(int indexInParent,
     if (toTable && newItem) {
         toTable->internalModel.lock()->insertItem(indexInParent, newItem, parent, eTableChangeReasonInternal);
     }
-    if (parent) {
+    if (parent && _table) {
         ModelItemsVec::iterator foundParent = _table->findItem(parent);
         if (foundParent != _table->items.end()) {
             _table->tableView->setExpanded(_table->tableModel->getItemIndex(foundParent->item), true);
@@ -1211,7 +1211,7 @@ DragItemsUndoCommand::moveItem(int indexInParent,
     }
 
 
-    if (newItem) {
+    if (newItem && toTable) {
         toTable->createCustomWidgetRecursively(newItem);
     }
 
