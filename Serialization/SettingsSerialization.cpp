@@ -108,7 +108,7 @@ SettingsSerialization::decode(const YAML::Node& node)
 {
 
     if (node["Settings"]) {
-        YAML::Node knobsNode = node["Settings"];
+        const YAML::Node& knobsNode = node["Settings"];
         for (std::size_t i = 0; i < knobsNode.size(); ++i) {
             KnobSerializationPtr n(new KnobSerialization);
             n->decode(knobsNode[i]);
@@ -116,7 +116,7 @@ SettingsSerialization::decode(const YAML::Node& node)
         }
     }
     if (node["Plugins"]) {
-        YAML::Node pluginNode = node["Plugins"];
+        const YAML::Node& pluginNode = node["Plugins"];
         for (std::size_t i = 0; i < pluginNode.size(); ++i) {
 
             if (pluginNode[i].size() != 2) {
@@ -126,12 +126,12 @@ SettingsSerialization::decode(const YAML::Node& node)
             PluginData data;
             PluginID id;
 
-            YAML::Node idNode = pluginNode[0];
+            const YAML::Node& idNode = pluginNode[0];
             id.identifier = idNode["ID"].as<std::string>();
             id.majorVersion = idNode["MajorVersion"].as<int>();
             id.minorVersion = idNode["MinorVersion"].as<int>();
 
-            YAML::Node propsNode = pluginNode[1];
+            const YAML::Node& propsNode = pluginNode[1];
 
             for (std::size_t i = 0; i < propsNode.size(); ++i) {
                 std::string prop = propsNode[i].as<std::string>();
@@ -151,15 +151,15 @@ SettingsSerialization::decode(const YAML::Node& node)
     }
 
     if (node["Shortcuts"]) {
-        YAML::Node shortcutsNode = node["Shortcuts"];
+        const YAML::Node& shortcutsNode = node["Shortcuts"];
         for (std::size_t i = 0; i < shortcutsNode.size(); ++i) {
-            YAML::Node keybindNode = shortcutsNode[i];
+            const YAML::Node& keybindNode = shortcutsNode[i];
             KeybindShortcutKey shortcutKey;
             KeybindShortcut shortcut;
             shortcutKey.grouping = keybindNode["Group"].as<std::string>();
             shortcutKey.actionID = keybindNode["Action"].as<std::string>();
             shortcut.symbol = keybindNode["Key"].as<std::string>();
-            YAML::Node modifsNode = keybindNode["Modifiers"];
+            const YAML::Node& modifsNode = keybindNode["Modifiers"];
             for (std::size_t j = 0; j < modifsNode.size(); ++j) {
                 shortcut.modifiers.push_back(modifsNode[j].as<std::string>());
             }

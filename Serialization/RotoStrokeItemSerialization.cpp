@@ -69,9 +69,9 @@ RotoStrokeItemSerialization::decode(const YAML::Node& node)
     KnobTableItemSerialization::decode(node);
 
     if (node["SubStrokes"]) {
-        YAML::Node strokesNode = node["SubStrokes"];
+        const YAML::Node& strokesNode = node["SubStrokes"];
         for (std::size_t i = 0; i < strokesNode.size(); ++i) {
-            YAML::Node strokeN = strokesNode[i];
+            const YAML::Node& strokeN = strokesNode[i];
             PointCurves p;
             p.x.reset(new CurveSerialization);
             p.y.reset(new CurveSerialization);

@@ -84,7 +84,7 @@ PythonPanelSerialization::decode(const YAML::Node& node)
         userData = node["Data"].as<std::string>();
     }
     if (node["Params"]) {
-        YAML::Node paramsNode = node["Params"];
+        const YAML::Node& paramsNode = node["Params"];
         for (std::size_t i = 0; i < paramsNode.size(); ++i) {
             KnobSerializationPtr s(new KnobSerialization);
             s->decode(paramsNode[i]);
@@ -133,7 +133,7 @@ TabWidgetSerialization::decode(const YAML::Node& node)
         isAnchor = false;
     }
     if (node["Tabs"]) {
-        YAML::Node tabsNode = node["Tabs"];
+        const YAML::Node& tabsNode = node["Tabs"];
         for (std::size_t i = 0; i < tabsNode.size(); ++i) {
             tabs.push_back(tabsNode[i].as<std::string>());
         }
@@ -169,7 +169,7 @@ WidgetSplitterSerialization::decode(const YAML::Node& node)
         throw YAML::InvalidNode();
     }
     {
-        YAML::Node n = node["Layout"];
+        const YAML::Node& n = node["Layout"];
         if (n.size() != 3) {
             throw YAML::InvalidNode();
         }
@@ -218,7 +218,7 @@ void
 WindowSerialization::decode(const YAML::Node& node)
 {
     {
-        YAML::Node n = node["Pos"];
+        const YAML::Node& n = node["Pos"];
         if (!n.IsSequence() || n.size() != 2) {
             throw YAML::InvalidNode();
         }
@@ -227,7 +227,7 @@ WindowSerialization::decode(const YAML::Node& node)
 
     }
     {
-        YAML::Node n = node["Size"];
+        const YAML::Node& n = node["Size"];
         if (!n.IsSequence() || n.size() != 2) {
             throw YAML::InvalidNode();
         }
@@ -236,7 +236,7 @@ WindowSerialization::decode(const YAML::Node& node)
 
     }
     childType = node["ChildType"].as<std::string>();
-    YAML::Node childNode = node["Child"];
+    const YAML::Node& childNode = node["Child"];
     if (childType == kSplitterChildTypeSplitter) {
         isChildSplitter.reset(new WidgetSplitterSerialization);
         isChildSplitter->decode(childNode);
@@ -292,13 +292,13 @@ WorkspaceSerialization::decode(const YAML::Node& node)
         throw YAML::InvalidNode();
     }
     if (node["Histograms"]) {
-        YAML::Node n = node["Histograms"];
+        const YAML::Node& n = node["Histograms"];
         for (std::size_t i = 0; i < n.size(); ++i) {
             _histograms.push_back(n[i].as<std::string>());
         }
     }
     if (node["PyPanels"]) {
-        YAML::Node n = node["PyPanels"];
+        const YAML::Node& n = node["PyPanels"];
         for (std::size_t i = 0; i < n.size(); ++i) {
             PythonPanelSerialization p;
             p.decode(n[i]);
@@ -310,7 +310,7 @@ WorkspaceSerialization::decode(const YAML::Node& node)
         _mainWindowSerialization->decode(node["MainWindow"]);
     }
     if (node["FloatingWindows"]) {
-        YAML::Node n = node["FloatingWindows"];
+        const YAML::Node& n = node["FloatingWindows"];
         for (std::size_t i = 0; i < n[i].size(); ++i) {
             boost::shared_ptr<WindowSerialization> p(new WindowSerialization);
             p->decode(n[i]);

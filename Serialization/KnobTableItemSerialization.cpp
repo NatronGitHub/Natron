@@ -153,7 +153,7 @@ KnobTableItemSerialization::decode(const YAML::Node& node)
         label = actualScriptName;
     }
     if (node["Children"]) {
-        YAML::Node childrenNode = node["Children"];
+        const YAML::Node& childrenNode = node["Children"];
         for (std::size_t i = 0; i < childrenNode.size(); ++i) {
             const std::string& nodeTag = childrenNode[i].Tag();
             KnobTableItemSerializationPtr child = createSerializationObjectForItemTag(nodeTag);
@@ -166,7 +166,7 @@ KnobTableItemSerialization::decode(const YAML::Node& node)
         }
     }
     if (node["Params"]) {
-        YAML::Node paramsNode = node["Params"];
+        const YAML::Node& paramsNode = node["Params"];
         for (std::size_t i = 0; i < paramsNode.size(); ++i) {
             KnobSerializationPtr child(new KnobSerialization);
             child->decode(paramsNode[i]);
@@ -174,7 +174,7 @@ KnobTableItemSerialization::decode(const YAML::Node& node)
         }
     }
     if (node["Animation"]) {
-        YAML::Node animNode = node["Animation"];
+        const YAML::Node& animNode = node["Animation"];
         if (animNode.IsMap()) {
             // multi-view
             for (YAML::const_iterator it = animNode.begin(); it!=animNode.end(); ++it) {
@@ -233,7 +233,7 @@ KnobItemsTableSerialization::decode(const YAML::Node& node)
     }
     
     if (node["Items"]) {
-        YAML::Node itemsNode = node["Items"];
+        const YAML::Node& itemsNode = node["Items"];
         for (std::size_t i = 0; i < itemsNode.size(); ++i) {
             const std::string& nodeTag = itemsNode[i].Tag();
             KnobTableItemSerializationPtr s = createSerializationObjectForItemTag(nodeTag);

@@ -90,7 +90,7 @@ ImagePlaneDescSerialization::decode(const YAML::Node& node)
     if (node["ChannelsLabel"]) {
         channelsLabel = node["ChannelsLabel"].as<std::string>();
     }
-    YAML::Node channelsNode = node["Channels"];
+    const YAML::Node& channelsNode = node["Channels"];
     for (std::size_t i = 0; i < channelsNode.size(); ++i) {
         channelNames.push_back(channelsNode[i].as<std::string>());
     }
@@ -236,7 +236,7 @@ NodeSerialization::encode(YAML::Emitter& em) const
 static void tryDecodeInputsMap(const YAML::Node& node, const std::string& token, std::map<std::string, std::string>* container)
 {
     if (node[token]) {
-        YAML::Node inputsNode = node[token];
+        const YAML::Node& inputsNode = node[token];
         if (inputsNode.IsMap()) {
             for (YAML::const_iterator it = inputsNode.begin(); it!=inputsNode.end(); ++it) {
                 container->insert(std::make_pair(it->first.as<std::string>(), it->second.as<std::string>()));
@@ -286,7 +286,7 @@ NodeSerialization::decode(const YAML::Node& node)
     }
 
     if (node["Version"]) {
-        YAML::Node versionNode = node["Version"];
+        const YAML::Node& versionNode = node["Version"];
         if (versionNode.size() != 2) {
             throw YAML::InvalidNode();
         }
@@ -298,7 +298,7 @@ NodeSerialization::decode(const YAML::Node& node)
     tryDecodeInputsMap(node, "Masks", &_masks);
 
     if (node["Outputs"]) {
-        YAML::Node outputsNode = node["Outputs"];
+        const YAML::Node& outputsNode = node["Outputs"];
         bool expectName = true;
         OutputNodeConnection connection;
         for (std::size_t i = 0; i < outputsNode.size(); ++i) {
@@ -321,7 +321,7 @@ NodeSerialization::decode(const YAML::Node& node)
 
     
     if (node["Params"]) {
-        YAML::Node paramsNode = node["Params"];
+        const YAML::Node& paramsNode = node["Params"];
         for (std::size_t i = 0; i < paramsNode.size(); ++i) {
             KnobSerializationPtr s(new KnobSerialization);
             s->decode(paramsNode[i]);
@@ -329,7 +329,7 @@ NodeSerialization::decode(const YAML::Node& node)
         }
     }
     if (node["UserPages"]) {
-        YAML::Node pagesNode = node["UserPages"];
+        const YAML::Node& pagesNode = node["UserPages"];
         for (std::size_t i = 0; i < pagesNode.size(); ++i) {
             GroupKnobSerializationPtr s(new GroupKnobSerialization);
             s->decode(pagesNode[i]);
@@ -337,13 +337,13 @@ NodeSerialization::decode(const YAML::Node& node)
         }
     }
     if (node["PagesOrder"]) {
-        YAML::Node pagesOrder = node["PagesOrder"];
+        const YAML::Node& pagesOrder = node["PagesOrder"];
         for (std::size_t i = 0; i < pagesOrder.size(); ++i) {
             _pagesIndexes.push_back(pagesOrder[i].as<std::string>());
         }
     }
     if (node["Children"]) {
-        YAML::Node childrenNode = node["Children"];
+        const YAML::Node& childrenNode = node["Children"];
         for (std::size_t i = 0; i < childrenNode.size(); ++i) {
             NodeSerializationPtr s(new NodeSerialization);
             s->decode(childrenNode[i]);
@@ -351,7 +351,7 @@ NodeSerialization::decode(const YAML::Node& node)
         }
     }
     if (node["Tables"]) {
-        YAML::Node tablesNode = node["Tables"];
+        const YAML::Node& tablesNode = node["Tables"];
         for (std::size_t i = 0; i < tablesNode.size(); ++i) {
             KnobItemsTableSerializationPtr table(new KnobItemsTableSerialization);
             table->decode(tablesNode[i]);
@@ -365,7 +365,7 @@ NodeSerialization::decode(const YAML::Node& node)
     
 
     if (node["Pos"]) {
-        YAML::Node posNode = node["Pos"];
+        const YAML::Node& posNode = node["Pos"];
         if (posNode.size() != 2) {
             throw YAML::InvalidNode();
         }
@@ -373,7 +373,7 @@ NodeSerialization::decode(const YAML::Node& node)
         _nodePositionCoords[1] = posNode[1].as<double>();
     }
     if (node["Size"]) {
-        YAML::Node sizeNode = node["Size"];
+        const YAML::Node& sizeNode = node["Size"];
         if (sizeNode.size() != 2) {
             throw YAML::InvalidNode();
         }
@@ -381,7 +381,7 @@ NodeSerialization::decode(const YAML::Node& node)
         _nodeSize[1] = sizeNode[1].as<double>();
     }
     if (node["Color"]) {
-        YAML::Node colorNode = node["Color"];
+        const YAML::Node& colorNode = node["Color"];
         if (colorNode.size() != 3) {
             throw YAML::InvalidNode();
         }
@@ -390,7 +390,7 @@ NodeSerialization::decode(const YAML::Node& node)
         _nodeColor[2] = colorNode[2].as<double>();
     }
     if (node["OverlayColor"]) {
-        YAML::Node colorNode = node["OverlayColor"];
+        const YAML::Node& colorNode = node["OverlayColor"];
         if (colorNode.size() != 3) {
             throw YAML::InvalidNode();
         }
@@ -399,7 +399,7 @@ NodeSerialization::decode(const YAML::Node& node)
         _overlayColor[2] = colorNode[2].as<double>();
     }
     if (node["ViewerParamsOrder"]) {
-        YAML::Node viewerParamsOrderNode = node["ViewerParamsOrder"];
+        const YAML::Node& viewerParamsOrderNode = node["ViewerParamsOrder"];
         for (std::size_t i = 0; i < viewerParamsOrderNode.size(); ++i) {
             _viewerUIKnobsOrder.push_back(viewerParamsOrderNode[i].as<std::string>());
         }

@@ -152,17 +152,17 @@ CurveSerialization::decode(const YAML::Node& node)
                 if (i+1 < node.size() && node[i+1].IsMap()) {
                     ++i;
                     // We have properties
-                    YAML::Node propertiesNode = node[i];
+                    const YAML::Node& propertiesNode = node[i];
                     for (YAML::Node::const_iterator it = propertiesNode.begin(); it != propertiesNode.end(); ++it) {
                         KeyFrameProperty prop;
                         prop.type = it->first.as<std::string>();
 
-                        YAML::Node propNode = it->second;
+                        const YAML::Node& propNode = it->second;
                         if (!propNode.IsMap()) {
                             throw YAML::InvalidNode();
                         }
                         prop.name = propNode["Name"].as<std::string>();
-                        YAML::Node valuesNode = propNode["Value"];
+                        const YAML::Node& valuesNode = propNode["Value"];
                         if (valuesNode.IsSequence()) {
                             for (std::size_t j = 0; j < valuesNode.size(); ++j) {
                                 KeyFramePropertyVariant v;
@@ -224,7 +224,7 @@ CurveSerialization::decode(const YAML::Node& node)
             bool pushKeyFrame = false;
             for (std::size_t i = 0; i < node.size(); ++i) {
 
-                YAML::Node keyNode = node[i];
+                const YAML::Node& keyNode = node[i];
 
                 switch (state) {
                     case eCurveDecodeStateMayExpectInterpolation:

@@ -123,8 +123,7 @@ void read(const std::string& header, std::istream& stream, T* obj)
             }
         }
     }
-    YAML::Node node = YAML::Load(stream);
-    obj->decode(node);
+    obj->decode(YAML::Load(stream));
 }
 
 SERIALIZATION_NAMESPACE_EXIT

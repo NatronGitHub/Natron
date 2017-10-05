@@ -91,10 +91,10 @@ static void decodeShape(const YAML::Node& shapeNode, BezierSerialization::Shape*
         shape->closed = false;
     }
     if (shapeNode["ControlPoints"]) {
-        YAML::Node cpListNode = shapeNode["ControlPoints"];
+        const YAML::Node& cpListNode = shapeNode["ControlPoints"];
         for (std::size_t i = 0; i < cpListNode.size(); ++i) {
             BezierSerialization::ControlPoint cp;
-            YAML::Node cpNode = cpListNode[i];
+            const YAML::Node& cpNode = cpListNode[i];
             if (cpNode["Inner"]) {
                 cp.innerPoint.decode(cpNode["Inner"]);
             }
@@ -117,7 +117,7 @@ BezierSerialization::decode(const YAML::Node& node)
         _isOpenBezier = false;
     }
     if (node["Shape"]) {
-        YAML::Node shapeNode = node["Shape"];
+        const YAML::Node& shapeNode = node["Shape"];
         if (!shapeNode["ControlPoints"]) {
             // Multi-view
             for (YAML::const_iterator it = shapeNode.begin(); it != shapeNode.end(); ++it) {

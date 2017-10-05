@@ -47,7 +47,7 @@ void
 ProjectBeingLoadedInfo::decode(const YAML::Node& node)
 {
     {
-        YAML::Node n = node["Version"];
+        const YAML::Node& n = node["Version"];
         if (n.size() != 3) {
             throw YAML::InvalidNode();
         }
@@ -122,7 +122,7 @@ void
 ProjectSerialization::decode(const YAML::Node& node)
 {
     if (node["Nodes"]) {
-        YAML::Node n = node["Nodes"];
+        const YAML::Node& n = node["Nodes"];
         for (std::size_t i = 0; i < n.size(); ++i) {
             NodeSerializationPtr ns(new NodeSerialization);
             ns->decode(n[i]);
@@ -130,7 +130,7 @@ ProjectSerialization::decode(const YAML::Node& node)
         }
     }
     if (node["Formats"]) {
-        YAML::Node n = node["Formats"];
+        const YAML::Node& n = node["Formats"];
         for (std::size_t i = 0; i < n.size(); ++i) {
             FormatSerialization s;
             s.decode(n[i]);
@@ -138,7 +138,7 @@ ProjectSerialization::decode(const YAML::Node& node)
         }
     }
     if (node["Params"]) {
-        YAML::Node n = node["Params"];
+        const YAML::Node& n = node["Params"];
         for (std::size_t i = 0; i < n.size(); ++i) {
             KnobSerializationPtr s(new KnobSerialization);
             s->decode(n[i]);
@@ -148,7 +148,7 @@ ProjectSerialization::decode(const YAML::Node& node)
     _timelineCurrent = node["Frame"].as<int>();
     _projectLoadedInfo.decode(node["NatronVersion"]);
     if (node["OpenedPanels"]) {
-        YAML::Node n = node["OpenedPanels"];
+        const YAML::Node& n = node["OpenedPanels"];
         for (std::size_t i = 0; i < n.size(); ++i) {
             _openedPanelsOrdered.push_back(n[i].as<std::string>());
         }
@@ -158,7 +158,7 @@ ProjectSerialization::decode(const YAML::Node& node)
         _projectWorkspace->decode(node["Workspace"]);
     }
     if (node["Viewports"]) {
-        YAML::Node n = node["Viewports"];
+        const YAML::Node& n = node["Viewports"];
         for (std::size_t i = 0; i < n.size(); ++i) {
             if (!n[i].IsSequence() || n[i].size() != 2) {
                 throw YAML::InvalidNode();

@@ -634,7 +634,7 @@ KnobSerialization::decodeValueNode(const std::string& viewName, const YAML::Node
 
     for (int i = 0; i < nDims; ++i) {
 
-        YAML::Node dimNode = isMainNodeSequence ? node[i] : node;
+        const YAML::Node& dimNode = isMainNodeSequence ? node[i] : node;
 
         if (!dimNode.IsMap()) {
             // This is a value
@@ -709,7 +709,7 @@ KnobSerialization::checkForValueNode(const YAML::Node& node, const std::string& 
         return false;
     }
         // We need to figure out of the knob is multi-view and if multi-dimensional
-    YAML::Node valueNode = node[nodeType];
+    const YAML::Node& valueNode = node[nodeType];
 
     _dataType = dataTypeFromString(nodeType);
 
@@ -754,12 +754,12 @@ KnobSerialization::checkForDefaultValueNode(const YAML::Node& node, const std::s
     }
 
 
-    YAML::Node defNode = node[defaultTypeName];
+    const YAML::Node& defNode = node[defaultTypeName];
     int nDims = defNode.IsSequence() ? defNode.size() : 1;
     _defaultValues.resize(nDims);
     for (int i = 0; i < nDims; ++i) {
         _defaultValues[i].serializeDefaultValue = true;
-        YAML::Node dimNode = defNode.IsSequence() ? defNode[i] : defNode;
+        const YAML::Node& dimNode = defNode.IsSequence() ? defNode[i] : defNode;
         decodeValueFromNode(dimNode, _defaultValues[i].value, _dataType);
     }
 
@@ -795,12 +795,12 @@ KnobSerialization::decode(const YAML::Node& node)
 
 
     if (node["ParametricCurves"]) {
-        YAML::Node curveNode = node["ParametricCurves"];
+        const YAML::Node& curveNode = node["ParametricCurves"];
         ParametricExtraData *data = getOrCreateExtraData<ParametricExtraData>(_extraData);
         if (curveNode.IsMap()) {
             for (YAML::const_iterator it = curveNode.begin(); it!=curveNode.end(); ++it) {
                 std::string viewName = it->first.as<std::string>();
-                YAML::Node curvesViewNode = it->second;
+                const YAML::Node& curvesViewNode = it->second;
 
                 std::list<CurveSerialization>& curvesList = data->parametricCurves[viewName];
                 for (std::size_t i = 0; i < curvesViewNode.size(); ++i) {
@@ -824,7 +824,7 @@ KnobSerialization::decode(const YAML::Node& node)
     }
  
     if (node["FontColor"]) {
-        YAML::Node n = node["FontColor"];
+        const YAML::Node& n = node["FontColor"];
         if (n.size() != 3) {
             throw YAML::InvalidNode();
         }
@@ -879,14 +879,14 @@ KnobSerialization::decode(const YAML::Node& node)
             // This is a choice
             ChoiceExtraData *data = new ChoiceExtraData;
             _extraData.reset(data);
-            YAML::Node entriesNode = node["Entries"];
+            const YAML::Node& entriesNode = node["Entries"];
             for (std::size_t i = 0; i < entriesNode.size(); ++i) {
                 data->_entries.push_back(entriesNode[i].as<std::string>());
             }
 
             // Also look for hints...
             if (node["Hints"]) {
-                YAML::Node hintsNode = node["Hints"];
+                const YAML::Node& hintsNode = node["Hints"];
                 for (std::size_t i = 0; i < hintsNode.size(); ++i) {
                     data->_helpStrings.push_back(hintsNode[i].as<std::string>());
                 }
@@ -911,7 +911,7 @@ KnobSerialization::decode(const YAML::Node& node)
         }
         if (node["FileTypes"]) {
             FileExtraData* data = getOrCreateExtraData<FileExtraData>(_extraData);
-            YAML::Node fileTypesNode = node["FileTypes"];
+            const YAML::Node& fileTypesNode = node["FileTypes"];
             for (std::size_t i = 0; i < fileTypesNode.size(); ++i) {
                 data->filters.push_back(fileTypesNode[i].as<std::string>());
             }
@@ -944,7 +944,7 @@ KnobSerialization::decode(const YAML::Node& node)
     }
 
     if (node["Props"]) {
-        YAML::Node propsNode = node["Props"];
+        const YAML::Node& propsNode = node["Props"];
         for (std::size_t i = 0; i < propsNode.size(); ++i) {
             std::string prop = propsNode[i].as<std::string>();
             if (prop == "Secret") {
@@ -1052,7 +1052,7 @@ GroupKnobSerialization::decode(const YAML::Node& node)
     }
 
     if (node["Params"]) {
-        YAML::Node paramsNode = node["Params"];
+        const YAML::Node& paramsNode = node["Params"];
         for (std::size_t i = 0; i < paramsNode.size(); ++i) {
 
             std::string typeName;
@@ -1073,7 +1073,7 @@ GroupKnobSerialization::decode(const YAML::Node& node)
     }
 
     if (node["Props"]) {
-        YAML::Node propsNode = node["Props"];
+        const YAML::Node& propsNode = node["Props"];
         for (std::size_t i = 0; i < propsNode.size(); ++i) {
             std::string prop = propsNode[i].as<std::string>();
             if (prop == "Opened") {
