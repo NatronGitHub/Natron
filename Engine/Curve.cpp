@@ -47,14 +47,6 @@ NATRON_NAMESPACE_ENTER
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
-struct KeyFrameCloner
-{
-    KeyFrame operator()(const KeyFrame & kf) const
-    {
-        return KeyFrame(kf);
-    }
-};
-
 class KeyFrameTimePredicate
 {
 public:
@@ -372,7 +364,7 @@ Curve::clone(const Curve & other)
 
 
         _imp->keyFrames.clear();
-        std::transform( otherKeys.begin(), otherKeys.end(), std::inserter( _imp->keyFrames, _imp->keyFrames.begin() ), KeyFrameCloner() );
+        _imp->keyFrames.insert( otherKeys.begin(), otherKeys.end() );
         if (!listeners.empty()) {
             newKeys.reset(new KeyFrameSet);
             *newKeys = _imp->keyFrames;
@@ -418,7 +410,7 @@ Curve::cloneIndexRange(const Curve& other, int firstKeyIdx, int nKeys)
             end = start;
             std::advance(end, nKeys);
         }
-        std::transform( start, end, std::inserter( _imp->keyFrames, _imp->keyFrames.begin() ), KeyFrameCloner() );
+        _imp->keyFrames.insert(start, end);
         if (!listeners.empty()) {
             newKeys.reset(new KeyFrameSet);
             *newKeys = _imp->keyFrames;
