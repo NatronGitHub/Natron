@@ -784,7 +784,7 @@ void NATRON_NAMESPACE::Curve::serialize(Archive & ar, const unsigned int /*versi
         KeyframeTypeEnum interpolation = it->getInterpolation();
         if ( interpolation == eKeyframeTypeSmooth ) {
             if ( it == _imp->keyFrames.begin() ||
-                (it != _imp->keyFrames.end() && next(it) == _imp->keyFrames.end() ) ) {
+                (it != _imp->keyFrames.end() && boost::next(it) == _imp->keyFrames.end() ) ) {
                 // KeyFrameSet sorts by time.
                 // If it is the first or last frame and interpolation is smooth, convert to broken
                 interpolation = eKeyframeTypeBroken;
