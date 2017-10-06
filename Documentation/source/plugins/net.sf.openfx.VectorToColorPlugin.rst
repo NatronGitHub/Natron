@@ -34,16 +34,16 @@ Controls
 | Parameter / script name      | Type      | Default   | Function                                                                                                                  |
 +==============================+===========+===========+===========================================================================================================================+
 | X channel / ``xChannel``     | Choice    | r         | | Selects the X component of vectors                                                                                      |
-|                              |           |           | | **r**: R channel from input                                                                                             |
-|                              |           |           | | **g**: G channel from input                                                                                             |
-|                              |           |           | | **b**: B channel from input                                                                                             |
-|                              |           |           | | **a**: A channel from input                                                                                             |
+|                              |           |           | | **r**: R channel from input.                                                                                            |
+|                              |           |           | | **g**: G channel from input.                                                                                            |
+|                              |           |           | | **b**: B channel from input.                                                                                            |
+|                              |           |           | | **a**: A channel from input.                                                                                            |
 +------------------------------+-----------+-----------+---------------------------------------------------------------------------------------------------------------------------+
 | Y channel / ``yChannel``     | Choice    | g         | | Selects the Y component of vectors                                                                                      |
-|                              |           |           | | **r**: R channel from input                                                                                             |
-|                              |           |           | | **g**: G channel from input                                                                                             |
-|                              |           |           | | **b**: B channel from input                                                                                             |
-|                              |           |           | | **a**: A channel from input                                                                                             |
+|                              |           |           | | **r**: R channel from input.                                                                                            |
+|                              |           |           | | **g**: G channel from input.                                                                                            |
+|                              |           |           | | **b**: B channel from input.                                                                                            |
+|                              |           |           | | **a**: A channel from input.                                                                                            |
 +------------------------------+-----------+-----------+---------------------------------------------------------------------------------------------------------------------------+
 | Opposite / ``opposite``      | Boolean   | Off       | If checked, opposite of X and Y are used.                                                                                 |
 +------------------------------+-----------+-----------+---------------------------------------------------------------------------------------------------------------------------+
