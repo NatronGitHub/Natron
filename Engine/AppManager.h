@@ -39,6 +39,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_ON(deprecated)
 #include <QtCore/QStringList>
 #include <QtCore/QString>
+#include <QtCore/QDir>
 #include <QtCore/QProcess>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -333,7 +334,9 @@ public:
 
     QStringList getAllNonOFXPluginsPaths() const;
 
-    QString getPyPlugsGlobalPath() const;
+    QDir getBundledPluginDirectory() const;
+
+    QString getSystemNatronPluginDirectory() const;
 
     void launchPythonInterpreter();
 
