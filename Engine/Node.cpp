@@ -4026,9 +4026,8 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
         inputLabels[i] = _imp->effect->getInputLabel(i);
 
         assert( i < (int)_imp->inputsComponents.size() );
-        const std::list<ImagePlaneDesc>& inputSupportedComps = _imp->inputsComponents[i];
         bool isMask = _imp->effect->isInputMask(i);
-        bool supportsOnlyAlpha = inputSupportedComps.size() == 1 && inputSupportedComps.front().getNumComponents() == 1;
+        bool supportsOnlyAlpha = isInputOnlyAlpha(i);
 
         hasMaskChannelSelector[i].first = false;
         hasMaskChannelSelector[i].second = isMask;
@@ -5413,6 +5412,15 @@ Node::getInputNumberFromLabel(const std::string& inputLabel) const
     }
 
     return -1;
+}
+
+bool
+Node::isInputOnlyAlpha(int inputNb) const
+{
+    assert(_imp->inputsInitialized);
+
+    const std::list<ImagePlaneDesc>& inputSupportedComps = _imp->inputsComponents[inputNb];
+    return (inputSupportedComps.size() == 1 && inputSupportedComps.front().getNumComponents() == 1);
 }
 
 bool

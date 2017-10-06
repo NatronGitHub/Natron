@@ -752,6 +752,8 @@ EffectInstance::getImage(int inputNb,
         }
     }
 
+    NodePtr node = getNode();
+
     if (!inputEffect) {
         inputEffect = getInput(inputNb);
     }
@@ -764,13 +766,14 @@ EffectInstance::getImage(int inputNb,
 
     ///Is this node a roto node or not. If so, find out if this input is the roto-brush
     boost::shared_ptr<RotoContext> roto;
-    boost::shared_ptr<RotoDrawableItem> attachedStroke = getNode()->getAttachedRotoItem();
+    boost::shared_ptr<RotoDrawableItem> attachedStroke = node->getAttachedRotoItem();
 
     if (attachedStroke) {
         roto = attachedStroke->getContext();
     }
     bool useRotoInput = false;
     bool inputIsRotoBrush = roto && isInputRotoBrush(inputNb);
+    bool supportsOnlyAlpha = node->isInputOnlyAlpha(inputNb);
     if (roto) {
         useRotoInput = isMask || inputIsRotoBrush;
     }
@@ -782,7 +785,7 @@ EffectInstance::getImage(int inputNb,
     }
 
     ///If this is a mask, fetch the image from the effect indicated by the mask channel
-    if (isMask) {
+    if (isMask || supportsOnlyAlpha) {
         if (!useRotoInput) {
             std::list<ImagePlaneDesc> availableLayers;
             getAvailableLayers(time, view, inputNb, &availableLayers);
@@ -909,7 +912,7 @@ EffectInstance::getImage(int inputNb,
         //If not, fallback on input RoD
         EffectInstPtr inputToFind;
         if (useRotoInput) {
-            if ( getNode()->getRotoContext() ) {
+            if ( node->getRotoContext() ) {
                 inputToFind = shared_from_this();
             } else {
                 assert(attachedStroke);
@@ -970,7 +973,7 @@ EffectInstance::getImage(int inputNb,
     bool renderScaleOneUpstreamIfRenderScaleSupportDisabled = false;
     unsigned int renderMappedMipMapLevel = mipMapLevel;
     if (renderFullScaleThenDownscale) {
-        renderScaleOneUpstreamIfRenderScaleSupportDisabled = getNode()->useScaleOneImagesWhenRenderScaleSupportIsDisabled();
+        renderScaleOneUpstreamIfRenderScaleSupportDisabled = node->useScaleOneImagesWhenRenderScaleSupportIsDisabled();
         if (renderScaleOneUpstreamIfRenderScaleSupportDisabled) {
             renderMappedMipMapLevel = 0;
         }
@@ -1002,7 +1005,7 @@ EffectInstance::getImage(int inputNb,
         assert(attachedStroke);
         if (attachedStroke) {
             if (duringPaintStroke) {
-                inputImg = getNode()->getOrRenderLastStrokeImage(mipMapLevel, par, components, depth);
+                inputImg = node->getOrRenderLastStrokeImage(mipMapLevel, par, components, depth);
             } else {
                 RectD rotoSrcRod;
                 if (inputIsRotoBrush) {
@@ -1034,7 +1037,7 @@ EffectInstance::getImage(int inputNb,
             //The RoI requested does not intersect with the bounds of the input image, return a NULL image.
 #ifdef DEBUG
             RectI inputBounds = inputImg->getBounds();
-            qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": The RoI requested to the roto mask does not intersect with the bounds of the input image: Pixel RoI x1=" << pixelRoI.x1 << "y1=" << pixelRoI.y1 << "x2=" << pixelRoI.x2 << "y2=" << pixelRoI.y2 <<
+            qDebug() << node->getScriptName_mt_safe().c_str() << ": The RoI requested to the roto mask does not intersect with the bounds of the input image: Pixel RoI x1=" << pixelRoI.x1 << "y1=" << pixelRoI.y1 << "x2=" << pixelRoI.x2 << "y2=" << pixelRoI.y2 <<
                 "Bounds x1=" << inputBounds.x1 << "y1=" << inputBounds.y1 << "x2=" << inputBounds.x2 << "y2=" << inputBounds.y2;
 #endif
 
@@ -1051,7 +1054,7 @@ EffectInstance::getImage(int inputNb,
         }
 
         if (mapToClipPrefs) {
-            inputImg = convertPlanesFormatsIfNeeded(getApp(), inputImg, pixelRoI, clipPrefComps, depth, getNode()->usesAlpha0ToConvertFromRGBToRGBA(), eImagePremultiplicationPremultiplied, channelForMask);
+            inputImg = convertPlanesFormatsIfNeeded(getApp(), inputImg, pixelRoI, clipPrefComps, depth, node->usesAlpha0ToConvertFromRGBToRGBA(), eImagePremultiplicationPremultiplied, channelForMask);
         }
 
         return inputImg;
@@ -1089,7 +1092,7 @@ EffectInstance::getImage(int inputNb,
     if ( !pixelRoI.intersects( inputImg->getBounds() ) ) {
         //The RoI requested does not intersect with the bounds of the input image, return a NULL image.
 #ifdef DEBUG
-        qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": The RoI requested to" << inputEffect->getScriptName_mt_safe().c_str() << "does not intersect with the bounds of the input image";
+        qDebug() << node->getScriptName_mt_safe().c_str() << ": The RoI requested to" << inputEffect->getScriptName_mt_safe().c_str() << "does not intersect with the bounds of the input image";
 #endif
 
         return ImagePtr();
@@ -1147,7 +1150,7 @@ EffectInstance::getImage(int inputNb,
 
 
     if (mapToClipPrefs) {
-        inputImg = convertPlanesFormatsIfNeeded(getApp(), inputImg, pixelRoI, clipPrefComps, depth, getNode()->usesAlpha0ToConvertFromRGBToRGBA(), outputPremult, channelForMask);
+        inputImg = convertPlanesFormatsIfNeeded(getApp(), inputImg, pixelRoI, clipPrefComps, depth, node->usesAlpha0ToConvertFromRGBToRGBA(), outputPremult, channelForMask);
     }
 
 #ifdef DEBUG
@@ -1159,7 +1162,7 @@ EffectInstance::getImage(int inputNb,
         } else {
             cc = components;
         }
-        qDebug() << "WARNING:" << getNode()->getScriptName_mt_safe().c_str() << "requested" << cc.getChannelsLabel().c_str() << "but" << inputEffect->getScriptName_mt_safe().c_str() << "returned an image with"
+        qDebug() << "WARNING:" << node->getScriptName_mt_safe().c_str() << "requested" << cc.getChannelsLabel().c_str() << "but" << inputEffect->getScriptName_mt_safe().c_str() << "returned an image with"
                  << inputImg->getComponents().getChannelsLabel().c_str();
     }
 

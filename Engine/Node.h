@@ -426,6 +426,8 @@ public:
 
     int getInputNumberFromLabel(const std::string& inputLabel) const;
 
+    bool isInputOnlyAlpha(int inputNb) const;
+
     bool isInputConnected(int inputNb) const;
 
     bool hasOutputConnected() const;
