@@ -1772,9 +1772,9 @@ AppManager::getAllNonOFXPluginsPaths() const
 
 
     //This is the bundled location for PyPlugs
-    QDir cwd( QCoreApplication::applicationDirPath() );
-    cwd.cdUp();
-    QString natronBundledPluginsPath = QString( cwd.absolutePath() +  QString::fromUtf8("/Plugins/PyPlugs") );
+    QDir pluginsDir = getBundledPluginDirectory();
+    pluginsDir.cd(QString::fromUtf8("PyPlugs"));
+    QString natronBundledPluginsPath = pluginsDir.absolutePath();
     bool preferBundleOverSystemWide = _imp->_settings->preferBundledPlugins();
     bool useBundledPlugins = _imp->_settings->loadBundledPlugins();
     if (preferBundleOverSystemWide && useBundledPlugins) {
@@ -1786,7 +1786,7 @@ AppManager::getAllNonOFXPluginsPaths() const
     templatesSearchPath.push_back(mainPath);
 
     ///look-in the global system wide plugin path
-    templatesSearchPath.push_back( getPyPlugsGlobalPath() );
+    templatesSearchPath.push_back( getSystemNatronPluginDirectory() );
 
     ///look-in the locations indicated by NATRON_PLUGIN_PATH
     Q_FOREACH(const QString &splitDir, splitDirs) {
@@ -1810,8 +1810,17 @@ AppManager::getAllNonOFXPluginsPaths() const
     return templatesSearchPath;
 } // AppManager::getAllNonOFXPluginsPaths
 
+QDir
+AppManager::getBundledPluginDirectory() const
+{
+    QDir cwd( QCoreApplication::applicationDirPath() );
+    cwd.cdUp();
+    cwd.cd(QString::fromUtf8("Plugins"));
+    return cwd;
+} // getBundledPluginDirectory
+
 QString
-AppManager::getPyPlugsGlobalPath() const
+AppManager::getSystemNatronPluginDirectory() const
 {
     QString path;
 
