@@ -32,6 +32,11 @@
 
 #include <dlfcn.h>
 
+#include "Engine/AppManager.h"
+#include "Engine/OSGLFunctions.h"
+#include "Engine/OSGLContext.h"
+#include "Global/GLIncludes.h"
+
 extern "C"
 {
 #include <X11/Xlib.h>
@@ -40,10 +45,7 @@ extern "C"
 #include <X11/Xresource.h>
 }
 
-#include "Engine/AppManager.h"
-#include "Engine/OSGLFunctions.h"
-#include "Engine/OSGLContext.h"
-#include "Global/GLIncludes.h"
+
 
 #define GLX_VENDOR 1
 #define GLX_RGBA_BIT 0x00000001
