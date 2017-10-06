@@ -34,12 +34,12 @@ Controls
 | Vertical / ``vertical``   | Boolean   | Off       | Stack views vertically instead of horizontally   |
 +---------------------------+-----------+-----------+--------------------------------------------------+
 | View 1 / ``view1``        | Choice    | Left      | | First view                                     |
-|                           |           |           | | **Left**                                       |
-|                           |           |           | | **Right**                                      |
+|                           |           |           | | **Left (left)**: Left view.                    |
+|                           |           |           | | **Right (right)**: Right view.                 |
 +---------------------------+-----------+-----------+--------------------------------------------------+
 | View 2 / ``view2``        | Choice    | Right     | | Second view                                    |
-|                           |           |           | | **Left**                                       |
-|                           |           |           | | **Right**                                      |
+|                           |           |           | | **Left (left)**: Left view.                    |
+|                           |           |           | | **Right (right)**: Right view.                 |
 +---------------------------+-----------+-----------+--------------------------------------------------+
 
 .. |pluginIcon| image:: net.sf.openfx.sideBySidePlugin.png
