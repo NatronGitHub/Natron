@@ -762,7 +762,9 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
     }
 
     const bool inputIsMask = getNode()->isInputMask(inArgs.inputNb);
-    if (inputIsMask && !isMaskEnabled(inArgs.inputNb)) {
+    std::bitset<4> inputSupportedComps = getNode()->getSupportedComponents(inArgs.inputNb);
+    bool supportsOnlyAlpha = inputSupportedComps[0] && !inputSupportedComps[1] && !inputSupportedComps[2] && !inputSupportedComps[3];
+    if ( (inputIsMask || supportsOnlyAlpha) && !isMaskEnabled(inArgs.inputNb) ) {
         return false;
     }
 
@@ -1011,10 +1013,10 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
             return false;
         }
 
-        // inputIsMask
+        // inputIsMask || supportsOnlyAlpha
         int channelForMask = - 1;
         ImagePlaneDesc maskComps;
-        if (inputIsMask) {
+        if (inputIsMask || supportsOnlyAlpha) {
             std::list<ImagePlaneDesc> upstreamAvailableLayers;
             ActionRetCodeEnum stat = getAvailableLayers(inputTime, inputView, inArgs.inputNb, &upstreamAvailableLayers);
             if (isFailureRetCode(stat)) {
