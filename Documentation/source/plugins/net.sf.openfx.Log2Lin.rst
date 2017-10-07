@@ -34,8 +34,8 @@ Controls
 | Parameter / script name        | Type      | Default                | Function                                                                                                                             |
 +================================+===========+========================+======================================================================================================================================+
 | Operation / ``operation``      | Choice    | Log to Lin             | | The operation to perform.                                                                                                          |
-|                                |           |                        | | **Log to Lin**: Convert the input from logarithmic to linear colorspace (usually after a Read node).                               |
-|                                |           |                        | | **Lin to Log**: Convert the input from linear to logarithmic colorspace (usually before a Write node).                             |
+|                                |           |                        | | **Log to Lin (log2lin)**: Convert the input from logarithmic to linear colorspace (usually after a Read node).                     |
+|                                |           |                        | | **Lin to Log (lin2log)**: Convert the input from linear to logarithmic colorspace (usually before a Write node).                   |
 +--------------------------------+-----------+------------------------+--------------------------------------------------------------------------------------------------------------------------------------+
 | Black / ``black``              | Color     | r: 95 g: 95 b: 95      | Value in the Cineon file that corresponds to black.                                                                                  |
 +--------------------------------+-----------+------------------------+--------------------------------------------------------------------------------------------------------------------------------------+

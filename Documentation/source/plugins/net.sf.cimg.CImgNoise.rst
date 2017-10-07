@@ -40,11 +40,11 @@ Controls
 | Sigma / ``sigma``              | Double    | 0.01       | Amplitude of the random additive noise.                                                                                              |
 +--------------------------------+-----------+------------+--------------------------------------------------------------------------------------------------------------------------------------+
 | Type / ``type``                | Choice    | Gaussian   | | Type of additive noise.                                                                                                            |
-|                                |           |            | | **Gaussian**: Gaussian noise.                                                                                                      |
-|                                |           |            | | **Uniform**: Uniform noise.                                                                                                        |
-|                                |           |            | | **Salt & Pepper**: Salt & pepper noise.                                                                                            |
-|                                |           |            | | **Poisson**: Poisson noise. Image is divided by Sigma before computing noise, then remultiplied by Sigma.                          |
-|                                |           |            | | **Rice**: Rician noise.                                                                                                            |
+|                                |           |            | | **Gaussian (gaussian)**: Gaussian noise.                                                                                           |
+|                                |           |            | | **Uniform (uniform)**: Uniform noise.                                                                                              |
+|                                |           |            | | **Salt & Pepper (saltnpepper)**: Salt & pepper noise.                                                                              |
+|                                |           |            | | **Poisson (poisson)**: Poisson noise. Image is divided by Sigma before computing noise, then remultiplied by Sigma.                |
+|                                |           |            | | **Rice (rice)**: Rician noise.                                                                                                     |
 +--------------------------------+-----------+------------+--------------------------------------------------------------------------------------------------------------------------------------+
 | Seed / ``seed``                | Integer   | 2000       | Random seed: change this if you want different instances to have different noise.                                                    |
 +--------------------------------+-----------+------------+--------------------------------------------------------------------------------------------------------------------------------------+

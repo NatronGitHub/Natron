@@ -38,8 +38,8 @@ Controls
 | Parameter / script name                  | Type      | Default       | Function                                                                                                                             |
 +==========================================+===========+===============+======================================================================================================================================+
 | Screen Type / ``screenType``             | Choice    | Greenscreen   | | Select the screen type according to your footage                                                                                   |
-|                                          |           |               | | **Greenscreen**                                                                                                                    |
-|                                          |           |               | | **Bluescreen**                                                                                                                     |
+|                                          |           |               | | **Greenscreen (green)**: The background screen has a green tint.                                                                   |
+|                                          |           |               | | **Bluescreen (blue)**: The background screen has a blue tint.                                                                      |
 +------------------------------------------+-----------+---------------+--------------------------------------------------------------------------------------------------------------------------------------+
 | Spillmap Mix / ``spillmapMix``           | Double    | 0.5           | | This value controls the generation of the spillmap.                                                                                |
 |                                          |           |               | | The spillmap decides in which areas the spill will be removed.                                                                     |
