@@ -201,7 +201,9 @@ CurveWidget::centerOn(const std::vector<boost::shared_ptr<CurveGui> > & curves, 
 
     std::vector<boost::shared_ptr<CurveGui> > curvesToFrame;
     if (curves.empty()) {
-        curvesToFrame.insert(curvesToFrame.end(), _imp->_curves.begin(), _imp->_curves.end());
+        curvesToFrame.reserve( _imp->_curves.size() );
+        curvesToFrame.insert( curvesToFrame.end(), _imp->_curves.begin(), _imp->_curves.end() );
+        assert(curvesToFrame.size() == _imp->_curves.size());
     } else {
         curvesToFrame = curves;
     }
@@ -256,8 +258,8 @@ CurveWidget::centerOn(const std::vector<boost::shared_ptr<CurveGui> > & curves, 
     
     bool doCenter = false;
     RectD ret;
-    for (U32 i = 0; i < curves.size(); ++i) {
-        const boost::shared_ptr<CurveGui>& c = curves[i];
+    for (U32 i = 0; i < curvesToFrame.size(); ++i) {
+        const boost::shared_ptr<CurveGui>& c = curvesToFrame[i];
         KeyFrameSet keys = c->getKeyFrames();
 
         if ( keys.empty() ) {
